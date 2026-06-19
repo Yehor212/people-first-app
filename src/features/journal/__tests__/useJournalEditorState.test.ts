@@ -12,9 +12,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
+import { readFileSync } from "node:fs";
 import { renderHook, act } from "@testing-library/react";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import type { SaveState } from "../SaveIndicator";
+import { sanitizeJournalTag } from "../useJournalEditorState";
+
+const hookSource = readFileSync("src/features/journal/useJournalEditorState.ts", "utf8");
 
 // ══════════════════════════════════════════════════════════════
 // Extracted logic: Save state machine (mirrors useJournalEditorState)
@@ -170,6 +174,28 @@ function computeIsDirty(initial: EditorSnapshot, current: EditorSnapshot) {
 // ══════════════════════════════════════════════════════════════
 // T01: Save State Machine
 // ══════════════════════════════════════════════════════════════
+
+describe("iOS keyboard inset contract", () => {
+  it("tracks visualViewport keyboard inset for the mobile editor", () => {
+    expect(hookSource).toContain("const [keyboardInset, setKeyboardInset] = useState(0);");
+    expect(hookSource).toContain("const updateKeyboardInset = () => {");
+    expect(hookSource).toContain("window.innerHeight - vv.height - vv.offsetTop");
+    expect(hookSource).toContain('vv.addEventListener("scroll", updateKeyboardInset);');
+    expect(hookSource).toContain("keyboardInset,");
+  });
+});
+
+describe("journal tag sanitization", () => {
+  it("preserves supported Arabic, Hebrew, and Japanese tag text", () => {
+    expect(sanitizeJournalTag("هدوء_2026")).toBe("هدوء_2026");
+    expect(sanitizeJournalTag("רוגע-ערב")).toBe("רוגע-ערב");
+    expect(sanitizeJournalTag("気づき_1")).toBe("気づき_1");
+  });
+
+  it("strips spaces and symbols without dropping Unicode letters", () => {
+    expect(sanitizeJournalTag(" calm مساء! ")).toBe("calmمساء");
+  });
+});
 
 describe("T01: Save state machine", () => {
   beforeEach(() => {
@@ -911,5 +937,44 @@ describe("T06: Draft persistence lifecycle", () => {
     });
 
     expect(saveDraftFn).not.toHaveBeenCalled();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════
+// T07: iOS editor safety contracts backed by the real hook source
+// ══════════════════════════════════════════════════════════════
+
+describe("T07: iOS editor safety contracts", () => {
+  it("checks the immediate content ref before navigating back", () => {
+    expect(hookSource).toContain("contentRef.current !== initialSnapshotRef.current.content");
+    expect(hookSource).toContain("setShowUnsavedDialog(true)");
+  });
+
+  it("reschedules draft persistence when debounced content state catches up", () => {
+    expect(hookSource).toContain("content: contentRef.current");
+    expect(hookSource).toMatch(/\[\s*title,\s*content,\s*date,/);
+  });
+
+  it("awaits local draft media deletion before a new diary entry is discarded or its draft is dismissed", () => {
+    expect(hookSource).toContain('deleteDraftMedia } from "./journalStorage";');
+    expect(hookSource).toContain("const deleteNewEntryDraftMedia = useCallback(async () =>");
+    expect(hookSource).toContain("await deleteDraftMedia();");
+    expect(hookSource).not.toContain("void deleteDraftMedia();");
+  });
+
+  it("stops unfinished recordings when recording overlays are closed so Android back does not silently discard audio", () => {
+    expect(hookSource).toContain("void recorder.stop();\n          setShowRecordingOverlay(false);");
+    expect(hookSource).not.toContain("void recorder.discard();\n        setShowRecordingOverlay(false);");
+  });
+
+  it("restores draft audio rows so saved draft recordings remain reviewable", () => {
+    expect(hookSource).toContain("const restoredAudioIds = draftAvailable.audioIds || [];");
+    expect(hookSource).toContain("getAudioById(audioId)");
+    expect(hookSource).toContain("setAudioRecordings(recordings.filter");
+  });
+
+  it("lets photo picker failures reject so the picker can stay open and show recovery UI", () => {
+    expect(hookSource).toContain('logger.error("[Journal] Photo upload failed:", error);');
+    expect(hookSource).toContain("throw error;");
   });
 });

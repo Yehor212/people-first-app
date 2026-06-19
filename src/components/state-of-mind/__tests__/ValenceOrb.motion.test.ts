@@ -15,6 +15,7 @@ import {
   resolveOrbFrameDeltaSeconds,
   resolveOrbFrameInterval,
   resolveOrbShaderTime,
+  resolveOrbTransitionDeltaSeconds,
   resolveOrbTransitionSettings,
   resolveOrbWrappedTimeDelta,
   resetOrbRuntimeSnapshotsForTests,
@@ -424,6 +425,14 @@ describe("ValenceOrb motion profile", () => {
     expect(resolveOrbFrameDeltaSeconds(1000, 1034)).toBeCloseTo(0.034);
     expect(resolveOrbFrameDeltaSeconds(1000, 1100)).toBe(0.05);
     expect(resolveOrbFrameDeltaSeconds(1000, 20_000)).toBe(0);
+  });
+
+  it("lets user-triggered valence transitions catch up after moderate mobile frame gaps", () => {
+    expect(resolveOrbTransitionDeltaSeconds(0, 1000)).toBe(0);
+    expect(resolveOrbTransitionDeltaSeconds(1000, 1034)).toBeCloseTo(0.034);
+    expect(resolveOrbTransitionDeltaSeconds(1000, 1100)).toBeCloseTo(0.1);
+    expect(resolveOrbTransitionDeltaSeconds(1000, 1200)).toBeCloseTo(0.12);
+    expect(resolveOrbTransitionDeltaSeconds(1000, 20_000)).toBe(0);
   });
 
   it("keeps long-running shader time bounded without changing frame cadence", () => {

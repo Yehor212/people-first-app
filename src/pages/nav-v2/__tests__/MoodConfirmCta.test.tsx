@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { MoodConfirmCta } from "../MoodConfirmCta";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -143,5 +145,16 @@ describe("MoodConfirmCta", () => {
     );
     fireEvent.click(screen.getByTestId("mood-confirm-button"));
     expect(screen.getByTestId("mood-undo-toast-progress")).toBeInTheDocument();
+  });
+
+  it("keeps the undo toast below the mobile drawer stack", () => {
+    const css = readFileSync(
+      resolve(process.cwd(), "src/pages/nav-v2/MoodConfirmCta.css"),
+      "utf8",
+    );
+    const match = css.match(/\.mood-undo-toast\s*\{[^}]*z-index:\s*(\d+)/s);
+
+    expect(match).not.toBeNull();
+    expect(Number(match?.[1])).toBeLessThan(59);
   });
 });

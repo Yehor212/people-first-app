@@ -30,6 +30,8 @@ const ANDROID_RES = path.resolve(__dirname, "..", "android", "app", "src", "main
 const ANDROID_APP_BUILD = path.resolve(__dirname, "..", "android", "app", "build");
 const ANDROID_CORDOVA_PLUGINS = path.resolve(__dirname, "..", "android", "capacitor-cordova-android-plugins");
 const IOS_APP = path.resolve(__dirname, "..", "ios", "App", "App");
+const LATE_DUPLICATE_CONFIRM_PASSES = 8;
+const LATE_DUPLICATE_CONFIRM_DELAY_MS = 500;
 const PRUNE = [
   // Play Store listing artwork — only for manual uploads, not runtime
   "feature-graphic.png",
@@ -59,6 +61,18 @@ const PRUNE = [
   "pwa-maskable-512.png",
 ];
 
+function resolveChildInsideRoot(root, childName) {
+  // childName comes from fs.readdirSync(root), but keep an explicit
+  // containment check so future call sites cannot turn this into traversal.
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+  const childPath = path.resolve(root, childName);
+  const relative = path.relative(root, childPath);
+  if (relative === "" || relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`Refusing to prune outside ${root}: ${childName}`);
+  }
+  return childPath;
+}
+
 function pruneMacDuplicateArtifacts(root, label) {
   if (!fs.existsSync(root)) {
     console.log(`[prune-assets] ${label} not found — skipping duplicate artifact cleanup`);
@@ -67,7 +81,7 @@ function pruneMacDuplicateArtifacts(root, label) {
 
   let removed = 0;
   for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
-    const entryPath = path.join(root, entry.name);
+    const entryPath = resolveChildInsideRoot(root, entry.name);
     if (/ \d+(?=\.|$)/.test(entry.name)) {
       fs.rmSync(entryPath, { force: true, recursive: true });
       removed++;
@@ -79,6 +93,49 @@ function pruneMacDuplicateArtifacts(root, label) {
   }
   console.log(`[prune-assets] removed ${removed} duplicate ${label} artifact(s)`);
   return removed;
+}
+
+function prunePrecompressedNativeAssets(root, label) {
+  if (!fs.existsSync(root)) {
+    console.log(`[prune-assets] ${label} not found — skipping precompressed cleanup`);
+    return 0;
+  }
+
+  let removed = 0;
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    const entryPath = resolveChildInsideRoot(root, entry.name);
+    if (entry.isDirectory()) {
+      removed += prunePrecompressedNativeAssets(entryPath, `${label}/${entry.name}`);
+      continue;
+    }
+    if (/\.(?:br|gz)$/.test(entry.name)) {
+      fs.rmSync(entryPath, { force: true });
+      removed++;
+    }
+  }
+  console.log(`[prune-assets] removed stale precompressed ${label} asset(s): ${removed}`);
+  return removed;
+}
+
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function pruneLateMacDuplicateArtifacts() {
+  // Some macOS/iCloud workspaces materialize " 2" duplicate artifacts just
+  // after Capacitor sync completes. Poll for a few seconds so delayed local
+  // filesystem copies are removed before native runtime verification.
+  let removedTotal = 0;
+  for (let pass = 1; pass <= LATE_DUPLICATE_CONFIRM_PASSES; pass++) {
+    sleepSync(LATE_DUPLICATE_CONFIRM_DELAY_MS);
+    removedTotal +=
+      pruneMacDuplicateArtifacts(DIST, `dist-late-${pass}`) +
+      pruneMacDuplicateArtifacts(IOS_APP, `ios-app-late-${pass}`);
+  }
+
+  if (removedTotal > 0) {
+    console.log(`[prune-assets] removed ${removedTotal} late duplicate artifact(s)`);
+  }
 }
 
 function stripNativeManifestLink() {
@@ -121,6 +178,8 @@ pruneMacDuplicateArtifacts(ANDROID_RES, "android-res");
 pruneMacDuplicateArtifacts(ANDROID_APP_BUILD, "android-app-build");
 pruneMacDuplicateArtifacts(ANDROID_CORDOVA_PLUGINS, "android-cordova-plugins");
 pruneMacDuplicateArtifacts(IOS_APP, "ios-app");
+prunePrecompressedNativeAssets(ANDROID_PUBLIC, "android-public");
+prunePrecompressedNativeAssets(path.join(IOS_APP, "public"), "ios-public");
 
 for (const name of PRUNE) {
   const p = path.join(DIST, name);
@@ -142,3 +201,4 @@ if (pruned === 0) {
 }
 
 stripNativeManifestLink();
+pruneLateMacDuplicateArtifacts();

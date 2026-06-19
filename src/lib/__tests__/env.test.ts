@@ -8,6 +8,8 @@ import {
   BASE_URL,
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
+  SUPABASE_PUBLISHABLE_KEY,
+  SUPABASE_PUBLIC_API_KEY,
   SENTRY_DSN,
   SPOTIFY_CLIENT_ID,
   ADMOB_REWARDED_ID_ANDROID,
@@ -36,6 +38,14 @@ describe("env", () => {
 
   it("SUPABASE_ANON_KEY is string or undefined", () => {
     expect(SUPABASE_ANON_KEY === undefined || typeof SUPABASE_ANON_KEY === "string").toBe(true);
+  });
+
+  it("SUPABASE_PUBLISHABLE_KEY is string or undefined", () => {
+    expect(SUPABASE_PUBLISHABLE_KEY === undefined || typeof SUPABASE_PUBLISHABLE_KEY === "string").toBe(true);
+  });
+
+  it("SUPABASE_PUBLIC_API_KEY prefers publishable key with legacy anon fallback", () => {
+    expect(SUPABASE_PUBLIC_API_KEY).toBe(SUPABASE_PUBLISHABLE_KEY || SUPABASE_ANON_KEY);
   });
 
   it("SENTRY_DSN is string or undefined", () => {

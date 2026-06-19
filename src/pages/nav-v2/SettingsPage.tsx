@@ -8,12 +8,15 @@ import {
   LockKeyhole,
   Palette,
   UserRound,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeStore } from "@/stores/themeStore";
 import { useAppStore } from "@/stores";
+import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
 import { supabase } from "@/lib/supabaseClient";
 import { APP_VERSION } from "@/lib/appVersion";
 import { DeviceSessionsCard } from "@/components/sync/DeviceSessionsCard";
@@ -36,6 +39,7 @@ interface SettingsPageProps {
 const INITIAL_SECTION_TO_V2_SECTION: Record<string, V2SettingsSectionId> = {
   profile: "profile",
   appearance: "appearance",
+  sound: "sound",
   language: "language",
   notifications: "notifications",
   privacy: "privacy",
@@ -54,6 +58,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   );
   const themePreference = useThemeStore((s) => s.theme);
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
+  const audioSettings = useAppAudioSettings();
   const hasValidSession = useAppStore((s) => s.hasValidSession);
   const settingsLead = `${tx.settingsCloudSyncTitle}: ${tx.settingsCloudSyncDescription}`;
 
@@ -78,6 +83,9 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
         : appliedTheme === "paper"
           ? tx.themeLight
           : tx.themeDark;
+  const soundSummary = audioSettings.muted
+    ? tx.settingsSoundSummaryOff || tx.soundOff || "Muted"
+    : tx.settingsSoundSummaryOn || tx.soundOn || "Sound on";
   const reminderSummary = controls?.reminders.enabled
     ? `${tx.moodReminder}: ${
         controls.reminders.moodTimeMorning || "09:00"
@@ -128,6 +136,14 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
         role: "mind",
       },
       {
+        id: "sound",
+        icon: audioSettings.muted ? VolumeX : Volume2,
+        label: tx.settingsSoundTitle || "Sound",
+        description: tx.settingsSoundDescription || "App ambience and feedback volume.",
+        value: soundSummary,
+        role: "settings",
+      },
+      {
         id: "notifications",
         icon: Clock3,
         label: tx.settingsGroupNotifications || tx.notifications,
@@ -167,10 +183,12 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
       },
     ],
     [
+      audioSettings.muted,
       dataSummary,
       privacySummary,
       reminderSummary,
       syncDescription,
+      soundSummary,
       syncStatus,
       themeLabel,
       tx.appearance,
@@ -180,6 +198,8 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
       tx.privacyDescription,
       tx.privacyTitle,
       tx.profile,
+      tx.settingsSoundDescription,
+      tx.settingsSoundTitle,
       tx.remindersDescription,
       tx.selectLanguage,
       tx.settingsCloudSyncTitle,

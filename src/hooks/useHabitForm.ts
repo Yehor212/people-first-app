@@ -31,6 +31,10 @@ import {
   normalizeHabitSchedule,
 } from '@/lib/habitScheduling';
 import { hapticTap } from '@/lib/haptics';
+import {
+  getV2HabitTemplatePictogramId,
+  resolveV2HabitPictogramId,
+} from '@/lib/v2HabitPictograms';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 // ============================================
@@ -65,9 +69,10 @@ export const frequencyPresets: { label: string; i18nKey: string; ratio: HabitFre
 interface UseHabitFormOptions {
   onAddHabit: (habit: Habit) => void;
   onUpdateHabit?: (habit: Habit) => void;
+  useV2IconIds?: boolean;
 }
 
-export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions) {
+export function useHabitForm({ onAddHabit, onUpdateHabit, useV2IconIds = false }: UseHabitFormOptions) {
   const { language, t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
 
@@ -80,7 +85,9 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
 
   // Core fields
   const [newHabitName, setNewHabitName] = useState('');
-  const [selectedIcon, setSelectedIcon] = useState(habitIcons[0]);
+  const [selectedIcon, setSelectedIcon] = useState(() =>
+    useV2IconIds ? resolveV2HabitPictogramId(habitIcons[0]) : habitIcons[0],
+  );
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<HabitCategory>('health');
 
@@ -114,7 +121,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
 
   const resetForm = useCallback(() => {
     setNewHabitName('');
-    setSelectedIcon(habitIcons[0]);
+    setSelectedIcon(useV2IconIds ? resolveV2HabitPictogramId(habitIcons[0]) : habitIcons[0]);
     setSelectedColorIndex(0);
     setSelectedCategory('health');
     setHabitType('boolean');
@@ -139,7 +146,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     setSettingsMode('simple');
     setIsAdding(false);
     setShowCustomForm(false);
-  }, []);
+  }, [useV2IconIds]);
 
   const syncReminderDays = useCallback((
     nextFrequency: HabitFrequencyRatio,
@@ -231,7 +238,9 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     setSelectedTemplateId(template.id);
     setEditingHabit(null);
     setNewHabitName(name);
-    setSelectedIcon(template.icon);
+    setSelectedIcon(
+      useV2IconIds ? getV2HabitTemplatePictogramId(template.id) : template.icon,
+    );
     setSelectedColorIndex(template.color);
     setSelectedCategory(mapTemplateCategoryToHabitCategory(template.category));
     setHabitType(template.habitType || 'boolean');
@@ -258,7 +267,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     setSettingsMode('simple');
     setIsAdding(true);
     setShowCustomForm(true);
-  }, [language]);
+  }, [language, useV2IconIds]);
 
   const handleEditHabit = useCallback((habit: Habit) => {
     const template = habit.templateId
@@ -272,7 +281,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     setEditingHabit(habit);
     setSelectedTemplateId(habit.templateId || null);
     setNewHabitName(habit.name);
-    setSelectedIcon(habit.icon);
+    setSelectedIcon(useV2IconIds ? resolveV2HabitPictogramId(habit.icon) : habit.icon);
     setSelectedColorIndex(habit.color);
     setSelectedCategory(habit.category || 'health');
     setHabitType(habit.habitType || 'boolean');
@@ -303,7 +312,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     setSettingsMode('simple');
     setIsAdding(true);
     setShowCustomForm(true);
-  }, []);
+  }, [useV2IconIds]);
 
   const handleAddHabit = useCallback(() => {
     if (!newHabitName.trim()) return;
@@ -329,12 +338,15 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     };
     const habitSchedule = createHabitSchedule(frequency, scheduleMode, scheduleDueDays);
     const persistedFrequency = getFrequencyFromSchedule(habitSchedule);
+    const persistedIcon = useV2IconIds
+      ? resolveV2HabitPictogramId(selectedIcon)
+      : selectedIcon;
 
     if (editingHabit && onUpdateHabit) {
       const updatedHabit: Habit = {
         ...editingHabit,
         name: newHabitName.trim(),
-        icon: selectedIcon,
+        icon: persistedIcon,
         color: selectedColorIndex,
         category: selectedCategory,
         habitType,
@@ -373,7 +385,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
       const habit: Habit = {
         id: generateId(),
         name: newHabitName.trim(),
-        icon: selectedIcon,
+        icon: persistedIcon,
         color: selectedColorIndex,
         position: Date.now(),
         createdAt: Date.now(),
@@ -434,6 +446,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     identityIcon,
     selectedTemplateId,
     ts,
+    useV2IconIds,
   ]);
 
   const handleQuickAdd = useCallback((templateId: string) => {

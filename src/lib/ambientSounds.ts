@@ -5,7 +5,7 @@
  * No external URLs to avoid CSP issues and 403 errors.
  *
  * iOS Audio Requirements:
- * - Audio must be unlocked via user gesture (touchstart/touchend/click)
+ * - Audio must be unlocked via user gesture (touchstart/touchend on iOS, keydown for keyboard users)
  * - AudioContext must be created/resumed during user gesture
  * - MP3 format is more reliable than WAV on iOS
  * - playsInline attribute required for inline playback
@@ -14,6 +14,7 @@
 import { logger } from "./logger";
 import { isAbortError } from "./validation";
 import type { SeverityLevel } from "@sentry/core";
+import { BASE_URL } from "@/lib/env";
 
 // Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
 // Breadcrumbs are fire-and-forget telemetry — async import is safe.
@@ -27,7 +28,12 @@ const lazyBreadcrumb = (bc: {
     .then(({ addBreadcrumb }) => addBreadcrumb(bc))
     .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
 };
-import { BASE_URL } from "@/lib/env";
+import { getAppAudioAssetSrc } from "@/lib/appAudioAssets";
+import {
+  HYPERFOCUS_AUDIO_FAMILIES,
+  getHyperfocusAudioVariant,
+  type HyperfocusAudioFamilyId,
+} from "@/lib/hyperfocusAudioCatalog";
 
 // ============================================
 // AUDIO STATUS TRACKING
@@ -175,7 +181,7 @@ async function unlockWithAudioElement(): Promise<void> {
 
 /**
  * Unlock audio on mobile browsers.
- * Must be called in response to a user gesture (click/touch).
+ * Must be called in response to a user gesture (touch/key/audio-control click).
  * Uses multiple methods for maximum iOS compatibility.
  */
 export async function unlockAudio(): Promise<void> {
@@ -283,7 +289,6 @@ export function setupAudioUnlock(): void {
 
     document.removeEventListener("touchstart", audioUnlockHandler, true);
     document.removeEventListener("touchend", audioUnlockHandler, true);
-    document.removeEventListener("click", audioUnlockHandler, true);
     document.removeEventListener("keydown", audioUnlockHandler, true);
     logger.log("[AmbientSounds] Audio unlock listeners removed");
 
@@ -294,7 +299,6 @@ export function setupAudioUnlock(): void {
   // Use capture phase to catch events before they're handled
   document.addEventListener("touchstart", audioUnlockHandler, { capture: true, passive: true });
   document.addEventListener("touchend", audioUnlockHandler, { capture: true, passive: true });
-  document.addEventListener("click", audioUnlockHandler, { capture: true, passive: true });
   document.addEventListener("keydown", audioUnlockHandler, { capture: true, passive: true });
 
   // Note: No safety timeout — listeners are cleaned up on successful unlock (line above).
@@ -337,8 +341,32 @@ export interface SoundInfo {
   description: string;
 }
 
-// Get base path from Vite config (or use default for GitHub Pages)
-const BASE_PATH = BASE_URL;
+const LEGACY_SOUND_COPY: Record<HyperfocusAudioFamilyId, Pick<SoundInfo, "nameEn" | "description">> = {
+  underwater: {
+    nameEn: "Underwater Hum",
+    description: "Deep underwater ambient sound",
+  },
+  thunderstorm: {
+    nameEn: "Jungle Thunderstorm",
+    description: "Thunder and rain in tropical jungle",
+  },
+  ocean: {
+    nameEn: "Waves on Rocks",
+    description: "Small waves hitting harbor rocks",
+  },
+  river: {
+    nameEn: "River Wildlife",
+    description: "River sounds with wildlife",
+  },
+  cafe: {
+    nameEn: "Cafe Ambience",
+    description: "Coffee shop background noise",
+  },
+  fireplace: {
+    nameEn: "Fireplace Crackling",
+    description: "Cozy fireplace crackling",
+  },
+};
 
 /**
  * All available sounds - LOCAL ONLY
@@ -346,62 +374,42 @@ const BASE_PATH = BASE_URL;
  *
  * MP3 primary files keep the app shell compact on web/PWA and reduce native APK asset weight.
  */
-export const SOUNDS: SoundInfo[] = [
-  {
-    id: "underwater",
-    type: "underwater",
+export const SOUNDS: SoundInfo[] = HYPERFOCUS_AUDIO_FAMILIES.map((family) => {
+  const copy = LEGACY_SOUND_COPY[family.id];
 
-    nameEn: "Underwater Hum",
-    file: `${BASE_PATH}sounds/mixkit-underwater-transmitter-hum-2135.mp3`,
-    description: "Deep underwater ambient sound",
-  },
-  {
-    id: "thunderstorm",
-    type: "thunderstorm",
-
-    nameEn: "Jungle Thunderstorm",
-    file: `${BASE_PATH}sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.mp3`,
-    description: "Thunder and rain in tropical jungle",
-  },
-  {
-    id: "ocean",
-    type: "ocean",
-
-    nameEn: "Waves on Rocks",
-    file: `${BASE_PATH}sounds/mixkit-small-waves-harbor-rocks-1208.mp3`,
-    description: "Small waves hitting harbor rocks",
-  },
-  {
-    id: "river",
-    type: "river",
-
-    nameEn: "River Wildlife",
-    file: `${BASE_PATH}sounds/mixkit-wildlife-environment-in-a-river-2456.mp3`,
-    description: "River sounds with wildlife",
-  },
-  {
-    id: "cafe",
-    type: "cafe",
-
-    nameEn: "Cafe Ambience",
-    file: `${BASE_PATH}sounds/cafe-noise-32940.mp3`,
-    description: "Coffee shop background noise",
-  },
-  {
-    id: "fireplace",
-    type: "fireplace",
-
-    nameEn: "Fireplace Crackling",
-    file: `${BASE_PATH}sounds/fireplace-fx-56636.mp3`,
-    description: "Cozy fireplace crackling",
-  },
-];
+  return {
+    id: family.legacyId,
+    type: family.id,
+    nameEn: copy.nameEn,
+    file: getAppAudioAssetSrc(family.legacyAssetId),
+    description: copy.description,
+  };
+});
 
 /**
  * Get sound by ID
  */
 export function getSoundById(id: string): SoundInfo | undefined {
-  return SOUNDS.find((s) => s.id === id);
+  const legacySound = SOUNDS.find((s) => s.id === id);
+  if (legacySound) return legacySound;
+
+  const variant = getHyperfocusAudioVariant(id);
+  if (!variant) return undefined;
+
+  const familySound = SOUNDS.find((sound) => sound.id === variant.legacyId);
+  if (!familySound) return undefined;
+
+  const generatedFile = variant.generated && variant.runtimePublicPath ? BASE_URL + variant.runtimePublicPath : null;
+
+  return {
+    ...familySound,
+    id: variant.id,
+    type: variant.familyId,
+    nameEn: `${familySound.nameEn} - ${variant.label}`,
+    file: generatedFile ?? familySound.file,
+    fallbackFile: generatedFile ? familySound.file : familySound.fallbackFile,
+    description: `${variant.label}: ${familySound.description}`,
+  };
 }
 
 /**

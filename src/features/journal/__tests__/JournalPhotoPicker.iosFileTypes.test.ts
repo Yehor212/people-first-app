@@ -24,4 +24,12 @@ describe("JournalPhotoPicker iOS photo file support", () => {
   it("keeps action buttons inside the iOS viewport during the bottom-sheet entrance", () => {
     expect(pickerSource).toContain('pb-[calc(max(1rem,env(safe-area-inset-bottom))+0.75rem)]');
   });
+
+  it("keeps the picker open and shows an error when iOS photo processing fails", () => {
+    const failureBranch = /catch \(err\)[\s\S]*?finally/.exec(pickerSource)?.[0] ?? "";
+
+    expect(failureBranch).toContain('logger.error("[JournalPhotoPicker] Photo upload failed:", err);');
+    expect(failureBranch).toContain('setError(ts.journalPhotoError || "Failed to add photo. Try again.");');
+    expect(failureBranch).not.toContain("onClose()");
+  });
 });

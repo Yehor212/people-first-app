@@ -5,6 +5,9 @@ import { getToday } from '@/lib/utils';
 import * as storage from './journalStorage';
 
 export type JournalView = 'list' | 'editing' | 'viewing' | 'stats';
+type CreateJournalEntryInput = Omit<JournalEntry, 'id' | 'createdAt' | 'updatedAt' | 'date'> & {
+  date?: string;
+};
 
 export function useJournal() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -79,25 +82,11 @@ export function useJournal() {
   }, [entries]);
 
   // CRUD operations
-  const createEntry = useCallback(async (data: {
-    title: string;
-    content: string;
-    stickers: string[];
-    photoIds: string[];
-    audioIds?: string[];
-    mood?: MoodType;
-    tags: string[];
-    date?: string;
-  }) => {
+  const createEntry = useCallback(async (data: CreateJournalEntryInput) => {
+    const { date, ...entryData } = data;
     const entry = await storage.saveEntry({
-      date: data.date || getToday(),
-      title: data.title,
-      content: data.content,
-      stickers: data.stickers,
-      photoIds: data.photoIds,
-      audioIds: data.audioIds,
-      mood: data.mood,
-      tags: data.tags,
+      ...entryData,
+      date: date || getToday(),
     });
     setEntries(prev => [entry, ...prev]);
     return entry;

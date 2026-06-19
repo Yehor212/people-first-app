@@ -52,6 +52,26 @@ jobs:
           npm run check:canonical-orbs
           npx vitest run src/components/navigation-v2/__tests__/ClassicPortalLink.test.tsx src/components/navigation-v2/__tests__/DrawerV2.test.tsx src/components/navigation-v2/__tests__/SidebarV2.test.tsx
 
+      - name: Check Sentry readiness for V2 preview
+        working-directory: v2-src
+        env:
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          ZENFLOW_SENTRY_READINESS_REQUIRED: "true"
+        run: npm run check:sentry-readiness
+      - name: Smoke Sentry API for V2 preview
+        working-directory: v2-src
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL }}
+          ZENFLOW_SENTRY_API_REQUIRED: "true"
+        run: npm run smoke:sentry-api
+
+
       - name: Build V2 preview under /v2
         working-directory: v2-src
         env:
@@ -64,11 +84,38 @@ jobs:
           VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
           VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'false' }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: npm run build
+
+      - name: Check Sentry public artifacts for V2 preview
+        working-directory: v2-src
+        run: npm run check:sentry-artifacts
 
       - name: Install V1 dependencies
         working-directory: v1-src
         run: npm install
+
+      - name: Check Sentry readiness for V1 public root
+        working-directory: v1-src
+        env:
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          ZENFLOW_SENTRY_READINESS_REQUIRED: "true"
+        run: npm run check:sentry-readiness
+      - name: Smoke Sentry API for V1 public root
+        working-directory: v1-src
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL }}
+          ZENFLOW_SENTRY_API_REQUIRED: "true"
+        run: npm run smoke:sentry-api
+
 
       - name: Build V1 public root from main
         working-directory: v1-src
@@ -78,7 +125,14 @@ jobs:
           VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
           VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'false' }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: npm run build
+
+      - name: Check Sentry public artifacts for V1 public root
+        working-directory: v1-src
+        run: npm run check:sentry-artifacts
 
       - name: Compose GitHub Pages artifact
         run: |
@@ -93,6 +147,11 @@ jobs:
           done
           cp v2-src/dist/404.html pages/404.html
           touch pages/.nojekyll
+
+      - name: Check final Sentry combined Pages artifact
+        env:
+          ZENFLOW_DIST_DIR: pages
+        run: npm run check:sentry-artifacts
 
       - name: Upload combined Pages artifact
         uses: actions/upload-pages-artifact@v5

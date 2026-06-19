@@ -210,6 +210,20 @@ describe("DrawerV2", () => {
     );
   });
 
+  it("shows immediate destination feedback on touch down before route change", () => {
+    const onPageChange = vi.fn();
+    render(<DrawerV2 {...baseProps} onPageChange={onPageChange} />);
+
+    const habitsDestination = screen.getByTestId("drawer-v2-destination-habits");
+    expect(habitsDestination).toHaveAttribute("data-navigating", "false");
+
+    fireEvent.pointerDown(habitsDestination, { pointerType: "touch" });
+
+    expect(habitsDestination).toHaveAttribute("data-navigating", "true");
+    expect(screen.getByTestId("drawer-v2-destination-habits-progress")).toBeInTheDocument();
+    expect(onPageChange).not.toHaveBeenCalled();
+  });
+
   it("navigates from the mobile drawer primary destinations", () => {
     const onPageChange = vi.fn();
     render(<DrawerV2 {...baseProps} onPageChange={onPageChange} />);

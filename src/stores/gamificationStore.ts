@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { logger } from "@/lib/logger";
+import { getAppAudioRewardSoundType, type AppAudioFeedbackSoundType } from "@/lib/appAudioAssets";
+import { playSound } from "@/lib/audioManager";
 import type { XpAction } from "@/lib/gamification";
 import type { TreatSource, MoodType } from "@/types";
 
@@ -42,6 +44,7 @@ export interface RewardOptions {
   skipPopup?: boolean;
   skipGarden?: boolean;
   skipSync?: boolean;
+  sound?: AppAudioFeedbackSoundType | null;
 }
 
 export interface RewardResult {
@@ -84,7 +87,11 @@ export const useGamificationStore = create<GamificationState & GamificationActio
     // 5. Haptic feedback
     if (options.haptic) void options.haptic();
 
-    // 6. Inner World: plant + water
+    // 6. Short action sound feedback
+    const sound = options.sound === undefined ? getAppAudioRewardSoundType(activity) : options.sound;
+    if (sound) playSound(sound);
+
+    // 7. Inner World: plant + water
     if (!options.skipGarden) {
       hooks.plantSeed(activity, options.seedExtra);
       hooks.waterPlants(activity);

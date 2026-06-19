@@ -1,0 +1,456 @@
+{
+  "version": "v2-habit-icons-1",
+  "rendererPriority": [
+    "css",
+    "lottie",
+    "rive",
+    "still"
+  ],
+  "budget": {
+    "idleLoopMaxDurationMs": 3000,
+    "idleAnimationMaxBytes": 80000,
+    "reducedSvgTargetBytes": 8192
+  },
+  "icons": [
+    {
+      "id": "drink-water",
+      "label": "Drink water",
+      "source": "phosphor-icons-react@2.1.10/Drop",
+      "license": "MIT",
+      "reduced": "drink-water/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-droplet-ripple",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "walk-distance",
+      "label": "Walk distance",
+      "source": "phosphor-icons-react@2.1.10/Footprints",
+      "license": "MIT",
+      "reduced": "walk-distance/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-footstep-cadence",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "exercise",
+      "label": "Exercise",
+      "source": "phosphor-icons-react@2.1.10/Barbell",
+      "license": "MIT",
+      "reduced": "exercise/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-weighted-rep",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "read",
+      "label": "Read",
+      "source": "phosphor-icons-react@2.1.10/BookOpenText",
+      "license": "MIT",
+      "reduced": "read/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-page-turn",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "meditate",
+      "label": "Meditate",
+      "source": "phosphor-icons-react@2.1.10/Brain",
+      "license": "MIT",
+      "reduced": "meditate/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-neural-breath",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "sleep",
+      "label": "Sleep",
+      "source": "phosphor-icons-react@2.1.10/MoonStars",
+      "license": "MIT",
+      "reduced": "sleep/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-moon-sway",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "stretch",
+      "label": "Stretch",
+      "source": "phosphor-icons-react@2.1.10/PersonSimpleTaiChi",
+      "license": "MIT",
+      "reduced": "stretch/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-reach-return",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "healthy-food",
+      "label": "Healthy food",
+      "source": "phosphor-icons-react@2.1.10/BowlFood",
+      "license": "MIT",
+      "reduced": "healthy-food/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-bowl-orbit",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "protein",
+      "label": "Protein",
+      "source": "phosphor-icons-react@2.1.10/Egg",
+      "license": "MIT",
+      "reduced": "protein/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-shell-settle",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "vitamins",
+      "label": "Vitamins",
+      "source": "phosphor-icons-react@2.1.10/Pill",
+      "license": "MIT",
+      "reduced": "vitamins/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-capsule-roll",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "brush-teeth",
+      "label": "Brush teeth",
+      "source": "phosphor-icons-react@2.1.10/Tooth",
+      "license": "MIT",
+      "reduced": "brush-teeth/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-tooth-sweep",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "sunlight",
+      "label": "Sunlight",
+      "source": "phosphor-icons-react@2.1.10/SunHorizon",
+      "license": "MIT",
+      "reduced": "sunlight/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-sunrise-lift",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "touch-grass",
+      "label": "Touch grass",
+      "source": "phosphor-icons-react@2.1.10/Leaf",
+      "license": "MIT",
+      "reduced": "touch-grass/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-leaf-ground",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "journal",
+      "label": "Journal",
+      "source": "phosphor-icons-react@2.1.10/Notebook",
+      "license": "MIT",
+      "reduced": "journal/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-pen-write",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "gratitude",
+      "label": "Gratitude",
+      "source": "phosphor-icons-react@2.1.10/HandHeart",
+      "license": "MIT",
+      "reduced": "gratitude/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-heart-offer",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "breathwork",
+      "label": "Breathwork",
+      "source": "phosphor-icons-react@2.1.10/Wind",
+      "license": "MIT",
+      "reduced": "breathwork/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-ribbon-breathe",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "phone-break",
+      "label": "Phone break",
+      "source": "phosphor-icons-react@2.1.10/PhoneSlash",
+      "license": "MIT",
+      "reduced": "phone-break/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-signal-cut",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "deep-work",
+      "label": "Deep work",
+      "source": "phosphor-icons-react@2.1.10/Target",
+      "license": "MIT",
+      "reduced": "deep-work/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-reticle-lock",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "tidy-room",
+      "label": "Tidy room",
+      "source": "phosphor-icons-react@2.1.10/Broom",
+      "license": "MIT",
+      "reduced": "tidy-room/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-broom-sweep",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "quit-smoking",
+      "label": "Quit smoking",
+      "source": "phosphor-icons-react@2.1.10/CigaretteSlash",
+      "license": "MIT",
+      "reduced": "quit-smoking/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-smoke-dissolve",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "quit-drinking",
+      "label": "Quit drinking",
+      "source": "phosphor-icons-react@2.1.10/Wine",
+      "license": "MIT",
+      "reduced": "quit-drinking/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-glass-steady",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    },
+    {
+      "id": "focus",
+      "label": "Focus",
+      "source": "phosphor-icons-react@2.1.10/Coffee",
+      "license": "MIT",
+      "reduced": "focus/reduced.svg",
+      "idle": {
+        "renderer": "css",
+        "name": "v2hp-b62-coffee-steam",
+        "durationMs": 2800,
+        "bytes": 0
+      },
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
+    }
+  ]
+}

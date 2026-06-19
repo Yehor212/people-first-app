@@ -9,6 +9,9 @@ import { db } from "@/storage/db";
 import { triggerSync } from "@/storage/cloudSync";
 import { sanitizeObject } from "@/lib/validation";
 import { logger } from "@/lib/logger";
+import { getJournalContentVaultKey } from "./journalContentSession";
+import { encryptJournalContent, isEncryptedJournalContent } from "./journalCrypto";
+import { encryptJournalMediaDataUrl, isEncryptedJournalMediaData } from "./journalMediaCrypto";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "./types";
 
 interface JournalBackup {
@@ -47,6 +50,16 @@ function validateEntry(entry: unknown): entry is JournalEntry {
   );
 }
 
+async function encryptImportedEntryContent(content: string, vaultKey: string | null): Promise<string> {
+  if (!vaultKey || !content || isEncryptedJournalContent(content)) return content;
+  return encryptJournalContent(content, vaultKey);
+}
+
+async function encryptImportedMediaData(data: string | undefined, vaultKey: string | null): Promise<string> {
+  if (!data || !vaultKey || isEncryptedJournalMediaData(data)) return data || "";
+  return encryptJournalMediaDataUrl(data, vaultKey);
+}
+
 export async function importJournalBackup(
   file: File,
   onProgress?: (step: string) => void
@@ -83,6 +96,7 @@ export async function importJournalBackup(
   }
 
   const backup = data;
+  const vaultKey = getJournalContentVaultKey();
 
   // Wrap all DB writes in a transaction for atomicity
   // If the transaction fails, all writes are rolled back
@@ -112,7 +126,7 @@ export async function importJournalBackup(
             id: entry.id,
             date: entry.date,
             title: entry.title || "",
-            content: entry.content || "",
+            content: await encryptImportedEntryContent(entry.content || "", vaultKey),
             stickers: Array.isArray(entry.stickers) ? entry.stickers : [],
             photoIds: Array.isArray(entry.photoIds) ? entry.photoIds : [],
             audioIds: Array.isArray(entry.audioIds) ? entry.audioIds : undefined,
@@ -140,7 +154,12 @@ export async function importJournalBackup(
         for (const photo of backup.photos) {
           if (!photo.id || existingPhotoIds.has(photo.id)) continue;
           try {
-            await db.journalPhotos.add(photo);
+            const safePhoto: JournalPhoto = {
+              ...photo,
+              data: await encryptImportedMediaData(photo.data, vaultKey),
+              thumbnail: await encryptImportedMediaData(photo.thumbnail, vaultKey),
+            };
+            await db.journalPhotos.add(safePhoto);
             result.photosImported++;
           } catch {
             // Skip duplicate or invalid photos
@@ -156,7 +175,11 @@ export async function importJournalBackup(
         for (const audio of backup.audio) {
           if (!audio.id || existingAudioIds.has(audio.id)) continue;
           try {
-            await db.journalAudio.add(audio);
+            const safeAudio: JournalAudio = {
+              ...audio,
+              data: await encryptImportedMediaData(audio.data, vaultKey),
+            };
+            await db.journalAudio.add(safeAudio);
             result.audioImported++;
           } catch {
             // Skip duplicate or invalid audio
@@ -172,7 +195,7 @@ export async function importJournalBackup(
   }
 
   // Trigger backup sync so imported entries reach the cloud
-  if (result.imported > 0) triggerSync();
+  if (result.imported > 0 || result.photosImported > 0 || result.audioImported > 0) triggerSync();
 
   return result;
 }

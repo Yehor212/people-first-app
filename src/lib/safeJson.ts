@@ -177,6 +177,15 @@ export function storageRemove(key: string): void {
   } catch { /* graceful: storage removal is best-effort, failure has no user impact */ }
 }
 
+/** Safely enumerate localStorage keys for cleanup routines. */
+export function storageKeys(): string[] {
+  try {
+    return Object.keys(localStorage);
+  } catch {
+    return [];
+  }
+}
+
 /** Returns whether localStorage accepts a write/remove roundtrip in this browser context. */
 export function storageCanWrite(testKey = "__zenflow_storage_test__"): boolean {
   try {

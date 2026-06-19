@@ -7,11 +7,12 @@
 
 import { memo, useMemo, useState, useCallback, type CSSProperties } from "react";
 import { Drawer } from "vaul";
+import { V2HabitPictogram } from "@/components/habit-pictogram/V2HabitPictogram";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { hapticTap } from "@/lib/haptics";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { getRoleTone, getTemplateCategoryVisualRole } from "@/lib/nonOrbVisualRoles";
-import { V2_SHELL_ICONS, getV2HabitTemplateSymbol } from "@/lib/v2IconSystem";
+import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import {
   habitTemplates,
   resolveHabitTemplateSetup,
@@ -134,7 +135,7 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
           </nav>
 
           <ul
-            className="grid flex-1 grid-cols-2 gap-2 overflow-y-auto px-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] md:grid-cols-3"
+            className="grid flex-1 grid-cols-2 gap-2 overflow-y-auto px-5 pb-[calc(var(--safe-bottom)+1.25rem)] md:grid-cols-3"
             data-testid="habits-library-list"
           >
             {filtered.map((tpl) => {
@@ -143,7 +144,6 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
               const setup = resolveHabitTemplateSetup(tpl);
               const role = tpl.category ? getTemplateCategoryVisualRole(tpl.category) : "space";
               const tone = getRoleTone(role);
-              const symbol = getV2HabitTemplateSymbol(tpl.id);
               const templateMeta =
                 tpl.habitType === "numerical"
                   ? `${setup.targetType === "atMost" ? `${tx.atMost} ` : ""}${formatHabitQuantity(
@@ -188,21 +188,16 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
                     <span className="relative z-[1] flex w-full items-start justify-between gap-2">
                       <span
                         className={
-                          "flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border bg-[hsl(var(--card)/0.66)] text-[hsl(var(--foreground))] " +
-                          (added
-                            ? "border-[hsl(var(--zf-role-body)/0.20)] opacity-75"
-                            : tone.borderClass)
+                          "flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center overflow-visible rounded-none border-0 bg-transparent text-[hsl(var(--foreground))] shadow-none " +
+                          (added ? "opacity-70" : "")
                         }
                         aria-hidden="true"
-                        data-template-icon="true"
+                        data-icon-frame="real-object-source-icon-native"
                         data-slot="ritual-library-icon"
                       >
-                        <span
-                          className="text-[1.65rem] leading-none"
-                          data-slot="ritual-library-symbol"
-                        >
-                          {symbol}
-                        </span>
+                          <span data-slot="ritual-library-svg">
+                            <V2HabitPictogram value={tpl.id} className="h-[4.35rem] w-[4.35rem] md:h-[5rem] md:w-[5rem]" />
+                          </span>
                       </span>
                       {added && (
                         <span

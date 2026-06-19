@@ -57,15 +57,17 @@ import {
 import auroraMountainsUrl from "@/assets/journal/aurora-mountains.webp";
 import { logger } from "@/lib/logger";
 import type { SemanticSearchResult } from "@/lib/journalAI";
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/env";
+import { SUPABASE_PUBLIC_API_KEY, SUPABASE_URL } from "@/lib/env";
 import { Quote } from "lucide-react";
 import { getJournalListDateFilter } from "./journalListFilters";
 import { formatLocalizedCount } from "./journalWordCount";
 import { getLocale } from "@/lib/timeUtils";
 import { useThemeStore } from "@/stores/themeStore";
 import { scheduleIdle } from "@/lib/scheduleIdle";
+import { safeLocalStorageSet, storageGetRaw } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
 
-const JOURNAL_AI_AVAILABLE = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+const JOURNAL_AI_AVAILABLE = Boolean(SUPABASE_URL && SUPABASE_PUBLIC_API_KEY);
 const JOURNAL_SPACE_MEMORY_FALLBACK_MS = import.meta.env.MODE === "test" ? 650 : 4500;
 const JOURNAL_SPACE_MEMORY_MIN_DELAY_MS = import.meta.env.MODE === "test" ? 120 : 2800;
 
@@ -509,6 +511,9 @@ export const JournalEntryList = memo(function JournalEntryList({
   const [aiSearching, setAiSearching] = useState(false);
   const [aiResults, setAiResults] = useState<SemanticSearchResult[]>([]);
   const [aiIndexing, setAiIndexing] = useState(false);
+  const [aiSearchConsentGranted, setAiSearchConsentGranted] = useState(
+    () => storageGetRaw(SK.JOURNAL_AI_SEARCH_CONSENT) === "true"
+  );
   const aiIndexedRef = useRef(false);
 
   // Debounce search input — 300ms for text, 800ms for AI
@@ -693,6 +698,15 @@ export const JournalEntryList = memo(function JournalEntryList({
 
         setAiMode((prev) => {
           const next = !prev;
+          if (next && !aiSearchConsentGranted) {
+            const accepted = window.confirm(
+              ts.journalAiPrivacyConfirm ||
+                "AI search sends your diary search text and entry snippets to our AI provider to build private search results. Continue?"
+            );
+            if (!accepted) return prev;
+            safeLocalStorageSet(SK.JOURNAL_AI_SEARCH_CONSENT, true);
+            setAiSearchConsentGranted(true);
+          }
           if (next && !aiIndexedRef.current) {
             aiIndexedRef.current = true;
             setAiIndexing(true);
@@ -708,7 +722,7 @@ export const JournalEntryList = memo(function JournalEntryList({
       .catch((error) => {
         logger.warn("[Journal] Failed to initialize AI search", error);
       });
-  }, []);
+  }, [aiSearchConsentGranted, ts.journalAiPrivacyConfirm]);
 
   const allEntriesForSpaces = useMemo(
     () => allEntries ?? groupedEntries.flatMap((group) => group.entries),
@@ -2100,7 +2114,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                 setSearchInput("");
                 setAiResults([]);
               }}
-              className="p-2 rounded-lg hover:bg-muted/50"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg hover:bg-muted/50"
               aria-label={ts.clear || "Clear search"}
             >
               {aiSearching ? (

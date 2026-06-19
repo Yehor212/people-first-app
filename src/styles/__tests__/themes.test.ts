@@ -67,4 +67,18 @@ describe("V2 data-theme glass tokens", () => {
     );
     expect(themesCss.slice(weeklyNightStart, weeklyNightEnd)).not.toContain("!important");
   });
+  it("keeps native habit template picker source charm frames transparent across themes", () => {
+    expect(themesCss).toContain(
+      ':root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-template-picker-icon="true"][data-icon-frame="real-icon-duo-native"]',
+    );
+    expect(themesCss).toContain(
+      ':root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"]',
+    );
+    expect(themesCss).toContain(
+      ':root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"]',
+    );
+    expect(themesCss).toContain("background-color: transparent;");
+    expect(themesCss).toContain("box-shadow: none;");
+  });
+
 });

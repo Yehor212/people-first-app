@@ -197,7 +197,7 @@ Before sync edits, inspect:
 
 ## Platform Matrix
 
-Every runtime-sensitive change must account for this matrix.
+Every runtime-sensitive change must account for this matrix. V2 fullscreen and safe-area work must also follow `docs/ai/V2_FULLSCREEN_EDGE_TO_EDGE_CONTRACT.md`.
 
 | Platform | Required proof |
 | --- | --- |
@@ -217,19 +217,20 @@ Use this sequence for performance, sync, navigation, orb, or cross-platform work
 1. Read this contract.
 2. Read `docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md`.
 3. Read `docs/ai/TASK_COMPLETION_PROTOCOL.md` before claiming a task is done.
-4. Read `docs/ai/SYNC_CONTRACT.md` for data/sync work.
-5. Read `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` for any sync,
+4. Read `docs/ai/V2_FULLSCREEN_EDGE_TO_EDGE_CONTRACT.md` for V2 fullscreen, safe-area, viewport, and native edge-to-edge work.
+5. Read `docs/ai/SYNC_CONTRACT.md` for data/sync work.
+6. Read `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md` for any sync,
    account, cross-shell, offline, resume, or Supabase convergence work.
-6. Read `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md` for sync/runtime/account
+7. Read `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md` for sync/runtime/account
    tasks and map every touched row to evidence.
-7. Read `docs/ai/CANONICAL_ORB_INVARIANT.md` for orb or visual primitive work.
-8. Gather current repo evidence with search and file reads.
-9. Reproduce or measure the issue before proposing fixes.
-10. Identify the root cause and the affected platforms.
-11. Implement the smallest change that fixes the root cause.
-12. Run the required gates.
-13. Verify public deployment when the user-reported issue is public.
-14. Write the Done Packet from `docs/ai/TASK_COMPLETION_PROTOCOL.md`.
+8. Read `docs/ai/CANONICAL_ORB_INVARIANT.md` for orb or visual primitive work.
+9. Gather current repo evidence with search and file reads.
+10. Reproduce or measure the issue before proposing fixes.
+11. Identify the root cause and the affected platforms.
+12. Implement the smallest change that fixes the root cause.
+13. Run the required gates.
+14. Verify public deployment when the user-reported issue is public.
+15. Write the Done Packet from `docs/ai/TASK_COMPLETION_PROTOCOL.md`.
 
 ## Evidence Requirements
 

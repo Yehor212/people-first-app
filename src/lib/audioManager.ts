@@ -1,5 +1,6 @@
-// Centralized Audio Manager - Single source of truth for all app audio
-// Prevents conflicts from multiple AudioContext instances
+// Procedural feedback audio manager.
+// Long ambient tracks are managed separately in ambientSounds because iOS unlock
+// and blessed HTMLAudioElement handling have different lifecycle requirements.
 
 import { logger } from './logger';
 
@@ -14,7 +15,16 @@ import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
 import { shouldPlaySounds } from './animationUtils';
 
-type SoundType = 'success' | 'complete' | 'streak' | 'levelUp' | 'notification';
+export type SoundType = 'success' | 'complete' | 'streak' | 'levelUp' | 'notification';
+
+export const AUDIO_SETTINGS_CHANGE_EVENT = 'zenflow-audio-settings-change';
+
+export interface AudioSettingsSnapshot {
+  muted: boolean;
+  volume: number;
+  feedbackSoundsEnabled: boolean;
+  canPlayFeedback: boolean;
+}
 
 interface AudioManagerState {
   context: AudioContext | null;
@@ -29,6 +39,68 @@ const state: AudioManagerState = {
   volume: 0.3,
   activeTimeouts: [],
 };
+
+function getAudioSettingsSnapshot(): AudioSettingsSnapshot {
+  const feedbackSoundsEnabled = shouldPlaySounds();
+  return {
+    muted: state.isMuted,
+    volume: state.volume,
+    feedbackSoundsEnabled,
+    canPlayFeedback: !state.isMuted && feedbackSoundsEnabled,
+  };
+}
+
+function emitAudioSettingsChange(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent<AudioSettingsSnapshot>(AUDIO_SETTINGS_CHANGE_EVENT, {
+      detail: getAudioSettingsSnapshot(),
+    }),
+  );
+}
+
+export function getAudioSettings(): AudioSettingsSnapshot {
+  return getAudioSettingsSnapshot();
+}
+
+export function getAppAudioVolume(baseVolume = 1): number {
+  if (state.isMuted) return 0;
+  return Math.max(0, Math.min(1, state.volume * baseVolume));
+}
+
+export function canPlayAppAudio(): boolean {
+  return !state.isMuted;
+}
+
+export function subscribeAudioSettings(
+  listener: (settings: AudioSettingsSnapshot) => void,
+): () => void {
+  if (typeof window === 'undefined') return () => undefined;
+
+  const notify = () => listener(getAudioSettingsSnapshot());
+  const handleStorage = (event: StorageEvent) => {
+    if (
+      event.key !== SK.AUDIO_MUTED &&
+      event.key !== SK.AUDIO_VOLUME &&
+      event.key !== SK.DOPAMINE_SETTINGS
+    ) {
+      return;
+    }
+
+    initAudioManager();
+    notify();
+  };
+
+  window.addEventListener(AUDIO_SETTINGS_CHANGE_EVENT, notify);
+  window.addEventListener('dopamine-settings-change', notify);
+  window.addEventListener('storage', handleStorage);
+
+  return () => {
+    window.removeEventListener(AUDIO_SETTINGS_CHANGE_EVENT, notify);
+    window.removeEventListener('dopamine-settings-change', notify);
+    window.removeEventListener('storage', handleStorage);
+  };
+}
 
 // Helper to schedule timeout with tracking
 function scheduleTimeout(callback: () => void, delay: number): void {
@@ -118,6 +190,29 @@ export function playSuccess(): void {
   }
 }
 
+// Play completion chime (habit/focus finished)
+export function playComplete(): void {
+  if (state.isMuted || !shouldPlaySounds()) return;
+
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  try {
+    // Warmer and lower than generic success so completion feels resolved, not flashy.
+    const notes = [
+      { freq: 392, delay: 0, duration: 0.18 },
+      { freq: 523.25, delay: 90, duration: 0.22 },
+      { freq: 659.25, delay: 190, duration: 0.26 },
+    ];
+
+    notes.forEach(({ freq, delay, duration }) => {
+      scheduleTimeout(() => playTone(freq, duration, 'triangle'), delay);
+    });
+  } catch (_e) {
+    // Silent fail
+  }
+}
+
 // Play streak milestone sound
 export function playStreakMilestone(): void {
   if (state.isMuted || !shouldPlaySounds()) return;
@@ -171,8 +266,10 @@ export function playNotification(): void {
 export function playSound(type: SoundType): void {
   switch (type) {
     case 'success':
-    case 'complete':
       playSuccess();
+      break;
+    case 'complete':
+      playComplete();
       break;
     case 'streak':
       playStreakMilestone();
@@ -190,6 +287,7 @@ export function playSound(type: SoundType): void {
 export function setMuted(muted: boolean): void {
   state.isMuted = muted;
   storageSetRaw(SK.AUDIO_MUTED, muted ? '1' : '0');
+  emitAudioSettingsChange();
 }
 
 export function isMuted(): boolean {
@@ -200,6 +298,7 @@ export function isMuted(): boolean {
 export function setVolume(volume: number): void {
   state.volume = Math.max(0, Math.min(1, volume));
   storageSetRaw(SK.AUDIO_VOLUME, state.volume.toString());
+  emitAudioSettingsChange();
 }
 
 export function getVolume(): number {
@@ -209,14 +308,10 @@ export function getVolume(): number {
 // Initialize from localStorage
 export function initAudioManager(): void {
   const mutedStr = storageGetRaw(SK.AUDIO_MUTED);
-  if (mutedStr === '1') {
-    state.isMuted = true;
-  }
+  state.isMuted = mutedStr === '1';
 
   const volumeStr = storageGetRaw(SK.AUDIO_VOLUME);
-  if (volumeStr) {
-    state.volume = safeParseFloat(volumeStr, 0.3, 0, 1);
-  }
+  state.volume = volumeStr ? safeParseFloat(volumeStr, 0.3, 0, 1) : 0.3;
 }
 
 // Resume context on user interaction (required for mobile)

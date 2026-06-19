@@ -276,6 +276,14 @@ function main() {
     "WRITE_SYNC_EVENT",
     "DELETE_SETTINGS",
     "deleteSettingFromCloud",
+    "UPLOAD_JOURNAL_PHOTO_STORAGE",
+    "UPLOAD_JOURNAL_AUDIO_STORAGE",
+    "DELETE_JOURNAL_PHOTO_STORAGE",
+    "DELETE_JOURNAL_AUDIO_STORAGE",
+    "retryJournalPhotoUpload",
+    "retryJournalAudioUpload",
+    "retryJournalPhotoDelete",
+    "retryJournalAudioDelete",
     "isSyncEventWriteIntent",
     "normalizeSyncEventWriteIntent",
     "action.payload = intent",
@@ -284,6 +292,10 @@ function main() {
 
   requireIncludes("src/lib/offlineQueue.ts", [
     "WRITE_SYNC_EVENT",
+    "UPLOAD_JOURNAL_PHOTO_STORAGE",
+    "UPLOAD_JOURNAL_AUDIO_STORAGE",
+    "DELETE_JOURNAL_PHOTO_STORAGE",
+    "DELETE_JOURNAL_AUDIO_STORAGE",
     "syncEventActions",
     "deduplicate?: boolean; priority?: OfflineActionPriority",
     "await this.persistToStorage()",
@@ -293,22 +305,57 @@ function main() {
     "Critical sync event blocked after max retries",
   ]);
 
-  requireIncludes("src/storage/db.ts", ["priority?: string"]);
+  requireIncludes("src/storage/db.ts", [
+    "priority?: string",
+    "isLocalOnlySettingKey",
+    "localOnlySettingKeys",
+    "dynamicLocalOnlyStorageKeys",
+  ]);
+
+  requireIncludes("src/features/journal/journalStorage.ts", [
+    "retryJournalPhotoUpload",
+    "retryJournalAudioUpload",
+    "retryJournalPhotoDelete",
+    "retryJournalAudioDelete",
+    "journal-photo-upload:",
+    "journal-audio-upload:",
+    "journal-photo-delete:",
+    "journal-audio-delete:",
+  ]);
+
+  requireIncludes("src/storage/sync/syncJournal.ts", [
+    "queueJournalPhotoUploadRetry",
+    "queueJournalAudioUploadRetry",
+    "queueJournalPhotoDeleteRetry",
+    "queueJournalAudioDeleteRetry",
+    "metadata: toPhotoSyncPayload(photo)",
+    "metadata: toAudioSyncPayload(audio)",
+  ]);
 
   requireIncludes("src/features/journal/journalDraftStorage.ts", [
     "getJournalDraftKey",
     "SK.journalDraft",
     "settingsRepo.put",
-    "syncSetting(key, data)",
+    "Draft IndexedDB save failed",
     "deleteSettingFromCloud(key)",
     "clearJournalDraft",
+  ]);
+  requireNotIncludes("src/features/journal/journalDraftStorage.ts", [
+    "syncSetting(key, data)",
+    "safeLocalStorageSet",
   ]);
 
   requireIncludes("src/storage/sync/syncSettings.ts", [
     "isAccountSyncedSettingKey",
+    "shouldDeleteSettingFromCloud",
     "deleteSettingFromCloud",
     "\"DELETE_SETTINGS\"",
     "await writeEventAndBroadcast(\"setting\", key, \"delete\"",
+  ]);
+
+  requireIncludes("src/storage/journalStorageService.ts", [
+    "if (mime.includes(\"wav\")) return \"wav\"",
+    "\"wav\", \"bin\"",
   ]);
 
   requireIncludes("src/storage/sync/settingSyncPolicy.ts", [
@@ -316,7 +363,11 @@ function main() {
     "sync-cursor-v2",
     "zenflow-device-id",
     "DELETION_TRACKER_KEYS",
+    "LOCAL_ONLY_SETTING_KEY_PREFIXES",
+    "journal_draft_",
+    "isLocalOnlySettingKey",
     "isAccountSyncedSettingKey",
+    "shouldDeleteSettingFromCloud",
   ]);
 
   requireIncludes("src/storage/sync/syncHabits.ts", [
@@ -357,6 +408,9 @@ function main() {
   const migrations = readMigrations();
   requireMigrationToken(migrations, "CREATE TABLE IF NOT EXISTS public.sync_events");
   requireMigrationToken(migrations, "sync_events_user_seq_idx");
+  requireMigrationToken(migrations, "REVOKE ALL PRIVILEGES ON TABLE public.sync_events FROM anon");
+  requireMigrationToken(migrations, "REVOKE ALL PRIVILEGES ON TABLE public.sync_events FROM authenticated");
+  requireMigrationToken(migrations, "GRANT SELECT, INSERT ON TABLE public.sync_events TO authenticated");
   requireMigrationToken(migrations, "CREATE TABLE IF NOT EXISTS public.sync_tombstones");
   requireMigrationToken(migrations, "PRIMARY KEY (user_id, entity_type, entity_id)");
   requireMigrationToken(migrations, "trg_apply_sync_event_tombstone");
@@ -543,12 +597,31 @@ function main() {
     "zenflow:sync-health-receipt",
   ]);
 
+  requireIncludes("src/storage/sync/__tests__/syncSettings.test.ts", [
+    "does not sync unsaved journal drafts to the account channel",
+    "does not queue unsaved journal drafts while offline",
+  ]);
+
+  requireIncludes("src/storage/__tests__/eventSync.test.ts", [
+    "ignores remote deletes for local-only unsaved journal drafts",
+  ]);
+
+  requireIncludes("src/storage/__tests__/db.test.ts", [
+    "clears dynamic unsaved journal draft settings at the account boundary",
+  ]);
+
+  requireIncludes("src/storage/__tests__/journalStorageService.test.ts", [
+    "uploads wav diary audio with a wav storage path",
+    "deletes wav diary audio and legacy bin residue",
+  ]);
+
   requireIncludes("scripts/smoke-telegram-sync-drill.cjs", [
     "Telegram-grade sync drill",
     "ZENFLOW_SYNC_DRILL_URL",
     "syncHabits.delete.test.ts",
     "syncSettings.test.ts",
     "journalDraftStorage.test.ts",
+    "journalStorageService.test.ts",
     "cloudSync.test.ts",
     "ZENFLOW_TELEGRAM_SYNC_DRILL_REQUIRED",
     "check:sync-contract",

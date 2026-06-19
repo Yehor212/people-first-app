@@ -83,6 +83,7 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
     "--habit-group-role-soft": getRoleHsl(visualRole, 0.16),
     "--habit-group-role-line": getRoleHsl(visualRole, 0.34),
   } as CSSProperties;
+  const animateHabitRows = animate && tier !== "phone";
   const shouldLimitInitialRows =
     tier === "phone" && habits.length > MOBILE_INITIAL_HABIT_ROWS;
   const cappedVisibleCount = shouldLimitInitialRows
@@ -150,10 +151,10 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
           {visibleHabits.map((habit) => (
             <motion.div
               key={habit.id}
-              layout={animate}
-              initial={animate ? { opacity: 0, y: 8 } : false}
+              layout={animateHabitRows}
+              initial={animateHabitRows ? { opacity: 0, y: 8 } : false}
               animate={{ opacity: 1, y: 0 }}
-              exit={animate ? { opacity: 0, y: -8 } : undefined}
+              exit={animateHabitRows ? { opacity: 0, y: -8 } : undefined}
               transition={{ type: "spring", stiffness: 380, damping: 30 }}
             >
               <HeroHabitRow
@@ -168,6 +169,7 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
                 onArchive={onArchiveHabit}
                 onUnarchive={onUnarchiveHabit}
                 onOpenDetail={onOpenDetail}
+                initiallyCollapsed={tier === "phone"}
               />
             </motion.div>
           ))}

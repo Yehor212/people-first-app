@@ -30,6 +30,13 @@ const syncMocks = vi.hoisted(() => {
 });
 
 vi.mock("@/storage/deletionTracker", () => ({
+  DELETION_TRACKER_KEYS: {
+    focus: "zenflow-deleted-focus-session-ids",
+    gratitude: "zenflow-deleted-gratitude-ids",
+    habit: "zenflow-deleted-habit-ids",
+    journal: "zenflow-deleted-journal-entry-ids",
+    mood: "zenflow-deleted-mood-ids",
+  },
   trackDeletedHabitId: syncMocks.trackDeletedHabitId,
 }));
 

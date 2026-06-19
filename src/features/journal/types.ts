@@ -1,3 +1,4 @@
+import { SK } from '@/lib/storageKeys';
 import type { MoodType } from '@/types';
 
 // ── Diary Theme / Font ──
@@ -264,7 +265,7 @@ export interface JournalPhoto {
   height: number;
   createdAt: number;
   storagePath?: string;   // Supabase Storage path (e.g. "{userId}/{photoId}.jpg")
-  storageUrl?: string;    // Signed URL for CDN access
+  storageUrl?: string;    // Legacy signed URL; new sync uses storagePath and short-lived URLs on demand
 }
 
 /** PBKDF2-hashed password stored in settings table */
@@ -273,6 +274,13 @@ export interface JournalPassword {
   salt: string;           // base64 random salt
   iterations: number;     // 100_000
   createdAt: number;
+}
+
+/** Wrapped journal content key stored in settings table */
+export interface JournalVaultKeySetting {
+  wrappedKey: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 /** Audio recording attached to a journal entry */
@@ -284,14 +292,15 @@ export interface JournalAudio {
   mimeType: string;       // 'audio/webm' or 'audio/mp4'
   createdAt: number;
   storagePath?: string;   // Supabase Storage path
-  storageUrl?: string;    // Signed URL for access
+  storageUrl?: string;    // Legacy signed URL; new sync uses storagePath and short-lived URLs on demand
 }
 
 export const MAX_PHOTOS_PER_ENTRY = 5;
 export const MAX_STICKERS_PER_ENTRY = 10;
 export const MAX_AUDIO_PER_ENTRY = 3;
 export const MAX_AUDIO_DURATION_SEC = 300; // 5 minutes
-export const JOURNAL_PASSWORD_KEY = 'journal_password';
+export const JOURNAL_PASSWORD_KEY = SK.JOURNAL_PASSWORD;
+export const JOURNAL_VAULT_KEY_SETTING_KEY = SK.JOURNAL_VAULT_KEY;
 
 /** Count words in text. Handles empty/whitespace strings. */
 export function countWords(text: string): number {

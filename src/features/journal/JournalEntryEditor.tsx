@@ -394,6 +394,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     hasContent,
     entryId,
     diaryStyle,
+    keyboardInset,
     // voice & recorder
     voice,
     recorder,
@@ -430,6 +431,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   const typingDynamics = useTypingDynamics(editorRef);
   const [orbMounted, setOrbMounted] = useState(false);
   const [mobileToolsCollapsed, setMobileToolsCollapsed] = useState(false);
+  const [settingsDraftError, setSettingsDraftError] = useState<string | null>(null);
   const [panicUnlockError, setPanicUnlockError] = useState<string | null>(null);
   const orbTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -618,6 +620,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   const handleRequestSettings = useCallback(() => {
     if (!onRequestSettings) return;
 
+    setSettingsDraftError(null);
     if (isDirty || hasImmediateChanges()) {
       setShowSettingsConfirm(true);
       return;
@@ -627,15 +630,30 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   }, [hasImmediateChanges, isDirty, onRequestSettings, setShowSettingsConfirm]);
 
   const handleSaveDraftAndOpenSettings = useCallback(async () => {
-    await persistDraftNow();
-    setShowSettingsConfirm(false);
-    onRequestSettings?.();
-  }, [persistDraftNow, onRequestSettings, setShowSettingsConfirm]);
+    try {
+      await persistDraftNow();
+      setSettingsDraftError(null);
+      setShowSettingsConfirm(false);
+      onRequestSettings?.();
+    } catch {
+      setSettingsDraftError(
+        ts.journalDraftSaveFailed ||
+          ts.settingsSaveFailed ||
+          "Could not save this draft. Please try again.",
+      );
+    }
+  }, [persistDraftNow, onRequestSettings, setShowSettingsConfirm, ts]);
 
   useLayoutEffect(() => {
     onBindSettingsRequestHandler?.(onRequestSettings ? handleRequestSettings : null);
     return () => onBindSettingsRequestHandler?.(null);
   }, [handleRequestSettings, onBindSettingsRequestHandler, onRequestSettings]);
+
+  const editorShellStyle = {
+    ...diaryStyle,
+    "--diary-keyboard-inset": `${keyboardInset}px`,
+    bottom: desktop ? undefined : `${keyboardInset}px`,
+  } as React.CSSProperties;
 
   const editorShell = (
     <div
@@ -647,9 +665,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
         "flex flex-col overflow-hidden text-foreground",
         desktop
           ? "relative isolate h-full min-h-0 overflow-hidden"
-          : "fixed inset-0 z-[60] h-screen supports-[height:100svh]:h-[100svh]"
+          : "fixed inset-x-0 top-0 z-[60] min-h-0 max-h-[var(--app-viewport-height)]"
       )}
-      style={diaryStyle}
+      style={editorShellStyle}
     >
       {/* Canvas decorative background */}
       <DiaryCanvas
@@ -705,10 +723,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               >
                 {title || ts.diaryTimeCapsule || "TIME CAPSULE"}
               </div>
-              <div className="relative">
-                <button
-                  onClick={() => dateInputRef.current?.showPicker?.()}
-                  className="text-[11px] flex items-center gap-1 text-foreground/70 hover:text-muted-foreground motion-safe:transition-colors whitespace-nowrap"
+              <div className="relative inline-flex min-h-[44px] items-center">
+                <span
+                  className="pointer-events-none flex min-h-[44px] items-center gap-1 rounded-lg px-2 text-[11px] text-foreground/70 whitespace-nowrap"
+                  aria-hidden="true"
                 >
                   <Calendar className="w-3 h-3" aria-hidden="true" />
                   {new Date(date + "T00:00:00").toLocaleDateString(getLocale(language), {
@@ -716,7 +734,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     day: "numeric",
                     year: "numeric",
                   })}
-                </button>
+                </span>
                 <input
                   ref={dateInputRef}
                   type="date"
@@ -725,9 +743,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   onChange={(e) => {
                     if (e.target.value) setDate(e.target.value);
                   }}
-                  className="pointer-events-none absolute h-px w-px opacity-0"
-                  aria-hidden="true"
-                  tabIndex={-1}
+                  aria-label={ts.journalEntryDate || "Entry date"}
+                  className="absolute inset-0 min-h-[44px] w-full cursor-pointer opacity-0"
                 />
               </div>
             </div>
@@ -787,8 +804,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 "flex items-center gap-1.5 py-2 rounded-xl text-sm font-medium min-h-[48px] motion-safe:transition-all",
                 desktop ? "px-4" : "px-3 min-w-[48px]",
                 saveSuccess
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm"
-                  : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 hover:shadow-sm",
+                  ? "bg-primary/20 text-primary border border-primary/40 shadow-sm"
+                  : "bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 hover:shadow-sm",
                 "disabled:opacity-40"
               )}
             >
@@ -1205,7 +1222,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             "absolute inset-0 overflow-y-auto z-10",
             desktop
               ? "px-8 pt-[clamp(80px,18vh,140px)] pb-[clamp(100px,22vh,160px)]"
-              : "px-3 pt-6 pb-8"
+              : "px-3 pt-6 pb-[calc(2rem+var(--diary-keyboard-inset,0px))] scroll-pb-[calc(8rem+var(--diary-keyboard-inset,0px))]"
           )}
           onScroll={handleContentScroll}
         >
@@ -1366,7 +1383,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   <button
                     key={tag}
                     onClick={() => setTags((prev) => prev.filter((t2) => t2 !== tag))}
-                    className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 motion-safe:transition-colors min-h-[32px]"
+                    className="flex min-h-[44px] items-center gap-1 rounded-full bg-primary/10 px-3 py-2 text-xs text-primary hover:bg-primary/20 motion-safe:transition-colors"
                   >
                     #{tag} &times;
                   </button>
@@ -2244,9 +2261,16 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               {ts.journalSettings || "Diary Settings"}
             </h3>
             <p className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
-              Save this draft before opening settings so you can continue exactly where you left
-              off.
+              {ts.journalSaveDraftOpenSettingsDescription}
             </p>
+            {settingsDraftError ? (
+              <p
+                role="alert"
+                className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"
+              >
+                {settingsDraftError}
+              </p>
+            ) : null}
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => {

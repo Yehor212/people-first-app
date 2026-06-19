@@ -10,6 +10,7 @@ import type {
 export type V2SettingsSectionId =
   | "profile"
   | "appearance"
+  | "sound"
   | "language"
   | "notifications"
   | "privacy"

@@ -71,6 +71,10 @@ vi.mock("@/storage/cloudSync", () => ({
   triggerSync: (...args: unknown[]) => mockTriggerSync(...args),
 }));
 
+vi.mock("@/lib/audioManager", () => ({
+  playSound: vi.fn(),
+}));
+
 vi.mock("@/lib/haptics", () => ({
   haptics: {
     habitToggled: vi.fn(() => Promise.resolve()),
@@ -124,6 +128,7 @@ vi.mock("@/lib/safeJson", () => ({
 import { useHabitHandlers } from "../useHabitHandlers";
 import { useUserDataStore } from "@/stores";
 import type { Habit } from "@/types";
+import { playSound } from "@/lib/audioManager";
 
 describe("useHabitHandlers", () => {
   const mockAwardXp = vi.fn();
@@ -224,6 +229,7 @@ describe("useHabitHandlers", () => {
     const habit = updated.find((h) => h.id === "h1");
     expect(habit?.entries["2026-02-19"]?.value).toBe(ENTRY.YES_MANUAL);
     expect(mockAwardXp).toHaveBeenCalledWith("habit");
+    expect(playSound).toHaveBeenCalledWith("complete");
   });
 
   it("handleToggleHabit toggles daily completion off when already completed", () => {

@@ -35,10 +35,9 @@ describe("IdentityMappingSection", () => {
     expect(screen.getByTestId("identity-vote-preview")).toHaveTextContent(
       "Proof: someone who keeps their word",
     );
-    expect(screen.getByTestId("identity-icon-inherited")).toHaveTextContent("💧");
-    expect(screen.getByTestId("identity-icon-inherited")).toHaveTextContent(
-      "Uses the habit emoji as the symbol",
-    );
+    const inheritedIcon = screen.getByTestId("identity-icon-inherited");
+    expect(inheritedIcon.querySelector('[data-habit-pictogram="drink-water"]')).toBeInTheDocument();
+    expect(inheritedIcon).toHaveTextContent("Uses the habit emoji as the symbol");
     expect(screen.queryByRole("radiogroup")).not.toBeInTheDocument();
   });
 

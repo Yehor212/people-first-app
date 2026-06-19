@@ -18,6 +18,12 @@ import {
 } from "@/storage/realtimeSync";
 import { logger } from "./logger";
 import {
+  retryJournalPhotoUpload,
+  retryJournalAudioUpload,
+  retryJournalPhotoDelete,
+  retryJournalAudioDelete,
+} from "@/features/journal/journalStorage";
+import {
   isSyncEventWriteIntent,
   normalizeSyncEventWriteIntent,
   writeQueuedEventAndBroadcast,
@@ -188,6 +194,22 @@ export function initializeOfflineQueueHandlers(): void {
 
   offlineQueue.registerHandler("DELETE_JOURNAL_ENTRY", async (action: OfflineAction) => {
     await deleteJournalEntryFromCloud(action.entityId);
+  });
+
+  offlineQueue.registerHandler("UPLOAD_JOURNAL_PHOTO_STORAGE", async (action: OfflineAction) => {
+    await retryJournalPhotoUpload(action.payload ?? { id: action.entityId });
+  });
+
+  offlineQueue.registerHandler("UPLOAD_JOURNAL_AUDIO_STORAGE", async (action: OfflineAction) => {
+    await retryJournalAudioUpload(action.payload ?? { id: action.entityId });
+  });
+
+  offlineQueue.registerHandler("DELETE_JOURNAL_PHOTO_STORAGE", async (action: OfflineAction) => {
+    await retryJournalPhotoDelete(action.payload ?? { id: action.entityId });
+  });
+
+  offlineQueue.registerHandler("DELETE_JOURNAL_AUDIO_STORAGE", async (action: OfflineAction) => {
+    await retryJournalAudioDelete(action.payload ?? { id: action.entityId });
   });
 
   // Durable event-log outbox.

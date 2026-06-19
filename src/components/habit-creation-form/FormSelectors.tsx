@@ -4,6 +4,7 @@
  */
 
 import { motion } from "framer-motion";
+import { V2HabitPictogram } from "@/components/habit-pictogram/V2HabitPictogram";
 import { CheckCircle2, ListChecks } from "lucide-react";
 import { zenTap } from "@/lib/animationUtils";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,7 @@ import {
   frequencyPresets,
 } from "@/hooks/useHabitForm";
 import { LOOP_PALETTE_LIGHT, resolveHabitColor } from "@/lib/habitColorUtils";
+import { resolveV2HabitPictogramId } from "@/lib/v2HabitPictograms";
 import {
   getSuggestedDueDays,
   getWeeklyTargetCountFromFrequency,
@@ -56,39 +58,47 @@ export function IconSelector({
         role="radiogroup"
         aria-labelledby="icon-selector-label"
       >
-        {habitIcons.map((icon) => (
-          <motion.button
-            key={icon}
-            type="button"
-            role="radio"
-            aria-checked={selectedIcon === icon}
-            aria-label={`${ts.selectIcon} ${icon}`}
-            onClick={(e) => {
-              e.preventDefault();
-              setSelectedIcon(icon);
-            }}
-            className={cn(
-              "w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-xl motion-safe:transition-all motion-safe:duration-200 cursor-pointer",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-              isPrimaryCTA
-                ? selectedIcon === icon
-                  ? "bg-gradient-to-br from-violet-500/30 to-purple-600/20 border border-violet-500/40"
-                  : "bg-foreground/5 border border-foreground/10 hover:bg-foreground/10"
-                : selectedIcon === icon
-                  ? "bg-primary/20 ring-2 ring-primary scale-105 shadow-sm"
-                  : "bg-background hover:bg-muted hover:scale-105",
-            )}
-            style={
-              isPrimaryCTA && selectedIcon === icon
-                ? { boxShadow: "0 0 16px hsl(var(--cosmic-nebula-purple) / 0.4)" }
-                : undefined
-            }
-            whileHover={{ scale: 1.05 }}
-            whileTap={zenTap.button}
-          >
-            {icon}
-          </motion.button>
-        ))}
+        {habitIcons.map((icon) => {
+          const optionValue = isPrimaryCTA ? resolveV2HabitPictogramId(icon) : icon;
+          const selected = selectedIcon === optionValue || selectedIcon === icon;
+          return (
+            <motion.button
+              key={icon}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              aria-label={ts.selectIcon + " " + optionValue}
+              onClick={(e) => {
+                e.preventDefault();
+                setSelectedIcon(optionValue);
+              }}
+              className={cn(
+                "w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center motion-safe:transition-all motion-safe:duration-200 cursor-pointer",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                isPrimaryCTA
+                  ? selected
+                    ? "bg-gradient-to-br from-violet-500/30 to-purple-600/20 border border-violet-500/40"
+                    : "bg-foreground/5 border border-foreground/10 hover:bg-foreground/10"
+                  : selected
+                    ? "bg-primary/20 ring-2 ring-primary scale-105 shadow-sm text-xl"
+                    : "bg-background hover:bg-muted hover:scale-105 text-xl",
+              )}
+              style={
+                isPrimaryCTA && selected
+                  ? { boxShadow: "0 0 16px hsl(var(--cosmic-nebula-purple) / 0.4)" }
+                  : undefined
+              }
+              whileHover={{ scale: 1.05 }}
+              whileTap={zenTap.button}
+            >
+              {isPrimaryCTA ? (
+                <V2HabitPictogram value={optionValue} className="h-7 w-7" />
+              ) : (
+                icon
+              )}
+            </motion.button>
+          );
+        })}
       </div>
     </div>
   );
@@ -492,7 +502,20 @@ export function CategorySelector({
         {ts.habitCategory}:
       </label>
       <div className="grid grid-cols-4 gap-2">
-        {habitCategories.map(({ id, icon, color }) => (
+        {habitCategories.map(({ id, icon, color }) => {
+          const categoryIcon = isPrimaryCTA
+            ? ({
+                health: "exercise",
+                mindfulness: "meditate",
+                productivity: "deep-work",
+                social: "gratitude",
+                creativity: "journal",
+                finance: "focus",
+                "self-care": "sleep",
+                other: "focus",
+              } as const)[id]
+            : icon;
+          return (
           <motion.button
             key={id}
             type="button"
@@ -513,12 +536,19 @@ export function CategorySelector({
             whileHover={{ scale: 1.02 }}
             whileTap={zenTap.card}
           >
-            <span className="text-lg">{icon}</span>
+            <span className="text-lg">
+              {isPrimaryCTA ? (
+                <V2HabitPictogram value={categoryIcon} className="h-6 w-6" />
+              ) : (
+                categoryIcon
+              )}
+            </span>
             <span className="truncate w-full text-center">
               {categoryLabels[id]}
             </span>
           </motion.button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

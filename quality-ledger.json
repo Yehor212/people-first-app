@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-05-17",
+  "lastUpdated": "2026-06-18",
   "phase": "3-a.4c-ii-c-a-emotion-progressive-disclosure",
   "floors": {
     "moodScopeSelectorActive": {
@@ -178,15 +178,15 @@
       "description": "Phase 2-A — staggered choreography helper active (0=absent, 1=active, 2=adopted across >=5 surfaces). src/lib/motion/choreography.ts exports stages (background 0ms, chrome 80ms, primary 140ms, secondary 220ms, cta 360ms), staggerDelay(stage), childrenStagger(count, base). Currently consumed by Index.tsx tab Bloom (primary) and MotionPreview rollout demos. Phase 2-B will expand adoption across every composite surface."
     },
     "tests.total": {
-      "value": 4492,
+      "value": 4986,
       "direction": "up",
-      "recorded": "2026-05-17",
+      "recorded": "2026-06-18",
       "description": "Total unit test count (vitest, src/ scope). Phase 3-C.2 (2026-04-19) deletion: Garden + MindMap zones removed per user request, HabitsHeroZone rewritten A+++ with 4 sub-components + pure timeOfDay bucketing. Net -76 tests (dropped HabitGardenZone.test + HabitMindMapZone.test, added timeOfDay + HeroDailyRing + HeroIdentityPrompt + HeroEmptyJourney). Prior baseline 3786 reflected legacy 3-zone layout."
     },
     "tests.files": {
-      "value": 294,
+      "value": 372,
       "direction": "up",
-      "recorded": "2026-05-17",
+      "recorded": "2026-06-18",
       "description": "Test file count. Current: 281 after 2026-05-10 ratchet close pass."
     },
     "designTokenCoverage": {
@@ -347,10 +347,10 @@
       "description": "Theme-blind hardcoded colors (Visual Aesthetic Part 6) — hex literals + slate/gray utilities only. Does NOT cover Tailwind numeric color classes (bg-red-500 etc); that category tracked separately via tailwindNumericColors since Phase 2-B.1."
     },
     "tailwindNumericColors": {
-      "value": 695,
+      "value": 601,
       "direction": "down",
       "tolerance": 0.01,
-      "recorded": "2026-05-10",
+      "recorded": "2026-06-18",
       "description": "Phase 2-B.1 — count of Tailwind numeric color utility classes (bg|text|border|from|to|via|ring|shadow|fill|stroke|outline)-(red|blue|green|...)-[0-9]+ in src/. Police 2 found hardcodedColors scanner narrow (hex+slate/gray only), missing 800+ numeric utilities. New metric = true scanner count (grep via scripts/check-ratchet.ts::countTailwindNumericColors). Exclusions: __tests__, .d.ts, state-of-mind/ shader, dark: variants, tailwind.config. Floor can only go down. Tolerance 1% for prettier reformat noise."
     },
     "baselinePngsCommitted": {
@@ -408,10 +408,10 @@
       "description": "TODO/FIXME/HACK/XXX comments in source"
     },
     "bundleSizeKB": {
-      "value": 4806,
+      "value": 4762,
       "direction": "down",
       "tolerance": 0.008,
-      "recorded": "2026-05-17",
+      "recorded": "2026-06-18",
       "description": "Total JS bundle size in KB (dist/assets/*.js). Phase 3-C A+++ HabitsPage adds +51KB: HeroTemplateLibrarySheet + HeroInsightStrip + HeroHabitRow (long-press/chain/cue/overdue) + HeroEmptyJourney + useStreakMilestones + lazy HabitCompletionCelebration + starterHabits + timeOfDay helpers + 40 i18n keys × 8 langs. All 11 V1 primitives imported, none duplicated. Tolerance 0.8% (~40KB)."
     },
     "enforcement.blockingHooks": {
@@ -529,6 +529,10 @@
       },
       {
         "date": "2026-05-17",
+        "value": 9.9
+      },
+      {
+        "date": "2026-06-18",
         "value": 9.9
       }
     ]

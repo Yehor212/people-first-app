@@ -6,6 +6,7 @@ const baseDecision = {
   desktopRuntime: false,
   forceNavV2: false,
   designFlag: false,
+  nativeDiaryDeepLink: false,
   queryOverride: false,
   pathOverride: false,
 };
@@ -23,5 +24,9 @@ describe("Index desktop runtime shell selection", () => {
     expect(shouldUseNavV2Shell({ ...baseDecision, queryOverride: true })).toBe(true);
     expect(shouldUseNavV2Shell({ ...baseDecision, pathOverride: true })).toBe(true);
     expect(shouldUseNavV2Shell({ ...baseDecision, designFlag: true })).toBe(true);
+  });
+
+  it("opens native diary custom-scheme launches in the V2 shell", () => {
+    expect(shouldUseNavV2Shell({ ...baseDecision, nativeDiaryDeepLink: true })).toBe(true);
   });
 });

@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
 import { isNative } from "@/lib/platform";
 import { canStartAuthFlow, startAuthFlow, endAuthFlow } from "@/lib/authGuard";
+import { checkAppleAuthAvailability } from "@/lib/appleAuthAvailability";
 import { authenticateWithGoogleNative } from "@/lib/nativeGoogleAuth";
 import {
   buildOAuthCredentials,
@@ -27,6 +28,29 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
     if (!supabase) {
       session.setError(t.authSupabaseNotConfigured);
       return;
+    }
+
+    if (provider === "apple") {
+      session.setError(null);
+      session.setDebugInfo(null);
+      const availability = await checkAppleAuthAvailability();
+      if (availability.status === "disabled" || availability.status === "unconfigured") {
+        logger.warn("[Auth] Apple sign-in blocked before OAuth", {
+          status: availability.status,
+          reason: availability.reason,
+        });
+        session.setError(
+          t.authAppleUnavailable ||
+            t.authNotConfigured ||
+            "Apple sign-in is not available yet. Please use another sign-in method.",
+        );
+        session.setDebugInfo(
+          `Apple auth availability: ${availability.status}${
+            availability.reason ? ` (${availability.reason})` : ""
+          }`,
+        );
+        return;
+      }
     }
 
     if (!canStartAuthFlow()) {

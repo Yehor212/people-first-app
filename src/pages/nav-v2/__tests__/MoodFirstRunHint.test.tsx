@@ -91,4 +91,15 @@ describe("MoodFirstRunHint", () => {
     expect(css).toMatch(/\.mood-first-run-backdrop\s*\{[^}]*pointer-events:\s*none/s);
     expect(css).toMatch(/\.mood-first-run-card\s*\{[^}]*pointer-events:\s*auto/s);
   });
+
+  it("keeps the hint below the mobile drawer stack so drawer taps are not intercepted", () => {
+    const css = readFileSync(
+      resolve(process.cwd(), "src/pages/nav-v2/MoodFirstRunHint.css"),
+      "utf8",
+    );
+    const match = css.match(/\.mood-first-run-backdrop\s*\{[^}]*z-index:\s*(\d+)/s);
+
+    expect(match).not.toBeNull();
+    expect(Number(match?.[1])).toBeLessThan(59);
+  });
 });

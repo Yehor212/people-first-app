@@ -27,7 +27,7 @@ Copy `.env.example` into one of:
 
 Required:
 - `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+- `VITE_SUPABASE_PUBLISHABLE_KEY` preferred, or legacy `VITE_SUPABASE_ANON_KEY` fallback
 
 Optional:
 - `VITE_VAPID_PUBLIC_KEY`

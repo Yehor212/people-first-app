@@ -11,7 +11,7 @@ import { offlineQueue } from "@/lib/offlineQueue";
 import type { Json } from "@/types/supabase";
 import { getPersistentDeviceId, writeEventAndBroadcast } from "@/storage/eventSync";
 import { storageRemove } from "@/lib/safeJson";
-import { isAccountSyncedSettingKey } from "./settingSyncPolicy";
+import { isAccountSyncedSettingKey, shouldDeleteSettingFromCloud } from "./settingSyncPolicy";
 
 // ============================================
 // SETTINGS SYNC
@@ -74,7 +74,7 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
 export const deleteSettingFromCloud = async (key: string): Promise<void> => {
   storageRemove(key);
 
-  if (!isAccountSyncedSettingKey(key)) {
+  if (!shouldDeleteSettingFromCloud(key)) {
     logger.warn("[Sync] Skipping local-only setting delete sync:", key);
     return;
   }

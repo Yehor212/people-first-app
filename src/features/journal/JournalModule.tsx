@@ -195,6 +195,36 @@ async function loadJournalSupabase(): Promise<SupabaseClient<Database> | null> {
   return supabase;
 }
 
+type JournalPasswordResetRequest = {
+  email: string;
+  startedAt: number;
+};
+
+function normalizeJournalResetEmail(email: string | null | undefined): string {
+  return typeof email === "string" ? email.trim().toLowerCase() : "";
+}
+
+function serializeJournalPasswordResetRequest(email: string): string {
+  return JSON.stringify({
+    email: normalizeJournalResetEmail(email),
+    startedAt: Date.now(),
+  } satisfies JournalPasswordResetRequest);
+}
+
+function parseJournalPasswordResetRequest(raw: string | null): JournalPasswordResetRequest | null {
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<JournalPasswordResetRequest>;
+    const email = normalizeJournalResetEmail(parsed.email);
+    const startedAt = Number(parsed.startedAt);
+    if (!email || !Number.isFinite(startedAt)) return null;
+    return { email, startedAt };
+  } catch {
+    return null;
+  }
+}
+
 function JournalDeferredPanelFallback({
   label = "Loading...",
 }: {
@@ -203,6 +233,41 @@ function JournalDeferredPanelFallback({
   return (
     <div className="flex min-h-[320px] flex-1 items-center justify-center">
       <Loader2 className="h-6 w-6 animate-spin text-primary" aria-label={label} />
+    </div>
+  );
+}
+
+function JournalSettingsDeferredFallback({
+  label = "Loading...",
+}: {
+  label?: string;
+}) {
+  return (
+    <div
+      className="space-y-4 pb-1"
+      role="status"
+      aria-label={label}
+      data-testid="journal-settings-fallback"
+    >
+      <span className="sr-only">{label}</span>
+      {[0, 1, 2].map((item) => (
+        <div
+          key={item}
+          className="journal-settings-fallback-card rounded-[28px] border border-border/50 bg-card/65 p-5 shadow-sm backdrop-blur-sm"
+        >
+          <div className="flex items-start gap-4">
+            <div className="h-12 w-12 shrink-0 rounded-2xl bg-primary/10 motion-safe:animate-pulse" />
+            <div className="min-w-0 flex-1 space-y-3 pt-1">
+              <div className="h-4 w-2/5 rounded-full bg-foreground/12 motion-safe:animate-pulse" />
+              <div className="h-3 w-4/5 rounded-full bg-muted-foreground/14 motion-safe:animate-pulse" />
+            </div>
+          </div>
+          <div className="journal-settings-fallback-row mt-5 flex min-h-[44px] items-center justify-between gap-4">
+            <div className="h-3 w-1/2 rounded-full bg-muted-foreground/12 motion-safe:animate-pulse" />
+            <div className="h-8 w-16 rounded-full bg-primary/12 motion-safe:animate-pulse" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -374,12 +439,12 @@ export const JournalModule = memo(function JournalModule({
 
   // Consolidated Escape key handler for inline sub-dialogs (password, export, remove-confirm)
   useEffect(() => {
-    const activeDialog = showPasswordSettings
-      ? "password"
+    const activeDialog = showRemovePasswordConfirm
+      ? "remove"
       : showExportPicker
         ? "export"
-        : showRemovePasswordConfirm
-          ? "remove"
+        : showPasswordSettings
+          ? "password"
           : null;
     if (!activeDialog) return;
     const handler = (e: KeyboardEvent) => {
@@ -413,12 +478,21 @@ export const JournalModule = memo(function JournalModule({
     () => new Map(),
   );
   const security = useJournalSecurity();
+  const refreshJournalRef = useRef(journal.refresh);
+  useEffect(() => {
+    refreshJournalRef.current = journal.refresh;
+  }, [journal.refresh]);
   const reminder = useJournalReminder({
     reminderTitle: ts.journalReminderNotifTitle || "Time to Write",
     reminderBody:
       ts.journalReminderNotifBody || "Take a moment to capture your thoughts and feelings.",
   });
   const screenSecurity = useScreenSecurity(moduleState === "open");
+
+  useEffect(() => {
+    if (security.loading || security.isLocked) return;
+    void refreshJournalRef.current();
+  }, [security.isLocked, security.loading, security.vaultKey]);
 
   const releaseTraceDates = useMemo(() => {
     const dates = new Map<string, number>();
@@ -938,7 +1012,7 @@ export const JournalModule = memo(function JournalModule({
         setResetStep("confirm");
         return;
       }
-      storageSetRaw(SK.JOURNAL_PASSWORD_RESET, String(Date.now()));
+      storageSetRaw(SK.JOURNAL_PASSWORD_RESET, serializeJournalPasswordResetRequest(resetEmail));
       setResetStep("sent");
     } catch {
       setResetError(ts.journalResetSendFailed || "Failed to send link. Check your connection.");
@@ -995,6 +1069,11 @@ export const JournalModule = memo(function JournalModule({
         closeResetDialog();
         return true;
       });
+    if (showRemovePasswordConfirm)
+      return registerModalCloseCallback(() => {
+        setShowRemovePasswordConfirm(false);
+        return true;
+      });
     if (showPasswordSettings)
       return registerModalCloseCallback(() => {
         closeSettings();
@@ -1016,6 +1095,7 @@ export const JournalModule = memo(function JournalModule({
     closeSettings,
     moduleState,
     resetStep,
+    showRemovePasswordConfirm,
     showPasswordSettings,
     journal,
     security,
@@ -1046,15 +1126,24 @@ export const JournalModule = memo(function JournalModule({
       .then((supabase) => {
         if (disposed || !supabase) return;
 
-        const { data } = supabase.auth.onAuthStateChange(async (event) => {
-          if (event === "SIGNED_IN") {
-            const pending = storageGetRaw(SK.JOURNAL_PASSWORD_RESET);
-            if (pending && Date.now() - Number(pending) < 600_000) {
-              await security.removePassword();
-              storageRemove(SK.JOURNAL_PASSWORD_RESET);
-              setResetStep("success");
-            }
+        const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+          if (event !== "SIGNED_IN") return;
+
+          const pending = parseJournalPasswordResetRequest(storageGetRaw(SK.JOURNAL_PASSWORD_RESET));
+          if (!pending || Date.now() - pending.startedAt >= 600_000) {
+            storageRemove(SK.JOURNAL_PASSWORD_RESET);
+            return;
           }
+
+          const signedInEmail = normalizeJournalResetEmail(session?.user?.email);
+          if (!signedInEmail || signedInEmail !== pending.email) {
+            logger.warn("[Journal] Ignored password reset sign-in for a different account");
+            return;
+          }
+
+          await security.removePassword();
+          storageRemove(SK.JOURNAL_PASSWORD_RESET);
+          setResetStep("success");
         });
         subscription = data.subscription;
       })
@@ -1168,10 +1257,12 @@ export const JournalModule = memo(function JournalModule({
   // ── Full-screen overlay (portal to escape PullToRefresh transform ancestor) ──
   const moduleContent = (
     <div
+      onKeyDown={security.touch}
+      onPointerDown={security.touch}
       className={cn(
         "w-full h-full flex flex-col",
         isPagePresentation
-          ? "relative z-[1] min-h-screen bg-transparent overflow-hidden"
+          ? "v2-fullscreen-page relative z-[1] min-h-[var(--app-viewport-height)] bg-transparent overflow-hidden"
           : "md:my-4 md:mx-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden",
         !isPagePresentation &&
           "lg:max-w-none lg:mx-0 lg:my-0 lg:h-full lg:rounded-none lg:shadow-none lg:border-0 lg:overflow-hidden"
@@ -1602,7 +1693,7 @@ export const JournalModule = memo(function JournalModule({
                       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6">
                         <Suspense
                           fallback={
-                            <JournalDeferredPanelFallback label={t.loading || "Loading..."} />
+                            <JournalSettingsDeferredFallback label={t.loading || "Loading..."} />
                           }
                         >
                           <LazyJournalSettingsContent
@@ -1710,6 +1801,7 @@ export const JournalModule = memo(function JournalModule({
                                     return e.createdAt > weekAgo;
                                   }).length
                                 }
+                                showWallpaper={!isPagePresentation}
                               />
                             </Suspense>
                           </div>
@@ -1963,7 +2055,7 @@ export const JournalModule = memo(function JournalModule({
                             instant
                           />
                         ) : (
-                          <div className="relative flex h-full min-h-0 flex-col overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4">
+                          <div className="relative flex h-full min-h-0 flex-col overflow-y-auto px-4 pb-[calc(1rem+var(--safe-bottom))] pt-4">
                             {listHeaderContent ? <div className="mb-3">{listHeaderContent}</div> : null}
 
                             {hasInitialEntrySuggestion && !autoCreateInitialEntry ? (
@@ -2037,14 +2129,14 @@ export const JournalModule = memo(function JournalModule({
                             role="dialog"
                             aria-modal="true"
                             aria-label={ts.journalSettings || "Diary Settings"}
-                            className="fixed bottom-0 inset-x-0 z-[65] flex max-h-[calc(100dvh-env(safe-area-inset-top)-0.75rem)] flex-col overflow-hidden motion-safe:animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
+                            className="fixed bottom-0 inset-x-0 z-[65] flex max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] flex-col overflow-hidden motion-safe:animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {/* Handle bar */}
                             <div className="flex shrink-0 justify-center pt-2 pb-1 bg-card rounded-t-2xl">
                               <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
                             </div>
-                            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-card p-5 pb-[max(1.25rem,var(--safe-bottom))]">
                               <div className="mb-4 flex items-center justify-between gap-3">
                                 <div className="flex min-w-0 flex-1 items-center gap-3">
                                   {onOpenNavMenu ? (
@@ -2080,7 +2172,7 @@ export const JournalModule = memo(function JournalModule({
 
                               <Suspense
                                 fallback={
-                                  <JournalDeferredPanelFallback label={t.loading || "Loading..."} />
+                                  <JournalSettingsDeferredFallback label={t.loading || "Loading..."} />
                                 }
                               >
                                 <LazyJournalSettingsContent
@@ -2340,7 +2432,7 @@ export const JournalModule = memo(function JournalModule({
       <section
         ref={overlayRef}
         aria-label={ts.journalTitle || "Diary"}
-        className="relative flex min-h-screen w-full flex-col bg-background lg:h-screen lg:overflow-hidden"
+        className="v2-fullscreen-page relative flex min-h-[var(--app-viewport-height)] w-full flex-col bg-background lg:h-[var(--app-viewport-height)] lg:overflow-hidden"
         dir={isRTL ? "rtl" : "ltr"}
         data-testid="journal-page-shell"
       >
@@ -2357,7 +2449,7 @@ export const JournalModule = memo(function JournalModule({
       aria-modal="true"
       aria-label={ts.journalTitle || "Diary"}
       className={cn(
-        "fixed inset-0 z-[60] bg-background flex items-start justify-center motion-safe:animate-slide-up h-screen overflow-hidden",
+        "fixed inset-x-0 top-0 z-[60] h-[var(--app-viewport-height)] bg-background flex items-start justify-center motion-safe:animate-slide-up overflow-hidden",
         "md:bg-background/80 md:backdrop-blur-sm",
         "lg:left-[var(--sidebar-width,256px)] lg:bg-background lg:backdrop-blur-none lg:transition-[left] lg:duration-300 lg:items-stretch"
       )}

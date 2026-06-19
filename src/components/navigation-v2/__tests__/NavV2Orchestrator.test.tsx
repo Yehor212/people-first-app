@@ -261,7 +261,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     // Fixed edge positioning keeps page headers/content full-width.
     expect(trigger.className).toMatch(/fixed/);
     expect(trigger.className).toContain("start-4");
-    expect(trigger.className).toContain("top-[calc(env(safe-area-inset-top)+0.75rem)]");
+    expect(trigger.className).toContain("top-[calc(var(--safe-top)+0.75rem)]");
     expect(trigger.className).not.toContain("top-1/2");
     expect(trigger.className).not.toContain("rounded-e-full");
   });

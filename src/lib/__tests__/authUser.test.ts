@@ -41,4 +41,20 @@ describe("auth user helpers", () => {
     expect(getAuthUserAccountLabel(user)).toBe("Taylor Green");
     expect(getLinkedAuthProviderIds(user)).toEqual(["facebook"]);
   });
+
+  it("uses the friendly fallback for Apple users when OAuth has no name metadata", () => {
+    const user = {
+      id: "apple-user-123456",
+      email: "private-relay@example.privaterelay.appleid.com",
+      phone: null,
+      app_metadata: { provider: "apple" },
+      user_metadata: {},
+      identities: [{ provider: "apple" }],
+    } as unknown as User;
+
+    expect(getAuthUserDisplayName(user)).toBe("Friend");
+    expect(getAuthUserAccountLabel(user)).toBe("private-relay@example.privaterelay.appleid.com");
+    expect(getLinkedAuthProviderIds(user)).toEqual(["apple"]);
+  });
+
 });

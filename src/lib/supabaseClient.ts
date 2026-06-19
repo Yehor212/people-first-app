@@ -3,7 +3,7 @@ import { isNative } from "@/lib/platform";
 import { Database } from "@/types/supabase";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
-import { SUPABASE_URL, SUPABASE_ANON_KEY, IS_DEV } from "@/lib/env";
+import { SUPABASE_URL, SUPABASE_PUBLIC_API_KEY, IS_DEV } from "@/lib/env";
 
 /**
  * Zod schema for validating Supabase user object
@@ -51,7 +51,9 @@ export function getSupabaseConfigStatus(): SupabaseConfigStatus {
   const missingUrl =
     !SUPABASE_URL || typeof SUPABASE_URL !== "string" || SUPABASE_URL.trim() === "";
   const missingKey =
-    !SUPABASE_ANON_KEY || typeof SUPABASE_ANON_KEY !== "string" || SUPABASE_ANON_KEY.trim() === "";
+    !SUPABASE_PUBLIC_API_KEY ||
+    typeof SUPABASE_PUBLIC_API_KEY !== "string" ||
+    SUPABASE_PUBLIC_API_KEY.trim() === "";
 
   return {
     isConfigured: !missingUrl && !missingKey,
@@ -68,7 +70,9 @@ if (!configStatus.isConfigured && typeof window !== "undefined") {
     logger.warn(
       "[Supabase] Cloud sync disabled - environment variables not configured.",
       configStatus.missingUrl ? "Missing VITE_SUPABASE_URL." : "",
-      configStatus.missingKey ? "Missing VITE_SUPABASE_ANON_KEY." : ""
+      configStatus.missingKey
+        ? "Missing VITE_SUPABASE_PUBLISHABLE_KEY or VITE_SUPABASE_ANON_KEY."
+        : ""
     );
   }
   // Emit event for UI to show notification (async to not block initialization)
@@ -104,8 +108,8 @@ const shouldDetectSessionInUrl = (): boolean => {
 
 // Export null if not configured - app works in local-only mode
 export const supabase: SupabaseClient<Database> | null =
-  SUPABASE_URL && SUPABASE_ANON_KEY
-    ? createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  SUPABASE_URL && SUPABASE_PUBLIC_API_KEY
+    ? createClient<Database>(SUPABASE_URL, SUPABASE_PUBLIC_API_KEY, {
         auth: {
           persistSession: true,
           autoRefreshToken: true,

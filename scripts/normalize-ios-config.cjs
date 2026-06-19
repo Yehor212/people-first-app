@@ -21,6 +21,8 @@ const ALLOWED_ACCESS_ORIGINS = [
   "https://cdn.pixabay.com",
   "https://*.sentry.io",
   "https://*.ingest.sentry.io",
+  "https://*.ingest.us.sentry.io",
+  "https://*.ingest.de.sentry.io",
   "https://www.googleapis.com",
   "https://fonts.googleapis.com",
   "https://fonts.gstatic.com",
@@ -28,6 +30,20 @@ const ALLOWED_ACCESS_ORIGINS = [
 
 function renderAccessLines() {
   return ALLOWED_ACCESS_ORIGINS.map((origin) => `  <access origin="${origin}" />`).join("\n");
+}
+
+function removeDuplicateConfigFiles() {
+  const configDir = path.dirname(CONFIG_PATH);
+  if (!fs.existsSync(configDir)) return [];
+
+  const removed = [];
+  for (const name of fs.readdirSync(configDir)) {
+    if (!/^config\s+.+\.xml$/i.test(name)) continue;
+    const duplicatePath = path.join(configDir, name);
+    fs.rmSync(duplicatePath, { force: true });
+    removed.push(path.relative(process.cwd(), duplicatePath));
+  }
+  return removed;
 }
 
 function normalizeConfigXml(source) {
@@ -43,6 +59,11 @@ function normalizeConfigXml(source) {
   }
 
   return updated;
+}
+
+const removedDuplicates = removeDuplicateConfigFiles();
+for (const removed of removedDuplicates) {
+  console.log(`[ios-config] removed duplicate config file: ${removed}`);
 }
 
 if (!fs.existsSync(CONFIG_PATH)) {

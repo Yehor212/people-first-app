@@ -49,6 +49,7 @@ describe("runtime performance guards", () => {
     expect(source).not.toContain('"**/*.{js,css,html,ico,png,svg,woff2}"');
     expect(source).toContain('"assets/index-*.js"');
     expect(source).toContain('"assets/index-*.css"');
+    expect(source).not.toContain('"assets/runtime-perf-bootstrap-*.js"');
     expect(source).toContain('"assets/orbWorker-*.js"');
     expect(source).toContain('"assets/OrbPage-*.js"');
     expect(source).toContain('"assets/OrbPage-*.css"');
@@ -65,6 +66,7 @@ describe("runtime performance guards", () => {
     );
 
     expect(source).toContain('const APP_SHELL_URL = "index.html";');
+    expect(navigationBlock).toContain('request.destination === "document"');
     expect(navigationBlock).toContain("return await fetch(request);");
     expect(navigationBlock).toContain("matchPrecache(APP_SHELL_URL)");
     expect(navigationBlock).toContain("logger.warn");
@@ -145,6 +147,22 @@ describe("runtime performance guards", () => {
     expect(normalizer).not.toContain('origin="*"');
   });
 
+  it("sanitizes iOS app bundle extended attributes after resources copy before code signing", () => {
+    const project = readSource("ios/App/App.xcodeproj/project.pbxproj");
+    const targetBlock = extractBlock(
+      project,
+      "buildPhases = (\n\t\t\t\t7D20A1B62F92000100AA0001 /* Verify Release AdMob App ID */,",
+      "\n\t\t\t);",
+    );
+
+    expect(project).toContain("Sanitize App Bundle Extended Attributes");
+    expect(project).toContain('APP_BUNDLE=\\"$TARGET_BUILD_DIR/$WRAPPER_NAME\\"');
+    expect(project).toContain('xattr -cr \\"$APP_BUNDLE\\"');
+    expect(targetBlock.indexOf("504EC3021FED79650016851F /* Resources */")).toBeLessThan(
+      targetBlock.indexOf("Sanitize App Bundle Extended Attributes"),
+    );
+  });
+
   it("does not expose Android-only diary screenshot blocking on iOS", () => {
     const hookSource = readSource("src/features/journal/useScreenSecurity.ts");
     const moduleSource = readSource("src/features/journal/JournalModule.tsx");
@@ -164,6 +182,15 @@ describe("runtime performance guards", () => {
     expect(source).toContain("pwaEnabled ? html : stripPwaManifestLink(html)");
     expect(source).toContain("stripDisabledPwaManifestPlugin(pwaEnabled)");
     expect(source).toContain("rel=[\"']manifest[\"']");
+  });
+
+  it("keeps the production PWA service worker registration injected", () => {
+    const source = readSource("vite.config.ts");
+
+    expect(source).toContain('strategies: "injectManifest"');
+    expect(source).toContain('registerType: "autoUpdate"');
+    expect(source).toContain('injectRegister: "script-defer"');
+    expect(source).toContain('"registerSW.js"');
   });
 
   it("keeps desktop diary rail and stats controls at least 44px", () => {

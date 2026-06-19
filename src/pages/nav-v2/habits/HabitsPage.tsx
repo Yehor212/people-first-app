@@ -520,7 +520,7 @@ export const HabitsPage = memo(function HabitsPage() {
         id="main-content-v2"
         role="main"
         tabIndex={-1}
-        className="v2-readable-page v2-readable-page--ambient relative isolate min-h-screen w-full overflow-hidden pb-16 outline-none motion-safe:transition-[background] motion-safe:duration-700"
+        className="v2-fullscreen-page v2-readable-page v2-readable-page--ambient relative isolate min-h-[var(--app-viewport-height)] w-full overflow-hidden pb-16 outline-none motion-safe:transition-[background] motion-safe:duration-700"
         style={habitFieldStyle}
         aria-labelledby="habits-page-heading"
         data-testid="habits-page"
@@ -529,8 +529,8 @@ export const HabitsPage = memo(function HabitsPage() {
         data-habit-count={todaysHabits.length}
       >
         <HabitFieldBackdrop isEmpty={isEmpty} animate={animateBackdrop} />
-        <div className="relative z-[2] mx-auto min-h-screen w-full max-w-3xl lg:max-w-none">
-          <header className="mx-auto min-h-[5.75rem] w-full max-w-[88rem] px-4 ps-20 pt-[calc(env(safe-area-inset-top)+1.75rem)] md:min-h-0 md:px-6 md:ps-6 md:pt-12 lg:px-10 lg:pt-14 xl:px-14">
+        <div className="relative z-[2] mx-auto min-h-[var(--app-viewport-height)] w-full max-w-3xl lg:max-w-none">
+          <header className="mx-auto min-h-[5.75rem] w-full max-w-[88rem] px-4 ps-20 pt-[calc(var(--safe-top)+1.75rem)] md:min-h-0 md:px-6 md:ps-6 md:pt-12 lg:px-10 lg:pt-14 xl:px-14">
             <h1
               id="habits-page-heading"
               className="font-display text-3xl font-semibold leading-[1.08] tracking-tight text-foreground md:text-4xl lg:text-5xl"

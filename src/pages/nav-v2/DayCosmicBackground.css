@@ -815,6 +815,28 @@
   animation-delay: -6.3s;
 }
 
+.orb-day-scope .orb-page-rim-glow::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--orb-hero-size, 260px) * -0.16);
+  z-index: 0;
+  border-radius: 9999px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, hsl(54 100% 90% / 0.36) 0 22%, hsl(var(--zf-role-body) / 0.22) 33%, transparent 63%),
+    conic-gradient(
+      from 18deg,
+      hsl(var(--zf-role-energy) / 0.00),
+      hsl(var(--zf-role-energy) / 0.34),
+      hsl(var(--zf-role-focus) / 0.20),
+      hsl(var(--zf-role-release) / 0.16),
+      hsl(var(--zf-role-energy) / 0.00)
+    );
+  filter: blur(calc(var(--orb-hero-size, 260px) * 0.045)) saturate(1.18);
+  opacity: 0.92;
+  transform: scale(1.02);
+}
+
 .orb-day-scope .orb-page-rim-glow > button {
   z-index: 2;
   box-shadow:

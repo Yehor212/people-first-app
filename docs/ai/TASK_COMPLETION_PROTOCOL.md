@@ -10,6 +10,7 @@ state. It complements:
 
 - `docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md`
 - `docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md`
+- `docs/ai/V2_FULLSCREEN_EDGE_TO_EDGE_CONTRACT.md`
 - `docs/ai/SYNC_CONTRACT.md`
 - `docs/ai/TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md`
 - `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md`
@@ -109,7 +110,7 @@ A task can be closed only after these steps are true:
 | Work type | Required completion proof |
 | --- | --- |
 | Docs-only | Relevant docs read, links valid enough for intent, docs consistency check, no protected law/visual docs touched by accident. |
-| UI/layout/navigation | Screenshot or browser trace for target route, phone and desktop where applicable, scrollability, safe areas, focus, touch targets, dark/light or theme-sensitive states. |
+| UI/layout/navigation | Screenshot or browser trace for target route, phone and desktop where applicable, scrollability, safe areas, focus, touch targets, dark/light or theme-sensitive states. V2 fullscreen or edge-to-edge work must also cite `docs/ai/V2_FULLSCREEN_EDGE_TO_EDGE_CONTRACT.md`. |
 | Canonical orb or adjacent visual runtime | `npm run check:canonical-orbs`, browser screenshot evidence, no non-canonical full or mini orb implementation, no late renderer swap that changes appearance. |
 | Brand logo/app icon/splash assets | `npm run assets:logos:check`, `npm run check:visual`, focused splash/loading tests when runtime splash is touched, contact sheet proof across favicon/PWA/Android/iOS/Tauri/Store surfaces, and no unapproved logo replacement or SVG-filter artifact regression. |
 | Sync/account/data | `npm run check:sync-contract`, `npm run smoke:telegram-sync-drill`, `npm run check:github-sync-secrets`, touched rows from `TELEGRAM_GRADE_20_IDEA_LEDGER.md`, entity round-trip proof, V1/V2 convergence when shared, anti-resurrection proof for deletes, account-boundary proof when auth is touched. Release claims must also cite the GitHub Actions `telegram-sync-drill` artifact from a freshly built preview. |

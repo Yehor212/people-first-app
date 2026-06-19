@@ -5,6 +5,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type Dispatch,
   type SetStateAction,
 } from "react";
@@ -14,7 +15,9 @@ import { getModalToggle, useUserDataStore, useHydrateUserData } from "@/stores";
 import { useAppLifecycle } from "@/hooks/useAppLifecycle";
 import { useDateTracking } from "@/hooks/useDateTracking";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { useDeepLinkHandler } from "@/hooks/useDeepLinkHandler";
 import { useTelegramGradeSyncRuntime } from "@/hooks/useTelegramGradeSyncRuntime";
+import { useV2FullscreenSurface } from "@/hooks/useV2FullscreenSurface";
 import { useChallengeHandlers } from "@/hooks/useChallengeHandlers";
 import { useMoodHandlers } from "@/hooks/useMoodHandlers";
 import { useGratitudeHandlers } from "@/hooks/useGratitudeHandlers";
@@ -29,6 +32,10 @@ import { analytics } from "@/lib/analytics";
 import { canInitializeRewardedAds } from "@/lib/privacyConsent";
 import { getChallenges, getBadges } from "@/lib/challengeStorage";
 import { FORCE_NAV_V2, IS_DESKTOP_RUNTIME } from "@/lib/env";
+import {
+  hasPendingNativeDiaryDeepLink,
+  NATIVE_DIARY_DEEP_LINK_EVENT,
+} from "@/lib/nativeDiaryDeepLinkSignal";
 
 const IndexV1Impl = lazy(() => import("./IndexV1Impl"));
 const DesktopDownloadPage = lazy(() =>
@@ -45,6 +52,7 @@ interface NavV2ShellDecision {
   desktopRuntime: boolean;
   forceNavV2: boolean;
   designFlag: boolean;
+  nativeDiaryDeepLink: boolean;
   queryOverride: boolean;
   pathOverride: boolean;
 }
@@ -54,6 +62,7 @@ export function shouldUseNavV2Shell(decision: NavV2ShellDecision): boolean {
     decision.desktopRuntime ||
     decision.forceNavV2 ||
     decision.designFlag ||
+    decision.nativeDiaryDeepLink ||
     decision.queryOverride ||
     decision.pathOverride
   );
@@ -98,6 +107,18 @@ export function Index() {
   }, []);
 
   const navV2PathOverride = useMemo(isNavV2RouteLocation, []);
+  const [nativeDiaryDeepLinkOverride, setNativeDiaryDeepLinkOverride] = useState(() =>
+    hasPendingNativeDiaryDeepLink(),
+  );
+
+  useEffect(() => {
+    const handleNativeDiaryDeepLink = () => setNativeDiaryDeepLinkOverride(true);
+    window.addEventListener(NATIVE_DIARY_DEEP_LINK_EVENT, handleNativeDiaryDeepLink);
+    if (hasPendingNativeDiaryDeepLink()) {
+      handleNativeDiaryDeepLink();
+    }
+    return () => window.removeEventListener(NATIVE_DIARY_DEEP_LINK_EVENT, handleNativeDiaryDeepLink);
+  }, []);
 
   if (publicRoute) {
     return (
@@ -112,6 +133,7 @@ export function Index() {
       desktopRuntime: IS_DESKTOP_RUNTIME,
       forceNavV2: FORCE_NAV_V2,
       designFlag: navV2Flag,
+      nativeDiaryDeepLink: nativeDiaryDeepLinkOverride,
       queryOverride: navV2QueryOverride,
       pathOverride: navV2PathOverride,
     })
@@ -129,6 +151,7 @@ export function Index() {
 function IndexV2Impl() {
   // V2 must use the same boot contract as V1: native splash handoff,
   // premium web loading screen, data hydration, and auth/onboarding gates.
+  useV2FullscreenSurface();
   useAppLifecycle();
   useDateTracking();
   useHydrateUserData();
@@ -171,6 +194,7 @@ function IndexV2Impl() {
   const isLoading = isLoadingUserData || isLoadingInnerWorld;
 
   useAuthSession(isLoading);
+  useDeepLinkHandler({ handleDiaryDeepLinks: false });
   useTelegramGradeSyncRuntime();
 
   const { updateChallengeProgress } = useChallengeHandlers({

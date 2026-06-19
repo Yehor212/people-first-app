@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, ChevronRight, type LucideIcon } from "lucide-react";
+import { X, ChevronRight, LoaderCircle, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -47,9 +47,11 @@ export const DrawerV2 = memo(function DrawerV2({
   const firstFocusRef = useRef<HTMLButtonElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [shouldRender, setShouldRender] = useState(open);
+  const [navigatingPage, setNavigatingPage] = useState<NavV2Page | null>(null);
 
   useEffect(() => {
     if (open) {
+      setNavigatingPage(null);
       if (closeTimerRef.current) {
         clearTimeout(closeTimerRef.current);
       }
@@ -88,6 +90,12 @@ export const DrawerV2 = memo(function DrawerV2({
     };
   }, [open]);
 
+  useEffect(() => {
+    if (navigatingPage === activePage) {
+      setNavigatingPage(null);
+    }
+  }, [activePage, navigatingPage]);
+
   // Escape to close (complements Android hardware back)
   useEffect(() => {
     if (!open) return;
@@ -112,6 +120,8 @@ export const DrawerV2 = memo(function DrawerV2({
   ];
   const settingsLabel = tx.navV2Settings;
   const isSettingsActive = activePage === "settings";
+  const isSettingsNavigating = navigatingPage === "settings";
+  const isSettingsSelected = isSettingsActive || isSettingsNavigating;
   const SettingsIcon = V2_NAV_ICONS.settings;
 
   const content = (
@@ -153,7 +163,7 @@ export const DrawerV2 = memo(function DrawerV2({
               : "-translate-x-full opacity-0"
         )}
       >
-        <header className="flex items-center justify-between gap-3 border-b border-[hsl(var(--nav-v2-drawer-divider)/0.48)] px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.85rem)]">
+        <header className="flex items-center justify-between gap-3 border-b border-[hsl(var(--nav-v2-drawer-divider)/0.48)] px-4 pb-3 pt-[calc(var(--safe-top)+0.85rem)]">
           <div className="flex min-w-0 items-center gap-3">
             <MiniValenceOrb
               valence={0}
@@ -188,6 +198,8 @@ export const DrawerV2 = memo(function DrawerV2({
           <div className="space-y-2" data-testid="drawer-v2-navigation-deck">
             {destinations.map((item, index) => {
               const isActive = activePage === item.id;
+              const isNavigating = navigatingPage === item.id;
+              const isSelected = isActive || isNavigating;
               const visualRole = getNavVisualRole(item.id);
               const tone = getRoleTone(visualRole);
               return (
@@ -196,8 +208,17 @@ export const DrawerV2 = memo(function DrawerV2({
                   type="button"
                   aria-current={isActive ? "page" : undefined}
                   data-active={isActive ? "true" : "false"}
+                  data-navigating={isNavigating ? "true" : "false"}
                   data-visual-role={visualRole}
+                  onPointerDown={() => {
+                    if (!isActive) {
+                      setNavigatingPage(item.id);
+                    }
+                  }}
                   onClick={() => {
+                    if (!isActive) {
+                      setNavigatingPage(item.id);
+                    }
                     void haptics.tabChanged();
                     onPageChange(item.id);
                   }}
@@ -208,7 +229,7 @@ export const DrawerV2 = memo(function DrawerV2({
                     "motion-safe:animate-fade-in",
                     "motion-safe:transition-[transform,background-color,border-color,box-shadow,color,opacity] motion-safe:duration-300 motion-safe:ease-out",
                     "active:scale-[0.992]",
-                    isActive
+                    isSelected
                       ? tone.activeSurfaceClass + " text-[hsl(var(--nav-v2-drawer-text))]"
                       : "border-[hsl(var(--nav-v2-drawer-border)/0.20)] bg-[hsl(var(--nav-v2-item-surface)/0.52)] text-[hsl(var(--nav-v2-drawer-muted))] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] active:bg-[hsl(var(--nav-v2-item-hover))] " + tone.borderClass
                   )}
@@ -217,7 +238,7 @@ export const DrawerV2 = memo(function DrawerV2({
                   }}
                   data-testid={`drawer-v2-destination-${item.id}`}
                 >
-                  {isActive && (
+                  {isSelected && (
                     <>
                       <span
                         aria-hidden="true"
@@ -233,7 +254,7 @@ export const DrawerV2 = memo(function DrawerV2({
                     className={cn(
                       "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ring-1",
                       "motion-safe:transition-colors motion-safe:duration-200",
-                      isActive
+                      isSelected
                         ? tone.iconClass + " " + tone.ringClass
                         : "bg-[hsl(var(--nav-v2-icon-surface)/0.76)] text-[hsl(var(--nav-v2-icon-muted))] ring-[hsl(var(--nav-v2-drawer-border)/0.22)] group-hover:text-[hsl(var(--nav-v2-drawer-text))]"
                     )}
@@ -241,13 +262,21 @@ export const DrawerV2 = memo(function DrawerV2({
                     <item.icon className="h-5 w-5" aria-hidden="true" />
                   </span>
                   <span className="relative flex-1 truncate">{item.label}</span>
-                  <ChevronRight
-                    className={cn(
-                      "relative h-4 w-4 shrink-0 opacity-35",
-                      isActive && "opacity-65"
-                    )}
-                    aria-hidden="true"
-                  />
+                  {isNavigating ? (
+                    <LoaderCircle
+                      className="relative h-4 w-4 shrink-0 animate-spin opacity-75"
+                      aria-hidden="true"
+                      data-testid={`drawer-v2-destination-${item.id}-progress`}
+                    />
+                  ) : (
+                    <ChevronRight
+                      className={cn(
+                        "relative h-4 w-4 shrink-0 opacity-35",
+                        isActive && "opacity-65"
+                      )}
+                      aria-hidden="true"
+                    />
+                  )}
                 </button>
               );
             })}
@@ -263,7 +292,7 @@ export const DrawerV2 = memo(function DrawerV2({
         </nav>
 
         <nav
-          className="border-t border-[hsl(var(--nav-v2-drawer-divider)/0.42)] px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3"
+          className="border-t border-[hsl(var(--nav-v2-drawer-divider)/0.42)] px-3 pb-[calc(var(--safe-bottom)+0.75rem)] pt-3"
           aria-label={settingsLabel}
           data-testid="drawer-v2-bottom-nav"
         >
@@ -280,8 +309,17 @@ export const DrawerV2 = memo(function DrawerV2({
             type="button"
             aria-current={isSettingsActive ? "page" : undefined}
             data-active={isSettingsActive ? "true" : "false"}
+            data-navigating={isSettingsNavigating ? "true" : "false"}
             data-visual-role="settings"
+            onPointerDown={() => {
+              if (!isSettingsActive) {
+                setNavigatingPage("settings");
+              }
+            }}
             onClick={() => {
+              if (!isSettingsActive) {
+                setNavigatingPage("settings");
+              }
               void haptics.tabChanged();
               onPageChange("settings");
             }}
@@ -291,7 +329,7 @@ export const DrawerV2 = memo(function DrawerV2({
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               "motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-300 motion-safe:ease-out",
               "active:scale-[0.992]",
-              isSettingsActive
+              isSettingsSelected
                 ? getRoleTone("settings").activeSurfaceClass + " text-[hsl(var(--nav-v2-drawer-text))]"
                 : "border-[hsl(var(--nav-v2-drawer-border)/0.20)] bg-[hsl(var(--nav-v2-item-surface)/0.52)] text-[hsl(var(--nav-v2-drawer-muted))] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] active:bg-[hsl(var(--nav-v2-item-hover))] " + getRoleTone("settings").borderClass
             )}
@@ -300,7 +338,7 @@ export const DrawerV2 = memo(function DrawerV2({
             <span
               className={cn(
                 "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ring-1",
-                isSettingsActive
+                isSettingsSelected
                   ? getRoleTone("settings").iconClass + " " + getRoleTone("settings").ringClass
                   : "bg-[hsl(var(--nav-v2-icon-surface)/0.76)] text-[hsl(var(--nav-v2-icon-muted))] ring-[hsl(var(--nav-v2-drawer-border)/0.22)] group-hover:text-[hsl(var(--nav-v2-drawer-text))]"
               )}
@@ -308,7 +346,15 @@ export const DrawerV2 = memo(function DrawerV2({
               <SettingsIcon className="h-5 w-5" aria-hidden="true" />
             </span>
             <span className="flex-1 truncate">{settingsLabel}</span>
-            <ChevronRight className="h-4 w-4 shrink-0 opacity-40" aria-hidden="true" />
+            {isSettingsNavigating ? (
+              <LoaderCircle
+                className="h-4 w-4 shrink-0 animate-spin opacity-75"
+                aria-hidden="true"
+                data-testid="drawer-v2-destination-settings-progress"
+              />
+            ) : (
+              <ChevronRight className="h-4 w-4 shrink-0 opacity-40" aria-hidden="true" />
+            )}
           </button>
         </nav>
       </aside>

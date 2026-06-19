@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -23,6 +23,11 @@ vi.mock("@/lib/sentry", () => ({
   captureError: vi.fn(),
 }));
 
+vi.mock("@/lib/errorBuffer", () => ({
+  captureOrBuffer: vi.fn(),
+}));
+
+import { captureOrBuffer } from "@/lib/errorBuffer";
 import { ErrorBoundary } from "../ErrorBoundary";
 
 function Thrower(): ReactElement {
@@ -55,6 +60,12 @@ describe("ErrorBoundary", () => {
     expect(screen.queryByRole("button", { name: "Експортувати звіт" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Перезавантажити" })).toHaveClass(
       "min-h-[48px]",
+    );
+
+    await waitFor(() => expect(captureOrBuffer).toHaveBeenCalledTimes(1));
+    expect(captureOrBuffer).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "boom" }),
+      expect.objectContaining({ context: "ErrorBoundary" }),
     );
   });
 

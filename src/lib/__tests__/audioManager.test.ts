@@ -36,12 +36,85 @@ import {
   getAudioContext,
   playSound,
   playSuccess,
+  playComplete,
   playStreakMilestone,
   playLevelUp,
   playNotification,
 } from '../audioManager';
 
 import { storageSetRaw } from '../safeJson';
+
+type CapturedAudioShape = {
+  frequencies: number[];
+  durations: number[];
+  waveforms: OscillatorType[];
+};
+
+function installCapturedAudioContext(): CapturedAudioShape {
+  const captured: CapturedAudioShape = {
+    frequencies: [],
+    durations: [],
+    waveforms: [],
+  };
+
+  class MockAudioContext {
+    currentTime = 10;
+    destination = {};
+    state = 'running';
+
+    createOscillator() {
+      const currentTime = this.currentTime;
+      const oscillator = {
+        frequency: { value: 0 },
+        type: 'sine' as OscillatorType,
+        connect: vi.fn(),
+        start: vi.fn(),
+        stop: vi.fn((stopAt: number) => {
+          captured.frequencies.push(oscillator.frequency.value);
+          captured.durations.push(Number((stopAt - currentTime).toFixed(2)));
+          captured.waveforms.push(oscillator.type);
+        }),
+      };
+
+      return oscillator as unknown as OscillatorNode;
+    }
+
+    createGain() {
+      return {
+        connect: vi.fn(),
+        gain: {
+          setValueAtTime: vi.fn(),
+          exponentialRampToValueAtTime: vi.fn(),
+        },
+      } as unknown as GainNode;
+    }
+
+    close() {
+      return Promise.resolve();
+    }
+
+    resume() {
+      return Promise.resolve();
+    }
+
+    suspend() {
+      return Promise.resolve();
+    }
+  }
+
+  Object.defineProperty(window, 'AudioContext', {
+    configurable: true,
+    writable: true,
+    value: MockAudioContext,
+  });
+  Object.defineProperty(globalThis, 'AudioContext', {
+    configurable: true,
+    writable: true,
+    value: MockAudioContext,
+  });
+
+  return captured;
+}
 
 // ─── Setup ──────────────────────────────────────────────────────
 beforeEach(() => {
@@ -190,6 +263,10 @@ describe('playSound dispatch', () => {
     expect(() => playSuccess()).not.toThrow();
   });
 
+  it('playComplete does not throw', () => {
+    expect(() => playComplete()).not.toThrow();
+  });
+
   it('playStreakMilestone does not throw', () => {
     expect(() => playStreakMilestone()).not.toThrow();
   });
@@ -200,5 +277,34 @@ describe('playSound dispatch', () => {
 
   it('playNotification does not throw', () => {
     expect(() => playNotification()).not.toThrow();
+  });
+
+  it('keeps completion feedback distinct from generic success feedback', () => {
+    vi.useFakeTimers();
+    try {
+      const success = installCapturedAudioContext();
+      playSound('success');
+      vi.runOnlyPendingTimers();
+      const successShape = {
+        frequencies: [...success.frequencies],
+        durations: [...success.durations],
+        waveforms: [...success.waveforms],
+      };
+
+      cleanup();
+
+      const complete = installCapturedAudioContext();
+      playSound('complete');
+      vi.runOnlyPendingTimers();
+
+      expect({
+        frequencies: complete.frequencies,
+        durations: complete.durations,
+        waveforms: complete.waveforms,
+      }).not.toEqual(successShape);
+      expect(complete.frequencies.length).toBeGreaterThanOrEqual(3);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

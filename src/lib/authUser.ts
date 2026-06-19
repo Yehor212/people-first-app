@@ -24,9 +24,18 @@ function metadataString(
   return null;
 }
 
+function isAppleAuthUser(user: User): boolean {
+  const provider = typeof user.app_metadata?.provider === "string" ? user.app_metadata.provider : null;
+  if (normalizeAuthProviderId(provider) === "apple") return true;
+  return (user.identities ?? []).some((identity) => normalizeAuthProviderId(identity.provider) === "apple");
+}
+
 export function getAuthUserDisplayName(user: User | null | undefined, fallback = "Friend"): string {
   if (!user) return fallback;
-  return metadataString(user.user_metadata, DISPLAY_NAME_KEYS) || user.email || user.phone || fallback;
+  const metadataName = metadataString(user.user_metadata, DISPLAY_NAME_KEYS);
+  if (metadataName) return metadataName;
+  if (isAppleAuthUser(user)) return fallback;
+  return user.email || user.phone || fallback;
 }
 
 export function getAuthUserAccountLabel(user: User | null | undefined): string | null {

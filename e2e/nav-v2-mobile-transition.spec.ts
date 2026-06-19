@@ -84,6 +84,84 @@ async function seedHeavyHabitsDataset(page: import("@playwright/test").Page) {
   });
 }
 
+async function seedVeryHeavyHabitsDataset(page: import("@playwright/test").Page) {
+  await page.addInitScript(() => {
+    const dateKey = (offsetDays: number) => {
+      const date = new Date();
+      date.setHours(12, 0, 0, 0);
+      date.setDate(date.getDate() + offsetDays);
+      return date.toISOString().slice(0, 10);
+    };
+    const entriesFor = (habitIndex: number) => {
+      const entries: Record<string, { value: number; loggedAt: string; source: string }> = {};
+      for (let offset = -240; offset <= 0; offset += 1) {
+        if ((Math.abs(offset) + habitIndex) % 4 === 0) continue;
+        entries[dateKey(offset)] = {
+          value: 2,
+          loggedAt: new Date(Date.now() + offset * 86_400_000).toISOString(),
+          source: "quickTap",
+        };
+      }
+      return entries;
+    };
+    const reminders = ["08:00", "13:00", "19:00"];
+    const identity = ["body", "focus", "energy", "gratitude"];
+    const habits = Array.from({ length: 48 }, (_, index) => ({
+      id: `perf-heavy-habit-${index}`,
+      name: `Heavy performance habit ${index + 1}`,
+      icon: ["Leaf", "Water", "Focus", "Book"][index % 4],
+      color: index % 8,
+      position: index,
+      createdAt: Date.now() - 250 * 86_400_000,
+      habitType: "boolean",
+      frequency: { numerator: 1, denominator: 1 },
+      schedule: {
+        mode: "daily",
+        period: "week",
+        targetCount: 7,
+        dueDays: [1, 2, 3, 4, 5, 6, 0],
+      },
+      question: "",
+      description: "",
+      isArchived: false,
+      targetValue: 1,
+      targetType: "atLeast",
+      unit: "",
+      entries: entriesFor(index),
+      reminders: index % 4 === 3
+        ? []
+        : [
+            {
+              id: `heavy-rem-${index}`,
+              time: reminders[index % reminders.length],
+              enabled: true,
+              days: [1, 2, 3, 4, 5, 6, 0],
+            },
+          ],
+      identityCluster: identity[index % identity.length],
+      identityVerb: ["steadier", "clearer", "stronger", "kinder"][index % 4],
+      identityIcon: ["Sprout", "Route", "Orbit", "Heart"][index % 4],
+    }));
+    const moods = Array.from({ length: 180 }, (_, index) => ({
+      id: `perf-heavy-mood-${index}`,
+      date: dateKey(-index),
+      timestamp: Date.now() - index * 86_400_000,
+      mood: (["great", "good", "okay", "bad"] as const)[index % 4],
+      note: "",
+      tags: index % 3 === 0 ? ["habit"] : [],
+    }));
+    localStorage.setItem("zenflow-habits", JSON.stringify(habits));
+    localStorage.setItem("zenflow-moods", JSON.stringify(moods));
+    localStorage.setItem("zenflow-focus", JSON.stringify([]));
+  });
+}
+
+async function emulateSlowMobileCpu(page: import("@playwright/test").Page, rate = 6) {
+  const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setCPUThrottlingRate", { rate });
+  return () => session.detach().catch(() => undefined);
+}
+
 async function installRoutePerfProbe(page: import("@playwright/test").Page) {
   await page.addInitScript(() => {
     const state = window as Window & {
@@ -487,6 +565,61 @@ test.describe("V2 mobile web route transitions", () => {
     expect(metrics.tapToVisibleMs).toBeLessThan(1_500);
     expect(metrics.sampleWindowMs).toBeLessThan(4_000);
     expect(metrics.drawerMounted).toBe(false);
+    expect(metrics.maxLongTaskMs).toBeLessThan(500);
+    if (metrics.longAnimationFrameCount > 0) {
+      expect(metrics.maxLongAnimationFrameBlockingMs).toBeLessThan(250);
+    }
+  });
+
+  test("phone drawer keeps Mood to Habits visually responsive on slow mobile web", async ({
+    page,
+  }) => {
+    const restoreCpu = await emulateSlowMobileCpu(page, 6);
+    await installRoutePerfProbe(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await primeZenflowV2(page, {
+      clearStorage: true,
+      language: "en",
+      theme: "paper",
+    });
+    await seedVeryHeavyHabitsDataset(page);
+
+    await page.goto("orb?nav=v2&navLayout=phone&dev=true", {
+      waitUntil: "domcontentloaded",
+    });
+
+    await page.getByTestId("nav-v2-open-drawer").click({ timeout: 5_000 });
+    await expect(page.getByTestId("drawer-v2")).toBeVisible({ timeout: 5_000 });
+    await resetRoutePerfProbe(page);
+
+    const destination = page.getByTestId("drawer-v2-destination-habits");
+    const startedAt = await page.evaluate(() => performance.now());
+    await destination.dispatchEvent("pointerdown", { pointerType: "touch" });
+    await expect(destination).toHaveAttribute("data-navigating", "true", {
+      timeout: 250,
+    });
+    await expect(page.getByTestId("drawer-v2-destination-habits-progress")).toBeVisible({
+      timeout: 250,
+    });
+    const localFeedbackAt = await page.evaluate(() => performance.now());
+    await destination.click({ timeout: 5_000 });
+    await expect(page.getByTestId("nav-v2-route-pending")).toContainText("Habits", {
+      timeout: 800,
+    });
+
+    await expectHabitsRouteVisible(page, {
+      activeTimeout: 2_000,
+      visibleTimeout: 3_000,
+    });
+    const routeVisibleAt = await page.evaluate(() => performance.now());
+    await expect(page.getByTestId("drawer-v2")).toBeHidden({ timeout: 1_500 });
+    await page.waitForTimeout(1_500);
+
+    const metrics = await readRoutePerfMetrics(page, startedAt, routeVisibleAt);
+    await restoreCpu();
+
+    expect(localFeedbackAt - startedAt).toBeLessThan(250);
+    expect(metrics.tapToVisibleMs).toBeLessThan(1_500);
     expect(metrics.maxLongTaskMs).toBeLessThan(500);
     if (metrics.longAnimationFrameCount > 0) {
       expect(metrics.maxLongAnimationFrameBlockingMs).toBeLessThan(250);

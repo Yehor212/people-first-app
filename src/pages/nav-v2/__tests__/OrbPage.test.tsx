@@ -1,7 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import type { AppliedTheme } from "@/stores/themeStore";
+
+const appAudioSettingsState = vi.hoisted(() => ({
+  muted: false,
+  volume: 1,
+  feedbackSoundsEnabled: true,
+  canPlayFeedback: true,
+}));
 
 import { OrbPage } from "../OrbPage";
 import { useDiaryDraftStore } from "@/stores/diaryDraftStore";
@@ -44,10 +51,20 @@ vi.mock("@/contexts/LanguageContext", () => ({
       moodBad: "Bad",
       moodTerrible: "Terrible",
       somTagHopeful: "Localized hopeful",
+      orbAmbienceLabel: "Orb ambience",
+      orbAmbiencePlay: "Play orb ambience",
+      orbAmbiencePause: "Pause orb ambience",
+      audioRetry: "Retry",
+      soundOn: "On",
+      soundOff: "Off",
     },
     language: "en",
     isRTL: false,
   }),
+}));
+
+vi.mock("@/hooks/useAppAudioSettings", () => ({
+  useAppAudioSettings: () => appAudioSettingsState,
 }));
 
 vi.mock("@/lib/haptics", () => ({
@@ -197,6 +214,11 @@ vi.mock("@/stores", () => ({
   useUserDataStore: (selector: (s: unknown) => unknown) => selector(moodsSnapshot),
 }));
 
+const media = vi.hoisted(() => ({
+  play: vi.fn(() => Promise.resolve()),
+  pause: vi.fn(),
+}));
+
 const themeState = vi.hoisted<{ appliedTheme: AppliedTheme }>(() => ({
   appliedTheme: "ink",
 }));
@@ -220,6 +242,10 @@ vi.mock("@/lib/motion", () => ({
 
 describe("OrbPage progressive flow", () => {
   beforeEach(() => {
+  appAudioSettingsState.muted = false;
+  appAudioSettingsState.volume = 1;
+  appAudioSettingsState.feedbackSoundsEnabled = true;
+  appAudioSettingsState.canPlayFeedback = true;
     setMoodsSpy.mockClear();
     onAddMoodMock.mockClear();
     setActivePageMock.mockClear();
@@ -232,6 +258,16 @@ describe("OrbPage progressive flow", () => {
     useMoodEntryDraftStore.getState().reset();
     useDiaryDraftStore.getState().clearPendingMoodContext();
     window.localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
+    media.play.mockClear();
+    media.pause.mockClear();
+    Object.defineProperty(window.HTMLMediaElement.prototype, "play", {
+      configurable: true,
+      value: media.play,
+    });
+    Object.defineProperty(window.HTMLMediaElement.prototype, "pause", {
+      configurable: true,
+      value: media.pause,
+    });
   });
 
   it("renders the page landmark and V2 shell chrome", () => {
@@ -294,6 +330,84 @@ describe("OrbPage progressive flow", () => {
 
     expect(screen.getByTestId("orb-day-flourish")).toBeInTheDocument();
     expect(screen.queryByTestId("shooting-star-stub")).toBeNull();
+  });
+
+  it("offers polished stone ambience as user-started orb audio without changing the canonical orb", async () => {
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    const audio = screen.getByTestId("orb-page-ambience-audio");
+    expect(audio).toHaveAttribute(
+      "src",
+      expect.stringContaining("/sounds/polished-stone-and-paper.mp3"),
+    );
+    expect(audio).toHaveAttribute("preload", "none");
+    expect(audio).toHaveAttribute("loop");
+    expect(audio).not.toHaveAttribute("autoplay");
+    expect(media.play).not.toHaveBeenCalled();
+
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-renderer", "webgpu");
+
+    const toggle = screen.getByTestId("orb-page-ambience-toggle");
+    expect(toggle).toHaveAttribute("type", "button");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(toggle).toHaveAccessibleName("Play orb ambience");
+
+    fireEvent.click(toggle);
+    expect(media.play).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
+
+    fireEvent.click(toggle);
+    expect(media.pause).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+  });
+
+  it("does not start orb ambience while app sound is muted", () => {
+    appAudioSettingsState.muted = true;
+
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    const toggle = screen.getByTestId("orb-page-ambience-toggle");
+    expect(toggle).toBeDisabled();
+
+    fireEvent.click(toggle);
+
+    expect(media.play).not.toHaveBeenCalled();
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("keeps orb ambience retryable when the browser blocks the first play", async () => {
+    media.play.mockRejectedValueOnce(new Error("Audio blocked"));
+    media.play.mockResolvedValueOnce(undefined);
+
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    const toggle = screen.getByTestId("orb-page-ambience-toggle");
+    fireEvent.click(toggle);
+
+    await waitFor(() => expect(toggle).toHaveAccessibleName("Retry"));
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(toggle);
+
+    expect(media.play).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
+  });
+
+  it("stops orb ambience when the orb route unmounts", async () => {
+    const { unmount } = render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    fireEvent.click(screen.getByTestId("orb-page-ambience-toggle"));
+    await waitFor(() =>
+      expect(screen.getByTestId("orb-page-ambience-toggle")).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      ),
+    );
+
+    media.pause.mockClear();
+    unmount();
+
+    expect(media.pause).toHaveBeenCalledTimes(1);
   });
 
   it("allows Next from the neutral center on first render", () => {

@@ -37,6 +37,10 @@ export function ExportPickerDialog({
           <h3 className="text-base font-semibold text-foreground mb-3">
             {ts.journalExportFormat || "Export Format"}
           </h3>
+          <p className="mb-3 rounded-lg border border-border/20 bg-muted/30 px-3 py-2 text-[11px] leading-snug text-muted-foreground">
+            {ts.journalExportPrivacyWarning ||
+              "Exports are private files and are not encrypted by ZenFlow. Keep them somewhere you trust."}
+          </p>
           <div className="grid grid-cols-2 gap-2">
             {(
               [

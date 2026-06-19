@@ -1,0 +1,282 @@
+{
+  "version": "2026-06-19",
+  "project": "ZenFlow Hyperfocus three-level ambient audio",
+  "modelPolicy": {
+    "requiredProvider": "Google Gemini family only",
+    "allowedCurrentCandidate": "lyria-3-clip",
+    "blockedFallback": "elevenlabs-sfx is available but disallowed by user requirement",
+    "currentToolFinding": "Gemini TTS and Google Lyria music are available; no Gemini SFX/soundscape-specific model is exposed in the current tool list.",
+    "pilotGate": "Generate one Lyria 3 Clip pilot only after confirming we accept music-model soundscape output for non-musical ambience. If the pilot contains melody, vocals, beat, or song structure, stop and wait for a Gemini soundscape/SFX-capable model."
+  },
+  "assetPolicy": {
+    "format": "mp3",
+    "targetDurationSeconds": 30,
+    "targetMaxBytesPerFile": 900000,
+    "targetTotalBytesFor18Files": 16200000,
+    "looping": "must feel seamless, no obvious start/end, no hard transient at the seam",
+    "loudness": "background ambience, quieter than UI feedback, no clipping, no harsh transients",
+    "runtime": "local bundled files under public/sounds/hyperfocus, preload none, user-started only"
+  },
+  "families": [
+    {
+      "id": "fireplace",
+      "currentFile": "public/sounds/fireplace-fx-56636.mp3",
+      "productRole": "warm steady focus, evening writing, calming background texture",
+      "levels": [
+        {
+          "id": "soft",
+          "label": "Embers",
+          "fileName": "hyperfocus-fireplace-soft.mp3",
+          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: tiny fireplace embers, soft close crackle, warm room air, very calm, low intensity, no melody, no beat, no vocals, no alarms, no dramatic flame surge, no harsh pops.",
+          "rejectIf": [
+            "sirens",
+            "emergency fire",
+            "loud pops",
+            "music beat",
+            "vocals"
+          ]
+        },
+        {
+          "id": "deep",
+          "label": "Hearth",
+          "fileName": "hyperfocus-fireplace-deep.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: steady hearth fire in a quiet room, medium crackle density, warm wooden resonance, stable dynamics for deep focus, no melody, no rhythm, no vocals, no emergency fire cues.",
+          "rejectIf": [
+            "camp crowd",
+            "sharp transient cluster",
+            "song structure",
+            "sirens"
+          ]
+        },
+        {
+          "id": "intense",
+          "label": "Bonfire",
+          "fileName": "hyperfocus-fireplace-intense.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: controlled bonfire intensity, broad warm crackle, low windless roar, energetic but safe, useful for masking noise during focus, no panic, no sirens, no burning building, no vocals, no music.",
+          "rejectIf": [
+            "disaster fire",
+            "alarm",
+            "screaming",
+            "danger cues",
+            "melody"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "underwater",
+      "currentFile": "public/sounds/mixkit-underwater-transmitter-hum-2135.mp3",
+      "productRole": "deep masking hum, low distraction, sensory cocoon",
+      "levels": [
+        {
+          "id": "soft",
+          "label": "Shallow Drift",
+          "fileName": "hyperfocus-underwater-soft.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: gentle underwater muffled room, soft bubbles far away, low pressure hum, calm shallow drift, no sonar ping, no melody, no vocals, no scary deep sea tension.",
+          "rejectIf": [
+            "sonar ping",
+            "horror tension",
+            "whale song",
+            "music"
+          ]
+        },
+        {
+          "id": "deep",
+          "label": "Deep Current",
+          "fileName": "hyperfocus-underwater-deep.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: deep underwater current, smooth low-mid hum, occasional soft bubble movement, stable pressure texture for concentration, no alerts, no voices, no rhythm.",
+          "rejectIf": [
+            "beeping",
+            "submarine alarm",
+            "voice",
+            "melody"
+          ]
+        },
+        {
+          "id": "intense",
+          "label": "Abyss Focus",
+          "fileName": "hyperfocus-underwater-intense.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: strong underwater pressure and flowing current, dense masking texture, still calm enough for focus, no horror, no monster, no sonar alarm, no vocals, no beat.",
+          "rejectIf": [
+            "horror",
+            "creature",
+            "alarm",
+            "song structure"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "thunderstorm",
+      "currentFile": "public/sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.mp3",
+      "productRole": "rain masking, weather cocoon, high noise coverage",
+      "levels": [
+        {
+          "id": "soft",
+          "label": "Distant Rain",
+          "fileName": "hyperfocus-thunderstorm-soft.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: gentle distant rain with very far soft thunder, calm indoor-safe feeling, stable background, no sudden cracks, no melody, no vocals, no storm alarm.",
+          "rejectIf": [
+            "loud thunder crack",
+            "panic",
+            "siren",
+            "music"
+          ]
+        },
+        {
+          "id": "deep",
+          "label": "Steady Storm",
+          "fileName": "hyperfocus-thunderstorm-deep.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: steady rain and rolling thunder at medium intensity, smooth masking texture for focus, no lightning shock, no birds dominating, no melody, no vocals.",
+          "rejectIf": [
+            "sharp lightning",
+            "animal foreground",
+            "beat",
+            "voice"
+          ]
+        },
+        {
+          "id": "intense",
+          "label": "Monsoon Wall",
+          "fileName": "hyperfocus-thunderstorm-intense.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: dense monsoon rain wall with controlled rolling thunder, strong noise masking, no dangerous storm sirens, no abrupt thunder spike, no vocals, no rhythm.",
+          "rejectIf": [
+            "sirens",
+            "destruction",
+            "jumpscare thunder",
+            "music"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ocean",
+      "currentFile": "public/sounds/mixkit-small-waves-harbor-rocks-1208.mp3",
+      "productRole": "wide breathing rhythm, calm movement, visualizable space",
+      "levels": [
+        {
+          "id": "soft",
+          "label": "Shoreline",
+          "fileName": "hyperfocus-ocean-soft.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: small shoreline waves, soft foam, no gulls in foreground, slow calming movement, no melody, no vocals, no dramatic swell.",
+          "rejectIf": [
+            "seagull foreground",
+            "boat horn",
+            "music",
+            "storm"
+          ]
+        },
+        {
+          "id": "deep",
+          "label": "Rock Pools",
+          "fileName": "hyperfocus-ocean-deep.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: medium waves over rocks, smooth foam wash, grounded coastal texture for focus, stable dynamics, no vocals, no beat, no alarm horn.",
+          "rejectIf": [
+            "horn",
+            "sharp crash",
+            "song",
+            "voice"
+          ]
+        },
+        {
+          "id": "intense",
+          "label": "Heavy Surf",
+          "fileName": "hyperfocus-ocean-intense.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: heavy ocean surf with broad wave crashes, strong masking but not dangerous, no storm panic, no gulls, no music, no vocals, no ship horn.",
+          "rejectIf": [
+            "tsunami drama",
+            "ship horn",
+            "melody",
+            "vocals"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "river",
+      "currentFile": "public/sounds/mixkit-wildlife-environment-in-a-river-2456.mp3",
+      "productRole": "organic flow, forest calm, medium-high masking",
+      "levels": [
+        {
+          "id": "soft",
+          "label": "Brook",
+          "fileName": "hyperfocus-river-soft.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: small forest brook, gentle water over stones, sparse soft nature bed, no birds dominating, no insects close, no melody, no vocals.",
+          "rejectIf": [
+            "bird foreground",
+            "bugs close",
+            "music",
+            "voice"
+          ]
+        },
+        {
+          "id": "deep",
+          "label": "Forest River",
+          "fileName": "hyperfocus-river-deep.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: steady forest river, layered water flow over rocks, grounded and calm for deep work, minimal wildlife, no melody, no vocals, no abrupt splash.",
+          "rejectIf": [
+            "animal call foreground",
+            "splash hit",
+            "song",
+            "voice"
+          ]
+        },
+        {
+          "id": "intense",
+          "label": "Whitewater",
+          "fileName": "hyperfocus-river-intense.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: controlled whitewater river, dense continuous water texture for masking noise, energetic but not chaotic, no danger cues, no vocals, no rhythm.",
+          "rejectIf": [
+            "danger alarm",
+            "shouting",
+            "rhythm",
+            "music"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cafe",
+      "currentFile": "public/sounds/cafe-noise-32940.mp3",
+      "productRole": "social masking, body-doubling feeling, work mode",
+      "levels": [
+        {
+          "id": "soft",
+          "label": "Quiet Corner",
+          "fileName": "hyperfocus-cafe-soft.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: quiet cafe corner, distant cups and soft room murmur, no intelligible speech, no music, no espresso machine spike, calm work atmosphere.",
+          "rejectIf": [
+            "clear words",
+            "music",
+            "loud machine",
+            "laughter foreground"
+          ]
+        },
+        {
+          "id": "deep",
+          "label": "Work Cafe",
+          "fileName": "hyperfocus-cafe-deep.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: medium cafe ambience, soft anonymized conversation bed, cups and gentle movement, no intelligible speech, no music, no sudden chair scrape.",
+          "rejectIf": [
+            "words",
+            "song",
+            "sharp scrape",
+            "loud laugh"
+          ]
+        },
+        {
+          "id": "intense",
+          "label": "Busy Rush",
+          "fileName": "hyperfocus-cafe-intense.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: busy cafe rush as smooth social noise mask, dense but non-distracting, no intelligible words, no music, no alarms, no harsh clatter spikes.",
+          "rejectIf": [
+            "intelligible speech",
+            "alarm",
+            "song",
+            "dish crash"
+          ]
+        }
+      ]
+    }
+  ]
+}

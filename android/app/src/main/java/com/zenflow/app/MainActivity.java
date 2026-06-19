@@ -3,9 +3,13 @@ package com.zenflow.app;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
+import android.content.res.Configuration;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.webkit.WebView;
 import androidx.activity.EdgeToEdge;
+import androidx.core.view.WindowCompat;
 import com.getcapacitor.BridgeActivity;
 import ee.forgr.capacitor.social.login.ModifiedMainActivityForSocialLoginPlugin;
 
@@ -21,18 +25,50 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         // Clear WebView cache on app version change to prevent stale JS bundles
         clearWebViewCacheOnUpdate();
 
-        // Enable edge-to-edge display (required for targetSdk 35 / Android 15+)
-        EdgeToEdge.enable(this);
+        enableNativeEdgeToEdge();
 
         // Register local plugins before Capacitor creates the bridge.
         registerPlugin(WidgetPlugin.class);
         registerPlugin(ReviewPlugin.class);
         registerPlugin(AppUpdatePlugin.class);
         registerPlugin(DndPlugin.class);
+        registerPlugin(BiometricAuthPlugin.class);
         registerPlugin(ScreenSecurityPlugin.class);
         registerPlugin(StatusBarStylePlugin.class);
 
         super.onCreate(savedInstanceState);
+        enableNativeEdgeToEdge();
+    }
+
+    private void enableNativeEdgeToEdge() {
+        EdgeToEdge.enable(this);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(Color.TRANSPARENT);
+        applyNativeEdgeBackdrop();
+        getWindow().getDecorView().post(this::applyNativeEdgeBackdrop);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setStatusBarContrastEnforced(false);
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
+    }
+
+    private void applyNativeEdgeBackdrop() {
+        getWindow().setBackgroundDrawableResource(R.drawable.zenflow_edge_bleed_backdrop);
+        getWindow().getDecorView().setBackgroundResource(R.drawable.zenflow_edge_bleed_backdrop);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        enableNativeEdgeToEdge();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        enableNativeEdgeToEdge();
     }
 
     @Override

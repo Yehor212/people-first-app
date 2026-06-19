@@ -13,6 +13,7 @@ vi.mock('@capacitor/app', () => ({
 }));
 
 import { parseDeepLink, subscribeToDeepLinks, DEEP_LINK_EVENT, DeepLinkData } from '@/lib/deepLinks';
+import { logger } from '@/lib/logger';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -64,6 +65,15 @@ describe('parseDeepLink', () => {
     expect(result).toEqual({ type: 'unknown', params: expect.any(Object) });
   });
 
+  it('redacts query values from deep link diagnostics', () => {
+    parseDeepLink('https://example.com/something?access_token=secret-token&code=abc123');
+
+    const logText = vi.mocked(logger.log).mock.calls.flat().map(String).join(' ');
+    expect(logText).not.toContain('secret-token');
+    expect(logText).not.toContain('access_token');
+    expect(logText).not.toContain('code=abc123');
+  });
+
   it('returns null for invalid URL', () => {
     const result = parseDeepLink('not a url at all');
     expect(result).toBeNull();
@@ -76,6 +86,11 @@ describe('parseDeepLink', () => {
 
   it('parses zenflow://diary/editor as diary type with route "editor"', () => {
     const result = parseDeepLink('zenflow://diary/editor');
+    expect(result).toEqual({ type: 'diary', route: 'editor' });
+  });
+
+  it('parses zenflow:///diary/editor as diary editor for empty-host iOS custom-scheme links', () => {
+    const result = parseDeepLink('zenflow:///diary/editor');
     expect(result).toEqual({ type: 'diary', route: 'editor' });
   });
 

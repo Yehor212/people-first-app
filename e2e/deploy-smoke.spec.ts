@@ -42,6 +42,7 @@ test.describe("Deploy smoke", () => {
     { path: "orb?nav=v2&navLayout=phone&dev=true", testId: "orb-page" },
     { path: "habits?nav=v2&navLayout=phone&dev=true", testId: "habits-page" },
     { path: "diary?nav=v2&navLayout=phone&dev=true", testId: "diary-page" },
+    { path: "settings?nav=v2&navLayout=phone&dev=true", testId: "settings-page" },
   ]) {
     test(`V2 route boots: ${target.path}`, async ({ page }) => {
       await page.goto(target.path, { waitUntil: "domcontentloaded" });

@@ -1,11 +1,6 @@
 import { motion } from "framer-motion";
-import {
-  AlertCircle,
-  ArrowLeft,
-  Loader2,
-  Phone,
-} from "lucide-react";
-import { useEffect } from "react";
+import { AlertCircle, ArrowLeft, Loader2, Phone } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { EntryGateBackdrop } from "@/components/EntryGateBackdrop";
 import { EntryThemeSwitcher } from "@/components/EntryThemeSwitcher";
 import { AuthProviderButton } from "@/components/auth/AuthProviderButton";
@@ -13,11 +8,14 @@ import { ZenFlowBrandMark } from "@/components/ZenFlowBrandMark";
 import { resetEntryGateScroll } from "@/components/entryGateScroll";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { shouldAnimate, zenMotion } from "@/lib/animationUtils";
+import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
+import { getAppAudioAssetSrc } from "@/lib/appAudioAssets";
 import { IS_DEV } from "@/lib/env";
 import { getEnabledAuthScreenProviders } from "@/lib/authProviders";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
 import { useThemeStore } from "@/stores/themeStore";
+import { AuthMeasuredBreathToggle } from "./AuthMeasuredBreathToggle";
 import type { AuthScreenProps } from "./types";
 import { SHOW_PHONE_AUTH } from "./types";
 import { useAuthHandlers } from "./useAuthHandlers";
@@ -40,6 +38,8 @@ const authProviderListVariants = {
   },
 };
 
+const MEASURED_BREATH_AUDIO_SRC = getAppAudioAssetSrc("measured-breath");
+
 const authProviderItemVariants = {
   hidden: { opacity: 0, y: 10, scale: 0.985 },
   visible: { opacity: 1, y: 0, scale: 1 },
@@ -50,13 +50,62 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
   const ts = t as unknown as Record<string, string>;
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const animated = shouldAnimate();
+  const breathAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [isBreathAudioPlaying, setIsBreathAudioPlaying] = useState(false);
+  const appAudioSettings = useAppAudioSettings();
 
   const session = useAuthSession({ onComplete, webOAuthError, onClearError });
   const handlers = useAuthHandlers(session, t as unknown as Record<string, string>);
   const socialProviders = getEnabledAuthScreenProviders();
 
+  const breathAudioToggleLabel = isBreathAudioPlaying
+    ? t.authMeasuredBreathPause
+    : t.authMeasuredBreathPlay;
+  const breathAudioStatusLabel = isBreathAudioPlaying && !appAudioSettings.muted ? t.soundOn : t.soundOff;
+
+  const handleBreathAudioToggle = () => {
+    const audio = breathAudioRef.current;
+    if (!audio) return;
+
+    if (isBreathAudioPlaying) {
+      audio.pause();
+      setIsBreathAudioPlaying(false);
+      return;
+    }
+
+    if (appAudioSettings.muted) {
+      audio.pause();
+      setIsBreathAudioPlaying(false);
+      return;
+    }
+
+    audio.volume = Math.max(0, Math.min(1, appAudioSettings.volume * 0.42));
+    setIsBreathAudioPlaying(true);
+    void audio.play().catch(() => {
+      setIsBreathAudioPlaying(false);
+    });
+  };
+
   useEffect(() => {
     resetEntryGateScroll("auth-screen");
+  }, []);
+
+  useEffect(() => {
+    const audio = breathAudioRef.current;
+    if (!audio || !appAudioSettings.muted) return;
+
+    audio.pause();
+    setIsBreathAudioPlaying(false);
+  }, [appAudioSettings.muted]);
+
+  useEffect(() => {
+    const audio = breathAudioRef.current;
+
+    return () => {
+      if (!audio) return;
+      audio.pause();
+      audio.removeAttribute("src");
+    };
   }, []);
 
   return (
@@ -67,6 +116,19 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
       data-entry-theme={appliedTheme}
     >
       <EntryGateBackdrop animated={animated} />
+      {/* Ambient sign-in music has no spoken content; the adjacent button provides control. */}
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+      <audio
+        ref={breathAudioRef}
+        aria-hidden="true"
+        data-testid="auth-measured-breath-audio"
+        src={MEASURED_BREATH_AUDIO_SRC}
+        preload="none"
+        loop
+        playsInline
+        onPlay={() => setIsBreathAudioPlaying(true)}
+        onPause={() => setIsBreathAudioPlaying(false)}
+      />
 
       <motion.section
         className="entry-gate-content relative z-10 flex w-full max-w-lg flex-col gap-4 md:max-w-2xl md:gap-5 lg:max-w-3xl"
@@ -88,7 +150,17 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
           </h1>
         </header>
 
-        <EntryThemeSwitcher />
+        <div className="space-y-2">
+          <EntryThemeSwitcher />
+          <AuthMeasuredBreathToggle
+            isPlaying={isBreathAudioPlaying}
+            isMuted={appAudioSettings.muted}
+            label={t.authMeasuredBreathLabel}
+            statusLabel={breathAudioStatusLabel}
+            toggleLabel={breathAudioToggleLabel}
+            onToggle={handleBreathAudioToggle}
+          />
+        </div>
 
         <section
           className="entry-auth-panel entry-glass-panel rounded-3xl border border-border/50 p-3.5 shadow-2xl"

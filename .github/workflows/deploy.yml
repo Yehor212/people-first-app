@@ -102,6 +102,26 @@ jobs:
             --coverage.thresholds.statements=0 \
             --maxWorkers=2
 
+      - name: Check Sentry readiness
+        if: github.event_name != 'pull_request'
+        env:
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          ZENFLOW_SENTRY_READINESS_REQUIRED: "true"
+        run: npm run check:sentry-readiness
+      - name: Smoke Sentry API
+        if: github.event_name != 'pull_request'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL }}
+          ZENFLOW_SENTRY_API_REQUIRED: "true"
+        run: npm run smoke:sentry-api
+
+
       - name: Build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -109,16 +129,27 @@ jobs:
           VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
           VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'false' }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           VITE_DESKTOP_SIGNED_RELEASE_URL: ${{ vars.VITE_DESKTOP_SIGNED_RELEASE_URL }}
           VITE_DESKTOP_SIGNED_RELEASE_SHA256: ${{ vars.VITE_DESKTOP_SIGNED_RELEASE_SHA256 }}
           VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE: ${{ vars.VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE }}
         run: npm run build
+
+      - name: Check Sentry public artifacts
+        run: npm run check:sentry-artifacts
 
       # GitHub Pages serves direct URLs only when the path exists in the
       # artifact. Keep SPA fallback plus physical V2 route entrypoints so
       # /orb, /habits, /diary, /settings, and /desktop return 200 instead of 404.
       - name: Prepare GitHub Pages SPA artifact
         run: node scripts/prepare-pages-artifact.cjs
+
+      - name: Check final Sentry public artifact
+        env:
+          ZENFLOW_DIST_DIR: dist
+        run: npm run check:sentry-artifacts
 
       # Phase 0-A: size-limit enforces JS+CSS budget ceilings (ratchet complements this with floor).
       # Use the local check instead of the PR comparison action: the action mutates the checkout while
@@ -218,6 +249,26 @@ jobs:
       - name: Install deps
         run: npm install
 
+      - name: Check Sentry readiness for Android web assets
+        if: github.event_name != 'pull_request'
+        env:
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          ZENFLOW_SENTRY_READINESS_REQUIRED: "true"
+        run: npm run check:sentry-readiness
+      - name: Smoke Sentry API for Android web assets
+        if: github.event_name != 'pull_request'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL }}
+          ZENFLOW_SENTRY_API_REQUIRED: "true"
+        run: npm run smoke:sentry-api
+
+
       - name: Build Android web assets (required before cap sync)
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -225,7 +276,13 @@ jobs:
           VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
           VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'false' }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: npm run build:android
+
+      - name: Check Sentry public artifacts for Android web assets
+        run: npm run check:sentry-artifacts
 
       - name: Capacitor sync (generates cordova.variables.gradle)
         run: npx cap sync android
@@ -264,6 +321,26 @@ jobs:
       - name: Install deps
         run: npm install
 
+      - name: Check Sentry readiness for iOS web assets
+        if: github.event_name != 'pull_request'
+        env:
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          ZENFLOW_SENTRY_READINESS_REQUIRED: "true"
+        run: npm run check:sentry-readiness
+      - name: Smoke Sentry API for iOS web assets
+        if: github.event_name != 'pull_request'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL }}
+          ZENFLOW_SENTRY_API_REQUIRED: "true"
+        run: npm run smoke:sentry-api
+
+
       - name: Build iOS web assets
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -271,7 +348,13 @@ jobs:
           VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
           VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'false' }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: npm run build:ios
+
+      - name: Check Sentry public artifacts for iOS web assets
+        run: npm run check:sentry-artifacts
 
       - name: Capacitor sync iOS
         run: npx cap sync ios && node scripts/normalize-ios-spm.cjs

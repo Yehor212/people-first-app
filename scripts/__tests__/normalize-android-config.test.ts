@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
@@ -76,4 +76,22 @@ describe("normalize-android-config", () => {
     expect(config).toContain('<access origin="https://*.supabase.co" />');
     expect(config).toContain("<name>ZenFlow</name>");
   });
+  it("removes duplicate generated config files before native builds", () => {
+    const root = mkdtempSync(join(tmpdir(), "normalize-android-config-"));
+    const source = [
+      "<?xml version='1.0' encoding='utf-8'?>",
+      '<widget version="1.0.0" xmlns="http://www.w3.org/ns/widgets">',
+      '  <access origin="https://*.supabase.co" />',
+      "</widget>",
+    ].join("\n");
+    writeFixture(root, "android/app/src/main/res/xml/config.xml", source);
+    writeFixture(root, "android/app/src/main/res/xml/config 2.xml", source);
+
+    const logs = runNormalizeAndroidConfig(root);
+
+    expect(existsSync(join(root, "android/app/src/main/res/xml/config.xml"))).toBe(true);
+    expect(existsSync(join(root, "android/app/src/main/res/xml/config 2.xml"))).toBe(false);
+    expect(logs.some((line) => line.includes("[android-config] removed duplicate config file"))).toBe(true);
+  });
+
 });

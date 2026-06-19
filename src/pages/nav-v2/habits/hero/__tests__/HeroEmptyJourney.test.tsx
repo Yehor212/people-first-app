@@ -96,6 +96,21 @@ describe("HeroEmptyJourney", () => {
       "data-visual-role",
       "rest",
     );
+    expect(
+      screen
+        .getByTestId("hero-quickpick-drink-water")
+        .querySelector('[data-habit-pictogram="drink-water"]'),
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByTestId("hero-quickpick-walk-distance")
+        .querySelector('[data-habit-pictogram="walk-distance"]'),
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByTestId("hero-quickpick-meditate")
+        .querySelector('[data-habit-pictogram="meditate"]'),
+    ).toBeTruthy();
     expect(screen.getByTestId("hero-empty-open-library")).toHaveAttribute(
       "data-visual-role",
       "focus",
@@ -104,16 +119,28 @@ describe("HeroEmptyJourney", () => {
     for (const chip of quickPicks.querySelectorAll("button")) {
       expect(chip).toHaveAttribute("data-tile", "ritual-deck-card");
       expect(chip.className).toContain("linear-gradient");
-      expect(chip.className).toContain("min-h-[108px]");
+      expect(chip.className).toContain("min-h-[136px]");
       expect(chip.className).toContain("backdrop-blur-xl");
       expect(chip.className).not.toContain("--zf-night");
-      const medallion = chip.querySelector("[data-icon-medallion='true']");
-      expect(medallion).toBeTruthy();
-      expect(medallion?.className).toContain("h-12");
-      expect(medallion?.className).toContain("w-12");
-      expect(medallion?.className).toContain("linear-gradient");
-      const symbol = medallion?.querySelector("[data-slot='quickpick-symbol']");
-      expect(symbol?.textContent?.trim()).toBeTruthy();
+      const iconFrame = chip.querySelector("[data-icon-frame='real-object-source-icon-native']");
+      expect(iconFrame).toBeTruthy();
+      expect(iconFrame?.className).toContain("h-[4.5rem]");
+      expect(iconFrame?.className).toContain("w-[4.5rem]");
+      expect(iconFrame?.className).toContain("overflow-visible");
+      expect(iconFrame?.className).toContain("bg-transparent");
+      expect(iconFrame?.className).not.toContain("rounded-[24px]");
+      expect(iconFrame?.className).not.toContain("linear-gradient");
+      expect(chip.querySelector("[data-icon-medallion='true']")).toBeNull();
+      const symbol = iconFrame?.querySelector("[data-slot='quickpick-symbol']");
+      expect(symbol).toBeNull();
+      const pictogram = iconFrame?.querySelector(
+        "[data-slot='quickpick-svg'] [data-habit-pictogram]",
+      );
+      expect(pictogram).toBeTruthy();
+      expect(pictogram?.className).toContain("h-[4.35rem]");
+      expect(pictogram?.className).toContain("w-[4.35rem]");
+      expect(pictogram).toHaveAttribute("data-approval-state", "candidate-option-b-pending-user-approval");
+      expect(iconFrame?.textContent?.trim()).toBe("");
       const meta = chip.querySelector("[data-slot='quickpick-meta']");
       expect(meta).toBeTruthy();
       expect(meta?.className).toContain("text-[hsl(var(--foreground))]");
@@ -152,22 +179,34 @@ describe("HeroEmptyJourney", () => {
     expect(screen.queryByTestId("hero-quickpick-delayed-caffeine")).not.toBeInTheDocument();
   });
 
-  it("uses an ink-paper ritual deck with an aligned animated carousel", () => {
+  it("uses the Option B liquid-glass totem hero", () => {
     render(<HeroEmptyJourney onCreateHabit={vi.fn()} />);
 
     const hero = screen.getByTestId("habits-hero-empty");
     const scene = screen.getByTestId("hero-ritual-board-scene");
     expect(hero).toHaveAttribute("data-tone", "ritual-deck");
     expect(hero).toHaveAttribute("data-surface", "ink-paper");
-    expect(scene).toHaveAttribute(
-      "data-scene",
-      "ritual-carousel",
-    );
-    expect(scene.querySelector("[data-motion='ritual-card-carousel']")).toBeTruthy();
-    expect(scene.querySelector("[data-ritual-comet='true']")).toBeTruthy();
-    expect(scene.querySelector("[data-card-motion='ritual-card-focus']")).toBeTruthy();
-    expect(scene.querySelector("[data-card-motion='ritual-card-body']")).toBeTruthy();
-    expect(scene.querySelector("[data-card-motion='ritual-card-rest']")).toBeTruthy();
+    expect(scene).toHaveAttribute("data-scene", "option-b-liquid-glass-totem");
+    expect(scene.querySelector("[data-motion='option-b-liquid-glass-totem-hero']")).toBeTruthy();
+    expect(scene.querySelector("[data-card-motion]")).toBeNull();
+    expect(scene.querySelector("[data-ritual-comet='true']")).toBeNull();
+
+    const heroPictograms = scene.querySelectorAll("[data-habit-pictogram]");
+    expect(heroPictograms).toHaveLength(1);
+    expect(heroPictograms[0]).toHaveAttribute("data-icon-source", "phosphor-icons-react-real-source-icon");
+    expect(heroPictograms[0]).toHaveAttribute("data-approval-state", "candidate-option-b-pending-user-approval");
+    expect(heroPictograms[0]).toHaveAttribute("data-icon-treatment", "option-b-liquid-glass-totem");
+    expect(heroPictograms[0]).toHaveAttribute("data-pictogram-style", "option-b-liquid-glass-totem");
+    expect(heroPictograms[0]?.innerHTML ?? "").not.toContain("b39");
+    expect(heroPictograms[0]).toHaveAttribute("data-icon-composition", "two-layer-real-source-svg-inside-liquid-glass-totem");
+    expect(heroPictograms[0]?.querySelectorAll("svg")).toHaveLength(2);
+    expect(heroPictograms[0]?.querySelector("[data-pictogram-layer='liquid-glass-totem-shell']")).toBeTruthy();
+    expect(heroPictograms[0]?.querySelector("[data-pictogram-layer='source-accent-glyph']")).toBeNull();
+    expect(heroPictograms[0]).toHaveAttribute("data-mini-icon-treatment", "removed");
+    expect(heroPictograms[0]).toHaveAttribute("data-frame-animation-system", "semantic-keyframe-storyboard-per-habit");
+    expect(heroPictograms[0]?.querySelector("[data-pictogram-layer='source-fill-relief']")).toBeTruthy();
+    expect(heroPictograms[0]?.querySelector("[data-pictogram-layer='source-stroke-core']")).toBeNull();
+    expect(heroPictograms[0]?.querySelectorAll("img[data-pictogram-layer='asset']")).toHaveLength(0);
     expect(hero.className).not.toContain("--zf-surface-1");
     expect(hero.className).not.toContain("--zf-night");
     expect(hero.className).not.toContain("before:opacity-90");

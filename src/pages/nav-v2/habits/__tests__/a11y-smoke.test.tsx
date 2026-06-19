@@ -112,7 +112,7 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
     });
   });
 
-  describe("§11 #4 — every emoji-bearing chip has a distinct aria-label", () => {
+  describe("§11 #4 — every pictogram-bearing chip has a distinct aria-label", () => {
     it("quick-pick chips in empty journey carry aria-label of habit name", () => {
       render(
         <HeroEmptyJourney
@@ -126,7 +126,7 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
       chips.forEach((chip) => {
         const label = chip.getAttribute("aria-label");
         expect(label).toBeTruthy();
-        // aria-label must not be just the emoji (e.g. "💧"); must contain letters
+        // aria-label must not be just the symbol (e.g. "💧"); must contain letters
         expect(/[a-zA-Z]/.test(label ?? "")).toBe(true);
       });
     });
@@ -170,11 +170,25 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
       const templateCard = screen.getByTestId("habits-library-template-drink-water");
       expect(inactiveTab.className).not.toContain("--zf-night");
       expect(templateCard.className).not.toContain("--zf-night");
-      expect(templateCard.querySelector("[data-template-icon='true']")).toBeTruthy();
-      expect(templateCard.querySelector('[data-slot="ritual-library-symbol"]')).toHaveTextContent(
-        "💧",
+      expect(templateCard.querySelector("[data-template-icon='true']")).toBeNull();
+      const iconSlot = templateCard.querySelector("[data-icon-frame='real-object-source-icon-native']");
+      expect(iconSlot).toBeTruthy();
+      expect(iconSlot).toHaveAttribute("data-slot", "ritual-library-icon");
+      expect(iconSlot?.className).toContain("h-[4.5rem]");
+      expect(iconSlot?.className).toContain("w-[4.5rem]");
+      expect(iconSlot?.className).toContain("overflow-visible");
+      expect(iconSlot?.className).toContain("bg-transparent");
+      expect(iconSlot?.className).not.toContain("rounded-[21px]");
+      expect(iconSlot?.className).not.toContain("bg-[hsl(var(--card)/0.66)]");
+      expect(templateCard.querySelector('[data-slot="ritual-library-symbol"]')).toBeNull();
+      const pictogram = templateCard.querySelector(
+        '[data-slot="ritual-library-svg"] [data-habit-pictogram="drink-water"]',
       );
-      expect(templateCard.querySelector("[data-slot='ritual-library-icon'] svg")).toBeNull();
+      expect(pictogram).toBeTruthy();
+      expect(pictogram).toHaveAttribute("data-approval-state", "candidate-option-b-pending-user-approval");
+      expect(pictogram?.className).toContain("h-[4.35rem]");
+      expect(pictogram?.className).toContain("w-[4.35rem]");
+      expect(templateCard.textContent).not.toContain("💧");
     });
   });
 

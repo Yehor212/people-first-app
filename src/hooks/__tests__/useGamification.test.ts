@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useGamification } from '../useGamification';
+import { playSound } from '@/lib/audioManager';
 
 // Mock dependencies
 vi.mock('@/lib/logger', () => ({
@@ -14,6 +15,10 @@ vi.mock('@/lib/logger', () => ({
     warn: vi.fn(),
     error: vi.fn(),
   },
+}));
+
+vi.mock('@/lib/audioManager', () => ({
+  playSound: vi.fn(),
 }));
 
 vi.mock('sonner', () => ({
@@ -198,6 +203,33 @@ describe('useGamification', () => {
       await waitFor(() => {
         expect(mockGamificationState.totalXp).toBe(25);
       });
+    });
+
+    it('plays level-up feedback when XP crosses a level boundary', async () => {
+      mockGamificationState.totalXp = 90;
+      const { result } = renderHook(() => useGamification());
+
+      act(() => {
+        result.current.awardXp('habit');
+      });
+
+      await waitFor(() => {
+        expect(playSound).toHaveBeenCalledWith('levelUp');
+      });
+    });
+
+    it('does not play level-up feedback for XP inside the same level', async () => {
+      mockGamificationState.totalXp = 10;
+      const { result } = renderHook(() => useGamification());
+
+      act(() => {
+        result.current.awardXp('mood');
+      });
+
+      await waitFor(() => {
+        expect(mockGamificationState.totalXp).toBe(20);
+      });
+      expect(playSound).not.toHaveBeenCalledWith('levelUp');
     });
 
     it('accumulates XP from multiple actions', async () => {

@@ -154,4 +154,16 @@ describe("V2 diary loading surface", () => {
     expect(chromePerformanceSmokeSource).toContain("async function waitForRouteReady(page, route)");
     expect(chromePerformanceSmokeSource).toContain("routeReadyBeforeSteady");
   });
+
+  it("keeps the diary settings sheet polished while lazy settings load", () => {
+    expect(journalModuleSource).toContain("function JournalSettingsDeferredFallback");
+    expect(journalModuleSource).toContain('data-testid="journal-settings-fallback"');
+    expect(journalModuleSource).toContain("<JournalSettingsDeferredFallback");
+    expect(journalModuleSource).toContain("journal-settings-fallback-card");
+    expect(journalModuleSource).toContain("journal-settings-fallback-row");
+    expect(journalModuleSource).not.toMatch(
+      /LazyJournalSettingsContent[\s\S]{0,220}<JournalDeferredPanelFallback/,
+    );
+  });
+
 });

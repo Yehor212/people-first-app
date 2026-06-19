@@ -1,5 +1,10 @@
 import type { Provider } from "@supabase/supabase-js";
-import { ENABLE_FACEBOOK_AUTH, ENABLE_TELEGRAM_AUTH, SUPABASE_URL } from "@/lib/env";
+import {
+  ENABLE_APPLE_AUTH,
+  ENABLE_FACEBOOK_AUTH,
+  ENABLE_TELEGRAM_AUTH,
+  SUPABASE_URL,
+} from "@/lib/env";
 
 export type SocialAuthProviderId = "google" | "facebook" | "telegram" | "apple";
 
@@ -21,6 +26,16 @@ export interface SocialAuthProviderConfig {
 export interface OAuthCredentialOptions {
   redirectTo: string;
   skipBrowserRedirect?: boolean;
+}
+
+export interface AppleAuthSurfaceHints {
+  userAgent?: string;
+  platform?: string;
+  maxTouchPoints?: number;
+}
+
+export function shouldExposeAppleAuthOnEntry(_hints?: AppleAuthSurfaceHints): boolean {
+  return ENABLE_APPLE_AUTH;
 }
 
 export const AUTH_PROVIDER_CONFIGS: Record<SocialAuthProviderId, SocialAuthProviderConfig> = {
@@ -61,7 +76,7 @@ export const AUTH_PROVIDER_CONFIGS: Record<SocialAuthProviderId, SocialAuthProvi
     fallbackName: "Telegram",
     enabled: ENABLE_TELEGRAM_AUTH,
     scopes: "openid profile",
-    trustedDomains: ["oauth.telegram.org", "telegram.org"],
+    trustedDomains: ["oauth.telegram.org"],
   },
   apple: {
     id: "apple",
@@ -72,7 +87,7 @@ export const AUTH_PROVIDER_CONFIGS: Record<SocialAuthProviderId, SocialAuthProvi
     fallbackLabel: "Continue with Apple",
     fallbackLoadingLabel: "Signing in...",
     fallbackName: "Apple",
-    enabled: false,
+    enabled: ENABLE_APPLE_AUTH,
     scopes: "name email",
     trustedDomains: ["appleid.apple.com"],
   },
@@ -82,20 +97,26 @@ export const AUTH_SCREEN_PROVIDER_IDS: readonly SocialAuthProviderId[] = [
   "google",
   "facebook",
   "telegram",
+  "apple",
 ];
 
 export const ACCOUNT_AUTH_PROVIDER_IDS: readonly SocialAuthProviderId[] = [
   "google",
   "facebook",
   "telegram",
+  "apple",
 ];
 
 export function getAuthProviderConfig(id: SocialAuthProviderId): SocialAuthProviderConfig {
   return AUTH_PROVIDER_CONFIGS[id];
 }
 
-export function getEnabledAuthScreenProviders(): SocialAuthProviderConfig[] {
-  return AUTH_SCREEN_PROVIDER_IDS.map(getAuthProviderConfig).filter((provider) => provider.enabled);
+export function getEnabledAuthScreenProviders(
+  hints?: AppleAuthSurfaceHints,
+): SocialAuthProviderConfig[] {
+  return AUTH_SCREEN_PROVIDER_IDS.map(getAuthProviderConfig).filter(
+    (provider) => provider.enabled && (provider.id !== "apple" || shouldExposeAppleAuthOnEntry(hints)),
+  );
 }
 
 export function getEnabledAccountAuthProviders(): SocialAuthProviderConfig[] {

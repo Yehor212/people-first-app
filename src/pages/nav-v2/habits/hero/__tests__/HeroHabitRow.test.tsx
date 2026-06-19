@@ -30,8 +30,17 @@ vi.mock("@/contexts/LanguageContext", () => ({
 }));
 
 vi.mock("../HeroWeeklyHabitCard", () => ({
-  HeroWeeklyHabitCard: ({ habit }: { habit: { id: string; name: string } }) => (
-    <div data-testid={`mock-weekly-card-${habit.id}`}>
+  HeroWeeklyHabitCard: ({
+    habit,
+    initiallyCollapsed,
+  }: {
+    habit: { id: string; name: string };
+    initiallyCollapsed?: boolean;
+  }) => (
+    <div
+      data-testid={`mock-weekly-card-${habit.id}`}
+      data-initially-collapsed={initiallyCollapsed ? "true" : "false"}
+    >
       {habit.name}
       <div
         role="checkbox"
@@ -163,6 +172,21 @@ describe("HeroHabitRow", () => {
     row.focus();
     fireEvent.keyDown(row, { key: "Enter" });
     expect(screen.getByTestId("habit-action-sheet-h1")).toBeInTheDocument();
+  });
+
+  it("passes progressive collapse state into the weekly card", () => {
+    render(
+      <HeroHabitRow
+        habit={habit()}
+        onToggle={vi.fn()}
+        initiallyCollapsed
+      />,
+    );
+
+    expect(screen.getByTestId("mock-weekly-card-h1")).toHaveAttribute(
+      "data-initially-collapsed",
+      "true",
+    );
   });
 
   it("does not mount the closed action sheet before secondary actions are requested", () => {

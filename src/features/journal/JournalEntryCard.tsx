@@ -21,10 +21,6 @@ import { formatJournalRelativeTime, formatJournalWordCount } from "./journalWord
 const DEFAULT_BG = "from-primary/3 to-transparent";
 const DEFAULT_ACCENT = "from-primary/20 to-primary/10";
 
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function getRelativeTime(
   timestamp: number,
   ts: Record<string, string>,
@@ -124,24 +120,30 @@ export const JournalEntryCard = memo(function JournalEntryCard({
   // ── Search highlight ──
   const highlightText = useCallback(
     (text: string): React.ReactNode => {
-      if (!searchQuery || !searchQuery.trim()) return text;
-      try {
-        const regex = new RegExp(`(${escapeRegex(searchQuery)})`, "gi");
-        const parts = text.split(regex);
-        if (parts.length <= 1) return text;
-        const queryLower = searchQuery.toLowerCase();
-        return parts.map((part, i) =>
-          part.toLowerCase().includes(queryLower) ? (
-            <mark key={i} className="bg-primary/20 text-foreground rounded-sm px-0.5">
-              {part}
-            </mark>
-          ) : (
-            part
-          )
+      const query = searchQuery?.trim();
+      if (!query) return text;
+
+      const textLower = text.toLocaleLowerCase();
+      const queryLower = query.toLocaleLowerCase();
+      const parts: React.ReactNode[] = [];
+      let cursor = 0;
+      let matchIndex = textLower.indexOf(queryLower, cursor);
+
+      while (matchIndex !== -1) {
+        if (matchIndex > cursor) parts.push(text.slice(cursor, matchIndex));
+        const matchEnd = matchIndex + query.length;
+        parts.push(
+          <mark key={`${matchIndex}-${matchEnd}`} className="bg-primary/20 text-foreground rounded-sm px-0.5">
+            {text.slice(matchIndex, matchEnd)}
+          </mark>
         );
-      } catch {
-        return text;
+        cursor = matchEnd;
+        matchIndex = textLower.indexOf(queryLower, cursor);
       }
+
+      if (cursor === 0) return text;
+      if (cursor < text.length) parts.push(text.slice(cursor));
+      return parts;
     },
     [searchQuery]
   );
@@ -223,6 +225,9 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     onTap(entry.id);
   }, [onTap, entry.id]);
 
+  const privateEntryLabel = ts.journalPrivateEntry || ts.privateMode || "Private entry";
+  const privateEntryHint =
+    ts.journalPrivateEntryHint || "Unlock private mode to view this memory.";
   const plainContent = getJournalPreviewText(entry.content, ts);
   const rawPreview = plainContent.slice(0, 140);
   const preview = rawPreview + (plainContent.length > 140 ? "..." : "");
@@ -240,7 +245,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     ? getLocalizedEmotionLabel(entry.title, ts)
     : "";
   const displayTags = entry.tags.map((tag) => getLocalizedEmotionLabel(tag, ts));
-  const moodAura = getDiaryAura(entry.mood);
+  const moodAura = privateMode ? null : getDiaryAura(entry.mood);
   const moodGlow = moodAura ? `0 0 30px ${moodAura.color(0.13)}` : "";
   const moodOverlayStyle = moodAura
     ? {
@@ -261,19 +266,22 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     : undefined;
 
   // Load first photo thumbnail
-  const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [thumbnail, setThumbnail] = useState<{ photoId: string; data: string } | null>(null);
+  const firstPhotoId = entry.photoIds[0];
+  const thumbnailData = firstPhotoId && thumbnail?.photoId === firstPhotoId ? thumbnail.data : null;
   useEffect(() => {
-    if (entry.photoIds.length === 0) return;
+    setThumbnail(null);
+    if (privateMode || !firstPhotoId) return;
     let cancelled = false;
-    getPhotoById(entry.photoIds[0])
+    getPhotoById(firstPhotoId)
       .then((photo) => {
-        if (!cancelled && photo?.thumbnail) setThumbnail(photo.thumbnail);
+        if (!cancelled && photo?.thumbnail) setThumbnail({ photoId: firstPhotoId, data: photo.thumbnail });
       })
       .catch((err) => logger.warn("[Journal]", "Photo load failed:", err));
     return () => {
       cancelled = true;
     };
-  }, [entry.photoIds]);
+  }, [firstPhotoId, privateMode]);
 
   // Combine base shadow with mood glow
   const cardShadow =
@@ -354,10 +362,10 @@ export const JournalEntryCard = memo(function JournalEntryCard({
         />
 
         {/* Hero photo banner (when photo exists) */}
-        {!privateMode && hasPhoto && thumbnail && (
+        {!privateMode && hasPhoto && thumbnailData && (
           <div className="relative h-28 overflow-hidden">
             <img
-              src={thumbnail}
+              src={thumbnailData}
               alt=""
               width={320}
               height={112}
@@ -382,7 +390,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
         <div className="flex">
           {/* Accent bar (only when no hero photo) */}
-          {!(hasPhoto && thumbnail && !privateMode) && (
+          {!(hasPhoto && thumbnailData && !privateMode) && (
             <div
               className={cn(
                 "w-1.5 flex-shrink-0 bg-gradient-to-b rounded-s-2xl lg:w-1 lg:rounded-none",
@@ -395,7 +403,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
           <div className="flex-1 p-3.5 relative z-[1]">
             <div className="flex items-start gap-3">
               {/* Mood signal orb — shared diary language, layoutId for sidebar morph */}
-              {entry.mood ? (
+              {!privateMode && entry.mood ? (
                 <motion.div
                   layoutId={`mood-${entry.id}`}
                   className="flex h-10 w-10 flex-shrink-0 items-center justify-center"
@@ -403,7 +411,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                   <DiaryMiniOrb mood={entry.mood} size="compact" className="scale-[0.84]" />
                 </motion.div>
               ) : /* Photo placeholder (no hero) or bookmark icon */
-              !privateMode && !thumbnail && hasPhoto ? (
+              !privateMode && !thumbnailData && hasPhoto ? (
                 <motion.div
                   layoutId={`mood-${entry.id}`}
                   className="w-10 h-10 rounded-full flex-shrink-0 bg-muted/30 ring-1 ring-border/10 flex items-center justify-center"
@@ -424,12 +432,18 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                 {/* Title + relative time */}
                 <div className="flex items-center gap-2 mb-0.5">
                   <h4 className="text-sm font-semibold text-foreground truncate flex-1">
-                    {displayTitle ? highlightText(displayTitle) : time}
+                    {privateMode ? privateEntryLabel : displayTitle ? highlightText(displayTitle) : time}
                   </h4>
                   <span className="text-[10px] text-muted-foreground/50 flex-shrink-0">
-                    {relativeTime}
+                    {privateMode ? "" : relativeTime}
                   </span>
                 </div>
+
+                {privateMode && (
+                  <p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed">
+                    {privateEntryHint}
+                  </p>
+                )}
 
                 {/* Content preview (hidden in private mode) */}
                 {!privateMode && preview && (
@@ -483,7 +497,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
               {/* Time (only when no hero photo) + contextual actions */}
               <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                {!(hasPhoto && thumbnail && !privateMode) && (
+                {!privateMode && !(hasPhoto && thumbnailData && !privateMode) && (
                   <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/60">
                     <Clock className="w-2.5 h-2.5" />
                     {time}

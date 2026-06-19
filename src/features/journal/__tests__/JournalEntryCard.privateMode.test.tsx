@@ -1,0 +1,144 @@
+import React from "react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { JournalEntryCard } from "../JournalEntryCard";
+import type { JournalEntry } from "../types";
+
+const mocks = vi.hoisted(() => ({
+  getPhotoById: vi.fn(),
+}));
+
+vi.mock("@/contexts/LanguageContext", () => ({
+  useLanguage: () => ({
+    isRTL: false,
+    language: "en",
+    t: {
+      journalPrivateEntry: "Private entry",
+      journalPrivateEntryHint: "Unlock private mode to view this memory.",
+      more: "More",
+    },
+  }),
+}));
+
+vi.mock("@/lib/haptics", () => ({
+  hapticTap: vi.fn(() => Promise.resolve()),
+  hapticMedium: vi.fn(() => Promise.resolve()),
+  hapticWarning: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("../DiaryMiniOrb", () => ({
+  DiaryMiniOrb: () => <span data-testid="diary-private-test-mood-orb" />,
+}));
+
+vi.mock("../journalStorage", () => ({
+  getPhotoById: mocks.getPhotoById,
+}));
+
+vi.mock("framer-motion", async () => {
+  const ReactModule = await import("react");
+  const MotionDiv = ReactModule.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+    ({ children, ...props }, ref) => <div ref={ref} {...props}>{children}</div>
+  );
+  return {
+    motion: { div: MotionDiv },
+    useMotionValue: () => ({ set: () => undefined }),
+    useTransform: () => 0,
+  };
+});
+
+function makeEntry(overrides: Partial<JournalEntry> = {}): JournalEntry {
+  return {
+    id: "entry-private-1",
+    date: "2026-06-17",
+    title: "Therapy plan",
+    content: "Sensitive appointment notes and family details.",
+    stickers: ["star"],
+    photoIds: ["photo-private"],
+    audioIds: ["audio-private"],
+    mood: "bad",
+    tags: ["secret"],
+    createdAt: Date.UTC(2026, 5, 17, 12, 30),
+    updatedAt: Date.UTC(2026, 5, 17, 12, 30),
+    ...overrides,
+  };
+}
+
+describe("JournalEntryCard private mode", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("replaces private diary details with a neutral locked placeholder", async () => {
+    render(
+      <JournalEntryCard
+        entry={makeEntry()}
+        privateMode
+        onTap={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Private entry")).toBeInTheDocument();
+    expect(screen.getByText("Unlock private mode to view this memory.")).toBeInTheDocument();
+    expect(screen.queryByText("Therapy plan")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Sensitive appointment/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/secret/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("diary-private-test-mood-orb")).not.toBeInTheDocument();
+
+    await waitFor(() => expect(mocks.getPhotoById).not.toHaveBeenCalled());
+  });
+
+  it("does not reuse a loaded thumbnail for another private photo id", async () => {
+    mocks.getPhotoById.mockImplementation((photoId: string) => {
+      if (photoId === "photo-private") {
+        return Promise.resolve({ id: photoId, thumbnail: "data:image/jpeg;base64,old-thumb" });
+      }
+      return new Promise(() => undefined);
+    });
+
+    const { container, rerender } = render(
+      <JournalEntryCard
+        entry={makeEntry()}
+        onTap={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(container.querySelector('img[src="data:image/jpeg;base64,old-thumb"]')).toBeInTheDocument();
+    });
+
+    rerender(
+      <JournalEntryCard
+        entry={makeEntry({ id: "entry-private-2", photoIds: ["photo-next"] })}
+        onTap={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    expect(container.querySelector('img[src="data:image/jpeg;base64,old-thumb"]')).not.toBeInTheDocument();
+  });
+
+  it("renders a text-only entry without reading thumbnail data from null state", () => {
+    render(
+      <JournalEntryCard
+        entry={makeEntry({
+          id: "entry-text-only",
+          title: "Plain thought",
+          content: "No photo should still render safely.",
+          photoIds: [],
+          audioIds: [],
+          stickers: [],
+          tags: [],
+          mood: undefined,
+        })}
+        onTap={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Plain thought")).toBeInTheDocument();
+    expect(screen.getByText(/No photo should still render safely/i)).toBeInTheDocument();
+    expect(mocks.getPhotoById).not.toHaveBeenCalled();
+  });
+});

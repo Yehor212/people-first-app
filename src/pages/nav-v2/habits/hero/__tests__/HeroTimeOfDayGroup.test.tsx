@@ -18,8 +18,19 @@ vi.mock("@/contexts/LanguageContext", () => ({
 	}));
 
 vi.mock("../HeroHabitRow", () => ({
-  HeroHabitRow: ({ habit }: { habit: Habit }) => (
-    <li data-testid={`mock-hero-row-${habit.id}`}>{habit.name}</li>
+  HeroHabitRow: ({
+    habit,
+    initiallyCollapsed,
+  }: {
+    habit: Habit;
+    initiallyCollapsed?: boolean;
+  }) => (
+    <li
+      data-testid={`mock-hero-row-${habit.id}`}
+      data-initially-collapsed={initiallyCollapsed ? "true" : "false"}
+    >
+      {habit.name}
+    </li>
   ),
 }));
 
@@ -82,6 +93,38 @@ describe("HeroTimeOfDayGroup", () => {
 
     expect(screen.getAllByTestId(/^mock-hero-row-/)).toHaveLength(20);
     expect(screen.queryByTestId("hero-group-anytime-show-more")).not.toBeInTheDocument();
+  });
+
+  it("starts phone habit rows collapsed for a lighter first paint", () => {
+    const habits = Array.from({ length: 3 }, (_, index) => makeHabit(index + 1));
+    const { rerender } = render(
+      <HeroTimeOfDayGroup
+        bucket="anytime"
+        habits={habits}
+        onToggleHabit={vi.fn()}
+        onDeleteHabit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getAllByTestId(/^mock-hero-row-/)[0]).toHaveAttribute(
+      "data-initially-collapsed",
+      "true",
+    );
+
+    mockDeviceTier.tier = "desktop";
+    rerender(
+      <HeroTimeOfDayGroup
+        bucket="anytime"
+        habits={habits}
+        onToggleHabit={vi.fn()}
+        onDeleteHabit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getAllByTestId(/^mock-hero-row-/)[0]).toHaveAttribute(
+      "data-initially-collapsed",
+      "false",
+    );
   });
 
   it("resets an expanded progressive row count before paint when returning to phone", () => {

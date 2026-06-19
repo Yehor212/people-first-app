@@ -264,8 +264,9 @@ export async function initAndroidBackHandler(): Promise<void> {
       }
     }
 
-    // Priority 2: Navigate back if not on root route
-    if (!isOnRootRoute()) {
+    // Priority 2: Navigate back only when Capacitor reports a real WebView history entry.
+    // Cold-start deep links can land on /diary without history; history.back() would no-op.
+    if (!isOnRootRoute() && canGoBack) {
       logger.log("[AndroidBackHandler] Not on root route, navigating back");
       window.history.back();
       return;

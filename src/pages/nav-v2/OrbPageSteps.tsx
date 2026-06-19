@@ -158,7 +158,7 @@ export function OrbSelectStep({
 
       <Bloom key="orb-select-actions" transition={staggerDelay("cta")}>
         <div
-          className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-20 md:inset-x-6 md:bottom-[calc(env(safe-area-inset-bottom)+1rem)]"
+          className="pointer-events-none absolute inset-x-4 bottom-[calc(var(--safe-bottom)+0.75rem)] z-20 md:inset-x-6 md:bottom-[calc(var(--safe-bottom)+1rem)]"
           data-testid="orb-page-footer"
         >
           <div
@@ -305,7 +305,7 @@ export function OrbRefineStep({
 
       <Bloom key="orb-refine-actions" transition={staggerDelay("cta")}>
         <div
-          className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-20 md:inset-x-6 md:bottom-[calc(env(safe-area-inset-bottom)+1rem)]"
+          className="pointer-events-none absolute inset-x-4 bottom-[calc(var(--safe-bottom)+0.75rem)] z-20 md:inset-x-6 md:bottom-[calc(var(--safe-bottom)+1rem)]"
           data-testid="orb-page-footer"
         >
           <div

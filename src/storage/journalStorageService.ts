@@ -14,6 +14,8 @@ import { logger } from "@/lib/logger";
 
 const PHOTO_BUCKET = "journal-photos";
 const AUDIO_BUCKET = "journal-audio";
+const ENCRYPTED_MEDIA_MIME = "application/octet-stream";
+const ENCRYPTED_MEDIA_EXTENSION = "bin";
 
 /** Allowed image MIME types for photo uploads */
 const ALLOWED_IMAGE_MIMES: readonly string[] = ["image/jpeg", "image/png", "image/webp"];
@@ -32,6 +34,9 @@ const MAX_PHOTO_SIZE = 1 * 1024 * 1024;
 
 /** Maximum audio file size: 20 MB (matches journal-audio bucket) */
 const MAX_AUDIO_SIZE = 20 * 1024 * 1024;
+const ENCRYPTED_MEDIA_OVERHEAD_BYTES = 4096;
+const MAX_ENCRYPTED_PHOTO_SIZE = MAX_PHOTO_SIZE + ENCRYPTED_MEDIA_OVERHEAD_BYTES;
+const MAX_ENCRYPTED_AUDIO_SIZE = MAX_AUDIO_SIZE + ENCRYPTED_MEDIA_OVERHEAD_BYTES;
 
 /** Characters forbidden in storage path segments (null byte checked separately) */
 const UNSAFE_PATH_CHARS = /[/\\:*?"<>|]/;
@@ -61,6 +66,7 @@ function extFromMime(mime: string): string {
   if (mime.includes("mp4")) return "mp4";
   if (mime.includes("mpeg") || mime.includes("mp3")) return "mp3";
   if (mime.includes("ogg")) return "ogg";
+  if (mime.includes("wav")) return "wav";
   return "bin";
 }
 
@@ -78,6 +84,40 @@ function storagePath(userId: string, fileId: string, ext: string): string {
 // ============================================
 // UPLOAD
 // ============================================
+async function uploadRawStorageBlob(
+  bucket: typeof PHOTO_BUCKET | typeof AUDIO_BUCKET,
+  fileId: string,
+  blob: Blob,
+  options: { contentType: string; ext: string; maxSize: number; label: string },
+): Promise<UploadResult | null> {
+  if (!supabase) return null;
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  try {
+    if (blob.size > options.maxSize) {
+      logger.warn("[Storage] " + options.label + " upload rejected: file too large", blob.size);
+      throw new Error(options.label + " too large.");
+    }
+
+    const path = storagePath(userId, fileId, options.ext);
+    const { error: uploadError } = await supabase.storage.from(bucket).upload(path, blob, {
+      contentType: options.contentType,
+      upsert: true,
+    });
+
+    if (uploadError) {
+      logger.warn("[Storage] " + options.label + " upload failed:", uploadError.message);
+      return null;
+    }
+
+    return { path, signedUrl: "" };
+  } catch (err) {
+    logger.warn("[Storage] " + options.label + " upload error:", err);
+    return null;
+  }
+}
+
 
 export interface UploadResult {
   path: string;
@@ -86,7 +126,7 @@ export interface UploadResult {
 
 /**
  * Upload a photo (base64 data URL) to Supabase Storage.
- * Returns the storage path and a signed URL (1 year expiry).
+ * Returns the storage path only; signed URLs are minted on demand.
  */
 export async function uploadPhoto(photoId: string, dataUrl: string): Promise<UploadResult | null> {
   if (!supabase) return null;
@@ -121,18 +161,23 @@ export async function uploadPhoto(photoId: string, dataUrl: string): Promise<Upl
       return null;
     }
 
-    const { data: urlData } = await supabase.storage
-      .from(PHOTO_BUCKET)
-      .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
-
     return {
       path,
-      signedUrl: urlData?.signedUrl ?? "",
+      signedUrl: "",
     };
   } catch (err) {
     logger.warn("[Storage] Photo upload error:", err);
     return null;
   }
+}
+
+export async function uploadEncryptedPhoto(photoId: string, encryptedPayload: Blob): Promise<UploadResult | null> {
+  return uploadRawStorageBlob(PHOTO_BUCKET, photoId, encryptedPayload, {
+    contentType: ENCRYPTED_MEDIA_MIME,
+    ext: ENCRYPTED_MEDIA_EXTENSION,
+    maxSize: MAX_ENCRYPTED_PHOTO_SIZE,
+    label: "Encrypted photo",
+  });
 }
 
 /**
@@ -175,18 +220,23 @@ export async function uploadAudio(
       return null;
     }
 
-    const { data: urlData } = await supabase.storage
-      .from(AUDIO_BUCKET)
-      .createSignedUrl(path, 60 * 60 * 24 * 365);
-
     return {
       path,
-      signedUrl: urlData?.signedUrl ?? "",
+      signedUrl: "",
     };
   } catch (err) {
     logger.warn("[Storage] Audio upload error:", err);
     return null;
   }
+}
+
+export async function uploadEncryptedAudio(audioId: string, encryptedPayload: Blob): Promise<UploadResult | null> {
+  return uploadRawStorageBlob(AUDIO_BUCKET, audioId, encryptedPayload, {
+    contentType: ENCRYPTED_MEDIA_MIME,
+    ext: ENCRYPTED_MEDIA_EXTENSION,
+    maxSize: MAX_ENCRYPTED_AUDIO_SIZE,
+    label: "Encrypted audio",
+  });
 }
 
 // ============================================
@@ -230,7 +280,7 @@ export async function downloadAsBase64(
 export async function getSignedUrl(
   bucket: "journal-photos" | "journal-audio",
   path: string,
-  expiresInSeconds = 60 * 60 * 24 * 365
+  expiresInSeconds = 60 * 10
 ): Promise<string | null> {
   if (!supabase) return null;
 
@@ -255,6 +305,21 @@ export async function getSignedUrl(
 // DELETE
 // ============================================
 
+export async function deleteJournalMediaStoragePath(
+  bucket: "journal-photos" | "journal-audio",
+  path: string
+): Promise<void> {
+  if (!supabase) return;
+
+  try {
+    const { error } = await supabase.storage.from(bucket).remove([path]);
+    if (error) throw error;
+  } catch (err) {
+    logger.warn("[Storage] Journal media path delete error:", err);
+    throw err;
+  }
+}
+
 /**
  * Delete a photo from Supabase Storage.
  */
@@ -265,11 +330,13 @@ export async function deletePhotoFromStorage(photoId: string): Promise<void> {
 
   try {
     // Try common extensions since we may not know the exact one
-    const exts = ["jpg", "png", "webp"];
+    const exts = ["jpg", "png", "webp", "bin"];
     const paths = exts.map((ext) => storagePath(userId, photoId, ext));
-    await supabase.storage.from(PHOTO_BUCKET).remove(paths);
+    const { error } = await supabase.storage.from(PHOTO_BUCKET).remove(paths);
+    if (error) throw error;
   } catch (err) {
     logger.warn("[Storage] Photo delete error:", err);
+    throw err;
   }
 }
 
@@ -282,11 +349,13 @@ export async function deleteAudioFromStorage(audioId: string): Promise<void> {
   if (!userId) return;
 
   try {
-    const exts = ["webm", "mp4", "mp3", "ogg"];
+    const exts = ["webm", "mp4", "mp3", "ogg", "wav", "bin"];
     const paths = exts.map((ext) => storagePath(userId, audioId, ext));
-    await supabase.storage.from(AUDIO_BUCKET).remove(paths);
+    const { error } = await supabase.storage.from(AUDIO_BUCKET).remove(paths);
+    if (error) throw error;
   } catch (err) {
     logger.warn("[Storage] Audio delete error:", err);
+    throw err;
   }
 }
 

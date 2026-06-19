@@ -3,6 +3,12 @@ import { MAX_AUDIO_DURATION_SEC } from './types';
 import { logger } from '@/lib/logger';
 import { isNative } from '@/lib/platform';
 
+export type RecordedAudioCapture = {
+  data: string;
+  duration: number;
+  mimeType: string;
+};
+
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -33,6 +39,17 @@ export function useAudioRecorder() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(0);
   const streamRef = useRef<MediaStream | null>(null);
+  const durationRef = useRef(0);
+  const mimeTypeRef = useRef('audio/webm');
+  const pendingCaptureRef = useRef<Promise<RecordedAudioCapture | null> | null>(null);
+  const lastCompletedCaptureRef = useRef<RecordedAudioCapture | null>(null);
+  const stopCompletionRef = useRef<{
+    discard: boolean;
+    duration: number;
+    mimeType: string;
+    reject: (error: unknown) => void;
+    resolve: (capture: RecordedAudioCapture | null) => void;
+  } | null>(null);
 
   const isSupported = typeof window !== 'undefined' && typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
 
@@ -44,11 +61,46 @@ export function useAudioRecorder() {
     }
   }, [error]);
 
-  const stopActiveRecording = useCallback(() => {
+  const stopActiveRecording = useCallback((options: { discard?: boolean } = {}): Promise<RecordedAudioCapture | null> => {
     const recorder = mediaRecorderRef.current;
     if (recorder?.state === 'recording') {
+      const elapsed = Math.max(
+        durationRef.current,
+        Math.floor((Date.now() - startTimeRef.current) / 1000)
+      );
+      const stopped = new Promise<RecordedAudioCapture | null>((resolve, reject) => {
+        stopCompletionRef.current = {
+          discard: options.discard === true,
+          duration: elapsed,
+          mimeType: mimeTypeRef.current,
+          reject,
+          resolve,
+        };
+      });
+      const pending = stopped.finally(() => {
+        if (pendingCaptureRef.current === pending) {
+          pendingCaptureRef.current = null;
+        }
+      });
+      pendingCaptureRef.current = pending;
       recorder.stop();
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      setIsRecording(false);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return pending;
     }
+
+    if (!options.discard && pendingCaptureRef.current) return pendingCaptureRef.current;
+    if (!options.discard && lastCompletedCaptureRef.current) {
+      return Promise.resolve(lastCompletedCaptureRef.current);
+    }
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -59,12 +111,16 @@ export function useAudioRecorder() {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    return Promise.resolve(null);
   }, []);
 
   const start = useCallback(async () => {
     setError(null);
     setAudioData(null);
     setDuration(0);
+    durationRef.current = 0;
+    pendingCaptureRef.current = null;
+    lastCompletedCaptureRef.current = null;
     chunksRef.current = [];
 
     try {
@@ -74,7 +130,9 @@ export function useAudioRecorder() {
       streamRef.current = stream;
 
       const mime = getAudioMimeType();
-      setMimeType(mime.split(';')[0]); // Store clean mime type
+      const cleanMime = mime.split(';')[0];
+      setMimeType(cleanMime); // Store clean mime type
+      mimeTypeRef.current = cleanMime;
 
       const recorder = new MediaRecorder(stream, {
         mimeType: mime,
@@ -86,18 +144,51 @@ export function useAudioRecorder() {
       };
 
       recorder.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: mime });
-        const base64 = await blobToBase64(blob);
-        setAudioData(base64);
+        const completion = stopCompletionRef.current;
+        try {
+          if (completion?.discard) {
+            chunksRef.current = [];
+            lastCompletedCaptureRef.current = null;
+            setAudioData(null);
+            completion.resolve(null);
+            return;
+          }
 
-        // Cleanup stream
-        stream.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
+          const blob = new Blob(chunksRef.current, { type: mime });
+          const base64 = await blobToBase64(blob);
+          const captureDuration = completion?.duration ?? durationRef.current;
+          const captureMimeType = completion?.mimeType ?? mimeTypeRef.current;
+          setAudioData(base64);
+          const capture = {
+            data: base64,
+            duration: captureDuration,
+            mimeType: captureMimeType,
+          };
+          lastCompletedCaptureRef.current = capture;
+          completion?.resolve({
+            data: capture.data,
+            duration: capture.duration,
+            mimeType: capture.mimeType,
+          });
+        } catch (err) {
+          setError('Recording failed');
+          stopCompletionRef.current?.reject(err);
+        } finally {
+          chunksRef.current = [];
+          stopCompletionRef.current = null;
+          // Cleanup stream when it was not already stopped by an explicit stop call.
+          if (streamRef.current === stream) {
+            stream.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+          }
+        }
       };
 
       recorder.onerror = () => {
         setError('Recording failed');
         setIsRecording(false);
+        stopCompletionRef.current?.reject(new Error('Recording failed'));
+        stopCompletionRef.current = null;
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;
@@ -114,13 +205,14 @@ export function useAudioRecorder() {
       // Duration timer
       timerRef.current = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        durationRef.current = elapsed;
         setDuration(elapsed);
 
         // Auto-stop at max duration
         if (elapsed >= MAX_AUDIO_DURATION_SEC) {
-          recorder.stop();
-          setIsRecording(false);
-          if (timerRef.current) clearInterval(timerRef.current);
+          void stopActiveRecording().catch((err) =>
+            logger.warn('[useAudioRecorder] Max-duration stop failed:', err)
+          );
         }
       }, 1000);
     } catch (err) {
@@ -137,23 +229,32 @@ export function useAudioRecorder() {
       logger.error('[useAudioRecorder] Microphone access denied:', err);
       throw err;
     }
-  }, []);
-
-  const stop = useCallback(() => {
-    stopActiveRecording();
   }, [stopActiveRecording]);
+
+  const stop = useCallback(() => stopActiveRecording(), [stopActiveRecording]);
+  const discard = useCallback(() => stopActiveRecording({ discard: true }), [stopActiveRecording]);
 
   useEffect(() => {
     const stopOnHidden = () => {
-      if (document.hidden) stopActiveRecording();
+      if (document.hidden) {
+        void stopActiveRecording().catch((err) =>
+          logger.warn('[useAudioRecorder] Hidden-page stop failed:', err)
+        );
+      }
+    };
+
+    const stopOnPageHide = () => {
+      void stopActiveRecording().catch((err) =>
+        logger.warn('[useAudioRecorder] Pagehide stop failed:', err)
+      );
     };
 
     document.addEventListener('visibilitychange', stopOnHidden);
-    window.addEventListener('pagehide', stopActiveRecording);
+    window.addEventListener('pagehide', stopOnPageHide);
 
     return () => {
       document.removeEventListener('visibilitychange', stopOnHidden);
-      window.removeEventListener('pagehide', stopActiveRecording);
+      window.removeEventListener('pagehide', stopOnPageHide);
     };
   }, [stopActiveRecording]);
 
@@ -165,7 +266,11 @@ export function useAudioRecorder() {
 
     void import('@capacitor/app')
       .then(async ({ App }) => {
-        const listener = await App.addListener('pause', stopActiveRecording);
+        const listener = await App.addListener('pause', () => {
+          void stopActiveRecording().catch((err) =>
+            logger.warn('[useAudioRecorder] Native pause stop failed:', err)
+          );
+        });
         if (cancelled) {
           void listener.remove();
         } else {
@@ -184,22 +289,24 @@ export function useAudioRecorder() {
     setAudioData(null);
     setDuration(0);
     setError(null);
+    pendingCaptureRef.current = null;
+    lastCompletedCaptureRef.current = null;
+    chunksRef.current = [];
   }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (mediaRecorderRef.current?.state === 'recording') {
-        mediaRecorderRef.current.stop();
-      }
+      void stopActiveRecording({ discard: true });
       if (timerRef.current) clearInterval(timerRef.current);
+      chunksRef.current = [];
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [stopActiveRecording]);
 
   return useMemo(() => ({
-    isRecording, duration, audioData, mimeType, isSupported, error, start, stop, reset,
-  }), [isRecording, duration, audioData, mimeType, isSupported, error, start, stop, reset]);
+    isRecording, duration, audioData, mimeType, isSupported, error, start, stop, discard, reset,
+  }), [isRecording, duration, audioData, mimeType, isSupported, error, start, stop, discard, reset]);
 }

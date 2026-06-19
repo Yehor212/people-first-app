@@ -1,9 +1,15 @@
 import { logger } from "@/lib/logger";
-import { safeJsonParse, safeLocalStorageSet, storageGetRaw, storageRemove } from "@/lib/safeJson";
+import { safeJsonParse, storageGetRaw, storageRemove } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 import { settingsRepo } from "@/storage/db";
-import { deleteSettingFromCloud, syncSetting } from "@/storage/realtimeSync";
+import { deleteSettingFromCloud } from "@/storage/realtimeSync";
 import type { MoodType } from "@/types";
+import { getJournalContentVaultKey } from "./journalContentSession";
+import {
+  decryptJournalContentIfNeeded,
+  encryptJournalContent,
+  isEncryptedJournalContent,
+} from "./journalCrypto";
 import type {
   BackgroundIntensity,
   DiaryBgPattern,
@@ -49,14 +55,6 @@ export function getJournalDraftKey(entryId: string | null): string {
   return SK.journalDraft(entryId || "new");
 }
 
-async function syncDraftSetting(key: string, data: JournalDraftData): Promise<void> {
-  try {
-    await syncSetting(key, data);
-  } catch (error) {
-    logger.warn("[Journal]", "Draft cloud sync failed:", error);
-  }
-}
-
 async function syncDraftDelete(key: string): Promise<void> {
   try {
     await deleteSettingFromCloud(key);
@@ -69,14 +67,40 @@ function isExpiredDraft(data: JournalDraftData): boolean {
   return Date.now() - data.savedAt > JOURNAL_DRAFT_TTL_MS;
 }
 
-export async function saveJournalDraft(key: string, data: JournalDraftData): Promise<void> {
-  try {
-    await settingsRepo.put({ key, value: data });
-  } catch {
-    safeLocalStorageSet(key, data);
+async function protectDraftForStorage(data: JournalDraftData): Promise<JournalDraftData> {
+  const vaultKey = getJournalContentVaultKey();
+  if (!vaultKey || !data.content || isEncryptedJournalContent(data.content)) return data;
+
+  return {
+    ...data,
+    content: await encryptJournalContent(data.content, vaultKey),
+  };
+}
+
+async function revealDraftFromStorage(data: JournalDraftData): Promise<JournalDraftData | null> {
+  if (!data.content || !isEncryptedJournalContent(data.content)) return data;
+
+  const vaultKey = getJournalContentVaultKey();
+  if (!vaultKey) {
+    logger.warn("[Journal] Protected draft is locked until the diary is unlocked");
+    return null;
   }
 
-  await syncDraftSetting(key, data);
+  return {
+    ...data,
+    content: await decryptJournalContentIfNeeded(data.content, vaultKey),
+  };
+}
+
+export async function saveJournalDraft(key: string, data: JournalDraftData): Promise<void> {
+  try {
+    await settingsRepo.put({ key, value: await protectDraftForStorage(data) });
+  } catch (error) {
+    // Unsaved diary drafts can contain private text; keep failures local-only
+    // instead of exposing raw draft HTML through localStorage or cloud sync.
+    logger.warn("[Journal]", "Draft IndexedDB save failed:", error);
+    throw error;
+  }
 }
 
 export async function loadJournalDraft(key: string): Promise<JournalDraftData | null> {
@@ -88,7 +112,7 @@ export async function loadJournalDraft(key: string): Promise<JournalDraftData | 
         await clearJournalDraft(key);
         return null;
       }
-      return data;
+      return revealDraftFromStorage(data);
     }
 
     const raw = storageGetRaw(key);
@@ -103,10 +127,9 @@ export async function loadJournalDraft(key: string): Promise<JournalDraftData | 
         await syncDraftDelete(key);
         return null;
       }
-      await settingsRepo.put({ key, value: data });
+      await settingsRepo.put({ key, value: await protectDraftForStorage(data) });
       storageRemove(key);
-      await syncDraftSetting(key, data);
-      return data;
+      return revealDraftFromStorage(data);
     }
     return null;
   } catch {
@@ -120,7 +143,7 @@ export async function loadJournalDraft(key: string): Promise<JournalDraftData | 
         await syncDraftDelete(key);
         return null;
       }
-      return data;
+      return revealDraftFromStorage(data);
     } catch {
       return null;
     }

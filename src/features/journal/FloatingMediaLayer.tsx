@@ -12,7 +12,7 @@ import { useRef, useCallback, useState, useEffect, memo } from "react";
 import { motion } from "framer-motion";
 import { X, GripVertical, Maximize2 } from "lucide-react";
 import type { JournalPhoto } from "./types";
-import { getPhotosForEntry } from "./journalStorage";
+import { getPhotoById } from "./journalStorage";
 import { logger } from "@/lib/logger";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -208,7 +208,6 @@ const FloatingPhoto = memo(function FloatingPhoto({
 });
 
 export const FloatingMediaLayer = memo(function FloatingMediaLayer({
-  entryId,
   photoIds,
   layout,
   onLayoutChange,
@@ -224,15 +223,21 @@ export const FloatingMediaLayer = memo(function FloatingMediaLayer({
       setPhotos([]);
       return;
     }
-    getPhotosForEntry(entryId)
-      .then((all) => {
-        setPhotos(all.filter((p) => floatingIds.includes(p.id)));
+    let cancelled = false;
+    Promise.all(floatingIds.map((photoId) => getPhotoById(photoId)))
+      .then((items) => {
+        if (cancelled) return;
+        setPhotos(items.filter((photo): photo is JournalPhoto => Boolean(photo)));
       })
       .catch((err) => {
+        if (cancelled) return;
         logger.warn("[FloatingMediaLayer] Failed to load photos:", err);
         setPhotos([]);
       });
-  }, [entryId, photoIds, layout]);
+    return () => {
+      cancelled = true;
+    };
+  }, [photoIds, layout]);
 
   if (photos.length === 0) return null;
 

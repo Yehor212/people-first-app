@@ -1,7 +1,6 @@
 import { memo, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { AnimatedFire } from "@/components/compact-habit-card/AnimatedFire";
 import { MiniWeekRow } from "@/components/habit-hub/MiniWeekRow";
-import { IdentityVisual } from "@/components/IdentityIconPicker";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { frequencyPresets } from "@/hooks/useHabitForm";
 import { resolveHabitColor } from "@/lib/habitColorUtils";
@@ -109,6 +108,7 @@ interface HeroWeeklyHabitCardProps {
   onAdjust?: (habitId: string, date: string, delta: number) => void;
   onNumericalAction?: (habitId: string, date: string, action: NumericalEntryAction) => void;
   onOpenDetail?: (habit: Habit) => void;
+  initiallyCollapsed?: boolean;
 }
 
 export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
@@ -117,9 +117,10 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
   onAdjust,
   onNumericalAction,
   onOpenDetail,
+  initiallyCollapsed = false,
 }: HeroWeeklyHabitCardProps) {
   const { t, language } = useLanguage();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => initiallyCollapsed);
   const today = getToday();
   const habitColor = resolveHabitColor(habit.color, true);
   const visualRole = getHabitVisualRole(habit);
@@ -231,7 +232,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
   const collapseLabel = isCollapsed ? t.expand || "Expand" : t.collapse || "Collapse";
   const collapsedCueLabel = t.expand || "Expand";
 
-  const handleEmojiCheckIn = () => {
+  const handleIconCheckIn = () => {
     if (!isDueToday) return;
 
     if (isNumeric) {
@@ -289,16 +290,16 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
       >
         <button
             type="button"
-            onClick={handleEmojiCheckIn}
+            onClick={handleIconCheckIn}
             className={
               "flex shrink-0 items-center justify-center rounded-2xl border text-lg shadow-sm motion-safe:transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
               (isCollapsed ? "h-12 w-12" : "min-h-[44px] min-w-[44px]")
             }
             aria-label={`${habit.name}: ${isCompletedToday ? t.completed || "Completed" : tx.identityVotePending || "mark today"}`}
-            data-testid={`hero-weekly-card-${habit.id}-emoji-check`}
+            data-testid={`hero-weekly-card-${habit.id}-icon-check`}
             data-slot="weekly-check"
           >
-            <HabitIconVisual value={habit.icon} />
+            <HabitIconVisual value={habit.icon} iconClassName={isCollapsed ? "h-8 w-8" : "h-7 w-7"} />
           </button>
           <div className="min-w-0 self-center">
             <p
@@ -340,8 +341,8 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
                 data-slot="weekly-pill"
                 title={identityVoteLabel}
               >
-                <IdentityVisual
-                  name={identityIcon}
+                <HabitIconVisual
+                  value={identityIcon}
                   fallback="Sparkles"
                   iconClassName="h-3 w-3 shrink-0"
                   textClassName="text-xs leading-none"
@@ -424,8 +425,8 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
                   className="inline-flex items-center gap-1 font-medium text-[hsl(var(--zf-role-rest))]"
                   data-testid={`hero-weekly-card-${habit.id}-identity-vote`}
                 >
-                  <IdentityVisual
-                    name={identityIcon}
+                  <HabitIconVisual
+                    value={identityIcon}
                     fallback="Sparkles"
                     iconClassName="h-3 w-3"
                     textClassName="text-xs leading-none"

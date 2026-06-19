@@ -8,6 +8,29 @@ let mockAudio: any[] = [];
 let addedEntries: any[] = [];
 let addedPhotos: any[] = [];
 let addedAudio: any[] = [];
+let mockVaultKey: string | null = null;
+
+vi.mock("../journalContentSession", () => ({
+  getJournalContentVaultKey: vi.fn(() => mockVaultKey),
+}));
+
+vi.mock("../journalCrypto", () => ({
+  encryptJournalContent: vi.fn((content: string, key: string) =>
+    Promise.resolve(`encrypted-entry:${key}:${content}`)
+  ),
+  isEncryptedJournalContent: vi.fn((content: string) => content.startsWith("encrypted-entry:")),
+}));
+
+vi.mock("../journalMediaCrypto", () => ({
+  encryptJournalMediaDataUrl: vi.fn((dataUrl: string, key: string) =>
+    Promise.resolve(`encrypted-media:${key}:${dataUrl}`)
+  ),
+  isEncryptedJournalMediaData: vi.fn((dataUrl: string) => dataUrl.startsWith("encrypted-media:")),
+}));
+
+vi.mock("@/storage/cloudSync", () => ({
+  triggerSync: vi.fn(),
+}));
 
 vi.mock("@/storage/db", () => ({
   db: {
@@ -36,6 +59,7 @@ vi.mock("@/storage/db", () => ({
   },
 }));
 
+import { triggerSync } from "@/storage/cloudSync";
 import { importJournalBackup } from "../journalImport";
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -110,6 +134,7 @@ beforeEach(() => {
   addedEntries = [];
   addedPhotos = [];
   addedAudio = [];
+  mockVaultKey = null;
 });
 
 // ─── Tests ────────────────────────────────────────────────────
@@ -234,6 +259,57 @@ describe("importJournalBackup", () => {
 
     expect(result.audioImported).toBe(1);
     expect(addedAudio).toHaveLength(1);
+  });
+
+  it("encrypts imported plaintext content and media when a diary vault key is active", async () => {
+    mockVaultKey = "vault-key-1";
+    const backup = makeBackup({
+      entries: [
+        makeEntry({
+          id: "e1",
+          content: "private imported entry",
+          photoIds: ["photo-1"],
+          audioIds: ["audio-1"],
+        }),
+      ],
+      photos: [makePhoto({ id: "photo-1", entryId: "e1" })],
+      audio: [makeAudioItem({ id: "audio-1", entryId: "e1" })],
+    });
+    const file = makeFile(JSON.stringify(backup));
+
+    const result = await importJournalBackup(file);
+
+    expect(result.errors).toHaveLength(0);
+    expect(addedEntries[0].content).toBe(
+      "encrypted-entry:vault-key-1:private imported entry"
+    );
+    expect(addedPhotos[0].data).toBe(
+      "encrypted-media:vault-key-1:data:image/jpeg;base64,abc"
+    );
+    expect(addedPhotos[0].thumbnail).toBe(
+      "encrypted-media:vault-key-1:data:image/jpeg;base64,thumb"
+    );
+    expect(addedAudio[0].data).toBe(
+      "encrypted-media:vault-key-1:data:audio/webm;base64,abc"
+    );
+  });
+
+  it("triggers sync when import adds media to an existing entry", async () => {
+    mockEntries = [makeEntry({ id: "entry-1", photoIds: [], audioIds: [] })];
+    const backup = makeBackup({
+      entries: [makeEntry({ id: "entry-1", photoIds: ["photo-1"], audioIds: ["audio-1"] })],
+      photos: [makePhoto({ id: "photo-1", entryId: "entry-1" })],
+      audio: [makeAudioItem({ id: "audio-1", entryId: "entry-1" })],
+    });
+    const file = makeFile(JSON.stringify(backup));
+
+    const result = await importJournalBackup(file);
+
+    expect(result.imported).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(result.photosImported).toBe(1);
+    expect(result.audioImported).toBe(1);
+    expect(triggerSync).toHaveBeenCalledTimes(1);
   });
 
   it("calls onProgress callback with progress steps", async () => {

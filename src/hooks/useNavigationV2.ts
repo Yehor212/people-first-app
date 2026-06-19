@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { flushSync } from "react-dom";
 import { morph } from "@/lib/motion/morph";
+import { consumePendingNativeDiaryDeepLink } from "@/lib/nativeDiaryDeepLinkSignal";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 
@@ -56,17 +58,8 @@ function scheduleAfterNextPaint(callback: () => void): () => void {
     return () => globalThis.clearTimeout(timerId);
   }
 
-  let secondFrameId: number | null = null;
-  const firstFrameId = window.requestAnimationFrame(() => {
-    secondFrameId = window.requestAnimationFrame(callback);
-  });
-
-  return () => {
-    window.cancelAnimationFrame(firstFrameId);
-    if (secondFrameId !== null) {
-      window.cancelAnimationFrame(secondFrameId);
-    }
-  };
+  const frameId = window.requestAnimationFrame(callback);
+  return () => window.cancelAnimationFrame(frameId);
 }
 
 function isValidPage(value: unknown): value is NavV2Page {
@@ -128,6 +121,10 @@ function normalizePath(pathname: string): string {
 function getRouteSnapshot(): RouteSnapshot {
   if (typeof window === "undefined") {
     return { page: "orb", unknownPath: null };
+  }
+
+  if (consumePendingNativeDiaryDeepLink()) {
+    return { page: "diary", unknownPath: null };
   }
 
   const normalizedPath = normalizePath(window.location.pathname);
@@ -249,16 +246,30 @@ export function useNavigationV2(): UseNavigationV2Return {
 
     // Close drawer on navigate so mobile users don't see stale overlay.
     const wasDrawerOpen = drawerOpen;
-    setDrawerOpen(false);
+    const isCurrentPage = page === activePageRef.current && !unknownPath;
+    const publishImmediateNavigationFeedback = () => {
+      if (isCurrentPage) {
+        routePendingStartedAtRef.current = 0;
+        setRoutePendingPage(null);
+        return;
+      }
+      routePendingStartedAtRef.current = nowMs();
+      setRoutePendingPage(page);
+    };
 
-    if (page === activePageRef.current && !unknownPath) {
-      routePendingStartedAtRef.current = 0;
-      setRoutePendingPage(null);
-      return;
+    if (options.skipTransition) {
+      flushSync(() => {
+        setDrawerOpen(false);
+        publishImmediateNavigationFeedback();
+      });
+    } else {
+      setDrawerOpen(false);
+      publishImmediateNavigationFeedback();
     }
 
-    routePendingStartedAtRef.current = nowMs();
-    setRoutePendingPage(page);
+    if (isCurrentPage) {
+      return;
+    }
 
     const run = (deferRouteWork: boolean) => {
       const updateRoute = () => {
@@ -295,7 +306,7 @@ export function useNavigationV2(): UseNavigationV2Return {
         });
         return;
       }
-      run(true);
+      run(false);
       return;
     }
 

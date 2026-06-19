@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { readFileSync } from 'node:fs';
 
 // ─── Mocks ────────────────────────────────────────────────────
 
@@ -49,6 +50,14 @@ vi.mock('@/storage/realtimeSync', () => ({
 
 vi.mock('@/storage/cloudSync', () => ({ triggerSync: vi.fn() }));
 
+vi.mock('@/lib/cloudSyncSettings', () => ({
+  isCloudSyncEnabled: vi.fn(() => true),
+}));
+
+vi.mock('@/lib/offlineQueue', () => ({
+  offlineQueue: { enqueue: vi.fn(() => Promise.resolve()) },
+}));
+
 vi.mock('@/storage/deletionTracker', () => ({
   trackDeletedJournalEntryId: vi.fn(() => Promise.resolve()),
 }));
@@ -56,8 +65,8 @@ vi.mock('@/storage/deletionTracker', () => ({
 vi.mock('@/storage/journalStorageService', () => ({
   uploadPhoto: vi.fn(() => Promise.resolve(null)),
   uploadAudio: vi.fn(() => Promise.resolve(null)),
-  deletePhotoFromStorage: vi.fn(),
-  deleteAudioFromStorage: vi.fn(),
+  deletePhotoFromStorage: vi.fn(() => Promise.resolve()),
+  deleteAudioFromStorage: vi.fn(() => Promise.resolve()),
   deleteEntryMediaFromStorage: vi.fn(),
   downloadAsBase64: vi.fn(() => Promise.resolve(null)),
 }));
@@ -86,11 +95,15 @@ import {
   getAudioForEntry,
   getAudioById,
   deleteAudio,
+  deleteDraftMedia,
+  commitDraftMediaToEntry,
 } from '../journalStorage';
 import { syncJournalEntry, deleteJournalEntryFromCloud, syncJournalAudio, deleteJournalPhotoFromCloud, deleteJournalAudioFromCloud } from '@/storage/realtimeSync';
 import { triggerSync } from '@/storage/cloudSync';
-import { deleteEntryMediaFromStorage, downloadAsBase64 } from '@/storage/journalStorageService';
+import { offlineQueue } from '@/lib/offlineQueue';
+import { uploadPhoto, uploadAudio, deleteEntryMediaFromStorage, downloadAsBase64 } from '@/storage/journalStorageService';
 import { trackDeletedJournalEntryId } from '@/storage/deletionTracker';
+import { isCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import type { JournalEntry, JournalPhoto, JournalAudio } from '../types';
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -145,6 +158,7 @@ async function flushAsyncTurns(turns = 10): Promise<void> {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(isCloudSyncEnabled).mockReturnValue(true);
 });
 
 // ============================================================
@@ -296,6 +310,79 @@ describe('saveEntry', () => {
       expect.objectContaining({ entryId: 'test-id-123' }),
     );
   });
+
+  it('queues relinked draft photo upload retry without storing base64 in the queue payload', async () => {
+    vi.mocked(db.journalPhotos.get).mockResolvedValue(makePhoto({ id: 'photo-draft', entryId: '__draft__' }));
+    vi.mocked(uploadPhoto).mockResolvedValue(null);
+
+    await saveEntry({
+      date: '2026-01-01',
+      title: 'Title',
+      content: 'Body text',
+      stickers: [],
+      photoIds: ['photo-draft'],
+      tags: [],
+    });
+    await flushAsyncTurns();
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith(
+      'UPLOAD_JOURNAL_PHOTO_STORAGE',
+      'journal-photo-upload:photo-draft',
+      { id: 'photo-draft' },
+      expect.objectContaining({ priority: 'high' }),
+    );
+  });
+
+  it('keeps newly saved entries local when cloud sync is disabled', async () => {
+    vi.mocked(isCloudSyncEnabled).mockReturnValue(false);
+
+    await saveEntry({
+      date: '2026-02-17',
+      title: 'Private local note',
+      content: 'Only on this device',
+      stickers: [],
+      photoIds: [],
+      tags: [],
+    });
+
+    expect(syncJournalEntry).not.toHaveBeenCalled();
+    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    expect(triggerSync).not.toHaveBeenCalled();
+  });
+});
+
+// ============================================================
+// commitDraftMediaToEntry
+// ============================================================
+describe('commitDraftMediaToEntry', () => {
+  it('relinks selected draft media rows to an existing entry id', async () => {
+    vi.mocked(db.journalPhotos.get).mockResolvedValue(makePhoto({ id: 'photo-draft', entryId: '__draft__' }));
+    vi.mocked(db.journalAudio.get).mockResolvedValue(makeAudio({ id: 'audio-draft', entryId: '__draft__' }));
+
+    await commitDraftMediaToEntry('entry-existing', {
+      photoIds: ['photo-draft'],
+      audioIds: ['audio-draft'],
+    });
+
+    expect(db.journalPhotos.update).toHaveBeenCalledWith(
+      'photo-draft',
+      expect.objectContaining({ entryId: 'entry-existing' }),
+    );
+    expect(db.journalAudio.update).toHaveBeenCalledWith(
+      'audio-draft',
+      expect.objectContaining({ entryId: 'entry-existing' }),
+    );
+  });
+
+  it('does not commit media back onto the reserved draft entry id', async () => {
+    await commitDraftMediaToEntry('__draft__', {
+      photoIds: ['photo-draft'],
+      audioIds: ['audio-draft'],
+    });
+
+    expect(db.journalPhotos.get).not.toHaveBeenCalled();
+    expect(db.journalAudio.get).not.toHaveBeenCalled();
+  });
 });
 
 // ============================================================
@@ -322,6 +409,21 @@ describe('updateEntry', () => {
     await updateEntry('entry-1', { content: 'New content' });
 
     expect(triggerSync).toHaveBeenCalled();
+  });
+
+  it('updates only local IndexedDB when cloud sync is disabled', async () => {
+    vi.mocked(isCloudSyncEnabled).mockReturnValue(false);
+    vi.mocked(db.journalEntries.get).mockResolvedValue(makeEntry());
+
+    await updateEntry('entry-1', { content: 'Still local' });
+    await flushAsyncTurns();
+
+    expect(db.journalEntries.update).toHaveBeenCalledWith(
+      'entry-1',
+      expect.objectContaining({ content: 'Still local' }),
+    );
+    expect(syncJournalEntry).not.toHaveBeenCalled();
+    expect(triggerSync).not.toHaveBeenCalled();
   });
 });
 
@@ -440,6 +542,25 @@ describe('deleteEntry', () => {
     expect(db.journalAudio.bulkDelete).not.toHaveBeenCalled();
     expect(db.journalEntries.delete).toHaveBeenCalledWith('entry-1');
   });
+
+  it('does not enqueue or call cloud deletes when cloud sync is disabled', async () => {
+    vi.mocked(isCloudSyncEnabled).mockReturnValue(false);
+    vi.mocked(db.journalPhotos.where).mockReturnValue({
+      equals: vi.fn(() => ({ toArray: vi.fn(() => Promise.resolve([makePhoto({ id: 'p-local' })])) })),
+    } as never);
+    vi.mocked(db.journalAudio.where).mockReturnValue({
+      equals: vi.fn(() => ({ toArray: vi.fn(() => Promise.resolve([makeAudio({ id: 'a-local' })])) })),
+    } as never);
+
+    await deleteEntry('entry-1');
+
+    expect(trackDeletedJournalEntryId).toHaveBeenCalledWith('entry-1');
+    expect(db.journalEntries.delete).toHaveBeenCalledWith('entry-1');
+    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    expect(deleteEntryMediaFromStorage).not.toHaveBeenCalled();
+    expect(deleteJournalEntryFromCloud).not.toHaveBeenCalled();
+    expect(triggerSync).not.toHaveBeenCalled();
+  });
 });
 
 // ============================================================
@@ -548,6 +669,17 @@ describe('deletePhoto', () => {
     expect(deleteJournalPhotoFromCloud).toHaveBeenCalledWith('photo-1');
   });
 
+  it('keeps photo deletion local when cloud sync is disabled', async () => {
+    vi.mocked(isCloudSyncEnabled).mockReturnValue(false);
+    vi.mocked(db.journalEntries.get).mockResolvedValue(undefined);
+
+    await deletePhoto('photo-1', 'entry-1');
+
+    expect(db.journalPhotos.delete).toHaveBeenCalledWith('photo-1');
+    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    expect(deleteJournalPhotoFromCloud).not.toHaveBeenCalled();
+  });
+
   it('does not update entry when entry not found', async () => {
     vi.mocked(db.journalEntries.get).mockResolvedValue(undefined);
 
@@ -606,6 +738,90 @@ describe('storeAudio', () => {
     expect(syncJournalAudio).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'test-id-123', entryId: 'entry-1' }),
     );
+  });
+
+  it('keeps newly recorded entry audio local when cloud sync is disabled', async () => {
+    vi.mocked(isCloudSyncEnabled).mockReturnValue(false);
+    const mockCount = vi.fn(() => Promise.resolve(0));
+    const mockEquals = vi.fn(() => ({
+      count: mockCount,
+      toArray: vi.fn(() => Promise.resolve([])),
+    }));
+    vi.mocked(db.journalAudio.where).mockReturnValue({ equals: mockEquals } as never);
+
+    await storeAudio('entry-1', 'data:audio/webm;base64,abc', 15, 'audio/webm');
+
+    expect(db.journalAudio.add).toHaveBeenCalled();
+    expect(uploadAudio).not.toHaveBeenCalled();
+    expect(syncJournalAudio).not.toHaveBeenCalled();
+    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('queues audio upload retry without storing the recording payload in the queue', async () => {
+    const mockCount = vi.fn(() => Promise.resolve(0));
+    const mockEquals = vi.fn(() => ({
+      count: mockCount,
+      toArray: vi.fn(() => Promise.resolve([])),
+    }));
+    vi.mocked(db.journalAudio.where).mockReturnValue({ equals: mockEquals } as never);
+    vi.mocked(uploadAudio).mockResolvedValue(null);
+
+    await storeAudio('entry-1', 'data:audio/webm;base64,abc', 15, 'audio/webm');
+    await flushAsyncTurns();
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith(
+      'UPLOAD_JOURNAL_AUDIO_STORAGE',
+      'journal-audio-upload:test-id-123',
+      { id: 'test-id-123' },
+      expect.objectContaining({ priority: 'high' }),
+    );
+  });
+
+  it('keeps draft audio local until the entry is saved', async () => {
+    const mockCount = vi.fn(() => Promise.resolve(0));
+    const mockEquals = vi.fn(() => ({
+      count: mockCount,
+      toArray: vi.fn(() => Promise.resolve([])),
+    }));
+    vi.mocked(db.journalAudio.where).mockReturnValue({ equals: mockEquals } as never);
+
+    await storeAudio('__draft__', 'data:audio/webm;base64,abc', 15, 'audio/webm');
+
+    expect(uploadAudio).not.toHaveBeenCalled();
+    expect(syncJournalAudio).not.toHaveBeenCalled();
+  });
+});
+
+// ============================================================
+// Draft media privacy
+// ============================================================
+describe('draft media privacy', () => {
+  it('keeps draft photos local until the entry is saved', () => {
+    const source = readFileSync('src/features/journal/journalStorage.ts', 'utf8');
+
+    expect(source).toContain('if (entryId !== JOURNAL_DRAFT_ENTRY_ID)');
+    expect(source).toContain('const storedPhoto = await encryptPhotoForStorage(photo)');
+    expect(source).toContain('uploadPhotoAndSync(storedPhoto, storedPhoto.data)');
+    expect(source).toContain('syncJournalPhoto(photo)');
+  });
+
+  it('deletes local and remote draft media on discard', async () => {
+    const photos = [makePhoto({ id: 'photo-draft', entryId: '__draft__' })];
+    const audios = [makeAudio({ id: 'audio-draft', entryId: '__draft__' })];
+    vi.mocked(db.journalPhotos.where).mockReturnValue({
+      equals: vi.fn(() => ({ toArray: vi.fn(() => Promise.resolve(photos)) })),
+    } as never);
+    vi.mocked(db.journalAudio.where).mockReturnValue({
+      equals: vi.fn(() => ({ toArray: vi.fn(() => Promise.resolve(audios)) })),
+    } as never);
+
+    await deleteDraftMedia();
+
+    expect(db.journalPhotos.bulkDelete).toHaveBeenCalledWith(['photo-draft']);
+    expect(db.journalAudio.bulkDelete).toHaveBeenCalledWith(['audio-draft']);
+    expect(deleteEntryMediaFromStorage).toHaveBeenCalledWith(['photo-draft'], ['audio-draft']);
+    expect(deleteJournalPhotoFromCloud).toHaveBeenCalledWith('photo-draft');
+    expect(deleteJournalAudioFromCloud).toHaveBeenCalledWith('audio-draft');
   });
 });
 
@@ -696,6 +912,30 @@ describe('deleteAudio', () => {
     await deleteAudio('audio-1', 'entry-1');
 
     expect(deleteJournalAudioFromCloud).toHaveBeenCalledWith('audio-1');
+  });
+
+  it('keeps audio deletion local when cloud sync is disabled', async () => {
+    vi.mocked(isCloudSyncEnabled).mockReturnValue(false);
+    vi.mocked(db.journalEntries.get).mockResolvedValue(undefined);
+
+    await deleteAudio('audio-1', 'entry-1');
+
+    expect(db.journalAudio.delete).toHaveBeenCalledWith('audio-1');
+    expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    expect(deleteJournalAudioFromCloud).not.toHaveBeenCalled();
+  });
+
+  it('queues audio delete retry as an id-only durable action', async () => {
+    vi.mocked(db.journalEntries.get).mockResolvedValue(undefined);
+
+    await deleteAudio('audio-1', 'entry-1');
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith(
+      'DELETE_JOURNAL_AUDIO_STORAGE',
+      'journal-audio-delete:audio-1',
+      { id: 'audio-1' },
+      expect.objectContaining({ priority: 'high' }),
+    );
   });
 
   it('does not update entry when entry not found', async () => {

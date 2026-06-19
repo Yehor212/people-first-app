@@ -34,7 +34,7 @@ describe("JournalModule V2 header", () => {
   });
 
   it("makes the mobile diary settings sheet bounded and internally scrollable", () => {
-    expect(source).toContain("max-h-[calc(100dvh-env(safe-area-inset-top)-0.75rem)]");
+    expect(source).toContain("max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)]");
     expect(source).toContain("flex-col overflow-hidden");
     expect(source).toContain("min-h-0 flex-1 overflow-y-auto overscroll-contain bg-card");
   });
@@ -58,5 +58,27 @@ describe("JournalModule V2 header", () => {
     expect(source).toContain("key={getSuggestionDismissKey(suggestion, index)}");
     expect(source).toContain("onStart={() => handleUseExtraSuggestion(suggestion, index)}");
     expect(source).toContain("onDismiss={() => handleDismissExtraSuggestion(suggestion, index)}");
+  });
+
+  it("prioritizes the topmost remove-password confirmation before closing settings on Android back", () => {
+    const escapeHandlerBlock =
+      /const activeDialog =[\s\S]*?const handler = \(e: KeyboardEvent\) => \{[\s\S]*?\};\n {4}document\.addEventListener\("keydown", handler\);/.exec(
+        source,
+      )?.[0] ?? "";
+    expect(escapeHandlerBlock.indexOf("showRemovePasswordConfirm")).toBeGreaterThanOrEqual(0);
+    expect(escapeHandlerBlock.indexOf("showPasswordSettings")).toBeGreaterThanOrEqual(0);
+    expect(escapeHandlerBlock.indexOf("showRemovePasswordConfirm")).toBeLessThan(
+      escapeHandlerBlock.indexOf("showPasswordSettings"),
+    );
+
+    const androidBackBlock =
+      /\/\/ Android back button handling[\s\S]*?useEffect\(\(\) => \{[\s\S]*?\}, \[[\s\S]*?\]\);/.exec(
+        source,
+      )?.[0] ?? "";
+    expect(androidBackBlock.indexOf("showRemovePasswordConfirm")).toBeGreaterThanOrEqual(0);
+    expect(androidBackBlock.indexOf("showPasswordSettings")).toBeGreaterThanOrEqual(0);
+    expect(androidBackBlock.indexOf("showRemovePasswordConfirm")).toBeLessThan(
+      androidBackBlock.indexOf("showPasswordSettings"),
+    );
   });
 });

@@ -55,6 +55,10 @@ export type OfflineActionType =
   | "DELETE_SETTINGS"
   | "SYNC_JOURNAL_ENTRY"
   | "DELETE_JOURNAL_ENTRY"
+  | "UPLOAD_JOURNAL_PHOTO_STORAGE"
+  | "UPLOAD_JOURNAL_AUDIO_STORAGE"
+  | "DELETE_JOURNAL_PHOTO_STORAGE"
+  | "DELETE_JOURNAL_AUDIO_STORAGE"
   | "WRITE_SYNC_EVENT";
 
 export type OfflineActionPriority = "critical" | "high" | "normal" | "low";

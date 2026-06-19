@@ -45,6 +45,7 @@ import {
   saveJournalDraft as saveDraft,
   type JournalDraftData as DraftData,
 } from "./journalDraftStorage";
+import { commitDraftMediaToEntry, deleteDraftMedia } from "./journalStorage";
 
 interface EditorSnapshot {
   title: string;
@@ -105,6 +106,10 @@ function getAudioStartFailureMessage(ts: Record<string, string>, error: unknown)
     );
   }
   return ts.journalAudioError || "Failed to save audio";
+}
+
+export function sanitizeJournalTag(value: string): string {
+  return value.trim().replace(/[^\p{L}\p{M}\p{N}_-]/gu, "");
 }
 
 function createEditorSnapshot(
@@ -248,6 +253,12 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const contentSyncRef = useRef<ReturnType<typeof setTimeout>>();
   const lastScrollTopRef = useRef(0);
   const promptsDropdownRef = useRef<HTMLDivElement>(null);
+  const audioIdsRef = useRef<string[]>(entry?.audioIds || []);
+  const stagedAddedPhotoIdsRef = useRef<Set<string>>(new Set());
+  const stagedAddedAudioIdsRef = useRef<Set<string>>(new Set());
+  const stagedRemovedPhotoIdsRef = useRef<Set<string>>(new Set());
+  const stagedRemovedAudioIdsRef = useRef<Set<string>>(new Set());
+  const saveHandledAudioDataRef = useRef<string | null>(null);
 
   const draftKey = getDraftKey(entry?.id || null);
 
@@ -313,6 +324,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const [zenFocusActive, setZenFocusActive] = useState(false);
   const [, setShowActionSheet] = useState(false);
   const [, setToolbarHidden] = useState(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
 
   // === Canvas/Atmosphere State ===
   const [bgIntensity, setBgIntensity] = useState<BackgroundIntensity>(
@@ -352,6 +364,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
 
   const paperColors = PAPER_COLORS[paperColor];
   const entryId = entry?.id || JOURNAL_DRAFT_ENTRY_ID;
+  const isExistingEntry = entryId !== JOURNAL_DRAFT_ENTRY_ID;
 
   // === Panic gesture ===
   const handlePanic = useCallback(() => setPanicLocked(true), []);
@@ -460,8 +473,86 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     stickers.length > 0 ||
     photoIds.length > 0 ||
     audioIds.length > 0 ||
+    isRecording ||
+    showRecordingOverlay ||
     mood ||
     habitSnapshot.length > 0;
+
+  const setEditorContent = useCallback((nextContent: string) => {
+    const html = sanitizeRichContent(nextContent);
+    contentRef.current = html;
+    if (contentSyncRef.current) {
+      clearTimeout(contentSyncRef.current);
+      contentSyncRef.current = undefined;
+    }
+    setContent(html);
+    const editor = editorRef.current;
+    if (editor && editor.innerHTML !== html) {
+      editor.innerHTML = html;
+    }
+  }, []);
+
+  const saveDraftSnapshot = useCallback(
+    async (nextAudioIds = audioIdsRef.current) => {
+      if (
+        !title &&
+        photoIds.length === 0 &&
+        !contentRef.current &&
+        stickers.length === 0 &&
+        !mood &&
+        tags.length === 0 &&
+        nextAudioIds.length === 0 &&
+        habitSnapshot.length === 0
+      ) {
+        return;
+      }
+
+      const savedAt = Date.now();
+      await saveDraft(draftKey, {
+        title,
+        date,
+        content: contentRef.current,
+        stickers,
+        photoIds,
+        audioIds: nextAudioIds,
+        mood,
+        tags,
+        habitSnapshot,
+        theme: diaryTheme.theme,
+        font: diaryTheme.font,
+        inkColor,
+        paperTexture,
+        paperColor,
+        bgIntensity,
+        particleSpeed,
+        bgPattern,
+        fontSize,
+        photoLayout,
+        savedAt,
+      });
+      setDraftSavedAt(savedAt);
+    },
+    [
+      title,
+      photoIds,
+      stickers,
+      mood,
+      tags,
+      habitSnapshot,
+      draftKey,
+      date,
+      diaryTheme.theme,
+      diaryTheme.font,
+      inkColor,
+      paperTexture,
+      paperColor,
+      bgIntensity,
+      particleSpeed,
+      bgPattern,
+      fontSize,
+      photoLayout,
+    ],
+  );
 
   // === Effects ===
 
@@ -482,46 +573,14 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   useEffect(() => {
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
-      if (
-        title ||
-        photoIds.length > 0 ||
-        contentRef.current ||
-        stickers.length > 0 ||
-        mood ||
-        tags.length > 0 ||
-        audioIds.length > 0 ||
-        habitSnapshot.length > 0
-      ) {
-        void saveDraft(draftKey, {
-          title,
-          date,
-          content: contentRef.current,
-          stickers,
-          photoIds,
-          audioIds,
-          mood,
-          tags,
-          habitSnapshot,
-          theme: diaryTheme.theme,
-          font: diaryTheme.font,
-          inkColor,
-          paperTexture,
-          paperColor,
-          bgIntensity,
-          particleSpeed,
-          bgPattern,
-          fontSize,
-          photoLayout,
-          savedAt: Date.now(),
-        });
-        setDraftSavedAt(Date.now());
-      }
+      void saveDraftSnapshot(audioIds).catch((err) => logger.warn("[Journal] Draft autosave failed:", err));
     }, 3000);
     return () => {
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     };
   }, [
     title,
+    content,
     date,
     stickers,
     photoIds,
@@ -540,6 +599,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     bgPattern,
     fontSize,
     photoLayout,
+    saveDraftSnapshot,
   ]);
 
   // Cleanup timeouts on unmount
@@ -608,16 +668,28 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   // Handle completed audio recording — store and add to audioIds
   useEffect(() => {
     if (audioData && !isRecording) {
+      if (saveHandledAudioDataRef.current === audioData) return;
       let cancelled = false;
       const storeRecording = async () => {
         try {
           const data = audioData;
           if (!data) return;
-          const audio = await onAddAudio(data, duration, mimeType, entryId);
+          const audio = await onAddAudio(
+            data,
+            duration,
+            mimeType,
+            isExistingEntry ? JOURNAL_DRAFT_ENTRY_ID : entryId,
+          );
           if (cancelled) return;
+          if (isExistingEntry) stagedAddedAudioIdsRef.current.add(audio.id);
+          const nextAudioIds = [...audioIdsRef.current, audio.id];
+          audioIdsRef.current = nextAudioIds;
           setAudioError(null);
-          setAudioIds((prev) => [...prev, audio.id]);
+          setAudioIds(nextAudioIds);
           setAudioRecordings((prev) => [...prev, audio]);
+          void saveDraftSnapshot(nextAudioIds).catch((err) =>
+            logger.warn("[Journal] Recording draft save failed:", err),
+          );
           resetRecorder();
           setShowRecordingOverlay(false);
         } catch (err) {
@@ -635,7 +707,11 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
         cancelled = true;
       };
     }
-  }, [audioData, isRecording, onAddAudio, entryId, duration, mimeType, resetRecorder, ts]);
+  }, [audioData, isRecording, onAddAudio, entryId, isExistingEntry, duration, mimeType, resetRecorder, saveDraftSnapshot, ts]);
+
+  useEffect(() => {
+    audioIdsRef.current = audioIds;
+  }, [audioIds]);
 
   useEffect(() => {
     if (!showRecordingOverlay || !recorder.error || recorder.isRecording) return;
@@ -661,23 +737,42 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     };
   }, [showPromptsDropdown]);
 
-  // Visual viewport resize (show toolbar when keyboard opens)
+  // iOS/WKWebView visual viewport resize: reserve software keyboard space.
   useEffect(() => {
+    if (desktop) {
+      setKeyboardInset(0);
+      return;
+    }
+
     const vv = window.visualViewport;
     if (!vv) return;
-    const onResize = () => {
-      if (vv.height < window.innerHeight * 0.75) {
+
+    const updateKeyboardInset = () => {
+      const nextInset = Math.max(
+        0,
+        Math.round(window.innerHeight - vv.height - vv.offsetTop),
+      );
+      setKeyboardInset(nextInset);
+      if (nextInset > 48) {
         setToolbarHidden(false);
       }
     };
-    vv.addEventListener("resize", onResize);
-    return () => vv.removeEventListener("resize", onResize);
-  }, []);
+
+    updateKeyboardInset();
+    vv.addEventListener("resize", updateKeyboardInset);
+    vv.addEventListener("scroll", updateKeyboardInset);
+    window.addEventListener("orientationchange", updateKeyboardInset);
+    return () => {
+      vv.removeEventListener("resize", updateKeyboardInset);
+      vv.removeEventListener("scroll", updateKeyboardInset);
+      window.removeEventListener("orientationchange", updateKeyboardInset);
+    };
+  }, [desktop]);
 
   // === Handlers ===
 
   const handleBack = useCallback(() => {
-    if (isDirty) {
+    if (isDirty || contentRef.current !== initialSnapshotRef.current.content) {
       setShowUnsavedDialog(true);
     } else {
       void clearDraft(draftKey);
@@ -685,20 +780,70 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     }
   }, [isDirty, draftKey, onBack]);
 
+  const flushActiveRecordingForSave = useCallback(async (force = false): Promise<string[]> => {
+    if (!force && !recorder.isRecording) return audioIdsRef.current;
+    const captured = await recorder.stop();
+    if (!captured?.data) return audioIdsRef.current;
+
+    saveHandledAudioDataRef.current = captured.data;
+    try {
+      const audio = await onAddAudio(
+        captured.data,
+        captured.duration,
+        captured.mimeType,
+        isExistingEntry ? JOURNAL_DRAFT_ENTRY_ID : entryId,
+      );
+      if (isExistingEntry) stagedAddedAudioIdsRef.current.add(audio.id);
+      const nextAudioIds = [...audioIdsRef.current, audio.id];
+      audioIdsRef.current = nextAudioIds;
+      setAudioError(null);
+      setAudioIds(nextAudioIds);
+      setAudioRecordings((prev) => [...prev, audio]);
+      resetRecorder();
+      setShowRecordingOverlay(false);
+      return nextAudioIds;
+    } catch (err) {
+      const message = ts.journalAudioError || "Failed to save audio";
+      setAudioError(message);
+      announceError(message);
+      resetRecorder();
+      setShowRecordingOverlay(false);
+      throw err;
+    } finally {
+      saveHandledAudioDataRef.current = null;
+    }
+  }, [entryId, isExistingEntry, onAddAudio, recorder, resetRecorder, ts]);
+
   const handleSave = useCallback(async () => {
     if (!hasContent) return;
     // Stop any active voice/recording before saving
     if (voice.isListening) voice.stop();
-    if (recorder.isRecording) recorder.stop();
     setSaveState("saving");
     saveStartRef.current = Date.now();
     try {
+      const shouldFlushRecording = recorder.isRecording || showRecordingOverlay;
+      const audioIdsForSave = shouldFlushRecording
+        ? await flushActiveRecordingForSave(shouldFlushRecording)
+        : audioIdsRef.current;
+
+      const stagedAddedPhotoIds = isExistingEntry ? [...stagedAddedPhotoIdsRef.current] : [];
+      const stagedAddedAudioIds = isExistingEntry ? [...stagedAddedAudioIdsRef.current] : [];
+      const stagedRemovedPhotoIds = isExistingEntry ? [...stagedRemovedPhotoIdsRef.current] : [];
+      const stagedRemovedAudioIds = isExistingEntry ? [...stagedRemovedAudioIdsRef.current] : [];
+
+      if (isExistingEntry) {
+        await commitDraftMediaToEntry(entryId, {
+          photoIds: stagedAddedPhotoIds,
+          audioIds: stagedAddedAudioIds,
+        });
+      }
+
       await onSave({
         title: title.trim(),
         content: contentRef.current.trim(),
         stickers,
         photoIds,
-        audioIds: audioIds.length > 0 ? audioIds : undefined,
+        audioIds: audioIdsForSave.length > 0 ? audioIdsForSave : undefined,
         mood,
         tags,
         date,
@@ -714,6 +859,16 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
         fontSize: fontSize !== "medium" ? fontSize : undefined,
         photoLayout: Object.keys(photoLayout).length > 0 ? photoLayout : undefined,
       });
+      if (isExistingEntry) {
+        await Promise.all([
+          ...stagedRemovedPhotoIds.map((photoId) => onRemovePhoto(photoId, entryId)),
+          ...stagedRemovedAudioIds.map((audioId) => onRemoveAudio(audioId, entryId)),
+        ]);
+        stagedAddedPhotoIdsRef.current.clear();
+        stagedAddedAudioIdsRef.current.clear();
+        stagedRemovedPhotoIdsRef.current.clear();
+        stagedRemovedAudioIdsRef.current.clear();
+      }
       // Enforce minimum display time for "saving" state (prevents flicker)
       const elapsed = Date.now() - saveStartRef.current;
       if (elapsed < MIN_SAVE_DISPLAY_MS) {
@@ -743,7 +898,6 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     title,
     stickers,
     photoIds,
-    audioIds,
     mood,
     tags,
     date,
@@ -751,9 +905,15 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     onBack,
     draftKey,
     hasContent,
+    showRecordingOverlay,
     ts,
     voice,
     recorder,
+    flushActiveRecordingForSave,
+    isExistingEntry,
+    entryId,
+    onRemovePhoto,
+    onRemoveAudio,
     habitSnapshot,
     diaryTheme.theme,
     diaryTheme.font,
@@ -775,7 +935,17 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   }, [handleSave]);
 
   const persistDraftNow = useCallback(async () => {
-    if (!(isDirty || hasContent)) return false;
+    const hasDraftPayload = Boolean(
+      title.trim() ||
+        contentRef.current.trim() ||
+        stickers.length > 0 ||
+        photoIds.length > 0 ||
+        audioIdsRef.current.length > 0 ||
+        mood ||
+        tags.length > 0 ||
+        habitSnapshot.length > 0,
+    );
+    if (!(isDirty || hasContent || hasDraftPayload)) return false;
 
     const savedAt = Date.now();
     await saveDraft(draftKey, {
@@ -784,7 +954,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
       content: contentRef.current,
       stickers,
       photoIds,
-      audioIds,
+      audioIds: audioIdsRef.current,
       mood,
       tags,
       habitSnapshot,
@@ -810,7 +980,6 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     date,
     stickers,
     photoIds,
-    audioIds,
     mood,
     tags,
     habitSnapshot,
@@ -826,11 +995,60 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     photoLayout,
   ]);
 
-  const handleDiscard = useCallback(() => {
-    void clearDraft(draftKey);
+  useEffect(() => {
+    const flushDraftForBackground = () => {
+      void persistDraftNow().catch((err) => logger.warn("[Journal] Background draft save failed:", err));
+    };
+    const flushDraftWhenHidden = () => {
+      if (document.hidden) flushDraftForBackground();
+    };
+
+    document.addEventListener("visibilitychange", flushDraftWhenHidden);
+    window.addEventListener("pagehide", flushDraftForBackground);
+    return () => {
+      document.removeEventListener("visibilitychange", flushDraftWhenHidden);
+      window.removeEventListener("pagehide", flushDraftForBackground);
+    };
+  }, [persistDraftNow]);
+
+  const cleanupStagedExistingMedia = useCallback(async () => {
+    if (!isExistingEntry) return;
+    const stagedPhotoIds = [...stagedAddedPhotoIdsRef.current];
+    const stagedAudioIds = [...stagedAddedAudioIdsRef.current];
+    stagedAddedPhotoIdsRef.current.clear();
+    stagedAddedAudioIdsRef.current.clear();
+    stagedRemovedPhotoIdsRef.current.clear();
+    stagedRemovedAudioIdsRef.current.clear();
+
+    await Promise.all([
+      ...stagedPhotoIds.map((photoId) => onRemovePhoto(photoId, JOURNAL_DRAFT_ENTRY_ID)),
+      ...stagedAudioIds.map((audioId) => onRemoveAudio(audioId, JOURNAL_DRAFT_ENTRY_ID)),
+    ]);
+  }, [isExistingEntry, onRemoveAudio, onRemovePhoto]);
+
+  const deleteNewEntryDraftMedia = useCallback(async () => {
+    if (entryId !== JOURNAL_DRAFT_ENTRY_ID) return;
+    try {
+      await deleteDraftMedia();
+    } catch (err) {
+      logger.warn("[Journal] Draft media cleanup failed:", err);
+    }
+  }, [entryId]);
+
+  const handleDiscard = useCallback(async () => {
+    await clearDraft(draftKey);
+    if (isExistingEntry) {
+      try {
+        await cleanupStagedExistingMedia();
+      } catch (err) {
+        logger.warn("[Journal] Staged media cleanup failed:", err);
+      }
+    } else {
+      await deleteNewEntryDraftMedia();
+    }
     setShowUnsavedDialog(false);
     onBack();
-  }, [draftKey, onBack]);
+  }, [cleanupStagedExistingMedia, deleteNewEntryDraftMedia, draftKey, isExistingEntry, onBack]);
 
   // Keyboard shortcuts: Escape to close overlays/go back, Ctrl+Enter to save
   useEffect(() => {
@@ -853,7 +1071,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
           return;
         }
         if (showRecordingOverlay) {
-          recorder.stop();
+          void recorder.stop();
           setShowRecordingOverlay(false);
           return;
         }
@@ -918,7 +1136,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
       });
     if (showRecordingOverlay)
       return registerModalCloseCallback(() => {
-        recorder.stop();
+        void recorder.stop();
         setShowRecordingOverlay(false);
         return true;
       });
@@ -970,11 +1188,43 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     if (!draftAvailable) return;
     setTitle(draftAvailable.title);
     setDate(draftAvailable.date || getToday());
-    contentRef.current = draftAvailable.content;
-    setContent(draftAvailable.content);
+    setEditorContent(draftAvailable.content);
     setStickers(draftAvailable.stickers);
     setPhotoIds(draftAvailable.photoIds);
-    if (draftAvailable.audioIds) setAudioIds(draftAvailable.audioIds);
+    if (isExistingEntry) {
+      const originalPhotoIds = new Set(entry?.photoIds || []);
+      stagedAddedPhotoIdsRef.current = new Set(
+        draftAvailable.photoIds.filter((photoId) => !originalPhotoIds.has(photoId)),
+      );
+      stagedRemovedPhotoIdsRef.current = new Set(
+        (entry?.photoIds || []).filter((photoId) => !draftAvailable.photoIds.includes(photoId)),
+      );
+    }
+    const restoredAudioIds = draftAvailable.audioIds || [];
+    setAudioIds(restoredAudioIds);
+    audioIdsRef.current = restoredAudioIds;
+    if (isExistingEntry) {
+      const originalAudioIds = new Set(entry?.audioIds || []);
+      stagedAddedAudioIdsRef.current = new Set(
+        restoredAudioIds.filter((audioId) => !originalAudioIds.has(audioId)),
+      );
+      stagedRemovedAudioIdsRef.current = new Set(
+        (entry?.audioIds || []).filter((audioId) => !restoredAudioIds.includes(audioId)),
+      );
+    }
+    if (restoredAudioIds.length > 0) {
+      import("./journalStorage")
+        .then(async ({ getAudioById }) => {
+          const recordings = await Promise.all(restoredAudioIds.map((audioId) => getAudioById(audioId)));
+          setAudioRecordings(recordings.filter((audio): audio is NonNullable<typeof audio> => !!audio));
+        })
+        .catch((err) => {
+          logger.warn("[Journal] Draft audio restore failed:", err);
+          setAudioRecordings([]);
+        });
+    } else {
+      setAudioRecordings([]);
+    }
     setMood(draftAvailable.mood);
     setTags(draftAvailable.tags);
     setHabitSnapshot(draftAvailable.habitSnapshot || []);
@@ -990,12 +1240,26 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     if (draftAvailable.fontSize) setFontSize(draftAvailable.fontSize);
     if (draftAvailable.photoLayout) setPhotoLayout(draftAvailable.photoLayout);
     setDraftAvailable(null);
-  }, [draftAvailable, diaryTheme]);
+  }, [draftAvailable, diaryTheme, entry?.audioIds, entry?.photoIds, isExistingEntry, setEditorContent]);
 
-  const handleDismissDraft = useCallback(() => {
-    void clearDraft(draftKey);
+  const handleDismissDraft = useCallback(async () => {
+    await clearDraft(draftKey);
+    if (isExistingEntry && draftAvailable) {
+      const originalPhotoIds = new Set(entry?.photoIds || []);
+      const originalAudioIds = new Set(entry?.audioIds || []);
+      const draftAddedPhotoIds = draftAvailable.photoIds.filter((photoId) => !originalPhotoIds.has(photoId));
+      const draftAddedAudioIds = (draftAvailable.audioIds || []).filter(
+        (audioId) => !originalAudioIds.has(audioId),
+      );
+      await Promise.all([
+        ...draftAddedPhotoIds.map((photoId) => onRemovePhoto(photoId, JOURNAL_DRAFT_ENTRY_ID)),
+        ...draftAddedAudioIds.map((audioId) => onRemoveAudio(audioId, JOURNAL_DRAFT_ENTRY_ID)),
+      ]);
+    } else {
+      await deleteNewEntryDraftMedia();
+    }
     setDraftAvailable(null);
-  }, [draftKey]);
+  }, [deleteNewEntryDraftMedia, draftAvailable, draftKey, entry?.audioIds, entry?.photoIds, isExistingEntry, onRemoveAudio, onRemovePhoto]);
 
   const handleAddSticker = useCallback(
     (sticker: string) => {
@@ -1013,25 +1277,42 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const handleAddPhoto = useCallback(
     async (file: File) => {
       try {
-        const photo = await onAddPhoto(file, entryId);
+        const photo = await onAddPhoto(file, isExistingEntry ? JOURNAL_DRAFT_ENTRY_ID : entryId);
+        if (isExistingEntry) stagedAddedPhotoIdsRef.current.add(photo.id);
         setPhotoIds((prev) => [...prev, photo.id]);
       } catch (error) {
         logger.error("[Journal] Photo upload failed:", error);
+        throw error;
       }
     },
-    [onAddPhoto, entryId]
+    [onAddPhoto, entryId, isExistingEntry]
   );
 
   const handleRemovePhoto = useCallback(
     async (photoId: string) => {
       try {
-        await onRemovePhoto(photoId, entryId);
+        if (isExistingEntry) {
+          if (stagedAddedPhotoIdsRef.current.has(photoId)) {
+            await onRemovePhoto(photoId, JOURNAL_DRAFT_ENTRY_ID);
+            stagedAddedPhotoIdsRef.current.delete(photoId);
+          } else {
+            stagedRemovedPhotoIdsRef.current.add(photoId);
+          }
+        } else {
+          await onRemovePhoto(photoId, entryId);
+        }
         setPhotoIds((prev) => prev.filter((id) => id !== photoId));
+        setPhotoLayout((prev) => {
+          if (!prev[photoId]) return prev;
+          const next = { ...prev };
+          delete next[photoId];
+          return next;
+        });
       } catch (err) {
         logger.error("[Journal] Photo removal failed:", err);
       }
     },
-    [onRemovePhoto, entryId]
+    [onRemovePhoto, entryId, isExistingEntry]
   );
 
   const handleReturnToGallery = useCallback((photoId: string) => {
@@ -1053,12 +1334,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const handleCloseGratitude = useCallback(() => setShowGratitudeWidget(false), []);
 
   const handleAddTag = useCallback(() => {
-    const tag = tagInput
-      .trim()
-      .replace(
-        /[^a-zA-Z\u0430-\u044f\u0410-\u042f\u0451\u0401\u0456\u0406\u0457\u0407\u0454\u0404\u0491\u04900-9_-]/g,
-        ""
-      );
+    const tag = sanitizeJournalTag(tagInput);
     if (tag && !tags.includes(tag)) {
       setTags((prev) => [...prev, tag]);
     }
@@ -1069,14 +1345,24 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const handleRemoveAudio = useCallback(
     async (audioId: string) => {
       try {
-        await onRemoveAudio(audioId, entryId);
+        if (isExistingEntry) {
+          if (stagedAddedAudioIdsRef.current.has(audioId)) {
+            await onRemoveAudio(audioId, JOURNAL_DRAFT_ENTRY_ID);
+            stagedAddedAudioIdsRef.current.delete(audioId);
+          } else {
+            stagedRemovedAudioIdsRef.current.add(audioId);
+          }
+        } else {
+          await onRemoveAudio(audioId, entryId);
+        }
         setAudioIds((prev) => prev.filter((id) => id !== audioId));
+        audioIdsRef.current = audioIdsRef.current.filter((id) => id !== audioId);
         setAudioRecordings((prev) => prev.filter((a) => a.id !== audioId));
       } catch (err) {
         logger.error("[Journal] Audio removal failed:", err);
       }
     },
-    [onRemoveAudio, entryId]
+    [onRemoveAudio, entryId, isExistingEntry]
   );
 
   const handleToggleDictation = useCallback(() => {
@@ -1134,7 +1420,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   }, [recorder, audioIds.length, ts]);
 
   const handleStopRecording = useCallback(() => {
-    recorder.stop();
+    void recorder.stop();
     // audioData effect will handle storing
   }, [recorder]);
 
@@ -1242,12 +1528,11 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
 
   const handleTemplateSelect = useCallback(
     (templateContent: string, _templateId: string | null) => {
-      contentRef.current = templateContent;
-      setContent(templateContent);
+      setEditorContent(templateContent);
       setShowTemplatePicker(false);
       focusTimeoutRef.current = setTimeout(() => editorRef.current?.focus(), 100);
     },
-    []
+    [setEditorContent]
   );
 
   const handleTemplateClose = useCallback(() => {
@@ -1382,6 +1667,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     hasContent,
     entryId,
     diaryStyle,
+    keyboardInset,
 
     // voice & recorder
     voice,

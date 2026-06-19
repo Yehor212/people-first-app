@@ -10,12 +10,16 @@ const envFileNames = [".env.example", ".env", ".env.production", ".env.local"];
 const publicKeys = [
   "VITE_ENABLE_FACEBOOK_AUTH",
   "VITE_ENABLE_TELEGRAM_AUTH",
+  "VITE_ENABLE_APPLE_AUTH",
   "VITE_SUPABASE_URL",
+  "VITE_SUPABASE_PUBLISHABLE_KEY",
   "VITE_SUPABASE_ANON_KEY",
 ];
 const providerSecretKeys = [
   "FACEBOOK_APP_SECRET",
   "TELEGRAM_CLIENT_SECRET",
+  "APPLE_CLIENT_SECRET",
+  "APPLE_PRIVATE_KEY",
   "SUPABASE_ACCESS_TOKEN",
   "SUPABASE_SERVICE_ROLE_KEY",
 ];
@@ -33,9 +37,37 @@ function readText(relativePath) {
   return fs.readFileSync(absolutePath, "utf8");
 }
 
-function parseEnvFile(relativePath) {
+function getTomlSection(content, sectionName) {
+  const header = `[${sectionName}]`;
+  const start = content.indexOf(header);
+  if (start === -1) return "";
+
+  const rest = content.slice(start + header.length);
+  const nextSection = rest.search(/^\[[^\]]+\]/m);
+  return nextSection === -1 ? rest : rest.slice(0, nextSection);
+}
+
+function checkSectionLine(section, regex, passMessage, failMessage, evidencePath) {
+  if (regex.test(section)) {
+    add("PASS", passMessage, `${evidencePath} matches ${regex.source}`);
+  } else {
+    add("FAIL", failMessage, `${evidencePath} does not match ${regex.source}`);
+  }
+}
+
+function checkConfigContains(content, needle, passMessage, failMessage, evidencePath) {
+  if (content.includes(needle)) {
+    add("PASS", passMessage, `${evidencePath} contains ${needle}`);
+  } else {
+    add("FAIL", failMessage, `${evidencePath} is missing ${needle}`);
+  }
+}
+
+function parseEnvFile(relativePath, options = {}) {
+  const includeExample = options.includeExample === true;
   const absolutePath = path.join(rootDir, relativePath);
   if (!fs.existsSync(absolutePath)) return new Map();
+  if (relativePath === ".env.example" && !includeExample) return new Map();
 
   const result = new Map();
   const content = fs.readFileSync(absolutePath, "utf8");
@@ -54,10 +86,20 @@ function parseEnvFile(relativePath) {
     ) {
       value = value.slice(1, -1);
     }
+    if (!includeExample && isExamplePlaceholder(key, value)) continue;
     result.set(key, { value, source: relativePath });
   }
 
   return result;
+}
+
+function isExamplePlaceholder(key, value) {
+  if (!value) return true;
+  if (value === "your_supabase_anon_key") return true;
+  if (value === "sb_publishable_your_public_key") return true;
+  if (value.includes("your-project-ref.supabase.co")) return true;
+  if (key.startsWith("VITE_") && /^your_[a-z0-9_]+$/i.test(value)) return true;
+  return false;
 }
 
 function mergeEnv() {
@@ -77,12 +119,23 @@ function mergeEnv() {
   return merged;
 }
 
-function hasEnabledFlag(env, key) {
-  return env.get(key)?.value === "true";
+function getPublicFlagState(env, key) {
+  const entry = env.get(key);
+  if (!entry?.value) {
+    return {
+      enabled: true,
+      evidence: `${key} is not set; app default is enabled unless the value is false`,
+    };
+  }
+
+  return {
+    enabled: entry.value !== "false",
+    evidence: `${key} set in ${entry.source}`,
+  };
 }
 
-function sourceFor(env, key) {
-  return env.get(key)?.source ?? "not found";
+function hasEnabledFlag(env, key) {
+  return getPublicFlagState(env, key).enabled;
 }
 
 function checkSourceContains(relativePath, needle, label) {
@@ -95,34 +148,99 @@ function checkSourceContains(relativePath, needle, label) {
 }
 
 const env = mergeEnv();
+const supabaseConfig = readText("supabase/config.toml");
+const authSection = getTomlSection(supabaseConfig, "auth");
+const appleAuthSection = getTomlSection(supabaseConfig, "auth.external.apple");
 
 checkSourceContains("src/lib/authProviders.ts", "custom:telegram", "Telegram maps to Supabase custom OIDC");
 checkSourceContains("src/lib/authProviders.ts", "facebook", "Facebook provider is present in provider config");
+checkSourceContains("src/lib/authProviders.ts", "supabaseProvider: \"apple\"", "Apple provider is present in provider config");
+checkSourceContains("src/lib/authProviders.ts", "\"apple\",\n];", "Apple provider is available for account sign-in and linking");
 checkSourceContains("src/components/settings/account-section/useAccountAuth.ts", "linkIdentity", "Settings supports provider account linking");
 checkSourceContains("src/lib/nativeOAuthBrowser.ts", "@capacitor/browser", "Native OAuth uses Capacitor Browser");
 checkSourceContains("ios/App/App/Info.plist", "com.zenflow.app", "iOS custom callback scheme is registered");
 checkSourceContains(".env.example", "VITE_ENABLE_FACEBOOK_AUTH=true", "Facebook public feature flag is documented");
 checkSourceContains(".env.example", "VITE_ENABLE_TELEGRAM_AUTH=true", "Telegram public feature flag is documented");
+checkSourceContains(".env.example", "VITE_ENABLE_APPLE_AUTH=true", "Apple public feature flag is documented");
+
+if (!authSection) {
+  add("FAIL", "Supabase auth section is missing", "supabase/config.toml lacks [auth]");
+} else {
+  checkSectionLine(
+    authSection,
+    /^enable_manual_linking\s*=\s*true\s*$/m,
+    "Local Supabase manual identity linking is enabled",
+    "Local Supabase manual identity linking must be enabled for provider linking",
+    "supabase/config.toml [auth]",
+  );
+}
+
+if (!appleAuthSection) {
+  add("FAIL", "Supabase Apple provider section is missing", "supabase/config.toml lacks [auth.external.apple]");
+} else {
+  checkSectionLine(
+    appleAuthSection,
+    /^enabled\s*=\s*true\s*$/m,
+    "Local Supabase Apple provider is enabled",
+    "Local Supabase Apple provider is disabled",
+    "supabase/config.toml [auth.external.apple]",
+  );
+  checkSectionLine(
+    appleAuthSection,
+    /^client_id\s*=\s*"env\(SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID\)"\s*$/m,
+    "Apple Services ID is configured through server-side env substitution",
+    "Apple Services ID must use SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID env substitution",
+    "supabase/config.toml [auth.external.apple]",
+  );
+  checkSectionLine(
+    appleAuthSection,
+    /^secret\s*=\s*"env\(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET\)"\s*$/m,
+    "Apple client secret is configured through server-side env substitution",
+    "Apple client secret must use SUPABASE_AUTH_EXTERNAL_APPLE_SECRET env substitution",
+    "supabase/config.toml [auth.external.apple]",
+  );
+}
+
+for (const [url, label] of [
+  ["https://yehor212.github.io/people-first-app/", "canonical GitHub Pages auth redirect"],
+  ["https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone", "canonical V2 phone auth redirect"],
+  ["com.zenflow.app://login-callback", "native OAuth callback redirect"],
+  ["http://localhost:5173/**", "local Vite OAuth wildcard redirect"],
+]) {
+  checkConfigContains(
+    supabaseConfig,
+    `"${url}"`,
+    `Supabase allow-list includes ${label}`,
+    `Supabase allow-list is missing ${label}`,
+    "supabase/config.toml auth.additional_redirect_urls",
+  );
+}
 
 for (const provider of [
   ["Facebook", "VITE_ENABLE_FACEBOOK_AUTH"],
   ["Telegram", "VITE_ENABLE_TELEGRAM_AUTH"],
+  ["Apple", "VITE_ENABLE_APPLE_AUTH"],
 ]) {
   const [label, key] = provider;
-  if (hasEnabledFlag(env, key)) {
-    add("PASS", `${label} public auth flag is enabled`, `${key} set in ${sourceFor(env, key)}`);
+  const flag = getPublicFlagState(env, key);
+  if (flag.enabled) {
+    add("PASS", `${label} public auth flag is enabled`, flag.evidence);
   } else if (strict) {
-    add("FAIL", `${label} public auth flag is disabled`, `${key} must be true for live OAuth proof`);
+    add("FAIL", `${label} public auth flag is disabled`, `${key} is explicitly false`);
   } else {
-    add("INFO", `${label} public auth flag is disabled`, `${key} is ${env.get(key)?.value ?? "missing"} in ${sourceFor(env, key)}`);
+    add("INFO", `${label} public auth flag is disabled`, `${key} is explicitly false`);
   }
 }
 
 const supabaseUrl = env.get("VITE_SUPABASE_URL");
 if (!supabaseUrl?.value) {
-  const status = strict || hasEnabledFlag(env, "VITE_ENABLE_FACEBOOK_AUTH") || hasEnabledFlag(env, "VITE_ENABLE_TELEGRAM_AUTH")
-    ? "FAIL"
-    : "INFO";
+  const status =
+    strict ||
+    hasEnabledFlag(env, "VITE_ENABLE_FACEBOOK_AUTH") ||
+    hasEnabledFlag(env, "VITE_ENABLE_TELEGRAM_AUTH") ||
+    hasEnabledFlag(env, "VITE_ENABLE_APPLE_AUTH")
+      ? "FAIL"
+      : "INFO";
   add(status, "Supabase public URL is not configured", "VITE_SUPABASE_URL not found in loaded env files/process.env");
 } else {
   try {
@@ -137,18 +255,41 @@ if (!supabaseUrl?.value) {
   }
 }
 
+const publishableKey = env.get("VITE_SUPABASE_PUBLISHABLE_KEY");
 const anonKey = env.get("VITE_SUPABASE_ANON_KEY");
-if (anonKey?.value) {
-  add("PASS", "Supabase anon key is configured without printing it", `VITE_SUPABASE_ANON_KEY set in ${anonKey.source}`);
+if (publishableKey?.value) {
+  add(
+    "PASS",
+    "Supabase publishable key is configured without printing it",
+    `VITE_SUPABASE_PUBLISHABLE_KEY set in ${publishableKey.source}`,
+  );
+} else if (anonKey?.value) {
+  if (strict) {
+    add(
+      "FAIL",
+      "Strict Supabase readiness requires VITE_SUPABASE_PUBLISHABLE_KEY",
+      `Only legacy VITE_SUPABASE_ANON_KEY is set in ${anonKey.source}; publishable keys are the production target`,
+    );
+  } else {
+    add("PASS", "Supabase anon key is configured without printing it", `VITE_SUPABASE_ANON_KEY set in ${anonKey.source}`);
+  }
 } else {
-  const status = strict || hasEnabledFlag(env, "VITE_ENABLE_FACEBOOK_AUTH") || hasEnabledFlag(env, "VITE_ENABLE_TELEGRAM_AUTH")
-    ? "FAIL"
-    : "INFO";
-  add(status, "Supabase anon key is not configured", "VITE_SUPABASE_ANON_KEY not found in loaded env files/process.env");
+  const status =
+    strict ||
+    hasEnabledFlag(env, "VITE_ENABLE_FACEBOOK_AUTH") ||
+    hasEnabledFlag(env, "VITE_ENABLE_TELEGRAM_AUTH") ||
+    hasEnabledFlag(env, "VITE_ENABLE_APPLE_AUTH")
+      ? "FAIL"
+      : "INFO";
+  add(
+    status,
+    "Supabase public client key is not configured",
+    "VITE_SUPABASE_PUBLISHABLE_KEY or VITE_SUPABASE_ANON_KEY not found in loaded env files/process.env",
+  );
 }
 
 for (const fileName of envFileNames) {
-  const entries = parseEnvFile(fileName);
+  const entries = parseEnvFile(fileName, { includeExample: true });
   for (const [key] of entries) {
     if (
       key.startsWith("VITE_") &&
@@ -161,11 +302,11 @@ for (const fileName of envFileNames) {
 
 for (const key of providerSecretKeys) {
   const entry = env.get(key);
-  if (entry) {
+  if (entry?.value) {
     add(
-      "WARN",
+      strict ? "FAIL" : "WARN",
       `${key} is present outside the app dashboards`,
-      `${key} is set in ${entry.source}; keep provider secrets in Facebook/Telegram/Supabase dashboards or secret storage, never in VITE_* client env`,
+      `${key} is set in ${entry.source}; keep provider secrets in Apple/Facebook/Telegram/Supabase dashboards or secret storage, never in VITE_* client env`,
     );
   }
 }
@@ -173,7 +314,7 @@ for (const key of providerSecretKeys) {
 add(
   "INFO",
   "Dashboard provider secrets are intentionally not readable from this repo",
-  "Facebook App Secret and Telegram OIDC secret must be configured by the project owner in official dashboards",
+  "Apple, Facebook, and Telegram provider secrets must be configured by the project owner in official dashboards",
 );
 
 let failures = 0;

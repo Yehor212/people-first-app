@@ -8,7 +8,7 @@ import { useModalA11y } from "@/hooks/useModalA11y";
 import { useDeviceTier } from "@/hooks/useDeviceTier";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { JournalPhoto } from "./types";
-import { getPhotosForEntry, getPhotoById } from "./journalStorage";
+import { getPhotoById } from "./journalStorage";
 import { logger } from "@/lib/logger";
 
 interface JournalPhotoGalleryProps {
@@ -20,7 +20,6 @@ interface JournalPhotoGalleryProps {
 }
 
 export const JournalPhotoGallery = memo(function JournalPhotoGallery({
-  entryId,
   photoIds,
   onRemovePhoto,
   onFloatPhoto,
@@ -74,15 +73,21 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
       setPhotos([]);
       return;
     }
-    getPhotosForEntry(entryId)
-      .then((all) => {
-        setPhotos(all.filter((p) => photoIds.includes(p.id)));
+    let cancelled = false;
+    Promise.all(photoIds.map((photoId) => getPhotoById(photoId)))
+      .then((items) => {
+        if (cancelled) return;
+        setPhotos(items.filter((photo): photo is JournalPhoto => Boolean(photo)));
       })
       .catch((err) => {
+        if (cancelled) return;
         logger.warn("[Journal]", "Photos load failed:", err);
         setPhotos([]);
       }); // graceful: photo display, not data mutation
-  }, [entryId, photoIds]);
+    return () => {
+      cancelled = true;
+    };
+  }, [photoIds]);
 
   const openLightbox = async (photo: JournalPhoto, index: number) => {
     setLightboxPhoto(photo);

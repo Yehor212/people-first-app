@@ -35,6 +35,34 @@ const localNotificationsMock = vi.hoisted(() => ({
   requestPermissions: vi.fn(),
 }));
 
+const audioManagerMock = vi.hoisted(() => {
+  const state = { muted: false, volume: 0.3 };
+
+  return {
+    state,
+    initAudioManager: vi.fn(),
+    isMuted: vi.fn(() => state.muted),
+    getVolume: vi.fn(() => state.volume),
+    setMuted: vi.fn((muted: boolean) => {
+      state.muted = muted;
+      window.dispatchEvent(new CustomEvent("zenflow-audio-settings-change"));
+    }),
+    setVolume: vi.fn((volume: number) => {
+      state.volume = volume;
+      window.dispatchEvent(new CustomEvent("zenflow-audio-settings-change"));
+    }),
+    playNotification: vi.fn(),
+    getAudioSettings: vi.fn(() => ({
+      muted: state.muted,
+      volume: state.volume,
+    })),
+    subscribeAudioSettings: vi.fn((listener: () => void) => {
+      window.addEventListener("zenflow-audio-settings-change", listener);
+      return () => window.removeEventListener("zenflow-audio-settings-change", listener);
+    }),
+  };
+});
+
 function expectDocumentOrder(first: HTMLElement, second: HTMLElement) {
   expect(Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(
     true
@@ -142,6 +170,25 @@ vi.mock("@/contexts/LanguageContext", () => ({
       privacyAnalytics: "Analytics",
       enableReminders: "Enable reminders",
       pushPermissionDenied: "Notification permission denied.",
+      settingsSoundTitle: "Sound",
+      settingsSoundDescription: "App ambience and feedback volume.",
+      settingsSoundSummaryOn: "Sound on",
+      settingsSoundSummaryOff: "Muted",
+      settingsSoundMaster: "App sound",
+      settingsSoundMasterDesc: "Controls success chimes, orb ambience, and diary ambience.",
+      settingsSoundVolume: "Volume",
+      settingsSoundVolumeDesc: "Sets the default level for app audio.",
+      settingsSoundPreview: "Preview sound",
+      settingsSoundPreviewDesc: "Play a short local preview.",
+      settingsSoundAmbienceNote: "Orb and diary ambience still start only after you tap their own buttons.",
+      settingsSoundActionMapMilestones: "Achievements and streak milestones",
+      settingsSoundActionMapBreathing: "Breathing completed",
+      settingsSoundActionMapFocus: "Focus completed",
+      settingsSoundActionMapJournal: "Journal saved",
+      settingsSoundActionMapHabit: "Habit completed",
+      settingsSoundActionMapMood: "Mood saved",
+      settingsSoundActionMapDescription: "Short sounds are reserved for meaningful completions and rare milestones.",
+      settingsSoundActionMapTitle: "Action feedback map",
     },
   }),
 }));
@@ -391,6 +438,7 @@ vi.mock("@/lib/env", () => ({
   GOOGLE_WEB_CLIENT_ID: "",
   ENABLE_FACEBOOK_AUTH: false,
   ENABLE_TELEGRAM_AUTH: false,
+  ENABLE_APPLE_AUTH: false,
   ADMOB_APP_ID_ANDROID: "",
   ADMOB_REWARDED_ID_ANDROID: "",
   ADMOB_BANNER_ID_ANDROID: "",
@@ -403,6 +451,8 @@ vi.mock("@/lib/notificationSounds", () => ({
   getNotificationSound: () => "default",
   setNotificationSound: vi.fn(),
 }));
+
+vi.mock("@/lib/audioManager", () => audioManagerMock);
 
 vi.mock("@/lib/appUpdateManager", () => ({
   checkForAppUpdate: vi.fn(),
@@ -447,6 +497,16 @@ describe("SettingsPage", () => {
     platformMock.isAndroid = false;
     localNotificationsMock.checkPermissions.mockReset();
     localNotificationsMock.requestPermissions.mockReset();
+    audioManagerMock.state.muted = false;
+    audioManagerMock.state.volume = 0.3;
+    audioManagerMock.initAudioManager.mockClear();
+    audioManagerMock.isMuted.mockClear();
+    audioManagerMock.getVolume.mockClear();
+    audioManagerMock.setMuted.mockClear();
+    audioManagerMock.setVolume.mockClear();
+    audioManagerMock.playNotification.mockClear();
+    audioManagerMock.getAudioSettings.mockClear();
+    audioManagerMock.subscribeAudioSettings.mockClear();
     delete document.documentElement.dataset.theme;
     document.documentElement.classList.remove("oled", "dark");
     localStorage.clear();
@@ -699,6 +759,47 @@ describe("SettingsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Українська" }));
 
     expect(languageContextMock.setLanguage).toHaveBeenCalledWith("uk");
+  });
+
+  it("wires V2 sound controls to the app audio manager", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    const soundCard = screen.getByTestId("settings-module-card-sound");
+    expect(soundCard).toHaveTextContent("Sound");
+    expect(soundCard).toHaveTextContent("Sound on");
+
+    fireEvent.click(soundCard);
+
+    expect(screen.getByTestId("settings-v2-panel-sound")).toBeInTheDocument();
+    expect(screen.getByText("Orb and diary ambience still start only after you tap their own buttons.")).toBeInTheDocument();
+    expect(screen.getByText("Where sound appears")).toBeInTheDocument();
+    expect(screen.getByText("Sign-in measured breath")).toBeInTheDocument();
+    expect(screen.getByText("Orb ambience")).toBeInTheDocument();
+    expect(screen.getByText("Diary ambience")).toBeInTheDocument();
+    expect(screen.getByText("Focus ambient library")).toBeInTheDocument();
+    expect(screen.getByText("Completion and reminder chimes")).toBeInTheDocument();
+    expect(screen.getByText("Ready on Web, PWA, Android, iOS, and Desktop.")).toBeInTheDocument();
+    expect(screen.getByText("Action feedback map")).toBeInTheDocument();
+    expect(screen.getByText("Mood saved")).toBeInTheDocument();
+    expect(screen.getByText("Habit completed")).toBeInTheDocument();
+    expect(screen.getByText("Journal saved")).toBeInTheDocument();
+    expect(screen.getByText("Focus completed")).toBeInTheDocument();
+    expect(screen.getByText("Breathing completed")).toBeInTheDocument();
+    expect(screen.getByText("Achievements and streak milestones")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview sound" }));
+    expect(audioManagerMock.playNotification).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(
+      within(screen.getByTestId("settings-v2-app-sound-toggle")).getByRole("switch", {
+        name: "App sound",
+      })
+    );
+    expect(audioManagerMock.setMuted).toHaveBeenLastCalledWith(true);
+
+    const volume = screen.getByTestId("settings-v2-audio-volume");
+    fireEvent.change(volume, { target: { value: "0.7" } });
+    expect(audioManagerMock.setVolume).toHaveBeenLastCalledWith(0.7);
   });
 
   it("wires notification reminder controls to the settings callback", () => {

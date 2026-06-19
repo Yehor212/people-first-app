@@ -86,6 +86,7 @@ const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for healthy WebGL sessions.
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 const ORB_FRAME_CLOCK_REANCHOR_GAP_MS = 750;
 const ORB_MAX_FRAME_DELTA_SECONDS = 0.05;
+const ORB_MAX_TRANSITION_DELTA_SECONDS = 0.12;
 export const ORB_SHADER_TIME_WRAP_SECONDS = Math.PI * 6000;
 
 function shouldAnimateCanonicalOrb(): boolean {
@@ -238,6 +239,20 @@ export function resolveOrbFrameDeltaSeconds(
   if (elapsedMs > ORB_FRAME_CLOCK_REANCHOR_GAP_MS) return 0;
 
   return Math.min(elapsedMs / 1000, ORB_MAX_FRAME_DELTA_SECONDS);
+}
+
+export function resolveOrbTransitionDeltaSeconds(
+  previousFrameAtMs: number,
+  currentFrameAtMs: number,
+): number {
+  if (!Number.isFinite(previousFrameAtMs) || previousFrameAtMs <= 0) return 0;
+  if (!Number.isFinite(currentFrameAtMs)) return 0;
+
+  const elapsedMs = currentFrameAtMs - previousFrameAtMs;
+  if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 0;
+  if (elapsedMs > ORB_FRAME_CLOCK_REANCHOR_GAP_MS) return 0;
+
+  return Math.min(elapsedMs / 1000, ORB_MAX_TRANSITION_DELTA_SECONDS);
 }
 
 function normalizeOrbShaderTime(timeSeconds: number, wrapSeconds = ORB_SHADER_TIME_WRAP_SECONDS): number {
@@ -1043,12 +1058,13 @@ export const ValenceOrb = memo(function ValenceOrb({
       }
       // Re-anchor instead of catching up after hidden tabs, reload restore, or long stalls.
       const dt = resolveOrbFrameDeltaSeconds(state.lastFrame, timestamp);
+      const transitionDt = resolveOrbTransitionDeltaSeconds(state.lastFrame, timestamp);
       state.lastFrame = timestamp;
 
       // Shimmer decay: dt-based exponential (~0.8s half-life, frame-rate independent).
       // Keep it as a quiet target-change glow; delayed high-energy bursts read as
       // a sudden spin-up after the transition should already feel settled.
-      shimmerRef.current *= Math.pow(0.08, dt); // 0.08^(1/30) ≈ 0.92 per frame at 30fps
+      shimmerRef.current *= Math.pow(0.08, transitionDt); // 0.08^(1/30) ≈ 0.92 per frame at 30fps
       if (shimmerRef.current < 0.005) shimmerRef.current = 0;
 
       // Soft-tail interpolation: the last part of a mood transition must not
@@ -1071,7 +1087,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         Math.abs(targetDelta),
         shimmerRef.current > 0.1,
       );
-      const lerpRate = frameRateIndependentLerp(targetBaseLerp, dt, 30);
+      const lerpRate = frameRateIndependentLerp(targetBaseLerp, transitionDt, 30);
 
       // Interpolate valence (exponential ease)
       state.currentValence += targetDelta * lerpRate;
@@ -1090,7 +1106,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         frameTransitionProfile,
         Math.abs(visualDelta),
       );
-      const smoothLerp = frameRateIndependentLerp(visualBaseLerp, dt, 60);
+      const smoothLerp = frameRateIndependentLerp(visualBaseLerp, transitionDt, 60);
       smoothValenceRef.current += (state.currentValence - smoothValenceRef.current) * smoothLerp;
 
       // Update particles (skip when off-screen to save CPU)

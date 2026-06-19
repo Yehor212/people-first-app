@@ -46,10 +46,12 @@ export function JournalLockScreen({
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
   const [wrongGlow, setWrongGlow] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<"current" | "enter" | "confirm">(
     mode === "change" ? "current" : "enter"
   );
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const submitInFlightRef = useRef(false);
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const glowTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -88,9 +90,34 @@ export function JournalLockScreen({
     glowTimeoutRef.current = setTimeout(() => setWrongGlow(false), 1000);
   };
 
+  const beginSubmit = () => {
+    if (submitInFlightRef.current) return false;
+    submitInFlightRef.current = true;
+    setIsSubmitting(true);
+    return true;
+  };
+
+  const finishSubmit = () => {
+    submitInFlightRef.current = false;
+    setIsSubmitting(false);
+  };
+
+  const handleBiometricUnlock = async () => {
+    if (!onBiometricUnlock || !beginSubmit()) return;
+    try {
+      const ok = await onBiometricUnlock();
+      if (!ok) {
+        setError(ts.journalBiometricFailed || "Biometric unlock failed. Try again.");
+        triggerShake();
+      }
+    } finally {
+      finishSubmit();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (countdown > 0) return;
+    if (countdown > 0 || submitInFlightRef.current) return;
 
     if (mode === "change") {
       if (step === "current") {
@@ -115,14 +142,19 @@ export function JournalLockScreen({
         triggerShake();
         return;
       }
-      const ok = await onChangePassword?.(currentPassword, password);
-      if (!ok) {
-        setError(ts.journalPasswordOldWrong || "Current password is incorrect");
-        setStep("current");
-        setCurrentPassword("");
-        setPassword("");
-        setConfirm("");
-        triggerShake();
+      if (!beginSubmit()) return;
+      try {
+        const ok = await onChangePassword?.(currentPassword, password);
+        if (!ok) {
+          setError(ts.journalPasswordOldWrong || "Current password is incorrect");
+          setStep("current");
+          setCurrentPassword("");
+          setPassword("");
+          setConfirm("");
+          triggerShake();
+        }
+      } finally {
+        finishSubmit();
       }
       return;
     }
@@ -144,13 +176,23 @@ export function JournalLockScreen({
         triggerShake();
         return;
       }
-      await onSetPassword(password);
+      if (!beginSubmit()) return;
+      try {
+        await onSetPassword(password);
+      } finally {
+        finishSubmit();
+      }
     } else {
-      const ok = await onUnlock(password);
-      if (!ok) {
-        setError(ts.journalPasswordWrong || "Wrong password");
-        setPassword("");
-        triggerShake();
+      if (!beginSubmit()) return;
+      try {
+        const ok = await onUnlock(password);
+        if (!ok) {
+          setError(ts.journalPasswordWrong || "Wrong password");
+          setPassword("");
+          triggerShake();
+        }
+      } finally {
+        finishSubmit();
       }
     }
   };
@@ -275,12 +317,13 @@ export function JournalLockScreen({
               )}
               inputMode="text"
               autoComplete="off"
-              disabled={countdown > 0}
+              disabled={countdown > 0 || isSubmitting}
               aria-describedby={error ? "lock-error" : undefined}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
+              disabled={isSubmitting}
               aria-label={
                 showPassword
                   ? ts.journalPasswordHide || "Hide password"
@@ -314,6 +357,7 @@ export function JournalLockScreen({
             type="submit"
             disabled={
               countdown > 0 ||
+              isSubmitting ||
               (step === "current" ? !currentPassword : step === "confirm" ? !confirm : !password)
             }
             className={cn(
@@ -342,7 +386,10 @@ export function JournalLockScreen({
         {/* Biometric unlock button */}
         {mode === "unlock" && biometricAvailable && onBiometricUnlock && (
           <button
-            onClick={onBiometricUnlock}
+            onClick={() => {
+              void handleBiometricUnlock();
+            }}
+            disabled={isSubmitting || countdown > 0}
             className="w-full mt-3 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] hover:bg-muted/70 motion-safe:transition-colors"
           >
             <Fingerprint className="w-5 h-5 text-primary" aria-hidden="true" />

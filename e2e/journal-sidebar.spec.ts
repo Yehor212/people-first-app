@@ -89,7 +89,7 @@ test.describe("Diary desktop shell recovery", () => {
     await expect(editor).toContainText("Recovered draft text");
 
     const saveDraftAndOpenSettings = page.getByRole("button", {
-      name: "Save Draft & Open Settings",
+      name: /^Save Draft (?:&|and) Open Settings$/,
     });
     if (
       await saveDraftAndOpenSettings

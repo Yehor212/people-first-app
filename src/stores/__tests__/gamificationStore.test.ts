@@ -4,9 +4,14 @@ vi.mock("@/lib/logger", () => ({
   logger: { log: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock("@/lib/audioManager", () => ({
+  playSound: vi.fn(),
+}));
+
 import { useGamificationStore } from "@/stores/gamificationStore";
 import type { RewardOptions } from "@/stores/gamificationStore";
 import { logger } from "@/lib/logger";
+import { playSound } from "@/lib/audioManager";
 
 const initialState = useGamificationStore.getState();
 
@@ -220,5 +225,26 @@ describe("haptic callback", () => {
     expect(() => {
       useGamificationStore.getState().rewardUser("mood", defaultOptions());
     }).not.toThrow();
+  });
+});
+
+// =========================================================================
+// 7. Audio feedback
+// =========================================================================
+describe("action sound feedback", () => {
+  it.each([
+    ["mood", "success"],
+    ["gratitude", "success"],
+    ["journal", "success"],
+    ["breathing", "success"],
+    ["habit", "complete"],
+    ["focus", "complete"],
+  ] as const)("plays %s reward feedback as %s", (activity, sound) => {
+    const hooks = createMockHooks();
+    useGamificationStore.getState()._registerHooks(hooks);
+
+    useGamificationStore.getState().rewardUser(activity, defaultOptions());
+
+    expect(playSound).toHaveBeenCalledWith(sound);
   });
 });

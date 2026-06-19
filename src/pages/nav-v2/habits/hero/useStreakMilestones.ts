@@ -29,10 +29,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentStreak } from "@/lib/habitScore";
-import { scheduleIdle } from "@/lib/scheduleIdle";
+import { scheduleIdle, type IdleHandle } from "@/lib/scheduleIdle";
 import type { Habit } from "@/types";
 
 export const STREAK_MILESTONES: readonly number[] = [3, 7, 21, 66, 100] as const;
+const STREAK_MILESTONE_IDLE_BATCH_SIZE = 4;
 
 /** Pure: which milestone (if any) does this streak exactly equal? */
 export function milestoneForStreak(streak: number): number | null {
@@ -79,48 +80,82 @@ export function useStreakMilestones(habits: readonly Habit[]): UseStreakMileston
     }
 
     let cancelled = false;
-    const handle = scheduleIdle(() => {
-      if (cancelled) return;
-      const prev = prevStreaksRef.current;
-      const surfaceNextEvent = () => {
-        if (!event && queueRef.current.length > 0) {
-          const next = queueRef.current.shift();
-          if (next) setEvent(next);
+    let handle: IdleHandle | null = null;
+    const prev = prevStreaksRef.current;
+    const surfaceNextEvent = () => {
+      if (!event && queueRef.current.length > 0) {
+        const next = queueRef.current.shift();
+        if (next) setEvent(next);
+      }
+    };
+    const scheduleNextChunk = (run: () => void) => {
+      handle = scheduleIdle(run, 1_200, 120);
+    };
+
+    if (!seededRef.current) {
+      const initialHabits = initialHabitsRef.current;
+      const compareInitial = initialHabits != null && initialHabits !== habits;
+      const initialStreaks = new Map<string, number>();
+      let phase: "initial" | "current" = compareInitial ? "initial" : "current";
+      let index = 0;
+
+      const processChunk = () => {
+        if (cancelled) return;
+        let processed = 0;
+
+        while (processed < STREAK_MILESTONE_IDLE_BATCH_SIZE) {
+          if (phase === "initial") {
+            if (initialHabits && index < initialHabits.length) {
+              const h = initialHabits[index];
+              initialStreaks.set(h.id, getCurrentStreak(h));
+              index += 1;
+              processed += 1;
+              continue;
+            }
+            phase = "current";
+            index = 0;
+          }
+
+          if (index < habits.length) {
+            const h = habits[index];
+            const current = getCurrentStreak(h);
+            const previous = initialStreaks.get(h.id);
+            if (previous !== undefined) {
+              const crossed = didCrossMilestone(previous, current);
+              if (crossed !== null) {
+                queueRef.current.push({ habit: h, streak: current, milestone: crossed });
+              }
+            }
+            prev.set(h.id, current);
+            index += 1;
+            processed += 1;
+            continue;
+          }
+
+          initialHabitsRef.current = null;
+          seededRef.current = true;
+          surfaceNextEvent();
+          return;
         }
+
+        scheduleNextChunk(processChunk);
       };
 
-      // First pass: seed the baseline so we don't celebrate streaks that existed
-      // before the page mounted. If the user taps before the idle seed runs, compare
-      // against the first snapshot so the legitimate crossing is not swallowed.
-      if (!seededRef.current) {
-        const initialHabits = initialHabitsRef.current;
-        const initialStreaks = new Map<string, number>();
+      scheduleNextChunk(processChunk);
+      return () => {
+        cancelled = true;
+        handle?.cancel();
+      };
+    }
 
-        if (initialHabits && initialHabits !== habits) {
-          for (const h of initialHabits) {
-            initialStreaks.set(h.id, getCurrentStreak(h));
-          }
-        }
+    let index = 0;
+    const alive = new Set<string>();
+    const processChunk = () => {
+      if (cancelled) return;
+      let processed = 0;
 
-        for (const h of habits) {
-          const current = getCurrentStreak(h);
-          const previous = initialStreaks.get(h.id);
-          if (previous !== undefined) {
-            const crossed = didCrossMilestone(previous, current);
-            if (crossed !== null) {
-              queueRef.current.push({ habit: h, streak: current, milestone: crossed });
-            }
-          }
-          prev.set(h.id, current);
-        }
-
-        initialHabitsRef.current = null;
-        seededRef.current = true;
-        surfaceNextEvent();
-        return;
-      }
-
-      for (const h of habits) {
+      while (processed < STREAK_MILESTONE_IDLE_BATCH_SIZE && index < habits.length) {
+        const h = habits[index];
         const current = getCurrentStreak(h);
         const previous = prev.get(h.id) ?? current;
         const crossed = didCrossMilestone(previous, current);
@@ -128,21 +163,26 @@ export function useStreakMilestones(habits: readonly Habit[]): UseStreakMileston
           queueRef.current.push({ habit: h, streak: current, milestone: crossed });
         }
         prev.set(h.id, current);
+        alive.add(h.id);
+        index += 1;
+        processed += 1;
       }
 
-      // Prune ids for deleted habits so memory doesn't leak
-      const alive = new Set(habits.map((h) => h.id));
+      if (index < habits.length) {
+        scheduleNextChunk(processChunk);
+        return;
+      }
+
       for (const id of Array.from(prev.keys())) {
         if (!alive.has(id)) prev.delete(id);
       }
-
-      // Surface one event at a time
       surfaceNextEvent();
-    }, 1_200, 120);
+    };
 
+    scheduleNextChunk(processChunk);
     return () => {
       cancelled = true;
-      handle.cancel();
+      handle?.cancel();
     };
   }, [habits, event]);
 

@@ -1,0 +1,29 @@
+{
+  "version": "v2-habit-icons-1",
+  "style": "b62-liquid-glass-vector-motion",
+  "sourcePolicy": "licensed-vector-or-hand-authored-vector-only",
+  "ids": [
+    "drink-water",
+    "walk-distance",
+    "exercise",
+    "read",
+    "meditate",
+    "sleep",
+    "stretch",
+    "healthy-food",
+    "protein",
+    "vitamins",
+    "brush-teeth",
+    "sunlight",
+    "touch-grass",
+    "journal",
+    "gratitude",
+    "breathwork",
+    "phone-break",
+    "deep-work",
+    "tidy-room",
+    "quit-smoking",
+    "quit-drinking",
+    "focus"
+  ]
+}

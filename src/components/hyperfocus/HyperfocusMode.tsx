@@ -311,6 +311,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             onSoundSelect={audio.handleSoundSelect}
             onToggleSound={audio.toggleSound}
             onPlaySound={audio.playSound}
+            audioMuted={audio.audioMuted}
             t={tRecord}
           />
 

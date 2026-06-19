@@ -65,7 +65,11 @@ export function HabitCreateSheet({
     [onUpdateHabit, onClose],
   );
 
-  const form = useHabitForm({ onAddHabit: handleAdd, onUpdateHabit: handleUpdate });
+  const form = useHabitForm({
+    onAddHabit: handleAdd,
+    onUpdateHabit: handleUpdate,
+    useV2IconIds: true,
+  });
   const {
     setIsAdding,
     resetForm,

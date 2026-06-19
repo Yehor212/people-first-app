@@ -10,6 +10,7 @@ export default tseslint.config(
     ignores: [
       "dist",
       "android",
+      "ios/App/build/**",
       "coverage",
       "output/**",
       "src-tauri/target/**",

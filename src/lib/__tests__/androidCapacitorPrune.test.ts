@@ -30,4 +30,24 @@ describe("Android Capacitor native asset pruning", () => {
     expect(source).toContain('pruneMacDuplicateArtifacts(ANDROID_APP_BUILD, "android-app-build")');
     expect(source).toContain('pruneMacDuplicateArtifacts(ANDROID_CORDOVA_PLUGINS, "android-cordova-plugins")');
   });
+
+  it("polls late macOS duplicate artifacts long enough for delayed iOS build outputs", () => {
+    const source = readSource("scripts/capacitor-prune-assets.cjs");
+
+    expect(source).toContain("const LATE_DUPLICATE_CONFIRM_PASSES");
+    expect(source).toContain("const LATE_DUPLICATE_CONFIRM_DELAY_MS");
+    expect(source).toContain("pass <= LATE_DUPLICATE_CONFIRM_PASSES");
+    expect(source).toContain('pruneMacDuplicateArtifacts(DIST, `dist-late-${pass}`)');
+    expect(source).toContain('pruneMacDuplicateArtifacts(IOS_APP, `ios-app-late-${pass}`)');
+  });
+
+  it("removes stale precompressed assets from native bundles after Capacitor sync", () => {
+    const source = readSource("scripts/capacitor-prune-assets.cjs");
+
+    expect(source).toContain("prunePrecompressedNativeAssets");
+    expect(source).toContain("/\\.(?:br|gz)$/");
+    expect(source).toContain('prunePrecompressedNativeAssets(ANDROID_PUBLIC, "android-public")');
+    expect(source).toContain('prunePrecompressedNativeAssets(path.join(IOS_APP, "public"), "ios-public")');
+    expect(source).toContain("removed stale precompressed");
+  });
 });

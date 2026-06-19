@@ -15,6 +15,10 @@ import { closeOAuthBrowser } from "@/lib/nativeOAuthBrowser";
 
 const setShowChallengeModal = getModalToggle("showChallengeModal");
 
+interface UseDeepLinkHandlerOptions {
+  handleDiaryDeepLinks?: boolean;
+}
+
 /**
  * Handles all deep link processing:
  * - Auth deep links (login-callback URLs)
@@ -22,7 +26,8 @@ const setShowChallengeModal = getModalToggle("showChallengeModal");
  * - Launch URL processing (cold start)
  * - Runtime appUrlOpen events
  */
-export function useDeepLinkHandler(): void {
+export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): void {
+  const { handleDiaryDeepLinks = true } = options;
   const { isFeatureVisible } = useFeatureFlags();
   const setAuthBypassFlag = useAppStore((s) => s.setAuthBypassFlag);
   const setHasValidSession = useAppStore((s) => s.setHasValidSession);
@@ -251,6 +256,8 @@ export function useDeepLinkHandler(): void {
 
   // Handle diary deep links from widget taps (zenflow://diary/mood, zenflow://diary/editor)
   useEffect(() => {
+    if (!handleDiaryDeepLinks) return undefined;
+
     const cleanup = subscribeToDeepLinks((data) => {
       if (data.type === "diary") {
         logger.log("[DeepLink] Diary deep link received, route:", data.route);
@@ -263,5 +270,5 @@ export function useDeepLinkHandler(): void {
       }
     });
     return cleanup;
-  }, [setActiveTab]);
+  }, [handleDiaryDeepLinks, setActiveTab]);
 }

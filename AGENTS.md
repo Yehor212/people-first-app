@@ -76,6 +76,7 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 
 - Use theme tokens for colors; do not add hardcoded colors.
 - Touch targets must be at least 44px and safe areas must be respected.
+- For V2 fullscreen, edge-to-edge, safe-area, SystemBars, WebView, PWA viewport, mobile nav, sheet, modal, or entry/auth layout changes, read and follow `docs/ai/V2_FULLSCREEN_EDGE_TO_EDGE_CONTRACT.md` before editing.
 - Z-index rules: nav `z-50`, modals at least `z-[60]`.
 - Use `-webkit-backdrop-filter` with backdrop blur for cross-platform support.
 - No direct `localStorage`; use the repo storage helpers.
@@ -86,6 +87,7 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 ## Runtime And Visual Invariants
 
 - Read `docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md` before startup, performance, sync, navigation, service worker, WebGL/canvas, IndexedDB/Dexie, Supabase, offline queue, app lifecycle, or cross-platform flow changes.
+- Read `docs/ai/V2_FULLSCREEN_EDGE_TO_EDGE_CONTRACT.md` before V2 fullscreen, edge-to-edge, safe-area, SystemBars, WebView viewport, native shell, mobile nav, sheet, modal, or entry/auth layout changes.
 - The canonical state-of-mind orb family is frozen. Full surfaces use `ValenceOrb`; compact surfaces use `MiniValenceOrb`.
 - Run `npm run check:canonical-orbs` for orb or visual runtime changes.
 - Do not replace premium visuals with cheaper approximations to make performance metrics pass.

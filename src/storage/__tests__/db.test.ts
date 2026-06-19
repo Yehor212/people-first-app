@@ -5,6 +5,7 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 vi.mock('@/lib/safeJson', () => ({
+  storageKeys: vi.fn(() => Object.keys(localStorage)),
   storageRemove: vi.fn((key: string) => {
     try {
       localStorage.removeItem(key);
@@ -149,6 +150,8 @@ describe('clearLocalUserData', () => {
     await db.settings.put({ key: 'sync-last-seq', value: 42 });
     await db.settings.put({ key: 'zenflow-device-id', value: 'device-old' });
     await db.settings.put({ key: 'zenflow-deleted-habit-ids', value: ['habit-old'] });
+    await db.settings.put({ key: 'journal_draft_new', value: { title: 'private draft' } });
+    await db.settings.put({ key: 'journal_draft_entry-1', value: { title: 'entry draft' } });
 
     // Set some localStorage keys that should be cleared
     localStorage.setItem('zenflow-moods', 'data');
@@ -158,6 +161,7 @@ describe('clearLocalUserData', () => {
     localStorage.setItem('zenflow-device-id', 'device-old');
     localStorage.setItem('sync-last-seq', '42');
     localStorage.setItem('zenflow-deleted-habit-ids', '["habit-old"]');
+    localStorage.setItem('journal_draft_new', '{"title":"private draft"}');
   });
 
   it('clears moods table', async () => {
@@ -210,6 +214,14 @@ describe('clearLocalUserData', () => {
     expect(localStorage.getItem('sync-last-seq')).toBeNull();
     expect(localStorage.getItem('zenflow-device-id')).toBeNull();
     expect(localStorage.getItem('zenflow-deleted-habit-ids')).toBeNull();
+  });
+
+  it('clears dynamic unsaved journal draft settings at the account boundary', async () => {
+    await clearLocalUserData();
+
+    await expect(db.settings.get('journal_draft_new')).resolves.toBeUndefined();
+    await expect(db.settings.get('journal_draft_entry-1')).resolves.toBeUndefined();
+    expect(localStorage.getItem('journal_draft_new')).toBeNull();
   });
 
   it('removes expected localStorage keys', async () => {

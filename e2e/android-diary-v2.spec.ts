@@ -5,6 +5,8 @@ import { primeZenflowV2, v2RoutePath } from "./helpers/zenflowV2State";
 const ANDROID_TOUCH_TARGET_PX = 48;
 const TOUCH_EPSILON_PX = 0.01;
 
+test.use({ timezoneId: "UTC" });
+
 async function expectAndroidTouchTarget(page: Page, locator: Locator) {
   await expect(locator).toBeVisible({ timeout: 30_000 });
   await expect
@@ -31,6 +33,49 @@ async function expectAndroidTouchTarget(page: Page, locator: Locator) {
   expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
 }
 
+async function expectPhoneDiaryWallpaper(page: Page, expectedTone: "day" | "night" = "day") {
+  const wallpaper = page.getByTestId("journal-wallpaper");
+  await expect(wallpaper).toHaveCount(1);
+  await expect(wallpaper).toHaveAttribute("data-wallpaper-surface", "page");
+  await expect(wallpaper).toHaveAttribute("data-wallpaper-tone", expectedTone);
+  await expect(wallpaper).toHaveAttribute("data-wallpaper-motion", "static");
+  await expect(wallpaper).toHaveAttribute("data-wallpaper-platform", "universal");
+
+  const facts = await page.evaluate(() => {
+    const shell = document.querySelector<HTMLElement>("[data-testid='journal-page-shell']");
+    const wallpaper = document.querySelector<HTMLElement>("[data-testid='journal-wallpaper']");
+    const luminanceWash = document.querySelector<HTMLElement>(".journal-wallpaper__luminance-wash");
+    const memoryBloom = document.querySelector<HTMLElement>(".journal-wallpaper__memory-bloom");
+    if (!shell || !wallpaper || !luminanceWash || !memoryBloom) return null;
+
+    const shellRect = shell.getBoundingClientRect();
+    const wallpaperRect = wallpaper.getBoundingClientRect();
+    const style = window.getComputedStyle(wallpaper);
+
+    return {
+      backgroundImage: style.backgroundImage,
+      horizontalOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      luminanceWashOpacity: Number.parseFloat(window.getComputedStyle(luminanceWash).opacity),
+      memoryBloomOpacity: Number.parseFloat(window.getComputedStyle(memoryBloom).opacity),
+      pointerEvents: style.pointerEvents,
+      shellHeight: shellRect.height,
+      shellWidth: shellRect.width,
+      wallpaperHeight: wallpaperRect.height,
+      wallpaperWidth: wallpaperRect.width,
+    };
+  });
+
+  expect(facts).not.toBeNull();
+  expect(facts?.horizontalOverflow).toBeLessThanOrEqual(1);
+  expect(facts?.backgroundImage).toContain("radial-gradient");
+  expect(facts?.backgroundImage).not.toContain("url(");
+  expect(facts?.memoryBloomOpacity).toBeGreaterThan(0);
+  expect(facts?.luminanceWashOpacity).toBeGreaterThan(0);
+  expect(facts?.pointerEvents).toBe("none");
+  expect(facts?.wallpaperWidth).toBeGreaterThanOrEqual((facts?.shellWidth ?? 0) - 1);
+  expect(facts?.wallpaperHeight).toBeGreaterThanOrEqual((facts?.shellHeight ?? 0) - 1);
+}
+
 async function openDiaryFromV2Root(page: Page) {
   await page.goto(v2RoutePath("orb", { layout: "phone" }), { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("nav-v2-orchestrator")).toBeVisible({ timeout: 30_000 });
@@ -53,12 +98,15 @@ test.describe("Android V2 Diary", () => {
   test.describe.configure({ timeout: 90_000 });
 
   test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-06-17T12:00:00.000Z"));
     await primeZenflowV2(page, { language: "en", theme: "paper" });
     await page.setViewportSize({ width: 399, height: 869 });
     await openDiaryFromV2Root(page);
   });
 
   test("keeps the Android diary shell tap-safe and unclipped", async ({ page }) => {
+    await expectPhoneDiaryWallpaper(page);
+
     for (const id of ["journal-mobile-nav-menu", "journal-mobile-stats", "journal-mobile-settings"]) {
       await expectAndroidTouchTarget(page, page.getByTestId(id));
     }
@@ -66,6 +114,46 @@ test.describe("Android V2 Diary", () => {
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
+  });
+
+  test("serves the Android diary ambience audio from the native bundle", async ({ page }) => {
+    const audioSrc = await page
+      .getByTestId("diary-page-ambience-audio")
+      .evaluate((audio: HTMLAudioElement) => audio.currentSrc || audio.src);
+    const result = await page.evaluate(async (src) => {
+      const response = await fetch(src, { cache: "no-store" });
+      return {
+        bytes: (await response.arrayBuffer()).byteLength,
+        contentType: response.headers.get("content-type") || "",
+        status: response.status,
+      };
+    }, audioSrc);
+
+    expect(result.status).toBe(200);
+    expect(result.contentType).toContain("audio/");
+    expect(result.bytes).toBeGreaterThan(1024);
+  });
+
+  test("renders the Android night diary wallpaper without losing the static platform contract", async ({
+    page,
+  }) => {
+    await page.clock.setFixedTime(new Date("2026-06-17T23:00:00.000Z"));
+    await primeZenflowV2(page, { clearStorage: true, language: "en", theme: "ink" });
+    await page.setViewportSize({ width: 399, height: 869 });
+    await openDiaryFromV2Root(page);
+
+    await expectPhoneDiaryWallpaper(page, "night");
+  });
+
+  test("renders the Android paper diary wallpaper in natural night hours", async ({
+    page,
+  }) => {
+    await page.clock.setFixedTime(new Date("2026-06-18T02:00:00.000Z"));
+    await primeZenflowV2(page, { clearStorage: true, language: "en", theme: "paper" });
+    await page.setViewportSize({ width: 399, height: 869 });
+    await openDiaryFromV2Root(page);
+
+    await expectPhoneDiaryWallpaper(page, "night");
   });
 
   test("opens and dismisses Android diary action surfaces predictably", async ({ page }) => {

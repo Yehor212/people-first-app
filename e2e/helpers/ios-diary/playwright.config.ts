@@ -8,6 +8,7 @@ const artifactRoot = resolve(repoRoot, "output/playwright/ios-diary-e2e-20260614
 
 export default defineConfig({
   testDir: repoRoot,
+  testIgnore: ["**/output/**"],
   fullyParallel: false,
   forbidOnly: true,
   retries: 0,

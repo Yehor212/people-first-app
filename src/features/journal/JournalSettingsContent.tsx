@@ -423,15 +423,7 @@ export function JournalSettingsContent({
         }
         icon={KeyRound}
       >
-        <div className="flex min-h-[44px] items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              {ts.journalPrivateMode || "Hide previews"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {ts.journalPrivateModeHint || "Show only titles in entry list"}
-            </p>
-          </div>
+        <div className="flex min-h-[44px] items-center justify-end">
           <Switch
             checked={privateMode}
             onCheckedChange={onPrivateModeChange}

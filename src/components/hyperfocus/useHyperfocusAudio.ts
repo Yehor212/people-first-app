@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getAmbientSoundGenerator, AmbientSoundGenerator, AudioStatus } from '@/lib/ambientSounds';
+import { normalizeHyperfocusSoundId } from '@/lib/hyperfocusAudioCatalog';
+import { useAppAudioSettings } from '@/hooks/useAppAudioSettings';
 
 interface UseHyperfocusAudioOptions {
   isRunning: boolean;
@@ -15,6 +17,8 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     isUnlocked: false,
   });
   const soundGeneratorRef = useRef<AmbientSoundGenerator>(getAmbientSoundGenerator());
+  const appAudioSettings = useAppAudioSettings();
+  const ambientVolume = appAudioSettings.muted ? 0 : Math.max(0, Math.min(1, appAudioSettings.volume * 0.5));
 
   // Subscribe to audio status updates
   useEffect(() => {
@@ -33,6 +37,18 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    const generator = soundGeneratorRef.current;
+    if (!generator) return;
+
+    generator.setVolume(ambientVolume);
+
+    if (appAudioSettings.muted) {
+      generator.pause();
+      setIsSoundPlaying(false);
+    }
+  }, [ambientVolume, appAudioSettings.muted]);
+
   // Pause/resume sync with timer state
   useEffect(() => {
     const generator = soundGeneratorRef.current;
@@ -44,10 +60,11 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
       return;
     }
 
-    if (!isRunning || isPaused) {
+    if (!isRunning || isPaused || appAudioSettings.muted) {
       generator.pause();
+      setIsSoundPlaying(false);
     }
-  }, [selectedSoundId, isRunning, isPaused]);
+  }, [selectedSoundId, isRunning, isPaused, appAudioSettings.muted]);
 
   // Stop sound on unmount
   useEffect(() => {
@@ -62,9 +79,11 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
   // Play sound — preserves iOS gesture context
   const playSound = useCallback((soundId: string) => {
     const generator = soundGeneratorRef.current;
-    if (!generator || !soundId) return;
-    generator.playDirect(soundId);
-  }, []);
+    const normalizedSoundId = normalizeHyperfocusSoundId(soundId);
+    if (!generator || !normalizedSoundId || appAudioSettings.muted) return;
+    generator.setVolume(ambientVolume);
+    generator.playDirect(normalizedSoundId);
+  }, [ambientVolume, appAudioSettings.muted]);
 
   const pauseAudio = () => {
     soundGeneratorRef.current?.pause();
@@ -81,17 +100,19 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     if (isSoundPlaying) {
       generator.pause();
       setIsSoundPlaying(false);
-    } else if (selectedSoundId) {
+    } else if (selectedSoundId && !appAudioSettings.muted) {
+      generator.setVolume(ambientVolume);
       generator.resumeDirect();
     }
   };
 
   const handleSoundSelect = (soundId: string | null) => {
-    setSelectedSoundId(soundId);
+    const normalizedSoundId = soundId ? normalizeHyperfocusSoundId(soundId) : null;
+    setSelectedSoundId(normalizedSoundId);
 
-    if (soundId && isRunning && !isPaused) {
-      playSound(soundId);
-    } else if (!soundId) {
+    if (normalizedSoundId && isRunning && !isPaused && !appAudioSettings.muted) {
+      playSound(normalizedSoundId);
+    } else if (!normalizedSoundId) {
       soundGeneratorRef.current?.stop();
       setIsSoundPlaying(false);
     }
@@ -100,6 +121,7 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
   return {
     selectedSoundId,
     isSoundPlaying,
+    audioMuted: appAudioSettings.muted,
     audioStatus,
     playSound,
     pauseAudio,

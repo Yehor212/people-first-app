@@ -1,5 +1,8 @@
 // @vitest-environment node
 
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type {
   IndexHtmlTransformContext,
@@ -13,6 +16,11 @@ import { versionPlugin } from "../vite-plugin-version";
 type ConfigResolvedHook = (
   this: MinimalPluginContextWithoutEnvironment,
   config: ResolvedConfig,
+) => void | Promise<void>;
+type WriteBundleHook = (
+  this: MinimalPluginContextWithoutEnvironment,
+  options: unknown,
+  bundle: unknown,
 ) => void | Promise<void>;
 
 const pluginContext = {
@@ -34,10 +42,16 @@ function getTransformIndexHtml(plugin: Plugin): IndexHtmlTransformHook | undefin
   return hook.handler;
 }
 
-function createResolvedConfig(command: "serve" | "build"): ResolvedConfig {
+function getWriteBundle(plugin: Plugin): WriteBundleHook | undefined {
+  const hook = plugin.writeBundle;
+  if (!hook) return undefined;
+  return (typeof hook === "function" ? hook : hook.handler) as WriteBundleHook;
+}
+
+function createResolvedConfig(command: "serve" | "build", outDir = "dist"): ResolvedConfig {
   return {
     root: process.cwd(),
-    build: { outDir: "dist" },
+    build: { outDir },
     base: "/people-first-app/",
     command,
   } as unknown as ResolvedConfig;
@@ -84,5 +98,25 @@ describe("versionPlugin HTML injection", () => {
         injectTo: "head-prepend",
       },
     ]);
+  });
+
+  it("generates a version-check reload path without redirecting from document location", async () => {
+    const outputDir = mkdtempSync(join(tmpdir(), "zenflow-version-plugin-"));
+    try {
+      const plugin = versionPlugin({ buildTime: 1234567890 });
+      const configResolved = getConfigResolved(plugin);
+      const writeBundle = getWriteBundle(plugin);
+
+      await configResolved?.call(pluginContext, createResolvedConfig("build", outputDir));
+      await Promise.resolve(writeBundle?.call(pluginContext, {}, {}));
+
+      const script = readFileSync(join(outputDir, "version-check.js"), "utf8");
+
+      expect(script).not.toContain("new URL(location.href)");
+      expect(script).not.toContain("location.replace(");
+      expect(script).toContain("location.reload()");
+    } finally {
+      rmSync(outputDir, { force: true, recursive: true });
+    }
   });
 });

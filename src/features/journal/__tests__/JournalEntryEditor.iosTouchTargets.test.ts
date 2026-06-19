@@ -19,6 +19,11 @@ const relatedInteractiveSource = Object.values(touchTargetSources)
   .join("\n");
 
 describe("JournalEntryEditor iOS touch targets", () => {
+  it("localizes the save-draft-before-settings confirmation copy", () => {
+    expect(editorSource).toContain("ts.journalSaveDraftOpenSettingsDescription");
+    expect(editorSource).not.toContain("Save this draft before opening settings so you can continue exactly where you left");
+  });
+
   it("keeps mobile editor chrome controls at least 44px", () => {
     expect(editorSource).toContain(
       "flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5",
@@ -26,8 +31,19 @@ describe("JournalEntryEditor iOS touch targets", () => {
     expect(editorSource).toContain(
       "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full",
     );
+    expect(editorSource).toContain("flex min-h-[44px] items-center gap-1 rounded-full");
   });
 
+  it("keeps the iOS save button readable with theme tokens", () => {
+    const saveButtonSource =
+      /whileTap=\{saveSuccess[\s\S]*?\{ts\.journalSave \|\| "Save"\}[\s\S]*?<\/motion\.button>/.exec(
+        editorSource,
+      )?.[0] ?? "";
+
+    expect(saveButtonSource).toContain("text-primary");
+    expect(saveButtonSource).toContain("border-primary/30");
+    expect(saveButtonSource).not.toContain("text-emerald-400");
+  });
 
   it("keeps the mobile editor above iPad sidebar stacking contexts", () => {
     expect(editorSource).toContain('import { createPortal } from "react-dom";');
@@ -76,11 +92,18 @@ describe("JournalEntryEditor iOS touch targets", () => {
     expect(relatedInteractiveSource).not.toContain("w-7 h-7 flex items-center justify-center opacity-0");
   });
 
-  it("keeps the native date input hidden from touch hit testing", () => {
-    expect(editorSource).toContain(
-      'className="pointer-events-none absolute h-px w-px opacity-0"',
-    );
-    expect(editorSource).toContain('aria-hidden="true"');
-    expect(editorSource).toContain("tabIndex={-1}");
+  it("applies the iOS keyboard inset to the fixed mobile editor shell", () => {
+    expect(editorSource).toContain('"--diary-keyboard-inset": `${keyboardInset}px`');
+    expect(editorSource).toContain('bottom: desktop ? undefined : `${keyboardInset}px`');
+    expect(editorSource).toContain("pb-[calc(2rem+var(--diary-keyboard-inset,0px))]");
+  });
+  it("uses a real 44px native date input hit target on iOS", () => {
+    expect(editorSource).not.toContain("const handleDatePickerOpen = useCallback(() =>");
+    expect(editorSource).not.toContain("input.showPicker();");
+    expect(editorSource).not.toContain('className="pointer-events-none absolute h-px w-px opacity-0"');
+    expect(editorSource).toContain("relative inline-flex min-h-[44px] items-center");
+    expect(editorSource).toContain("pointer-events-none flex min-h-[44px] items-center gap-1 rounded-lg px-2");
+    expect(editorSource).toContain('aria-label={ts.journalEntryDate || "Entry date"}');
+    expect(editorSource).toContain('className="absolute inset-0 min-h-[44px] w-full cursor-pointer opacity-0"');
   });
 });

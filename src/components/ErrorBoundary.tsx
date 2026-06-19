@@ -2,15 +2,9 @@ import React from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { APP_VERSION, getAppMetadata } from "@/lib/appVersion";
 import { crashReporting } from "@/lib/crashReporting";
+import { captureOrBuffer } from "@/lib/errorBuffer";
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
-// Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
-// captureError is fire-and-forget in componentDidCatch — async is safe here.
-const lazyCaptureError = (error: Error, context?: Record<string, unknown>) => {
-  import("@/lib/sentry")
-    .then(({ captureError }) => captureError(error, context))
-    .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
-};
 import { createFocusTrap, announceError } from "@/lib/a11y";
 import { logger } from "@/lib/logger";
 import { isChunkLoadError } from "@/lib/chunkErrorDetection";
@@ -163,7 +157,7 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
     });
 
     // Send to Sentry for error monitoring
-    lazyCaptureError(error, {
+    captureOrBuffer(error, {
       componentStack: info.componentStack || "unknown",
       location: window.location.origin + window.location.pathname,
       context: "ErrorBoundary",
@@ -369,7 +363,7 @@ class ModalErrorBoundaryClass extends React.Component<
     });
 
     // Send to Sentry for error monitoring
-    lazyCaptureError(error, {
+    captureOrBuffer(error, {
       componentStack: info.componentStack || "unknown",
       location: window.location.origin + window.location.pathname,
       context: "ModalErrorBoundary",

@@ -23,6 +23,7 @@ import {
   isAudioUnlocked,
   getAmbientSoundGenerator,
   preloadAmbientSounds,
+  setupAudioUnlock,
   AmbientSoundGenerator,
   type AudioState,
   type AmbientSoundType,
@@ -95,6 +96,18 @@ describe('getSoundById', () => {
     expect(getSoundById('nonexistent')).toBeUndefined();
   });
 
+  it('resolves future three-level variant ids through the current legacy family file', () => {
+    const legacy = getSoundById('fireplace');
+    const variant = getSoundById('fireplace:soft');
+
+    expect(variant).toMatchObject({
+      id: 'fireplace:soft',
+      type: 'fireplace',
+      nameEn: expect.stringContaining('Embers'),
+    });
+    expect(variant?.file).toBe(legacy?.file);
+  });
+
   it('returns undefined for empty string', () => {
     expect(getSoundById('')).toBeUndefined();
   });
@@ -140,6 +153,30 @@ describe('preloadAmbientSounds', () => {
 describe('isAudioUnlocked', () => {
   it('returns a boolean', () => {
     expect(typeof isAudioUnlocked()).toBe('boolean');
+  });
+});
+
+describe('setupAudioUnlock', () => {
+  it('does not attach a global click listener that can delay navigation taps', () => {
+    const addSpy = vi.spyOn(document, 'addEventListener');
+
+    setupAudioUnlock();
+
+    expect(addSpy).toHaveBeenCalledWith('touchstart', expect.any(Function), {
+      capture: true,
+      passive: true,
+    });
+    expect(addSpy).toHaveBeenCalledWith('touchend', expect.any(Function), {
+      capture: true,
+      passive: true,
+    });
+    expect(addSpy).toHaveBeenCalledWith('keydown', expect.any(Function), {
+      capture: true,
+      passive: true,
+    });
+    expect(addSpy.mock.calls.some(([eventName]) => eventName === 'click')).toBe(false);
+
+    addSpy.mockRestore();
   });
 });
 

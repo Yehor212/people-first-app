@@ -2,12 +2,28 @@ import { db } from "@/storage/db";
 import { generateId } from "@/lib/utils";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "./types";
 import { JOURNAL_DRAFT_ENTRY_ID, MAX_PHOTOS_PER_ENTRY, MAX_AUDIO_PER_ENTRY } from "./types";
+import { getJournalContentVaultKey } from "./journalContentSession";
+import {
+  decryptJournalContentIfNeeded,
+  encryptJournalContent,
+  isEncryptedJournalContent,
+} from "./journalCrypto";
+import {
+  decryptJournalMediaDataUrlIfNeeded,
+  encryptedJournalMediaFromStorageDataUrl,
+  encryptedJournalMediaToStorageBlob,
+  encryptJournalMediaDataUrl,
+  isEncryptedJournalMediaData,
+} from "./journalMediaCrypto";
 import {
   uploadPhoto,
+  uploadEncryptedPhoto,
   uploadAudio as uploadAudioToStorage,
+  uploadEncryptedAudio,
   deletePhotoFromStorage,
   deleteAudioFromStorage,
   deleteEntryMediaFromStorage,
+  deleteJournalMediaStoragePath,
   downloadAsBase64,
 } from "@/storage/journalStorageService";
 import {
@@ -21,7 +37,335 @@ import {
 import { triggerSync } from "@/storage/cloudSync";
 import { trackDeletedJournalEntryId } from "@/storage/deletionTracker";
 import { logger } from "@/lib/logger";
+import { offlineQueue } from "@/lib/offlineQueue";
+import { isCloudSyncEnabled } from "@/lib/cloudSyncSettings";
 
+type JournalPhotoSyncMetadata = Pick<
+  JournalPhoto,
+  "id" | "entryId" | "width" | "height" | "createdAt" | "storagePath"
+>;
+
+type JournalAudioSyncMetadata = Pick<
+  JournalAudio,
+  "id" | "entryId" | "duration" | "mimeType" | "createdAt" | "storagePath"
+>;
+
+type JournalMediaQueueAction =
+  | "UPLOAD_JOURNAL_PHOTO_STORAGE"
+  | "UPLOAD_JOURNAL_AUDIO_STORAGE"
+  | "DELETE_JOURNAL_PHOTO_STORAGE"
+  | "DELETE_JOURNAL_AUDIO_STORAGE";
+
+interface QueuedJournalPhotoUploadPayload {
+  id: string;
+  metadata?: JournalPhotoSyncMetadata;
+}
+
+interface QueuedJournalAudioUploadPayload {
+  id: string;
+  metadata?: JournalAudioSyncMetadata;
+}
+
+interface QueuedJournalMediaIdPayload {
+  id: string;
+}
+
+function toPhotoSyncMetadata(photo: JournalPhoto): JournalPhotoSyncMetadata {
+  return {
+    id: photo.id,
+    entryId: photo.entryId,
+    width: photo.width,
+    height: photo.height,
+    createdAt: photo.createdAt,
+    storagePath: photo.storagePath,
+  };
+}
+
+function toAudioSyncMetadata(audio: JournalAudio): JournalAudioSyncMetadata {
+  return {
+    id: audio.id,
+    entryId: audio.entryId,
+    duration: audio.duration,
+    mimeType: audio.mimeType,
+    createdAt: audio.createdAt,
+    storagePath: audio.storagePath,
+  };
+}
+
+async function encryptEntryContentForStorage(entry: JournalEntry): Promise<JournalEntry> {
+  if (!entry.content || isEncryptedJournalContent(entry.content)) return entry;
+
+  const vaultKey = getJournalContentVaultKey();
+  if (!vaultKey) return entry;
+
+  return {
+    ...entry,
+    content: await encryptJournalContent(entry.content, vaultKey),
+  };
+}
+
+async function encryptEntryChangesForStorage<T extends Partial<Pick<JournalEntry, "content">>>(
+  changes: T,
+): Promise<T> {
+  if (typeof changes.content !== "string" || changes.content.length === 0) return changes;
+  if (isEncryptedJournalContent(changes.content)) return changes;
+
+  const vaultKey = getJournalContentVaultKey();
+  if (!vaultKey) return changes;
+
+  return {
+    ...changes,
+    content: await encryptJournalContent(changes.content, vaultKey),
+  };
+}
+
+async function decryptEntryContentForDisplay(entry: JournalEntry): Promise<JournalEntry> {
+  if (!entry.content || !isEncryptedJournalContent(entry.content)) return entry;
+
+  const vaultKey = getJournalContentVaultKey();
+  if (!vaultKey) {
+    return { ...entry, content: "" };
+  }
+
+  return {
+    ...entry,
+    content: await decryptJournalContentIfNeeded(entry.content, vaultKey),
+  };
+}
+
+async function decryptEntriesForDisplay(entries: JournalEntry[]): Promise<JournalEntry[]> {
+  return Promise.all(entries.map((entry) => decryptEntryContentForDisplay(entry)));
+}
+
+
+async function encryptMediaDataWithVaultKey(value: string, vaultKey: string): Promise<string> {
+  if (!value || isEncryptedJournalMediaData(value)) return value;
+  return encryptJournalMediaDataUrl(value, vaultKey);
+}
+
+async function decryptMediaDataWithVaultKey(value: string, vaultKey: string): Promise<string> {
+  if (!value) return value;
+  return decryptJournalMediaDataUrlIfNeeded(value, vaultKey);
+}
+
+async function encryptMediaDataForStorage(value: string): Promise<string> {
+  const vaultKey = getJournalContentVaultKey();
+  if (!vaultKey) return value;
+  return encryptMediaDataWithVaultKey(value, vaultKey);
+}
+
+async function decryptMediaDataForDisplay(value: string): Promise<string> {
+  if (!value) return value;
+  const normalized = encryptedJournalMediaFromStorageDataUrl(value);
+  if (!isEncryptedJournalMediaData(normalized)) return normalized;
+
+  const vaultKey = getJournalContentVaultKey();
+  if (!vaultKey) return "";
+
+  return decryptMediaDataWithVaultKey(normalized, vaultKey);
+}
+
+async function encryptPhotoForStorage(photo: JournalPhoto): Promise<JournalPhoto> {
+  return {
+    ...photo,
+    data: await encryptMediaDataForStorage(photo.data),
+    thumbnail: await encryptMediaDataForStorage(photo.thumbnail),
+  };
+}
+
+async function decryptPhotoForDisplay(photo: JournalPhoto): Promise<JournalPhoto> {
+  return {
+    ...photo,
+    data: await decryptMediaDataForDisplay(photo.data),
+    thumbnail: await decryptMediaDataForDisplay(photo.thumbnail),
+  };
+}
+
+async function encryptAudioForStorage(audio: JournalAudio): Promise<JournalAudio> {
+  return {
+    ...audio,
+    data: await encryptMediaDataForStorage(audio.data),
+  };
+}
+
+async function decryptAudioForDisplay(audio: JournalAudio): Promise<JournalAudio> {
+  return {
+    ...audio,
+    data: await decryptMediaDataForDisplay(audio.data),
+  };
+}
+
+function getQueuedMediaId(payload: unknown): string | null {
+  if (typeof payload === "string") return payload;
+  if (!payload || typeof payload !== "object") return null;
+  const id = (payload as { id?: unknown }).id;
+  return typeof id === "string" && id.length > 0 ? id : null;
+}
+
+function getQueuedPhotoMetadata(payload: unknown): JournalPhotoSyncMetadata | undefined {
+  const metadata = (payload as { metadata?: Partial<JournalPhotoSyncMetadata> } | null)?.metadata;
+  if (!metadata || typeof metadata.id !== "string" || typeof metadata.entryId !== "string") {
+    return undefined;
+  }
+  return metadata as JournalPhotoSyncMetadata;
+}
+
+function getQueuedAudioMetadata(payload: unknown): JournalAudioSyncMetadata | undefined {
+  const metadata = (payload as { metadata?: Partial<JournalAudioSyncMetadata> } | null)?.metadata;
+  if (!metadata || typeof metadata.id !== "string" || typeof metadata.entryId !== "string") {
+    return undefined;
+  }
+  return metadata as JournalAudioSyncMetadata;
+}
+
+function queueJournalMediaAction(
+  type: JournalMediaQueueAction,
+  entityId: string,
+  payload: QueuedJournalPhotoUploadPayload | QueuedJournalAudioUploadPayload | QueuedJournalMediaIdPayload,
+  label: string
+): void {
+  if (!isCloudSyncEnabled()) return;
+  void offlineQueue
+    .enqueue(type, entityId, payload, { priority: "high" })
+    .catch((err) => logger.warn("[JournalSync]", label + " queue failed:", err));
+}
+
+function queuePhotoUploadRetry(photoId: string): void {
+  queueJournalMediaAction(
+    "UPLOAD_JOURNAL_PHOTO_STORAGE",
+    "journal-photo-upload:" + photoId,
+    { id: photoId },
+    "Photo upload retry"
+  );
+}
+
+function queueAudioUploadRetry(audioId: string): void {
+  queueJournalMediaAction(
+    "UPLOAD_JOURNAL_AUDIO_STORAGE",
+    "journal-audio-upload:" + audioId,
+    { id: audioId },
+    "Audio upload retry"
+  );
+}
+
+function queuePhotoDeleteRetry(photoId: string): void {
+  queueJournalMediaAction(
+    "DELETE_JOURNAL_PHOTO_STORAGE",
+    "journal-photo-delete:" + photoId,
+    { id: photoId },
+    "Photo delete retry"
+  );
+}
+
+function queueAudioDeleteRetry(audioId: string): void {
+  queueJournalMediaAction(
+    "DELETE_JOURNAL_AUDIO_STORAGE",
+    "journal-audio-delete:" + audioId,
+    { id: audioId },
+    "Audio delete retry"
+  );
+}
+
+function queueEntryMediaDeleteRetries(photoIds: string[], audioIds: string[]): void {
+  for (const photoId of photoIds) queuePhotoDeleteRetry(photoId);
+  for (const audioId of audioIds) queueAudioDeleteRetry(audioId);
+}
+
+export async function retryJournalPhotoUpload(payload: unknown): Promise<void> {
+  if (!isCloudSyncEnabled()) return;
+
+  const photoId = getQueuedMediaId(payload);
+  if (!photoId) {
+    logger.warn("[JournalSync]", "Queued photo upload missing id");
+    return;
+  }
+
+  const fallbackMetadata = getQueuedPhotoMetadata(payload);
+  const photo = await db.journalPhotos.get(photoId);
+
+  if (!photo && !fallbackMetadata) {
+    logger.warn("[JournalSync]", "Queued photo upload skipped; local row missing:", photoId);
+    return;
+  }
+
+  if (photo?.data && !photo.storagePath) {
+    const result = await uploadPhotoPayload(photo, photo.data);
+    if (!result) throw new Error("Journal photo upload retry returned no storage result: " + photo.id);
+
+    await db.journalPhotos.update(photo.id, {
+      storagePath: result.path,
+    });
+    const updated = await db.journalPhotos.get(photo.id);
+    await syncJournalPhoto(updated ? toPhotoSyncMetadata(updated) : {
+      ...toPhotoSyncMetadata(photo),
+      storagePath: result.path,
+    });
+    return;
+  }
+
+  const metadata = photo ? toPhotoSyncMetadata(photo) : fallbackMetadata;
+  if (metadata) await syncJournalPhoto(metadata);
+}
+
+export async function retryJournalAudioUpload(payload: unknown): Promise<void> {
+  if (!isCloudSyncEnabled()) return;
+
+  const audioId = getQueuedMediaId(payload);
+  if (!audioId) {
+    logger.warn("[JournalSync]", "Queued audio upload missing id");
+    return;
+  }
+
+  const fallbackMetadata = getQueuedAudioMetadata(payload);
+  const audio = await db.journalAudio.get(audioId);
+
+  if (!audio && !fallbackMetadata) {
+    logger.warn("[JournalSync]", "Queued audio upload skipped; local row missing:", audioId);
+    return;
+  }
+
+  if (audio?.data && !audio.storagePath) {
+    const result = await uploadAudioPayload(audio, audio.data, audio.mimeType);
+    if (!result) throw new Error("Journal audio upload retry returned no storage result: " + audio.id);
+
+    await db.journalAudio.update(audio.id, {
+      storagePath: result.path,
+    });
+    const updated = await db.journalAudio.get(audio.id);
+    await syncJournalAudio(updated ? toAudioSyncMetadata(updated) : {
+      ...toAudioSyncMetadata(audio),
+      storagePath: result.path,
+    });
+    return;
+  }
+
+  const metadata = audio ? toAudioSyncMetadata(audio) : fallbackMetadata;
+  if (metadata) await syncJournalAudio(metadata);
+}
+
+export async function retryJournalPhotoDelete(payload: unknown): Promise<void> {
+  if (!isCloudSyncEnabled()) return;
+
+  const photoId = getQueuedMediaId(payload);
+  if (!photoId) {
+    logger.warn("[JournalSync]", "Queued photo delete missing id");
+    return;
+  }
+  await deletePhotoFromStorage(photoId);
+  await deleteJournalPhotoFromCloud(photoId);
+}
+
+export async function retryJournalAudioDelete(payload: unknown): Promise<void> {
+  if (!isCloudSyncEnabled()) return;
+
+  const audioId = getQueuedMediaId(payload);
+  if (!audioId) {
+    logger.warn("[JournalSync]", "Queued audio delete missing id");
+    return;
+  }
+  await deleteAudioFromStorage(audioId);
+  await deleteJournalAudioFromCloud(audioId);
+}
 
 async function relinkDraftMediaToEntry(
   entryId: string,
@@ -49,34 +393,152 @@ async function relinkDraftMediaToEntry(
   return relinked;
 }
 
-async function hydratePhotoFromStorage(photo: JournalPhoto): Promise<JournalPhoto> {
-  if (photo.data && photo.thumbnail) return photo;
+export async function commitDraftMediaToEntry(
+  entryId: string,
+  media: { photoIds?: string[]; audioIds?: string[] }
+): Promise<void> {
+  if (!entryId || entryId === JOURNAL_DRAFT_ENTRY_ID) return;
 
+  let relinkedMedia: { photos: JournalPhoto[]; audios: JournalAudio[] } = { photos: [], audios: [] };
+  await db.transaction("rw", [db.journalPhotos, db.journalAudio], async () => {
+    relinkedMedia = await relinkDraftMediaToEntry(
+      entryId,
+      media.photoIds || [],
+      media.audioIds || [],
+    );
+  });
+
+  if (!isCloudSyncEnabled()) return;
+
+  for (const photo of relinkedMedia.photos) {
+    if (photo.data && !photo.storagePath) {
+      uploadPhotoAndSync(photo, photo.data);
+    } else {
+      syncPhotoMetadata(photo, "Photo relink sync");
+    }
+  }
+  for (const audio of relinkedMedia.audios) {
+    if (audio.data && !audio.storagePath) {
+      uploadAudioAndSync(audio, audio.data, audio.mimeType);
+    } else {
+      syncAudioMetadata(audio, "Audio relink sync");
+    }
+  }
+  if (relinkedMedia.photos.length || relinkedMedia.audios.length) triggerSync();
+}
+
+function syncPhotoMetadata(photo: JournalPhoto, label: string): void {
+  if (!isCloudSyncEnabled()) return;
+  syncJournalPhoto(photo).catch((err) => logger.warn("[JournalSync]", `${label} failed:`, err));
+}
+
+function syncAudioMetadata(audio: JournalAudio, label: string): void {
+  if (!isCloudSyncEnabled()) return;
+  syncJournalAudio(audio).catch((err) => logger.warn("[JournalSync]", `${label} failed:`, err));
+}
+
+
+async function uploadPhotoPayload(photo: JournalPhoto, dataUrl: string) {
+  const result = isEncryptedJournalMediaData(dataUrl)
+    ? await uploadEncryptedPhoto(photo.id, encryptedJournalMediaToStorageBlob(dataUrl))
+    : await uploadPhoto(photo.id, dataUrl);
+
+  if (result && photo.storagePath && photo.storagePath !== result.path) {
+    void deleteJournalMediaStoragePath("journal-photos", photo.storagePath).catch((err) =>
+      logger.warn("[JournalSync]", "Old photo storage cleanup failed:", err),
+    );
+  }
+
+  return result;
+}
+
+async function uploadAudioPayload(audio: JournalAudio, dataUrl: string, mimeType: string) {
+  const result = isEncryptedJournalMediaData(dataUrl)
+    ? await uploadEncryptedAudio(audio.id, encryptedJournalMediaToStorageBlob(dataUrl))
+    : await uploadAudioToStorage(audio.id, dataUrl, mimeType);
+
+  if (result && audio.storagePath && audio.storagePath !== result.path) {
+    void deleteJournalMediaStoragePath("journal-audio", audio.storagePath).catch((err) =>
+      logger.warn("[JournalSync]", "Old audio storage cleanup failed:", err),
+    );
+  }
+
+  return result;
+}
+
+function uploadPhotoAndSync(photo: JournalPhoto, dataUrl: string): void {
+  if (!isCloudSyncEnabled()) return;
+  queuePhotoUploadRetry(photo.id);
+  void uploadPhotoPayload(photo, dataUrl)
+    .then(async (result) => {
+      if (result) {
+        await db.journalPhotos.update(photo.id, {
+          storagePath: result.path,
+        });
+        const updated = await db.journalPhotos.get(photo.id);
+        if (updated) syncPhotoMetadata(updated, "Photo sync");
+      } else {
+        logger.warn("[Journal]", "Photo upload returned no storage result; queued for retry:", photo.id);
+      }
+    })
+    .catch((err) => {
+      logger.error("[Journal]", "Photo upload failed:", err);
+      queuePhotoUploadRetry(photo.id);
+    });
+
+  syncPhotoMetadata(photo, "Photo metadata sync");
+}
+
+function uploadAudioAndSync(audio: JournalAudio, dataUrl: string, mimeType: string): void {
+  if (!isCloudSyncEnabled()) return;
+  queueAudioUploadRetry(audio.id);
+  void uploadAudioPayload(audio, dataUrl, mimeType)
+    .then(async (result) => {
+      if (result) {
+        await db.journalAudio.update(audio.id, {
+          storagePath: result.path,
+        });
+        const updated = await db.journalAudio.get(audio.id);
+        if (updated) syncAudioMetadata(updated, "Audio sync");
+      } else {
+        logger.warn("[Journal]", "Audio upload returned no storage result; queued for retry:", audio.id);
+      }
+    })
+    .catch((err) => {
+      logger.error("[Journal]", "Audio upload failed:", err);
+      queueAudioUploadRetry(audio.id);
+    });
+
+  syncAudioMetadata(audio, "Audio metadata sync");
+}
+
+async function hydratePhotoFromStorage(photo: JournalPhoto): Promise<JournalPhoto> {
   const downloaded = !photo.data && photo.storagePath
     ? await downloadAsBase64("journal-photos", photo.storagePath)
     : null;
-  const data = photo.data || downloaded;
-  if (!data) return photo;
+  const storedData = photo.data || (downloaded ? encryptedJournalMediaFromStorageDataUrl(downloaded) : null);
+  if (!storedData) return photo;
 
-  const thumbnail = photo.thumbnail || data;
+  const storedThumbnail = photo.thumbnail || storedData;
   const changes: Partial<JournalPhoto> = {};
-  if (!photo.data) changes.data = data;
-  if (!photo.thumbnail) changes.thumbnail = thumbnail;
+  if (!photo.data) changes.data = storedData;
+  if (!photo.thumbnail) changes.thumbnail = storedThumbnail;
   if (Object.keys(changes).length > 0) {
     await db.journalPhotos.update(photo.id, changes);
   }
 
-  return { ...photo, data, thumbnail };
+  return decryptPhotoForDisplay({ ...photo, data: storedData, thumbnail: storedThumbnail });
 }
 
 async function hydrateAudioFromStorage(audio: JournalAudio): Promise<JournalAudio> {
-  if (audio.data || !audio.storagePath) return audio;
+  const downloaded = !audio.data && audio.storagePath
+    ? await downloadAsBase64("journal-audio", audio.storagePath)
+    : null;
+  const storedData = audio.data || (downloaded ? encryptedJournalMediaFromStorageDataUrl(downloaded) : null);
+  if (!storedData) return audio;
 
-  const data = await downloadAsBase64("journal-audio", audio.storagePath);
-  if (!data) return audio;
-
-  await db.journalAudio.update(audio.id, { data });
-  return { ...audio, data };
+  if (!audio.data) await db.journalAudio.update(audio.id, { data: storedData });
+  return decryptAudioForDisplay({ ...audio, data: storedData });
 }
 
 // ============================================
@@ -84,15 +546,18 @@ async function hydrateAudioFromStorage(audio: JournalAudio): Promise<JournalAudi
 // ============================================
 
 export async function getAllEntries(): Promise<JournalEntry[]> {
-  return db.journalEntries.orderBy("createdAt").reverse().toArray();
+  const entries = await db.journalEntries.orderBy("createdAt").reverse().toArray();
+  return decryptEntriesForDisplay(entries);
 }
 
 export async function getEntriesByDate(date: string): Promise<JournalEntry[]> {
-  return db.journalEntries.where("date").equals(date).reverse().sortBy("createdAt");
+  const entries = await db.journalEntries.where("date").equals(date).reverse().sortBy("createdAt");
+  return decryptEntriesForDisplay(entries);
 }
 
 export async function getEntryById(id: string): Promise<JournalEntry | undefined> {
-  return db.journalEntries.get(id);
+  const entry = await db.journalEntries.get(id);
+  return entry ? decryptEntryContentForDisplay(entry) : undefined;
 }
 
 export async function saveEntry(
@@ -105,23 +570,30 @@ export async function saveEntry(
     createdAt: now,
     updatedAt: now,
   };
+  const storedFull = await encryptEntryContentForStorage(full);
   let relinkedMedia: { photos: JournalPhoto[]; audios: JournalAudio[] } = { photos: [], audios: [] };
   await db.transaction("rw", [db.journalEntries, db.journalPhotos, db.journalAudio], async () => {
-    await db.journalEntries.add(full);
+    await db.journalEntries.add(storedFull);
     relinkedMedia = await relinkDraftMediaToEntry(full.id, full.photoIds, full.audioIds || []);
   });
 
+  if (!isCloudSyncEnabled()) return full;
+
   // Granular sync to cloud (non-blocking)
-  syncJournalEntry(full).catch((err) => logger.warn("[JournalSync]", "Entry sync failed:", err));
+  syncJournalEntry(storedFull).catch((err) => logger.warn("[JournalSync]", "Entry sync failed:", err));
   for (const photo of relinkedMedia.photos) {
-    syncJournalPhoto(photo).catch((err) =>
-      logger.warn("[JournalSync]", "Photo relink sync failed:", err)
-    );
+    if (photo.data && !photo.storagePath) {
+      uploadPhotoAndSync(photo, photo.data);
+    } else {
+      syncPhotoMetadata(photo, "Photo relink sync");
+    }
   }
   for (const audio of relinkedMedia.audios) {
-    syncJournalAudio(audio).catch((err) =>
-      logger.warn("[JournalSync]", "Audio relink sync failed:", err)
-    );
+    if (audio.data && !audio.storagePath) {
+      uploadAudioAndSync(audio, audio.data, audio.mimeType);
+    } else {
+      syncAudioMetadata(audio, "Audio relink sync");
+    }
   }
   triggerSync();
 
@@ -132,7 +604,11 @@ export async function updateEntry(
   id: string,
   changes: Partial<Omit<JournalEntry, "id" | "createdAt">>
 ): Promise<void> {
-  await db.journalEntries.update(id, { ...changes, updatedAt: Date.now() });
+  const updatedAt = Date.now();
+  const storageChanges = await encryptEntryChangesForStorage({ ...changes, updatedAt });
+  await db.journalEntries.update(id, storageChanges);
+
+  if (!isCloudSyncEnabled()) return;
 
   // Granular sync to cloud (non-blocking) — re-read full entry for sync
   void db.journalEntries.get(id).then((updated) => {
@@ -163,11 +639,15 @@ export async function deleteEntry(id: string): Promise<void> {
     await db.journalEntries.delete(id);
   });
 
-  // Clean up from Supabase Storage (fire-and-forget, non-blocking)
-  void deleteEntryMediaFromStorage(
-    photos.map((p) => p.id),
-    audios.map((a) => a.id)
-  );
+  const photoIds = photos.map((p) => p.id);
+  const audioIds = audios.map((a) => a.id);
+
+  if (!isCloudSyncEnabled()) return;
+
+  queueEntryMediaDeleteRetries(photoIds, audioIds);
+
+  // Clean up from Supabase Storage (fire-and-forget, durable queue is already recorded)
+  void deleteEntryMediaFromStorage(photoIds, audioIds);
 
   // Delete from cloud tables (fire-and-forget)
   deleteJournalEntryFromCloud(id).catch((err) =>
@@ -176,8 +656,220 @@ export async function deleteEntry(id: string): Promise<void> {
   triggerSync();
 }
 
+export async function deleteDraftMedia(): Promise<void> {
+  const photos = await db.journalPhotos.where("entryId").equals(JOURNAL_DRAFT_ENTRY_ID).toArray();
+  const audios = await db.journalAudio.where("entryId").equals(JOURNAL_DRAFT_ENTRY_ID).toArray();
+  const photoIds = photos.map((p) => p.id);
+  const audioIds = audios.map((a) => a.id);
+
+  await db.transaction("rw", [db.journalPhotos, db.journalAudio], async () => {
+    if (photoIds.length) await db.journalPhotos.bulkDelete(photoIds);
+    if (audioIds.length) await db.journalAudio.bulkDelete(audioIds);
+  });
+
+  if (isCloudSyncEnabled() && (photoIds.length || audioIds.length)) {
+    queueEntryMediaDeleteRetries(photoIds, audioIds);
+    void deleteEntryMediaFromStorage(photoIds, audioIds);
+    for (const photoId of photoIds) {
+      deleteJournalPhotoFromCloud(photoId).catch((err) =>
+        logger.warn("[JournalSync]", "Draft photo delete sync failed:", err)
+      );
+    }
+    for (const audioId of audioIds) {
+      deleteJournalAudioFromCloud(audioId).catch((err) =>
+        logger.warn("[JournalSync]", "Draft audio delete sync failed:", err)
+      );
+    }
+    triggerSync();
+  }
+}
+
 export async function getEntryCount(): Promise<number> {
   return db.journalEntries.count();
+}
+
+export async function encryptPlaintextJournalEntries(vaultKey: string): Promise<number> {
+  const entries = await db.journalEntries.toArray();
+  const plaintextEntries = entries.filter((entry) => entry.content && !isEncryptedJournalContent(entry.content));
+  if (plaintextEntries.length === 0) return 0;
+
+  const encryptedEntries = await Promise.all(
+    plaintextEntries.map(async (entry) => ({
+      ...entry,
+      content: await encryptJournalContent(entry.content, vaultKey),
+      updatedAt: Date.now(),
+    })),
+  );
+
+  await db.transaction("rw", [db.journalEntries], async () => {
+    for (const entry of encryptedEntries) {
+      await db.journalEntries.update(entry.id, {
+        content: entry.content,
+        updatedAt: entry.updatedAt,
+      });
+    }
+  });
+
+  if (!isCloudSyncEnabled()) return encryptedEntries.length;
+
+  for (const entry of encryptedEntries) {
+    syncJournalEntry(entry).catch((err) =>
+      logger.warn("[JournalSync]", "Entry encryption migration sync failed:", err),
+    );
+  }
+  triggerSync();
+
+  return encryptedEntries.length;
+}
+
+export async function hasEncryptedJournalContent(): Promise<boolean> {
+  const entries = await db.journalEntries.toArray();
+  return entries.some((entry) => Boolean(entry.content) && isEncryptedJournalContent(entry.content));
+}
+
+export async function decryptEncryptedJournalEntries(vaultKey: string): Promise<number> {
+  const entries = await db.journalEntries.toArray();
+  const encryptedEntries = entries.filter((entry) => entry.content && isEncryptedJournalContent(entry.content));
+  if (encryptedEntries.length === 0) return 0;
+
+  const decryptedEntries = await Promise.all(
+    encryptedEntries.map(async (entry) => ({
+      ...entry,
+      content: await decryptJournalContentIfNeeded(entry.content, vaultKey),
+      updatedAt: Date.now(),
+    })),
+  );
+
+  await db.transaction("rw", [db.journalEntries], async () => {
+    for (const entry of decryptedEntries) {
+      await db.journalEntries.update(entry.id, {
+        content: entry.content,
+        updatedAt: entry.updatedAt,
+      });
+    }
+  });
+
+  if (!isCloudSyncEnabled()) return decryptedEntries.length;
+
+  for (const entry of decryptedEntries) {
+    syncJournalEntry(entry).catch((err) =>
+      logger.warn("[JournalSync]", "Entry password removal sync failed:", err),
+    );
+  }
+  triggerSync();
+
+  return decryptedEntries.length;
+}
+
+
+export async function encryptPlaintextJournalMedia(vaultKey: string): Promise<number> {
+  const [photos, audios] = await Promise.all([db.journalPhotos.toArray(), db.journalAudio.toArray()]);
+  const photoUpdates = await Promise.all(
+    photos
+      .filter((photo) =>
+        Boolean(photo.data && !isEncryptedJournalMediaData(photo.data)) ||
+        Boolean(photo.thumbnail && !isEncryptedJournalMediaData(photo.thumbnail)),
+      )
+      .map(async (photo) => ({
+        ...photo,
+        data: await encryptMediaDataWithVaultKey(photo.data, vaultKey),
+        thumbnail: await encryptMediaDataWithVaultKey(photo.thumbnail, vaultKey),
+      })),
+  );
+  const audioUpdates = await Promise.all(
+    audios
+      .filter((audio) => Boolean(audio.data && !isEncryptedJournalMediaData(audio.data)))
+      .map(async (audio) => ({
+        ...audio,
+        data: await encryptMediaDataWithVaultKey(audio.data, vaultKey),
+      })),
+  );
+
+  if (photoUpdates.length === 0 && audioUpdates.length === 0) return 0;
+
+  await db.transaction("rw", [db.journalPhotos, db.journalAudio], async () => {
+    for (const photo of photoUpdates) {
+      await db.journalPhotos.update(photo.id, {
+        data: photo.data,
+        thumbnail: photo.thumbnail,
+        storagePath: undefined,
+      });
+    }
+    for (const audio of audioUpdates) {
+      await db.journalAudio.update(audio.id, {
+        data: audio.data,
+        storagePath: undefined,
+      });
+    }
+  });
+
+  if (isCloudSyncEnabled()) {
+    for (const photo of photoUpdates) uploadPhotoAndSync(photo, photo.data);
+    for (const audio of audioUpdates) uploadAudioAndSync(audio, audio.data, audio.mimeType);
+    triggerSync();
+  }
+
+  return photoUpdates.length + audioUpdates.length;
+}
+
+export async function hasEncryptedJournalMedia(): Promise<boolean> {
+  const [photos, audios] = await Promise.all([db.journalPhotos.toArray(), db.journalAudio.toArray()]);
+  return (
+    photos.some((photo) =>
+      Boolean(photo.data && isEncryptedJournalMediaData(photo.data)) ||
+      Boolean(photo.thumbnail && isEncryptedJournalMediaData(photo.thumbnail)),
+    ) || audios.some((audio) => Boolean(audio.data && isEncryptedJournalMediaData(audio.data)))
+  );
+}
+
+export async function decryptEncryptedJournalMedia(vaultKey: string): Promise<number> {
+  const [photos, audios] = await Promise.all([db.journalPhotos.toArray(), db.journalAudio.toArray()]);
+  const photoUpdates = await Promise.all(
+    photos
+      .filter((photo) =>
+        Boolean(photo.data && isEncryptedJournalMediaData(photo.data)) ||
+        Boolean(photo.thumbnail && isEncryptedJournalMediaData(photo.thumbnail)),
+      )
+      .map(async (photo) => ({
+        ...photo,
+        data: await decryptMediaDataWithVaultKey(photo.data, vaultKey),
+        thumbnail: await decryptMediaDataWithVaultKey(photo.thumbnail, vaultKey),
+      })),
+  );
+  const audioUpdates = await Promise.all(
+    audios
+      .filter((audio) => Boolean(audio.data && isEncryptedJournalMediaData(audio.data)))
+      .map(async (audio) => ({
+        ...audio,
+        data: await decryptMediaDataWithVaultKey(audio.data, vaultKey),
+      })),
+  );
+
+  if (photoUpdates.length === 0 && audioUpdates.length === 0) return 0;
+
+  await db.transaction("rw", [db.journalPhotos, db.journalAudio], async () => {
+    for (const photo of photoUpdates) {
+      await db.journalPhotos.update(photo.id, {
+        data: photo.data,
+        thumbnail: photo.thumbnail,
+        storagePath: undefined,
+      });
+    }
+    for (const audio of audioUpdates) {
+      await db.journalAudio.update(audio.id, {
+        data: audio.data,
+        storagePath: undefined,
+      });
+    }
+  });
+
+  if (isCloudSyncEnabled()) {
+    for (const photo of photoUpdates) uploadPhotoAndSync(photo, photo.data);
+    for (const audio of audioUpdates) uploadAudioAndSync(audio, audio.data, audio.mimeType);
+    triggerSync();
+  }
+
+  return photoUpdates.length + audioUpdates.length;
 }
 
 // ============================================
@@ -240,31 +932,13 @@ export async function compressAndStorePhoto(file: File, entryId: string): Promis
       height: full.height,
       createdAt: Date.now(),
     };
+    const storedPhoto = await encryptPhotoForStorage(photo);
 
-    await db.journalPhotos.add(photo);
+    await db.journalPhotos.add(storedPhoto);
 
-    // Background upload to Supabase Storage (non-blocking)
-    void uploadPhoto(photo.id, full.dataUrl)
-      .then(async (result) => {
-        if (result) {
-          await db.journalPhotos.update(photo.id, {
-            storagePath: result.path,
-            storageUrl: result.signedUrl,
-          });
-          // Sync photo metadata with storage path to cloud table
-          const updated = await db.journalPhotos.get(photo.id);
-          if (updated)
-            syncJournalPhoto(updated).catch((err) =>
-              logger.warn("[JournalSync]", "Photo sync failed:", err)
-            );
-        }
-      })
-      .catch((err) => logger.error("[Journal]", "Photo upload failed:", err));
-
-    // Sync photo metadata (without storagePath yet — will be updated after upload)
-    syncJournalPhoto(photo).catch((err) =>
-      logger.warn("[JournalSync]", "Photo metadata sync failed:", err)
-    );
+    if (entryId !== JOURNAL_DRAFT_ENTRY_ID) {
+      uploadPhotoAndSync(storedPhoto, storedPhoto.data);
+    }
 
     return photo;
   } finally {
@@ -293,8 +967,14 @@ export async function deletePhoto(id: string, entryId: string): Promise<void> {
       });
     }
   });
-  // Clean up from Supabase Storage + cloud table (fire-and-forget)
-  void deletePhotoFromStorage(id);
+
+  if (!isCloudSyncEnabled()) return;
+
+  // Clean up from Supabase Storage + cloud table (fire-and-forget, durable queue is already recorded)
+  queuePhotoDeleteRetry(id);
+  void deletePhotoFromStorage(id).catch((err) =>
+    logger.warn("[JournalSync]", "Photo storage delete failed:", err)
+  );
   deleteJournalPhotoFromCloud(id).catch((err) =>
     logger.warn("[JournalSync]", "Photo delete sync failed:", err)
   );
@@ -334,31 +1014,13 @@ export async function storeAudio(
     mimeType,
     createdAt: Date.now(),
   };
+  const storedAudio = await encryptAudioForStorage(audio);
 
-  await db.journalAudio.add(audio);
+  await db.journalAudio.add(storedAudio);
 
-  // Background upload to Supabase Storage (non-blocking)
-  void uploadAudioToStorage(audio.id, data, mimeType)
-    .then(async (result) => {
-      if (result) {
-        await db.journalAudio.update(audio.id, {
-          storagePath: result.path,
-          storageUrl: result.signedUrl,
-        });
-        // Sync audio metadata with storage path to cloud table
-        const updated = await db.journalAudio.get(audio.id);
-        if (updated)
-          syncJournalAudio(updated).catch((err) =>
-            logger.warn("[JournalSync]", "Audio sync failed:", err)
-          );
-      }
-    })
-    .catch((err) => logger.error("[Journal]", "Audio upload failed:", err));
-
-  // Sync audio metadata (without storagePath yet — will be updated after upload)
-  syncJournalAudio(audio).catch((err) =>
-    logger.warn("[JournalSync]", "Audio metadata sync failed:", err)
-  );
+  if (entryId !== JOURNAL_DRAFT_ENTRY_ID) {
+    uploadAudioAndSync(storedAudio, storedAudio.data, mimeType);
+  }
 
   return audio;
 }
@@ -384,8 +1046,14 @@ export async function deleteAudio(id: string, entryId: string): Promise<void> {
       });
     }
   });
-  // Clean up from Supabase Storage + cloud table (fire-and-forget)
-  void deleteAudioFromStorage(id);
+
+  if (!isCloudSyncEnabled()) return;
+
+  // Clean up from Supabase Storage + cloud table (fire-and-forget, durable queue is already recorded)
+  queueAudioDeleteRetry(id);
+  void deleteAudioFromStorage(id).catch((err) =>
+    logger.warn("[JournalSync]", "Audio storage delete failed:", err)
+  );
   deleteJournalAudioFromCloud(id).catch((err) =>
     logger.warn("[JournalSync]", "Audio delete sync failed:", err)
   );

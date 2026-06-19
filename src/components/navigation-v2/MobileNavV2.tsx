@@ -51,7 +51,7 @@ export const MobileNavV2 = memo(function MobileNavV2({
       data-testid="mobile-nav-v2"
       className={cn(
         "md:hidden fixed inset-x-3 z-50",
-        "bottom-[calc(env(safe-area-inset-bottom)+0.5rem)]",
+        "bottom-[calc(var(--safe-bottom)+0.5rem)]",
         "rounded-2xl border border-border/60 bg-card/80",
         "backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]",
         "shadow-lg gpu-layer",

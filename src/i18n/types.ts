@@ -1076,6 +1076,25 @@ export interface Translations {
   hyperfocusSoundCoffee: string;
   hyperfocusSoundFireplace: string;
   hyperfocusSoundVariants: string;
+  hyperfocusSoundIntensity: string;
+  hyperfocusSoundUnderwaterSoft: string;
+  hyperfocusSoundUnderwaterDeep: string;
+  hyperfocusSoundUnderwaterIntense: string;
+  hyperfocusSoundThunderstormSoft: string;
+  hyperfocusSoundThunderstormDeep: string;
+  hyperfocusSoundThunderstormIntense: string;
+  hyperfocusSoundOceanSoft: string;
+  hyperfocusSoundOceanDeep: string;
+  hyperfocusSoundOceanIntense: string;
+  hyperfocusSoundRiverSoft: string;
+  hyperfocusSoundRiverDeep: string;
+  hyperfocusSoundRiverIntense: string;
+  hyperfocusSoundCafeSoft: string;
+  hyperfocusSoundCafeDeep: string;
+  hyperfocusSoundCafeIntense: string;
+  hyperfocusSoundFireplaceSoft: string;
+  hyperfocusSoundFireplaceDeep: string;
+  hyperfocusSoundFireplaceIntense: string;
   hyperfocusShowVariants: string;
   hyperfocusHideVariants: string;
   hyperfocusTip: string;
@@ -1103,6 +1122,36 @@ export interface Translations {
   audioError: string;
   muteSound: string;
   unmuteSound: string;
+  settingsSoundTitle: string;
+  settingsSoundDescription: string;
+  settingsSoundSummaryOn: string;
+  settingsSoundSummaryOff: string;
+  settingsSoundMaster: string;
+  settingsSoundMasterDesc: string;
+  settingsSoundVolume: string;
+  settingsSoundVolumeDesc: string;
+  settingsSoundPreview: string;
+  settingsSoundAmbienceTitle: string;
+  settingsSoundAmbienceNote: string;
+  settingsSoundFeedbackOn: string;
+  settingsSoundFeedbackOff: string;
+  settingsSoundMapTitle: string;
+  settingsSoundMapDescription: string;
+  settingsSoundMapAuth: string;
+  settingsSoundMapOrb: string;
+  settingsSoundMapDiary: string;
+  settingsSoundMapFocus: string;
+  settingsSoundMapFeedback: string;
+  settingsSoundCrossPlatformTitle: string;
+  settingsSoundCrossPlatformNote: string;
+  settingsSoundActionMapTitle: string;
+  settingsSoundActionMapDescription: string;
+  settingsSoundActionMapMood: string;
+  settingsSoundActionMapHabit: string;
+  settingsSoundActionMapJournal: string;
+  settingsSoundActionMapFocus: string;
+  settingsSoundActionMapBreathing: string;
+  settingsSoundActionMapMilestones: string;
 
   // Leaderboard
   // Note: weekly/monthly defined above in Personal Goals section
@@ -2174,6 +2223,9 @@ export interface Translations {
   authWelcomeTitle: string;
   authWelcomeSubtitle: string;
   authContinueWith: string;
+  authMeasuredBreathLabel: string;
+  authMeasuredBreathPlay: string;
+  authMeasuredBreathPause: string;
   authSigningInGoogle: string;
   authSigningInFacebook: string;
   authSigningInTelegram: string;
@@ -2186,6 +2238,7 @@ export interface Translations {
   authSignInTooLong: string;
   authTooManyAttempts: string;
   authSupabaseNotConfigured: string;
+  authAppleUnavailable: string;
   authUnexpectedError: string;
   authGoogleSignInFailed: string;
 
@@ -2510,6 +2563,7 @@ export interface Translations {
   journalAiSwitchToAiSearch: string;
   journalAiSearchOn: string;
   journalAiIndexing: string;
+  journalAiPrivacyConfirm: string;
   journalNoResults: string;
   journalEdit: string;
   journalUndo: string;
@@ -2525,6 +2579,7 @@ export interface Translations {
   journalDiscard: string;
   journalKeepWriting: string;
   journalSaveDraftOpenSettings: string;
+  journalSaveDraftOpenSettingsDescription: string;
   journalSaveClose: string;
   journalWords: string;
   journalWordCountZero: string;
@@ -2774,6 +2829,7 @@ export interface Translations {
   journalBiometricEnable: string;
   journalBiometricSubtitle: string;
   journalBiometricUnlock: string;
+  journalBiometricFailed: string;
   journalScreenshotBlock: string;
   journalScreenshotBlockSubtitle: string;
   journalDataSection: string;
@@ -2794,6 +2850,7 @@ export interface Translations {
   journalExportPDFDesc: string;
   journalExportText: string;
   journalExportTextDesc: string;
+  journalExportPrivacyWarning: string;
   journalExportSuccess: string;
   journalExportFailed: string;
 
@@ -2900,6 +2957,8 @@ export interface Translations {
   journalHubSpaceIdeasDesc: string;
   journalHubSpacePrivate: string;
   journalHubSpacePrivateDesc: string;
+  journalPrivateEntry: string;
+  journalPrivateEntryHint: string;
   journalHubSpaceGratitude: string;
   journalHubSpaceGratitudeDesc: string;
   journalFolders: string;
@@ -3341,6 +3400,12 @@ export interface Translations {
   orbWhisper3: string;
   orbWhisper4: string;
   orbWhisper5: string;
+  orbAmbienceLabel: string;
+  orbAmbiencePlay: string;
+  orbAmbiencePause: string;
+  diaryAmbienceLabel: string;
+  diaryAmbiencePlay: string;
+  diaryAmbiencePause: string;
 
   // Phase 3-A.4b: Orb mood entry flow (scope selector + confirm CTA + first-run hint)
   orbScopeGroupLabel: string;

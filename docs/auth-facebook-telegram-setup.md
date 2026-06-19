@@ -70,22 +70,74 @@ Do not paste the Facebook secret into the repo or chat.
 
 ## Telegram Dashboard
 
-1. Create or open the Telegram bot in BotFather.
-2. Configure the bot's Web Login / OAuth settings.
-3. Use the callback URL shown by Supabase for the `custom:telegram` provider.
-4. Store the Telegram Client ID and Client Secret securely.
-5. In Supabase custom providers, create:
+Telegram sign-in uses Telegram's OIDC flow through a Supabase custom provider.
+The app client already calls Supabase with provider id `custom:telegram`; no
+client-side Telegram secret is needed.
+
+### BotFather
+
+1. Create or open the ZenFlow Telegram bot in BotFather.
+2. Open **Bot Settings → Web Login**.
+3. Register these Allowed URLs:
+
+```text
+https://bwgfslmxmueyglpumkbf.supabase.co/auth/v1/callback
+https://yehor212.github.io/people-first-app/
+https://zenflow.app/
+```
+
+4. Copy the **Client ID** and **Client Secret** shown in BotFather.
+5. Store them only in Supabase Dashboard or a local secret manager. Do not paste
+   them into git, app code, screenshots, or chat.
+
+### Supabase Custom Provider
+
+In Supabase Dashboard → Auth → Providers → Custom OAuth Providers, create or
+update this provider:
 
 ```text
 identifier: custom:telegram
-provider type: OIDC
+name: Telegram
+provider type: OIDC / Auto-discovery
 issuer: https://oauth.telegram.org
+client_id: <BotFather Client ID>
+client_secret: <BotFather Client Secret>
 scopes: openid profile
 pkce_enabled: true
 email_optional: true
 ```
 
-Do not paste the Telegram secret into the repo or chat.
+Keep `phone` out of the default scopes. Telegram can return a verified phone
+number with the `phone` scope, but that is extra personal data and needs an
+explicit product/privacy decision before collection.
+
+### Hosted Supabase Auth Toggles
+
+These hosted settings must be enabled before public Telegram login is considered
+ready:
+
+```text
+custom_oauth_enabled: true
+security_manual_linking_enabled: true
+```
+
+Manual linking matters because Settings uses `supabase.auth.linkIdentity()` to
+attach Telegram to an existing account without splitting sync data into a second
+account.
+
+### Verification
+
+Run these checks after the BotFather client credentials are configured in
+Supabase:
+
+```bash
+npm run check:auth-providers -- --strict
+npm run test -- src/lib/__tests__/authProviders.test.ts scripts/__tests__/auth-providers-readiness.test.ts
+```
+
+Then perform one real web login and one native callback login, confirming the
+returned user has provider `custom:telegram` and a display name or
+`preferred_username` even when no email is present.
 
 ## Smoke Checklist
 

@@ -210,7 +210,7 @@ describe("HabitsHeroZone", () => {
     expect(screen.getByTestId("hero-empty-quickpick")).toBeInTheDocument();
   });
 
-  it("keeps empty-state quick-pick cards on emoji symbols like the ritual animation", () => {
+  it("keeps empty-state quick-pick cards on custom v2 pictograms instead of emoji glyphs", () => {
     render(
       <HabitsHeroZone
         todaysHabits={[]}
@@ -223,8 +223,11 @@ describe("HabitsHeroZone", () => {
     );
 
     const water = screen.getByTestId("hero-quickpick-drink-water");
-    expect(water.querySelector('[data-slot="quickpick-symbol"]')).toHaveTextContent("💧");
-    expect(water.querySelector('[data-slot="quickpick-svg"]')).toBeNull();
+    expect(water.querySelector('[data-slot="quickpick-symbol"]')).toBeNull();
+    const pictogram = water.querySelector('[data-slot="quickpick-svg"] [data-habit-pictogram="drink-water"]');
+    expect(pictogram).toBeTruthy();
+    expect(pictogram?.querySelectorAll("[data-pictogram-motion]").length).toBeGreaterThan(0);
+    expect(water.textContent).not.toContain("💧");
   });
 
   it("renders a scheduled rest-day state when active habits exist but none are due", () => {

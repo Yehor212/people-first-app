@@ -7,18 +7,35 @@
     var(--zenflow-test-nav-inset-bottom, 0px)
   );
   --entry-safe-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
-  min-height: 100svh;
-  min-height: 100dvh;
-  padding-block: calc(var(--entry-safe-top) + 1.25rem)
-    calc(var(--entry-safe-bottom) + 1.5rem);
-  padding-inline: max(1rem, calc(var(--entry-safe-left) + 1rem))
-    max(1rem, calc(var(--entry-safe-right) + 1rem));
-  background:
+  --entry-brand-clearance: clamp(2.25rem, 5.2vh, 4.25rem);
+  --entry-block-end-clearance: 1.5rem;
+  --entry-edge-bleed-background:
+    radial-gradient(ellipse 112% 20% at 50% -4%, hsl(var(--zf-role-focus) / 0.2), transparent 72%),
+    linear-gradient(90deg,
+      hsl(var(--zf-role-body) / 0.12),
+      transparent 30%,
+      hsl(var(--zf-role-focus) / 0.13) 66%,
+      hsl(var(--zf-role-diary) / 0.09)
+    ),
     radial-gradient(circle at 10% 10%, hsl(var(--zf-role-body) / 0.38), transparent 32%),
     radial-gradient(circle at 88% 14%, hsl(var(--zf-role-focus) / 0.32), transparent 34%),
     radial-gradient(ellipse 70% 42% at 48% 54%, hsl(var(--primary) / 0.12), transparent 66%),
     radial-gradient(ellipse 82% 48% at 50% 108%, hsl(var(--zf-role-energy) / 0.2), transparent 68%),
     linear-gradient(154deg, hsl(var(--background)), hsl(var(--surface-elevated, var(--secondary))) 48%, hsl(var(--card)));
+  margin-block: calc(-1 * var(--entry-safe-top)) calc(-1 * var(--entry-safe-bottom));
+  min-height: calc(100svh + var(--entry-safe-top) + var(--entry-safe-bottom));
+  min-height: calc(100dvh + var(--entry-safe-top) + var(--entry-safe-bottom));
+  padding-block-start: calc(var(--entry-safe-top) + var(--entry-brand-clearance));
+  padding-block-end: calc(var(--entry-safe-bottom) + var(--entry-block-end-clearance));
+  padding-inline: max(1rem, calc(var(--entry-safe-left) + 1rem))
+    max(1rem, calc(var(--entry-safe-right) + 1rem));
+  background: var(--entry-edge-bleed-background);
+}
+
+body.zenflow-v2-edge-to-edge .entry-gate-screen {
+  margin-block-start: 0;
+  min-height: 100svh;
+  min-height: 100dvh;
 }
 
 .entry-gate-aurora {
@@ -50,12 +67,20 @@
   --entry-ink-action-surface-hover: hsl(var(--zf-surface-1) / 0.82);
   --entry-ink-selected-surface: hsl(var(--primary) / 0.24);
   --entry-ink-border: hsl(var(--primary) / 0.2);
-  background:
+  --entry-ink-edge-bleed-background:
+    radial-gradient(ellipse 112% 20% at 50% -4%, hsl(var(--zf-role-focus) / 0.16), transparent 72%),
+    linear-gradient(90deg,
+      hsl(var(--zf-role-body) / 0.18),
+      transparent 32%,
+      hsl(var(--zf-role-focus) / 0.12) 66%,
+      hsl(var(--zf-role-diary) / 0.1)
+    ),
     radial-gradient(circle at 9% 18%, hsl(var(--zf-role-body) / 0.42), transparent 34%),
     radial-gradient(circle at 88% 12%, hsl(var(--zf-role-focus) / 0.26), transparent 36%),
     radial-gradient(ellipse 76% 44% at 50% 48%, hsl(var(--primary) / 0.14), transparent 68%),
     radial-gradient(ellipse 96% 56% at 50% 112%, hsl(var(--zf-role-energy) / 0.12), transparent 72%),
     linear-gradient(154deg, hsl(var(--zf-night-1)), hsl(var(--zf-surface-1)) 48%, hsl(var(--zf-night-0)));
+  background: var(--entry-ink-edge-bleed-background);
 }
 
 .entry-gate-screen[data-entry-theme="ink"] .entry-gate-aurora {
@@ -196,8 +221,8 @@ body.reduce-motion .entry-gate-horizon {
 
 @media (max-width: 480px) and (max-height: 700px) {
   .entry-gate-screen {
-    padding-block: calc(var(--entry-safe-top) + 0.75rem)
-      calc(var(--entry-safe-bottom) + 0.75rem);
+    --entry-brand-clearance: clamp(1.25rem, 4vh, 1.75rem);
+    --entry-block-end-clearance: 0.75rem;
   }
 
   .entry-gate-content {

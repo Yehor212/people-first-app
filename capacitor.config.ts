@@ -10,7 +10,7 @@ const config: CapacitorConfig = {
   },
   ios: {
     scheme: "zenflow",
-    contentInset: "automatic",
+    contentInset: "never",
   },
   server: {
     androidScheme: "https",
@@ -50,10 +50,14 @@ const config: CapacitorConfig = {
        */
     },
     SystemBars: {
-      insetsHandling: "css",
+      insetsHandling: "disable",
       style: "DEFAULT",
       hidden: false,
       animation: "NONE",
+    },
+    SafeArea: {
+      initialViewportFitCover: true,
+      detectViewportFitCoverChanges: true,
     },
   },
 };

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import type { CSSProperties } from "react";
+import { V2HabitPictogram } from "@/components/habit-pictogram/V2HabitPictogram";
 import { zenMotion, zenTap } from "@/lib/animationUtils";
 import { Settings2, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,7 +11,6 @@ import {
   getRoleStyleVars,
   getRoleTone,
 } from "@/lib/nonOrbVisualRoles";
-import { getV2HabitTemplateIcon, getV2HabitTemplateSymbol } from "@/lib/v2IconSystem";
 import type { Habit } from "@/types";
 import type { Language } from "@/i18n/types";
 
@@ -79,8 +79,6 @@ export function TemplatePicker({
               ),
           )
           .map((template, index) => {
-            const TemplateIcon = getV2HabitTemplateIcon(template.id);
-            const symbol = getV2HabitTemplateSymbol(template.id);
             const role = getHabitStarterPlayTone(template.id).role;
             const tone = getRoleTone(role);
             const roleStyle = getRoleStyleVars(role) as unknown as CSSProperties;
@@ -92,7 +90,8 @@ export function TemplatePicker({
                 data-card={useRitualPicker ? "ritual-template-picker-card" : undefined}
                 data-visual-role={useRitualPicker ? role : undefined}
                 className={cn(
-                  "flex min-h-[58px] items-center gap-3 rounded-[18px] border px-3 py-3 text-start motion-safe:transition-all",
+                  "flex items-center rounded-[18px] border text-start motion-safe:transition-all",
+                  useRitualPicker ? "min-h-[84px] gap-2 px-2.5 py-2.5" : "min-h-[58px] gap-3 px-3 py-3",
                   useRitualPicker
                     ? "relative isolate overflow-hidden text-[hsl(var(--foreground))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
                         tone.borderClass +
@@ -113,20 +112,31 @@ export function TemplatePicker({
               >
                 <span
                   className={cn(
-                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-[15px] border",
+                    "flex shrink-0 items-center justify-center",
                     useRitualPicker
-                      ? "bg-[hsl(var(--card)/0.62)] text-[hsl(var(--foreground))] " +
-                          tone.borderClass
-                      : "border-[hsl(var(--zf-role-energy)/0.22)] bg-[hsl(var(--zf-night-0)/0.42)] text-[1.35rem]",
+                      ? "h-[4.25rem] w-[4.25rem] overflow-visible rounded-none border-0 bg-transparent text-[hsl(var(--foreground))] shadow-none"
+                      : "h-10 w-10 rounded-[15px] border border-[hsl(var(--zf-role-energy)/0.22)] bg-[hsl(var(--zf-night-0)/0.42)] text-[1.35rem]",
                   )}
+                  data-icon-frame={useRitualPicker ? "real-object-source-icon-native" : undefined}
                   data-template-picker-icon="true"
                   data-slot="template-picker-icon"
                 >
-                  <span className="text-[1.35rem] leading-none" data-slot="template-picker-symbol">
-                    {symbol}
+                  <span data-slot="template-picker-svg">
+                    <V2HabitPictogram
+                      value={template.id}
+                      className={useRitualPicker ? "h-[3.85rem] w-[3.85rem] md:h-[4.45rem] md:w-[4.45rem]" : "h-7 w-7"}
+                    />
                   </span>
                 </span>
-                <span className="truncate text-sm font-semibold" data-slot="template-picker-label">
+                <span
+                  className={cn(
+                    "text-sm font-semibold leading-tight",
+                    useRitualPicker
+                      ? "min-w-0 whitespace-normal break-words [hyphens:none] [overflow-wrap:normal]"
+                      : "truncate",
+                  )}
+                  data-slot="template-picker-label"
+                >
                   {template.names[language] || template.names.en}
                 </span>
               </motion.button>
@@ -139,7 +149,12 @@ export function TemplatePicker({
                 className="justify-start gap-2 min-h-[48px]"
               >
                 {isV2Presentation ? (
-                  <TemplateIcon className="h-[18px] w-[18px] text-primary" aria-hidden="true" />
+                  <span
+                    className="inline-flex h-[24px] w-[24px] shrink-0 items-center justify-center"
+                    data-slot="template-picker-svg"
+                  >
+                    <V2HabitPictogram value={template.id} className="h-6 w-6" />
+                  </span>
                 ) : (
                   <span className="text-xl">{template.icon}</span>
                 )}

@@ -32,6 +32,7 @@ const TARGETED_SYNC_TESTS = [
   "src/lib/__tests__/syncLeader.test.ts",
   "src/lib/__tests__/offlineQueueHandlers.test.ts",
   "src/features/journal/__tests__/journalDraftStorage.test.ts",
+  "src/storage/__tests__/journalStorageService.test.ts",
   "src/storage/__tests__/cloudSync.test.ts",
   "src/storage/sync/__tests__/syncHabits.delete.test.ts",
   "src/storage/sync/__tests__/syncSettings.test.ts",

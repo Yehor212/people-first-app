@@ -325,7 +325,7 @@ describe("eventSync auth guards", () => {
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 14 });
   });
 
-  it("removes local fallback storage when applying remote setting deletes", async () => {
+  it("ignores remote deletes for local-only unsaved journal drafts", async () => {
     const applied = await applyDelta(
       [
         {
@@ -342,9 +342,9 @@ describe("eventSync auth guards", () => {
       "current-device"
     );
 
-    expect(applied).toBe(1);
-    expect(mocks.settingsDelete).toHaveBeenCalledWith("journal_draft_new");
-    expect(mocks.storageRemove).toHaveBeenCalledWith("journal_draft_new");
+    expect(applied).toBe(0);
+    expect(mocks.settingsDelete).not.toHaveBeenCalledWith("journal_draft_new");
+    expect(mocks.storageRemove).not.toHaveBeenCalledWith("journal_draft_new");
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 15 });
   });
 

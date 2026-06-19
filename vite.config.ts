@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 import { compression } from "vite-plugin-compression2";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { changelogPlugin } from "./vite-plugin-changelog.ts";
 import { versionPlugin } from "./vite-plugin-version.ts";
 
@@ -66,6 +67,26 @@ function isDeferredJournalPreload(dep: string): boolean {
 const PWA_INSTALL_ICON_REVISION = "zenflow-browser-leaf-20260525-r6";
 const pwaIconSrc = (file: string) => `${file}?v=${PWA_INSTALL_ICON_REVISION}`;
 
+function isPlaceholderSentryUploadValue(value: string | undefined): boolean {
+  const raw = value?.trim();
+  if (!raw) return true;
+
+  const normalized = raw.toLowerCase();
+  return (
+    /^<[^>]+>$/.test(raw) ||
+    normalized === "todo" ||
+    normalized === "changeme" ||
+    normalized.startsWith("your-") ||
+    normalized.startsWith("your_") ||
+    normalized.startsWith("set-") ||
+    normalized.startsWith("set_") ||
+    normalized.includes("placeholder")
+  );
+}
+
+function hasUsableSentryUploadEnv(values: Array<string | undefined>): boolean {
+  return values.every((value) => !isPlaceholderSentryUploadValue(value));
+}
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Use relative paths for Capacitor/Android builds
@@ -79,6 +100,13 @@ export default defineConfig(({ mode }) => {
   const packageJson = JSON.parse(readFileSync("./package.json", "utf-8"));
   const appVersion = packageJson.version;
   const appBuildTime = Number(process.env.VITE_APP_BUILD_TIME || Date.now());
+  const sentrySourceMapUploadEnabled =
+    mode === "production" &&
+    hasUsableSentryUploadEnv([
+      process.env.SENTRY_AUTH_TOKEN,
+      process.env.SENTRY_ORG,
+      process.env.SENTRY_PROJECT,
+    ]);
 
   return {
     base,
@@ -143,6 +171,7 @@ export default defineConfig(({ mode }) => {
             strategies: "injectManifest",
             srcDir: "src",
             filename: "sw.ts",
+            injectRegister: "script-defer",
             registerType: "autoUpdate",
             includeAssets: [
               "favicon.ico",
@@ -282,6 +311,20 @@ export default defineConfig(({ mode }) => {
         : null,
       stripDisabledPwaManifestPlugin(pwaEnabled),
       normalizeIndexBasePathPlugin(base),
+      sentrySourceMapUploadEnabled
+        ? sentryVitePlugin({
+            org: process.env.SENTRY_ORG,
+            project: process.env.SENTRY_PROJECT,
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+            telemetry: false,
+            release: {
+              name: `zenflow@${appVersion}`,
+            },
+            sourcemaps: {
+              filesToDeleteAfterUpload: ["./dist/**/*.map"],
+            },
+          })
+        : null,
     ].filter(Boolean),
 
     resolve: {
@@ -417,7 +460,7 @@ export default defineConfig(({ mode }) => {
         },
       },
 
-      sourcemap: mode === "development",
+      sourcemap: mode === "production" ? (sentrySourceMapUploadEnabled ? "hidden" : false) : mode === "development",
       chunkSizeWarningLimit: 600, // KB
     },
 
@@ -429,26 +472,5 @@ export default defineConfig(({ mode }) => {
       entries: ["index.html"],
     },
 
-    // Strip /*! license */ banners + dead debug code from production bundle.
-    // Ship THIRD_PARTY_NOTICES.md alongside for compliance.
-    // `pure` drops calls whose result is unused (all console.* return void),
-    // so every console.log/debug/warn/info/error/trace invocation becomes dead
-    // code and is tree-shaken. Runtime errors still flow through Sentry/UI paths.
-    // `drop: ['debugger']` removes stray debugger statements in production.
-    esbuild: {
-      legalComments: "none",
-      pure:
-        mode === "production"
-          ? [
-              "console.log",
-              "console.debug",
-              "console.warn",
-              "console.info",
-              "console.error",
-              "console.trace",
-            ]
-          : [],
-      drop: mode === "production" ? ["debugger"] : [],
-    },
   };
 });

@@ -7,7 +7,7 @@
  */
 
 import { memo, useMemo } from "react";
-import { IdentityVisual } from "@/components/IdentityIconPicker";
+import { HabitIconVisual } from "./HabitIconVisual";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Habit } from "@/types";
 
@@ -96,8 +96,8 @@ export const HeroIdentityPrompt = memo(function HeroIdentityPrompt({
         className="habit-identity-verb inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-base font-semibold"
         data-testid="hero-identity-verb"
       >
-        <IdentityVisual
-          name={icon}
+        <HabitIconVisual
+          value={icon}
           fallback={DEFAULT_IDENTITY_ICON}
           iconClassName="h-3.5 w-3.5 text-[hsl(var(--zf-role-body))]"
           textClassName="text-sm leading-none text-[hsl(var(--zf-role-body))]"

@@ -26,7 +26,11 @@ export const CLASSIC_BASE_URL = normalizeBaseUrl(
 
 // Supabase
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+export const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as
+  | string
+  | undefined;
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+export const SUPABASE_PUBLIC_API_KEY = SUPABASE_PUBLISHABLE_KEY || SUPABASE_ANON_KEY;
 
 // Sentry
 export const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN as string | undefined;
@@ -39,6 +43,7 @@ export const SPOTIFY_CLIENT_ID = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as stri
 export const GOOGLE_WEB_CLIENT_ID = (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string) || "";
 export const ENABLE_FACEBOOK_AUTH = import.meta.env.VITE_ENABLE_FACEBOOK_AUTH !== "false";
 export const ENABLE_TELEGRAM_AUTH = import.meta.env.VITE_ENABLE_TELEGRAM_AUTH !== "false";
+export const ENABLE_APPLE_AUTH = import.meta.env.VITE_ENABLE_APPLE_AUTH !== "false";
 
 // AdMob — IDs must come from environment variables, no hardcoded production IDs
 export const ADMOB_APP_ID_ANDROID =

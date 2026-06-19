@@ -54,7 +54,7 @@ describe("MobileNavV2", () => {
   it("uses safe-area-inset-bottom via Tailwind arbitrary value for iOS notch/home indicator", () => {
     render(<MobileNavV2 {...defaultProps} />);
     const nav = screen.getByTestId("mobile-nav-v2");
-    expect(nav.className).toContain("safe-area-inset-bottom");
+    expect(nav.className).toContain("--safe-bottom");
   });
 
   it("returns null when hidden=true (e.g. keyboard open)", () => {

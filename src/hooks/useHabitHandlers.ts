@@ -18,6 +18,7 @@ import { updateAllQuestsProgress } from "@/lib/randomQuests";
 import { SK } from "@/lib/storageKeys";
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 import { analytics } from "@/lib/analytics";
+import { playSound } from "@/lib/audioManager";
 import { LIMITS } from "@/lib/constants";
 import { ENTRY } from "@/types";
 import type { Habit, TreatSource, MoodType } from "@/types";
@@ -90,6 +91,7 @@ export function useHabitHandlers({
       const treatResult = earnTreats("habit", 10, ts.completedHabitReason || "Completed habit");
       triggerXpPopup(treatResult.earned, "habit");
       void haptics.habitCompleted();
+      playSound("complete");
       setConfettiBurst({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
       trackTimeOfDayCompletion();
       // §15 retention cohort — emit the total active-habit count so the

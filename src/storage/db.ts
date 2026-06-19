@@ -12,7 +12,8 @@ import type {
 } from "@/features/journal/types";
 import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
-import { storageRemove } from "@/lib/safeJson";
+import { storageKeys, storageRemove } from "@/lib/safeJson";
+import { isLocalOnlySettingKey } from "@/storage/sync/settingSyncPolicy";
 
 /**
  * Offline queue action stored in IndexedDB
@@ -299,6 +300,12 @@ export const clearLocalUserData = async (
         db.settings,
       ],
       async () => {
+        const localOnlySettingKeys = includeUserBoundaryState
+          ? (await db.settings.toCollection().primaryKeys()).filter(
+              (key): key is string => typeof key === "string" && isLocalOnlySettingKey(key)
+            )
+          : [];
+
         await db.moods.clear();
         await db.habits.clear();
         await db.focusSessions.clear();
@@ -313,8 +320,9 @@ export const clearLocalUserData = async (
         await db.journalSpaceCaptures.clear();
         await db.offlineQueue.clear();
         await db.deadLetterQueue.clear();
-        // Delete account-bound settings and local-only sync state.
-        await db.settings.bulkDelete(settingsKeysToDelete);
+        // Delete account-bound settings and local-only sync state, including
+        // dynamic unsaved diary draft keys that are intentionally not listed.
+        await db.settings.bulkDelete([...new Set([...settingsKeysToDelete, ...localOnlySettingKeys])]);
       }
     );
   } catch (error) {
@@ -328,12 +336,17 @@ export const clearLocalUserData = async (
     }
   }
 
+  const dynamicLocalOnlyStorageKeys = includeUserBoundaryState
+    ? storageKeys().filter(isLocalOnlySettingKey)
+    : [];
+
   // Clear user-data localStorage keys (must match IndexedDB keys above)
   const allUserKeys = [
     ...USER_SETTINGS_KEYS,
     SK.CLOUD_SYNC_ENABLED, // Cloud sync preference (per-account)
     SK.OFFLINE_QUEUE, // Offline queue localStorage fallback
     ...(includeUserBoundaryState ? USER_BOUNDARY_LOCAL_ONLY_KEYS : []),
+    ...dynamicLocalOnlyStorageKeys,
   ];
   allUserKeys.forEach((key) => storageRemove(key));
 };

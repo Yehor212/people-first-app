@@ -131,7 +131,7 @@ describe("HeroWeeklyHabitCard", () => {
     );
   });
 
-  it("starts expanded and can collapse into a centered emoji/name shell", () => {
+  it("starts expanded and can collapse into a centered pictogram/name shell", () => {
     render(
       <HeroWeeklyHabitCard
         habit={habit({
@@ -175,7 +175,41 @@ describe("HeroWeeklyHabitCard", () => {
     );
   });
 
-  it("uses the emoji button as today's boolean check-in", () => {
+  it("can start collapsed for mobile progressive first paint", () => {
+    render(
+      <HeroWeeklyHabitCard
+        habit={habit({
+          id: "stretch",
+          name: "Stretch",
+          habitType: "boolean",
+          targetValue: 0,
+          unit: "",
+          identityVerb: "someone who moves gently",
+        })}
+        onToggle={vi.fn()}
+        onOpenDetail={vi.fn()}
+        initiallyCollapsed
+      />,
+    );
+
+    expect(screen.getByTestId("hero-weekly-card-stretch")).toHaveAttribute(
+      "data-collapsed",
+      "true",
+    );
+    expect(screen.queryByTestId("mini-week-row-stub")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("hero-weekly-card-stretch-stats")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("hero-weekly-card-stretch-collapse"));
+
+    expect(screen.getByTestId("hero-weekly-card-stretch")).toHaveAttribute(
+      "data-collapsed",
+      "false",
+    );
+    expect(screen.getByTestId("mini-week-row-stub")).toBeInTheDocument();
+    expect(screen.getByTestId("hero-weekly-card-stretch-stats")).toBeInTheDocument();
+  });
+
+  it("uses the pictogram button as today's boolean check-in", () => {
     const onToggle = vi.fn();
     render(
       <HeroWeeklyHabitCard
@@ -190,13 +224,13 @@ describe("HeroWeeklyHabitCard", () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId("hero-weekly-card-walk-emoji-check"));
+    fireEvent.click(screen.getByTestId("hero-weekly-card-walk-icon-check"));
 
     expect(onToggle).toHaveBeenCalledWith("walk", getToday());
   });
 
   it.each(["Leaf", "Water", "Focus", "Book"])(
-    "renders stored lucide-style habit icon %s as a pictogram instead of raw text",
+    "renders stored habit icon %s as a Lucide pictogram instead of raw text",
     (icon) => {
       render(
         <HeroWeeklyHabitCard
@@ -213,7 +247,7 @@ describe("HeroWeeklyHabitCard", () => {
       );
 
       const iconButton = screen.getByTestId(
-        `hero-weekly-card-icon-${icon.toLowerCase()}-emoji-check`,
+        `hero-weekly-card-icon-${icon.toLowerCase()}-icon-check`,
       );
       expect(iconButton).not.toHaveTextContent(icon);
       expect(iconButton.querySelector("svg")).toBeInTheDocument();
@@ -224,7 +258,41 @@ describe("HeroWeeklyHabitCard", () => {
     },
   );
 
-  it("uses the emoji button as today's smart numerical check-in", () => {
+  it.each([
+    ["💧", "drink-water"],
+    ["🚶", "walk-distance"],
+    ["📚", "read"],
+    ["🧘", "meditate"],
+  ])(
+    "renders stored emoji %s as a custom animated v2 pictogram",
+    (storedIcon, pictogramId) => {
+      render(
+        <HeroWeeklyHabitCard
+          habit={habit({
+            id: `pictogram-${pictogramId}`,
+            name: `${pictogramId} habit`,
+            icon: storedIcon,
+            habitType: "boolean",
+            targetValue: 0,
+            unit: "",
+          })}
+          onToggle={vi.fn()}
+        />,
+      );
+
+      const iconButton = screen.getByTestId(
+        `hero-weekly-card-pictogram-${pictogramId}-icon-check`,
+      );
+      expect(iconButton).not.toHaveTextContent(storedIcon);
+      const pictogram = iconButton.querySelector(
+        `[data-habit-pictogram="${pictogramId}"]`,
+      );
+      expect(pictogram).toBeInTheDocument();
+      expect(pictogram?.querySelectorAll("[data-pictogram-motion]").length).toBeGreaterThan(0);
+    },
+  );
+
+  it("uses the pictogram button as today's smart numerical check-in", () => {
     const onNumericalAction = vi.fn();
     render(
       <HeroWeeklyHabitCard
@@ -234,7 +302,7 @@ describe("HeroWeeklyHabitCard", () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId("hero-weekly-card-water-emoji-check"));
+    fireEvent.click(screen.getByTestId("hero-weekly-card-water-icon-check"));
 
     expect(onNumericalAction).toHaveBeenCalledWith("water", getToday(), {
       type: "set",

@@ -87,6 +87,7 @@ interface DiaryEmptyCanvasProps {
   onNewEntryWithPrompt: (prompt: string) => void;
   streak: number;
   entriesThisWeek: number;
+  showWallpaper?: boolean;
 }
 
 export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
@@ -94,6 +95,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
   onNewEntryWithPrompt,
   streak,
   entriesThisWeek,
+  showWallpaper = true,
 }: DiaryEmptyCanvasProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
@@ -116,7 +118,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
       data-testid="diary-empty-canvas"
     >
       {/* Layer 1: shared day/night diary wallpaper */}
-      <DiaryWallpaper surface="empty" />
+      {showWallpaper && <DiaryWallpaper surface="empty" />}
 
       {/* Layer 2: Ambient particles */}
       {!reducedMotion && (

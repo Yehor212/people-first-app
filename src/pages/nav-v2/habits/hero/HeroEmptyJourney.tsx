@@ -6,6 +6,7 @@
  */
 
 import { memo, useCallback, type CSSProperties } from "react";
+import { V2HabitPictogram } from "@/components/habit-pictogram/V2HabitPictogram";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { hapticTap } from "@/lib/haptics";
@@ -14,15 +15,11 @@ import {
   ROUTINE_STARTER_TEMPLATE_IDS,
   type HabitTemplate,
 } from "@/lib/habitTemplates";
-import {
-  V2_HABIT_JOURNEY_ICONS,
-  getV2HabitTemplateSymbol,
-} from "@/lib/v2IconSystem";
+import { V2_HABIT_JOURNEY_ICONS } from "@/lib/v2IconSystem";
 import {
   getHabitStarterPlayTone,
   getHabitRoleTone,
   getRoleTone,
-  type NonOrbVisualRole,
 } from "@/lib/nonOrbVisualRoles";
 
 interface HeroEmptyJourneyProps {
@@ -53,10 +50,10 @@ const HERO_RITUAL_DECK_CLASS =
   "relative mt-3 overflow-hidden rounded-[28px] border border-[hsl(var(--zf-role-energy)/0.24)] bg-[radial-gradient(circle_at_14%_0%,hsl(var(--zf-role-energy)/0.18),transparent_31%),radial-gradient(circle_at_92%_12%,hsl(var(--zf-role-gratitude)/0.13),transparent_30%),radial-gradient(circle_at_52%_118%,hsl(var(--zf-role-body)/0.16),transparent_38%),linear-gradient(155deg,hsl(var(--card)/0.96)_0%,hsl(var(--surface-elevated)/0.90)_56%,hsl(var(--surface-overlay)/0.95)_100%)] px-4 py-4 text-start text-[hsl(var(--foreground))] shadow-[0_28px_96px_-72px_hsl(var(--foreground)/0.38),0_18px_62px_-54px_hsl(var(--zf-role-energy)/0.44)] before:pointer-events-none before:absolute before:inset-x-10 before:top-0 before:h-[2px] before:rounded-b-full before:bg-[linear-gradient(90deg,hsl(var(--zf-role-energy)/0.88),hsl(var(--zf-role-body)/0.82)_28%,hsl(var(--zf-role-gratitude)/0.70)_72%,hsl(var(--zf-role-rest)/0.72))] after:pointer-events-none after:absolute after:inset-[1px] after:rounded-[27px] after:border after:border-[hsl(var(--foreground)/0.07)] md:mt-6 md:px-7 md:py-7";
 
 const QUICK_PICK_CARD_CLASS =
-  "group relative isolate flex min-h-[108px] w-full min-w-[44px] flex-col items-start justify-between overflow-hidden rounded-[22px] border bg-[linear-gradient(155deg,hsl(var(--card)/0.98)_0%,hsl(var(--secondary)/0.92)_52%,hsl(var(--background)/0.74)_100%)] p-3 text-start text-sm font-semibold leading-tight text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.12),inset_0_-34px_58px_-48px_hsl(var(--foreground)/0.34),0_18px_42px_-34px_hsl(var(--foreground)/0.42)] backdrop-blur-xl after:pointer-events-none after:absolute after:inset-[1px] after:rounded-[21px] after:border after:border-[hsl(var(--foreground)/0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
+  "group relative isolate flex min-h-[136px] w-full min-w-[44px] flex-col items-start justify-between overflow-hidden rounded-[22px] border bg-[linear-gradient(155deg,hsl(var(--card)/0.98)_0%,hsl(var(--secondary)/0.92)_52%,hsl(var(--background)/0.74)_100%)] p-3 text-start text-sm font-semibold leading-tight text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.12),inset_0_-34px_58px_-48px_hsl(var(--foreground)/0.34),0_18px_42px_-34px_hsl(var(--foreground)/0.42)] backdrop-blur-xl after:pointer-events-none after:absolute after:inset-[1px] after:rounded-[21px] after:border after:border-[hsl(var(--foreground)/0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
 
 const QUICK_PICK_ICON_CLASS =
-  "flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border bg-[linear-gradient(145deg,hsl(var(--foreground)/0.12),hsl(var(--card)/0.82))] text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.14),0_10px_24px_-18px_hsl(var(--foreground)/0.45)]";
+  "flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center overflow-visible rounded-none border-0 bg-transparent text-[hsl(var(--foreground))] shadow-none";
 
 const QUICK_PICK_META_CLASS =
   "rounded-full border bg-[hsl(var(--card)/0.86)] px-2.5 py-1 text-[11px] font-bold leading-none text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.12),0_8px_18px_-15px_hsl(var(--foreground)/0.42)] tabular-nums";
@@ -64,110 +61,53 @@ const QUICK_PICK_META_CLASS =
 const QUICK_PICK_LABEL_CLASS =
   "relative z-[1] line-clamp-2 max-w-full pr-1 text-[15px] font-bold leading-tight text-[hsl(var(--foreground))]";
 
-const HERO_DECK_CARDS = [
-  {
-    id: "drink-water",
-    role: "focus",
-    stillClass: "translate-x-[-2.45rem] translate-y-[1.35rem] rotate-[-15deg] scale-[0.86]",
-    motionClass: "ritual-card-focus",
-  },
-  {
-    id: "walk-distance",
-    role: "body",
-    stillClass: "translate-y-[-0.9rem] rotate-[1deg] scale-[1.12]",
-    motionClass: "ritual-card-body",
-  },
-  {
-    id: "read",
-    role: "rest",
-    stillClass: "translate-x-[2.45rem] translate-y-[1.25rem] rotate-[13deg] scale-[0.9]",
-    motionClass: "ritual-card-rest",
-  },
-] satisfies Array<{
-  id: string;
-  role: NonOrbVisualRole;
-  stillClass: string;
-  motionClass: string;
-}>;
-
 function RitualDeckScene({ animate }: { animate: boolean }) {
   return (
     <div
       className="relative h-24 w-28 overflow-visible"
       role="presentation"
       aria-hidden="true"
-      data-motion="ritual-card-carousel"
+      data-motion="option-b-liquid-glass-totem-hero"
     >
       <span
-        className="absolute left-1/2 top-1/2 h-[5.95rem] w-[5.95rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[hsl(var(--zf-role-energy)/0.20)] bg-[radial-gradient(circle,hsl(var(--zf-role-energy)/0.14),transparent_63%)]"
-        data-scene-layer="halo"
+        className="absolute inset-x-3 bottom-3 h-5 rounded-full bg-[hsl(var(--foreground)/0.10)] blur-xl"
+        data-scene-layer="soft-shadow"
       />
       <span
         className={
-          "absolute left-1/2 top-1/2 h-[5.95rem] w-[5.95rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-[hsl(var(--zf-role-body)/0.34)] " +
-          (animate ? "motion-safe:animate-[orbit-spin_14s_linear_infinite]" : "")
+          "absolute left-1/2 top-1/2 h-[5.1rem] w-[4.25rem] -translate-x-1/2 -translate-y-1/2 rounded-[2rem] border border-[hsl(var(--foreground)/0.10)] bg-[linear-gradient(145deg,hsl(var(--card)/0.42),hsl(var(--surface-elevated)/0.18))] shadow-[inset_0_1px_0_hsl(var(--background)/0.72),0_18px_42px_-34px_hsl(var(--foreground)/0.34)] backdrop-blur-xl " +
+          (animate ? "motion-safe:animate-[v2hp-b41-hero-plate_6s_ease-in-out_infinite]" : "")
         }
-        data-scene-layer="orbit"
-      />
-      <span
-        className="absolute left-1/2 top-1/2 h-[4.15rem] w-[4.15rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[hsl(var(--foreground)/0.08)] bg-[linear-gradient(155deg,hsl(var(--card)/0.86),hsl(var(--surface-elevated)/0.56))]"
-        data-scene-layer="core"
-      />
-      <span
-        className="absolute inset-x-3 bottom-2 h-5 rounded-full bg-[hsl(var(--zf-role-energy)/0.16)] blur-xl"
-        data-scene-layer="shadow"
+        data-scene-layer="b41-plate"
       />
       <span
         className={
-          "absolute inset-x-5 bottom-4 h-[2px] rounded-full bg-[linear-gradient(90deg,hsl(var(--zf-role-energy)/0),hsl(var(--zf-role-energy)/0.72),hsl(var(--zf-role-body)/0.64),hsl(var(--zf-role-release)/0))] " +
-          (animate ? "ritual-rail-pulse" : "")
+          "absolute left-1/2 top-1/2 h-[4.8rem] w-4 -translate-x-1/2 -translate-y-1/2 rotate-[-18deg] rounded-full bg-[linear-gradient(180deg,hsl(var(--background)/0.68),transparent_42%,hsl(var(--zf-role-energy)/0.16)_80%,transparent)] mix-blend-screen " +
+          (animate ? "motion-safe:animate-[v2hp-b41-hero-facet_5s_ease-in-out_infinite]" : "")
         }
-        data-scene-layer="rail"
+        data-scene-layer="b41-refraction"
+      />
+      <span
+        className="absolute left-1/2 top-[12%] h-3 w-12 -translate-x-1/2 rotate-[-16deg] rounded-full bg-[linear-gradient(90deg,transparent,hsl(var(--background)/0.78),transparent)] opacity-70 mix-blend-screen"
+        data-scene-layer="b41-highlight"
+      />
+      <span
+        className="absolute bottom-[22%] left-1/2 h-3 w-16 -translate-x-1/2 rounded-full bg-[linear-gradient(90deg,transparent,hsl(var(--zf-role-energy)/0.18),hsl(var(--zf-role-body)/0.14),transparent)] opacity-70 mix-blend-screen"
+        data-scene-layer="b41-caustic"
       />
       <span
         className={
-          "absolute left-1/2 top-1/2 -ml-1 -mt-1 flex h-2 w-2 items-center justify-center rounded-full bg-[hsl(var(--zf-role-energy)/0.95)] shadow-[0_0_18px_hsl(var(--zf-role-energy)/0.85)] " +
-          (animate ? "ritual-loop-comet" : "translate-x-[3.05rem]")
+          "absolute left-1/2 top-1/2 grid h-[4.25rem] w-[4.25rem] -translate-x-1/2 -translate-y-1/2 place-items-center " +
+          (animate ? "motion-safe:animate-[v2hp-b41-hero-float_4.2s_ease-in-out_infinite]" : "")
         }
-        data-ritual-comet="true"
+        data-scene-layer="b41-symbol"
       >
-        <span className="h-1 w-1 rounded-full bg-[hsl(var(--card)/0.92)]" />
+        <V2HabitPictogram value="drink-water" className="h-[4.1rem] w-[4.1rem] md:h-[4.85rem] md:w-[4.85rem]" />
       </span>
       <span
-        className={
-          "absolute bottom-5 left-9 h-1.5 w-1.5 rounded-full bg-[hsl(var(--zf-role-body)/0.78)] " +
-          (animate ? "ritual-spark-rise" : "opacity-50")
-        }
-        style={{ "--spark-x": "-0.6rem" } as CSSProperties}
-        data-ritual-spark="body"
+        className="absolute right-5 top-4 h-2.5 w-2.5 rounded-sm bg-[linear-gradient(135deg,hsl(var(--background)/0.92),hsl(var(--zf-role-energy)/0.24))] shadow-[0_0_18px_hsl(var(--zf-role-energy)/0.34)] [clip-path:polygon(50%_0,62%_38%,100%_50%,62%_62%,50%_100%,38%_62%,0_50%,38%_38%)]"
+        data-scene-layer="b41-spark"
       />
-      <span
-        className={
-          "absolute bottom-4 right-8 h-1.5 w-1.5 rounded-full bg-[hsl(var(--zf-role-rest)/0.76)] " +
-          (animate ? "ritual-spark-rise [animation-delay:1.35s]" : "opacity-50")
-        }
-        style={{ "--spark-x": "0.7rem" } as CSSProperties}
-        data-ritual-spark="rest"
-      />
-      {HERO_DECK_CARDS.map((card, index) => {
-        const tone = getRoleTone(card.role);
-        return (
-          <span
-            key={card.id}
-            className={
-              "ritual-loop-card absolute left-1/2 top-1/2 -ml-[1.65rem] -mt-[2.05rem] flex h-[4.15rem] w-[3.3rem] items-center justify-center rounded-[1.05rem] border bg-[linear-gradient(155deg,hsl(var(--card)/0.94),hsl(var(--surface-elevated)/0.82))] text-[1.65rem] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.10),0_18px_34px_-28px_hsl(var(--foreground)/0.30)] " +
-              tone.borderClass +
-              " " +
-              (animate ? card.motionClass : card.stillClass)
-            }
-            data-ritual-card={index + 1}
-            data-card-motion={card.motionClass}
-          >
-            <span className={"absolute inset-x-3 top-2 h-1 rounded-full " + tone.railClass} />
-            <span>{getV2HabitTemplateSymbol(card.id)}</span>
-          </span>
-        );
-      })}
     </div>
   );
 }
@@ -220,7 +160,7 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
         <div
           className="flex h-24 w-28 items-center justify-center overflow-visible rounded-[24px] border border-[hsl(var(--zf-role-energy)/0.28)] bg-[linear-gradient(145deg,hsl(var(--zf-role-energy)/0.14),hsl(var(--card)/0.84)_46%,hsl(var(--zf-role-gratitude)/0.12)),hsl(var(--surface-elevated)/0.76)] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.10),0_20px_54px_-40px_hsl(var(--foreground)/0.34)]"
           data-testid="hero-ritual-board-scene"
-          data-scene="ritual-carousel"
+          data-scene="option-b-liquid-glass-totem"
         >
           <RitualDeckScene animate={animate} />
         </div>
@@ -244,7 +184,6 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
               const name = tpl.names[language] || tpl.names.en;
               const playTone = getHabitStarterPlayTone(tpl.id);
               const tone = getRoleTone(playTone.role);
-              const symbol = getV2HabitTemplateSymbol(tpl.id);
               const meta = QUICK_PICK_META[tpl.id] ?? "1x";
               return (
                 <li key={tpl.id}>
@@ -282,16 +221,12 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
                     />
                     <span className="relative z-[1] flex w-full items-start justify-between gap-2">
                       <span
-                        className={
-                          QUICK_PICK_ICON_CLASS +
-                          " " +
-                          tone.borderClass
-                        }
+                        className={QUICK_PICK_ICON_CLASS}
                         aria-hidden="true"
-                        data-icon-medallion="true"
+                        data-icon-frame="real-object-source-icon-native"
                       >
-                        <span className="text-[1.7rem] leading-none" data-slot="quickpick-symbol">
-                          {symbol}
+                        <span data-slot="quickpick-svg">
+                          <V2HabitPictogram value={tpl.id} className="h-[4.35rem] w-[4.35rem] md:h-[5rem] md:w-[5rem]" />
                         </span>
                       </span>
                       <span

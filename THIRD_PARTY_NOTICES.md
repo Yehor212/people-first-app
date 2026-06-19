@@ -51,6 +51,15 @@ Full license text: https://openfontlicense.org/open-font-license-official-text/
 
 > Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
 
+**Phosphor Icons** — https://phosphoricons.com
+
+- License: MIT
+- Copyright © 2020 Phosphor Icons
+- Used via `@phosphor-icons/react` npm package for v2 habit pictograms
+
+> The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+
 ---
 
 ## Runtime Dependencies (NPM, production)
@@ -91,6 +100,7 @@ Full machine-readable list: run `npx license-checker --production --json` in CI 
 - [x] MixKit WAV files attributed (this file)
 - [x] SIL OFL fonts attributed (this file)
 - [x] Lucide ISC copyright preserved (this file)
+- [x] Phosphor MIT copyright preserved (this file)
 - [ ] In-app "Acknowledgements" screen surfacing this document (iOS App Store requirement — TODO for v2.0)
 - [ ] `LICENSE` file at repo root (proprietary or MIT — pending user decision; tech-debt P1-10)
 - [ ] CI gate: `npx license-checker --failOn 'GPL;AGPL;SSPL'` to prevent copyleft creep
@@ -109,4 +119,4 @@ When adding a new runtime dependency:
 
 When removing: sweep this file and delete the stale attribution.
 
-*Last updated: 2026-04-18 (tech-debt audit + deep-scan extension)*
+*Last updated: 2026-06-18 (v2 Phosphor habit icon attribution)*

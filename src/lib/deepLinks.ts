@@ -10,7 +10,14 @@
 
 import { App, URLOpenListenerEvent } from "@capacitor/app";
 import { isNative } from "@/lib/platform";
+import {
+  hasPendingNativeDiaryDeepLink,
+  markNativeDiaryDeepLinkRequested,
+  NATIVE_DIARY_DEEP_LINK_EVENT,
+} from "@/lib/nativeDiaryDeepLinkSignal";
 import { logger } from "./logger";
+
+export { hasPendingNativeDiaryDeepLink, NATIVE_DIARY_DEEP_LINK_EVENT };
 
 // Event name for deep link navigation
 export const DEEP_LINK_EVENT = "zenflow-deep-link";
@@ -29,6 +36,20 @@ export interface DeepLinkData {
 function deepLinkKey(data: DeepLinkData): string {
   const params = data.params ? JSON.stringify(Object.entries(data.params).sort()) : "";
   return [data.type, data.id ?? "", data.route ?? "", params].join(":");
+}
+
+function describeDeepLinkUrl(url: string): Record<string, string> {
+  try {
+    const parsed = new URL(url);
+    const route = parsed.pathname.split("/").filter(Boolean)[0] ?? "/";
+    return {
+      scheme: parsed.protocol.replace(/:$/, ""),
+      host: parsed.host || "(none)",
+      route,
+    };
+  } catch {
+    return { scheme: "invalid", host: "(invalid)", route: "/" };
+  }
 }
 
 /**
@@ -52,9 +73,9 @@ export function parseDeepLink(url: string): DeepLinkData | null {
         }
       }
 
-      // zenflow://diary/mood or zenflow://diary/editor
-      if (host === "diary" || path.startsWith("diary")) {
-        const route = path.replace("diary/", "").replace("diary", "") || host === "diary" ? parsed.pathname.replace(/^\/+/, "") : "";
+      // zenflow://diary/mood, zenflow://diary/editor, or zenflow:///diary/editor
+      if (host === "diary" || path === "diary" || path.startsWith("diary/")) {
+        const route = host === "diary" ? path : path.replace(/^diary\/?/, "");
         const validRoutes = ["mood", "editor"];
         const resolvedRoute = validRoutes.includes(route) ? route : "mood";
         return { type: "diary", route: resolvedRoute };
@@ -74,7 +95,7 @@ export function parseDeepLink(url: string): DeepLinkData | null {
       }
     }
 
-    logger.log("[DeepLinks] Unknown deep link format:", url);
+    logger.log("[DeepLinks] Unknown deep link format:", describeDeepLinkUrl(url));
     return { type: "unknown", params: Object.fromEntries(parsed.searchParams) };
   } catch (error) {
     logger.error("[DeepLinks] Failed to parse URL:", error);
@@ -101,7 +122,7 @@ function dispatchDeepLinkEvent(data: DeepLinkData): void {
  * Handle an incoming deep link URL
  */
 function handleDeepLink(url: string): void {
-  logger.log("[DeepLinks] Received deep link:", url);
+  logger.log("[DeepLinks] Received deep link:", describeDeepLinkUrl(url));
 
   // Skip OAuth callbacks - they're handled separately
   if (url.includes("login-callback")) {
@@ -115,6 +136,9 @@ function handleDeepLink(url: string): void {
     if (data.type === "diary" && data.route && !["mood", "editor"].includes(data.route)) {
       logger.log("[DeepLinks] Invalid diary route:", data.route);
       return;
+    }
+    if (data.type === "diary") {
+      markNativeDiaryDeepLinkRequested();
     }
     dispatchDeepLinkEvent(data);
   }
@@ -141,7 +165,7 @@ export function setupDeepLinks(): void {
   App.getLaunchUrl()
     .then((result) => {
       if (result?.url) {
-        logger.log("[DeepLinks] App launched with URL:", result.url);
+        logger.log("[DeepLinks] App launched with URL:", describeDeepLinkUrl(result.url));
         handleDeepLink(result.url);
       }
     })

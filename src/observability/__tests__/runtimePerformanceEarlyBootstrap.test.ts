@@ -5,6 +5,10 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const RUNTIME_PERF_DEVICE_GUARD_KEY = "zenflow-runtime-perf-device-guard";
 const source = readFileSync(
+  resolve(process.cwd(), "src/runtime-perf-bootstrap.js"),
+  "utf8",
+);
+const legacyPublicSource = readFileSync(
   resolve(process.cwd(), "public/runtime-perf-bootstrap.js"),
   "utf8",
 );
@@ -95,13 +99,18 @@ describe("runtime performance early bootstrap", () => {
     expect(document.documentElement.dataset.runtimePerf).toBeUndefined();
   });
 
-  it("loads from the app base path before the React bundle on every route", () => {
-    const bootstrapIndex = indexHtml.indexOf('%BASE_URL%runtime-perf-bootstrap.js');
+  it("loads as a Vite source module before the React bundle on every route", () => {
+    const bootstrapIndex = indexHtml.indexOf('type="module" src="/src/runtime-perf-bootstrap.js"');
     const appBundleIndex = indexHtml.indexOf('type="module" src="/src/main.tsx"');
 
     expect(bootstrapIndex).toBeGreaterThan(-1);
     expect(appBundleIndex).toBeGreaterThan(-1);
     expect(bootstrapIndex).toBeLessThan(appBundleIndex);
+    expect(indexHtml).not.toContain('%BASE_URL%runtime-perf-bootstrap.js');
     expect(indexHtml).not.toContain('src="./runtime-perf-bootstrap.js"');
+  });
+
+  it("keeps the legacy public bootstrap fallback byte-for-byte aligned", () => {
+    expect(legacyPublicSource).toBe(source);
   });
 });

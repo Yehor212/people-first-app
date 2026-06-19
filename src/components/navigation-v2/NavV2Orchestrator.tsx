@@ -134,7 +134,7 @@ function NavV2RouteFallback({ label }: { label: string }) {
       role="status"
       aria-live="polite"
       aria-label={label}
-      className="flex min-h-screen items-center justify-center px-4 py-10"
+      className="flex min-h-[var(--app-viewport-height)] items-center justify-center px-4 py-10"
     >
       <div className="inline-flex min-h-[44px] items-center gap-3 rounded-2xl border border-border/50 bg-card/70 px-4 py-3 text-sm font-medium text-muted-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]">
         <span
@@ -161,7 +161,7 @@ function NavV2RoutePending({ label }: { label: string }) {
       aria-live="polite"
       aria-label={`Loading ${label}`}
       data-testid="nav-v2-route-pending"
-      className="pointer-events-none fixed start-1/2 top-[calc(env(safe-area-inset-top)+0.35rem)] z-[61] max-w-[calc(100vw-6rem)] -translate-x-1/2 rounded-full border border-border/55 bg-card/85 px-3 py-1.5 text-[11px] font-semibold leading-none text-foreground shadow-[0_10px_28px_hsl(var(--foreground)/0.14)] backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] motion-safe:animate-fade-in"
+      className="pointer-events-none fixed start-1/2 top-[calc(var(--safe-top)+0.35rem)] z-[61] max-w-[calc(100vw-6rem)] -translate-x-1/2 rounded-full border border-border/55 bg-card/85 px-3 py-1.5 text-[11px] font-semibold leading-none text-foreground shadow-[0_10px_28px_hsl(var(--foreground)/0.14)] backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] motion-safe:animate-fade-in"
     >
       <span className="inline-flex min-h-[24px] items-center gap-1.5">
         <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-primary motion-safe:animate-pulse" />
@@ -302,7 +302,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   return (
     <div
       className={cn(
-        "min-h-screen bg-background motion-safe:transition-[padding] motion-safe:duration-300",
+        "v2-edge-to-edge-surface min-h-[var(--app-viewport-height)] bg-background motion-safe:transition-[padding] motion-safe:duration-300",
         effectiveSidebarCollapsed
           ? forceWebNavigation
             ? "ps-[72px]"
@@ -312,6 +312,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
             : "md:ps-64",
       )}
       data-testid="nav-v2-orchestrator"
+      data-fullscreen-surface="v2"
       data-active-page={activePage}
       data-nav-layout={isWebNavigation ? "web" : "phone"}
       data-nav-rail={effectiveSidebarCollapsed ? "compact" : "expanded"}
@@ -340,7 +341,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         data-testid="nav-v2-open-drawer"
         className={cn(
           shouldShowDrawerTrigger ? "md:hidden flex" : "hidden",
-          "fixed start-4 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[58]",
+          "fixed start-4 top-[calc(var(--safe-top)+0.75rem)] z-[58]",
           "h-12 w-12 items-center justify-center rounded-full",
           "bg-card/70 backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]",
           "border border-border/50 shadow-[0_14px_34px_hsl(var(--foreground)/0.16)]",

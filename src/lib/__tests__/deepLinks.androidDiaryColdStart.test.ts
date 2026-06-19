@@ -25,7 +25,14 @@ describe("Android diary deep links", () => {
   });
 
   it("replays a cold-start diary launch URL to the first subscriber", async () => {
-    const { setupDeepLinks, subscribeToDeepLinks } = await import("../deepLinks");
+    const {
+      hasPendingNativeDiaryDeepLink,
+      NATIVE_DIARY_DEEP_LINK_EVENT,
+      setupDeepLinks,
+      subscribeToDeepLinks,
+    } = await import("../deepLinks");
+    const nativeDiaryListener = vi.fn();
+    window.addEventListener(NATIVE_DIARY_DEEP_LINK_EVENT, nativeDiaryListener);
 
     setupDeepLinks();
     await Promise.resolve();
@@ -34,9 +41,12 @@ describe("Android diary deep links", () => {
     const callback = vi.fn();
     const cleanup = subscribeToDeepLinks(callback);
 
+    expect(hasPendingNativeDiaryDeepLink()).toBe(true);
+    expect(nativeDiaryListener).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledWith({ type: "diary", route: "editor" });
 
     cleanup();
+    window.removeEventListener(NATIVE_DIARY_DEEP_LINK_EVENT, nativeDiaryListener);
   });
 
   it("dedupes the same cold-start diary URL before replay", async () => {

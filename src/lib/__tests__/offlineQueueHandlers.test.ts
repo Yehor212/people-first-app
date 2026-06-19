@@ -45,6 +45,13 @@ vi.mock("@/storage/realtimeSync", () => ({
   deleteSettingFromCloud: vi.fn(() => Promise.resolve()),
 }));
 
+vi.mock("@/features/journal/journalStorage", () => ({
+  retryJournalPhotoUpload: vi.fn(() => Promise.resolve()),
+  retryJournalAudioUpload: vi.fn(() => Promise.resolve()),
+  retryJournalPhotoDelete: vi.fn(() => Promise.resolve()),
+  retryJournalAudioDelete: vi.fn(() => Promise.resolve()),
+}));
+
 vi.mock("@/storage/eventSync", () => ({
   isSyncEventWriteIntent: vi.fn(
     (value: unknown) =>
@@ -92,6 +99,12 @@ import {
   syncSetting,
   deleteSettingFromCloud,
 } from "@/storage/realtimeSync";
+import {
+  retryJournalPhotoUpload,
+  retryJournalAudioUpload,
+  retryJournalPhotoDelete,
+  retryJournalAudioDelete,
+} from "@/features/journal/journalStorage";
 import { writeQueuedEventAndBroadcast } from "@/storage/eventSync";
 import { safeValidate } from "@/lib/validation";
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
@@ -174,12 +187,16 @@ describe("offlineQueueHandlers", () => {
       expect(registeredTypes).toContain("DELETE_SETTINGS");
       expect(registeredTypes).toContain("SYNC_JOURNAL_ENTRY");
       expect(registeredTypes).toContain("DELETE_JOURNAL_ENTRY");
+      expect(registeredTypes).toContain("UPLOAD_JOURNAL_PHOTO_STORAGE");
+      expect(registeredTypes).toContain("UPLOAD_JOURNAL_AUDIO_STORAGE");
+      expect(registeredTypes).toContain("DELETE_JOURNAL_PHOTO_STORAGE");
+      expect(registeredTypes).toContain("DELETE_JOURNAL_AUDIO_STORAGE");
       expect(registeredTypes).toContain("WRITE_SYNC_EVENT");
     });
 
-    it("registers exactly 15 handlers", () => {
+    it("registers exactly 19 handlers", () => {
       initializeOfflineQueueHandlers();
-      expect(offlineQueue.registerHandler).toHaveBeenCalledTimes(15);
+      expect(offlineQueue.registerHandler).toHaveBeenCalledTimes(19);
     });
 
     it("calls processQueue when online", () => {
@@ -369,6 +386,34 @@ describe("offlineQueueHandlers", () => {
       await handler(makeAction("DELETE_JOURNAL_ENTRY", null, "journal-del"));
 
       expect(deleteJournalEntryFromCloud).toHaveBeenCalledWith("journal-del");
+    });
+
+    it("UPLOAD_JOURNAL_PHOTO_STORAGE handler retries photo upload from an id-only payload", async () => {
+      const handler = getHandler("UPLOAD_JOURNAL_PHOTO_STORAGE");
+      await handler(makeAction("UPLOAD_JOURNAL_PHOTO_STORAGE", { id: "photo-1" }, "journal-photo-upload:photo-1"));
+
+      expect(retryJournalPhotoUpload).toHaveBeenCalledWith({ id: "photo-1" });
+    });
+
+    it("UPLOAD_JOURNAL_AUDIO_STORAGE handler retries audio upload from an id-only payload", async () => {
+      const handler = getHandler("UPLOAD_JOURNAL_AUDIO_STORAGE");
+      await handler(makeAction("UPLOAD_JOURNAL_AUDIO_STORAGE", { id: "audio-1" }, "journal-audio-upload:audio-1"));
+
+      expect(retryJournalAudioUpload).toHaveBeenCalledWith({ id: "audio-1" });
+    });
+
+    it("DELETE_JOURNAL_PHOTO_STORAGE handler retries photo delete from an id-only payload", async () => {
+      const handler = getHandler("DELETE_JOURNAL_PHOTO_STORAGE");
+      await handler(makeAction("DELETE_JOURNAL_PHOTO_STORAGE", { id: "photo-1" }, "journal-photo-delete:photo-1"));
+
+      expect(retryJournalPhotoDelete).toHaveBeenCalledWith({ id: "photo-1" });
+    });
+
+    it("DELETE_JOURNAL_AUDIO_STORAGE handler retries audio delete from an id-only payload", async () => {
+      const handler = getHandler("DELETE_JOURNAL_AUDIO_STORAGE");
+      await handler(makeAction("DELETE_JOURNAL_AUDIO_STORAGE", { id: "audio-1" }, "journal-audio-delete:audio-1"));
+
+      expect(retryJournalAudioDelete).toHaveBeenCalledWith({ id: "audio-1" });
     });
 
     it("WRITE_SYNC_EVENT handler retries the durable event-log write", async () => {

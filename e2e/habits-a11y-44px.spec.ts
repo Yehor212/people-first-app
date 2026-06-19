@@ -12,6 +12,7 @@ import { test, expect, type Locator, type Page } from "@playwright/test";
 import { primeZenflowV2, v2RoutePath } from "./helpers/zenflowV2State";
 
 const MIN_TARGET_PX = 44;
+const WEEKLY_CARD_SELECTOR = '[data-card="ritual-weekly-card"][data-testid^="hero-weekly-card-"]';
 
 async function primeOnboarding(page: Page) {
   await primeZenflowV2(page, {
@@ -47,9 +48,17 @@ async function completeTemplateSetup(page: Page, quickPickId: string) {
   await page.getByRole("button", { name: /add habit/i }).evaluate((el) => {
     (el as HTMLButtonElement).click();
   });
-  await expect(page.locator('[data-testid^="hero-weekly-card-"]').first()).toBeVisible({
+  await expect(page.locator(WEEKLY_CARD_SELECTOR).first()).toBeVisible({
     timeout: 15_000,
   });
+}
+
+async function expandWeeklyCard(card: Locator) {
+  await expect(card).toBeVisible({ timeout: 15_000 });
+  if ((await card.getAttribute("data-collapsed")) === "true") {
+    await card.locator('[data-slot="weekly-collapse"]').click();
+  }
+  await expect(card).toHaveAttribute("data-collapsed", "false");
 }
 
 async function openCustomHabitForm(page: Page) {
@@ -57,15 +66,14 @@ async function openCustomHabitForm(page: Page) {
   const sheet = page.getByTestId("habits-create-sheet");
   await expect(sheet).toBeVisible({ timeout: 10_000 });
 
-  const nameInput = page.getByLabel(/habit name/i);
   const customButton = sheet.getByRole("button", { name: /create custom habit/i });
-  for (let attempt = 0; attempt < 2 && !(await nameInput.isVisible()); attempt += 1) {
-    await expect(customButton).toBeVisible({ timeout: 10_000 });
-    await customButton.click();
-    await page.waitForTimeout(250);
-  }
+  await expect(customButton).toBeVisible({ timeout: 10_000 });
+  await customButton.evaluate((el) => {
+    (el as HTMLButtonElement).click();
+  });
 
-  await expect(nameInput).toBeVisible({ timeout: 10_000 });
+  await expect(sheet.getByRole("tab", { name: /advanced/i })).toBeVisible({ timeout: 10_000 });
+  await expect(sheet.getByLabel(/habit name/i)).toBeVisible({ timeout: 10_000 });
 }
 
 async function openAdvancedMode(page: Page) {
@@ -73,8 +81,13 @@ async function openAdvancedMode(page: Page) {
   const sheet = page.getByTestId("habits-create-sheet");
   const advancedTab = sheet.getByRole("tab", { name: /advanced/i });
   await expect(advancedTab).toBeVisible({ timeout: 10_000 });
-  await advancedTab.click();
-  await expect(advancedTab).toHaveAttribute("aria-selected", "true");
+  await advancedTab.evaluate((el) => {
+    (el as HTMLButtonElement).click();
+  });
+  await expect(sheet.getByRole("tab", { name: /advanced/i })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
   await expect(page.locator('[data-settings-panel="tracking"]')).toBeVisible({
     timeout: 10_000,
   });
@@ -133,7 +146,8 @@ test.describe("§11 #1 — Habits touch targets ≥ 44×44 px", () => {
 
     await completeTemplateSetup(page, "exercise");
 
-    const card = page.locator('[data-testid^="hero-weekly-card-"]').first();
+    const card = page.locator(WEEKLY_CARD_SELECTOR).first();
+    await expandWeeklyCard(card);
     const weekCell = card.getByRole("checkbox").first();
     await expectTouchTarget(weekCell, "weekly cell toggle");
 
@@ -194,7 +208,7 @@ test.describe("§11 #1 — Habits touch targets ≥ 44×44 px", () => {
     await expect(page.locator('[data-settings-panel-content="tracking"]')).toBeVisible();
   });
 
-  test("habit purpose survives creation and becomes proof on emoji check-in", async ({
+  test("habit purpose survives creation and becomes proof on icon check-in", async ({
     page,
   }) => {
     await primeOnboarding(page);
@@ -203,9 +217,12 @@ test.describe("§11 #1 — Habits touch targets ≥ 44×44 px", () => {
     await openAdvancedMode(page);
 
     await page.getByLabel(/habit name/i).fill("Morning walk");
-    await page
-      .locator('[data-advanced-rail-item][data-advanced-jump="identity"]')
-      .click({ force: true });
+    await page.locator('[data-advanced-rail-item][data-advanced-jump="identity"]').evaluate((el) => {
+      (el as HTMLButtonElement).click();
+    });
+    await expect(page.locator('[data-settings-panel-content="identity"]')).toBeVisible({
+      timeout: 10_000,
+    });
     await expect(page.getByTestId("identity-vote-preview")).toBeVisible();
     await page.getByTestId("identity-cluster-input").fill("Healthy body");
     await page.getByTestId("identity-verb-input").fill("someone who moves daily");
@@ -225,10 +242,10 @@ test.describe("§11 #1 — Habits touch targets ≥ 44×44 px", () => {
     });
 
     const card = page
-      .locator('[data-testid^="hero-weekly-card-"]')
+      .locator(WEEKLY_CARD_SELECTOR)
       .filter({ hasText: "Morning walk" })
       .first();
-    await expect(card).toBeVisible({ timeout: 15_000 });
+    await expandWeeklyCard(card);
     await expect(card.locator('[data-testid$="-identity"]')).toContainText(
       "Step toward someone who moves daily",
     );
@@ -236,7 +253,7 @@ test.describe("§11 #1 — Habits touch targets ≥ 44×44 px", () => {
       "ready to mark",
     );
 
-    await card.locator('[data-testid$="-emoji-check"]').click();
+    await card.locator('[data-testid$="-icon-check"]').click();
     await expect(card.locator('[data-testid$="-identity-vote"]')).toContainText(
       "step logged",
     );

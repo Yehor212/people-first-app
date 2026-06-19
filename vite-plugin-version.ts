@@ -82,15 +82,14 @@ try{
 var RL='_zf_rl';var VCF='zenflow_check_version';
 var V='${version}';var B='${base}';
 var S=document.currentScript&&document.currentScript.src;
-var BT=Number(S?new URL(S,location.href).searchParams.get('bt'):0)||${buildTime};
+var BT=Number(S?new URL(S,location.origin).searchParams.get('bt'):0)||${buildTime};
 var t=sessionStorage.getItem(RL);
 if(t&&Date.now()-Number(t)<30000)return;
 function mismatch(d){return d.version!==V||d.buildTime!==BT;}
 function reload(){
 sessionStorage.setItem(RL,String(Date.now()));
 sessionStorage.setItem(VCF,'true');
-var u=new URL(location.href);u.searchParams.set('_v',String(Date.now()));
-location.replace(u.toString());
+location.reload();
 }
 function clearCaches(){
 var jobs=[];

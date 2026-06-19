@@ -1,3 +1,6 @@
+// Generated from Supabase project bwgfslmxmueyglpumkbf via Supabase MCP.
+// Regenerate with: npx supabase gen types typescript --project-id bwgfslmxmueyglpumkbf > src/types/supabase.ts
+
 export type Json =
   | string
   | number

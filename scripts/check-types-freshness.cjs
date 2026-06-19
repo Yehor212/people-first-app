@@ -30,17 +30,87 @@ const ROOT = path.join(__dirname, "..");
 const TYPES = path.join(ROOT, "src/types/supabase.ts");
 const MIGRATIONS_DIR = path.join(ROOT, "supabase/migrations");
 
+
+function stripSqlComments(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .map((line) => line.replace(/--.*$/, ""))
+    .join("\n");
+}
+
+function isPermissionOnlyStatement(statement) {
+  const normalized = statement.replace(/\s+/g, " ").trim();
+  if (!normalized) return true;
+  return (
+    /^(grant|revoke)\s+.+\s+on\s+(table|schema|function|sequence)\s+/i.test(normalized) ||
+    /^alter\s+default\s+privileges\s+.+\s+(grant|revoke)\s+/i.test(normalized)
+  );
+}
+
+function isStorageBucketMetadataStatement(statement) {
+  const normalized = statement.replace(/\s+/g, " ").trim();
+  return /^update\s+storage\.buckets\s+set\s+/i.test(normalized);
+}
+
+function isTypeAffectingMigration(absFile) {
+  try {
+    const source = fs.readFileSync(absFile, "utf8");
+    const statements = stripSqlComments(source)
+      .split(";")
+      .map((statement) => statement.trim())
+      .filter(Boolean);
+    if (statements.length === 0) return true;
+    return statements.some(
+      (statement) =>
+        !isPermissionOnlyStatement(statement) && !isStorageBucketMetadataStatement(statement),
+    );
+  } catch {
+    return true;
+  }
+}
+
+
+function getFilesystemTime(absFile) {
+  try {
+    return fs.statSync(absFile).mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
+function getRelativePath(absFile) {
+  return path.relative(ROOT, absFile).replace(/\\/g, "/");
+}
+
+function hasWorktreeChange(absFile) {
+  const rel = getRelativePath(absFile);
+  try {
+    return execSync(`git status --porcelain -- "${rel}"`, {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "ignore"],
+    }).trim().length > 0;
+  } catch {
+    return true;
+  }
+}
+
 /**
- * Return file timestamp (ms) preferring Git committer-time over filesystem mtime.
+ * Return file timestamp (ms), using filesystem time for uncommitted worktree
+ * changes and Git committer-time for clean tracked files.
+ *
  * Rationale: after `git clone` (e.g. in CI), fs.statSync mtime is the clone
  * time, not the content's change time — making filesystem-mtime-based drift
- * checks useless in CI. Git committer-time survives clones.
- * Falls back to fs.statSync.mtimeMs if git metadata is unavailable (e.g. file
- * untracked or outside a working tree).
+ * checks useless in CI. Git committer-time survives clones for clean files.
+ * During local generation, however, a tracked generated file can be freshly
+ * modified before commit; in that case, the worktree mtime is the right proof.
  */
-function getContentTime(absFile) {
+function getContentTime(absFile, options = {}) {
+  const rel = getRelativePath(absFile);
+  if (options.preferFilesystem || hasWorktreeChange(absFile)) return getFilesystemTime(absFile);
+
   try {
-    const rel = path.relative(ROOT, absFile).replace(/\\/g, "/");
     const out = execSync(`git log -1 --format=%ct -- "${rel}"`, {
       cwd: ROOT,
       encoding: "utf8",
@@ -50,20 +120,32 @@ function getContentTime(absFile) {
   } catch {
     /* fall through to fs mtime */
   }
-  try {
-    return fs.statSync(absFile).mtimeMs;
-  } catch {
-    return 0;
-  }
+
+  return getFilesystemTime(absFile);
 }
 
 function newestMigrationMtime() {
-  if (!fs.existsSync(MIGRATIONS_DIR)) return { mtime: 0, file: null };
+  if (!fs.existsSync(MIGRATIONS_DIR)) return { mtime: 0, file: null, skippedNonTypeAffecting: [] };
   const files = fs.readdirSync(MIGRATIONS_DIR).filter((f) => /\.sql$/.test(f));
-  let newest = { mtime: 0, file: null };
+  let newest = { mtime: 0, file: null, hasWorktreeChanges: false, skippedNonTypeAffecting: [] };
   for (const f of files) {
-    const t = getContentTime(path.join(MIGRATIONS_DIR, f));
-    if (t > newest.mtime) newest = { mtime: t, file: f };
+    const absFile = path.join(MIGRATIONS_DIR, f);
+    if (!isTypeAffectingMigration(absFile)) {
+      newest.skippedNonTypeAffecting.push(f);
+      continue;
+    }
+
+    const hasChange = hasWorktreeChange(absFile);
+    const t = getContentTime(absFile);
+    if (hasChange) newest.hasWorktreeChanges = true;
+    if (t > newest.mtime) {
+      newest = {
+        mtime: t,
+        file: f,
+        hasWorktreeChanges: newest.hasWorktreeChanges,
+        skippedNonTypeAffecting: newest.skippedNonTypeAffecting,
+      };
+    }
   }
   return newest;
 }
@@ -79,8 +161,8 @@ function main() {
     process.exit(2);
   }
 
-  const typesMtime = getContentTime(TYPES);
   const newest = newestMigrationMtime();
+  const typesMtime = getContentTime(TYPES, { preferFilesystem: newest.hasWorktreeChanges });
   const driftMs = newest.mtime - typesMtime;
   const driftMinutes = Math.round(driftMs / 60_000);
   const thresholdMs = driftMaxMinutes * 60_000;
@@ -89,11 +171,15 @@ function main() {
     typesFile: path.relative(ROOT, TYPES),
     typesMtime: new Date(typesMtime).toISOString(),
     newestMigration: newest.file,
+    newestMigrationKind: "type-affecting",
     newestMigrationMtime: newest.mtime > 0 ? new Date(newest.mtime).toISOString() : null,
+    skippedNonTypeAffectingMigrations: newest.skippedNonTypeAffecting,
     driftMinutes,
     thresholdMinutes: driftMaxMinutes,
     status: driftMs <= thresholdMs ? "fresh" : "stale",
-    timeSource: "git-log-fallback-to-fs-mtime",
+    timeSource: newest.hasWorktreeChanges
+      ? "fs-mtime-for-local-migration-worktree"
+      : "git-log-for-clean-files-fs-mtime-for-worktree-changes",
   };
 
   if (printOnly) {
@@ -103,13 +189,13 @@ function main() {
 
   if (driftMs <= thresholdMs) {
     console.log(
-      `[types-freshness] OK — types ${driftMinutes >= 0 ? driftMinutes + "m older than" : -driftMinutes + "m newer than"} newest migration (${newest.file}). Threshold: ${driftMaxMinutes}m.`,
+      `[types-freshness] OK — types ${driftMinutes >= 0 ? driftMinutes + "m older than" : -driftMinutes + "m newer than"} newest type-affecting migration (${newest.file ?? "none"}). Threshold: ${driftMaxMinutes}m.`,
     );
     return;
   }
 
   console.error(
-    `[types-freshness] FAIL — src/types/supabase.ts is ${driftMinutes} minutes older than supabase/migrations/${newest.file} (threshold ${driftMaxMinutes}m).`,
+    `[types-freshness] FAIL — src/types/supabase.ts is ${driftMinutes} minutes older than type-affecting supabase/migrations/${newest.file} (threshold ${driftMaxMinutes}m).`,
   );
   console.error("");
   console.error("  Fix:");

@@ -2,6 +2,30 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const settingsStore = new Map<string, { key: string; value: unknown }>();
+const journalStorageMocks = vi.hoisted(() => ({
+  decryptEncryptedJournalEntries: vi.fn(() => Promise.resolve(0)),
+  decryptEncryptedJournalMedia: vi.fn(() => Promise.resolve(0)),
+  encryptPlaintextJournalEntries: vi.fn(() => Promise.resolve(0)),
+  encryptPlaintextJournalMedia: vi.fn(() => Promise.resolve(0)),
+  hasEncryptedJournalContent: vi.fn(() => Promise.resolve(false)),
+  hasEncryptedJournalMedia: vi.fn(() => Promise.resolve(false)),
+}));
+const vaultCryptoMocks = vi.hoisted(() => ({
+  generateJournalVaultKey: vi.fn(() => "vault-key-test"),
+  wrapJournalVaultKey: vi.fn((vaultKey: string, password: string) =>
+    Promise.resolve(`wrapped:${password}:${vaultKey}`),
+  ),
+  unwrapJournalVaultKey: vi.fn((wrappedKey: string, password: string) => {
+    const prefix = `wrapped:${password}:`;
+    if (!wrappedKey.startsWith(prefix)) return Promise.reject(new Error("Failed to unwrap journal vault key"));
+    return Promise.resolve(wrappedKey.slice(prefix.length));
+  }),
+  rewrapJournalVaultKey: vi.fn(async (wrappedKey: string, oldPassword: string, newPassword: string) => {
+    const prefix = `wrapped:${oldPassword}:`;
+    if (!wrappedKey.startsWith(prefix)) throw new Error("Failed to unwrap journal vault key");
+    return `wrapped:${newPassword}:${wrappedKey.slice(prefix.length)}`;
+  }),
+}));
 
 vi.mock("@/lib/platform", () => ({
   isNative: false,
@@ -30,6 +54,9 @@ vi.mock("@/storage/db", () => ({
   },
 }));
 
+vi.mock("../journalVaultCrypto", () => vaultCryptoMocks);
+vi.mock("../journalStorage", () => journalStorageMocks);
+
 import { db } from "@/storage/db";
 import { useJournalSecurity } from "../useJournalSecurity";
 
@@ -40,6 +67,7 @@ function bytesToString(bytes: Uint8Array): string {
 describe("useJournalSecurity cooldown persistence", () => {
   beforeEach(() => {
     settingsStore.clear();
+    vi.clearAllMocks();
     vi.spyOn(Date, "now").mockReturnValue(1_781_580_000_000);
 
     Object.defineProperty(globalThis, "crypto", {

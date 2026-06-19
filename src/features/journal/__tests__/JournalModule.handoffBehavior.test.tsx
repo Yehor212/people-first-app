@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -27,6 +27,37 @@ const journalHubMocks = vi.hoisted(() => ({
 
 const gamificationMocks = vi.hoisted(() => ({
   rewardUser: vi.fn(),
+}));
+
+const securityMocks = vi.hoisted(() => ({
+  state: {
+    biometricAvailable: false,
+    biometricEnabled: false,
+    cooldownRemaining: 0,
+    failedAttempts: 0,
+    hasPassword: false,
+    isLocked: false,
+    loading: false,
+  },
+  lock: vi.fn(),
+  removePassword: vi.fn(),
+  setPassword: vi.fn(),
+  touch: vi.fn(),
+  unlock: vi.fn(),
+  unlockWithBiometric: vi.fn(),
+}));
+
+const safeJsonStore = vi.hoisted(() => ({
+  values: new Map<string, string>(),
+}));
+
+const supabaseMocks = vi.hoisted(() => ({
+  authStateCallback: null as
+    | null
+    | ((event: string, session?: { user?: { email?: string | null } | null } | null) => Promise<void> | void),
+  getSession: vi.fn(),
+  signInWithOtp: vi.fn(),
+  unsubscribe: vi.fn(),
 }));
 
 vi.mock("@/contexts/LanguageContext", () => ({
@@ -126,9 +157,13 @@ vi.mock("@/lib/logger", () => ({
 
 vi.mock("@/lib/safeJson", () => ({
   safeJsonParse: vi.fn((_raw: string, fallback: unknown) => fallback),
-  storageGetRaw: vi.fn((_key: string, fallback?: string) => fallback ?? null),
-  storageRemove: vi.fn(),
-  storageSetRaw: vi.fn(),
+  storageGetRaw: vi.fn((key: string, fallback?: string) => safeJsonStore.values.get(key) ?? fallback ?? null),
+  storageRemove: vi.fn((key: string) => {
+    safeJsonStore.values.delete(key);
+  }),
+  storageSetRaw: vi.fn((key: string, value: string) => {
+    safeJsonStore.values.set(key, value);
+  }),
 }));
 
 vi.mock("@/lib/scheduleIdle", () => ({
@@ -137,6 +172,25 @@ vi.mock("@/lib/scheduleIdle", () => ({
 
 vi.mock("@/storage/cloudSync", () => ({
   triggerSync: vi.fn(),
+}));
+
+vi.mock("@/lib/supabaseClient", () => ({
+  supabase: {
+    auth: {
+      getSession: supabaseMocks.getSession,
+      onAuthStateChange: vi.fn((callback) => {
+        supabaseMocks.authStateCallback = callback;
+        return {
+          data: {
+            subscription: {
+              unsubscribe: supabaseMocks.unsubscribe,
+            },
+          },
+        };
+      }),
+      signInWithOtp: supabaseMocks.signInWithOtp,
+    },
+  },
 }));
 
 vi.mock("@/storage/db", () => ({
@@ -216,19 +270,13 @@ vi.mock("../useJournalReminder", () => ({
 
 vi.mock("../useJournalSecurity", () => ({
   useJournalSecurity: () => ({
-    biometricAvailable: false,
-    biometricEnabled: false,
-    cooldownRemaining: 0,
-    failedAttempts: 0,
-    hasPassword: false,
-    isLocked: false,
-    loading: false,
-    lock: vi.fn(),
-    removePassword: vi.fn(),
-    setPassword: vi.fn(),
-    touch: vi.fn(),
-    unlock: vi.fn(),
-    unlockWithBiometric: vi.fn(),
+    ...securityMocks.state,
+    lock: securityMocks.lock,
+    removePassword: securityMocks.removePassword,
+    setPassword: securityMocks.setPassword,
+    touch: securityMocks.touch,
+    unlock: securityMocks.unlock,
+    unlockWithBiometric: securityMocks.unlockWithBiometric,
   }),
 }));
 
@@ -319,6 +367,21 @@ const initialSuggestion: JournalEntrySuggestion = {
 describe("JournalModule orb handoff behavior", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.assign(securityMocks.state, {
+      biometricAvailable: false,
+      biometricEnabled: false,
+      cooldownRemaining: 0,
+      failedAttempts: 0,
+      hasPassword: false,
+      isLocked: false,
+      loading: false,
+    });
+    safeJsonStore.values.clear();
+    supabaseMocks.authStateCallback = null;
+    supabaseMocks.getSession.mockResolvedValue({
+      data: { session: { user: { email: "owner@example.invalid" } } },
+    });
+    supabaseMocks.signInWithOtp.mockResolvedValue({ error: null });
     storageMocks.getAllEntries.mockResolvedValue([]);
     storageMocks.getEntryCount.mockResolvedValue(0);
     storageMocks.saveEntry.mockResolvedValue({
@@ -368,6 +431,99 @@ describe("JournalModule orb handoff behavior", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("diary-entry-suggestion")).not.toBeInTheDocument();
     });
+  });
+
+  it("refreshes the diary auto-lock timer on pointer and keyboard interaction", async () => {
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+      />,
+    );
+
+    const diaryControl = await screen.findByTestId("journal-mobile-stats");
+    await waitFor(() => expect(securityMocks.touch).toHaveBeenCalled());
+    securityMocks.touch.mockClear();
+
+    fireEvent.pointerDown(diaryControl);
+    fireEvent.keyDown(diaryControl, { key: "A" });
+
+    expect(securityMocks.touch).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not remove the diary password when another account signs in during reset", async () => {
+    Object.assign(securityMocks.state, {
+      hasPassword: true,
+      isLocked: true,
+    });
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /forgot password/i }));
+    expect(await screen.findByText(/reset via email/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /send link/i }));
+
+    await waitFor(() => {
+      expect(supabaseMocks.signInWithOtp).toHaveBeenCalledWith({
+        email: "owner@example.invalid",
+        options: { shouldCreateUser: false },
+      });
+    });
+    await waitFor(() => {
+      expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
+    });
+
+    await act(async () => {
+      await supabaseMocks.authStateCallback?.("SIGNED_IN", {
+        user: { email: "other@example.invalid" },
+      });
+    });
+
+    expect(securityMocks.removePassword).not.toHaveBeenCalled();
+  });
+
+  it("removes the diary password when the requested account signs in during reset", async () => {
+    Object.assign(securityMocks.state, {
+      hasPassword: true,
+      isLocked: true,
+    });
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /forgot password/i }));
+    expect(await screen.findByText(/reset via email/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /send link/i }));
+
+    await waitFor(() => {
+      expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
+    });
+
+    await act(async () => {
+      await supabaseMocks.authStateCallback?.("SIGNED_IN", {
+        user: { email: "Owner@Example.Invalid" },
+      });
+    });
+
+    expect(securityMocks.removePassword).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText(/diary password removed/i)).toBeInTheDocument();
   });
 
   it("clears an unconsumed orb suggestion when the parent clears the handoff", async () => {

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { zenMotion } from "@/lib/animationUtils";
 import { cn } from "@/lib/utils";
+import { V2HabitPictogram } from "@/components/habit-pictogram/V2HabitPictogram";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { frequencyPresets } from "@/hooks/useHabitForm";
@@ -26,7 +27,10 @@ import {
   getTemplateCategoryVisualRole,
   type NonOrbVisualRole,
 } from "@/lib/nonOrbVisualRoles";
-import { getV2HabitTemplateSymbol } from "@/lib/v2IconSystem";
+import {
+  getV2HabitTemplatePictogramId,
+  resolveV2HabitPictogramId,
+} from "@/lib/v2HabitPictograms";
 import type { useHabitForm } from "@/hooks/useHabitForm";
 import type { Habit } from "@/types";
 import { TemplatePicker } from "./TemplatePicker";
@@ -341,15 +345,17 @@ export function HabitCreationForm({
     ? getTemplateCategoryVisualRole(activeTemplate.category)
     : "space";
   const templateTone = getRoleTone(templateRole);
-  const templateSymbol = activeTemplate
-    ? getV2HabitTemplateSymbol(activeTemplate.id)
+  const templateIconValue = activeTemplate
+    ? getV2HabitTemplatePictogramId(activeTemplate.id)
     : selectedIcon;
+  const templateSymbol = activeTemplate ? activeTemplate.icon : selectedIcon;
   const recommendedQuickEntryMode =
     activeTemplate?.habitType === "numerical"
       ? resolveHabitTemplateSetup(activeTemplate, unit || undefined).quickEntryMode
       : targetType === "atMost"
         ? "limitCheck"
         : undefined;
+  const previewIconValue = selectedIcon || templateIconValue;
   const previewSymbol = selectedIcon || templateSymbol;
 
   const existingClusters = [
@@ -411,7 +417,10 @@ export function HabitCreationForm({
     reminders.length > 0
       ? `${reminders.length} ${ts.reminders || "reminders"}`
       : ts.noReminders || "No reminders";
-  const appearancePreviewText = `${selectedIcon} · ${ts[selectedCategory] ?? selectedCategory}`;
+  const appearancePreviewIcon = isElevatedForm
+    ? resolveV2HabitPictogramId(selectedIcon)
+    : selectedIcon;
+  const appearancePreviewText = `${appearancePreviewIcon} · ${ts[selectedCategory] ?? selectedCategory}`;
   const optionalPreviewText = ts.optional
     ? `${ts.optional.charAt(0).toUpperCase()}${ts.optional.slice(1)}`
     : "Optional";
@@ -574,7 +583,11 @@ export function HabitCreationForm({
                 )}
                 aria-hidden="true"
               >
-                {previewSymbol}
+                {isElevatedForm ? (
+                  <V2HabitPictogram value={previewIconValue} className="h-8 w-8" />
+                ) : (
+                  previewSymbol
+                )}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -701,7 +714,11 @@ export function HabitCreationForm({
               className="flex h-12 w-12 items-center justify-center rounded-xl text-xl motion-safe:transition-all motion-safe:duration-300"
               style={{ backgroundColor: `${resolveHabitColor(selectedColorIndex)}33` }}
             >
-              {selectedIcon}
+              {isElevatedForm ? (
+                <V2HabitPictogram value={selectedIcon} className="h-8 w-8" />
+              ) : (
+                selectedIcon
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <p

@@ -26,10 +26,31 @@ describe("TemplatePicker V2 ritual presentation", () => {
     expect(cards).toHaveLength(ROUTINE_STARTER_TEMPLATE_IDS.length);
     expect(cards[0]).toHaveAttribute("data-visual-role", "focus");
     expect(cards[0]?.getAttribute("style")).toContain("--habit-role: var(--zf-role-focus)");
-    expect(cards[0]?.querySelector('[data-slot="template-picker-symbol"]')).toHaveTextContent(
-      "💧",
+    expect(cards[0]?.querySelector('[data-slot="template-picker-symbol"]')).toBeNull();
+    const pictogram = cards[0]?.querySelector(
+      '[data-slot="template-picker-svg"] [data-habit-pictogram="drink-water"]',
     );
-    expect(cards[0]?.querySelector('[data-slot="template-picker-svg"]')).toBeNull();
+    expect(pictogram).toBeTruthy();
+    expect(pictogram).toHaveAttribute("data-approval-state", "candidate-option-b-pending-user-approval");
+    const iconSlot = cards[0]?.querySelector('[data-slot="template-picker-icon"]');
+    expect(iconSlot).toHaveAttribute("data-icon-frame", "real-object-source-icon-native");
+    expect(iconSlot?.className).toContain("h-[4.25rem]");
+    expect(iconSlot?.className).toContain("w-[4.25rem]");
+    expect(iconSlot?.className).toContain("overflow-visible");
+    expect(iconSlot?.className).toContain("bg-transparent");
+    expect(iconSlot?.className).not.toContain("rounded-[21px]");
+    expect(iconSlot?.className).not.toContain("bg-[hsl(var(--card)/0.62)]");
+    expect(pictogram?.className).toContain("h-[3.85rem]");
+    expect(pictogram?.className).toContain("w-[3.85rem]");
+    expect(cards[0]?.textContent).not.toContain("💧");
+
+    const labels = container.querySelectorAll('[data-slot="template-picker-label"]');
+    expect(labels.length).toBeGreaterThan(0);
+    labels.forEach((label) => {
+      expect(label.className).not.toContain("truncate");
+      expect(label.className).toContain("whitespace-normal");
+      expect(label.className).not.toContain("anywhere");
+    });
 
     expect(screen.getByRole("button", { name: /create custom habit/i })).toHaveAttribute(
       "data-card",
@@ -37,7 +58,7 @@ describe("TemplatePicker V2 ritual presentation", () => {
     );
   });
 
-  it("marks decorative lucide icons as aria-hidden in the custom action", () => {
+  it("marks decorative real-source habit icons as aria-hidden in the custom action", () => {
     render(
       <TemplatePicker
         isPrimaryCTA
@@ -60,5 +81,48 @@ describe("TemplatePicker V2 ritual presentation", () => {
     decorativeIcons.forEach((icon) => {
       expect(icon).toHaveAttribute("aria-hidden", "true");
     });
+  });
+
+  it("renders secondary v2 templates with Option B liquid-glass totems", () => {
+    const { container } = render(
+      <TemplatePicker
+        isPrimaryCTA={false}
+        presentation="v2"
+        habits={[]}
+        language="en"
+        t={{
+          quickAdd: "Quick add",
+          createCustomHabit: "Create custom habit",
+        }}
+        handleQuickAdd={vi.fn()}
+        setShowCustomForm={vi.fn()}
+      />,
+    );
+
+    const pictograms = container.querySelectorAll("[data-habit-pictogram]");
+    expect(pictograms).toHaveLength(ROUTINE_STARTER_TEMPLATE_IDS.length);
+    expect(container.querySelectorAll("[data-icon-source='phosphor-icons-react-real-source-icon']")).toHaveLength(
+      ROUTINE_STARTER_TEMPLATE_IDS.length,
+    );
+    expect(container.querySelectorAll("[data-approval-state='candidate-option-b-pending-user-approval']")).toHaveLength(
+      ROUTINE_STARTER_TEMPLATE_IDS.length,
+    );
+    expect(container.querySelectorAll("[data-pictogram-layer^='b39-']")).toHaveLength(0);
+    expect(container.querySelectorAll("[data-icon-treatment='option-b-liquid-glass-totem']")).toHaveLength(
+      ROUTINE_STARTER_TEMPLATE_IDS.length,
+    );
+    expect(container.querySelectorAll("img[data-pictogram-layer='asset']")).toHaveLength(0);
+    expect(container.querySelectorAll("[data-pictogram-layer='source-hero-glyph'] svg")).toHaveLength(
+      ROUTINE_STARTER_TEMPLATE_IDS.length,
+    );
+    expect(container.querySelectorAll("[data-pictogram-layer='source-fill-relief'] svg")).toHaveLength(
+      ROUTINE_STARTER_TEMPLATE_IDS.length,
+    );
+    expect(container.querySelectorAll("[data-pictogram-layer='source-stroke-core'] svg")).toHaveLength(0);
+    expect(container.querySelectorAll("[data-pictogram-layer='source-accent-glyph']")).toHaveLength(0);
+    expect(container.querySelectorAll("[data-habit-pictogram] svg")).toHaveLength(
+      ROUTINE_STARTER_TEMPLATE_IDS.length * 2,
+    );
+    expect(container.textContent).not.toContain("💧");
   });
 });

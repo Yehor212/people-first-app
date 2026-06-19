@@ -22,6 +22,57 @@ const IS_DEV = import.meta.env.DEV;
 const MODE = import.meta.env.MODE;
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN as string | undefined;
 
+function isUsableSentryDsn(dsn: string | undefined): dsn is string {
+  const value = dsn?.trim();
+  if (!value) return false;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && /(^|\.)sentry\.io$/i.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+const SENSITIVE_PATTERNS = [
+  /Bearer\s+[A-Za-z0-9\-_.]+/gi,
+  /access_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
+  /refresh_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
+  /id_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
+  /token[=:]\s*["']?[A-Za-z0-9\-_.]{20,}["']?/gi,
+  /[#&](access_token|refresh_token|id_token|token)=[^&\s"'}]+/gi,
+] as const;
+
+const SENSITIVE_FIELD_NAME_PATTERN =
+  /(^|[_-])(authorization|access[_-]?token|refresh[_-]?token|id[_-]?token|session[_-]?token|token|jwt|secret|password|cookie)s?($|[_-])/i;
+
+function scrubString(str: string): string {
+  return SENSITIVE_PATTERNS.reduce((result, pattern) => result.replace(pattern, "[REDACTED]"), str);
+}
+
+function shouldRedactField(fieldName: string): boolean {
+  return SENSITIVE_FIELD_NAME_PATTERN.test(fieldName);
+}
+
+function scrubSentryPayload(value: unknown, seen = new WeakSet<object>()): unknown {
+  if (typeof value === "string") return scrubString(value);
+  if (value === null || typeof value !== "object") return value;
+  if (value instanceof Date) return value;
+  if (seen.has(value)) return "[Circular]";
+
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    return value.map((item) => scrubSentryPayload(item, seen));
+  }
+
+  const scrubbed: Record<string, unknown> = {};
+  for (const [key, nestedValue] of Object.entries(value as Record<string, unknown>)) {
+    scrubbed[key] = shouldRedactField(key) ? "[REDACTED]" : scrubSentryPayload(nestedValue, seen);
+  }
+  return scrubbed;
+}
+
 function getSentryPlatform(): "android" | "ios" | "web" {
   const capacitor = (globalThis as {
     Capacitor?: {
@@ -43,12 +94,12 @@ function getSentryPlatform(): "android" | "ios" | "web" {
  * Call this as early as possible in the app lifecycle
  */
 export function initSentry(): void {
-  const dsn = SENTRY_DSN;
+  const dsn = SENTRY_DSN?.trim();
   const detectedPlatform = getSentryPlatform();
   const isNativeRuntime = detectedPlatform !== "web";
 
-  // Skip if no DSN configured (development without Sentry)
-  if (!dsn) {
+  // Skip if no valid DSN is configured (development without Sentry or copied placeholders)
+  if (!isUsableSentryDsn(dsn)) {
     return;
   }
 
@@ -143,51 +194,63 @@ export function initSentry(): void {
         delete event.user.username;
       }
 
-      // Scrub tokens from breadcrumbs and request data
-      const sensitivePatterns = [
-        /Bearer\s+[A-Za-z0-9\-_.]+/gi,
-        /access_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
-        /refresh_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
-        /token[=:]\s*["']?[A-Za-z0-9\-_.]{20,}["']?/gi,
-        /[#&](access_token|refresh_token|id_token|token)=[^&\s]+/gi,
-      ];
+      // Scrub top-level strings too. Auth callback failures and manually
+      // captured messages can carry token-bearing URLs outside request fields.
+      if (event.message) {
+        event.message = scrubString(event.message);
+      }
+      if (event.transaction) {
+        event.transaction = scrubString(event.transaction);
+      }
+      if (event.exception) {
+        event.exception = scrubSentryPayload(event.exception) as typeof event.exception;
+      }
+      if (event.fingerprint) {
+        event.fingerprint = scrubSentryPayload(event.fingerprint) as typeof event.fingerprint;
+      }
+      if (event.tags) {
+        event.tags = scrubSentryPayload(event.tags) as typeof event.tags;
+      }
 
-      const scrubString = (str: string): string => {
-        let result = str;
-        sensitivePatterns.forEach((pattern) => {
-          result = result.replace(pattern, "[REDACTED]");
-        });
-        return result;
-      };
-
-      // Scrub breadcrumb messages
+      // Scrub breadcrumb messages, request metadata, and caller-provided context.
       if (event.breadcrumbs) {
         event.breadcrumbs = event.breadcrumbs.map((bc) => ({
           ...bc,
           message: bc.message ? scrubString(bc.message) : bc.message,
-          data: bc.data
-            ? (() => {
-                try {
-                  return JSON.parse(scrubString(JSON.stringify(bc.data)));
-                } catch {
-                  return bc.data; // Return original if scrubbing corrupts JSON
-                }
-              })()
-            : bc.data,
+          data: bc.data ? (scrubSentryPayload(bc.data) as Breadcrumb["data"]) : bc.data,
         }));
       }
 
-      // Scrub request URLs
+      // Scrub request URLs and payload-like fields.
       if (event.request?.url) {
         event.request.url = scrubString(event.request.url);
+      }
+      if (event.request?.query_string) {
+        const scrubbedQueryString = scrubSentryPayload(event.request.query_string);
+        event.request.query_string =
+          typeof scrubbedQueryString === "string"
+            ? scrubbedQueryString
+            : JSON.stringify(scrubbedQueryString);
+      }
+      if (event.request?.cookies) {
+        event.request.cookies = scrubSentryPayload(event.request.cookies) as typeof event.request.cookies;
+      }
+      if (event.request?.data) {
+        event.request.data = scrubSentryPayload(event.request.data);
       }
       if (event.request?.headers) {
         const headers: Record<string, string> = {};
         for (const [key, value] of Object.entries(event.request.headers)) {
-          headers[key] =
-            key.toLowerCase() === "authorization" ? "[REDACTED]" : scrubString(String(value));
+          headers[key] = shouldRedactField(key) ? "[REDACTED]" : scrubString(String(value));
         }
         event.request.headers = headers;
+      }
+
+      if (event.extra) {
+        event.extra = scrubSentryPayload(event.extra) as typeof event.extra;
+      }
+      if (event.contexts) {
+        event.contexts = scrubSentryPayload(event.contexts) as typeof event.contexts;
       }
 
       // Don't send events in development

@@ -3,6 +3,7 @@
  */
 
 import { BadgeCheck, Fingerprint } from "lucide-react";
+import { V2HabitPictogram } from "@/components/habit-pictogram/V2HabitPictogram";
 import { cn } from "@/lib/utils";
 import { IdentityVisual } from "@/components/IdentityIconPicker";
 
@@ -96,12 +97,16 @@ export function IdentityMappingSection({
             )}
             aria-hidden="true"
           >
-            <IdentityVisual
-              name={displayIcon}
-              fallback="Sparkles"
-              iconClassName="h-4 w-4"
-              textClassName="text-base leading-none"
-            />
+            {isPrimaryCTA ? (
+              <V2HabitPictogram value={displayIcon} className="h-5 w-5" />
+            ) : (
+              <IdentityVisual
+                name={displayIcon}
+                fallback="Sparkles"
+                iconClassName="h-4 w-4"
+                textClassName="text-base leading-none"
+              />
+            )}
           </span>
           <div className="min-w-0 flex-1">
             <p
@@ -203,12 +208,16 @@ export function IdentityMappingSection({
           )}
         >
           <span className="inline-flex items-center gap-1.5">
-            <IdentityVisual
-              name={displayIcon}
-              fallback="Sparkles"
-              iconClassName="h-3.5 w-3.5"
-              textClassName="text-sm leading-none"
-            />
+            {isPrimaryCTA ? (
+              <V2HabitPictogram value={displayIcon} className="h-4 w-4" />
+            ) : (
+              <IdentityVisual
+                name={displayIcon}
+                fallback="Sparkles"
+                iconClassName="h-3.5 w-3.5"
+                textClassName="text-sm leading-none"
+              />
+            )}
             <span>{ts.identityIcon}</span>
           </span>
         </p>

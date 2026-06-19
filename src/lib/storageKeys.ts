@@ -68,10 +68,13 @@ export const SK = {
 
   // ─── Journal ───
   JOURNAL_PASSWORD: "journal_password",
+  JOURNAL_VAULT_KEY: "journal_vault_key",
+  JOURNAL_PASSWORD_COOLDOWN: "journal_password_cooldown",
   JOURNAL_BIOMETRIC: "journal_biometric",
   JOURNAL_REMINDER: "journal_reminder",
   JOURNAL_SCREENSHOT_BLOCK: "journal_screenshot_block",
   JOURNAL_PRIVATE_MODE: "journal_private_mode",
+  JOURNAL_AI_SEARCH_CONSENT: "journal_ai_search_consent",
   JOURNAL_LOCK_TIMEOUT: "zenflow-journal-lock-timeout",
   JOURNAL_PASSWORD_RESET: "journal_password_reset_pending",
   JOURNAL_CALENDAR_MODE: "journal-calendar-mode",

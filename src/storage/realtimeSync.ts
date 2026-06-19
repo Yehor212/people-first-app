@@ -12,6 +12,7 @@ import { logger } from "@/lib/logger";
 import type { SeverityLevel } from "@sentry/core";
 import type { ErrorCategory } from "@/lib/sentry";
 import { calculateHabitEndDate } from "@/lib/habitPlan";
+import { SK } from "@/lib/storageKeys";
 
 // Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
 // Breadcrumbs are fire-and-forget telemetry — async import is safe.
@@ -30,6 +31,8 @@ import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { db } from "@/storage/db";
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
+import { getJournalContentVaultKey } from "@/features/journal/journalContentSession";
+import { isEncryptedJournalContent } from "@/features/journal/journalCrypto";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { fetchAndMergeServerTombstones, mergeSyncTombstones } from "@/storage/sync/serverTombstones";
 import {
@@ -93,6 +96,18 @@ import {
 
 // Track active subscriptions
 let realtimeChannel: RealtimeChannel | null = null;
+
+function isEncryptedJournalMediaStoragePath(path: string | null | undefined): boolean {
+  return Boolean(path?.toLowerCase().endsWith(".bin"));
+}
+
+function canPullJournalEntryWhileLocked(entry: { content?: string | null }): boolean {
+  return !entry.content || isEncryptedJournalContent(entry.content);
+}
+
+function canPullJournalMediaWhileLocked(media: { storage_path?: string | null }): boolean {
+  return !media.storage_path || isEncryptedJournalMediaStoragePath(media.storage_path);
+}
 
 // ============================================
 // FULL PULL FROM CLOUD
@@ -192,6 +207,28 @@ export const pullFromCloud = async (): Promise<boolean> => {
     const journalPhotosData = journalPhotosRes.data || [];
     const journalAudioData = journalAudioRes.data || [];
     const deletedIds = await mergeSyncTombstones(tombstonesRes.data || []);
+    const lockedProtectedJournal =
+      Boolean(await db.settings.get(SK.JOURNAL_PASSWORD)) && !getJournalContentVaultKey();
+    const pullableJournalEntriesData = lockedProtectedJournal
+      ? journalEntriesData.filter(canPullJournalEntryWhileLocked)
+      : journalEntriesData;
+    const pullableJournalEntryIds = new Set(pullableJournalEntriesData.map((entry) => entry.id));
+    const shouldFilterJournalMediaByPulledEntries =
+      lockedProtectedJournal && journalEntriesData.length > 0;
+    const pullableJournalPhotosData = lockedProtectedJournal
+      ? journalPhotosData.filter(
+          (photo) =>
+            canPullJournalMediaWhileLocked(photo) &&
+            (!shouldFilterJournalMediaByPulledEntries || pullableJournalEntryIds.has(photo.entry_id))
+        )
+      : journalPhotosData;
+    const pullableJournalAudioData = lockedProtectedJournal
+      ? journalAudioData.filter(
+          (audio) =>
+            canPullJournalMediaWhileLocked(audio) &&
+            (!shouldFilterJournalMediaByPulledEntries || pullableJournalEntryIds.has(audio.entry_id))
+        )
+      : journalAudioData;
 
     // Transform cloud data to local format
     const moods: MoodEntry[] = validateArray(
@@ -339,7 +376,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
     // Transform journal data from cloud to local format
     // Note: photos/audio only have metadata here — binary data lives in Storage
     // and will be lazily downloaded when the user views an entry
-    const journalEntries: JournalEntry[] = journalEntriesData.map((e) => ({
+    const journalEntries: JournalEntry[] = pullableJournalEntriesData.map((e) => ({
       id: e.id,
       date: e.date,
       title: e.title,
@@ -355,7 +392,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       updatedAt: e.updated_at,
     }));
 
-    const journalPhotos: JournalPhoto[] = journalPhotosData.map((p) => ({
+    const journalPhotos: JournalPhoto[] = pullableJournalPhotosData.map((p) => ({
       id: p.id,
       entryId: p.entry_id,
       data: "", // Binary data not stored in Supabase table — download from Storage on demand
@@ -364,10 +401,9 @@ export const pullFromCloud = async (): Promise<boolean> => {
       height: p.height,
       createdAt: p.created_at,
       storagePath: p.storage_path || undefined,
-      storageUrl: p.storage_url || undefined,
     }));
 
-    const journalAudioItems: JournalAudio[] = journalAudioData.map((a) => ({
+    const journalAudioItems: JournalAudio[] = pullableJournalAudioData.map((a) => ({
       id: a.id,
       entryId: a.entry_id,
       data: "", // Binary data not stored in Supabase table — download from Storage on demand
@@ -375,7 +411,6 @@ export const pullFromCloud = async (): Promise<boolean> => {
       mimeType: a.mime_type,
       createdAt: a.created_at,
       storagePath: a.storage_path || undefined,
-      storageUrl: a.storage_url || undefined,
     }));
 
     // P2-4 Fix: Save to local DB with explicit transaction error handling

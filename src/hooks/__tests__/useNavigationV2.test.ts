@@ -81,10 +81,29 @@ describe("useNavigationV2", () => {
       expect(result.current.activePage).toBe<NavV2Page>("diary");
       expect(result.current.unknownPath).toBeNull();
     });
+
+    it("consumes a native diary deep-link override after the first route snapshot", async () => {
+      const {
+        hasPendingNativeDiaryDeepLink,
+        markNativeDiaryDeepLinkRequested,
+      } = await import("@/lib/nativeDiaryDeepLinkSignal");
+
+      setPath("/settings");
+      markNativeDiaryDeepLinkRequested();
+
+      const first = renderHook(() => useNavigationV2());
+      expect(first.result.current.activePage).toBe<NavV2Page>("diary");
+      expect(hasPendingNativeDiaryDeepLink()).toBe(false);
+      first.unmount();
+
+      const second = renderHook(() => useNavigationV2());
+      expect(second.result.current.activePage).toBe<NavV2Page>("settings");
+      second.unmount();
+    });
   });
 
   describe("setActivePage", () => {
-    it("lets a phone drawer close paint before mounting a skipped route", async () => {
+    it("lets a phone drawer close paint on the next frame before mounting a skipped route", async () => {
       const rafCallbacks: FrameRequestCallback[] = [];
       const requestAnimationFrameSpy = vi
         .spyOn(window, "requestAnimationFrame")
@@ -110,14 +129,6 @@ describe("useNavigationV2", () => {
         expect(result.current.activePage).toBe<NavV2Page>("orb");
         expect(window.location.pathname).toBe("/");
         expect(requestAnimationFrameSpy).toHaveBeenCalledTimes(1);
-
-        await act(async () => {
-          rafCallbacks.shift()?.(performance.now());
-        });
-
-        expect(result.current.activePage).toBe<NavV2Page>("orb");
-        expect(window.location.pathname).toBe("/");
-        expect(requestAnimationFrameSpy).toHaveBeenCalledTimes(2);
 
         await act(async () => {
           rafCallbacks.shift()?.(performance.now());

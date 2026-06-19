@@ -1,17 +1,59 @@
 import { describe, expect, it } from "vitest";
 import {
   buildOAuthCredentials,
+  getEnabledAccountAuthProviders,
   getEnabledAuthScreenProviders,
   isTrustedOAuthRedirectUrl,
 } from "@/lib/authProviders";
 import { SUPABASE_URL } from "@/lib/env";
 
 describe("auth provider config", () => {
-  it("exposes Google, Facebook, and Telegram on the entry auth screen", () => {
+  it("exposes Apple on the entry auth screen with the other enabled providers", () => {
     expect(getEnabledAuthScreenProviders().map((provider) => provider.id)).toEqual([
       "google",
       "facebook",
       "telegram",
+      "apple",
+    ]);
+  });
+
+  it("keeps Apple available on iOS and iPadOS web surfaces", () => {
+    expect(
+      getEnabledAuthScreenProviders({
+        userAgent:
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
+        platform: "iPhone",
+        maxTouchPoints: 5,
+      }).map((provider) => provider.id),
+    ).toEqual(["google", "facebook", "telegram", "apple"]);
+
+    expect(
+      getEnabledAuthScreenProviders({
+        userAgent:
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15",
+        platform: "MacIntel",
+        maxTouchPoints: 5,
+      }).map((provider) => provider.id),
+    ).toEqual(["google", "facebook", "telegram", "apple"]);
+  });
+
+  it("keeps Apple available on non-iOS entry auth surfaces for cross-platform account access", () => {
+    expect(
+      getEnabledAuthScreenProviders({
+        userAgent:
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        platform: "Win32",
+        maxTouchPoints: 0,
+      }).map((provider) => provider.id),
+    ).toEqual(["google", "facebook", "telegram", "apple"]);
+  });
+
+  it("offers Apple as an account sign-in and linking provider", () => {
+    expect(getEnabledAccountAuthProviders().map((provider) => provider.id)).toEqual([
+      "google",
+      "facebook",
+      "telegram",
+      "apple",
     ]);
   });
 
@@ -41,6 +83,20 @@ describe("auth provider config", () => {
     });
   });
 
+  it("builds Apple OAuth credentials with name and email scope", () => {
+    const credentials = buildOAuthCredentials("apple", {
+      redirectTo: "com.zenflow.app://login-callback",
+      skipBrowserRedirect: true,
+    });
+
+    expect(credentials.provider).toBe("apple");
+    expect(credentials.options).toMatchObject({
+      redirectTo: "com.zenflow.app://login-callback",
+      scopes: "name email",
+      skipBrowserRedirect: true,
+    });
+  });
+
   it("keeps the existing Google prompt query param unchanged", () => {
     const credentials = buildOAuthCredentials("google", {
       redirectTo: "https://zenflow.app/auth/callback",
@@ -61,6 +117,9 @@ describe("isTrustedOAuthRedirectUrl", () => {
     expect(isTrustedOAuthRedirectUrl("https://www.facebook.com/v19.0/dialog/oauth", "facebook"))
       .toBe(true);
     expect(isTrustedOAuthRedirectUrl("https://oauth.telegram.org/auth", "telegram")).toBe(true);
+    expect(isTrustedOAuthRedirectUrl("https://appleid.apple.com/auth/authorize", "apple")).toBe(
+      true,
+    );
   });
 
   it("rejects unknown, spoofed, and non-HTTPS redirect URLs", () => {
@@ -68,6 +127,7 @@ describe("isTrustedOAuthRedirectUrl", () => {
     expect(isTrustedOAuthRedirectUrl("https://telegram.org.evil.example/auth", "telegram")).toBe(
       false,
     );
+    expect(isTrustedOAuthRedirectUrl("https://core.telegram.org/auth", "telegram")).toBe(false);
     expect(
       isTrustedOAuthRedirectUrl("https://other-project.supabase.co/auth/v1/authorize", "telegram"),
     ).toBe(false);

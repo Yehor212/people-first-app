@@ -14,6 +14,8 @@ import { primeZenflowV2, v2RoutePath } from "./helpers/zenflowV2State";
 
 type GtagArgs = unknown[];
 
+const WEEKLY_CARD_SELECTOR = '[data-card="ritual-weekly-card"][data-testid^="hero-weekly-card-"]';
+
 const CAN_INTERCEPT_VITE_SOURCE_MODULES =
   process.env.ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER === "true" && process.env.CI !== "true";
 
@@ -110,9 +112,17 @@ async function completeTemplateSetup(
   await page.getByRole("button", { name: /add habit/i }).evaluate((el) => {
     (el as HTMLButtonElement).click();
   });
-  await expect(page.locator('[data-testid^="hero-weekly-card-"]').first()).toBeVisible({
+  await expect(page.locator(WEEKLY_CARD_SELECTOR).first()).toBeVisible({
     timeout: 15_000,
   });
+}
+
+async function expandWeeklyCard(card: import("@playwright/test").Locator) {
+  await expect(card).toBeVisible({ timeout: 15_000 });
+  if ((await card.getAttribute("data-collapsed")) === "true") {
+    await card.locator('[data-slot="weekly-collapse"]').click();
+  }
+  await expect(card).toHaveAttribute("data-collapsed", "false");
 }
 
 test.describe("§15 metrics — real-browser smoke (all 4 events)", () => {
@@ -140,7 +150,8 @@ test.describe("§15 metrics — real-browser smoke (all 4 events)", () => {
 
     await completeTemplateSetup(page, "exercise");
 
-    const card = page.locator('[data-testid^="hero-weekly-card-"]').first();
+    const card = page.locator(WEEKLY_CARD_SELECTOR).first();
+    await expandWeeklyCard(card);
     const weekCell = card.locator('[role="checkbox"]:not([aria-disabled="true"])').first();
     await expect(weekCell).toBeVisible();
     if ((await weekCell.getAttribute("aria-checked")) === "true") {
@@ -164,10 +175,9 @@ test.describe("§15 metrics — real-browser smoke (all 4 events)", () => {
 
     await completeTemplateSetup(page, "exercise");
 
-    const statsButton = page
-      .locator('[data-testid^="hero-weekly-card-"]')
-      .first()
-      .getByRole("button", { name: /statistics/i });
+    const card = page.locator(WEEKLY_CARD_SELECTOR).first();
+    await expandWeeklyCard(card);
+    const statsButton = card.locator('[data-slot="weekly-stats"]').first();
     await expect(statsButton).toBeVisible();
     await statsButton.click();
 

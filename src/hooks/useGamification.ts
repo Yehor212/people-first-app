@@ -12,6 +12,7 @@ import {
 } from '@/lib/gamification';
 import { addFriendActivity, loadMyProfile, updateMyLevel } from '@/storage/friendsSync';
 import { analytics } from '@/lib/analytics';
+import { playSound } from '@/lib/audioManager';
 import { useUserDataStore } from '@/stores/userDataStore';
 
 interface GamificationState {
@@ -86,6 +87,10 @@ export function useGamification() {
         if (!initialLoadRef.current && isRealChange && achievementsToShow.length > 0) {
           queueMicrotask(() => {
             const profile = loadMyProfile();
+            const milestoneSound = achievementsToShow.some((achievement) => achievement.id.startsWith('streak_'))
+              ? 'streak'
+              : 'levelUp';
+            playSound(milestoneSound);
             achievementsToShow.forEach((achievement) => {
               analytics.achievementUnlocked(achievement.id);
               if (profile) {
@@ -129,10 +134,18 @@ export function useGamification() {
   const awardXp = useCallback(
     (action: XpAction) => {
       const xp = getXpForAction(action);
-      setGamificationState((prev) => ({
-        ...prev,
-        totalXp: prev.totalXp + xp,
-      }));
+      setGamificationState((prev) => {
+        const nextTotalXp = prev.totalXp + xp;
+        const previousLevel = calculateLevel(prev.totalXp).level;
+        const nextLevel = calculateLevel(nextTotalXp).level;
+        if (nextLevel > previousLevel) {
+          queueMicrotask(() => playSound('levelUp'));
+        }
+        return {
+          ...prev,
+          totalXp: nextTotalXp,
+        };
+      });
     },
     [setGamificationState]
   );

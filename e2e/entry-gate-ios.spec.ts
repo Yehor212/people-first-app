@@ -21,6 +21,10 @@ interface IosEntryScenario {
 const OUTPUT_DIR = path.resolve(process.cwd(), "output/playwright/ios-entry-20260615");
 const SUPPORTED_LANGUAGES: readonly EntryLanguage[] = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
 const RTL_LANGUAGES = new Set<EntryLanguage>(["ar", "he"]);
+const IPHONE_WEBKIT_USER_AGENT =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1";
+const IPAD_WEBKIT_USER_AGENT =
+  "Mozilla/5.0 (iPad; CPU OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1";
 
 const scenarios: IosEntryScenario[] = [
   {
@@ -119,6 +123,15 @@ function sha256File(filePath: string) {
   return createHash("sha256").update(readFileSync(filePath)).digest("hex");
 }
 
+function getIosNavigatorProfile(scenario: IosEntryScenario) {
+  const isPhone = scenario.viewport.width < 600;
+  return {
+    userAgent: isPhone ? IPHONE_WEBKIT_USER_AGENT : IPAD_WEBKIT_USER_AGENT,
+    platform: isPhone ? "iPhone" : "iPad",
+    maxTouchPoints: 5,
+  };
+}
+
 function prepareOutputDir() {
   if (existsSync(OUTPUT_DIR)) {
     rmSync(OUTPUT_DIR, { recursive: true, force: true });
@@ -127,8 +140,19 @@ function prepareOutputDir() {
 }
 
 async function primeEntryState(page: Page, scenario: IosEntryScenario) {
-  await page.addInitScript(({ scenario }) => {
+  await page.addInitScript(({ scenario, navigatorProfile }) => {
     const json = (value: unknown) => JSON.stringify(value);
+    const defineNavigatorGetter = (key: "userAgent" | "platform" | "maxTouchPoints", value: string | number) => {
+      try {
+        Object.defineProperty(navigator, key, { configurable: true, get: () => value });
+      } catch {
+        Object.defineProperty(Navigator.prototype, key, { configurable: true, get: () => value });
+      }
+    };
+
+    defineNavigatorGetter("userAgent", navigatorProfile.userAgent);
+    defineNavigatorGetter("platform", navigatorProfile.platform);
+    defineNavigatorGetter("maxTouchPoints", navigatorProfile.maxTouchPoints);
     const legacyTheme =
       scenario.theme === "paper" ? "light" : scenario.theme === "ink" ? "dark" : "system";
 
@@ -146,7 +170,7 @@ async function primeEntryState(page: Page, scenario: IosEntryScenario) {
       "zenflow:theme-v0c",
       json({ state: { theme: scenario.theme }, version: 0 }),
     );
-  }, { scenario });
+  }, { scenario, navigatorProfile: getIosNavigatorProfile(scenario) });
 }
 
 test.use({ browserName: "webkit" });
@@ -429,12 +453,14 @@ test.describe("iOS entry gate evidence", () => {
           "google",
           "facebook",
           "telegram",
+          "apple",
         ]);
         expect(fact.iconCenterSpread, `${fact.name} provider icon rail spread`).toBe(0);
         expect(fact.providerIconMetrics, `${fact.name} provider icon metrics`).toEqual([
           { id: "auth-provider-icon-google", renderedHeight: 24, renderedWidth: 24 },
           { id: "auth-provider-icon-facebook", renderedHeight: 24, renderedWidth: 24 },
           { id: "auth-provider-icon-telegram", renderedHeight: 24, renderedWidth: 24 },
+          { id: "auth-provider-icon-apple", renderedHeight: 24, renderedWidth: 24 },
         ]);
         expect(fact.telegram.exists, `${fact.name} Telegram icon`).toBe(true);
         expect(fact.telegram.viewBox, `${fact.name} Telegram viewBox`).toBe("0 0 128 128");

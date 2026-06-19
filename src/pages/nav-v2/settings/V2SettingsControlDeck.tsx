@@ -3,6 +3,7 @@ import { AboutPanel } from "./V2SettingsAboutPanel";
 import { AccountPanel } from "./V2SettingsAccountPanel";
 import { DataPanel, PrivacyPanel } from "./V2SettingsDataPanels";
 import { NotificationsPanel } from "./V2SettingsNotificationsPanel";
+import { SoundPanel } from "./V2SettingsSoundPanel";
 import { AppearancePanel, LanguagePanel, ProfilePanel } from "./V2SettingsProfilePanels";
 import type { V2SettingsControls, V2SettingsSectionId } from "./types";
 
@@ -18,6 +19,8 @@ export const V2SettingsControlDeck = memo(function V2SettingsControlDeck({
   switch (selectedSectionId) {
     case "appearance":
       return <AppearancePanel />;
+    case "sound":
+      return <SoundPanel />;
     case "language":
       return <LanguagePanel />;
     case "notifications":

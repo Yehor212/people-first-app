@@ -127,6 +127,95 @@ describe("syncSettings", () => {
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
+  it("syncs the wrapped journal vault key so another device can recover encrypted diary data", async () => {
+    await syncSetting("journal_vault_key", {
+      wrappedKey: "wrapped-key-fixture",
+      createdAt: 1_781_580_000_000,
+      updatedAt: 1_781_580_000_000,
+    });
+
+    expect(mocks.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: "user-1",
+        key: "journal_vault_key",
+        value: {
+          wrappedKey: "wrapped-key-fixture",
+          createdAt: 1_781_580_000_000,
+          updatedAt: 1_781_580_000_000,
+        },
+      }),
+      { onConflict: "user_id,key" }
+    );
+  });
+
+  it("does not sync password cooldown security settings", async () => {
+    await syncSetting("journal_password_cooldown", {
+      failedAttempts: 3,
+      cooldownUntil: 1_781_580_030_000,
+    });
+
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("queues the wrapped journal vault key while offline", async () => {
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+
+    await syncSetting("journal_vault_key", { wrappedKey: "wrapped-key-fixture" });
+
+    expect(mocks.enqueue).toHaveBeenCalledWith("UPDATE_SETTINGS", "journal_vault_key", {
+      key: "journal_vault_key",
+      value: { wrappedKey: "wrapped-key-fixture" },
+    });
+    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("does not queue password cooldown while offline", async () => {
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+
+    await syncSetting("journal_password_cooldown", { failedAttempts: 4 });
+
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("does not sync unsaved journal drafts to the account channel", async () => {
+    await syncSetting("journal_draft_new", {
+      title: "private unsaved draft",
+      content: "<p>not saved yet</p>",
+      audioIds: ["audio-local"],
+      photoIds: ["photo-local"],
+    });
+
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("does not queue unsaved journal drafts while offline", async () => {
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+
+    await syncSetting("journal_draft_entry-1", {
+      title: "offline private draft",
+      content: "<p>still local only</p>",
+    });
+
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
   it("writes a setting delete sync event after a successful cloud delete", async () => {
     await deleteSettingFromCloud("journal_draft_new");
 

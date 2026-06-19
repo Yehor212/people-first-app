@@ -110,6 +110,41 @@ describe('androidBackHandler', () => {
       expect(result).toBeInstanceOf(Promise);
       await result;
     });
+
+    it('treats a cold-start non-root route without web history as an exit prompt instead of a no-op history back', async () => {
+      vi.resetModules();
+      let backButtonCallback: ((event: { canGoBack: boolean }) => void) | null = null;
+      const nativeAddListener = vi.fn(async (_eventName: string, callback: (event: { canGoBack: boolean }) => void) => {
+        backButtonCallback = callback;
+        return { remove: vi.fn() };
+      });
+      const nativeExitApp = vi.fn();
+
+      vi.doMock('@capacitor/app', () => ({
+        App: {
+          addListener: nativeAddListener,
+          exitApp: nativeExitApp,
+        },
+      }));
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        isAndroid: true,
+      }));
+
+      const { initAndroidBackHandler } = await import('../androidBackHandler');
+      window.history.pushState({}, '', '/diary?nav=v2&navLayout=phone');
+      const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
+
+      await initAndroidBackHandler();
+      const callback = backButtonCallback as ((event: { canGoBack: boolean }) => void) | null;
+      expect(callback).toBeTypeOf('function');
+
+      callback?.({ canGoBack: false });
+
+      expect(historyBack).not.toHaveBeenCalled();
+      expect(nativeExitApp).not.toHaveBeenCalled();
+      expect(document.body.textContent).toContain('Press again to exit');
+    });
   });
 
   describe('removeAndroidBackHandler', () => {

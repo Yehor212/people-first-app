@@ -203,10 +203,12 @@ try {
   await page.waitForTimeout(700);
   screenshots.push({ step: "06-settings-dialog", path: await capture(page, "06-settings-dialog") });
   await page.keyboard.press("Escape");
+  await page.getByRole("dialog", { name: /diary settings/i }).waitFor({ state: "detached", timeout: 20_000 });
 
   await page.addStyleTag({ content: ":root { --zenflow-test-nav-inset-bottom: 34px; }" });
   await page.getByTestId("journal-mobile-stats").click();
   await page.getByTestId("memory-portal-canvas").waitFor({ state: "visible", timeout: 30_000 });
+  await page.waitForTimeout(1_000);
   screenshots.push({ step: "07-memory-portal", path: await capture(page, "07-memory-portal") });
 
   const dom = await page.evaluate(() => ({

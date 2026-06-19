@@ -1,7 +1,11 @@
 import { db } from "@/storage/db";
 import { FocusSession, GratitudeEntry, Habit, MoodEntry } from "@/types";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
+import { getJournalContentVaultKey } from "@/features/journal/journalContentSession";
+import { encryptJournalContent, isEncryptedJournalContent } from "@/features/journal/journalCrypto";
+import { encryptJournalMediaDataUrl, isEncryptedJournalMediaData } from "@/features/journal/journalMediaCrypto";
 import { generateId } from "@/lib/utils";
+import { SK } from "@/lib/storageKeys";
 import {
   sanitizeObject,
   moodEntrySchema,
@@ -23,6 +27,7 @@ import {
   getDeletedGratitudeIds,
   mergeDeletedGratitudeIds,
 } from "@/storage/deletionTracker";
+import { isAccountSyncedSettingKey } from "@/storage/sync/settingSyncPolicy";
 
 export type ImportMode = "merge" | "replace";
 
@@ -108,6 +113,86 @@ export interface ImportReport {
 export const BACKUP_SCHEMA_VERSION = 3;
 const MAX_DELETION_TOMBSTONES_PER_COLLECTION = 100000;
 
+async function encryptImportedJournalEntryForStorage(
+  entry: JournalEntry,
+  vaultKey: string | null
+): Promise<JournalEntry> {
+  if (!vaultKey || !entry.content || isEncryptedJournalContent(entry.content)) return entry;
+  return { ...entry, content: await encryptJournalContent(entry.content, vaultKey) };
+}
+
+async function encryptImportedJournalMediaData(
+  data: string | undefined,
+  vaultKey: string | null
+): Promise<string> {
+  if (!data || !vaultKey || isEncryptedJournalMediaData(data)) return data || "";
+  return encryptJournalMediaDataUrl(data, vaultKey);
+}
+
+async function encryptImportedJournalPhotoForStorage(
+  photo: JournalPhoto,
+  vaultKey: string | null
+): Promise<JournalPhoto> {
+  if (!vaultKey) return photo;
+  return {
+    ...photo,
+    data: await encryptImportedJournalMediaData(photo.data, vaultKey),
+    thumbnail: await encryptImportedJournalMediaData(photo.thumbnail, vaultKey),
+  };
+}
+
+async function encryptImportedJournalAudioForStorage(
+  audio: JournalAudio,
+  vaultKey: string | null
+): Promise<JournalAudio> {
+  if (!vaultKey) return audio;
+  return {
+    ...audio,
+    data: await encryptImportedJournalMediaData(audio.data, vaultKey),
+  };
+}
+
+function isEncryptedJournalMediaStoragePath(path: string | undefined): boolean {
+  return Boolean(path?.toLowerCase().endsWith(".bin"));
+}
+
+function isBackupPortableSettingKey(key: string): boolean {
+  return isAccountSyncedSettingKey(key) && key !== SK.JOURNAL_VAULT_KEY;
+}
+
+function shouldStripJournalMediaDataForBackup(media: {
+  storagePath?: string;
+  data?: string;
+  thumbnail?: string;
+}): boolean {
+  if (!media.storagePath) return false;
+
+  const dataValues = [media.data, media.thumbnail].filter(
+    (value): value is string => typeof value === "string" && value.length > 0
+  );
+  if (dataValues.length === 0) return true;
+
+  const hasEncryptedData = dataValues.some((value) => isEncryptedJournalMediaData(value));
+  return hasEncryptedData === isEncryptedJournalMediaStoragePath(media.storagePath);
+}
+
+function canImportJournalEntryWhileLocked(entry: JournalEntry): boolean {
+  return !entry.content || isEncryptedJournalContent(entry.content);
+}
+
+function canImportJournalMediaWhileLocked(media: {
+  storagePath?: string;
+  data?: string;
+  thumbnail?: string;
+}): boolean {
+  const dataValues = [media.data, media.thumbnail].filter(
+    (value): value is string => typeof value === "string" && value.length > 0
+  );
+  if (dataValues.some((value) => !isEncryptedJournalMediaData(value))) return false;
+  if (media.storagePath && !isEncryptedJournalMediaStoragePath(media.storagePath)) return false;
+  return true;
+}
+
 const getOrCreateDeviceId = async () => {
   const existing = await db.settings.get("zenflow-device-id");
   if (typeof existing?.value === "string" && existing.value.trim().length > 0) {
@@ -174,16 +259,23 @@ export const exportBackup = async (): Promise<BackupPayloadV3> => {
         db.journalAudio.toArray(),
       ]);
 
+      const accountSyncedSettings = settings.filter((setting) =>
+        isBackupPortableSettingKey(setting.key)
+      );
+
       // Optimize: strip base64 data from media that has been uploaded to Storage
       // The binary data lives in Supabase Storage buckets and can be re-downloaded
-      const optimizedPhotos = journalPhotos.map((p) => ({
-        ...p,
-        data: p.storagePath ? "" : p.data,
-        thumbnail: p.storagePath ? "" : p.thumbnail,
-      }));
+      const optimizedPhotos = journalPhotos.map((p) => {
+        const stripData = shouldStripJournalMediaDataForBackup(p);
+        return {
+          ...p,
+          data: stripData ? "" : p.data,
+          thumbnail: stripData ? "" : p.thumbnail,
+        };
+      });
       const optimizedAudio = journalAudio.map((a) => ({
         ...a,
-        data: a.storagePath ? "" : a.data,
+        data: shouldStripJournalMediaDataForBackup(a) ? "" : a.data,
       }));
 
       return {
@@ -191,7 +283,7 @@ export const exportBackup = async (): Promise<BackupPayloadV3> => {
         habits: habits.filter((habit) => !deletedHabitSet.has(habit.id)),
         focusSessions: focusSessions.filter((session) => !deletedFocusSessionSet.has(session.id)),
         gratitudeEntries: gratitudeEntries.filter((entry) => !deletedGratitudeSet.has(entry.id)),
-        settings,
+        settings: accountSyncedSettings,
         journalEntries: journalEntries.filter((entry) => !deletedJournalEntrySet.has(entry.id)),
         journalPhotos: optimizedPhotos.filter(
           (photo) => !deletedJournalEntrySet.has(photo.entryId)
@@ -340,21 +432,65 @@ export const importBackup = async (
     gratitudeEntries,
     gratitudeEntrySchema
   );
-  const validSettings = validateAndSanitize<{ key: string; value: unknown }>(
+  const rawValidSettings = validateAndSanitize<{ key: string; value: unknown }>(
     settings,
     settingSchema
   );
+  const accountSyncedValidSettings = rawValidSettings.valid.filter((setting) =>
+    isBackupPortableSettingKey(setting.key)
+  );
+  const validSettings = {
+    valid: accountSyncedValidSettings,
+    skipped: rawValidSettings.skipped + (rawValidSettings.valid.length - accountSyncedValidSettings.length),
+  };
 
   // Journal entries: lightweight validation (no Zod schema, just basic shape check)
-  const validJournalEntries = (journalEntries || []).filter(
+  let validJournalEntries = (journalEntries || []).filter(
     (e) => !!e && typeof e === "object" && typeof e.id === "string" && typeof e.date === "string"
   );
-  const validJournalPhotos = (journalPhotos || []).filter(
+  let validJournalPhotos = (journalPhotos || []).filter(
     (p) => !!p && typeof p === "object" && typeof p.id === "string" && typeof p.entryId === "string"
   );
-  const validJournalAudio = (journalAudio || []).filter(
+  let validJournalAudio = (journalAudio || []).filter(
     (a) => !!a && typeof a === "object" && typeof a.id === "string" && typeof a.entryId === "string"
   );
+
+  const journalVaultKey = getJournalContentVaultKey();
+  const hasLockedLocalJournal = Boolean(await db.settings.get(SK.JOURNAL_PASSWORD)) && !journalVaultKey;
+  if (hasLockedLocalJournal) {
+    const incomingEntryIds = new Set(validJournalEntries.map((entry) => entry.id));
+    const safeEntries = validJournalEntries.filter(canImportJournalEntryWhileLocked);
+    const safeEntryIds = new Set(safeEntries.map((entry) => entry.id));
+    validJournalEntries = safeEntries;
+    validJournalPhotos = validJournalPhotos.filter(
+      (photo) =>
+        canImportJournalMediaWhileLocked(photo) &&
+        (incomingEntryIds.size === 0 || safeEntryIds.has(photo.entryId))
+    );
+    validJournalAudio = validJournalAudio.filter(
+      (audio) =>
+        canImportJournalMediaWhileLocked(audio) &&
+        (incomingEntryIds.size === 0 || safeEntryIds.has(audio.entryId))
+    );
+  } else if (journalVaultKey) {
+    [validJournalEntries, validJournalPhotos, validJournalAudio] = await Promise.all([
+      Promise.all(
+        validJournalEntries.map((entry) =>
+          encryptImportedJournalEntryForStorage(entry, journalVaultKey)
+        )
+      ),
+      Promise.all(
+        validJournalPhotos.map((photo) =>
+          encryptImportedJournalPhotoForStorage(photo, journalVaultKey)
+        )
+      ),
+      Promise.all(
+        validJournalAudio.map((audio) =>
+          encryptImportedJournalAudioForStorage(audio, journalVaultKey)
+        )
+      ),
+    ]);
+  }
 
   // Extract remote deletion IDs before either replace or merge. A stale backup
   // can still contain an item and its tombstone; the tombstone must win.
@@ -415,7 +551,12 @@ export const importBackup = async (
         await db.habits.clear();
         await db.focusSessions.clear();
         await db.gratitudeEntries.clear();
-        await db.settings.clear();
+        const existingAccountSyncedSettingKeys = (await db.settings.toCollection().primaryKeys()).filter(
+          (key): key is string => typeof key === "string" && isBackupPortableSettingKey(key)
+        );
+        if (existingAccountSyncedSettingKeys.length) {
+          await db.settings.bulkDelete(existingAccountSyncedSettingKeys);
+        }
         await db.journalEntries.clear();
         await db.journalPhotos.clear();
         await db.journalAudio.clear();

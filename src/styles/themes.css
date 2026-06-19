@@ -1077,6 +1077,17 @@
     0 10px 24px -18px hsl(var(--habit-role) / 0.74);
 }
 
+
+:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-template-picker-icon="true"][data-icon-frame="real-icon-duo-native"],
+:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"],
+:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"] {
+  background: transparent;
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: hsl(var(--foreground));
+}
+
 :root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-slot="template-picker-label"],
 :root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-slot="template-picker-label"] {
   position: relative;

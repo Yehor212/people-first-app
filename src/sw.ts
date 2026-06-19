@@ -190,7 +190,9 @@ registerRoute(
 // The network response is not stored here, so online navigations still avoid
 // stale-cache deadlocks with old version-check scripts.
 registerRoute(
-  ({ url, request }) => request.mode === "navigate" && url.origin === self.location.origin,
+  ({ url, request }) =>
+    url.origin === self.location.origin &&
+    (request.mode === "navigate" || request.destination === "document"),
   async ({ request }) => {
     try {
       return await fetch(request);

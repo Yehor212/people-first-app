@@ -29,6 +29,7 @@ interface HeroHabitRowProps {
   onUnskip?: (habitId: string, date: string) => void;
   onArchive?: (habitId: string) => void;
   onUnarchive?: (habitId: string) => void;
+  initiallyCollapsed?: boolean;
 }
 
 const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
@@ -46,6 +47,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   onUnskip,
   onArchive,
   onUnarchive,
+  initiallyCollapsed = false,
 }: HeroHabitRowProps) {
   const today = getToday();
   const { t } = useLanguage();
@@ -162,6 +164,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
         onAdjust={onAdjust}
         onNumericalAction={onNumericalAction}
         onOpenDetail={onOpenDetail}
+        initiallyCollapsed={initiallyCollapsed}
       />
 
       {actionSheetOpen && (

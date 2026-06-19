@@ -110,6 +110,28 @@ describe("useStreakMilestones hook", () => {
     expect(getCurrentStreakMock).toHaveBeenCalledTimes(2);
   });
 
+  it("chunks initial streak seeding across idle callbacks", () => {
+    const manyHabits = Array.from({ length: 48 }, (_, index) =>
+      habit(`many-${index}`, 7),
+    ) as Habit[];
+
+    renderHook(({ habits }) => useStreakMilestones(habits), {
+      initialProps: { habits: manyHabits },
+    });
+
+    runNextIdleCallback();
+
+    expect(getCurrentStreakMock.mock.calls.length).toBeGreaterThan(0);
+    expect(getCurrentStreakMock.mock.calls.length).toBeLessThan(manyHabits.length);
+    expect(scheduleIdleCallbacks.length).toBeGreaterThan(0);
+
+    while (scheduleIdleCallbacks.length > 0) {
+      runNextIdleCallback();
+    }
+
+    expect(getCurrentStreakMock).toHaveBeenCalledTimes(manyHabits.length);
+  });
+
   it("does not fire on initial seed", () => {
     const { result } = renderHook(({ habits }) => useStreakMilestones(habits), {
       initialProps: { habits: [habit("a", 7)] as Habit[] },

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthScreen } from "../AuthScreen";
 
@@ -39,6 +39,18 @@ const { handlers, providers, session } = vi.hoisted(() => {
       fallbackName: "Telegram",
       enabled: true,
       trustedDomains: ["oauth.telegram.org"],
+    },
+    {
+      id: "apple",
+      supabaseProvider: "apple",
+      labelKey: "continueWithApple",
+      loadingLabelKey: "authSigningIn",
+      nameKey: "authProviderApple",
+      fallbackLabel: "Continue with Apple",
+      fallbackLoadingLabel: "Signing in...",
+      fallbackName: "Apple",
+      enabled: true,
+      trustedDomains: ["appleid.apple.com"],
     },
   ];
   return {
@@ -88,6 +100,20 @@ const themeState = vi.hoisted(() => {
   };
 });
 
+const media = vi.hoisted(() => ({
+  play: vi.fn(() => Promise.resolve()),
+  pause: vi.fn(),
+}));
+
+const appAudioSettingsState = vi.hoisted(() => ({
+  snapshot: {
+    muted: false,
+    volume: 0.3,
+    feedbackSoundsEnabled: true,
+    canPlayFeedback: true,
+  },
+}));
+
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
@@ -98,9 +124,11 @@ vi.mock("@/contexts/LanguageContext", () => ({
       authSigningInGoogle: "Signing in with Google...",
       authSigningInFacebook: "Signing in with Facebook...",
       authSigningInTelegram: "Signing in with Telegram...",
+      authSigningIn: "Signing in...",
       continueWithGoogle: "Continue with Google",
       continueWithFacebook: "Continue with Facebook",
       continueWithTelegram: "Continue with Telegram",
+      continueWithApple: "Continue with Apple",
       authNotConfiguredMessage: "Authentication not configured.",
       authExportDebugInfo: "Export debug info",
       authPrivacyNote: "Privacy note",
@@ -113,6 +141,11 @@ vi.mock("@/contexts/LanguageContext", () => ({
       themeSystem: "System",
       ariaBack: "Back",
       appName: "ZenFlow",
+      authMeasuredBreathLabel: "Measured breath",
+      authMeasuredBreathPlay: "Play measured breath",
+      authMeasuredBreathPause: "Pause measured breath",
+      soundOn: "On",
+      soundOff: "Off",
     },
   }),
 }));
@@ -140,6 +173,10 @@ vi.mock("@/lib/animationUtils", () => ({
   },
 }));
 
+vi.mock("@/hooks/useAppAudioSettings", () => ({
+  useAppAudioSettings: () => appAudioSettingsState.snapshot,
+}));
+
 vi.mock("@/lib/supabaseClient", () => ({
   supabase: {},
 }));
@@ -164,9 +201,25 @@ describe("AuthScreen provider buttons", () => {
     themeState.setThemePreference.mockClear();
     themeState.storageSetRaw.mockClear();
     handlers.handleProviderSignIn.mockClear();
+    media.play.mockClear();
+    media.pause.mockClear();
+    appAudioSettingsState.snapshot = {
+      muted: false,
+      volume: 0.3,
+      feedbackSoundsEnabled: true,
+      canPlayFeedback: true,
+    };
+    Object.defineProperty(window.HTMLMediaElement.prototype, "play", {
+      configurable: true,
+      value: media.play,
+    });
+    Object.defineProperty(window.HTMLMediaElement.prototype, "pause", {
+      configurable: true,
+      value: media.pause,
+    });
   });
 
-  it("renders enabled Facebook and Telegram buttons beside Google", () => {
+  it("renders enabled Facebook, Telegram, and Apple buttons beside Google", () => {
     render(<AuthScreen onComplete={vi.fn()} />);
 
     expect(screen.getByTestId("auth-screen")).toHaveAttribute("data-entry-theme", "paper");
@@ -178,6 +231,7 @@ describe("AuthScreen provider buttons", () => {
     expect(screen.getByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue with Facebook" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue with Telegram" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue with Apple" })).toBeInTheDocument();
     expect(within(screen.getByTestId("auth-screen-panel")).queryByText("ZenFlow")).toBeNull();
     expect(screen.queryByText("Sign in to sync your data across devices")).toBeNull();
     expect(screen.queryByTestId("entry-gate-backdrop-star")).toBeNull();
@@ -197,6 +251,50 @@ describe("AuthScreen provider buttons", () => {
 
     fireEvent.click(googleButton);
     expect(handlers.handleProviderSignIn).toHaveBeenCalledWith("google");
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Apple" }));
+    expect(handlers.handleProviderSignIn).toHaveBeenCalledWith("apple");
+  });
+
+
+  it("offers the measured breath track as user-started sign-in ambience", async () => {
+    render(<AuthScreen onComplete={vi.fn()} />);
+
+    const audio = screen.getByTestId("auth-measured-breath-audio");
+    expect(audio).toHaveAttribute("src", expect.stringContaining("/sounds/measured-breath.mp3"));
+    expect(audio).toHaveAttribute("preload", "none");
+    expect(audio).toHaveAttribute("loop");
+    expect(media.play).not.toHaveBeenCalled();
+
+    const toggle = screen.getByTestId("auth-measured-breath-toggle");
+    expect(toggle).toHaveAttribute("type", "button");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(toggle).toHaveAccessibleName("Play measured breath");
+
+    fireEvent.click(toggle);
+    expect(media.play).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
+
+    fireEvent.click(toggle);
+    expect(media.pause).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+  });
+
+  it("does not start measured breath when app sound is muted", () => {
+    appAudioSettingsState.snapshot = {
+      muted: true,
+      volume: 0.3,
+      feedbackSoundsEnabled: true,
+      canPlayFeedback: false,
+    };
+
+    render(<AuthScreen onComplete={vi.fn()} />);
+
+    const toggle = screen.getByTestId("auth-measured-breath-toggle");
+    expect(toggle).toBeDisabled();
+
+    fireEvent.click(toggle);
+    expect(media.play).not.toHaveBeenCalled();
   });
 
   it("keeps sign-in focused while preserving theme choice", () => {
@@ -223,10 +321,12 @@ describe("AuthScreen provider buttons", () => {
     const googleIcon = screen.getByTestId("auth-provider-icon-google");
     const facebookIcon = screen.getByTestId("auth-provider-icon-facebook");
     const telegramIcon = screen.getByTestId("auth-provider-icon-telegram");
+    const appleIcon = screen.getByTestId("auth-provider-icon-apple");
 
     expect(googleIcon).toHaveClass("h-6", "w-6");
     expect(facebookIcon).toHaveClass("h-6", "w-6");
     expect(telegramIcon).toHaveClass("h-6", "w-6");
+    expect(appleIcon).toHaveClass("h-6", "w-6");
     expect(facebookIcon.querySelector('circle[fill="#1877F2"]')).toBeTruthy();
     expect(telegramIcon).toHaveAttribute("viewBox", "0 0 128 128");
     expect(
@@ -249,7 +349,12 @@ describe("AuthScreen provider buttons", () => {
       "max-w-[22rem]",
       "grid-cols-[2rem_minmax(0,1fr)_2rem]"
     );
-    for (const provider of ["google", "facebook", "telegram"]) {
+    expect(screen.getByTestId("auth-provider-content-apple")).toHaveClass(
+      "grid",
+      "max-w-[22rem]",
+      "grid-cols-[2rem_minmax(0,1fr)_2rem]"
+    );
+    for (const provider of ["google", "facebook", "telegram", "apple"]) {
       expect(screen.getByTestId(`auth-provider-icon-rail-${provider}`)).toHaveClass(
         "h-8",
         "w-8",
