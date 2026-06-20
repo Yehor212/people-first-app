@@ -1,0 +1,381 @@
+{
+  "version": 1,
+  "project": "ZenFlow Hyperfocus nature concentration soundscapes",
+  "purpose": "Replace flat V1 Hyperfocus ambient choices with six environmental sound families, each with soft/deep/intense levels, without allowing music-like outputs.",
+  "modelPolicy": {
+    "requiredProvider": "Google Gemini/Lyria family only",
+    "preferredPilotModel": "lyria-3-clip",
+    "fallbackProvidersAllowed": false,
+    "warning": "Lyria is a music-capable model. Treat every output as untrusted until objective QC and audible review prove it is a non-musical field-recording style ambience.",
+    "disallowedPromptSteering": [
+      "artist names",
+      "K-pop references",
+      "celebrity references",
+      "catchy, upbeat, melodic, cinematic, soundtrack, song-about wording"
+    ]
+  },
+  "assetPolicy": {
+    "format": "mp3",
+    "durationSeconds": {
+      "min": 27,
+      "target": 30,
+      "max": 33
+    },
+    "channelLayout": "stereo preferred, mono acceptable only if spatially comfortable",
+    "loudness": "quiet focus bed; no clipping; no harsh transient spikes; no fatigue after 10 minutes looped",
+    "storagePath": "public/sounds/hyperfocus/hyperfocus-<family>-<level>.mp3"
+  },
+  "generationGate": {
+    "requiredPilotVariant": "fireplace:soft",
+    "fullPackAllowedOnlyAfter": [
+      "pilot passes validator prompt policy",
+      "pilot passes afinfo/afconvert probe",
+      "pilot passes objective size/duration/clipping/loop checks",
+      "pilot passes audible review: no song, no melody, no beat, no vocals, no instruments"
+    ]
+  },
+  "families": [
+    {
+      "id": "underwater",
+      "kind": "nature",
+      "label": "Underwater focus",
+      "originalAsset": "sounds/mixkit-underwater-transmitter-hum-2135.mp3",
+      "focusRole": "soft pressure cocoon that masks distraction without music",
+      "levels": [
+        {
+          "id": "soft",
+          "label": "Shallow Drift",
+          "fileName": "hyperfocus-underwater-soft.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: gentle underwater room tone, soft muffled bubbles, slow pressure drift, no machinery. Level: soft, sparse, low movement, almost meditative. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        },
+        {
+          "id": "deep",
+          "label": "Deep Current",
+          "fileName": "hyperfocus-underwater-deep.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: deeper underwater current, rounded low-frequency water movement, occasional distant bubble trails. Level: balanced, fuller body, stable masking, no drama. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        },
+        {
+          "id": "intense",
+          "label": "Abyss Focus",
+          "fileName": "hyperfocus-underwater-intense.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: dense underwater pressure, broad current wash, layered bubbles, enclosed ocean depth. Level: intense masking, strong but smooth, never frightening. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "thunderstorm",
+      "kind": "nature",
+      "label": "Rain and thunder",
+      "originalAsset": "sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.mp3",
+      "focusRole": "rain masking with controlled thunder that never jumpscares",
+      "levels": [
+        {
+          "id": "soft",
+          "label": "Distant Rain",
+          "fileName": "hyperfocus-thunderstorm-soft.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: distant steady rain on leaves, soft far-away thunder roll, humid air, no sharp cracks. Level: soft, low thunder density, gentle rain texture. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        },
+        {
+          "id": "deep",
+          "label": "Steady Storm",
+          "fileName": "hyperfocus-thunderstorm-deep.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: steady jungle rain bed, rounded thunder far behind the rain, natural wet ambience. Level: balanced rain masking, moderate thunder, no sudden peaks. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        },
+        {
+          "id": "intense",
+          "label": "Monsoon Wall",
+          "fileName": "hyperfocus-thunderstorm-intense.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: thick monsoon rain wall, constant water texture, distant rolling thunder under the rain. Level: intense rain masking, dense but smooth, no lightning crack jumps. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ocean",
+      "kind": "nature",
+      "label": "Ocean waves",
+      "originalAsset": "sounds/mixkit-small-waves-harbor-rocks-1208.mp3",
+      "focusRole": "breathing rhythm from natural waves without musical rhythm",
+      "levels": [
+        {
+          "id": "soft",
+          "label": "Shoreline",
+          "fileName": "hyperfocus-ocean-soft.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: small shoreline waves sliding over sand and pebbles, soft foam, open coastal air. Level: soft, slow, spacious, low splash energy. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        },
+        {
+          "id": "deep",
+          "label": "Rock Pools",
+          "fileName": "hyperfocus-ocean-deep.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: waves around harbor rocks and tide pools, foam receding, rounded water movement. Level: balanced wave energy, clear but not loud. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        },
+        {
+          "id": "intense",
+          "label": "Heavy Surf",
+          "fileName": "hyperfocus-ocean-intense.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: heavy surf rolling against rocks, broad water roar, continuous foam bed. Level: intense masking, powerful but steady, no dramatic crash spikes. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "river",
+      "kind": "nature",
+      "label": "River flow",
+      "originalAsset": "sounds/mixkit-wildlife-environment-in-a-river-2456.mp3",
+      "focusRole": "organic flow and light wildlife texture for task momentum",
+      "levels": [
+        {
+          "id": "soft",
+          "label": "Brook",
+          "fileName": "hyperfocus-river-soft.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: tiny forest brook over stones, soft trickle, occasional distant leaves, minimal wildlife. Level: soft, delicate, close and calm. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        },
+        {
+          "id": "deep",
+          "label": "Forest River",
+          "fileName": "hyperfocus-river-deep.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: forest river with layered water flow, rounded stones, light natural bank ambience. Level: balanced flow, medium body, steady attention support. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        },
+        {
+          "id": "intense",
+          "label": "Whitewater",
+          "fileName": "hyperfocus-river-intense.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: energetic whitewater over rocks, dense continuous water movement, natural river power. Level: intense masking, active flow, no abrupt splashes. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cafe",
+      "kind": "human-environment",
+      "label": "Cafe focus",
+      "originalAsset": "sounds/cafe-noise-32940.mp3",
+      "focusRole": "social masking for people who focus better with neutral room activity",
+      "levels": [
+        {
+          "id": "soft",
+          "label": "Quiet Corner",
+          "fileName": "hyperfocus-cafe-soft.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a real-world human environment soundscape, not a song. Scene: quiet cafe corner, soft room tone, distant cups, low indistinct human murmur, no intelligible speech. Level: soft, sparse, private, not busy. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        },
+        {
+          "id": "deep",
+          "label": "Work Cafe",
+          "fileName": "hyperfocus-cafe-deep.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a real-world human environment soundscape, not a song. Scene: warm work cafe, espresso machine far away, soft cups, chairs, indistinct low conversation bed. Level: balanced masking, stable room activity, no words. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        },
+        {
+          "id": "intense",
+          "label": "Busy Rush",
+          "fileName": "hyperfocus-cafe-intense.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a real-world human environment soundscape, not a song. Scene: busy cafe ambience, layered but blurred room murmur, cups, gentle movement, no intelligible speech. Level: intense social masking, dense but smooth, no music in the cafe. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fireplace",
+      "kind": "nature",
+      "label": "Fire crackle",
+      "originalAsset": "sounds/fireplace-fx-56636.mp3",
+      "focusRole": "warm crackle and room masking without campfire drama",
+      "levels": [
+        {
+          "id": "soft",
+          "label": "Embers",
+          "fileName": "hyperfocus-fireplace-soft.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: close quiet fireplace embers, tiny wood crackles, warm air, no roaring flame. Level: soft pilot, sparse crackle, safe and calm. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        },
+        {
+          "id": "deep",
+          "label": "Hearth",
+          "fileName": "hyperfocus-fireplace-deep.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: steady hearth fire, rounded wood crackle, warm room air, gentle flame bed. Level: balanced warmth, fuller crackle, still calm. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        },
+        {
+          "id": "intense",
+          "label": "Bonfire",
+          "fileName": "hyperfocus-fireplace-intense.mp3",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: outdoor bonfire texture, active wood crackle, low flame movement, open night air. Level: intense fire masking, energetic but not alarming, no fire emergency cues. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "rejectIf": [
+            "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
+            "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
+            "contains beat, drums, percussion, pulse, rhythm section, or metronomic groove",
+            "contains instruments, synth pads, bassline, piano, guitar, strings, brass, or lead sound",
+            "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
+            "sounds like pop or commercial music soundtrack instead of environmental ambience",
+            "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
+          ]
+        }
+      ]
+    }
+  ]
+}
