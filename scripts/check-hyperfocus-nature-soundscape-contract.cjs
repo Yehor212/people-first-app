@@ -69,33 +69,17 @@ function validatePrompt({ family, level, prompt, issues }) {
 
   for (const phrase of REQUIRED_PROMPT_PHRASES) {
     if (!lower.includes(phrase)) {
-      issues.push(
-        createIssue("missing-required-prompt-phrase", 'Prompt is missing required phrase "' + phrase + '".', {
-          familyId: family.id,
-          levelId: level.id,
-        }),
-      );
+      issues.push(createIssue("missing-required-prompt-phrase", 'Prompt is missing required phrase "' + phrase + '".', { familyId: family.id, levelId: level.id }));
     }
   }
 
   if (family.kind === "nature" && !lower.includes("nature")) {
-    issues.push(
-      createIssue("missing-nature-contract", "Nature family prompt must explicitly say nature.", {
-        familyId: family.id,
-        levelId: level.id,
-      }),
-    );
+    issues.push(createIssue("missing-nature-contract", "Nature family prompt must explicitly say nature.", { familyId: family.id, levelId: level.id }));
   }
 
   for (const pattern of POSITIVE_MUSIC_DRIFT_PATTERNS) {
     if (pattern.test(text)) {
-      issues.push(
-        createIssue("music-positive-drift", "Prompt contains wording that can steer the model toward a song.", {
-          familyId: family.id,
-          levelId: level.id,
-          pattern: String(pattern),
-        }),
-      );
+      issues.push(createIssue("music-positive-drift", "Prompt contains wording that can steer the model toward a song.", { familyId: family.id, levelId: level.id, pattern: String(pattern) }));
     }
   }
 }
@@ -143,13 +127,10 @@ function validateHyperfocusNatureSoundscapeSpec({ rootDir = process.cwd(), specP
     for (const level of family.levels) {
       levelCount += 1;
       const expectedFileName = 'hyperfocus-' + family.id + '-' + level.id + '.mp3';
-
       if (level.fileName !== expectedFileName) {
         issues.push(createIssue("file-name", 'Expected fileName "' + expectedFileName + '".', { familyId: family.id, levelId: level.id }));
       }
-
       validatePrompt({ family, level, prompt: level.prompt, issues });
-
       if (!Array.isArray(level.rejectIf)) {
         issues.push(createIssue("missing-reject-if", "Every level must include rejectIf criteria.", { familyId: family.id, levelId: level.id }));
       } else {
@@ -168,42 +149,26 @@ function validateHyperfocusNatureSoundscapeSpec({ rootDir = process.cwd(), specP
     }
   }
 
-  return {
-    ok: issues.length === 0,
-    familyCount: Array.isArray(loadedSpec.families) ? loadedSpec.families.length : 0,
-    levelCount,
-    issues,
-  };
+  return { ok: issues.length === 0, familyCount: Array.isArray(loadedSpec.families) ? loadedSpec.families.length : 0, levelCount, issues };
 }
 
 function buildHyperfocusNatureGenerationQueue({ rootDir = process.cwd(), specPath = DEFAULT_SPEC_PATH, phase = "pilot" } = {}) {
   const spec = readJson(path.resolve(rootDir, specPath));
   const validation = validateHyperfocusNatureSoundscapeSpec({ rootDir, specPath, spec });
-  if (!validation.ok) {
-    return { ok: false, phase, jobs: [], issues: validation.issues };
-  }
+  if (!validation.ok) return { ok: false, phase, jobs: [], issues: validation.issues };
 
-  const allJobs = spec.families.flatMap((family) =>
-    family.levels.map((level) => ({
-      id: family.id + ':' + level.id,
-      familyId: family.id,
-      levelId: level.id,
-      model: spec.modelPolicy.preferredPilotModel,
-      fileName: level.fileName,
-      prompt: level.prompt,
-      rejectIf: level.rejectIf,
-    })),
-  );
+  const allJobs = spec.families.flatMap((family) => family.levels.map((level) => ({
+    id: family.id + ':' + level.id,
+    familyId: family.id,
+    levelId: level.id,
+    model: spec.modelPolicy.preferredPilotModel,
+    fileName: level.fileName,
+    prompt: level.prompt,
+    rejectIf: level.rejectIf,
+  })));
 
   const jobs = phase === "pilot" ? allJobs.filter((job) => job.id === spec.generationGate.requiredPilotVariant) : allJobs;
-  return {
-    ok: true,
-    phase: phase === "pilot" ? "pilot" : "full-pack-after-accepted-pilot",
-    jobCount: jobs.length,
-    requiresAcceptedPilot: phase !== "pilot",
-    jobs,
-    issues: [],
-  };
+  return { ok: true, phase: phase === "pilot" ? "pilot" : "full-pack-after-accepted-pilot", jobCount: jobs.length, requiresAcceptedPilot: phase !== "pilot", jobs, issues: [] };
 }
 
 function runCli() {
@@ -227,19 +192,10 @@ function runCli() {
   }
 
   console.error('[hyperfocus-nature-soundscape] FAIL - ' + result.issues.length + ' issue(s).');
-  for (const issue of result.issues.slice(0, 20)) {
-    console.error('- ' + issue.code + ': ' + issue.message);
-  }
+  for (const issue of result.issues.slice(0, 20)) console.error('- ' + issue.code + ': ' + issue.message);
   process.exit(1);
 }
 
-if (require.main === module) {
-  runCli();
-}
+if (require.main === module) runCli();
 
-module.exports = {
-  REQUIRED_FAMILIES,
-  REQUIRED_LEVELS,
-  validateHyperfocusNatureSoundscapeSpec,
-  buildHyperfocusNatureGenerationQueue,
-};
+module.exports = { REQUIRED_FAMILIES, REQUIRED_LEVELS, validateHyperfocusNatureSoundscapeSpec, buildHyperfocusNatureGenerationQueue };

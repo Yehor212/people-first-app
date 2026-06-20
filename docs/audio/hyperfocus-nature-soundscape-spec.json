@@ -11,7 +11,7 @@
       "artist names",
       "K-pop references",
       "celebrity references",
-      "catchy, upbeat, melodic, cinematic, soundtrack, song-about wording"
+      "catchy, upbeat, melodic, soundtrack, song-about wording"
     ]
   },
   "assetPolicy": {
@@ -21,7 +21,6 @@
       "target": 30,
       "max": 33
     },
-    "channelLayout": "stereo preferred, mono acceptable only if spatially comfortable",
     "loudness": "quiet focus bed; no clipping; no harsh transient spikes; no fatigue after 10 minutes looped",
     "storagePath": "public/sounds/hyperfocus/hyperfocus-<family>-<level>.mp3"
   },
