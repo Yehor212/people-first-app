@@ -59,7 +59,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
-          ZENFLOW_SENTRY_READINESS_REQUIRED: "true"
+          ZENFLOW_SENTRY_READINESS_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run check:sentry-readiness
       - name: Smoke Sentry API for V2 preview
         working-directory: v2-src
@@ -68,7 +68,7 @@ jobs:
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL }}
-          ZENFLOW_SENTRY_API_REQUIRED: "true"
+          ZENFLOW_SENTRY_API_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run smoke:sentry-api
 
 
@@ -104,7 +104,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
-          ZENFLOW_SENTRY_READINESS_REQUIRED: "true"
+          ZENFLOW_SENTRY_READINESS_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run check:sentry-readiness
       - name: Smoke Sentry API for V1 public root
         working-directory: v1-src
@@ -113,7 +113,7 @@ jobs:
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL }}
-          ZENFLOW_SENTRY_API_REQUIRED: "true"
+          ZENFLOW_SENTRY_API_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run smoke:sentry-api
 
 

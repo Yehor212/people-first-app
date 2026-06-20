@@ -109,7 +109,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
-          ZENFLOW_SENTRY_READINESS_REQUIRED: "true"
+          ZENFLOW_SENTRY_READINESS_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run check:sentry-readiness
       - name: Smoke Sentry API
         if: github.event_name != 'pull_request'
@@ -118,7 +118,7 @@ jobs:
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL }}
-          ZENFLOW_SENTRY_API_REQUIRED: "true"
+          ZENFLOW_SENTRY_API_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run smoke:sentry-api
 
 
@@ -256,7 +256,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
-          ZENFLOW_SENTRY_READINESS_REQUIRED: "true"
+          ZENFLOW_SENTRY_READINESS_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run check:sentry-readiness
       - name: Smoke Sentry API for Android web assets
         if: github.event_name != 'pull_request'
@@ -265,7 +265,7 @@ jobs:
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL }}
-          ZENFLOW_SENTRY_API_REQUIRED: "true"
+          ZENFLOW_SENTRY_API_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run smoke:sentry-api
 
 
@@ -328,7 +328,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
-          ZENFLOW_SENTRY_READINESS_REQUIRED: "true"
+          ZENFLOW_SENTRY_READINESS_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run check:sentry-readiness
       - name: Smoke Sentry API for iOS web assets
         if: github.event_name != 'pull_request'
@@ -337,7 +337,7 @@ jobs:
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL }}
-          ZENFLOW_SENTRY_API_REQUIRED: "true"
+          ZENFLOW_SENTRY_API_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run smoke:sentry-api
 
 

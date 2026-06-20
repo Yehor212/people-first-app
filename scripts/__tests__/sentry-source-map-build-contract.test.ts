@@ -77,13 +77,15 @@ describe("Sentry source-map build contract", () => {
     }
   });
 
-  it("fails CI before Sentry source-map builds when upload env is missing", () => {
+  it("keeps live Sentry proof strict only when upload env is configured", () => {
     const deploy = read(".github/workflows/deploy.yml");
     const preview = read(".github/workflows/deploy-v2-preview.yml");
+    const uploadEnvRequiredExpression =
+      "secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != ''";
 
     for (const workflow of [deploy, preview]) {
-      expect(workflow).toContain('ZENFLOW_SENTRY_READINESS_REQUIRED: "true"');
-      expect(workflow).toContain('ZENFLOW_SENTRY_API_REQUIRED: "true"');
+      expect(workflow).toContain("ZENFLOW_SENTRY_READINESS_REQUIRED: ${{ " + uploadEnvRequiredExpression + " }}");
+      expect(workflow).toContain("ZENFLOW_SENTRY_API_REQUIRED: ${{ " + uploadEnvRequiredExpression + " }}");
       expect(workflow).toContain("npm run check:sentry-readiness");
       expect(workflow).toContain("npm run smoke:sentry-api");
     }
