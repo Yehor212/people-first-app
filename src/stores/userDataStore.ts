@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 import type {
   MoodEntry,
   Habit,
@@ -11,10 +11,10 @@ import type {
   CanvasGoal,
   DayRitual,
   ReflectionInsightCard,
-} from '@/types';
-import { defaultReminderSettings } from '@/lib/reminders';
-import { needsMigration, migrateAllHabits } from '@/lib/habitMigration';
-import { logger } from '@/lib/logger';
+} from "@/types";
+import { defaultReminderSettings } from "@/lib/reminders";
+import { needsMigration, migrateAllHabits } from "@/lib/habitMigration";
+import { logger } from "@/lib/logger";
 
 // Module-level guard: prevents _hydrateFromDB from re-running migration in a loop.
 // The loop occurs when migration calls dbSetter → useIndexedDB setState → useLayoutEffect
@@ -39,6 +39,8 @@ export interface RegisteredSetters {
   setTutorialComplete: Setter<boolean>;
   setOnboardingComplete: Setter<boolean>;
   setNotificationPermissionChecked: Setter<boolean>;
+  setAuthGateChecked: Setter<boolean>;
+  /** @deprecated Use setAuthGateChecked. Kept for legacy storage/caller compatibility. */
   setGoogleAuthChecked: Setter<boolean>;
   setMicroReflections: Setter<MicroReflection[]>;
   setCanvasGoals: Setter<CanvasGoal[]>;
@@ -67,6 +69,8 @@ export interface UserDataState {
   tutorialComplete: boolean;
   onboardingComplete: boolean;
   notificationPermissionChecked: boolean;
+  authGateChecked: boolean;
+  /** @deprecated Use authGateChecked. Kept as a synchronized legacy alias. */
   googleAuthChecked: boolean;
 
   // Loading
@@ -94,6 +98,8 @@ interface UserDataActions {
   setTutorialComplete: Setter<boolean>;
   setOnboardingComplete: Setter<boolean>;
   setNotificationPermissionChecked: Setter<boolean>;
+  setAuthGateChecked: Setter<boolean>;
+  /** @deprecated Use setAuthGateChecked. Kept as a synchronized legacy alias. */
   setGoogleAuthChecked: Setter<boolean>;
 
   _registerSetters: (setters: RegisteredSetters) => void;
@@ -108,16 +114,35 @@ function createFieldAction<T>(
   fieldName: string,
   setterKey: keyof RegisteredSetters,
   set: (fn: (state: UserDataState) => Partial<UserDataState>) => void,
-  get: () => UserDataState & UserDataActions,
+  get: () => UserDataState & UserDataActions
 ): Setter<T> {
   return (value) => {
     set((state) => ({
-      [fieldName]: typeof value === 'function'
-        ? (value as (prev: T) => T)(state[fieldName as keyof UserDataState] as T)
-        : value,
+      [fieldName]:
+        typeof value === "function"
+          ? (value as (prev: T) => T)(state[fieldName as keyof UserDataState] as T)
+          : value,
     }));
     const dbSetter = get()._setters?.[setterKey];
     if (dbSetter) (dbSetter as unknown as Setter<T>)(get()[fieldName as keyof UserDataState] as T);
+  };
+}
+
+function createAuthGateCheckedAction(
+  set: (fn: (state: UserDataState) => Partial<UserDataState>) => void,
+  get: () => UserDataState & UserDataActions
+): Setter<boolean> {
+  return (value) => {
+    set((state) => {
+      const nextValue = typeof value === "function" ? value(state.authGateChecked) : value;
+      return {
+        authGateChecked: nextValue,
+        googleAuthChecked: nextValue,
+      };
+    });
+
+    const dbSetter = get()._setters?.setAuthGateChecked ?? get()._setters?.setGoogleAuthChecked;
+    if (dbSetter) dbSetter(get().authGateChecked);
   };
 }
 
@@ -134,49 +159,95 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
   canvasGoals: [],
   dayRituals: [],
   reflectionInsights: [],
-  userName: 'Friend',
+  userName: "Friend",
   userNameCustom: false,
   hasSelectedLanguage: false,
   tutorialComplete: false,
   onboardingComplete: false,
   notificationPermissionChecked: false,
+  authGateChecked: false,
   googleAuthChecked: false,
   isLoading: true,
   _setters: null,
 
   // Actions — each updates Zustand + calls IndexedDB setter
-  setMoods: createFieldAction<MoodEntry[]>('moods', 'setMoods', set, get),
-  setHabits: createFieldAction<Habit[]>('habits', 'setHabits', set, get),
-  setFocusSessions: createFieldAction<FocusSession[]>('focusSessions', 'setFocusSessions', set, get),
-  setGratitudeEntries: createFieldAction<GratitudeEntry[]>('gratitudeEntries', 'setGratitudeEntries', set, get),
-  setReminders: createFieldAction<ReminderSettings>('reminders', 'setReminders', set, get),
-  setPrivacy: createFieldAction<PrivacySettings>('privacy', 'setPrivacy', set, get),
-  setScheduleEvents: createFieldAction<ScheduleEvent[]>('scheduleEvents', 'setScheduleEvents', set, get),
-  setMicroReflections: createFieldAction<MicroReflection[]>('microReflections', 'setMicroReflections', set, get),
-  setCanvasGoals: createFieldAction<CanvasGoal[]>('canvasGoals', 'setCanvasGoals', set, get),
-  setDayRituals: createFieldAction<DayRitual[]>('dayRituals', 'setDayRituals', set, get),
-  setReflectionInsights: createFieldAction<ReflectionInsightCard[]>('reflectionInsights', 'setReflectionInsights', set, get),
-  setUserName: createFieldAction<string>('userName', 'setUserName', set, get),
-  setUserNameCustom: createFieldAction<boolean>('userNameCustom', 'setUserNameCustom', set, get),
-  setHasSelectedLanguage: createFieldAction<boolean>('hasSelectedLanguage', 'setHasSelectedLanguage', set, get),
-  setTutorialComplete: createFieldAction<boolean>('tutorialComplete', 'setTutorialComplete', set, get),
-  setOnboardingComplete: createFieldAction<boolean>('onboardingComplete', 'setOnboardingComplete', set, get),
-  setNotificationPermissionChecked: createFieldAction<boolean>('notificationPermissionChecked', 'setNotificationPermissionChecked', set, get),
-  setGoogleAuthChecked: createFieldAction<boolean>('googleAuthChecked', 'setGoogleAuthChecked', set, get),
+  setMoods: createFieldAction<MoodEntry[]>("moods", "setMoods", set, get),
+  setHabits: createFieldAction<Habit[]>("habits", "setHabits", set, get),
+  setFocusSessions: createFieldAction<FocusSession[]>(
+    "focusSessions",
+    "setFocusSessions",
+    set,
+    get
+  ),
+  setGratitudeEntries: createFieldAction<GratitudeEntry[]>(
+    "gratitudeEntries",
+    "setGratitudeEntries",
+    set,
+    get
+  ),
+  setReminders: createFieldAction<ReminderSettings>("reminders", "setReminders", set, get),
+  setPrivacy: createFieldAction<PrivacySettings>("privacy", "setPrivacy", set, get),
+  setScheduleEvents: createFieldAction<ScheduleEvent[]>(
+    "scheduleEvents",
+    "setScheduleEvents",
+    set,
+    get
+  ),
+  setMicroReflections: createFieldAction<MicroReflection[]>(
+    "microReflections",
+    "setMicroReflections",
+    set,
+    get
+  ),
+  setCanvasGoals: createFieldAction<CanvasGoal[]>("canvasGoals", "setCanvasGoals", set, get),
+  setDayRituals: createFieldAction<DayRitual[]>("dayRituals", "setDayRituals", set, get),
+  setReflectionInsights: createFieldAction<ReflectionInsightCard[]>(
+    "reflectionInsights",
+    "setReflectionInsights",
+    set,
+    get
+  ),
+  setUserName: createFieldAction<string>("userName", "setUserName", set, get),
+  setUserNameCustom: createFieldAction<boolean>("userNameCustom", "setUserNameCustom", set, get),
+  setHasSelectedLanguage: createFieldAction<boolean>(
+    "hasSelectedLanguage",
+    "setHasSelectedLanguage",
+    set,
+    get
+  ),
+  setTutorialComplete: createFieldAction<boolean>(
+    "tutorialComplete",
+    "setTutorialComplete",
+    set,
+    get
+  ),
+  setOnboardingComplete: createFieldAction<boolean>(
+    "onboardingComplete",
+    "setOnboardingComplete",
+    set,
+    get
+  ),
+  setNotificationPermissionChecked: createFieldAction<boolean>(
+    "notificationPermissionChecked",
+    "setNotificationPermissionChecked",
+    set,
+    get
+  ),
+  setAuthGateChecked: createAuthGateCheckedAction(set, get),
+  setGoogleAuthChecked: (value) => get().setAuthGateChecked(value),
 
   _registerSetters: (setters) => set({ _setters: setters }),
   _hydrateFromDB: (data) => {
     // Defensive: ensure arrays survive corrupted cloud sync data
-    let habits = data.habits !== undefined
-      ? (Array.isArray(data.habits) ? data.habits : [])
-      : undefined;
+    let habits =
+      data.habits !== undefined ? (Array.isArray(data.habits) ? data.habits : []) : undefined;
 
     // v1 → v2 migration: convert old habit format to entry-based model.
     // Guard with module-level flag to prevent infinite loop:
     // _hydrateFromDB → dbSetter → useIndexedDB setState → useLayoutEffect re-fires → _hydrateFromDB again
     if (habits && habits.length > 0 && !habitsMigrationDone && needsMigration(habits)) {
       habitsMigrationDone = true; // One-shot guard — prevents re-entry even if stale data persists
-      logger.info('[habitMigration] Migrating v1 habits to v2 format...');
+      logger.info("[habitMigration] Migrating v1 habits to v2 format...");
       habits = migrateAllHabits(habits);
       // Persist migrated habits back to IndexedDB
       const dbSetter = get()._setters?.setHabits;
@@ -186,24 +257,49 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
       logger.info(`[habitMigration] Migrated ${habits.length} habits successfully.`);
     }
 
+    const hasAuthGateChecked =
+      data.authGateChecked !== undefined || data.googleAuthChecked !== undefined;
+    const hydratedAuthGateChecked =
+      data.authGateChecked !== undefined ? data.authGateChecked : data.googleAuthChecked;
+
     const payload = {
       ...data,
+      ...(hasAuthGateChecked && {
+        authGateChecked: hydratedAuthGateChecked,
+        googleAuthChecked: hydratedAuthGateChecked,
+      }),
       ...(data.moods !== undefined && { moods: Array.isArray(data.moods) ? data.moods : [] }),
       ...(habits !== undefined && { habits }),
-      ...(data.focusSessions !== undefined && { focusSessions: Array.isArray(data.focusSessions) ? data.focusSessions : [] }),
-      ...(data.gratitudeEntries !== undefined && { gratitudeEntries: Array.isArray(data.gratitudeEntries) ? data.gratitudeEntries : [] }),
-      ...(data.scheduleEvents !== undefined && { scheduleEvents: Array.isArray(data.scheduleEvents) ? data.scheduleEvents : [] }),
-      ...(data.microReflections !== undefined && { microReflections: Array.isArray(data.microReflections) ? data.microReflections : [] }),
-      ...(data.canvasGoals !== undefined && { canvasGoals: Array.isArray(data.canvasGoals) ? data.canvasGoals : [] }),
-      ...(data.dayRituals !== undefined && { dayRituals: Array.isArray(data.dayRituals) ? data.dayRituals : [] }),
-      ...(data.reflectionInsights !== undefined && { reflectionInsights: Array.isArray(data.reflectionInsights) ? data.reflectionInsights : [] }),
+      ...(data.focusSessions !== undefined && {
+        focusSessions: Array.isArray(data.focusSessions) ? data.focusSessions : [],
+      }),
+      ...(data.gratitudeEntries !== undefined && {
+        gratitudeEntries: Array.isArray(data.gratitudeEntries) ? data.gratitudeEntries : [],
+      }),
+      ...(data.scheduleEvents !== undefined && {
+        scheduleEvents: Array.isArray(data.scheduleEvents) ? data.scheduleEvents : [],
+      }),
+      ...(data.microReflections !== undefined && {
+        microReflections: Array.isArray(data.microReflections) ? data.microReflections : [],
+      }),
+      ...(data.canvasGoals !== undefined && {
+        canvasGoals: Array.isArray(data.canvasGoals) ? data.canvasGoals : [],
+      }),
+      ...(data.dayRituals !== undefined && {
+        dayRituals: Array.isArray(data.dayRituals) ? data.dayRituals : [],
+      }),
+      ...(data.reflectionInsights !== undefined && {
+        reflectionInsights: Array.isArray(data.reflectionInsights) ? data.reflectionInsights : [],
+      }),
     };
 
     // Belt-and-suspenders: skip set() if all values are referentially identical
     // to current store state. Prevents infinite loop even if re-entry guard fails.
     const current = get();
     const changed = Object.keys(payload).some(
-      (k) => (current as unknown as Record<string, unknown>)[k] !== (payload as unknown as Record<string, unknown>)[k]
+      (k) =>
+        (current as unknown as Record<string, unknown>)[k] !==
+        (payload as unknown as Record<string, unknown>)[k]
     );
     if (!changed) return;
 

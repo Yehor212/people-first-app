@@ -64,14 +64,14 @@ export const HomeTab = memo(function HomeTab({
   const { t, language } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   // User data — single subscription (was 6 individual)
-  const { moods, habits, focusSessions, userName, googleAuthChecked, gratitudeEntries } =
+  const { moods, habits, focusSessions, userName, authGateChecked, gratitudeEntries } =
     useUserDataStore(
       useShallow((s) => ({
         moods: s.moods,
         habits: s.habits,
         focusSessions: s.focusSessions,
         userName: s.userName,
-        googleAuthChecked: s.googleAuthChecked,
+        authGateChecked: s.authGateChecked,
         gratitudeEntries: s.gratitudeEntries,
       }))
     );
@@ -142,7 +142,7 @@ export const HomeTab = memo(function HomeTab({
         <V2PreviewPortal />
 
         {/* Session expired banner */}
-        {hasValidSession === false && googleAuthChecked && userName !== "Friend" && (
+        {hasValidSession === false && authGateChecked && userName !== "Friend" && (
           <SessionExpiredBanner
             onSignIn={() => {
               setSettingsOpenSection("account");

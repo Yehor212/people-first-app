@@ -84,8 +84,8 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     setOnboardingComplete,
     notificationPermissionChecked,
     setNotificationPermissionChecked,
-    googleAuthChecked,
-    setGoogleAuthChecked,
+    authGateChecked,
+    setAuthGateChecked,
   } = useUserDataStore(
     useShallow((s) => ({
       hasSelectedLanguage: s.hasSelectedLanguage,
@@ -98,8 +98,8 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
       setOnboardingComplete: s.setOnboardingComplete,
       notificationPermissionChecked: s.notificationPermissionChecked,
       setNotificationPermissionChecked: s.setNotificationPermissionChecked,
-      googleAuthChecked: s.googleAuthChecked,
-      setGoogleAuthChecked: s.setGoogleAuthChecked,
+      authGateChecked: s.authGateChecked,
+      setAuthGateChecked: s.setAuthGateChecked,
     }))
   );
 
@@ -117,7 +117,7 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     // Then set persistent values (async IndexedDB)
     setUserName(userData.name);
     setUserNameCustom(false);
-    setGoogleAuthChecked(true);
+    setAuthGateChecked(true);
   };
 
   const handleOnboardingComplete = (result: { skipped?: boolean; modules?: string[] }) => {
@@ -205,7 +205,7 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
 
   // Auth screen — check both IndexedDB flag and synchronous bypass
   // hasValidSession: null = checking, true = has session, false = no session
-  if (!googleAuthChecked && !authBypassFlag && hasValidSession === false) {
+  if (!authGateChecked && !authBypassFlag && hasValidSession === false) {
     if (isProcessingWebOAuth) {
       return (
         <div className="min-h-screen zen-gradient-hero flex items-center justify-center p-4">

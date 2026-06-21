@@ -85,7 +85,7 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
   const setUserName = useUserDataStore((s) => s.setUserName);
   const userNameCustom = useUserDataStore((s) => s.userNameCustom);
   const setUserNameCustom = useUserDataStore((s) => s.setUserNameCustom);
-  const setGoogleAuthChecked = useUserDataStore((s) => s.setGoogleAuthChecked);
+  const setAuthGateChecked = useUserDataStore((s) => s.setAuthGateChecked);
   const setChallengeInvite = useUIStore((s) => s.setChallengeInvite);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
   const handledAuthKeysRef = useRef<Set<string>>(new Set());
@@ -207,7 +207,7 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
           setUserName(name);
           setUserNameCustom(false);
         }
-        setGoogleAuthChecked(true);
+        setAuthGateChecked(true);
         endAuthFlow();
         return true;
       }

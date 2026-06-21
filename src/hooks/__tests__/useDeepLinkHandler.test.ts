@@ -115,6 +115,7 @@ function resetStores() {
     webOAuthError: null,
   });
   useUserDataStore.setState({
+    authGateChecked: false,
     googleAuthChecked: false,
     userName: "Friend",
     userNameCustom: false,
@@ -370,6 +371,7 @@ describe("useDeepLinkHandler", () => {
       expect(useAppStore.getState().hasValidSession).toBe(true);
       expect(useUserDataStore.getState().userName).toBe("Facebook Friend");
       expect(useUserDataStore.getState().userNameCustom).toBe(false);
+      expect(useUserDataStore.getState().authGateChecked).toBe(true);
       expect(useUserDataStore.getState().googleAuthChecked).toBe(true);
     });
 

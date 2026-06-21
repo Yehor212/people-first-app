@@ -40,6 +40,8 @@ const { splashScreenMock, authScreenMock, authScreenProps, appState, userState }
       setOnboardingComplete: vi.fn(),
       notificationPermissionChecked: true,
       setNotificationPermissionChecked: vi.fn(),
+      authGateChecked: true,
+      setAuthGateChecked: vi.fn(),
       googleAuthChecked: true,
       setGoogleAuthChecked: vi.fn(),
     };
@@ -108,6 +110,7 @@ describe("AuthGate", () => {
     userState.setTutorialComplete.mockReset();
     userState.setOnboardingComplete.mockReset();
     userState.setNotificationPermissionChecked.mockReset();
+    userState.setAuthGateChecked.mockReset();
     appState.initializationState = { isInitializing: true, error: null, wasUpdated: false };
     appState.loadingFadeOut = false;
     appState.authBypassFlag = false;
@@ -120,6 +123,7 @@ describe("AuthGate", () => {
     userState.tutorialComplete = true;
     userState.onboardingComplete = true;
     userState.notificationPermissionChecked = true;
+    userState.authGateChecked = true;
     userState.googleAuthChecked = true;
   });
 
@@ -175,11 +179,13 @@ describe("AuthGate", () => {
   it("completes the auth gate for non-Google social providers", () => {
     appState.initializationState = { isInitializing: false, error: null, wasUpdated: false };
     appState.hasValidSession = false;
+    userState.authGateChecked = false;
     userState.googleAuthChecked = false;
     appState.setAuthBypassFlag.mockImplementation((value: boolean) => {
       appState.authBypassFlag = value;
     });
-    userState.setGoogleAuthChecked.mockImplementation((value: boolean) => {
+    userState.setAuthGateChecked.mockImplementation((value: boolean) => {
+      userState.authGateChecked = value;
       userState.googleAuthChecked = value;
     });
 
@@ -198,7 +204,7 @@ describe("AuthGate", () => {
     expect(appState.setAuthBypassFlag).toHaveBeenCalledWith(true);
     expect(userState.setUserName).toHaveBeenCalledWith("Telegram User");
     expect(userState.setUserNameCustom).toHaveBeenCalledWith(false);
-    expect(userState.setGoogleAuthChecked).toHaveBeenCalledWith(true);
+    expect(userState.setAuthGateChecked).toHaveBeenCalledWith(true);
     expect(screen.getByText("App")).toBeInTheDocument();
     expect(screen.queryByTestId("mock-auth-screen")).not.toBeInTheDocument();
   });

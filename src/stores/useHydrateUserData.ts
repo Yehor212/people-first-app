@@ -136,8 +136,9 @@ export function useHydrateUserData(): void {
     idField: "key",
   });
 
-  const [googleAuthChecked, setGoogleAuthChecked, isLoadingGoogleAuth] = useIndexedDB({
+  const [authGateChecked, setAuthGateChecked, isLoadingAuthGate] = useIndexedDB({
     table: db.settings,
+    // Legacy storage key: keep it so existing signed-in users do not lose gate state.
     localStorageKey: "zenflow-google-auth-checked",
     initialValue: false,
     idField: "key",
@@ -215,7 +216,8 @@ export function useHydrateUserData(): void {
     setTutorialComplete,
     setOnboardingComplete,
     setNotificationPermissionChecked,
-    setGoogleAuthChecked,
+    setAuthGateChecked,
+    setGoogleAuthChecked: setAuthGateChecked,
   });
   // Keep ref current (useIndexedDB setters are useCallback-stable, but update ref just in case)
   settersRef.current = {
@@ -236,7 +238,8 @@ export function useHydrateUserData(): void {
     setTutorialComplete,
     setOnboardingComplete,
     setNotificationPermissionChecked,
-    setGoogleAuthChecked,
+    setAuthGateChecked,
+    setGoogleAuthChecked: setAuthGateChecked,
   };
 
   useEffect(() => {
@@ -260,7 +263,8 @@ export function useHydrateUserData(): void {
       setOnboardingComplete: (v) => settersRef.current.setOnboardingComplete(v),
       setNotificationPermissionChecked: (v) =>
         settersRef.current.setNotificationPermissionChecked(v),
-      setGoogleAuthChecked: (v) => settersRef.current.setGoogleAuthChecked(v),
+      setAuthGateChecked: (v) => settersRef.current.setAuthGateChecked(v),
+      setGoogleAuthChecked: (v) => settersRef.current.setAuthGateChecked(v),
     };
     useUserDataStore.getState()._registerSetters(stableSetters);
   }, []);
@@ -280,7 +284,7 @@ export function useHydrateUserData(): void {
     isLoadingOnboarding ||
     isLoadingPrivacy ||
     isLoadingNotificationPermission ||
-    isLoadingGoogleAuth ||
+    isLoadingAuthGate ||
     isLoadingSchedule ||
     isLoadingMicroReflections ||
     isLoadingCanvasGoals ||
@@ -314,7 +318,8 @@ export function useHydrateUserData(): void {
       tutorialComplete,
       onboardingComplete,
       notificationPermissionChecked,
-      googleAuthChecked,
+      authGateChecked,
+      googleAuthChecked: authGateChecked,
       isLoading,
     });
 
@@ -340,7 +345,7 @@ export function useHydrateUserData(): void {
     tutorialComplete,
     onboardingComplete,
     notificationPermissionChecked,
-    googleAuthChecked,
+    authGateChecked,
     isLoading,
   ]);
 }

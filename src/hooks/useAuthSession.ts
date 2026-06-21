@@ -40,8 +40,8 @@ export function useAuthSession(isLoading: boolean): void {
   const setIsProcessingWebOAuth = useAppStore((s) => s.setIsProcessingWebOAuth);
   const setWebOAuthError = useAppStore((s) => s.setWebOAuthError);
 
-  const googleAuthChecked = useUserDataStore((s) => s.googleAuthChecked);
-  const setGoogleAuthChecked = useUserDataStore((s) => s.setGoogleAuthChecked);
+  const authGateChecked = useUserDataStore((s) => s.authGateChecked);
+  const setAuthGateChecked = useUserDataStore((s) => s.setAuthGateChecked);
   const isLoadingUserData = useUserDataStore((s) => s.isLoading);
   const userName = useUserDataStore((s) => s.userName);
   const setUserName = useUserDataStore((s) => s.setUserName);
@@ -53,8 +53,8 @@ export function useAuthSession(isLoading: boolean): void {
   const lastSessionExpiredRef = useRef<number>(0);
 
   // Refs for values used inside effects to prevent listener re-subscription
-  const googleAuthCheckedRef = useRef(googleAuthChecked);
-  googleAuthCheckedRef.current = googleAuthChecked;
+  const authGateCheckedRef = useRef(authGateChecked);
+  authGateCheckedRef.current = authGateChecked;
   const isLoadingUserDataRef = useRef(isLoadingUserData);
   isLoadingUserDataRef.current = isLoadingUserData;
   const isLoadingRef = useRef(isLoading);
@@ -77,11 +77,11 @@ export function useAuthSession(isLoading: boolean): void {
         const sessionExists = !!data.session;
         setHasValidSession(sessionExists);
 
-        // If session exists but googleAuthChecked is false, restore it
+        // If session exists but the auth gate flag is false, restore it
         // This prevents the login loop after OAuth redirect
-        if (sessionExists && !googleAuthCheckedRef.current && !isLoadingUserDataRef.current) {
+        if (sessionExists && !authGateCheckedRef.current && !isLoadingUserDataRef.current) {
           logger.log("[Index] Session exists but auth not checked - restoring state");
-          setGoogleAuthChecked(true);
+          setAuthGateChecked(true);
         }
       } catch (error) {
         logger.error("[Index] Error checking session:", error);
@@ -96,7 +96,7 @@ export function useAuthSession(isLoading: boolean): void {
     return () => {
       active = false;
     };
-  }, [setGoogleAuthChecked, setHasValidSession]);
+  }, [setAuthGateChecked, setHasValidSession]);
 
   // Web OAuth callback detection — runs ONCE on mount
   // Detects OAuth code/error in query or hash params (from provider redirects).
@@ -146,7 +146,7 @@ export function useAuthSession(isLoading: boolean): void {
       setHasValidSession(true);
       setWebOAuthError(null);
       setIsProcessingWebOAuth(false);
-      setGoogleAuthChecked(true);
+      setAuthGateChecked(true);
 
       if (!userNameCustomRef.current) {
         setUserName(name);
@@ -295,7 +295,7 @@ export function useAuthSession(isLoading: boolean): void {
               setUserName(name);
               setUserNameCustom(false);
             }
-            setGoogleAuthChecked(true);
+            setAuthGateChecked(true);
             endAuthFlow();
           } else {
             logger.error("[Index] Pending auth callback had no session");
@@ -318,7 +318,7 @@ export function useAuthSession(isLoading: boolean): void {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: subscribe to auth state once
-  }, [supabase, setUserName, setUserNameCustom, setGoogleAuthChecked]);
+  }, [supabase, setUserName, setUserNameCustom, setAuthGateChecked]);
 
   // Cloud sync on auth change
   useEffect(() => {
@@ -473,10 +473,10 @@ export function useAuthSession(isLoading: boolean): void {
       logger.warn("[Index] Session confirmed expired, resetting auth state");
       setHasValidSession(false);
       setAuthBypassFlag(false);
-      setGoogleAuthChecked(false);
+      setAuthGateChecked(false);
     };
 
     window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
     return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
-  }, [setGoogleAuthChecked, setHasValidSession, setAuthBypassFlag]);
+  }, [setAuthGateChecked, setHasValidSession, setAuthBypassFlag]);
 }

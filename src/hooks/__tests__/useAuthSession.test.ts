@@ -180,6 +180,7 @@ function resetStores() {
   useUserDataStore.setState({
     userName: "Friend",
     userNameCustom: false,
+    authGateChecked: false,
     googleAuthChecked: false,
     isLoading: false,
   });
