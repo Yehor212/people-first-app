@@ -86,13 +86,34 @@ export function getCleanAuthCallbackUrl(rawUrl: string): string {
     "error_code",
     "error_description",
     "state",
+    "access_token",
+    "refresh_token",
+    "expires_at",
+    "expires_in",
+    "token_type",
+    "provider_token",
+    "provider_refresh_token",
   ];
 
   for (const param of oauthParams) {
     url.searchParams.delete(param);
   }
 
-  return `${url.pathname}${url.search}${url.hash}`;
+  const rawHash = url.hash.replace(/^#/, "");
+  if (rawHash) {
+    const hashParams = new URLSearchParams(rawHash);
+    const hasOAuthHashParam = oauthParams.some((param) => hashParams.has(param));
+
+    if (hasOAuthHashParam) {
+      for (const param of oauthParams) {
+        hashParams.delete(param);
+      }
+      const cleanHash = hashParams.toString();
+      url.hash = cleanHash ? "#" + cleanHash : "";
+    }
+  }
+
+  return url.pathname + url.search + url.hash;
 }
 
 // Known OAuth error codes for safe display

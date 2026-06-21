@@ -135,6 +135,14 @@ describe('getCleanAuthCallbackUrl', () => {
 
     expect(cleanUrl).toBe('/people-first-app/orb?nav=v2&navLayout=phone');
   });
+
+  it('removes OAuth tokens from the hash while preserving non-OAuth hash params', () => {
+    const cleanUrl = getCleanAuthCallbackUrl(
+      'https://example.com/people-first-app/orb?nav=v2#section=mood&access_token=abc&refresh_token=def&provider_token=ghi&state=xyz'
+    );
+
+    expect(cleanUrl).toBe('/people-first-app/orb?nav=v2#section=mood');
+  });
 });
 
 // ─── isNativePlatform ──────────────────────────────────────────────────────

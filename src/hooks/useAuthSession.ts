@@ -123,6 +123,25 @@ export function useAuthSession(isLoading: boolean): void {
 
     let settled = false;
 
+    const completeWebOAuthSession = (session: import("@supabase/supabase-js").Session) => {
+      const name = getAuthUserDisplayName(session.user);
+
+      setAuthBypassFlag(true);
+      setHasValidSession(true);
+      setWebOAuthError(null);
+      setIsProcessingWebOAuth(false);
+      setGoogleAuthChecked(true);
+
+      if (!userNameCustomRef.current) {
+        setUserName(name);
+        setUserNameCustom(false);
+      }
+
+      notifyAuthComplete();
+      endAuthFlow();
+      window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
+    };
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
@@ -131,8 +150,7 @@ export function useAuthSession(isLoading: boolean): void {
       if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
         settled = true;
         logger.log("[Index] Web OAuth code exchange succeeded (event:", event, ")");
-        window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
-        setIsProcessingWebOAuth(false);
+        completeWebOAuthSession(session);
       }
     });
 
@@ -145,8 +163,7 @@ export function useAuthSession(isLoading: boolean): void {
         if (data.session) {
           settled = true;
           logger.log("[Index] Web OAuth: fallback session check found valid session");
-          window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
-          setIsProcessingWebOAuth(false);
+          completeWebOAuthSession(data.session);
         }
       } catch (e) {
         logger.warn("[Index] Web OAuth fallback check failed:", e);
@@ -160,6 +177,7 @@ export function useAuthSession(isLoading: boolean): void {
       logger.error("[Index] Web OAuth code exchange timed out after 30s");
       setIsProcessingWebOAuth(false);
       setWebOAuthError("Sign-in took too long. Please try again.");
+      endAuthFlow();
       window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
     }, 30000);
 
