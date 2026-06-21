@@ -188,6 +188,7 @@ Supabase:
 
 ```bash
 npm run check:auth-providers -- --strict
+npm run check:telegram-oidc-live
 npm run test -- src/lib/__tests__/authProviders.test.ts scripts/__tests__/auth-providers-readiness.test.ts scripts/__tests__/telegram-oidc-proxy.test.ts
 ```
 

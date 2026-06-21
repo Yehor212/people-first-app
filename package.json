@@ -64,6 +64,7 @@
     "check:subagent-governance": "node scripts/check-subagent-teamlead-governance.mjs",
     "check:sync-contract": "node scripts/check-sync-contract.cjs",
     "check:auth-providers": "node scripts/check-auth-providers.cjs",
+    "check:telegram-oidc-live": "node scripts/check-telegram-oidc-live.cjs",
     "check:apple-auth-public": "node scripts/check-apple-auth-public.cjs",
     "check:apple-auth-activation": "node scripts/check-apple-auth-activation.cjs",
     "check:apple-auth-live": "node scripts/check-apple-auth-live.cjs",
