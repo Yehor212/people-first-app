@@ -64,9 +64,10 @@ account without replacing that account's sync data.
 https://api.zenflowapp.online/auth/v1/callback
 ```
 
-4. Keep the app request limited to `public_profile` until Meta public access is
-   approved. Do not request `email` from the client OAuth scope; the product
-   treats Facebook email as optional.
+4. In Meta Use Cases > Authentication and Account Creation, make sure both
+   `public_profile` and `email` are listed as Ready for testing. Hosted Supabase
+   Facebook Auth requests both scopes; if Meta shows an invalid email scope
+   error, the Meta app permission is not ready yet.
 5. Copy the Facebook App ID and App Secret. Store them in Supabase/secret
    storage as `SUPABASE_AUTH_EXTERNAL_FACEBOOK_CLIENT_ID` and
    `SUPABASE_AUTH_EXTERNAL_FACEBOOK_SECRET`, never in client env.
@@ -93,11 +94,11 @@ VITE_FACEBOOK_PUBLIC_ACCESS_READY=false
 
 That means the provider can remain configured and testable by developers, while
 the public app hides the Facebook button instead of sending users into a broken
-Meta approval screen. The client OAuth request stays on `public_profile` so Meta
-does not show an Invalid Scopes screen for `email`; collect email later only after
-a separate product/privacy decision. After Meta approves public access, set
-`VITE_FACEBOOK_PUBLIC_ACCESS_READY=true` in the production build environment and
-rerun the readiness check.
+Meta approval screen. Keep the client OAuth request on Supabase's required
+`email public_profile` scope set; if Meta shows an invalid email scope screen,
+fix the permission in Meta Use Cases before enabling public access. After Meta
+approves public access, set `VITE_FACEBOOK_PUBLIC_ACCESS_READY=true` in the
+production build environment and rerun the readiness check.
 
 ## Telegram Dashboard
 

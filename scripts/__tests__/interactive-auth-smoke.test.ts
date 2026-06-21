@@ -4,11 +4,17 @@ import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
 const {
+  detectProviderOAuthError,
   hasOAuthCallbackParams,
   isCompletedInteractiveAuthState,
   parseInteractiveAuthConfig,
   sanitizeInteractiveAuthState,
 } = require("../smoke-interactive-auth-completion.cjs") as {
+  detectProviderOAuthError?: (state: {
+    provider: string;
+    currentHost: string;
+    externalText: string;
+  }) => { reason: string; providerError: string } | null;
   hasOAuthCallbackParams?: (url: string) => boolean;
   isCompletedInteractiveAuthState?: (state: {
     appHost: string;
@@ -102,6 +108,37 @@ describe("interactive auth completion smoke helpers", () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("Set --provider to one of google, facebook, telegram, apple");
     expect(result.stderr).not.toContain("at parseInteractiveAuthConfig");
+  });
+
+  it("detects Facebook invalid email scope pages before timing out", () => {
+    expect(typeof detectProviderOAuthError).toBe("function");
+
+    expect(
+      detectProviderOAuthError?.({
+        provider: "facebook",
+        currentHost: "www.facebook.com",
+        externalText:
+          "Этот контент сейчас недоступен Invalid Scopes: email. This message is only shown to developers.",
+      })
+    ).toEqual({
+      reason: "facebook_invalid_scope_email",
+      providerError:
+        "Facebook rejected the email permission. Configure email in Meta Use Cases > Authentication and Account Creation.",
+    });
+  });
+
+  it("redacts nested OAuth state from Facebook report URLs", () => {
+    expect(typeof sanitizeInteractiveAuthState).toBe("function");
+
+    const report = sanitizeInteractiveAuthState?.({
+      provider: "facebook",
+      finalUrl:
+        "https://www.facebook.com/login.php?next=https%3A%2F%2Fwww.facebook.com%2Fdialog%2Foauth%3Fscope%3Demail%252Bpublic_profile%26state%3Dsecret-state&cancel_url=https%3A%2F%2Fapi.zenflowapp.online%2Fauth%2Fv1%2Fcallback%3Ferror_description%3DPermissions%2520error%26state%3Dsecret-state",
+      supabaseSessionKeys: [],
+    }) as { finalUrl?: string };
+
+    expect(report.finalUrl).not.toContain("secret-state");
+    expect(report.finalUrl).not.toContain("error_description");
   });
 
   it("redacts storage keys and never exposes token-bearing values in reports", () => {

@@ -70,7 +70,7 @@ export const AUTH_PROVIDER_CONFIGS: Record<SocialAuthProviderId, SocialAuthProvi
     fallbackLoadingLabel: "Signing in with Facebook...",
     fallbackName: "Facebook",
     enabled: ENABLE_FACEBOOK_AUTH,
-    scopes: "public_profile",
+    scopes: "email public_profile",
     trustedDomains: ["facebook.com"],
   },
   telegram: {

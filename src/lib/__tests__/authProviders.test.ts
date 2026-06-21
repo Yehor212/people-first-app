@@ -90,7 +90,7 @@ describe("auth provider config", () => {
     ).toEqual(["google", "facebook", "telegram", "apple"]);
   });
 
-  it("builds Facebook OAuth credentials with only the public profile scope", () => {
+  it("builds Facebook OAuth credentials with Supabase-required email and public profile scopes", () => {
     const credentials = buildOAuthCredentials("facebook", {
       redirectTo: "com.zenflow.app://login-callback",
       skipBrowserRedirect: true,
@@ -99,10 +99,11 @@ describe("auth provider config", () => {
     expect(credentials.provider).toBe("facebook");
     expect(credentials.options).toMatchObject({
       redirectTo: "com.zenflow.app://login-callback",
-      scopes: "public_profile",
+      scopes: "email public_profile",
       skipBrowserRedirect: true,
     });
-    expect(credentials.options.scopes).not.toContain("email");
+    expect(credentials.options.scopes).toContain("email");
+    expect(credentials.options.scopes).toContain("public_profile");
   });
 
   it("builds Telegram as the Supabase custom OIDC provider", () => {

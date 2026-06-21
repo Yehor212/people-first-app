@@ -107,6 +107,34 @@ function isCompletedInteractiveAuthState(state) {
   );
 }
 
+function detectProviderOAuthError(state) {
+  const externalText = String(state?.externalText || "");
+  const normalizedText = externalText.toLowerCase();
+  const currentHost = String(state?.currentHost || "").toLowerCase();
+
+  if (
+    state?.provider === "facebook" &&
+    currentHost.endsWith("facebook.com") &&
+    normalizedText.includes("invalid scopes") &&
+    /\bemail\b/i.test(externalText)
+  ) {
+    return {
+      reason: "facebook_invalid_scope_email",
+      providerError:
+        "Facebook rejected the email permission. Configure email in Meta Use Cases > Authentication and Account Creation.",
+    };
+  }
+
+  if (normalizedText.includes("invalid scopes")) {
+    return {
+      reason: "provider_invalid_scope",
+      providerError: "OAuth provider rejected one or more requested scopes.",
+    };
+  }
+
+  return null;
+}
+
 function removeOAuthReportParams(params) {
   for (const name of OAUTH_REPORT_PARAM_NAMES) {
     params.delete(name);
@@ -119,11 +147,23 @@ function removeOAuthReportParams(params) {
   }
 }
 
-function sanitizeUrlForReport(rawUrl) {
+function sanitizeUrlParamValuesForReport(params, depth) {
+  if (depth >= 2) return;
+
+  for (const [name, value] of Array.from(params.entries())) {
+    if (!/^https?:\/\//i.test(value)) continue;
+
+    const safeValue = sanitizeUrlForReport(value, depth + 1);
+    params.set(name, safeValue);
+  }
+}
+
+function sanitizeUrlForReport(rawUrl, depth = 0) {
   if (typeof rawUrl !== "string" || rawUrl.length === 0) return rawUrl;
 
   try {
     const url = new URL(rawUrl);
+    sanitizeUrlParamValuesForReport(url.searchParams, depth);
     removeOAuthReportParams(url.searchParams);
 
     if (url.hash) {
@@ -135,6 +175,7 @@ function sanitizeUrlForReport(rawUrl) {
       );
 
       if (rawHash.includes("=") && hasSensitiveHashParam) {
+        sanitizeUrlParamValuesForReport(hashParams, depth);
         removeOAuthReportParams(hashParams);
         const safeHash = hashParams.toString();
         url.hash = safeHash ? "#" + safeHash : "";
@@ -153,6 +194,8 @@ function sanitizeInteractiveAuthState(state) {
     : Number(state.supabaseSessionKeyCount || 0);
   const result = {
     provider: state.provider,
+    reason: state.reason,
+    providerError: state.providerError,
     finalUrl: sanitizeUrlForReport(state.finalUrl),
     finalHost: state.finalHost,
     finalPath: state.finalPath,
@@ -229,7 +272,17 @@ async function readInteractiveAuthState(page, appHost, provider) {
     supabaseSessionKeys: [],
   };
 
-  if (currentHost !== appHost) return state;
+  if (currentHost !== appHost) {
+    try {
+      const externalText = await page.evaluate(
+        () => document.body?.innerText?.slice(0, 2000) || ""
+      );
+      const providerError = detectProviderOAuthError({ ...state, externalText });
+      return providerError ? { ...state, ...providerError } : state;
+    } catch {
+      return state;
+    }
+  }
 
   try {
     const pageState = await page.evaluate(() => {
@@ -312,6 +365,12 @@ async function runInteractiveAuthCompletion(config = parseInteractiveAuthConfig(
         const safeState = sanitizeInteractiveAuthState({ ...lastState, completed: true });
         return { ok: true, ...safeState };
       }
+      if (lastState.providerError) {
+        return {
+          ok: false,
+          ...sanitizeInteractiveAuthState({ ...lastState, completed: false }),
+        };
+      }
       await page.waitForTimeout(1000);
     }
 
@@ -344,6 +403,7 @@ if (require.main === module) {
 module.exports = {
   DEFAULT_INTERACTIVE_AUTH_URL,
   SUPPORTED_PROVIDERS,
+  detectProviderOAuthError,
   hasOAuthCallbackParams,
   isCompletedInteractiveAuthState,
   parseInteractiveAuthConfig,

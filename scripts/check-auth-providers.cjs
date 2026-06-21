@@ -168,23 +168,21 @@ checkSourceContains(
 );
 
 const authProvidersSource = readText("src/lib/authProviders.ts");
-if (/id:\s*"facebook"[\s\S]*?scopes:\s*"public_profile"/.test(authProvidersSource)) {
+const facebookScopesMatch = authProvidersSource.match(
+  /id:\s*"facebook"[\s\S]*?scopes:\s*"([^"]+)"/
+);
+const facebookScopes = new Set((facebookScopesMatch?.[1] || "").split(/\s+/).filter(Boolean));
+if (facebookScopes.has("email") && facebookScopes.has("public_profile")) {
   add(
     "PASS",
-    "Facebook OAuth requests only public_profile scope",
-    'src/lib/authProviders.ts has scopes: "public_profile" for facebook'
-  );
-} else if (/id:\s*"facebook"[\s\S]*?scopes:\s*"[^"]*email/.test(authProvidersSource)) {
-  add(
-    "FAIL",
-    "Facebook OAuth must not request email scope before Meta public access is approved",
-    "src/lib/authProviders.ts facebook scopes include email"
+    "Facebook OAuth requests Supabase-required email and public_profile scopes",
+    `src/lib/authProviders.ts facebook scopes are configured as "${facebookScopesMatch?.[1]}"`
   );
 } else {
   add(
     "FAIL",
-    "Facebook OAuth scope contract is missing",
-    `src/lib/authProviders.ts facebook config must set scopes: "public_profile"`
+    "Facebook OAuth must request email and public_profile for hosted Supabase Auth",
+    `src/lib/authProviders.ts facebook scopes are "${facebookScopesMatch?.[1] || "missing"}"`
   );
 }
 checkSourceContains(
@@ -434,11 +432,7 @@ for (const provider of [
 
 const applePublicAccess = getPublicFlagState(env, "VITE_APPLE_PUBLIC_ACCESS_READY", false);
 if (applePublicAccess.enabled) {
-  add(
-    "PASS",
-    "Apple hosted public access readiness flag is enabled",
-    applePublicAccess.evidence
-  );
+  add("PASS", "Apple hosted public access readiness flag is enabled", applePublicAccess.evidence);
 } else {
   add(
     "INFO",

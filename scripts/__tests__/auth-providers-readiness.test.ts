@@ -194,13 +194,15 @@ describe("check-auth-providers public key readiness", () => {
     expect(result.stdout).toContain("Facebook Meta public access readiness flag is enabled");
   });
 
-  it("requires Facebook OAuth to avoid the email scope", () => {
+  it("requires Facebook OAuth to request Supabase-required email and public_profile scopes", () => {
     const result = runReadiness({
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Facebook OAuth requests only public_profile scope");
+    expect(result.stdout).toContain(
+      "Facebook OAuth requests Supabase-required email and public_profile scopes"
+    );
   });
 
   it("requires Supabase Facebook auth to allow email-optional identities", () => {
