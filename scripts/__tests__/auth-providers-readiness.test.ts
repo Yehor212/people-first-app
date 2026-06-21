@@ -202,17 +202,30 @@ describe("check-auth-providers public key readiness", () => {
   it("requires GitHub Pages public auth smoke to exercise Facebook when Meta readiness is enabled", () => {
     const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
 
-    expect(workflow).toContain(
-      "ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'google,facebook,telegram' || 'google,telegram' }}"
-    );
-    expect(workflow).toContain(
-      "ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'apple' || 'facebook,apple' }}"
-    );
-    expect(workflow).toContain(
-      "ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'google,facebook,telegram' || 'google,telegram' }}"
-    );
+    expect(workflow).toContain("FACEBOOK_READY");
+    expect(workflow).toContain('if [ "$FACEBOOK_READY" = "true" ]; then');
+    expect(workflow).toContain('expected_providers="google,facebook,telegram"');
+    expect(workflow).toContain('click_providers="google,facebook,telegram"');
+    expect(workflow).toContain('forbidden_providers="facebook"');
+    expect(workflow).toContain('ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS="$expected_providers"');
+    expect(workflow).toContain('ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS="$click_providers"');
+    expect(workflow).toContain('ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS="$forbidden_providers"');
   });
 
+  it("requires GitHub Pages public auth smoke to exercise Apple when hosted readiness is enabled", () => {
+    const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+
+    expect(workflow).toContain("APPLE_READY");
+    expect(workflow).toContain('if [ "$APPLE_READY" = "true" ]; then');
+    expect(workflow).toContain('expected_providers="${expected_providers},apple"');
+    expect(workflow).toContain('click_providers="${click_providers},apple"');
+    expect(workflow).toContain(
+      'forbidden_providers="${forbidden_providers:+${forbidden_providers},}apple"'
+    );
+    expect(workflow).toContain('ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS="$expected_providers"');
+    expect(workflow).toContain('ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS="$click_providers"');
+    expect(workflow).toContain('ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS="$forbidden_providers"');
+  });
   it("requires GitHub deploy builds to pass the modern Supabase publishable key", () => {
     const result = runReadiness({
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",

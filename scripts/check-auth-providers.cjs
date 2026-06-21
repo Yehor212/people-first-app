@@ -385,6 +385,31 @@ checkSourceContains(
   "VITE_SUPABASE_PUBLISHABLE_KEY",
   "V2 preview deploy passes the modern Supabase publishable key"
 );
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "FACEBOOK_READY",
+  "GitHub Pages public auth smoke reads Facebook readiness"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "APPLE_READY",
+  "GitHub Pages public auth smoke reads Apple readiness"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  'expected_providers="${expected_providers},apple"',
+  "GitHub Pages public auth smoke exercises Apple when hosted readiness is enabled"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  'click_providers="${click_providers},apple"',
+  "GitHub Pages public auth smoke clicks Apple when hosted readiness is enabled"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  'forbidden_providers="${forbidden_providers:+${forbidden_providers},}apple"',
+  "GitHub Pages public auth smoke forbids Apple until hosted readiness is enabled"
+);
 
 if (!authSection) {
   add("FAIL", "Supabase auth section is missing", "supabase/config.toml lacks [auth]");

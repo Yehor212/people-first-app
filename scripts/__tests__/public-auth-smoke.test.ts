@@ -7,6 +7,7 @@ const {
   detectProviderRedirectError,
   isAppDiagnosticUrl,
   isRetryableAppLoadFailure,
+  parseCsv,
   parsePublicAuthUrls,
   providerRedirectHosts,
   resolvePublicAuthUrls,
@@ -19,6 +20,13 @@ describe("public auth smoke URL parsing", () => {
     ]);
   });
 
+  it("treats an explicit empty forbidden-provider list as no forbidden providers", () => {
+    expect(parseCsv("", ["facebook", "apple"], { emptyMeansEmpty: true })).toEqual([]);
+    expect(parseCsv(undefined, ["facebook", "apple"], { emptyMeansEmpty: true })).toEqual([
+      "facebook",
+      "apple",
+    ]);
+  });
   it("keeps multiple canonical URLs in order and drops URL hashes", () => {
     expect(
       parsePublicAuthUrls(

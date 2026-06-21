@@ -11,8 +11,9 @@ const DEFAULT_REDIRECT_HOSTS = {
   facebook: ["facebook.com", "www.facebook.com", ...SUPABASE_AUTH_REDIRECT_HOSTS],
 };
 
-function parseCsv(value, fallback) {
-  if (value === undefined || value === null || value.trim() === "") return [...fallback];
+function parseCsv(value, fallback, options = {}) {
+  if (value === undefined || value === null) return [...fallback];
+  if (value.trim() === "") return options.emptyMeansEmpty ? [] : [...fallback];
   return value
     .split(",")
     .map((item) => item.trim())
@@ -465,7 +466,8 @@ async function run() {
   );
   const forbiddenProviders = parseCsv(
     process.env.ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS,
-    DEFAULT_FORBIDDEN_PROVIDERS
+    DEFAULT_FORBIDDEN_PROVIDERS,
+    { emptyMeansEmpty: true }
   );
   const clickProviders = parseCsv(
     process.env.ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS,

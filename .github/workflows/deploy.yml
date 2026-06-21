@@ -445,8 +445,31 @@ jobs:
         env:
           ZENFLOW_PUBLIC_AUTH_URL: ${{ needs.deploy.outputs.page_url }}
           ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS: orb/?nav=v2&navLayout=phone
-          ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'google,facebook,telegram' || 'google,telegram' }}
-          ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'apple' || 'facebook,apple' }}
-          ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'google,facebook,telegram' || 'google,telegram' }}
+          FACEBOOK_READY: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'true' || 'false' }}
+          APPLE_READY: ${{ vars.VITE_APPLE_PUBLIC_ACCESS_READY == 'true' && 'true' || 'false' }}
           ZENFLOW_PUBLIC_AUTH_BROWSER_CHANNEL: chrome
-        run: npm run smoke:public-auth
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_providers="google,telegram"
+          click_providers="google,telegram"
+          forbidden_providers=""
+
+          if [ "$FACEBOOK_READY" = "true" ]; then
+            expected_providers="google,facebook,telegram"
+            click_providers="google,facebook,telegram"
+          else
+            forbidden_providers="facebook"
+          fi
+
+          if [ "$APPLE_READY" = "true" ]; then
+            expected_providers="${expected_providers},apple"
+            click_providers="${click_providers},apple"
+          else
+            forbidden_providers="${forbidden_providers:+${forbidden_providers},}apple"
+          fi
+
+          ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS="$expected_providers" \
+          ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS="$forbidden_providers" \
+          ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS="$click_providers" \
+            npm run smoke:public-auth
