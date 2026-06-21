@@ -182,6 +182,76 @@ describe("check-apple-auth-public", () => {
     expect(result.message).not.toContain(publishableKey);
   });
 
+  it("can verify hosted Apple auth from the deployed app bundle without printing the public key", async () => {
+    const publicKey = testSecretFixture(
+      "sb",
+      "publishable",
+      "bundle",
+      "key",
+      "must",
+      "not",
+      "print"
+    );
+    const requests: Array<{ url: string; apikey?: string }> = [];
+
+    const result = await checkAppleAuthPublic({
+      env: {
+        ZENFLOW_PUBLIC_AUTH_URL: "https://yehor212.github.io/people-first-app/",
+      },
+      fetchImpl: (async (url: URL | RequestInfo, init?: RequestInit) => {
+        const rawUrl = String(url);
+        if (rawUrl === "https://yehor212.github.io/people-first-app/") {
+          return new Response(
+            [
+              '<link rel="modulepreload" href="/people-first-app/assets/supabaseClient-fixture.js">',
+              '<script type="module" src="/people-first-app/assets/index-fixture.js"></script>',
+            ].join(""),
+            {
+              status: 200,
+              headers: { "content-type": "text/html" },
+            }
+          );
+        }
+
+        if (rawUrl === "https://yehor212.github.io/people-first-app/assets/index-fixture.js") {
+          return new Response("import './supabaseClient-fixture.js';", {
+            status: 200,
+            headers: { "content-type": "application/javascript" },
+          });
+        }
+
+        if (
+          rawUrl === "https://yehor212.github.io/people-first-app/assets/supabaseClient-fixture.js"
+        ) {
+          return new Response(
+            'const supabaseUrl="https://api.zenflowapp.online";const supabaseKey="' +
+              publicKey +
+              '";',
+            {
+              status: 200,
+              headers: { "content-type": "application/javascript" },
+            }
+          );
+        }
+
+        const headers = init?.headers as Record<string, string>;
+        requests.push({ url: rawUrl, apikey: headers?.apikey });
+        return new Response(JSON.stringify({ external: { apple: true } }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }) as typeof fetch,
+    });
+
+    expect(result).toMatchObject({ status: "PASS", exitCode: 0 });
+    expect(result.message).not.toContain(publicKey);
+    expect(requests).toEqual([
+      {
+        url: "https://api.zenflowapp.online/auth/v1/settings",
+        apikey: publicKey,
+      },
+    ]);
+  });
   it("does not print anon key values in CLI output", async () => {
     const anonKey = testSecretFixture("anon", "fixture", "must", "stay", "hidden");
     const result = await runScript({

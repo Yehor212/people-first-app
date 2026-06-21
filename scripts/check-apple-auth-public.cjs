@@ -89,6 +89,82 @@ function getPublicApiKey(env, safeFileEnv) {
   );
 }
 
+function getPublicAppUrl(env) {
+  return (
+    getDirectPublicEnv(env, "ZENFLOW_APPLE_AUTH_PUBLIC_APP_URL") ||
+    getDirectPublicEnv(env, "ZENFLOW_PUBLIC_AUTH_URL")
+  );
+}
+
+function extractScriptUrlsFromHtml(html, appUrl) {
+  const scriptUrls = [];
+  const baseUrl = new URL(appUrl);
+  const assetUrlPattern = /\b(?:src|href)=["']([^"']+\.js(?:\?[^"']*)?)["']/gi;
+  let match;
+
+  while ((match = assetUrlPattern.exec(html))) {
+    try {
+      const scriptUrl = new URL(match[1], baseUrl);
+      if (scriptUrl.origin === baseUrl.origin && scriptUrl.pathname.endsWith(".js")) {
+        scriptUrls.push(scriptUrl.toString());
+      }
+    } catch {
+      // Ignore malformed asset references from public HTML.
+    }
+  }
+
+  return [...new Set(scriptUrls)];
+}
+
+function extractPublicSupabaseConfigFromText(text) {
+  const supabaseProjectUrl = text.match(/https:\/\/[a-z0-9]{20}\.supabase\.co/i)?.[0] || "";
+  const zenflowApiUrl = text.match(/https:\/\/api\.zenflowapp\.online\b/i)?.[0] || "";
+  const supabaseUrl = supabaseProjectUrl || zenflowApiUrl;
+  const publishableKey = text.match(/sb_publishable_[A-Za-z0-9._-]+/)?.[0] || "";
+  const anonJwt =
+    text.match(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/)?.[0] || "";
+
+  return {
+    supabaseUrl,
+    publicApiKey: publishableKey || anonJwt,
+  };
+}
+
+async function fetchText(url, fetchImpl) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const response = await fetchImpl(url, {
+      headers: { Accept: "text/html,application/javascript,text/javascript,*/*" },
+      signal: controller.signal,
+    });
+    if (!response.ok) return "";
+    return await response.text();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function discoverPublicSupabaseConfigFromApp(appUrl, fetchImpl = fetch) {
+  const normalizedAppUrl = new URL(appUrl).toString();
+  const html = await fetchText(normalizedAppUrl, fetchImpl);
+  let discovered = extractPublicSupabaseConfigFromText(html);
+  if (discovered.supabaseUrl && discovered.publicApiKey) return discovered;
+
+  const scriptUrls = extractScriptUrlsFromHtml(html, normalizedAppUrl).slice(0, 20);
+  for (const scriptUrl of scriptUrls) {
+    const scriptText = await fetchText(scriptUrl, fetchImpl);
+    const candidate = extractPublicSupabaseConfigFromText(scriptText);
+    discovered = {
+      supabaseUrl: discovered.supabaseUrl || candidate.supabaseUrl,
+      publicApiKey: discovered.publicApiKey || candidate.publicApiKey,
+    };
+    if (discovered.supabaseUrl && discovered.publicApiKey) return discovered;
+  }
+
+  return discovered;
+}
+
 function normalizeBoolean(value) {
   if (typeof value === "boolean") return value;
   if (typeof value === "string") return value.toLowerCase() === "true";
@@ -147,9 +223,20 @@ async function checkAppleAuthPublic({
   fetchImpl = fetch,
 } = {}) {
   const safeFileEnv = parseSafeEnvFiles(rootDir);
-  const supabaseUrl = getSupabaseUrl(env, safeFileEnv);
-  const publicApiKey = getPublicApiKey(env, safeFileEnv);
+  let supabaseUrl = getSupabaseUrl(env, safeFileEnv);
+  let publicApiKey = getPublicApiKey(env, safeFileEnv);
   const required = env.ZENFLOW_APPLE_AUTH_PUBLIC_REQUIRED === "true";
+  const publicAppUrl = getPublicAppUrl(env);
+
+  if ((!supabaseUrl || !publicApiKey) && publicAppUrl) {
+    try {
+      const discovered = await discoverPublicSupabaseConfigFromApp(publicAppUrl, fetchImpl);
+      supabaseUrl = supabaseUrl || discovered.supabaseUrl;
+      publicApiKey = publicApiKey || discovered.publicApiKey;
+    } catch {
+      // Fall through to the existing missing-config result below.
+    }
+  }
 
   const missing = [];
   if (!supabaseUrl) missing.push("VITE_SUPABASE_URL");
@@ -209,6 +296,8 @@ if (require.main === module) {
 
 module.exports = {
   checkAppleAuthPublic,
+  discoverPublicSupabaseConfigFromApp,
+  extractPublicSupabaseConfigFromText,
   fetchPublicAuthSettings,
   inspectPublicAuthSettings,
   parseSafeEnvFiles,
