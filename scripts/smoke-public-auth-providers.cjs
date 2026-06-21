@@ -1,0 +1,247 @@
+#!/usr/bin/env node
+
+const DEFAULT_PUBLIC_AUTH_URL = "https://yehor212.github.io/people-first-app/";
+const DEFAULT_EXPECTED_PROVIDERS = ["google", "telegram"];
+const DEFAULT_FORBIDDEN_PROVIDERS = ["facebook", "apple"];
+const DEFAULT_REDIRECT_HOSTS = {
+  google: ["accounts.google.com", "google.com", "bwgfslmxmueyglpumkbf.supabase.co"],
+  telegram: ["oauth.telegram.org", "bwgfslmxmueyglpumkbf.supabase.co"],
+  apple: ["appleid.apple.com", "bwgfslmxmueyglpumkbf.supabase.co"],
+  facebook: ["facebook.com", "www.facebook.com", "bwgfslmxmueyglpumkbf.supabase.co"],
+};
+
+function parseCsv(value, fallback) {
+  if (value === undefined || value === null || value.trim() === "") return [...fallback];
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeBaseUrl(rawUrl) {
+  const url = new URL(rawUrl || DEFAULT_PUBLIC_AUTH_URL);
+  url.hash = "";
+  return url;
+}
+
+function providerRedirectHosts(provider) {
+  const normalizedProvider = provider.toUpperCase().replace(/[^A-Z0-9]/g, "_");
+  const envKey = "ZENFLOW_PUBLIC_AUTH_REDIRECT_HOSTS_" + normalizedProvider;
+  return parseCsv(process.env[envKey], DEFAULT_REDIRECT_HOSTS[provider] || []);
+}
+
+function hostnameMatches(hostname, allowedHost) {
+  const normalizedHost = hostname.toLowerCase();
+  const normalizedAllowedHost = allowedHost.toLowerCase();
+  return normalizedHost === normalizedAllowedHost || normalizedHost.endsWith("." + normalizedAllowedHost);
+}
+
+function initEntryState() {
+  const json = (value) => JSON.stringify(value);
+  localStorage.clear();
+  sessionStorage.clear();
+  localStorage.setItem("zenflow-language", json("en"));
+  localStorage.setItem("zenflow-language-selected", json(true));
+  localStorage.setItem("zenflow-google-auth-checked", json(false));
+  localStorage.setItem("zenflow-tutorial-complete", json(false));
+  localStorage.setItem("zenflow-onboarding-complete", json(false));
+  localStorage.setItem("zenflow-notification-permission-checked", json(false));
+  localStorage.setItem("zenflow-theme", "light");
+  localStorage.setItem("zenflow_oled_mode", json(false));
+  localStorage.setItem("zenflow:theme-v0c", json({ state: { theme: "paper" }, version: 0 }));
+}
+
+function createScenarioUrl(baseUrl, label) {
+  const url = new URL(baseUrl.toString());
+  url.searchParams.set("publicAuthSmoke", label + "-" + Date.now());
+  return url.toString();
+}
+
+async function collectProviders(page, url, timeoutMs) {
+  await page.addInitScript(initEntryState);
+  await page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs });
+  await page.getByTestId("auth-screen").waitFor({ state: "visible", timeout: timeoutMs });
+  return page
+    .locator('[data-testid^="auth-provider-content-"]')
+    .evaluateAll((elements) =>
+      elements.map((element) => element.getAttribute("data-testid")?.replace("auth-provider-content-", "")),
+    );
+}
+
+async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs }) {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 3,
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await context.newPage();
+  const consoleMessages = [];
+  const failedRequests = [];
+
+  page.on("console", (message) => {
+    if (message.type() === "error" || message.type() === "warning") {
+      consoleMessages.push(message.type() + ": " + message.text());
+    }
+  });
+  page.on("requestfailed", (request) => {
+    failedRequests.push(request.method() + " " + request.url() + " " + request.failure()?.errorText);
+  });
+
+  try {
+    const appHost = baseUrl.host;
+    const providersBefore = await collectProviders(
+      page,
+      createScenarioUrl(baseUrl, "provider-" + provider),
+      timeoutMs,
+    );
+
+    if (!providersBefore.includes(provider)) {
+      return {
+        provider,
+        ok: false,
+        reason: "provider_not_visible",
+        providersBefore,
+        consoleCount: consoleMessages.length,
+        failedCount: failedRequests.length,
+      };
+    }
+
+    await page.getByTestId("auth-provider-content-" + provider).click({ timeout: timeoutMs });
+    await page.waitForURL((currentUrl) => currentUrl.host !== appHost, { timeout: timeoutMs });
+    await page.waitForTimeout(1000);
+
+    const finalUrl = new URL(page.url());
+    const allowedHosts = providerRedirectHosts(provider);
+    const ok = allowedHosts.some((host) => hostnameMatches(finalUrl.hostname, host));
+
+    return {
+      provider,
+      ok,
+      reason: ok ? null : "unexpected_redirect_host",
+      providersBefore,
+      finalHost: finalUrl.host,
+      finalPath: finalUrl.pathname,
+      allowedHosts,
+      consoleCount: consoleMessages.length,
+      failedCount: failedRequests.length,
+      consoleMessages: consoleMessages.slice(0, 5),
+      failedRequests: failedRequests.slice(0, 5),
+    };
+  } catch (error) {
+    return {
+      provider,
+      ok: false,
+      reason: "redirect_check_failed",
+      error: error instanceof Error ? error.message : String(error),
+      currentUrl: page.url(),
+      consoleCount: consoleMessages.length,
+      failedCount: failedRequests.length,
+      consoleMessages: consoleMessages.slice(0, 5),
+      failedRequests: failedRequests.slice(0, 5),
+    };
+  } finally {
+    await context.close();
+  }
+}
+
+async function run() {
+  const { chromium } = require("playwright");
+  const baseUrl = normalizeBaseUrl(process.env.ZENFLOW_PUBLIC_AUTH_URL || DEFAULT_PUBLIC_AUTH_URL);
+  const expectedProviders = parseCsv(
+    process.env.ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS,
+    DEFAULT_EXPECTED_PROVIDERS,
+  );
+  const forbiddenProviders = parseCsv(
+    process.env.ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS,
+    DEFAULT_FORBIDDEN_PROVIDERS,
+  );
+  const clickProviders = parseCsv(process.env.ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS, expectedProviders);
+  const timeoutMs = Number(process.env.ZENFLOW_PUBLIC_AUTH_TIMEOUT_MS || 45_000);
+
+  const browser = await chromium.launch();
+  const listContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 3,
+    isMobile: true,
+    hasTouch: true,
+  });
+  const listPage = await listContext.newPage();
+  const listConsoleMessages = [];
+  const listFailedRequests = [];
+
+  listPage.on("console", (message) => {
+    if (message.type() === "error" || message.type() === "warning") {
+      listConsoleMessages.push(message.type() + ": " + message.text());
+    }
+  });
+  listPage.on("requestfailed", (request) => {
+    listFailedRequests.push(request.method() + " " + request.url() + " " + request.failure()?.errorText);
+  });
+
+  const publicProviders = await collectProviders(
+    listPage,
+    createScenarioUrl(baseUrl, "list"),
+    timeoutMs,
+  );
+  await listContext.close();
+
+  const providerSet = new Set(publicProviders);
+  const expectedMatches = publicProviders.join(",") === expectedProviders.join(",");
+  const forbiddenVisible = forbiddenProviders.filter((provider) => providerSet.has(provider));
+  const missingExpected = expectedProviders.filter((provider) => !providerSet.has(provider));
+
+  const redirectResults = [];
+  if (process.env.ZENFLOW_PUBLIC_AUTH_SKIP_CLICKS !== "true") {
+    for (const provider of clickProviders) {
+      redirectResults.push(await verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs }));
+    }
+  }
+
+  await browser.close();
+
+  const ok =
+    expectedMatches &&
+    forbiddenVisible.length === 0 &&
+    missingExpected.length === 0 &&
+    listConsoleMessages.length === 0 &&
+    listFailedRequests.length === 0 &&
+    redirectResults.every((result) => result.ok && result.consoleCount === 0 && result.failedCount === 0);
+
+  const summary = {
+    ok,
+    url: baseUrl.toString(),
+    expectedProviders,
+    publicProviders,
+    forbiddenProviders,
+    forbiddenVisible,
+    missingExpected,
+    listConsoleCount: listConsoleMessages.length,
+    listFailedCount: listFailedRequests.length,
+    listConsoleMessages: listConsoleMessages.slice(0, 5),
+    listFailedRequests: listFailedRequests.slice(0, 5),
+    redirectResults,
+  };
+
+  console.log(JSON.stringify(summary, null, 2));
+
+  if (!ok) {
+    process.exitCode = 1;
+  }
+}
+
+if (require.main === module) {
+  run().catch((error) => {
+    console.error(error instanceof Error ? error.stack || error.message : String(error));
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  DEFAULT_EXPECTED_PROVIDERS,
+  DEFAULT_FORBIDDEN_PROVIDERS,
+  DEFAULT_REDIRECT_HOSTS,
+  hostnameMatches,
+  parseCsv,
+  providerRedirectHosts,
+};

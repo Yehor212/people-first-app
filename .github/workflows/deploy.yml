@@ -383,6 +383,8 @@ jobs:
     needs: [build] # android-gate and ios-gate run in parallel; web deploy waits only for web release gates
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -392,3 +394,32 @@ jobs:
         uses: actions/deploy-pages@v5.0.0
         with:
           timeout: 600000 # 10 minutes (max allowed)
+
+  public-auth-smoke:
+    if: github.event_name == 'push' || github.event.inputs.telegram_approval == 'telegram-approved'
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install deps
+        run: npm install
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke public auth providers
+        env:
+          ZENFLOW_PUBLIC_AUTH_URL: ${{ needs.deploy.outputs.page_url }}
+          ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS: google,telegram
+          ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS: facebook,apple
+          ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS: google,telegram
+        run: npm run smoke:public-auth
