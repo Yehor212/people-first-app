@@ -316,6 +316,26 @@ checkSourceContains(
   "GitHub Pages deploy gates Facebook live OAuth readiness before public exposure"
 );
 checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "npm run check:apple-auth-public",
+  "GitHub Pages deploy runs Apple public Auth readiness check"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "npm run check:apple-auth-live",
+  "GitHub Pages deploy runs Apple hosted Auth readiness check"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "ZENFLOW_APPLE_AUTH_PUBLIC_REQUIRED",
+  "GitHub Pages deploy gates Apple public Auth readiness before public exposure"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "ZENFLOW_APPLE_AUTH_LIVE_REQUIRED",
+  "GitHub Pages deploy gates Apple hosted Auth readiness before public exposure"
+);
+checkSourceContains(
   ".github/workflows/deploy-v2-preview.yml",
   "VITE_SUPABASE_PUBLISHABLE_KEY",
   "V2 preview deploy passes the modern Supabase publishable key"

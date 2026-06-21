@@ -8,14 +8,15 @@ import { describe, expect, it } from "vitest";
 const script = "scripts/check-apple-auth-public.cjs";
 const scriptPath = join(process.cwd(), script);
 const require = createRequire(import.meta.url);
-const { checkAppleAuthPublic, inspectPublicAuthSettings } = require("../check-apple-auth-public.cjs") as {
-  checkAppleAuthPublic: (input?: {
-    env?: NodeJS.ProcessEnv;
-    rootDir?: string;
-    fetchImpl?: typeof fetch;
-  }) => Promise<{ status: string; message: string; exitCode: number }>;
-  inspectPublicAuthSettings: (settings: Record<string, unknown>) => string[];
-};
+const { checkAppleAuthPublic, inspectPublicAuthSettings } =
+  require("../check-apple-auth-public.cjs") as {
+    checkAppleAuthPublic: (input?: {
+      env?: NodeJS.ProcessEnv;
+      rootDir?: string;
+      fetchImpl?: typeof fetch;
+    }) => Promise<{ status: string; message: string; exitCode: number }>;
+    inspectPublicAuthSettings: (settings: Record<string, unknown>) => string[];
+  };
 
 interface RunResult {
   status: number | null;
@@ -86,6 +87,24 @@ describe("check-apple-auth-public", () => {
     ]);
   });
 
+  it("does not fail when hosted Apple is disabled but public Apple access is not enabled", async () => {
+    const result = await checkAppleAuthPublic({
+      env: {
+        VITE_SUPABASE_URL: "https://supabase.example.test",
+        VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+        ZENFLOW_APPLE_AUTH_PUBLIC_REQUIRED: "false",
+      },
+      fetchImpl: (async () =>
+        new Response(JSON.stringify({ external: { apple: false } }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        })) as typeof fetch,
+    });
+
+    expect(result).toMatchObject({ status: "INFO", exitCode: 0 });
+    expect(result.message).toContain("Apple provider is disabled");
+  });
+
   it("does not treat .env.example placeholders as live Supabase config", async () => {
     const result = await runScriptInFixture({
       ".env.example": [
@@ -123,12 +142,14 @@ describe("check-apple-auth-public", () => {
     });
 
     expect(result).toMatchObject({ status: "PASS", exitCode: 0 });
-    expect(requests).toEqual([{ url: "https://supabase.example.test/auth/v1/settings", apikey: anonKey }]);
+    expect(requests).toEqual([
+      { url: "https://supabase.example.test/auth/v1/settings", apikey: anonKey },
+    ]);
     expect(result.message).not.toContain(anonKey);
   });
 
   it("uses a modern publishable key when no legacy anon key is configured", async () => {
-    const publishableKey = "sb_publishable_fixture_key_that_must_stay_public_but_unprinted";
+    const publishableKey = ["sb", "publishable", "fixture", "key", "public"].join("_");
     const requests: Array<{ url: string; apikey?: string; authorization?: string }> = [];
 
     const result = await checkAppleAuthPublic({
@@ -163,7 +184,10 @@ describe("check-apple-auth-public", () => {
 
   it("does not print anon key values in CLI output", async () => {
     const anonKey = testSecretFixture("anon", "fixture", "must", "stay", "hidden");
-    const result = await runScript({ VITE_SUPABASE_URL: "not-a-valid-url", VITE_SUPABASE_ANON_KEY: anonKey });
+    const result = await runScript({
+      VITE_SUPABASE_URL: "not-a-valid-url",
+      VITE_SUPABASE_ANON_KEY: anonKey,
+    });
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("[apple-auth-public] UNVERIFIED");

@@ -70,7 +70,10 @@ function getPublicEnv(env, safeFileEnv, key) {
 }
 
 function getSupabaseUrl(env, safeFileEnv) {
-  return getPublicEnv(env, safeFileEnv, "VITE_SUPABASE_URL") || getPublicEnv(env, safeFileEnv, "SUPABASE_URL");
+  return (
+    getPublicEnv(env, safeFileEnv, "VITE_SUPABASE_URL") ||
+    getPublicEnv(env, safeFileEnv, "SUPABASE_URL")
+  );
 }
 
 function getPublicApiKey(env, safeFileEnv) {
@@ -95,7 +98,9 @@ function normalizeBoolean(value) {
 function inspectPublicAuthSettings(settings) {
   const external = settings && typeof settings === "object" ? settings.external : undefined;
   const apple = external && typeof external === "object" ? external.apple : undefined;
-  return normalizeBoolean(apple) ? [] : ["Apple provider is disabled in public Supabase Auth settings"];
+  return normalizeBoolean(apple)
+    ? []
+    : ["Apple provider is disabled in public Supabase Auth settings"];
 }
 
 async function fetchPublicAuthSettings(supabaseUrl, anonKey, fetchImpl = fetch) {
@@ -113,20 +118,34 @@ async function fetchPublicAuthSettings(supabaseUrl, anonKey, fetchImpl = fetch) 
 
     const text = await response.text();
     if (!response.ok) {
-      return { ok: false, status: response.status, body: null, message: `Auth settings returned HTTP ${response.status}` };
+      return {
+        ok: false,
+        status: response.status,
+        body: null,
+        message: `Auth settings returned HTTP ${response.status}`,
+      };
     }
 
     try {
       return { ok: true, status: response.status, body: text ? JSON.parse(text) : {}, message: "" };
     } catch {
-      return { ok: false, status: response.status, body: null, message: "Auth settings returned non-JSON" };
+      return {
+        ok: false,
+        status: response.status,
+        body: null,
+        message: "Auth settings returned non-JSON",
+      };
     }
   } finally {
     clearTimeout(timeout);
   }
 }
 
-async function checkAppleAuthPublic({ env = process.env, rootDir = process.cwd(), fetchImpl = fetch } = {}) {
+async function checkAppleAuthPublic({
+  env = process.env,
+  rootDir = process.cwd(),
+  fetchImpl = fetch,
+} = {}) {
   const safeFileEnv = parseSafeEnvFiles(rootDir);
   const supabaseUrl = getSupabaseUrl(env, safeFileEnv);
   const publicApiKey = getPublicApiKey(env, safeFileEnv);
@@ -139,7 +158,7 @@ async function checkAppleAuthPublic({ env = process.env, rootDir = process.cwd()
     return buildResult(
       "UNVERIFIED",
       `Public Supabase Apple Auth not checked; missing ${missing.join(", ")}.`,
-      required ? 2 : 0,
+      required ? 2 : 0
     );
   }
 
@@ -147,17 +166,32 @@ async function checkAppleAuthPublic({ env = process.env, rootDir = process.cwd()
   try {
     result = await fetchPublicAuthSettings(supabaseUrl, publicApiKey, fetchImpl);
   } catch (error) {
-    const reason = error instanceof Error && error.name === "AbortError" ? "request timed out" : "request failed";
+    const reason =
+      error instanceof Error && error.name === "AbortError"
+        ? "request timed out"
+        : "request failed";
     return buildResult("UNVERIFIED", `Public Supabase Auth settings ${reason}.`, required ? 2 : 0);
   }
 
   if (!result.ok) {
-    return buildResult("UNVERIFIED", `${result.message}; public Auth settings could not be verified.`, required ? 2 : 0);
+    return buildResult(
+      "UNVERIFIED",
+      `${result.message}; public Auth settings could not be verified.`,
+      required ? 2 : 0
+    );
   }
 
   const failures = inspectPublicAuthSettings(result.body || {});
   if (failures.length > 0) {
-    return buildResult("FAIL", failures.join("; "), 1);
+    const message = failures.join("; ");
+    if (!required) {
+      return buildResult(
+        "INFO",
+        message + "; Apple remains hidden until VITE_APPLE_PUBLIC_ACCESS_READY=true.",
+        0
+      );
+    }
+    return buildResult("FAIL", message, 1);
   }
 
   return buildResult("PASS", "Public Supabase Auth settings expose Apple provider.", 0);

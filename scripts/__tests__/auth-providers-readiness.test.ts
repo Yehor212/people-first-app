@@ -144,9 +144,15 @@ describe("check-auth-providers public key readiness", () => {
 
     expect(workflow).toContain("npm run check:facebook-auth-public");
     expect(workflow).toContain("npm run check:facebook-auth-live");
+    expect(workflow).toContain("npm run check:apple-auth-public");
+    expect(workflow).toContain("npm run check:apple-auth-live");
     expect(workflow).toContain("npm run check:telegram-oidc-live");
     expect(workflow).toContain("secrets.VITE_SUPABASE_ANON_KEY != ''");
     expect(workflow).toContain("ZENFLOW_FACEBOOK_AUTH_LIVE_REQUIRED");
+    expect(workflow).toContain("ZENFLOW_APPLE_AUTH_PUBLIC_REQUIRED");
+    expect(workflow).toContain("ZENFLOW_APPLE_AUTH_LIVE_REQUIRED");
+    expect(workflow).toContain("SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}");
+    expect(workflow).toContain("SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}");
     expect(workflow).toContain("ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true");
   });
 
@@ -157,6 +163,22 @@ describe("check-auth-providers public key readiness", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("GitHub Pages deploy runs Facebook live OAuth readiness check");
+  });
+
+  it("requires general auth readiness to include the Apple public and hosted live gates", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("GitHub Pages deploy runs Apple public Auth readiness check");
+    expect(result.stdout).toContain("GitHub Pages deploy runs Apple hosted Auth readiness check");
+    expect(result.stdout).toContain(
+      "GitHub Pages deploy gates Apple public Auth readiness before public exposure"
+    );
+    expect(result.stdout).toContain(
+      "GitHub Pages deploy gates Apple hosted Auth readiness before public exposure"
+    );
   });
 
   it("requires GitHub Pages public auth smoke to exercise Facebook when Meta readiness is enabled", () => {
