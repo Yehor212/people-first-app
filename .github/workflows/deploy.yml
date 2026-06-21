@@ -133,6 +133,15 @@ jobs:
           npm run check:facebook-auth-public
           npm run check:telegram-oidc-live
 
+      - name: Check Supabase publishable key readiness
+        if: github.event_name != 'pull_request'
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          ZENFLOW_SUPABASE_PUBLISHABLE_REQUIRED: ${{ vars.ZENFLOW_SUPABASE_PUBLISHABLE_REQUIRED || 'false' }}
+        run: npm run check:supabase-publishable-key
+
       - name: Build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
