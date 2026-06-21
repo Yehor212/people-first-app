@@ -128,12 +128,16 @@ function hasValidSupabaseAuthSessionValue(value) {
   }
 }
 
+function isAuthGateCheckedState(state) {
+  return Boolean(state?.authGateChecked ?? state?.googleAuthChecked);
+}
+
 function isCompletedInteractiveAuthState(state) {
   return Boolean(
     state &&
     state.currentHost === state.appHost &&
     state.hasSupabaseSession &&
-    state.googleAuthChecked &&
+    isAuthGateCheckedState(state) &&
     !state.authScreenVisible &&
     !state.hasOAuthParams
   );
@@ -221,6 +225,9 @@ function sanitizeUrlForReport(rawUrl, depth = 0) {
 }
 
 function sanitizeInteractiveAuthState(state) {
+  const hasAuthGateCheckedState =
+    Object.prototype.hasOwnProperty.call(state, "authGateChecked") ||
+    Object.prototype.hasOwnProperty.call(state, "googleAuthChecked");
   const supabaseSessionKeyCount = Array.isArray(state.supabaseSessionKeys)
     ? state.supabaseSessionKeys.length
     : Number(state.supabaseSessionKeyCount || 0);
@@ -234,7 +241,7 @@ function sanitizeInteractiveAuthState(state) {
     appHost: state.appHost,
     currentHost: state.currentHost,
     authScreenVisible: state.authScreenVisible,
-    googleAuthChecked: state.googleAuthChecked,
+    ...(hasAuthGateCheckedState ? { authGateChecked: isAuthGateCheckedState(state) } : {}),
     hasSupabaseSession: state.hasSupabaseSession,
     hasOAuthParams: state.hasOAuthParams,
     supabaseSessionKeyCount,
@@ -298,7 +305,7 @@ async function readInteractiveAuthState(page, appHost, provider) {
     appHost,
     currentHost,
     authScreenVisible: false,
-    googleAuthChecked: false,
+    authGateChecked: false,
     hasSupabaseSession: false,
     hasOAuthParams: hasOAuthCallbackParams(finalUrl),
     supabaseSessionKeys: [],
@@ -319,7 +326,7 @@ async function readInteractiveAuthState(page, appHost, provider) {
   try {
     const pageState = await page.evaluate(() => {
       const authScreenVisible = Boolean(document.querySelector('[data-testid="auth-screen"]'));
-      const googleAuthChecked = localStorage.getItem("zenflow-google-auth-checked") === "true";
+      const authGateChecked = localStorage.getItem("zenflow-google-auth-checked") === "true";
       const supabaseSessionKeys = Object.keys(localStorage).filter(
         (key) => key.startsWith("sb-") && key.includes("auth-token")
       );
@@ -351,7 +358,7 @@ async function readInteractiveAuthState(page, appHost, provider) {
         hasValidSupabaseAuthSessionValue(localStorage.getItem(key))
       );
 
-      return { authScreenVisible, googleAuthChecked, hasSupabaseSession, supabaseSessionKeys };
+      return { authScreenVisible, authGateChecked, hasSupabaseSession, supabaseSessionKeys };
     });
 
     return { ...state, ...pageState };
@@ -476,6 +483,7 @@ module.exports = {
   detectProviderOAuthError,
   hasOAuthCallbackParams,
   hasValidSupabaseAuthSessionValue,
+  isAuthGateCheckedState,
   isCompletedInteractiveAuthState,
   parseInteractiveAuthConfig,
   runInteractiveAuthCompletion,

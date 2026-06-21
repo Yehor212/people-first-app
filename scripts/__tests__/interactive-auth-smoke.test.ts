@@ -36,7 +36,8 @@ const {
     appHost: string;
     currentHost: string;
     authScreenVisible: boolean;
-    googleAuthChecked: boolean;
+    authGateChecked?: boolean;
+    googleAuthChecked?: boolean;
     hasSupabaseSession: boolean;
     hasOAuthParams: boolean;
   }) => boolean;
@@ -83,6 +84,21 @@ describe("interactive auth completion smoke helpers", () => {
     expect(hasOAuthCallbackParams?.("https://yehor212.github.io/people-first-app/orb/")).toBe(
       false
     );
+  });
+
+  it("accepts the provider-neutral auth gate marker for completion", () => {
+    expect(typeof isCompletedInteractiveAuthState).toBe("function");
+
+    expect(
+      isCompletedInteractiveAuthState?.({
+        appHost: "yehor212.github.io",
+        currentHost: "yehor212.github.io",
+        authScreenVisible: false,
+        authGateChecked: true,
+        hasSupabaseSession: true,
+        hasOAuthParams: false,
+      })
+    ).toBe(true);
   });
 
   it("requires app return, session marker, cleared OAuth params, and hidden auth screen", () => {
@@ -222,6 +238,24 @@ describe("interactive auth completion smoke helpers", () => {
 
     expect(report.finalUrl).not.toContain("secret-state");
     expect(report.finalUrl).not.toContain("error_description");
+  });
+
+  it("reports auth gate completion without provider-specific Google wording", () => {
+    expect(typeof sanitizeInteractiveAuthState).toBe("function");
+
+    expect(
+      sanitizeInteractiveAuthState?.({
+        provider: "telegram",
+        authGateChecked: true,
+        googleAuthChecked: true,
+        hasSupabaseSession: true,
+      })
+    ).toEqual({
+      provider: "telegram",
+      authGateChecked: true,
+      hasSupabaseSession: true,
+      supabaseSessionKeyCount: 0,
+    });
   });
 
   it("redacts storage keys and never exposes token-bearing values in reports", () => {
