@@ -100,6 +100,22 @@ describe('isOAuthReturn', () => {
     expect(isOAuthReturn()).toBe(true);
   });
 
+  it('returns true when referrer contains Telegram OAuth', () => {
+    Object.defineProperty(document, 'referrer', {
+      value: 'https://oauth.telegram.org/auth?bot_id=123&origin=https%3A%2F%2Fexample.com',
+      configurable: true,
+    });
+    expect(isOAuthReturn()).toBe(true);
+  });
+
+  it('returns true when referrer contains Facebook OAuth', () => {
+    Object.defineProperty(document, 'referrer', {
+      value: 'https://www.facebook.com/v19.0/dialog/oauth?client_id=123',
+      configurable: true,
+    });
+    expect(isOAuthReturn()).toBe(true);
+  });
+
   it('returns false when referrer is empty', () => {
     Object.defineProperty(document, 'referrer', { value: '', configurable: true });
     expect(isOAuthReturn()).toBe(false);

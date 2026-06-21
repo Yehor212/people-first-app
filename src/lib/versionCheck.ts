@@ -147,13 +147,16 @@ export function shouldCheckVersion(): boolean {
 
 /**
  * Check if this is a return from OAuth flow.
- * OAuth providers we recognize: Google, Supabase Auth
+ * OAuth providers we recognize: Google, Supabase Auth, Telegram, Facebook.
  */
 export function isOAuthReturn(): boolean {
   const referrer = document.referrer.toLowerCase();
   return (
     referrer.includes("accounts.google.com") ||
     referrer.includes("google.com/o/oauth") ||
+    referrer.includes("oauth.telegram.org") ||
+    referrer.includes("facebook.com/v") ||
+    referrer.includes("facebook.com/dialog/oauth") ||
     referrer.includes("supabase.co/auth") ||
     referrer.includes("supabase.io/auth") ||
     referrer.includes("api.zenflowapp.online/auth")
