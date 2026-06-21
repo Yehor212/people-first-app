@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   buildLocalTelegramReadinessChecks,
   buildTelegramReadinessChecks,
   checkTelegramBotProfilePhoto,
+  compareTelegramProfilePhotoToApproved,
   overallTelegramReadinessStatus,
   validateTelegramBotToken,
   validateTelegramWebhookSecret,
@@ -175,6 +177,49 @@ void test("Telegram bot profile photo live check fails when the avatar differs",
 
   assert.equal(check.status, "FAIL");
   assert.match(check.evidence, /does not match/);
+});
+
+void test("Telegram bot profile photo comparison accepts a Telegram-cropped approved userpic", async () => {
+  const { default: sharp } = await import("sharp");
+  const approvedPhotoPath = fileURLToPath(
+    new URL("../../../docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg", import.meta.url)
+  );
+  const telegramCroppedBytes = new Uint8Array(
+    await sharp(approvedPhotoPath)
+      .extract({ left: 132, top: 132, width: 760, height: 760 })
+      .resize(320, 320)
+      .jpeg({ quality: 86 })
+      .toBuffer()
+  );
+
+  assert.equal(
+    await compareTelegramProfilePhotoToApproved(telegramCroppedBytes, approvedPhotoPath),
+    true
+  );
+});
+
+void test("Telegram bot profile photo comparison rejects unrelated userpics", async () => {
+  const { default: sharp } = await import("sharp");
+  const approvedPhotoPath = fileURLToPath(
+    new URL("../../../docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg", import.meta.url)
+  );
+  const unrelatedBytes = new Uint8Array(
+    await sharp({
+      create: {
+        width: 320,
+        height: 320,
+        channels: 3,
+        background: { r: 230, g: 60, b: 60 },
+      },
+    })
+      .jpeg({ quality: 86 })
+      .toBuffer()
+  );
+
+  assert.equal(
+    await compareTelegramProfilePhotoToApproved(unrelatedBytes, approvedPhotoPath),
+    false
+  );
 });
 
 function jsonResponse(body: unknown): Response {

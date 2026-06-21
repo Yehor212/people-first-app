@@ -310,6 +310,9 @@ export async function checkTelegramBotProfilePhoto({
   };
 }
 
+const TELEGRAM_PROFILE_PHOTO_DISTANCE_THRESHOLD = 0.08;
+const APPROVED_PROFILE_PHOTO_CROP_RATIOS = [1, 0.94, 0.88, 0.84, 0.8, 0.76, 0.72, 0.68] as const;
+
 export async function compareTelegramProfilePhotoToApproved(
   actualBytes: Uint8Array,
   approvedPhotoPath: string
@@ -318,26 +321,61 @@ export async function compareTelegramProfilePhotoToApproved(
     import("sharp"),
     readFile(approvedPhotoPath),
   ]);
-  const [actualRaw, approvedRaw] = await Promise.all([
+  const [actualRaw, approvedCandidates] = await Promise.all([
     sharp(Buffer.from(actualBytes))
       .resize(64, 64, { fit: "cover" })
       .flatten()
       .removeAlpha()
       .raw()
       .toBuffer(),
-    sharp(approvedBytes).resize(64, 64, { fit: "cover" }).flatten().removeAlpha().raw().toBuffer(),
+    buildApprovedProfilePhotoCandidates(approvedBytes),
   ]);
 
-  if (actualRaw.length !== approvedRaw.length || actualRaw.length === 0) {
+  if (actualRaw.length === 0) {
     return false;
   }
 
+  return approvedCandidates.some((approvedRaw) => {
+    if (actualRaw.length !== approvedRaw.length || approvedRaw.length === 0) {
+      return false;
+    }
+
+    return (
+      meanNormalizedPixelDistance(actualRaw, approvedRaw) <=
+      TELEGRAM_PROFILE_PHOTO_DISTANCE_THRESHOLD
+    );
+  });
+}
+
+async function buildApprovedProfilePhotoCandidates(approvedBytes: Buffer): Promise<Buffer[]> {
+  const { default: sharp } = await import("sharp");
+  const metadata = await sharp(approvedBytes).metadata();
+  const width = metadata.width ?? 0;
+  const height = metadata.height ?? 0;
+  const minSide = Math.min(width, height);
+
+  return Promise.all(
+    APPROVED_PROFILE_PHOTO_CROP_RATIOS.map((ratio) => {
+      let pipeline = sharp(approvedBytes);
+
+      if (ratio < 1 && minSide > 0) {
+        const cropSide = Math.max(1, Math.round(minSide * ratio));
+        const left = Math.max(0, Math.floor((width - cropSide) / 2));
+        const top = Math.max(0, Math.floor((height - cropSide) / 2));
+        pipeline = pipeline.extract({ left, top, width: cropSide, height: cropSide });
+      }
+
+      return pipeline.resize(64, 64, { fit: "cover" }).flatten().removeAlpha().raw().toBuffer();
+    })
+  );
+}
+
+function meanNormalizedPixelDistance(actualRaw: Buffer, approvedRaw: Buffer): number {
   let totalDistance = 0;
   for (let index = 0; index < actualRaw.length; index += 1) {
     totalDistance += Math.abs(actualRaw[index] - approvedRaw[index]);
   }
-  const meanNormalizedDistance = totalDistance / actualRaw.length / 255;
-  return meanNormalizedDistance <= 0.08;
+  return totalDistance / actualRaw.length / 255;
 }
 
 async function checkTelegramGetMe(
