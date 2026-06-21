@@ -42,12 +42,12 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
         session.setError(
           t.authAppleUnavailable ||
             t.authNotConfigured ||
-            "Apple sign-in is not available yet. Please use another sign-in method.",
+            "Apple sign-in is not available yet. Please use another sign-in method."
         );
         session.setDebugInfo(
           `Apple auth availability: ${availability.status}${
             availability.reason ? ` (${availability.reason})` : ""
-          }`,
+          }`
         );
         return;
       }
@@ -67,10 +67,12 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
     // OAuth timeout (60 seconds)
     if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
     session.oauthTimeoutRef.current = setTimeout(() => {
+      session.oauthTimeoutRef.current = null;
       if (!session.hasCompletedRef.current) {
         logger.warn(`[Auth] ${provider} OAuth timeout after 60s`);
         session.setLoadingProvider(null);
         session.setError(t.authSignInTooLong);
+        endAuthFlow();
       }
     }, 60000);
 

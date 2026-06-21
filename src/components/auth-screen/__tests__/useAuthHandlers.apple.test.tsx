@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthHandlers } from "../useAuthHandlers";
 
@@ -126,7 +126,7 @@ describe("useAuthHandlers Apple availability preflight", () => {
     expect(mocks.signInWithOAuth).not.toHaveBeenCalled();
     expect(mocks.canStartAuthFlow).not.toHaveBeenCalled();
     expect(session.setDebugInfo).toHaveBeenCalledWith(
-      expect.stringContaining("Apple auth availability: disabled"),
+      expect.stringContaining("Apple auth availability: disabled")
     );
   });
 
@@ -142,11 +142,41 @@ describe("useAuthHandlers Apple availability preflight", () => {
 
     await waitFor(() => {
       expect(mocks.signInWithOAuth).toHaveBeenCalledWith(
-        expect.objectContaining({ provider: "apple" }),
+        expect.objectContaining({ provider: "apple" })
       );
     });
     expect(mocks.canStartAuthFlow).toHaveBeenCalledTimes(1);
     expect(mocks.startAuthFlow).toHaveBeenCalledTimes(1);
     if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
+  });
+
+  it("releases the auth guard when a web OAuth launch times out", async () => {
+    vi.useFakeTimers();
+    try {
+      const session = createSession();
+      const { result } = renderHook(() => useAuthHandlers(session, t));
+
+      result.current.handleProviderSignIn("telegram");
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(mocks.signInWithOAuth).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: "custom:telegram" })
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60000);
+      });
+
+      expect(session.setLoadingProvider).toHaveBeenCalledWith(null);
+      expect(session.setError).toHaveBeenCalledWith(t.authSignInTooLong);
+      expect(mocks.endAuthFlow).toHaveBeenCalledTimes(1);
+      expect(session.oauthTimeoutRef.current).toBe(null);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
