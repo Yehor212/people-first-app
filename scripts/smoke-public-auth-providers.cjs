@@ -112,6 +112,59 @@ function isAppDiagnosticUrl(diagnosticUrl, currentPageUrl, appHost, requireDiagn
   return true;
 }
 
+function parsePositiveInteger(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
+
+function diagnosticEntries(result) {
+  return [
+    result?.error,
+    ...(Array.isArray(result?.consoleMessages) ? result.consoleMessages : []),
+    ...(Array.isArray(result?.failedRequests) ? result.failedRequests : []),
+    ...(Array.isArray(result?.listConsoleMessages) ? result.listConsoleMessages : []),
+    ...(Array.isArray(result?.listFailedRequests) ? result.listFailedRequests : []),
+  ].filter(Boolean);
+}
+
+function resultHostMatchesApp(result, appHost) {
+  const rawUrl = result?.currentUrl || result?.url || "";
+  if (!rawUrl) return true;
+
+  try {
+    return new URL(rawUrl).host === appHost;
+  } catch {
+    return false;
+  }
+}
+
+function isRetryableAppLoadFailure(result, appHost) {
+  if (!result || result.ok || result.providerError) return false;
+  if (!resultHostMatchesApp(result, appHost)) return false;
+
+  const diagnostics = diagnosticEntries(result).join("\n");
+  const hasAppAssetSignal = /\/assets\/|failed to load resource|net::err_aborted/i.test(
+    diagnostics
+  );
+  const hasTransientSignal = /status of 503|\b503\b|net::err_aborted/i.test(diagnostics);
+
+  return hasAppAssetSignal && hasTransientSignal;
+}
+
+function isRetryablePublicAuthResult(result, appHost) {
+  if (!result || result.ok) return false;
+  if (isRetryableAppLoadFailure(result, appHost)) return true;
+  return Array.isArray(result.redirectResults)
+    ? result.redirectResults.some((redirectResult) =>
+        isRetryableAppLoadFailure(redirectResult, appHost)
+      )
+    : false;
+}
+
+async function waitForPublicAuthRetry(attempt) {
+  await new Promise((resolve) => setTimeout(resolve, Math.min(1000 * attempt, 5000)));
+}
+
 function initEntryState() {
   const json = (value) => JSON.stringify(value);
   localStorage.clear();
@@ -280,7 +333,7 @@ async function launchBrowser(chromium) {
   }
 }
 
-async function verifyPublicAuthUrl({
+async function verifyPublicAuthUrlOnce({
   browser,
   baseUrl,
   expectedProviders,
@@ -309,12 +362,40 @@ async function verifyPublicAuthUrl({
     );
   });
 
-  const publicProviders = await collectProviders(
-    listPage,
-    createScenarioUrl(baseUrl, "list"),
-    timeoutMs
-  );
-  await listContext.close();
+  let publicProviders = [];
+  let listFailure = null;
+
+  try {
+    publicProviders = await collectProviders(
+      listPage,
+      createScenarioUrl(baseUrl, "list"),
+      timeoutMs
+    );
+  } catch (error) {
+    listFailure = error instanceof Error ? error.message : String(error);
+  } finally {
+    await listContext.close();
+  }
+
+  if (listFailure) {
+    return {
+      ok: false,
+      reason: "provider_list_failed",
+      error: listFailure,
+      currentUrl: listPage.url(),
+      url: baseUrl.toString(),
+      expectedProviders,
+      publicProviders,
+      forbiddenProviders,
+      forbiddenVisible: [],
+      missingExpected: expectedProviders,
+      listConsoleCount: listConsoleMessages.length,
+      listFailedCount: listFailedRequests.length,
+      listConsoleMessages: listConsoleMessages.slice(0, 5),
+      listFailedRequests: listFailedRequests.slice(0, 5),
+      redirectResults: [],
+    };
+  }
 
   const providerSet = new Set(publicProviders);
   const expectedMatches = publicProviders.join(",") === expectedProviders.join(",");
@@ -352,6 +433,22 @@ async function verifyPublicAuthUrl({
     listFailedRequests: listFailedRequests.slice(0, 5),
     redirectResults,
   };
+}
+
+async function verifyPublicAuthUrl(args) {
+  const maxAttempts = parsePositiveInteger(process.env.ZENFLOW_PUBLIC_AUTH_RETRY_ATTEMPTS, 3);
+  let lastResult = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const result = await verifyPublicAuthUrlOnce(args);
+    const retryable = isRetryablePublicAuthResult(result, args.baseUrl.host);
+    lastResult = { ...result, attempt, retryable };
+
+    if (!retryable || attempt === maxAttempts) return lastResult;
+    await waitForPublicAuthRetry(attempt);
+  }
+
+  return lastResult;
 }
 
 async function run() {
@@ -427,6 +524,8 @@ module.exports = {
   detectProviderRedirectError,
   hostnameMatches,
   isAppDiagnosticUrl,
+  isRetryableAppLoadFailure,
+  isRetryablePublicAuthResult,
   parseCsv,
   parsePublicAuthUrls,
   resolvePublicAuthUrls,

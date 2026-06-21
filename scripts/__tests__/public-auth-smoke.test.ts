@@ -6,6 +6,7 @@ const require = createRequire(import.meta.url);
 const {
   detectProviderRedirectError,
   isAppDiagnosticUrl,
+  isRetryableAppLoadFailure,
   parsePublicAuthUrls,
   resolvePublicAuthUrls,
 } = require("../smoke-public-auth-providers.cjs");
@@ -80,5 +81,40 @@ describe("public auth smoke URL parsing", () => {
       providerError:
         "Facebook rejected the email permission. Configure email in Meta Use Cases > Authentication and Account Creation.",
     });
+  });
+
+  it("treats post-deploy app asset 503s as retryable smoke infrastructure", () => {
+    expect(typeof isRetryableAppLoadFailure).toBe("function");
+
+    expect(
+      isRetryableAppLoadFailure(
+        {
+          ok: false,
+          reason: "redirect_check_failed",
+          currentUrl: "https://yehor212.github.io/people-first-app/orb/?nav=v2&navLayout=phone",
+          consoleMessages: [
+            "error: Failed to load resource: the server responded with a status of 503 ()",
+          ],
+          failedRequests: [
+            "GET https://yehor212.github.io/people-first-app/assets/react-dom-4P3QW5sd.js net::ERR_ABORTED",
+          ],
+        },
+        "yehor212.github.io"
+      )
+    ).toBe(true);
+
+    expect(
+      isRetryableAppLoadFailure(
+        {
+          ok: false,
+          reason: "facebook_invalid_scope_email",
+          providerError: "Facebook rejected the email permission.",
+          currentUrl: "https://www.facebook.com/login.php",
+          consoleMessages: [],
+          failedRequests: [],
+        },
+        "yehor212.github.io"
+      )
+    ).toBe(false);
   });
 });
