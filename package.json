@@ -65,6 +65,7 @@
     "check:sync-contract": "node scripts/check-sync-contract.cjs",
     "check:auth-providers": "node scripts/check-auth-providers.cjs",
     "check:facebook-auth-public": "node scripts/check-facebook-auth-public.cjs",
+    "check:facebook-auth-live": "node scripts/check-facebook-auth-live.cjs",
     "check:telegram-oidc-live": "node scripts/check-telegram-oidc-live.cjs",
     "check:apple-auth-public": "node scripts/check-apple-auth-public.cjs",
     "check:apple-auth-activation": "node scripts/check-apple-auth-activation.cjs",

@@ -143,9 +143,20 @@ describe("check-auth-providers public key readiness", () => {
     const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
 
     expect(workflow).toContain("npm run check:facebook-auth-public");
+    expect(workflow).toContain("npm run check:facebook-auth-live");
     expect(workflow).toContain("npm run check:telegram-oidc-live");
     expect(workflow).toContain("secrets.VITE_SUPABASE_ANON_KEY != ''");
+    expect(workflow).toContain("ZENFLOW_FACEBOOK_AUTH_LIVE_REQUIRED");
     expect(workflow).toContain("ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true");
+  });
+
+  it("requires general auth readiness to include the Facebook live OAuth gate", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("GitHub Pages deploy runs Facebook live OAuth readiness check");
   });
 
   it("requires GitHub Pages public auth smoke to exercise Facebook when Meta readiness is enabled", () => {

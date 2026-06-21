@@ -296,6 +296,26 @@ checkSourceContains(
   "GitHub Pages deploy passes the modern Supabase publishable key"
 );
 checkSourceContains(
+  "package.json",
+  '"check:facebook-auth-live"',
+  "Facebook live OAuth readiness npm script is registered"
+);
+checkSourceContains(
+  "scripts/check-facebook-auth-live.cjs",
+  "facebook_invalid_scope_email",
+  "Facebook live OAuth readiness detects Meta invalid-scope email errors"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "npm run check:facebook-auth-live",
+  "GitHub Pages deploy runs Facebook live OAuth readiness check"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "ZENFLOW_FACEBOOK_AUTH_LIVE_REQUIRED",
+  "GitHub Pages deploy gates Facebook live OAuth readiness before public exposure"
+);
+checkSourceContains(
   ".github/workflows/deploy-v2-preview.yml",
   "VITE_SUPABASE_PUBLISHABLE_KEY",
   "V2 preview deploy passes the modern Supabase publishable key"
