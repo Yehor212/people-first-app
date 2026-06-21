@@ -142,6 +142,27 @@ describe('useDeepLinkHandler', () => {
       expect(useAppStore.getState().webOAuthError).not.toContain("Google");
       expect(mockCloseOAuthBrowser).toHaveBeenCalled();
     });
+
+    it("ignores untrusted HTTPS OAuth callback URLs", async () => {
+      renderHook(() => useDeepLinkHandler());
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(appUrlOpenListeners).toHaveLength(1);
+
+      await act(async () => {
+        appUrlOpenListeners[0]({
+          url: "https://evil.example/login-callback?code=stolen-code&state=bad-state",
+        });
+        await Promise.resolve();
+      });
+
+      expect(mockHandleAuthCallback).not.toHaveBeenCalled();
+      expect(mockCloseOAuthBrowser).not.toHaveBeenCalled();
+      expect(useAppStore.getState().webOAuthError).toBeNull();
+    });
     it.todo('deduplicates identical auth URLs');
     it.todo('clears dedupe cache after 50 entries');
     it.todo('stores pending URL when supabase is not ready');

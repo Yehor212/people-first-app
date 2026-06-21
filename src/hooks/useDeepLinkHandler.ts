@@ -3,7 +3,12 @@ import { useAppStore, useUIStore, useUserDataStore, getModalToggle } from "@/sto
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { logger } from "@/lib/logger";
 import { App } from "@capacitor/app";
-import { handleAuthCallback, notifyAuthComplete, setPendingAuthUrl } from "@/lib/authRedirect";
+import {
+  handleAuthCallback,
+  isAllowedLocalOAuthOrigin,
+  notifyAuthComplete,
+  setPendingAuthUrl,
+} from "@/lib/authRedirect";
 import { isNative } from "@/lib/platform";
 import { supabase } from "@/lib/supabaseClient";
 import { decodeInviteData } from "@/lib/friendChallenge";
@@ -14,6 +19,41 @@ import { getAuthUserDisplayName } from "@/lib/authUser";
 import { closeOAuthBrowser } from "@/lib/nativeOAuthBrowser";
 
 const setShowChallengeModal = getModalToggle("showChallengeModal");
+
+const TRUSTED_AUTH_CALLBACK_WEB_ORIGINS = new Set([
+  "https://yehor212.github.io",
+  "https://zenflow.app",
+]);
+
+function hasLoginCallbackPath(parsedUrl: URL): boolean {
+  return parsedUrl.pathname.split("/").filter(Boolean).includes("login-callback");
+}
+
+function isTrustedAuthCallbackUrl(url: string): boolean {
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    return false;
+  }
+
+  if (parsedUrl.protocol === "com.zenflow.app:") {
+    return parsedUrl.hostname === "login-callback" &&
+      (parsedUrl.pathname === "" || parsedUrl.pathname === "/");
+  }
+
+  if (!hasLoginCallbackPath(parsedUrl)) return false;
+
+  if (parsedUrl.protocol === "https:") {
+    return TRUSTED_AUTH_CALLBACK_WEB_ORIGINS.has(parsedUrl.origin);
+  }
+
+  if (parsedUrl.protocol === "http:") {
+    return isAllowedLocalOAuthOrigin(parsedUrl.origin);
+  }
+
+  return false;
+}
 
 interface UseDeepLinkHandlerOptions {
   handleDiaryDeepLinks?: boolean;
@@ -106,13 +146,8 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
       url: string,
       source: "launch" | "appUrlOpen" | "appState" = "appUrlOpen"
     ): Promise<boolean> => {
-      // Check if URL is auth callback — validate scheme + path (OWASP deep link safety)
-      const isAuthCallback =
-        url.includes("login-callback") &&
-        (url.startsWith("com.zenflow.app://") ||
-          url.startsWith("https://") ||
-          url.startsWith("http://localhost"));
-      if (!isAuthCallback) return false;
+      // Check if URL is auth callback — validate scheme + trusted origin (OWASP deep link safety)
+      if (!isTrustedAuthCallbackUrl(url)) return false;
 
       const dedupeKey = getAuthDedupeKey(url);
       if (handledAuthKeysRef.current.has(dedupeKey)) {
