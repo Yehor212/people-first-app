@@ -8,6 +8,7 @@ const {
   isAppDiagnosticUrl,
   isRetryableAppLoadFailure,
   parsePublicAuthUrls,
+  providerRedirectHosts,
   resolvePublicAuthUrls,
 } = require("../smoke-public-auth-providers.cjs");
 
@@ -66,6 +67,17 @@ describe("public auth smoke URL parsing", () => {
       "https://yehor212.github.io/people-first-app/",
       "https://yehor212.github.io/people-first-app/orb/?nav=v2&navLayout=phone",
     ]);
+  });
+
+  it("trusts the hosted Supabase custom auth domain during provider redirects", () => {
+    expect(typeof providerRedirectHosts).toBe("function");
+
+    expect(providerRedirectHosts("telegram")).toEqual(
+      expect.arrayContaining(["oauth.telegram.org", "api.zenflowapp.online"])
+    );
+    expect(providerRedirectHosts("google")).toEqual(
+      expect.arrayContaining(["accounts.google.com", "api.zenflowapp.online"])
+    );
   });
 
   it("detects Facebook invalid email scope pages after a valid external redirect", () => {

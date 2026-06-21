@@ -3,11 +3,12 @@
 const DEFAULT_PUBLIC_AUTH_URL = "https://yehor212.github.io/people-first-app/";
 const DEFAULT_EXPECTED_PROVIDERS = ["google", "telegram"];
 const DEFAULT_FORBIDDEN_PROVIDERS = ["facebook", "apple"];
+const SUPABASE_AUTH_REDIRECT_HOSTS = ["api.zenflowapp.online", "bwgfslmxmueyglpumkbf.supabase.co"];
 const DEFAULT_REDIRECT_HOSTS = {
-  google: ["accounts.google.com", "google.com", "bwgfslmxmueyglpumkbf.supabase.co"],
-  telegram: ["oauth.telegram.org", "bwgfslmxmueyglpumkbf.supabase.co"],
-  apple: ["appleid.apple.com", "bwgfslmxmueyglpumkbf.supabase.co"],
-  facebook: ["facebook.com", "www.facebook.com", "bwgfslmxmueyglpumkbf.supabase.co"],
+  google: ["accounts.google.com", "google.com", ...SUPABASE_AUTH_REDIRECT_HOSTS],
+  telegram: ["oauth.telegram.org", ...SUPABASE_AUTH_REDIRECT_HOSTS],
+  apple: ["appleid.apple.com", ...SUPABASE_AUTH_REDIRECT_HOSTS],
+  facebook: ["facebook.com", "www.facebook.com", ...SUPABASE_AUTH_REDIRECT_HOSTS],
 };
 
 function parseCsv(value, fallback) {
