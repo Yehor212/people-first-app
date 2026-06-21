@@ -165,6 +165,27 @@ checkSourceContains(
   "facebook",
   "Facebook provider is present in provider config"
 );
+
+const authProvidersSource = readText("src/lib/authProviders.ts");
+if (/id:\s*"facebook"[\s\S]*?scopes:\s*"public_profile"/.test(authProvidersSource)) {
+  add(
+    "PASS",
+    "Facebook OAuth requests only public_profile scope",
+    'src/lib/authProviders.ts has scopes: "public_profile" for facebook'
+  );
+} else if (/id:\s*"facebook"[\s\S]*?scopes:\s*"[^"]*email/.test(authProvidersSource)) {
+  add(
+    "FAIL",
+    "Facebook OAuth must not request email scope before Meta public access is approved",
+    "src/lib/authProviders.ts facebook scopes include email"
+  );
+} else {
+  add(
+    "FAIL",
+    "Facebook OAuth scope contract is missing",
+    `src/lib/authProviders.ts facebook config must set scopes: "public_profile"`
+  );
+}
 checkSourceContains(
   "src/lib/authProviders.ts",
   'supabaseProvider: "apple"',

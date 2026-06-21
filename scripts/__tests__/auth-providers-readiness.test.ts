@@ -170,6 +170,15 @@ describe("check-auth-providers public key readiness", () => {
     expect(result.stdout).toContain("Facebook Meta public access readiness flag is enabled");
   });
 
+  it("requires Facebook OAuth to avoid the email scope", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Facebook OAuth requests only public_profile scope");
+  });
+
   it("fails strict readiness when server-only Supabase secrets are present locally", () => {
     const result = runReadiness({
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",

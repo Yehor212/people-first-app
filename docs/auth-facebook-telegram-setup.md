@@ -64,7 +64,9 @@ account without replacing that account's sync data.
 https://api.zenflowapp.online/auth/v1/callback
 ```
 
-4. Confirm `public_profile` and `email` permissions are enabled.
+4. Keep the app request limited to `public_profile` until Meta public access is
+   approved. Do not request `email` from the client OAuth scope; the product
+   treats Facebook email as optional.
 5. Copy the Facebook App ID and App Secret.
 6. In Supabase Auth Providers, enable Facebook and paste the App ID and Secret.
 7. Enable `Allow users without an email` to keep provider behavior consistent
@@ -89,7 +91,9 @@ VITE_FACEBOOK_PUBLIC_ACCESS_READY=false
 
 That means the provider can remain configured and testable by developers, while
 the public app hides the Facebook button instead of sending users into a broken
-Meta approval screen. After Meta approves public access, set
+Meta approval screen. The client OAuth request stays on `public_profile` so Meta
+does not show an Invalid Scopes screen for `email`; collect email later only after
+a separate product/privacy decision. After Meta approves public access, set
 `VITE_FACEBOOK_PUBLIC_ACCESS_READY=true` in the production build environment and
 rerun the readiness check.
 
@@ -197,8 +201,9 @@ skip ID token verification, or store Telegram bot tokens in the client.
 
 ## Smoke Checklist
 
-- Web/PWA first-run screen shows Google, Telegram, and Apple by default, and
-  shows Facebook only when `VITE_FACEBOOK_PUBLIC_ACCESS_READY=true`.
+- Web/PWA first-run screen shows Google and Telegram by default, keeps Apple
+  hidden until hosted Supabase Apple Auth is ready, and shows Facebook only when
+  `VITE_FACEBOOK_PUBLIC_ACCESS_READY=true`.
 - Settings account section shows the same providers for sign-in.
 - Existing signed-in users can link a new provider without losing sync data.
 - Telegram users without email show a display name or username and count as
