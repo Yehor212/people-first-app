@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const ENV_FILE_NAMES = [".env.local", ".env", ".env.production", ".env.example"];
+const DEFAULT_PUBLIC_AUTH_APP_URL = "https://yehor212.github.io/people-first-app/";
 const SAFE_ENV_FILE_KEYS = new Set([
   "SUPABASE_ANON_KEY",
   "SUPABASE_PUBLISHABLE_KEY",
@@ -89,10 +90,17 @@ function getPublicApiKey(env, safeFileEnv) {
   );
 }
 
+function isPublicAppDiscoveryEnabled(env) {
+  return String(env.ZENFLOW_FACEBOOK_AUTH_PUBLIC_DISCOVERY || "").toLowerCase() !== "false";
+}
+
 function getPublicAppUrl(env) {
+  if (!isPublicAppDiscoveryEnabled(env)) return "";
+
   return (
     getDirectPublicEnv(env, "ZENFLOW_FACEBOOK_AUTH_PUBLIC_APP_URL") ||
-    getDirectPublicEnv(env, "ZENFLOW_PUBLIC_AUTH_URL")
+    getDirectPublicEnv(env, "ZENFLOW_PUBLIC_AUTH_URL") ||
+    DEFAULT_PUBLIC_AUTH_APP_URL
   );
 }
 
