@@ -68,6 +68,34 @@ function hostnameMatches(hostname, allowedHost) {
   );
 }
 
+function detectProviderRedirectError(state) {
+  const externalText = String(state?.externalText || "");
+  const normalizedText = externalText.toLowerCase();
+  const currentHost = String(state?.currentHost || "").toLowerCase();
+
+  if (
+    state?.provider === "facebook" &&
+    currentHost.endsWith("facebook.com") &&
+    normalizedText.includes("invalid scopes") &&
+    /\bemail\b/i.test(externalText)
+  ) {
+    return {
+      reason: "facebook_invalid_scope_email",
+      providerError:
+        "Facebook rejected the email permission. Configure email in Meta Use Cases > Authentication and Account Creation.",
+    };
+  }
+
+  if (normalizedText.includes("invalid scopes")) {
+    return {
+      reason: "provider_invalid_scope",
+      providerError: "OAuth provider rejected one or more requested scopes.",
+    };
+  }
+
+  return null;
+}
+
 function isAppDiagnosticUrl(diagnosticUrl, currentPageUrl, appHost, requireDiagnosticUrl = false) {
   if (requireDiagnosticUrl && !diagnosticUrl) return false;
 
@@ -182,12 +210,31 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
 
     const finalUrl = new URL(page.url());
     const allowedHosts = providerRedirectHosts(provider);
-    const ok = allowedHosts.some((host) => hostnameMatches(finalUrl.hostname, host));
+    const hostOk = allowedHosts.some((host) => hostnameMatches(finalUrl.hostname, host));
+    let providerError = null;
+
+    if (hostOk) {
+      try {
+        const externalText = await page.evaluate(
+          () => document.body?.innerText?.slice(0, 2000) || ""
+        );
+        providerError = detectProviderRedirectError({
+          provider,
+          currentHost: finalUrl.host,
+          externalText,
+        });
+      } catch {
+        providerError = null;
+      }
+    }
+
+    const ok = hostOk && !providerError;
 
     return {
       provider,
       ok,
-      reason: ok ? null : "unexpected_redirect_host",
+      reason: providerError?.reason || (hostOk ? null : "unexpected_redirect_host"),
+      providerError: providerError?.providerError,
       providersBefore,
       finalHost: finalUrl.host,
       finalPath: finalUrl.pathname,
@@ -377,6 +424,7 @@ module.exports = {
   DEFAULT_EXPECTED_PROVIDERS,
   DEFAULT_FORBIDDEN_PROVIDERS,
   DEFAULT_REDIRECT_HOSTS,
+  detectProviderRedirectError,
   hostnameMatches,
   isAppDiagnosticUrl,
   parseCsv,

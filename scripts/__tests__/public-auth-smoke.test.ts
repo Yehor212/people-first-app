@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
 const {
+  detectProviderRedirectError,
   isAppDiagnosticUrl,
   parsePublicAuthUrls,
   resolvePublicAuthUrls,
@@ -64,5 +65,20 @@ describe("public auth smoke URL parsing", () => {
       "https://yehor212.github.io/people-first-app/",
       "https://yehor212.github.io/people-first-app/orb/?nav=v2&navLayout=phone",
     ]);
+  });
+
+  it("detects Facebook invalid email scope pages after a valid external redirect", () => {
+    expect(
+      detectProviderRedirectError({
+        provider: "facebook",
+        currentHost: "www.facebook.com",
+        externalText:
+          "Этот контент сейчас недоступен Invalid Scopes: email. This message is only shown to developers.",
+      })
+    ).toEqual({
+      reason: "facebook_invalid_scope_email",
+      providerError:
+        "Facebook rejected the email permission. Configure email in Meta Use Cases > Authentication and Account Creation.",
+    });
   });
 });
