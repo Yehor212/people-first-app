@@ -488,11 +488,11 @@ function normalizeTelegramPublicBotUsername(value: string): string | null {
 function extractTelegramPublicOgImageUrl(html: string): string | null {
   const metaTags = html.match(/<meta\b[^>]*>/gi) ?? [];
   for (const tag of metaTags) {
-    if (!/(?:property|name)\s*=\s*["\']og:image["\']/i.test(tag)) {
+    if (!/(?:property|name)\s*=\s*["']og:image["']/i.test(tag)) {
       continue;
     }
 
-    const contentMatch = tag.match(/\bcontent\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>]+))/i);
+    const contentMatch = tag.match(/\bcontent\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
     const rawContent = contentMatch?.[1] ?? contentMatch?.[2] ?? contentMatch?.[3];
     if (!rawContent) {
       continue;
