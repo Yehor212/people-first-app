@@ -14,11 +14,7 @@ interface UseAuthSessionOptions {
   onClearError?: () => void;
 }
 
-export function useAuthSession({
-  onComplete,
-  webOAuthError,
-  onClearError,
-}: UseAuthSessionOptions) {
+export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseAuthSessionOptions) {
   const [loadingProvider, setLoadingProvider] = useState<AuthProvider>(null);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
@@ -46,10 +42,7 @@ export function useAuthSession({
   }, [webOAuthError, onClearError]);
 
   // Safe completion helper - ensures onComplete is called exactly once
-  const tryComplete = (
-    userData: { name: string; email: string },
-    source: string,
-  ): boolean => {
+  const tryComplete = (userData: { name: string; email: string }, source: string): boolean => {
     if (hasCompletedRef.current) {
       logger.log(`[Auth] Completion already done, ignoring from ${source}`);
       return false;
@@ -86,9 +79,7 @@ export function useAuthSession({
         }
       } catch (err) {
         logger.error("[Auth] Unexpected error checking session:", err);
-        setDebugInfo(
-          `Unexpected error: ${err instanceof Error ? err.message : String(err)}`,
-        );
+        setDebugInfo(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
       }
     };
     void checkSession();
@@ -97,7 +88,7 @@ export function useAuthSession({
     if (supabase) {
       const { data } = supabase.auth.onAuthStateChange((event, session) => {
         logger.log("[Auth] Auth state changed:", event);
-        if (event === "SIGNED_IN" && session?.user) {
+        if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user) {
           endAuthFlow();
           const name = getAuthUserDisplayName(session.user);
           const email = session.user.email || "";
@@ -185,9 +176,7 @@ export function useAuthSession({
         if (listenerHandle) {
           listenerHandle
             .remove()
-            .catch((err) =>
-              logger.warn("[Auth]", "Listener remove failed:", err),
-            );
+            .catch((err) => logger.warn("[Auth]", "Listener remove failed:", err));
         }
       };
     }
