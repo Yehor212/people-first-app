@@ -5,6 +5,7 @@ import {
   buildLocalTelegramReadinessChecks,
   buildTelegramReadinessChecks,
   checkTelegramBotProfilePhoto,
+  checkTelegramPublicBotProfilePhoto,
   compareTelegramProfilePhotoToApproved,
   overallTelegramReadinessStatus,
   validateTelegramBotToken,
@@ -177,6 +178,36 @@ void test("Telegram bot profile photo live check fails when the avatar differs",
 
   assert.equal(check.status, "FAIL");
   assert.match(check.evidence, /does not match/);
+});
+
+void test("Telegram public bot profile photo check verifies t.me og:image without a bot token", async () => {
+  const requestedUrls: string[] = [];
+  const fetcher = async (url: string | URL) => {
+    const nextUrl = String(url);
+    requestedUrls.push(nextUrl);
+    if (nextUrl === "https://t.me/ZenFlowAuthBot") {
+      return new Response(
+        '<html><head><meta property="og:title" content="ZenFlow"><meta property="og:image" content="https://cdn4.telesco.pe/file/approved.jpg"></head></html>',
+        { status: 200, headers: { "Content-Type": "text/html" } }
+      );
+    }
+    return new Response(new Uint8Array([1, 2, 3]), { status: 200 });
+  };
+
+  const check = await checkTelegramPublicBotProfilePhoto({
+    botUsername: "ZenFlowAuthBot",
+    approvedPhotoPath: "docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg",
+    fetcher: fetcher as typeof fetch,
+    comparePhoto: async (actualBytes, approvedPath) =>
+      actualBytes.length === 3 && approvedPath.endsWith("zenflow-auth-bot-userpic.jpg"),
+  });
+
+  assert.equal(check.status, "PASS");
+  assert.deepEqual(requestedUrls, [
+    "https://t.me/ZenFlowAuthBot",
+    "https://cdn4.telesco.pe/file/approved.jpg",
+  ]);
+  assert.match(check.evidence, /@ZenFlowAuthBot/);
 });
 
 void test("Telegram bot profile photo comparison accepts a Telegram-cropped approved userpic", async () => {

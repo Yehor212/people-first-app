@@ -116,6 +116,7 @@ jobs:
           ZENFLOW_APPLE_AUTH_PUBLIC_REQUIRED: ${{ vars.VITE_APPLE_PUBLIC_ACCESS_READY == 'true' && secrets.VITE_SUPABASE_URL != '' && (secrets.VITE_SUPABASE_PUBLISHABLE_KEY != '' || secrets.VITE_SUPABASE_ANON_KEY != '') }}
           ZENFLOW_APPLE_AUTH_LIVE_REQUIRED: ${{ vars.VITE_APPLE_PUBLIC_ACCESS_READY == 'true' && 'true' || 'false' }}
           ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true
+          ZENFLOW_TELEGRAM_PUBLIC_BOT_PROFILE_PHOTO_REQUIRED: true
           ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}
         run: |
           npm run check:facebook-auth-public
@@ -123,6 +124,7 @@ jobs:
           npm run check:apple-auth-public
           npm run check:apple-auth-live
           npm run check:telegram-oidc-live
+          npm --prefix tools/telegram-control run check:public-bot-profile-photo
           npm --prefix tools/telegram-control run check:bot-profile-photo
 
       - name: Check Sentry readiness for V1 public root

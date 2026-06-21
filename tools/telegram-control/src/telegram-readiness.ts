@@ -50,6 +50,12 @@ export interface TelegramBotProfilePhotoCheckOptions {
   fetcher?: typeof fetch;
   comparePhoto?: (actualBytes: Uint8Array, approvedPhotoPath: string) => Promise<boolean>;
 }
+export interface TelegramPublicBotProfilePhotoCheckOptions {
+  botUsername?: string | undefined;
+  approvedPhotoPath: string;
+  fetcher?: typeof fetch;
+  comparePhoto?: (actualBytes: Uint8Array, approvedPhotoPath: string) => Promise<boolean>;
+}
 
 interface TelegramWebhookInfo {
   url?: string;
@@ -310,6 +316,100 @@ export async function checkTelegramBotProfilePhoto({
   };
 }
 
+const DEFAULT_TELEGRAM_PUBLIC_BOT_USERNAME = "ZenFlowAuthBot";
+const TELEGRAM_PUBLIC_IMAGE_HOST_SUFFIXES = [
+  "telesco.pe",
+  "telegram.org",
+  "telegram-cdn.org",
+  "t.me",
+] as const;
+
+export async function checkTelegramPublicBotProfilePhoto({
+  botUsername = DEFAULT_TELEGRAM_PUBLIC_BOT_USERNAME,
+  approvedPhotoPath,
+  fetcher = fetch,
+  comparePhoto = compareTelegramProfilePhotoToApproved,
+}: TelegramPublicBotProfilePhotoCheckOptions): Promise<TelegramReadinessCheck> {
+  const username = normalizeTelegramPublicBotUsername(botUsername);
+  if (!username) {
+    return {
+      name: "Telegram public bot profile photo",
+      status: "FAIL",
+      evidence:
+        "Telegram bot username must be 5-32 characters and contain only letters, numbers, or underscores",
+    };
+  }
+
+  const profileUrl = new URL("/" + encodeURIComponent(username), "https://t.me").toString();
+  try {
+    const profileResponse = await fetcher(profileUrl);
+    if (!profileResponse.ok) {
+      return {
+        name: "Telegram public bot profile photo",
+        status: "UNVERIFIED",
+        evidence:
+          "Telegram public profile returned HTTP " + profileResponse.status + " for @" + username,
+      };
+    }
+
+    const profileHtml = await profileResponse.text();
+    const imageUrl = extractTelegramPublicOgImageUrl(profileHtml);
+    if (!imageUrl) {
+      return {
+        name: "Telegram public bot profile photo",
+        status: "FAIL",
+        evidence:
+          "Telegram public profile for @" + username + " does not expose a safe og:image avatar",
+      };
+    }
+
+    const imageResponse = await fetcher(imageUrl);
+    if (!imageResponse.ok) {
+      return {
+        name: "Telegram public bot profile photo",
+        status: "UNVERIFIED",
+        evidence:
+          "Telegram public profile avatar returned HTTP " +
+          imageResponse.status +
+          " for @" +
+          username,
+      };
+    }
+
+    const actualBytes = new Uint8Array(await imageResponse.arrayBuffer());
+    const matchesApproved = await comparePhoto(actualBytes, approvedPhotoPath);
+    if (!matchesApproved) {
+      return {
+        name: "Telegram public bot profile photo",
+        status: "FAIL",
+        evidence:
+          "Telegram public profile photo for @" +
+          username +
+          " does not match the approved ZenFlow logo asset",
+      };
+    }
+  } catch (error) {
+    return {
+      name: "Telegram public bot profile photo",
+      status: "UNVERIFIED",
+      evidence:
+        "Telegram public bot profile photo check could not be completed for @" +
+        username +
+        ": " +
+        (error instanceof Error ? error.message : String(error)),
+    };
+  }
+
+  return {
+    name: "Telegram public bot profile photo",
+    status: "PASS",
+    evidence:
+      "@" +
+      username +
+      " public profile photo matches the approved ZenFlow logo; no bot token required",
+  };
+}
+
 const TELEGRAM_PROFILE_PHOTO_DISTANCE_THRESHOLD = 0.08;
 const APPROVED_PROFILE_PHOTO_CROP_RATIOS = [1, 0.94, 0.88, 0.84, 0.8, 0.76, 0.72, 0.68] as const;
 
@@ -376,6 +476,70 @@ function meanNormalizedPixelDistance(actualRaw: Buffer, approvedRaw: Buffer): nu
     totalDistance += Math.abs(actualRaw[index] - approvedRaw[index]);
   }
   return totalDistance / actualRaw.length / 255;
+}
+function normalizeTelegramPublicBotUsername(value: string): string | null {
+  const username = value.trim().replace(/^@/, "");
+  if (!/^[A-Za-z0-9_]{5,32}$/.test(username)) {
+    return null;
+  }
+  return username;
+}
+
+function extractTelegramPublicOgImageUrl(html: string): string | null {
+  const metaTags = html.match(/<meta\b[^>]*>/gi) ?? [];
+  for (const tag of metaTags) {
+    if (!/(?:property|name)\s*=\s*["\']og:image["\']/i.test(tag)) {
+      continue;
+    }
+
+    const contentMatch = tag.match(/\bcontent\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>]+))/i);
+    const rawContent = contentMatch?.[1] ?? contentMatch?.[2] ?? contentMatch?.[3];
+    if (!rawContent) {
+      continue;
+    }
+
+    const imageUrl = normalizeTelegramPublicImageUrl(decodeHtmlAttributeValue(rawContent));
+    if (imageUrl) {
+      return imageUrl;
+    }
+  }
+  return null;
+}
+
+function normalizeTelegramPublicImageUrl(value: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return null;
+  }
+
+  if (parsed.protocol !== "https:") {
+    return null;
+  }
+  if (!isAllowedTelegramPublicImageHost(parsed.hostname)) {
+    return null;
+  }
+  if (parsed.username || parsed.password) {
+    return null;
+  }
+  return parsed.toString();
+}
+
+function isAllowedTelegramPublicImageHost(hostname: string): boolean {
+  const normalizedHost = hostname.toLowerCase();
+  return TELEGRAM_PUBLIC_IMAGE_HOST_SUFFIXES.some(
+    (suffix) => normalizedHost === suffix || normalizedHost.endsWith("." + suffix)
+  );
+}
+
+function decodeHtmlAttributeValue(value: string): string {
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
 }
 
 async function checkTelegramGetMe(

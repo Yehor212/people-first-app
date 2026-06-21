@@ -172,6 +172,21 @@ describe("check-auth-providers public key readiness", () => {
       "GitHub Pages deploy verifies the approved Telegram bot profile photo"
     );
   });
+
+  it("requires GitHub Pages deploy to verify the public Telegram bot profile photo without secrets", () => {
+    const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+
+    expect(workflow).toContain(
+      "npm --prefix tools/telegram-control run check:public-bot-profile-photo"
+    );
+
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+    expect(result.stdout).toContain(
+      "GitHub Pages deploy verifies the public Telegram bot profile photo without secrets"
+    );
+  });
   it("requires V2 preview deploy to verify the live Telegram bot profile photo when the bot token is configured", () => {
     const workflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
 
@@ -186,6 +201,21 @@ describe("check-auth-providers public key readiness", () => {
     });
     expect(result.stdout).toContain(
       "V2 preview deploy verifies the approved Telegram bot profile photo"
+    );
+  });
+
+  it("requires V2 preview deploy to verify the public Telegram bot profile photo without secrets", () => {
+    const workflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
+
+    expect(workflow).toContain(
+      "npm --prefix tools/telegram-control run check:public-bot-profile-photo"
+    );
+
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+    expect(result.stdout).toContain(
+      "V2 preview deploy verifies the public Telegram bot profile photo without secrets"
     );
   });
   it("requires V2 preview deploy to run hosted auth live checks", () => {
@@ -331,6 +361,15 @@ describe("check-auth-providers public key readiness", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("Telegram bot profile photo live verifier is registered");
+  });
+
+  it("requires a no-secret public Telegram bot profile photo verifier", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Telegram bot profile photo public verifier is registered");
   });
 
   it("requires Supabase Facebook auth to allow email-optional identities", () => {

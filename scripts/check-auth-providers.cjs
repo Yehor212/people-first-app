@@ -226,9 +226,19 @@ checkSourceContains(
   "Telegram bot profile photo live verifier is registered"
 );
 checkSourceContains(
+  "tools/telegram-control/package.json",
+  "check:public-bot-profile-photo",
+  "Telegram bot profile photo public verifier is registered"
+);
+checkSourceContains(
   "tools/telegram-control/src/telegram-readiness.ts",
   "getUserProfilePhotos",
   "Telegram bot profile photo live verifier checks the live Bot API avatar"
+);
+checkSourceContains(
+  "tools/telegram-control/src/telegram-readiness.ts",
+  "https://t.me",
+  "Telegram bot profile photo public verifier checks the t.me public profile avatar"
 );
 checkSourceContains(
   "src/components/settings/account-section/useAccountAuth.ts",
@@ -417,6 +427,11 @@ checkSourceContains(
 );
 checkSourceContains(
   ".github/workflows/deploy.yml",
+  "npm --prefix tools/telegram-control run check:public-bot-profile-photo",
+  "GitHub Pages deploy verifies the public Telegram bot profile photo without secrets"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
   "npm --prefix tools/telegram-control run check:bot-profile-photo",
   "GitHub Pages deploy verifies the approved Telegram bot profile photo"
 );
@@ -429,6 +444,11 @@ checkSourceContains(
   ".github/workflows/deploy-v2-preview.yml",
   "ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}",
   "V2 preview deploy requires approved Telegram bot profile photo when bot token is configured"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "npm --prefix tools/telegram-control run check:public-bot-profile-photo",
+  "V2 preview deploy verifies the public Telegram bot profile photo without secrets"
 );
 checkSourceContains(
   ".github/workflows/deploy-v2-preview.yml",
