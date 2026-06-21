@@ -139,6 +139,10 @@ const telegramSession = {
   },
 };
 
+function usePlainAuthRoute() {
+  window.history.pushState({}, "", "/orb?nav=v2&navLayout=phone");
+}
+
 function resetStores() {
   useAppStore.setState({
     activeTab: "home",
@@ -321,11 +325,54 @@ describe("useAuthSession", () => {
   });
 
   describe("session check on mount", () => {
-    it.todo("checks Supabase session on mount");
-    it.todo("sets hasValidSession to true when session exists");
-    it.todo("sets hasValidSession to false when no session");
-    it.todo("restores googleAuthChecked when session exists but not checked");
-    it.todo("handles session check error gracefully");
+    it("checks Supabase session on mount", async () => {
+      usePlainAuthRoute();
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(mockGetSession).toHaveBeenCalled());
+    });
+
+    it("sets hasValidSession to true when session exists", async () => {
+      usePlainAuthRoute();
+      mockGetSession.mockResolvedValue({ data: { session: telegramSession }, error: null });
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(useAppStore.getState().hasValidSession).toBe(true));
+    });
+
+    it("sets hasValidSession to false when no session", async () => {
+      usePlainAuthRoute();
+      useAppStore.getState().setHasValidSession(true);
+      mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(useAppStore.getState().hasValidSession).toBe(false));
+    });
+
+    it("restores googleAuthChecked when session exists but not checked", async () => {
+      usePlainAuthRoute();
+      mockGetSession.mockResolvedValue({ data: { session: telegramSession }, error: null });
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(useUserDataStore.getState().googleAuthChecked).toBe(true));
+      expect(useAppStore.getState().hasValidSession).toBe(true);
+    });
+
+    it("handles session check error gracefully", async () => {
+      usePlainAuthRoute();
+      useAppStore.getState().setHasValidSession(true);
+      mockGetSession
+        .mockRejectedValueOnce(new Error("session unavailable"))
+        .mockResolvedValue({ data: { session: null }, error: null });
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(useAppStore.getState().hasValidSession).toBe(false));
+    });
   });
 
   describe("pending auth URL (native)", () => {
