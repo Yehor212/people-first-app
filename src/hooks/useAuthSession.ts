@@ -127,6 +127,8 @@ export function useAuthSession(isLoading: boolean): void {
           ? sanitizeAuthErrorMessage(errorDescription)
           : "Authentication failed. Please try again."
       );
+      setIsProcessingWebOAuth(false);
+      endAuthFlow();
       window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
       return;
     }

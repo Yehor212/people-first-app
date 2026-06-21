@@ -263,6 +263,22 @@ describe("useAuthSession", () => {
       );
     });
 
+    it("releases auth guard when a web OAuth error callback is received", async () => {
+      startAuthFlow();
+      expect(isAuthFlowInProgress()).toBe(true);
+      window.history.pushState(
+        {},
+        "",
+        "/orb?nav=v2&navLayout=phone&error=access_denied&error_description=access_denied"
+      );
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(useAppStore.getState().webOAuthError).toBe("access_denied"));
+      expect(window.location.pathname + window.location.search).toBe("/orb?nav=v2&navLayout=phone");
+      expect(isAuthFlowInProgress()).toBe(false);
+    });
+
     it("completes implicit OAuth callbacks returned in the URL hash", async () => {
       const fakeAccessToken = ["test", "public", "oauth", "value"].join(".");
       const fakeRefreshToken = ["test", "public", "refresh", "value"].join(".");
