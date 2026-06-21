@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
@@ -36,6 +36,7 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
   const [signingInProvider, setSigningInProvider] = useState<SocialAuthProviderId | null>(null);
   const [linkingProvider, setLinkingProvider] = useState<SocialAuthProviderId | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const nativeOAuthTimeoutRef = useRef<number | null>(null);
   const enabledProviders = useMemo(() => getEnabledAccountAuthProviders(), []);
 
   useEffect(() => {
@@ -43,6 +44,15 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
     const timer = window.setTimeout(() => setAuthStatus(null), 3000);
     return () => window.clearTimeout(timer);
   }, [authStatus]);
+
+  useEffect(() => {
+    return () => {
+      if (nativeOAuthTimeoutRef.current !== null) {
+        window.clearTimeout(nativeOAuthTimeoutRef.current);
+        nativeOAuthTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!supabase) return;
@@ -56,6 +66,15 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSessionUser(session?.user ?? null);
+      if (session?.user) {
+        if (nativeOAuthTimeoutRef.current !== null) {
+          window.clearTimeout(nativeOAuthTimeoutRef.current);
+          nativeOAuthTimeoutRef.current = null;
+          endAuthFlow();
+        }
+        setSigningInProvider(null);
+        setLinkingProvider(null);
+      }
     });
     return () => {
       subscription.unsubscribe();
@@ -78,6 +97,7 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
 
     startAuthFlow();
     const setLoading = mode === "link" ? setLinkingProvider : setSigningInProvider;
+    let waitingForNativeOAuthCallback = false;
     setLoading(provider);
     setAuthStatus(null);
 
@@ -107,13 +127,32 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
           return;
         }
         await openOAuthUrl(data.url);
+        waitingForNativeOAuthCallback = true;
+        if (nativeOAuthTimeoutRef.current !== null) {
+          window.clearTimeout(nativeOAuthTimeoutRef.current);
+        }
+        nativeOAuthTimeoutRef.current = window.setTimeout(() => {
+          nativeOAuthTimeoutRef.current = null;
+          logger.warn(
+            `[AccountSection] ${provider} ${mode} timed out waiting for native OAuth callback`,
+          );
+          setAuthStatus(
+            t.authSignInTooLong ||
+              t.authUnexpectedError ||
+              "Sign-in took too long. Please try again.",
+          );
+          endAuthFlow();
+          setLoading(null);
+        }, 60_000);
       }
     } catch (err) {
       logger.error(`[AccountSection] ${provider} ${mode} exception:`, err);
       setAuthStatus(mode === "link" ? t.authProviderLinkFailed : t.authUnexpectedError);
     } finally {
-      endAuthFlow();
-      setLoading(null);
+      if (!waitingForNativeOAuthCallback) {
+        endAuthFlow();
+        setLoading(null);
+      }
     }
   };
 
