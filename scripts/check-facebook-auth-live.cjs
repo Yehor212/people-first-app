@@ -9,6 +9,9 @@ const SAFE_ENV_FILE_KEYS = new Set([
   "SUPABASE_URL",
   "VITE_SUPABASE_URL",
   "ZENFLOW_FACEBOOK_AUTH_LIVE_REDIRECT_TO",
+  "ZENFLOW_FACEBOOK_AUTH_LIVE_APP_URL",
+  "ZENFLOW_FACEBOOK_AUTH_PUBLIC_APP_URL",
+  "ZENFLOW_PUBLIC_AUTH_URL",
 ]);
 const DEFAULT_REDIRECT_TO = "https://yehor212.github.io/people-first-app/";
 const DEFAULT_FACEBOOK_SCOPES = ["email", "public_profile"];
@@ -95,6 +98,77 @@ function normalizeHttpsUrl(rawUrl) {
   } catch {
     return "";
   }
+}
+
+function getPublicAppUrl(env, safeFileEnv) {
+  return (
+    getSafeEnvValue(env, safeFileEnv, "ZENFLOW_FACEBOOK_AUTH_LIVE_APP_URL") ||
+    getSafeEnvValue(env, safeFileEnv, "ZENFLOW_FACEBOOK_AUTH_PUBLIC_APP_URL") ||
+    getSafeEnvValue(env, safeFileEnv, "ZENFLOW_PUBLIC_AUTH_URL") ||
+    getRedirectTo(env, safeFileEnv) ||
+    DEFAULT_REDIRECT_TO
+  );
+}
+
+function extractScriptUrlsFromHtml(html, appUrl) {
+  const scriptUrls = [];
+  const baseUrl = new URL(appUrl);
+  const assetUrlPattern = /\b(?:src|href)=["']([^"']+\.js(?:\?[^"']*)?)["']/gi;
+  let match;
+
+  while ((match = assetUrlPattern.exec(html))) {
+    try {
+      const scriptUrl = new URL(match[1], baseUrl);
+      if (scriptUrl.origin === baseUrl.origin && scriptUrl.pathname.endsWith(".js")) {
+        scriptUrls.push(scriptUrl.toString());
+      }
+    } catch {
+      // Ignore malformed asset references from public HTML.
+    }
+  }
+
+  return [...new Set(scriptUrls)];
+}
+
+function extractPublicSupabaseUrlFromText(text) {
+  return (
+    text.match(/https:\/\/[a-z0-9]{20}\.supabase\.co/i)?.[0] ||
+    text.match(/https:\/\/api\.zenflowapp\.online\b/i)?.[0] ||
+    ""
+  );
+}
+
+async function fetchText(url, fetchImpl) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const response = await fetchImpl(url, {
+      headers: { Accept: "text/html,application/javascript,text/javascript,*/*" },
+      signal: controller.signal,
+    });
+    if (!response.ok) return "";
+    return await response.text();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function discoverPublicSupabaseUrlFromApp(appUrl, fetchImpl = fetch) {
+  const normalizedAppUrl = normalizeHttpsUrl(appUrl);
+  if (!normalizedAppUrl || typeof fetchImpl !== "function") return "";
+
+  const html = await fetchText(normalizedAppUrl, fetchImpl);
+  const fromHtml = extractPublicSupabaseUrlFromText(html);
+  if (fromHtml) return fromHtml;
+
+  const scriptUrls = extractScriptUrlsFromHtml(html, normalizedAppUrl).slice(0, 20);
+  for (const scriptUrl of scriptUrls) {
+    const scriptText = await fetchText(scriptUrl, fetchImpl);
+    const fromScript = extractPublicSupabaseUrlFromText(scriptText);
+    if (fromScript) return fromScript;
+  }
+
+  return "";
 }
 
 function buildFacebookAuthorizeUrl({
@@ -305,8 +379,20 @@ async function checkFacebookAuthLive({
   }
 
   const safeFileEnv = parseSafeEnvFiles(rootDir);
-  const supabaseUrl = getSupabaseUrl(env, safeFileEnv);
+  let supabaseUrl = getSupabaseUrl(env, safeFileEnv);
   const redirectTo = getRedirectTo(env, safeFileEnv);
+
+  if (!supabaseUrl) {
+    try {
+      supabaseUrl = await discoverPublicSupabaseUrlFromApp(
+        getPublicAppUrl(env, safeFileEnv),
+        fetchImpl
+      );
+    } catch {
+      supabaseUrl = "";
+    }
+  }
+
   const authorizeUrl = buildFacebookAuthorizeUrl({ supabaseUrl, redirectTo });
 
   if (!authorizeUrl) {
@@ -364,6 +450,7 @@ module.exports = {
   DEFAULT_FACEBOOK_SCOPES,
   buildFacebookAuthorizeUrl,
   checkFacebookAuthLive,
+  discoverPublicSupabaseUrlFromApp,
   detectFacebookOAuthProblem,
   hostnameMatchesFacebook,
   inspectFacebookOAuthPage,

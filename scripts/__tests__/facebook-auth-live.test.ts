@@ -92,12 +92,60 @@ describe("Facebook live auth readiness", () => {
     expect(result.message).toContain("redirects to Meta");
   });
 
-  it("does not print OAuth URLs or keys when live config is missing", () => {
+  it("discovers the public Supabase URL from the deployed app bundle when env is absent", async () => {
+    const { checkFacebookAuthLive } = loadFacebookAuthLive();
+    let probedAuthorizeUrl = "";
+
+    const result = await checkFacebookAuthLive({
+      env: {
+        VITE_SUPABASE_URL: "",
+        SUPABASE_URL: "",
+        ZENFLOW_FACEBOOK_AUTH_LIVE_APP_URL: "https://yehor212.github.io/people-first-app/",
+      },
+      rootDir: process.cwd(),
+      probeImpl: async ({ authorizeUrl }) => {
+        probedAuthorizeUrl = authorizeUrl;
+        return {
+          ok: true,
+          status: "PASS",
+          exitCode: 0,
+          finalHost: "www.facebook.com",
+          message: "Facebook OAuth reaches Meta without an immediate invalid-scope error.",
+        };
+      },
+      fetchImpl: (async (url: URL | RequestInfo) => {
+        const rawUrl = String(url);
+        if (rawUrl === "https://yehor212.github.io/people-first-app/") {
+          return new Response(
+            '<script type="module" src="/people-first-app/assets/index-fixture.js"></script>',
+            { status: 200, headers: { "content-type": "text/html" } }
+          );
+        }
+
+        if (rawUrl === "https://yehor212.github.io/people-first-app/assets/index-fixture.js") {
+          return new Response('const supabaseUrl="https://api.zenflowapp.online";', {
+            status: 200,
+            headers: { "content-type": "application/javascript" },
+          });
+        }
+
+        return new Response("", { status: 404 });
+      }) as typeof fetch,
+    });
+
+    expect(result).toMatchObject({ status: "PASS", exitCode: 0 });
+    expect(probedAuthorizeUrl).toContain("https://api.zenflowapp.online/auth/v1/authorize");
+    expect(probedAuthorizeUrl).toContain("provider=facebook");
+  });
+
+  it("does not print OAuth URLs or keys when live config cannot be discovered", () => {
     const result = spawnSync(process.execPath, [script], {
       cwd: process.cwd(),
       env: {
         ...process.env,
         VITE_SUPABASE_URL: "",
+        SUPABASE_URL: "",
+        ZENFLOW_FACEBOOK_AUTH_LIVE_APP_URL: "not-a-valid-url",
         VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_that_must_not_print",
         VITE_SUPABASE_ANON_KEY: "legacy_fixture_that_must_not_print",
       },
