@@ -29,7 +29,9 @@ function parsePublicAuthUrls(value, fallback = [DEFAULT_PUBLIC_AUTH_URL]) {
 }
 
 function appendPublicAuthPath(baseUrl, path) {
-  const trimmedPath = String(path || "").trim().replace(/^\/+/, "");
+  const trimmedPath = String(path || "")
+    .trim()
+    .replace(/^\/+/, "");
   if (!trimmedPath) return normalizeBaseUrl(baseUrl.toString());
 
   const url = new URL(trimmedPath, baseUrl);
@@ -61,7 +63,21 @@ function providerRedirectHosts(provider) {
 function hostnameMatches(hostname, allowedHost) {
   const normalizedHost = hostname.toLowerCase();
   const normalizedAllowedHost = allowedHost.toLowerCase();
-  return normalizedHost === normalizedAllowedHost || normalizedHost.endsWith("." + normalizedAllowedHost);
+  return (
+    normalizedHost === normalizedAllowedHost || normalizedHost.endsWith("." + normalizedAllowedHost)
+  );
+}
+
+function isAppDiagnosticUrl(diagnosticUrl, currentPageUrl, appHost) {
+  const candidates = [diagnosticUrl, currentPageUrl].filter(Boolean);
+  for (const rawUrl of candidates) {
+    try {
+      return new URL(rawUrl).host === appHost;
+    } catch {
+      // Try the fallback URL before deciding below.
+    }
+  }
+  return true;
 }
 
 function initEntryState() {
@@ -92,7 +108,9 @@ async function collectProviders(page, url, timeoutMs) {
   return page
     .locator('[data-testid^="auth-provider-content-"]')
     .evaluateAll((elements) =>
-      elements.map((element) => element.getAttribute("data-testid")?.replace("auth-provider-content-", "")),
+      elements.map((element) =>
+        element.getAttribute("data-testid")?.replace("auth-provider-content-", "")
+      )
     );
 }
 
@@ -103,25 +121,35 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
     isMobile: true,
     hasTouch: true,
   });
+  const appHost = baseUrl.host;
   const page = await context.newPage();
   const consoleMessages = [];
   const failedRequests = [];
+  const externalConsoleMessages = [];
+  const externalFailedRequests = [];
 
   page.on("console", (message) => {
     if (message.type() === "error" || message.type() === "warning") {
-      consoleMessages.push(message.type() + ": " + message.text());
+      const diagnostic = message.type() + ": " + message.text();
+      const target = isAppDiagnosticUrl(message.location().url, page.url(), appHost)
+        ? consoleMessages
+        : externalConsoleMessages;
+      target.push(diagnostic);
     }
   });
   page.on("requestfailed", (request) => {
-    failedRequests.push(request.method() + " " + request.url() + " " + request.failure()?.errorText);
+    const diagnostic = request.method() + " " + request.url() + " " + request.failure()?.errorText;
+    const target = isAppDiagnosticUrl(request.url(), page.url(), appHost)
+      ? failedRequests
+      : externalFailedRequests;
+    target.push(diagnostic);
   });
 
   try {
-    const appHost = baseUrl.host;
     const providersBefore = await collectProviders(
       page,
       createScenarioUrl(baseUrl, "provider-" + provider),
-      timeoutMs,
+      timeoutMs
     );
 
     if (!providersBefore.includes(provider)) {
@@ -132,6 +160,8 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
         providersBefore,
         consoleCount: consoleMessages.length,
         failedCount: failedRequests.length,
+        externalConsoleCount: externalConsoleMessages.length,
+        externalFailedCount: externalFailedRequests.length,
       };
     }
 
@@ -153,6 +183,8 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
       allowedHosts,
       consoleCount: consoleMessages.length,
       failedCount: failedRequests.length,
+      externalConsoleCount: externalConsoleMessages.length,
+      externalFailedCount: externalFailedRequests.length,
       consoleMessages: consoleMessages.slice(0, 5),
       failedRequests: failedRequests.slice(0, 5),
     };
@@ -165,6 +197,8 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
       currentUrl: page.url(),
       consoleCount: consoleMessages.length,
       failedCount: failedRequests.length,
+      externalConsoleCount: externalConsoleMessages.length,
+      externalFailedCount: externalFailedRequests.length,
       consoleMessages: consoleMessages.slice(0, 5),
       failedRequests: failedRequests.slice(0, 5),
     };
@@ -180,7 +214,10 @@ async function launchBrowser(chromium) {
   try {
     return await chromium.launch({ channel });
   } catch (error) {
-    console.warn("[public-auth-smoke] Browser channel unavailable, falling back to bundled Chromium:", channel);
+    console.warn(
+      "[public-auth-smoke] Browser channel unavailable, falling back to bundled Chromium:",
+      channel
+    );
     return chromium.launch();
   }
 }
@@ -209,13 +246,15 @@ async function verifyPublicAuthUrl({
     }
   });
   listPage.on("requestfailed", (request) => {
-    listFailedRequests.push(request.method() + " " + request.url() + " " + request.failure()?.errorText);
+    listFailedRequests.push(
+      request.method() + " " + request.url() + " " + request.failure()?.errorText
+    );
   });
 
   const publicProviders = await collectProviders(
     listPage,
     createScenarioUrl(baseUrl, "list"),
-    timeoutMs,
+    timeoutMs
   );
   await listContext.close();
 
@@ -237,7 +276,9 @@ async function verifyPublicAuthUrl({
     missingExpected.length === 0 &&
     listConsoleMessages.length === 0 &&
     listFailedRequests.length === 0 &&
-    redirectResults.every((result) => result.ok && result.consoleCount === 0 && result.failedCount === 0);
+    redirectResults.every(
+      (result) => result.ok && result.consoleCount === 0 && result.failedCount === 0
+    );
 
   return {
     ok,
@@ -264,13 +305,16 @@ async function run() {
   });
   const expectedProviders = parseCsv(
     process.env.ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS,
-    DEFAULT_EXPECTED_PROVIDERS,
+    DEFAULT_EXPECTED_PROVIDERS
   );
   const forbiddenProviders = parseCsv(
     process.env.ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS,
-    DEFAULT_FORBIDDEN_PROVIDERS,
+    DEFAULT_FORBIDDEN_PROVIDERS
   );
-  const clickProviders = parseCsv(process.env.ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS, expectedProviders);
+  const clickProviders = parseCsv(
+    process.env.ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS,
+    expectedProviders
+  );
   const timeoutMs = Number(process.env.ZENFLOW_PUBLIC_AUTH_TIMEOUT_MS || 45_000);
 
   const browser = await launchBrowser(chromium);
@@ -286,7 +330,7 @@ async function run() {
           forbiddenProviders,
           clickProviders,
           timeoutMs,
-        }),
+        })
       );
     }
   } finally {
@@ -323,6 +367,7 @@ module.exports = {
   DEFAULT_FORBIDDEN_PROVIDERS,
   DEFAULT_REDIRECT_HOSTS,
   hostnameMatches,
+  isAppDiagnosticUrl,
   parseCsv,
   parsePublicAuthUrls,
   resolvePublicAuthUrls,

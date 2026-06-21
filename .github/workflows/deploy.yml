@@ -121,7 +121,6 @@ jobs:
           ZENFLOW_SENTRY_API_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run smoke:sentry-api
 
-
       - name: Check hosted auth providers
         if: github.event_name != 'pull_request'
         env:
@@ -285,7 +284,6 @@ jobs:
           ZENFLOW_SENTRY_API_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run smoke:sentry-api
 
-
       - name: Build Android web assets (required before cap sync)
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -361,7 +359,6 @@ jobs:
           ZENFLOW_SENTRY_API_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run smoke:sentry-api
 
-
       - name: Build iOS web assets
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -429,8 +426,8 @@ jobs:
         env:
           ZENFLOW_PUBLIC_AUTH_URL: ${{ needs.deploy.outputs.page_url }}
           ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS: orb/?nav=v2&navLayout=phone
-          ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS: google,telegram
-          ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS: facebook,apple
-          ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS: google,telegram
+          ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'google,facebook,telegram' || 'google,telegram' }}
+          ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'apple' || 'facebook,apple' }}
+          ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'google,facebook,telegram' || 'google,telegram' }}
           ZENFLOW_PUBLIC_AUTH_BROWSER_CHANNEL: chrome
         run: npm run smoke:public-auth

@@ -148,6 +148,20 @@ describe("check-auth-providers public key readiness", () => {
     expect(workflow).toContain("ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true");
   });
 
+  it("requires GitHub Pages public auth smoke to exercise Facebook when Meta readiness is enabled", () => {
+    const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+
+    expect(workflow).toContain(
+      "ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'google,facebook,telegram' || 'google,telegram' }}"
+    );
+    expect(workflow).toContain(
+      "ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'apple' || 'facebook,apple' }}"
+    );
+    expect(workflow).toContain(
+      "ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'google,facebook,telegram' || 'google,telegram' }}"
+    );
+  });
+
   it("requires GitHub deploy builds to pass the modern Supabase publishable key", () => {
     const result = runReadiness({
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
