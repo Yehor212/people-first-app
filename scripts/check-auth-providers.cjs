@@ -406,6 +406,36 @@ checkSourceContains(
   "V2 preview deploy gates Telegram OIDC readiness before public exposure"
 );
 checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}",
+  "GitHub Pages deploy receives Telegram bot token without printing it"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}",
+  "GitHub Pages deploy requires approved Telegram bot profile photo when bot token is configured"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "npm --prefix tools/telegram-control run check:bot-profile-photo",
+  "GitHub Pages deploy verifies the approved Telegram bot profile photo"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}",
+  "V2 preview deploy receives Telegram bot token without printing it"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}",
+  "V2 preview deploy requires approved Telegram bot profile photo when bot token is configured"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "npm --prefix tools/telegram-control run check:bot-profile-photo",
+  "V2 preview deploy verifies the approved Telegram bot profile photo"
+);
+checkSourceContains(
   ".github/workflows/deploy-v2-preview.yml",
   "VITE_SUPABASE_PUBLISHABLE_KEY",
   "V2 preview deploy passes the modern Supabase publishable key"

@@ -156,6 +156,38 @@ describe("check-auth-providers public key readiness", () => {
     expect(workflow).toContain("ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true");
   });
 
+  it("requires GitHub Pages deploy to verify the live Telegram bot profile photo when the bot token is configured", () => {
+    const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+
+    expect(workflow).toContain("TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}");
+    expect(workflow).toContain(
+      "ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}"
+    );
+    expect(workflow).toContain("npm --prefix tools/telegram-control run check:bot-profile-photo");
+
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+    expect(result.stdout).toContain(
+      "GitHub Pages deploy verifies the approved Telegram bot profile photo"
+    );
+  });
+  it("requires V2 preview deploy to verify the live Telegram bot profile photo when the bot token is configured", () => {
+    const workflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
+
+    expect(workflow).toContain("TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}");
+    expect(workflow).toContain(
+      "ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}"
+    );
+    expect(workflow).toContain("npm --prefix tools/telegram-control run check:bot-profile-photo");
+
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+    expect(result.stdout).toContain(
+      "V2 preview deploy verifies the approved Telegram bot profile photo"
+    );
+  });
   it("requires V2 preview deploy to run hosted auth live checks", () => {
     const workflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
 
