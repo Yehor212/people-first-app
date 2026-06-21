@@ -8,14 +8,15 @@ import { describe, expect, it } from "vitest";
 const script = "scripts/check-facebook-auth-public.cjs";
 const scriptPath = join(process.cwd(), script);
 const require = createRequire(import.meta.url);
-const { checkFacebookAuthPublic, inspectPublicAuthSettings } = require("../check-facebook-auth-public.cjs") as {
-  checkFacebookAuthPublic?: (input?: {
-    env?: NodeJS.ProcessEnv;
-    rootDir?: string;
-    fetchImpl?: typeof fetch;
-  }) => Promise<{ status: string; message: string; exitCode: number }>;
-  inspectPublicAuthSettings?: (settings: Record<string, unknown>) => string[];
-};
+const { checkFacebookAuthPublic, inspectPublicAuthSettings } =
+  require("../check-facebook-auth-public.cjs") as {
+    checkFacebookAuthPublic?: (input?: {
+      env?: NodeJS.ProcessEnv;
+      rootDir?: string;
+      fetchImpl?: typeof fetch;
+    }) => Promise<{ status: string; message: string; exitCode: number }>;
+    inspectPublicAuthSettings?: (settings: Record<string, unknown>) => string[];
+  };
 
 function runPublicCheck(env: NodeJS.ProcessEnv = {}) {
   return spawnSync(process.execPath, [script], {
@@ -100,7 +101,7 @@ describe("check-facebook-auth-public", () => {
   it("passes when public Supabase Auth settings expose Facebook", async () => {
     expect(typeof checkFacebookAuthPublic).toBe("function");
     const publicKey = "sb_publishable_fixture_key_must_not_print";
-    const requests: Array<{ url: string; apikey?: string }> = [];
+    const requests: Array<{ url: string; headerValue?: string }> = [];
 
     const result = await checkFacebookAuthPublic?.({
       env: {
@@ -109,7 +110,7 @@ describe("check-facebook-auth-public", () => {
       },
       fetchImpl: (async (url: URL | RequestInfo, init?: RequestInit) => {
         const headers = init?.headers as Record<string, string>;
-        requests.push({ url: String(url), apikey: headers?.apikey });
+        requests.push({ url: String(url), headerValue: headers?.apikey });
         return new Response(JSON.stringify({ external: { facebook: true } }), {
           status: 200,
           headers: { "content-type": "application/json" },
@@ -122,7 +123,69 @@ describe("check-facebook-auth-public", () => {
     expect(requests).toEqual([
       {
         url: "https://bwgfslmxmueyglpumkbf.supabase.co/auth/v1/settings",
-        apikey: publicKey,
+        headerValue: publicKey,
+      },
+    ]);
+  });
+
+  it("can verify hosted Facebook auth from the deployed app bundle without printing the public key", async () => {
+    expect(typeof checkFacebookAuthPublic).toBe("function");
+    const publicKey = "sb_publishable_bundle_key_must_not_print";
+    const requests: Array<{ url: string; headerValue?: string }> = [];
+
+    const result = await checkFacebookAuthPublic?.({
+      env: {
+        ZENFLOW_FACEBOOK_AUTH_PUBLIC_APP_URL: "https://yehor212.github.io/people-first-app/",
+      },
+      fetchImpl: (async (url: URL | RequestInfo, init?: RequestInit) => {
+        const rawUrl = String(url);
+        if (rawUrl === "https://yehor212.github.io/people-first-app/") {
+          return new Response(
+            [
+              '<link rel="modulepreload" href="/people-first-app/assets/supabaseClient-fixture.js">',
+              '<script type="module" src="/people-first-app/assets/index-fixture.js"></script>',
+            ].join(""),
+            {
+              status: 200,
+              headers: { "content-type": "text/html" },
+            }
+          );
+        }
+
+        if (rawUrl === "https://yehor212.github.io/people-first-app/assets/index-fixture.js") {
+          return new Response("import './supabaseClient-fixture.js';", {
+            status: 200,
+            headers: { "content-type": "application/javascript" },
+          });
+        }
+
+        if (
+          rawUrl === "https://yehor212.github.io/people-first-app/assets/supabaseClient-fixture.js"
+        ) {
+          return new Response(
+            `const supabaseUrl="https://api.zenflowapp.online";const supabaseKey="${publicKey}";`,
+            {
+              status: 200,
+              headers: { "content-type": "application/javascript" },
+            }
+          );
+        }
+
+        const headers = init?.headers as Record<string, string>;
+        requests.push({ url: rawUrl, headerValue: headers?.apikey });
+        return new Response(JSON.stringify({ external: { facebook: true } }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }) as typeof fetch,
+    });
+
+    expect(result).toMatchObject({ status: "PASS", exitCode: 0 });
+    expect(result?.message).not.toContain(publicKey);
+    expect(requests).toEqual([
+      {
+        url: "https://api.zenflowapp.online/auth/v1/settings",
+        headerValue: publicKey,
       },
     ]);
   });
