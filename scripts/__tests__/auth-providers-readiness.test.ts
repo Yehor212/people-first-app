@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const script = "scripts/check-auth-providers.cjs";
@@ -136,6 +137,14 @@ describe("check-auth-providers public key readiness", () => {
     expect(result.stdout).toContain("GitHub Pages deploy defaults Telegram public auth on");
     expect(result.stdout).toContain("V2 preview deploy defaults Telegram public auth on");
     expect(result.stdout).toContain("Visual regression build defaults Telegram public auth on");
+  });
+
+  it("requires GitHub Pages deploy to run hosted auth live checks", () => {
+    const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+
+    expect(workflow).toContain("npm run check:facebook-auth-public");
+    expect(workflow).toContain("npm run check:telegram-oidc-live");
+    expect(workflow).toContain("ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true");
   });
 
   it("requires GitHub deploy builds to pass the modern Supabase publishable key", () => {

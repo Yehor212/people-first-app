@@ -122,6 +122,18 @@ jobs:
         run: npm run smoke:sentry-api
 
 
+      - name: Check hosted auth providers
+        if: github.event_name != 'pull_request'
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          ZENFLOW_FACEBOOK_AUTH_PUBLIC_REQUIRED: ${{ secrets.VITE_SUPABASE_URL != '' && secrets.VITE_SUPABASE_PUBLISHABLE_KEY != '' }}
+          ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true
+        run: |
+          npm run check:facebook-auth-public
+          npm run check:telegram-oidc-live
+
       - name: Build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
