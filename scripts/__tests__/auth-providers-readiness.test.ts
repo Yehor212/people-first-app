@@ -144,6 +144,7 @@ describe("check-auth-providers public key readiness", () => {
 
     expect(workflow).toContain("npm run check:facebook-auth-public");
     expect(workflow).toContain("npm run check:telegram-oidc-live");
+    expect(workflow).toContain("secrets.VITE_SUPABASE_ANON_KEY != ''");
     expect(workflow).toContain("ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true");
   });
 
