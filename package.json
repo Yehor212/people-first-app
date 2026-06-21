@@ -134,7 +134,8 @@
     "assets:splash:dark": "node scripts/generate-dark-splash.cjs",
     "check:sentry-artifacts": "node scripts/check-sentry-artifacts.cjs",
     "activate:apple-auth-live": "node scripts/activate-apple-auth-live.cjs",
-    "smoke:public-auth": "node scripts/smoke-public-auth-providers.cjs"
+    "smoke:public-auth": "node scripts/smoke-public-auth-providers.cjs",
+    "smoke:interactive-auth": "node scripts/smoke-interactive-auth-completion.cjs"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",
