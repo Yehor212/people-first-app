@@ -21,6 +21,8 @@ const {
   mockMigrateExistingUser,
   mockResetSessionExpired,
   mockProfileUpdate,
+  mockCloseOAuthBrowser,
+  mockIsNative,
 } = vi.hoisted(() => {
   const authStateCallbacks: Array<(event: string, session: unknown) => void> = [];
   const mockExchangeCodeForSession = vi.fn();
@@ -38,6 +40,7 @@ const {
   const mockProfileEq = vi.fn(() => Promise.resolve({ error: null }));
   const mockProfileUpdate = vi.fn(() => ({ eq: mockProfileEq }));
   const mockSetSession = vi.fn();
+  const mockCloseOAuthBrowser = vi.fn(() => Promise.resolve());
 
   return {
     authStateCallbacks,
@@ -54,6 +57,8 @@ const {
     mockMigrateExistingUser: vi.fn(),
     mockResetSessionExpired: vi.fn(),
     mockProfileUpdate,
+    mockCloseOAuthBrowser,
+    mockIsNative: { value: false },
   };
 });
 
@@ -73,7 +78,7 @@ vi.mock("@/lib/supabaseClient", () => ({
 
 vi.mock("@/lib/platform", () => ({
   get isNative() {
-    return false;
+    return mockIsNative.value;
   },
 }));
 
@@ -103,7 +108,7 @@ vi.mock("@/lib/syncOrchestrator", () => ({
 }));
 
 vi.mock("@/lib/nativeOAuthBrowser", () => ({
-  closeOAuthBrowser: vi.fn(() => Promise.resolve()),
+  closeOAuthBrowser: mockCloseOAuthBrowser,
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -115,6 +120,7 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { setPendingAuthUrl } from "@/lib/authRedirect";
 import { useAppStore, useUserDataStore } from "@/stores";
 import { isAuthFlowInProgress, resetAuthGuard, startAuthFlow } from "@/lib/authGuard";
 
@@ -169,6 +175,8 @@ describe("useAuthSession", () => {
       data: { session: telegramSession },
       error: null,
     });
+    mockIsNative.value = false;
+    setPendingAuthUrl(null);
     resetStores();
     resetAuthGuard();
   });
@@ -321,7 +329,35 @@ describe("useAuthSession", () => {
   });
 
   describe("pending auth URL (native)", () => {
-    it.todo("processes pending auth URL when supabase is ready");
+    it("processes pending auth URL when supabase is ready", async () => {
+      mockIsNative.value = true;
+      startAuthFlow();
+
+      let currentSession: unknown = null;
+      mockGetSession.mockImplementation(() =>
+        Promise.resolve({ data: { session: currentSession }, error: null })
+      );
+      mockExchangeCodeForSession.mockImplementation(async () => {
+        currentSession = telegramSession;
+        return { data: { session: telegramSession }, error: null };
+      });
+
+      setPendingAuthUrl(
+        "zenflow://auth/callback?code=native-code&state=telegram-state&provider=telegram"
+      );
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(mockExchangeCodeForSession).toHaveBeenCalledWith("native-code"));
+      await waitFor(() => expect(useAppStore.getState().hasValidSession).toBe(true));
+
+      expect(mockCloseOAuthBrowser).toHaveBeenCalledTimes(1);
+      expect(useAppStore.getState().authBypassFlag).toBe(true);
+      expect(useAppStore.getState().webOAuthError).toBe(null);
+      expect(useUserDataStore.getState().googleAuthChecked).toBe(true);
+      expect(useUserDataStore.getState().userName).toBe("Telegram Friend");
+      expect(isAuthFlowInProgress()).toBe(false);
+    });
     it.todo("sets user name from session metadata");
     it.todo("handles failed pending auth callback");
     it.todo("skips processing on non-native platform");
