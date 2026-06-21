@@ -163,6 +163,24 @@ describe('useDeepLinkHandler', () => {
       expect(mockCloseOAuthBrowser).not.toHaveBeenCalled();
       expect(useAppStore.getState().webOAuthError).toBeNull();
     });
+
+    it("ignores malformed appUrlOpen URLs without throwing", async () => {
+      renderHook(() => useDeepLinkHandler());
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(appUrlOpenListeners).toHaveLength(1);
+
+      expect(() => {
+        appUrlOpenListeners[0]({ url: "not a valid callback url" });
+      }).not.toThrow();
+
+      expect(mockHandleAuthCallback).not.toHaveBeenCalled();
+      expect(mockCloseOAuthBrowser).not.toHaveBeenCalled();
+      expect(useAppStore.getState().webOAuthError).toBeNull();
+    });
     it.todo('deduplicates identical auth URLs');
     it.todo('clears dedupe cache after 50 entries');
     it.todo('stores pending URL when supabase is not ready');
