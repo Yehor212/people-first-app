@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
 const {
+  clickProvider,
   detectProviderOAuthError,
   hasValidSupabaseAuthSessionValue,
   hasOAuthCallbackParams,
@@ -16,6 +17,19 @@ const {
     currentHost: string;
     externalText: string;
   }) => { reason: string; providerError: string } | null;
+  clickProvider?: (
+    page: {
+      getByTestId: (testId: string) => {
+        locator: (selector: string) => {
+          count: () => Promise<number>;
+          click: (options: { timeout: number }) => Promise<void>;
+        };
+        click: (options: { timeout: number }) => Promise<void>;
+      };
+    },
+    provider: string,
+    timeoutMs: number
+  ) => Promise<void>;
   hasOAuthCallbackParams?: (url: string) => boolean;
   hasValidSupabaseAuthSessionValue?: (value: string | null) => boolean;
   isCompletedInteractiveAuthState?: (state: {
@@ -164,6 +178,32 @@ describe("interactive auth completion smoke helpers", () => {
       providerError:
         "Facebook rejected the email permission. Configure email in Meta Use Cases > Authentication and Account Creation.",
     });
+  });
+
+  it("clicks the provider button ancestor instead of the inner content span", async () => {
+    expect(typeof clickProvider).toBe("function");
+    const clicks: string[] = [];
+    const ancestorLocator = {
+      count: async () => 1,
+      click: async () => clicks.push("ancestor"),
+    };
+    const contentLocator = {
+      locator: (selector: string) => {
+        expect(selector).toContain("ancestor::");
+        return ancestorLocator;
+      },
+      click: async () => clicks.push("content"),
+    };
+    const page = {
+      getByTestId: (testId: string) => {
+        expect(testId).toBe("auth-provider-content-telegram");
+        return contentLocator;
+      },
+    };
+
+    await clickProvider?.(page, "telegram", 123);
+
+    expect(clicks).toEqual(["ancestor"]);
   });
 
   it("redacts nested OAuth state from Facebook report URLs", () => {

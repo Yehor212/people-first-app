@@ -371,6 +371,20 @@ async function collectProviders(page, timeoutMs) {
     );
 }
 
+async function clickProvider(page, provider, timeoutMs) {
+  const content = page.getByTestId("auth-provider-content-" + provider);
+  const clickTarget = content.locator(
+    "xpath=ancestor::*[self::button or self::a or @role='button'][1]"
+  );
+
+  if ((await clickTarget.count()) > 0) {
+    await clickTarget.click({ timeout: timeoutMs });
+    return;
+  }
+
+  await content.click({ timeout: timeoutMs });
+}
+
 async function runInteractiveAuthCompletion(config = parseInteractiveAuthConfig()) {
   const { chromium } = require("playwright");
   const browser = await launchBrowser(chromium, config);
@@ -406,7 +420,7 @@ async function runInteractiveAuthCompletion(config = parseInteractiveAuthConfig(
       };
     }
 
-    await page.getByTestId("auth-provider-content-" + config.provider).click({ timeout: 30000 });
+    await clickProvider(page, config.provider, 30000);
     console.log(
       "[interactive-auth-smoke] " +
         config.provider +
@@ -458,6 +472,7 @@ if (require.main === module) {
 module.exports = {
   DEFAULT_INTERACTIVE_AUTH_URL,
   SUPPORTED_PROVIDERS,
+  clickProvider,
   detectProviderOAuthError,
   hasOAuthCallbackParams,
   hasValidSupabaseAuthSessionValue,
