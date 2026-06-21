@@ -612,14 +612,12 @@ test.describe("Desktop/Tauri entry gate evidence", () => {
         expect(fact.authProviders, `${fact.name} auth provider ids`).toEqual([
           "google",
           "telegram",
-          "apple",
         ]);
         expect(fact.iconCenterSpread, `${fact.name} provider icon rail spread`).toBe(0);
         expect(fact.providerIcons.every((icon) => icon.className.includes("h-6 w-6"))).toBe(true);
         expect(fact.providerIconMetrics, `${fact.name} provider icon metrics`).toEqual([
           { id: "auth-provider-icon-google", renderedHeight: 24, renderedWidth: 24 },
           { id: "auth-provider-icon-telegram", renderedHeight: 24, renderedWidth: 24 },
-          { id: "auth-provider-icon-apple", renderedHeight: 24, renderedWidth: 24 },
         ]);
         expect(fact.telegram.exists, `${fact.name} Telegram icon`).toBe(true);
         expect(fact.telegram.viewBox, `${fact.name} Telegram viewBox`).toBe("0 0 128 128");

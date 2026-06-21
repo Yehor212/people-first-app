@@ -63,6 +63,8 @@ jobs:
           VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
           VITE_FACEBOOK_PUBLIC_ACCESS_READY: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY || 'false' }}
           VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'true' }}
+          VITE_ENABLE_APPLE_AUTH: ${{ vars.VITE_ENABLE_APPLE_AUTH || 'true' }}
+          VITE_APPLE_PUBLIC_ACCESS_READY: ${{ vars.VITE_APPLE_PUBLIC_ACCESS_READY || 'false' }}
 
       - name: Verify visual baselines exist (Percy/Sauce anti-pattern guard)
         # Phase 2-B.1 hardening: fail the workflow if NO baseline PNGs are

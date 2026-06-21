@@ -1,5 +1,6 @@
 import type { Provider } from "@supabase/supabase-js";
 import {
+  APPLE_PUBLIC_ACCESS_READY,
   ENABLE_APPLE_AUTH,
   ENABLE_FACEBOOK_AUTH,
   ENABLE_TELEGRAM_AUTH,
@@ -34,10 +35,11 @@ export interface AuthProviderSurfaceHints {
   platform?: string;
   maxTouchPoints?: number;
   facebookPublicAccessReady?: boolean;
+  applePublicAccessReady?: boolean;
 }
 
-export function shouldExposeAppleAuthOnEntry(_hints?: AuthProviderSurfaceHints): boolean {
-  return ENABLE_APPLE_AUTH;
+export function shouldExposeAppleAuthOnEntry(hints?: AuthProviderSurfaceHints): boolean {
+  return ENABLE_APPLE_AUTH && (hints?.applePublicAccessReady ?? APPLE_PUBLIC_ACCESS_READY);
 }
 
 export function shouldExposeFacebookAuth(hints?: AuthProviderSurfaceHints): boolean {
@@ -133,7 +135,9 @@ export function getEnabledAccountAuthProviders(
 ): SocialAuthProviderConfig[] {
   return ACCOUNT_AUTH_PROVIDER_IDS.map(getAuthProviderConfig).filter(
     (provider) =>
-      provider.enabled && (provider.id !== "facebook" || shouldExposeFacebookAuth(hints))
+      provider.enabled &&
+      (provider.id !== "facebook" || shouldExposeFacebookAuth(hints)) &&
+      (provider.id !== "apple" || shouldExposeAppleAuthOnEntry(hints))
   );
 }
 

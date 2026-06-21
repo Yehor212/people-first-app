@@ -8,15 +8,14 @@ import {
 import { SUPABASE_URL } from "@/lib/env";
 
 describe("auth provider config", () => {
-  it("keeps Facebook hidden by default until Meta public access is ready", () => {
+  it("keeps unavailable public providers hidden by default until hosted access is ready", () => {
     expect(getEnabledAuthScreenProviders().map((provider) => provider.id)).toEqual([
       "google",
       "telegram",
-      "apple",
     ]);
   });
 
-  it("keeps Apple available on iOS and iPadOS web surfaces", () => {
+  it("keeps Apple hidden on entry auth surfaces until hosted Apple auth is ready", () => {
     expect(
       getEnabledAuthScreenProviders({
         userAgent:
@@ -24,7 +23,7 @@ describe("auth provider config", () => {
         platform: "iPhone",
         maxTouchPoints: 5,
       }).map((provider) => provider.id)
-    ).toEqual(["google", "telegram", "apple"]);
+    ).toEqual(["google", "telegram"]);
 
     expect(
       getEnabledAuthScreenProviders({
@@ -33,26 +32,32 @@ describe("auth provider config", () => {
         platform: "MacIntel",
         maxTouchPoints: 5,
       }).map((provider) => provider.id)
-    ).toEqual(["google", "telegram", "apple"]);
+    ).toEqual(["google", "telegram"]);
   });
 
-  it("keeps Apple available on non-iOS entry auth surfaces for cross-platform account access", () => {
+  it("shows Apple on entry auth surfaces when hosted Apple auth is ready", () => {
     expect(
       getEnabledAuthScreenProviders({
         userAgent:
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
         platform: "Win32",
         maxTouchPoints: 0,
+        applePublicAccessReady: true,
       }).map((provider) => provider.id)
     ).toEqual(["google", "telegram", "apple"]);
   });
 
-  it("offers Apple as an account sign-in and linking provider", () => {
+  it("keeps Apple hidden from account sign-in and linking until hosted Apple auth is ready", () => {
     expect(getEnabledAccountAuthProviders().map((provider) => provider.id)).toEqual([
       "google",
       "telegram",
-      "apple",
     ]);
+
+    expect(
+      getEnabledAccountAuthProviders({ applePublicAccessReady: true }).map(
+        (provider) => provider.id
+      )
+    ).toEqual(["google", "telegram", "apple"]);
   });
 
   it("keeps Facebook hidden from public auth surfaces until Meta public access is ready", () => {
@@ -60,26 +65,28 @@ describe("auth provider config", () => {
       getEnabledAuthScreenProviders({ facebookPublicAccessReady: false }).map(
         (provider) => provider.id
       )
-    ).toEqual(["google", "telegram", "apple"]);
+    ).toEqual(["google", "telegram"]);
 
     expect(
       getEnabledAccountAuthProviders({ facebookPublicAccessReady: false }).map(
         (provider) => provider.id
       )
-    ).toEqual(["google", "telegram", "apple"]);
+    ).toEqual(["google", "telegram"]);
   });
 
   it("shows Facebook when the provider flag and Meta public access readiness are both enabled", () => {
     expect(
-      getEnabledAuthScreenProviders({ facebookPublicAccessReady: true }).map(
-        (provider) => provider.id
-      )
+      getEnabledAuthScreenProviders({
+        facebookPublicAccessReady: true,
+        applePublicAccessReady: true,
+      }).map((provider) => provider.id)
     ).toEqual(["google", "facebook", "telegram", "apple"]);
 
     expect(
-      getEnabledAccountAuthProviders({ facebookPublicAccessReady: true }).map(
-        (provider) => provider.id
-      )
+      getEnabledAccountAuthProviders({
+        facebookPublicAccessReady: true,
+        applePublicAccessReady: true,
+      }).map((provider) => provider.id)
     ).toEqual(["google", "facebook", "telegram", "apple"]);
   });
 

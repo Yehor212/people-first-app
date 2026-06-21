@@ -46,6 +46,7 @@ export const FACEBOOK_PUBLIC_ACCESS_READY =
   import.meta.env.VITE_FACEBOOK_PUBLIC_ACCESS_READY === "true";
 export const ENABLE_TELEGRAM_AUTH = import.meta.env.VITE_ENABLE_TELEGRAM_AUTH !== "false";
 export const ENABLE_APPLE_AUTH = import.meta.env.VITE_ENABLE_APPLE_AUTH !== "false";
+export const APPLE_PUBLIC_ACCESS_READY = import.meta.env.VITE_APPLE_PUBLIC_ACCESS_READY === "true";
 
 // AdMob — IDs must come from environment variables, no hardcoded production IDs
 export const ADMOB_APP_ID_ANDROID = (import.meta.env.VITE_ADMOB_APP_ID_ANDROID as string) || "";

@@ -1,6 +1,6 @@
 # Apple Sign-In With Supabase
 
-ZenFlow uses Supabase Auth as the backend for Apple sign-in. Do not add Apple
+ZenFlow uses Supabase Auth as the backend for Apple sign-in. Keep `VITE_APPLE_PUBLIC_ACCESS_READY=false` until hosted Supabase Auth settings report `external.apple=true`; this hides the public button instead of presenting a dead OAuth path. Do not add Apple
 private keys, client secrets, Supabase access tokens, service-role keys, or `.p8`
 contents to this repo or to any `VITE_*` variable.
 

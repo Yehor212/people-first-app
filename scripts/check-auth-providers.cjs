@@ -12,6 +12,7 @@ const publicKeys = [
   "VITE_FACEBOOK_PUBLIC_ACCESS_READY",
   "VITE_ENABLE_TELEGRAM_AUTH",
   "VITE_ENABLE_APPLE_AUTH",
+  "VITE_APPLE_PUBLIC_ACCESS_READY",
   "VITE_SUPABASE_URL",
   "VITE_SUPABASE_PUBLISHABLE_KEY",
   "VITE_SUPABASE_ANON_KEY",
@@ -220,9 +221,19 @@ checkSourceContains(
   "Apple public feature flag is documented"
 );
 checkSourceContains(
+  ".env.example",
+  "VITE_APPLE_PUBLIC_ACCESS_READY=false",
+  "Apple hosted public access readiness gate is documented"
+);
+checkSourceContains(
   ".github/workflows/deploy.yml",
   "VITE_FACEBOOK_PUBLIC_ACCESS_READY",
   "GitHub Pages deploy passes Facebook Meta readiness flag"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "VITE_APPLE_PUBLIC_ACCESS_READY",
+  "GitHub Pages deploy passes Apple hosted readiness flag"
 );
 checkSourceContains(
   ".github/workflows/deploy-v2-preview.yml",
@@ -230,9 +241,19 @@ checkSourceContains(
   "V2 preview deploy passes Facebook Meta readiness flag"
 );
 checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "VITE_APPLE_PUBLIC_ACCESS_READY",
+  "V2 preview deploy passes Apple hosted readiness flag"
+);
+checkSourceContains(
   ".github/workflows/visual-regression.yml",
   "VITE_FACEBOOK_PUBLIC_ACCESS_READY",
   "Visual regression build passes Facebook Meta readiness flag"
+);
+checkSourceContains(
+  ".github/workflows/visual-regression.yml",
+  "VITE_APPLE_PUBLIC_ACCESS_READY",
+  "Visual regression build passes Apple hosted readiness flag"
 );
 checkSourceContains(
   ".github/workflows/deploy.yml",
@@ -350,6 +371,21 @@ for (const provider of [
   } else {
     add("INFO", `${label} public auth flag is disabled`, `${key} is explicitly false`);
   }
+}
+
+const applePublicAccess = getPublicFlagState(env, "VITE_APPLE_PUBLIC_ACCESS_READY", false);
+if (applePublicAccess.enabled) {
+  add(
+    "PASS",
+    "Apple hosted public access readiness flag is enabled",
+    applePublicAccess.evidence
+  );
+} else {
+  add(
+    "INFO",
+    "Apple hosted public access readiness flag is not enabled",
+    `${applePublicAccess.evidence}; Apple stays hidden until hosted Supabase Apple Auth reports external.apple=true`
+  );
 }
 
 const facebookPublicAccess = getPublicFlagState(env, "VITE_FACEBOOK_PUBLIC_ACCESS_READY", false);

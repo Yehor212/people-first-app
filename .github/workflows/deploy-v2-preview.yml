@@ -85,6 +85,8 @@ jobs:
           VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
           VITE_FACEBOOK_PUBLIC_ACCESS_READY: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY || 'false' }}
           VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'true' }}
+          VITE_ENABLE_APPLE_AUTH: ${{ vars.VITE_ENABLE_APPLE_AUTH || 'true' }}
+          VITE_APPLE_PUBLIC_ACCESS_READY: ${{ vars.VITE_APPLE_PUBLIC_ACCESS_READY || 'false' }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
@@ -128,6 +130,8 @@ jobs:
           VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
           VITE_FACEBOOK_PUBLIC_ACCESS_READY: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY || 'false' }}
           VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'true' }}
+          VITE_ENABLE_APPLE_AUTH: ${{ vars.VITE_ENABLE_APPLE_AUTH || 'true' }}
+          VITE_APPLE_PUBLIC_ACCESS_READY: ${{ vars.VITE_APPLE_PUBLIC_ACCESS_READY || 'false' }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}

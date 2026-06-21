@@ -664,7 +664,6 @@ test.describe("PWA entry gate evidence", () => {
         expect(fact.authProviders, `${fact.name} auth provider ids`).toEqual([
           "google",
           "telegram",
-          "apple",
         ]);
         expect(fact.iconCenterSpread, `${fact.name} provider icon rail spread`).toBe(0);
         expect(fact.providerIcons.every((icon) => icon.className.includes("h-6 w-6"))).toBe(true);

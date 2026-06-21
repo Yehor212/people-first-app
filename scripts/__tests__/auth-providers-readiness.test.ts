@@ -33,7 +33,7 @@ describe("check-auth-providers public key readiness", () => {
     );
   });
 
-  it("treats a missing Apple flag as enabled by the app default", () => {
+  it("treats a missing Apple provider flag as enabled by the app default", () => {
     const result = runReadiness({
       VITE_ENABLE_APPLE_AUTH: "",
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
@@ -94,6 +94,28 @@ describe("check-auth-providers public key readiness", () => {
     expect(result.stdout).toContain("Facebook Meta public access readiness flag is not enabled");
   });
 
+  it("keeps Apple public login behind the hosted readiness gate", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+      VITE_APPLE_PUBLIC_ACCESS_READY: "",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Apple hosted public access readiness gate is documented");
+    expect(result.stdout).toContain("Apple hosted public access readiness flag is not enabled");
+  });
+
+  it("requires GitHub builds to pass the Apple hosted readiness flag", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("GitHub Pages deploy passes Apple hosted readiness flag");
+    expect(result.stdout).toContain("V2 preview deploy passes Apple hosted readiness flag");
+    expect(result.stdout).toContain("Visual regression build passes Apple hosted readiness flag");
+  });
+
   it("requires GitHub builds to pass the Facebook Meta readiness flag", () => {
     const result = runReadiness({
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
@@ -126,6 +148,16 @@ describe("check-auth-providers public key readiness", () => {
       "GitHub Pages deploy passes the modern Supabase publishable key"
     );
     expect(result.stdout).toContain("V2 preview deploy passes the modern Supabase publishable key");
+  });
+
+  it("reports Apple public access as ready only when the hosted readiness flag is true", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+      VITE_APPLE_PUBLIC_ACCESS_READY: "true",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Apple hosted public access readiness flag is enabled");
   });
 
   it("reports Facebook public access as ready only when the Meta readiness flag is true", () => {
