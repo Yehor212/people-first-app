@@ -21,7 +21,7 @@ export const BASE_URL = normalizeBaseUrl(import.meta.env.BASE_URL || "/");
 export const FORCE_NAV_V2 = import.meta.env.VITE_FORCE_NAV_V2 === "true";
 export const IS_DESKTOP_RUNTIME = import.meta.env.VITE_DESKTOP_RUNTIME === "true";
 export const CLASSIC_BASE_URL = normalizeBaseUrl(
-  (import.meta.env.VITE_CLASSIC_BASE_URL as string | undefined) || inferClassicBaseUrl(BASE_URL),
+  (import.meta.env.VITE_CLASSIC_BASE_URL as string | undefined) || inferClassicBaseUrl(BASE_URL)
 );
 
 // Supabase
@@ -42,12 +42,13 @@ export const SPOTIFY_CLIENT_ID = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as stri
 // Security: no hardcoded fallback — set VITE_GOOGLE_WEB_CLIENT_ID in .env
 export const GOOGLE_WEB_CLIENT_ID = (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string) || "";
 export const ENABLE_FACEBOOK_AUTH = import.meta.env.VITE_ENABLE_FACEBOOK_AUTH !== "false";
+export const FACEBOOK_PUBLIC_ACCESS_READY =
+  import.meta.env.VITE_FACEBOOK_PUBLIC_ACCESS_READY === "true";
 export const ENABLE_TELEGRAM_AUTH = import.meta.env.VITE_ENABLE_TELEGRAM_AUTH !== "false";
 export const ENABLE_APPLE_AUTH = import.meta.env.VITE_ENABLE_APPLE_AUTH !== "false";
 
 // AdMob — IDs must come from environment variables, no hardcoded production IDs
-export const ADMOB_APP_ID_ANDROID =
-  (import.meta.env.VITE_ADMOB_APP_ID_ANDROID as string) || "";
+export const ADMOB_APP_ID_ANDROID = (import.meta.env.VITE_ADMOB_APP_ID_ANDROID as string) || "";
 export const ADMOB_REWARDED_ID_ANDROID =
   (import.meta.env.VITE_ADMOB_REWARDED_ID_ANDROID as string) || "";
 export const ADMOB_BANNER_ID_ANDROID =

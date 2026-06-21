@@ -125,9 +125,11 @@ jobs:
       - name: Build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
-          VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'false' }}
+          VITE_FACEBOOK_PUBLIC_ACCESS_READY: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY || 'false' }}
+          VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'true' }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
@@ -171,6 +173,7 @@ jobs:
         id: telegram-sync-drill
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           ZENFLOW_SYNC_TEST_EMAIL: ${{ secrets.ZENFLOW_SYNC_TEST_EMAIL }}
           ZENFLOW_SYNC_TEST_PASSWORD: ${{ secrets.ZENFLOW_SYNC_TEST_PASSWORD }}
@@ -272,9 +275,11 @@ jobs:
       - name: Build Android web assets (required before cap sync)
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
-          VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'false' }}
+          VITE_FACEBOOK_PUBLIC_ACCESS_READY: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY || 'false' }}
+          VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'true' }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
@@ -344,9 +349,11 @@ jobs:
       - name: Build iOS web assets
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
-          VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'false' }}
+          VITE_FACEBOOK_PUBLIC_ACCESS_READY: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY || 'false' }}
+          VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'true' }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}

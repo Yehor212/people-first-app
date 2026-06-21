@@ -8,6 +8,7 @@ function runReadiness(env: NodeJS.ProcessEnv = {}) {
     cwd: process.cwd(),
     env: {
       ...process.env,
+      VITE_SUPABASE_URL: "https://bwgfslmxmueyglpumkbf.supabase.co",
       VITE_SUPABASE_ANON_KEY: "",
       VITE_SUPABASE_PUBLISHABLE_KEY: "",
       FACEBOOK_APP_SECRET: "",
@@ -27,7 +28,9 @@ describe("check-auth-providers public key readiness", () => {
     const result = runReadiness();
 
     expect(result.stdout).toContain("Supabase public client key is not configured");
-    expect(result.stdout).not.toContain("Supabase publishable key is configured without printing it");
+    expect(result.stdout).not.toContain(
+      "Supabase publishable key is configured without printing it"
+    );
   });
 
   it("treats a missing Apple flag as enabled by the app default", () => {
@@ -56,7 +59,9 @@ describe("check-auth-providers public key readiness", () => {
     });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("Strict Supabase readiness requires VITE_SUPABASE_PUBLISHABLE_KEY");
+    expect(result.stdout).toContain(
+      "Strict Supabase readiness requires VITE_SUPABASE_PUBLISHABLE_KEY"
+    );
   });
 
   it("requires manual identity linking for Telegram account linking readiness", () => {
@@ -67,6 +72,72 @@ describe("check-auth-providers public key readiness", () => {
     expect(result.stdout).toContain("Local Supabase manual identity linking is enabled");
   });
 
+  it("requires the Telegram OIDC compatibility endpoint to be public and documented", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(result.stdout).toContain(
+      "Telegram OIDC compatibility function is public for Supabase Auth discovery"
+    );
+    expect(result.stdout).toContain("Telegram Supabase discovery override is documented");
+  });
+
+  it("keeps Facebook public login behind the Meta readiness gate", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+      VITE_FACEBOOK_PUBLIC_ACCESS_READY: "",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Facebook Meta public access readiness gate is documented");
+    expect(result.stdout).toContain("Facebook Meta public access readiness flag is not enabled");
+  });
+
+  it("requires GitHub builds to pass the Facebook Meta readiness flag", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("GitHub Pages deploy passes Facebook Meta readiness flag");
+    expect(result.stdout).toContain("V2 preview deploy passes Facebook Meta readiness flag");
+    expect(result.stdout).toContain("Visual regression build passes Facebook Meta readiness flag");
+  });
+
+  it("requires GitHub builds to keep Telegram public auth enabled by default", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("GitHub Pages deploy defaults Telegram public auth on");
+    expect(result.stdout).toContain("V2 preview deploy defaults Telegram public auth on");
+    expect(result.stdout).toContain("Visual regression build defaults Telegram public auth on");
+  });
+
+  it("requires GitHub deploy builds to pass the modern Supabase publishable key", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(
+      "GitHub Pages deploy passes the modern Supabase publishable key"
+    );
+    expect(result.stdout).toContain("V2 preview deploy passes the modern Supabase publishable key");
+  });
+
+  it("reports Facebook public access as ready only when the Meta readiness flag is true", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+      VITE_FACEBOOK_PUBLIC_ACCESS_READY: "true",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Facebook Meta public access readiness flag is enabled");
+  });
+
   it("fails strict readiness when server-only Supabase secrets are present locally", () => {
     const result = runReadiness({
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
@@ -74,7 +145,9 @@ describe("check-auth-providers public key readiness", () => {
     });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("[FAIL] SUPABASE_SERVICE_ROLE_KEY is present outside the app dashboards");
+    expect(result.stdout).toContain(
+      "[FAIL] SUPABASE_SERVICE_ROLE_KEY is present outside the app dashboards"
+    );
     expect(result.stdout).not.toContain("service_role_fixture_that_must_not_print");
   });
 });

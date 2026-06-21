@@ -11,17 +11,21 @@ Supabase:
 
 ```env
 VITE_ENABLE_FACEBOOK_AUTH=true
+VITE_FACEBOOK_PUBLIC_ACCESS_READY=false
 VITE_ENABLE_TELEGRAM_AUTH=true
 ```
 
-Local defaults in `.env.example` are `true` so the approved entry screen
-shows every supported social provider. Set a flag to `false` only when the
-matching dashboard provider is intentionally unavailable.
+Local provider defaults in `.env.example` are `true` once a dashboard provider
+is configured. Facebook has one extra public-access gate: keep
+`VITE_FACEBOOK_PUBLIC_ACCESS_READY=false` until Meta business verification and
+App Review are approved, even if developer-role Facebook login works.
 
 GitHub Pages and native CI builds pass these public flags explicitly:
 
 - `VITE_ENABLE_FACEBOOK_AUTH` defaults to `true` because the ZenFlow Facebook app
   is configured.
+- `VITE_FACEBOOK_PUBLIC_ACCESS_READY` must stay `false` until Meta approves
+  public access for Facebook Login.
 - `VITE_ENABLE_TELEGRAM_AUTH` defaults to `true` so Telegram is visible on
   the public entry screen. Set the GitHub repository variable to `false` only
   if the Supabase `custom:telegram` OIDC provider is intentionally disabled.
@@ -68,6 +72,27 @@ https://api.zenflowapp.online/auth/v1/callback
 
 Do not paste the Facebook secret into the repo or chat.
 
+## Facebook Public Access
+
+Developer-role Facebook login can succeed before the app is public, but regular
+users need Meta approval for public Facebook Login access. Meta currently blocks
+that submission until the ZenFlow business portfolio is verified. Use only free
+official Meta flows: do not pay for Meta Verified, do not invent legal company
+data, and do not upload placeholder documents.
+
+Until Meta business verification and App Review are approved, keep:
+
+```env
+VITE_ENABLE_FACEBOOK_AUTH=true
+VITE_FACEBOOK_PUBLIC_ACCESS_READY=false
+```
+
+That means the provider can remain configured and testable by developers, while
+the public app hides the Facebook button instead of sending users into a broken
+Meta approval screen. After Meta approves public access, set
+`VITE_FACEBOOK_PUBLIC_ACCESS_READY=true` in the production build environment and
+rerun the readiness check.
+
 ## Telegram Dashboard
 
 Telegram sign-in uses Telegram's OIDC flow through a Supabase custom provider.
@@ -105,11 +130,36 @@ client_secret: <BotFather Client Secret>
 scopes: openid profile
 pkce_enabled: true
 email_optional: true
+discovery_url: https://api.zenflowapp.online/functions/v1/telegram-oidc/.well-known/openid-configuration
 ```
 
 Keep `phone` out of the default scopes. Telegram can return a verified phone
 number with the `phone` scope, but that is extra personal data and needs an
 explicit product/privacy decision before collection.
+
+### Telegram JWKS Compatibility
+
+As of 2026-06-20, Telegram's official JWKS includes an `ES256K` / `secp256k1`
+signing key. Hosted Supabase Auth can fail the Telegram callback while decoding
+that key before it completes the user session. ZenFlow keeps Telegram's official
+issuer, authorization endpoint, token endpoint, PKCE flow, and client secret in
+Supabase, but points Supabase custom provider discovery to the project-owned
+compatibility endpoint above. That endpoint publishes the same Telegram OIDC
+metadata with a project JWKS URL and removes only the unsupported `ES256K` /
+`secp256k1` key from the proxied JWKS.
+
+Deploy the Edge Function before setting `discovery_url`:
+
+```bash
+supabase functions deploy telegram-oidc --project-ref bwgfslmxmueyglpumkbf --no-verify-jwt
+```
+
+If Supabase Auth adds native support for Telegram's `secp256k1` JWKS, remove the
+custom `discovery_url` override and use Telegram's official discovery URL again:
+
+```text
+https://oauth.telegram.org/.well-known/openid-configuration
+```
 
 ### Hosted Supabase Auth Toggles
 
@@ -132,25 +182,35 @@ Supabase:
 
 ```bash
 npm run check:auth-providers -- --strict
-npm run test -- src/lib/__tests__/authProviders.test.ts scripts/__tests__/auth-providers-readiness.test.ts
+npm run test -- src/lib/__tests__/authProviders.test.ts scripts/__tests__/auth-providers-readiness.test.ts scripts/__tests__/telegram-oidc-proxy.test.ts
 ```
 
 Then perform one real web login and one native callback login, confirming the
 returned user has provider `custom:telegram` and a display name or
 `preferred_username` even when no email is present.
 
+If a real Telegram login still fails after the compatibility endpoint is live,
+check Supabase Auth logs for the callback request and keep Telegram disabled via
+`VITE_ENABLE_TELEGRAM_AUTH=false` until either the provider configuration or the
+upstream Supabase Auth parser issue is fixed. Do not loosen token validation,
+skip ID token verification, or store Telegram bot tokens in the client.
+
 ## Smoke Checklist
 
-- Web/PWA first-run screen shows Google, Facebook, and Telegram when both flags
-  are true.
+- Web/PWA first-run screen shows Google, Telegram, and Apple by default, and
+  shows Facebook only when `VITE_FACEBOOK_PUBLIC_ACCESS_READY=true`.
 - Settings account section shows the same providers for sign-in.
 - Existing signed-in users can link a new provider without losing sync data.
 - Telegram users without email show a display name or username and count as
   signed in.
+- Telegram OIDC discovery URL points to the deployed `telegram-oidc` Edge
+  Function while hosted Supabase Auth cannot decode Telegram's `secp256k1` JWKS.
 - Android and iOS custom URL callbacks return through
   `com.zenflow.app://login-callback`.
 - Supabase/Facebook/Telegram dashboard setup is complete before flipping public
   feature flags in production.
+- Meta business verification and App Review are approved before setting
+  `VITE_FACEBOOK_PUBLIC_ACCESS_READY=true`.
 
 ## Primary References
 

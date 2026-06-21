@@ -511,14 +511,14 @@ test.describe("Android entry gate evidence", () => {
       if (fact.screen === "auth-screen") {
         expect(fact.authProviders, `${fact.name} auth provider ids`).toEqual([
           "google",
-          "facebook",
           "telegram",
+          "apple",
         ]);
         expect(fact.iconCenterSpread, `${fact.name} provider icon rail spread`).toBe(0);
         expect(fact.providerIconMetrics, `${fact.name} provider icon metrics`).toEqual([
           { id: "auth-provider-icon-google", renderedHeight: 24, renderedWidth: 24 },
-          { id: "auth-provider-icon-facebook", renderedHeight: 24, renderedWidth: 24 },
           { id: "auth-provider-icon-telegram", renderedHeight: 24, renderedWidth: 24 },
+          { id: "auth-provider-icon-apple", renderedHeight: 24, renderedWidth: 24 },
         ]);
         expect(fact.telegram.exists, `${fact.name} Telegram icon`).toBe(true);
         expect(fact.telegram.viewBox, `${fact.name} Telegram viewBox`).toBe("0 0 128 128");

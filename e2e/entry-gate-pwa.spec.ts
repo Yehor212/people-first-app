@@ -663,8 +663,8 @@ test.describe("PWA entry gate evidence", () => {
       if (fact.screen === "auth-screen") {
         expect(fact.authProviders, `${fact.name} auth provider ids`).toEqual([
           "google",
-          "facebook",
           "telegram",
+          "apple",
         ]);
         expect(fact.iconCenterSpread, `${fact.name} provider icon rail spread`).toBe(0);
         expect(fact.providerIcons.every((icon) => icon.className.includes("h-6 w-6"))).toBe(true);

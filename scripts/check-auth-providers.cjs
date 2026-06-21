@@ -9,6 +9,7 @@ const strict = process.argv.includes("--strict");
 const envFileNames = [".env.example", ".env", ".env.production", ".env.local"];
 const publicKeys = [
   "VITE_ENABLE_FACEBOOK_AUTH",
+  "VITE_FACEBOOK_PUBLIC_ACCESS_READY",
   "VITE_ENABLE_TELEGRAM_AUTH",
   "VITE_ENABLE_APPLE_AUTH",
   "VITE_SUPABASE_URL",
@@ -119,17 +120,17 @@ function mergeEnv() {
   return merged;
 }
 
-function getPublicFlagState(env, key) {
+function getPublicFlagState(env, key, defaultEnabled = true) {
   const entry = env.get(key);
   if (!entry?.value) {
     return {
-      enabled: true,
-      evidence: `${key} is not set; app default is enabled unless the value is false`,
+      enabled: defaultEnabled,
+      evidence: `${key} is not set; app default is ${defaultEnabled ? "enabled unless the value is false" : "disabled unless the value is true"}`,
     };
   }
 
   return {
-    enabled: entry.value !== "false",
+    enabled: defaultEnabled ? entry.value !== "false" : entry.value === "true",
     evidence: `${key} set in ${entry.source}`,
   };
 }
@@ -151,17 +152,113 @@ const env = mergeEnv();
 const supabaseConfig = readText("supabase/config.toml");
 const authSection = getTomlSection(supabaseConfig, "auth");
 const appleAuthSection = getTomlSection(supabaseConfig, "auth.external.apple");
+const telegramOidcFunctionSection = getTomlSection(supabaseConfig, "functions.telegram-oidc");
 
-checkSourceContains("src/lib/authProviders.ts", "custom:telegram", "Telegram maps to Supabase custom OIDC");
-checkSourceContains("src/lib/authProviders.ts", "facebook", "Facebook provider is present in provider config");
-checkSourceContains("src/lib/authProviders.ts", "supabaseProvider: \"apple\"", "Apple provider is present in provider config");
-checkSourceContains("src/lib/authProviders.ts", "\"apple\",\n];", "Apple provider is available for account sign-in and linking");
-checkSourceContains("src/components/settings/account-section/useAccountAuth.ts", "linkIdentity", "Settings supports provider account linking");
-checkSourceContains("src/lib/nativeOAuthBrowser.ts", "@capacitor/browser", "Native OAuth uses Capacitor Browser");
-checkSourceContains("ios/App/App/Info.plist", "com.zenflow.app", "iOS custom callback scheme is registered");
-checkSourceContains(".env.example", "VITE_ENABLE_FACEBOOK_AUTH=true", "Facebook public feature flag is documented");
-checkSourceContains(".env.example", "VITE_ENABLE_TELEGRAM_AUTH=true", "Telegram public feature flag is documented");
-checkSourceContains(".env.example", "VITE_ENABLE_APPLE_AUTH=true", "Apple public feature flag is documented");
+checkSourceContains(
+  "src/lib/authProviders.ts",
+  "custom:telegram",
+  "Telegram maps to Supabase custom OIDC"
+);
+checkSourceContains(
+  "src/lib/authProviders.ts",
+  "facebook",
+  "Facebook provider is present in provider config"
+);
+checkSourceContains(
+  "src/lib/authProviders.ts",
+  'supabaseProvider: "apple"',
+  "Apple provider is present in provider config"
+);
+checkSourceContains(
+  "src/lib/authProviders.ts",
+  '"apple",\n];',
+  "Apple provider is available for account sign-in and linking"
+);
+checkSourceContains(
+  "supabase/functions/telegram-oidc/telegram_oidc.ts",
+  "secp256k1",
+  "Telegram OIDC JWKS compatibility filter is implemented"
+);
+checkSourceContains(
+  "docs/auth-facebook-telegram-setup.md",
+  "discovery_url: https://api.zenflowapp.online/functions/v1/telegram-oidc/.well-known/openid-configuration",
+  "Telegram Supabase discovery override is documented"
+);
+checkSourceContains(
+  "src/components/settings/account-section/useAccountAuth.ts",
+  "linkIdentity",
+  "Settings supports provider account linking"
+);
+checkSourceContains(
+  "src/lib/nativeOAuthBrowser.ts",
+  "@capacitor/browser",
+  "Native OAuth uses Capacitor Browser"
+);
+checkSourceContains(
+  "ios/App/App/Info.plist",
+  "com.zenflow.app",
+  "iOS custom callback scheme is registered"
+);
+checkSourceContains(
+  ".env.example",
+  "VITE_ENABLE_FACEBOOK_AUTH=true",
+  "Facebook public feature flag is documented"
+);
+checkSourceContains(
+  ".env.example",
+  "VITE_FACEBOOK_PUBLIC_ACCESS_READY=false",
+  "Facebook Meta public access readiness gate is documented"
+);
+checkSourceContains(
+  ".env.example",
+  "VITE_ENABLE_TELEGRAM_AUTH=true",
+  "Telegram public feature flag is documented"
+);
+checkSourceContains(
+  ".env.example",
+  "VITE_ENABLE_APPLE_AUTH=true",
+  "Apple public feature flag is documented"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "VITE_FACEBOOK_PUBLIC_ACCESS_READY",
+  "GitHub Pages deploy passes Facebook Meta readiness flag"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "VITE_FACEBOOK_PUBLIC_ACCESS_READY",
+  "V2 preview deploy passes Facebook Meta readiness flag"
+);
+checkSourceContains(
+  ".github/workflows/visual-regression.yml",
+  "VITE_FACEBOOK_PUBLIC_ACCESS_READY",
+  "Visual regression build passes Facebook Meta readiness flag"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'true' }}",
+  "GitHub Pages deploy defaults Telegram public auth on"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'true' }}",
+  "V2 preview deploy defaults Telegram public auth on"
+);
+checkSourceContains(
+  ".github/workflows/visual-regression.yml",
+  "VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'true' }}",
+  "Visual regression build defaults Telegram public auth on"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "VITE_SUPABASE_PUBLISHABLE_KEY",
+  "GitHub Pages deploy passes the modern Supabase publishable key"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "VITE_SUPABASE_PUBLISHABLE_KEY",
+  "V2 preview deploy passes the modern Supabase publishable key"
+);
 
 if (!authSection) {
   add("FAIL", "Supabase auth section is missing", "supabase/config.toml lacks [auth]");
@@ -171,39 +268,62 @@ if (!authSection) {
     /^enable_manual_linking\s*=\s*true\s*$/m,
     "Local Supabase manual identity linking is enabled",
     "Local Supabase manual identity linking must be enabled for provider linking",
-    "supabase/config.toml [auth]",
+    "supabase/config.toml [auth]"
   );
 }
 
 if (!appleAuthSection) {
-  add("FAIL", "Supabase Apple provider section is missing", "supabase/config.toml lacks [auth.external.apple]");
+  add(
+    "FAIL",
+    "Supabase Apple provider section is missing",
+    "supabase/config.toml lacks [auth.external.apple]"
+  );
 } else {
   checkSectionLine(
     appleAuthSection,
     /^enabled\s*=\s*true\s*$/m,
     "Local Supabase Apple provider is enabled",
     "Local Supabase Apple provider is disabled",
-    "supabase/config.toml [auth.external.apple]",
+    "supabase/config.toml [auth.external.apple]"
   );
   checkSectionLine(
     appleAuthSection,
     /^client_id\s*=\s*"env\(SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID\)"\s*$/m,
     "Apple Services ID is configured through server-side env substitution",
     "Apple Services ID must use SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID env substitution",
-    "supabase/config.toml [auth.external.apple]",
+    "supabase/config.toml [auth.external.apple]"
   );
   checkSectionLine(
     appleAuthSection,
     /^secret\s*=\s*"env\(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET\)"\s*$/m,
     "Apple client secret is configured through server-side env substitution",
     "Apple client secret must use SUPABASE_AUTH_EXTERNAL_APPLE_SECRET env substitution",
-    "supabase/config.toml [auth.external.apple]",
+    "supabase/config.toml [auth.external.apple]"
+  );
+}
+
+if (!telegramOidcFunctionSection) {
+  add(
+    "FAIL",
+    "Telegram OIDC compatibility function config is missing",
+    "supabase/config.toml lacks [functions.telegram-oidc]"
+  );
+} else {
+  checkSectionLine(
+    telegramOidcFunctionSection,
+    /^verify_jwt\s*=\s*false\s*$/m,
+    "Telegram OIDC compatibility function is public for Supabase Auth discovery",
+    "Telegram OIDC compatibility function must disable JWT verification for Supabase Auth discovery",
+    "supabase/config.toml [functions.telegram-oidc]"
   );
 }
 
 for (const [url, label] of [
   ["https://yehor212.github.io/people-first-app/", "canonical GitHub Pages auth redirect"],
-  ["https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone", "canonical V2 phone auth redirect"],
+  [
+    "https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone",
+    "canonical V2 phone auth redirect",
+  ],
   ["com.zenflow.app://login-callback", "native OAuth callback redirect"],
   ["http://localhost:5173/**", "local Vite OAuth wildcard redirect"],
 ]) {
@@ -212,7 +332,7 @@ for (const [url, label] of [
     `"${url}"`,
     `Supabase allow-list includes ${label}`,
     `Supabase allow-list is missing ${label}`,
-    "supabase/config.toml auth.additional_redirect_urls",
+    "supabase/config.toml auth.additional_redirect_urls"
   );
 }
 
@@ -232,6 +352,21 @@ for (const provider of [
   }
 }
 
+const facebookPublicAccess = getPublicFlagState(env, "VITE_FACEBOOK_PUBLIC_ACCESS_READY", false);
+if (facebookPublicAccess.enabled) {
+  add(
+    "PASS",
+    "Facebook Meta public access readiness flag is enabled",
+    facebookPublicAccess.evidence
+  );
+} else {
+  add(
+    "INFO",
+    "Facebook Meta public access readiness flag is not enabled",
+    `${facebookPublicAccess.evidence}; Facebook stays hidden until Meta business verification and App Review are approved`
+  );
+}
+
 const supabaseUrl = env.get("VITE_SUPABASE_URL");
 if (!supabaseUrl?.value) {
   const status =
@@ -241,17 +376,33 @@ if (!supabaseUrl?.value) {
     hasEnabledFlag(env, "VITE_ENABLE_APPLE_AUTH")
       ? "FAIL"
       : "INFO";
-  add(status, "Supabase public URL is not configured", "VITE_SUPABASE_URL not found in loaded env files/process.env");
+  add(
+    status,
+    "Supabase public URL is not configured",
+    "VITE_SUPABASE_URL not found in loaded env files/process.env"
+  );
 } else {
   try {
     const parsed = new URL(supabaseUrl.value);
     if (parsed.hostname === `${expectedProjectRef}.supabase.co`) {
-      add("PASS", "Supabase public URL targets the ZenFlow project", `VITE_SUPABASE_URL host is ${parsed.hostname} from ${supabaseUrl.source}`);
+      add(
+        "PASS",
+        "Supabase public URL targets the ZenFlow project",
+        `VITE_SUPABASE_URL host is ${parsed.hostname} from ${supabaseUrl.source}`
+      );
     } else {
-      add("WARN", "Supabase public URL does not match the documented project ref", `VITE_SUPABASE_URL host is ${parsed.hostname} from ${supabaseUrl.source}`);
+      add(
+        "WARN",
+        "Supabase public URL does not match the documented project ref",
+        `VITE_SUPABASE_URL host is ${parsed.hostname} from ${supabaseUrl.source}`
+      );
     }
   } catch {
-    add("FAIL", "Supabase public URL is invalid", `VITE_SUPABASE_URL could not be parsed from ${supabaseUrl.source}`);
+    add(
+      "FAIL",
+      "Supabase public URL is invalid",
+      `VITE_SUPABASE_URL could not be parsed from ${supabaseUrl.source}`
+    );
   }
 }
 
@@ -261,17 +412,21 @@ if (publishableKey?.value) {
   add(
     "PASS",
     "Supabase publishable key is configured without printing it",
-    `VITE_SUPABASE_PUBLISHABLE_KEY set in ${publishableKey.source}`,
+    `VITE_SUPABASE_PUBLISHABLE_KEY set in ${publishableKey.source}`
   );
 } else if (anonKey?.value) {
   if (strict) {
     add(
       "FAIL",
       "Strict Supabase readiness requires VITE_SUPABASE_PUBLISHABLE_KEY",
-      `Only legacy VITE_SUPABASE_ANON_KEY is set in ${anonKey.source}; publishable keys are the production target`,
+      `Only legacy VITE_SUPABASE_ANON_KEY is set in ${anonKey.source}; publishable keys are the production target`
     );
   } else {
-    add("PASS", "Supabase anon key is configured without printing it", `VITE_SUPABASE_ANON_KEY set in ${anonKey.source}`);
+    add(
+      "PASS",
+      "Supabase anon key is configured without printing it",
+      `VITE_SUPABASE_ANON_KEY set in ${anonKey.source}`
+    );
   }
 } else {
   const status =
@@ -284,7 +439,7 @@ if (publishableKey?.value) {
   add(
     status,
     "Supabase public client key is not configured",
-    "VITE_SUPABASE_PUBLISHABLE_KEY or VITE_SUPABASE_ANON_KEY not found in loaded env files/process.env",
+    "VITE_SUPABASE_PUBLISHABLE_KEY or VITE_SUPABASE_ANON_KEY not found in loaded env files/process.env"
   );
 }
 
@@ -295,7 +450,11 @@ for (const fileName of envFileNames) {
       key.startsWith("VITE_") &&
       /(SECRET|SERVICE_ROLE|ACCESS_TOKEN|CLIENT_SECRET|APP_SECRET|PRIVATE|PAT|TOKEN)$/i.test(key)
     ) {
-      add("FAIL", "Secret-looking key is exposed to the client bundle", `${key} appears in ${fileName}`);
+      add(
+        "FAIL",
+        "Secret-looking key is exposed to the client bundle",
+        `${key} appears in ${fileName}`
+      );
     }
   }
 }
@@ -306,7 +465,7 @@ for (const key of providerSecretKeys) {
     add(
       strict ? "FAIL" : "WARN",
       `${key} is present outside the app dashboards`,
-      `${key} is set in ${entry.source}; keep provider secrets in Apple/Facebook/Telegram/Supabase dashboards or secret storage, never in VITE_* client env`,
+      `${key} is set in ${entry.source}; keep provider secrets in Apple/Facebook/Telegram/Supabase dashboards or secret storage, never in VITE_* client env`
     );
   }
 }
@@ -314,7 +473,7 @@ for (const key of providerSecretKeys) {
 add(
   "INFO",
   "Dashboard provider secrets are intentionally not readable from this repo",
-  "Apple, Facebook, and Telegram provider secrets must be configured by the project owner in official dashboards",
+  "Apple, Facebook, and Telegram provider secrets must be configured by the project owner in official dashboards"
 );
 
 let failures = 0;
@@ -328,7 +487,7 @@ for (const check of checks) {
 
 console.log("");
 console.log(
-  `Auth provider readiness: ${failures} failure(s), ${warnings} warning(s), strict=${strict ? "true" : "false"}`,
+  `Auth provider readiness: ${failures} failure(s), ${warnings} warning(s), strict=${strict ? "true" : "false"}`
 );
 
 if (failures > 0) {

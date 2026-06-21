@@ -3,6 +3,7 @@ import {
   ENABLE_APPLE_AUTH,
   ENABLE_FACEBOOK_AUTH,
   ENABLE_TELEGRAM_AUTH,
+  FACEBOOK_PUBLIC_ACCESS_READY,
   SUPABASE_URL,
 } from "@/lib/env";
 
@@ -28,14 +29,19 @@ export interface OAuthCredentialOptions {
   skipBrowserRedirect?: boolean;
 }
 
-export interface AppleAuthSurfaceHints {
+export interface AuthProviderSurfaceHints {
   userAgent?: string;
   platform?: string;
   maxTouchPoints?: number;
+  facebookPublicAccessReady?: boolean;
 }
 
-export function shouldExposeAppleAuthOnEntry(_hints?: AppleAuthSurfaceHints): boolean {
+export function shouldExposeAppleAuthOnEntry(_hints?: AuthProviderSurfaceHints): boolean {
   return ENABLE_APPLE_AUTH;
+}
+
+export function shouldExposeFacebookAuth(hints?: AuthProviderSurfaceHints): boolean {
+  return ENABLE_FACEBOOK_AUTH && (hints?.facebookPublicAccessReady ?? FACEBOOK_PUBLIC_ACCESS_READY);
 }
 
 export const AUTH_PROVIDER_CONFIGS: Record<SocialAuthProviderId, SocialAuthProviderConfig> = {
@@ -112,20 +118,28 @@ export function getAuthProviderConfig(id: SocialAuthProviderId): SocialAuthProvi
 }
 
 export function getEnabledAuthScreenProviders(
-  hints?: AppleAuthSurfaceHints,
+  hints?: AuthProviderSurfaceHints
 ): SocialAuthProviderConfig[] {
   return AUTH_SCREEN_PROVIDER_IDS.map(getAuthProviderConfig).filter(
-    (provider) => provider.enabled && (provider.id !== "apple" || shouldExposeAppleAuthOnEntry(hints)),
+    (provider) =>
+      provider.enabled &&
+      (provider.id !== "facebook" || shouldExposeFacebookAuth(hints)) &&
+      (provider.id !== "apple" || shouldExposeAppleAuthOnEntry(hints))
   );
 }
 
-export function getEnabledAccountAuthProviders(): SocialAuthProviderConfig[] {
-  return ACCOUNT_AUTH_PROVIDER_IDS.map(getAuthProviderConfig).filter((provider) => provider.enabled);
+export function getEnabledAccountAuthProviders(
+  hints?: AuthProviderSurfaceHints
+): SocialAuthProviderConfig[] {
+  return ACCOUNT_AUTH_PROVIDER_IDS.map(getAuthProviderConfig).filter(
+    (provider) =>
+      provider.enabled && (provider.id !== "facebook" || shouldExposeFacebookAuth(hints))
+  );
 }
 
 export function buildOAuthCredentials(
   providerId: SocialAuthProviderId,
-  { redirectTo, skipBrowserRedirect }: OAuthCredentialOptions,
+  { redirectTo, skipBrowserRedirect }: OAuthCredentialOptions
 ) {
   const provider = getAuthProviderConfig(providerId);
   return {
@@ -157,7 +171,7 @@ function getConfiguredSupabaseHostname(): string | null {
 
 export function isTrustedOAuthRedirectUrl(
   rawUrl: string,
-  providerId?: SocialAuthProviderId,
+  providerId?: SocialAuthProviderId
 ): boolean {
   let parsed: URL;
   try {

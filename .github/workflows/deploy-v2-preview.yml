@@ -80,9 +80,11 @@ jobs:
           VITE_CLASSIC_BASE_URL: /people-first-app/
           VITE_DISABLE_PWA: "true"
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
-          VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'false' }}
+          VITE_FACEBOOK_PUBLIC_ACCESS_READY: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY || 'false' }}
+          VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'true' }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
@@ -121,9 +123,11 @@ jobs:
         working-directory: v1-src
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
-          VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'false' }}
+          VITE_FACEBOOK_PUBLIC_ACCESS_READY: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY || 'false' }}
+          VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'true' }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
