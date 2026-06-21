@@ -581,6 +581,19 @@ describe("useAuthSession", () => {
       );
     });
 
+    it("tracks app version in the user profile on initial session", async () => {
+      usePlainAuthRoute();
+
+      renderHook(() => useAuthSession(false));
+      emitAuthEvent("INITIAL_SESSION", telegramSession);
+
+      await waitFor(() =>
+        expect(mockProfileUpdate).toHaveBeenCalledWith({
+          app_version: expect.any(String),
+        })
+      );
+    });
+
     it("stops auto-sync on unmount", () => {
       usePlainAuthRoute();
 

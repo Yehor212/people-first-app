@@ -385,7 +385,7 @@ export function useAuthSession(isLoading: boolean): void {
       void syncIfNeeded(session?.user?.id ?? null);
 
       // Track app_version in profiles on login (was separate subscription)
-      if (event === "SIGNED_IN" && session?.user?.id) {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user?.id) {
         supabase
           .from("profiles")
           .update({
