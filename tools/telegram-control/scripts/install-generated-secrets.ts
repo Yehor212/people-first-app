@@ -1,6 +1,7 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { parseWranglerWhoamiAuthentication } from "../src/activation-doctor";
 import { parseGeneratedSecretsEnv, requireGeneratedSecret } from "../src/generated-secret-store";
 
 const root = resolve(import.meta.dirname, "../../..");
@@ -52,11 +53,15 @@ if (dryRun) {
 if (github) {
   assertGitHubCli();
 
-  const result = spawnSync("gh", ["secret", "set", "TELEGRAM_CONTROL_CALLBACK_SECRET", "--repo", repo], {
-    input: callbackSecret,
-    encoding: "utf8",
-    stdio: ["pipe", "pipe", "pipe"],
-  });
+  const result = spawnSync(
+    "gh",
+    ["secret", "set", "TELEGRAM_CONTROL_CALLBACK_SECRET", "--repo", repo],
+    {
+      input: callbackSecret,
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"],
+    }
+  );
 
   if (result.status !== 0) {
     if (result.stderr) {
@@ -74,18 +79,24 @@ if (cloudflare) {
     stdio: ["ignore", "pipe", "pipe"],
   });
 
-  if (auth.status !== 0) {
-    console.error("UNVERIFIED Cloudflare secrets were not stored because wrangler is not authenticated.");
+  if (auth.status !== 0 || !parseWranglerWhoamiAuthentication(`${auth.stdout}\n${auth.stderr}`)) {
+    console.error(
+      "UNVERIFIED Cloudflare secrets were not stored because wrangler is not authenticated."
+    );
     console.error("Run npx wrangler login, then retry with --cloudflare.");
-    process.exit(auth.status ?? 1);
+    process.exit(auth.status === 0 ? 1 : (auth.status ?? 1));
   }
 
   for (const [name, value] of Object.entries(cloudflareSecrets)) {
-    const result = spawnSync(npxCommand(), ["wrangler", "secret", "put", name, "--config", workerConfigPath], {
-      input: value,
-      encoding: "utf8",
-      stdio: ["pipe", "pipe", "pipe"],
-    });
+    const result = spawnSync(
+      npxCommand(),
+      ["wrangler", "secret", "put", name, "--config", workerConfigPath],
+      {
+        input: value,
+        encoding: "utf8",
+        stdio: ["pipe", "pipe", "pipe"],
+      }
+    );
 
     if (result.status !== 0) {
       if (result.stderr) {

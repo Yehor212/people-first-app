@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import {
   buildActivationDoctorChecks,
   overallActivationStatus,
+  parseWranglerWhoamiAuthentication,
   summarizeGeneratedSecretFile,
 } from "../src/activation-doctor";
 import { fetchGitHubStatusChecks } from "../src/github-status";
@@ -20,8 +21,12 @@ const checkExternal = args.includes("--external-checks");
 const workerConfigExists = existsSync(workerConfigPath);
 const workerConfigText = workerConfigExists ? readFileSync(workerConfigPath, "utf8") : "";
 const generatedSecretsExists = existsSync(generatedSecretsPath);
-const generatedSecretsContent = generatedSecretsExists ? readFileSync(generatedSecretsPath, "utf8") : "";
-const githubSecretResult = checkGitHub ? listGitHubSecrets() : { available: false, names: new Set<string>() };
+const generatedSecretsContent = generatedSecretsExists
+  ? readFileSync(generatedSecretsPath, "utf8")
+  : "";
+const githubSecretResult = checkGitHub
+  ? listGitHubSecrets()
+  : { available: false, names: new Set<string>() };
 
 const checks = buildActivationDoctorChecks({
   workerConfigPath: "tools/telegram-control/wrangler.jsonc",
@@ -64,7 +69,7 @@ function listGitHubSecrets(): { available: boolean; names: Set<string> } {
         output
           .split(/\r?\n/)
           .map((line) => line.split(/\s+/)[0] ?? "")
-          .filter(Boolean),
+          .filter(Boolean)
       ),
     };
   } catch {
@@ -74,13 +79,32 @@ function listGitHubSecrets(): { available: boolean; names: Set<string> } {
 
 function isWranglerAuthenticated(): boolean {
   try {
-    execFileSync(npxCommand(), ["wrangler", "whoami", "--config", workerConfigPath], {
-      stdio: "ignore",
-    });
-    return true;
-  } catch {
-    return false;
+    const output = execFileSync(
+      npxCommand(),
+      ["wrangler", "whoami", "--config", workerConfigPath],
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      }
+    );
+    return parseWranglerWhoamiAuthentication(output);
+  } catch (error) {
+    return parseWranglerWhoamiAuthentication(execErrorOutput(error));
   }
+}
+
+function execErrorOutput(error: unknown): string {
+  if (!error || typeof error !== "object") {
+    return String(error);
+  }
+  const execError = error as {
+    message?: string;
+    stdout?: Buffer | string;
+    stderr?: Buffer | string;
+  };
+  return [execError.stdout, execError.stderr, execError.message]
+    .map((part) => String(part ?? ""))
+    .join("\n");
 }
 
 function npxCommand(): string {

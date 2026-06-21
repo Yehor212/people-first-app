@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
+import { parseWranglerWhoamiAuthentication } from "../src/activation-doctor";
 
 const root = resolve(import.meta.dirname, "../../..");
 const workerConfigPath = resolve(root, "tools/telegram-control/wrangler.jsonc");
@@ -141,13 +142,32 @@ function listGitHubSecrets(): Set<string> {
 
 function isWranglerAuthenticated(): boolean {
   try {
-    execFileSync(npxCommand(), ["wrangler", "whoami", "--config", workerConfigPath], {
-      stdio: "ignore",
-    });
-    return true;
-  } catch {
-    return false;
+    const output = execFileSync(
+      npxCommand(),
+      ["wrangler", "whoami", "--config", workerConfigPath],
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      }
+    );
+    return parseWranglerWhoamiAuthentication(output);
+  } catch (error) {
+    return parseWranglerWhoamiAuthentication(execErrorOutput(error));
   }
+}
+
+function execErrorOutput(error: unknown): string {
+  if (!error || typeof error !== "object") {
+    return String(error);
+  }
+  const execError = error as {
+    message?: string;
+    stdout?: Buffer | string;
+    stderr?: Buffer | string;
+  };
+  return [execError.stdout, execError.stderr, execError.message]
+    .map((part) => String(part ?? ""))
+    .join("\n");
 }
 
 function npxCommand(): string {

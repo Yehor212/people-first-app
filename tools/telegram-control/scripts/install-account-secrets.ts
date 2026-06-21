@@ -1,5 +1,6 @@
 import { execFileSync, spawnSync as spawnSyncBase } from "node:child_process";
 import { resolve } from "node:path";
+import { parseWranglerWhoamiAuthentication } from "../src/activation-doctor";
 import {
   buildAccountSecretChecks,
   CLOUDFLARE_ACCOUNT_SECRET_NAMES,
@@ -154,11 +155,14 @@ function assertWranglerAuthenticated(): void {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
-  if (result.status !== 0) {
+  if (
+    result.status !== 0 ||
+    !parseWranglerWhoamiAuthentication(`${result.stdout}\n${result.stderr}`)
+  ) {
     console.error(
       "UNVERIFIED Cloudflare account-owned secrets were not stored because wrangler is not authenticated."
     );
-    process.exit(result.status ?? 1);
+    process.exit(result.status === 0 ? 1 : (result.status ?? 1));
   }
 }
 

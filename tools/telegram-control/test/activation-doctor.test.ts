@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildActivationDoctorChecks,
   overallActivationStatus,
+  parseWranglerWhoamiAuthentication,
   resolveCallbackUrlCheck,
   summarizeGeneratedSecretFile,
   validateTelegramAdminIds,
@@ -36,8 +37,19 @@ void test("activation doctor separates missing evidence from hard failures", () 
   );
 });
 
+void test("activation doctor parses wrangler whoami authentication output", () => {
+  assert.equal(
+    parseWranglerWhoamiAuthentication("You are not authenticated. Please run wrangler login."),
+    false
+  );
+  assert.equal(parseWranglerWhoamiAuthentication("You are logged in with an OAuth Token."), true);
+});
+
 void test("generated secret file summary validates required generated names", () => {
-  const summary = summarizeGeneratedSecretFile(true, formatGeneratedSecretsEnv(generateProjectSecrets()));
+  const summary = summarizeGeneratedSecretFile(
+    true,
+    formatGeneratedSecretsEnv(generateProjectSecrets())
+  );
 
   assert.equal(summary.exists, true);
   assert.deepEqual(summary.errors, []);
@@ -85,7 +97,7 @@ void test("GitHub status checks fail closed during Actions or Pages incidents", 
 
   assert.deepEqual(
     checks.map((check) => check.status),
-    ["FAIL", "FAIL"],
+    ["FAIL", "FAIL"]
   );
   assert.match(checks[0]?.evidence ?? "", /major_outage/);
   assert.match(checks[1]?.evidence ?? "", /Incident with Actions and Pages/);
@@ -103,7 +115,7 @@ void test("GitHub status checks pass when required components are operational", 
 
   assert.deepEqual(
     checks.map((check) => check.status),
-    ["PASS", "PASS"],
+    ["PASS", "PASS"]
   );
 });
 

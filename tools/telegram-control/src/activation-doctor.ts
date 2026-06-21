@@ -155,6 +155,18 @@ export function overallActivationStatus(checks: readonly ActivationCheck[]): Act
   return "PASS";
 }
 
+export function parseWranglerWhoamiAuthentication(output: string): boolean {
+  const normalized = output.toLowerCase();
+  if (normalized.includes("not authenticated") || normalized.includes("wrangler login")) {
+    return false;
+  }
+  return (
+    normalized.includes("you are logged in") ||
+    /\baccount (id|name)\b/.test(normalized) ||
+    /\buser (id|email)\b/.test(normalized)
+  );
+}
+
 export function summarizeGeneratedSecretFile(
   exists: boolean,
   content: string

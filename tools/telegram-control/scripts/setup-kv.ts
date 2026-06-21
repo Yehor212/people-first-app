@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { parseWranglerWhoamiAuthentication } from "../src/activation-doctor";
 import {
   CONTROL_STATE_BINDING,
   extractKvNamespaceIdFromWranglerOutput,
@@ -30,7 +31,7 @@ const currentSummary = summarizeControlStateKvConfig(workerConfigText);
 console.log(`Telegram Cloudflare KV setup: ${dryRun ? "DRY_RUN" : "APPLY"}`);
 console.log(`PASS Binding target: ${CONTROL_STATE_BINDING}`);
 console.log(
-  `PASS Create command: npx wrangler kv namespace create ${CONTROL_STATE_BINDING} --config ${relativeWorkerConfigPath} --binding ${CONTROL_STATE_BINDING}`,
+  `PASS Create command: npx wrangler kv namespace create ${CONTROL_STATE_BINDING} --config ${relativeWorkerConfigPath} --binding ${CONTROL_STATE_BINDING}`
 );
 for (const evidence of currentSummary.evidence) {
   console.log(`${currentSummary.status} CONTROL_STATE_KV_ID - ${evidence}`);
@@ -38,7 +39,7 @@ for (const evidence of currentSummary.evidence) {
 
 if (dryRun) {
   console.log(
-    "Dry run only. Re-run with --namespace-id <cloudflare-kv-id> --write, or --create --write after wrangler login.",
+    "Dry run only. Re-run with --namespace-id <cloudflare-kv-id> --write, or --create --write after wrangler login."
   );
   process.exit(0);
 }
@@ -74,7 +75,9 @@ if (!write) {
 const updatedConfig = replaceControlStateKvNamespaceId(workerConfigText, namespaceId);
 writeFileSync(workerConfigPath, updatedConfig, "utf8");
 console.log(`PASS ${relativeWorkerConfigPath} updated with CONTROL_STATE KV namespace id`);
-console.log("No secret values were printed. KV namespace ids are Cloudflare account-bound identifiers, not secret keys.");
+console.log(
+  "No secret values were printed. KV namespace ids are Cloudflare account-bound identifiers, not secret keys."
+);
 
 function createKvNamespace(): string {
   const result = spawnSync(
@@ -93,7 +96,7 @@ function createKvNamespace(): string {
     {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
-    },
+    }
   );
 
   if (result.status !== 0) {
@@ -117,10 +120,12 @@ function assertWranglerAuthenticated(): void {
     stdio: ["ignore", "pipe", "pipe"],
   });
 
-  if (auth.status !== 0) {
-    console.error("UNVERIFIED Cloudflare KV namespace was not created because wrangler is not authenticated.");
+  if (auth.status !== 0 || !parseWranglerWhoamiAuthentication(`${auth.stdout}\n${auth.stderr}`)) {
+    console.error(
+      "UNVERIFIED Cloudflare KV namespace was not created because wrangler is not authenticated."
+    );
     console.error("Run npx wrangler login, then retry with --create --write.");
-    process.exit(auth.status ?? 1);
+    process.exit(auth.status === 0 ? 1 : (auth.status ?? 1));
   }
 }
 
