@@ -187,6 +187,26 @@ describe("useAuthSession", () => {
       expect(useUserDataStore.getState().userName).toBe("Telegram Friend");
       expect(isAuthFlowInProgress()).toBe(false);
     });
+
+    it("sanitizes unsafe OAuth error descriptions from web callback URLs", async () => {
+      window.history.pushState(
+        {},
+        "",
+        "/orb?nav=v2&navLayout=phone&error=server_error&error_description=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E",
+      );
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() =>
+        expect(useAppStore.getState().webOAuthError).toBe(
+          "Authentication failed. Please try again.",
+        ),
+      );
+      expect(useAppStore.getState().webOAuthError).not.toContain("<img");
+      expect(window.location.pathname + window.location.search).toBe(
+        "/orb?nav=v2&navLayout=phone",
+      );
+    });
   });
 
   describe("session check on mount", () => {

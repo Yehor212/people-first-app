@@ -11,6 +11,7 @@ import {
   notifyAuthComplete,
   getPendingAuthUrl,
   getCleanAuthCallbackUrl,
+  sanitizeAuthErrorMessage,
 } from "@/lib/authRedirect";
 import { AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
 import { syncWithCloud, startAutoSync, stopAutoSync } from "@/storage/cloudSync";
@@ -112,7 +113,11 @@ export function useAuthSession(isLoading: boolean): void {
     // Handle error case immediately
     if (hasError) {
       logger.error("[Index] OAuth error in URL:", url.searchParams.get("error"), errorDescription);
-      setWebOAuthError(errorDescription || "Authentication failed. Please try again.");
+      setWebOAuthError(
+        errorDescription
+          ? sanitizeAuthErrorMessage(errorDescription)
+          : "Authentication failed. Please try again."
+      );
       window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
       return;
     }

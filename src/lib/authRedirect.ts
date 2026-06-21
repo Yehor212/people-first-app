@@ -126,7 +126,7 @@ const KNOWN_ERROR_CODES = [
 ];
 
 // Sanitize error message - only allow known patterns
-const sanitizeErrorMessage = (message: string): string => {
+export const sanitizeAuthErrorMessage = (message: string): string => {
   // Remove any HTML/script tags
   const cleaned = message.replace(/<[^>]*>/g, "").trim();
   // Limit length
@@ -182,7 +182,7 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
   const errorDescription =
     searchParams.get("error_description") || hashParams.get("error_description");
   if (errorDescription) {
-    throw new Error(sanitizeErrorMessage(errorDescription));
+    throw new Error(sanitizeAuthErrorMessage(errorDescription));
   }
 
   // Try PKCE flow first - exchange code for session (most secure)
