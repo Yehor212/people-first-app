@@ -10,6 +10,7 @@ const {
   authStateCallbacks,
   mockGetSession,
   mockOnAuthStateChange,
+  mockSetSession,
   mockSyncWithCloud,
   mockStartAutoSync,
   mockStopAutoSync,
@@ -34,11 +35,13 @@ const {
   });
   const mockProfileEq = vi.fn(() => Promise.resolve({ error: null }));
   const mockProfileUpdate = vi.fn(() => ({ eq: mockProfileEq }));
+  const mockSetSession = vi.fn();
 
   return {
     authStateCallbacks,
     mockGetSession,
     mockOnAuthStateChange,
+    mockSetSession,
     mockSyncWithCloud: vi.fn(() => Promise.resolve()),
     mockStartAutoSync: vi.fn(),
     mockStopAutoSync: vi.fn(),
@@ -56,6 +59,7 @@ vi.mock("@/lib/supabaseClient", () => ({
     auth: {
       getSession: mockGetSession,
       onAuthStateChange: mockOnAuthStateChange,
+      setSession: mockSetSession,
     },
     from: vi.fn(() => ({
       update: mockProfileUpdate,
@@ -152,7 +156,7 @@ describe("useAuthSession", () => {
     window.history.pushState(
       {},
       "",
-      "/orb?nav=v2&navLayout=phone&code=telegram-code&state=telegram-state",
+      "/orb?nav=v2&navLayout=phone&code=telegram-code&state=telegram-state"
     );
     authStateCallbacks.length = 0;
     vi.clearAllMocks();
@@ -178,9 +182,7 @@ describe("useAuthSession", () => {
 
       await waitFor(() => expect(useAppStore.getState().isProcessingWebOAuth).toBe(false));
 
-      expect(window.location.pathname + window.location.search).toBe(
-        "/orb?nav=v2&navLayout=phone",
-      );
+      expect(window.location.pathname + window.location.search).toBe("/orb?nav=v2&navLayout=phone");
       expect(useAppStore.getState().hasValidSession).toBe(true);
       expect(useAppStore.getState().authBypassFlag).toBe(true);
       expect(useUserDataStore.getState().googleAuthChecked).toBe(true);
@@ -192,37 +194,72 @@ describe("useAuthSession", () => {
       window.history.pushState(
         {},
         "",
-        "/orb?nav=v2&navLayout=phone&error=server_error&error_description=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E",
+        "/orb?nav=v2&navLayout=phone&error=server_error&error_description=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E"
       );
 
       renderHook(() => useAuthSession(false));
 
       await waitFor(() =>
         expect(useAppStore.getState().webOAuthError).toBe(
-          "Authentication failed. Please try again.",
-        ),
+          "Authentication failed. Please try again."
+        )
       );
       expect(useAppStore.getState().webOAuthError).not.toContain("<img");
-      expect(window.location.pathname + window.location.search).toBe(
-        "/orb?nav=v2&navLayout=phone",
-      );
+      expect(window.location.pathname + window.location.search).toBe("/orb?nav=v2&navLayout=phone");
     });
 
     it("handles OAuth errors returned in the URL hash", async () => {
       window.history.pushState(
         {},
         "",
-        "/orb?nav=v2&navLayout=phone#error=server_error&error_description=access_denied",
+        "/orb?nav=v2&navLayout=phone#error=server_error&error_description=access_denied"
       );
 
       renderHook(() => useAuthSession(false));
 
-      await waitFor(() =>
-        expect(useAppStore.getState().webOAuthError).toBe("access_denied"),
-      );
+      await waitFor(() => expect(useAppStore.getState().webOAuthError).toBe("access_denied"));
       expect(window.location.pathname + window.location.search + window.location.hash).toBe(
-        "/orb?nav=v2&navLayout=phone",
+        "/orb?nav=v2&navLayout=phone"
       );
+    });
+
+    it("completes implicit OAuth callbacks returned in the URL hash", async () => {
+      const fakeAccessToken = ["test", "public", "oauth", "value"].join(".");
+      const fakeRefreshToken = ["test", "public", "refresh", "value"].join(".");
+      const callbackHash = new URLSearchParams({
+        access_token: fakeAccessToken,
+        refresh_token: fakeRefreshToken,
+        token_type: "bearer",
+        expires_in: "3600",
+      }).toString();
+      let currentSession: unknown = null;
+      mockGetSession.mockImplementation(() =>
+        Promise.resolve({ data: { session: currentSession }, error: null })
+      );
+      mockSetSession.mockImplementation(async () => {
+        currentSession = telegramSession;
+        return { data: { session: telegramSession }, error: null };
+      });
+
+      window.history.pushState({}, "", `/orb?nav=v2&navLayout=phone#${callbackHash}`);
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() =>
+        expect(mockSetSession).toHaveBeenCalledWith({
+          access_token: fakeAccessToken,
+          refresh_token: fakeRefreshToken,
+        })
+      );
+      await waitFor(() => expect(useAppStore.getState().hasValidSession).toBe(true));
+
+      expect(window.location.pathname + window.location.search + window.location.hash).toBe(
+        "/orb?nav=v2&navLayout=phone"
+      );
+      expect(useAppStore.getState().isProcessingWebOAuth).toBe(false);
+      expect(useAppStore.getState().authBypassFlag).toBe(true);
+      expect(useUserDataStore.getState().googleAuthChecked).toBe(true);
+      expect(useUserDataStore.getState().userName).toBe("Telegram Friend");
     });
   });
 

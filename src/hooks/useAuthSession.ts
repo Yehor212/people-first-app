@@ -105,19 +105,22 @@ export function useAuthSession(isLoading: boolean): void {
 
     const url = new URL(window.location.href);
     const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
-    const hasCode = url.searchParams.has("code") || hashParams.has("code");
+    const hasQueryCode = url.searchParams.has("code");
+    const hasHashCode = hashParams.has("code");
+    const hasImplicitTokens = hashParams.has("access_token") && hashParams.has("refresh_token");
+    const hasCode = hasQueryCode || hasHashCode;
     const hasError = url.searchParams.has("error") || hashParams.has("error");
     const errorDescription =
       url.searchParams.get("error_description") || hashParams.get("error_description");
 
-    if (!hasCode && !hasError) return;
+    if (!hasCode && !hasError && !hasImplicitTokens) return;
 
     // Handle error case immediately
     if (hasError) {
       logger.error(
         "[Index] OAuth error in URL:",
         url.searchParams.get("error") || hashParams.get("error"),
-        errorDescription,
+        errorDescription
       );
       setWebOAuthError(
         errorDescription
@@ -153,6 +156,39 @@ export function useAuthSession(isLoading: boolean): void {
       window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
     };
 
+    const failWebOAuthSession = (message: string) => {
+      setIsProcessingWebOAuth(false);
+      setWebOAuthError(message);
+      endAuthFlow();
+      window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
+    };
+
+    const completeHashOnlyWebOAuthCallback = async () => {
+      try {
+        await handleAuthCallback(supabase, window.location.href);
+        if (settled) return;
+
+        const { data } = await supabase.auth.getSession();
+        if (settled) return;
+
+        if (data.session) {
+          settled = true;
+          logger.log("[Index] Web OAuth hash callback processed successfully");
+          completeWebOAuthSession(data.session);
+          return;
+        }
+
+        settled = true;
+        logger.error("[Index] Web OAuth hash callback had no session");
+        failWebOAuthSession("Sign-in did not complete. Please try again.");
+      } catch (error) {
+        if (settled) return;
+        settled = true;
+        logger.error("[Index] Failed to process web OAuth hash callback:", error);
+        failWebOAuthSession("Sign-in failed. Please try again.");
+      }
+    };
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
@@ -164,6 +200,10 @@ export function useAuthSession(isLoading: boolean): void {
         completeWebOAuthSession(session);
       }
     });
+
+    if (!hasQueryCode && (hasHashCode || hasImplicitTokens)) {
+      void completeHashOnlyWebOAuthCallback();
+    }
 
     // Fallback: if no auth event fires within 5s, proactively check session
     const fallbackCheck = setTimeout(async () => {
