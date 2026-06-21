@@ -444,7 +444,7 @@ jobs:
       - name: Smoke public auth providers
         env:
           ZENFLOW_PUBLIC_AUTH_URL: ${{ needs.deploy.outputs.page_url }}
-          ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS: orb/?nav=v2&navLayout=phone
+          ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS: orb/?nav=v2&navLayout=phone,habits/?nav=v2&navLayout=phone,diary/?nav=v2&navLayout=phone,settings/?nav=v2&navLayout=phone
           FACEBOOK_READY: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'true' || 'false' }}
           APPLE_READY: ${{ vars.VITE_APPLE_PUBLIC_ACCESS_READY == 'true' && 'true' || 'false' }}
           ZENFLOW_PUBLIC_AUTH_BROWSER_CHANNEL: chrome

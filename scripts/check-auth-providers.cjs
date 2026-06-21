@@ -435,6 +435,11 @@ checkSourceContains(
   'forbidden_providers="${forbidden_providers:+${forbidden_providers},}apple"',
   "GitHub Pages public auth smoke forbids Apple until hosted readiness is enabled"
 );
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS: orb/?nav=v2&navLayout=phone,habits/?nav=v2&navLayout=phone,diary/?nav=v2&navLayout=phone,settings/?nav=v2&navLayout=phone",
+  "GitHub Pages public auth smoke covers canonical V2 phone entrypoints"
+);
 
 if (!authSection) {
   add("FAIL", "Supabase auth section is missing", "supabase/config.toml lacks [auth]");

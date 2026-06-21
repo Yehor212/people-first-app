@@ -226,6 +226,20 @@ describe("check-auth-providers public key readiness", () => {
     expect(workflow).toContain('ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS="$click_providers"');
     expect(workflow).toContain('ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS="$forbidden_providers"');
   });
+  it("requires GitHub Pages public auth smoke to cover all canonical V2 phone entrypoints", () => {
+    const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(workflow).toContain(
+      "ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS: orb/?nav=v2&navLayout=phone,habits/?nav=v2&navLayout=phone,diary/?nav=v2&navLayout=phone,settings/?nav=v2&navLayout=phone"
+    );
+    expect(result.stdout).toContain(
+      "GitHub Pages public auth smoke covers canonical V2 phone entrypoints"
+    );
+  });
+
   it("requires GitHub deploy builds to pass the modern Supabase publishable key", () => {
     const result = runReadiness({
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
