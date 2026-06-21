@@ -163,28 +163,42 @@ export function useAuthSession(isLoading: boolean): void {
       window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
     };
 
-    const completeHashOnlyWebOAuthCallback = async () => {
+    const completeManualWebOAuthCallback = async (source: "hash" | "fallback") => {
+      const completeFromCurrentSession = async () => {
+        const { data } = await supabase.auth.getSession();
+        if (settled) return true;
+
+        if (data.session) {
+          settled = true;
+          logger.log(`[Index] Web OAuth ${source} callback processed successfully`);
+          completeWebOAuthSession(data.session);
+          return true;
+        }
+
+        return false;
+      };
+
       try {
         await handleAuthCallback(supabase, window.location.href);
         if (settled) return;
 
-        const { data } = await supabase.auth.getSession();
-        if (settled) return;
-
-        if (data.session) {
-          settled = true;
-          logger.log("[Index] Web OAuth hash callback processed successfully");
-          completeWebOAuthSession(data.session);
-          return;
-        }
+        if (await completeFromCurrentSession()) return;
 
         settled = true;
-        logger.error("[Index] Web OAuth hash callback had no session");
+        logger.error(`[Index] Web OAuth ${source} callback had no session`);
         failWebOAuthSession("Sign-in did not complete. Please try again.");
       } catch (error) {
         if (settled) return;
+
+        try {
+          if (await completeFromCurrentSession()) return;
+        } catch (sessionError) {
+          logger.warn("[Index] Web OAuth fallback session check failed:", sessionError);
+        }
+
+        if (settled) return;
         settled = true;
-        logger.error("[Index] Failed to process web OAuth hash callback:", error);
+        logger.error(`[Index] Failed to process web OAuth ${source} callback:`, error);
         failWebOAuthSession("Sign-in failed. Please try again.");
       }
     };
@@ -202,7 +216,7 @@ export function useAuthSession(isLoading: boolean): void {
     });
 
     if (!hasQueryCode && (hasHashCode || hasImplicitTokens)) {
-      void completeHashOnlyWebOAuthCallback();
+      void completeManualWebOAuthCallback("hash");
     }
 
     // Fallback: if no auth event fires within 5s, proactively check session
@@ -215,9 +229,16 @@ export function useAuthSession(isLoading: boolean): void {
           settled = true;
           logger.log("[Index] Web OAuth: fallback session check found valid session");
           completeWebOAuthSession(data.session);
+          return;
         }
       } catch (e) {
         logger.warn("[Index] Web OAuth fallback check failed:", e);
+      }
+
+      if (settled) return;
+      if (hasCode || hasImplicitTokens) {
+        logger.warn("[Index] Web OAuth fallback exchanging callback directly");
+        await completeManualWebOAuthCallback("fallback");
       }
     }, 5000);
 

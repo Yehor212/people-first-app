@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   authStateCallbacks,
+  mockExchangeCodeForSession,
   mockGetSession,
   mockOnAuthStateChange,
   mockSetSession,
@@ -22,6 +23,7 @@ const {
   mockProfileUpdate,
 } = vi.hoisted(() => {
   const authStateCallbacks: Array<(event: string, session: unknown) => void> = [];
+  const mockExchangeCodeForSession = vi.fn();
   const mockGetSession = vi.fn();
   const mockOnAuthStateChange = vi.fn((callback: (event: string, session: unknown) => void) => {
     authStateCallbacks.push(callback);
@@ -39,6 +41,7 @@ const {
 
   return {
     authStateCallbacks,
+    mockExchangeCodeForSession,
     mockGetSession,
     mockOnAuthStateChange,
     mockSetSession,
@@ -57,6 +60,7 @@ const {
 vi.mock("@/lib/supabaseClient", () => ({
   supabase: {
     auth: {
+      exchangeCodeForSession: mockExchangeCodeForSession,
       getSession: mockGetSession,
       onAuthStateChange: mockOnAuthStateChange,
       setSession: mockSetSession,
@@ -161,6 +165,10 @@ describe("useAuthSession", () => {
     authStateCallbacks.length = 0;
     vi.clearAllMocks();
     mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
+    mockExchangeCodeForSession.mockResolvedValue({
+      data: { session: telegramSession },
+      error: null,
+    });
     resetStores();
     resetAuthGuard();
   });
@@ -260,6 +268,47 @@ describe("useAuthSession", () => {
       expect(useAppStore.getState().authBypassFlag).toBe(true);
       expect(useUserDataStore.getState().googleAuthChecked).toBe(true);
       expect(useUserDataStore.getState().userName).toBe("Telegram Friend");
+    });
+
+    it("exchanges a web OAuth code when no Supabase auth event arrives", async () => {
+      vi.useFakeTimers();
+      try {
+        let currentSession: unknown = null;
+        mockGetSession.mockImplementation(() =>
+          Promise.resolve({ data: { session: currentSession }, error: null })
+        );
+        mockExchangeCodeForSession.mockImplementation(async () => {
+          currentSession = telegramSession;
+          return { data: { session: telegramSession }, error: null };
+        });
+
+        window.history.pushState(
+          {},
+          "",
+          "/orb?nav=v2&navLayout=phone&code=manual-code&state=telegram-state"
+        );
+
+        renderHook(() => useAuthSession(false));
+
+        expect(useAppStore.getState().isProcessingWebOAuth).toBe(true);
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(5000);
+        });
+
+        expect(mockExchangeCodeForSession).toHaveBeenCalledWith("manual-code");
+        expect(useAppStore.getState().hasValidSession).toBe(true);
+
+        expect(window.location.pathname + window.location.search + window.location.hash).toBe(
+          "/orb?nav=v2&navLayout=phone"
+        );
+        expect(useAppStore.getState().isProcessingWebOAuth).toBe(false);
+        expect(useAppStore.getState().authBypassFlag).toBe(true);
+        expect(useUserDataStore.getState().googleAuthChecked).toBe(true);
+        expect(useUserDataStore.getState().userName).toBe("Telegram Friend");
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 
