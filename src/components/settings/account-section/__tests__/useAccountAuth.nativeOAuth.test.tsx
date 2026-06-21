@@ -1,4 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mocks } = vi.hoisted(() => ({
@@ -95,6 +96,29 @@ const t = {
   authSignedOut: "Signed out.",
 };
 
+const authStateCallbacks: Array<(event: AuthChangeEvent, session: Session | null) => void> = [];
+
+function createSession(): Session {
+  return {
+    access_token: "",
+    refresh_token: "",
+    expires_in: 3600,
+    token_type: "bearer",
+    user: {
+      id: "telegram-user-id",
+      aud: "authenticated",
+      role: "authenticated",
+      app_metadata: {
+        provider: "telegram",
+      },
+      user_metadata: {
+        name: "Telegram User",
+      },
+      created_at: "2026-06-21T00:00:00.000Z",
+    },
+  };
+}
+
 function renderAccountAuth() {
   return renderHook(() => useAccountAuth({ onNameChange: vi.fn(), t }));
 }
@@ -102,17 +126,44 @@ function renderAccountAuth() {
 describe("useAccountAuth native OAuth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authStateCallbacks.length = 0;
     resetAuthGuard();
     mocks.getSession.mockResolvedValue({ data: { session: null } });
-    mocks.onAuthStateChange.mockReturnValue({
-      data: {
-        subscription: {
-          unsubscribe: vi.fn(),
+    mocks.onAuthStateChange.mockImplementation((callback) => {
+      authStateCallbacks.push(callback);
+      return {
+        data: {
+          subscription: {
+            unsubscribe: vi.fn(),
+          },
         },
-      },
+      };
     });
     mocks.openOAuthUrl.mockResolvedValue(undefined);
     mocks.hasPendingActions.mockReturnValue(false);
+  });
+
+  it("clears Telegram linking when Supabase restores the session after native OAuth", async () => {
+    mocks.linkIdentity.mockResolvedValue({
+      data: { url: "https://oauth.telegram.org/auth?bot_id=123" },
+      error: null,
+    });
+
+    const { result } = renderAccountAuth();
+
+    await act(async () => {
+      await result.current.handleLinkProvider("telegram");
+    });
+
+    expect(result.current.linkingProvider).toBe("telegram");
+    expect(isAuthFlowInProgress()).toBe(true);
+
+    await act(async () => {
+      authStateCallbacks[0]("INITIAL_SESSION", createSession());
+    });
+
+    expect(result.current.linkingProvider).toBeNull();
+    expect(isAuthFlowInProgress()).toBe(false);
   });
 
   it("keeps Telegram linking in progress after opening the native OAuth browser", async () => {
@@ -134,7 +185,7 @@ describe("useAccountAuth native OAuth", () => {
           redirectTo: "com.zenflow.app://login-callback",
           skipBrowserRedirect: true,
         }),
-      }),
+      })
     );
     expect(mocks.openOAuthUrl).toHaveBeenCalledWith("https://oauth.telegram.org/auth?bot_id=123");
     expect(result.current.linkingProvider).toBe("telegram");
