@@ -323,7 +323,7 @@ redirect_uri = ""
 # Overrides the default auth provider URL.
 url = ""
 skip_nonce_check = false
-# Facebook OAuth requests only public_profile, so email must remain optional.
+# Facebook OAuth requests email and public_profile; email remains optional for Meta accounts without an email.
 email_optional = true
 
 [auth.external.apple]
