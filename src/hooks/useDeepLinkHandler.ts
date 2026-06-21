@@ -161,9 +161,9 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
 
       logger.error("[Auth] Callback processed but no session established");
       if (callbackError instanceof Error) {
-        setWebOAuthError(callbackError.message || "Google sign-in failed. Please try again.");
+        setWebOAuthError(callbackError.message || "Sign-in failed. Please try again.");
       } else {
-        setWebOAuthError("Google sign-in did not complete. Please try again.");
+        setWebOAuthError("Sign-in did not complete. Please try again.");
       }
       endAuthFlow();
       return true;

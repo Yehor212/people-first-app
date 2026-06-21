@@ -223,7 +223,7 @@ export function useAuthSession(isLoading: boolean): void {
             endAuthFlow();
           } else {
             logger.error("[Index] Pending auth callback had no session");
-            setWebOAuthError("Google sign-in did not complete. Please try again.");
+            setWebOAuthError("Sign-in did not complete. Please try again.");
             void closeOAuthBrowser();
             endAuthFlow();
           }
@@ -231,7 +231,7 @@ export function useAuthSession(isLoading: boolean): void {
           logger.error("[Index] Failed to process pending auth:", error);
           void closeOAuthBrowser();
           setWebOAuthError(
-            error instanceof Error ? error.message : "Google sign-in failed. Please try again."
+            error instanceof Error ? error.message : "Sign-in failed. Please try again."
           );
           endAuthFlow();
         }

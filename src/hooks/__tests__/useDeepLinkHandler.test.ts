@@ -3,11 +3,145 @@
  * Tests deep link processing for auth and challenge URLs
  */
 
-import { describe, it } from 'vitest';
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const {
+  appUrlOpenListeners,
+  mockAddListener,
+  mockGetLaunchUrl,
+  mockGetSession,
+  mockOnAuthStateChange,
+  mockHandleAuthCallback,
+  mockCloseOAuthBrowser,
+} = vi.hoisted(() => {
+  const appUrlOpenListeners: Array<(event: { url?: string }) => void> = [];
+  const mockAddListener = vi.fn(
+    async (eventName: string, callback: (event: { url?: string; isActive?: boolean }) => void) => {
+      if (eventName === "appUrlOpen") {
+        appUrlOpenListeners.push(callback);
+      }
+      return { remove: vi.fn() };
+    },
+  );
+
+  return {
+    appUrlOpenListeners,
+    mockAddListener,
+    mockGetLaunchUrl: vi.fn(async () => null),
+    mockGetSession: vi.fn(async () => ({ data: { session: null }, error: null })),
+    mockOnAuthStateChange: vi.fn(() => ({
+      data: { subscription: { unsubscribe: vi.fn() } },
+    })),
+    mockHandleAuthCallback: vi.fn(async () => undefined),
+    mockCloseOAuthBrowser: vi.fn(async () => undefined),
+  };
+});
+
+vi.mock("@/lib/platform", () => ({
+  isNative: true,
+}));
+
+vi.mock("@capacitor/app", () => ({
+  App: {
+    addListener: mockAddListener,
+    getLaunchUrl: mockGetLaunchUrl,
+  },
+}));
+
+vi.mock("@/lib/supabaseClient", () => ({
+  supabase: {
+    auth: {
+      getSession: mockGetSession,
+      onAuthStateChange: mockOnAuthStateChange,
+    },
+  },
+}));
+
+vi.mock("@/contexts/FeatureFlagsContext", () => ({
+  useFeatureFlags: () => ({ isFeatureVisible: () => true }),
+}));
+
+vi.mock("@/lib/authRedirect", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/authRedirect")>("@/lib/authRedirect");
+  return {
+    ...actual,
+    handleAuthCallback: mockHandleAuthCallback,
+    notifyAuthComplete: vi.fn(),
+    setPendingAuthUrl: vi.fn(),
+  };
+});
+
+vi.mock("@/lib/nativeOAuthBrowser", () => ({
+  closeOAuthBrowser: mockCloseOAuthBrowser,
+}));
+
+vi.mock("@/lib/logger", () => ({
+  logger: {
+    log: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+import { useDeepLinkHandler } from "@/hooks/useDeepLinkHandler";
+import { useAppStore, useUserDataStore } from "@/stores";
+
+function resetStores() {
+  useAppStore.setState({
+    authBypassFlag: false,
+    hasValidSession: false,
+    webOAuthError: null,
+  });
+  useUserDataStore.setState({
+    googleAuthChecked: false,
+    userName: "Friend",
+    userNameCustom: false,
+  });
+}
 
 describe('useDeepLinkHandler', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.clearAllMocks();
+    appUrlOpenListeners.length = 0;
+    mockGetLaunchUrl.mockResolvedValue(null);
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
+    mockHandleAuthCallback.mockResolvedValue(undefined);
+    resetStores();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   describe('auth deep links', () => {
-    it.todo('handles login-callback URL from appUrlOpen');
+    it("uses provider-neutral copy when an OAuth callback returns without a session", async () => {
+      renderHook(() => useDeepLinkHandler());
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(appUrlOpenListeners).toHaveLength(1);
+
+      act(() => {
+        appUrlOpenListeners[0]({
+          url: "com.zenflow.app://login-callback?code=telegram-code&state=telegram-state",
+        });
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(15_000);
+        await Promise.resolve();
+      });
+
+      expect(useAppStore.getState().webOAuthError).toBe(
+        "Sign-in did not complete. Please try again.",
+      );
+      expect(useAppStore.getState().webOAuthError).not.toContain("Google");
+      expect(mockCloseOAuthBrowser).toHaveBeenCalled();
+    });
     it.todo('deduplicates identical auth URLs');
     it.todo('clears dedupe cache after 50 entries');
     it.todo('stores pending URL when supabase is not ready');
