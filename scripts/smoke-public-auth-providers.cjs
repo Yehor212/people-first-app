@@ -10,6 +10,19 @@ const DEFAULT_REDIRECT_HOSTS = {
   apple: ["appleid.apple.com", ...SUPABASE_AUTH_REDIRECT_HOSTS],
   facebook: ["facebook.com", "www.facebook.com", ...SUPABASE_AUTH_REDIRECT_HOSTS],
 };
+const OAUTH_CALLBACK_PARAM_NAMES = [
+  "access_token",
+  "refresh_token",
+  "provider_token",
+  "provider_refresh_token",
+  "code",
+  "state",
+  "error",
+  "error_description",
+  "token_type",
+  "expires_at",
+  "expires_in",
+];
 
 function parseCsv(value, fallback, options = {}) {
   if (value === undefined || value === null) return [...fallback];
@@ -156,6 +169,7 @@ function isRetryableAppLoadFailure(result, appHost) {
 function isRetryablePublicAuthResult(result, appHost) {
   if (!result || result.ok) return false;
   if (isRetryableAppLoadFailure(result, appHost)) return true;
+  if (isRetryableAppLoadFailure(result.errorCallbackResult, appHost)) return true;
   return Array.isArray(result.redirectResults)
     ? result.redirectResults.some((redirectResult) =>
         isRetryableAppLoadFailure(redirectResult, appHost)
@@ -188,6 +202,65 @@ function createScenarioUrl(baseUrl, label) {
   return url.toString();
 }
 
+function hasOAuthCallbackParams(rawUrl) {
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return false;
+  }
+
+  const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
+  return OAUTH_CALLBACK_PARAM_NAMES.some(
+    (param) => url.searchParams.has(param) || hashParams.has(param)
+  );
+}
+
+function buildOAuthErrorCallbackUrl(baseUrl, label = "callback-error") {
+  const url = new URL(baseUrl.toString());
+  url.hash = "";
+  url.searchParams.set("error", "access_denied");
+  url.searchParams.set("error_description", "access_denied");
+  url.searchParams.set("state", "public-auth-smoke-" + label);
+  url.searchParams.set("publicAuthSmoke", "oauth-error-" + label + "-" + Date.now());
+  return url;
+}
+
+function validateOAuthErrorCallbackState(state, expectedProviders, forbiddenProviders = []) {
+  const finalUrl = String(state?.finalUrl || "");
+  const providers = Array.isArray(state?.providers) ? state.providers.filter(Boolean) : [];
+  const providerSet = new Set(providers);
+  const buttons = Array.isArray(state?.buttons) ? state.buttons : [];
+  const alertText = String(state?.alertText || "");
+  const missingExpected = expectedProviders.filter((provider) => !providerSet.has(provider));
+  const forbiddenVisible = forbiddenProviders.filter((provider) => providerSet.has(provider));
+  const disabledExpected = buttons
+    .filter((button) => expectedProviders.includes(button.provider) && button.disabled)
+    .map((button) => button.provider);
+  const hasOAuthParams = hasOAuthCallbackParams(finalUrl);
+  const authScreenVisible = Boolean(state?.authScreenVisible);
+  const alertOk = alertText.includes("access_denied");
+  const ok =
+    authScreenVisible &&
+    alertOk &&
+    !hasOAuthParams &&
+    missingExpected.length === 0 &&
+    forbiddenVisible.length === 0 &&
+    disabledExpected.length === 0;
+
+  return {
+    ok,
+    finalUrl,
+    authScreenVisible,
+    alertText,
+    providers,
+    missingExpected,
+    forbiddenVisible,
+    disabledExpected,
+    hasOAuthParams,
+  };
+}
+
 async function collectProviders(page, url, timeoutMs) {
   await page.addInitScript(initEntryState);
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs });
@@ -213,6 +286,112 @@ async function clickProvider(page, provider, timeoutMs) {
   }
 
   await content.click({ timeout: timeoutMs });
+}
+
+async function verifyOAuthErrorCallback({
+  browser,
+  baseUrl,
+  expectedProviders,
+  forbiddenProviders,
+  timeoutMs,
+}) {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 3,
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await context.newPage();
+  await page.addInitScript(initEntryState);
+
+  const consoleMessages = [];
+  const failedRequests = [];
+  const callbackUrl = buildOAuthErrorCallbackUrl(baseUrl);
+
+  page.on("console", (message) => {
+    if (message.type() === "error" || message.type() === "warning") {
+      consoleMessages.push(message.type() + ": " + message.text());
+    }
+  });
+  page.on("requestfailed", (request) => {
+    failedRequests.push(
+      request.method() + " " + request.url() + " " + request.failure()?.errorText
+    );
+  });
+
+  try {
+    await page.goto(callbackUrl.toString(), { waitUntil: "networkidle", timeout: timeoutMs });
+    await page.waitForSelector('[data-testid="auth-screen"]', {
+      state: "visible",
+      timeout: timeoutMs,
+    });
+    await page.waitForSelector('[role="alert"]', { state: "visible", timeout: timeoutMs });
+    await page.waitForFunction(
+      (params) => {
+        const url = new URL(location.href);
+        const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
+        return !params.some((param) => url.searchParams.has(param) || hashParams.has(param));
+      },
+      OAUTH_CALLBACK_PARAM_NAMES,
+      { timeout: timeoutMs }
+    );
+
+    const pageState = await page.evaluate(() => {
+      const providers = Array.from(
+        document.querySelectorAll('[data-testid^="auth-provider-content-"]')
+      ).map((element) =>
+        element.getAttribute("data-testid")?.replace("auth-provider-content-", "")
+      );
+      const buttons = providers.map((provider) => {
+        const content = document.querySelector(
+          '[data-testid="auth-provider-content-' + provider + '"]'
+        );
+        const button = content?.closest('button, a, [role="button"]');
+        return {
+          provider,
+          disabled:
+            button?.hasAttribute("disabled") || button?.getAttribute("aria-disabled") === "true",
+        };
+      });
+
+      return {
+        finalUrl: location.href,
+        authScreenVisible: Boolean(document.querySelector('[data-testid="auth-screen"]')),
+        alertText: document.querySelector('[role="alert"]')?.textContent?.trim() || "",
+        providers,
+        buttons,
+      };
+    });
+    const validation = validateOAuthErrorCallbackState(
+      pageState,
+      expectedProviders,
+      forbiddenProviders
+    );
+    const ok = validation.ok && consoleMessages.length === 0 && failedRequests.length === 0;
+
+    return {
+      ok,
+      reason: ok ? null : "oauth_error_callback_not_recoverable",
+      ...validation,
+      consoleCount: consoleMessages.length,
+      failedCount: failedRequests.length,
+      consoleMessages: consoleMessages.slice(0, 5),
+      failedRequests: failedRequests.slice(0, 5),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      reason: "oauth_error_callback_check_failed",
+      error: error instanceof Error ? error.message : String(error),
+      currentUrl: page.url(),
+      consoleCount: consoleMessages.length,
+      failedCount: failedRequests.length,
+      consoleMessages: consoleMessages.slice(0, 5),
+      failedRequests: failedRequests.slice(0, 5),
+    };
+  } finally {
+    await context.close();
+  }
 }
 
 async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs }) {
@@ -424,6 +603,13 @@ async function verifyPublicAuthUrlOnce({
       redirectResults.push(await verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs }));
     }
   }
+  const errorCallbackResult = await verifyOAuthErrorCallback({
+    browser,
+    baseUrl,
+    expectedProviders,
+    forbiddenProviders,
+    timeoutMs,
+  });
 
   const ok =
     expectedMatches &&
@@ -431,6 +617,7 @@ async function verifyPublicAuthUrlOnce({
     missingExpected.length === 0 &&
     listConsoleMessages.length === 0 &&
     listFailedRequests.length === 0 &&
+    errorCallbackResult.ok &&
     redirectResults.every(
       (result) => result.ok && result.consoleCount === 0 && result.failedCount === 0
     );
@@ -447,6 +634,7 @@ async function verifyPublicAuthUrlOnce({
     listFailedCount: listFailedRequests.length,
     listConsoleMessages: listConsoleMessages.slice(0, 5),
     listFailedRequests: listFailedRequests.slice(0, 5),
+    errorCallbackResult,
     redirectResults,
   };
 }
@@ -538,8 +726,10 @@ module.exports = {
   DEFAULT_EXPECTED_PROVIDERS,
   DEFAULT_FORBIDDEN_PROVIDERS,
   DEFAULT_REDIRECT_HOSTS,
+  buildOAuthErrorCallbackUrl,
   clickProvider,
   detectProviderRedirectError,
+  hasOAuthCallbackParams,
   hostnameMatches,
   isAppDiagnosticUrl,
   isRetryableAppLoadFailure,
@@ -547,6 +737,8 @@ module.exports = {
   parseCsv,
   parsePublicAuthUrls,
   resolvePublicAuthUrls,
+  validateOAuthErrorCallbackState,
+  verifyOAuthErrorCallback,
   launchBrowser,
   providerRedirectHosts,
 };

@@ -4,13 +4,16 @@ import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
 const {
+  buildOAuthErrorCallbackUrl,
   clickProvider,
   detectProviderRedirectError,
+  hasOAuthCallbackParams,
   isAppDiagnosticUrl,
   isRetryableAppLoadFailure,
   parseCsv,
   parsePublicAuthUrls,
   providerRedirectHosts,
+  validateOAuthErrorCallbackState,
   resolvePublicAuthUrls,
 } = require("../smoke-public-auth-providers.cjs");
 
@@ -101,6 +104,80 @@ describe("public auth smoke URL parsing", () => {
       reason: "facebook_invalid_scope_email",
       providerError:
         "Facebook rejected the email permission. Configure email in Meta Use Cases > Authentication and Account Creation.",
+    });
+  });
+
+  it("builds an OAuth error callback probe URL from the deployed route", () => {
+    expect(typeof buildOAuthErrorCallbackUrl).toBe("function");
+    expect(typeof hasOAuthCallbackParams).toBe("function");
+
+    const probeUrl = buildOAuthErrorCallbackUrl(
+      new URL("https://yehor212.github.io/people-first-app/orb/?nav=v2&navLayout=phone#ignored"),
+      "unit"
+    );
+
+    expect(probeUrl.toString()).toContain("/people-first-app/orb/?");
+    expect(probeUrl.searchParams.get("nav")).toBe("v2");
+    expect(probeUrl.searchParams.get("navLayout")).toBe("phone");
+    expect(probeUrl.searchParams.get("error")).toBe("access_denied");
+    expect(probeUrl.searchParams.get("error_description")).toBe("access_denied");
+    expect(probeUrl.searchParams.get("state")).toBe("public-auth-smoke-unit");
+    expect(probeUrl.hash).toBe("");
+    expect(hasOAuthCallbackParams(probeUrl.toString())).toBe(true);
+    expect(hasOAuthCallbackParams("https://yehor212.github.io/people-first-app/orb/?nav=v2")).toBe(
+      false
+    );
+  });
+
+  it("validates OAuth error callback cleanup state", () => {
+    expect(typeof validateOAuthErrorCallbackState).toBe("function");
+
+    expect(
+      validateOAuthErrorCallbackState(
+        {
+          finalUrl: "https://yehor212.github.io/people-first-app/orb/?nav=v2&navLayout=phone",
+          authScreenVisible: true,
+          alertText: "access_denied",
+          providers: ["google", "facebook", "telegram"],
+          buttons: [
+            { provider: "google", disabled: false },
+            { provider: "facebook", disabled: false },
+            { provider: "telegram", disabled: false },
+          ],
+        },
+        ["google", "facebook", "telegram"],
+        ["apple"]
+      )
+    ).toMatchObject({
+      ok: true,
+      missingExpected: [],
+      forbiddenVisible: [],
+      disabledExpected: [],
+      hasOAuthParams: false,
+    });
+
+    expect(
+      validateOAuthErrorCallbackState(
+        {
+          finalUrl: "https://yehor212.github.io/people-first-app/orb/?nav=v2&error=access_denied",
+          authScreenVisible: true,
+          alertText: "access_denied",
+          providers: ["google", "telegram", "apple"],
+          buttons: [
+            { provider: "google", disabled: false },
+            { provider: "telegram", disabled: true },
+            { provider: "apple", disabled: false },
+          ],
+        },
+        ["google", "facebook", "telegram"],
+        ["apple"]
+      )
+    ).toMatchObject({
+      ok: false,
+      missingExpected: ["facebook"],
+      forbiddenVisible: ["apple"],
+      disabledExpected: ["telegram"],
+      hasOAuthParams: true,
     });
   });
 
