@@ -46,8 +46,10 @@ function isTrustedAuthCallbackUrl(url: string): boolean {
   }
 
   if (parsedUrl.protocol === "com.zenflow.app:") {
-    return parsedUrl.hostname === "login-callback" &&
-      (parsedUrl.pathname === "" || parsedUrl.pathname === "/");
+    return (
+      parsedUrl.hostname === "login-callback" &&
+      (parsedUrl.pathname === "" || parsedUrl.pathname === "/")
+    );
   }
 
   if (!hasLoginCallbackPath(parsedUrl)) return false;
@@ -81,11 +83,14 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
   const setHasValidSession = useAppStore((s) => s.setHasValidSession);
   const setWebOAuthError = useAppStore((s) => s.setWebOAuthError);
   const setUserName = useUserDataStore((s) => s.setUserName);
+  const userNameCustom = useUserDataStore((s) => s.userNameCustom);
   const setUserNameCustom = useUserDataStore((s) => s.setUserNameCustom);
   const setGoogleAuthChecked = useUserDataStore((s) => s.setGoogleAuthChecked);
   const setChallengeInvite = useUIStore((s) => s.setChallengeInvite);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
   const handledAuthKeysRef = useRef<Set<string>>(new Set());
+  const userNameCustomRef = useRef(userNameCustom);
+  userNameCustomRef.current = userNameCustom;
 
   useEffect(() => {
     if (!isNative) return;
@@ -195,8 +200,10 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
         setHasValidSession(true);
         setWebOAuthError(null);
         notifyAuthComplete();
-        setUserName(name);
-        setUserNameCustom(false);
+        if (!userNameCustomRef.current) {
+          setUserName(name);
+          setUserNameCustom(false);
+        }
         setGoogleAuthChecked(true);
         endAuthFlow();
         return true;
