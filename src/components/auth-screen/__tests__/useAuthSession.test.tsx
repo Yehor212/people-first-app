@@ -105,4 +105,45 @@ describe("auth-screen useAuthSession", () => {
     );
     expect(mockEndAuthFlow).toHaveBeenCalledTimes(1);
   });
+
+  it("ends auth guard when the initial session check completes auth", async () => {
+    const onComplete = vi.fn();
+    mockGetSession.mockResolvedValueOnce({
+      data: { session: createTelegramSession() },
+      error: null,
+    });
+
+    renderHook(() => useAuthSession({ onComplete }));
+
+    await waitFor(() =>
+      expect(onComplete).toHaveBeenCalledWith({ name: "Telegram Friend", email: "" })
+    );
+    expect(mockEndAuthFlow).toHaveBeenCalledTimes(1);
+  });
+
+  it("ends auth guard when a web resume session check completes auth", async () => {
+    const onComplete = vi.fn();
+    const { result } = renderHook(() => useAuthSession({ onComplete }));
+
+    await waitFor(() => expect(mockGetSession).toHaveBeenCalledTimes(1));
+
+    mockGetSession.mockResolvedValueOnce({
+      data: { session: createTelegramSession() },
+      error: null,
+    });
+
+    act(() => {
+      result.current.setLoadingProvider("telegram");
+    });
+    await waitFor(() => expect(result.current.loadingProvider).toBe("telegram"));
+
+    act(() => {
+      window.dispatchEvent(new Event("focus"));
+    });
+
+    await waitFor(() =>
+      expect(onComplete).toHaveBeenCalledWith({ name: "Telegram Friend", email: "" })
+    );
+    expect(mockEndAuthFlow).toHaveBeenCalledTimes(1);
+  });
 });

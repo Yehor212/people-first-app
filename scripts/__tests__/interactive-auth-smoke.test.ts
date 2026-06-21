@@ -185,14 +185,18 @@ describe("interactive auth completion smoke helpers", () => {
     const clicks: string[] = [];
     const ancestorLocator = {
       count: async () => 1,
-      click: async () => clicks.push("ancestor"),
+      click: async () => {
+        clicks.push("ancestor");
+      },
     };
     const contentLocator = {
       locator: (selector: string) => {
         expect(selector).toContain("ancestor::");
         return ancestorLocator;
       },
-      click: async () => clicks.push("content"),
+      click: async () => {
+        clicks.push("content");
+      },
     };
     const page = {
       getByTestId: (testId: string) => {

@@ -75,6 +75,7 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
         if (data.session?.user) {
           const name = getAuthUserDisplayName(data.session.user);
           const email = data.session.user.email || "";
+          endAuthFlow();
           tryComplete({ name, email }, "checkSession");
         }
       } catch (err) {
@@ -139,6 +140,7 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
         if (data.session?.user) {
           const name = getAuthUserDisplayName(data.session.user);
           const email = data.session.user.email || "";
+          endAuthFlow();
           tryComplete({ name, email }, "checkSessionOnResume");
         } else if (!hasCompletedRef.current) {
           logger.log("[Auth] No session on resume, user may have canceled");
