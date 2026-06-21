@@ -4,10 +4,42 @@ import { describe, expect, it } from "vitest";
 
 const script = "scripts/check-facebook-auth-live.cjs";
 
+type FacebookAuthLiveResult = {
+  ok?: boolean;
+  status: string;
+  exitCode: number;
+  reason?: string;
+  message: string;
+  finalHost?: string;
+};
+
+type FacebookAuthLiveModule = {
+  detectFacebookOAuthProblem: (input: {
+    currentHost?: string;
+    externalText?: string;
+  }) => FacebookAuthLiveResult | null;
+  inspectFacebookOAuthPage: (input: {
+    finalUrl?: string;
+    externalText?: string;
+  }) => FacebookAuthLiveResult;
+  checkFacebookAuthLive: (input: {
+    env?: Record<string, string | undefined>;
+    rootDir?: string;
+    probeImpl?: (input: {
+      authorizeUrl: string;
+      timeoutMs: number;
+    }) => Promise<FacebookAuthLiveResult>;
+    fetchImpl?: typeof fetch;
+  }) => Promise<FacebookAuthLiveResult>;
+};
+
+function loadFacebookAuthLive(): FacebookAuthLiveModule {
+  return require("../check-facebook-auth-live.cjs") as FacebookAuthLiveModule;
+}
+
 describe("Facebook live auth readiness", () => {
   it("detects the Meta invalid-scope email error before public exposure", async () => {
-    const { detectFacebookOAuthProblem } =
-      await import("../../scripts/check-facebook-auth-live.cjs");
+    const { detectFacebookOAuthProblem } = loadFacebookAuthLive();
 
     expect(
       detectFacebookOAuthProblem({
@@ -21,7 +53,7 @@ describe("Facebook live auth readiness", () => {
   });
 
   it("passes when Facebook shows a normal login page without provider errors", async () => {
-    const { inspectFacebookOAuthPage } = await import("../../scripts/check-facebook-auth-live.cjs");
+    const { inspectFacebookOAuthPage } = loadFacebookAuthLive();
 
     expect(
       inspectFacebookOAuthPage({
@@ -35,7 +67,7 @@ describe("Facebook live auth readiness", () => {
   });
 
   it("falls back to a safe redirect probe when browser inspection is unavailable", async () => {
-    const { checkFacebookAuthLive } = await import("../../scripts/check-facebook-auth-live.cjs");
+    const { checkFacebookAuthLive } = loadFacebookAuthLive();
 
     const result = await checkFacebookAuthLive({
       env: {

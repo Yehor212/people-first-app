@@ -289,8 +289,10 @@ export function useAuthSession(isLoading: boolean): void {
             setHasValidSession(true);
             setWebOAuthError(null);
             notifyAuthComplete();
-            setUserName(name);
-            setUserNameCustom(false);
+            if (!userNameCustomRef.current) {
+              setUserName(name);
+              setUserNameCustom(false);
+            }
             setGoogleAuthChecked(true);
             endAuthFlow();
           } else {

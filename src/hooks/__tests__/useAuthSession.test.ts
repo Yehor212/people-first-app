@@ -120,9 +120,10 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 import { useAuthSession } from "@/hooks/useAuthSession";
-import { setPendingAuthUrl } from "@/lib/authRedirect";
+import { hasPendingAuthUrl, setPendingAuthUrl } from "@/lib/authRedirect";
 import { useAppStore, useUserDataStore } from "@/stores";
 import { isAuthFlowInProgress, resetAuthGuard, startAuthFlow } from "@/lib/authGuard";
+import { AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
 
 const telegramSession = {
   user: {
@@ -424,9 +425,68 @@ describe("useAuthSession", () => {
       expect(useUserDataStore.getState().userName).toBe("Telegram Friend");
       expect(isAuthFlowInProgress()).toBe(false);
     });
-    it.todo("sets user name from session metadata");
-    it.todo("handles failed pending auth callback");
-    it.todo("skips processing on non-native platform");
+    it("does not overwrite a custom user name from native pending auth metadata", async () => {
+      mockIsNative.value = true;
+      startAuthFlow();
+      useUserDataStore.setState({ userName: "My Native Name", userNameCustom: true });
+
+      let currentSession: unknown = null;
+      mockGetSession.mockImplementation(() =>
+        Promise.resolve({ data: { session: currentSession }, error: null })
+      );
+      mockExchangeCodeForSession.mockImplementation(async () => {
+        currentSession = telegramSession;
+        return { data: { session: telegramSession }, error: null };
+      });
+
+      setPendingAuthUrl(
+        "zenflow://auth/callback?code=native-code&state=telegram-state&provider=telegram"
+      );
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(useAppStore.getState().hasValidSession).toBe(true));
+
+      expect(useUserDataStore.getState().userName).toBe("My Native Name");
+      expect(useUserDataStore.getState().userNameCustom).toBe(true);
+    });
+    it("handles failed pending auth callback", async () => {
+      mockIsNative.value = true;
+      startAuthFlow();
+      mockExchangeCodeForSession.mockResolvedValue({
+        data: { session: null },
+        error: { message: "bad verifier" },
+      });
+
+      setPendingAuthUrl(
+        "zenflow://auth/callback?code=broken-native-code&state=telegram-state&provider=telegram"
+      );
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() =>
+        expect(useAppStore.getState().webOAuthError).toBe("Session exchange failed: bad verifier")
+      );
+
+      expect(mockCloseOAuthBrowser).toHaveBeenCalledTimes(1);
+      expect(useAppStore.getState().hasValidSession).toBe(false);
+      expect(isAuthFlowInProgress()).toBe(false);
+    });
+    it("skips pending auth URL processing on non-native platform", async () => {
+      usePlainAuthRoute();
+      mockIsNative.value = false;
+      setPendingAuthUrl(
+        "zenflow://auth/callback?code=native-code&state=telegram-state&provider=telegram"
+      );
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(mockGetSession).toHaveBeenCalled());
+
+      expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
+      expect(mockCloseOAuthBrowser).not.toHaveBeenCalled();
+      expect(hasPendingAuthUrl()).toBe(true);
+    });
   });
 
   describe("cloud sync on auth change", () => {
@@ -566,8 +626,85 @@ describe("useAuthSession", () => {
   });
 
   describe("session expired handler", () => {
-    it.todo("resets auth state when session is truly expired");
-    it.todo("ignores expired event if session is still valid");
-    it.todo("throttles expired events within 5s window");
+    it("resets auth state when session is truly expired", async () => {
+      usePlainAuthRoute();
+      mockGetSession.mockResolvedValue({ data: { session: telegramSession }, error: null });
+
+      renderHook(() => useAuthSession(false));
+      await waitFor(() => expect(useAppStore.getState().hasValidSession).toBe(true));
+
+      useAppStore.setState({ hasValidSession: true, authBypassFlag: true });
+      useUserDataStore.setState({ googleAuthChecked: true });
+      mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
+
+      act(() => {
+        window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
+      });
+
+      await waitFor(() => expect(useAppStore.getState().hasValidSession).toBe(false));
+      expect(useAppStore.getState().authBypassFlag).toBe(false);
+      expect(useUserDataStore.getState().googleAuthChecked).toBe(false);
+    });
+
+    it("ignores expired event if session is still valid", async () => {
+      usePlainAuthRoute();
+      mockGetSession.mockResolvedValue({ data: { session: telegramSession }, error: null });
+
+      renderHook(() => useAuthSession(false));
+      await waitFor(() => expect(useAppStore.getState().hasValidSession).toBe(true));
+
+      useAppStore.setState({ hasValidSession: true, authBypassFlag: true });
+      useUserDataStore.setState({ googleAuthChecked: true });
+
+      act(() => {
+        window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
+      });
+
+      await Promise.resolve();
+
+      expect(useAppStore.getState().hasValidSession).toBe(true);
+      expect(useAppStore.getState().authBypassFlag).toBe(true);
+      expect(useUserDataStore.getState().googleAuthChecked).toBe(true);
+    });
+
+    it("throttles expired events within 5s window", async () => {
+      usePlainAuthRoute();
+      const nowSpy = vi.spyOn(Date, "now");
+      nowSpy.mockReturnValue(10000);
+      mockGetSession.mockResolvedValue({ data: { session: telegramSession }, error: null });
+
+      try {
+        renderHook(() => useAuthSession(false));
+        await waitFor(() => expect(useAppStore.getState().hasValidSession).toBe(true));
+
+        mockGetSession.mockClear();
+        mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
+
+        act(() => {
+          window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
+        });
+
+        await waitFor(() => expect(mockGetSession).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(useAppStore.getState().hasValidSession).toBe(false));
+
+        mockGetSession.mockClear();
+        useAppStore.setState({ hasValidSession: true, authBypassFlag: true });
+        useUserDataStore.setState({ googleAuthChecked: true });
+        nowSpy.mockReturnValue(10001);
+
+        act(() => {
+          window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
+        });
+
+        await Promise.resolve();
+
+        expect(mockGetSession).not.toHaveBeenCalled();
+        expect(useAppStore.getState().hasValidSession).toBe(true);
+        expect(useAppStore.getState().authBypassFlag).toBe(true);
+        expect(useUserDataStore.getState().googleAuthChecked).toBe(true);
+      } finally {
+        nowSpy.mockRestore();
+      }
+    });
   });
 });
