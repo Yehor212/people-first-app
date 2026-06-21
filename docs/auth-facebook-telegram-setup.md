@@ -117,7 +117,13 @@ client-side Telegram secret is needed.
    ```bash
    npm --prefix tools/telegram-control run set-bot-ui -- --profile-photo-only --dry-run
    npm --prefix tools/telegram-control run set-bot-ui -- --profile-photo-only
+   npm --prefix tools/telegram-control run check:bot-profile-photo
    ```
+
+   The verifier uses Bot API `getUserProfilePhotos` and `getFile` to compare
+   the live Telegram avatar with the approved repo JPG. Without
+   `TELEGRAM_BOT_TOKEN` it reports `UNVERIFIED` instead of printing or
+   guessing secrets.
 
    If the Bot API profile-photo call is unavailable for the account, use the
    manual fallback: send `/setuserpic` to BotFather, choose `@ZenFlowAuthBot`,

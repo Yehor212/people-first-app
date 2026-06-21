@@ -221,6 +221,16 @@ checkSourceContains(
   "Telegram bot UI setup uploads the approved profile photo through Bot API"
 );
 checkSourceContains(
+  "tools/telegram-control/package.json",
+  "check:bot-profile-photo",
+  "Telegram bot profile photo live verifier is registered"
+);
+checkSourceContains(
+  "tools/telegram-control/src/telegram-readiness.ts",
+  "getUserProfilePhotos",
+  "Telegram bot profile photo live verifier checks the live Bot API avatar"
+);
+checkSourceContains(
   "src/components/settings/account-section/useAccountAuth.ts",
   "linkIdentity",
   "Settings supports provider account linking"

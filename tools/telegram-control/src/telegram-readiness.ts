@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+
 import { validateTelegramAdminIds } from "./activation-doctor";
 
 export type TelegramReadinessStatus = "PASS" | "UNVERIFIED" | "FAIL";
@@ -20,8 +22,33 @@ interface TelegramApiResponse<T> {
 }
 
 interface TelegramBotInfo {
+  id?: number;
   is_bot?: boolean;
   username?: string;
+}
+
+interface TelegramPhotoSize {
+  file_id?: string;
+  width?: number;
+  height?: number;
+  file_size?: number;
+}
+
+interface TelegramUserProfilePhotos {
+  total_count?: number;
+  photos?: TelegramPhotoSize[][];
+}
+
+interface TelegramFile {
+  file_id?: string;
+  file_path?: string;
+}
+
+export interface TelegramBotProfilePhotoCheckOptions {
+  botToken: string | undefined;
+  approvedPhotoPath: string;
+  fetcher?: typeof fetch;
+  comparePhoto?: (actualBytes: Uint8Array, approvedPhotoPath: string) => Promise<boolean>;
 }
 
 interface TelegramWebhookInfo {
@@ -33,7 +60,7 @@ interface TelegramWebhookInfo {
 
 export async function buildTelegramReadinessChecks(
   env: Readonly<Record<string, string | undefined>>,
-  options: TelegramReadinessOptions,
+  options: TelegramReadinessOptions
 ): Promise<TelegramReadinessCheck[]> {
   const checks = buildLocalTelegramReadinessChecks(env);
 
@@ -63,24 +90,34 @@ export async function buildTelegramReadinessChecks(
 }
 
 export function buildLocalTelegramReadinessChecks(
-  env: Readonly<Record<string, string | undefined>>,
+  env: Readonly<Record<string, string | undefined>>
 ): TelegramReadinessCheck[] {
   const botToken = trimmed(env.TELEGRAM_BOT_TOKEN);
   const webhookSecret = trimmed(env.TELEGRAM_WEBHOOK_SECRET);
   const adminIds = trimmed(env.TELEGRAM_ADMIN_IDS);
   const webhookUrl = trimmed(env.TELEGRAM_WEBHOOK_URL);
-  const miniAppUrl = trimmed(env.TELEGRAM_MINI_APP_URL) ?? miniAppUrlFromControlBase(env.TELEGRAM_CONTROL_BASE_URL);
+  const miniAppUrl =
+    trimmed(env.TELEGRAM_MINI_APP_URL) ?? miniAppUrlFromControlBase(env.TELEGRAM_CONTROL_BASE_URL);
   const tokenErrors = botToken ? validateTelegramBotToken(botToken) : ["missing from environment"];
-  const webhookSecretErrors = webhookSecret ? validateTelegramWebhookSecret(webhookSecret) : ["missing from environment"];
+  const webhookSecretErrors = webhookSecret
+    ? validateTelegramWebhookSecret(webhookSecret)
+    : ["missing from environment"];
   const adminIdErrors = validateTelegramAdminIds(adminIds);
-  const webhookUrlErrors = webhookUrl ? validateTelegramWebhookUrl(webhookUrl) : ["missing from environment"];
-  const miniAppUrlErrors = miniAppUrl ? validateTelegramMiniAppUrl(miniAppUrl) : ["set TELEGRAM_MINI_APP_URL or TELEGRAM_CONTROL_BASE_URL"];
+  const webhookUrlErrors = webhookUrl
+    ? validateTelegramWebhookUrl(webhookUrl)
+    : ["missing from environment"];
+  const miniAppUrlErrors = miniAppUrl
+    ? validateTelegramMiniAppUrl(miniAppUrl)
+    : ["set TELEGRAM_MINI_APP_URL or TELEGRAM_CONTROL_BASE_URL"];
 
   return [
     {
       name: "TELEGRAM_BOT_TOKEN",
       status: statusFromErrors(Boolean(botToken), tokenErrors),
-      evidence: tokenErrors.length === 0 ? "present and shape-valid; value not printed" : tokenErrors.join("; "),
+      evidence:
+        tokenErrors.length === 0
+          ? "present and shape-valid; value not printed"
+          : tokenErrors.join("; "),
     },
     {
       name: "TELEGRAM_WEBHOOK_SECRET",
@@ -93,23 +130,32 @@ export function buildLocalTelegramReadinessChecks(
     {
       name: "TELEGRAM_ADMIN_IDS",
       status: statusFromErrors(Boolean(adminIds), adminIdErrors),
-      evidence: adminIdErrors.length === 0 ? "numeric Telegram admin allowlist present" : adminIdErrors.join("; "),
+      evidence:
+        adminIdErrors.length === 0
+          ? "numeric Telegram admin allowlist present"
+          : adminIdErrors.join("; "),
     },
     {
       name: "TELEGRAM_WEBHOOK_URL",
       status: statusFromErrors(Boolean(webhookUrl), webhookUrlErrors),
-      evidence: webhookUrlErrors.length === 0 ? "HTTPS /telegram/webhook URL validated" : webhookUrlErrors.join("; "),
+      evidence:
+        webhookUrlErrors.length === 0
+          ? "HTTPS /telegram/webhook URL validated"
+          : webhookUrlErrors.join("; "),
     },
     {
       name: "TELEGRAM_MINI_APP_URL",
       status: statusFromErrors(Boolean(miniAppUrl), miniAppUrlErrors),
-      evidence: miniAppUrlErrors.length === 0 ? "HTTPS Mini App URL validated" : miniAppUrlErrors.join("; "),
+      evidence:
+        miniAppUrlErrors.length === 0
+          ? "HTTPS Mini App URL validated"
+          : miniAppUrlErrors.join("; "),
     },
   ];
 }
 
 export function overallTelegramReadinessStatus(
-  checks: readonly TelegramReadinessCheck[],
+  checks: readonly TelegramReadinessCheck[]
 ): TelegramReadinessStatus {
   if (checks.some((check) => check.status === "FAIL")) {
     return "FAIL";
@@ -147,7 +193,157 @@ export function validateTelegramMiniAppUrl(value: string): string[] {
   return errors;
 }
 
-async function checkTelegramGetMe(botToken: string, fetcher: typeof fetch): Promise<TelegramReadinessCheck> {
+export async function checkTelegramBotProfilePhoto({
+  botToken: rawBotToken,
+  approvedPhotoPath,
+  fetcher = fetch,
+  comparePhoto = compareTelegramProfilePhotoToApproved,
+}: TelegramBotProfilePhotoCheckOptions): Promise<TelegramReadinessCheck> {
+  const botToken = trimmed(rawBotToken);
+  if (!botToken) {
+    return {
+      name: "Telegram bot profile photo",
+      status: "UNVERIFIED",
+      evidence: "TELEGRAM_BOT_TOKEN is missing; live bot profile photo check not run",
+    };
+  }
+
+  const tokenErrors = validateTelegramBotToken(botToken);
+  if (tokenErrors.length > 0) {
+    return {
+      name: "Telegram bot profile photo",
+      status: "FAIL",
+      evidence: tokenErrors.join("; "),
+    };
+  }
+
+  const botInfo = await callTelegram<TelegramBotInfo>(botToken, "getMe", fetcher);
+  if (!botInfo.ok || !botInfo.result?.is_bot || !botInfo.result.id) {
+    return {
+      name: "Telegram bot profile photo",
+      status: "FAIL",
+      evidence: `Telegram getMe did not return a bot id: ${redactTelegramToken(botInfo.description ?? "unknown error", botToken)}`,
+    };
+  }
+
+  const photos = await callTelegram<TelegramUserProfilePhotos>(
+    botToken,
+    "getUserProfilePhotos",
+    fetcher,
+    {
+      user_id: botInfo.result.id,
+      limit: 1,
+    }
+  );
+  if (!photos.ok || !photos.result) {
+    return {
+      name: "Telegram bot profile photo",
+      status: "FAIL",
+      evidence: `Telegram getUserProfilePhotos failed: ${redactTelegramToken(photos.description ?? "unknown error", botToken)}`,
+    };
+  }
+
+  const photo = photos.result.photos?.[0]?.at(-1);
+  if (!photo?.file_id) {
+    return {
+      name: "Telegram bot profile photo",
+      status: "FAIL",
+      evidence:
+        "Telegram bot has no profile photo; upload the approved ZenFlow userpic before public OAuth checks",
+    };
+  }
+
+  const file = await callTelegram<TelegramFile>(botToken, "getFile", fetcher, {
+    file_id: photo.file_id,
+  });
+  if (!file.ok || !file.result?.file_path) {
+    return {
+      name: "Telegram bot profile photo",
+      status: "FAIL",
+      evidence: `Telegram getFile failed: ${redactTelegramToken(file.description ?? "unknown error", botToken)}`,
+    };
+  }
+
+  const fileUrl = buildTelegramFileUrl(botToken, file.result.file_path);
+  if (!fileUrl) {
+    return {
+      name: "Telegram bot profile photo",
+      status: "FAIL",
+      evidence: "Telegram returned an unsafe profile photo file path",
+    };
+  }
+
+  try {
+    const response = await fetcher(fileUrl);
+    if (!response.ok) {
+      return {
+        name: "Telegram bot profile photo",
+        status: "UNVERIFIED",
+        evidence: `Telegram profile photo download returned HTTP ${response.status}`,
+      };
+    }
+
+    const actualBytes = new Uint8Array(await response.arrayBuffer());
+    const matchesApproved = await comparePhoto(actualBytes, approvedPhotoPath);
+    if (!matchesApproved) {
+      return {
+        name: "Telegram bot profile photo",
+        status: "FAIL",
+        evidence: "Telegram bot profile photo does not match the approved ZenFlow logo asset",
+      };
+    }
+  } catch (error) {
+    return {
+      name: "Telegram bot profile photo",
+      status: "UNVERIFIED",
+      evidence: `Telegram bot profile photo check could not be completed: ${redactTelegramToken(error instanceof Error ? error.message : String(error), botToken)}`,
+    };
+  }
+
+  const username = botInfo.result.username
+    ? `@${botInfo.result.username}`
+    : "bot username unavailable";
+  return {
+    name: "Telegram bot profile photo",
+    status: "PASS",
+    evidence: `${username} profile photo matches the approved ZenFlow logo; token value not printed`,
+  };
+}
+
+export async function compareTelegramProfilePhotoToApproved(
+  actualBytes: Uint8Array,
+  approvedPhotoPath: string
+): Promise<boolean> {
+  const [{ default: sharp }, approvedBytes] = await Promise.all([
+    import("sharp"),
+    readFile(approvedPhotoPath),
+  ]);
+  const [actualRaw, approvedRaw] = await Promise.all([
+    sharp(Buffer.from(actualBytes))
+      .resize(64, 64, { fit: "cover" })
+      .flatten()
+      .removeAlpha()
+      .raw()
+      .toBuffer(),
+    sharp(approvedBytes).resize(64, 64, { fit: "cover" }).flatten().removeAlpha().raw().toBuffer(),
+  ]);
+
+  if (actualRaw.length !== approvedRaw.length || actualRaw.length === 0) {
+    return false;
+  }
+
+  let totalDistance = 0;
+  for (let index = 0; index < actualRaw.length; index += 1) {
+    totalDistance += Math.abs(actualRaw[index] - approvedRaw[index]);
+  }
+  const meanNormalizedDistance = totalDistance / actualRaw.length / 255;
+  return meanNormalizedDistance <= 0.08;
+}
+
+async function checkTelegramGetMe(
+  botToken: string,
+  fetcher: typeof fetch
+): Promise<TelegramReadinessCheck> {
   const response = await callTelegram<TelegramBotInfo>(botToken, "getMe", fetcher);
   if (!response.ok || !response.result?.is_bot) {
     return {
@@ -156,7 +352,9 @@ async function checkTelegramGetMe(botToken: string, fetcher: typeof fetch): Prom
       evidence: `Telegram getMe did not confirm a bot: ${response.description ?? "unknown error"}`,
     };
   }
-  const username = response.result.username ? `@${response.result.username}` : "bot username unavailable";
+  const username = response.result.username
+    ? `@${response.result.username}`
+    : "bot username unavailable";
   return {
     name: "Telegram getMe",
     status: "PASS",
@@ -167,7 +365,7 @@ async function checkTelegramGetMe(botToken: string, fetcher: typeof fetch): Prom
 async function checkTelegramWebhookInfo(
   botToken: string,
   env: Readonly<Record<string, string | undefined>>,
-  fetcher: typeof fetch,
+  fetcher: typeof fetch
 ): Promise<TelegramReadinessCheck> {
   const response = await callTelegram<TelegramWebhookInfo>(botToken, "getWebhookInfo", fetcher);
   if (!response.ok || !response.result) {
@@ -213,10 +411,21 @@ async function checkTelegramWebhookInfo(
   };
 }
 
-async function callTelegram<T>(botToken: string, method: string, fetcher: typeof fetch): Promise<TelegramApiResponse<T>> {
+async function callTelegram<T>(
+  botToken: string,
+  method: string,
+  fetcher: typeof fetch,
+  body?: Record<string, unknown>
+): Promise<TelegramApiResponse<T>> {
   try {
     const response = await fetcher(`https://api.telegram.org/bot${botToken}/${method}`, {
       method: "POST",
+      ...(body
+        ? {
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          }
+        : {}),
     });
     return (await response.json()) as TelegramApiResponse<T>;
   } catch (error) {
@@ -225,6 +434,22 @@ async function callTelegram<T>(botToken: string, method: string, fetcher: typeof
       description: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+function buildTelegramFileUrl(botToken: string, filePath: string): string | null {
+  if (
+    !filePath ||
+    filePath.startsWith("/") ||
+    filePath.includes("..") ||
+    /^[a-z][a-z0-9+.-]*:/i.test(filePath)
+  ) {
+    return null;
+  }
+  return new URL(`/file/bot${botToken}/${filePath}`, "https://api.telegram.org").toString();
+}
+
+function redactTelegramToken(value: string, botToken: string): string {
+  return value.split(botToken).join("[redacted-telegram-token]");
 }
 
 function statusFromErrors(hasValue: boolean, errors: readonly string[]): TelegramReadinessStatus {

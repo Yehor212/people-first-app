@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildLocalTelegramReadinessChecks,
   buildTelegramReadinessChecks,
+  checkTelegramBotProfilePhoto,
   overallTelegramReadinessStatus,
   validateTelegramBotToken,
   validateTelegramWebhookSecret,
@@ -18,7 +19,9 @@ const validEnv = {
 
 void test("Telegram readiness local checks validate setup without exposing secrets", () => {
   const checks = buildLocalTelegramReadinessChecks(validEnv);
-  const report = checks.map((check) => `${check.status} ${check.name} ${check.evidence}`).join("\n");
+  const report = checks
+    .map((check) => `${check.status} ${check.name} ${check.evidence}`)
+    .join("\n");
 
   assert.equal(overallTelegramReadinessStatus(checks), "PASS");
   assert.doesNotMatch(report, /abcdefghijklmnopqrstuvwxyz/);
@@ -63,8 +66,13 @@ void test("Telegram readiness live checks use getMe and getWebhookInfo without p
     });
   };
 
-  const checks = await buildTelegramReadinessChecks(validEnv, { live: true, fetcher: fetcher as typeof fetch });
-  const report = checks.map((check) => `${check.status} ${check.name} ${check.evidence}`).join("\n");
+  const checks = await buildTelegramReadinessChecks(validEnv, {
+    live: true,
+    fetcher: fetcher as typeof fetch,
+  });
+  const report = checks
+    .map((check) => `${check.status} ${check.name} ${check.evidence}`)
+    .join("\n");
 
   assert.equal(overallTelegramReadinessStatus(checks), "PASS");
   assert.equal(requestedUrls.length, 2);
@@ -84,9 +92,89 @@ void test("Telegram readiness live webhook mismatch fails closed", async () => {
     });
   };
 
-  const checks = await buildTelegramReadinessChecks(validEnv, { live: true, fetcher: fetcher as typeof fetch });
+  const checks = await buildTelegramReadinessChecks(validEnv, {
+    live: true,
+    fetcher: fetcher as typeof fetch,
+  });
 
   assert.equal(checks.find((check) => check.name === "Telegram getWebhookInfo")?.status, "FAIL");
+});
+
+void test("Telegram bot profile photo live check verifies approved userpic without exposing token", async () => {
+  const requestedUrls: string[] = [];
+  const fetcher = async (url: string | URL) => {
+    const nextUrl = String(url);
+    requestedUrls.push(nextUrl);
+    if (nextUrl.endsWith("/getMe")) {
+      return jsonResponse({
+        ok: true,
+        result: { id: 123456789, is_bot: true, username: "ZenFlowAuthBot" },
+      });
+    }
+    if (nextUrl.endsWith("/getUserProfilePhotos")) {
+      return jsonResponse({
+        ok: true,
+        result: { total_count: 1, photos: [[{ file_id: "small" }, { file_id: "approved-file" }]] },
+      });
+    }
+    if (nextUrl.endsWith("/getFile")) {
+      return jsonResponse({ ok: true, result: { file_path: "photos/approved.jpg" } });
+    }
+    return new Response(new Uint8Array([1, 2, 3]), { status: 200 });
+  };
+
+  const check = await checkTelegramBotProfilePhoto({
+    botToken: validEnv.TELEGRAM_BOT_TOKEN,
+    approvedPhotoPath: "docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg",
+    fetcher: fetcher as typeof fetch,
+    comparePhoto: async (actualBytes, approvedPath) =>
+      actualBytes.length === 3 && approvedPath.endsWith("zenflow-auth-bot-userpic.jpg"),
+  });
+
+  assert.equal(check.status, "PASS");
+  assert.equal(requestedUrls.length, 4);
+  assert.match(check.evidence, /@ZenFlowAuthBot/);
+  assert.doesNotMatch(check.evidence, /abcdefghijklmnopqrstuvwxyz/);
+  assert.equal(
+    requestedUrls.some((url) => url.includes("/getUserProfilePhotos")),
+    true
+  );
+  assert.equal(
+    requestedUrls.some((url) => url.includes("/getFile")),
+    true
+  );
+});
+
+void test("Telegram bot profile photo live check fails when the avatar differs", async () => {
+  const fetcher = async (url: string | URL) => {
+    const nextUrl = String(url);
+    if (nextUrl.endsWith("/getMe")) {
+      return jsonResponse({
+        ok: true,
+        result: { id: 123456789, is_bot: true, username: "ZenFlowAuthBot" },
+      });
+    }
+    if (nextUrl.endsWith("/getUserProfilePhotos")) {
+      return jsonResponse({
+        ok: true,
+        result: { total_count: 1, photos: [[{ file_id: "current-file" }]] },
+      });
+    }
+    if (nextUrl.endsWith("/getFile")) {
+      return jsonResponse({ ok: true, result: { file_path: "photos/current.jpg" } });
+    }
+    return new Response(new Uint8Array([9, 9, 9]), { status: 200 });
+  };
+
+  const check = await checkTelegramBotProfilePhoto({
+    botToken: validEnv.TELEGRAM_BOT_TOKEN,
+    approvedPhotoPath: "docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg",
+    fetcher: fetcher as typeof fetch,
+    comparePhoto: async () => false,
+  });
+
+  assert.equal(check.status, "FAIL");
+  assert.match(check.evidence, /does not match/);
 });
 
 function jsonResponse(body: unknown): Response {
