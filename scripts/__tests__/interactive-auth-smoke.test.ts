@@ -38,6 +38,7 @@ const {
     authScreenVisible: boolean;
     authGateChecked?: boolean;
     googleAuthChecked?: boolean;
+    appShellVisible?: boolean;
     hasSupabaseSession: boolean;
     hasOAuthParams: boolean;
   }) => boolean;
@@ -95,6 +96,7 @@ describe("interactive auth completion smoke helpers", () => {
         currentHost: "yehor212.github.io",
         authScreenVisible: false,
         authGateChecked: true,
+        appShellVisible: true,
         hasSupabaseSession: true,
         hasOAuthParams: false,
       })
@@ -110,6 +112,7 @@ describe("interactive auth completion smoke helpers", () => {
         currentHost: "yehor212.github.io",
         authScreenVisible: false,
         googleAuthChecked: true,
+        appShellVisible: true,
         hasSupabaseSession: true,
         hasOAuthParams: false,
       })
@@ -121,10 +124,37 @@ describe("interactive auth completion smoke helpers", () => {
         currentHost: "oauth.telegram.org",
         authScreenVisible: false,
         googleAuthChecked: true,
+        appShellVisible: true,
         hasSupabaseSession: true,
         hasOAuthParams: false,
       })
     ).toBe(false);
+  });
+
+  it("requires the app shell before treating interactive auth as complete", () => {
+    expect(typeof isCompletedInteractiveAuthState).toBe("function");
+
+    const completedState = {
+      appHost: "yehor212.github.io",
+      currentHost: "yehor212.github.io",
+      authScreenVisible: false,
+      authGateChecked: true,
+      hasSupabaseSession: true,
+      hasOAuthParams: false,
+    };
+
+    expect(
+      isCompletedInteractiveAuthState?.({
+        ...completedState,
+        appShellVisible: false,
+      })
+    ).toBe(false);
+    expect(
+      isCompletedInteractiveAuthState?.({
+        ...completedState,
+        appShellVisible: true,
+      })
+    ).toBe(true);
   });
 
   it("requires a parseable Supabase session shape before treating auth as complete", () => {
@@ -248,11 +278,13 @@ describe("interactive auth completion smoke helpers", () => {
         provider: "telegram",
         authGateChecked: true,
         googleAuthChecked: true,
+        appShellVisible: true,
         hasSupabaseSession: true,
       })
     ).toEqual({
       provider: "telegram",
       authGateChecked: true,
+      appShellVisible: true,
       hasSupabaseSession: true,
       supabaseSessionKeyCount: 0,
     });

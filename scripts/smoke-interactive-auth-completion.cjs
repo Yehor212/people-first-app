@@ -138,6 +138,7 @@ function isCompletedInteractiveAuthState(state) {
     state.currentHost === state.appHost &&
     state.hasSupabaseSession &&
     isAuthGateCheckedState(state) &&
+    state.appShellVisible &&
     !state.authScreenVisible &&
     !state.hasOAuthParams
   );
@@ -241,6 +242,7 @@ function sanitizeInteractiveAuthState(state) {
     appHost: state.appHost,
     currentHost: state.currentHost,
     authScreenVisible: state.authScreenVisible,
+    appShellVisible: state.appShellVisible,
     ...(hasAuthGateCheckedState ? { authGateChecked: isAuthGateCheckedState(state) } : {}),
     hasSupabaseSession: state.hasSupabaseSession,
     hasOAuthParams: state.hasOAuthParams,
@@ -305,6 +307,7 @@ async function readInteractiveAuthState(page, appHost, provider) {
     appHost,
     currentHost,
     authScreenVisible: false,
+    appShellVisible: false,
     authGateChecked: false,
     hasSupabaseSession: false,
     hasOAuthParams: hasOAuthCallbackParams(finalUrl),
@@ -326,6 +329,9 @@ async function readInteractiveAuthState(page, appHost, provider) {
   try {
     const pageState = await page.evaluate(() => {
       const authScreenVisible = Boolean(document.querySelector('[data-testid="auth-screen"]'));
+      const appShellVisible = Boolean(
+        document.querySelector('[data-testid="nav-v2-orchestrator"], [data-testid="app-shell-v1"]')
+      );
       const authGateChecked = localStorage.getItem("zenflow-google-auth-checked") === "true";
       const supabaseSessionKeys = Object.keys(localStorage).filter(
         (key) => key.startsWith("sb-") && key.includes("auth-token")
@@ -358,7 +364,13 @@ async function readInteractiveAuthState(page, appHost, provider) {
         hasValidSupabaseAuthSessionValue(localStorage.getItem(key))
       );
 
-      return { authScreenVisible, authGateChecked, hasSupabaseSession, supabaseSessionKeys };
+      return {
+        authScreenVisible,
+        appShellVisible,
+        authGateChecked,
+        hasSupabaseSession,
+        supabaseSessionKeys,
+      };
     });
 
     return { ...state, ...pageState };

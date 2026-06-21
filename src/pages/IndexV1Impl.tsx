@@ -318,17 +318,28 @@ export default function IndexV1Impl() {
   // Derive latest mood emoji + label for widget sync
   const widgetMoodData = useMemo(() => {
     const MOOD_EMOJI: Record<string, string> = {
-      great: "\u{1F604}", good: "\u{1F642}", okay: "\u{1F610}",
-      bad: "\u{1F614}", terrible: "\u{1F622}",
+      great: "\u{1F604}",
+      good: "\u{1F642}",
+      okay: "\u{1F610}",
+      bad: "\u{1F614}",
+      terrible: "\u{1F622}",
     };
     const today = new Date().toISOString().slice(0, 10);
-    const todayMoods = moods.filter(m => m.date === today);
+    const todayMoods = moods.filter((m) => m.date === today);
     if (todayMoods.length === 0) return { emoji: undefined, label: undefined };
     const latest = todayMoods[todayMoods.length - 1];
     return { emoji: MOOD_EMOJI[latest.mood], label: latest.mood };
   }, [moods]);
 
-  useWidgetSync(widgetStreak, habits, todayFocusMinutes, lastBadgeName, isWidgetDataLoading, widgetMoodData.emoji, widgetMoodData.label);
+  useWidgetSync(
+    widgetStreak,
+    habits,
+    todayFocusMinutes,
+    lastBadgeName,
+    isWidgetDataLoading,
+    widgetMoodData.emoji,
+    widgetMoodData.label
+  );
 
   // Settings/data management handlers
   const {
@@ -378,7 +389,10 @@ export default function IndexV1Impl() {
           adConsent={canInitializeRewardedAds(privacy)}
           isPremium={false}
         >
-          <div className="min-h-screen zen-gradient-hero lg:ps-[var(--sidebar-width,256px)] motion-safe:transition-[padding] motion-safe:duration-300">
+          <div
+            data-testid="app-shell-v1"
+            className="min-h-screen zen-gradient-hero lg:ps-[var(--sidebar-width,256px)] motion-safe:transition-[padding] motion-safe:duration-300"
+          >
             {/* Skip to main content link for accessibility */}
             <a
               href="#main-content"
@@ -438,81 +452,78 @@ export default function IndexV1Impl() {
                       </div>
                     }
                   >
-                    <Bloom
-                      key={activeTab}
-                      transition={staggerDelay('primary')}
-                    >
-                        {activeTab === "home" && (
-                          <HomeTab
-                            currentActiveStreak={innerWorld.currentActiveStreak}
-                            isRestMode={isRestMode}
-                            activateRestMode={activateRestMode}
-                            deactivateRestMode={deactivateRestMode}
-                            canActivateRestMode={canActivateRestMode}
-                            completedTodayCount={completedTodayCount}
-                            currentPrimaryCTA={currentPrimaryCTA}
-                            handleAddMood={handleAddMood}
-                            handlePullToRefresh={handlePullToRefresh}
-                            moodRef={moodRef}
-                          />
-                        )}
+                    <Bloom key={activeTab} transition={staggerDelay("primary")}>
+                      {activeTab === "home" && (
+                        <HomeTab
+                          currentActiveStreak={innerWorld.currentActiveStreak}
+                          isRestMode={isRestMode}
+                          activateRestMode={activateRestMode}
+                          deactivateRestMode={deactivateRestMode}
+                          canActivateRestMode={canActivateRestMode}
+                          completedTodayCount={completedTodayCount}
+                          currentPrimaryCTA={currentPrimaryCTA}
+                          handleAddMood={handleAddMood}
+                          handlePullToRefresh={handlePullToRefresh}
+                          moodRef={moodRef}
+                        />
+                      )}
 
-                        {activeTab === "garden" && (
-                          <GardenTab
-                            todayAllEvents={todayAllEvents}
-                            handleAddScheduleEvent={handleAddScheduleEvent}
-                            handleDeleteScheduleEvent={handleDeleteScheduleEvent}
-                            handleCompleteFocusSession={handleCompleteFocusSession}
-                            onToggleHabit={handleToggleHabit}
-                            onAddGratitude={handleAddGratitude}
-                            handlePullToRefresh={handlePullToRefresh}
-                          />
-                        )}
+                      {activeTab === "garden" && (
+                        <GardenTab
+                          todayAllEvents={todayAllEvents}
+                          handleAddScheduleEvent={handleAddScheduleEvent}
+                          handleDeleteScheduleEvent={handleDeleteScheduleEvent}
+                          handleCompleteFocusSession={handleCompleteFocusSession}
+                          onToggleHabit={handleToggleHabit}
+                          onAddGratitude={handleAddGratitude}
+                          handlePullToRefresh={handlePullToRefresh}
+                        />
+                      )}
 
-                        {activeTab === "stats" && (
-                          <StatsTab
-                            restDays={innerWorld.restDays}
-                            currentFocusMinutes={currentFocusMinutes}
-                            onQuickAction={handleQuickAction}
-                            handlePullToRefresh={handlePullToRefresh}
-                          />
-                        )}
+                      {activeTab === "stats" && (
+                        <StatsTab
+                          restDays={innerWorld.restDays}
+                          currentFocusMinutes={currentFocusMinutes}
+                          onQuickAction={handleQuickAction}
+                          handlePullToRefresh={handlePullToRefresh}
+                        />
+                      )}
 
-                        {activeTab === "achievements" && (
-                          <AchievementsTab
-                            stats={stats}
-                            unlockedAchievements={gamificationState.unlockedAchievements}
-                            handlePullToRefresh={handlePullToRefresh}
-                          />
-                        )}
+                      {activeTab === "achievements" && (
+                        <AchievementsTab
+                          stats={stats}
+                          unlockedAchievements={gamificationState.unlockedAchievements}
+                          handlePullToRefresh={handlePullToRefresh}
+                        />
+                      )}
 
-                        {activeTab === "settings" && (
-                          <SettingsTab
-                            userName={userName}
-                            onNameChange={handleNameChange}
-                            onResetData={handleResetData}
-                            reminders={reminders}
-                            onRemindersChange={setReminders}
-                            privacy={privacy}
-                            onPrivacyChange={setPrivacy}
-                            initialOpenSection={settingsOpenSection}
-                          />
-                        )}
+                      {activeTab === "settings" && (
+                        <SettingsTab
+                          userName={userName}
+                          onNameChange={handleNameChange}
+                          onResetData={handleResetData}
+                          reminders={reminders}
+                          onRemindersChange={setReminders}
+                          privacy={privacy}
+                          onPrivacyChange={setPrivacy}
+                          initialOpenSection={settingsOpenSection}
+                        />
+                      )}
 
-                        {activeTab === "mindmap" && HABIT_HUB_ENABLED && (
-                          <HabitHubTab
-                            habits={habits}
-                            onToggleHabit={handleToggleHabit}
-                            onAdjustHabit={handleAdjustHabit}
-                            onAddHabit={handleAddHabit}
-                            onDeleteHabit={handleDeleteHabit}
-                            onUpdateHabit={handleUpdateHabit}
-                            onArchiveHabit={handleArchiveHabit}
-                            onUnarchiveHabit={handleUnarchiveHabit}
-                            onSkipHabit={handleSkipHabit}
-                            onUnskipHabit={handleUnskipHabit}
-                          />
-                        )}
+                      {activeTab === "mindmap" && HABIT_HUB_ENABLED && (
+                        <HabitHubTab
+                          habits={habits}
+                          onToggleHabit={handleToggleHabit}
+                          onAdjustHabit={handleAdjustHabit}
+                          onAddHabit={handleAddHabit}
+                          onDeleteHabit={handleDeleteHabit}
+                          onUpdateHabit={handleUpdateHabit}
+                          onArchiveHabit={handleArchiveHabit}
+                          onUnarchiveHabit={handleUnarchiveHabit}
+                          onSkipHabit={handleSkipHabit}
+                          onUnskipHabit={handleUnskipHabit}
+                        />
+                      )}
                     </Bloom>
                   </Suspense>
                 </LazyErrorBoundary>
