@@ -145,6 +145,18 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
   }
 }
 
+async function launchBrowser(chromium) {
+  const channel = process.env.ZENFLOW_PUBLIC_AUTH_BROWSER_CHANNEL;
+  if (!channel) return chromium.launch();
+
+  try {
+    return await chromium.launch({ channel });
+  } catch (error) {
+    console.warn("[public-auth-smoke] Browser channel unavailable, falling back to bundled Chromium:", channel);
+    return chromium.launch();
+  }
+}
+
 async function run() {
   const { chromium } = require("playwright");
   const baseUrl = normalizeBaseUrl(process.env.ZENFLOW_PUBLIC_AUTH_URL || DEFAULT_PUBLIC_AUTH_URL);
@@ -159,7 +171,7 @@ async function run() {
   const clickProviders = parseCsv(process.env.ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS, expectedProviders);
   const timeoutMs = Number(process.env.ZENFLOW_PUBLIC_AUTH_TIMEOUT_MS || 45_000);
 
-  const browser = await chromium.launch();
+  const browser = await launchBrowser(chromium);
   const listContext = await browser.newContext({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 3,
@@ -243,5 +255,6 @@ module.exports = {
   DEFAULT_REDIRECT_HOSTS,
   hostnameMatches,
   parseCsv,
+  launchBrowser,
   providerRedirectHosts,
 };

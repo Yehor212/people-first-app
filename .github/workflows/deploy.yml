@@ -413,13 +413,11 @@ jobs:
       - name: Install deps
         run: npm install
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-
       - name: Smoke public auth providers
         env:
           ZENFLOW_PUBLIC_AUTH_URL: ${{ needs.deploy.outputs.page_url }}
           ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS: google,telegram
           ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS: facebook,apple
           ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS: google,telegram
+          ZENFLOW_PUBLIC_AUTH_BROWSER_CHANNEL: chrome
         run: npm run smoke:public-auth
