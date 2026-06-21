@@ -207,6 +207,23 @@ describe("useAuthSession", () => {
         "/orb?nav=v2&navLayout=phone",
       );
     });
+
+    it("handles OAuth errors returned in the URL hash", async () => {
+      window.history.pushState(
+        {},
+        "",
+        "/orb?nav=v2&navLayout=phone#error=server_error&error_description=access_denied",
+      );
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() =>
+        expect(useAppStore.getState().webOAuthError).toBe("access_denied"),
+      );
+      expect(window.location.pathname + window.location.search + window.location.hash).toBe(
+        "/orb?nav=v2&navLayout=phone",
+      );
+    });
   });
 
   describe("session check on mount", () => {

@@ -99,20 +99,26 @@ export function useAuthSession(isLoading: boolean): void {
   }, [setGoogleAuthChecked, setHasValidSession]);
 
   // Web OAuth callback detection — runs ONCE on mount
-  // Detects ?code= or ?error= in URL (from Supabase PKCE redirect)
+  // Detects OAuth code/error in query or hash params (from provider redirects).
   useEffect(() => {
     if (isNativePlatform() || !supabase) return;
 
     const url = new URL(window.location.href);
-    const hasCode = url.searchParams.has("code");
-    const hasError = url.searchParams.has("error");
-    const errorDescription = url.searchParams.get("error_description");
+    const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
+    const hasCode = url.searchParams.has("code") || hashParams.has("code");
+    const hasError = url.searchParams.has("error") || hashParams.has("error");
+    const errorDescription =
+      url.searchParams.get("error_description") || hashParams.get("error_description");
 
     if (!hasCode && !hasError) return;
 
     // Handle error case immediately
     if (hasError) {
-      logger.error("[Index] OAuth error in URL:", url.searchParams.get("error"), errorDescription);
+      logger.error(
+        "[Index] OAuth error in URL:",
+        url.searchParams.get("error") || hashParams.get("error"),
+        errorDescription,
+      );
       setWebOAuthError(
         errorDescription
           ? sanitizeAuthErrorMessage(errorDescription)
