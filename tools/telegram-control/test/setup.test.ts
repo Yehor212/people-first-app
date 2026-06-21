@@ -3,8 +3,11 @@ import test from "node:test";
 import {
   buildTelegramCommandsPayload,
   buildTelegramMenuButtonPayload,
+  buildTelegramProfilePhotoPayload,
   buildTelegramWebhookPayload,
+  TELEGRAM_BOT_USERPIC_RELATIVE_PATH,
   redactTelegramMenuButtonPayload,
+  redactTelegramProfilePhotoPayload,
   redactWebhookPayload,
   validateRuntimeConfig,
 } from "../src/setup";
@@ -85,6 +88,29 @@ void test("buildTelegramCommandsPayload exposes the full control command menu", 
     "deny",
     "cancel",
   ]);
+});
+
+void test("buildTelegramProfilePhotoPayload uses the approved ZenFlow userpic asset", () => {
+  assert.equal(
+    TELEGRAM_BOT_USERPIC_RELATIVE_PATH,
+    "docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg",
+  );
+
+  const payload = buildTelegramProfilePhotoPayload();
+
+  assert.deepEqual(payload, {
+    attachName: "zenflow_auth_bot_userpic",
+    photo: {
+      type: "static",
+      photo: "attach://zenflow_auth_bot_userpic",
+    },
+  });
+  assert.deepEqual(redactTelegramProfilePhotoPayload(payload), {
+    photo: {
+      type: "static",
+      attachNameConfigured: true,
+    },
+  });
 });
 
 void test("buildTelegramMenuButtonPayload requires HTTPS Mini App URL", () => {

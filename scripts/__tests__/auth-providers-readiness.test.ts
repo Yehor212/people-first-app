@@ -269,6 +269,15 @@ describe("check-auth-providers public key readiness", () => {
     );
   });
 
+  it("requires Telegram bot profile photo setup to use the approved ZenFlow logo", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Telegram bot profile photo uses the approved ZenFlow logo");
+  });
+
   it("requires Supabase Facebook auth to allow email-optional identities", () => {
     const result = runReadiness({
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",

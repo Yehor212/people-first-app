@@ -109,8 +109,23 @@ client-side Telegram secret is needed.
 ### BotFather
 
 1. Create or open the ZenFlow Telegram bot in BotFather.
-2. Open **Bot Settings → Web Login**.
-3. Register these Allowed URLs:
+2. Replace the placeholder bot avatar before public login checks. The
+   preferred free path is the repository script, which calls Telegram Bot API
+   `setMyProfilePhoto` with the approved classic ZenFlow logo JPG:
+   `docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg`.
+
+   ```bash
+   npm --prefix tools/telegram-control run set-bot-ui -- --profile-photo-only --dry-run
+   npm --prefix tools/telegram-control run set-bot-ui -- --profile-photo-only
+   ```
+
+   If the Bot API profile-photo call is unavailable for the account, use the
+   manual fallback: send `/setuserpic` to BotFather, choose `@ZenFlowAuthBot`,
+   and upload the same approved JPG asset. Either path removes the old `Z`
+   avatar from the Telegram OAuth consent screen.
+
+3. Open **Bot Settings → Web Login**.
+4. Register these Allowed URLs:
 
 ```text
 https://bwgfslmxmueyglpumkbf.supabase.co/auth/v1/callback
@@ -118,8 +133,8 @@ https://yehor212.github.io/people-first-app/
 https://zenflow.app/
 ```
 
-4. Copy the **Client ID** and **Client Secret** shown in BotFather.
-5. Store them only in Supabase Dashboard or a local secret manager. Do not paste
+5. Copy the **Client ID** and **Client Secret** shown in BotFather.
+6. Store them only in Supabase Dashboard or a local secret manager. Do not paste
    them into git, app code, screenshots, or chat.
 
 ### Supabase Custom Provider

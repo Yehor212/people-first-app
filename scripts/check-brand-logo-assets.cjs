@@ -110,6 +110,7 @@ const IMAGE_EXPECTATIONS = [
     darkSplash: true,
   })),
   { file: "docs/release/microsoft-store/assets/official-logo/zenflow-official-logo-source-1024.png", width: 1024, height: 1024, alpha: "allowed", maxBytes: MAX_STORE_BYTES },
+  { file: "docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg", width: 1024, height: 1024, alpha: "opaque", maxBytes: 5 * 1024 * 1024 },
   { file: "docs/release/microsoft-store/assets/official-logo/zenflow-official-app-tile-icon-300.png", width: 300, height: 300, alpha: "allowed", maxBytes: MAX_STORE_BYTES },
   { file: "docs/release/microsoft-store/assets/official-logo/zenflow-official-app-tile-icon-150.png", width: 150, height: 150, alpha: "allowed", maxBytes: MAX_STORE_BYTES },
   { file: "docs/release/microsoft-store/assets/official-logo/zenflow-official-app-tile-icon-71.png", width: 71, height: 71, alpha: "allowed", maxBytes: MAX_STORE_BYTES },

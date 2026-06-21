@@ -206,6 +206,21 @@ checkSourceContains(
   "Telegram Supabase discovery override is documented"
 );
 checkSourceContains(
+  "docs/auth-facebook-telegram-setup.md",
+  "docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg",
+  "Telegram bot profile photo uses the approved ZenFlow logo"
+);
+checkSourceContains(
+  "docs/auth-facebook-telegram-setup.md",
+  "`/setuserpic`",
+  "Telegram BotFather userpic update flow is documented"
+);
+checkSourceContains(
+  "tools/telegram-control/scripts/set-bot-ui.ts",
+  "setMyProfilePhoto",
+  "Telegram bot UI setup uploads the approved profile photo through Bot API"
+);
+checkSourceContains(
   "src/components/settings/account-section/useAccountAuth.ts",
   "linkIdentity",
   "Settings supports provider account linking"

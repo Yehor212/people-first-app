@@ -14,6 +14,10 @@ export interface SetupReport {
   checks: SetupCheck[];
 }
 
+export const TELEGRAM_BOT_USERPIC_RELATIVE_PATH =
+  "docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg";
+const TELEGRAM_BOT_USERPIC_ATTACH_NAME = "zenflow_auth_bot_userpic";
+
 const REQUIRED_SECRETS = [
   "TELEGRAM_BOT_TOKEN",
   "TELEGRAM_WEBHOOK_SECRET",
@@ -120,6 +124,37 @@ export function buildTelegramCommandsPayload(): {
       { command: "deny", description: "Deny a job with id and nonce" },
       { command: "cancel", description: "Cancel a control job" },
     ],
+  };
+}
+
+export function buildTelegramProfilePhotoPayload(attachName = TELEGRAM_BOT_USERPIC_ATTACH_NAME): {
+  attachName: string;
+  photo: {
+    type: "static";
+    photo: string;
+  };
+} {
+  if (!/^[A-Za-z0-9_]+$/.test(attachName)) {
+    throw new Error("Telegram profile photo attach name may contain only letters, numbers, and underscores");
+  }
+
+  return {
+    attachName,
+    photo: {
+      type: "static",
+      photo: `attach://${attachName}`,
+    },
+  };
+}
+
+export function redactTelegramProfilePhotoPayload(
+  payload: ReturnType<typeof buildTelegramProfilePhotoPayload>,
+): Record<string, unknown> {
+  return {
+    photo: {
+      type: payload.photo.type,
+      attachNameConfigured: payload.photo.photo === `attach://${payload.attachName}`,
+    },
   };
 }
 
