@@ -22,6 +22,9 @@ function runPublicCheck(env: NodeJS.ProcessEnv = {}) {
     cwd: process.cwd(),
     env: {
       ...process.env,
+      SUPABASE_URL: "",
+      SUPABASE_PUBLISHABLE_KEY: "",
+      SUPABASE_ANON_KEY: "",
       VITE_SUPABASE_URL: "",
       VITE_SUPABASE_PUBLISHABLE_KEY: "",
       VITE_SUPABASE_ANON_KEY: "",
@@ -44,6 +47,9 @@ function runPublicCheckInFixture(files: Record<string, string>, env: NodeJS.Proc
     cwd: root,
     env: {
       ...process.env,
+      SUPABASE_URL: "",
+      SUPABASE_PUBLISHABLE_KEY: "",
+      SUPABASE_ANON_KEY: "",
       VITE_SUPABASE_URL: "",
       VITE_SUPABASE_PUBLISHABLE_KEY: "",
       VITE_SUPABASE_ANON_KEY: "",
