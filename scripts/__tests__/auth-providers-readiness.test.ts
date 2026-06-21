@@ -179,6 +179,15 @@ describe("check-auth-providers public key readiness", () => {
     expect(result.stdout).toContain("Facebook OAuth requests only public_profile scope");
   });
 
+  it("requires Supabase Facebook auth to allow email-optional identities", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Local Supabase Facebook provider allows users without email");
+  });
+
   it("fails strict readiness when server-only Supabase secrets are present locally", () => {
     const result = runReadiness({
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",

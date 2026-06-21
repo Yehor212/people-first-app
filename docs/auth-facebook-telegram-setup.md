@@ -67,7 +67,9 @@ https://api.zenflowapp.online/auth/v1/callback
 4. Keep the app request limited to `public_profile` until Meta public access is
    approved. Do not request `email` from the client OAuth scope; the product
    treats Facebook email as optional.
-5. Copy the Facebook App ID and App Secret.
+5. Copy the Facebook App ID and App Secret. Store them in Supabase/secret
+   storage as `SUPABASE_AUTH_EXTERNAL_FACEBOOK_CLIENT_ID` and
+   `SUPABASE_AUTH_EXTERNAL_FACEBOOK_SECRET`, never in client env.
 6. In Supabase Auth Providers, enable Facebook and paste the App ID and Secret.
 7. Enable `Allow users without an email` to keep provider behavior consistent
    with Telegram and prevent email-optional identities from being rejected.

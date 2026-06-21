@@ -152,6 +152,7 @@ function checkSourceContains(relativePath, needle, label) {
 const env = mergeEnv();
 const supabaseConfig = readText("supabase/config.toml");
 const authSection = getTomlSection(supabaseConfig, "auth");
+const facebookAuthSection = getTomlSection(supabaseConfig, "auth.external.facebook");
 const appleAuthSection = getTomlSection(supabaseConfig, "auth.external.apple");
 const telegramOidcFunctionSection = getTomlSection(supabaseConfig, "functions.telegram-oidc");
 
@@ -311,6 +312,43 @@ if (!authSection) {
     "Local Supabase manual identity linking is enabled",
     "Local Supabase manual identity linking must be enabled for provider linking",
     "supabase/config.toml [auth]"
+  );
+}
+
+if (!facebookAuthSection) {
+  add(
+    "FAIL",
+    "Supabase Facebook provider section is missing",
+    "supabase/config.toml lacks [auth.external.facebook]"
+  );
+} else {
+  checkSectionLine(
+    facebookAuthSection,
+    /^enabled\s*=\s*true\s*$/m,
+    "Local Supabase Facebook provider is enabled",
+    "Local Supabase Facebook provider is disabled",
+    "supabase/config.toml [auth.external.facebook]"
+  );
+  checkSectionLine(
+    facebookAuthSection,
+    /^client_id\s*=\s*"env\(SUPABASE_AUTH_EXTERNAL_FACEBOOK_CLIENT_ID\)"\s*$/m,
+    "Facebook App ID is configured through server-side env substitution",
+    "Facebook App ID must use SUPABASE_AUTH_EXTERNAL_FACEBOOK_CLIENT_ID env substitution",
+    "supabase/config.toml [auth.external.facebook]"
+  );
+  checkSectionLine(
+    facebookAuthSection,
+    /^secret\s*=\s*"env\(SUPABASE_AUTH_EXTERNAL_FACEBOOK_SECRET\)"\s*$/m,
+    "Facebook app secret is configured through server-side env substitution",
+    "Facebook app secret must use SUPABASE_AUTH_EXTERNAL_FACEBOOK_SECRET env substitution",
+    "supabase/config.toml [auth.external.facebook]"
+  );
+  checkSectionLine(
+    facebookAuthSection,
+    /^email_optional\s*=\s*true\s*$/m,
+    "Local Supabase Facebook provider allows users without email",
+    "Local Supabase Facebook provider must set email_optional=true",
+    "supabase/config.toml [auth.external.facebook]"
   );
 }
 
