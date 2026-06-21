@@ -139,8 +139,27 @@ const telegramSession = {
   },
 };
 
+const secondTelegramSession = {
+  user: {
+    ...telegramSession.user,
+    id: "223e4567-e89b-12d3-a456-426614174000",
+    user_metadata: {
+      full_name: "Second Telegram Friend",
+      preferred_username: "second_friend",
+    },
+  },
+};
+
 function usePlainAuthRoute() {
   window.history.pushState({}, "", "/orb?nav=v2&navLayout=phone");
+}
+
+function emitAuthEvent(event: string, session: unknown) {
+  act(() => {
+    for (const callback of authStateCallbacks) {
+      callback(event, session);
+    }
+  });
 }
 
 function resetStores() {
@@ -411,19 +430,139 @@ describe("useAuthSession", () => {
   });
 
   describe("cloud sync on auth change", () => {
-    it.todo("syncs with cloud on initial session");
-    it.todo("uses merge mode for same user");
-    it.todo("uses replace mode after sign-out and re-sign-in");
-    it.todo("uses replace mode on account switch");
-    it.todo("starts auto-sync after successful initial sync");
-    it.todo("joins presence channel on auth");
-    it.todo("stops auto-sync on unmount");
+    it("syncs with cloud on initial session", async () => {
+      usePlainAuthRoute();
+      mockGetSession.mockResolvedValue({ data: { session: telegramSession }, error: null });
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(mockSyncWithCloud).toHaveBeenCalledWith("merge"));
+      expect(mockMigrateExistingUser).toHaveBeenCalled();
+    });
+
+    it("uses merge mode for same user", async () => {
+      usePlainAuthRoute();
+
+      renderHook(() => useAuthSession(false));
+      emitAuthEvent("SIGNED_IN", telegramSession);
+
+      await waitFor(() => expect(mockSyncWithCloud).toHaveBeenCalledWith("merge"));
+      emitAuthEvent("SIGNED_IN", telegramSession);
+
+      expect(mockSyncWithCloud).toHaveBeenCalledTimes(1);
+    });
+
+    it("uses replace mode after sign-out and re-sign-in", async () => {
+      usePlainAuthRoute();
+
+      renderHook(() => useAuthSession(false));
+      emitAuthEvent("SIGNED_IN", telegramSession);
+      await waitFor(() => expect(mockSyncWithCloud).toHaveBeenCalledWith("merge"));
+
+      emitAuthEvent("SIGNED_OUT", null);
+      emitAuthEvent("SIGNED_IN", telegramSession);
+
+      await waitFor(() => expect(mockSyncWithCloud).toHaveBeenCalledWith("replace"));
+      expect(mockSyncWithCloud).toHaveBeenNthCalledWith(2, "replace");
+    });
+
+    it("uses replace mode on account switch", async () => {
+      usePlainAuthRoute();
+
+      renderHook(() => useAuthSession(false));
+      emitAuthEvent("SIGNED_IN", telegramSession);
+      await waitFor(() => expect(mockSyncWithCloud).toHaveBeenCalledWith("merge"));
+
+      emitAuthEvent("SIGNED_IN", secondTelegramSession);
+
+      await waitFor(() => expect(mockSyncWithCloud).toHaveBeenCalledWith("replace"));
+      expect(mockSyncWithCloud).toHaveBeenNthCalledWith(2, "replace");
+    });
+
+    it("starts auto-sync after successful initial sync", async () => {
+      usePlainAuthRoute();
+      mockGetSession.mockResolvedValue({ data: { session: telegramSession }, error: null });
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(mockStartAutoSync).toHaveBeenCalled());
+    });
+
+    it("joins presence channel on auth", async () => {
+      usePlainAuthRoute();
+      mockGetSession.mockResolvedValue({ data: { session: telegramSession }, error: null });
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(mockJoinPresence).toHaveBeenCalled());
+    });
+
+    it("pulls preferences and clears stale session-expired state on sign-in", async () => {
+      usePlainAuthRoute();
+
+      renderHook(() => useAuthSession(false));
+      emitAuthEvent("SIGNED_IN", telegramSession);
+
+      await waitFor(() => expect(mockPullPreferences).toHaveBeenCalled());
+      expect(mockResetSessionExpired).toHaveBeenCalled();
+      expect(mockMigrateExistingUser).toHaveBeenCalled();
+    });
+
+    it("tracks app version in the user profile on sign-in", async () => {
+      usePlainAuthRoute();
+
+      renderHook(() => useAuthSession(false));
+      emitAuthEvent("SIGNED_IN", telegramSession);
+
+      await waitFor(() =>
+        expect(mockProfileUpdate).toHaveBeenCalledWith({
+          app_version: expect.any(String),
+        })
+      );
+    });
+
+    it("stops auto-sync on unmount", () => {
+      usePlainAuthRoute();
+
+      const { unmount } = renderHook(() => useAuthSession(false));
+      unmount();
+
+      expect(mockStopAutoSync).toHaveBeenCalled();
+      expect(mockLeavePresence).toHaveBeenCalled();
+    });
   });
 
   describe("user name sync", () => {
-    it.todo("syncs user name from session metadata on mount");
-    it.todo("updates name when auth state changes");
-    it.todo("does not overwrite custom user name");
+    it("syncs user name from session metadata on mount", async () => {
+      usePlainAuthRoute();
+      mockGetSession.mockResolvedValue({ data: { session: telegramSession }, error: null });
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(useUserDataStore.getState().userName).toBe("Telegram Friend"));
+    });
+
+    it("updates name when auth state changes", async () => {
+      usePlainAuthRoute();
+
+      renderHook(() => useAuthSession(false));
+      emitAuthEvent("SIGNED_IN", telegramSession);
+
+      await waitFor(() => expect(useUserDataStore.getState().userName).toBe("Telegram Friend"));
+    });
+
+    it("does not overwrite custom user name", async () => {
+      usePlainAuthRoute();
+      useUserDataStore.setState({ userName: "My Name", userNameCustom: true });
+      mockGetSession.mockResolvedValue({ data: { session: telegramSession }, error: null });
+
+      renderHook(() => useAuthSession(false));
+      await waitFor(() => expect(mockGetSession).toHaveBeenCalled());
+      emitAuthEvent("SIGNED_IN", telegramSession);
+      await Promise.resolve();
+
+      expect(useUserDataStore.getState().userName).toBe("My Name");
+    });
   });
 
   describe("session expired handler", () => {
