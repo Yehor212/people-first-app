@@ -24,6 +24,34 @@ function normalizeBaseUrl(rawUrl) {
   return url;
 }
 
+function parsePublicAuthUrls(value, fallback = [DEFAULT_PUBLIC_AUTH_URL]) {
+  return parseCsv(value, fallback).map((url) => normalizeBaseUrl(url));
+}
+
+function appendPublicAuthPath(baseUrl, path) {
+  const trimmedPath = String(path || "").trim().replace(/^\/+/, "");
+  if (!trimmedPath) return normalizeBaseUrl(baseUrl.toString());
+
+  const url = new URL(trimmedPath, baseUrl);
+  url.hash = "";
+  return url;
+}
+
+function resolvePublicAuthUrls({ baseUrl, urls, additionalPaths } = {}) {
+  const baseUrls = parsePublicAuthUrls(urls || baseUrl || DEFAULT_PUBLIC_AUTH_URL);
+  const extraPaths = parseCsv(additionalPaths, []);
+  const resolvedUrls = [];
+
+  for (const url of baseUrls) {
+    resolvedUrls.push(url);
+    for (const path of extraPaths) {
+      resolvedUrls.push(appendPublicAuthPath(url, path));
+    }
+  }
+
+  return resolvedUrls;
+}
+
 function providerRedirectHosts(provider) {
   const normalizedProvider = provider.toUpperCase().replace(/[^A-Z0-9]/g, "_");
   const envKey = "ZENFLOW_PUBLIC_AUTH_REDIRECT_HOSTS_" + normalizedProvider;
@@ -157,21 +185,14 @@ async function launchBrowser(chromium) {
   }
 }
 
-async function run() {
-  const { chromium } = require("playwright");
-  const baseUrl = normalizeBaseUrl(process.env.ZENFLOW_PUBLIC_AUTH_URL || DEFAULT_PUBLIC_AUTH_URL);
-  const expectedProviders = parseCsv(
-    process.env.ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS,
-    DEFAULT_EXPECTED_PROVIDERS,
-  );
-  const forbiddenProviders = parseCsv(
-    process.env.ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS,
-    DEFAULT_FORBIDDEN_PROVIDERS,
-  );
-  const clickProviders = parseCsv(process.env.ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS, expectedProviders);
-  const timeoutMs = Number(process.env.ZENFLOW_PUBLIC_AUTH_TIMEOUT_MS || 45_000);
-
-  const browser = await launchBrowser(chromium);
+async function verifyPublicAuthUrl({
+  browser,
+  baseUrl,
+  expectedProviders,
+  forbiddenProviders,
+  clickProviders,
+  timeoutMs,
+}) {
   const listContext = await browser.newContext({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 3,
@@ -210,8 +231,6 @@ async function run() {
     }
   }
 
-  await browser.close();
-
   const ok =
     expectedMatches &&
     forbiddenVisible.length === 0 &&
@@ -220,7 +239,7 @@ async function run() {
     listFailedRequests.length === 0 &&
     redirectResults.every((result) => result.ok && result.consoleCount === 0 && result.failedCount === 0);
 
-  const summary = {
+  return {
     ok,
     url: baseUrl.toString(),
     expectedProviders,
@@ -233,6 +252,55 @@ async function run() {
     listConsoleMessages: listConsoleMessages.slice(0, 5),
     listFailedRequests: listFailedRequests.slice(0, 5),
     redirectResults,
+  };
+}
+
+async function run() {
+  const { chromium } = require("playwright");
+  const publicAuthUrls = resolvePublicAuthUrls({
+    baseUrl: process.env.ZENFLOW_PUBLIC_AUTH_URL,
+    urls: process.env.ZENFLOW_PUBLIC_AUTH_URLS,
+    additionalPaths: process.env.ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS,
+  });
+  const expectedProviders = parseCsv(
+    process.env.ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS,
+    DEFAULT_EXPECTED_PROVIDERS,
+  );
+  const forbiddenProviders = parseCsv(
+    process.env.ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS,
+    DEFAULT_FORBIDDEN_PROVIDERS,
+  );
+  const clickProviders = parseCsv(process.env.ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS, expectedProviders);
+  const timeoutMs = Number(process.env.ZENFLOW_PUBLIC_AUTH_TIMEOUT_MS || 45_000);
+
+  const browser = await launchBrowser(chromium);
+  const routeResults = [];
+
+  try {
+    for (const baseUrl of publicAuthUrls) {
+      routeResults.push(
+        await verifyPublicAuthUrl({
+          browser,
+          baseUrl,
+          expectedProviders,
+          forbiddenProviders,
+          clickProviders,
+          timeoutMs,
+        }),
+      );
+    }
+  } finally {
+    await browser.close();
+  }
+
+  const ok = routeResults.every((result) => result.ok);
+  const summary = {
+    ok,
+    urls: publicAuthUrls.map((url) => url.toString()),
+    expectedProviders,
+    forbiddenProviders,
+    routeResults,
+    ...(routeResults.length === 1 ? routeResults[0] : {}),
   };
 
   console.log(JSON.stringify(summary, null, 2));
@@ -250,11 +318,14 @@ if (require.main === module) {
 }
 
 module.exports = {
+  DEFAULT_PUBLIC_AUTH_URL,
   DEFAULT_EXPECTED_PROVIDERS,
   DEFAULT_FORBIDDEN_PROVIDERS,
   DEFAULT_REDIRECT_HOSTS,
   hostnameMatches,
   parseCsv,
+  parsePublicAuthUrls,
+  resolvePublicAuthUrls,
   launchBrowser,
   providerRedirectHosts,
 };

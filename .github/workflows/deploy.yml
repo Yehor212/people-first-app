@@ -416,6 +416,7 @@ jobs:
       - name: Smoke public auth providers
         env:
           ZENFLOW_PUBLIC_AUTH_URL: ${{ needs.deploy.outputs.page_url }}
+          ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS: orb/?nav=v2&navLayout=phone
           ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS: google,telegram
           ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS: facebook,apple
           ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS: google,telegram
