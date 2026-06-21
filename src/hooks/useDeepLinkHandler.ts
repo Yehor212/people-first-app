@@ -126,7 +126,10 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
-          if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
+          if (
+            (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") &&
+            session?.user
+          ) {
             subscription?.unsubscribe();
             clearTimeout(timeoutId);
             trySettle(session);

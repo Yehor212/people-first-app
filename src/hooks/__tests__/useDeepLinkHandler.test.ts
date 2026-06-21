@@ -305,6 +305,42 @@ describe("useDeepLinkHandler", () => {
       expect(mockCloseOAuthBrowser).toHaveBeenCalled();
     });
 
+    it("accepts INITIAL_SESSION after native OAuth callback", async () => {
+      renderHook(() => useDeepLinkHandler());
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(appUrlOpenListeners).toHaveLength(1);
+
+      act(() => {
+        appUrlOpenListeners[0]({
+          url: "com.zenflow.app://login-callback?code=telegram-code&state=telegram-state",
+        });
+      });
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(authStateListeners).toHaveLength(1);
+
+      act(() => {
+        authStateListeners[0]("INITIAL_SESSION", createSession());
+      });
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(useAppStore.getState().hasValidSession).toBe(true);
+      expect(useAppStore.getState().webOAuthError).toBeNull();
+      expect(useUserDataStore.getState().userName).toBe("Telegram Friend");
+      expect(mockCloseOAuthBrowser).toHaveBeenCalled();
+    });
+
     it("sets user name from session metadata on success", async () => {
       mockGetSession.mockResolvedValue({
         data: { session: createSession("Facebook Friend") },
