@@ -12,6 +12,10 @@ const cloudflareSecrets = [
 const githubSecrets: Array<{ name: string; note?: string }> = [
   { name: "TELEGRAM_CONTROL_CALLBACK_URL" },
   { name: "TELEGRAM_CONTROL_CALLBACK_SECRET" },
+  {
+    name: "TELEGRAM_BOT_TOKEN",
+    note: "required for deploy-time approved OAuth bot profile photo proof",
+  },
   { name: "OPENAI_API_KEY", note: "optional; AI modes return UNVERIFIED without it" },
   { name: "SNYK_TOKEN", note: "optional; security mode skips Snyk without it" },
 ];
@@ -21,9 +25,7 @@ console.log("");
 console.log("1. Create free Cloudflare KV namespace:");
 console.log("   npm --prefix tools/telegram-control run setup:kv -- --dry-run");
 console.log("   npm --prefix tools/telegram-control run setup:kv -- --create --write");
-console.log(
-  "   # Or, if the namespace already exists:"
-);
+console.log("   # Or, if the namespace already exists:");
 console.log(
   "   npm --prefix tools/telegram-control run setup:kv -- --namespace-id <cloudflare-kv-id> --write"
 );
@@ -73,17 +75,25 @@ console.log("   npm --prefix tools/telegram-control run set-bot-ui -- --dry-run"
 console.log("   npm --prefix tools/telegram-control run set-bot-ui");
 console.log("");
 console.log("6. Configure GitHub repository secrets:");
-console.log("   npm --prefix tools/telegram-control run github-app:manifest -- --base-url https://<worker-host>");
+console.log(
+  "   npm --prefix tools/telegram-control run github-app:manifest -- --base-url https://<worker-host>"
+);
 console.log("   # Add --org <organization> only for an organization-owned GitHub App.");
 console.log("   npm --prefix tools/telegram-control run secrets:install-generated -- --github");
 console.log("   $env:TELEGRAM_CONTROL_BASE_URL='https://<worker-host>'");
 console.log("   npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run");
 console.log("   npm --prefix tools/telegram-control run set-github-callback-url -- --github");
-console.log("   npm --prefix tools/telegram-control run secrets:install-account -- --github --github-snyk");
+console.log(
+  "   npm --prefix tools/telegram-control run secrets:install-account -- --github --github-telegram --github-snyk"
+);
 console.log("   # Add --github-openai only after explicit OPENAI_API_KEY approval.");
-console.log("   npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare");
+console.log(
+  "   npm --prefix tools/telegram-control run activation:doctor -- --github --cloudflare"
+);
 console.log("   # Full explicit activation after all env vars and CLIs are ready:");
-console.log("   npm --prefix tools/telegram-control run activation:run -- --apply --kv --cloudflare-account-secrets --cloudflare-secrets --github-snyk-secret --github-secrets --deploy --github-callback --telegram --live-smoke --external-checks");
+console.log(
+  "   npm --prefix tools/telegram-control run activation:run -- --apply --kv --cloudflare-account-secrets --cloudflare-secrets --github-telegram-secret --github-snyk-secret --github-secrets --deploy --github-callback --telegram --live-smoke --external-checks"
+);
 for (const secret of githubSecrets) {
   if (secret.note) {
     console.log(`   # ${secret.note}`);

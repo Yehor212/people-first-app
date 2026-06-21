@@ -16,6 +16,7 @@ const cloudflare = args.includes("--cloudflare");
 const github = args.includes("--github");
 const dryRun = args.includes("--dry-run") || (!cloudflare && !github);
 const githubOpenAI = args.includes("--github-openai");
+const githubTelegram = args.includes("--github-telegram");
 const githubSnyk = args.includes("--github-snyk");
 const repo = argValue("--repo") ?? "Yehor212/people-first-app";
 const githubNames = selectedGitHubSecretNames();
@@ -38,13 +39,15 @@ if (showGitHub) {
 
 if (dryRun) {
   console.log(
-    "Dry run only. Re-run with --cloudflare for Worker account secrets, or --github plus --github-openai/--github-snyk for GitHub Actions secrets.",
+    "Dry run only. Re-run with --cloudflare for Worker account secrets, or --github plus --github-telegram/--github-openai/--github-snyk for GitHub Actions secrets."
   );
   process.exit(0);
 }
 
 if (github && githubNames.length === 0) {
-  console.error("UNVERIFIED No GitHub account-owned secrets selected. Use --github-openai or --github-snyk.");
+  console.error(
+    "UNVERIFIED No GitHub account-owned secrets selected. Use --github-telegram, --github-openai, or --github-snyk."
+  );
   process.exit(1);
 }
 
@@ -71,6 +74,9 @@ function selectedGitHubSecretNames(): AccountSecretName[] {
     return [...GITHUB_ACCOUNT_SECRET_NAMES];
   }
   const names: AccountSecretName[] = [];
+  if (githubTelegram) {
+    names.push("TELEGRAM_BOT_TOKEN");
+  }
   if (githubOpenAI) {
     names.push("OPENAI_API_KEY");
   }
@@ -103,7 +109,14 @@ function assertNoMissing(label: string, checks: readonly AccountSecretCheck[]): 
 }
 
 function putCloudflareSecret(name: string, value: string): void {
-  const invocation = commandInvocation("npx", ["wrangler", "secret", "put", name, "--config", workerConfigPath]);
+  const invocation = commandInvocation("npx", [
+    "wrangler",
+    "secret",
+    "put",
+    name,
+    "--config",
+    workerConfigPath,
+  ]);
   const result = spawnSyncBase(invocation.command, invocation.args, {
     input: value,
     encoding: "utf8",
@@ -142,7 +155,9 @@ function assertWranglerAuthenticated(): void {
     stdio: ["ignore", "pipe", "pipe"],
   });
   if (result.status !== 0) {
-    console.error("UNVERIFIED Cloudflare account-owned secrets were not stored because wrangler is not authenticated.");
+    console.error(
+      "UNVERIFIED Cloudflare account-owned secrets were not stored because wrangler is not authenticated."
+    );
     process.exit(result.status ?? 1);
   }
 }
@@ -151,7 +166,10 @@ function assertGitHubCli(): void {
   execFileSync("gh", ["auth", "status"], { stdio: "ignore" });
 }
 
-function commandInvocation(command: string, commandArgs: string[]): { command: string; args: string[] } {
+function commandInvocation(
+  command: string,
+  commandArgs: string[]
+): { command: string; args: string[] } {
   if (process.platform === "win32" && (command === "npx" || command === "npm")) {
     return { command: "cmd.exe", args: ["/d", "/s", "/c", command, ...commandArgs] };
   }

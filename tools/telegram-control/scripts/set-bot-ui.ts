@@ -32,7 +32,8 @@ if (missing.length > 0 && !dryRun) {
 }
 
 const commandsPayload = profilePhotoOnly ? null : buildTelegramCommandsPayload();
-const menuPayload = profilePhotoOnly ? null : buildTelegramMenuButtonPayload(miniAppUrl ?? "");
+const menuPayload =
+  profilePhotoOnly || !miniAppUrl ? null : buildTelegramMenuButtonPayload(miniAppUrl);
 const profilePhotoPayload = buildTelegramProfilePhotoPayload();
 
 if (dryRun) {

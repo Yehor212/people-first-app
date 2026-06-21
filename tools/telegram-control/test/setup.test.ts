@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import test from "node:test";
 import {
   buildTelegramCommandsPayload,
@@ -33,7 +34,7 @@ void test("buildTelegramWebhookPayload rejects non-HTTPS URLs", () => {
         webhookUrl: "http://example.com/telegram/webhook",
         webhookSecret: "secret-token",
       }),
-    /HTTPS/,
+    /HTTPS/
   );
 });
 
@@ -44,7 +45,7 @@ void test("buildTelegramWebhookPayload rejects wrong webhook path and unsafe sec
         webhookUrl: "https://example.com/not-webhook",
         webhookSecret: "secret-token",
       }),
-    /\/telegram\/webhook/,
+    /\/telegram\/webhook/
   );
   assert.throws(
     () =>
@@ -52,7 +53,7 @@ void test("buildTelegramWebhookPayload rejects wrong webhook path and unsafe sec
         webhookUrl: "https://example.com/telegram/webhook",
         webhookSecret: invalidTelegramHeaderValueForTest(),
       }),
-    /may contain only/,
+    /may contain only/
   );
 });
 
@@ -93,7 +94,7 @@ void test("buildTelegramCommandsPayload exposes the full control command menu", 
 void test("buildTelegramProfilePhotoPayload uses the approved ZenFlow userpic asset", () => {
   assert.equal(
     TELEGRAM_BOT_USERPIC_RELATIVE_PATH,
-    "docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg",
+    "docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg"
   );
 
   const payload = buildTelegramProfilePhotoPayload();
@@ -129,6 +130,31 @@ void test("buildTelegramMenuButtonPayload requires HTTPS Mini App URL", () => {
   });
 });
 
+void test("set-bot-ui dry run reports missing Mini App URL without throwing", () => {
+  const result = spawnSync(
+    process.execPath,
+    ["--import", "tsx", "scripts/set-bot-ui.ts", "--dry-run"],
+    {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        TELEGRAM_BOT_TOKEN: "",
+        TELEGRAM_MINI_APP_URL: "",
+        TELEGRAM_CONTROL_BASE_URL: "",
+      },
+      encoding: "utf8",
+    }
+  );
+
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /Telegram bot UI setup dry run: UNVERIFIED/);
+  assert.match(result.stdout, /TELEGRAM_MINI_APP_URL or TELEGRAM_CONTROL_BASE_URL/);
+  assert.doesNotMatch(
+    `${result.stdout}
+${result.stderr}`,
+    /ERR_INVALID_URL|TypeError/
+  );
+});
 void test("validateRuntimeConfig reports missing live secrets as UNVERIFIED", () => {
   const report = validateRuntimeConfig(
     {},
@@ -136,9 +162,14 @@ void test("validateRuntimeConfig reports missing live secrets as UNVERIFIED", ()
       hasKvNamespaceId: false,
       hasWorkerConfig: true,
       hasWorkflowFile: true,
-    },
+    }
   );
 
   assert.equal(report.status, "UNVERIFIED");
-  assert.equal(report.checks.some((check) => check.name === "TELEGRAM_BOT_TOKEN" && check.status === "UNVERIFIED"), true);
+  assert.equal(
+    report.checks.some(
+      (check) => check.name === "TELEGRAM_BOT_TOKEN" && check.status === "UNVERIFIED"
+    ),
+    true
+  );
 });

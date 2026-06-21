@@ -53,21 +53,34 @@ const checks = [
   },
   {
     name: "GitHub callback secret",
-    status: process.env.TELEGRAM_CONTROL_CALLBACK_SECRET || githubSecrets.has("TELEGRAM_CONTROL_CALLBACK_SECRET")
-      ? "PASS"
-      : "UNVERIFIED",
+    status:
+      process.env.TELEGRAM_CONTROL_CALLBACK_SECRET ||
+      githubSecrets.has("TELEGRAM_CONTROL_CALLBACK_SECRET")
+        ? "PASS"
+        : "UNVERIFIED",
     next: "Set TELEGRAM_CONTROL_CALLBACK_SECRET in GitHub Actions secrets.",
   },
   {
     name: "GitHub callback URL",
-    status: process.env.TELEGRAM_CONTROL_CALLBACK_URL || githubSecrets.has("TELEGRAM_CONTROL_CALLBACK_URL")
-      ? "PASS"
-      : "UNVERIFIED",
+    status:
+      process.env.TELEGRAM_CONTROL_CALLBACK_URL ||
+      githubSecrets.has("TELEGRAM_CONTROL_CALLBACK_URL")
+        ? "PASS"
+        : "UNVERIFIED",
     next: "Set TELEGRAM_CONTROL_CALLBACK_URL in GitHub Actions secrets after the Worker URL exists.",
   },
   {
+    name: "GitHub Telegram bot token",
+    status:
+      process.env.TELEGRAM_BOT_TOKEN || githubSecrets.has("TELEGRAM_BOT_TOKEN")
+        ? "PASS"
+        : "UNVERIFIED",
+    next: "Set GitHub TELEGRAM_BOT_TOKEN so deploy can prove the approved Telegram OAuth bot profile photo.",
+  },
+  {
     name: "OpenAI Codex secret",
-    status: process.env.OPENAI_API_KEY || githubSecrets.has("OPENAI_API_KEY") ? "PASS" : "UNVERIFIED",
+    status:
+      process.env.OPENAI_API_KEY || githubSecrets.has("OPENAI_API_KEY") ? "PASS" : "UNVERIFIED",
     next: "Set GitHub OPENAI_API_KEY for Codex-backed plan/fix/review/security modes. Without it, AI modes correctly report UNVERIFIED.",
   },
   {
@@ -119,7 +132,7 @@ function listGitHubSecrets(): Set<string> {
       output
         .split(/\r?\n/)
         .map((line) => line.split(/\s+/)[0] ?? "")
-        .filter(Boolean),
+        .filter(Boolean)
     );
   } catch {
     return new Set();

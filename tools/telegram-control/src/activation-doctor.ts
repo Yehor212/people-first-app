@@ -96,6 +96,11 @@ export function buildActivationDoctorChecks(input: ActivationDoctorInput): Activ
     },
     resolveCallbackUrlCheck(input.env),
     {
+      name: "GitHub Telegram bot token",
+      status: envOrGitHubSecret(input, "TELEGRAM_BOT_TOKEN") ? "PASS" : "UNVERIFIED",
+      evidence: githubEvidence(input, "TELEGRAM_BOT_TOKEN"),
+    },
+    {
       name: "OpenAI Codex secret",
       status: envOrGitHubSecret(input, "OPENAI_API_KEY") ? "PASS" : "UNVERIFIED",
       evidence: githubEvidence(input, "OPENAI_API_KEY"),
@@ -114,7 +119,12 @@ export function buildActivationDoctorChecks(input: ActivationDoctorInput): Activ
     },
     {
       name: "Telegram admin ids",
-      status: telegramAdminIdErrors.length === 0 ? "PASS" : hasEnv(input.env, "TELEGRAM_ADMIN_IDS") ? "FAIL" : "UNVERIFIED",
+      status:
+        telegramAdminIdErrors.length === 0
+          ? "PASS"
+          : hasEnv(input.env, "TELEGRAM_ADMIN_IDS")
+            ? "FAIL"
+            : "UNVERIFIED",
       evidence:
         telegramAdminIdErrors.length === 0
           ? "numeric Telegram admin allowlist is present"
@@ -122,7 +132,11 @@ export function buildActivationDoctorChecks(input: ActivationDoctorInput): Activ
     },
     {
       name: "Telegram webhook env",
-      status: hasAllEnv(input.env, ["TELEGRAM_WEBHOOK_URL", "TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET"])
+      status: hasAllEnv(input.env, [
+        "TELEGRAM_WEBHOOK_URL",
+        "TELEGRAM_BOT_TOKEN",
+        "TELEGRAM_WEBHOOK_SECRET",
+      ])
         ? "PASS"
         : "UNVERIFIED",
       evidence: "required before set-webhook can install a live Telegram webhook",
@@ -141,7 +155,10 @@ export function overallActivationStatus(checks: readonly ActivationCheck[]): Act
   return "PASS";
 }
 
-export function summarizeGeneratedSecretFile(exists: boolean, content: string): GeneratedSecretFileSummary {
+export function summarizeGeneratedSecretFile(
+  exists: boolean,
+  content: string
+): GeneratedSecretFileSummary {
   if (!exists) {
     return { exists: false, presentNames: [], errors: [] };
   }
@@ -162,7 +179,9 @@ export function summarizeGeneratedSecretFile(exists: boolean, content: string): 
   return { exists: true, presentNames, errors };
 }
 
-export function resolveCallbackUrlCheck(env: Readonly<Record<string, string | undefined>>): ActivationCheck {
+export function resolveCallbackUrlCheck(
+  env: Readonly<Record<string, string | undefined>>
+): ActivationCheck {
   const explicit = trimmed(env.TELEGRAM_CONTROL_CALLBACK_URL);
   const base = trimmed(env.TELEGRAM_CONTROL_BASE_URL);
 
@@ -170,7 +189,8 @@ export function resolveCallbackUrlCheck(env: Readonly<Record<string, string | un
     return {
       name: "Callback URL shape",
       status: "UNVERIFIED",
-      evidence: "set TELEGRAM_CONTROL_BASE_URL or TELEGRAM_CONTROL_CALLBACK_URL after Worker deploy",
+      evidence:
+        "set TELEGRAM_CONTROL_BASE_URL or TELEGRAM_CONTROL_CALLBACK_URL after Worker deploy",
     };
   }
 
@@ -245,7 +265,9 @@ function kvNamespaceStatus(input: ActivationDoctorInput): ActivationStatus {
   if (!input.workerConfigExists) {
     return "FAIL";
   }
-  return input.workerConfigText.includes("REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID") ? "UNVERIFIED" : "PASS";
+  return input.workerConfigText.includes("REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID")
+    ? "UNVERIFIED"
+    : "PASS";
 }
 
 function kvNamespaceEvidence(input: ActivationDoctorInput): string {
@@ -278,7 +300,7 @@ function githubEvidence(input: ActivationDoctorInput, name: string): string {
 
 function hasAllEnv(
   env: Readonly<Record<string, string | undefined>>,
-  names: readonly string[],
+  names: readonly string[]
 ): boolean {
   return names.every((name) => hasEnv(env, name));
 }

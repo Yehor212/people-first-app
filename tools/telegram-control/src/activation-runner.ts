@@ -5,6 +5,7 @@ export interface ActivationRunOptions {
   createKv: boolean;
   cloudflareAccountSecrets: boolean;
   githubOpenAISecret: boolean;
+  githubTelegramSecret: boolean;
   githubSnykSecret: boolean;
   cloudflareSecrets: boolean;
   githubSecrets: boolean;
@@ -31,7 +32,7 @@ export interface ActivationRunStep {
 
 export function parseActivationRunOptions(
   args: readonly string[],
-  env: Readonly<Record<string, string | undefined>>,
+  env: Readonly<Record<string, string | undefined>>
 ): ActivationRunOptions {
   return {
     apply: args.includes("--apply"),
@@ -40,6 +41,7 @@ export function parseActivationRunOptions(
     createKv: args.includes("--create-kv"),
     cloudflareAccountSecrets: args.includes("--cloudflare-account-secrets"),
     githubOpenAISecret: args.includes("--github-openai-secret"),
+    githubTelegramSecret: args.includes("--github-telegram-secret"),
     githubSnykSecret: args.includes("--github-snyk-secret"),
     cloudflareSecrets: args.includes("--cloudflare-secrets"),
     githubSecrets: args.includes("--github-secrets"),
@@ -56,8 +58,14 @@ export function parseActivationRunOptions(
 export function buildActivationRunSteps(options: ActivationRunOptions): ActivationRunStep[] {
   const applyAll = options.apply && options.all;
   const applyKv = options.apply && (options.kv || options.createKv || applyAll);
-  const applyCloudflareAccountSecrets = options.apply && (options.cloudflareAccountSecrets || applyAll);
-  const applyGitHubAccountSecrets = options.apply && (options.githubOpenAISecret || options.githubSnykSecret || applyAll);
+  const applyCloudflareAccountSecrets =
+    options.apply && (options.cloudflareAccountSecrets || applyAll);
+  const applyGitHubAccountSecrets =
+    options.apply &&
+    (options.githubTelegramSecret ||
+      options.githubOpenAISecret ||
+      options.githubSnykSecret ||
+      applyAll);
   const applyCloudflareSecrets = options.apply && (options.cloudflareSecrets || applyAll);
   const applyGithubSecrets = options.apply && (options.githubSecrets || applyAll);
   const applyDeploy = options.apply && (options.deploy || applyAll);
@@ -119,7 +127,7 @@ export function buildActivationRunSteps(options: ActivationRunOptions): Activati
       ],
       displayCommand: `npm --prefix tools/telegram-control run secrets:install-account -- ${githubAccountSecretDisplayArgs(
         options,
-        applyGitHubAccountSecrets,
+        applyGitHubAccountSecrets
       ).join(" ")}`,
       applyEnabled: applyGitHubAccountSecrets,
     },
@@ -167,7 +175,12 @@ export function buildActivationRunSteps(options: ActivationRunOptions): Activati
       mutatesExternalState: applyDeploy,
       shouldRun: true,
       command: "npm",
-      args: ["--prefix", "tools/telegram-control", "run", applyDeploy ? "deploy" : "deploy:dry-run"],
+      args: [
+        "--prefix",
+        "tools/telegram-control",
+        "run",
+        applyDeploy ? "deploy" : "deploy:dry-run",
+      ],
       displayCommand: `npm --prefix tools/telegram-control run ${applyDeploy ? "deploy" : "deploy:dry-run"}`,
       applyEnabled: applyDeploy,
     },
@@ -315,11 +328,17 @@ function kvDisplayArgs(options: ActivationRunOptions, applyKv: boolean): string[
   return ["--namespace-id", "<CONTROL_STATE_KV_ID>", "--write"];
 }
 
-function githubAccountSecretArgs(options: ActivationRunOptions, applyGitHubAccountSecrets: boolean): string[] {
+function githubAccountSecretArgs(
+  options: ActivationRunOptions,
+  applyGitHubAccountSecrets: boolean
+): string[] {
   if (!applyGitHubAccountSecrets) {
     return ["--dry-run", "--github"];
   }
   const args = ["--github"];
+  if (options.githubTelegramSecret || options.all) {
+    args.push("--github-telegram");
+  }
   if (options.githubOpenAISecret) {
     args.push("--github-openai");
   }
@@ -331,7 +350,7 @@ function githubAccountSecretArgs(options: ActivationRunOptions, applyGitHubAccou
 
 function githubAccountSecretDisplayArgs(
   options: ActivationRunOptions,
-  applyGitHubAccountSecrets: boolean,
+  applyGitHubAccountSecrets: boolean
 ): string[] {
   return githubAccountSecretArgs(options, applyGitHubAccountSecrets);
 }

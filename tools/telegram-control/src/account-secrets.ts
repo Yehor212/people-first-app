@@ -6,7 +6,11 @@ export const CLOUDFLARE_ACCOUNT_SECRET_NAMES = [
   "GITHUB_APP_PRIVATE_KEY",
 ] as const;
 
-export const GITHUB_ACCOUNT_SECRET_NAMES = ["OPENAI_API_KEY", "SNYK_TOKEN"] as const;
+export const GITHUB_ACCOUNT_SECRET_NAMES = [
+  "TELEGRAM_BOT_TOKEN",
+  "OPENAI_API_KEY",
+  "SNYK_TOKEN",
+] as const;
 
 export type CloudflareAccountSecretName = (typeof CLOUDFLARE_ACCOUNT_SECRET_NAMES)[number];
 export type GitHubAccountSecretName = (typeof GITHUB_ACCOUNT_SECRET_NAMES)[number];
@@ -21,7 +25,7 @@ export interface AccountSecretCheck {
 
 export function buildAccountSecretChecks(
   env: Readonly<Record<string, string | undefined>>,
-  names: readonly AccountSecretName[],
+  names: readonly AccountSecretName[]
 ): AccountSecretCheck[] {
   return names.map((name) => {
     const value = env[name]?.trim() ?? "";
@@ -58,6 +62,10 @@ export function validateAccountSecret(name: AccountSecretName, value: string): s
     return [`${name} is empty`];
   }
 
+  if (name === "TELEGRAM_BOT_TOKEN" && !/^\d+:[A-Za-z0-9_-]{20,}$/.test(trimmed)) {
+    errors.push("TELEGRAM_BOT_TOKEN must look like a BotFather token");
+  }
+
   if (name === "TELEGRAM_ADMIN_IDS") {
     const ids = trimmed
       .split(",")
@@ -69,7 +77,11 @@ export function validateAccountSecret(name: AccountSecretName, value: string): s
   }
 
   if (name === "GITHUB_APP_PRIVATE_KEY") {
-    if (!trimmed.includes("BEGIN") || !trimmed.includes("PRIVATE KEY") || !trimmed.includes("END")) {
+    if (
+      !trimmed.includes("BEGIN") ||
+      !trimmed.includes("PRIVATE KEY") ||
+      !trimmed.includes("END")
+    ) {
       errors.push("GITHUB_APP_PRIVATE_KEY must look like a PEM private key");
     }
   }
