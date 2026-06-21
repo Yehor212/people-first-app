@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const require = createRequire(import.meta.url);
 const {
   detectProviderOAuthError,
+  hasValidSupabaseAuthSessionValue,
   hasOAuthCallbackParams,
   isCompletedInteractiveAuthState,
   parseInteractiveAuthConfig,
@@ -16,6 +17,7 @@ const {
     externalText: string;
   }) => { reason: string; providerError: string } | null;
   hasOAuthCallbackParams?: (url: string) => boolean;
+  hasValidSupabaseAuthSessionValue?: (value: string | null) => boolean;
   isCompletedInteractiveAuthState?: (state: {
     appHost: string;
     currentHost: string;
@@ -93,6 +95,43 @@ describe("interactive auth completion smoke helpers", () => {
         hasOAuthParams: false,
       })
     ).toBe(false);
+  });
+
+  it("requires a parseable Supabase session shape before treating auth as complete", () => {
+    expect(typeof hasValidSupabaseAuthSessionValue).toBe("function");
+
+    expect(
+      hasValidSupabaseAuthSessionValue?.("not-json-but-long-enough-to-look-like-a-token")
+    ).toBe(false);
+    expect(
+      hasValidSupabaseAuthSessionValue?.(
+        JSON.stringify({
+          access_token: "short",
+          refresh_token: "also-short",
+          user: { id: "user-123" },
+        })
+      )
+    ).toBe(false);
+    expect(
+      hasValidSupabaseAuthSessionValue?.(
+        JSON.stringify({
+          currentSession: {
+            access_token: "a".repeat(48),
+            refresh_token: "r".repeat(48),
+            user: { id: "user-123" },
+          },
+        })
+      )
+    ).toBe(true);
+    expect(
+      hasValidSupabaseAuthSessionValue?.(
+        JSON.stringify({
+          access_token: "a".repeat(48),
+          refresh_token: "r".repeat(48),
+          user: { id: "user-123" },
+        })
+      )
+    ).toBe(true);
   });
 
   it("prints concise CLI validation errors without stack traces", () => {

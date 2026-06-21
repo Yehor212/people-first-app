@@ -96,6 +96,38 @@ function hasOAuthCallbackParams(rawUrl) {
   );
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isLikelyStoredToken(value) {
+  return typeof value === "string" && value.length > 20;
+}
+
+function isValidSupabaseSessionShape(session) {
+  return Boolean(
+    isPlainObject(session) &&
+    isLikelyStoredToken(session.access_token) &&
+    isLikelyStoredToken(session.refresh_token) &&
+    isPlainObject(session.user) &&
+    typeof session.user.id === "string" &&
+    session.user.id.trim().length > 0
+  );
+}
+
+function hasValidSupabaseAuthSessionValue(value) {
+  if (typeof value !== "string" || value.length === 0) return false;
+
+  try {
+    const parsed = JSON.parse(value);
+    if (!isPlainObject(parsed)) return false;
+
+    return [parsed, parsed.currentSession, parsed.session].some(isValidSupabaseSessionShape);
+  } catch {
+    return false;
+  }
+}
+
 function isCompletedInteractiveAuthState(state) {
   return Boolean(
     state &&
@@ -291,10 +323,33 @@ async function readInteractiveAuthState(page, appHost, provider) {
       const supabaseSessionKeys = Object.keys(localStorage).filter(
         (key) => key.startsWith("sb-") && key.includes("auth-token")
       );
-      const hasSupabaseSession = supabaseSessionKeys.some((key) => {
-        const value = localStorage.getItem(key);
-        return typeof value === "string" && value.length > 20;
-      });
+      const isPlainObject = (value) =>
+        value !== null && typeof value === "object" && !Array.isArray(value);
+      const isLikelyStoredToken = (value) => typeof value === "string" && value.length > 20;
+      const isValidSupabaseSessionShape = (session) =>
+        Boolean(
+          isPlainObject(session) &&
+          isLikelyStoredToken(session.access_token) &&
+          isLikelyStoredToken(session.refresh_token) &&
+          isPlainObject(session.user) &&
+          typeof session.user.id === "string" &&
+          session.user.id.trim().length > 0
+        );
+      const hasValidSupabaseAuthSessionValue = (value) => {
+        if (typeof value !== "string" || value.length === 0) return false;
+
+        try {
+          const parsed = JSON.parse(value);
+          if (!isPlainObject(parsed)) return false;
+
+          return [parsed, parsed.currentSession, parsed.session].some(isValidSupabaseSessionShape);
+        } catch {
+          return false;
+        }
+      };
+      const hasSupabaseSession = supabaseSessionKeys.some((key) =>
+        hasValidSupabaseAuthSessionValue(localStorage.getItem(key))
+      );
 
       return { authScreenVisible, googleAuthChecked, hasSupabaseSession, supabaseSessionKeys };
     });
@@ -405,6 +460,7 @@ module.exports = {
   SUPPORTED_PROVIDERS,
   detectProviderOAuthError,
   hasOAuthCallbackParams,
+  hasValidSupabaseAuthSessionValue,
   isCompletedInteractiveAuthState,
   parseInteractiveAuthConfig,
   runInteractiveAuthCompletion,
