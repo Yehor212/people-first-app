@@ -337,6 +337,51 @@ checkSourceContains(
 );
 checkSourceContains(
   ".github/workflows/deploy-v2-preview.yml",
+  "npm run check:facebook-auth-public",
+  "V2 preview deploy runs Facebook public Auth readiness check"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "npm run check:facebook-auth-live",
+  "V2 preview deploy runs Facebook live OAuth readiness check"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "ZENFLOW_FACEBOOK_AUTH_LIVE_REQUIRED",
+  "V2 preview deploy gates Facebook live OAuth readiness before public exposure"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "npm run check:apple-auth-public",
+  "V2 preview deploy runs Apple public Auth readiness check"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "npm run check:apple-auth-live",
+  "V2 preview deploy runs Apple hosted Auth readiness check"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "ZENFLOW_APPLE_AUTH_PUBLIC_REQUIRED",
+  "V2 preview deploy gates Apple public Auth readiness before public exposure"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "ZENFLOW_APPLE_AUTH_LIVE_REQUIRED",
+  "V2 preview deploy gates Apple hosted Auth readiness before public exposure"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "npm run check:telegram-oidc-live",
+  "V2 preview deploy runs Telegram OIDC live readiness check"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true",
+  "V2 preview deploy gates Telegram OIDC readiness before public exposure"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
   "VITE_SUPABASE_PUBLISHABLE_KEY",
   "V2 preview deploy passes the modern Supabase publishable key"
 );

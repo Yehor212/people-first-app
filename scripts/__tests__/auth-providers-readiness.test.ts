@@ -156,6 +156,24 @@ describe("check-auth-providers public key readiness", () => {
     expect(workflow).toContain("ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true");
   });
 
+  it("requires V2 preview deploy to run hosted auth live checks", () => {
+    const workflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
+
+    expect(workflow).toContain("Check hosted auth providers for V2 preview");
+    expect(workflow).toContain("npm run check:facebook-auth-public");
+    expect(workflow).toContain("npm run check:facebook-auth-live");
+    expect(workflow).toContain("npm run check:apple-auth-public");
+    expect(workflow).toContain("npm run check:apple-auth-live");
+    expect(workflow).toContain("npm run check:telegram-oidc-live");
+    expect(workflow).toContain("secrets.VITE_SUPABASE_ANON_KEY != ''");
+    expect(workflow).toContain("ZENFLOW_FACEBOOK_AUTH_LIVE_REQUIRED");
+    expect(workflow).toContain("ZENFLOW_APPLE_AUTH_PUBLIC_REQUIRED");
+    expect(workflow).toContain("ZENFLOW_APPLE_AUTH_LIVE_REQUIRED");
+    expect(workflow).toContain("SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}");
+    expect(workflow).toContain("SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}");
+    expect(workflow).toContain("ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true");
+  });
+
   it("requires general auth readiness to include the Facebook live OAuth gate", () => {
     const result = runReadiness({
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",

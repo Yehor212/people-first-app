@@ -71,7 +71,6 @@ jobs:
           ZENFLOW_SENTRY_API_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run smoke:sentry-api
 
-
       - name: Build V2 preview under /v2
         working-directory: v2-src
         env:
@@ -101,6 +100,28 @@ jobs:
         working-directory: v1-src
         run: npm install
 
+      - name: Check hosted auth providers for V2 preview
+        working-directory: v1-src
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_EXPECTED_APPLE_CLIENT_ID: ${{ vars.SUPABASE_EXPECTED_APPLE_CLIENT_ID }}
+          SUPABASE_EXPECTED_APPLE_ADDITIONAL_CLIENT_IDS: ${{ vars.SUPABASE_EXPECTED_APPLE_ADDITIONAL_CLIENT_IDS }}
+          ZENFLOW_FACEBOOK_AUTH_PUBLIC_REQUIRED: ${{ secrets.VITE_SUPABASE_URL != '' && (secrets.VITE_SUPABASE_PUBLISHABLE_KEY != '' || secrets.VITE_SUPABASE_ANON_KEY != '') }}
+          ZENFLOW_FACEBOOK_AUTH_LIVE_REQUIRED: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'true' || 'false' }}
+          ZENFLOW_APPLE_AUTH_PUBLIC_REQUIRED: ${{ vars.VITE_APPLE_PUBLIC_ACCESS_READY == 'true' && secrets.VITE_SUPABASE_URL != '' && (secrets.VITE_SUPABASE_PUBLISHABLE_KEY != '' || secrets.VITE_SUPABASE_ANON_KEY != '') }}
+          ZENFLOW_APPLE_AUTH_LIVE_REQUIRED: ${{ vars.VITE_APPLE_PUBLIC_ACCESS_READY == 'true' && 'true' || 'false' }}
+          ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true
+        run: |
+          npm run check:facebook-auth-public
+          npm run check:facebook-auth-live
+          npm run check:apple-auth-public
+          npm run check:apple-auth-live
+          npm run check:telegram-oidc-live
+
       - name: Check Sentry readiness for V1 public root
         working-directory: v1-src
         env:
@@ -119,7 +140,6 @@ jobs:
           SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL }}
           ZENFLOW_SENTRY_API_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run smoke:sentry-api
-
 
       - name: Build V1 public root from main
         working-directory: v1-src
