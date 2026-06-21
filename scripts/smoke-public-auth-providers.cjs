@@ -68,8 +68,12 @@ function hostnameMatches(hostname, allowedHost) {
   );
 }
 
-function isAppDiagnosticUrl(diagnosticUrl, currentPageUrl, appHost) {
-  const candidates = [diagnosticUrl, currentPageUrl].filter(Boolean);
+function isAppDiagnosticUrl(diagnosticUrl, currentPageUrl, appHost, requireDiagnosticUrl = false) {
+  if (requireDiagnosticUrl && !diagnosticUrl) return false;
+
+  const candidates = [diagnosticUrl, ...(requireDiagnosticUrl ? [] : [currentPageUrl])].filter(
+    Boolean
+  );
   for (const rawUrl of candidates) {
     try {
       return new URL(rawUrl).host === appHost;
@@ -127,11 +131,17 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
   const failedRequests = [];
   const externalConsoleMessages = [];
   const externalFailedRequests = [];
+  let providerRedirectStarted = false;
 
   page.on("console", (message) => {
     if (message.type() === "error" || message.type() === "warning") {
       const diagnostic = message.type() + ": " + message.text();
-      const target = isAppDiagnosticUrl(message.location().url, page.url(), appHost)
+      const target = isAppDiagnosticUrl(
+        message.location().url,
+        page.url(),
+        appHost,
+        providerRedirectStarted
+      )
         ? consoleMessages
         : externalConsoleMessages;
       target.push(diagnostic);
@@ -165,6 +175,7 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
       };
     }
 
+    providerRedirectStarted = true;
     await page.getByTestId("auth-provider-content-" + provider).click({ timeout: timeoutMs });
     await page.waitForURL((currentUrl) => currentUrl.host !== appHost, { timeout: timeoutMs });
     await page.waitForTimeout(1000);

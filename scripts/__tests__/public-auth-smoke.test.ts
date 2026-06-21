@@ -48,6 +48,10 @@ describe("public auth smoke URL parsing", () => {
       )
     ).toBe(false);
     expect(isAppDiagnosticUrl("", "https://www.facebook.com/login.php", appHost)).toBe(false);
+    expect(isAppDiagnosticUrl("", "http://127.0.0.1:4173/people-first-app/", appHost)).toBe(true);
+    expect(isAppDiagnosticUrl("", "http://127.0.0.1:4173/people-first-app/", appHost, true)).toBe(
+      false
+    );
   });
 
   it("builds additional route URLs from the deployed page URL", () => {
