@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
 const {
+  clickProvider,
   detectProviderRedirectError,
   isAppDiagnosticUrl,
   isRetryableAppLoadFailure,
@@ -136,5 +137,30 @@ describe("public auth smoke URL parsing", () => {
         "yehor212.github.io"
       )
     ).toBe(false);
+  });
+  it("clicks the provider button ancestor instead of the inner content span", async () => {
+    expect(typeof clickProvider).toBe("function");
+    const clicks: string[] = [];
+    const ancestorLocator = {
+      count: async () => 1,
+      click: async () => clicks.push("ancestor"),
+    };
+    const contentLocator = {
+      locator: (selector: string) => {
+        expect(selector).toContain("ancestor::");
+        return ancestorLocator;
+      },
+      click: async () => clicks.push("content"),
+    };
+    const page = {
+      getByTestId: (testId: string) => {
+        expect(testId).toBe("auth-provider-content-google");
+        return contentLocator;
+      },
+    };
+
+    await clickProvider(page, "google", 123);
+
+    expect(clicks).toEqual(["ancestor"]);
   });
 });

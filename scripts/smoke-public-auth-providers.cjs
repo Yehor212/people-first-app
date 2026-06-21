@@ -201,6 +201,20 @@ async function collectProviders(page, url, timeoutMs) {
     );
 }
 
+async function clickProvider(page, provider, timeoutMs) {
+  const content = page.getByTestId("auth-provider-content-" + provider);
+  const clickTarget = content.locator(
+    "xpath=ancestor::*[self::button or self::a or @role='button'][1]"
+  );
+
+  if ((await clickTarget.count()) > 0) {
+    await clickTarget.click({ timeout: timeoutMs });
+    return;
+  }
+
+  await content.click({ timeout: timeoutMs });
+}
+
 async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs }) {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -259,7 +273,7 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
     }
 
     providerRedirectStarted = true;
-    await page.getByTestId("auth-provider-content-" + provider).click({ timeout: timeoutMs });
+    await clickProvider(page, provider, timeoutMs);
     await page.waitForURL((currentUrl) => currentUrl.host !== appHost, { timeout: timeoutMs });
     await page.waitForTimeout(1000);
 
@@ -524,6 +538,7 @@ module.exports = {
   DEFAULT_EXPECTED_PROVIDERS,
   DEFAULT_FORBIDDEN_PROVIDERS,
   DEFAULT_REDIRECT_HOSTS,
+  clickProvider,
   detectProviderRedirectError,
   hostnameMatches,
   isAppDiagnosticUrl,
