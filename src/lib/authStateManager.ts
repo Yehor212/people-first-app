@@ -3,7 +3,7 @@
  *
  * Centralized auth completion state to prevent race conditions.
  *
- * Problem: Multiple auth completion pathways (GoogleAuthScreen + Index.tsx)
+ * Problem: Multiple auth completion pathways (AuthScreen + Index.tsx)
  * could fire simultaneously, causing duplicate auth completion events
  * and state inconsistencies.
  *

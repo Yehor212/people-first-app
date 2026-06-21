@@ -43,48 +43,65 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
 
   // App store — single subscription with shallow comparison (was 12 individual)
   const {
-    initializationState, loadingFadeOut,
-    authBypassFlag, setAuthBypassFlag,
-    isProcessingWebOAuth, webOAuthError, setWebOAuthError, hasValidSession,
-    tutorialBypassFlag, setTutorialBypassFlag,
-    onboardingBypassFlag, setOnboardingBypassFlag,
-  } = useAppStore(useShallow((s) => ({
-    initializationState: s.initializationState,
-    loadingFadeOut: s.loadingFadeOut,
-    authBypassFlag: s.authBypassFlag,
-    setAuthBypassFlag: s.setAuthBypassFlag,
-    isProcessingWebOAuth: s.isProcessingWebOAuth,
-    webOAuthError: s.webOAuthError,
-    setWebOAuthError: s.setWebOAuthError,
-    hasValidSession: s.hasValidSession,
-    tutorialBypassFlag: s.tutorialBypassFlag,
-    setTutorialBypassFlag: s.setTutorialBypassFlag,
-    onboardingBypassFlag: s.onboardingBypassFlag,
-    setOnboardingBypassFlag: s.setOnboardingBypassFlag,
-  })));
+    initializationState,
+    loadingFadeOut,
+    authBypassFlag,
+    setAuthBypassFlag,
+    isProcessingWebOAuth,
+    webOAuthError,
+    setWebOAuthError,
+    hasValidSession,
+    tutorialBypassFlag,
+    setTutorialBypassFlag,
+    onboardingBypassFlag,
+    setOnboardingBypassFlag,
+  } = useAppStore(
+    useShallow((s) => ({
+      initializationState: s.initializationState,
+      loadingFadeOut: s.loadingFadeOut,
+      authBypassFlag: s.authBypassFlag,
+      setAuthBypassFlag: s.setAuthBypassFlag,
+      isProcessingWebOAuth: s.isProcessingWebOAuth,
+      webOAuthError: s.webOAuthError,
+      setWebOAuthError: s.setWebOAuthError,
+      hasValidSession: s.hasValidSession,
+      tutorialBypassFlag: s.tutorialBypassFlag,
+      setTutorialBypassFlag: s.setTutorialBypassFlag,
+      onboardingBypassFlag: s.onboardingBypassFlag,
+      setOnboardingBypassFlag: s.setOnboardingBypassFlag,
+    }))
+  );
 
   // User data store — single subscription with shallow comparison (was 12 individual)
   const {
-    hasSelectedLanguage, setHasSelectedLanguage,
-    setUserName, setUserNameCustom,
-    tutorialComplete, setTutorialComplete,
-    onboardingComplete, setOnboardingComplete,
-    notificationPermissionChecked, setNotificationPermissionChecked,
-    googleAuthChecked, setGoogleAuthChecked,
-  } = useUserDataStore(useShallow((s) => ({
-    hasSelectedLanguage: s.hasSelectedLanguage,
-    setHasSelectedLanguage: s.setHasSelectedLanguage,
-    setUserName: s.setUserName,
-    setUserNameCustom: s.setUserNameCustom,
-    tutorialComplete: s.tutorialComplete,
-    setTutorialComplete: s.setTutorialComplete,
-    onboardingComplete: s.onboardingComplete,
-    setOnboardingComplete: s.setOnboardingComplete,
-    notificationPermissionChecked: s.notificationPermissionChecked,
-    setNotificationPermissionChecked: s.setNotificationPermissionChecked,
-    googleAuthChecked: s.googleAuthChecked,
-    setGoogleAuthChecked: s.setGoogleAuthChecked,
-  })));
+    hasSelectedLanguage,
+    setHasSelectedLanguage,
+    setUserName,
+    setUserNameCustom,
+    tutorialComplete,
+    setTutorialComplete,
+    onboardingComplete,
+    setOnboardingComplete,
+    notificationPermissionChecked,
+    setNotificationPermissionChecked,
+    googleAuthChecked,
+    setGoogleAuthChecked,
+  } = useUserDataStore(
+    useShallow((s) => ({
+      hasSelectedLanguage: s.hasSelectedLanguage,
+      setHasSelectedLanguage: s.setHasSelectedLanguage,
+      setUserName: s.setUserName,
+      setUserNameCustom: s.setUserNameCustom,
+      tutorialComplete: s.tutorialComplete,
+      setTutorialComplete: s.setTutorialComplete,
+      onboardingComplete: s.onboardingComplete,
+      setOnboardingComplete: s.setOnboardingComplete,
+      notificationPermissionChecked: s.notificationPermissionChecked,
+      setNotificationPermissionChecked: s.setNotificationPermissionChecked,
+      googleAuthChecked: s.googleAuthChecked,
+      setGoogleAuthChecked: s.setGoogleAuthChecked,
+    }))
+  );
 
   // ── Gate handlers ──
 
@@ -92,8 +109,8 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     setHasSelectedLanguage(true);
   };
 
-  const handleGoogleAuthComplete = (userData: { name: string; email: string }) => {
-    logger.log("[AuthGate] Google auth completed");
+  const handleAuthComplete = (userData: { name: string; email: string }) => {
+    logger.log("[AuthGate] Auth completed");
     // CRITICAL: Set synchronous bypass flag FIRST (immediate UI update)
     // This ensures we skip AuthScreen immediately, before IndexedDB writes
     setAuthBypassFlag(true);
@@ -186,7 +203,7 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     return <LanguageSelector onComplete={handleLanguageSelected} />;
   }
 
-  // Google Auth screen — check both IndexedDB flag and synchronous bypass
+  // Auth screen — check both IndexedDB flag and synchronous bypass
   // hasValidSession: null = checking, true = has session, false = no session
   if (!googleAuthChecked && !authBypassFlag && hasValidSession === false) {
     if (isProcessingWebOAuth) {
@@ -202,7 +219,7 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
 
     return (
       <AuthScreen
-        onComplete={handleGoogleAuthComplete}
+        onComplete={handleAuthComplete}
         webOAuthError={webOAuthError}
         onClearError={() => setWebOAuthError(null)}
       />

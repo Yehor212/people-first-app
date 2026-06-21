@@ -10,15 +10,7 @@ const ALLOWED_WEB_ORIGINS = [
   "capacitor://localhost",
   "https://zenflow.app",
 ] as const;
-const LOOPBACK_OAUTH_PORTS = new Set([
-  "3000",
-  "4173",
-  "4174",
-  "4175",
-  "4176",
-  "5173",
-  "8080",
-]);
+const LOOPBACK_OAUTH_PORTS = new Set(["3000", "4173", "4174", "4175", "4176", "5173", "8080"]);
 const LOOPBACK_OAUTH_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
 function normalizeBasePath(basePath: string): string {
@@ -148,10 +140,11 @@ export const getAuthRedirectUrl = () => {
 
   // Web: construct clean redirect URL with origin allowlist (OWASP L18)
   const rawOrigin = window.location.origin;
-  const origin = (ALLOWED_WEB_ORIGINS as readonly string[]).includes(rawOrigin) ||
+  const origin =
+    (ALLOWED_WEB_ORIGINS as readonly string[]).includes(rawOrigin) ||
     isAllowedLocalOAuthOrigin(rawOrigin)
-    ? rawOrigin
-    : ALLOWED_WEB_ORIGINS[0];
+      ? rawOrigin
+      : ALLOWED_WEB_ORIGINS[0];
   const basePath = BASE_URL;
 
   // Ensure proper path format (no double slashes)
@@ -248,7 +241,7 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
 // Event name for OAuth completion notification
 export const AUTH_COMPLETE_EVENT = "zenflow-auth-complete";
 
-// Notify GoogleAuthScreen that auth completed in Index.tsx
+// Notify AuthScreen that auth completed in Index.tsx
 export const notifyAuthComplete = () => {
   window.dispatchEvent(new CustomEvent(AUTH_COMPLETE_EVENT));
 };
