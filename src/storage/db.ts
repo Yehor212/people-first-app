@@ -362,8 +362,10 @@ export const checkDatabaseHealth = async (): Promise<boolean> => {
   try {
     // Add timeout to prevent hanging on IndexedDB issues
     // Increased from 3000ms to 5000ms to handle slow devices and cold starts
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const timeoutPromise = new Promise<boolean>((resolve) => {
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
+        timeoutId = undefined;
         logger.warn("[DB] Database health check timed out - continuing anyway");
         resolve(true); // Don't block app on timeout
       }, 5000);
@@ -415,7 +417,11 @@ export const checkDatabaseHealth = async (): Promise<boolean> => {
       }
     })();
 
-    return await Promise.race([healthCheckPromise, timeoutPromise]);
+    const result = await Promise.race([healthCheckPromise, timeoutPromise]);
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+    }
+    return result;
   } catch (error) {
     logger.error("[DB] Health check failed", error);
     return false;

@@ -71,6 +71,7 @@ export const OnThisDayCard = memo(function OnThisDayCard({
   const agoLabel = years === 1 ? (t.diaryYearAgo ?? "year ago") : (t.diaryYearsAgo ?? "years ago");
   const moreCount = matches.length - 1;
   const privateEntryLabel = t.journalHubSpacePrivate ?? "Private";
+  const anniversaryLabel = privateMode ? privateEntryLabel : `${years} ${agoLabel}`;
   const snippet = truncate(entry.content.replace(/<[^>]*>/g, " ").trim(), 60);
 
   const handleDismiss = () => {
@@ -92,18 +93,23 @@ export const OnThisDayCard = memo(function OnThisDayCard({
           whileTap={reducedMotion ? undefined : { scale: 0.98 }}
           role="button"
           tabIndex={0}
-          aria-label={`${titleLabel} — ${years} ${agoLabel}`}
+          aria-disabled={privateMode || undefined}
+          aria-label={`${titleLabel} — ${anniversaryLabel}`}
           className={cn(
             "relative bg-card/60 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]",
-            "border border-border/20 rounded-2xl p-4 mb-3 cursor-pointer",
+            "border border-border/20 rounded-2xl p-4 mb-3",
+            privateMode ? "cursor-default" : "cursor-pointer",
             "min-h-[44px]"
           )}
           onClick={() => {
+            if (privateMode) return;
             void hapticTap();
             onOpenEntry(entry.id);
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              if (privateMode) return;
               void hapticTap();
               onOpenEntry(entry.id);
             }
@@ -114,7 +120,7 @@ export const OnThisDayCard = memo(function OnThisDayCard({
             <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
               <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-xs font-medium text-muted-foreground">
-                {titleLabel} &middot; {years} {agoLabel}
+                {titleLabel} &middot; {anniversaryLabel}
               </span>
             </div>
 
@@ -173,7 +179,7 @@ export const OnThisDayCard = memo(function OnThisDayCard({
               )}
             </div>
           </div>
-          {moreCount > 0 && (
+          {!privateMode && moreCount > 0 && (
             <p className="text-[10px] text-muted-foreground/50 mt-2">
               {formatLocalizedCount(
                 moreCount,

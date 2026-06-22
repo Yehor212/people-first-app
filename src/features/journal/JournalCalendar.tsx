@@ -41,6 +41,7 @@ interface JournalCalendarProps {
   selectedDate: string | null;
   onSelectDate: (date: string | null) => void;
   onToggleMode?: () => void;
+  privateMode?: boolean;
 }
 
 export function JournalCalendar({
@@ -49,6 +50,7 @@ export function JournalCalendar({
   selectedDate,
   onSelectDate,
   onToggleMode,
+  privateMode = false,
 }: JournalCalendarProps) {
   const today = getToday();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -163,10 +165,11 @@ export function JournalCalendar({
         {days.map((d, index) => {
           const isToday = d.date === today;
           const isSelected = d.date === selectedDate;
-          const mood = entryDates.get(d.date);
-          const hasEntry = entryDates.has(d.date);
-          const hasReleaseTrace = (releaseTraceDates?.get(d.date) ?? 0) > 0;
-          const streak = streaks.get(d.date);
+          const rawMood = entryDates.get(d.date);
+          const mood = privateMode ? undefined : rawMood;
+          const hasEntry = !privateMode && entryDates.has(d.date);
+          const hasReleaseTrace = !privateMode && (releaseTraceDates?.get(d.date) ?? 0) > 0;
+          const streak = privateMode ? undefined : streaks.get(d.date);
 
           // T1: Mood intensity background color via theme tokens
           const moodBgColor =

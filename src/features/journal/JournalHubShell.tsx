@@ -104,6 +104,26 @@ function label(ts: Record<string, string>, key: string, fallback: string): strin
   return ts[key] || fallback;
 }
 
+function getSpaceDisplayName(
+  ts: Record<string, string>,
+  space: JournalSpace,
+  privateMode: boolean,
+): string {
+  if (privateMode) {
+    return label(ts, "journalHubSpacePrivate", label(ts, "privateMode", "Private"));
+  }
+  return space.name || (space.nameKey ? label(ts, space.nameKey, space.id) : space.id);
+}
+
+function getSpaceDescription(
+  ts: Record<string, string>,
+  space: JournalSpace,
+  privateMode: boolean,
+): string {
+  if (privateMode) return "";
+  return space.descriptionKey ? label(ts, space.descriptionKey, "") : "";
+}
+
 export function JournalHubShell({
   ts,
   groupedEntries,
@@ -317,6 +337,7 @@ export function JournalHubShell({
                 todayCount={todayEntries.length}
                 totalCount={totalCount}
                 recentEntry={recentEntry}
+                privateMode={privateMode}
                 onOpenRecent={() => recentEntry && onOpenEntry(recentEntry.id)}
                 onAction={runAction}
                 onOpenStats={onOpenStats}
@@ -344,7 +365,7 @@ export function JournalHubShell({
               </div>
             )}
 
-            {activeView === "spaces" && <SpacesView ts={ts} spaces={spaces} onAction={runAction} />}
+            {activeView === "spaces" && <SpacesView ts={ts} spaces={spaces} privateMode={privateMode} onAction={runAction} />}
             {activeView === "practices" && <PracticesView ts={ts} onAction={runAction} />}
             {activeView === "library" && (
               <LibraryView ts={ts} onAction={runAction} onSearchEntries={() => changeView("entries")} />
@@ -588,6 +609,7 @@ function TodayView({
   todayCount,
   totalCount,
   recentEntry,
+  privateMode,
   spaces,
   onOpenRecent,
   onAction,
@@ -597,11 +619,23 @@ function TodayView({
   todayCount: number;
   totalCount: number;
   recentEntry: JournalEntry | null;
+  privateMode: boolean;
   spaces: JournalSpace[];
   onOpenRecent: () => void;
   onAction: (action: JournalHubAction) => void;
   onOpenStats: () => void;
 }) {
+  const privateEntryLabel = label(ts, "journalPrivateEntry", label(ts, "privateMode", "Private entry"));
+  const privateMetricLabel = label(ts, "privateMode", "Private");
+  const todayStatusLabel = privateMode
+    ? privateMetricLabel
+    : todayCount > 0
+      ? label(ts, "journalHubTodayCaptured", "Captured")
+      : label(ts, "journalHubTodayReady", "Ready");
+  const todayMetricValue = privateMode ? privateMetricLabel : String(todayCount);
+  const totalMetricValue = privateMode ? privateMetricLabel : String(totalCount);
+  const visibleSpaces = privateMode ? spaces.slice(0, 1) : spaces.slice(0, 4);
+
   return (
     <div className="space-y-3" data-testid="journal-hub-today">
       <div className="rounded-[1.25rem] border border-primary/15 bg-card/85 p-4 shadow-sm backdrop-blur-xl">
@@ -611,13 +645,11 @@ function TodayView({
               {label(ts, "journalHubTodayCard", "Your day")}
             </p>
             <h4 className="mt-1 text-2xl font-bold text-foreground">
-              {todayCount > 0
-                ? label(ts, "journalHubTodayCaptured", "Captured")
-                : label(ts, "journalHubTodayReady", "Ready")}
+              {todayStatusLabel}
             </h4>
           </div>
           <span className="inline-flex h-11 min-w-[44px] items-center justify-center rounded-2xl bg-primary/10 px-3 text-sm font-bold text-primary">
-            {todayCount}
+            {todayMetricValue}
           </span>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2">
@@ -641,8 +673,8 @@ function TodayView({
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <MetricCard label={label(ts, "journalHubMetricEntries", "Entries")} value={String(totalCount)} />
-        <MetricCard label={label(ts, "journalHubMetricToday", "Today")} value={String(todayCount)} />
+        <MetricCard label={label(ts, "journalHubMetricEntries", "Entries")} value={totalMetricValue} />
+        <MetricCard label={label(ts, "journalHubMetricToday", "Today")} value={todayMetricValue} />
         <button
           type="button"
           onClick={onOpenStats}
@@ -655,15 +687,22 @@ function TodayView({
       {recentEntry && (
         <button
           type="button"
-          onClick={onOpenRecent}
-          className="flex min-h-[72px] w-full items-center justify-between gap-3 rounded-2xl border border-border/35 bg-card/70 px-4 text-start"
+          aria-disabled={privateMode || undefined}
+          onClick={() => {
+            if (privateMode) return;
+            onOpenRecent();
+          }}
+          className={cn(
+            "flex min-h-[72px] w-full items-center justify-between gap-3 rounded-2xl border border-border/35 bg-card/70 px-4 text-start",
+            privateMode && "cursor-default",
+          )}
         >
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               {label(ts, "journalHubContinue", "Continue")}
             </p>
             <p className="mt-1 truncate text-sm font-semibold text-foreground">
-              {recentEntry.title || label(ts, "journalTemplateBlank", "Blank Entry")}
+              {privateMode ? privateEntryLabel : recentEntry.title || label(ts, "journalTemplateBlank", "Blank Entry")}
             </p>
           </div>
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground rtl:scale-x-[-1]" aria-hidden="true" />
@@ -671,8 +710,10 @@ function TodayView({
       )}
 
       <div className="grid grid-cols-2 gap-2">
-        {spaces.slice(0, 4).map((space) => {
-          const SpaceIcon = getJournalIcon(space.iconKey);
+        {visibleSpaces.map((space) => {
+          const SpaceIcon = privateMode ? PanelBottomOpen : getJournalIcon(space.iconKey);
+          const spaceName = getSpaceDisplayName(ts, space, privateMode);
+          const spaceDescription = getSpaceDescription(ts, space, privateMode);
           return (
             <div
               key={space.id}
@@ -680,10 +721,10 @@ function TodayView({
             >
               <SpaceIcon className="mb-2 h-4 w-4 text-primary" aria-hidden="true" />
               <p className="truncate text-sm font-semibold text-foreground">
-                {space.name || (space.nameKey ? label(ts, space.nameKey, space.id) : space.id)}
+                {spaceName}
               </p>
               <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
-                {space.descriptionKey ? label(ts, space.descriptionKey, "") : ""}
+                {spaceDescription}
               </p>
             </div>
           );
@@ -707,12 +748,16 @@ function MetricCard({ label: labelText, value }: { label: string; value: string 
 function SpacesView({
   ts,
   spaces,
+  privateMode,
   onAction,
 }: {
   ts: Record<string, string>;
   spaces: JournalSpace[];
+  privateMode: boolean;
   onAction: (action: JournalHubAction) => void;
 }) {
+  const visibleSpaces = privateMode ? spaces.slice(0, 1) : spaces;
+
   return (
     <div className="space-y-3" data-testid="journal-hub-spaces">
       <SectionIntro
@@ -721,23 +766,25 @@ function SpacesView({
         description={label(ts, "journalHubSpacesDesc", "Collect projects, life areas, and private notes without losing the day.")}
       />
       <div className="grid grid-cols-2 gap-2">
-        {spaces.map((space) => {
-          const SpaceIcon = getJournalIcon(space.iconKey);
+        {visibleSpaces.map((space) => {
+          const SpaceIcon = privateMode ? PanelBottomOpen : getJournalIcon(space.iconKey);
+          const spaceName = getSpaceDisplayName(ts, space, privateMode);
+          const spaceDescription = getSpaceDescription(ts, space, privateMode);
           return (
             <button
               key={space.id}
               type="button"
-              onClick={() => onAction(space.pinnedAction ?? "write")}
+              onClick={() => onAction(privateMode ? "write" : space.pinnedAction ?? "write")}
               className="min-h-[118px] rounded-2xl border border-border/35 bg-card/75 p-3 text-start shadow-sm motion-safe:transition-transform active:scale-[0.98]"
             >
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
                 <SpaceIcon className="h-5 w-5" aria-hidden="true" />
               </span>
               <p className="mt-3 truncate text-sm font-bold text-foreground">
-                {space.name || (space.nameKey ? label(ts, space.nameKey, space.id) : space.id)}
+                {spaceName}
               </p>
               <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
-                {space.descriptionKey ? label(ts, space.descriptionKey, "") : ""}
+                {spaceDescription}
               </p>
             </button>
           );

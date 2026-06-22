@@ -142,13 +142,13 @@ try {
   const initialShellMetrics = {
     boxes: {
       createFab: await boxFor(page, "journal-entry-main-fab"),
-      menu: await boxFor(page, "journal-mobile-nav-menu"),
+      diaryPanelTrigger: await boxFor(page, "journal-mobile-diary-sidebar-trigger"),
       settings: await boxFor(page, "journal-mobile-settings"),
       stats: await boxFor(page, "journal-mobile-stats"),
     },
     details: {
       createFab: await describeElement(page, "journal-entry-main-fab"),
-      menu: await describeElement(page, "journal-mobile-nav-menu"),
+      diaryPanelTrigger: await describeElement(page, "journal-mobile-diary-sidebar-trigger"),
       settings: await describeElement(page, "journal-mobile-settings"),
       stats: await describeElement(page, "journal-mobile-stats"),
     },
@@ -236,7 +236,7 @@ try {
       "## Steps Captured",
       "",
       "1. Empty diary first screen: route renders, header controls are visible, empty state is clear.",
-      "2. Create menu: main action expands into entry actions without clipping.",
+      "2. Diary panel trigger: main action expands into entry actions without clipping.",
       "3. Editor: contenteditable editor opens and accepts input in the Android viewport.",
       "4. Saved entry: saved local test note appears in the diary list.",
       "5. Settings dialog: settings opens as a dialog and can be dismissed with Escape fallback.",

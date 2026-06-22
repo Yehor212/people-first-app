@@ -28,6 +28,18 @@ async function openPrimedDiary(page: Page) {
   await expect(page.getByTestId("journal-wallpaper")).toBeVisible();
 }
 
+async function expectDiaryTabActions(page: Page) {
+  await expect(page.getByTestId("journal-mobile-entry")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("journal-mobile-stats")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("journal-mobile-favorites")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("journal-mobile-settings")).toBeVisible({ timeout: 30_000 });
+
+  await page.getByTestId("journal-mobile-favorites").click();
+  await expect(page.getByTestId("journal-favorites-panel")).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId("journal-mobile-entry").click();
+  await expect(page.getByTestId("journal-favorites-panel")).toHaveCount(0);
+}
+
 async function waitForServiceWorkerControl(page: Page) {
   const ready = await page.evaluate(async () => {
     if (!("serviceWorker" in navigator)) return { ready: false, controlled: false };
@@ -94,6 +106,7 @@ test.describe("PWA offline V2 Diary", () => {
       "data-wallpaper-platform",
       "universal",
     );
+    await expectDiaryTabActions(page);
 
     const onlineFacts = await page.evaluate(async () => {
       const cacheNames = "caches" in window ? await caches.keys() : [];
@@ -119,6 +132,7 @@ test.describe("PWA offline V2 Diary", () => {
       "data-wallpaper-motion",
       "static",
     );
+    await expectDiaryTabActions(page);
 
     const offlineFacts = await page.evaluate(() => {
       const shell = document.querySelector<HTMLElement>("[data-testid='journal-page-shell']");
@@ -160,6 +174,7 @@ test.describe("PWA offline V2 Diary", () => {
     await page.reload({ waitUntil: "networkidle" });
     await expect(page.getByTestId("journal-page-shell")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("journal-wallpaper")).toBeVisible();
+    await expectDiaryTabActions(page);
 
     const onlineFacts = await page.evaluate(async () => {
       const cacheNames = "caches" in window ? await caches.keys() : [];

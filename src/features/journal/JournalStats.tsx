@@ -6,7 +6,7 @@
  */
 
 import { useMemo, useState, useRef, useEffect, useCallback, memo } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Flame } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Flame, LockKeyhole } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -333,9 +333,10 @@ const StreakFireIcon = memo(function StreakFireIcon() {
 interface JournalStatsProps {
   entries: JournalEntry[];
   onBack: () => void;
+  privateMode?: boolean;
 }
 
-export const JournalStats = memo(function JournalStats({ entries, onBack }: JournalStatsProps) {
+export const JournalStats = memo(function JournalStats({ entries, onBack, privateMode = false }: JournalStatsProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const chartFonts = useChartFontSizes();
@@ -592,6 +593,44 @@ export const JournalStats = memo(function JournalStats({ entries, onBack }: Jour
   }, [entries, pixelYear, language]);
 
   const currentYear = new Date().getFullYear();
+
+  if (privateMode) {
+    return (
+      <>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/80 backdrop-blur-xl">
+          <button
+            onClick={onBack}
+            className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label={ts.back || "Back"}
+          >
+            <ArrowLeft className="w-5 h-5 text-foreground rtl:scale-x-[-1]" />
+          </button>
+          <h2 className="text-base font-bold text-foreground">
+            {ts.journalStatsTitle || "Diary Statistics"}
+          </h2>
+          <div className="w-[44px]" />
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <section
+            data-testid="journal-stats-private-mode"
+            aria-label={ts.privateMode || "Private"}
+            className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-border/25 bg-card/45 px-5 py-10 text-center backdrop-blur-xl"
+          >
+            <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/20 bg-primary/[0.10] text-primary">
+              <LockKeyhole className="h-6 w-6" aria-hidden="true" />
+            </span>
+            <h3 className="text-base font-bold text-foreground">
+              {ts.privateMode || "Private"}
+            </h3>
+            <p className="mt-2 max-w-[260px] text-sm leading-relaxed text-muted-foreground">
+              {ts.journalPrivateEntryHint || "Unlock private mode to view this memory."}
+            </p>
+          </section>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

@@ -198,7 +198,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
     routePendingPage,
   } = useNavigationV2();
   const effectiveSidebarCollapsed = sidebarCollapsed || forceCompactWebRail;
-  const shouldShowDrawerTrigger = !forceWebNavigation && !unknownPath && activePage !== "diary";
+  const shouldShowDrawerTrigger = !isWebNavigation && !unknownPath && activePage !== "diary";
   const MenuIcon = V2_SHELL_ICONS.menu;
   const pendingRouteLabel = routePendingPage
     ? getNavV2RouteLabel(routePendingPage, tx)
@@ -242,10 +242,10 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   }, [handleBackButton]);
 
   useEffect(() => {
-    if (forceWebNavigation && drawerOpen) {
+    if (isWebNavigation && drawerOpen) {
       closeDrawer();
     }
-  }, [closeDrawer, drawerOpen, forceWebNavigation]);
+  }, [closeDrawer, drawerOpen, isWebNavigation]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -293,6 +293,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
       <DiaryPage
         onOpenNavMenu={handleOpenDrawer}
         navMenuOpen={drawerOpen}
+        showAppNavMenu={!isWebNavigation}
         onAddGratitude={onAddGratitude}
       />
     ) : (
@@ -356,7 +357,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
       {pendingRouteLabel && <NavV2RoutePending label={pendingRouteLabel} />}
 
       <DrawerV2
-        open={!forceWebNavigation && drawerOpen}
+        open={!isWebNavigation && drawerOpen}
         activePage={activePage}
         onClose={closeDrawer}
         onPageChange={handlePrimaryPageChange}

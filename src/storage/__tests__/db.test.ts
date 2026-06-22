@@ -235,6 +235,23 @@ describe('clearLocalUserData', () => {
 // ─── checkDatabaseHealth ─────────────────────────────────────────
 
 describe('checkDatabaseHealth', () => {
+  it('does not emit timeout warning after a healthy database check', async () => {
+    vi.useFakeTimers();
+    try {
+      const { logger } = await import('@/lib/logger');
+
+      const result = await checkDatabaseHealth();
+
+      expect(result).toBe(true);
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(logger.warn).not.toHaveBeenCalledWith(
+        '[DB] Database health check timed out - continuing anyway',
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('returns true when database is healthy', async () => {
     const result = await checkDatabaseHealth();
     expect(result).toBe(true);

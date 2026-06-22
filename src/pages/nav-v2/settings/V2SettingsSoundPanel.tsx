@@ -1,8 +1,11 @@
-import { Bell, ListChecks, ListMusic, MonitorSmartphone, Music2, Volume2, VolumeX } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Bell, ListChecks, ListMusic, MonitorSmartphone, Music2, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import type { PluginListenerHandle } from "@capacitor/core";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { playNotification, setMuted, setVolume } from "@/lib/audioManager";
 import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
-import { APP_AUDIO_ACTION_EVENTS, APP_AUDIO_ASSETS, APP_AUDIO_FEEDBACK_EVENTS } from "@/lib/appAudioAssets";
+import { APP_AUDIO_ACTION_EVENTS, APP_AUDIO_ASSETS, APP_AUDIO_FEEDBACK_EVENTS, getAppAudioAssetSrc } from "@/lib/appAudioAssets";
+import { logger } from "@/lib/logger";
 import {
   ActionButton,
   PanelFrame,
@@ -12,12 +15,23 @@ import {
   ToggleRow,
 } from "./components/V2SettingsControlPrimitives";
 
+const DIARY_AMBIENCE_AUDIO_SRC = getAppAudioAssetSrc("diary-reflection-loop");
+
 export function SoundPanel() {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const audio = useAppAudioSettings();
+  const diaryAmbienceAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [isDiaryAmbiencePlaying, setIsDiaryAmbiencePlaying] = useState(false);
+  const [diaryAmbienceError, setDiaryAmbienceError] = useState(false);
   const volumePercent = Math.round(audio.volume * 100);
   const focusAssetCount = APP_AUDIO_ASSETS.filter((asset) => asset.family === "focus").length;
+  const diaryAmbienceVolume = Math.max(0, Math.min(1, audio.volume * 0.32));
+  const diaryAmbienceToggleLabel = isDiaryAmbiencePlaying
+    ? tx.diaryAmbiencePause || "Pause diary ambience"
+    : diaryAmbienceError
+      ? tx.audioRetry || "Retry"
+      : tx.diaryAmbiencePlay || "Play diary ambience";
   const actionSoundItems = [
     {
       key: "mood",
@@ -78,6 +92,88 @@ export function SoundPanel() {
       detail: String(APP_AUDIO_FEEDBACK_EVENTS.length),
     },
   ];
+
+  const stopDiaryAmbience = useCallback(() => {
+    const audioElement = diaryAmbienceAudioRef.current;
+    if (!audioElement) return;
+
+    audioElement.pause();
+    setIsDiaryAmbiencePlaying(false);
+    setDiaryAmbienceError(false);
+  }, []);
+
+  const toggleDiaryAmbience = useCallback(() => {
+    const audioElement = diaryAmbienceAudioRef.current;
+    if (!audioElement) return;
+
+    if (isDiaryAmbiencePlaying) {
+      stopDiaryAmbience();
+      return;
+    }
+
+    if (audio.muted) {
+      stopDiaryAmbience();
+      return;
+    }
+
+    audioElement.volume = diaryAmbienceVolume;
+    setDiaryAmbienceError(false);
+    setIsDiaryAmbiencePlaying(true);
+    void audioElement.play().catch((error) => {
+      setIsDiaryAmbiencePlaying(false);
+      setDiaryAmbienceError(true);
+      logger.warn("[V2SettingsSoundPanel]", "Diary ambience preview failed:", error);
+    });
+  }, [audio.muted, diaryAmbienceVolume, isDiaryAmbiencePlaying, stopDiaryAmbience]);
+
+  useEffect(() => {
+    const audioElement = diaryAmbienceAudioRef.current;
+    if (!audioElement) return;
+
+    audioElement.volume = diaryAmbienceVolume;
+    if (audio.muted && isDiaryAmbiencePlaying) stopDiaryAmbience();
+  }, [audio.muted, diaryAmbienceVolume, isDiaryAmbiencePlaying, stopDiaryAmbience]);
+
+  useEffect(() => {
+    const stopOnHidden = () => {
+      if (document.hidden) stopDiaryAmbience();
+    };
+    const stopOnPageHide = () => stopDiaryAmbience();
+    let cancelled = false;
+    let pauseListener: PluginListenerHandle | null = null;
+
+    document.addEventListener("visibilitychange", stopOnHidden);
+    window.addEventListener("pagehide", stopOnPageHide);
+    void import("@capacitor/app")
+      .then(({ App }) => App.addListener("pause", stopDiaryAmbience))
+      .then((listener) => {
+        if (cancelled) {
+          void listener.remove();
+          return;
+        }
+        pauseListener = listener;
+      })
+      .catch((error) => {
+        logger.warn("[V2SettingsSoundPanel]", "Failed to register diary ambience pause listener:", error);
+      });
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", stopOnHidden);
+      window.removeEventListener("pagehide", stopOnPageHide);
+      if (pauseListener) void pauseListener.remove();
+    };
+  }, [stopDiaryAmbience]);
+
+  useEffect(() => {
+    const audioElement = diaryAmbienceAudioRef.current;
+
+    return () => {
+      if (!audioElement) return;
+      if (!audioElement.paused) audioElement.pause();
+      audioElement.removeAttribute("src");
+    };
+  }, []);
 
   return (
     <PanelFrame
@@ -198,15 +294,59 @@ export function SoundPanel() {
         </SettingsStatus>
       </SettingsInset>
 
-      <SettingsInset>
+      <SettingsInset testId="settings-v2-diary-ambience-control">
         <SettingsFieldHeader
           icon={Music2}
           title={tx.settingsSoundAmbienceTitle || "Ambient tracks"}
           description={
             tx.settingsSoundAmbienceNote ||
-            "Orb and diary ambience still start only after you tap their own buttons."
+            "Orb ambience starts from Orb. Diary sound is managed here so it never covers your writing."
           }
         />
+        {/* Ambient preview has no spoken content; it is always tap-started from Settings. */}
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+        <audio
+          ref={diaryAmbienceAudioRef}
+          aria-hidden="true"
+          data-testid="settings-v2-diary-ambience-audio"
+          src={DIARY_AMBIENCE_AUDIO_SRC}
+          preload="none"
+          loop
+          playsInline
+          onPlay={() => {
+            setIsDiaryAmbiencePlaying(true);
+            setDiaryAmbienceError(false);
+          }}
+          onPause={() => setIsDiaryAmbiencePlaying(false)}
+          onError={() => {
+            setIsDiaryAmbiencePlaying(false);
+            setDiaryAmbienceError(true);
+          }}
+        />
+        <button
+          type="button"
+          data-testid="settings-v2-diary-ambience-toggle"
+          aria-label={diaryAmbienceToggleLabel}
+          aria-pressed={isDiaryAmbiencePlaying}
+          title={diaryAmbienceToggleLabel}
+          onClick={toggleDiaryAmbience}
+          disabled={audio.muted}
+          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl border border-[hsl(var(--border)/0.55)] bg-[hsl(var(--secondary)/0.72)] px-4 py-3 text-sm font-semibold text-secondary-foreground motion-safe:transition-[opacity,transform,background-color] hover:-translate-y-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isDiaryAmbiencePlaying ? (
+            <Pause className="h-4 w-4" aria-hidden="true" />
+          ) : (
+            <Play className="h-4 w-4" aria-hidden="true" />
+          )}
+          <span>{tx.diaryAmbienceLabel || "Diary ambience"}</span>
+          <span className="rounded-full border border-[hsl(var(--border)/0.45)] px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+            {isDiaryAmbiencePlaying
+              ? tx.soundOn || "On"
+              : diaryAmbienceError
+                ? tx.audioRetry || "Retry"
+                : tx.soundOff || "Off"}
+          </span>
+        </button>
         <SettingsStatus>
           {audio.feedbackSoundsEnabled
             ? tx.settingsSoundFeedbackOn || "Feedback sounds follow this volume."

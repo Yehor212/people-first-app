@@ -26,6 +26,12 @@ describe("web diary privacy and reset contracts", () => {
     );
   });
 
+  it("passes private mode into the lazy statistics surface", () => {
+    const statsBlock = /<LazyJournalStats[\s\S]*?\/>/.exec(journalModuleSource)?.[0] ?? "";
+
+    expect(statsBlock).toContain("privateMode={privateMode}");
+  });
+
   it("passes private mode into every On This Day surface", () => {
     const moduleBlocks = [...journalModuleSource.matchAll(/<OnThisDayCard[\s\S]*?\/>/g)].map((match) => match[0]);
     expect(moduleBlocks.length).toBeGreaterThan(0);
@@ -46,10 +52,93 @@ describe("web diary privacy and reset contracts", () => {
     expect(onThisDaySource).toContain("journalHubSpacePrivate");
   });
 
+  it("keeps Memory Portal node aria labels private", () => {
+    expect(memoryPortalSource).toContain('data-testid="memory-portal-node"');
+    expect(memoryPortalSource).not.toContain('aria-label={`${node.title} ${formatPortalDate(node.date)}`}');
+    expect(memoryPortalSource).toMatch(/aria-label=\{[\s\S]*?privateMode[\s\S]*?journalHubSpacePrivate[\s\S]*?formatPortalDate\(node\.date\)/);
+  });
+
   it("hides memory portal day capsule titles and tags while private mode is active", () => {
     expect(memoryPortalSource).toContain("privateMode ?");
     expect(memoryPortalSource).toContain("journalHubSpacePrivate");
     expect(memoryPortalSource).toContain("!privateMode && entry.tags");
+  });
+
+  it("keeps the space capture board private while private mode is active", () => {
+    const captureBoardBlock =
+      /data-testid="journal-capture-board-card"[\s\S]*?data-testid="journal-capture-open-editor"[\s\S]*?<\/button>/.exec(
+        journalEntryListSource,
+      )?.[0] ?? "";
+
+    expect(captureBoardBlock).toMatch(/privateMode[\s\S]*?\?[\s\S]*?journalPrivateEntry/);
+    expect(captureBoardBlock).toContain("!privateMode && focusedCapture.fields");
+    expect(captureBoardBlock).toContain("aria-disabled={privateMode || undefined}");
+    expect(captureBoardBlock).toContain("disabled={!focusedCapture || privateMode}");
+    expect(captureBoardBlock).toContain("if (privateMode || !focusedCapture) return;");
+    expect(captureBoardBlock.search(/privateMode[\s\S]*?\?[\s\S]*?journalPrivateEntry/)).toBeLessThan(
+      captureBoardBlock.indexOf("getCaptureDisplayTitle(focusedCapture, ts)"),
+    );
+  });
+
+  it("keeps the capture studio compose branch private while private mode is active", () => {
+    const studioComposeBlock =
+      /data-testid="journal-capture-studio"[\s\S]*?data-testid="journal-capture-save"[\s\S]*?<\/button>/.exec(
+        journalEntryListSource,
+      )?.[0] ?? "";
+
+    expect(studioComposeBlock).toContain("getSpaceDisplayName(activeStudio)");
+    expect(studioComposeBlock).toContain("getSpaceDisplayDescription(activeStudio)");
+    expect(studioComposeBlock).toContain('activeStudio.id === "space-all" ? ts.all || "All" : getSpaceDisplayName(activeStudio)');
+    expect(studioComposeBlock).not.toContain("{activeStudio.name}");
+    expect(studioComposeBlock).not.toContain("{activeStudio.description}");
+  });
+
+  it("keeps private space prefill payloads free of hidden folder names and ids", () => {
+    const studioPrefillBlock =
+      /const buildStudioPrefill = useCallback\([\s\S]*?const handleSaveStudioCapture/.exec(
+        journalEntryListSource,
+      )?.[0] ?? "";
+    const filteredEmptyActionBlock =
+      /activeFilterSpaceName && !deferredSearch && onNewEntryWithPrefill[\s\S]*?<\/button>/.exec(
+        journalEntryListSource,
+      )?.[0] ?? "";
+
+    expect(studioPrefillBlock).toContain('tags: privateMode || space.id === "space-all" ? [] : [space.name]');
+    expect(studioPrefillBlock).toContain(
+      'spaceId: !privateMode && space.id.startsWith("space-") && space.id !== "space-all" ? space.id : undefined',
+    );
+    expect(studioPrefillBlock).not.toContain('tags: space.id === "space-all" ? [] : [space.name]');
+    expect(studioPrefillBlock).not.toContain(
+      'spaceId: space.id.startsWith("space-") && space.id !== "space-all" ? space.id : undefined',
+    );
+
+    expect(filteredEmptyActionBlock).toContain("tags: privateMode ? [] : [activeFilterSpaceName]");
+    expect(filteredEmptyActionBlock).toContain("spaceId: privateMode ? undefined : selectedSpaceId ?? undefined");
+    expect(filteredEmptyActionBlock).not.toContain("tags: [activeFilterSpaceName]");
+    expect(filteredEmptyActionBlock).not.toContain("spaceId: selectedSpaceId ?? undefined");
+  });
+
+  it("guards the shared entry open handler while private mode is active", () => {
+    const handleTapBlock =
+      /const handleTap = useCallback\([\s\S]*?\n\s{2}const handleDelete/.exec(journalEntryListSource)?.[0] ?? "";
+
+    expect(handleTapBlock).toContain("privateMode");
+    expect(handleTapBlock).toContain("onOpenEntry(id)");
+    expect(handleTapBlock.indexOf("privateMode")).toBeLessThan(handleTapBlock.indexOf("onOpenEntry(id)"));
+  });
+
+  it("keeps the desktop entry context menu from opening private entries", () => {
+    const contextItemsBlock =
+      /const getEntryContextItems = useCallback\([\s\S]*?return items;[\s\S]*?\n\s{2}\);/.exec(
+        journalEntryListSource,
+      )?.[0] ?? "";
+
+    expect(contextItemsBlock).toContain('label: ts.open || "Open"');
+    expect(contextItemsBlock).toContain("if (!privateMode) {");
+    expect(contextItemsBlock.indexOf("if (!privateMode) {")).toBeLessThan(
+      contextItemsBlock.indexOf('label: ts.open || "Open"'),
+    );
+    expect(contextItemsBlock).not.toMatch(/const items:[\s\S]*?\[\s*\{\s*label: ts\.open \|\| "Open"/);
   });
 
   it("keeps privacy copy honest about account sync in every supported locale", () => {

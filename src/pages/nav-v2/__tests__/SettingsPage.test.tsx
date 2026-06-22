@@ -35,8 +35,23 @@ const localNotificationsMock = vi.hoisted(() => ({
   requestPermissions: vi.fn(),
 }));
 
+const capacitorAppMock = vi.hoisted(() => ({
+  pauseListeners: [] as Array<() => void>,
+  remove: vi.fn(),
+  addListener: vi.fn((eventName: string, listener: () => void) => {
+    if (eventName === "pause") capacitorAppMock.pauseListeners.push(listener);
+    return Promise.resolve({ remove: capacitorAppMock.remove });
+  }),
+}));
+
 const audioManagerMock = vi.hoisted(() => {
   const state = { muted: false, volume: 0.3 };
+  const getAudioSettings = vi.fn(() => ({
+    muted: state.muted,
+    volume: state.volume,
+    feedbackSoundsEnabled: true,
+    canPlayFeedback: !state.muted,
+  }));
 
   return {
     state,
@@ -52,13 +67,11 @@ const audioManagerMock = vi.hoisted(() => {
       window.dispatchEvent(new CustomEvent("zenflow-audio-settings-change"));
     }),
     playNotification: vi.fn(),
-    getAudioSettings: vi.fn(() => ({
-      muted: state.muted,
-      volume: state.volume,
-    })),
-    subscribeAudioSettings: vi.fn((listener: () => void) => {
-      window.addEventListener("zenflow-audio-settings-change", listener);
-      return () => window.removeEventListener("zenflow-audio-settings-change", listener);
+    getAudioSettings,
+    subscribeAudioSettings: vi.fn((listener: (settings: ReturnType<typeof getAudioSettings>) => void) => {
+      const handleChange = () => listener(getAudioSettings());
+      window.addEventListener("zenflow-audio-settings-change", handleChange);
+      return () => window.removeEventListener("zenflow-audio-settings-change", handleChange);
     }),
   };
 });
@@ -180,7 +193,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settingsSoundVolumeDesc: "Sets the default level for app audio.",
       settingsSoundPreview: "Preview sound",
       settingsSoundPreviewDesc: "Play a short local preview.",
-      settingsSoundAmbienceNote: "Orb and diary ambience still start only after you tap their own buttons.",
+      settingsSoundAmbienceNote: "Orb ambience starts from Orb. Diary sound is managed here so it never covers your writing.",
       settingsSoundActionMapMilestones: "Achievements and streak milestones",
       settingsSoundActionMapBreathing: "Breathing completed",
       settingsSoundActionMapFocus: "Focus completed",
@@ -454,6 +467,12 @@ vi.mock("@/lib/notificationSounds", () => ({
 
 vi.mock("@/lib/audioManager", () => audioManagerMock);
 
+vi.mock("@capacitor/app", () => ({
+  App: {
+    addListener: capacitorAppMock.addListener,
+  },
+}));
+
 vi.mock("@/lib/appUpdateManager", () => ({
   checkForAppUpdate: vi.fn(),
   openGooglePlayStore: vi.fn(),
@@ -497,6 +516,9 @@ describe("SettingsPage", () => {
     platformMock.isAndroid = false;
     localNotificationsMock.checkPermissions.mockReset();
     localNotificationsMock.requestPermissions.mockReset();
+    capacitorAppMock.pauseListeners.length = 0;
+    capacitorAppMock.remove.mockClear();
+    capacitorAppMock.addListener.mockClear();
     audioManagerMock.state.muted = false;
     audioManagerMock.state.volume = 0.3;
     audioManagerMock.initAudioManager.mockClear();
@@ -771,11 +793,12 @@ describe("SettingsPage", () => {
     fireEvent.click(soundCard);
 
     expect(screen.getByTestId("settings-v2-panel-sound")).toBeInTheDocument();
-    expect(screen.getByText("Orb and diary ambience still start only after you tap their own buttons.")).toBeInTheDocument();
+    expect(screen.getByText("Orb ambience starts from Orb. Diary sound is managed here so it never covers your writing.")).toBeInTheDocument();
     expect(screen.getByText("Where sound appears")).toBeInTheDocument();
     expect(screen.getByText("Sign-in measured breath")).toBeInTheDocument();
     expect(screen.getByText("Orb ambience")).toBeInTheDocument();
-    expect(screen.getByText("Diary ambience")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-v2-sound-map-card")).toHaveTextContent("Diary ambience");
+    expect(screen.getByTestId("settings-v2-diary-ambience-control")).toHaveTextContent("Diary ambience");
     expect(screen.getByText("Focus ambient library")).toBeInTheDocument();
     expect(screen.getByText("Completion and reminder chimes")).toBeInTheDocument();
     expect(screen.getByText("Ready on Web, PWA, Android, iOS, and Desktop.")).toBeInTheDocument();
@@ -800,6 +823,80 @@ describe("SettingsPage", () => {
     const volume = screen.getByTestId("settings-v2-audio-volume");
     fireEvent.change(volume, { target: { value: "0.7" } });
     expect(audioManagerMock.setVolume).toHaveBeenLastCalledWith(0.7);
+  });
+
+  it("keeps diary ambience control inside sound settings only", async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, "play")
+      .mockResolvedValue(undefined);
+    const pause = vi
+      .spyOn(HTMLMediaElement.prototype, "pause")
+      .mockImplementation(() => undefined);
+    const hiddenDescriptor = Object.getOwnPropertyDescriptor(document, "hidden");
+    let unmount: (() => void) | undefined;
+
+    try {
+      ({ unmount } = render(<SettingsPage controls={createSettingsControls()} />));
+      fireEvent.click(screen.getByTestId("settings-module-card-sound"));
+
+      expect(screen.queryByTestId("diary-page-ambience-control")).toBeNull();
+      expect(screen.queryByTestId("diary-page-ambience-toggle")).toBeNull();
+
+      const control = screen.getByTestId("settings-v2-diary-ambience-control");
+      const audio = screen.getByTestId("settings-v2-diary-ambience-audio");
+      const toggle = within(control).getByRole("button", { name: "Play diary ambience" });
+
+      expect(audio).toHaveAttribute("preload", "none");
+      expect(audio).not.toHaveAttribute("autoplay");
+      expect(toggle).toHaveAttribute("aria-pressed", "false");
+      expect(play).not.toHaveBeenCalled();
+
+      fireEvent.click(toggle);
+
+      await waitFor(() => expect(play).toHaveBeenCalledTimes(1));
+      expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+      fireEvent.click(toggle);
+
+      expect(pause).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+
+      fireEvent.click(toggle);
+      await waitFor(() => expect(play).toHaveBeenCalledTimes(2));
+      pause.mockClear();
+      Object.defineProperty(document, "hidden", { configurable: true, value: true });
+      document.dispatchEvent(new Event("visibilitychange"));
+
+      expect(pause).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+
+      Object.defineProperty(document, "hidden", { configurable: true, value: false });
+      fireEvent.click(toggle);
+      await waitFor(() => expect(play).toHaveBeenCalledTimes(3));
+      pause.mockClear();
+      window.dispatchEvent(new Event("pagehide"));
+
+      expect(pause).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+
+      fireEvent.click(toggle);
+      await waitFor(() => expect(play).toHaveBeenCalledTimes(4));
+      await waitFor(() => expect(capacitorAppMock.addListener).toHaveBeenCalledWith("pause", expect.any(Function)));
+      pause.mockClear();
+      capacitorAppMock.pauseListeners[0]?.();
+
+      expect(pause).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+    } finally {
+      unmount?.();
+      if (hiddenDescriptor) {
+        Object.defineProperty(document, "hidden", hiddenDescriptor);
+      } else {
+        Reflect.deleteProperty(document, "hidden");
+      }
+      play.mockRestore();
+      pause.mockRestore();
+    }
   });
 
   it("wires notification reminder controls to the settings callback", () => {

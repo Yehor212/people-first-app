@@ -140,6 +140,64 @@ function sha256File(filePath: string) {
   return createHash("sha256").update(readFileSync(filePath)).digest("hex");
 }
 
+function hasUsablePng(filePath: string) {
+  if (!existsSync(filePath)) return false;
+  const bytes = readFileSync(filePath);
+  return (
+    bytes.length > 8 &&
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  );
+}
+
+async function captureDesktopEntryScreenshot(
+  page: Page,
+  screenshotPath: string,
+  fallback?: {
+    baseURL: string;
+    browser: Browser;
+    scenario: DesktopEntryScenario;
+    screenTestId: string;
+  },
+) {
+  try {
+    await page.screenshot({ path: screenshotPath, animations: "disabled" });
+    return "primary";
+  } catch {
+    if (hasUsablePng(screenshotPath)) {
+      return "primary-existing";
+    }
+
+    await page.waitForTimeout(250);
+    try {
+      await page.screenshot({ path: screenshotPath, animations: "disabled" });
+      return "primary-retry";
+    } catch {
+      if (hasUsablePng(screenshotPath)) {
+        return "primary-retry-existing";
+      }
+      if (!fallback) throw new Error(`Unable to capture screenshot for ${screenshotPath}`);
+
+      const context = await newDesktopContext(fallback.browser, fallback.scenario);
+      const screenshotPage = await context.newPage();
+      try {
+        await primeEntryState(screenshotPage, fallback.scenario);
+        await screenshotPage.goto(fallback.baseURL, { waitUntil: "domcontentloaded" });
+        await expect(screenshotPage.getByTestId(fallback.screenTestId)).toBeVisible({
+          timeout: 30_000,
+        });
+        await screenshotPage.waitForTimeout(250);
+        await screenshotPage.screenshot({ path: screenshotPath, animations: "disabled" });
+        return "fresh-context";
+      } finally {
+        await context.close();
+      }
+    }
+  }
+}
+
 function prepareOutputDir() {
   if (existsSync(OUTPUT_DIR)) {
     rmSync(OUTPUT_DIR, { recursive: true, force: true });
@@ -371,7 +429,12 @@ test.describe("Desktop/Tauri entry gate evidence", () => {
       await page.waitForTimeout(350);
 
       const screenshotPath = path.join(OUTPUT_DIR, scenario.fileName);
-      await page.screenshot({ path: screenshotPath });
+      const screenshotCaptureSource = await captureDesktopEntryScreenshot(page, screenshotPath, {
+        baseURL,
+        browser,
+        scenario,
+        screenTestId,
+      });
 
       const fact = await page.evaluate(async ({ scenario, screenTestId }) => {
         const byTestId = (testId: string) =>
@@ -534,6 +597,7 @@ test.describe("Desktop/Tauri entry gate evidence", () => {
         consoleMessages,
         failedRequests,
         screenshot: screenshotPath,
+        screenshotCaptureSource,
         screenshotSha256: screenshotSha,
       });
       verificationLines.push(
@@ -549,7 +613,7 @@ test.describe("Desktop/Tauri entry gate evidence", () => {
           `iconMetrics=${fact.providerIconMetrics
             .map((icon) => `${icon.id}:${icon.renderedWidth}x${icon.renderedHeight}`)
             .join(",")} console=${consoleMessages.length} failedRequests=${failedRequests.length} ` +
-          `screenshotSha=${screenshotSha}`,
+          `screenshotSource=${screenshotCaptureSource} screenshotSha=${screenshotSha}`,
       );
 
       page.removeAllListeners("console");
@@ -612,12 +676,14 @@ test.describe("Desktop/Tauri entry gate evidence", () => {
         expect(fact.authProviders, `${fact.name} auth provider ids`).toEqual([
           "google",
           "telegram",
+          "apple",
         ]);
         expect(fact.iconCenterSpread, `${fact.name} provider icon rail spread`).toBe(0);
         expect(fact.providerIcons.every((icon) => icon.className.includes("h-6 w-6"))).toBe(true);
         expect(fact.providerIconMetrics, `${fact.name} provider icon metrics`).toEqual([
           { id: "auth-provider-icon-google", renderedHeight: 24, renderedWidth: 24 },
           { id: "auth-provider-icon-telegram", renderedHeight: 24, renderedWidth: 24 },
+          { id: "auth-provider-icon-apple", renderedHeight: 24, renderedWidth: 24 },
         ]);
         expect(fact.telegram.exists, `${fact.name} Telegram icon`).toBe(true);
         expect(fact.telegram.viewBox, `${fact.name} Telegram viewBox`).toBe("0 0 128 128");

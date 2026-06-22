@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -47,6 +47,10 @@ const securityMocks = vi.hoisted(() => ({
   unlockWithBiometric: vi.fn(),
 }));
 
+const mediaQueryMocks = vi.hoisted(() => ({
+  matches: false,
+}));
+
 const safeJsonStore = vi.hoisted(() => ({
   values: new Map<string, string>(),
 }));
@@ -85,7 +89,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
 }));
 
 vi.mock("@/hooks/useMediaQuery", () => ({
-  useMediaQuery: () => false,
+  useMediaQuery: () => mediaQueryMocks.matches,
 }));
 
 vi.mock("@/hooks/useScrollLock", () => ({
@@ -146,6 +150,7 @@ vi.mock("@/lib/haptics", () => ({
     light: vi.fn(),
   },
   hapticSuccess: vi.fn(),
+  hapticTap: vi.fn(),
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -240,10 +245,21 @@ vi.mock("../JournalOnboardingHints", () => ({
 }));
 
 vi.mock("../JournalEntryEditor", () => ({
-  JournalEntryEditor: ({ entryPrefill }: { entryPrefill: JournalEntryPrefill | null }) => (
+  JournalEntryEditor: ({
+    entryPrefill,
+    onRequestSettings,
+  }: {
+    entryPrefill: JournalEntryPrefill | null;
+    onRequestSettings?: () => void;
+  }) => (
     <section data-testid="journal-entry-editor">
       <h2>{entryPrefill?.title}</h2>
       <p>{entryPrefill?.content}</p>
+      {onRequestSettings ? (
+        <button type="button" onClick={onRequestSettings}>
+          Open diary settings
+        </button>
+      ) : null}
     </section>
   ),
 }));
@@ -329,6 +345,10 @@ vi.mock("framer-motion", () => ({
       const { children, ...rest } = omitMotionProps(props);
       return <article {...rest}>{children}</article>;
     },
+    aside: (props: MotionMockProps<HTMLElement>) => {
+      const { children, ...rest } = omitMotionProps(props);
+      return <aside {...rest}>{children}</aside>;
+    },
     button: (props: MotionMockProps<HTMLButtonElement>) => {
       const { children, ...rest } = omitMotionProps(props);
       return <button {...rest}>{children}</button>;
@@ -377,6 +397,7 @@ describe("JournalModule orb handoff behavior", () => {
       loading: false,
     });
     safeJsonStore.values.clear();
+    mediaQueryMocks.matches = false;
     supabaseMocks.authStateCallback = null;
     supabaseMocks.getSession.mockResolvedValue({
       data: { session: { user: { email: "owner@example.invalid" } } },
@@ -431,6 +452,39 @@ describe("JournalModule orb handoff behavior", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("diary-entry-suggestion")).not.toBeInTheDocument();
     });
+  });
+
+  it("does not return to an open editor after private mode is enabled from diary settings", async () => {
+    mediaQueryMocks.matches = true;
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /continue writing/i }));
+    expect(await screen.findByTestId("journal-entry-editor")).toHaveTextContent(
+      "A steady moment worth keeping.",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /open diary settings/i }));
+
+    const settingsPanel = await screen.findByTestId("journal-settings-panel");
+    const privateModeSwitch = await within(settingsPanel).findByRole("switch", {
+      name: /hide previews/i,
+    });
+    fireEvent.click(privateModeSwitch);
+    fireEvent.click(within(settingsPanel).getByRole("button", { name: /close/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("journal-entry-editor")).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId("journal-page-shell")).toBeInTheDocument();
   });
 
   it("refreshes the diary auto-lock timer on pointer and keyboard interaction", async () => {

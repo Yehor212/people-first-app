@@ -31,18 +31,23 @@ interface MoodDotStripProps {
   entries: JournalEntry[];
   activeEntryId: string | null;
   onOpenEntry: (id: string) => void;
+  privateMode?: boolean;
 }
 
 export const MoodDotStrip = memo(function MoodDotStrip({
   entries,
   activeEntryId,
   onOpenEntry,
+  privateMode = false,
 }: MoodDotStripProps) {
-  const { isRTL } = useLanguage();
+  const { isRTL, t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   const listRef = useRef<HTMLDivElement>(null);
   const [focusIndex, setFocusIndex] = useState(-1);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const railEntries = privateMode ? entries.slice(0, 1) : entries;
 
   // Virtualization: render only visible dots + buffer
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 12 });
@@ -54,13 +59,13 @@ export const MoodDotStrip = memo(function MoodDotStrip({
       const scrollTop = container.scrollTop;
       const viewportItems = Math.ceil(container.clientHeight / DOT_ITEM_HEIGHT);
       const start = Math.max(0, Math.floor(scrollTop / DOT_ITEM_HEIGHT) - 5);
-      const end = Math.min(entries.length, start + viewportItems + 10);
+      const end = Math.min(railEntries.length, start + viewportItems + 10);
       setVisibleRange({ start, end });
     };
     handleScroll();
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [entries.length]);
+  }, [railEntries.length]);
 
   // Cleanup hover timeout
   useEffect(() => {
@@ -83,16 +88,17 @@ export const MoodDotStrip = memo(function MoodDotStrip({
     (e: React.KeyboardEvent) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setFocusIndex((prev) => Math.min(prev + 1, entries.length - 1));
+        setFocusIndex((prev) => Math.min(prev + 1, railEntries.length - 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setFocusIndex((prev) => Math.max(prev - 1, 0));
-      } else if (e.key === "Enter" && focusIndex >= 0) {
+      } else if ((e.key === "Enter" || e.key === " ") && focusIndex >= 0) {
         e.preventDefault();
-        onOpenEntry(entries[focusIndex].id);
+        if (privateMode) return;
+        onOpenEntry(railEntries[focusIndex].id);
       }
     },
-    [entries, focusIndex, onOpenEntry]
+    [focusIndex, onOpenEntry, privateMode, railEntries]
   );
 
   // Focus the active dot when focusIndex changes
@@ -102,8 +108,8 @@ export const MoodDotStrip = memo(function MoodDotStrip({
     el?.focus();
   }, [focusIndex]);
 
-  const totalHeight = entries.length * DOT_ITEM_HEIGHT;
-  const visibleEntries = entries.slice(visibleRange.start, visibleRange.end);
+  const totalHeight = railEntries.length * DOT_ITEM_HEIGHT;
+  const visibleEntries = railEntries.slice(visibleRange.start, visibleRange.end);
 
   return (
     <div
@@ -120,8 +126,11 @@ export const MoodDotStrip = memo(function MoodDotStrip({
           const isActive = entry.id === activeEntryId;
           const isFocused = realIndex === focusIndex;
           const isHovered = entry.id === hoveredId;
-          const mood = entry.mood;
-          const title = entry.title || new Date(entry.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          const mood = privateMode ? undefined : entry.mood;
+          const title = privateMode
+            ? ts.journalPrivateEntry || ts.privateMode || "Private entry"
+            : entry.title || new Date(entry.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          const ariaLabel = privateMode ? title : `${mood ? mood : "entry"}: ${title}`;
 
           return (
             <div
@@ -133,11 +142,12 @@ export const MoodDotStrip = memo(function MoodDotStrip({
                 layoutId={`mood-${entry.id}`}
                 role="option"
                 aria-selected={isActive}
-                aria-label={`${mood ? mood : "entry"}: ${title}`}
+                aria-disabled={privateMode || undefined}
+                aria-label={ariaLabel}
                 data-index={realIndex}
                 tabIndex={isFocused ? 0 : -1}
                 onClick={() => {
-                  if (isActive) return;
+                  if (privateMode || isActive) return;
                   onOpenEntry(entry.id);
                 }}
                 onMouseEnter={() => handleMouseEnter(entry.id)}
@@ -149,7 +159,8 @@ export const MoodDotStrip = memo(function MoodDotStrip({
                   isActive && mood && `ring-2 ${MOOD_RING_COLOR[mood]}`,
                   isActive && !mood && "ring-2 ring-primary/30",
                   isFocused && "ring-2 ring-primary/50",
-                  !isActive && "hover:bg-muted/30"
+                  privateMode && "cursor-default",
+                  !privateMode && !isActive && "hover:bg-muted/30"
                 )}
               >
                 {mood ? (
@@ -174,7 +185,9 @@ export const MoodDotStrip = memo(function MoodDotStrip({
                     )}
                   >
                     <span className="font-medium">{title.length > 24 ? title.slice(0, 24) + "\u2026" : title}</span>
-                    <span className="text-muted-foreground/60 ms-1.5">{getRelativeTimeShort(entry.createdAt)}</span>
+                    {!privateMode ? (
+                      <span className="text-muted-foreground/60 ms-1.5">{getRelativeTimeShort(entry.createdAt)}</span>
+                    ) : null}
                   </motion.div>
                 )}
               </AnimatePresence>

@@ -142,6 +142,26 @@ function nodePulseClass(size: MemoryPortalNode["size"]): string {
   return "h-8 w-8";
 }
 
+const EMPTY_PORTAL_ENTRIES: JournalEntry[] = [];
+const EMPTY_PORTAL_MOODS: MoodEntry[] = [];
+
+function buildPrivateMemoryPortalNode(date: string): MemoryPortalNode {
+  return {
+    id: "memory-node-private",
+    entryId: "private",
+    date,
+    title: "Private",
+    x: 50,
+    y: 52,
+    size: "md",
+    hasMedia: false,
+    hasAudio: false,
+    wordCount: 0,
+    createdAt: 0,
+    isSelectedDay: true,
+  };
+}
+
 export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
   ts,
   entries,
@@ -171,10 +191,12 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
   const animate = shouldAnimate() && !reducedMotion;
   const preferences = useMemo(() => loadMemoryPortalPreferences(), []);
   const activeDate = selectedDate ?? getToday();
-  const nodes = useMemo(() => buildMemoryPortalNodes(entries, activeDate), [activeDate, entries]);
+  const visualEntries = privateMode ? EMPTY_PORTAL_ENTRIES : entries;
+  const visualMoods = privateMode ? EMPTY_PORTAL_MOODS : moods;
+  const nodes = useMemo(() => buildMemoryPortalNodes(visualEntries, activeDate), [activeDate, visualEntries]);
   const moodSignal = useMemo(
-    () => getMemoryPortalMoodSignal(entries, moods, activeDate),
-    [activeDate, entries, moods]
+    () => getMemoryPortalMoodSignal(visualEntries, visualMoods, activeDate),
+    [activeDate, visualEntries, visualMoods]
   );
   const zodiacSign = useMemo(
     () => getZodiacSignForBirthDate(storageGetRaw(SK.USER_BIRTH_DATE, "")),
@@ -184,7 +206,12 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
     () => getEntriesForPortalDate(entries, activeDate),
     [activeDate, entries]
   );
-  const recentNodes = nodes.slice(0, 9);
+  const visibleCapsuleEntries = privateMode ? capsuleEntries.slice(0, 1) : capsuleEntries.slice(0, 3);
+  const visibleNodes = useMemo(
+    () => (privateMode && entries.length > 0 ? [buildPrivateMemoryPortalNode(activeDate)] : nodes),
+    [activeDate, entries.length, nodes, privateMode]
+  );
+  const recentNodes = visibleNodes.slice(0, 9);
   const [actionFanOpen, setActionFanOpen] = useState(false);
   const [activeScene, setActiveScene] = useState<MemoryPortalAction | null>(null);
   const [capsuleOpen, setCapsuleOpen] = useState(false);
@@ -488,7 +515,11 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
                     : undefined
                 }
                 onClick={() => openCapsuleForDate(node.date)}
-                aria-label={`${node.title} ${formatPortalDate(node.date)}`}
+                aria-label={
+                  privateMode
+                    ? `${ts.journalHubSpacePrivate || "Private"} ${formatPortalDate(node.date)}`
+                    : `${node.title} ${formatPortalDate(node.date)}`
+                }
                 data-testid="memory-portal-node"
               >
                 <span
@@ -572,9 +603,9 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
                       key={action}
                       type="button"
                       className="pointer-events-auto absolute left-1/2 top-[52%] flex min-h-[52px] min-w-[52px] w-[min(156px,calc(50vw-0.5rem))] -translate-y-1/2 items-center gap-2 rounded-full border border-primary/20 bg-card/90 px-3 text-xs font-semibold text-foreground shadow-[0_12px_38px_hsl(var(--primary)/0.16)] backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]"
-                      initial={animate ? { opacity: 0, scale: 0.4, x: -78, y: 0 } : false}
-                      animate={{ opacity: 1, scale: 1, x: position.x, y: position.y }}
-                      exit={animate ? { opacity: 0, scale: 0.5, x: -78, y: 0 } : { opacity: 0 }}
+                      initial={animate ? { opacity: 0, x: -78, y: 0 } : false}
+                      animate={{ opacity: 1, x: position.x, y: position.y }}
+                      exit={animate ? { opacity: 0, x: -78, y: 0 } : { opacity: 0 }}
                       transition={
                         animate
                           ? {
@@ -695,29 +726,38 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
             <div className="mt-3 grid grid-cols-3 gap-2">
               <div className="rounded-2xl border border-border/20 bg-background/45 px-3 py-2">
                 <p className="text-[10px] text-muted-foreground">{ts.journalEntries || "Entries"}</p>
-                <p className="text-base font-black text-foreground">{capsuleEntries.length}</p>
+                <p className="text-base font-black text-foreground">
+                  {privateMode ? ts.journalHubSpacePrivate || ts.privateMode || "Private" : capsuleEntries.length}
+                </p>
               </div>
               <div className="rounded-2xl border border-border/20 bg-background/45 px-3 py-2">
                 <p className="text-[10px] text-muted-foreground">{ts.journalPhotoAdd || "Media"}</p>
                 <p className="text-base font-black text-foreground">
-                  {capsuleEntries.filter((entry) => entry.photoIds.length > 0 || (entry.audioIds?.length ?? 0) > 0).length}
+                  {privateMode ? ts.journalHubSpacePrivate || ts.privateMode || "Private" : capsuleEntries.filter((entry) => entry.photoIds.length > 0 || (entry.audioIds?.length ?? 0) > 0).length}
                 </p>
               </div>
               <div className="rounded-2xl border border-border/20 bg-background/45 px-3 py-2">
                 <p className="text-[10px] text-muted-foreground">{ts.focus || "Focus"}</p>
                 <p className="text-base font-black text-foreground">
-                  {capsuleEntries.filter((entry) => entry.tags.includes("portal-focus")).length}
+                  {privateMode ? ts.journalHubSpacePrivate || ts.privateMode || "Private" : capsuleEntries.filter((entry) => entry.tags.includes("portal-focus")).length}
                 </p>
               </div>
             </div>
 
             <div className="mt-3 space-y-2">
-              {capsuleEntries.slice(0, 3).map((entry) => (
+              {visibleCapsuleEntries.map((entry) => (
                 <button
                   key={entry.id}
                   type="button"
-                  onClick={() => onOpenEntry(entry.id)}
-                  className="flex min-h-[52px] w-full items-center justify-between gap-3 rounded-2xl border border-border/20 bg-background/50 px-3 text-start"
+                  aria-disabled={privateMode || undefined}
+                  onClick={() => {
+                    if (privateMode) return;
+                    onOpenEntry(entry.id);
+                  }}
+                  className={cn(
+                    "flex min-h-[52px] w-full items-center justify-between gap-3 rounded-2xl border border-border/20 bg-background/50 px-3 text-start",
+                    privateMode && "cursor-default",
+                  )}
                   data-testid="memory-portal-capsule-entry"
                 >
                   <span className="min-w-0">

@@ -76,6 +76,7 @@ interface JournalCalendarFullProps {
   selectedDate: string | null;
   onSelectDate: (date: string | null) => void;
   onToggleMode: () => void;
+  privateMode?: boolean;
 }
 
 export function JournalCalendarFull({
@@ -84,6 +85,7 @@ export function JournalCalendarFull({
   selectedDate,
   onSelectDate,
   onToggleMode,
+  privateMode = false,
 }: JournalCalendarFullProps) {
   const today = getToday();
   const { t, language } = useLanguage();
@@ -255,13 +257,14 @@ export function JournalCalendarFull({
               return <div key={`empty-${idx}`} className="aspect-square" />;
             }
 
-            const mood = entryDates.get(cell.date);
-            const hasEntry = entryDates.has(cell.date);
-            const hasReleaseTrace = (releaseTraceDates?.get(cell.date) ?? 0) > 0;
+            const rawMood = entryDates.get(cell.date);
+            const mood = privateMode ? undefined : rawMood;
+            const hasEntry = !privateMode && entryDates.has(cell.date);
+            const hasReleaseTrace = !privateMode && (releaseTraceDates?.get(cell.date) ?? 0) > 0;
             const count = entryCounts.get(cell.date) || 0;
             const isSelected = cell.date === selectedDate;
             const isFuture = cell.date > today;
-            const streak = streaks.get(cell.date);
+            const streak = privateMode ? undefined : streaks.get(cell.date);
 
             // T1: Mood intensity background color via theme tokens
             const moodBgColor =
@@ -330,7 +333,7 @@ export function JournalCalendarFull({
                     >
                       <DiaryMiniOrb mood={mood} size="micro" className="scale-[0.58]" />
                     </div>
-                    {count > 1 && (
+                    {!privateMode && count > 1 && (
                       <span className="text-[7px] text-muted-foreground/60 font-medium leading-none">
                         {count}
                       </span>

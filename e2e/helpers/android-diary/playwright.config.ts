@@ -8,6 +8,7 @@ const artifactRoot = resolve(repoRoot, "output/playwright/android-diary-e2e-2026
 
 export default defineConfig({
   testDir: repoRoot,
+  testIgnore: ["**/.codex-artifacts/**", "**/output/**"],
   fullyParallel: false,
   forbidOnly: true,
   retries: 0,

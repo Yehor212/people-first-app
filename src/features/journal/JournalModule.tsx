@@ -7,6 +7,7 @@ import {
   Suspense,
   memo,
   type ComponentType,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -23,6 +24,8 @@ import {
   Upload,
   BarChart3,
   Flame,
+  PanelLeftOpen,
+  Star,
 } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from "framer-motion";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -35,7 +38,7 @@ import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { consumePendingDiaryEditorOpen, subscribeToDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useModalA11y } from "@/hooks/useModalA11y";
-import { createFocusTrap, announceSuccess, announceError } from "@/lib/a11y";
+import { createFocusTrap, getFocusableElements, announceSuccess, announceError } from "@/lib/a11y";
 import { Switch } from "@/components/ui/switch";
 import { SplashScreen, type SplashThemePreference } from "@/components/SplashScreen";
 import { triggerSync } from "@/storage/cloudSync";
@@ -44,7 +47,7 @@ import type { Database } from "@/types/supabase";
 import { useJournal } from "./useJournal";
 import { useJournalSecurity } from "./useJournalSecurity";
 import { JournalLockScreen } from "./JournalLockScreen";
-import { SidebarCompact } from "./SidebarCompact";
+import { SidebarCompact, type DiarySidebarSection } from "./SidebarCompact";
 import { DiaryEntrySuggestionCard } from "./DiaryEntrySuggestionCard";
 import { OnThisDayCard } from "./OnThisDayCard";
 import { JournalOnboardingHints, useJournalOnboarding } from "./JournalOnboardingHints";
@@ -68,15 +71,21 @@ import { useThemeStore } from "@/stores/themeStore";
 import { haptics, hapticSuccess } from "@/lib/haptics";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { useEntryTransition } from "@/hooks/useEntryTransition";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import { useSidebarKeyboard } from "@/hooks/useSidebarKeyboard";
-import { useEntryTransition } from "@/hooks/useEntryTransition";
 import { springs } from "@/config/animations";
 import { useStreakFreeze, StreakFreezeIndicator } from "./StreakFreeze";
 import type { JournalSettingsSection } from "./JournalSettingsContent";
-import type { JournalEntryPrefill, JournalEntrySuggestion, JournalReleaseTraceSummary } from "./types";
+import type {
+  JournalEntry,
+  JournalEntryPrefill,
+  JournalEntrySuggestion,
+  JournalReleaseTraceSummary,
+} from "./types";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
 import { DiaryWallpaper } from "./DiaryWallpaper";
+import { getJournalPreviewText } from "./journalDisplay";
 
 function getPrefillSpaceIds(prefill: JournalEntryPrefill | null | undefined): string[] {
   if (!prefill) return [];
@@ -304,6 +313,136 @@ function JournalCompactEmptyListShell({
   );
 }
 
+const FAVORITE_ENTRY_TAGS = new Set([
+  "favorite",
+  "favorites",
+  "favourite",
+  "favourites",
+  "starred",
+  "fav",
+  "обране",
+  "избранное",
+  "favorito",
+  "favoritos",
+  "favori",
+  "favoris",
+  "favorit",
+  "favoriten",
+  "お気に入り",
+  "المفضلة",
+  "מועדף",
+  "מועדפים",
+]);
+
+function isFavoriteJournalEntry(entry: Pick<JournalEntry, "tags">): boolean {
+  return entry.tags.some((tag) => FAVORITE_ENTRY_TAGS.has(tag.trim().toLowerCase()));
+}
+
+function JournalFavoritesPanel({
+  entries,
+  onOpenEntry,
+  onNewEntry,
+  privateMode,
+  ts,
+}: {
+  entries: JournalEntry[];
+  onOpenEntry: (entryId: string) => void;
+  onNewEntry: () => void;
+  privateMode: boolean;
+  ts: Record<string, string>;
+}) {
+  const favorites = entries.filter(isFavoriteJournalEntry);
+  const visibleFavorites = privateMode ? favorites.slice(0, 1) : favorites;
+
+  return (
+    <section
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-6 lg:px-8"
+      aria-label={ts.journalFavorites || "Favorites"}
+      data-testid="journal-favorites-panel"
+    >
+      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4">
+        <div className="flex items-center gap-3 rounded-[28px] border border-border/35 bg-card/65 p-4 shadow-[0_18px_55px_hsl(var(--foreground)/0.07)] backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/[0.12] text-primary">
+            <Star className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-lg font-black text-foreground">
+              {ts.journalFavorites || "Favorites"}
+            </h2>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              {ts.journalFavoritesEmptyHint || "Add a favorite tag to an entry to keep it here."}
+            </p>
+          </div>
+        </div>
+
+        {favorites.length === 0 ? (
+          <div className="flex min-h-[320px] flex-1 flex-col items-center justify-center rounded-[28px] border border-dashed border-border/45 bg-background/55 p-6 text-center">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-3xl border border-primary/20 bg-primary/[0.10] text-primary">
+              <Star className="h-6 w-6" aria-hidden="true" />
+            </div>
+            <h3 className="text-base font-bold text-foreground">
+              {ts.journalFavoritesEmptyTitle || "No favorites yet"}
+            </h3>
+            <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+              {ts.journalFavoritesEmptyHint || "Add a favorite tag to an entry to keep it here."}
+            </p>
+            <button
+              type="button"
+              onClick={onNewEntry}
+              className="mt-5 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.20)] motion-safe:transition-transform active:scale-[0.98]"
+            >
+              <PenLine className="h-4 w-4" aria-hidden="true" />
+              {ts.journalNewEntry || "Write first entry"}
+            </button>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {visibleFavorites.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                aria-disabled={privateMode || undefined}
+                onClick={() => {
+                  if (privateMode) return;
+                  onOpenEntry(entry.id);
+                }}
+                className={cn(
+                  "min-h-[120px] rounded-[24px] border border-border/35 bg-card/70 p-4 text-start shadow-[0_12px_34px_hsl(var(--foreground)/0.06)] backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)] motion-safe:transition-[transform,border-color,box-shadow] active:scale-[0.99]",
+                  privateMode && "cursor-default",
+                  !privateMode && "hover:border-primary/30 hover:shadow-[0_18px_48px_hsl(var(--primary)/0.12)]",
+                )}
+              >
+                {privateMode ? (
+                  <>
+                    <span className="block truncate text-base font-bold text-foreground">
+                      {ts.journalPrivateEntry || ts.privateMode || "Private entry"}
+                    </span>
+                    <span className="mt-2 block max-h-12 overflow-hidden text-sm leading-relaxed text-muted-foreground">
+                      {ts.journalPrivateEntryHint || "Unlock private mode to view this memory."}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs font-bold uppercase tracking-[0.16em] text-primary/75">
+                      {entry.date}
+                    </span>
+                    <span className="mt-2 block truncate text-base font-bold text-foreground">
+                      {entry.title || ts.journalEntryTitle || "Entry"}
+                    </span>
+                    <span className="mt-2 block max-h-12 overflow-hidden text-sm leading-relaxed text-muted-foreground">
+                      {getJournalPreviewText(entry.content, ts) || ts.journalEmptyHint || "A quiet saved moment."}
+                    </span>
+                  </>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 type ModuleState = "card" | "open";
 
 interface JournalModuleProps {
@@ -321,6 +460,7 @@ interface JournalModuleProps {
   loadingTheme?: SplashThemePreference;
   onOpenNavMenu?: () => void;
   navMenuOpen?: boolean;
+  showAppNavMenu?: boolean;
 }
 
 const JOURNAL_SIDEBAR_PANEL_ID = "journal-sidebar-panel";
@@ -341,6 +481,7 @@ export const JournalModule = memo(function JournalModule({
   loadingTheme = "auto",
   onOpenNavMenu,
   navMenuOpen = false,
+  showAppNavMenu = false,
 }: JournalModuleProps = {}) {
   const { t, isRTL, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
@@ -352,6 +493,8 @@ export const JournalModule = memo(function JournalModule({
     "flex h-[48px] w-[48px] shrink-0 touch-manipulation items-center justify-center rounded-full border border-border/50 bg-card/70 p-0 text-foreground/90 shadow-[0_14px_34px_hsl(var(--foreground)/0.16)] backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 active:scale-95 active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
   const mobileHeaderActionClass =
     "press-stable flex h-[48px] w-[48px] shrink-0 touch-manipulation items-center justify-center rounded-xl p-0 text-muted-foreground motion-safe:transition-[background-color,color,box-shadow] motion-safe:duration-150 hover:bg-muted/50 hover:text-foreground active:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45";
+  const mobileHeaderTabClass =
+    "press-stable flex min-h-[48px] min-w-[44px] touch-manipulation items-center justify-center rounded-xl p-0 text-muted-foreground motion-safe:transition-[background-color,color,box-shadow] motion-safe:duration-150 hover:bg-muted/50 hover:text-foreground active:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45";
   const rewardUser = useGamificationStore((s) => s.rewardUser);
   const moodEntries = useUserDataStore((s) => s.moods);
   const [moduleState, setModuleState] = useState<ModuleState>(
@@ -359,6 +502,8 @@ export const JournalModule = memo(function JournalModule({
   );
   const [entryCount, setEntryCount] = useState(0);
   const [showPasswordSettings, setShowPasswordSettings] = useState(false);
+  const [showMobileDiarySidebar, setShowMobileDiarySidebar] = useState(false);
+  const [diaryTabSection, setDiaryTabSection] = useState<DiarySidebarSection>("entry");
   const [settingsSection, setSettingsSection] = useState<JournalSettingsSection>("overview");
   const [calendarMode, setCalendarMode] = useState<"strip" | "full">(() => {
     return storageGetRaw(SK.JOURNAL_CALENDAR_MODE, "strip") as "strip" | "full";
@@ -390,6 +535,7 @@ export const JournalModule = memo(function JournalModule({
   const initialSuggestionConsumedRef = useRef(false);
   const initialSuggestionRef = useRef<JournalEntrySuggestion | null>(initialEntrySuggestion);
   const settingsReturnFocusRef = useRef<HTMLElement | null>(null);
+  const settingsReturnTabRef = useRef<DiarySidebarSection>("entry");
   const editorSettingsRequestRef = useRef<(() => void) | null>(null);
 
   if (initialEntrySuggestion && !initialSuggestionConsumedRef.current) {
@@ -415,27 +561,51 @@ export const JournalModule = memo(function JournalModule({
     return () => document.removeEventListener("keydown", handler);
   }, [moduleState]);
   const reducedMotion = useReducedMotion();
+  const isLgScreen = useMediaQuery("(min-width: 1024px)");
+  const isDiaryDesktopLayout = useMediaQuery("(min-width: 1280px)");
   const entryTransition = useEntryTransition();
   const onboarding = useJournalOnboarding();
   const sidebarContentRef = useRef<HTMLDivElement>(null);
+  const mobileDiarySidebarTriggerRef = useRef<HTMLButtonElement>(null);
+  const mobileDiarySidebarCloseRef = useRef<HTMLButtonElement>(null);
+  const mobileDiarySidebarRef = useRef<HTMLElement | null>(null);
+  const mobileSettingsPanelRef = useRef<HTMLDivElement | null>(null);
+  const mobileSettingsCloseRef = useRef<HTMLButtonElement>(null);
   const isSidebarCollapsed = isCollapsed;
+  const closeMobileDiarySidebar = useCallback((restoreFocus = true) => {
+    setShowMobileDiarySidebar(false);
+    if (restoreFocus) {
+      mobileDiarySidebarTriggerRef.current?.focus({ preventScroll: true });
+      requestAnimationFrame(() => mobileDiarySidebarTriggerRef.current?.focus({ preventScroll: true }));
+    }
+  }, []);
 
   useBackHandler(showExportPicker, () => setShowExportPicker(false));
+  useBackHandler(showMobileDiarySidebar, closeMobileDiarySidebar);
 
   const closeSettings = useCallback((restoreFocus = true) => {
     setShowPasswordSettings(false);
+    setDiaryTabSection(settingsReturnTabRef.current === "settings" ? "entry" : settingsReturnTabRef.current);
     setSettingsSection("overview");
 
     if (!restoreFocus) return;
-    requestAnimationFrame(() => settingsReturnFocusRef.current?.focus());
+    settingsReturnFocusRef.current?.focus({ preventScroll: true });
+    requestAnimationFrame(() => settingsReturnFocusRef.current?.focus({ preventScroll: true }));
   }, []);
 
-  const openSettings = useCallback((section: JournalSettingsSection = "overview") => {
-    settingsReturnFocusRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const openSettings = useCallback((
+    section: JournalSettingsSection = "overview",
+    returnFocusElement?: HTMLElement | null,
+  ) => {
+    settingsReturnFocusRef.current = returnFocusElement ?? (
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    );
+    settingsReturnTabRef.current = diaryTabSection === "settings" ? settingsReturnTabRef.current : diaryTabSection;
+    setShowMobileDiarySidebar(false);
+    setDiaryTabSection("settings");
     setSettingsSection(section);
     setShowPasswordSettings(true);
-  }, []);
+  }, [diaryTabSection]);
 
   // Consolidated Escape key handler for inline sub-dialogs (password, export, remove-confirm)
   useEffect(() => {
@@ -445,27 +615,112 @@ export const JournalModule = memo(function JournalModule({
         ? "export"
         : showPasswordSettings
           ? "password"
-          : null;
+          : showMobileDiarySidebar
+            ? "mobile-sidebar"
+            : null;
     if (!activeDialog) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopPropagation();
       if (activeDialog === "password") {
         closeSettings();
       } else if (activeDialog === "export") {
         setShowExportPicker(false);
       } else if (activeDialog === "remove") {
         setShowRemovePasswordConfirm(false);
+      } else if (activeDialog === "mobile-sidebar") {
+        closeMobileDiarySidebar();
       }
     };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
+    document.addEventListener("keydown", handler, true);
+    return () => document.removeEventListener("keydown", handler, true);
   }, [
     closeSettings,
+    closeMobileDiarySidebar,
     showPasswordSettings,
     showExportPicker,
     showRemovePasswordConfirm,
+    showMobileDiarySidebar,
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!showMobileDiarySidebar) return;
+    mobileDiarySidebarCloseRef.current?.focus({ preventScroll: true });
+    requestAnimationFrame(() => mobileDiarySidebarCloseRef.current?.focus({ preventScroll: true }));
+  }, [showMobileDiarySidebar]);
+
+  useEffect(() => {
+    if (!showMobileDiarySidebar || !mobileDiarySidebarRef.current) return;
+
+    const drawer = mobileDiarySidebarRef.current;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+
+      const focusableElements = getFocusableElements(drawer);
+      if (focusableElements.length === 0) return;
+
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey && activeElement === firstFocusable) {
+        event.preventDefault();
+        lastFocusable.focus({ preventScroll: true });
+      } else if (!event.shiftKey && activeElement === lastFocusable) {
+        event.preventDefault();
+        firstFocusable.focus({ preventScroll: true });
+      }
+    };
+
+    drawer.addEventListener("keydown", handleKeyDown);
+    return () => drawer.removeEventListener("keydown", handleKeyDown);
+  }, [showMobileDiarySidebar]);
+
+  useEffect(() => {
+    if (!showPasswordSettings || isDiaryDesktopLayout) return;
+    mobileSettingsCloseRef.current?.focus({ preventScroll: true });
+    requestAnimationFrame(() => mobileSettingsCloseRef.current?.focus({ preventScroll: true }));
+  }, [isDiaryDesktopLayout, showPasswordSettings]);
+
+  useEffect(() => {
+    if (!showPasswordSettings || isDiaryDesktopLayout || !mobileSettingsPanelRef.current) return;
+
+    const panel = mobileSettingsPanelRef.current;
+    const restoreFocusToPanel = () => {
+      mobileSettingsCloseRef.current?.focus({ preventScroll: true });
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+
+      const focusableElements = getFocusableElements(panel);
+      if (focusableElements.length === 0) return;
+
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey && activeElement === firstFocusable) {
+        event.preventDefault();
+        lastFocusable.focus({ preventScroll: true });
+      } else if (!event.shiftKey && activeElement === lastFocusable) {
+        event.preventDefault();
+        firstFocusable.focus({ preventScroll: true });
+      }
+    };
+    const handleFocusIn = (event: FocusEvent) => {
+      if (event.target instanceof Node && panel.contains(event.target)) return;
+      restoreFocusToPanel();
+    };
+
+    panel.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("focusin", handleFocusIn);
+    return () => {
+      panel.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("focusin", handleFocusIn);
+    };
+  }, [isDiaryDesktopLayout, showPasswordSettings]);
 
   // Secure password reset via email verification
   type ResetStep = "idle" | "checking" | "no-account" | "confirm" | "sending" | "sent" | "success";
@@ -478,6 +733,14 @@ export const JournalModule = memo(function JournalModule({
     () => new Map(),
   );
   const security = useJournalSecurity();
+  const handleModuleKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
+    security.touch();
+    if (event.key !== "Escape" || !showMobileDiarySidebar) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    closeMobileDiarySidebar();
+  }, [closeMobileDiarySidebar, security, showMobileDiarySidebar]);
   const refreshJournalRef = useRef(journal.refresh);
   useEffect(() => {
     refreshJournalRef.current = journal.refresh;
@@ -600,7 +863,7 @@ export const JournalModule = memo(function JournalModule({
     return count;
   }, [journal.entryDates]);
 
-  // Streak freeze (Duolingo-style — miss a day without breaking streak)
+
   const lastEntryDate = useMemo(() => {
     const dates = [...journal.entryDates.keys()].sort().reverse();
     return dates[0] ?? null;
@@ -650,11 +913,13 @@ export const JournalModule = memo(function JournalModule({
     }
   };
 
+  const getActiveDraftDate = useCallback(() => journal.selectedDate ?? getToday(), [journal.selectedDate]);
+
   const handleNewEntry = useCallback(() => {
     entryModeRef.current = "fab";
-    setPortalEntryPrefill(null);
+    setPortalEntryPrefill({ date: getActiveDraftDate() });
     journal.editEntry(null);
-  }, [journal]);
+  }, [getActiveDraftDate, journal]);
 
   useEffect(() => {
     const openEditor = () => {
@@ -671,10 +936,13 @@ export const JournalModule = memo(function JournalModule({
   const handleNewEntryWithPrefill = useCallback(
     (prefill: JournalEntryPrefill) => {
       entryModeRef.current = "fab";
-      setPortalEntryPrefill(prefill);
+      setPortalEntryPrefill({
+        ...prefill,
+        date: prefill.date ?? getActiveDraftDate(),
+      });
       journal.editEntry(null);
     },
-    [journal]
+    [getActiveDraftDate, journal]
   );
 
   const handleUseInitialEntrySuggestion = useCallback(() => {
@@ -740,8 +1008,8 @@ export const JournalModule = memo(function JournalModule({
     ? portalEntryPrefill
     : null;
 
-  const isLgScreen = useMediaQuery("(min-width: 1024px)");
-  const showEntrySuggestionCards = isLgScreen;
+  const showAppNavMenuButton = showAppNavMenu && !!onOpenNavMenu;
+  const showEntrySuggestionCards = isDiaryDesktopLayout;
 
   const hasInitialEntrySuggestion =
     !!initialEntrySuggestion &&
@@ -773,6 +1041,7 @@ export const JournalModule = memo(function JournalModule({
 
   const handleOpenEntry = useCallback(
     (id: string) => {
+      if (privateMode) return;
       entryModeRef.current = "card";
       setPortalEntryPrefill(null);
       entryTransition.startTransition(id);
@@ -781,7 +1050,7 @@ export const JournalModule = memo(function JournalModule({
       if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
       transitionTimerRef.current = setTimeout(() => entryTransition.completeTransition(), 350);
     },
-    [journal, entryTransition]
+    [journal, entryTransition, privateMode]
   );
 
   /** Reverse entry transition before navigating back to list */
@@ -804,7 +1073,19 @@ export const JournalModule = memo(function JournalModule({
     }
   }, [journal, entryTransition]);
 
+  useEffect(() => {
+    if (privateMode && (journal.view === "viewing" || journal.view === "editing")) {
+      handleGoBack();
+    }
+  }, [handleGoBack, journal.view, privateMode]);
+
+  const handleStatsBack = useCallback(() => {
+    setDiaryTabSection("entry");
+    handleGoBack();
+  }, [handleGoBack]);
+
   const handleShellSettingsRequest = useCallback(() => {
+    setDiaryTabSection("settings");
     if (journal.view === "editing" && editorSettingsRequestRef.current) {
       editorSettingsRequestRef.current();
       return;
@@ -817,6 +1098,7 @@ export const JournalModule = memo(function JournalModule({
     if (showPasswordSettings) {
       closeSettings(false);
     }
+    setDiaryTabSection("stats");
     journal.openStats();
   }, [closeSettings, journal, showPasswordSettings]);
 
@@ -832,6 +1114,18 @@ export const JournalModule = memo(function JournalModule({
       if (showPasswordSettings) {
         closeSettings(false);
       }
+      setDiaryTabSection("entry");
+      handleOpenEntry(id);
+    },
+    [closeSettings, handleOpenEntry, showPasswordSettings]
+  );
+
+  const handleOpenFavoriteEntry = useCallback(
+    (id: string) => {
+      if (showPasswordSettings) {
+        closeSettings(false);
+      }
+      setDiaryTabSection("favorites");
       handleOpenEntry(id);
     },
     [closeSettings, handleOpenEntry, showPasswordSettings]
@@ -845,7 +1139,15 @@ export const JournalModule = memo(function JournalModule({
     void haptics.light();
   }, [toggleSidebarCollapsed]);
 
-  const handleShowDiaryPanel = useCallback(() => {
+  const handleOpenMobileDiarySidebar = useCallback(() => {
+    if (showPasswordSettings) {
+      closeSettings(false);
+    }
+    setShowMobileDiarySidebar(true);
+    void haptics.light();
+  }, [closeSettings, showPasswordSettings]);
+
+  const handleOpenFavorites = useCallback(() => {
     if (showPasswordSettings) {
       closeSettings(false);
     }
@@ -854,19 +1156,36 @@ export const JournalModule = memo(function JournalModule({
       handleGoBack();
     }
 
+    if (journal.view !== "editing") {
+      setDiaryTabSection("favorites");
+    }
+
     if (sidebarState === "collapsed") {
       setSidebarState("expanded");
       requestAnimationFrame(() => sidebarContentRef.current?.focus());
-      void haptics.light();
     }
-  }, [
-    closeSettings,
-    handleGoBack,
-    journal.view,
-    setSidebarState,
-    showPasswordSettings,
-    sidebarState,
-  ]);
+
+    void haptics.light();
+  }, [closeSettings, handleGoBack, journal.view, setSidebarState, showPasswordSettings, sidebarState]);
+
+  const handleShowDiaryPanel = useCallback(() => {
+    if (showPasswordSettings) {
+      closeSettings(false);
+    }
+
+    setDiaryTabSection("entry");
+
+    if (journal.view === "viewing" || journal.view === "stats") {
+      handleGoBack();
+    }
+
+    if (sidebarState === "collapsed") {
+      setSidebarState("expanded");
+      requestAnimationFrame(() => sidebarContentRef.current?.focus());
+    }
+
+    void haptics.light();
+  }, [closeSettings, handleGoBack, journal.view, setSidebarState, showPasswordSettings, sidebarState]);
 
   const handleSaveEntry = useCallback(
     async (data: Parameters<typeof journal.createEntry>[0]) => {
@@ -1074,11 +1393,22 @@ export const JournalModule = memo(function JournalModule({
         setShowRemovePasswordConfirm(false);
         return true;
       });
+    if (showMobileDiarySidebar)
+      return registerModalCloseCallback(() => {
+        closeMobileDiarySidebar();
+        return true;
+      });
     if (showPasswordSettings)
       return registerModalCloseCallback(() => {
         closeSettings();
         return true;
       });
+    if (journal.view === "stats") {
+      return registerModalCloseCallback(() => {
+        handleStatsBack();
+        return true;
+      });
+    }
     if (journal.view !== "list") {
       return registerModalCloseCallback(() => {
         handleGoBack();
@@ -1097,8 +1427,11 @@ export const JournalModule = memo(function JournalModule({
     resetStep,
     showRemovePasswordConfirm,
     showPasswordSettings,
+    showMobileDiarySidebar,
+    closeMobileDiarySidebar,
     journal,
     security,
+    handleStatsBack,
     handleGoBack,
     isPagePresentation,
   ]);
@@ -1257,7 +1590,7 @@ export const JournalModule = memo(function JournalModule({
   // ── Full-screen overlay (portal to escape PullToRefresh transform ancestor) ──
   const moduleContent = (
     <div
-      onKeyDown={security.touch}
+      onKeyDown={handleModuleKeyDown}
       onPointerDown={security.touch}
       className={cn(
         "w-full h-full flex flex-col",
@@ -1274,7 +1607,7 @@ export const JournalModule = memo(function JournalModule({
           {/* Header with close */}
           <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border/30">
             <div className="flex min-w-0 flex-1 items-center gap-3">
-              {onOpenNavMenu ? (
+              {showAppNavMenuButton ? (
                 <button
                   type="button"
                   onClick={onOpenNavMenu}
@@ -1479,16 +1812,29 @@ export const JournalModule = memo(function JournalModule({
       {/* Main content (unlocked or no password) */}
       {!security.isLocked && !security.loading && (
         <>
-          {isLgScreen ? (
+          {isDiaryDesktopLayout ? (
             <>
               <div className="flex flex-1 min-h-0">
                 <SidebarCompact
+                  activeSection={
+                    showPasswordSettings
+                      ? "settings"
+                      : journal.view === "stats"
+                        ? "stats"
+                        : diaryTabSection === "favorites"
+                          ? "favorites"
+                          : journal.view === "editing" || journal.view === "viewing"
+                            ? "entry"
+                            : diaryTabSection
+                  }
                   collapsed={isSidebarCollapsed}
                   entries={journal.allEntries}
                   activeEntryId={journal.activeEntryId}
+                  privateMode={privateMode}
                   onOpenEntry={handleOpenEntryFromShell}
                   onNewEntry={handleNewEntryFromShell}
                   onOpenStats={handleOpenStats}
+                  onOpenFavorites={handleOpenFavorites}
                   onOpenSettings={handleShellSettingsRequest}
                   onShowList={handleShowDiaryPanel}
                   onToggleSidebar={handleToggleDiaryPanel}
@@ -1536,6 +1882,7 @@ export const JournalModule = memo(function JournalModule({
                       </div>
                       <div className="flex items-center gap-1">
                         <button
+                          type="button"
                           onClick={handleOpenStats}
                           className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-muted-foreground hover:bg-muted/50"
                           title={ts.journalStatsTitle || "Statistics"}
@@ -1544,6 +1891,7 @@ export const JournalModule = memo(function JournalModule({
                           <BarChart3 className="w-4 h-4" />
                         </button>
                         <button
+                          type="button"
                           onClick={handleShellSettingsRequest}
                           className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-muted-foreground hover:bg-muted/50"
                           title={ts.journalSettings || "Diary settings"}
@@ -1553,6 +1901,7 @@ export const JournalModule = memo(function JournalModule({
                         </button>
                         {!hideCloseButton && (
                           <button
+                            type="button"
                             onClick={handleClose}
                             className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 hover:bg-muted/50"
                             aria-label={ts.close || "Close"}
@@ -1576,6 +1925,7 @@ export const JournalModule = memo(function JournalModule({
                           <LazyJournalCalendarFull
                             entryDates={journal.entryDates}
                             releaseTraceDates={releaseTraceDates}
+                            privateMode={privateMode}
                             selectedDate={journal.selectedDate}
                             onSelectDate={journal.setSelectedDate}
                             onToggleMode={() => {
@@ -1588,6 +1938,7 @@ export const JournalModule = memo(function JournalModule({
                         <JournalCalendar
                           entryDates={journal.entryDates}
                           releaseTraceDates={releaseTraceDates}
+                          privateMode={privateMode}
                           selectedDate={journal.selectedDate}
                           onSelectDate={journal.setSelectedDate}
                           onToggleMode={() => {
@@ -1760,8 +2111,16 @@ export const JournalModule = memo(function JournalModule({
                         </div>
                       }
                     >
-                      <LazyJournalStats entries={journal.allEntries} onBack={handleGoBack} />
+                      <LazyJournalStats entries={journal.allEntries} onBack={handleStatsBack} privateMode={privateMode} />
                     </Suspense>
+                  ) : diaryTabSection === "favorites" ? (
+                    <JournalFavoritesPanel
+                      entries={journal.allEntries}
+                      onOpenEntry={handleOpenFavoriteEntry}
+                      onNewEntry={handleNewEntryFromShell}
+                      privateMode={privateMode}
+                      ts={ts}
+                    />
                   ) : (
                     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-4 pt-8">
                       <div className="flex min-h-full flex-col gap-4">
@@ -1881,7 +2240,7 @@ export const JournalModule = memo(function JournalModule({
                       <div className="flex items-center justify-between border-b border-border/30 bg-gradient-to-r from-primary/[0.03] via-background/80 to-primary/[0.02] px-4 py-3 backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]">
                         <button
                           type="button"
-                          onClick={handleGoBack}
+                          onClick={handleStatsBack}
                           className={mobileHeaderActionClass}
                           aria-label={ts.back || "Back"}
                         >
@@ -1957,169 +2316,436 @@ export const JournalModule = memo(function JournalModule({
                       className="flex flex-col flex-1 min-h-0"
                     >
                       {/* Header */}
-                      <div className="flex items-center justify-between gap-3 border-b border-border/30 bg-gradient-to-r from-primary/[0.03] via-background/80 to-primary/[0.02] px-4 py-3 backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]">
-                        <div className="flex min-w-0 flex-1 items-center gap-3">
-                          {onOpenNavMenu ? (
+                      <div className="border-b border-border/30 bg-gradient-to-r from-primary/[0.03] via-background/80 to-primary/[0.02] backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]">
+                        <div className="flex items-center justify-between gap-3 px-4 py-3">
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
+                            {showAppNavMenuButton ? (
+                              <button
+                                type="button"
+                                onClick={onOpenNavMenu}
+                                className={mobileHeaderMenuClass}
+                                title={ts.navV2OpenMenu || "Open menu"}
+                                aria-label={ts.navV2OpenMenu || "Open menu"}
+                                aria-expanded={navMenuOpen}
+                                aria-controls="nav-v2-drawer"
+                                data-testid="journal-mobile-app-nav-menu"
+                              >
+                                <JournalMenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            <div className="flex min-w-0 items-center gap-2">
+                              <h2 className="truncate text-base font-bold leading-none text-foreground">
+                                {ts.journalTitle || "Diary"}
+                              </h2>
+                              {streak > 0 && (
+                                <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-orange-500/10 bg-gradient-to-r from-orange-500/15 to-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-orange-500 motion-safe:animate-streak-fire-glow">
+                                  <Flame className="h-3 w-3" aria-hidden="true" />
+                                  {streak}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1">
                             <button
                               type="button"
-                              onClick={onOpenNavMenu}
+                              ref={mobileDiarySidebarTriggerRef}
+                              onClick={handleOpenMobileDiarySidebar}
                               className={mobileHeaderMenuClass}
-                              title={ts.navV2OpenMenu || "Open menu"}
-                              aria-label={ts.navV2OpenMenu || "Open menu"}
-                              aria-expanded={navMenuOpen}
-                              aria-controls="nav-v2-drawer"
-                              data-testid="journal-mobile-nav-menu"
+                              title={ts.diarySidebarShow || "Open diary panel"}
+                              aria-label={ts.diarySidebarShow || "Open diary panel"}
+                              aria-expanded={showMobileDiarySidebar}
+                              aria-controls="journal-mobile-diary-sidebar"
+                              data-testid="journal-mobile-diary-sidebar-trigger"
                             >
-                              <JournalMenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />
+                              <PanelLeftOpen className="pointer-events-none h-5 w-5" aria-hidden="true" />
                             </button>
-                          ) : null}
-                          <div className="flex min-w-0 items-center gap-2">
-                            <h2 className="truncate text-base font-bold leading-none text-foreground">
-                              {ts.journalTitle || "Diary"}
-                            </h2>
-                            {streak > 0 && (
-                              <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-orange-500/10 bg-gradient-to-r from-orange-500/15 to-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-orange-500 motion-safe:animate-streak-fire-glow">
-                                <Flame className="h-3 w-3" aria-hidden="true" />
-                                {streak}
-                              </span>
+                            {!hideCloseButton && (
+                              <button
+                                onClick={handleClose}
+                                className={mobileHeaderActionClass}
+                                aria-label={ts.close || "Close"}
+                              >
+                                <X className="h-5 w-5" aria-hidden="true" />
+                              </button>
                             )}
                           </div>
                         </div>
-                        <div className="flex shrink-0 items-center gap-1">
+                        <div
+                          className="grid grid-cols-4 gap-1 px-4 pb-3"
+                          role="toolbar"
+                          aria-label={ts.journalTitle || "Diary"}
+                          data-testid="journal-mobile-section-toolbar"
+                        >
                           <button
+                            type="button"
+                            onClick={handleShowDiaryPanel}
+                            className={mobileHeaderTabClass}
+                            title={ts.journalEntry || "Entry"}
+                            aria-label={ts.journalEntry || "Entry"}
+                            aria-pressed={diaryTabSection === "entry"}
+                            aria-current={diaryTabSection === "entry" ? "page" : undefined}
+                            data-testid="journal-mobile-entry"
+                          >
+                            <PenLine className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={handleOpenStats}
-                            className={mobileHeaderActionClass}
-                            title={ts.journalStatsTitle || "Statistics"}
-                            aria-label={ts.journalStatsTitle || "Statistics"}
+                            className={mobileHeaderTabClass}
+                            title={ts.statistics || "Statistics"}
+                            aria-label={ts.statistics || "Statistics"}
+                            aria-pressed={diaryTabSection === "stats"}
                             data-testid="journal-mobile-stats"
                           >
                             <BarChart3 className="h-4 w-4" aria-hidden="true" />
                           </button>
                           <button
+                            type="button"
+                            onClick={handleOpenFavorites}
+                            className={mobileHeaderTabClass}
+                            title={ts.journalFavorites || "Favorites"}
+                            aria-label={ts.journalFavorites || "Favorites"}
+                            aria-pressed={diaryTabSection === "favorites"}
+                            aria-current={diaryTabSection === "favorites" ? "page" : undefined}
+                            data-testid="journal-mobile-favorites"
+                          >
+                            <Star className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => openSettings()}
-                            className={mobileHeaderActionClass}
+                            className={mobileHeaderTabClass}
                             title={ts.journalSettings || "Diary settings"}
                             aria-label={ts.settings || "Settings"}
+                            aria-pressed={diaryTabSection === "settings"}
+                            aria-current={diaryTabSection === "settings" ? "page" : undefined}
                             data-testid="journal-mobile-settings"
                           >
                             <Settings className="h-4 w-4" aria-hidden="true" />
                           </button>
-                          {!hideCloseButton && (
-                            <button
-                              onClick={handleClose}
-                              className={mobileHeaderActionClass}
-                              aria-label={ts.close || "Close"}
-                            >
-                              <X className="h-5 w-5" aria-hidden="true" />
-                            </button>
-                          )}
                         </div>
                       </div>
 
-                      {/* Calendar */}
-                      <div className="border-b border-border/10 bg-gradient-to-b from-transparent to-muted/5 px-4 py-2">
-                        {calendarMode === "full" ? (
-                          <Suspense fallback={null}>
-                            <LazyJournalCalendarFull
-                              entryDates={journal.entryDates}
-                              releaseTraceDates={releaseTraceDates}
-                              selectedDate={journal.selectedDate}
-                              onSelectDate={journal.setSelectedDate}
-                              onToggleMode={() => {
-                                setCalendarMode("strip");
-                                storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "strip");
-                              }}
-                            />
-                          </Suspense>
-                        ) : (
-                          <JournalCalendar
-                            entryDates={journal.entryDates}
-                            releaseTraceDates={releaseTraceDates}
-                            selectedDate={journal.selectedDate}
-                            onSelectDate={journal.setSelectedDate}
-                            onToggleMode={() => {
-                              setCalendarMode("full");
-                              storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "full");
-                            }}
+                      {diaryTabSection === "favorites" ? (
+                        <div className="relative flex-1 min-h-0">
+                          <JournalFavoritesPanel
+                            entries={journal.allEntries}
+                            onOpenEntry={handleOpenFavoriteEntry}
+                            onNewEntry={handleNewEntryFromShell}
+                            privateMode={privateMode}
+                            ts={ts}
                           />
-                        )}
-                      </div>
-
-                      {/* Main diary stays lightweight; the cinematic portal lives behind the stats button. */}
-                      <div className="relative flex-1 min-h-0">
-                        {journal.loading ? (
-                          <SplashScreen
-                            loadingFadeOut={false}
-                            subtitle={ts.initializingApp || "Preparing your zen space..."}
-                            theme={loadingTheme}
-                            instant
-                          />
-                        ) : (
-                          <div className="relative flex h-full min-h-0 flex-col overflow-y-auto px-4 pb-[calc(1rem+var(--safe-bottom))] pt-4">
-                            {listHeaderContent ? <div className="mb-3">{listHeaderContent}</div> : null}
-
-                            {hasInitialEntrySuggestion && !autoCreateInitialEntry ? (
-                              <div className="mb-3">
-                                <DiaryEntrySuggestionCard
-                                  suggestion={initialSuggestionRef.current!}
-                                  onStart={handleUseInitialEntrySuggestion}
-                                  onDismiss={handleDismissInitialEntrySuggestion}
-                                  compact
+                        </div>
+                      ) : (
+                        <>
+                          {/* Calendar */}
+                          <div className="border-b border-border/10 bg-gradient-to-b from-transparent to-muted/5 px-4 py-2">
+                            {calendarMode === "full" ? (
+                              <Suspense fallback={null}>
+                                <LazyJournalCalendarFull
+                                  entryDates={journal.entryDates}
+                                  releaseTraceDates={releaseTraceDates}
+                                  privateMode={privateMode}
+                                  selectedDate={journal.selectedDate}
+                                  onSelectDate={journal.setSelectedDate}
+                                  onToggleMode={() => {
+                                    setCalendarMode("strip");
+                                    storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "strip");
+                                  }}
                                 />
-                              </div>
-                            ) : null}
-
-                            {!autoCreateInitialEntry && visibleExtraSuggestions.map((suggestion, index) => (
-                              <div
-                                key={getSuggestionDismissKey(suggestion, index)}
-                                className="mb-3"
-                              >
-                                <DiaryEntrySuggestionCard
-                                  suggestion={suggestion}
-                                  onStart={() => handleUseExtraSuggestion(suggestion, index)}
-                                  onDismiss={() => handleDismissExtraSuggestion(suggestion, index)}
-                                  compact
-                                />
-                              </div>
-                            ))}
-
-                            {journal.allEntries.length > 0 ? (
-                              <OnThisDayCard
-                                entries={journal.allEntries}
-                                onOpenEntry={handleOpenEntry}
-                                onDismiss={() => {
-                                  /* handled internally */
-                                }}
+                              </Suspense>
+                            ) : (
+                              <JournalCalendar
+                                entryDates={journal.entryDates}
+                                releaseTraceDates={releaseTraceDates}
                                 privateMode={privateMode}
-                              />
-                            ) : null}
-
-                            <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
-                              <LazyJournalEntryList
-                                groupedEntries={journal.groupedEntries}
-                                allEntries={journal.allEntries}
-                                onOpenEntry={handleOpenEntry}
-                                onDeleteEntry={handleDeleteEntry}
-                                onSwipeDelete={handleDeleteEntry}
-                                onNewEntry={handleNewEntry}
-                                onNewEntryWithPrefill={handleNewEntryWithPrefill}
-                                totalCount={journal.entries.length}
-                                loading={journal.loading}
                                 selectedDate={journal.selectedDate}
-                                daysSinceLastEntry={daysSinceLastEntry}
-                                privateMode={privateMode}
-                                onAddGratitude={handleAddGratitudeWithSpace}
-                                releaseTraceSummaries={releaseTraceSummaries}
-                                onReleaseThought={handleReleaseThought}
-                                selectedDateOnly
+                                onSelectDate={journal.setSelectedDate}
+                                onToggleMode={() => {
+                                  setCalendarMode("full");
+                                  storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "full");
+                                }}
                               />
-                            </Suspense>
+                            )}
                           </div>
-                        )}
-                      </div>
+
+                          {/* Main diary stays lightweight; the cinematic portal lives behind the stats button. */}
+                          <div className="relative flex-1 min-h-0">
+                            {journal.loading ? (
+                              <SplashScreen
+                                loadingFadeOut={false}
+                                subtitle={ts.initializingApp || "Preparing your zen space..."}
+                                theme={loadingTheme}
+                                instant
+                              />
+                            ) : (
+                              <div className="relative flex h-full min-h-0 flex-col overflow-y-auto px-4 pb-[calc(1rem+var(--safe-bottom))] pt-4">
+                                {listHeaderContent ? <div className="mb-3">{listHeaderContent}</div> : null}
+
+                                {hasInitialEntrySuggestion && !autoCreateInitialEntry ? (
+                                  <div className="mb-3">
+                                    <DiaryEntrySuggestionCard
+                                      suggestion={initialSuggestionRef.current!}
+                                      onStart={handleUseInitialEntrySuggestion}
+                                      onDismiss={handleDismissInitialEntrySuggestion}
+                                      compact
+                                    />
+                                  </div>
+                                ) : null}
+
+                                {!autoCreateInitialEntry && visibleExtraSuggestions.map((suggestion, index) => (
+                                  <div
+                                    key={getSuggestionDismissKey(suggestion, index)}
+                                    className="mb-3"
+                                  >
+                                    <DiaryEntrySuggestionCard
+                                      suggestion={suggestion}
+                                      onStart={() => handleUseExtraSuggestion(suggestion, index)}
+                                      onDismiss={() => handleDismissExtraSuggestion(suggestion, index)}
+                                      compact
+                                    />
+                                  </div>
+                                ))}
+
+                                {journal.allEntries.length > 0 ? (
+                                  <OnThisDayCard
+                                    entries={journal.allEntries}
+                                    onOpenEntry={handleOpenEntry}
+                                    onDismiss={() => {
+                                      /* handled internally */
+                                    }}
+                                    privateMode={privateMode}
+                                  />
+                                ) : null}
+
+                                <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
+                                  <LazyJournalEntryList
+                                    groupedEntries={journal.groupedEntries}
+                                    allEntries={journal.allEntries}
+                                    onOpenEntry={handleOpenEntry}
+                                    onDeleteEntry={handleDeleteEntry}
+                                    onSwipeDelete={handleDeleteEntry}
+                                    onNewEntry={handleNewEntry}
+                                    onNewEntryWithPrefill={handleNewEntryWithPrefill}
+                                    totalCount={journal.entries.length}
+                                    loading={journal.loading}
+                                    selectedDate={journal.selectedDate}
+                                    daysSinceLastEntry={daysSinceLastEntry}
+                                    privateMode={privateMode}
+                                    onAddGratitude={handleAddGratitudeWithSpace}
+                                    releaseTraceSummaries={releaseTraceSummaries}
+                                    onReleaseThought={handleReleaseThought}
+                                    selectedDateOnly
+                                  />
+                                </Suspense>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+
+                      <AnimatePresence>
+                        {!isDiaryDesktopLayout && showMobileDiarySidebar ? (
+                          <>
+                            <motion.div
+                              key="mobile-diary-sidebar-backdrop"
+                              initial={shouldAnimate() ? { opacity: 0 } : undefined}
+                              animate={{ opacity: 1 }}
+                              exit={shouldAnimate() ? { opacity: 0 } : undefined}
+                              transition={{ duration: 0.18 }}
+                              className="fixed inset-0 z-[64] bg-background/55 backdrop-blur-sm [-webkit-backdrop-filter:blur(12px)]"
+                              onClick={() => closeMobileDiarySidebar()}
+                              data-testid="journal-mobile-diary-sidebar-backdrop"
+                            />
+                            <motion.aside
+                              key="mobile-diary-sidebar"
+                              role="dialog"
+                              aria-modal="true"
+                              aria-label={ts.journalTitle || "Diary"}
+                              id="journal-mobile-diary-sidebar"
+                              ref={mobileDiarySidebarRef}
+                              data-testid="journal-mobile-diary-sidebar"
+                              initial={shouldAnimate() ? { x: isRTL ? 32 : -32, opacity: 0 } : undefined}
+                              animate={{ x: 0, opacity: 1 }}
+                              exit={shouldAnimate() ? { x: isRTL ? 32 : -32, opacity: 0 } : undefined}
+                              transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                              className={cn(
+                                "fixed inset-y-0 z-[65] flex w-[min(360px,88vw)] flex-col overflow-hidden border-border/35 bg-background shadow-[0_24px_80px_hsl(var(--foreground)/0.24)] backdrop-blur-2xl [-webkit-backdrop-filter:blur(22px)] pb-safe pt-safe",
+                                isRTL ? "right-0 border-s" : "left-0 border-e"
+                              )}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/20 px-4 py-3">
+                                <div className="min-w-0">
+                                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary/70">
+                                    {ts.journalEntry || "Entry"}
+                                  </p>
+                                  <h2 className="truncate text-lg font-black text-foreground">
+                                    {ts.journalTitle || "Diary"}
+                                  </h2>
+                                </div>
+                                <button
+                                  type="button"
+                                  ref={mobileDiarySidebarCloseRef}
+                                  onClick={() => closeMobileDiarySidebar()}
+                                  className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45"
+                                  aria-label={ts.close || "Close"}
+                                  data-testid="journal-mobile-diary-sidebar-close"
+                                >
+                                  <X className="h-5 w-5" aria-hidden="true" />
+                                </button>
+                              </div>
+
+                              <div className="grid shrink-0 grid-cols-4 gap-2 border-b border-border/20 px-3 py-3">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeMobileDiarySidebar(false);
+                                    handleShowDiaryPanel();
+                                  }}
+                                  className="flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-2xl bg-primary/[0.12] text-primary"
+                                  aria-label={ts.journalEntry || "Entry"}
+                                >
+                                  <PenLine className="h-4 w-4" aria-hidden="true" />
+                                  <span className="text-[10px] font-bold">{ts.journalEntry || "Entry"}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeMobileDiarySidebar(false);
+                                    handleOpenStats();
+                                  }}
+                                  className="flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-2xl text-muted-foreground hover:bg-muted/55 hover:text-foreground"
+                                  aria-label={ts.statistics || "Statistics"}
+                                >
+                                  <BarChart3 className="h-4 w-4" aria-hidden="true" />
+                                  <span className="text-[10px] font-bold">{ts.statistics || "Stats"}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeMobileDiarySidebar(false);
+                                    handleOpenFavorites();
+                                  }}
+                                  className="flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-2xl text-muted-foreground hover:bg-muted/55 hover:text-foreground"
+                                  aria-label={ts.journalFavorites || "Favorites"}
+                                >
+                                  <Star className="h-4 w-4" aria-hidden="true" />
+                                  <span className="text-[10px] font-bold">{ts.journalFavorites || "Favorites"}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeMobileDiarySidebar(false);
+                                    openSettings("overview", mobileDiarySidebarTriggerRef.current);
+                                  }}
+                                  className="flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-2xl text-muted-foreground hover:bg-muted/55 hover:text-foreground"
+                                  aria-label={ts.settings || "Settings"}
+                                >
+                                  <Settings className="h-4 w-4" aria-hidden="true" />
+                                  <span className="text-[10px] font-bold">{ts.settings || "Settings"}</span>
+                                </button>
+                              </div>
+
+                              <div
+                                className="shrink-0 border-b border-border/20 px-3 py-2"
+                                data-testid="journal-mobile-diary-sidebar-calendar"
+                              >
+                                {calendarMode === "full" ? (
+                                  <Suspense fallback={null}>
+                                    <LazyJournalCalendarFull
+                                      entryDates={journal.entryDates}
+                                      releaseTraceDates={releaseTraceDates}
+                                      privateMode={privateMode}
+                                      selectedDate={journal.selectedDate}
+                                      onSelectDate={journal.setSelectedDate}
+                                      onToggleMode={() => {
+                                        setCalendarMode("strip");
+                                        storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "strip");
+                                      }}
+                                    />
+                                  </Suspense>
+                                ) : (
+                                  <JournalCalendar
+                                    entryDates={journal.entryDates}
+                                    releaseTraceDates={releaseTraceDates}
+                                    privateMode={privateMode}
+                                    selectedDate={journal.selectedDate}
+                                    onSelectDate={journal.setSelectedDate}
+                                    onToggleMode={() => {
+                                      setCalendarMode("full");
+                                      storageSetRaw(SK.JOURNAL_CALENDAR_MODE, "full");
+                                    }}
+                                  />
+                                )}
+                              </div>
+
+                              <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+                                {journal.totalCount === 0 && !journal.loading ? (
+                                  <JournalCompactEmptyListShell
+                                    ts={ts}
+                                    onNewEntry={() => {
+                                      closeMobileDiarySidebar(false);
+                                      handleNewEntryFromShell();
+                                    }}
+                                  />
+                                ) : (
+                                  <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
+                                    <LazyJournalEntryList
+                                      groupedEntries={journal.groupedEntries}
+                                      allEntries={journal.allEntries}
+                                      onOpenEntry={(entryId) => {
+                                        closeMobileDiarySidebar(false);
+                                        handleOpenEntryFromShell(entryId);
+                                      }}
+                                      onDeleteEntry={handleDeleteEntry}
+                                      onSwipeDelete={handleDeleteEntry}
+                                      onNewEntry={() => {
+                                        closeMobileDiarySidebar(false);
+                                        handleNewEntryFromShell();
+                                      }}
+                                      onNewEntryWithPrefill={(prefill) => {
+                                        closeMobileDiarySidebar(false);
+                                        handleNewEntryWithPrefill(prefill);
+                                      }}
+                                      totalCount={journal.totalCount}
+                                      loading={journal.loading}
+                                      selectedDate={journal.selectedDate}
+                                      daysSinceLastEntry={daysSinceLastEntry}
+                                      privateMode={privateMode}
+                                      onAddGratitude={handleAddGratitudeWithSpace}
+                                      releaseTraceSummaries={releaseTraceSummaries}
+                                      onReleaseThought={handleReleaseThought}
+                                      compact
+                                      showFab={false}
+                                      showSpaces={false}
+                                      activeEntryId={journal.activeEntryId}
+                                    />
+                                  </Suspense>
+                                )}
+                              </div>
+
+                              <div className="shrink-0 border-t border-border/20 p-3">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeMobileDiarySidebar(false);
+                                    handleNewEntryFromShell();
+                                  }}
+                                  className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.22)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45"
+                                  data-testid="journal-mobile-diary-sidebar-new-entry"
+                                >
+                                  <Plus className="h-4 w-4" aria-hidden="true" />
+                                  {ts.journalNewEntry || "New entry"}
+                                </button>
+                              </div>
+                            </motion.aside>
+                          </>
+                        ) : null}
+                      </AnimatePresence>
 
                       {/* Password settings bottom sheet — mobile only (desktop rendered below ternary) */}
-                      {!isLgScreen && showPasswordSettings && (
+                      {!isDiaryDesktopLayout && showPasswordSettings && (
                         <>
                           <div
                             className="fixed inset-0 z-[64] bg-black/30 dark:bg-black/30 motion-safe:animate-fade-in"
@@ -2129,6 +2755,8 @@ export const JournalModule = memo(function JournalModule({
                             role="dialog"
                             aria-modal="true"
                             aria-label={ts.journalSettings || "Diary Settings"}
+                            ref={mobileSettingsPanelRef}
+                            data-testid="journal-mobile-settings-panel"
                             className="fixed bottom-0 inset-x-0 z-[65] flex max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] flex-col overflow-hidden motion-safe:animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
                             onClick={(e) => e.stopPropagation()}
                           >
@@ -2139,7 +2767,7 @@ export const JournalModule = memo(function JournalModule({
                             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-card p-5 pb-[max(1.25rem,var(--safe-bottom))]">
                               <div className="mb-4 flex items-center justify-between gap-3">
                                 <div className="flex min-w-0 flex-1 items-center gap-3">
-                                  {onOpenNavMenu ? (
+                                  {showAppNavMenuButton ? (
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -2162,9 +2790,11 @@ export const JournalModule = memo(function JournalModule({
                                 </div>
                                 <button
                                   type="button"
+                                  ref={mobileSettingsCloseRef}
                                   onClick={() => closeSettings()}
                                   className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                                   aria-label={ts.close || "Close"}
+                                  data-testid="journal-mobile-settings-close"
                                 >
                                   <X className="h-5 w-5" />
                                 </button>

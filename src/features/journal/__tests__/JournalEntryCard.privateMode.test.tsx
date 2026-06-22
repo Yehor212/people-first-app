@@ -1,6 +1,7 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { readFileSync } from "node:fs";
 import { JournalEntryCard } from "../JournalEntryCard";
 import type { JournalEntry } from "../types";
 
@@ -63,9 +64,16 @@ function makeEntry(overrides: Partial<JournalEntry> = {}): JournalEntry {
   };
 }
 
+const cardSource = readFileSync("src/features/journal/JournalEntryCard.tsx", "utf8");
+
 describe("JournalEntryCard private mode", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("replaces private diary details with a neutral locked placeholder", async () => {
@@ -86,6 +94,75 @@ describe("JournalEntryCard private mode", () => {
     expect(screen.queryByTestId("diary-private-test-mood-orb")).not.toBeInTheDocument();
 
     await waitFor(() => expect(mocks.getPhotoById).not.toHaveBeenCalled());
+  });
+
+  it("does not open the full entry from the private placeholder", () => {
+    const onTap = vi.fn();
+
+    render(
+      <JournalEntryCard
+        entry={makeEntry()}
+        privateMode
+        onTap={onTap}
+        onDelete={vi.fn()}
+      />
+    );
+
+    const privateCard = screen.getByRole("button");
+    expect(privateCard).toHaveAttribute("aria-disabled", "true");
+
+    fireEvent.click(privateCard);
+    expect(onTap).not.toHaveBeenCalled();
+  });
+
+  it("guards private placeholders from swipe delete", () => {
+    const dragEndBlock = /const handleDragEnd = useCallback\([\s\S]*?\n\s{2}\);/.exec(cardSource)?.[0] ?? "";
+    const motionCardBlock = /aria-disabled=\{privateMode \|\| undefined\}[\s\S]*?onDragEnd=\{handleDragEnd\}/.exec(cardSource)?.[0] ?? "";
+
+    expect(dragEndBlock).toContain("privateMode");
+    expect(dragEndBlock.indexOf("privateMode")).toBeLessThan(dragEndBlock.indexOf("onSwipeDelete"));
+    expect(motionCardBlock).toContain('drag={privateMode ? false : "x"}');
+  });
+
+  it("does not expose contextual actions from the private placeholder", () => {
+    const onActions = vi.fn();
+
+    render(
+      <JournalEntryCard
+        entry={makeEntry()}
+        privateMode
+        onTap={vi.fn()}
+        onDelete={vi.fn()}
+        onActions={onActions}
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: "More" })).not.toBeInTheDocument();
+    expect(onActions).not.toHaveBeenCalled();
+  });
+
+  it("ignores long press actions from the private placeholder", () => {
+    vi.useFakeTimers();
+    const onLongPress = vi.fn();
+
+    render(
+      <JournalEntryCard
+        entry={makeEntry()}
+        privateMode
+        onTap={vi.fn()}
+        onDelete={vi.fn()}
+        onLongPress={onLongPress}
+      />
+    );
+
+    fireEvent.touchStart(screen.getByRole("button"), {
+      touches: [{ clientX: 20, clientY: 20 }],
+    });
+    act(() => {
+      vi.advanceTimersByTime(550);
+    });
+
+    expect(onLongPress).not.toHaveBeenCalled();
   });
 
   it("does not reuse a loaded thumbnail for another private photo id", async () => {

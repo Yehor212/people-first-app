@@ -2511,6 +2511,9 @@ export interface Translations {
   journalFocusOpenEntry: string;
   journalNewEntry: string;
   journalEntries: string;
+  journalFavorites: string;
+  journalFavoritesEmptyTitle: string;
+  journalFavoritesEmptyHint: string;
   journalToday: string;
   journalYesterday: string;
   journalThisWeek: string;

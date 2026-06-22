@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const appAudioSettingsState = vi.hoisted(() => ({
@@ -77,7 +77,7 @@ describe("DiaryPage ambience audio", () => {
     });
   });
 
-  it("offers the Gemini reflection loop as user-started diary ambience", async () => {
+  it("keeps the Gemini reflection loop non-autoplaying without a page-level overlay control", () => {
     render(<DiaryPage />);
 
     const audio = screen.getByTestId("diary-page-ambience-audio");
@@ -90,98 +90,18 @@ describe("DiaryPage ambience audio", () => {
     expect(audio).not.toHaveAttribute("autoplay");
     expect(media.play).not.toHaveBeenCalled();
 
-    const toggle = screen.getByTestId("diary-page-ambience-toggle");
-    expect(toggle).toHaveAttribute("type", "button");
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
-    expect(toggle).toHaveAccessibleName("Play diary ambience");
-
-    fireEvent.click(toggle);
-    expect(media.play).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
-
-    fireEvent.click(toggle);
-    expect(media.pause).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+    expect(screen.queryByTestId("diary-page-ambience-control")).toBeNull();
+    expect(screen.queryByTestId("diary-page-ambience-toggle")).toBeNull();
   });
 
-  it("keeps the ambience control away from the iOS diary header actions", () => {
-    render(<DiaryPage />);
-
-    const control = screen.getByTestId("diary-page-ambience-control");
-    const toggle = screen.getByTestId("diary-page-ambience-toggle");
-
-    expect(control.className).toContain("bottom-[calc(5.35rem+var(--safe-bottom))]");
-    expect(control.className).toContain("start-4");
-    expect(control.className).toContain("md:top-[calc(var(--safe-top)+1rem)]");
-    expect(toggle.className).toContain("pointer-events-auto");
-  });
-
-  it("does not start diary ambience while app sound is muted", () => {
+  it("keeps the diary surface free from ambience controls even while app sound is muted", () => {
     appAudioSettingsState.muted = true;
 
     render(<DiaryPage />);
 
-    const toggle = screen.getByTestId("diary-page-ambience-toggle");
-    expect(toggle).toBeDisabled();
-
-    fireEvent.click(toggle);
-
     expect(media.play).not.toHaveBeenCalled();
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByTestId("diary-page-ambience-control")).toBeNull();
+    expect(screen.queryByTestId("diary-page-ambience-toggle")).toBeNull();
   });
 
-  it("keeps diary ambience retryable when the browser blocks first play", async () => {
-    media.play.mockRejectedValueOnce(new Error("Audio blocked"));
-    media.play.mockResolvedValueOnce(undefined);
-
-    render(<DiaryPage />);
-
-    const toggle = screen.getByTestId("diary-page-ambience-toggle");
-    fireEvent.click(toggle);
-
-    await waitFor(() => expect(toggle).toHaveAccessibleName("Retry"));
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
-    expect(loggerWarn).toHaveBeenCalledWith(
-      "[DiaryPage]",
-      "Diary ambience playback failed:",
-      expect.any(Error),
-    );
-
-    fireEvent.click(toggle);
-
-    expect(media.play).toHaveBeenCalledTimes(2);
-    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
-  });
-
-  it("stops diary ambience when the diary route unmounts", async () => {
-    const { unmount } = render(<DiaryPage />);
-
-    fireEvent.click(screen.getByTestId("diary-page-ambience-toggle"));
-    await waitFor(() =>
-      expect(screen.getByTestId("diary-page-ambience-toggle")).toHaveAttribute(
-        "aria-pressed",
-        "true",
-      ),
-    );
-
-    media.pause.mockClear();
-    unmount();
-
-    expect(media.pause).toHaveBeenCalledTimes(1);
-  });
-
-  it("pauses diary ambience when iOS WebView backgrounds the page", async () => {
-    render(<DiaryPage />);
-
-    const toggle = screen.getByTestId("diary-page-ambience-toggle");
-    fireEvent.click(toggle);
-    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
-
-    media.pause.mockClear();
-    Object.defineProperty(document, "hidden", { configurable: true, value: true });
-    document.dispatchEvent(new Event("visibilitychange"));
-
-    expect(media.pause).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
-  });
 });

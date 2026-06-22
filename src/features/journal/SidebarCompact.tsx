@@ -1,33 +1,41 @@
 import { memo } from "react";
-import { PenLine, BarChart3, Settings, Plus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { BarChart3, PanelLeftClose, PanelLeftOpen, PenLine, Plus, Settings, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MoodDotStrip } from "./MoodDotStrip";
 import type { JournalEntry } from "./types";
 
+export type DiarySidebarSection = "entry" | "stats" | "favorites" | "settings";
+
 interface SidebarCompactProps {
+  activeSection: DiarySidebarSection;
   entries: JournalEntry[];
   activeEntryId: string | null;
   onOpenEntry: (id: string) => void;
   onNewEntry: () => void;
   onOpenStats: () => void;
+  onOpenFavorites: () => void;
   onOpenSettings: () => void;
   onShowList: () => void;
   onToggleSidebar: () => void;
   collapsed: boolean;
+  privateMode?: boolean;
 }
 
 export const SidebarCompact = memo(function SidebarCompact({
+  activeSection,
   entries,
   activeEntryId,
   onOpenEntry,
   onNewEntry,
   onOpenStats,
+  onOpenFavorites,
   onOpenSettings,
   onShowList,
   onToggleSidebar,
   collapsed,
+  privateMode = false,
 }: SidebarCompactProps) {
   const { t, isRTL } = useLanguage();
   const ts = t as unknown as Record<string, string>;
@@ -35,41 +43,69 @@ export const SidebarCompact = memo(function SidebarCompact({
     ? ts.diarySidebarShow || "Show diary panel"
     : ts.diarySidebarHide || "Hide diary panel";
 
+  const actionClass = (active: boolean) => cn(
+    "flex h-[44px] w-[44px] items-center justify-center rounded-xl border p-0 motion-safe:transition-[background-color,border-color,color,box-shadow,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 active:scale-[0.98]",
+    active
+      ? "border-primary/25 bg-primary/[0.14] text-primary shadow-[0_10px_26px_hsl(var(--primary)/0.13)]"
+      : "border-transparent text-muted-foreground hover:border-border/35 hover:bg-muted/50 hover:text-foreground"
+  );
+
   return (
     <motion.aside
       initial={{ x: isRTL ? 24 : -24, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 400, damping: 30 }}
       className={cn(
-        "w-[72px] flex-shrink-0 flex flex-col h-full bg-card border-border/30 z-30",
+        "flex h-full w-[72px] flex-shrink-0 flex-col border-border/30 bg-card/88 backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] z-30",
         isRTL ? "border-s" : "border-e"
       )}
+      aria-label={ts.journalTitle || "Diary"}
       data-testid="journal-sidebar-rail"
     >
       <div className="flex flex-col items-center gap-1 border-b border-border/20 px-2 pb-2 pt-3">
         <button
+          type="button"
           onClick={onShowList}
-          className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-muted-foreground hover:bg-muted/50"
+          className={actionClass(activeSection === "entry")}
           title={ts.journalTitle || "Diary"}
-          aria-label={ts.journalTitle || "Diary"}
+          aria-label={ts.journalEntry || ts.journalTitle || "Entry"}
+          aria-current={activeSection === "entry" ? "page" : undefined}
+          data-testid="journal-sidebar-nav-entry"
         >
-          <PenLine className="w-4 h-4" />
+          <PenLine className="w-4 h-4" aria-hidden="true" />
         </button>
         <button
+          type="button"
           onClick={onOpenStats}
-          className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-muted-foreground hover:bg-muted/50"
+          className={actionClass(activeSection === "stats")}
           title={ts.journalStatsTitle || "Statistics"}
-          aria-label={ts.journalStatsTitle || "Statistics"}
+          aria-label={ts.statistics || ts.journalStatsTitle || "Statistics"}
+          aria-current={activeSection === "stats" ? "page" : undefined}
+          data-testid="journal-sidebar-nav-stats"
         >
-          <BarChart3 className="w-4 h-4" />
+          <BarChart3 className="w-4 h-4" aria-hidden="true" />
         </button>
         <button
+          type="button"
+          onClick={onOpenFavorites}
+          className={actionClass(activeSection === "favorites")}
+          title={ts.journalFavorites || "Favorites"}
+          aria-label={ts.journalFavorites || "Favorites"}
+          aria-current={activeSection === "favorites" ? "page" : undefined}
+          data-testid="journal-sidebar-nav-favorites"
+        >
+          <Star className="w-4 h-4" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
           onClick={onOpenSettings}
-          className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-muted-foreground hover:bg-muted/50"
+          className={actionClass(activeSection === "settings")}
           title={ts.journalSettings || "Settings"}
           aria-label={ts.settings || "Settings"}
+          aria-current={activeSection === "settings" ? "page" : undefined}
+          data-testid="journal-sidebar-nav-settings"
         >
-          <Settings className="w-4 h-4" />
+          <Settings className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
 
@@ -77,13 +113,15 @@ export const SidebarCompact = memo(function SidebarCompact({
         entries={entries}
         activeEntryId={activeEntryId}
         onOpenEntry={onOpenEntry}
+        privateMode={privateMode}
       />
 
       <div className="mt-auto border-t border-border/20 px-2 py-3">
         <div className="flex flex-col items-center gap-1">
           <button
+            type="button"
             onClick={onToggleSidebar}
-            className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-muted-foreground hover:bg-muted/50"
+            className={actionClass(false)}
             title={toggleLabel}
             aria-label={toggleLabel}
             aria-expanded={!collapsed}
@@ -99,14 +137,16 @@ export const SidebarCompact = memo(function SidebarCompact({
         </div>
 
         <div className="mt-2 flex flex-col items-center">
-        <button
-          onClick={onNewEntry}
-          className="flex h-[44px] w-[44px] items-center justify-center rounded-lg p-0 text-primary hover:bg-primary/10"
-          title={ts.journalNewEntry || "New entry"}
-          aria-label={ts.journalNewEntry || "New entry"}
-        >
-          <Plus className="w-5 h-5" />
-        </button>
+          <button
+            type="button"
+            onClick={onNewEntry}
+            className="flex h-[44px] w-[44px] items-center justify-center rounded-xl border border-primary/20 bg-primary/[0.10] p-0 text-primary motion-safe:transition-[background-color,transform] hover:bg-primary/[0.16] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45"
+            title={ts.journalNewEntry || "New entry"}
+            aria-label={ts.journalNewEntry || "New entry"}
+            data-testid="journal-sidebar-new-entry"
+          >
+            <Plus className="w-5 h-5" aria-hidden="true" />
+          </button>
         </div>
       </div>
     </motion.aside>

@@ -108,13 +108,14 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       dragDirectionLocked.current = null;
       hapticFiredRef.current = false;
+      if (privateMode) return;
       const deleteDelta = isRTL ? info.offset.x : -info.offset.x;
       if (deleteDelta > 80) {
         onSwipeDelete?.(entry.id);
       }
       // If not past threshold, dragConstraints spring handles snap-back
     },
-    [isRTL, onSwipeDelete, entry.id]
+    [isRTL, onSwipeDelete, entry.id, privateMode]
   );
 
   // ── Search highlight ──
@@ -167,6 +168,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
+      if (privateMode) return;
       const action = onLongPress ?? onEdit ?? onActions;
       if (!action) return;
 
@@ -181,7 +183,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
         action(entry);
       }, 500);
     },
-    [entry, onActions, onEdit, onLongPress]
+    [entry, onActions, onEdit, onLongPress, privateMode]
   );
 
   const handleTouchMove = useCallback(
@@ -221,9 +223,10 @@ export const JournalEntryCard = memo(function JournalEntryCard({
       longPressTriggered.current = false;
       return;
     }
+    if (privateMode) return;
     void hapticTap();
     onTap(entry.id);
-  }, [onTap, entry.id]);
+  }, [onTap, entry.id, privateMode]);
 
   const privateEntryLabel = ts.journalPrivateEntry || ts.privateMode || "Private entry";
   const privateEntryHint =
@@ -315,7 +318,8 @@ export const JournalEntryCard = memo(function JournalEntryCard({
         layoutId={animate ? `entry-${entry.id}` : undefined}
         role="button"
         tabIndex={0}
-        drag="x"
+        aria-disabled={privateMode || undefined}
+        drag={privateMode ? false : "x"}
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={{ left: isRTL ? 0 : 0.3, right: isRTL ? 0.3 : 0 }}
         dragTransition={{ bounceStiffness: 500, bounceDamping: 35 }}
@@ -503,7 +507,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                     {time}
                   </span>
                 )}
-                {onActions ? (
+                {onActions && !privateMode ? (
                   <button
                     type="button"
                     onClick={(e) => {

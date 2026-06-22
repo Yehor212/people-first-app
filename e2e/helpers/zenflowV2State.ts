@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const packageJson = require("../../package.json") as { version: string };
 
-export type ZenflowV2Language = "en" | "uk" | "ar" | "he";
+export type ZenflowV2Language = "en" | "uk" | "es" | "de" | "fr" | "ja" | "ar" | "he";
 export type ZenflowV2Theme = "paper" | "ink" | "oled";
 export type ZenflowV2Layout = "phone" | "desktop";
 export type ZenflowV2Route = "orb" | "habits" | "diary" | "settings";

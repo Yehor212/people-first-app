@@ -228,12 +228,12 @@ try {
   const metrics = {
     boxes: {
       createFab: await boxFor(page, "journal-entry-main-fab"),
-      menu: await boxFor(page, "journal-mobile-nav-menu"),
+      diaryPanelTrigger: await boxFor(page, "journal-mobile-diary-sidebar-trigger"),
       settings: await boxFor(page, "journal-mobile-settings"),
       stats: await boxFor(page, "journal-mobile-stats"),
     },
     details: {
-      menu: await describeElement(page, "journal-mobile-nav-menu"),
+      diaryPanelTrigger: await describeElement(page, "journal-mobile-diary-sidebar-trigger"),
       memoryPortal: await describeElement(page, "memory-portal-canvas"),
       settings: await describeElement(page, "journal-mobile-settings"),
       stats: await describeElement(page, "journal-mobile-stats"),
@@ -253,7 +253,7 @@ try {
       "## Steps Captured",
       "",
       "1. Empty diary first screen: route renders in WebKit iPhone 15 emulation.",
-      "2. Create menu: main action expands into entry actions without clipping.",
+      "2. Diary panel trigger: main action expands into entry actions without clipping.",
       "3. Editor: contenteditable editor opens and accepts input.",
       "4. Photo picker: native-adjacent photo choices are reachable.",
       "5. Saved entry: local seeded note appears in the diary list.",

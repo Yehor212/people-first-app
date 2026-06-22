@@ -174,6 +174,64 @@ test.describe("V2 Settings controls-first hierarchy", () => {
     );
   });
 
+  for (const soundLayout of [
+    { name: "phone", viewport: { width: 390, height: 844 } },
+    { name: "desktop", viewport: { width: 1280, height: 900 } },
+  ] as const) {
+    test(`sound settings own diary ambience without a diary route overlay (${soundLayout.name})`, async ({
+      page,
+    }) => {
+      await primeApp(page);
+      await page.setViewportSize(soundLayout.viewport);
+
+      await page.goto(`${APP_BASE}/diary?nav=v2&navLayout=${soundLayout.name}&dev=true`);
+      await expect(page.getByTestId("diary-page")).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByTestId("diary-page-ambience-control")).toHaveCount(0);
+      await expect(page.getByTestId("diary-page-ambience-toggle")).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Play diary ambience" })).toHaveCount(0);
+
+      await page.goto(`${APP_BASE}/settings?nav=v2&navLayout=${soundLayout.name}&dev=true`);
+      await page.evaluate(() => document.fonts.ready);
+      await page.getByTestId("settings-module-card-sound").click();
+
+      await expect(page.getByTestId("settings-v2-panel-sound")).toBeVisible();
+      await expect(page.getByTestId("settings-v2-diary-ambience-control")).toBeVisible();
+      const diaryAmbienceToggle = page.getByTestId("settings-v2-diary-ambience-toggle");
+      await expect(diaryAmbienceToggle).toBeVisible();
+      await expect(diaryAmbienceToggle).toHaveAccessibleName("Play diary ambience");
+      await expect(diaryAmbienceToggle).toHaveAttribute("aria-pressed", "false");
+
+      const facts = await page.evaluate(() => {
+        const toggle = document.querySelector<HTMLElement>(
+          '[data-testid="settings-v2-diary-ambience-toggle"]',
+        );
+        const audio = document.querySelector<HTMLAudioElement>(
+          '[data-testid="settings-v2-diary-ambience-audio"]',
+        );
+        const rect = toggle?.getBoundingClientRect();
+        return {
+          audioAutoplay: audio?.hasAttribute("autoplay") ?? null,
+          audioPreload: audio?.getAttribute("preload") ?? null,
+          pageOverflowX: Math.max(
+            0,
+            document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            document.body.scrollWidth - document.documentElement.clientWidth,
+          ),
+          touchHeight: rect?.height ?? 0,
+          touchWidth: rect?.width ?? 0,
+        };
+      });
+
+      expect(facts).toMatchObject({
+        audioAutoplay: false,
+        audioPreload: "none",
+        pageOverflowX: 0,
+      });
+      expect(Math.min(facts.touchWidth, facts.touchHeight)).toBeGreaterThanOrEqual(44);
+      await expectControlsFirstHierarchy(page, "sound");
+    });
+  }
+
   test("appearance controls update the canonical V2 theme and legacy compatibility state", async ({
     page,
   }) => {

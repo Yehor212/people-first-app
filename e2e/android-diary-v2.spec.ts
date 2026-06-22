@@ -7,6 +7,32 @@ const TOUCH_EPSILON_PX = 0.01;
 
 test.use({ timezoneId: "UTC" });
 
+async function expectFocusInsideMobileDiarySidebar(page: Page) {
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() => {
+          const drawer = document.querySelector('[data-testid="journal-mobile-diary-sidebar"]');
+          return Boolean(drawer && document.activeElement && drawer.contains(document.activeElement));
+        }),
+      { message: "keyboard focus remains inside the mobile diary sidebar", timeout: 3_000 },
+    )
+    .toBe(true);
+}
+
+async function expectFocusInsideMobileDiarySettings(page: Page) {
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() => {
+          const sheet = document.querySelector('[data-testid="journal-mobile-settings-panel"]');
+          return Boolean(sheet && document.activeElement && sheet.contains(document.activeElement));
+        }),
+      { message: "keyboard focus remains inside the mobile diary settings sheet", timeout: 3_000 },
+    )
+    .toBe(true);
+}
+
 async function expectAndroidTouchTarget(page: Page, locator: Locator) {
   await expect(locator).toBeVisible({ timeout: 30_000 });
   await expect
@@ -83,8 +109,9 @@ async function openDiaryFromV2Root(page: Page) {
   const drawerButton = page.getByTestId("nav-v2-open-drawer");
   if (await drawerButton.isVisible()) {
     await drawerButton.click();
-    const drawer = page.getByRole("dialog", { name: /menu/i });
-    const diaryDestination = drawer.getByRole("button", { name: /^Diary$/ });
+    const drawer = page.getByTestId("drawer-v2");
+    await expect(drawer).toBeVisible({ timeout: 10_000 });
+    const diaryDestination = drawer.getByTestId("drawer-v2-destination-diary");
     await expect(diaryDestination).toBeVisible({ timeout: 10_000 });
     await diaryDestination.click();
   } else {
@@ -106,14 +133,77 @@ test.describe("Android V2 Diary", () => {
 
   test("keeps the Android diary shell tap-safe and unclipped", async ({ page }) => {
     await expectPhoneDiaryWallpaper(page);
+    await expect(page.getByTestId("diary-page-ambience-control")).toHaveCount(0);
+    await expect(page.getByTestId("diary-page-ambience-toggle")).toHaveCount(0);
 
-    for (const id of ["journal-mobile-nav-menu", "journal-mobile-stats", "journal-mobile-settings"]) {
+    for (const id of [
+      "journal-mobile-app-nav-menu",
+      "journal-mobile-diary-sidebar-trigger",
+      "journal-mobile-stats",
+      "journal-mobile-favorites",
+      "journal-mobile-settings",
+    ]) {
       await expectAndroidTouchTarget(page, page.getByTestId(id));
     }
     await expectAndroidTouchTarget(page, page.getByTestId("journal-entry-main-fab"));
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
+  });
+
+  test("opens the app drawer and diary-only sidebar drawer on Android", async ({ page }) => {
+    const appMenuButton = page.getByTestId("journal-mobile-app-nav-menu");
+    await expectAndroidTouchTarget(page, appMenuButton);
+    await appMenuButton.click();
+    await expect(page.getByTestId("drawer-v2")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("drawer-v2-destination-habits")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("drawer-v2")).toHaveCount(0);
+
+    const menuButton = page.getByTestId("journal-mobile-diary-sidebar-trigger");
+    await expectAndroidTouchTarget(page, menuButton);
+    await menuButton.click();
+
+    const drawer = page.getByTestId("journal-mobile-diary-sidebar");
+    await expect(drawer).toBeVisible({ timeout: 20_000 });
+    await expect(drawer.getByTestId("journal-mobile-diary-sidebar-calendar")).toBeVisible();
+    await expect(page.getByTestId("drawer-v2")).toHaveCount(0);
+    await expectAndroidTouchTarget(page, page.getByTestId("journal-mobile-diary-sidebar-close"));
+    await expect(page.getByTestId("journal-mobile-diary-sidebar-close")).toBeFocused();
+    await expectFocusInsideMobileDiarySidebar(page);
+    await page.keyboard.press("Shift+Tab");
+    await expectFocusInsideMobileDiarySidebar(page);
+
+    await page.keyboard.press("Escape");
+    await expect(drawer).toHaveCount(0);
+    await expect(menuButton).toBeFocused();
+
+    await menuButton.click();
+    const reopenedDrawer = page.getByTestId("journal-mobile-diary-sidebar");
+    await expect(reopenedDrawer).toBeVisible({ timeout: 20_000 });
+    await reopenedDrawer.getByRole("button", { name: /^Settings$/ }).click();
+    const settingsDialog = page.getByRole("dialog", { name: /diary settings/i });
+    await expect(settingsDialog).toBeVisible({ timeout: 20_000 });
+    await expect(reopenedDrawer).toHaveCount(0);
+    await expect(page.getByTestId("journal-mobile-settings-close")).toBeFocused();
+    await expectFocusInsideMobileDiarySettings(page);
+    await page.keyboard.press("Shift+Tab");
+    await expectFocusInsideMobileDiarySettings(page);
+    await page.getByTestId("journal-mobile-settings-close").click();
+    await expect(settingsDialog).toHaveCount(0);
+    await expect(menuButton).toBeFocused();
+  });
+
+  test("keeps Android diary tab actions coherent", async ({ page }) => {
+    await expectAndroidTouchTarget(page, page.getByTestId("journal-mobile-entry"));
+    await expectAndroidTouchTarget(page, page.getByTestId("journal-mobile-stats"));
+    await expectAndroidTouchTarget(page, page.getByTestId("journal-mobile-favorites"));
+    await expectAndroidTouchTarget(page, page.getByTestId("journal-mobile-settings"));
+
+    await page.getByTestId("journal-mobile-favorites").click();
+    await expect(page.getByTestId("journal-favorites-panel")).toBeVisible();
+    await page.getByTestId("journal-mobile-entry").click();
+    await expect(page.getByTestId("journal-favorites-panel")).toHaveCount(0);
   });
 
   test("serves the Android diary ambience audio from the native bundle", async ({ page }) => {
