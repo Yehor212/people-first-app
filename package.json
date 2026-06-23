@@ -183,6 +183,7 @@
     "dexie": "^4.4.2",
     "dompurify": "^3.3.1",
     "framer-motion": "^12.26.2",
+    "lottie-web": "^5.13.0",
     "lucide-react": "^0.462.0",
     "nanoid": "^5.0.9",
     "react": "^18.3.1",
