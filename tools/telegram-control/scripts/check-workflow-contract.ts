@@ -39,11 +39,15 @@ const telegramRequiredSubstrings = [
   "Rollback target missing or unsafe. Use /rollback target=<commit-or-ref>.",
   "first_token",
   "second_token",
-  "git revert --no-edit \"$rollback_target\"",
+  'git revert --no-edit "$rollback_target"',
   "This is a draft rollback PR. It does not deploy or write directly to main.",
   "OPENAI_API_KEY is missing; Codex action was not run.",
+  "Create no-paid AI fallback report",
+  "node --import tsx tools/telegram-control/scripts/no-paid-ai-fallback.ts",
+  "No-paid RAG context report created; OPENAI_API_KEY is missing; Codex action was not run.",
   "uses: openai/codex-action@v1",
   "openai-api-key: ${{ secrets.OPENAI_API_KEY }}",
+  "env.HAS_OPENAI_API_KEY == 'true'",
   "sandbox: workspace-write",
   "safety-strategy: drop-sudo",
   "X-Zenflow-Control-Secret",
@@ -82,9 +86,21 @@ const sourceRequiredSubstrings = [
   [controlPath, controlSource, "instance.sendEvent"],
   [workflowSourcePath, workflowSource, "waitForEvent<ApprovalSignal>"],
   [workflowSourcePath, workflowSource, "Cloudflare Workflow received approve signal"],
-  [routerTestPath, routerTest, "approval-gated command starts a durable Workflow before waiting for Telegram approval"],
-  [routerTestPath, routerTest, "manual approve sends a Workflow approval signal instead of dispatching directly"],
-  [routerTestPath, routerTest, "manual cancel sends a Workflow cancel signal while job is awaiting approval"],
+  [
+    routerTestPath,
+    routerTest,
+    "approval-gated command starts a durable Workflow before waiting for Telegram approval",
+  ],
+  [
+    routerTestPath,
+    routerTest,
+    "manual approve sends a Workflow approval signal instead of dispatching directly",
+  ],
+  [
+    routerTestPath,
+    routerTest,
+    "manual cancel sends a Workflow cancel signal while job is awaiting approval",
+  ],
 ] as const;
 
 const missing = [
@@ -116,5 +132,5 @@ console.log(
     deployRequiredSubstrings.length +
     wranglerRequiredSubstrings.length +
     sourceRequiredSubstrings.length
-  } invariants verified.`,
+  } invariants verified.`
 );

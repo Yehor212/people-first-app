@@ -84,12 +84,12 @@ The v1 runtime uses Cloudflare Workers plus Cloudflare Workflows because it can 
 - Worker KV stores metadata only; no ZenFlow user content is stored.
 - AI work is branch-scoped to `codex/telegram-*`.
 - Production deploy is only dispatched after Telegram approval and only from `main`.
-- Missing `OPENAI_API_KEY` is reported as `UNVERIFIED`, never as success.
+- Missing `OPENAI_API_KEY` is reported as `UNVERIFIED`, never as success; the workflow writes a no-paid RAG/manual artifact for local Codex continuation.
 - `secrets:bootstrap` may generate only project-owned random shared secrets. It must not generate or print account-owned credentials such as Telegram bot tokens, GitHub App private keys, or OpenAI API keys.
 
 ## No-Budget Constraint
 
-This implementation avoids a permanent paid host. Cloudflare Workers/Workflows and GitHub Actions can fit a no-subscription v1, subject to their free-tier limits. OpenAI API execution still requires an existing API key or credits; there is no unlimited free Codex API path.
+This implementation avoids a permanent paid host. Cloudflare Workers/Workflows and GitHub Actions can fit a no-subscription v1, subject to their free-tier limits. OpenAI API execution still requires an existing API key or credits; there is no unlimited free Codex API path. Without that key, Telegram Control produces only a no-paid RAG/manual artifact and local Codex Desktop remains the intended execution path.
 
 ## Official References
 

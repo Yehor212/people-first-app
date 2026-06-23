@@ -19,6 +19,16 @@ Agent rules:
 - Do not reveal or preserve token-shaped text from excerpts; the formatter redacts likely secrets.
 - If lexical search misses the needed context, fall back to direct file reads with `rg` and source citations.
 
+## Telegram Control Without Paid APIs
+
+Telegram Control can run status, test gates, deploy approval plumbing, rollback proposal plumbing, and setup/doctor checks without paid AI APIs.
+
+For Codex-backed remote modes (`plan`, `fix`, `review`, and `security`), `OPENAI_API_KEY` is still required to run the GitHub `openai/codex-action`. When the key is absent, the workflow now creates `artifacts/telegram-control-no-paid-ai.md` instead of failing empty:
+
+- status remains `UNVERIFIED`; it does not claim AI work completed;
+- the raw Telegram prompt is omitted from the artifact; only hash and byte count are recorded;
+- a free lexical project RAG context is included so the work can continue in local Codex Desktop.
+
 ## AI Coach Without Paid APIs
 
 The Supabase `ai-coach` edge function keeps auth, rate limiting, request size validation, and normal Gemini behavior when `GEMINI_API_KEY` is configured.
@@ -51,5 +61,8 @@ This keeps journal search usable in free/local environments while preserving the
 ```bash
 npm run test -- scripts/__tests__/rag-free-mode.test.ts scripts/__tests__/journal-ai-free-mode.test.ts src/lib/__tests__/aiCoachService.test.ts src/lib/__tests__/journalAI.test.ts
 npm run rag:smoke:free
+npm --prefix tools/telegram-control run test
+npm --prefix tools/telegram-control run check:workflow
+npm --prefix tools/telegram-control run typecheck
 npm run typecheck
 ```

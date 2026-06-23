@@ -26,6 +26,7 @@
     "deploy": "npx wrangler deploy",
     "deploy:dry-run": "npx wrangler deploy --dry-run",
     "check:bot-profile-photo": "node --import tsx scripts/check-bot-profile-photo.ts",
-    "check:public-bot-profile-photo": "node --import tsx scripts/check-public-bot-profile-photo.ts"
+    "check:public-bot-profile-photo": "node --import tsx scripts/check-public-bot-profile-photo.ts",
+    "ai:no-paid-fallback": "node --import tsx scripts/no-paid-ai-fallback.ts"
   }
 }

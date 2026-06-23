@@ -129,7 +129,7 @@ The Telegram bot readiness doctor validates BotFather token shape, webhook secre
 ## Required GitHub Secrets
 
 - `TELEGRAM_BOT_TOKEN`: required for deploy-time proof that the public Telegram OAuth bot uses the approved ZenFlow profile photo.
-- `OPENAI_API_KEY`: required only for Codex-backed `plan`, `fix`, `review`, and `security`. When missing, the workflow reports `UNVERIFIED` and does not fake AI success.
+- `OPENAI_API_KEY`: required only for Codex-backed `plan`, `fix`, `review`, and `security`. When missing, the workflow reports `UNVERIFIED`, writes a no-paid RAG/manual artifact, and does not fake AI success.
 - `TELEGRAM_CONTROL_CALLBACK_URL`: `https://<worker-host>/github/webhook`.
 - `TELEGRAM_CONTROL_CALLBACK_SECRET`: must match the Cloudflare secret.
 - `SNYK_TOKEN`: optional for `snyk code test`.

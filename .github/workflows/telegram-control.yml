@@ -286,6 +286,17 @@ jobs:
           fi
           npx snyk code test
 
+      - name: Create no-paid AI fallback report
+        if: ${{ (inputs.mode == 'plan' || inputs.mode == 'fix' || inputs.mode == 'review' || inputs.mode == 'security') && env.HAS_OPENAI_API_KEY != 'true' }}
+        shell: bash
+        env:
+          PROMPT_SHA: ${{ steps.prompt_meta.outputs.sha }}
+          PROMPT_BYTES: ${{ steps.prompt_meta.outputs.bytes }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          node --import tsx tools/telegram-control/scripts/no-paid-ai-fallback.ts
+
       - name: Guard OpenAI API availability
         if: ${{ inputs.mode == 'plan' || inputs.mode == 'fix' || inputs.mode == 'review' || inputs.mode == 'security' }}
         shell: bash
@@ -293,14 +304,14 @@ jobs:
           set -euo pipefail
           . /tmp/telegram-control-notify.sh
           if [ "$HAS_OPENAI_API_KEY" != "true" ]; then
-            notify_control "UNVERIFIED" "OPENAI_API_KEY is missing; Codex action was not run."
-            echo "UNVERIFIED: OPENAI_API_KEY is missing; Codex action was not run." >&2
-            exit 1
+            notify_control "UNVERIFIED" "No-paid RAG context report created; OPENAI_API_KEY is missing; Codex action was not run."
+            echo "UNVERIFIED: No-paid RAG context report created; OPENAI_API_KEY is missing; Codex action was not run."
+            exit 0
           fi
 
       - name: Run Codex
         id: run_codex
-        if: ${{ inputs.mode == 'plan' || inputs.mode == 'fix' || inputs.mode == 'review' || inputs.mode == 'security' }}
+        if: ${{ (inputs.mode == 'plan' || inputs.mode == 'fix' || inputs.mode == 'review' || inputs.mode == 'security') && env.HAS_OPENAI_API_KEY == 'true' }}
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
@@ -331,7 +342,7 @@ jobs:
             - Whether the result is PASS, PARTIAL, UNVERIFIED, FAIL, or ASK.
 
       - name: Run post-Codex safety gates
-        if: ${{ inputs.mode == 'fix' || inputs.mode == 'security' }}
+        if: ${{ (inputs.mode == 'fix' || inputs.mode == 'security') && env.HAS_OPENAI_API_KEY == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -342,7 +353,7 @@ jobs:
 
       - name: Publish branch and PR
         id: publish
-        if: ${{ inputs.mode == 'plan' || inputs.mode == 'fix' || inputs.mode == 'review' || inputs.mode == 'security' }}
+        if: ${{ (inputs.mode == 'plan' || inputs.mode == 'fix' || inputs.mode == 'review' || inputs.mode == 'security') && env.HAS_OPENAI_API_KEY == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
