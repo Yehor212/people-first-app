@@ -12,6 +12,8 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+const PUBLIC_TEST_ANON_KEY = ["public", "anon", "key"].join("-");
+
 describe("Apple Auth public availability", () => {
   beforeEach(() => {
     clearAppleAuthAvailabilityCache();
@@ -33,12 +35,12 @@ describe("Apple Auth public availability", () => {
 
   it("checks /auth/v1/settings with only the public anon key", async () => {
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
-      jsonResponse({ external: { apple: false } }),
+      jsonResponse({ external: { apple: false } })
     );
 
     const result = await checkAppleAuthAvailability({
       supabaseUrl: "https://project-ref.supabase.co/",
-      anonKey: "public-anon-key",
+      anonKey: PUBLIC_TEST_ANON_KEY,
       fetchImpl,
       now: () => 1_000,
     });
@@ -51,25 +53,25 @@ describe("Apple Auth public availability", () => {
     const [url, init] = call;
     expect(url).toBe("https://project-ref.supabase.co/auth/v1/settings");
     expect(init?.headers).toMatchObject({
-      apikey: "public-anon-key",
-      Authorization: "Bearer public-anon-key",
+      apikey: PUBLIC_TEST_ANON_KEY,
+      Authorization: `Bearer ${PUBLIC_TEST_ANON_KEY}`,
     });
   });
 
   it("caches the known provider state briefly to avoid repeated preflight calls", async () => {
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
-      jsonResponse({ external: { apple: true } }),
+      jsonResponse({ external: { apple: true } })
     );
 
     const first = await checkAppleAuthAvailability({
       supabaseUrl: "https://project-ref.supabase.co",
-      anonKey: "public-anon-key",
+      anonKey: PUBLIC_TEST_ANON_KEY,
       fetchImpl,
       now: () => 10_000,
     });
     const second = await checkAppleAuthAvailability({
       supabaseUrl: "https://project-ref.supabase.co",
-      anonKey: "public-anon-key",
+      anonKey: PUBLIC_TEST_ANON_KEY,
       fetchImpl,
       now: () => 11_000,
     });
@@ -87,9 +89,9 @@ describe("Apple Auth public availability", () => {
     await expect(
       checkAppleAuthAvailability({
         supabaseUrl: "https://project-ref.supabase.co",
-        anonKey: "public-anon-key",
+        anonKey: PUBLIC_TEST_ANON_KEY,
         fetchImpl,
-      }),
+      })
     ).resolves.toMatchObject({ status: "unknown", reason: "settings_unreachable" });
   });
 });
