@@ -260,7 +260,7 @@ export async function handleGitHubWebhook(request: Request, env: Env): Promise<R
     updated.githubRunId = payload.workflow_run.id;
     updated.githubRunUrl = payload.workflow_run.html_url;
     await saveJob(env, updated);
-    await sendTelegramMessage(env, updated.chatId, formatJobUpdate(updated.id, updated.status, updated.githubRunUrl));
+    await sendTelegramMessage(env, updated.chatId, formatJobReport(updated));
   }
 
   return json({ ok: true, event });
@@ -333,7 +333,7 @@ async function handleWorkflowCallback(env: Env, payload: WorkflowCallbackPayload
   updated.branch = payload.branch ?? updated.branch;
   updated.prUrl = payload.pr_url ?? updated.prUrl;
   await saveJob(env, updated);
-  await sendTelegramMessage(env, updated.chatId, formatJobUpdate(updated.id, updated.status, updated.prUrl ?? updated.githubRunUrl));
+  await sendTelegramMessage(env, updated.chatId, formatJobReport(updated));
   return json({ ok: true, job_id: updated.id, status: updated.status });
 }
 
@@ -422,8 +422,33 @@ function formatJobStarted(job: { id: string; status: string; githubRunUrl?: stri
   return lines.join("\n");
 }
 
-function formatJobUpdate(jobId: string, status: string, url?: string): string {
-  return [`Job ${jobId}: ${status}`, url].filter(Boolean).join("\n");
+function formatJobReport(job: {
+  id: string;
+  status: string;
+  branch?: string;
+  prUrl?: string;
+  githubRunUrl?: string;
+  evidence: string[];
+}): string {
+  const lines = ["Telegram control report", `Job: ${job.id}`, `Status: ${job.status}`];
+  if (job.branch) {
+    lines.push(`Branch: ${job.branch}`);
+  }
+
+  const primaryUrl = job.prUrl ?? job.githubRunUrl;
+  if (primaryUrl) {
+    lines.push(`Link: ${primaryUrl}`);
+  }
+
+  const recentEvidence = job.evidence.slice(-3);
+  if (recentEvidence.length > 0) {
+    lines.push("Evidence:");
+    for (const entry of recentEvidence) {
+      lines.push(`- ${entry}`);
+    }
+  }
+
+  return lines.join("\n");
 }
 
 function mapGitHubStatus(status?: string, conclusion?: string): "queued" | "running" | "succeeded" | "failed" {

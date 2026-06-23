@@ -76,10 +76,7 @@ export function HabitMotionPlayer({
     if (!shouldRenderLottie || !asset.lottie || !lottieContainerRef.current) return;
     if (import.meta.env.MODE === "test") return;
     let cancelled = false;
-    void Promise.all([
-      loadHabitLottieAnimation(asset.lottie),
-      import("lottie-web/build/player/lottie_svg"),
-    ])
+    void Promise.all([loadHabitLottieAnimation(asset.lottie), import("lottie-web")])
       .then(([lottieAnimation, module]) => {
         if (cancelled || !lottieAnimation || !lottieContainerRef.current) return;
         const lottie = module.default ?? module;

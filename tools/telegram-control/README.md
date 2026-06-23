@@ -24,6 +24,12 @@ Free text is parsed into the same schema. Low-confidence text becomes `ASK` and 
 
 Approval-gated commands start a Cloudflare Workflow before Telegram confirmation. The approval, denial, or cancellation is sent back into that Workflow as an event, so the durable runtime owns the pause/resume boundary instead of relying only on a chat callback.
 
+## Report Delivery
+
+When GitHub Actions or GitHub workflow webhooks call back into `/github/webhook`, the Worker sends the original Telegram chat an actionable report instead of a bare status line. The report includes the control job id, final status, branch when available, PR or run URL, and the latest evidence lines.
+
+This callback path is what makes Telegram useful for receiving reports: `TELEGRAM_CONTROL_CALLBACK_URL` must point to `https://<worker-host>/github/webhook`, and `TELEGRAM_CONTROL_CALLBACK_SECRET` must match in both GitHub Actions and Cloudflare Worker secrets.
+
 ## Mini App
 
 - `GET /miniapp` serves the Telegram dashboard shell.

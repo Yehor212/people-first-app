@@ -43,7 +43,7 @@ describe("HabitMotionPlayer", () => {
     expect(motionPlayerSource).not.toContain("lottieAnimationLoaders");
     expect(motionPlayerSource).not.toContain("../../assets/habit-icons/v2/*/idle.lottie.json");
     expect(motionPlayerSource).toContain("loadHabitLottieAnimation");
-    expect(motionPlayerSource).toContain('import("lottie-web/build/player/lottie_svg")');
+    expect(motionPlayerSource).toContain('import("lottie-web")');
     expect(motionPlayerSource).toContain('"drink-water/idle.lottie.json"');
     expect(motionPlayerSource).toContain('"read/idle.lottie.json"');
     expect(motionPlayerSource).toContain('"walk-distance/idle.lottie.json"');

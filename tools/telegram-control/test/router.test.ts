@@ -689,9 +689,16 @@ void test("manual cancel finds and cancels an active GitHub run by branch when r
   }
 });
 
-void test("workflow callback updates matching job and keeps evidence", async () => {
+void test("workflow callback sends actionable Telegram report", async () => {
+  const sentMessages: string[] = [];
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = (async () => Response.json({ ok: true }));
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = input instanceof Request ? input.url : input.toString();
+    if (url.includes("/sendMessage") && typeof init?.body === "string") {
+      sentMessages.push(init.body);
+    }
+    return Response.json({ ok: true });
+  });
 
   try {
     const kv = new FakeKvNamespace();
@@ -722,19 +729,28 @@ void test("workflow callback updates matching job and keeps evidence", async () 
         body: JSON.stringify({
           job_id: job.id,
           status: "succeeded",
+          branch: "codex/telegram-report-test",
+          github_run_url: "https://github.com/Yehor212/people-first-app/actions/runs/123",
           pr_url: "https://github.com/Yehor212/people-first-app/pull/1",
-          evidence: ["callback evidence"],
+          evidence: ["first evidence", "callback evidence"],
         }),
       }),
       env,
     );
     const payload = (await response.json()) as { status: string };
     const [updated] = await listJobs(env, 1);
+    const finalMessageBody = sentMessages.at(-1) ?? "";
 
     assert.equal(response.status, 200);
     assert.equal(payload.status, "succeeded");
     assert.equal(updated?.prUrl, "https://github.com/Yehor212/people-first-app/pull/1");
+    assert.equal(updated?.branch, "codex/telegram-report-test");
     assert.equal(updated?.evidence.includes("callback evidence"), true);
+    assert.match(finalMessageBody, /Telegram control report/);
+    assert.match(finalMessageBody, /succeeded/);
+    assert.match(finalMessageBody, /codex\/telegram-report-test/);
+    assert.match(finalMessageBody, /pull\/1/);
+    assert.match(finalMessageBody, /callback evidence/);
   } finally {
     globalThis.fetch = originalFetch;
   }
