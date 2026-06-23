@@ -1,4 +1,819 @@
 {
-  "version": "2026-06-19",
-  "assets": {}
+  "version": "2026-06-20-real-source-intensity-v3",
+  "decision": "Gemini/Lyria UI candidates were rejected as music-like. The runtime Hyperfocus pack now uses real Mixkit/bundled natural SFX sources selected by semantic fit and measured intensity progression: soft < deep < intense for every family.",
+  "rejectedExternalCandidates": [
+    {
+      "provider": "Google Gemini/Lyria UI",
+      "fileName": "after_the_flame.mp4",
+      "verdict": "rejected",
+      "reason": "Audible result was music-like rather than pure nature/fireplace SFX."
+    },
+    {
+      "provider": "Google Gemini/Lyria UI",
+      "fileName": "before_the_hearth.mp4",
+      "verdict": "rejected",
+      "reason": "Second Pro/Expanded prompt still did not produce the required natural non-musical SFX bed."
+    }
+  ],
+  "rejectedSelectionPatterns": [
+    "Do not accept songs, lyrics, melody, beat/drop structure, artist-style references, K-pop/pop/cinematic prompts, sirens, alarms, applause, children/playground foreground noise, screams, explosions, or obvious one-shot SFX.",
+    "Do not accept a set where soft/deep/intense are only unique hashes; the measured intensity order must pass."
+  ],
+  "researchedSources": [
+    {
+      "name": "Mixkit Fire SFX",
+      "url": "https://mixkit.co/free-sound-effects/fire/",
+      "evidence": "Campfire burning crackles, campfire crackles, campfire night wind; Mixkit SFX license page confirms sound effects are free under Mixkit License."
+    },
+    {
+      "name": "Mixkit Nature SFX",
+      "url": "https://mixkit.co/free-sound-effects/nature/",
+      "evidence": "Thunderstorm and clear rain, thunderstorm/rain loop, heavy storm rain loop."
+    },
+    {
+      "name": "Mixkit Sea SFX",
+      "url": "https://mixkit.co/free-sound-effects/sea/",
+      "evidence": "Diving sea ambience, sinking in the sea, small waves, sea coast breaking waves, rough sea waves."
+    },
+    {
+      "name": "Mixkit Rivers SFX",
+      "url": "https://mixkit.co/free-sound-effects/rivers/",
+      "evidence": "River water flow and surroundings, wildlife environment in a river, water flowing in the river."
+    },
+    {
+      "name": "Mixkit Restaurant/Public Places SFX",
+      "url": "https://mixkit.co/free-sound-effects/restaurant/",
+      "evidence": "Hotel reception/restaurant, restaurant crowd talking ambience, big crowd talking loop; loud party/siren/children/crowd-event clips rejected."
+    },
+    {
+      "name": "Pixabay Underwater/Fireplace/Nature",
+      "url": "https://pixabay.com/sound-effects/search/underwater%20ambience/",
+      "evidence": "Royalty-free fallback candidates found, but no direct MP3 was bundled because the static page did not expose a transparent download URL."
+    }
+  ],
+  "metricGate": {
+    "version": "2026-06-20-real-source-intensity-v3",
+    "generatedAt": "2026-06-20T02:46:00Z",
+    "metric": "intensityScore = weighted RMS + motion + zero-crossing activity; higher means denser/louder/noisier ambience.",
+    "families": {
+      "cafe": {
+        "soft": {
+          "fileName": "hyperfocus-cafe-soft.mp3",
+          "sourceTitle": "Hotel reception and restaurant",
+          "durationSeconds": 60,
+          "rmsDb": -27.6,
+          "motionDb": -43.3,
+          "peakDb": -5.5,
+          "zeroCrossingsPerSecond": 2055,
+          "intensityScore": 56,
+          "sha256": "fbb4154d0f4acfc9116b53f2788cded2d1bdcd2cb245b86396c28b61ab601184"
+        },
+        "deep": {
+          "fileName": "hyperfocus-cafe-deep.mp3",
+          "sourceTitle": "Restaurant crowd talking ambience",
+          "durationSeconds": 120,
+          "rmsDb": -24.5,
+          "motionDb": -41.4,
+          "peakDb": -1.8,
+          "zeroCrossingsPerSecond": 1727,
+          "intensityScore": 59.8,
+          "sha256": "c158ed1dad3eb4978ab3dd9c17fa41a70f3fa8a87dcf543a2bc6553191392a94"
+        },
+        "intense": {
+          "fileName": "hyperfocus-cafe-intense.mp3",
+          "sourceTitle": "Big crowd talking loop",
+          "durationSeconds": 59.7,
+          "rmsDb": -18.7,
+          "motionDb": -38.1,
+          "peakDb": -4.2,
+          "zeroCrossingsPerSecond": 1493,
+          "intensityScore": 67.6,
+          "sha256": "a8e9d737d38aba57bca7f67ce6dd147e2bffd6574f780e691200615c06a2c65e"
+        },
+        "acceptance": {
+          "order": "soft < deep < intense",
+          "scores": [56, 59.8, 67.6],
+          "softToDeepGap": 3.8,
+          "deepToIntenseGap": 7.8,
+          "pass": true
+        }
+      },
+      "fireplace": {
+        "soft": {
+          "fileName": "hyperfocus-fireplace-soft.mp3",
+          "sourceTitle": "Campfire burning crackles",
+          "durationSeconds": 14.1,
+          "rmsDb": -60.1,
+          "motionDb": -56.4,
+          "peakDb": -21.2,
+          "zeroCrossingsPerSecond": 14301,
+          "intensityScore": 26,
+          "sha256": "73d22bdfe741fd1bb879ec53b9b080a910a9202f0873bb1afced15c0ca7fd15e"
+        },
+        "deep": {
+          "fileName": "hyperfocus-fireplace-deep.mp3",
+          "sourceTitle": "Campfire crackles",
+          "durationSeconds": 24,
+          "rmsDb": -55.4,
+          "motionDb": -55.4,
+          "peakDb": -10,
+          "zeroCrossingsPerSecond": 8034,
+          "intensityScore": 32.1,
+          "sha256": "47dee6aa6ee5ec0d3136aee0255789833dcaaff27c1334e82ffaa016efb1d7c4"
+        },
+        "intense": {
+          "fileName": "hyperfocus-fireplace-intense.mp3",
+          "sourceTitle": "Campfire night wind",
+          "durationSeconds": 30.8,
+          "rmsDb": -23.5,
+          "motionDb": -50.9,
+          "peakDb": -4,
+          "zeroCrossingsPerSecond": 439,
+          "intensityScore": 53.5,
+          "sha256": "f4ba18fc9fa32be7fd3e483dd83b7811d06f5d00c9cc83dcefc84cbb981afdc7"
+        },
+        "acceptance": {
+          "order": "soft < deep < intense",
+          "scores": [26, 32.1, 53.5],
+          "softToDeepGap": 6.1,
+          "deepToIntenseGap": 21.4,
+          "pass": true
+        }
+      },
+      "ocean": {
+        "soft": {
+          "fileName": "hyperfocus-ocean-soft.mp3",
+          "sourceTitle": "Small waves harbor rocks",
+          "durationSeconds": 77.9,
+          "rmsDb": -32.7,
+          "motionDb": -40.8,
+          "peakDb": -7.4,
+          "zeroCrossingsPerSecond": 5578,
+          "intensityScore": 59.8,
+          "sha256": "ae63d13f9f56a3b6211714042534a31a7b89da94206edf4668830ea45a9ff3df"
+        },
+        "deep": {
+          "fileName": "hyperfocus-ocean-deep.mp3",
+          "sourceTitle": "Sea coast breaking waves",
+          "durationSeconds": 120.1,
+          "rmsDb": -20.7,
+          "motionDb": -34.8,
+          "peakDb": -0.9,
+          "zeroCrossingsPerSecond": 1704,
+          "intensityScore": 67.3,
+          "sha256": "91960b0e869fcd7fd6f72fad0ea8d2fc63e8d9d7294674f81c2596ae8c28def0"
+        },
+        "intense": {
+          "fileName": "hyperfocus-ocean-intense.mp3",
+          "sourceTitle": "Rough sea waves loop",
+          "durationSeconds": 70.8,
+          "rmsDb": -19.4,
+          "motionDb": -32.8,
+          "peakDb": -1.6,
+          "zeroCrossingsPerSecond": 2943,
+          "intensityScore": 72.8,
+          "sha256": "7d5c40dcbde007e789a13d5e7d61ef69b918c159522117983225b27e8834013a"
+        },
+        "acceptance": {
+          "order": "soft < deep < intense",
+          "scores": [59.8, 67.3, 72.8],
+          "softToDeepGap": 7.5,
+          "deepToIntenseGap": 5.5,
+          "pass": true
+        }
+      },
+      "river": {
+        "soft": {
+          "fileName": "hyperfocus-river-soft.mp3",
+          "sourceTitle": "River water flow and surroundings",
+          "durationSeconds": 60.1,
+          "rmsDb": -45.4,
+          "motionDb": -52.4,
+          "peakDb": -30.6,
+          "zeroCrossingsPerSecond": 6430,
+          "intensityScore": 41.5,
+          "sha256": "6e45d1f6e552f72e2118df04e0a899f81335a99cffcf9d34b75cb59e141ec133"
+        },
+        "deep": {
+          "fileName": "hyperfocus-river-deep.mp3",
+          "sourceTitle": "Wildlife environment in a river",
+          "durationSeconds": 121.7,
+          "rmsDb": -33.2,
+          "motionDb": -44.9,
+          "peakDb": -14.9,
+          "zeroCrossingsPerSecond": 4536,
+          "intensityScore": 54.8,
+          "sha256": "3f41f9eb2a6ec333791b7a68c03783d25f887399eb28a02683b125768426cce8"
+        },
+        "intense": {
+          "fileName": "hyperfocus-river-intense.mp3",
+          "sourceTitle": "Water flowing in the river",
+          "durationSeconds": 180.1,
+          "rmsDb": -16.4,
+          "motionDb": -23.8,
+          "peakDb": -0.9,
+          "zeroCrossingsPerSecond": 5979,
+          "intensityScore": 88,
+          "sha256": "09b31b3c9f6d073f47b988cde1592c25a27d93e290d477dc8ef5b5a4ef72d24a"
+        },
+        "acceptance": {
+          "order": "soft < deep < intense",
+          "scores": [41.5, 54.8, 88],
+          "softToDeepGap": 13.3,
+          "deepToIntenseGap": 33.2,
+          "pass": true
+        }
+      },
+      "thunderstorm": {
+        "soft": {
+          "fileName": "hyperfocus-thunderstorm-soft.mp3",
+          "sourceTitle": "Thunderstorm and clear rain",
+          "durationSeconds": 44.2,
+          "rmsDb": -28.5,
+          "motionDb": -47.8,
+          "peakDb": -1.8,
+          "zeroCrossingsPerSecond": 3029,
+          "intensityScore": 55.4,
+          "sha256": "fa5dda3e884c51e975875b7bf03a1dc70b675588d06723e31b6fcfa2ff33ed38"
+        },
+        "deep": {
+          "fileName": "hyperfocus-thunderstorm-deep.mp3",
+          "sourceTitle": "Thunderstorm and rain loop",
+          "durationSeconds": 52.8,
+          "rmsDb": -25.8,
+          "motionDb": -46.4,
+          "peakDb": -1.3,
+          "zeroCrossingsPerSecond": 3129,
+          "intensityScore": 59.4,
+          "sha256": "a05dc25da59f852515657341bec9195fbd2e2d993de8b2896c1377c224f91710"
+        },
+        "intense": {
+          "fileName": "hyperfocus-thunderstorm-intense.mp3",
+          "sourceTitle": "Heavy storm rain loop",
+          "durationSeconds": 18,
+          "rmsDb": -20.8,
+          "motionDb": -40.8,
+          "peakDb": -1.3,
+          "zeroCrossingsPerSecond": 2192,
+          "intensityScore": 65.6,
+          "sha256": "c412e7f0aba641629594fe49fd1acbfba39424198c361f304c0b8889c8c40e49"
+        },
+        "acceptance": {
+          "order": "soft < deep < intense",
+          "scores": [55.4, 59.4, 65.6],
+          "softToDeepGap": 4,
+          "deepToIntenseGap": 6.2,
+          "pass": true
+        }
+      },
+      "underwater": {
+        "soft": {
+          "fileName": "hyperfocus-underwater-soft.mp3",
+          "sourceTitle": "Diving sea ambience",
+          "durationSeconds": 10.1,
+          "rmsDb": -39.7,
+          "motionDb": -58.1,
+          "peakDb": -14,
+          "zeroCrossingsPerSecond": 1727,
+          "intensityScore": 34,
+          "sha256": "d9c920020bed167e0e0299670b6d624f5f27ce9f8566ab804253c2b8a6f81942"
+        },
+        "deep": {
+          "fileName": "hyperfocus-underwater-deep.mp3",
+          "sourceTitle": "Sinking in the sea",
+          "durationSeconds": 31.4,
+          "rmsDb": -20.9,
+          "motionDb": -54.4,
+          "peakDb": -1.3,
+          "zeroCrossingsPerSecond": 372,
+          "intensityScore": 54.9,
+          "sha256": "87888f1491bb6e0c2a7b039a1439a52f046b5c9c4c964b07f39c4c44fe3d9dd4"
+        },
+        "intense": {
+          "fileName": "hyperfocus-underwater-intense.mp3",
+          "sourceTitle": "Underwater transmitter hum",
+          "durationSeconds": 13.6,
+          "rmsDb": -17.2,
+          "motionDb": -49.2,
+          "peakDb": -4,
+          "zeroCrossingsPerSecond": 356,
+          "intensityScore": 61.7,
+          "sha256": "1884a0e71d5b31c7d578ea0a1a059d8228f2043498cf3757a621c83d7b35d818"
+        },
+        "acceptance": {
+          "order": "soft < deep < intense",
+          "scores": [34, 54.9, 61.7],
+          "softToDeepGap": 20.9,
+          "deepToIntenseGap": 6.8,
+          "pass": true
+        }
+      }
+    }
+  },
+  "assets": {
+    "cafe:soft": {
+      "fileName": "hyperfocus-cafe-soft.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-cafe-soft-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Hotel reception and restaurant (https://mixkit.co/free-sound-effects/restaurant/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "fbb4154d0f4acfc9116b53f2788cded2d1bdcd2cb245b86396c28b61ab601184",
+      "bytes": 1834920,
+      "metrics": {
+        "durationSeconds": 60,
+        "rmsDb": -27.6,
+        "motionDb": -43.3,
+        "peakDb": -5.5,
+        "zeroCrossingsPerSecond": 2055,
+        "intensityScore": 56
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": "ambient-room-tone-with-possible-indistinct-room-murmur",
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "cafe:deep": {
+      "fileName": "hyperfocus-cafe-deep.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-cafe-deep-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Restaurant crowd talking ambience (https://mixkit.co/free-sound-effects/restaurant/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "c158ed1dad3eb4978ab3dd9c17fa41a70f3fa8a87dcf543a2bc6553191392a94",
+      "bytes": 3674106,
+      "metrics": {
+        "durationSeconds": 120,
+        "rmsDb": -24.5,
+        "motionDb": -41.4,
+        "peakDb": -1.8,
+        "zeroCrossingsPerSecond": 1727,
+        "intensityScore": 59.8
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": "ambient-room-tone-with-possible-indistinct-room-murmur",
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "cafe:intense": {
+      "fileName": "hyperfocus-cafe-intense.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-cafe-intense-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Big crowd talking loop (https://mixkit.co/free-sound-effects/public-places/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "a8e9d737d38aba57bca7f67ce6dd147e2bffd6574f780e691200615c06a2c65e",
+      "bytes": 1811286,
+      "metrics": {
+        "durationSeconds": 59.7,
+        "rmsDb": -18.7,
+        "motionDb": -38.1,
+        "peakDb": -4.2,
+        "zeroCrossingsPerSecond": 1493,
+        "intensityScore": 67.6
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": "ambient-room-tone-with-possible-indistinct-room-murmur",
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "fireplace:soft": {
+      "fileName": "hyperfocus-fireplace-soft.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-fireplace-soft-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Campfire burning crackles (https://mixkit.co/free-sound-effects/fire/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "73d22bdfe741fd1bb879ec53b9b080a910a9202f0873bb1afced15c0ca7fd15e",
+      "bytes": 542767,
+      "metrics": {
+        "durationSeconds": 14.1,
+        "rmsDb": -60.1,
+        "motionDb": -56.4,
+        "peakDb": -21.2,
+        "zeroCrossingsPerSecond": 14301,
+        "intensityScore": 26
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "fireplace:deep": {
+      "fileName": "hyperfocus-fireplace-deep.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-fireplace-deep-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Campfire crackles (https://mixkit.co/free-sound-effects/fire/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "47dee6aa6ee5ec0d3136aee0255789833dcaaff27c1334e82ffaa016efb1d7c4",
+      "bytes": 926321,
+      "metrics": {
+        "durationSeconds": 24,
+        "rmsDb": -55.4,
+        "motionDb": -55.4,
+        "peakDb": -10,
+        "zeroCrossingsPerSecond": 8034,
+        "intensityScore": 32.1
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "fireplace:intense": {
+      "fileName": "hyperfocus-fireplace-intense.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-fireplace-intense-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Campfire night wind (https://mixkit.co/free-sound-effects/fire/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "f4ba18fc9fa32be7fd3e483dd83b7811d06f5d00c9cc83dcefc84cbb981afdc7",
+      "bytes": 961767,
+      "metrics": {
+        "durationSeconds": 30.8,
+        "rmsDb": -23.5,
+        "motionDb": -50.9,
+        "peakDb": -4,
+        "zeroCrossingsPerSecond": 439,
+        "intensityScore": 53.5
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "ocean:soft": {
+      "fileName": "hyperfocus-ocean-soft.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-ocean-soft-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Small waves harbor rocks (https://mixkit.co/free-sound-effects/sea/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "ae63d13f9f56a3b6211714042534a31a7b89da94206edf4668830ea45a9ff3df",
+      "bytes": 2402410,
+      "metrics": {
+        "durationSeconds": 77.9,
+        "rmsDb": -32.7,
+        "motionDb": -40.8,
+        "peakDb": -7.4,
+        "zeroCrossingsPerSecond": 5578,
+        "intensityScore": 59.8
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "ocean:deep": {
+      "fileName": "hyperfocus-ocean-deep.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-ocean-deep-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Sea coast breaking waves (https://mixkit.co/free-sound-effects/sea/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "91960b0e869fcd7fd6f72fad0ea8d2fc63e8d9d7294674f81c2596ae8c28def0",
+      "bytes": 3673817,
+      "metrics": {
+        "durationSeconds": 120.1,
+        "rmsDb": -20.7,
+        "motionDb": -34.8,
+        "peakDb": -0.9,
+        "zeroCrossingsPerSecond": 1704,
+        "intensityScore": 67.3
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "ocean:intense": {
+      "fileName": "hyperfocus-ocean-intense.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-ocean-intense-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Rough sea waves loop (https://mixkit.co/free-sound-effects/sea/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "7d5c40dcbde007e789a13d5e7d61ef69b918c159522117983225b27e8834013a",
+      "bytes": 2172911,
+      "metrics": {
+        "durationSeconds": 70.8,
+        "rmsDb": -19.4,
+        "motionDb": -32.8,
+        "peakDb": -1.6,
+        "zeroCrossingsPerSecond": 2943,
+        "intensityScore": 72.8
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "river:soft": {
+      "fileName": "hyperfocus-river-soft.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-river-soft-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "River water flow and surroundings (https://mixkit.co/free-sound-effects/rivers/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "6e45d1f6e552f72e2118df04e0a899f81335a99cffcf9d34b75cb59e141ec133",
+      "bytes": 1874017,
+      "metrics": {
+        "durationSeconds": 60.1,
+        "rmsDb": -45.4,
+        "motionDb": -52.4,
+        "peakDb": -30.6,
+        "zeroCrossingsPerSecond": 6430,
+        "intensityScore": 41.5
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "river:deep": {
+      "fileName": "hyperfocus-river-deep.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-river-deep-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Wildlife environment in a river (https://mixkit.co/free-sound-effects/rivers/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "3f41f9eb2a6ec333791b7a68c03783d25f887399eb28a02683b125768426cce8",
+      "bytes": 3783975,
+      "metrics": {
+        "durationSeconds": 121.7,
+        "rmsDb": -33.2,
+        "motionDb": -44.9,
+        "peakDb": -14.9,
+        "zeroCrossingsPerSecond": 4536,
+        "intensityScore": 54.8
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "river:intense": {
+      "fileName": "hyperfocus-river-intense.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-river-intense-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Water flowing in the river (https://mixkit.co/free-sound-effects/rivers/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "09b31b3c9f6d073f47b988cde1592c25a27d93e290d477dc8ef5b5a4ef72d24a",
+      "bytes": 5620122,
+      "metrics": {
+        "durationSeconds": 180.1,
+        "rmsDb": -16.4,
+        "motionDb": -23.8,
+        "peakDb": -0.9,
+        "zeroCrossingsPerSecond": 5979,
+        "intensityScore": 88
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "thunderstorm:soft": {
+      "fileName": "hyperfocus-thunderstorm-soft.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-thunderstorm-soft-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Thunderstorm and clear rain (https://mixkit.co/free-sound-effects/nature/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "fa5dda3e884c51e975875b7bf03a1dc70b675588d06723e31b6fcfa2ff33ed38",
+      "bytes": 1402045,
+      "metrics": {
+        "durationSeconds": 44.2,
+        "rmsDb": -28.5,
+        "motionDb": -47.8,
+        "peakDb": -1.8,
+        "zeroCrossingsPerSecond": 3029,
+        "intensityScore": 55.4
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "thunderstorm:deep": {
+      "fileName": "hyperfocus-thunderstorm-deep.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-thunderstorm-deep-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Thunderstorm and rain loop (https://mixkit.co/free-sound-effects/nature/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "a05dc25da59f852515657341bec9195fbd2e2d993de8b2896c1377c224f91710",
+      "bytes": 1700703,
+      "metrics": {
+        "durationSeconds": 52.8,
+        "rmsDb": -25.8,
+        "motionDb": -46.4,
+        "peakDb": -1.3,
+        "zeroCrossingsPerSecond": 3129,
+        "intensityScore": 59.4
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "thunderstorm:intense": {
+      "fileName": "hyperfocus-thunderstorm-intense.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-thunderstorm-intense-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Heavy storm rain loop (https://mixkit.co/free-sound-effects/nature/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "c412e7f0aba641629594fe49fd1acbfba39424198c361f304c0b8889c8c40e49",
+      "bytes": 557552,
+      "metrics": {
+        "durationSeconds": 18,
+        "rmsDb": -20.8,
+        "motionDb": -40.8,
+        "peakDb": -1.3,
+        "zeroCrossingsPerSecond": 2192,
+        "intensityScore": 65.6
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "underwater:soft": {
+      "fileName": "hyperfocus-underwater-soft.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-underwater-soft-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Diving sea ambience (https://mixkit.co/free-sound-effects/sea/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "d9c920020bed167e0e0299670b6d624f5f27ce9f8566ab804253c2b8a6f81942",
+      "bytes": 239377,
+      "metrics": {
+        "durationSeconds": 10.1,
+        "rmsDb": -39.7,
+        "motionDb": -58.1,
+        "peakDb": -14,
+        "zeroCrossingsPerSecond": 1727,
+        "intensityScore": 34
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "underwater:deep": {
+      "fileName": "hyperfocus-underwater-deep.mp3",
+      "provider": "Mixkit",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-underwater-deep-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Sinking in the sea (https://mixkit.co/free-sound-effects/sea/)",
+      "sourceLicense": "https://mixkit.co/license/",
+      "publicSha256": "87888f1491bb6e0c2a7b039a1439a52f046b5c9c4c964b07f39c4c44fe3d9dd4",
+      "bytes": 918774,
+      "metrics": {
+        "durationSeconds": 31.4,
+        "rmsDb": -20.9,
+        "motionDb": -54.4,
+        "peakDb": -1.3,
+        "zeroCrossingsPerSecond": 372,
+        "intensityScore": 54.9
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    },
+    "underwater:intense": {
+      "fileName": "hyperfocus-underwater-intense.mp3",
+      "provider": "bundled-source",
+      "model": "real-source-intensity-pack",
+      "generationId": "real-source-intensity-underwater-intense-2026-06-20",
+      "generatedAt": "2026-06-20T02:46:00Z",
+      "source": "Underwater transmitter hum (public/sounds/mixkit-underwater-transmitter-hum-2135.mp3)",
+      "sourceLicense": "project bundled audio ledger",
+      "publicSha256": "1884a0e71d5b31c7d578ea0a1a059d8228f2043498cf3757a621c83d7b35d818",
+      "bytes": 164631,
+      "metrics": {
+        "durationSeconds": 13.6,
+        "rmsDb": -17.2,
+        "motionDb": -49.2,
+        "peakDb": -4,
+        "zeroCrossingsPerSecond": 356,
+        "intensityScore": 61.7
+      },
+      "audibleReview": {
+        "reviewer": "codex-source-selection-with-metric-gate",
+        "noVocals": true,
+        "noSpeech": true,
+        "noMelody": true,
+        "noBeat": true,
+        "noForegroundDistractions": true,
+        "natureOrFocusAmbienceSource": true
+      }
+    }
+  }
 }
