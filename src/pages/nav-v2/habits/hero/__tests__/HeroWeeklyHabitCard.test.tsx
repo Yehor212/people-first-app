@@ -9,8 +9,8 @@ import type { Habit } from "@/types";
 const miniWeekRowSpy = vi.hoisted(() => vi.fn());
 const getCurrentStreakSpy = vi.hoisted(() =>
   vi.fn((h: { entries?: Record<string, unknown> }) =>
-    Object.keys(h.entries ?? {}).length > 0 ? 1 : 0,
-  ),
+    Object.keys(h.entries ?? {}).length > 0 ? 1 : 0
+  )
 );
 const scheduleIdleCallbacks = vi.hoisted(() => [] as Array<() => void>);
 
@@ -109,25 +109,17 @@ describe("HeroWeeklyHabitCard", () => {
 
   it("renders a one-tap statistics button on the card", () => {
     const onOpenDetail = vi.fn();
-    render(
-      <HeroWeeklyHabitCard
-        habit={habit()}
-        onToggle={vi.fn()}
-        onOpenDetail={onOpenDetail}
-      />,
-    );
+    render(<HeroWeeklyHabitCard habit={habit()} onToggle={vi.fn()} onOpenDetail={onOpenDetail} />);
 
     fireEvent.click(screen.getByTestId("hero-weekly-card-water-stats"));
-    expect(onOpenDetail).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "water" }),
-    );
+    expect(onOpenDetail).toHaveBeenCalledWith(expect.objectContaining({ id: "water" }));
     expect(screen.getByTestId("hero-weekly-card-water")).toHaveAttribute(
       "data-card",
-      "ritual-weekly-card",
+      "ritual-weekly-card"
     );
     expect(screen.getByTestId("hero-weekly-card-water-stats")).toHaveAttribute(
       "data-slot",
-      "weekly-stats",
+      "weekly-stats"
     );
   });
 
@@ -144,26 +136,18 @@ describe("HeroWeeklyHabitCard", () => {
         })}
         onToggle={vi.fn()}
         onOpenDetail={vi.fn()}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("hero-weekly-card-walk")).toHaveAttribute(
-      "data-collapsed",
-      "false",
-    );
+    expect(screen.getByTestId("hero-weekly-card-walk")).toHaveAttribute("data-collapsed", "false");
     expect(screen.getByTestId("mini-week-row-stub")).toBeInTheDocument();
     expect(screen.getByTestId("hero-weekly-card-walk-stats")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("hero-weekly-card-walk-collapse"));
 
-    expect(screen.getByTestId("hero-weekly-card-walk")).toHaveAttribute(
-      "data-collapsed",
-      "true",
-    );
+    expect(screen.getByTestId("hero-weekly-card-walk")).toHaveAttribute("data-collapsed", "true");
     expect(screen.getByText("Morning walk")).toBeInTheDocument();
-    expect(screen.getByTestId("hero-weekly-card-walk-collapsed-cue")).toHaveTextContent(
-      "Expand",
-    );
+    expect(screen.getByTestId("hero-weekly-card-walk-collapsed-cue")).toHaveTextContent("Expand");
     expect(screen.queryByTestId("hero-weekly-card-walk-identity")).not.toBeInTheDocument();
     expect(screen.queryByTestId("mini-week-row-stub")).not.toBeInTheDocument();
     expect(screen.queryByTestId("hero-weekly-card-walk-stats")).not.toBeInTheDocument();
@@ -171,7 +155,7 @@ describe("HeroWeeklyHabitCard", () => {
     fireEvent.click(screen.getByTestId("hero-weekly-card-walk-collapse"));
 
     expect(screen.getByTestId("hero-weekly-card-walk-identity")).toHaveTextContent(
-      "Step toward someone who moves daily",
+      "Step toward someone who moves daily"
     );
   });
 
@@ -189,12 +173,12 @@ describe("HeroWeeklyHabitCard", () => {
         onToggle={vi.fn()}
         onOpenDetail={vi.fn()}
         initiallyCollapsed
-      />,
+      />
     );
 
     expect(screen.getByTestId("hero-weekly-card-stretch")).toHaveAttribute(
       "data-collapsed",
-      "true",
+      "true"
     );
     expect(screen.queryByTestId("mini-week-row-stub")).not.toBeInTheDocument();
     expect(screen.queryByTestId("hero-weekly-card-stretch-stats")).not.toBeInTheDocument();
@@ -203,7 +187,7 @@ describe("HeroWeeklyHabitCard", () => {
 
     expect(screen.getByTestId("hero-weekly-card-stretch")).toHaveAttribute(
       "data-collapsed",
-      "false",
+      "false"
     );
     expect(screen.getByTestId("mini-week-row-stub")).toBeInTheDocument();
     expect(screen.getByTestId("hero-weekly-card-stretch-stats")).toBeInTheDocument();
@@ -221,7 +205,7 @@ describe("HeroWeeklyHabitCard", () => {
           unit: "",
         })}
         onToggle={onToggle}
-      />,
+      />
     );
 
     fireEvent.click(screen.getByTestId("hero-weekly-card-walk-icon-check"));
@@ -230,7 +214,7 @@ describe("HeroWeeklyHabitCard", () => {
   });
 
   it.each(["Leaf", "Water", "Focus", "Book"])(
-    "renders stored habit icon %s as a Lucide pictogram instead of raw text",
+    "renders stored habit icon %s as a safe pictogram instead of raw text",
     (icon) => {
       render(
         <HeroWeeklyHabitCard
@@ -243,19 +227,23 @@ describe("HeroWeeklyHabitCard", () => {
             unit: "",
           })}
           onToggle={vi.fn()}
-        />,
+        />
       );
 
       const iconButton = screen.getByTestId(
-        `hero-weekly-card-icon-${icon.toLowerCase()}-icon-check`,
+        `hero-weekly-card-icon-${icon.toLowerCase()}-icon-check`
       );
       expect(iconButton).not.toHaveTextContent(icon);
-      expect(iconButton.querySelector("svg")).toBeInTheDocument();
+      expect(
+        iconButton.querySelector("svg") ??
+          iconButton.querySelector("[data-habit-motion-still]") ??
+          iconButton.querySelector("[data-habit-lottie-player]")
+      ).toBeInTheDocument();
       expect(screen.getByTestId(`hero-weekly-card-icon-${icon.toLowerCase()}`)).toHaveAttribute(
         "aria-label",
-        `${icon} habit`,
+        `${icon} habit`
       );
-    },
+    }
   );
 
   it.each([
@@ -263,34 +251,36 @@ describe("HeroWeeklyHabitCard", () => {
     ["🚶", "walk-distance"],
     ["📚", "read"],
     ["🧘", "meditate"],
-  ])(
-    "renders stored emoji %s as a custom animated v2 pictogram",
-    (storedIcon, pictogramId) => {
-      render(
-        <HeroWeeklyHabitCard
-          habit={habit({
-            id: `pictogram-${pictogramId}`,
-            name: `${pictogramId} habit`,
-            icon: storedIcon,
-            habitType: "boolean",
-            targetValue: 0,
-            unit: "",
-          })}
-          onToggle={vi.fn()}
-        />,
-      );
+  ])("renders stored emoji %s as a custom v2 pictogram", (storedIcon, pictogramId) => {
+    render(
+      <HeroWeeklyHabitCard
+        habit={habit({
+          id: `pictogram-${pictogramId}`,
+          name: `${pictogramId} habit`,
+          icon: storedIcon,
+          habitType: "boolean",
+          targetValue: 0,
+          unit: "",
+        })}
+        onToggle={vi.fn()}
+      />
+    );
 
-      const iconButton = screen.getByTestId(
-        `hero-weekly-card-pictogram-${pictogramId}-icon-check`,
-      );
-      expect(iconButton).not.toHaveTextContent(storedIcon);
-      const pictogram = iconButton.querySelector(
-        `[data-habit-pictogram="${pictogramId}"]`,
-      );
-      expect(pictogram).toBeInTheDocument();
-      expect(pictogram?.querySelectorAll("[data-pictogram-motion]").length).toBeGreaterThan(0);
-    },
-  );
+    const iconButton = screen.getByTestId(`hero-weekly-card-pictogram-${pictogramId}-icon-check`);
+    expect(iconButton).not.toHaveTextContent(storedIcon);
+    const pictogram = iconButton.querySelector(`[data-habit-pictogram="${pictogramId}"]`);
+    expect(pictogram).toBeInTheDocument();
+    const isApprovedLottie = ["drink-water", "walk-distance", "read"].includes(pictogramId);
+    expect(pictogram).toHaveAttribute(
+      "data-icon-source",
+      isApprovedLottie ? "approved-lottie-json" : "static-reduced-svg-fallback"
+    );
+    expect(
+      pictogram?.querySelector(
+        isApprovedLottie ? "[data-habit-lottie-player]" : "[data-habit-motion-still]"
+      )
+    ).toBeInTheDocument();
+  });
 
   it("uses the pictogram button as today's smart numerical check-in", () => {
     const onNumericalAction = vi.fn();
@@ -299,7 +289,7 @@ describe("HeroWeeklyHabitCard", () => {
         habit={habit()}
         onToggle={vi.fn()}
         onNumericalAction={onNumericalAction}
-      />,
+      />
     );
 
     fireEvent.click(screen.getByTestId("hero-weekly-card-water-icon-check"));
@@ -320,45 +310,37 @@ describe("HeroWeeklyHabitCard", () => {
           },
         })}
         onToggle={vi.fn()}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("hero-weekly-card-water-summary")).toHaveTextContent(
-      "1.5/2 L",
-    );
+    expect(screen.getByTestId("hero-weekly-card-water-summary")).toHaveTextContent("1.5/2 L");
     expect(screen.getByTestId("hero-weekly-card-water-meta")).toHaveTextContent("1.5 L");
   });
 
   it("exposes semantic visual roles for habit categories", () => {
     render(
       <>
-        <HeroWeeklyHabitCard
-          habit={habit({ id: "body", category: "health" })}
-          onToggle={vi.fn()}
-        />
+        <HeroWeeklyHabitCard habit={habit({ id: "body", category: "health" })} onToggle={vi.fn()} />
         <HeroWeeklyHabitCard
           habit={habit({ id: "focus", category: "productivity" })}
           onToggle={vi.fn()}
         />
-      </>,
+      </>
     );
 
-    expect(screen.getByTestId("hero-weekly-card-body")).toHaveAttribute(
-      "data-visual-role",
-      "body",
+    expect(screen.getByTestId("hero-weekly-card-body")).toHaveAttribute("data-visual-role", "body");
+    expect(screen.getByTestId("hero-weekly-card-body").getAttribute("style")).toContain(
+      "--habit-role: var(--zf-role-body)"
     );
     expect(screen.getByTestId("hero-weekly-card-body").getAttribute("style")).toContain(
-      "--habit-role: var(--zf-role-body)",
+      "--habit-card-background:"
     );
     expect(screen.getByTestId("hero-weekly-card-body").getAttribute("style")).toContain(
-      "--habit-card-background:",
-    );
-    expect(screen.getByTestId("hero-weekly-card-body").getAttribute("style")).toContain(
-      "--habit-card-shadow:",
+      "--habit-card-shadow:"
     );
     expect(screen.getByTestId("hero-weekly-card-focus")).toHaveAttribute(
       "data-visual-role",
-      "focus",
+      "focus"
     );
   });
 
@@ -367,16 +349,16 @@ describe("HeroWeeklyHabitCard", () => {
       <HeroWeeklyHabitCard
         habit={habit({ id: "focus", category: "productivity" })}
         onToggle={vi.fn()}
-      />,
+      />
     );
 
     expect(screen.getByTestId("mini-week-row-stub")).toHaveAttribute(
       "data-role-accent",
-      "hsl(var(--zf-role-focus))",
+      "hsl(var(--zf-role-focus))"
     );
     expect(screen.getByTestId("mini-week-row-stub")).toHaveAttribute(
       "data-role-accent-bg",
-      "hsl(var(--zf-role-focus) / 0.3)",
+      "hsl(var(--zf-role-focus) / 0.3)"
     );
     expect(miniWeekRowSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -384,7 +366,7 @@ describe("HeroWeeklyHabitCard", () => {
           color: "hsl(var(--zf-role-focus))",
           strongBg: "hsl(var(--zf-role-focus) / 0.3)",
         }),
-      }),
+      })
     );
   });
 
@@ -396,14 +378,14 @@ describe("HeroWeeklyHabitCard", () => {
         habit={habit({ id: "focus", category: "productivity" })}
         onToggle={vi.fn()}
         onNumericalAction={onNumericalAction}
-      />,
+      />
     );
 
     expect(miniWeekRowSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         interactionScope: "today",
         onNumericalAction,
-      }),
+      })
     );
   });
 
@@ -423,23 +405,19 @@ describe("HeroWeeklyHabitCard", () => {
           },
         })}
         onToggle={vi.fn()}
-      />,
+      />
     );
 
     expect(getCurrentStreakSpy).not.toHaveBeenCalled();
     expect(scheduleIdle).toHaveBeenCalledWith(expect.any(Function), 240, 80);
-    expect(screen.getByTestId("hero-weekly-card-walk-streak")).not.toHaveTextContent(
-      "1d streak",
-    );
+    expect(screen.getByTestId("hero-weekly-card-walk-streak")).not.toHaveTextContent("1d streak");
 
     act(() => {
       scheduleIdleCallbacks.shift()?.();
     });
 
     expect(getCurrentStreakSpy).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId("hero-weekly-card-walk-streak")).toHaveTextContent(
-      "1d streak",
-    );
+    expect(screen.getByTestId("hero-weekly-card-walk-streak")).toHaveTextContent("1d streak");
   });
 
   it("serializes idle streak calculations across mounted hero cards", () => {
@@ -466,7 +444,7 @@ describe("HeroWeeklyHabitCard", () => {
         {card("walk")}
         {card("read")}
         {card("water")}
-      </>,
+      </>
     );
 
     expect(scheduleIdleCallbacks).toHaveLength(1);
@@ -497,12 +475,10 @@ describe("HeroWeeklyHabitCard", () => {
           },
         })}
         onToggle={vi.fn()}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("hero-weekly-card-water-summary")).toHaveTextContent(
-      "0.25/2 L",
-    );
+    expect(screen.getByTestId("hero-weekly-card-water-summary")).toHaveTextContent("0.25/2 L");
     expect(screen.getByTestId("hero-weekly-card-water-meta")).toHaveTextContent("0.25 L");
   });
 
@@ -521,11 +497,11 @@ describe("HeroWeeklyHabitCard", () => {
           },
         })}
         onToggle={vi.fn()}
-      />,
+      />
     );
 
     expect(screen.getByTestId("hero-weekly-card-gratitude-meta")).toHaveTextContent(
-      "1x · This week",
+      "1x · This week"
     );
   });
 
@@ -543,13 +519,11 @@ describe("HeroWeeklyHabitCard", () => {
           endDate: "2026-05-03",
         })}
         onToggle={vi.fn()}
-      />,
+      />
     );
 
     expect(screen.getByText(/14-day plan/i)).toBeInTheDocument();
-    expect(screen.getByTestId("hero-weekly-card-plan-plan")).toHaveTextContent(
-      "14 days left",
-    );
+    expect(screen.getByTestId("hero-weekly-card-plan-plan")).toHaveTextContent("14 days left");
   });
 
   it("shows identity as a plain step and updates the state when completed today", () => {
@@ -564,15 +538,13 @@ describe("HeroWeeklyHabitCard", () => {
       identityIcon: "Dumbbell",
     });
 
-    const { rerender } = render(
-      <HeroWeeklyHabitCard habit={baseHabit} onToggle={vi.fn()} />,
-    );
+    const { rerender } = render(<HeroWeeklyHabitCard habit={baseHabit} onToggle={vi.fn()} />);
 
     expect(screen.getByTestId("hero-weekly-card-walk-identity")).toHaveTextContent(
-      "Step toward someone who moves daily",
+      "Step toward someone who moves daily"
     );
     expect(screen.getByTestId("hero-weekly-card-walk-identity-vote")).toHaveTextContent(
-      "ready to mark",
+      "ready to mark"
     );
 
     rerender(
@@ -584,17 +556,15 @@ describe("HeroWeeklyHabitCard", () => {
           },
         }}
         onToggle={vi.fn()}
-      />,
+      />
     );
     act(() => {
       scheduleIdleCallbacks.shift()?.();
     });
 
     expect(screen.getByTestId("hero-weekly-card-walk-identity-vote")).toHaveTextContent(
-      "step logged",
+      "step logged"
     );
-    expect(screen.getByTestId("hero-weekly-card-walk-streak")).toHaveTextContent(
-      "1d streak",
-    );
+    expect(screen.getByTestId("hero-weekly-card-walk-streak")).toHaveTextContent("1d streak");
   });
 });

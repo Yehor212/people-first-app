@@ -70,16 +70,20 @@ function pumpQueuedStreakTasks() {
     return;
   }
 
-  queuedStreakHandle = scheduleIdle(() => {
-    queuedStreakHandle = null;
-    pruneCancelledStreakTasks();
-    const task = queuedStreakTasks.shift();
-    if (task && !task.cancelled) {
-      task.run();
-    }
-    pruneCancelledStreakTasks();
-    pumpQueuedStreakTasks();
-  }, STREAK_IDLE_TIMEOUT_MS, STREAK_IDLE_MIN_DELAY_MS);
+  queuedStreakHandle = scheduleIdle(
+    () => {
+      queuedStreakHandle = null;
+      pruneCancelledStreakTasks();
+      const task = queuedStreakTasks.shift();
+      if (task && !task.cancelled) {
+        task.run();
+      }
+      pruneCancelledStreakTasks();
+      pumpQueuedStreakTasks();
+    },
+    STREAK_IDLE_TIMEOUT_MS,
+    STREAK_IDLE_MIN_DELAY_MS
+  );
 }
 
 function scheduleQueuedStreakTask(run: () => void): IdleHandle {
@@ -134,7 +138,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
       border: getRoleHsl(visualRole, 0.46),
       mutedBg: getRoleHsl(visualRole, 0.16),
     }),
-    [visualRole],
+    [visualRole]
   );
   const isCompletedToday = isHabitCompletedOnDate(habit, today);
   const cardVisualStyle = useMemo(
@@ -143,7 +147,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
         ...getRoleStyleVars(visualRole),
         "--habit-card-border": getRoleHsl(visualRole, isCollapsed ? 0.5 : 0.28),
         "--habit-card-background": isCollapsed
-          ? `radial-gradient(circle at 9% 50%, ${getRoleHsl(visualRole, 0.28)} 0%, transparent 36%), linear-gradient(135deg, ${getRoleHsl(visualRole, 0.20)} 0%, hsl(var(--card)) 52%, hsl(var(--surface-elevated)) 100%)`
+          ? `radial-gradient(circle at 9% 50%, ${getRoleHsl(visualRole, 0.28)} 0%, transparent 36%), linear-gradient(135deg, ${getRoleHsl(visualRole, 0.2)} 0%, hsl(var(--card)) 52%, hsl(var(--surface-elevated)) 100%)`
           : `radial-gradient(circle at 18% 0%, ${getRoleHsl(visualRole, 0.22)} 0%, transparent 34%), linear-gradient(135deg, ${getRoleHsl(visualRole, 0.16)} 0%, hsl(var(--card)) 42%, hsl(var(--surface-elevated)) 100%)`,
         "--habit-card-shadow": isCompletedToday
           ? `0 18px 46px -34px ${roleColor}`
@@ -151,7 +155,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
             ? `inset 0 0 0 1px ${getRoleHsl(visualRole, 0.16)}, 0 18px 44px -34px ${roleColor}`
             : `0 14px 40px -36px ${roleColor}`,
       }) as CSSProperties,
-    [isCollapsed, isCompletedToday, roleColor, visualRole],
+    [isCollapsed, isCompletedToday, roleColor, visualRole]
   );
   const [streak, setStreak] = useState(0);
   useEffect(() => {
@@ -188,16 +192,13 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
   const weekSummary = useMemo(() => {
     const thisWeekLabel = t.thisWeek || "This week";
     if (isNumeric) {
-      const total = weekDates.reduce(
-        (sum, date) => sum + getNumericalValue(habit, date),
-        0,
-      );
+      const total = weekDates.reduce((sum, date) => sum + getNumericalValue(habit, date), 0);
       return `${formatHabitQuantity(total, habit.unit, language)} · ${thisWeekLabel}`;
     }
 
     const done = weekDates.reduce(
       (sum, date) => sum + (isHabitCompletedOnDate(habit, date) ? 1 : 0),
-      0,
+      0
     );
     if (schedule.mode === "daily") return `${done}x · ${thisWeekLabel}`;
     const target = schedule.targetCount;
@@ -208,7 +209,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
     const { numerator: n, denominator: d } = habit.frequency;
     const ts = t as unknown as Record<string, string>;
     const preset = frequencyPresets.find(
-      (item) => item.ratio.numerator === n && item.ratio.denominator === d,
+      (item) => item.ratio.numerator === n && item.ratio.denominator === d
     );
     if (preset) return ts[preset.i18nKey] || preset.label;
     return `${n}x / ${d}${ts.daysAbbr || "d"}`;
@@ -289,68 +290,68 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
         }
       >
         <button
-            type="button"
-            onClick={handleIconCheckIn}
+          type="button"
+          onClick={handleIconCheckIn}
+          className={
+            "flex shrink-0 items-center justify-center rounded-2xl border text-lg shadow-sm motion-safe:transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
+            (isCollapsed ? "h-12 w-12" : "min-h-[44px] min-w-[44px]")
+          }
+          aria-label={`${habit.name}: ${isCompletedToday ? t.completed || "Completed" : tx.identityVotePending || "mark today"}`}
+          data-testid={`hero-weekly-card-${habit.id}-icon-check`}
+          data-slot="weekly-check"
+        >
+          <HabitIconVisual value={habit.icon} iconClassName={isCollapsed ? "h-8 w-8" : "h-7 w-7"} />
+        </button>
+        <div className="min-w-0 self-center">
+          <p
             className={
-              "flex shrink-0 items-center justify-center rounded-2xl border text-lg shadow-sm motion-safe:transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
-              (isCollapsed ? "h-12 w-12" : "min-h-[44px] min-w-[44px]")
+              "truncate font-semibold " +
+              (isCollapsed ? "text-[15px] leading-snug" : "text-sm leading-tight md:text-base") +
+              " " +
+              (isCompletedToday ? "text-foreground/70" : "text-foreground")
             }
-            aria-label={`${habit.name}: ${isCompletedToday ? t.completed || "Completed" : tx.identityVotePending || "mark today"}`}
-            data-testid={`hero-weekly-card-${habit.id}-icon-check`}
-            data-slot="weekly-check"
+            title={habit.name}
           >
-            <HabitIconVisual value={habit.icon} iconClassName={isCollapsed ? "h-8 w-8" : "h-7 w-7"} />
-          </button>
-          <div className="min-w-0 self-center">
-            <p
-              className={
-                "truncate font-semibold " +
-                (isCollapsed ? "text-[15px] leading-snug" : "text-sm leading-tight md:text-base") +
-                " " +
-                (isCompletedToday ? "text-foreground/70" : "text-foreground")
-              }
-              title={habit.name}
-            >
-              {habit.name}
+            {habit.name}
+          </p>
+          {!isCollapsed && planSubLabel ? (
+            <p className="mt-1 truncate text-[11px] text-muted-foreground">
+              {planSubLabel}
+              {planLabel ? ` · ${planLabel}` : ""}
             </p>
-            {!isCollapsed && planSubLabel ? (
-              <p className="mt-1 truncate text-[11px] text-muted-foreground">
-                {planSubLabel}
-                {planLabel ? ` · ${planLabel}` : ""}
-              </p>
-            ) : null}
-            {isCollapsed ? (
+          ) : null}
+          {isCollapsed ? (
+            <span
+              className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full border bg-background/68 px-2.5 py-1 text-[11px] font-semibold text-foreground/75"
+              data-testid={`hero-weekly-card-${habit.id}-collapsed-cue`}
+              data-slot="weekly-pill"
+              aria-live="polite"
+            >
               <span
-                className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full border bg-background/68 px-2.5 py-1 text-[11px] font-semibold text-foreground/75"
-                data-testid={`hero-weekly-card-${habit.id}-collapsed-cue`}
-                data-slot="weekly-pill"
-                aria-live="polite"
-              >
-                <span
-                  className="h-1.5 w-1.5 rounded-full"
-                  data-slot="weekly-pill-dot"
-                  aria-hidden="true"
-                />
-                <span className="truncate">{collapsedCueLabel}</span>
-              </span>
-            ) : null}
-            {!isCollapsed && identityVerb ? (
-              <p
-                className="mt-1 inline-flex max-w-full items-center gap-1.5 truncate rounded-full border bg-background/55 px-2 py-1 text-[11px] font-medium text-foreground/75"
-                data-testid={`hero-weekly-card-${habit.id}-identity`}
-                data-slot="weekly-pill"
-                title={identityVoteLabel}
-              >
-                <HabitIconVisual
-                  value={identityIcon}
-                  fallback="Sparkles"
-                  iconClassName="h-3 w-3 shrink-0"
-                  textClassName="text-xs leading-none"
-                />
-                <span className="truncate">{identityVoteLabel}</span>
-              </p>
-            ) : null}
-          </div>
+                className="h-1.5 w-1.5 rounded-full"
+                data-slot="weekly-pill-dot"
+                aria-hidden="true"
+              />
+              <span className="truncate">{collapsedCueLabel}</span>
+            </span>
+          ) : null}
+          {!isCollapsed && identityVerb ? (
+            <p
+              className="mt-1 inline-flex max-w-full items-center gap-1.5 truncate rounded-full border bg-background/55 px-2 py-1 text-[11px] font-medium text-foreground/75"
+              data-testid={`hero-weekly-card-${habit.id}-identity`}
+              data-slot="weekly-pill"
+              title={identityVoteLabel}
+            >
+              <HabitIconVisual
+                value={identityIcon}
+                fallback="Sparkles"
+                iconClassName="h-3 w-3 shrink-0"
+                textClassName="text-xs leading-none"
+              />
+              <span className="truncate">{identityVoteLabel}</span>
+            </p>
+          ) : null}
+        </div>
         <div
           className={
             isCollapsed

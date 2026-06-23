@@ -1,456 +1,617 @@
 {
-  "version": "v2-habit-icons-1",
-  "rendererPriority": [
-    "css",
-    "lottie",
-    "rive",
-    "still"
-  ],
+  "version": "v2-habit-icons-approved-read-water-walk-v12",
+  "qualityTier": "approved-read-water-production-quality-targets",
+  "rendererPriority": ["lottie", "still"],
+  "sourcePolicy": "read-water-and-walk-distance-original-approved-lotties",
+  "faceOrPersonGlyphsAllowed": false,
+  "genericFloatPulseAllowed": false,
   "budget": {
     "idleLoopMaxDurationMs": 3000,
-    "idleAnimationMaxBytes": 80000,
-    "reducedSvgTargetBytes": 8192
+    "idleAnimationMaxBytes": null,
+    "noRawSizeCapForReferenceQuality": true,
+    "reducedSvgTargetBytes": 8192,
+    "minReviewLayers": 6,
+    "maxReviewLayers": 12,
+    "referenceReadMinLayers": 48,
+    "referenceReadFrames": 179,
+    "referenceReadMinShapeRecords": 1270,
+    "minAnimatedChannels": 36,
+    "frameRate": 60,
+    "objectModel": "single-cohesive-habit-object-scene",
+    "requiredMotionMetadata": "animationGrammar"
   },
   "icons": [
     {
       "id": "drink-water",
       "label": "Drink water",
-      "source": "phosphor-icons-react@2.1.10/Drop",
-      "license": "MIT",
+      "source": "zenflow-original-approved-lottie/drink-water-v29-continuous-entry",
+      "license": "Original",
       "reduced": "drink-water/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-droplet-ripple",
-        "durationMs": 2800,
-        "bytes": 0
+        "renderer": "lottie",
+        "name": "v2hp-drink-water-continuous-entry-v29-approved",
+        "durationMs": 2983,
+        "bytes": 8493455
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 179,
+        "frameRate": 60,
+        "layers": 263,
+        "shapeRecords": 1851,
+        "animatedChannels": 3328,
+        "gradients": 34,
+        "trimPaths": 295,
+        "paths": 356,
+        "strokes": 420
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"],
+      "lottie": "drink-water/idle.lottie.json",
+      "reviewStatus": "approved-production-user-confirmed-water-v29",
+      "productionRights": "Original ZenFlow vector animation",
+      "qualityGateProfile": "zenflow-app-grade-lottie-no-telegram-size-cap",
+      "appQualityReport": "drink-water/proof/app-quality-report.json",
+      "telegramBudgetStatus": "not-targeted-app-grade-asset"
     },
     {
       "id": "walk-distance",
       "label": "Walk distance",
-      "source": "phosphor-icons-react@2.1.10/Footprints",
-      "license": "MIT",
+      "source": "zenflow-original-approved-lottie/walk-distance-v12-hero-runner",
+      "license": "Original",
       "reduced": "walk-distance/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-footstep-cadence",
-        "durationMs": 2800,
-        "bytes": 0
+        "renderer": "lottie",
+        "name": "v2hp-walk-distance-hero-runner-v12-final-candidate",
+        "durationMs": 2983,
+        "bytes": 3071542
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 179,
+        "frameRate": 60,
+        "layers": 191,
+        "shapeRecords": 1343,
+        "animatedChannels": 838,
+        "gradients": 61,
+        "trimPaths": 59,
+        "paths": 149,
+        "strokes": 233
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"],
+      "lottie": "walk-distance/idle.lottie.json",
+      "reviewStatus": "approved-production-hero-runner-v12",
+      "productionRights": "Original ZenFlow vector animation",
+      "qualityGateProfile": "zenflow-app-grade-lottie-walk-hero-runner-v12",
+      "appQualityReport": "walk-distance/proof/approval-packet.json",
+      "telegramBudgetStatus": "tgs-exported-under-64kb"
     },
     {
       "id": "exercise",
       "label": "Exercise",
-      "source": "phosphor-icons-react@2.1.10/Barbell",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/exercise",
+      "license": "Original",
       "reduced": "exercise/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-weighted-rep",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-exercise-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "read",
       "label": "Read",
-      "source": "phosphor-icons-react@2.1.10/BookOpenText",
-      "license": "MIT",
+      "source": "user-confirmed-reference-derived-production/read",
+      "license": "User-confirmed rights",
       "reduced": "read/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-page-turn",
-        "durationMs": 2800,
-        "bytes": 0
+        "renderer": "lottie",
+        "name": "v2hp-read-page-turn-reference-quality-approved-no-logo",
+        "durationMs": 2983,
+        "bytes": 485816
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 179,
+        "frameRate": 60,
+        "layers": 48,
+        "shapeRecords": 1315,
+        "animatedChannels": 784,
+        "gradients": 22,
+        "trimPaths": 29,
+        "paths": 312,
+        "strokes": 291
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"],
+      "lottie": "read/idle.lottie.json",
+      "reviewStatus": "approved-production-user-confirmed-no-logo",
+      "productionRights": "CONFIRMED_BY_USER_2026-06-22",
+      "referenceVariant": "read/reference-derived.lottie.json",
+      "originalCandidate": "read/original-v91.lottie.json",
+      "coverLogoPolicy": "removed-after-visual-rejection"
     },
     {
       "id": "meditate",
       "label": "Meditate",
-      "source": "phosphor-icons-react@2.1.10/Brain",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/meditate",
+      "license": "Original",
       "reduced": "meditate/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-neural-breath",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-meditate-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "sleep",
       "label": "Sleep",
-      "source": "phosphor-icons-react@2.1.10/MoonStars",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/sleep",
+      "license": "Original",
       "reduced": "sleep/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-moon-sway",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-sleep-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "stretch",
       "label": "Stretch",
-      "source": "phosphor-icons-react@2.1.10/PersonSimpleTaiChi",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/stretch",
+      "license": "Original",
       "reduced": "stretch/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-reach-return",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-stretch-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "healthy-food",
       "label": "Healthy food",
-      "source": "phosphor-icons-react@2.1.10/BowlFood",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/healthy-food",
+      "license": "Original",
       "reduced": "healthy-food/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-bowl-orbit",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-healthy-food-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "protein",
       "label": "Protein",
-      "source": "phosphor-icons-react@2.1.10/Egg",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/protein",
+      "license": "Original",
       "reduced": "protein/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-shell-settle",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-protein-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "vitamins",
       "label": "Vitamins",
-      "source": "phosphor-icons-react@2.1.10/Pill",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/vitamins",
+      "license": "Original",
       "reduced": "vitamins/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-capsule-roll",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-vitamins-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "brush-teeth",
       "label": "Brush teeth",
-      "source": "phosphor-icons-react@2.1.10/Tooth",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/brush-teeth",
+      "license": "Original",
       "reduced": "brush-teeth/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-tooth-sweep",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-brush-teeth-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "sunlight",
       "label": "Sunlight",
-      "source": "phosphor-icons-react@2.1.10/SunHorizon",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/sunlight",
+      "license": "Original",
       "reduced": "sunlight/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-sunrise-lift",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-sunlight-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "touch-grass",
       "label": "Touch grass",
-      "source": "phosphor-icons-react@2.1.10/Leaf",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/touch-grass",
+      "license": "Original",
       "reduced": "touch-grass/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-leaf-ground",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-touch-grass-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "journal",
       "label": "Journal",
-      "source": "phosphor-icons-react@2.1.10/Notebook",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/journal",
+      "license": "Original",
       "reduced": "journal/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-pen-write",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-journal-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "gratitude",
       "label": "Gratitude",
-      "source": "phosphor-icons-react@2.1.10/HandHeart",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/gratitude",
+      "license": "Original",
       "reduced": "gratitude/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-heart-offer",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-gratitude-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "breathwork",
       "label": "Breathwork",
-      "source": "phosphor-icons-react@2.1.10/Wind",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/breathwork",
+      "license": "Original",
       "reduced": "breathwork/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-ribbon-breathe",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-breathwork-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "phone-break",
       "label": "Phone break",
-      "source": "phosphor-icons-react@2.1.10/PhoneSlash",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/phone-break",
+      "license": "Original",
       "reduced": "phone-break/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-signal-cut",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-phone-break-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "deep-work",
       "label": "Deep work",
-      "source": "phosphor-icons-react@2.1.10/Target",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/deep-work",
+      "license": "Original",
       "reduced": "deep-work/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-reticle-lock",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-deep-work-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "tidy-room",
       "label": "Tidy room",
-      "source": "phosphor-icons-react@2.1.10/Broom",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/tidy-room",
+      "license": "Original",
       "reduced": "tidy-room/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-broom-sweep",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-tidy-room-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "quit-smoking",
       "label": "Quit smoking",
-      "source": "phosphor-icons-react@2.1.10/CigaretteSlash",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/quit-smoking",
+      "license": "Original",
       "reduced": "quit-smoking/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-smoke-dissolve",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-quit-smoking-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "quit-drinking",
       "label": "Quit drinking",
-      "source": "phosphor-icons-react@2.1.10/Wine",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/quit-drinking",
+      "license": "Original",
       "reduced": "quit-drinking/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-glass-steady",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-quit-drinking-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     },
     {
       "id": "focus",
       "label": "Focus",
-      "source": "phosphor-icons-react@2.1.10/Coffee",
-      "license": "MIT",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/focus",
+      "license": "Original",
       "reduced": "focus/reduced.svg",
       "idle": {
-        "renderer": "css",
-        "name": "v2hp-b62-coffee-steam",
-        "durationMs": 2800,
+        "renderer": "still",
+        "name": "v2hp-locked-static-focus-awaiting-lottie-approval",
+        "durationMs": 0,
         "bytes": 0
       },
-      "states": [
-        "idle",
-        "press",
-        "complete",
-        "disabled",
-        "reduced"
-      ]
+      "quality": {
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
+      },
+      "states": ["idle", "press", "complete", "disabled", "reduced"]
     }
-  ]
+  ],
+  "approvedLottieIds": ["drink-water", "walk-distance", "read"],
+  "approvalPolicy": {
+    "oneIconAtATime": true,
+    "currentPilot": "walk-distance",
+    "nextIconsLockedUntilUserApproval": false,
+    "requiredReviewRoute": "/habit-lottie-review?dev=true&icon=walk-distance",
+    "requiredProof": [
+      "strict-quality-gate",
+      "frame-strip",
+      "webm-motion-proof",
+      "telegram-tgs-export",
+      "browser-review",
+      "explicit-user-approval"
+    ],
+    "currentPilotStatus": "planning-original-walk-distance-quality-first-after-read-water-approval",
+    "requiredProductionBrief": "design/habit-icons/v2/telegram-grade-lottie-production-brief.md",
+    "selectedReviewCandidate": null,
+    "originalCandidateArchived": "read/original-v91.lottie.json",
+    "productionRightsRequiredBeforeApproval": true,
+    "nextIconProductionQueueStarted": true,
+    "approvedProductionIcons": ["drink-water", "read"]
+  },
+  "reviewCandidateLottieIds": [],
+  "rejectedLottieIds": ["read-original-v91", "walk-distance-kinetic-soles-v1"]
 }

@@ -33,10 +33,7 @@ describe("HeroEmptyJourney", () => {
 
   it("renders the starter surface without method chips", () => {
     render(<HeroEmptyJourney onCreateHabit={vi.fn()} />);
-    expect(screen.getByTestId("habits-hero-empty")).toHaveAttribute(
-      "data-visual-role",
-      "body",
-    );
+    expect(screen.getByTestId("habits-hero-empty")).toHaveAttribute("data-visual-role", "body");
     expect(screen.queryByTestId("hero-empty-journey-steps")).not.toBeInTheDocument();
     expect(screen.queryByText(/Pick your identity/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Set your cue/)).not.toBeInTheDocument();
@@ -58,62 +55,52 @@ describe("HeroEmptyJourney", () => {
 
   it("renders quick-pick chips as premium ritual deck cards", () => {
     render(
-      <HeroEmptyJourney
-        onCreateHabit={vi.fn()}
-        onPickTemplate={vi.fn()}
-        onOpenLibrary={vi.fn()}
-      />,
+      <HeroEmptyJourney onCreateHabit={vi.fn()} onPickTemplate={vi.fn()} onOpenLibrary={vi.fn()} />
     );
 
     const quickPicks = screen.getByTestId("hero-empty-quickpick");
     const roles = new Set(
       Array.from(quickPicks.querySelectorAll("[data-visual-role]")).map((node) =>
-        node.getAttribute("data-visual-role"),
-      ),
+        node.getAttribute("data-visual-role")
+      )
     );
     expect(roles.size).toBeGreaterThanOrEqual(5);
     expect(screen.getByTestId("hero-quickpick-drink-water")).toHaveAttribute(
       "data-visual-role",
-      "focus",
+      "focus"
     );
     expect(screen.getByTestId("hero-quickpick-walk-distance")).toHaveAttribute(
       "data-visual-role",
-      "body",
+      "body"
     );
     expect(screen.getByTestId("hero-quickpick-exercise")).toHaveAttribute(
       "data-visual-role",
-      "energy",
+      "energy"
     );
-    expect(screen.getByTestId("hero-quickpick-read")).toHaveAttribute(
-      "data-visual-role",
-      "focus",
-    );
+    expect(screen.getByTestId("hero-quickpick-read")).toHaveAttribute("data-visual-role", "focus");
     expect(screen.getByTestId("hero-quickpick-meditate")).toHaveAttribute(
       "data-visual-role",
-      "mind",
+      "mind"
     );
-    expect(screen.getByTestId("hero-quickpick-sleep")).toHaveAttribute(
-      "data-visual-role",
-      "rest",
-    );
+    expect(screen.getByTestId("hero-quickpick-sleep")).toHaveAttribute("data-visual-role", "rest");
     expect(
       screen
         .getByTestId("hero-quickpick-drink-water")
-        .querySelector('[data-habit-pictogram="drink-water"]'),
+        .querySelector('[data-habit-pictogram="drink-water"]')
     ).toBeTruthy();
     expect(
       screen
         .getByTestId("hero-quickpick-walk-distance")
-        .querySelector('[data-habit-pictogram="walk-distance"]'),
+        .querySelector('[data-habit-pictogram="walk-distance"]')
     ).toBeTruthy();
     expect(
       screen
         .getByTestId("hero-quickpick-meditate")
-        .querySelector('[data-habit-pictogram="meditate"]'),
+        .querySelector('[data-habit-pictogram="meditate"]')
     ).toBeTruthy();
     expect(screen.getByTestId("hero-empty-open-library")).toHaveAttribute(
       "data-visual-role",
-      "focus",
+      "focus"
     );
 
     for (const chip of quickPicks.querySelectorAll("button")) {
@@ -134,12 +121,26 @@ describe("HeroEmptyJourney", () => {
       const symbol = iconFrame?.querySelector("[data-slot='quickpick-symbol']");
       expect(symbol).toBeNull();
       const pictogram = iconFrame?.querySelector(
-        "[data-slot='quickpick-svg'] [data-habit-pictogram]",
+        "[data-slot='quickpick-svg'] [data-habit-pictogram]"
       );
       expect(pictogram).toBeTruthy();
       expect(pictogram?.className).toContain("h-[4.35rem]");
       expect(pictogram?.className).toContain("w-[4.35rem]");
-      expect(pictogram).toHaveAttribute("data-approval-state", "candidate-option-b-pending-user-approval");
+      const pictogramId = pictogram?.getAttribute("data-habit-pictogram");
+      const isApprovedLottie = ["drink-water", "walk-distance", "read"].includes(pictogramId ?? "");
+      expect(pictogram).toHaveAttribute(
+        "data-icon-source",
+        isApprovedLottie ? "approved-lottie-json" : "static-reduced-svg-fallback"
+      );
+      expect(pictogram).toHaveAttribute(
+        "data-motion-system",
+        isApprovedLottie ? "approved-single-lottie-json" : "locked-static-until-user-approval"
+      );
+      expect(
+        pictogram?.querySelector(
+          isApprovedLottie ? "[data-habit-lottie-player]" : "[data-habit-motion-still]"
+        )
+      ).toBeInTheDocument();
       expect(iconFrame?.textContent?.trim()).toBe("");
       const meta = chip.querySelector("[data-slot='quickpick-meta']");
       expect(meta).toBeTruthy();
@@ -155,11 +156,7 @@ describe("HeroEmptyJourney", () => {
 
   it("uses broad starter habits instead of journal prompts or method fragments", () => {
     render(
-      <HeroEmptyJourney
-        onCreateHabit={vi.fn()}
-        onPickTemplate={vi.fn()}
-        onOpenLibrary={vi.fn()}
-      />,
+      <HeroEmptyJourney onCreateHabit={vi.fn()} onPickTemplate={vi.fn()} onOpenLibrary={vi.fn()} />
     );
 
     for (const templateId of ROUTINE_STARTER_TEMPLATE_IDS) {
@@ -193,20 +190,33 @@ describe("HeroEmptyJourney", () => {
 
     const heroPictograms = scene.querySelectorAll("[data-habit-pictogram]");
     expect(heroPictograms).toHaveLength(1);
-    expect(heroPictograms[0]).toHaveAttribute("data-icon-source", "phosphor-icons-react-real-source-icon");
-    expect(heroPictograms[0]).toHaveAttribute("data-approval-state", "candidate-option-b-pending-user-approval");
-    expect(heroPictograms[0]).toHaveAttribute("data-icon-treatment", "option-b-liquid-glass-totem");
-    expect(heroPictograms[0]).toHaveAttribute("data-pictogram-style", "option-b-liquid-glass-totem");
+    expect(heroPictograms[0]).toHaveAttribute("data-icon-source", "approved-lottie-json");
+    expect(heroPictograms[0]).toHaveAttribute("data-motion-system", "approved-single-lottie-json");
+    expect(heroPictograms[0]).toHaveAttribute("data-icon-treatment", "single-lottie-icon");
+    expect(heroPictograms[0]).toHaveAttribute("data-pictogram-style", "single-lottie-json-icon");
     expect(heroPictograms[0]?.innerHTML ?? "").not.toContain("b39");
-    expect(heroPictograms[0]).toHaveAttribute("data-icon-composition", "two-layer-real-source-svg-inside-liquid-glass-totem");
-    expect(heroPictograms[0]?.querySelectorAll("svg")).toHaveLength(2);
-    expect(heroPictograms[0]?.querySelector("[data-pictogram-layer='liquid-glass-totem-shell']")).toBeTruthy();
-    expect(heroPictograms[0]?.querySelector("[data-pictogram-layer='source-accent-glyph']")).toBeNull();
-    expect(heroPictograms[0]).toHaveAttribute("data-mini-icon-treatment", "removed");
-    expect(heroPictograms[0]).toHaveAttribute("data-frame-animation-system", "semantic-keyframe-storyboard-per-habit");
-    expect(heroPictograms[0]?.querySelector("[data-pictogram-layer='source-fill-relief']")).toBeTruthy();
-    expect(heroPictograms[0]?.querySelector("[data-pictogram-layer='source-stroke-core']")).toBeNull();
-    expect(heroPictograms[0]?.querySelectorAll("img[data-pictogram-layer='asset']")).toHaveLength(0);
+    expect(heroPictograms[0]).toHaveAttribute(
+      "data-icon-composition",
+      "one-lottie-json-asset-per-reviewable-habit"
+    );
+    expect(heroPictograms[0]?.querySelectorAll("svg")).toHaveLength(0);
+    expect(
+      heroPictograms[0]?.querySelector('[data-habit-lottie-player="drink-water"]')
+    ).toBeTruthy();
+    expect(
+      heroPictograms[0]?.querySelector("[data-pictogram-layer='source-accent-glyph']")
+    ).toBeNull();
+    expect(heroPictograms[0]).not.toHaveAttribute("data-mini-icon-treatment");
+    expect(heroPictograms[0]).not.toHaveAttribute("data-frame-animation-system");
+    expect(
+      heroPictograms[0]?.querySelector("[data-pictogram-layer='source-fill-relief']")
+    ).toBeNull();
+    expect(
+      heroPictograms[0]?.querySelector("[data-pictogram-layer='source-stroke-core']")
+    ).toBeNull();
+    expect(heroPictograms[0]?.querySelectorAll("img[data-pictogram-layer='asset']")).toHaveLength(
+      0
+    );
     expect(hero.className).not.toContain("--zf-surface-1");
     expect(hero.className).not.toContain("--zf-night");
     expect(hero.className).not.toContain("before:opacity-90");
@@ -219,7 +229,7 @@ describe("HeroEmptyJourney", () => {
 
   it("keeps first-screen starters broad and trackable", () => {
     const starters = ROUTINE_STARTER_TEMPLATE_IDS.map((templateId) =>
-      habitTemplates.find((template) => template.id === templateId),
+      habitTemplates.find((template) => template.id === templateId)
     );
 
     expect(starters).toHaveLength(ROUTINE_STARTER_TEMPLATE_IDS.length);
@@ -233,8 +243,8 @@ describe("HeroEmptyJourney", () => {
     ]);
     expect(
       starters.every(
-        (template) => template?.habitType === "boolean" || template?.habitType === "numerical",
-      ),
+        (template) => template?.habitType === "boolean" || template?.habitType === "numerical"
+      )
     ).toBe(true);
     expect(starters.every((template) => template?.category)).toBe(true);
     expect(starters.some((template) => template?.habitType === "numerical")).toBe(true);

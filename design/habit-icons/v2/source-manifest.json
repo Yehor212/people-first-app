@@ -1,7 +1,8 @@
 {
-  "version": "v2-habit-icons-1",
-  "style": "b62-liquid-glass-vector-motion",
-  "sourcePolicy": "licensed-vector-or-hand-authored-vector-only",
+  "version": "v2-habit-icons-read-original-from-scratch-review",
+  "style": "telegram-grade-cohesive-vector-object-lottie-no-face-no-emoji",
+  "qualityTier": "read-original-from-scratch-review-candidate-reference-benchmark-only",
+  "sourcePolicy": "original-hand-authored-vector-lottie-no-stock-no-emoji-no-trace",
   "ids": [
     "drink-water",
     "walk-distance",
@@ -25,5 +26,138 @@
     "quit-smoking",
     "quit-drinking",
     "focus"
-  ]
+  ],
+  "motionSystem": "one-cohesive-lottie-json-per-habit-with-frame-proof-and-localhost-approval",
+  "baseVisualSystem": "original-vector-lottie-rigs-reviewed-one-icon-at-a-time",
+  "reviewPolicy": {
+    "approvalState": "read-original-from-scratch-awaiting-user-visual-approval",
+    "rejectedAttempts": [
+      {
+        "id": "previous-read-draft",
+        "reason": "failed user quality bar and is not a production candidate"
+      },
+      {
+        "id": "read-production-safe-codegen-c",
+        "reason": "oversized translucent page slab, poor occlusion, not a cohesive book, removed from assets and generators"
+      },
+      {
+        "id": "read-reference-rig-ab-path",
+        "reason": "removed from production candidate path; supplied .tgs is benchmark-only and no geometry is imported"
+      }
+    ],
+    "finalProductionApprovalRequiresUser": true,
+    "localReviewRoute": "/people-first-app/habit-lottie-review?dev=true&icon=<id>",
+    "directDeepLinksRequired": true,
+    "oneIconAtATime": true
+  },
+  "animationPolicy": {
+    "loopProfile": "seamless-vector-object-story-loop",
+    "renderer": "lottie-web-svg",
+    "authoringFps": 60,
+    "maxDurationMs": 3000,
+    "maxFrames": 180,
+    "composition": "512x512",
+    "qualityCap": "none-artificial; complexity follows reference-quality object mechanics",
+    "telegramDeliveryTarget": {
+      "compressedTgsMaxBytes": 65536,
+      "source": "https://core.telegram.org/stickers"
+    },
+    "runtimeProperties": [
+      "svg",
+      "transform",
+      "opacity",
+      "shape-path",
+      "fill",
+      "gradient-fill",
+      "stroke",
+      "trim-path"
+    ],
+    "forbiddenLottieFeatures": [
+      "images",
+      "text-layers",
+      "fonts",
+      "effects",
+      "masks",
+      "expressions",
+      "3d-layers",
+      "merge-paths",
+      "star-shape-primitive",
+      "gradient-strokes",
+      "repeaters",
+      "time-remap",
+      "time-stretch"
+    ],
+    "reducedMotion": "do not load animated runtime; use reduced.svg still from the same approved visual language"
+  },
+  "assetContract": {
+    "animatedAsset": "src/assets/habit-icons/v2/<id>/idle.lottie.json",
+    "reducedAsset": "src/assets/habit-icons/v2/<id>/reduced.svg",
+    "oneAssetPerHabit": true,
+    "domMotionPartsAllowed": false,
+    "emojiAllowed": false,
+    "faceOrPersonGlyphsAllowed": false,
+    "genericFloatPulseAllowed": false,
+    "stockOrLibraryIconSourceAllowed": false,
+    "reviewRequiredBeforeFinal": true,
+    "minReviewLayers": null,
+    "maxReviewLayers": null,
+    "minAnimatedChannels": "must meet icon-specific benchmark; Read current review candidate is 2252 channels / 286 layers / 1717 shape records",
+    "maxJsonBytes": null,
+    "objectModel": "single-cohesive-habit-object-scene",
+    "sourceGeometry": "original-owned first-party vector shapes; supplied .tgs is quality benchmark only, not geometry source",
+    "requiredMotionMetadata": [
+      "animationGrammar",
+      "primaryMotion",
+      "storyboard",
+      "sourcePolicy",
+      "approvalState"
+    ],
+    "timelineMarkers": ["anticipation", "primary-action", "follow-through", "settle"],
+    "metadataGenerator": "zenflow-read-original-book-atelier-v1",
+    "rejectedTemplate": "read-production-safe-codegen-c-and-reference-rig-ab-path"
+  },
+  "requiredSemanticParts": {
+    "insideLottieOnly": true,
+    "perIconMinimum": 8,
+    "readReference": [
+      "book-cover-left-original",
+      "book-cover-right-original",
+      "spine-hinge-original",
+      "page-turn-sheet-primary-original",
+      "page-turn-sheet-secondary-original",
+      "page-turn-sheet-cinematic-original",
+      "page-text-parallax-left-clusters",
+      "page-text-parallax-right-clusters",
+      "bookmark-bead-original"
+    ],
+    "qualityRule": "each semantic part must exist as both a named group and a named geometry item using <part> and <part>-geometry"
+  },
+  "toolingAvailability": {
+    "inspectedAt": "2026-06-20T21:43:00-05:00",
+    "localApps": {
+      "cavalry": "/Applications/Cavalry.app version 2.7.2 available; signed and accepted by macOS Gatekeeper; Canva login/export still UNVERIFIED",
+      "glaxnimate": "/Applications/glaxnimate.app version 0.6.0-git-d2da67a available",
+      "inkscape": "/Applications/Inkscape.app version 1.4.3 available",
+      "blender": "/Applications/Blender.app version 5.1.2 available",
+      "afterEffects": "not found in /Applications",
+      "lottieLab": "not found in /Applications",
+      "rive": "not found in /Applications",
+      "keyshape": "not found in /Applications"
+    },
+    "implication": "Free-first production path is now Cavalry for visual motion authoring plus Inkscape, Glaxnimate, and repo gates. Current Read candidate remains repo-generated and review-only until user approval; Cavalry export is not treated as production evidence until login and a real Lottie export are verified."
+  },
+  "productionBacklog": {
+    "path": "design/habit-icons/v2/production-backlog.json",
+    "status": "all-22-icons-specified-read-pilot-review-only",
+    "currentPilot": "read",
+    "nextCandidateAfterApproval": "drink-water",
+    "productionApprovedIds": [],
+    "requiredBeforeNextIcon": [
+      "explicit-user-approval-for-read-direction",
+      "one-icon-at-a-time-localhost-review",
+      "quality-report-pass",
+      "approval-packet-pass",
+      "visible-artifact-gates-pass"
+    ]
+  }
 }

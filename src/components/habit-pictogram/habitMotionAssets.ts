@@ -1,472 +1,227 @@
 import type { V2HabitPictogramId } from "@/lib/v2HabitPictograms";
 
 export type HabitIconMotionState = "idle" | "press" | "complete" | "disabled" | "reduced";
-export type HabitIconRenderer = "css" | "lottie" | "rive" | "still";
+export type HabitIconRenderer = "lottie" | "still";
+
+export interface HabitIconQualityMetrics {
+  frames: number;
+  frameRate: number;
+  layers: number;
+  shapeRecords: number;
+  animatedChannels: number;
+  gradients: number;
+  trimPaths: number;
+  paths: number;
+  strokes: number;
+}
 
 export interface HabitIconAssetEntry {
   id: V2HabitPictogramId;
   label: string;
   source: string;
-  license: "MIT" | string;
+  license: "MIT" | "Original" | string;
   reduced: string;
+  lottie?: string;
+  referenceVariant?: string;
+  reviewStatus?: string;
+  productionRights?: string;
+  originalCandidate?: string;
+  coverLogoPolicy?: string;
   idle: {
     renderer: HabitIconRenderer;
     name: string;
     durationMs: number;
     bytes: number;
   };
+  quality: HabitIconQualityMetrics;
   states: HabitIconMotionState[];
 }
 
+const STATIC_HABIT_IDS: readonly V2HabitPictogramId[] = [
+  "drink-water",
+  "walk-distance",
+  "exercise",
+  "meditate",
+  "sleep",
+  "stretch",
+  "healthy-food",
+  "vitamins",
+  "brush-teeth",
+  "sunlight",
+  "touch-grass",
+  "protein",
+  "journal",
+  "gratitude",
+  "breathwork",
+  "phone-break",
+  "deep-work",
+  "tidy-room",
+  "quit-smoking",
+  "quit-drinking",
+  "focus",
+];
+
+const ZERO_QUALITY: HabitIconQualityMetrics = {
+  frames: 0,
+  frameRate: 0,
+  layers: 0,
+  shapeRecords: 0,
+  animatedChannels: 0,
+  gradients: 0,
+  trimPaths: 0,
+  paths: 0,
+  strokes: 0,
+};
+
+const MOTION_STATES: HabitIconMotionState[] = ["idle", "press", "complete", "disabled", "reduced"];
+
+function toAssetLabel(id: V2HabitPictogramId): string {
+  const spaced = id.replace(/-/g, " ");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+function makeStaticAsset(id: V2HabitPictogramId): HabitIconAssetEntry {
+  return {
+    id,
+    label: toAssetLabel(id),
+    source: "zenflow-static-reduced-awaiting-lottie-approval/" + id,
+    license: "Original",
+    reduced: id + "/reduced.svg",
+    idle: {
+      renderer: "still",
+      name: "v2hp-locked-static-" + id + "-awaiting-lottie-approval",
+      durationMs: 0,
+      bytes: 0,
+    },
+    quality: ZERO_QUALITY,
+    states: MOTION_STATES,
+  };
+}
+
+const DRINK_WATER_APPROVED_ASSET: HabitIconAssetEntry = {
+  id: "drink-water",
+  label: "Drink water",
+  source: "zenflow-original-approved-lottie/drink-water-v29-continuous-entry",
+  license: "Original",
+  reduced: "drink-water/reduced.svg",
+  lottie: "drink-water/idle.lottie.json",
+  reviewStatus: "approved-production-user-confirmed-water-v29",
+  productionRights: "Original ZenFlow vector animation",
+  idle: {
+    renderer: "lottie",
+    name: "v2hp-drink-water-continuous-entry-v29-approved",
+    durationMs: 2983,
+    bytes: 8493455,
+  },
+  quality: {
+    frames: 179,
+    frameRate: 60,
+    layers: 263,
+    shapeRecords: 1851,
+    animatedChannels: 3328,
+    gradients: 34,
+    trimPaths: 295,
+    paths: 356,
+    strokes: 420,
+  },
+  states: MOTION_STATES,
+};
+
+const WALK_DISTANCE_APPROVED_ASSET: HabitIconAssetEntry = {
+  id: "walk-distance",
+  label: "Walk distance",
+  source: "zenflow-original-approved-lottie/walk-distance-v12-hero-runner",
+  license: "Original",
+  reduced: "walk-distance/reduced.svg",
+  lottie: "walk-distance/idle.lottie.json",
+  reviewStatus: "approved-production-hero-runner-v12",
+  productionRights: "Original ZenFlow vector animation",
+  idle: {
+    renderer: "lottie",
+    name: "v2hp-walk-distance-hero-runner-v12-final-candidate",
+    durationMs: 2983,
+    bytes: 3071319,
+  },
+  quality: {
+    frames: 179,
+    frameRate: 60,
+    layers: 191,
+    shapeRecords: 1343,
+    animatedChannels: 838,
+    gradients: 61,
+    trimPaths: 59,
+    paths: 149,
+    strokes: 233,
+  },
+  states: MOTION_STATES,
+};
+
+const READ_APPROVED_ASSET: HabitIconAssetEntry = {
+  id: "read",
+  label: "Read",
+  source: "user-confirmed-reference-derived-production/read",
+  license: "User-confirmed rights",
+  reduced: "read/reduced.svg",
+  lottie: "read/idle.lottie.json",
+  referenceVariant: "read/reference-derived.lottie.json",
+  reviewStatus: "approved-production-user-confirmed-no-logo",
+  productionRights: "CONFIRMED_BY_USER_2026-06-22",
+  originalCandidate: "read/original-v91.lottie.json",
+  coverLogoPolicy: "removed-after-visual-rejection",
+  idle: {
+    renderer: "lottie",
+    name: "v2hp-read-page-turn-reference-quality-approved-no-logo",
+    durationMs: 2983,
+    bytes: 485816,
+  },
+  quality: {
+    frames: 179,
+    frameRate: 60,
+    layers: 48,
+    shapeRecords: 1315,
+    animatedChannels: 784,
+    gradients: 22,
+    trimPaths: 29,
+    paths: 312,
+    strokes: 291,
+  },
+  states: MOTION_STATES,
+};
+
+export const APPROVED_HABIT_LOTTIE_IDS = new Set<string>(["drink-water", "walk-distance", "read"]);
+export const REVIEW_CANDIDATE_HABIT_LOTTIE_IDS = new Set<string>();
+export const REJECTED_HABIT_LOTTIE_IDS = new Set<string>([
+  "read-original-v91",
+  "walk-distance-kinetic-soles-v1",
+]);
 export const V2_HABIT_ICON_ASSETS = [
-  {
-    "id": "drink-water",
-    "label": "Drink water",
-    "source": "phosphor-icons-react@2.1.10/Drop",
-    "license": "MIT",
-    "reduced": "drink-water/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-droplet-ripple",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "walk-distance",
-    "label": "Walk distance",
-    "source": "phosphor-icons-react@2.1.10/Footprints",
-    "license": "MIT",
-    "reduced": "walk-distance/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-footstep-cadence",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "exercise",
-    "label": "Exercise",
-    "source": "phosphor-icons-react@2.1.10/Barbell",
-    "license": "MIT",
-    "reduced": "exercise/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-weighted-rep",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "read",
-    "label": "Read",
-    "source": "phosphor-icons-react@2.1.10/BookOpenText",
-    "license": "MIT",
-    "reduced": "read/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-page-turn",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "meditate",
-    "label": "Meditate",
-    "source": "phosphor-icons-react@2.1.10/Brain",
-    "license": "MIT",
-    "reduced": "meditate/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-neural-breath",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "sleep",
-    "label": "Sleep",
-    "source": "phosphor-icons-react@2.1.10/MoonStars",
-    "license": "MIT",
-    "reduced": "sleep/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-moon-sway",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "stretch",
-    "label": "Stretch",
-    "source": "phosphor-icons-react@2.1.10/PersonSimpleTaiChi",
-    "license": "MIT",
-    "reduced": "stretch/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-reach-return",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "healthy-food",
-    "label": "Healthy food",
-    "source": "phosphor-icons-react@2.1.10/BowlFood",
-    "license": "MIT",
-    "reduced": "healthy-food/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-bowl-orbit",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "protein",
-    "label": "Protein",
-    "source": "phosphor-icons-react@2.1.10/Egg",
-    "license": "MIT",
-    "reduced": "protein/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-shell-settle",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "vitamins",
-    "label": "Vitamins",
-    "source": "phosphor-icons-react@2.1.10/Pill",
-    "license": "MIT",
-    "reduced": "vitamins/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-capsule-roll",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "brush-teeth",
-    "label": "Brush teeth",
-    "source": "phosphor-icons-react@2.1.10/Tooth",
-    "license": "MIT",
-    "reduced": "brush-teeth/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-tooth-sweep",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "sunlight",
-    "label": "Sunlight",
-    "source": "phosphor-icons-react@2.1.10/SunHorizon",
-    "license": "MIT",
-    "reduced": "sunlight/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-sunrise-lift",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "touch-grass",
-    "label": "Touch grass",
-    "source": "phosphor-icons-react@2.1.10/Leaf",
-    "license": "MIT",
-    "reduced": "touch-grass/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-leaf-ground",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "journal",
-    "label": "Journal",
-    "source": "phosphor-icons-react@2.1.10/Notebook",
-    "license": "MIT",
-    "reduced": "journal/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-pen-write",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "gratitude",
-    "label": "Gratitude",
-    "source": "phosphor-icons-react@2.1.10/HandHeart",
-    "license": "MIT",
-    "reduced": "gratitude/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-heart-offer",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "breathwork",
-    "label": "Breathwork",
-    "source": "phosphor-icons-react@2.1.10/Wind",
-    "license": "MIT",
-    "reduced": "breathwork/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-ribbon-breathe",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "phone-break",
-    "label": "Phone break",
-    "source": "phosphor-icons-react@2.1.10/PhoneSlash",
-    "license": "MIT",
-    "reduced": "phone-break/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-signal-cut",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "deep-work",
-    "label": "Deep work",
-    "source": "phosphor-icons-react@2.1.10/Target",
-    "license": "MIT",
-    "reduced": "deep-work/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-reticle-lock",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "tidy-room",
-    "label": "Tidy room",
-    "source": "phosphor-icons-react@2.1.10/Broom",
-    "license": "MIT",
-    "reduced": "tidy-room/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-broom-sweep",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "quit-smoking",
-    "label": "Quit smoking",
-    "source": "phosphor-icons-react@2.1.10/CigaretteSlash",
-    "license": "MIT",
-    "reduced": "quit-smoking/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-smoke-dissolve",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "quit-drinking",
-    "label": "Quit drinking",
-    "source": "phosphor-icons-react@2.1.10/Wine",
-    "license": "MIT",
-    "reduced": "quit-drinking/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-glass-steady",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  },
-  {
-    "id": "focus",
-    "label": "Focus",
-    "source": "phosphor-icons-react@2.1.10/Coffee",
-    "license": "MIT",
-    "reduced": "focus/reduced.svg",
-    "idle": {
-      "renderer": "css",
-      "name": "v2hp-b62-coffee-steam",
-      "durationMs": 2800,
-      "bytes": 0
-    },
-    "states": [
-      "idle",
-      "press",
-      "complete",
-      "disabled",
-      "reduced"
-    ]
-  }
-] as const satisfies readonly HabitIconAssetEntry[];
+  DRINK_WATER_APPROVED_ASSET,
+  WALK_DISTANCE_APPROVED_ASSET,
+  makeStaticAsset("exercise"),
+  READ_APPROVED_ASSET,
+  ...STATIC_HABIT_IDS.slice(3).map(makeStaticAsset),
+] as readonly HabitIconAssetEntry[];
 
 const ASSETS_BY_ID = new Map<V2HabitPictogramId, HabitIconAssetEntry>(
-  V2_HABIT_ICON_ASSETS.map((entry) => [entry.id, entry]),
+  V2_HABIT_ICON_ASSETS.map((asset) => [asset.id, asset])
 );
 
+export function isHabitLottieApproved(id: V2HabitPictogramId): boolean {
+  return APPROVED_HABIT_LOTTIE_IDS.has(id);
+}
+
+export function isHabitLottieReviewCandidate(id: V2HabitPictogramId): boolean {
+  return REVIEW_CANDIDATE_HABIT_LOTTIE_IDS.has(id);
+}
+
+export function isHabitLottieRejected(id: V2HabitPictogramId): boolean {
+  return REJECTED_HABIT_LOTTIE_IDS.has(id);
+}
+
 export function getHabitIconAsset(id: V2HabitPictogramId): HabitIconAssetEntry {
-  const entry = ASSETS_BY_ID.get(id);
-  if (!entry) throw new Error(`Missing v2 habit icon asset: ${id}`);
-  return entry;
+  const asset = ASSETS_BY_ID.get(id);
+  if (!asset) {
+    return ASSETS_BY_ID.get("drink-water") ?? V2_HABIT_ICON_ASSETS[0];
+  }
+  return asset;
 }

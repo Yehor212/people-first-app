@@ -1,1 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" fill="currentColor" aria-hidden="true" data-reduced-still="walk-distance" data-source="phosphor-icons-react@2.1.10/Footprints" viewBox="0 0 256 256"><title>Walk distance reduced motion still</title><path d="M212 180h-56a12 12 0 0 0-12 12v12a40 40 0 0 0 80 0v-12a12 12 0 0 0-12-12m-28 40a16 16 0 0 1-16-16h32a16 16 0 0 1-16 16m-84-64H44a12 12 0 0 0-12 12v12a40 40 0 0 0 80 0v-12a12 12 0 0 0-12-12m-28 40a16 16 0 0 1-16-16h32a16 16 0 0 1-16 16m0-184c-14.06 0-27.7 12.33-37.41 33.83-12.45 27.57-16.78 67.52 3.14 90.11a12 12 0 0 0 9 4.06h50.52a12 12 0 0 0 9-4.06c19.92-22.59 15.59-62.54 3.14-90.11C99.68 24.33 86 12 72 12m19.07 104H52.9c-6.71-12.13-7.67-35.45 3.56-60.3C63.16 40.85 70.28 36 72 36s8.82 4.85 15.53 19.7c11.2 24.85 10.24 48.17 3.54 60.3m67.68 48h50.54a12 12 0 0 0 9-4.06c19.92-22.59 15.59-62.54 3.14-90.11C211.72 48.33 198.08 36 184 36s-27.7 12.33-37.41 33.83c-12.45 27.57-16.78 67.52 3.14 90.11a12 12 0 0 0 9.02 4.06m9.74-84.3C175.2 64.85 182.32 60 184 60s8.82 4.85 15.52 19.7c11.23 24.85 10.27 48.17 3.56 60.3h-38.15c-6.7-12.13-7.66-35.45 3.56-60.3"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Walk distance">
+  <defs>
+    <linearGradient id="path" x1="90" y1="312" x2="430" y2="426"><stop stop-color="#98f1dc"/><stop offset=".55" stop-color="#37d4c6"/><stop offset="1" stop-color="#ffe4a2"/></linearGradient>
+    <linearGradient id="left" x1="160" y1="118" x2="278" y2="380"><stop stop-color="#70f6ec"/><stop offset=".48" stop-color="#0fa6a7"/><stop offset="1" stop-color="#073b49"/></linearGradient>
+    <linearGradient id="right" x1="282" y1="124" x2="368" y2="326"><stop stop-color="#fff2df"/><stop offset=".52" stop-color="#ff9b78"/><stop offset="1" stop-color="#a24b32"/></linearGradient>
+  </defs>
+  <path d="M108 350C158 315 227 313 298 331C388 345 438 378 403 424C305 397 236 386 147 408C103 404 82 390 108 350Z" fill="url(#path)" opacity=".72"/>
+  <ellipse cx="212" cy="360" rx="72" ry="18" fill="#0a4239" opacity=".2"/>
+  <ellipse cx="324" cy="314" rx="48" ry="14" fill="#0a4239" opacity=".14"/>
+  <path d="M186 338C150 291 159 230 148 174C138 123 163 81 213 74C270 66 293 118 289 170C284 225 309 288 272 337C248 369 208 369 186 338Z" fill="url(#left)" stroke="#063440" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M198 308C181 265 189 207 185 159C183 121 205 94 235 99C263 105 268 142 263 178C255 232 275 279 247 318C231 341 209 335 198 308Z" fill="#bffff7" opacity=".24"/>
+  <path d="M301 306C274 263 285 207 286 164C288 126 315 104 348 113C384 123 394 164 383 200C371 241 379 296 340 319C324 328 310 322 301 306Z" fill="url(#right)" stroke="#bd7043" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M307 286C298 248 305 200 309 164C314 136 335 127 354 139C375 152 375 182 363 208C348 243 357 282 333 300C321 309 311 301 307 286Z" fill="#fff6db" opacity=".34"/>
+  <path d="M122 256C166 168 246 132 313 184" fill="none" stroke="#9df3e6" stroke-width="3" stroke-linecap="round" opacity=".42"/>
+  <path d="M342 246C406 195 444 252 407 325" fill="none" stroke="#ffd7b0" stroke-width="3" stroke-linecap="round" opacity=".38"/>
+</svg>

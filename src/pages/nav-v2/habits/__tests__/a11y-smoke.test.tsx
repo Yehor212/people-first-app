@@ -14,10 +14,7 @@ vi.mock("@/hooks/useShouldAnimate", () => ({ useShouldAnimate: () => true }));
 vi.mock("@/lib/haptics", () => ({ hapticTap: vi.fn() }));
 vi.mock("@/components/compact-habit-card/CompactHabitCard", () => ({
   CompactHabitCard: ({ habit }: { habit: { id: string; name: string } }) => (
-    <li
-      aria-label={habit.name}
-      data-testid={`card-${habit.id}`}
-    >
+    <li aria-label={habit.name} data-testid={`card-${habit.id}`}>
       <button aria-label={`${habit.name}: Mark complete`} aria-pressed={false}>
         toggle
       </button>
@@ -119,7 +116,7 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
           onCreateHabit={vi.fn()}
           onPickTemplate={vi.fn()}
           onOpenLibrary={vi.fn()}
-        />,
+        />
       );
       const chips = screen.queryAllByTestId(/^hero-quickpick-/);
       expect(chips.length).toBeGreaterThan(0);
@@ -140,7 +137,7 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
           onClose={vi.fn()}
           seededIds={new Set()}
           onPickTemplate={vi.fn()}
-        />,
+        />
       );
       const tabs = [
         screen.getByTestId("habits-library-tab-body"),
@@ -163,7 +160,7 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
           onClose={vi.fn()}
           seededIds={new Set()}
           onPickTemplate={vi.fn()}
-        />,
+        />
       );
 
       const inactiveTab = screen.getByTestId("habits-library-tab-mind");
@@ -171,7 +168,9 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
       expect(inactiveTab.className).not.toContain("--zf-night");
       expect(templateCard.className).not.toContain("--zf-night");
       expect(templateCard.querySelector("[data-template-icon='true']")).toBeNull();
-      const iconSlot = templateCard.querySelector("[data-icon-frame='real-object-source-icon-native']");
+      const iconSlot = templateCard.querySelector(
+        "[data-icon-frame='real-object-source-icon-native']"
+      );
       expect(iconSlot).toBeTruthy();
       expect(iconSlot).toHaveAttribute("data-slot", "ritual-library-icon");
       expect(iconSlot?.className).toContain("h-[4.5rem]");
@@ -182,12 +181,16 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
       expect(iconSlot?.className).not.toContain("bg-[hsl(var(--card)/0.66)]");
       expect(templateCard.querySelector('[data-slot="ritual-library-symbol"]')).toBeNull();
       const pictogram = templateCard.querySelector(
-        '[data-slot="ritual-library-svg"] [data-habit-pictogram="drink-water"]',
+        '[data-slot="ritual-library-svg"] [data-habit-pictogram="drink-water"]'
       );
       expect(pictogram).toBeTruthy();
-      expect(pictogram).toHaveAttribute("data-approval-state", "candidate-option-b-pending-user-approval");
+      expect(pictogram).toHaveAttribute("data-icon-source", "approved-lottie-json");
+      expect(pictogram).toHaveAttribute("data-motion-system", "approved-single-lottie-json");
       expect(pictogram?.className).toContain("h-[4.35rem]");
       expect(pictogram?.className).toContain("w-[4.35rem]");
+      expect(
+        pictogram?.querySelector('[data-habit-lottie-player="drink-water"]')
+      ).toBeInTheDocument();
       expect(templateCard.textContent).not.toContain("💧");
     });
   });
@@ -200,7 +203,7 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
           habit={habit({ entries: { [today]: { value: 1 } } })}
           onToggle={vi.fn()}
           onDelete={vi.fn()}
-        />,
+        />
       );
       const row = screen.getByTestId("hero-habit-row-h1");
       expect(row.getAttribute("role")).toBe("group");
@@ -226,7 +229,7 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
           onCreateHabit={vi.fn()}
           onPickTemplate={vi.fn()}
           onOpenLibrary={vi.fn()}
-        />,
+        />
       );
       const cta = screen.getByTestId("habits-hero-create-empty");
       // Accept any of the known ≥44 utilities we ship
@@ -241,7 +244,7 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
           onClose={vi.fn()}
           seededIds={new Set()}
           onPickTemplate={vi.fn()}
-        />,
+        />
       );
       const tab = screen.getByTestId("habits-library-tab-body");
       // Law 9 (A11y): touch targets ≥ 44px. Accept any ≥44 utility we ship.

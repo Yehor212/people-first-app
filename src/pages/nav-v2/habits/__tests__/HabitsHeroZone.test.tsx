@@ -100,7 +100,7 @@ describe("HabitsHeroZone", () => {
         onToggleHabit={vi.fn()}
         onDeleteHabit={vi.fn()}
         onCreateHabit={onCreate}
-      />,
+      />
     );
     expect(screen.getByTestId("habits-hero-empty")).toBeInTheDocument();
     expect(screen.getByTestId("hero-ritual-board-scene")).toBeInTheDocument();
@@ -116,7 +116,7 @@ describe("HabitsHeroZone", () => {
         onToggleHabit={vi.fn()}
         onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
-      />,
+      />
     );
     expect(screen.queryByTestId("habits-hero-progress-ring")).not.toBeInTheDocument();
     expect(screen.getByTestId("hero-insight-strip-stub")).toBeInTheDocument();
@@ -131,21 +131,19 @@ describe("HabitsHeroZone", () => {
         onToggleHabit={vi.fn()}
         onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
-      />,
+      />
     );
 
     expect(screen.getByTestId("habits-groups-grid")).toHaveClass("habits-groups-grid");
-    expect(screen.getByTestId("habits-desktop-command")).toHaveClass(
-      "habits-desktop-command",
-    );
+    expect(screen.getByTestId("habits-desktop-command")).toHaveClass("habits-desktop-command");
     expect(screen.getByTestId("habits-hero-create-desktop")).toHaveClass("w-full");
     expect(screen.getByRole("progressbar", { name: "Today's habits" })).toHaveAttribute(
       "aria-valuenow",
-      "1",
+      "1"
     );
     expect(screen.getByRole("progressbar", { name: "Today's habits" })).toHaveAttribute(
       "aria-valuemax",
-      "3",
+      "3"
     );
   });
 
@@ -169,7 +167,7 @@ describe("HabitsHeroZone", () => {
         onToggleHabit={vi.fn()}
         onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByTestId("hero-row-morn")).toBeInTheDocument();
     expect(screen.getByTestId("hero-row-eve")).toBeInTheDocument();
@@ -185,7 +183,7 @@ describe("HabitsHeroZone", () => {
         onToggleHabit={vi.fn()}
         onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
-      />,
+      />
     );
     const glyph = screen.getByTestId("hero-group-anytime-icon");
     expect(glyph).toHaveClass("habit-bucket-glyph");
@@ -202,7 +200,7 @@ describe("HabitsHeroZone", () => {
         onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
         onPickTemplate={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByText("Plant your first seed")).toBeInTheDocument();
     expect(screen.getByText("Start with 3 habits")).toBeInTheDocument();
@@ -219,14 +217,20 @@ describe("HabitsHeroZone", () => {
         onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
         onPickTemplate={vi.fn()}
-      />,
+      />
     );
 
     const water = screen.getByTestId("hero-quickpick-drink-water");
     expect(water.querySelector('[data-slot="quickpick-symbol"]')).toBeNull();
-    const pictogram = water.querySelector('[data-slot="quickpick-svg"] [data-habit-pictogram="drink-water"]');
+    const pictogram = water.querySelector(
+      '[data-slot="quickpick-svg"] [data-habit-pictogram="drink-water"]'
+    );
     expect(pictogram).toBeTruthy();
-    expect(pictogram?.querySelectorAll("[data-pictogram-motion]").length).toBeGreaterThan(0);
+    expect(pictogram).toHaveAttribute("data-icon-source", "approved-lottie-json");
+    expect(pictogram).toHaveAttribute("data-motion-system", "approved-single-lottie-json");
+    expect(
+      pictogram?.querySelector('[data-habit-lottie-player="drink-water"]')
+    ).toBeInTheDocument();
     expect(water.textContent).not.toContain("💧");
   });
 
@@ -240,7 +244,7 @@ describe("HabitsHeroZone", () => {
         onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
         onPickTemplate={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByText("No habits today")).toBeInTheDocument();
     expect(screen.queryByTestId("hero-empty-quickpick")).not.toBeInTheDocument();
@@ -255,7 +259,7 @@ describe("HabitsHeroZone", () => {
         onToggleHabit={vi.fn()}
         onDeleteHabit={vi.fn()}
         onCreateHabit={onCreate}
-      />,
+      />
     );
     fireEvent.click(screen.getByTestId("habits-hero-create"));
     expect(onCreate).toHaveBeenCalledTimes(1);
@@ -269,7 +273,7 @@ describe("HabitsHeroZone", () => {
         onToggleHabit={vi.fn()}
         onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByTestId("hero-identity-prompt")).toBeInTheDocument();
     expect(screen.getByTestId("habits-identity-cue")).toHaveClass("habit-identity-cue");
@@ -284,7 +288,7 @@ describe("HabitsHeroZone", () => {
         onToggleHabit={vi.fn()}
         onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByTestId("habits-hero-recovery")).toBeInTheDocument();
   });

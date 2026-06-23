@@ -1,28 +1,81 @@
+import { readFileSync } from "node:fs";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { HabitMotionPlayer } from "../HabitMotionPlayer";
 
-describe("HabitMotionPlayer", () => {
-  it("renders CSS fallback when renderer is css", () => {
-    render(<HabitMotionPlayer pictogramId="drink-water" renderer="css" motionAllowed />);
+const motionPlayerSource = readFileSync(
+  "src/components/habit-pictogram/HabitMotionPlayer.tsx",
+  "utf8"
+);
 
-    expect(screen.getByTestId("habit-motion-player")).toHaveAttribute("data-renderer", "css");
-    expect(screen.getByTestId("habit-motion-player")).toHaveAttribute("data-loop-duration-ms", "2800");
+describe("HabitMotionPlayer", () => {
+  it("renders the approved Read Lottie on the normal motion path", () => {
+    render(<HabitMotionPlayer pictogramId="read" renderer="auto" motionAllowed />);
+
+    const player = screen.getByTestId("habit-motion-player");
+    expect(player).toHaveAttribute("data-renderer", "lottie");
+    expect(player).toHaveAttribute("data-loop-duration-ms", "2983");
+    expect(player).toHaveAttribute("data-reduced-asset", "read/reduced.svg");
+    expect(player).toHaveAttribute("data-lottie-asset", "read/idle.lottie.json");
+    expect(screen.getByTestId("habit-lottie-player")).toHaveAttribute(
+      "data-habit-lottie-player",
+      "read"
+    );
+  });
+
+  it("renders the approved Drink Water Lottie on the normal motion path", () => {
+    render(<HabitMotionPlayer pictogramId="drink-water" renderer="auto" motionAllowed />);
+
+    const player = screen.getByTestId("habit-motion-player");
+    expect(player).toHaveAttribute("data-renderer", "lottie");
+    expect(player).toHaveAttribute("data-loop-duration-ms", "2983");
+    expect(player).toHaveAttribute("data-reduced-asset", "drink-water/reduced.svg");
+    expect(player).toHaveAttribute("data-lottie-asset", "drink-water/idle.lottie.json");
+    expect(screen.getByTestId("habit-lottie-player")).toHaveAttribute(
+      "data-habit-lottie-player",
+      "drink-water"
+    );
+  });
+
+  it("keeps approved Lottie JSON lazy-loaded instead of putting every animation on the eager path", () => {
+    expect(motionPlayerSource).not.toContain("const lottieAnimations");
+    expect(motionPlayerSource).not.toContain("lottieAnimationLoaders");
+    expect(motionPlayerSource).not.toContain("../../assets/habit-icons/v2/*/idle.lottie.json");
+    expect(motionPlayerSource).toContain("loadHabitLottieAnimation");
+    expect(motionPlayerSource).toContain('import("lottie-web/build/player/lottie_svg")');
+    expect(motionPlayerSource).toContain('"drink-water/idle.lottie.json"');
+    expect(motionPlayerSource).toContain('"read/idle.lottie.json"');
+    expect(motionPlayerSource).toContain('"walk-distance/idle.lottie.json"');
+  });
+
+  it("keeps unapproved habit icons on still fallback even when motion is allowed", () => {
+    render(<HabitMotionPlayer pictogramId="exercise" renderer="auto" motionAllowed />);
+
+    const player = screen.getByTestId("habit-motion-player");
+    expect(player).toHaveAttribute("data-renderer", "still");
+    expect(player).toHaveAttribute("data-loop-duration-ms", "0");
+    expect(player).toHaveAttribute("data-reduced-asset", "exercise/reduced.svg");
+    expect(player).not.toHaveAttribute("data-lottie-asset");
+    expect(screen.queryByTestId("habit-lottie-player")).not.toBeInTheDocument();
   });
 
   it("renders still fallback when motion is not allowed", () => {
-    render(<HabitMotionPlayer pictogramId="drink-water" renderer="auto" motionAllowed={false} />);
+    render(<HabitMotionPlayer pictogramId="read" renderer="auto" motionAllowed={false} />);
 
     expect(screen.getByTestId("habit-motion-player")).toHaveAttribute("data-renderer", "still");
-    expect(screen.getByTestId("habit-motion-player")).toHaveAttribute("data-reduced-asset", "drink-water/reduced.svg");
+    expect(screen.getByTestId("habit-motion-player")).toHaveAttribute(
+      "data-reduced-asset",
+      "read/reduced.svg"
+    );
   });
 
-  it("exposes the bundled reduced SVG as a visible production asset", () => {
-    render(<HabitMotionPlayer pictogramId="drink-water" renderer="css" motionAllowed />);
+  it("keeps the bundled reduced SVG as the reduced-motion fallback only", () => {
+    render(<HabitMotionPlayer pictogramId="drink-water" renderer="auto" motionAllowed={false} />);
 
     const image = screen.getByRole("img", { hidden: true });
     expect(image).toHaveAttribute("src", expect.stringContaining("drink-water"));
     expect(image).toHaveAttribute("data-habit-motion-still", "drink-water");
+    expect(screen.queryByTestId("habit-lottie-player")).not.toBeInTheDocument();
   });
 });

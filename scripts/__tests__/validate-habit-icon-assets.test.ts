@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
 const { validateHabitIconManifest } = require("../validate-habit-icon-assets.cjs") as {
-  validateHabitIconManifest: (manifest: unknown, options?: { rootDir?: string; checkFiles?: boolean }) => {
+  validateHabitIconManifest: (
+    manifest: unknown,
+    options?: { rootDir?: string; checkFiles?: boolean }
+  ) => {
     errors: string[];
     iconCount: number;
     ids: string[];
@@ -26,6 +29,66 @@ describe("validateHabitIconManifest", () => {
     expect(new Set(result.ids).size).toBe(22);
   });
 
+  it("rejects unapproved Lottie references before visual approval", () => {
+    const result = validateHabitIconManifest(
+      {
+        version: "bad",
+        approvedLottieIds: ["read"],
+        icons: [
+          {
+            id: "drink-water",
+            label: "Drink water",
+            source: "zenflow-original-v6/drink-water",
+            license: "Original",
+            reduced: "drink-water/reduced.svg",
+            lottie: "drink-water/idle.lottie.json",
+            idle: { renderer: "lottie", name: "bad", durationMs: 3000, bytes: 12000 },
+            states: ["idle", "press", "complete", "disabled", "reduced"],
+          },
+        ],
+      },
+      {
+        rootDir: "src/assets/habit-icons/v2",
+        checkFiles: false,
+      }
+    );
+
+    expect(result.errors).toContain("manifest must contain 22 icons");
+    expect(result.errors).toContain(
+      "drink-water: lottie renderer requires approvedLottieIds or reviewCandidateLottieIds entry"
+    );
+  });
+
+  it("rejects locked still icons that still reference Lottie files", () => {
+    const result = validateHabitIconManifest(
+      {
+        version: "bad",
+        approvedLottieIds: ["read"],
+        icons: [
+          {
+            id: "walk-distance",
+            label: "Walk distance",
+            source: "zenflow-static-reduced-awaiting-lottie-approval/walk-distance",
+            license: "Original",
+            reduced: "walk-distance/reduced.svg",
+            lottie: "walk-distance/idle.lottie.json",
+            idle: { renderer: "still", name: "locked", durationMs: 0, bytes: 10 },
+            states: ["idle", "press", "complete", "disabled", "reduced"],
+          },
+        ],
+      },
+      {
+        rootDir: "src/assets/habit-icons/v2",
+        checkFiles: false,
+      }
+    );
+
+    expect(result.errors).toContain(
+      "walk-distance: locked still icon must not reference Lottie before approval"
+    );
+    expect(result.errors).toContain("walk-distance: locked still icon must use 0 animation bytes");
+  });
+
   it("rejects emoji, missing reduced stills, overlong loops, and over-budget animation JSON", () => {
     const result = validateHabitIconManifest(
       {
@@ -43,7 +106,7 @@ describe("validateHabitIconManifest", () => {
       {
         rootDir: "src/assets/habit-icons/v2",
         checkFiles: false,
-      },
+      }
     );
 
     expect(result.errors).toContain("drink-water: label must not contain emoji");
