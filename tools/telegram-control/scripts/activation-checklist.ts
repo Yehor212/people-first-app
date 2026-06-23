@@ -82,7 +82,7 @@ const checks = [
     name: "OpenAI Codex secret",
     status:
       process.env.OPENAI_API_KEY || githubSecrets.has("OPENAI_API_KEY") ? "PASS" : "UNVERIFIED",
-    next: "Set GitHub OPENAI_API_KEY for Codex-backed plan/fix/review/security modes. Without it, AI modes correctly report UNVERIFIED.",
+    next: "Set GitHub OPENAI_API_KEY for Codex-backed plan/fix/review/security modes. Without it, AI modes write a no-paid RAG/manual artifact and report UNVERIFIED.",
   },
   {
     name: "GitHub Snyk secret",

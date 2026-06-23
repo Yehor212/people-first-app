@@ -16,7 +16,10 @@ const githubSecrets: Array<{ name: string; note?: string }> = [
     name: "TELEGRAM_BOT_TOKEN",
     note: "required for deploy-time approved OAuth bot profile photo proof",
   },
-  { name: "OPENAI_API_KEY", note: "optional; AI modes return UNVERIFIED without it" },
+  {
+    name: "OPENAI_API_KEY",
+    note: "optional; AI modes write a no-paid RAG/manual artifact and return UNVERIFIED without it",
+  },
   { name: "SNYK_TOKEN", note: "optional; security mode skips Snyk without it" },
 ];
 

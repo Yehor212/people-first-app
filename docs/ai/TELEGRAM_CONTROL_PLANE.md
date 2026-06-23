@@ -111,7 +111,7 @@ This implementation avoids a permanent paid host. Cloudflare Workers/Workflows a
 - `/fix ...` creates a GitHub control job and dispatches branch-scoped work.
 - `/deploy` stops at Telegram approval before dispatch, then queues the existing GitHub Pages deploy workflow from `main`.
 - `/rollback target=<commit-or-ref>` requires Telegram approval, creates a `codex/telegram-*` branch, reverts the target, runs gates, and opens a draft PR. It does not deploy directly.
-- Missing `OPENAI_API_KEY` returns `UNVERIFIED`.
+- Missing `OPENAI_API_KEY` returns `UNVERIFIED` and produces a no-paid RAG/manual artifact.
 - Failed CI reports failure evidence back through `/github/webhook`.
 - A Telegram-approved production deploy from any ref other than `main` is rejected.
 - `/miniapp/state` rejects missing or invalid Telegram init data.
