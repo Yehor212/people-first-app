@@ -5,9 +5,11 @@
  * Stores embeddings in journal_embeddings table for semantic search.
  *
  * Required secrets:
- *   - GEMINI_API_KEY: same key used by ai-coach
  *   - SUPABASE_URL
  *   - SUPABASE_ANON_KEY
+ *
+ * Optional secrets:
+ *   - GEMINI_API_KEY: enables paid embedding generation; no-paid mode skips gracefully
  *
  * Request body:
  *   - entryIds?: string[] — specific entries to embed (max 20)
@@ -175,7 +177,15 @@ Deno.serve(async (req) => {
   }
 
   if (!GEMINI_API_KEY) {
-    return jsonResponse(500, { error: "Gemini API not configured" });
+    console.warn(
+      "[GenerateEmbedding] GEMINI_API_KEY not configured; skipping paid embedding generation"
+    );
+    return jsonResponse(200, {
+      processed: 0,
+      skipped: true,
+      mode: "no_paid_api",
+      requiresPaidApi: false,
+    });
   }
 
   try {

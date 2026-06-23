@@ -20,6 +20,31 @@ export interface AICoachResponse {
   reply: string;
 }
 
+function getFirstIncompleteHabitName(context: object): string {
+  const maybeContext = context as { habits?: Array<{ name?: string; completedToday?: boolean }> };
+  const habits = Array.isArray(maybeContext.habits) ? maybeContext.habits : [];
+  const incomplete = habits.find((habit) => habit?.completedToday === false);
+  return incomplete?.name || habits[0]?.name || "your next habit";
+}
+
+function buildClientCoachLiteReply(request: AICoachRequest): string {
+  const habitName = getFirstIncompleteHabitName(request.context);
+
+  if (request.language === "ru") {
+    return `Coach Lite (бесплатный локальный режим): уменьши "${habitName}" до микро-шага, даже 1 минута считается. Какой самый маленький следующий шаг ты можешь сделать сегодня?`;
+  }
+
+  if (request.language === "uk") {
+    return `Coach Lite (безкоштовний локальний режим): зменш "${habitName}" до мікрокроку, навіть 1 хвилина рахується. Який найменший наступний крок ти можеш зробити сьогодні?`;
+  }
+
+  return `Coach Lite (free local mode): make ${habitName} tiny today, even 1 minute counts. What is the smallest next step you can do before the day ends?`;
+}
+
+function isMissingPaidAiConfigError(errorMessage: string): boolean {
+  return errorMessage === "AI service not configured";
+}
+
 /**
  * Send a message to the AI Coach edge function.
  * Handles auth token retrieval and request formatting.
@@ -57,7 +82,14 @@ export async function sendAICoachMessage(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({})); // graceful: response may not be JSON (e.g. 502 proxy error)
-    throw new Error(errorData.error || "API error");
+    const errorMessage = typeof errorData.error === "string" ? errorData.error : "API error";
+
+    if (isMissingPaidAiConfigError(errorMessage)) {
+      logger.warn("[AICoach] Paid AI provider is not configured; using Coach Lite fallback");
+      return { reply: buildClientCoachLiteReply(request) };
+    }
+
+    throw new Error(errorMessage);
   }
 
   const data = await response.json().catch(() => {

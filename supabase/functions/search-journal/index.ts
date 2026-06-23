@@ -6,9 +6,11 @@
  * then uses cosine similarity to find matching entries.
  *
  * Required secrets:
- *   - GEMINI_API_KEY
  *   - SUPABASE_URL
  *   - SUPABASE_ANON_KEY
+ *
+ * Optional secrets:
+ *   - GEMINI_API_KEY: enables semantic vector search; lexical search is used when absent
  *
  * Request body:
  *   - query: string — the search text
@@ -19,6 +21,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
 import { getCorsHeaders, parseJsonBody } from "../_shared/http.ts";
 import { redactUserRef } from "../_shared/redaction.ts";
+import { searchJournalEntriesLexically } from "../_shared/journal_ai_free.ts";
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -121,10 +124,6 @@ Deno.serve(async (req) => {
     return jsonResponse(429, { error: "Too many requests" });
   }
 
-  if (!GEMINI_API_KEY) {
-    return jsonResponse(500, { error: "Gemini API not configured" });
-  }
-
   try {
     const [body, bodyErr] = await parseJsonBody(req, origin);
     if (bodyErr) return bodyErr;
@@ -138,6 +137,30 @@ Deno.serve(async (req) => {
       return jsonResponse(400, { error: "Query too long (max 2000 chars)" });
     }
 
+    const safeLimit = Math.min(50, Math.max(1, typeof limit === "number" ? limit : 10));
+
+    if (!GEMINI_API_KEY) {
+      console.warn("[SearchJournal] GEMINI_API_KEY not configured; using lexical search fallback");
+      const { data: entries, error: entriesError } = await supabase
+        .from("journal_entries")
+        .select("id, title, content, mood, tags, updated_at, created_at")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(200);
+
+      if (entriesError) {
+        console.error("[SearchJournal] Lexical fallback fetch error:", entriesError);
+        return jsonResponse(500, { error: "Search failed" });
+      }
+
+      const results = searchJournalEntriesLexically(entries || [], query.trim(), safeLimit);
+      return jsonResponse(200, {
+        results,
+        mode: "journal_search_free_lexical",
+        requiresPaidApi: false,
+      });
+    }
+
     // 1. Generate embedding for the search query
     const queryEmbedding = await generateEmbedding(query.trim());
 
@@ -146,7 +169,7 @@ Deno.serve(async (req) => {
       query_embedding: `[${queryEmbedding.join(",")}]`,
       match_user_id: user.id,
       match_threshold: Math.max(0, Math.min(1, threshold)),
-      match_count: Math.min(50, Math.max(1, limit)),
+      match_count: safeLimit,
     });
 
     if (error) {

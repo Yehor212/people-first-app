@@ -5,14 +5,17 @@
  * Analyzes user context and provides personalized responses.
  *
  * Required secrets:
- *   - GEMINI_API_KEY: Get from https://makersuite.google.com/app/apikey
  *   - SUPABASE_URL: Supabase project URL
  *   - SUPABASE_ANON_KEY: For JWT verification
+ *
+ * Optional secrets:
+ *   - GEMINI_API_KEY: enables full generative coaching; Coach Lite is used when absent
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
 import { getCorsHeaders, parseJsonBody } from "../_shared/http.ts";
 import { redactUserRef, redactError } from "../_shared/redaction.ts";
+import { buildCoachLiteResponse } from "../_shared/coach_lite.ts";
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -294,12 +297,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Check if Gemini is configured
-  if (!GEMINI_API_KEY) {
-    console.error("[AICoach] GEMINI_API_KEY not configured");
-    return jsonResponse(500, { error: "AI service not configured" });
-  }
-
   try {
     const [body, bodyErr] = await parseJsonBody<CoachRequest>(req, origin);
     if (bodyErr) return bodyErr;
@@ -313,6 +310,17 @@ Deno.serve(async (req) => {
     if (message.length > MAX_MESSAGE_LENGTH) {
       return jsonResponse(400, {
         error: `Message too long. Maximum ${MAX_MESSAGE_LENGTH} characters.`,
+      });
+    }
+
+    if (!GEMINI_API_KEY) {
+      console.warn("[AICoach] GEMINI_API_KEY not configured; using Coach Lite fallback");
+      const coachLite = buildCoachLiteResponse({ message, context, language, trigger });
+      return jsonResponse(200, {
+        message: coachLite.message,
+        mode: coachLite.mode,
+        requiresPaidApi: coachLite.requiresPaidApi,
+        sources: coachLite.sources,
       });
     }
 

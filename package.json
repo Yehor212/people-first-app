@@ -137,7 +137,9 @@
     "activate:apple-auth-live": "node scripts/activate-apple-auth-live.cjs",
     "smoke:public-auth": "node scripts/smoke-public-auth-providers.cjs",
     "smoke:interactive-auth": "node scripts/smoke-interactive-auth-completion.cjs",
-    "check:supabase-publishable-key": "node scripts/check-supabase-publishable-key.cjs"
+    "check:supabase-publishable-key": "node scripts/check-supabase-publishable-key.cjs",
+    "rag:search:free": "npx tsx scripts/rag/search-project-docs.ts",
+    "rag:smoke:free": "npx tsx scripts/rag/smoke-free-rag.ts"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",
