@@ -600,19 +600,22 @@ async function generateAndroidAssets(androidResDir = path.join(ROOT, "android", 
   for (const { name, size } of ANDROID_SIZES) {
     const dir = path.join(androidResDir, name);
     fs.mkdirSync(dir, { recursive: true });
+    const launcherIconPath = dir + path.sep + "ic_launcher.png";
+    const launcherRoundPath = dir + path.sep + "ic_launcher_round.png";
+    const launcherForegroundPath = dir + path.sep + "ic_launcher_foreground.png";
     await pngFromSvg(
       rasterSizedSvg(fullBleedSvg, { width: size, height: size, leafScale: 0.52 }),
-      path.join(dir, "ic_launcher.png"),
+      launcherIconPath,
       { flatten: "#2E9B70", ...smallRasterOptions(size, size) },
     );
     await pngFromSvg(
       rasterSizedSvg(fullBleedSvg, { width: size, height: size, leafScale: 0.52 }),
-      path.join(dir, "ic_launcher_round.png"),
+      launcherRoundPath,
       { flatten: "#2E9B70", ...smallRasterOptions(size, size) },
     );
     await pngFromSvg(
       rasterSizedSvg(foregroundSvg, { width: size, height: size, leafScale: 0.56 }),
-      path.join(dir, "ic_launcher_foreground.png"),
+      launcherForegroundPath,
       smallRasterOptions(size, size),
     );
   }
