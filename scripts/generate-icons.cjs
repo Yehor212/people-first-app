@@ -111,6 +111,8 @@ function leafGroup({ cx, cy, size, fill = "rgba(255,255,255,.12)", stroke = "#ff
 const SMALL_RASTER_MAX_SIZE = 50;
 const SMALL_RASTER_SUPERSAMPLE = 4;
 const SMALL_RASTER_SHARPEN_SIGMA = 0.8;
+const TINY_RASTER_MAX_SIZE = 16;
+const TINY_RASTER_BACKGROUND_MULTIPLIER = 0.95;
 
 function smallRasterScale(width, height) {
   return Math.min(width, height) <= SMALL_RASTER_MAX_SIZE ? SMALL_RASTER_SUPERSAMPLE : 1;
@@ -119,13 +121,34 @@ function smallRasterScale(width, height) {
 function smallRasterOptions(width, height) {
   const scale = smallRasterScale(width, height);
   return scale > 1
-    ? { resize: { width, height }, sharpen: SMALL_RASTER_SHARPEN_SIGMA }
+    ? {
+        resize: { width, height },
+        sharpen: SMALL_RASTER_SHARPEN_SIGMA,
+        tinyBackgroundMultiplier:
+          Math.min(width, height) <= TINY_RASTER_MAX_SIZE ? TINY_RASTER_BACKGROUND_MULTIPLIER : undefined,
+      }
     : {};
 }
 
 function rasterSizedSvg(factory, options) {
   const scale = smallRasterScale(options.width, options.height);
   return factory({ ...options, width: options.width * scale, height: options.height * scale });
+}
+
+async function applyTinyRasterBackgroundContrast(pngBuffer, multiplier) {
+  if (!multiplier) return pngBuffer;
+  const { data, info } = await sharp(pngBuffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const adjusted = Buffer.from(data);
+  for (let i = 0; i < adjusted.length; i += info.channels) {
+    const alpha = adjusted[i + 3];
+    const isLeafPixel = alpha > 48 && adjusted[i] > 200 && adjusted[i + 1] > 200 && adjusted[i + 2] > 200;
+    if (alpha > 48 && !isLeafPixel) {
+      adjusted[i] = Math.round(adjusted[i] * multiplier);
+      adjusted[i + 1] = Math.round(adjusted[i + 1] * multiplier);
+      adjusted[i + 2] = Math.round(adjusted[i + 2] * multiplier);
+    }
+  }
+  return sharp(adjusted, { raw: info }).png({ compressionLevel: 9, adaptiveFiltering: true, palette: false }).toBuffer();
 }
 
 function plateDefs({ x, y, size, idPrefix }) {
@@ -310,7 +333,8 @@ async function pngFromSvg(svg, output, options = {}) {
   if (options.sharpen) {
     pipeline = pipeline.sharpen(options.sharpen);
   }
-  await pipeline.png({ compressionLevel: 9, adaptiveFiltering: true, palette: false }).toFile(output);
+  const png = await pipeline.png({ compressionLevel: 9, adaptiveFiltering: true, palette: false }).toBuffer();
+  fs.writeFileSync(output, await applyTinyRasterBackgroundContrast(png, options.tinyBackgroundMultiplier));
 }
 
 async function webpFromSvg(svg, output, options = {}) {
@@ -333,7 +357,8 @@ async function pngBuffer(svg, size, options = {}) {
   if (options.sharpen) {
     pipeline = pipeline.sharpen(options.sharpen);
   }
-  return pipeline.png({ compressionLevel: 9, adaptiveFiltering: true, palette: false }).toBuffer();
+  const png = await pipeline.png({ compressionLevel: 9, adaptiveFiltering: true, palette: false }).toBuffer();
+  return applyTinyRasterBackgroundContrast(png, options.tinyBackgroundMultiplier);
 }
 
 function writeIco(output, entries) {
