@@ -1,0 +1,241 @@
+import { memo, Suspense, useCallback, useMemo, useRef } from "react";
+import { CalendarDays, Clock3, Sparkles } from "lucide-react";
+import { GlobalScheduleBar } from "@/components/GlobalScheduleBar";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { cn, getToday } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useUIStore, useUserDataStore } from "@/stores";
+import { generateHabitScheduleEvents, mergeScheduleEvents } from "@/lib/habitScheduleSync";
+import { syncSetting } from "@/storage/sync/syncSettings";
+import { triggerSync } from "@/storage/cloudSync";
+import { logger } from "@/lib/logger";
+import type { FocusSession, ScheduleEvent } from "@/types";
+
+const ScheduleTimeline = lazyWithRetry(
+  () => import("@/components/ScheduleTimeline").then((m) => ({ default: m.ScheduleTimeline })),
+  "ScheduleTimeline",
+);
+const FocusTimer = lazyWithRetry(
+  () => import("@/components/FocusTimer").then((m) => ({ default: m.FocusTimer })),
+  "FocusTimer",
+);
+
+const SCHEDULE_EVENTS_SETTING_KEY = "zenflow-schedule-events";
+
+interface PlanningPageProps {
+  onCompleteFocusSession?: (session: FocusSession) => void;
+}
+
+function createScheduleEventId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `schedule-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function sortScheduleEventsByTime(events: ScheduleEvent[]): ScheduleEvent[] {
+  return [...events].sort((a, b) => {
+    const aStart = a.startHour * 60 + a.startMinute;
+    const bStart = b.startHour * 60 + b.startMinute;
+    return aStart - bStart;
+  });
+}
+
+function isManualScheduleEvent(event: ScheduleEvent | undefined): event is ScheduleEvent {
+  if (!event) return false;
+  const manualSource = !event.source || event.source === "manual";
+  return manualSource && event.isEditable !== false;
+}
+
+export const PlanningPage = memo(function PlanningPage({
+  onCompleteFocusSession,
+}: PlanningPageProps) {
+  const { t, isRTL } = useLanguage();
+  const scheduleSectionRef = useRef<HTMLElement>(null);
+
+  const scheduleEvents = useUserDataStore((s) => s.scheduleEvents);
+  const setScheduleEvents = useUserDataStore((s) => s.setScheduleEvents);
+  const habits = useUserDataStore((s) => s.habits);
+  const focusSessions = useUserDataStore((s) => s.focusSessions);
+  const isLoading = useUserDataStore((s) => s.isLoading);
+  const setCurrentFocusMinutes = useUIStore((s) => s.setCurrentFocusMinutes);
+
+  const habitScheduleEvents = useMemo(
+    () => generateHabitScheduleEvents(habits, 7),
+    [habits],
+  );
+
+  const allScheduleEvents = useMemo(
+    () => mergeScheduleEvents(scheduleEvents, habitScheduleEvents),
+    [habitScheduleEvents, scheduleEvents],
+  );
+
+  const todayScheduleEvents = useMemo(() => {
+    const today = getToday();
+    return sortScheduleEventsByTime(allScheduleEvents.filter((event) => event.date === today));
+  }, [allScheduleEvents]);
+
+  const persistManualScheduleEvents = useCallback(
+    (nextEvents: ScheduleEvent[]) => {
+      setScheduleEvents(nextEvents);
+      void syncSetting(SCHEDULE_EVENTS_SETTING_KEY, nextEvents).catch((error) => {
+        logger.warn("[Planning] Failed to sync schedule events", error);
+      });
+      triggerSync();
+    },
+    [setScheduleEvents],
+  );
+
+  const handleAddScheduleEvent = useCallback(
+    (event: Omit<ScheduleEvent, "id">) => {
+      const newEvent: ScheduleEvent = {
+        ...event,
+        id: createScheduleEventId(),
+        source: "manual",
+        isEditable: true,
+      };
+      persistManualScheduleEvents([...scheduleEvents, newEvent]);
+    },
+    [persistManualScheduleEvents, scheduleEvents],
+  );
+
+  const handleDeleteScheduleEvent = useCallback(
+    (id: string) => {
+      const event = allScheduleEvents.find((candidate) => candidate.id === id);
+      if (!isManualScheduleEvent(event)) {
+        logger.warn("[Planning] Ignoring delete for non-manual schedule event", id);
+        return;
+      }
+
+      const nextEvents = scheduleEvents.filter((candidate) => candidate.id !== id);
+      if (nextEvents.length === scheduleEvents.length) {
+        logger.warn("[Planning] Manual schedule event not found in local store", id);
+        return;
+      }
+
+      persistManualScheduleEvents(nextEvents);
+    },
+    [allScheduleEvents, persistManualScheduleEvents, scheduleEvents],
+  );
+
+  const handleCompleteFocusSession = useCallback(
+    (session: FocusSession) => {
+      if (onCompleteFocusSession) {
+        onCompleteFocusSession(session);
+        return;
+      }
+      logger.warn("[Planning] Focus session completed without a V2 completion handler");
+    },
+    [onCompleteFocusSession],
+  );
+
+  const scrollToTimeline = useCallback(() => {
+    scheduleSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const fallbackLabel = t.navV2PlanningLoading;
+
+  return (
+    <main
+      id="main-content-v2"
+      role="main"
+      tabIndex={-1}
+      data-testid="planning-page"
+      data-v2-readable-page="planning"
+      dir={isRTL ? "rtl" : undefined}
+      aria-labelledby="planning-page-heading"
+      className={cn(
+        "main-content-v2 v2-fullscreen-page v2-readable-page v2-readable-page--standard relative min-h-[var(--app-viewport-height)] overflow-x-hidden bg-background outline-none",
+        "px-4 pb-[calc(var(--safe-bottom)+5rem)] pt-[calc(var(--safe-top)+4.75rem)] md:px-6 md:pt-10 lg:px-10",
+      )}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_start,hsl(var(--primary)/0.13),transparent_34%),radial-gradient(circle_at_80%_16%,hsl(var(--accent)/0.10),transparent_30%)]" />
+
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-5 md:gap-6">
+        <header className="flex flex-col gap-3">
+          <div className="inline-flex min-h-[44px] w-fit items-center gap-2 rounded-full border border-border/55 bg-card/72 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]">
+            <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
+            <span>{t.navV2Planning}</span>
+          </div>
+          <div className="max-w-3xl space-y-2">
+            <h1 id="planning-page-heading" className="font-display text-4xl font-semibold leading-[1.02] text-foreground md:text-5xl">
+              {t.navV2PlanningHeading}
+            </h1>
+            <p className="max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
+              {t.navV2PlanningSubcopy}
+            </p>
+          </div>
+        </header>
+
+        <section aria-label={t.viewSchedule} className="space-y-3">
+          {todayScheduleEvents.length > 0 ? (
+            <GlobalScheduleBar events={todayScheduleEvents} onTap={scrollToTimeline} />
+          ) : (
+            <button
+              type="button"
+              onClick={scrollToTimeline}
+              data-testid="planning-empty-schedule"
+              className="flex min-h-[64px] w-full items-center gap-3 rounded-2xl border border-border/50 bg-card/72 px-4 py-3 text-start text-muted-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <Clock3 className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <span className="flex-1 truncate">{t.navV2PlanningEmpty}</span>
+            </button>
+          )}
+        </section>
+
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(22rem,0.92fr)] xl:items-start">
+          <section
+            ref={scheduleSectionRef}
+            aria-label={t.navV2Planning}
+            className="min-w-0"
+          >
+            <div className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold text-foreground">
+              <CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />
+              <span>{t.navV2Planning}</span>
+            </div>
+            <Suspense fallback={<PlanningPageFallback label={fallbackLabel} />}>
+              <ScheduleTimeline
+                events={allScheduleEvents}
+                onAddEvent={handleAddScheduleEvent}
+                onDeleteEvent={handleDeleteScheduleEvent}
+              />
+            </Suspense>
+          </section>
+
+          <section aria-label={t.focus} className="min-w-0">
+            <Suspense fallback={<PlanningPageFallback label={fallbackLabel} />}>
+              <FocusTimer
+                sessions={focusSessions}
+                onCompleteSession={handleCompleteFocusSession}
+                onMinuteUpdate={setCurrentFocusMinutes}
+                isPrimaryCTA
+              />
+            </Suspense>
+          </section>
+        </div>
+
+        {isLoading && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="sr-only"
+          >
+            {fallbackLabel}
+          </div>
+        )}
+      </div>
+    </main>
+  );
+});
+
+function PlanningPageFallback({ label }: { label: string }) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex min-h-[180px] items-center justify-center rounded-2xl border border-border/45 bg-card/60 px-4 text-sm font-medium text-muted-foreground backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]"
+    >
+      {label}
+    </div>
+  );
+}

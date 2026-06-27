@@ -26,15 +26,15 @@ test.describe("Deploy smoke", () => {
 
     await expect(page.getByTestId("v1-v2-portal-primary")).toHaveAttribute(
       "href",
-      /\/people-first-app\/orb\?nav=v2&navLayout=phone/,
+      /\/people-first-app\/orb\?nav=v2&navLayout=phone/
     );
     await expect(page.getByTestId("v1-v2-portal-habits")).toHaveAttribute(
       "href",
-      /\/people-first-app\/habits\?nav=v2&navLayout=phone/,
+      /\/people-first-app\/habits\?nav=v2&navLayout=phone/
     );
     await expect(page.getByTestId("v1-v2-portal-diary")).toHaveAttribute(
       "href",
-      /\/people-first-app\/diary\?nav=v2&navLayout=phone/,
+      /\/people-first-app\/diary\?nav=v2&navLayout=phone/
     );
   });
 
@@ -42,6 +42,7 @@ test.describe("Deploy smoke", () => {
     { path: "orb?nav=v2&navLayout=phone&dev=true", testId: "orb-page" },
     { path: "habits?nav=v2&navLayout=phone&dev=true", testId: "habits-page" },
     { path: "diary?nav=v2&navLayout=phone&dev=true", testId: "diary-page" },
+    { path: "planning?nav=v2&navLayout=phone&dev=true", testId: "planning-page" },
     { path: "settings?nav=v2&navLayout=phone&dev=true", testId: "settings-page" },
   ]) {
     test(`V2 route boots: ${target.path}`, async ({ page }) => {

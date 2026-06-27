@@ -1,7 +1,7 @@
 import type { V2HabitPictogramId } from "@/lib/v2HabitPictograms";
 
-export type HabitIconMotionState = "idle" | "press" | "complete" | "disabled" | "reduced";
-export type HabitIconRenderer = "lottie" | "still";
+export type HabitIconMotionState = "idle" | "press" | "complete" | "streak" | "disabled" | "reduced";
+export type HabitIconRenderer = "lottie" | "raster-sticker" | "animated-raster" | "still";
 
 export interface HabitIconQualityMetrics {
   frames: number;
@@ -22,6 +22,15 @@ export interface HabitIconAssetEntry {
   license: "MIT" | "Original" | string;
   reduced: string;
   lottie?: string;
+  raster?: string;
+  animatedRaster?: {
+    idle: string;
+    complete: string;
+    streak: string;
+    poster: string;
+    posterPng?: string;
+    format: "apng";
+  };
   referenceVariant?: string;
   reviewStatus?: string;
   productionRights?: string;
@@ -73,7 +82,7 @@ const ZERO_QUALITY: HabitIconQualityMetrics = {
   strokes: 0,
 };
 
-const MOTION_STATES: HabitIconMotionState[] = ["idle", "press", "complete", "disabled", "reduced"];
+const MOTION_STATES: HabitIconMotionState[] = ["idle", "press", "complete", "streak", "disabled", "reduced"];
 
 function toAssetLabel(id: V2HabitPictogramId): string {
   const spaced = id.replace(/-/g, " ");
@@ -127,34 +136,7 @@ const DRINK_WATER_APPROVED_ASSET: HabitIconAssetEntry = {
   states: MOTION_STATES,
 };
 
-const WALK_DISTANCE_APPROVED_ASSET: HabitIconAssetEntry = {
-  id: "walk-distance",
-  label: "Walk distance",
-  source: "zenflow-original-approved-lottie/walk-distance-v12-hero-runner",
-  license: "Original",
-  reduced: "walk-distance/reduced.svg",
-  lottie: "walk-distance/idle.lottie.json",
-  reviewStatus: "approved-production-hero-runner-v12",
-  productionRights: "Original ZenFlow vector animation",
-  idle: {
-    renderer: "lottie",
-    name: "v2hp-walk-distance-hero-runner-v12-final-candidate",
-    durationMs: 2983,
-    bytes: 3071319,
-  },
-  quality: {
-    frames: 179,
-    frameRate: 60,
-    layers: 191,
-    shapeRecords: 1343,
-    animatedChannels: 838,
-    gradients: 61,
-    trimPaths: 59,
-    paths: 149,
-    strokes: 233,
-  },
-  states: MOTION_STATES,
-};
+const WALK_DISTANCE_LOCKED_ASSET: HabitIconAssetEntry = makeStaticAsset("walk-distance");
 
 const READ_APPROVED_ASSET: HabitIconAssetEntry = {
   id: "read",
@@ -188,15 +170,19 @@ const READ_APPROVED_ASSET: HabitIconAssetEntry = {
   states: MOTION_STATES,
 };
 
-export const APPROVED_HABIT_LOTTIE_IDS = new Set<string>(["drink-water", "walk-distance", "read"]);
+export const APPROVED_HABIT_LOTTIE_IDS = new Set<string>(["drink-water", "read"]);
+export const APPROVED_HABIT_RASTER_IDS = new Set<string>();
+export const APPROVED_HABIT_ANIMATED_RASTER_IDS = new Set<string>();
 export const REVIEW_CANDIDATE_HABIT_LOTTIE_IDS = new Set<string>();
 export const REJECTED_HABIT_LOTTIE_IDS = new Set<string>([
   "read-original-v91",
+  "walk-distance",
+  "walk-distance-animated-raster-v1",
   "walk-distance-kinetic-soles-v1",
 ]);
 export const V2_HABIT_ICON_ASSETS = [
   DRINK_WATER_APPROVED_ASSET,
-  WALK_DISTANCE_APPROVED_ASSET,
+  WALK_DISTANCE_LOCKED_ASSET,
   makeStaticAsset("exercise"),
   READ_APPROVED_ASSET,
   ...STATIC_HABIT_IDS.slice(3).map(makeStaticAsset),
@@ -208,6 +194,14 @@ const ASSETS_BY_ID = new Map<V2HabitPictogramId, HabitIconAssetEntry>(
 
 export function isHabitLottieApproved(id: V2HabitPictogramId): boolean {
   return APPROVED_HABIT_LOTTIE_IDS.has(id);
+}
+
+export function isHabitRasterApproved(id: V2HabitPictogramId): boolean {
+  return APPROVED_HABIT_RASTER_IDS.has(id);
+}
+
+export function isHabitAnimatedRasterApproved(id: V2HabitPictogramId): boolean {
+  return APPROVED_HABIT_ANIMATED_RASTER_IDS.has(id);
 }
 
 export function isHabitLottieReviewCandidate(id: V2HabitPictogramId): boolean {

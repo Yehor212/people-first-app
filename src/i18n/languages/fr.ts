@@ -3376,6 +3376,7 @@ export const fr: Translations = {
   navV2Orb: "Humeur",
   navV2Habits: "Habitudes",
   navV2Diary: "Journal",
+  navV2Planning: "Planification",
   navV2Settings: "Paramètres",
   navV2PrimaryNav: "Navigation principale",
   navV2OpenMenu: "Ouvrir le menu",
@@ -3390,6 +3391,10 @@ export const fr: Translations = {
   navV2OrbPlaceholder: "Page Humeur — la phase 3-B connectera HomeTab ici.",
   navV2HabitsPlaceholder: "Page Habitudes — la phase 3-C connectera GardenTab + HabitHubTab.",
   navV2DiaryPlaceholder: "Page Journal — la phase 3-D connectera JournalModule.",
+  navV2PlanningHeading: "Planifie ton prochain rituel",
+  navV2PlanningSubcopy: "Ton planning et ton minuteur de concentration vivent ici ensemble.",
+  navV2PlanningEmpty: "Aucun événement pour l’instant",
+  navV2PlanningLoading: "Préparation de la planification...",
   navV2SettingsPlaceholder:
     "Vos réglages personnels sont en préparation ici. Les thèmes, rappels et options de confidentialité restent pour l’instant dans les paramètres classiques.",
   v2PortalEyebrow: "Aperçu V2",

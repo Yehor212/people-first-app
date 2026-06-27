@@ -20,6 +20,11 @@ const v2FullscreenPages = [
     testId: "diary-page",
   },
   {
+    id: "planning",
+    source: "src/pages/nav-v2/planning/PlanningPage.tsx",
+    testId: "planning-page",
+  },
+  {
     id: "settings",
     source: "src/pages/nav-v2/settings/components/SettingsPageComponents.tsx",
     testId: "settings-page",

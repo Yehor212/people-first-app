@@ -28,7 +28,8 @@ void test("builds a no-paid Telegram control report without exposing the raw pro
   assert.match(report, /Status: UNVERIFIED/);
   assert.match(report, /OPENAI_API_KEY is missing/);
   assert.match(report, /free lexical project RAG only/);
-  assert.match(report, /AGENTS\.md#chunk-0/);
+  assert.match(report, /AGENTS\.md:1/);
+  assert.match(report, /group telegram_control/);
   assert.match(report, /\[redacted-token\]/);
   assert.doesNotMatch(report, /keep this raw prompt private/);
 });

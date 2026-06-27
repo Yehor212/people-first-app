@@ -40,14 +40,14 @@ if (showGitHub) {
 
 if (dryRun) {
   console.log(
-    "Dry run only. Re-run with --cloudflare for Worker account secrets, or --github plus --github-telegram/--github-openai/--github-snyk for GitHub Actions secrets."
+    "Dry run only. Re-run with --cloudflare for Worker account secrets, or --github plus --github-telegram/--github-openai/--github-snyk for GitHub Actions secrets. --github-telegram uses TELEGRAM_AUTH_BOT_TOKEN, not the private control TELEGRAM_BOT_TOKEN."
   );
   process.exit(0);
 }
 
 if (github && githubNames.length === 0) {
   console.error(
-    "UNVERIFIED No GitHub account-owned secrets selected. Use --github-telegram, --github-openai, or --github-snyk."
+    "UNVERIFIED No GitHub account-owned secrets selected. Use --github-telegram for TELEGRAM_AUTH_BOT_TOKEN, --github-openai, or --github-snyk."
   );
   process.exit(1);
 }
@@ -76,7 +76,7 @@ function selectedGitHubSecretNames(): AccountSecretName[] {
   }
   const names: AccountSecretName[] = [];
   if (githubTelegram) {
-    names.push("TELEGRAM_BOT_TOKEN");
+    names.push("TELEGRAM_AUTH_BOT_TOKEN");
   }
   if (githubOpenAI) {
     names.push("OPENAI_API_KEY");

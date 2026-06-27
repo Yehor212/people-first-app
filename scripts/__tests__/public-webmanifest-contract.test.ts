@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const publicManifestPath = "public/manifest.webmanifest";
 const docsManifestPath = "docs/manifest.webmanifest";
+const brandLogoAssetsPath = "config/brand-logo-assets.json";
 
 function readJson(path: string) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -19,6 +20,8 @@ describe("public web manifest contract", () => {
 
     const publicManifest = readJson(publicManifestPath);
     const docsManifest = readJson(docsManifestPath);
+    const brandLogoAssets = readJson(brandLogoAssetsPath);
+    const iconRevision = brandLogoAssets.pwaInstallIconRevision;
     expect(publicManifest).toEqual(docsManifest);
     expect(publicManifest).toMatchObject({
       name: "ZenFlow - Daily Wellness",
@@ -27,8 +30,8 @@ describe("public web manifest contract", () => {
       scope: "/people-first-app/",
       display: "standalone",
       icons: expect.arrayContaining([
-        expect.objectContaining({ src: "pwa-192.png?v=zenflow-browser-leaf-20260525-r6" }),
-        expect.objectContaining({ src: "pwa-maskable-512.png?v=zenflow-browser-leaf-20260525-r6" }),
+        expect.objectContaining({ src: `pwa-192.png?v=${iconRevision}` }),
+        expect.objectContaining({ src: `pwa-maskable-512.png?v=${iconRevision}` }),
       ]),
     });
   });

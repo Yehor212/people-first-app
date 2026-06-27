@@ -8,6 +8,7 @@ import {
   type FreeRagDocument,
   type FreeRagResult,
 } from "./freeProjectRag";
+import { expandRagCorpusDocuments, loadRagCorpusManifest } from "./ragCorpus";
 
 export const DEFAULT_AGENT_RAG_FILES = [
   "AGENTS.md",
@@ -23,6 +24,7 @@ export interface SearchProjectDocsOptions {
   rootDir?: string;
   limit?: number;
   files?: string[];
+  groups?: string[];
 }
 
 export interface SearchProjectDocsResult {
@@ -51,7 +53,12 @@ export function searchProjectDocs(
   query: string,
   options: SearchProjectDocsOptions = {}
 ): SearchProjectDocsResult {
-  const documents = loadProjectRagDocuments(options.rootDir, options.files);
+  const documents = options.files
+    ? loadProjectRagDocuments(options.rootDir, options.files)
+    : expandRagCorpusDocuments(loadRagCorpusManifest(), {
+        rootDir: options.rootDir,
+        groupIds: options.groups,
+      });
   const index = createFreeProjectRagIndex(documents);
   const results = searchFreeProjectRag(index, query, { limit: options.limit ?? 5 });
 

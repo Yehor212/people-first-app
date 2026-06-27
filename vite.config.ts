@@ -64,7 +64,10 @@ function isDeferredJournalPreload(dep: string): boolean {
   );
 }
 
-const PWA_INSTALL_ICON_REVISION = "zenflow-browser-leaf-20260525-r6";
+const brandLogoAssets = JSON.parse(readFileSync("./config/brand-logo-assets.json", "utf-8")) as {
+  pwaInstallIconRevision: string;
+};
+const PWA_INSTALL_ICON_REVISION = brandLogoAssets.pwaInstallIconRevision;
 const pwaIconSrc = (file: string) => `${file}?v=${PWA_INSTALL_ICON_REVISION}`;
 
 function isPlaceholderSentryUploadValue(value: string | undefined): boolean {

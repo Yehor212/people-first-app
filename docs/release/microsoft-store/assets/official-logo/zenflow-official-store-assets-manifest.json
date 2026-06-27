@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-25T23:21:41.402Z",
+  "generatedAt": "2026-06-27T17:59:18.737Z",
   "source": {
     "vector": "public/icon-source.svg",
     "generator": "scripts/generate-microsoft-store-logo-assets.cjs"
@@ -72,7 +72,7 @@
       "dimensions": "1080x1080",
       "width": 1080,
       "height": 1080,
-      "sizeBytes": 169547
+      "sizeBytes": 170126
     },
     {
       "file": "zenflow-official-box-art-2160.png",
@@ -80,7 +80,7 @@
       "dimensions": "2160x2160",
       "width": 2160,
       "height": 2160,
-      "sizeBytes": 404571
+      "sizeBytes": 405931
     },
     {
       "file": "zenflow-official-poster-art-720x1080.png",
@@ -88,7 +88,7 @@
       "dimensions": "720x1080",
       "width": 720,
       "height": 1080,
-      "sizeBytes": 134060
+      "sizeBytes": 134262
     },
     {
       "file": "zenflow-official-poster-art-1440x2160.png",
@@ -96,7 +96,7 @@
       "dimensions": "1440x2160",
       "width": 1440,
       "height": 2160,
-      "sizeBytes": 309866
+      "sizeBytes": 310525
     },
     {
       "file": "zenflow-official-super-hero-art-1920x1080.png",

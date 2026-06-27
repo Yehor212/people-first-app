@@ -93,6 +93,13 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 - Do not replace premium visuals with cheaper approximations to make performance metrics pass.
 - UI, motion, layout, style, and accessibility changes require visual-audit coverage and proof appropriate to the risk.
 
+## Visual Integrity Critic Gate
+
+- For UI, visual polish, animation, 3D/model, Lottie/TGS/video sticker, generated image, product render, or motion work, run the local `visual-integrity-critic` skill after implementation and before final success claims.
+- When the user explicitly asks for a subagent or independent opinion and `multi_agent_v1.spawn_agent` is available, spawn a read-only visual critic with artifact paths and the rubric from `docs/ai/VISUAL_INTEGRITY_CRITIC_PROTOCOL.md`; otherwise emulate it inline and mark unavailable subagent evidence `UNVERIFIED`.
+- Technical checks, tests, audits, file-size gates, or successful renders never imply `ARTISTIC_PASS`.
+- Final responses for visual work must separately state `Technical`, `Visual Runtime`, `Artistic/Craft`, `Motion`, `Model`, and `Plan` as `PASS`, `FAIL`, or `UNVERIFIED` when those dimensions apply.
+
 ## Safety
 
 - Supabase: use MCP tools before raw SQL. `profiles` has no `email` column. A broken `handle_new_user()` breaks all signups.

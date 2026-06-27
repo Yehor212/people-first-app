@@ -16,7 +16,7 @@ interface MobileNavV2Props {
 /**
  * MobileNavV2 — bottom floating-pill tab bar for <md viewports.
  *
- * Four tabs: Orb / Habits / Diary / Settings.
+ * Five tabs: Orb / Habits / Diary / Planning / Settings.
  * 44×44 minimum touch targets, safe-area padding, haptic tap on change.
  * Theme-semantic active state + accent color.
  */
@@ -33,13 +33,14 @@ export const MobileNavV2 = memo(function MobileNavV2({
       { id: "orb", icon: V2_NAV_ICONS.orb, label: tx.navV2Orb || "Mood" },
       { id: "habits", icon: V2_NAV_ICONS.habits, label: tx.navV2Habits || t.habits || "Habits" },
       { id: "diary", icon: V2_NAV_ICONS.diary, label: tx.navV2Diary || t.diary || "Diary" },
+      { id: "planning", icon: V2_NAV_ICONS.planning, label: tx.navV2Planning },
       {
         id: "settings",
         icon: V2_NAV_ICONS.settings,
         label: tx.navV2Settings,
       },
     ],
-    [tx, t.habits, t.diary],
+    [tx, t.habits, t.diary]
   );
 
   if (hidden) return null;
@@ -54,7 +55,7 @@ export const MobileNavV2 = memo(function MobileNavV2({
         "bottom-[calc(var(--safe-bottom)+0.5rem)]",
         "rounded-2xl border border-border/60 bg-card/80",
         "backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]",
-        "shadow-lg gpu-layer",
+        "shadow-lg gpu-layer"
       )}
     >
       <div className="flex items-stretch justify-between px-1 py-1" role="tablist">
@@ -79,7 +80,7 @@ export const MobileNavV2 = memo(function MobileNavV2({
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
                 isActive
                   ? "bg-[hsl(var(--nav-v2-item-surface))] text-[hsl(var(--primary))]"
-                  : "text-muted-foreground active:text-foreground",
+                  : "text-muted-foreground active:text-foreground"
               )}
               data-testid={`mobile-nav-v2-tab-${tab.id}`}
             >
@@ -87,7 +88,7 @@ export const MobileNavV2 = memo(function MobileNavV2({
               <span
                 className={cn(
                   "font-display text-[10px] leading-none truncate max-w-full",
-                  isActive ? "font-semibold" : "font-normal",
+                  isActive ? "font-semibold" : "font-normal"
                 )}
               >
                 {tab.label}

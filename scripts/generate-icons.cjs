@@ -5,12 +5,13 @@ const { execFileSync } = require("child_process");
 const sharp = require("sharp");
 
 const ROOT = path.resolve(__dirname, "..");
+const BRAND_LOGO_ASSETS_CONFIG = require("../config/brand-logo-assets.json");
 
 const LEAF_BODY = "M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z";
 const LEAF_STEM = "M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12";
 const LEAF_DETAIL_SHADOW_MIN_SIZE = 72;
 
-const PWA_INSTALL_ICON_REVISION = "zenflow-browser-leaf-20260525-r6";
+const PWA_INSTALL_ICON_REVISION = BRAND_LOGO_ASSETS_CONFIG.pwaInstallIconRevision;
 const PWA_SIZES = [72, 96, 128, 144, 152, 192, 384, 512];
 const BROWSER_FAVICON_SIZES = [16, 32, 48, 64];
 const PWA_WINDOWS_ICONS = [
@@ -105,6 +106,26 @@ function leafGroup({ cx, cy, size, fill = "rgba(255,255,255,.12)", stroke = "#ff
       <path d="${LEAF_BODY}" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
       <path d="${LEAF_STEM}" stroke="${stroke}" stroke-width="2"/>
     </g>`;
+}
+
+const SMALL_RASTER_MAX_SIZE = 50;
+const SMALL_RASTER_SUPERSAMPLE = 4;
+const SMALL_RASTER_SHARPEN_SIGMA = 0.8;
+
+function smallRasterScale(width, height) {
+  return Math.min(width, height) <= SMALL_RASTER_MAX_SIZE ? SMALL_RASTER_SUPERSAMPLE : 1;
+}
+
+function smallRasterOptions(width, height) {
+  const scale = smallRasterScale(width, height);
+  return scale > 1
+    ? { resize: { width, height }, sharpen: SMALL_RASTER_SHARPEN_SIGMA }
+    : {};
+}
+
+function rasterSizedSvg(factory, options) {
+  const scale = smallRasterScale(options.width, options.height);
+  return factory({ ...options, width: options.width * scale, height: options.height * scale });
 }
 
 function plateDefs({ x, y, size, idPrefix }) {
@@ -286,6 +307,9 @@ async function pngFromSvg(svg, output, options = {}) {
   if (options.flatten) {
     pipeline = pipeline.flatten({ background: options.flatten });
   }
+  if (options.sharpen) {
+    pipeline = pipeline.sharpen(options.sharpen);
+  }
   await pipeline.png({ compressionLevel: 9, adaptiveFiltering: true, palette: false }).toFile(output);
 }
 
@@ -305,6 +329,9 @@ async function pngBuffer(svg, size, options = {}) {
   let pipeline = sharp(Buffer.from(svg)).resize(size, size);
   if (options.flatten) {
     pipeline = pipeline.flatten({ background: options.flatten });
+  }
+  if (options.sharpen) {
+    pipeline = pipeline.sharpen(options.sharpen);
   }
   return pipeline.png({ compressionLevel: 9, adaptiveFiltering: true, palette: false }).toBuffer();
 }
@@ -420,9 +447,37 @@ function writeDocsWebManifest() {
     ],
   };
 
-  fs.writeFileSync(path.join(ROOT, "docs", "manifest.webmanifest"), `${JSON.stringify(manifest)}\n`);
+  for (const manifestPath of [
+    path.join(ROOT, "public", "manifest.webmanifest"),
+    path.join(ROOT, "docs", "manifest.webmanifest"),
+  ]) {
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest)}\n`);
+  }
 }
 
+function iconRevisionHtmlFiles() {
+  const htmlFiles = ["index.html", "docs/index.html"];
+  for (const dir of ["public", "docs"]) {
+    const absDir = path.join(ROOT, dir);
+    if (!fs.existsSync(absDir)) continue;
+    for (const name of fs.readdirSync(absDir)) {
+      if (/^(404|delete-account|offline|privacy|privacy-policy|terms)(?:-[a-z]{2})?\.html$/.test(name)) {
+        htmlFiles.push(path.join(dir, name));
+      }
+    }
+  }
+  return [...new Set(htmlFiles)];
+}
+
+function syncStaticHtmlIconRevision() {
+  const iconPattern = /((?:manifest\.webmanifest|favicon(?:-\d+)?\.png|favicon\.ico|apple-touch-icon\.png|pwa(?:-\d+|-maskable-512|-windows-[a-z0-9-]+)\.png))(?:\?v=[a-z0-9-]+)?/gi;
+  for (const rel of iconRevisionHtmlFiles()) {
+    const filePath = path.join(ROOT, rel);
+    const original = fs.readFileSync(filePath, "utf8");
+    const updated = original.replace(iconPattern, "$1?v=" + PWA_INSTALL_ICON_REVISION);
+    if (updated !== original) fs.writeFileSync(filePath, updated);
+  }
+}
 function syncPublicInstallAssetsToDocs() {
   const publicDir = path.join(ROOT, "public");
   const docsDir = path.join(ROOT, "docs");
@@ -431,6 +486,7 @@ function syncPublicInstallAssetsToDocs() {
     fs.copyFileSync(path.join(publicDir, fileName), path.join(docsDir, fileName));
   }
   writeDocsWebManifest();
+  syncStaticHtmlIconRevision();
 }
 
 async function generatePublicAssets() {
@@ -452,9 +508,10 @@ async function generatePublicAssets() {
     const svg =
       icon.kind === "wide"
         ? featureGraphicSvg({ width: icon.width, height: icon.height })
-        : tileSvg({ width: icon.width, height: icon.height, scale: icon.width <= 50 ? 0.86 : 0.8 });
+        : rasterSizedSvg(tileSvg, { width: icon.width, height: icon.height, scale: icon.width <= 50 ? 0.86 : 0.8 });
     await pngFromSvg(svg, path.join(publicDir, icon.file), {
       flatten: icon.kind === "wide" ? "#071513" : undefined,
+      ...smallRasterOptions(icon.width, icon.height),
     });
   }
   await pngFromSvg(fullBleedSvg({ width: 512, height: 512, leafScale: 0.52 }), path.join(publicDir, "pwa-maskable-512.png"), {
@@ -479,12 +536,20 @@ async function generatePublicAssets() {
   const faviconEntries = await Promise.all(
     [16, 32, 48, 64, 128, 256].map(async (size) => ({
       size,
-      buffer: await pngBuffer(tileSvg({ width: size, height: size, scale: 0.82 }), size),
+      buffer: await pngBuffer(
+        rasterSizedSvg(tileSvg, { width: size, height: size, scale: 0.82 }),
+        size,
+        size <= SMALL_RASTER_MAX_SIZE ? { sharpen: SMALL_RASTER_SHARPEN_SIGMA } : {},
+      ),
     })),
   );
   writeIco(path.join(publicDir, "favicon.ico"), faviconEntries);
   for (const size of BROWSER_FAVICON_SIZES) {
-    await pngFromSvg(tileSvg({ width: size, height: size, scale: size <= 32 ? 0.88 : 0.82 }), path.join(publicDir, `favicon-${size}.png`));
+    await pngFromSvg(
+      rasterSizedSvg(tileSvg, { width: size, height: size, scale: size <= 32 ? 0.88 : 0.82 }),
+      path.join(publicDir, `favicon-${size}.png`),
+      smallRasterOptions(size, size),
+    );
   }
   syncPublicInstallAssetsToDocs();
 }
@@ -492,13 +557,21 @@ async function generatePublicAssets() {
 async function generateTauriAssets() {
   const tauriDir = path.join(ROOT, "src-tauri", "icons");
   for (const [file, size] of TAURI_PNGS) {
-    await pngFromSvg(tileSvg({ width: size, height: size, scale: size <= 44 ? 0.86 : 0.8 }), path.join(tauriDir, file));
+    await pngFromSvg(
+      rasterSizedSvg(tileSvg, { width: size, height: size, scale: size <= 44 ? 0.86 : 0.8 }),
+      path.join(tauriDir, file),
+      smallRasterOptions(size, size),
+    );
   }
 
   const icoEntries = await Promise.all(
     [16, 32, 48, 64, 128, 256].map(async (size) => ({
       size,
-      buffer: await pngBuffer(tileSvg({ width: size, height: size, scale: size <= 32 ? 0.88 : 0.82 }), size),
+      buffer: await pngBuffer(
+        rasterSizedSvg(tileSvg, { width: size, height: size, scale: size <= 32 ? 0.88 : 0.82 }),
+        size,
+        { sharpen: SMALL_RASTER_SHARPEN_SIGMA },
+      ),
     })),
   );
   writeIco(path.join(tauriDir, "icon.ico"), icoEntries);
@@ -527,13 +600,21 @@ async function generateAndroidAssets(androidResDir = path.join(ROOT, "android", 
   for (const { name, size } of ANDROID_SIZES) {
     const dir = path.join(androidResDir, name);
     fs.mkdirSync(dir, { recursive: true });
-    await pngFromSvg(fullBleedSvg({ width: size, height: size, leafScale: 0.52 }), path.join(dir, "ic_launcher.png"), {
-      flatten: "#2E9B70",
-    });
-    await pngFromSvg(fullBleedSvg({ width: size, height: size, leafScale: 0.52 }), path.join(dir, "ic_launcher_round.png"), {
-      flatten: "#2E9B70",
-    });
-    await pngFromSvg(foregroundSvg({ width: size, height: size, leafScale: 0.56 }), path.join(dir, "ic_launcher_foreground.png"));
+    await pngFromSvg(
+      rasterSizedSvg(fullBleedSvg, { width: size, height: size, leafScale: 0.52 }),
+      path.join(dir, "ic_launcher.png"),
+      { flatten: "#2E9B70", ...smallRasterOptions(size, size) },
+    );
+    await pngFromSvg(
+      rasterSizedSvg(fullBleedSvg, { width: size, height: size, leafScale: 0.52 }),
+      path.join(dir, "ic_launcher_round.png"),
+      { flatten: "#2E9B70", ...smallRasterOptions(size, size) },
+    );
+    await pngFromSvg(
+      rasterSizedSvg(foregroundSvg, { width: size, height: size, leafScale: 0.56 }),
+      path.join(dir, "ic_launcher_foreground.png"),
+      smallRasterOptions(size, size),
+    );
   }
 
   writeAndroidBackground(androidResDir);

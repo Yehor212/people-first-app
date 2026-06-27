@@ -13,8 +13,8 @@ const githubSecrets: Array<{ name: string; note?: string }> = [
   { name: "TELEGRAM_CONTROL_CALLBACK_URL" },
   { name: "TELEGRAM_CONTROL_CALLBACK_SECRET" },
   {
-    name: "TELEGRAM_BOT_TOKEN",
-    note: "required for deploy-time approved OAuth bot profile photo proof",
+    name: "TELEGRAM_AUTH_BOT_TOKEN",
+    note: "required for deploy-time approved public OAuth bot profile photo proof",
   },
   {
     name: "OPENAI_API_KEY",
@@ -34,10 +34,14 @@ console.log(
 );
 console.log("");
 console.log("2. Set Cloudflare secrets without printing values:");
+console.log("   Use a private report/control bot for TELEGRAM_BOT_TOKEN. Keep @ZenFlowAuthBot for Supabase login only.");
 console.log("   npm --prefix tools/telegram-control run secrets:bootstrap");
 console.log("   npm --prefix tools/telegram-control run secrets:bootstrap -- --write-local");
 console.log("   npm --prefix tools/telegram-control run secrets:install-generated -- --cloudflare");
 console.log("   npm --prefix tools/telegram-control run secrets:install-account -- --dry-run");
+console.log("   npm --prefix tools/telegram-control run secrets:prompt-account -- --dry-run");
+console.log("   npm --prefix tools/telegram-control run secrets:prompt-account -- --cloudflare --github-telegram");
+console.log("   # Or install from an already prepared shell env:");
 console.log("   npm --prefix tools/telegram-control run secrets:install-account -- --cloudflare");
 console.log(
   "   Use generated TELEGRAM_WEBHOOK_SECRET, GITHUB_WEBHOOK_SECRET, and TELEGRAM_CONTROL_CALLBACK_SECRET from the local ignored env file."
@@ -78,10 +82,18 @@ console.log("   npm --prefix tools/telegram-control run set-bot-ui -- --dry-run"
 console.log("   npm --prefix tools/telegram-control run set-bot-ui");
 console.log("");
 console.log("6. Configure GitHub repository secrets:");
+console.log("   Use TELEGRAM_AUTH_BOT_TOKEN for the public @ZenFlowAuthBot profile proof.");
 console.log(
   "   npm --prefix tools/telegram-control run github-app:manifest -- --base-url https://<worker-host>"
 );
+console.log(
+  "   npm --prefix tools/telegram-control run github-app:local-flow -- --dry-run --base-url https://<worker-host>"
+);
+console.log(
+  "   npm --prefix tools/telegram-control run github-app:local-flow -- --apply --base-url https://<worker-host> --cloudflare"
+);
 console.log("   # Add --org <organization> only for an organization-owned GitHub App.");
+console.log("   # Manifest flow returns GitHub's GITHUB_WEBHOOK_SECRET; store that value in Cloudflare.");
 console.log("   npm --prefix tools/telegram-control run secrets:install-generated -- --github");
 console.log("   $env:TELEGRAM_CONTROL_BASE_URL='https://<worker-host>'");
 console.log("   npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run");
@@ -110,5 +122,5 @@ console.log("   $env:TELEGRAM_ADMIN_ID='<your Telegram numeric id>'");
 console.log("   npm --prefix tools/telegram-control run smoke:live");
 console.log("");
 console.log(
-  "No command above includes a secret value. Enter secrets only into wrangler/gh prompts or local env vars."
+  "No command above includes a secret value. Enter secrets only into local prompts, wrangler/gh prompts, or local env vars."
 );

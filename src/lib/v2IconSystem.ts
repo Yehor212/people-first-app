@@ -3,6 +3,7 @@ import {
   BadgeCheck,
   BadgePlus,
   BookMarked,
+  CalendarClock,
   ChartSpline,
   CircleFadingPlus,
   CirclePlus,
@@ -34,6 +35,7 @@ export const V2_NAV_ICONS: Record<NavV2Page, LucideIcon> = {
   orb: HeartPulse,
   habits: Sprout,
   diary: NotebookPen,
+  planning: CalendarClock,
   settings: SlidersHorizontal,
 };
 
@@ -105,10 +107,7 @@ const V2_HABIT_TEMPLATE_IDS = [
 ] as const;
 
 export const V2_HABIT_TEMPLATE_SYMBOLS: Record<string, string> = Object.fromEntries(
-  V2_HABIT_TEMPLATE_IDS.map((templateId) => [
-    templateId,
-    getV2HabitTemplatePictogramId(templateId),
-  ]),
+  V2_HABIT_TEMPLATE_IDS.map((templateId) => [templateId, getV2HabitTemplatePictogramId(templateId)])
 );
 
 export function getV2HabitTemplateSymbol(templateId: string): string {

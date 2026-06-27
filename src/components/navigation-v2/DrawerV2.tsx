@@ -120,6 +120,7 @@ export const DrawerV2 = memo(function DrawerV2({
     { id: "orb", icon: V2_NAV_ICONS.orb, label: tx.navV2Orb || "Mood" },
     { id: "habits", icon: V2_NAV_ICONS.habits, label: tx.navV2Habits || tx.habits || "Habits" },
     { id: "diary", icon: V2_NAV_ICONS.diary, label: tx.navV2Diary || tx.diary || "Diary" },
+    { id: "planning", icon: V2_NAV_ICONS.planning, label: tx.navV2Planning },
   ];
   const settingsLabel = tx.navV2Settings;
   const isSettingsActive = activePage === "settings";
@@ -234,7 +235,8 @@ export const DrawerV2 = memo(function DrawerV2({
                     "active:scale-[0.992]",
                     isSelected
                       ? tone.activeSurfaceClass + " text-[hsl(var(--nav-v2-drawer-text))]"
-                      : "border-[hsl(var(--nav-v2-drawer-border)/0.20)] bg-[hsl(var(--nav-v2-item-surface)/0.52)] text-[hsl(var(--nav-v2-drawer-muted))] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] active:bg-[hsl(var(--nav-v2-item-hover))] " + tone.borderClass
+                      : "border-[hsl(var(--nav-v2-drawer-border)/0.20)] bg-[hsl(var(--nav-v2-item-surface)/0.52)] text-[hsl(var(--nav-v2-drawer-muted))] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] active:bg-[hsl(var(--nav-v2-item-hover))] " +
+                          tone.borderClass
                   )}
                   style={{
                     animationDelay: `${index * 45}ms`,
@@ -245,11 +247,16 @@ export const DrawerV2 = memo(function DrawerV2({
                     <>
                       <span
                         aria-hidden="true"
-                        className={"pointer-events-none absolute inset-0 bg-gradient-to-r " + tone.gradientClass}
+                        className={
+                          "pointer-events-none absolute inset-0 bg-gradient-to-r " +
+                          tone.gradientClass
+                        }
                       />
                       <span
                         aria-hidden="true"
-                        className={"absolute inset-y-3 start-0 w-1 rounded-e-full " + tone.railClass}
+                        className={
+                          "absolute inset-y-3 start-0 w-1 rounded-e-full " + tone.railClass
+                        }
                       />
                     </>
                   )}
@@ -303,10 +310,7 @@ export const DrawerV2 = memo(function DrawerV2({
             className="mb-2 rounded-2xl border border-[hsl(var(--nav-v2-drawer-border)/0.20)] bg-[hsl(var(--nav-v2-item-surface)/0.52)] shadow-sm"
             data-testid="drawer-v2-theme-switcher"
           >
-            <ThemeToggleV2
-              testId="drawer-v2-theme-toggle"
-              presentation="drawer"
-            />
+            <ThemeToggleV2 testId="drawer-v2-theme-toggle" presentation="drawer" />
           </div>
           <button
             type="button"
@@ -333,8 +337,10 @@ export const DrawerV2 = memo(function DrawerV2({
               "motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-300 motion-safe:ease-out",
               "active:scale-[0.992]",
               isSettingsSelected
-                ? getRoleTone("settings").activeSurfaceClass + " text-[hsl(var(--nav-v2-drawer-text))]"
-                : "border-[hsl(var(--nav-v2-drawer-border)/0.20)] bg-[hsl(var(--nav-v2-item-surface)/0.52)] text-[hsl(var(--nav-v2-drawer-muted))] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] active:bg-[hsl(var(--nav-v2-item-hover))] " + getRoleTone("settings").borderClass
+                ? getRoleTone("settings").activeSurfaceClass +
+                    " text-[hsl(var(--nav-v2-drawer-text))]"
+                : "border-[hsl(var(--nav-v2-drawer-border)/0.20)] bg-[hsl(var(--nav-v2-item-surface)/0.52)] text-[hsl(var(--nav-v2-drawer-muted))] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] active:bg-[hsl(var(--nav-v2-item-hover))] " +
+                    getRoleTone("settings").borderClass
             )}
             data-testid="drawer-v2-destination-settings"
           >

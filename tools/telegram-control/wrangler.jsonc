@@ -3,7 +3,10 @@
   "name": "zenflow-telegram-control",
   "main": "src/index.ts",
   "compatibility_date": "2026-05-26",
-  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
@@ -18,7 +21,7 @@
   "kv_namespaces": [
     {
       "binding": "CONTROL_STATE",
-      "id": "REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID"
+      "id": "216f5590e4f34156b159bf5f8e44836f"
     }
   ],
   "secrets": {

@@ -13,17 +13,20 @@ import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import { NotFoundPage } from "@/components/NotFoundPage";
 import { SidebarV2 } from "./SidebarV2";
 import { DrawerV2 } from "./DrawerV2";
-import type { GratitudeEntry, MoodEntry } from "@/types";
+import { V2FocusMiniPlayer } from "./V2FocusMiniPlayer";
+import { V2MindfulMomentLayer } from "./V2MindfulMomentLayer";
+import type { FocusSession, GratitudeEntry, MoodEntry } from "@/types";
 import type { V2SettingsControls } from "@/pages/nav-v2/SettingsPage";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 
 const loadCommandPalette = () => import("@/components/desktop/CommandPalette");
-const loadOrbPage = () =>
-  import("@/pages/nav-v2/OrbPage").then((m) => ({ default: m.OrbPage }));
+const loadOrbPage = () => import("@/pages/nav-v2/OrbPage").then((m) => ({ default: m.OrbPage }));
 const loadHabitsPage = () =>
   import("@/pages/nav-v2/HabitsPage").then((m) => ({ default: m.HabitsPage }));
 const loadDiaryPage = () =>
   import("@/pages/nav-v2/DiaryPage").then((m) => ({ default: m.DiaryPage }));
+const loadPlanningPage = () =>
+  import("@/pages/nav-v2/planning/PlanningPage").then((m) => ({ default: m.PlanningPage }));
 const loadSettingsPage = () =>
   import("@/pages/nav-v2/SettingsPage").then((m) => ({ default: m.SettingsPage }));
 
@@ -31,6 +34,7 @@ const CommandPalette = lazy(loadCommandPalette);
 const OrbPage = lazy(loadOrbPage);
 const HabitsPage = lazy(loadHabitsPage);
 const DiaryPage = lazy(loadDiaryPage);
+const PlanningPage = lazy(loadPlanningPage);
 const SettingsPage = lazy(loadSettingsPage);
 
 type RouteLoader = () => Promise<unknown>;
@@ -38,6 +42,7 @@ const NAV_V2_ROUTE_LOADERS: Record<NavV2Page, RouteLoader> = {
   orb: loadOrbPage,
   habits: loadHabitsPage,
   diary: loadDiaryPage,
+  planning: loadPlanningPage,
   settings: loadSettingsPage,
 };
 const preloadedNavV2Routes = new Map<NavV2Page, Promise<unknown>>();
@@ -110,6 +115,8 @@ function scheduleNavV2RoutePreload(activePage: NavV2Page) {
 interface NavV2OrchestratorProps {
   onAddMood?: (entry: MoodEntry) => void;
   onAddGratitude?: (entry: GratitudeEntry) => void;
+  onCompleteFocusSession?: (session: FocusSession) => void;
+  onMindfulMomentComplete?: () => void;
   settingsControls?: V2SettingsControls;
 }
 
@@ -150,6 +157,7 @@ function NavV2RouteFallback({ label }: { label: string }) {
 function getNavV2RouteLabel(page: NavV2Page, tx: Record<string, string>): string {
   if (page === "habits") return tx.navV2Habits || tx.habits || "Habits";
   if (page === "diary") return tx.navV2Diary || tx.diary || "Diary";
+  if (page === "planning") return tx.navV2Planning;
   if (page === "settings") return tx.navV2Settings || tx.settings;
   return tx.navV2Orb || tx.somLogFeeling || "Mood";
 }
@@ -164,7 +172,10 @@ function NavV2RoutePending({ label }: { label: string }) {
       className="pointer-events-none fixed start-1/2 top-[calc(var(--safe-top)+0.35rem)] z-[61] max-w-[calc(100vw-6rem)] -translate-x-1/2 rounded-full border border-border/55 bg-card/85 px-3 py-1.5 text-[11px] font-semibold leading-none text-foreground shadow-[0_10px_28px_hsl(var(--foreground)/0.14)] backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] motion-safe:animate-fade-in"
     >
       <span className="inline-flex min-h-[24px] items-center gap-1.5">
-        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-primary motion-safe:animate-pulse" />
+        <span
+          aria-hidden="true"
+          className="h-1.5 w-1.5 rounded-full bg-primary motion-safe:animate-pulse"
+        />
         <span className="truncate">{label}</span>
       </span>
     </div>
@@ -174,6 +185,8 @@ function NavV2RoutePending({ label }: { label: string }) {
 export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   onAddMood,
   onAddGratitude,
+  onCompleteFocusSession,
+  onMindfulMomentComplete,
   settingsControls,
 }: NavV2OrchestratorProps) {
   const { t } = useLanguage();
@@ -200,9 +213,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   const effectiveSidebarCollapsed = sidebarCollapsed || forceCompactWebRail;
   const shouldShowDrawerTrigger = !isWebNavigation && !unknownPath && activePage !== "diary";
   const MenuIcon = V2_SHELL_ICONS.menu;
-  const pendingRouteLabel = routePendingPage
-    ? getNavV2RouteLabel(routePendingPage, tx)
-    : null;
+  const pendingRouteLabel = routePendingPage ? getNavV2RouteLabel(routePendingPage, tx) : null;
 
   useEffect(() => scheduleNavV2RoutePreload(activePage), [activePage]);
 
@@ -232,7 +243,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
     (page: NavV2Page) => {
       setActivePage(page, { skipTransition: tier === "phone" || !isWebNavigation });
     },
-    [isWebNavigation, setActivePage, tier],
+    [isWebNavigation, setActivePage, tier]
   );
 
   // Register Android back handler — drawer close > palette close > let native back
@@ -251,7 +262,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
     if (typeof document === "undefined") return;
     document.documentElement.style.setProperty(
       "--sidebar-width",
-      effectiveSidebarCollapsed ? "72px" : "256px",
+      effectiveSidebarCollapsed ? "72px" : "256px"
     );
     return () => {
       document.documentElement.style.removeProperty("--sidebar-width");
@@ -259,23 +270,24 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   }, [effectiveSidebarCollapsed]);
 
   // Keyboard shortcuts (desktop/tablet only)
-  const togglePalette = useCallback(() => setCommandPaletteOpen(!commandPaletteOpen), [
-    commandPaletteOpen,
-    setCommandPaletteOpen,
-  ]);
+  const togglePalette = useCallback(
+    () => setCommandPaletteOpen(!commandPaletteOpen),
+    [commandPaletteOpen, setCommandPaletteOpen]
+  );
   useKeyboardShortcuts(
     {
       "ctrl+1": () => handlePrimaryPageChange("orb"),
       "ctrl+2": () => handlePrimaryPageChange("habits"),
       "ctrl+3": () => handlePrimaryPageChange("diary"),
-      "ctrl+4": () => handlePrimaryPageChange("settings"),
+      "ctrl+4": () => handlePrimaryPageChange("planning"),
+      "ctrl+5": () => handlePrimaryPageChange("settings"),
       "ctrl+k": togglePalette,
       escape: () => {
         if (commandPaletteOpen) setCommandPaletteOpen(false);
         else if (drawerOpen) closeDrawer();
       },
     },
-    isWebNavigation,
+    isWebNavigation
   );
 
   const pageNode = unknownPath ? (
@@ -286,19 +298,21 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
       onGoHome={() => handlePrimaryPageChange("orb")}
     />
   ) : activePage === "orb" ? (
-      <OrbPage navigateToPage={handlePrimaryPageChange} onAddMood={onAddMood} />
-    ) : activePage === "habits" ? (
-      <HabitsPage />
-    ) : activePage === "diary" ? (
-      <DiaryPage
-        onOpenNavMenu={handleOpenDrawer}
-        navMenuOpen={drawerOpen}
-        showAppNavMenu={!isWebNavigation}
-        onAddGratitude={onAddGratitude}
-      />
-    ) : (
-      <SettingsPage controls={settingsControls} />
-    );
+    <OrbPage navigateToPage={handlePrimaryPageChange} onAddMood={onAddMood} />
+  ) : activePage === "habits" ? (
+    <HabitsPage />
+  ) : activePage === "diary" ? (
+    <DiaryPage
+      onOpenNavMenu={handleOpenDrawer}
+      navMenuOpen={drawerOpen}
+      showAppNavMenu={!isWebNavigation}
+      onAddGratitude={onAddGratitude}
+    />
+  ) : activePage === "planning" ? (
+    <PlanningPage onCompleteFocusSession={onCompleteFocusSession} />
+  ) : (
+    <SettingsPage controls={settingsControls} />
+  );
 
   return (
     <div
@@ -310,7 +324,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
             : "md:ps-[72px]"
           : forceWebNavigation
             ? "ps-64"
-            : "md:ps-64",
+            : "md:ps-64"
       )}
       data-testid="nav-v2-orchestrator"
       data-fullscreen-surface="v2"
@@ -348,7 +362,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
           "border border-border/50 shadow-[0_14px_34px_hsl(var(--foreground)/0.16)]",
           "text-foreground/90",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-          "motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 active:scale-95 active:bg-muted/60",
+          "motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 active:scale-95 active:bg-muted/60"
         )}
       >
         <MenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />
@@ -366,16 +380,19 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
 
       {commandPaletteOpen && (
         <Suspense fallback={null}>
-          <CommandPalette
-            open={commandPaletteOpen}
-            onClose={() => setCommandPaletteOpen(false)}
-          />
+          <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
         </Suspense>
       )}
 
       <Suspense fallback={<NavV2RouteFallback label={tx.loading || "Loading..."} />}>
         {pageNode}
       </Suspense>
+
+      <V2FocusMiniPlayer
+        activePage={activePage}
+        onNavigateToPlanning={() => handlePrimaryPageChange("planning")}
+      />
+      <V2MindfulMomentLayer onComplete={onMindfulMomentComplete} />
     </div>
   );
 });

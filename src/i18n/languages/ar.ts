@@ -3212,6 +3212,7 @@ const arabicOverrides: Partial<Translations> = {
   navV2Orb: "المزاج",
   navV2Habits: "العادات",
   navV2Diary: "اليوميات",
+  navV2Planning: "التخطيط",
   navV2Settings: "الإعدادات",
   navV2PrimaryNav: "التنقل الرئيسي",
   navV2OpenMenu: "افتح القائمة",
@@ -3226,6 +3227,10 @@ const arabicOverrides: Partial<Translations> = {
   navV2OrbPlaceholder: "صفحة المزاج — ستصل المرحلة 3-B بـ HomeTab هنا.",
   navV2HabitsPlaceholder: "صفحة العادات — ستصل المرحلة 3-C بـ GardenTab + HabitHubTab.",
   navV2DiaryPlaceholder: "صفحة اليوميات — ستصل المرحلة 3-D بـ JournalModule.",
+  navV2PlanningHeading: "خطّط لطقسك التالي",
+  navV2PlanningSubcopy: "يجتمع جدولك ومؤقت التركيز هنا.",
+  navV2PlanningEmpty: "لا توجد أحداث بعد",
+  navV2PlanningLoading: "جارٍ تجهيز التخطيط...",
   navV2SettingsPlaceholder:
     "نحضّر عناصر التحكم الشخصية هنا. تبقى السمات والتذكيرات والخصوصية متاحة مؤقتًا في الإعدادات الكلاسيكية.",
   v2PortalEyebrow: "معاينة V2",

@@ -3322,6 +3322,7 @@ export interface Translations {
   navV2Orb: string;
   navV2Habits: string;
   navV2Diary: string;
+  navV2Planning: string;
   navV2Settings: string;
   navV2PrimaryNav: string;
   navV2OpenMenu: string;
@@ -3336,6 +3337,10 @@ export interface Translations {
   navV2OrbPlaceholder: string;
   navV2HabitsPlaceholder: string;
   navV2DiaryPlaceholder: string;
+  navV2PlanningHeading: string;
+  navV2PlanningSubcopy: string;
+  navV2PlanningEmpty: string;
+  navV2PlanningLoading: string;
   navV2SettingsPlaceholder: string;
   v2PortalEyebrow: string;
   v2PortalTitle: string;

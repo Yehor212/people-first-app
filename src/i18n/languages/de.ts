@@ -3376,6 +3376,7 @@ export const de: Translations = {
   navV2Orb: "Stimmung",
   navV2Habits: "Gewohnheiten",
   navV2Diary: "Tagebuch",
+  navV2Planning: "Planung",
   navV2Settings: "Einstellungen",
   navV2PrimaryNav: "Hauptnavigation",
   navV2OpenMenu: "Menü öffnen",
@@ -3390,6 +3391,10 @@ export const de: Translations = {
   navV2OrbPlaceholder: "Stimmungsseite — Phase 3-B verbindet hier HomeTab.",
   navV2HabitsPlaceholder: "Gewohnheiten-Seite — Phase 3-C verbindet GardenTab + HabitHubTab.",
   navV2DiaryPlaceholder: "Tagebuch-Seite — Phase 3-D verbindet JournalModule.",
+  navV2PlanningHeading: "Plane dein nächstes Ritual",
+  navV2PlanningSubcopy: "Dein Zeitplan und Fokus-Timer leben hier zusammen.",
+  navV2PlanningEmpty: "Noch keine Ereignisse",
+  navV2PlanningLoading: "Planung wird vorbereitet...",
   navV2SettingsPlaceholder:
     "Deine persönlichen Optionen werden hier vorbereitet. Themes, Erinnerungen und Datenschutz bleiben vorerst in den klassischen Einstellungen.",
   v2PortalEyebrow: "V2-Vorschau",

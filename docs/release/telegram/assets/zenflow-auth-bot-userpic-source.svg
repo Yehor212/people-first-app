@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="ZenFlow Telegram bot avatar">
+  <defs>
+    <linearGradient id="zfTelegramBg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#286f59"/>
+      <stop offset=".48" stop-color="#2e9b70"/>
+      <stop offset="1" stop-color="#42c386"/>
+    </linearGradient>
+    <radialGradient id="zfTelegramHighlight" cx="170" cy="126" r="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".18"/>
+      <stop offset=".5" stop-color="#ffffff" stop-opacity=".055"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="zfTelegramVignette" cx="358" cy="370" r="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#083227" stop-opacity=".18"/>
+      <stop offset=".72" stop-color="#083227" stop-opacity=".04"/>
+      <stop offset="1" stop-color="#083227" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="zfTelegramLeafFill" cx="246" cy="228" r="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity=".04"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#zfTelegramBg)"/>
+  <rect width="512" height="512" fill="url(#zfTelegramHighlight)"/>
+  <rect width="512" height="512" fill="url(#zfTelegramVignette)"/>
+
+  <g transform="translate(140.186 134.195) scale(9.65120)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" fill="url(#zfTelegramLeafFill)" stroke="#052c22" stroke-opacity=".18" stroke-width="2.28" transform="translate(.14 .22)"/>
+    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" stroke="#052c22" stroke-opacity=".18" stroke-width="2.28" transform="translate(.14 .22)"/>
+    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" fill="url(#zfTelegramLeafFill)" stroke="#fff" stroke-width="2"/>
+    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" stroke="#fff" stroke-width="2"/>
+  </g>
+</svg>

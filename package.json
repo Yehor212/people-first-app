@@ -76,7 +76,7 @@
     "check:sentry": "node scripts/check-sentry-status.cjs",
     "check:sentry-readiness": "node scripts/check-sentry-readiness.cjs",
     "smoke:sentry-api": "node scripts/smoke-sentry-api.cjs",
-    "check:telegram-control": "npm --prefix tools/telegram-control run typecheck && npm --prefix tools/telegram-control run test && npm --prefix tools/telegram-control run check:workflow && npm --prefix tools/telegram-control run check:secrets && npm --prefix tools/telegram-control run smoke:local && npm --prefix tools/telegram-control run verify:config && npm --prefix tools/telegram-control run setup:kv -- --dry-run && npm --prefix tools/telegram-control run github-app:manifest -- --base-url https://example.invalid && npm --prefix tools/telegram-control run telegram:doctor && npm --prefix tools/telegram-control run set-webhook -- --dry-run && npm --prefix tools/telegram-control run set-bot-ui -- --dry-run && npm --prefix tools/telegram-control run secrets:bootstrap && npm --prefix tools/telegram-control run secrets:install-generated -- --dry-run && npm --prefix tools/telegram-control run secrets:install-account -- --dry-run && npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run --base-url https://example.invalid && npm --prefix tools/telegram-control run activation:run && npm --prefix tools/telegram-control run activation:doctor",
+    "check:telegram-control": "npm --prefix tools/telegram-control run typecheck && npm --prefix tools/telegram-control run test && npm --prefix tools/telegram-control run check:workflow && npm --prefix tools/telegram-control run check:secrets && npm --prefix tools/telegram-control run smoke:local && npm --prefix tools/telegram-control run verify:config && npm --prefix tools/telegram-control run setup:kv -- --dry-run && npm --prefix tools/telegram-control run github-app:manifest -- --base-url https://example.invalid && npm --prefix tools/telegram-control run github-app:local-flow -- --dry-run --base-url https://example.invalid && npm --prefix tools/telegram-control run telegram:doctor && npm --prefix tools/telegram-control run set-webhook -- --dry-run && npm --prefix tools/telegram-control run set-bot-ui -- --dry-run && npm --prefix tools/telegram-control run secrets:bootstrap && npm --prefix tools/telegram-control run secrets:install-generated -- --dry-run && npm --prefix tools/telegram-control run secrets:install-account -- --dry-run && npm --prefix tools/telegram-control run secrets:prompt-account -- --dry-run && npm --prefix tools/telegram-control run set-github-callback-url -- --dry-run --base-url https://example.invalid && npm --prefix tools/telegram-control run activation:run && npm --prefix tools/telegram-control run activation:doctor",
     "check:visual": "npm run check:canonical-orbs && npm run assets:logos:check && npx tsx scripts/check-visual-guards.ts && npm run check:v2-paper",
     "check:all": "npm run typecheck && npm run lint && npm run i18n:check && npm run i18n:deep && npm run check:colors && npm run check:visual",
     "smoke:v2-splash": "node scripts/smoke-v2-splash.cjs",
@@ -139,7 +139,8 @@
     "smoke:interactive-auth": "node scripts/smoke-interactive-auth-completion.cjs",
     "check:supabase-publishable-key": "node scripts/check-supabase-publishable-key.cjs",
     "rag:search:free": "npx tsx scripts/rag/search-project-docs.ts",
-    "rag:smoke:free": "npx tsx scripts/rag/smoke-free-rag.ts"
+    "rag:smoke:free": "npx tsx scripts/rag/smoke-free-rag.ts",
+    "rag:audit:free": "npx tsx scripts/rag/audit-free-rag.ts"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",

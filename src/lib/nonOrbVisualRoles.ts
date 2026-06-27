@@ -22,7 +22,7 @@ export type HabitCategoryLike =
 
 export type HabitTemplateCategoryLike = "body" | "mind" | "focus" | "rest" | "quit";
 export type TimeOfDayLike = "morning" | "afternoon" | "evening" | "anytime";
-export type NavV2VisualPageLike = "orb" | "habits" | "diary" | "settings";
+export type NavV2VisualPageLike = "orb" | "habits" | "diary" | "planning" | "settings";
 
 export interface NonOrbRoleTone {
   cssVar: string;
@@ -77,7 +77,10 @@ const ROLE_CSS_VARS: Record<NonOrbVisualRole, string> = {
   settings: "--zf-role-settings",
 };
 
-function createRoleTone(role: NonOrbVisualRole, prefix: "zf-role" | "zf-habit-role"): NonOrbRoleTone {
+function createRoleTone(
+  role: NonOrbVisualRole,
+  prefix: "zf-role" | "zf-habit-role"
+): NonOrbRoleTone {
   return {
     cssVar: ROLE_CSS_VARS[role],
     textClass: "zf-role-text",
@@ -94,9 +97,11 @@ function createRoleTone(role: NonOrbVisualRole, prefix: "zf-role" | "zf-habit-ro
   };
 }
 
-function createRoleToneRecord(prefix: "zf-role" | "zf-habit-role"): Record<NonOrbVisualRole, NonOrbRoleTone> {
+function createRoleToneRecord(
+  prefix: "zf-role" | "zf-habit-role"
+): Record<NonOrbVisualRole, NonOrbRoleTone> {
   return Object.fromEntries(
-    VISUAL_ROLES.map((role) => [role, createRoleTone(role, prefix)]),
+    VISUAL_ROLES.map((role) => [role, createRoleTone(role, prefix)])
   ) as Record<NonOrbVisualRole, NonOrbRoleTone>;
 }
 
@@ -134,7 +139,7 @@ const HABIT_STARTER_PLAY_TONES: Record<string, HabitStarterPlayTone> = Object.fr
   Object.entries(HABIT_STARTER_PLAY_ROLE).map(([templateId, role]) => [
     templateId,
     createHabitStarterPlayTone(role),
-  ]),
+  ])
 );
 
 const DEFAULT_HABIT_STARTER_PLAY_TONE = createHabitStarterPlayTone("space");
@@ -164,9 +169,7 @@ export function getRoleHsl(role: NonOrbVisualRole, alpha?: number): string {
   return alpha == null ? `hsl(var(${cssVar}))` : `hsl(var(${cssVar}) / ${alpha})`;
 }
 
-export function getHabitCategoryVisualRole(
-  category?: HabitCategoryLike | null,
-): NonOrbVisualRole {
+export function getHabitCategoryVisualRole(category?: HabitCategoryLike | null): NonOrbVisualRole {
   switch (category) {
     case "health":
       return "body";
@@ -204,7 +207,7 @@ export function getHabitVisualRole(habit: {
 }
 
 export function getTemplateCategoryVisualRole(
-  category: HabitTemplateCategoryLike,
+  category: HabitTemplateCategoryLike
 ): NonOrbVisualRole {
   switch (category) {
     case "body":
@@ -242,6 +245,8 @@ export function getNavVisualRole(page: NavV2VisualPageLike): NonOrbVisualRole {
       return "body";
     case "diary":
       return "diary";
+    case "planning":
+      return "focus";
     case "settings":
       return "settings";
   }
@@ -274,14 +279,7 @@ const COVER_ROLE: Record<string, NonOrbVisualRole> = {
   creative: "release",
 };
 
-const USER_SPACE_ROLES: NonOrbVisualRole[] = [
-  "space",
-  "diary",
-  "focus",
-  "mind",
-  "release",
-  "rest",
-];
+const USER_SPACE_ROLES: NonOrbVisualRole[] = ["space", "diary", "focus", "mind", "release", "rest"];
 
 function hashString(value: string): number {
   let hash = 0;
@@ -314,5 +312,7 @@ export function getSpaceVisualRole(space: {
   const accentRole = space.accent ? ACCENT_ROLE[space.accent] : undefined;
   if (accentRole && accentRole !== "space") return accentRole;
 
-  return USER_SPACE_ROLES[hashString(`${space.id}:${space.coverKey ?? ""}`) % USER_SPACE_ROLES.length];
+  return USER_SPACE_ROLES[
+    hashString(`${space.id}:${space.coverKey ?? ""}`) % USER_SPACE_ROLES.length
+  ];
 }

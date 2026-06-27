@@ -3344,6 +3344,7 @@ export const en: Translations = {
   navV2Orb: "Mood",
   navV2Habits: "Habits",
   navV2Diary: "Diary",
+  navV2Planning: "Planning",
   navV2Settings: "Settings",
   navV2PrimaryNav: "Primary navigation",
   navV2OpenMenu: "Open menu",
@@ -3358,6 +3359,10 @@ export const en: Translations = {
   navV2OrbPlaceholder: "Mood page — Phase 3-B will wire the HomeTab experience here.",
   navV2HabitsPlaceholder: "Habits page — Phase 3-C will wire GardenTab + HabitHubTab here.",
   navV2DiaryPlaceholder: "Diary page — Phase 3-D will wire the JournalModule experience here.",
+  navV2PlanningHeading: "Plan your next ritual",
+  navV2PlanningSubcopy: "Your schedule and focus timer live together here.",
+  navV2PlanningEmpty: "No events yet",
+  navV2PlanningLoading: "Preparing planning...",
   navV2SettingsPlaceholder:
     "Personal controls are being prepared here. Themes, reminders, and privacy stay available in classic settings for now.",
   v2PortalEyebrow: "V2 preview",

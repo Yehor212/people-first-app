@@ -27,7 +27,7 @@ interface SidebarV2Props {
  *   - Rail (collapsed): 72px, icon-only, label visible in tooltip on hover.
  *
  * Paper texture accent, ink rule under active item, serif labels. Skip-to-content
- * link anchors at the top. Keyboard: Ctrl+1..4 is wired globally via Index.tsx.
+ * link anchors at the top. Keyboard: Ctrl+1..5 is wired globally via Index.tsx.
  */
 export const SidebarV2 = memo(function SidebarV2({
   activePage,
@@ -45,8 +45,9 @@ export const SidebarV2 = memo(function SidebarV2({
       { id: "orb", icon: V2_NAV_ICONS.orb, label: tx.navV2Orb || "Mood" },
       { id: "habits", icon: V2_NAV_ICONS.habits, label: tx.navV2Habits || t.habits || "Habits" },
       { id: "diary", icon: V2_NAV_ICONS.diary, label: tx.navV2Diary || t.diary || "Diary" },
+      { id: "planning", icon: V2_NAV_ICONS.planning, label: tx.navV2Planning },
     ],
-    [tx, t.habits, t.diary],
+    [tx, t.habits, t.diary]
   );
 
   const settingsItem = {
@@ -57,7 +58,7 @@ export const SidebarV2 = memo(function SidebarV2({
 
   const renderItem = (
     item: { id: NavV2Page; icon: LucideIcon; label: string },
-    isFooter = false,
+    isFooter = false
   ) => {
     const isActive = activePage === item.id;
     const visualRole = getNavVisualRole(item.id);
@@ -80,9 +81,10 @@ export const SidebarV2 = memo(function SidebarV2({
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           isActive
             ? tone.activeSurfaceClass + " text-foreground shadow-sm"
-            : "text-muted-foreground hover:bg-[hsl(var(--nav-v2-item-hover)/0.72)] hover:text-foreground " + tone.borderClass,
+            : "text-muted-foreground hover:bg-[hsl(var(--nav-v2-item-hover)/0.72)] hover:text-foreground " +
+                tone.borderClass,
           collapsed && "justify-center px-2",
-          isFooter && "mt-auto",
+          isFooter && "mt-auto"
         )}
       >
         {isActive && !collapsed && (
@@ -94,7 +96,7 @@ export const SidebarV2 = memo(function SidebarV2({
         <span
           className={cn(
             "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1",
-            isActive ? tone.iconClass + " " + tone.ringClass : "bg-muted/45 ring-border/40",
+            isActive ? tone.iconClass + " " + tone.ringClass : "bg-muted/45 ring-border/40"
           )}
           aria-hidden="true"
         >
@@ -113,7 +115,7 @@ export const SidebarV2 = memo(function SidebarV2({
         "border-e border-border/60 bg-card/80 backdrop-blur-lg",
         "[-webkit-backdrop-filter:blur(12px)]",
         "motion-safe:transition-[width] motion-safe:duration-300 ease-out",
-        collapsed ? "w-[72px]" : "w-64",
+        collapsed ? "w-[72px]" : "w-64"
       )}
       role="navigation"
       aria-label={tx.navV2PrimaryNav || tx.mainNavigation || "Primary navigation"}
@@ -132,7 +134,7 @@ export const SidebarV2 = memo(function SidebarV2({
       <div
         className={cn(
           "flex items-center gap-2 px-4 py-5 border-b border-border/40",
-          collapsed && "justify-center px-2",
+          collapsed && "justify-center px-2"
         )}
       >
         <span
@@ -185,7 +187,7 @@ export const SidebarV2 = memo(function SidebarV2({
               "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--nav-v2-item-hover)/0.72)]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               "motion-safe:transition-colors motion-safe:duration-200",
-              collapsed && "justify-center px-2",
+              collapsed && "justify-center px-2"
             )}
             data-testid="sidebar-v2-collapse-toggle"
           >
@@ -194,11 +196,7 @@ export const SidebarV2 = memo(function SidebarV2({
             ) : (
               <ChevronsLeft className="h-5 w-5" aria-hidden="true" />
             )}
-            {!collapsed && (
-              <span className="text-xs">
-                {tx.navV2CollapseSidebar || "Collapse"}
-              </span>
-            )}
+            {!collapsed && <span className="text-xs">{tx.navV2CollapseSidebar || "Collapse"}</span>}
           </button>
         )}
       </div>

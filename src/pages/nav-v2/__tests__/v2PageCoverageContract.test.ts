@@ -26,6 +26,13 @@ const v2Pages = [
     testId: "diary-page",
   },
   {
+    id: "planning",
+    loader: "loadPlanningPage",
+    component: "PlanningPage",
+    source: "src/pages/nav-v2/planning/PlanningPage.tsx",
+    testId: "planning-page",
+  },
+  {
     id: "settings",
     loader: "loadSettingsPage",
     component: "SettingsPage",
@@ -41,7 +48,7 @@ describe("V2 page coverage contract", () => {
     const helper = read("e2e/helpers/zenflowV2State.ts");
 
     expect(navHook).toContain(
-      "export const NAV_V2_PAGES: readonly NavV2Page[] = [\"orb\", \"habits\", \"diary\", \"settings\"] as const;",
+      "export const NAV_V2_PAGES: readonly NavV2Page[] = [\"orb\", \"habits\", \"diary\", \"planning\", \"settings\"] as const;",
     );
 
     for (const page of v2Pages) {

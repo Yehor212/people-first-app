@@ -8105,17 +8105,32 @@ button.press-stable:active:not(:disabled),
   animation: v2hp-b50-glyph-character var(--v2hp-b50-glyph-duration) ease-in-out infinite;
 }
 
-.v2hp-motion-player__still {
+.v2hp-motion-player__still,
+.v2hp-motion-player__raster,
+.v2hp-motion-player__animated-raster,
+.v2hp-motion-player__animated-raster-poster {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
+  transform: translateZ(0);
+  user-select: none;
+}
+
+.v2hp-motion-player__still {
   opacity: 0.72;
   filter:
     drop-shadow(0 0.02em 0 hsl(var(--background) / 0.8))
     drop-shadow(0 0.12em 0.18em hsl(var(--foreground) / 0.16));
-  transform: translateZ(0);
-  user-select: none;
+}
+
+.v2hp-motion-player__raster,
+.v2hp-motion-player__animated-raster,
+.v2hp-motion-player__animated-raster-poster {
+  opacity: 1;
+  filter:
+    drop-shadow(0 0.08em 0.16em hsl(var(--zf-night-0) / 0.18))
+    drop-shadow(0 0.2em 0.34em hsl(var(--foreground) / 0.12));
 }
 
 .v2hp-motion-player[data-renderer="still"] {
@@ -8124,7 +8139,13 @@ button.press-stable:active:not(:disabled),
   animation: none;
 }
 
-.v2hp-motion-player[data-motion-state="complete"] {
+.v2hp-motion-player[data-renderer="raster-sticker"],
+.v2hp-motion-player[data-renderer="animated-raster"] {
+  opacity: 1;
+  mix-blend-mode: normal;
+}
+
+.v2hp-motion-player[data-motion-state="complete"]:not([data-renderer="animated-raster"]) {
   opacity: 0.62;
 }
 

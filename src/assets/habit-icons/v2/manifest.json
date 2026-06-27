@@ -1,8 +1,11 @@
 {
-  "version": "v2-habit-icons-approved-read-water-walk-v12",
+  "version": "v2-habit-icons-approved-read-water-walk-review-blocked-v13",
   "qualityTier": "approved-read-water-production-quality-targets",
-  "rendererPriority": ["lottie", "still"],
-  "sourcePolicy": "read-water-and-walk-distance-original-approved-lotties",
+  "rendererPriority": [
+    "lottie",
+    "still"
+  ],
+  "sourcePolicy": "read-water-approved-lotties-walk-distance-blocked-until-telegram-grade-vector-rig",
   "faceOrPersonGlyphsAllowed": false,
   "genericFloatPulseAllowed": false,
   "budget": {
@@ -44,7 +47,13 @@
         "paths": 356,
         "strokes": 420
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"],
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ],
       "lottie": "drink-water/idle.lottie.json",
       "reviewStatus": "approved-production-user-confirmed-water-v29",
       "productionRights": "Original ZenFlow vector animation",
@@ -55,33 +64,38 @@
     {
       "id": "walk-distance",
       "label": "Walk distance",
-      "source": "zenflow-original-approved-lottie/walk-distance-v12-hero-runner",
+      "source": "zenflow-static-reduced-awaiting-lottie-approval/walk-distance",
       "license": "Original",
       "reduced": "walk-distance/reduced.svg",
       "idle": {
-        "renderer": "lottie",
-        "name": "v2hp-walk-distance-hero-runner-v12-final-candidate",
-        "durationMs": 2983,
-        "bytes": 3071542
+        "renderer": "still",
+        "name": "v2hp-locked-static-walk-distance-awaiting-lottie-approval",
+        "durationMs": 0,
+        "bytes": 0
       },
       "quality": {
-        "frames": 179,
-        "frameRate": 60,
-        "layers": 191,
-        "shapeRecords": 1343,
-        "animatedChannels": 838,
-        "gradients": 61,
-        "trimPaths": 59,
-        "paths": 149,
-        "strokes": 233
+        "frames": 0,
+        "frameRate": 0,
+        "layers": 0,
+        "shapeRecords": 0,
+        "animatedChannels": 0,
+        "gradients": 0,
+        "trimPaths": 0,
+        "paths": 0,
+        "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"],
-      "lottie": "walk-distance/idle.lottie.json",
-      "reviewStatus": "approved-production-hero-runner-v12",
-      "productionRights": "Original ZenFlow vector animation",
-      "qualityGateProfile": "zenflow-app-grade-lottie-walk-hero-runner-v12",
-      "appQualityReport": "walk-distance/proof/approval-packet.json",
-      "telegramBudgetStatus": "tgs-exported-under-64kb"
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ],
+      "reviewStatus": "blocked-apng-rejected-awaiting-telegram-grade-vector-lottie-tgs-rig",
+      "productionRights": "Original source required before approval; current APNG direction rejected by visual review",
+      "qualityGateProfile": "telegram-grade-vector-lottie-tgs-required",
+      "appQualityReport": "output/reference/tgs-benchmark/comparison.json",
+      "telegramBudgetStatus": "required-target-vector-tgs-lottie-not-apng"
     },
     {
       "id": "exercise",
@@ -106,7 +120,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "read",
@@ -131,7 +151,13 @@
         "paths": 312,
         "strokes": 291
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"],
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ],
       "lottie": "read/idle.lottie.json",
       "reviewStatus": "approved-production-user-confirmed-no-logo",
       "productionRights": "CONFIRMED_BY_USER_2026-06-22",
@@ -162,7 +188,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "sleep",
@@ -187,7 +219,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "stretch",
@@ -212,7 +250,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "healthy-food",
@@ -237,7 +281,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "protein",
@@ -262,7 +312,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "vitamins",
@@ -287,7 +343,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "brush-teeth",
@@ -312,7 +374,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "sunlight",
@@ -337,7 +405,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "touch-grass",
@@ -362,7 +436,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "journal",
@@ -387,7 +467,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "gratitude",
@@ -412,7 +498,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "breathwork",
@@ -437,7 +529,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "phone-break",
@@ -462,7 +560,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "deep-work",
@@ -487,7 +591,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "tidy-room",
@@ -512,7 +622,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "quit-smoking",
@@ -537,7 +653,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "quit-drinking",
@@ -562,7 +684,13 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     },
     {
       "id": "focus",
@@ -587,10 +715,19 @@
         "paths": 0,
         "strokes": 0
       },
-      "states": ["idle", "press", "complete", "disabled", "reduced"]
+      "states": [
+        "idle",
+        "press",
+        "complete",
+        "disabled",
+        "reduced"
+      ]
     }
   ],
-  "approvedLottieIds": ["drink-water", "walk-distance", "read"],
+  "approvedLottieIds": [
+    "drink-water",
+    "read"
+  ],
   "approvalPolicy": {
     "oneIconAtATime": true,
     "currentPilot": "walk-distance",
@@ -604,14 +741,24 @@
       "browser-review",
       "explicit-user-approval"
     ],
-    "currentPilotStatus": "planning-original-walk-distance-quality-first-after-read-water-approval",
+    "currentPilotStatus": "blocked-apng-rejected-awaiting-telegram-grade-vector-lottie-tgs-rig",
     "requiredProductionBrief": "design/habit-icons/v2/telegram-grade-lottie-production-brief.md",
     "selectedReviewCandidate": null,
     "originalCandidateArchived": "read/original-v91.lottie.json",
     "productionRightsRequiredBeforeApproval": true,
     "nextIconProductionQueueStarted": true,
-    "approvedProductionIcons": ["drink-water", "read"]
+    "approvedProductionIcons": [
+      "drink-water",
+      "read"
+    ]
   },
   "reviewCandidateLottieIds": [],
-  "rejectedLottieIds": ["read-original-v91", "walk-distance-kinetic-soles-v1"]
+  "rejectedLottieIds": [
+    "read-original-v91",
+    "walk-distance",
+    "walk-distance-animated-raster-v1",
+    "walk-distance-kinetic-soles-v1"
+  ],
+  "approvedAnimatedRasterIds": [],
+  "approvedRasterIds": []
 }

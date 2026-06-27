@@ -63,6 +63,7 @@ const deployRequiredSubstrings = [
   "Validate Telegram-approved deploy target",
   "Telegram-approved production deploys must run from main.",
   "github.event.inputs.telegram_approval == 'telegram-approved'",
+  "TELEGRAM_AUTH_BOT_TOKEN",
   "uses: actions/upload-pages-artifact@v5",
   "uses: actions/deploy-pages@v5.0.0",
 ];

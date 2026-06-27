@@ -8,15 +8,24 @@
   "routeGroups": [
     {
       "profile": "phone",
-      "viewport": { "width": 449, "height": 698 },
+      "viewport": {
+        "width": 449,
+        "height": 698
+      },
       "contextOptions": {
-        "viewport": { "width": 449, "height": 698 },
+        "viewport": {
+          "width": 449,
+          "height": 698
+        },
         "deviceScaleFactor": 2,
         "isMobile": true,
         "hasTouch": true
       },
       "routes": [
-        { "name": "home-v1-phone", "path": "?navLayout=phone" },
+        {
+          "name": "home-v1-phone",
+          "path": "?navLayout=phone"
+        },
         {
           "name": "orb-v2-phone",
           "path": "orb/?nav=v2&navLayout=phone",
@@ -34,6 +43,11 @@
           "readySelector": "[data-testid=\"journal-compact-empty-list\"], [data-testid=\"journal-empty-list\"]"
         },
         {
+          "name": "planning-v2-phone",
+          "path": "planning/?nav=v2&navLayout=phone",
+          "readySelector": "[data-testid=\"planning-page\"]"
+        },
+        {
           "name": "settings-v2-phone",
           "path": "settings/?nav=v2&navLayout=phone",
           "readySelector": "[data-testid=\"settings-page-control-card\"], [data-testid=\"settings-page-sections\"]"
@@ -47,15 +61,24 @@
     },
     {
       "profile": "desktop",
-      "viewport": { "width": 1440, "height": 900 },
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
       "contextOptions": {
-        "viewport": { "width": 1440, "height": 900 },
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
         "deviceScaleFactor": 1,
         "isMobile": false,
         "hasTouch": false
       },
       "routes": [
-        { "name": "home-v1-desktop", "path": "" },
+        {
+          "name": "home-v1-desktop",
+          "path": ""
+        },
         {
           "name": "orb-v2-desktop",
           "path": "orb/?nav=v2",
@@ -71,6 +94,11 @@
           "name": "diary-v2-desktop",
           "path": "diary/?nav=v2",
           "readySelector": "[data-testid=\"journal-compact-empty-list\"], [data-testid=\"journal-empty-list\"]"
+        },
+        {
+          "name": "planning-v2-desktop",
+          "path": "planning/?nav=v2",
+          "readySelector": "[data-testid=\"planning-page\"]"
         },
         {
           "name": "settings-v2-desktop",

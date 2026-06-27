@@ -130,7 +130,7 @@ void test("activation runner all mode selects every live activation step", () =>
   assert.equal(steps.find((step) => step.id === "live-smoke")?.shouldRun, true);
 });
 
-void test("activation runner installs the Telegram bot token into GitHub secrets explicitly", () => {
+void test("activation runner installs the public Telegram auth bot token into GitHub secrets explicitly", () => {
   const options = parseActivationRunOptions(["--apply", "--github-telegram-secret"], {});
   const step = buildActivationRunSteps(options).find(
     (candidate) => candidate.id === "github-account-secrets"

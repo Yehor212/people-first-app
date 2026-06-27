@@ -71,12 +71,12 @@ const checks = [
     next: "Set TELEGRAM_CONTROL_CALLBACK_URL in GitHub Actions secrets after the Worker URL exists.",
   },
   {
-    name: "GitHub Telegram bot token",
+    name: "GitHub Telegram auth bot token",
     status:
-      process.env.TELEGRAM_BOT_TOKEN || githubSecrets.has("TELEGRAM_BOT_TOKEN")
+      process.env.TELEGRAM_AUTH_BOT_TOKEN || githubSecrets.has("TELEGRAM_AUTH_BOT_TOKEN")
         ? "PASS"
         : "UNVERIFIED",
-    next: "Set GitHub TELEGRAM_BOT_TOKEN so deploy can prove the approved Telegram OAuth bot profile photo.",
+    next: "Set GitHub TELEGRAM_AUTH_BOT_TOKEN so deploy can prove the approved public Telegram OAuth bot profile photo.",
   },
   {
     name: "OpenAI Codex secret",

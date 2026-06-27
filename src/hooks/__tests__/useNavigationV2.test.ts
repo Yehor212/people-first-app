@@ -35,10 +35,17 @@ describe("useNavigationV2", () => {
       expect(result.current.unknownPath).toBeNull();
     });
 
-    it("derives initial page from URL path when one of the 4 matches", () => {
+    it("derives initial page from URL path when one of the V2 routes matches", () => {
       setPath("/diary");
       const { result } = renderHook(() => useNavigationV2());
       expect(result.current.activePage).toBe<NavV2Page>("diary");
+    });
+
+    it("derives initial page from the Planning URL path", () => {
+      setPath("/planning?nav=v2&navLayout=phone");
+      const { result } = renderHook(() => useNavigationV2());
+      expect(result.current.activePage).toBe<NavV2Page>("planning");
+      expect(result.current.unknownPath).toBeNull();
     });
 
     it("derives initial page from GitHub Pages directory URLs with trailing slash", () => {
@@ -185,8 +192,9 @@ describe("useNavigationV2", () => {
       expect(result.current.drawerOpen).toBe(false);
     });
 
-    it("visits all 4 pages in sequence without losing state", async () => {
+    it("visits all 5 pages in sequence without losing state", async () => {
       const { result } = renderHook(() => useNavigationV2());
+      expect(NAV_V2_PAGES).toEqual(["orb", "habits", "diary", "planning", "settings"]);
       for (const page of NAV_V2_PAGES) {
         await act(async () => {
           result.current.setActivePage(page);

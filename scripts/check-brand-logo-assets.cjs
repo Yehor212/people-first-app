@@ -5,8 +5,9 @@ const { execFileSync } = require("child_process");
 const sharp = require("sharp");
 
 const ROOT = path.resolve(__dirname, "..");
+const BRAND_LOGO_ASSETS_CONFIG = require("../config/brand-logo-assets.json");
 const MAX_STORE_BYTES = 50 * 1024 * 1024;
-const PWA_INSTALL_ICON_REVISION = "zenflow-browser-leaf-20260525-r6";
+const PWA_INSTALL_ICON_REVISION = BRAND_LOGO_ASSETS_CONFIG.pwaInstallIconRevision;
 const CLASSIC_LEAF_BODY = "M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z";
 const CLASSIC_LEAF_STEM = "M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12";
 const REJECTED_FLOW_LEAF_BODY = "M4.2 20.1C3.4 14.2 5.8 8.3 10.5 5.1c3.6-2.5 7.9-2.5 10.9-3.1.3 4.8-.5 9.3-3.8 12.8-3.5 3.7-8.7 5.7-13.4 5.3Z";
@@ -129,6 +130,8 @@ const SVG_EXPECTATIONS = [
   "docs/icon-source-round.svg",
   "docs/feature-graphic.svg",
 ];
+const TELEGRAM_USERPIC = "docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg";
+const TELEGRAM_USERPIC_SOURCE = "docs/release/telegram/assets/zenflow-auth-bot-userpic-source.svg";
 const DOCS_STATIC_HTML = fs
   .readdirSync(path.join(ROOT, "docs"))
   .filter((name) => /^(404|delete-account|privacy|privacy-policy|terms)(?:-[a-z]{2})?\.html$/.test(name))
@@ -158,9 +161,74 @@ const WHITE_MARK_SAFE_ZONE_EXPECTATIONS = [
   "docs/release/microsoft-store/assets/official-logo/zenflow-official-app-tile-icon-71.png",
   "docs/release/microsoft-store/assets/official-logo/zenflow-official-app-tile-icon-300.png",
 ];
+const SMALL_ICON_READABILITY_EXPECTATIONS = [
+  {
+    file: "public/favicon-16.png",
+    threshold: 200,
+    minPixels: 6,
+    minBox: 5,
+    maxBox: 10,
+    minMargin: 0.18,
+  },
+  {
+    file: "public/favicon-32.png",
+    threshold: 220,
+    minPixels: 28,
+    minBox: 10,
+    maxBox: 18,
+    minMargin: 0.2,
+  },
+  {
+    file: "public/pwa-windows-44.png",
+    threshold: 220,
+    minPixels: 70,
+    minBox: 14,
+    maxBox: 24,
+    minMargin: 0.2,
+  },
+  {
+    file: "public/pwa-windows-50.png",
+    threshold: 220,
+    minPixels: 86,
+    minBox: 16,
+    maxBox: 28,
+    minMargin: 0.2,
+  },
+  {
+    file: "src-tauri/icons/StoreLogo.png",
+    threshold: 220,
+    minPixels: 72,
+    minBox: 14,
+    maxBox: 26,
+    minMargin: 0.2,
+  },
+  {
+    file: "android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+    threshold: 220,
+    minPixels: 86,
+    minBox: 16,
+    maxBox: 28,
+    minMargin: 0.2,
+  },
+  {
+    file: "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
+    threshold: 235,
+    minPixels: 160,
+    minBox: 20,
+    maxBox: 30,
+    minMargin: 0.16,
+  },
+];
 
 function fail(message) {
   throw new Error(message);
+}
+
+function checkedRepoAssetPath(rel) {
+  if (path.isAbsolute(rel) || rel.split(/[\\/]+/).includes("..")) {
+    fail(`Unsafe repo asset path in brand logo contract: ${rel}`);
+  }
+  return ROOT + path.sep + rel.split("/").join(path.sep);
 }
 
 function read(rel) {
@@ -182,6 +250,7 @@ function assertClassicLogoContract() {
     "scripts/generate-icons.cjs",
     "scripts/generate-microsoft-store-logo-assets.cjs",
     "src/components/SplashScreen.tsx",
+    TELEGRAM_USERPIC_SOURCE,
     ...SVG_EXPECTATIONS,
   ]) {
     const text = read(rel);
@@ -198,6 +267,18 @@ function assertClassicLogoContract() {
       if (!text.includes(token)) {
         fail(`${rel} must keep the small-icon clarity guard ${token}`);
       }
+    }
+  }
+
+  const generator = read("scripts/generate-icons.cjs");
+  for (const token of ["iconLeafProfile", "leafProfile", "responsiveLeafScale", "strokeWidth =", "strokeWidth:", "shadow: false"]) {
+    if (generator.includes(token)) {
+      fail(`scripts/generate-icons.cjs must not change the ZenFlow logo design through size-specific visual profile token ${token}; improve raster quality only`);
+    }
+  }
+  for (const token of ["SMALL_RASTER_SUPERSAMPLE", "SMALL_RASTER_SHARPEN_SIGMA", "rasterSizedSvg"]) {
+    if (!generator.includes(token)) {
+      fail(`scripts/generate-icons.cjs must keep quality-only raster export token ${token}`);
     }
   }
 }
@@ -282,6 +363,122 @@ async function assertWhiteMarkSafeZone(file) {
   }
   if (markWidth < 0.28 || markHeight < 0.28 || markWidth > 0.62 || markHeight > 0.62) {
     fail(`${file} white mark has poor icon scale; measured ${(markWidth * 100).toFixed(1)}% x ${(markHeight * 100).toFixed(1)}%`);
+  }
+}
+
+async function assertSmallIconReadability(expectation) {
+  const abs = checkedRepoAssetPath(expectation.file);
+  const metadata = await sharp(abs).metadata();
+  const raw = await sharp(abs).ensureAlpha().raw().toBuffer();
+  let minX = metadata.width;
+  let minY = metadata.height;
+  let maxX = -1;
+  let maxY = -1;
+  let pixels = 0;
+
+  for (let y = 0; y < metadata.height; y += 1) {
+    for (let x = 0; x < metadata.width; x += 1) {
+      const index = (y * metadata.width + x) * 4;
+      const r = raw[index];
+      const g = raw[index + 1];
+      const b = raw[index + 2];
+      const alpha = raw[index + 3];
+      if (alpha > 48 && r > expectation.threshold && g > expectation.threshold && b > expectation.threshold) {
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+        pixels += 1;
+      }
+    }
+  }
+
+  if (pixels < expectation.minPixels) {
+    fail(
+      expectation.file + " must keep a crisp tiny ZenFlow leaf; only " + pixels + " pixels exceed RGB " + expectation.threshold,
+    );
+  }
+
+  const boxWidth = maxX - minX + 1;
+  const boxHeight = maxY - minY + 1;
+  if (
+    boxWidth < expectation.minBox ||
+    boxHeight < expectation.minBox ||
+    boxWidth > expectation.maxBox ||
+    boxHeight > expectation.maxBox
+  ) {
+    fail(
+      expectation.file +
+        " tiny mark bbox must stay readable at native size; got " +
+        boxWidth +
+        "x" +
+        boxHeight +
+        ", expected " +
+        expectation.minBox +
+        "-" +
+        expectation.maxBox +
+        "px",
+    );
+  }
+
+  const smallestMargin = Math.min(
+    minX / metadata.width,
+    minY / metadata.height,
+    (metadata.width - 1 - maxX) / metadata.width,
+    (metadata.height - 1 - maxY) / metadata.height,
+  );
+  if (smallestMargin < expectation.minMargin) {
+    fail(
+      expectation.file +
+        " tiny mark is too close to the edge; smallest strong-pixel margin is " +
+        (smallestMargin * 100).toFixed(1) +
+        "%",
+    );
+  }
+}
+
+async function assertTelegramUserpicHasNoInnerSquare() {
+  const source = read(TELEGRAM_USERPIC_SOURCE);
+  if (/<rect\b(?![^>]*\bwidth="512"[^>]*\bheight="512")/.test(source)) {
+    fail(`${TELEGRAM_USERPIC_SOURCE} must not contain an inner rect/rounded-square plate`);
+  }
+
+  const { data, info } = await sharp(path.join(ROOT, TELEGRAM_USERPIC))
+    .resize(256, 256)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const luminance = (x, y) => {
+    const offset = (y * info.width + x) * 3;
+    return 0.2126 * data[offset] + 0.7152 * data[offset + 1] + 0.0722 * data[offset + 2];
+  };
+
+  let strongestHorizontalBand = 0;
+  for (let y = 10; y < 60; y += 1) {
+    let total = 0;
+    let count = 0;
+    for (let x = 70; x < 186; x += 1) {
+      total += Math.abs(luminance(x, y) - luminance(x, y + 1));
+      count += 1;
+    }
+    strongestHorizontalBand = Math.max(strongestHorizontalBand, total / count);
+  }
+
+  let strongestVerticalBand = 0;
+  for (let x = 10; x < 60; x += 1) {
+    let total = 0;
+    let count = 0;
+    for (let y = 70; y < 186; y += 1) {
+      total += Math.abs(luminance(x, y) - luminance(x + 1, y));
+      count += 1;
+    }
+    strongestVerticalBand = Math.max(strongestVerticalBand, total / count);
+  }
+
+  if (strongestHorizontalBand > 8 || strongestVerticalBand > 8) {
+    fail(
+      `${TELEGRAM_USERPIC} appears to contain an inner square/plate edge; measured bands ${strongestHorizontalBand.toFixed(1)} / ${strongestVerticalBand.toFixed(1)}`,
+    );
   }
 }
 
@@ -445,16 +642,16 @@ function assertPwaInstallLogoContract() {
   }
 
   const pagesArtifact = read("scripts/prepare-pages-artifact.cjs");
-  if (!pagesArtifact.includes(`pwaInstallIconRevision = "${PWA_INSTALL_ICON_REVISION}"`)) {
+  if (!pagesArtifact.includes("brand-logo-assets.json") || !pagesArtifact.includes("pwaInstallIconRevision")) {
     fail(
-      `scripts/prepare-pages-artifact.cjs must inject ${PWA_INSTALL_ICON_REVISION}; GitHub Pages deploy output owns the live manifest link`,
+      `scripts/prepare-pages-artifact.cjs must read the shared logo asset revision ${PWA_INSTALL_ICON_REVISION}; GitHub Pages deploy output owns the live manifest link`,
     );
   }
 
   const viteConfig = read("vite.config.ts");
-  if (!viteConfig.includes(`PWA_INSTALL_ICON_REVISION = "${PWA_INSTALL_ICON_REVISION}"`)) {
+  if (!viteConfig.includes("config/brand-logo-assets.json") || !viteConfig.includes("pwaInstallIconRevision")) {
     fail(
-      `vite.config.ts must build the live PWA manifest with ${PWA_INSTALL_ICON_REVISION}; docs-only manifest updates do not refresh installed Chrome/Edge app icons`,
+      `vite.config.ts must read the shared logo asset revision ${PWA_INSTALL_ICON_REVISION}; docs-only manifest updates do not refresh installed Chrome/Edge app icons`,
     );
   }
 
@@ -581,6 +778,7 @@ async function main() {
   for (const rel of SVG_EXPECTATIONS) assertNoSvgFilters(rel);
   for (const expectation of IMAGE_EXPECTATIONS) await assertImage(expectation);
   for (const rel of WHITE_MARK_SAFE_ZONE_EXPECTATIONS) await assertWhiteMarkSafeZone(rel);
+  for (const expectation of SMALL_ICON_READABILITY_EXPECTATIONS) await assertSmallIconReadability(expectation);
   assertIco("public/favicon.ico");
   assertIco("docs/favicon.ico");
   assertIco("src-tauri/icons/icon.ico");
@@ -590,6 +788,7 @@ async function main() {
   assertNativeSplashContracts();
   assertRuntimeSplashLogoContract();
   assertClassicLogoContract();
+  await assertTelegramUserpicHasNoInnerSquare();
   assertNoLegacyStoreLogoDrafts();
   assertPublicStaticPageLogoContract();
   assertPlaceholderLogoContract();

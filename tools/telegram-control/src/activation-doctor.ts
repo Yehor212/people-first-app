@@ -96,9 +96,9 @@ export function buildActivationDoctorChecks(input: ActivationDoctorInput): Activ
     },
     resolveCallbackUrlCheck(input.env),
     {
-      name: "GitHub Telegram bot token",
-      status: envOrGitHubSecret(input, "TELEGRAM_BOT_TOKEN") ? "PASS" : "UNVERIFIED",
-      evidence: githubEvidence(input, "TELEGRAM_BOT_TOKEN"),
+      name: "GitHub Telegram auth bot token",
+      status: envOrGitHubSecret(input, "TELEGRAM_AUTH_BOT_TOKEN") ? "PASS" : "UNVERIFIED",
+      evidence: githubEvidence(input, "TELEGRAM_AUTH_BOT_TOKEN"),
     },
     {
       name: "OpenAI Codex secret",

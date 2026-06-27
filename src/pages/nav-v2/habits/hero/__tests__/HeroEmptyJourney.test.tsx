@@ -127,18 +127,31 @@ describe("HeroEmptyJourney", () => {
       expect(pictogram?.className).toContain("h-[4.35rem]");
       expect(pictogram?.className).toContain("w-[4.35rem]");
       const pictogramId = pictogram?.getAttribute("data-habit-pictogram");
-      const isApprovedLottie = ["drink-water", "walk-distance", "read"].includes(pictogramId ?? "");
+      const isApprovedAnimatedRaster = false;
+      const isApprovedLottie = ["drink-water", "read"].includes(pictogramId ?? "");
       expect(pictogram).toHaveAttribute(
         "data-icon-source",
-        isApprovedLottie ? "approved-lottie-json" : "static-reduced-svg-fallback"
+        isApprovedAnimatedRaster
+          ? "approved-animated-raster"
+          : isApprovedLottie
+            ? "approved-lottie-json"
+            : "static-reduced-svg-fallback"
       );
       expect(pictogram).toHaveAttribute(
         "data-motion-system",
-        isApprovedLottie ? "approved-single-lottie-json" : "locked-static-until-user-approval"
+        isApprovedAnimatedRaster
+          ? "approved-animated-raster-sequence"
+          : isApprovedLottie
+            ? "approved-single-lottie-json"
+            : "locked-static-until-user-approval"
       );
       expect(
         pictogram?.querySelector(
-          isApprovedLottie ? "[data-habit-lottie-player]" : "[data-habit-motion-still]"
+          isApprovedAnimatedRaster
+            ? "[data-habit-animated-raster]"
+            : isApprovedLottie
+              ? "[data-habit-lottie-player]"
+              : "[data-habit-motion-still]"
         )
       ).toBeInTheDocument();
       expect(iconFrame?.textContent?.trim()).toBe("");

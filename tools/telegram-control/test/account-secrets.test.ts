@@ -39,12 +39,16 @@ void test("account-secret checks keep missing secrets unverified", () => {
   assert.equal(missingRequiredChecks(checks).length, 2);
 });
 
-void test("GitHub account-secret catalog includes the Telegram bot token used by deploy avatar gates", () => {
-  assert.equal(GITHUB_ACCOUNT_SECRET_NAMES.includes("TELEGRAM_BOT_TOKEN"), true);
+void test("GitHub account-secret catalog separates public auth bot token from control bot token", () => {
+  assert.equal(GITHUB_ACCOUNT_SECRET_NAMES.includes("TELEGRAM_AUTH_BOT_TOKEN"), true);
+  assert.equal((GITHUB_ACCOUNT_SECRET_NAMES as readonly string[]).includes("TELEGRAM_BOT_TOKEN"), false);
 });
 void test("account-secret validation rejects malformed ids and private keys", () => {
   assert.deepEqual(validateAccountSecret("TELEGRAM_BOT_TOKEN", "not-a-token"), [
     "TELEGRAM_BOT_TOKEN must look like a BotFather token",
+  ]);
+  assert.deepEqual(validateAccountSecret("TELEGRAM_AUTH_BOT_TOKEN", "not-a-token"), [
+    "TELEGRAM_AUTH_BOT_TOKEN must look like a BotFather token",
   ]);
   assert.deepEqual(validateAccountSecret("TELEGRAM_ADMIN_IDS", "123,abc"), [
     "TELEGRAM_ADMIN_IDS must be a comma-separated numeric allowlist",

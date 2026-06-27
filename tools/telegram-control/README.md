@@ -6,6 +6,15 @@ It stores only automation metadata: job id, Telegram requester id, command kind,
 
 It also serves a minimal Telegram Mini App dashboard at `/miniapp`. Mini App API calls must include `Authorization: tma <Telegram.WebApp.initData>` and are verified server-side before any state or command is returned.
 
+## Bot Identity Split
+
+Use two Telegram bots in production:
+
+- Public auth bot: `@ZenFlowAuthBot`, configured in BotFather Web Login and Supabase `custom:telegram`. Its token is used only for auth-bot profile/photo verification as GitHub secret `TELEGRAM_AUTH_BOT_TOKEN`.
+- Private report/control bot: a separate admin-only bot, for example `@ZenFlowReportsBot`, configured as Cloudflare Worker secret `TELEGRAM_BOT_TOKEN` plus the `/telegram/webhook` webhook. This token must not be reused for public login.
+
+Keeping these identities separate avoids exposing admin command menus on the public login bot, reduces blast radius, and lets control/report credentials rotate without touching Telegram sign-in.
+
 ## Commands
 
 - `/status` returns recent GitHub control workflow state.
@@ -75,9 +84,18 @@ npm --prefix tools/telegram-control run secrets:bootstrap
 npm --prefix tools/telegram-control run secrets:bootstrap -- --write-local
 ```
 
-The write mode creates `.env.telegram-control.local`, which is ignored by git. It only contains `TELEGRAM_WEBHOOK_SECRET`, `GITHUB_WEBHOOK_SECRET`, and `TELEGRAM_CONTROL_CALLBACK_SECRET`. Account-owned credentials such as `TELEGRAM_BOT_TOKEN`, GitHub App ids/private key, and `OPENAI_API_KEY` must still come from their official account flows.
+The write mode creates `.env.telegram-control.local`, which is ignored by git. It only contains `TELEGRAM_WEBHOOK_SECRET`, `GITHUB_WEBHOOK_SECRET`, and `TELEGRAM_CONTROL_CALLBACK_SECRET`. Account-owned credentials such as private `TELEGRAM_BOT_TOKEN`, public `TELEGRAM_AUTH_BOT_TOKEN`, GitHub App ids/private key, and `OPENAI_API_KEY` must still come from their official account flows.
 
-Account-owned secrets can be installed from a prepared local shell without printing values:
+Account-owned secrets can be installed through local prompts without printing values:
+
+```bash
+npm --prefix tools/telegram-control run secrets:prompt-account -- --dry-run
+npm --prefix tools/telegram-control run secrets:prompt-account -- --cloudflare --github-telegram
+```
+
+The prompt helper asks for the private report/control BotFather token, numeric Telegram admin allowlist, GitHub App id, installation id, and a local path to the downloaded GitHub App `.pem` private key. It validates the values, writes them to Cloudflare Worker secrets, optionally asks for the public auth bot token and writes it to GitHub Actions as `TELEGRAM_AUTH_BOT_TOKEN`, and never prints secret values.
+
+Account-owned secrets can also be installed from a prepared local shell without printing values:
 
 ```bash
 npm --prefix tools/telegram-control run secrets:install-account -- --dry-run
@@ -85,7 +103,7 @@ npm --prefix tools/telegram-control run secrets:install-account -- --cloudflare
 npm --prefix tools/telegram-control run secrets:install-account -- --github --github-telegram --github-snyk
 ```
 
-`TELEGRAM_BOT_TOKEN` can be installed into GitHub Actions secrets from an already prepared environment with `--github --github-telegram`; this lets deploy prove the approved Telegram OAuth bot profile photo without printing the token. `OPENAI_API_KEY` can also be installed from an already prepared environment with `--github --github-openai`, but this must only be run after explicit operator approval for that key. This helper does not create OpenAI keys.
+`TELEGRAM_AUTH_BOT_TOKEN` can be installed into GitHub Actions secrets from an already prepared environment with `--github --github-telegram`; this lets deploy prove the approved public Telegram OAuth bot profile photo without printing the token. Keep `TELEGRAM_BOT_TOKEN` for the private Cloudflare report/control bot only. `OPENAI_API_KEY` can also be installed from an already prepared environment with `--github --github-openai`, but this must only be run after explicit operator approval for that key. This helper does not create OpenAI keys.
 
 If GitHub CLI is authenticated, store the generated callback secret without printing it:
 
@@ -127,14 +145,14 @@ npm --prefix tools/telegram-control run telegram:doctor -- --live
 
 The activation runner composes KV setup, account-secret installation, generated-secret installation, Worker deploy, GitHub App manifest generation, GitHub callback URL, Telegram bot readiness, Telegram webhook, bot UI, live smoke, and the doctor into one ordered flow. Its default mode is dry-run/report-only. Mutating steps run only with `--apply` plus explicit step flags such as `--kv`, `--cloudflare-account-secrets`, `--deploy`, or `--telegram`; `--all` is reserved for a fully prepared operator shell.
 
-The GitHub-aware check reads secret names only. It verifies whether `TELEGRAM_CONTROL_CALLBACK_SECRET`, `TELEGRAM_CONTROL_CALLBACK_URL`, `TELEGRAM_BOT_TOKEN`, `OPENAI_API_KEY`, and optional `SNYK_TOKEN` exist without reading their values.
+The GitHub-aware check reads secret names only. It verifies whether `TELEGRAM_CONTROL_CALLBACK_SECRET`, `TELEGRAM_CONTROL_CALLBACK_URL`, `TELEGRAM_AUTH_BOT_TOKEN`, `OPENAI_API_KEY`, and optional `SNYK_TOKEN` exist without reading their values.
 The activation doctor summarizes Cloudflare, GitHub, callback URL, OpenAI, Snyk, and Telegram readiness as PASS/UNVERIFIED/FAIL without printing secret values. Its default mode is local-only; `--github --cloudflare` adds name-only GitHub secret checks and Wrangler auth status.
 With `--external-checks`, the activation doctor also checks public GitHub Status for Actions and Pages incidents, so workflow dispatch/deploy outages are reported as external dependency failures instead of vague CI drift.
 The Telegram bot readiness doctor validates BotFather token shape, webhook secret-token rules, admin id allowlist, webhook URL, and Mini App URL without printing secret values. With `--live`, it additionally calls Telegram `getMe` and `getWebhookInfo` to prove the token and current webhook state.
 
 ## Required GitHub Secrets
 
-- `TELEGRAM_BOT_TOKEN`: required for deploy-time proof that the public Telegram OAuth bot uses the approved ZenFlow profile photo.
+- `TELEGRAM_AUTH_BOT_TOKEN`: required for deploy-time proof that the public Telegram OAuth bot uses the approved ZenFlow profile photo. This must be the public auth bot token, not the private report/control bot token.
 - `OPENAI_API_KEY`: required only for Codex-backed `plan`, `fix`, `review`, and `security`. When missing, the workflow reports `UNVERIFIED`, writes a no-paid RAG/manual artifact, and does not fake AI success.
 - `TELEGRAM_CONTROL_CALLBACK_URL`: `https://<worker-host>/github/webhook`.
 - `TELEGRAM_CONTROL_CALLBACK_SECRET`: must match the Cloudflare secret.
@@ -156,7 +174,16 @@ npm --prefix tools/telegram-control run github-app:manifest -- --base-url https:
 npm --prefix tools/telegram-control run github-app:manifest -- --base-url https://<worker-host> --org <organization>
 ```
 
-The manifest uses `workflow_run` webhooks, `metadata:read`, and `actions:write` by default. The helper uses GitHub's personal-account manifest target unless `--org <organization>` is provided. Add `--workflow-owned-prs` only if the GitHub App itself will create branches, issues, or PRs instead of the GitHub Actions workflow owning that work. The generated manifest does not include App ID, private key, webhook secret, or installation ID; GitHub returns those only through the owner-controlled manifest flow.
+For less manual copying, use the local manifest-flow helper:
+
+```bash
+npm --prefix tools/telegram-control run github-app:local-flow -- --dry-run --base-url https://<worker-host>
+npm --prefix tools/telegram-control run github-app:local-flow -- --apply --base-url https://<worker-host> --cloudflare
+```
+
+The local-flow helper starts a one-time loopback callback, opens a GitHub registration form, exchanges GitHub's temporary manifest `code`, and stores `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, and GitHub's generated `GITHUB_WEBHOOK_SECRET` in Cloudflare when `--cloudflare` is present. It also saves the returned private key outside the repo under the local user config directory unless `--no-write-pem` is passed. It never prints private keys, webhook secrets, or tokens.
+
+The manifest uses `workflow_run` webhooks, `metadata:read`, and `actions:write` by default. The helper uses GitHub's personal-account manifest target unless `--org <organization>` is provided. Add `--workflow-owned-prs` only if the GitHub App itself will create branches, issues, or PRs instead of the GitHub Actions workflow owning that work. The generated manifest does not include App ID, private key, webhook secret, or installation ID; GitHub returns those only through the owner-controlled manifest flow. If you use the manifest flow, prefer GitHub's returned `webhook_secret` for Cloudflare `GITHUB_WEBHOOK_SECRET` so webhook signature verification matches.
 
 For branch and PR publishing by `.github/workflows/telegram-control.yml`:
 

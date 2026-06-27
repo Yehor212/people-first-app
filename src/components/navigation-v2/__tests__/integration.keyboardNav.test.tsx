@@ -1,5 +1,5 @@
 /**
- * Phase 3-A.4c-ii-d-c Integration Test #2 — Ctrl+1..4 keyboard navigation.
+ * Phase 3-A.4c-ii-d-c Integration Test #2 — Ctrl+1..5 keyboard navigation.
  *
  * The orchestrator wires useKeyboardShortcuts → setActivePage for both
  * Ctrl+N and Cmd+N (Mac) because useKeyboardShortcuts treats metaKey as ctrlKey.
@@ -7,8 +7,8 @@
  * (as lightweight markers) + `useNavigationV2` isn't mocked — we let it run.
  *
  * Scope — what this test verifies:
- *  - Ctrl+1 activates Orb, Ctrl+2 Habits, Ctrl+3 Diary, Ctrl+4 Settings
- *  - metaKey equivalence (Cmd+1..4 on macOS) → same handlers
+ *  - Ctrl+1 activates Orb, Ctrl+2 Habits, Ctrl+3 Diary, Ctrl+4 Planning, Ctrl+5 Settings
+ *  - metaKey equivalence (Cmd+1..5 on macOS) → same handlers
  *  - Shortcuts are SUPPRESSED when device tier is "phone" (useKeyboardShortcuts
  *    `enabled=false` branch)
  */
@@ -24,6 +24,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2Orb: "Orb",
       navV2Habits: "Habits",
       navV2Diary: "Diary",
+      navV2Planning: "Planning",
       navV2Settings: "Settings",
       navV2OpenMenu: "Open menu",
       navV2CloseMenu: "Close menu",
@@ -56,6 +57,13 @@ vi.mock("@/lib/motion/morph", () => ({
   },
 }));
 
+vi.mock("../V2FocusMiniPlayer", () => ({
+  V2FocusMiniPlayer: () => null,
+}));
+vi.mock("../V2MindfulMomentLayer", () => ({
+  V2MindfulMomentLayer: () => null,
+}));
+
 // Page shells as markers so we can assert active-page transitions.
 vi.mock("@/pages/nav-v2/OrbPage", () => ({
   OrbPage: () => <div data-testid="page-orb-marker">orb</div>,
@@ -65,6 +73,9 @@ vi.mock("@/pages/nav-v2/HabitsPage", () => ({
 }));
 vi.mock("@/pages/nav-v2/DiaryPage", () => ({
   DiaryPage: () => <div data-testid="page-diary-marker">diary</div>,
+}));
+vi.mock("@/pages/nav-v2/planning/PlanningPage", () => ({
+  PlanningPage: () => <div data-testid="page-planning-marker">planning</div>,
 }));
 vi.mock("@/pages/nav-v2/SettingsPage", () => ({
   SettingsPage: () => <div data-testid="page-settings-marker">settings</div>,
@@ -78,6 +89,13 @@ vi.mock("../DrawerV2", () => ({
     open ? <div data-testid="drawer-v2-open">drawer</div> : null,
 }));
 
+vi.mock("../V2FocusMiniPlayer", () => ({
+  V2FocusMiniPlayer: () => null,
+}));
+vi.mock("../V2MindfulMomentLayer", () => ({
+  V2MindfulMomentLayer: () => null,
+}));
+
 // Device-tier mock — controllable per test
 const tierState = { tier: "desktop" as "phone" | "tablet" | "desktop" };
 vi.mock("@/hooks/useDeviceTier", () => ({
@@ -86,7 +104,7 @@ vi.mock("@/hooks/useDeviceTier", () => ({
 
 // Real hook + real shortcuts + real keyboard plumbing below — no mocks of them.
 
-describe("Integration #2 — Ctrl+1..4 keyboard navigation", () => {
+describe("Integration #2 — Ctrl+1..5 keyboard navigation", () => {
   beforeEach(() => {
     tierState.tier = "desktop";
     // Reset URL so useNavigationV2 defaults to orb
@@ -108,12 +126,12 @@ describe("Integration #2 — Ctrl+1..4 keyboard navigation", () => {
           metaKey: modifier === "meta",
           bubbles: true,
           cancelable: true,
-        }),
+        })
       );
     });
   }
 
-  it("Ctrl+1 → Orb, Ctrl+2 → Habits, Ctrl+3 → Diary, Ctrl+4 → Settings", async () => {
+  it("Ctrl+1 → Orb, Ctrl+2 → Habits, Ctrl+3 → Diary, Ctrl+4 → Planning, Ctrl+5 → Settings", async () => {
     const { container } = render(<NavV2Orchestrator />);
     const root = () => container.querySelector('[data-testid="nav-v2-orchestrator"]');
 
@@ -129,6 +147,10 @@ describe("Integration #2 — Ctrl+1..4 keyboard navigation", () => {
     expect(await screen.findByTestId("page-diary-marker")).toBeInTheDocument();
 
     fireKey("4");
+    expect(root()?.getAttribute("data-active-page")).toBe("planning");
+    expect(await screen.findByTestId("page-planning-marker")).toBeInTheDocument();
+
+    fireKey("5");
     expect(root()?.getAttribute("data-active-page")).toBe("settings");
     expect(await screen.findByTestId("page-settings-marker")).toBeInTheDocument();
 
@@ -137,12 +159,15 @@ describe("Integration #2 — Ctrl+1..4 keyboard navigation", () => {
     expect(await screen.findByTestId("page-orb-marker")).toBeInTheDocument();
   });
 
-  it("Cmd+1..4 (macOS meta) behaves identically", () => {
+  it("Cmd+1..5 (macOS meta) behaves identically", () => {
     const { container } = render(<NavV2Orchestrator />);
     const root = () => container.querySelector('[data-testid="nav-v2-orchestrator"]');
 
     fireKey("3", "meta");
     expect(root()?.getAttribute("data-active-page")).toBe("diary");
+
+    fireKey("4", "meta");
+    expect(root()?.getAttribute("data-active-page")).toBe("planning");
 
     fireKey("1", "meta");
     expect(root()?.getAttribute("data-active-page")).toBe("orb");

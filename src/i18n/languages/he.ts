@@ -3290,6 +3290,7 @@ const hebrewOverrides: Partial<Translations> = {
   navV2Orb: "מצב רוח",
   navV2Habits: "הרגלים",
   navV2Diary: "יומן",
+  navV2Planning: "תכנון",
   navV2Settings: "הגדרות",
   navV2PrimaryNav: "ניווט ראשי",
   navV2OpenMenu: "פתח תפריט",
@@ -3304,6 +3305,10 @@ const hebrewOverrides: Partial<Translations> = {
   navV2OrbPlaceholder: "עמוד מצב הרוח — שלב 3-B יחבר כאן את HomeTab.",
   navV2HabitsPlaceholder: "עמוד הרגלים — שלב 3-C יחבר את GardenTab + HabitHubTab.",
   navV2DiaryPlaceholder: "עמוד יומן — שלב 3-D יחבר את JournalModule.",
+  navV2PlanningHeading: "תכנן את הטקס הבא שלך",
+  navV2PlanningSubcopy: "לוח הזמנים וטיימר המיקוד נמצאים כאן יחד.",
+  navV2PlanningEmpty: "אין אירועים עדיין",
+  navV2PlanningLoading: "מכינים את התכנון...",
   navV2SettingsPlaceholder:
     "אנחנו מכינים כאן את הבקרות האישיות. ערכות נושא, תזכורות ופרטיות זמינות בינתיים בהגדרות הקלאסיות.",
   v2PortalEyebrow: "תצוגת V2",

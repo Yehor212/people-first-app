@@ -7,7 +7,7 @@ export const CLOUDFLARE_ACCOUNT_SECRET_NAMES = [
 ] as const;
 
 export const GITHUB_ACCOUNT_SECRET_NAMES = [
-  "TELEGRAM_BOT_TOKEN",
+  "TELEGRAM_AUTH_BOT_TOKEN",
   "OPENAI_API_KEY",
   "SNYK_TOKEN",
 ] as const;
@@ -62,8 +62,8 @@ export function validateAccountSecret(name: AccountSecretName, value: string): s
     return [`${name} is empty`];
   }
 
-  if (name === "TELEGRAM_BOT_TOKEN" && !/^\d+:[A-Za-z0-9_-]{20,}$/.test(trimmed)) {
-    errors.push("TELEGRAM_BOT_TOKEN must look like a BotFather token");
+  if ((name === "TELEGRAM_BOT_TOKEN" || name === "TELEGRAM_AUTH_BOT_TOKEN") && !/^\d+:[A-Za-z0-9_-]{20,}$/.test(trimmed)) {
+    errors.push(`${name} must look like a BotFather token`);
   }
 
   if (name === "TELEGRAM_ADMIN_IDS") {

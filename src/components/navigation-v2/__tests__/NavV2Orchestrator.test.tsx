@@ -11,6 +11,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2Orb: "Orb",
       navV2Habits: "Habits",
       navV2Diary: "Diary",
+      navV2Planning: "Planning",
       navV2Settings: "Settings",
       navV2OpenMenu: "Open menu",
       navV2CloseMenu: "Close menu",
@@ -64,6 +65,13 @@ vi.mock("@/lib/motion/morph", () => ({
 
 import { morph } from "@/lib/motion/morph";
 
+vi.mock("../V2FocusMiniPlayer", () => ({
+  V2FocusMiniPlayer: () => null,
+}));
+vi.mock("../V2MindfulMomentLayer", () => ({
+  V2MindfulMomentLayer: () => null,
+}));
+
 // Mock page shells as lightweight markers
 vi.mock("@/pages/nav-v2/OrbPage", () => ({
   OrbPage: () => <div data-testid="orb-page">orb</div>,
@@ -73,6 +81,9 @@ vi.mock("@/pages/nav-v2/HabitsPage", () => ({
 }));
 vi.mock("@/pages/nav-v2/DiaryPage", () => ({
   DiaryPage: () => <div data-testid="diary-page">diary</div>,
+}));
+vi.mock("@/pages/nav-v2/planning/PlanningPage", () => ({
+  PlanningPage: () => <div data-testid="planning-page">planning</div>,
 }));
 vi.mock("@/pages/nav-v2/SettingsPage", () => ({
   SettingsPage: () => <div data-testid="settings-page">settings</div>,
@@ -87,7 +98,7 @@ vi.mock("../SidebarV2", () => ({
   }: {
     collapsed?: boolean;
     forceVisible?: boolean;
-    onPageChange: (page: "habits") => void;
+    onPageChange: (page: "habits" | "planning") => void;
   }) => (
     <nav
       data-testid="sidebar-v2"
@@ -98,6 +109,9 @@ vi.mock("../SidebarV2", () => ({
       <button type="button" onClick={() => onPageChange("habits")}>
         Habits
       </button>
+      <button type="button" onClick={() => onPageChange("planning")}>
+        Planning
+      </button>
     </nav>
   ),
 }));
@@ -107,7 +121,7 @@ vi.mock("../DrawerV2", () => ({
     onPageChange,
   }: {
     open: boolean;
-    onPageChange: (page: "habits") => void;
+    onPageChange: (page: "habits" | "planning") => void;
   }) =>
     open ? (
       <div data-testid="drawer-v2-open">
@@ -115,17 +129,25 @@ vi.mock("../DrawerV2", () => ({
         <button type="button" onClick={() => onPageChange("habits")}>
           Habits
         </button>
+        <button type="button" onClick={() => onPageChange("planning")}>
+          Planning
+        </button>
       </div>
     ) : null,
+}));
+
+vi.mock("../V2FocusMiniPlayer", () => ({
+  V2FocusMiniPlayer: () => null,
+}));
+vi.mock("../V2MindfulMomentLayer", () => ({
+  V2MindfulMomentLayer: () => null,
 }));
 
 // Critical: we want to prove MobileNavV2 is NEVER rendered.
 // Fail loudly if the orchestrator accidentally imports it again.
 vi.mock("../MobileNavV2", () => ({
   MobileNavV2: () => {
-    throw new Error(
-      "MobileNavV2 must NOT be rendered — Phase 3-A.1 removed bottom tabs.",
-    );
+    throw new Error("MobileNavV2 must NOT be rendered — Phase 3-A.1 removed bottom tabs.");
   },
 }));
 
@@ -151,18 +173,11 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
   });
 
   it("recognizes the GitHub Pages base path as a valid V2 route", () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/people-first-app/orb?nav=v2&navLayout=phone&dev=true",
-    );
+    window.history.replaceState({}, "", "/people-first-app/orb?nav=v2&navLayout=phone&dev=true");
 
     render(<NavV2Orchestrator />);
 
-    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
-      "data-active-page",
-      "orb",
-    );
+    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute("data-active-page", "orb");
     expect(screen.queryByText("Route not found")).not.toBeInTheDocument();
     expect(screen.getByTestId("nav-v2-open-drawer").className).toContain("md:hidden");
   });
@@ -194,7 +209,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     await waitFor(() =>
       expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
         "data-active-page",
-        "habits",
+        "habits"
       )
     );
     await waitFor(() =>
@@ -203,29 +218,40 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(morph).not.toHaveBeenCalled();
   });
 
+  it("navigates to the Planning page from the V2 shell", async () => {
+    window.history.replaceState({}, "", "/?nav=v2&dev=true");
+
+    render(<NavV2Orchestrator />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Planning" }));
+
+    expect(screen.getByTestId("nav-v2-route-pending")).toHaveTextContent("Planning");
+    await waitFor(() =>
+      expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
+        "data-active-page",
+        "planning"
+      )
+    );
+    expect(await screen.findByTestId("planning-page")).toBeInTheDocument();
+  });
+
   it("skips full-page morph and defers route mount when phone drawer navigation changes page", async () => {
     render(<NavV2Orchestrator />);
 
     fireEvent.click(screen.getByTestId("nav-v2-open-drawer"));
     fireEvent.click(screen.getByRole("button", { name: "Habits" }));
 
-    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
-      "data-active-page",
-      "orb",
-    );
+    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute("data-active-page", "orb");
     expect(screen.getByTestId("nav-v2-route-pending")).toHaveTextContent("Habits");
     expect(morph).not.toHaveBeenCalled();
 
     await waitFor(() =>
       expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
         "data-active-page",
-        "habits",
+        "habits"
       )
     );
-    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
-      "data-active-page",
-      "habits",
-    );
+    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute("data-active-page", "habits");
     await waitFor(() =>
       expect(screen.queryByTestId("nav-v2-route-pending")).not.toBeInTheDocument()
     );
@@ -290,10 +316,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
   });
 
   it("uses a visible V2 page loading fallback instead of a blank route boundary", () => {
-    const source = readFileSync(
-      "src/components/navigation-v2/NavV2Orchestrator.tsx",
-      "utf8",
-    );
+    const source = readFileSync("src/components/navigation-v2/NavV2Orchestrator.tsx", "utf8");
 
     expect(source).toContain("NavV2RouteFallback");
     expect(source).not.toContain("<Suspense fallback={null}>{pageNode}</Suspense>");

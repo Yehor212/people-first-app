@@ -4,9 +4,10 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = process.cwd();
+const brandLogoAssets = require("../config/brand-logo-assets.json");
 const distDir = path.join(root, "dist");
 const indexPath = path.join(distDir, "index.html");
-const pwaInstallIconRevision = "zenflow-browser-leaf-20260525-r6";
+const pwaInstallIconRevision = brandLogoAssets.pwaInstallIconRevision;
 
 const routes = ["orb", "habits", "diary", "settings", "desktop"];
 

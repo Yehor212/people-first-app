@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 
 import { V2HabitPictogram } from "../V2HabitPictogram";
 import {
+  APPROVED_HABIT_ANIMATED_RASTER_IDS,
   APPROVED_HABIT_LOTTIE_IDS,
+  APPROVED_HABIT_RASTER_IDS,
   REJECTED_HABIT_LOTTIE_IDS,
   REVIEW_CANDIDATE_HABIT_LOTTIE_IDS,
   V2_HABIT_ICON_ASSETS,
@@ -18,7 +20,14 @@ const assetModuleSource = readFileSync(
   "src/components/habit-pictogram/habitMotionAssets.ts",
   "utf8"
 );
-const approvedMotionIds = new Set<V2HabitPictogramId>(["drink-water", "read", "walk-distance"]);
+const approvedLottieIds = new Set<V2HabitPictogramId>(["drink-water", "read"]);
+const approvedRasterIds = new Set<V2HabitPictogramId>();
+const approvedAnimatedRasterIds = new Set<V2HabitPictogramId>();
+const approvedMotionIds = new Set<V2HabitPictogramId>([
+  ...approvedLottieIds,
+  ...approvedRasterIds,
+  ...approvedAnimatedRasterIds,
+]);
 const lockedIds = pictogramIds.filter((id) => !approvedMotionIds.has(id));
 const legacyEmoji =
   /[💧🚶🏃👟🥾🤸🧘🪷🏋💪🥗🥚💊🪥🌅🌤🌿✍📝🙏✨🌬🫁📖📚📵🎧🎯🛏😴☕🧹🚭🚬🕯🍷🫗🎵🧠]/u;
@@ -131,11 +140,15 @@ describe("V2HabitPictogram", () => {
     expect(assetModuleSource).toContain("makeStaticAsset");
   });
 
-  it("promotes confirmed Read, Drink Water, and Walk Distance Lotties while keeping the rest locked", () => {
-    expect([...APPROVED_HABIT_LOTTIE_IDS].sort()).toEqual(["drink-water", "read", "walk-distance"]);
+  it("promotes confirmed Read/Drink Water Lotties and keeps Walk Distance locked after APNG rejection", () => {
+    expect([...APPROVED_HABIT_LOTTIE_IDS].sort()).toEqual(["drink-water", "read"]);
+    expect([...APPROVED_HABIT_RASTER_IDS]).toEqual([]);
+    expect([...APPROVED_HABIT_ANIMATED_RASTER_IDS]).toEqual([]);
     expect([...REVIEW_CANDIDATE_HABIT_LOTTIE_IDS]).toEqual([]);
     expect([...REJECTED_HABIT_LOTTIE_IDS]).toEqual([
       "read-original-v91",
+      "walk-distance",
+      "walk-distance-animated-raster-v1",
       "walk-distance-kinetic-soles-v1",
     ]);
     expect(V2_HABIT_ICON_ASSETS).toHaveLength(22);
@@ -168,15 +181,19 @@ describe("V2HabitPictogram", () => {
     expect(existsSync("src/assets/habit-icons/v2/drink-water/idle.lottie.json")).toBe(true);
 
     const walkAsset = getHabitIconAsset("walk-distance");
-    expect(walkAsset.idle.renderer).toBe("lottie");
-    expect(walkAsset.lottie).toBe("walk-distance/idle.lottie.json");
-    expect(walkAsset.source).toBe("zenflow-original-approved-lottie/walk-distance-v12-hero-runner");
+    expect(walkAsset.idle.renderer).toBe("still");
+    expect(walkAsset.lottie).toBeUndefined();
+    expect(walkAsset.raster).toBeUndefined();
+    expect(walkAsset.animatedRaster).toBeUndefined();
+    expect(walkAsset.source).toBe(
+      "zenflow-static-reduced-awaiting-lottie-approval/walk-distance"
+    );
     expect(walkAsset.license).toBe("Original");
-    expect(walkAsset.idle.name).toBe("v2hp-walk-distance-hero-runner-v12-final-candidate");
-    expect(walkAsset.quality.layers).toBeGreaterThanOrEqual(190);
-    expect(walkAsset.quality.shapeRecords).toBeGreaterThanOrEqual(1300);
-    expect(walkAsset.quality.animatedChannels).toBeGreaterThanOrEqual(838);
-    expect(existsSync("src/assets/habit-icons/v2/walk-distance/idle.lottie.json")).toBe(true);
+    expect(walkAsset.idle.name).toBe(
+      "v2hp-locked-static-walk-distance-awaiting-lottie-approval"
+    );
+    expect(walkAsset.quality.frames).toBe(0);
+    expect(walkAsset.quality.animatedChannels).toBe(0);
 
     lockedIds.forEach((id) => {
       const asset = getHabitIconAsset(id);
@@ -196,29 +213,67 @@ describe("V2HabitPictogram", () => {
     const { container } = render(<V2HabitPictogram pictogramId={pictogramId} />);
     const root = container.querySelector('[data-habit-pictogram="' + pictogramId + '"]');
     const asset = getHabitIconAsset(pictogramId);
-    const approved = approvedMotionIds.has(pictogramId);
+    const approvedLottie = approvedLottieIds.has(pictogramId);
+    const approvedRaster = approvedRasterIds.has(pictogramId);
+    const approvedAnimatedRaster = approvedAnimatedRasterIds.has(pictogramId);
     expect(root).toBeInTheDocument();
     expect(root).toHaveAttribute("aria-hidden", "true");
     expect(root).toHaveAttribute(
       "data-pictogram-style",
-      approved ? "single-lottie-json-icon" : "locked-static-reduced-icon"
+      approvedLottie
+        ? "single-lottie-json-icon"
+        : approvedAnimatedRaster
+          ? "artist-grade-animated-raster-icon"
+          : approvedRaster
+            ? "artist-grade-raster-sticker-icon"
+            : "locked-static-reduced-icon"
     );
     expect(root).toHaveAttribute(
       "data-icon-renderer",
-      approved ? "lottie-web-svg" : "reduced-svg-still"
+      approvedLottie
+        ? "lottie-web-svg"
+        : approvedAnimatedRaster
+          ? "animated-raster-apng"
+          : approvedRaster
+            ? "raster-webp-image"
+            : "reduced-svg-still"
     );
     expect(root).toHaveAttribute(
       "data-design-contract",
-      "no-emoji-no-dom-motion-stack-approval-gated-lottie"
+      "no-emoji-no-dom-motion-stack-approval-gated-asset"
     );
     expect(root).toHaveAttribute(
       "data-motion-system",
-      approved ? "approved-single-lottie-json" : "locked-static-until-user-approval"
+      approvedLottie
+        ? "approved-single-lottie-json"
+        : approvedAnimatedRaster
+          ? "approved-animated-raster-sequence"
+          : approvedRaster
+            ? "approved-raster-sticker"
+            : "locked-static-until-user-approval"
     );
     expect(root).toHaveAttribute("data-reduced-asset", asset.reduced);
-    if (approved) {
+    if (approvedLottie) {
       expect(root).toHaveAttribute("data-lottie-asset", asset.lottie);
       expect(root?.querySelector("[data-habit-lottie-player]")).toBeInTheDocument();
+      expect(
+        root?.querySelector('[data-habit-motion-still="' + pictogramId + '"]')
+      ).not.toBeInTheDocument();
+    } else if (approvedAnimatedRaster) {
+      expect(root).not.toHaveAttribute("data-lottie-asset");
+      expect(root).not.toHaveAttribute("data-raster-asset");
+      expect(root).toHaveAttribute("data-animated-raster-asset", asset.animatedRaster?.idle);
+      expect(root?.querySelector("[data-habit-lottie-player]")).not.toBeInTheDocument();
+      expect(root?.querySelector("[data-habit-animated-raster]")).toBeInTheDocument();
+      expect(root?.querySelector("[data-habit-raster-sticker]")).not.toBeInTheDocument();
+      expect(
+        root?.querySelector('[data-habit-motion-still="' + pictogramId + '"]')
+      ).not.toBeInTheDocument();
+    } else if (approvedRaster) {
+      expect(root).not.toHaveAttribute("data-lottie-asset");
+      expect(root).toHaveAttribute("data-raster-asset", asset.raster);
+      expect(root?.querySelector("[data-habit-lottie-player]")).not.toBeInTheDocument();
+      expect(root?.querySelector("[data-habit-raster-sticker]")).toBeInTheDocument();
       expect(
         root?.querySelector('[data-habit-motion-still="' + pictogramId + '"]')
       ).not.toBeInTheDocument();
@@ -326,6 +381,32 @@ describe("V2HabitPictogram", () => {
     expect(read.layers?.some((layer) => (layer.ef?.length ?? 0) > 0)).toBe(false);
     expect(read.layers?.some((layer) => (layer.masksProperties?.length ?? 0) > 0)).toBe(false);
     expect(shapes.some((shape) => shape.ty === "sr")).toBe(false);
+  });
+
+  it("keeps Walk Distance blocked from APNG runtime approval until a true TGS/Lottie rig exists", () => {
+    const rejectedLottiePath = "src/assets/habit-icons/v2/walk-distance/idle.lottie.json";
+    const walkAsset = getHabitIconAsset("walk-distance");
+
+    expect(walkAsset.source).toBe(
+      "zenflow-static-reduced-awaiting-lottie-approval/walk-distance"
+    );
+    expect(walkAsset.idle.name).toBe(
+      "v2hp-locked-static-walk-distance-awaiting-lottie-approval"
+    );
+    expect(walkAsset.lottie).toBeUndefined();
+    expect(walkAsset.raster).toBeUndefined();
+    expect(walkAsset.animatedRaster).toBeUndefined();
+    expect(assetModuleSource).not.toContain(
+      'lottie: "walk-distance/idle.lottie.json"'
+    );
+    expect(assetModuleSource).not.toContain("walk-distance/animated/idle.apng");
+    expect(assetModuleSource).not.toContain(
+      "v2hp-walk-distance-sneaker-road-step-animated-raster-v1-approved"
+    );
+    if (existsSync(rejectedLottiePath)) {
+      const rejectedRaw = readFileSync(rejectedLottiePath, "utf8");
+      expect(rejectedRaw).toContain('"rejectedReason":"procedural-code-drawn-not-read-quality"');
+    }
   });
 
   it("uses the reduced SVG still when motion is disabled", () => {

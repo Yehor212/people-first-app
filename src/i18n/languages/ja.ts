@@ -3300,6 +3300,7 @@ export const ja: Translations = {
   navV2Orb: "気分",
   navV2Habits: "習慣",
   navV2Diary: "日記",
+  navV2Planning: "計画",
   navV2Settings: "設定",
   navV2PrimaryNav: "メインナビゲーション",
   navV2OpenMenu: "メニューを開く",
@@ -3314,6 +3315,10 @@ export const ja: Translations = {
   navV2OrbPlaceholder: "気分ページ — フェーズ3-BでHomeTabを接続します。",
   navV2HabitsPlaceholder: "習慣ページ — フェーズ3-CでGardenTab + HabitHubTabを接続します。",
   navV2DiaryPlaceholder: "日記ページ — フェーズ3-DでJournalModuleを接続します。",
+  navV2PlanningHeading: "次のリチュアルを整える",
+  navV2PlanningSubcopy: "スケジュールと集中タイマーをここで一緒に使えます。",
+  navV2PlanningEmpty: "まだ予定はありません",
+  navV2PlanningLoading: "計画を準備中...",
   navV2SettingsPlaceholder:
     "個人設定をここに準備しています。テーマ、リマインダー、プライバシーは今のところ従来の設定で利用できます。",
   v2PortalEyebrow: "V2プレビュー",

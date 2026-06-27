@@ -8,6 +8,7 @@ describe("V2 readability contract", () => {
       readFileSync("src/pages/nav-v2/OrbPage.tsx", "utf8"),
       readFileSync("src/pages/nav-v2/habits/HabitsPage.tsx", "utf8"),
       readFileSync("src/pages/nav-v2/DiaryPage.tsx", "utf8"),
+      readFileSync("src/pages/nav-v2/planning/PlanningPage.tsx", "utf8"),
       readFileSync("src/pages/nav-v2/settings/components/SettingsPageComponents.tsx", "utf8"),
     ];
 

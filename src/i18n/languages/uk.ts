@@ -3327,6 +3327,7 @@ export const uk: Translations = {
   navV2Orb: "Настрій",
   navV2Habits: "Звички",
   navV2Diary: "Щоденник",
+  navV2Planning: "Планування",
   navV2Settings: "Налаштування",
   navV2PrimaryNav: "Основна навігація",
   navV2OpenMenu: "Відкрити меню",
@@ -3341,6 +3342,10 @@ export const uk: Translations = {
   navV2OrbPlaceholder: "Сторінка настрою — у фазі 3-B з’єднаємо HomeTab сюди.",
   navV2HabitsPlaceholder: "Сторінка Звичок — у фазі 3-C з’єднаємо GardenTab + HabitHubTab.",
   navV2DiaryPlaceholder: "Сторінка Щоденника — у фазі 3-D з’єднаємо JournalModule.",
+  navV2PlanningHeading: "Сплануй наступний ритуал",
+  navV2PlanningSubcopy: "Твій розклад і фокус-таймер живуть тут разом.",
+  navV2PlanningEmpty: "Подій поки немає",
+  navV2PlanningLoading: "Готуємо планування...",
   navV2SettingsPlaceholder:
     "Тут готуємо особисті налаштування. Теми, нагадування й приватність поки доступні у класичних налаштуваннях.",
   v2PortalEyebrow: "Попередній перегляд V2",

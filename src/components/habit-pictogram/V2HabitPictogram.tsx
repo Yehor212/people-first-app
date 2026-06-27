@@ -7,7 +7,9 @@ import {
 import { HabitMotionPlayer } from "./HabitMotionPlayer";
 import {
   getHabitIconAsset,
+  isHabitAnimatedRasterApproved,
   isHabitLottieApproved,
+  isHabitRasterApproved,
   type HabitIconMotionState,
   type HabitIconRenderer,
 } from "./habitMotionAssets";
@@ -41,14 +43,31 @@ export function V2HabitPictogram({
   const family = getV2HabitPictogramFamily(id);
   const asset = getHabitIconAsset(id);
   const hasLottieCandidate = asset.idle.renderer === "lottie" && Boolean(asset.lottie);
+  const hasAnimatedRasterCandidate =
+    asset.idle.renderer === "animated-raster" && Boolean(asset.animatedRaster);
   const isApprovedLottie = hasLottieCandidate && isHabitLottieApproved(id);
+  const isApprovedAnimatedRaster =
+    hasAnimatedRasterCandidate && isHabitAnimatedRasterApproved(id);
+  const isApprovedRaster = asset.idle.renderer === "raster-sticker" && isHabitRasterApproved(id);
   const shouldExposeLottie = isApprovedLottie || (forceMotionForReview && hasLottieCandidate);
+  const shouldExposeAnimatedRaster = isApprovedAnimatedRaster && !shouldExposeLottie;
+  const shouldExposeRaster = isApprovedRaster && !shouldExposeLottie && !shouldExposeAnimatedRaster;
   const iconSource = shouldExposeLottie
     ? isApprovedLottie
       ? "approved-lottie-json"
       : "review-candidate-lottie-json"
-    : "static-reduced-svg-fallback";
-  const iconTreatment = shouldExposeLottie ? "single-lottie-icon" : "reduced-static-fallback";
+    : shouldExposeAnimatedRaster
+      ? "approved-animated-raster"
+      : shouldExposeRaster
+        ? "approved-raster-sticker"
+        : "static-reduced-svg-fallback";
+  const iconTreatment = shouldExposeLottie
+    ? "single-lottie-icon"
+    : shouldExposeAnimatedRaster
+      ? "artist-grade-animated-raster"
+      : shouldExposeRaster
+        ? "artist-grade-raster-sticker"
+        : "reduced-static-fallback";
 
   return (
     <span
@@ -59,47 +78,110 @@ export function V2HabitPictogram({
       data-habit-pictogram={id}
       data-pictogram-family={family}
       data-pictogram-style={
-        shouldExposeLottie ? "single-lottie-json-icon" : "locked-static-reduced-icon"
+        shouldExposeLottie
+          ? "single-lottie-json-icon"
+          : shouldExposeAnimatedRaster
+            ? "artist-grade-animated-raster-icon"
+            : shouldExposeRaster
+              ? "artist-grade-raster-sticker-icon"
+              : "locked-static-reduced-icon"
       }
       data-icon-source={iconSource}
-      data-icon-renderer={shouldExposeLottie ? "lottie-web-svg" : "reduced-svg-still"}
+      data-icon-renderer={
+        shouldExposeLottie
+          ? "lottie-web-svg"
+          : shouldExposeAnimatedRaster
+            ? "animated-raster-apng"
+            : shouldExposeRaster
+              ? "raster-webp-image"
+              : "reduced-svg-still"
+      }
       data-icon-license={asset.license}
       data-icon-composition={
         shouldExposeLottie
           ? "one-lottie-json-asset-per-reviewable-habit"
-          : "static-reduced-fallback-until-approval"
+          : shouldExposeAnimatedRaster
+            ? "one-animated-raster-apng-sequence-per-approved-habit"
+            : shouldExposeRaster
+              ? "one-artist-grade-raster-sticker-asset"
+              : "static-reduced-fallback-until-approval"
       }
-      data-source-pack="lottie-web@5.13.0"
+      data-source-pack={
+        shouldExposeAnimatedRaster
+          ? "apng-raster-sequence"
+          : shouldExposeRaster
+            ? "imagegen-raster-webp"
+            : "lottie-web@5.13.0"
+      }
       data-source-authenticity={
         shouldExposeLottie
           ? "review-gated-vector-lottie-json-not-emoji"
-          : "reduced-svg-fallback-not-emoji"
+          : shouldExposeAnimatedRaster
+            ? "artist-raster-sequence-not-code-drawn-not-emoji"
+            : shouldExposeRaster
+              ? "imagegen-raster-sticker-not-code-drawn-not-emoji"
+              : "reduced-svg-fallback-not-emoji"
       }
-      data-design-contract="no-emoji-no-dom-motion-stack-approval-gated-lottie"
-      data-visual-upgrade="v2-single-lottie-habit-icon-system"
-      data-art-direction="premium-telegram-grade-lottie-icons"
+      data-design-contract="no-emoji-no-dom-motion-stack-approval-gated-asset"
+      data-visual-upgrade={
+        shouldExposeAnimatedRaster
+          ? "v2-animated-raster-habit-icon-system"
+          : shouldExposeRaster
+            ? "v2-raster-sticker-habit-icon-system"
+            : "v2-single-lottie-habit-icon-system"
+      }
+      data-art-direction={
+        shouldExposeAnimatedRaster
+          ? "premium-telegram-grade-animated-raster-walking-sticker"
+          : shouldExposeRaster
+            ? "premium-telegram-grade-raster-sticker"
+            : "premium-telegram-grade-lottie-icons"
+      }
       data-icon-treatment={iconTreatment}
       data-template-guard="no-shared-ai-template"
       data-motion-system={
         isApprovedLottie
           ? "approved-single-lottie-json"
-          : shouldExposeLottie
-            ? "review-candidate-lottie-json"
-            : "locked-static-until-user-approval"
+          : shouldExposeAnimatedRaster
+            ? "approved-animated-raster-sequence"
+            : shouldExposeRaster
+              ? "approved-raster-sticker"
+              : shouldExposeLottie
+                ? "review-candidate-lottie-json"
+                : "locked-static-until-user-approval"
       }
       data-motion-quality={
         isApprovedLottie
           ? "telegram-grade-lottie-vector-loop"
-          : shouldExposeLottie
-            ? "rejected-candidate-visible-for-review-only"
-            : "awaiting-telegram-grade-lottie-approval"
+          : shouldExposeAnimatedRaster
+            ? "artist-grade-raster-footstep-road-motion"
+            : shouldExposeRaster
+              ? "artist-grade-raster-sticker-with-wrapper-motion"
+              : shouldExposeLottie
+                ? "rejected-candidate-visible-for-review-only"
+                : "awaiting-telegram-grade-lottie-approval"
       }
-      data-animation-loop-profile="seamless-vector-micro-loop"
-      data-animation-frame-rate-target={shouldExposeLottie ? "60" : undefined}
+      data-animation-loop-profile={
+        shouldExposeAnimatedRaster
+          ? "footstep-road-loop"
+          : shouldExposeRaster
+            ? "wrapper-object-micro-loop"
+            : "seamless-vector-micro-loop"
+      }
+      data-animation-frame-rate-target={shouldExposeLottie || shouldExposeAnimatedRaster ? "60" : undefined}
       data-animation-loop-max-duration-ms={asset.idle.durationMs}
-      data-animation-performance-contract="lottie-svg-renderer-with-reduced-motion-still"
+      data-animation-performance-contract={
+        shouldExposeAnimatedRaster
+          ? "animated-raster-apng-with-poster-fallback"
+          : shouldExposeRaster
+            ? "raster-sticker-renderer-with-reduced-motion-still"
+            : "lottie-svg-renderer-with-reduced-motion-still"
+      }
       data-motion-storyboard={asset.idle.name}
       data-lottie-asset={shouldExposeLottie ? asset.lottie : undefined}
+      data-raster-asset={shouldExposeRaster ? asset.raster : undefined}
+      data-animated-raster-asset={shouldExposeAnimatedRaster ? asset.animatedRaster?.idle : undefined}
+      data-poster-asset={shouldExposeAnimatedRaster ? asset.animatedRaster?.poster : undefined}
       data-reduced-asset={asset.reduced}
       aria-hidden={decorative ? "true" : undefined}
       aria-label={decorative ? undefined : toReadableLabel(id)}

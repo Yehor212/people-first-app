@@ -6,13 +6,13 @@ import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 
 /**
- * Navigation V2 — 4-page IA (Orb / Habits / Diary / Settings).
+ * Navigation V2 — 5-page IA (Orb / Habits / Diary / Planning / Settings).
  *
  * Coexists with V1 `useTabNavigation`. V2 lives under a design flag
  * (`design.nav.v2`) and a `?nav=v2` override; V1 remains the default.
  *
  * Responsibilities:
- *  - Active page state machine (Orb / Habits / Diary / Settings)
+ *  - Active page state machine (Orb / Habits / Diary / Planning / Settings)
  *  - URL <-> page sync via history.pushState + popstate (no router dep)
  *  - Page transitions wrapped in `morph()` (View Transitions API, with
  *    the wrapper's own reduced-motion + browser fallback)
@@ -20,21 +20,24 @@ import { SK } from "@/lib/storageKeys";
  *  - Android back precedence: drawer close > page back
  */
 
-export type NavV2Page = "orb" | "habits" | "diary" | "settings";
+export type NavV2Page = "orb" | "habits" | "diary" | "planning" | "settings";
 
-export const NAV_V2_PAGES: readonly NavV2Page[] = ["orb", "habits", "diary", "settings"] as const;
+// prettier-ignore
+export const NAV_V2_PAGES: readonly NavV2Page[] = ["orb", "habits", "diary", "planning", "settings"] as const;
 
 const STORAGE_KEY = SK.NAV_V2_LAST_PAGE;
 const PATH_TO_PAGE: Record<string, NavV2Page> = {
   "/orb": "orb",
   "/habits": "habits",
   "/diary": "diary",
+  "/planning": "planning",
   "/settings": "settings",
 };
 const PAGE_TO_PATH: Record<NavV2Page, string> = {
   orb: "/orb",
   habits: "/habits",
   diary: "/diary",
+  planning: "/planning",
   settings: "/settings",
 };
 
@@ -106,16 +109,15 @@ function getNavV2BasePath(pathname: string): string {
 /** Strip Vite base (e.g. "/people-first-app/") from pathname for GH Pages deploys. */
 function normalizePath(pathname: string): string {
   const base = getNavV2BasePath(pathname);
-  const stripped = base && (pathname === base || pathname.startsWith(`${base}/`))
-    ? pathname.slice(base.length)
-    : pathname;
+  const stripped =
+    base && (pathname === base || pathname.startsWith(`${base}/`))
+      ? pathname.slice(base.length)
+      : pathname;
   const normalized = stripped || "/";
   if (normalized === "/index.html" || normalized.endsWith("/index.html")) {
     return "/";
   }
-  return normalized.length > 1 && normalized.endsWith("/")
-    ? normalized.slice(0, -1)
-    : normalized;
+  return normalized.length > 1 && normalized.endsWith("/") ? normalized.slice(0, -1) : normalized;
 }
 
 function getRouteSnapshot(): RouteSnapshot {
@@ -144,7 +146,7 @@ function getRouteSnapshot(): RouteSnapshot {
 }
 
 export interface UseNavigationV2Return {
-  /** Currently active page (one of Orb/Habits/Diary/Settings). */
+  /** Currently active page (one of Orb/Habits/Diary/Planning/Settings). */
   activePage: NavV2Page;
   /** Unknown app path that should render the user-facing Not Found state. */
   unknownPath: string | null;
@@ -167,7 +169,7 @@ export interface UseNavigationV2Return {
 }
 
 /**
- * 4-page V2 navigation state machine.
+ * 5-page V2 navigation state machine.
  *
  * Example:
  *   const { activePage, setActivePage, sidebarCollapsed, toggleSidebar } = useNavigationV2();
@@ -237,82 +239,82 @@ export function useNavigationV2(): UseNavigationV2Return {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  const setActivePage = useCallback((
-    page: NavV2Page,
-    options: { skipTransition?: boolean } = {},
-  ) => {
-    deferredRouteCancelRef.current?.();
-    deferredRouteCancelRef.current = null;
+  const setActivePage = useCallback(
+    (page: NavV2Page, options: { skipTransition?: boolean } = {}) => {
+      deferredRouteCancelRef.current?.();
+      deferredRouteCancelRef.current = null;
 
-    // Close drawer on navigate so mobile users don't see stale overlay.
-    const wasDrawerOpen = drawerOpen;
-    const isCurrentPage = page === activePageRef.current && !unknownPath;
-    const publishImmediateNavigationFeedback = () => {
-      if (isCurrentPage) {
-        routePendingStartedAtRef.current = 0;
-        setRoutePendingPage(null);
-        return;
-      }
-      routePendingStartedAtRef.current = nowMs();
-      setRoutePendingPage(page);
-    };
-
-    if (options.skipTransition) {
-      flushSync(() => {
-        setDrawerOpen(false);
-        publishImmediateNavigationFeedback();
-      });
-    } else {
-      setDrawerOpen(false);
-      publishImmediateNavigationFeedback();
-    }
-
-    if (isCurrentPage) {
-      return;
-    }
-
-    const run = (deferRouteWork: boolean) => {
-      const updateRoute = () => {
-        setActivePageState(page);
-        setUnknownPath(null);
-        if (typeof window !== "undefined") {
-          const base = getNavV2BasePath(window.location.pathname);
-          const path = PAGE_TO_PATH[page];
-          // Preserve ?nav=v2 (and other) query params across navigation.
-          // Prepend Vite base so GH Pages deploys keep /people-first-app/ prefix.
-          const newUrl = base + path + window.location.search + window.location.hash;
-          try {
-            window.history.pushState({ navV2Page: page }, "", newUrl);
-          } catch {
-            // Some environments block history (sandbox iframes) — state still moves.
-          }
+      // Close drawer on navigate so mobile users don't see stale overlay.
+      const wasDrawerOpen = drawerOpen;
+      const isCurrentPage = page === activePageRef.current && !unknownPath;
+      const publishImmediateNavigationFeedback = () => {
+        if (isCurrentPage) {
+          routePendingStartedAtRef.current = 0;
+          setRoutePendingPage(null);
+          return;
         }
+        routePendingStartedAtRef.current = nowMs();
+        setRoutePendingPage(page);
       };
 
-      if (deferRouteWork) {
-        startRouteTransition(updateRoute);
-        return;
-      }
-      updateRoute();
-    };
-
-    // Phone drawer navigation should acknowledge the tap first, then schedule
-    // the route render as non-urgent work so low-end mobile web does not feel frozen.
-    if (options.skipTransition) {
-      if (wasDrawerOpen) {
-        deferredRouteCancelRef.current = scheduleAfterNextPaint(() => {
-          deferredRouteCancelRef.current = null;
-          run(true);
+      if (options.skipTransition) {
+        flushSync(() => {
+          setDrawerOpen(false);
+          publishImmediateNavigationFeedback();
         });
+      } else {
+        setDrawerOpen(false);
+        publishImmediateNavigationFeedback();
+      }
+
+      if (isCurrentPage) {
         return;
       }
-      run(false);
-      return;
-    }
 
-    // morph() handles reduced-motion + VT-API-missing fallback internally.
-    void morph(`page-${page}`, () => run(false));
-  }, [drawerOpen, startRouteTransition, unknownPath]);
+      const run = (deferRouteWork: boolean) => {
+        const updateRoute = () => {
+          setActivePageState(page);
+          setUnknownPath(null);
+          if (typeof window !== "undefined") {
+            const base = getNavV2BasePath(window.location.pathname);
+            const path = PAGE_TO_PATH[page];
+            // Preserve ?nav=v2 (and other) query params across navigation.
+            // Prepend Vite base so GH Pages deploys keep /people-first-app/ prefix.
+            const newUrl = base + path + window.location.search + window.location.hash;
+            try {
+              window.history.pushState({ navV2Page: page }, "", newUrl);
+            } catch {
+              // Some environments block history (sandbox iframes) — state still moves.
+            }
+          }
+        };
+
+        if (deferRouteWork) {
+          startRouteTransition(updateRoute);
+          return;
+        }
+        updateRoute();
+      };
+
+      // Phone drawer navigation should acknowledge the tap first, then schedule
+      // the route render as non-urgent work so low-end mobile web does not feel frozen.
+      if (options.skipTransition) {
+        if (wasDrawerOpen) {
+          deferredRouteCancelRef.current = scheduleAfterNextPaint(() => {
+            deferredRouteCancelRef.current = null;
+            run(true);
+          });
+          return;
+        }
+        run(false);
+        return;
+      }
+
+      // morph() handles reduced-motion + VT-API-missing fallback internally.
+      void morph(`page-${page}`, () => run(false));
+    },
+    [drawerOpen, startRouteTransition, unknownPath]
+  );
 
   const toggleSidebar = useCallback(() => setSidebarCollapsed((s) => !s), []);
   const openDrawer = useCallback(() => setDrawerOpen(true), []);

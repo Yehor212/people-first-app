@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "globalExclude": [
+    ".git/**",
+    ".env*",
+    "**/.env*",
+    "**/*.pem",
+    "**/*.key",
+    "**/*secret*",
+    "**/*token*",
+    "node_modules/**",
+    "dist/**",
+    "build/**",
+    "coverage/**",
+    "artifacts/**",
+    "android/**/build/**",
+    "ios/**/build/**",
+    "**/assets/**",
+    "**/generated/**",
+    "**/*.png",
+    "**/*.jpg",
+    "**/*.jpeg",
+    "**/*.gif",
+    "**/*.webp",
+    "**/*.svg",
+    "**/*.lottie",
+    "**/*.rlottie",
+    "**/*.map"
+  ],
+  "groups": [
+    {
+      "id": "agent_rules",
+      "description": "Agent-facing operating rules, architecture anchors, governance, and no-paid AI/RAG policy.",
+      "tags": ["agents", "architecture", "governance", "verification"],
+      "include": [
+        "AGENTS.md",
+        "ARCHITECTURE.md",
+        "docs/ai/TEST_FIRST_AGENT_POLICY.md",
+        "docs/ai/SKILL_ROUTING_AGENT_POLICY.md",
+        "docs/ai/RUFLOW_PLUS_BLUEPRINT.md",
+        "docs/ai/AGENT_CHANGE_GOVERNANCE.md",
+        "docs/ai/AGENT_CONTEXT_PERSISTENCE.md",
+        "docs/ai/FREE_RAG_AND_COACH_LITE.md"
+      ]
+    },
+    {
+      "id": "telegram_control",
+      "description": "Telegram reports/control bot, Cloudflare Worker, GitHub workflow, and no-paid remote fallback path.",
+      "tags": ["telegram", "cloudflare", "github-actions", "reports", "control"],
+      "include": [
+        "docs/ai/TELEGRAM_CONTROL_PLANE.md",
+        "docs/ai/TELEGRAM_CONTROL_COMPLETION_AUDIT.md",
+        "tools/telegram-control/README.md",
+        "tools/telegram-control/package.json",
+        "tools/telegram-control/src/**/*.ts",
+        "tools/telegram-control/scripts/**/*.ts",
+        "tools/telegram-control/test/**/*.ts",
+        ".github/workflows/telegram-control.yml"
+      ]
+    },
+    {
+      "id": "sync_auth",
+      "description": "Authentication, account linking, Supabase, offline queue, and sync contracts.",
+      "tags": ["auth", "sync", "supabase", "offline"],
+      "include": [
+        "docs/ai/SYNC_CONTRACT.md",
+        "docs/auth-facebook-telegram-setup.md",
+        "src/lib/**/*auth*.ts",
+        "src/lib/**/*sync*.ts",
+        "src/hooks/**/*sync*.ts",
+        "src/observability/**/*sync*.ts",
+        "src/storage/**/*sync*.ts",
+        "supabase/functions/**/*auth*/**/*.ts",
+        "supabase/functions/auth-telegram/**/*.ts"
+      ]
+    },
+    {
+      "id": "ui_v2",
+      "description": "V2 fullscreen runtime, Telegram-grade UI contracts, canonical orb, and nav-v2 surfaces.",
+      "tags": ["ui", "v2", "runtime", "telegram-grade", "orb"],
+      "include": [
+        "docs/ai/V2_FULLSCREEN_EDGE_TO_EDGE_CONTRACT.md",
+        "docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md",
+        "docs/ai/CANONICAL_ORB_INVARIANT.md",
+        "src/pages/nav-v2/**/*.ts",
+        "src/pages/nav-v2/**/*.tsx",
+        "src/components/state-of-mind/**/*.ts",
+        "src/components/state-of-mind/**/*.tsx",
+        "src/components/habit-pictogram/**/*.ts",
+        "src/components/habit-pictogram/**/*.tsx"
+      ]
+    },
+    {
+      "id": "coach_journal",
+      "description": "Coach Lite, journal AI, lexical journal search, and paid-provider fallback behavior.",
+      "tags": ["coach", "journal", "free-mode", "gemini-fallback"],
+      "include": [
+        "supabase/functions/ai-coach/index.ts",
+        "supabase/functions/_shared/coach_lite.ts",
+        "supabase/functions/generate-embedding/index.ts",
+        "supabase/functions/search-journal/index.ts",
+        "src/lib/**/*journalAI*.ts",
+        "src/lib/**/*aiCoach*.ts",
+        "scripts/__tests__/journal-ai-free-mode.test.ts",
+        "scripts/__tests__/rag-free-mode.test.ts"
+      ]
+    }
+  ]
+}

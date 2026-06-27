@@ -19,6 +19,7 @@ import { useDeepLinkHandler } from "@/hooks/useDeepLinkHandler";
 import { useTelegramGradeSyncRuntime } from "@/hooks/useTelegramGradeSyncRuntime";
 import { useV2FullscreenSurface } from "@/hooks/useV2FullscreenSurface";
 import { useChallengeHandlers } from "@/hooks/useChallengeHandlers";
+import { useFocusHandlers } from "@/hooks/useFocusHandlers";
 import { useMoodHandlers } from "@/hooks/useMoodHandlers";
 import { useGratitudeHandlers } from "@/hooks/useGratitudeHandlers";
 import { useSettingsHandlers } from "@/hooks/useSettingsHandlers";
@@ -41,9 +42,13 @@ const IndexV1Impl = lazy(() => import("./IndexV1Impl"));
 const DesktopDownloadPage = lazy(() =>
   import("./DesktopDownloadPage").then((m) => ({ default: m.DesktopDownloadPage })),
 );
+const HabitStickerPreview = import.meta.env.DEV
+  ? lazy(() => import("./__dev/HabitStickerPreview"))
+  : null;
 
-const NAV_V2_ROUTE_PATHS = new Set(["/orb", "/habits", "/diary", "/settings"]);
+const NAV_V2_ROUTE_PATHS = new Set(["/orb", "/habits", "/diary", "/planning", "/settings"]);
 const PUBLIC_ROUTE_PATHS = new Set(["/desktop"]);
+const DEV_PREVIEW_ROUTE_PATHS = new Set(["/__dev/habit-sticker"]);
 const setShowWidgetSettings = getModalToggle("showWidgetSettings");
 type ChallengeList = ReturnType<typeof getChallenges>;
 type BadgeList = ReturnType<typeof getBadges>;
@@ -91,6 +96,12 @@ function isPublicRouteLocation(): boolean {
   return PUBLIC_ROUTE_PATHS.has(appPath);
 }
 
+function isDevPreviewRouteLocation(): boolean {
+  if (!import.meta.env.DEV) return false;
+  const appPath = getCurrentAppPath();
+  return DEV_PREVIEW_ROUTE_PATHS.has(appPath);
+}
+
 /**
  * Index - V1/V2 shell selector.
  *
@@ -100,6 +111,7 @@ function isPublicRouteLocation(): boolean {
  */
 export function Index() {
   const publicRoute = useMemo(isPublicRouteLocation, []);
+  const devPreviewRoute = useMemo(isDevPreviewRouteLocation, []);
   const navV2Flag = useDesignFlag("design.nav.v2");
   const navV2QueryOverride = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -124,6 +136,14 @@ export function Index() {
     return (
       <Suspense fallback={null}>
         <DesktopDownloadPage />
+      </Suspense>
+    );
+  }
+
+  if (devPreviewRoute && HabitStickerPreview) {
+    return (
+      <Suspense fallback={null}>
+        <HabitStickerPreview />
       </Suspense>
     );
   }
@@ -197,7 +217,7 @@ function IndexV2Impl() {
   useDeepLinkHandler({ handleDiaryDeepLinks: false });
   useTelegramGradeSyncRuntime();
 
-  const { updateChallengeProgress } = useChallengeHandlers({
+  const { checkForFeatureUnlocks, updateChallengeProgress } = useChallengeHandlers({
     safeMoods: moods,
     safeHabits: habits,
     safeFocusSessions: focusSessions,
@@ -215,6 +235,11 @@ function IndexV2Impl() {
     attractCreature,
     feedCreatures,
     updateChallengeProgress,
+  });
+  const { handleCompleteFocusSession, handleMindfulMomentComplete } = useFocusHandlers({
+    earnTreats,
+    updateChallengeProgress,
+    checkForFeatureUnlocks,
   });
   const settingsControls = useMemo(
     () => ({
@@ -259,6 +284,8 @@ function IndexV2Impl() {
           <NavV2Orchestrator
             onAddMood={handleAddMood}
             onAddGratitude={handleAddGratitude}
+            onCompleteFocusSession={handleCompleteFocusSession}
+            onMindfulMomentComplete={handleMindfulMomentComplete}
             settingsControls={settingsControls}
           />
         </AdProvider>

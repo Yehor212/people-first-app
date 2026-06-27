@@ -1,0 +1,190 @@
+.habit-sticker-preview {
+  background:
+    radial-gradient(circle at 22% 12%, hsl(var(--zf-role-energy) / 0.16), transparent 30%),
+    radial-gradient(circle at 82% 18%, hsl(var(--zf-role-focus) / 0.14), transparent 34%),
+    linear-gradient(150deg, hsl(var(--background)), hsl(var(--card)) 56%, hsl(var(--muted)));
+  color: hsl(var(--foreground));
+}
+
+.habit-sticker-preview__shell {
+  margin: 0 auto;
+  max-width: 72rem;
+  padding: 2rem;
+}
+
+.habit-sticker-preview__header {
+  align-items: end;
+  border-bottom: 1px solid hsl(var(--border));
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+}
+
+.habit-sticker-preview__title {
+  font-family: var(--typography-family-display);
+  font-size: clamp(2rem, 4vw, 3.6rem);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  margin: 0;
+}
+
+.habit-sticker-preview__meta {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: 0.5rem 0 0;
+}
+
+.habit-sticker-preview__controls {
+  background: hsl(var(--card) / 0.8);
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+
+.habit-sticker-preview__control {
+  background: transparent;
+  border: 0;
+  border-radius: 0.55rem;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  min-height: 44px;
+  min-width: 72px;
+  padding: 0.65rem 0.9rem;
+}
+
+.habit-sticker-preview__control[data-active="true"] {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.habit-sticker-preview__stage-card {
+  align-items: center;
+  background: hsl(var(--card) / 0.72);
+  border: 1px solid hsl(var(--border));
+  border-radius: 1.5rem;
+  box-shadow: 0 1.5rem 4rem hsl(var(--zf-night-0) / 0.12);
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(18rem, 0.9fr) minmax(16rem, 1fr);
+  min-height: 32rem;
+  overflow: hidden;
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+.habit-sticker-preview__hero {
+  justify-self: center;
+}
+
+.habit-sticker-preview__hero .habit-sticker-model {
+  --habit-sticker-size: clamp(18rem, 38vw, 28rem);
+}
+
+.habit-sticker-preview__spec {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.habit-sticker-preview__spec h2 {
+  font-family: var(--typography-family-display);
+  font-size: clamp(1.6rem, 3vw, 2.5rem);
+  line-height: 1.05;
+  margin: 0;
+}
+
+.habit-sticker-preview__spec-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.habit-sticker-preview__spec-row {
+  align-items: center;
+  background: hsl(var(--muted) / 0.68);
+  border: 1px solid hsl(var(--border) / 0.8);
+  border-radius: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0.7rem 0.85rem;
+}
+
+.habit-sticker-preview__spec-row dt,
+.habit-sticker-preview__spec-row dd {
+  margin: 0;
+}
+
+.habit-sticker-preview__spec-row dt {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.habit-sticker-preview__spec-row dd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.habit-sticker-preview__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+
+.habit-sticker-preview__tile {
+  align-items: center;
+  background: hsl(var(--card) / 0.72);
+  border: 1px solid hsl(var(--border));
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 15rem;
+  padding: 1rem;
+}
+
+.habit-sticker-preview__tile .habit-sticker-model {
+  --habit-sticker-size: 10rem;
+}
+
+.habit-sticker-preview__tile-label {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+@media (max-width: 820px) {
+  .habit-sticker-preview__shell {
+    padding: 1rem;
+  }
+
+  .habit-sticker-preview__header,
+  .habit-sticker-preview__stage-card {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .habit-sticker-preview__header {
+    flex-direction: column;
+  }
+
+  .habit-sticker-preview__grid {
+    grid-template-columns: 1fr;
+  }
+}

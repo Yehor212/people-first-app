@@ -8,6 +8,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2Orb: "Orb",
       navV2Habits: "Habits",
       navV2Diary: "Diary",
+      navV2Planning: "Planning",
       navV2Settings: "Settings",
       navV2PrimaryNav: "Primary navigation",
       navV2CollapseSidebar: "Collapse sidebar",
@@ -46,7 +47,7 @@ describe("SidebarV2", () => {
     onToggleCollapsed: vi.fn(),
   };
 
-  it("renders the 4 primary navigation items", () => {
+  it("renders the 5 V2 navigation items", () => {
     render(<SidebarV2 {...defaultProps} />);
     expect(screen.getByTestId("sidebar-v2-brand-orb")).toContainElement(
       within(screen.getByTestId("sidebar-v2-brand-orb")).getByTestId(
@@ -61,6 +62,7 @@ describe("SidebarV2", () => {
     expect(screen.getByRole("button", { name: "Orb" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Habits" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Diary" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Planning" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Settings" })).toBeInTheDocument();
     expect(screen.getByTestId("sidebar-v2-classic-portal")).toHaveAttribute(
       "aria-label",
@@ -69,11 +71,17 @@ describe("SidebarV2", () => {
   });
 
   it("marks the active page with aria-current=page", () => {
-    render(<SidebarV2 {...defaultProps} activePage="diary" />);
+    const { rerender } = render(<SidebarV2 {...defaultProps} activePage="diary" />);
     const diary = screen.getByRole("button", { name: "Diary" });
     expect(diary).toHaveAttribute("aria-current", "page");
     const orb = screen.getByRole("button", { name: "Orb" });
     expect(orb).not.toHaveAttribute("aria-current");
+
+    rerender(<SidebarV2 {...defaultProps} activePage="planning" />);
+    expect(screen.getByRole("button", { name: "Planning" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
   it("calls onPageChange with the clicked page", () => {

@@ -79,6 +79,7 @@ for (const marker of [
 const files = [
   "docs/ai/RUFLOW_PLUS_BLUEPRINT.md",
   "docs/ai/RUFLOW_PLUS_ROLE_PROMPTS.md",
+  "docs/ai/VISUAL_INTEGRITY_CRITIC_PROTOCOL.md",
   ".agents/skills/teamlead/SKILL.md",
   ".agents/skills/ruflow-plus-orchestration/SKILL.md",
   ".claude/agents/team-lead.md",
@@ -138,6 +139,32 @@ for (const marker of [
   "Do not maximize agent count",
 ]) {
   requireIncludes(".agents/skills/ruflow-plus-orchestration/SKILL.md", ruflowSkill, marker);
+}
+
+
+const visualProtocol = read("docs/ai/VISUAL_INTEGRITY_CRITIC_PROTOCOL.md");
+for (const marker of [
+  "Visual Integrity Critic Protocol",
+  "Technical PASS never implies ARTISTIC_PASS",
+  "ARTISTIC_UNVERIFIED",
+  "Technical",
+  "Visual Runtime",
+  "Artistic-Craft",
+  "Motion",
+  "Model",
+  "Plan",
+]) {
+  requireIncludes("docs/ai/VISUAL_INTEGRITY_CRITIC_PROTOCOL.md", visualProtocol, marker);
+}
+
+const agentsGuide = read("AGENTS.md");
+for (const marker of [
+  "Visual Integrity Critic Gate",
+  "visual-integrity-critic",
+  "docs/ai/VISUAL_INTEGRITY_CRITIC_PROTOCOL.md",
+  "Technical checks, tests, audits, file-size gates, or successful renders never imply `ARTISTIC_PASS`",
+]) {
+  requireIncludes("AGENTS.md", agentsGuide, marker);
 }
 
 const blueprint = read("docs/ai/RUFLOW_PLUS_BLUEPRINT.md");

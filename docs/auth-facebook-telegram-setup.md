@@ -125,6 +125,10 @@ client-side Telegram secret is needed.
    `TELEGRAM_BOT_TOKEN` it reports `UNVERIFIED` instead of printing or
    guessing secrets.
 
+   In GitHub Actions this proof uses repository secret `TELEGRAM_AUTH_BOT_TOKEN`,
+   which must be the public `@ZenFlowAuthBot` token. Do not reuse the private
+   report/control bot token for this proof.
+
    If the Bot API profile-photo call is unavailable for the account, use the
    manual fallback: send `/setuserpic` to BotFather, choose `@ZenFlowAuthBot`,
    and upload the same approved JPG asset. Either path removes the old `Z`

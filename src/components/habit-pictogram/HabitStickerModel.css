@@ -1,0 +1,337 @@
+.habit-sticker-model {
+  --habit-sticker-size: clamp(11rem, 36vw, 20rem);
+  align-items: center;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  isolation: isolate;
+  min-width: min(100%, var(--habit-sticker-size));
+  text-align: center;
+}
+
+.habit-sticker-model__stage {
+  align-items: center;
+  aspect-ratio: 1;
+  display: grid;
+  justify-items: center;
+  position: relative;
+  transform-style: preserve-3d;
+  width: var(--habit-sticker-size);
+}
+
+.habit-sticker-model__stage::before {
+  background: radial-gradient(
+    ellipse at center,
+    hsl(var(--zf-night-0) / 0.2),
+    hsl(var(--zf-night-0) / 0.08) 48%,
+    transparent 70%
+  );
+  border-radius: 999px;
+  bottom: 12%;
+  content: "";
+  height: 16%;
+  position: absolute;
+  width: 64%;
+  z-index: 0;
+}
+
+.habit-sticker-model__lighting,
+.habit-sticker-model__rim,
+.habit-sticker-model__spark,
+.habit-sticker-model__complete-burst,
+.habit-sticker-model__check,
+.habit-sticker-model__streak-aura,
+.habit-sticker-model__streak-count {
+  pointer-events: none;
+  position: absolute;
+}
+
+.habit-sticker-model__lighting {
+  background:
+    radial-gradient(circle at 42% 28%, hsl(var(--zf-role-energy) / 0.22), transparent 30%),
+    radial-gradient(circle at 65% 35%, hsl(var(--zf-role-focus) / 0.18), transparent 34%),
+    radial-gradient(circle at 50% 70%, hsl(var(--zf-role-body) / 0.16), transparent 42%);
+  border-radius: 50%;
+  inset: 9%;
+  opacity: 0.9;
+  transform: translateZ(-18px);
+  z-index: 1;
+}
+
+.habit-sticker-model__rim {
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 42% 48% 46% 44%;
+  box-shadow:
+    inset 0 0 0 1px hsl(var(--card) / 0.48),
+    0 1.5rem 3rem hsl(var(--zf-night-0) / 0.18),
+    0 0 2.5rem hsl(var(--zf-role-focus) / 0.12);
+  inset: 11%;
+  opacity: 0.8;
+  z-index: 2;
+}
+
+.habit-sticker-model__pictogram {
+  filter:
+    drop-shadow(0 1.2rem 1.4rem hsl(var(--zf-night-0) / 0.22))
+    drop-shadow(0 0.3rem 0.4rem hsl(var(--zf-role-energy) / 0.16));
+  height: 74%;
+  position: relative;
+  transform-origin: 50% 68%;
+  width: 74%;
+  z-index: 4;
+}
+
+.habit-sticker-model__pictogram .v2hp-motion-player,
+.habit-sticker-model__pictogram .v2hp-motion-player__lottie,
+.habit-sticker-model__pictogram .v2hp-motion-player__animated-raster,
+.habit-sticker-model__pictogram .v2hp-motion-player__animated-raster-poster,
+.habit-sticker-model__pictogram .v2hp-motion-player__raster,
+.habit-sticker-model__pictogram .v2hp-motion-player__still,
+.habit-sticker-model__pictogram svg {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.habit-sticker-model__spark {
+  background: hsl(var(--zf-role-energy) / 0.9);
+  border-radius: 999px;
+  box-shadow: 0 0 0.8rem hsl(var(--zf-role-energy) / 0.35);
+  height: 0.45rem;
+  opacity: 0.72;
+  width: 0.45rem;
+  z-index: 5;
+}
+
+.habit-sticker-model__spark--one {
+  right: 21%;
+  top: 18%;
+}
+
+.habit-sticker-model__spark--two {
+  left: 22%;
+  top: 30%;
+}
+
+.habit-sticker-model__spark--three {
+  bottom: 27%;
+  right: 26%;
+}
+
+.habit-sticker-model__complete-burst {
+  border: 0.18rem solid hsl(var(--zf-role-energy) / 0.72);
+  border-radius: 50%;
+  inset: 18%;
+  opacity: 0;
+  z-index: 3;
+}
+
+.habit-sticker-model__check {
+  align-items: center;
+  background: hsl(var(--zf-role-body));
+  border: 0.18rem solid hsl(var(--card));
+  border-radius: 999px;
+  box-shadow:
+    0 0.7rem 1.5rem hsl(var(--zf-night-0) / 0.2),
+    0 0 1.4rem hsl(var(--zf-role-body) / 0.35);
+  color: hsl(var(--primary-foreground));
+  display: flex;
+  font-size: 1.55rem;
+  font-weight: 800;
+  height: 3.3rem;
+  justify-content: center;
+  right: 13%;
+  top: 17%;
+  width: 3.3rem;
+  z-index: 6;
+}
+
+.habit-sticker-model__check svg {
+  height: 1.75rem;
+  stroke-width: 3.2;
+  width: 1.75rem;
+}
+
+.habit-sticker-model__streak-aura {
+  border: 0.14rem solid hsl(var(--zf-role-energy) / 0.48);
+  border-radius: 42% 46% 48% 40%;
+  box-shadow:
+    0 0 1.8rem hsl(var(--zf-role-energy) / 0.22),
+    inset 0 0 1.2rem hsl(var(--zf-role-energy) / 0.12);
+  inset: 9%;
+  z-index: 3;
+}
+
+.habit-sticker-model__streak-count {
+  background: hsl(var(--zf-role-energy));
+  border: 0.14rem solid hsl(var(--card));
+  border-radius: 999px;
+  box-shadow: 0 0.6rem 1.2rem hsl(var(--zf-night-0) / 0.18);
+  color: hsl(var(--zf-night-0));
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  min-height: 2.35rem;
+  min-width: 2.35rem;
+  padding: 0.48rem 0.56rem;
+  right: 15%;
+  top: 14%;
+  z-index: 6;
+}
+
+.habit-sticker-model__caption {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.habit-sticker-model[data-motion-allowed="true"] .habit-sticker-model__pictogram {
+  animation: habit-sticker-idle-float 2983ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.habit-sticker-model[data-motion-allowed="true"] .habit-sticker-model__lighting {
+  animation: habit-sticker-lighting 2983ms ease-in-out infinite;
+}
+
+.habit-sticker-model[data-motion-allowed="true"] .habit-sticker-model__spark {
+  animation: habit-sticker-spark 1800ms ease-in-out infinite;
+}
+
+.habit-sticker-model[data-motion-allowed="true"] .habit-sticker-model__spark--two {
+  animation-delay: 320ms;
+}
+
+.habit-sticker-model[data-motion-allowed="true"] .habit-sticker-model__spark--three {
+  animation-delay: 640ms;
+}
+
+.habit-sticker-model[data-sticker-state="complete"][data-motion-allowed="true"] .habit-sticker-model__pictogram {
+  animation: habit-sticker-complete-pop 980ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.habit-sticker-model[data-sticker-state="complete"][data-motion-allowed="true"] .habit-sticker-model__complete-burst {
+  animation: habit-sticker-complete-burst 980ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.habit-sticker-model[data-sticker-state="complete"][data-motion-allowed="true"] .habit-sticker-model__check {
+  animation: habit-sticker-check-pop 980ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.habit-sticker-model[data-sticker-state="streak"][data-motion-allowed="true"] .habit-sticker-model__streak-aura {
+  animation: habit-sticker-streak-aura 2400ms ease-in-out infinite;
+}
+
+.habit-sticker-model[data-sticker-state="streak"][data-motion-allowed="true"] .habit-sticker-model__streak-count {
+  animation: habit-sticker-streak-count 1800ms ease-in-out infinite;
+}
+
+@keyframes habit-sticker-idle-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-1deg) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -0.38rem, 0) rotate(1.4deg) scale(1.018);
+  }
+}
+
+@keyframes habit-sticker-lighting {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: translateZ(-18px) scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: translateZ(-18px) scale(1.04);
+  }
+}
+
+@keyframes habit-sticker-spark {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: translateY(0) scale(0.72);
+  }
+  45% {
+    opacity: 0.86;
+    transform: translateY(-0.4rem) scale(1);
+  }
+}
+
+@keyframes habit-sticker-complete-pop {
+  0% {
+    transform: scale(0.94) rotate(-3deg);
+  }
+  52% {
+    transform: scale(1.13) rotate(3deg);
+  }
+  74% {
+    transform: scale(0.98) rotate(-1deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes habit-sticker-complete-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0.54);
+  }
+  34% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.36);
+  }
+}
+
+@keyframes habit-sticker-check-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-12deg);
+  }
+  54% {
+    opacity: 1;
+    transform: scale(1.1) rotate(4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes habit-sticker-streak-aura {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.98) rotate(0deg);
+  }
+  50% {
+    opacity: 0.92;
+    transform: scale(1.04) rotate(2deg);
+  }
+}
+
+@keyframes habit-sticker-streak-count {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-0.22rem) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .habit-sticker-model *,
+  .habit-sticker-model *::before,
+  .habit-sticker-model *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

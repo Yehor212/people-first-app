@@ -11,6 +11,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2Orb: "Orb",
       navV2Habits: "Habits",
       navV2Diary: "Diary",
+      navV2Planning: "Planning",
       navV2Settings: "Settings",
       navV2PrimaryNav: "Primary navigation",
       navV2SecondaryNav: "Secondary navigation",
@@ -109,6 +110,7 @@ describe("DrawerV2", () => {
     expect(screen.getByTestId("drawer-v2-primary-nav")).toBeInTheDocument();
     expect(screen.getByTestId("drawer-v2-destination-orb")).toBeInTheDocument();
     expect(screen.getByTestId("drawer-v2-destination-habits")).toBeInTheDocument();
+    expect(screen.getByTestId("drawer-v2-destination-planning")).toBeInTheDocument();
     expect(screen.getByTestId("drawer-v2-destination-diary")).toHaveAttribute(
       "aria-current",
       "page"
@@ -141,6 +143,7 @@ describe("DrawerV2", () => {
       "drawer-v2-destination-orb",
       "drawer-v2-destination-habits",
       "drawer-v2-destination-diary",
+      "drawer-v2-destination-planning",
       "drawer-v2-destination-settings",
     ].forEach((testId) => {
       expect(screen.getByTestId(testId).className).not.toContain("press-stable");
@@ -204,6 +207,10 @@ describe("DrawerV2", () => {
       "data-visual-role",
       "diary"
     );
+    expect(screen.getByTestId("drawer-v2-destination-planning")).toHaveAttribute(
+      "data-visual-role",
+      "focus"
+    );
     expect(screen.getByTestId("drawer-v2-destination-settings")).toHaveAttribute(
       "data-visual-role",
       "settings"
@@ -231,6 +238,10 @@ describe("DrawerV2", () => {
     fireEvent.click(screen.getByTestId("drawer-v2-destination-habits"));
 
     expect(onPageChange).toHaveBeenCalledWith("habits");
+
+    fireEvent.click(screen.getByTestId("drawer-v2-destination-planning"));
+
+    expect(onPageChange).toHaveBeenCalledWith("planning");
   });
 
   it("does not render Search in the mobile drawer", () => {

@@ -7,7 +7,7 @@ const packageJson = require("../../package.json") as { version: string };
 export type ZenflowV2Language = "en" | "uk" | "es" | "de" | "fr" | "ja" | "ar" | "he";
 export type ZenflowV2Theme = "paper" | "ink" | "oled";
 export type ZenflowV2Layout = "phone" | "desktop";
-export type ZenflowV2Route = "orb" | "habits" | "diary" | "settings";
+export type ZenflowV2Route = "orb" | "habits" | "diary" | "planning" | "settings";
 
 export interface PrimeZenflowV2Options {
   analytics?: boolean;
@@ -22,10 +22,7 @@ export interface PrimeZenflowV2Options {
   };
 }
 
-export async function primeZenflowV2(
-  page: Page,
-  options: PrimeZenflowV2Options = {},
-) {
+export async function primeZenflowV2(page: Page, options: PrimeZenflowV2Options = {}) {
   await page.addInitScript(
     ({ appVersion, options }) => {
       const json = (value: unknown) => JSON.stringify(value);
@@ -54,7 +51,7 @@ export async function primeZenflowV2(
           analytics: options.analytics === true && options.privacyNoTracking !== true,
           consentShown: true,
           noTracking: options.privacyNoTracking === true,
-        }),
+        })
       );
       localStorage.setItem(
         "zenflow_onboarding_state",
@@ -65,14 +62,11 @@ export async function primeZenflowV2(
           isNewUser: false,
           lastActiveDate: today,
           unlockedFeatures: [],
-        }),
+        })
       );
       localStorage.setItem("zenflow-theme", theme === "paper" ? "light" : "dark");
       localStorage.setItem("zenflow_oled_mode", theme === "oled" ? "true" : "false");
-      localStorage.setItem(
-        "zenflow:theme-v0c",
-        json({ state: { theme }, version: 0 }),
-      );
+      localStorage.setItem("zenflow:theme-v0c", json({ state: { theme }, version: 0 }));
 
       if (options.user) {
         localStorage.setItem(
@@ -81,20 +75,20 @@ export async function primeZenflowV2(
             email: options.user.email ?? `${options.user.id}@example.invalid`,
             id: options.user.id,
             name: options.user.name,
-          }),
+          })
         );
       }
 
       sessionStorage.removeItem("zenflow-orb-webgl-slow-ms");
       sessionStorage.removeItem("zenflow-mood-entry-draft");
     },
-    { appVersion: packageJson.version, options },
+    { appVersion: packageJson.version, options }
   );
 }
 
 export function v2RoutePath(
   route: ZenflowV2Route,
-  options: { dev?: boolean; layout?: ZenflowV2Layout } = {},
+  options: { dev?: boolean; layout?: ZenflowV2Layout } = {}
 ) {
   const params = new URLSearchParams({ nav: "v2" });
   if (options.layout) params.set("navLayout", options.layout);
