@@ -139,6 +139,7 @@
     "smoke:interactive-auth": "node scripts/smoke-interactive-auth-completion.cjs",
     "check:supabase-publishable-key": "node scripts/check-supabase-publishable-key.cjs",
     "rag:search:free": "npx tsx scripts/rag/search-project-docs.ts",
+    "rag:preflight": "npx tsx scripts/rag/preflight.ts",
     "rag:smoke:free": "npx tsx scripts/rag/smoke-free-rag.ts",
     "rag:audit:free": "npx tsx scripts/rag/audit-free-rag.ts"
   },

@@ -242,6 +242,8 @@ jobs:
 
       - name: Run deploy smoke tests
         timeout-minutes: 8
+        env:
+          ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER: true
         run: |
           if [ -d "e2e/visual-regression.spec.ts-snapshots" ]; then
             npx playwright test e2e/deploy-smoke.spec.ts --project=chromium

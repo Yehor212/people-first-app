@@ -7,10 +7,13 @@ ZenFlow must keep a useful AI path when paid provider API keys are absent.
 Use the local lexical RAG command before agent work that needs project rules or architecture context:
 
 ```bash
+npm run rag:preflight -- "architecture source of truth for agents"
 npm run rag:search:free -- "architecture source of truth for agents"
 ```
 
-The command indexes a curated project corpus from `scripts/rag/corpus-manifest.json` and returns short excerpts with source citations. It does not call OpenAI, Gemini, Supabase vector search, or any embedding API.
+`rag:preflight` is the agent-wide entry point. It selects the relevant curated groups, writes `.Codex/auto-context/rag-current.md` plus metadata, and returns a compact context pack for Codex, Claude, Telegram reports, and subagents. `rag:search:free` is the lower-level manual search command.
+
+The commands index a curated project corpus from `scripts/rag/corpus-manifest.json` and return short excerpts with source citations. They do not call OpenAI, Gemini, Supabase vector search, or any embedding API.
 
 The curated corpus is grouped so agents can retrieve the right project memory without blindly scanning the whole repository:
 
@@ -45,6 +48,7 @@ Useful commands:
 
 ```bash
 npm run rag:search:free -- "telegram control openai no paid"
+npm run rag:preflight -- "telegram control openai no paid"
 npm run rag:smoke:free
 npm run rag:audit:free
 ```
