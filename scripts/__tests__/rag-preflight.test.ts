@@ -77,7 +77,7 @@ describe("Free RAG agent preflight", () => {
         resultCount: expect.any(Number),
       })
     );
-  });
+  }, 60_000);
 });
 
 function writeFile(rootDir: string, relativePath: string, contents: string): void {

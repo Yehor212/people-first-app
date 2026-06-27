@@ -165,7 +165,10 @@ const SMALL_ICON_READABILITY_EXPECTATIONS = [
   {
     file: "public/favicon-16.png",
     threshold: 200,
+    coreThreshold: 220,
     minPixels: 6,
+    minCorePixels: 3,
+    minCoreContrast: 3,
     minBox: 5,
     maxBox: 10,
     minMargin: 0.18,
@@ -173,7 +176,10 @@ const SMALL_ICON_READABILITY_EXPECTATIONS = [
   {
     file: "public/favicon-32.png",
     threshold: 220,
+    coreThreshold: 220,
     minPixels: 28,
+    minCorePixels: 20,
+    minCoreContrast: 3,
     minBox: 10,
     maxBox: 18,
     minMargin: 0.2,
@@ -181,7 +187,10 @@ const SMALL_ICON_READABILITY_EXPECTATIONS = [
   {
     file: "public/pwa-windows-44.png",
     threshold: 220,
+    coreThreshold: 220,
     minPixels: 70,
+    minCorePixels: 55,
+    minCoreContrast: 3,
     minBox: 14,
     maxBox: 24,
     minMargin: 0.2,
@@ -189,7 +198,10 @@ const SMALL_ICON_READABILITY_EXPECTATIONS = [
   {
     file: "public/pwa-windows-50.png",
     threshold: 220,
+    coreThreshold: 220,
     minPixels: 86,
+    minCorePixels: 70,
+    minCoreContrast: 3,
     minBox: 16,
     maxBox: 28,
     minMargin: 0.2,
@@ -197,7 +209,10 @@ const SMALL_ICON_READABILITY_EXPECTATIONS = [
   {
     file: "src-tauri/icons/StoreLogo.png",
     threshold: 220,
+    coreThreshold: 220,
     minPixels: 72,
+    minCorePixels: 58,
+    minCoreContrast: 3,
     minBox: 14,
     maxBox: 26,
     minMargin: 0.2,
@@ -205,7 +220,10 @@ const SMALL_ICON_READABILITY_EXPECTATIONS = [
   {
     file: "android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
     threshold: 220,
+    coreThreshold: 220,
     minPixels: 86,
+    minCorePixels: 70,
+    minCoreContrast: 3,
     minBox: 16,
     maxBox: 28,
     minMargin: 0.2,
@@ -213,7 +231,10 @@ const SMALL_ICON_READABILITY_EXPECTATIONS = [
   {
     file: "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
     threshold: 235,
+    coreThreshold: 235,
     minPixels: 160,
+    minCorePixels: 120,
+    minCoreContrast: 3,
     minBox: 20,
     maxBox: 30,
     minMargin: 0.16,
@@ -229,6 +250,21 @@ function checkedRepoAssetPath(rel) {
     fail(`Unsafe repo asset path in brand logo contract: ${rel}`);
   }
   return ROOT + path.sep + rel.split("/").join(path.sep);
+}
+
+function channelToLinear(value) {
+  const channel = value / 255;
+  return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+}
+
+function relativeLuminance(r, g, b) {
+  return 0.2126 * channelToLinear(r) + 0.7152 * channelToLinear(g) + 0.0722 * channelToLinear(b);
+}
+
+function contrastRatio(luminanceA, luminanceB) {
+  const lighter = Math.max(luminanceA, luminanceB);
+  const darker = Math.min(luminanceA, luminanceB);
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 function read(rel) {
@@ -276,7 +312,7 @@ function assertClassicLogoContract() {
       fail(`scripts/generate-icons.cjs must not change the ZenFlow logo design through size-specific visual profile token ${token}; improve raster quality only`);
     }
   }
-  for (const token of ["SMALL_RASTER_SUPERSAMPLE", "SMALL_RASTER_SHARPEN_SIGMA", "rasterSizedSvg"]) {
+  for (const token of ["SMALL_RASTER_SUPERSAMPLE", "SMALL_RASTER_SHARPEN_SIGMA", "TINY_RASTER_BACKGROUND_MULTIPLIER", "rasterSizedSvg"]) {
     if (!generator.includes(token)) {
       fail(`scripts/generate-icons.cjs must keep quality-only raster export token ${token}`);
     }
@@ -375,6 +411,11 @@ async function assertSmallIconReadability(expectation) {
   let maxX = -1;
   let maxY = -1;
   let pixels = 0;
+  let corePixels = 0;
+  let coreLuminance = 0;
+  let backgroundPixels = 0;
+  let backgroundLuminance = 0;
+  const coreThreshold = expectation.coreThreshold ?? expectation.threshold;
 
   for (let y = 0; y < metadata.height; y += 1) {
     for (let x = 0; x < metadata.width; x += 1) {
@@ -390,6 +431,13 @@ async function assertSmallIconReadability(expectation) {
         maxY = Math.max(maxY, y);
         pixels += 1;
       }
+      if (alpha > 48 && r > coreThreshold && g > coreThreshold && b > coreThreshold) {
+        corePixels += 1;
+        coreLuminance += relativeLuminance(r, g, b);
+      } else if (alpha > 48) {
+        backgroundPixels += 1;
+        backgroundLuminance += relativeLuminance(r, g, b);
+      }
     }
   }
 
@@ -397,6 +445,31 @@ async function assertSmallIconReadability(expectation) {
     fail(
       expectation.file + " must keep a crisp tiny ZenFlow leaf; only " + pixels + " pixels exceed RGB " + expectation.threshold,
     );
+  }
+  if (expectation.minCorePixels && corePixels < expectation.minCorePixels) {
+    fail(
+      expectation.file +
+        " must keep a bright readable leaf core; only " +
+        corePixels +
+        " pixels exceed RGB " +
+        coreThreshold,
+    );
+  }
+  if (expectation.minCoreContrast) {
+    if (corePixels === 0 || backgroundPixels === 0) {
+      fail(expectation.file + " cannot calculate tiny-icon contrast; foreground or background pixels are missing");
+    }
+    const contrast = contrastRatio(coreLuminance / corePixels, backgroundLuminance / backgroundPixels);
+    if (contrast < expectation.minCoreContrast) {
+      fail(
+        expectation.file +
+          " tiny leaf core contrast is too low; got " +
+          contrast.toFixed(2) +
+          ":1, expected at least " +
+          expectation.minCoreContrast.toFixed(2) +
+          ":1",
+      );
+    }
   }
 
   const boxWidth = maxX - minX + 1;
