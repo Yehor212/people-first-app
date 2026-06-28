@@ -43,6 +43,24 @@ function isStandaloneAppDisplayMode(): boolean {
   );
 }
 
+function isNativeAppShell(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const shellWindow = window as Window & {
+    Capacitor?: { isNativePlatform?: () => boolean };
+    __TAURI__?: unknown;
+    __TAURI_INTERNALS__?: unknown;
+  };
+
+  return (
+    shellWindow.Capacitor?.isNativePlatform?.() === true ||
+    shellWindow.__TAURI__ != null ||
+    shellWindow.__TAURI_INTERNALS__ != null
+  );
+}
+
 export interface TransitionOptions {
   /**
    * Optional `view-transition-name` applied to the root element for the
@@ -67,6 +85,7 @@ export interface TransitionOptions {
  *   - `options.skip === true`
  *   - `document.startViewTransition` is not a function (Firefox, older Safari)
  *   - installed app display mode is standalone/fullscreen (PWA shell input stability)
+ *   - native shells such as Capacitor/Tauri (desktop/mobile WebView input stability)
  *   - `shouldAnimate()` returns false (Dopamine off, OS reduced-motion, low battery)
  *
  * When `options.name` is provided, `view-transition-name` is set on
@@ -84,7 +103,13 @@ export async function transition(
 
   // Installed PWA shells can freeze while Chrome captures a View Transition
   // snapshot over a route-level lazy render. Prefer immediate navigation there.
-  if (skip || !apiAvailable || isStandaloneAppDisplayMode() || !shouldAnimate()) {
+  if (
+    skip ||
+    !apiAvailable ||
+    isStandaloneAppDisplayMode() ||
+    isNativeAppShell() ||
+    !shouldAnimate()
+  ) {
     await fn();
     return;
   }

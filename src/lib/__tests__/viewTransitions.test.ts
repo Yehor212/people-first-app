@@ -73,6 +73,9 @@ describe("transition (Phase 0-D)", () => {
   afterEach(() => {
     vi.clearAllMocks();
     window.matchMedia = originalMatchMedia;
+    delete (window as unknown as Record<string, unknown>).Capacitor;
+    delete (window as unknown as Record<string, unknown>).__TAURI__;
+    delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
   });
 
   it("runs fn directly when the View Transitions API is missing", async () => {
@@ -114,6 +117,32 @@ describe("transition (Phase 0-D)", () => {
 
     const fn = vi.fn();
     await transition(fn, { name: "pwa-route" });
+
+    expect(fn).toHaveBeenCalledOnce();
+    expect(apiMock).not.toHaveBeenCalled();
+    expect(document.documentElement.style.getPropertyValue("view-transition-name")).toBe("");
+  });
+
+  it("runs fn directly in native app shells", async () => {
+    const apiMock = installMockStartViewTransition();
+    (window as unknown as Record<string, unknown>).Capacitor = {
+      isNativePlatform: () => true,
+    };
+
+    const fn = vi.fn();
+    await transition(fn, { name: "native-route" });
+
+    expect(fn).toHaveBeenCalledOnce();
+    expect(apiMock).not.toHaveBeenCalled();
+    expect(document.documentElement.style.getPropertyValue("view-transition-name")).toBe("");
+  });
+
+  it("runs fn directly in Tauri desktop shells", async () => {
+    const apiMock = installMockStartViewTransition();
+    (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {};
+
+    const fn = vi.fn();
+    await transition(fn, { name: "desktop-route" });
 
     expect(fn).toHaveBeenCalledOnce();
     expect(apiMock).not.toHaveBeenCalled();
