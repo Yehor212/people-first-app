@@ -23,6 +23,26 @@ export function startViewTransition(callback: () => void): void {
   }
 }
 
+function isStandaloneAppDisplayMode(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const iosNavigator = window.navigator as Navigator & { standalone?: boolean };
+  if (iosNavigator.standalone === true) {
+    return true;
+  }
+
+  if (typeof window.matchMedia !== "function") {
+    return false;
+  }
+
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches
+  );
+}
+
 export interface TransitionOptions {
   /**
    * Optional `view-transition-name` applied to the root element for the
@@ -46,6 +66,7 @@ export interface TransitionOptions {
  * Skip conditions (any ONE triggers a direct call):
  *   - `options.skip === true`
  *   - `document.startViewTransition` is not a function (Firefox, older Safari)
+ *   - installed app display mode is standalone/fullscreen (PWA shell input stability)
  *   - `shouldAnimate()` returns false (Dopamine off, OS reduced-motion, low battery)
  *
  * When `options.name` is provided, `view-transition-name` is set on
@@ -61,7 +82,9 @@ export async function transition(
     typeof document !== "undefined" &&
     typeof document.startViewTransition === "function";
 
-  if (skip || !apiAvailable || !shouldAnimate()) {
+  // Installed PWA shells can freeze while Chrome captures a View Transition
+  // snapshot over a route-level lazy render. Prefer immediate navigation there.
+  if (skip || !apiAvailable || isStandaloneAppDisplayMode() || !shouldAnimate()) {
     await fn();
     return;
   }

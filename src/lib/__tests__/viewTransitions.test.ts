@@ -62,13 +62,17 @@ describe("startViewTransition (legacy)", () => {
 });
 
 describe("transition (Phase 0-D)", () => {
+  const originalMatchMedia = window.matchMedia;
+
   beforeEach(() => {
     delete (document as unknown as Record<string, unknown>).startViewTransition;
     document.documentElement.style.removeProperty("view-transition-name");
     shouldAnimateMock.mockReturnValue(true);
+    window.matchMedia = originalMatchMedia;
   });
   afterEach(() => {
     vi.clearAllMocks();
+    window.matchMedia = originalMatchMedia;
   });
 
   it("runs fn directly when the View Transitions API is missing", async () => {
@@ -93,6 +97,27 @@ describe("transition (Phase 0-D)", () => {
     await transition(fn, { skip: true });
     expect(fn).toHaveBeenCalledOnce();
     expect(apiMock).not.toHaveBeenCalled();
+  });
+
+  it("runs fn directly in standalone PWA display mode", async () => {
+    const apiMock = installMockStartViewTransition();
+    window.matchMedia = vi.fn((query: string) => ({
+      matches: query === "(display-mode: standalone)",
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    const fn = vi.fn();
+    await transition(fn, { name: "pwa-route" });
+
+    expect(fn).toHaveBeenCalledOnce();
+    expect(apiMock).not.toHaveBeenCalled();
+    expect(document.documentElement.style.getPropertyValue("view-transition-name")).toBe("");
   });
 
   it("wraps fn in startViewTransition when all conditions allow", async () => {
