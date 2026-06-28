@@ -9,6 +9,7 @@ import { resetEntryGateScroll } from "@/components/entryGateScroll";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { type Language, languageFlags, languageNames } from "@/i18n/translations";
 import { shouldAnimate } from "@/lib/animationUtils";
+import { isAndroid } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/themeStore";
 
@@ -44,7 +45,7 @@ const languageItemVariants = {
 export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
   const { language, setLanguage, t } = useLanguage();
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
-  const animated = shouldAnimate();
+  const animated = !isAndroid && shouldAnimate();
 
   useEffect(() => {
     resetEntryGateScroll("language-selector-screen");

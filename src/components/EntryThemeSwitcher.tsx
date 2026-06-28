@@ -33,7 +33,7 @@ export function EntryThemeSwitcher() {
     <div
       role="radiogroup"
       aria-label={tx.themeLabel || tx.appearance || "Theme"}
-      className="entry-action-tile grid grid-cols-3 gap-1 rounded-full border border-border/45 bg-card/45 p-1 shadow-sm"
+      className="entry-action-tile mx-auto grid w-full max-w-[32rem] grid-cols-3 gap-1 rounded-full border border-border/45 bg-card/45 p-1 shadow-sm"
       data-testid="entry-theme-switcher"
     >
       {options.map(({ preference, legacyPreference, labelKey, fallback, Icon }) => {
@@ -52,14 +52,14 @@ export function EntryThemeSwitcher() {
               setThemePreference(legacyPreference);
             }}
             className={cn(
-              "flex min-h-[44px] items-center justify-center gap-1.5 rounded-full px-2 text-sm font-semibold leading-none outline-none transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              "flex min-h-[44px] min-w-0 items-center justify-center gap-1 rounded-full px-1.5 text-xs font-semibold leading-none outline-none transition-all sm:gap-1.5 sm:px-2 sm:text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               selected
                 ? "bg-primary/20 text-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-card/75 hover:text-foreground"
             )}
           >
             <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">{label}</span>
+            <span className="min-w-0 truncate">{label}</span>
           </button>
         );
       })}

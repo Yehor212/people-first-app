@@ -66,4 +66,35 @@ describe("EntryGate cross-platform safe areas", () => {
     expect(css).toContain("--entry-ink-panel-top");
     expect(css).toContain("--entry-ink-action-surface");
   });
+
+  it("keeps Android WebView entry compositing stable without replacing the approved backdrop", () => {
+    const css = readProjectFile("src/components/EntryGate.css");
+
+    expect(css).toContain(':root[data-platform="android"] .entry-gate-screen');
+    expect(css).toContain(':root[data-platform="android"] .entry-gate-aurora');
+    expect(css).toContain(':root[data-platform="android"] .entry-glass-panel');
+    expect(css).toContain(':root[data-platform="android"] .entry-action-tile');
+    expect(css).toContain("--entry-native-panel-top");
+    expect(css).toContain("--entry-native-panel-bottom: hsl(var(--surface-elevated, var(--secondary)) / 0.96)");
+    expect(css).toContain("--entry-native-action-surface: hsl(var(--card) / 0.9)");
+    expect(css).toContain("background: var(--entry-edge-bleed-background)");
+    expect(css).toContain("filter: none");
+    expect(css).toContain("animation: none");
+    expect(css).toContain(":root[data-platform=\"android\"] .entry-gate-horizon");
+    expect(css).toContain("display: none");
+    expect(css).toContain('[data-testid="entry-gate-backdrop-ripple"]');
+    expect(css).toContain('[data-testid="entry-gate-backdrop-orb"]');
+    expect(css).toContain("-webkit-backdrop-filter: none");
+    expect(css).toContain("backdrop-filter: none");
+  });
+
+  it("disables entry Framer Motion on Android WebView before compositor layers are created", () => {
+    const authScreenSource = readProjectFile("src/components/auth-screen/AuthScreen.tsx");
+    const languageSelectorSource = readProjectFile("src/components/LanguageSelector.tsx");
+
+    expect(authScreenSource).toContain('import { isAndroid } from "@/lib/platform";');
+    expect(languageSelectorSource).toContain('import { isAndroid } from "@/lib/platform";');
+    expect(authScreenSource).toContain("const animated = !isAndroid && shouldAnimate();");
+    expect(languageSelectorSource).toContain("const animated = !isAndroid && shouldAnimate();");
+  });
 });

@@ -3,7 +3,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useAppStore, useUserDataStore } from "@/stores";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { logger } from "@/lib/logger";
-import { safeLocalStorageSet } from "@/lib/safeJson";
+import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 import { SplashScreen, type SplashThemePreference } from "@/components/SplashScreen";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { AuthScreen } from "@/components/AuthScreen";
@@ -27,6 +27,24 @@ export function isLocalDevBypassHost(hostname: string): boolean {
 
 export function shouldBypassDesktopInteractiveGates(isDesktopRuntime: boolean): boolean {
   return isDesktopRuntime;
+}
+
+export function isInstalledWebShell(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(display-mode: standalone)").matches
+  );
+}
+
+export function hasStoredCompletedInteractiveGates(): boolean {
+  return (
+    safeLocalStorageGet<boolean>("zenflow-language-selected", false) === true &&
+    safeLocalStorageGet<boolean>("zenflow-google-auth-checked", false) === true &&
+    safeLocalStorageGet<boolean>("zenflow-tutorial-complete", false) === true &&
+    safeLocalStorageGet<boolean>("zenflow-onboarding-complete", false) === true &&
+    safeLocalStorageGet<boolean>("zenflow-notification-permission-checked", false) === true
+  );
 }
 
 /**
@@ -176,6 +194,14 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     );
   }
 
+  if (shouldBypassDesktopInteractiveGates(IS_DESKTOP_RUNTIME)) {
+    return <>{children}</>;
+  }
+
+  if (isLoading && isInstalledWebShell() && hasStoredCompletedInteractiveGates()) {
+    return <>{children}</>;
+  }
+
   if (isLoading) {
     if (splashTheme) {
       return (
@@ -193,10 +219,6 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
         <PremiumLoader size="lg" />
       </div>
     );
-  }
-
-  if (shouldBypassDesktopInteractiveGates(IS_DESKTOP_RUNTIME)) {
-    return <>{children}</>;
   }
 
   if (!hasSelectedLanguage) {

@@ -157,7 +157,9 @@ const WHITE_MARK_SAFE_ZONE_EXPECTATIONS = [
   "src-tauri/icons/32x32.png",
   "src-tauri/icons/StoreLogo.png",
   "android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+  "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
   "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
+  "src-tauri/icons/android/mipmap-mdpi/ic_launcher_round.png",
   "docs/release/microsoft-store/assets/official-logo/zenflow-official-app-tile-icon-71.png",
   "docs/release/microsoft-store/assets/official-logo/zenflow-official-app-tile-icon-300.png",
 ];
@@ -229,6 +231,28 @@ const SMALL_ICON_READABILITY_EXPECTATIONS = [
     minMargin: 0.2,
   },
   {
+    file: "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+    threshold: 220,
+    coreThreshold: 220,
+    minPixels: 86,
+    minCorePixels: 70,
+    minCoreContrast: 3,
+    minBox: 16,
+    maxBox: 28,
+    minMargin: 0.2,
+  },
+  {
+    file: "src-tauri/icons/android/mipmap-mdpi/ic_launcher_round.png",
+    threshold: 220,
+    coreThreshold: 220,
+    minPixels: 86,
+    minCorePixels: 70,
+    minCoreContrast: 3,
+    minBox: 16,
+    maxBox: 28,
+    minMargin: 0.2,
+  },
+  {
     file: "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
     threshold: 235,
     coreThreshold: 235,
@@ -268,7 +292,7 @@ function contrastRatio(luminanceA, luminanceB) {
 }
 
 function read(rel) {
-  return fs.readFileSync(path.join(ROOT, rel), "utf8");
+  return fs.readFileSync(checkedRepoAssetPath(rel), "utf8");
 }
 
 function assertNoSvgFilters(rel) {
@@ -320,7 +344,7 @@ function assertClassicLogoContract() {
 }
 
 async function assertOpaquePng(file) {
-  const image = sharp(path.join(ROOT, file));
+  const image = sharp(checkedRepoAssetPath(file));
   const metadata = await image.metadata();
   if (!metadata.hasAlpha) return;
   const raw = await image.ensureAlpha().raw().toBuffer();
@@ -332,7 +356,7 @@ async function assertOpaquePng(file) {
 }
 
 async function assertImage(expectation) {
-  const abs = path.join(ROOT, expectation.file);
+  const abs = checkedRepoAssetPath(expectation.file);
   if (!fs.existsSync(abs)) fail(`${expectation.file} is missing`);
   const metadata = await sharp(abs).metadata();
   if (metadata.width !== expectation.width || metadata.height !== expectation.height) {
@@ -354,7 +378,7 @@ async function assertImage(expectation) {
 }
 
 async function assertWhiteMarkSafeZone(file) {
-  const abs = path.join(ROOT, file);
+  const abs = checkedRepoAssetPath(file);
   const metadata = await sharp(abs).metadata();
   const raw = await sharp(abs).ensureAlpha().raw().toBuffer();
   let minX = metadata.width;
@@ -516,7 +540,7 @@ async function assertTelegramUserpicHasNoInnerSquare() {
     fail(`${TELEGRAM_USERPIC_SOURCE} must not contain an inner rect/rounded-square plate`);
   }
 
-  const { data, info } = await sharp(path.join(ROOT, TELEGRAM_USERPIC))
+  const { data, info } = await sharp(checkedRepoAssetPath(TELEGRAM_USERPIC))
     .resize(256, 256)
     .removeAlpha()
     .raw()
@@ -556,7 +580,7 @@ async function assertTelegramUserpicHasNoInnerSquare() {
 }
 
 function assertIco(rel) {
-  const file = path.join(ROOT, rel);
+  const file = checkedRepoAssetPath(rel);
   const buffer = fs.readFileSync(file);
   if (buffer.readUInt16LE(0) !== 0 || buffer.readUInt16LE(2) !== 1) {
     fail(`${rel} is not a valid ICO`);
@@ -575,7 +599,7 @@ function assertIco(rel) {
 }
 
 function assertIcns(rel) {
-  const file = path.join(ROOT, rel);
+  const file = checkedRepoAssetPath(rel);
   const buffer = fs.readFileSync(file);
   if (buffer.toString("ascii", 0, 4) !== "icns") {
     fail(`${rel} is not a valid ICNS`);
@@ -602,6 +626,18 @@ function assertAndroidXml(baseRel) {
     const xml = read(`${baseRel}/mipmap-anydpi-v26/${file}`);
     for (const token of ["@color/ic_launcher_background", "@mipmap/ic_launcher_foreground", "<monochrome"]) {
       if (!xml.includes(token)) fail(`${baseRel}/mipmap-anydpi-v26/${file} is missing ${token}`);
+    }
+  }
+}
+
+function assertAndroidLauncherIconContract() {
+  const manifest = read("android/app/src/main/AndroidManifest.xml");
+  for (const token of [
+    'android:icon="@mipmap/ic_launcher"',
+    'android:roundIcon="@mipmap/ic_launcher_round"',
+  ]) {
+    if (!manifest.includes(token)) {
+      fail(`android/app/src/main/AndroidManifest.xml must declare ${token} so Android launchers use the canonical ZenFlow icon set`);
     }
   }
 }
@@ -856,6 +892,7 @@ async function main() {
   assertIco("docs/favicon.ico");
   assertIco("src-tauri/icons/icon.ico");
   assertIcns("src-tauri/icons/icon.icns");
+  assertAndroidLauncherIconContract();
   assertAndroidXml("android/app/src/main/res");
   assertAndroidXml("src-tauri/icons/android");
   assertNativeSplashContracts();

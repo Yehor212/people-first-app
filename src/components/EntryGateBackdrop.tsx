@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import type { ComponentProps } from "react";
 
 interface EntryGateBackdropProps {
   animated: boolean;
@@ -55,6 +56,16 @@ function entryToneVar(tone: string) {
   return "--zf-role-body";
 }
 
+type MotionSpanProps = ComponentProps<typeof motion.span>;
+
+function BackdropSpan({ animated, animate, transition, ...props }: MotionSpanProps & { animated: boolean }) {
+  if (!animated) {
+    return <span {...(props as ComponentProps<"span">)} />;
+  }
+
+  return <motion.span {...props} animate={animate} transition={transition} />;
+}
+
 export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
   return (
     <>
@@ -68,7 +79,8 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
         className="pointer-events-none absolute inset-0 overflow-hidden"
         data-testid="entry-gate-backdrop"
       >
-        <motion.span
+        <BackdropSpan
+          animated={animated}
           className="entry-gate-horizon absolute"
           data-testid="entry-gate-backdrop-horizon"
           style={{
@@ -76,7 +88,7 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
             right: "8%",
             bottom: "17%",
           }}
-          animate={animated ? { opacity: [0.18, 0.34, 0.22], scaleX: [0.98, 1.02, 1] } : undefined}
+          animate={{ opacity: [0.18, 0.34, 0.22], scaleX: [0.98, 1.02, 1] }}
           transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
         />
 
@@ -84,7 +96,8 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
           const toneVar = entryToneVar(ribbon.tone);
 
           return (
-            <motion.span
+            <BackdropSpan
+              animated={animated}
               key={`${ribbon.left}-${ribbon.top}`}
               className="entry-gate-flow-ribbon absolute rounded-full"
               data-testid="entry-gate-backdrop-ribbon"
@@ -96,15 +109,11 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
                 rotate: `${ribbon.rotate}deg`,
                 background: `linear-gradient(90deg, transparent, hsl(var(${toneVar}) / 0.16), hsl(var(--primary) / 0.08), transparent)`,
               }}
-              animate={
-                animated
-                  ? {
-                      opacity: [0.08, 0.24, 0.12],
-                      x: [0, 16, -8, 0],
-                      y: [0, -10, 4, 0],
-                    }
-                  : undefined
-              }
+              animate={{
+                opacity: [0.08, 0.24, 0.12],
+                x: [0, 16, -8, 0],
+                y: [0, -10, 4, 0],
+              }}
               transition={{
                 duration: 12,
                 delay: ribbon.delay,
@@ -119,7 +128,8 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
           const toneVar = entryToneVar(caustic.tone);
 
           return (
-            <motion.span
+            <BackdropSpan
+              animated={animated}
               key={`${caustic.left}-${caustic.top}`}
               className="entry-gate-caustic absolute rounded-full"
               data-testid="entry-gate-backdrop-caustic"
@@ -131,15 +141,11 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
                 rotate: `${caustic.rotate}deg`,
                 background: `radial-gradient(ellipse at 35% 45%, hsl(var(${toneVar}) / 0.13), transparent 58%), radial-gradient(ellipse at 68% 52%, hsl(var(--primary) / 0.09), transparent 64%)`,
               }}
-              animate={
-                animated
-                  ? {
-                      opacity: [0.1, 0.26, 0.14],
-                      scale: [0.98, 1.05, 1],
-                      x: [0, 8, -4, 0],
-                    }
-                  : undefined
-              }
+              animate={{
+                opacity: [0.1, 0.26, 0.14],
+                scale: [0.98, 1.05, 1],
+                x: [0, 8, -4, 0],
+              }}
               transition={{ duration: 9.2, delay: caustic.delay, repeat: Infinity, ease: "easeInOut" }}
             />
           );
@@ -149,7 +155,8 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
           const toneVar = entryToneVar(current.tone);
 
           return (
-            <motion.span
+            <BackdropSpan
+              animated={animated}
               key={`${current.left}-${current.top}`}
               className="entry-gate-current absolute"
               data-testid="entry-gate-backdrop-current"
@@ -160,21 +167,18 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
                 rotate: `${current.rotate}deg`,
                 background: `linear-gradient(90deg, transparent, hsl(var(${toneVar}) / 0.2), hsl(var(--primary) / 0.08), transparent)`,
               }}
-              animate={
-                animated
-                  ? {
-                      opacity: [0.08, 0.22, 0.12],
-                      x: [0, 18, -6, 0],
-                    }
-                  : undefined
-              }
+              animate={{
+                opacity: [0.08, 0.22, 0.12],
+                x: [0, 18, -6, 0],
+              }}
               transition={{ duration: 10.5, delay: current.delay, repeat: Infinity, ease: "easeInOut" }}
             />
           );
         })}
 
         {orbs.map((orb) => (
-          <motion.span
+          <BackdropSpan
+            animated={animated}
             key={`${orb.left}-${orb.top}`}
             className="absolute rounded-full"
             data-testid="entry-gate-backdrop-orb"
@@ -186,13 +190,14 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
               background: orb.color,
               boxShadow: `0 0 ${orb.size * 5}px ${orb.color}`,
             }}
-            animate={animated ? { opacity: [0.22, 0.72, 0.28], scale: [1, 1.45, 1] } : undefined}
+            animate={{ opacity: [0.22, 0.72, 0.28], scale: [1, 1.45, 1] }}
             transition={{ duration: 5.5, delay: orb.delay, repeat: Infinity, ease: "easeInOut" }}
           />
         ))}
 
         {ripples.map((ripple) => (
-          <motion.span
+          <BackdropSpan
+            animated={animated}
             key={`${ripple.left}-${ripple.top}`}
             className="absolute rounded-full"
             data-testid="entry-gate-backdrop-ripple"
@@ -207,15 +212,11 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
                 "radial-gradient(ellipse at center, hsl(var(--primary) / 0.1), transparent 68%)",
               boxShadow: "0 0 34px hsl(var(--primary) / 0.08)",
             }}
-            animate={
-              animated
-                ? {
-                    opacity: [0.1, 0.3, 0.14],
-                    scale: [0.96, 1.08, 1],
-                    y: [0, -8, 2, 0],
-                  }
-                : undefined
-            }
+            animate={{
+              opacity: [0.1, 0.3, 0.14],
+              scale: [0.96, 1.08, 1],
+              y: [0, -8, 2, 0],
+            }}
             transition={{ duration: 7.4, delay: ripple.delay, repeat: Infinity, ease: "easeInOut" }}
           />
         ))}

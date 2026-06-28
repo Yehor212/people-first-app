@@ -11,6 +11,7 @@ import { shouldAnimate, zenMotion } from "@/lib/animationUtils";
 import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
 import { getAppAudioAssetSrc } from "@/lib/appAudioAssets";
 import { IS_DEV } from "@/lib/env";
+import { isAndroid } from "@/lib/platform";
 import { getEnabledAuthScreenProviders } from "@/lib/authProviders";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
@@ -49,7 +50,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
-  const animated = shouldAnimate();
+  const animated = !isAndroid && shouldAnimate();
   const breathAudioRef = useRef<HTMLAudioElement | null>(null);
   const [isBreathAudioPlaying, setIsBreathAudioPlaying] = useState(false);
   const appAudioSettings = useAppAudioSettings();

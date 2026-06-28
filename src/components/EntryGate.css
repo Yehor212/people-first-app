@@ -115,6 +115,78 @@ body.zenflow-v2-edge-to-edge .entry-gate-screen {
     inset 0 1px 0 hsl(var(--zf-text-strong) / 0.08);
 }
 
+:root[data-platform="android"] .entry-gate-screen {
+  --entry-native-panel-top: hsl(var(--card) / 0.98);
+  --entry-native-panel-bottom: hsl(var(--surface-elevated, var(--secondary)) / 0.96);
+  --entry-native-action-surface: hsl(var(--card) / 0.9);
+  --entry-native-action-surface-hover: hsl(var(--card) / 0.96);
+  --entry-native-action-selected-surface: hsl(var(--primary) / 0.2);
+  contain: none;
+  background: var(--entry-edge-bleed-background);
+}
+
+:root[data-platform="android"] .entry-gate-screen[data-entry-theme="ink"] {
+  --entry-native-panel-top: var(--entry-ink-panel-top);
+  --entry-native-panel-bottom: var(--entry-ink-panel-bottom);
+  --entry-native-action-surface: var(--entry-ink-action-surface);
+  --entry-native-action-surface-hover: var(--entry-ink-action-surface-hover);
+  --entry-native-action-selected-surface: var(--entry-ink-selected-surface);
+  background: var(--entry-ink-edge-bleed-background);
+}
+
+:root[data-platform="android"] .entry-gate-aurora {
+  filter: none;
+  animation: none;
+  opacity: 0.58;
+  transform: none;
+  will-change: auto;
+}
+
+:root[data-platform="android"] .entry-gate-flow-ribbon,
+:root[data-platform="android"] .entry-gate-caustic,
+:root[data-platform="android"] .entry-gate-current {
+  filter: none;
+  mix-blend-mode: normal;
+  will-change: auto;
+}
+
+:root[data-platform="android"] .entry-gate-horizon,
+:root[data-platform="android"] .entry-gate-flow-ribbon,
+:root[data-platform="android"] .entry-gate-caustic,
+:root[data-platform="android"] .entry-gate-current {
+  display: none;
+}
+
+:root[data-platform="android"] [data-testid="entry-gate-backdrop-ripple"] {
+  opacity: 0.12;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:root[data-platform="android"] [data-testid="entry-gate-backdrop-orb"] {
+  opacity: 0.42;
+  box-shadow: none !important;
+}
+
+:root[data-platform="android"] .entry-glass-panel {
+  background: linear-gradient(155deg, var(--entry-native-panel-top), var(--entry-native-panel-bottom));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-platform="android"] .entry-action-tile {
+  background: var(--entry-native-action-surface);
+}
+
+:root[data-platform="android"] .entry-action-tile:hover {
+  background: var(--entry-native-action-surface-hover);
+}
+
+:root[data-platform="android"] [data-testid="entry-theme-switcher"] [aria-checked="true"],
+:root[data-platform="android"] .entry-glass-panel .entry-action-tile[aria-checked="true"] {
+  background: var(--entry-native-action-selected-surface);
+}
+
 .entry-gate-screen[data-entry-theme="ink"] [data-testid="entry-theme-switcher"].entry-action-tile,
 .entry-gate-screen[data-entry-theme="ink"] .entry-glass-panel .entry-action-tile {
   background: var(--entry-ink-action-surface);

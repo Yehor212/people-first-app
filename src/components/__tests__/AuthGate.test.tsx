@@ -86,6 +86,31 @@ vi.mock("@/contexts/LanguageContext", () => ({
   }),
 }));
 
+
+const setStandaloneDisplayMode = (matches: boolean) => {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: query === "(display-mode: standalone)" ? matches : false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+};
+
+const storeCompletedInteractiveGates = () => {
+  localStorage.setItem("zenflow-language-selected", "true");
+  localStorage.setItem("zenflow-google-auth-checked", "true");
+  localStorage.setItem("zenflow-tutorial-complete", "true");
+  localStorage.setItem("zenflow-onboarding-complete", "true");
+  localStorage.setItem("zenflow-notification-permission-checked", "true");
+};
+
 vi.mock("@/stores", () => {
   return {
     useAppStore: (selector: (state: typeof appState) => unknown) => selector(appState),
@@ -96,6 +121,8 @@ vi.mock("@/stores", () => {
 describe("AuthGate", () => {
   beforeEach(() => {
     window.history.pushState({}, "", "/people-first-app/");
+    localStorage.clear();
+    setStandaloneDisplayMode(false);
     splashScreenMock.mockClear();
     authScreenMock.mockClear();
     authScreenProps.length = 0;
@@ -161,6 +188,43 @@ describe("AuthGate", () => {
   it("marks desktop runtime as shell-first so the installed app can open V2 immediately", () => {
     expect(shouldBypassDesktopInteractiveGates(true)).toBe(true);
     expect(shouldBypassDesktopInteractiveGates(false)).toBe(false);
+  });
+
+
+  it("opens an installed web shell with completed local gates while IndexedDB is still hydrating", () => {
+    appState.initializationState = { isInitializing: false, error: null, wasUpdated: false };
+    setStandaloneDisplayMode(true);
+    storeCompletedInteractiveGates();
+    userState.hasSelectedLanguage = false;
+    userState.authGateChecked = false;
+    userState.googleAuthChecked = false;
+    userState.tutorialComplete = false;
+    userState.onboardingComplete = false;
+    userState.notificationPermissionChecked = false;
+
+    render(
+      <AuthGate isLoading splashTheme="ink">
+        <div>App</div>
+      </AuthGate>
+    );
+
+    expect(screen.getByText("App")).toBeInTheDocument();
+    expect(screen.queryByTestId("mock-splash")).not.toBeInTheDocument();
+  });
+
+  it("keeps an installed web shell on the loading splash when local gates are incomplete", () => {
+    appState.initializationState = { isInitializing: false, error: null, wasUpdated: false };
+    setStandaloneDisplayMode(true);
+    localStorage.setItem("zenflow-language-selected", "true");
+
+    render(
+      <AuthGate isLoading splashTheme="ink">
+        <div>App</div>
+      </AuthGate>
+    );
+
+    expect(screen.getByTestId("mock-splash")).toBeInTheDocument();
+    expect(screen.queryByText("App")).not.toBeInTheDocument();
   });
 
   it("renders children immediately when dev bypass query is present", () => {

@@ -51,6 +51,28 @@ const DIST_ASSETS = [
   "dist/version-check.js",
 ] as const;
 
+function isEnvEnabled(name: string) {
+  return process.env[name] !== "false";
+}
+
+function isPublicAccessReady(name: string) {
+  return process.env[name] === "true";
+}
+
+function expectedEntryAuthProviderIds() {
+  const providerIds = ["google"];
+  if (isEnvEnabled("VITE_ENABLE_FACEBOOK_AUTH") && isPublicAccessReady("VITE_FACEBOOK_PUBLIC_ACCESS_READY")) {
+    providerIds.push("facebook");
+  }
+  if (isEnvEnabled("VITE_ENABLE_TELEGRAM_AUTH")) {
+    providerIds.push("telegram");
+  }
+  if (isEnvEnabled("VITE_ENABLE_APPLE_AUTH") && isPublicAccessReady("VITE_APPLE_PUBLIC_ACCESS_READY")) {
+    providerIds.push("apple");
+  }
+  return providerIds;
+}
+
 const scenarios: PwaEntryScenario[] = [
   {
     name: "pwa-phone-language-light",
@@ -315,6 +337,7 @@ test.describe("PWA entry gate evidence", () => {
 
     const manifest = readManifest();
     const assetFacts = collectAssetFacts();
+    const expectedAuthProviders = expectedEntryAuthProviderIds();
     const indexHtml = readFileSync("dist/index.html", "utf8");
     const serviceWorker = readFileSync("dist/sw.js", "utf8");
     const registration = readFileSync("dist/registerSW.js", "utf8");
@@ -342,9 +365,9 @@ test.describe("PWA entry gate evidence", () => {
     expect(entryCss).toContain(":root[data-runtime-perf] .entry-gate-aurora");
     expect(entryCss).toContain("body.reduce-motion .entry-gate-aurora");
     expect(entryCss).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(languageSelectorSource).toContain("const animated = shouldAnimate();");
+    expect(languageSelectorSource).toContain("const animated = !isAndroid && shouldAnimate();");
     expect(languageSelectorSource).toContain("<EntryGateBackdrop animated={animated} />");
-    expect(authScreenSource).toContain("const animated = shouldAnimate();");
+    expect(authScreenSource).toContain("const animated = !isAndroid && shouldAnimate();");
     expect(authScreenSource).toContain("<EntryGateBackdrop animated={animated} />");
 
     const facts = [];
@@ -352,6 +375,7 @@ test.describe("PWA entry gate evidence", () => {
       `Generated: ${new Date().toISOString()}`,
       `Base URL: ${String(testInfo.project.use.baseURL ?? "")}`,
       `Browser: ${browserName} production preview`,
+      `Expected auth providers: ${expectedAuthProviders.join(",")}`,
     ];
     const baseURL = String(
       testInfo.project.use.baseURL ?? process.env.ZENFLOW_PLAYWRIGHT_BASE_URL ?? "",
@@ -661,11 +685,7 @@ test.describe("PWA entry gate evidence", () => {
       }
 
       if (fact.screen === "auth-screen") {
-        expect(fact.authProviders, `${fact.name} auth provider ids`).toEqual([
-          "google",
-          "telegram",
-          "apple",
-        ]);
+        expect(fact.authProviders, `${fact.name} auth provider ids`).toEqual(expectedAuthProviders);
         expect(fact.iconCenterSpread, `${fact.name} provider icon rail spread`).toBe(0);
         expect(fact.providerIcons.every((icon) => icon.className.includes("h-6 w-6"))).toBe(true);
         expect(

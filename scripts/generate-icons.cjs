@@ -6,6 +6,7 @@ const sharp = require("sharp");
 
 const ROOT = path.resolve(__dirname, "..");
 const BRAND_LOGO_ASSETS_CONFIG = require("../config/brand-logo-assets.json");
+const ANDROID_RES_DIR = ROOT + path.sep + ["android", "app", "src", "main", "res"].join(path.sep);
 
 const LEAF_BODY = "M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z";
 const LEAF_STEM = "M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12";
@@ -402,7 +403,7 @@ function writeIcns(output, entries) {
 }
 
 function writeAndroidBackground(dir) {
-  const file = path.join(dir, "values", "ic_launcher_background.xml");
+  const file = dir + path.sep + "values" + path.sep + "ic_launcher_background.xml";
   ensureDir(file);
   fs.writeFileSync(
     file,
@@ -411,11 +412,11 @@ function writeAndroidBackground(dir) {
 }
 
 function writeAdaptiveXml(dir) {
-  const anydpi = path.join(dir, "mipmap-anydpi-v26");
+  const anydpi = dir + path.sep + "mipmap-anydpi-v26";
   fs.mkdirSync(anydpi, { recursive: true });
   const xml = `<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n    <background android:drawable="@color/ic_launcher_background"/>\n    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>\n    <monochrome android:drawable="@mipmap/ic_launcher_foreground"/>\n</adaptive-icon>\n`;
-  fs.writeFileSync(path.join(anydpi, "ic_launcher.xml"), xml);
-  fs.writeFileSync(path.join(anydpi, "ic_launcher_round.xml"), xml);
+  fs.writeFileSync(anydpi + path.sep + "ic_launcher.xml", xml);
+  fs.writeFileSync(anydpi + path.sep + "ic_launcher_round.xml", xml);
 }
 
 function writeDocsWebManifest() {
@@ -615,15 +616,15 @@ async function generateTauriAssets() {
       buffer: await pngBuffer(tileSvg({ width: size, height: size, scale: size <= 32 ? 0.88 : 0.82 }), size),
     })),
   );
-  writeIcns(path.join(tauriDir, "icon.icns"), icnsEntries);
+  writeIcns(tauriDir + path.sep + "icon.icns", icnsEntries);
 
   const androidIconDir = path.join(tauriDir, "android");
   await generateAndroidAssets(androidIconDir);
 }
 
-async function generateAndroidAssets(androidResDir = path.join(ROOT, "android", "app", "src", "main", "res")) {
+async function generateAndroidAssets(androidResDir = ANDROID_RES_DIR) {
   for (const { name, size } of ANDROID_SIZES) {
-    const dir = path.join(androidResDir, name);
+    const dir = androidResDir + path.sep + name;
     fs.mkdirSync(dir, { recursive: true });
     const launcherIconPath = dir + path.sep + "ic_launcher.png";
     const launcherRoundPath = dir + path.sep + "ic_launcher_round.png";
@@ -649,9 +650,9 @@ async function generateAndroidAssets(androidResDir = path.join(ROOT, "android", 
   writeAdaptiveXml(androidResDir);
 }
 
-async function generateAndroidSplashAssets(androidResDir = path.join(ROOT, "android", "app", "src", "main", "res")) {
+async function generateAndroidSplashAssets(androidResDir = ANDROID_RES_DIR) {
   for (const target of ANDROID_SPLASH_TARGETS) {
-    const output = path.join(androidResDir, target);
+    const output = androidResDir + path.sep + target.split("/").join(path.sep);
     if (!fs.existsSync(output)) {
       throw new Error(`Missing Android splash target: ${target}`);
     }
