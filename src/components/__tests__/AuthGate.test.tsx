@@ -212,6 +212,27 @@ describe("AuthGate", () => {
     expect(screen.queryByTestId("mock-splash")).not.toBeInTheDocument();
   });
 
+  it("opens an installed web shell with completed local gates while startup recovery is still initializing", () => {
+    appState.initializationState = { isInitializing: true, error: null, wasUpdated: false };
+    setStandaloneDisplayMode(true);
+    storeCompletedInteractiveGates();
+    userState.hasSelectedLanguage = false;
+    userState.authGateChecked = false;
+    userState.googleAuthChecked = false;
+    userState.tutorialComplete = false;
+    userState.onboardingComplete = false;
+    userState.notificationPermissionChecked = false;
+
+    render(
+      <AuthGate isLoading splashTheme="ink">
+        <div>App</div>
+      </AuthGate>
+    );
+
+    expect(screen.getByText("App")).toBeInTheDocument();
+    expect(screen.queryByTestId("mock-splash")).not.toBeInTheDocument();
+  });
+
   it("keeps an installed web shell on the loading splash when local gates are incomplete", () => {
     appState.initializationState = { isInitializing: false, error: null, wasUpdated: false };
     setStandaloneDisplayMode(true);

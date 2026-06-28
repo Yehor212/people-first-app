@@ -15,6 +15,33 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logger } from '@/lib/logger';
+import { BASE_URL } from '@/lib/env';
+
+export function getConnectivityProbeUrl(): string {
+  if (typeof window === 'undefined') {
+    return '/favicon.ico';
+  }
+
+  try {
+    if (BASE_URL === './') {
+      return new URL('favicon.ico', window.location.href).href;
+    }
+
+    return new URL('favicon.ico', new URL(BASE_URL || '/', window.location.origin)).href;
+  } catch {
+    return '/favicon.ico';
+  }
+}
+
+async function probeConnectivity(signal?: AbortSignal): Promise<boolean> {
+  const response = await fetch(getConnectivityProbeUrl(), {
+    method: 'HEAD',
+    cache: 'no-cache',
+    signal,
+  });
+
+  return response.ok;
+}
 
 export function OfflineBanner() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -58,6 +85,36 @@ export function OfflineBanner() {
     };
   }, []);
 
+  // navigator.onLine can be stale in installed shells; confirm with a local app asset.
+  useEffect(() => {
+    if (isOnline || dataDropWarning) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 5000);
+
+    probeConnectivity(controller.signal)
+      .then((online) => {
+        setIsOnline(online);
+        if (online) {
+          setDataDropWarning(null);
+        }
+      })
+      .catch((err) => {
+        if ((err as Error).name !== 'AbortError') {
+          logger.warn('[Network]', 'Connectivity check failed:', err);
+        }
+        setIsOnline(false);
+      })
+      .finally(() => window.clearTimeout(timeoutId));
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [dataDropWarning, isOnline]);
+
   // Don't render if online and no warning, or if dismissed
   if ((isOnline && !dataDropWarning) || isDismissed) {
     return null;
@@ -74,9 +131,8 @@ export function OfflineBanner() {
   const handleRetry = () => {
     // Trigger a manual sync attempt
     window.dispatchEvent(new CustomEvent('zenflow:manual-sync-request'));
-    // Also try to check connection
-    fetch('/favicon.ico', { method: 'HEAD', cache: 'no-cache' })
-      .then(() => setIsOnline(true))
+    probeConnectivity()
+      .then((online) => setIsOnline(online))
       .catch(err => { logger.warn('[Network]', 'Connectivity check failed:', err); setIsOnline(false); });
   };
 

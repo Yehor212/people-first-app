@@ -167,15 +167,10 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
 
   // ── Gate screens (order matters — first matching gate wins) ──
 
-  if (initializationState.isInitializing) {
-    return (
-      <SplashScreen
-        loadingFadeOut={loadingFadeOut}
-        subtitle={t.initializingApp || "Preparing your zen space..."}
-        theme={splashTheme}
-      />
-    );
-  }
+  const canOpenInstalledWebShell =
+    isInstalledWebShell() && hasStoredCompletedInteractiveGates();
+  const shouldOpenInstalledWebShellDuringStartup =
+    canOpenInstalledWebShell && (initializationState.isInitializing || isLoading);
 
   if (initializationState.error) {
     return (
@@ -194,11 +189,21 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     );
   }
 
-  if (shouldBypassDesktopInteractiveGates(IS_DESKTOP_RUNTIME)) {
+  if (shouldOpenInstalledWebShellDuringStartup) {
     return <>{children}</>;
   }
 
-  if (isLoading && isInstalledWebShell() && hasStoredCompletedInteractiveGates()) {
+  if (initializationState.isInitializing) {
+    return (
+      <SplashScreen
+        loadingFadeOut={loadingFadeOut}
+        subtitle={t.initializingApp || "Preparing your zen space..."}
+        theme={splashTheme}
+      />
+    );
+  }
+
+  if (shouldBypassDesktopInteractiveGates(IS_DESKTOP_RUNTIME)) {
     return <>{children}</>;
   }
 
