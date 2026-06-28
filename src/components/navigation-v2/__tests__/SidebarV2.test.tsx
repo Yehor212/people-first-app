@@ -91,6 +91,17 @@ describe("SidebarV2", () => {
     expect(onPageChange).toHaveBeenCalledWith("habits");
   });
 
+  it("marks a clicked page active immediately while parent navigation catches up", () => {
+    render(<SidebarV2 {...defaultProps} activePage="orb" />);
+
+    const habits = screen.getByRole("button", { name: "Habits" });
+    expect(habits).not.toHaveAttribute("aria-current");
+
+    fireEvent.click(habits);
+
+    expect(habits).toHaveAttribute("aria-current", "page");
+  });
+
   it("shows collapse toggle and calls onToggleCollapsed", () => {
     const onToggleCollapsed = vi.fn();
     render(<SidebarV2 {...defaultProps} onToggleCollapsed={onToggleCollapsed} />);

@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { ChevronsLeft, ChevronsRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
@@ -39,6 +39,12 @@ export const SidebarV2 = memo(function SidebarV2({
 }: SidebarV2Props) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
+  const [optimisticPage, setOptimisticPage] = useState<NavV2Page | null>(null);
+  const selectedPage = optimisticPage ?? activePage;
+
+  useEffect(() => {
+    setOptimisticPage(null);
+  }, [activePage]);
 
   const items = useMemo(
     (): Array<{ id: NavV2Page; icon: LucideIcon; label: string }> => [
@@ -60,7 +66,7 @@ export const SidebarV2 = memo(function SidebarV2({
     item: { id: NavV2Page; icon: LucideIcon; label: string },
     isFooter = false
   ) => {
-    const isActive = activePage === item.id;
+    const isActive = selectedPage === item.id;
     const visualRole = getNavVisualRole(item.id);
     const tone = getRoleTone(visualRole);
     return (
@@ -68,6 +74,7 @@ export const SidebarV2 = memo(function SidebarV2({
         key={item.id}
         type="button"
         onClick={() => {
+          setOptimisticPage(item.id);
           void haptics.tabChanged();
           onPageChange(item.id);
         }}
