@@ -212,6 +212,10 @@ function tileSvg({ width, height, scale = 0.78, round = false, role = false }) {
 </svg>`;
 }
 
+function legacyAndroidRoundIconSvg({ width, height }) {
+  return tileSvg({ width, height, scale: 0.94, round: true });
+}
+
 function fullBleedDefs(width, height, idPrefix) {
   return `
     <linearGradient id="${idPrefix}Base" x1="0" y1="0" x2="${width}" y2="${height}" gradientUnits="userSpaceOnUse">
@@ -635,9 +639,9 @@ async function generateAndroidAssets(androidResDir = ANDROID_RES_DIR) {
       { flatten: "#2E9B70", ...smallRasterOptions(size, size) },
     );
     await pngFromSvg(
-      rasterSizedSvg(fullBleedSvg, { width: size, height: size, leafScale: 0.52 }),
+      rasterSizedSvg(legacyAndroidRoundIconSvg, { width: size, height: size }),
       launcherRoundPath,
-      { flatten: "#2E9B70", ...smallRasterOptions(size, size) },
+      smallRasterOptions(size, size),
     );
     await pngFromSvg(
       rasterSizedSvg(foregroundSvg, { width: size, height: size, leafScale: 0.56 }),

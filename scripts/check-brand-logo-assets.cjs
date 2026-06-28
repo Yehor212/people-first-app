@@ -77,10 +77,10 @@ const IMAGE_EXPECTATIONS = [
     ["mipmap-xxxhdpi", 192],
   ].flatMap(([folder, size]) => [
     { file: `android/app/src/main/res/${folder}/ic_launcher.png`, width: size, height: size, alpha: "opaque" },
-    { file: `android/app/src/main/res/${folder}/ic_launcher_round.png`, width: size, height: size, alpha: "opaque" },
+    { file: `android/app/src/main/res/${folder}/ic_launcher_round.png`, width: size, height: size, alpha: "allowed" },
     { file: `android/app/src/main/res/${folder}/ic_launcher_foreground.png`, width: size, height: size, alpha: "allowed" },
     { file: `src-tauri/icons/android/${folder}/ic_launcher.png`, width: size, height: size, alpha: "opaque" },
-    { file: `src-tauri/icons/android/${folder}/ic_launcher_round.png`, width: size, height: size, alpha: "opaque" },
+    { file: `src-tauri/icons/android/${folder}/ic_launcher_round.png`, width: size, height: size, alpha: "allowed" },
     { file: `src-tauri/icons/android/${folder}/ic_launcher_foreground.png`, width: size, height: size, alpha: "allowed" },
   ]),
   ...[
@@ -132,6 +132,18 @@ const SVG_EXPECTATIONS = [
 ];
 const TELEGRAM_USERPIC = "docs/release/telegram/assets/zenflow-auth-bot-userpic.jpg";
 const TELEGRAM_USERPIC_SOURCE = "docs/release/telegram/assets/zenflow-auth-bot-userpic-source.svg";
+const ANDROID_ROUND_PNG_EXPECTATIONS = [
+  ...[
+    ["mipmap-mdpi", 48],
+    ["mipmap-hdpi", 72],
+    ["mipmap-xhdpi", 96],
+    ["mipmap-xxhdpi", 144],
+    ["mipmap-xxxhdpi", 192],
+  ].flatMap(([folder]) => [
+    `android/app/src/main/res/${folder}/ic_launcher_round.png`,
+    `src-tauri/icons/android/${folder}/ic_launcher_round.png`,
+  ]),
+];
 const DOCS_STATIC_HTML = fs
   .readdirSync(path.join(ROOT, "docs"))
   .filter((name) => /^(404|delete-account|privacy|privacy-policy|terms)(?:-[a-z]{2})?\.html$/.test(name))
@@ -352,6 +364,23 @@ async function assertOpaquePng(file) {
     if (raw[i] !== 255) {
       fail(`${file} must be opaque for platform/store surfaces that reject or flatten alpha`);
     }
+  }
+}
+
+async function assertLegacyAndroidRoundPng(file) {
+  const { data, info } = await sharp(checkedRepoAssetPath(file)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const alphaAt = (x, y) => data[(y * info.width + x) * info.channels + 3];
+  const corners = [
+    alphaAt(0, 0),
+    alphaAt(info.width - 1, 0),
+    alphaAt(0, info.height - 1),
+    alphaAt(info.width - 1, info.height - 1),
+  ];
+  if (corners.some((alpha) => alpha > 8)) {
+    fail(`${file} must be a physical round PNG with transparent corners; corner alpha values are ${corners.join(", ")}`);
+  }
+  if (alphaAt(Math.floor(info.width / 2), Math.floor(info.height / 2)) < 248) {
+    fail(`${file} must keep an opaque center inside the round launcher icon`);
   }
 }
 
@@ -893,6 +922,7 @@ async function main() {
   assertIco("src-tauri/icons/icon.ico");
   assertIcns("src-tauri/icons/icon.icns");
   assertAndroidLauncherIconContract();
+  for (const rel of ANDROID_ROUND_PNG_EXPECTATIONS) await assertLegacyAndroidRoundPng(rel);
   assertAndroidXml("android/app/src/main/res");
   assertAndroidXml("src-tauri/icons/android");
   assertNativeSplashContracts();
