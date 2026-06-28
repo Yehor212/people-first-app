@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Home, Settings, BookOpen, BarChart3, Compass, Repeat } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -20,6 +20,12 @@ export const BottomTabs = memo(function BottomTabs({
   habitHubEnabled,
 }: BottomTabsProps) {
   const { t } = useLanguage();
+  const [optimisticTab, setOptimisticTab] = useState<TabType | null>(null);
+  const selectedTab = optimisticTab ?? activeTab;
+
+  useEffect(() => {
+    setOptimisticTab(null);
+  }, [activeTab]);
 
   const mainTabs = [
     { id: "home" as TabType, icon: Home, label: t.home },
@@ -54,16 +60,17 @@ export const BottomTabs = memo(function BottomTabs({
             <button
               key={tab.id}
               onClick={() => {
+                setOptimisticTab(tab.id);
                 void haptics.tabChanged();
                 onTabChange(tab.id);
               }}
               role="tab"
-              aria-selected={activeTab === tab.id}
+              aria-selected={selectedTab === tab.id}
               aria-label={tab.label}
               className={cn(
                 "flex flex-col items-center gap-1 py-2 px-3 flex-1 rounded-xl motion-safe:transition-all motion-safe:duration-200 min-w-0 min-h-[44px]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                activeTab === tab.id
+                selectedTab === tab.id
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
@@ -71,14 +78,14 @@ export const BottomTabs = memo(function BottomTabs({
               <tab.icon
                 className={cn(
                   "w-6 h-6 motion-safe:transition-colors motion-safe:duration-200",
-                  activeTab === tab.id ? "text-primary" : "text-muted-foreground"
+                  selectedTab === tab.id ? "text-primary" : "text-muted-foreground"
                 )}
                 aria-hidden="true"
               />
               <span
                 className={cn(
                   "text-xs truncate max-w-full motion-safe:transition-colors motion-safe:duration-200",
-                  activeTab === tab.id ? "text-primary font-medium" : "text-muted-foreground"
+                  selectedTab === tab.id ? "text-primary font-medium" : "text-muted-foreground"
                 )}
               >
                 {tab.label}

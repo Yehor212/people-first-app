@@ -33,6 +33,12 @@ export const Sidebar = memo(function Sidebar({
 }: SidebarProps) {
   const { t } = useLanguage();
   const [collapsed, setCollapsed] = useState(() => storageGetRaw(SK.SIDEBAR_COLLAPSED) === "true");
+  const [optimisticTab, setOptimisticTab] = useState<TabType | null>(null);
+  const selectedTab = optimisticTab ?? activeTab;
+
+  useEffect(() => {
+    setOptimisticTab(null);
+  }, [activeTab]);
 
   // Persist collapse state
   const toggleCollapse = useCallback(() => {
@@ -84,11 +90,12 @@ export const Sidebar = memo(function Sidebar({
   const settingsTab = { id: "settings" as TabType, icon: Settings, label: t.settings };
 
   const renderTab = (tab: typeof settingsTab) => {
-    const isActive = activeTab === tab.id;
+    const isActive = selectedTab === tab.id;
 
     const buttonContent = (
       <button
         onClick={() => {
+          setOptimisticTab(tab.id);
           void haptics.tabChanged();
           onTabChange(tab.id);
         }}
