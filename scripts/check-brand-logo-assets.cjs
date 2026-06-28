@@ -144,6 +144,12 @@ const ANDROID_ROUND_PNG_EXPECTATIONS = [
     `src-tauri/icons/android/${folder}/ic_launcher_round.png`,
   ]),
 ];
+const ANDROID_ROUND_SCALE_EXPECTATION = {
+  minCircleScale: 0.92,
+  maxCircleScale: 0.97,
+  minLeafScale: 0.44,
+  maxLeafScale: 0.52,
+};
 const DOCS_STATIC_HTML = fs
   .readdirSync(path.join(ROOT, "docs"))
   .filter((name) => /^(404|delete-account|privacy|privacy-policy|terms)(?:-[a-z]{2})?\.html$/.test(name))
@@ -381,6 +387,45 @@ async function assertLegacyAndroidRoundPng(file) {
   }
   if (alphaAt(Math.floor(info.width / 2), Math.floor(info.height / 2)) < 248) {
     fail(`${file} must keep an opaque center inside the round launcher icon`);
+  }
+
+  let minX = info.width;
+  let minY = info.height;
+  let maxX = -1;
+  let maxY = -1;
+  let leafMinX = info.width;
+  let leafMinY = info.height;
+  let leafMaxX = -1;
+  let leafMaxY = -1;
+  for (let y = 0; y < info.height; y += 1) {
+    for (let x = 0; x < info.width; x += 1) {
+      const index = (y * info.width + x) * info.channels;
+      const r = data[index];
+      const g = data[index + 1];
+      const b = data[index + 2];
+      const alpha = data[index + 3];
+      if (alpha > 8) {
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+      if (alpha > 48 && r > 220 && g > 220 && b > 220) {
+        leafMinX = Math.min(leafMinX, x);
+        leafMinY = Math.min(leafMinY, y);
+        leafMaxX = Math.max(leafMaxX, x);
+        leafMaxY = Math.max(leafMaxY, y);
+      }
+    }
+  }
+  const circleScale = Math.max(maxX - minX + 1, maxY - minY + 1) / Math.min(info.width, info.height);
+  const leafScale = Math.max(leafMaxX - leafMinX + 1, leafMaxY - leafMinY + 1) / Math.min(info.width, info.height);
+  const { minCircleScale, maxCircleScale, minLeafScale, maxLeafScale } = ANDROID_ROUND_SCALE_EXPECTATION;
+  if (circleScale < minCircleScale || circleScale > maxCircleScale) {
+    fail(`${file} round icon circle scale is ${(circleScale * 100).toFixed(1)}%; expected ${(minCircleScale * 100).toFixed(1)}%-${(maxCircleScale * 100).toFixed(1)}%`);
+  }
+  if (leafScale < minLeafScale || leafScale > maxLeafScale) {
+    fail(`${file} ZenFlow leaf optical scale is ${(leafScale * 100).toFixed(1)}%; expected ${(minLeafScale * 100).toFixed(1)}%-${(maxLeafScale * 100).toFixed(1)}%`);
   }
 }
 

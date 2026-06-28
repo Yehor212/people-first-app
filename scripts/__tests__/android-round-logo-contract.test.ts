@@ -12,6 +12,10 @@ describe("Android round logo contract", () => {
     expect(checker).toContain("@mipmap/ic_launcher_round");
     expect(checker).toContain("ic_launcher_round.png");
     expect(checker).toContain("ic_launcher_round.xml");
+    expect(checker).toContain("minCircleScale");
+    expect(checker).toContain("maxCircleScale");
+    expect(checker).toContain("minLeafScale");
+    expect(checker).toContain("maxLeafScale");
   });
 
   it("renders legacy Android round launcher PNGs as physical circles with transparent corners", async () => {
