@@ -36,6 +36,37 @@ function timestampDaysAgo(n: number): number {
 // computeHabitScore
 // ============================================
 describe('computeHabitScore', () => {
+  it('keeps legacy long-lived habits responsive on desktop navigation', () => {
+    const legacyHabit = makeTestHabit({
+      createdAt: 0,
+      frequency: { numerator: 1, denominator: 365 },
+      entries: {},
+    });
+
+    const start = performance.now();
+    computeHabitScore(legacyHabit, daysAgo(0));
+    const durationMs = performance.now() - start;
+
+    expect(durationMs).toBeLessThan(250);
+  });
+
+  it('keeps a desktop batch of legacy empty habits responsive', () => {
+    const legacyHabits = Array.from({ length: 40 }, (_, index) => makeTestHabit({
+      id: `legacy-${index}`,
+      createdAt: 0,
+      frequency: { numerator: 1, denominator: 365 },
+      entries: {},
+    }));
+
+    const start = performance.now();
+    for (const habit of legacyHabits) {
+      computeHabitScore(habit, daysAgo(0));
+    }
+    const durationMs = performance.now() - start;
+
+    expect(durationMs).toBeLessThan(500);
+  });
+
   describe('boolean daily habits', () => {
     it('returns 0 for a habit with no entries', () => {
       const habit = makeTestHabit({

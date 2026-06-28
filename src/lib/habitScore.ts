@@ -45,6 +45,55 @@ function getToday(): string {
   return toDateStr(new Date());
 }
 
+function getInitialScore(habit: Habit): number {
+  return habit.habitType === 'numerical' && habit.targetType === 'atMost' ? 1.0 : 0.0;
+}
+
+function getSafeFrequency(habit: Habit): { numerator: number; denominator: number } {
+  const rawNumerator = Number(habit.frequency?.numerator);
+  const rawDenominator = Number(habit.frequency?.denominator);
+  const denominator = Number.isFinite(rawDenominator)
+    ? Math.max(1, Math.floor(rawDenominator))
+    : 1;
+  const numerator = Number.isFinite(rawNumerator)
+    ? Math.max(1, Math.floor(rawNumerator))
+    : 1;
+
+  return {
+    numerator: Math.min(numerator, denominator),
+    denominator,
+  };
+}
+
+function isYesValue(value: number): boolean {
+  return value === ENTRY.YES_MANUAL || value === ENTRY.YES_AUTO;
+}
+
+function numericContribution(value: number): number {
+  return value > 0 && value !== ENTRY.SKIP ? value / 1000 : 0;
+}
+
+function getRelevantEntryDates(
+  entries: Record<string, HabitEntry> | undefined,
+  createdStr: string,
+  endStr: string,
+): string[] {
+  return Object.keys(entries ?? {})
+    .filter((date) => date >= createdStr && date <= endStr)
+    .sort((a, b) => a.localeCompare(b));
+}
+
+function getScoreStartIndex(
+  createdDate: Date,
+  firstEntryDate: string,
+  totalDays: number,
+  windowSize: number,
+): number {
+  const firstEntryIndex = daysBetween(createdDate, parseDate(firstEntryDate));
+  if (!Number.isFinite(firstEntryIndex)) return 0;
+  return Math.max(0, Math.min(totalDays, firstEntryIndex - windowSize + 1));
+}
+
 // ─── Entry helpers ──────────────────────────────────────────────────────────
 
 /** Get entry value for a date, defaulting to UNKNOWN */
@@ -89,91 +138,98 @@ export function computeHabitScore(habit: Habit, upToDate?: string): number {
   if (end < createdDate) return 0;
 
   const totalDays = daysBetween(createdDate, end);
-  if (totalDays < 0) return 0;
+  if (!Number.isFinite(totalDays) || totalDays < 0) return getInitialScore(habit);
 
-  const { numerator, denominator } = habit.frequency;
-  const safeDenominator = Math.max(1, denominator);
+  const { numerator, denominator: safeDenominator } = getSafeFrequency(habit);
   const freq = numerator / safeDenominator;
-  const isDaily = numerator === denominator;
+  const isDaily = numerator === safeDenominator;
 
-  // Use computed entries (YES_AUTO fills for non-daily boolean habits)
-  const entries = computeEntriesWithAuto(habit);
+  let score = getInitialScore(habit);
+  const createdStr = toDateStr(createdDate);
+  const rawEntryDates = getRelevantEntryDates(habit.entries, createdStr, endStr);
 
-  // Initial score: 0.0 for boolean/atLeast, 1.0 for atMost
-  let score = (habit.habitType === 'numerical' && habit.targetType === 'atMost') ? 1.0 : 0.0;
+  if (habit.habitType === 'boolean') {
+    const windowSize = isDaily ? safeDenominator : safeDenominator * 2;
+    if (rawEntryDates.length === 0) return score;
 
-  // Build date array for window lookups
-  const dates: string[] = [];
-  for (let i = 0; i <= totalDays; i++) {
-    dates.push(toDateStr(addDays(createdDate, i)));
-  }
+    const startIndex = getScoreStartIndex(createdDate, rawEntryDates[0], totalDays, windowSize);
+    const dates: string[] = [];
+    for (let i = startIndex; i <= totalDays; i++) {
+      dates.push(toDateStr(addDays(createdDate, i)));
+    }
+    const dateAt = (index: number) => dates[index - startIndex];
 
-  for (let i = 0; i <= totalDays; i++) {
-    if (habit.habitType === 'boolean') {
-      // Window size: denominator (doubled for non-daily)
-      const windowSize = isDaily ? safeDenominator : safeDenominator * 2;
-      const targetCount = Math.max(1, isDaily ? numerator : numerator * 2);
+    // Use computed entries (YES_AUTO fills for non-daily boolean habits)
+    const entries = computeEntriesWithAuto(habit);
+    const targetCount = Math.max(1, isDaily ? numerator : numerator * 2);
+    let yesCount = 0;
+    let skipCount = 0;
 
-      // Clamp target to available days so early history isn't penalized
-      const availableInWindow = Math.min(windowSize, i + 1);
-      const effectiveTarget = Math.min(targetCount, availableInWindow);
+    for (let i = startIndex; i <= totalDays; i++) {
+      const added = getEntryValue(entries, dateAt(i));
+      if (isYesValue(added)) yesCount++;
+      if (added === ENTRY.SKIP) skipCount++;
 
-      // Count completed entries in window (YES_MANUAL + YES_AUTO from computed entries)
-      let yesCount = 0;
-      let allSkip = true;
-
-      for (let w = 0; w < windowSize && (i - w) >= 0; w++) {
-        const wDate = dates[i - w];
-        const val = getEntryValue(entries, wDate);
-        if (val === ENTRY.YES_MANUAL || val === ENTRY.YES_AUTO) {
-          yesCount++;
-          allSkip = false;
-        } else if (val !== ENTRY.SKIP) {
-          allSkip = false;
-        }
+      const staleIndex = i - windowSize;
+      if (staleIndex >= startIndex) {
+        const removed = getEntryValue(entries, dateAt(staleIndex));
+        if (isYesValue(removed)) yesCount--;
+        if (removed === ENTRY.SKIP) skipCount--;
       }
 
-      // If all entries in window are SKIP, score unchanged
+      const availableInWindow = Math.min(windowSize, i + 1);
+      const effectiveTarget = Math.min(targetCount, availableInWindow);
+      const allSkip = skipCount === availableInWindow;
+
       if (allSkip && i > 0) continue;
 
       const percentageCompleted = Math.min(1.0, yesCount / effectiveTarget);
       score = computeScoreStep(freq, score, percentageCompleted);
-
-    } else {
-      // Numerical habit
-      const windowSize = safeDenominator;
-
-      // Rolling sum of values in window (value / 1000 to get real value)
-      let rollingSum = 0;
-      for (let w = 0; w < windowSize && (i - w) >= 0; w++) {
-        const wDate = dates[i - w];
-        const val = getEntryValue(entries, wDate);
-        if (val > 0 && val !== ENTRY.SKIP) {
-          rollingSum += val / 1000;
-        }
-      }
-
-      let percentageCompleted: number;
-      if (habit.targetType === 'atMost') {
-        // AT_MOST: 100% when at or under target, linear decrease above
-        if (habit.targetValue <= 0) {
-          percentageCompleted = rollingSum === 0 ? 1.0 : 0.0;
-        } else {
-          percentageCompleted = Math.max(0, Math.min(1.0,
-            1.0 - (rollingSum - habit.targetValue) / habit.targetValue
-          ));
-        }
-      } else {
-        // AT_LEAST: percentage of target achieved
-        if (habit.targetValue <= 0) {
-          percentageCompleted = rollingSum > 0 ? 1.0 : 0.0;
-        } else {
-          percentageCompleted = Math.min(1.0, rollingSum / habit.targetValue);
-        }
-      }
-
-      score = computeScoreStep(freq, score, percentageCompleted);
     }
+
+    return score;
+  }
+
+  const windowSize = safeDenominator;
+  if (rawEntryDates.length === 0) return score;
+
+  const startIndex = getScoreStartIndex(createdDate, rawEntryDates[0], totalDays, windowSize);
+  const dates: string[] = [];
+  for (let i = startIndex; i <= totalDays; i++) {
+    dates.push(toDateStr(addDays(createdDate, i)));
+  }
+  const dateAt = (index: number) => dates[index - startIndex];
+
+  // Use computed entries (YES_AUTO fills for non-daily boolean habits)
+  const entries = computeEntriesWithAuto(habit);
+  let rollingSum = 0;
+
+  for (let i = startIndex; i <= totalDays; i++) {
+    rollingSum += numericContribution(getEntryValue(entries, dateAt(i)));
+
+    const staleIndex = i - windowSize;
+    if (staleIndex >= startIndex) {
+      rollingSum -= numericContribution(getEntryValue(entries, dateAt(staleIndex)));
+    }
+
+    let percentageCompleted: number;
+    if (habit.targetType === 'atMost') {
+      if (habit.targetValue <= 0) {
+        percentageCompleted = rollingSum === 0 ? 1.0 : 0.0;
+      } else {
+        percentageCompleted = Math.max(0, Math.min(1.0,
+          1.0 - (rollingSum - habit.targetValue) / habit.targetValue
+        ));
+      }
+    } else {
+      if (habit.targetValue <= 0) {
+        percentageCompleted = rollingSum > 0 ? 1.0 : 0.0;
+      } else {
+        percentageCompleted = Math.min(1.0, rollingSum / habit.targetValue);
+      }
+    }
+
+    score = computeScoreStep(freq, score, percentageCompleted);
   }
 
   return score;
@@ -210,69 +266,128 @@ export function computeScoreHistory(
   }
 
   const totalDays = daysBetween(createdDate, todayMidnight);
-  if (totalDays < 0) {
+  if (!Number.isFinite(totalDays) || totalDays < 0) {
     return resultDates.map(date => ({ date, score: 0 }));
   }
 
-  const { numerator, denominator } = habit.frequency;
-  const safeDenominator = Math.max(1, denominator);
+  const { numerator, denominator: safeDenominator } = getSafeFrequency(habit);
   const freq = numerator / safeDenominator;
-  const isDaily = numerator === denominator;
+  const isDaily = numerator === safeDenominator;
 
-  // Use computed entries (YES_AUTO fills for non-daily boolean habits)
-  const entries = computeEntriesWithAuto(habit);
-
-  let score = (habit.habitType === 'numerical' && habit.targetType === 'atMost') ? 1.0 : 0.0;
+  let score = getInitialScore(habit);
   const scores = new Array<number>(resultDates.length).fill(0);
+  const createdStr = toDateStr(createdDate);
+  const todayStr = toDateStr(todayMidnight);
+  const rawEntryDates = getRelevantEntryDates(habit.entries, createdStr, todayStr);
 
-  // Build date array for window lookups
-  const dates: string[] = [];
-  for (let i = 0; i <= totalDays; i++) {
-    dates.push(toDateStr(addDays(createdDate, i)));
-  }
+  if (habit.habitType === 'boolean') {
+    const windowSize = isDaily ? safeDenominator : safeDenominator * 2;
+    if (rawEntryDates.length === 0) {
+      return resultDates.map((date) => ({
+        date,
+        score: date >= createdStr ? score : 0,
+      }));
+    }
 
-  // Single pass — identical scoring logic to computeHabitScore
-  for (let i = 0; i <= totalDays; i++) {
-    if (habit.habitType === 'boolean') {
-      const windowSize = isDaily ? safeDenominator : safeDenominator * 2;
-      const targetCount = Math.max(1, isDaily ? numerator : numerator * 2);
+    const startIndex = getScoreStartIndex(createdDate, rawEntryDates[0], totalDays, windowSize);
+    const startDate = toDateStr(addDays(createdDate, startIndex));
+    for (const date of resultDates) {
+      const sampleIdx = sampleDates.get(date);
+      if (sampleIdx !== undefined && date >= createdStr && date < startDate) {
+        scores[sampleIdx] = score;
+      }
+    }
+
+    const dates: string[] = [];
+    for (let i = startIndex; i <= totalDays; i++) {
+      dates.push(toDateStr(addDays(createdDate, i)));
+    }
+    const dateAt = (index: number) => dates[index - startIndex];
+
+    // Use computed entries (YES_AUTO fills for non-daily boolean habits)
+    const entries = computeEntriesWithAuto(habit);
+    const targetCount = Math.max(1, isDaily ? numerator : numerator * 2);
+    let yesCount = 0;
+    let skipCount = 0;
+
+    for (let i = startIndex; i <= totalDays; i++) {
+      const added = getEntryValue(entries, dateAt(i));
+      if (isYesValue(added)) yesCount++;
+      if (added === ENTRY.SKIP) skipCount++;
+
+      const staleIndex = i - windowSize;
+      if (staleIndex >= startIndex) {
+        const removed = getEntryValue(entries, dateAt(staleIndex));
+        if (isYesValue(removed)) yesCount--;
+        if (removed === ENTRY.SKIP) skipCount--;
+      }
+
       const availableInWindow = Math.min(windowSize, i + 1);
       const effectiveTarget = Math.min(targetCount, availableInWindow);
-
-      let yesCount = 0;
-      let allSkip = true;
-      for (let w = 0; w < windowSize && (i - w) >= 0; w++) {
-        const val = getEntryValue(entries, dates[i - w]);
-        if (val === ENTRY.YES_MANUAL || val === ENTRY.YES_AUTO) { yesCount++; allSkip = false; }
-        else if (val !== ENTRY.SKIP) { allSkip = false; }
-      }
+      const allSkip = skipCount === availableInWindow;
 
       if (!(allSkip && i > 0)) {
         score = computeScoreStep(freq, score, Math.min(1.0, yesCount / effectiveTarget));
       }
-    } else {
-      const windowSize = safeDenominator;
-      let rollingSum = 0;
-      for (let w = 0; w < windowSize && (i - w) >= 0; w++) {
-        const val = getEntryValue(entries, dates[i - w]);
-        if (val > 0 && val !== ENTRY.SKIP) { rollingSum += val / 1000; }
-      }
 
-      let pct: number;
-      if (habit.targetType === 'atMost') {
-        pct = habit.targetValue <= 0
-          ? (rollingSum === 0 ? 1.0 : 0.0)
-          : Math.max(0, Math.min(1.0, 1.0 - (rollingSum - habit.targetValue) / habit.targetValue));
-      } else {
-        pct = habit.targetValue <= 0
-          ? (rollingSum > 0 ? 1.0 : 0.0)
-          : Math.min(1.0, rollingSum / habit.targetValue);
+      const sampleIdx = sampleDates.get(dateAt(i));
+      if (sampleIdx !== undefined) {
+        scores[sampleIdx] = score;
       }
-      score = computeScoreStep(freq, score, pct);
     }
 
-    // Sample score at this date if it's a target week endpoint
-    const sampleIdx = sampleDates.get(dates[i]);
+    return resultDates.map((date, idx) => ({ date, score: scores[idx] }));
+  }
+
+  const windowSize = safeDenominator;
+  if (rawEntryDates.length === 0) {
+    return resultDates.map((date) => ({
+      date,
+      score: date >= createdStr ? score : 0,
+    }));
+  }
+
+  const startIndex = getScoreStartIndex(createdDate, rawEntryDates[0], totalDays, windowSize);
+  const startDate = toDateStr(addDays(createdDate, startIndex));
+  for (const date of resultDates) {
+    const sampleIdx = sampleDates.get(date);
+    if (sampleIdx !== undefined && date >= createdStr && date < startDate) {
+      scores[sampleIdx] = score;
+    }
+  }
+
+  const dates: string[] = [];
+  for (let i = startIndex; i <= totalDays; i++) {
+    dates.push(toDateStr(addDays(createdDate, i)));
+  }
+  const dateAt = (index: number) => dates[index - startIndex];
+
+  // Use computed entries (YES_AUTO fills for non-daily boolean habits)
+  const entries = computeEntriesWithAuto(habit);
+  let rollingSum = 0;
+
+  for (let i = startIndex; i <= totalDays; i++) {
+    rollingSum += numericContribution(getEntryValue(entries, dateAt(i)));
+
+    const staleIndex = i - windowSize;
+    if (staleIndex >= startIndex) {
+      rollingSum -= numericContribution(getEntryValue(entries, dateAt(staleIndex)));
+    }
+
+    let pct: number;
+    if (habit.targetType === 'atMost') {
+      pct = habit.targetValue <= 0
+        ? (rollingSum === 0 ? 1.0 : 0.0)
+        : Math.max(0, Math.min(1.0, 1.0 - (rollingSum - habit.targetValue) / habit.targetValue));
+    } else {
+      pct = habit.targetValue <= 0
+        ? (rollingSum > 0 ? 1.0 : 0.0)
+        : Math.min(1.0, rollingSum / habit.targetValue);
+    }
+
+    score = computeScoreStep(freq, score, pct);
+
+    const sampleIdx = sampleDates.get(dateAt(i));
     if (sampleIdx !== undefined) {
       scores[sampleIdx] = score;
     }
