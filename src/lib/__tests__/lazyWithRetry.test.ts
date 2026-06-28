@@ -140,6 +140,24 @@ describe('lazyWithRetry', () => {
     expect(mockForceHardReload).toHaveBeenCalled();
   });
 
+  it('hard-reloads for browser chunk-load messages even when the rejection is not a TypeError', async () => {
+    const importFn = vi.fn().mockImplementation(async () => {
+      throw new Error(
+        'Failed to fetch dynamically imported module: https://app.example/assets/TabContent-old.js',
+      );
+    });
+
+    const LazyComp = lazyWithRetry(importFn, 'BrowserErrorModule');
+
+    const promise = invokeLazyFactory(LazyComp).catch(() => {/* expected */});
+    await vi.advanceTimersByTimeAsync(5000);
+    await promise;
+
+    expect(importFn).toHaveBeenCalledTimes(3);
+    expect(mockMarkForVersionCheck).toHaveBeenCalled();
+    expect(mockForceHardReload).toHaveBeenCalled();
+  });
+
   it('prevents infinite reload loop when recent reload detected', async () => {
     sessionMap['chunk_reload_LoopModule'] = Date.now().toString();
 

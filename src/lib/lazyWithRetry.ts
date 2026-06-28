@@ -3,22 +3,12 @@ import { forceHardReload, markForVersionCheck } from "./versionCheck";
 import { logger } from "@/lib/logger";
 import { SSK } from "@/lib/storageKeys";
 import { retryWithBackoff } from "@/lib/retry";
+import { isChunkLoadError } from "@/lib/chunkErrorDetection";
 
 type ImportFn<T> = () => Promise<{ default: T }>;
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
-
-/** Recognize Vite chunk-load errors — used to classify retryable vs not. */
-function isChunkLoadError(error: unknown): boolean {
-  return (
-    error instanceof TypeError &&
-    (error.message.includes("Failed to fetch dynamically imported module") ||
-      error.message.includes("Importing a module script failed") ||
-      error.message.includes("Loading chunk") ||
-      error.message.includes("Loading CSS chunk"))
-  );
-}
 
 /**
  * Wrapper around React.lazy() that handles chunk loading failures.

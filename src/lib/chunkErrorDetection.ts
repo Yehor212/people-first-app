@@ -34,9 +34,19 @@ const CHUNK_ERROR_PHRASES = [
   "Unable to preload CSS",
 ] as const;
 
+function getErrorMessage(error: unknown): string | null {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    return typeof message === "string" ? message : null;
+  }
+  return null;
+}
+
 /** Returns true if the error message matches any known chunk-load phrase. */
-export function isChunkLoadError(error: Error | null | undefined): boolean {
-  const message = error?.message;
+export function isChunkLoadError(error: unknown): boolean {
+  const message = getErrorMessage(error);
   if (!message) return false;
   return CHUNK_ERROR_PHRASES.some((phrase) => message.includes(phrase));
 }

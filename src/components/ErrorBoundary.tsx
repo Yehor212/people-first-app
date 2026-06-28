@@ -8,6 +8,7 @@ import { SK } from "@/lib/storageKeys";
 import { createFocusTrap, announceError } from "@/lib/a11y";
 import { logger } from "@/lib/logger";
 import { isChunkLoadError } from "@/lib/chunkErrorDetection";
+import { forceHardReload } from "@/lib/versionCheck";
 import type { Language } from "@/i18n/types";
 import { RecoveryOrbit } from "@/components/RecoveryOrbit";
 
@@ -375,14 +376,11 @@ class ModalErrorBoundaryClass extends React.Component<
       const lastReload = sessionStorage.getItem(reloadKey);
       if (!lastReload || Date.now() - parseInt(lastReload) > 60000) {
         sessionStorage.setItem(reloadKey, Date.now().toString());
-        logger.log("[ModalErrorBoundary] Chunk error detected, auto-reloading...");
-        caches
-          .keys()
-          .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
-          .catch((e) => {
-            logger.warn("[ErrorBoundary] Cache cleanup failed:", e);
-          }); // graceful: page reloads immediately after — cleanup is best-effort
-        window.location.reload();
+        logger.log("[ModalErrorBoundary] Chunk error detected, hard-reloading...");
+        void forceHardReload().catch((reloadError) => {
+          logger.warn("[ErrorBoundary] Hard reload failed, falling back to normal reload:", reloadError);
+          window.location.reload();
+        });
         return;
       }
     }
@@ -410,9 +408,12 @@ class ModalErrorBoundaryClass extends React.Component<
     const error = this.state.error;
 
     if (isChunkLoadError(error)) {
-      // Force reload to get fresh assets
-      logger.log("[ErrorBoundary] Chunk error detected, reloading page...");
-      window.location.reload();
+      // Force hard reload to get fresh assets outside stale PWA caches.
+      logger.log("[ErrorBoundary] Chunk error detected, hard-reloading page...");
+      void forceHardReload().catch((reloadError) => {
+        logger.warn("[ErrorBoundary] Hard reload failed, falling back to normal reload:", reloadError);
+        window.location.reload();
+      });
       return;
     }
 

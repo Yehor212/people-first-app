@@ -39,6 +39,7 @@ import {
   chunkFromMessage,
   isChunkLoadMessage,
 } from "@/lib/chunkErrorDetection";
+import { forceHardReload } from "@/lib/versionCheck";
 
 // Event name for chunk load failures
 export const CHUNK_LOAD_ERROR_EVENT = "zenflow:chunk-load-error";
@@ -84,8 +85,11 @@ export function UpdateRequiredDialog() {
       data: { failedChunk },
     });
 
-    // Force a hard reload, bypassing cache
-    window.location.reload();
+    // Clear PWA caches/SW state and reload with a cache-busting URL.
+    void forceHardReload().catch((error) => {
+      logger.warn("[UpdateRequired] Hard reload failed, falling back to normal reload:", error);
+      window.location.reload();
+    });
   }, [failedChunk]);
 
   return (

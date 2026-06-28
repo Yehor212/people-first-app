@@ -2,6 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const mockForceHardReload = vi.fn().mockResolvedValue(undefined);
+
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
@@ -9,6 +11,10 @@ vi.mock("@/contexts/LanguageContext", () => ({
       errorBoundaryBody: "Спробуйте перезавантажити додаток.",
       errorBoundaryKicker: "Режим відновлення ZenFlow",
       errorBoundaryReload: "Перезавантажити",
+      failedToLoad: "Не вдалося завантажити",
+      failedToLoadBody: "Компонент не вдалося завантажити. Спробуйте оновити сторінку.",
+      tryAgain: "Спробувати знову",
+      close: "Закрити",
     },
   }),
 }));
@@ -27,11 +33,21 @@ vi.mock("@/lib/errorBuffer", () => ({
   captureOrBuffer: vi.fn(),
 }));
 
+vi.mock("@/lib/versionCheck", () => ({
+  forceHardReload: (...args: unknown[]) => mockForceHardReload(...args),
+}));
+
 import { captureOrBuffer } from "@/lib/errorBuffer";
-import { ErrorBoundary } from "../ErrorBoundary";
+import { ErrorBoundary, LazyErrorBoundary } from "../ErrorBoundary";
 
 function Thrower(): ReactElement {
   throw new Error("boom");
+}
+
+function ThrowChunkLoadError(): ReactElement {
+  throw new Error(
+    "Failed to fetch dynamically imported module: https://app.example/assets/TabContent-old.js",
+  );
 }
 
 describe("ErrorBoundary", () => {
@@ -39,6 +55,7 @@ describe("ErrorBoundary", () => {
 
   beforeEach(() => {
     document.documentElement.dataset.deviceTier = "phone";
+    mockForceHardReload.mockClear();
   });
 
   afterEach(() => {
@@ -67,6 +84,16 @@ describe("ErrorBoundary", () => {
       expect.objectContaining({ message: "boom" }),
       expect.objectContaining({ context: "ErrorBoundary" }),
     );
+  });
+
+  it("uses the hard-reload recovery path for stale lazy chunks", async () => {
+    render(
+      <LazyErrorBoundary componentName="TabContent">
+        <ThrowChunkLoadError />
+      </LazyErrorBoundary>,
+    );
+
+    await waitFor(() => expect(mockForceHardReload).toHaveBeenCalledTimes(1));
   });
 
   afterAll(() => {
