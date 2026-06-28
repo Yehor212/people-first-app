@@ -1,4 +1,4 @@
-import { memo, Suspense, useCallback, useMemo, useRef } from "react";
+import { memo, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { CalendarDays, Clock3, Sparkles } from "lucide-react";
 import { GlobalScheduleBar } from "@/components/GlobalScheduleBar";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
@@ -10,6 +10,12 @@ import { syncSetting } from "@/storage/sync/syncSettings";
 import { triggerSync } from "@/storage/cloudSync";
 import { logger } from "@/lib/logger";
 import type { FocusSession, ScheduleEvent } from "@/types";
+import { PlanningActionPanel } from "./PlanningActionPanel";
+import { PlanningBridgeActions } from "./PlanningBridgeActions";
+import { PlanningDayPulse } from "./PlanningDayPulse";
+import { PlanningModeRail } from "./PlanningModeRail";
+import { PlanningReviewLane } from "./PlanningReviewLane";
+import { derivePlanningFeatureModel, type PlanningMode } from "./planningFeatureModel";
 
 const ScheduleTimeline = lazyWithRetry(
   () => import("@/components/ScheduleTimeline").then((m) => ({ default: m.ScheduleTimeline })),
@@ -51,14 +57,21 @@ export const PlanningPage = memo(function PlanningPage({
   onCompleteFocusSession,
 }: PlanningPageProps) {
   const { t, isRTL } = useLanguage();
+  const tx = t as unknown as Record<string, string>;
   const scheduleSectionRef = useRef<HTMLElement>(null);
+  const [activeMode, setActiveMode] = useState<PlanningMode>("today");
 
   const scheduleEvents = useUserDataStore((s) => s.scheduleEvents);
   const setScheduleEvents = useUserDataStore((s) => s.setScheduleEvents);
   const habits = useUserDataStore((s) => s.habits);
+  const moods = useUserDataStore((s) => s.moods);
   const focusSessions = useUserDataStore((s) => s.focusSessions);
   const isLoading = useUserDataStore((s) => s.isLoading);
   const setCurrentFocusMinutes = useUIStore((s) => s.setCurrentFocusMinutes);
+  const focusEndTime = useUIStore((s) => s.focusEndTime);
+  const focusIsRunning = useUIStore((s) => s.focusIsRunning);
+  const focusIsBreak = useUIStore((s) => s.focusIsBreak);
+  const focusLabel = useUIStore((s) => s.focusLabel);
 
   const habitScheduleEvents = useMemo(
     () => generateHabitScheduleEvents(habits, 7),
@@ -74,6 +87,39 @@ export const PlanningPage = memo(function PlanningPage({
     const today = getToday();
     return sortScheduleEventsByTime(allScheduleEvents.filter((event) => event.date === today));
   }, [allScheduleEvents]);
+
+  const planningFeatureModel = useMemo(
+    () =>
+      derivePlanningFeatureModel({
+        now: new Date(),
+        events: allScheduleEvents,
+        focusSessions,
+        focusBridge: {
+          endTime: focusEndTime,
+          isRunning: focusIsRunning,
+          isBreak: focusIsBreak,
+          label: focusLabel,
+        },
+        habits,
+        moodEntries: moods,
+      }),
+    [allScheduleEvents, focusEndTime, focusIsBreak, focusIsRunning, focusLabel, focusSessions, habits, moods],
+  );
+
+  const lastCompletedFocusSession = useMemo(
+    () =>
+      [...focusSessions]
+        .filter((session) => session.status !== "aborted")
+        .sort((a, b) => b.completedAt - a.completedAt)[0] ?? null,
+    [focusSessions],
+  );
+
+  const planningModeLabels: Record<PlanningMode, string> = {
+    today: t.planningModeToday,
+    schedule: t.planningModeSchedule,
+    focus: t.planningModeFocus,
+    review: t.planningModeReview,
+  };
 
   const persistManualScheduleEvents = useCallback(
     (nextEvents: ScheduleEvent[]) => {
@@ -130,7 +176,7 @@ export const PlanningPage = memo(function PlanningPage({
   );
 
   const scrollToTimeline = useCallback(() => {
-    scheduleSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scheduleSectionRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   }, []);
 
   const fallbackLabel = t.navV2PlanningLoading;
@@ -141,11 +187,12 @@ export const PlanningPage = memo(function PlanningPage({
       role="main"
       tabIndex={-1}
       data-testid="planning-page"
+      data-planning-theme="v1-dark"
       data-v2-readable-page="planning"
       dir={isRTL ? "rtl" : undefined}
       aria-labelledby="planning-page-heading"
       className={cn(
-        "main-content-v2 v2-fullscreen-page v2-readable-page v2-readable-page--standard relative min-h-[var(--app-viewport-height)] overflow-x-hidden bg-background outline-none",
+        "dark main-content-v2 v2-fullscreen-page v2-readable-page v2-readable-page--standard relative min-h-[var(--app-viewport-height)] overflow-x-hidden bg-background outline-none",
         "px-4 pb-[calc(var(--safe-bottom)+5rem)] pt-[calc(var(--safe-top)+4.75rem)] md:px-6 md:pt-10 lg:px-10",
       )}
     >
@@ -183,7 +230,35 @@ export const PlanningPage = memo(function PlanningPage({
           )}
         </section>
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(22rem,0.92fr)] xl:items-start">
+        <PlanningDayPulse pulse={planningFeatureModel.dayPulse} labels={tx} />
+
+        <PlanningBridgeActions actions={planningFeatureModel.bridgeActions} labels={tx} />
+
+        <PlanningModeRail
+          activeMode={activeMode}
+          onModeChange={setActiveMode}
+          labels={planningModeLabels}
+        />
+
+        <PlanningActionPanel
+          model={planningFeatureModel}
+          labels={tx}
+          onModeChange={setActiveMode}
+          onScrollToTimeline={scrollToTimeline}
+        />
+
+        <PlanningReviewLane
+          focusMinutesToday={planningFeatureModel.focusMinutesToday}
+          lastFocusSession={lastCompletedFocusSession}
+          labels={tx}
+          onModeChange={setActiveMode}
+        />
+
+        <div
+          data-testid="planning-v1-dark-scope"
+          data-planning-v1-theme="dark"
+          className="dark grid gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(22rem,0.92fr)] xl:items-start"
+        >
           <section
             ref={scheduleSectionRef}
             aria-label={t.navV2Planning}

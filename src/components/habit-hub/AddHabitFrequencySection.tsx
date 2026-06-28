@@ -40,7 +40,7 @@ export function AddHabitFrequencySection({ frequency, setFrequency, ts }: AddHab
                 : 'bg-foreground/[0.03] border-border text-muted-foreground hover:bg-foreground/[0.06]',
             )}
           >
-            {ts[preset.i18nKey] || preset.label}
+            {ts[preset.translationId] || preset.label}
           </button>
         ))}
         <button

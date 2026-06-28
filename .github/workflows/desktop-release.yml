@@ -2,11 +2,6 @@ name: Desktop Windows Release
 
 on:
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Release tag. Defaults to desktop-v<package version>."
-        required: false
-        default: ""
 
 permissions:
   contents: write
@@ -33,7 +28,7 @@ jobs:
           cache: npm
 
       - name: Setup Rust stable
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
 
       - name: Install dependencies
         run: npm install
@@ -59,8 +54,7 @@ jobs:
         shell: pwsh
         run: |
           $version = node -p "require('./package.json').version"
-          $tagInput = "${{ github.event.inputs.tag }}"
-          $tag = if ([string]::IsNullOrWhiteSpace($tagInput)) { "desktop-v$version" } else { $tagInput.Trim() }
+          $tag = "desktop-v$version"
           $installer = "src-tauri/target/release/bundle/nsis/ZenFlow_${version}_x64-setup.exe"
           $sha = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer).Hash
           "tag=$tag" >> $env:GITHUB_OUTPUT

@@ -18,6 +18,7 @@ These run on every push to `main` and every PR via `.github/workflows/deploy.yml
 | 6 | E2E smoke | `npx playwright test --project=chromium` | Yes |
 | 7 | Coverage report | `npx vitest run --coverage` | **No** (informational) |
 | 8 | Security audit | `npm audit --audit-level=high` | **No** (informational) |
+| 9 | Best-practices implied requirements gate | `npm run check:best-practices` verifies `docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md`, AGENTS, CI, drift, release, and completion wiring | Yes for agent/process/release-gate changes |
 
 ## Runtime Reliability Gates
 
@@ -43,6 +44,7 @@ cross-platform user-flow changes.
 | 14 | iOS native gate | `npm run cap:sync:ios` plus the GitHub Actions `ios-gate` macOS simulator build for `ios/App/App.xcodeproj`; missing macOS/Xcode proof means iOS remains `UNVERIFIED` | Yes for iOS/WKWebView claims |
 | 15 | Desktop EXE contract | `npm run check:desktop-exe-contract`; local artifacts require `npm run desktop:check` and `npm run desktop:release:check:dev`; public `.exe` claims require `npm run desktop:release:check`, `/desktop` Desktop Dock screenshot, WebView2 trace evidence, signed updater/code-signing status, and no visual/canonical orb regression | Yes for desktop runtime, download page, or `.exe` claims |
 | 16 | Microsoft Store/MSIX contract | `npm run assets:logos:check`, `npm run desktop:store:assets:check`, `npm run desktop:store:package`, and `npm run desktop:store:check`; Store logo assets must be generated from the filter-free source with no hard-square thumbnail artifacts, web/PWA/Tauri/Android/iOS logo surfaces must stay in the same family, Store package identity must come from Partner Center Product Identity, and Store package/certification state stays `UNVERIFIED` until the generated package is accepted in Partner Center and Windows App Certification Kit or Store certification evidence exists | Yes for Partner Center, Store, MSIX, or Store-ready claims |
+| 17 | Google Play AdMob/app-ads production contract | `npm run google-play:assets:check`; before production monetization, `public/app-ads.txt` must be generated and verified with `ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads` and `npm run google-play:app-ads:check`, and real AdMob app/ad unit IDs plus Play Console Ads/Advertising ID/Data safety proof must be current. Missing owner IDs or Play Console proof means Google Play production monetization remains `UNVERIFIED`, not PASS | Yes for Google Play, Android ads, AdMob, Advertising ID, or production monetization claims |
 
 ## Manual Checks (before major releases)
 
@@ -60,6 +62,7 @@ cross-platform user-flow changes.
 | 10 | 20-idea ledger reviewed | `docs/ai/TELEGRAM_GRADE_20_IDEA_LEDGER.md` touched rows are named in the Done Packet |
 | 11 | Desktop EXE contract reviewed | `docs/ai/DESKTOP_EXE_RUNTIME_CONTRACT.md` read when desktop/WebView2/runtime packaging is touched |
 | 12 | Microsoft Store/MSIX contract reviewed | `docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md` read when Partner Center, Store, MSIX, or Product Identity is touched |
+| 13 | Best Practices Packet reviewed | `docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md` used when the user asks for best practices, full implementation, deep research, hidden gaps, or cross-platform quality |
 
 ## Release-Only (before store/web publish)
 

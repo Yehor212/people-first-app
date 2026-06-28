@@ -94,14 +94,19 @@ function isPublicAppDiscoveryEnabled(env) {
   return String(env.ZENFLOW_FACEBOOK_AUTH_PUBLIC_DISCOVERY || "").toLowerCase() !== "false";
 }
 
-function getPublicAppUrl(env) {
+function getExplicitPublicAppUrl(env) {
   if (!isPublicAppDiscoveryEnabled(env)) return "";
 
   return (
     getDirectPublicEnv(env, "ZENFLOW_FACEBOOK_AUTH_PUBLIC_APP_URL") ||
-    getDirectPublicEnv(env, "ZENFLOW_PUBLIC_AUTH_URL") ||
-    DEFAULT_PUBLIC_AUTH_APP_URL
+    getDirectPublicEnv(env, "ZENFLOW_PUBLIC_AUTH_URL")
   );
+}
+
+function getPublicAppUrl(env) {
+  if (!isPublicAppDiscoveryEnabled(env)) return "";
+
+  return getExplicitPublicAppUrl(env) || DEFAULT_PUBLIC_AUTH_APP_URL;
 }
 
 function extractScriptUrlsFromHtml(html, appUrl) {
@@ -234,6 +239,7 @@ async function checkFacebookAuthPublic({
   let supabaseUrl = getSupabaseUrl(env, safeFileEnv);
   let publicApiKey = getPublicApiKey(env, safeFileEnv);
   const required = env.ZENFLOW_FACEBOOK_AUTH_PUBLIC_REQUIRED === "true";
+  const explicitPublicAppUrl = getExplicitPublicAppUrl(env);
   const publicAppUrl = getPublicAppUrl(env);
 
   if (env.ZENFLOW_FACEBOOK_AUTH_PUBLIC_OFFLINE === "true") {
@@ -244,11 +250,15 @@ async function checkFacebookAuthPublic({
     );
   }
 
-  if ((!supabaseUrl || !publicApiKey) && publicAppUrl) {
+  if (publicAppUrl && (explicitPublicAppUrl || !supabaseUrl || !publicApiKey)) {
     try {
       const discovered = await discoverPublicSupabaseConfigFromApp(publicAppUrl, fetchImpl);
-      supabaseUrl = supabaseUrl || discovered.supabaseUrl;
-      publicApiKey = publicApiKey || discovered.publicApiKey;
+      supabaseUrl = explicitPublicAppUrl
+        ? discovered.supabaseUrl || supabaseUrl
+        : supabaseUrl || discovered.supabaseUrl;
+      publicApiKey = explicitPublicAppUrl
+        ? discovered.publicApiKey || publicApiKey
+        : publicApiKey || discovered.publicApiKey;
     } catch {
       // Fall through to the existing missing-config result below.
     }

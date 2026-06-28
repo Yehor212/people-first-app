@@ -116,9 +116,9 @@ describe('getTotalDuration', () => {
     const pattern: BreathingPattern = {
       id: 'test',
       name: 'Test',
-      nameKey: 'test',
+      nameTranslationId: 'test',
       description: 'Test',
-      descriptionKey: 'testDesc',
+      descriptionTranslationId: 'testDesc',
       inhale: 3,
       holdAfterInhale: 0,
       exhale: 6,

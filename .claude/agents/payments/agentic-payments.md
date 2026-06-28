@@ -32,7 +32,7 @@ mcp__agentic-payments__create_active_mandate({
 // Sign Mandate with Ed25519
 mcp__agentic-payments__sign_mandate({
   mandate_id: "mandate_abc123",
-  private_key_hex: "ed25519_private_key"
+  private_key_hex: process.env.AGENTIC_PAYMENTS_PRIVATE_KEY_HEX
 })
 
 // Verify Mandate Signature

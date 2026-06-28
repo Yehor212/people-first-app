@@ -591,15 +591,15 @@ Shared EntryGate CSS refresh on 2026-06-15:
 - Verification log SHA-256:
   `245bfe4d00fe7c0ca8badb94d421e89862f8a19ae7c46ce86164ff7189259649`
 - Fresh screenshot hashes:
-  `iphone-language-light=8d8c2174a7796bcbacd5d064771a58fee16b4d30c64c6e8bdaa38e0e855ff553`,
-  `iphone-language-ar-rtl=07ffdab194220a430b5439bdc112bb0a6b0c236eb3435a7040e2be992d46b570`,
-  `iphone-language-he-rtl=882e1630136da3cd94cdd04b6ae3a54f45dc73e8b4835699f728f7f68fb40ffc`,
-  `iphone-auth-light=0f2a7e5227fdfedf95b6407c1a15e2b1fdf1cff80f3034748fc7487d2268aad6`,
-  `iphone-auth-dark=ee62ad7bd9c1d14d1fa16d9724f3dd2d16d5d177a977638855a4f9d329375608`,
-  `ipad-language-system=3741e7beec025c81a7d25a13a531defcef8d641d538bff5fc3d7e2a01989ae6f`,
-  `ipad-language-dark=695585e9bd205e257ca177619911b4e63fa01103922906547f6c942a075dee62`,
-  `ipad-auth-light=89b085af0cac0f9a1f7169785b827e17859c9abd35eeb5bc80269314ba824bb2`,
-  `ipad-auth-dark=002e8ce3d51b90d9be1711a0892b3f4b51470e58e21750eef45104e707254c14`.
+  `iphone-language-light` SHA-256 `8d8c2174a7796bcbacd5d064771a58fee16b4d30c64c6e8bdaa38e0e855ff553`,
+  `iphone-language-ar-rtl` SHA-256 `07ffdab194220a430b5439bdc112bb0a6b0c236eb3435a7040e2be992d46b570`,
+  `iphone-language-he-rtl` SHA-256 `882e1630136da3cd94cdd04b6ae3a54f45dc73e8b4835699f728f7f68fb40ffc`,
+  `iphone-auth-light` SHA-256 `0f2a7e5227fdfedf95b6407c1a15e2b1fdf1cff80f3034748fc7487d2268aad6`,
+  `iphone-auth-dark` SHA-256 `ee62ad7bd9c1d14d1fa16d9724f3dd2d16d5d177a977638855a4f9d329375608`,
+  `ipad-language-system` SHA-256 `3741e7beec025c81a7d25a13a531defcef8d641d538bff5fc3d7e2a01989ae6f`,
+  `ipad-language-dark` SHA-256 `695585e9bd205e257ca177619911b4e63fa01103922906547f6c942a075dee62`,
+  `ipad-auth-light` SHA-256 `89b085af0cac0f9a1f7169785b827e17859c9abd35eeb5bc80269314ba824bb2`,
+  `ipad-auth-dark` SHA-256 `002e8ce3d51b90d9be1711a0892b3f4b51470e58e21750eef45104e707254c14`.
 - Refresh facts: horizontal overflow false, out-of-bounds audited elements 0,
   failed network requests 0, provider icon center spread 0, Telegram viewBox
   `0 0 128 128`, and 0 star/generic AI marks.

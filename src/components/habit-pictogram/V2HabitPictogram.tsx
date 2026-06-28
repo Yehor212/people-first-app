@@ -6,6 +6,7 @@ import {
 } from "@/lib/v2HabitPictograms";
 import { HabitMotionPlayer } from "./HabitMotionPlayer";
 import {
+  HABIT_LOTTIE_RUNTIME_ENABLED,
   getHabitIconAsset,
   isHabitAnimatedRasterApproved,
   isHabitLottieApproved,
@@ -43,13 +44,17 @@ export function V2HabitPictogram({
   const family = getV2HabitPictogramFamily(id);
   const asset = getHabitIconAsset(id);
   const hasLottieCandidate = asset.idle.renderer === "lottie" && Boolean(asset.lottie);
+  const canUseLottieRuntime = HABIT_LOTTIE_RUNTIME_ENABLED && hasLottieCandidate;
   const hasAnimatedRasterCandidate =
     asset.idle.renderer === "animated-raster" && Boolean(asset.animatedRaster);
-  const isApprovedLottie = hasLottieCandidate && isHabitLottieApproved(id);
+  const isApprovedLottie = canUseLottieRuntime && isHabitLottieApproved(id);
+  const isApprovedLottieStaticFallback =
+    !HABIT_LOTTIE_RUNTIME_ENABLED && hasLottieCandidate && isHabitLottieApproved(id);
   const isApprovedAnimatedRaster =
     hasAnimatedRasterCandidate && isHabitAnimatedRasterApproved(id);
   const isApprovedRaster = asset.idle.renderer === "raster-sticker" && isHabitRasterApproved(id);
-  const shouldExposeLottie = isApprovedLottie || (forceMotionForReview && hasLottieCandidate);
+  const shouldExposeLottie =
+    isApprovedLottie || (HABIT_LOTTIE_RUNTIME_ENABLED && forceMotionForReview && hasLottieCandidate);
   const shouldExposeAnimatedRaster = isApprovedAnimatedRaster && !shouldExposeLottie;
   const shouldExposeRaster = isApprovedRaster && !shouldExposeLottie && !shouldExposeAnimatedRaster;
   const iconSource = shouldExposeLottie
@@ -89,7 +94,7 @@ export function V2HabitPictogram({
       data-icon-source={iconSource}
       data-icon-renderer={
         shouldExposeLottie
-          ? "lottie-web-svg"
+          ? "lottie-svg-runtime"
           : shouldExposeAnimatedRaster
             ? "animated-raster-apng"
             : shouldExposeRaster
@@ -111,7 +116,9 @@ export function V2HabitPictogram({
           ? "apng-raster-sequence"
           : shouldExposeRaster
             ? "imagegen-raster-webp"
-            : "lottie-web@5.13.0"
+            : shouldExposeLottie
+              ? "lottie-runtime-optional"
+              : "runtime-free-reduced-svg"
       }
       data-source-authenticity={
         shouldExposeLottie
@@ -128,14 +135,18 @@ export function V2HabitPictogram({
           ? "v2-animated-raster-habit-icon-system"
           : shouldExposeRaster
             ? "v2-raster-sticker-habit-icon-system"
-            : "v2-single-lottie-habit-icon-system"
+            : shouldExposeLottie
+              ? "v2-single-lottie-habit-icon-system"
+              : "v2-reduced-svg-habit-icon-system"
       }
       data-art-direction={
         shouldExposeAnimatedRaster
           ? "premium-telegram-grade-animated-raster-walking-sticker"
           : shouldExposeRaster
             ? "premium-telegram-grade-raster-sticker"
-            : "premium-telegram-grade-lottie-icons"
+            : shouldExposeLottie
+              ? "premium-telegram-grade-lottie-icons"
+              : "runtime-free-reduced-svg-icons"
       }
       data-icon-treatment={iconTreatment}
       data-template-guard="no-shared-ai-template"
@@ -148,7 +159,9 @@ export function V2HabitPictogram({
               ? "approved-raster-sticker"
               : shouldExposeLottie
                 ? "review-candidate-lottie-json"
-                : "locked-static-until-user-approval"
+                : isApprovedLottieStaticFallback
+                  ? "approved-lottie-static-fallback-runtime-disabled"
+                  : "locked-static-until-user-approval"
       }
       data-motion-quality={
         isApprovedLottie
@@ -159,14 +172,18 @@ export function V2HabitPictogram({
               ? "artist-grade-raster-sticker-with-wrapper-motion"
               : shouldExposeLottie
                 ? "rejected-candidate-visible-for-review-only"
-                : "awaiting-telegram-grade-lottie-approval"
+                : isApprovedLottieStaticFallback
+                  ? "approved-lottie-art-static-runtime-free-fallback"
+                  : "awaiting-telegram-grade-lottie-approval"
       }
       data-animation-loop-profile={
         shouldExposeAnimatedRaster
           ? "footstep-road-loop"
           : shouldExposeRaster
             ? "wrapper-object-micro-loop"
-            : "seamless-vector-micro-loop"
+            : shouldExposeLottie
+              ? "seamless-vector-micro-loop"
+              : "static-reduced-svg"
       }
       data-animation-frame-rate-target={shouldExposeLottie || shouldExposeAnimatedRaster ? "60" : undefined}
       data-animation-loop-max-duration-ms={asset.idle.durationMs}
@@ -175,7 +192,9 @@ export function V2HabitPictogram({
           ? "animated-raster-apng-with-poster-fallback"
           : shouldExposeRaster
             ? "raster-sticker-renderer-with-reduced-motion-still"
-            : "lottie-svg-renderer-with-reduced-motion-still"
+            : shouldExposeLottie
+              ? "lottie-svg-renderer-with-reduced-motion-still"
+              : "runtime-free-reduced-svg-still"
       }
       data-motion-storyboard={asset.idle.name}
       data-lottie-asset={shouldExposeLottie ? asset.lottie : undefined}

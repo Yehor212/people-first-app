@@ -6,9 +6,9 @@
 export interface BreathingPattern {
   id: string;
   name: string;
-  nameKey: string; // translation key
+  nameTranslationId: string;
   description: string;
-  descriptionKey: string;
+  descriptionTranslationId: string;
   inhale: number;      // seconds
   holdAfterInhale: number;
   exhale: number;
@@ -22,9 +22,9 @@ export const BREATHING_PATTERNS: BreathingPattern[] = [
   {
     id: 'box',
     name: 'Box Breathing',
-    nameKey: 'breathingBox',
+    nameTranslationId: 'breathingBox',
     description: 'Equal phases for focus and balance',
-    descriptionKey: 'breathingBoxDesc',
+    descriptionTranslationId: 'breathingBoxDesc',
     inhale: 4,
     holdAfterInhale: 4,
     exhale: 4,
@@ -36,9 +36,9 @@ export const BREATHING_PATTERNS: BreathingPattern[] = [
   {
     id: '478',
     name: '4-7-8 Relaxing',
-    nameKey: 'breathing478',
+    nameTranslationId: 'breathing478',
     description: 'Deep calming for anxiety relief',
-    descriptionKey: 'breathing478Desc',
+    descriptionTranslationId: 'breathing478Desc',
     inhale: 4,
     holdAfterInhale: 7,
     exhale: 8,
@@ -50,9 +50,9 @@ export const BREATHING_PATTERNS: BreathingPattern[] = [
   {
     id: 'energize',
     name: 'Energizing Breath',
-    nameKey: 'breathingEnergize',
+    nameTranslationId: 'breathingEnergize',
     description: 'Quick inhales for energy boost',
-    descriptionKey: 'breathingEnergizeDesc',
+    descriptionTranslationId: 'breathingEnergizeDesc',
     inhale: 2,
     holdAfterInhale: 1,
     exhale: 4,
@@ -64,9 +64,9 @@ export const BREATHING_PATTERNS: BreathingPattern[] = [
   {
     id: 'sleep',
     name: 'Sleep Preparation',
-    nameKey: 'breathingSleep',
+    nameTranslationId: 'breathingSleep',
     description: 'Slow exhales for better sleep',
-    descriptionKey: 'breathingSleepDesc',
+    descriptionTranslationId: 'breathingSleepDesc',
     inhale: 4,
     holdAfterInhale: 0,
     exhale: 8,

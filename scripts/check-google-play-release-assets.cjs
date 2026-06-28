@@ -9,6 +9,8 @@ const MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024;
 const PACKAGE_JSON = path.join(ROOT, "package.json");
 const ANDROID_MANIFEST = path.join(ROOT, "android", "app", "src", "main", "AndroidManifest.xml");
 const PUBLIC_APP_ADS = path.join(ROOT, "public", "app-ads.txt");
+const APP_ADS_GOOGLE_SELLER_ID = "f08c47fec0942fa0";
+const APP_ADS_SAMPLE_PUBLISHER_ID = "pub-3940256099942544";
 const FEATURE_WIDTH = 1024;
 const FEATURE_HEIGHT = 500;
 const FEATURE_SOURCE = path.join(ROOT, "docs", "release", "google-play", "source", "community-aura-feature-source.png");
@@ -18,6 +20,20 @@ const LOCALIZED_LISTING_PACKET = path.join(
   "release",
   "google-play",
   "GOOGLE_PLAY_LOCALIZED_LISTING_PACKET.json",
+);
+const GOOGLE_PLAY_FIELD_PACKET = path.join(
+  ROOT,
+  "docs",
+  "release",
+  "google-play",
+  "GOOGLE_PLAY_CONSOLE_FIELD_PACKET.md",
+);
+const GOOGLE_PLAY_DRAFT_AUDIT = path.join(
+  ROOT,
+  "docs",
+  "release",
+  "google-play",
+  "GOOGLE_PLAY_DRAFT_COMPLETION_AUDIT.md",
 );
 const ANDROID_BUILT_RELEASE_MANIFESTS = [
   path.join(ROOT, "android", "app", "build", "intermediates", "merged_manifest", "release", "processReleaseMainManifest", "AndroidManifest.xml"),
@@ -65,6 +81,8 @@ const REQUIRED = [
     screenshot: true,
   })),
 ];
+
+const REQUIRED_IMAGE_FILES = new Set(REQUIRED.map((expectation) => expectation.file));
 
 const REQUIRED_LOCALES = ["en-US", "uk-UA", "es-ES", "de-DE", "fr-FR", "ja-JP", "ar-SA", "he-IL"];
 const LISTING_LIMITS = {
@@ -134,6 +152,18 @@ function fail(message) {
 function readIfExists(abs) {
   if (!fs.existsSync(abs)) return null;
   return fs.readFileSync(abs, "utf8");
+}
+
+function assertIncludes(abs, snippets) {
+  const source = readIfExists(abs);
+  if (!source) {
+    fail(`${path.relative(ROOT, abs)} is missing`);
+  }
+  for (const snippet of snippets) {
+    if (!source.includes(snippet)) {
+      fail(`${path.relative(ROOT, abs)} must include ${snippet}`);
+    }
+  }
 }
 
 async function assertFeatureSourceUsable() {
@@ -264,7 +294,18 @@ async function assertOpaque(abs) {
 }
 
 async function assertImage(expectation) {
-  const abs = path.join(ROOT, expectation.file);
+  if (!REQUIRED_IMAGE_FILES.has(expectation.file) || path.isAbsolute(expectation.file) || expectation.file.includes("\0")) {
+    fail(`Unexpected Google Play image path ${expectation.file}`);
+  }
+  const normalizedFile = path.normalize(expectation.file);
+  if (normalizedFile.startsWith("..") || path.isAbsolute(normalizedFile)) {
+    fail(`Google Play image path escapes repo root: ${expectation.file}`);
+  }
+  const abs = path.resolve(ROOT, normalizedFile); // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal - expectation.file is allow-listed and checked to stay inside ROOT above.
+  const rootRelative = path.relative(ROOT, abs);
+  if (rootRelative.startsWith("..") || path.isAbsolute(rootRelative)) {
+    fail(`Google Play image path resolves outside repo root: ${expectation.file}`);
+  }
   if (!fs.existsSync(abs)) fail(`${expectation.file} is missing`);
 
   const metadata = await sharp(abs).metadata();
@@ -306,6 +347,28 @@ function assertAdDeclarationMatchesArtifact(packet) {
     fail("@capacitor-community/admob must be installed for the current ads release path");
   }
 
+  if (packageJson.scripts?.["google-play:app-ads"] !== "node scripts/write-app-ads.cjs") {
+    fail("package.json must expose google-play:app-ads so public/app-ads.txt is generated only from the real AdMob publisher id");
+  }
+
+  if (packageJson.scripts?.["google-play:app-ads:check"] !== "node scripts/write-app-ads.cjs --check") {
+    fail("package.json must expose google-play:app-ads:check for the real AdMob publisher id gate");
+  }
+
+  assertIncludes(GOOGLE_PLAY_FIELD_PACKET, [
+    "ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads",
+    "ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads:check",
+    "Do not hand-write the file",
+    "do not use Google's sample publisher id",
+  ]);
+
+  assertIncludes(GOOGLE_PLAY_DRAFT_AUDIT, [
+    "ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads",
+    "npm run google-play:app-ads:check",
+    "Do not invent this value",
+    "Google's sample publisher id",
+  ]);
+
   const sourceManifest = readIfExists(ANDROID_MANIFEST);
   if (!sourceManifest) {
     fail("android/app/src/main/AndroidManifest.xml is missing");
@@ -346,7 +409,21 @@ function assertAdDeclarationMatchesArtifact(packet) {
 
   const appAds = readIfExists(PUBLIC_APP_ADS);
   if (!appAds) {
-    console.warn("[google-play-assets] WARN - public/app-ads.txt is missing; add the real AdMob publisher line before production monetization");
+    console.warn("[google-play-assets] WARN - public/app-ads.txt is missing; run npm run google-play:app-ads with the real AdMob publisher id before production monetization");
+    return;
+  }
+
+  const trimmed = appAds.trim();
+  const match = /^google\.com, (pub-\d{16}), DIRECT, ([a-f0-9]{16})$/i.exec(trimmed);
+  if (!match) {
+    fail("public/app-ads.txt must contain exactly the AdMob authorized seller line: google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0");
+  }
+  const [, publisherId, sellerId] = match;
+  if (publisherId === APP_ADS_SAMPLE_PUBLISHER_ID) {
+    fail("public/app-ads.txt must not use Google's sample AdMob publisher id");
+  }
+  if (sellerId.toLowerCase() !== APP_ADS_GOOGLE_SELLER_ID) {
+    fail(`public/app-ads.txt must use Google's AdMob seller id ${APP_ADS_GOOGLE_SELLER_ID}`);
   }
 }
 

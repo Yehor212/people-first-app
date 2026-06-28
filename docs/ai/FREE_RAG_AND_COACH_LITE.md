@@ -27,6 +27,10 @@ The curated corpus is grouped so agents can retrieve the right project memory wi
 
 The manifest excludes secrets, generated files, assets, dependency folders, and build output. Examples: `.env*`, `*.pem`, `node_modules/**`, `dist/**`, `build/**`, `coverage/**`, `artifacts/**`, `**/assets/**`, `**/generated/**`, source maps, images, and Lottie/rlottie assets.
 
+When an agent adds or discovers durable project knowledge that future agents must retrieve, it must either update `scripts/rag/corpus-manifest.json` or record why the file is intentionally excluded. Never add secrets, raw user journal content, ignored env files, generated output, dependency folders, build output, assets, screenshots, or token-bearing logs to the corpus.
+
+External agents and report workflows that cannot run repo commands must use the latest `.Codex/auto-context/rag-current.md` pack or the Telegram no-paid RAG artifact. If neither is available, their status must stay `UNVERIFIED` instead of claiming RAG-backed context.
+
 Chunking is source-aware:
 
 - Markdown is chunked by headings and cited as `path.md:line`.

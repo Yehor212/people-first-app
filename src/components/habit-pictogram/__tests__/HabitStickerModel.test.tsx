@@ -39,7 +39,7 @@ describe("HabitStickerModel", () => {
     expect(screen.getByTestId("habit-sticker-streak-aura")).toBeInTheDocument();
   });
 
-  it("renders the Read habit as a concrete Telegram-style animated sticker model", () => {
+  it("renders the Read habit as a concrete Telegram-style static fallback model", () => {
     render(<HabitStickerModel state="idle" />);
 
     const model = screen.getByTestId("habit-sticker-model");
@@ -53,15 +53,10 @@ describe("HabitStickerModel", () => {
       "data-depth-model",
       "layered-book-pages-cover-bookmark-shadow"
     );
-    expect(screen.getByTestId("habit-lottie-player")).toHaveAttribute(
-      "data-habit-lottie-player",
-      "read"
-    );
-    expect(screen.getByTestId("habit-motion-player")).toHaveAttribute("data-renderer", "lottie");
-    expect(screen.getByTestId("habit-motion-player")).toHaveAttribute(
-      "data-lottie-asset",
-      "read/idle.lottie.json"
-    );
+    expect(screen.queryByTestId("habit-lottie-player")).not.toBeInTheDocument();
+    expect(screen.getByTestId("habit-motion-player")).toHaveAttribute("data-renderer", "still");
+    expect(screen.getByTestId("habit-motion-player")).not.toHaveAttribute("data-lottie-asset");
+    expect(document.querySelector('[data-habit-motion-still="read"]')).toBeInTheDocument();
   });
 
   it("adds complete-state reaction layers without replacing the book model", () => {
@@ -73,10 +68,8 @@ describe("HabitStickerModel", () => {
     );
     expect(screen.getByTestId("habit-sticker-complete-burst")).toBeInTheDocument();
     expect(screen.getByTestId("habit-sticker-check")).toBeInTheDocument();
-    expect(screen.getByTestId("habit-lottie-player")).toHaveAttribute(
-      "data-habit-lottie-player",
-      "read"
-    );
+    expect(screen.queryByTestId("habit-lottie-player")).not.toBeInTheDocument();
+    expect(document.querySelector('[data-habit-motion-still="read"]')).toBeInTheDocument();
   });
 
   it("adds streak-state aura while preserving reduced-motion fallback", () => {
@@ -87,10 +80,8 @@ describe("HabitStickerModel", () => {
       "streak"
     );
     expect(screen.getByTestId("habit-sticker-streak-aura")).toBeInTheDocument();
-    expect(screen.getByTestId("habit-lottie-player")).toHaveAttribute(
-      "data-habit-lottie-player",
-      "read"
-    );
+    expect(screen.queryByTestId("habit-lottie-player")).not.toBeInTheDocument();
+    expect(document.querySelector('[data-habit-motion-still="read"]')).toBeInTheDocument();
 
     rerender(<HabitStickerModel state="streak" motionAllowed={false} />);
     expect(screen.getByTestId("habit-motion-player")).toHaveAttribute("data-renderer", "still");

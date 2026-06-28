@@ -2,6 +2,16 @@
 
 Use this list before publishing on stores or web.
 
+## Best Practices Gate
+- Read `docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md` for release,
+  store, native, PWA, security, privacy, accessibility, performance, visual, or
+  cross-platform changes.
+- Attach or update a Best Practices Packet before the final Done Packet:
+  explicit requirements, implied requirements, Platform Matrix, Standards Map,
+  Acceptance Evidence, `UNVERIFIED` Ledger, and rollback.
+- Run `npm run check:best-practices` before release claims that touch agent
+  rules, completion docs, release docs, CI/drift gates, or quality-gate wiring.
+
 ## Versioning
 - Update `package.json` version.
 - Update in-app version label if shown.

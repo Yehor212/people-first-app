@@ -5,6 +5,7 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+  #checkov:skip=CKV_GHA_7:Manual dispatch inputs are validated Telegram approval signals, not build-output parameters.
   workflow_dispatch:
     inputs:
       telegram_control_job_id:
@@ -82,6 +83,9 @@ jobs:
 
       - name: Check task completion protocol
         run: npm run check:task-completion
+
+      - name: Check best-practices implied requirements gate
+        run: npm run check:best-practices
 
       - name: Check Telegram-grade sync contract
         run: npm run check:sync-contract

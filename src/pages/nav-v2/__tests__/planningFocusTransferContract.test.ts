@@ -45,4 +45,14 @@ describe("Planning V2 focus transfer contract", () => {
     expect(orchestrator).toContain("<V2MindfulMomentLayer");
     expect(index).toContain("onMindfulMomentComplete={handleMindfulMomentComplete}");
   });
+
+  it("keeps Planning review lane local to V2 Planning without V1 stats navigation", () => {
+    const planning = read("src/pages/nav-v2/planning/PlanningPage.tsx");
+    const reviewLane = read("src/pages/nav-v2/planning/PlanningReviewLane.tsx");
+
+    expect(planning).toContain("<PlanningReviewLane");
+    expect(reviewLane).not.toContain("setActiveTab");
+    expect(reviewLane).not.toContain("onViewProgress");
+    expect(reviewLane).not.toContain("stats");
+  });
 });

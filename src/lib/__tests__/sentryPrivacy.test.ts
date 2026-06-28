@@ -33,6 +33,9 @@ async function loadSentry(dsn: string | undefined) {
         environment?: string;
         release?: string;
         sendDefaultPii?: boolean;
+        integrations?: Array<{ name?: string }>;
+        replaysSessionSampleRate?: number;
+        replaysOnErrorSampleRate?: number;
       }
     | undefined;
 }
@@ -56,10 +59,17 @@ describe("Sentry privacy scrubbing", () => {
     }
   });
 
-  it("initializes when the DSN is a valid Sentry HTTPS URL", async () => {
-    await loadSentry("https://public@example.ingest.sentry.io/1");
+  it("initializes error/performance monitoring without Session Replay", async () => {
+    const options = await loadSentry("https://public@example.ingest.sentry.io/1");
 
     expect(sentryMocks.init).toHaveBeenCalledTimes(1);
+    expect(sentryMocks.browserTracingIntegration).toHaveBeenCalledTimes(1);
+    expect(sentryMocks.replayIntegration).not.toHaveBeenCalled();
+    expect(options?.integrations?.map((integration) => integration.name)).toEqual([
+      "browserTracingIntegration",
+    ]);
+    expect(options?.replaysSessionSampleRate).toBeUndefined();
+    expect(options?.replaysOnErrorSampleRate).toBeUndefined();
   });
 
 

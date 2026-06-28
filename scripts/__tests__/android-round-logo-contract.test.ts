@@ -19,17 +19,29 @@ describe("Android round logo contract", () => {
   });
 
   it("renders legacy Android round launcher PNGs as physical circles with transparent corners", async () => {
-    const roundIcon = await sharp("android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png")
-      .ensureAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-    const { data, info } = roundIcon;
-    const alphaAt = (x: number, y: number) => data[(y * info.width + x) * info.channels + 3];
+    const densities = [
+      ["mipmap-mdpi", 48],
+      ["mipmap-hdpi", 72],
+      ["mipmap-xhdpi", 96],
+      ["mipmap-xxhdpi", 144],
+      ["mipmap-xxxhdpi", 192],
+    ] as const;
 
-    expect(alphaAt(0, 0)).toBeLessThanOrEqual(8);
-    expect(alphaAt(info.width - 1, 0)).toBeLessThanOrEqual(8);
-    expect(alphaAt(0, info.height - 1)).toBeLessThanOrEqual(8);
-    expect(alphaAt(info.width - 1, info.height - 1)).toBeLessThanOrEqual(8);
-    expect(alphaAt(Math.floor(info.width / 2), Math.floor(info.height / 2))).toBeGreaterThanOrEqual(248);
+    for (const [folder, size] of densities) {
+      const roundIcon = await sharp(`android/app/src/main/res/${folder}/ic_launcher_round.png`)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const { data, info } = roundIcon;
+      const alphaAt = (x: number, y: number) => data[(y * info.width + x) * info.channels + 3];
+
+      expect(info.width, folder).toBe(size);
+      expect(info.height, folder).toBe(size);
+      expect(alphaAt(0, 0), `${folder} top-left corner`).toBeLessThanOrEqual(8);
+      expect(alphaAt(info.width - 1, 0), `${folder} top-right corner`).toBeLessThanOrEqual(8);
+      expect(alphaAt(0, info.height - 1), `${folder} bottom-left corner`).toBeLessThanOrEqual(8);
+      expect(alphaAt(info.width - 1, info.height - 1), `${folder} bottom-right corner`).toBeLessThanOrEqual(8);
+      expect(alphaAt(Math.floor(info.width / 2), Math.floor(info.height / 2)), `${folder} center`).toBeGreaterThanOrEqual(248);
+    }
   });
 });

@@ -25,7 +25,6 @@ export interface PrimeZenflowV2Options {
 export async function primeZenflowV2(page: Page, options: PrimeZenflowV2Options = {}) {
   await page.addInitScript(
     ({ appVersion, options }) => {
-      const json = (value: unknown) => JSON.stringify(value);
       const today = new Date().toISOString().split("T")[0];
       const theme = options.theme ?? "paper";
 
@@ -34,20 +33,20 @@ export async function primeZenflowV2(page: Page, options: PrimeZenflowV2Options 
         sessionStorage.clear();
       }
 
-      localStorage.setItem("zenflow-language", json(options.language ?? "en"));
-      localStorage.setItem("zenflow-language-selected", json(true));
-      localStorage.setItem("zenflow-google-auth-checked", json(true));
-      localStorage.setItem("zenflow-tutorial-complete", json(true));
-      localStorage.setItem("zenflow-onboarding-complete", json(true));
-      localStorage.setItem("zenflow-notification-permission-checked", json(true));
+      localStorage.setItem("zenflow-language", JSON.stringify(options.language ?? "en"));
+      localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
+      localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
+      localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
+      localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
+      localStorage.setItem("zenflow-notification-permission-checked", JSON.stringify(true));
       localStorage.setItem("zenflow_last_seen_version", appVersion);
       localStorage.setItem("zenflow_last_active", today);
       localStorage.setItem("zenflow-last-weekly-report", new Date().toISOString());
       localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-      localStorage.setItem("zenflow-privacy-acknowledged", json(true));
+      localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));
       localStorage.setItem(
         "zenflow-privacy",
-        json({
+        JSON.stringify({
           analytics: options.analytics === true && options.privacyNoTracking !== true,
           consentShown: true,
           noTracking: options.privacyNoTracking === true,
@@ -55,7 +54,7 @@ export async function primeZenflowV2(page: Page, options: PrimeZenflowV2Options 
       );
       localStorage.setItem(
         "zenflow_onboarding_state",
-        json({
+        JSON.stringify({
           daysActive: 5,
           firstLoginDate: Date.now(),
           hasSeenWelcome: true,
@@ -66,12 +65,12 @@ export async function primeZenflowV2(page: Page, options: PrimeZenflowV2Options 
       );
       localStorage.setItem("zenflow-theme", theme === "paper" ? "light" : "dark");
       localStorage.setItem("zenflow_oled_mode", theme === "oled" ? "true" : "false");
-      localStorage.setItem("zenflow:theme-v0c", json({ state: { theme }, version: 0 }));
+      localStorage.setItem("zenflow:theme-v0c", JSON.stringify({ state: { theme }, version: 0 }));
 
       if (options.user) {
         localStorage.setItem(
           "zenflow-user",
-          json({
+          JSON.stringify({
             email: options.user.email ?? `${options.user.id}@example.invalid`,
             id: options.user.id,
             name: options.user.name,

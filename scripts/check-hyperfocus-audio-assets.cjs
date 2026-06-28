@@ -2,7 +2,6 @@
 "use strict";
 
 const fs = require("node:fs");
-const http = require("node:http");
 const https = require("node:https");
 const os = require("node:os");
 const path = require("node:path");
@@ -860,12 +859,12 @@ function normalizeCandidateUrlBatchEntries({ rootDir = DEFAULT_ROOT, batch, batc
   return { ok: true, entries, phase, pilotVariantId, issues: [] };
 }
 
-function isHttpCandidateUrl(value) {
+function getCandidateUrlProtocol(value) {
   try {
     const parsed = new URL(String(value || ""));
-    return parsed.protocol === "https:" || parsed.protocol === "http:";
+    return parsed.protocol;
   } catch (_error) {
-    return false;
+    return "";
   }
 }
 
@@ -896,8 +895,11 @@ function validateCandidateUrlBatchShape({ rootDir = DEFAULT_ROOT, entries, phase
       issues.push(issue("missing-candidate-url", "Candidate URL batch entry is missing url for " + entry.fileName + ".", { fileName: entry.fileName }));
       continue;
     }
-    if (!isHttpCandidateUrl(entry.url)) {
-      issues.push(issue("invalid-candidate-url", "Candidate URL for " + entry.fileName + " must be an http(s) URL.", { fileName: entry.fileName }));
+    const protocol = getCandidateUrlProtocol(entry.url);
+    if (!protocol || (protocol !== "https:" && protocol !== "http:")) {
+      issues.push(issue("invalid-candidate-url", "Candidate URL for " + entry.fileName + " must be an HTTPS URL.", { fileName: entry.fileName }));
+    } else if (protocol === "http:") {
+      issues.push(issue("cleartext-candidate-url", "Candidate URL for " + entry.fileName + " must use HTTPS before download.", { fileName: entry.fileName }));
     }
   }
 
@@ -937,10 +939,13 @@ function downloadFileFromUrl(url, destinationFile) {
       reject(error);
       return;
     }
+    if (parsed.protocol !== "https:") {
+      reject(new Error("Candidate downloads must use HTTPS URLs."));
+      return;
+    }
 
-    const client = parsed.protocol === "https:" ? https : http;
     fs.mkdirSync(path.dirname(destinationFile), { recursive: true });
-    const request = client.get(parsed, { headers: { "User-Agent": "ZenFlow-Hyperfocus-Audio-QC/1.0" } }, (response) => {
+    const request = https.get(parsed, { headers: { "User-Agent": "ZenFlow-Hyperfocus-Audio-QC/1.0" } }, (response) => {
       const statusCode = response.statusCode || 0;
       const redirectLocation = response.headers.location;
       if (statusCode >= 300 && statusCode < 400 && redirectLocation) {
@@ -1828,9 +1833,8 @@ function getRawCandidateAuditFiles({ rootDir = DEFAULT_ROOT, expectedAssets = ge
   const entries = [];
   for (const asset of expectedAssets) {
     const baseName = asset.fileName.replace(/\.mp3$/i, "");
-    const rawPattern = new RegExp("^" + escapeRegExp(baseName) + "(?:-[a-z0-9]+)*-raw\\.mp3$", "i");
     for (const candidateName of candidateNames) {
-      if (!rawPattern.test(candidateName)) continue;
+      if (!isRawCandidateFileName(baseName, candidateName)) continue;
       entries.push({
         asset,
         candidatePath: toPosixPath(path.join("output/audio-quarantine", candidateName)),
@@ -1839,6 +1843,17 @@ function getRawCandidateAuditFiles({ rootDir = DEFAULT_ROOT, expectedAssets = ge
   }
 
   return entries.sort((left, right) => left.candidatePath.localeCompare(right.candidatePath));
+}
+
+function isRawCandidateFileName(baseName, candidateName) {
+  const normalizedBase = String(baseName || "").toLowerCase();
+  const normalizedName = String(candidateName || "").toLowerCase();
+  const suffix = "-raw.mp3";
+  if (!normalizedBase || !normalizedName.startsWith(normalizedBase) || !normalizedName.endsWith(suffix)) return false;
+  const middle = normalizedName.slice(normalizedBase.length, -suffix.length);
+  if (!middle) return true;
+  if (!middle.startsWith("-")) return false;
+  return middle.slice(1).split("-").every((segment) => /^[a-z0-9]+$/.test(segment));
 }
 
 function buildRawCandidateAuditReport({ rootDir = DEFAULT_ROOT, generatedAt = new Date().toISOString(), skipAudioProbe = false, probeAudioFile: probe = probeAudioFile } = {}) {

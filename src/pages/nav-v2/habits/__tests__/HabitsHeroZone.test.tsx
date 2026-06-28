@@ -226,10 +226,13 @@ describe("HabitsHeroZone", () => {
       '[data-slot="quickpick-svg"] [data-habit-pictogram="drink-water"]'
     );
     expect(pictogram).toBeTruthy();
-    expect(pictogram).toHaveAttribute("data-icon-source", "approved-lottie-json");
-    expect(pictogram).toHaveAttribute("data-motion-system", "approved-single-lottie-json");
+    expect(pictogram).toHaveAttribute("data-icon-source", "static-reduced-svg-fallback");
+    expect(pictogram).toHaveAttribute(
+      "data-motion-system",
+      "approved-lottie-static-fallback-runtime-disabled"
+    );
     expect(
-      pictogram?.querySelector('[data-habit-lottie-player="drink-water"]')
+      pictogram?.querySelector('[data-habit-motion-still="drink-water"]')
     ).toBeInTheDocument();
     expect(water.textContent).not.toContain("💧");
   });

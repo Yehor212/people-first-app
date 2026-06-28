@@ -59,7 +59,7 @@ export function PatternSelector({ patterns, selected, onSelect, onStart, t }: Pa
 
             <div className="flex-1 relative z-10">
               <p className="font-medium text-foreground">
-                {t[pattern.nameKey] || pattern.name}
+                {t[pattern.nameTranslationId] || pattern.name}
               </p>
               <p className="text-xs text-muted-foreground">
                 {formatDuration(getTotalDuration(pattern))} • {pattern.cycles} {t.cycles || 'cycles'}

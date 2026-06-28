@@ -2,6 +2,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { checkSupabaseRlsEvidence } = require("./supabase-public-readiness.cjs");
 
 const rootDir = path.resolve(__dirname, "..");
 const strict = process.argv.includes("--strict");
@@ -417,12 +418,12 @@ checkSourceContains(
 );
 checkSourceContains(
   ".github/workflows/deploy.yml",
-  "TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}",
+  "TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_AUTH_BOT_TOKEN }}",
   "GitHub Pages deploy receives Telegram bot token without printing it"
 );
 checkSourceContains(
   ".github/workflows/deploy.yml",
-  "ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}",
+  "ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_AUTH_BOT_TOKEN != '' }}",
   "GitHub Pages deploy requires approved Telegram bot profile photo when bot token is configured"
 );
 checkSourceContains(
@@ -437,12 +438,12 @@ checkSourceContains(
 );
 checkSourceContains(
   ".github/workflows/deploy-v2-preview.yml",
-  "TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}",
+  "TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_AUTH_BOT_TOKEN }}",
   "V2 preview deploy receives Telegram bot token without printing it"
 );
 checkSourceContains(
   ".github/workflows/deploy-v2-preview.yml",
-  "ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}",
+  "ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_AUTH_BOT_TOKEN != '' }}",
   "V2 preview deploy requires approved Telegram bot profile photo when bot token is configured"
 );
 checkSourceContains(
@@ -687,12 +688,21 @@ if (!supabaseUrl?.value) {
 
 const publishableKey = env.get("VITE_SUPABASE_PUBLISHABLE_KEY");
 const anonKey = env.get("VITE_SUPABASE_ANON_KEY");
+const supabaseRlsEvidence = checkSupabaseRlsEvidence(rootDir);
 if (publishableKey?.value) {
-  add(
-    "PASS",
-    "Supabase publishable key is configured without printing it",
-    `VITE_SUPABASE_PUBLISHABLE_KEY set in ${publishableKey.source}`
-  );
+  if (supabaseRlsEvidence.ok) {
+    add(
+      "PASS",
+      "Supabase publishable key is configured with authenticated RLS evidence",
+      `VITE_SUPABASE_PUBLISHABLE_KEY set in ${publishableKey.source}; RLS evidence file=${supabaseRlsEvidence.file}`
+    );
+  } else {
+    add(
+      strict ? "FAIL" : "WARN",
+      "Supabase publishable key RLS evidence is missing",
+      `RLS evidence file=${supabaseRlsEvidence.file}; missing=${supabaseRlsEvidence.missing.join(", ")}`
+    );
+  }
 } else if (anonKey?.value) {
   if (strict) {
     add(

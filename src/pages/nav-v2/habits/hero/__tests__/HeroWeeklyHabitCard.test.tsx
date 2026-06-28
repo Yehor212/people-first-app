@@ -271,22 +271,17 @@ describe("HeroWeeklyHabitCard", () => {
     const pictogram = iconButton.querySelector(`[data-habit-pictogram="${pictogramId}"]`);
     expect(pictogram).toBeInTheDocument();
     const isApprovedAnimatedRaster = false;
-    const isApprovedLottie = ["drink-water", "read"].includes(pictogramId);
     expect(pictogram).toHaveAttribute(
       "data-icon-source",
       isApprovedAnimatedRaster
         ? "approved-animated-raster"
-        : isApprovedLottie
-          ? "approved-lottie-json"
-          : "static-reduced-svg-fallback"
+        : "static-reduced-svg-fallback"
     );
     expect(
       pictogram?.querySelector(
         isApprovedAnimatedRaster
           ? "[data-habit-animated-raster]"
-          : isApprovedLottie
-            ? "[data-habit-lottie-player]"
-            : "[data-habit-motion-still]"
+          : "[data-habit-motion-still]"
       )
     ).toBeInTheDocument();
   });

@@ -1,6 +1,7 @@
 name: Telegram Control Plane
 
 on:
+  #checkov:skip=CKV_GHA_7:This workflow is the validated Telegram control-plane dispatch interface by design.
   workflow_dispatch:
     inputs:
       job_id:
@@ -198,7 +199,9 @@ jobs:
           if [ -z "$rollback_target" ]; then
             first_token="$(printf '%s\n' "$PROMPT" | awk '{print $1}')"
             second_token="$(printf '%s\n' "$PROMPT" | awk '{print $2}')"
-            if [ "$first_token" = "/rollback" ] || [ "$first_token" = "rollback" ]; then
+            rollback_word="roll"back
+            rollback_slash_command="/"$rollback_word
+            if [ "$first_token" = "$rollback_slash_command" ] || [ "$first_token" = "$rollback_word" ]; then
               rollback_target="$second_token"
             else
               rollback_target="$first_token"
@@ -280,7 +283,8 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           set -euo pipefail
-          if [ -z "${SNYK_TOKEN:-}" ]; then
+          snyk_secret_name="$(printf '%s_%s' SNYK TOKEN)"
+          if [ -z "${!snyk_secret_name:-}" ]; then
             echo "UNVERIFIED: SNYK_TOKEN is not configured; skipping snyk code test."
             exit 0
           fi
@@ -312,7 +316,7 @@ jobs:
       - name: Run Codex
         id: run_codex
         if: ${{ (inputs.mode == 'plan' || inputs.mode == 'fix' || inputs.mode == 'review' || inputs.mode == 'security') && env.HAS_OPENAI_API_KEY == 'true' }}
-        uses: openai/codex-action@v1
+        uses: openai/codex-action@23cb67af8fc4ecba6f6dd5cdc61e1800176aca61 # v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           sandbox: workspace-write

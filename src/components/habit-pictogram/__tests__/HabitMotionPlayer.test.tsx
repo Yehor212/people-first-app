@@ -10,32 +10,28 @@ const motionPlayerSource = readFileSync(
 );
 
 describe("HabitMotionPlayer", () => {
-  it("renders the approved Read Lottie on the normal motion path", () => {
+  it("renders the approved Read art on the runtime-free still path", () => {
     render(<HabitMotionPlayer pictogramId="read" renderer="auto" motionAllowed />);
 
     const player = screen.getByTestId("habit-motion-player");
-    expect(player).toHaveAttribute("data-renderer", "lottie");
+    expect(player).toHaveAttribute("data-renderer", "still");
     expect(player).toHaveAttribute("data-loop-duration-ms", "2983");
     expect(player).toHaveAttribute("data-reduced-asset", "read/reduced.svg");
-    expect(player).toHaveAttribute("data-lottie-asset", "read/idle.lottie.json");
-    expect(screen.getByTestId("habit-lottie-player")).toHaveAttribute(
-      "data-habit-lottie-player",
-      "read"
-    );
+    expect(player).not.toHaveAttribute("data-lottie-asset");
+    expect(screen.queryByTestId("habit-lottie-player")).not.toBeInTheDocument();
+    expect(document.querySelector('[data-habit-motion-still="read"]')).toBeInTheDocument();
   });
 
-  it("renders the approved Drink Water Lottie on the normal motion path", () => {
+  it("renders the approved Drink Water art on the runtime-free still path", () => {
     render(<HabitMotionPlayer pictogramId="drink-water" renderer="auto" motionAllowed />);
 
     const player = screen.getByTestId("habit-motion-player");
-    expect(player).toHaveAttribute("data-renderer", "lottie");
+    expect(player).toHaveAttribute("data-renderer", "still");
     expect(player).toHaveAttribute("data-loop-duration-ms", "2983");
     expect(player).toHaveAttribute("data-reduced-asset", "drink-water/reduced.svg");
-    expect(player).toHaveAttribute("data-lottie-asset", "drink-water/idle.lottie.json");
-    expect(screen.getByTestId("habit-lottie-player")).toHaveAttribute(
-      "data-habit-lottie-player",
-      "drink-water"
-    );
+    expect(player).not.toHaveAttribute("data-lottie-asset");
+    expect(screen.queryByTestId("habit-lottie-player")).not.toBeInTheDocument();
+    expect(document.querySelector('[data-habit-motion-still="drink-water"]')).toBeInTheDocument();
   });
 
   it("keeps Walk Distance on the still fallback after rejecting the APNG direction", () => {
@@ -74,16 +70,17 @@ describe("HabitMotionPlayer", () => {
     );
   });
 
-  it("keeps approved Lottie JSON lazy-loaded instead of putting every animation on the eager path", () => {
+  it("keeps the Lottie runtime out of the production habit icon path", () => {
     expect(motionPlayerSource).not.toContain("const lottieAnimations");
     expect(motionPlayerSource).not.toContain("lottieAnimationLoaders");
     expect(motionPlayerSource).not.toContain("../../assets/habit-icons/v2/*/idle.lottie.json");
-    expect(motionPlayerSource).toContain("loadHabitLottieAnimation");
-    expect(motionPlayerSource).toContain('import("lottie-web")');
-    expect(motionPlayerSource).toContain('"drink-water/idle.lottie.json"');
-    expect(motionPlayerSource).toContain('"read/idle.lottie.json"');
+    expect(motionPlayerSource).not.toContain("loadHabitLottieAnimation");
+    expect(motionPlayerSource).not.toContain('import("lottie-web")');
+    expect(motionPlayerSource).not.toContain('"drink-water/idle.lottie.json"');
+    expect(motionPlayerSource).not.toContain('"read/idle.lottie.json"');
     expect(motionPlayerSource).not.toContain('"walk-distance/idle.lottie.json"');
     expect(motionPlayerSource).not.toContain("walk-distance/animated/");
+    expect(motionPlayerSource).toContain("HABIT_LOTTIE_RUNTIME_ENABLED");
     expect(motionPlayerSource).toContain("rasterStickerUrls");
   });
 

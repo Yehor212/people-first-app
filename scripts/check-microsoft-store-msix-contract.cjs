@@ -169,7 +169,20 @@ function validateOptionalIdentityEnv() {
 
   const anyIdentity = Object.values(identity).some(Boolean);
   if (!anyIdentity) {
-    warnings.push("Partner Center Product Identity env values are absent; CI/env mirror remains UNVERIFIED, public identity file is checked");
+    const publicIdentity = readJson("docs/release/microsoft-store/product-identity.public.json");
+    if (
+      publicIdentity.productId === PRODUCT_ID &&
+      publicIdentity.packageIdentityName === EXPECTED_IDENTITY.packageIdentityName &&
+      publicIdentity.publisher === EXPECTED_IDENTITY.publisher &&
+      publicIdentity.publisherDisplayName === EXPECTED_IDENTITY.publisherDisplayName
+    ) {
+      pass();
+      pass();
+      pass();
+      pass();
+      return;
+    }
+    warnings.push("Partner Center Product Identity env values are absent and public identity file could not be used as the local source of truth");
     return;
   }
 
@@ -196,6 +209,16 @@ function validateOptionalIdentityEnv() {
   } else {
     pass();
   }
+}
+
+function requireProductIdentityEnvExample() {
+  requireIncludes("docs/release/microsoft-store/product-identity.env.example", [
+    `ZENFLOW_STORE_PRODUCT_ID=${PRODUCT_ID}`,
+    `ZENFLOW_STORE_PACKAGE_IDENTITY_NAME=${EXPECTED_IDENTITY.packageIdentityName}`,
+    `ZENFLOW_STORE_PUBLISHER=${EXPECTED_IDENTITY.publisher}`,
+    `ZENFLOW_STORE_PUBLISHER_DISPLAY_NAME=${EXPECTED_IDENTITY.publisherDisplayName}`,
+    "Do not add certificates",
+  ]);
 }
 
 function requirePublicIdentity(identity) {
@@ -570,6 +593,9 @@ function main() {
     "npm run desktop:store:check",
     "Do not place certificates",
     "product-identity.public.json",
+    "product-identity.env.example",
+    "falls back to",
+    "external Partner Center proof surfaces",
     "desktop:store:package",
     "accepted package in the Partner Center draft",
     "en",
@@ -757,6 +783,7 @@ function main() {
   requireLocalizedStorePacket(localizedStorePacket);
   requireMicrosoftStoreImages(localizedStorePacket);
   requirePartnerCenterTabsAudit(partnerCenterTabsAudit);
+  requireProductIdentityEnvExample();
   validateOptionalIdentityEnv();
 
   requireNoHighConfidenceSecrets([
@@ -772,6 +799,7 @@ function main() {
     PARTNER_CENTER_TABS_AUDIT,
     "docs/release/microsoft-store/identity.template.json",
     "docs/release/microsoft-store/product-identity.public.json",
+    "docs/release/microsoft-store/product-identity.env.example",
     "scripts/check-microsoft-store-msix-contract.cjs",
     "scripts/create-microsoft-store-msix.cjs",
   ]);

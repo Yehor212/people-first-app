@@ -128,30 +128,26 @@ describe("HeroEmptyJourney", () => {
       expect(pictogram?.className).toContain("w-[4.35rem]");
       const pictogramId = pictogram?.getAttribute("data-habit-pictogram");
       const isApprovedAnimatedRaster = false;
-      const isApprovedLottie = ["drink-water", "read"].includes(pictogramId ?? "");
+      const isApprovedStaticLottieFallback = ["drink-water", "read"].includes(pictogramId ?? "");
       expect(pictogram).toHaveAttribute(
         "data-icon-source",
         isApprovedAnimatedRaster
           ? "approved-animated-raster"
-          : isApprovedLottie
-            ? "approved-lottie-json"
-            : "static-reduced-svg-fallback"
+          : "static-reduced-svg-fallback"
       );
       expect(pictogram).toHaveAttribute(
         "data-motion-system",
         isApprovedAnimatedRaster
           ? "approved-animated-raster-sequence"
-          : isApprovedLottie
-            ? "approved-single-lottie-json"
+          : isApprovedStaticLottieFallback
+            ? "approved-lottie-static-fallback-runtime-disabled"
             : "locked-static-until-user-approval"
       );
       expect(
         pictogram?.querySelector(
           isApprovedAnimatedRaster
             ? "[data-habit-animated-raster]"
-            : isApprovedLottie
-              ? "[data-habit-lottie-player]"
-              : "[data-habit-motion-still]"
+            : "[data-habit-motion-still]"
         )
       ).toBeInTheDocument();
       expect(iconFrame?.textContent?.trim()).toBe("");
@@ -203,18 +199,21 @@ describe("HeroEmptyJourney", () => {
 
     const heroPictograms = scene.querySelectorAll("[data-habit-pictogram]");
     expect(heroPictograms).toHaveLength(1);
-    expect(heroPictograms[0]).toHaveAttribute("data-icon-source", "approved-lottie-json");
-    expect(heroPictograms[0]).toHaveAttribute("data-motion-system", "approved-single-lottie-json");
-    expect(heroPictograms[0]).toHaveAttribute("data-icon-treatment", "single-lottie-icon");
-    expect(heroPictograms[0]).toHaveAttribute("data-pictogram-style", "single-lottie-json-icon");
+    expect(heroPictograms[0]).toHaveAttribute("data-icon-source", "static-reduced-svg-fallback");
+    expect(heroPictograms[0]).toHaveAttribute(
+      "data-motion-system",
+      "approved-lottie-static-fallback-runtime-disabled"
+    );
+    expect(heroPictograms[0]).toHaveAttribute("data-icon-treatment", "reduced-static-fallback");
+    expect(heroPictograms[0]).toHaveAttribute("data-pictogram-style", "locked-static-reduced-icon");
     expect(heroPictograms[0]?.innerHTML ?? "").not.toContain("b39");
     expect(heroPictograms[0]).toHaveAttribute(
       "data-icon-composition",
-      "one-lottie-json-asset-per-reviewable-habit"
+      "static-reduced-fallback-until-approval"
     );
     expect(heroPictograms[0]?.querySelectorAll("svg")).toHaveLength(0);
     expect(
-      heroPictograms[0]?.querySelector('[data-habit-lottie-player="drink-water"]')
+      heroPictograms[0]?.querySelector('[data-habit-motion-still="drink-water"]')
     ).toBeTruthy();
     expect(
       heroPictograms[0]?.querySelector("[data-pictogram-layer='source-accent-glyph']")

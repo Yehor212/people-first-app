@@ -385,7 +385,7 @@ export function HabitCreationForm({
 
   const freqText =
     activePresetIndex >= 0
-      ? ts[frequencyPresets[activePresetIndex].i18nKey]
+      ? ts[frequencyPresets[activePresetIndex].translationId]
       : `${frequency.numerator}x / ${frequency.denominator}${ts.daysAbbr}`;
   const targetPreviewText =
     habitType === "boolean"

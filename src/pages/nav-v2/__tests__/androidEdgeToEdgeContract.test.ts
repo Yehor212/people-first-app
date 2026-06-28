@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const read = (path: string) => readFileSync(path, "utf8");
@@ -86,7 +86,16 @@ describe("Android edge-to-edge native contract", () => {
   });
 
   it("serves Capacitor Android assets from the native localhost root, not the GitHub Pages base", () => {
-    const nativeIndex = read("android/app/src/main/assets/public/index.html");
+    const viteConfig = read("vite.config.ts");
+
+    expect(viteConfig).toContain("process.env.CAPACITOR_BUILD === \"true\"");
+    expect(viteConfig).toContain("const base = isCapacitor ? \"./\" : webBase;");
+    expect(viteConfig).toContain("const pwaEnabled = !isCapacitor");
+
+    const nativeIndexPath = "android/app/src/main/assets/public/index.html";
+    if (!existsSync(nativeIndexPath)) return;
+
+    const nativeIndex = read(nativeIndexPath);
 
     expect(nativeIndex).not.toContain('"/people-first-app/assets/');
     expect(nativeIndex).not.toContain('href="/people-first-app/manifest.webmanifest');

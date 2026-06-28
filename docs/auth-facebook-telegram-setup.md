@@ -229,6 +229,20 @@ check Supabase Auth logs for the callback request and keep Telegram disabled via
 upstream Supabase Auth parser issue is fixed. Do not loosen token validation,
 skip ID token verification, or store Telegram bot tokens in the client.
 
+## Public Smoke Alignment
+
+Local defaults keep Facebook and Apple hidden until readiness flags are enabled. Public GitHub Pages smoke must mirror the deployed flags instead of assuming local defaults. When Facebook public access is ready, use:
+
+```bash
+ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS=google,facebook,telegram \
+ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS=apple \
+ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS=google,facebook,telegram \
+ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS='orb/?nav=v2&navLayout=phone' \
+  npm run smoke:public-auth
+```
+
+When Facebook is not ready, keep expected providers at `google,telegram` and include `facebook,apple` in `ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS`.
+
 ## Smoke Checklist
 
 - Web/PWA first-run screen shows Google and Telegram by default, keeps Apple

@@ -228,11 +228,11 @@ async function checkAppleAuthPublic({
   const required = env.ZENFLOW_APPLE_AUTH_PUBLIC_REQUIRED === "true";
   const publicAppUrl = getPublicAppUrl(env);
 
-  if ((!supabaseUrl || !publicApiKey) && publicAppUrl) {
+  if (publicAppUrl) {
     try {
       const discovered = await discoverPublicSupabaseConfigFromApp(publicAppUrl, fetchImpl);
-      supabaseUrl = supabaseUrl || discovered.supabaseUrl;
-      publicApiKey = publicApiKey || discovered.publicApiKey;
+      supabaseUrl = discovered.supabaseUrl || supabaseUrl;
+      publicApiKey = discovered.publicApiKey || publicApiKey;
     } catch {
       // Fall through to the existing missing-config result below.
     }

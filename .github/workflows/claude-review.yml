@@ -29,7 +29,7 @@ jobs:
         run: |
           echo "Claude review skipped: ANTHROPIC_API_KEY is not configured for this repository."
 
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@78a7209fd893bd50d1b2b784da9b6f240a66373a # v1
         if: ${{ env.HAS_ANTHROPIC_API_KEY == 'true' }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}

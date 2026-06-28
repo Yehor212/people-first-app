@@ -27,7 +27,21 @@ describe("Supabase publishable key readiness", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("[supabase-publishable-key] PASS");
+    expect(result.stdout).toContain("RLS evidence=present");
     expect(result.stdout).toContain("VITE_SUPABASE_PUBLISHABLE_KEY=present");
+    expect(result.stdout).not.toContain("sb_publishable_fixture_key_must_not_print");
+  });
+
+  it("fails required readiness when authenticated RLS evidence is missing", () => {
+    const result = runCheck({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key_must_not_print",
+      ZENFLOW_SUPABASE_PUBLISHABLE_REQUIRED: "true",
+      ZENFLOW_SUPABASE_RLS_EVIDENCE_FILE: "supabase/migrations/missing-authenticated-rls.sql",
+    });
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toContain("[supabase-publishable-key] UNVERIFIED");
+    expect(result.stdout).toContain("RLS evidence");
     expect(result.stdout).not.toContain("sb_publishable_fixture_key_must_not_print");
   });
 

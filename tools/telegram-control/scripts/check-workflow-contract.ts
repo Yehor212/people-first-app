@@ -45,7 +45,7 @@ const telegramRequiredSubstrings = [
   "Create no-paid AI fallback report",
   "node --import tsx tools/telegram-control/scripts/no-paid-ai-fallback.ts",
   "No-paid RAG context report created; OPENAI_API_KEY is missing; Codex action was not run.",
-  "uses: openai/codex-action@v1",
+  "uses: openai/codex-action@23cb67af8fc4ecba6f6dd5cdc61e1800176aca61 # v1",
   "openai-api-key: ${{ secrets.OPENAI_API_KEY }}",
   "env.HAS_OPENAI_API_KEY == 'true'",
   "sandbox: workspace-write",

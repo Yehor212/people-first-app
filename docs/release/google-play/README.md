@@ -29,8 +29,17 @@ Evidence expected before production monetization:
 - `GOOGLE_PLAY_LOCALIZED_LISTING_PACKET.json` declares `ads=Yes` and
   `advertisingId=Yes`.
 - Real AdMob app/ad unit IDs are configured outside the repo before publishing.
-- `public/app-ads.txt` should be added with the real AdMob publisher line before
-  production monetization. Do not add a fake publisher line.
+- `public/app-ads.txt` must be generated with the real AdMob publisher line
+  before production monetization. Do not add a fake or sample publisher line.
+  Use:
+
+```bash
+ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads
+ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads:check
+```
+
+The script refuses Google's sample publisher id and writes the official AdMob
+seller line format only.
 
 ## Generated Assets
 

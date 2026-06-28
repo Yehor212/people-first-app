@@ -3,6 +3,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { checkSupabaseRlsEvidence } = require("./supabase-public-readiness.cjs");
 
 const ROOT = path.join(__dirname, "..");
 const REQUIRED = process.env.ZENFLOW_SUPABASE_PUBLISHABLE_REQUIRED === "true";
@@ -23,7 +24,7 @@ function loadEnvFile(file) {
     if (!match) continue;
 
     const [, key, rawValue] = match;
-    if (process.env[key]) continue;
+    if (Object.prototype.hasOwnProperty.call(process.env, key)) continue;
     process.env[key] = rawValue.replace(/^["']|["']$/g, "");
   }
 }
@@ -72,6 +73,11 @@ function summarize(keys) {
 function finish(status, reason, missing = []) {
   console.log("[supabase-publishable-key] " + status + " - " + reason);
   console.log("[supabase-publishable-key] public_env: " + summarize(PUBLIC_KEYS));
+  const rlsStatus = rlsEvidence.ok ? "present" : "missing";
+  console.log("[supabase-publishable-key] RLS evidence=" + rlsStatus + " file=" + rlsEvidence.file);
+  if (!rlsEvidence.ok) {
+    console.log("[supabase-publishable-key] RLS missing: " + rlsEvidence.missing.join(", "));
+  }
   if (missing.length > 0) {
     console.log("[supabase-publishable-key] missing_or_legacy: " + missing.join(", "));
   }
@@ -86,11 +92,14 @@ function finish(status, reason, missing = []) {
 const hasUrl = isPresent("VITE_SUPABASE_URL");
 const hasPublishable = isModernPublishableKey(process.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 const hasLegacyAnon = isPresent("VITE_SUPABASE_ANON_KEY");
+const rlsEvidence = checkSupabaseRlsEvidence(ROOT);
 
 if (!hasUrl) {
   finish("UNVERIFIED", "Supabase public URL is missing or placeholder", ["VITE_SUPABASE_URL"]);
+} else if (!rlsEvidence.ok) {
+  finish("UNVERIFIED", rlsEvidence.reason, ["authenticated RLS evidence"]);
 } else if (hasPublishable) {
-  finish("PASS", "Modern Supabase publishable key is configured without printing it");
+  finish("PASS", "Modern Supabase publishable key is configured with authenticated RLS evidence and without printing it");
 } else if (hasLegacyAnon) {
   finish(
     "UNVERIFIED",

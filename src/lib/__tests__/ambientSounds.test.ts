@@ -96,7 +96,7 @@ describe('getSoundById', () => {
     expect(getSoundById('nonexistent')).toBeUndefined();
   });
 
-  it('resolves future three-level variant ids through the current legacy family file', () => {
+  it('resolves generated three-level variant ids with a legacy fallback file', () => {
     const legacy = getSoundById('fireplace');
     const variant = getSoundById('fireplace:soft');
 
@@ -105,7 +105,8 @@ describe('getSoundById', () => {
       type: 'fireplace',
       nameEn: expect.stringContaining('Embers'),
     });
-    expect(variant?.file).toBe(legacy?.file);
+    expect(variant?.file).toContain('/sounds/hyperfocus/hyperfocus-fireplace-soft.mp3');
+    expect(variant?.fallbackFile).toBe(legacy?.file);
   });
 
   it('returns undefined for empty string', () => {

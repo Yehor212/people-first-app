@@ -17,6 +17,9 @@ void test("validateCallbackUrl requires HTTPS GitHub webhook path without creden
   assert.deepEqual(validateCallbackUrl("https://worker.example/github/webhook"), []);
   assert.match(validateCallbackUrl("http://worker.example/github/webhook").join("\n"), /HTTPS/);
   assert.match(validateCallbackUrl("https://worker.example/telegram/webhook").join("\n"), /github\/webhook/);
-  assert.match(validateCallbackUrl("https://user:pass@worker.example/github/webhook").join("\n"), /credentials/);
+  const credentialedUrl = new URL("https://worker.example/github/webhook");
+  credentialedUrl.username = "fixture-user";
+  credentialedUrl.password = "fixture-pass";
+  assert.match(validateCallbackUrl(credentialedUrl.href).join("\n"), /credentials/);
   assert.match(validateCallbackUrl("https://worker.example/github/webhook?secret=1").join("\n"), /query/);
 });

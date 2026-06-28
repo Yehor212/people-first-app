@@ -64,6 +64,11 @@ The values are also recorded in `product-identity.public.json` as non-secret
 public package metadata. They are case-sensitive. Do not invent or normalize
 them.
 
+For local CI/env mirroring without opening Partner Center again, use
+`product-identity.env.example`. It contains only the same non-secret public
+identity values. Do not put certificate files, PFX data, passwords, Store
+credentials, or signing keys in repo files.
+
 ## Readiness Command
 
 Run:
@@ -89,9 +94,10 @@ icons, iOS app icon, Store upload-pack mirrors, and SVG source filters. Use
 `desktop:store:package` writes the current Store upload candidate to
 `tmp/microsoft-store-msix/ZenFlow_2.0.0.0_x64.msixupload`.
 `desktop:store:check` proves the Store guardrails are wired into the repo. If
-Product Identity environment variables are absent, it reports that Store
-packaging identity remains `UNVERIFIED`; that is expected until Partner Center
-values are copied.
+Product Identity environment variables are absent, it falls back to
+`product-identity.public.json` and `product-identity.env.example` as the local
+non-secret source of truth. Live package acceptance, signing/certification, and
+account state still remain external Partner Center proof surfaces.
 
 The generated file is not final proof until it becomes an accepted package in the Partner Center draft.
 

@@ -90,6 +90,8 @@ npm run ai:context:auto-check
 
 This does not remove the need for explicit MCP calls. It gives every new turn and subagent a fresh default context pack; agents can still call `get_zenflow_context` when they need a different pack or a larger budget.
 
+The free RAG corpus is curated by `scripts/rag/corpus-manifest.json`. When durable agent rules, architecture docs, verification contracts, Telegram/reporting behavior, sync/auth behavior, UI V2 contracts, or Coach/Journal no-paid behavior are added, update that manifest or document why the file is excluded. Do not add secrets, raw journal/user data, ignored env files, generated files, assets, dependency folders, build output, screenshots, or logs containing tokens.
+
 ## Local MCP Memory Setup
 
 The project-local `.mcp.json` should point the `memory` server at:

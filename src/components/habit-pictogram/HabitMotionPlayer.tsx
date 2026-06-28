@@ -1,12 +1,7 @@
-import { useEffect, useRef } from "react";
-import type { AnimationItem } from "lottie-web";
-
-import drinkWaterLottieUrl from "../../assets/habit-icons/v2/drink-water/idle.lottie.json?url";
-import readLottieUrl from "../../assets/habit-icons/v2/read/idle.lottie.json?url";
 import { shouldAnimate } from "@/lib/animationUtils";
-import { logger } from "@/lib/logger";
 import type { V2HabitPictogramId } from "@/lib/v2HabitPictograms";
 import {
+  HABIT_LOTTIE_RUNTIME_ENABLED,
   getHabitIconAsset,
   isHabitAnimatedRasterApproved,
   isHabitLottieApproved,
@@ -30,23 +25,6 @@ const animatedRasterUrls: Record<string, string> = {};
 
 const animatedRasterPosterUrls: Record<string, string> = {};
 
-const lottieAnimationUrls: Record<string, string> = {
-  "drink-water/idle.lottie.json": drinkWaterLottieUrl,
-  "read/idle.lottie.json": readLottieUrl,
-};
-
-async function loadHabitLottieAnimation(assetPath: string): Promise<unknown | null> {
-  const animationUrl = lottieAnimationUrls[assetPath];
-  if (!animationUrl) return null;
-
-  const response = await fetch(animationUrl);
-  if (!response.ok) {
-    throw new Error(`Habit Lottie asset failed to load: ${assetPath}`);
-  }
-
-  return response.json() as Promise<unknown>;
-}
-
 function toAnimatedRasterState(state: HabitIconMotionState): "idle" | "complete" | "streak" {
   return state === "complete" || state === "streak" ? state : "idle";
 }
@@ -67,16 +45,15 @@ export function HabitMotionPlayer({
   forceMotionForReview = false,
 }: HabitMotionPlayerProps) {
   const asset = getHabitIconAsset(pictogramId);
-  const lottieContainerRef = useRef<HTMLSpanElement | null>(null);
-  const animationRef = useRef<AnimationItem | null>(null);
-  const visibilityObserverRef = useRef<IntersectionObserver | null>(null);
   const animationAllowed = motionAllowed && (forceMotionForReview || shouldAnimate());
   const requestedRenderer = renderer === "auto" ? asset.idle.renderer : renderer;
+  const runtimeRenderer =
+    requestedRenderer === "lottie" && !HABIT_LOTTIE_RUNTIME_ENABLED ? "still" : requestedRenderer;
   const effectiveRenderer =
-    requestedRenderer === "raster-sticker"
+    runtimeRenderer === "raster-sticker"
       ? "raster-sticker"
       : animationAllowed
-        ? requestedRenderer
+        ? runtimeRenderer
         : "still";
   const reducedAssetKey = "../../assets/habit-icons/v2/" + asset.reduced;
   const reducedAssetSrc = reducedIconUrls[reducedAssetKey] ?? "";
@@ -90,7 +67,9 @@ export function HabitMotionPlayer({
   const animatedRasterPosterSrc = animatedRasterPosterAsset
     ? (animatedRasterPosterUrls[animatedRasterPosterAsset] ?? "")
     : "";
-  const canRenderLottie = forceMotionForReview || isHabitLottieApproved(pictogramId);
+  const canRenderLottie =
+    HABIT_LOTTIE_RUNTIME_ENABLED &&
+    (forceMotionForReview || isHabitLottieApproved(pictogramId));
   const shouldRenderLottie =
     canRenderLottie && effectiveRenderer === "lottie" && Boolean(asset.lottie);
   const shouldRenderRaster =
@@ -115,62 +94,6 @@ export function HabitMotionPlayer({
       : shouldRenderRaster
         ? "raster-sticker"
         : "still";
-
-  useEffect(() => {
-    if (!shouldRenderLottie || !asset.lottie || !lottieContainerRef.current) return;
-    if (import.meta.env.MODE === "test") return;
-    let cancelled = false;
-    void Promise.all([loadHabitLottieAnimation(asset.lottie), import("lottie-web")])
-      .then(([lottieAnimation, module]) => {
-        if (cancelled || !lottieAnimation || !lottieContainerRef.current) return;
-        const lottie = module.default ?? module;
-        const container = lottieContainerRef.current;
-        animationRef.current?.destroy();
-        animationRef.current = lottie.loadAnimation({
-          container,
-          renderer: "svg",
-          loop: true,
-          autoplay: true,
-          animationData: lottieAnimation,
-          rendererSettings: {
-            preserveAspectRatio: "xMidYMid meet",
-            progressiveLoad: true,
-          },
-        });
-
-        if (typeof IntersectionObserver !== "undefined") {
-          visibilityObserverRef.current?.disconnect();
-          visibilityObserverRef.current = new IntersectionObserver(
-            ([entry]) => {
-              if (!animationRef.current) return;
-              if (entry.isIntersecting) {
-                animationRef.current.play();
-              } else {
-                animationRef.current.pause();
-              }
-            },
-            { rootMargin: "96px" }
-          );
-          visibilityObserverRef.current.observe(container);
-        }
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        logger.warn("[HabitMotionPlayer] Failed to load Lottie asset", {
-          asset: asset.lottie,
-          error: error instanceof Error ? error.message : String(error),
-          pictogramId,
-        });
-      });
-
-    return () => {
-      cancelled = true;
-      visibilityObserverRef.current?.disconnect();
-      visibilityObserverRef.current = null;
-      animationRef.current?.destroy();
-      animationRef.current = null;
-    };
-  }, [asset.lottie, pictogramId, shouldRenderLottie]);
 
   return (
     <span
@@ -197,7 +120,6 @@ export function HabitMotionPlayer({
     >
       {shouldRenderLottie ? (
         <span
-          ref={lottieContainerRef}
           className="v2hp-motion-player__lottie"
           data-testid="habit-lottie-player"
           data-habit-lottie-player={pictogramId}

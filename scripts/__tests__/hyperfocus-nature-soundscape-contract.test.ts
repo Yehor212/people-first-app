@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 const contract = require("../check-hyperfocus-nature-soundscape-contract.cjs") as {
-  validateHyperfocusNatureSoundscapeSpec: (options?: { spec?: unknown; specPath?: string }) => {
+  validateHyperfocusNatureSoundscapeSpec: (options?: { rootDir?: string; spec?: unknown; specPath?: string }) => {
     ok: boolean;
     familyCount: number;
     levelCount: number;
@@ -71,5 +71,19 @@ describe("hyperfocus nature soundscape generation contract", () => {
     const result = contract.validateHyperfocusNatureSoundscapeSpec({ spec: badSpec });
     expect(result.ok).toBe(false);
     expect(result.issues.map((issue) => issue.code)).toContain("music-positive-drift");
+  });
+
+  it("rejects spec paths that resolve outside the project root", () => {
+    const result = contract.validateHyperfocusNatureSoundscapeSpec({
+      rootDir: "/tmp/zenflow-audio-contract-root",
+      specPath: "../outside-spec.json",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({
+        code: "unsafe-spec-path",
+      }),
+    );
   });
 });

@@ -211,7 +211,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
     const preset = frequencyPresets.find(
       (item) => item.ratio.numerator === n && item.ratio.denominator === d
     );
-    if (preset) return ts[preset.i18nKey] || preset.label;
+    if (preset) return ts[preset.translationId] || preset.label;
     return `${n}x / ${d}${ts.daysAbbr || "d"}`;
   }, [habit.frequency, t]);
 

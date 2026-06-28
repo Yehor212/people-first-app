@@ -70,6 +70,7 @@ For any radical/protected change, collect the applicable proof before claiming P
 - Current repo state: `git status --short --branch`.
 - Architecture/context: `AGENTS.md`, `ARCHITECTURE.md`, and this file read this session.
 - Agent context: `npm run check:agent-context` and `npm run ai:ruflow-plus:check`.
+- Best-practices implied requirements: use `docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md` and run `npm run check:best-practices` when the change affects agent rules, completion docs, release docs, CI/drift gates, logo/icon policy, or cross-platform quality claims.
 - Drift/hook health: `npm run enforcement:check` when hooks, prompts, tools, CI, or workflow docs are involved.
 - Architecture freshness: `npm run doc-counts` and `npm run constitution:check` for architecture/refactor claims. If stale, mark STOP/UNVERIFIED before broad refactors.
 - UI/visual/runtime: `npm run check:visual`, `npm run check:canonical-orbs`, viewport/browser evidence, and `npm run smoke:chrome-performance` when motion, canvas, PWA, startup, or performance can change.

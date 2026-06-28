@@ -49,8 +49,18 @@ describe("check-auth-providers public key readiness", () => {
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
     });
 
-    expect(result.stdout).toContain("Supabase publishable key is configured without printing it");
+    expect(result.stdout).toContain("Supabase publishable key is configured with authenticated RLS evidence");
     expect(result.stdout).not.toContain("Supabase anon key is not configured");
+  });
+
+  it("requires authenticated RLS evidence for strict Supabase publishable-key readiness", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+      ZENFLOW_SUPABASE_RLS_EVIDENCE_FILE: "supabase/migrations/missing-authenticated-rls.sql",
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Supabase publishable key RLS evidence is missing");
   });
 
   it("requires the modern publishable key in strict mode instead of legacy-only anon config", () => {
@@ -159,9 +169,9 @@ describe("check-auth-providers public key readiness", () => {
   it("requires GitHub Pages deploy to verify the live Telegram bot profile photo when the bot token is configured", () => {
     const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
 
-    expect(workflow).toContain("TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}");
+    expect(workflow).toContain("TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_AUTH_BOT_TOKEN }}");
     expect(workflow).toContain(
-      "ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}"
+      "ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_AUTH_BOT_TOKEN != '' }}"
     );
     expect(workflow).toContain("npm --prefix tools/telegram-control run check:bot-profile-photo");
 
@@ -190,9 +200,9 @@ describe("check-auth-providers public key readiness", () => {
   it("requires V2 preview deploy to verify the live Telegram bot profile photo when the bot token is configured", () => {
     const workflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
 
-    expect(workflow).toContain("TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}");
+    expect(workflow).toContain("TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_AUTH_BOT_TOKEN }}");
     expect(workflow).toContain(
-      "ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}"
+      "ZENFLOW_TELEGRAM_BOT_PROFILE_PHOTO_REQUIRED: ${{ secrets.TELEGRAM_AUTH_BOT_TOKEN != '' }}"
     );
     expect(workflow).toContain("npm --prefix tools/telegram-control run check:bot-profile-photo");
 

@@ -9,6 +9,12 @@ function toArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function resolveInsideRoot(rootDir, relativePath) {
+  const root = path.resolve(rootDir || ".");
+  const target = path.resolve(root, relativePath || "");
+  return target === root || target.startsWith(root + path.sep) ? target : null;
+}
+
 function validateHabitIconManifest(manifest, options = {}) {
   const rootDir = options.rootDir || "src/assets/habit-icons/v2";
   const checkFiles = options.checkFiles !== false;
@@ -65,12 +71,20 @@ function validateHabitIconManifest(manifest, options = {}) {
     }
 
     if (checkFiles && icon.idle && icon.idle.renderer === "lottie" && icon.lottie) {
-      const lottiePath = path.join(rootDir, icon.lottie);
+      const lottiePath = resolveInsideRoot(rootDir, icon.lottie);
+      if (!lottiePath) {
+        errors.push(id + ": lottie file path must stay inside the manifest root");
+        continue;
+      }
       if (!fs.existsSync(lottiePath)) errors.push(id + ": missing lottie file " + icon.lottie);
     }
 
     if (checkFiles && icon.reduced) {
-      const reducedPath = path.join(rootDir, icon.reduced);
+      const reducedPath = resolveInsideRoot(rootDir, icon.reduced);
+      if (!reducedPath) {
+        errors.push(id + ": reduced file path must stay inside the manifest root");
+        continue;
+      }
       if (!fs.existsSync(reducedPath)) {
         errors.push(id + ": missing reduced file " + icon.reduced);
       } else {
@@ -89,7 +103,12 @@ function validateHabitIconManifest(manifest, options = {}) {
 }
 
 if (require.main === module) {
-  const manifestPath = process.argv[2] || "src/assets/habit-icons/v2/manifest.json";
+  const manifestArg = process.argv[2] || "src/assets/habit-icons/v2/manifest.json";
+  if (manifestArg !== "src/assets/habit-icons/v2/manifest.json") {
+    console.error("manifest path must use the canonical project manifest: src/assets/habit-icons/v2/manifest.json");
+    process.exit(1);
+  }
+  const manifestPath = path.join(process.cwd(), "src/assets/habit-icons/v2/manifest.json");
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
   const result = validateHabitIconManifest(manifest, {
     rootDir: path.dirname(manifestPath),

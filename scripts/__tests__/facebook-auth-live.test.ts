@@ -1,8 +1,10 @@
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const script = "scripts/check-facebook-auth-live.cjs";
+const script = resolve("scripts/check-facebook-auth-live.cjs");
 
 type FacebookAuthLiveResult = {
   ok?: boolean;
@@ -102,7 +104,7 @@ describe("Facebook live auth readiness", () => {
         SUPABASE_URL: "",
         ZENFLOW_FACEBOOK_AUTH_LIVE_APP_URL: "https://yehor212.github.io/people-first-app/",
       },
-      rootDir: process.cwd(),
+      rootDir: mkdtempSync(join(tmpdir(), "zenflow-facebook-live-")),
       probeImpl: async ({ authorizeUrl }) => {
         probedAuthorizeUrl = authorizeUrl;
         return {
@@ -140,7 +142,7 @@ describe("Facebook live auth readiness", () => {
 
   it("does not print OAuth URLs or keys when live config cannot be discovered", () => {
     const result = spawnSync(process.execPath, [script], {
-      cwd: process.cwd(),
+      cwd: mkdtempSync(join(tmpdir(), "zenflow-facebook-live-")),
       env: {
         ...process.env,
         VITE_SUPABASE_URL: "",

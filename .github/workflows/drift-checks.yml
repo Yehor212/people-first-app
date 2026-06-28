@@ -24,6 +24,10 @@ on:
       - 'ARCHITECTURE.md'
       - 'CLAUDE.md'
       - 'scripts/check-agent-context.mjs'
+      - 'scripts/rag/**'
+      - 'scripts/__tests__/rag-*.test.ts'
+      - 'scripts/check-best-practices-gate.cjs'
+      - 'scripts/__tests__/best-practices-gate-contract.test.ts'
       - 'scripts/check-subagent-teamlead-governance.mjs'
       - 'scripts/doc-counts.cjs'
       - 'scripts/check-types-freshness.cjs'
@@ -62,6 +66,9 @@ jobs:
           - name: agent-context
             cmd: npm run check:agent-context
             fix: keep AGENTS.md tracked, CLAUDE.md as an AGENTS bridge, and ZenFlow Context profiles pointed at real headings
+          - name: free-rag
+            cmd: npm run check:rag
+            fix: keep scripts/rag/corpus-manifest.json curated and rerun npm run rag:preflight for task-specific context
           - name: subagent-governance
             cmd: npm run check:subagent-governance
             fix: remove stale static test counts, fake mandatory Ruflo/tool claims, or untrusted subagent-output gaps
@@ -71,6 +78,9 @@ jobs:
           - name: enforcement-health
             cmd: npm run enforcement:check
             fix: register missing blocking hooks or document intentional advisory-only enforcement
+          - name: best-practices-gate
+            cmd: npm run check:best-practices
+            fix: restore docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md plus AGENTS, package, CI, release, and completion wiring
           - name: retry-tests
             cmd: npx vitest run src/lib/__tests__/retry.test.ts src/lib/__tests__/appUpdateManager.test.ts src/lib/__tests__/lazyWithRetry.test.ts
             fix: fix failing tests in src/lib/retry.ts (or migrated call-sites)

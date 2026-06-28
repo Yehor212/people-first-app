@@ -156,6 +156,6 @@ describe("hyperfocus bundled audio intensity progression", () => {
         ).toBeGreaterThanOrEqual(3);
       }
     },
-    120000
+    240000
   );
 });

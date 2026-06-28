@@ -81,9 +81,12 @@ function main() {
     "Sync/account/data",
     "Performance/startup",
     "Desktop EXE/runtime",
+    "Google Play/AdMob production",
     "Security/privacy",
     "Release/public URL",
     "Native/PWA/cross-platform",
+    "google-play:app-ads",
+    "google-play:app-ads:check",
     "telegram-sync-drill",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "TELEGRAM_GRADE_20_IDEA_LEDGER.md",
@@ -102,6 +105,7 @@ function main() {
 
   requireIncludes("docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md", [
     "docs/ai/TASK_COMPLETION_PROTOCOL.md",
+    "docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md",
     "No evidence means not complete",
     "Public-user claims need public-user proof",
     "Ordered sync beats arrival order",
@@ -129,12 +133,17 @@ function main() {
   requireIncludes("docs/DEFINITION_OF_DONE.md", [
     "Task completion protocol",
     "TASK_COMPLETION_PROTOCOL.md",
+    "BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md",
     "Telegram sync drill",
     "Sync 100 percent closure matrix",
     "Desktop EXE contract",
+    "Google Play AdMob/app-ads production contract",
+    "google-play:app-ads:check",
   ]);
 
   requireIncludes("docs/RELEASE_CHECKLIST.md", [
+    "BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md",
+    "Best Practices Packet",
     "TASK_COMPLETION_PROTOCOL.md",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "smoke:telegram-sync-drill",
@@ -142,13 +151,17 @@ function main() {
   ]);
 
   requireIncludes("package.json", [
+    '"check:best-practices": "node scripts/check-best-practices-gate.cjs"',
     '"check:task-completion": "node scripts/check-task-completion-protocol.cjs"',
+    "npm run check:best-practices",
     "npm run check:task-completion",
     "npm run check:sync-contract",
     "npm run check:canonical-orbs",
   ]);
 
   requireIncludes(".github/workflows/deploy.yml", [
+    "Check best-practices implied requirements gate",
+    "npm run check:best-practices",
     "Check task completion protocol",
     "npm run check:task-completion",
     "Check Telegram-grade sync contract",

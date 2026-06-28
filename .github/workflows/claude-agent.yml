@@ -5,11 +5,6 @@ on:
     # Weekdays at 9:00 UTC (12:00 Kyiv time)
     - cron: '0 9 * * 1-5'
   workflow_dispatch:
-    inputs:
-      task:
-        description: 'Custom task for Claude agent'
-        required: false
-        default: ''
 
 permissions:
   contents: read
@@ -42,7 +37,7 @@ jobs:
 
       - name: Claude Agent - Daily Health Check
         if: ${{ env.HAS_ANTHROPIC_API_KEY == 'true' }}
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@78a7209fd893bd50d1b2b784da9b6f240a66373a # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
@@ -55,8 +50,6 @@ jobs:
             3. Run `npx eslint src/ --max-warnings 0` — report lint warnings
             4. Run `npm outdated` — list outdated dependencies
             5. Check if any `sync_events` in Supabase have errors (if accessible)
-
-            ${{ github.event.inputs.task }}
 
             Create a GitHub issue titled "Daily Health Check - [date]" with:
             - Summary of all check results

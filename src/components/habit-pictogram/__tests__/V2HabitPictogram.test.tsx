@@ -7,6 +7,7 @@ import { V2HabitPictogram } from "../V2HabitPictogram";
 import {
   APPROVED_HABIT_ANIMATED_RASTER_IDS,
   APPROVED_HABIT_LOTTIE_IDS,
+  HABIT_LOTTIE_RUNTIME_ENABLED,
   APPROVED_HABIT_RASTER_IDS,
   REJECTED_HABIT_LOTTIE_IDS,
   REVIEW_CANDIDATE_HABIT_LOTTIE_IDS,
@@ -23,6 +24,7 @@ const assetModuleSource = readFileSync(
 const approvedLottieIds = new Set<V2HabitPictogramId>(["drink-water", "read"]);
 const approvedRasterIds = new Set<V2HabitPictogramId>();
 const approvedAnimatedRasterIds = new Set<V2HabitPictogramId>();
+const runtimeLottieIds = new Set<V2HabitPictogramId>();
 const approvedMotionIds = new Set<V2HabitPictogramId>([
   ...approvedLottieIds,
   ...approvedRasterIds,
@@ -141,6 +143,7 @@ describe("V2HabitPictogram", () => {
   });
 
   it("promotes confirmed Read/Drink Water Lotties and keeps Walk Distance locked after APNG rejection", () => {
+    expect(HABIT_LOTTIE_RUNTIME_ENABLED).toBe(false);
     expect([...APPROVED_HABIT_LOTTIE_IDS].sort()).toEqual(["drink-water", "read"]);
     expect([...APPROVED_HABIT_RASTER_IDS]).toEqual([]);
     expect([...APPROVED_HABIT_ANIMATED_RASTER_IDS]).toEqual([]);
@@ -213,7 +216,9 @@ describe("V2HabitPictogram", () => {
     const { container } = render(<V2HabitPictogram pictogramId={pictogramId} />);
     const root = container.querySelector('[data-habit-pictogram="' + pictogramId + '"]');
     const asset = getHabitIconAsset(pictogramId);
-    const approvedLottie = approvedLottieIds.has(pictogramId);
+    const approvedLottie = runtimeLottieIds.has(pictogramId);
+    const approvedStaticLottieFallback =
+      !HABIT_LOTTIE_RUNTIME_ENABLED && approvedLottieIds.has(pictogramId);
     const approvedRaster = approvedRasterIds.has(pictogramId);
     const approvedAnimatedRaster = approvedAnimatedRasterIds.has(pictogramId);
     expect(root).toBeInTheDocument();
@@ -231,7 +236,7 @@ describe("V2HabitPictogram", () => {
     expect(root).toHaveAttribute(
       "data-icon-renderer",
       approvedLottie
-        ? "lottie-web-svg"
+        ? "lottie-svg-runtime"
         : approvedAnimatedRaster
           ? "animated-raster-apng"
           : approvedRaster
@@ -250,7 +255,9 @@ describe("V2HabitPictogram", () => {
           ? "approved-animated-raster-sequence"
           : approvedRaster
             ? "approved-raster-sticker"
-            : "locked-static-until-user-approval"
+            : approvedStaticLottieFallback
+              ? "approved-lottie-static-fallback-runtime-disabled"
+              : "locked-static-until-user-approval"
     );
     expect(root).toHaveAttribute("data-reduced-asset", asset.reduced);
     if (approvedLottie) {

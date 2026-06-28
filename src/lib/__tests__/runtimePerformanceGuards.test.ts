@@ -198,7 +198,7 @@ describe("runtime performance guards", () => {
     const journalStats = readSource("src/features/journal/JournalStats.tsx");
 
     expect(moodDotStrip).toContain("const DOT_ITEM_HEIGHT = 48;");
-    expect(moodDotStrip).toContain("const totalHeight = entries.length * DOT_ITEM_HEIGHT;");
+    expect(moodDotStrip).toContain("const totalHeight = railEntries.length * DOT_ITEM_HEIGHT;");
     expect(moodDotStrip).toContain("top: realIndex * DOT_ITEM_HEIGHT");
     expect(moodDotStrip).toContain("h-[44px] w-[44px]");
     expect(journalStats).not.toContain("min-w-[32px] min-h-[32px]");

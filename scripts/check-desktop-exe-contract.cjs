@@ -281,8 +281,8 @@ function main() {
   });
 
   requireIncludes("src-tauri/Cargo.toml", [
-    "tauri = { version = \"2.11.2\"",
-    "tauri-build = { version = \"2.6.2\"",
+    "tauri = { version = \"2.11.3\"",
+    "tauri-build = { version = \"2.6.3\"",
   ]);
 
   requireFile("src-tauri/icons/icon.ico");

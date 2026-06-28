@@ -118,4 +118,29 @@ describe("validateHabitIconManifest", () => {
     expect(result.errors).toContain("drink-water: missing state disabled");
     expect(result.errors).toContain("drink-water: missing state reduced");
   });
+
+  it("rejects asset paths that resolve outside the manifest root", () => {
+    const result = validateHabitIconManifest(
+      {
+        version: "bad",
+        icons: [
+          {
+            id: "drink-water",
+            label: "Drink water",
+            source: "fixture",
+            license: "Original",
+            reduced: "../outside.svg",
+            idle: { renderer: "still", name: "locked", durationMs: 0, bytes: 0 },
+            states: ["idle", "press", "complete", "disabled", "reduced"],
+          },
+        ],
+      },
+      {
+        rootDir: "src/assets/habit-icons/v2",
+        checkFiles: true,
+      },
+    );
+
+    expect(result.errors).toContain("drink-water: reduced file path must stay inside the manifest root");
+  });
 });

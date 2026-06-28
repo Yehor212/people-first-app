@@ -107,7 +107,7 @@ export const HabitHubCard = memo(function HabitHubCard({
     const preset = frequencyPresets.find(
       (p) => p.ratio.numerator === n && p.ratio.denominator === d
     );
-    if (preset) return ts[preset.i18nKey] || preset.label;
+    if (preset) return ts[preset.translationId] || preset.label;
     return `${n}× / ${d}${ts.daysAbbr || "d"}`;
   }, [habit.frequency, t]);
 

@@ -189,6 +189,14 @@ Before publishing production monetization:
 
 1. Create the real Android app and rewarded ad unit in AdMob.
 2. Set `VITE_ADMOB_APP_ID_ANDROID` and `VITE_ADMOB_REWARDED_ID_ANDROID`.
-3. Add `public/app-ads.txt` with the real publisher line.
+3. Generate and verify `public/app-ads.txt` from the real publisher id only:
+
+```bash
+ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads
+ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads:check
+```
+
+Do not hand-write the file and do not use Google's sample publisher id.
+
 4. Re-run the Android release manifest/build proof.
 5. Re-check Play Console Ads, Advertising ID, and Data safety sections.

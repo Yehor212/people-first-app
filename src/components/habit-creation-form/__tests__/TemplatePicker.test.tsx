@@ -31,7 +31,13 @@ describe("TemplatePicker V2 ritual presentation", () => {
       '[data-slot="template-picker-svg"] [data-habit-pictogram="drink-water"]',
     );
     expect(pictogram).toBeTruthy();
-    expect(pictogram).toHaveAttribute("data-approval-state", "candidate-option-b-pending-user-approval");
+    expect(pictogram).toHaveAttribute("data-icon-source", "static-reduced-svg-fallback");
+    expect(pictogram).toHaveAttribute("data-icon-treatment", "reduced-static-fallback");
+    expect(pictogram).toHaveAttribute(
+      "data-motion-system",
+      "approved-lottie-static-fallback-runtime-disabled",
+    );
+    expect(pictogram).not.toHaveAttribute("data-approval-state");
     const iconSlot = cards[0]?.querySelector('[data-slot="template-picker-icon"]');
     expect(iconSlot).toHaveAttribute("data-icon-frame", "real-object-source-icon-native");
     expect(iconSlot?.className).toContain("h-[4.25rem]");
@@ -101,28 +107,21 @@ describe("TemplatePicker V2 ritual presentation", () => {
 
     const pictograms = container.querySelectorAll("[data-habit-pictogram]");
     expect(pictograms).toHaveLength(ROUTINE_STARTER_TEMPLATE_IDS.length);
-    expect(container.querySelectorAll("[data-icon-source='phosphor-icons-react-real-source-icon']")).toHaveLength(
+    expect(container.querySelectorAll("[data-icon-source='approved-lottie-json']")).toHaveLength(0);
+    expect(container.querySelectorAll("[data-icon-source='static-reduced-svg-fallback']")).toHaveLength(
       ROUTINE_STARTER_TEMPLATE_IDS.length,
     );
-    expect(container.querySelectorAll("[data-approval-state='candidate-option-b-pending-user-approval']")).toHaveLength(
+    expect(container.querySelectorAll("[data-approval-state]")).toHaveLength(0);
+    expect(container.querySelectorAll("[data-pictogram-layer]")).toHaveLength(0);
+    expect(container.querySelectorAll("[data-icon-treatment='single-lottie-icon']")).toHaveLength(0);
+    expect(container.querySelectorAll("[data-icon-treatment='reduced-static-fallback']")).toHaveLength(
       ROUTINE_STARTER_TEMPLATE_IDS.length,
     );
-    expect(container.querySelectorAll("[data-pictogram-layer^='b39-']")).toHaveLength(0);
-    expect(container.querySelectorAll("[data-icon-treatment='option-b-liquid-glass-totem']")).toHaveLength(
+    expect(container.querySelectorAll("[data-habit-lottie-player]")).toHaveLength(0);
+    expect(container.querySelectorAll("[data-habit-motion-still]")).toHaveLength(
       ROUTINE_STARTER_TEMPLATE_IDS.length,
     );
     expect(container.querySelectorAll("img[data-pictogram-layer='asset']")).toHaveLength(0);
-    expect(container.querySelectorAll("[data-pictogram-layer='source-hero-glyph'] svg")).toHaveLength(
-      ROUTINE_STARTER_TEMPLATE_IDS.length,
-    );
-    expect(container.querySelectorAll("[data-pictogram-layer='source-fill-relief'] svg")).toHaveLength(
-      ROUTINE_STARTER_TEMPLATE_IDS.length,
-    );
-    expect(container.querySelectorAll("[data-pictogram-layer='source-stroke-core'] svg")).toHaveLength(0);
-    expect(container.querySelectorAll("[data-pictogram-layer='source-accent-glyph']")).toHaveLength(0);
-    expect(container.querySelectorAll("[data-habit-pictogram] svg")).toHaveLength(
-      ROUTINE_STARTER_TEMPLATE_IDS.length * 2,
-    );
     expect(container.textContent).not.toContain("💧");
   });
 });

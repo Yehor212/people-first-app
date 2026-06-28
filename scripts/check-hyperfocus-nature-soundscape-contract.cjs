@@ -51,6 +51,19 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
+function resolveInsideRoot(rootDir, relativePath, issueCode) {
+  const root = path.resolve(rootDir || process.cwd()); // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal -- sanitizer computes the trusted root before prefix validation.
+  const target = path.resolve(root, relativePath || ""); // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal -- target is rejected unless it remains inside root before any file read.
+  if (target !== root && !target.startsWith(root + path.sep)) {
+    return {
+      ok: false,
+      filePath: "",
+      issue: createIssue(issueCode, "Spec path must stay inside the project root."),
+    };
+  }
+  return { ok: true, filePath: target, issue: null };
+}
+
 function createIssue(code, message, context = {}) {
   return { code, message, ...context };
 }
@@ -85,8 +98,12 @@ function validatePrompt({ family, level, prompt, issues }) {
 }
 
 function validateHyperfocusNatureSoundscapeSpec({ rootDir = process.cwd(), specPath = DEFAULT_SPEC_PATH, spec } = {}) {
-  const loadedSpec = spec || readJson(path.resolve(rootDir, specPath));
   const issues = [];
+  const safeSpec = spec ? null : resolveInsideRoot(rootDir, specPath, "unsafe-spec-path");
+  if (safeSpec && !safeSpec.ok) {
+    return { ok: false, familyCount: 0, levelCount: 0, issues: [safeSpec.issue] };
+  }
+  const loadedSpec = spec || readJson(safeSpec.filePath);
 
   if (loadedSpec.modelPolicy?.requiredProvider !== REQUIRED_MODEL_PROVIDER) {
     issues.push(createIssue("provider-policy-drift", 'requiredProvider must be "' + REQUIRED_MODEL_PROVIDER + '".'));
@@ -153,7 +170,9 @@ function validateHyperfocusNatureSoundscapeSpec({ rootDir = process.cwd(), specP
 }
 
 function buildHyperfocusNatureGenerationQueue({ rootDir = process.cwd(), specPath = DEFAULT_SPEC_PATH, phase = "pilot" } = {}) {
-  const spec = readJson(path.resolve(rootDir, specPath));
+  const safeSpec = resolveInsideRoot(rootDir, specPath, "unsafe-spec-path");
+  if (!safeSpec.ok) return { ok: false, phase, jobs: [], issues: [safeSpec.issue] };
+  const spec = readJson(safeSpec.filePath);
   const validation = validateHyperfocusNatureSoundscapeSpec({ rootDir, specPath, spec });
   if (!validation.ok) return { ok: false, phase, jobs: [], issues: validation.issues };
 
@@ -174,7 +193,11 @@ function buildHyperfocusNatureGenerationQueue({ rootDir = process.cwd(), specPat
 function runCli() {
   const args = process.argv.slice(2);
   const specIndex = args.indexOf("--spec");
-  const specPath = specIndex >= 0 && args[specIndex + 1] ? args[specIndex + 1] : DEFAULT_SPEC_PATH;
+  if (specIndex >= 0 && args[specIndex + 1] && args[specIndex + 1] !== DEFAULT_SPEC_PATH) {
+    console.error('[hyperfocus-nature-soundscape] FAIL - --spec must use the canonical project spec path: ' + DEFAULT_SPEC_PATH);
+    process.exit(1);
+  }
+  const specPath = DEFAULT_SPEC_PATH;
   const queueIndex = args.indexOf("--print-generation-queue");
   const phaseIndex = args.indexOf("--phase");
   const phase = phaseIndex >= 0 && args[phaseIndex + 1] ? args[phaseIndex + 1] : "pilot";

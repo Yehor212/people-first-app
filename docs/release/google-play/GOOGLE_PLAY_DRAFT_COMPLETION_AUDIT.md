@@ -106,7 +106,7 @@ production monetization blockers.
 | --- | --- | --- |
 | Real AdMob Android app ID | NOT READY | Create/use the real AdMob Android app ID and set `VITE_ADMOB_APP_ID_ANDROID` / `ZENFLOW_ADMOB_ANDROID_APP_ID`. |
 | Real rewarded ad unit ID | NOT READY | Create/use the real rewarded ad unit and set `VITE_ADMOB_REWARDED_ID_ANDROID`. |
-| `public/app-ads.txt` | NOT READY | Add the real AdMob publisher line only after the publisher ID is known. Do not invent this value. |
+| `public/app-ads.txt` | NOT READY | Generate it only with `ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads`, then verify with `npm run google-play:app-ads:check`. Do not invent this value or use Google's sample publisher id. |
 | Final Google Play review submission | OUT OF SCOPE | Submit only after the V2 Android artifact and real monetization IDs are ready. |
 
 ## Completion Decision

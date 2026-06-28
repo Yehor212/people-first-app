@@ -71,6 +71,36 @@ const ITEMS = [
     tiny: true,
   },
   {
+    label: "Android round mdpi",
+    rel: "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+    role: "Legacy round launcher icon",
+    tiny: true,
+  },
+  {
+    label: "Android round hdpi",
+    rel: "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+    role: "Round launcher 72px density",
+    tiny: true,
+  },
+  {
+    label: "Android round xhdpi",
+    rel: "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+    role: "Round launcher 96px density",
+    tiny: true,
+  },
+  {
+    label: "Android round xxhdpi",
+    rel: "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+    role: "Round launcher 144px density",
+    tiny: true,
+  },
+  {
+    label: "Android round xxxhdpi",
+    rel: "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+    role: "Round launcher 192px density",
+    tiny: true,
+  },
+  {
     label: "Android foreground",
     rel: "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
     role: "Adaptive foreground layer",
@@ -117,6 +147,8 @@ const ITEMS = [
     role: "Wide Store artwork",
   },
 ];
+
+const ALLOWED_ASSET_RELS = new Set(ITEMS.map((item) => item.rel));
 
 function escapeXml(value) {
   return String(value)
@@ -172,7 +204,18 @@ function sheetHeader(width) {
 }
 
 async function readImage(rel) {
-  const abs = path.join(ROOT, rel);
+  if (!ALLOWED_ASSET_RELS.has(rel) || path.isAbsolute(rel) || rel.includes("\0")) {
+    throw new Error(`Unexpected logo asset path: ${rel}`);
+  }
+  const normalizedRel = path.normalize(rel);
+  if (normalizedRel.startsWith("..") || path.isAbsolute(normalizedRel)) {
+    throw new Error(`Logo asset path escapes repo root: ${rel}`);
+  }
+  const abs = path.resolve(ROOT, normalizedRel); // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal - rel is allow-listed and checked to stay inside ROOT above.
+  const rootRelative = path.relative(ROOT, abs);
+  if (rootRelative.startsWith("..") || path.isAbsolute(rootRelative)) {
+    throw new Error(`Logo asset path resolves outside repo root: ${rel}`);
+  }
   if (!fs.existsSync(abs)) {
     throw new Error(`Missing logo asset: ${rel}`);
   }

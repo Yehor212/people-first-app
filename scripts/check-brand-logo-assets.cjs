@@ -886,6 +886,16 @@ function assertProofSheetGeneratorContract() {
     "MAX_TINY_PROOF_SCALE",
     "native raster",
     "They are not enlarged as hero art",
+    "Android round mdpi",
+    "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+    "Android round hdpi",
+    "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+    "Android round xhdpi",
+    "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+    "Android round xxhdpi",
+    "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+    "Android round xxxhdpi",
+    "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
   ]) {
     if (!proofGenerator.includes(token)) {
       fail(`scripts/generate-brand-logo-proof-sheet.cjs must keep proof-sheet clarity guard ${token}`);

@@ -8,6 +8,11 @@ performance, startup, sync, navigation, service workers, WebGL/canvas, the
 canonical orb family, IndexedDB/Dexie, Supabase, offline queue, app lifecycle,
 or any cross-platform user flow.
 
+When the user asks for best practices, deep research, complete implementation,
+or hidden gaps, expand implied cross-platform requirements first with
+`docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md`, then close the work with
+the Done Packet in `docs/ai/TASK_COMPLETION_PROTOCOL.md`.
+
 ## North Star
 
 The app must feel immediate even when the network, storage, WebGL, or device is

@@ -334,7 +334,7 @@ export function FrequencySelector({
             whileHover={{ scale: 1.02 }}
             whileTap={zenTap.card}
           >
-            {ts[preset.i18nKey]}
+            {ts[preset.translationId]}
           </motion.button>
         ))}
         {activePresetIndex < 0 && (

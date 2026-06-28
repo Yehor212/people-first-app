@@ -125,17 +125,9 @@ export function initSentry(): void {
     }),
   ];
 
-  // Session replay only on web — rrweb uses Shadow DOM / MutationObserver
-  // features that can crash in Android WebView
-  if (!isNativeRuntime) {
-    integrations.push(
-      Sentry.replayIntegration({
-        maskAllText: true,
-        maskAllInputs: true,
-        blockAllMedia: true,
-      })
-    );
-  }
+  // Session Replay stays disabled by default: ZenFlow contains diary, mood,
+  // auth and coach surfaces, so error telemetry is enough without recording UI.
+  // Keeping Replay out also prevents pulling rrweb into the production bundle.
 
   Sentry.init({
     dsn,
@@ -147,10 +139,6 @@ export function initSentry(): void {
 
     // Distributed tracing targets - MUST be at root level for SDK v8+
     tracePropagationTargets: ["localhost", /^https:\/\/.*\.supabase\.co/],
-
-    // Session replay rates — only effective on web (integration not added on native)
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
 
     // Explicit opt-out of server-side PII inference (GDPR). v10.4.0 made this
     // the default, but setting it explicitly future-proofs against SDK default

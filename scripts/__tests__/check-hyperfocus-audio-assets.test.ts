@@ -1569,6 +1569,43 @@ describe("check-hyperfocus-audio-assets", () => {
     expect(existsSync(join(rootDir, "output/audio-quarantine/hyperfocus-fireplace-soft-accepted.mp3"))).toBe(false);
   });
 
+  it("refuses cleartext HTTP candidate URL batches before downloading", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "hyperfocus-audio-url-cleartext-"));
+    mkdirSync(join(rootDir, "docs/audio"), { recursive: true });
+    copyFileSync(
+      join(process.cwd(), "docs/audio/hyperfocus-three-level-generation-spec.json"),
+      join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"),
+    );
+    const expected = qc.getExpectedHyperfocusAssets({ rootDir });
+    const batch = {
+      phase: "pilot",
+      pilotVariantId: "fireplace:soft",
+      defaults: { provider: "Google", model: "lyria-3-clip", source: "picsart" },
+      assets: [
+        {
+          variantId: "fireplace:soft",
+          fileName: expected[0].fileName,
+          url: "http://cdn.example.test/generated/0.mp3",
+          generationId: "generation-0",
+        },
+      ],
+    };
+    const downloadFile = vi.fn(async () => undefined);
+
+    const result = await qc.downloadCandidateUrlBatch({ rootDir, batch, downloadFile, skipAudioProbe: true });
+
+    expect(result.ok).toBe(false);
+    expect(result.downloadedCount).toBe(0);
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({
+        code: "cleartext-candidate-url",
+        fileName: expected[0].fileName,
+      }),
+    );
+    expect(downloadFile).not.toHaveBeenCalled();
+    expect(existsSync(join(rootDir, "output/audio-quarantine/hyperfocus-fireplace-soft-accepted.mp3"))).toBe(false);
+  });
+
   it("routes CLI candidate URL downloads through the all-or-nothing command", () => {
     const rootDir = mkdtempSync(join(tmpdir(), "hyperfocus-audio-cli-url-download-"));
     mkdirSync(join(rootDir, "docs/audio"), { recursive: true });

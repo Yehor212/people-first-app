@@ -170,6 +170,7 @@ const READ_APPROVED_ASSET: HabitIconAssetEntry = {
   states: MOTION_STATES,
 };
 
+export const HABIT_LOTTIE_RUNTIME_ENABLED = false;
 export const APPROVED_HABIT_LOTTIE_IDS = new Set<string>(["drink-water", "read"]);
 export const APPROVED_HABIT_RASTER_IDS = new Set<string>();
 export const APPROVED_HABIT_ANIMATED_RASTER_IDS = new Set<string>();

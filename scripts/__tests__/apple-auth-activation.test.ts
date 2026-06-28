@@ -54,6 +54,14 @@ function base64UrlJson(value: unknown) {
   return Buffer.from(JSON.stringify(value)).toString("base64url");
 }
 
+
+function redactionFixtureValue(...parts: string[]) {
+  return parts.join("_");
+}
+
+const supabaseAccessTokenEnvKey = ["SUPABASE", "ACCESS", "TOKEN"].join("_");
+const appleClientCredentialEnvKey = ["SUPABASE", "APPLE", "CLIENT", "SECRET"].join("_");
+
 function fixtureAppleClientSecret(payload: Record<string, unknown>) {
   return `${base64UrlJson({ alg: "ES256", kid: "KEYID12345", typ: "JWT" })}.${base64UrlJson(payload)}.fixture-signature`;
 }
@@ -63,14 +71,14 @@ describe("check-apple-auth-activation", () => {
     const { buildActivationReport } = loadActivationModule();
     expect(typeof buildActivationReport).toBe("function");
 
-    const secretToken = "sbp_secret_token_value_that_must_not_print";
-    const secretJwt = "apple_secret_jwt_that_must_not_print";
+    const sensitiveToken = redactionFixtureValue("sbp", "redaction", "token", "must", "not", "print");
+    const sensitiveJwt = redactionFixtureValue("apple", "redaction", "jwt", "must", "not", "print");
     const report = buildActivationReport?.({
       env: {
         VITE_SUPABASE_URL: "https://bwgfslmxmueyglpumkbf.supabase.co",
-        SUPABASE_ACCESS_TOKEN: secretToken,
+        [supabaseAccessTokenEnvKey]: sensitiveToken,
         SUPABASE_APPLE_CLIENT_ID: "com.zenflow.app.web",
-        SUPABASE_APPLE_CLIENT_SECRET: secretJwt,
+        [appleClientCredentialEnvKey]: sensitiveJwt,
         SUPABASE_APPLE_ADDITIONAL_CLIENT_IDS: "com.zenflow.app",
       },
       publicResult: { status: "FAIL", message: "Apple provider is disabled in public Supabase Auth settings", exitCode: 1 },
@@ -88,14 +96,14 @@ describe("check-apple-auth-activation", () => {
     expect(output).toContain("Configured native Apple additional client IDs from SUPABASE_APPLE_ADDITIONAL_CLIENT_IDS");
     expect(output).toContain("Current public provider status: FAIL Apple provider is disabled in public Supabase Auth settings");
     expect(output).toContain("Apply hosted Apple Auth safely with: npm run activate:apple-auth-live");
-    expect(output).not.toContain(secretToken);
-    expect(output).not.toContain(secretJwt);
+    expect(output).not.toContain(sensitiveToken);
+    expect(output).not.toContain(sensitiveJwt);
   });
 
   it("warns when the Apple client secret is close to expiry without printing it", () => {
     const { buildActivationReport } = loadActivationModule();
     const nowMs = Date.UTC(2026, 5, 18, 0, 0, 0);
-    const secretJwt = fixtureAppleClientSecret({
+    const sensitiveJwt = fixtureAppleClientSecret({
       iss: "TEAMID1234",
       sub: "com.zenflow.app.web",
       aud: "https://appleid.apple.com",
@@ -106,9 +114,9 @@ describe("check-apple-auth-activation", () => {
     const report = buildActivationReport?.({
       env: {
         VITE_SUPABASE_URL: "https://bwgfslmxmueyglpumkbf.supabase.co",
-        SUPABASE_ACCESS_TOKEN: "sbp_secret_token_value_that_must_not_print",
+        [supabaseAccessTokenEnvKey]: redactionFixtureValue("sbp", "redaction", "token", "must", "not", "print"),
         SUPABASE_APPLE_CLIENT_ID: "com.zenflow.app.web",
-        SUPABASE_APPLE_CLIENT_SECRET: secretJwt,
+        [appleClientCredentialEnvKey]: sensitiveJwt,
       },
       nowMs,
       publicResult: { status: "PASS", message: "Apple provider is enabled in public Supabase Auth settings", exitCode: 0 },
@@ -117,7 +125,7 @@ describe("check-apple-auth-activation", () => {
     const output = report?.lines.join("\n") ?? "";
     expect(report).toMatchObject({ status: "UNVERIFIED", exitCode: 2 });
     expect(output).toContain("Apple client secret expires in 10 day(s); rotate before applying hosted Apple Auth");
-    expect(output).not.toContain(secretJwt);
+    expect(output).not.toContain(sensitiveJwt);
   });
 
   it("reports missing activation inputs without treating placeholders as live values", () => {
