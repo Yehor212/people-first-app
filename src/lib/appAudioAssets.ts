@@ -93,6 +93,7 @@ export const APP_AUDIO_ASSETS = [
   makeAsset("focus-thunderstorm", "focus", "sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.mp3", "Jungle thunderstorm"),
   makeAsset("focus-ocean", "focus", "sounds/mixkit-small-waves-harbor-rocks-1208.mp3", "Waves on rocks"),
   makeAsset("focus-river", "focus", "sounds/mixkit-wildlife-environment-in-a-river-2456.mp3", "River wildlife"),
+  makeAsset("focus-forest", "focus", "sounds/hyperfocus/hyperfocus-forest-deep.mp3", "Forest birds ambience"),
   makeAsset("focus-cafe", "focus", "sounds/cafe-noise-32940.mp3", "Cafe ambience"),
   makeAsset("focus-fireplace", "focus", "sounds/fireplace-fx-56636.mp3", "Fireplace crackling"),
 ] as const satisfies readonly AppAudioAsset[];

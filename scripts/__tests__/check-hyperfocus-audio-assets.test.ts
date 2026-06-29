@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -204,7 +204,7 @@ describe("check-hyperfocus-audio-assets", () => {
       "thunderstorm",
       "ocean",
       "river",
-      "cafe",
+      "forest",
       "fireplace",
     ]);
     expect(report.assets).toContainEqual(
@@ -421,7 +421,9 @@ describe("check-hyperfocus-audio-assets", () => {
       join(rootDir, "src/lib/appAudioAssets.ts"),
     );
     for (const asset of qc.buildOriginalSourceCoverageReport({ rootDir: process.cwd() }).assets) {
-      copyFileSync(join(process.cwd(), asset.sourcePath), join(rootDir, asset.sourcePath));
+      const targetPath = join(rootDir, asset.sourcePath);
+      mkdirSync(dirname(targetPath), { recursive: true });
+      copyFileSync(join(process.cwd(), asset.sourcePath), targetPath);
     }
     const outputFile = join(rootDir, "output/audio-qc/hyperfocus-source-coverage-current.json");
 
@@ -455,7 +457,7 @@ describe("check-hyperfocus-audio-assets", () => {
 
     expect(expected).toHaveLength(18);
     expect(expected.map((asset) => asset.fileName)).toContain("hyperfocus-fireplace-soft.mp3");
-    expect(expected.map((asset) => asset.fileName)).toContain("hyperfocus-cafe-intense.mp3");
+    expect(expected.map((asset) => asset.fileName)).toContain("hyperfocus-forest-intense.mp3");
     expect(new Set(expected.map((asset) => asset.publicPath)).size).toBe(18);
   });
 
@@ -1178,8 +1180,8 @@ describe("check-hyperfocus-audio-assets", () => {
     expect(template.assets).toHaveLength(18);
     expect(template.assets[17]).toEqual(
       expect.objectContaining({
-        variantId: "cafe:intense",
-        fileName: "hyperfocus-cafe-intense.mp3",
+        variantId: "forest:intense",
+        fileName: "hyperfocus-forest-intense.mp3",
       }),
     );
   });

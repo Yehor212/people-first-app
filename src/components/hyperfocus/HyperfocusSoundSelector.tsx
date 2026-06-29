@@ -16,13 +16,13 @@ import {
 import { cn } from '@/lib/utils';
 import { zenTap } from '@/lib/animationUtils';
 
-const soundMeta: Record<HyperfocusAudioFamilyId, { emoji: string; labelKey: string }> = {
-  underwater: { emoji: '🌊', labelKey: 'hyperfocusSoundOcean' },
-  thunderstorm: { emoji: '⛈️', labelKey: 'hyperfocusSoundRain' },
-  ocean: { emoji: '🏖️', labelKey: 'hyperfocusSoundOcean' },
-  river: { emoji: '🏞️', labelKey: 'hyperfocusSoundForest' },
-  cafe: { emoji: '☕', labelKey: 'hyperfocusSoundCoffee' },
-  fireplace: { emoji: '🔥', labelKey: 'hyperfocusSoundFireplace' },
+const soundMeta: Record<HyperfocusAudioFamilyId, { emoji: string }> = {
+  underwater: { emoji: '🌊' },
+  thunderstorm: { emoji: '⛈️' },
+  ocean: { emoji: '🏖️' },
+  river: { emoji: '🏞️' },
+  forest: { emoji: '🌲' },
+  fireplace: { emoji: '🔥' },
 };
 
 interface HyperfocusSoundSelectorProps {
@@ -152,7 +152,7 @@ export function HyperfocusSoundSelector({
           const sound = SOUNDS.find((candidate) => candidate.id === family.legacyId);
           const isSelected = activeFamily?.id === family.id;
           const meta = soundMeta[family.id];
-          const localizedName = t[meta.labelKey] || sound?.nameEn || family.id;
+          const localizedName = t[family.labelKey] || sound?.nameEn || family.id;
 
           return (
             <motion.button

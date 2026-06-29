@@ -74,6 +74,7 @@ export type AmbientSoundType =
   | "thunderstorm"
   | "ocean"
   | "river"
+  | "forest"
   | "cafe"
   | "fireplace";
 
@@ -358,9 +359,9 @@ const LEGACY_SOUND_COPY: Record<HyperfocusAudioFamilyId, Pick<SoundInfo, "nameEn
     nameEn: "River Wildlife",
     description: "River sounds with wildlife",
   },
-  cafe: {
-    nameEn: "Cafe Ambience",
-    description: "Coffee shop background noise",
+  forest: {
+    nameEn: "Forest Canopy",
+    description: "Forest wind, night air, and soft bird ambience",
   },
   fireplace: {
     nameEn: "Fireplace Crackling",
@@ -417,7 +418,8 @@ export function getSoundById(id: string): SoundInfo | undefined {
  */
 export function getSoundByType(type: AmbientSoundType): SoundInfo | undefined {
   if (type === "none") return undefined;
-  return SOUNDS.find((s) => s.type === type);
+  const normalizedType = type === "cafe" ? "forest" : type;
+  return SOUNDS.find((s) => s.type === normalizedType);
 }
 
 export class AmbientSoundGenerator {

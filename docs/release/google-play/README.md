@@ -31,6 +31,10 @@ Evidence expected before production monetization:
 - Real AdMob app/ad unit IDs are configured outside the repo before publishing.
 - `public/app-ads.txt` must be generated with the real AdMob publisher line
   before production monetization. Do not add a fake or sample publisher line.
+  After deployment, verify the same file at the root of the developer website
+  configured in Play Console/AdMob. For a GitHub Pages project URL, this may
+  require a user-site root, custom domain, or redirect because AdMob crawlers
+  validate the site root, not just the app subpath.
   Use:
 
 ```bash

@@ -5,7 +5,7 @@ const path = require("path");
 
 const DEFAULT_SPEC_PATH = "docs/audio/hyperfocus-nature-soundscape-spec.json";
 const REQUIRED_MODEL_PROVIDER = "Google Gemini/Lyria family only";
-const REQUIRED_FAMILIES = ["underwater", "thunderstorm", "ocean", "river", "cafe", "fireplace"];
+const REQUIRED_FAMILIES = ["underwater", "thunderstorm", "ocean", "river", "forest", "fireplace"];
 const REQUIRED_LEVELS = ["soft", "deep", "intense"];
 const REQUIRED_PROMPT_PHRASES = [
   "field-recording",

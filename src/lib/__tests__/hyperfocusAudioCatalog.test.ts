@@ -14,8 +14,16 @@ describe("hyperfocus three-level audio catalog", () => {
       "thunderstorm",
       "ocean",
       "river",
-      "cafe",
+      "forest",
       "fireplace",
+    ]);
+    expect(HYPERFOCUS_AUDIO_FAMILIES.map((family) => family.labelKey)).toEqual([
+      "hyperfocusSoundUnderwater",
+      "hyperfocusSoundThunderstorm",
+      "hyperfocusSoundOcean",
+      "hyperfocusSoundRiver",
+      "hyperfocusSoundForest",
+      "hyperfocusSoundFireplace",
     ]);
     expect(HYPERFOCUS_AUDIO_LEVEL_IDS).toEqual(["soft", "deep", "intense"]);
 
@@ -38,6 +46,14 @@ describe("hyperfocus three-level audio catalog", () => {
     expect(parseHyperfocusVariantId("fireplace")).toEqual({
       familyId: "fireplace",
       levelId: "deep",
+    });
+    expect(parseHyperfocusVariantId("cafe")).toEqual({
+      familyId: "forest",
+      levelId: "deep",
+    });
+    expect(parseHyperfocusVariantId("cafe:soft")).toEqual({
+      familyId: "forest",
+      levelId: "soft",
     });
     expect(parseHyperfocusVariantId("fireplace:unknown")).toBeNull();
     expect(parseHyperfocusVariantId("unknown:soft")).toBeNull();

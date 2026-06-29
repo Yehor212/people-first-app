@@ -179,9 +179,12 @@ function getOriginalFocusAudioAssets({ rootDir = DEFAULT_ROOT } = {}) {
   const pattern = new RegExp('makeAsset\\("focus-([^\\"]+)",\\s*"focus",\\s*"([^\\"]+)",\\s*"([^\\"]+)"', "g");
   let match;
   while ((match = pattern.exec(source)) !== null) {
+    const familyId = match[1];
+    if (familyId === "cafe") continue;
+
     assets.push({
-      familyId: match[1],
-      assetId: "focus-" + match[1],
+      familyId,
+      assetId: "focus-" + familyId,
       publicPath: toPosixPath(match[2]),
       sourcePath: path.posix.join("public", toPosixPath(match[2])),
       sourceRootDir,

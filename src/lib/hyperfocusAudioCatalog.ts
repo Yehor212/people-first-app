@@ -6,7 +6,7 @@ export const HYPERFOCUS_AUDIO_FAMILY_IDS = [
   "thunderstorm",
   "ocean",
   "river",
-  "cafe",
+  "forest",
   "fireplace",
 ] as const;
 
@@ -47,6 +47,10 @@ export interface HyperfocusAudioVariantRef {
   levelId: HyperfocusAudioLevelId;
 }
 
+const HYPERFOCUS_LEGACY_FAMILY_ALIASES: Record<string, HyperfocusAudioFamilyId> = {
+  cafe: "forest",
+};
+
 const familyIds = new Set<string>(HYPERFOCUS_AUDIO_FAMILY_IDS);
 const levelIds = new Set<string>(HYPERFOCUS_AUDIO_LEVEL_IDS);
 
@@ -55,7 +59,7 @@ const familyLabelKeyParts: Record<HyperfocusAudioFamilyId, string> = {
   thunderstorm: "Thunderstorm",
   ocean: "Ocean",
   river: "River",
-  cafe: "Cafe",
+  forest: "Forest",
   fireplace: "Fireplace",
 };
 
@@ -114,14 +118,14 @@ export const HYPERFOCUS_AUDIO_FAMILIES = [
     id: "underwater",
     legacyId: "underwater",
     legacyAssetId: "focus-underwater",
-    labelKey: "hyperfocusSoundOcean",
+    labelKey: "hyperfocusSoundUnderwater",
     levels: makeLevels("underwater", ["Shallow Drift", "Deep Current", "Abyss Focus"]),
   },
   {
     id: "thunderstorm",
     legacyId: "thunderstorm",
     legacyAssetId: "focus-thunderstorm",
-    labelKey: "hyperfocusSoundRain",
+    labelKey: "hyperfocusSoundThunderstorm",
     levels: makeLevels("thunderstorm", ["Distant Rain", "Steady Storm", "Monsoon Wall"]),
   },
   {
@@ -135,15 +139,15 @@ export const HYPERFOCUS_AUDIO_FAMILIES = [
     id: "river",
     legacyId: "river",
     legacyAssetId: "focus-river",
-    labelKey: "hyperfocusSoundForest",
+    labelKey: "hyperfocusSoundRiver",
     levels: makeLevels("river", ["Brook", "Forest River", "Whitewater"]),
   },
   {
-    id: "cafe",
-    legacyId: "cafe",
-    legacyAssetId: "focus-cafe",
-    labelKey: "hyperfocusSoundCoffee",
-    levels: makeLevels("cafe", ["Quiet Corner", "Work Cafe", "Busy Rush"]),
+    id: "forest",
+    legacyId: "forest",
+    legacyAssetId: "focus-forest",
+    labelKey: "hyperfocusSoundForest",
+    levels: makeLevels("forest", ["Canopy Breeze", "Bird Canopy", "Forest Night"]),
   },
   {
     id: "fireplace",
@@ -174,16 +178,22 @@ export function getHyperfocusVariantId(
 }
 
 export function parseHyperfocusVariantId(id: string): HyperfocusAudioVariantRef | null {
+  const familyAlias = HYPERFOCUS_LEGACY_FAMILY_ALIASES[id];
+  if (familyAlias) {
+    return { familyId: familyAlias, levelId: "deep" };
+  }
+
   if (isHyperfocusAudioFamilyId(id)) {
     return { familyId: id, levelId: "deep" };
   }
 
   const [familyId, levelId, extra] = id.split(":");
-  if (extra !== undefined || !isHyperfocusAudioFamilyId(familyId) || !isHyperfocusAudioLevelId(levelId)) {
+  const aliasedFamilyId = HYPERFOCUS_LEGACY_FAMILY_ALIASES[familyId] ?? familyId;
+  if (extra !== undefined || !isHyperfocusAudioFamilyId(aliasedFamilyId) || !isHyperfocusAudioLevelId(levelId)) {
     return null;
   }
 
-  return { familyId, levelId };
+  return { familyId: aliasedFamilyId, levelId };
 }
 
 export function getHyperfocusAudioVariant(id: string): HyperfocusAudioVariant | undefined {

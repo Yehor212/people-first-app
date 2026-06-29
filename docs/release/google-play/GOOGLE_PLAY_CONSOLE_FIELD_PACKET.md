@@ -197,6 +197,9 @@ ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads:chec
 ```
 
 Do not hand-write the file and do not use Google's sample publisher id.
+Deploy it and verify the live `app-ads.txt` at the root of the developer
+website configured in Play Console/AdMob. A GitHub Pages project subpath is not
+enough proof by itself if AdMob crawls the host root.
 
 4. Re-run the Android release manifest/build proof.
 5. Re-check Play Console Ads, Advertising ID, and Data safety sections.

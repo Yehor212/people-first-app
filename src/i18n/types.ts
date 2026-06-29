@@ -1070,8 +1070,11 @@ export interface Translations {
   hyperfocusAmbientSound: string;
   hyperfocusSoundNone: string;
   hyperfocusSoundWhiteNoise: string;
+  hyperfocusSoundUnderwater: string;
+  hyperfocusSoundThunderstorm: string;
   hyperfocusSoundRain: string;
   hyperfocusSoundOcean: string;
+  hyperfocusSoundRiver: string;
   hyperfocusSoundForest: string;
   hyperfocusSoundCoffee: string;
   hyperfocusSoundFireplace: string;
@@ -1089,6 +1092,9 @@ export interface Translations {
   hyperfocusSoundRiverSoft: string;
   hyperfocusSoundRiverDeep: string;
   hyperfocusSoundRiverIntense: string;
+  hyperfocusSoundForestSoft: string;
+  hyperfocusSoundForestDeep: string;
+  hyperfocusSoundForestIntense: string;
   hyperfocusSoundCafeSoft: string;
   hyperfocusSoundCafeDeep: string;
   hyperfocusSoundCafeIntense: string;

@@ -1,6 +1,6 @@
 {
-  "version": "2026-06-20-real-source-intensity-v3",
-  "decision": "Gemini/Lyria UI candidates were rejected as music-like. The runtime Hyperfocus pack now uses real Mixkit/bundled natural SFX sources selected by semantic fit and measured intensity progression: soft < deep < intense for every family.",
+  "version": "2026-06-29-nature-source-intensity-v4",
+  "decision": "Gemini/Lyria UI candidates were rejected as music-like. The runtime Hyperfocus pack now uses real Mixkit/bundled natural SFX sources selected by semantic fit and measured intensity progression. The visible V2 nature pack replaces cafe/social noise with forest while preserving cafe as a legacy alias to forest.",
   "rejectedExternalCandidates": [
     {
       "provider": "Google Gemini/Lyria UI",
@@ -41,60 +41,64 @@
       "evidence": "River water flow and surroundings, wildlife environment in a river, water flowing in the river."
     },
     {
-      "name": "Mixkit Restaurant/Public Places SFX",
-      "url": "https://mixkit.co/free-sound-effects/restaurant/",
-      "evidence": "Hotel reception/restaurant, restaurant crowd talking ambience, big crowd talking loop; loud party/siren/children/crowd-event clips rejected."
-    },
-    {
       "name": "Pixabay Underwater/Fireplace/Nature",
       "url": "https://pixabay.com/sound-effects/search/underwater%20ambience/",
       "evidence": "Royalty-free fallback candidates found, but no direct MP3 was bundled because the static page did not expose a transparent download URL."
+    },
+    {
+      "name": "Mixkit Forest SFX",
+      "url": "https://mixkit.co/free-sound-effects/forest/",
+      "evidence": "Wind in the forest, Forest birds ambience, Forest at night; selected to replace the prior cafe/social-noise family in the V2 nature-first Hyperfocus set."
     }
   ],
   "metricGate": {
-    "version": "2026-06-20-real-source-intensity-v3",
-    "generatedAt": "2026-06-20T02:46:00Z",
+    "version": "2026-06-29-nature-source-intensity-v4",
+    "generatedAt": "2026-06-29T07:29:00Z",
     "metric": "intensityScore = weighted RMS + motion + zero-crossing activity; higher means denser/louder/noisier ambience.",
     "families": {
-      "cafe": {
+      "forest": {
         "soft": {
-          "fileName": "hyperfocus-cafe-soft.mp3",
-          "sourceTitle": "Hotel reception and restaurant",
-          "durationSeconds": 60,
-          "rmsDb": -27.6,
-          "motionDb": -43.3,
-          "peakDb": -5.5,
-          "zeroCrossingsPerSecond": 2055,
-          "intensityScore": 56,
-          "sha256": "fbb4154d0f4acfc9116b53f2788cded2d1bdcd2cb245b86396c28b61ab601184"
+          "fileName": "hyperfocus-forest-soft.mp3",
+          "sourceTitle": "Wind in the forest",
+          "durationSeconds": 25.3,
+          "rmsDb": -41.5,
+          "motionDb": -50.1,
+          "peakDb": -28.2,
+          "zeroCrossingsPerSecond": 5359.7,
+          "intensityScore": 44.5,
+          "sha256": "cf237d761f1b2f8977c19a384bda28163f7ef00b0ecabceb91a96a2c132b2528"
         },
         "deep": {
-          "fileName": "hyperfocus-cafe-deep.mp3",
-          "sourceTitle": "Restaurant crowd talking ambience",
-          "durationSeconds": 120,
-          "rmsDb": -24.5,
-          "motionDb": -41.4,
-          "peakDb": -1.8,
-          "zeroCrossingsPerSecond": 1727,
-          "intensityScore": 59.8,
-          "sha256": "c158ed1dad3eb4978ab3dd9c17fa41a70f3fa8a87dcf543a2bc6553191392a94"
+          "fileName": "hyperfocus-forest-deep.mp3",
+          "sourceTitle": "Forest birds ambience",
+          "durationSeconds": 151.6,
+          "rmsDb": -42.8,
+          "motionDb": -47.8,
+          "peakDb": -19.6,
+          "zeroCrossingsPerSecond": 7068.9,
+          "intensityScore": 48.3,
+          "sha256": "47ab079aac704576d45d252c416de1da31dd016b69b5b9a2eaaa720efb6c2411"
         },
         "intense": {
-          "fileName": "hyperfocus-cafe-intense.mp3",
-          "sourceTitle": "Big crowd talking loop",
-          "durationSeconds": 59.7,
-          "rmsDb": -18.7,
-          "motionDb": -38.1,
-          "peakDb": -4.2,
-          "zeroCrossingsPerSecond": 1493,
-          "intensityScore": 67.6,
-          "sha256": "a8e9d737d38aba57bca7f67ce6dd147e2bffd6574f780e691200615c06a2c65e"
+          "fileName": "hyperfocus-forest-intense.mp3",
+          "sourceTitle": "Forest at night",
+          "durationSeconds": 47,
+          "rmsDb": -31.8,
+          "motionDb": -31.5,
+          "peakDb": -18.2,
+          "zeroCrossingsPerSecond": 15206.8,
+          "intensityScore": 71.2,
+          "sha256": "5aa9d78e18efdb8589ae7257f20dc966df89cf5a8e47a0cea6f498583f05af46"
         },
         "acceptance": {
           "order": "soft < deep < intense",
-          "scores": [56, 59.8, 67.6],
+          "scores": [
+            44.5,
+            48.3,
+            71.2
+          ],
           "softToDeepGap": 3.8,
-          "deepToIntenseGap": 7.8,
+          "deepToIntenseGap": 22.9,
           "pass": true
         }
       },
@@ -134,7 +138,11 @@
         },
         "acceptance": {
           "order": "soft < deep < intense",
-          "scores": [26, 32.1, 53.5],
+          "scores": [
+            26,
+            32.1,
+            53.5
+          ],
           "softToDeepGap": 6.1,
           "deepToIntenseGap": 21.4,
           "pass": true
@@ -176,7 +184,11 @@
         },
         "acceptance": {
           "order": "soft < deep < intense",
-          "scores": [59.8, 67.3, 72.8],
+          "scores": [
+            59.8,
+            67.3,
+            72.8
+          ],
           "softToDeepGap": 7.5,
           "deepToIntenseGap": 5.5,
           "pass": true
@@ -218,7 +230,11 @@
         },
         "acceptance": {
           "order": "soft < deep < intense",
-          "scores": [41.5, 54.8, 88],
+          "scores": [
+            41.5,
+            54.8,
+            88
+          ],
           "softToDeepGap": 13.3,
           "deepToIntenseGap": 33.2,
           "pass": true
@@ -260,7 +276,11 @@
         },
         "acceptance": {
           "order": "soft < deep < intense",
-          "scores": [55.4, 59.4, 65.6],
+          "scores": [
+            55.4,
+            59.4,
+            65.6
+          ],
           "softToDeepGap": 4,
           "deepToIntenseGap": 6.2,
           "pass": true
@@ -302,7 +322,11 @@
         },
         "acceptance": {
           "order": "soft < deep < intense",
-          "scores": [34, 54.9, 61.7],
+          "scores": [
+            34,
+            54.9,
+            61.7
+          ],
           "softToDeepGap": 20.9,
           "deepToIntenseGap": 6.8,
           "pass": true
@@ -311,84 +335,84 @@
     }
   },
   "assets": {
-    "cafe:soft": {
-      "fileName": "hyperfocus-cafe-soft.mp3",
+    "forest:soft": {
+      "fileName": "hyperfocus-forest-soft.mp3",
       "provider": "Mixkit",
-      "model": "real-source-intensity-pack",
-      "generationId": "real-source-intensity-cafe-soft-2026-06-20",
-      "generatedAt": "2026-06-20T02:46:00Z",
-      "source": "Hotel reception and restaurant (https://mixkit.co/free-sound-effects/restaurant/)",
+      "model": "real-source-nature-pack",
+      "generationId": "mixkit-forest-soft-1237-2026-06-29",
+      "generatedAt": "2026-06-29T07:29:00Z",
+      "source": "Wind in the forest (https://mixkit.co/free-sound-effects/forest/, item 1237)",
       "sourceLicense": "https://mixkit.co/license/",
-      "publicSha256": "fbb4154d0f4acfc9116b53f2788cded2d1bdcd2cb245b86396c28b61ab601184",
-      "bytes": 1834920,
+      "publicSha256": "cf237d761f1b2f8977c19a384bda28163f7ef00b0ecabceb91a96a2c132b2528",
+      "bytes": 788018,
       "metrics": {
-        "durationSeconds": 60,
-        "rmsDb": -27.6,
-        "motionDb": -43.3,
-        "peakDb": -5.5,
-        "zeroCrossingsPerSecond": 2055,
-        "intensityScore": 56
+        "durationSeconds": 25.3,
+        "rmsDb": -41.5,
+        "motionDb": -50.1,
+        "peakDb": -28.2,
+        "zeroCrossingsPerSecond": 5359.7,
+        "intensityScore": 44.5
       },
       "audibleReview": {
         "reviewer": "codex-source-selection-with-metric-gate",
         "noVocals": true,
-        "noSpeech": "ambient-room-tone-with-possible-indistinct-room-murmur",
+        "noSpeech": true,
         "noMelody": true,
         "noBeat": true,
         "noForegroundDistractions": true,
         "natureOrFocusAmbienceSource": true
       }
     },
-    "cafe:deep": {
-      "fileName": "hyperfocus-cafe-deep.mp3",
+    "forest:deep": {
+      "fileName": "hyperfocus-forest-deep.mp3",
       "provider": "Mixkit",
-      "model": "real-source-intensity-pack",
-      "generationId": "real-source-intensity-cafe-deep-2026-06-20",
-      "generatedAt": "2026-06-20T02:46:00Z",
-      "source": "Restaurant crowd talking ambience (https://mixkit.co/free-sound-effects/restaurant/)",
+      "model": "real-source-nature-pack",
+      "generationId": "mixkit-forest-deep-1210-2026-06-29",
+      "generatedAt": "2026-06-29T07:29:00Z",
+      "source": "Forest birds ambience (https://mixkit.co/free-sound-effects/forest/, item 1210)",
       "sourceLicense": "https://mixkit.co/license/",
-      "publicSha256": "c158ed1dad3eb4978ab3dd9c17fa41a70f3fa8a87dcf543a2bc6553191392a94",
-      "bytes": 3674106,
+      "publicSha256": "47ab079aac704576d45d252c416de1da31dd016b69b5b9a2eaaa720efb6c2411",
+      "bytes": 4716152,
       "metrics": {
-        "durationSeconds": 120,
-        "rmsDb": -24.5,
-        "motionDb": -41.4,
-        "peakDb": -1.8,
-        "zeroCrossingsPerSecond": 1727,
-        "intensityScore": 59.8
+        "durationSeconds": 151.6,
+        "rmsDb": -42.8,
+        "motionDb": -47.8,
+        "peakDb": -19.6,
+        "zeroCrossingsPerSecond": 7068.9,
+        "intensityScore": 48.3
       },
       "audibleReview": {
         "reviewer": "codex-source-selection-with-metric-gate",
         "noVocals": true,
-        "noSpeech": "ambient-room-tone-with-possible-indistinct-room-murmur",
+        "noSpeech": true,
         "noMelody": true,
         "noBeat": true,
-        "noForegroundDistractions": true,
+        "noForegroundDistractions": "bird texture requires human fatigue review",
         "natureOrFocusAmbienceSource": true
       }
     },
-    "cafe:intense": {
-      "fileName": "hyperfocus-cafe-intense.mp3",
+    "forest:intense": {
+      "fileName": "hyperfocus-forest-intense.mp3",
       "provider": "Mixkit",
-      "model": "real-source-intensity-pack",
-      "generationId": "real-source-intensity-cafe-intense-2026-06-20",
-      "generatedAt": "2026-06-20T02:46:00Z",
-      "source": "Big crowd talking loop (https://mixkit.co/free-sound-effects/public-places/)",
+      "model": "real-source-nature-pack",
+      "generationId": "mixkit-forest-intense-1224-2026-06-29",
+      "generatedAt": "2026-06-29T07:29:00Z",
+      "source": "Forest at night (https://mixkit.co/free-sound-effects/forest/, item 1224)",
       "sourceLicense": "https://mixkit.co/license/",
-      "publicSha256": "a8e9d737d38aba57bca7f67ce6dd147e2bffd6574f780e691200615c06a2c65e",
-      "bytes": 1811286,
+      "publicSha256": "5aa9d78e18efdb8589ae7257f20dc966df89cf5a8e47a0cea6f498583f05af46",
+      "bytes": 1437810,
       "metrics": {
-        "durationSeconds": 59.7,
-        "rmsDb": -18.7,
-        "motionDb": -38.1,
-        "peakDb": -4.2,
-        "zeroCrossingsPerSecond": 1493,
-        "intensityScore": 67.6
+        "durationSeconds": 47,
+        "rmsDb": -31.8,
+        "motionDb": -31.5,
+        "peakDb": -18.2,
+        "zeroCrossingsPerSecond": 15206.8,
+        "intensityScore": 71.2
       },
       "audibleReview": {
         "reviewer": "codex-source-selection-with-metric-gate",
         "noVocals": true,
-        "noSpeech": "ambient-room-tone-with-possible-indistinct-room-murmur",
+        "noSpeech": true,
         "noMelody": true,
         "noBeat": true,
         "noForegroundDistractions": true,

@@ -62,6 +62,15 @@ describe("useHyperfocusAudio master app sound", () => {
     expect(generator.playDirect).toHaveBeenCalledWith("river:deep");
   });
 
+  it("maps the removed cafe option to forest for legacy selections", () => {
+    const { result } = renderHook(() => useHyperfocusAudio({ isRunning: true, isPaused: false }));
+
+    act(() => result.current.handleSoundSelect("cafe"));
+
+    expect(result.current.selectedSoundId).toBe("forest:deep");
+    expect(generator.playDirect).toHaveBeenCalledWith("forest:deep");
+  });
+
   it("does not start focus ambience while app sound is muted", () => {
     audioSettingsState.snapshot = {
       muted: true,

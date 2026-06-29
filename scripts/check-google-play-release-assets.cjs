@@ -360,6 +360,9 @@ function assertAdDeclarationMatchesArtifact(packet) {
     "ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads:check",
     "Do not hand-write the file",
     "do not use Google's sample publisher id",
+    "Play Console/AdMob",
+    "GitHub Pages project subpath",
+    "enough proof by itself",
   ]);
 
   assertIncludes(GOOGLE_PLAY_DRAFT_AUDIT, [
@@ -367,6 +370,8 @@ function assertAdDeclarationMatchesArtifact(packet) {
     "npm run google-play:app-ads:check",
     "Do not invent this value",
     "Google's sample publisher id",
+    "LOCAL READY / PUBLIC UNVERIFIED",
+    "root of the developer website configured in Play Console/AdMob",
   ]);
 
   const sourceManifest = readIfExists(ANDROID_MANIFEST);

@@ -23,10 +23,11 @@ vi.mock("framer-motion", async () => {
 const t = {
   hyperfocusAmbientSound: "Ambient sound",
   hyperfocusSoundNone: "None",
+  hyperfocusSoundUnderwater: "Underwater",
+  hyperfocusSoundThunderstorm: "Thunderstorm",
   hyperfocusSoundOcean: "Ocean",
-  hyperfocusSoundRain: "Rain",
+  hyperfocusSoundRiver: "River",
   hyperfocusSoundForest: "Forest",
-  hyperfocusSoundCoffee: "Coffee",
   hyperfocusSoundFireplace: "Fireplace",
   hyperfocusSoundIntensity: "Sound intensity",
   hyperfocusSoundFireplaceSoft: "Embers",
@@ -58,6 +59,18 @@ function renderSelector(props: Partial<React.ComponentProps<typeof HyperfocusSou
 }
 
 describe("HyperfocusSoundSelector three-level audio", () => {
+  it("renders a clear nature-first set of unique sound families", () => {
+    renderSelector();
+
+    expect(screen.getByRole("button", { name: /underwater/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /thunderstorm/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ocean/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /river/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /forest/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /fireplace/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /coffee|cafe/i })).toBeNull();
+  });
+
   it("shows three intensity levels for the selected sound family", () => {
     const { onSoundSelect } = renderSelector({ selectedSoundId: "fireplace:deep" });
 

@@ -67,7 +67,7 @@ describe('SOUNDS constant', () => {
     expect(types).toContain('thunderstorm');
     expect(types).toContain('ocean');
     expect(types).toContain('river');
-    expect(types).toContain('cafe');
+    expect(types).toContain('forest');
     expect(types).toContain('fireplace');
   });
 
@@ -123,6 +123,10 @@ describe('getSoundByType', () => {
 
   it('returns undefined for type "none"', () => {
     expect(getSoundByType('none')).toBeUndefined();
+  });
+
+  it('maps the old cafe type to the nature-first forest sound', () => {
+    expect(getSoundByType('cafe')?.type).toBe('forest');
   });
 
   it('returns undefined for an unknown type', () => {

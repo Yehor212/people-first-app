@@ -18,6 +18,7 @@ const expectedAssetIds = [
   "focus-thunderstorm",
   "focus-ocean",
   "focus-river",
+  "focus-forest",
   "focus-cafe",
   "focus-fireplace",
 ];
@@ -44,6 +45,7 @@ describe("app audio asset manifest", () => {
     expect(getAppAudioAssetSrc("measured-breath")).toContain("/sounds/measured-breath.mp3");
     expect(getAppAudioAssetSrc("orb-ambience")).toContain("/sounds/polished-stone-and-paper.mp3");
     expect(getAppAudioAssetSrc("diary-reflection-loop")).toContain("/sounds/v2-diary-reflection-loop.mp3");
+    expect(getAppAudioAsset("focus-forest")?.publicPath).toBe("sounds/hyperfocus/hyperfocus-forest-deep.mp3");
     expect(getAppAudioAsset("focus-cafe")?.publicPath).toBe("sounds/cafe-noise-32940.mp3");
   });
 

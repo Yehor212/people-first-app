@@ -1,12 +1,14 @@
 {
-  "version": "2026-06-19",
+  "version": "2026-06-29-nature-source-v4",
   "project": "ZenFlow Hyperfocus three-level ambient audio",
   "modelPolicy": {
     "requiredProvider": "Google Gemini family only",
     "allowedCurrentCandidate": "lyria-3-clip",
     "blockedFallback": "elevenlabs-sfx is available but disallowed by user requirement",
     "currentToolFinding": "Gemini TTS and Google Lyria music are available; no Gemini SFX/soundscape-specific model is exposed in the current tool list.",
-    "pilotGate": "Generate one Lyria 3 Clip pilot only after confirming we accept music-model soundscape output for non-musical ambience. If the pilot contains melody, vocals, beat, or song structure, stop and wait for a Gemini soundscape/SFX-capable model."
+    "pilotGate": "Generate one Lyria 3 Clip pilot only after confirming we accept music-model soundscape output for non-musical ambience. If the pilot contains melody, vocals, beat, or song structure, stop and wait for a Gemini soundscape/SFX-capable model.",
+    "currentDecision": "Use free real-source Mixkit nature recordings for the shipped V2 pack; generated candidates remain quarantine-only until they pass QC.",
+    "legacyCafePolicy": "The old cafe/social-noise family is not a visible V2 nature option; cafe ids normalize to forest for compatibility."
   },
   "assetPolicy": {
     "format": "mp3",
@@ -236,44 +238,44 @@
       ]
     },
     {
-      "id": "cafe",
-      "currentFile": "public/sounds/cafe-noise-32940.mp3",
-      "productRole": "social masking, body-doubling feeling, work mode",
+      "id": "forest",
+      "currentFile": "public/sounds/hyperfocus/hyperfocus-forest-deep.mp3",
+      "productRole": "nature-first forest ambience, organic masking, non-social focus bed",
       "levels": [
         {
           "id": "soft",
-          "label": "Quiet Corner",
-          "fileName": "hyperfocus-cafe-soft.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: quiet cafe corner, distant cups and soft room murmur, no intelligible speech, no music, no espresso machine spike, calm work atmosphere.",
+          "label": "Canopy Breeze",
+          "fileName": "hyperfocus-forest-soft.mp3",
+          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: soft wind moving through a forest canopy, natural air texture, sparse leaves, gentle masking, no speech, no melody, no beat, no alarms, no harsh wind spike, no foreground distraction.",
           "rejectIf": [
             "clear words",
             "music",
-            "loud machine",
-            "laughter foreground"
+            "alarm",
+            "harsh wind spike"
           ]
         },
         {
           "id": "deep",
-          "label": "Work Cafe",
-          "fileName": "hyperfocus-cafe-deep.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: medium cafe ambience, soft anonymized conversation bed, cups and gentle movement, no intelligible speech, no music, no sudden chair scrape.",
+          "label": "Bird Canopy",
+          "fileName": "hyperfocus-forest-deep.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: balanced forest canopy bed with natural bird texture and soft air movement, medium density for deep focus, no speech, no voices, no melody, no beat, no sudden close foreground calls, no alarm cues.",
           "rejectIf": [
-            "words",
+            "human speech",
             "song",
-            "sharp scrape",
-            "loud laugh"
+            "sharp foreground bird call",
+            "fatigue after looped listening"
           ]
         },
         {
           "id": "intense",
-          "label": "Busy Rush",
-          "fileName": "hyperfocus-cafe-intense.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: busy cafe rush as smooth social noise mask, dense but non-distracting, no intelligible words, no music, no alarms, no harsh clatter spikes.",
+          "label": "Forest Night",
+          "fileName": "hyperfocus-forest-intense.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: denser night forest texture with continuous natural masking, insects and distant canopy movement kept even and focus-safe, no speech, no voices, no melody, no beat, no alarms, no foreground scare cue.",
           "rejectIf": [
-            "intelligible speech",
+            "clear words",
             "alarm",
             "song",
-            "dish crash"
+            "scary foreground cue"
           ]
         }
       ]

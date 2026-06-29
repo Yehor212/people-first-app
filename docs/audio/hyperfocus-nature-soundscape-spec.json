@@ -2,35 +2,35 @@
   "version": 1,
   "project": "ZenFlow Hyperfocus nature concentration soundscapes",
   "purpose": "Replace flat V1 Hyperfocus ambient choices with six environmental sound families, each with soft/deep/intense levels, without allowing music-like outputs.",
-  "modelPolicy": {
-    "requiredProvider": "Google Gemini/Lyria family only",
-    "preferredPilotModel": "lyria-3-clip",
-    "fallbackProvidersAllowed": false,
-    "warning": "Lyria is a music-capable model. Treat every output as untrusted until objective QC and audible review prove it is a non-musical field-recording style ambience.",
-    "disallowedPromptSteering": [
-      "artist names",
-      "K-pop references",
-      "celebrity references",
-      "catchy, upbeat, melodic, soundtrack, song-about wording"
+  "sourcePolicy": {
+    "preferredSource": "free real-world nature recordings bundled in public/sounds/hyperfocus",
+    "currentProvider": "Mixkit free sound effects",
+    "aiGenerationPolicy": "Generated pilots stay quarantined until objective QC and audible review prove they are non-musical, loop-safe environmental beds.",
+    "disallowedAudioTraits": [
+      "artist references or pop/music genre steering",
+      "vocals, spoken words, lyrics, whispering, or humming",
+      "melody, beat, drums, instruments, hooks, risers, drops, intros, or outros",
+      "sudden alarms, notification-like transients, clipping, harsh peaks, or scare moments",
+      "social chatter as a visible V2 nature-family option"
     ]
   },
   "assetPolicy": {
     "format": "mp3",
     "durationSeconds": {
-      "min": 27,
-      "target": 30,
-      "max": 33
+      "min": 20,
+      "targetRange": "30-120",
+      "max": 180
     },
     "loudness": "quiet focus bed; no clipping; no harsh transient spikes; no fatigue after 10 minutes looped",
     "storagePath": "public/sounds/hyperfocus/hyperfocus-<family>-<level>.mp3"
   },
-  "generationGate": {
-    "requiredPilotVariant": "fireplace:soft",
+  "qualityGate": {
     "fullPackAllowedOnlyAfter": [
-      "pilot passes validator prompt policy",
-      "pilot passes afinfo/afconvert probe",
-      "pilot passes objective size/duration/clipping/loop checks",
-      "pilot passes audible review: no song, no melody, no beat, no vocals, no instruments"
+      "source license and local bundled path are recorded",
+      "afinfo probe confirms readable MP3 duration and sample rate",
+      "manifest sha256 and bytes match local files",
+      "objective size/duration/loop-safety checks pass or are explicitly marked REVIEW_REQUIRED",
+      "audible review confirms no song, melody, beat, vocals, intelligible speech, or fatigue-inducing spikes"
     ]
   },
   "families": [
@@ -263,17 +263,19 @@
       ]
     },
     {
-      "id": "cafe",
-      "kind": "human-environment",
-      "label": "Cafe focus",
-      "originalAsset": "sounds/cafe-noise-32940.mp3",
-      "focusRole": "social masking for people who focus better with neutral room activity",
+      "id": "forest",
+      "kind": "nature",
+      "label": "Forest canopy",
+      "originalAsset": "sounds/hyperfocus/hyperfocus-forest-deep.mp3",
+      "focusRole": "living forest texture for users who focus with airy, organic, non-social ambience",
       "levels": [
         {
           "id": "soft",
-          "label": "Quiet Corner",
-          "fileName": "hyperfocus-cafe-soft.mp3",
-          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a real-world human environment soundscape, not a song. Scene: quiet cafe corner, soft room tone, distant cups, low indistinct human murmur, no intelligible speech. Level: soft, sparse, private, not busy. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "label": "Canopy Breeze",
+          "fileName": "hyperfocus-forest-soft.mp3",
+          "source": "Wind in the forest, Mixkit item 1237",
+          "durationSeconds": 25.36,
+          "selectionRationale": "Soft wind bed with minimal semantic content; replaces cafe chatter for users who need gentle natural masking.",
           "rejectIf": [
             "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
             "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
@@ -283,13 +285,16 @@
             "sounds like pop or commercial music soundtrack instead of environmental ambience",
             "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
             "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
-          ]
+          ],
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature forest soundscape, not a song. Scene: wind in the forest canopy, soft leaves, airy organic room for attention, minimal wildlife. Level: soft, delicate, close and calm. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions."
         },
         {
           "id": "deep",
-          "label": "Work Cafe",
-          "fileName": "hyperfocus-cafe-deep.mp3",
-          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a real-world human environment soundscape, not a song. Scene: warm work cafe, espresso machine far away, soft cups, chairs, indistinct low conversation bed. Level: balanced masking, stable room activity, no words. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "label": "Bird Canopy",
+          "fileName": "hyperfocus-forest-deep.mp3",
+          "source": "Forest birds ambience, Mixkit item 1210",
+          "durationSeconds": 151.59,
+          "selectionRationale": "Long natural bed for the default balanced level; more texture than soft wind, still without human speech or cafe cues.",
           "rejectIf": [
             "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
             "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
@@ -299,13 +304,16 @@
             "sounds like pop or commercial music soundtrack instead of environmental ambience",
             "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
             "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
-          ]
+          ],
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature forest soundscape, not a song. Scene: forest canopy with distant birds and rounded natural ambience, no human presence, no intelligible calls. Level: balanced texture, medium body, steady attention support. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions."
         },
         {
           "id": "intense",
-          "label": "Busy Rush",
-          "fileName": "hyperfocus-cafe-intense.mp3",
-          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a real-world human environment soundscape, not a song. Scene: busy cafe ambience, layered but blurred room murmur, cups, gentle movement, no intelligible speech. Level: intense social masking, dense but smooth, no music in the cafe. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "label": "Forest Night",
+          "fileName": "hyperfocus-forest-intense.mp3",
+          "source": "Forest at night, Mixkit item 1224",
+          "durationSeconds": 47.07,
+          "selectionRationale": "Densest measured forest variant for stronger masking; still non-musical and free of human speech.",
           "rejectIf": [
             "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
             "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
@@ -315,7 +323,8 @@
             "sounds like pop or commercial music soundtrack instead of environmental ambience",
             "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
             "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
-          ]
+          ],
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature forest soundscape, not a song. Scene: dense forest night ambience, layered leaves and natural bed, strong masking without alarm, panic, or harsh foreground spikes. Level: intense natural masking, broad but not chaotic. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions."
         }
       ]
     },
@@ -376,5 +385,26 @@
         }
       ]
     }
-  ]
+  ],
+  "modelPolicy": {
+    "requiredProvider": "Google Gemini/Lyria family only",
+    "preferredPilotModel": "lyria-3-clip",
+    "fallbackProvidersAllowed": false,
+    "warning": "Lyria is a music-capable model. Treat generated outputs as untrusted until objective QC and audible review prove they are non-musical field-recording style ambience.",
+    "disallowedPromptSteering": [
+      "artist names",
+      "K-pop references",
+      "celebrity references",
+      "catchy, upbeat, melodic, soundtrack, song-about wording"
+    ]
+  },
+  "generationGate": {
+    "requiredPilotVariant": "fireplace:soft",
+    "fullPackAllowedOnlyAfter": [
+      "pilot passes validator prompt policy",
+      "pilot passes afinfo/afconvert probe",
+      "pilot passes objective size/duration/clipping/loop checks or is marked real-source REVIEW_REQUIRED",
+      "pilot passes audible review: no song, no melody, no beat, no vocals, no instruments"
+    ]
+  }
 }
