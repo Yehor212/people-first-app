@@ -86,6 +86,7 @@ const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for healthy WebGL sessions.
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 const ORB_FRAME_CLOCK_REANCHOR_GAP_MS = 750;
 const ORB_MAX_FRAME_DELTA_SECONDS = 0.05;
+const ORB_MAX_WORKER_VISIBLE_DELTA_SECONDS = WEBGL_FRAME_INTERVAL / 1000;
 const ORB_MAX_TRANSITION_DELTA_SECONDS = 0.12;
 export const ORB_SHADER_TIME_WRAP_SECONDS = Math.PI * 6000;
 
@@ -252,6 +253,27 @@ export function resolveOrbTransitionDeltaSeconds(
   if (elapsedMs > ORB_FRAME_CLOCK_REANCHOR_GAP_MS) return 0;
 
   return Math.min(elapsedMs / 1000, ORB_MAX_TRANSITION_DELTA_SECONDS);
+}
+
+export function resolveOrbWorkerFrameDeltaSeconds(
+  previousFrameAtMs: number,
+  currentFrameAtMs: number,
+): number {
+  if (!Number.isFinite(previousFrameAtMs) || previousFrameAtMs <= 0) return 0;
+  if (!Number.isFinite(currentFrameAtMs)) return 0;
+
+  const elapsedMs = currentFrameAtMs - previousFrameAtMs;
+  if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 0;
+  if (elapsedMs > ORB_FRAME_CLOCK_REANCHOR_GAP_MS) return 0;
+
+  return Math.min(elapsedMs / 1000, ORB_MAX_WORKER_VISIBLE_DELTA_SECONDS);
+}
+
+export function resolveOrbWorkerTransitionDeltaSeconds(
+  previousFrameAtMs: number,
+  currentFrameAtMs: number,
+): number {
+  return resolveOrbWorkerFrameDeltaSeconds(previousFrameAtMs, currentFrameAtMs);
 }
 
 function normalizeOrbShaderTime(timeSeconds: number, wrapSeconds = ORB_SHADER_TIME_WRAP_SECONDS): number {
@@ -1056,8 +1078,13 @@ export const ValenceOrb = memo(function ValenceOrb({
         return;
       }
       // Re-anchor instead of catching up after hidden tabs, reload restore, or long stalls.
-      const dt = resolveOrbFrameDeltaSeconds(state.lastFrame, timestamp);
-      const transitionDt = resolveOrbTransitionDeltaSeconds(state.lastFrame, timestamp);
+      const isWorkerFrame = Boolean(workerRenderer);
+      const dt = isWorkerFrame
+        ? resolveOrbWorkerFrameDeltaSeconds(state.lastFrame, timestamp)
+        : resolveOrbFrameDeltaSeconds(state.lastFrame, timestamp);
+      const transitionDt = isWorkerFrame
+        ? resolveOrbWorkerTransitionDeltaSeconds(state.lastFrame, timestamp)
+        : resolveOrbTransitionDeltaSeconds(state.lastFrame, timestamp);
       state.lastFrame = timestamp;
 
       // Shimmer decay: dt-based exponential (~0.8s half-life, frame-rate independent).

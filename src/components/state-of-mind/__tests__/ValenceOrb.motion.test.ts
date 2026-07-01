@@ -17,6 +17,8 @@ import {
   resolveOrbShaderTime,
   resolveOrbTransitionDeltaSeconds,
   resolveOrbTransitionSettings,
+  resolveOrbWorkerFrameDeltaSeconds,
+  resolveOrbWorkerTransitionDeltaSeconds,
   resolveOrbWrappedTimeDelta,
   resetOrbRuntimeSnapshotsForTests,
   shouldApplyWorkerWebGLUpgrade,
@@ -433,6 +435,18 @@ describe("ValenceOrb motion profile", () => {
     expect(resolveOrbTransitionDeltaSeconds(1000, 1100)).toBeCloseTo(0.1);
     expect(resolveOrbTransitionDeltaSeconds(1000, 1200)).toBeCloseTo(0.12);
     expect(resolveOrbTransitionDeltaSeconds(1000, 20_000)).toBe(0);
+  });
+
+  it("caps worker visible deltas to one healthy WebGL frame under backpressure", () => {
+    const healthyFrameSeconds = 1 / 60;
+
+    expect(resolveOrbWorkerFrameDeltaSeconds(0, 1000)).toBe(0);
+    expect(resolveOrbWorkerFrameDeltaSeconds(1000, 1016)).toBeCloseTo(0.016);
+    expect(resolveOrbWorkerFrameDeltaSeconds(1000, 1100)).toBeCloseTo(healthyFrameSeconds, 4);
+    expect(resolveOrbWorkerFrameDeltaSeconds(1000, 20_000)).toBe(0);
+
+    expect(resolveOrbWorkerTransitionDeltaSeconds(1000, 1100)).toBeCloseTo(healthyFrameSeconds, 4);
+    expect(resolveOrbWorkerTransitionDeltaSeconds(1000, 20_000)).toBe(0);
   });
 
   it("keeps long-running shader time bounded without changing frame cadence", () => {
@@ -1228,7 +1242,7 @@ describe("ValenceOrb motion profile", () => {
       });
 
       act(() => {
-        flushFrameAt(3000);
+        flushFrameAt(2600);
       });
       await act(async () => {
         await Promise.resolve();
@@ -1236,7 +1250,7 @@ describe("ValenceOrb motion profile", () => {
       });
 
       expect(renderMessages.length).toBeGreaterThanOrEqual(2);
-      expect(renderMessages[1].payload.time - firstRenderTime).toBeLessThanOrEqual(0.05);
+      expect(renderMessages[1].payload.time - firstRenderTime).toBeLessThanOrEqual(0.02);
     } finally {
       Object.defineProperty(window, "innerWidth", {
         configurable: true,
