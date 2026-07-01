@@ -48,9 +48,16 @@ vi.mock("@/lib/logger", () => ({
   logger: { warn: vi.fn() },
 }));
 
+vi.mock("@/lib/audioManager", () => ({
+  playSound: vi.fn(),
+}));
+
 // --- import under test after mocks ---
 
 import { useFocusHandlers } from "../useFocusHandlers";
+import { triggerXpPopup } from "@/components/XpPopup";
+import { playSound } from "@/lib/audioManager";
+import { updateAllQuestsProgress } from "@/lib/randomQuests";
 
 describe("useFocusHandlers", () => {
   beforeEach(() => {
@@ -62,12 +69,13 @@ describe("useFocusHandlers", () => {
     vi.useRealTimers();
   });
 
-  const renderFocusHandlers = () =>
+  const renderFocusHandlers = (options: { rewardsEnabled?: boolean } = {}) =>
     renderHook(() =>
       useFocusHandlers({
         earnTreats: mockEarnTreats,
         updateChallengeProgress: mockUpdateChallengeProgress,
         checkForFeatureUnlocks: mockCheckForFeatureUnlocks,
+        ...options,
       })
     );
 
@@ -105,6 +113,22 @@ describe("useFocusHandlers", () => {
       treatReason: "Focus 20min",
       haptic: "focusCompleted",
     });
+  });
+
+  it("V2 neutral mode skips focus rewards, XP popup, and plays neutral completion feedback", () => {
+    vi.mocked(updateAllQuestsProgress).mockReturnValueOnce([
+      { title: "Focus quest", reward: { xp: 30 } },
+    ] as never);
+    const { result } = renderFocusHandlers({ rewardsEnabled: false });
+    const session = makeSession(20);
+
+    act(() => {
+      result.current.handleCompleteFocusSession(session);
+    });
+
+    expect(mockRewardUser).not.toHaveBeenCalled();
+    expect(triggerXpPopup).not.toHaveBeenCalled();
+    expect(playSound).toHaveBeenCalledWith("complete");
   });
 
   it("handleCompleteFocusSession shows mindful moment for sessions >= 5min", () => {

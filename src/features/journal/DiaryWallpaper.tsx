@@ -1,7 +1,9 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/themeStore";
+import auroraMountainsUrl from "@/assets/journal/aurora-mountains.webp";
+import daylightJournalWallpaperUrl from "@/assets/journal/daylight-journal-wallpaper.webp";
 
 type DiaryWallpaperSurface = "page" | "empty";
 type DiaryWallpaperTone = "day" | "night";
@@ -110,13 +112,20 @@ export const DiaryWallpaper = memo(function DiaryWallpaper({
       data-wallpaper-tone={tone}
       data-wallpaper-motion="static"
       data-wallpaper-platform="universal"
+      style={{
+        "--journal-wallpaper-day-scenic-image": `url(${daylightJournalWallpaperUrl})`,
+        "--journal-wallpaper-night-scenic-image": `url(${auroraMountainsUrl})`,
+      } as CSSProperties}
     >
+      <span className="journal-wallpaper__scenic-vista" />
       <span className="journal-wallpaper__sky" />
       <span className="journal-wallpaper__horizon" />
       <span className="journal-wallpaper__daybreak-arc" />
       <span className="journal-wallpaper__moon-gate" />
       <span className="journal-wallpaper__ink-river" />
       <span className="journal-wallpaper__prism-field" />
+      <span className="journal-wallpaper__starfield" />
+      <span className="journal-wallpaper__deep-stars" />
       <span className="journal-wallpaper__starlace" />
       <span className="journal-wallpaper__memory-bloom" />
       <span className="journal-wallpaper__luminance-wash" />

@@ -14,7 +14,7 @@
   --desktop-page-warm: hsl(var(--zf-warm));
 
   position: relative;
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
   overflow-x: hidden;
   background:
     radial-gradient(circle at 50% 12%, hsl(var(--zf-role-focus) / 0.2), transparent 28rem),
@@ -23,10 +23,10 @@
   color: var(--desktop-page-text);
   isolation: isolate;
   padding:
-    calc(env(safe-area-inset-top) + 1rem)
-    max(1rem, env(safe-area-inset-right))
-    calc(env(safe-area-inset-bottom) + 2rem)
-    max(1rem, env(safe-area-inset-left));
+    calc(var(--safe-top) + 1rem)
+    max(1rem, var(--safe-right))
+    calc(var(--safe-bottom) + 2rem)
+    max(1rem, var(--safe-left));
 }
 
 .desktop-download-page::before {
@@ -139,7 +139,7 @@
 .desktop-download-page__hero {
   position: relative;
   display: grid;
-  min-height: min(40.5rem, calc(100svh - 5rem));
+  min-height: min(40.5rem, calc(var(--app-viewport-height) - 5rem));
   width: min(74rem, 100%);
   margin: 0 auto;
   padding: 3.35rem 0 2.35rem;
@@ -631,7 +631,7 @@
 
 @media (max-width: 560px) {
   .desktop-download-page {
-    padding-inline: max(0.9rem, env(safe-area-inset-left), env(safe-area-inset-right));
+    padding-inline: max(0.9rem, var(--safe-left), var(--safe-right));
   }
 
   .desktop-download-page__nav {

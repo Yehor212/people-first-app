@@ -51,7 +51,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(self), geolocation=(), interest-cohort=()"
+          "value": "accelerometer=(), ambient-light-sensor=(), autoplay=(self), battery=(self), bluetooth=(), browsing-topics=(), camera=(), cross-origin-isolated=(), display-capture=(), document-domain=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(self), hid=(), idle-detection=(), interest-cohort=(), magnetometer=(), microphone=(self), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), usb=(), web-share=(self), xr-spatial-tracking=()"
         },
         {
           "key": "Strict-Transport-Security",

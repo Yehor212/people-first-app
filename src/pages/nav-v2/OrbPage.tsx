@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { PluginListenerHandle } from "@capacitor/core";
 import { Volume2, VolumeX } from "lucide-react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
@@ -6,9 +7,12 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeStore } from "@/stores/themeStore";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
+import { useAudioComfortSettings } from "@/hooks/useAudioComfortSettings";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
 import { getAppAudioAssetSrc } from "@/lib/appAudioAssets";
+import { clearAppAudioMediaSession, setAppAudioMediaSession } from "@/lib/audioMediaSession";
+import { logger } from "@/lib/logger";
 import { CANONICAL_ORB_ANIMATION_SPEED } from "@/components/state-of-mind/ValenceOrb";
 import { CosmicBgAdapter } from "./CosmicBgAdapter";
 import { useCosmicParallax } from "./useCosmicParallax";
@@ -20,7 +24,7 @@ import { useOrbMoodFlow } from "./useOrbMoodFlow";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 import type { MoodEntry } from "@/types";
 
-const V1_VALENCE_ORB_SIZE = 280;
+const BASE_VALENCE_ORB_SIZE = 280;
 const ORB_AMBIENCE_AUDIO_SRC = getAppAudioAssetSrc("orb-ambience");
 
 /**
@@ -93,29 +97,38 @@ export const OrbPage = memo(function OrbPage({
     handleOpenDiary,
   } = useOrbMoodFlow({ navigateToPage, onAddMood });
   const shouldRunAmbientMotion = useShouldAnimate({ respectRuntimePerformance: false });
+  const shouldRunDecorativeMotion = useShouldAnimate();
   const appAudioSettings = useAppAudioSettings();
-  const ambienceVolume = appAudioSettings.muted ? 0 : Math.max(0, Math.min(1, appAudioSettings.volume * 0.36));
+  const audioComfort = useAudioComfortSettings();
+  const canPlayOrbAmbience = !appAudioSettings.muted && audioComfort.canPlayAmbientAsset("orb-ambience");
+  const ambienceVolume = canPlayOrbAmbience ? Math.max(0, Math.min(1, appAudioSettings.volume * 0.36)) : 0;
   const ambienceToggleLabel = isAmbiencePlaying
     ? tx.orbAmbiencePause || "Pause orb ambience"
     : ambienceAudioError
       ? tx.audioRetry || "Retry"
       : tx.orbAmbiencePlay || "Play orb ambience";
 
+  const stopAmbienceAudio = useCallback(() => {
+    const audio = ambienceAudioRef.current;
+    if (!audio) return;
+    audio.pause();
+    clearAppAudioMediaSession();
+    ambiencePlaybackAttemptedRef.current = false;
+    setIsAmbiencePlaying(false);
+    setAmbienceAudioError(false);
+  }, []);
+
   const handleAmbienceToggle = useCallback(() => {
     const audio = ambienceAudioRef.current;
     if (!audio) return;
 
     if (isAmbiencePlaying) {
-      audio.pause();
-      ambiencePlaybackAttemptedRef.current = false;
-      setIsAmbiencePlaying(false);
-      setAmbienceAudioError(false);
+      stopAmbienceAudio();
       return;
     }
 
-    if (appAudioSettings.muted) {
-      setIsAmbiencePlaying(false);
-      setAmbienceAudioError(false);
+    if (!canPlayOrbAmbience) {
+      stopAmbienceAudio();
       return;
     }
 
@@ -123,12 +136,20 @@ export const OrbPage = memo(function OrbPage({
     setAmbienceAudioError(false);
     setIsAmbiencePlaying(true);
     ambiencePlaybackAttemptedRef.current = true;
-    void audio.play().catch(() => {
+    void audio.play().then(() => {
+      setAppAudioMediaSession({
+        title: tx.orbAmbienceLabel || "Orb ambience",
+        onPause: stopAmbienceAudio,
+        onStop: stopAmbienceAudio,
+      });
+    }).catch((error) => {
+      logger.warn("[OrbPage] Ambience playback failed:", error);
       ambiencePlaybackAttemptedRef.current = false;
+      clearAppAudioMediaSession();
       setIsAmbiencePlaying(false);
       setAmbienceAudioError(true);
     });
-  }, [ambienceVolume, appAudioSettings.muted, isAmbiencePlaying]);
+  }, [ambienceVolume, canPlayOrbAmbience, isAmbiencePlaying, stopAmbienceAudio, tx.orbAmbienceLabel]);
 
   useEffect(() => {
     mainRef.current?.focus({ preventScroll: true });
@@ -140,13 +161,41 @@ export const OrbPage = memo(function OrbPage({
 
     audio.volume = ambienceVolume;
 
-    if (appAudioSettings.muted && isAmbiencePlaying) {
-      audio.pause();
-      ambiencePlaybackAttemptedRef.current = false;
-      setIsAmbiencePlaying(false);
-      setAmbienceAudioError(false);
+    if (!canPlayOrbAmbience && isAmbiencePlaying) {
+      stopAmbienceAudio();
     }
-  }, [ambienceVolume, appAudioSettings.muted, isAmbiencePlaying]);
+  }, [ambienceVolume, canPlayOrbAmbience, isAmbiencePlaying, stopAmbienceAudio]);
+
+  useEffect(() => {
+    const stopOnHidden = () => {
+      if (document.hidden) stopAmbienceAudio();
+    };
+    const stopOnPageHide = () => stopAmbienceAudio();
+    let cancelled = false;
+    let pauseListener: PluginListenerHandle | null = null;
+
+    document.addEventListener("visibilitychange", stopOnHidden);
+    window.addEventListener("pagehide", stopOnPageHide);
+    void import("@capacitor/app")
+      .then(({ App }) => App.addListener("pause", stopAmbienceAudio))
+      .then((listener) => {
+        if (cancelled) {
+          void listener.remove();
+          return;
+        }
+        pauseListener = listener;
+      })
+      .catch((error) => {
+        logger.warn("[OrbPage] Failed to register ambience pause listener:", error);
+      });
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", stopOnHidden);
+      window.removeEventListener("pagehide", stopOnPageHide);
+      if (pauseListener) void pauseListener.remove();
+    };
+  }, [stopAmbienceAudio]);
 
   useEffect(() => {
     const audio = ambienceAudioRef.current;
@@ -155,6 +204,7 @@ export const OrbPage = memo(function OrbPage({
       if (!audio) return;
       if (ambiencePlaybackAttemptedRef.current) {
         audio.pause();
+        clearAppAudioMediaSession();
         ambiencePlaybackAttemptedRef.current = false;
       }
       audio.removeAttribute("src");
@@ -177,10 +227,9 @@ export const OrbPage = memo(function OrbPage({
 
   const auraRef = useRef<HTMLDivElement>(null);
   const handleOrbTap = useCallback(() => {
-    // V2 orb tap plays pulse-aura animation only. Mood entry flow is inline
-    // below (slider → emotion grid → confirm CTA). Opening the legacy V1
-    // StateOfMindModal here duplicated the UI and showed V1 chrome on a V2
-    // surface — removed per user feedback 2026-04-18.
+    // Orb tap plays pulse-aura animation only. Mood entry flow is inline
+    // below (slider -> emotion grid -> confirm CTA), so the CTA advances
+    // the local flow instead of opening a second mood modal.
     void haptics.tabChanged();
     const node = auraRef.current;
     if (node && shouldRunAmbientMotion) {
@@ -225,13 +274,13 @@ export const OrbPage = memo(function OrbPage({
     (viewport.height < 860 || (draftScope === "specific" && viewport.height < 940));
   const heroOrbSize = useMemo(() => {
     if (!isDenseSelectStep && !isUltraDenseSelectStep) {
-      return V1_VALENCE_ORB_SIZE;
+      return BASE_VALENCE_ORB_SIZE;
     }
 
     const denseMin = isUltraDenseSelectStep ? 220 : isDesktopViewport ? 260 : 240;
     const denseScale = isUltraDenseSelectStep ? 0.3 : isDesktopViewport ? 0.34 : 0.32;
     return Math.round(
-      Math.max(denseMin, Math.min(V1_VALENCE_ORB_SIZE, viewport.height * denseScale)),
+      Math.max(denseMin, Math.min(BASE_VALENCE_ORB_SIZE, viewport.height * denseScale)),
     );
   }, [
     isDenseSelectStep,
@@ -297,10 +346,14 @@ export const OrbPage = memo(function OrbPage({
             setIsAmbiencePlaying(true);
             setAmbienceAudioError(false);
           }}
-          onPause={() => setIsAmbiencePlaying(false)}
+          onPause={() => {
+            setIsAmbiencePlaying(false);
+            clearAppAudioMediaSession();
+          }}
           onError={() => {
             setIsAmbiencePlaying(false);
             setAmbienceAudioError(true);
+            clearAppAudioMediaSession();
           }}
         />
 
@@ -310,7 +363,7 @@ export const OrbPage = memo(function OrbPage({
           className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
           data-testid="cosmic-orb-flourish-layer"
         >
-          {isPaperTheme ? <OrbDayFlourish /> : <ShootingStar />}
+          {shouldRunDecorativeMotion ? (isPaperTheme ? <OrbDayFlourish /> : <ShootingStar />) : null}
         </div>
 
         <div
@@ -327,7 +380,7 @@ export const OrbPage = memo(function OrbPage({
               aria-pressed={isAmbiencePlaying}
               title={ambienceToggleLabel}
               onClick={handleAmbienceToggle}
-              disabled={appAudioSettings.muted}
+              disabled={!canPlayOrbAmbience}
               className="inline-flex min-h-[44px] max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full border border-border/50 bg-background/40 px-3 py-2 text-xs font-semibold text-foreground shadow-lg backdrop-blur-xl transition-all hover:bg-background/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-55 md:px-4 md:text-sm"
             >
               {isAmbiencePlaying ? (

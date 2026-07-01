@@ -77,13 +77,13 @@ describe("DiaryPage ambience audio", () => {
     });
   });
 
-  it("keeps the Gemini reflection loop non-autoplaying without a page-level overlay control", () => {
+  it("keeps the soft rain reflection loop non-autoplaying without a page-level overlay control", () => {
     render(<DiaryPage />);
 
     const audio = screen.getByTestId("diary-page-ambience-audio");
     expect(audio).toHaveAttribute(
       "src",
-      expect.stringContaining("/sounds/v2-diary-reflection-loop.mp3"),
+      expect.stringContaining("/sounds/soft-rain-veil.mp3"),
     );
     expect(audio).toHaveAttribute("preload", "none");
     expect(audio).toHaveAttribute("loop");

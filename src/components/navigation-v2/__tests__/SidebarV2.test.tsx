@@ -17,11 +17,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
       diary: "Diary",
       settings: "Settings",
       skipToContent: "Skip to main content",
-      classicPortalAria: "Return to classic ZenFlow",
-      classicPortalEyebrow: "Stable home",
-      classicPortalTitle: "Back to classic ZenFlow",
-      classicPortalBody: "Return to the current stable home while V2 stays in preview.",
-      classicPortalCta: "Classic ZenFlow",
     },
     isRTL: false,
   }),
@@ -54,20 +49,12 @@ describe("SidebarV2", () => {
         "sidebar-v2-mini-orb",
       ),
     );
-    expect(screen.getByTestId("sidebar-v2-classic-portal-orb")).toContainElement(
-      within(screen.getByTestId("sidebar-v2-classic-portal-orb")).getByTestId(
-        "sidebar-v2-mini-orb",
-      ),
-    );
     expect(screen.getByRole("button", { name: "Orb" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Habits" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Diary" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Planning" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Settings" })).toBeInTheDocument();
-    expect(screen.getByTestId("sidebar-v2-classic-portal")).toHaveAttribute(
-      "aria-label",
-      "Return to classic ZenFlow",
-    );
+    expect(screen.queryByTestId("sidebar-v2-classic-portal")).not.toBeInTheDocument();
   });
 
   it("marks the active page with aria-current=page", () => {

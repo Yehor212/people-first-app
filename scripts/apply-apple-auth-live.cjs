@@ -20,6 +20,8 @@ const REQUIRED_REDIRECT_URLS = [
   "https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone",
   "https://yehor212.github.io/people-first-app/habits?nav=v2",
   "https://yehor212.github.io/people-first-app/diary?nav=v2",
+  "https://yehor212.github.io/people-first-app/planning?nav=v2",
+  "https://yehor212.github.io/people-first-app/planning?nav=v2&navLayout=phone",
   "https://yehor212.github.io/people-first-app/settings?nav=v2",
   "capacitor://localhost/",
   "com.zenflow.app://login-callback",

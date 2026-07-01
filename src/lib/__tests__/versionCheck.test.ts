@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ─── In-memory storage mocks ────────────────────────────────────
@@ -44,6 +45,7 @@ vi.stubGlobal('__APP_BUILD_TIME__', 1000);
 import { logger } from '@/lib/logger';
 
 import {
+  buildSafeHardReloadUrl,
   checkAppVersion,
   shouldCheckVersion,
   markForVersionCheck,
@@ -143,6 +145,34 @@ describe('markVersionChecked', () => {
     expect(localMap['zenflow_last_version_check']).toBeDefined();
     const ts = parseInt(localMap['zenflow_last_version_check'], 10);
     expect(ts).toBeGreaterThan(0);
+  });
+});
+
+// ─── checkAppVersion ────────────────────────────────────────────
+
+describe('forceHardReload', () => {
+  it('preserves only safe app navigation params while adding a cache-bust parameter', () => {
+    const url = new URL('https://app.example/people-first-app/orb?nav=v2&navLayout=phone&planningDate=2026-07-01&view=week&code=oauth-code&state=oauth-state&access_token=secret#access_token=fragment-secret') as unknown as Location;
+
+    expect(buildSafeHardReloadUrl(url, 12345)).toBe(
+      'https://app.example/people-first-app/orb?nav=v2&navLayout=phone&planningDate=2026-07-01&view=week&_v=12345',
+    );
+  });
+
+  it('drops unsafe app params, auth params, and hash fragments from recovery reloads', () => {
+    const url = new URL('https://app.example/people-first-app/orb?nav=v1&navLayout=tablet&planningDate=soon&dev=true&orbRenderer=webgl&refresh_token=secret#token=secret') as unknown as Location;
+
+    expect(buildSafeHardReloadUrl(url, 67890)).toBe(
+      'https://app.example/people-first-app/orb?_v=67890',
+    );
+  });
+
+  it('keeps the implementation from copying the full query string or hash', () => {
+    const source = readFileSync('src/lib/versionCheck.ts', 'utf8');
+
+    expect(source).toContain('SAFE_HARD_RELOAD_SEARCH_PARAMS');
+    expect(source).not.toContain('url.hash = window.location.hash');
+    expect(source).not.toContain('new URLSearchParams(window.location.search);\n  url.pathname = safePathname;');
   });
 });
 

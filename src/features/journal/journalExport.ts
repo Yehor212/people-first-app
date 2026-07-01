@@ -117,27 +117,30 @@ export async function exportCSV(language: Language = "en"): Promise<void> {
     const time = dt.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
     const wordCount = e.content.trim() ? e.content.trim().split(/\s+/).filter(Boolean).length : 0;
     return [
-      e.date,
-      time,
+      csvEscape(e.date),
+      csvEscape(time),
       csvEscape(e.title),
       csvEscape(e.content.slice(0, 500)),
-      e.mood ? MOOD_LABEL[e.mood] || e.mood : "",
+      csvEscape(e.mood ? MOOD_LABEL[e.mood] || e.mood : ""),
       csvEscape(e.tags.join(", ")),
-      e.stickers.join(" "),
-      String(wordCount),
-      String(e.photoIds.length),
-      String(e.audioIds?.length || 0),
+      csvEscape(e.stickers.join(" ")),
+      csvEscape(String(wordCount)),
+      csvEscape(String(e.photoIds.length)),
+      csvEscape(String(e.audioIds?.length || 0)),
     ];
   });
 
-  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const csv = [headers.map(csvEscape).join(","), ...rows.map((r) => r.join(","))].join("\n");
   const dateStr = getToday();
   downloadText(csv, `journal-${dateStr}.csv`, "text/csv");
 }
 
 function csvEscape(str: string): string {
   if (!str) return '""';
-  const escaped = str.replace(/"/g, '""').replace(/\n/g, " ");
+  const normalized = str.replace(/[\r\n]+/g, " ");
+  const formulaLike = /^[\t=+\-@]|^\s+[=+\-@]/.test(normalized);
+  const safe = formulaLike ? `'${normalized}` : normalized;
+  const escaped = safe.replace(/"/g, '""');
   return `"${escaped}"`;
 }
 

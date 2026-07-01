@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertCircle, Bell, Volume2, Zap } from "lucide-react";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { SmartRemindersCard } from "@/components/SmartRemindersCard";
@@ -8,10 +8,16 @@ import { useQuickActions } from "@/hooks/useQuickActions";
 import { logger } from "@/lib/logger";
 import {
   getNotificationSound,
+  getNotificationSystemSettingsCopyKey,
   NOTIFICATION_SOUNDS,
-  setNotificationSound,
+  updateNotificationSound,
   type NotificationSoundType,
 } from "@/lib/notificationSounds";
+import {
+  scheduleHabitReminders,
+  scheduleLocalReminders,
+  scheduleMoodQuickLogNotification,
+} from "@/lib/localNotifications";
 import { isAndroid, isNative } from "@/lib/platform";
 import {
   PanelFrame,
@@ -19,6 +25,7 @@ import {
   SettingsChoiceButton,
   SettingsFieldHeader,
   SettingsInset,
+  SettingsStatus,
   ToggleRow,
 } from "./components/V2SettingsControlPrimitives";
 import type { V2SettingsControls } from "./types";
@@ -41,6 +48,27 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
     { value: 6, label: tx.sat || "Sat" },
     { value: 0, label: tx.sun || "Sun" },
   ];
+  const notificationSystemSettingsDescription =
+    tx[getNotificationSystemSettingsCopyKey()] ||
+    tx.notificationSystemSettingsDescription ||
+    "Your device or browser notification settings keep final control over reminders.";
+  const reminderCopy = useMemo(() => {
+    const safeHabits = Array.isArray(controls.habits) ? controls.habits : [];
+    const habitNameMap = new Map(safeHabits.map((habit) => [habit.id, habit.name]));
+    const habitNames = controls.reminders.habitIds
+      .map((id: string) => habitNameMap.get(id))
+      .filter(Boolean);
+    const habitBody =
+      habitNames.length === 0
+        ? t.reminderHabitBody
+        : `${t.reminderHabitBody} ${habitNames.join(", ")}`;
+
+    return {
+      mood: { title: t.reminderMoodTitle, body: t.reminderMoodBody },
+      habit: { title: t.reminderHabitTitle, body: habitBody },
+      focus: { title: t.reminderFocusTitle, body: t.reminderFocusBody },
+    };
+  }, [controls.habits, controls.reminders.habitIds, t]);
 
   const setReminder = (
     value:
@@ -48,9 +76,28 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
       | ((prev: V2SettingsControls["reminders"]) => V2SettingsControls["reminders"])
   ) => controls.onRemindersChange(value);
 
-  const updateSound = (sound: NotificationSoundType) => {
+  const updateSound = async (sound: NotificationSoundType) => {
     setSelectedSound(sound);
-    setNotificationSound(sound);
+    await updateNotificationSound(sound);
+
+    try {
+      await scheduleLocalReminders(controls.reminders, reminderCopy);
+      await scheduleHabitReminders(controls.habits, {
+        reminderTitle: t.reminderHabitTitle,
+        reminderBody: t.reminderHabitBody,
+      });
+      if (controls.reminders.enabled) {
+        const [hour = 9, minute = 0] = (controls.reminders.moodTimeMorning || "09:00")
+          .split(":")
+          .map(Number);
+        await scheduleMoodQuickLogNotification(
+          { hour, minute },
+          t.howAreYouNow || "How are you feeling? Tap! 😊",
+        );
+      }
+    } catch (error) {
+      logger.error("[Notifications] Failed to reschedule reminders after sound change:", error);
+    }
   };
 
   const handleReminderToggle = async (checked: boolean) => {
@@ -208,7 +255,9 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
               return (
                 <SettingsChoiceButton
                   key={sound.id}
-                  onClick={() => updateSound(sound.id)}
+                  onClick={() => {
+                    void updateSound(sound.id);
+                  }}
                   selected={selectedSound === sound.id}
                   surface="card"
                 >
@@ -222,6 +271,14 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
           </SettingsButtonGrid>
         </SettingsInset>
       )}
+
+      <SettingsInset testId="settings-v2-notification-system-guidance">
+        <SettingsFieldHeader
+          icon={Bell}
+          title={tx.notificationSystemSettingsTitle || "System notification controls"}
+        />
+        <SettingsStatus>{notificationSystemSettingsDescription}</SettingsStatus>
+      </SettingsInset>
 
       {isAndroid && (
         <ToggleRow

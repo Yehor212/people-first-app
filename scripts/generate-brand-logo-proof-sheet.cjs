@@ -13,8 +13,8 @@ const COLS = 4;
 const HEADER_H = 118;
 const PADDING = 18;
 const TINY_RASTER_LIMIT = 96;
-const MAX_TINY_PROOF_SCALE = 4;
-const MAX_TINY_AUDIT_PX = 144;
+const MAX_TINY_PROOF_SCALE = 3;
+const MAX_TINY_AUDIT_PX = 96;
 const MAX_SURFACE_W = CARD_W - 48;
 const MAX_SURFACE_H = 142;
 
@@ -38,8 +38,18 @@ const ITEMS = [
   },
   {
     label: "PWA 512",
-    rel: "public/icon-512.png",
-    role: "High-density app icon",
+    rel: "public/pwa-512.png",
+    role: "Manifest any 512px icon",
+  },
+  {
+    label: "Apple touch 180",
+    rel: "public/apple-touch-icon.png",
+    role: "iPhone/iPad home-screen web clip",
+  },
+  {
+    label: "iOS AppIcon 1024",
+    rel: "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
+    role: "iOS App Store and app icon source",
   },
   {
     label: "PWA Win 44",
@@ -63,6 +73,23 @@ const ITEMS = [
     rel: "src-tauri/icons/StoreLogo.png",
     role: "Windows StoreLogo 50px surface",
     tiny: true,
+  },
+  {
+    label: "Desktop macOS 512",
+    rel: "src-tauri/icons/icon.png",
+    role: "Tauri desktop source icon",
+  },
+  {
+    label: "Desktop ICO",
+    rel: "src-tauri/icons/icon.png",
+    proofRel: "src-tauri/icons/icon.ico",
+    role: "Windows .ico container visual source",
+  },
+  {
+    label: "Desktop ICNS",
+    rel: "src-tauri/icons/icon.png",
+    proofRel: "src-tauri/icons/icon.icns",
+    role: "macOS .icns container visual source",
   },
   {
     label: "Android mdpi",
@@ -107,6 +134,12 @@ const ITEMS = [
     tiny: true,
   },
   {
+    label: "Android adaptive masks",
+    rel: "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
+    role: "Circle, rounded and square launcher masks",
+    adaptivePreview: true,
+  },
+  {
     label: "Splash Android",
     rel: "android/app/src/main/res/drawable/splash.png",
     role: "Native launch background",
@@ -148,7 +181,7 @@ const ITEMS = [
   },
 ];
 
-const ALLOWED_ASSET_RELS = new Set(ITEMS.map((item) => item.rel));
+const ALLOWED_ASSET_RELS = new Set(ITEMS.flatMap((item) => [item.rel, item.proofRel].filter(Boolean)));
 
 function escapeXml(value) {
   return String(value)
@@ -168,7 +201,7 @@ function svgBuffer(svg) {
 
 function cardBase(item, meta, modeLabel) {
   const title = escapeXml(item.label);
-  const file = escapeXml(truncate(item.rel, 52));
+  const file = escapeXml(truncate(item.proofRel || item.rel, 52));
   const role = escapeXml(item.role);
   const dimensions = `${meta.width}x${meta.height}`;
   return svgBuffer(`
@@ -186,10 +219,52 @@ function cardBase(item, meta, modeLabel) {
 function tinyPanelsSvg(scale) {
   return svgBuffer(`
 <svg xmlns="http://www.w3.org/2000/svg" width="${CARD_W}" height="${CARD_H}" viewBox="0 0 ${CARD_W} ${CARD_H}">
-  <rect x="31" y="78" width="118" height="118" rx="14" fill="#06130F" stroke="#123A30"/>
-  <rect x="211" y="66" width="118" height="142" rx="14" fill="#06130F" stroke="#123A30"/>
-  <text x="90" y="220" text-anchor="middle" fill="#A9C9B9" font-family="Inter, Arial, sans-serif" font-size="10">1x native</text>
-  <text x="270" y="220" text-anchor="middle" fill="#A9C9B9" font-family="Inter, Arial, sans-serif" font-size="10">${scale}x pixel audit</text>
+  <rect x="28" y="82" width="72" height="72" rx="12" fill="#06130F" stroke="#123A30"/>
+  <rect x="122" y="72" width="96" height="110" rx="14" fill="#06130F" stroke="#123A30"/>
+  <rect x="238" y="72" width="96" height="110" rx="14" fill="#06130F" stroke="#123A30"/>
+  <text x="64" y="220" text-anchor="middle" fill="#A9C9B9" font-family="Inter, Arial, sans-serif" font-size="10">1x native</text>
+  <text x="170" y="220" text-anchor="middle" fill="#A9C9B9" font-family="Inter, Arial, sans-serif" font-size="10">${scale}x smooth/user</text>
+  <text x="286" y="220" text-anchor="middle" fill="#A9C9B9" font-family="Inter, Arial, sans-serif" font-size="10">${scale}x pixel audit</text>
+</svg>`);
+}
+
+function adaptivePanelsSvg() {
+  return svgBuffer(`
+<svg xmlns="http://www.w3.org/2000/svg" width="${CARD_W}" height="${CARD_H}" viewBox="0 0 ${CARD_W} ${CARD_H}">
+  <rect x="33" y="80" width="84" height="84" rx="12" fill="#06130F" stroke="#123A30"/>
+  <rect x="138" y="80" width="84" height="84" rx="12" fill="#06130F" stroke="#123A30"/>
+  <rect x="243" y="80" width="84" height="84" rx="12" fill="#06130F" stroke="#123A30"/>
+  <text x="75" y="186" text-anchor="middle" fill="#A9C9B9" font-family="Inter, Arial, sans-serif" font-size="10">circle</text>
+  <text x="180" y="186" text-anchor="middle" fill="#A9C9B9" font-family="Inter, Arial, sans-serif" font-size="10">rounded</text>
+  <text x="285" y="186" text-anchor="middle" fill="#A9C9B9" font-family="Inter, Arial, sans-serif" font-size="10">square</text>
+</svg>`);
+}
+
+function adaptivePreviewSvg(shape, size) {
+  const shapeTag =
+    shape === "circle"
+      ? `<circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="white"/>`
+      : shape === "rounded"
+        ? `<rect width="${size}" height="${size}" rx="${size * 0.22}" fill="white"/>`
+        : `<rect width="${size}" height="${size}" fill="white"/>`;
+  return svgBuffer(`
+<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <defs>
+    <clipPath id="mask">${shapeTag}</clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="${size}" y2="${size}" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#286f59"/>
+      <stop offset=".48" stop-color="#2e9b70"/>
+      <stop offset="1" stop-color="#42c386"/>
+    </linearGradient>
+    <radialGradient id="hi" cx="${size * 0.3}" cy="${size * 0.22}" r="${size * 0.72}" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".14"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g clip-path="url(#mask)">
+    <rect width="${size}" height="${size}" fill="url(#bg)"/>
+    <rect width="${size}" height="${size}" fill="url(#hi)"/>
+  </g>
 </svg>`);
 }
 
@@ -242,6 +317,25 @@ async function renderSurface(item, abs, meta) {
     .toBuffer();
 }
 
+async function renderAdaptivePreview(item, abs, meta) {
+  const previewSize = 84;
+  const foreground = await sharp(abs).resize(previewSize, previewSize, { fit: "contain" }).png().toBuffer();
+  const previews = await Promise.all(
+    ["circle", "rounded", "square"].map(async (shape) =>
+      sharp(adaptivePreviewSvg(shape, previewSize)).composite([{ input: foreground, left: 0, top: 0 }]).png().toBuffer(),
+    ),
+  );
+  return sharp(cardBase(item, meta, "adaptive masks"))
+    .composite([
+      { input: adaptivePanelsSvg(), left: 0, top: 0 },
+      { input: previews[0], left: 33, top: 80 },
+      { input: previews[1], left: 138, top: 80 },
+      { input: previews[2], left: 243, top: 80 },
+    ])
+    .png()
+    .toBuffer();
+}
+
 async function renderTiny(item, abs, meta) {
   if (meta.width > TINY_RASTER_LIMIT || meta.height > TINY_RASTER_LIMIT) {
     return renderSurface(item, abs, meta);
@@ -249,6 +343,14 @@ async function renderTiny(item, abs, meta) {
   const maxSide = Math.max(meta.width, meta.height);
   const auditScale = Math.max(1, Math.min(MAX_TINY_PROOF_SCALE, Math.floor(MAX_TINY_AUDIT_PX / maxSide)));
   const native = await sharp(abs).png().toBuffer();
+  const smooth = await sharp(abs)
+    .resize({
+      width: meta.width * auditScale,
+      height: meta.height * auditScale,
+      kernel: sharp.kernel.lanczos3,
+    })
+    .png()
+    .toBuffer();
   const audit = await sharp(abs)
     .resize({
       width: meta.width * auditScale,
@@ -258,19 +360,25 @@ async function renderTiny(item, abs, meta) {
     .png()
     .toBuffer();
   const nativeMeta = await sharp(native).metadata();
+  const smoothMeta = await sharp(smooth).metadata();
   const auditMeta = await sharp(audit).metadata();
-  return sharp(cardBase(item, meta, "native raster"))
+  return sharp(cardBase(item, meta, "native/user/audit"))
     .composite([
       { input: tinyPanelsSvg(auditScale), left: 0, top: 0 },
       {
         input: native,
-        left: Math.round(31 + (118 - nativeMeta.width) / 2),
-        top: Math.round(78 + (118 - nativeMeta.height) / 2),
+        left: Math.round(28 + (72 - nativeMeta.width) / 2),
+        top: Math.round(82 + (72 - nativeMeta.height) / 2),
+      },
+      {
+        input: smooth,
+        left: Math.round(122 + (96 - smoothMeta.width) / 2),
+        top: Math.round(72 + (110 - smoothMeta.height) / 2),
       },
       {
         input: audit,
-        left: Math.round(211 + (118 - auditMeta.width) / 2),
-        top: Math.round(66 + (142 - auditMeta.height) / 2),
+        left: Math.round(238 + (96 - auditMeta.width) / 2),
+        top: Math.round(72 + (110 - auditMeta.height) / 2),
       },
     ])
     .png()
@@ -287,7 +395,11 @@ async function main() {
   for (let index = 0; index < ITEMS.length; index += 1) {
     const item = ITEMS[index];
     const { abs, meta } = await readImage(item.rel);
-    const card = item.tiny ? await renderTiny(item, abs, meta) : await renderSurface(item, abs, meta);
+    const card = item.adaptivePreview
+      ? await renderAdaptivePreview(item, abs, meta)
+      : item.tiny
+        ? await renderTiny(item, abs, meta)
+        : await renderSurface(item, abs, meta);
     const col = index % COLS;
     const row = Math.floor(index / COLS);
     composites.push({

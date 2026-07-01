@@ -8,6 +8,7 @@ const MAX_APP_ICON_BYTES = 1024 * 1024;
 const MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024;
 const PACKAGE_JSON = path.join(ROOT, "package.json");
 const ANDROID_MANIFEST = path.join(ROOT, "android", "app", "src", "main", "AndroidManifest.xml");
+const ANDROID_BUILD_GRADLE = path.join(ROOT, "android", "app", "build.gradle");
 const PUBLIC_APP_ADS = path.join(ROOT, "public", "app-ads.txt");
 const APP_ADS_GOOGLE_SELLER_ID = "f08c47fec0942fa0";
 const APP_ADS_SAMPLE_PUBLISHER_ID = "pub-3940256099942544";
@@ -35,6 +36,7 @@ const GOOGLE_PLAY_DRAFT_AUDIT = path.join(
   "google-play",
   "GOOGLE_PLAY_DRAFT_COMPLETION_AUDIT.md",
 );
+const GOOGLE_PLAY_README = path.join(ROOT, "docs", "release", "google-play", "README.md");
 const ANDROID_BUILT_RELEASE_MANIFESTS = [
   path.join(ROOT, "android", "app", "build", "intermediates", "merged_manifest", "release", "processReleaseMainManifest", "AndroidManifest.xml"),
   path.join(ROOT, "android", "app", "build", "intermediates", "bundle_manifest", "release", "processApplicationManifestReleaseForBundle", "AndroidManifest.xml"),
@@ -355,23 +357,74 @@ function assertAdDeclarationMatchesArtifact(packet) {
     fail("package.json must expose google-play:app-ads:check for the real AdMob publisher id gate");
   }
 
+  if (packageJson.scripts?.["google-play:app-ads:public-check"] !== "node scripts/check-app-ads-public.cjs") {
+    fail("package.json must expose google-play:app-ads:public-check for deployed root-domain app-ads.txt proof");
+  }
+
+  if (packageJson.scripts?.["google-play:admob:check"] !== "node scripts/check-admob-production-readiness.cjs") {
+    fail("package.json must expose google-play:admob:check for real non-sample AdMob app/ad-unit ids");
+  }
+
+  if (packageJson.scripts?.["google-play:public-listing:check"] !== "node scripts/check-google-play-public-listing.cjs") {
+    fail("package.json must expose google-play:public-listing:check for public Play ads/developer website proof");
+  }
+
   assertIncludes(GOOGLE_PLAY_FIELD_PACKET, [
     "ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads",
     "ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads:check",
+    "ZENFLOW_APP_ADS_PUBLIC_URL=https://your-developer-domain.example/app-ads.txt npm run google-play:app-ads:public-check",
+    "npm run google-play:public-listing:check",
+    "npm run google-play:admob:check",
     "Do not hand-write the file",
     "do not use Google's sample publisher id",
     "Play Console/AdMob",
     "GitHub Pages project subpath",
     "enough proof by itself",
+    "Store listing contact details -> website",
+    "https://yehor212.github.io/people-first-app/",
+    "appstore:developer_url=about:invalid#navigation",
+    "public probe",
+    "Contains ads",
+    "no stale `No ads` claim",
   ]);
 
   assertIncludes(GOOGLE_PLAY_DRAFT_AUDIT, [
     "ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads",
     "npm run google-play:app-ads:check",
+    "npm run google-play:app-ads:public-check",
+    "npm run google-play:public-listing:check",
+    "npm run google-play:admob:check",
     "Do not invent this value",
     "Google's sample publisher id",
-    "LOCAL READY / PUBLIC UNVERIFIED",
+    "PUBLIC ROOT READY / ADMOB CRAWL PENDING",
     "root of the developer website configured in Play Console/AdMob",
+    "appstore:developer_url=about:invalid#navigation",
+    "Public Play ads label and copy",
+    "PASS / PUBLIC LISTING UPDATED",
+    "npm run google-play:public-listing:check",
+    "PUBLISHED / ADMOB VERIFY PENDING",
+  ]);
+
+  assertIncludes(GOOGLE_PLAY_README, [
+    "appstore:developer_url=about:invalid#navigation",
+    "Store listing contact details -> website",
+    "https://yehor212.github.io/people-first-app/",
+    "No ads",
+    "Contains ads",
+    "google-play:public-listing:check",
+    "Verify app",
+  ]);
+
+  const androidBuildGradle = readIfExists(ANDROID_BUILD_GRADLE);
+  if (!androidBuildGradle) {
+    fail("android/app/build.gradle is missing");
+  }
+
+  assertIncludes(ANDROID_BUILD_GRADLE, [
+    "ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS",
+    "gradle.taskGraph.whenReady",
+    "throw new GradleException",
+    "Release builds require ZENFLOW_ADMOB_ANDROID_APP_ID",
   ]);
 
   const sourceManifest = readIfExists(ANDROID_MANIFEST);

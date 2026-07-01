@@ -35,11 +35,11 @@ const PUBLIC_TO_DOCS_ASSETS = [
   ...PWA_WINDOWS_ICONS.map((icon) => icon.file),
 ];
 const ANDROID_SIZES = [
-  { name: "mipmap-mdpi", size: 48 },
-  { name: "mipmap-hdpi", size: 72 },
-  { name: "mipmap-xhdpi", size: 96 },
-  { name: "mipmap-xxhdpi", size: 144 },
-  { name: "mipmap-xxxhdpi", size: 192 },
+  { name: "mipmap-mdpi", size: 48, foregroundSize: 108 },
+  { name: "mipmap-hdpi", size: 72, foregroundSize: 162 },
+  { name: "mipmap-xhdpi", size: 96, foregroundSize: 216 },
+  { name: "mipmap-xxhdpi", size: 144, foregroundSize: 324 },
+  { name: "mipmap-xxxhdpi", size: 192, foregroundSize: 432 },
 ];
 const TAURI_PNGS = [
   ["32x32.png", 32],
@@ -112,7 +112,8 @@ function leafGroup({ cx, cy, size, fill = "rgba(255,255,255,.12)", stroke = "#ff
 const SMALL_RASTER_MAX_SIZE = 50;
 const SMALL_RASTER_SUPERSAMPLE = 4;
 const SMALL_RASTER_SHARPEN_SIGMA = 0.8;
-const TINY_RASTER_MAX_SIZE = 16;
+const TINY_PROFILE_MAX_SIZE = 32;
+const TINY_RASTER_MAX_SIZE = 32;
 const TINY_RASTER_BACKGROUND_MULTIPLIER = 0.90;
 
 function smallRasterScale(width, height) {
@@ -152,7 +153,13 @@ async function applyTinyRasterBackgroundContrast(pngBuffer, multiplier) {
   return sharp(adjusted, { raw: info }).png({ compressionLevel: 9, adaptiveFiltering: true, palette: false }).toBuffer();
 }
 
-function plateDefs({ x, y, size, idPrefix }) {
+function plateDefs({ x, y, size, idPrefix, tiny = false }) {
+  const highlightStart = tiny ? ".12" : ".16";
+  const highlightMid = tiny ? ".025" : ".04";
+  const vignetteStart = tiny ? ".045" : ".16";
+  const rimStart = tiny ? ".12" : ".2";
+  const rimMid = tiny ? ".03" : ".055";
+  const rimEnd = tiny ? ".018" : ".08";
   return `
     <linearGradient id="${idPrefix}Plate" x1="${x}" y1="${y}" x2="${x + size}" y2="${y + size}" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#286f59"/>
@@ -160,18 +167,18 @@ function plateDefs({ x, y, size, idPrefix }) {
       <stop offset="1" stop-color="#42c386"/>
     </linearGradient>
     <radialGradient id="${idPrefix}Highlight" cx="${x + size * 0.3}" cy="${y + size * 0.22}" r="${size * 0.72}" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff" stop-opacity=".16"/>
-      <stop offset=".52" stop-color="#fff" stop-opacity=".04"/>
+      <stop offset="0" stop-color="#fff" stop-opacity="${highlightStart}"/>
+      <stop offset=".52" stop-color="#fff" stop-opacity="${highlightMid}"/>
       <stop offset="1" stop-color="#fff" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="${idPrefix}Vignette" cx="${x + size * 0.72}" cy="${y + size * 0.74}" r="${size * 0.64}" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#083227" stop-opacity=".16"/>
+      <stop offset="0" stop-color="#083227" stop-opacity="${vignetteStart}"/>
       <stop offset="1" stop-color="#083227" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="${idPrefix}Rim" x1="${x}" y1="${y}" x2="${x + size}" y2="${y + size}" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff" stop-opacity=".2"/>
-      <stop offset=".55" stop-color="#fff" stop-opacity=".055"/>
-      <stop offset="1" stop-color="#001f18" stop-opacity=".08"/>
+      <stop offset="0" stop-color="#fff" stop-opacity="${rimStart}"/>
+      <stop offset=".55" stop-color="#fff" stop-opacity="${rimMid}"/>
+      <stop offset="1" stop-color="#001f18" stop-opacity="${rimEnd}"/>
     </linearGradient>
     <radialGradient id="${idPrefix}LeafFill" cx="${x + size * 0.46}" cy="${y + size * 0.43}" r="${size * 0.38}" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#fff" stop-opacity=".18"/>
@@ -179,7 +186,7 @@ function plateDefs({ x, y, size, idPrefix }) {
     </radialGradient>`;
 }
 
-function plate({ cx, cy, size, idPrefix = "zf", round = false }) {
+function plate({ cx, cy, size, idPrefix = "zf", round = false, tiny = false }) {
   const x = cx - size / 2;
   const y = cy - size / 2;
   const radius = round ? size / 2 : size * 0.215;
@@ -195,10 +202,16 @@ function plate({ cx, cy, size, idPrefix = "zf", round = false }) {
 
   return `
     ${tag}
-    ${leafGroup({ cx, cy: cy - size * 0.015, size: size * 0.58, fill: `url(#${idPrefix}LeafFill)` })}`;
+    ${leafGroup({
+      cx,
+      cy: cy - size * (tiny ? 0.005 : 0.015),
+      size: size * (tiny ? 0.68 : 0.58),
+      fill: `url(#${idPrefix}LeafFill)`,
+      shadow: tiny ? Boolean(0) : useLeafDetailShadow(size * 0.58),
+    })}`;
 }
 
-function tileSvg({ width, height, scale = 0.78, round = false, role = false }) {
+function tileSvg({ width, height, scale = 0.78, round = false, role = false, tiny = false }) {
   const size = Math.min(width, height) * scale;
   const x = width / 2 - size / 2;
   const y = height / 2 - size / 2;
@@ -206,14 +219,27 @@ function tileSvg({ width, height, scale = 0.78, round = false, role = false }) {
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"${roleAttrs}>
   <defs>
-    ${plateDefs({ x, y, size, idPrefix: "zfIcon" })}
+    ${plateDefs({ x, y, size, idPrefix: "zfIcon", tiny })}
   </defs>
-  ${plate({ cx: width / 2, cy: height / 2, size, idPrefix: "zfIcon", round })}
+  ${plate({ cx: width / 2, cy: height / 2, size, idPrefix: "zfIcon", round, tiny })}
 </svg>`;
 }
 
 function legacyAndroidRoundIconSvg({ width, height }) {
-  return tileSvg({ width, height, scale: 0.94, round: true });
+  const size = Math.min(width, height);
+  const cx = width / 2;
+  const cy = height / 2;
+  const radius = size / 2;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
+  <defs>
+    <radialGradient id="zfAndroidRoundLeafFill" cx="${width * 0.48}" cy="${height * 0.43}" r="${size * 0.34}" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".05"/>
+    </radialGradient>
+  </defs>
+  <circle cx="${cx}" cy="${cy}" r="${radius}" fill="#2E9B70"/>
+  ${leafGroup({ cx, cy: cy - size * 0.015, size: size * 0.58, fill: "url(#zfAndroidRoundLeafFill)" })}
+</svg>`;
 }
 
 function fullBleedDefs(width, height, idPrefix) {
@@ -464,14 +490,14 @@ function writeDocsWebManifest() {
         name: "Log Mood",
         short_name: "Mood",
         description: "Quickly log your mood",
-        url: `${DOCS_PWA_BASE}?tab=home`,
+        url: `${DOCS_PWA_BASE}orb/?nav=v2&navLayout=phone`,
         icons: [{ src: iconSrc("pwa-192.png"), sizes: "192x192", type: "image/png" }],
       },
       {
         name: "Track Habit",
         short_name: "Habit",
         description: "Mark a habit as completed",
-        url: `${DOCS_PWA_BASE}?tab=home`,
+        url: `${DOCS_PWA_BASE}habits/?nav=v2&navLayout=phone`,
         icons: [{ src: iconSrc("pwa-192.png"), sizes: "192x192", type: "image/png" }],
       },
     ],
@@ -567,7 +593,12 @@ async function generatePublicAssets() {
     [16, 32, 48, 64, 128, 256].map(async (size) => ({
       size,
       buffer: await pngBuffer(
-        rasterSizedSvg(tileSvg, { width: size, height: size, scale: 0.82 }),
+        rasterSizedSvg(tileSvg, {
+          width: size,
+          height: size,
+          scale: size <= 16 ? 0.9 : size <= TINY_PROFILE_MAX_SIZE ? 0.88 : 0.82,
+          tiny: size <= TINY_PROFILE_MAX_SIZE,
+        }),
         size,
         size <= SMALL_RASTER_MAX_SIZE ? { sharpen: SMALL_RASTER_SHARPEN_SIGMA } : {},
       ),
@@ -576,7 +607,12 @@ async function generatePublicAssets() {
   writeIco(path.join(publicDir, "favicon.ico"), faviconEntries);
   for (const size of BROWSER_FAVICON_SIZES) {
     await pngFromSvg(
-      rasterSizedSvg(tileSvg, { width: size, height: size, scale: size <= 32 ? 0.88 : 0.82 }),
+      rasterSizedSvg(tileSvg, {
+        width: size,
+        height: size,
+        scale: size <= 16 ? 0.9 : size <= TINY_PROFILE_MAX_SIZE ? 0.88 : 0.82,
+        tiny: size <= TINY_PROFILE_MAX_SIZE,
+      }),
       path.join(publicDir, `favicon-${size}.png`),
       smallRasterOptions(size, size),
     );
@@ -588,7 +624,12 @@ async function generateTauriAssets() {
   const tauriDir = path.join(ROOT, "src-tauri", "icons");
   for (const [file, size] of TAURI_PNGS) {
     await pngFromSvg(
-      rasterSizedSvg(tileSvg, { width: size, height: size, scale: size <= 44 ? 0.86 : 0.8 }),
+      rasterSizedSvg(tileSvg, {
+        width: size,
+        height: size,
+        scale: size <= 44 ? 0.86 : 0.8,
+        tiny: size <= TINY_PROFILE_MAX_SIZE,
+      }),
       path.join(tauriDir, file),
       smallRasterOptions(size, size),
     );
@@ -598,7 +639,12 @@ async function generateTauriAssets() {
     [16, 32, 48, 64, 128, 256].map(async (size) => ({
       size,
       buffer: await pngBuffer(
-        rasterSizedSvg(tileSvg, { width: size, height: size, scale: size <= 32 ? 0.88 : 0.82 }),
+        rasterSizedSvg(tileSvg, {
+          width: size,
+          height: size,
+          scale: size <= 16 ? 0.9 : size <= TINY_PROFILE_MAX_SIZE ? 0.88 : 0.82,
+          tiny: size <= TINY_PROFILE_MAX_SIZE,
+        }),
         size,
         { sharpen: SMALL_RASTER_SHARPEN_SIGMA },
       ),
@@ -627,7 +673,7 @@ async function generateTauriAssets() {
 }
 
 async function generateAndroidAssets(androidResDir = ANDROID_RES_DIR) {
-  for (const { name, size } of ANDROID_SIZES) {
+  for (const { name, size, foregroundSize } of ANDROID_SIZES) {
     const dir = androidResDir + path.sep + name;
     fs.mkdirSync(dir, { recursive: true });
     const launcherIconPath = dir + path.sep + "ic_launcher.png";
@@ -644,9 +690,9 @@ async function generateAndroidAssets(androidResDir = ANDROID_RES_DIR) {
       smallRasterOptions(size, size),
     );
     await pngFromSvg(
-      rasterSizedSvg(foregroundSvg, { width: size, height: size, leafScale: 0.56 }),
+      foregroundSvg({ width: foregroundSize, height: foregroundSize, leafScale: 0.56 }),
       launcherForegroundPath,
-      smallRasterOptions(size, size),
+      smallRasterOptions(foregroundSize, foregroundSize),
     );
   }
 

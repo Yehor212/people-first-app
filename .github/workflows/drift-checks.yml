@@ -11,6 +11,19 @@ on:
       # Run only when something we can drift on actually changes.
       - 'src/**'
       - 'docs/**'
+      - 'public/sounds/**'
+      - 'docs/sounds/**'
+      - 'docs/audio/**'
+      - 'public/favicon*'
+      - 'public/icon-*'
+      - 'public/pwa-*'
+      - 'public/apple-touch-icon.png'
+      - 'public/manifest.webmanifest'
+      - 'android/app/src/main/res/mipmap*/**'
+      - 'android/app/src/main/res/values/ic_launcher_background.xml'
+      - 'ios/App/App/Assets.xcassets/**'
+      - 'src-tauri/icons/**'
+      - 'config/brand-logo-assets.json'
       - 'AGENTS.md'
       - '.github/CODEOWNERS'
       - '.github/PULL_REQUEST_TEMPLATE.md'
@@ -27,6 +40,17 @@ on:
       - 'scripts/rag/**'
       - 'scripts/__tests__/rag-*.test.ts'
       - 'scripts/check-best-practices-gate.cjs'
+      - 'scripts/generate-icons.cjs'
+      - 'scripts/check-brand-logo-assets.cjs'
+      - 'scripts/generate-brand-logo-proof-sheet.cjs'
+      - 'scripts/generate-microsoft-store-logo-assets.cjs'
+      - 'scripts/check-microsoft-store-logo-assets.cjs'
+      - 'scripts/check-microsoft-store-msix-contract.cjs'
+      - 'scripts/create-microsoft-store-msix.cjs'
+      - 'scripts/check-no-ai-templates.cjs'
+      - 'scripts/check-app-audio-assets.cjs'
+      - 'scripts/__tests__/check-app-audio-assets.test.ts'
+      - 'scripts/__tests__/no-ai-templates-policy.test.ts'
       - 'scripts/__tests__/best-practices-gate-contract.test.ts'
       - 'scripts/check-subagent-teamlead-governance.mjs'
       - 'scripts/doc-counts.cjs'
@@ -81,6 +105,18 @@ jobs:
           - name: best-practices-gate
             cmd: npm run check:best-practices
             fix: restore docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md plus AGENTS, package, CI, release, and completion wiring
+          - name: brand-logo-assets
+            cmd: npm run assets:logos:check
+            fix: run npm run assets:logos && npm run assets:logos:proof, then commit generated logo assets
+          - name: desktop-store-logo-assets
+            cmd: npm run desktop:store:check
+            fix: run npm run desktop:store:assets and resolve Store logo/MSIX contract drift
+          - name: no-ai-templates
+            cmd: npm run check:no-ai-templates
+            fix: restore docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md plus AGENTS, PR template, drift, agent-context, package, and checker wiring
+          - name: app-audio
+            cmd: npm run check:app-audio
+            fix: regenerate non-Hyperfocus audio, update provenance, and keep app audio inventories in sync
           - name: retry-tests
             cmd: npx vitest run src/lib/__tests__/retry.test.ts src/lib/__tests__/appUpdateManager.test.ts src/lib/__tests__/lazyWithRetry.test.ts
             fix: fix failing tests in src/lib/retry.ts (or migrated call-sites)

@@ -5,8 +5,19 @@ const path = require("path");
 
 const DEFAULT_SPEC_PATH = "docs/audio/hyperfocus-nature-soundscape-spec.json";
 const REQUIRED_MODEL_PROVIDER = "Google Gemini/Lyria family only";
-const REQUIRED_FAMILIES = ["underwater", "thunderstorm", "ocean", "river", "forest", "fireplace"];
+const REQUIRED_FAMILIES = ["forest", "rain", "ocean", "fireplace", "river", "wind"];
 const REQUIRED_LEVELS = ["soft", "deep", "intense"];
+const FORBIDDEN_LEGACY_ROOT_AUDIO_PATTERNS = [/underwater/i, /thunderstorm/i];
+const LEGACY_ROOT_AUDIO_SCAN_TARGETS = [
+  "public/sounds",
+  "dist/sounds",
+  "android/app/src/main/assets/public/sounds",
+  "ios/App/App/public/sounds",
+  "output/xcodebuild-hyperfocus-ios/Build/Products/Debug-iphonesimulator/App.app/public/sounds",
+];
+const LEGACY_EMBEDDED_SCAN_TARGETS = [
+  "src-tauri/target/release/bundle/macos/ZenFlow.app/Contents/MacOS/zenflow-desktop",
+];
 const REQUIRED_PROMPT_PHRASES = [
   "field-recording",
   "environmental soundscape",
@@ -74,6 +85,52 @@ function hasRequiredRejectConcept(rejectIf, pattern) {
 
 function normalizeText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function isForbiddenLegacyRootAudioFile(fileName) {
+  return /\.(mp3|wav|m4a|aac|ogg)$/i.test(fileName) && FORBIDDEN_LEGACY_ROOT_AUDIO_PATTERNS.some((pattern) => pattern.test(fileName));
+}
+
+function scanForbiddenLegacyRootAudioAssets({ rootDir = process.cwd() } = {}) {
+  const root = path.resolve(rootDir || process.cwd());
+  const issues = [];
+
+  for (const relativeDir of LEGACY_ROOT_AUDIO_SCAN_TARGETS) {
+    const directory = path.resolve(root, relativeDir);
+    if (directory !== root && !directory.startsWith(root + path.sep)) {
+      issues.push(createIssue("unsafe-legacy-audio-scan-path", "Legacy audio scan path must stay inside the project root.", { relativePath: relativeDir }));
+      continue;
+    }
+    if (!fs.existsSync(directory)) continue;
+    for (const fileName of fs.readdirSync(directory)) {
+      if (!isForbiddenLegacyRootAudioFile(fileName)) continue;
+      issues.push(createIssue(
+        "forbidden-legacy-root-audio",
+        "Legacy underwater/thunderstorm root-level audio must not be shipped for Hyperfocus V2.",
+        { relativePath: path.posix.join(relativeDir, fileName) },
+      ));
+    }
+  }
+
+  for (const relativeFile of LEGACY_EMBEDDED_SCAN_TARGETS) {
+    const filePath = path.resolve(root, relativeFile);
+    if (filePath !== root && !filePath.startsWith(root + path.sep)) {
+      issues.push(createIssue("unsafe-legacy-audio-scan-path", "Legacy embedded scan path must stay inside the project root.", { relativePath: relativeFile }));
+      continue;
+    }
+    if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) continue;
+    const embeddedText = fs.readFileSync(filePath).toString("latin1");
+    for (const pattern of FORBIDDEN_LEGACY_ROOT_AUDIO_PATTERNS) {
+      if (!pattern.test(embeddedText)) continue;
+      issues.push(createIssue(
+        "forbidden-legacy-embedded-audio",
+        "Legacy underwater/thunderstorm audio path is still embedded in the desktop bundle.",
+        { relativePath: relativeFile, pattern: String(pattern) },
+      ));
+    }
+  }
+
+  return { ok: issues.length === 0, scannedTargets: LEGACY_ROOT_AUDIO_SCAN_TARGETS.length + LEGACY_EMBEDDED_SCAN_TARGETS.length, issues };
 }
 
 function validatePrompt({ family, level, prompt, issues }) {
@@ -166,7 +223,16 @@ function validateHyperfocusNatureSoundscapeSpec({ rootDir = process.cwd(), specP
     }
   }
 
-  return { ok: issues.length === 0, familyCount: Array.isArray(loadedSpec.families) ? loadedSpec.families.length : 0, levelCount, issues };
+  const legacyAudioScan = scanForbiddenLegacyRootAudioAssets({ rootDir });
+  issues.push(...legacyAudioScan.issues);
+
+  return {
+    ok: issues.length === 0,
+    familyCount: Array.isArray(loadedSpec.families) ? loadedSpec.families.length : 0,
+    levelCount,
+    legacyAudioScan,
+    issues,
+  };
 }
 
 function buildHyperfocusNatureGenerationQueue({ rootDir = process.cwd(), specPath = DEFAULT_SPEC_PATH, phase = "pilot" } = {}) {
@@ -221,4 +287,11 @@ function runCli() {
 
 if (require.main === module) runCli();
 
-module.exports = { REQUIRED_FAMILIES, REQUIRED_LEVELS, validateHyperfocusNatureSoundscapeSpec, buildHyperfocusNatureGenerationQueue };
+module.exports = {
+  REQUIRED_FAMILIES,
+  REQUIRED_LEVELS,
+  FORBIDDEN_LEGACY_ROOT_AUDIO_PATTERNS,
+  scanForbiddenLegacyRootAudioAssets,
+  validateHyperfocusNatureSoundscapeSpec,
+  buildHyperfocusNatureGenerationQueue,
+};

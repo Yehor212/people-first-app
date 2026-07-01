@@ -101,7 +101,9 @@ describe("V2 diary loading surface", () => {
 
   it("keeps diary startup work off the first interactive frame", () => {
     expect(useJournalSource).toContain("startTransition");
-    expect(useJournalSource).toContain("setEntries(all)");
+    expect(useJournalSource).toContain("getEntriesPage({ limit: JOURNAL_INITIAL_ENTRY_LIMIT })");
+    expect(useJournalSource).toContain("scheduleRemainingLoad");
+    expect(useJournalSource).not.toContain("setEntries(all)");
 
     expect(journalEntryListSource).toContain('import { scheduleIdle } from "@/lib/scheduleIdle"');
     expect(journalEntryListSource).toContain("Promise.all([");

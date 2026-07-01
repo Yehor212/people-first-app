@@ -43,17 +43,27 @@ vi.mock("@/lib/logger", () => ({
   logger: { log: vi.fn() },
 }));
 
+vi.mock("@/lib/audioManager", () => ({
+  playSound: vi.fn(),
+}));
+
 // --- import under test after mocks ---
 
 import { useMoodHandlers } from "../useMoodHandlers";
+import { playSound } from "@/lib/audioManager";
 
 describe("useMoodHandlers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  const renderMoodHandlers = () =>
-    renderHook(() => useMoodHandlers({ updateChallengeProgress: mockUpdateChallengeProgress }));
+  const renderMoodHandlers = (options: { rewardsEnabled?: boolean } = {}) =>
+    renderHook(() =>
+      useMoodHandlers({
+        updateChallengeProgress: mockUpdateChallengeProgress,
+        ...options,
+      })
+    );
 
   it("handleAddMood calls setMoods with new entry appended", () => {
     const { result } = renderMoodHandlers();
@@ -83,6 +93,18 @@ describe("useMoodHandlers", () => {
       haptic: "moodSaved",
       seedExtra: "great",
     });
+  });
+
+  it("V2 neutral mode skips rewardUser and plays only neutral mood feedback", () => {
+    const { result } = renderMoodHandlers({ rewardsEnabled: false });
+
+    const entry = { id: "v2-mood", mood: "great" as const, date: "2026-02-19", timestamp: 2000 };
+    act(() => {
+      result.current.handleAddMood(entry);
+    });
+
+    expect(mockRewardUser).not.toHaveBeenCalled();
+    expect(playSound).toHaveBeenCalledWith("success");
   });
 
   it("handleAddMood calls updateChallengeProgress", () => {

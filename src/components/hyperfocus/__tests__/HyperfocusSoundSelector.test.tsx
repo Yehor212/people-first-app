@@ -23,8 +23,8 @@ vi.mock("framer-motion", async () => {
 const t = {
   hyperfocusAmbientSound: "Ambient sound",
   hyperfocusSoundNone: "None",
-  hyperfocusSoundUnderwater: "Underwater",
-  hyperfocusSoundThunderstorm: "Thunderstorm",
+  hyperfocusSoundRain: "Rain",
+  hyperfocusSoundWind: "Wind",
   hyperfocusSoundOcean: "Ocean",
   hyperfocusSoundRiver: "River",
   hyperfocusSoundForest: "Forest",
@@ -62,12 +62,12 @@ describe("HyperfocusSoundSelector three-level audio", () => {
   it("renders a clear nature-first set of unique sound families", () => {
     renderSelector();
 
-    expect(screen.getByRole("button", { name: /underwater/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /thunderstorm/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /ocean/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /river/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /forest/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /rain/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ocean/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /fireplace/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /river/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /wind/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /coffee|cafe/i })).toBeNull();
   });
 

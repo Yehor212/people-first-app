@@ -126,7 +126,7 @@ function promptSha256ForVariant(variantId = "fireplace:soft") {
 function passingAudioMetrics() {
   return {
     durationSeconds: 30,
-    sampleRate: 44100,
+    sampleRate: 48000,
     channels: 2,
     rmsDbfs: -22,
     peakDbfs: -2.5,
@@ -200,12 +200,12 @@ describe("check-hyperfocus-audio-assets", () => {
       }),
     );
     expect(report.assets.map((asset) => asset.familyId)).toEqual([
-      "underwater",
-      "thunderstorm",
-      "ocean",
-      "river",
       "forest",
+      "rain",
+      "ocean",
       "fireplace",
+      "river",
+      "wind",
     ]);
     expect(report.assets).toContainEqual(
       expect.objectContaining({
@@ -478,7 +478,7 @@ describe("check-hyperfocus-audio-assets", () => {
   it("rejects clipped fading audio that cannot loop cleanly", () => {
     const issues = qc.evaluateHyperfocusAudioMetrics({
       durationSeconds: 29.1,
-      sampleRate: 44100,
+      sampleRate: 48000,
       channels: 2,
       rmsDbfs: -14.4,
       peakDbfs: 0,
@@ -531,7 +531,7 @@ describe("check-hyperfocus-audio-assets", () => {
       fileName: "hyperfocus-fireplace-soft.mp3",
       probeAudioFile: () => ({
         durationSeconds: 29.1,
-        sampleRate: 44100,
+        sampleRate: 48000,
         channels: 2,
         rmsDbfs: -14.4,
         peakDbfs: 0,
@@ -578,7 +578,7 @@ describe("check-hyperfocus-audio-assets", () => {
       },
       probeAudioFile: () => ({
         durationSeconds: 30,
-        sampleRate: 44100,
+        sampleRate: 48000,
         channels: 2,
         rmsDbfs: -22,
         peakDbfs: -2.5,
@@ -617,7 +617,7 @@ describe("check-hyperfocus-audio-assets", () => {
       fileName: "hyperfocus-fireplace-soft.mp3",
       probeAudioFile: () => ({
         durationSeconds: 30,
-        sampleRate: 44100,
+        sampleRate: 48000,
         channels: 2,
         rmsDbfs: -22,
         peakDbfs: -2.5,
@@ -646,7 +646,7 @@ describe("check-hyperfocus-audio-assets", () => {
     writeFileSync(candidateFile, "accepted-audio-bytes");
     const probeAudioFile = vi.fn(() => ({
       durationSeconds: 30,
-      sampleRate: 44100,
+      sampleRate: 48000,
       channels: 2,
       rmsDbfs: -22,
       peakDbfs: -2.5,
@@ -749,7 +749,7 @@ describe("check-hyperfocus-audio-assets", () => {
       },
       probeAudioFile: () => ({
         durationSeconds: 30,
-        sampleRate: 44100,
+        sampleRate: 48000,
         channels: 2,
         rmsDbfs: -22,
         peakDbfs: -2.5,
@@ -1073,7 +1073,8 @@ describe("check-hyperfocus-audio-assets", () => {
       }),
     );
     expect(result.batch.assets).toHaveLength(18);
-    expect(result.batch.assets[0]).toEqual(
+    const fireplaceTemplateAsset = result.batch.assets.find((asset) => asset.variantId === "fireplace:soft");
+    expect(fireplaceTemplateAsset).toEqual(
       expect.objectContaining({
         variantId: "fireplace:soft",
         fileName: "hyperfocus-fireplace-soft.mp3",
@@ -1095,7 +1096,7 @@ describe("check-hyperfocus-audio-assets", () => {
     expect(batchResult.issues[0]).toEqual(
       expect.objectContaining({
         code: "audible-review-read-failed",
-        fileName: "hyperfocus-fireplace-soft.mp3",
+        fileName: "hyperfocus-forest-soft.mp3",
       }),
     );
   });
@@ -1180,8 +1181,8 @@ describe("check-hyperfocus-audio-assets", () => {
     expect(template.assets).toHaveLength(18);
     expect(template.assets[17]).toEqual(
       expect.objectContaining({
-        variantId: "forest:intense",
-        fileName: "hyperfocus-forest-intense.mp3",
+        variantId: "wind:intense",
+        fileName: "hyperfocus-wind-intense.mp3",
       }),
     );
   });
@@ -1209,7 +1210,8 @@ describe("check-hyperfocus-audio-assets", () => {
       }),
     );
     expect(result.batch.assets).toHaveLength(18);
-    expect(result.batch.assets[0]).toEqual(
+    const fireplaceUrlTemplateAsset = result.batch.assets.find((asset) => asset.variantId === "fireplace:soft");
+    expect(fireplaceUrlTemplateAsset).toEqual(
       expect.objectContaining({
         variantId: "fireplace:soft",
         fileName: "hyperfocus-fireplace-soft.mp3",
@@ -1339,7 +1341,7 @@ describe("check-hyperfocus-audio-assets", () => {
       join(process.cwd(), "docs/audio/hyperfocus-three-level-generation-spec.json"),
       join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"),
     );
-    const pilotAsset = qc.getExpectedHyperfocusAssets({ rootDir })[0];
+    const pilotAsset = qc.getExpectedHyperfocusAssets({ rootDir }).find((asset) => asset.familyId === "fireplace" && asset.levelId === "soft")!;
     const baseEntry = {
       variantId: "fireplace:soft",
       fileName: pilotAsset.fileName,
@@ -1385,7 +1387,7 @@ describe("check-hyperfocus-audio-assets", () => {
       join(process.cwd(), "docs/audio/hyperfocus-three-level-generation-spec.json"),
       join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"),
     );
-    const pilotAsset = qc.getExpectedHyperfocusAssets({ rootDir })[0];
+    const pilotAsset = qc.getExpectedHyperfocusAssets({ rootDir }).find((asset) => asset.familyId === "fireplace" && asset.levelId === "soft")!;
     const downloadFile = vi.fn(async () => undefined);
     const baseBatch = {
       phase: "pilot",
@@ -1424,7 +1426,7 @@ describe("check-hyperfocus-audio-assets", () => {
       join(process.cwd(), "docs/audio/hyperfocus-three-level-generation-spec.json"),
       join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"),
     );
-    const pilotAsset = qc.getExpectedHyperfocusAssets({ rootDir })[0];
+    const pilotAsset = qc.getExpectedHyperfocusAssets({ rootDir }).find((asset) => asset.familyId === "fireplace" && asset.levelId === "soft")!;
     const pilotEntry = {
       variantId: "fireplace:soft",
       fileName: pilotAsset.fileName,
@@ -1579,6 +1581,7 @@ describe("check-hyperfocus-audio-assets", () => {
       join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"),
     );
     const expected = qc.getExpectedHyperfocusAssets({ rootDir });
+    const pilotAsset = expected.find((asset) => asset.familyId === "fireplace" && asset.levelId === "soft")!;
     const batch = {
       phase: "pilot",
       pilotVariantId: "fireplace:soft",
@@ -1586,7 +1589,7 @@ describe("check-hyperfocus-audio-assets", () => {
       assets: [
         {
           variantId: "fireplace:soft",
-          fileName: expected[0].fileName,
+          fileName: pilotAsset.fileName,
           url: "http://cdn.example.test/generated/0.mp3",
           generationId: "generation-0",
         },
@@ -1601,7 +1604,7 @@ describe("check-hyperfocus-audio-assets", () => {
     expect(result.issues).toContainEqual(
       expect.objectContaining({
         code: "cleartext-candidate-url",
-        fileName: expected[0].fileName,
+        fileName: pilotAsset.fileName,
       }),
     );
     expect(downloadFile).not.toHaveBeenCalled();
@@ -1723,7 +1726,8 @@ describe("check-hyperfocus-audio-assets", () => {
     const rootDir = mkdtempSync(join(tmpdir(), "hyperfocus-audio-generation-auth-prompt-policy-"));
     mkdirSync(join(rootDir, "docs/audio"), { recursive: true });
     const spec = JSON.parse(readFileSync(join(process.cwd(), "docs/audio/hyperfocus-three-level-generation-spec.json"), "utf8"));
-    spec.families[0].levels[0].prompt = "short musical jingle with vocals";
+    const fireplaceFamily = spec.families.find((family: { id: string }) => family.id === "fireplace");
+    fireplaceFamily.levels[0].prompt = "short musical jingle with vocals";
     writeFileSync(join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"), JSON.stringify(spec, null, 2) + "\n");
 
     const pilotBlocked = qc.buildGenerationAuthorizationReport({
@@ -2442,7 +2446,7 @@ describe("check-hyperfocus-audio-assets", () => {
       generatedAt: "2026-06-19T00:00:00.000Z",
       probeAudioFile: () => ({
         durationSeconds: 30,
-        sampleRate: 44100,
+        sampleRate: 48000,
         channels: 2,
         rmsDbfs: -22,
         peakDbfs: -2.5,
@@ -2499,7 +2503,7 @@ describe("check-hyperfocus-audio-assets", () => {
       generatedAt: "2026-06-19T00:00:00.000Z",
       probeAudioFile: () => ({
         durationSeconds: 30,
-        sampleRate: 44100,
+        sampleRate: 48000,
         channels: 2,
         rmsDbfs: -22,
         peakDbfs: -2.5,
@@ -2558,7 +2562,7 @@ describe("check-hyperfocus-audio-assets", () => {
       generatedAt: "2026-06-19T00:00:00.000Z",
       probeAudioFile: () => ({
         durationSeconds: 30,
-        sampleRate: 44100,
+        sampleRate: 48000,
         channels: 2,
         rmsDbfs: -22,
         peakDbfs: -2.5,
@@ -2581,6 +2585,57 @@ describe("check-hyperfocus-audio-assets", () => {
     ]);
   });
 
+  it("accepts licensed real-source provenance for strict-QC bundled nature assets", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "hyperfocus-audio-real-source-provenance-"));
+    mkdirSync(join(rootDir, "docs/audio"), { recursive: true });
+    mkdirSync(join(rootDir, "public/sounds/hyperfocus"), { recursive: true });
+    copyFileSync(
+      join(process.cwd(), "docs/audio/hyperfocus-three-level-generation-spec.json"),
+      join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"),
+    );
+    const audioBuffer = Buffer.alloc(300_000, 2);
+    const publicSha256 = sha256Buffer(audioBuffer);
+    writeFileSync(join(rootDir, "public/sounds/hyperfocus/hyperfocus-forest-soft.mp3"), audioBuffer);
+    writeFileSync(
+      join(rootDir, "docs/audio/hyperfocus-generated-audio-provenance.json"),
+      JSON.stringify({
+        version: "2026-06-29",
+        assets: {
+          "forest:soft": {
+            fileName: "hyperfocus-forest-soft.mp3",
+            provider: "Mixkit",
+            model: "real-source-nature-pack",
+            generationId: "mixkit-forest-soft-1237-2026-06-29",
+            generatedAt: "2026-06-29T00:00:00.000Z",
+            source: "Wind in the forest (https://mixkit.co/free-sound-effects/forest/, item 1237)",
+            sourceLicense: "https://mixkit.co/license/",
+            publicSha256,
+            postProcessing: {
+              objectiveResult: "PASS",
+              policy: "strict-qc-30s-loop-crossfade-normalization",
+            },
+          },
+        },
+      }),
+    );
+
+    const result = qc.collectGeneratedAudioManifestEntries({
+      rootDir,
+      generatedAt: "2026-06-29T00:00:00.000Z",
+      probeAudioFile: () => passingAudioMetrics(),
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.entries).toEqual([
+      expect.objectContaining({
+        variantId: "forest:soft",
+        provider: "Mixkit",
+        model: "real-source-nature-pack",
+        generationId: "mixkit-forest-soft-1237-2026-06-29",
+      }),
+    ]);
+  });
+
   it("builds a durable JSON QC report with missing and passing asset evidence", () => {
     const rootDir = mkdtempSync(join(tmpdir(), "hyperfocus-audio-report-"));
     mkdirSync(join(rootDir, "docs/audio"), { recursive: true });
@@ -2596,7 +2651,7 @@ describe("check-hyperfocus-audio-assets", () => {
       generatedAt: "2026-06-19T00:00:00.000Z",
       probeAudioFile: () => ({
         durationSeconds: 30,
-        sampleRate: 44100,
+        sampleRate: 48000,
         channels: 2,
         rmsDbfs: -22,
         peakDbfs: -2.5,
@@ -2613,7 +2668,8 @@ describe("check-hyperfocus-audio-assets", () => {
     expect(report.passedCount).toBe(1);
     expect(report.missingCount).toBe(17);
     expect(report.failedCount).toBe(0);
-    expect(report.assets[0]).toEqual(
+    const fireplaceReportAsset = report.assets.find((asset) => asset.variantId === "fireplace:soft");
+    expect(fireplaceReportAsset).toEqual(
       expect.objectContaining({
         variantId: "fireplace:soft",
         fileName: "hyperfocus-fireplace-soft.mp3",
@@ -2622,8 +2678,8 @@ describe("check-hyperfocus-audio-assets", () => {
         bytes: "accepted-audio-bytes".length,
       }),
     );
-    expect(report.assets[0].sha256).toMatch(/^[a-f0-9]{64}$/);
-    expect(report.assets[0].metrics).toEqual(expect.objectContaining({ durationSeconds: 30, sampleRate: 44100 }));
+    expect(fireplaceReportAsset?.sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(fireplaceReportAsset?.metrics).toEqual(expect.objectContaining({ durationSeconds: 30, sampleRate: 48000 }));
     expect(report.assets.filter((asset) => asset.status === "missing")).toHaveLength(17);
   });
 
@@ -2663,7 +2719,7 @@ describe("check-hyperfocus-audio-assets", () => {
     expect(report.assets).toHaveLength(18);
     expect(report.assets[0]).toEqual(
       expect.objectContaining({
-        variantId: "fireplace:soft",
+        variantId: "forest:soft",
         status: "missing",
       }),
     );
@@ -2897,7 +2953,8 @@ describe("check-hyperfocus-audio-assets", () => {
     expect(targetsById["ios-simulator-app"]).toEqual(expect.objectContaining({ platform: "ios", artifactPath: "output/xcodebuild-hyperfocus-ios/Build/Products/Debug-iphonesimulator/App.app", presentCount: 0, missingCount: 18 }));
     expect(targetsById["android-capacitor"]).toEqual(expect.objectContaining({ platform: "android", presentCount: 0, missingCount: 18 }));
     expect(targetsById["android-debug-apk"]).toEqual(expect.objectContaining({ platform: "android", artifactPath: "android/app/build/outputs/apk/debug/app-debug.apk", presentCount: 0, missingCount: 18 }));
-    expect(targetsById["source-public"].assets[0]).toEqual(
+    const sourcePublicFireplaceAsset = targetsById["source-public"].assets.find((asset) => asset.variantId === "fireplace:soft");
+    expect(sourcePublicFireplaceAsset).toEqual(
       expect.objectContaining({
         variantId: "fireplace:soft",
         fileName: "hyperfocus-fireplace-soft.mp3",
@@ -2906,7 +2963,7 @@ describe("check-hyperfocus-audio-assets", () => {
         bytes: "source-audio-bytes".length,
       }),
     );
-    expect(targetsById["source-public"].assets[0].sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(sourcePublicFireplaceAsset?.sha256).toMatch(/^[a-f0-9]{64}$/);
     expect(report.issues.some((issue) => issue.code === "missing-packaged-file" && issue.targetId === "ios-capacitor")).toBe(true);
   });
 
@@ -2940,7 +2997,8 @@ describe("check-hyperfocus-audio-assets", () => {
         missingCount: 17,
       }),
     );
-    expect(tauriAppTarget.assets[0]).toEqual(
+    const tauriFireplaceAsset = tauriAppTarget.assets.find((asset) => asset.variantId === "fireplace:soft");
+    expect(tauriFireplaceAsset).toEqual(
       expect.objectContaining({
         variantId: "fireplace:soft",
         status: "present",
@@ -2950,7 +3008,7 @@ describe("check-hyperfocus-audio-assets", () => {
         binaryPath: "src-tauri/target/release/bundle/macos/ZenFlow.app/Contents/MacOS/zenflow-desktop",
       }),
     );
-    expect(tauriAppTarget.assets[0].sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(tauriFireplaceAsset?.sha256).toMatch(/^[a-f0-9]{64}$/);
   });
 
   it("reads generated Hyperfocus assets from the iOS simulator App.app bundle", () => {
@@ -2988,7 +3046,8 @@ describe("check-hyperfocus-audio-assets", () => {
         missingCount: 17,
       }),
     );
-    expect(iosAppTarget.assets[0]).toEqual(
+    const iosFireplaceAsset = iosAppTarget.assets.find((asset) => asset.variantId === "fireplace:soft");
+    expect(iosFireplaceAsset).toEqual(
       expect.objectContaining({
         variantId: "fireplace:soft",
         status: "present",
@@ -2997,7 +3056,7 @@ describe("check-hyperfocus-audio-assets", () => {
         bytes: "ios-app-audio-bytes".length,
       }),
     );
-    expect(iosAppTarget.assets[0].sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(iosFireplaceAsset?.sha256).toMatch(/^[a-f0-9]{64}$/);
   });
 
   it("reads generated Hyperfocus assets from the Android debug APK artifact", () => {
@@ -3034,7 +3093,8 @@ describe("check-hyperfocus-audio-assets", () => {
         missingCount: 17,
       }),
     );
-    expect(apkTarget.assets[0]).toEqual(
+    const apkFireplaceAsset = apkTarget.assets.find((asset) => asset.variantId === "fireplace:soft");
+    expect(apkFireplaceAsset).toEqual(
       expect.objectContaining({
         variantId: "fireplace:soft",
         status: "present",
@@ -3148,22 +3208,22 @@ describe("check-hyperfocus-audio-assets", () => {
     expect(result.jobs).toHaveLength(18);
     expect(result.jobs[0]).toEqual(
       expect.objectContaining({
-        variantId: "fireplace:soft",
-        familyId: "fireplace",
+        variantId: "forest:soft",
+        familyId: "forest",
         levelId: "soft",
-        fileName: "hyperfocus-fireplace-soft.mp3",
-        publicPath: "sounds/hyperfocus/hyperfocus-fireplace-soft.mp3",
-        quarantinePath: "output/audio-quarantine/hyperfocus-fireplace-soft-raw.mp3",
+        fileName: "hyperfocus-forest-soft.mp3",
+        publicPath: "sounds/hyperfocus/hyperfocus-forest-soft.mp3",
+        quarantinePath: "output/audio-quarantine/hyperfocus-forest-soft-raw.mp3",
         provider: "Google",
         model: "lyria-3-clip",
       }),
     );
     expect(result.jobs[0].prompt).toContain("30-second seamless non-musical ambience loop");
-    expect(result.jobs[0].rejectIf).toContain("vocals");
-    expect(result.jobs[0].promotionCommand).toContain("--file-name hyperfocus-fireplace-soft.mp3");
+    expect(result.jobs[0].rejectIf).toContain("clear words");
+    expect(result.jobs[0].promotionCommand).toContain("--file-name hyperfocus-forest-soft.mp3");
     expect(result.jobs[0].promotionCommand).toContain("--model lyria-3-clip");
     expect(result.jobs[0].promotionCommand).toContain("--generation-id <generation-id>");
-    expect(result.jobs[0].promotionCommand).toContain("--audible-review output/audio-qc/reviews/hyperfocus-fireplace-soft-audible-review.json");
+    expect(result.jobs[0].promotionCommand).toContain("--audible-review output/audio-qc/reviews/hyperfocus-forest-soft-audible-review.json");
     expect(new Set(result.jobs.map((job) => job.variantId)).size).toBe(18);
   });
 
@@ -3295,7 +3355,8 @@ describe("check-hyperfocus-audio-assets", () => {
     const rootDir = mkdtempSync(join(tmpdir(), "hyperfocus-audio-queue-prompt-policy-"));
     mkdirSync(join(rootDir, "docs/audio"), { recursive: true });
     const spec = JSON.parse(readFileSync(join(process.cwd(), "docs/audio/hyperfocus-three-level-generation-spec.json"), "utf8"));
-    spec.families[0].levels[0].prompt = "short musical jingle with vocals";
+    const fireplaceFamily = spec.families.find((family: { id: string }) => family.id === "fireplace");
+    fireplaceFamily.levels[0].prompt = "short musical jingle with vocals";
     writeFileSync(join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"), JSON.stringify(spec, null, 2) + "\n");
 
     const result = qc.buildGeminiGenerationQueue({ rootDir, model: "lyria-3-clip", phase: "pilot" });
@@ -3367,8 +3428,8 @@ describe("check-hyperfocus-audio-assets", () => {
     expect(queue.jobs).toHaveLength(18);
     expect(queue.jobs[0]).toEqual(
       expect.objectContaining({
-        variantId: "fireplace:soft",
-        fileName: "hyperfocus-fireplace-soft.mp3",
+        variantId: "forest:soft",
+        fileName: "hyperfocus-forest-soft.mp3",
         model: "lyria-3-clip",
       }),
     );
@@ -3395,7 +3456,7 @@ describe("check-hyperfocus-audio-assets", () => {
   it("accepts stable loop metrics inside the Hyperfocus QC envelope", () => {
     const issues = qc.evaluateHyperfocusAudioMetrics({
       durationSeconds: 30,
-      sampleRate: 44100,
+      sampleRate: 48000,
       channels: 2,
       rmsDbfs: -22,
       peakDbfs: -2.5,

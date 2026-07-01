@@ -435,7 +435,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
               <div className="flex-1 min-w-0">
                 {/* Title + relative time */}
                 <div className="flex items-center gap-2 mb-0.5">
-                  <h4 className="text-sm font-semibold text-foreground truncate flex-1">
+                  <h4 className="text-sm font-semibold text-foreground truncate flex-1" dir="auto">
                     {privateMode ? privateEntryLabel : displayTitle ? highlightText(displayTitle) : time}
                   </h4>
                   <span className="text-[10px] text-muted-foreground/50 flex-shrink-0">
@@ -444,14 +444,14 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                 </div>
 
                 {privateMode && (
-                  <p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed" dir="auto">
                     {privateEntryHint}
                   </p>
                 )}
 
                 {/* Content preview (hidden in private mode) */}
                 {!privateMode && preview && (
-                  <p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed" dir="auto">
                     {highlightText(preview)}
                   </p>
                 )}

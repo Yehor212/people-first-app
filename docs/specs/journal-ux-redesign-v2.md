@@ -196,12 +196,12 @@ HIDDEN ──────────────────> COMPACT ───
 │ [mood] [title]           [more] │  ← sticky header
 ├─────────────────────────────────┤
 │                                 │
-│  Lorem ipsum dolor sit amet,    │
+│  Today I noticed a calmer       │
 │  ███████████████████            │  ← selected text
 │  ┌─────────────────────┐        │
 │  │ B  I  U  ~  " 🔗 H │        │  ← floating toolbar (appears on selection)
 │  └─────────────────────┘        │
-│  consectetur adipiscing elit.   │
+│  rhythm after my walk.          │
 │                                 │
 │                                 │
 │                                 │

@@ -10,6 +10,17 @@ async function importOrFailure<T>(specifier: string): Promise<T | { error: Error
 }
 
 describe("free RAG and Coach Lite mode", () => {
+  const coachLiteLanguageMarkers = [
+    ["en", "free local mode"],
+    ["uk", "безкоштовний локальний режим"],
+    ["es", "modo local gratuito"],
+    ["de", "kostenloser lokaler Modus"],
+    ["fr", "mode local gratuit"],
+    ["ja", "無料ローカルモード"],
+    ["ar", "الوضع المحلي المجاني"],
+    ["he", "מצב מקומי חינמי"],
+  ] as const;
+
   it("builds a local project RAG index that retrieves agent-facing project docs without paid APIs", async () => {
     const module =
       await importOrFailure<typeof import("../rag/freeProjectRag")>("../rag/freeProjectRag");
@@ -101,6 +112,35 @@ describe("free RAG and Coach Lite mode", () => {
       })
     );
   });
+
+  it("keeps Coach Lite fallback copy localized for every supported app language", async () => {
+    const module = await importOrFailure<
+      typeof import("../../supabase/functions/_shared/coach_lite")
+    >("../../supabase/functions/_shared/coach_lite");
+
+    expect("error" in module, "error" in module ? module.error.message : "").toBe(false);
+
+    if ("error" in module) {
+      return;
+    }
+
+    for (const [language, marker] of coachLiteLanguageMarkers) {
+      const response = module.buildCoachLiteResponse({
+        message: "I skipped my evening walk and feel stuck.",
+        language,
+        trigger: "habit_skip",
+        context: {
+          habits: [{ name: "Evening walk", completedToday: false, streak: 4 }],
+        },
+      });
+
+      expect(response.message, language).toContain(marker);
+      if (language !== "en") {
+        expect(response.message, language).not.toContain("free local mode");
+      }
+    }
+  });
+
   it("wires AI Coach edge fallback to Coach Lite instead of returning a paid-provider config error", () => {
     const source = readFileSync("supabase/functions/ai-coach/index.ts", "utf8");
 

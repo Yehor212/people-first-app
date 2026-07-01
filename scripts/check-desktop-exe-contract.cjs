@@ -42,6 +42,19 @@ function requireIncludes(file, snippets) {
   }
 }
 
+function requireExcludes(file, snippets) {
+  const source = read(file);
+  if (!source) return;
+
+  for (const snippet of snippets) {
+    if (source.includes(snippet)) {
+      failures.push(`${rel(file)} contains legacy desktop token: ${snippet}`);
+    } else {
+      pass();
+    }
+  }
+}
+
 function requireFile(file) {
   if (!fs.existsSync(abs(file))) {
     failures.push(`${rel(file)} is missing`);
@@ -139,10 +152,16 @@ function main() {
 
   requireIncludes("src/pages/Index.tsx", [
     "DesktopDownloadPage",
-    "IS_DESKTOP_RUNTIME",
-    "shouldUseNavV2Shell",
     "PUBLIC_ROUTE_PATHS",
     "\"/desktop\"",
+    "return <IndexV2Impl />;",
+  ]);
+
+  requireExcludes("src/pages/Index.tsx", [
+    "IndexV1Impl",
+    "shouldUseNavV2Shell",
+    "NavV2ShellDecision",
+    "IS_DESKTOP_RUNTIME",
   ]);
 
   requireIncludes("src/lib/env.ts", [

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -59,5 +60,15 @@ describe("DesktopDownloadPage", () => {
     expect(canonicalOrbs.length).toBeGreaterThanOrEqual(2);
     expect(canonicalOrbs.some((orb) => orb.dataset.size === "lg")).toBe(true);
     expect(canonicalOrbs.some((orb) => orb.dataset.chrome === "badge")).toBe(true);
+  });
+
+  it("uses shared app viewport and safe-area variables on the public desktop route", () => {
+    const css = readFileSync("src/pages/DesktopDownloadPage.css", "utf8");
+
+    expect(css).toContain("var(--app-viewport-height)");
+    expect(css).toContain("var(--safe-top)");
+    expect(css).toContain("var(--safe-bottom)");
+    expect(css).not.toContain("100svh");
+    expect(css).not.toContain("env(safe-area-inset");
   });
 });

@@ -22,6 +22,13 @@ vi.mock('@/storage/db', () => {
         })),
         sortBy: vi.fn(() => Promise.resolve([])),
       })),
+      below: vi.fn(() => ({
+        reverse: vi.fn(() => ({
+          limit: vi.fn(() => ({
+            toArray: vi.fn(() => Promise.resolve([])),
+          })),
+        })),
+      })),
     })),
     orderBy: vi.fn(() => ({
       reverse: vi.fn(() => ({
@@ -82,6 +89,7 @@ vi.mock('@/lib/utils', () => ({
 import { db } from '@/storage/db';
 import {
   getAllEntries,
+  getEntriesPage,
   getEntriesByDate,
   getEntryById,
   saveEntry,
@@ -159,6 +167,120 @@ async function flushAsyncTurns(turns = 10): Promise<void> {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(isCloudSyncEnabled).mockReturnValue(true);
+});
+
+// ============================================================
+// getAllEntries
+// ============================================================
+describe('getEntriesPage', () => {
+  it('loads one bounded page plus one sentinel row and returns the total count', async () => {
+    const entries = [
+      makeEntry({ id: 'e-new', createdAt: 3000 }),
+      makeEntry({ id: 'e-mid', createdAt: 2000 }),
+      makeEntry({ id: 'e-sentinel', createdAt: 1000 }),
+    ];
+    const mockToArray = vi.fn(() => Promise.resolve(entries));
+    const mockLimit = vi.fn(() => ({ toArray: mockToArray }));
+    const mockReverse = vi.fn(() => ({ limit: mockLimit }));
+    vi.mocked(db.journalEntries.orderBy).mockReturnValue({ reverse: mockReverse } as never);
+    vi.mocked(db.journalEntries.count).mockResolvedValue(12);
+
+    const result = await getEntriesPage({ limit: 2 });
+
+    expect(db.journalEntries.orderBy).toHaveBeenCalledWith('createdAt');
+    expect(mockLimit).toHaveBeenCalledWith(3);
+    expect(result.entries.map((entry) => entry.id)).toEqual(['e-new', 'e-mid']);
+    expect(result.totalCount).toBe(12);
+    expect(result.hasMore).toBe(true);
+    expect(result.nextCursor).toEqual({ createdAt: 2000, id: 'e-mid' });
+  });
+
+  it('uses a stable cursor for older journal pages', async () => {
+    const sameTimestampEntries = [makeEntry({ id: 'e-cursor', createdAt: 1000 })];
+    const olderEntries = [makeEntry({ id: 'e-old', createdAt: 900 })];
+    const mockSameToArray = vi.fn(() => Promise.resolve(sameTimestampEntries));
+    const mockOlderToArray = vi.fn(() => Promise.resolve(olderEntries));
+    const mockOlderLimit = vi.fn(() => ({ toArray: mockOlderToArray }));
+    const mockOlderReverse = vi.fn(() => ({ limit: mockOlderLimit }));
+    const mockWhere = vi.fn((field: string) => {
+      expect(field).toBe('createdAt');
+      return {
+        equals: vi.fn((createdAt: number) => ({
+          toArray: createdAt === 1000 ? mockSameToArray : vi.fn(() => Promise.resolve(olderEntries)),
+        })),
+        below: vi.fn(() => ({ reverse: mockOlderReverse })),
+      };
+    });
+    vi.mocked(db.journalEntries.where).mockImplementation(mockWhere as never);
+    vi.mocked(db.journalEntries.count).mockResolvedValue(2);
+
+    const result = await getEntriesPage({ limit: 2, before: { createdAt: 1000, id: 'e-cursor' } });
+
+    expect(mockOlderLimit).toHaveBeenCalledWith(3);
+    expect(result.entries.map((entry) => entry.id)).toEqual(['e-old']);
+    expect(result.hasMore).toBe(false);
+    expect(result.nextCursor).toBeNull();
+  });
+
+  it('keeps same-millisecond entries after the cursor instead of skipping them', async () => {
+    const sameTimestampEntries = [
+      makeEntry({ id: 'e-z-first', createdAt: 2000 }),
+      makeEntry({ id: 'e-m-cursor', createdAt: 2000 }),
+      makeEntry({ id: 'e-a-same-ms', createdAt: 2000 }),
+    ];
+    const olderEntries = [makeEntry({ id: 'e-old', createdAt: 1000 })];
+    const mockSameToArray = vi.fn(() => Promise.resolve(sameTimestampEntries));
+    const mockOlderToArray = vi.fn(() => Promise.resolve(olderEntries));
+    const mockOlderLimit = vi.fn(() => ({ toArray: mockOlderToArray }));
+    const mockOlderReverse = vi.fn(() => ({ limit: mockOlderLimit }));
+    const mockWhere = vi.fn((field: string) => {
+      expect(field).toBe('createdAt');
+      return {
+        equals: vi.fn((createdAt: number) => ({
+          toArray: createdAt === 2000 ? mockSameToArray : vi.fn(() => Promise.resolve(olderEntries)),
+        })),
+        below: vi.fn(() => ({ reverse: mockOlderReverse })),
+      };
+    });
+    vi.mocked(db.journalEntries.where).mockImplementation(mockWhere as never);
+    vi.mocked(db.journalEntries.count).mockResolvedValue(4);
+
+    const result = await getEntriesPage({ limit: 2, before: { createdAt: 2000, id: 'e-m-cursor' } });
+
+    expect(result.entries.map((entry) => entry.id)).toEqual(['e-a-same-ms', 'e-old']);
+    expect(result.hasMore).toBe(false);
+    expect(result.nextCursor).toBeNull();
+  });
+
+  it('uses the same raw id ordering for mixed-case same-millisecond cursors', async () => {
+    const sameTimestampEntries = [
+      makeEntry({ id: 'entry-z', createdAt: 2000 }),
+      makeEntry({ id: 'entry-Z', createdAt: 2000 }),
+      makeEntry({ id: 'entry-a', createdAt: 2000 }),
+      makeEntry({ id: 'entry-_', createdAt: 2000 }),
+      makeEntry({ id: 'entry--', createdAt: 2000 }),
+    ];
+    const mockSameToArray = vi.fn(() => Promise.resolve(sameTimestampEntries));
+    const mockWhere = vi.fn((field: string) => {
+      expect(field).toBe('createdAt');
+      return {
+        equals: vi.fn(() => ({ toArray: mockSameToArray })),
+        below: vi.fn(() => ({
+          reverse: vi.fn(() => ({
+            limit: vi.fn(() => ({ toArray: vi.fn(() => Promise.resolve([])) })),
+          })),
+        })),
+      };
+    });
+    vi.mocked(db.journalEntries.where).mockImplementation(mockWhere as never);
+    vi.mocked(db.journalEntries.count).mockResolvedValue(5);
+
+    const result = await getEntriesPage({ limit: 3, before: { createdAt: 2000, id: 'entry-z' } });
+
+    expect(result.entries.map((entry) => entry.id)).toEqual(['entry-a', 'entry-_', 'entry-Z']);
+    expect(result.hasMore).toBe(true);
+    expect(result.nextCursor).toEqual({ createdAt: 2000, id: 'entry-Z' });
+  });
 });
 
 // ============================================================

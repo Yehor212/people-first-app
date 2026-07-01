@@ -14,8 +14,9 @@ import { safeParseFloat } from '@/lib/validation';
 import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
 import { shouldPlaySounds } from './animationUtils';
+import { canPlayFeedbackSound, consumeAudioFeedbackBudget } from './audioComfort';
 
-export type SoundType = 'success' | 'complete' | 'streak' | 'levelUp' | 'notification';
+export type SoundType = 'success' | 'complete' | 'streak' | 'milestone' | 'levelUp' | 'notification';
 
 export const AUDIO_SETTINGS_CHANGE_EVENT = 'zenflow-audio-settings-change';
 
@@ -39,6 +40,14 @@ const state: AudioManagerState = {
   volume: 0.3,
   activeTimeouts: [],
 };
+
+const HIGH_SALIENCE_SOUND_TYPES = new Set<SoundType>(['streak', 'milestone', 'levelUp']);
+const DEFERRED_ACTION_SOUND_TYPES = new Set<SoundType>(['success', 'complete', 'notification']);
+const LOW_SALIENCE_DELAY_MS = 160;
+const HIGH_SALIENCE_SUPPRESSION_MS = 1200;
+
+let pendingActionSound: { id: number; type: SoundType } | null = null;
+let lastHighSalienceSoundAt = 0;
 
 function getAudioSettingsSnapshot(): AudioSettingsSnapshot {
   const feedbackSoundsEnabled = shouldPlaySounds();
@@ -103,7 +112,7 @@ export function subscribeAudioSettings(
 }
 
 // Helper to schedule timeout with tracking
-function scheduleTimeout(callback: () => void, delay: number): void {
+function scheduleTimeout(callback: () => void, delay: number): number {
   const id = window.setTimeout(() => {
     callback();
     // Remove from active list after execution
@@ -111,6 +120,15 @@ function scheduleTimeout(callback: () => void, delay: number): void {
     if (index > -1) state.activeTimeouts.splice(index, 1);
   }, delay);
   state.activeTimeouts.push(id);
+  return id;
+}
+
+function clearPendingActionSound(): void {
+  if (!pendingActionSound) return;
+  clearTimeout(pendingActionSound.id);
+  const index = state.activeTimeouts.indexOf(pendingActionSound.id);
+  if (index > -1) state.activeTimeouts.splice(index, 1);
+  pendingActionSound = null;
 }
 
 // Lazy initialization of AudioContext (required for mobile)
@@ -144,7 +162,12 @@ async function ensureContextResumed(): Promise<boolean> {
 }
 
 // Play a simple tone (for UI feedback)
-function playTone(frequency: number, duration: number, type: OscillatorType = 'sine'): void {
+function playTone(
+  frequency: number,
+  duration: number,
+  type: OscillatorType = 'sine',
+  gainScale = 0.1,
+): void {
   if (state.isMuted) return;
 
   const ctx = getAudioContext();
@@ -160,7 +183,7 @@ function playTone(frequency: number, duration: number, type: OscillatorType = 's
     oscillator.frequency.value = frequency;
     oscillator.type = type;
 
-    const volume = state.volume * 0.5; // Reduce oscillator volume
+    const volume = Math.max(0.0001, state.volume * gainScale);
     gainNode.gain.setValueAtTime(volume, ctx.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
 
@@ -172,115 +195,172 @@ function playTone(frequency: number, duration: number, type: OscillatorType = 's
 }
 
 // Play success chime (task completed)
-export function playSuccess(): void {
-  if (state.isMuted || !shouldPlaySounds()) return;
-
+function emitSuccessTone(): void {
   const ctx = getAudioContext();
   if (!ctx) return;
 
   try {
-    // C-E-G chord progression (happy chime)
-    const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
-
-    notes.forEach((freq, i) => {
-      scheduleTimeout(() => playTone(freq, 0.2), i * 80);
-    });
-  } catch (_e) {
-    // Silent fail
-  }
-}
-
-// Play completion chime (habit/focus finished)
-export function playComplete(): void {
-  if (state.isMuted || !shouldPlaySounds()) return;
-
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
-  try {
-    // Warmer and lower than generic success so completion feels resolved, not flashy.
     const notes = [
-      { freq: 392, delay: 0, duration: 0.18 },
-      { freq: 523.25, delay: 90, duration: 0.22 },
-      { freq: 659.25, delay: 190, duration: 0.26 },
+      { freq: 392, delay: 0, duration: 0.12 },
+      { freq: 493.88, delay: 70, duration: 0.14 },
     ];
 
     notes.forEach(({ freq, delay, duration }) => {
-      scheduleTimeout(() => playTone(freq, duration, 'triangle'), delay);
+      scheduleTimeout(() => playTone(freq, duration, 'sine', 0.105), delay);
     });
   } catch (_e) {
     // Silent fail
   }
+}
+
+export function playSuccess(): void {
+  playSound('success');
+}
+
+// Play completion chime (habit/focus finished)
+function emitCompleteTone(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  try {
+    const notes = [
+      { freq: 329.63, delay: 0, duration: 0.13 },
+      { freq: 392, delay: 80, duration: 0.15 },
+      { freq: 493.88, delay: 170, duration: 0.18 },
+    ];
+
+    notes.forEach(({ freq, delay, duration }) => {
+      scheduleTimeout(() => playTone(freq, duration, 'triangle', 0.12), delay);
+    });
+  } catch (_e) {
+    // Silent fail
+  }
+}
+
+export function playComplete(): void {
+  playSound('complete');
 }
 
 // Play streak milestone sound
-export function playStreakMilestone(): void {
-  if (state.isMuted || !shouldPlaySounds()) return;
-
+function emitStreakMilestoneTone(): void {
   const ctx = getAudioContext();
   if (!ctx) return;
 
   try {
-    // Ascending arpeggio
-    const notes = [392, 493.88, 587.33, 783.99]; // G4, B4, D5, G5
+    const notes = [
+      { freq: 349.23, delay: 0, duration: 0.14 },
+      { freq: 440, delay: 80, duration: 0.16 },
+      { freq: 523.25, delay: 170, duration: 0.18 },
+      { freq: 587.33, delay: 270, duration: 0.2 },
+    ];
 
-    notes.forEach((freq, i) => {
-      scheduleTimeout(() => playTone(freq, 0.3, 'triangle'), i * 100);
+    notes.forEach(({ freq, delay, duration }) => {
+      scheduleTimeout(() => playTone(freq, duration, 'triangle', 0.135), delay);
     });
   } catch (_e) {
     // Silent fail
   }
 }
 
-// Play level up fanfare
-export function playLevelUp(): void {
-  if (state.isMuted || !shouldPlaySounds()) return;
+export function playStreakMilestone(): void {
+  playSound('streak');
+}
 
+// Play a soft cue reserved for rare milestones.
+function emitMilestoneTone(): void {
   const ctx = getAudioContext();
   if (!ctx) return;
 
   try {
-    // Victory fanfare
     const notes = [
-      { freq: 523.25, delay: 0 },
-      { freq: 659.25, delay: 100 },
-      { freq: 783.99, delay: 200 },
-      { freq: 1046.5, delay: 350 },
+      { freq: 392, delay: 0, duration: 0.14 },
+      { freq: 493.88, delay: 80, duration: 0.16 },
+      { freq: 587.33, delay: 175, duration: 0.2 },
     ];
 
-    notes.forEach(({ freq, delay }) => {
-      scheduleTimeout(() => playTone(freq, 0.4, 'sine'), delay);
+    notes.forEach(({ freq, delay, duration }) => {
+      scheduleTimeout(() => playTone(freq, duration, 'triangle', 0.135), delay);
     });
   } catch (_e) {
     // Silent fail
   }
+}
+
+export function playMilestone(): void {
+  playSound('milestone');
+}
+
+export function playLevelUp(): void {
+  playSound('levelUp');
 }
 
 // Play notification ping
-export function playNotification(): void {
+function playNotificationTone(): void {
   if (state.isMuted || !shouldPlaySounds()) return;
-  playTone(880, 0.15, 'sine'); // A5
+  playTone(587.33, 0.1, 'sine', 0.05);
 }
 
-// Play by sound type
-export function playSound(type: SoundType): void {
+export function playNotification(): void {
+  if (!canPlayFeedbackSound('notification')) return;
+  if (state.isMuted || !shouldPlaySounds()) return;
+  if (!consumeAudioFeedbackBudget('notification')) return;
+  playNotificationTone();
+}
+
+function playSoundNow(type: SoundType): void {
   switch (type) {
     case 'success':
-      playSuccess();
+      emitSuccessTone();
       break;
     case 'complete':
-      playComplete();
+      emitCompleteTone();
       break;
     case 'streak':
-      playStreakMilestone();
+      emitStreakMilestoneTone();
+      break;
+    case 'milestone':
+      emitMilestoneTone();
       break;
     case 'levelUp':
-      playLevelUp();
+      emitMilestoneTone();
       break;
     case 'notification':
-      playNotification();
+      playNotificationTone();
       break;
   }
+}
+
+// Play by sound type. Low-salience action cues are briefly deferred so a
+// rare milestone cue in the same transaction can replace them instead of stacking.
+export function playSound(type: SoundType): void {
+  if (!canPlayFeedbackSound(type)) return;
+  if (state.isMuted || !shouldPlaySounds()) return;
+
+  if (HIGH_SALIENCE_SOUND_TYPES.has(type)) {
+    clearPendingActionSound();
+    if (!consumeAudioFeedbackBudget(type)) return;
+    lastHighSalienceSoundAt = Date.now();
+    playSoundNow(type);
+    return;
+  }
+
+  if (!DEFERRED_ACTION_SOUND_TYPES.has(type)) {
+    if (!consumeAudioFeedbackBudget(type)) return;
+    playSoundNow(type);
+    return;
+  }
+
+  if (Date.now() - lastHighSalienceSoundAt < HIGH_SALIENCE_SUPPRESSION_MS) return;
+
+  clearPendingActionSound();
+  const id = scheduleTimeout(() => {
+    pendingActionSound = null;
+    if (Date.now() - lastHighSalienceSoundAt < HIGH_SALIENCE_SUPPRESSION_MS) return;
+    if (!canPlayFeedbackSound(type) || state.isMuted || !shouldPlaySounds()) return;
+    if (!consumeAudioFeedbackBudget(type)) return;
+    playSoundNow(type);
+  }, LOW_SALIENCE_DELAY_MS);
+  pendingActionSound = { id, type };
 }
 
 // Mute control
@@ -362,6 +442,8 @@ export function cleanup(): void {
   // Clear all pending audio timeouts
   state.activeTimeouts.forEach(id => clearTimeout(id));
   state.activeTimeouts.length = 0;
+  pendingActionSound = null;
+  lastHighSalienceSoundAt = 0;
 
   if (state.context) {
     void state.context.close();

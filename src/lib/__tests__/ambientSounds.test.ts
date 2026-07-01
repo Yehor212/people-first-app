@@ -63,12 +63,12 @@ describe('SOUNDS constant', () => {
 
   it('includes expected sound types', () => {
     const types = SOUNDS.map(s => s.type);
-    expect(types).toContain('underwater');
-    expect(types).toContain('thunderstorm');
-    expect(types).toContain('ocean');
-    expect(types).toContain('river');
     expect(types).toContain('forest');
+    expect(types).toContain('rain');
+    expect(types).toContain('ocean');
     expect(types).toContain('fireplace');
+    expect(types).toContain('river');
+    expect(types).toContain('wind');
   });
 
   it('file paths start with BASE_URL', () => {
@@ -129,8 +129,13 @@ describe('getSoundByType', () => {
     expect(getSoundByType('cafe')?.type).toBe('forest');
   });
 
+  it('maps retired underwater and thunderstorm types to the closest nature replacements', () => {
+    expect(getSoundByType('underwater')?.type).toBe('ocean');
+    expect(getSoundByType('thunderstorm')?.type).toBe('rain');
+  });
+
   it('returns undefined for an unknown type', () => {
-    expect(getSoundByType('wind' as AmbientSoundType)).toBeUndefined();
+    expect(getSoundByType('nonexistent' as AmbientSoundType)).toBeUndefined();
   });
 });
 

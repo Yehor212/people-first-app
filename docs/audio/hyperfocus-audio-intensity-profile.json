@@ -1,97 +1,151 @@
 {
-  "version": "2026-06-29-nature-source-intensity-v4",
-  "generatedAt": "2026-06-29T07:29:00Z",
-  "metric": "intensityScore = weighted RMS + motion + zero-crossing activity; higher means denser/louder/noisier ambience.",
+  "version": "2026-06-29-rain-wind-v8-48khz",
+  "generatedAt": "2026-06-29T20:49:38.107Z",
+  "metric": "intensityScore = weighted RMS + motion + zero-crossing activity, measured with macOS afconvert parity to the regression test; higher means denser/louder/noisier ambience.",
   "families": {
     "forest": {
       "soft": {
         "fileName": "hyperfocus-forest-soft.mp3",
         "sourceTitle": "Wind in the forest",
-        "durationSeconds": 25.3,
-        "rmsDb": -41.5,
-        "motionDb": -50.1,
-        "peakDb": -28.2,
-        "zeroCrossingsPerSecond": 5359.7,
-        "intensityScore": 44.5,
-        "sha256": "cf237d761f1b2f8977c19a384bda28163f7ef00b0ecabceb91a96a2c132b2528"
+        "durationSeconds": 30.024,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -33.84,
+        "motionDb": -43.21,
+        "peakDb": -17.39,
+        "zeroCrossingsPerSecond": 5255.2,
+        "intensityScore": 56.59,
+        "sha256": "4b40ea1e22d473eb4a2ada97236288a9d1ad0d63ea6ffb76be218800821a1b29",
+        "bytes": 480384,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.021249,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.05
+        }
       },
       "deep": {
         "fileName": "hyperfocus-forest-deep.mp3",
         "sourceTitle": "Forest birds ambience",
-        "durationSeconds": 151.6,
-        "rmsDb": -42.8,
-        "motionDb": -47.8,
-        "peakDb": -19.6,
-        "zeroCrossingsPerSecond": 7068.9,
-        "intensityScore": 48.3,
-        "sha256": "47ab079aac704576d45d252c416de1da31dd016b69b5b9a2eaaa720efb6c2411"
+        "durationSeconds": 30.024,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -32.27,
+        "motionDb": -38.23,
+        "peakDb": -6.04,
+        "zeroCrossingsPerSecond": 6889.7,
+        "intensityScore": 64.8,
+        "sha256": "78ec636955e6c983ee634c3488a9cf200dd427ae38464ed901121de26e2d8e04",
+        "bytes": 480384,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.014272,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.27
+        }
       },
       "intense": {
         "fileName": "hyperfocus-forest-intense.mp3",
         "sourceTitle": "Forest at night",
-        "durationSeconds": 47,
-        "rmsDb": -31.8,
-        "motionDb": -31.5,
-        "peakDb": -18.2,
-        "zeroCrossingsPerSecond": 15206.8,
-        "intensityScore": 71.2,
-        "sha256": "5aa9d78e18efdb8589ae7257f20dc966df89cf5a8e47a0cea6f498583f05af46"
+        "durationSeconds": 30.024,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -29.15,
+        "motionDb": -29.54,
+        "peakDb": -11.21,
+        "zeroCrossingsPerSecond": 15210.2,
+        "intensityScore": 75.23,
+        "sha256": "646ef045aeb613f56ad10a6406d05f2c204f9501174c923301609bd00db9ef70",
+        "bytes": 480384,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.04423,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.02
+        }
       },
       "acceptance": {
         "order": "soft < deep < intense",
         "scores": [
-          44.5,
-          48.3,
-          71.2
+          56.59,
+          64.8,
+          75.23
         ],
-        "softToDeepGap": 3.8,
-        "deepToIntenseGap": 22.9,
+        "softToDeepGap": 8.21,
+        "deepToIntenseGap": 10.43,
         "pass": true
       }
     },
-    "fireplace": {
+    "rain": {
       "soft": {
-        "fileName": "hyperfocus-fireplace-soft.mp3",
-        "sourceTitle": "Campfire burning crackles",
-        "durationSeconds": 14.1,
-        "rmsDb": -60.1,
-        "motionDb": -56.4,
-        "peakDb": -21.2,
-        "zeroCrossingsPerSecond": 14301,
-        "intensityScore": 26,
-        "sha256": "73d22bdfe741fd1bb879ec53b9b080a910a9202f0873bb1afced15c0ca7fd15e"
+        "fileName": "hyperfocus-rain-soft.mp3",
+        "sourceTitle": "Light rain looping",
+        "durationSeconds": 30.072,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -33.08,
+        "motionDb": -42.18,
+        "peakDb": -10,
+        "zeroCrossingsPerSecond": 5306.2,
+        "intensityScore": 58.09,
+        "sha256": "e491344e4ec1e558bce5f29d4b438ac4e9f9a4c0fff1c72470ad607e01e1a52b",
+        "bytes": 481152,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.011766,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.39
+        }
       },
       "deep": {
-        "fileName": "hyperfocus-fireplace-deep.mp3",
-        "sourceTitle": "Campfire crackles",
-        "durationSeconds": 24,
-        "rmsDb": -55.4,
-        "motionDb": -55.4,
-        "peakDb": -10,
-        "zeroCrossingsPerSecond": 8034,
-        "intensityScore": 32.1,
-        "sha256": "47dee6aa6ee5ec0d3136aee0255789833dcaaff27c1334e82ffaa016efb1d7c4"
+        "fileName": "hyperfocus-rain-deep.mp3",
+        "sourceTitle": "Long rain ambience",
+        "durationSeconds": 30.072,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -30.36,
+        "motionDb": -39.66,
+        "peakDb": -8.49,
+        "zeroCrossingsPerSecond": 4892.7,
+        "intensityScore": 61.45,
+        "sha256": "f746986b775588bbc5acd8964847c7fff911840f73b2590ab333af12ae469e38",
+        "bytes": 481152,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.010866,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 1.01
+        }
       },
       "intense": {
-        "fileName": "hyperfocus-fireplace-intense.mp3",
-        "sourceTitle": "Campfire night wind",
-        "durationSeconds": 30.8,
-        "rmsDb": -23.5,
-        "motionDb": -50.9,
-        "peakDb": -4,
-        "zeroCrossingsPerSecond": 439,
-        "intensityScore": 53.5,
-        "sha256": "f4ba18fc9fa32be7fd3e483dd83b7811d06f5d00c9cc83dcefc84cbb981afdc7"
+        "fileName": "hyperfocus-rain-intense.mp3",
+        "sourceTitle": "Heavy rain ambience",
+        "durationSeconds": 30.072,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -24.76,
+        "motionDb": -37.85,
+        "peakDb": -12.38,
+        "zeroCrossingsPerSecond": 3302.5,
+        "intensityScore": 65.01,
+        "sha256": "73031e99a4c7fac3707718e6eaf56ce83a04156fe979845d8ff98399d5ed22a4",
+        "bytes": 481152,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.026094,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.6
+        }
       },
       "acceptance": {
         "order": "soft < deep < intense",
         "scores": [
-          26,
-          32.1,
-          53.5
+          58.09,
+          61.45,
+          65.01
         ],
-        "softToDeepGap": 6.1,
-        "deepToIntenseGap": 21.4,
+        "softToDeepGap": 3.36,
+        "deepToIntenseGap": 3.56,
         "pass": true
       }
     },
@@ -99,45 +153,145 @@
       "soft": {
         "fileName": "hyperfocus-ocean-soft.mp3",
         "sourceTitle": "Small waves harbor rocks",
-        "durationSeconds": 77.9,
-        "rmsDb": -32.7,
-        "motionDb": -40.8,
-        "peakDb": -7.4,
-        "zeroCrossingsPerSecond": 5578,
-        "intensityScore": 59.8,
-        "sha256": "ae63d13f9f56a3b6211714042534a31a7b89da94206edf4668830ea45a9ff3df"
+        "durationSeconds": 30.024,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -34.49,
+        "motionDb": -43.25,
+        "peakDb": -9.7,
+        "zeroCrossingsPerSecond": 5349.9,
+        "intensityScore": 56.03,
+        "sha256": "2881fc8be99fc3b1263ae7e5816aeec82af663442ebe8957c083aa8f1d753c7d",
+        "bytes": 480384,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.000003,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.3
+        }
       },
       "deep": {
         "fileName": "hyperfocus-ocean-deep.mp3",
         "sourceTitle": "Sea coast breaking waves",
-        "durationSeconds": 120.1,
-        "rmsDb": -20.7,
-        "motionDb": -34.8,
-        "peakDb": -0.9,
-        "zeroCrossingsPerSecond": 1704,
-        "intensityScore": 67.3,
-        "sha256": "91960b0e869fcd7fd6f72fad0ea8d2fc63e8d9d7294674f81c2596ae8c28def0"
+        "durationSeconds": 30.024,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -23.21,
+        "motionDb": -42.85,
+        "peakDb": -2.35,
+        "zeroCrossingsPerSecond": 1571.4,
+        "intensityScore": 60.29,
+        "sha256": "8c7c27ec1aa1ac2a82431dcb992d443d791ee965ae31f27b0583ae01e7c64825",
+        "bytes": 480384,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.000169,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.22
+        }
       },
       "intense": {
         "fileName": "hyperfocus-ocean-intense.mp3",
-        "sourceTitle": "Rough sea waves loop",
-        "durationSeconds": 70.8,
-        "rmsDb": -19.4,
-        "motionDb": -32.8,
-        "peakDb": -1.6,
-        "zeroCrossingsPerSecond": 2943,
-        "intensityScore": 72.8,
-        "sha256": "7d5c40dcbde007e789a13d5e7d61ef69b918c159522117983225b27e8834013a"
+        "sourceTitle": "Sea coast breaking waves + rough sea waves blend",
+        "durationSeconds": 30.024,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -22.03,
+        "motionDb": -40.74,
+        "peakDb": -1.81,
+        "zeroCrossingsPerSecond": 1851.7,
+        "intensityScore": 63.36,
+        "sha256": "caa38a9a6ca6c91b8d0dd9b0299094899554a455eb389413f17126f19c0f0194",
+        "bytes": 480384,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.022135,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.27
+        }
       },
       "acceptance": {
         "order": "soft < deep < intense",
         "scores": [
-          59.8,
-          67.3,
-          72.8
+          56.03,
+          60.29,
+          63.36
         ],
-        "softToDeepGap": 7.5,
-        "deepToIntenseGap": 5.5,
+        "softToDeepGap": 4.26,
+        "deepToIntenseGap": 3.07,
+        "pass": true
+      }
+    },
+    "fireplace": {
+      "soft": {
+        "fileName": "hyperfocus-fireplace-soft.mp3",
+        "sourceTitle": "Campfire burning crackles",
+        "durationSeconds": 30.024,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -31.12,
+        "motionDb": -59.62,
+        "peakDb": -8.31,
+        "zeroCrossingsPerSecond": 415.2,
+        "intensityScore": 40.36,
+        "sha256": "1eb38f1eec5012e1e94284134784392b788be82655767cf3c7ad560dc30bd103",
+        "bytes": 480384,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.00043,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.28
+        }
+      },
+      "deep": {
+        "fileName": "hyperfocus-fireplace-deep.mp3",
+        "sourceTitle": "Campfire crackles",
+        "durationSeconds": 30.024,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -33.38,
+        "motionDb": -32.32,
+        "peakDb": -5.02,
+        "zeroCrossingsPerSecond": 14724.3,
+        "intensityScore": 68.9,
+        "sha256": "5c470beb8d115f0e00b1e9bb2399a11c83db87d7d0940d502234429e6f22100a",
+        "bytes": 480384,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.000018,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.8
+        }
+      },
+      "intense": {
+        "fileName": "hyperfocus-fireplace-intense.mp3",
+        "sourceTitle": "Campfire night wind",
+        "durationSeconds": 30.024,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -30.36,
+        "motionDb": -31.78,
+        "peakDb": -1.9,
+        "zeroCrossingsPerSecond": 10286.4,
+        "intensityScore": 72.77,
+        "sha256": "a850e30dfaf4f2608fa517b70eeb2b98dafeaaa9083f1f77d7b9928c5d859934",
+        "bytes": 480384,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.000098,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.05
+        }
+      },
+      "acceptance": {
+        "order": "soft < deep < intense",
+        "scores": [
+          40.36,
+          68.9,
+          72.77
+        ],
+        "softToDeepGap": 28.54,
+        "deepToIntenseGap": 3.87,
         "pass": true
       }
     },
@@ -145,137 +299,145 @@
       "soft": {
         "fileName": "hyperfocus-river-soft.mp3",
         "sourceTitle": "River water flow and surroundings",
-        "durationSeconds": 60.1,
-        "rmsDb": -45.4,
-        "motionDb": -52.4,
-        "peakDb": -30.6,
-        "zeroCrossingsPerSecond": 6430,
-        "intensityScore": 41.5,
-        "sha256": "6e45d1f6e552f72e2118df04e0a899f81335a99cffcf9d34b75cb59e141ec133"
+        "durationSeconds": 30.024,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -34.29,
+        "motionDb": -42.04,
+        "peakDb": -16.22,
+        "zeroCrossingsPerSecond": 6549.5,
+        "intensityScore": 59.8,
+        "sha256": "05322454891235d1efb5b596dd99d566b1d40c1f112d54e19299f9aa9f1dfc61",
+        "bytes": 480384,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.000052,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.39
+        }
       },
       "deep": {
         "fileName": "hyperfocus-river-deep.mp3",
         "sourceTitle": "Wildlife environment in a river",
-        "durationSeconds": 121.7,
-        "rmsDb": -33.2,
-        "motionDb": -44.9,
-        "peakDb": -14.9,
-        "zeroCrossingsPerSecond": 4536,
-        "intensityScore": 54.8,
-        "sha256": "3f41f9eb2a6ec333791b7a68c03783d25f887399eb28a02683b125768426cce8"
+        "durationSeconds": 30.024,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -27.94,
+        "motionDb": -40.38,
+        "peakDb": -3,
+        "zeroCrossingsPerSecond": 4438,
+        "intensityScore": 62.9,
+        "sha256": "19d97166266afba6416c0cc52fda306e75480a16948bbf538dc3b7ec7fd20caa",
+        "bytes": 480384,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.000056,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.52
+        }
       },
       "intense": {
         "fileName": "hyperfocus-river-intense.mp3",
         "sourceTitle": "Water flowing in the river",
-        "durationSeconds": 180.1,
-        "rmsDb": -16.4,
-        "motionDb": -23.8,
-        "peakDb": -0.9,
-        "zeroCrossingsPerSecond": 5979,
-        "intensityScore": 88,
-        "sha256": "09b31b3c9f6d073f47b988cde1592c25a27d93e290d477dc8ef5b5a4ef72d24a"
+        "durationSeconds": 30.024,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -24.07,
+        "motionDb": -31.9,
+        "peakDb": -7.8,
+        "zeroCrossingsPerSecond": 6189.2,
+        "intensityScore": 75.73,
+        "sha256": "48f65e5fd91a503463eac6be257e798e8cb3c35d688acc9a634914519f902b96",
+        "bytes": 480384,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.00033,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.22
+        }
       },
       "acceptance": {
         "order": "soft < deep < intense",
         "scores": [
-          41.5,
-          54.8,
-          88
+          59.8,
+          62.9,
+          75.73
         ],
-        "softToDeepGap": 13.3,
-        "deepToIntenseGap": 33.2,
+        "softToDeepGap": 3.1,
+        "deepToIntenseGap": 12.83,
         "pass": true
       }
     },
-    "thunderstorm": {
+    "wind": {
       "soft": {
-        "fileName": "hyperfocus-thunderstorm-soft.mp3",
-        "sourceTitle": "Thunderstorm and clear rain",
-        "durationSeconds": 44.2,
-        "rmsDb": -28.5,
-        "motionDb": -47.8,
-        "peakDb": -1.8,
-        "zeroCrossingsPerSecond": 3029,
-        "intensityScore": 55.4,
-        "sha256": "fa5dda3e884c51e975875b7bf03a1dc70b675588d06723e31b6fcfa2ff33ed38"
+        "fileName": "hyperfocus-wind-soft.mp3",
+        "sourceTitle": "Wind blowing ambience",
+        "durationSeconds": 30.072,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -32.9,
+        "motionDb": -61.57,
+        "peakDb": -19.22,
+        "zeroCrossingsPerSecond": 555.4,
+        "intensityScore": 37.7,
+        "sha256": "178d9726fe2b0c5468fc14c8beb7e07b34773a82abf5d0f04a87ce591486d70f",
+        "bytes": 481152,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.00959,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.89
+        }
       },
       "deep": {
-        "fileName": "hyperfocus-thunderstorm-deep.mp3",
-        "sourceTitle": "Thunderstorm and rain loop",
-        "durationSeconds": 52.8,
-        "rmsDb": -25.8,
-        "motionDb": -46.4,
-        "peakDb": -1.3,
-        "zeroCrossingsPerSecond": 3129,
-        "intensityScore": 59.4,
-        "sha256": "a05dc25da59f852515657341bec9195fbd2e2d993de8b2896c1377c224f91710"
+        "fileName": "hyperfocus-wind-deep.mp3",
+        "sourceTitle": "Wind blowing ambience",
+        "durationSeconds": 30.072,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -29.4,
+        "motionDb": -59.13,
+        "peakDb": -14.57,
+        "zeroCrossingsPerSecond": 496.1,
+        "intensityScore": 42.85,
+        "sha256": "1ec296327b7bc07a20b6772a2f26b4cc4a032251bf563c3dea6b9a1065ca6f64",
+        "bytes": 481152,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.014077,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 0.52
+        }
       },
       "intense": {
-        "fileName": "hyperfocus-thunderstorm-intense.mp3",
-        "sourceTitle": "Heavy storm rain loop",
-        "durationSeconds": 18,
-        "rmsDb": -20.8,
-        "motionDb": -40.8,
-        "peakDb": -1.3,
-        "zeroCrossingsPerSecond": 2192,
-        "intensityScore": 65.6,
-        "sha256": "c412e7f0aba641629594fe49fd1acbfba39424198c361f304c0b8889c8c40e49"
+        "fileName": "hyperfocus-wind-intense.mp3",
+        "sourceTitle": "Wind in the top of the mountain",
+        "durationSeconds": 30.072,
+        "sampleRate": 48000,
+        "channels": 2,
+        "rmsDb": -27.79,
+        "motionDb": -51.45,
+        "peakDb": -12.38,
+        "zeroCrossingsPerSecond": 978.3,
+        "intensityScore": 49.45,
+        "sha256": "2fb611a9bfe7564711c966872cfd813977c6383b3afc45b896ccfe555f2fefbc",
+        "bytes": 481152,
+        "strictQc": {
+          "status": "PASS",
+          "seamMeanAbsDiff": 0.018784,
+          "clippedSamples": 0,
+          "startEndRmsDeltaDb": 2.2
+        }
       },
       "acceptance": {
         "order": "soft < deep < intense",
         "scores": [
-          55.4,
-          59.4,
-          65.6
+          37.7,
+          42.85,
+          49.45
         ],
-        "softToDeepGap": 4,
-        "deepToIntenseGap": 6.2,
-        "pass": true
-      }
-    },
-    "underwater": {
-      "soft": {
-        "fileName": "hyperfocus-underwater-soft.mp3",
-        "sourceTitle": "Diving sea ambience",
-        "durationSeconds": 10.1,
-        "rmsDb": -39.7,
-        "motionDb": -58.1,
-        "peakDb": -14,
-        "zeroCrossingsPerSecond": 1727,
-        "intensityScore": 34,
-        "sha256": "d9c920020bed167e0e0299670b6d624f5f27ce9f8566ab804253c2b8a6f81942"
-      },
-      "deep": {
-        "fileName": "hyperfocus-underwater-deep.mp3",
-        "sourceTitle": "Sinking in the sea",
-        "durationSeconds": 31.4,
-        "rmsDb": -20.9,
-        "motionDb": -54.4,
-        "peakDb": -1.3,
-        "zeroCrossingsPerSecond": 372,
-        "intensityScore": 54.9,
-        "sha256": "87888f1491bb6e0c2a7b039a1439a52f046b5c9c4c964b07f39c4c44fe3d9dd4"
-      },
-      "intense": {
-        "fileName": "hyperfocus-underwater-intense.mp3",
-        "sourceTitle": "Underwater transmitter hum",
-        "durationSeconds": 13.6,
-        "rmsDb": -17.2,
-        "motionDb": -49.2,
-        "peakDb": -4,
-        "zeroCrossingsPerSecond": 356,
-        "intensityScore": 61.7,
-        "sha256": "1884a0e71d5b31c7d578ea0a1a059d8228f2043498cf3757a621c83d7b35d818"
-      },
-      "acceptance": {
-        "order": "soft < deep < intense",
-        "scores": [
-          34,
-          54.9,
-          61.7
-        ],
-        "softToDeepGap": 20.9,
-        "deepToIntenseGap": 6.8,
+        "softToDeepGap": 5.15,
+        "deepToIntenseGap": 6.6,
         "pass": true
       }
     }

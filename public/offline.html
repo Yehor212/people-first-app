@@ -68,7 +68,7 @@
     <img class="brand-logo" src="/people-first-app/pwa-192.png?v=zenflow-browser-leaf-20260627-r7" width="96" height="96" alt="" aria-hidden="true">
     <h1 id="offline-title">You are offline</h1>
     <p id="offline-desc">ZenFlow works in offline mode. All your data is saved locally and will sync when you reconnect.</p>
-    <button class="btn" onclick="window.location.reload();" id="offline-retry" aria-label="Retry connection">Try again</button>
+    <button class="btn" onclick="window.location.reload();" id="offline-retry" aria-label="Try again">Try again</button>
   </div>
   <script>
     // Detect language from localStorage (same key as app uses)
@@ -76,18 +76,19 @@
       var lang = localStorage.getItem('zenflow-language') || navigator.language.slice(0, 2);
       var t = {
         en: { title: 'You are offline', desc: 'ZenFlow works in offline mode. All your data is saved locally and will sync when you reconnect.', btn: 'Try again' },
-        uk: { title: 'Р’Рё РѕС„Р»Р°Р№РЅ', desc: 'ZenFlow РїСЂР°С†СЋС” РІ Р°РІС‚РѕРЅРѕРјРЅРѕРјСѓ СЂРµР¶РёРјС–. Р’СЃС– РІР°С€С– РґР°РЅС– Р·Р±РµСЂРµР¶РµРЅС– Р»РѕРєР°Р»СЊРЅРѕ С‚Р° СЃРёРЅС…СЂРѕРЅС–Р·СѓСЋС‚СЊСЃСЏ РїСЂРё РїС–РґРєР»СЋС‡РµРЅРЅС–.', btn: 'РЎРїСЂРѕР±СѓРІР°С‚Рё Р·РЅРѕРІСѓ' },
-        es: { title: 'Sin conexiГіn', desc: 'ZenFlow funciona sin conexiГіn. Todos tus datos se guardan localmente y se sincronizarГЎn cuando te reconectes.', btn: 'Reintentar' },
-        de: { title: 'Offline', desc: 'ZenFlow funktioniert im Offline-Modus. Alle Daten werden lokal gespeichert und bei erneuter Verbindung synchronisiert.', btn: 'Erneut versuchen' },
-        fr: { title: 'Hors ligne', desc: 'ZenFlow fonctionne hors ligne. Toutes vos donnГ©es sont sauvegardГ©es localement et seront synchronisГ©es Г  la reconnexion.', btn: 'RГ©essayer' },
-        ja: { title: 'г‚Єгѓ•гѓ©г‚¤гѓі', desc: 'ZenFlowгЃЇг‚Єгѓ•гѓ©г‚¤гѓігѓўгѓјгѓ‰гЃ§е‹•дЅњгЃ—гЃ¦гЃ„гЃѕгЃ™гЂ‚гЃ™гЃ№гЃ¦гЃ®гѓ‡гѓјг‚їгЃЇгѓ­гѓјг‚«гѓ«гЃ«дїќе­гЃ•г‚ЊгЂЃжЋҐз¶љж™‚гЃ«еђЊжњџгЃ•г‚ЊгЃѕгЃ™гЂ‚', btn: 'е†Ќи©¦иЎЊ' },
-        ar: { title: 'ШЈЩ†ШЄ ШєЩЉШ± Щ…ШЄШµЩ„', desc: 'ЩЉШ№Щ…Щ„ ZenFlow ЩЃЩЉ Щ€Ш¶Ш№ Ш№ШЇЩ… Ш§Щ„Ш§ШЄШµШ§Щ„. ЩЉШЄЩ… Ш­ЩЃШё Ш¬Щ…ЩЉШ№ ШЁЩЉШ§Щ†Ш§ШЄЩѓ Щ…Ш­Щ„ЩЉЩ‹Ш§ Щ€ШіШЄШЄЩ… Щ…ШІШ§Щ…Щ†ШЄЩ‡Ш§ Ш№Щ†ШЇ ШҐШ№Ш§ШЇШ© Ш§Щ„Ш§ШЄШµШ§Щ„.', btn: 'ШҐШ№Ш§ШЇШ© Ш§Щ„Щ…Ш­Ш§Щ€Щ„Ш©' },
-        he: { title: 'ЧђЧЄЧ” Ч‘ЧћЧ¦Ч‘ ЧњЧђ ЧћЧ§Ч•Ч•Чџ', desc: 'ZenFlow ЧўЧ•Ч‘Ч“ Ч‘ЧћЧ¦Ч‘ ЧњЧђ ЧћЧ§Ч•Ч•Чџ. Ч›Чњ Ч”Ч ЧЄЧ•Ч Ч™Чќ Ч©ЧњЧљ Ч Ч©ЧћЧЁЧ™Чќ ЧћЧ§Ч•ЧћЧ™ЧЄ Ч•Ч™ЧЎЧ•Ч Ч›ЧЁЧ Ч• Ч›Ч©ЧЄЧЄЧ—Ч‘ЧЁ ЧћЧ—Ч“Ч©.', btn: 'Ч ЧЎЧ” Ч©Ч•Ч‘' }
+        uk: { title: 'Ви офлайн', desc: 'ZenFlow працює в автономному режимі. Усі ваші дані збережені локально та синхронізуються після підключення.', btn: 'Повторити з'єднання' },
+        es: { title: 'Estás sin conexión', desc: 'ZenFlow funciona sin conexión. Todos tus datos se guardan localmente y se sincronizarán cuando vuelvas a conectarte.', btn: 'Reintentar conexión' },
+        de: { title: 'Du bist offline', desc: 'ZenFlow funktioniert offline. Alle Daten werden lokal gespeichert und synchronisiert, sobald du wieder verbunden bist.', btn: 'Verbindung erneut versuchen' },
+        fr: { title: 'Vous êtes hors ligne', desc: 'ZenFlow fonctionne hors ligne. Toutes vos données sont enregistrées localement et se synchroniseront à la reconnexion.', btn: 'Réessayer la connexion' },
+        ja: { title: 'オフラインです', desc: 'ZenFlowはオフラインでも動作します。すべてのデータは端末に保存され、再接続時に同期されます。', btn: '再接続' },
+        ar: { title: 'أنت غير متصل', desc: 'يعمل ZenFlow دون اتصال. تُحفظ كل بياناتك محليًا وتتم مزامنتها عند إعادة الاتصال.', btn: 'إعادة محاولة الاتصال' },
+        he: { title: 'את/ה אופליין', desc: 'ZenFlow עובד גם ללא חיבור. כל הנתונים שלך נשמרים מקומית ויסונכרנו כשתתחבר/י מחדש.', btn: 'נסה חיבור מחדש' }
       };
       var msgs = t[lang] || t.en;
       document.getElementById('offline-title').textContent = msgs.title;
       document.getElementById('offline-desc').textContent = msgs.desc;
       document.getElementById('offline-retry').textContent = msgs.btn;
+      document.getElementById('offline-retry').setAttribute('aria-label', msgs.btn);
       document.documentElement.lang = lang;
       if (lang === 'ar' || lang === 'he') document.documentElement.dir = 'rtl';
     } catch(e) { /* fallback to English */ }

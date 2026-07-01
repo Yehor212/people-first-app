@@ -36,13 +36,16 @@ const PAGE_PATHS = {
   planning: "/planning",
 } as const;
 
-export function buildPlanningBridgeHref(targetPage: PlanningBridgeAction["targetPage"]): string {
+export function buildPlanningBridgeHref(action: Pick<PlanningBridgeAction, "kind" | "targetPage">): string {
   const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-  const path = PAGE_PATHS[targetPage];
+  const path = PAGE_PATHS[action.targetPage];
   const params = new URLSearchParams(
     typeof window === "undefined" ? undefined : window.location.search,
   );
   params.set("nav", "v2");
+  if (action.kind === "plan_tomorrow") {
+    params.set("planningDate", "tomorrow");
+  }
   const query = params.toString();
   return `${base}${path}${query ? `?${query}` : ""}`;
 }
@@ -66,7 +69,7 @@ export function PlanningBridgeActions({ actions, labels }: PlanningBridgeActions
           return (
             <a
               key={action.kind}
-              href={buildPlanningBridgeHref(action.targetPage)}
+              href={buildPlanningBridgeHref(action)}
               data-testid={`planning-bridge-action-${action.kind}`}
               className="group flex min-h-[64px] items-center gap-3 rounded-xl border border-border/45 bg-secondary/50 px-3 py-2 text-start text-foreground touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >

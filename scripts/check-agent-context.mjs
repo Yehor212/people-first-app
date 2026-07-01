@@ -142,6 +142,7 @@ function assertAgentChangeGovernance(agents) {
 
   assertFreeRagPreflightContract(agents);
   assertBestPracticesGateContract(agents);
+  assertNoAiTemplatesGateContract(agents);
 
   const governance = assertGovernanceFile("docs/ai/AGENT_CHANGE_GOVERNANCE.md");
   if (governance) {
@@ -370,6 +371,85 @@ function assertBestPracticesGateContract(agents) {
   const packageJson = assertGovernanceFile("package.json");
   if (packageJson && !/"check:best-practices"\s*:\s*"node scripts\/check-best-practices-gate\.cjs"/.test(packageJson)) {
     fail('package.json must define "check:best-practices" for the implied-requirements gate');
+  }
+}
+
+function assertNoAiTemplatesGateContract(agents) {
+  if (agents) {
+    if (!hasHeading(agents, "No AI Templates Agent Gate")) {
+      fail('AGENTS.md is missing required heading "No AI Templates Agent Gate"');
+    }
+    for (const marker of [
+      "docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md",
+      "npm run check:no-ai-templates",
+      "ИИ шаблоны",
+      "layered enforcement",
+    ]) {
+      if (!agents.includes(marker)) {
+        fail(`AGENTS.md must include no-AI-template marker "${marker}"`);
+      }
+    }
+  }
+
+  const policy = assertGovernanceFile("docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md");
+  if (policy) {
+    for (const marker of [
+      "Source Evidence",
+      "Enforcement Layers",
+      "Required Agent Behavior",
+      "Static Guard",
+      "https://www.nist.gov/itl/ai-risk-management-framework",
+      "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+      "https://developers.openai.com/codex/guides/agents-md",
+      "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches",
+      "https://google.github.io/eng-practices/review/developer/small-cls.html",
+      "UNVERIFIED",
+    ]) {
+      if (!policy.includes(marker)) {
+        fail(`NO_AI_TEMPLATES_AGENT_POLICY.md must include ${marker}`);
+      }
+    }
+  }
+
+  const prTemplate = assertGovernanceFile(".github/PULL_REQUEST_TEMPLATE.md");
+  if (prTemplate) {
+    if (!/No AI-template output/.test(prTemplate)) {
+      fail(".github/PULL_REQUEST_TEMPLATE.md must include a No AI-template output checklist item");
+    }
+    if (!/npm run check:no-ai-templates/.test(prTemplate)) {
+      fail(".github/PULL_REQUEST_TEMPLATE.md must mention npm run check:no-ai-templates");
+    }
+  }
+
+  const driftWorkflow = assertGovernanceFile(".github/workflows/drift-checks.yml");
+  if (driftWorkflow && !/npm run check:no-ai-templates/.test(driftWorkflow)) {
+    fail("drift-checks.yml must run npm run check:no-ai-templates");
+  }
+
+  const packageJson = assertGovernanceFile("package.json");
+  if (packageJson && !/"check:no-ai-templates"\s*:\s*"node scripts\/check-no-ai-templates\.cjs"/.test(packageJson)) {
+    fail('package.json must define "check:no-ai-templates" for the no-AI-templates gate');
+  }
+  if (packageJson && !/"ci:preflight"[\s\S]*npm run check:no-ai-templates/.test(packageJson)) {
+    fail('package.json ci:preflight must run "npm run check:no-ai-templates"');
+  }
+
+  const checker = assertGovernanceFile("scripts/check-no-ai-templates.cjs");
+  if (checker) {
+    for (const marker of ["validateNoAiTemplatesPolicy", "scanForTemplateMarkers", "AI-template marker"]) {
+      if (!checker.includes(marker)) {
+        fail(`scripts/check-no-ai-templates.cjs must enforce ${marker}`);
+      }
+    }
+  }
+
+  const tests = assertGovernanceFile("scripts/__tests__/no-ai-templates-policy.test.ts");
+  if (tests) {
+    for (const marker of ["Source Evidence", "No AI-template output", "rejects obvious AI-template markers"]) {
+      if (!tests.includes(marker)) {
+        fail(`scripts/__tests__/no-ai-templates-policy.test.ts must cover ${marker}`);
+      }
+    }
   }
 }
 

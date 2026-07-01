@@ -10,8 +10,8 @@ import { logger } from "@/lib/logger";
 /**
  * ThemeToggleV2 — Sidebar-embedded theme switcher for Nav-V2.
  *
- * Visual: 52×36 pill-switch (Sun ↔ Moon, sky-300 / slate-700) matching V1
- * ThemeToggle.tsx aesthetic, but wired through the V2 paper/ink theme store.
+ * Visual: 52×36 pill-switch (Sun ↔ Moon, sky-300 / slate-700) wired
+ * through the V2 paper/ink theme store.
  *
  * Animation: 2026-standard circle-reveal via View Transitions API — the new
  * theme grows from the click origin as a clip-path circle until it covers

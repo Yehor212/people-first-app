@@ -30,7 +30,12 @@ const INITIAL_STATE: GamificationState = {
   shownAchievementToasts: [],
 };
 
-export function useGamification() {
+interface UseGamificationOptions {
+  enabled?: boolean;
+}
+
+export function useGamification(options: UseGamificationOptions = {}) {
+  const enabled = options.enabled ?? true;
   const [gamificationState, setGamificationState] = useIndexedDB<GamificationState>({
     table: db.settings,
     localStorageKey: 'gamification',
@@ -59,6 +64,11 @@ export function useGamification() {
 
   // Check for new achievements
   useEffect(() => {
+    if (!enabled) {
+      initialLoadRef.current = false;
+      lastDataHashRef.current = `${moods.length}-${habits.length}-${focusSessions.length}-${gratitudeEntries.length}`;
+      return;
+    }
     if (moods.length === 0 && habits.length === 0) return;
 
     // Create a hash of the current data to detect real changes
@@ -89,7 +99,7 @@ export function useGamification() {
             const profile = loadMyProfile();
             const milestoneSound = achievementsToShow.some((achievement) => achievement.id.startsWith('streak_'))
               ? 'streak'
-              : 'levelUp';
+              : 'milestone';
             playSound(milestoneSound);
             achievementsToShow.forEach((achievement) => {
               analytics.achievementUnlocked(achievement.id);
@@ -128,26 +138,19 @@ export function useGamification() {
       initialLoadRef.current = false;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- gamificationState read via functional updater (prev), not closure
-  }, [moods, habits, focusSessions, gratitudeEntries]);
+  }, [enabled, moods, habits, focusSessions, gratitudeEntries]);
 
   // Award XP for actions
   const awardXp = useCallback(
     (action: XpAction) => {
+      if (!enabled) return;
       const xp = getXpForAction(action);
-      setGamificationState((prev) => {
-        const nextTotalXp = prev.totalXp + xp;
-        const previousLevel = calculateLevel(prev.totalXp).level;
-        const nextLevel = calculateLevel(nextTotalXp).level;
-        if (nextLevel > previousLevel) {
-          queueMicrotask(() => playSound('levelUp'));
-        }
-        return {
-          ...prev,
-          totalXp: nextTotalXp,
-        };
-      });
+      setGamificationState((prev) => ({
+        ...prev,
+        totalXp: prev.totalXp + xp,
+      }));
     },
-    [setGamificationState]
+    [enabled, setGamificationState]
   );
 
   const userLevel = calculateLevel(gamificationState.totalXp);
@@ -155,6 +158,7 @@ export function useGamification() {
   // Track level-up for friends activity feed + sync level to profile
   const prevLevelRef = useRef(userLevel.level);
   useEffect(() => {
+    if (!enabled) return;
     // Always sync current level to friends profile
     updateMyLevel(userLevel.level);
 
@@ -171,7 +175,7 @@ export function useGamification() {
       }
     }
     prevLevelRef.current = userLevel.level;
-  }, [userLevel.level, userLevel.title]);
+  }, [enabled, userLevel.level, userLevel.title]);
 
   return {
     stats,

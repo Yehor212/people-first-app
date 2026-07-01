@@ -6,31 +6,38 @@ import { syncMood } from "@/storage/realtimeSync";
 import { haptics } from "@/lib/haptics";
 import { logger } from "@/lib/logger";
 import { analytics } from "@/lib/analytics";
+import { playSound } from "@/lib/audioManager";
 import { useThrottledCallback } from "@/hooks/useThrottledCallback";
 import type { MoodEntry } from "@/types";
 
 interface UseMoodHandlersParams {
   updateChallengeProgress: () => void;
+  rewardsEnabled?: boolean;
 }
 
 interface CommitMoodEntryDeps {
   setMoods: ReturnType<typeof useUserDataStore.getState>["setMoods"];
   rewardUser: ReturnType<typeof useGamificationStore.getState>["rewardUser"];
   updateChallengeProgress: () => void;
+  rewardsEnabled?: boolean;
 }
 
 export function commitMoodEntry(
   entry: MoodEntry,
-  { setMoods, rewardUser, updateChallengeProgress }: CommitMoodEntryDeps,
+  { setMoods, rewardUser, updateChallengeProgress, rewardsEnabled = true }: CommitMoodEntryDeps,
 ) {
   const stamped = { ...entry, updatedAt: entry.updatedAt || Date.now() };
   setMoods((prev) => [...prev, stamped]);
-  rewardUser("mood", {
-    treats: 5,
-    treatReason: "Logged mood",
-    haptic: haptics.moodSaved,
-    seedExtra: entry.mood,
-  });
+  if (rewardsEnabled) {
+    rewardUser("mood", {
+      treats: 5,
+      treatReason: "Logged mood",
+      haptic: haptics.moodSaved,
+      seedExtra: entry.mood,
+    });
+  } else {
+    playSound("success");
+  }
   analytics.moodTracked(entry.mood);
   updateChallengeProgress();
   triggerSync();
@@ -40,7 +47,7 @@ export function commitMoodEntry(
 /**
  * Mood entry handlers: add mood, quick mood (notification), update mood.
  */
-export function useMoodHandlers({ updateChallengeProgress }: UseMoodHandlersParams) {
+export function useMoodHandlers({ updateChallengeProgress, rewardsEnabled = true }: UseMoodHandlersParams) {
   const setMoods = useUserDataStore((s) => s.setMoods);
   const rewardUser = useGamificationStore((s) => s.rewardUser);
 
@@ -49,6 +56,7 @@ export function useMoodHandlers({ updateChallengeProgress }: UseMoodHandlersPara
       setMoods,
       rewardUser,
       updateChallengeProgress,
+      rewardsEnabled,
     });
   }, 800);
 
@@ -64,20 +72,24 @@ export function useMoodHandlers({ updateChallengeProgress }: UseMoodHandlersPara
       };
 
       setMoods((prev) => [...prev, entry]);
-      rewardUser("mood", {
-        treats: 5,
-        treatReason: "Quick mood",
-        haptic: haptics.moodSaved,
-        skipPopup: true,
-        seedExtra: mood,
-      });
+      if (rewardsEnabled) {
+        rewardUser("mood", {
+          treats: 5,
+          treatReason: "Quick mood",
+          haptic: haptics.moodSaved,
+          skipPopup: true,
+          seedExtra: mood,
+        });
+      } else {
+        playSound("success");
+      }
       analytics.moodTracked(mood);
 
       triggerSync();
       void syncMood(entry).catch((err) => logger.warn("[Mood] Granular sync failed:", err));
       logger.log("Quick mood logged from notification:", mood);
     },
-    [rewardUser, setMoods]
+    [rewardUser, rewardsEnabled, setMoods]
   );
 
   const handleUpdateMood = useCallback(

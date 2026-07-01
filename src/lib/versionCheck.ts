@@ -23,6 +23,32 @@ interface VersionManifest {
   buildTime: number;
 }
 const VERSION_CHECK_INTERVAL = 1 * 60 * 1000; // 1 minute — aggressive for GitHub Pages (no custom cache headers)
+const SAFE_HARD_RELOAD_SEARCH_PARAMS = new Map<string, (value: string) => boolean>([
+  ["nav", (value) => value === "v2"],
+  ["navLayout", (value) => value === "phone" || value === "desktop"],
+  ["planningDate", (value) => /^\d{4}-\d{2}-\d{2}$/.test(value)],
+  ["view", (value) => /^[a-z0-9_-]{1,32}$/i.test(value)],
+]);
+
+export function buildSafeHardReloadUrl(location: Location, cacheBustValue: number): string {
+  const pathname = location.pathname;
+  const safePathname = pathname.startsWith("/") && !pathname.startsWith("//") ? pathname : "/";
+  if (safePathname !== pathname) {
+    logger.warn("[VersionCheck] Suspicious pathname, using root");
+  }
+
+  const url = new URL(location.origin);
+  url.pathname = safePathname;
+
+  const sourceParams = new URLSearchParams(location.search);
+  for (const [name, isSafeValue] of SAFE_HARD_RELOAD_SEARCH_PARAMS) {
+    for (const value of sourceParams.getAll(name)) {
+      if (isSafeValue(value)) url.searchParams.append(name, value);
+    }
+  }
+  url.searchParams.set("_v", cacheBustValue.toString());
+  return url.href;
+}
 
 /**
  * Check if the app version matches the server version.
@@ -113,17 +139,9 @@ export async function forceHardReload(): Promise<void> {
     logger.warn("[VersionCheck] Error clearing caches:", error);
   }
 
-  // 3. Reload with cache-busting query param (origin-locked to prevent open redirect CWE-601)
-  // Validate pathname is a safe relative path (no protocol/scheme injection via //evil.com)
-  const pathname = window.location.pathname;
-  const safePathname = pathname.startsWith("/") && !pathname.startsWith("//") ? pathname : "/";
-  if (safePathname !== pathname) {
-    logger.warn("[VersionCheck] Suspicious pathname, using root");
-  }
-  const url = new URL(window.location.origin);
-  url.pathname = safePathname;
-  url.searchParams.set("_v", now.toString());
-  window.location.replace(url.href);
+  // 3. Reload with cache-busting query param (origin-locked to prevent open redirect CWE-601).
+  // Preserve only safe app navigation params; OAuth codes, token fragments, and hashes are dropped.
+  window.location.replace(buildSafeHardReloadUrl(window.location, now));
 }
 
 /**

@@ -20,7 +20,7 @@ export function EventDetailsModal({
   onDelete?: () => void;
 }) {
   const { t } = useLanguage();
-  useModalA11y(true, onClose);
+  const { modalRef, handleKeyDown } = useModalA11y(true, onClose);
   useBackHandler(true, onClose);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -35,10 +35,12 @@ export function EventDetailsModal({
 
   return (
     <motion.div
+      ref={modalRef}
+      onKeyDown={handleKeyDown}
       role="dialog"
       aria-modal="true"
       aria-labelledby="event-details-title"
-      className="fixed inset-0 flex items-center justify-center p-4 z-[60]"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

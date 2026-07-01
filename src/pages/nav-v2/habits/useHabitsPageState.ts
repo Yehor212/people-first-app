@@ -2,12 +2,12 @@
  * useHabitsPageState — selectors-only hook for the Phase 3-C HabitsPage.
  *
  * Read-only consumer of {@link useUserDataStore}. Uses {@link useShallow} to
- * subscribe to the slice this page actually renders (habits + focusSessions),
+ * subscribe to the slice this page actually renders (habits),
  * keeping component re-renders aligned with the underlying data shape rather
  * than the entire user-data record.
  *
  * No mutations are issued from this hook — Hero / Garden / MindMap zones
- * each call their own action surfaces (or compose existing V1 components),
+ * each call their own action surfaces (or compose existing shared components),
  * preserving Law 14 (State Integrity) and Law 15 (Component Isolation).
  */
 
@@ -17,7 +17,7 @@ import { useUserDataStore } from "@/stores";
 import { isHabitCompletedOnDate } from "@/lib/habits";
 import { isHabitDueOnDate } from "@/lib/habitScheduling";
 import { getToday } from "@/lib/utils";
-import type { Habit, FocusSession } from "@/types";
+import type { Habit } from "@/types";
 
 export interface HabitsPageDailyProgress {
   /** Number of habits completed for today. */
@@ -33,8 +33,6 @@ export interface HabitsPageStateValue {
   habits: Habit[];
   /** Subset of {@link habits} that the user is meant to perform today. */
   todaysHabits: Habit[];
-  /** Focus sessions — surfaced for the Identity / mind-map zone. */
-  focusSessions: FocusSession[];
   /** Aggregate daily progress for the Hero zone ring. */
   dailyProgress: HabitsPageDailyProgress;
   /** True when there are no active habits at all (empty state cue). */
@@ -44,7 +42,6 @@ export interface HabitsPageStateValue {
 /** Pure helper — extracted for unit testing without React. */
 export function deriveHabitsPageState(
   rawHabits: readonly Habit[],
-  focusSessions: readonly FocusSession[],
   today: string,
 ): HabitsPageStateValue {
   // Defensive: array might be undefined mid-hydration (Law 14 — array validation)
@@ -60,22 +57,16 @@ export function deriveHabitsPageState(
   return {
     habits,
     todaysHabits,
-    focusSessions: Array.isArray(focusSessions) ? focusSessions : [],
     dailyProgress: { completed, total, ratio },
     isEmpty: habits.length === 0,
   };
 }
 
 export function useHabitsPageState(): HabitsPageStateValue {
-  const { habits, focusSessions } = useUserDataStore(
-    useShallow((s) => ({
-      habits: s.habits,
-      focusSessions: s.focusSessions,
-    })),
-  );
+  const habits = useUserDataStore(useShallow((s) => s.habits));
 
   return useMemo(
-    () => deriveHabitsPageState(habits, focusSessions, getToday()),
-    [habits, focusSessions],
+    () => deriveHabitsPageState(habits, getToday()),
+    [habits],
   );
 }

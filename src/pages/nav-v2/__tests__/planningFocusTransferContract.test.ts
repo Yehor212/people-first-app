@@ -46,6 +46,21 @@ describe("Planning V2 focus transfer contract", () => {
     expect(index).toContain("onMindfulMomentComplete={handleMindfulMomentComplete}");
   });
 
+  it("keeps schedule modals above V2 nav with attached focus traps", () => {
+    const addEventModal = read("src/components/schedule/AddEventModal.tsx");
+    const eventDetailsModal = read("src/components/schedule/EventDetailsModal.tsx");
+
+    expect(addEventModal).toContain("const { modalRef, handleKeyDown } = useModalA11y(true, onClose);");
+    expect(addEventModal).toContain("ref={modalRef}");
+    expect(addEventModal).toContain("onKeyDown={handleKeyDown}");
+    expect(addEventModal).toContain("z-[60]");
+
+    expect(eventDetailsModal).toContain("const { modalRef, handleKeyDown } = useModalA11y(true, onClose);");
+    expect(eventDetailsModal).toContain("ref={modalRef}");
+    expect(eventDetailsModal).toContain("onKeyDown={handleKeyDown}");
+    expect(eventDetailsModal).toContain("z-[60]");
+  });
+
   it("keeps Planning review lane local to V2 Planning without V1 stats navigation", () => {
     const planning = read("src/pages/nav-v2/planning/PlanningPage.tsx");
     const reviewLane = read("src/pages/nav-v2/planning/PlanningReviewLane.tsx");

@@ -1,6 +1,7 @@
 /**
  * useHabitsPageState — derive() helper unit tests (no React).
  */
+import { readFileSync } from "node:fs";
 import { describe, it, expect } from "vitest";
 import { deriveHabitsPageState } from "../useHabitsPageState";
 import type { Habit } from "@/types";
@@ -26,14 +27,14 @@ const baseHabit: Habit = {
 
 describe("deriveHabitsPageState", () => {
   it("returns isEmpty=true and zero progress for an empty habit list", () => {
-    const state = deriveHabitsPageState([], [], "2026-04-18");
+    const state = deriveHabitsPageState([], "2026-04-18");
     expect(state.isEmpty).toBe(true);
     expect(state.dailyProgress).toEqual({ completed: 0, total: 0, ratio: 0 });
   });
 
   it("filters out archived habits", () => {
     const archived: Habit = { ...baseHabit, id: "h2", isArchived: true };
-    const state = deriveHabitsPageState([baseHabit, archived], [], "2026-04-18");
+    const state = deriveHabitsPageState([baseHabit, archived], "2026-04-18");
     expect(state.habits).toHaveLength(1);
     expect(state.habits[0]?.id).toBe("h1");
   });
@@ -45,7 +46,7 @@ describe("deriveHabitsPageState", () => {
       id: "h2",
       entries: { [today]: { value: 1 } },
     };
-    const state = deriveHabitsPageState([baseHabit, completed], [], today);
+    const state = deriveHabitsPageState([baseHabit, completed], today);
     expect(state.dailyProgress.completed).toBe(1);
     expect(state.dailyProgress.total).toBe(2);
     expect(state.dailyProgress.ratio).toBeCloseTo(0.5, 5);
@@ -66,7 +67,7 @@ describe("deriveHabitsPageState", () => {
       entries: { [today]: { value: 2 } },
     };
 
-    const state = deriveHabitsPageState([mondayHabit, wednesdayHabit], [], today);
+    const state = deriveHabitsPageState([mondayHabit, wednesdayHabit], today);
 
     expect(state.isEmpty).toBe(false);
     expect(state.todaysHabits.map((h) => h.id)).toEqual(["mon"]);
@@ -81,20 +82,25 @@ describe("deriveHabitsPageState", () => {
       schedule: { mode: "specificDays", period: "week", targetCount: 1, dueDays: [3] },
     };
 
-    const state = deriveHabitsPageState([wednesdayHabit], [], today);
+    const state = deriveHabitsPageState([wednesdayHabit], today);
 
     expect(state.isEmpty).toBe(false);
     expect(state.todaysHabits).toEqual([]);
     expect(state.dailyProgress).toEqual({ completed: 0, total: 0, ratio: 0 });
   });
 
+  it("keeps the page hook subscribed only to habit data rendered by HabitsPage", () => {
+    const source = readFileSync("src/pages/nav-v2/habits/useHabitsPageState.ts", "utf8");
+
+    expect(source).not.toContain("focusSessions: s.focusSessions");
+    expect(source).not.toContain("focusSessions: FocusSession[]");
+  });
+
   it("treats a non-array habits prop as an empty list (Law 14)", () => {
     const state = deriveHabitsPageState(
       undefined as unknown as readonly Habit[],
-      undefined as unknown as never[],
       "2026-04-18",
     );
     expect(state.isEmpty).toBe(true);
-    expect(state.focusSessions).toEqual([]);
   });
 });

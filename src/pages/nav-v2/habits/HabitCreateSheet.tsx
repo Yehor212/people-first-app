@@ -1,7 +1,7 @@
 /**
- * HabitCreateSheet — vaul-driven bottom drawer that wraps the V1
+ * HabitCreateSheet — vaul-driven bottom drawer that wraps
  * {@link HabitCreationForm}. Phase 3-C deliberately reuses the existing form
- * so creation parity with V1 is guaranteed.
+ * so creation parity stays guaranteed.
  *
  * Cross-platform constraints satisfied:
  *   - Android back: closes drawer via {@link useBackHandler} (Law 10).
@@ -78,7 +78,7 @@ export function HabitCreateSheet({
   } = form;
 
   // Open the form whenever the drawer opens. If an `editHabit` was passed in,
-  // prefill via the V1 hook's `handleEditHabit` (sets editingHabit +
+  // prefill via the shared hook's `handleEditHabit` (sets editingHabit +
   // populates every field) so submit dispatches onUpdateHabit instead of
   // onAddHabit. Reset on close so a re-open starts clean.
   useEffect(() => {

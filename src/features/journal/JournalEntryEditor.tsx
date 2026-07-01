@@ -37,6 +37,7 @@ import { cn, getToday } from "@/lib/utils";
 import { zenMotion } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
 import { getLocale } from "@/lib/timeUtils";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import type {
   JournalEntry,
   JournalEntryPrefill,
@@ -78,6 +79,7 @@ import { PrivacyShield } from "./PrivacyShield";
 import { FloatingMediaLayer } from "./FloatingMediaLayer";
 import { DiaryFormatToolbar } from "./DiaryFormatToolbar";
 import { SlashCommandMenu } from "./SlashCommandMenu";
+import { SaveIndicator } from "./SaveIndicator";
 import { ThemeTransitionOverlay, useThemeTransition } from "./ThemeTransitionOverlay";
 import { formatJournalWordCount, formatLocalizedCount } from "./journalWordCount";
 // PhotoGridLayout available for viewer/card use — editor uses FloatingMediaLayer + JournalPhotoGallery
@@ -248,6 +250,8 @@ interface JournalEntryEditorProps {
   onAddGratitude?: (entry: import("@/types").GratitudeEntry) => void;
   /** Desktop master-detail mode: render inline instead of fixed overlay */
   desktop?: boolean;
+  /** Use the shared V2 DiaryWallpaper behind the desktop editor instead of the editor canvas. */
+  useSharedDiaryWallpaper?: boolean;
   onRequestSettings?: () => void;
   onBindSettingsRequestHandler?: (handler: (() => void) | null) => void;
 }
@@ -265,6 +269,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   onToggleHabit,
   onAddGratitude,
   desktop,
+  useSharedDiaryWallpaper = false,
   onRequestSettings,
   onBindSettingsRequestHandler,
 }: JournalEntryEditorProps) {
@@ -317,7 +322,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     // save
     saveState,
     saveSuccess,
-    handleRetry: _handleRetry,
+    handleRetry,
     // milestones (wired in future: confetti overlay + milestone toast)
     milestoneTriggered: _milestoneTriggered,
     showConfetti: _showConfetti,
@@ -479,6 +484,22 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     setShowStyleBar(false);
     setShowPromptsDropdown(false);
   }, [desktop, setShowPromptsDropdown, setShowStyleBar]);
+
+  const closeDeleteConfirm = useCallback(() => {
+    setShowDeleteConfirm(false);
+  }, [setShowDeleteConfirm]);
+
+  const closeUnsavedDialog = useCallback(() => {
+    setShowUnsavedDialog(false);
+  }, [setShowUnsavedDialog]);
+
+  const closeSettingsConfirm = useCallback(() => {
+    setShowSettingsConfirm(false);
+  }, [setShowSettingsConfirm]);
+
+  const deleteDialogA11y = useModalA11y(showDeleteConfirm, closeDeleteConfirm);
+  const unsavedDialogA11y = useModalA11y(showUnsavedDialog, closeUnsavedDialog);
+  const settingsDialogA11y = useModalA11y(showSettingsConfirm, closeSettingsConfirm);
 
   useEffect(() => {
     if (typingDynamics.isTyping) {
@@ -652,8 +673,19 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   const editorShellStyle = {
     ...diaryStyle,
     "--diary-keyboard-inset": `${keyboardInset}px`,
+    backgroundColor: useSharedDiaryWallpaper ? "transparent" : diaryStyle.backgroundColor,
     bottom: desktop ? undefined : `${keyboardInset}px`,
   } as React.CSSProperties;
+
+  const sharedWallpaperPaperStyle = useSharedDiaryWallpaper
+    ? ({
+        backgroundColor: "hsl(var(--card) / 0.54)",
+        borderColor: "hsl(var(--border) / 0.52)",
+        boxShadow: "0 24px 80px hsl(var(--background) / 0.34)",
+        WebkitBackdropFilter: "blur(22px) saturate(1.12)",
+        backdropFilter: "blur(22px) saturate(1.12)",
+      } as React.CSSProperties)
+    : null;
 
   const editorShell = (
     <div
@@ -661,6 +693,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       role={desktop ? undefined : "dialog"}
       aria-modal={desktop ? undefined : true}
       aria-label={ts.journalEntryTitle || "Diary Entry"}
+      data-testid="journal-entry-editor"
       className={cn(
         "flex flex-col overflow-hidden text-foreground",
         desktop
@@ -670,15 +703,17 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       style={editorShellStyle}
     >
       {/* Canvas decorative background */}
-      <DiaryCanvas
-        accentColor={diaryTheme.accentColor}
-        isActive={bgIntensity !== "off"}
-        theme={diaryTheme.theme}
-        intensity={bgIntensity}
-        particleSpeed={particleSpeed}
-        scrollContainerRef={scrollAreaRef}
-        scope={desktop ? "container" : "viewport"}
-      />
+      {!useSharedDiaryWallpaper && (
+        <DiaryCanvas
+          accentColor={diaryTheme.accentColor}
+          isActive={bgIntensity !== "off"}
+          theme={diaryTheme.theme}
+          intensity={bgIntensity}
+          particleSpeed={particleSpeed}
+          scrollContainerRef={scrollAreaRef}
+          scope={desktop ? "container" : "viewport"}
+        />
+      )}
 
       {/* Atmospheric background pattern overlay (Layer 1 — behind paper, above canvas) */}
       {bgPattern !== "none" && !desktop && (
@@ -764,6 +799,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     : "hover:bg-white/10 text-muted-foreground"
                 )}
                 aria-label={ts.diaryStyle || "Style"}
+                aria-pressed={showStyleBar}
               >
                 <SlidersHorizontal className="w-4 h-4" />
               </motion.button>
@@ -791,6 +827,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   : "hover:bg-white/10 text-muted-foreground"
               )}
               aria-label={ts.diaryPrivacyShield || "Privacy"}
+              aria-pressed={privacyShieldActive}
             >
               {privacyShieldActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </motion.button>
@@ -800,6 +837,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               whileHover={saveSuccess ? {} : { scale: 1.03 }}
               onClick={saveSuccess ? undefined : handleSave}
               disabled={!saveSuccess && (saveState === "saving" || !hasContent)}
+              aria-label={ts.journalSave || "Save"}
+              aria-busy={saveState === "saving"}
               className={cn(
                 "flex items-center gap-1.5 py-2 rounded-xl text-sm font-medium min-h-[48px] motion-safe:transition-all",
                 desktop ? "px-4" : "px-3 min-w-[48px]",
@@ -835,6 +874,12 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             </motion.button>
           </div>
         </div>
+
+        {saveState !== "idle" ? (
+          <div className={cn("min-w-0", desktop ? "self-end max-w-[min(28rem,100%)]" : "w-full")}>
+            <SaveIndicator state={saveState} onRetry={handleRetry} />
+          </div>
+        ) : null}
 
         {/* ROW 2: Collapsible style panel */}
         <AnimatePresence>
@@ -968,6 +1013,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                         ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
                         : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
                     )}
+                    aria-pressed={showTags}
+                    aria-expanded={showTags}
                   >
                     #
                   </motion.button>
@@ -1227,6 +1274,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
           onScroll={handleContentScroll}
         >
           <div
+            data-testid="journal-editor-paper"
             className={cn(
               "relative max-w-4xl mx-auto rounded-2xl border p-4 sm:p-6 md:p-8 min-h-[60dvh] space-y-4 [contain:layout_style_paint]",
               desktop ? "shadow-md max-w-3xl" : "shadow-2xl",
@@ -1237,6 +1285,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               color: paperColors.text,
               borderColor: paperColors.border,
               ...getPaperTextureStyle(paperTexture, paperColor === "dark"),
+              ...sharedWallpaperPaperStyle,
             }}
           >
             {/* Draft restore banner */}
@@ -1278,6 +1327,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               onChange={(e) => setTitle(e.target.value)}
               placeholder={ts.journalEntryTitle || "Title (optional)"}
               aria-label={ts.journalEntryTitle || "Entry title"}
+              dir="auto"
               autoFocus={!entry}
               className="w-full text-2xl font-bold tracking-tight bg-transparent border-none outline-none"
               style={{
@@ -1299,6 +1349,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     key={i}
                     onClick={() => handleRemoveSticker(i)}
                     className="px-1.5 py-0.5 rounded-lg hover:bg-muted/50 active:scale-90 motion-safe:transition-transform min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    aria-label={
+                      `${ts.journalRemoveSticker || "Remove sticker"} ${s}`
+                    }
                   >
                     <StickerRenderer emoji={s} size="md" />
                   </button>
@@ -1485,8 +1538,12 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             <div
               ref={editorRef}
               contentEditable
+              role="textbox"
+              aria-multiline="true"
+              aria-label={ts.journalEntryBody || "Diary entry body"}
+              dir="auto"
               suppressContentEditableWarning
-              className="w-full max-w-prose mx-auto min-h-[260px] bg-transparent border-none outline-none resize-none [&_blockquote]:border-l-2 [&_blockquote]:border-current/20 [&_blockquote]:ps-3 [&_blockquote]:italic [&_code]:bg-black/5 dark:[&_code]:bg-black/5 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 empty:before:pointer-events-none leading-[1.8]"
+              className="w-full max-w-prose mx-auto min-h-[260px] bg-transparent border-none outline-none resize-none rounded-xl focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent [&_blockquote]:border-s-2 [&_blockquote]:border-current/20 [&_blockquote]:ps-3 [&_blockquote]:italic [&_code]:bg-black/5 dark:[&_code]:bg-black/5 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 empty:before:pointer-events-none leading-[1.8]"
               style={{
                 fontSize: FONT_SIZES[fontSize],
                 fontFamily: diaryTheme.fontFamily,
@@ -1565,7 +1622,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       ease: "easeOut",
                     },
                   }}
-                  className="absolute bottom-2 right-2 z-40 pointer-events-none"
+                  className="pointer-events-none absolute bottom-2 end-2 z-40"
                   aria-hidden="true"
                 >
                   <TypingDynamicsMirror dynamics={typingDynamics} />
@@ -1731,6 +1788,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           )}
                           style={{ background: PAPER_COLORS[pc].bg }}
                           aria-label={PAPER_COLORS[pc].label}
+                          aria-pressed={paperColor === pc}
                         />
                       ))}
                     </div>
@@ -1747,6 +1805,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           )}
                           style={{ background: c.hex }}
                           aria-label={c.label}
+                          aria-pressed={inkColor === c.hex}
                         />
                       ))}
                     </div>
@@ -1821,6 +1880,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           ? "border-primary/30 bg-primary/15 text-primary"
                           : "border-border/60 bg-background/75 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                       )}
+                      aria-pressed={showTags}
+                      aria-expanded={showTags}
                     >
                       #
                     </button>
@@ -1929,6 +1990,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
                   )}
                   aria-expanded={showStyleBar}
+                  aria-pressed={showStyleBar}
                   aria-label={ts.diaryStyle || "Style"}
                 >
                   <Palette className="w-4 h-4" aria-hidden="true" />
@@ -1970,6 +2032,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     ? "bg-destructive/10 text-destructive border-destructive/25"
                     : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
                 )}
+                aria-pressed={showBurnWidget}
               >
                 <Flame className="w-4 h-4" aria-hidden="true" />
                 <span className="max-w-full truncate">
@@ -1994,6 +2057,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       ? "bg-primary/15 text-primary border-primary/30"
                       : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
                   )}
+                  aria-pressed={showGratitudeWidget}
                 >
                   <Leaf className="w-4 h-4" aria-hidden="true" />
                   <span className="max-w-full truncate">
@@ -2017,6 +2081,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     ? "bg-primary/15 text-primary border-primary/30"
                     : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
                 )}
+              aria-pressed={showBreathe}
               >
                 <Wind className="w-4 h-4" aria-hidden="true" />
                 <span className="max-w-full truncate">{ts.diaryBreathe || "Breathe"}</span>
@@ -2037,6 +2102,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     ? "bg-primary/15 text-primary border-primary/30"
                     : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
                 )}
+              aria-pressed={zenFocusActive}
               >
                 <Target className="w-4 h-4" aria-hidden="true" />
                 <span className="max-w-full truncate">{ts.diaryFocusRay || "Focus"}</span>
@@ -2057,6 +2123,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     ? "bg-primary/15 text-primary border-primary/30"
                     : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
                 )}
+              aria-pressed={showHabits}
               >
                 <ListChecks className="w-4 h-4" aria-hidden="true" />
                 <span className="max-w-full truncate">{ts.journalHabitsSection || "Habits"}</span>
@@ -2161,31 +2228,37 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       {showDeleteConfirm && (
         <div
           className="fixed inset-0 z-[70] bg-black/50 dark:bg-black/50 flex items-center justify-center motion-safe:animate-fade-in"
-          onClick={() => setShowDeleteConfirm(false)}
+          onClick={closeDeleteConfirm}
         >
           <motion.div
+            ref={deleteDialogA11y.modalRef}
+            onKeyDown={deleteDialogA11y.handleKeyDown}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="journal-delete-confirm-title"
+            aria-describedby="journal-delete-confirm-description"
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={zenMotion.gentle}
             className="rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl bg-[var(--diary-bg,hsl(var(--card)))] border border-[var(--diary-border,hsl(var(--border)/0.3))]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]">
+            <h3 id="journal-delete-confirm-title" className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]">
               {ts.journalDeleteEntry || "Delete Entry?"}
             </h3>
-            <p className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
+            <p id="journal-delete-confirm-description" className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
               {ts.journalDeleteConfirm || "This action cannot be undone."}
             </p>
             <div className="flex gap-2">
               <button
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={closeDeleteConfirm}
                 className="flex-1 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
               >
                 {ts.cancel || "Cancel"}
               </button>
               <button
                 onClick={() => {
-                  setShowDeleteConfirm(false);
+                  closeDeleteConfirm();
                   onDelete?.();
                 }}
                 className="flex-1 py-2.5 rounded-xl bg-destructive text-white text-sm font-medium min-h-[44px]"
@@ -2201,19 +2274,25 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       {showUnsavedDialog && (
         <div
           className="fixed inset-0 z-[70] bg-black/50 dark:bg-black/50 flex items-center justify-center motion-safe:animate-fade-in"
-          onClick={() => setShowUnsavedDialog(false)}
+          onClick={closeUnsavedDialog}
         >
           <motion.div
+            ref={unsavedDialogA11y.modalRef}
+            onKeyDown={unsavedDialogA11y.handleKeyDown}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="journal-unsaved-confirm-title"
+            aria-describedby="journal-unsaved-confirm-description"
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={zenMotion.gentle}
             className="rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl bg-[var(--diary-bg,hsl(var(--card)))] border border-[var(--diary-border,hsl(var(--border)/0.3))]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]">
+            <h3 id="journal-unsaved-confirm-title" className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]">
               {ts.journalDiscardTitle || "Unsaved Changes"}
             </h3>
-            <p className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
+            <p id="journal-unsaved-confirm-description" className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
               {ts.journalDiscardMessage || "You have unsaved changes."}
             </p>
             <div className="flex flex-col gap-2">
@@ -2235,7 +2314,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 {ts.journalDiscard || "Discard"}
               </button>
               <button
-                onClick={() => setShowUnsavedDialog(false)}
+                onClick={closeUnsavedDialog}
                 className="w-full py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
               >
                 {ts.journalKeepWriting || "Keep Writing"}
@@ -2248,19 +2327,25 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       {showSettingsConfirm && (
         <div
           className="fixed inset-0 z-[70] bg-black/50 dark:bg-black/50 flex items-center justify-center motion-safe:animate-fade-in"
-          onClick={() => setShowSettingsConfirm(false)}
+          onClick={closeSettingsConfirm}
         >
           <motion.div
+            ref={settingsDialogA11y.modalRef}
+            onKeyDown={settingsDialogA11y.handleKeyDown}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="journal-settings-confirm-title"
+            aria-describedby="journal-settings-confirm-description"
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={zenMotion.gentle}
             className="rounded-2xl p-5 max-w-[320px] mx-4 shadow-xl bg-[var(--diary-bg,hsl(var(--card)))] border border-[var(--diary-border,hsl(var(--border)/0.3))]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]">
+            <h3 id="journal-settings-confirm-title" className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]">
               {ts.journalSettings || "Diary Settings"}
             </h3>
-            <p className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
+            <p id="journal-settings-confirm-description" className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
               {ts.journalSaveDraftOpenSettingsDescription}
             </p>
             {settingsDraftError ? (
@@ -2281,7 +2366,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 {ts.journalSaveDraftOpenSettings || "Save Draft and Open Settings"}
               </button>
               <button
-                onClick={() => setShowSettingsConfirm(false)}
+                onClick={closeSettingsConfirm}
                 className="w-full py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
               >
                 {ts.journalKeepWriting || "Keep Writing"}

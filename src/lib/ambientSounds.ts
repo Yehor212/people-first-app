@@ -70,13 +70,15 @@ declare global {
 // Sound categories based on actual available files
 export type AmbientSoundType =
   | "none"
-  | "underwater"
-  | "thunderstorm"
-  | "ocean"
-  | "river"
   | "forest"
+  | "rain"
+  | "ocean"
+  | "fireplace"
+  | "river"
+  | "wind"
   | "cafe"
-  | "fireplace";
+  | "underwater"
+  | "thunderstorm";
 
 // Audio unlock state for mobile browsers
 let audioUnlocked = false;
@@ -308,6 +310,31 @@ export function setupAudioUnlock(): void {
   logger.log("[AmbientSounds] Audio unlock listeners set up");
 }
 
+function resetAudioUnlockState(): void {
+  if (audioUnlockCleanup) {
+    audioUnlockCleanup();
+    audioUnlockCleanup = null;
+  }
+  audioUnlocked = false;
+  unlockPromise = null;
+  audioUnlockSetup = false;
+  unlockAttempts = 0;
+}
+
+/**
+ * Re-arm unlock listeners after app resume without calling audio.play().
+ * Resume events are not user gestures, so playback must wait for the next tap/key.
+ */
+export function armAudioUnlockAfterResume(): void {
+  lazyBreadcrumb({
+    category: "audio",
+    message: "Audio unlock re-armed for next user gesture",
+    level: "info",
+  });
+  resetAudioUnlockState();
+  setupAudioUnlock();
+}
+
 /**
  * Check if audio is unlocked
  */
@@ -325,10 +352,7 @@ export async function forceUnlockAudio(): Promise<void> {
     level: "info",
   });
 
-  audioUnlocked = false;
-  unlockPromise = null;
-  audioUnlockSetup = false; // Allow re-registration of listeners
-  unlockAttempts = 0; // Reset retry counter
+  resetAudioUnlockState();
   await unlockAudio();
   setupAudioUnlock(); // Re-register listeners for next user interaction
 }
@@ -343,29 +367,29 @@ export interface SoundInfo {
 }
 
 const LEGACY_SOUND_COPY: Record<HyperfocusAudioFamilyId, Pick<SoundInfo, "nameEn" | "description">> = {
-  underwater: {
-    nameEn: "Underwater Hum",
-    description: "Deep underwater ambient sound",
+  forest: {
+    nameEn: "Forest Canopy",
+    description: "Forest wind, night air, and soft bird ambience",
   },
-  thunderstorm: {
-    nameEn: "Jungle Thunderstorm",
-    description: "Thunder and rain in tropical jungle",
+  rain: {
+    nameEn: "Rain Ambience",
+    description: "Layered rain ambience for natural masking",
   },
   ocean: {
     nameEn: "Waves on Rocks",
     description: "Small waves hitting harbor rocks",
   },
+  fireplace: {
+    nameEn: "Fireplace Crackling",
+    description: "Cozy fireplace crackling",
+  },
   river: {
     nameEn: "River Wildlife",
     description: "River sounds with wildlife",
   },
-  forest: {
-    nameEn: "Forest Canopy",
-    description: "Forest wind, night air, and soft bird ambience",
-  },
-  fireplace: {
-    nameEn: "Fireplace Crackling",
-    description: "Cozy fireplace crackling",
+  wind: {
+    nameEn: "Wind Ambience",
+    description: "Smooth wind ambience without storm peaks",
   },
 };
 
@@ -418,7 +442,13 @@ export function getSoundById(id: string): SoundInfo | undefined {
  */
 export function getSoundByType(type: AmbientSoundType): SoundInfo | undefined {
   if (type === "none") return undefined;
-  const normalizedType = type === "cafe" ? "forest" : type;
+  const normalizedType = type === "cafe"
+    ? "forest"
+    : type === "underwater"
+      ? "ocean"
+      : type === "thunderstorm"
+        ? "rain"
+        : type;
   return SOUNDS.find((s) => s.type === normalizedType);
 }
 

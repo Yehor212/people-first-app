@@ -87,6 +87,8 @@ export const SK = {
   // ─── Audio ───
   AUDIO_MUTED: "zenflow-audio-muted",
   AUDIO_VOLUME: "zenflow-audio-volume",
+  AUDIO_COMFORT: "zenflow-audio-comfort",
+  AUDIO_COMFORT_FEEDBACK: "zenflow-audio-comfort-feedback",
   NOTIFICATION_SOUND: "zenflow_notification_sound",
 
   // ─── Feedback & Errors ───

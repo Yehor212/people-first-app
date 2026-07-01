@@ -4,11 +4,12 @@
  * Provides AI-powered coaching using Gemini API (free tier).
  * Analyzes user context and provides personalized responses.
  *
- * Required secrets:
+ * Required environment variables:
  *   - SUPABASE_URL: Supabase project URL
  *   - SUPABASE_ANON_KEY: For JWT verification
+ *   - SUPABASE_SERVICE_ROLE_KEY: server-side project document retrieval
  *
- * Optional secrets:
+ * Optional environment variables:
  *   - GEMINI_API_KEY: enables full generative coaching; Coach Lite is used when absent
  */
 
@@ -16,11 +17,32 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
 import { getCorsHeaders, parseJsonBody } from "../_shared/http.ts";
 import { redactUserRef, redactError } from "../_shared/redaction.ts";
 import { buildCoachLiteResponse } from "../_shared/coach_lite.ts";
+import {
+  DEFAULT_GEMINI_API_BASE,
+  DEFAULT_GEMINI_CHAT_MODEL,
+  buildGeminiGenerateContentUrl,
+  generateGeminiEmbedding,
+} from "../_shared/gemini.ts";
+import type { RagChunk } from "../_shared/rag.ts";
+import {
+  retrieveRagChunks as retrieveRagChunksFromStore,
+  type RagMatchRow,
+} from "../_shared/ragRetriever.ts";
+import { buildAICoachRagResponse } from "../_shared/aiCoachRagFlow.ts";
+import type { GeminiContent } from "../_shared/ragChat.ts";
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const SUPABASE_SERVICE_ROLE_KEY =
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SECRET_KEY") || "";
 const IS_PRODUCTION = Deno.env.get("ENVIRONMENT") === "production";
+const GEMINI_CHAT_MODEL = Deno.env.get("GEMINI_CHAT_MODEL") || DEFAULT_GEMINI_CHAT_MODEL;
+const GEMINI_API_BASE = Deno.env.get("GEMINI_API_BASE") || DEFAULT_GEMINI_API_BASE;
+const RAG_EMBEDDING_MODEL = Deno.env.get("RAG_EMBEDDING_MODEL") || "gemini-embedding-001";
+const RAG_EMBEDDING_DIMENSIONS = readPositiveIntEnv("RAG_EMBEDDING_DIMENSIONS", 768);
+const RAG_MATCH_COUNT = readPositiveIntEnv("RAG_MATCH_COUNT", 5);
+const RAG_MATCH_THRESHOLD = readThresholdEnv("RAG_MATCH_THRESHOLD", 0.35);
 
 // P0 Fix #5: Rate limiting - 10 requests per minute per user
 const RATE_LIMIT = 10;
@@ -60,7 +82,7 @@ function checkRateLimit(userId: string): boolean {
 interface CoachRequest {
   message: string;
   context: UserContext;
-  language: "ru" | "en" | "uk" | "es" | "de" | "fr";
+  language: "en" | "uk" | "es" | "de" | "fr" | "ja" | "ar" | "he" | "ru";
   trigger: CoachTrigger;
   conversationHistory?: Array<{ role: "user" | "coach"; content: string }>;
 }
@@ -81,6 +103,96 @@ interface UserContext {
   goals?: string[];
   stressManagement?: string;
   daysAway?: number;
+}
+
+function readPositiveIntEnv(name: string, fallback: number): number {
+  const raw = Deno.env.get(name);
+  if (!raw) return fallback;
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function readThresholdEnv(name: string, fallback: number): number {
+  const raw = Deno.env.get(name);
+  if (!raw) return fallback;
+  const value = Number.parseFloat(raw);
+  if (!Number.isFinite(value)) return fallback;
+  return Math.max(0, Math.min(1, value));
+}
+
+async function retrieveRagChunks(
+  ragSupabase: ReturnType<typeof createClient> | null,
+  message: string
+): Promise<RagChunk[]> {
+  if (!GEMINI_API_KEY || !ragSupabase) return [];
+
+  return retrieveRagChunksFromStore({
+    message,
+    matchThreshold: RAG_MATCH_THRESHOLD,
+    matchCount: RAG_MATCH_COUNT,
+    embedText: (text) =>
+      generateGeminiEmbedding(text, {
+        apiKey: GEMINI_API_KEY,
+        model: RAG_EMBEDDING_MODEL,
+        dimensions: RAG_EMBEDDING_DIMENSIONS,
+      }),
+    matchChunks: async ({ queryEmbedding, matchThreshold, matchCount }) => {
+      const { data, error } = await ragSupabase.rpc("match_rag_chunks", {
+        query_embedding: `[${queryEmbedding.join(",")}]`,
+        match_threshold: matchThreshold,
+        match_count: matchCount,
+      });
+
+      if (error) throw error;
+      return (data || []) as RagMatchRow[];
+    },
+    onError: (error) => console.error("[AICoach] RAG retrieval skipped:", redactError(error)),
+  });
+}
+
+async function generateCoachReply(contents: GeminiContent[]): Promise<string> {
+  const geminiResponse = await fetch(
+    buildGeminiGenerateContentUrl(GEMINI_CHAT_MODEL, GEMINI_API_BASE),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY! },
+      body: JSON.stringify({
+        contents,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 200,
+          topP: 0.9,
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+          },
+        ],
+      }),
+    }
+  );
+
+  if (!geminiResponse.ok) {
+    const errorText = await geminiResponse.text();
+    console.error("[AICoach] Gemini API error:", errorText);
+    throw new Error("AI service error");
+  }
+
+  const result = await geminiResponse.json();
+  return result.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
 // System prompts by language
@@ -336,7 +448,7 @@ Deno.serve(async (req) => {
     const contextString = formatUserContext(context, language);
 
     // Build conversation for Gemini
-    const contents = [
+    const contents: GeminiContent[] = [
       {
         role: "user",
         parts: [
@@ -351,65 +463,34 @@ Deno.serve(async (req) => {
       },
       // Add conversation history (last 10 messages)
       ...conversationHistory.slice(-10).map((msg) => ({
-        role: msg.role === "user" ? "user" : "model",
+        role: msg.role === "user" ? ("user" as const) : ("model" as const),
         parts: [{ text: msg.content }],
       })),
       // Current message
       { role: "user", parts: [{ text: message }] },
     ];
 
-    // Call Gemini API
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY! },
-        body: JSON.stringify({
-          contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 200,
-            topP: 0.9,
-          },
-          safetySettings: [
-            {
-              category: "HARM_CATEGORY_HARASSMENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-            {
-              category: "HARM_CATEGORY_HATE_SPEECH",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-            {
-              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-            {
-              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-          ],
-        }),
-      }
-    );
+    const ragSupabase = SUPABASE_SERVICE_ROLE_KEY
+      ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
+      : null;
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error("[AICoach] Gemini API error:", errorText);
-      return jsonResponse(500, { error: "AI service error" });
-    }
-
-    const result = await geminiResponse.json();
-    const coachMessage = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-    if (!coachMessage) {
-      console.error("[AICoach] Empty response from Gemini");
-      return jsonResponse(500, { error: "Empty AI response" });
-    }
+    const ragResponse = await buildAICoachRagResponse({
+      message,
+      systemPrompt,
+      triggerPrompt,
+      trustedUserContext: contextString,
+      conversationHistory,
+      retrieveChunks: (query) => retrieveRagChunks(ragSupabase, query),
+      generateReply: generateCoachReply,
+      fallbackContents: contents,
+    });
 
     console.log(`[AICoach] Response generated for trigger: ${trigger}`);
 
-    return jsonResponse(200, { message: coachMessage });
+    return jsonResponse(200, {
+      message: ragResponse.message,
+      sources: ragResponse.sources,
+    });
   } catch (error) {
     console.error("[AICoach] Error:", error);
     // P0 Fix: Don't leak implementation details in production

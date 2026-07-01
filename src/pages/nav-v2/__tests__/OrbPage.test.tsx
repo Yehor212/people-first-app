@@ -332,13 +332,13 @@ describe("OrbPage progressive flow", () => {
     expect(screen.queryByTestId("shooting-star-stub")).toBeNull();
   });
 
-  it("offers polished stone ambience as user-started orb audio without changing the canonical orb", async () => {
+  it("offers gentle water ambience as user-started orb audio without changing the canonical orb", async () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
     const audio = screen.getByTestId("orb-page-ambience-audio");
     expect(audio).toHaveAttribute(
       "src",
-      expect.stringContaining("/sounds/polished-stone-and-paper.mp3"),
+      expect.stringContaining("/sounds/gentle-water-bed.mp3"),
     );
     expect(audio).toHaveAttribute("preload", "none");
     expect(audio).toHaveAttribute("loop");
@@ -357,7 +357,7 @@ describe("OrbPage progressive flow", () => {
     await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
 
     fireEvent.click(toggle);
-    expect(media.pause).toHaveBeenCalledTimes(1);
+    expect(media.pause).toHaveBeenCalled();
     await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
   });
 
@@ -393,6 +393,40 @@ describe("OrbPage progressive flow", () => {
     await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
   });
 
+  it("stops orb ambience on hidden and pagehide lifecycle events", async () => {
+    const hiddenDescriptor = Object.getOwnPropertyDescriptor(document, "hidden");
+    try {
+      render(<OrbPage onAddMood={onAddMoodMock} />);
+      const toggle = screen.getByTestId("orb-page-ambience-toggle");
+
+      fireEvent.click(toggle);
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
+      media.pause.mockClear();
+
+      Object.defineProperty(document, "hidden", { configurable: true, value: true });
+      document.dispatchEvent(new Event("visibilitychange"));
+
+      expect(media.pause).toHaveBeenCalled();
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+
+      Object.defineProperty(document, "hidden", { configurable: true, value: false });
+      fireEvent.click(toggle);
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
+      media.pause.mockClear();
+
+      window.dispatchEvent(new Event("pagehide"));
+
+      expect(media.pause).toHaveBeenCalled();
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+    } finally {
+      if (hiddenDescriptor) {
+        Object.defineProperty(document, "hidden", hiddenDescriptor);
+      } else {
+        Reflect.deleteProperty(document, "hidden");
+      }
+    }
+  });
+
   it("stops orb ambience when the orb route unmounts", async () => {
     const { unmount } = render(<OrbPage onAddMood={onAddMoodMock} />);
 
@@ -407,7 +441,7 @@ describe("OrbPage progressive flow", () => {
     media.pause.mockClear();
     unmount();
 
-    expect(media.pause).toHaveBeenCalledTimes(1);
+    expect(media.pause).toHaveBeenCalled();
   });
 
   it("allows Next from the neutral center on first render", () => {
@@ -497,6 +531,7 @@ describe("OrbPage progressive flow", () => {
       "data-orb-breathing",
       "true",
     );
+    expect(screen.queryByTestId("shooting-star-stub")).toBeNull();
     expect(mockUseShouldAnimate).toHaveBeenCalledWith({
       respectRuntimePerformance: false,
     });
@@ -565,12 +600,14 @@ describe("OrbPage progressive flow", () => {
   });
 
   it("opens Diary with a valid handoff even when no exact feeling is chosen", () => {
-    render(<OrbPage onAddMood={onAddMoodMock} />);
+    const navigateToPage = vi.fn();
+    render(<OrbPage navigateToPage={navigateToPage} onAddMood={onAddMoodMock} />);
 
     fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("orb-page-open-diary"));
 
-    expect(setActivePageMock).toHaveBeenCalledWith("diary");
+    expect(navigateToPage).toHaveBeenCalledWith("diary");
+    expect(setActivePageMock).not.toHaveBeenCalled();
     expect(onAddMoodMock).toHaveBeenCalledTimes(1);
     expect(setMoodsSpy).not.toHaveBeenCalled();
     expect(useDiaryDraftStore.getState().pendingMoodContext).toMatchObject({
@@ -617,5 +654,12 @@ describe("OrbPage progressive flow", () => {
     expect(navigateToPage).toHaveBeenCalledWith("diary");
     expect(setActivePageMock).not.toHaveBeenCalled();
     expect(onAddMoodMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the mood flow owned by the V2 orchestrator instead of creating a second navigator", () => {
+    const source = readFileSync("src/pages/nav-v2/useOrbMoodFlow.ts", "utf8");
+
+    expect(source).not.toContain('import { useNavigationV2 }');
+    expect(source).not.toContain("useNavigationV2()");
   });
 });

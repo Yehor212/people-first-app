@@ -82,6 +82,16 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 - Before guarded Codex edits, provide fresh `.skill-routing-token` evidence or a structured `.preflight-token` with `skill_routing`.
 - Use Browser for local/public runtime checks, Chrome for existing user Chrome state, and Computer Use only for real desktop UI tasks; do not automate Codex itself.
 
+## No AI Templates Agent Gate
+
+- For every substantive agent task, read and follow `docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md` before producing durable output when the work touches product copy, UI, docs, prompts, generated assets, release materials, plans, or agent-governance.
+- AI assistance is allowed; AI-template output is forbidden. Treat "AI template" / "ИИ шаблоны" as generic, ungrounded, placeholder, copy-paste, or fake-complete work that is not specific to ZenFlow's current code, users, platforms, and verification evidence.
+- Forbidden deliverables include lorem ipsum, TODO/TBD as final content, generic wellness/productivity slogans, starter-kit layouts, unadapted snippets, fake data presented as real, unverified claims, and subagent summaries treated as proof.
+- Required practice: inspect current files first, use local architecture and tokens, write product-specific copy, respect i18n/RTL and platform contracts when relevant, and mark missing proof as `UNVERIFIED` instead of filling gaps with model guesses.
+- When delegating to subagents, include this no-AI-templates policy in the rubric and require evidence, platform/domain impact, verification, unresolved risk, and `GO / STOP / ASK`.
+- Run `npm run check:no-ai-templates` when changing agent rules, docs, copy, UI patterns, generated assets, completion/release docs, or whenever the user explicitly mentions AI templates / ИИ шаблоны. If it cannot run, report it as `UNVERIFIED`, not `PASS`.
+- Treat this as layered enforcement: AGENTS.md routes agents, the policy defines the rubric, PR review and drift CI are backstops, `check:no-ai-templates` scans for drift, and `check:agent-context` keeps the contract discoverable. Do not claim absolute prevention; mark unchecked branch protection or review enforcement as `UNVERIFIED`.
+
 ## Best Practices Implied Requirements Gate
 
 - When the user asks for best practices, full implementation, deep research, "what did I miss", or a complete quality fix, read and follow `docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md` before narrowing scope.
@@ -111,6 +121,7 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 - Run `npm run check:canonical-orbs` for orb or visual runtime changes.
 - Do not replace premium visuals with cheaper approximations to make performance metrics pass.
 - UI, motion, layout, style, and accessibility changes require visual-audit coverage and proof appropriate to the risk.
+- For logo/icon/splash work, read and follow `docs/ai/LOGO_VISUAL_INTEGRITY_PROTOCOL.md` before editing. Preserve `LEAF_BODY` / `LEAF_STEM`, keep generator-owned assets canonical, run `npm run assets:logos:check` and `npm run assets:logos:proof`, and do not claim device/public/store proof unless freshly verified.
 
 ## Visual Integrity Critic Gate
 

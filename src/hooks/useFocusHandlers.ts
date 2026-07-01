@@ -7,6 +7,7 @@ import { triggerSync } from "@/storage/cloudSync";
 import { updateAllQuestsProgress } from "@/lib/randomQuests";
 import { logger } from "@/lib/logger";
 import { analytics } from "@/lib/analytics";
+import { playSound } from "@/lib/audioManager";
 import { useThrottledCallback } from "@/hooks/useThrottledCallback";
 import type { FocusSession, TreatSource } from "@/types";
 
@@ -18,6 +19,7 @@ interface UseFocusHandlersParams {
   ) => { earned: number; bonus: number; multiplier: number; newBalance: number };
   updateChallengeProgress: () => void;
   checkForFeatureUnlocks: () => void;
+  rewardsEnabled?: boolean;
 }
 
 /**
@@ -28,6 +30,7 @@ export function useFocusHandlers({
   earnTreats,
   updateChallengeProgress,
   checkForFeatureUnlocks,
+  rewardsEnabled = true,
 }: UseFocusHandlersParams) {
   const setFocusSessions = useUserDataStore((s) => s.setFocusSessions);
   const rewardUser = useGamificationStore((s) => s.rewardUser);
@@ -45,11 +48,15 @@ export function useFocusHandlers({
     setFocusSessions((prev) => [...prev, stamped]);
 
     const focusTreats = Math.round(session.duration * 0.5);
-    rewardUser("focus", {
-      treats: focusTreats,
-      treatReason: `Focus ${session.duration}min`,
-      haptic: haptics.focusCompleted,
-    });
+    if (rewardsEnabled) {
+      rewardUser("focus", {
+        treats: focusTreats,
+        treatReason: `Focus ${session.duration}min`,
+        haptic: haptics.focusCompleted,
+      });
+    } else {
+      playSound("complete");
+    }
     analytics.focusSessionCompleted(session.duration);
 
     queueFocusSessionSync(session).catch((err) => {
@@ -71,17 +78,20 @@ export function useFocusHandlers({
       type: "focus_completed",
       value: session.duration,
     });
-    completedQuests.forEach((quest) => {
-      const xpReward = quest.reward.xp;
-      earnTreats("focus", xpReward, `Quest: ${quest.title}`);
-      triggerXpPopup(xpReward, "bonus");
-    });
+    if (rewardsEnabled) {
+      completedQuests.forEach((quest) => {
+        const xpReward = quest.reward.xp;
+        earnTreats("focus", xpReward, `Quest: ${quest.title}`);
+        triggerXpPopup(xpReward, "bonus");
+      });
+    }
   }, 800);
 
   const handleMindfulMomentComplete = useCallback(() => {
+    if (!rewardsEnabled) return;
     const treatResult = earnTreats("mindful", 1, "Mindful Moment");
     triggerXpPopup(treatResult.earned, "mindful");
-  }, [earnTreats]);
+  }, [earnTreats, rewardsEnabled]);
 
   return { handleCompleteFocusSession, handleMindfulMomentComplete, mindfulTimeoutRef };
 }

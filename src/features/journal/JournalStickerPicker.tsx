@@ -22,6 +22,7 @@ interface JournalStickerPickerProps {
 export function JournalStickerPicker({ onSelect, onClose, mood }: JournalStickerPickerProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const stickerPickerTitleId = "journal-sticker-picker-title";
   const { modalRef, handleKeyDown } = useModalA11y(true, onClose);
   useScrollLock(true);
 
@@ -64,6 +65,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
         onKeyDown={handleKeyDown}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={stickerPickerTitleId}
         className={cn(
           "fixed bottom-0 inset-x-0 z-[65] pb-safe",
           "bg-card/95 backdrop-blur-xl border-t border-border/40",
@@ -79,7 +81,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-border/20">
-          <span className="text-sm font-semibold text-foreground">
+          <span id={stickerPickerTitleId} className="text-sm font-semibold text-foreground">
             {ts.journalStickerAdd || "Add Sticker"}
           </span>
           <div className="flex items-center gap-1">
@@ -130,7 +132,9 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
             {/* Suggested tab (only when mood set) */}
             {mood && (
               <button
+                type="button"
                 onClick={() => setActiveCategory(-1)}
+                aria-pressed={safeActiveCategory === -1 && activeCategory === -1}
                 className={cn(
                   "snap-start flex-shrink-0 px-2.5 py-1 rounded-lg text-sm motion-safe:transition-colors min-h-[44px] flex flex-col items-center justify-center gap-0.5",
                   safeActiveCategory === -1 && activeCategory === -1
@@ -152,7 +156,9 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
             {enabledCategories.map((cat, i) => (
               <button
                 key={cat.key}
+                type="button"
                 onClick={() => setActiveCategory(i)}
+                aria-pressed={safeActiveCategory === i && activeCategory >= 0}
                 className={cn(
                   "snap-start flex-shrink-0 px-2.5 py-1 rounded-lg text-sm motion-safe:transition-colors min-h-[44px] flex flex-col items-center justify-center gap-0.5",
                   safeActiveCategory === i && activeCategory >= 0
@@ -192,7 +198,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
                   <div className="grid grid-cols-6 gap-1.5">
                     {searchResults.map((r, i) => (
                       <div key={`sr-${i}`} className="relative">
-                        <button onClick={() => handleSelect(r.emoji)} className={stickerButton}>
+                        <button type="button" onClick={() => handleSelect(r.emoji)} className={stickerButton} aria-label={`${ts.journalStickerSelect || "Add sticker"} ${r.emoji}`}>
                           <StickerRenderer emoji={r.emoji} size="lg" />
                         </button>
                         {/* Show pack hint for disabled packs */}
@@ -225,8 +231,10 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
                   {MOOD_STICKER_SUGGESTIONS[mood].map((s, i) => (
                     <button
                       key={`sug-${i}`}
+                      type="button"
                       onClick={() => handleSelect(s)}
                       className={stickerButton}
+                      aria-label={`${ts.journalStickerSelect || "Add sticker"} ${s}`}
                     >
                       <StickerRenderer emoji={s} size="lg" />
                     </button>
@@ -271,8 +279,10 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
                       {recents.map((s, i) => (
                         <button
                           key={`r-${i}`}
+                          type="button"
                           onClick={() => handleSelect(s)}
                           className={stickerButton}
+                          aria-label={`${ts.journalStickerSelect || "Add sticker"} ${s}`}
                         >
                           <StickerRenderer emoji={s} size="lg" />
                         </button>
@@ -283,7 +293,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
 
                 <div className="grid grid-cols-6 gap-1.5">
                   {enabledCategories[safeActiveCategory]?.stickers.map((s, i) => (
-                    <button key={i} onClick={() => handleSelect(s)} className={stickerButton}>
+                    <button key={i} type="button" onClick={() => handleSelect(s)} className={stickerButton} aria-label={`${ts.journalStickerSelect || "Add sticker"} ${s}`}>
                       <StickerRenderer emoji={s} size="lg" />
                     </button>
                   ))}

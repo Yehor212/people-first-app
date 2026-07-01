@@ -1,6 +1,6 @@
 /**
- * HabitHubTab — Thin wrapper for the Habit Hub tab (replaces MindMapTab).
- * Pattern: GardenTab.tsx — receives data from Index.tsx, delegates to HabitHubList.
+ * HabitHubTab — thin wrapper for the Habit Hub experience.
+ * Receives shell data and delegates list rendering to HabitHubList.
  */
 
 import type { Habit } from '@/types';

@@ -28,12 +28,34 @@ const languageContextMock = vi.hoisted(() => ({
 const platformMock = vi.hoisted(() => ({
   isNative: false,
   isAndroid: false,
+  isIos: false,
+  isDesktopViewport: false,
+  platform: "web",
 }));
 
 const localNotificationsMock = vi.hoisted(() => ({
   checkPermissions: vi.fn(),
   requestPermissions: vi.fn(),
+  getPending: vi.fn(),
+  cancel: vi.fn(),
+  schedule: vi.fn(),
+  createChannel: vi.fn(),
+  listChannels: vi.fn(),
+  registerActionTypes: vi.fn(),
+  addListener: vi.fn(),
 }));
+
+const notificationSoundsMock = vi.hoisted(() => {
+  const state = { currentChannelId: "zenflow_default_v2" };
+  return {
+    state,
+    updateNotificationSound: vi.fn().mockImplementation(async (sound: string) => {
+      state.currentChannelId = sound === "gentle" ? "zenflow_gentle_v2" : "zenflow_default_v2";
+      return state.currentChannelId;
+    }),
+    initializeNotificationChannels: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 const capacitorAppMock = vi.hoisted(() => ({
   pauseListeners: [] as Array<() => void>,
@@ -136,7 +158,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
     t: {
       navV2Settings: "Settings",
       navV2Theme: "Theme",
-      navV2SettingsPlaceholder: "Prepare your controls.",
       themeLight: "Light",
       themeDark: "Dark",
       themeSystem: "System",
@@ -193,6 +214,51 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settingsSoundVolumeDesc: "Sets the default level for app audio.",
       settingsSoundPreview: "Preview sound",
       settingsSoundPreviewDesc: "Play a short local preview.",
+      settingsSoundAmbienceTitle: "Ambient tracks",
+      settingsSoundMapTitle: "Where sound appears",
+      settingsSoundMapDescription: "All app audio is local, tap-started, and shared across web, mobile, and desktop.",
+      settingsSoundMapAuth: "Sign-in soft air",
+      settingsSoundMapOrb: "Orb ambience",
+      settingsSoundMapDiary: "Diary ambience",
+      settingsSoundMapFocus: "Focus ambient library",
+      settingsSoundMapFeedback: "Completion and reminder cues",
+      settingsSoundCrossPlatformTitle: "Cross-platform readiness",
+      settingsSoundCrossPlatformNote: "Shared sound manifest covers Web, PWA, Android, iOS, and Desktop; package proof is checked before release.",
+      settingsSoundComfortTitle: "Sensory comfort",
+      settingsSoundComfortDescription: "Profiles tune ambience and short cues across Web, PWA, Android, iOS, and Desktop.",
+      settingsSoundProfileQuiet: "Quiet",
+      settingsSoundProfileQuietDesc: "No ambience, soft completion cues only.",
+      settingsSoundProfileBalanced: "Balanced",
+      settingsSoundProfileBalancedDesc: "Gentle ambience and meaningful cues.",
+      settingsSoundProfileRich: "Rich",
+      settingsSoundProfileRichDesc: "Full ambience and cues where supported.",
+      settingsSoundAmbientToggle: "Ambient sound",
+      settingsSoundAmbientToggleDesc: "Controls sign-in, Orb, and diary ambience outside Hyperfocus.",
+      settingsSoundCompletionCues: "Completion cues",
+      settingsSoundCompletionCuesDesc: "Allows quiet confirmations after meaningful completions.",
+      settingsSoundReminderCues: "Reminder previews",
+      settingsSoundReminderCuesDesc: "Allows opt-in reminder preview sounds.",
+      settingsSoundMilestoneCues: "Milestone cues",
+      settingsSoundMilestoneCuesDesc: "Allows rare streak and achievement cues without routine tap sounds.",
+      settingsSoundTextureTitle: "Non-Hyperfocus textures",
+      settingsSoundTextureDescription: "Choose the air, water, and rain textures used by sign-in, Orb, and diary ambience.",
+      settingsSoundTextureAir: "Air",
+      settingsSoundTextureWater: "Water",
+      settingsSoundTextureRain: "Rain",
+      settingsSoundFeedbackTitle: "Audio comfort feedback",
+      settingsSoundFeedbackDescription: "Stores only a local comfort choice, platform, mute state, and volume bucket.",
+      settingsSoundFeedbackComfortable: "Comfortable",
+      settingsSoundFeedbackTooLoud: "Too loud",
+      settingsSoundFeedbackDistracting: "Distracting",
+      settingsSoundFeedbackPreferSilent: "Prefer silent",
+      settingsSoundFeedbackDidNotPlay: "Did not play",
+      settingsSoundAmbientOff: "Ambient sound is off in Sensory comfort.",
+      diaryAmbienceLabel: "Diary ambience",
+      diaryAmbiencePlay: "Play diary ambience",
+      diaryAmbiencePause: "Pause diary ambience",
+      audioRetry: "Retry",
+      soundOn: "On",
+      soundOff: "Off",
       settingsSoundAmbienceNote: "Orb ambience starts from Orb. Diary sound is managed here so it never covers your writing.",
       settingsSoundActionMapMilestones: "Achievements and streak milestones",
       settingsSoundActionMapBreathing: "Breathing completed",
@@ -202,6 +268,21 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settingsSoundActionMapMood: "Mood saved",
       settingsSoundActionMapDescription: "Short sounds are reserved for meaningful completions and rare milestones.",
       settingsSoundActionMapTitle: "Action feedback map",
+      notificationSound: "Notification sound",
+      notificationSoundDescription: "Choose sound for reminders",
+      soundDefault: "Default",
+      soundDefaultDesc: "System notification sound",
+      soundGentle: "Gentle",
+      soundGentleDesc: "Vibration only",
+      soundChime: "Chime",
+      soundChimeDesc: "Short notification tone",
+      soundSilent: "Silent",
+      soundSilentDesc: "No sound or vibration",
+      notificationSystemSettingsTitle: "System notification controls",
+      notificationSystemSettingsWebDescription: "Browser and OS notification settings can mute or quiet reminders. App sounds stay local and tap-started.",
+      notificationSystemSettingsAndroidDescription: "Android notification categories keep the final sound and vibration setting for each channel.",
+      notificationSystemSettingsIosDescription: "iOS notification settings and Focus modes keep final control over alert sound and delivery.",
+      notificationSystemSettingsDesktopDescription: "Desktop browser and OS notification settings keep final control over reminder delivery.",
     },
   }),
 }));
@@ -441,9 +522,7 @@ vi.mock("@/lib/env", () => ({
   IS_DEV: false,
   MODE: "test",
   BASE_URL: "https://example.test/",
-  FORCE_NAV_V2: true,
   IS_DESKTOP_RUNTIME: false,
-  CLASSIC_BASE_URL: "https://example.test/",
   SUPABASE_URL: undefined,
   SUPABASE_ANON_KEY: undefined,
   SENTRY_DSN: undefined,
@@ -460,9 +539,42 @@ vi.mock("@/lib/env", () => ({
 }));
 
 vi.mock("@/lib/notificationSounds", () => ({
-  NOTIFICATION_SOUNDS: [],
+  NOTIFICATION_SOUNDS: [
+    {
+      id: "default",
+      labelKey: "soundDefault",
+      description: "System notification sound",
+      channelId: "zenflow_default_v2",
+      sound: "default",
+      vibrate: true,
+      importance: 3,
+    },
+    {
+      id: "gentle",
+      labelKey: "soundGentle",
+      description: "Vibration only",
+      channelId: "zenflow_gentle_v2",
+      sound: undefined,
+      vibrate: true,
+      importance: 2,
+    },
+  ],
   getNotificationSound: () => "default",
+  getCurrentChannelId: () => notificationSoundsMock.state.currentChannelId,
+  getNotificationSystemSettingsCopyKey: () => {
+    if (platformMock.isNative && platformMock.platform === "android") {
+      return "notificationSystemSettingsAndroidDescription";
+    }
+    if (platformMock.isNative && platformMock.platform === "ios") {
+      return "notificationSystemSettingsIosDescription";
+    }
+    return platformMock.isDesktopViewport
+      ? "notificationSystemSettingsDesktopDescription"
+      : "notificationSystemSettingsWebDescription";
+  },
   setNotificationSound: vi.fn(),
+  updateNotificationSound: notificationSoundsMock.updateNotificationSound,
+  initializeNotificationChannels: notificationSoundsMock.initializeNotificationChannels,
 }));
 
 vi.mock("@/lib/audioManager", () => audioManagerMock);
@@ -514,8 +626,21 @@ describe("SettingsPage", () => {
     languageContextMock.setLanguage.mockClear();
     platformMock.isNative = false;
     platformMock.isAndroid = false;
+    platformMock.isIos = false;
+    platformMock.isDesktopViewport = false;
+    platformMock.platform = "web";
     localNotificationsMock.checkPermissions.mockReset();
     localNotificationsMock.requestPermissions.mockReset();
+    localNotificationsMock.getPending.mockReset();
+    localNotificationsMock.cancel.mockReset();
+    localNotificationsMock.schedule.mockReset();
+    localNotificationsMock.createChannel.mockReset();
+    localNotificationsMock.listChannels.mockReset();
+    localNotificationsMock.registerActionTypes.mockReset();
+    localNotificationsMock.addListener.mockReset();
+    notificationSoundsMock.state.currentChannelId = "zenflow_default_v2";
+    notificationSoundsMock.updateNotificationSound.mockClear();
+    notificationSoundsMock.initializeNotificationChannels.mockClear();
     capacitorAppMock.pauseListeners.length = 0;
     capacitorAppMock.remove.mockClear();
     capacitorAppMock.addListener.mockClear();
@@ -795,13 +920,13 @@ describe("SettingsPage", () => {
     expect(screen.getByTestId("settings-v2-panel-sound")).toBeInTheDocument();
     expect(screen.getByText("Orb ambience starts from Orb. Diary sound is managed here so it never covers your writing.")).toBeInTheDocument();
     expect(screen.getByText("Where sound appears")).toBeInTheDocument();
-    expect(screen.getByText("Sign-in measured breath")).toBeInTheDocument();
+    expect(screen.getByText("Sign-in soft air")).toBeInTheDocument();
     expect(screen.getByText("Orb ambience")).toBeInTheDocument();
     expect(screen.getByTestId("settings-v2-sound-map-card")).toHaveTextContent("Diary ambience");
     expect(screen.getByTestId("settings-v2-diary-ambience-control")).toHaveTextContent("Diary ambience");
     expect(screen.getByText("Focus ambient library")).toBeInTheDocument();
-    expect(screen.getByText("Completion and reminder chimes")).toBeInTheDocument();
-    expect(screen.getByText("Ready on Web, PWA, Android, iOS, and Desktop.")).toBeInTheDocument();
+    expect(screen.getByText("Completion and reminder cues")).toBeInTheDocument();
+    expect(screen.getByText(/Shared sound manifest covers Web, PWA, Android, iOS, and Desktop/)).toBeInTheDocument();
     expect(screen.getByText("Action feedback map")).toBeInTheDocument();
     expect(screen.getByText("Mood saved")).toBeInTheDocument();
     expect(screen.getByText("Habit completed")).toBeInTheDocument();
@@ -920,6 +1045,18 @@ describe("SettingsPage", () => {
     expect(dayUpdater(controls.reminders).days).not.toContain(1);
   });
 
+  it("shows cross-platform system notification guidance on web/PWA settings", () => {
+    const controls = createSettingsControls();
+    render(<SettingsPage controls={controls} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-notifications"));
+
+    const guidance = screen.getByTestId("settings-v2-notification-system-guidance");
+    expect(guidance).toHaveTextContent("System notification controls");
+    expect(guidance).toHaveTextContent("Browser and OS notification settings");
+    expect(guidance).not.toHaveTextContent("Android notification categories");
+  });
+
   it("requests native notification permission before enabling reminders", async () => {
     platformMock.isNative = true;
     localNotificationsMock.checkPermissions.mockResolvedValue({ display: "prompt" });
@@ -941,6 +1078,34 @@ describe("SettingsPage", () => {
     const enabledUpdater = controls.onRemindersChange.mock.calls.at(-1)?.[0];
     expect(typeof enabledUpdater).toBe("function");
     expect(enabledUpdater(controls.reminders)).toMatchObject({ enabled: true });
+  });
+
+  it("reschedules native reminders onto the selected notification sound channel", async () => {
+    platformMock.isNative = true;
+    platformMock.platform = "android";
+    localNotificationsMock.checkPermissions.mockResolvedValue({ display: "granted" });
+    localNotificationsMock.getPending.mockResolvedValue({ notifications: [] });
+    localNotificationsMock.cancel.mockResolvedValue(undefined);
+    localNotificationsMock.schedule.mockResolvedValue({ notifications: [] });
+    const controls = createSettingsControls();
+    render(<SettingsPage controls={controls} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-notifications"));
+    fireEvent.click(screen.getByRole("button", { name: /Gentle/ }));
+
+    await waitFor(() =>
+      expect(notificationSoundsMock.updateNotificationSound).toHaveBeenCalledWith("gentle"),
+    );
+    await waitFor(() => expect(localNotificationsMock.schedule).toHaveBeenCalled());
+    const scheduled = localNotificationsMock.schedule.mock.calls.flatMap(
+      ([payload]) => payload.notifications,
+    );
+    expect(scheduled).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 1, channelId: "zenflow_gentle_v2" }),
+        expect.objectContaining({ id: 150, channelId: "zenflow_gentle_v2" }),
+      ]),
+    );
   });
 
   it("keeps native reminders off and shows feedback when notification permission is denied", async () => {

@@ -3,7 +3,7 @@ import { Command } from "cmdk";
 import {
   Home,
   BookOpen,
-  BarChart3,
+  CalendarClock,
   Settings,
   Repeat,
   PenLine,
@@ -13,10 +13,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useAppStore } from "@/stores";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
-
-type TabType = "home" | "garden" | "stats" | "achievements" | "settings" | "mindmap";
+import type { NavV2Page } from "@/hooks/useNavigationV2";
 
 const RECENT_KEY = "zenflow-cmd-recent";
 const MAX_RECENT = 5;
@@ -24,6 +22,7 @@ const MAX_RECENT = 5;
 interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
+  onNavigate: (page: NavV2Page) => void;
 }
 
 function getRecent(): string[] {
@@ -42,10 +41,9 @@ function pushRecent(id: string) {
   storageSetRaw(RECENT_KEY, JSON.stringify(items.slice(0, MAX_RECENT)));
 }
 
-export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
+export default function CommandPalette({ open, onClose, onNavigate }: CommandPaletteProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
-  const setActiveTab = useAppStore((s) => s.setActiveTab);
   const [search, setSearch] = useState("");
   const [recentIds] = useState(() => getRecent());
 
@@ -75,11 +73,11 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
     [onClose]
   );
 
-  const goToTab = useCallback(
-    (tab: TabType) => {
-      runAction(`nav-${tab}`, () => setActiveTab(tab));
+  const goToPage = useCallback(
+    (page: NavV2Page) => {
+      runAction(`nav-v2-${page}`, () => onNavigate(page));
     },
-    [runAction, setActiveTab]
+    [onNavigate, runAction]
   );
 
   const toggleTheme = useCallback(() => {
@@ -93,23 +91,48 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const isDark = document.documentElement.classList.contains("dark");
 
   const navItems = [
-    { id: "nav-home", label: t.home, icon: Home, action: () => goToTab("home") },
-    { id: "nav-garden", label: t.diary, icon: BookOpen, action: () => goToTab("garden") },
-    { id: "nav-mindmap", label: "Habits", icon: Repeat, action: () => goToTab("mindmap") },
-    { id: "nav-stats", label: t.stats, icon: BarChart3, action: () => goToTab("stats") },
-    { id: "nav-settings", label: t.settings, icon: Settings, action: () => goToTab("settings") },
+    {
+      id: "nav-v2-orb",
+      label: ts.navV2Orb || ts.somLogFeeling || ts.home,
+      icon: Home,
+      action: () => goToPage("orb"),
+    },
+    {
+      id: "nav-v2-habits",
+      label: ts.navV2Habits || ts.habits,
+      icon: Repeat,
+      action: () => goToPage("habits"),
+    },
+    {
+      id: "nav-v2-diary",
+      label: ts.navV2Diary || ts.diary,
+      icon: BookOpen,
+      action: () => goToPage("diary"),
+    },
+    {
+      id: "nav-v2-planning",
+      label: ts.navV2Planning,
+      icon: CalendarClock,
+      action: () => goToPage("planning"),
+    },
+    {
+      id: "nav-v2-settings",
+      label: ts.navV2Settings || ts.settings,
+      icon: Settings,
+      action: () => goToPage("settings"),
+    },
   ];
 
   const actionItems = [
     {
       id: "action-journal",
-      label: t.somLogFeeling || "New journal entry",
+      label: ts.somLogFeeling || ts.navV2Diary,
       icon: PenLine,
-      action: () => goToTab("garden"),
+      action: () => goToPage("diary"),
     },
     {
       id: "action-theme",
-      label: isDark ? "Light mode" : "Dark mode",
+      label: isDark ? ts.appearance : ts.navV2Theme,
       icon: isDark ? Sun : Moon,
       action: toggleTheme,
     },
@@ -124,7 +147,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={ts.search || "Command palette"}
+      aria-label={ts.navV2Search || ts.search}
       className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm flex items-start justify-center pt-[min(20vh,120px)]"
       onClick={onClose}
     >
@@ -141,7 +164,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
           <Command.Input
             value={search}
             onValueChange={setSearch}
-            placeholder={ts.search || "Search..."}
+            placeholder={ts.navV2Search || ts.search}
             className="flex-1 py-3 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
           />
           <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
@@ -151,11 +174,11 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
         <Command.List className="max-h-[300px] overflow-y-auto p-2">
           <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
-            {ts.noResults || "No results found."}
+            {ts.noResults || ts.navV2Search}
           </Command.Empty>
 
           {recentItems.length > 0 && !search && (
-            <Command.Group heading="Recent">
+            <Command.Group heading={ts.recentActivity}>
               {recentItems.map((item) => (
                 <Command.Item
                   key={item.id}
@@ -170,7 +193,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
             </Command.Group>
           )}
 
-          <Command.Group heading={t.mainNavigation || "Navigation"}>
+          <Command.Group heading={ts.mainNavigation}>
             {navItems.map((item) => (
               <Command.Item
                 key={item.id}
@@ -184,7 +207,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
             ))}
           </Command.Group>
 
-          <Command.Group heading={ts.actions || "Actions"}>
+          <Command.Group heading={ts.appearance}>
             {actionItems.map((item) => (
               <Command.Item
                 key={item.id}

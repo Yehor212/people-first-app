@@ -1,8 +1,8 @@
 /**
- * HeroInsightStrip - surfaces the top V1 insight on the Habits page.
+ * HeroInsightStrip - surfaces the top insight on the Habits page.
  *
  * Law 1 / feedback_v2_reuse_v1: we do NOT rebuild insight math. We import
- * {@link generateInsights} from V1 `src/lib/insightsEngine.ts` and render
+ * {@link generateInsights} from `src/lib/insightsEngine.ts` and render
  * the highest-confidence result as a single literary strip.
  *
  * Why here: the Habits page is where users decide "what am I doing today?",
@@ -123,7 +123,7 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
           setTopInsight(list[0] ?? null);
         }
       } catch {
-        // V1 insightsEngine throws on bad shape - never let insights break the page.
+        // insightsEngine throws on bad shape - never let insights break the page.
         if (!cancelled) {
           setTopInsight(null);
         }

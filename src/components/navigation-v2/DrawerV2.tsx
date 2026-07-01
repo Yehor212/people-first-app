@@ -10,7 +10,6 @@ import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import { ThemeToggleV2 } from "./ThemeToggleV2";
-import { ClassicPortalLink } from "./ClassicPortalLink";
 
 interface DrawerV2Props {
   open: boolean;
@@ -290,14 +289,6 @@ export const DrawerV2 = memo(function DrawerV2({
                 </button>
               );
             })}
-          </div>
-          <div className="mt-3" data-testid="drawer-v2-classic-portal-zone">
-            <ClassicPortalLink
-              onBeforeNavigate={onClose}
-              phoneLayout
-              testId="drawer-v2-classic-portal"
-              variant="drawer"
-            />
           </div>
         </nav>
 

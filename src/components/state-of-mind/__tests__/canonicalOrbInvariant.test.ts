@@ -6,14 +6,6 @@ function readSource(path: string): string {
   return readFileSync(resolve(process.cwd(), path), "utf8");
 }
 
-function extractPortalCore(source: string): string {
-  const start = source.indexOf('data-testid="v1-v2-portal-orb-core"');
-  const end = source.indexOf("</motion.span>", start);
-  expect(start).toBeGreaterThanOrEqual(0);
-  expect(end).toBeGreaterThan(start);
-  return source.slice(start, end);
-}
-
 describe("canonical orb invariant", () => {
   it("keeps every state-of-mind entry surface on ValenceOrb or MiniValenceOrb", () => {
     const canonicalSurfaces = [
@@ -24,10 +16,6 @@ describe("canonical orb invariant", () => {
       {
         file: "src/components/state-of-mind/StateOfMindModal.tsx",
         required: ["ValenceOrb"],
-      },
-      {
-        file: "src/components/tabs/HomeTab.tsx",
-        required: ["MiniValenceOrb"],
       },
       {
         file: "src/features/journal/DiaryMiniOrb.tsx",
@@ -54,14 +42,6 @@ describe("canonical orb invariant", () => {
         required: ["MiniValenceOrb"],
       },
       {
-        file: "src/components/navigation-v2/ClassicPortalLink.tsx",
-        required: ["MiniValenceOrb"],
-      },
-      {
-        file: "src/components/tabs/PreviewPortal.tsx",
-        required: ["MiniValenceOrb", 'data-testid="v1-v2-portal-orb-core"'],
-      },
-      {
         file: "src/pages/DesktopDownloadPage.tsx",
         required: ["MiniValenceOrb", "getDesktopReleaseState", 'data-testid="desktop-download-page"'],
       },
@@ -86,15 +66,6 @@ describe("canonical orb invariant", () => {
         expect(source, `${surface.file} must keep ${required}`).toContain(required);
       }
     }
-  });
-
-  it("does not put a manual icon back inside the V1 to V2 portal orb core", () => {
-    const source = readSource("src/components/tabs/PreviewPortal.tsx");
-    const portalCore = extractPortalCore(source);
-
-    expect(portalCore).toContain("<MiniValenceOrb");
-    expect(portalCore).not.toContain("<Sparkles");
-    expect(portalCore).not.toContain("<svg");
   });
 
   it("blocks non-canonical CSS mini-orbs in the valence label chip", () => {

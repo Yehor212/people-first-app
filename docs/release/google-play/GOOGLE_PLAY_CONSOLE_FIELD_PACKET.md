@@ -189,17 +189,48 @@ Before publishing production monetization:
 
 1. Create the real Android app and rewarded ad unit in AdMob.
 2. Set `VITE_ADMOB_APP_ID_ANDROID` and `VITE_ADMOB_REWARDED_ID_ANDROID`.
-3. Generate and verify `public/app-ads.txt` from the real publisher id only:
+3. In Play Console, open Store settings and set Store listing contact details -> website to:
+
+```text
+https://yehor212.github.io/people-first-app/
+```
+
+The public Play listing for `com.zenflow.app` must expose this website, not the
+failure value `appstore:developer_url=about:invalid#navigation`, before AdMob
+app-ads.txt verification can be called ready. The 2026-06-30 public probe
+confirmed `https://yehor212.github.io/people-first-app/` after the Store
+settings update.
+
+4. Generate and verify `public/app-ads.txt` from the real publisher id only:
 
 ```bash
 ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads
 ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads:check
+ZENFLOW_APP_ADS_PUBLIC_URL=https://your-developer-domain.example/app-ads.txt npm run google-play:app-ads:public-check
+npm run google-play:public-listing:check
+npm run google-play:admob:check
 ```
 
 Do not hand-write the file and do not use Google's sample publisher id.
 Deploy it and verify the live `app-ads.txt` at the root of the developer
 website configured in Play Console/AdMob. A GitHub Pages project subpath is not
 enough proof by itself if AdMob crawls the host root.
+The AdMob production readiness script must pass with the real Android app ID
+and real rewarded ad unit ID before production monetization can be called ready.
+Android release Gradle builds must also fail fast when `ZENFLOW_ADMOB_ANDROID_APP_ID`
+/ `VITE_ADMOB_APP_ID_ANDROID` is missing or still points at a Google sample app ID.
+Unused banner/iOS sample IDs are warnings for the Android rewarded-only release
+path; use `npm run google-play:admob:check -- --strict-optional` for a stricter
+all-configured-ad-ID audit.
 
-4. Re-run the Android release manifest/build proof.
-5. Re-check Play Console Ads, Advertising ID, and Data safety sections.
+Current public root proof for this app:
+
+```bash
+ZENFLOW_APP_ADS_PUBLIC_URL=https://yehor212.github.io/app-ads.txt npm run google-play:app-ads:public-check
+```
+
+5. Re-run the Android release manifest/build proof.
+6. Re-check Play Console Ads, Advertising ID, Data safety, store listing copy,
+   and the public Play listing ads label with `npm run google-play:public-listing:check`.
+   The 2026-06-30 public listing proof shows the developer website, Google Play
+   `Contains ads` signal, rewarded ads copy, and no stale `No ads` claim.

@@ -8,8 +8,8 @@ import { SK } from "@/lib/storageKeys";
 /**
  * Navigation V2 — 5-page IA (Orb / Habits / Diary / Planning / Settings).
  *
- * Coexists with V1 `useTabNavigation`. V2 lives under a design flag
- * (`design.nav.v2`) and a `?nav=v2` override; V1 remains the default.
+ * V2 is the default app shell. This hook owns direct routes, browser history,
+ * and native diary deep-link handoff for the primary five-page app.
  *
  * Responsibilities:
  *  - Active page state machine (Orb / Habits / Diary / Planning / Settings)

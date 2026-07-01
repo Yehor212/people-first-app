@@ -330,7 +330,7 @@ async function readInteractiveAuthState(page, appHost, provider) {
     const pageState = await page.evaluate(() => {
       const authScreenVisible = Boolean(document.querySelector('[data-testid="auth-screen"]'));
       const appShellVisible = Boolean(
-        document.querySelector('[data-testid="nav-v2-orchestrator"], [data-testid="app-shell-v1"]')
+        document.querySelector('[data-testid="nav-v2-orchestrator"]')
       );
       const authGateChecked = localStorage.getItem("zenflow-google-auth-checked") === "true";
       const supabaseSessionKeys = Object.keys(localStorage).filter(

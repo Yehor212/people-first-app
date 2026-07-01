@@ -11,9 +11,8 @@
  *     identity-map UX is finalized in Phase 3-C.2.
  *   - Read-only consumer of {@link useUserDataStore} via
  *     {@link useHabitsPageState} — no mutations cross the page boundary.
- *   - Habit CRUD is delegated to V1 actions through the store directly,
- *     so existing migration / IndexedDB plumbing stays the single source
- *     of truth (Law 14).
+ *   - Habit CRUD is delegated through the store directly, so existing
+ *     migration / IndexedDB plumbing stays the single source of truth (Law 14).
  */
 
 import {
@@ -50,7 +49,7 @@ import type { HabitTemplate } from "@/lib/habitTemplates";
 import type { Habit } from "@/types";
 import type { HabitEntrySource } from "@/types";
 import type { NumericalEntryAction } from "@/lib/habitNumericalInteraction";
-// Lazy-load V1 HabitDetailSheet — keeps its ~20KB chunk off the initial
+// Lazy-load HabitDetailSheet — keeps its ~20KB chunk off the initial
 // Habits page bundle; user only pays the cost when they actually open stats.
 const HabitDetailSheetLazy = lazyWithRetry(
   () =>
@@ -265,14 +264,14 @@ export const HabitsPage = memo(function HabitsPage() {
   );
 
   /**
-   * Numerical habit +/- adjustment. Mirrors V1 `useHabitHandlers.handleAdjustHabit`
+   * Numerical habit +/- adjustment. Mirrors `useHabitHandlers.handleAdjustHabit`
    * semantics: values are stored ×1000 for precision, `toStoredValue` handles
    * the conversion. Emits `habit_completed` when the delta transitions the
    * habit across its target threshold (atLeast ≥ target, atMost ≤ target).
    *
    * Cross-platform: pointer events are universal (iOS/Android/Desktop); the
    * haptic wrapper is Capacitor-aware and no-ops on web. The inner CompactHabitCard
-   * +/- buttons are ≥44px per V1 design (Law 9 touch-target).
+   * +/- buttons are >=44px per touch-target law.
    */
   const handleAdjustHabit = useCallback(
     (habitId: string, date: string, delta: number) => {
@@ -312,7 +311,7 @@ export const HabitsPage = memo(function HabitsPage() {
     (habitId: string, date: string) => {
       // Compute the completion transition BEFORE the setter runs so the
       // emission is pure (no state-mutation flag inside the updater). This
-      // also keeps the §15 contract parity with V1's useHabitHandlers —
+      // also keeps the section 15 contract parity with useHabitHandlers —
       // without this, V2 toggles would silently bypass `habit_completed`.
       const habit = habits.find((h) => h.id === habitId);
       const isCompletingNow = habit != null && habit.entries?.[date] == null;
@@ -489,8 +488,8 @@ export const HabitsPage = memo(function HabitsPage() {
     [setHabits]
   );
 
-  /** Set of V1 template ids the user has already adopted — used both by the
-   *  library sheet (to show an "Added" badge) and by the picker to de-dupe. */
+  /** Set of starter template ids the user has already adopted — used both by
+   *  the library sheet (to show an "Added" badge) and by the picker to de-dupe. */
   const seededTemplateIds = useMemo(() => {
     const ids = new Set<string>();
     for (const h of habits) {

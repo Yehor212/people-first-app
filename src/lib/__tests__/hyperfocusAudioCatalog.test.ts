@@ -10,20 +10,20 @@ import {
 describe("hyperfocus three-level audio catalog", () => {
   it("defines six families with three levels each", () => {
     expect(HYPERFOCUS_AUDIO_FAMILIES.map((family) => family.id)).toEqual([
-      "underwater",
-      "thunderstorm",
-      "ocean",
-      "river",
       "forest",
+      "rain",
+      "ocean",
       "fireplace",
+      "river",
+      "wind",
     ]);
     expect(HYPERFOCUS_AUDIO_FAMILIES.map((family) => family.labelKey)).toEqual([
-      "hyperfocusSoundUnderwater",
-      "hyperfocusSoundThunderstorm",
-      "hyperfocusSoundOcean",
-      "hyperfocusSoundRiver",
       "hyperfocusSoundForest",
+      "hyperfocusSoundRain",
+      "hyperfocusSoundOcean",
       "hyperfocusSoundFireplace",
+      "hyperfocusSoundRiver",
+      "hyperfocusSoundWind",
     ]);
     expect(HYPERFOCUS_AUDIO_LEVEL_IDS).toEqual(["soft", "deep", "intense"]);
 

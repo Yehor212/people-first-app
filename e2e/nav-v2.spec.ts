@@ -5,9 +5,8 @@
  * SidebarV2 + Orb page with ValenceOrb) and mobile (drawer trigger only —
  * NO bottom tabs after Phase 3-A.1 Option A correction).
  *
- * V1 remains the default render path — we enable V2 via the ?nav=v2 query
- * override (no flag mutation required, so the cloud flag stays at
- * rollout_percent=0 with killswitch ON).
+ * V2 is the default render path; legacy ?nav=v2 links and direct routes
+ * continue to share the same shell during the V1 removal window.
  *
  * Local baselines land under e2e/nav-v2.spec.ts-snapshots/ and are committed
  * (learning from Phase 2-B.2: never defer baselines — CI regenerates silently
@@ -229,14 +228,16 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     });
   });
 
-  test("V1 remains default when ?nav=v2 is absent", async ({ page }) => {
+  test("root uses V2 when ?nav=v2 is absent", async ({ page }) => {
     await primeApp(page);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("./");
-    // V2 shell must NOT render when the flag is off and no override is set
-    await expect(page.getByTestId("sidebar-v2")).toHaveCount(0);
-    await expect(page.getByTestId("mobile-nav-v2")).toHaveCount(0);
-    await expect(page.getByTestId("nav-v2-orchestrator")).toHaveCount(0);
+
+    await expect(page.getByTestId("nav-v2-orchestrator")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("sidebar-v2")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("v1-v2-portal")).toHaveCount(0);
+    await expect(page.getByTestId("app-shell-v1")).toHaveCount(0);
+    await expect(page.locator('[data-testid*="classic-portal"]')).toHaveCount(0);
   });
 
   // Progressive-flow refine baselines — after the coarse orb choice, the user

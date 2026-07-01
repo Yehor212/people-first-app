@@ -70,8 +70,8 @@ export const MoodSlider = memo(function MoodSlider({
   className?: string;
   /**
    * Phase 3-A.2 — hides the emoji detent row under the track.
-   * Default true preserves every existing caller (JournalEntryEditor, HomeTab, etc.)
-   * byte-for-byte. OrbPage passes `false` for a minimalist, cinematic cosmic surface.
+   * Default true preserves existing journal callers. OrbPage passes `false`
+   * for a minimalist, cinematic cosmic surface.
    */
   showEmojis?: boolean;
 }) {

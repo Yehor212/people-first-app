@@ -19,6 +19,7 @@ import { SK } from "@/lib/storageKeys";
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 import { analytics } from "@/lib/analytics";
 import { playSound } from "@/lib/audioManager";
+import { getCurrentStreak } from "@/lib/habitScore";
 import { LIMITS } from "@/lib/constants";
 import { ENTRY } from "@/types";
 import type { Habit, TreatSource, MoodType } from "@/types";
@@ -86,12 +87,23 @@ export function useHabitHandlers({
 
   /** Fire side effects when a habit is completed (XP, treats, confetti, etc.) */
   const fireCompletionEffects = useCallback(
-    (habit: Habit) => {
+    (habit: Habit, date: string) => {
       awardXp("habit");
       const treatResult = earnTreats("habit", 10, ts.completedHabitReason || "Completed habit");
       triggerXpPopup(treatResult.earned, "habit");
       void haptics.habitCompleted();
-      playSound("complete");
+      const completedHabit = {
+        ...habit,
+        entries: setEntryValue(
+          habit.entries || {},
+          date,
+          ENTRY.YES_MANUAL,
+          undefined,
+          entryMetadata(date, "quickTap")
+        ),
+      };
+      const nextStreak = getCurrentStreak(completedHabit);
+      playSound([7, 14, 21, 30, 60, 90, 100, 365].includes(nextStreak) ? "streak" : "complete");
       setConfettiBurst({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
       trackTimeOfDayCompletion();
       // §15 retention cohort — emit the total active-habit count so the
@@ -133,6 +145,7 @@ export function useHabitHandlers({
       trackTimeOfDayCompletion,
       ts,
       habits,
+      entryMetadata,
     ]
   );
 
@@ -182,7 +195,7 @@ export function useHabitHandlers({
 
       // Side effects OUTSIDE updater (safe from React 18 double-invoke)
       if (nextValue === ENTRY.YES_MANUAL && habit) {
-        fireCompletionEffects(habit);
+        fireCompletionEffects(habit, date);
 
         // Quest progress — only on actual completion, not un-completion
         const completedQuests = updateAllQuestsProgress({ type: "habit_completed", value: 1 });
@@ -258,7 +271,7 @@ export function useHabitHandlers({
         const prevMet = doesNumericalStoredValueMeetTarget(habit, prevValue);
         const nowMet = doesNumericalStoredValueMeetTarget(habit, storedValue);
         if (nowMet && !prevMet) {
-          fireCompletionEffects(habit);
+          fireCompletionEffects(habit, date);
         }
       }
 
@@ -336,7 +349,7 @@ export function useHabitHandlers({
         const prevMet = doesNumericalStoredValueMeetTarget(habit, currentStored);
         const nowMet = doesNumericalStoredValueMeetTarget(habit, toStoredValue(newReal));
         if (nowMet && !prevMet) {
-          fireCompletionEffects(habit);
+          fireCompletionEffects(habit, date);
         }
       }
 

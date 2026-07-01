@@ -4,7 +4,20 @@
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Volume2, VolumeX, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
+import {
+  AlertCircle,
+  CloudRain,
+  Droplets,
+  Flame,
+  Loader2,
+  RotateCcw,
+  TreePine,
+  Volume2,
+  VolumeX,
+  Waves,
+  Wind,
+  type LucideIcon,
+} from 'lucide-react';
 import { SOUNDS, AudioStatus } from '@/lib/ambientSounds';
 import {
   HYPERFOCUS_AUDIO_FAMILIES,
@@ -16,13 +29,13 @@ import {
 import { cn } from '@/lib/utils';
 import { zenTap } from '@/lib/animationUtils';
 
-const soundMeta: Record<HyperfocusAudioFamilyId, { emoji: string }> = {
-  underwater: { emoji: '🌊' },
-  thunderstorm: { emoji: '⛈️' },
-  ocean: { emoji: '🏖️' },
-  river: { emoji: '🏞️' },
-  forest: { emoji: '🌲' },
-  fireplace: { emoji: '🔥' },
+const soundMeta: Record<HyperfocusAudioFamilyId, { Icon: LucideIcon }> = {
+  forest: { Icon: TreePine },
+  rain: { Icon: CloudRain },
+  ocean: { Icon: Waves },
+  fireplace: { Icon: Flame },
+  river: { Icon: Droplets },
+  wind: { Icon: Wind },
 };
 
 interface HyperfocusSoundSelectorProps {
@@ -143,7 +156,7 @@ export function HyperfocusSoundSelector({
           whileHover={{ scale: 1.03 }}
           whileTap={zenTap.card}
         >
-          <span className="text-lg">🔇</span>
+          <VolumeX className="h-5 w-5" aria-hidden="true" />
           <span>{t.hyperfocusSoundNone}</span>
         </motion.button>
 
@@ -151,7 +164,7 @@ export function HyperfocusSoundSelector({
         {HYPERFOCUS_AUDIO_FAMILIES.map((family) => {
           const sound = SOUNDS.find((candidate) => candidate.id === family.legacyId);
           const isSelected = activeFamily?.id === family.id;
-          const meta = soundMeta[family.id];
+          const { Icon } = soundMeta[family.id];
           const localizedName = t[family.labelKey] || sound?.nameEn || family.id;
 
           return (
@@ -171,7 +184,7 @@ export function HyperfocusSoundSelector({
               whileHover={{ scale: 1.03 }}
               whileTap={zenTap.card}
             >
-              <span className="text-lg">{meta.emoji}</span>
+              <Icon className="h-5 w-5" aria-hidden="true" />
               <span>{localizedName}</span>
             </motion.button>
           );

@@ -6,12 +6,27 @@ let mockStorage: Record<string, string> = {};
 vi.mock('../safeJson', () => ({
   storageGetRaw: vi.fn((key: string): string | null => mockStorage[key] ?? null),
   storageSetRaw: vi.fn((key: string, value: string) => { mockStorage[key] = value; }),
+  safeLocalStorageGet: vi.fn((key: string, fallback: unknown) => {
+    const raw = mockStorage[key];
+    if (raw == null) return fallback;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return raw;
+    }
+  }),
+  safeLocalStorageSet: vi.fn((key: string, value: unknown) => {
+    mockStorage[key] = JSON.stringify(value);
+    return true;
+  }),
 }));
 
 vi.mock('../storageKeys', () => ({
   SK: {
     AUDIO_MUTED: 'zenflow_audio_muted',
     AUDIO_VOLUME: 'zenflow_audio_volume',
+    AUDIO_COMFORT: 'zenflow_audio_comfort',
+    AUDIO_COMFORT_FEEDBACK: 'zenflow_audio_comfort_feedback',
     DOPAMINE_SETTINGS: 'zenflow_dopamine_settings',
   },
 }));
@@ -38,16 +53,23 @@ import {
   playSuccess,
   playComplete,
   playStreakMilestone,
+  playMilestone,
   playLevelUp,
   playNotification,
 } from '../audioManager';
 
 import { storageSetRaw } from '../safeJson';
+import { shouldPlaySounds } from '../animationUtils';
+import { resetAudioComfortRuntimeForTests } from '../audioComfort';
+
+const LOW_SALIENCE_TEST_DELAY_MS = 180;
 
 type CapturedAudioShape = {
   frequencies: number[];
   durations: number[];
   waveforms: OscillatorType[];
+  gains: number[];
+  gainRampTargets: number[];
 };
 
 function installCapturedAudioContext(): CapturedAudioShape {
@@ -55,6 +77,8 @@ function installCapturedAudioContext(): CapturedAudioShape {
     frequencies: [],
     durations: [],
     waveforms: [],
+    gains: [],
+    gainRampTargets: [],
   };
 
   class MockAudioContext {
@@ -83,8 +107,12 @@ function installCapturedAudioContext(): CapturedAudioShape {
       return {
         connect: vi.fn(),
         gain: {
-          setValueAtTime: vi.fn(),
-          exponentialRampToValueAtTime: vi.fn(),
+          setValueAtTime: vi.fn((gain: number) => {
+            captured.gains.push(gain);
+          }),
+          exponentialRampToValueAtTime: vi.fn((gain: number) => {
+            captured.gainRampTargets.push(gain);
+          }),
         },
       } as unknown as GainNode;
     }
@@ -121,6 +149,8 @@ beforeEach(() => {
   mockStorage = {};
   vi.clearAllMocks();
   cleanup(); // Reset module state
+  resetAudioComfortRuntimeForTests();
+  vi.mocked(shouldPlaySounds).mockReturnValue(true);
 });
 
 afterEach(() => {
@@ -153,6 +183,16 @@ describe('Volume control', () => {
   it('setVolume persists to storage', () => {
     setVolume(0.6);
     expect(storageSetRaw).toHaveBeenCalledWith('zenflow_audio_volume', '0.6');
+  });
+
+  it('keeps notification feedback below sharp ping range', () => {
+    const captured = installCapturedAudioContext();
+    playNotification();
+
+    expect(captured.frequencies).toEqual([587.33]);
+    expect(captured.durations).toEqual([0.1]);
+    expect(captured.waveforms).toEqual(['sine']);
+    expect(Math.max(...captured.gains)).toBeLessThanOrEqual(0.03);
   });
 });
 
@@ -253,7 +293,7 @@ describe('cleanup', () => {
 
 describe('playSound dispatch', () => {
   it('does not throw for any valid sound type', () => {
-    const types = ['success', 'complete', 'streak', 'levelUp', 'notification'] as const;
+    const types = ['success', 'complete', 'streak', 'milestone', 'levelUp', 'notification'] as const;
     types.forEach(type => {
       expect(() => playSound(type)).not.toThrow();
     });
@@ -279,12 +319,140 @@ describe('playSound dispatch', () => {
     expect(() => playNotification()).not.toThrow();
   });
 
+  it('routes direct notification pings through sensory comfort settings', () => {
+    const captured = installCapturedAudioContext();
+    mockStorage.zenflow_audio_comfort = JSON.stringify({ reminderCuesEnabled: false });
+
+    playNotification();
+
+    expect(captured.frequencies).toEqual([]);
+  });
+
+  it('routes direct completion cues through sensory comfort settings', () => {
+    vi.useFakeTimers();
+    try {
+      const captured = installCapturedAudioContext();
+      mockStorage.zenflow_audio_comfort = JSON.stringify({ completionCuesEnabled: false });
+
+      playComplete();
+      vi.runAllTimers();
+
+      expect(captured.frequencies).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('routes direct milestone cues through sensory comfort settings', () => {
+    vi.useFakeTimers();
+    try {
+      const captured = installCapturedAudioContext();
+      mockStorage.zenflow_audio_comfort = JSON.stringify({ milestoneCuesEnabled: false });
+
+      playStreakMilestone();
+      playMilestone();
+      playLevelUp();
+      vi.runAllTimers();
+
+      expect(captured.frequencies).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('applies fatigue budget to direct milestone cues', () => {
+    vi.useFakeTimers();
+    try {
+      const captured = installCapturedAudioContext();
+
+      playMilestone();
+      playMilestone();
+      playMilestone();
+      playMilestone();
+      vi.runAllTimers();
+
+      expect(captured.frequencies).toHaveLength(9);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not consume fatigue budget while feedback audio is muted', () => {
+    vi.useFakeTimers();
+    try {
+      const captured = installCapturedAudioContext();
+      setMuted(true);
+      for (let index = 0; index < 6; index += 1) playSound('notification');
+      vi.runOnlyPendingTimers();
+
+      setMuted(false);
+      playSound('notification');
+      vi.advanceTimersByTime(LOW_SALIENCE_TEST_DELAY_MS);
+
+      expect(captured.frequencies).toEqual([587.33]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not consume fatigue budget while feedback style disables sounds', () => {
+    vi.useFakeTimers();
+    try {
+      const captured = installCapturedAudioContext();
+      vi.mocked(shouldPlaySounds).mockReturnValue(false);
+      for (let index = 0; index < 6; index += 1) playSound('notification');
+      vi.runOnlyPendingTimers();
+
+      vi.mocked(shouldPlaySounds).mockReturnValue(true);
+      playSound('notification');
+      vi.advanceTimersByTime(LOW_SALIENCE_TEST_DELAY_MS);
+
+      expect(captured.frequencies).toEqual([587.33]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps milestone feedback soft and below fanfare range', () => {
+    vi.useFakeTimers();
+    try {
+      const captured = installCapturedAudioContext();
+      playMilestone();
+      vi.runAllTimers();
+
+      expect(captured.frequencies.length).toBeGreaterThan(0);
+      expect(Math.max(...captured.frequencies)).toBeLessThanOrEqual(587.33);
+      expect(Math.max(...captured.durations)).toBeLessThanOrEqual(0.2);
+      expect(Math.max(...captured.gains)).toBeLessThanOrEqual(0.045);
+      expect(captured.waveforms.every((waveform) => waveform === 'triangle')).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('suppresses pending lower-salience cues when a milestone cue follows immediately', () => {
+    vi.useFakeTimers();
+    try {
+      const captured = installCapturedAudioContext();
+      playSound('success');
+      playSound('milestone');
+      vi.runOnlyPendingTimers();
+
+      expect(captured.frequencies.length).toBeGreaterThan(0);
+      expect(Math.max(...captured.frequencies)).toBeLessThanOrEqual(587.33);
+      expect(Math.max(...captured.gains)).toBeLessThanOrEqual(0.045);
+      expect(captured.waveforms.every((waveform) => waveform === 'triangle')).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('keeps completion feedback distinct from generic success feedback', () => {
     vi.useFakeTimers();
     try {
       const success = installCapturedAudioContext();
       playSound('success');
-      vi.runOnlyPendingTimers();
+      vi.runAllTimers();
       const successShape = {
         frequencies: [...success.frequencies],
         durations: [...success.durations],
@@ -295,14 +463,15 @@ describe('playSound dispatch', () => {
 
       const complete = installCapturedAudioContext();
       playSound('complete');
-      vi.runOnlyPendingTimers();
+      vi.runAllTimers();
 
       expect({
         frequencies: complete.frequencies,
         durations: complete.durations,
         waveforms: complete.waveforms,
       }).not.toEqual(successShape);
-      expect(complete.frequencies.length).toBeGreaterThanOrEqual(3);
+      expect(complete.frequencies.length).toBeGreaterThanOrEqual(2);
+      expect(Math.max(...complete.gains)).toBeLessThanOrEqual(0.04);
     } finally {
       vi.useRealTimers();
     }

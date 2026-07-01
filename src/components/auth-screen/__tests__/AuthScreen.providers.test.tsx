@@ -141,9 +141,9 @@ vi.mock("@/contexts/LanguageContext", () => ({
       themeSystem: "System",
       ariaBack: "Back",
       appName: "ZenFlow",
-      authMeasuredBreathLabel: "Measured breath",
-      authMeasuredBreathPlay: "Play measured breath",
-      authMeasuredBreathPause: "Pause measured breath",
+      authMeasuredBreathLabel: "Soft air",
+      authMeasuredBreathPlay: "Play soft air",
+      authMeasuredBreathPause: "Pause soft air",
       soundOn: "On",
       soundOff: "Off",
     },
@@ -164,6 +164,8 @@ vi.mock("@/components/ThemeToggle", () => ({
 
 vi.mock("@/lib/safeJson", () => ({
   storageSetRaw: themeState.storageSetRaw,
+  safeLocalStorageGet: vi.fn((_key: string, fallback: unknown) => fallback),
+  safeLocalStorageSet: vi.fn(() => true),
 }));
 
 vi.mock("@/lib/animationUtils", () => ({
@@ -257,11 +259,11 @@ describe("AuthScreen provider buttons", () => {
   });
 
 
-  it("offers the measured breath track as user-started sign-in ambience", async () => {
+  it("offers the soft air track as user-started sign-in ambience", async () => {
     render(<AuthScreen onComplete={vi.fn()} />);
 
     const audio = screen.getByTestId("auth-measured-breath-audio");
-    expect(audio).toHaveAttribute("src", expect.stringContaining("/sounds/measured-breath.mp3"));
+    expect(audio).toHaveAttribute("src", expect.stringContaining("/sounds/soft-air-veil.mp3"));
     expect(audio).toHaveAttribute("preload", "none");
     expect(audio).toHaveAttribute("loop");
     expect(media.play).not.toHaveBeenCalled();
@@ -269,18 +271,52 @@ describe("AuthScreen provider buttons", () => {
     const toggle = screen.getByTestId("auth-measured-breath-toggle");
     expect(toggle).toHaveAttribute("type", "button");
     expect(toggle).toHaveAttribute("aria-pressed", "false");
-    expect(toggle).toHaveAccessibleName("Play measured breath");
+    expect(toggle).toHaveAccessibleName("Play soft air");
 
     fireEvent.click(toggle);
     expect(media.play).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
 
     fireEvent.click(toggle);
-    expect(media.pause).toHaveBeenCalledTimes(1);
+    expect(media.pause).toHaveBeenCalled();
     await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
   });
 
-  it("does not start measured breath when app sound is muted", () => {
+  it("stops soft air on hidden and pagehide lifecycle events", async () => {
+    const hiddenDescriptor = Object.getOwnPropertyDescriptor(document, "hidden");
+    try {
+      render(<AuthScreen onComplete={vi.fn()} />);
+      const toggle = screen.getByTestId("auth-measured-breath-toggle");
+
+      fireEvent.click(toggle);
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
+      media.pause.mockClear();
+
+      Object.defineProperty(document, "hidden", { configurable: true, value: true });
+      document.dispatchEvent(new Event("visibilitychange"));
+
+      expect(media.pause).toHaveBeenCalled();
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+
+      Object.defineProperty(document, "hidden", { configurable: true, value: false });
+      fireEvent.click(toggle);
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
+      media.pause.mockClear();
+
+      window.dispatchEvent(new Event("pagehide"));
+
+      expect(media.pause).toHaveBeenCalled();
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+    } finally {
+      if (hiddenDescriptor) {
+        Object.defineProperty(document, "hidden", hiddenDescriptor);
+      } else {
+        Reflect.deleteProperty(document, "hidden");
+      }
+    }
+  });
+
+  it("does not start soft air when app sound is muted", () => {
     appAudioSettingsState.snapshot = {
       muted: true,
       volume: 0.3,

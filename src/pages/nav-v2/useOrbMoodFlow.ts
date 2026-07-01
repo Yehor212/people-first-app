@@ -4,7 +4,6 @@ import { useShallow } from "zustand/react/shallow";
 import { useGamificationStore, useUserDataStore } from "@/stores";
 import { useMoodEntryDraftStore } from "@/stores/moodEntryDraftStore";
 import { useDiaryDraftStore } from "@/stores/diaryDraftStore";
-import { useNavigationV2 } from "@/hooks/useNavigationV2";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { commitMoodEntry } from "@/hooks/useMoodHandlers";
 import { generateId, getToday } from "@/lib/utils";
@@ -57,8 +56,7 @@ export function useOrbMoodFlow(
   options: UseOrbMoodFlowOptions = {},
 ): UseOrbMoodFlowReturn {
   const shouldAnimate = useShouldAnimate();
-  const { setActivePage } = useNavigationV2();
-  const navigateToPage = options.navigateToPage ?? setActivePage;
+  const navigateToPage = options.navigateToPage;
   const onAddMood = options.onAddMood;
   const [step, setStep] = useState<OrbFlowStep>("orb-select");
 
@@ -183,7 +181,7 @@ export function useOrbMoodFlow(
 
     useMoodEntryDraftStore.getState().reset();
     setStep("orb-select");
-    navigateToPage("diary");
+    navigateToPage?.("diary");
   }, [
     canOpenDiary,
     draftEmotion,

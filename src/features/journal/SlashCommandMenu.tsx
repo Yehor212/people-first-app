@@ -1,9 +1,10 @@
-import { memo, useState, useEffect, useCallback, useRef } from "react";
+import { memo, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SlashCommandMenuProps {
   editorRef: React.RefObject<HTMLDivElement>;
@@ -12,17 +13,17 @@ interface SlashCommandMenuProps {
 }
 
 const COMMANDS = [
-  { id: "mood", icon: "\u{1F60A}", label: "Mood", description: "Set entry mood" },
-  { id: "heading", icon: "H", label: "Heading", description: "Insert heading" },
-  { id: "quote", icon: "\u275D", label: "Quote", description: "Insert blockquote" },
-  { id: "checklist", icon: "\u2611", label: "Checklist", description: "Insert checklist" },
-  { id: "breathe", icon: "\u{1F9D8}", label: "Breathe", description: "Breathing exercise" },
-  { id: "gratitude", icon: "\u{1F331}", label: "Gratitude", description: "Gratitude prompt" },
-  { id: "burn", icon: "\u{1F525}", label: "Burn", description: "Burn a thought" },
-  { id: "focus", icon: "\u270D\uFE0F", label: "Focus", description: "Zen focus mode" },
-  { id: "template", icon: "\u{1F4CB}", label: "Template", description: "Pick template" },
-  { id: "photo", icon: "\u{1F4F8}", label: "Photo", description: "Attach photo" },
-  { id: "audio", icon: "\u{1F3A4}", label: "Audio", description: "Record audio" },
+  { id: "mood", icon: "\u{1F60A}", labelKey: "journalSlashMoodLabel", descriptionKey: "journalSlashMoodDescription", fallbackLabel: "Mood", fallbackDescription: "Set entry mood" },
+  { id: "heading", icon: "H", labelKey: "journalSlashHeadingLabel", descriptionKey: "journalSlashHeadingDescription", fallbackLabel: "Heading", fallbackDescription: "Insert a heading" },
+  { id: "quote", icon: "\u275D", labelKey: "journalSlashQuoteLabel", descriptionKey: "journalSlashQuoteDescription", fallbackLabel: "Quote", fallbackDescription: "Insert a quote block" },
+  { id: "checklist", icon: "\u2611", labelKey: "journalSlashChecklistLabel", descriptionKey: "journalSlashChecklistDescription", fallbackLabel: "Checklist", fallbackDescription: "Insert a checklist" },
+  { id: "breathe", icon: "\u{1F9D8}", labelKey: "journalSlashBreatheLabel", descriptionKey: "journalSlashBreatheDescription", fallbackLabel: "Breathe", fallbackDescription: "Open a breathing exercise" },
+  { id: "gratitude", icon: "\u{1F331}", labelKey: "journalSlashGratitudeLabel", descriptionKey: "journalSlashGratitudeDescription", fallbackLabel: "Gratitude", fallbackDescription: "Add a gratitude prompt" },
+  { id: "burn", icon: "\u{1F525}", labelKey: "journalSlashBurnLabel", descriptionKey: "journalSlashBurnDescription", fallbackLabel: "Release", fallbackDescription: "Let go of a thought" },
+  { id: "focus", icon: "\u270D\uFE0F", labelKey: "journalSlashFocusLabel", descriptionKey: "journalSlashFocusDescription", fallbackLabel: "Focus", fallbackDescription: "Open focused writing mode" },
+  { id: "template", icon: "\u{1F4CB}", labelKey: "journalSlashTemplateLabel", descriptionKey: "journalSlashTemplateDescription", fallbackLabel: "Template", fallbackDescription: "Choose a diary template" },
+  { id: "photo", icon: "\u{1F4F8}", labelKey: "journalSlashPhotoLabel", descriptionKey: "journalSlashPhotoDescription", fallbackLabel: "Photo", fallbackDescription: "Attach a photo" },
+  { id: "audio", icon: "\u{1F3A4}", labelKey: "journalSlashAudioLabel", descriptionKey: "journalSlashAudioDescription", fallbackLabel: "Audio", fallbackDescription: "Record audio" },
 ] as const;
 
 type CommandId = (typeof COMMANDS)[number]["id"];
@@ -50,6 +51,8 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
   onCommand,
   onClose,
 }: SlashCommandMenuProps) {
+  const { t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -58,11 +61,23 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
   const composingRef = useRef(false);
   const slashRangeRef = useRef<{ node: Node; offset: number } | null>(null);
 
-  const filtered = COMMANDS.filter(
-    (cmd) =>
-      cmd.label.toLowerCase().includes(filter.toLowerCase()) ||
-      cmd.id.toLowerCase().includes(filter.toLowerCase()),
+  const localizedCommands = useMemo(
+    () =>
+      COMMANDS.map((cmd) => ({
+        ...cmd,
+        label: ts[cmd.labelKey] || cmd.fallbackLabel,
+        description: ts[cmd.descriptionKey] || cmd.fallbackDescription,
+      })),
+    [ts],
   );
+
+  const filtered = localizedCommands.filter((cmd) => {
+    const normalizedFilter = filter.toLocaleLowerCase();
+    return (
+      cmd.label.toLocaleLowerCase().includes(normalizedFilter) ||
+      cmd.id.toLocaleLowerCase().includes(normalizedFilter)
+    );
+  });
 
   const close = useCallback(() => {
     setOpen(false);
@@ -184,8 +199,16 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") { e.preventDefault(); close(); return; }
-      if (e.key === "ArrowDown") { e.preventDefault(); setSelectedIndex((i) => (i + 1) % filtered.length); return; }
-      if (e.key === "ArrowUp") { e.preventDefault(); setSelectedIndex((i) => (i - 1 + filtered.length) % filtered.length); return; }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.min(i + 1, Math.max(filtered.length - 1, 0)));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.max(i - 1, 0));
+        return;
+      }
       if (e.key === "Enter") { e.preventDefault(); const cmd = filtered[selectedIndex]; if (cmd) executeCommand(cmd.id); return; }
       if (e.key === "Backspace") {
         requestAnimationFrame(() => {
@@ -204,6 +227,10 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
     document.addEventListener("keydown", handleKey, true);
     return () => document.removeEventListener("keydown", handleKey, true);
   }, [open, filtered, selectedIndex, close, executeCommand, editorRef]);
+
+  useEffect(() => {
+    setSelectedIndex((i) => Math.min(i, Math.max(filtered.length - 1, 0)));
+  }, [filtered.length]);
 
   // Click outside to close
   useEffect(() => {
@@ -231,11 +258,11 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
 
   return createPortal(
     <AnimatePresence>
-      {open && filtered.length > 0 && (
+      {open && (
         <motion.div
           ref={menuRef}
           role="listbox"
-          aria-label="Slash commands"
+          aria-label={ts.journalSlashCommands || "Diary commands"}
           aria-activedescendant={activeId}
           className="fixed bg-popover/95 backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)] rounded-2xl border border-border/30 shadow-2xl p-1.5 min-w-[200px] max-h-[280px] overflow-y-auto z-[90]"
           style={{ top: position.top, left: position.left }}
@@ -245,7 +272,7 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
           exit="exit"
           transition={animate ? SPRING : INSTANT}
         >
-          {filtered.map((cmd, i) => (
+          {filtered.length > 0 ? filtered.map((cmd, i) => (
             <motion.div
               key={cmd.id}
               id={`slash-cmd-${cmd.id}`}
@@ -270,7 +297,14 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
                 <span className="text-xs text-muted-foreground truncate">{cmd.description}</span>
               </span>
             </motion.div>
-          ))}
+          )) : (
+            <div
+              role="status"
+              className="px-3 py-3 text-sm text-muted-foreground"
+            >
+              {ts.journalSlashNoResults || "No diary commands found"}
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>,

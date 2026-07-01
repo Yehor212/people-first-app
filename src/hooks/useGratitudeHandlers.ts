@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { triggerSync } from "@/storage/cloudSync";
 import { syncGratitude } from "@/storage/realtimeSync";
 import { updateAllQuestsProgress } from "@/lib/randomQuests";
+import { playSound } from "@/lib/audioManager";
 import { useThrottledCallback } from "@/hooks/useThrottledCallback";
 import type { GratitudeEntry, TreatSource } from "@/types";
 
@@ -17,6 +18,7 @@ interface UseGratitudeHandlersParams {
   attractCreature: () => void;
   feedCreatures: () => void;
   updateChallengeProgress: () => void;
+  rewardsEnabled?: boolean;
 }
 
 /**
@@ -27,6 +29,7 @@ export function useGratitudeHandlers({
   attractCreature,
   feedCreatures,
   updateChallengeProgress,
+  rewardsEnabled = true,
 }: UseGratitudeHandlersParams) {
   const setGratitudeEntries = useUserDataStore((s) => s.setGratitudeEntries);
   const rewardUser = useGamificationStore((s) => s.rewardUser);
@@ -34,24 +37,30 @@ export function useGratitudeHandlers({
   const handleAddGratitude = useThrottledCallback((entry: GratitudeEntry) => {
     const stamped = { ...entry, updatedAt: entry.updatedAt || Date.now() };
     setGratitudeEntries((prev) => [...prev, stamped]);
-    rewardUser("gratitude", {
-      treats: 8,
-      treatReason: "Gratitude entry",
-      haptic: haptics.gratitudeSaved,
-    });
+    if (rewardsEnabled) {
+      rewardUser("gratitude", {
+        treats: 8,
+        treatReason: "Gratitude entry",
+        haptic: haptics.gratitudeSaved,
+      });
 
-    // Gratitude-specific: attract creatures
-    if (Math.random() < 0.3) attractCreature();
-    feedCreatures();
+      // Gratitude-specific: attract creatures
+      if (Math.random() < 0.3) attractCreature();
+      feedCreatures();
+    } else {
+      playSound("success");
+    }
 
     updateChallengeProgress();
 
     const completedQuests = updateAllQuestsProgress({ type: "gratitude_added", value: 1 });
-    completedQuests.forEach((quest) => {
-      const xpReward = quest.reward.xp;
-      earnTreats("gratitude", xpReward, `Quest: ${quest.title}`);
-      triggerXpPopup(xpReward, "bonus");
-    });
+    if (rewardsEnabled) {
+      completedQuests.forEach((quest) => {
+        const xpReward = quest.reward.xp;
+        earnTreats("gratitude", xpReward, `Quest: ${quest.title}`);
+        triggerXpPopup(xpReward, "bonus");
+      });
+    }
 
     triggerSync();
     void syncGratitude(stamped).catch((err) =>

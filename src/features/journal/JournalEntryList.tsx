@@ -99,160 +99,31 @@ async function canUseJournalAi(): Promise<boolean> {
   return Boolean(supabase);
 }
 
-/** Daily rotating quotes — keyed by i18n key for translation */
-const DAILY_QUOTES: { translationId: string; fallback: string; author: string }[] = [
+/** Daily first-party reflection prompts — no unverified attribution or pressure framing. */
+const DAILY_REFLECTIONS: { translationId: string; fallback: string }[] = [
   {
-    translationId: "quoteJournal1",
-    fallback: "Fill your paper with the breathings of your heart.",
-    author: "William Wordsworth",
+    translationId: "journalReflectionPrompt1",
+    fallback: "Name the moment that is asking for attention.",
   },
   {
-    translationId: "quoteJournal2",
-    fallback: "Journal writing is a voyage to the interior.",
-    author: "Christina Baldwin",
+    translationId: "journalReflectionPrompt2",
+    fallback: "Write one true sentence about today.",
   },
   {
-    translationId: "quoteJournal3",
-    fallback: "The act of writing is the act of discovering what you believe.",
-    author: "David Hare",
+    translationId: "journalReflectionPrompt3",
+    fallback: "Notice what changed in your body, mood, or focus.",
   },
   {
-    translationId: "quoteJournal4",
-    fallback: "We write to taste life twice, in the moment and in retrospect.",
-    author: "Anaïs Nin",
+    translationId: "journalReflectionPrompt4",
+    fallback: "Keep only the detail you want future you to remember.",
   },
   {
-    translationId: "quoteJournal5",
-    fallback: "Writing is the painting of the voice.",
-    author: "Voltaire",
+    translationId: "journalReflectionPrompt5",
+    fallback: "Start small: a place, a feeling, a next step.",
   },
   {
-    translationId: "quoteJournal6",
-    fallback:
-      "Start writing, no matter what. The water does not flow until the faucet is turned on.",
-    author: "Louis L'Amour",
-  },
-  {
-    translationId: "quoteJournal7",
-    fallback: "In the journal I am at ease.",
-    author: "Anaïs Nin",
-  },
-  {
-    translationId: "quoteJournal8",
-    fallback: "A personal journal is an ideal environment in which to become.",
-    author: "Gail Sheehy",
-  },
-  {
-    translationId: "quoteJournal9",
-    fallback: "People who keep journals have life twice.",
-    author: "Jessamyn West",
-  },
-  {
-    translationId: "quoteJournal10",
-    fallback:
-      "The pages are still blank, but there is a miraculous feeling of the words being there.",
-    author: "Vladimir Nabokov",
-  },
-  {
-    translationId: "quoteJournal11",
-    fallback:
-      "Write what disturbs you, what you fear, what you have not been willing to speak about.",
-    author: "Natalie Goldberg",
-  },
-  {
-    translationId: "quoteJournal12",
-    fallback: "One day I will find the right words, and they will be simple.",
-    author: "Jack Kerouac",
-  },
-  {
-    translationId: "quoteJournal13",
-    fallback: "There is no greater agony than bearing an untold story inside you.",
-    author: "Maya Angelou",
-  },
-  {
-    translationId: "quoteJournal14",
-    fallback: "Your journal is like your best friend. You don't have to pretend with it.",
-    author: "Oprah Winfrey",
-  },
-  {
-    translationId: "quoteJournal15",
-    fallback: "There is only one way. Go into yourself.",
-    author: "Rainer Maria Rilke",
-  },
-  {
-    translationId: "quoteJournal16",
-    fallback: "How vain it is to sit down to write when you have not stood up to live.",
-    author: "Henry David Thoreau",
-  },
-  {
-    translationId: "quoteJournal17",
-    fallback: "Reading maketh a full man; conference a ready man; and writing an exact man.",
-    author: "Francis Bacon",
-  },
-  {
-    translationId: "quoteJournal18",
-    fallback: "I never travel without my diary.",
-    author: "Oscar Wilde",
-  },
-  {
-    translationId: "quoteJournal19",
-    fallback: "The universe is transformation: life is opinion.",
-    author: "Marcus Aurelius",
-  },
-  {
-    translationId: "quoteJournal20",
-    fallback: "I am myself the matter of my book.",
-    author: "Michel de Montaigne",
-  },
-  {
-    translationId: "quoteJournal21",
-    fallback: "The unexamined life is not worth living.",
-    author: "Socrates",
-  },
-  {
-    translationId: "quoteJournal22",
-    fallback: "Write it on your heart that every day is the best day in the year.",
-    author: "Ralph Waldo Emerson",
-  },
-  {
-    translationId: "quoteJournal23",
-    fallback: "Men are disturbed not by things, but by the views which they take of things.",
-    author: "Epictetus",
-  },
-  {
-    translationId: "quoteJournal24",
-    fallback: "We suffer more often in imagination than in reality.",
-    author: "Seneca",
-  },
-  {
-    translationId: "quoteJournal25",
-    fallback: "Language is the dress of thought.",
-    author: "Samuel Johnson",
-  },
-  {
-    translationId: "quoteJournal26",
-    fallback: "The life of every man is a diary in which he means to write one story.",
-    author: "J. M. Barrie",
-  },
-  {
-    translationId: "quoteJournal27",
-    fallback: "So long as you write what you wish to write, that is all that matters.",
-    author: "Virginia Woolf",
-  },
-  {
-    translationId: "quoteJournal28",
-    fallback: "How do I know what I think until I see what I say?",
-    author: "E. M. Forster",
-  },
-  {
-    translationId: "quoteJournal29",
-    fallback: "We tell ourselves stories in order to live.",
-    author: "Joan Didion",
-  },
-  {
-    translationId: "quoteJournal30",
-    fallback: "Good prose is like a windowpane.",
-    author: "George Orwell",
+    translationId: "journalReflectionPrompt6",
+    fallback: "Park the thought here so you can revisit it later.",
   },
 ];
 
@@ -264,12 +135,35 @@ const QuietReleaseIcon = V2_JOURNAL_ICONS.quietRelease;
 const JournalNudgeIcon = V2_JOURNAL_ICONS.prompt;
 const AiSearchIcon = V2_SHELL_ICONS.insight;
 
-function getDailyQuote(): (typeof DAILY_QUOTES)[0] {
+function getSafeSpaceCoverImageUrl(coverImage: string | undefined): string | null {
+  const value = coverImage?.trim();
+  if (!value) return null;
+  if (/^(?:https?:)?\/\//i.test(value)) return null;
+  if (/^data:image\/(?:png|jpe?g|webp|gif|avif);base64,/i.test(value)) return value;
+  if (/^blob:/i.test(value)) return value;
+  if (value.startsWith("/") || value.startsWith("./") || value.startsWith("../") || value.startsWith("assets/")) {
+    return value;
+  }
+  if (typeof window === "undefined") return null;
+
+  try {
+    const parsed = new URL(value, window.location.origin);
+    return parsed.origin === window.location.origin ? parsed.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function toCssImageUrl(imageUrl: string): string {
+  return "url(" + JSON.stringify(imageUrl) + ")";
+}
+
+function getDailyReflection(): (typeof DAILY_REFLECTIONS)[0] {
   const today = new Date();
   const dayOfYear = Math.floor(
     (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000
   );
-  return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
+  return DAILY_REFLECTIONS[dayOfYear % DAILY_REFLECTIONS.length];
 }
 
 function JournalMemoryBackdrop() {
@@ -436,6 +330,8 @@ interface JournalEntryListProps {
   showFab?: boolean;
   /** Hide folder/space workspace on compact chrome where the route shell owns secondary actions. */
   showSpaces?: boolean;
+  /** Use the parent page wallpaper instead of the list-local memory backdrop. */
+  useSharedDiaryWallpaper?: boolean;
   /** Open a new entry with contextual defaults, for example a selected folder tag. */
   onNewEntryWithPrefill?: (prefill: JournalEntryPrefill) => void;
   /** Mobile V2 can focus the selected day instead of showing older groups below it. */
@@ -461,6 +357,7 @@ export const JournalEntryList = memo(function JournalEntryList({
   activeEntryId = null,
   showFab = true,
   showSpaces = true,
+  useSharedDiaryWallpaper = false,
   onNewEntryWithPrefill,
   selectedDateOnly = false,
   releaseTraceSummaries,
@@ -515,6 +412,7 @@ export const JournalEntryList = memo(function JournalEntryList({
   // AI search state
   const [aiMode, setAiMode] = useState(false);
   const [aiSearching, setAiSearching] = useState(false);
+  const [aiSearchError, setAiSearchError] = useState(false);
   const [aiResults, setAiResults] = useState<SemanticSearchResult[]>([]);
   const [aiIndexing, setAiIndexing] = useState(false);
   const [aiSearchConsentGranted, setAiSearchConsentGranted] = useState(
@@ -680,19 +578,27 @@ export const JournalEntryList = memo(function JournalEntryList({
     if (privateMode || !aiMode || !debouncedSearch.trim()) {
       setAiResults([]);
       setAiSearching(false);
+      setAiSearchError(false);
       return;
     }
 
     let cancelled = false;
     setAiSearching(true);
+    setAiSearchError(false);
 
     searchJournalSemanticLazy(debouncedSearch.trim())
       .then((results) => {
-        if (!cancelled) setAiResults(results);
+        if (!cancelled) {
+          setAiResults(results);
+          setAiSearchError(false);
+        }
       })
-      .catch(() => {
-        // graceful: AI semantic search failure shows empty results — non-blocking UX
-        if (!cancelled) setAiResults([]);
+      .catch((error) => {
+        logger.warn("[Journal] AI semantic search failed", error);
+        if (!cancelled) {
+          setAiResults([]);
+          setAiSearchError(true);
+        }
       })
       .finally(() => {
         if (!cancelled) setAiSearching(false);
@@ -859,7 +765,8 @@ export const JournalEntryList = memo(function JournalEntryList({
           "linear-gradient(145deg, hsl(var(--card) / 0.86), hsl(var(--surface-overlay) / 0.78))",
         ].join(", ")
       : `url(${auroraMountainsUrl})`;
-    const coverImage = space.coverImage ? `url(${space.coverImage})` : fallbackCover;
+    const safeCoverImage = getSafeSpaceCoverImageUrl(space.coverImage);
+    const coverImage = safeCoverImage ? toCssImageUrl(safeCoverImage) : fallbackCover;
     const role = getSpaceVisualRole(space);
     const accentGlow =
       space.private
@@ -1613,7 +1520,7 @@ export const JournalEntryList = memo(function JournalEntryList({
           </div>
         </div>
 
-        {renderDailyQuote()}
+        {renderDailyReflectionPrompt()}
 
         <div className="flex items-center gap-3 px-1">
           <span className="text-[10px] text-muted-foreground/50">
@@ -1843,8 +1750,8 @@ export const JournalEntryList = memo(function JournalEntryList({
     );
   };
 
-  const renderDailyQuote = () => {
-    const quote = getDailyQuote();
+  const renderDailyReflectionPrompt = () => {
+    const reflection = getDailyReflection();
     return (
       <div
         className="relative overflow-hidden rounded-2xl border border-primary/10 bg-card/55 p-3.5 shadow-[0_18px_45px_hsl(var(--foreground)/0.06)] backdrop-blur-xl"
@@ -1865,10 +1772,7 @@ export const JournalEntryList = memo(function JournalEntryList({
           }}
         />
         <p className="text-sm font-serif italic leading-relaxed pe-7 text-foreground/85">
-          {ts[quote.translationId] || quote.fallback}
-        </p>
-        <p className="mt-2 text-[10px] font-serif text-muted-foreground/55">
-          — {quote.author}
+          {ts[reflection.translationId] || reflection.fallback}
         </p>
       </div>
     );
@@ -2024,7 +1928,7 @@ export const JournalEntryList = memo(function JournalEntryList({
     return (
       <div className="space-y-3 pb-4" data-testid="journal-compact-empty-list">
         {renderQuietReleaseTrace()}
-        <div className="rounded-2xl border border-border/25 bg-card/45 p-4 text-center backdrop-blur-xl">
+        <div className="journal-diary-glass-panel rounded-2xl border border-border/30 p-4 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/[0.10] text-primary">
             <PenLine className="h-5 w-5" aria-hidden="true" />
           </div>
@@ -2040,7 +1944,7 @@ export const JournalEntryList = memo(function JournalEntryList({
             className="mt-4 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.20)] motion-safe:transition-transform active:scale-[0.98]"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
-            {ts.journalNewEntry || "New entry"}
+            {ts.journalWriteFirstEntry || ts.journalNewEntry || "Write first entry"}
           </button>
         </div>
       </div>
@@ -2050,8 +1954,8 @@ export const JournalEntryList = memo(function JournalEntryList({
   if (totalCount === 0 && !spacesSheetOpen && !activeSpaceMode) {
     return (
       <div className="relative isolate space-y-3 pb-24" data-testid="journal-empty-list">
-        <JournalMemoryBackdrop />
-        {renderDailyQuote()}
+        {!useSharedDiaryWallpaper && <JournalMemoryBackdrop />}
+        {renderDailyReflectionPrompt()}
         {renderQuietReleaseTrace()}
         {renderSpaceShortcut()}
         <JournalCaptureLauncher
@@ -2061,7 +1965,7 @@ export const JournalEntryList = memo(function JournalEntryList({
           onFocusEntry={onNewEntry}
           onReleaseThought={onReleaseThought}
         />
-        <div className="flex flex-col items-center justify-center py-14 px-6 relative rounded-[1.6rem] border border-border/25 bg-card/45 backdrop-blur-xl">
+        <div className="journal-diary-glass-panel relative flex flex-col items-center justify-center rounded-[1.6rem] border border-border/30 px-6 py-14">
           {/* Ambient floating particles */}
           {[
             { x: "15%", y: "10%", size: 7, idx: 0 },
@@ -2072,8 +1976,8 @@ export const JournalEntryList = memo(function JournalEntryList({
             <div
               key={p.idx}
               className={cn(
-                "absolute rounded-full bg-primary/15 blur-[1px]",
-                `animate-particle-float-${(p.idx % 5) + 1}`
+                "absolute rounded-full bg-primary/12 blur-[1px] motion-reduce:hidden",
+                !reducedMotion && `animate-particle-float-${(p.idx % 5) + 1}`
               )}
               style={{ left: p.x, top: p.y, width: p.size, height: p.size }}
             />
@@ -2081,9 +1985,9 @@ export const JournalEntryList = memo(function JournalEntryList({
 
           <div className="relative w-24 h-24 mb-5">
             <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/15 via-primary/8 to-transparent flex items-center justify-center motion-safe:animate-float"
+              animate={reducedMotion ? undefined : { y: [0, -8, 0] }}
+              transition={reducedMotion ? undefined : { duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="flex h-24 w-24 items-center justify-center rounded-[2rem] border border-primary/16 bg-primary/[0.10] shadow-[inset_0_1px_0_hsl(var(--card)/0.62),0_22px_58px_-48px_hsl(var(--foreground)/0.52)]"
             >
               <PenLine className="h-9 w-9 text-primary" aria-hidden="true" />
             </motion.div>
@@ -2096,14 +2000,14 @@ export const JournalEntryList = memo(function JournalEntryList({
             ].map((sparkle, i) => (
               <motion.div
                 key={i}
-                animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
-                transition={{
+                animate={reducedMotion ? undefined : { opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
+                transition={reducedMotion ? undefined : {
                   duration: 2,
                   repeat: Infinity,
                   delay: sparkle.delay,
                   ease: "easeInOut",
                 }}
-                className="absolute w-2 h-2 rounded-full bg-primary/40"
+                className="absolute h-1.5 w-1.5 rounded-full bg-primary/34 motion-reduce:hidden"
                 style={{
                   left: `calc(50% + ${sparkle.x}px)`,
                   top: `calc(50% + ${sparkle.y}px)`,
@@ -2117,8 +2021,8 @@ export const JournalEntryList = memo(function JournalEntryList({
           <p className="text-sm text-muted-foreground text-center mb-2 max-w-[260px]">
             {ts.journalEmptyHint || "Start writing to capture your thoughts, feelings, and memories."}
           </p>
-          <p className="text-[10px] text-muted-foreground/60 text-center mb-6 italic">
-            {ts.journalEmptyQuote || "Your thoughts are worth preserving"}
+          <p className="mb-6 text-center text-xs italic leading-relaxed text-muted-foreground">
+            {ts.journalEmptyQuote || "Start with one detail from this moment."}
           </p>
         </div>
       </div>
@@ -2127,7 +2031,7 @@ export const JournalEntryList = memo(function JournalEntryList({
 
   return (
     <div className="relative isolate space-y-3 pb-24">
-      <JournalMemoryBackdrop />
+      {!useSharedDiaryWallpaper && <JournalMemoryBackdrop />}
       {/* Inactivity banner */}
       {daysSinceLastEntry != null && daysSinceLastEntry >= 2 && !bannerDismissed && (
         <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/15">
@@ -2138,7 +2042,7 @@ export const JournalEntryList = memo(function JournalEntryList({
             <p className="text-xs text-foreground">
               {(
                 ts.journalInactiveBanner ||
-                "You haven't written in {days} days. How about a quick entry?"
+                "Last entry was {days} days ago. Start a note if it helps right now."
               ).replace("{days}", String(daysSinceLastEntry))}
             </p>
           </div>
@@ -2152,8 +2056,8 @@ export const JournalEntryList = memo(function JournalEntryList({
         </div>
       )}
 
-      {/* Daily inspirational quote */}
-      {!activeSpaceMode && renderDailyQuote()}
+      {/* Daily first-party reflection prompt */}
+      {!activeSpaceMode && renderDailyReflectionPrompt()}
 
       {/* Writing stats mini-bar */}
       {!activeSpaceMode && visibleEntryCount > 0 && (
@@ -2214,7 +2118,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                 setSearchInput("");
                 setAiResults([]);
               }}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg hover:bg-muted/50"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               aria-label={ts.clear || "Clear search"}
             >
               {aiSearching ? (
@@ -2228,7 +2132,7 @@ export const JournalEntryList = memo(function JournalEntryList({
             <button
               onClick={toggleAiMode}
               className={cn(
-                "p-2 rounded-lg motion-safe:transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center",
+                "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 aiMode
                   ? "bg-purple-500/15 text-purple-500"
                   : "hover:bg-muted/50 text-muted-foreground"
@@ -2838,7 +2742,17 @@ export const JournalEntryList = memo(function JournalEntryList({
       {/* AI search results */}
       {!activeSpaceMode && aiMode && debouncedSearch.trim() && !aiSearching && (
         <>
-          {aiMatchedEntries.length > 0 ? (
+          {aiSearchError ? (
+            <div className="flex flex-col items-center py-8 text-center" role="status">
+              <Search className="mb-2 h-8 w-8 text-muted-foreground/60" aria-hidden="true" />
+              <p className="text-sm text-muted-foreground mb-1">
+                {ts.journalAiSearchUnavailable || "AI search is unavailable right now"}
+              </p>
+              <p className="text-[10px] text-muted-foreground/50 mb-3 max-w-[240px]">
+                {ts.journalAiSearchUnavailableHint || "Your entries are still here. Try standard search or retry later."}
+              </p>
+            </div>
+          ) : aiMatchedEntries.length > 0 ? (
             <motion.div
               variants={activeContainerVariants}
               initial="hidden"

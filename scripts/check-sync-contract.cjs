@@ -215,11 +215,6 @@ function main() {
     "useTelegramGradeSyncRuntime();",
   ]);
 
-  requireIncludes("src/pages/IndexV1Impl.tsx", [
-    "useTelegramGradeSyncRuntime",
-    "useTelegramGradeSyncRuntime();",
-  ]);
-
   requireIncludes("src/main.tsx", [
     "runWithSyncLeaderLock",
     "resume-delta-sync",
@@ -227,7 +222,6 @@ function main() {
   ]);
 
   requireNotIncludes("src/pages/Index.tsx", ['from "@/hooks/useDeltaSyncEffects"']);
-  requireNotIncludes("src/pages/IndexV1Impl.tsx", ['from "@/hooks/useDeltaSyncEffects"']);
 
   requireIncludes("src/storage/initialDeltaSync.ts", [
     "getServerMaxSeq()",

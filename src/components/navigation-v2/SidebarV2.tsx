@@ -8,7 +8,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 import { ThemeToggleV2 } from "./ThemeToggleV2";
-import { ClassicPortalLink } from "./ClassicPortalLink";
 
 interface SidebarV2Props {
   activePage: NavV2Page;
@@ -169,12 +168,6 @@ export const SidebarV2 = memo(function SidebarV2({
 
       {/* Footer: theme toggle + settings + collapse toggle */}
       <div className="mt-auto flex flex-col gap-1 p-3 border-t border-border/40">
-        <ClassicPortalLink
-          collapsed={collapsed}
-          className={collapsed ? "mb-1" : "mb-2"}
-          testId="sidebar-v2-classic-portal"
-          variant="sidebar"
-        />
         <ThemeToggleV2 collapsed={collapsed} />
         {renderItem(settingsItem, true)}
         {!collapseLocked && (

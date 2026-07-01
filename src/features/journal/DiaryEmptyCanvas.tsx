@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from "react";
+import { memo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -8,7 +8,6 @@ import { springs as springPresets } from "@/config/animations";
 import { V2_JOURNAL_ICONS, V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 
 import { DiaryWallpaper } from "./DiaryWallpaper";
-import { TypewriterText } from "./TypewriterText";
 import { formatLocalizedCount } from "./journalWordCount";
 
 /** Detect low-end device: skip orb if < 4GB RAM or no WebGL */
@@ -37,6 +36,16 @@ function getCurrentTimePeriod(): string {
   if (h >= 12 && h < 17) return "afternoon";
   if (h >= 17 && h < 22) return "evening";
   return "night";
+}
+
+const JOURNAL_EMPTY_QUOTES = [
+  { translationId: "journalReflectionQuote1", fallback: "One detail is enough." },
+  { translationId: "journalReflectionQuote2", fallback: "This page can hold only what you choose." },
+  { translationId: "journalReflectionQuote3", fallback: "Leave a small note for later." },
+] as const;
+
+function getJournalEmptyQuoteIndex(date = new Date()): number {
+  return Math.abs(Math.floor(date.getTime() / 86_400_000)) % JOURNAL_EMPTY_QUOTES.length;
 }
 
 const TIME_GREETINGS: Record<string, Record<string, string>> = {
@@ -71,14 +80,14 @@ const TIME_GREETINGS: Record<string, Record<string, string>> = {
     he: "ערב טוב",
   },
   night: {
-    en: "Still up?",
-    uk: "Ще не спиш?",
-    es: "¿Aún despierto?",
-    de: "Noch wach?",
-    fr: "Encore debout ?",
-    ja: "まだ起きてる？",
-    ar: "ما زلت مستيقظ؟",
-    he: "עדיין ער?",
+    en: "Quiet night",
+    uk: "Тиха ніч",
+    es: "Noche tranquila",
+    de: "Ruhige Nacht",
+    fr: "Nuit calme",
+    ja: "静かな夜",
+    ar: "ليلة هادئة",
+    he: "לילה שקט",
   },
 };
 
@@ -101,20 +110,18 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
   const ts = t as unknown as Record<string, string>;
   const reducedMotion = useReducedMotion();
   const lowEnd = isLowEndDevice();
-  const [currentPrompt, setCurrentPrompt] = useState("");
+  const currentPrompt = ts.journalReflectionPrompt2 || "Write one true sentence about today.";
+  const quoteDefinition = JOURNAL_EMPTY_QUOTES[getJournalEmptyQuoteIndex()];
+  const currentQuote = ts[quoteDefinition.translationId] || quoteDefinition.fallback;
   const period = getCurrentTimePeriod();
   const greeting = TIME_GREETINGS[period]?.[language] || TIME_GREETINGS[period]?.en || "Hello";
   const NewEntryIcon = V2_JOURNAL_ICONS.newEntry;
   const PromptIcon = V2_JOURNAL_ICONS.prompt;
   const StreakIcon = V2_SHELL_ICONS.confirm;
 
-  const handlePromptChange = useCallback((text: string) => {
-    setCurrentPrompt(text);
-  }, []);
-
   return (
     <div
-      className="relative flex flex-1 select-none flex-col items-center justify-center gap-6 overflow-hidden"
+      className="relative flex flex-1 select-none flex-col items-center justify-center gap-5 overflow-hidden px-4 py-6 sm:gap-6"
       data-testid="diary-empty-canvas"
     >
       {/* Layer 1: shared day/night diary wallpaper */}
@@ -153,20 +160,37 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
         {greeting}
       </motion.h2>
 
-      {/* Layer 5: Typewriter text */}
-      <motion.div
+      {/* Layer 5: stable first-party reflection prompt */}
+      <motion.p
         initial={reducedMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35, duration: 0.4 }}
-        className="relative z-[1] px-8 text-center"
+        className="relative z-[1] max-w-[min(30rem,calc(100vw-3rem))] px-8 text-center text-lg font-light italic leading-relaxed text-foreground/78"
       >
-        <TypewriterText
-          className="min-h-[2em] text-lg font-light italic"
-          onPromptChange={handlePromptChange}
-        />
-      </motion.div>
+        {currentPrompt}
+      </motion.p>
 
-      {/* Layer 6: CTA pills */}
+      {/* Layer 6: quiet first-party quote */}
+      <motion.figure
+        initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.43, duration: 0.35 }}
+        className="relative z-[1] max-w-[min(28rem,calc(100vw-3rem))] border-y border-foreground/10 bg-background/20 px-5 py-3 text-center backdrop-blur-sm"
+        data-testid="diary-reflection-quote"
+        aria-label={ts.journalReflectionQuoteLabel || "A quiet quote"}
+        dir="auto"
+      >
+        <figcaption className="mb-2 text-xs font-medium text-muted-foreground/70">
+          {ts.journalReflectionQuoteLabel || "A quiet quote"}
+        </figcaption>
+        <blockquote className="text-base font-serif italic leading-relaxed text-foreground/82">
+          <span aria-hidden="true">&quot;</span>
+          {currentQuote}
+          <span aria-hidden="true">&quot;</span>
+        </blockquote>
+      </motion.figure>
+
+      {/* Layer 7: CTA pills */}
       <motion.div
         initial={reducedMotion ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -182,7 +206,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
           whileTap={reducedMotion ? undefined : { scale: 0.97 }}
           transition={springPresets.snappy}
           onClick={onNewEntry}
-          className="flex min-h-[44px] items-center gap-2 rounded-full bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/15 motion-safe:transition-colors"
+          className="flex min-h-[44px] items-center gap-2 rounded-full bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:transition-colors"
           aria-label={ts.journalNewEntry || "Write"}
         >
           <NewEntryIcon className="h-4 w-4" />
@@ -198,7 +222,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
           whileTap={reducedMotion ? undefined : { scale: 0.97 }}
           transition={springPresets.snappy}
           onClick={() => onNewEntryWithPrompt(currentPrompt)}
-          className="flex min-h-[44px] items-center gap-2 rounded-full bg-muted/50 px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/70 motion-safe:transition-colors"
+          className="flex min-h-[44px] items-center gap-2 rounded-full bg-muted/50 px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:transition-colors"
           aria-label={ts.journalPrompt || "Prompt"}
         >
           <PromptIcon className="h-4 w-4" />
@@ -206,7 +230,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
         </motion.button>
       </motion.div>
 
-      {/* Layer 7: Context line + streak */}
+      {/* Layer 8: Context line + streak */}
       <motion.div
         initial={reducedMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -242,7 +266,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
           </motion.span>
         )}
         {entriesThisWeek === 0 && streak === 0 && (
-          <span>{ts.diaryStartFirstEntry || "Start your first entry this week"}</span>
+          <span>{ts.diaryStartFirstEntry || "Begin with one small detail."}</span>
         )}
       </motion.div>
     </div>

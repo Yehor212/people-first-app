@@ -64,7 +64,7 @@ interface ModalLayerProps {
   ) => { earned: number; bonus: number; multiplier: number; newBalance: number };
   // Handler from hook
   handleMindfulMomentComplete: () => void;
-  // Schedule event handler (for AddEventModal from HomeTab button)
+  // Schedule event handler shared by schedule entry points
   handleAddScheduleEvent: (event: Omit<import("@/types").ScheduleEvent, "id">) => void;
   // Data from hooks that can't be called again in this component
   currentStreak: number;
@@ -206,7 +206,7 @@ export function ModalLayer({
         </LazyErrorBoundary>
       )}
 
-      {/* Add Event Modal (from HomeTab "Подія" button) */}
+      {/* Add Event Modal */}
       {showAddEvent && (
         <LazyErrorBoundary componentName="AddEvent">
           <Suspense fallback={<SkeletonSection />}>

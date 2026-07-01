@@ -1,10 +1,12 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { PlanningPage } from "../planning/PlanningPage";
+import { buildPlanningBridgeHref } from "../planning/PlanningBridgeActions";
 import { ENTRY, type FocusSession, type Habit, type MoodEntry, type ScheduleEvent } from "@/types";
 import { useUserDataStore } from "@/stores/userDataStore";
 import { useUIStore } from "@/stores/uiStore";
-import { getToday } from "@/lib/utils";
+import { formatDate, getToday } from "@/lib/utils";
 import { syncSetting } from "@/storage/sync/syncSettings";
 import { triggerSync } from "@/storage/cloudSync";
 
@@ -39,9 +41,11 @@ vi.mock("@/contexts/LanguageContext", () => ({
       planningPulseFocus: "Focus",
       planningPulseHabits: "Habits",
       planningPulseMood: "Mood",
+      planningPulseConflicts: "Overlaps",
       planningPulseMoodDone: "Logged",
       planningPulseMoodOpen: "Open",
       planningPulseHabitCount: "{count} left",
+      planningPulseConflictCount: "{count} conflict",
       planningBridgeTitle: "Helpful next moves",
       planningBridgeLogMood: "Log mood",
       planningBridgeLogMoodDesc: "Check in before the day moves on.",
@@ -70,15 +74,18 @@ vi.mock("@/components/GlobalScheduleBar", () => ({
 vi.mock("@/components/ScheduleTimeline", () => ({
   ScheduleTimeline: ({
     events,
+    initialSelectedDate,
     onAddEvent,
     onDeleteEvent,
   }: {
     events: ScheduleEvent[];
+    initialSelectedDate?: string;
     onAddEvent?: (event: Omit<ScheduleEvent, "id">) => void;
     onDeleteEvent?: (id: string) => void;
   }) => (
     <section data-testid="planning-schedule-timeline">
       <span data-testid="planning-schedule-count">{events.length}</span>
+      <span data-testid="planning-schedule-initial-date">{initialSelectedDate ?? "today"}</span>
       <button
         type="button"
         onClick={() =>
@@ -207,9 +214,22 @@ const moodEntry = (): MoodEntry => ({
   timestamp: Date.now(),
 });
 
+function getTomorrow(): string {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  return formatDate(date);
+}
+
 describe("PlanningPage", () => {
+  it("finds the latest completed focus session without sorting the full session history", () => {
+    const source = readFileSync("src/pages/nav-v2/planning/PlanningPage.tsx", "utf8");
+
+    expect(source).toContain("getLatestCompletedFocusSession");
+    expect(source).not.toContain(".sort((a, b) => b.completedAt - a.completedAt)");
+  });
   beforeEach(() => {
     vi.clearAllMocks();
+    window.history.pushState({}, "", "/planning?nav=v2");
     useUserDataStore.setState({
       scheduleEvents: [],
       habits: [],
@@ -289,12 +309,69 @@ describe("PlanningPage", () => {
     expect(screen.getByTestId("planning-mode-today")).toHaveAttribute("aria-pressed", "false");
   });
 
+  it("moves mode changes into the real workspace instead of only changing the chip", async () => {
+    render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
+
+    expect(screen.getByTestId("planning-schedule-section")).toHaveAttribute(
+      "data-active-planning-mode",
+      "false",
+    );
+
+    fireEvent.click(screen.getByTestId("planning-mode-focus"));
+    await waitFor(() =>
+      expect(screen.getByTestId("planning-focus-section")).toHaveAttribute(
+        "data-active-planning-mode",
+        "true",
+      ),
+    );
+    expect(screen.getByTestId("planning-schedule-section")).toHaveAttribute(
+      "data-active-planning-mode",
+      "false",
+    );
+
+    fireEvent.click(screen.getByTestId("planning-mode-schedule"));
+    await waitFor(() =>
+      expect(screen.getByTestId("planning-schedule-section")).toHaveAttribute(
+        "data-active-planning-mode",
+        "true",
+      ),
+    );
+    expect(screen.getByTestId("planning-focus-section")).toHaveAttribute(
+      "data-active-planning-mode",
+      "false",
+    );
+  });
+
   it("routes the primary Planning action to the schedule mode on an empty day", () => {
     render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
 
     fireEvent.click(screen.getByTestId("planning-primary-action"));
 
     expect(screen.getByTestId("planning-mode-schedule")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("planning-schedule-section")).toHaveAttribute(
+      "data-active-planning-mode",
+      "true",
+    );
+  });
+
+  it("routes a focus primary action to the actual focus workspace", async () => {
+    useUIStore.setState({
+      focusIsRunning: true,
+      focusEndTime: Date.now() + 1_000_000,
+      focusIsBreak: false,
+      focusLabel: "Deep work",
+    });
+
+    render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
+
+    fireEvent.click(screen.getByTestId("planning-primary-action"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("planning-focus-section")).toHaveAttribute(
+        "data-active-planning-mode",
+        "true",
+      ),
+    );
   });
 
   it("renders a day pulse and contextual cross-tab bridge actions", () => {
@@ -323,6 +400,46 @@ describe("PlanningPage", () => {
     expect(screen.getByTestId("planning-bridge-action-log_mood")).toHaveAttribute("href", expect.stringContaining("/orb"));
     expect(screen.getByTestId("planning-bridge-action-complete_habits")).toHaveAttribute("href", expect.stringContaining("/habits"));
     expect(screen.getByTestId("planning-bridge-action-reflect_in_diary")).toHaveAttribute("href", expect.stringContaining("/diary"));
+  });
+
+  it("surfaces schedule conflicts in the day pulse", () => {
+    useUserDataStore.setState({
+      scheduleEvents: [
+        manualEvent(),
+        {
+          ...manualEvent(),
+          id: "manual-2",
+          title: "Overlap",
+          startHour: 10,
+          startMinute: 15,
+          endHour: 10,
+          endMinute: 45,
+        },
+      ],
+    });
+
+    render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
+
+    expect(screen.getByTestId("planning-pulse-conflicts")).toHaveTextContent("Overlaps");
+    expect(screen.getByTestId("planning-pulse-conflicts")).toHaveTextContent("1 conflict");
+  });
+
+  it("keeps the plan-tomorrow bridge anchored to tomorrow's Planning date", () => {
+    const href = buildPlanningBridgeHref({ kind: "plan_tomorrow", targetPage: "planning" });
+
+    expect(href).toContain("/planning");
+    expect(href).toContain("nav=v2");
+    expect(href).toContain("planningDate=tomorrow");
+  });
+
+  it("opens Planning on tomorrow when the bridge date is requested", async () => {
+    window.history.pushState({}, "", "/planning?nav=v2&planningDate=tomorrow");
+
+    render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
+
+    expect(await screen.findByTestId("planning-schedule-initial-date")).toHaveTextContent(
+      getTomorrow(),
+    );
   });
 
   it("keeps bridge actions quiet when mood and habits are already handled", () => {

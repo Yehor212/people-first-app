@@ -32,7 +32,6 @@ supabase/ @Yehor212
 
 src/components/state-of-mind/ @Yehor212
 src/pages/Index.tsx @Yehor212
-src/pages/IndexV1Impl.tsx @Yehor212
 src/pages/nav-v2/ @Yehor212
 src/sw.ts @Yehor212
 vite.config.ts @Yehor212

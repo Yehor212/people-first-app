@@ -22,5 +22,6 @@ AGENT_CHANGE_NOTICE:
 - [ ] No TypeScript errors (`npx tsc --noEmit` = 0)
 - [ ] Visual check done (screenshot below or "N/A — no UI changes")
 - [ ] Agent change notice completed or explicitly N/A
+- [ ] No AI-template output: copy/UI/docs/assets are ZenFlow-specific, placeholders removed, and `npm run check:no-ai-templates` run or marked N/A with reason
 - [ ] CHANGELOG.md updated (or N/A — no user-facing changes)
 - [ ] No secrets committed (.env, keystore, google-services.json)

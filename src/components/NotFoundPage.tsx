@@ -23,7 +23,7 @@ export function NotFoundPage({
 
   return (
     <main
-      className="relative flex min-h-[100svh] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_18%_16%,hsl(var(--zf-role-focus)/0.18),transparent_34%),radial-gradient(circle_at_82%_8%,hsl(var(--zf-role-mind)/0.16),transparent_30%),linear-gradient(150deg,hsl(var(--zf-night-0)),hsl(var(--zf-night-1)))] px-4 py-[calc(env(safe-area-inset-top)+2rem)] text-[hsl(var(--zf-text-strong))]"
+      className="v2-fullscreen-page relative flex min-h-[var(--app-viewport-height)] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_18%_16%,hsl(var(--zf-role-focus)/0.18),transparent_34%),radial-gradient(circle_at_82%_8%,hsl(var(--zf-role-mind)/0.16),transparent_30%),linear-gradient(150deg,hsl(var(--zf-night-0)),hsl(var(--zf-night-1)))] px-4 pb-[calc(var(--safe-bottom)+2rem)] pt-[calc(var(--safe-top)+2rem)] text-[hsl(var(--zf-text-strong))]"
       data-testid="not-found-page"
       data-surface="v2-not-found"
     >

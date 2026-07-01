@@ -30,7 +30,8 @@ const ANDROID_RES = path.resolve(__dirname, "..", "android", "app", "src", "main
 const ANDROID_APP_BUILD = path.resolve(__dirname, "..", "android", "app", "build");
 const ANDROID_CORDOVA_PLUGINS = path.resolve(__dirname, "..", "android", "capacitor-cordova-android-plugins");
 const IOS_APP = path.resolve(__dirname, "..", "ios", "App", "App");
-const LATE_DUPLICATE_CONFIRM_PASSES = 8;
+const IOS_CORDOVA_PLUGINS = path.resolve(__dirname, "..", "ios", "capacitor-cordova-ios-plugins");
+const LATE_DUPLICATE_CONFIRM_PASSES = 24;
 const LATE_DUPLICATE_CONFIRM_DELAY_MS = 500;
 const PRUNE = [
   // Play Store listing artwork — only for manual uploads, not runtime
@@ -122,15 +123,16 @@ function sleepSync(ms) {
 }
 
 function pruneLateMacDuplicateArtifacts() {
-  // Some macOS/iCloud workspaces materialize " 2" duplicate artifacts just
-  // after Capacitor sync completes. Poll for a few seconds so delayed local
-  // filesystem copies are removed before native runtime verification.
+  // Some macOS/iCloud workspaces materialize " 2" duplicate artifacts after
+  // Capacitor sync completes. Poll long enough for delayed local filesystem
+  // copies to settle before native runtime verification and release guards.
   let removedTotal = 0;
   for (let pass = 1; pass <= LATE_DUPLICATE_CONFIRM_PASSES; pass++) {
     sleepSync(LATE_DUPLICATE_CONFIRM_DELAY_MS);
     removedTotal +=
       pruneMacDuplicateArtifacts(DIST, `dist-late-${pass}`) +
-      pruneMacDuplicateArtifacts(IOS_APP, `ios-app-late-${pass}`);
+      pruneMacDuplicateArtifacts(IOS_APP, `ios-app-late-${pass}`) +
+      pruneMacDuplicateArtifacts(IOS_CORDOVA_PLUGINS, `ios-cordova-plugins-late-${pass}`);
   }
 
   if (removedTotal > 0) {
@@ -178,6 +180,7 @@ pruneMacDuplicateArtifacts(ANDROID_RES, "android-res");
 pruneMacDuplicateArtifacts(ANDROID_APP_BUILD, "android-app-build");
 pruneMacDuplicateArtifacts(ANDROID_CORDOVA_PLUGINS, "android-cordova-plugins");
 pruneMacDuplicateArtifacts(IOS_APP, "ios-app");
+pruneMacDuplicateArtifacts(IOS_CORDOVA_PLUGINS, "ios-cordova-plugins");
 prunePrecompressedNativeAssets(ANDROID_PUBLIC, "android-public");
 prunePrecompressedNativeAssets(path.join(IOS_APP, "public"), "ios-public");
 

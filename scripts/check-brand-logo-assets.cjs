@@ -70,18 +70,18 @@ const IMAGE_EXPECTATIONS = [
     ["StoreLogo.png", 50],
   ].map(([file, size]) => ({ file: `src-tauri/icons/${file}`, width: size, height: size, alpha: "allowed" })),
   ...[
-    ["mipmap-mdpi", 48],
-    ["mipmap-hdpi", 72],
-    ["mipmap-xhdpi", 96],
-    ["mipmap-xxhdpi", 144],
-    ["mipmap-xxxhdpi", 192],
-  ].flatMap(([folder, size]) => [
+    ["mipmap-mdpi", 48, 108],
+    ["mipmap-hdpi", 72, 162],
+    ["mipmap-xhdpi", 96, 216],
+    ["mipmap-xxhdpi", 144, 324],
+    ["mipmap-xxxhdpi", 192, 432],
+  ].flatMap(([folder, size, foregroundSize]) => [
     { file: `android/app/src/main/res/${folder}/ic_launcher.png`, width: size, height: size, alpha: "opaque" },
     { file: `android/app/src/main/res/${folder}/ic_launcher_round.png`, width: size, height: size, alpha: "allowed" },
-    { file: `android/app/src/main/res/${folder}/ic_launcher_foreground.png`, width: size, height: size, alpha: "allowed" },
+    { file: `android/app/src/main/res/${folder}/ic_launcher_foreground.png`, width: foregroundSize, height: foregroundSize, alpha: "allowed" },
     { file: `src-tauri/icons/android/${folder}/ic_launcher.png`, width: size, height: size, alpha: "opaque" },
     { file: `src-tauri/icons/android/${folder}/ic_launcher_round.png`, width: size, height: size, alpha: "allowed" },
-    { file: `src-tauri/icons/android/${folder}/ic_launcher_foreground.png`, width: size, height: size, alpha: "allowed" },
+    { file: `src-tauri/icons/android/${folder}/ic_launcher_foreground.png`, width: foregroundSize, height: foregroundSize, alpha: "allowed" },
   ]),
   ...[
     ["drawable/splash.png", 480, 320],
@@ -145,8 +145,8 @@ const ANDROID_ROUND_PNG_EXPECTATIONS = [
   ]),
 ];
 const ANDROID_ROUND_SCALE_EXPECTATION = {
-  minCircleScale: 0.92,
-  maxCircleScale: 0.97,
+  minCircleScale: 0.99,
+  maxCircleScale: 1,
   minLeafScale: 0.44,
   maxLeafScale: 0.52,
 };
@@ -168,6 +168,8 @@ const PUBLIC_STATIC_HTML = [
 const WHITE_MARK_SAFE_ZONE_EXPECTATIONS = [
   "public/pwa-72.png",
   "public/pwa-192.png",
+  "public/pwa-maskable-512.png",
+  "docs/pwa-maskable-512.png",
   "public/pwa-windows-44.png",
   "public/pwa-windows-50.png",
   "docs/pwa-192.png",
@@ -184,14 +186,15 @@ const WHITE_MARK_SAFE_ZONE_EXPECTATIONS = [
 const SMALL_ICON_READABILITY_EXPECTATIONS = [
   {
     file: "public/favicon-16.png",
-    threshold: 200,
-    coreThreshold: 220,
-    minPixels: 6,
-    minCorePixels: 3,
+    threshold: 220,
+    coreThreshold: 235,
+    minPixels: 8,
+    minCorePixels: 4,
     minCoreContrast: 3,
-    minBox: 5,
-    maxBox: 10,
-    minMargin: 0.18,
+    minBox: 6,
+    maxBox: 11,
+    minMargin: 0.14,
+    maxWhiteCoverage: 0.7,
   },
   {
     file: "public/favicon-32.png",
@@ -203,6 +206,55 @@ const SMALL_ICON_READABILITY_EXPECTATIONS = [
     minBox: 10,
     maxBox: 18,
     minMargin: 0.2,
+    maxWhiteCoverage: 0.58,
+  },
+  {
+    file: "docs/favicon-16.png",
+    threshold: 220,
+    coreThreshold: 235,
+    minPixels: 8,
+    minCorePixels: 4,
+    minCoreContrast: 3,
+    minBox: 6,
+    maxBox: 11,
+    minMargin: 0.14,
+    maxWhiteCoverage: 0.7,
+  },
+  {
+    file: "docs/favicon-32.png",
+    threshold: 220,
+    coreThreshold: 220,
+    minPixels: 28,
+    minCorePixels: 20,
+    minCoreContrast: 3,
+    minBox: 10,
+    maxBox: 18,
+    minMargin: 0.2,
+    maxWhiteCoverage: 0.58,
+  },
+  {
+    file: "src-tauri/icons/Square30x30Logo.png",
+    threshold: 220,
+    coreThreshold: 220,
+    minPixels: 24,
+    minCorePixels: 18,
+    minCoreContrast: 3,
+    minBox: 10,
+    maxBox: 17,
+    minMargin: 0.18,
+    maxWhiteCoverage: 0.58,
+  },
+  {
+    file: "src-tauri/icons/32x32.png",
+    threshold: 220,
+    coreThreshold: 220,
+    minPixels: 28,
+    minCorePixels: 20,
+    minCoreContrast: 3,
+    minBox: 10,
+    maxBox: 18,
+    minMargin: 0.18,
+    maxWhiteCoverage: 0.58,
   },
   {
     file: "public/pwa-windows-44.png",
@@ -274,11 +326,11 @@ const SMALL_ICON_READABILITY_EXPECTATIONS = [
     file: "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
     threshold: 235,
     coreThreshold: 235,
-    minPixels: 160,
-    minCorePixels: 120,
-    minCoreContrast: 3,
-    minBox: 20,
-    maxBox: 30,
+    minPixels: 760,
+    minCorePixels: 680,
+    transparentLayer: true,
+    minBox: 48,
+    maxBox: 70,
     minMargin: 0.16,
   },
 ];
@@ -354,10 +406,59 @@ function assertClassicLogoContract() {
       fail(`scripts/generate-icons.cjs must not change the ZenFlow logo design through size-specific visual profile token ${token}; improve raster quality only`);
     }
   }
-  for (const token of ["SMALL_RASTER_SUPERSAMPLE", "SMALL_RASTER_SHARPEN_SIGMA", "TINY_RASTER_BACKGROUND_MULTIPLIER", "rasterSizedSvg"]) {
+  for (const token of ["SMALL_RASTER_SUPERSAMPLE", "SMALL_RASTER_SHARPEN_SIGMA", "TINY_RASTER_BACKGROUND_MULTIPLIER", "TINY_PROFILE_MAX_SIZE", "rasterSizedSvg"]) {
     if (!generator.includes(token)) {
       fail(`scripts/generate-icons.cjs must keep quality-only raster export token ${token}`);
     }
+  }
+  if (!generator.includes("const TINY_PROFILE_MAX_SIZE = 32") || !generator.includes("tiny: size <= TINY_PROFILE_MAX_SIZE")) {
+    fail("scripts/generate-icons.cjs must keep the crisp 16/32px tiny logo profile for favicon-class outputs");
+  }
+}
+
+function assertLogoVisualProtocolContract() {
+  const protocolRel = "docs/ai/LOGO_VISUAL_INTEGRITY_PROTOCOL.md";
+  const protocolPath = checkedRepoAssetPath(protocolRel);
+  if (!fs.existsSync(protocolPath)) {
+    fail(protocolRel + " must exist; future logo/icon work needs a durable visual integrity protocol");
+  }
+
+  const protocol = read(protocolRel);
+  for (const token of [
+    "# ZenFlow Logo Visual Integrity Protocol",
+    "Canonical Shape Lock",
+    "LEAF_BODY",
+    "LEAF_STEM",
+    "No AI Or One-Off Raster Canonical Source",
+    "Tiny Anti-Blob Guard",
+    "maxWhiteCoverage",
+    "native/user/audit",
+    "Platform Matrix",
+    "Visual Integrity Critic",
+    "UNVERIFIED",
+    "assets:logos:check",
+    "assets:logos:proof",
+  ]) {
+    if (!protocol.includes(token)) {
+      fail(protocolRel + " is missing required logo visual protocol token " + token);
+    }
+  }
+
+  const agents = read("AGENTS.md");
+  for (const token of [
+    "docs/ai/LOGO_VISUAL_INTEGRITY_PROTOCOL.md",
+    "logo/icon/splash",
+    "assets:logos:check",
+    "assets:logos:proof",
+  ]) {
+    if (!agents.includes(token)) {
+      fail("AGENTS.md must route future logo/icon/splash work through " + protocolRel + " and logo proof checks; missing " + token);
+    }
+  }
+
+  const generator = read("scripts/generate-icons.cjs");
+  if (generator.includes('fill: tiny ? "#fff"')) {
+    fail("scripts/generate-icons.cjs must not restore a solid-white tiny leaf fill; it caused 16/30/32px blob regressions");
   }
 }
 
@@ -373,6 +474,34 @@ async function assertOpaquePng(file) {
   }
 }
 
+function assertAndroidRoundNoLightRing(file, data, info) {
+  const cx = (info.width - 1) / 2;
+  const cy = (info.height - 1) / 2;
+  let ringPixels = 0;
+  let brightRingPixels = 0;
+  for (let y = 0; y < info.height; y += 1) {
+    for (let x = 0; x < info.width; x += 1) {
+      const index = (y * info.width + x) * info.channels;
+      const alpha = data[index + 3];
+      if (alpha < 48) continue;
+      const dx = (x - cx) / (info.width / 2);
+      const dy = (y - cy) / (info.height / 2);
+      const distance = Math.hypot(dx, dy);
+      if (distance < 0.72 || distance > 0.98) continue;
+      ringPixels += 1;
+      const r = data[index];
+      const g = data[index + 1];
+      const b = data[index + 2];
+      const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      const paleMint = g - r > 58 && g - b < 75 && luminance > 160;
+      if (paleMint) brightRingPixels += 1;
+    }
+  }
+  const ratio = ringPixels === 0 ? 0 : brightRingPixels / ringPixels;
+  if (ratio > 0.04) {
+    fail(file + " must not contain a pale mint outer ring/halo; " + (ratio * 100).toFixed(1) + "% of outer ring pixels are too bright");
+  }
+}
 async function assertLegacyAndroidRoundPng(file) {
   const { data, info } = await sharp(checkedRepoAssetPath(file)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const alphaAt = (x, y) => data[(y * info.width + x) * info.channels + 3];
@@ -424,6 +553,7 @@ async function assertLegacyAndroidRoundPng(file) {
   if (circleScale < minCircleScale || circleScale > maxCircleScale) {
     fail(`${file} round icon circle scale is ${(circleScale * 100).toFixed(1)}%; expected ${(minCircleScale * 100).toFixed(1)}%-${(maxCircleScale * 100).toFixed(1)}%`);
   }
+  assertAndroidRoundNoLightRing(file, data, info);
   if (leafScale < minLeafScale || leafScale > maxLeafScale) {
     fail(`${file} ZenFlow leaf optical scale is ${(leafScale * 100).toFixed(1)}%; expected ${(minLeafScale * 100).toFixed(1)}%-${(maxLeafScale * 100).toFixed(1)}%`);
   }
@@ -553,7 +683,7 @@ async function assertSmallIconReadability(expectation) {
         coreThreshold,
     );
   }
-  if (expectation.minCoreContrast) {
+  if (expectation.minCoreContrast && !expectation.transparentLayer) {
     if (corePixels === 0 || backgroundPixels === 0) {
       fail(expectation.file + " cannot calculate tiny-icon contrast; foreground or background pixels are missing");
     }
@@ -572,6 +702,20 @@ async function assertSmallIconReadability(expectation) {
 
   const boxWidth = maxX - minX + 1;
   const boxHeight = maxY - minY + 1;
+  const boxArea = boxWidth * boxHeight;
+  if (expectation.maxWhiteCoverage && boxArea > 0) {
+    const whiteCoverage = pixels / boxArea;
+    if (whiteCoverage > expectation.maxWhiteCoverage) {
+      fail(
+        expectation.file +
+          " tiny mark is too solid-white and can read as an empty blob; white coverage is " +
+          (whiteCoverage * 100).toFixed(1) +
+          "%, expected at most " +
+          (expectation.maxWhiteCoverage * 100).toFixed(1) +
+          "%",
+      );
+    }
+  }
   if (
     boxWidth < expectation.minBox ||
     boxHeight < expectation.minBox ||
@@ -884,7 +1028,8 @@ function assertProofSheetGeneratorContract() {
   for (const token of [
     "TINY_RASTER_LIMIT",
     "MAX_TINY_PROOF_SCALE",
-    "native raster",
+    "native/user/audit",
+    "smooth/user",
     "They are not enlarged as hero art",
     "Android round mdpi",
     "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
@@ -896,6 +1041,19 @@ function assertProofSheetGeneratorContract() {
     "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
     "Android round xxxhdpi",
     "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+    "Android adaptive masks",
+    "adaptive masks",
+    "adaptivePreview",
+    "Apple touch 180",
+    "public/apple-touch-icon.png",
+    "iOS AppIcon 1024",
+    "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
+    "Desktop ICO",
+    "src-tauri/icons/icon.ico",
+    "Desktop ICNS",
+    "src-tauri/icons/icon.icns",
+    "Desktop macOS 512",
+    "src-tauri/icons/icon.png",
   ]) {
     if (!proofGenerator.includes(token)) {
       fail(`scripts/generate-brand-logo-proof-sheet.cjs must keep proof-sheet clarity guard ${token}`);
@@ -983,6 +1141,7 @@ async function main() {
   assertNativeSplashContracts();
   assertRuntimeSplashLogoContract();
   assertClassicLogoContract();
+  assertLogoVisualProtocolContract();
   await assertTelegramUserpicHasNoInnerSquare();
   assertNoLegacyStoreLogoDrafts();
   assertPublicStaticPageLogoContract();

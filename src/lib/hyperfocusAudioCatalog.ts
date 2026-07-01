@@ -2,12 +2,12 @@ import type { AppAudioAssetId } from "@/lib/appAudioAssets";
 import { HYPERFOCUS_GENERATED_AUDIO_MANIFEST } from "@/lib/hyperfocusGeneratedAudioManifest";
 
 export const HYPERFOCUS_AUDIO_FAMILY_IDS = [
-  "underwater",
-  "thunderstorm",
-  "ocean",
-  "river",
   "forest",
+  "rain",
+  "ocean",
   "fireplace",
+  "river",
+  "wind",
 ] as const;
 
 export const HYPERFOCUS_AUDIO_LEVEL_IDS = ["soft", "deep", "intense"] as const;
@@ -49,18 +49,20 @@ export interface HyperfocusAudioVariantRef {
 
 const HYPERFOCUS_LEGACY_FAMILY_ALIASES: Record<string, HyperfocusAudioFamilyId> = {
   cafe: "forest",
+  underwater: "ocean",
+  thunderstorm: "rain",
 };
 
 const familyIds = new Set<string>(HYPERFOCUS_AUDIO_FAMILY_IDS);
 const levelIds = new Set<string>(HYPERFOCUS_AUDIO_LEVEL_IDS);
 
 const familyLabelKeyParts: Record<HyperfocusAudioFamilyId, string> = {
-  underwater: "Underwater",
-  thunderstorm: "Thunderstorm",
-  ocean: "Ocean",
-  river: "River",
   forest: "Forest",
+  rain: "Rain",
+  ocean: "Ocean",
   fireplace: "Fireplace",
+  river: "River",
+  wind: "Wind",
 };
 
 const levelLabelKeyParts: Record<HyperfocusAudioLevelId, string> = {
@@ -115,18 +117,18 @@ function makeLevels(
 
 export const HYPERFOCUS_AUDIO_FAMILIES = [
   {
-    id: "underwater",
-    legacyId: "underwater",
-    legacyAssetId: "focus-underwater",
-    labelKey: "hyperfocusSoundUnderwater",
-    levels: makeLevels("underwater", ["Shallow Drift", "Deep Current", "Abyss Focus"]),
+    id: "forest",
+    legacyId: "forest",
+    legacyAssetId: "focus-forest",
+    labelKey: "hyperfocusSoundForest",
+    levels: makeLevels("forest", ["Canopy Breeze", "Bird Canopy", "Forest Night"]),
   },
   {
-    id: "thunderstorm",
-    legacyId: "thunderstorm",
-    legacyAssetId: "focus-thunderstorm",
-    labelKey: "hyperfocusSoundThunderstorm",
-    levels: makeLevels("thunderstorm", ["Distant Rain", "Steady Storm", "Monsoon Wall"]),
+    id: "rain",
+    legacyId: "rain",
+    legacyAssetId: "focus-rain",
+    labelKey: "hyperfocusSoundRain",
+    levels: makeLevels("rain", ["Light Rain", "Rain Bed", "Heavy Rain"]),
   },
   {
     id: "ocean",
@@ -136,6 +138,13 @@ export const HYPERFOCUS_AUDIO_FAMILIES = [
     levels: makeLevels("ocean", ["Shoreline", "Rock Pools", "Heavy Surf"]),
   },
   {
+    id: "fireplace",
+    legacyId: "fireplace",
+    legacyAssetId: "focus-fireplace",
+    labelKey: "hyperfocusSoundFireplace",
+    levels: makeLevels("fireplace", ["Embers", "Hearth", "Bonfire"]),
+  },
+  {
     id: "river",
     legacyId: "river",
     legacyAssetId: "focus-river",
@@ -143,18 +152,11 @@ export const HYPERFOCUS_AUDIO_FAMILIES = [
     levels: makeLevels("river", ["Brook", "Forest River", "Whitewater"]),
   },
   {
-    id: "forest",
-    legacyId: "forest",
-    legacyAssetId: "focus-forest",
-    labelKey: "hyperfocusSoundForest",
-    levels: makeLevels("forest", ["Canopy Breeze", "Bird Canopy", "Forest Night"]),
-  },
-  {
-    id: "fireplace",
-    legacyId: "fireplace",
-    legacyAssetId: "focus-fireplace",
-    labelKey: "hyperfocusSoundFireplace",
-    levels: makeLevels("fireplace", ["Embers", "Hearth", "Bonfire"]),
+    id: "wind",
+    legacyId: "wind",
+    legacyAssetId: "focus-wind",
+    labelKey: "hyperfocusSoundWind",
+    levels: makeLevels("wind", ["Soft Wind", "Wind Bed", "Mountain Wind"]),
   },
 ] as const satisfies readonly HyperfocusAudioFamily[];
 

@@ -24,13 +24,13 @@ interface DiaryFormatToolbarProps {
 }
 
 const FORMAT_ACTIONS = [
-  { cmd: "bold", icon: "B", style: "font-bold" },
-  { cmd: "italic", icon: "I", style: "italic" },
-  { cmd: "underline", icon: "U", style: "underline" },
-  { cmd: "strikeThrough", icon: "S", style: "line-through" },
-  { cmd: "formatBlock:blockquote", icon: "\u275D", style: "" },
-  { cmd: "insertHTML:<code>", icon: "</>", style: "font-mono text-[11px]" },
-  { cmd: "createLink", icon: "\uD83D\uDD17", style: "" },
+  { cmd: "bold", icon: "B", style: "font-bold", labelKey: "journalFormatBold" },
+  { cmd: "italic", icon: "I", style: "italic", labelKey: "journalFormatItalic" },
+  { cmd: "underline", icon: "U", style: "underline", labelKey: "journalFormatUnderline" },
+  { cmd: "strikeThrough", icon: "S", style: "line-through", labelKey: "journalFormatStrikethrough" },
+  { cmd: "formatBlock:blockquote", icon: "\u275D", style: "", labelKey: "journalFormatQuote" },
+  { cmd: "insertHTML:<code>", icon: "</>", style: "font-mono text-[11px]", labelKey: "journalFormatCode" },
+  { cmd: "createLink", icon: "\uD83D\uDD17", style: "", labelKey: "journalFormatLink" },
 ] as const;
 
 const VIEWPORT_PADDING = 8;
@@ -321,7 +321,8 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
                     ? "bg-primary/20 text-primary ring-1 ring-primary/40 shadow-[0_0_8px_rgba(var(--primary-rgb),0.15)]"
                     : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
                 )}
-                aria-label={action.icon}
+                aria-label={ts[action.labelKey] || action.icon}
+                aria-pressed={isActive}
               >
                 {action.icon}
               </motion.button>

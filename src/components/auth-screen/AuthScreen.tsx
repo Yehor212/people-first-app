@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { AlertCircle, ArrowLeft, Loader2, Phone } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { PluginListenerHandle } from "@capacitor/core";
 import { EntryGateBackdrop } from "@/components/EntryGateBackdrop";
 import { EntryThemeSwitcher } from "@/components/EntryThemeSwitcher";
 import { AuthProviderButton } from "@/components/auth/AuthProviderButton";
@@ -9,8 +10,11 @@ import { resetEntryGateScroll } from "@/components/entryGateScroll";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { shouldAnimate, zenMotion } from "@/lib/animationUtils";
 import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
+import { useAudioComfortSettings } from "@/hooks/useAudioComfortSettings";
 import { getAppAudioAssetSrc } from "@/lib/appAudioAssets";
+import { clearAppAudioMediaSession, setAppAudioMediaSession } from "@/lib/audioMediaSession";
 import { IS_DEV } from "@/lib/env";
+import { logger } from "@/lib/logger";
 import { isAndroid } from "@/lib/platform";
 import { getEnabledAuthScreenProviders } from "@/lib/authProviders";
 import { cn } from "@/lib/utils";
@@ -39,7 +43,7 @@ const authProviderListVariants = {
   },
 };
 
-const MEASURED_BREATH_AUDIO_SRC = getAppAudioAssetSrc("measured-breath");
+const MEASURED_BREATH_AUDIO_SRC = getAppAudioAssetSrc("soft-air-veil");
 
 const authProviderItemVariants = {
   hidden: { opacity: 0, y: 10, scale: 0.985 },
@@ -54,6 +58,8 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
   const breathAudioRef = useRef<HTMLAudioElement | null>(null);
   const [isBreathAudioPlaying, setIsBreathAudioPlaying] = useState(false);
   const appAudioSettings = useAppAudioSettings();
+  const audioComfort = useAudioComfortSettings();
+  const canPlayBreathAudio = !appAudioSettings.muted && audioComfort.canPlayAmbientAsset("soft-air-veil");
 
   const session = useAuthSession({ onComplete, webOAuthError, onClearError });
   const handlers = useAuthHandlers(session, t as unknown as Record<string, string>);
@@ -62,42 +68,83 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
   const breathAudioToggleLabel = isBreathAudioPlaying
     ? t.authMeasuredBreathPause
     : t.authMeasuredBreathPlay;
-  const breathAudioStatusLabel = isBreathAudioPlaying && !appAudioSettings.muted ? t.soundOn : t.soundOff;
+  const breathAudioStatusLabel = isBreathAudioPlaying && canPlayBreathAudio ? t.soundOn : t.soundOff;
 
-  const handleBreathAudioToggle = () => {
+  const stopBreathAudio = useCallback(() => {
+    const audio = breathAudioRef.current;
+    if (!audio) return;
+    audio.pause();
+    clearAppAudioMediaSession();
+    setIsBreathAudioPlaying(false);
+  }, []);
+
+  const handleBreathAudioToggle = useCallback(() => {
     const audio = breathAudioRef.current;
     if (!audio) return;
 
     if (isBreathAudioPlaying) {
-      audio.pause();
-      setIsBreathAudioPlaying(false);
+      stopBreathAudio();
       return;
     }
 
-    if (appAudioSettings.muted) {
-      audio.pause();
-      setIsBreathAudioPlaying(false);
+    if (!canPlayBreathAudio) {
+      stopBreathAudio();
       return;
     }
 
-    audio.volume = Math.max(0, Math.min(1, appAudioSettings.volume * 0.42));
+    audio.volume = Math.max(0, Math.min(1, appAudioSettings.volume * 0.18));
     setIsBreathAudioPlaying(true);
-    void audio.play().catch(() => {
-      setIsBreathAudioPlaying(false);
+    void audio.play().then(() => {
+      setAppAudioMediaSession({
+        title: t.authMeasuredBreathLabel,
+        onPause: stopBreathAudio,
+        onStop: stopBreathAudio,
+      });
+    }).catch((error) => {
+      logger.warn("[AuthScreen] Breath ambience failed:", error);
+      stopBreathAudio();
     });
-  };
+  }, [appAudioSettings.volume, canPlayBreathAudio, isBreathAudioPlaying, stopBreathAudio, t.authMeasuredBreathLabel]);
 
   useEffect(() => {
     resetEntryGateScroll("auth-screen");
   }, []);
 
   useEffect(() => {
-    const audio = breathAudioRef.current;
-    if (!audio || !appAudioSettings.muted) return;
+    if (canPlayBreathAudio) return;
+    stopBreathAudio();
+  }, [canPlayBreathAudio, stopBreathAudio]);
 
-    audio.pause();
-    setIsBreathAudioPlaying(false);
-  }, [appAudioSettings.muted]);
+  useEffect(() => {
+    const stopOnHidden = () => {
+      if (document.hidden) stopBreathAudio();
+    };
+    const stopOnPageHide = () => stopBreathAudio();
+    let cancelled = false;
+    let pauseListener: PluginListenerHandle | null = null;
+
+    document.addEventListener("visibilitychange", stopOnHidden);
+    window.addEventListener("pagehide", stopOnPageHide);
+    void import("@capacitor/app")
+      .then(({ App }) => App.addListener("pause", stopBreathAudio))
+      .then((listener) => {
+        if (cancelled) {
+          void listener.remove();
+          return;
+        }
+        pauseListener = listener;
+      })
+      .catch((error) => {
+        logger.warn("[AuthScreen] Failed to register audio pause listener:", error);
+      });
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", stopOnHidden);
+      window.removeEventListener("pagehide", stopOnPageHide);
+      if (pauseListener) void pauseListener.remove();
+    };
+  }, [stopBreathAudio]);
 
   useEffect(() => {
     const audio = breathAudioRef.current;
@@ -105,6 +152,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
     return () => {
       if (!audio) return;
       audio.pause();
+      clearAppAudioMediaSession();
       audio.removeAttribute("src");
     };
   }, []);
@@ -128,7 +176,10 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
         loop
         playsInline
         onPlay={() => setIsBreathAudioPlaying(true)}
-        onPause={() => setIsBreathAudioPlaying(false)}
+        onPause={() => {
+          setIsBreathAudioPlaying(false);
+          clearAppAudioMediaSession();
+        }}
       />
 
       <motion.section
@@ -155,7 +206,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
           <EntryThemeSwitcher />
           <AuthMeasuredBreathToggle
             isPlaying={isBreathAudioPlaying}
-            isMuted={appAudioSettings.muted}
+            isMuted={!canPlayBreathAudio}
             label={t.authMeasuredBreathLabel}
             statusLabel={breathAudioStatusLabel}
             toggleLabel={breathAudioToggleLabel}

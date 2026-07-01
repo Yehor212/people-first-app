@@ -3,6 +3,7 @@ import { formatDate, parseLocalDate, getToday } from '@/lib/utils';
 
 export interface ScheduleTimelineProps {
   events: ScheduleEvent[];
+  initialSelectedDate?: string;
   onAddEvent?: (event: Omit<ScheduleEvent, 'id'>) => void;
   onDeleteEvent?: (id: string) => void;
 }

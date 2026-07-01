@@ -15,27 +15,29 @@ test.describe("Deploy smoke", () => {
     await primeReleasePreview(page);
   });
 
-  test("V1 portal exposes readable Ukrainian V2 entry points", async ({ page }) => {
+  test("root boots the V2 shell without the legacy portal", async ({ page }) => {
     await page.goto("?navLayout=desktop&dev=true", { waitUntil: "domcontentloaded" });
 
-    const portal = page.getByTestId("v1-v2-portal");
-    await expect(portal).toBeVisible({ timeout: 30_000 });
-    await expect(portal).toContainText("Попередній перегляд V2");
-    await expect(portal).toContainText("Перейди в новий простір ритуалів");
-    await expect(portal).not.toContainText(/\?{4,}/);
-
-    await expect(page.getByTestId("v1-v2-portal-primary")).toHaveAttribute(
-      "href",
-      /\/people-first-app\/orb\?nav=v2&navLayout=phone/
-    );
-    await expect(page.getByTestId("v1-v2-portal-habits")).toHaveAttribute(
-      "href",
-      /\/people-first-app\/habits\?nav=v2&navLayout=phone/
-    );
-    await expect(page.getByTestId("v1-v2-portal-diary")).toHaveAttribute(
-      "href",
-      /\/people-first-app\/diary\?nav=v2&navLayout=phone/
-    );
+    await expect(page.getByTestId("nav-v2-orchestrator")).toBeVisible({ timeout: 30_000 });
+    await expect
+      .poll(
+        async () => {
+          for (const affordance of [
+            page.getByTestId("sidebar-v2"),
+            page.getByTestId("mobile-nav-v2"),
+            page.getByTestId("nav-v2-open-drawer"),
+          ]) {
+            if ((await affordance.count()) > 0 && (await affordance.first().isVisible())) return true;
+          }
+          return false;
+        },
+        { timeout: 30_000, message: "V2 shell exposes a platform navigation affordance" }
+      )
+      .toBe(true);
+    await expect(page.getByTestId("v1-v2-portal")).toHaveCount(0);
+    await expect(page.getByTestId("app-shell-v1")).toHaveCount(0);
+    await expect(page.locator('[data-testid*="classic-portal"]')).toHaveCount(0);
+    await expect(page.locator("body")).not.toContainText(/\?{4,}/);
   });
 
   for (const target of [

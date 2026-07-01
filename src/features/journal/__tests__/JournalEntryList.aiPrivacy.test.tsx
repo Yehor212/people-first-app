@@ -39,7 +39,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalNoMatchingEntries: "No matches",
       journalNoMatchingHint: "Try another search",
       journalSearch: "Search entries...",
-      quoteJournal1: "Quote",
     },
   }),
 }));

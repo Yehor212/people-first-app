@@ -224,7 +224,6 @@ const GOD_COMPONENT_EXEMPT = [
   "canvas/MindMapCanvas.tsx",
   "state-of-mind/ValenceOrb.tsx",
   "pages/Index.tsx",
-  "pages/IndexV1Impl.tsx", // legacy V1 orchestrator shell; tracked by constitution god-component report
   "contexts/",
   "UrgencyAlert.tsx",
   "OnboardingFlow.tsx",

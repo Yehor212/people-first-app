@@ -26,7 +26,6 @@ import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { getActiveChallenges } from "@/lib/friendChallenge";
 import { useHabitForm, habitCategories } from "@/hooks/useHabitForm";
 import { announceSuccess } from "@/lib/a11y";
-import { playSuccess, playStreakMilestone, playLevelUp } from "@/lib/audioManager";
 import { getHabitStreak } from "./habitStreakUtils";
 import { PremiumProgressBar } from "./PremiumProgressBar";
 
@@ -178,12 +177,6 @@ export const HabitTracker = memo(function HabitTracker({
       if (!wasCompleted) {
         const streak = getHabitStreak(habit);
 
-        if ([7, 14, 21, 30, 60, 90, 100, 365].includes(streak)) {
-          playStreakMilestone();
-        } else {
-          playSuccess();
-        }
-
         announceSuccess(`${habit.icon} ${habit.name} ${t.habitCompleted || "completed"}`);
 
         setCelebrationData({
@@ -200,7 +193,6 @@ export const HabitTracker = memo(function HabitTracker({
           if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
           celebrationTimerRef.current = setTimeout(() => {
             setShowAllComplete(true);
-            playLevelUp();
             if (celebrationHideTimerRef.current) clearTimeout(celebrationHideTimerRef.current);
             celebrationHideTimerRef.current = setTimeout(() => setShowAllComplete(false), 4000);
           }, 1800);

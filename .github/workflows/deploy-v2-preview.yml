@@ -1,8 +1,6 @@
 name: Deploy V2 Preview to GitHub Pages
 
 on:
-  push:
-    branches: ["codex/journal-v2-hub"]
   workflow_dispatch:
 
 permissions:
@@ -21,16 +19,10 @@ jobs:
   build-preview:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout V2 preview branch
+      - name: Checkout V2 branch
         uses: actions/checkout@v6
         with:
           path: v2-src
-
-      - name: Checkout V1 main branch
-        uses: actions/checkout@v6
-        with:
-          ref: main
-          path: v1-src
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -39,69 +31,21 @@ jobs:
           cache: npm
           cache-dependency-path: v2-src/package-lock.json
 
-      - name: Install V2 dependencies
+      - name: Install dependencies
         working-directory: v2-src
         run: npm install
 
-      - name: Verify V2 preview shell
+      - name: Verify V2-only shell
         working-directory: v2-src
         run: |
           npm run typecheck
           npm run lint
           npm run i18n:check
           npm run check:canonical-orbs
-          npx vitest run src/components/navigation-v2/__tests__/ClassicPortalLink.test.tsx src/components/navigation-v2/__tests__/DrawerV2.test.tsx src/components/navigation-v2/__tests__/SidebarV2.test.tsx
-
-      - name: Check Sentry readiness for V2 preview
-        working-directory: v2-src
-        env:
-          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
-          ZENFLOW_SENTRY_READINESS_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
-        run: npm run check:sentry-readiness
-      - name: Smoke Sentry API for V2 preview
-        working-directory: v2-src
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
-          SENTRY_BASE_URL: ${{ vars.SENTRY_BASE_URL }}
-          ZENFLOW_SENTRY_API_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
-        run: npm run smoke:sentry-api
-
-      - name: Build V2 preview under /v2
-        working-directory: v2-src
-        env:
-          VITE_APP_BASE: /people-first-app/v2/
-          VITE_FORCE_NAV_V2: "true"
-          VITE_CLASSIC_BASE_URL: /people-first-app/
-          VITE_DISABLE_PWA: "true"
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_ENABLE_FACEBOOK_AUTH: ${{ vars.VITE_ENABLE_FACEBOOK_AUTH || 'true' }}
-          VITE_FACEBOOK_PUBLIC_ACCESS_READY: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY || 'false' }}
-          VITE_ENABLE_TELEGRAM_AUTH: ${{ vars.VITE_ENABLE_TELEGRAM_AUTH || 'true' }}
-          VITE_ENABLE_APPLE_AUTH: ${{ vars.VITE_ENABLE_APPLE_AUTH || 'true' }}
-          VITE_APPLE_PUBLIC_ACCESS_READY: ${{ vars.VITE_APPLE_PUBLIC_ACCESS_READY || 'false' }}
-          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
-        run: npm run build
-
-      - name: Check Sentry public artifacts for V2 preview
-        working-directory: v2-src
-        run: npm run check:sentry-artifacts
-
-      - name: Install V1 dependencies
-        working-directory: v1-src
-        run: npm install
+          npx vitest run scripts/__tests__/v2-only-shell-inventory.test.ts src/components/navigation-v2/__tests__/DrawerV2.test.tsx src/components/navigation-v2/__tests__/SidebarV2.test.tsx src/pages/nav-v2/__tests__/PlanningPage.test.tsx
 
       - name: Check hosted auth providers for V2 preview
-        working-directory: v1-src
+        working-directory: v2-src
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
@@ -127,8 +71,8 @@ jobs:
           npm --prefix tools/telegram-control run check:public-bot-profile-photo
           npm --prefix tools/telegram-control run check:bot-profile-photo
 
-      - name: Check Sentry readiness for V1 public root
-        working-directory: v1-src
+      - name: Check Sentry readiness for V2 preview
+        working-directory: v2-src
         env:
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -136,8 +80,9 @@ jobs:
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           ZENFLOW_SENTRY_READINESS_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run check:sentry-readiness
-      - name: Smoke Sentry API for V1 public root
-        working-directory: v1-src
+
+      - name: Smoke Sentry API for V2 preview
+        working-directory: v2-src
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
@@ -146,9 +91,10 @@ jobs:
           ZENFLOW_SENTRY_API_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run smoke:sentry-api
 
-      - name: Build V1 public root from main
-        working-directory: v1-src
+      - name: Build V2 public root
+        working-directory: v2-src
         env:
+          VITE_APP_BASE: /people-first-app/
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
@@ -163,33 +109,18 @@ jobs:
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: npm run build
 
-      - name: Check Sentry public artifacts for V1 public root
-        working-directory: v1-src
+      - name: Prepare V2 GitHub Pages artifact
+        working-directory: v2-src
+        run: node scripts/prepare-pages-artifact.cjs
+
+      - name: Check Sentry public artifacts for V2 preview
+        working-directory: v2-src
         run: npm run check:sentry-artifacts
 
-      - name: Compose GitHub Pages artifact
-        run: |
-          mkdir -p pages
-          cp -a v1-src/dist/. pages/
-          rm -rf pages/v2
-          mkdir -p pages/v2
-          cp -a v2-src/dist/. pages/v2/
-          for route in orb habits diary settings; do
-            mkdir -p "pages/v2/${route}"
-            cp pages/v2/index.html "pages/v2/${route}/index.html"
-          done
-          cp v2-src/dist/404.html pages/404.html
-          touch pages/.nojekyll
-
-      - name: Check final Sentry combined Pages artifact
-        env:
-          ZENFLOW_DIST_DIR: pages
-        run: npm run check:sentry-artifacts
-
-      - name: Upload combined Pages artifact
+      - name: Upload V2 Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: pages
+          path: v2-src/dist
 
   deploy:
     needs: build-preview
@@ -198,7 +129,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy combined V1 + V2 preview
+      - name: Deploy V2 preview
         id: deployment
         uses: actions/deploy-pages@v5.0.0
         with:

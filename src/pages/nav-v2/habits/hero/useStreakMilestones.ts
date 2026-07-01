@@ -12,7 +12,7 @@
  * Design:
  *   - Pure front-end detection; no persistence. Milestones are moments, not
  *     achievements. We detect a streak crossing and fire exactly once per
- *     habit per transition — then let V1 HabitCompletionCelebration handle
+ *     habit per transition — then let HabitCompletionCelebration handle
  *     the visuals.
  *   - Ref-based prev-streak tracking per habit id avoids re-firing on
  *     unrelated re-renders. When a new habit appears (never seen before),

@@ -321,4 +321,18 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(source).toContain("NavV2RouteFallback");
     expect(source).not.toContain("<Suspense fallback={null}>{pageNode}</Suspense>");
   });
+
+  it("opens the phone drawer before scheduling route preloads", () => {
+    const source = readFileSync("src/components/navigation-v2/NavV2Orchestrator.tsx", "utf8");
+    const start = source.indexOf("const handleOpenDrawer = useCallback");
+    const end = source.indexOf("const handlePrimaryPageChange", start);
+    const body = source.slice(start, end);
+
+    const openIndex = body.indexOf("openDrawer();");
+    const scheduleIndex = body.indexOf("scheduleNavV2RoutePreload(activePage)");
+
+    expect(openIndex).toBeGreaterThan(-1);
+    expect(scheduleIndex).toBeGreaterThan(openIndex);
+    expect(body).not.toContain("preloadNavV2Route(page)");
+  });
 });

@@ -26,9 +26,11 @@ import { useScheduleData } from "./useScheduleData";
 import { AddEventModal } from "./AddEventModal";
 import { EventDetailsModal } from "./EventDetailsModal";
 import { TaskFocusPanel } from "./TaskFocusPanel";
+import { getTimelineRenderWindow } from "./timelineWindowing";
 
 export function ScheduleTimeline({
   events,
+  initialSelectedDate,
   onAddEvent,
   onDeleteEvent,
 }: ScheduleTimelineProps) {
@@ -77,7 +79,7 @@ export function ScheduleTimeline({
     isScrollingProgrammatically,
     t,
     language,
-  } = useScheduleData(events, timelineRef, daySelectorRef);
+  } = useScheduleData(events, timelineRef, daySelectorRef, initialSelectedDate);
 
   // --- Local derived state ---
 
@@ -143,6 +145,11 @@ export function ScheduleTimeline({
     });
     return map;
   }, [safeEvents]);
+
+  const timelineRenderWindow = useMemo(
+    () => getTimelineRenderWindow(allDates, selectedDate),
+    [allDates, selectedDate],
+  );
 
   // --- JSX ---
 
@@ -297,7 +304,7 @@ export function ScheduleTimeline({
               className="relative h-28"
               style={{ width: `${allDates.length * DAY_WIDTH_PX}px` }}
             >
-              {allDates.map((date, dayIndex) => (
+              {timelineRenderWindow.map(({ date, index: dayIndex }) => (
                 <TimelineDayColumn
                   key={date}
                   date={date}

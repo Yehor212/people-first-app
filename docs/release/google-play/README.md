@@ -40,10 +40,37 @@ Evidence expected before production monetization:
 ```bash
 ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads
 ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads:check
+ZENFLOW_APP_ADS_PUBLIC_URL=https://your-developer-domain.example/app-ads.txt npm run google-play:app-ads:public-check
+npm run google-play:public-listing:check
+npm run google-play:admob:check
 ```
 
 The script refuses Google's sample publisher id and writes the official AdMob
-seller line format only.
+seller line format only. The production readiness check rejects Google sample
+app/ad-unit IDs and masks publisher fragments in logs. Android release Gradle
+builds fail fast if `ZENFLOW_ADMOB_ANDROID_APP_ID` / `VITE_ADMOB_APP_ID_ANDROID`
+is missing or still points at a Google sample app ID. For the current Android
+rewarded-only release path, unused banner and iOS ad-unit IDs are warnings by
+default; run `npm run google-play:admob:check -- --strict-optional` when doing a
+full cross-format advertising audit where every configured optional ad ID must
+be production-real.
+
+Current GitHub Pages root proof for this app uses:
+
+```bash
+ZENFLOW_APP_ADS_PUBLIC_URL=https://yehor212.github.io/app-ads.txt npm run google-play:app-ads:public-check
+```
+
+If AdMob still reports that app-ads.txt data does not match, check the public
+Google Play listing before changing the file. For `com.zenflow.app`, the
+2026-06-30 follow-up probe shows the Store listing contact details -> website
+value as
+`https://yehor212.github.io/people-first-app/`, which fixes the previous
+`appstore:developer_url=about:invalid#navigation` blocker. `npm run google-play:public-listing:check`
+now verifies the public listing has the Google Play `Contains ads` signal,
+rewarded ads copy, and no stale `No ads` claim. If AdMob still shows the
+app-ads.txt mismatch warning after these checks pass, retry AdMob `Verify app`
+after Google's crawler has time to refresh.
 
 ## Generated Assets
 

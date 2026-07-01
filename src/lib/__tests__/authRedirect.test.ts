@@ -108,6 +108,16 @@ describe('getAuthRedirectUrl', () => {
     expect(url).toBe(`${window.location.origin}/people-first-app/habits?nav=v2&navLayout=phone`);
   });
 
+  it('preserves Planning as a first-class V2 route for web OAuth redirect', () => {
+    mockIsNative = false;
+    mockBaseUrl = '/people-first-app/';
+    window.history.pushState({}, '', '/people-first-app/planning/?nav=v2&navLayout=phone');
+
+    const url = getAuthRedirectUrl();
+
+    expect(url).toBe(`${window.location.origin}/people-first-app/planning?nav=v2&navLayout=phone`);
+  });
+
   it('returns to V2 from a direct GitHub Pages route even without query params', () => {
     mockIsNative = false;
     mockBaseUrl = '/people-first-app/';

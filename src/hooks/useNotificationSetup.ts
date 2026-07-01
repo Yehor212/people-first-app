@@ -46,6 +46,14 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
     };
   }, [habits, reminders.habitIds, t]);
 
+  // Initialize notification channel before any schedule call (Android 8+ requirement)
+  useEffect(() => {
+    if (!isNative) return;
+    initializeNotificationChannel().catch((error) => {
+      logger.error('Failed to initialize notification channel:', error);
+    });
+  }, []);
+
   // Schedule local reminders
   useEffect(() => {
     if (!isNative) return;
@@ -64,14 +72,6 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
       logger.error("Failed to schedule habit reminders:", error);
     });
   }, [habits, t.reminderHabitTitle, t.reminderHabitBody]);
-
-  // Initialize notification channel (Android 8+ requirement)
-  useEffect(() => {
-    if (!isNative) return;
-    initializeNotificationChannel().catch((error) => {
-      logger.error('Failed to initialize notification channel:', error);
-    });
-  }, []);
 
   // Initialize FCM push notifications (Android)
   useEffect(() => {

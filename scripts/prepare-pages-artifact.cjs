@@ -9,7 +9,7 @@ const distDir = path.join(root, "dist");
 const indexPath = path.join(distDir, "index.html");
 const pwaInstallIconRevision = brandLogoAssets.pwaInstallIconRevision;
 
-const routes = ["orb", "habits", "diary", "settings", "desktop"];
+const routes = ["orb", "habits", "diary", "planning", "settings", "desktop"];
 
 if (!fs.existsSync(indexPath)) {
   throw new Error(`Cannot prepare GitHub Pages artifact: missing ${indexPath}`);

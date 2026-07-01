@@ -149,6 +149,13 @@ describe("web diary privacy and reset contracts", () => {
     }
   });
 
+  it("blocks remote folder cover images from diary visual surfaces", () => {
+    expect(journalEntryListSource).toContain("getSafeSpaceCoverImageUrl");
+    expect(journalEntryListSource).toContain("toCssImageUrl");
+    expect(journalEntryListSource).toContain("/^(?:https?:)?\\/\\//i");
+    expect(journalEntryListSource).not.toContain("url(${space.coverImage})");
+  });
+
   it("requires an explicit privacy disclosure before AI search can index diary text", () => {
     expect(journalEntryListSource).toContain("journalAiPrivacyConfirm");
     expect(journalEntryListSource).toContain("window.confirm");

@@ -26,7 +26,7 @@ export function AddEventModal({
 }) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
-  useModalA11y(true, onClose);
+  const { modalRef, handleKeyDown } = useModalA11y(true, onClose);
   useBackHandler(true, onClose);
   const [selectedPreset, setSelectedPreset] = useState(EVENT_PRESETS[0]);
   const [eventDate, setEventDate] = useState(initialDate);
@@ -94,10 +94,12 @@ export function AddEventModal({
 
   return (
     <motion.div
+      ref={modalRef}
+      onKeyDown={handleKeyDown}
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-event-title"
-      className="fixed inset-0 flex items-end sm:items-center justify-center p-4 z-[var(--z-overlay)] mb-[var(--nav-height)]"
+      className="fixed inset-0 z-[60] mb-[var(--nav-height)] flex items-end justify-center p-4 sm:items-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

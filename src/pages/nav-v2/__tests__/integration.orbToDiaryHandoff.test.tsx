@@ -100,4 +100,17 @@ describe("Integration - Orb -> Diary handoff via pendingMoodContext", () => {
     );
     expect(journalModuleSource).toMatch(/const visibleExtraSuggestions = useMemo\([\s\S]*?showEntrySuggestionCards/);
   });
+
+  it("keeps V2 diary saves out of XP, treat, and reward-audio behavior", () => {
+    expect(diaryPageSource).toContain("rewardsEnabled={false}");
+    expect(journalModuleSource).toContain("rewardsEnabled?: boolean");
+    expect(journalModuleSource).toContain("rewardsEnabled = true");
+    expect(journalModuleSource).toContain("if (isNew && rewardsEnabled)");
+
+    const rewardBlock = journalModuleSource.match(
+      /if \(isNew && rewardsEnabled\) \{[\s\S]*?const handleDeleteEntry/,
+    )?.[0];
+    expect(rewardBlock).toContain('rewardUser("journal"');
+    expect(rewardBlock).toContain("playStreakMilestone");
+  });
 });

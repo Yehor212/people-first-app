@@ -73,7 +73,7 @@ jobs:
         run: npx eslint . --max-warnings=0
 
       - name: Type check
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Check i18n translations
         run: npm run i18n:check
@@ -86,6 +86,9 @@ jobs:
 
       - name: Check best-practices implied requirements gate
         run: npm run check:best-practices
+
+      - name: Check app audio asset contract
+        run: npm run check:app-audio
 
       - name: Check Telegram-grade sync contract
         run: npm run check:sync-contract
@@ -455,7 +458,7 @@ jobs:
       - name: Smoke public auth providers
         env:
           ZENFLOW_PUBLIC_AUTH_URL: ${{ needs.deploy.outputs.page_url }}
-          ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS: orb/?nav=v2&navLayout=phone,habits/?nav=v2&navLayout=phone,diary/?nav=v2&navLayout=phone,settings/?nav=v2&navLayout=phone
+          ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS: orb/?nav=v2&navLayout=phone,habits/?nav=v2&navLayout=phone,diary/?nav=v2&navLayout=phone,planning/?nav=v2&navLayout=phone,settings/?nav=v2&navLayout=phone
           FACEBOOK_READY: ${{ vars.VITE_FACEBOOK_PUBLIC_ACCESS_READY == 'true' && 'true' || 'false' }}
           APPLE_READY: ${{ vars.VITE_APPLE_PUBLIC_ACCESS_READY == 'true' && 'true' || 'false' }}
           ZENFLOW_PUBLIC_AUTH_BROWSER_CHANNEL: chrome

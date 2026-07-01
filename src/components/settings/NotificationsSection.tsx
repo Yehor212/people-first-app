@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Bell, CheckCircle, Zap, Volume2 } from 'lucide-react';
 import { isNative } from '@/lib/platform';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -8,7 +8,19 @@ import { TimeInputInline } from '@/components/ui/time-input';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { SmartRemindersCard } from '@/components/SmartRemindersCard';
 import { useQuickActions } from '@/hooks/useQuickActions';
-import { NOTIFICATION_SOUNDS, getNotificationSound, setNotificationSound, NotificationSoundType } from '@/lib/notificationSounds';
+import { logger } from '@/lib/logger';
+import {
+  scheduleHabitReminders,
+  scheduleLocalReminders,
+  scheduleMoodQuickLogNotification,
+} from '@/lib/localNotifications';
+import {
+  NOTIFICATION_SOUNDS,
+  getNotificationSound,
+  getNotificationSystemSettingsCopyKey,
+  updateNotificationSound,
+  NotificationSoundType,
+} from '@/lib/notificationSounds';
 import type { ReminderSettings, MoodEntry, Habit, FocusSession } from '@/types';
 
 interface NotificationsSectionProps {
@@ -35,9 +47,53 @@ export function NotificationsSection({
   // Notification sound preference
   const [selectedSound, setSelectedSound] = useState<NotificationSoundType>(() => getNotificationSound());
 
-  const handleSoundChange = (sound: NotificationSoundType) => {
+  const reminderCopy = useMemo(() => {
+    const safeHabits = Array.isArray(habits) ? habits : [];
+    const habitNameMap = new Map(safeHabits.map((habit) => [habit.id, habit.name]));
+    const habitNames = reminders.habitIds
+      .map((id: string) => habitNameMap.get(id))
+      .filter(Boolean);
+    const habitBody =
+      habitNames.length === 0
+        ? t.reminderHabitBody
+        : `${t.reminderHabitBody} ${habitNames.join(', ')}`;
+
+    return {
+      mood: { title: t.reminderMoodTitle, body: t.reminderMoodBody },
+      habit: { title: t.reminderHabitTitle, body: habitBody },
+      focus: { title: t.reminderFocusTitle, body: t.reminderFocusBody },
+    };
+  }, [habits, reminders.habitIds, t]);
+
+  const parseReminderTime = (time: string | undefined) => {
+    const [hour = 9, minute = 0] = (time || '09:00').split(':').map(Number);
+    return {
+      hour: Number.isFinite(hour) ? hour : 9,
+      minute: Number.isFinite(minute) ? minute : 0,
+    };
+  };
+
+  const handleSoundChange = async (sound: NotificationSoundType) => {
     setSelectedSound(sound);
-    setNotificationSound(sound);
+    await updateNotificationSound(sound);
+
+    if (!isNative) return;
+
+    try {
+      await scheduleLocalReminders(reminders, reminderCopy);
+      await scheduleHabitReminders(habits, {
+        reminderTitle: t.reminderHabitTitle,
+        reminderBody: t.reminderHabitBody,
+      });
+      if (reminders.enabled) {
+        await scheduleMoodQuickLogNotification(
+          parseReminderTime(reminders.moodTimeMorning),
+          t.howAreYouNow || 'How are you feeling? Tap! 😊',
+        );
+      }
+    } catch (error) {
+      logger.error('[Notifications] Failed to reschedule reminders after sound change:', error);
+    }
   };
 
   const handleRemindersToggle = (checked: boolean) => {
@@ -53,6 +109,10 @@ export function NotificationsSection({
     { value: 6, label: t.sat },
     { value: 0, label: t.sun },
   ];
+  const notificationSystemSettingsDescription =
+    tx[getNotificationSystemSettingsCopyKey()] ||
+    tx.notificationSystemSettingsDescription ||
+    'Your device or browser notification settings keep final control over reminders.';
 
   return (
     <AccordionItem value="notifications" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
@@ -236,6 +296,23 @@ export function NotificationsSection({
               </div>
             </div>
           )}
+
+          <div
+            className="mt-4 p-4 bg-secondary/50 rounded-xl"
+            data-testid="settings-notification-system-guidance"
+          >
+            <div className="flex items-start gap-3">
+              <Bell className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {t.notificationSystemSettingsTitle || 'System notification controls'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {notificationSystemSettingsDescription}
+                </p>
+              </div>
+            </div>
+          </div>
 
           {/* Quick Actions for Lock Screen (Android only) */}
           {isAndroid && (

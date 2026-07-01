@@ -65,34 +65,46 @@ function scheduleNavV2RoutePreload(activePage: NavV2Page) {
   }
 
   let cancelled = false;
-  const run = () => {
-    if (cancelled) {
-      return;
-    }
-    NAV_V2_PAGES.forEach((page) => {
-      if (page !== activePage) {
-        preloadNavV2Route(page);
-      }
-    });
-  };
+  let idleId: number | null = null;
+  let timerId: number | null = null;
+  const pendingPages = NAV_V2_PAGES.filter((page) => page !== activePage);
 
   const requestIdle = window.requestIdleCallback;
   const cancelIdle = window.cancelIdleCallback;
   const scheduleTimeout = window.setTimeout.bind(window);
   const cancelTimeout = window.clearTimeout.bind(window);
 
-  if (typeof requestIdle === "function" && typeof cancelIdle === "function") {
-    const idleId = requestIdle(run, { timeout: 750 });
-    return () => {
-      cancelled = true;
-      cancelIdle(idleId);
-    };
-  }
+  const scheduleNext = () => {
+    if (cancelled) {
+      return;
+    }
 
-  const timerId = scheduleTimeout(run, 120);
+    const page = pendingPages.shift();
+    if (!page) {
+      return;
+    }
+
+    preloadNavV2Route(page);
+    if (pendingPages.length > 0) {
+      schedule();
+    }
+  };
+
+  const schedule = () => {
+    if (typeof requestIdle === "function" && typeof cancelIdle === "function") {
+      idleId = requestIdle(scheduleNext, { timeout: 750 });
+      return;
+    }
+
+    timerId = scheduleTimeout(scheduleNext, 120);
+  };
+
+  schedule();
+
   return () => {
     cancelled = true;
-    cancelTimeout(timerId);
+    if (idleId !== null) cancelIdle?.(idleId);
+    if (timerId !== null) cancelTimeout(timerId);
   };
 }
 
@@ -105,12 +117,11 @@ function scheduleNavV2RoutePreload(activePage: NavV2Page) {
  *                     No bottom tab bar — drawer carries primary + secondary nav.
  *   - Both:           Ctrl+K <CommandPalette> (lazy)
  *
- * Stays orthogonal to V1 (`<Navigation />`) — Index.tsx picks one or the other
- * based on `design.nav.v2` flag + `?nav=v2` override.
+ * Owns the app navigation surface. Root Index mounts this shell directly,
+ * while `?nav=v2` remains accepted for existing deep links.
  *
- * Phase 3-A.1 correction: MobileNavV2 bottom tabs removed from render (Option A —
- * drawer-only on mobile per user post-facto override). File retained as dead code
- * pending Phase 3-F V1 cutover cleanup.
+ * Phase 3-A.1 correction: bottom tabs were removed from render; mobile uses
+ * the drawer as primary navigation.
  */
 interface NavV2OrchestratorProps {
   onAddMood?: (entry: MoodEntry) => void;
@@ -230,13 +241,9 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   }, [setActivePage]);
 
   const handleOpenDrawer = useCallback(() => {
-    NAV_V2_PAGES.forEach((page) => {
-      if (page !== activePage) {
-        preloadNavV2Route(page);
-      }
-    });
     void haptics.tabChanged();
     openDrawer();
+    scheduleNavV2RoutePreload(activePage);
   }, [activePage, openDrawer]);
 
   const handlePrimaryPageChange = useCallback(
@@ -380,7 +387,11 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
 
       {commandPaletteOpen && (
         <Suspense fallback={null}>
-          <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+          <CommandPalette
+            open={commandPaletteOpen}
+            onClose={() => setCommandPaletteOpen(false)}
+            onNavigate={handlePrimaryPageChange}
+          />
         </Suspense>
       )}
 

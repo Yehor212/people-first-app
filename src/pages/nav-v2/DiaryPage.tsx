@@ -92,11 +92,10 @@ interface DiaryPageProps {
 }
 
 /**
- * DiaryPage — V2 adapter around the mature V1 personal-diary experience.
+ * DiaryPage — V2 adapter around the mature journal feature module.
  *
- * This intentionally reuses the journal feature module instead of leaving V2
- * as a placeholder. Diary stays history-first like V1, while Orb handoff is
- * exposed as a soft suggestion instead of force-opening the editor.
+ * Diary stays history-first, while Orb handoff is exposed as a soft
+ * suggestion instead of force-opening the editor.
  */
 export const DiaryPage = memo(function DiaryPage({
   onOpenNavMenu,
@@ -216,6 +215,7 @@ export const DiaryPage = memo(function DiaryPage({
             onOpenNavMenu={onOpenNavMenu}
             navMenuOpen={navMenuOpen}
             showAppNavMenu={showAppNavMenu}
+            rewardsEnabled={false}
             onAddGratitude={onAddGratitude}
           />
         </Suspense>

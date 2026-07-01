@@ -1,4 +1,4 @@
-import { CalendarDays, CheckCircle2, SmilePlus, Timer } from "lucide-react";
+import { AlertTriangle, CalendarDays, CheckCircle2, SmilePlus, Timer } from "lucide-react";
 import type { PlanningDayPulse } from "./planningFeatureModel";
 
 interface PlanningDayPulseProps {
@@ -36,6 +36,16 @@ export function PlanningDayPulse({ pulse, labels }: PlanningDayPulseProps) {
       label: labels.planningPulseMood,
       value: pulse.moodLoggedToday ? labels.planningPulseMoodDone : labels.planningPulseMoodOpen,
     },
+    ...(pulse.conflictCount > 0
+      ? [
+          {
+            id: "conflicts",
+            icon: AlertTriangle,
+            label: labels.planningPulseConflicts,
+            value: interpolateCount(labels.planningPulseConflictCount, pulse.conflictCount),
+          },
+        ]
+      : []),
   ] as const;
 
   return (
@@ -45,7 +55,7 @@ export function PlanningDayPulse({ pulse, labels }: PlanningDayPulseProps) {
       className="rounded-2xl border border-border/45 bg-card/72 p-3 shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]"
     >
       <p className="px-1 text-sm font-semibold text-foreground">{labels.planningPulseTitle}</p>
-      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-5">
         {items.map((item) => {
           const Icon = item.icon;
           return (

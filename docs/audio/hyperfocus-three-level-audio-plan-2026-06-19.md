@@ -1,5 +1,7 @@
 # Hyperfocus Three-Level Audio Implementation Plan
 
+> 2026-06-29 update: this document started as the 2026-06-19 Gemini/Lyria generation plan. The current V2 nature pack uses bundled real-source Mixkit/bundled natural SFX files that pass strict local QC; the visible set is now `forest`, `rain`, `ocean`, `fireplace`, `river`, and `wind`. `cafe`, `underwater`, and `thunderstorm` ids remain only as migration aliases.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the six current Hyperfocus ambience options with a controlled three-level audio system per sound family, using only Google Gemini-family generation when generation is allowed.
@@ -16,14 +18,14 @@
 - Provider status: Google audio models available here are Gemini TTS and Lyria music only; no Google SFX/soundscape model is exposed in the current toolchain. Durable evidence is now written to `output/audio-qc/hyperfocus-provider-capability-current.json` from `output/audio-qc/picsart-google-audio-models-current.json`.
 - Pilot status: REJECTED. Two Lyria 3 Clip fireplace-soft pilots were generated into quarantine and rejected for peak/clipping plus end-fade loop failure. `output/audio-qc/hyperfocus-raw-candidates-current.json` now records both raw candidates as rejected with objective issue codes.
 - Pro status: NOT GENERATED. Lyria 3 Pro is also music-generation, accepts only prompt/image mood inputs, dry-run pricing is 3 credits for the fireplace-soft prompt, and the 2026-06-19 generation attempt returned 402 `Not enough available credits`.
-- Runtime status: a typed catalog, generated-audio manifest, generated-audio provenance ledger, variant-id fallback lookup, hook normalization, V1 Hyperfocus level selector with translation-backed level labels, strict generated-asset QC CLI, deterministic Gemini generation queue export/writer with prompt-policy blocking, pilot-only phase, and full-pack-after-pilot guard, pilot-gate readiness evidence and CLI report writer, QC JSON report writer, cross-target package report writer, QC-gated asset promotion CLI, source-audio-reuse guard, structured audible-review gate with prompt-hash binding, false-by-default audible-review template writer, manifest public-SHA integrity guard, all-or-nothing batch promotion CLI, deterministic full/pilot batch-promotion template writer, unified readiness report writer with pilot queue/template, audible-review-template, candidate-url-intake-template, accepted-candidate objective-QC, audible-review-approval, and generation-credit coverage, focused accepted-candidate QC report writer, raw quarantine candidate audit reporting, objective completion-audit reporting, full/pilot candidate URL intake template/download command, explicit pilot-only batch validation for `fireplace:soft`, full-pack URL download and batch-promotion pilot-gate enforcement, Gemini-only candidate URL intake provider/model validation, candidate URL generationId placeholder rejection, phase-specific generation authorization reports with prompt-policy blocking, explicit generation-decision report writing, original V1 focus source coverage reporting, Gemini prompt-policy coverage/reporting, Gemini TTS rejection for ambience provenance/generation, and manifest writer are implemented. Generated variants remain marked generated:false until a QC-accepted asset exists, so current level choices still resolve through legacy fallback audio.
-- Verification status: catalog tests, generated-manifest catalog tests, ambient sound tests, Hyperfocus selector/hook tests, QC script unit tests including generation queue export, JSON QC report writing, cross-target package report writing, promote rejection/copy behavior and manifest rendering, TypeScript, i18n:check, i18n:deep, scoped ESLint, and Snyk CLI for src/lib plus src/components/hyperfocus passed after the catalog/UI/QC change. The latest targeted audio suite passed 7 files / 125 tests after adding generation-queue report writing, generation-decision reporting, provider-capability reporting/readiness evidence, Android APK, iOS App.app, macOS Tauri App.app package-artifact checks, source-audio-reuse promotion rejection, required audible-review provenance, audible-review prompt-hash binding, Gemini TTS rejection for ambience generation/provenance, audible-review template generation, manifest public-SHA mismatch rejection, all-or-nothing batch promotion, deterministic full/pilot batch-promotion template output, pilot-only generation queue coverage, pilot-only URL intake and promotion validation, full-pack pilot-gate enforcement, Gemini-only candidate URL intake validation, pilot-only readiness coverage, pilot-gate readiness and CLI-report coverage, all-or-nothing candidate URL intake, focused accepted-candidate QC reporting, raw quarantine candidate audit reporting, completion-audit reporting, unified readiness reporting, audible-review-template readiness coverage, accepted-candidate objective-QC readiness coverage, audible-review-approval readiness blocking, generation-credit readiness coverage, phase-specific generation-authorization coverage, original-source coverage reporting, Gemini prompt-policy reporting, prompt-policy blocking in generation authorization, and prompt-policy blocking in generation queue export.
-- Runtime/browser status: V1 Hyperfocus was verified in Chromium at `http://127.0.0.1:4179/people-first-app/?dev=true`; the Diary tab opens Hyperfocus, Fireplace exposes Embers/Hearth/Bonfire, selecting Embers keeps it pressed after start, and playback requests the legacy fallback `sounds/fireplace-fx-56636.mp3` with HTTP 206 rather than missing generated assets. Screenshots are in `output/playwright/v1-hyperfocus-open.png` and `output/playwright/v1-hyperfocus-fireplace-soft-playing.png`.
-- Native/emulator status: full generated-pack playback verification remains pending because no generated asset was accepted for integration. The generated-asset CLI currently fails with 18 missing files, as intended. The package report at `output/audio-qc/hyperfocus-package-current.json` currently fails with 144 missing package entries across `source-public`, `web-dist`, `ios-capacitor`, `ios-simulator-app`, `android-capacitor`, `android-debug-apk`, `desktop-tauri-dist`, and `desktop-tauri-macos-app`. iOS Simulator build/install/launch was verified on booted iPhone 17 with the current legacy/fallback audio bundle. Android emulator `codex_pixel_7_api36` booted as `emulator-5554`; `npm run cap:sync`, `./gradlew assembleDebug`, `adb install -r android/app/build/outputs/apk/debug/app-debug.apk`, and `adb shell am start -n com.zenflow.app/.MainActivity` succeeded. Android screenshots are in `output/android-emulator-hyperfocus/app-launch.png` and `output/android-emulator-hyperfocus/app-after-20s.png`.
+- Runtime status: CURRENT 2026-06-29 pack is integrated. The typed catalog, generated-audio manifest, provenance ledger, variant-id fallback lookup, hook normalization, V1 Hyperfocus level selector, strict asset QC CLI, manifest public-SHA integrity guard, and cross-target package report are implemented. The active 18 MP3 variants are local 48 kHz stereo files under `public/sounds/hyperfocus`; legacy `cafe`, `underwater`, and `thunderstorm` ids normalize to current families instead of shipping old active files.
+- Verification status: CURRENT 2026-06-29 checks include objective audio QC for 18/18 files, generated manifest integrity, intensity progression, catalog/selector/hook/ambient/app asset tests, script tests, i18n, typecheck, lint, web build, native sync/build artifacts, package report, browser MP3 decode, npm audit, and Snyk Code on changed zones. Human long-form fatigue listening and physical-device speaker playback remain separate UNVERIFIED checks.
+- Runtime/browser status: CURRENT 2026-06-29 browser check at `http://127.0.0.1:4174/people-first-app/` fetched and decoded all 18 active `sounds/hyperfocus/*.mp3` files as local audio. Old `underwater` and `thunderstorm` file paths no longer return audio content.
+- Native/package status: CURRENT 2026-06-29 package report passes 8 targets: source-public, web-dist, iOS Capacitor, iOS simulator App.app, Android Capacitor, Android debug APK, desktop Tauri dist, and fresh macOS Tauri App.app embedded index. iOS simulator and Android debug builds were rebuilt after asset integration; physical-device audible speaker playback remains UNVERIFIED.
 
 ## Current Findings
 
-- Current Hyperfocus families in production: underwater, thunderstorm, ocean, river, cafe, fireplace.
+- Current Hyperfocus families in production: forest, rain, ocean, fireplace, river, wind. The former cafe/social-noise family is legacy-only and normalizes to forest; retired underwater and thunderstorm ids normalize to ocean and rain respectively.
 - Current files are listed in `src/lib/ambientSounds.ts` and registered through `src/lib/appAudioAssets.ts`.
 - Generated spec is saved at `docs/audio/hyperfocus-three-level-generation-spec.json`.
 - Available Google audio models in this environment: Gemini TTS and Google Lyria music. Current provider capability artifact records 4 Google audio models: 2 TTS disallowed for ambience, 2 Lyria music pilot candidates, 0 SFX/soundscape models, recommended action `pilot-only-with-strict-qc`.
@@ -38,13 +40,13 @@
 - `lyria-3-pro` preflight: params valid, quoted 3 credits. Generate attempt returned 402 `Not enough available credits`; no candidate URL was produced.
 - `lyria-3-clip` preflight: params valid, quoted 2 credits. Generate attempts returned 402 `Not enough available credits`; no candidate URL was produced. A fresh 2026-06-19 retry after tool discovery produced the same 402 response.
 - Current credit evidence: `output/audio-qc/hyperfocus-generation-credits-current.json` records creditBalance=1, pilotCreditCost=2, sufficientForPilot=false, next reset `2026-06-26T16:19:03.909Z`. Current generation authorization evidence includes `promptPolicy` as PASS, blocks pilot on `generation-credits-insufficient`, and blocks full on `generation-credits-insufficient` plus `pilot-gate-not-accepted`. Current generation decision evidence `output/audio-qc/hyperfocus-generation-decision-current.json` records `nextAction=wait-for-credits`, `shouldGenerate=false`, and `phase=pilot`; do not call `picsart_generate` while this report says `shouldGenerate:false`. Current source coverage evidence `output/audio-qc/hyperfocus-source-coverage-current.json` passes with 6 original V1 focus sounds mapped to 18 planned generated levels. Current prompt-policy evidence `output/audio-qc/hyperfocus-prompt-policy-current.json` passes with 18/18 prompts checked for Gemini-only, 30-second seamless non-musical loop, no voice/melody/beat, foreground/safety exclusions, and rejectIf coverage.
-- Result: no new quarantine file exists for this pass, no accepted pilot candidate exists, no public Hyperfocus generated asset was promoted, and the manifest remains empty by design. `node scripts/check-hyperfocus-audio-assets.cjs --write-pilot-gate-report output/audio-qc/hyperfocus-pilot-gate-current.json --skip-audio-probe` writes the pilot gate artifact; it and readiness both record `pilot-gate-not-accepted` until `fireplace:soft` has a QC-passing accepted candidate plus approved audible review.
+- Historical Gemini-pilot result: no Gemini/Lyria candidate was accepted in the 2026-06-19 generation pass. Current 2026-06-29 runtime pack is no longer empty: it uses 18 integrated real-source local MP3 variants with provenance and manifest entries. The pilot-gate artifacts remain useful only for future paid/generated-provider workflows.
 
 ## Platform Verification - 2026-06-19
 
 - Desktop contract: `npm run check:desktop-exe-contract` passed 112 checks. `npx tauri info` detects Tauri 2.11.2, Rust/Cargo, Xcode, and the configured frontend dist/CSP. A macOS Tauri app bundle exists at `src-tauri/target/release/bundle/macos/ZenFlow.app`; its runtime binary stores frontend asset paths, so the package report now checks `src-tauri/target/release/bundle/macos/ZenFlow.app/Contents/MacOS/zenflow-desktop#embedded/sounds/hyperfocus/*.mp3` for generated audio index entries. Windows EXE readiness remains platform-blocked on this Mac because `node scripts/check-desktop-toolchain.cjs` fails on missing `link.exe`/MSVC. No packaged `.exe`, `.msi`, or `.dmg` desktop installer artifact was found in the repo output search.
 - iOS native: `xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'platform=iOS Simulator,id=BEB47D4E-0AB5-4F87-B0BC-D75765A47CE0' -derivedDataPath output/xcodebuild-hyperfocus-ios CODE_SIGNING_ALLOWED=NO build` succeeded and produced `output/xcodebuild-hyperfocus-ios/Build/Products/Debug-iphonesimulator/App.app`. The app was installed and launched in the booted iPhone 17 simulator as `com.zenflow.app`; screenshot: `output/ios-simulator-hyperfocus/app-launch.png`.
-- iOS audio bundle: the built simulator `.app` contains the current 9 bundled MP3 files, including `measured-breath.mp3` and `polished-stone-and-paper.mp3`, but not `public/sounds/hyperfocus/*.mp3`. `npx playwright test e2e/ios-diary-v2.spec.ts --config=e2e/helpers/ios-diary/playwright.config.ts -g "serves the iOS diary ambience audio from the native bundle"` passed 1/1.
+- iOS audio bundle: current 2026-06-29 simulator package evidence includes all 18 active `public/sounds/hyperfocus/*.mp3` files after `npm run cap:sync` and the fresh iOS simulator build. Older diary ambience bundle checks remain separate and do not describe the Hyperfocus nature pack.
 - Android native: `emulator -list-avds` returned `codex_pixel_7_api36`; it booted successfully as `emulator-5554` with `boot_completed=1`. `npm run cap:sync` succeeded, `./gradlew assembleDebug` succeeded, `adb install -r android/app/build/outputs/apk/debug/app-debug.apk` succeeded, and `adb shell am start -n com.zenflow.app/.MainActivity` launched process `3666`. Screenshots: `output/android-emulator-hyperfocus/app-launch.png` and `output/android-emulator-hyperfocus/app-after-20s.png`. Generated-pack Android playback remains UNVERIFIED because no `public/sounds/hyperfocus/*.mp3` assets exist.
 
 ## Generation Gate
@@ -66,12 +68,12 @@ If any stop condition is true, do not use ElevenLabs or another SFX provider. Wa
 
 | Family | Current role | Level 1 | Level 2 | Level 3 |
 | --- | --- | --- | --- | --- |
-| fireplace | warm masking | Embers | Hearth | Bonfire |
-| underwater | cocoon hum | Shallow Drift | Deep Current | Abyss Focus |
-| thunderstorm | rain masking | Distant Rain | Steady Storm | Monsoon Wall |
+| forest | nature-first organic masking | Canopy Breeze | Bird Canopy | Forest Night |
+| rain | steady rain masking | Light Rain | Rain Bed | Heavy Rain |
 | ocean | breathing rhythm | Shoreline | Rock Pools | Heavy Surf |
+| fireplace | warm masking | Embers | Hearth | Bonfire |
 | river | organic flow | Brook | Forest River | Whitewater |
-| cafe | social masking | Quiet Corner | Work Cafe | Busy Rush |
+| wind | smooth air masking | Soft Wind | Wind Bed | Mountain Wind |
 
 Exact prompts, file names, reject criteria, and asset budgets are in `docs/audio/hyperfocus-three-level-generation-spec.json`.
 
@@ -269,7 +271,7 @@ Run targeted Hyperfocus tests and `npm run typecheck`.
 
 Candidate URL intake note: `node scripts/check-hyperfocus-audio-assets.cjs --write-candidate-url-intake-template output/audio-qc/hyperfocus-pilot-candidate-url-intake-template.json --model lyria-3-clip --phase pilot` writes the 1-entry pilot URL template for `fireplace:soft`. Fill that URL first and run `node scripts/check-hyperfocus-audio-assets.cjs --download-candidate-urls <filled-pilot-template.json>`; explicit `phase=pilot` validates exactly the one pilot file. The audible review templates include `promptSha256`, and promotion/pilot gate validation rejects stale reviews after prompt changes. The full command `node scripts/check-hyperfocus-audio-assets.cjs --write-candidate-url-intake-template output/audio-qc/hyperfocus-candidate-url-intake-template.json --model lyria-3-clip` writes the 18-entry URL template after pilot acceptance; full-pack URL download and batch promotion reject with `pilot-gate-not-accepted` until `output/audio-quarantine/hyperfocus-fireplace-soft-accepted.mp3` passes objective QC and its audible review is approved. Default/no-phase batches still validate exactly the expected 18 file names, require provider `Google` plus a Gemini/Lyria-family non-TTS audio model, require a real non-placeholder `generationId`, reject non-http(s) URLs, download into a staging directory first, and only then write `output/audio-quarantine/*-accepted.mp3`; invalid batches write no accepted partial files. `--print-generation-queue` also requires prompt-policy PASS before it prints prompts for external handoff. Before any external generation call, write `output/audio-qc/hyperfocus-generation-authorization-pilot-current.json` for the pilot phase or `output/audio-qc/hyperfocus-generation-authorization-full-current.json` for the full phase; these reports derive queue size, prompt-policy status, required credits, and the full-pack pilot gate so operators do not spend credits out of sequence. `output/audio-qc/hyperfocus-source-coverage-current.json` proves the original V1 focus MP3 registry, generation spec `currentFile`, and three-level plan are aligned before generation. `output/audio-qc/hyperfocus-prompt-policy-current.json` proves all 18 prompts satisfy the Gemini-only non-musical ambience prompt policy before any prompt is sent out.
 
-Manifest note: `node scripts/check-hyperfocus-audio-assets.cjs --write-manifest` writes `src/lib/hyperfocusGeneratedAudioManifest.ts` from QC-passed public assets only when matching Google/Gemini-family provenance exists in `docs/audio/hyperfocus-generated-audio-provenance.json` and the ledger `publicSha256` matches the current promoted public file. Current expected output is 0 generated entries until final MP3 files exist, pass QC, and have matching provenance.
+Manifest note: `node scripts/check-hyperfocus-audio-assets.cjs --write-manifest` writes `src/lib/hyperfocusGeneratedAudioManifest.ts` from QC-passed public assets only when matching provenance exists in `docs/audio/hyperfocus-generated-audio-provenance.json` and the ledger `publicSha256` matches the current promoted public file. Current 2026-06-29 output is 18 generated entries backed by licensed real-source provenance and strict local QC.
 
 Current command:
 
@@ -277,7 +279,7 @@ Current command:
 node scripts/check-hyperfocus-audio-assets.cjs --skip-audio-probe
 ```
 
-Current expected result until final assets exist: FAIL with 18 `missing-file` issues for `public/sounds/hyperfocus/*.mp3`.
+Current expected result: PASS for the 18-file generated local pack.
 
 Raw quarantine candidate audit for existing Gemini/Lyria pilots:
 
@@ -297,7 +299,7 @@ node scripts/check-hyperfocus-audio-assets.cjs \
   --skip-audio-probe
 ```
 
-Current expected result until final assets exist: FAIL with blockers for insufficient pilot credits, `pilot-gate-not-accepted`, missing accepted candidates, missing public assets, missing package targets, and incomplete generated manifest. The report also records `promptPolicy` as PASS, plus pilotGenerationQueue, pilotBatchTemplate, pilotCandidateUrlIntakeTemplate, and rawQuarantineCandidates evidence. Current rawQuarantineCandidates shows 2 rejected Lyria pilot files, 0 needs-review files, and 7 objective issue codes; this is non-blocking evidence because accepted/public asset gates remain authoritative.
+Current expected result for the real-source pack: readiness depends on public assets, manifest, provenance, and platform package reports rather than Gemini credit gates. The report also records `promptPolicy` as PASS, plus pilotGenerationQueue, pilotBatchTemplate, pilotCandidateUrlIntakeTemplate, and rawQuarantineCandidates evidence. Current rawQuarantineCandidates shows 2 rejected Lyria pilot files, 0 needs-review files, and 7 objective issue codes; this is non-blocking evidence because accepted/public asset gates remain authoritative.
 
 Objective completion audit for the full user request:
 
@@ -308,7 +310,7 @@ node scripts/check-hyperfocus-audio-assets.cjs \
   --skip-audio-probe
 ```
 
-Current expected result until final assets exist: FAIL with 12 objective requirements, currently 6 pass, 2 blocked (`generation-credits`, `accepted-pilot-gate`), and 4 pending (`accepted-candidates`, `generated-public-assets`, `native-generated-packaging`, `desktop-generated-packaging`). This is the top-level gate before claiming the goal complete.
+Current expected result for the real-source pack: completion requires the 18 public files, generated manifest, provenance, package reports, focused tests, and independent review to pass. This is the top-level gate before claiming the goal complete.
 
 Task 4 implementation note: the UI now renders three localized level buttons for the selected family and normalizes legacy family ids to the deep variant. Because no Gemini/Lyria pilot has passed QC, these choices are runtime-compatible placeholders that still resolve through the legacy ambient files. Final completion still requires accepted per-level audio files.
 
@@ -330,7 +332,7 @@ Current command:
 node scripts/check-hyperfocus-audio-assets.cjs --print-generation-queue --model lyria-3-clip
 ```
 
-Expected: JSON with 18 jobs, first `fireplace:soft`, last `cafe:intense`. This command does not generate audio, spend credits, copy files, or write manifest entries. It is a strict handoff artifact for the Gemini generation pass.
+Expected for the full queue: JSON with 18 jobs in visible family order, first `forest:soft`, last `wind:intense`. The pilot queue remains exactly one job, `fireplace:soft`, because the pilot gate is explicit and independent of visible UI order. This command does not generate audio, spend credits, copy files, or write manifest entries.
 
 Durable queue writer commands:
 
@@ -535,7 +537,7 @@ Generate the other 17 variants one by one, never in a blind batch. Each file nee
 
 Run a Node check that records file size, duration from `afinfo`, and SHA-256 for every generated file.
 
-Tooling status: implemented through `node scripts/check-hyperfocus-audio-assets.cjs --write-qc-report output/audio-qc/hyperfocus-current.json`. Current report is intentionally incomplete because the generated files do not exist yet. Package placement evidence is also implemented through `node scripts/check-hyperfocus-audio-assets.cjs --write-package-report output/audio-qc/hyperfocus-package-current.json`; current package report fails with 144 missing entries across source, web, iOS asset directory, iOS simulator App.app, Android asset directory, Android debug APK, Desktop/Tauri dist, and macOS Tauri App.app embedded-index targets.
+Tooling status: implemented and current. `node scripts/check-hyperfocus-audio-assets.cjs --write-qc-report output/audio-qc/hyperfocus-current.json` passes 18/18 active 48 kHz MP3 assets. Package placement evidence is implemented through `node scripts/check-hyperfocus-audio-assets.cjs --write-package-report output/audio-qc/hyperfocus-package-current.json`; the current report passes all 8 source/web/iOS/Android/Desktop targets after fresh builds.
 
 Expected for final completion: all generated files have duration evidence, SHA-256, and size within budget.
 
@@ -543,25 +545,25 @@ Expected for final completion: all generated files have duration evidence, SHA-2
 
 Run: `npm run build`.
 
-Expected: PASS, and generated files exist under `dist/sounds/hyperfocus`. Fresh `npm run build` passed on 2026-06-19, but current package-report targets `web-dist` and `desktop-tauri-dist` both still show 18 missing files because the accepted pack has not been generated and copied.
+Expected/current: PASS, and active files exist under `dist/sounds/hyperfocus` after fresh `npm run build`.
 
 - [ ] **Step 3: Android packaging check**
 
 Run Capacitor sync/build command used by the repo, then verify generated files under `android/app/src/main/assets/public/sounds/hyperfocus`.
 
-Expected: files copied. Fresh `npm run cap:sync`, Android emulator boot, `./gradlew assembleDebug`, install, and launch passed on 2026-06-19. The package report now also inspects `android/app/build/outputs/apk/debug/app-debug.apk!/assets/public/sounds/hyperfocus/*.mp3`. Current package-report targets `android-capacitor` and `android-debug-apk` still show 18 missing files each because the generated pack is not present in source assets or the built APK.
+Expected/current: files copied. Fresh `npm run cap:sync` and `./gradlew assembleDebug` include the 18 active Hyperfocus MP3 files in both Android Capacitor assets and the debug APK package report target.
 
 - [ ] **Step 4: iOS simulator smoke**
 
 Use the booted iPhone simulator. Launch the app, open Hyperfocus, choose a generated family/level, verify no crash and no console playback blocker. Record screenshots or logs.
 
-Expected: audio can be selected; if physical speaker output cannot be captured, mark audible playback as `UNVERIFIED` and keep DOM/native state proof. Current package-report targets `ios-capacitor` and `ios-simulator-app` show 18 missing files each because the generated pack is not present in source assets or the built simulator `.app`.
+Expected/current: audio can be selected; if physical speaker output cannot be captured, mark audible playback as `UNVERIFIED` and keep DOM/native state proof. Fresh Capacitor sync and iOS simulator build include all 18 active Hyperfocus MP3 files in the package report.
 
 - [ ] **Step 5: Desktop/Tauri packaging check**
 
 Verify generated MP3s are referenced in built Vite output and available to Tauri runtime.
 
-Expected: Desktop route loads and Hyperfocus selector still works. Fresh `npm run build` and `npm run check:desktop-exe-contract` passed on 2026-06-19. Current package-report targets `desktop-tauri-dist` and `desktop-tauri-macos-app` each show 18 missing files/index entries because the generated pack is not present or rebuilt into the Tauri app. Windows EXE/MSI build remains platform-blocked on this Mac by missing `link.exe`/MSVC.
+Expected/current: Desktop route loads and Hyperfocus selector still works. Fresh `npx tauri build --bundles app --no-sign --ci` rebuilds the macOS `.app`, and the package report verifies all 18 active Hyperfocus paths in the Tauri frontend dist and macOS app embedded index. Windows EXE/MSI build remains platform-blocked on this Mac by missing `link.exe`/MSVC.
 
 ---
 

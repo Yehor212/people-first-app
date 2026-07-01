@@ -26,7 +26,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalSpaceAddEntry: "Додати запис",
       journalNoMatchingEntries: "Нічого не знайдено",
       journalNoMatchingHint: "Спробуйте інший запит",
-      quoteJournal1: "Quote",
     },
   }),
 }));

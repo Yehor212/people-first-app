@@ -6,7 +6,7 @@ import { Clock, Bell, BellOff, Play, Pause, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import { safeParseInt } from "@/lib/validation";
-import { playNotification, playLevelUp } from "@/lib/audioManager";
+import { playComplete, playNotification } from "@/lib/audioManager";
 import { getLocale } from "@/lib/timeUtils";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -29,7 +29,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
   const [duration, setDuration] = useState(60); // minutes
   const [timeLeft, setTimeLeft] = useState(duration * 60); // seconds
   const [isRunning, setIsRunning] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const [pingInterval, setPingInterval] = useState(15); // minutes
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastPingRef = useRef<number>(0);
@@ -51,7 +51,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
         if (prev <= 1) {
           const interval = intervalRef.current;
           if (interval) clearInterval(interval);
-          if (soundEnabled) playLevelUp();
+          if (soundEnabled) playComplete();
           return 0;
         }
 

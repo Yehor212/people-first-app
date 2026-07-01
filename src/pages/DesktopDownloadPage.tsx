@@ -29,7 +29,7 @@ const copy = {
     downloadReady: "Завантажити підписаний EXE",
     downloadLocked: "Підписаний EXE готується",
     webFallback: "Відкрити web-версію",
-    v2Preview: "Перейти у V2",
+    openMoodSpace: "Відкрити простір настрою",
     releaseStatus: "Публічне скачування відкриється тільки після підпису",
     releaseBody:
       "Локальний EXE вже збирається, але для користувачів кнопка заблокована до валідного Authenticode-підпису, hash-перевірки і release-gate.",
@@ -57,7 +57,7 @@ const copy = {
       {
         title: "Одна синхронізація",
         body:
-          "V1, V2, web, PWA і desktop лишаються на одному ordered-sync контракті з anti-resurrection захистом.",
+          "Web, PWA і desktop лишаються на одному ordered-sync контракті з anti-resurrection захистом.",
       },
     ],
     releaseRailTitle: "Безпечний шлях релізу",
@@ -81,7 +81,7 @@ const copy = {
     downloadReady: "Download signed EXE",
     downloadLocked: "Signed EXE is being prepared",
     webFallback: "Open web ZenFlow",
-    v2Preview: "Open V2 preview",
+    openMoodSpace: "Open mood space",
     releaseStatus: "Public download opens only after signing",
     releaseBody:
       "The local EXE already builds, but user download stays locked until Authenticode signing, hash verification, and release gates pass.",
@@ -109,7 +109,7 @@ const copy = {
       {
         title: "One sync contract",
         body:
-          "V1, V2, web, PWA, and desktop stay on the same ordered-sync contract with anti-resurrection protection.",
+          "Web, PWA, and desktop stay on the same ordered-sync contract with anti-resurrection protection.",
       },
     ],
     releaseRailTitle: "Safe release path",
@@ -144,7 +144,7 @@ export function DesktopDownloadPage() {
   const animate = useShouldAnimate();
   const tx = selectCopy(language);
   const webHref = buildAppHref();
-  const v2Href = buildAppHref("orb?nav=v2&navLayout=phone");
+  const moodSpaceHref = buildAppHref("orb?nav=v2&navLayout=phone");
   const release = getDesktopReleaseState();
 
   return (
@@ -217,8 +217,8 @@ export function DesktopDownloadPage() {
                 {tx.downloadLocked}
               </button>
             )}
-            <a className="desktop-download-page__secondary" href={v2Href}>
-              {tx.v2Preview}
+            <a className="desktop-download-page__secondary" href={moodSpaceHref}>
+              {tx.openMoodSpace}
               <ArrowRight aria-hidden="true" />
             </a>
           </div>

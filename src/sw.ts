@@ -116,6 +116,26 @@ registerRoute(
   })
 );
 
+
+// Cache shipped app audio on first use so installed PWA sessions can replay
+// already-used ambience offline without bloating the service worker install.
+registerRoute(
+  ({ url, request }) =>
+    url.origin === self.location.origin &&
+    url.pathname.includes("/sounds/") &&
+    (request.destination === "audio" || /\.mp3$/i.test(url.pathname)),
+  new CacheFirst({
+    cacheName: "zenflow-runtime-audio",
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 32,
+        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+        purgeOnQuotaError: true,
+      }),
+    ],
+  })
+);
+
 // Cache Supabase Storage (public assets only)
 registerRoute(
   ({ url }) =>

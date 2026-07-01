@@ -5,15 +5,17 @@ const mockGenerator = {
   getStatus: vi.fn().mockReturnValue({ state: 'idle', soundId: null, isUnlocked: false }),
   pause: vi.fn(),
   resume: vi.fn().mockResolvedValue(undefined),
+  resumeDirect: vi.fn(),
 };
 
 vi.mock('../ambientSounds', () => ({
   getAmbientSoundGenerator: vi.fn(() => mockGenerator),
-  forceUnlockAudio: vi.fn().mockResolvedValue(undefined),
+  armAudioUnlockAfterResume: vi.fn(),
 }));
 
 vi.mock('../audioManager', () => ({
   resumeOnInteraction: vi.fn().mockResolvedValue(undefined),
+  suspendContext: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../logger', () => ({
@@ -21,8 +23,8 @@ vi.mock('../logger', () => ({
 }));
 
 import { pauseAllAudio, resumeAllAudio, getLifecycleState, wasAudioPlaying } from '../audioLifecycle';
-import { forceUnlockAudio } from '../ambientSounds';
-import { resumeOnInteraction } from '../audioManager';
+import { armAudioUnlockAfterResume } from '../ambientSounds';
+import { resumeOnInteraction, suspendContext } from '../audioManager';
 
 // ─── Setup ──────────────────────────────────────────────────────
 beforeEach(() => {
@@ -74,6 +76,12 @@ describe('pauseAllAudio', () => {
     expect(mockGenerator.pause).toHaveBeenCalledTimes(1);
   });
 
+  it('suspends the feedback AudioContext even when ambient audio is idle', () => {
+    mockGenerator.getStatus.mockReturnValue({ state: 'idle', soundId: null, isUnlocked: false });
+    pauseAllAudio();
+    expect(suspendContext).toHaveBeenCalledTimes(1);
+  });
+
   it('does not call generator.pause() when audio is idle', () => {
     mockGenerator.getStatus.mockReturnValue({ state: 'idle', soundId: null, isUnlocked: false });
     pauseAllAudio();
@@ -105,9 +113,11 @@ describe('pauseAllAudio', () => {
 });
 
 describe('resumeAllAudio', () => {
-  it('calls forceUnlockAudio on every resume', async () => {
+  it('re-arms audio unlock on every resume without forcing playback', async () => {
     await resumeAllAudio();
-    expect(forceUnlockAudio).toHaveBeenCalledTimes(1);
+    expect(armAudioUnlockAfterResume).toHaveBeenCalledTimes(1);
+    expect(mockGenerator.resume).not.toHaveBeenCalled();
+    expect(mockGenerator.resumeDirect).not.toHaveBeenCalled();
   });
 
   it('does not call generator.resume() when wasPlaying is false', async () => {
@@ -117,24 +127,48 @@ describe('resumeAllAudio', () => {
     expect(mockGenerator.resume).not.toHaveBeenCalled();
   });
 
-  it('calls generator.resume() when wasPlaying is true', async () => {
+  it('defers ambient resume until the next user gesture when wasPlaying is true', async () => {
     mockGenerator.getStatus.mockReturnValue({ state: 'playing', soundId: 'ocean', isUnlocked: true });
     pauseAllAudio();
     await resumeAllAudio();
-    expect(mockGenerator.resume).toHaveBeenCalledTimes(1);
+    expect(mockGenerator.resume).not.toHaveBeenCalled();
+    expect(mockGenerator.resumeDirect).not.toHaveBeenCalled();
+
+    document.dispatchEvent(new Event('touchstart'));
+
+    expect(mockGenerator.resumeDirect).toHaveBeenCalledTimes(1);
   });
 
-  it('calls resumeOnInteraction before generator.resume()', async () => {
+  it('resumes the feedback AudioContext only from the deferred user gesture', async () => {
     mockGenerator.getStatus.mockReturnValue({ state: 'playing', soundId: 'ocean', isUnlocked: true });
     pauseAllAudio();
     await resumeAllAudio();
+    expect(resumeOnInteraction).not.toHaveBeenCalled();
+
+    document.dispatchEvent(new Event('keydown'));
+
     expect(resumeOnInteraction).toHaveBeenCalledTimes(1);
+    expect(mockGenerator.resumeDirect).toHaveBeenCalledTimes(1);
   });
 
-  it('resets lifecycle state after resume', async () => {
+  it('resumes deferred audio from a desktop pointer gesture', async () => {
+    mockGenerator.getStatus.mockReturnValue({ state: 'playing', soundId: 'ocean', isUnlocked: true });
+    pauseAllAudio();
+    await resumeAllAudio();
+
+    document.dispatchEvent(new Event('pointerdown'));
+
+    expect(resumeOnInteraction).toHaveBeenCalledTimes(1);
+    expect(mockGenerator.resumeDirect).toHaveBeenCalledTimes(1);
+  });
+
+  it('resets lifecycle state after the deferred resume gesture', async () => {
     mockGenerator.getStatus.mockReturnValue({ state: 'playing', soundId: 'cafe', isUnlocked: true });
     pauseAllAudio();
     await resumeAllAudio();
+    expect(getLifecycleState().wasPlaying).toBe(true);
+
+    document.dispatchEvent(new Event('touchend'));
 
     const state = getLifecycleState();
     expect(state.wasPlaying).toBe(false);
@@ -152,8 +186,10 @@ describe('resumeAllAudio', () => {
     expect(state.soundId).toBeNull();
   });
 
-  it('handles forceUnlockAudio failure gracefully', async () => {
-    vi.mocked(forceUnlockAudio).mockRejectedValueOnce(new Error('unlock failed'));
+  it('handles audio unlock re-arm failure gracefully', async () => {
+    vi.mocked(armAudioUnlockAfterResume).mockImplementationOnce(() => {
+      throw new Error('unlock failed');
+    });
     mockGenerator.getStatus.mockReturnValue({ state: 'playing', soundId: 'ocean', isUnlocked: true });
     pauseAllAudio();
 
@@ -161,12 +197,15 @@ describe('resumeAllAudio', () => {
     await expect(resumeAllAudio()).resolves.toBeUndefined();
   });
 
-  it('handles generator.resume() failure gracefully', async () => {
+  it('handles deferred resumeDirect failure gracefully', async () => {
     mockGenerator.getStatus.mockReturnValue({ state: 'playing', soundId: 'ocean', isUnlocked: true });
     pauseAllAudio();
-    mockGenerator.resume.mockRejectedValueOnce(new Error('resume failed'));
+    mockGenerator.resumeDirect.mockImplementationOnce(() => {
+      throw new Error('resume failed');
+    });
 
     // Should not throw — error is caught internally
     await expect(resumeAllAudio()).resolves.toBeUndefined();
+    expect(() => document.dispatchEvent(new Event('touchstart'))).not.toThrow();
   });
 });

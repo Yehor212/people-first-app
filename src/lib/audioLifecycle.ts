@@ -10,8 +10,8 @@
  * - Proper re-unlock of AudioContext on iOS after background
  */
 
-import { getAmbientSoundGenerator, forceUnlockAudio, type AudioStatus } from "./ambientSounds";
-import { resumeOnInteraction } from "./audioManager";
+import { getAmbientSoundGenerator, armAudioUnlockAfterResume, type AudioStatus } from "./ambientSounds";
+import { resumeOnInteraction, suspendContext } from "./audioManager";
 import { logger } from "./logger";
 import type { SeverityLevel } from "@sentry/core";
 
@@ -40,12 +40,75 @@ let lifecycleState: AudioLifecycleState = {
   pausedAt: null,
 };
 
+let deferredResumeCleanup: (() => void) | null = null;
+
+function resetLifecycleState(): void {
+  lifecycleState = { wasPlaying: false, soundId: null, pausedAt: null };
+}
+
+function clearDeferredResume(): void {
+  if (!deferredResumeCleanup) return;
+  deferredResumeCleanup();
+  deferredResumeCleanup = null;
+}
+
+function deferResumeUntilUserGesture(soundId: string, pauseDuration: number): void {
+  clearDeferredResume();
+
+  let cleaned = false;
+  const events = ["pointerdown", "touchstart", "touchend", "keydown"] as const;
+  const handler = () => {
+    if (cleaned) return;
+    clearDeferredResume();
+
+    try {
+      void resumeOnInteraction().catch((error) => {
+        logger.warn("[AudioLifecycle] Audio manager resume after gesture failed:", error);
+      });
+      getAmbientSoundGenerator().resumeDirect();
+      logger.log("[AudioLifecycle] Audio resume started after user gesture");
+
+      lazyBreadcrumb({
+        category: "audio",
+        message: "Audio resume deferred until user gesture",
+        level: "info",
+        data: { soundId, pauseDuration },
+      });
+    } catch (error) {
+      logger.error("[AudioLifecycle] Failed to resume audio after user gesture:", error);
+      lazyBreadcrumb({
+        category: "audio",
+        message: "Deferred audio resume failed",
+        level: "error",
+        data: { error: String(error) },
+      });
+    } finally {
+      resetLifecycleState();
+    }
+  };
+
+  deferredResumeCleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    for (const eventName of events) {
+      document.removeEventListener(eventName, handler, true);
+    }
+  };
+
+  for (const eventName of events) {
+    document.addEventListener(eventName, handler, { capture: true, passive: true });
+  }
+
+  logger.log("[AudioLifecycle] Audio resume deferred until next user gesture");
+}
+
 /**
  * Pause all audio when app goes to background.
  * Call this from Capacitor 'pause' event or visibilitychange='hidden'.
  */
 export function pauseAllAudio(): void {
   try {
+    clearDeferredResume();
     const generator = getAmbientSoundGenerator();
     const status: AudioStatus = generator.getStatus();
 
@@ -55,6 +118,10 @@ export function pauseAllAudio(): void {
       soundId: status.soundId,
       pausedAt: Date.now(),
     };
+
+    void suspendContext().catch((error) => {
+      logger.warn("[AudioLifecycle] Feedback AudioContext suspend failed:", error);
+    });
 
     if (lifecycleState.wasPlaying) {
       generator.pause();
@@ -78,61 +145,22 @@ export function pauseAllAudio(): void {
  * Call this from Capacitor 'resume' event or visibilitychange='visible'.
  */
 export async function resumeAllAudio(): Promise<void> {
-  // iOS re-suspends/interrupts AudioContext on ANY background event.
-  // Always force re-unlock to reset state and re-register listeners,
-  // so next user tap can re-unlock even if audio wasn't playing.
+  // Resume events are not user gestures. Re-arm unlock listeners only; playback waits for the next tap/key.
   try {
-    await forceUnlockAudio();
+    armAudioUnlockAfterResume();
   } catch (e) {
-    logger.warn("[AudioLifecycle] Failed to re-unlock audio on resume:", e);
+    logger.warn("[AudioLifecycle] Failed to re-arm audio unlock on resume:", e);
   }
 
   if (!lifecycleState.wasPlaying || !lifecycleState.soundId) {
-    // Reset state
-    lifecycleState = { wasPlaying: false, soundId: null, pausedAt: null };
+    resetLifecycleState();
     return;
   }
 
   const pauseDuration = lifecycleState.pausedAt ? Date.now() - lifecycleState.pausedAt : 0;
 
-  logger.log("[AudioLifecycle] Attempting to resume audio after", pauseDuration, "ms");
-
-  try {
-    // forceUnlockAudio already called above — just ensure audioManager's context is ready
-    await resumeOnInteraction();
-
-    // Resume ambient sounds
-    const generator = getAmbientSoundGenerator();
-    await generator.resume();
-
-    logger.log("[AudioLifecycle] Audio resumed successfully");
-
-    lazyBreadcrumb({
-      category: "audio",
-      message: "Audio resumed on app foreground",
-      level: "info",
-      data: {
-        soundId: lifecycleState.soundId,
-        pauseDuration,
-      },
-    });
-  } catch (error) {
-    logger.error("[AudioLifecycle] Failed to resume audio:", error);
-
-    lazyBreadcrumb({
-      category: "audio",
-      message: "Audio resume failed",
-      level: "error",
-      data: { error: String(error) },
-    });
-  }
-
-  // Reset state after attempt
-  lifecycleState = {
-    wasPlaying: false,
-    soundId: null,
-    pausedAt: null,
-  };
+  logger.log("[AudioLifecycle] Deferring audio resume after", pauseDuration, "ms");
+  deferResumeUntilUserGesture(lifecycleState.soundId, pauseDuration);
 }
 
 /**

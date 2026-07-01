@@ -1,6 +1,7 @@
 # Google Play V2 Draft Completion Audit
 
 Date: 2026-05-27 local workspace time.
+Monetization follow-up: 2026-06-30 workspace review time.
 
 Scope: Google Play Console draft metadata for ZenFlow V2, store logo/listing
 assets, and the ads/Advertising ID path. This audit is intentionally draft
@@ -89,13 +90,28 @@ Runtime proof screenshots captured locally:
 
 ## Repo / Artifact State Verified
 
+The rows below are historical baseline evidence from 2026-05-27 and must not be reused as fresh PASS evidence for the 2026-06-30 audio release without rerunning the named gates.
+
 | Requirement | Status | Evidence |
 | --- | --- | --- |
-| Google Play asset packet validates | PASS | 2026-05-27 `npm run google-play:assets` regenerated the packet from the validated feature source, then `npm run google-play:assets:check` verified 5 Play Console assets and 8 localized listings. |
-| Brand logo pack validates | PASS | 2026-05-27 `npm run assets:logos:check` verified 117 images, 6 SVG sources, native splash, ICO/ICNS, Android XML, Store upload pack, and package scripts. |
-| Visual/canonical orb guards still pass | PASS | 2026-05-27 `npm run check:visual` verified canonical orbs, logo assets, visual guards, and V2 paper guard. |
-| Task completion protocol still passes | PASS | 2026-05-27 `npm run check:task-completion` verified 72 invariants. |
-| Security scan for changed first-party asset scripts | PASS | 2026-05-27 `snyk code test --file=scripts/generate-google-play-assets.cjs` reported 0 issues. |
+| Google Play asset packet validates | HISTORICAL PASS / FRESH AUDIO RELEASE UNVERIFIED | 2026-05-27 `npm run google-play:assets` regenerated the packet from the validated feature source, then `npm run google-play:assets:check` verified 5 Play Console assets and 8 localized listings. |
+| Brand logo pack validates | HISTORICAL PASS / FRESH AUDIO RELEASE UNVERIFIED | 2026-05-27 `npm run assets:logos:check` verified 117 images, 6 SVG sources, native splash, ICO/ICNS, Android XML, Store upload pack, and package scripts. |
+| Visual/canonical orb guards still pass | HISTORICAL PASS / FRESH AUDIO RELEASE UNVERIFIED | 2026-05-27 `npm run check:visual` verified canonical orbs, logo assets, visual guards, and V2 paper guard. |
+| Task completion protocol still passes | HISTORICAL PASS / FRESH AUDIO RELEASE UNVERIFIED | 2026-05-27 `npm run check:task-completion` verified 72 invariants. |
+| Security scan for changed first-party asset scripts | HISTORICAL PASS / FRESH AUDIO RELEASE UNVERIFIED | 2026-05-27 `snyk code test --file=scripts/generate-google-play-assets.cjs` reported 0 issues. |
+
+
+## 2026-06-30 Audio Release Evidence
+
+Fresh local evidence for the audio-layer release path is tracked separately from the 2026-05-27 Play Console draft baseline.
+
+| Requirement | Status | Evidence |
+| --- | --- | --- |
+| App audio package guard | PASS | 2026-06-30 `npm run check:app-audio` checked current app audio assets, root MP3 inventories, Desktop/Tauri generated target files, docs/assets bundles, and output artifacts. |
+| i18n coverage for new sound settings | PASS | 2026-06-30 `npm run i18n:check` validated all 8 supported languages with 3232 keys each and V2 copy guard passed. |
+| No AI-template copy guard | PASS | 2026-06-30 `npm run check:no-ai-templates` passed for the current audio/copy changes. |
+| Best-practices implied requirements guard | PASS | 2026-06-30 `npm run check:best-practices` passed for the current policy/check wiring. |
+| Public Play Console/store state for this audio release | UNVERIFIED | No fresh Play Console browser verification or public Google Play listing verification was performed for the 2026-06-30 audio-only release loop. |
 
 ## Honest Not-Ready Items
 
@@ -104,16 +120,20 @@ production monetization blockers.
 
 | Item | Status | Required next action |
 | --- | --- | --- |
-| Real AdMob Android app ID | NOT READY | Create/use the real AdMob Android app ID and set `VITE_ADMOB_APP_ID_ANDROID` / `ZENFLOW_ADMOB_ANDROID_APP_ID`. |
-| Real rewarded ad unit ID | NOT READY | Create/use the real rewarded ad unit and set `VITE_ADMOB_REWARDED_ID_ANDROID`. |
-| `public/app-ads.txt` | LOCAL READY / PUBLIC UNVERIFIED | Generate it only with `ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads`, then verify with `npm run google-play:app-ads:check`. Do not invent this value or use Google's sample publisher id. Before production monetization, deploy and verify the same file at the root of the developer website configured in Play Console/AdMob. |
-| Final Google Play review submission | OUT OF SCOPE | Submit only after the V2 Android artifact and real monetization IDs are ready. |
+| Real AdMob Android app ID | LOCAL READY / RELEASE ENV GUARDED | Local env contains a real Android AdMob app ID for publisher `pub-9501********2808`; keep the value owner-controlled and verify release/CI env with `npm run google-play:admob:check`. Android release Gradle builds now fail fast if the native app ID is missing or still points at a Google sample app ID. |
+| Real rewarded ad unit ID | LOCAL READY / RELEASE ENV UNVERIFIED | 2026-06-30 AdMob contains `zenflow_rewarded_video_main` with the normal rewarded format (`З винагородою`), and local `.env.local` uses a real Android rewarded ad unit for publisher `pub-9501********2808`. `npm run google-play:admob:check` passes locally. Copy the same owner-controlled value into release/CI env before building a production Android artifact. Optional banner/iOS sample IDs remain warnings by default and can be made blocking with `npm run google-play:admob:check -- --strict-optional`. |
+| `public/app-ads.txt` | PUBLIC ROOT READY / ADMOB CRAWL PENDING | `ZENFLOW_APP_ADS_PUBLIC_URL=https://yehor212.github.io/app-ads.txt npm run google-play:app-ads:public-check` passes for publisher `pub-9501********2808`. If the publisher changes, regenerate only with `ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads`, verify with `npm run google-play:app-ads:check`, and Do not invent this value or use Google's sample publisher id. In AdMob, click `Verify app` / refresh verification after Google crawls the root of the developer website configured in Play Console/AdMob. |
+| Public Play developer website | PASS / PUBLIC LISTING UPDATED | 2026-06-30 public listing probe for `com.zenflow.app` returned `https://yehor212.github.io/people-first-app/` as the developer website after Play Console Store listing contact details were updated. This fixes the previous `appstore:developer_url=about:invalid#navigation` blocker. |
+| Public Play ads label and copy | PASS / PUBLIC LISTING UPDATED | 2026-06-30 `npm run google-play:public-listing:check` passes: the public listing exposes the developer website, shows the Google Play `Contains ads` signal, includes rewarded ads copy, and no longer exposes the old `No ads` claim. |
+| Final Google Play review submission | PUBLISHED / ADMOB VERIFY PENDING | 2026-06-30 Play Console Publishing overview shows the update was published after the 6-change package: short description, full description, app icon, feature graphic, Ads declaration, Data safety, and Advertising ID declaration. Do not claim AdMob verification PASS until AdMob removes the app-ads.txt mismatch warning after its crawler refreshes. |
 
 ## Completion Decision
 
-Google Play Console is now corrected for the V2 draft store listing surfaces:
-the active default listing uses the current high-quality ZenFlow app icon, the
-current user-approved feature graphic, and the current SMM/ASO-safe short/full
-English description. The feature graphic is not content-hash locked and may be
-replaced deliberately when a better user-approved source is chosen. Final
-certification/review remains intentionally unsubmitted.
+Google Play Console is now corrected and the 6-change package has been
+published. The public listing exposes the correct developer website, contains
+ads disclosure, rewarded ads copy, and no longer shows the stale no-ads claim.
+The local Android rewarded-only AdMob path now uses a real rewarded ad unit and
+passes `npm run google-play:admob:check`. Public production monetization remains
+AdMob crawler pending until AdMob verifies the app and removes the app-ads.txt
+mismatch warning; release/CI env still needs owner confirmation before a
+production Android artifact is built.

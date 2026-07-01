@@ -305,7 +305,7 @@ describe("check-auth-providers public key readiness", () => {
     });
 
     expect(workflow).toContain(
-      "ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS: orb/?nav=v2&navLayout=phone,habits/?nav=v2&navLayout=phone,diary/?nav=v2&navLayout=phone,settings/?nav=v2&navLayout=phone"
+      "ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS: orb/?nav=v2&navLayout=phone,habits/?nav=v2&navLayout=phone,diary/?nav=v2&navLayout=phone,planning/?nav=v2&navLayout=phone,settings/?nav=v2&navLayout=phone"
     );
     expect(result.stdout).toContain(
       "GitHub Pages public auth smoke covers canonical V2 phone entrypoints"

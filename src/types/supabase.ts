@@ -997,6 +997,42 @@ export type Database = {
         }
         Relationships: []
       }
+      rag_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          content_hash: string
+          embedding: string
+          id: string
+          indexed_at: string
+          source: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          chunk_index: number
+          content: string
+          content_hash: string
+          embedding: string
+          id?: string
+          indexed_at?: string
+          source: string
+          title: string
+          updated_at: string
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          content_hash?: string
+          embedding?: string
+          id?: string
+          indexed_at?: string
+          source?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sync_events: {
         Row: {
           created_at: string
@@ -1616,6 +1652,23 @@ export type Database = {
         Returns: {
           entry_id: string
           similarity: number
+        }[]
+      }
+      match_rag_chunks: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          chunk_index: number
+          content: string
+          content_hash: string
+          id: string
+          similarity: number
+          source: string
+          title: string
+          updated_at: string
         }[]
       }
       reset_monthly_leaderboard: { Args: never; Returns: undefined }

@@ -129,22 +129,17 @@ describe("Sentry source-map build contract", () => {
     expect(deployPrepare).toBeLessThan(deployFinalGuard);
     expect(deployFinalGuard).toBeLessThan(deployUpload);
 
-    const previewV2Build = indexOfOrThrow(preview, "name: Build V2 preview under /v2");
+    const previewV2Build = indexOfOrThrow(preview, "name: Build V2 public root");
+    const previewPrepare = indexOfOrThrow(preview, "name: Prepare V2 GitHub Pages artifact");
     const previewV2Guard = indexOfOrThrow(preview, "name: Check Sentry public artifacts for V2 preview");
-    const previewV1Build = indexOfOrThrow(preview, "name: Build V1 public root from main");
-    const previewV1Guard = indexOfOrThrow(preview, "name: Check Sentry public artifacts for V1 public root");
-    const previewCompose = indexOfOrThrow(preview, "name: Compose GitHub Pages artifact");
-    const previewFinalGuard = indexOfOrThrow(preview, "name: Check final Sentry combined Pages artifact");
-    const previewUpload = indexOfOrThrow(preview, "name: Upload combined Pages artifact");
-    expect(previewV2Build).toBeLessThan(previewV2Guard);
-    expect(previewV1Build).toBeLessThan(previewV1Guard);
-    expect(previewV2Guard).toBeLessThan(previewCompose);
-    expect(previewV1Guard).toBeLessThan(previewCompose);
-    expect(previewCompose).toBeLessThan(previewFinalGuard);
-    expect(previewFinalGuard).toBeLessThan(previewUpload);
+    const previewUpload = indexOfOrThrow(preview, "name: Upload V2 Pages artifact");
+    expect(previewV2Build).toBeLessThan(previewPrepare);
+    expect(previewPrepare).toBeLessThan(previewV2Guard);
+    expect(previewV2Guard).toBeLessThan(previewUpload);
 
     expect(deploy).toContain("ZENFLOW_DIST_DIR: dist");
-    expect(preview).toContain("ZENFLOW_DIST_DIR: pages");
+    expect(preview).not.toContain("V1 public root");
+    expect(preview).not.toContain("v1-src");
   });
 
 

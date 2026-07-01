@@ -1,3 +1,7 @@
+import { copyFileSync, mkdirSync, mkdtempSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+
 import { describe, expect, it } from "vitest";
 
 const contract = require("../check-hyperfocus-nature-soundscape-contract.cjs") as {
@@ -5,7 +9,13 @@ const contract = require("../check-hyperfocus-nature-soundscape-contract.cjs") a
     ok: boolean;
     familyCount: number;
     levelCount: number;
-    issues: Array<{ code: string; familyId?: string; levelId?: string }>;
+    legacyAudioScan?: { ok: boolean; scannedTargets: number; issues: Array<{ code: string; relativePath?: string }> };
+    issues: Array<{ code: string; familyId?: string; levelId?: string; relativePath?: string }>;
+  };
+  scanForbiddenLegacyRootAudioAssets: (options?: { rootDir?: string }) => {
+    ok: boolean;
+    scannedTargets: number;
+    issues: Array<{ code: string; relativePath?: string }>;
   };
   buildHyperfocusNatureGenerationQueue: (options?: { phase?: "pilot" | "full" }) => {
     ok: boolean;
@@ -37,6 +47,29 @@ describe("hyperfocus nature soundscape generation contract", () => {
     expect(full.phase).toBe("full-pack-after-accepted-pilot");
     expect(full.jobCount).toBe(18);
     expect(full.requiresAcceptedPilot).toBe(true);
+  });
+
+  it("rejects shipped root-level underwater and thunderstorm audio files", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "hyperfocus-nature-legacy-audio-"));
+    mkdirSync(join(rootDir, "docs/audio"), { recursive: true });
+    mkdirSync(join(rootDir, "public/sounds"), { recursive: true });
+    copyFileSync(
+      join(process.cwd(), "docs/audio/hyperfocus-nature-soundscape-spec.json"),
+      join(rootDir, "docs/audio/hyperfocus-nature-soundscape-spec.json"),
+    );
+    writeFileSync(join(rootDir, "public/sounds/mixkit-underwater-transmitter-hum-2135.mp3"), "legacy-underwater-audio");
+    writeFileSync(join(rootDir, "public/sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.mp3"), "legacy-thunderstorm-audio");
+
+    const result = contract.validateHyperfocusNatureSoundscapeSpec({ rootDir });
+
+    expect(result.ok).toBe(false);
+    expect(result.legacyAudioScan?.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "forbidden-legacy-root-audio", relativePath: "public/sounds/mixkit-underwater-transmitter-hum-2135.mp3" }),
+        expect.objectContaining({ code: "forbidden-legacy-root-audio", relativePath: "public/sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.mp3" }),
+      ]),
+    );
   });
 
   it("rejects prompts that steer Lyria toward songs, pop, or celebrity-style music", () => {

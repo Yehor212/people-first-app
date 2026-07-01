@@ -37,22 +37,30 @@ vi.mock("@/lib/randomQuests", () => ({
   updateAllQuestsProgress: vi.fn(() => []),
 }));
 
+vi.mock("@/lib/audioManager", () => ({
+  playSound: vi.fn(),
+}));
+
 // --- import under test after mocks ---
 
 import { useGratitudeHandlers } from "../useGratitudeHandlers";
+import { triggerXpPopup } from "@/components/XpPopup";
+import { playSound } from "@/lib/audioManager";
+import { updateAllQuestsProgress } from "@/lib/randomQuests";
 
 describe("useGratitudeHandlers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  const renderGratitudeHandlers = () =>
+  const renderGratitudeHandlers = (options: { rewardsEnabled?: boolean } = {}) =>
     renderHook(() =>
       useGratitudeHandlers({
         earnTreats: mockEarnTreats,
         attractCreature: mockAttractCreature,
         feedCreatures: mockFeedCreatures,
         updateChallengeProgress: mockUpdateChallengeProgress,
+        ...options,
       })
     );
 
@@ -89,6 +97,24 @@ describe("useGratitudeHandlers", () => {
       treatReason: "Gratitude entry",
       haptic: "gratitudeSaved",
     });
+  });
+
+  it("V2 neutral mode skips gratitude rewards, creature rewards, XP popup, and plays neutral feedback", () => {
+    vi.mocked(updateAllQuestsProgress).mockReturnValueOnce([
+      { title: "Gratitude quest", reward: { xp: 20 } },
+    ] as never);
+    const { result } = renderGratitudeHandlers({ rewardsEnabled: false });
+    const entry = makeEntry();
+
+    act(() => {
+      result.current.handleAddGratitude(entry);
+    });
+
+    expect(mockRewardUser).not.toHaveBeenCalled();
+    expect(mockAttractCreature).not.toHaveBeenCalled();
+    expect(mockFeedCreatures).not.toHaveBeenCalled();
+    expect(triggerXpPopup).not.toHaveBeenCalled();
+    expect(playSound).toHaveBeenCalledWith("success");
   });
 
   it("handleAddGratitude calls feedCreatures", () => {

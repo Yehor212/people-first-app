@@ -30,8 +30,8 @@ describe("V2 iOS diary deep link handling", () => {
 
     expect(indexSource).toContain("useDeepLinkHandler");
     expect(indexSource).toContain("handleDiaryDeepLinks: false");
-    expect(indexSource).toContain("hasPendingNativeDiaryDeepLink");
-    expect(indexSource).toContain("NATIVE_DIARY_DEEP_LINK_EVENT");
+    expect(indexSource).not.toContain("hasPendingNativeDiaryDeepLink");
+    expect(indexSource).not.toContain("NATIVE_DIARY_DEEP_LINK_EVENT");
 
     expect(deepLinkSource).toContain("NATIVE_DIARY_DEEP_LINK_EVENT");
     expect(deepLinkSource).toContain("markNativeDiaryDeepLinkRequested");
@@ -39,6 +39,7 @@ describe("V2 iOS diary deep link handling", () => {
     expect(nativeSignalSource).toContain("hasPendingNativeDiaryDeepLink");
     expect(nativeSignalSource).toContain("consumePendingNativeDiaryDeepLink");
     expect(nativeSignalSource).toContain("clearPendingNativeDiaryDeepLink");
+    expect(navigationHookSource).toContain("if (consumePendingNativeDiaryDeepLink())");
     expect(navigationHookSource).toContain("consumePendingNativeDiaryDeepLink");
     expect(navigationHookSource).toContain('return { page: "diary", unknownPath: null };');
 

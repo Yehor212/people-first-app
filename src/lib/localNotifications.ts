@@ -17,23 +17,20 @@
  *   - lights
  *
  * To change these settings for existing users:
- * 1. Create a NEW channel with a versioned ID (e.g., 'zenflow_reminders_v2')
+ * 1. Create a NEW channel with a versioned ID
  * 2. Update all notification code to use the new channel ID
- * 3. Optionally delete the old channel for cleanup
+ * 3. Tell users that Android system notification settings remain in control
  *
  * Users can always manually adjust settings in Android System Settings.
  * See: https://developer.android.com/develop/ui/views/notifications/channels
  */
 
-import { LocalNotifications, ActionPerformed, Channel } from '@capacitor/local-notifications';
+import { LocalNotifications, type ActionPerformed } from '@capacitor/local-notifications';
 import { isNative } from '@/lib/platform';
 import { logger } from './logger';
 import { ReminderSettings, Habit, MoodType } from '@/types';
 import { getCurrentChannelId, initializeNotificationChannels } from './notificationSounds';
 import { parseTime } from './timeUtils';
-
-// Legacy notification channel ID for Android 8+ (kept for backwards compatibility)
-const CHANNEL_ID = 'zenflow_reminders';
 
 /**
  * Get the active channel ID based on user's sound preference
@@ -51,26 +48,10 @@ export async function initializeNotificationChannel(): Promise<void> {
   if (!isNative) return;
 
   try {
-    // Initialize all sound-based channels
     await initializeNotificationChannels();
-
-    // Also create legacy channel for backwards compatibility
-    const channel: Channel = {
-      id: CHANNEL_ID,
-      name: 'ZenFlow Reminders',
-      description: 'Reminders for habits, mood tracking, and focus sessions',
-      importance: 4, // HIGH - makes sound and shows heads-up
-      visibility: 1, // PUBLIC
-      vibration: true,
-      sound: 'default',
-      lights: true,
-      lightColor: '#10B981',
-    };
-
-    await LocalNotifications.createChannel(channel);
-    logger.log('[Notifications] All channels initialized');
+    logger.log('[Notifications] Sound channels initialized');
   } catch (error) {
-    logger.error('[Notifications] Failed to create channel:', error);
+    logger.error('[Notifications] Failed to initialize channels:', error);
   }
 }
 
@@ -93,8 +74,9 @@ export async function checkNotificationStatus(): Promise<{
     // Try to get channels (Android only)
     let channelExists = true;
     try {
+      const activeChannelId = getActiveChannelId();
       const channels = await LocalNotifications.listChannels();
-      channelExists = channels.channels.some(c => c.id === CHANNEL_ID);
+      channelExists = channels.channels.some(c => c.id === activeChannelId);
     } catch {
       // listChannels might not be available on all platforms
     }
@@ -140,6 +122,8 @@ export async function scheduleLocalReminders(
   copy: ReminderCopy
 ): Promise<void> {
   try {
+    await initializeNotificationChannel();
+
     // Check permission
     const permission = await LocalNotifications.checkPermissions();
     if (permission.display !== 'granted') {
@@ -233,6 +217,8 @@ export async function scheduleHabitReminders(
   translations: { reminderTitle: string; reminderBody: string }
 ): Promise<void> {
   try {
+    await initializeNotificationChannel();
+
     // Check permission
     const permission = await LocalNotifications.checkPermissions();
     if (permission.display !== 'granted') {
@@ -381,6 +367,8 @@ export async function scheduleJournalReminder(
   if (!isNative) return;
 
   try {
+    await initializeNotificationChannel();
+
     const permission = await LocalNotifications.checkPermissions();
     if (permission.display !== 'granted') return;
 
@@ -421,6 +409,8 @@ export async function scheduleMoodQuickLogNotification(
   message: string
 ): Promise<void> {
   try {
+    await initializeNotificationChannel();
+
     const permission = await LocalNotifications.checkPermissions();
     if (permission.display !== 'granted') {
       return;

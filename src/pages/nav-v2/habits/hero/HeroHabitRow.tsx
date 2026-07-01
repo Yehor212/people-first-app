@@ -1,7 +1,7 @@
 /**
  * HeroHabitRow — weekly-first V2 habit row.
  *
- * Primary interaction stays on the week cells, as in V1.
+ * Primary interaction stays on the week cells.
  * Secondary actions stay behind long-press / keyboard on the row shell.
  */
 

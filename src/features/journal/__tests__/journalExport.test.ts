@@ -166,6 +166,59 @@ describe('exportCSV', () => {
     await exportCSV();
     expect(mockClick).toHaveBeenCalled();
   });
+
+  it('neutralizes spreadsheet formulas in exported CSV cells', async () => {
+    const entries = [
+      makeEntry({
+        title: '=IMPORTXML("https://example.test","//a")',
+        content: '+cmd|\' /C calc!A0',
+        date: '=DATE(2026,1,1)',
+        mood: '=mood' as JournalEntry['mood'],
+        stickers: ['+sticker', '@symbol'],
+        tags: ['@private', '-tag'],
+      }),
+    ];
+    vi.mocked(storage.getAllEntries).mockResolvedValue(entries);
+
+    const OriginalBlob = globalThis.Blob;
+    const createdBlobs: Array<{ text: () => Promise<string> }> = [];
+    class TestBlob {
+      readonly parts: BlobPart[];
+
+      constructor(parts: BlobPart[]) {
+        this.parts = parts;
+        createdBlobs.push(this);
+      }
+
+      async text() {
+        return this.parts
+          .map((part) => {
+            if (typeof part === 'string') return part;
+            if (part instanceof ArrayBuffer) return new TextDecoder().decode(part);
+            if (ArrayBuffer.isView(part)) {
+              return new TextDecoder().decode(part);
+            }
+            return '';
+          })
+          .join('');
+      }
+    }
+
+    vi.stubGlobal('Blob', TestBlob);
+
+    try {
+      await exportCSV();
+      const csv = await createdBlobs.at(-1)?.text();
+      expect(csv).toContain(`"'=IMPORTXML(""https://example.test"",""//a"")"`);
+      expect(csv).toContain(`"'+cmd|' /C calc!A0"`);
+      expect(csv).toContain(`"'=DATE(2026,1,1)"`);
+      expect(csv).toContain(`"'=mood"`);
+      expect(csv).toContain(`"'@private, -tag"`);
+      expect(csv).toContain(`"'+sticker @symbol"`);
+    } finally {
+      vi.stubGlobal('Blob', OriginalBlob);
+    }
+  });
 });
 
 // ============================================================

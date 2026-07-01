@@ -63,7 +63,7 @@ const AUDIBLE_REVIEW_REQUIRED_TRUE_FIELDS = Object.freeze([
 const LIMITS = Object.freeze({
   minDurationSeconds: 27,
   maxDurationSeconds: 33,
-  sampleRate: 44100,
+  sampleRate: 48000,
   channels: 2,
   minFileBytes: 250000,
   maxFileBytes: 2000000,
@@ -1213,6 +1213,42 @@ function validateGeminiProvenancePayload({ rootDir = DEFAULT_ROOT, asset, proven
   const provider = String(provenance?.provider || "");
   const model = String(provenance?.model || "");
   const generationId = String(provenance?.generationId || "");
+  const source = provenance?.source ? String(provenance.source) : undefined;
+  const sourceLicense = provenance?.sourceLicense ? String(provenance.sourceLicense) : undefined;
+  const postProcessing = provenance?.postProcessing && typeof provenance.postProcessing === "object" ? provenance.postProcessing : null;
+  const isRealSource =
+    model.startsWith("real-source-") ||
+    ["mixkit", "bundled-source"].includes(provider.toLowerCase());
+
+  if (isRealSource) {
+    if (!source || !sourceLicense) {
+      return {
+        ok: false,
+        issue: issue("missing-real-source-provenance", "Real-source Hyperfocus audio provenance for " + asset.fileName + " must include source and sourceLicense.", { fileName: asset.fileName }),
+      };
+    }
+    if (postProcessing && postProcessing.objectiveResult !== "PASS") {
+      return {
+        ok: false,
+        issue: issue("real-source-post-processing-not-passing", "Real-source Hyperfocus audio postProcessing.objectiveResult must be PASS for " + asset.fileName + ".", { fileName: asset.fileName }),
+      };
+    }
+
+    return {
+      ok: true,
+      entry: {
+        provider,
+        model,
+        generationId,
+        source,
+        sourceLicense,
+        generatedAt: provenance?.generatedAt ? String(provenance.generatedAt) : undefined,
+        approvedBy: provenance?.approvedBy ? String(provenance.approvedBy) : undefined,
+        audibleReview: provenance?.audibleReview,
+        postProcessing: postProcessing || undefined,
+      },
+    };
+  }
 
   if (provider.toLowerCase() !== "google") {
     return {
@@ -1428,7 +1464,7 @@ function probeAudioFile(file) {
   const wavPath = path.join(tempDir, "decoded.wav");
 
   try {
-    execFileSync("afconvert", [file, wavPath, "-f", "WAVE", "-d", "LEI16@44100"], { stdio: "pipe" });
+    execFileSync("afconvert", [file, wavPath, "-f", "WAVE", "-d", "LEI16@48000"], { stdio: "pipe" });
     const decodedMetrics = readWavPcm16Metrics(wavPath);
     const stat = fs.statSync(file);
 

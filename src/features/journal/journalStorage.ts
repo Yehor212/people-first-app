@@ -137,6 +137,70 @@ async function decryptEntriesForDisplay(entries: JournalEntry[]): Promise<Journa
   return Promise.all(entries.map((entry) => decryptEntryContentForDisplay(entry)));
 }
 
+export interface JournalEntryPageCursor {
+  createdAt: number;
+  id: string;
+}
+
+export interface JournalEntryPageOptions {
+  limit?: number;
+  before?: JournalEntryPageCursor | null;
+  beforeCreatedAt?: number | null;
+}
+
+export interface JournalEntryPageResult {
+  entries: JournalEntry[];
+  totalCount: number;
+  hasMore: boolean;
+  nextCursor: JournalEntryPageCursor | null;
+}
+
+function normalizeJournalPageLimit(limit: number | undefined): number {
+  if (typeof limit !== "number" || !Number.isFinite(limit)) return 32;
+  return Math.max(1, Math.min(100, Math.floor(limit)));
+}
+
+function compareJournalEntryIdsDescending(a: string, b: string): number {
+  if (a === b) return 0;
+  return a > b ? -1 : 1;
+}
+
+function compareJournalEntryPageOrder(a: JournalEntry, b: JournalEntry): number {
+  if (a.createdAt !== b.createdAt) return b.createdAt - a.createdAt;
+  return compareJournalEntryIdsDescending(a.id, b.id);
+}
+
+function journalEntryPageCursor(entry: JournalEntry): JournalEntryPageCursor {
+  return { createdAt: entry.createdAt, id: entry.id };
+}
+
+function isEntryAfterCursorInPageOrder(entry: JournalEntry, cursor: JournalEntryPageCursor): boolean {
+  if (entry.createdAt < cursor.createdAt) return true;
+  if (entry.createdAt > cursor.createdAt) return false;
+  return compareJournalEntryIdsDescending(entry.id, cursor.id) > 0;
+}
+
+function dedupeJournalEntriesById(entries: JournalEntry[]): JournalEntry[] {
+  return [...new Map(entries.map((entry) => [entry.id, entry])).values()];
+}
+
+async function getCreatedAtPageWithStableTies(
+  limit: number,
+  beforeCreatedAt?: number,
+): Promise<JournalEntry[]> {
+  const collection = typeof beforeCreatedAt === "number"
+    ? db.journalEntries.where("createdAt").below(beforeCreatedAt).reverse()
+    : db.journalEntries.orderBy("createdAt").reverse();
+  const candidates = await collection.limit(limit + 1).toArray();
+  const boundaryCreatedAt = candidates[Math.min(limit, candidates.length) - 1]?.createdAt;
+  if (typeof boundaryCreatedAt !== "number") return candidates;
+
+  const boundaryTies = await db.journalEntries.where("createdAt").equals(boundaryCreatedAt).toArray();
+  return dedupeJournalEntriesById([...candidates, ...boundaryTies])
+    .sort(compareJournalEntryPageOrder)
+    .slice(0, limit + 1);
+}
+
 
 async function encryptMediaDataWithVaultKey(value: string, vaultKey: string): Promise<string> {
   if (!value || isEncryptedJournalMediaData(value)) return value;
@@ -544,6 +608,48 @@ async function hydrateAudioFromStorage(audio: JournalAudio): Promise<JournalAudi
 // ============================================
 // JOURNAL ENTRIES CRUD
 // ============================================
+
+export async function getEntriesPage(
+  options: JournalEntryPageOptions = {},
+): Promise<JournalEntryPageResult> {
+  const limit = normalizeJournalPageLimit(options.limit);
+  const totalCountPromise = db.journalEntries.count();
+  const cursor = options.before
+    ?? (typeof options.beforeCreatedAt === "number"
+      ? { createdAt: options.beforeCreatedAt, id: "\uffff" }
+      : null);
+
+  let pageWithSentinel: JournalEntry[];
+  if (cursor) {
+    const sameTimestampEntries = await db.journalEntries.where("createdAt").equals(cursor.createdAt).toArray();
+    const sameTimestampAfterCursor = sameTimestampEntries
+      .filter((entry) => isEntryAfterCursorInPageOrder(entry, cursor))
+      .sort(compareJournalEntryPageOrder);
+    const remainingLimit = limit + 1 - sameTimestampAfterCursor.length;
+    const olderEntries = remainingLimit > 0
+      ? await getCreatedAtPageWithStableTies(remainingLimit - 1, cursor.createdAt)
+      : [];
+    pageWithSentinel = [...sameTimestampAfterCursor, ...olderEntries]
+      .sort(compareJournalEntryPageOrder)
+      .slice(0, limit + 1);
+  } else {
+    pageWithSentinel = await getCreatedAtPageWithStableTies(limit);
+  }
+
+  const pageEntries = pageWithSentinel.slice(0, limit);
+  const hasMore = pageWithSentinel.length > limit;
+  const entries = await decryptEntriesForDisplay(pageEntries);
+  const totalCount = await totalCountPromise;
+
+  return {
+    entries,
+    totalCount,
+    hasMore,
+    nextCursor: hasMore && pageEntries.length > 0
+      ? journalEntryPageCursor(pageEntries[pageEntries.length - 1])
+      : null,
+  };
+}
 
 export async function getAllEntries(): Promise<JournalEntry[]> {
   const entries = await db.journalEntries.orderBy("createdAt").reverse().toArray();

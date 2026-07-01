@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { DrawerV2 } from "../DrawerV2";
 import { useThemeStore } from "@/stores/themeStore";
 
@@ -19,11 +19,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
       switchToLight: "Switch to light mode",
       themeDark: "Dark",
       themeLight: "Light",
-      classicPortalAria: "Return to classic ZenFlow",
-      classicPortalEyebrow: "Stable home",
-      classicPortalTitle: "Back to classic ZenFlow",
-      classicPortalBody: "Return to the current stable home while V2 stays in preview.",
-      classicPortalCta: "Classic ZenFlow",
     },
     isRTL: false,
   }),
@@ -72,12 +67,8 @@ describe("DrawerV2", () => {
       "data-theme-region",
       "drawer-v2",
     );
-    expect(screen.getAllByTestId("drawer-v2-mini-orb")).toHaveLength(2);
-    expect(screen.getByTestId("drawer-v2-classic-portal-orb")).toContainElement(
-      within(screen.getByTestId("drawer-v2-classic-portal-orb")).getByTestId(
-        "drawer-v2-mini-orb",
-      ),
-    );
+    expect(screen.getAllByTestId("drawer-v2-mini-orb")).toHaveLength(1);
+    expect(screen.queryByTestId("drawer-v2-classic-portal-orb")).not.toBeInTheDocument();
   });
 
   it("calls onClose when backdrop is clicked", () => {
@@ -126,13 +117,11 @@ describe("DrawerV2", () => {
     expect(screen.getByTestId("drawer-v2-destination-settings")).toBeInTheDocument();
   });
 
-  it("renders the reverse portal in the primary navigation area", () => {
+  it("does not render a reverse portal back to Classic/V1", () => {
     render(<DrawerV2 {...baseProps} />);
 
-    const portal = screen.getByTestId("drawer-v2-classic-portal");
-    expect(screen.getByTestId("drawer-v2-primary-nav")).toContainElement(portal);
-    expect(portal).toHaveAttribute("aria-label", "Return to classic ZenFlow");
-    expect(portal).toHaveAttribute("href", "/?navLayout=phone&dev=true");
+    expect(screen.queryByTestId("drawer-v2-classic-portal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("drawer-v2-classic-portal-zone")).not.toBeInTheDocument();
   });
 
   it("uses the quiet command deck without jumpy press-stable motion", () => {

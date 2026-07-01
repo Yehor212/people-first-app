@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { BarChart3, PanelLeftClose, PanelLeftOpen, PenLine, Plus, Settings, Star } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MoodDotStrip } from "./MoodDotStrip";
@@ -21,6 +21,7 @@ interface SidebarCompactProps {
   onToggleSidebar: () => void;
   collapsed: boolean;
   privateMode?: boolean;
+  useSharedDiaryWallpaper?: boolean;
 }
 
 export const SidebarCompact = memo(function SidebarCompact({
@@ -36,8 +37,10 @@ export const SidebarCompact = memo(function SidebarCompact({
   onToggleSidebar,
   collapsed,
   privateMode = false,
+  useSharedDiaryWallpaper = false,
 }: SidebarCompactProps) {
   const { t, isRTL } = useLanguage();
+  const reducedMotion = useReducedMotion();
   const ts = t as unknown as Record<string, string>;
   const toggleLabel = collapsed
     ? ts.diarySidebarShow || "Show diary panel"
@@ -52,11 +55,12 @@ export const SidebarCompact = memo(function SidebarCompact({
 
   return (
     <motion.aside
-      initial={{ x: isRTL ? 24 : -24, opacity: 0 }}
+      initial={reducedMotion ? false : { x: isRTL ? 24 : -24, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+      transition={reducedMotion ? undefined : { type: "spring", stiffness: 400, damping: 30 }}
       className={cn(
-        "flex h-full w-[72px] flex-shrink-0 flex-col border-border/30 bg-card/88 backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] z-30",
+        "z-30 flex h-full w-[72px] flex-shrink-0 flex-col border-border/30 backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]",
+        useSharedDiaryWallpaper ? "journal-light-sidebar-rail" : "bg-card/88",
         isRTL ? "border-s" : "border-e"
       )}
       aria-label={ts.journalTitle || "Diary"}

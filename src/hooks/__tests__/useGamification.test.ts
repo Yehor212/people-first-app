@@ -157,6 +157,17 @@ describe('useGamification', () => {
       expect(mockGamificationState.totalXp).toBe(10);
     });
 
+    it('does not award XP when disabled for V2', () => {
+      const { result } = renderHook(() => useGamification({ enabled: false }));
+
+      act(() => {
+        result.current.awardXp('mood');
+      });
+
+      expect(mockSetGamificationState).not.toHaveBeenCalled();
+      expect(mockGamificationState.totalXp).toBe(0);
+    });
+
     it('awards XP for habit action', async () => {
       const { result } = renderHook(() => useGamification());
 
@@ -205,7 +216,7 @@ describe('useGamification', () => {
       });
     });
 
-    it('plays level-up feedback when XP crosses a level boundary', async () => {
+    it('does not play level-up feedback from raw XP bookkeeping', async () => {
       mockGamificationState.totalXp = 90;
       const { result } = renderHook(() => useGamification());
 
@@ -214,8 +225,9 @@ describe('useGamification', () => {
       });
 
       await waitFor(() => {
-        expect(playSound).toHaveBeenCalledWith('levelUp');
+        expect(mockGamificationState.totalXp).toBe(105);
       });
+      expect(playSound).not.toHaveBeenCalledWith('levelUp');
     });
 
     it('does not play level-up feedback for XP inside the same level', async () => {

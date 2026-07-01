@@ -4,8 +4,12 @@ export const APP_AUDIO_PLATFORMS = ["web", "pwa", "android", "ios", "desktop"] a
 
 export type AppAudioPlatform = (typeof APP_AUDIO_PLATFORMS)[number];
 export type AppAudioFamily = "entry" | "orb" | "diary" | "focus";
-export type AppAudioFeedbackSoundType = "success" | "complete" | "streak" | "levelUp" | "notification";
+export type AppAudioComfortTexture = "air" | "water" | "rain" | "forest" | "fire" | "river" | "wind";
+export type AppAudioOfflineStrategy = "runtime-cache";
+export type AppAudioFeedbackSoundType = "success" | "complete" | "streak" | "milestone" | "notification";
 export type AppAudioRewardActivity = "mood" | "habit" | "focus" | "gratitude" | "journal" | "breathing";
+export type AppAudioActionTrigger = "completion" | "milestone" | "preview";
+export type AppAudioNonAudioFeedback = "visual+haptic" | "visual" | "visual+haptic-disabled";
 
 export interface AppAudioAsset {
   id: string;
@@ -16,6 +20,8 @@ export interface AppAudioAsset {
   labelKey?: string;
   startsOnUserGesture: boolean;
   respectsMasterVolume: boolean;
+  comfortTexture: AppAudioComfortTexture;
+  offlineStrategy: AppAudioOfflineStrategy;
   platforms: readonly AppAudioPlatform[];
 }
 
@@ -36,34 +42,54 @@ export interface AppAudioActionEvent {
     | "breathingCompleted"
     | "achievementUnlocked"
     | "streakMilestone"
-    | "levelUp"
+    | "majorProgressMilestone"
     | "notification";
   fallbackLabel: string;
   soundType: AppAudioFeedbackSoundType;
   rationale: string;
+  allowedTrigger: AppAudioActionTrigger;
+  nonAudioFeedback: AppAudioNonAudioFeedback;
   startsOnUserGesture: boolean;
   respectsMasterVolume: boolean;
   platforms: readonly AppAudioPlatform[];
 }
 
+export interface AppAudioForbiddenAction {
+  id: "routineTap" | "tabChange" | "pickerMovement" | "drawerOpen" | "validationError";
+  soundType: null;
+  reason: string;
+  fallbackFeedback: AppAudioNonAudioFeedback;
+  platforms: readonly AppAudioPlatform[];
+}
+
 const allPlatforms = APP_AUDIO_PLATFORMS;
+
+export function resolveAppAudioAssetSrc(publicPath: string, baseUrl = BASE_URL): string {
+  const normalizedPath = publicPath.replace(/^\/+/, "");
+  if (!baseUrl || baseUrl === "/") return "/" + normalizedPath;
+  if (baseUrl === "." || baseUrl === "./") return "/" + normalizedPath;
+  return (baseUrl.endsWith("/") ? baseUrl : baseUrl + "/") + normalizedPath;
+}
 
 function makeAsset(
   id: string,
   family: AppAudioFamily,
   publicPath: string,
   fallbackLabel: string,
+  comfortTexture: AppAudioComfortTexture,
   labelKey?: string,
 ): AppAudioAsset {
   return {
     id,
     family,
     publicPath,
-    src: BASE_URL + publicPath,
+    src: resolveAppAudioAssetSrc(publicPath),
     fallbackLabel,
     labelKey,
     startsOnUserGesture: true,
     respectsMasterVolume: true,
+    comfortTexture,
+    offlineStrategy: "runtime-cache",
     platforms: allPlatforms,
   };
 }
@@ -73,12 +99,16 @@ function makeActionEvent(
   fallbackLabel: string,
   soundType: AppAudioFeedbackSoundType,
   rationale: string,
+  allowedTrigger: AppAudioActionTrigger = "completion",
+  nonAudioFeedback: AppAudioNonAudioFeedback = "visual+haptic",
 ): AppAudioActionEvent {
   return {
     id,
     fallbackLabel,
     soundType,
     rationale,
+    allowedTrigger,
+    nonAudioFeedback,
     startsOnUserGesture: true,
     respectsMasterVolume: true,
     platforms: allPlatforms,
@@ -86,39 +116,88 @@ function makeActionEvent(
 }
 
 export const APP_AUDIO_ASSETS = [
-  makeAsset("measured-breath", "entry", "sounds/measured-breath.mp3", "Measured breath", "authMeasuredBreathLabel"),
-  makeAsset("orb-ambience", "orb", "sounds/polished-stone-and-paper.mp3", "Orb ambience", "orbAmbienceLabel"),
-  makeAsset("diary-reflection-loop", "diary", "sounds/v2-diary-reflection-loop.mp3", "Diary ambience", "diaryAmbienceLabel"),
-  makeAsset("focus-underwater", "focus", "sounds/mixkit-underwater-transmitter-hum-2135.mp3", "Underwater hum"),
-  makeAsset("focus-thunderstorm", "focus", "sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.mp3", "Jungle thunderstorm"),
-  makeAsset("focus-ocean", "focus", "sounds/mixkit-small-waves-harbor-rocks-1208.mp3", "Waves on rocks"),
-  makeAsset("focus-river", "focus", "sounds/mixkit-wildlife-environment-in-a-river-2456.mp3", "River wildlife"),
-  makeAsset("focus-forest", "focus", "sounds/hyperfocus/hyperfocus-forest-deep.mp3", "Forest birds ambience"),
-  makeAsset("focus-cafe", "focus", "sounds/cafe-noise-32940.mp3", "Cafe ambience"),
-  makeAsset("focus-fireplace", "focus", "sounds/fireplace-fx-56636.mp3", "Fireplace crackling"),
+  makeAsset("soft-air-veil", "entry", "sounds/soft-air-veil.mp3", "Soft air", "air", "authMeasuredBreathLabel"),
+  makeAsset("orb-ambience", "orb", "sounds/gentle-water-bed.mp3", "Gentle water", "water", "orbAmbienceLabel"),
+  makeAsset("diary-reflection-loop", "diary", "sounds/soft-rain-veil.mp3", "Soft rain", "rain", "diaryAmbienceLabel"),
+  makeAsset("focus-forest", "focus", "sounds/hyperfocus/hyperfocus-forest-deep.mp3", "Forest birds ambience", "forest"),
+  makeAsset("focus-rain", "focus", "sounds/hyperfocus/hyperfocus-rain-deep.mp3", "Rain ambience", "rain"),
+  makeAsset("focus-ocean", "focus", "sounds/hyperfocus/hyperfocus-ocean-deep.mp3", "Ocean ambience", "water"),
+  makeAsset("focus-fireplace", "focus", "sounds/hyperfocus/hyperfocus-fireplace-deep.mp3", "Fireplace ambience", "fire"),
+  makeAsset("focus-river", "focus", "sounds/hyperfocus/hyperfocus-river-deep.mp3", "River ambience", "river"),
+  makeAsset("focus-wind", "focus", "sounds/hyperfocus/hyperfocus-wind-deep.mp3", "Wind ambience", "wind"),
 ] as const satisfies readonly AppAudioAsset[];
 
 export type AppAudioAssetId = (typeof APP_AUDIO_ASSETS)[number]["id"];
 
+export const APP_AUDIO_NON_HYPERFOCUS_ASSET_IDS = [
+  "soft-air-veil",
+  "orb-ambience",
+  "diary-reflection-loop",
+] as const satisfies readonly AppAudioAssetId[];
+
 export const APP_AUDIO_FEEDBACK_EVENTS: readonly AppAudioFeedbackEvent[] = [
-  { id: "success", fallbackLabel: "Success chime", respectsMasterVolume: true, platforms: allPlatforms },
-  { id: "complete", fallbackLabel: "Completion chime", respectsMasterVolume: true, platforms: allPlatforms },
-  { id: "streak", fallbackLabel: "Streak milestone", respectsMasterVolume: true, platforms: allPlatforms },
-  { id: "levelUp", fallbackLabel: "Level up fanfare", respectsMasterVolume: true, platforms: allPlatforms },
-  { id: "notification", fallbackLabel: "Notification ping", respectsMasterVolume: true, platforms: allPlatforms },
+  { id: "success", fallbackLabel: "Soft confirmation", respectsMasterVolume: true, platforms: allPlatforms },
+  { id: "complete", fallbackLabel: "Soft completion", respectsMasterVolume: true, platforms: allPlatforms },
+  { id: "streak", fallbackLabel: "Soft streak cue", respectsMasterVolume: true, platforms: allPlatforms },
+  { id: "milestone", fallbackLabel: "Soft milestone cue", respectsMasterVolume: true, platforms: allPlatforms },
+  { id: "notification", fallbackLabel: "Soft reminder cue", respectsMasterVolume: true, platforms: allPlatforms },
 ];
 
 export const APP_AUDIO_ACTION_EVENTS: readonly AppAudioActionEvent[] = [
-  makeActionEvent("moodSaved", "Mood saved", "success", "A quiet confirmation after emotional check-in."),
+  makeActionEvent("moodSaved", "Mood saved", "success", "A quiet completion confirmation after emotional check-in."),
   makeActionEvent("habitCompleted", "Habit completed", "complete", "Primary completion cue for a finished habit."),
-  makeActionEvent("journalSaved", "Journal saved", "success", "Confirms a private entry was saved."),
-  makeActionEvent("focusCompleted", "Focus completed", "complete", "Marks the end of an intentional focus session."),
-  makeActionEvent("gratitudeSaved", "Gratitude saved", "success", "Acknowledges a gratitude entry without celebration overload."),
-  makeActionEvent("breathingCompleted", "Breathing completed", "success", "A soft finish cue for breathing practice."),
-  makeActionEvent("achievementUnlocked", "Achievement unlocked", "levelUp", "Reserved for rare unlocks."),
-  makeActionEvent("streakMilestone", "Streak milestone", "streak", "Reserved for meaningful streak thresholds."),
-  makeActionEvent("levelUp", "Level up", "levelUp", "Reserved for XP level transitions."),
-  makeActionEvent("notification", "Notification ping", "notification", "A short opt-in reminder preview."),
+  makeActionEvent("journalSaved", "Journal saved", "success", "Completion confirmation that a private entry was saved."),
+  makeActionEvent("focusCompleted", "Focus completed", "complete", "Completion cue for an intentional focus session."),
+  makeActionEvent("gratitudeSaved", "Gratitude saved", "success", "Completion cue for a gratitude entry without celebration overload."),
+  makeActionEvent("breathingCompleted", "Breathing completed", "success", "Soft completion cue for breathing practice."),
+  makeActionEvent("achievementUnlocked", "Achievement unlocked", "milestone", "Reserved for rare achievement milestones.", "milestone"),
+  makeActionEvent("streakMilestone", "Streak milestone", "streak", "Reserved for meaningful streak thresholds.", "milestone"),
+  makeActionEvent(
+    "majorProgressMilestone",
+    "Major progress milestone",
+    "milestone",
+    "Reserved for rare progress milestones and does not introduce current V2 XP behavior.",
+    "milestone",
+  ),
+  makeActionEvent("notification", "Soft reminder cue", "notification", "A short opt-in reminder preview.", "preview", "visual"),
+];
+
+export const APP_AUDIO_FORBIDDEN_ACTIONS: readonly AppAudioForbiddenAction[] = [
+  {
+    id: "routineTap",
+    soundType: null,
+    reason: "Routine presses should rely on visual and haptic response so the app stays calm during repeated use.",
+    fallbackFeedback: "visual+haptic",
+    platforms: allPlatforms,
+  },
+  {
+    id: "tabChange",
+    soundType: null,
+    reason: "Navigation changes are frequent and must not create repeated audio clutter.",
+    fallbackFeedback: "visual+haptic",
+    platforms: allPlatforms,
+  },
+  {
+    id: "pickerMovement",
+    soundType: null,
+    reason: "Slider and picker movement can fire many times per second, so sound remains silent.",
+    fallbackFeedback: "visual+haptic",
+    platforms: allPlatforms,
+  },
+  {
+    id: "drawerOpen",
+    soundType: null,
+    reason: "Opening panels and drawers should be readable through motion, state, and focus management.",
+    fallbackFeedback: "visual",
+    platforms: allPlatforms,
+  },
+  {
+    id: "validationError",
+    soundType: null,
+    reason: "Errors need visible, screen-reader-friendly messaging rather than startling audio.",
+    fallbackFeedback: "visual+haptic-disabled",
+    platforms: allPlatforms,
+  },
 ];
 
 export const APP_AUDIO_REWARD_SOUND_BY_ACTIVITY: Record<AppAudioRewardActivity, AppAudioFeedbackSoundType> = {

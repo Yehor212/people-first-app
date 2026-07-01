@@ -29,7 +29,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalSpaceEmpty: "This space is empty",
       journalSpaceLatestActivity: "Latest activity",
       open: "Open",
-      quoteJournal1: "Quote",
     },
   }),
 }));

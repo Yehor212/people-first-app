@@ -23,8 +23,9 @@
       },
       "routes": [
         {
-          "name": "home-v1-phone",
-          "path": "?navLayout=phone"
+          "name": "home-v2-phone",
+          "path": "?navLayout=phone",
+          "readySelector": "[data-testid=\"auth-screen\"], [data-testid=\"nav-v2-orchestrator\"]"
         },
         {
           "name": "orb-v2-phone",
@@ -76,8 +77,9 @@
       },
       "routes": [
         {
-          "name": "home-v1-desktop",
-          "path": ""
+          "name": "home-v2-desktop",
+          "path": "",
+          "readySelector": "[data-testid=\"auth-screen\"], [data-testid=\"nav-v2-orchestrator\"]"
         },
         {
           "name": "orb-v2-desktop",

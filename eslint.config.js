@@ -13,6 +13,7 @@ export default tseslint.config(
       "ios/App/build/**",
       "coverage",
       "output/**",
+      "tmp/**",
       "src-tauri/target/**",
       "scripts",
       "supabase/functions/**",

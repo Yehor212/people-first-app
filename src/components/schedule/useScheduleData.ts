@@ -40,10 +40,11 @@ export function useScheduleData(
   events: ScheduleEvent[],
   timelineRef: React.RefObject<HTMLDivElement | null>,
   daySelectorRef: React.RefObject<HTMLDivElement | null>,
+  initialSelectedDate = getToday(),
 ): UseScheduleDataReturn {
   const { t, language } = useLanguage();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(getToday());
+  const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
   const [tasks, setTasks] = useState<Task[]>([]);
   const isScrollingProgrammatically = useRef(false);
 
@@ -249,13 +250,13 @@ export function useScheduleData(
     }, 500);
   }, [timelineRef, getDateIndex]);
 
-  // Initial scroll to today
+  // Initial scroll to the requested Planning date. Defaults to today for schedule callers.
   useEffect(() => {
-    const today = getToday();
-    setSelectedDate(today);
-    scrollTimelineToDate(today, true);
-    scrollDaySelectorToDate(today);
-  }, [scrollTimelineToDate, scrollDaySelectorToDate]);
+    const initialDate = initialSelectedDate || getToday();
+    setSelectedDate(initialDate);
+    scrollTimelineToDate(initialDate, initialDate === getToday());
+    scrollDaySelectorToDate(initialDate);
+  }, [initialSelectedDate, scrollTimelineToDate, scrollDaySelectorToDate]);
 
   return {
     currentTime,

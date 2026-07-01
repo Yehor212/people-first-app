@@ -35,7 +35,7 @@ const SHORTCUT_GROUPS = [
   {
     category: "View",
     items: [
-      { keys: [`${mod}+S`], label: "Save entry" },
+      { keys: [`${mod}+Enter`], label: "Save entry" },
       { keys: ["?"], label: "Show shortcuts" },
     ],
   },

@@ -2,7 +2,7 @@ import { memo, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { CalendarDays, Clock3, Sparkles } from "lucide-react";
 import { GlobalScheduleBar } from "@/components/GlobalScheduleBar";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
-import { cn, getToday } from "@/lib/utils";
+import { cn, formatDate, getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUIStore, useUserDataStore } from "@/stores";
 import { generateHabitScheduleEvents, mergeScheduleEvents } from "@/lib/habitScheduleSync";
@@ -53,13 +53,48 @@ function isManualScheduleEvent(event: ScheduleEvent | undefined): event is Sched
   return manualSource && event.isEditable !== false;
 }
 
+export function getLatestCompletedFocusSession(
+  focusSessions: readonly FocusSession[],
+): FocusSession | null {
+  let latest: FocusSession | null = null;
+
+  for (const session of focusSessions) {
+    if (session.status === "aborted") continue;
+    if (!latest || session.completedAt > latest.completedAt) {
+      latest = session;
+    }
+  }
+
+  return latest;
+}
+
+function getTomorrowDate(): string {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  return formatDate(date);
+}
+
+function getInitialScheduleDate(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+
+  const value = new URLSearchParams(window.location.search).get("planningDate");
+  if (!value) return undefined;
+  if (value === "tomorrow") return getTomorrowDate();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  return undefined;
+}
+
 export const PlanningPage = memo(function PlanningPage({
   onCompleteFocusSession,
 }: PlanningPageProps) {
   const { t, isRTL } = useLanguage();
   const tx = t as unknown as Record<string, string>;
+  const pageRootRef = useRef<HTMLElement>(null);
   const scheduleSectionRef = useRef<HTMLElement>(null);
+  const focusSectionRef = useRef<HTMLElement>(null);
+  const reviewSectionRef = useRef<HTMLDivElement>(null);
   const [activeMode, setActiveMode] = useState<PlanningMode>("today");
+  const initialScheduleDate = useMemo(getInitialScheduleDate, []);
 
   const scheduleEvents = useUserDataStore((s) => s.scheduleEvents);
   const setScheduleEvents = useUserDataStore((s) => s.setScheduleEvents);
@@ -107,10 +142,7 @@ export const PlanningPage = memo(function PlanningPage({
   );
 
   const lastCompletedFocusSession = useMemo(
-    () =>
-      [...focusSessions]
-        .filter((session) => session.status !== "aborted")
-        .sort((a, b) => b.completedAt - a.completedAt)[0] ?? null,
+    () => getLatestCompletedFocusSession(focusSessions),
     [focusSessions],
   );
 
@@ -175,9 +207,28 @@ export const PlanningPage = memo(function PlanningPage({
     [onCompleteFocusSession],
   );
 
-  const scrollToTimeline = useCallback(() => {
-    scheduleSectionRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  const activatePlanningMode = useCallback((mode: PlanningMode) => {
+    setActiveMode(mode);
+
+    const target =
+      mode === "schedule"
+        ? scheduleSectionRef.current
+        : mode === "focus"
+          ? focusSectionRef.current
+          : mode === "review"
+            ? reviewSectionRef.current
+            : pageRootRef.current;
+
+    target?.scrollIntoView?.({
+      behavior: "smooth",
+      block: mode === "today" ? "start" : "center",
+    });
+    target?.focus?.({ preventScroll: true });
   }, []);
+
+  const scrollToTimeline = useCallback(() => {
+    activatePlanningMode("schedule");
+  }, [activatePlanningMode]);
 
   const fallbackLabel = t.navV2PlanningLoading;
 
@@ -185,6 +236,7 @@ export const PlanningPage = memo(function PlanningPage({
     <main
       id="main-content-v2"
       role="main"
+      ref={pageRootRef}
       tabIndex={-1}
       data-testid="planning-page"
       data-planning-theme="v1-dark"
@@ -236,23 +288,33 @@ export const PlanningPage = memo(function PlanningPage({
 
         <PlanningModeRail
           activeMode={activeMode}
-          onModeChange={setActiveMode}
+          onModeChange={activatePlanningMode}
           labels={planningModeLabels}
         />
 
         <PlanningActionPanel
           model={planningFeatureModel}
           labels={tx}
-          onModeChange={setActiveMode}
-          onScrollToTimeline={scrollToTimeline}
+          onActivateMode={activatePlanningMode}
         />
 
-        <PlanningReviewLane
-          focusMinutesToday={planningFeatureModel.focusMinutesToday}
-          lastFocusSession={lastCompletedFocusSession}
-          labels={tx}
-          onModeChange={setActiveMode}
-        />
+        <div
+          ref={reviewSectionRef}
+          tabIndex={-1}
+          data-testid="planning-review-section"
+          data-active-planning-mode={activeMode === "review" ? "true" : "false"}
+          className={cn(
+            "rounded-[1.35rem] outline-none motion-safe:transition-shadow",
+            activeMode === "review" && "ring-2 ring-primary/70 ring-offset-2 ring-offset-background",
+          )}
+        >
+          <PlanningReviewLane
+            focusMinutesToday={planningFeatureModel.focusMinutesToday}
+            lastFocusSession={lastCompletedFocusSession}
+            labels={tx}
+            onModeChange={activatePlanningMode}
+          />
+        </div>
 
         <div
           data-testid="planning-v1-dark-scope"
@@ -261,8 +323,14 @@ export const PlanningPage = memo(function PlanningPage({
         >
           <section
             ref={scheduleSectionRef}
+            tabIndex={-1}
+            data-testid="planning-schedule-section"
+            data-active-planning-mode={activeMode === "schedule" ? "true" : "false"}
             aria-label={t.navV2Planning}
-            className="min-w-0"
+            className={cn(
+              "min-w-0 rounded-[1.75rem] outline-none motion-safe:transition-shadow",
+              activeMode === "schedule" && "ring-2 ring-primary/70 ring-offset-2 ring-offset-background",
+            )}
           >
             <div className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold text-foreground">
               <CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />
@@ -271,13 +339,24 @@ export const PlanningPage = memo(function PlanningPage({
             <Suspense fallback={<PlanningPageFallback label={fallbackLabel} />}>
               <ScheduleTimeline
                 events={allScheduleEvents}
+                initialSelectedDate={initialScheduleDate}
                 onAddEvent={handleAddScheduleEvent}
                 onDeleteEvent={handleDeleteScheduleEvent}
               />
             </Suspense>
           </section>
 
-          <section aria-label={t.focus} className="min-w-0">
+          <section
+            ref={focusSectionRef}
+            tabIndex={-1}
+            data-testid="planning-focus-section"
+            data-active-planning-mode={activeMode === "focus" ? "true" : "false"}
+            aria-label={t.focus}
+            className={cn(
+              "min-w-0 rounded-[1.75rem] outline-none motion-safe:transition-shadow",
+              activeMode === "focus" && "ring-2 ring-primary/70 ring-offset-2 ring-offset-background",
+            )}
+          >
             <Suspense fallback={<PlanningPageFallback label={fallbackLabel} />}>
               <FocusTimer
                 sessions={focusSessions}

@@ -20,7 +20,20 @@ const invokerMigration = readMigration(
 const foreignKeyIndexMigration = readMigration(
   "supabase/migrations/20260618022951_index_advisor_foreign_keys.sql",
 );
-const combinedMigrations = [baseMigration, explicitRoleMigration, invokerMigration, foreignKeyIndexMigration].join("\n");
+const ragBaselineMigration = readMigration(
+  "supabase/migrations/20260623043546_rag_project_documents.sql",
+);
+const ragHardeningMigration = readMigration(
+  "supabase/migrations/20260630000100_harden_project_rag_rpc.sql",
+);
+const combinedMigrations = [
+  baseMigration,
+  explicitRoleMigration,
+  invokerMigration,
+  foreignKeyIndexMigration,
+  ragBaselineMigration,
+  ragHardeningMigration,
+].join("\n");
 
 const triggerOnlyFunctions = [
   "assign_sync_seq()",
@@ -145,5 +158,44 @@ describe("Supabase hardening migrations", () => {
 
     expect(foreignKeyIndexMigration).toContain("NOTIFY pgrst, 'reload schema';");
     expect(foreignKeyIndexMigration).not.toMatch(/DROP\s+INDEX|DROP\s+TABLE|ALTER\s+TABLE|DELETE\s+FROM|TRUNCATE/i);
+  });
+
+  it("recreates the live project RAG baseline before hardening it", () => {
+    expect(ragBaselineMigration).toContain("Live migration history: 20260623043546 / rag_project_documents");
+    expect(ragBaselineMigration).toContain("CREATE TABLE IF NOT EXISTS public.rag_chunks");
+    expect(ragBaselineMigration).toContain("embedding extensions.vector(768) NOT NULL");
+    expect(ragBaselineMigration).toContain("ALTER TABLE public.rag_chunks ENABLE ROW LEVEL SECURITY;");
+    expect(ragBaselineMigration).toContain("REVOKE ALL ON TABLE public.rag_chunks FROM PUBLIC, anon, authenticated;");
+    expect(ragBaselineMigration).toContain("GRANT ALL ON TABLE public.rag_chunks TO service_role;");
+    expect(ragBaselineMigration).toContain("CREATE UNIQUE INDEX IF NOT EXISTS rag_chunks_source_chunk_index_key");
+    expect(ragBaselineMigration).toContain("CREATE INDEX IF NOT EXISTS idx_rag_chunks_embedding_hnsw");
+    expect(ragBaselineMigration).toContain("CREATE OR REPLACE FUNCTION public.match_rag_chunks");
+    expect(ragBaselineMigration).toContain("STABLE SECURITY DEFINER");
+    expect(ragBaselineMigration).toContain("IF auth.uid() IS NULL THEN");
+    expect(ragBaselineMigration).toContain("GRANT EXECUTE ON FUNCTION public.match_rag_chunks(extensions.vector, double precision, integer) TO authenticated, service_role;");
+    expect(ragBaselineMigration).not.toMatch(/DROP\s+TABLE|TRUNCATE|DELETE\s+FROM|DISABLE\s+ROW\s+LEVEL\s+SECURITY/i);
+  });
+
+  it("hardens project RAG docs against client table access and SECURITY DEFINER RPC exposure", () => {
+    expect(ragHardeningMigration).toContain("Live Supabase drift evidence");
+    expect(ragHardeningMigration).toContain("ALTER TABLE public.rag_chunks ENABLE ROW LEVEL SECURITY;");
+    expect(ragHardeningMigration).toContain("REVOKE ALL ON TABLE public.rag_chunks FROM PUBLIC, anon, authenticated;");
+    expect(ragHardeningMigration).toContain('DROP POLICY IF EXISTS "rag_chunks_no_client_access" ON public.rag_chunks;');
+    expect(ragHardeningMigration).toContain('CREATE POLICY "rag_chunks_no_client_access"');
+    expect(ragHardeningMigration).toContain("FOR ALL");
+    expect(ragHardeningMigration).toContain("TO anon, authenticated");
+    expect(ragHardeningMigration).toContain("USING (false)");
+    expect(ragHardeningMigration).toContain("WITH CHECK (false)");
+    expect(ragHardeningMigration).toContain("CREATE OR REPLACE FUNCTION public.match_rag_chunks");
+    expect(ragHardeningMigration).toContain("STABLE SECURITY INVOKER");
+    expect(ragHardeningMigration).not.toContain("SECURITY DEFINER");
+    expect(ragHardeningMigration).not.toContain("auth.uid() IS NULL");
+    expect(ragHardeningMigration).toContain(
+      "REVOKE ALL ON FUNCTION public.match_rag_chunks(extensions.vector, double precision, integer) FROM PUBLIC, anon, authenticated;",
+    );
+    expect(ragHardeningMigration).toContain(
+      "GRANT EXECUTE ON FUNCTION public.match_rag_chunks(extensions.vector, double precision, integer) TO service_role;",
+    );
+    expect(ragHardeningMigration).not.toMatch(/DROP\s+TABLE|TRUNCATE|DELETE\s+FROM|DISABLE\s+ROW\s+LEVEL\s+SECURITY/i);
   });
 });

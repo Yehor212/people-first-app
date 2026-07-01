@@ -12,18 +12,9 @@ function normalizeBaseUrl(value: string): string {
   return value.endsWith("/") ? value : `${value}/`;
 }
 
-function inferClassicBaseUrl(baseUrl: string): string {
-  const normalized = normalizeBaseUrl(baseUrl);
-  return normalized.endsWith("/v2/") ? normalized.slice(0, -3) : normalized;
-}
 
 export const BASE_URL = normalizeBaseUrl(import.meta.env.BASE_URL || "/");
-export const FORCE_NAV_V2 = import.meta.env.VITE_FORCE_NAV_V2 === "true";
 export const IS_DESKTOP_RUNTIME = import.meta.env.VITE_DESKTOP_RUNTIME === "true";
-export const CLASSIC_BASE_URL = normalizeBaseUrl(
-  (import.meta.env.VITE_CLASSIC_BASE_URL as string | undefined) || inferClassicBaseUrl(BASE_URL)
-);
-
 // Supabase
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 export const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as

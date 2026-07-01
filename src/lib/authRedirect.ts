@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { BASE_URL } from "@/lib/env";
 
 const NATIVE_REDIRECT_URL = "com.zenflow.app://login-callback";
-const V2_ROUTE_PATHS = new Set(["/orb", "/habits", "/diary", "/settings"]);
+const V2_ROUTE_PATHS = new Set(["/orb", "/habits", "/diary", "/planning", "/settings"]);
 const ALLOWED_WEB_ORIGINS = [
   "https://yehor212.github.io",
   "capacitor://localhost",

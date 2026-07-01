@@ -21,132 +21,90 @@
   },
   "families": [
     {
-      "id": "fireplace",
-      "currentFile": "public/sounds/fireplace-fx-56636.mp3",
-      "productRole": "warm steady focus, evening writing, calming background texture",
+      "id": "forest",
+      "currentFile": "public/sounds/hyperfocus/hyperfocus-forest-deep.mp3",
+      "productRole": "nature-first forest ambience, organic masking, non-social focus bed",
       "levels": [
         {
           "id": "soft",
-          "label": "Embers",
-          "fileName": "hyperfocus-fireplace-soft.mp3",
-          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: tiny fireplace embers, soft close crackle, warm room air, very calm, low intensity, no melody, no beat, no vocals, no alarms, no dramatic flame surge, no harsh pops.",
+          "label": "Canopy Breeze",
+          "fileName": "hyperfocus-forest-soft.mp3",
+          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: soft wind moving through a forest canopy, natural air texture, sparse leaves, gentle masking, no speech, no melody, no beat, no alarms, no harsh wind spike, no foreground distraction.",
           "rejectIf": [
-            "sirens",
-            "emergency fire",
-            "loud pops",
-            "music beat",
-            "vocals"
+            "clear words",
+            "music",
+            "alarm",
+            "harsh wind spike"
           ]
         },
         {
           "id": "deep",
-          "label": "Hearth",
-          "fileName": "hyperfocus-fireplace-deep.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: steady hearth fire in a quiet room, medium crackle density, warm wooden resonance, stable dynamics for deep focus, no melody, no rhythm, no vocals, no emergency fire cues.",
+          "label": "Bird Canopy",
+          "fileName": "hyperfocus-forest-deep.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: balanced forest canopy bed with natural bird texture and soft air movement, medium density for deep focus, no speech, no voices, no melody, no beat, no sudden close foreground calls, no alarm cues.",
           "rejectIf": [
-            "camp crowd",
-            "sharp transient cluster",
-            "song structure",
-            "sirens"
+            "human speech",
+            "song",
+            "sharp foreground bird call",
+            "fatigue after looped listening"
           ]
         },
         {
           "id": "intense",
-          "label": "Bonfire",
-          "fileName": "hyperfocus-fireplace-intense.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: controlled bonfire intensity, broad warm crackle, low windless roar, energetic but safe, useful for masking noise during focus, no panic, no sirens, no burning building, no vocals, no music.",
+          "label": "Forest Night",
+          "fileName": "hyperfocus-forest-intense.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: denser night forest texture with continuous natural masking, insects and distant canopy movement kept even and focus-safe, no speech, no voices, no melody, no beat, no alarms, no foreground scare cue.",
           "rejectIf": [
-            "disaster fire",
+            "clear words",
             "alarm",
-            "screaming",
-            "danger cues",
-            "melody"
+            "song",
+            "scary foreground cue"
           ]
         }
       ]
     },
     {
-      "id": "underwater",
-      "currentFile": "public/sounds/mixkit-underwater-transmitter-hum-2135.mp3",
-      "productRole": "deep masking hum, low distraction, sensory cocoon",
+      "id": "rain",
+      "currentFile": "public/sounds/hyperfocus/hyperfocus-rain-deep.mp3",
+      "productRole": "steady rain masking, weather cocoon, high noise coverage without thunder shocks",
       "levels": [
         {
           "id": "soft",
-          "label": "Shallow Drift",
-          "fileName": "hyperfocus-underwater-soft.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: gentle underwater muffled room, soft bubbles far away, low pressure hum, calm shallow drift, no sonar ping, no melody, no vocals, no scary deep sea tension.",
+          "label": "Light Rain",
+          "fileName": "hyperfocus-rain-soft.mp3",
+          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: light rain on leaves and distant pavement, airy droplets, calm low intensity, no thunder. Level: soft. Keep it steady and loop-safe, no melody, no beat, no rhythm, no vocals, no voices, no alarms, no harsh transient, no foreground distraction.",
           "rejectIf": [
-            "sonar ping",
-            "horror tension",
-            "whale song",
-            "music"
+            "music, melody, beat, rhythm, song, vocals, voices, or speech",
+            "foreground alarm, siren, danger cue, panic cue, harsh transient, click, pop, crack, crash, or clatter",
+            "foreground thunder crack",
+            "lightning shock",
+            "storm alarm"
           ]
         },
         {
           "id": "deep",
-          "label": "Deep Current",
-          "fileName": "hyperfocus-underwater-deep.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: deep underwater current, smooth low-mid hum, occasional soft bubble movement, stable pressure texture for concentration, no alerts, no voices, no rhythm.",
+          "label": "Rain Bed",
+          "fileName": "hyperfocus-rain-deep.mp3",
+          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: steady long rain bed with rounded water texture, medium masking, no thunder cracks. Level: deep. Keep it steady and loop-safe, no melody, no beat, no rhythm, no vocals, no voices, no alarms, no harsh transient, no foreground distraction.",
           "rejectIf": [
-            "beeping",
-            "submarine alarm",
-            "voice",
-            "melody"
+            "music, melody, beat, rhythm, song, vocals, voices, or speech",
+            "foreground alarm, siren, danger cue, panic cue, harsh transient, click, pop, crack, crash, or clatter",
+            "foreground thunder crack",
+            "lightning shock",
+            "storm alarm"
           ]
         },
         {
           "id": "intense",
-          "label": "Abyss Focus",
-          "fileName": "hyperfocus-underwater-intense.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: strong underwater pressure and flowing current, dense masking texture, still calm enough for focus, no horror, no monster, no sonar alarm, no vocals, no beat.",
+          "label": "Heavy Rain",
+          "fileName": "hyperfocus-rain-intense.mp3",
+          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: dense heavy rain wall, continuous water texture, strong masking, no lightning shocks. Level: intense. Keep it steady and loop-safe, no melody, no beat, no rhythm, no vocals, no voices, no alarms, no harsh transient, no foreground distraction.",
           "rejectIf": [
-            "horror",
-            "creature",
-            "alarm",
-            "song structure"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "thunderstorm",
-      "currentFile": "public/sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.mp3",
-      "productRole": "rain masking, weather cocoon, high noise coverage",
-      "levels": [
-        {
-          "id": "soft",
-          "label": "Distant Rain",
-          "fileName": "hyperfocus-thunderstorm-soft.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: gentle distant rain with very far soft thunder, calm indoor-safe feeling, stable background, no sudden cracks, no melody, no vocals, no storm alarm.",
-          "rejectIf": [
-            "loud thunder crack",
-            "panic",
-            "siren",
-            "music"
-          ]
-        },
-        {
-          "id": "deep",
-          "label": "Steady Storm",
-          "fileName": "hyperfocus-thunderstorm-deep.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: steady rain and rolling thunder at medium intensity, smooth masking texture for focus, no lightning shock, no birds dominating, no melody, no vocals.",
-          "rejectIf": [
-            "sharp lightning",
-            "animal foreground",
-            "beat",
-            "voice"
-          ]
-        },
-        {
-          "id": "intense",
-          "label": "Monsoon Wall",
-          "fileName": "hyperfocus-thunderstorm-intense.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: dense monsoon rain wall with controlled rolling thunder, strong noise masking, no dangerous storm sirens, no abrupt thunder spike, no vocals, no rhythm.",
-          "rejectIf": [
-            "sirens",
-            "destruction",
-            "jumpscare thunder",
-            "music"
+            "music, melody, beat, rhythm, song, vocals, voices, or speech",
+            "foreground alarm, siren, danger cue, panic cue, harsh transient, click, pop, crack, crash, or clatter",
+            "foreground thunder crack",
+            "lightning shock",
+            "storm alarm"
           ]
         }
       ]
@@ -195,6 +153,51 @@
       ]
     },
     {
+      "id": "fireplace",
+      "currentFile": "public/sounds/fireplace-fx-56636.mp3",
+      "productRole": "warm crackle and room masking without campfire drama",
+      "levels": [
+        {
+          "id": "soft",
+          "label": "Embers",
+          "fileName": "hyperfocus-fireplace-soft.mp3",
+          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: tiny fireplace embers, soft close crackle, warm room air, very calm, low intensity, no melody, no beat, no vocals, no alarms, no dramatic flame surge, no harsh pops.",
+          "rejectIf": [
+            "sirens",
+            "emergency fire",
+            "loud pops",
+            "music beat",
+            "vocals"
+          ]
+        },
+        {
+          "id": "deep",
+          "label": "Hearth",
+          "fileName": "hyperfocus-fireplace-deep.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: steady hearth fire in a quiet room, medium crackle density, warm wooden resonance, stable dynamics for deep focus, no melody, no rhythm, no vocals, no emergency fire cues.",
+          "rejectIf": [
+            "camp crowd",
+            "sharp transient cluster",
+            "song structure",
+            "sirens"
+          ]
+        },
+        {
+          "id": "intense",
+          "label": "Bonfire",
+          "fileName": "hyperfocus-fireplace-intense.mp3",
+          "prompt": "30-second seamless non-musical ambience loop: controlled bonfire intensity, broad warm crackle, low windless roar, energetic but safe, useful for masking noise during focus, no panic, no sirens, no burning building, no vocals, no music.",
+          "rejectIf": [
+            "disaster fire",
+            "alarm",
+            "screaming",
+            "danger cues",
+            "melody"
+          ]
+        }
+      ]
+    },
+    {
       "id": "river",
       "currentFile": "public/sounds/mixkit-wildlife-environment-in-a-river-2456.mp3",
       "productRole": "organic flow, forest calm, medium-high masking",
@@ -238,44 +241,47 @@
       ]
     },
     {
-      "id": "forest",
-      "currentFile": "public/sounds/hyperfocus/hyperfocus-forest-deep.mp3",
-      "productRole": "nature-first forest ambience, organic masking, non-social focus bed",
+      "id": "wind",
+      "currentFile": "public/sounds/hyperfocus/hyperfocus-wind-deep.mp3",
+      "productRole": "smooth air masking and spacious movement without storm peaks",
       "levels": [
         {
           "id": "soft",
-          "label": "Canopy Breeze",
-          "fileName": "hyperfocus-forest-soft.mp3",
-          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: soft wind moving through a forest canopy, natural air texture, sparse leaves, gentle masking, no speech, no melody, no beat, no alarms, no harsh wind spike, no foreground distraction.",
+          "label": "Soft Wind",
+          "fileName": "hyperfocus-wind-soft.mp3",
+          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: soft wind through open trees, gentle air movement, low intensity, no storm howl. Level: soft. Keep it steady and loop-safe, no melody, no beat, no rhythm, no vocals, no voices, no alarms, no harsh transient, no foreground distraction.",
           "rejectIf": [
-            "clear words",
-            "music",
-            "alarm",
-            "harsh wind spike"
+            "music, melody, beat, rhythm, song, vocals, voices, or speech",
+            "foreground alarm, siren, danger cue, panic cue, harsh transient, click, pop, crack, crash, or clatter",
+            "harsh wind spike",
+            "storm howl",
+            "scary gust foreground"
           ]
         },
         {
           "id": "deep",
-          "label": "Bird Canopy",
-          "fileName": "hyperfocus-forest-deep.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: balanced forest canopy bed with natural bird texture and soft air movement, medium density for deep focus, no speech, no voices, no melody, no beat, no sudden close foreground calls, no alarm cues.",
+          "label": "Wind Bed",
+          "fileName": "hyperfocus-wind-deep.mp3",
+          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: steady wind ambience with rounded gusts and smooth air body, medium masking, no whistling spike. Level: deep. Keep it steady and loop-safe, no melody, no beat, no rhythm, no vocals, no voices, no alarms, no harsh transient, no foreground distraction.",
           "rejectIf": [
-            "human speech",
-            "song",
-            "sharp foreground bird call",
-            "fatigue after looped listening"
+            "music, melody, beat, rhythm, song, vocals, voices, or speech",
+            "foreground alarm, siren, danger cue, panic cue, harsh transient, click, pop, crack, crash, or clatter",
+            "harsh wind spike",
+            "storm howl",
+            "scary gust foreground"
           ]
         },
         {
           "id": "intense",
-          "label": "Forest Night",
-          "fileName": "hyperfocus-forest-intense.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: denser night forest texture with continuous natural masking, insects and distant canopy movement kept even and focus-safe, no speech, no voices, no melody, no beat, no alarms, no foreground scare cue.",
+          "label": "Mountain Wind",
+          "fileName": "hyperfocus-wind-intense.mp3",
+          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: mountain wind across open terrain, fuller gust bed, strong but smooth masking, no dangerous storm cue. Level: intense. Keep it steady and loop-safe, no melody, no beat, no rhythm, no vocals, no voices, no alarms, no harsh transient, no foreground distraction.",
           "rejectIf": [
-            "clear words",
-            "alarm",
-            "song",
-            "scary foreground cue"
+            "music, melody, beat, rhythm, song, vocals, voices, or speech",
+            "foreground alarm, siren, danger cue, panic cue, harsh transient, click, pop, crack, crash, or clatter",
+            "harsh wind spike",
+            "storm howl",
+            "scary gust foreground"
           ]
         }
       ]

@@ -14,7 +14,7 @@
  *   - Edit habit
  *   - Open details (read-only stats)
  *
- * Delete is NOT included here — V1 swipe-reveal owns destructive Delete with
+ * Delete is NOT included here — the swipe-reveal row owns destructive Delete with
  * its 2-tap confirmation (CompactHabitCard.tsx:173-200). Two paths would
  * violate Hick's law; one safe path (swipe) is enough.
  *

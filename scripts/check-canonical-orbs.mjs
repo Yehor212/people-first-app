@@ -87,18 +87,6 @@ const REQUIRED_SURFACES = [
     required: ["ValenceOrb", 'renderer="webgpu"'],
   },
   {
-    file: "src/components/tabs/HomeTab.tsx",
-    required: ["MiniValenceOrb"],
-  },
-  {
-    file: "src/components/tabs/PreviewPortal.tsx",
-    required: ["MiniValenceOrb", 'data-testid="v1-v2-portal-orb-core"'],
-  },
-  {
-    file: "src/components/navigation-v2/ClassicPortalLink.tsx",
-    required: ["MiniValenceOrb", "classic-portal"],
-  },
-  {
     file: "src/components/navigation-v2/SidebarV2.tsx",
     required: ["MiniValenceOrb"],
   },
@@ -126,22 +114,7 @@ const REQUIRED_SURFACES = [
   },
 ];
 
-const ORB_SLOT_RULES = [
-  {
-    file: "src/components/tabs/PreviewPortal.tsx",
-    anchor: 'data-testid="v1-v2-portal-orb-core"',
-    end: "</motion.span>",
-    required: ["<MiniValenceOrb"],
-    forbidden: ["<Sparkles", "<svg", "OrbLottie", "HeartPulse"],
-  },
-  {
-    file: "src/components/navigation-v2/ClassicPortalLink.tsx",
-    anchor: 'data-testid={`${testId}-orb`}',
-    end: "</span>",
-    required: ["<MiniValenceOrb"],
-    forbidden: ["<Sparkles", "<svg", "OrbLottie"],
-  },
-];
+const ORB_SLOT_RULES = [];
 
 const BANNED_NON_TEST_SNIPPETS = [
   {

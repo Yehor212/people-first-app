@@ -73,7 +73,7 @@ export const STARTER_TEMPLATES: readonly StarterTemplate[] = [
   },
 ];
 
-/** Pure: materialize a V1 {@link HabitTemplate} into a full Habit with a fresh id.
+/** Pure: materialize a {@link HabitTemplate} into a full Habit with a fresh id.
  *
  * Resolves the localized name via `language`, falling back to English.
  * The id carries the template id as a suffix so dedupe ("already added")
