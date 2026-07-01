@@ -323,7 +323,7 @@ describe("ValenceOrb motion profile", () => {
     ).toBe(false);
   });
 
-  it("defers full canonical WebGL startup past first paint while staggering mini upgrades", () => {
+  it("starts full canonical WebGL immediately while staggering mini upgrades", () => {
     const fullOrb = resolveCanonicalWebGLUpgradeScheduling(true, 240, 1000, 1000);
     const firstMini = resolveCanonicalWebGLUpgradeScheduling(true, 120, 1000, 1000);
     const secondMini = resolveCanonicalWebGLUpgradeScheduling(
@@ -335,8 +335,8 @@ describe("ValenceOrb motion profile", () => {
     const autoOrb = resolveCanonicalWebGLUpgradeScheduling(false, 120, 1000, 1000);
 
     expect(fullOrb).toMatchObject({
-      delayMs: 240,
-      preferIdle: true,
+      delayMs: 0,
+      preferIdle: false,
       nextMiniUpgradeStartAt: 1000,
     });
     expect(firstMini).toMatchObject({

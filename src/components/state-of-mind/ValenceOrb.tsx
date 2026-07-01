@@ -103,7 +103,6 @@ export const WEBGL_VISIBILITY_RETRY_INTERVAL_MS = 250;
 const FORCED_WEBGL_WORKER_STARTUP_TIMEOUT_MS = 30000;
 export const WEBGL_VISIBLE_UPGRADE_DEADLINE_MS = 1200;
 const WEBGL_UPGRADE_DELAY_MS = 180;
-const FORCED_WEBGL_UPGRADE_DELAY_MS = 240;
 const MINI_WEBGL_UPGRADE_DELAY_MS = 900;
 const MINI_WEBGL_UPGRADE_QUEUE_GAP_MS = 6000;
 const ORB_IDLE_WAKE_SOFT_EPSILON = 0.01;
@@ -484,8 +483,8 @@ export function resolveCanonicalWebGLUpgradeScheduling(
 
   if (size > MINI_ORB_CANONICAL_SIZE) {
     return {
-      delayMs: FORCED_WEBGL_UPGRADE_DELAY_MS,
-      preferIdle: true,
+      delayMs: 0,
+      preferIdle: false,
       nextMiniUpgradeStartAt,
     };
   }
