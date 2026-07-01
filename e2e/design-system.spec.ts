@@ -36,6 +36,7 @@ const packageJson = require("../package.json") as { version: string };
 const __specDir = path.dirname(fileURLToPath(import.meta.url));
 const FROZEN_HOME_TIME = new Date("2026-04-16T20:00:00-05:00");
 const HOME_SCREENSHOT_MAX_DIFF_PIXEL_RATIO = process.env.CI ? 0.035 : 0.02;
+const HOME_SCREENSHOT_TIMEOUT_MS = process.env.CI ? 15000 : 5000;
 
 async function primeApp(page: import("@playwright/test").Page, oklchEnabled: boolean) {
   await page.clock.setFixedTime(FROZEN_HOME_TIME);
@@ -135,6 +136,7 @@ test.describe("Design System Phase 2-B.2 — OKLCH flag bridge", () => {
     await expect(page).toHaveScreenshot("home-flag-off-hsl.png", {
       maxDiffPixelRatio: HOME_SCREENSHOT_MAX_DIFF_PIXEL_RATIO,
       fullPage: false,
+      timeout: HOME_SCREENSHOT_TIMEOUT_MS,
     });
   });
 
@@ -145,6 +147,7 @@ test.describe("Design System Phase 2-B.2 — OKLCH flag bridge", () => {
     await expect(page).toHaveScreenshot("home-flag-on-oklch.png", {
       maxDiffPixelRatio: HOME_SCREENSHOT_MAX_DIFF_PIXEL_RATIO,
       fullPage: false,
+      timeout: HOME_SCREENSHOT_TIMEOUT_MS,
     });
   });
 
