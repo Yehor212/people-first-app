@@ -11,6 +11,7 @@ import { offlineQueue } from "@/lib/offlineQueue";
 import { stopAutoSync } from "@/storage/cloudSync";
 import { clearLocalUserData } from "@/storage/db";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
+import { useAppStore, useUserDataStore } from "@/stores";
 import {
   buildOAuthCredentials,
   getEnabledAccountAuthProviders,
@@ -36,6 +37,8 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
   const [signingInProvider, setSigningInProvider] = useState<SocialAuthProviderId | null>(null);
   const [linkingProvider, setLinkingProvider] = useState<SocialAuthProviderId | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const resetAuthState = useAppStore((s) => s.resetAuthState);
+  const setAuthGateChecked = useUserDataStore((s) => s.setAuthGateChecked);
   const nativeOAuthTimeoutRef = useRef<number | null>(null);
   const enabledProviders = useMemo(() => getEnabledAccountAuthProviders(), []);
 
@@ -220,6 +223,8 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
       triggerDataRefresh();
       await removePushToken();
       await supabase.auth.signOut();
+      resetAuthState();
+      setAuthGateChecked(false);
       authStateManager.reset();
       resetAuthGuard();
       onNameChange("Friend");

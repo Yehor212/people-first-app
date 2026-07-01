@@ -66,6 +66,24 @@ const capacitorAppMock = vi.hoisted(() => ({
   }),
 }));
 
+const accountAuthMock = vi.hoisted(() => ({
+  authStatus: null,
+  setAuthStatus: vi.fn(),
+  sessionUserId: "user-1",
+  sessionAccountLabel: "avery@example.com",
+  sessionDisplayName: "Avery",
+  linkedProviderIds: [],
+  enabledProviders: [],
+  hasSession: true,
+  signingInProvider: null,
+  linkingProvider: null,
+  isSigningIn: false,
+  isSigningOut: false,
+  handleProvider: vi.fn(),
+  handleLinkProvider: vi.fn(),
+  handleSignOut: vi.fn(),
+}));
+
 const audioManagerMock = vi.hoisted(() => {
   const state = { muted: false, volume: 0.3 };
   const getAudioSettings = vi.fn(() => ({
@@ -417,23 +435,7 @@ vi.mock("@/lib/supabaseClient", () => ({
 }));
 
 vi.mock("@/components/settings/account-section/useAccountAuth", () => ({
-  useAccountAuth: () => ({
-    authStatus: null,
-    setAuthStatus: vi.fn(),
-    sessionUserId: "user-1",
-    sessionAccountLabel: "avery@example.com",
-    sessionDisplayName: "Avery",
-    linkedProviderIds: [],
-    enabledProviders: [],
-    hasSession: true,
-    signingInProvider: null,
-    linkingProvider: null,
-    isSigningIn: false,
-    isSigningOut: false,
-    handleProvider: vi.fn(),
-    handleLinkProvider: vi.fn(),
-    handleSignOut: vi.fn(),
-  }),
+  useAccountAuth: () => accountAuthMock,
 }));
 
 vi.mock("@/components/settings/account-section/useAccountSync", () => ({
@@ -654,6 +656,9 @@ describe("SettingsPage", () => {
     audioManagerMock.playNotification.mockClear();
     audioManagerMock.getAudioSettings.mockClear();
     audioManagerMock.subscribeAudioSettings.mockClear();
+    accountAuthMock.handleSignOut.mockClear();
+    accountAuthMock.handleProvider.mockClear();
+    accountAuthMock.handleLinkProvider.mockClear();
     delete document.documentElement.dataset.theme;
     document.documentElement.classList.remove("oled", "dark");
     localStorage.clear();
@@ -804,6 +809,21 @@ describe("SettingsPage", () => {
     } finally {
       restore();
     }
+  });
+
+  it("wires the V2 account sign-out button to the shared auth logout flow", () => {
+    render(
+      <SettingsPage
+        controls={{
+          ...createSettingsControls(),
+          initialOpenSection: "account",
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+
+    expect(accountAuthMock.handleSignOut).toHaveBeenCalledTimes(1);
   });
 
   it("keeps automatic sync status inside the active account module without a manual sync button", () => {

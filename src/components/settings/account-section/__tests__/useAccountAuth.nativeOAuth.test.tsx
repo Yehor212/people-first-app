@@ -1,4 +1,4 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,9 +13,12 @@ const { mocks } = vi.hoisted(() => ({
     removePushToken: vi.fn(),
     stopAutoSync: vi.fn(),
     clearLocalUserData: vi.fn(),
+    clearDeviceIdCache: vi.fn(),
     triggerDataRefresh: vi.fn(),
     processQueue: vi.fn(),
     hasPendingActions: vi.fn(),
+    resetAuthState: vi.fn(),
+    setAuthGateChecked: vi.fn(),
   },
 }));
 
@@ -76,6 +79,18 @@ vi.mock("@/hooks/useIndexedDB", () => ({
   triggerDataRefresh: mocks.triggerDataRefresh,
 }));
 
+vi.mock("@/storage/eventSync", () => ({
+  clearDeviceIdCache: mocks.clearDeviceIdCache,
+}));
+
+vi.mock("@/stores", () => ({
+  useAppStore: (selector: (state: { resetAuthState: () => void }) => unknown) =>
+    selector({ resetAuthState: mocks.resetAuthState }),
+  useUserDataStore: (
+    selector: (state: { setAuthGateChecked: (value: boolean) => void }) => unknown
+  ) => selector({ setAuthGateChecked: mocks.setAuthGateChecked }),
+}));
+
 vi.mock("@/lib/logger", () => ({
   logger: {
     log: vi.fn(),
@@ -119,8 +134,8 @@ function createSession(): Session {
   };
 }
 
-function renderAccountAuth() {
-  return renderHook(() => useAccountAuth({ onNameChange: vi.fn(), t }));
+function renderAccountAuth(onNameChange = vi.fn()) {
+  return renderHook(() => useAccountAuth({ onNameChange, t }));
 }
 
 describe("useAccountAuth native OAuth", () => {
@@ -141,6 +156,10 @@ describe("useAccountAuth native OAuth", () => {
     });
     mocks.openOAuthUrl.mockResolvedValue(undefined);
     mocks.hasPendingActions.mockReturnValue(false);
+    mocks.signOut.mockResolvedValue({ error: null });
+    mocks.removePushToken.mockResolvedValue(undefined);
+    mocks.clearLocalUserData.mockResolvedValue(undefined);
+    mocks.processQueue.mockResolvedValue(undefined);
   });
 
   it("clears Telegram linking when Supabase restores the session after native OAuth", async () => {
@@ -218,5 +237,34 @@ describe("useAccountAuth native OAuth", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("resets the protected V2 auth gate after sign-out completes", async () => {
+    const onNameChange = vi.fn();
+    mocks.getSession.mockResolvedValue({ data: { session: createSession() } });
+
+    const { result } = renderAccountAuth(onNameChange);
+
+    await waitFor(() => expect(result.current.hasSession).toBe(true));
+
+    await act(async () => {
+      await result.current.handleSignOut();
+    });
+
+    expect(mocks.stopAutoSync).toHaveBeenCalledTimes(1);
+    expect(mocks.clearDeviceIdCache).toHaveBeenCalledTimes(1);
+    expect(mocks.clearLocalUserData).toHaveBeenCalledTimes(1);
+    expect(mocks.triggerDataRefresh).toHaveBeenCalledTimes(1);
+    expect(mocks.removePushToken).toHaveBeenCalledTimes(1);
+    expect(mocks.signOut).toHaveBeenCalledTimes(1);
+    expect(mocks.resetAuthState).toHaveBeenCalledTimes(1);
+    expect(mocks.setAuthGateChecked).toHaveBeenCalledWith(false);
+    expect(onNameChange).toHaveBeenCalledWith("Friend");
+    expect(mocks.resetAuthState.mock.invocationCallOrder[0]).toBeGreaterThan(
+      mocks.signOut.mock.invocationCallOrder[0]
+    );
+    expect(mocks.setAuthGateChecked.mock.invocationCallOrder[0]).toBeGreaterThan(
+      mocks.signOut.mock.invocationCallOrder[0]
+    );
   });
 });
