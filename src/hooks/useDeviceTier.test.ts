@@ -3,6 +3,10 @@ import { renderHook } from "@testing-library/react";
 import { useDeviceTier } from "./useDeviceTier";
 
 const mockMatchMedia = (width: number) => {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    value: width,
+  });
   window.matchMedia = vi.fn((query: string) => {
     const min = query.match(/min-width:\s*(\d+)px/);
     return {

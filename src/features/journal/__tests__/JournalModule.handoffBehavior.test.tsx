@@ -6,6 +6,8 @@ import type { JournalEntryPrefill, JournalEntrySuggestion } from "../types";
 
 const storageMocks = vi.hoisted(() => ({
   getAllEntries: vi.fn(),
+  getEntriesPage: vi.fn(),
+  getEntriesByDate: vi.fn(),
   saveEntry: vi.fn(),
   getEntryCount: vi.fn(),
   updateEntry: vi.fn(),
@@ -49,6 +51,13 @@ const securityMocks = vi.hoisted(() => ({
 
 const mediaQueryMocks = vi.hoisted(() => ({
   matches: false,
+}));
+
+const hapticsMocks = vi.hoisted(() => ({
+  hapticSuccess: vi.fn(),
+  hapticTap: vi.fn(),
+  journalSaved: vi.fn(),
+  light: vi.fn(),
 }));
 
 const safeJsonStore = vi.hoisted(() => ({
@@ -146,11 +155,11 @@ vi.mock("@/lib/animationUtils", () => ({
 
 vi.mock("@/lib/haptics", () => ({
   haptics: {
-    journalSaved: vi.fn(),
-    light: vi.fn(),
+    journalSaved: hapticsMocks.journalSaved,
+    light: hapticsMocks.light,
   },
-  hapticSuccess: vi.fn(),
-  hapticTap: vi.fn(),
+  hapticSuccess: hapticsMocks.hapticSuccess,
+  hapticTap: hapticsMocks.hapticTap,
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -222,6 +231,8 @@ vi.mock("../journalStorage", () => ({
   deletePhoto: storageMocks.deletePhoto,
   getAllEntries: storageMocks.getAllEntries,
   getAudioForEntry: storageMocks.getAudioForEntry,
+  getEntriesByDate: storageMocks.getEntriesByDate,
+  getEntriesPage: storageMocks.getEntriesPage,
   getEntryCount: storageMocks.getEntryCount,
   getPhotosForEntry: storageMocks.getPhotosForEntry,
   saveEntry: storageMocks.saveEntry,
@@ -264,8 +275,36 @@ vi.mock("../JournalEntryEditor", () => ({
   ),
 }));
 
+vi.mock("../JournalEntryList", () => ({
+  JournalEntryList: ({
+    groupedEntries,
+    onDeleteEntry,
+  }: {
+    groupedEntries: Array<{ entries: Array<{ id: string; title?: string; content?: string }> }>;
+    onDeleteEntry: (id: string) => void;
+  }) => (
+    <section data-testid="journal-entry-list">
+      {groupedEntries.flatMap((group) =>
+        group.entries.map((entry) => (
+          <article key={entry.id}>
+            <h3>{entry.title}</h3>
+            <p>{entry.content}</p>
+            <button type="button" onClick={() => onDeleteEntry(entry.id)}>
+              Delete {entry.title}
+            </button>
+          </article>
+        )),
+      )}
+    </section>
+  ),
+}));
+
 vi.mock("../DiaryMiniOrb", () => ({
   DiaryMiniOrb: () => <span data-testid="diary-mini-orb" />,
+}));
+
+vi.mock("../DiaryEmptyCanvas", () => ({
+  DiaryEmptyCanvas: () => <div data-testid="diary-empty-canvas" />,
 }));
 
 vi.mock("../StreakFreeze", () => ({
@@ -357,9 +396,25 @@ vi.mock("framer-motion", () => ({
       const { children, ...rest } = omitMotionProps(props);
       return <div {...rest}>{children}</div>;
     },
+    figure: (props: MotionMockProps<HTMLElement>) => {
+      const { children, ...rest } = omitMotionProps(props);
+      return <figure {...rest}>{children}</figure>;
+    },
+    h2: (props: MotionMockProps<HTMLHeadingElement>) => {
+      const { children, ...rest } = omitMotionProps(props);
+      return <h2 {...rest}>{children}</h2>;
+    },
+    p: (props: MotionMockProps<HTMLParagraphElement>) => {
+      const { children, ...rest } = omitMotionProps(props);
+      return <p {...rest}>{children}</p>;
+    },
     section: (props: MotionMockProps<HTMLElement>) => {
       const { children, ...rest } = omitMotionProps(props);
       return <section {...rest}>{children}</section>;
+    },
+    span: (props: MotionMockProps<HTMLSpanElement>) => {
+      const { children, ...rest } = omitMotionProps(props);
+      return <span {...rest}>{children}</span>;
     },
   },
   useReducedMotion: () => false,
@@ -404,7 +459,15 @@ describe("JournalModule orb handoff behavior", () => {
     });
     supabaseMocks.signInWithOtp.mockResolvedValue({ error: null });
     storageMocks.getAllEntries.mockResolvedValue([]);
+    storageMocks.getEntriesPage.mockResolvedValue({
+      entries: [],
+      totalCount: 0,
+      hasMore: false,
+      nextCursor: null,
+    });
+    storageMocks.getEntriesByDate.mockResolvedValue([]);
     storageMocks.getEntryCount.mockResolvedValue(0);
+    storageMocks.deleteEntry.mockResolvedValue(undefined);
     storageMocks.saveEntry.mockResolvedValue({
       id: "entry-1",
       date: "2026-06-12",
@@ -419,6 +482,7 @@ describe("JournalModule orb handoff behavior", () => {
   });
 
   it("renders the orb suggestion without saving, then opens the editor with prefill on user action", async () => {
+    mediaQueryMocks.matches = true;
     const onConsumed = vi.fn();
 
     render(
@@ -580,7 +644,178 @@ describe("JournalModule orb handoff behavior", () => {
     expect(await screen.findByText(/diary password removed/i)).toBeInTheDocument();
   });
 
+  it("restores a soft-deleted entry when the committed delete fails", async () => {
+    mediaQueryMocks.matches = true;
+    const retainedEntry = {
+      id: "entry-retained",
+      date: "2026-06-12",
+      title: "Retained entry",
+      content: "Keep this line visible if storage cannot delete it.",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 1_781_321_000_000,
+      updatedAt: 1_781_321_000_000,
+    };
+
+    storageMocks.getEntriesPage.mockResolvedValue({
+      entries: [retainedEntry],
+      totalCount: 1,
+      hasMore: false,
+      nextCursor: null,
+    });
+    storageMocks.deleteEntry.mockRejectedValueOnce(new Error("offline delete failed"));
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+      />,
+    );
+
+    expect(await screen.findByText("Retained entry")).toBeInTheDocument();
+
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole("button", { name: /delete retained entry/i }));
+      expect(screen.queryByText("Retained entry")).not.toBeInTheDocument();
+
+      await act(async () => {
+        vi.advanceTimersByTime(5000);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(screen.getByText("Retained entry")).toBeInTheDocument();
+      expect(
+        screen.getByText("Couldn't delete this entry. It has been restored."),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("removes undo once the delete commit starts", async () => {
+    mediaQueryMocks.matches = true;
+    const retainedEntry = {
+      id: "entry-commit-started",
+      date: "2026-06-12",
+      title: "Commit started",
+      content: "Undo must not remain available once storage delete starts.",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 1_781_321_000_000,
+      updatedAt: 1_781_321_000_000,
+    };
+
+    storageMocks.getEntriesPage.mockResolvedValue({
+      entries: [retainedEntry],
+      totalCount: 1,
+      hasMore: false,
+      nextCursor: null,
+    });
+    storageMocks.deleteEntry.mockReturnValueOnce(new Promise(() => undefined));
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+      />,
+    );
+
+    expect(await screen.findByText("Commit started")).toBeInTheDocument();
+
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole("button", { name: /delete commit started/i }));
+      expect(screen.getByRole("button", { name: /undo/i })).toBeInTheDocument();
+
+      await act(async () => {
+        vi.advanceTimersByTime(5000);
+        await Promise.resolve();
+      });
+
+      expect(storageMocks.deleteEntry).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("button", { name: /undo/i })).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not recover failed delete state after the component unmounts", async () => {
+    mediaQueryMocks.matches = true;
+    const retainedEntry = {
+      id: "entry-unmounted-delete",
+      date: "2026-06-12",
+      title: "Unmounted delete",
+      content: "This delete commit resolves after unmount.",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 1_781_321_000_000,
+      updatedAt: 1_781_321_000_000,
+    };
+    let rejectDelete: (error: Error) => void = () => undefined;
+
+    storageMocks.getEntriesPage.mockResolvedValue({
+      entries: [retainedEntry],
+      totalCount: 1,
+      hasMore: false,
+      nextCursor: null,
+    });
+    storageMocks.deleteEntry.mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        rejectDelete = reject;
+      }),
+    );
+
+    const { unmount } = render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+      />,
+    );
+
+    expect(await screen.findByText("Unmounted delete")).toBeInTheDocument();
+
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole("button", { name: /delete unmounted delete/i }));
+
+      await act(async () => {
+        vi.advanceTimersByTime(5000);
+        await Promise.resolve();
+      });
+      expect(storageMocks.deleteEntry).toHaveBeenCalledTimes(1);
+
+      hapticsMocks.light.mockClear();
+      unmount();
+
+      await act(async () => {
+        rejectDelete(new Error("late delete failure"));
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(storageMocks.deleteEntry).toHaveBeenCalledTimes(1);
+      expect(hapticsMocks.light).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("clears an unconsumed orb suggestion when the parent clears the handoff", async () => {
+    mediaQueryMocks.matches = true;
     const onConsumed = vi.fn();
 
     const { rerender } = render(

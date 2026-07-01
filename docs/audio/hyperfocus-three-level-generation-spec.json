@@ -111,7 +111,7 @@
     },
     {
       "id": "ocean",
-      "currentFile": "public/sounds/mixkit-small-waves-harbor-rocks-1208.mp3",
+      "currentFile": "public/sounds/hyperfocus/hyperfocus-ocean-deep.mp3",
       "productRole": "wide breathing rhythm, calm movement, visualizable space",
       "levels": [
         {
@@ -154,7 +154,7 @@
     },
     {
       "id": "fireplace",
-      "currentFile": "public/sounds/fireplace-fx-56636.mp3",
+      "currentFile": "public/sounds/hyperfocus/hyperfocus-fireplace-deep.mp3",
       "productRole": "warm crackle and room masking without campfire drama",
       "levels": [
         {
@@ -199,7 +199,7 @@
     },
     {
       "id": "river",
-      "currentFile": "public/sounds/mixkit-wildlife-environment-in-a-river-2456.mp3",
+      "currentFile": "public/sounds/hyperfocus/hyperfocus-river-deep.mp3",
       "productRole": "organic flow, forest calm, medium-high masking",
       "levels": [
         {

@@ -57,6 +57,7 @@ export function useJournal() {
   const [view, setView] = useState<JournalView>('list');
   const idleLoadRef = useRef<IdleHandle | null>(null);
   const loadGenerationRef = useRef(0);
+  const mutationGenerationRef = useRef(0);
   const requestedDateLoadsRef = useRef(new Set<string>());
   const loadedDateLoadsRef = useRef(new Set<string>());
   const softDeletedEntryIdsRef = useRef(new Set<string>());
@@ -67,8 +68,20 @@ export function useJournal() {
     idleLoadRef.current = null;
   }, []);
 
+  const invalidateInFlightLoads = useCallback(() => {
+    loadGenerationRef.current += 1;
+    mutationGenerationRef.current += 1;
+    requestedDateLoadsRef.current.clear();
+    cancelRemainingLoad();
+    setHistoryLoading(false);
+  }, [cancelRemainingLoad]);
+
   const scheduleRemainingLoad = useCallback(
-    (cursor: JournalEntryPageCursor | null, generation = loadGenerationRef.current) => {
+    (
+      cursor: JournalEntryPageCursor | null,
+      generation = loadGenerationRef.current,
+      mutationGeneration = mutationGenerationRef.current,
+    ) => {
       if (cursor === null) {
         setHistoryLoading(false);
         return;
@@ -80,7 +93,7 @@ export function useJournal() {
         void storage
           .getEntriesPage({ limit: JOURNAL_BACKGROUND_ENTRY_LIMIT, before: cursor })
           .then((page) => {
-            if (loadGenerationRef.current !== generation) return;
+            if (loadGenerationRef.current !== generation || mutationGenerationRef.current !== mutationGeneration) return;
             startTransition(() => {
               setEntries((prev) => mergeJournalEntries(prev, page.entries, softDeletedEntryIdsRef.current));
               setTotalCount((prev) => Math.max(
@@ -90,13 +103,13 @@ export function useJournal() {
               setHistoryLoadError(false);
             });
             if (page.hasMore && page.nextCursor !== null) {
-              scheduleRemainingLoad(page.nextCursor, generation);
+              scheduleRemainingLoad(page.nextCursor, generation, mutationGeneration);
             } else {
               setHistoryLoading(false);
             }
           })
           .catch((error) => {
-            if (loadGenerationRef.current !== generation) return;
+            if (loadGenerationRef.current !== generation || mutationGenerationRef.current !== mutationGeneration) return;
             logger.warn('[Journal] Failed to load older entries', error);
             setHistoryLoadError(true);
             setHistoryLoading(false);
@@ -128,7 +141,7 @@ export function useJournal() {
         setLoading(false);
       });
       if (page.hasMore && page.nextCursor !== null) {
-        scheduleRemainingLoad(page.nextCursor, generation);
+        scheduleRemainingLoad(page.nextCursor, generation, mutationGenerationRef.current);
       }
     } catch (error) {
       logger.warn('[Journal] Failed to load entries', error);
@@ -161,9 +174,10 @@ export function useJournal() {
 
     requestedDateLoads.add(selectedDate);
     let cancelled = false;
+    const mutationGeneration = mutationGenerationRef.current;
     void storage.getEntriesByDate(selectedDate).then((dateEntries) => {
       requestedDateLoads.delete(selectedDate);
-      if (cancelled) return;
+      if (cancelled || mutationGenerationRef.current !== mutationGeneration) return;
       loadedDateLoads.add(selectedDate);
       startTransition(() => {
         setEntries((prev) => mergeJournalEntries(prev, dateEntries, softDeletedEntryIdsRef.current));
@@ -171,7 +185,7 @@ export function useJournal() {
       });
     }).catch((error) => {
       requestedDateLoads.delete(selectedDate);
-      if (cancelled) return;
+      if (cancelled || mutationGenerationRef.current !== mutationGeneration) return;
       loadedDateLoads.delete(selectedDate);
       logger.warn('[Journal] Failed to load selected date entries', error);
       setDateLoadError(true);
@@ -247,15 +261,20 @@ export function useJournal() {
   }, []);
 
   const deleteEntry = useCallback(async (id: string) => {
-    await storage.deleteEntry(id);
-    softDeletedEntryIdsRef.current.delete(id);
+    softDeletedEntryIdsRef.current.add(id);
+    try {
+      await storage.deleteEntry(id);
+      invalidateInFlightLoads();
+    } finally {
+      softDeletedEntryIdsRef.current.delete(id);
+    }
     setEntries(prev => prev.filter(e => e.id !== id));
     setTotalCount(prev => Math.max(0, prev - 1));
     if (activeEntryId === id) {
       setActiveEntryId(null);
       setView('list');
     }
-  }, [activeEntryId]);
+  }, [activeEntryId, invalidateInFlightLoads]);
 
   // Soft delete: remove from UI state only, return entry for undo
   const softDeleteEntry = useCallback((id: string): JournalEntry | null => {
@@ -273,9 +292,15 @@ export function useJournal() {
 
   // Commit: actually delete from storage (called after undo timeout)
   const commitDeleteEntry = useCallback(async (id: string) => {
-    await storage.deleteEntry(id);
+    try {
+      await storage.deleteEntry(id);
+    } catch (error) {
+      softDeletedEntryIdsRef.current.delete(id);
+      throw error;
+    }
+    invalidateInFlightLoads();
     softDeletedEntryIdsRef.current.delete(id);
-  }, []);
+  }, [invalidateInFlightLoads]);
 
   // Restore: add entry back to UI state (on undo)
   const restoreEntry = useCallback((entry: JournalEntry) => {

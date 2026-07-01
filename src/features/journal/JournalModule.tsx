@@ -856,23 +856,32 @@ export const JournalModule = memo(function JournalModule({
   );
 
   // Undo delete state (soft-delete → 5s timer → commit)
-  const [pendingDelete, setPendingDelete] = useState<{
+  type PendingDelete = {
     id: string;
     entry: (typeof journal.entries)[0];
-  } | null>(null);
+  };
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
+  const [deleteCommitMessage, setDeleteCommitMessage] = useState<string | null>(null);
   const deleteTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const deleteFeedbackTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const isMountedRef = useRef(true);
   const pendingDeleteRef = useRef(pendingDelete);
   useEffect(() => {
     pendingDeleteRef.current = pendingDelete;
   }, [pendingDelete]);
   useEffect(
-    () => () => {
-      clearTimeout(deleteTimerRef.current);
-      if (pendingDeleteRef.current) {
-        journal
-          .commitDeleteEntry(pendingDeleteRef.current.id)
-          .catch((err) => logger.warn("[Journal]", "Cleanup commitDelete failed:", err));
-      }
+    () => {
+      isMountedRef.current = true;
+      return () => {
+        isMountedRef.current = false;
+        clearTimeout(deleteTimerRef.current);
+        clearTimeout(deleteFeedbackTimerRef.current);
+        if (pendingDeleteRef.current) {
+          journal
+            .commitDeleteEntry(pendingDeleteRef.current.id)
+            .catch((err) => logger.warn("[Journal]", "Cleanup commitDelete failed:", err));
+        }
+      };
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount-only: journal ref is stable, intentionally excluded to avoid re-running cleanup
     []
@@ -1273,36 +1282,70 @@ export const JournalModule = memo(function JournalModule({
     [activeEntryPrefill, journal, rewardsEnabled, streak, hasTodayEntry, rewardUser]
   );
 
+  const recoverFailedDelete = useCallback(
+    (failedDelete: PendingDelete, err: unknown) => {
+      logger.warn("[Journal]", "commitDelete failed:", err);
+      if (!isMountedRef.current) return;
+      journal.restoreEntry(failedDelete.entry);
+      setPendingDelete((current) => (current?.id === failedDelete.id ? null : current));
+      setDeleteCommitMessage(
+        ts.entryDeleteFailedRestored || "Couldn't delete this entry. It has been restored."
+      );
+      clearTimeout(deleteFeedbackTimerRef.current);
+      deleteFeedbackTimerRef.current = setTimeout(() => setDeleteCommitMessage(null), 5000);
+      void haptics.light();
+    },
+    [journal, ts.entryDeleteFailedRestored]
+  );
+
   const handleDeleteEntry = useCallback(
     (id: string) => {
       // Commit any previous pending delete first
       if (pendingDelete) {
+        const previousPendingDelete = pendingDelete;
         clearTimeout(deleteTimerRef.current);
+        pendingDeleteRef.current = null;
         journal
-          .commitDeleteEntry(pendingDelete.id)
-          .catch((err) => logger.warn("[Journal]", "commitDelete failed:", err));
+          .commitDeleteEntry(previousPendingDelete.id)
+          .then(() => {
+            if (!isMountedRef.current) return;
+            setPendingDelete((current) =>
+              current?.id === previousPendingDelete.id ? null : current
+            );
+          })
+          .catch((err) => recoverFailedDelete(previousPendingDelete, err));
       }
       // Soft-delete: remove from UI, keep in storage for 5s
       const entry = journal.softDeleteEntry(id);
       if (!entry) return;
+      clearTimeout(deleteFeedbackTimerRef.current);
+      setDeleteCommitMessage(null);
       setPendingDelete({ id, entry });
       // Haptic confirmation when slide-out starts (shouldTriggerHaptics check is inside hapticSuccess)
       void hapticSuccess();
+      const deleteToCommit = { id, entry };
       deleteTimerRef.current = setTimeout(() => {
+        pendingDeleteRef.current = null;
+        setPendingDelete((current) => (current?.id === id ? null : current));
         journal
           .commitDeleteEntry(id)
-          .catch((err) => logger.warn("[Journal]", "commitDelete failed:", err));
-        setPendingDelete(null);
+          .then(() => {
+            if (!isMountedRef.current) return;
+            setPendingDelete((current) => (current?.id === id ? null : current));
+          })
+          .catch((err) => recoverFailedDelete(deleteToCommit, err));
       }, 5000);
     },
-    [journal, pendingDelete]
+    [journal, pendingDelete, recoverFailedDelete]
   );
 
   const handleUndoDelete = useCallback(() => {
     if (!pendingDelete) return;
     clearTimeout(deleteTimerRef.current);
+    clearTimeout(deleteFeedbackTimerRef.current);
     journal.restoreEntry(pendingDelete.entry);
     setPendingDelete(null);
+    setDeleteCommitMessage(null);
     void haptics.light();
   }, [pendingDelete, journal]);
 
@@ -3074,21 +3117,29 @@ export const JournalModule = memo(function JournalModule({
 
       {/* Undo delete snackbar */}
       <AnimatePresence>
-        {pendingDelete && (
+        {(pendingDelete || deleteCommitMessage) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             className="fixed bottom-20 inset-x-4 z-[55] flex justify-center pointer-events-none"
           >
-            <div className="bg-foreground text-background rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg max-w-sm w-full pointer-events-auto">
-              <span className="text-sm flex-1">{ts.entryDeleted || "Entry deleted"}</span>
-              <button
-                onClick={handleUndoDelete}
-                className="text-sm font-semibold text-primary min-w-[44px] min-h-[44px] flex items-center justify-center"
-              >
-                {ts.undo || "Undo"}
-              </button>
+            <div
+              role="status"
+              aria-live="polite"
+              className="bg-foreground text-background rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg max-w-sm w-full pointer-events-auto"
+            >
+              <span className="text-sm flex-1">
+                {pendingDelete ? ts.entryDeleted || "Entry deleted" : deleteCommitMessage}
+              </span>
+              {pendingDelete && (
+                <button
+                  onClick={handleUndoDelete}
+                  className="text-sm font-semibold text-primary min-w-[44px] min-h-[44px] flex items-center justify-center"
+                >
+                  {ts.undo || "Undo"}
+                </button>
+              )}
             </div>
           </motion.div>
         )}

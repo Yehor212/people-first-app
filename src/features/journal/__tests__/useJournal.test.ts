@@ -26,6 +26,7 @@ vi.mock("../journalStorage", () => ({
   getAllEntries: vi.fn(),
   getEntriesByDate: vi.fn(),
   saveEntry: vi.fn(),
+  deleteEntry: vi.fn(),
 }));
 
 function makeEntry(overrides: Partial<JournalEntry> = {}): JournalEntry {
@@ -292,4 +293,82 @@ describe("useJournal", () => {
     await waitFor(() => expect(result.current.allEntries.map((entry) => entry.id)).toEqual([pendingEntry.id]));
     expect(result.current.totalCount).toBe(1);
   });
+
+  it("does not resurrect a committed delete from a stale background backfill", async () => {
+    const deletedEntry = makeEntry({ id: "committed-delete", date: "2026-06-12", createdAt: 2000 });
+    let resolveBackgroundPage: (page: Awaited<ReturnType<typeof storage.getEntriesPage>>) => void = () => undefined;
+    vi.mocked(storage.getEntriesPage)
+      .mockResolvedValueOnce({
+        entries: [deletedEntry],
+        totalCount: 1,
+        hasMore: true,
+        nextCursor: { createdAt: deletedEntry.createdAt, id: deletedEntry.id },
+      })
+      .mockReturnValueOnce(new Promise((resolve) => { resolveBackgroundPage = resolve; }));
+    vi.mocked(storage.deleteEntry).mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useJournal());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      scheduleIdleMock.callbacks.shift()?.();
+      await Promise.resolve();
+    });
+
+    act(() => {
+      expect(result.current.softDeleteEntry(deletedEntry.id)?.id).toBe(deletedEntry.id);
+    });
+    await act(async () => {
+      await result.current.commitDeleteEntry(deletedEntry.id);
+    });
+
+    await act(async () => {
+      resolveBackgroundPage({
+        entries: [deletedEntry],
+        totalCount: 1,
+        hasMore: false,
+        nextCursor: null,
+      });
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(result.current.allEntries).toEqual([]));
+    expect(result.current.entries).toEqual([]);
+    expect(result.current.totalCount).toBe(0);
+  });
+
+
+  it("clears the hidden delete marker when committed storage delete fails", async () => {
+    const retainedEntry = makeEntry({ id: "delete-failed", date: "2026-06-12", createdAt: 2000 });
+    vi.mocked(storage.getEntriesPage)
+      .mockResolvedValueOnce({
+        entries: [retainedEntry],
+        totalCount: 1,
+        hasMore: false,
+        nextCursor: null,
+      })
+      .mockResolvedValueOnce({
+        entries: [retainedEntry],
+        totalCount: 1,
+        hasMore: false,
+        nextCursor: null,
+      });
+    vi.mocked(storage.deleteEntry).mockRejectedValueOnce(new Error("delete failed"));
+
+    const { result } = renderHook(() => useJournal());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => {
+      expect(result.current.softDeleteEntry(retainedEntry.id)?.id).toBe(retainedEntry.id);
+    });
+    await expect(result.current.commitDeleteEntry(retainedEntry.id)).rejects.toThrow("delete failed");
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    await waitFor(() => expect(result.current.allEntries.map((entry) => entry.id)).toEqual([retainedEntry.id]));
+    expect(result.current.totalCount).toBe(1);
+  });
+
 });

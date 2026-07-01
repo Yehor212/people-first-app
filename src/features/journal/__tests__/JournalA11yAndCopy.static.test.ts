@@ -44,9 +44,36 @@ const requiredJournalKeys = [
   "journalFormatCode",
   "journalFormatLink",
   "journalReflectionQuoteLabel",
-  "journalReflectionQuote1",
-  "journalReflectionQuote2",
-  "journalReflectionQuote3",
+  "quoteJournal1",
+  "quoteJournal2",
+  "quoteJournal3",
+  "quoteJournal4",
+  "quoteJournal5",
+  "quoteJournal6",
+  "quoteJournal7",
+  "quoteJournal8",
+  "quoteJournal9",
+  "quoteJournal10",
+  "quoteJournal11",
+  "quoteJournal12",
+  "quoteJournal13",
+  "quoteJournal14",
+  "quoteJournal15",
+  "quoteJournal16",
+  "quoteJournal17",
+  "quoteJournal18",
+  "quoteJournal19",
+  "quoteJournal20",
+  "quoteJournal21",
+  "quoteJournal22",
+  "quoteJournal23",
+  "quoteJournal24",
+  "quoteJournal25",
+  "quoteJournal26",
+  "quoteJournal27",
+  "quoteJournal28",
+  "quoteJournal29",
+  "quoteJournal30",
 ];
 
 describe("Journal accessibility, copy, and wallpaper static contracts", () => {
@@ -124,7 +151,8 @@ describe("Journal accessibility, copy, and wallpaper static contracts", () => {
 
   it("keeps the restored quote ritual unaffiliated, localized, and pressure-free", () => {
     expect(source.emptyCanvas).toContain("JOURNAL_EMPTY_QUOTES");
-    expect(source.emptyCanvas).toContain("journalReflectionQuote1");
+    expect(source.emptyCanvas).toContain("quoteJournal1");
+    expect(source.emptyCanvas).toContain("quoteJournal30");
     expect(source.emptyCanvas).toContain('data-testid="diary-reflection-quote"');
     expect(source.emptyCanvas).toContain("journalReflectionQuoteLabel");
     expect(source.emptyCanvas).toContain("focus-visible:ring-2");
@@ -168,12 +196,15 @@ describe("Journal accessibility, copy, and wallpaper static contracts", () => {
     expect(source.saveIndicator).toContain('aria-live={state === "error" ? "assertive" : "polite"}');
   });
 
-  it("keeps copy neutral and removes stale quote keys from the active locale contract", () => {
+  it("keeps copy neutral while restoring the full legacy quoteJournal contract", () => {
     expect(source.entryList).not.toContain("Your thoughts are worth preserving");
     expect(source.module).toContain("journalWriteFirstEntry");
-    expect(source.types).not.toContain("quoteJournal1");
-    expect(localeFiles[0].source).not.toContain("quoteJournal1");
-    expect(localeFiles[0].source).not.toContain("carry it alone");
+    expect(source.types).toContain("quoteJournal1: string;");
+    expect(source.types).toContain("quoteJournal30: string;");
+    for (const locale of localeFiles) {
+      expect(locale.source, "quoteJournal1 missing from " + locale.language).toContain("quoteJournal1:");
+      expect(locale.source, "quoteJournal30 missing from " + locale.language).toContain("quoteJournal30:");
+    }
   });
 
 });

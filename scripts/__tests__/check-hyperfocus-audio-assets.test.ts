@@ -211,9 +211,9 @@ describe("check-hyperfocus-audio-assets", () => {
       expect.objectContaining({
         assetId: "focus-fireplace",
         familyId: "fireplace",
-        publicPath: "sounds/fireplace-fx-56636.mp3",
-        sourcePath: "public/sounds/fireplace-fx-56636.mp3",
-        specCurrentFile: "public/sounds/fireplace-fx-56636.mp3",
+        publicPath: "sounds/hyperfocus/hyperfocus-fireplace-deep.mp3",
+        sourcePath: "public/sounds/hyperfocus/hyperfocus-fireplace-deep.mp3",
+        specCurrentFile: "public/sounds/hyperfocus/hyperfocus-fireplace-deep.mp3",
         levelIds: ["soft", "deep", "intense"],
         status: "covered",
       }),
@@ -559,7 +559,8 @@ describe("check-hyperfocus-audio-assets", () => {
       join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"),
     );
     const sourceBytes = Buffer.from("legacy-fireplace-source-audio-bytes");
-    writeFileSync(join(rootDir, "public/sounds/fireplace-fx-56636.mp3"), sourceBytes);
+    mkdirSync(join(rootDir, "public/sounds/hyperfocus"), { recursive: true });
+    writeFileSync(join(rootDir, "public/sounds/hyperfocus/hyperfocus-fireplace-deep.mp3"), sourceBytes);
     const candidateFile = join(rootDir, "candidate.mp3");
     writeFileSync(candidateFile, sourceBytes);
 
