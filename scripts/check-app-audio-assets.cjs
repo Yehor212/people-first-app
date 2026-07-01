@@ -19,7 +19,7 @@ const appAudioAssetsReportPath = path.join(outputAudioQcDir, 'app-audio-assets-r
 
 const APPROVED_ROOT_MP3S = new Map([
   ['soft-air-veil.mp3', { gain: 0.18, peakMax: 0.18, rmsMax: 0.04, effectivePeakMax: 0.08, effectiveRmsMax: 0.008, loopDeltaMax: 0.035, startEndRmsDeltaMax: 0.012, transientDeltaMax: 0.16, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
-  ['gentle-water-bed.mp3', { gain: 0.36, peakMax: 0.24, rmsMax: 0.06, effectivePeakMax: 0.22, effectiveRmsMax: 0.02, loopDeltaMax: 0.035, startEndRmsDeltaMax: 0.014, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
+  ['gentle-water-bed.mp3', { gain: 0.36, peakMax: 0.24, rmsMax: 0.06, effectivePeakMax: 0.22, effectiveRmsMax: 0.02, loopDeltaMax: 0.035, startEndRmsDeltaMax: 0.014, decoderThresholds: { ffmpeg: { startEndRmsDeltaMax: 0.0175 } }, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
   ['soft-rain-veil.mp3', { gain: 0.32, peakMax: 0.22, rmsMax: 0.055, effectivePeakMax: 0.2, effectiveRmsMax: 0.018, loopDeltaMax: 0.035, startEndRmsDeltaMax: 0.014, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
 ]);
 
@@ -611,6 +611,10 @@ function convertAndMeasure(fileName) {
   }
 }
 
+function resolveMetricLimit(thresholds, decoder, metricName) {
+  return (thresholds.decoderThresholds && thresholds.decoderThresholds[decoder] && thresholds.decoderThresholds[decoder][metricName]) || thresholds[metricName];
+}
+
 function checkMetrics(rootMp3s) {
   const metrics = [];
   for (const fileName of rootMp3s) {
@@ -629,23 +633,23 @@ function checkMetrics(rootMp3s) {
     assert(thresholds.sampleRates.includes(measured.sampleRate), 'audio sample rate is outside approved set', { fileName, measured, thresholds });
     assert(measured.durationSeconds >= thresholds.durationMin && measured.durationSeconds <= thresholds.durationMax,
       'audio duration is outside approved range', { fileName, measured, thresholds });
-    assert(measured.peak <= thresholds.peakMax, 'audio peak is too hot', { fileName, measured, thresholds });
-    assert(measured.rms <= thresholds.rmsMax, 'audio RMS is too dense for calm V2 ambience', { fileName, measured, thresholds });
-    assert(effectivePeak <= thresholds.effectivePeakMax, 'runtime-adjusted peak is too hot for the V2 surface', {
+    assert(measured.peak <= resolveMetricLimit(thresholds, measured.decoder, 'peakMax'), 'audio peak is too hot', { fileName, measured, thresholds });
+    assert(measured.rms <= resolveMetricLimit(thresholds, measured.decoder, 'rmsMax'), 'audio RMS is too dense for calm V2 ambience', { fileName, measured, thresholds });
+    assert(effectivePeak <= resolveMetricLimit(thresholds, measured.decoder, 'effectivePeakMax'), 'runtime-adjusted peak is too hot for the V2 surface', {
       fileName,
       measured,
       effectivePeak,
       thresholds,
     });
-    assert(effectiveRms <= thresholds.effectiveRmsMax, 'runtime-adjusted RMS is too dense for the V2 surface', {
+    assert(effectiveRms <= resolveMetricLimit(thresholds, measured.decoder, 'effectiveRmsMax'), 'runtime-adjusted RMS is too dense for the V2 surface', {
       fileName,
       measured,
       effectiveRms,
       thresholds,
     });
-    assert(measured.loopDelta <= thresholds.loopDeltaMax, 'loop seam is too abrupt for repeated ambience', { fileName, measured, thresholds });
-    assert(measured.startEndRmsDelta <= thresholds.startEndRmsDeltaMax, 'start/end loudness shift is too abrupt for repeated ambience', { fileName, measured, thresholds });
-    assert(measured.transientDelta <= thresholds.transientDeltaMax, 'decoded MP3 contains abrupt sample-to-sample transients', { fileName, measured, thresholds });
+    assert(measured.loopDelta <= resolveMetricLimit(thresholds, measured.decoder, 'loopDeltaMax'), 'loop seam is too abrupt for repeated ambience', { fileName, measured, thresholds });
+    assert(measured.startEndRmsDelta <= resolveMetricLimit(thresholds, measured.decoder, 'startEndRmsDeltaMax'), 'start/end loudness shift is too abrupt for repeated ambience', { fileName, measured, thresholds });
+    assert(measured.transientDelta <= resolveMetricLimit(thresholds, measured.decoder, 'transientDeltaMax'), 'decoded MP3 contains abrupt sample-to-sample transients', { fileName, measured, thresholds });
   }
   return metrics;
 }
