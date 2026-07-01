@@ -97,6 +97,7 @@ jobs:
         run: npx playwright test e2e/design-system.spec.ts
         env:
           CI: "true"
+          ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER: "true"
 
       - name: Upload Playwright snapshots (always)
         if: always()

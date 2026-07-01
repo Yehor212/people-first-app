@@ -62,6 +62,7 @@ async function primeApp(page: import("@playwright/test").Page, oklchEnabled: boo
       );
       localStorage.setItem("zenflow_last_seen_version", appVersion);
       localStorage.setItem("zenflow-theme", "light");
+      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
 
       // Phase 2-B.2 Option B: dismiss Privacy Settings first-run modal in
       // test fixture only. Production z-index stacking deferred to Phase 2-D
