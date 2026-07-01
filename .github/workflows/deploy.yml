@@ -87,6 +87,16 @@ jobs:
       - name: Check best-practices implied requirements gate
         run: npm run check:best-practices
 
+      - name: Ensure app audio QC decoder
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          fi
+
       - name: Check app audio asset contract
         run: npm run check:app-audio
 

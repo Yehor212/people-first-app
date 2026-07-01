@@ -40,6 +40,8 @@ describe("non-Hyperfocus app audio guard", () => {
     expect(script).toContain("APP_AUDIO_FORBIDDEN_ACTIONS");
     expect(script).toContain("scanDesktopTargetForStaleStrings");
     expect(script).toContain("scanDocsAssetsForStaleStrings");
+    expect(script).toContain("ffmpeg");
+    expect(script).toContain("afconvert or ffmpeg is required");
     expect(script).toContain("appAudioAssetsReportPath");
     expect(script).toContain("outputArtifactsScannedCount");
     expect(script).toContain("THIRD_PARTY_NOTICES.md");

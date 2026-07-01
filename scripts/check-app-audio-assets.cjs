@@ -492,7 +492,8 @@ function scanOutputArtifactsForStaleStrings() {
 }
 
 function commandExists(name) {
-  const result = spawnSync('command', ['-v', name], { shell: true, encoding: 'utf8' });
+  const lookup = process.platform === 'win32' ? 'where' : 'which';
+  const result = spawnSync(lookup, [name], { encoding: 'utf8' });
   return result.status === 0;
 }
 
@@ -577,15 +578,34 @@ function parseWavMetrics(wavPath) {
   };
 }
 
+function selectAudioDecoder() {
+  const requested = process.env.ZENFLOW_AUDIO_QC_DECODER;
+  if (requested) {
+    assert(['afconvert', 'ffmpeg'].includes(requested), 'unsupported audio QC decoder requested', { requested });
+    assert(commandExists(requested), requested + ' is required for MP3 metric QC on this machine');
+    return requested;
+  }
+  if (commandExists('afconvert')) return 'afconvert';
+  if (commandExists('ffmpeg')) return 'ffmpeg';
+  fail('afconvert or ffmpeg is required for MP3 metric QC on this machine');
+}
+
+function decodeMp3ToWav(decoder, source, wavPath, fileName) {
+  const command = decoder === 'afconvert'
+    ? { bin: 'afconvert', args: [source, '-f', 'WAVE', '-d', 'LEI16', wavPath] }
+    : { bin: 'ffmpeg', args: ['-y', '-hide_banner', '-loglevel', 'error', '-i', source, '-f', 'wav', '-acodec', 'pcm_s16le', wavPath] };
+  const result = spawnSync(command.bin, command.args, { encoding: 'utf8' });
+  assert(result.status === 0, decoder + ' failed to decode MP3', { fileName, stderr: result.stderr, stdout: result.stdout });
+}
+
 function convertAndMeasure(fileName) {
-  assert(commandExists('afconvert'), 'afconvert is required for local MP3 metric QC on this machine');
   const source = path.join(publicSoundsDir, fileName);
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'app-audio-qc-'));
   const wavPath = path.join(tempDir, fileName.replace(/\.mp3$/, '.wav'));
+  const decoder = selectAudioDecoder();
   try {
-    const result = spawnSync('afconvert', [source, '-f', 'WAVE', '-d', 'LEI16', wavPath], { encoding: 'utf8' });
-    assert(result.status === 0, 'afconvert failed to decode MP3', { fileName, stderr: result.stderr, stdout: result.stdout });
-    return parseWavMetrics(wavPath);
+    decodeMp3ToWav(decoder, source, wavPath, fileName);
+    return { decoder, ...parseWavMetrics(wavPath) };
   } finally {
     try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (_) {}
   }
