@@ -132,7 +132,7 @@ describe("useNavigationV2", () => {
           result.current.setActivePage("habits", { skipTransition: true });
         });
 
-        expect(result.current.drawerOpen).toBe(false);
+        expect(result.current.drawerOpen).toBe(true);
         expect(result.current.activePage).toBe<NavV2Page>("orb");
         expect(window.location.pathname).toBe("/");
         expect(requestAnimationFrameSpy).toHaveBeenCalledTimes(1);
@@ -141,6 +141,17 @@ describe("useNavigationV2", () => {
           rafCallbacks.shift()?.(performance.now());
         });
 
+        expect(result.current.drawerOpen).toBe(true);
+        expect(result.current.activePage).toBe<NavV2Page>("orb");
+        expect(window.location.pathname).toBe("/");
+        expect(requestAnimationFrameSpy).toHaveBeenCalledTimes(2);
+
+        await act(async () => {
+          rafCallbacks.shift()?.(performance.now());
+          await new Promise<void>((resolve) => window.setTimeout(resolve, 130));
+        });
+
+        expect(result.current.drawerOpen).toBe(false);
         expect(result.current.activePage).toBe<NavV2Page>("habits");
         expect(window.location.pathname).toBe("/habits");
         expect(morph).not.toHaveBeenCalled();

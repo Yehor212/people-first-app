@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const PUBLIC_APP_URL = process.env.ZENFLOW_PLAYWRIGHT_BASE_URL || 'https://yehor212.github.io/people-first-app/';
-const LOCAL_APP_URL = 'http://localhost:8080/people-first-app/';
+const LOCAL_APP_PORT = process.env.ZENFLOW_PLAYWRIGHT_LOCAL_PORT || '8080';
+const LOCAL_APP_URL = `http://localhost:${LOCAL_APP_PORT}/people-first-app/`;
 const USE_LOCAL_WEBSERVER = process.env.ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER === 'true';
 
 /**
@@ -49,7 +50,9 @@ export default defineConfig({
   ...(USE_LOCAL_WEBSERVER
     ? {
         webServer: {
-          command: process.env.CI ? 'npm run preview' : 'npm run dev',
+          command: process.env.CI
+            ? `npm run preview -- --port ${LOCAL_APP_PORT}`
+            : `npm run dev -- --port ${LOCAL_APP_PORT}`,
           url: LOCAL_APP_URL,
           reuseExistingServer: !process.env.CI,
           timeout: 120 * 1000,

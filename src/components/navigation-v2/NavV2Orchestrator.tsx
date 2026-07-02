@@ -72,7 +72,9 @@ function scheduleNavV2RoutePreload(activePage: NavV2Page) {
   let cancelled = false;
   let idleId: number | null = null;
   let timerId: number | null = null;
-  const pendingPages = NAV_V2_PAGES.filter((page) => page !== activePage);
+  const pendingPages = Array.from(new Set<NavV2Page>(["settings", ...NAV_V2_PAGES])).filter(
+    (page) => page !== activePage,
+  );
 
   const requestIdle = window.requestIdleCallback;
   const cancelIdle = window.cancelIdleCallback;
@@ -199,6 +201,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   const handleOpenDrawer = useCallback(() => {
     void haptics.tabChanged();
     openDrawer();
+    preloadNavV2Route("settings");
     scheduleNavV2RoutePreload(activePage);
   }, [activePage, openDrawer]);
 

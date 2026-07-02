@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, memo, useEffect, useMemo, useRef, useState } from "react";
 import {
   Cloud,
   Clock3,
@@ -19,8 +19,6 @@ import { useAppStore } from "@/stores";
 import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
 import { supabase } from "@/lib/supabaseClient";
 import { APP_VERSION } from "@/lib/appVersion";
-import { DeviceSessionsCard } from "@/components/sync/DeviceSessionsCard";
-import { SyncHealthCard } from "@/components/sync/SyncHealthCard";
 import {
   SettingsHeroCard,
   SettingsModuleList,
@@ -31,6 +29,17 @@ import { V2SettingsControlDeck } from "./settings/V2SettingsControlDeck";
 import type { V2SettingsControls, V2SettingsSectionId } from "./settings/types";
 
 export type { V2SettingsControls };
+
+const SyncHealthCard = lazy(() =>
+  import("@/components/sync/SyncHealthCard").then((module) => ({
+    default: module.SyncHealthCard,
+  })),
+);
+const DeviceSessionsCard = lazy(() =>
+  import("@/components/sync/DeviceSessionsCard").then((module) => ({
+    default: module.DeviceSessionsCard,
+  })),
+);
 
 interface SettingsPageProps {
   controls?: V2SettingsControls;
@@ -248,25 +257,27 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
                     selectedSectionId={item.id}
                   />
                   {item.id === "account" && (
-                    <section
-                      aria-label={
-                        tx.settingsCloudSyncTitle || tx.settingsGroupAccount || "Sync status"
-                      }
-                      className="grid min-w-0 gap-3"
-                      data-testid="settings-status-overview"
-                    >
-                      <SyncHealthCard
-                        compact
-                        dense
-                        showHeader
-                        allowManualRetry={false}
-                        surface="settings-space"
-                        quietWhenIdle
-                      />
-                      {supabase && hasValidSession === true && (
-                        <DeviceSessionsCard dense surface="settings" />
-                      )}
-                    </section>
+                    <Suspense fallback={null}>
+                      <section
+                        aria-label={
+                          tx.settingsCloudSyncTitle || tx.settingsGroupAccount || "Sync status"
+                        }
+                        className="grid min-w-0 gap-3"
+                        data-testid="settings-status-overview"
+                      >
+                        <SyncHealthCard
+                          compact
+                          dense
+                          showHeader
+                          allowManualRetry={false}
+                          surface="settings-space"
+                          quietWhenIdle
+                        />
+                        {supabase && hasValidSession === true && (
+                          <DeviceSessionsCard dense surface="settings" />
+                        )}
+                      </section>
+                    </Suspense>
                   )}
                 </div>
               )}

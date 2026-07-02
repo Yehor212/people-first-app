@@ -331,10 +331,13 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     const body = source.slice(start, end);
 
     const openIndex = body.indexOf("openDrawer();");
+    const settingsPreloadIndex = body.indexOf('preloadNavV2Route("settings");');
     const scheduleIndex = body.indexOf("scheduleNavV2RoutePreload(activePage)");
 
     expect(openIndex).toBeGreaterThan(-1);
+    expect(settingsPreloadIndex).toBeGreaterThan(openIndex);
     expect(scheduleIndex).toBeGreaterThan(openIndex);
+    expect(scheduleIndex).toBeGreaterThan(settingsPreloadIndex);
     expect(body).not.toContain("preloadNavV2Route(page)");
   });
 });

@@ -107,6 +107,7 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:v2:smoke": "playwright test e2e/deploy-smoke.spec.ts --project=chromium",
     "test:e2e:v2:critical": "playwright test e2e/deploy-smoke.spec.ts e2e/orb-renderer-lifecycle.spec.ts e2e/nav-v2-settings.spec.ts --project=chromium",
+    "test:e2e:v2:orb-performance": "npm run build && cross-env CI=true ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER=true playwright test e2e/orb-user-flow-performance.spec.ts --project=chromium --workers=1 --retries=0",
     "test:e2e:v2:visual": "playwright test e2e/nav-v2.spec.ts e2e/design-system.spec.ts --project=chromium",
     "test:e2e:v2:journal": "playwright test e2e/journal-hub-v2.spec.ts e2e/journal-sidebar.spec.ts --project=chromium",
     "test:e2e:v2:diary-wallpaper": "npm run test:e2e:v2:diary-wallpaper:web && npm run test:e2e:v2:diary-wallpaper:desktop && npm run test:e2e:v2:diary-wallpaper:android && npm run test:e2e:v2:diary-wallpaper:ios",

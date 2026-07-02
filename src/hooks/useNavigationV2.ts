@@ -47,6 +47,7 @@ interface RouteSnapshot {
 }
 
 const ROUTE_PENDING_MIN_VISIBLE_MS = 320;
+const DEFERRED_DRAWER_ROUTE_DELAY_MS = 120;
 
 function nowMs(): number {
   if (typeof window !== "undefined" && window.performance?.now) {
@@ -61,8 +62,27 @@ function scheduleAfterNextPaint(callback: () => void): () => void {
     return () => globalThis.clearTimeout(timerId);
   }
 
-  const frameId = window.requestAnimationFrame(callback);
-  return () => window.cancelAnimationFrame(frameId);
+  let cancelled = false;
+  let firstFrameId: number | null = null;
+  let secondFrameId: number | null = null;
+  let timerId: number | null = null;
+
+  firstFrameId = window.requestAnimationFrame(() => {
+    if (cancelled) return;
+    secondFrameId = window.requestAnimationFrame(() => {
+      if (cancelled) return;
+      timerId = window.setTimeout(() => {
+        if (!cancelled) callback();
+      }, DEFERRED_DRAWER_ROUTE_DELAY_MS);
+    });
+  });
+
+  return () => {
+    cancelled = true;
+    if (firstFrameId !== null) window.cancelAnimationFrame(firstFrameId);
+    if (secondFrameId !== null) window.cancelAnimationFrame(secondFrameId);
+    if (timerId !== null) window.clearTimeout(timerId);
+  };
 }
 
 function isValidPage(value: unknown): value is NavV2Page {
@@ -247,6 +267,7 @@ export function useNavigationV2(): UseNavigationV2Return {
       // Close drawer on navigate so mobile users don't see stale overlay.
       const wasDrawerOpen = drawerOpen;
       const isCurrentPage = page === activePageRef.current && !unknownPath;
+      const shouldDeferDrawerClose = options.skipTransition && wasDrawerOpen && !isCurrentPage;
       const publishImmediateNavigationFeedback = () => {
         if (isCurrentPage) {
           routePendingStartedAtRef.current = 0;
@@ -259,7 +280,9 @@ export function useNavigationV2(): UseNavigationV2Return {
 
       if (options.skipTransition) {
         flushSync(() => {
-          setDrawerOpen(false);
+          if (!shouldDeferDrawerClose) {
+            setDrawerOpen(false);
+          }
           publishImmediateNavigationFeedback();
         });
       } else {
@@ -302,6 +325,7 @@ export function useNavigationV2(): UseNavigationV2Return {
         if (wasDrawerOpen) {
           deferredRouteCancelRef.current = scheduleAfterNextPaint(() => {
             deferredRouteCancelRef.current = null;
+            setDrawerOpen(false);
             run(true);
           });
           return;

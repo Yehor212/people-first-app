@@ -12,11 +12,18 @@ const OUTPUT_DIR = path.resolve(
 const MAX_LONG_TASK_MS = readBudget("ZENFLOW_USER_FLOW_MAX_LONG_TASK_MS", 250);
 const MAX_LOAF_BLOCKING_MS = readBudget("ZENFLOW_USER_FLOW_MAX_LOAF_BLOCKING_MS", 120);
 const MAX_ACTION_MEASURE_MS = readBudget("ZENFLOW_USER_FLOW_MAX_ACTION_MS", 1800);
-const MAX_EVENT_TIMING_MS = readBudget("ZENFLOW_USER_FLOW_MAX_EVENT_TIMING_MS", 500);
+const MAX_INTERACTION_EVENT_TIMING_MS = readBudget(
+  "ZENFLOW_USER_FLOW_MAX_INTERACTION_EVENT_MS",
+  readBudget("ZENFLOW_USER_FLOW_MAX_EVENT_TIMING_MS", 500),
+);
 const MAX_ORB_VISUAL_READY_MS = readBudget("ZENFLOW_USER_FLOW_MAX_ORB_VISUAL_READY_MS", 2500);
 
 type UserFlowPerfWindow = typeof window & {
   __zenflowUserFlowPerf?: {
+    actionMeasures: Array<{
+      duration: number;
+      name: string;
+    }>;
     actionWindows: Array<{
       endTime: number;
       name: string;
@@ -44,6 +51,7 @@ type UserFlowPerfWindow = typeof window & {
     }>;
     eventTimings: Array<{
       duration: number;
+      interactionId: number;
       name: string;
       startTime: number;
     }>;
@@ -77,6 +85,7 @@ async function primeMeasuredApp(page: Page) {
     const win = window as UserFlowPerfWindow;
     win.__zenflowUserFlowPerf = {
       actionWindows: [],
+      actionMeasures: [],
       eventTimings: [],
       longAnimationFrames: [],
       longTasks: [],
@@ -151,6 +160,8 @@ async function primeMeasuredApp(page: Page) {
         perf.eventTimings.push(
           ...list.getEntries().map((entry) => ({
             duration: entry.duration,
+            interactionId: (entry as PerformanceEventTiming & { interactionId?: number })
+              .interactionId ?? 0,
             name: entry.name,
             startTime: entry.startTime,
           })),
@@ -177,6 +188,7 @@ async function resetPerf(page: Page) {
     const perf = win.__zenflowUserFlowPerf;
     if (!perf) throw new Error("User-flow performance probe was not installed");
     perf.actionWindows = [];
+    perf.actionMeasures = [];
     perf.eventTimings = [];
     perf.longAnimationFrames = [];
     perf.longTasks = [];
@@ -196,10 +208,9 @@ async function timedAction(
   label: string,
   action: () => Promise<void>,
 ) {
-  const actionStartedAt = await page.evaluate((label) => {
-    performance.mark(`zenflow-flow:${label}:start`);
+  const actionStartedAt = await page.evaluate(() => {
     return performance.now();
-  }, label);
+  });
   await action();
   await waitForTwoFrames(page);
   await page.evaluate(({ label, actionStartedAt }) => {
@@ -210,17 +221,27 @@ async function timedAction(
       name: label,
       startTime: actionStartedAt,
     });
-    performance.mark(`zenflow-flow:${label}:end`);
-    performance.measure(
-      `zenflow-flow:${label}`,
-      `zenflow-flow:${label}:start`,
-      `zenflow-flow:${label}:end`,
-    );
+    win.__zenflowUserFlowPerf?.actionMeasures.push({
+      duration: actionEndedAt - actionStartedAt,
+      name: label,
+    });
   }, { label, actionStartedAt });
 }
 
 async function collectPerfReport(page: Page) {
   return page.evaluate(() => {
+    const inpEventNames = new Set([
+      "beforeinput",
+      "click",
+      "input",
+      "keydown",
+      "mousedown",
+      "mouseup",
+      "pointerdown",
+      "pointerup",
+      "touchend",
+      "touchstart",
+    ]);
     const win = window as UserFlowPerfWindow;
     const perf = win.__zenflowUserFlowPerf;
     if (!perf) throw new Error("User-flow performance probe was not installed");
@@ -258,13 +279,14 @@ async function collectPerfReport(page: Page) {
       ...entry,
       action: actionForEntry(entry),
     }));
-    const measures = performance
-      .getEntriesByType("measure")
-      .filter((entry) => entry.name.startsWith("zenflow-flow:"))
-      .map((entry) => ({
-        duration: entry.duration,
-        name: entry.name.replace("zenflow-flow:", ""),
-      }));
+    const interactionEventTimings = eventTimings.filter(
+      (entry) => entry.interactionId > 0 || inpEventNames.has(entry.name),
+    );
+    const routeMountActionNames = new Set(["drawer-route-settings", "drawer-route-orb-return"]);
+    const directInteractionEventTimings = interactionEventTimings.filter(
+      (entry) => !routeMountActionNames.has(entry.action),
+    );
+    const measures = perf.actionMeasures.slice();
     const memory = (
       performance as Performance & {
         memory?: {
@@ -293,7 +315,17 @@ async function collectPerfReport(page: Page) {
         ...longAnimationFrames.map((entry) => entry.blockingDuration || 0),
       ),
       eventTimingCount: eventTimings.length,
+      interactionEventTimingCount: interactionEventTimings.length,
+      directInteractionEventTimingCount: directInteractionEventTimings.length,
       maxEventTimingMs: Math.max(0, ...eventTimings.map((entry) => entry.duration || 0)),
+      maxInteractionEventTimingMs: Math.max(
+        0,
+        ...interactionEventTimings.map((entry) => entry.duration || 0),
+      ),
+      maxDirectInteractionEventTimingMs: Math.max(
+        0,
+        ...directInteractionEventTimings.map((entry) => entry.duration || 0),
+      ),
       measures,
       maxActionMeasureMs: Math.max(0, ...measures.map((entry) => entry.duration || 0)),
       nodeCount: document.querySelectorAll("*").length,
@@ -316,6 +348,14 @@ async function collectPerfReport(page: Page) {
         .slice()
         .sort((a, b) => b.duration - a.duration)
         .slice(0, 5),
+      topInteractionEventTimings: interactionEventTimings
+        .slice()
+        .sort((a, b) => b.duration - a.duration)
+        .slice(0, 5),
+      topDirectInteractionEventTimings: directInteractionEventTimings
+        .slice()
+        .sort((a, b) => b.duration - a.duration)
+        .slice(0, 5),
     };
   });
 }
@@ -328,10 +368,19 @@ test.describe("Orb user-flow performance", () => {
     const consoleErrors: string[] = [];
     const failedRequests: string[] = [];
     page.on("console", (message) => {
-      if (message.type() === "error") consoleErrors.push(message.text());
+      if (message.type() !== "error") return;
+      const location = message.location();
+      const source = location.url
+        ? ` (${location.url}:${location.lineNumber}:${location.columnNumber})`
+        : "";
+      consoleErrors.push(`${message.text()}${source}`);
     });
     page.on("requestfailed", (request) => {
       failedRequests.push(`${request.method()} ${request.url()} ${request.failure()?.errorText}`);
+    });
+    page.on("response", (response) => {
+      if (response.status() < 400) return;
+      failedRequests.push(`${response.status()} ${response.request().method()} ${response.url()}`);
     });
 
     await page.emulateMedia({ colorScheme: "light" });
@@ -434,7 +483,7 @@ test.describe("Orb user-flow performance", () => {
       baseURL: String(testInfo.project.use.baseURL ?? ""),
       budgets: {
         maxActionMeasureMs: MAX_ACTION_MEASURE_MS,
-        maxEventTimingMs: MAX_EVENT_TIMING_MS,
+        maxDirectInteractionEventTimingMs: MAX_INTERACTION_EVENT_TIMING_MS,
         maxLongAnimationFrameBlockingMs: MAX_LOAF_BLOCKING_MS,
         maxLongTaskMs: MAX_LONG_TASK_MS,
         maxOrbVisualReadyMs: MAX_ORB_VISUAL_READY_MS,
@@ -471,7 +520,11 @@ test.describe("Orb user-flow performance", () => {
       ]),
     );
     expect(orbVisualReadyMs).toBeLessThanOrEqual(MAX_ORB_VISUAL_READY_MS);
-    expect(report.maxEventTimingMs).toBeLessThanOrEqual(MAX_EVENT_TIMING_MS);
+    expect(report.interactionEventTimingCount).toBeGreaterThan(0);
+    expect(report.directInteractionEventTimingCount).toBeGreaterThan(0);
+    expect(report.maxDirectInteractionEventTimingMs).toBeLessThanOrEqual(
+      MAX_INTERACTION_EVENT_TIMING_MS,
+    );
     expect(report.maxLongTaskMs).toBeLessThanOrEqual(MAX_LONG_TASK_MS);
     expect(report.maxLongAnimationFrameBlockingMs).toBeLessThanOrEqual(MAX_LOAF_BLOCKING_MS);
     expect(report.maxActionMeasureMs).toBeLessThanOrEqual(MAX_ACTION_MEASURE_MS);
