@@ -23,6 +23,7 @@ import {
   resetOrbRuntimeSnapshotsForTests,
   shouldApplyWorkerWebGLUpgrade,
   shouldDropLateVisibleWebGLUpgrade,
+  shouldPreferWorkerWebGLBeforeMainThreadWebGPU,
   shouldStartIdleWakeSoftening,
   shouldUseWorkerWebGL,
 } from "../ValenceOrb";
@@ -420,6 +421,46 @@ describe("ValenceOrb motion profile", () => {
 
     expect(resolveOrbFrameInterval(true)).toBeCloseTo(1000 / 60);
     expect(resolveOrbFrameInterval(false)).toBeCloseTo(1000 / 30);
+  });
+
+  it("renders reduced-motion forced WebGL on a mature still frame instead of the startup bead", async () => {
+    vi.useFakeTimers();
+    stubVisibleOrbRect();
+    const { flushNextFrame } = installQueuedRaf();
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        matches: query === "(prefers-reduced-motion: reduce)",
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+
+    const renderer = createMockGLRenderer();
+    vi.mocked(createOrbGLAsync).mockResolvedValue({
+      renderer,
+      durationMs: 1,
+      tier: "webgl",
+    });
+
+    render(
+      createElement(ValenceOrb, {
+        valence: 0.25,
+        renderer: "webgl",
+        size: 240,
+      }),
+    );
+
+    await flushScheduledWebGLUpgrade(flushNextFrame);
+
+    const firstPayload = renderer.render.mock.calls.at(0)?.[0];
+    expect(firstPayload?.time).toBeGreaterThan(0.5);
+    expect(firstPayload?.genesis).toBe(1);
   });
 
   it("reanchors large frame gaps instead of catching up missed orb motion", () => {
@@ -851,6 +892,52 @@ describe("ValenceOrb motion profile", () => {
     expect(shouldUseWorkerWebGL(true, 240)).toBe(true);
     expect(shouldUseWorkerWebGL(true, 120)).toBe(true);
     expect(getContextSpy).not.toHaveBeenCalled();
+  });
+
+  it("prefers worker WebGL before main-thread WebGPU on phone-like forced orbs", () => {
+    const originalInnerWidth = window.innerWidth;
+    const hadTransferControl =
+      "transferControlToOffscreen" in HTMLCanvasElement.prototype;
+    const originalTransferControl =
+      HTMLCanvasElement.prototype.transferControlToOffscreen;
+
+    Object.defineProperty(HTMLCanvasElement.prototype, "transferControlToOffscreen", {
+      configurable: true,
+      value: vi.fn(() => ({ width: 0, height: 0 })),
+    });
+    vi.stubGlobal("OffscreenCanvas", class OffscreenCanvasStub {});
+    vi.stubGlobal("Worker", vi.fn());
+
+    try {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: 449,
+      });
+      expect(shouldPreferWorkerWebGLBeforeMainThreadWebGPU(true, 240)).toBe(true);
+
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: 1024,
+      });
+      expect(shouldPreferWorkerWebGLBeforeMainThreadWebGPU(true, 240)).toBe(false);
+      expect(shouldPreferWorkerWebGLBeforeMainThreadWebGPU(false, 240)).toBe(false);
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: originalInnerWidth,
+      });
+      if (hadTransferControl) {
+        Object.defineProperty(HTMLCanvasElement.prototype, "transferControlToOffscreen", {
+          configurable: true,
+          value: originalTransferControl,
+        });
+      } else {
+        const canvasPrototype = HTMLCanvasElement.prototype as {
+          transferControlToOffscreen?: HTMLCanvasElement["transferControlToOffscreen"];
+        };
+        delete canvasPrototype.transferControlToOffscreen;
+      }
+    }
   });
 
   it("uses worker WebGL for the primary full-size forced orb when workers are available", async () => {

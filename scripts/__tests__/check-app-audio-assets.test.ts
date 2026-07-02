@@ -46,9 +46,11 @@ describe("non-Hyperfocus app audio guard", () => {
     expect(script).toContain("resolveMetricLimit");
     expect(script).toContain("appAudioAssetsReportPath");
     expect(script).toContain("outputArtifactsScannedCount");
+    expect(script).toContain("fs.statSync(file).isFile()");
     expect(script).toContain("THIRD_PARTY_NOTICES.md");
     expect(script).toContain("hyperfocusGeneratedAudioManifest.ts");
     expect(script).toContain("MixKit");
+    expect(script).toContain("BigSoundBank");
     expect(script).toContain("Desktop/Tauri generated target files scanned");
     expect(script).toContain("docs/assets bundles scanned");
     expect(packageJson.scripts["check:app-audio"]).toBe("node scripts/check-app-audio-assets.cjs");

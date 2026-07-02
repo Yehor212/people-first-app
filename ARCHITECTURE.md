@@ -19,7 +19,7 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 | Index.tsx LOC | **269** | `wc -l src/pages/Index.tsx` |
 | Components top-level dirs | **43** | `ls src/components/ -d` |
 | Features modules | 1 | `ls src/features/ -d` |
-| V2 coexistence files | 36 | `find src -name '*V2*' -o -name '*-v2*'` |
+| V2 coexistence files | 38 | `find src -name '*V2*' -o -name '*-v2*'` |
 | `it.todo(` occurrences | 39 | regex walk |
 | `as any` total | 125 (125 in tests, ~0 prod) | regex walk |
 | Console.\* in prod (excl. logger/crashReporting) | **3** | regex walk |

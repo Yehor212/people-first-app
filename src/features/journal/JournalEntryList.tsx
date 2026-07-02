@@ -60,6 +60,7 @@ import type { SemanticSearchResult } from "@/lib/journalAI";
 import { SUPABASE_PUBLIC_API_KEY, SUPABASE_URL } from "@/lib/env";
 import { Quote } from "lucide-react";
 import { getJournalListDateFilter } from "./journalListFilters";
+import { getJournalQuote } from "./journalQuotes";
 import { formatLocalizedCount } from "./journalWordCount";
 import { getLocale } from "@/lib/timeUtils";
 import { useThemeStore } from "@/stores/themeStore";
@@ -365,6 +366,7 @@ export const JournalEntryList = memo(function JournalEntryList({
 }: JournalEntryListProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const currentJournalQuote = getJournalQuote(ts);
   const { isMouse } = useInputMethod();
   const reducedMotion = useReducedMotion();
   const isPaperTheme = useThemeStore((state) => state.appliedTheme === "paper");
@@ -1938,6 +1940,9 @@ export const JournalEntryList = memo(function JournalEntryList({
           <p className="mx-auto mt-1 max-w-[240px] text-xs leading-relaxed text-muted-foreground">
             {ts.journalEmptyHint || "Start writing to capture your thoughts, feelings, and memories."}
           </p>
+          <p className="mx-auto mt-3 max-w-[240px] text-xs italic leading-relaxed text-muted-foreground" dir="auto">
+            {currentJournalQuote}
+          </p>
           <button
             type="button"
             onClick={onNewEntry}
@@ -2021,8 +2026,8 @@ export const JournalEntryList = memo(function JournalEntryList({
           <p className="text-sm text-muted-foreground text-center mb-2 max-w-[260px]">
             {ts.journalEmptyHint || "Start writing to capture your thoughts, feelings, and memories."}
           </p>
-          <p className="mb-6 text-center text-xs italic leading-relaxed text-muted-foreground">
-            {ts.journalEmptyQuote || "Start with one detail from this moment."}
+          <p className="mb-6 text-center text-xs italic leading-relaxed text-muted-foreground" dir="auto">
+            {currentJournalQuote}
           </p>
         </div>
       </div>

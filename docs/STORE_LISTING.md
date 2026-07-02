@@ -25,7 +25,7 @@ Habit Tracker
 Create habits with 6 flexible types: daily, weekly, frequency, reduction, continuous, and scheduled. Track streaks, set reminders, and watch your consistency grow.
 
 Focus Timer
-Pomodoro-style timer with 7 ambient sounds (rain, ocean, cafe, fireplace). Hyperfocus mode for deep work sessions. Reflection prompts after each session.
+Pomodoro-style timer with 6 ambient sound families (forest, rain, ocean, fireplace, river, wind). Hyperfocus mode for deep work sessions. Reflection prompts after each session.
 
 Gratitude Journal
 Three quick-entry templates to build a gratitude practice. Memory jar feature and gratitude streak tracking.
@@ -132,7 +132,7 @@ ZenFlow — ваш персональный центр благополучия:
 6 гибких типов привычек: ежедневные, еженедельные, по частоте, на снижение, непрерывные, по расписанию. Отслеживание серий, напоминания и визуализация прогресса.
 
 Таймер фокуса
-Помодоро-таймер с 7 звуками окружения (дождь, океан, кафе, камин). Режим гиперфокуса для глубокой работы. Рефлексия после каждой сессии.
+Помодоро-таймер с 6 семействами звуков окружения (лес, дождь, океан, камин, река, ветер). Режим гиперфокуса для глубокой работы. Рефлексия после каждой сессии.
 
 Журнал благодарностей
 3 шаблона для быстрых записей. Банка воспоминаний и отслеживание серий благодарностей.
@@ -204,7 +204,7 @@ ZenFlow — 心と習慣のケア
 
 ⏱️ フォーカスタイマー
 • ポモドーロ式タイマー（25分 / 50分 / カスタム）
-• 7種のアンビエントサウンド（雨音、海、焚き火など）
+• 6種のアンビエントサウンド（森、雨音、海、暖炉、川、風）
 • ハイパーフォーカスモード（没入型フルスクリーン）
 • Phone Focus Mode（Android DND連携）で通知を自動ミュート
 
@@ -330,7 +330,7 @@ ZenFlow — رفيق العافية
 
 ⏱️ مؤقت التركيز
 • مؤقت بومودورو (25 / 50 دقيقة أو مخصص)
-• 7 أصوات محيطة (مطر، محيط، مقهى، موقد وغيرها)
+• 6 عائلات من الأصوات المحيطة (الغابة، المطر، المحيط، المدفأة، النهر، الرياح)
 • وضع التركيز العميق (شاشة كاملة غامرة)
 • وضع التركيز الهاتفي — كتم الإشعارات تلقائياً (Android DND)
 
@@ -456,7 +456,7 @@ ZenFlow — מעקב רווחה אישי
 
 ⏱️ טיימר מיקוד
 • טיימר פומודורו (25 / 50 דקות או מותאם אישית)
-• 7 צלילי רקע (גשם, אוקיינוס, בית קפה, אח ועוד)
+• 6 משפחות של צלילי רקע (יער, גשם, אוקיינוס, אח, נהר, רוח)
 • מצב היפר-מיקוד (מסך מלא סוחף)
 • מצב פוקוס טלפוני — השתקת התראות אוטומטית (Android DND)
 

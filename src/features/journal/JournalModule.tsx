@@ -87,6 +87,7 @@ import type {
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
 import { DiaryWallpaper } from "./DiaryWallpaper";
 import { getJournalPreviewText } from "./journalDisplay";
+import { getJournalQuote } from "./journalQuotes";
 
 function getPrefillSpaceIds(prefill: JournalEntryPrefill | null | undefined): string[] {
   if (!prefill) return [];
@@ -323,6 +324,8 @@ function JournalCompactEmptyListShell({
   ts: Record<string, string>;
   onNewEntry: () => void;
 }) {
+  const currentJournalQuote = getJournalQuote(ts);
+
   return (
     <div className="space-y-3 pb-4" data-testid="journal-compact-empty-list">
       <div className="rounded-2xl border border-border/25 bg-card/45 p-4 text-center backdrop-blur-xl">
@@ -335,6 +338,13 @@ function JournalCompactEmptyListShell({
         <p className="mx-auto mt-1 max-w-[240px] text-xs leading-relaxed text-muted-foreground">
           {ts.journalEmptyHint || "Start writing to capture your thoughts, feelings, and memories."}
         </p>
+        <figure
+          className="mx-auto mt-3 max-w-[240px] text-xs italic leading-relaxed text-muted-foreground"
+          aria-label={ts.journalReflectionQuoteLabel || "A quiet quote"}
+          dir="auto"
+        >
+          <blockquote>{currentJournalQuote}</blockquote>
+        </figure>
         <button
           type="button"
           onClick={onNewEntry}

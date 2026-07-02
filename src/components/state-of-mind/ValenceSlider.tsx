@@ -15,6 +15,7 @@ interface ValenceSliderProps {
 const TRACK_HEIGHT = 8;
 const THUMB_SIZE = 28;
 const TOUCH_PADDING = 10; // Extra padding for 44px+ touch target
+const KEYBOARD_COMMIT_DELAY_MS = 90;
 
 /** 7 discrete snap positions matching Apple Health */
 const SNAP_POSITIONS = [-1.0, -0.667, -0.333, 0.0, 0.333, 0.667, 1.0] as const;
@@ -56,15 +57,24 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
   const { t } = useLanguage();
   const trackRef = useRef<HTMLDivElement>(null);
   const [isPressed, setIsPressed] = useState(false);
-  const prevSnapRef = useRef(nearestSnapIndex(value));
+  const [displayValue, setDisplayValue] = useState(value);
+  const prevSnapRef = useRef(nearestSnapIndex(displayValue));
+  const keyboardSnapRef = useRef(nearestSnapIndex(value));
   const onChangeRef = useRef(onChange);
   const pendingChangeRef = useRef<number | null>(null);
   const changeRafRef = useRef<number | null>(null);
+  const keyboardCommitTimeoutRef = useRef<number | null>(null);
+  const activePointerIdRef = useRef<number | null>(null);
   onChangeRef.current = onChange;
+
+  useEffect(() => {
+    setDisplayValue(value);
+    keyboardSnapRef.current = nearestSnapIndex(value);
+  }, [value]);
 
   // Haptic feedback when crossing snap position thresholds during drag
   useEffect(() => {
-    const currentSnap = nearestSnapIndex(value);
+    const currentSnap = nearestSnapIndex(displayValue);
     if (currentSnap !== prevSnapRef.current) {
       prevSnapRef.current = currentSnap;
       // Stronger haptic at extreme endpoints
@@ -74,7 +84,7 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
         void haptics.light();
       }
     }
-  }, [value]);
+  }, [displayValue]);
 
   const getValenceFromEvent = useCallback((clientX: number) => {
     if (!Number.isFinite(clientX)) return 0;
@@ -97,6 +107,11 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
   }, []);
 
   const queueChange = useCallback((next: number) => {
+    if (keyboardCommitTimeoutRef.current !== null) {
+      window.clearTimeout(keyboardCommitTimeoutRef.current);
+      keyboardCommitTimeoutRef.current = null;
+    }
+    setDisplayValue(next);
     pendingChangeRef.current = next;
     if (changeRafRef.current !== null) return;
 
@@ -110,13 +125,65 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
     });
   }, []);
 
+  const flushPendingChange = useCallback(() => {
+    if (keyboardCommitTimeoutRef.current !== null) {
+      window.clearTimeout(keyboardCommitTimeoutRef.current);
+      keyboardCommitTimeoutRef.current = null;
+    }
+    if (changeRafRef.current !== null) {
+      window.cancelAnimationFrame(changeRafRef.current);
+      changeRafRef.current = null;
+    }
+    const pending = pendingChangeRef.current;
+    pendingChangeRef.current = null;
+    if (pending !== null) {
+      keyboardSnapRef.current = nearestSnapIndex(pending);
+      onChangeRef.current(pending);
+    }
+  }, []);
+
+  const scheduleKeyboardChange = useCallback((next: number) => {
+    if (changeRafRef.current !== null) {
+      window.cancelAnimationFrame(changeRafRef.current);
+      changeRafRef.current = null;
+    }
+    setDisplayValue(next);
+    pendingChangeRef.current = next;
+    if (keyboardCommitTimeoutRef.current !== null) {
+      window.clearTimeout(keyboardCommitTimeoutRef.current);
+    }
+    keyboardCommitTimeoutRef.current = window.setTimeout(() => {
+      keyboardCommitTimeoutRef.current = null;
+      const pending = pendingChangeRef.current;
+      pendingChangeRef.current = null;
+      if (pending !== null) {
+        keyboardSnapRef.current = nearestSnapIndex(pending);
+        onChangeRef.current(pending);
+      }
+    }, KEYBOARD_COMMIT_DELAY_MS);
+  }, []);
+
   const commitChange = useCallback((next: number) => {
+    if (keyboardCommitTimeoutRef.current !== null) {
+      window.clearTimeout(keyboardCommitTimeoutRef.current);
+      keyboardCommitTimeoutRef.current = null;
+    }
     if (changeRafRef.current !== null) {
       window.cancelAnimationFrame(changeRafRef.current);
       changeRafRef.current = null;
     }
     pendingChangeRef.current = null;
+    setDisplayValue(next);
+    keyboardSnapRef.current = nearestSnapIndex(next);
     onChangeRef.current(next);
+  }, []);
+
+  const releasePointerCapture = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // Some WebViews lose capture during scroll/navigation; the value path stays valid.
+    }
   }, []);
 
   useEffect(() => {
@@ -125,36 +192,53 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
         window.cancelAnimationFrame(changeRafRef.current);
         changeRafRef.current = null;
       }
+      if (keyboardCommitTimeoutRef.current !== null) {
+        window.clearTimeout(keyboardCommitTimeoutRef.current);
+        keyboardCommitTimeoutRef.current = null;
+      }
+      const pending = pendingChangeRef.current;
+      pendingChangeRef.current = null;
+      if (pending !== null) {
+        onChangeRef.current(pending);
+      }
     };
   }, []);
 
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    activePointerIdRef.current = e.pointerId;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Pointer capture can throw in embedded WebViews; direct target events still work.
+    }
     setIsPressed(true);
     commitChange(getValenceFromEvent(e.clientX));
   }, [getValenceFromEvent, commitChange]);
 
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (activePointerIdRef.current !== e.pointerId) return;
     queueChange(getValenceFromEvent(e.clientX));
   }, [getValenceFromEvent, queueChange]);
 
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    e.currentTarget.releasePointerCapture(e.pointerId);
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (activePointerIdRef.current !== e.pointerId) return;
+    activePointerIdRef.current = null;
+    releasePointerCapture(e);
     setIsPressed(false);
     // Snap to nearest discrete position on release
-    const track = trackRef.current;
-    if (track) {
-      const rect = track.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const ratio = Math.max(0, Math.min(1, x / rect.width));
-      const freeValue = Math.round((ratio * 2 - 1) * 1000) / 1000;
-      commitChange(snapToNearest(freeValue));
-    }
-  }, [commitChange, snapToNearest]);
+    commitChange(snapToNearest(getValenceFromEvent(e.clientX)));
+  }, [commitChange, getValenceFromEvent, releasePointerCapture, snapToNearest]);
+
+  const handlePointerCancel = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (activePointerIdRef.current !== e.pointerId) return;
+    activePointerIdRef.current = null;
+    releasePointerCapture(e);
+    setIsPressed(false);
+    flushPendingChange();
+  }, [flushPendingChange, releasePointerCapture]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    const currentIdx = nearestSnapIndex(value);
+    const currentIdx = keyboardSnapRef.current;
     let newIdx = currentIdx;
 
     if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
@@ -169,16 +253,17 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
       return;
     }
     e.preventDefault();
-    commitChange(SNAP_POSITIONS[newIdx]);
-  }, [value, commitChange]);
+    keyboardSnapRef.current = newIdx;
+    scheduleKeyboardChange(SNAP_POSITIONS[newIdx]);
+  }, [scheduleKeyboardChange]);
 
   // Thumb position as percentage (0-100)
-  const thumbPercent = ((value + 1) / 2) * 100;
+  const thumbPercent = ((displayValue + 1) / 2) * 100;
 
   // Label: show nearest snap position's label
-  const snapIdx = nearestSnapIndex(value);
+  const snapIdx = nearestSnapIndex(displayValue);
   const valenceLabel = t[SNAP_LABELS[snapIdx]] as string;
-  const valenceColor = valenceToColor(value);
+  const valenceColor = valenceToColor(displayValue);
 
   return (
     <div className="w-full px-5">
@@ -205,6 +290,7 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
         role="slider"
         aria-label={t.somSlider}
         aria-valuemin={0}
@@ -213,6 +299,7 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
         aria-valuetext={valenceLabel}
         tabIndex={0}
         onKeyDown={handleKeyDown}
+        onBlur={flushPendingChange}
       >
         {/* Track background (gradient) */}
         <div

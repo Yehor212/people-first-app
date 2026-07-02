@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { JournalEntry, JournalSpace, JournalSpaceCapture } from "../types";
 
 vi.mock("@/contexts/LanguageContext", () => ({
@@ -26,6 +26,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalSpaceAddEntry: "Додати запис",
       journalNoMatchingEntries: "Нічого не знайдено",
       journalNoMatchingHint: "Спробуйте інший запит",
+      quoteJournal1: "Наповніть сторінку диханням свого серця.",
     },
   }),
 }));
@@ -202,6 +203,10 @@ describe("JournalEntryList spaces", () => {
     ]);
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("opens a highlight space with captures and linked entries outside the selected day", async () => {
     render(
       <JournalEntryList
@@ -233,13 +238,16 @@ describe("JournalEntryList spaces", () => {
   });
 
   it("keeps compact chrome empty state off the spaces startup path", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(0));
+    const onNewEntry = vi.fn();
     render(
       <JournalEntryList
         groupedEntries={[]}
         allEntries={[]}
         onOpenEntry={vi.fn()}
         onDeleteEntry={vi.fn()}
-        onNewEntry={vi.fn()}
+        onNewEntry={onNewEntry}
         totalCount={0}
         compact
         showFab={false}
@@ -249,6 +257,13 @@ describe("JournalEntryList spaces", () => {
 
     expect(screen.getByTestId("journal-compact-empty-list")).toBeInTheDocument();
     expect(screen.queryByTestId("journal-capture-launcher")).not.toBeInTheDocument();
+    expect(screen.getByTestId("journal-compact-empty-list")).toHaveTextContent(
+      "Наповніть сторінку диханням свого серця.",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Write first entry" }));
+
+    expect(onNewEntry).toHaveBeenCalledTimes(1);
 
     await Promise.resolve();
 

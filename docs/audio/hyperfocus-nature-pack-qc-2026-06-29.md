@@ -1,4 +1,4 @@
-# Hyperfocus Nature Pack QC - 2026-06-29
+# Hyperfocus Nature Pack QC - 2026-07-01
 
 ## Decision
 
@@ -9,7 +9,7 @@ Reason: the user asked for nature sounds for Hyperfocus V2. The prior cafe/socia
 ## Best-Practice Basis
 
 - Nature soundscapes are supported by restorative-environment research as candidates for stress/fatigue recovery and attention restoration: https://pmc.ncbi.nlm.nih.gov/articles/PMC8107214/
-- Selected rain, wind, forest, ocean, river, and fire assets come from Mixkit free sound effects; the Mixkit license page covers sound effects for commercial and non-commercial projects: https://mixkit.co/license/
+- Selected rain, wind, forest, ocean, and river assets come from Mixkit free sound effects; fireplace now comes from BigSoundBank Fireplace #4 as an indoor hearth source. License evidence is recorded at https://mixkit.co/license/ and https://bigsoundbank.com/licenses.html.
 - Hyperfocus ambience remains user-started, not autoplayed; MDN documents autoplay blocking and UX risk from unexpected audio: https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Autoplay
 - MP3 remains the safest single-format choice for the current bundled Web/PWA/native path because MDN lists it as supported by all major browsers: https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Audio_codecs
 
@@ -26,9 +26,9 @@ Reason: the user asked for nature sounds for Hyperfocus V2. The prior cafe/socia
 | ocean:soft | `hyperfocus-ocean-soft.mp3` | Small waves harbor rocks | 30.024s | 480384 | `2881fc8be99fc3b1263ae7e5816aeec82af663442ebe8957c083aa8f1d753c7d` |
 | ocean:deep | `hyperfocus-ocean-deep.mp3` | Sea coast breaking waves | 30.024s | 480384 | `8c7c27ec1aa1ac2a82431dcb992d443d791ee965ae31f27b0583ae01e7c64825` |
 | ocean:intense | `hyperfocus-ocean-intense.mp3` | Sea coast breaking waves + rough sea waves blend | 30.024s | 480384 | `caa38a9a6ca6c91b8d0dd9b0299094899554a455eb389413f17126f19c0f0194` |
-| fireplace:soft | `hyperfocus-fireplace-soft.mp3` | Campfire burning crackles | 30.024s | 480384 | `1eb38f1eec5012e1e94284134784392b788be82655767cf3c7ad560dc30bd103` |
-| fireplace:deep | `hyperfocus-fireplace-deep.mp3` | Campfire crackles | 30.024s | 480384 | `5c470beb8d115f0e00b1e9bb2399a11c83db87d7d0940d502234429e6f22100a` |
-| fireplace:intense | `hyperfocus-fireplace-intense.mp3` | Campfire night wind | 30.024s | 480384 | `a850e30dfaf4f2608fa517b70eeb2b98dafeaaa9083f1f77d7b9928c5d859934` |
+| fireplace:soft | `hyperfocus-fireplace-soft.mp3` | BigSoundBank Fireplace #4 indoor embers | 30.024s | 480384 | `1d654a6ec53bb4ffd348c10439bf4446de4e8a0db39c5f900d7314a06857b81b` |
+| fireplace:deep | `hyperfocus-fireplace-deep.mp3` | BigSoundBank Fireplace #4 indoor hearth | 30.024s | 480384 | `0f4db7ae0a8a62c76b64e92e6466ff8022b8c18b13055b8b9930d22fe27f03dc` |
+| fireplace:intense | `hyperfocus-fireplace-intense.mp3` | BigSoundBank Fireplace #4 full indoor hearth | 30.024s | 480384 | `e64cbe03214200767cf849887cd4dfbe3c969ebc6dbc63b2d3c9f6e39df99359` |
 | river:soft | `hyperfocus-river-soft.mp3` | River water flow and surroundings | 30.024s | 480384 | `05322454891235d1efb5b596dd99d566b1d40c1f112d54e19299f9aa9f1dfc61` |
 | river:deep | `hyperfocus-river-deep.mp3` | Wildlife environment in a river | 30.024s | 480384 | `19d97166266afba6416c0cc52fda306e75480a16948bbf538dc3b7ec7fd20caa` |
 | river:intense | `hyperfocus-river-intense.mp3` | Water flowing in the river | 30.024s | 480384 | `48f65e5fd91a503463eac6be257e798e8cb3c35d688acc9a634914519f902b96` |
@@ -47,12 +47,12 @@ Reason: the user asked for nature sounds for Hyperfocus V2. The prior cafe/socia
 
 | Check | Status | Evidence |
 | --- | --- | --- |
-| Free/source trace | PASS | Mixkit source URLs and item ids are recorded in `docs/audio/hyperfocus-generated-audio-provenance.json` and this QC note. |
+| Free/source trace | PASS | Mixkit and BigSoundBank source URLs, item ids, licenses, hashes, and processing notes are recorded in `docs/audio/hyperfocus-generated-audio-provenance.json` and this QC note. |
 | Bundled local files | PASS | Files are under `public/sounds/hyperfocus/`; no runtime external audio URL is needed. |
 | MP3 readability | PASS | `node scripts/check-hyperfocus-audio-assets.cjs` decoded and measured all 18 files as 2ch/48000Hz MP3. |
 | Objective duration and loop seam | PASS | All 18 Hyperfocus MP3s pass duration, byte-size, RMS, peak, clipping, start/end RMS, and seam limits. |
 | Level logic | PASS | `npm run test -- src/lib/__tests__/hyperfocusAudioProgression.test.ts` verifies each family progresses `soft < deep < intense`. |
-| Runtime selector tests | PASS | Focused audio/UI suite passed 7 files / 53 tests. |
+| Runtime selector tests | PASS | Focused audio/UI suite passed 8 files / 64 tests. |
 | Soundscape contract | PASS | `node scripts/check-hyperfocus-nature-soundscape-contract.cjs` passed 6 families / 18 variants. |
 | Generated manifest integrity | PASS | `node scripts/check-hyperfocus-audio-assets.cjs --write-manifest` wrote 18 entries with current SHA-256 and byte counts. |
 | Human fatigue listening | UNVERIFIED | Agent cannot perform reliable long-form human auditory fatigue review; needs human listen-through at low volume. |

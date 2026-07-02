@@ -12,7 +12,9 @@ const audioSettingsState = vi.hoisted(() => ({
 }));
 
 const generator = vi.hoisted(() => ({
+  statusListeners: [] as Array<(status: { state: string; soundId: string | null; isUnlocked: boolean }) => void>,
   addStatusListener: vi.fn((listener: (status: { state: string; soundId: string | null; isUnlocked: boolean }) => void) => {
+    generator.statusListeners.push(listener);
     listener({ state: "idle", soundId: null, isUnlocked: false });
     return vi.fn();
   }),
@@ -21,6 +23,11 @@ const generator = vi.hoisted(() => ({
   pause: vi.fn(),
   stop: vi.fn(),
   resumeDirect: vi.fn(),
+}));
+
+const mediaSession = vi.hoisted(() => ({
+  setAppAudioMediaSession: vi.fn(),
+  clearAppAudioMediaSession: vi.fn(),
 }));
 
 vi.mock("@/hooks/useAppAudioSettings", () => ({
@@ -32,9 +39,12 @@ vi.mock("@/lib/ambientSounds", () => ({
   AmbientSoundGenerator: class {},
 }));
 
+vi.mock("@/lib/audioMediaSession", () => mediaSession);
+
 describe("useHyperfocusAudio master app sound", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    generator.statusListeners.length = 0;
     audioSettingsState.snapshot = {
       muted: false,
       volume: 0.6,
@@ -69,6 +79,33 @@ describe("useHyperfocusAudio master app sound", () => {
 
     expect(result.current.selectedSoundId).toBe("forest:deep");
     expect(generator.playDirect).toHaveBeenCalledWith("forest:deep");
+  });
+
+  it("clears the playing indicator and media session when the generator pauses or blocks", () => {
+    const { result } = renderHook(() => useHyperfocusAudio({ isRunning: true, isPaused: false }));
+    const listener = generator.statusListeners[0];
+
+    act(() => listener({ state: "playing", soundId: "rain:deep", isUnlocked: true }));
+    expect(result.current.isSoundPlaying).toBe(true);
+    expect(mediaSession.setAppAudioMediaSession).toHaveBeenCalledWith(expect.objectContaining({
+      title: "ZenFlow Hyperfocus",
+      onPause: expect.any(Function),
+      onStop: expect.any(Function),
+    }));
+    const mediaOptions = mediaSession.setAppAudioMediaSession.mock.calls.at(-1)?.[0] as { onStop: () => void };
+    generator.pause.mockClear();
+    generator.stop.mockClear();
+    act(() => mediaOptions.onStop());
+    expect(generator.pause).toHaveBeenCalled();
+    expect(generator.stop).not.toHaveBeenCalled();
+
+    act(() => listener({ state: "paused", soundId: "rain:deep", isUnlocked: true }));
+    expect(result.current.isSoundPlaying).toBe(false);
+    expect(mediaSession.clearAppAudioMediaSession).toHaveBeenCalled();
+
+    act(() => listener({ state: "playing", soundId: "rain:deep", isUnlocked: true }));
+    act(() => listener({ state: "blocked", soundId: "rain:deep", isUnlocked: false }));
+    expect(result.current.isSoundPlaying).toBe(false);
   });
 
   it("does not start focus ambience while app sound is muted", () => {

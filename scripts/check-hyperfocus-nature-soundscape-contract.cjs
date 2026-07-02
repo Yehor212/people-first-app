@@ -57,6 +57,17 @@ const POSITIVE_MUSIC_DRIFT_PATTERNS = [
   /\bsoundtrack\b/i,
   /\bcinematic\b/i,
 ];
+const FIREPLACE_POSITIVE_CONTEXT_DRIFT_PATTERNS = [
+  /\bcamp[- ]?fire\b/i,
+  /\bbonfire\b/i,
+  /\bfire\s+pit\b/i,
+  /\bcampsite\b/i,
+  /\bnight\s+wind\b/i,
+  /\bopen\s+night\s+air\b/i,
+  /\bopen[- ]air\b/i,
+  /\boutdoor\b/i,
+];
+const FIREPLACE_REQUIRED_CONTEXT_PATTERNS = [/\bindoor\b/i, /\b(room|hearth|fireplace|embers?)\b/i];
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -133,6 +144,36 @@ function scanForbiddenLegacyRootAudioAssets({ rootDir = process.cwd() } = {}) {
   return { ok: issues.length === 0, scannedTargets: LEGACY_ROOT_AUDIO_SCAN_TARGETS.length + LEGACY_EMBEDDED_SCAN_TARGETS.length, issues };
 }
 
+function getPositiveLevelText({ family, level }) {
+  return normalizeText([
+    family.label,
+    family.focusRole,
+    family.originalAsset,
+    level.label,
+    level.source,
+    level.selectionRationale,
+    level.prompt,
+    level.normalization,
+  ].filter(Boolean).join(" "));
+}
+
+function validateFireplaceContext({ family, level, issues }) {
+  if (family.id !== "fireplace") return;
+  const text = getPositiveLevelText({ family, level });
+
+  for (const pattern of FIREPLACE_POSITIVE_CONTEXT_DRIFT_PATTERNS) {
+    if (pattern.test(text)) {
+      issues.push(createIssue("fireplace-context-drift", "Fireplace positive copy/source must stay indoor-hearth focused and must not drift into campfire, bonfire, outdoor, or night-wind cues.", { familyId: family.id, levelId: level.id, pattern: String(pattern) }));
+    }
+  }
+
+  for (const pattern of FIREPLACE_REQUIRED_CONTEXT_PATTERNS) {
+    if (!pattern.test(text)) {
+      issues.push(createIssue("fireplace-context-missing", "Fireplace positive copy/source must explicitly anchor the sound as an indoor fireplace/hearth bed.", { familyId: family.id, levelId: level.id, pattern: String(pattern) }));
+    }
+  }
+}
+
 function validatePrompt({ family, level, prompt, issues }) {
   const text = normalizeText(prompt);
   const lower = text.toLowerCase();
@@ -205,6 +246,7 @@ function validateHyperfocusNatureSoundscapeSpec({ rootDir = process.cwd(), specP
         issues.push(createIssue("file-name", 'Expected fileName "' + expectedFileName + '".', { familyId: family.id, levelId: level.id }));
       }
       validatePrompt({ family, level, prompt: level.prompt, issues });
+      validateFireplaceContext({ family, level, issues });
       if (!Array.isArray(level.rejectIf)) {
         issues.push(createIssue("missing-reject-if", "Every level must include rejectIf criteria.", { familyId: family.id, levelId: level.id }));
       } else {

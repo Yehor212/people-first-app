@@ -411,7 +411,8 @@ export function useFocusTimer({
   const handleHyperfocusComplete = () => {
     setShowHyperfocus(false);
     const session = createFocusSession(focusMinutes, label, "completed");
-    onCompleteSession(session);
+    setPendingSession(session);
+    setShowReflection(true);
   };
 
   useBackHandler(showReflection, () => handleSaveReflection(null));

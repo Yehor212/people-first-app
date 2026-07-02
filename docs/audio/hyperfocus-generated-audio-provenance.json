@@ -1,6 +1,6 @@
 {
-  "version": "2026-06-29-rain-wind-v8-48khz",
-  "decision": "The runtime Hyperfocus V2 nature pack uses six free real-source local SFX families: forest, rain, ocean, fireplace, river, and wind. Retired underwater/thunderstorm assets are no longer shipped as active Hyperfocus variants; legacy ids are migration aliases only. All active MP3 files were rebuilt as 48 kHz stereo local loops and pass objective QC plus measured soft/deep/intense progression.",
+  "version": "2026-07-01-fireplace-hearth-v9-48khz",
+  "decision": "The runtime Hyperfocus V2 nature pack uses free real-source local SFX families: forest, rain, ocean, fireplace, river, and wind. Fireplace now uses a BigSoundBank indoor hearth source rather than outdoor fire material. Retired underwater/thunderstorm assets are migration aliases only. All active MP3 files are 48 kHz stereo local loops and pass objective QC plus measured soft/deep/intense progression.",
   "rejectedExternalCandidates": [
     {
       "provider": "Google Gemini/Lyria UI",
@@ -36,11 +36,6 @@
       "evidence": "Small waves, sea coast breaking waves, rough sea waves."
     },
     {
-      "name": "Mixkit Fire SFX",
-      "url": "https://mixkit.co/free-sound-effects/fire/",
-      "evidence": "Campfire burning crackles, campfire crackles, campfire night wind."
-    },
-    {
       "name": "Mixkit Rivers SFX",
       "url": "https://mixkit.co/free-sound-effects/rivers/",
       "evidence": "River water flow and surroundings, wildlife environment in a river, water flowing in the river."
@@ -54,11 +49,21 @@
       "name": "Mixkit License",
       "url": "https://mixkit.co/license/",
       "evidence": "Mixkit license page covers free sound effects for commercial and non-commercial projects."
+    },
+    {
+      "name": "BigSoundBank Fireplace #4",
+      "url": "https://bigsoundbank.com/fireplace-4-s2856.html",
+      "evidence": "Indoor fireplace/hearth source, item 2856, selected for the fireplace family."
+    },
+    {
+      "name": "BigSoundBank License",
+      "url": "https://bigsoundbank.com/licenses.html",
+      "evidence": "License page records CC0/public-domain-equivalent free sound-effects use; provenance retained even where attribution is not required."
     }
   ],
   "metricGate": {
-    "version": "2026-06-29-rain-wind-v8-48khz",
-    "generatedAt": "2026-06-29T20:49:38.107Z",
+    "version": "2026-07-01-fireplace-hearth-v9-48khz",
+    "generatedAt": "2026-07-01T06:15:12.304Z",
     "metric": "intensityScore = weighted RMS + motion + zero-crossing activity, measured with macOS afconvert parity to the regression test; higher means denser/louder/noisier ambience.",
     "families": {
       "forest": {
@@ -283,73 +288,73 @@
       "fireplace": {
         "soft": {
           "fileName": "hyperfocus-fireplace-soft.mp3",
-          "sourceTitle": "Campfire burning crackles",
+          "sourceTitle": "BigSoundBank Fireplace #4 indoor embers",
           "durationSeconds": 30.024,
           "sampleRate": 48000,
           "channels": 2,
-          "rmsDb": -31.12,
-          "motionDb": -59.62,
-          "peakDb": -8.31,
-          "zeroCrossingsPerSecond": 415.2,
-          "intensityScore": 40.36,
-          "sha256": "1eb38f1eec5012e1e94284134784392b788be82655767cf3c7ad560dc30bd103",
+          "rmsDb": -33.58,
+          "motionDb": -43.33,
+          "peakDb": -17.48,
+          "zeroCrossingsPerSecond": 4385,
+          "intensityScore": 54.67,
+          "sha256": "1d654a6ec53bb4ffd348c10439bf4446de4e8a0db39c5f900d7314a06857b81b",
           "bytes": 480384,
           "strictQc": {
             "status": "PASS",
-            "seamMeanAbsDiff": 0.00043,
+            "seamMeanAbsDiff": 0.015779,
             "clippedSamples": 0,
-            "startEndRmsDeltaDb": 0.28
+            "startEndRmsDeltaDb": 0.08
           }
         },
         "deep": {
           "fileName": "hyperfocus-fireplace-deep.mp3",
-          "sourceTitle": "Campfire crackles",
+          "sourceTitle": "BigSoundBank Fireplace #4 indoor hearth",
           "durationSeconds": 30.024,
           "sampleRate": 48000,
           "channels": 2,
-          "rmsDb": -33.38,
-          "motionDb": -32.32,
-          "peakDb": -5.02,
-          "zeroCrossingsPerSecond": 14724.3,
-          "intensityScore": 68.9,
-          "sha256": "5c470beb8d115f0e00b1e9bb2399a11c83db87d7d0940d502234429e6f22100a",
+          "rmsDb": -30.32,
+          "motionDb": -38.98,
+          "peakDb": -12.18,
+          "zeroCrossingsPerSecond": 4993.9,
+          "intensityScore": 62.06,
+          "sha256": "0f4db7ae0a8a62c76b64e92e6466ff8022b8c18b13055b8b9930d22fe27f03dc",
           "bytes": 480384,
           "strictQc": {
             "status": "PASS",
-            "seamMeanAbsDiff": 0.000018,
+            "seamMeanAbsDiff": 0.025082,
             "clippedSamples": 0,
-            "startEndRmsDeltaDb": 0.8
+            "startEndRmsDeltaDb": 0.4
           }
         },
         "intense": {
           "fileName": "hyperfocus-fireplace-intense.mp3",
-          "sourceTitle": "Campfire night wind",
+          "sourceTitle": "BigSoundBank Fireplace #4 full indoor hearth",
           "durationSeconds": 30.024,
           "sampleRate": 48000,
           "channels": 2,
-          "rmsDb": -30.36,
-          "motionDb": -31.78,
-          "peakDb": -1.9,
-          "zeroCrossingsPerSecond": 10286.4,
-          "intensityScore": 72.77,
-          "sha256": "a850e30dfaf4f2608fa517b70eeb2b98dafeaaa9083f1f77d7b9928c5d859934",
+          "rmsDb": -26.7,
+          "motionDb": -34.5,
+          "peakDb": -6.72,
+          "zeroCrossingsPerSecond": 5402.6,
+          "intensityScore": 69.44,
+          "sha256": "e64cbe03214200767cf849887cd4dfbe3c969ebc6dbc63b2d3c9f6e39df99359",
           "bytes": 480384,
           "strictQc": {
             "status": "PASS",
-            "seamMeanAbsDiff": 0.000098,
+            "seamMeanAbsDiff": 0.041647,
             "clippedSamples": 0,
-            "startEndRmsDeltaDb": 0.05
+            "startEndRmsDeltaDb": 0.11
           }
         },
         "acceptance": {
           "order": "soft < deep < intense",
           "scores": [
-            40.36,
-            68.9,
-            72.77
+            54.67,
+            62.06,
+            69.44
           ],
-          "softToDeepGap": 28.54,
-          "deepToIntenseGap": 3.87,
+          "softToDeepGap": 7.39,
+          "deepToIntenseGap": 7.38,
           "pass": true
         }
       },
@@ -885,123 +890,144 @@
     },
     "fireplace:soft": {
       "fileName": "hyperfocus-fireplace-soft.mp3",
-      "provider": "Mixkit",
-      "model": "real-source-intensity-pack",
-      "generationId": "real-source-intensity-fireplace-soft-2026-06-20",
-      "generatedAt": "2026-06-20T02:46:00Z",
-      "source": "Campfire burning crackles (https://mixkit.co/free-sound-effects/fire/)",
-      "sourceLicense": "https://mixkit.co/license/",
-      "publicSha256": "1eb38f1eec5012e1e94284134784392b788be82655767cf3c7ad560dc30bd103",
+      "provider": "BigSoundBank / LaSonotheque",
+      "model": "real-source-indoor-hearth-pack",
+      "generationId": "bigsoundbank-fireplace-soft-2856-2026-07-01",
+      "generatedAt": "2026-07-01T06:15:12.304Z",
+      "source": "Fireplace #4 indoor hearth (Embers) (https://bigsoundbank.com/fireplace-4-s2856.html)",
+      "sourceLicense": "https://bigsoundbank.com/licenses.html",
+      "publicSha256": "1d654a6ec53bb4ffd348c10439bf4446de4e8a0db39c5f900d7314a06857b81b",
       "bytes": 480384,
       "metrics": {
         "durationSeconds": 30.024,
         "sampleRate": 48000,
         "channels": 2,
-        "rmsDb": -31.12,
-        "motionDb": -59.62,
-        "peakDb": -8.31,
-        "zeroCrossingsPerSecond": 415.2,
-        "intensityScore": 40.36,
+        "rmsDb": -33.58,
+        "motionDb": -43.33,
+        "peakDb": -17.48,
+        "crestDb": 16.1,
+        "zeroCrossingsPerSecond": 4385,
+        "intensityScore": 54.67,
+        "maxWindowRmsDb": -30.56,
+        "hotMinus6DbWindows": 0,
+        "overRmsPlus18DbWindows": 0,
         "clippedSamples": 0,
-        "startEndRmsDeltaDb": 0.28,
-        "seamMeanAbsDiff": 0.00043
+        "startEndRmsDeltaDb": 0.08,
+        "seamMeanAbsDiff": 0.015779
       },
       "audibleReview": {
-        "reviewer": "codex-source-selection-with-metric-gate",
+        "reviewer": "codex-fireplace-hearth-replacement-objective-qc",
         "noVocals": true,
         "noSpeech": true,
         "noMelody": true,
         "noBeat": true,
         "noForegroundDistractions": true,
-        "natureOrFocusAmbienceSource": true
+        "natureOrFocusAmbienceSource": true,
+        "notes": "Objective QC and semantic source review pass for indoor hearth replacement; extended human fatigue listen-through remains UNVERIFIED."
       },
       "postProcessing": {
-        "processedAt": "2026-06-29T20:47:00.000Z",
-        "policy": "strict-qc-30s-48khz-stereo-loop-normalization",
-        "tool": "macOS afconvert 48kHz stereo PCM resample plus lamejs 1.2.1 MP3 128k; gain/mix normalization only where needed for seam and intensity progression",
-        "sourceBackup": "output/audio-source/pre-strict-qc-normalization-20260629/hyperfocus-fireplace-soft.mp3",
+        "processedAt": "2026-07-01T06:15:12.304Z",
+        "policy": "indoor-hearth-30s-48khz-stereo-loop-transient-softening",
+        "tool": "macOS afconvert 48kHz stereo decode plus lamejs 1.2.1 MP3 128k; loop-leading crossfade, warmth shaping, and transient softening",
+        "sourceBackup": "output/audio-source/pre-fireplace-hearth-replacement-20260701/hyperfocus-fireplace-soft.mp3",
+        "sourceDownload": "output/audio-source/bigsoundbank-fireplace/fireplace-2856-source.mp3",
+        "renderReport": "output/audio-source/bigsoundbank-fireplace/fireplace-replacement-render-report.json",
         "qcReport": "output/audio-qc/hyperfocus-current.json",
         "objectiveResult": "PASS"
       }
     },
     "fireplace:deep": {
       "fileName": "hyperfocus-fireplace-deep.mp3",
-      "provider": "Mixkit",
-      "model": "real-source-intensity-pack",
-      "generationId": "real-source-intensity-fireplace-deep-2026-06-20",
-      "generatedAt": "2026-06-20T02:46:00Z",
-      "source": "Campfire crackles (https://mixkit.co/free-sound-effects/fire/)",
-      "sourceLicense": "https://mixkit.co/license/",
-      "publicSha256": "5c470beb8d115f0e00b1e9bb2399a11c83db87d7d0940d502234429e6f22100a",
+      "provider": "BigSoundBank / LaSonotheque",
+      "model": "real-source-indoor-hearth-pack",
+      "generationId": "bigsoundbank-fireplace-deep-2856-2026-07-01",
+      "generatedAt": "2026-07-01T06:15:12.304Z",
+      "source": "Fireplace #4 indoor hearth (Hearth) (https://bigsoundbank.com/fireplace-4-s2856.html)",
+      "sourceLicense": "https://bigsoundbank.com/licenses.html",
+      "publicSha256": "0f4db7ae0a8a62c76b64e92e6466ff8022b8c18b13055b8b9930d22fe27f03dc",
       "bytes": 480384,
       "metrics": {
         "durationSeconds": 30.024,
         "sampleRate": 48000,
         "channels": 2,
-        "rmsDb": -33.38,
-        "motionDb": -32.32,
-        "peakDb": -5.02,
-        "zeroCrossingsPerSecond": 14724.3,
-        "intensityScore": 68.9,
+        "rmsDb": -30.32,
+        "motionDb": -38.98,
+        "peakDb": -12.18,
+        "crestDb": 18.14,
+        "zeroCrossingsPerSecond": 4993.9,
+        "intensityScore": 62.06,
+        "maxWindowRmsDb": -23.15,
+        "hotMinus6DbWindows": 0,
+        "overRmsPlus18DbWindows": 0,
         "clippedSamples": 0,
-        "startEndRmsDeltaDb": 0.8,
-        "seamMeanAbsDiff": 0.000018
+        "startEndRmsDeltaDb": 0.4,
+        "seamMeanAbsDiff": 0.025082
       },
       "audibleReview": {
-        "reviewer": "codex-source-selection-with-metric-gate",
+        "reviewer": "codex-fireplace-hearth-replacement-objective-qc",
         "noVocals": true,
         "noSpeech": true,
         "noMelody": true,
         "noBeat": true,
         "noForegroundDistractions": true,
-        "natureOrFocusAmbienceSource": true
+        "natureOrFocusAmbienceSource": true,
+        "notes": "Objective QC and semantic source review pass for indoor hearth replacement; extended human fatigue listen-through remains UNVERIFIED."
       },
       "postProcessing": {
-        "processedAt": "2026-06-29T20:47:00.000Z",
-        "policy": "strict-qc-30s-48khz-stereo-loop-normalization",
-        "tool": "macOS afconvert 48kHz stereo PCM resample plus lamejs 1.2.1 MP3 128k; gain/mix normalization only where needed for seam and intensity progression",
-        "sourceBackup": "output/audio-source/pre-strict-qc-normalization-20260629/hyperfocus-fireplace-deep.mp3",
+        "processedAt": "2026-07-01T06:15:12.304Z",
+        "policy": "indoor-hearth-30s-48khz-stereo-loop-transient-softening",
+        "tool": "macOS afconvert 48kHz stereo decode plus lamejs 1.2.1 MP3 128k; loop-leading crossfade, warmth shaping, and transient softening",
+        "sourceBackup": "output/audio-source/pre-fireplace-hearth-replacement-20260701/hyperfocus-fireplace-deep.mp3",
+        "sourceDownload": "output/audio-source/bigsoundbank-fireplace/fireplace-2856-source.mp3",
+        "renderReport": "output/audio-source/bigsoundbank-fireplace/fireplace-replacement-render-report.json",
         "qcReport": "output/audio-qc/hyperfocus-current.json",
         "objectiveResult": "PASS"
       }
     },
     "fireplace:intense": {
       "fileName": "hyperfocus-fireplace-intense.mp3",
-      "provider": "Mixkit",
-      "model": "real-source-intensity-pack",
-      "generationId": "real-source-intensity-fireplace-intense-2026-06-20",
-      "generatedAt": "2026-06-20T02:46:00Z",
-      "source": "Campfire night wind (https://mixkit.co/free-sound-effects/fire/)",
-      "sourceLicense": "https://mixkit.co/license/",
-      "publicSha256": "a850e30dfaf4f2608fa517b70eeb2b98dafeaaa9083f1f77d7b9928c5d859934",
+      "provider": "BigSoundBank / LaSonotheque",
+      "model": "real-source-indoor-hearth-pack",
+      "generationId": "bigsoundbank-fireplace-intense-2856-2026-07-01",
+      "generatedAt": "2026-07-01T06:15:12.304Z",
+      "source": "Fireplace #4 indoor hearth (Full Hearth) (https://bigsoundbank.com/fireplace-4-s2856.html)",
+      "sourceLicense": "https://bigsoundbank.com/licenses.html",
+      "publicSha256": "e64cbe03214200767cf849887cd4dfbe3c969ebc6dbc63b2d3c9f6e39df99359",
       "bytes": 480384,
       "metrics": {
         "durationSeconds": 30.024,
         "sampleRate": 48000,
         "channels": 2,
-        "rmsDb": -30.36,
-        "motionDb": -31.78,
-        "peakDb": -1.9,
-        "zeroCrossingsPerSecond": 10286.4,
-        "intensityScore": 72.77,
+        "rmsDb": -26.7,
+        "motionDb": -34.5,
+        "peakDb": -6.72,
+        "crestDb": 19.98,
+        "zeroCrossingsPerSecond": 5402.6,
+        "intensityScore": 69.44,
+        "maxWindowRmsDb": -21.34,
+        "hotMinus6DbWindows": 0,
+        "overRmsPlus18DbWindows": 0,
         "clippedSamples": 0,
-        "startEndRmsDeltaDb": 0.05,
-        "seamMeanAbsDiff": 0.000098
+        "startEndRmsDeltaDb": 0.11,
+        "seamMeanAbsDiff": 0.041647
       },
       "audibleReview": {
-        "reviewer": "codex-source-selection-with-metric-gate",
+        "reviewer": "codex-fireplace-hearth-replacement-objective-qc",
         "noVocals": true,
         "noSpeech": true,
         "noMelody": true,
         "noBeat": true,
         "noForegroundDistractions": true,
-        "natureOrFocusAmbienceSource": true
+        "natureOrFocusAmbienceSource": true,
+        "notes": "Objective QC and semantic source review pass for indoor hearth replacement; extended human fatigue listen-through remains UNVERIFIED."
       },
       "postProcessing": {
-        "processedAt": "2026-06-29T20:47:00.000Z",
-        "policy": "strict-qc-30s-48khz-stereo-loop-normalization",
-        "tool": "macOS afconvert 48kHz stereo PCM resample plus lamejs 1.2.1 MP3 128k; gain/mix normalization only where needed for seam and intensity progression",
-        "sourceBackup": "output/audio-source/pre-strict-qc-normalization-20260629/hyperfocus-fireplace-intense.mp3",
+        "processedAt": "2026-07-01T06:15:12.304Z",
+        "policy": "indoor-hearth-30s-48khz-stereo-loop-transient-softening",
+        "tool": "macOS afconvert 48kHz stereo decode plus lamejs 1.2.1 MP3 128k; loop-leading crossfade, warmth shaping, and transient softening",
+        "sourceBackup": "output/audio-source/pre-fireplace-hearth-replacement-20260701/hyperfocus-fireplace-intense.mp3",
+        "sourceDownload": "output/audio-source/bigsoundbank-fireplace/fireplace-2856-source.mp3",
+        "renderReport": "output/audio-source/bigsoundbank-fireplace/fireplace-replacement-render-report.json",
         "qcReport": "output/audio-qc/hyperfocus-current.json",
         "objectiveResult": "PASS"
       }

@@ -518,6 +518,14 @@ describe("OrbPage progressive flow", () => {
     );
   });
 
+  it("keeps the Orb ambience control on the logical end edge for RTL-safe top chrome", () => {
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    const chrome = screen.getByTestId("orb-page-ambience-toggle").parentElement;
+    expect(chrome?.className).toContain("end-4");
+    expect(chrome?.className).not.toContain("right-4");
+  });
+
   it("keeps the desktop ambient orb breathing alive during runtime performance startup", () => {
     mockUseShouldAnimate.mockImplementation(
       (options?: { respectRuntimePerformance?: boolean }) =>

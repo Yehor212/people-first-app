@@ -271,9 +271,9 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settingsSoundFeedbackPreferSilent: "Prefer silent",
       settingsSoundFeedbackDidNotPlay: "Did not play",
       settingsSoundAmbientOff: "Ambient sound is off in Sensory comfort.",
-      diaryAmbienceLabel: "Diary ambience",
-      diaryAmbiencePlay: "Play diary ambience",
-      diaryAmbiencePause: "Pause diary ambience",
+      diaryAmbienceLabel: "Soft rain",
+      diaryAmbiencePlay: "Play soft rain",
+      diaryAmbiencePause: "Pause soft rain",
       audioRetry: "Retry",
       soundOn: "On",
       soundOff: "Off",
@@ -943,7 +943,7 @@ describe("SettingsPage", () => {
     expect(screen.getByText("Sign-in soft air")).toBeInTheDocument();
     expect(screen.getByText("Orb ambience")).toBeInTheDocument();
     expect(screen.getByTestId("settings-v2-sound-map-card")).toHaveTextContent("Diary ambience");
-    expect(screen.getByTestId("settings-v2-diary-ambience-control")).toHaveTextContent("Diary ambience");
+    expect(screen.getByTestId("settings-v2-diary-ambience-control")).toHaveTextContent("Soft rain");
     expect(screen.getByText("Focus ambient library")).toBeInTheDocument();
     expect(screen.getByText("Completion and reminder cues")).toBeInTheDocument();
     expect(screen.getByText(/Shared sound manifest covers Web, PWA, Android, iOS, and Desktop/)).toBeInTheDocument();
@@ -989,7 +989,7 @@ describe("SettingsPage", () => {
 
       const control = screen.getByTestId("settings-v2-diary-ambience-control");
       const audio = screen.getByTestId("settings-v2-diary-ambience-audio");
-      const toggle = within(control).getByRole("button", { name: "Play diary ambience" });
+      const toggle = within(control).getByRole("button", { name: "Play soft rain" });
 
       expect(audio).toHaveAttribute("preload", "none");
       expect(audio).not.toHaveAttribute("autoplay");

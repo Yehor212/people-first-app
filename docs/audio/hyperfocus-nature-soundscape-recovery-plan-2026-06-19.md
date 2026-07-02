@@ -9,7 +9,7 @@ Goal: recover the Hyperfocus audio project from music-like outputs by enforcing 
 - Gemini/Lyria UI outputs are not accepted unless they audibly behave like pure SFX/field recordings.
 - Do not include artist, celebrity, K-pop, pop-song, catchy, melodic, upbeat, chorus, verse, drop, soundtrack, or cinematic wording in positive prompts.
 
-## Recovery Decision - 2026-06-20, Updated 2026-06-29
+## Recovery Decision - 2026-06-20, Updated 2026-07-01
 
 Gemini/Lyria UI was tried twice and rejected both times because the outputs were not close enough to pure natural SFX. The project now ships a real-source pack under `public/sounds/hyperfocus/` with 18 manifest-backed variants.
 
@@ -22,7 +22,7 @@ The earlier recovery pack included cafe, underwater, and thunderstorm. The curre
 | forest | Wind in the forest (56.79) | Forest birds ambience (65.52) | Forest at night (82.21) | 8.73 / 16.69 |
 | rain | Light rain looping (58.16) | Long rain ambience (61.66) | Heavy rain ambience (65.03) | 3.5 / 3.37 |
 | ocean | Small waves harbor rocks (56.45) | Sea coast breaking waves (61.02) | Rough sea waves loop (69.53) | 4.57 / 8.51 |
-| fireplace | Campfire burning crackles (41.32) | Campfire crackles (69.62) | Campfire night wind (73.4) | 28.3 / 3.79 |
+| fireplace | BigSoundBank indoor embers (54.67) | BigSoundBank indoor hearth (62.06) | BigSoundBank full indoor hearth (69.44) | 7.39 / 7.38 |
 | river | River water flow and surroundings (59.96) | Wildlife environment in a river (63.6) | Water flowing in the river (76.05) | 3.64 / 12.45 |
 | wind | Wind blowing ambience (38.76) | Wind blowing ambience (43.91) | Wind in the top of the mountain (50.51) | 5.15 / 6.6 |
 

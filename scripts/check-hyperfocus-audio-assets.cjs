@@ -7,6 +7,7 @@ const os = require("node:os");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const crypto = require("node:crypto");
+const zlib = require("node:zlib");
 
 const DEFAULT_ROOT = path.join(__dirname, "..");
 const SPEC_PATH = "docs/audio/hyperfocus-three-level-generation-spec.json";
@@ -83,9 +84,41 @@ function toPosixPath(value) {
   return String(value).split(path.sep).join(path.posix.sep);
 }
 
+const CRC32_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let index = 0; index < table.length; index += 1) {
+    let value = index;
+    for (let bit = 0; bit < 8; bit += 1) {
+      value = (value & 1) ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
+    }
+    table[index] = value >>> 0;
+  }
+  return table;
+})();
+
+function crc32Buffer(buffer) {
+  let crc = 0xffffffff;
+  for (const byte of buffer) {
+    crc = CRC32_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  }
+  return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, "0");
+}
+
+function parseZipEntryPath(value) {
+  const entryPath = String(value || "");
+  const parts = entryPath.split("/");
+  if (!entryPath || entryPath.includes("\\") || entryPath.startsWith("/") || parts.includes("..")) {
+    throw new Error("ZIP entry path is not a safe relative path: " + entryPath);
+  }
+  return entryPath;
+}
+
 
 function readZipCentralDirectoryEntries(file) {
-  const buffer = fs.readFileSync(file);
+  return readZipCentralDirectoryEntriesFromBuffer(fs.readFileSync(file));
+}
+
+function readZipCentralDirectoryEntriesFromBuffer(buffer) {
   const endOfCentralDirectorySignature = 0x06054b50;
   const centralDirectorySignature = 0x02014b50;
   const minimumEndSize = 22;
@@ -124,24 +157,82 @@ function readZipCentralDirectoryEntries(file) {
     const bytes = buffer.readUInt32LE(cursor + 24);
     const fileNameLength = buffer.readUInt16LE(cursor + 28);
     const extraLength = buffer.readUInt16LE(cursor + 30);
+    const localHeaderOffset = buffer.readUInt32LE(cursor + 42);
     const commentLength = buffer.readUInt16LE(cursor + 32);
     const fileNameStart = cursor + 46;
     const fileNameEnd = fileNameStart + fileNameLength;
     if (fileNameEnd > buffer.length) throw new Error("ZIP central directory entry " + index + " has an invalid file name length");
 
-    const archiveEntryPath = buffer.toString("utf8", fileNameStart, fileNameEnd);
+    const archiveEntryPath = parseZipEntryPath(buffer.toString("utf8", fileNameStart, fileNameEnd));
     entries.set(archiveEntryPath, {
       archiveEntryPath,
       bytes,
       compressedBytes,
       crc32,
       compressionMethod,
+      localHeaderOffset,
     });
 
     cursor = fileNameEnd + extraLength + commentLength;
   }
 
   return entries;
+}
+
+function readZipEntryBytes(buffer, entry) {
+  const localFileHeaderSignature = 0x04034b50;
+  const offset = entry.localHeaderOffset;
+  const maxEntryBytes = LIMITS.maxFileBytes;
+  const maxCompressedBytes = LIMITS.maxFileBytes + 65536;
+  if (!Number.isInteger(offset) || offset < 0 || offset + 30 > buffer.length) {
+    throw new Error("ZIP local header for " + entry.archiveEntryPath + " points outside the artifact");
+  }
+  if (entry.bytes > maxEntryBytes) {
+    throw new Error("ZIP entry " + entry.archiveEntryPath + " declares " + entry.bytes + " bytes; maximum Hyperfocus asset size is " + maxEntryBytes);
+  }
+  if (entry.compressedBytes > maxCompressedBytes) {
+    throw new Error("ZIP entry " + entry.archiveEntryPath + " declares " + entry.compressedBytes + " compressed bytes; maximum allowed is " + maxCompressedBytes);
+  }
+  if (buffer.readUInt32LE(offset) !== localFileHeaderSignature) {
+    throw new Error("ZIP local header for " + entry.archiveEntryPath + " is malformed");
+  }
+  const fileNameLength = buffer.readUInt16LE(offset + 26);
+  const extraLength = buffer.readUInt16LE(offset + 28);
+  const localFileNameStart = offset + 30;
+  const localFileNameEnd = localFileNameStart + fileNameLength;
+  if (localFileNameEnd > buffer.length) {
+    throw new Error("ZIP local header for " + entry.archiveEntryPath + " has an invalid file name length");
+  }
+  const localEntryPath = parseZipEntryPath(buffer.toString("utf8", localFileNameStart, localFileNameEnd));
+  if (localEntryPath !== entry.archiveEntryPath) {
+    throw new Error("ZIP local header path " + localEntryPath + " does not match central directory path " + entry.archiveEntryPath);
+  }
+  const dataStart = localFileNameEnd + extraLength;
+  const dataEnd = dataStart + entry.compressedBytes;
+  if (dataStart < 0 || dataEnd > buffer.length) {
+    throw new Error("ZIP entry bytes for " + entry.archiveEntryPath + " point outside the artifact");
+  }
+  const compressed = buffer.subarray(dataStart, dataEnd);
+  let bytes;
+  if (entry.compressionMethod === 0) {
+    bytes = compressed;
+  } else if (entry.compressionMethod === 8) {
+    bytes = zlib.inflateRawSync(compressed, { maxOutputLength: maxEntryBytes + 1 });
+  } else {
+    throw new Error("Unsupported ZIP compression method " + entry.compressionMethod + " for " + entry.archiveEntryPath);
+  }
+  if (bytes.length !== entry.bytes) {
+    throw new Error("ZIP entry " + entry.archiveEntryPath + " expands to " + bytes.length + " bytes; expected " + entry.bytes);
+  }
+  const actualCrc32 = crc32Buffer(bytes);
+  if (actualCrc32 !== entry.crc32) {
+    throw new Error("ZIP entry " + entry.archiveEntryPath + " CRC32 " + actualCrc32 + " does not match central directory CRC32 " + entry.crc32);
+  }
+  return bytes;
+}
+
+function sha256Buffer(buffer) {
+  return crypto.createHash("sha256").update(buffer).digest("hex");
 }
 
 function getSpec(rootDir = DEFAULT_ROOT) {
@@ -2017,6 +2108,7 @@ function buildHyperfocusPackagedAssetReport({ rootDir = DEFAULT_ROOT, generatedA
     let missingCount = 0;
     let failedCount = 0;
     let archiveEntries = null;
+    let archiveBuffer = null;
     let archiveIssue = null;
     let binaryBuffer = null;
     let binarySha256 = null;
@@ -2036,7 +2128,8 @@ function buildHyperfocusPackagedAssetReport({ rootDir = DEFAULT_ROOT, generatedA
         });
       } else {
         try {
-          archiveEntries = readZipCentralDirectoryEntries(archiveFile);
+          archiveBuffer = fs.readFileSync(archiveFile);
+          archiveEntries = readZipCentralDirectoryEntriesFromBuffer(archiveBuffer);
         } catch (error) {
           archiveIssue = issue("package-artifact-unreadable", "Could not read package artifact " + artifactPath + ": " + (error instanceof Error ? error.message : String(error)), {
             targetId: target.id,
@@ -2154,6 +2247,54 @@ function buildHyperfocusPackagedAssetReport({ rootDir = DEFAULT_ROOT, generatedA
           continue;
         }
 
+        let archiveEntrySha256 = null;
+        try {
+          archiveEntrySha256 = sha256Buffer(readZipEntryBytes(archiveBuffer, archiveEntry));
+        } catch (error) {
+          const foundIssue = issue("package-entry-unreadable", "Could not read packaged Hyperfocus asset " + displayPath + " for target " + target.id + ": " + (error instanceof Error ? error.message : String(error)), {
+            targetId: target.id,
+            platform: target.platform,
+            fileName: asset.fileName,
+          });
+          failedCount += 1;
+          issues.push(foundIssue);
+          targetAssets.push({
+            ...baseEntry,
+            status: "fail",
+            bytes: archiveEntry.bytes,
+            compressedBytes: archiveEntry.compressedBytes,
+            crc32: archiveEntry.crc32,
+            issues: [foundIssue],
+          });
+          continue;
+        }
+
+        const sourceFile = path.join(rootDir, PUBLIC_ASSET_DIR, asset.fileName);
+        if (fs.existsSync(sourceFile) && fs.statSync(sourceFile).isFile()) {
+          const sourceSha256 = sha256File(sourceFile);
+          if (archiveEntrySha256 !== sourceSha256) {
+            const foundIssue = issue("packaged-asset-sha-mismatch", "Packaged Hyperfocus asset " + displayPath + " does not match source public asset " + toPosixPath(path.relative(rootDir, sourceFile)) + ".", {
+              targetId: target.id,
+              platform: target.platform,
+              fileName: asset.fileName,
+              expectedSha256: sourceSha256,
+              actualSha256: archiveEntrySha256,
+            });
+            failedCount += 1;
+            issues.push(foundIssue);
+            targetAssets.push({
+              ...baseEntry,
+              status: "fail",
+              bytes: archiveEntry.bytes,
+              compressedBytes: archiveEntry.compressedBytes,
+              crc32: archiveEntry.crc32,
+              sha256: archiveEntrySha256,
+              issues: [foundIssue],
+            });
+            continue;
+          }
+        }
+
         presentCount += 1;
         targetAssets.push({
           ...baseEntry,
@@ -2161,6 +2302,7 @@ function buildHyperfocusPackagedAssetReport({ rootDir = DEFAULT_ROOT, generatedA
           bytes: archiveEntry.bytes,
           compressedBytes: archiveEntry.compressedBytes,
           crc32: archiveEntry.crc32,
+          sha256: archiveEntrySha256,
           issues: [],
         });
         continue;
@@ -2226,8 +2368,8 @@ function buildHyperfocusPackagedAssetReport({ rootDir = DEFAULT_ROOT, generatedA
   };
 }
 
-function writeHyperfocusPackagedAssetReport({ rootDir = DEFAULT_ROOT, outputFile = path.join(rootDir, "output/audio-qc/hyperfocus-package-current.json"), generatedAt } = {}) {
-  const report = buildHyperfocusPackagedAssetReport({ rootDir, generatedAt });
+function writeHyperfocusPackagedAssetReport({ rootDir = DEFAULT_ROOT, outputFile = path.join(rootDir, "output/audio-qc/hyperfocus-package-current.json"), generatedAt, targets } = {}) {
+  const report = buildHyperfocusPackagedAssetReport({ rootDir, generatedAt, targets });
   fs.mkdirSync(path.dirname(outputFile), { recursive: true });
   fs.writeFileSync(outputFile, JSON.stringify(report, null, 2) + "\n");
   return { ok: report.ok, outputFile, report };
@@ -3478,6 +3620,31 @@ function promoteCandidateAudioBatch({ rootDir = DEFAULT_ROOT, batch, batchFile, 
   return { ok: true, promotedCount: destinations.length, destinations, issues: [] };
 }
 
+function getArgValues(args, flag) {
+  const values = [];
+  for (let index = 0; index < args.length; index += 1) {
+    if (args[index] !== flag) continue;
+    const value = args[index + 1];
+    if (!value || value.startsWith("--")) {
+      throw new Error(flag + " requires a value");
+    }
+    values.push(value);
+  }
+  return values;
+}
+
+function resolvePackagedAssetTargets(targetIds = []) {
+  if (!Array.isArray(targetIds) || targetIds.length === 0) return PACKAGED_ASSET_TARGETS;
+  const byId = new Map(PACKAGED_ASSET_TARGETS.map((target) => [target.id, target]));
+  return Object.freeze(targetIds.map((targetId) => {
+    const target = byId.get(targetId);
+    if (!target) {
+      throw new Error("Unknown Hyperfocus package target " + targetId + "; expected one of " + Array.from(byId.keys()).join(", "));
+    }
+    return target;
+  }));
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const rootIndex = args.indexOf("--root");
@@ -3504,6 +3671,7 @@ async function main() {
   const writeSourceCoverageReportIndex = args.indexOf("--write-source-coverage-report");
   const writePromptPolicyReportIndex = args.indexOf("--write-prompt-policy-report");
   const writeProviderCapabilityReportIndex = args.indexOf("--write-provider-capability-report");
+  const packageTargetIds = getArgValues(args, "--package-target");
   const promoteIndex = args.indexOf("--promote");
   const promoteBatchIndex = args.indexOf("--promote-batch");
   const fileNameIndex = args.indexOf("--file-name");
@@ -3867,9 +4035,18 @@ async function main() {
   }
 
   if (writePackageReportIndex >= 0) {
+    let packageTargets;
+    try {
+      packageTargets = resolvePackagedAssetTargets(packageTargetIds);
+    } catch (error) {
+      console.error("[hyperfocus-audio-package] FAIL - " + (error instanceof Error ? error.message : String(error)) + ".");
+      process.exitCode = 1;
+      return;
+    }
     const reportResult = writeHyperfocusPackagedAssetReport({
       rootDir,
       outputFile: packageReportOutputFile,
+      targets: packageTargets,
       generatedAt: generatedAtIndex >= 0 ? args[generatedAtIndex + 1] : undefined,
     });
     const relativeOutput = path.relative(rootDir, reportResult.outputFile);

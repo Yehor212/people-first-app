@@ -142,7 +142,7 @@ export const HYPERFOCUS_AUDIO_FAMILIES = [
     legacyId: "fireplace",
     legacyAssetId: "focus-fireplace",
     labelKey: "hyperfocusSoundFireplace",
-    levels: makeLevels("fireplace", ["Embers", "Hearth", "Bonfire"]),
+    levels: makeLevels("fireplace", ["Embers", "Hearth", "Full Hearth"]),
   },
   {
     id: "river",

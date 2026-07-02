@@ -1138,7 +1138,7 @@ export const fr: Translations = {
   hyperfocusSoundCafeIntense: "Heure de pointe",
   hyperfocusSoundFireplaceSoft: "Braises",
   hyperfocusSoundFireplaceDeep: "Foyer",
-  hyperfocusSoundFireplaceIntense: "Grand feu",
+  hyperfocusSoundFireplaceIntense: "Foyer intense",
   hyperfocusShowVariants: "Afficher les variantes",
   hyperfocusHideVariants: "Masquer les variantes",
   hyperfocusTip: "Astuce",

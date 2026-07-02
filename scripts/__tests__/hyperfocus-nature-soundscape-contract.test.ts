@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, mkdtempSync, writeFileSync } from "fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -104,6 +104,25 @@ describe("hyperfocus nature soundscape generation contract", () => {
     const result = contract.validateHyperfocusNatureSoundscapeSpec({ spec: badSpec });
     expect(result.ok).toBe(false);
     expect(result.issues.map((issue) => issue.code)).toContain("music-positive-drift");
+  });
+
+  it("rejects fireplace variants that drift into campfire, bonfire, or night-wind cues", () => {
+    const badSpec = JSON.parse(readFileSync("docs/audio/hyperfocus-nature-soundscape-spec.json", "utf8"));
+    const fireplace = badSpec.families.find((family: { id?: string }) => family.id === "fireplace");
+
+    fireplace.levels[0].source = "Campfire burning crackles";
+    fireplace.levels[1].prompt = fireplace.levels[1].prompt.replace("steady hearth fire", "steady campfire");
+    fireplace.levels[2].label = "Bonfire";
+    fireplace.levels[2].prompt = fireplace.levels[2].prompt.replace("outdoor bonfire texture", "outdoor bonfire texture with night wind");
+
+    const result = contract.validateHyperfocusNatureSoundscapeSpec({ spec: badSpec });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "fireplace-context-drift", familyId: "fireplace" }),
+      ]),
+    );
   });
 
   it("rejects spec paths that resolve outside the project root", () => {

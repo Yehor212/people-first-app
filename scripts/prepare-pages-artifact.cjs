@@ -16,12 +16,30 @@ if (!fs.existsSync(indexPath)) {
 }
 
 const indexHtml = fs.readFileSync(indexPath, "utf8");
-const cacheBustedIndexHtml = indexHtml.replace(
-  /(<link\s+rel=["']manifest["']\s+href=["'][^"']*manifest\.webmanifest)(?:\?[^"']*)?(["'][^>]*>)/i,
-  `$1?v=${pwaInstallIconRevision}$2`,
-);
+const manifestLinkPattern = /\s*<link\s+rel=["']manifest["'][^>]*manifest\.webmanifest[^>]*>/gi;
+const manifestLinks = indexHtml.match(manifestLinkPattern) ?? [];
 
-if (!cacheBustedIndexHtml.includes(`manifest.webmanifest?v=${pwaInstallIconRevision}`)) {
+if (manifestLinks.length === 0) {
+  throw new Error(
+    `Cannot prepare GitHub Pages artifact: missing manifest.webmanifest link for ${pwaInstallIconRevision}`,
+  );
+}
+
+const canonicalManifestLink =
+  `    <link rel="manifest" href="/people-first-app/manifest.webmanifest?v=${pwaInstallIconRevision}">`;
+const cacheBustedIndexHtml = indexHtml
+  .replace(manifestLinkPattern, "")
+  .replace(/\s*<script id=["']vite-plugin-pwa:register-sw["']/, "\n  <script id=\"vite-plugin-pwa:register-sw\"")
+  .replace(/\s*<\/head>/i, `\n${canonicalManifestLink}\n  </head>`);
+
+const preparedManifestLinks = cacheBustedIndexHtml.match(manifestLinkPattern) ?? [];
+if (preparedManifestLinks.length !== 1) {
+  throw new Error(
+    `Cannot prepare GitHub Pages artifact: expected exactly one manifest link, found ${preparedManifestLinks.length}`,
+  );
+}
+
+if (!preparedManifestLinks[0].includes(`manifest.webmanifest?v=${pwaInstallIconRevision}`)) {
   throw new Error(
     `Cannot prepare GitHub Pages artifact: manifest link must cache-bust with ${pwaInstallIconRevision}`,
   );

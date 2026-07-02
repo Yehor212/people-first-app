@@ -24,9 +24,17 @@ Current generated non-Hyperfocus files:
 ### MixKit — Hyperfocus Nature Sound Effects
 Location: `public/sounds/hyperfocus/` and generated native asset bundles.
 
-The current Hyperfocus nature pack uses MixKit free sound effects as source material for the six active V2 families: forest, rain, ocean/sea, fireplace/fire, river, and wind. Provenance is tracked in `src/lib/hyperfocusGeneratedAudioManifest.ts` and `docs/audio/hyperfocus-generated-audio-provenance.json`, including source category URLs, generated file names, SHA-256 hashes, and packaged public paths.
+The current Hyperfocus nature pack uses MixKit free sound effects as source material for the forest, rain, ocean/sea, river, and wind V2 families. Fireplace was moved to a separate indoor-hearth source listed below so the product no longer ships outdoor fire cues as the fireplace focus option. Provenance is tracked in `src/lib/hyperfocusGeneratedAudioManifest.ts` and `docs/audio/hyperfocus-generated-audio-provenance.json`, including source category URLs, generated file names, SHA-256 hashes, and packaged public paths.
 
 License reference: MixKit Sound Effects Free License, `https://mixkit.co/license/`. The official free sound effects catalog states the clips are royalty-free, usable without attribution, and available for commercial and personal projects; this notice records provenance for audit even where attribution is not required.
+
+### BigSoundBank / LaSonotheque — Hyperfocus Fireplace Sound Effects
+Location: `public/sounds/hyperfocus/hyperfocus-fireplace-*.mp3` and generated native asset bundles.
+
+The Hyperfocus fireplace family uses BigSoundBank Fireplace #4 / item 2856 as the real-source indoor hearth recording for `Embers`, `Hearth`, and `Full Hearth`. The source was trimmed, loop-tail-normalized, warmed, and transient-softened into 30-second 48 kHz stereo MP3 loops. Provenance, hashes, metrics, and processing notes are tracked in `docs/audio/hyperfocus-generated-audio-provenance.json` and the runtime manifest.
+
+Source reference: `https://bigsoundbank.com/fireplace-4-s2856.html`.
+License reference: `https://bigsoundbank.com/licenses.html`. The source page/license records CC0/public-domain-equivalent free sound-effects use; this notice records provenance for audit even where attribution is not required.
 
 ### Dev-time audio encoder
 
@@ -106,7 +114,7 @@ Full machine-readable list: run `npx license-checker --production --json` in CI 
 ## Compliance Checklist
 
 - [x] First-party generated audio provenance recorded (this file + docs/audio)
-- [x] MixKit Hyperfocus nature source provenance recorded (manifest + docs/audio)
+- [x] MixKit and BigSoundBank Hyperfocus nature source provenance recorded (manifest + docs/audio)
 - [x] SIL OFL fonts attributed (this file)
 - [x] Lucide ISC copyright preserved (this file)
 - [x] Phosphor MIT copyright preserved (this file)
@@ -129,4 +137,4 @@ When adding a new runtime dependency:
 
 When removing: sweep this file and delete the stale attribution.
 
-*Last updated: 2026-06-30 (first-party non-Hyperfocus provenance, Hyperfocus MixKit provenance, and stale root-audio cleanup)*
+*Last updated: 2026-07-01 (Hyperfocus fireplace indoor-hearth replacement, BigSoundBank provenance, and audio guard wiring)*

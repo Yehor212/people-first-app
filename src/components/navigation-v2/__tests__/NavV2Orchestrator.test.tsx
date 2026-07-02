@@ -205,7 +205,9 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Habits" }));
 
-    expect(screen.getByTestId("nav-v2-route-pending")).toHaveTextContent("Habits");
+    const pending = screen.getByTestId("nav-v2-route-pending");
+    expect(pending).toHaveTextContent("Habits");
+    expect(pending).not.toHaveAttribute("aria-label");
     await waitFor(() =>
       expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
         "data-active-page",

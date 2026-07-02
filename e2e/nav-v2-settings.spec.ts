@@ -188,7 +188,7 @@ test.describe("V2 Settings controls-first hierarchy", () => {
       await expect(page.getByTestId("diary-page")).toBeVisible({ timeout: 30_000 });
       await expect(page.getByTestId("diary-page-ambience-control")).toHaveCount(0);
       await expect(page.getByTestId("diary-page-ambience-toggle")).toHaveCount(0);
-      await expect(page.getByRole("button", { name: "Play diary ambience" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Play soft rain" })).toHaveCount(0);
 
       await page.goto(`${APP_BASE}/settings?nav=v2&navLayout=${soundLayout.name}&dev=true`);
       await page.evaluate(() => document.fonts.ready);
@@ -198,7 +198,7 @@ test.describe("V2 Settings controls-first hierarchy", () => {
       await expect(page.getByTestId("settings-v2-diary-ambience-control")).toBeVisible();
       const diaryAmbienceToggle = page.getByTestId("settings-v2-diary-ambience-toggle");
       await expect(diaryAmbienceToggle).toBeVisible();
-      await expect(diaryAmbienceToggle).toHaveAccessibleName("Play diary ambience");
+      await expect(diaryAmbienceToggle).toHaveAccessibleName("Play soft rain");
       await expect(diaryAmbienceToggle).toHaveAttribute("aria-pressed", "false");
 
       const facts = await page.evaluate(() => {

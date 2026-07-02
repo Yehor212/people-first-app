@@ -71,7 +71,7 @@ If any stop condition is true, do not use ElevenLabs or another SFX provider. Wa
 | forest | nature-first organic masking | Canopy Breeze | Bird Canopy | Forest Night |
 | rain | steady rain masking | Light Rain | Rain Bed | Heavy Rain |
 | ocean | breathing rhythm | Shoreline | Rock Pools | Heavy Surf |
-| fireplace | warm masking | Embers | Hearth | Bonfire |
+| fireplace | warm indoor hearth masking | Embers | Hearth | Full Hearth |
 | river | organic flow | Brook | Forest River | Whitewater |
 | wind | smooth air masking | Soft Wind | Wind Bed | Mountain Wind |
 

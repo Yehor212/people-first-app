@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Plus, type LucideIcon } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -38,26 +38,51 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
   const [open, setOpen] = useState(false);
   const [showQuickGratitude, setShowQuickGratitude] = useState(false);
   const [showQuickBurn, setShowQuickBurn] = useState(false);
+  const mainButtonRef = useRef<HTMLButtonElement>(null);
+  const firstActionRef = useRef<HTMLButtonElement>(null);
 
-  const closeSurfaces = useCallback(() => {
+  const restoreMainButtonFocus = useCallback(() => {
+    const focusMainButton = () => mainButtonRef.current?.focus();
+    if (typeof window === "undefined") {
+      focusMainButton();
+      return;
+    }
+    window.requestAnimationFrame(focusMainButton);
+  }, []);
+
+  const closeSurfaces = useCallback((restoreFocus = false) => {
     setShowQuickGratitude(false);
     setShowQuickBurn(false);
     setOpen(false);
-  }, []);
+    if (restoreFocus) restoreMainButtonFocus();
+  }, [restoreMainButtonFocus]);
 
   useEffect(() => {
     if (!open && !showQuickGratitude && !showQuickBurn) return undefined;
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      closeSurfaces();
+      closeSurfaces(true);
     };
     document.addEventListener("keydown", handleEsc);
     return () => document.removeEventListener("keydown", handleEsc);
   }, [closeSurfaces, open, showQuickBurn, showQuickGratitude]);
 
-  useBackHandler(open, () => setOpen(false));
+  useBackHandler(open, () => {
+    setOpen(false);
+    restoreMainButtonFocus();
+  });
   useBackHandler(showQuickGratitude, () => setShowQuickGratitude(false));
   useBackHandler(showQuickBurn, () => setShowQuickBurn(false));
+
+  useEffect(() => {
+    if (!open) return undefined;
+    if (typeof window === "undefined") {
+      firstActionRef.current?.focus();
+      return undefined;
+    }
+    const frame = window.requestAnimationFrame(() => firstActionRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [open]);
 
   const handleNewEntry = useCallback(() => {
     closeSurfaces();
@@ -149,7 +174,7 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setOpen(false)}
+            onClick={() => closeSurfaces(true)}
           />
         )}
       </AnimatePresence>
@@ -180,6 +205,7 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
                         damping: 22,
                       }
                 }
+                ref={index === 0 ? firstActionRef : undefined}
                 onClick={item.action}
                 aria-label={item.label}
                 data-testid={`journal-fab-action-${item.id}`}
@@ -207,13 +233,18 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
         type="button"
         whileTap={{ scale: 0.96 }}
         whileHover={{ scale: inline ? 1 : 1.05 }}
+        ref={mainButtonRef}
         onClick={() => {
           if (showQuickGratitude || showQuickBurn) {
             closeSurfaces();
             setOpen(true);
             return;
           }
-          setOpen((prev) => !prev);
+          if (open) {
+            setOpen(false);
+            return;
+          }
+          setOpen(true);
         }}
         aria-label={open ? ts.close || "Close" : ts.journalFabNewEntry || "New entry"}
         aria-expanded={open}

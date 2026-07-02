@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/contexts/LanguageContext", () => ({
@@ -42,48 +42,61 @@ type MotionMockProps<T extends HTMLElement> = React.HTMLAttributes<T> & {
   whileTap?: unknown;
 };
 
-vi.mock("framer-motion", () => ({
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  motion: {
-    button: ({
-      children,
-      initial,
-      animate,
-      exit,
-      transition,
-      whileHover,
-      whileTap,
-      ...rest
-    }: MotionMockProps<HTMLButtonElement>) => {
-      void initial;
-      void animate;
-      void exit;
-      void transition;
-      void whileHover;
-      void whileTap;
-      return <button {...rest}>{children}</button>;
+vi.mock("framer-motion", async () => {
+  const React = await vi.importActual<typeof import("react")>("react");
+
+  return {
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    motion: {
+      button: React.forwardRef<HTMLButtonElement, MotionMockProps<HTMLButtonElement>>(
+        (
+          {
+            children,
+            initial,
+            animate,
+            exit,
+            transition,
+            whileHover,
+            whileTap,
+            ...rest
+          },
+          ref,
+        ) => {
+          void initial;
+          void animate;
+          void exit;
+          void transition;
+          void whileHover;
+          void whileTap;
+          return (
+            <button ref={ref} {...rest}>
+              {children}
+            </button>
+          );
+        },
+      ),
+      div: ({
+        children,
+        initial,
+        animate,
+        exit,
+        transition,
+        whileHover,
+        whileTap,
+        ...rest
+      }: MotionMockProps<HTMLDivElement>) => {
+        void initial;
+        void animate;
+        void exit;
+        void transition;
+        void whileHover;
+        void whileTap;
+        return <div {...rest}>{children}</div>;
+      },
     },
-    div: ({
-      children,
-      initial,
-      animate,
-      exit,
-      transition,
-      whileHover,
-      whileTap,
-      ...rest
-    }: MotionMockProps<HTMLDivElement>) => {
-      void initial;
-      void animate;
-      void exit;
-      void transition;
-      void whileHover;
-      void whileTap;
-      return <div {...rest}>{children}</div>;
-    },
-  },
-  useReducedMotion: () => false,
-}));
+    useReducedMotion: () => false,
+  };
+});
 
 vi.mock("@/components/HyperfocusMode", () => ({
   HyperfocusMode: ({
@@ -178,6 +191,24 @@ describe("JournalCaptureLauncher", () => {
     expect(screen.getByTestId("journal-fab-action-gratitude")).toBeInTheDocument();
     expect(screen.getByTestId("journal-fab-action-burn")).toBeInTheDocument();
     expect(screen.queryByTestId("journal-fab-action-focus")).not.toBeInTheDocument();
+  });
+
+  it("moves keyboard focus into the action fan and restores it on Escape", async () => {
+    render(<JournalCaptureLauncher onNewEntry={vi.fn()} onAddGratitude={vi.fn()} />);
+
+    const mainFab = screen.getByTestId("journal-entry-main-fab");
+    mainFab.focus();
+    fireEvent.click(mainFab);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("journal-fab-action-new-entry")).toHaveFocus();
+    });
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(mainFab).toHaveFocus();
+    });
   });
 
   it("renders an inline launcher for empty days", () => {

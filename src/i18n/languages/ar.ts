@@ -897,7 +897,7 @@ const arabicOverrides: Partial<Translations> = {
   hyperfocusSoundCafeIntense: "ازدحام نشط",
   hyperfocusSoundFireplaceSoft: "جمر هادئ",
   hyperfocusSoundFireplaceDeep: "موقد دافئ",
-  hyperfocusSoundFireplaceIntense: "نار كبيرة",
+  hyperfocusSoundFireplaceIntense: "دفء المدفأة",
   hyperfocusShowVariants: "عرض التنويعات",
   hyperfocusHideVariants: "إخفاء التنويعات",
   hyperfocusTip: "نصيحة",

@@ -1,26 +1,38 @@
 /**
- * HyperfocusBackground — cosmic background with star particles and breathing animation
- * Pure component, 0 useState. Particles visible in both themes via CSS duality.
+ * HyperfocusBackground — restored Historical night Hyperfocus atmosphere.
+ * Pure component, 0 useState. The fullscreen Hyperfocus shell owns the local dark scope.
  */
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useShouldAnimate } from '@/hooks/useShouldAnimate';
 
 /**
- * Theme-aware particle — CSS .zen-particle switches animation:
- *   Day:   zen-mote-float  (gentle upward drift)
- *   Night: zen-star-twinkle (pulse in place)
- * Migrated from FM animate → CSS keyframes for 50-particle performance.
+ * Historical night Hyperfocus particle. The local dark shell keeps these as
+ * quiet stars while still using the shared GPU-only .zen-particle animation.
  */
-function CosmicStar({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
+function CosmicStar({
+  x,
+  y,
+  size,
+  delay,
+  motionAllowed,
+}: {
+  x: number;
+  y: number;
+  size: number;
+  delay: number;
+  motionAllowed: boolean;
+}) {
   return (
     <div
-      className="zen-particle absolute rounded-full"
+      className={motionAllowed ? "zen-particle absolute rounded-full" : "absolute rounded-full"}
       style={{
         left: `${x}%`,
         top: `${y}%`,
         width: size,
         height: size,
+        opacity: motionAllowed ? undefined : 0.42,
         backgroundColor: 'var(--particle-color)',
         '--particle-duration': `${2 + delay}s`,
         '--particle-delay': `${delay}s`,
@@ -35,6 +47,7 @@ interface HyperfocusBackgroundProps {
 }
 
 export function HyperfocusBackground({ showBreathingAnimation, t }: HyperfocusBackgroundProps) {
+  const motionAllowed = useShouldAnimate({ respectRuntimePerformance: false });
   const cosmicStars = useMemo(() =>
     Array.from({ length: 50 }, (_, i) => ({
       id: i,
@@ -47,27 +60,25 @@ export function HyperfocusBackground({ showBreathingAnimation, t }: HyperfocusBa
 
   return (
     <>
-      {/* Deep space background - Theme-aware (fixed layer) */}
-      {/* Light mode — Sun-Dappled Meadow */}
-      <div className="absolute inset-0 bg-gradient-to-b from-amber-50 via-sky-50 to-indigo-50 dark:bg-none" />
+      {/* Historical night Hyperfocus — Cosmic Cathedral from before day/night duality. */}
       <div
-        className="absolute inset-0 hidden dark:block"
+        className="absolute inset-0"
         style={{
           background: `radial-gradient(ellipse at center,
-            hsl(var(--focus-cosmic-mid)) 0%, hsl(var(--focus-cosmic-deep)) 50%, hsl(0 0% 0%) 100%)`
+            hsl(var(--focus-cosmic-mid)) 0%, hsl(var(--focus-cosmic-deep)) 50%, hsl(var(--focus-cosmic-dark)) 100%)`
         }}
       />
 
       {/* Star field */}
       {cosmicStars.map((star) => (
-        <CosmicStar key={star.id} {...star} />
+        <CosmicStar key={star.id} {...star} motionAllowed={motionAllowed} />
       ))}
 
       {/* Animated nebula gradient */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
-        animate={{ opacity: [0.2, 0.4, 0.2] }}
-        transition={{ duration: 8, repeat: Infinity }}
+        animate={motionAllowed ? { opacity: [0.2, 0.4, 0.2] } : { opacity: 0.24 }}
+        transition={motionAllowed ? { duration: 8, repeat: Infinity } : { duration: 0 }}
         style={{
           background: `
             radial-gradient(circle at 20% 30%, var(--nebula-a) 0%, transparent 40%),
@@ -78,7 +89,7 @@ export function HyperfocusBackground({ showBreathingAnimation, t }: HyperfocusBa
       />
 
       {/* Breathing Animation */}
-      {showBreathingAnimation && (
+      {motionAllowed && showBreathingAnimation && (
         <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
           <div className="breathing-circle zen-gradient rounded-full opacity-40" />
           <div className="absolute text-center">

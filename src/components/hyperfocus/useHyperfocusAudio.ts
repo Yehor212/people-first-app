@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { getAmbientSoundGenerator, AmbientSoundGenerator, AudioStatus } from '@/lib/ambientSounds';
 import { normalizeHyperfocusSoundId } from '@/lib/hyperfocusAudioCatalog';
 import { useAppAudioSettings } from '@/hooks/useAppAudioSettings';
+import { clearAppAudioMediaSession, setAppAudioMediaSession } from '@/lib/audioMediaSession';
 
 interface UseHyperfocusAudioOptions {
   isRunning: boolean;
@@ -29,8 +30,16 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
       setAudioStatus(status);
       if (status.state === 'playing') {
         setIsSoundPlaying(true);
-      } else if (status.state === 'idle' || status.state === 'error') {
+        setAppAudioMediaSession({
+          title: 'ZenFlow Hyperfocus',
+          artist: 'Focus ambience',
+          onPlay: () => generator.resumeDirect(),
+          onPause: () => generator.pause(),
+          onStop: () => generator.pause(),
+        });
+      } else if (status.state === 'idle' || status.state === 'paused' || status.state === 'blocked' || status.state === 'error') {
         setIsSoundPlaying(false);
+        clearAppAudioMediaSession();
       }
     });
 
@@ -46,6 +55,7 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     if (appAudioSettings.muted) {
       generator.pause();
       setIsSoundPlaying(false);
+      clearAppAudioMediaSession();
     }
   }, [ambientVolume, appAudioSettings.muted]);
 
@@ -70,6 +80,7 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
   useEffect(() => {
     return () => {
       if (soundGeneratorRef.current) {
+        clearAppAudioMediaSession();
         // eslint-disable-next-line react-hooks/exhaustive-deps -- ref.current in cleanup is intentional
         soundGeneratorRef.current.stop();
       }

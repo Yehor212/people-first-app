@@ -16,6 +16,7 @@ describe("Planning V2 focus transfer contract", () => {
   it("keeps Hyperfocus, reflection, and mini-player controls attached to FocusTimer", () => {
     const focusTimer = read("src/components/focus-timer/FocusTimer.tsx");
     const timerControls = read("src/components/focus-timer/TimerControls.tsx");
+    const cosmicBackground = read("src/components/focus-timer/CosmicBackground.tsx");
     const useFocusTimer = read("src/hooks/useFocusTimer.ts");
 
     expect(focusTimer).toContain('import { HyperfocusMode } from "../HyperfocusMode";');
@@ -27,11 +28,84 @@ describe("Planning V2 focus transfer contract", () => {
     expect(timerControls).toContain("onShowHyperfocus");
     expect(timerControls).toContain("disabled={isRunning}");
     expect(timerControls).toContain("{labels.hyperfocusMode}");
+    expect(timerControls).toContain("import { Play, Pause, RotateCcw, Focus }");
+    expect(timerControls).toContain("useShouldAnimate");
+    expect(timerControls).toContain("motionAllowed && !isRunning");
+    expect(timerControls).toContain("whileHover={motionAllowed ?");
+    expect(timerControls).toContain("<Focus");
+    expect(timerControls).not.toContain("Zap");
+
+    expect(cosmicBackground).toContain("import { Focus }");
+    expect(cosmicBackground).toContain("<Focus");
+    expect(cosmicBackground).not.toContain("Sparkles");
+    expect(cosmicBackground).not.toContain("Zap");
 
     expect(useFocusTimer).toContain("const [showHyperfocus, setShowHyperfocus] = useState(false);");
     expect(useFocusTimer).toContain("const handleHyperfocusComplete = () =>");
-    expect(useFocusTimer).toContain("onCompleteSession(session);");
+    expect(useFocusTimer).toContain("setPendingSession(session);");
+    expect(useFocusTimer).toContain("setShowReflection(true);");
+    expect(useFocusTimer).not.toContain("onCompleteSession(session);\n  };\n\n  useBackHandler(showReflection");
     expect(useFocusTimer).toContain("setFocusControls({ toggle: throttledToggle, reset: throttledReset });");
+  });
+
+  it("keeps Hyperfocus on the restored local night scope without restoring V1", () => {
+    const hyperfocusMode = read("src/components/hyperfocus/HyperfocusMode.tsx");
+    const hyperfocusBackground = read("src/components/hyperfocus/HyperfocusBackground.tsx");
+    const hyperfocusSoundSelector = read("src/components/hyperfocus/HyperfocusSoundSelector.tsx");
+
+    expect(hyperfocusMode).toContain('data-hyperfocus-theme="night"');
+    expect(hyperfocusMode).toContain('className="dark fixed inset-y-0 left-0');
+    expect(hyperfocusMode).toContain("w-screen");
+    expect(hyperfocusMode).toContain("max-w-none");
+    expect(hyperfocusMode).toContain("overflow-y-auto overscroll-contain scrollbar-hide");
+    expect(hyperfocusMode).toContain("document.documentElement");
+    expect(hyperfocusMode).toContain("scrollbar-gutter");
+    expect(hyperfocusMode).toContain("previousScrollbarGutter");
+    expect(hyperfocusMode).toContain("[@media(min-height:980px)]:block");
+    expect(hyperfocusMode).toContain("Play, Pause, Shield, Music, Leaf");
+    expect(hyperfocusMode).toContain("useShouldAnimate");
+    expect(hyperfocusMode).toContain("motionAllowed");
+    expect(hyperfocusMode).toContain("motionAllowed && (");
+    expect(hyperfocusMode).toContain("motionAllowed ? { height:");
+    expect(hyperfocusMode).toContain("<Leaf");
+    expect(hyperfocusMode).not.toContain("💡");
+    expect(hyperfocusMode).not.toContain("Sparkles");
+    expect(hyperfocusMode).toContain('bg-[hsl(var(--focus-cosmic-deep))]');
+    expect(hyperfocusMode).toContain('text-[hsl(var(--zf-text-strong))]');
+    expect(hyperfocusMode).toContain('min-h-[var(--app-viewport-height)]');
+    expect(hyperfocusMode).toContain('var(--safe-top)');
+    expect(hyperfocusMode).toContain('var(--safe-right)');
+    expect(hyperfocusMode).toContain('var(--safe-bottom)');
+    expect(hyperfocusMode).toContain('pt-[calc(var(--safe-top)_+_4.75rem)]');
+    expect(hyperfocusMode).toContain('pb-[calc(var(--safe-bottom)_+_2rem)]');
+    expect(hyperfocusMode).not.toContain('pt-[calc(var(--safe-top)+4.75rem)]');
+    expect(hyperfocusMode).not.toContain('pb-[calc(var(--safe-bottom)+2rem)]');
+    expect(hyperfocusMode).not.toContain('env(safe-area-inset-top');
+    expect(hyperfocusMode).not.toContain("components/v1");
+
+    expect(hyperfocusBackground).toContain("Historical night Hyperfocus");
+    expect(hyperfocusBackground).toContain("hsl(var(--focus-cosmic-mid))");
+    expect(hyperfocusBackground).toContain("hsl(var(--focus-cosmic-dark))");
+    expect(hyperfocusBackground).not.toContain("Light mode");
+    expect(hyperfocusBackground).not.toContain("from-amber-50 via-sky-50 to-indigo-50");
+    expect(hyperfocusBackground).toContain("motionAllowed");
+    expect(hyperfocusBackground).toContain("useShouldAnimate");
+    expect(hyperfocusBackground).toContain("motionAllowed={motionAllowed}");
+    expect(hyperfocusBackground).toContain('motionAllowed ? "zen-particle absolute rounded-full" : "absolute rounded-full"');
+    expect(hyperfocusBackground).toContain("motionAllowed && showBreathingAnimation");
+    expect(hyperfocusBackground).not.toContain("transition={{ duration: 8, repeat: Infinity }}");
+
+    const hyperfocusTimerDisplay = read("src/components/hyperfocus/HyperfocusTimerDisplay.tsx");
+    expect(hyperfocusTimerDisplay).toContain("motionAllowed");
+    expect(hyperfocusTimerDisplay).toContain("useShouldAnimate");
+    expect(hyperfocusTimerDisplay).toContain("initial={motionAllowed");
+    expect(hyperfocusTimerDisplay).toContain("transition={motionAllowed ? zenMotion.snappy : { duration: 0 }}");
+
+    expect(hyperfocusSoundSelector).toContain("lg:max-w-3xl");
+    expect(hyperfocusSoundSelector).toContain("lg:grid-cols-7");
+    expect(hyperfocusSoundSelector).toContain("useShouldAnimate");
+    expect(hyperfocusSoundSelector).toContain('motionAllowed && "animate-spin"');
+    expect(hyperfocusSoundSelector).toContain("whileHover={motionAllowed ?");
   });
 
   it("keeps V2 post-focus mindful moment out of V1 stats navigation", () => {

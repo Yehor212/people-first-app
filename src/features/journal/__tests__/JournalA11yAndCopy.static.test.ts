@@ -11,6 +11,7 @@ const source = {
   shortcuts: readFileSync("src/features/journal/KeyboardShortcutsOverlay.tsx", "utf8"),
   saveIndicator: readFileSync("src/features/journal/SaveIndicator.tsx", "utf8"),
   emptyCanvas: readFileSync("src/features/journal/DiaryEmptyCanvas.tsx", "utf8"),
+  journalQuotes: readFileSync("src/features/journal/journalQuotes.ts", "utf8"),
   useJournal: readFileSync("src/features/journal/useJournal.ts", "utf8"),
   types: readFileSync("src/i18n/types.ts", "utf8"),
 };
@@ -150,9 +151,13 @@ describe("Journal accessibility, copy, and wallpaper static contracts", () => {
   });
 
   it("keeps the restored quote ritual unaffiliated, localized, and pressure-free", () => {
-    expect(source.emptyCanvas).toContain("JOURNAL_EMPTY_QUOTES");
-    expect(source.emptyCanvas).toContain("quoteJournal1");
-    expect(source.emptyCanvas).toContain("quoteJournal30");
+    expect(source.journalQuotes).toContain("JOURNAL_EMPTY_QUOTES");
+    expect(source.journalQuotes).toContain("quoteJournal1");
+    expect(source.journalQuotes).toContain("quoteJournal30");
+    expect(source.emptyCanvas).toContain("getJournalQuote(ts)");
+    expect(source.entryList).toContain("getJournalQuote(ts)");
+    expect(source.module).toContain("getJournalQuote(ts)");
+    expect(source.entryList).not.toContain("ts.journalEmptyQuote");
     expect(source.emptyCanvas).toContain('data-testid="diary-reflection-quote"');
     expect(source.emptyCanvas).toContain("journalReflectionQuoteLabel");
     expect(source.emptyCanvas).toContain("focus-visible:ring-2");
@@ -165,6 +170,7 @@ describe("Journal accessibility, copy, and wallpaper static contracts", () => {
     expect(source.entryList).not.toContain("You haven't written in {days} days");
     expect(source.entryList).not.toContain("Write what disturbs you");
     expect(source.entryList).not.toContain("The unexamined life is not worth living");
+    expect(source.journalQuotes).toContain("JOURNAL_FIRST_USE_QUOTES");
   });
   it("separates diary load and AI search failures from empty states", () => {
     expect(source.useJournal).toContain("loadError");

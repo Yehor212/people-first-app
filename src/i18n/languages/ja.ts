@@ -1107,7 +1107,7 @@ export const ja: Translations = {
   hyperfocusSoundCafeIntense: "にぎやかな時間",
   hyperfocusSoundFireplaceSoft: "熾き火",
   hyperfocusSoundFireplaceDeep: "暖炉",
-  hyperfocusSoundFireplaceIntense: "焚き火",
+  hyperfocusSoundFireplaceIntense: "暖炉の炎",
   hyperfocusShowVariants: "バリエーションを表示",
   hyperfocusHideVariants: "バリエーションを隠す",
   hyperfocusTip: "ヒント",

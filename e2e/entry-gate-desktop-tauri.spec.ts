@@ -51,6 +51,11 @@ interface TauriCapability {
 const OUTPUT_DIR = path.resolve(process.cwd(), "output/playwright/desktop-tauri-entry-20260615");
 const SUPPORTED_LANGUAGES: readonly EntryLanguage[] = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
 const RTL_LANGUAGES = new Set<EntryLanguage>(["ar", "he"]);
+const DEFAULT_PUBLIC_AUTH_PROVIDER_IDS = ["google", "telegram"];
+const DEFAULT_PUBLIC_AUTH_PROVIDER_ICON_METRICS = [
+  { id: "auth-provider-icon-google", renderedHeight: 24, renderedWidth: 24 },
+  { id: "auth-provider-icon-telegram", renderedHeight: 24, renderedWidth: 24 },
+];
 
 const scenarios: DesktopEntryScenario[] = [
   {
@@ -241,8 +246,8 @@ function collectTauriBoundaryFacts() {
       windows: capability.windows ?? [],
     },
     cargo: {
-      tauriBuildVersionPinned: cargoSource.includes("tauri-build = { version = \"2.6.2\""),
-      tauriVersionPinned: cargoSource.includes("tauri = { version = \"2.11.2\""),
+      tauriBuildVersionPinned: cargoSource.includes("tauri-build = { version = \"2.6.3\""),
+      tauriVersionPinned: cargoSource.includes("tauri = { version = \"2.11.3\""),
     },
     env: {
       exposesDesktopRuntime: envSource.includes("IS_DESKTOP_RUNTIME"),
@@ -673,18 +678,14 @@ test.describe("Desktop/Tauri entry gate evidence", () => {
       }
 
       if (fact.screen === "auth-screen") {
-        expect(fact.authProviders, `${fact.name} auth provider ids`).toEqual([
-          "google",
-          "telegram",
-          "apple",
-        ]);
+        expect(fact.authProviders, `${fact.name} auth provider ids`).toEqual(
+          DEFAULT_PUBLIC_AUTH_PROVIDER_IDS,
+        );
         expect(fact.iconCenterSpread, `${fact.name} provider icon rail spread`).toBe(0);
         expect(fact.providerIcons.every((icon) => icon.className.includes("h-6 w-6"))).toBe(true);
-        expect(fact.providerIconMetrics, `${fact.name} provider icon metrics`).toEqual([
-          { id: "auth-provider-icon-google", renderedHeight: 24, renderedWidth: 24 },
-          { id: "auth-provider-icon-telegram", renderedHeight: 24, renderedWidth: 24 },
-          { id: "auth-provider-icon-apple", renderedHeight: 24, renderedWidth: 24 },
-        ]);
+        expect(fact.providerIconMetrics, `${fact.name} provider icon metrics`).toEqual(
+          DEFAULT_PUBLIC_AUTH_PROVIDER_ICON_METRICS,
+        );
         expect(fact.telegram.exists, `${fact.name} Telegram icon`).toBe(true);
         expect(fact.telegram.viewBox, `${fact.name} Telegram viewBox`).toBe("0 0 128 128");
         expect(fact.telegram.gradientStops, `${fact.name} Telegram gradient`).toEqual([

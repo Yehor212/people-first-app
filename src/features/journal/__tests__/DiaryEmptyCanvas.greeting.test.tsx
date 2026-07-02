@@ -15,6 +15,7 @@ const translations = {
     journalPrompt: "Prompt",
     journalReflectionPrompt2: "Write one true sentence about today.",
     journalReflectionQuoteLabel: "A quiet quote",
+    quoteJournal3: "The act of writing is the act of discovering what you believe.",
     quoteJournal13: "There is no greater agony than bearing an untold story inside you.",
   },
   uk: {
@@ -23,6 +24,7 @@ const translations = {
     journalPrompt: "Підказка",
     journalReflectionPrompt2: "Напишіть одне правдиве речення про сьогодні.",
     journalReflectionQuoteLabel: "Тиха цитата",
+    quoteJournal3: "Писати — означає відкривати, у що ти насправді віриш.",
     quoteJournal13: "Немає більшого болю, ніж носити нерозказану історію в собі.",
   },
 } as const;
@@ -112,8 +114,9 @@ describe("DiaryEmptyCanvas night greeting", () => {
 
     expect(screen.getByRole("heading", { name: "Quiet night" })).toBeVisible();
     expect(
-      screen.getByText("There is no greater agony than bearing an untold story inside you."),
+      screen.getByText("The act of writing is the act of discovering what you believe."),
     ).toBeVisible();
+    expect(screen.queryByText("There is no greater agony than bearing an untold story inside you.")).not.toBeInTheDocument();
     expect(screen.queryByText("Still up?")).not.toBeInTheDocument();
   });
 
@@ -122,8 +125,9 @@ describe("DiaryEmptyCanvas night greeting", () => {
 
     expect(screen.getByRole("heading", { name: "Тиха ніч" })).toBeVisible();
     expect(
-      screen.getByText("Немає більшого болю, ніж носити нерозказану історію в собі."),
+      screen.getByText("Писати — означає відкривати, у що ти насправді віриш."),
     ).toBeVisible();
+    expect(screen.queryByText("Немає більшого болю, ніж носити нерозказану історію в собі.")).not.toBeInTheDocument();
     expect(screen.queryByText("Ще не спиш?")).not.toBeInTheDocument();
   });
 });

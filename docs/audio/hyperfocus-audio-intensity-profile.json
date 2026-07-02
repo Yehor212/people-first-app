@@ -1,6 +1,6 @@
 {
-  "version": "2026-06-29-rain-wind-v8-48khz",
-  "generatedAt": "2026-06-29T20:49:38.107Z",
+  "version": "2026-07-01-fireplace-hearth-v9-48khz",
+  "generatedAt": "2026-07-01T06:15:12.304Z",
   "metric": "intensityScore = weighted RMS + motion + zero-crossing activity, measured with macOS afconvert parity to the regression test; higher means denser/louder/noisier ambience.",
   "families": {
     "forest": {
@@ -225,73 +225,73 @@
     "fireplace": {
       "soft": {
         "fileName": "hyperfocus-fireplace-soft.mp3",
-        "sourceTitle": "Campfire burning crackles",
+        "sourceTitle": "BigSoundBank Fireplace #4 indoor embers",
         "durationSeconds": 30.024,
         "sampleRate": 48000,
         "channels": 2,
-        "rmsDb": -31.12,
-        "motionDb": -59.62,
-        "peakDb": -8.31,
-        "zeroCrossingsPerSecond": 415.2,
-        "intensityScore": 40.36,
-        "sha256": "1eb38f1eec5012e1e94284134784392b788be82655767cf3c7ad560dc30bd103",
+        "rmsDb": -33.58,
+        "motionDb": -43.33,
+        "peakDb": -17.48,
+        "zeroCrossingsPerSecond": 4385,
+        "intensityScore": 54.67,
+        "sha256": "1d654a6ec53bb4ffd348c10439bf4446de4e8a0db39c5f900d7314a06857b81b",
         "bytes": 480384,
         "strictQc": {
           "status": "PASS",
-          "seamMeanAbsDiff": 0.00043,
+          "seamMeanAbsDiff": 0.015779,
           "clippedSamples": 0,
-          "startEndRmsDeltaDb": 0.28
+          "startEndRmsDeltaDb": 0.08
         }
       },
       "deep": {
         "fileName": "hyperfocus-fireplace-deep.mp3",
-        "sourceTitle": "Campfire crackles",
+        "sourceTitle": "BigSoundBank Fireplace #4 indoor hearth",
         "durationSeconds": 30.024,
         "sampleRate": 48000,
         "channels": 2,
-        "rmsDb": -33.38,
-        "motionDb": -32.32,
-        "peakDb": -5.02,
-        "zeroCrossingsPerSecond": 14724.3,
-        "intensityScore": 68.9,
-        "sha256": "5c470beb8d115f0e00b1e9bb2399a11c83db87d7d0940d502234429e6f22100a",
+        "rmsDb": -30.32,
+        "motionDb": -38.98,
+        "peakDb": -12.18,
+        "zeroCrossingsPerSecond": 4993.9,
+        "intensityScore": 62.06,
+        "sha256": "0f4db7ae0a8a62c76b64e92e6466ff8022b8c18b13055b8b9930d22fe27f03dc",
         "bytes": 480384,
         "strictQc": {
           "status": "PASS",
-          "seamMeanAbsDiff": 0.000018,
+          "seamMeanAbsDiff": 0.025082,
           "clippedSamples": 0,
-          "startEndRmsDeltaDb": 0.8
+          "startEndRmsDeltaDb": 0.4
         }
       },
       "intense": {
         "fileName": "hyperfocus-fireplace-intense.mp3",
-        "sourceTitle": "Campfire night wind",
+        "sourceTitle": "BigSoundBank Fireplace #4 full indoor hearth",
         "durationSeconds": 30.024,
         "sampleRate": 48000,
         "channels": 2,
-        "rmsDb": -30.36,
-        "motionDb": -31.78,
-        "peakDb": -1.9,
-        "zeroCrossingsPerSecond": 10286.4,
-        "intensityScore": 72.77,
-        "sha256": "a850e30dfaf4f2608fa517b70eeb2b98dafeaaa9083f1f77d7b9928c5d859934",
+        "rmsDb": -26.7,
+        "motionDb": -34.5,
+        "peakDb": -6.72,
+        "zeroCrossingsPerSecond": 5402.6,
+        "intensityScore": 69.44,
+        "sha256": "e64cbe03214200767cf849887cd4dfbe3c969ebc6dbc63b2d3c9f6e39df99359",
         "bytes": 480384,
         "strictQc": {
           "status": "PASS",
-          "seamMeanAbsDiff": 0.000098,
+          "seamMeanAbsDiff": 0.041647,
           "clippedSamples": 0,
-          "startEndRmsDeltaDb": 0.05
+          "startEndRmsDeltaDb": 0.11
         }
       },
       "acceptance": {
         "order": "soft < deep < intense",
         "scores": [
-          40.36,
-          68.9,
-          72.77
+          54.67,
+          62.06,
+          69.44
         ],
-        "softToDeepGap": 28.54,
-        "deepToIntenseGap": 3.87,
+        "softToDeepGap": 7.39,
+        "deepToIntenseGap": 7.38,
         "pass": true
       }
     },

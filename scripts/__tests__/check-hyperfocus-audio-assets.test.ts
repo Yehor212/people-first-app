@@ -4,40 +4,66 @@ import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { deflateRawSync } from "node:zlib";
 import { describe, expect, it, vi } from "vitest";
 
+const TEST_CRC32_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let index = 0; index < table.length; index += 1) {
+    let value = index;
+    for (let bit = 0; bit < 8; bit += 1) {
+      value = (value & 1) ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
+    }
+    table[index] = value >>> 0;
+  }
+  return table;
+})();
 
-function makeStoredZip(entries: Array<{ name: string; content: string | Buffer }>) {
+function crc32Number(buffer: Buffer) {
+  let crc = 0xffffffff;
+  for (const byte of buffer) {
+    crc = TEST_CRC32_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+
+function makeStoredZip(entries: Array<{ name: string; content: string | Buffer; localName?: string; compressionMethod?: 0 | 8; declaredBytes?: number }>) {
   const localParts: Buffer[] = [];
   const centralParts: Buffer[] = [];
   let offset = 0;
 
   for (const entry of entries) {
     const name = Buffer.from(entry.name, "utf8");
+    const localName = Buffer.from(entry.localName || entry.name, "utf8");
     const content = Buffer.isBuffer(entry.content) ? entry.content : Buffer.from(entry.content);
+    const compressionMethod = entry.compressionMethod ?? 0;
+    const payload = compressionMethod === 8 ? deflateRawSync(content) : content;
+    const declaredBytes = entry.declaredBytes ?? content.length;
+    const crc32 = crc32Number(content);
     const local = Buffer.alloc(30);
     local.writeUInt32LE(0x04034b50, 0);
     local.writeUInt16LE(20, 4);
     local.writeUInt16LE(0x0800, 6);
-    local.writeUInt16LE(0, 8);
+    local.writeUInt16LE(compressionMethod, 8);
     local.writeUInt32LE(0, 10);
-    local.writeUInt32LE(0, 14);
-    local.writeUInt32LE(content.length, 18);
-    local.writeUInt32LE(content.length, 22);
-    local.writeUInt16LE(name.length, 26);
+    local.writeUInt32LE(crc32, 14);
+    local.writeUInt32LE(payload.length, 18);
+    local.writeUInt32LE(declaredBytes, 22);
+    local.writeUInt16LE(localName.length, 26);
     local.writeUInt16LE(0, 28);
-    localParts.push(local, name, content);
+    localParts.push(local, localName, payload);
 
     const central = Buffer.alloc(46);
     central.writeUInt32LE(0x02014b50, 0);
     central.writeUInt16LE(20, 4);
     central.writeUInt16LE(20, 6);
     central.writeUInt16LE(0x0800, 8);
-    central.writeUInt16LE(0, 10);
+    central.writeUInt16LE(compressionMethod, 10);
     central.writeUInt32LE(0, 12);
-    central.writeUInt32LE(0, 16);
-    central.writeUInt32LE(content.length, 20);
-    central.writeUInt32LE(content.length, 24);
+    central.writeUInt32LE(crc32, 16);
+    central.writeUInt32LE(payload.length, 20);
+    central.writeUInt32LE(declaredBytes, 24);
     central.writeUInt16LE(name.length, 28);
     central.writeUInt16LE(0, 30);
     central.writeUInt16LE(0, 32);
@@ -47,7 +73,7 @@ function makeStoredZip(entries: Array<{ name: string; content: string | Buffer }
     central.writeUInt32LE(offset, 42);
     centralParts.push(central, name);
 
-    offset += local.length + name.length + content.length;
+    offset += local.length + localName.length + payload.length;
   }
 
   const centralDirectoryOffset = offset;
@@ -3103,9 +3129,241 @@ describe("check-hyperfocus-audio-assets", () => {
         archiveEntryPath: "assets/public/sounds/hyperfocus/hyperfocus-fireplace-soft.mp3",
         bytes: "apk-audio-bytes".length,
         compressedBytes: "apk-audio-bytes".length,
-        crc32: "00000000",
+        crc32: expect.stringMatching(/^[a-f0-9]{8}$/),
       }),
     );
+  });
+
+  it("reads deflated generated Hyperfocus assets from the Android debug APK artifact", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "hyperfocus-audio-apk-deflated-package-"));
+    mkdirSync(join(rootDir, "docs/audio"), { recursive: true });
+    mkdirSync(join(rootDir, "public/sounds/hyperfocus"), { recursive: true });
+    mkdirSync(join(rootDir, "android/app/build/outputs/apk/debug"), { recursive: true });
+    copyFileSync(
+      join(process.cwd(), "docs/audio/hyperfocus-three-level-generation-spec.json"),
+      join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"),
+    );
+    writeFileSync(
+      join(rootDir, "public/sounds/hyperfocus/hyperfocus-fireplace-soft.mp3"),
+      "source-audio-bytes",
+    );
+    writeFileSync(
+      join(rootDir, "android/app/build/outputs/apk/debug/app-debug.apk"),
+      makeStoredZip([
+        {
+          name: "assets/public/sounds/hyperfocus/hyperfocus-fireplace-soft.mp3",
+          content: "source-audio-bytes",
+          compressionMethod: 8,
+        },
+      ]),
+    );
+
+    const report = qc.buildHyperfocusPackagedAssetReport({
+      rootDir,
+      generatedAt: "2026-06-19T00:00:00.000Z",
+    });
+    const targetsById = Object.fromEntries(report.targets.map((target) => [target.id, target]));
+    const apkFireplaceAsset = targetsById["android-debug-apk"].assets.find((asset) => asset.variantId === "fireplace:soft");
+
+    expect(apkFireplaceAsset).toEqual(
+      expect.objectContaining({
+        status: "present",
+        bytes: "source-audio-bytes".length,
+        sha256: sha256Buffer(Buffer.from("source-audio-bytes")),
+      }),
+    );
+  });
+
+  it("fails Android debug APK assets whose bytes do not match the source public asset", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "hyperfocus-audio-apk-sha-mismatch-"));
+    mkdirSync(join(rootDir, "docs/audio"), { recursive: true });
+    mkdirSync(join(rootDir, "public/sounds/hyperfocus"), { recursive: true });
+    mkdirSync(join(rootDir, "android/app/build/outputs/apk/debug"), { recursive: true });
+    copyFileSync(
+      join(process.cwd(), "docs/audio/hyperfocus-three-level-generation-spec.json"),
+      join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"),
+    );
+    writeFileSync(
+      join(rootDir, "public/sounds/hyperfocus/hyperfocus-fireplace-soft.mp3"),
+      "source-audio-bytes",
+    );
+    writeFileSync(
+      join(rootDir, "android/app/build/outputs/apk/debug/app-debug.apk"),
+      makeStoredZip([
+        {
+          name: "assets/public/sounds/hyperfocus/hyperfocus-fireplace-soft.mp3",
+          content: "stale-apk-audio-bytes",
+        },
+      ]),
+    );
+
+    const report = qc.buildHyperfocusPackagedAssetReport({
+      rootDir,
+      generatedAt: "2026-06-19T00:00:00.000Z",
+    });
+    const targetsById = Object.fromEntries(report.targets.map((target) => [target.id, target]));
+    const apkTarget = targetsById["android-debug-apk"];
+    const apkFireplaceAsset = apkTarget.assets.find((asset) => asset.variantId === "fireplace:soft");
+
+    expect(report.ok).toBe(false);
+    expect(apkTarget).toEqual(
+      expect.objectContaining({
+        platform: "android",
+        presentCount: 0,
+        failedCount: 1,
+      }),
+    );
+    expect(apkFireplaceAsset).toEqual(
+      expect.objectContaining({
+        variantId: "fireplace:soft",
+        status: "fail",
+      }),
+    );
+    expect(apkFireplaceAsset?.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "packaged-asset-sha-mismatch",
+        }),
+      ]),
+    );
+  });
+
+  it("fails APK entries whose local ZIP header name does not match the central directory path", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "hyperfocus-audio-apk-local-header-mismatch-"));
+    mkdirSync(join(rootDir, "docs/audio"), { recursive: true });
+    mkdirSync(join(rootDir, "public/sounds/hyperfocus"), { recursive: true });
+    mkdirSync(join(rootDir, "android/app/build/outputs/apk/debug"), { recursive: true });
+    copyFileSync(
+      join(process.cwd(), "docs/audio/hyperfocus-three-level-generation-spec.json"),
+      join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"),
+    );
+    writeFileSync(
+      join(rootDir, "public/sounds/hyperfocus/hyperfocus-fireplace-soft.mp3"),
+      "source-audio-bytes",
+    );
+    writeFileSync(
+      join(rootDir, "android/app/build/outputs/apk/debug/app-debug.apk"),
+      makeStoredZip([
+        {
+          name: "assets/public/sounds/hyperfocus/hyperfocus-fireplace-soft.mp3",
+          localName: "assets/public/sounds/hyperfocus/hyperfocus-fireplace-deep.mp3",
+          content: "source-audio-bytes",
+        },
+      ]),
+    );
+
+    const report = qc.buildHyperfocusPackagedAssetReport({
+      rootDir,
+      generatedAt: "2026-06-19T00:00:00.000Z",
+    });
+    const targetsById = Object.fromEntries(report.targets.map((target) => [target.id, target]));
+    const apkTarget = targetsById["android-debug-apk"];
+    const apkFireplaceAsset = apkTarget.assets.find((asset) => asset.variantId === "fireplace:soft");
+
+    expect(apkTarget).toEqual(
+      expect.objectContaining({
+        platform: "android",
+        presentCount: 0,
+        failedCount: 1,
+      }),
+    );
+    expect(apkFireplaceAsset).toEqual(expect.objectContaining({ status: "fail" }));
+    expect(apkFireplaceAsset?.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "package-entry-unreadable" }),
+      ]),
+    );
+  });
+
+  it("fails APK entries that declare an oversized uncompressed payload", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "hyperfocus-audio-apk-oversized-entry-"));
+    mkdirSync(join(rootDir, "docs/audio"), { recursive: true });
+    mkdirSync(join(rootDir, "android/app/build/outputs/apk/debug"), { recursive: true });
+    copyFileSync(
+      join(process.cwd(), "docs/audio/hyperfocus-three-level-generation-spec.json"),
+      join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"),
+    );
+    writeFileSync(
+      join(rootDir, "android/app/build/outputs/apk/debug/app-debug.apk"),
+      makeStoredZip([
+        {
+          name: "assets/public/sounds/hyperfocus/hyperfocus-fireplace-soft.mp3",
+          content: "source-audio-bytes",
+          declaredBytes: 2_000_001,
+        },
+      ]),
+    );
+
+    const report = qc.buildHyperfocusPackagedAssetReport({
+      rootDir,
+      generatedAt: "2026-06-19T00:00:00.000Z",
+    });
+    const targetsById = Object.fromEntries(report.targets.map((target) => [target.id, target]));
+    const apkFireplaceAsset = targetsById["android-debug-apk"].assets.find((asset) => asset.variantId === "fireplace:soft");
+
+    expect(apkFireplaceAsset).toEqual(expect.objectContaining({ status: "fail" }));
+    expect(apkFireplaceAsset?.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "package-entry-unreadable" }),
+      ]),
+    );
+  });
+
+  it("supports a CLI package-target filter for the Android APK package guard", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "hyperfocus-audio-package-target-cli-"));
+    mkdirSync(join(rootDir, "docs/audio"), { recursive: true });
+    mkdirSync(join(rootDir, "public/sounds/hyperfocus"), { recursive: true });
+    mkdirSync(join(rootDir, "android/app/build/outputs/apk/debug"), { recursive: true });
+    copyFileSync(
+      join(process.cwd(), "docs/audio/hyperfocus-three-level-generation-spec.json"),
+      join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"),
+    );
+    const expectedAssets = qc.getExpectedHyperfocusAssets({ rootDir });
+    for (const asset of expectedAssets) {
+      writeFileSync(join(rootDir, "public/sounds/hyperfocus", asset.fileName), "source-" + asset.fileName);
+    }
+    writeFileSync(
+      join(rootDir, "android/app/build/outputs/apk/debug/app-debug.apk"),
+      makeStoredZip(expectedAssets.map((asset) => ({
+        name: "assets/public/sounds/hyperfocus/" + asset.fileName,
+        content: "source-" + asset.fileName,
+      }))),
+    );
+    const reportFile = join(rootDir, "output/audio-qc/hyperfocus-android-apk-package-current.json");
+
+    const output = execFileSync(
+      process.execPath,
+      [
+        "scripts/check-hyperfocus-audio-assets.cjs",
+        "--root",
+        rootDir,
+        "--write-package-report",
+        reportFile,
+        "--package-target",
+        "android-debug-apk",
+      ],
+      { cwd: process.cwd(), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    );
+
+    expect(output).toContain("[hyperfocus-audio-package] PASS");
+    const report = JSON.parse(readFileSync(reportFile, "utf8"));
+    expect(report).toEqual(expect.objectContaining({ ok: true, targetCount: 1 }));
+    expect(report.targets).toEqual([
+      expect.objectContaining({ id: "android-debug-apk", presentCount: 18, missingCount: 0, failedCount: 0 }),
+    ]);
+  });
+
+  it("keeps the Android APK Hyperfocus package guard wired into the deploy workflow", () => {
+    const packageJson = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"));
+    expect(packageJson.scripts["check:hyperfocus-audio:android-apk"]).toContain("--package-target android-debug-apk");
+
+    const workflow = readFileSync(join(process.cwd(), ".github/workflows/deploy.yml"), "utf8");
+    const assembleIndex = workflow.indexOf("Android assembleDebug");
+    const guardIndex = workflow.indexOf("npm run check:hyperfocus-audio:android-apk");
+    const unitIndex = workflow.indexOf("Android testDebugUnitTest");
+
+    expect(guardIndex).toBeGreaterThan(assembleIndex);
+    expect(guardIndex).toBeLessThan(unitIndex);
   });
 
   it("writes a generated audio packaging report from the CLI when targets are incomplete", () => {

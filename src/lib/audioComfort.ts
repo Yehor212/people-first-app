@@ -93,7 +93,7 @@ export const AUDIO_COMFORT_PROFILES: readonly AudioComfortProfile[] = [
   {
     id: "quiet",
     label: "Quiet",
-    description: "No ambience, soft completion cues only.",
+    description: "No passive ambience; Hyperfocus sounds only when explicitly selected.",
     settings: {
       profile: "quiet",
       ambientEnabled: false,

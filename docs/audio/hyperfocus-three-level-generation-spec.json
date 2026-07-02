@@ -7,7 +7,7 @@
     "blockedFallback": "elevenlabs-sfx is available but disallowed by user requirement",
     "currentToolFinding": "Gemini TTS and Google Lyria music are available; no Gemini SFX/soundscape-specific model is exposed in the current tool list.",
     "pilotGate": "Generate one Lyria 3 Clip pilot only after confirming we accept music-model soundscape output for non-musical ambience. If the pilot contains melody, vocals, beat, or song structure, stop and wait for a Gemini soundscape/SFX-capable model.",
-    "currentDecision": "Use free real-source Mixkit nature recordings for the shipped V2 pack; generated candidates remain quarantine-only until they pass QC.",
+    "currentDecision": "Use free real-source nature recordings for the shipped V2 pack; fireplace uses a BigSoundBank indoor hearth source, and generated candidates remain quarantine-only until they pass QC.",
     "legacyCafePolicy": "The old cafe/social-noise family is not a visible V2 nature option; cafe ids normalize to forest for compatibility."
   },
   "assetPolicy": {
@@ -155,17 +155,20 @@
     {
       "id": "fireplace",
       "currentFile": "public/sounds/hyperfocus/hyperfocus-fireplace-deep.mp3",
-      "productRole": "warm crackle and room masking without campfire drama",
+      "productRole": "warm indoor hearth masking with softened crackle and room tone for calm focus",
       "levels": [
         {
           "id": "soft",
           "label": "Embers",
           "fileName": "hyperfocus-fireplace-soft.mp3",
-          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: tiny fireplace embers, soft close crackle, warm room air, very calm, low intensity, no melody, no beat, no vocals, no alarms, no dramatic flame surge, no harsh pops.",
+          "prompt": "30-second seamless non-musical ambience loop for a premium focus app: indoor fireplace embers in a quiet room, soft close crackle, warm room air, very calm, low intensity, no melody, no beat, no vocals, no alarms, no dramatic flame surge, no harsh pops.",
           "rejectIf": [
             "sirens",
             "emergency fire",
             "loud pops",
+            "campfire or campsite cue",
+            "bonfire or outdoor fire pit",
+            "night wind",
             "music beat",
             "vocals"
           ]
@@ -174,9 +177,12 @@
           "id": "deep",
           "label": "Hearth",
           "fileName": "hyperfocus-fireplace-deep.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: steady hearth fire in a quiet room, medium crackle density, warm wooden resonance, stable dynamics for deep focus, no melody, no rhythm, no vocals, no emergency fire cues.",
+          "prompt": "30-second seamless non-musical ambience loop: steady indoor hearth fireplace in a quiet room, medium softened crackle density, warm wooden resonance, stable dynamics for deep focus, no melody, no rhythm, no vocals, no emergency fire cues.",
           "rejectIf": [
             "camp crowd",
+            "campfire or campsite cue",
+            "outdoor fire pit",
+            "night wind",
             "sharp transient cluster",
             "song structure",
             "sirens"
@@ -184,14 +190,17 @@
         },
         {
           "id": "intense",
-          "label": "Bonfire",
+          "label": "Full Hearth",
           "fileName": "hyperfocus-fireplace-intense.mp3",
-          "prompt": "30-second seamless non-musical ambience loop: controlled bonfire intensity, broad warm crackle, low windless roar, energetic but safe, useful for masking noise during focus, no panic, no sirens, no burning building, no vocals, no music.",
+          "prompt": "30-second seamless non-musical ambience loop: full indoor fireplace hearth glow, broad warm crackle, quiet room tone, fuller but softened masking for focus, no panic, no sirens, no burning building, no vocals, no music.",
           "rejectIf": [
             "disaster fire",
             "alarm",
             "screaming",
             "danger cues",
+            "campfire or campsite cue",
+            "bonfire or outdoor fire pit",
+            "night wind",
             "melody"
           ]
         }

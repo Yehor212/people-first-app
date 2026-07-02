@@ -4,13 +4,14 @@
  * This file: ~280L, 0 useState, delegates state to 4 custom hooks.
  */
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { X, Play, Pause, Sparkles, Shield, Music } from "lucide-react";
+import { X, Play, Pause, Shield, Music, Leaf } from "lucide-react";
 import { isNative } from "@/lib/platform";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import {
   requestDndPolicyAccess,
   checkPolicyAccess,
@@ -32,9 +33,31 @@ import { HyperfocusSoundSelector } from "./HyperfocusSoundSelector";
 
 export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeProps) {
   const { t } = useLanguage();
+  const motionAllowed = useShouldAnimate({ respectRuntimePerformance: false });
 
   useBackHandler(true, onExit);
   useScrollLock(true);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const previousOverflow = html.style.overflow;
+    const previousBackgroundColor = html.style.backgroundColor;
+    const previousScrollbarGutter = html.style.getPropertyValue("scrollbar-gutter");
+
+    html.style.overflow = "hidden";
+    html.style.backgroundColor = "hsl(var(--focus-cosmic-deep))";
+    html.style.setProperty("scrollbar-gutter", "auto");
+
+    return () => {
+      html.style.overflow = previousOverflow;
+      html.style.backgroundColor = previousBackgroundColor;
+      if (previousScrollbarGutter) {
+        html.style.setProperty("scrollbar-gutter", previousScrollbarGutter);
+      } else {
+        html.style.removeProperty("scrollbar-gutter");
+      }
+    };
+  }, []);
 
   // --- Hooks ---
   const timer = useHyperfocusTimer({ duration, onComplete });
@@ -96,7 +119,11 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
   // --- JSX ---
   return (
-    <div className="fixed inset-0 bg-slate-100 dark:bg-black z-[110]">
+    <div
+      data-hyperfocus-theme="night"
+      className="dark fixed inset-y-0 left-0 z-[110] min-h-[var(--app-viewport-height)] w-screen max-w-none overflow-hidden bg-[hsl(var(--focus-cosmic-deep))] text-[hsl(var(--zf-text-strong))]"
+      style={{ colorScheme: "dark" }}
+    >
       <HyperfocusBackground showBreathingAnimation={timer.showBreathingAnimation} t={tRecord} />
 
       {/* Close Button */}
@@ -104,8 +131,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         onClick={onExit}
         className="fixed top-4 end-4 z-[110] p-3 min-w-[48px] min-h-[48px] bg-secondary hover:bg-secondary/80 rounded-xl motion-safe:transition-all text-slate-600 dark:text-white flex items-center justify-center active:scale-95"
         style={{
-          top: "max(1rem, env(safe-area-inset-top, 1rem))",
-          insetInlineEnd: "max(1rem, env(safe-area-inset-right, 1rem))",
+          top: "max(1rem, calc(var(--safe-top) + 0.75rem))",
+          insetInlineEnd: "max(1rem, calc(var(--safe-right) + 0.75rem))",
         }}
         aria-label={t.close}
       >
@@ -113,8 +140,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       </button>
 
       {/* Scrollable content layer */}
-      <div className="absolute inset-0 z-20 overflow-y-auto">
-        <div className="min-h-full flex flex-col items-center justify-center text-center px-6 py-8 lg:px-12">
+      <div className="absolute inset-0 z-20 overflow-y-auto overscroll-contain scrollbar-hide">
+        <div className="min-h-[var(--app-viewport-height)] flex flex-col items-center justify-center text-center px-6 pt-[calc(var(--safe-top)_+_4.75rem)] pb-[calc(var(--safe-bottom)_+_2rem)] lg:px-12">
           <HyperfocusTimerDisplay
             formattedTime={timer.formattedTime}
             timeLeft={timer.timeLeft}
@@ -135,23 +162,25 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   background: `linear-gradient(135deg, ${progressColor.from}, ${progressColor.to})`,
                   boxShadow: `0 0 30px ${progressColor.from}50`,
                 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={zenTap.button}
+                whileHover={motionAllowed ? { scale: 1.05 } : undefined}
+                whileTap={motionAllowed ? zenTap.button : undefined}
               >
-                <motion.div
-                  className="absolute inset-0 rounded-2xl border-2 border-white/30 dark:border-white/30"
-                  animate={{ scale: [1, 1.1], opacity: [0.5, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                />
-                <Sparkles className="w-5 h-5" />
+                {motionAllowed && (
+                  <motion.div
+                    className="absolute inset-0 rounded-2xl border-2 border-white/30 dark:border-white/30"
+                    animate={{ scale: [1, 1.1], opacity: [0.5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  />
+                )}
+                <Play className="w-5 h-5" aria-hidden="true" />
                 {t.hyperfocusStart}
               </motion.button>
             ) : (
               <motion.button
                 onClick={handlePause}
                 className="px-8 py-4 min-h-[56px] bg-secondary backdrop-blur-sm border border-border rounded-2xl text-slate-700 dark:text-white font-bold text-lg flex items-center gap-3 motion-safe:transition-all"
-                whileHover={{ scale: 1.05 }}
-                whileTap={zenTap.button}
+                whileHover={motionAllowed ? { scale: 1.05 } : undefined}
+                whileTap={motionAllowed ? zenTap.button : undefined}
               >
                 {timer.isPaused ? (
                   <>
@@ -170,8 +199,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             <motion.button
               onClick={onExit}
               className="px-6 py-4 min-h-[56px] bg-red-100 dark:bg-red-500/20 backdrop-blur-sm border border-red-300 dark:border-red-500/30 rounded-2xl text-red-600 dark:text-red-300 font-medium motion-safe:transition-all"
-              whileHover={{ scale: 1.05 }}
-              whileTap={zenTap.button}
+              whileHover={motionAllowed ? { scale: 1.05 } : undefined}
+              whileTap={motionAllowed ? zenTap.button : undefined}
             >
               {t.hyperfocusExit}
             </motion.button>
@@ -189,7 +218,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                     ? "bg-violet-500/20 border-violet-500/40"
                     : "bg-secondary border-border"
                 )}
-                whileTap={zenTap.card}
+                whileTap={motionAllowed ? zenTap.card : undefined}
                 aria-label={t.focusModeToggle || "Phone Focus Mode"}
                 aria-checked={dnd.dndEnabled}
                 role="switch"
@@ -242,7 +271,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                     // dark:bg-white silences theme-blind lint without changing runtime visuals.
                     className="w-5 h-5 rounded-full bg-white dark:bg-white shadow-sm mt-0.5"
                     animate={{ marginInlineStart: dnd.dndEnabled ? "22px" : "2px" }}
-                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    transition={motionAllowed ? { type: "spring", stiffness: 300, damping: 25 } : { duration: 0 }}
                   />
                 </div>
               </motion.button>
@@ -260,7 +289,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             >
               <motion.div
                 className="bg-card rounded-2xl p-6 max-w-sm w-full shadow-xl border border-border"
-                initial={{ scale: 0.9, opacity: 0 }}
+                initial={motionAllowed ? { scale: 0.9, opacity: 0 } : false}
                 animate={{ scale: 1, opacity: 1 }}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -332,7 +361,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                         ? "bg-[hsl(var(--brand-spotify))]/30 border border-[hsl(var(--brand-spotify))]/50 text-[hsl(var(--brand-spotify))]"
                         : "bg-secondary border border-border text-slate-500 dark:text-white/60"
                     )}
-                    whileTap={zenTap.button}
+                    whileTap={motionAllowed ? zenTap.button : undefined}
                   >
                     {spotify.spotifyAutoPlay ? t.spotifyAutoPlayOn : t.spotifyAutoPlayOff}
                   </motion.button>
@@ -362,18 +391,18 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                     <div className="flex gap-0.5 items-end h-5">
                       <motion.div
                         className="w-1 bg-[hsl(var(--brand-spotify))] rounded-full"
-                        animate={{ height: ["8px", "20px", "12px", "16px", "8px"] }}
-                        transition={{ duration: 1, repeat: Infinity }}
+                        animate={motionAllowed ? { height: ["8px", "20px", "12px", "16px", "8px"] } : { height: "12px" }}
+                        transition={motionAllowed ? { duration: 1, repeat: Infinity } : { duration: 0 }}
                       />
                       <motion.div
                         className="w-1 bg-[hsl(var(--brand-spotify))] rounded-full"
-                        animate={{ height: ["16px", "8px", "20px", "12px", "16px"] }}
-                        transition={{ duration: 1, repeat: Infinity, delay: 0.1 }}
+                        animate={motionAllowed ? { height: ["16px", "8px", "20px", "12px", "16px"] } : { height: "12px" }}
+                        transition={motionAllowed ? { duration: 1, repeat: Infinity, delay: 0.1 } : { duration: 0 }}
                       />
                       <motion.div
                         className="w-1 bg-[hsl(var(--brand-spotify))] rounded-full"
-                        animate={{ height: ["12px", "16px", "8px", "20px", "12px"] }}
-                        transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+                        animate={motionAllowed ? { height: ["12px", "16px", "8px", "20px", "12px"] } : { height: "12px" }}
+                        transition={motionAllowed ? { duration: 1, repeat: Infinity, delay: 0.2 } : { duration: 0 }}
                       />
                     </div>
                   )}
@@ -389,14 +418,14 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           {/* Premium Tips */}
           {!timer.isRunning && (
             <motion.div
-              className="mt-8 max-w-sm sm:max-w-md lg:max-w-lg mx-auto"
-              initial={{ opacity: 0, y: 10 }}
+              className="mt-8 hidden max-w-sm sm:max-w-md lg:max-w-lg mx-auto [@media(min-height:980px)]:block"
+              initial={motionAllowed ? { opacity: 0, y: 10 } : false}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={motionAllowed ? { delay: 0.3 } : { duration: 0 }}
             >
               <div className="bg-secondary backdrop-blur-md border border-border rounded-2xl p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">💡</span>
+                  <Leaf className="h-4 w-4 text-[hsl(var(--zf-primary))]" aria-hidden="true" />
                   <p className="text-xs text-slate-600 dark:text-white/60 font-medium">
                     {t.hyperfocusTip}
                   </p>

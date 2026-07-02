@@ -53,6 +53,7 @@ describe("audioComfort", () => {
 
   it("applies quiet, balanced, and rich profiles as explicit presets", () => {
     expect(AUDIO_COMFORT_PROFILES.map((profile) => profile.id)).toEqual(["quiet", "balanced", "rich"]);
+    expect(AUDIO_COMFORT_PROFILES[0].description).toContain("Hyperfocus sounds only when explicitly selected");
 
     applyAudioComfortProfile("quiet");
     expect(getAudioComfortSettings()).toMatchObject({

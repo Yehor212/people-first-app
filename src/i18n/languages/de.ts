@@ -1136,7 +1136,7 @@ export const de: Translations = {
   hyperfocusSoundCafeIntense: "Geschäftiges Treiben",
   hyperfocusSoundFireplaceSoft: "Glut",
   hyperfocusSoundFireplaceDeep: "Herdfeuer",
-  hyperfocusSoundFireplaceIntense: "Lagerfeuer",
+  hyperfocusSoundFireplaceIntense: "Volles Kaminfeuer",
   hyperfocusShowVariants: "Varianten anzeigen",
   hyperfocusHideVariants: "Varianten ausblenden",
   hyperfocusTip: "Tipp",

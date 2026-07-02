@@ -1316,7 +1316,7 @@ const hebrewOverrides: Partial<Translations> = {
   hyperfocusSoundCafeIntense: "עומס שוקק",
   hyperfocusSoundFireplaceSoft: "גחלים",
   hyperfocusSoundFireplaceDeep: "אח בוערת",
-  hyperfocusSoundFireplaceIntense: "מדורה",
+  hyperfocusSoundFireplaceIntense: "אש אח מלאה",
   hyperfocusShowVariants: "הצג גרסאות",
   hyperfocusHideVariants: "הסתר גרסאות",
   hyperfocusTip: "טיפ",

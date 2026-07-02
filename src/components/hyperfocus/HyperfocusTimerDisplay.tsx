@@ -5,6 +5,7 @@
 
 import { motion } from 'framer-motion';
 import { zenMotion } from '@/lib/animationUtils';
+import { useShouldAnimate } from '@/hooks/useShouldAnimate';
 import type { ProgressColor } from './types';
 
 interface HyperfocusTimerDisplayProps {
@@ -20,6 +21,8 @@ interface HyperfocusTimerDisplayProps {
 export function HyperfocusTimerDisplay({
   formattedTime, timeLeft, progress, progressColor, isRunning, isPaused, t,
 }: HyperfocusTimerDisplayProps) {
+  const motionAllowed = useShouldAnimate({ respectRuntimePerformance: false });
+
   return (
     <div className="mb-6 sm:mb-12 lg:mb-16">
       <div className="relative w-52 h-52 sm:w-64 sm:h-64 md:w-72 md:h-72 lg:w-80 lg:h-80 xl:w-96 xl:h-96 mx-auto mb-6 sm:mb-8">
@@ -79,7 +82,7 @@ export function HyperfocusTimerDisplay({
             animate={{
               strokeDashoffset: `${2 * Math.PI * 110 * (1 - progress / 100)}`
             }}
-            transition={zenMotion.gentle}
+            transition={motionAllowed ? zenMotion.gentle : { duration: 0 }}
             style={{
               filter: `drop-shadow(0 0 12px ${progressColor.from})`
             }}
@@ -95,7 +98,7 @@ export function HyperfocusTimerDisplay({
         </svg>
 
         {/* Inner breathing glow */}
-        {isRunning && !isPaused && (
+        {motionAllowed && isRunning && !isPaused && (
           <motion.div
             className="absolute inset-12 rounded-full pointer-events-none"
             style={{
@@ -122,9 +125,9 @@ export function HyperfocusTimerDisplay({
                 textShadow: `0 0 30px ${progressColor.from}60`
               }}
               key={timeLeft}
-              initial={{ scale: 0.95, opacity: 0.8 }}
+              initial={motionAllowed ? { scale: 0.95, opacity: 0.8 } : false}
               animate={{ scale: 1, opacity: 1 }}
-              transition={zenMotion.snappy}
+              transition={motionAllowed ? zenMotion.snappy : { duration: 0 }}
             >
               {formattedTime}
             </motion.div>

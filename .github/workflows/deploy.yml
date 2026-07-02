@@ -347,13 +347,21 @@ jobs:
         run: npm run check:sentry-artifacts
 
       - name: Capacitor sync (generates cordova.variables.gradle)
-        run: npx cap sync android
+        env:
+          CAPACITOR_BUILD: "true"
+        run: |
+          npx cap sync android
+          node scripts/capacitor-prune-assets.cjs
+          node scripts/normalize-android-config.cjs
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
       - name: Android assembleDebug
         run: cd android && ./gradlew assembleDebug --console=plain
+
+      - name: Check Android packaged Hyperfocus audio
+        run: npm run check:hyperfocus-audio:android-apk
 
       - name: Android testDebugUnitTest
         run: cd android && ./gradlew testDebugUnitTest --console=plain
@@ -422,7 +430,13 @@ jobs:
         run: npm run check:sentry-artifacts
 
       - name: Capacitor sync iOS
-        run: npx cap sync ios && node scripts/normalize-ios-spm.cjs
+        env:
+          CAPACITOR_BUILD: "true"
+        run: |
+          npx cap sync ios
+          node scripts/capacitor-prune-assets.cjs
+          node scripts/normalize-ios-config.cjs
+          node scripts/normalize-ios-spm.cjs
 
       - name: Resolve iOS packages
         run: xcodebuild -resolvePackageDependencies -project ios/App/App.xcodeproj -scheme App

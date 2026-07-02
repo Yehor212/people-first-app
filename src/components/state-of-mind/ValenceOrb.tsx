@@ -89,6 +89,12 @@ const ORB_MAX_FRAME_DELTA_SECONDS = 0.05;
 const ORB_MAX_WORKER_VISIBLE_DELTA_SECONDS = WEBGL_FRAME_INTERVAL / 1000;
 const ORB_MAX_TRANSITION_DELTA_SECONDS = 0.12;
 export const ORB_SHADER_TIME_WRAP_SECONDS = Math.PI * 6000;
+export const ORB_REDUCED_MOTION_STILL_TIME_SECONDS = 1.2;
+
+export function resolveReducedMotionOrbStillTime(currentTime: number): number {
+  if (Number.isFinite(currentTime) && currentTime >= 0.5) return currentTime;
+  return ORB_REDUCED_MOTION_STILL_TIME_SECONDS;
+}
 
 function shouldAnimateCanonicalOrb(): boolean {
   return shouldAnimate({ respectRuntimePerformance: false });
@@ -571,6 +577,17 @@ export function shouldUseWorkerWebGL(forceCanonicalWebGL: boolean, size = Number
   return !isPhoneLikeViewport();
 }
 
+export function shouldPreferWorkerWebGLBeforeMainThreadWebGPU(
+  forceCanonicalWebGL: boolean,
+  size = Number.POSITIVE_INFINITY,
+): boolean {
+  return (
+    forceCanonicalWebGL &&
+    isPhoneLikeViewport() &&
+    shouldUseWorkerWebGL(forceCanonicalWebGL, size)
+  );
+}
+
 function scheduleAfterFirstPaint(
   task: () => void,
   options: { preferIdle?: boolean; delayMs?: number } = {},
@@ -864,6 +881,9 @@ export const ValenceOrb = memo(function ValenceOrb({
       return Math.max(0, 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2));
     };
 
+    const resolveOrbGenesis = (timestamp: number): number =>
+      shouldAnimateCanonicalOrb() ? computeGenesis(timestamp) : 1.0;
+
     // ── Touch state ──
     const computeTouch = (time: number): { x: number; y: number; age: number } => {
       const tc = touchRef.current;
@@ -889,7 +909,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         color,
         shape: getShapeParams(v),
         particles,
-        genesis: computeGenesis(timestamp),
+        genesis: resolveOrbGenesis(timestamp),
         touch: computeTouch(t),
         shimmer: shimmerRef.current,
       });
@@ -914,7 +934,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         color,
         shape: getShapeParams(v),
         particles,
-        genesis: computeGenesis(timestamp),
+        genesis: resolveOrbGenesis(timestamp),
         touch: computeTouch(t),
         shimmer: shimmerRef.current,
       };
@@ -1057,7 +1077,8 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       // Runtime dopamine gate
       if (!shouldAnimateCanonicalOrb()) {
-        try { render(state.currentValence, state.time, state.particles); } catch { /* graceful: static frame render failure invisible — orb just stays as-is */ }
+        const stillTime = resolveReducedMotionOrbStillTime(state.time);
+        try { render(state.currentValence, stillTime, state.particles); } catch { /* graceful: static frame render failure invisible — orb just stays as-is */ }
         return;
       }
 
@@ -1392,7 +1413,10 @@ export const ValenceOrb = memo(function ValenceOrb({
         const state = stateRef.current;
         if (state) {
           try {
-            renderGL(smoothValenceRef.current, state.time, state.particles);
+            const firstFrameTime = shouldAnimateCanonicalOrb()
+              ? state.time
+              : resolveReducedMotionOrbStillTime(state.time);
+            renderGL(smoothValenceRef.current, firstFrameTime, state.particles);
           } catch (err) {
             recordError(err, { component: 'ValenceOrb', action: `${result.tier}-first-frame` });
             result.renderer.dispose();
@@ -1410,6 +1434,7 @@ export const ValenceOrb = memo(function ValenceOrb({
           wrapper.appendChild(upgradeCanvas);
         }
         visibleCanvasMountedAt = performance.now();
+        restartAnimationClock();
 
         return true;
       };
@@ -1440,7 +1465,13 @@ export const ValenceOrb = memo(function ValenceOrb({
         })();
       };
 
-      const recoveredWithWebGPU = await upgradeToMainThreadWebGL(true);
+      const preferWorkerWebGLFirst = shouldPreferWorkerWebGLBeforeMainThreadWebGPU(
+        forceCanonicalWebGL,
+        size,
+      );
+      const recoveredWithWebGPU = preferWorkerWebGLFirst
+        ? false
+        : await upgradeToMainThreadWebGL(true);
       if (recoveredWithWebGPU) return;
 
       if ((renderer === 'auto' || renderer === 'webgpu' || renderer === 'webgl') && shouldUseWorkerWebGL(forceCanonicalWebGL, size)) {
@@ -1537,7 +1568,11 @@ export const ValenceOrb = memo(function ValenceOrb({
             canvasElRef.current = workerCanvas;
             ctx2d = null;
             render = renderWorkerGL;
+            const shouldRestartAnimationClock = !visualReadyRef.current;
             markVisualReadyRef.current();
+            if (shouldRestartAnimationClock) {
+              restartAnimationClock();
+            }
             flushWorkerRender();
             return;
           }
@@ -1586,7 +1621,10 @@ export const ValenceOrb = memo(function ValenceOrb({
 
           const state = stateRef.current;
           if (state) {
-            controller.render(createWorkerPayload(smoothValenceRef.current, state.time, state.particles));
+            const firstWorkerFrameTime = shouldAnimateCanonicalOrb()
+              ? state.time
+              : resolveReducedMotionOrbStillTime(state.time);
+            controller.render(createWorkerPayload(smoothValenceRef.current, firstWorkerFrameTime, state.particles));
           }
         };
 
@@ -1797,7 +1835,8 @@ export const ValenceOrb = memo(function ValenceOrb({
     }
 
     if (!shouldAnimateOrb && !forceCanonicalWebGL) {
-      try { render(valenceRef.current, 0, stateRef.current.particles); } catch { /* graceful: initial frame render failure leaves the canvas untouched */ }
+      const stillTime = resolveReducedMotionOrbStillTime(stateRef.current.time);
+      try { render(valenceRef.current, stillTime, stateRef.current.particles); } catch { /* graceful: initial frame render failure leaves the canvas untouched */ }
       return cleanup;
     }
 
@@ -1831,12 +1870,13 @@ export const ValenceOrb = memo(function ValenceOrb({
     if (!state) return;
 
     const dpr = Math.max(1, canvas.width / size);
+    const stillTime = resolveReducedMotionOrbStillTime(state.time);
     state.currentValence = valence;
 
     if (workerRendererRef.current) {
       workerRendererRef.current.render({
         valence,
-        time: 0,
+        time: stillTime,
         size,
         dpr,
         isDark: document.documentElement.classList.contains('dark'),
@@ -1854,7 +1894,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     if (glRendererRef.current) {
       glRendererRef.current.render({
         valence,
-        time: 0,
+        time: stillTime,
         size,
         dpr,
         isDark: document.documentElement.classList.contains('dark'),
@@ -1873,7 +1913,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       if (!ctx) return;
       drawOrbScene(ctx, {
         valence,
-        time: 0,
+        time: stillTime,
         particles: state.particles,
         size,
         dpr,

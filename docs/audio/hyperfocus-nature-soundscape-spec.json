@@ -4,7 +4,7 @@
   "purpose": "Replace flat V1 Hyperfocus ambient choices with six environmental sound families, each with soft/deep/intense levels, without allowing music-like outputs.",
   "sourcePolicy": {
     "preferredSource": "free real-world nature recordings bundled in public/sounds/hyperfocus",
-    "currentProvider": "Mixkit free sound effects",
+    "currentProvider": "Mixkit and BigSoundBank free sound effects",
     "aiGenerationPolicy": "Generated pilots stay quarantined until objective QC and audible review prove they are non-musical, loop-safe environmental beds.",
     "disallowedAudioTraits": [
       "artist references or pop/music genre steering",
@@ -222,15 +222,15 @@
     {
       "id": "fireplace",
       "kind": "nature",
-      "label": "Fire crackle",
+      "label": "Fireplace hearth",
       "originalAsset": "sounds/fireplace-fx-56636.mp3",
-      "focusRole": "warm crackle and room masking without campfire drama",
+      "focusRole": "warm indoor hearth masking with softened crackle and room tone for calm focus",
       "levels": [
         {
           "id": "soft",
           "label": "Embers",
           "fileName": "hyperfocus-fireplace-soft.mp3",
-          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: close quiet fireplace embers, tiny wood crackles, warm air, no roaring flame. Level: soft pilot, sparse crackle, safe and calm. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature fireplace soundscape, not a song. Scene: indoor fireplace embers in a quiet room, tiny softened wood crackles, warm room air, no roaring flame. Level: soft pilot, sparse crackle, safe and calm. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
           "rejectIf": [
             "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
             "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
@@ -239,14 +239,18 @@
             "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
             "sounds like pop or commercial music soundtrack instead of environmental ambience",
             "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
-            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
-          ]
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike",
+            "sounds like campfire, bonfire, outdoor fire pit, campsite, night wind, or open-air fire instead of an indoor fireplace hearth"
+          ],
+          "source": "BigSoundBank Fireplace #4 indoor hearth, item 2856",
+          "selectionRationale": "Quiet indoor hearth embers with softened crackle for a calmer focus-safe fireplace bed.",
+          "normalization": "strict local 30-second MP3 loop; BigSoundBank indoor fireplace source was trimmed, warmed, loop-tail-normalized, and transient-softened for bundled runtime QC"
         },
         {
           "id": "deep",
           "label": "Hearth",
           "fileName": "hyperfocus-fireplace-deep.mp3",
-          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: steady hearth fire, rounded wood crackle, warm room air, gentle flame bed. Level: balanced warmth, fuller crackle, still calm. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature fireplace soundscape, not a song. Scene: steady indoor hearth fireplace, rounded wood crackle, warm room air, gentle flame bed. Level: balanced warmth, fuller crackle, still calm. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
           "rejectIf": [
             "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
             "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
@@ -255,14 +259,18 @@
             "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
             "sounds like pop or commercial music soundtrack instead of environmental ambience",
             "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
-            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
-          ]
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike",
+            "sounds like campfire, bonfire, outdoor fire pit, campsite, night wind, or open-air fire instead of an indoor fireplace hearth"
+          ],
+          "source": "BigSoundBank Fireplace #4 indoor hearth, item 2856",
+          "selectionRationale": "Balanced indoor hearth texture with steady warmth and softened crackle.",
+          "normalization": "strict local 30-second MP3 loop; BigSoundBank indoor fireplace source was trimmed, warmed, loop-tail-normalized, and transient-softened for bundled runtime QC"
         },
         {
           "id": "intense",
-          "label": "Bonfire",
+          "label": "Full Hearth",
           "fileName": "hyperfocus-fireplace-intense.mp3",
-          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature soundscape, not a song. Scene: outdoor bonfire texture, active wood crackle, low flame movement, open night air. Level: intense fire masking, energetic but not alarming, no fire emergency cues. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
+          "prompt": "Generate a 30-second seamless loop, field-recording environmental soundscape for concentration. This is a nature fireplace soundscape, not a song. Scene: full indoor fireplace hearth glow, active but softened wood crackle, warm room tone, steady flame movement. Level: intense hearth masking, fuller but not alarming, no fire emergency cues. Keep the texture steady from first second to last second. No vocals, no lyrics, no melody, no beat, no drums, no instruments, no song structure. No intro, no ending, no riser, no dramatic transition, no scored drama. Make it calm, local, organic, loop-safe, and suitable for long focus sessions.",
           "rejectIf": [
             "contains vocals, lyrics, spoken words, whispering, humming, or human singing",
             "contains melody, tune, motif, hook, arpeggio, or recognizable musical phrase",
@@ -271,8 +279,12 @@
             "contains song structure, chorus, verse, drop, intro, outro, riser, or transition",
             "sounds like pop or commercial music soundtrack instead of environmental ambience",
             "does not form a clean seamless loop or has an obvious seam, fade-in, or fade-out",
-            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike"
-          ]
+            "has clipping, harsh transient, click, pop, alarm, siren, notification, or distracting spike",
+            "sounds like campfire, bonfire, outdoor fire pit, campsite, night wind, or open-air fire instead of an indoor fireplace hearth"
+          ],
+          "source": "BigSoundBank Fireplace #4 indoor hearth, item 2856",
+          "selectionRationale": "Fuller indoor hearth masking with softened crackle and low salience for longer focus sessions.",
+          "normalization": "strict local 30-second MP3 loop; BigSoundBank indoor fireplace source was trimmed, warmed, loop-tail-normalized, and transient-softened for bundled runtime QC"
         }
       ]
     },

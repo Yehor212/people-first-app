@@ -208,17 +208,30 @@ function checkThirdPartyNotices() {
   const notices = fs.readFileSync(thirdPartyNoticesPath, 'utf8');
   const manifest = fs.readFileSync(hyperfocusManifestPath, 'utf8');
   const hyperfocusUsesMixkit = /provider:\s*["']Mixkit["']/i.test(manifest);
-  if (!hyperfocusUsesMixkit) return;
+  const hyperfocusUsesBigSoundBank = /provider:\s*["']BigSoundBank \/ LaSonotheque["']/i.test(manifest);
 
-  for (const marker of [
-    'MixKit — Hyperfocus Nature Sound Effects',
-    'public/sounds/hyperfocus/',
-    'src/lib/hyperfocusGeneratedAudioManifest.ts',
-    'docs/audio/hyperfocus-generated-audio-provenance.json',
-    'https://mixkit.co/license/',
-    'forest, rain, ocean/sea, fireplace/fire, river, and wind',
-  ]) {
-    assert(notices.includes(marker), 'THIRD_PARTY_NOTICES.md is missing Hyperfocus MixKit coverage', { marker });
+  if (hyperfocusUsesMixkit) {
+    for (const marker of [
+      'MixKit — Hyperfocus Nature Sound Effects',
+      'public/sounds/hyperfocus/',
+      'src/lib/hyperfocusGeneratedAudioManifest.ts',
+      'docs/audio/hyperfocus-generated-audio-provenance.json',
+      'https://mixkit.co/license/',
+      'forest, rain, ocean/sea, river, and wind',
+    ]) {
+      assert(notices.includes(marker), 'THIRD_PARTY_NOTICES.md is missing Hyperfocus MixKit coverage', { marker });
+    }
+  }
+
+  if (hyperfocusUsesBigSoundBank) {
+    for (const marker of [
+      'BigSoundBank / LaSonotheque — Hyperfocus Fireplace Sound Effects',
+      'https://bigsoundbank.com/fireplace-4-s2856.html',
+      'https://bigsoundbank.com/licenses.html',
+      'public/sounds/hyperfocus/hyperfocus-fireplace-',
+    ]) {
+      assert(notices.includes(marker), 'THIRD_PARTY_NOTICES.md is missing Hyperfocus BigSoundBank coverage', { marker });
+    }
   }
 }
 
@@ -467,7 +480,7 @@ function scanDocsAssetsForStaleStrings() {
 function collectOutputArtifactFiles() {
   const outputDir = path.join(rootDir, 'output');
   if (!fs.existsSync(outputDir)) return [];
-  return walk(outputDir, []).filter((file) => path.resolve(file) !== appAudioAssetsReportPath);
+  return walk(outputDir, []).filter((file) => fs.statSync(file).isFile() && path.resolve(file) !== appAudioAssetsReportPath);
 }
 
 function scanOutputArtifactsForStaleStrings() {

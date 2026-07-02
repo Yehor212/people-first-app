@@ -242,11 +242,31 @@ export async function unlockAudio(): Promise<void> {
 }
 
 // Module-level reference for audio unlock handler (ensures same reference for add/remove)
-let audioUnlockHandler: (() => Promise<void>) | null = null;
+let audioUnlockHandler: ((event?: Event) => Promise<void>) | null = null;
 let audioUnlockCleanup: (() => void) | null = null;
 let audioUnlockTimeoutId: ReturnType<typeof setTimeout> | null = null;
 const MAX_UNLOCK_ATTEMPTS = 10;
 let unlockAttempts = 0;
+
+const KEYBOARD_AUDIO_UNLOCK_KEYS = new Set(["Enter", " ", "Spacebar"]);
+const KEYBOARD_AUDIO_UNLOCK_TARGET_SELECTOR = [
+  "button",
+  "a[href]",
+  "input",
+  "select",
+  "textarea",
+  '[role="button"]',
+  '[role="switch"]',
+  '[role="checkbox"]',
+  "[data-audio-unlock]",
+].join(",");
+
+export function isKeyboardAudioUnlockGesture(event: KeyboardEvent): boolean {
+  if (!KEYBOARD_AUDIO_UNLOCK_KEYS.has(event.key)) return false;
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return true;
+  return target.closest(KEYBOARD_AUDIO_UNLOCK_TARGET_SELECTOR) !== null;
+}
 
 /**
  * Setup global audio unlock listeners.
@@ -260,7 +280,8 @@ export function setupAudioUnlock(): void {
   let cleaned = false;
 
   // Define handler first so it's available for cleanup
-  audioUnlockHandler = async () => {
+  audioUnlockHandler = async (event?: Event) => {
+    if (event instanceof KeyboardEvent && !isKeyboardAudioUnlockGesture(event)) return;
     try {
       unlockAttempts++;
       await unlockAudio();
@@ -749,6 +770,10 @@ export class AmbientSoundGenerator {
     // Synchronous cleanup
     this.stopImmediate();
 
+    const fallbackUrl = sound.fallbackFile && sound.fallbackFile !== sound.file ? sound.fallbackFile : undefined;
+    let fallbackAttempted = false;
+    this.usedFallback = false;
+
     // Get blessed element, set properties
     this.audioElement = getOrCreateBlessedElement();
     this.audioElement.loop = true;
@@ -782,6 +807,27 @@ export class AmbientSoundGenerator {
       if (myPlaybackId !== this.playbackId) return;
       const errCode = this.audioElement?.error?.code;
       const errMsg = this.audioElement?.error?.message || "Load error";
+
+      if (fallbackUrl && !fallbackAttempted && this.audioElement) {
+        fallbackAttempted = true;
+        this.usedFallback = true;
+        logger.warn(`[AmbientSounds] playDirect primary failed, trying fallback:`, { errCode, errMsg, soundId, fallbackUrl });
+        this.audioElement.src = fallbackUrl;
+        const fallbackPlayPromise = this.audioElement.play();
+        fallbackPlayPromise.catch((err) => {
+          if (myPlaybackId !== this.playbackId || isAbortError(err)) return;
+          logger.warn("[AmbientSounds] playDirect fallback rejected:", err);
+          this.isPlaying = false;
+          this.currentSoundId = null;
+          this.setStatus({
+            state: "error",
+            soundId,
+            error: { code: "FALLBACK_PLAYBACK_ERROR", message: err.message, recoverable: true },
+          });
+        });
+        return;
+      }
+
       logger.error(`[AmbientSounds] playDirect error:`, { errCode, errMsg, soundId });
       this.isPlaying = false;
       this.currentSoundId = null;

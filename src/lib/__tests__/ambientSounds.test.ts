@@ -22,6 +22,7 @@ import {
   getSoundByType,
   isAudioUnlocked,
   getAmbientSoundGenerator,
+  isKeyboardAudioUnlockGesture,
   preloadAmbientSounds,
   setupAudioUnlock,
   AmbientSoundGenerator,
@@ -188,6 +189,26 @@ describe('setupAudioUnlock', () => {
 
     addSpy.mockRestore();
   });
+
+  it('keeps slider arrow keys out of the global audio unlock path', () => {
+    const slider = document.createElement('div');
+    slider.setAttribute('role', 'slider');
+    const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
+    Object.defineProperty(event, 'target', { value: slider });
+
+    expect(isKeyboardAudioUnlockGesture(event)).toBe(false);
+  });
+
+  it('still treats keyboard button activation as an audio unlock gesture', () => {
+    const button = document.createElement('button');
+    const enter = new KeyboardEvent('keydown', { key: 'Enter' });
+    Object.defineProperty(enter, 'target', { value: button });
+    const space = new KeyboardEvent('keydown', { key: ' ' });
+    Object.defineProperty(space, 'target', { value: button });
+
+    expect(isKeyboardAudioUnlockGesture(enter)).toBe(true);
+    expect(isKeyboardAudioUnlockGesture(space)).toBe(true);
+  });
 });
 
 describe('AmbientSoundGenerator', () => {
@@ -272,6 +293,38 @@ describe('AmbientSoundGenerator', () => {
     expect(debug).toHaveProperty('isPlaying');
     expect(debug).toHaveProperty('isTransitioning');
     expect(debug).toHaveProperty('volume');
+  });
+
+  it('playDirect tries the family fallback when a generated variant fails to load', () => {
+    const fakeAudio = {
+      playsInline: false,
+      loop: false,
+      volume: 0,
+      preload: '',
+      src: '',
+      error: { code: 4, message: 'missing generated asset' },
+      onerror: null as null | (() => void),
+      onplaying: null as null | (() => void),
+      setAttribute: vi.fn(),
+      play: vi.fn(() => Promise.resolve()),
+      pause: vi.fn(),
+    };
+    const AudioConstructor = vi.fn(function AudioStub() {
+      return fakeAudio;
+    });
+    vi.stubGlobal('Audio', AudioConstructor);
+
+    const directGenerator = new AmbientSoundGenerator();
+    directGenerator.playDirect('fireplace:soft');
+
+    expect(fakeAudio.src).toContain('/sounds/hyperfocus/hyperfocus-fireplace-soft.mp3');
+    fakeAudio.onerror?.();
+
+    expect(fakeAudio.src).toContain('/sounds/hyperfocus/hyperfocus-fireplace-deep.mp3');
+    expect(fakeAudio.play).toHaveBeenCalledTimes(2);
+    expect(directGenerator.getDebugInfo()).toEqual(expect.objectContaining({ usedFallback: true }));
+
+    vi.unstubAllGlobals();
   });
 });
 

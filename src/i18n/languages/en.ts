@@ -1124,7 +1124,7 @@ export const en: Translations = {
   hyperfocusSoundCafeIntense: "Busy rush",
   hyperfocusSoundFireplaceSoft: "Embers",
   hyperfocusSoundFireplaceDeep: "Hearth",
-  hyperfocusSoundFireplaceIntense: "Bonfire",
+  hyperfocusSoundFireplaceIntense: "Full Hearth",
   hyperfocusShowVariants: "Show variants",
   hyperfocusHideVariants: "Hide variants",
   hyperfocusTip: "Tip",

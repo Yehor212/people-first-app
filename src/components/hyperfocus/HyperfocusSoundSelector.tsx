@@ -28,6 +28,7 @@ import {
 } from '@/lib/hyperfocusAudioCatalog';
 import { cn } from '@/lib/utils';
 import { zenTap } from '@/lib/animationUtils';
+import { useShouldAnimate } from '@/hooks/useShouldAnimate';
 
 const soundMeta: Record<HyperfocusAudioFamilyId, { Icon: LucideIcon }> = {
   forest: { Icon: TreePine },
@@ -53,12 +54,13 @@ export function HyperfocusSoundSelector({
   selectedSoundId, isSoundPlaying, audioStatus,
   onSoundSelect, onToggleSound, onPlaySound, audioMuted = false, t,
 }: HyperfocusSoundSelectorProps) {
+  const motionAllowed = useShouldAnimate({ respectRuntimePerformance: false });
   const selectedVariant = selectedSoundId ? parseHyperfocusVariantId(selectedSoundId) : null;
   const activeFamily = selectedVariant ? getHyperfocusAudioFamily(selectedVariant.familyId) : undefined;
   const activeLevelId = selectedVariant?.levelId;
 
   return (
-    <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-secondary backdrop-blur-md rounded-2xl p-4 border border-border">
+    <div className="w-full max-w-sm sm:max-w-md lg:max-w-3xl mx-auto bg-secondary backdrop-blur-md rounded-2xl p-4 border border-border">
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm text-slate-600 dark:text-white/70 font-medium">
           {t.hyperfocusAmbientSound}
@@ -70,12 +72,12 @@ export function HyperfocusSoundSelector({
             {audioStatus.state === 'loading' && selectedSoundId && (
               <motion.div
                 key="loading"
-                initial={{ opacity: 0, scale: 0.8 }}
+                initial={motionAllowed ? { opacity: 0, scale: 0.8 } : false}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
+                exit={motionAllowed ? { opacity: 0, scale: 0.8 } : undefined}
                 className="flex items-center gap-1.5 px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg"
               >
-                <Loader2 className="w-4 h-4 text-blue-500 animate-spin" aria-hidden="true" />
+                <Loader2 className={cn("w-4 h-4 text-blue-500", motionAllowed && "animate-spin")} aria-hidden="true" />
                 <span className="text-xs text-blue-600 dark:text-blue-400">
                   {t.audioLoading || 'Loading...'}
                 </span>
@@ -85,9 +87,9 @@ export function HyperfocusSoundSelector({
               <motion.button
                 key="blocked"
                 type="button"
-                initial={{ opacity: 0, scale: 0.8 }}
+                initial={motionAllowed ? { opacity: 0, scale: 0.8 } : false}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
+                exit={motionAllowed ? { opacity: 0, scale: 0.8 } : undefined}
                 className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/20 border border-amber-500/30 rounded-lg cursor-pointer min-h-[44px]"
                 onClick={() => selectedSoundId && !audioMuted && onPlaySound(selectedSoundId)}
               >
@@ -101,9 +103,9 @@ export function HyperfocusSoundSelector({
               <motion.button
                 key="error"
                 type="button"
-                initial={{ opacity: 0, scale: 0.8 }}
+                initial={motionAllowed ? { opacity: 0, scale: 0.8 } : false}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
+                exit={motionAllowed ? { opacity: 0, scale: 0.8 } : undefined}
                 className="flex items-center gap-1.5 px-2 py-1 bg-red-500/20 border border-red-500/30 rounded-lg cursor-pointer min-h-[44px]"
                 onClick={() => selectedSoundId && !audioMuted && onPlaySound(selectedSoundId)}
               >
@@ -127,7 +129,7 @@ export function HyperfocusSoundSelector({
                   : "bg-secondary border border-border",
                 audioMuted && "cursor-not-allowed opacity-55"
               )}
-              whileTap={zenTap.button}
+              whileTap={motionAllowed ? zenTap.button : undefined}
             >
               {isSoundPlaying ? (
                 <Volume2 className="w-5 h-5 text-violet-700 dark:text-violet-300" />
@@ -140,10 +142,11 @@ export function HyperfocusSoundSelector({
       </div>
 
       {/* Sound selector grid */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 lg:grid-cols-7">
         {/* None button */}
         <motion.button
           onClick={() => onSoundSelect(null)}
+          aria-pressed={!selectedSoundId}
           className={cn(
             'px-2 py-3 min-h-[52px] rounded-xl text-xs font-medium motion-safe:transition-all flex flex-col items-center justify-center gap-1',
             !selectedSoundId
@@ -153,8 +156,8 @@ export function HyperfocusSoundSelector({
           style={!selectedSoundId ? {
             boxShadow: '0 0 12px hsl(var(--focus-violet) / 0.3)'
           } : {}}
-          whileHover={{ scale: 1.03 }}
-          whileTap={zenTap.card}
+          whileHover={motionAllowed ? { scale: 1.03 } : undefined}
+          whileTap={motionAllowed ? zenTap.card : undefined}
         >
           <VolumeX className="h-5 w-5" aria-hidden="true" />
           <span>{t.hyperfocusSoundNone}</span>
@@ -181,8 +184,8 @@ export function HyperfocusSoundSelector({
               style={isSelected ? {
                 boxShadow: '0 0 12px hsl(var(--focus-violet) / 0.3)'
               } : {}}
-              whileHover={{ scale: 1.03 }}
-              whileTap={zenTap.card}
+              whileHover={motionAllowed ? { scale: 1.03 } : undefined}
+              whileTap={motionAllowed ? zenTap.card : undefined}
             >
               <Icon className="h-5 w-5" aria-hidden="true" />
               <span>{localizedName}</span>
@@ -209,7 +212,7 @@ export function HyperfocusSoundSelector({
                     ? 'bg-violet-500/30 border border-violet-500/50 text-violet-700 dark:text-violet-100'
                     : 'bg-secondary border border-border text-slate-600 dark:text-white/70 hover:bg-secondary/80'
                 )}
-                whileTap={zenTap.button}
+                whileTap={motionAllowed ? zenTap.button : undefined}
               >
                 {localizedLevelName}
               </motion.button>

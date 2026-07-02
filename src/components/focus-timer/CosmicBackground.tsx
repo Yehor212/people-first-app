@@ -3,7 +3,7 @@
  */
 
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Focus } from 'lucide-react';
 import { CosmicStar, cosmicStars } from '@/components/cosmic/CosmicStarField';
 
 interface CosmicBackgroundProps {
@@ -48,7 +48,7 @@ export function CosmicBackground({ startHereLabel }: CosmicBackgroundProps) {
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="flex items-center gap-2 px-4 py-2 bg-violet-500/25 backdrop-blur-sm rounded-full border border-violet-500/30">
-          <Sparkles className="w-4 h-4 text-violet-700 dark:text-violet-300" />
+          <Focus className="w-4 h-4 text-violet-700 dark:text-violet-300" aria-hidden="true" />
           <span className="text-sm font-bold text-violet-700 dark:text-violet-200">{startHereLabel}</span>
         </div>
       </motion.div>

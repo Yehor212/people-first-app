@@ -3,6 +3,10 @@ import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { HyperfocusSoundSelector } from "../HyperfocusSoundSelector";
 
+vi.mock("@/hooks/useShouldAnimate", () => ({
+  useShouldAnimate: () => true,
+}));
+
 vi.mock("framer-motion", async () => {
   const ReactModule = await import("react");
   const createMotionComponent = (tag: "button" | "div") =>
@@ -32,7 +36,7 @@ const t = {
   hyperfocusSoundIntensity: "Sound intensity",
   hyperfocusSoundFireplaceSoft: "Embers",
   hyperfocusSoundFireplaceDeep: "Hearth",
-  hyperfocusSoundFireplaceIntense: "Bonfire",
+  hyperfocusSoundFireplaceIntense: "Full Hearth",
   muteSound: "Mute sound",
   unmuteSound: "Unmute sound",
 };
@@ -69,6 +73,7 @@ describe("HyperfocusSoundSelector three-level audio", () => {
     expect(screen.getByRole("button", { name: /river/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /wind/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /coffee|cafe/i })).toBeNull();
+    expect(screen.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("shows three intensity levels for the selected sound family", () => {
@@ -77,7 +82,7 @@ describe("HyperfocusSoundSelector three-level audio", () => {
     const embersButton = screen.getByRole("button", { name: "Embers" });
     expect(embersButton.className).toContain("min-h-[44px]");
     expect(screen.getByRole("button", { name: "Hearth" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bonfire" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Full Hearth" })).toBeInTheDocument();
 
     fireEvent.click(embersButton);
 
@@ -100,13 +105,13 @@ describe("HyperfocusSoundSelector three-level audio", () => {
         hyperfocusSoundIntensity: "Intensidad del sonido",
         hyperfocusSoundFireplaceSoft: "Brasas",
         hyperfocusSoundFireplaceDeep: "Hogar",
-        hyperfocusSoundFireplaceIntense: "Fogata",
+        hyperfocusSoundFireplaceIntense: "Chimenea intensa",
       },
     });
 
     expect(screen.getByRole("group", { name: "Intensidad del sonido" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Brasas" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Hogar" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Fogata" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Chimenea intensa" })).toBeInTheDocument();
   });
 });
