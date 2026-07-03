@@ -753,6 +753,12 @@
 }
 
 /* V2 settings comfort layer: token-only color identity for settings/menu surfaces. */
+.v2-edge-to-edge-surface[data-active-page="settings"] {
+  background:
+    linear-gradient(180deg, hsl(var(--settings-v2-rim-light) / 0.08), transparent 42%),
+    hsl(var(--settings-v2-shell) / 0.98);
+}
+
 :root[data-theme="paper"] [data-v2-readable-page="settings"],
 :root[data-theme="ink"] [data-v2-readable-page="settings"],
 :root[data-theme="oled"] [data-v2-readable-page="settings"] {
@@ -760,8 +766,9 @@
   --v2-readable-surface: hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.88));
   --v2-readable-surface-border: hsl(var(--settings-v2-border) / 0.58);
   background:
-    linear-gradient(180deg, hsl(var(--settings-v2-rim-light) / 0.12), transparent 34%),
-    linear-gradient(135deg, hsl(var(--settings-v2-accent) / 0.06), transparent 56%);
+    linear-gradient(180deg, hsl(var(--settings-v2-rim-light) / 0.10), transparent 34%),
+    linear-gradient(135deg, hsl(var(--settings-v2-accent) / 0.045), transparent 56%),
+    hsl(var(--settings-v2-shell) / 0.98);
 }
 
 :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],

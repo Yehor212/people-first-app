@@ -79,6 +79,16 @@ function cssRuleBlock(selector: string): string {
   return match[1];
 }
 
+function settingsReadablePageRuleBlock(): string {
+  const match = css.match(
+    /:root\[data-theme="paper"\] \[data-v2-readable-page="settings"\],[\s\S]*?:root\[data-theme="oled"\] \[data-v2-readable-page="settings"\] \{([\s\S]*?)\n\}/,
+  );
+  if (!match) {
+    throw new Error("Missing Settings readable page liquid glass rule");
+  }
+  return match[1];
+}
+
 function hslLightness(value: string): number {
   const match = value.match(/^\d+(?:\.\d+)?\s+\d+(?:\.\d+)?%\s+(\d+(?:\.\d+)?)%$/);
   if (!match) {
@@ -143,6 +153,21 @@ describe("theme bridge variables", () => {
     }
 
     expect(paper).not.toMatch(/--zf-role-(body|mind|focus|rest|energy|release|diary|space|gratitude|settings):/);
+  });
+
+  it("settings liquid glass page background includes a shell base", () => {
+    const rule = settingsReadablePageRuleBlock();
+
+    expect(rule).toContain("hsl(var(--settings-v2-shell)");
+    expect(rule).toContain("linear-gradient(180deg");
+    expect(rule).toContain("linear-gradient(135deg");
+  });
+
+  it("settings shell background follows the liquid glass page", () => {
+    const rule = cssRuleBlock('.v2-edge-to-edge-surface[data-active-page="settings"]');
+
+    expect(rule).toContain("hsl(var(--settings-v2-shell)");
+    expect(rule).toContain("linear-gradient(180deg");
   });
 
   it("settings surfaces have dedicated comfort tokens in every theme", () => {

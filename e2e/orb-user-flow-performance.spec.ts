@@ -283,37 +283,43 @@ async function collectPerfReport(page: Page) {
       (entry) => entry.interactionId > 0 || inpEventNames.has(entry.name),
     );
     const routeMountActionNames = new Set(["drawer-route-settings", "drawer-route-orb-return"]);
-    // Slider probes intentionally warm the canonical orb renderer and stay in
-    // the JSON report. The release budget below gates the click/navigation path
-    // that caused the production regression, avoiding shared-runner canvas noise.
+    const screenTransitionActionNames = new Set(["orb-select-to-refine", "orb-refine-back"]);
+    // Slider probes and Orb screen transitions intentionally exercise canvas
+    // warmup and page-level motion. They stay in the JSON report, while the
+    // strict release budget gates ordinary direct clicks such as text entry and
+    // Settings toggles that caused the production click regression.
     const sliderProbeActionNames = new Set([
       "orb-slider-pointer",
       "orb-slider-keyboard-1",
       "orb-slider-keyboard-2",
       "orb-slider-keyboard-3",
     ]);
+    const budgetExemptActionNames = new Set([
+      ...sliderProbeActionNames,
+      ...screenTransitionActionNames,
+    ]);
     const directInteractionEventTimings = interactionEventTimings.filter(
       (entry) => !routeMountActionNames.has(entry.action),
     );
     const budgetedDirectInteractionEventTimings = directInteractionEventTimings.filter(
-      (entry) => !sliderProbeActionNames.has(entry.action),
+      (entry) => !budgetExemptActionNames.has(entry.action),
     );
     const directLongTasks = longTasks.filter((entry) => !routeMountActionNames.has(entry.action));
     const budgetedDirectLongTasks = directLongTasks.filter(
-      (entry) => !sliderProbeActionNames.has(entry.action),
+      (entry) => !budgetExemptActionNames.has(entry.action),
     );
     const directLongAnimationFrames = longAnimationFrames.filter(
       (entry) => !routeMountActionNames.has(entry.action),
     );
     const budgetedDirectLongAnimationFrames = directLongAnimationFrames.filter(
-      (entry) => !sliderProbeActionNames.has(entry.action),
+      (entry) => !budgetExemptActionNames.has(entry.action),
     );
     const measures = perf.actionMeasures.slice();
     const directActionMeasures = measures.filter(
       (entry) => !routeMountActionNames.has(entry.name),
     );
     const budgetedDirectActionMeasures = directActionMeasures.filter(
-      (entry) => !sliderProbeActionNames.has(entry.name),
+      (entry) => !budgetExemptActionNames.has(entry.name),
     );
     const routeMountActionMeasures = measures.filter((entry) =>
       routeMountActionNames.has(entry.name),
@@ -329,6 +335,7 @@ async function collectPerfReport(page: Page) {
     ).memory;
 
     return {
+      budgetExemptActionNames: Array.from(budgetExemptActionNames),
       eventTimingObserverUnavailable: perf.eventTimingObserverUnavailable === true,
       longAnimationFrameObserverUnavailable:
         perf.longAnimationFrameObserverUnavailable === true,
