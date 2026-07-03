@@ -328,7 +328,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
           "border border-border/50 shadow-[0_14px_34px_hsl(var(--foreground)/0.16)]",
           "text-foreground/90",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-          "motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 active:scale-95 active:bg-muted/60"
+          "motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 motion-safe:active:translate-y-[1px] active:bg-muted/60"
         )}
       >
         <MenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />

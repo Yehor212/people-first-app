@@ -122,6 +122,12 @@ export const DrawerV2 = memo(function DrawerV2({
     { id: "planning", icon: V2_NAV_ICONS.planning, label: tx.navV2Planning },
   ];
   const settingsLabel = tx.navV2Settings;
+  const clearNavigatingPage = () => setNavigatingPage(null);
+  const beginNavigationFeedback = (page: NavV2Page, isActive: boolean) => {
+    if (!isActive) {
+      setNavigatingPage(page);
+    }
+  };
   const loadingLabel = tx.loading || "loading";
   const isSettingsActive = activePage === "settings";
   const isSettingsNavigating = navigatingPage === "settings";
@@ -188,7 +194,7 @@ export const DrawerV2 = memo(function DrawerV2({
               onClose();
             }}
             aria-label={tx.navV2CloseMenu || "Close menu"}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-[hsl(var(--nav-v2-drawer-border)/0.28)] bg-[hsl(var(--nav-v2-item-surface)/0.66)] text-[hsl(var(--nav-v2-drawer-muted))] shadow-sm transition-colors duration-200 hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="flex h-11 w-11 items-center justify-center rounded-[8px] border border-[hsl(var(--nav-v2-drawer-border)/0.36)] bg-[hsl(var(--nav-v2-item-surface)/0.66)] text-[hsl(var(--nav-v2-drawer-muted))] shadow-[0_8px_18px_-16px_hsl(var(--nav-v2-shadow)/0.42)] motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -216,26 +222,23 @@ export const DrawerV2 = memo(function DrawerV2({
                   aria-busy={isNavigating ? "true" : undefined}
                   data-active={isActive ? "true" : "false"}
                   data-navigating={isNavigating ? "true" : "false"}
+                  data-nav-button="drawer"
                   data-visual-role={visualRole}
-                  onPointerDown={() => {
-                    if (!isActive) {
-                      setNavigatingPage(item.id);
-                    }
-                  }}
+                  onPointerDown={() => beginNavigationFeedback(item.id, isActive)}
+                  onPointerCancel={clearNavigatingPage}
+                  onPointerLeave={clearNavigatingPage}
                   onClick={() => {
-                    if (!isActive) {
-                      setNavigatingPage(item.id);
-                    }
+                    beginNavigationFeedback(item.id, isActive);
                     void haptics.tabChanged();
                     onPageChange(item.id);
                   }}
                   className={cn(
-                    "group relative flex min-h-[64px] w-full items-center gap-3 overflow-hidden rounded-2xl border px-3.5 py-3",
-                    "font-display text-sm text-start shadow-sm",
+                    "group relative flex min-h-[64px] w-full items-center gap-3 overflow-hidden rounded-[8px] border px-3.5 py-3",
+                    "font-display text-sm text-start shadow-[0_8px_18px_-16px_hsl(var(--nav-v2-shadow)/0.38)]",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     "motion-safe:animate-fade-in",
                     "motion-safe:transition-[transform,background-color,border-color,box-shadow,color,opacity] motion-safe:duration-300 motion-safe:ease-out",
-                    "active:scale-[0.992]",
+                    "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
                     isSelected
                       ? tone.activeSurfaceClass + " text-[hsl(var(--nav-v2-drawer-text))]"
                       : "border-[hsl(var(--nav-v2-drawer-border)/0.20)] bg-[hsl(var(--nav-v2-item-surface)/0.52)] text-[hsl(var(--nav-v2-drawer-muted))] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] active:bg-[hsl(var(--nav-v2-item-hover))] " +
@@ -265,8 +268,8 @@ export const DrawerV2 = memo(function DrawerV2({
                   )}
                   <span
                     className={cn(
-                      "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ring-1",
-                      "motion-safe:transition-colors motion-safe:duration-200",
+                      "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] ring-1",
+                      "motion-safe:transition-[background-color,color,border-color] motion-safe:duration-200",
                       isSelected
                         ? tone.iconClass + " " + tone.ringClass
                         : "bg-[hsl(var(--nav-v2-icon-surface)/0.76)] text-[hsl(var(--nav-v2-icon-muted))] ring-[hsl(var(--nav-v2-drawer-border)/0.22)] group-hover:text-[hsl(var(--nav-v2-drawer-text))]"
@@ -277,7 +280,7 @@ export const DrawerV2 = memo(function DrawerV2({
                   <span className="relative flex-1 truncate">{item.label}</span>
                   {isNavigating ? (
                     <LoaderCircle
-                      className="relative h-4 w-4 shrink-0 animate-spin opacity-75"
+                      className="relative h-4 w-4 shrink-0 motion-safe:animate-spin opacity-75"
                       aria-hidden="true"
                       data-testid={`drawer-v2-destination-${item.id}-progress`}
                     />
@@ -305,7 +308,7 @@ export const DrawerV2 = memo(function DrawerV2({
           data-testid="drawer-v2-bottom-nav"
         >
           <div
-            className="mb-2 rounded-2xl border border-[hsl(var(--nav-v2-drawer-border)/0.20)] bg-[hsl(var(--nav-v2-item-surface)/0.52)] shadow-sm"
+            className="mb-2 rounded-[8px] border border-[hsl(var(--nav-v2-drawer-border)/0.28)] bg-[hsl(var(--nav-v2-item-surface)/0.52)] shadow-[0_8px_18px_-16px_hsl(var(--nav-v2-shadow)/0.38)]"
             data-testid="drawer-v2-theme-switcher"
           >
             <ThemeToggleV2 testId="drawer-v2-theme-toggle" presentation="drawer" />
@@ -317,27 +320,24 @@ export const DrawerV2 = memo(function DrawerV2({
             aria-busy={isSettingsNavigating ? "true" : undefined}
             data-active={isSettingsActive ? "true" : "false"}
             data-navigating={isSettingsNavigating ? "true" : "false"}
+            data-nav-button="drawer"
             data-visual-role="settings"
-            onPointerDown={() => {
-              if (!isSettingsActive) {
-                setNavigatingPage("settings");
-              }
-            }}
+            onPointerDown={() => beginNavigationFeedback("settings", isSettingsActive)}
+            onPointerCancel={clearNavigatingPage}
+            onPointerLeave={clearNavigatingPage}
             onClick={() => {
-              if (!isSettingsActive) {
-                setNavigatingPage("settings");
-              }
+              beginNavigationFeedback("settings", isSettingsActive);
               void haptics.tabChanged();
               onPageChange("settings");
             }}
             className={cn(
-              "group flex min-h-[58px] w-full items-center gap-3 rounded-2xl border px-3.5 py-3",
-              "font-display text-sm text-start shadow-sm",
+              "group flex min-h-[58px] w-full items-center gap-3 rounded-[8px] border px-3.5 py-3",
+              "font-display text-sm text-start shadow-[0_8px_18px_-16px_hsl(var(--nav-v2-shadow)/0.38)]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               "motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-300 motion-safe:ease-out",
-              "active:scale-[0.992]",
+              "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
               isSettingsSelected
-                ? "border-[hsl(var(--settings-v2-accent)/0.62)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-[hsl(var(--nav-v2-drawer-text))] shadow-[inset_0_0_0_1px_hsl(var(--settings-v2-accent)/0.18)]"
+                ? "border-[hsl(var(--settings-v2-accent)/0.74)] bg-[hsl(var(--settings-v2-accent)/0.18)] text-[hsl(var(--nav-v2-drawer-text))] shadow-[0_12px_28px_-20px_hsl(var(--nav-v2-shadow)/0.48)]"
                 : "border-[hsl(var(--nav-v2-drawer-border)/0.20)] bg-[hsl(var(--nav-v2-item-surface)/0.52)] text-[hsl(var(--nav-v2-drawer-muted))] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] active:bg-[hsl(var(--nav-v2-item-hover))] " +
                     getRoleTone("settings").borderClass
             )}
@@ -345,7 +345,7 @@ export const DrawerV2 = memo(function DrawerV2({
           >
             <span
               className={cn(
-                "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ring-1",
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] ring-1",
                 isSettingsSelected
                   ? "bg-[hsl(var(--settings-v2-accent)/0.18)] text-[hsl(var(--settings-v2-accent))] ring-[hsl(var(--settings-v2-accent)/0.42)]"
                   : "bg-[hsl(var(--nav-v2-icon-surface)/0.76)] text-[hsl(var(--nav-v2-icon-muted))] ring-[hsl(var(--nav-v2-drawer-border)/0.22)] group-hover:text-[hsl(var(--nav-v2-drawer-text))]"
@@ -356,7 +356,7 @@ export const DrawerV2 = memo(function DrawerV2({
             <span className="flex-1 truncate">{settingsLabel}</span>
             {isSettingsNavigating ? (
               <LoaderCircle
-                className="h-4 w-4 shrink-0 animate-spin opacity-75"
+                className="h-4 w-4 shrink-0 motion-safe:animate-spin opacity-75"
                 aria-hidden="true"
                 data-testid="drawer-v2-destination-settings-progress"
               />

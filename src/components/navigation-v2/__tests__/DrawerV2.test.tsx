@@ -136,6 +136,18 @@ describe("DrawerV2", () => {
     });
   });
 
+  it("gives drawer destinations a modern pressable affordance contract", () => {
+    render(<DrawerV2 {...baseProps} activePage="settings" />);
+
+    const mood = screen.getByTestId("drawer-v2-destination-orb");
+    const settings = screen.getByTestId("drawer-v2-destination-settings");
+
+    expect(mood).toHaveAttribute("data-nav-button", "drawer");
+    expect(mood.className).toContain("active:translate-y-[1px]");
+    expect(settings).toHaveAttribute("data-nav-button", "drawer");
+    expect(settings.className).toContain("shadow-[");
+  });
+
   it("keeps Settings pinned in the bottom navigation area", () => {
     render(<DrawerV2 {...baseProps} activePage="settings" />);
 
@@ -160,7 +172,7 @@ describe("DrawerV2", () => {
 
     const toggle = await screen.findByTestId("drawer-v2-theme-toggle");
     expect(screen.getByTestId("drawer-v2-bottom-nav")).toContainElement(toggle);
-    expect(toggle).toHaveAttribute("aria-label", "Switch to dark mode");
+    expect(toggle).toHaveAttribute("aria-label", "Dark");
     expect(toggle).toHaveClass("min-h-[44px]");
 
     fireEvent.click(toggle);
@@ -218,6 +230,19 @@ describe("DrawerV2", () => {
     expect(habitsDestination).toHaveAttribute("data-navigating", "true");
     expect(screen.getByTestId("drawer-v2-destination-habits-progress")).toBeInTheDocument();
     expect(onPageChange).not.toHaveBeenCalled();
+  });
+
+  it("clears drawer navigation feedback when a touch is cancelled", () => {
+    render(<DrawerV2 {...baseProps} activePage="orb" />);
+
+    const habitsDestination = screen.getByTestId("drawer-v2-destination-habits");
+    fireEvent.pointerDown(habitsDestination, { pointerType: "touch" });
+    expect(habitsDestination).toHaveAttribute("data-navigating", "true");
+
+    fireEvent.pointerCancel(habitsDestination, { pointerType: "touch" });
+
+    expect(habitsDestination).toHaveAttribute("data-navigating", "false");
+    expect(screen.queryByTestId("drawer-v2-destination-habits-progress")).not.toBeInTheDocument();
   });
 
   it("names drawer navigation progress and hides it from click when navigating", () => {

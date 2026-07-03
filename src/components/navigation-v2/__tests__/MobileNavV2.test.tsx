@@ -8,6 +8,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2Orb: "Orb",
       navV2Habits: "Habits",
       navV2Diary: "Diary",
+      navV2Planning: "Planning",
       navV2Settings: "Settings",
       navV2PrimaryNav: "Primary navigation",
       habits: "Habits",
@@ -28,27 +29,42 @@ describe("MobileNavV2", () => {
     onPageChange: vi.fn(),
   };
 
-  it("renders all 4 tabs", () => {
+  it("renders all 5 navigation destinations", () => {
     render(<MobileNavV2 {...defaultProps} />);
     expect(screen.getByTestId("mobile-nav-v2-tab-orb")).toBeInTheDocument();
     expect(screen.getByTestId("mobile-nav-v2-tab-habits")).toBeInTheDocument();
     expect(screen.getByTestId("mobile-nav-v2-tab-diary")).toBeInTheDocument();
+    expect(screen.getByTestId("mobile-nav-v2-tab-planning")).toBeInTheDocument();
     expect(screen.getByTestId("mobile-nav-v2-tab-settings")).toBeInTheDocument();
   });
 
-  it("marks the active tab with aria-selected=true and aria-current=page", () => {
+  it("uses plain navigation buttons instead of incomplete tabs semantics", () => {
     render(<MobileNavV2 {...defaultProps} activePage="habits" />);
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
     const habits = screen.getByTestId("mobile-nav-v2-tab-habits");
-    expect(habits).toHaveAttribute("aria-selected", "true");
+    expect(habits).not.toHaveAttribute("role", "tab");
+    expect(habits).not.toHaveAttribute("aria-selected");
     expect(habits).toHaveAttribute("aria-current", "page");
     const orb = screen.getByTestId("mobile-nav-v2-tab-orb");
-    expect(orb).toHaveAttribute("aria-selected", "false");
+    expect(orb).not.toHaveAttribute("aria-current");
   });
 
   it("enforces minimum 44px touch target via min-h on each tab button", () => {
     render(<MobileNavV2 {...defaultProps} />);
     const tab = screen.getByTestId("mobile-nav-v2-tab-orb");
     expect(tab.className).toMatch(/min-h-\[(44|48|52)px\]/);
+  });
+
+  it("gives mobile tabs a modern pressable affordance contract", () => {
+    render(<MobileNavV2 {...defaultProps} activePage="settings" />);
+
+    const settings = screen.getByTestId("mobile-nav-v2-tab-settings");
+    const habits = screen.getByTestId("mobile-nav-v2-tab-habits");
+
+    expect(settings).toHaveAttribute("data-nav-button", "mobile-tab");
+    expect(settings.className).toContain("active:translate-y-[1px]");
+    expect(settings.className).toContain("shadow-[");
+    expect(habits).toHaveAttribute("data-nav-button", "mobile-tab");
   });
 
   it("uses safe-area-inset-bottom via Tailwind arbitrary value for iOS notch/home indicator", () => {

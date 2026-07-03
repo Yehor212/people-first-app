@@ -36,7 +36,7 @@ export const SidebarV2 = memo(function SidebarV2({
   forceVisible = false,
   collapseLocked = false,
 }: SidebarV2Props) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const [optimisticPage, setOptimisticPage] = useState<NavV2Page | null>(null);
   const selectedPage = optimisticPage ?? activePage;
@@ -80,13 +80,16 @@ export const SidebarV2 = memo(function SidebarV2({
         aria-current={isActive ? "page" : undefined}
         aria-label={item.label}
         title={collapsed ? item.label : undefined}
+        data-nav-button="sidebar"
         data-visual-role={visualRole}
         className={cn(
-          "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 min-h-[44px]",
-          "font-display text-sm motion-safe:transition-all motion-safe:duration-200",
+          "group relative flex items-center gap-3 rounded-[8px] px-3 py-2.5 min-h-[44px]",
+          "font-display text-sm shadow-[0_8px_18px_-16px_hsl(var(--nav-v2-shadow)/0.36)] motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out",
+          "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           isActive
-            ? tone.activeSurfaceClass + " text-foreground shadow-sm"
+            ? tone.activeSurfaceClass +
+                " text-foreground shadow-[0_12px_28px_-20px_hsl(var(--nav-v2-shadow)/0.48)]"
             : "text-muted-foreground hover:bg-[hsl(var(--nav-v2-item-hover)/0.72)] hover:text-foreground " +
                 tone.borderClass,
           collapsed && "justify-center px-2",
@@ -96,12 +99,12 @@ export const SidebarV2 = memo(function SidebarV2({
         {isActive && !collapsed && (
           <span
             aria-hidden="true"
-            className={"absolute inset-y-2 left-0 w-0.5 rounded-full " + tone.railClass}
+            className={"absolute inset-y-2 start-0 w-0.5 rounded-e-full " + tone.railClass}
           />
         )}
         <span
           className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1",
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] ring-1",
             isActive ? tone.iconClass + " " + tone.ringClass : "bg-muted/45 ring-border/40"
           )}
           aria-hidden="true"
@@ -162,9 +165,7 @@ export const SidebarV2 = memo(function SidebarV2({
       </div>
 
       {/* Main items */}
-      <div className="flex flex-col gap-1 p-3">
-        {items.map((it) => renderItem(it))}
-      </div>
+      <div className="flex flex-col gap-1 p-3">{items.map((it) => renderItem(it))}</div>
 
       {/* Footer: theme toggle + settings + collapse toggle */}
       <div className="mt-auto flex flex-col gap-1 p-3 border-t border-border/40">
@@ -186,12 +187,18 @@ export const SidebarV2 = memo(function SidebarV2({
               "flex items-center gap-2 rounded-lg px-3 py-2 min-h-[44px]",
               "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--nav-v2-item-hover)/0.72)]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-              "motion-safe:transition-colors motion-safe:duration-200",
+              "motion-safe:transition-[transform,background-color,color] motion-safe:duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px]",
               collapsed && "justify-center px-2"
             )}
             data-testid="sidebar-v2-collapse-toggle"
           >
             {collapsed ? (
+              isRTL ? (
+                <ChevronsLeft className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <ChevronsRight className="h-5 w-5" aria-hidden="true" />
+              )
+            ) : isRTL ? (
               <ChevronsRight className="h-5 w-5" aria-hidden="true" />
             ) : (
               <ChevronsLeft className="h-5 w-5" aria-hidden="true" />

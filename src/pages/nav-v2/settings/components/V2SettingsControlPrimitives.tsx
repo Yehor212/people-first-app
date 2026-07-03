@@ -1,7 +1,4 @@
-import {
-  type KeyboardEventHandler,
-  type ReactNode,
-} from "react";
+import { type KeyboardEventHandler, type ReactNode } from "react";
 import { type LucideIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -77,16 +74,13 @@ interface SettingsFieldHeaderProps {
   tone?: "neutral" | "danger";
 }
 
-const ACTION_BUTTON_VARIANT_CLASS: Record<
-  NonNullable<ActionButtonProps["variant"]>,
-  string
-> = {
+const ACTION_BUTTON_VARIANT_CLASS: Record<NonNullable<ActionButtonProps["variant"]>, string> = {
   primary:
-    "border border-[hsl(var(--settings-v2-accent)/0.45)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-[hsl(var(--settings-v2-accent))] hover:bg-[hsl(var(--settings-v2-accent)/0.2)]",
+    "border border-[hsl(var(--settings-v2-accent)/0.45)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-[hsl(var(--settings-v2-accent))] shadow-[0_12px_28px_-22px_hsl(var(--settings-v2-accent)/0.52)] hover:bg-[hsl(var(--settings-v2-accent)/0.2)]",
   secondary:
-    "border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-panel)/0.64)] text-foreground hover:bg-[hsl(var(--settings-v2-panel)/0.84)]",
+    "border border-[hsl(var(--settings-v2-border)/0.64)] bg-[hsl(var(--settings-v2-panel)/0.78)] text-foreground shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.42)] hover:bg-[hsl(var(--settings-v2-panel)/0.92)]",
   danger:
-    "border border-destructive/25 bg-destructive/10 text-destructive hover:bg-destructive/15",
+    "border border-destructive/48 bg-destructive/14 text-destructive shadow-[0_10px_22px_-18px_hsl(var(--destructive)/0.54)] hover:bg-destructive/20",
 };
 
 const SETTINGS_INSET_TONE_CLASS: Record<NonNullable<SettingsInsetProps["tone"]>, string> = {
@@ -112,16 +106,20 @@ const SETTINGS_CHOICE_SURFACE_CLASS: Record<
   background:
     "border-[hsl(var(--settings-v2-border)/0.48)] bg-[hsl(var(--settings-v2-shell)/0.48)] text-foreground hover:bg-[hsl(var(--settings-v2-panel)/0.78)]",
   card: "border-[hsl(var(--settings-v2-border)/0.48)] bg-[hsl(var(--settings-v2-card)/0.62)] text-foreground hover:bg-[hsl(var(--settings-v2-panel)/0.78)]",
-  secondary: "border-[hsl(var(--settings-v2-border)/0.36)] bg-[hsl(var(--settings-v2-panel)/0.62)] text-foreground hover:bg-[hsl(var(--settings-v2-panel)/0.78)]",
+  secondary:
+    "border-[hsl(var(--settings-v2-border)/0.36)] bg-[hsl(var(--settings-v2-panel)/0.62)] text-foreground hover:bg-[hsl(var(--settings-v2-panel)/0.78)]",
 };
 
 const SETTINGS_CHOICE_SELECTED_CLASS: Record<
   NonNullable<SettingsChoiceButtonProps["selectedTone"]>,
   string
 > = {
-  solid: "border-[hsl(var(--settings-v2-accent)/0.78)] bg-[hsl(var(--settings-v2-accent)/0.18)] text-[hsl(var(--settings-v2-accent))] shadow-[inset_0_0_0_1px_hsl(var(--settings-v2-accent)/0.22)]",
-  subtle: "border-[hsl(var(--settings-v2-accent)/0.58)] bg-[hsl(var(--settings-v2-accent)/0.12)] text-[hsl(var(--settings-v2-accent))]",
-  danger: "border-destructive/45 bg-destructive/10 text-destructive",
+  solid:
+    "border-[hsl(var(--settings-v2-accent)/0.78)] bg-[hsl(var(--settings-v2-accent)/0.18)] text-[hsl(var(--settings-v2-accent))] shadow-[0_10px_22px_-20px_hsl(var(--settings-v2-accent)/0.48)]",
+  subtle:
+    "border-[hsl(var(--settings-v2-accent)/0.58)] bg-[hsl(var(--settings-v2-accent)/0.12)] text-[hsl(var(--settings-v2-accent))] shadow-[0_10px_22px_-22px_hsl(var(--settings-v2-accent)/0.42)]",
+  danger:
+    "border-destructive/45 bg-destructive/10 text-destructive shadow-[0_10px_22px_-22px_hsl(var(--destructive)/0.42)]",
 };
 
 export function PanelFrame({
@@ -172,7 +170,7 @@ export function ToggleRow({
     <div
       className={cn(
         "flex min-h-[64px] items-start justify-between gap-4 rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.42)] bg-[hsl(var(--settings-v2-shell)/0.46)] p-3 md:p-4",
-        disabled && "opacity-60",
+        disabled && "opacity-60"
       )}
       data-testid={testId}
     >
@@ -215,10 +213,12 @@ export function ActionButton({
       onClick={onClick}
       disabled={isDisabled}
       aria-busy={isLoading ? "true" : undefined}
+      data-button-tone={variant}
       data-testid={testId}
       className={cn(
-        "flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[8px] px-4 py-3 text-sm font-semibold motion-safe:transition-[opacity,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-        ACTION_BUTTON_VARIANT_CLASS[variant],
+        "flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[8px] px-4 py-3 text-sm font-semibold motion-safe:transition-[opacity,transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
+        ACTION_BUTTON_VARIANT_CLASS[variant]
       )}
     >
       <Icon className={cn("h-4 w-4", isLoading && "motion-safe:animate-spin")} aria-hidden="true" />
@@ -227,11 +227,7 @@ export function ActionButton({
   );
 }
 
-export function SettingsInset({
-  children,
-  tone = "neutral",
-  testId,
-}: SettingsInsetProps) {
+export function SettingsInset({ children, tone = "neutral", testId }: SettingsInsetProps) {
   return (
     <div
       className={cn("space-y-3 rounded-[8px] border p-3 md:p-4", SETTINGS_INSET_TONE_CLASS[tone])}
@@ -254,7 +250,7 @@ export function SettingsInsetButton({
       onClick={onClick}
       onKeyDown={onKeyDown}
       data-testid={testId}
-      className="w-full rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.42)] bg-[hsl(var(--settings-v2-shell)/0.46)] p-4 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      className="w-full rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.58)] bg-[hsl(var(--settings-v2-shell)/0.56)] p-4 text-center shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.42)] motion-safe:transition-[transform,background-color,border-color,box-shadow] motion-safe:duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       {children}
     </button>
@@ -278,13 +274,14 @@ export function SettingsChoiceButton({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={selected}
+      data-interaction-surface="settings-choice"
       data-testid={testId}
       className={cn(
-        "border font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55",
+        "border font-semibold shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.38)] motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55",
         SETTINGS_CHOICE_PRESENTATION_CLASS[presentation],
         selected
           ? SETTINGS_CHOICE_SELECTED_CLASS[selectedTone]
-          : SETTINGS_CHOICE_SURFACE_CLASS[surface],
+          : SETTINGS_CHOICE_SURFACE_CLASS[surface]
       )}
     >
       {Icon ? <Icon className="h-5 w-5" aria-hidden="true" /> : null}
@@ -312,7 +309,7 @@ export function SettingsFieldHeader({
         <span
           className={cn(
             "text-sm font-semibold",
-            tone === "danger" ? "text-destructive" : "text-foreground",
+            tone === "danger" ? "text-destructive" : "text-foreground"
           )}
         >
           {title}

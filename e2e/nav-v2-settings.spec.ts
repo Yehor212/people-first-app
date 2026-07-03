@@ -225,7 +225,7 @@ test.describe("V2 Settings controls-first hierarchy", () => {
       const diaryAmbienceToggle = page.getByTestId("settings-v2-diary-ambience-toggle");
       await expect(diaryAmbienceToggle).toBeVisible();
       await expect(diaryAmbienceToggle).toHaveAccessibleName("Play soft rain");
-      await expect(diaryAmbienceToggle).toHaveAttribute("aria-pressed", "false");
+      await expect(diaryAmbienceToggle).not.toHaveAttribute("aria-pressed");
 
       const facts = await page.evaluate(() => {
         const toggle = document.querySelector<HTMLElement>(

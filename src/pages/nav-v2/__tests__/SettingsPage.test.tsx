@@ -338,7 +338,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
       themeIntensityTitle: "Intensity",
       themeComfortTitle: "Comfort",
       themePreviewTitle: "Preview",
-      themePreviewDescription: "Preview shows cards, buttons, focus, and selected states before saving.",
+      themePreviewDescription:
+        "Preview shows cards, buttons, focus, and selected states before saving.",
       themePreviewAction: "Preview",
       themeApplyAction: "Apply",
       themeResetAction: "Reset",
@@ -912,12 +913,8 @@ describe("SettingsPage", () => {
     expect(screen.getByTestId("settings-module-card-profile")).not.toHaveTextContent(
       "Profile & Appearance"
     );
-    expect(screen.getByTestId("settings-module-card-profile")).not.toHaveAttribute(
-      "aria-expanded"
-    );
-    expect(screen.getByTestId("settings-module-card-profile")).not.toHaveAttribute(
-      "aria-controls"
-    );
+    expect(screen.getByTestId("settings-module-card-profile")).not.toHaveAttribute("aria-expanded");
+    expect(screen.getByTestId("settings-module-card-profile")).not.toHaveAttribute("aria-controls");
     expect(screen.getByTestId("settings-module-card-profile")).toBeDisabled();
     expect(screen.getByTestId("settings-module-card-profile")).not.toHaveAttribute("aria-disabled");
     expect(screen.getByTestId("settings-module-card-account")).toHaveTextContent(
@@ -1324,7 +1321,7 @@ describe("SettingsPage", () => {
     fireEvent.click(
       within(screen.getByTestId("settings-v2-high-contrast-toggle")).getByRole("switch", {
         name: "High contrast",
-      }),
+      })
     );
 
     fireEvent.click(screen.getByTestId("settings-v2-style-preview"));
@@ -1335,14 +1332,14 @@ describe("SettingsPage", () => {
         accentFamily: "clay",
         intensity: "vivid",
         contrastMode: "high",
-      }),
+      })
     );
     expect(themeStoreMock.setThemeCustomization).not.toHaveBeenCalled();
     expect(document.documentElement.dataset.themeStyle).toBe("morningHearth");
 
     fireEvent.click(screen.getByTestId("settings-v2-style-apply"));
     expect(themeStoreMock.setThemeCustomization).toHaveBeenLastCalledWith(
-      expect.objectContaining({ paletteId: "morningHearth", accentFamily: "clay" }),
+      expect.objectContaining({ paletteId: "morningHearth", accentFamily: "clay" })
     );
 
     fireEvent.click(screen.getByTestId("settings-v2-style-reset"));
@@ -1352,6 +1349,32 @@ describe("SettingsPage", () => {
     expect(themeStoreMock.undoThemeCustomization).toHaveBeenCalledTimes(1);
   });
 
+  it("gives settings navigation and actions a tactile affordance contract", () => {
+    render(
+      <SettingsPage
+        controls={{
+          ...createSettingsControls(),
+          initialOpenSection: "appearance",
+        }}
+      />
+    );
+
+    const appearanceArticle = screen.getByTestId("settings-module-appearance");
+    const appearanceModule = screen.getByTestId("settings-module-card-appearance");
+    const morningHearthChoice = screen.getByTestId("settings-v2-style-choice-morningHearth");
+    const previewAction = screen.getByTestId("settings-v2-style-preview");
+    const applyAction = screen.getByTestId("settings-v2-style-apply");
+
+    expect(appearanceArticle).toHaveAttribute("data-active", "true");
+    expect(appearanceModule).toHaveAttribute("data-interaction-surface", "settings-module");
+    expect(appearanceModule.className).toContain("active:translate-y-[1px]");
+    expect(morningHearthChoice).toHaveAttribute("data-interaction-surface", "settings-choice");
+    expect(morningHearthChoice.className).toContain("active:translate-y-[1px]");
+    expect(previewAction).toHaveAttribute("data-button-tone", "secondary");
+    expect(previewAction.className).toContain("active:translate-y-[1px]");
+    expect(applyAction).toHaveAttribute("data-button-tone", "primary");
+    expect(applyAction.className).toContain("shadow-[");
+  });
 
   it("clears a live preview when the draft changes before apply", () => {
     render(
@@ -1366,7 +1389,7 @@ describe("SettingsPage", () => {
     fireEvent.click(screen.getByTestId("settings-v2-style-choice-morningHearth"));
     fireEvent.click(screen.getByTestId("settings-v2-style-preview"));
     expect(themeStoreMock.previewThemeCustomization).toHaveBeenLastCalledWith(
-      expect.objectContaining({ paletteId: "morningHearth" }),
+      expect.objectContaining({ paletteId: "morningHearth" })
     );
 
     fireEvent.click(screen.getByTestId("settings-v2-accent-choice-clay"));
@@ -1442,7 +1465,9 @@ describe("SettingsPage", () => {
     const actionMap = screen.getByTestId("settings-v2-action-sound-map-card");
 
     expect(within(soundMap).getByRole("list", { name: "Where sound appears" })).toBeInTheDocument();
-    expect(within(actionMap).getByRole("list", { name: "Action feedback map" })).toBeInTheDocument();
+    expect(
+      within(actionMap).getByRole("list", { name: "Action feedback map" })
+    ).toBeInTheDocument();
     expect(within(soundMap).queryByRole("button")).not.toBeInTheDocument();
     expect(within(actionMap).queryByRole("button")).not.toBeInTheDocument();
     expect(within(soundMap).getByTestId("settings-v2-sound-map-auth")).toHaveAttribute(
@@ -1470,7 +1495,6 @@ describe("SettingsPage", () => {
 
       expect(audio).toHaveAttribute("preload", "none");
       expect(audio).not.toHaveAttribute("autoplay");
-      expect(toggle).toHaveAttribute("aria-pressed", "false");
       expect(play).not.toHaveBeenCalled();
 
       const pendingPlayback = createDeferred();
@@ -1478,17 +1502,15 @@ describe("SettingsPage", () => {
       fireEvent.click(toggle);
 
       await waitFor(() => expect(play).toHaveBeenCalledTimes(1));
-      expect(toggle).toHaveAttribute("aria-pressed", "false");
       expect(toggle).toHaveAccessibleName("Soft rain, Loading...");
 
       pendingPlayback.resolve();
-      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
-      expect(toggle).toHaveAccessibleName("Pause soft rain");
+      await waitFor(() => expect(toggle).toHaveAccessibleName("Pause soft rain"));
 
       fireEvent.click(toggle);
 
       expect(pause).toHaveBeenCalledTimes(1);
-      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+      await waitFor(() => expect(toggle).toHaveAccessibleName("Play soft rain"));
 
       fireEvent.click(toggle);
       await waitFor(() => expect(play).toHaveBeenCalledTimes(2));
@@ -1497,7 +1519,7 @@ describe("SettingsPage", () => {
       document.dispatchEvent(new Event("visibilitychange"));
 
       expect(pause).toHaveBeenCalledTimes(1);
-      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+      await waitFor(() => expect(toggle).toHaveAccessibleName("Play soft rain"));
 
       Object.defineProperty(document, "hidden", { configurable: true, value: false });
       fireEvent.click(toggle);
@@ -1506,7 +1528,7 @@ describe("SettingsPage", () => {
       window.dispatchEvent(new Event("pagehide"));
 
       expect(pause).toHaveBeenCalledTimes(1);
-      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+      await waitFor(() => expect(toggle).toHaveAccessibleName("Play soft rain"));
 
       fireEvent.click(toggle);
       await waitFor(() => expect(play).toHaveBeenCalledTimes(4));
@@ -1517,7 +1539,7 @@ describe("SettingsPage", () => {
       capacitorAppMock.pauseListeners[0]?.();
 
       expect(pause).toHaveBeenCalledTimes(1);
-      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+      await waitFor(() => expect(toggle).toHaveAccessibleName("Play soft rain"));
     } finally {
       unmount?.();
       if (hiddenDescriptor) {
@@ -1573,12 +1595,18 @@ describe("SettingsPage", () => {
     fireEvent.change(screen.getByLabelText("Quiet start"), { target: { value: "21:30" } });
     const quietStartUpdater = controls.onRemindersChange.mock.calls.at(-1)?.[0];
     expect(typeof quietStartUpdater).toBe("function");
-    expect(quietStartUpdater(controls.reminders).quietHours).toEqual({ start: "21:30", end: "07:00" });
+    expect(quietStartUpdater(controls.reminders).quietHours).toEqual({
+      start: "21:30",
+      end: "07:00",
+    });
 
     fireEvent.change(screen.getByLabelText("Quiet end"), { target: { value: "08:15" } });
     const quietEndUpdater = controls.onRemindersChange.mock.calls.at(-1)?.[0];
     expect(typeof quietEndUpdater).toBe("function");
-    expect(quietEndUpdater(controls.reminders).quietHours).toEqual({ start: "22:00", end: "08:15" });
+    expect(quietEndUpdater(controls.reminders).quietHours).toEqual({
+      start: "22:00",
+      end: "08:15",
+    });
   });
 
   it("shows cross-platform system notification guidance on web/PWA settings", () => {
@@ -1701,7 +1729,13 @@ describe("SettingsPage", () => {
   it("wires remote push notifications to explicit privacy consent", () => {
     const controls = {
       ...createSettingsControls(),
-      privacy: { noTracking: true, analytics: false, consentShown: true, adConsent: false, pushNotifications: false },
+      privacy: {
+        noTracking: true,
+        analytics: false,
+        consentShown: true,
+        adConsent: false,
+        pushNotifications: false,
+      },
     };
     render(<SettingsPage controls={controls} />);
 

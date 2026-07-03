@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { SidebarV2 } from "../SidebarV2";
 
+const languageMock = vi.hoisted(() => ({ isRTL: false }));
+
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
@@ -18,7 +20,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settings: "Settings",
       skipToContent: "Skip to main content",
     },
-    isRTL: false,
+    isRTL: languageMock.isRTL,
   }),
 }));
 
@@ -45,9 +47,7 @@ describe("SidebarV2", () => {
   it("renders the 5 V2 navigation items", () => {
     render(<SidebarV2 {...defaultProps} />);
     expect(screen.getByTestId("sidebar-v2-brand-orb")).toContainElement(
-      within(screen.getByTestId("sidebar-v2-brand-orb")).getByTestId(
-        "sidebar-v2-mini-orb",
-      ),
+      within(screen.getByTestId("sidebar-v2-brand-orb")).getByTestId("sidebar-v2-mini-orb")
     );
     expect(screen.getByRole("button", { name: "Orb" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Habits" })).toBeInTheDocument();
@@ -67,7 +67,7 @@ describe("SidebarV2", () => {
     rerender(<SidebarV2 {...defaultProps} activePage="planning" />);
     expect(screen.getByRole("button", { name: "Planning" })).toHaveAttribute(
       "aria-current",
-      "page",
+      "page"
     );
   });
 
@@ -89,6 +89,19 @@ describe("SidebarV2", () => {
     expect(habits).toHaveAttribute("aria-current", "page");
   });
 
+  it("gives sidebar destinations a modern pressable affordance contract", () => {
+    render(<SidebarV2 {...defaultProps} activePage="settings" />);
+
+    const settings = screen.getByRole("button", { name: "Settings" });
+    const habits = screen.getByRole("button", { name: "Habits" });
+
+    expect(settings).toHaveAttribute("data-nav-button", "sidebar");
+    expect(settings.className).toContain("active:translate-y-[1px]");
+    expect(settings.className).toContain("shadow-[");
+    expect(habits).toHaveAttribute("data-nav-button", "sidebar");
+    expect(habits.className).toContain("hover:-translate-y-0.5");
+  });
+
   it("shows collapse toggle and calls onToggleCollapsed", () => {
     const onToggleCollapsed = vi.fn();
     render(<SidebarV2 {...defaultProps} onToggleCollapsed={onToggleCollapsed} />);
@@ -96,6 +109,20 @@ describe("SidebarV2", () => {
     expect(toggle).toHaveAttribute("aria-label", "Collapse sidebar");
     fireEvent.click(toggle);
     expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses logical active rail and mirrors collapse chevrons in RTL", () => {
+    languageMock.isRTL = true;
+    render(<SidebarV2 {...defaultProps} activePage="settings" collapsed={false} />);
+
+    const settings = screen.getByRole("button", { name: "Settings" });
+    const rail = settings.querySelector("[aria-hidden='true']");
+    expect(rail?.className).toContain("start-0");
+    expect(rail?.className).not.toContain("left-0");
+    expect(
+      screen.getByTestId("sidebar-v2-collapse-toggle").querySelector("svg")?.className.baseVal
+    ).toContain("lucide-chevrons-right");
+    languageMock.isRTL = false;
   });
 
   it("hides labels in collapsed (rail) mode and swaps toggle aria-label", () => {

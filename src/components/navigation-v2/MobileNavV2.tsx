@@ -14,7 +14,7 @@ interface MobileNavV2Props {
 }
 
 /**
- * MobileNavV2 — bottom floating-pill tab bar for <md viewports.
+ * MobileNavV2 — bottom floating navigation bar for <md viewports.
  *
  * Five tabs: Orb / Habits / Diary / Planning / Settings.
  * 44×44 minimum touch targets, safe-area padding, haptic tap on change.
@@ -58,15 +58,13 @@ export const MobileNavV2 = memo(function MobileNavV2({
         "shadow-lg gpu-layer"
       )}
     >
-      <div className="flex items-stretch justify-between px-1 py-1" role="tablist">
+      <div className="flex items-stretch justify-between px-1 py-1">
         {tabs.map((tab) => {
           const isActive = activePage === tab.id;
           return (
             <button
               key={tab.id}
               type="button"
-              role="tab"
-              aria-selected={isActive}
               aria-current={isActive ? "page" : undefined}
               aria-label={tab.label}
               onClick={() => {
@@ -75,13 +73,15 @@ export const MobileNavV2 = memo(function MobileNavV2({
               }}
               className={cn(
                 "flex flex-1 flex-col items-center justify-center gap-0.5 min-w-0",
-                "rounded-xl px-2 py-2 min-h-[48px]",
-                "motion-safe:transition-all motion-safe:duration-200",
+                "rounded-[8px] px-2 py-2 min-h-[48px]",
+                "motion-safe:transition-[transform,background-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out",
+                "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
                 isActive
-                  ? "bg-[hsl(var(--nav-v2-item-surface))] text-[hsl(var(--primary))]"
+                  ? "bg-[hsl(var(--nav-v2-item-surface))] text-[hsl(var(--primary))] shadow-[0_8px_18px_-16px_hsl(var(--nav-v2-shadow)/0.42)]"
                   : "text-muted-foreground active:text-foreground"
               )}
+              data-nav-button="mobile-tab"
               data-testid={`mobile-nav-v2-tab-${tab.id}`}
             >
               <tab.icon className="h-5 w-5" aria-hidden="true" />

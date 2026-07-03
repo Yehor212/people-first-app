@@ -81,11 +81,11 @@ const SETTINGS_BUTTON_GRID_CLASS: Record<
 
 const SETTINGS_INLINE_BUTTON_CLASS = {
   primary:
-    "border border-[hsl(var(--settings-v2-accent)/0.45)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-[hsl(var(--settings-v2-accent))] hover:bg-[hsl(var(--settings-v2-accent)/0.2)] focus-visible:ring-[hsl(var(--settings-v2-accent)/0.65)] focus-visible:ring-offset-2",
+    "border border-[hsl(var(--settings-v2-accent)/0.45)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-[hsl(var(--settings-v2-accent))] shadow-[0_12px_28px_-22px_hsl(var(--settings-v2-accent)/0.52)] hover:bg-[hsl(var(--settings-v2-accent)/0.2)] focus-visible:ring-[hsl(var(--settings-v2-accent))] focus-visible:ring-offset-2",
   secondary:
-    "border border-[hsl(var(--settings-v2-border)/0.46)] bg-[hsl(var(--settings-v2-panel)/0.62)] text-foreground hover:bg-[hsl(var(--settings-v2-panel)/0.82)] focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] focus-visible:ring-offset-2",
+    "border border-[hsl(var(--settings-v2-border)/0.64)] bg-[hsl(var(--settings-v2-panel)/0.78)] text-foreground shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.42)] hover:bg-[hsl(var(--settings-v2-panel)/0.92)] focus-visible:ring-[hsl(var(--settings-v2-accent))] focus-visible:ring-offset-2",
   danger:
-    "border border-destructive/25 bg-destructive/10 text-destructive hover:bg-destructive/15 focus-visible:ring-destructive/40 disabled:opacity-60",
+    "border border-destructive/48 bg-destructive/14 text-destructive shadow-[0_10px_22px_-18px_hsl(var(--destructive)/0.54)] hover:bg-destructive/20 focus-visible:ring-destructive focus-visible:ring-offset-2 disabled:opacity-60",
 };
 
 export function SettingsButtonGrid({
@@ -126,18 +126,13 @@ export function SettingsTextInput({
         fill && "flex-1",
         tone === "danger"
           ? "border border-destructive/20 bg-background"
-          : "border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-shell)/0.46)]",
+          : "border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-shell)/0.46)]"
       )}
     />
   );
 }
 
-export function SettingsSelectField({
-  id,
-  value,
-  options,
-  onChange,
-}: SettingsSelectFieldProps) {
+export function SettingsSelectField({ id, value, options, onChange }: SettingsSelectFieldProps) {
   return (
     <div className="relative">
       <select
@@ -174,10 +169,13 @@ export function SettingsInlineButton({
       onClick={onClick}
       disabled={isDisabled}
       aria-busy={isLoading ? "true" : undefined}
+      data-button-tone={variant}
       data-testid={testId}
       className={cn(
         "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-[8px] px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-55",
-        SETTINGS_INLINE_BUTTON_CLASS[variant],
+        "motion-safe:transition-[transform,background-color,border-color,box-shadow,color,opacity] motion-safe:duration-200 motion-safe:ease-out",
+        "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
+        SETTINGS_INLINE_BUTTON_CLASS[variant]
       )}
     >
       {Icon ? (
@@ -192,11 +190,7 @@ export function SettingsInlineButton({
   );
 }
 
-export function SettingsStatus({
-  children,
-  tone = "muted",
-  center = false,
-}: SettingsStatusProps) {
+export function SettingsStatus({ children, tone = "muted", center = false }: SettingsStatusProps) {
   if (!children) return null;
 
   return (
@@ -204,7 +198,7 @@ export function SettingsStatus({
       className={cn(
         "text-sm",
         tone === "danger" ? "text-destructive" : "text-muted-foreground",
-        center && "text-center",
+        center && "text-center"
       )}
     >
       {children}
@@ -212,11 +206,7 @@ export function SettingsStatus({
   );
 }
 
-export function SettingsExternalLink({
-  href,
-  children,
-  size = "xs",
-}: SettingsExternalLinkProps) {
+export function SettingsExternalLink({ href, children, size = "xs" }: SettingsExternalLinkProps) {
   return (
     <a
       href={href}
@@ -224,7 +214,7 @@ export function SettingsExternalLink({
       rel="noopener noreferrer"
       className={cn(
         "text-primary underline hover:text-primary/90",
-        size === "sm" ? "text-sm" : "text-xs",
+        size === "sm" ? "text-sm" : "text-xs"
       )}
     >
       {children}
@@ -254,7 +244,7 @@ export function SettingsDialog({
     const firstFocusable = dialogRef.current
       ?.querySelector<HTMLElement>("[data-dialog-panel]")
       ?.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
     firstFocusable?.focus({ preventScroll: true });
 
@@ -270,8 +260,8 @@ export function SettingsDialog({
       dialogRef.current
         ?.querySelector<HTMLElement>("[data-dialog-panel]")
         ?.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ) ?? [],
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) ?? []
     );
     if (focusable.length === 0) return;
 
@@ -304,7 +294,10 @@ export function SettingsDialog({
         aria-label={cancelLabel}
         onClick={onCancel}
       />
-      <div data-dialog-panel="true" className="relative w-full max-w-sm rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.58)] bg-[hsl(var(--settings-v2-card)/0.96)] p-5 shadow-[var(--zen-shadow-card)]">
+      <div
+        data-dialog-panel="true"
+        className="relative w-full max-w-sm rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.58)] bg-[hsl(var(--settings-v2-card)/0.96)] p-5 shadow-[var(--zen-shadow-card)]"
+      >
         <h3 id={titleId} className="text-lg font-semibold text-foreground">
           {title}
         </h3>

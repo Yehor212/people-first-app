@@ -52,16 +52,30 @@ describe("GitHub Pages deploy workflow contract", () => {
 
     expect(validation).toBeLessThan(checkout);
     expect(validation).toBeLessThan(install);
-    expect(workflow).toContain('if [ "$BASE_REF" != "main" ] && [ "$BASE_REF" != "refs/heads/main" ]; then');
+    expect(workflow).toContain(
+      'if [ "$BASE_REF" != "main" ] && [ "$BASE_REF" != "refs/heads/main" ]; then'
+    );
     expect(workflow).toContain("Only main is trusted for Telegram Control checkout.");
   });
 
   it("keeps Telegram Control write tokens scoped away from global env and scans artifacts before upload", () => {
     const workflow = readFileSync(".github/workflows/telegram-control.yml", "utf8");
     const topEnv = sliceBetween(workflow, "env:", "jobs:");
-    const checkoutStep = sliceBetween(workflow, "name: Checkout base ref", "name: Prepare callback helper");
-    const dispatchStep = sliceBetween(workflow, "name: Dispatch production deploy workflow", "name: Optional Snyk code scan");
-    const publishStep = sliceBetween(workflow, "name: Publish branch and PR", "name: Final callback for non-Codex modes");
+    const checkoutStep = sliceBetween(
+      workflow,
+      "name: Checkout base ref",
+      "name: Prepare callback helper"
+    );
+    const dispatchStep = sliceBetween(
+      workflow,
+      "name: Dispatch production deploy workflow",
+      "name: Optional Snyk code scan"
+    );
+    const publishStep = sliceBetween(
+      workflow,
+      "name: Publish branch and PR",
+      "name: Final callback for non-Codex modes"
+    );
     const artifactScan = indexOfOrThrow(workflow, "name: Scan control artifacts before upload");
     const upload = indexOfOrThrow(workflow, "name: Upload control artifacts");
 
@@ -74,7 +88,7 @@ describe("GitHub Pages deploy workflow contract", () => {
 
   it("pins external GitHub Actions to full commit SHAs", () => {
     const mutableRefs = WORKFLOW_FILES.flatMap((file) =>
-      findMutableActionRefs(readFileSync(file, "utf8")).map((ref) => file + ": " + ref),
+      findMutableActionRefs(readFileSync(file, "utf8")).map((ref) => file + ": " + ref)
     );
 
     expect(mutableRefs).toEqual([]);
@@ -93,7 +107,9 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(previewWorkflow).toContain("publish_target:");
     expect(previewWorkflow).toContain("artifact-only");
     expect(previewWorkflow).toContain("overwrite-github-pages");
-    expect(previewWorkflow).toContain("github.event.inputs.publish_target == 'overwrite-github-pages'");
+    expect(previewWorkflow).toContain(
+      "github.event.inputs.publish_target == 'overwrite-github-pages'"
+    );
     expect(previewWorkflow).not.toContain("push:");
     expect(previewWorkflow).not.toContain("codex/journal-v2-hub");
     expect(previewWorkflow).not.toContain("VITE_DISABLE_PWA");
@@ -105,10 +121,10 @@ describe("GitHub Pages deploy workflow contract", () => {
 
     expect(extractConcurrencyGroup(workflow)).toBe("pages");
     expect(previewWorkflow).toContain(
-      "group: ${{ github.event.inputs.publish_target == 'overwrite-github-pages' && 'pages' || 'pages-v2-preview' }}",
+      "group: ${{ github.event.inputs.publish_target == 'overwrite-github-pages' && 'pages' || 'pages-v2-preview' }}"
     );
     expect(previewWorkflow).toContain(
-      "cancel-in-progress: ${{ github.event.inputs.publish_target != 'overwrite-github-pages' }}",
+      "cancel-in-progress: ${{ github.event.inputs.publish_target != 'overwrite-github-pages' }}"
     );
   });
 
@@ -117,14 +133,16 @@ describe("GitHub Pages deploy workflow contract", () => {
     const validationStep = sliceBetween(
       previewWorkflow,
       "name: Validate production overwrite source",
-      "name: Setup Node",
+      "name: Setup Node"
     );
     const uploadStep = sliceBetween(previewWorkflow, "name: Upload V2 Pages artifact", "deploy:");
 
-    expect(validationStep).toContain("github.event.inputs.publish_target == 'overwrite-github-pages'");
+    expect(validationStep).toContain(
+      "github.event.inputs.publish_target == 'overwrite-github-pages'"
+    );
     expect(validationStep).toContain('if [ "$GITHUB_REF" != "refs/heads/main" ]; then');
     expect(uploadStep).toContain(
-      "github.event.inputs.publish_target == 'overwrite-github-pages' && github.ref == 'refs/heads/main'",
+      "github.event.inputs.publish_target == 'overwrite-github-pages' && github.ref == 'refs/heads/main'"
     );
   });
 
@@ -156,7 +174,9 @@ describe("GitHub Pages deploy workflow contract", () => {
     const previewWorkflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
 
     for (const source of [workflow, previewWorkflow]) {
-      expect(source).toMatch(/uses: actions\/upload-pages-artifact@[a-f0-9]{40}\s+# v5[\s\S]*include-hidden-files: true/);
+      expect(source).toMatch(
+        /uses: actions\/upload-pages-artifact@[a-f0-9]{40}\s+# v5[\s\S]*include-hidden-files: true/
+      );
     }
   });
 
@@ -174,7 +194,10 @@ describe("GitHub Pages deploy workflow contract", () => {
     const prepare = indexOfOrThrow(workflow, "name: Prepare GitHub Pages SPA artifact");
     const duplicateGate = indexOfOrThrow(workflow, "name: Check final duplicate release artifacts");
     const stage = indexOfOrThrow(workflow, "name: Stage Pages release artifact");
-    const stagedIntegrity = indexOfOrThrow(workflow, "name: Check staged release artifact integrity");
+    const stagedIntegrity = indexOfOrThrow(
+      workflow,
+      "name: Check staged release artifact integrity"
+    );
     const stagedSmoke = indexOfOrThrow(workflow, "name: Run staged deploy smoke tests");
     const stagedPwaOffline = indexOfOrThrow(workflow, "name: Run staged PWA offline tests");
     const upload = indexOfOrThrow(workflow, "uses: actions/upload-pages-artifact@");
@@ -189,10 +212,19 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(workflow).toContain("ZENFLOW_PWA_OFFLINE_PREVIEW_DIR: output/pages-artifact.nosync");
     expect(workflow).toContain("ZENFLOW_PWA_OFFLINE_SKIP_BUILD: true");
 
-    const previewPrepare = indexOfOrThrow(previewWorkflow, "name: Prepare V2 GitHub Pages artifact");
-    const previewDuplicateGate = indexOfOrThrow(previewWorkflow, "name: Check final duplicate release artifacts for V2 preview");
+    const previewPrepare = indexOfOrThrow(
+      previewWorkflow,
+      "name: Prepare V2 GitHub Pages artifact"
+    );
+    const previewDuplicateGate = indexOfOrThrow(
+      previewWorkflow,
+      "name: Check final duplicate release artifacts for V2 preview"
+    );
     const previewStage = indexOfOrThrow(previewWorkflow, "name: Stage V2 Pages release artifact");
-    const previewIntegrity = indexOfOrThrow(previewWorkflow, "name: Check staged release artifact integrity for V2 preview");
+    const previewIntegrity = indexOfOrThrow(
+      previewWorkflow,
+      "name: Check staged release artifact integrity for V2 preview"
+    );
     const previewUpload = indexOfOrThrow(previewWorkflow, "name: Upload V2 Pages artifact");
     expect(previewPrepare).toBeLessThan(previewDuplicateGate);
     expect(previewDuplicateGate).toBeLessThan(previewStage);
@@ -209,12 +241,16 @@ describe("GitHub Pages deploy workflow contract", () => {
     };
 
     expect(pkg.scripts["test:e2e:v2:pwa-audio-range"]).toBe(
-      "playwright test e2e/pwa-audio-range.spec.ts --config=e2e/helpers/pwa-offline/playwright.config.ts",
+      "playwright test e2e/pwa-audio-range.spec.ts --config=e2e/helpers/pwa-offline/playwright.config.ts"
     );
     expect(workflow).toContain("name: Run staged PWA audio range tests");
-    expect(workflow).toContain("npm run test:e2e:v2:pwa-audio-range -- --project=pwa-offline-chromium-phone");
+    expect(workflow).toContain(
+      "npm run test:e2e:v2:pwa-audio-range -- --project=pwa-offline-chromium-phone"
+    );
     expect(previewWorkflow).toContain("name: Run V2 overwrite staged PWA audio range tests");
-    expect(previewWorkflow).toContain("npm run test:e2e:v2:pwa-audio-range -- --project=pwa-offline-chromium-phone");
+    expect(previewWorkflow).toContain(
+      "npm run test:e2e:v2:pwa-audio-range -- --project=pwa-offline-chromium-phone"
+    );
 
     const stagedPwaOffline = indexOfOrThrow(workflow, "name: Run staged PWA offline tests");
     const stagedAudioRange = indexOfOrThrow(workflow, "name: Run staged PWA audio range tests");
@@ -222,8 +258,14 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(stagedPwaOffline).toBeLessThan(stagedAudioRange);
     expect(stagedAudioRange).toBeLessThan(upload);
 
-    const previewPwaOffline = indexOfOrThrow(previewWorkflow, "name: Run V2 overwrite staged PWA offline tests");
-    const previewAudioRange = indexOfOrThrow(previewWorkflow, "name: Run V2 overwrite staged PWA audio range tests");
+    const previewPwaOffline = indexOfOrThrow(
+      previewWorkflow,
+      "name: Run V2 overwrite staged PWA offline tests"
+    );
+    const previewAudioRange = indexOfOrThrow(
+      previewWorkflow,
+      "name: Run V2 overwrite staged PWA audio range tests"
+    );
     const previewUpload = indexOfOrThrow(previewWorkflow, "name: Upload V2 Pages artifact");
     expect(previewPwaOffline).toBeLessThan(previewAudioRange);
     expect(previewAudioRange).toBeLessThan(previewUpload);
@@ -245,17 +287,15 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(pkg.scripts["ci:preflight"]).toContain("npm run build");
     expect(pkg.scripts["ci:preflight"]).not.toContain("vite build --configLoader runner");
     expect(pkg.scripts["prune:release-artifacts"]).toBe(
-      "node scripts/prune-duplicate-artifacts.cjs dist",
+      "node scripts/prune-duplicate-artifacts.cjs dist"
     );
     expect(pkg.scripts["check:release-artifacts"]).toBe(
-      "node scripts/prune-duplicate-artifacts.cjs dist --verify",
+      "node scripts/prune-duplicate-artifacts.cjs dist --verify"
     );
     expect(pkg.scripts["check:staged-release-artifacts"]).toBe(
-      "node scripts/check-release-artifact-integrity.cjs",
+      "node scripts/check-release-artifact-integrity.cjs"
     );
-    expect(pkg.scripts["stage:release-artifacts"]).toBe(
-      "node scripts/stage-release-artifact.cjs",
-    );
+    expect(pkg.scripts["stage:release-artifacts"]).toBe("node scripts/stage-release-artifact.cjs");
   });
 
   it("wires release workflow contract tests into blocking deploy CI", () => {
@@ -265,17 +305,17 @@ describe("GitHub Pages deploy workflow contract", () => {
     };
 
     expect(pkg.scripts["test:release-contracts"]).toContain(
-      "scripts/__tests__/deploy-workflow-contract.test.ts",
+      "scripts/__tests__/deploy-workflow-contract.test.ts"
     );
     expect(pkg.scripts["test:release-contracts"]).toContain(
-      "scripts/__tests__/release-artifact-integrity.test.ts",
+      "scripts/__tests__/release-artifact-integrity.test.ts"
     );
     expect(pkg.scripts["test:release-contracts"]).toContain(
-      "scripts/__tests__/check-v2-paper-theme.test.ts",
+      "scripts/__tests__/check-v2-paper-theme.test.ts"
     );
     expect(workflow).toContain("run: npm run test:release-contracts");
     expect(indexOfOrThrow(workflow, "run: npm run test:release-contracts")).toBeLessThan(
-      indexOfOrThrow(workflow, "name: Build"),
+      indexOfOrThrow(workflow, "name: Build")
     );
   });
 
@@ -293,16 +333,24 @@ describe("GitHub Pages deploy workflow contract", () => {
     const syncDrillStep = sliceBetween(
       workflow,
       "name: Run Telegram sync drill",
-      "name: Upload Telegram sync drill artifact",
+      "name: Upload Telegram sync drill artifact"
     );
 
-    expect(syncDrillStep).not.toContain("ZENFLOW_SYNC_TEST_EMAIL: ${{ secrets.ZENFLOW_SYNC_TEST_EMAIL }}");
-    expect(syncDrillStep).not.toContain("ZENFLOW_SYNC_TEST_PASSWORD: ${{ secrets.ZENFLOW_SYNC_TEST_PASSWORD }}");
+    expect(syncDrillStep).not.toContain(
+      "ZENFLOW_SYNC_TEST_EMAIL: ${{ secrets.ZENFLOW_SYNC_TEST_EMAIL }}"
+    );
+    expect(syncDrillStep).not.toContain(
+      "ZENFLOW_SYNC_TEST_PASSWORD: ${{ secrets.ZENFLOW_SYNC_TEST_PASSWORD }}"
+    );
     expect(syncDrillStep).toContain("SYNC_TEST_EMAIL: ${{ secrets.ZENFLOW_SYNC_TEST_EMAIL }}");
-    expect(syncDrillStep).toContain("SYNC_TEST_PASSWORD: ${{ secrets.ZENFLOW_SYNC_TEST_PASSWORD }}");
+    expect(syncDrillStep).toContain(
+      "SYNC_TEST_PASSWORD: ${{ secrets.ZENFLOW_SYNC_TEST_PASSWORD }}"
+    );
     expect(syncDrillStep).toContain('SYNC_TEST_EMAIL_VALUE="${SYNC_TEST_EMAIL:-}"');
     expect(syncDrillStep).toContain('SYNC_TEST_PASSWORD_VALUE="${SYNC_TEST_PASSWORD:-}"');
-    expect(syncDrillStep).toContain("unset SYNC_TEST_EMAIL SYNC_TEST_PASSWORD ZENFLOW_SYNC_TEST_EMAIL ZENFLOW_SYNC_TEST_PASSWORD");
+    expect(syncDrillStep).toContain(
+      "unset SYNC_TEST_EMAIL SYNC_TEST_PASSWORD ZENFLOW_SYNC_TEST_EMAIL ZENFLOW_SYNC_TEST_PASSWORD"
+    );
     expect(syncDrillStep).toContain('ZENFLOW_SYNC_TEST_EMAIL="$SYNC_TEST_EMAIL_VALUE"');
     expect(syncDrillStep).toContain("Secret material leaked into uploaded sync drill artifacts");
   });
@@ -336,9 +384,19 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(workflow).toContain("ZENFLOW_PLAYWRIGHT_PREVIEW_DIR: output/pages-artifact.nosync");
     expect(workflow).toContain("e2e/orb-user-flow-performance.spec.ts");
     expect(workflow).toContain("--workers=1 --retries=0");
-    expect(indexOfOrThrow(workflow, "name: Run staged V2 Orb performance tests")).toBeLessThan(
-      indexOfOrThrow(workflow, "name: Upload artifact"),
+    expect(workflow).toContain("name: Upload V2 Orb performance diagnostics");
+    expect(workflow).toContain("!cancelled() && failure()");
+    expect(workflow).toContain("output/playwright/orb-user-flow-performance-2026-07-01/**");
+    expect(workflow).toContain("test-results/orb-user-flow-performance-*/**");
+    const stagedPerf = indexOfOrThrow(workflow, "name: Run staged V2 Orb performance tests");
+    const perfDiagnostics = indexOfOrThrow(
+      workflow,
+      "name: Upload V2 Orb performance diagnostics"
     );
+    const stagedVisual = indexOfOrThrow(workflow, "name: Run staged V2 visual regression tests");
+    expect(stagedPerf).toBeLessThan(perfDiagnostics);
+    expect(perfDiagnostics).toBeLessThan(stagedVisual);
+    expect(stagedPerf).toBeLessThan(indexOfOrThrow(workflow, "name: Upload artifact"));
   });
 
   it("blocks Pages uploads on deep i18n and staged V2 runtime release gates", () => {
@@ -349,39 +407,60 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(workflow).toContain("run: npm run i18n:deep");
     expect(productionDeepI18n).toBeLessThan(indexOfOrThrow(workflow, "name: Build"));
 
-    const productionStagedVisual = indexOfOrThrow(workflow, "name: Run staged V2 visual regression tests");
+    const productionStagedVisual = indexOfOrThrow(
+      workflow,
+      "name: Run staged V2 visual regression tests"
+    );
     expect(workflow).toContain("npm run test:e2e:v2:visual");
     expect(productionStagedVisual).toBeLessThan(indexOfOrThrow(workflow, "name: Upload artifact"));
 
     const previewVerify = sliceBetween(
       previewWorkflow,
       "name: Verify V2-only shell",
-      "name: Check hosted auth providers for V2 preview",
+      "name: Check hosted auth providers for V2 preview"
     );
     expect(previewVerify).toContain("npm run i18n:deep");
 
     const overwriteReleaseGates = sliceBetween(
       previewWorkflow,
       "name: Run production overwrite release gates",
-      "name: Build V2 public root",
+      "name: Build V2 public root"
     );
-    expect(overwriteReleaseGates).toContain("github.event.inputs.publish_target == 'overwrite-github-pages'");
+    expect(overwriteReleaseGates).toContain(
+      "github.event.inputs.publish_target == 'overwrite-github-pages'"
+    );
     expect(overwriteReleaseGates).toContain("npm audit --audit-level=high");
     expect(overwriteReleaseGates).toContain("npm run check:task-completion");
     expect(overwriteReleaseGates).toContain("npm run check:best-practices");
     expect(overwriteReleaseGates).toContain("npm run test:release-contracts");
 
-    const previewStagedSmoke = indexOfOrThrow(previewWorkflow, "name: Run V2 overwrite staged deploy smoke tests");
-    const previewStagedPwa = indexOfOrThrow(previewWorkflow, "name: Run V2 overwrite staged PWA offline tests");
-    const previewStagedOrbPerf = indexOfOrThrow(previewWorkflow, "name: Run V2 overwrite staged Orb performance tests");
-    const previewStagedVisual = indexOfOrThrow(previewWorkflow, "name: Run V2 overwrite staged visual regression tests");
+    const previewStagedSmoke = indexOfOrThrow(
+      previewWorkflow,
+      "name: Run V2 overwrite staged deploy smoke tests"
+    );
+    const previewStagedPwa = indexOfOrThrow(
+      previewWorkflow,
+      "name: Run V2 overwrite staged PWA offline tests"
+    );
+    const previewStagedOrbPerf = indexOfOrThrow(
+      previewWorkflow,
+      "name: Run V2 overwrite staged Orb performance tests"
+    );
+    const previewStagedVisual = indexOfOrThrow(
+      previewWorkflow,
+      "name: Run V2 overwrite staged visual regression tests"
+    );
     const previewUpload = indexOfOrThrow(previewWorkflow, "name: Upload V2 Pages artifact");
     expect(previewStagedSmoke).toBeLessThan(previewStagedPwa);
     expect(previewStagedPwa).toBeLessThan(previewStagedOrbPerf);
     expect(previewStagedOrbPerf).toBeLessThan(previewStagedVisual);
     expect(previewStagedVisual).toBeLessThan(previewUpload);
-    expect(previewWorkflow).toContain("ZENFLOW_PLAYWRIGHT_PREVIEW_DIR: output/pages-artifact.nosync");
-    expect(previewWorkflow).toContain("ZENFLOW_PWA_OFFLINE_PREVIEW_DIR: output/pages-artifact.nosync");
+    expect(previewWorkflow).toContain(
+      "ZENFLOW_PLAYWRIGHT_PREVIEW_DIR: output/pages-artifact.nosync"
+    );
+    expect(previewWorkflow).toContain(
+      "ZENFLOW_PWA_OFFLINE_PREVIEW_DIR: output/pages-artifact.nosync"
+    );
   });
 
   it("hard-blocks native gates and verifies native public assets after sync", () => {
@@ -391,10 +470,10 @@ describe("GitHub Pages deploy workflow contract", () => {
     };
 
     expect(pkg.scripts["check:release-artifacts:android"]).toBe(
-      "node scripts/prune-duplicate-artifacts.cjs android/app/src/main/assets/public --verify",
+      "node scripts/prune-duplicate-artifacts.cjs android/app/src/main/assets/public --verify"
     );
     expect(pkg.scripts["check:release-artifacts:ios"]).toBe(
-      "node scripts/prune-duplicate-artifacts.cjs ios/App/App/public --verify",
+      "node scripts/prune-duplicate-artifacts.cjs ios/App/App/public --verify"
     );
     expect(pkg.scripts["cap:sync"]).toContain("npm run check:release-artifacts:android");
     expect(pkg.scripts["cap:sync"]).toContain("npm run check:release-artifacts:ios");
@@ -405,8 +484,14 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(androidGate).not.toContain("continue-on-error: true");
     expect(androidGate).toContain("npm run check:release-artifacts:android");
 
-    const androidSync = indexOfOrThrow(androidGate, "name: Capacitor sync (generates cordova.variables.gradle)");
-    const androidPostSyncGate = indexOfOrThrow(androidGate, "name: Check Android synced duplicate release artifacts");
+    const androidSync = indexOfOrThrow(
+      androidGate,
+      "name: Capacitor sync (generates cordova.variables.gradle)"
+    );
+    const androidPostSyncGate = indexOfOrThrow(
+      androidGate,
+      "name: Check Android synced duplicate release artifacts"
+    );
     const androidAssemble = indexOfOrThrow(androidGate, "name: Android assembleDebug");
     expect(androidSync).toBeLessThan(androidPostSyncGate);
     expect(androidPostSyncGate).toBeLessThan(androidAssemble);
@@ -414,7 +499,10 @@ describe("GitHub Pages deploy workflow contract", () => {
     const iosGate = sliceBetween(workflow, "ios-gate:", "deploy:");
     expect(iosGate).toContain("npm run check:release-artifacts:ios");
     const iosSync = indexOfOrThrow(iosGate, "name: Capacitor sync iOS");
-    const iosPostSyncGate = indexOfOrThrow(iosGate, "name: Check iOS synced duplicate release artifacts");
+    const iosPostSyncGate = indexOfOrThrow(
+      iosGate,
+      "name: Check iOS synced duplicate release artifacts"
+    );
     const iosBuild = indexOfOrThrow(iosGate, "name: Build iOS simulator");
     expect(iosSync).toBeLessThan(iosPostSyncGate);
     expect(iosPostSyncGate).toBeLessThan(iosBuild);
@@ -436,7 +524,7 @@ describe("GitHub Pages deploy workflow contract", () => {
     const syncUpload = sliceBetween(
       deployWorkflow,
       "name: Upload Telegram sync drill artifact",
-      "name: Run deploy smoke tests",
+      "name: Run deploy smoke tests"
     );
     expect(syncUpload).toContain("steps.telegram-sync-drill.outcome == 'success'");
     expect(syncUpload).not.toContain("if: always()");
@@ -444,9 +532,11 @@ describe("GitHub Pages deploy workflow contract", () => {
     const controlScan = sliceBetween(
       telegramWorkflow,
       "name: Scan control artifacts before upload",
-      "name: Upload control artifacts",
+      "name: Upload control artifacts"
     );
-    const controlUpload = telegramWorkflow.slice(indexOfOrThrow(telegramWorkflow, "name: Upload control artifacts"));
+    const controlUpload = telegramWorkflow.slice(
+      indexOfOrThrow(telegramWorkflow, "name: Upload control artifacts")
+    );
     expect(controlScan).toContain("id: control_artifact_scan");
     expect(controlUpload).toContain("steps.control_artifact_scan.outcome == 'success'");
     expect(controlUpload).not.toContain("if: always()");
@@ -454,14 +544,15 @@ describe("GitHub Pages deploy workflow contract", () => {
     const visualScan = sliceBetween(
       visualWorkflow,
       "name: Scan visual artifacts before upload",
-      "name: Upload Playwright snapshots",
+      "name: Upload Playwright snapshots"
     );
     const visualUpload = sliceBetween(
       visualWorkflow,
       "name: Upload Playwright snapshots",
-      "name: Publish visual diff summary",
+      "name: Publish visual diff summary"
     );
     expect(visualScan).toContain("id: visual_artifact_scan");
+    expect(visualScan).toContain('find test-results -type f -name ".last-run.json" -delete');
     expect(visualUpload).toContain("steps.visual_artifact_scan.outcome == 'success'");
     expect(visualUpload).not.toContain("if: always()");
   });
@@ -478,9 +569,11 @@ describe("GitHub Pages deploy workflow contract", () => {
 
     for (const file of files) {
       const workflow = readFileSync(file, "utf8");
-      for (const match of workflow.matchAll(/uses: actions\/checkout@[a-f0-9]{40}[\s\S]*?(?=\n\s*- (?:name|uses):|$)/g)) {
+      for (const match of workflow.matchAll(
+        /uses: actions\/checkout@[a-f0-9]{40}[\s\S]*?(?=\n\s*- (?:name|uses):|$)/g
+      )) {
         expect(match[0], file + " checkout must disable credential persistence").toContain(
-          "persist-credentials: false",
+          "persist-credentials: false"
         );
       }
     }

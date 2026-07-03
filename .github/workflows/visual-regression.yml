@@ -48,7 +48,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: ".nvmrc"
           cache: npm
 
       - name: Install dependencies
@@ -128,6 +128,9 @@ jobs:
           if [ ${#existing[@]} -eq 0 ]; then
             exit 0
           fi
+          # Playwright writes harmless run metadata under test-results; keep
+          # the hidden-file guard strict for every other visual artifact.
+          find test-results -type f -name ".last-run.json" -delete 2>/dev/null || true
           if find "${existing[@]}" -type f -name ".*" -print -quit | grep -q .; then
             echo "::error title=Hidden visual artifact::Unexpected hidden file in visual artifacts."
             find "${existing[@]}" -type f -name ".*" -print

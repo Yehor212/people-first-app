@@ -39,40 +39,43 @@ describe("ThemeToggleV2", () => {
     expect(btn.className).toContain("min-h-[44px]");
   });
 
-  it("matches the V1 pill-switch geometry inside V2 surfaces", () => {
+  it("uses the V2 tactile switch geometry and theme tokens", () => {
     render(<ThemeToggleV2 />);
     const track = screen.getByTestId("sidebar-v2-theme-toggle-track");
     const thumb = screen.getByTestId("sidebar-v2-theme-toggle-thumb");
     expect(track.className).toContain("w-[52px] h-[36px]");
-    expect(track.className).toContain("bg-[hsl(var(--theme-toggle-v1-light-track))]");
-    expect(thumb.className).toContain("top-[7px] w-[22px] h-[22px]");
-    expect(thumb.className).toContain("left-[3px]");
-    expect(thumb.className).toContain("bg-[hsl(var(--theme-toggle-v1-light-thumb))]");
+    expect(track.className).toContain("rounded-[8px]");
+    expect(track.className).toContain("--settings-v2-shell");
+    expect(track.className).not.toContain("theme-toggle-v1");
+    expect(thumb.className).toContain("top-[5px] h-[26px] w-[22px]");
+    expect(thumb.className).toContain("left-[5px]");
+    expect(thumb.className).toContain("rounded-[6px]");
   });
 
-  it("matches the V1 dark switch colors and thumb position when in ink", () => {
+  it("uses the V2 dark switch colors and thumb position when in ink", () => {
     useThemeStore.setState({ theme: "ink", appliedTheme: "ink" });
     render(<ThemeToggleV2 />);
     const track = screen.getByTestId("sidebar-v2-theme-toggle-track");
     const thumb = screen.getByTestId("sidebar-v2-theme-toggle-thumb");
-    expect(track.className).toContain("bg-[hsl(var(--theme-toggle-v1-dark-track))]");
-    expect(thumb.className).toContain("left-[27px]");
-    expect(thumb.className).toContain("bg-[hsl(var(--theme-toggle-v1-dark-thumb))]");
+    expect(track.className).toContain("--nav-v2-item-surface");
+    expect(track.className).not.toContain("theme-toggle-v1");
+    expect(thumb.className).toContain("left-[25px]");
+    expect(thumb.className).toContain("--settings-v2-accent");
   });
 
-  it("exposes aria-label 'Switch to dark mode' when theme is paper", () => {
+  it("uses a stable pressed-state label when theme is paper", () => {
     useThemeStore.setState({ theme: "paper", appliedTheme: "paper" });
     render(<ThemeToggleV2 />);
     const btn = screen.getByTestId("sidebar-v2-theme-toggle");
-    expect(btn).toHaveAttribute("aria-label", "Switch to dark mode");
+    expect(btn).toHaveAttribute("aria-label", "Dark");
     expect(btn).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("exposes aria-label 'Switch to light mode' when theme is ink", () => {
+  it("keeps the same pressed-state label when theme is ink", () => {
     useThemeStore.setState({ theme: "ink", appliedTheme: "ink" });
     render(<ThemeToggleV2 />);
     const btn = screen.getByTestId("sidebar-v2-theme-toggle");
-    expect(btn).toHaveAttribute("aria-label", "Switch to light mode");
+    expect(btn).toHaveAttribute("aria-label", "Dark");
     expect(btn).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -101,16 +104,16 @@ describe("ThemeToggleV2", () => {
     );
   });
 
-  it("shows 'Dark' label when in paper (prompts next action)", () => {
+  it("shows 'Light' label when paper is active", () => {
     useThemeStore.setState({ theme: "paper", appliedTheme: "paper" });
     render(<ThemeToggleV2 />);
-    expect(screen.getByText("Dark")).toBeInTheDocument();
+    expect(screen.getByText("Light")).toBeInTheDocument();
   });
 
-  it("shows 'Light' label when in ink (prompts next action)", () => {
+  it("shows 'Dark' label when ink is active", () => {
     useThemeStore.setState({ theme: "ink", appliedTheme: "ink" });
     render(<ThemeToggleV2 />);
-    expect(screen.getByText("Light")).toBeInTheDocument();
+    expect(screen.getByText("Dark")).toBeInTheDocument();
   });
 
   it("skips the root view transition inside modal drawers", () => {

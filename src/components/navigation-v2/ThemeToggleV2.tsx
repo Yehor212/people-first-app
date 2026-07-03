@@ -10,8 +10,8 @@ import { logger } from "@/lib/logger";
 /**
  * ThemeToggleV2 — Sidebar-embedded theme switcher for Nav-V2.
  *
- * Visual: 52×36 pill-switch (Sun ↔ Moon, sky-300 / slate-700) wired
- * through the V2 paper/ink theme store.
+ * Visual: compact 52×36 tactile switch (Sun ↔ Moon) wired through the V2
+ * paper/ink theme store.
  *
  * Animation: 2026-standard circle-reveal via View Transitions API — the new
  * theme grows from the click origin as a clip-path circle until it covers
@@ -76,12 +76,12 @@ const THEME_TOGGLE_PRESENTATION_CLASSES: Record<
   },
   drawer: {
     button:
-      "w-full justify-between rounded-2xl px-3.5 py-3 text-[hsl(var(--nav-v2-drawer-muted))] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] focus-visible:ring-primary focus-visible:ring-offset-[hsl(var(--nav-v2-drawer-end))]",
+      "w-full justify-between rounded-[8px] px-3.5 py-3 text-[hsl(var(--nav-v2-drawer-muted))] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] focus-visible:ring-primary focus-visible:ring-offset-[hsl(var(--nav-v2-drawer-end))]",
     label: "font-display text-sm",
   },
   "settings-card": {
     button:
-      "rounded-full border border-[hsl(var(--border)/0.55)] bg-[hsl(var(--card)/0.72)] px-2",
+      "rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-panel)/0.72)] px-2 shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.42)]",
     label: "text-xs",
   },
 };
@@ -167,9 +167,7 @@ export function ThemeToggleV2({
     [isDark, setTheme],
   );
 
-  const ariaLabel = isDark
-    ? t.switchToLight || "Switch to light mode"
-    : t.switchToDark || "Switch to dark mode";
+  const ariaLabel = t.themeDark || "Dark mode";
   const presentationClasses = THEME_TOGGLE_PRESENTATION_CLASSES[presentation];
 
   // SSR / pre-hydration placeholder — static, zero hydration risk.
@@ -183,7 +181,7 @@ export function ThemeToggleV2({
         )}
         aria-hidden="true"
       >
-        <div className="relative flex-shrink-0 w-[52px] h-[36px] rounded-full bg-muted" />
+        <div className="relative flex-shrink-0 w-[52px] h-[36px] rounded-[8px] bg-muted" />
       </div>
     );
   }
@@ -199,7 +197,8 @@ export function ThemeToggleV2({
         "flex items-center gap-3 rounded-lg px-3 py-2 min-h-[44px]",
         "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--nav-v2-item-hover)/0.72)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-        "motion-safe:transition-colors motion-safe:duration-200",
+        "motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200",
+        "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
         collapsed && "justify-center px-2",
         presentationClasses.button,
       )}
@@ -207,41 +206,34 @@ export function ThemeToggleV2({
       <span
         data-testid={`${testId}-track`}
         className={cn(
-          "relative flex-shrink-0 rounded-full motion-safe:transition-all motion-safe:duration-300",
+          "relative flex-shrink-0 rounded-[8px] border shadow-[inset_0_0_0_1px_hsl(var(--settings-v2-shadow)/0.08)] motion-safe:transition-[background-color,border-color,box-shadow] motion-safe:duration-300",
           "w-[52px] h-[36px]",
           isDark
-            ? "bg-[hsl(var(--theme-toggle-v1-dark-track))]"
-            : "bg-[hsl(var(--theme-toggle-v1-light-track))]",
+            ? "border-[hsl(var(--nav-v2-drawer-border)/0.36)] bg-[hsl(var(--nav-v2-item-surface)/0.76)]"
+            : "border-[hsl(var(--settings-v2-border)/0.48)] bg-[hsl(var(--settings-v2-shell)/0.74)]",
         )}
         aria-hidden="true"
       >
         <span
           data-testid={`${testId}-thumb`}
           className={cn(
-            "absolute top-[7px] w-[22px] h-[22px] rounded-full motion-safe:transition-all motion-safe:duration-300 flex items-center justify-center shadow-sm",
+            "absolute top-[5px] h-[26px] w-[22px] rounded-[6px] motion-safe:transition-[left,background-color,color,box-shadow] motion-safe:duration-300 flex items-center justify-center shadow-[0_8px_16px_-12px_hsl(var(--settings-v2-shadow)/0.68)] ring-1",
             isDark
-              ? "left-[27px] bg-[hsl(var(--theme-toggle-v1-dark-thumb))] ring-1 ring-[hsl(var(--theme-toggle-v1-dark-ring)/0.30)]"
-              : "left-[3px] bg-[hsl(var(--theme-toggle-v1-light-thumb))]",
+              ? "left-[25px] bg-[hsl(var(--settings-v2-accent)/0.18)] text-[hsl(var(--settings-v2-accent))] ring-[hsl(var(--settings-v2-accent)/0.34)]"
+              : "left-[5px] bg-[hsl(var(--settings-v2-panel)/0.94)] text-[hsl(var(--settings-v2-accent))] ring-[hsl(var(--settings-v2-border)/0.42)]",
           )}
         >
           {isDark ? (
-            <Moon className="w-3.5 h-3.5 text-[hsl(var(--theme-toggle-v1-dark-ring))] dark:text-[hsl(var(--zf-text-soft))]" aria-hidden="true" />
+            <Moon className="w-3.5 h-3.5" aria-hidden="true" />
           ) : (
-            <Sun className="w-3.5 h-3.5 text-[hsl(var(--theme-toggle-v1-light-icon))]" aria-hidden="true" />
+            <Sun className="w-3.5 h-3.5" aria-hidden="true" />
           )}
         </span>
-
-        {isDark && (
-          <>
-            <span className="absolute top-[6px] left-[6px] w-1 h-1 bg-foreground/60 rounded-full" />
-            <span className="absolute top-[14px] left-[12px] w-0.5 h-0.5 bg-foreground/40 rounded-full" />
-          </>
-        )}
       </span>
 
       {!collapsed && (
         <span className={presentationClasses.label}>
-          {isDark ? t.themeLight || "Light" : t.themeDark || "Dark"}
+          {isDark ? t.themeDark || "Dark" : t.themeLight || "Light"}
         </span>
       )}
     </button>

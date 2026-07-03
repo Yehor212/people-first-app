@@ -26,15 +26,6 @@
  * aliases can reference --color-theme-* vars via var().
  */
 
-:root {
-  --theme-toggle-v1-light-track: 199 89% 74%;
-  --theme-toggle-v1-light-thumb: 48 96% 53%;
-  --theme-toggle-v1-light-icon: 0 0% 100%;
-  --theme-toggle-v1-dark-track: 215 25% 27%;
-  --theme-toggle-v1-dark-thumb: 242 47% 20%;
-  --theme-toggle-v1-dark-ring: 215 20% 65%;
-}
-
 @layer theme {
   :root[data-theme="paper"] {
     --zen-surface: var(--color-theme-paper-surface);
@@ -762,6 +753,12 @@
     linear-gradient(180deg, hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.96)), hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.72)));
   border-color: hsl(var(--settings-v2-border) / 0.52);
   box-shadow: var(--zen-shadow-card);
+}
+
+:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"][data-active="true"],
+:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"][data-active="true"],
+:root[data-theme="oled"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"][data-active="true"] {
+  border-color: hsl(var(--settings-v2-accent));
 }
 
 :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"],

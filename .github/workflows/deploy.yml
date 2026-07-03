@@ -344,6 +344,16 @@ jobs:
           ZENFLOW_PLAYWRIGHT_LOCAL_PORT: 4183
         run: npx playwright test e2e/orb-user-flow-performance.spec.ts --project=chromium --workers=1 --retries=0
 
+      - name: Upload V2 Orb performance diagnostics
+        if: ${{ !cancelled() && failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: v2-orb-performance-diagnostics
+          path: |
+            output/playwright/orb-user-flow-performance-2026-07-01/**
+            test-results/orb-user-flow-performance-*/**
+          if-no-files-found: warn
+
       - name: Run staged V2 visual regression tests
         timeout-minutes: 15
         env:
