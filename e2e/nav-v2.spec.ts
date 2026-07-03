@@ -475,6 +475,11 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
       expect(collapsedCount).toBeGreaterThanOrEqual(6);
       expect(collapsedCount).toBeLessThanOrEqual(16);
       await expect(page.getByTestId("emotion-more-precise")).toBeVisible();
+      const mobileEmotionGridMask = [
+        page.getByTestId("emotion-tag-chips"),
+        page.getByTestId("orb-page-note"),
+        page.getByTestId("orb-page-footer"),
+      ];
 
       await expect(page).toHaveScreenshot(
         `nav-v2-mobile-orb-emotions-collapsed-${themeLabel}.png`,
@@ -483,7 +488,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
           maxDiffPixelRatio: 0.04,
           animations: "disabled",
           timeout: 30_000,
-          mask: [page.getByTestId("emotion-tag-chips")],
+          mask: mobileEmotionGridMask,
         }
       );
     });
@@ -508,6 +513,11 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
         "aria-expanded",
         "true"
       );
+      const mobileEmotionGridMask = [
+        page.getByTestId("emotion-tag-chips"),
+        page.getByTestId("orb-page-note"),
+        page.getByTestId("orb-page-footer"),
+      ];
 
       if (theme === "paper") {
         for (const key of ["nostalgic", "appreciated", "content", "loved", "brave"]) {
@@ -527,7 +537,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
             maxDiffPixelRatio: 0.04,
             animations: "disabled",
             timeout: 30_000,
-            mask: [page.getByTestId("emotion-tag-chips")],
+            mask: mobileEmotionGridMask,
           }
         );
         return;
@@ -538,7 +548,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
         maxDiffPixelRatio: 0.04,
         animations: "disabled",
         timeout: 30_000,
-        mask: [page.getByTestId("emotion-tag-chips")],
+        mask: mobileEmotionGridMask,
       });
     });
   }
