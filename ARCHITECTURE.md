@@ -585,6 +585,8 @@ bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--
 
 **Where NOT to apply:** Standard cards (habits, mood tracker, settings) — these use `bg-card`.
 
+**Scoped V2 Settings exception:** V2 Settings appearance/navigation surfaces may use the Settings-only liquid glass layer when the page is marked with `data-v2-readable-page="settings"` and the colors come from `--settings-v2-*` theme tokens. This exception is limited to Settings personalization and must keep readable solid/reduced-transparency fallbacks.
+
 ### CLS Guards
 
 Every `lazy()`-loaded component container MUST have a `min-h-[Xpx]` class to prevent Cumulative Layout Shift:

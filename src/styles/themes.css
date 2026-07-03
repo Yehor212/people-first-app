@@ -106,15 +106,18 @@
   --nav-v2-shadow: 176 33% 12%;
   --zf-surface-3: 43 52% 78%;
 
-  --settings-v2-shell: 35 44% 92%;
-  --settings-v2-card: 40 58% 97%;
-  --settings-v2-panel: 33 38% 88%;
-  --settings-v2-border: 31 24% 58%;
-  --settings-v2-accent: 18 44% 42%;
-  --settings-v2-shadow: 24 24% 20%;
-  --settings-v2-glass-blur: 18px;
-  --settings-v2-rim-light: 40 70% 99%;
-  --settings-v2-rim-alpha: 0.44;
+  --settings-v2-shell: 198 32% 91%;
+  --settings-v2-card: 0 0% 100%;
+  --settings-v2-panel: 204 40% 96%;
+  --settings-v2-border: 205 15% 72%;
+  --settings-v2-accent: 211 84% 45%;
+  --settings-v2-shadow: 212 24% 22%;
+  --settings-v2-card-alpha: 0.64;
+  --settings-v2-panel-alpha: 0.5;
+  --settings-v2-shell-alpha: 0.44;
+  --settings-v2-glass-blur: 28px;
+  --settings-v2-rim-light: 0 0% 100%;
+  --settings-v2-rim-alpha: 0.74;
 }
 
 /* V2 Mist Paper guardrail.
@@ -629,15 +632,18 @@
     --nav-v2-backdrop: 0 0% 0%;
     --nav-v2-shadow: 0 0% 0%;
 
-  --settings-v2-shell: 263 26% 8%;
-  --settings-v2-card: 258 24% 12%;
-  --settings-v2-panel: 254 18% 18%;
-  --settings-v2-border: 262 18% 38%;
-  --settings-v2-accent: 274 44% 72%;
-  --settings-v2-shadow: 260 38% 4%;
-  --settings-v2-glass-blur: 20px;
-  --settings-v2-rim-light: 274 70% 78%;
-  --settings-v2-rim-alpha: 0.42;
+  --settings-v2-shell: 252 16% 8%;
+  --settings-v2-card: 258 18% 12%;
+  --settings-v2-panel: 252 16% 18%;
+  --settings-v2-border: 252 14% 44%;
+  --settings-v2-accent: 258 70% 78%;
+  --settings-v2-shadow: 258 36% 4%;
+  --settings-v2-card-alpha: 0.62;
+  --settings-v2-panel-alpha: 0.5;
+  --settings-v2-shell-alpha: 0.5;
+  --settings-v2-glass-blur: 30px;
+  --settings-v2-rim-light: 264 36% 82%;
+  --settings-v2-rim-alpha: 0.24;
 }
 
 :root[data-theme="oled"] {
@@ -726,14 +732,17 @@
   --zf-warm: 32 50% 68%;
   --zf-warning: 43 70% 64%;
   --settings-v2-shell: 0 0% 0%;
-  --settings-v2-card: 260 18% 5%;
-  --settings-v2-panel: 258 16% 9%;
-  --settings-v2-border: 262 15% 32%;
-  --settings-v2-accent: 274 44% 68%;
+  --settings-v2-card: 258 12% 5%;
+  --settings-v2-panel: 252 12% 9%;
+  --settings-v2-border: 252 12% 34%;
+  --settings-v2-accent: 258 66% 76%;
   --settings-v2-shadow: 0 0% 0%;
-  --settings-v2-glass-blur: 18px;
-  --settings-v2-rim-light: 274 64% 74%;
-  --settings-v2-rim-alpha: 0.34;
+  --settings-v2-card-alpha: 0.62;
+  --settings-v2-panel-alpha: 0.6;
+  --settings-v2-shell-alpha: 0.56;
+  --settings-v2-glass-blur: 24px;
+  --settings-v2-rim-light: 270 48% 82%;
+  --settings-v2-rim-alpha: 0.3;
 }
 
 
@@ -751,8 +760,8 @@
   --v2-readable-surface: hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.88));
   --v2-readable-surface-border: hsl(var(--settings-v2-border) / 0.58);
   background:
-    radial-gradient(circle at 12% 3%, hsl(var(--settings-v2-rim-light) / 0.32), transparent 28%),
-    radial-gradient(circle at 92% 0%, hsl(var(--settings-v2-accent) / 0.14), transparent 32%);
+    linear-gradient(180deg, hsl(var(--settings-v2-rim-light) / 0.12), transparent 34%),
+    linear-gradient(135deg, hsl(var(--settings-v2-accent) / 0.06), transparent 56%);
 }
 
 :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],
@@ -762,32 +771,33 @@
 :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"],
 :root[data-theme="oled"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"] {
   background:
-    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / var(--settings-v2-rim-alpha, 0.34)), transparent 38%),
-    linear-gradient(180deg, hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.96)), hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.72)));
-  border-color: hsl(var(--settings-v2-border) / 0.52);
+    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / var(--settings-v2-rim-alpha, 0.34)), hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.7)) 42%, hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.58)));
+  border-color: hsl(var(--settings-v2-border) / 0.32);
   box-shadow:
-    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.46),
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.62),
+    inset 0 -1px 0 hsl(var(--settings-v2-border) / 0.14),
     var(--zen-shadow-card);
-  -webkit-backdrop-filter: blur(var(--settings-v2-glass-blur, 14px)) saturate(1.12);
-  backdrop-filter: blur(var(--settings-v2-glass-blur, 14px)) saturate(1.12);
+  -webkit-backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.35);
+  backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.35);
 }
 
 :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"][data-active="true"],
 :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"][data-active="true"],
 :root[data-theme="oled"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"][data-active="true"] {
-  border-color: hsl(var(--settings-v2-accent));
+  border-color: hsl(var(--settings-v2-accent) / 0.54);
 }
 
 :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"],
 :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"],
 :root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"] {
   background:
-    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.18), transparent 34%),
-    hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.76));
-  border-color: hsl(var(--settings-v2-border) / 0.44);
-  box-shadow: inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.28);
-  -webkit-backdrop-filter: blur(var(--settings-v2-glass-blur, 14px)) saturate(1.08);
-  backdrop-filter: blur(var(--settings-v2-glass-blur, 14px)) saturate(1.08);
+    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.18), hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.66)) 48%, hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.58)));
+  border-color: hsl(var(--settings-v2-border) / 0.28);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.42),
+    inset 0 -1px 0 hsl(var(--settings-v2-border) / 0.12);
+  -webkit-backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.28);
+  backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.28);
 }
 
 :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
@@ -803,14 +813,13 @@
 :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-preview-card"],
 :root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-preview-card"] {
   background:
-    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.16), transparent 36%),
-    hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.78));
-  border-color: hsl(var(--settings-v2-border) / 0.48);
+    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.14), hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.62)) 50%, hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.54)));
+  border-color: hsl(var(--settings-v2-border) / 0.3);
   box-shadow:
-    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.24),
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.36),
     var(--zen-shadow-card);
-  -webkit-backdrop-filter: blur(var(--settings-v2-glass-blur, 14px)) saturate(1.08);
-  backdrop-filter: blur(var(--settings-v2-glass-blur, 14px)) saturate(1.08);
+  -webkit-backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.24);
+  backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.24);
 }
 
 :root[data-theme-transparency="solid"] [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],

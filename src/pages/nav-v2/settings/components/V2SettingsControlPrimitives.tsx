@@ -115,9 +115,9 @@ const SETTINGS_CHOICE_SELECTED_CLASS: Record<
   string
 > = {
   solid:
-    "border-[hsl(var(--settings-v2-accent)/0.78)] bg-[hsl(var(--settings-v2-accent)/0.18)] text-[hsl(var(--settings-v2-accent))] shadow-[0_10px_22px_-20px_hsl(var(--settings-v2-accent)/0.48)]",
+    "border-[hsl(var(--settings-v2-accent)/0.46)] bg-[hsl(var(--settings-v2-accent)/0.1)] text-[hsl(var(--settings-v2-accent))] shadow-[0_10px_22px_-22px_hsl(var(--settings-v2-accent)/0.28)]",
   subtle:
-    "border-[hsl(var(--settings-v2-accent)/0.58)] bg-[hsl(var(--settings-v2-accent)/0.12)] text-[hsl(var(--settings-v2-accent))] shadow-[0_10px_22px_-22px_hsl(var(--settings-v2-accent)/0.42)]",
+    "border-[hsl(var(--settings-v2-accent)/0.42)] bg-[hsl(var(--settings-v2-accent)/0.08)] text-[hsl(var(--settings-v2-accent))] shadow-[0_10px_22px_-24px_hsl(var(--settings-v2-accent)/0.24)]",
   danger:
     "border-destructive/45 bg-destructive/10 text-destructive shadow-[0_10px_22px_-22px_hsl(var(--destructive)/0.42)]",
 };
@@ -137,7 +137,7 @@ export function PanelFrame({
     >
       <span
         aria-hidden="true"
-        className="absolute inset-x-4 top-0 h-px rounded-b-full bg-[hsl(var(--settings-v2-accent)/0.42)]"
+        className="absolute inset-x-4 top-0 h-px rounded-b-full bg-[hsl(var(--settings-v2-rim-light)/0.22)]"
       />
       {showHeader && (
         <div className="mb-3 flex items-start gap-3">

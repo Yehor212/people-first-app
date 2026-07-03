@@ -179,16 +179,16 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
 
 const PALETTE_LABEL_FALLBACK: Record<ThemePaletteId, string> = {
   zenflow: "ZenFlow",
-  morningHearth: "Morning Hearth",
-  velvetLibrary: "Velvet Library",
-  botanicalPulse: "Botanical Pulse",
-  quietOled: "Quiet OLED",
+  morningHearth: "Soft Light",
+  velvetLibrary: "Deep Glass",
+  botanicalPulse: "Fresh Glass",
+  quietOled: "OLED Glass",
 };
 
 const ACCENT_LABEL_FALLBACK: Record<ThemeAccentFamily, string> = {
-  teal: "Teal",
+  teal: "Blue",
   clay: "Clay",
-  plum: "Plum",
+  plum: "Violet",
   moss: "Moss",
   amber: "Amber",
 };
@@ -201,16 +201,16 @@ const INTENSITY_LABEL_FALLBACK: Record<ThemeIntensity, string> = {
 
 const PALETTE_SWATCH_TOKENS: Record<ThemePaletteId, { start: string; end: string }> = {
   zenflow: { start: "174 38% 34%", end: "42 20% 96%" },
-  morningHearth: { start: "18 48% 38%", end: "38 52% 96%" },
-  velvetLibrary: { start: "274 40% 38%", end: "43 34% 96%" },
+  morningHearth: { start: "211 84% 45%", end: "0 0% 100%" },
+  velvetLibrary: { start: "258 70% 78%", end: "252 16% 18%" },
   botanicalPulse: { start: "130 42% 32%", end: "148 28% 82%" },
-  quietOled: { start: "0 0% 0%", end: "172 32% 56%" },
+  quietOled: { start: "0 0% 0%", end: "211 68% 74%" },
 };
 
 const ACCENT_SWATCH_TOKENS: Record<ThemeAccentFamily, string> = {
-  teal: "174 38% 34%",
+  teal: "211 84% 45%",
   clay: "18 48% 38%",
-  plum: "274 40% 38%",
+  plum: "258 70% 78%",
   moss: "130 42% 32%",
   amber: "37 58% 35%",
 };
@@ -344,7 +344,7 @@ export function AppearancePanel() {
       <ToggleRow
         icon={Moon}
         title={tx.oledDarkMode || "OLED Dark Mode"}
-        description={tx.oledDarkModeHint || "Pure black theme for OLED screens."}
+        description={tx.oledDarkModeHint || "Pure black theme for OLED screens. May save battery."}
         checked={theme === "oled"}
         onCheckedChange={(checked) => updateTheme(checked ? "oled" : "ink")}
         testId="settings-v2-oled-toggle"
@@ -353,12 +353,12 @@ export function AppearancePanel() {
       <SettingsInset testId="settings-v2-style-customization">
         <SettingsFieldHeader
           icon={Sparkles}
-          title={tx.themeStyleTitle || "Mood palette"}
+          title={tx.themeStyleTitle || "Glass style"}
           description={
-            tx.themeStyleDescription || "Choose a curated look that stays readable."
+            tx.themeStyleDescription || "Tune translucency while keeping text readable."
           }
         />
-        <SettingsButtonGrid columns="two" role="group" ariaLabel={tx.themeStyleTitle || "Mood palette"}>
+        <SettingsButtonGrid columns="two" role="group" ariaLabel={tx.themeStyleTitle || "Glass style"}>
           {THEME_CUSTOMIZATION_PRESETS.map((option) => (
             <SettingsChoiceButton
               key={option.id}

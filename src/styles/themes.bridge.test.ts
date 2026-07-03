@@ -154,27 +154,28 @@ describe("theme bridge variables", () => {
     }
   });
 
-  it("paper settings tokens use the approved Warm Porcelain glass base", () => {
+  it("paper settings tokens use a nearly colorless Liquid Glass base", () => {
     const paper = themeBlock("paper");
     const shell = readVar(paper, "--settings-v2-shell");
     const card = readVar(paper, "--settings-v2-card");
     const panel = readVar(paper, "--settings-v2-panel");
     const settingsLightness = [shell, card, panel].map(hslLightness);
 
-    expect(shell).toBe("35 44% 92%");
-    expect(card).toBe("40 58% 97%");
-    expect(panel).toBe("33 38% 88%");
+    expect(shell).toBe("198 32% 91%");
+    expect(card).toBe("0 0% 100%");
+    expect(panel).toBe("204 40% 96%");
     expect(Math.max(...settingsLightness) - Math.min(...settingsLightness)).toBeGreaterThanOrEqual(
       7
     );
-    expect(hslHue(shell)).toBeGreaterThanOrEqual(30);
-    expect(hslHue(shell)).toBeLessThanOrEqual(45);
-    expect(hslSaturation(shell)).toBeGreaterThanOrEqual(35);
-    expect(hslLightness(readVar(paper, "--settings-v2-border"))).toBeLessThanOrEqual(60);
-    expect(hslHue(readVar(paper, "--settings-v2-accent"))).toBeGreaterThanOrEqual(15);
-    expect(hslHue(readVar(paper, "--settings-v2-accent"))).toBeLessThanOrEqual(25);
-    expect(readVar(paper, "--settings-v2-glass-blur")).toBe("18px");
-    expect(readVar(paper, "--settings-v2-rim-light")).toBe("40 70% 99%");
+    expect(hslHue(shell)).toBeGreaterThanOrEqual(190);
+    expect(hslHue(shell)).toBeLessThanOrEqual(205);
+    expect(hslSaturation(card)).toBeLessThanOrEqual(2);
+    expect(hslLightness(readVar(paper, "--settings-v2-border"))).toBeGreaterThanOrEqual(68);
+    expect(hslLightness(readVar(paper, "--settings-v2-border"))).toBeLessThanOrEqual(78);
+    expect(hslHue(readVar(paper, "--settings-v2-accent"))).toBeGreaterThanOrEqual(205);
+    expect(hslHue(readVar(paper, "--settings-v2-accent"))).toBeLessThanOrEqual(216);
+    expect(readVar(paper, "--settings-v2-glass-blur")).toBe("28px");
+    expect(readVar(paper, "--settings-v2-rim-light")).toBe("0 0% 100%");
   });
 
   it("ink theme preserves the night V2 snapshot bridge while keeping settings tokens separate", () => {
@@ -202,13 +203,13 @@ describe("theme bridge variables", () => {
       expect(readVar(ink, cssVar)).toBe(value);
     }
 
-    expect(readVar(ink, "--settings-v2-shell")).toBe("263 26% 8%");
-    expect(readVar(ink, "--settings-v2-card")).toBe("258 24% 12%");
-    expect(readVar(ink, "--settings-v2-panel")).toBe("254 18% 18%");
-    expect(readVar(ink, "--settings-v2-border")).toBe("262 18% 38%");
-    expect(readVar(ink, "--settings-v2-accent")).toBe("274 44% 72%");
-    expect(readVar(ink, "--settings-v2-glass-blur")).toBe("20px");
-    expect(readVar(ink, "--settings-v2-rim-light")).toBe("274 70% 78%");
+    expect(readVar(ink, "--settings-v2-shell")).toBe("252 16% 8%");
+    expect(readVar(ink, "--settings-v2-card")).toBe("258 18% 12%");
+    expect(readVar(ink, "--settings-v2-panel")).toBe("252 16% 18%");
+    expect(readVar(ink, "--settings-v2-border")).toBe("252 14% 44%");
+    expect(readVar(ink, "--settings-v2-accent")).toBe("258 70% 78%");
+    expect(readVar(ink, "--settings-v2-glass-blur")).toBe("30px");
+    expect(readVar(ink, "--settings-v2-rim-light")).toBe("264 36% 82%");
   });
 
   it("dark themes avoid theme-local edge-bleed haze overrides", () => {

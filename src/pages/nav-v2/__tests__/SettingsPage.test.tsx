@@ -331,8 +331,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
       theme: "Theme",
       themeLabel: "Theme",
       appearance: "Appearance",
-      themeStyleTitle: "Mood palette",
-      themeStyleDescription: "Choose a curated look that stays readable.",
+      themeStyleTitle: "Glass style",
+      themeStyleDescription: "Tune translucency while keeping text readable.",
       themeAccentTitle: "Accent",
       themeAccentDescription: "Color used for focus, selected states, and key controls.",
       themeIntensityTitle: "Intensity",
@@ -350,13 +350,13 @@ vi.mock("@/contexts/LanguageContext", () => ({
       themeUndone: "Style restored",
       themePreviewChanged: "Preview cleared after changes",
       themePaletteZenflow: "ZenFlow",
-      themePaletteMorningHearth: "Morning Hearth",
-      themePaletteVelvetLibrary: "Velvet Library",
-      themePaletteBotanicalPulse: "Botanical Pulse",
-      themePaletteQuietOled: "Quiet OLED",
-      themeAccentTeal: "Teal",
+      themePaletteMorningHearth: "Soft Light",
+      themePaletteVelvetLibrary: "Deep Glass",
+      themePaletteBotanicalPulse: "Fresh Glass",
+      themePaletteQuietOled: "OLED Glass",
+      themeAccentTeal: "Blue",
       themeAccentClay: "Clay",
-      themeAccentPlum: "Plum",
+      themeAccentPlum: "Violet",
       themeAccentMoss: "Moss",
       themeAccentAmber: "Amber",
       themeIntensityQuiet: "Quiet",
@@ -369,7 +369,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       themeReduceTransparency: "Reduce transparency",
       themeReduceTransparencyHint: "Uses more solid panels for readability.",
       oledDarkMode: "OLED dark theme",
-      oledDarkModeHint: "Pure black theme for OLED screens.",
+      oledDarkModeHint: "Pure black theme for OLED screens. May save battery.",
       profile: "Profile",
       settingsGroupProfile: "Profile & Appearance",
       yourName: "Your name",
@@ -1285,7 +1285,7 @@ describe("SettingsPage", () => {
       "true"
     );
     expect(screen.getByTestId("settings-v2-theme-choice-paper").className).toContain(
-      "bg-[hsl(var(--settings-v2-accent)/0.18)]"
+      "bg-[hsl(var(--settings-v2-accent)/0.1)]"
     );
 
     fireEvent.click(screen.getByTestId("settings-v2-theme-choice-ink"));

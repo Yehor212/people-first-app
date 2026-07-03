@@ -267,13 +267,13 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(screen.queryByTestId("mobile-nav-v2")).not.toBeInTheDocument();
   });
 
-  it("drawer trigger has a top-left 48px menu button + accessible label (WCAG 2.5.5 + 2.5.7)", () => {
+  it("drawer trigger has a top-left 44px menu button + accessible label (WCAG 2.5.5 + 2.5.7)", () => {
     render(<NavV2Orchestrator />);
     const trigger = screen.getByTestId("nav-v2-open-drawer");
 
-    // Tailwind h-12/w-12 = 48px, preserving a full phone touch target.
-    expect(trigger.className).toMatch(/h-12/);
-    expect(trigger.className).toMatch(/w-12/);
+    // Tailwind h-11/w-11 = 44px, preserving the minimum phone touch target.
+    expect(trigger.className).toMatch(/h-11/);
+    expect(trigger.className).toMatch(/w-11/);
     expect(trigger.className).toMatch(/rounded-full/);
 
     // ARIA: drawer control semantics
@@ -288,7 +288,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
 
     // Fixed edge positioning keeps page headers/content full-width.
     expect(trigger.className).toMatch(/fixed/);
-    expect(trigger.className).toContain("start-4");
+    expect(trigger.className).toContain("start-3");
     expect(trigger.className).toContain("top-[calc(var(--safe-top)+0.75rem)]");
     expect(trigger.className).not.toContain("top-1/2");
     expect(trigger.className).not.toContain("rounded-e-full");

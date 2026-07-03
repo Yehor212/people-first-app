@@ -162,7 +162,7 @@ export function SettingsModuleList({
           id={activePanelId}
           role="region"
           aria-labelledby={activeButtonId}
-          className="grid min-w-0 scroll-mt-[calc(var(--safe-top)+5.75rem)] gap-3 sm:scroll-mt-[calc(var(--safe-top)+5rem)] lg:scroll-mt-[calc(var(--safe-top)+1rem)]"
+          className="grid min-w-0 scroll-mt-[calc(var(--safe-top)+4.25rem)] gap-3 sm:scroll-mt-[calc(var(--safe-top)+4.25rem)] lg:scroll-mt-[calc(var(--safe-top)+1rem)]"
           data-testid={activePanelId}
         >
           <div
@@ -225,7 +225,7 @@ function SettingsModuleCard({
         "relative min-w-0 overflow-hidden rounded-[8px] border bg-[hsl(var(--settings-v2-card)/0.76)] shadow-[var(--zen-shadow-card)]",
         "motion-safe:transition-[border-color,background-color,box-shadow] motion-safe:duration-200",
         expanded
-          ? "border-[hsl(var(--settings-v2-accent))] bg-[hsl(var(--settings-v2-panel)/0.82)] shadow-[0_14px_36px_-28px_hsl(var(--settings-v2-shadow)/0.56)]"
+          ? "border-[hsl(var(--settings-v2-accent)/0.46)] bg-[hsl(var(--settings-v2-accent)/0.1)] shadow-[0_14px_36px_-30px_hsl(var(--settings-v2-shadow)/0.42)]"
           : "border-[hsl(var(--settings-v2-border)/0.52)]"
       )}
       data-active={expanded ? "true" : "false"}
@@ -292,7 +292,7 @@ function SettingsCardIcon({ icon: Icon, selected }: { icon: LucideIcon; selected
       className={cn(
         "flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] border",
         selected
-          ? "border-[hsl(var(--settings-v2-accent))] bg-[hsl(var(--settings-v2-accent)/0.18)] text-[hsl(var(--settings-v2-accent))]"
+          ? "border-[hsl(var(--settings-v2-accent)/0.46)] bg-[hsl(var(--settings-v2-accent)/0.1)] text-[hsl(var(--settings-v2-accent))]"
           : "border-[hsl(var(--settings-v2-border)/0.54)] bg-[hsl(var(--settings-v2-shell)/0.62)] text-muted-foreground"
       )}
     >

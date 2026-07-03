@@ -73,28 +73,29 @@ describe("themeCustomization", () => {
     ).toEqual(DEFAULT_THEME_CUSTOMIZATION);
   });
 
-  it("maps Morning Hearth paper mode to approved Warm Porcelain glass tokens", () => {
+  it("maps Soft Light paper mode to platform-like Liquid Glass tokens", () => {
     const recipe = getThemeCustomizationRecipe("paper", {
       ...DEFAULT_THEME_CUSTOMIZATION,
       paletteId: "morningHearth",
-      accentFamily: "clay",
+      accentFamily: "teal",
       intensity: "balanced",
-      warmth: "warm",
+      warmth: "cool",
       depth: "soft",
     });
 
-    expect(recipe.cssVars["--settings-v2-shell"]).toBe("35 44% 92%");
-    expect(recipe.cssVars["--settings-v2-card"]).toBe("40 58% 97%");
-    expect(recipe.cssVars["--settings-v2-panel"]).toBe("33 38% 88%");
-    expect(recipe.cssVars["--settings-v2-border"]).toBe("31 24% 58%");
-    expect(recipe.cssVars["--settings-v2-accent"]).toBe("18 44% 42%");
-    expect(recipe.cssVars["--settings-v2-panel-alpha"]).toBe("0.64");
-    expect(recipe.cssVars["--settings-v2-glass-blur"]).toBe("18px");
-    expect(recipe.cssVars["--settings-v2-rim-light"]).toBe("40 70% 99%");
-    expect(recipe.metaThemeColor).toBe("#a46a4f");
+    expect(recipe.cssVars["--settings-v2-shell"]).toBe("198 32% 91%");
+    expect(recipe.cssVars["--settings-v2-card"]).toBe("0 0% 100%");
+    expect(recipe.cssVars["--settings-v2-panel"]).toBe("204 40% 96%");
+    expect(recipe.cssVars["--settings-v2-border"]).toBe("205 15% 72%");
+    expect(recipe.cssVars["--settings-v2-accent"]).toBe("211 84% 45%");
+    expect(recipe.cssVars["--settings-v2-card-alpha"]).toBe("0.64");
+    expect(recipe.cssVars["--settings-v2-panel-alpha"]).toBe("0.5");
+    expect(recipe.cssVars["--settings-v2-glass-blur"]).toBe("28px");
+    expect(recipe.cssVars["--settings-v2-rim-light"]).toBe("0 0% 100%");
+    expect(recipe.metaThemeColor).toBe("#dbeef2");
   });
 
-  it("maps Velvet Library dark mode to approved Nocturne Velvet glass tokens", () => {
+  it("maps Deep Glass dark mode to platform-like Liquid Glass tokens", () => {
     const recipe = getThemeCustomizationRecipe("ink", {
       ...DEFAULT_THEME_CUSTOMIZATION,
       paletteId: "velvetLibrary",
@@ -103,22 +104,47 @@ describe("themeCustomization", () => {
       depth: "soft",
     });
 
-    expect(recipe.cssVars["--settings-v2-shell"]).toBe("263 26% 8%");
-    expect(recipe.cssVars["--settings-v2-card"]).toBe("258 24% 12%");
-    expect(recipe.cssVars["--settings-v2-panel"]).toBe("254 18% 18%");
-    expect(recipe.cssVars["--settings-v2-border"]).toBe("262 18% 38%");
-    expect(recipe.cssVars["--settings-v2-accent"]).toBe("274 44% 72%");
-    expect(recipe.cssVars["--settings-v2-panel-alpha"]).toBe("0.7");
-    expect(recipe.cssVars["--settings-v2-glass-blur"]).toBe("20px");
-    expect(recipe.cssVars["--settings-v2-rim-light"]).toBe("274 70% 78%");
-    expect(recipe.metaThemeColor).toBe("#6d588f");
+    expect(recipe.cssVars["--settings-v2-shell"]).toBe("252 16% 8%");
+    expect(recipe.cssVars["--settings-v2-card"]).toBe("258 18% 12%");
+    expect(recipe.cssVars["--settings-v2-panel"]).toBe("252 16% 18%");
+    expect(recipe.cssVars["--settings-v2-border"]).toBe("252 14% 44%");
+    expect(recipe.cssVars["--settings-v2-accent"]).toBe("258 70% 78%");
+    expect(recipe.cssVars["--settings-v2-card-alpha"]).toBe("0.62");
+    expect(recipe.cssVars["--settings-v2-panel-alpha"]).toBe("0.5");
+    expect(recipe.cssVars["--settings-v2-glass-blur"]).toBe("30px");
+    expect(recipe.cssVars["--settings-v2-rim-light"]).toBe("264 36% 82%");
+    expect(recipe.metaThemeColor).toBe("#211d2b");
+  });
+
+  it("keeps the Blue accent family blue across day, dark, and OLED recipes", () => {
+    expect(
+      getThemeCustomizationRecipe("paper", {
+        ...DEFAULT_THEME_CUSTOMIZATION,
+        accentFamily: "teal",
+        depth: "soft",
+      }).cssVars["--settings-v2-accent"],
+    ).toBe("211 84% 45%");
+    expect(
+      getThemeCustomizationRecipe("ink", {
+        ...DEFAULT_THEME_CUSTOMIZATION,
+        accentFamily: "teal",
+        depth: "soft",
+      }).cssVars["--settings-v2-accent"],
+    ).toBe("211 72% 76%");
+    expect(
+      getThemeCustomizationRecipe("oled", {
+        ...DEFAULT_THEME_CUSTOMIZATION,
+        accentFamily: "teal",
+        depth: "soft",
+      }).cssVars["--settings-v2-accent"],
+    ).toBe("211 68% 74%");
   });
 
   it("returns allowlisted token recipes without accepting raw CSS values", () => {
     const recipe = getThemeCustomizationRecipe("paper", {
       ...DEFAULT_THEME_CUSTOMIZATION,
       paletteId: "morningHearth",
-      accentFamily: "clay",
+      accentFamily: "teal",
       intensity: "vivid",
       warmth: "warm",
       depth: "cozy",
@@ -168,7 +194,7 @@ describe("themeCustomization", () => {
       accentFamily: "clay",
     });
 
-    expect(meta.content).toBe("#a46a4f");
+    expect(meta.content).toBe("#dbeef2");
 
     applyThemeCustomizationToDOM("paper", DEFAULT_THEME_CUSTOMIZATION);
     expect(meta.content).toBe("#4a9d7c");

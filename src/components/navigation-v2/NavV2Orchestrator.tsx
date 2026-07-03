@@ -322,10 +322,10 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         data-testid="nav-v2-open-drawer"
         className={cn(
           shouldShowDrawerTrigger ? "md:hidden flex" : "hidden",
-          "fixed start-4 top-[calc(var(--safe-top)+0.75rem)] z-[58]",
-          "h-12 w-12 items-center justify-center rounded-full",
-          "bg-card/70 backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]",
-          "border border-border/50 shadow-[0_14px_34px_hsl(var(--foreground)/0.16)]",
+          "fixed start-3 top-[calc(var(--safe-top)+0.75rem)] z-[58]",
+          "h-11 w-11 items-center justify-center rounded-full",
+          "bg-card/62 backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]",
+          "border border-border/42 shadow-[0_12px_28px_hsl(var(--foreground)/0.12)]",
           "text-foreground/90",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           "motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 motion-safe:active:translate-y-[1px] active:bg-muted/60"

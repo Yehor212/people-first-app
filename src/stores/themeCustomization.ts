@@ -100,12 +100,12 @@ const DEFAULT_THEME_COLOR = "#4a9d7c";
 const PAPER_PALETTES: Record<ThemePaletteId, Record<string, string>> = {
   zenflow: {},
   morningHearth: {
-    "--settings-v2-shell": "35 44% 92%",
-    "--settings-v2-card": "40 58% 97%",
-    "--settings-v2-panel": "33 38% 88%",
-    "--settings-v2-border": "31 24% 58%",
-    "--settings-v2-shadow": "24 24% 20%",
-    "--settings-v2-rim-light": "40 70% 99%",
+    "--settings-v2-shell": "198 32% 91%",
+    "--settings-v2-card": "0 0% 100%",
+    "--settings-v2-panel": "204 40% 96%",
+    "--settings-v2-border": "205 15% 72%",
+    "--settings-v2-shadow": "212 24% 22%",
+    "--settings-v2-rim-light": "0 0% 100%",
   },
   velvetLibrary: {
     "--settings-v2-shell": "268 24% 91%",
@@ -140,12 +140,12 @@ const DARK_PALETTES: Record<ThemePaletteId, Record<string, string>> = {
     "--settings-v2-shadow": "24 34% 4%",
   },
   velvetLibrary: {
-    "--settings-v2-shell": "263 26% 8%",
-    "--settings-v2-card": "258 24% 12%",
-    "--settings-v2-panel": "254 18% 18%",
-    "--settings-v2-border": "262 18% 38%",
-    "--settings-v2-shadow": "260 38% 4%",
-    "--settings-v2-rim-light": "274 70% 78%",
+    "--settings-v2-shell": "252 16% 8%",
+    "--settings-v2-card": "258 18% 12%",
+    "--settings-v2-panel": "252 16% 18%",
+    "--settings-v2-border": "252 14% 44%",
+    "--settings-v2-shadow": "258 36% 4%",
+    "--settings-v2-rim-light": "264 36% 82%",
   },
   botanicalPulse: {
     "--settings-v2-shell": "154 22% 8%",
@@ -165,23 +165,23 @@ const DARK_PALETTES: Record<ThemePaletteId, Record<string, string>> = {
 
 const ACCENTS: Record<AppliedTheme, Record<ThemeAccentFamily, Record<ThemeIntensity, string>>> = {
   paper: {
-    teal: { quiet: "176 34% 36%", balanced: "174 38% 34%", vivid: "176 50% 28%" },
+    teal: { quiet: "211 68% 42%", balanced: "211 84% 45%", vivid: "211 94% 39%" },
     clay: { quiet: "18 38% 45%", balanced: "18 44% 42%", vivid: "17 54% 36%" },
     plum: { quiet: "274 34% 44%", balanced: "274 40% 38%", vivid: "274 52% 34%" },
     moss: { quiet: "128 34% 36%", balanced: "130 42% 32%", vivid: "130 52% 27%" },
     amber: { quiet: "37 48% 37%", balanced: "37 58% 35%", vivid: "36 68% 30%" },
   },
   ink: {
-    teal: { quiet: "174 24% 62%", balanced: "172 30% 58%", vivid: "172 46% 62%" },
+    teal: { quiet: "211 48% 70%", balanced: "211 72% 76%", vivid: "211 84% 80%" },
     clay: { quiet: "18 40% 66%", balanced: "18 48% 62%", vivid: "17 62% 66%" },
-    plum: { quiet: "274 34% 70%", balanced: "274 44% 72%", vivid: "274 58% 74%" },
+    plum: { quiet: "258 48% 74%", balanced: "258 70% 78%", vivid: "258 84% 82%" },
     moss: { quiet: "130 32% 64%", balanced: "130 42% 60%", vivid: "130 56% 64%" },
     amber: { quiet: "38 50% 68%", balanced: "38 62% 64%", vivid: "38 76% 66%" },
   },
   oled: {
-    teal: { quiet: "174 24% 62%", balanced: "172 32% 56%", vivid: "172 50% 62%" },
+    teal: { quiet: "211 44% 68%", balanced: "211 68% 74%", vivid: "211 82% 78%" },
     clay: { quiet: "18 40% 66%", balanced: "18 50% 62%", vivid: "17 64% 66%" },
-    plum: { quiet: "274 34% 72%", balanced: "274 44% 68%", vivid: "274 60% 72%" },
+    plum: { quiet: "258 42% 72%", balanced: "258 66% 76%", vivid: "258 80% 80%" },
     moss: { quiet: "130 34% 64%", balanced: "130 44% 60%", vivid: "130 58% 64%" },
     amber: { quiet: "38 52% 68%", balanced: "38 64% 64%", vivid: "38 78% 66%" },
   },
@@ -189,8 +189,8 @@ const ACCENTS: Record<AppliedTheme, Record<ThemeAccentFamily, Record<ThemeIntens
 
 const META_THEME_COLORS: Record<ThemePaletteId, Record<ThemeAccentFamily, string>> = {
   zenflow: { teal: "#4a9d7c", clay: "#8e5640", plum: "#76519b", moss: "#3d7e48", amber: "#9b6b1f" },
-  morningHearth: { teal: "#5f8f88", clay: "#a46a4f", plum: "#80609a", moss: "#678b57", amber: "#a7772d" },
-  velvetLibrary: { teal: "#4f8986", clay: "#9a604d", plum: "#6d588f", moss: "#527d59", amber: "#9b742d" },
+  morningHearth: { teal: "#dbeef2", clay: "#dbeef2", plum: "#dbeef2", moss: "#dbeef2", amber: "#dbeef2" },
+  velvetLibrary: { teal: "#211d2b", clay: "#211d2b", plum: "#211d2b", moss: "#211d2b", amber: "#211d2b" },
   botanicalPulse: { teal: "#3e837c", clay: "#8f5a3f", plum: "#795896", moss: "#357d49", amber: "#986e24" },
   quietOled: { teal: "#58aca6", clay: "#bd765f", plum: "#a687cf", moss: "#73ad76", amber: "#c69545" },
 };
@@ -251,19 +251,27 @@ function transparencyVars(
     };
   }
   return {
-    "--settings-v2-card-alpha": customization.depth === "soft" ? "0.9" : "0.96",
-    "--settings-v2-panel-alpha": customization.depth === "soft"
+    "--settings-v2-card-alpha": customization.depth === "soft"
       ? appliedTheme === "paper"
         ? "0.64"
-        : "0.7"
+        : "0.62"
+      : "0.86",
+    "--settings-v2-panel-alpha": customization.depth === "soft"
+      ? appliedTheme === "paper"
+        ? "0.5"
+        : "0.5"
       : "0.72",
-    "--settings-v2-shell-alpha": customization.depth === "cozy" ? "0.66" : "0.56",
+    "--settings-v2-shell-alpha": customization.depth === "cozy" ? "0.58" : "0.44",
     "--settings-v2-glass-blur": customization.depth === "soft"
       ? appliedTheme === "paper"
-        ? "18px"
-        : "20px"
+        ? "28px"
+        : "30px"
       : "14px",
-    "--settings-v2-rim-alpha": customization.depth === "soft" ? "0.48" : "0.34",
+    "--settings-v2-rim-alpha": customization.depth === "soft"
+      ? appliedTheme === "paper"
+        ? "0.74"
+        : "0.24"
+      : "0.28",
   };
 }
 
