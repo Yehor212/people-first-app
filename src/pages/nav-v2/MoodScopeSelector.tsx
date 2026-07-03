@@ -31,11 +31,14 @@ const SCOPE_KEYS: Record<MoodDraftScope, string> = {
   specific: "orbScopeSpecific",
 };
 
+const SCOPE_ORDER: MoodDraftScope[] = ["now", "specific", "day"];
+
 function ScopeChip({
   scope,
   active,
   label,
   onSelect,
+  onKeyDown,
   variant = "secondary",
   compact = false,
 }: {
@@ -43,6 +46,10 @@ function ScopeChip({
   active: boolean;
   label: string;
   onSelect: (scope: MoodDraftScope) => void;
+  onKeyDown: (
+    scope: MoodDraftScope,
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ) => void;
   /** Primary = prominent default ("Now"); secondary = softer opt-in. */
   variant?: "primary" | "secondary";
   compact?: boolean;
@@ -76,6 +83,7 @@ function ScopeChip({
         void haptics.tabChanged();
         onSelect(scope);
       }}
+      onKeyDown={(event) => onKeyDown(scope, event)}
     >
       {label}
     </button>
@@ -116,6 +124,35 @@ export const MoodScopeSelector = memo(function MoodScopeSelector({
     [setSpecificTime],
   );
 
+  const onScopeKeyDown = useCallback(
+    (
+      currentScope: MoodDraftScope,
+      event: React.KeyboardEvent<HTMLButtonElement>,
+    ) => {
+      let nextScope: MoodDraftScope | null = null;
+      const currentIndex = SCOPE_ORDER.indexOf(currentScope);
+
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+        nextScope = SCOPE_ORDER[(currentIndex + 1) % SCOPE_ORDER.length];
+      } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        nextScope = SCOPE_ORDER[(currentIndex - 1 + SCOPE_ORDER.length) % SCOPE_ORDER.length];
+      } else if (event.key === "Home") {
+        nextScope = SCOPE_ORDER[0];
+      } else if (event.key === "End") {
+        nextScope = SCOPE_ORDER[SCOPE_ORDER.length - 1];
+      }
+
+      if (!nextScope) return;
+      event.preventDefault();
+      setScope(nextScope);
+      document
+        .querySelector<HTMLButtonElement>(`[data-testid="mood-scope-chip-${nextScope}"]`)
+        ?.focus();
+      void haptics.tabChanged();
+    },
+    [setScope],
+  );
+
   return (
     <div
       className="mood-scope-wrapper"
@@ -135,6 +172,7 @@ export const MoodScopeSelector = memo(function MoodScopeSelector({
           active={scope === "now"}
           label={tx[SCOPE_KEYS.now] || "In this moment"}
           onSelect={onSelect}
+          onKeyDown={onScopeKeyDown}
           variant="primary"
           compact={compact}
         />
@@ -143,6 +181,7 @@ export const MoodScopeSelector = memo(function MoodScopeSelector({
           active={scope === "specific"}
           label={tx[SCOPE_KEYS.specific] || "At a specific time"}
           onSelect={onSelect}
+          onKeyDown={onScopeKeyDown}
           variant="secondary"
           compact={compact}
         />
@@ -151,6 +190,7 @@ export const MoodScopeSelector = memo(function MoodScopeSelector({
           active={scope === "day"}
           label={tx[SCOPE_KEYS.day] || "For the whole day"}
           onSelect={onSelect}
+          onKeyDown={onScopeKeyDown}
           variant="secondary"
           compact={compact}
         />

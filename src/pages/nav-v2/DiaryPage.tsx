@@ -189,6 +189,7 @@ export const DiaryPage = memo(function DiaryPage({
           aria-hidden="true"
           data-testid="diary-page-ambience-audio"
           src={DIARY_AMBIENCE_AUDIO_SRC}
+          crossOrigin="anonymous"
           preload="none"
           loop
           playsInline

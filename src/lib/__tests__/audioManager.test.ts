@@ -194,6 +194,53 @@ describe('Volume control', () => {
     expect(captured.waveforms).toEqual(['sine']);
     expect(Math.max(...captured.gains)).toBeLessThanOrEqual(0.03);
   });
+
+  it('treats master volume 0 as silence for direct notification feedback', () => {
+    const captured = installCapturedAudioContext();
+    setVolume(0);
+
+    playNotification();
+
+    expect(captured.frequencies).toEqual([]);
+    expect(captured.gains).toEqual([]);
+    expect(captured.gainRampTargets).toEqual([]);
+  });
+
+  it('treats master volume 0 as silence for deferred and milestone feedback', () => {
+    vi.useFakeTimers();
+    try {
+      const captured = installCapturedAudioContext();
+      setVolume(0);
+
+      playSound('success');
+      playSound('complete');
+      playSound('milestone');
+      vi.runAllTimers();
+
+      expect(captured.frequencies).toEqual([]);
+      expect(captured.gains).toEqual([]);
+      expect(captured.gainRampTargets).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not spend notification fatigue budget while master volume is 0', () => {
+    vi.useFakeTimers();
+    try {
+      const captured = installCapturedAudioContext();
+      setVolume(0);
+      for (let index = 0; index < 6; index += 1) playNotification();
+
+      setVolume(0.3);
+      playNotification();
+      vi.runAllTimers();
+
+      expect(captured.frequencies).toEqual([587.33]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('Mute control', () => {

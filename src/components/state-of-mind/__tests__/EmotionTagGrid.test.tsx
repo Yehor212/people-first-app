@@ -110,6 +110,15 @@ describe('EmotionTagGrid — progressive disclosure (Phase 3-A.4c-ii-c)', () => 
     expect(btn).toHaveTextContent('More precise');
   });
 
+  it('expandable=true wires the precision toggle to the chip group', () => {
+    render(<EmotionTagGrid {...baseProps} expandable />);
+    const btn = screen.getByTestId('emotion-more-precise');
+    const chips = screen.getByTestId('emotion-tag-chips');
+
+    expect(btn).toHaveAttribute('aria-controls', 'emotion-tag-chips');
+    expect(chips).toHaveAttribute('id', 'emotion-tag-chips');
+  });
+
   it('expandable=true: aria-expanded is false collapsed, true after tap', () => {
     render(<EmotionTagGrid {...baseProps} expandable />);
     const btn = screen.getByTestId('emotion-more-precise');

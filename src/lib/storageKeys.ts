@@ -77,6 +77,7 @@ export const SK = {
   JOURNAL_AI_SEARCH_CONSENT: "journal_ai_search_consent",
   JOURNAL_LOCK_TIMEOUT: "zenflow-journal-lock-timeout",
   JOURNAL_PASSWORD_RESET: "journal_password_reset_pending",
+  JOURNAL_PASSWORD_RESET_PROOF: "journal_password_reset_proof",
   JOURNAL_CALENDAR_MODE: "journal-calendar-mode",
   JOURNAL_LEGEND_SEEN: "journal-legend-seen",
   JOURNAL_RECENT_STICKERS: "journal-recent-stickers",
@@ -123,6 +124,8 @@ export const SK = {
   // ─── Cloud Sync ───
   CLOUD_SYNC_ENABLED: "zenflow_cloud_sync_enabled",
   DEVICE_ID: "zenflow_device_id",
+  PUSH_INSTALL_ID: "zenflow_push_install_id",
+  PUSH_TOKEN: "zenflow_push_token",
   LAST_SYNC_SEQ: "zenflow_last_sync_seq",
   DELTA_SYNC_ENABLED: "zenflow_delta_sync_enabled",
   SYNC_LEADER_LOCK: "zenflow_sync_leader_lock",

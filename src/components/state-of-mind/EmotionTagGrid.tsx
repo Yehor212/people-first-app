@@ -118,6 +118,7 @@ export function EmotionTagGrid({
         initial="hidden"
         animate="visible"
         className="flex flex-wrap gap-2.5 px-1"
+        id="emotion-tag-chips"
         role="group"
         data-testid="emotion-tag-chips"
       >

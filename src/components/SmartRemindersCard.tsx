@@ -76,7 +76,7 @@ function SuggestionItem({
               'text-xs px-2 py-0.5 rounded-full border',
               confidenceColors[suggestion.confidence]
             )}>
-              {suggestion.confidence === 'high' ? t.highConfidence || 'High confidence' :
+              {suggestion.confidence === 'high' ? t.highConfidence || 'Stronger signal' :
                suggestion.confidence === 'medium' ? t.mediumConfidence || 'Medium' :
                t.lowConfidence || 'Suggestion'}
             </span>
@@ -238,7 +238,7 @@ export const SmartRemindersCard = memo(function SmartRemindersCard({
               {t.smartReminders || 'Smart Reminders'}
             </h3>
             <p className="text-xs text-muted-foreground">
-              {t.smartRemindersNotEnoughData || 'Keep using the app to unlock personalized reminder suggestions based on your patterns.'}
+              {t.smartRemindersNotEnoughData || 'Keep using the app to see reminder suggestions based on recent activity.'}
             </p>
           </div>
         </div>
@@ -259,7 +259,7 @@ export const SmartRemindersCard = memo(function SmartRemindersCard({
               {t.smartReminders || 'Smart Reminders'}
             </h3>
             <p className="text-xs text-muted-foreground">
-              {t.smartRemindersOptimized || 'Your reminder times are well optimized! Keep up the great work.'}
+              {t.smartRemindersOptimized || 'Your current reminder times match your recent patterns.'}
             </p>
           </div>
         </div>
@@ -283,7 +283,7 @@ export const SmartRemindersCard = memo(function SmartRemindersCard({
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          {t.smartRemindersDescription || 'Personalized suggestions based on your usage patterns'}
+          {t.smartRemindersDescription || 'Suggestions based on recent app activity'}
         </p>
       </div>
 
@@ -315,7 +315,7 @@ export const SmartRemindersCard = memo(function SmartRemindersCard({
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <span className="text-sm font-medium text-foreground">
-                {t.habitRemindersOptimal || 'Optimal habit times'}
+                {t.habitRemindersOptimal || 'Suggested habit times'}
               </span>
               <span className="text-xs text-muted-foreground">
                 ({habitSuggestions.length})

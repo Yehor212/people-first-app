@@ -274,6 +274,73 @@ describe("ValenceOrb motion profile", () => {
     expect(finalTail.visualBaseLerp).toBeLessThan(broadMove.visualBaseLerp);
   });
 
+  it("keeps long-session slider changes phase-continuous instead of fast-spinning", async () => {
+    vi.useFakeTimers();
+    stubVisibleOrbRect();
+    const { flushFrameAt } = installQueuedRaf();
+
+    const rotationSpeedForValence = (v: number) =>
+      0.055 + (0.015 - 0.055) * ((v + 1) * 0.5);
+    const wrappedPhaseDelta = (from: number, to: number) => {
+      const tau = Math.PI * 2;
+      const delta = Math.abs(((to - from) % tau + tau) % tau);
+      return Math.min(delta, tau - delta);
+    };
+    const renderPhaseForLastCall = () => {
+      const params = vi.mocked(drawOrbScene).mock.calls.at(-1)?.[1] as
+        | { valence: number; time: number; motionPhase?: number }
+        | undefined;
+      if (!params) return 0;
+      return params.motionPhase ?? params.time * rotationSpeedForValence(params.valence);
+    };
+
+    const view = render(
+      createElement(ValenceOrb, {
+        valence: -0.143,
+        renderer: "canvas",
+        animationSpeed: 1,
+        transitionProfile: "input-soft",
+      }),
+    );
+
+    const frameMs = 50;
+    const simulatedSeconds = 12 * 60;
+    const frameCount = Math.ceil(simulatedSeconds / (frameMs / 1000));
+
+    await act(async () => {
+      flushFrameAt(1000);
+      for (let i = 1; i <= frameCount; i += 1) {
+        flushFrameAt(1000 + i * frameMs);
+      }
+      await Promise.resolve();
+    });
+
+    const beforeChangePhase = renderPhaseForLastCall();
+
+    await act(async () => {
+      view.rerender(
+        createElement(ValenceOrb, {
+          valence: 1,
+          renderer: "canvas",
+          animationSpeed: 1,
+          transitionProfile: "input-soft",
+        }),
+      );
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      for (let i = 1; i <= 8; i += 1) {
+        flushFrameAt(1000 + (frameCount + i) * frameMs);
+      }
+      await Promise.resolve();
+    });
+
+    const afterChangePhase = renderPhaseForLastCall();
+
+    expect(wrappedPhaseDelta(beforeChangePhase, afterChangePhase)).toBeLessThanOrEqual(0.08);
+  });
+
   it("keeps input transitions on the same responsive profile after idle", () => {
     expect(shouldStartIdleWakeSoftening("input-soft", 9000, -0.667)).toBe(false);
     expect(shouldStartIdleWakeSoftening("input-soft", 1000, -0.667)).toBe(false);
@@ -460,7 +527,47 @@ describe("ValenceOrb motion profile", () => {
 
     const firstPayload = renderer.render.mock.calls.at(0)?.[0];
     expect(firstPayload?.time).toBeGreaterThan(0.5);
+    expect(firstPayload?.motionPhase).toBeTypeOf("number");
+    expect(firstPayload?.noisePhase).toBeTypeOf("number");
     expect(firstPayload?.genesis).toBe(1);
+  });
+
+  it("passes phase-stable motion clocks through WebGL renderer frames", async () => {
+    vi.useFakeTimers();
+    stubVisibleOrbRect();
+    const { flushNextFrame, flushFrameAt } = installQueuedRaf();
+
+    const renderer = createMockGLRenderer();
+    vi.mocked(createOrbGLAsync).mockResolvedValue({
+      renderer,
+      durationMs: 1,
+      tier: "webgl",
+    });
+
+    render(
+      createElement(ValenceOrb, {
+        valence: -0.143,
+        renderer: "webgl",
+        animationSpeed: 1,
+      }),
+    );
+
+    await flushScheduledWebGLUpgrade(flushNextFrame);
+    await act(async () => {
+      flushFrameAt(1000);
+      flushFrameAt(1050);
+      await Promise.resolve();
+    });
+
+    const latestPayload = renderer.render.mock.calls.at(-1)?.[0];
+
+    expect(latestPayload?.time).toBeGreaterThan(0);
+    expect(latestPayload?.motionPhase).toBeTypeOf("number");
+    expect(latestPayload?.noisePhase).toBeTypeOf("number");
+    expect(latestPayload?.motionPhase).toBeGreaterThanOrEqual(0);
+    expect(latestPayload?.motionPhase).toBeLessThan(Math.PI * 2);
+    expect(latestPayload?.noisePhase).toBeGreaterThanOrEqual(0);
+    expect(latestPayload?.noisePhase).toBeLessThan(ORB_SHADER_TIME_WRAP_SECONDS);
   });
 
   it("reanchors large frame gaps instead of catching up missed orb motion", () => {
@@ -1242,7 +1349,7 @@ describe("ValenceOrb motion profile", () => {
     const renderMessages: Array<{
       type: "render";
       requestId?: number;
-      payload: { time: number };
+      payload: { time: number; motionPhase: number; noisePhase: number };
     }> = [];
 
     class WorkerStub {
@@ -1251,7 +1358,7 @@ describe("ValenceOrb motion profile", () => {
       postMessage = vi.fn((message: {
         type: "init" | "render" | "dispose";
         requestId?: number;
-        payload?: { time: number };
+        payload?: { time: number; motionPhase: number; noisePhase: number };
       }) => {
         if (message.type === "init") {
           queueMicrotask(() => {
@@ -1337,7 +1444,13 @@ describe("ValenceOrb motion profile", () => {
       });
 
       expect(renderMessages.length).toBeGreaterThanOrEqual(2);
+      expect(renderMessages[0].payload.motionPhase).toBeTypeOf("number");
+      expect(renderMessages[0].payload.noisePhase).toBeTypeOf("number");
+      expect(renderMessages[1].payload.motionPhase).toBeTypeOf("number");
+      expect(renderMessages[1].payload.noisePhase).toBeTypeOf("number");
       expect(renderMessages[1].payload.time - firstRenderTime).toBeLessThanOrEqual(0.02);
+      expect(renderMessages[1].payload.motionPhase - renderMessages[0].payload.motionPhase).toBeLessThanOrEqual(0.002);
+      expect(renderMessages[1].payload.noisePhase - renderMessages[0].payload.noisePhase).toBeLessThanOrEqual(0.02);
     } finally {
       Object.defineProperty(window, "innerWidth", {
         configurable: true,
@@ -1369,7 +1482,7 @@ describe("ValenceOrb motion profile", () => {
     const renderMessages: Array<{
       type: "render";
       requestId?: number;
-      payload: { time: number };
+      payload: { time: number; motionPhase: number; noisePhase: number };
     }> = [];
 
     class WorkerStub {
@@ -1378,7 +1491,7 @@ describe("ValenceOrb motion profile", () => {
       postMessage = vi.fn((message: {
         type: "init" | "render" | "dispose";
         requestId?: number;
-        payload?: { time: number };
+        payload?: { time: number; motionPhase: number; noisePhase: number };
       }) => {
         if (message.type === "init") {
           queueMicrotask(() => {
@@ -1480,9 +1593,15 @@ describe("ValenceOrb motion profile", () => {
       });
 
       expect(renderMessages.length).toBeGreaterThan(messageCountBeforeRemount);
-      const firstTimeAfterRemount =
-        renderMessages[messageCountBeforeRemount]?.payload.time ?? 0;
+      const firstPayloadBeforeRemount = renderMessages.at(messageCountBeforeRemount - 1)?.payload;
+      const firstPayloadAfterRemount = renderMessages[messageCountBeforeRemount]?.payload;
+      const firstTimeAfterRemount = firstPayloadAfterRemount?.time ?? 0;
+      expect(firstPayloadBeforeRemount?.motionPhase).toBeTypeOf("number");
+      expect(firstPayloadBeforeRemount?.noisePhase).toBeTypeOf("number");
+      expect(firstPayloadAfterRemount?.motionPhase).toBeTypeOf("number");
+      expect(firstPayloadAfterRemount?.noisePhase).toBeTypeOf("number");
       expect(firstTimeAfterRemount).toBeGreaterThanOrEqual(timeBeforeRemount);
+      expect(firstPayloadAfterRemount?.motionPhase).toBeGreaterThanOrEqual(firstPayloadBeforeRemount?.motionPhase ?? 0);
     } finally {
       Object.defineProperty(window, "innerWidth", {
         configurable: true,

@@ -2,6 +2,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useId,
   useRef,
   useMemo,
   Suspense,
@@ -40,6 +41,8 @@ import { consumePendingDiaryEditorOpen, subscribeToDiaryEditorOpen } from "@/lib
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { createFocusTrap, getFocusableElements, announceSuccess, announceError } from "@/lib/a11y";
+import { getAuthRedirectUrl } from "@/lib/authRedirect";
+import { IS_DESKTOP_RUNTIME } from "@/lib/env";
 import { Switch } from "@/components/ui/switch";
 import { SplashScreen, type SplashThemePreference } from "@/components/SplashScreen";
 import { triggerSync } from "@/storage/cloudSync";
@@ -54,7 +57,7 @@ import { OnThisDayCard } from "./OnThisDayCard";
 import { JournalOnboardingHints, useJournalOnboarding } from "./JournalOnboardingHints";
 import { JournalCalendar } from "./JournalCalendar";
 import { formatLocalizedCount } from "./journalWordCount";
-import { getEntryCount } from "./journalStorage";
+import { getEntryCount, hasEncryptedJournalContent, hasEncryptedJournalMedia } from "./journalStorage";
 import {
   createGratitudeSpaceCapture,
   createQuietReleaseSession,
@@ -64,6 +67,14 @@ import {
 import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
 import { storageGetRaw, storageSetRaw, storageRemove } from "@/lib/safeJson";
+import {
+  JOURNAL_PASSWORD_RESET_PARAM,
+  clearJournalPasswordResetParamFromCurrentUrl,
+  clearJournalPasswordResetProof,
+  consumeJournalPasswordResetProof,
+  getJournalPasswordResetNonceFromUrl,
+  hasStoredJournalPasswordResetProof,
+} from "@/lib/journalPasswordResetHandoff";
 import { scheduleIdle } from "@/lib/scheduleIdle";
 import { useJournalReminder, getDaysSinceLastEntry } from "./useJournalReminder";
 import { useScreenSecurity } from "./useScreenSecurity";
@@ -208,16 +219,54 @@ async function loadJournalSupabase(): Promise<SupabaseClient<Database> | null> {
 
 type JournalPasswordResetRequest = {
   email: string;
+  nonce: string;
   startedAt: number;
 };
+
+const JOURNAL_PASSWORD_RESET_WINDOW_MS = 600_000;
 
 function normalizeJournalResetEmail(email: string | null | undefined): string {
   return typeof email === "string" ? email.trim().toLowerCase() : "";
 }
 
-function serializeJournalPasswordResetRequest(email: string): string {
+function createJournalPasswordResetNonce(): string {
+  const bytes = new Uint8Array(16);
+  if (globalThis.crypto?.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+function withJournalPasswordResetNonce(redirectUrl: string, nonce: string): string {
+  try {
+    const url = new URL(redirectUrl);
+    url.searchParams.set(JOURNAL_PASSWORD_RESET_PARAM, nonce);
+    return url.toString();
+  } catch {
+    const separator = redirectUrl.includes("?") ? "&" : "?";
+    return `${redirectUrl}${separator}${JOURNAL_PASSWORD_RESET_PARAM}=${encodeURIComponent(nonce)}`;
+  }
+}
+
+function hasJournalPasswordResetRedirectProof(pending: JournalPasswordResetRequest): boolean {
+  if (typeof window === "undefined") return false;
+
+  return getJournalPasswordResetNonceFromUrl(window.location.href) === pending.nonce;
+}
+
+function hasJournalPasswordResetProof(pending: JournalPasswordResetRequest): boolean {
+  return (
+    hasJournalPasswordResetRedirectProof(pending) ||
+    hasStoredJournalPasswordResetProof(pending.nonce, JOURNAL_PASSWORD_RESET_WINDOW_MS)
+  );
+}
+
+function serializeJournalPasswordResetRequest(email: string, nonce: string): string {
   return JSON.stringify({
     email: normalizeJournalResetEmail(email),
+    nonce,
     startedAt: Date.now(),
   } satisfies JournalPasswordResetRequest);
 }
@@ -228,9 +277,10 @@ function parseJournalPasswordResetRequest(raw: string | null): JournalPasswordRe
   try {
     const parsed = JSON.parse(raw) as Partial<JournalPasswordResetRequest>;
     const email = normalizeJournalResetEmail(parsed.email);
+    const nonce = typeof parsed.nonce === "string" ? parsed.nonce.trim() : "";
     const startedAt = Number(parsed.startedAt);
-    if (!email || !Number.isFinite(startedAt)) return null;
-    return { email, startedAt };
+    if (!email || !nonce || !Number.isFinite(startedAt)) return null;
+    return { email, nonce, startedAt };
   } catch {
     return null;
   }
@@ -283,7 +333,28 @@ function JournalSettingsDeferredFallback({
   );
 }
 
-function JournalLoadErrorPanel({
+function JournalModalDeferredFallback({
+  label = "Loading...",
+}: {
+  label?: string;
+}) {
+  return (
+    <>
+      <div className="fixed inset-0 z-[70] bg-black/40 dark:bg-black/40 motion-safe:animate-fade-in" />
+      <div
+        role="status"
+        aria-live="polite"
+        aria-label={label}
+        className="fixed inset-x-4 top-1/2 z-[71] mx-auto flex min-h-[132px] max-w-sm -translate-y-1/2 items-center justify-center rounded-2xl bg-card p-6 shadow-xl lg:max-w-lg"
+      >
+        <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
+        <span className="sr-only">{label}</span>
+      </div>
+    </>
+  );
+}
+
+export function JournalLoadErrorPanel({
   ts,
   onRetry,
   compact = false,
@@ -294,22 +365,26 @@ function JournalLoadErrorPanel({
 }) {
   return (
     <div
-      role="alert"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
       data-testid="journal-load-error"
       className={cn(
-        "rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-center text-destructive shadow-sm",
+        "rounded-2xl border border-border/50 bg-card/85 p-4 text-center text-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] forced-colors:border-[CanvasText] forced-colors:bg-[Canvas] forced-colors:text-[CanvasText]",
         compact ? "mx-0" : "mx-auto max-w-md"
       )}
     >
-      <AlertCircle className="mx-auto mb-2 h-5 w-5" aria-hidden="true" />
-      <h3 className="text-sm font-bold">{ts.journalLoadFailed || "Diary could not load"}</h3>
-      <p className="mx-auto mt-1 max-w-[280px] text-xs leading-relaxed text-destructive/80">
-        {ts.journalLoadFailedHint || "Your entries were not cleared. Try loading them again."}
+      <AlertCircle className="mx-auto mb-2 h-5 w-5 text-primary/80 forced-colors:text-[CanvasText]" aria-hidden="true" />
+      <h3 className="text-sm font-bold text-foreground forced-colors:text-[CanvasText]">
+        {ts.journalLoadFailed || "Diary needs another moment to load"}
+      </h3>
+      <p className="mx-auto mt-1 max-w-[280px] text-xs leading-relaxed text-muted-foreground forced-colors:text-[CanvasText]">
+        {ts.journalLoadFailedHint || "This load attempt did not change your entries. Try loading again."}
       </p>
       <button
         type="button"
         onClick={onRetry}
-        className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-xl border border-destructive/25 bg-background/70 px-4 text-xs font-bold text-destructive"
+        className="mt-3 inline-flex min-h-[44px] touch-manipulation items-center justify-center rounded-xl border border-border/55 bg-background/80 px-4 text-xs font-bold text-foreground shadow-sm motion-safe:transition-[background-color,border-color,color,transform] hover:bg-muted/65 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 forced-colors:border-[ButtonText] forced-colors:bg-[ButtonFace] forced-colors:text-[ButtonText]"
       >
         {ts.journalRetryLoad || "Retry loading"}
       </button>
@@ -562,6 +637,18 @@ export const JournalModule = memo(function JournalModule({
 
   const [showExportPicker, setShowExportPicker] = useState(false);
   const [exporting, setExporting] = useState(false);
+  type ResetStep = "idle" | "checking" | "no-account" | "unavailable" | "confirm" | "sending" | "sent" | "success";
+  const [resetStep, setResetStep] = useState<ResetStep>("idle");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [emailLockRemovalBlocked, setEmailLockRemovalBlocked] = useState(true);
+  const lastResetOtpRef = useRef(0);
+  const resetRequestSeqRef = useRef(0);
+  const resetDialogRef = useRef<HTMLDivElement | null>(null);
+  const resetCancelRef = useRef<HTMLButtonElement | null>(null);
+  const resetTitleId = useId();
+  const resetDescriptionId = useId();
+  const resetErrorId = useId();
   const [importing, setImporting] = useState(false);
   const [importFeedback, setImportFeedback] = useState<{
     type: "success" | "error";
@@ -569,6 +656,7 @@ export const JournalModule = memo(function JournalModule({
   } | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
   const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
+  const [removePasswordSubmitting, setRemovePasswordSubmitting] = useState(false);
   const [celebratingStreak, setCelebratingStreak] = useState<number | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [dismissedSuggestionIds, setDismissedSuggestionIds] = useState<string[]>([]);
@@ -609,9 +697,11 @@ export const JournalModule = memo(function JournalModule({
   }, [moduleState]);
   const reducedMotion = useReducedMotion();
   const isLgScreen = useMediaQuery("(min-width: 1024px)");
+  const isEmailLockRemovalAvailable = !IS_DESKTOP_RUNTIME;
   const isDiaryDesktopLayout = useMediaQuery("(min-width: 1280px)");
   const entryTransition = useEntryTransition();
   const onboarding = useJournalOnboarding();
+  const security = useJournalSecurity();
   const sidebarContentRef = useRef<HTMLDivElement>(null);
   const mobileDiarySidebarTriggerRef = useRef<HTMLButtonElement>(null);
   const mobileDiarySidebarCloseRef = useRef<HTMLButtonElement>(null);
@@ -627,7 +717,9 @@ export const JournalModule = memo(function JournalModule({
     }
   }, []);
 
-  useBackHandler(showExportPicker, () => setShowExportPicker(false));
+  useBackHandler(showExportPicker, () => {
+    if (!exporting) setShowExportPicker(false);
+  });
   useBackHandler(showMobileDiarySidebar, closeMobileDiarySidebar);
 
   const closeSettings = useCallback((restoreFocus = true) => {
@@ -639,6 +731,55 @@ export const JournalModule = memo(function JournalModule({
     settingsReturnFocusRef.current?.focus({ preventScroll: true });
     requestAnimationFrame(() => settingsReturnFocusRef.current?.focus({ preventScroll: true }));
   }, []);
+
+  const checkEmailLockRemovalAvailable = useCallback(async () => {
+    if (!isEmailLockRemovalAvailable) return false;
+    if (security.vaultKey) return true;
+
+    try {
+      const [hasEncryptedContent, hasEncryptedMedia] = await Promise.all([
+        hasEncryptedJournalContent(),
+        hasEncryptedJournalMedia(),
+      ]);
+      return !hasEncryptedContent && !hasEncryptedMedia;
+    } catch (error) {
+      logger.warn("[Journal] Email lock removal availability check failed:", error);
+      return false;
+    }
+  }, [isEmailLockRemovalAvailable, security.vaultKey]);
+
+  const canOfferEmailLockRemoval = isEmailLockRemovalAvailable && !emailLockRemovalBlocked;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isEmailLockRemovalAvailable || !security.hasPassword || !security.isLocked || security.loading) {
+      setEmailLockRemovalBlocked(true);
+      return undefined;
+    }
+
+    setEmailLockRemovalBlocked(true);
+    void checkEmailLockRemovalAvailable().then((available) => {
+      if (!cancelled) setEmailLockRemovalBlocked(!available);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [checkEmailLockRemovalAvailable, isEmailLockRemovalAvailable, security.hasPassword, security.isLocked, security.loading]);
+
+  const closeResetDialog = useCallback(() => {
+    if (resetStep === "sending") return;
+    if (resetStep === "sent") {
+      storageRemove(SK.JOURNAL_PASSWORD_RESET);
+      clearJournalPasswordResetProof();
+      clearJournalPasswordResetParamFromCurrentUrl();
+    }
+    resetRequestSeqRef.current += 1;
+    setResetStep("idle");
+    setResetEmail("");
+    setResetError("");
+  }, [resetStep]);
 
   const openSettings = useCallback((
     section: JournalSettingsSection = "overview",
@@ -656,7 +797,9 @@ export const JournalModule = memo(function JournalModule({
 
   // Consolidated Escape key handler for inline sub-dialogs (password, export, remove-confirm)
   useEffect(() => {
-    const activeDialog = showRemovePasswordConfirm
+    const activeDialog = resetStep !== "idle"
+      ? "reset"
+      : showRemovePasswordConfirm
       ? "remove"
       : showExportPicker
         ? "export"
@@ -670,11 +813,15 @@ export const JournalModule = memo(function JournalModule({
       if (e.key !== "Escape") return;
       e.preventDefault();
       e.stopPropagation();
-      if (activeDialog === "password") {
+      if (activeDialog === "reset") {
+        closeResetDialog();
+      } else if (activeDialog === "password") {
         closeSettings();
       } else if (activeDialog === "export") {
+        if (exporting) return;
         setShowExportPicker(false);
       } else if (activeDialog === "remove") {
+        if (removePasswordSubmitting) return;
         setShowRemovePasswordConfirm(false);
       } else if (activeDialog === "mobile-sidebar") {
         closeMobileDiarySidebar();
@@ -685,10 +832,14 @@ export const JournalModule = memo(function JournalModule({
   }, [
     closeSettings,
     closeMobileDiarySidebar,
+    resetStep,
     showPasswordSettings,
     showExportPicker,
     showRemovePasswordConfirm,
     showMobileDiarySidebar,
+    exporting,
+    removePasswordSubmitting,
+    closeResetDialog,
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -732,7 +883,12 @@ export const JournalModule = memo(function JournalModule({
   }, [isDiaryDesktopLayout, showPasswordSettings]);
 
   useEffect(() => {
-    if (!showPasswordSettings || isDiaryDesktopLayout || !mobileSettingsPanelRef.current) return;
+    if (
+      !showPasswordSettings ||
+      isDiaryDesktopLayout ||
+      showRemovePasswordConfirm ||
+      !mobileSettingsPanelRef.current
+    ) return;
 
     const panel = mobileSettingsPanelRef.current;
     const restoreFocusToPanel = () => {
@@ -767,19 +923,12 @@ export const JournalModule = memo(function JournalModule({
       panel.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("focusin", handleFocusIn);
     };
-  }, [isDiaryDesktopLayout, showPasswordSettings]);
-
-  // Secure password reset via email verification
-  type ResetStep = "idle" | "checking" | "no-account" | "confirm" | "sending" | "sent" | "success";
-  const [resetStep, setResetStep] = useState<ResetStep>("idle");
-  const [resetEmail, setResetEmail] = useState("");
-  const [resetError, setResetError] = useState("");
+  }, [isDiaryDesktopLayout, showPasswordSettings, showRemovePasswordConfirm]);
 
   const journal = useJournal();
   const [releaseTraceSummaries, setReleaseTraceSummaries] = useState<Map<string, JournalReleaseTraceSummary>>(
     () => new Map(),
   );
-  const security = useJournalSecurity();
   const handleModuleKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
     security.touch();
     if (event.key !== "Escape" || !showMobileDiarySidebar) return;
@@ -1366,10 +1515,20 @@ export const JournalModule = memo(function JournalModule({
   };
 
   const handleForgotPassword = async () => {
+    const requestSeq = ++resetRequestSeqRef.current;
+    const isCurrentResetRequest = () => requestSeq === resetRequestSeqRef.current;
+
     setResetStep("checking");
     setResetError("");
     try {
+      if (!(await checkEmailLockRemovalAvailable())) {
+        if (!isCurrentResetRequest()) return;
+        setResetStep("unavailable");
+        return;
+      }
+
       const supabase = await loadJournalSupabase();
+      if (!isCurrentResetRequest()) return;
       if (!supabase) {
         setResetStep("no-account");
         return;
@@ -1378,6 +1537,7 @@ export const JournalModule = memo(function JournalModule({
       const {
         data: { session },
       } = await supabase.auth.getSession();
+      if (!isCurrentResetRequest()) return;
       if (!session?.user?.email) {
         setResetStep("no-account");
         return;
@@ -1385,57 +1545,129 @@ export const JournalModule = memo(function JournalModule({
       setResetEmail(session.user.email);
       setResetStep("confirm");
     } catch {
+      if (!isCurrentResetRequest()) return;
       setResetStep("no-account");
     }
   };
 
-  const lastResetOtpRef = useRef(0);
-
   const handleSendResetLink = async () => {
+    if (resetStep === "sending") return;
     if (!resetEmail) return;
+    const requestSeq = ++resetRequestSeqRef.current;
+    const requestedEmail = resetEmail;
+    const resetNonce = createJournalPasswordResetNonce();
+
+    const isCurrentResetRequest = () => requestSeq === resetRequestSeqRef.current;
 
     // M2: OTP cooldown — prevent abuse by enforcing 60s between sends
     const now = Date.now();
     if (now - lastResetOtpRef.current < 60_000) {
       const remaining = Math.ceil((60_000 - (now - lastResetOtpRef.current)) / 1000);
       setResetError(
-        ts.journalResetCooldown || `Please wait ${remaining}s before requesting another link.`
+        (ts.journalResetCooldown || "Please wait {seconds}s before requesting another link.").replace(
+          "{seconds}",
+          String(remaining),
+        )
       );
       return;
     }
-    lastResetOtpRef.current = now;
-
     setResetStep("sending");
     setResetError("");
     try {
       const supabase = await loadJournalSupabase();
+      if (!isCurrentResetRequest()) return;
       if (!supabase) {
         setResetStep("no-account");
         return;
       }
 
       const { error } = await supabase.auth.signInWithOtp({
-        email: resetEmail,
-        options: { shouldCreateUser: false },
+        email: requestedEmail,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: withJournalPasswordResetNonce(getAuthRedirectUrl(), resetNonce),
+        },
       });
+      if (!isCurrentResetRequest()) return;
       if (error) {
-        setResetError(error.message);
+        logger.warn("[Journal] Password reset link failed:", error);
+        setResetError(ts.journalResetSendFailed || "Failed to send link. Check your connection.");
         setResetStep("confirm");
         return;
       }
-      storageSetRaw(SK.JOURNAL_PASSWORD_RESET, serializeJournalPasswordResetRequest(resetEmail));
+      lastResetOtpRef.current = now;
+      storageSetRaw(SK.JOURNAL_PASSWORD_RESET, serializeJournalPasswordResetRequest(requestedEmail, resetNonce));
+      clearJournalPasswordResetProof();
       setResetStep("sent");
     } catch {
+      if (!isCurrentResetRequest()) return;
       setResetError(ts.journalResetSendFailed || "Failed to send link. Check your connection.");
       setResetStep("confirm");
     }
   };
 
-  const closeResetDialog = () => {
-    setResetStep("idle");
-    setResetEmail("");
-    setResetError("");
-  };
+  const consumeVerifiedPasswordReset = useCallback(
+    async (sessionEmail: string | null | undefined) => {
+      const pending = parseJournalPasswordResetRequest(storageGetRaw(SK.JOURNAL_PASSWORD_RESET));
+      if (!pending) return false;
+
+      if (Date.now() - pending.startedAt >= JOURNAL_PASSWORD_RESET_WINDOW_MS) {
+        storageRemove(SK.JOURNAL_PASSWORD_RESET);
+        clearJournalPasswordResetProof();
+        clearJournalPasswordResetParamFromCurrentUrl();
+        return false;
+      }
+
+      const signedInEmail = normalizeJournalResetEmail(sessionEmail);
+      if (!signedInEmail || signedInEmail !== pending.email) {
+        logger.warn("[Journal] Ignored password reset sign-in for a different account");
+        return false;
+      }
+
+      if (!hasJournalPasswordResetProof(pending)) {
+        logger.warn("[Journal] Ignored password reset session without redirect proof");
+        return false;
+      }
+
+      if (!(await checkEmailLockRemovalAvailable())) {
+        storageRemove(SK.JOURNAL_PASSWORD_RESET);
+        clearJournalPasswordResetProof();
+        clearJournalPasswordResetParamFromCurrentUrl();
+        setResetEmail(pending.email);
+        setResetError("");
+        setResetStep("unavailable");
+        return false;
+      }
+
+      consumeJournalPasswordResetProof(pending.nonce, JOURNAL_PASSWORD_RESET_WINDOW_MS);
+      clearJournalPasswordResetParamFromCurrentUrl();
+
+      setResetEmail(pending.email);
+
+      try {
+        await security.removePassword();
+        storageRemove(SK.JOURNAL_PASSWORD_RESET);
+        clearJournalPasswordResetProof();
+        setResetError("");
+        setResetStep("success");
+        announceSuccess(
+          ts.journalPasswordRemoveSuccess || ts.journalResetSuccess || "Diary lock removed",
+        );
+        return true;
+      } catch (error) {
+        logger.warn("[Journal] Verified reset could not remove the diary lock:", error);
+        storageRemove(SK.JOURNAL_PASSWORD_RESET);
+        clearJournalPasswordResetProof();
+        setResetError(
+          ts.journalLockRemoveFailed ||
+            "Unlock your diary first, then try removing the lock again.",
+        );
+        setResetStep("unavailable");
+        return false;
+      }
+    },
+    [checkEmailLockRemovalAvailable, security, ts.journalLockRemoveFailed, ts.journalPasswordRemoveSuccess, ts.journalResetSuccess],
+  );
 
   // --- HOOKS (all callbacks declared above — safe from TDZ in production minified chunks) ---
   useScrollLock(moduleState === "open" && !isPagePresentation);
@@ -1449,6 +1681,21 @@ export const JournalModule = memo(function JournalModule({
     if (moduleState !== "open" || !overlayRef.current || isLgScreen || isPagePresentation) return;
     return createFocusTrap(overlayRef.current);
   }, [moduleState, isLgScreen, isPagePresentation]);
+
+  useEffect(() => {
+    if (resetStep === "idle" || !resetDialogRef.current) return;
+
+    const initialFocus =
+      resetCancelRef.current && !resetCancelRef.current.disabled
+        ? resetCancelRef.current
+        : null;
+
+    if (!initialFocus) {
+      resetDialogRef.current.focus({ preventScroll: true });
+    }
+
+    return createFocusTrap(resetDialogRef.current, { initialFocus });
+  }, [resetStep]);
 
   // Load entry count for card preview
   useEffect(() => {
@@ -1475,6 +1722,12 @@ export const JournalModule = memo(function JournalModule({
   // Android back button handling
   useEffect(() => {
     if (moduleState !== "open") return;
+    if (showExportPicker)
+      return registerModalCloseCallback(() => {
+        if (exporting) return true;
+        setShowExportPicker(false);
+        return true;
+      });
     if (resetStep !== "idle")
       return registerModalCloseCallback(() => {
         closeResetDialog();
@@ -1482,6 +1735,7 @@ export const JournalModule = memo(function JournalModule({
       });
     if (showRemovePasswordConfirm)
       return registerModalCloseCallback(() => {
+        if (removePasswordSubmitting) return true;
         setShowRemovePasswordConfirm(false);
         return true;
       });
@@ -1515,9 +1769,13 @@ export const JournalModule = memo(function JournalModule({
     });
   }, [
     closeSettings,
+    closeResetDialog,
     moduleState,
+    showExportPicker,
+    exporting,
     resetStep,
     showRemovePasswordConfirm,
+    removePasswordSubmitting,
     showPasswordSettings,
     showMobileDiarySidebar,
     closeMobileDiarySidebar,
@@ -1538,37 +1796,51 @@ export const JournalModule = memo(function JournalModule({
     if (resetStep !== "success") return;
     const timer = setTimeout(closeResetDialog, 2000);
     return () => clearTimeout(timer);
-  }, [resetStep]);
+  }, [closeResetDialog, resetStep]);
 
-  // Magic link fallback: listen for auth state change when waiting for code
+  // Magic link fallback: pending reset can complete after reload or in a new tab.
   useEffect(() => {
-    if (resetStep !== "sent") return;
+    const pending = parseJournalPasswordResetRequest(storageGetRaw(SK.JOURNAL_PASSWORD_RESET));
+    if (!pending) {
+      if (typeof window !== "undefined" && getJournalPasswordResetNonceFromUrl(window.location.href)) {
+        clearJournalPasswordResetProof();
+        clearJournalPasswordResetParamFromCurrentUrl();
+      }
+      return;
+    }
+
+    if (Date.now() - pending.startedAt >= JOURNAL_PASSWORD_RESET_WINDOW_MS) {
+      storageRemove(SK.JOURNAL_PASSWORD_RESET);
+      clearJournalPasswordResetProof();
+      clearJournalPasswordResetParamFromCurrentUrl();
+      return;
+    }
 
     let disposed = false;
     let subscription: { unsubscribe: () => void } | undefined;
 
     void loadJournalSupabase()
-      .then((supabase) => {
+      .then(async (supabase) => {
         if (disposed || !supabase) return;
 
-        const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (resetStep === "idle" && hasJournalPasswordResetProof(pending)) {
+          try {
+            const {
+              data: { session },
+            } = await supabase.auth.getSession();
+            if (!disposed) {
+              await consumeVerifiedPasswordReset(session?.user?.email);
+            }
+          } catch (error) {
+            logger.warn("[Journal] Password reset session check failed:", error);
+          }
+        }
+
+        if (disposed) return;
+
+        const { data } = supabase.auth.onAuthStateChange((event, session) => {
           if (event !== "SIGNED_IN") return;
-
-          const pending = parseJournalPasswordResetRequest(storageGetRaw(SK.JOURNAL_PASSWORD_RESET));
-          if (!pending || Date.now() - pending.startedAt >= 600_000) {
-            storageRemove(SK.JOURNAL_PASSWORD_RESET);
-            return;
-          }
-
-          const signedInEmail = normalizeJournalResetEmail(session?.user?.email);
-          if (!signedInEmail || signedInEmail !== pending.email) {
-            logger.warn("[Journal] Ignored password reset sign-in for a different account");
-            return;
-          }
-
-          await security.removePassword();
-          storageRemove(SK.JOURNAL_PASSWORD_RESET);
-          setResetStep("success");
+          void consumeVerifiedPasswordReset(session?.user?.email);
         });
         subscription = data.subscription;
       })
@@ -1578,7 +1850,7 @@ export const JournalModule = memo(function JournalModule({
       disposed = true;
       subscription?.unsubscribe();
     };
-  }, [resetStep, security]);
+  }, [consumeVerifiedPasswordReset, resetStep]);
 
   const mobileDiarySectionButtonClass = useCallback((active: boolean) => cn(
     "flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 text-center motion-safe:transition-[background-color,color,box-shadow,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]",
@@ -1738,30 +2010,66 @@ export const JournalModule = memo(function JournalModule({
             failedAttempts={security.failedAttempts}
             onUnlock={security.unlock}
             onSetPassword={security.setPassword}
-            onForgotPassword={handleForgotPassword}
+            onForgotPassword={canOfferEmailLockRemoval ? handleForgotPassword : undefined}
             onBiometricUnlock={security.biometricEnabled ? security.unlockWithBiometric : undefined}
             biometricAvailable={security.biometricAvailable && security.biometricEnabled}
+            emailLockRemovalAvailable={canOfferEmailLockRemoval}
           />
 
           {/* Secure password reset dialog (email verification) */}
           {resetStep !== "idle" && (
             <div
-              className="fixed inset-0 z-[70] bg-black/50 dark:bg-black/50 flex items-center justify-center motion-safe:animate-fade-in"
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] motion-safe:animate-fade-in dark:bg-black/50"
               onClick={closeResetDialog}
             >
               <motion.div
+                ref={resetDialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={resetTitleId}
+                aria-describedby={resetError ? `${resetDescriptionId} ${resetErrorId}` : resetDescriptionId}
+                aria-busy={resetStep === "checking" || resetStep === "sending"}
+                tabIndex={-1}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-card rounded-2xl p-5 max-w-sm lg:max-w-md w-full mx-4 shadow-xl"
+                className="max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_2rem)] w-full max-w-sm overflow-y-auto rounded-2xl bg-card p-5 shadow-xl lg:max-w-md"
                 onClick={(e) => e.stopPropagation()}
               >
+                <h3 id={resetTitleId} className="sr-only">
+                  {resetStep === "success"
+                    ? ts.journalResetSuccess || "Diary lock removed"
+                    : resetStep === "sent"
+                      ? ts.journalResetLinkSent || "Check your email"
+                      : resetStep === "no-account" || resetStep === "unavailable"
+                        ? ts.journalPasswordForgot || "Can't open the lock?"
+                        : ts.journalResetViaEmail || "Remove lock by email"}
+                </h3>
+                <p id={resetDescriptionId} className="sr-only">
+                  {resetStep === "sent"
+                    ? ts.journalResetCheckEmail ||
+                      "Click the link in your email to remove the diary lock. This page will update automatically."
+                    : resetStep === "no-account"
+                      ? ts.journalResetNoAccount ||
+                        "Sign in to your account in Settings to use email lock removal"
+                      : resetStep === "unavailable"
+                        ? ts.journalResetEncryptedUnavailable ||
+                          "This diary is encrypted with your password. Email verification cannot remove this lock while encrypted content is locked."
+                      : resetStep === "success"
+                        ? ts.journalResetSuccess || "Diary lock removed"
+                        : ts.journalResetConfirm || "We'll send a verification link to"}
+                </p>
                 {/* Checking session */}
                 {resetStep === "checking" && (
-                  <div className="flex items-center justify-center py-6">
-                    <Loader2
-                      className="w-6 h-6 animate-spin text-primary"
-                      aria-label={t.loading || "Loading..."}
-                    />
+                  <div className="flex flex-col items-center justify-center gap-4 py-6">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
+                    <button
+                      ref={resetCancelRef}
+                      type="button"
+                      onClick={closeResetDialog}
+                      className="min-h-[44px] rounded-xl bg-muted px-4 py-2.5 text-sm font-medium text-foreground"
+                    >
+                      {ts.journalClose || "Close"}
+                    </button>
                   </div>
                 )}
 
@@ -1774,13 +2082,42 @@ export const JournalModule = memo(function JournalModule({
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-2">
-                      {ts.journalPasswordForgot || "Forgot Password?"}
+                      {ts.journalPasswordForgot || "Can't open the lock?"}
                     </h3>
                     <p className="text-sm text-muted-foreground text-center mb-4">
                       {ts.journalResetNoAccount ||
-                        "Sign in to your account in Settings to enable password recovery"}
+                        "Sign in to your account in Settings to use email lock removal"}
                     </p>
                     <button
+                      ref={resetCancelRef}
+                      onClick={closeResetDialog}
+                      className="w-full py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
+                    >
+                      {ts.journalClose || "Close"}
+                    </button>
+                  </>
+                )}
+
+                {/* Email removal unavailable for encrypted locked content */}
+                {resetStep === "unavailable" && (
+                  <>
+                    <div className="flex justify-center mb-3">
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                        <Lock className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground text-center mb-2">
+                      {ts.journalPasswordForgot || "Can't open the lock?"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground text-center mb-4">
+                      {ts.journalResetEncryptedUnavailable ||
+                        "This diary is encrypted with your password. Email verification cannot remove this lock while encrypted content is locked. Unlock with your password to remove it."}
+                    </p>
+                    {resetError && (
+                      <p id={resetErrorId} role="alert" className="mb-3 text-center text-xs text-destructive">{resetError}</p>
+                    )}
+                    <button
+                      ref={resetCancelRef}
                       onClick={closeResetDialog}
                       className="w-full py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
                     >
@@ -1798,32 +2135,33 @@ export const JournalModule = memo(function JournalModule({
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-1">
-                      {ts.journalResetViaEmail || "Reset via email"}
+                      {ts.journalResetViaEmail || "Remove lock by email"}
                     </h3>
                     <p className="text-sm text-muted-foreground text-center mb-1">
                       {ts.journalResetConfirm || "We'll send a verification link to"}
                     </p>
-                    <p className="text-sm font-medium text-foreground text-center mb-4">
-                      {maskEmail(resetEmail)}
+                    <p className="mb-4 break-all text-center text-sm font-medium text-foreground" dir="ltr">
+                      <bdi>{maskEmail(resetEmail)}</bdi>
                     </p>
                     {resetError && (
-                      <p className="text-xs text-destructive text-center mb-3">{resetError}</p>
+                      <p id={resetErrorId} role="alert" className="mb-3 text-center text-xs text-destructive">{resetError}</p>
                     )}
                     <div className="flex gap-2">
                       <button
+                        ref={resetCancelRef}
                         onClick={closeResetDialog}
-                        disabled={resetStep === "sending"}
-                        className="flex-1 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px] disabled:opacity-50"
+                        aria-disabled={resetStep === "sending"}
+                        className="flex-1 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px] aria-disabled:opacity-50"
                       >
                         {ts.cancel || "Cancel"}
                       </button>
                       <button
                         onClick={handleSendResetLink}
-                        disabled={resetStep === "sending"}
+                        aria-disabled={resetStep === "sending"}
                         className={cn(
                           "flex-1 py-2.5 rounded-xl text-sm font-medium min-h-[44px]",
                           "bg-primary text-primary-foreground",
-                          "disabled:opacity-50 flex items-center justify-center gap-2"
+                          "aria-disabled:opacity-50 flex items-center justify-center gap-2"
                         )}
                       >
                         {resetStep === "sending" && (
@@ -1849,15 +2187,15 @@ export const JournalModule = memo(function JournalModule({
                     <p className="text-xs text-muted-foreground text-center mb-2">
                       {ts.journalResetLinkHint || "We sent a verification link to"}
                     </p>
-                    <p className="text-sm font-medium text-foreground text-center mb-4">
-                      {maskEmail(resetEmail)}
+                    <p className="mb-4 break-all text-center text-sm font-medium text-foreground" dir="ltr">
+                      <bdi>{maskEmail(resetEmail)}</bdi>
                     </p>
                     <p className="text-xs text-muted-foreground text-center mb-4">
                       {ts.journalResetCheckEmail ||
-                        "Click the link in your email to remove the diary password. This page will update automatically."}
+                        "Click the link in your email to remove the diary lock. This page will update automatically."}
                     </p>
                     {resetError && (
-                      <p className="text-xs text-destructive text-center mb-3">{resetError}</p>
+                      <p id={resetErrorId} role="alert" className="mb-3 text-center text-xs text-destructive">{resetError}</p>
                     )}
                     <div className="flex items-center justify-center gap-2 mb-3">
                       <Loader2 className="w-4 h-4 animate-spin text-primary" aria-hidden="true" />
@@ -1872,6 +2210,7 @@ export const JournalModule = memo(function JournalModule({
                       {ts.journalResetResend || "Resend link"}
                     </button>
                     <button
+                      ref={resetCancelRef}
                       onClick={closeResetDialog}
                       className="w-full py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors min-h-[44px]"
                     >
@@ -1898,7 +2237,7 @@ export const JournalModule = memo(function JournalModule({
                       </motion.div>
                     </div>
                     <p className="text-sm font-medium text-foreground text-center">
-                      {ts.journalResetSuccess || "Diary password removed"}
+                      {ts.journalResetSuccess || "Diary lock removed"}
                     </p>
                   </div>
                 )}
@@ -2161,7 +2500,9 @@ export const JournalModule = memo(function JournalModule({
                               storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
                             }}
                             onOpenExport={() => {
-                              closeSettings(false);
+                              if (!isDiaryDesktopLayout) {
+                                closeSettings(false);
+                              }
                               setShowExportPicker(true);
                             }}
                             onRequestRemovePassword={() => setShowRemovePasswordConfirm(true)}
@@ -2645,6 +2986,7 @@ export const JournalModule = memo(function JournalModule({
                                     onAddGratitude={handleAddGratitudeWithSpace}
                                     releaseTraceSummaries={releaseTraceSummaries}
                                     onReleaseThought={handleReleaseThought}
+                                    useSharedDiaryWallpaper={showJournalSidebarAtmosphere}
                                     selectedDateOnly
                                   />
                                 </Suspense>
@@ -2880,14 +3222,29 @@ export const JournalModule = memo(function JournalModule({
                             aria-label={ts.journalSettings || "Diary Settings"}
                             ref={mobileSettingsPanelRef}
                             data-testid="journal-mobile-settings-panel"
-                            className="fixed bottom-0 inset-x-0 z-[65] flex max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] flex-col overflow-hidden motion-safe:animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
+                            className={cn(
+                              "fixed bottom-0 inset-x-0 z-[65] flex max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] flex-col overflow-hidden motion-safe:animate-slide-up pb-safe lg:mx-auto lg:max-w-4xl",
+                              showJournalSidebarAtmosphere
+                                ? "journal-diary-glass-panel rounded-t-[28px] border border-border/35 shadow-[0_-24px_80px_hsl(var(--foreground)/0.18)]"
+                                : "rounded-t-2xl bg-card",
+                            )}
                             onClick={(e) => e.stopPropagation()}
                           >
                             {/* Handle bar */}
-                            <div className="flex shrink-0 justify-center pt-2 pb-1 bg-card rounded-t-2xl">
+                            <div
+                              className={cn(
+                                "flex shrink-0 justify-center pb-1 pt-2",
+                                showJournalSidebarAtmosphere ? "bg-transparent" : "rounded-t-2xl bg-card",
+                              )}
+                            >
                               <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
                             </div>
-                            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-card p-5 pb-[max(1.25rem,var(--safe-bottom))]">
+                            <div
+                              className={cn(
+                                "min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pb-[max(1.25rem,var(--safe-bottom))]",
+                                showJournalSidebarAtmosphere ? "bg-transparent" : "bg-card",
+                              )}
+                            >
                               <div className="mb-4 flex items-center justify-between gap-3">
                                 <div className="flex min-w-0 flex-1 items-center gap-3">
                                   {showAppNavMenuButton ? (
@@ -3106,7 +3463,7 @@ export const JournalModule = memo(function JournalModule({
 
                       {/* Export format picker */}
                       {showExportPicker && (
-                        <Suspense fallback={null}>
+                        <Suspense fallback={<JournalModalDeferredFallback label={t.loading || "Loading..."} />}>
                           <LazyExportPickerDialog
                             ts={ts}
                             language={language}
@@ -3157,14 +3514,20 @@ export const JournalModule = memo(function JournalModule({
 
       {/* Remove password confirmation dialog */}
       {showRemovePasswordConfirm && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<JournalModalDeferredFallback label={t.loading || "Loading..."} />}>
           <LazyRemovePasswordConfirmDialog
             ts={ts}
             onClose={() => setShowRemovePasswordConfirm(false)}
             onConfirm={async () => {
-              await security.removePassword();
-              setShowRemovePasswordConfirm(false);
-              setSettingsSection("overview");
+              setRemovePasswordSubmitting(true);
+              try {
+                await security.removePassword();
+                announceSuccess(ts.journalPasswordRemoveSuccess || "Password lock removed.");
+                setShowRemovePasswordConfirm(false);
+                setSettingsSection("overview");
+              } finally {
+                setRemovePasswordSubmitting(false);
+              }
             }}
           />
         </Suspense>

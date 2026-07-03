@@ -10,7 +10,7 @@
  *   - SUPABASE_ANON_KEY: For JWT verification
  *
  * Optional environment variables:
- *   - ADMIN_EMAIL: Email to receive feedback (default: zenflowtrack@gmail.com)
+ *   - ADMIN_EMAIL: Email to receive feedback (default: zenflow.app@gmail.com)
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
@@ -25,7 +25,7 @@ import { redactError } from "../_shared/redaction.ts";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const RESEND_FROM_EMAIL =
   Deno.env.get("RESEND_FROM_EMAIL") || "ZenFlow <onboarding@resend.dev>";
-const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "zenflowtrack@gmail.com";
+const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "zenflow.app@gmail.com";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 

@@ -1,8 +1,44 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'node:path';
 
 const PUBLIC_APP_URL = process.env.ZENFLOW_PLAYWRIGHT_BASE_URL || 'https://yehor212.github.io/people-first-app/';
-const LOCAL_APP_PORT = process.env.ZENFLOW_PLAYWRIGHT_LOCAL_PORT || '8080';
-const LOCAL_APP_URL = `http://localhost:${LOCAL_APP_PORT}/people-first-app/`;
+export function resolvePlaywrightLocalPort(port = process.env.ZENFLOW_PLAYWRIGHT_LOCAL_PORT): string {
+  const rawPort = port?.trim() || '8080';
+
+  if (!/^\d+$/.test(rawPort)) {
+    throw new Error('ZENFLOW_PLAYWRIGHT_LOCAL_PORT must be a numeric TCP port.');
+  }
+
+  const numericPort = Number(rawPort);
+  if (!Number.isInteger(numericPort) || numericPort < 1 || numericPort > 65535) {
+    throw new Error('ZENFLOW_PLAYWRIGHT_LOCAL_PORT must be between 1 and 65535.');
+  }
+
+  return String(numericPort);
+}
+
+export function resolvePlaywrightPreviewOutDir(
+  outDir = process.env.ZENFLOW_PLAYWRIGHT_PREVIEW_DIR,
+): string {
+  const rawOutDir = outDir?.trim() || 'dist';
+
+  if (!/^[A-Za-z0-9._/-]+$/.test(rawOutDir)) {
+    throw new Error('ZENFLOW_PLAYWRIGHT_PREVIEW_DIR must contain only safe relative path characters.');
+  }
+  if (path.isAbsolute(rawOutDir) || rawOutDir.split('/').includes('..')) {
+    throw new Error('ZENFLOW_PLAYWRIGHT_PREVIEW_DIR must stay inside the repository.');
+  }
+
+  return rawOutDir;
+}
+
+export function resolvePlaywrightLocalBaseUrl(port = process.env.ZENFLOW_PLAYWRIGHT_LOCAL_PORT): string {
+  return `http://127.0.0.1:${resolvePlaywrightLocalPort(port)}/people-first-app/`;
+}
+
+const LOCAL_APP_PORT = resolvePlaywrightLocalPort();
+const LOCAL_PREVIEW_OUT_DIR = resolvePlaywrightPreviewOutDir();
+const LOCAL_APP_URL = resolvePlaywrightLocalBaseUrl(LOCAL_APP_PORT);
 const USE_LOCAL_WEBSERVER = process.env.ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER === 'true';
 
 /**
@@ -51,8 +87,8 @@ export default defineConfig({
     ? {
         webServer: {
           command: process.env.CI
-            ? `npm run preview -- --port ${LOCAL_APP_PORT}`
-            : `npm run dev -- --port ${LOCAL_APP_PORT}`,
+            ? `npm run preview -- --host 127.0.0.1 --port ${LOCAL_APP_PORT} --strictPort --outDir ${LOCAL_PREVIEW_OUT_DIR}`
+            : `npm run dev -- --host 127.0.0.1 --port ${LOCAL_APP_PORT} --strictPort`,
           url: LOCAL_APP_URL,
           reuseExistingServer: !process.env.CI,
           timeout: 120 * 1000,

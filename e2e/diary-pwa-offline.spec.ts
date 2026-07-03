@@ -122,29 +122,40 @@ test.describe("PWA offline V2 Diary", () => {
     expect(onlineFacts.cacheNames.some((name) => name.includes("precache"))).toBe(true);
     expect(onlineFacts.cacheNames.some((name) => name.includes("runtime-assets"))).toBe(true);
 
+    let offlineFacts: {
+      controlled: boolean;
+      diaryRoute: boolean;
+      online: boolean;
+      shellVisible: boolean;
+      wallpaperTone: string | null;
+    };
     await context.setOffline(true);
-    await page.reload({
-      waitUntil: "domcontentloaded",
-    });
+    try {
+      await page.reload({
+        waitUntil: "domcontentloaded",
+      });
 
-    await expect(page.getByTestId("journal-page-shell")).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByTestId("journal-wallpaper")).toHaveAttribute(
-      "data-wallpaper-motion",
-      "static",
-    );
-    await expectDiaryTabActions(page);
+      await expect(page.getByTestId("journal-page-shell")).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByTestId("journal-wallpaper")).toHaveAttribute(
+        "data-wallpaper-motion",
+        "static",
+      );
+      await expectDiaryTabActions(page);
 
-    const offlineFacts = await page.evaluate(() => {
-      const shell = document.querySelector<HTMLElement>("[data-testid='journal-page-shell']");
-      const wallpaper = document.querySelector<HTMLElement>("[data-testid='journal-wallpaper']");
-      return {
-        controlled: Boolean(navigator.serviceWorker?.controller),
-        diaryRoute: window.location.pathname.endsWith("/diary"),
-        online: navigator.onLine,
-        shellVisible: Boolean(shell && shell.getBoundingClientRect().height > 0),
-        wallpaperTone: wallpaper?.dataset.wallpaperTone ?? null,
-      };
-    });
+      offlineFacts = await page.evaluate(() => {
+        const shell = document.querySelector<HTMLElement>("[data-testid='journal-page-shell']");
+        const wallpaper = document.querySelector<HTMLElement>("[data-testid='journal-wallpaper']");
+        return {
+          controlled: Boolean(navigator.serviceWorker?.controller),
+          diaryRoute: window.location.pathname.endsWith("/diary"),
+          online: navigator.onLine,
+          shellVisible: Boolean(shell && shell.getBoundingClientRect().height > 0),
+          wallpaperTone: wallpaper?.dataset.wallpaperTone ?? null,
+        };
+      });
+    } finally {
+      await context.setOffline(false);
+    }
 
     expect(offlineFacts).toMatchObject({
       controlled: true,
@@ -156,11 +167,7 @@ test.describe("PWA offline V2 Diary", () => {
     expect(errors).toEqual([]);
   });
 
-  test("prepares the iPhone WebKit diary route for PWA offline use", async ({
-    browserName,
-    context,
-    page,
-  }) => {
+  test("prepares the iPhone WebKit diary route for PWA offline use", async ({ browserName, page }) => {
     test.skip(browserName !== "webkit", "WebKit-only iPhone PWA readiness coverage.");
 
     const errors: string[] = [];
@@ -190,21 +197,28 @@ test.describe("PWA offline V2 Diary", () => {
     expect(onlineFacts.cacheNames.some((name) => name.includes("precache"))).toBe(true);
     expect(onlineFacts.cacheNames.some((name) => name.includes("runtime-assets"))).toBe(true);
 
-    await context.setOffline(true);
-    const offlineFacts = await page.evaluate(() => {
+    const readinessFacts: {
+      controlled: boolean;
+      diaryRoute: boolean;
+      online: boolean;
+      shellVisible: boolean;
+      wallpaperVisible: boolean;
+    } = await page.evaluate(() => {
       const shell = document.querySelector<HTMLElement>("[data-testid='journal-page-shell']");
       const wallpaper = document.querySelector<HTMLElement>("[data-testid='journal-wallpaper']");
       return {
         controlled: Boolean(navigator.serviceWorker?.controller),
+        diaryRoute: window.location.pathname.endsWith("/diary"),
         online: navigator.onLine,
         shellVisible: Boolean(shell && shell.getBoundingClientRect().height > 0),
         wallpaperVisible: Boolean(wallpaper && wallpaper.getBoundingClientRect().height > 0),
       };
     });
 
-    expect(offlineFacts).toMatchObject({
+    expect(readinessFacts).toMatchObject({
       controlled: true,
-      online: false,
+      diaryRoute: true,
+      online: true,
       shellVisible: true,
       wallpaperVisible: true,
     });

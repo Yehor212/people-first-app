@@ -86,7 +86,9 @@ async function expectControlsFirstHierarchy(page: Page, selectedSectionId = "pro
     };
 
     const pageWidth = document.documentElement.clientWidth;
+    const workspace = document.querySelector('[data-testid="settings-page-workspace"]');
     const moduleList = document.querySelector('[data-testid="settings-module-list"]');
+    const selectedPanel = document.querySelector('[data-testid="settings-selected-panel"]');
     const panel = document.querySelector(`[data-testid="settings-module-panel-${selectedSectionId}"]`);
     const deck = document.querySelector('[data-testid="settings-page-control-deck"]');
     const status = document.querySelector('[data-testid="settings-status-overview"]');
@@ -95,8 +97,8 @@ async function expectControlsFirstHierarchy(page: Page, selectedSectionId = "pro
       `[data-testid="settings-module-card-${selectedSectionId}"]`
     );
 
-    if (!moduleList || !panel || !deck || !selectedButton) {
-      throw new Error("Missing settings accordion nodes");
+    if (!workspace || !moduleList || !selectedPanel || !panel || !deck || !selectedButton) {
+      throw new Error("Missing settings workspace nodes");
     }
 
     return {
@@ -115,9 +117,17 @@ async function expectControlsFirstHierarchy(page: Page, selectedSectionId = "pro
       ),
       panelClientWidth: panel.clientWidth,
       panelInsideList: moduleList.contains(panel),
+      panelInsideSelectedPanel: selectedPanel.contains(panel),
+      workspaceHasList: workspace.contains(moduleList),
+      workspaceHasSelectedPanel: workspace.contains(selectedPanel),
+      workspaceDomOrder: Array.from(workspace.children).map((node) =>
+        (node as HTMLElement).dataset.testid || (node as HTMLElement).id || node.tagName,
+      ),
+      workspaceLayout: (workspace as HTMLElement).dataset.layout,
       panelOverflowX: getComputedStyle(panel).overflowX,
       panelScrollWidth: panel.scrollWidth,
       viewportHeight: window.innerHeight,
+      viewportWidth: window.innerWidth,
       hero: readRect("settings-page-control-card"),
       moduleList: readRect("settings-module-list"),
       deck: readRect("settings-page-control-deck"),
@@ -126,9 +136,25 @@ async function expectControlsFirstHierarchy(page: Page, selectedSectionId = "pro
   }, selectedSectionId);
 
   expect(metrics.moduleList.top).toBeGreaterThanOrEqual(metrics.hero.bottom - 1);
-  expect(metrics.panelInsideList).toBe(true);
+  expect(metrics.workspaceLayout).toBe("control-surface");
+  expect(metrics.workspaceHasList).toBe(true);
+  expect(metrics.workspaceHasSelectedPanel).toBe(true);
+  expect(metrics.panelInsideList).toBe(false);
+  expect(metrics.panelInsideSelectedPanel).toBe(true);
   expect(metrics.deckInsidePanel).toBe(true);
-  expect(metrics.deck.top).toBeGreaterThanOrEqual(metrics.moduleList.top);
+  if (metrics.viewportWidth < 1024) {
+    expect(metrics.deck.top).toBeLessThanOrEqual(metrics.moduleList.top + 1);
+    expect(metrics.workspaceDomOrder.slice(0, 2)).toEqual([
+      "settings-selected-panel",
+      "settings-module-list",
+    ]);
+  } else {
+    expect(metrics.deck.top).toBeGreaterThanOrEqual(metrics.moduleList.top);
+    expect(metrics.workspaceDomOrder.slice(0, 2)).toEqual([
+      "settings-module-list",
+      "settings-selected-panel",
+    ]);
+  }
   if (selectedSectionId === "account") {
     expect(metrics.statusExists).toBe(true);
     expect(metrics.statusInsidePanel).toBe(true);
@@ -297,7 +323,7 @@ test.describe("V2 Settings controls-first hierarchy", () => {
     expect(page.url()).toBe(beforeUrl);
   });
 
-  test("wide desktop phone-layout mode keeps settings cards without horizontal scrolling", async ({
+  test("wide desktop phone-layout mode keeps settings workspace without horizontal scrolling", async ({
     page,
   }) => {
     await primeApp(page);
@@ -308,15 +334,20 @@ test.describe("V2 Settings controls-first hierarchy", () => {
     await expectControlsFirstHierarchy(page);
   });
 
-  test("RTL layout keeps the card accordion inside the page width", async ({ page }) => {
-    await primeApp(page, { language: "he" });
-    await page.setViewportSize({ width: 1280, height: 720 });
-    await page.goto(`${APP_BASE}/settings?nav=v2&navLayout=desktop&dev=true`);
-    await page.evaluate(() => document.fonts.ready);
+  for (const language of ["ar", "he"] as const) {
+    test(`RTL layout keeps the ${language} settings workspace inside the page width`, async ({
+      page,
+    }) => {
+      await primeApp(page, { language });
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await page.goto(`${APP_BASE}/settings?nav=v2&navLayout=desktop&dev=true`);
+      await page.evaluate(() => document.fonts.ready);
 
-    await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
-    await expectControlsFirstHierarchy(page);
-  });
+      await expect(page.locator("html")).toHaveAttribute("lang", language);
+      await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+      await expectControlsFirstHierarchy(page);
+    });
+  }
 
   test("privacy no-tracking switch can be turned on and back off", async ({ page }) => {
     await primeApp(page);

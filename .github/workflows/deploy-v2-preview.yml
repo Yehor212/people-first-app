@@ -1,16 +1,24 @@
 name: Deploy V2 Preview to GitHub Pages
 
 on:
+  #checkov:skip=CKV_GHA_7:publish_target is a fixed choice that gates artifact-only vs explicit Pages overwrite; it does not alter build output.
   workflow_dispatch:
+    inputs:
+      publish_target:
+        description: Build only by default; explicit overwrite is required to publish to production GitHub Pages.
+        required: true
+        type: choice
+        default: artifact-only
+        options:
+          - artifact-only
+          - overwrite-github-pages
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: true
+  group: ${{ github.event.inputs.publish_target == 'overwrite-github-pages' && 'pages' || 'pages-v2-preview' }}
+  cancel-in-progress: ${{ github.event.inputs.publish_target != 'overwrite-github-pages' }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -20,12 +28,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout V2 branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           path: v2-src
+          persist-credentials: false
+
+      - name: Validate production overwrite source
+        if: github.event.inputs.publish_target == 'overwrite-github-pages'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Production GitHub Pages overwrite must be dispatched from refs/heads/main."
+            exit 1
+          fi
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 24
           cache: npm
@@ -33,7 +52,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: v2-src
-        run: npm install
+        run: npm ci
 
       - name: Verify V2-only shell
         working-directory: v2-src
@@ -41,6 +60,7 @@ jobs:
           npm run typecheck
           npm run lint
           npm run i18n:check
+          npm run i18n:deep
           npm run check:canonical-orbs
           npx vitest run scripts/__tests__/v2-only-shell-inventory.test.ts src/components/navigation-v2/__tests__/DrawerV2.test.tsx src/components/navigation-v2/__tests__/SidebarV2.test.tsx src/pages/nav-v2/__tests__/PlanningPage.test.tsx
 
@@ -91,6 +111,16 @@ jobs:
           ZENFLOW_SENTRY_API_REQUIRED: ${{ secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != '' }}
         run: npm run smoke:sentry-api
 
+      - name: Run production overwrite release gates
+        if: github.event.inputs.publish_target == 'overwrite-github-pages'
+        working-directory: v2-src
+        run: |
+          npm audit --audit-level=high
+          npm run check:task-completion
+          npm run check:best-practices
+          npm run check:sync-contract
+          npm run test:release-contracts
+
       - name: Build V2 public root
         working-directory: v2-src
         env:
@@ -117,20 +147,117 @@ jobs:
         working-directory: v2-src
         run: npm run check:sentry-artifacts
 
-      - name: Upload V2 Pages artifact
-        uses: actions/upload-pages-artifact@v5
+      - name: Check final duplicate release artifacts for V2 preview
+        working-directory: v2-src
+        run: npm run check:release-artifacts
+
+      - name: Stage V2 Pages release artifact
+        working-directory: v2-src
+        run: npm run stage:release-artifacts
+
+      - name: Check staged Sentry public artifact for V2 preview
+        working-directory: v2-src
+        env:
+          ZENFLOW_DIST_DIR: output/pages-artifact.nosync
+        run: npm run check:sentry-artifacts
+
+      - name: Check staged release artifact integrity for V2 preview
+        working-directory: v2-src
+        run: npm run check:staged-release-artifacts
+
+      - name: Cache Playwright browsers for V2 overwrite
+        if: github.event.inputs.publish_target == 'overwrite-github-pages'
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
-          path: v2-src/dist
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('v2-src/package-lock.json') }}
+          restore-keys: playwright-
+
+      - name: Install Playwright browsers for V2 overwrite
+        if: github.event.inputs.publish_target == 'overwrite-github-pages'
+        working-directory: v2-src
+        run: npx playwright install --with-deps chromium
+
+      - name: Run V2 overwrite staged deploy smoke tests
+        if: github.event.inputs.publish_target == 'overwrite-github-pages'
+        timeout-minutes: 8
+        working-directory: v2-src
+        env:
+          ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER: true
+          ZENFLOW_PLAYWRIGHT_PREVIEW_DIR: output/pages-artifact.nosync
+          ZENFLOW_PLAYWRIGHT_LOCAL_PORT: 4185
+        run: npx playwright test e2e/deploy-smoke.spec.ts --project=chromium
+
+      - name: Run V2 overwrite staged PWA offline tests
+        if: github.event.inputs.publish_target == 'overwrite-github-pages'
+        timeout-minutes: 10
+        working-directory: v2-src
+        env:
+          ZENFLOW_PWA_OFFLINE_PREVIEW_DIR: output/pages-artifact.nosync
+          ZENFLOW_PWA_OFFLINE_SKIP_BUILD: true
+        run: npm run test:e2e:v2:diary-pwa-offline -- --project=pwa-offline-chromium-phone
+
+      - name: Run V2 overwrite staged PWA audio range tests
+        if: github.event.inputs.publish_target == 'overwrite-github-pages'
+        timeout-minutes: 10
+        working-directory: v2-src
+        env:
+          ZENFLOW_PWA_OFFLINE_PREVIEW_DIR: output/pages-artifact.nosync
+          ZENFLOW_PWA_OFFLINE_SKIP_BUILD: true
+        run: npm run test:e2e:v2:pwa-audio-range -- --project=pwa-offline-chromium-phone
+
+      - name: Run V2 overwrite staged Orb performance tests
+        if: github.event.inputs.publish_target == 'overwrite-github-pages'
+        timeout-minutes: 10
+        working-directory: v2-src
+        env:
+          CI: true
+          ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER: true
+          ZENFLOW_PLAYWRIGHT_PREVIEW_DIR: output/pages-artifact.nosync
+          ZENFLOW_PLAYWRIGHT_LOCAL_PORT: 4186
+        run: npx playwright test e2e/orb-user-flow-performance.spec.ts --project=chromium --workers=1 --retries=0
+
+      - name: Run V2 overwrite staged visual regression tests
+        if: github.event.inputs.publish_target == 'overwrite-github-pages'
+        timeout-minutes: 15
+        working-directory: v2-src
+        env:
+          CI: true
+          ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER: true
+          ZENFLOW_PLAYWRIGHT_PREVIEW_DIR: output/pages-artifact.nosync
+          ZENFLOW_PLAYWRIGHT_LOCAL_PORT: 4187
+        run: npm run test:e2e:v2:visual
+
+      - name: Upload V2 preview artifact for review
+        if: github.event.inputs.publish_target == 'artifact-only'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: v2-preview-pages-artifact
+          path: v2-src/output/pages-artifact.nosync
+          include-hidden-files: true
+          if-no-files-found: error
+
+      - name: Upload V2 Pages artifact
+        if: github.event.inputs.publish_target == 'overwrite-github-pages' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: v2-src/output/pages-artifact.nosync
+          include-hidden-files: true
 
   deploy:
+    if: github.event.inputs.publish_target == 'overwrite-github-pages' && github.ref == 'refs/heads/main'
     needs: build-preview
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy V2 preview
         id: deployment
-        uses: actions/deploy-pages@v5.0.0
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
         with:
           timeout: 600000

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const source = {
   editor: readFileSync("src/features/journal/JournalEntryEditor.tsx", "utf8"),
   entryList: readFileSync("src/features/journal/JournalEntryList.tsx", "utf8"),
+  hubShell: readFileSync("src/features/journal/JournalHubShell.tsx", "utf8"),
   module: readFileSync("src/features/journal/JournalModule.tsx", "utf8"),
   formatToolbar: readFileSync("src/features/journal/DiaryFormatToolbar.tsx", "utf8"),
   slashMenu: readFileSync("src/features/journal/SlashCommandMenu.tsx", "utf8"),
@@ -131,6 +132,28 @@ describe("Journal accessibility, copy, and wallpaper static contracts", () => {
     expect(emptyListBlock).toContain("{!useSharedDiaryWallpaper && <JournalMemoryBackdrop />}");
     expect(source.module).toContain("useSharedDiaryWallpaper={showJournalSidebarAtmosphere}");
     expect(source.module).toContain("journal-mobile-diary-sidebar");
+  });
+
+  it("keeps every V2 page-mode diary list and settings sheet on the shared wallpaper material", () => {
+    const listCalls = source.module.match(/<LazyJournalEntryList[\s\S]*?\/>/g) ?? [];
+    const mobileSelectedDayList = listCalls.find((call) => call.includes("selectedDateOnly"));
+    const hubListBlock = /<JournalEntryList[\s\S]*?showFab=\{false\}/.exec(source.hubShell)?.[0] ?? "";
+    const mobileSettingsPanelBlock =
+      /data-testid="journal-mobile-settings-panel"[\s\S]*?journal-mobile-settings-close/.exec(
+        source.module,
+      )?.[0] ?? "";
+
+    expect(listCalls.length).toBeGreaterThanOrEqual(3);
+    for (const listCall of listCalls) {
+      expect(listCall).toContain("useSharedDiaryWallpaper={showJournalSidebarAtmosphere}");
+    }
+    expect(mobileSelectedDayList).toBeTruthy();
+    expect(source.hubShell).toContain("useSharedDiaryWallpaper?: boolean;");
+    expect(source.hubShell).toContain("useSharedDiaryWallpaper = false");
+    expect(hubListBlock).toContain("useSharedDiaryWallpaper={useSharedDiaryWallpaper}");
+    expect(mobileSettingsPanelBlock).toContain("journal-diary-glass-panel");
+    expect(mobileSettingsPanelBlock).not.toContain("bg-card rounded-t-2xl");
+    expect(mobileSettingsPanelBlock).not.toContain("overflow-y-auto overscroll-contain bg-card p-5");
   });
 
   it("uses localized, semantic labels for selection and slash command toolbars", () => {

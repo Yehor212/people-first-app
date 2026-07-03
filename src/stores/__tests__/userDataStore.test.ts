@@ -177,11 +177,12 @@ describe("userDataStore initial state", () => {
     });
   });
 
-  it("privacy defaults to { noTracking: false, analytics: false, consentShown: false }", () => {
+  it("privacy defaults to tracking, analytics, consent, and push notifications off", () => {
     expect(useUserDataStore.getState().privacy).toEqual({
       noTracking: false,
       analytics: false,
       consentShown: false,
+      pushNotifications: false,
     });
   });
 

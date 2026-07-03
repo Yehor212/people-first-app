@@ -2,6 +2,10 @@ import { isNative } from "@/lib/platform";
 import { logger } from "./logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { BASE_URL } from "@/lib/env";
+import {
+  JOURNAL_PASSWORD_RESET_PARAM,
+  persistJournalPasswordResetProofFromUrl,
+} from "@/lib/journalPasswordResetHandoff";
 
 const NATIVE_REDIRECT_URL = "com.zenflow.app://login-callback";
 const V2_ROUTE_PATHS = new Set(["/orb", "/habits", "/diary", "/planning", "/settings"]);
@@ -85,6 +89,7 @@ export function getCleanAuthCallbackUrl(rawUrl: string): string {
     "token_type",
     "provider_token",
     "provider_refresh_token",
+    JOURNAL_PASSWORD_RESET_PARAM,
   ];
 
   for (const param of oauthParams) {
@@ -202,6 +207,7 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
       "[Auth] PKCE session exchange successful, user:",
       `user:${data.session.user.id.slice(0, 8)}`
     );
+    persistJournalPasswordResetProofFromUrl(url);
     return;
   }
 
@@ -231,6 +237,7 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
       "[Auth] Implicit flow session set, user:",
       `user:${data.session.user.id.slice(0, 8)}`
     );
+    persistJournalPasswordResetProofFromUrl(url);
     return;
   }
 

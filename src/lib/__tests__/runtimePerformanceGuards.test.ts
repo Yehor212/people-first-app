@@ -66,8 +66,10 @@ describe("runtime performance guards", () => {
     );
 
     expect(source).toContain('const APP_SHELL_URL = "index.html";');
+    expect(source).toContain("const NAVIGATION_NETWORK_TIMEOUT_MS = 4000;");
+    expect(source).toContain("fetchNavigationWithTimeout(request)");
     expect(navigationBlock).toContain('request.destination === "document"');
-    expect(navigationBlock).toContain("return await fetch(request);");
+    expect(navigationBlock).toContain("return await fetchNavigationWithTimeout(request);");
     expect(navigationBlock).toContain("matchPrecache(APP_SHELL_URL)");
     expect(navigationBlock).toContain("logger.warn");
     expect(source).not.toContain('request.mode === "navigate", new NetworkOnly()');

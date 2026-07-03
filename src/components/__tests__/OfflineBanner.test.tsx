@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 
@@ -50,6 +50,10 @@ describe("OfflineBanner", () => {
     setNavigatorOnline(true);
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("clears a false offline state after a successful app asset probe", async () => {
     setNavigatorOnline(false);
     fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
@@ -83,4 +87,39 @@ describe("OfflineBanner", () => {
       expect(screen.queryByTestId("offline-banner")).not.toBeInTheDocument();
     });
   });
+  it("bounds manual retry probes so stalled network checks cannot feel frozen", async () => {
+    vi.useFakeTimers();
+    setNavigatorOnline(false);
+    fetchMock
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockImplementationOnce((_url, init?: RequestInit) => {
+        const signal = init?.signal;
+        return new Promise((_resolve, reject) => {
+          signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+        });
+      });
+
+    render(<OfflineBanner />);
+
+    expect(screen.getByTestId("offline-banner")).toBeInTheDocument();
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry connection" }));
+
+    const retrySignal = fetchMock.mock.calls.at(-1)?.[1]?.signal;
+    expect(retrySignal).toBeInstanceOf(AbortSignal);
+    expect(retrySignal?.aborted).toBe(false);
+
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+      await Promise.resolve();
+    });
+
+    expect(retrySignal?.aborted).toBe(true);
+    expect(screen.getByTestId("offline-banner")).toBeInTheDocument();
+  });
+
 });

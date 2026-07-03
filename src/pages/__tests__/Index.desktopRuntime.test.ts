@@ -22,4 +22,12 @@ describe("Index desktop runtime shell contract", () => {
     expect(source).toContain("DevPreviewRouteFallback");
     expect(source).not.toContain("<Suspense fallback={null}>");
   });
+
+  it("mounts native notification setup from the V2 boot shell", () => {
+    const source = readIndex();
+
+    expect(source).toContain('import { useNotificationSetup } from "@/hooks/useNotificationSetup";');
+    expect(source).toContain("const { handleAddMood, handleQuickMood }");
+    expect(source).toContain("useNotificationSetup({ handleQuickMood });");
+  });
 });

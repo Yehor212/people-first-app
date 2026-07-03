@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ChevronLeft, Download, Fingerprint, KeyRound, Lock, Shield } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch";
@@ -62,18 +62,21 @@ function SectionCard({
 function SettingsActionButton({
   label,
   tone = "default",
+  disabled = false,
   onClick,
 }: {
   label: string;
   tone?: "default" | "danger";
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "inline-flex min-h-[44px] items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-medium transition-colors",
+        "inline-flex min-h-[44px] items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         tone === "danger"
           ? "border border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/15"
           : "border border-border/70 bg-background/80 text-foreground hover:bg-accent",
@@ -87,11 +90,15 @@ function SettingsActionButton({
 function SettingsFormShell({
   title,
   description,
+  backLabel,
+  disabled = false,
   onBack,
   children,
 }: {
   title: string;
   description: string;
+  backLabel: string;
+  disabled?: boolean;
   onBack: () => void;
   children: ReactNode;
 }) {
@@ -100,10 +107,11 @@ function SettingsFormShell({
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex min-h-[44px] items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        disabled={disabled}
+        className="inline-flex min-h-[44px] items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
       >
         <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-        <span>Back</span>
+        <span>{backLabel}</span>
       </button>
 
       <div className="mt-3">
@@ -136,9 +144,59 @@ export function JournalSettingsContent({
   const [changeConfirm, setChangeConfirm] = useState("");
   const [changeError, setChangeError] = useState("");
   const [changeSubmitting, setChangeSubmitting] = useState(false);
+  const [biometricSubmitting, setBiometricSubmitting] = useState(false);
+  const [biometricError, setBiometricError] = useState("");
+  const setupRequestSeqRef = useRef(0);
+  const changeRequestSeqRef = useRef(0);
+  const setupErrorId = useId();
+  const changeErrorId = useId();
+  const biometricErrorId = useId();
+
+  const clearSetupForm = () => {
+    setupRequestSeqRef.current += 1;
+    setSetupPassword("");
+    setSetupConfirm("");
+    setSetupError("");
+    setSetupSubmitting(false);
+  };
+
+  const clearChangeForm = () => {
+    changeRequestSeqRef.current += 1;
+    setCurrentPassword("");
+    setNextPassword("");
+    setChangeConfirm("");
+    setChangeError("");
+    setChangeSubmitting(false);
+  };
+
+  useEffect(() => {
+    if (section !== "password-setup") {
+      setupRequestSeqRef.current += 1;
+      setSetupPassword("");
+      setSetupConfirm("");
+      setSetupError("");
+      setSetupSubmitting(false);
+    }
+
+    if (section !== "password-change") {
+      changeRequestSeqRef.current += 1;
+      setCurrentPassword("");
+      setNextPassword("");
+      setChangeConfirm("");
+      setChangeError("");
+      setChangeSubmitting(false);
+    }
+  }, [section]);
 
   const securityDescription = useMemo(() => {
     if (security.hasPassword) {
+      if (!security.biometricAvailable) {
+        return (
+          ts.journalPasswordActiveHint ||
+          "Diary lock is active. Change or remove it here."
+        );
+      }
+
       return (
         ts.journalBiometricSubtitle ||
         "Protect your journal and choose how you unlock it."
@@ -149,7 +207,7 @@ export function JournalSettingsContent({
       ts.journalLockHint ||
       "Protect your diary with a password so only you can open it."
     );
-  }, [security.hasPassword, ts]);
+  }, [security.biometricAvailable, security.hasPassword, ts]);
 
   const handleSetupSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -166,14 +224,20 @@ export function JournalSettingsContent({
 
     setSetupSubmitting(true);
     setSetupError("");
+    const requestSeq = ++setupRequestSeqRef.current;
+    const isCurrentRequest = () => setupRequestSeqRef.current === requestSeq;
 
     try {
       await security.setPassword(setupPassword);
+      if (!isCurrentRequest()) return;
       setSetupPassword("");
       setSetupConfirm("");
       onSectionChange("overview");
+    } catch {
+      if (!isCurrentRequest()) return;
+      setSetupError(ts.journalPasswordSetupFailed || "We could not turn on the diary lock. Try again.");
     } finally {
-      setSetupSubmitting(false);
+      if (isCurrentRequest()) setSetupSubmitting(false);
     }
   };
 
@@ -197,9 +261,12 @@ export function JournalSettingsContent({
 
     setChangeSubmitting(true);
     setChangeError("");
+    const requestSeq = ++changeRequestSeqRef.current;
+    const isCurrentRequest = () => changeRequestSeqRef.current === requestSeq;
 
     try {
       const ok = await security.changePassword(currentPassword, nextPassword);
+      if (!isCurrentRequest()) return;
       if (!ok) {
         setChangeError(ts.journalPasswordOldWrong || "Current password is incorrect");
         return;
@@ -209,8 +276,32 @@ export function JournalSettingsContent({
       setNextPassword("");
       setChangeConfirm("");
       onSectionChange("overview");
+    } catch {
+      if (!isCurrentRequest()) return;
+      setChangeError(ts.journalPasswordChangeFailed || "We could not update the diary lock. Try again.");
     } finally {
-      setChangeSubmitting(false);
+      if (isCurrentRequest()) setChangeSubmitting(false);
+    }
+  };
+
+  const handleBiometricEnabledChange = async (checked: boolean) => {
+    if (biometricSubmitting) return;
+
+    setBiometricSubmitting(true);
+    setBiometricError("");
+    try {
+      const ok = await security.setBiometricEnabled(checked);
+      if (!ok) {
+        setBiometricError(
+          ts.journalBiometricUpdateFailed || "Biometric unlock could not be updated. Try again.",
+        );
+      }
+    } catch {
+      setBiometricError(
+        ts.journalBiometricUpdateFailed || "Biometric unlock could not be updated. Try again.",
+      );
+    } finally {
+      setBiometricSubmitting(false);
     }
   };
 
@@ -223,8 +314,10 @@ export function JournalSettingsContent({
             ts.journalLockHint ||
             "This password protects only your diary. Make it memorable."
           }
+          backLabel={ts.journalBack || ts.back || "Back"}
+          disabled={setupSubmitting}
           onBack={() => {
-            setSetupError("");
+            clearSetupForm();
             onSectionChange("overview");
           }}
         >
@@ -239,6 +332,9 @@ export function JournalSettingsContent({
                 value={setupPassword}
                 onChange={(event) => setSetupPassword(event.target.value)}
                 autoComplete="new-password"
+                disabled={setupSubmitting}
+                aria-invalid={setupError ? true : undefined}
+                aria-describedby={setupError ? setupErrorId : undefined}
               />
             </div>
 
@@ -252,11 +348,14 @@ export function JournalSettingsContent({
                 value={setupConfirm}
                 onChange={(event) => setSetupConfirm(event.target.value)}
                 autoComplete="new-password"
+                disabled={setupSubmitting}
+                aria-invalid={setupError ? true : undefined}
+                aria-describedby={setupError ? setupErrorId : undefined}
               />
             </div>
 
             {setupError ? (
-              <p className="text-sm text-destructive">{setupError}</p>
+              <p id={setupErrorId} role="alert" className="text-sm text-destructive">{setupError}</p>
             ) : null}
 
             <div className="flex flex-wrap gap-2">
@@ -269,8 +368,9 @@ export function JournalSettingsContent({
               </button>
               <SettingsActionButton
                 label={ts.cancel || "Cancel"}
+                disabled={setupSubmitting}
                 onClick={() => {
-                  setSetupError("");
+                  clearSetupForm();
                   onSectionChange("overview");
                 }}
               />
@@ -290,8 +390,10 @@ export function JournalSettingsContent({
             ts.journalPasswordNewEnter ||
             "Update the password that protects your diary."
           }
+          backLabel={ts.journalBack || ts.back || "Back"}
+          disabled={changeSubmitting}
           onBack={() => {
-            setChangeError("");
+            clearChangeForm();
             onSectionChange("overview");
           }}
         >
@@ -306,6 +408,9 @@ export function JournalSettingsContent({
                 value={currentPassword}
                 onChange={(event) => setCurrentPassword(event.target.value)}
                 autoComplete="current-password"
+                disabled={changeSubmitting}
+                aria-invalid={changeError ? true : undefined}
+                aria-describedby={changeError ? changeErrorId : undefined}
               />
             </div>
 
@@ -319,6 +424,9 @@ export function JournalSettingsContent({
                 value={nextPassword}
                 onChange={(event) => setNextPassword(event.target.value)}
                 autoComplete="new-password"
+                disabled={changeSubmitting}
+                aria-invalid={changeError ? true : undefined}
+                aria-describedby={changeError ? changeErrorId : undefined}
               />
             </div>
 
@@ -332,11 +440,14 @@ export function JournalSettingsContent({
                 value={changeConfirm}
                 onChange={(event) => setChangeConfirm(event.target.value)}
                 autoComplete="new-password"
+                disabled={changeSubmitting}
+                aria-invalid={changeError ? true : undefined}
+                aria-describedby={changeError ? changeErrorId : undefined}
               />
             </div>
 
             {changeError ? (
-              <p className="text-sm text-destructive">{changeError}</p>
+              <p id={changeErrorId} role="alert" className="text-sm text-destructive">{changeError}</p>
             ) : null}
 
             <div className="flex flex-wrap gap-2">
@@ -349,8 +460,9 @@ export function JournalSettingsContent({
               </button>
               <SettingsActionButton
                 label={ts.cancel || "Cancel"}
+                disabled={changeSubmitting}
                 onClick={() => {
-                  setChangeError("");
+                  clearChangeForm();
                   onSectionChange("overview");
                 }}
               />
@@ -409,10 +521,17 @@ export function JournalSettingsContent({
             </div>
             <Switch
               checked={security.biometricEnabled}
-              onCheckedChange={security.setBiometricEnabled}
+              onCheckedChange={handleBiometricEnabledChange}
+              disabled={biometricSubmitting}
               aria-label={ts.journalBiometricEnable || "Biometric Unlock"}
+              aria-describedby={biometricError ? biometricErrorId : undefined}
             />
           </div>
+          {biometricError ? (
+            <p id={biometricErrorId} role="alert" className="mt-3 text-sm text-destructive">
+              {biometricError}
+            </p>
+          ) : null}
         </SectionCard>
       ) : null}
 

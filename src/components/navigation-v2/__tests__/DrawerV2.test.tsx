@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { DrawerV2 } from "../DrawerV2";
 import { useThemeStore } from "@/stores/themeStore";
 
+const languageMock = vi.hoisted(() => ({ isRTL: false }));
+
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
@@ -20,7 +22,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       themeDark: "Dark",
       themeLight: "Light",
     },
-    isRTL: false,
+    isRTL: languageMock.isRTL,
   }),
 }));
 
@@ -49,6 +51,7 @@ describe("DrawerV2", () => {
     useThemeStore.setState({ theme: "paper", appliedTheme: "paper" });
     document.documentElement.removeAttribute("data-theme-swap");
     document.documentElement.removeAttribute("data-theme-swap-mode");
+    languageMock.isRTL = false;
   });
 
   it("renders nothing when open=false", () => {
@@ -63,10 +66,7 @@ describe("DrawerV2", () => {
     expect(screen.getByTestId("drawer-v2")).toHaveAttribute("role", "dialog");
     expect(screen.getByTestId("drawer-v2")).toHaveAttribute("aria-modal", "true");
     expect(screen.getByTestId("drawer-v2")).toHaveAttribute("id", "nav-v2-drawer");
-    expect(screen.getByTestId("drawer-v2")).toHaveAttribute(
-      "data-theme-region",
-      "drawer-v2",
-    );
+    expect(screen.getByTestId("drawer-v2")).toHaveAttribute("data-theme-region", "drawer-v2");
     expect(screen.getAllByTestId("drawer-v2-mini-orb")).toHaveLength(1);
     expect(screen.queryByTestId("drawer-v2-classic-portal-orb")).not.toBeInTheDocument();
   });
@@ -110,10 +110,7 @@ describe("DrawerV2", () => {
       "data-active",
       "true"
     );
-    expect(screen.getByTestId("drawer-v2-destination-orb")).toHaveAttribute(
-      "data-active",
-      "false"
-    );
+    expect(screen.getByTestId("drawer-v2-destination-orb")).toHaveAttribute("data-active", "false");
     expect(screen.getByTestId("drawer-v2-destination-settings")).toBeInTheDocument();
   });
 
@@ -152,6 +149,9 @@ describe("DrawerV2", () => {
     expect(screen.getByTestId("drawer-v2-destination-settings")).toHaveAttribute(
       "data-active",
       "true"
+    );
+    expect(screen.getByTestId("drawer-v2-destination-settings").className).toContain(
+      "--settings-v2-accent"
     );
   });
 
@@ -218,6 +218,32 @@ describe("DrawerV2", () => {
     expect(habitsDestination).toHaveAttribute("data-navigating", "true");
     expect(screen.getByTestId("drawer-v2-destination-habits-progress")).toBeInTheDocument();
     expect(onPageChange).not.toHaveBeenCalled();
+  });
+
+  it("names drawer navigation progress and hides it from click when navigating", () => {
+    render(<DrawerV2 {...baseProps} activePage="orb" />);
+
+    const habitsDestination = screen.getByTestId("drawer-v2-destination-habits");
+    fireEvent.pointerDown(habitsDestination, { pointerType: "touch" });
+
+    expect(habitsDestination).toHaveAttribute("aria-busy", "true");
+    expect(habitsDestination).toHaveAccessibleName("Habits, loading");
+    expect(screen.getByTestId("drawer-v2-destination-habits-progress")).toBeInTheDocument();
+  });
+
+  it("mirrors drawer chevrons in RTL navigation", () => {
+    languageMock.isRTL = true;
+
+    render(<DrawerV2 {...baseProps} activePage="orb" />);
+
+    expect(screen.getByTestId("drawer-v2-destination-habits-chevron")).toHaveAttribute(
+      "class",
+      expect.stringContaining("rotate-180")
+    );
+    expect(screen.getByTestId("drawer-v2-destination-settings-chevron")).toHaveAttribute(
+      "class",
+      expect.stringContaining("rotate-180")
+    );
   });
 
   it("navigates from the mobile drawer primary destinations", () => {

@@ -13,6 +13,7 @@ import {
   getCleanAuthCallbackUrl,
   sanitizeAuthErrorMessage,
 } from "@/lib/authRedirect";
+import { persistJournalPasswordResetProofFromUrl } from "@/lib/journalPasswordResetHandoff";
 import { AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
 import { syncWithCloud, startAutoSync, stopAutoSync } from "@/storage/cloudSync";
 import { pullPreferences } from "@/storage/preferenceSync";
@@ -155,6 +156,7 @@ export function useAuthSession(isLoading: boolean): void {
 
       notifyAuthComplete();
       endAuthFlow();
+      persistJournalPasswordResetProofFromUrl(window.location.href);
       window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
     };
 

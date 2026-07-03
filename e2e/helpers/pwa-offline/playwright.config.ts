@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 const configDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(configDir, "../../..");
 const baseURL = "https://127.0.0.1:4181/people-first-app/";
+const skipBuild = process.env.ZENFLOW_PWA_OFFLINE_SKIP_BUILD === "true";
+const buildPrefix = skipBuild ? "" : "npm run build && ";
 
 export default defineConfig({
   testDir: repoRoot,
@@ -27,7 +29,7 @@ export default defineConfig({
     video: "off",
   },
   webServer: {
-    command: `cd ${repoRoot} && npm run build && node ${resolve(configDir, "serve-pwa-preview.mjs")}`,
+    command: `cd ${repoRoot} && ${buildPrefix}node ${resolve(configDir, "serve-pwa-preview.mjs")}`,
     ignoreHTTPSErrors: true,
     url: baseURL,
     reuseExistingServer: false,

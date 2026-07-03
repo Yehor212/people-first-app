@@ -858,7 +858,6 @@
     touch-action: manipulation; /* kill 300ms tap delay */
     scroll-padding-top: calc(var(--safe-top, 0px) + 1rem);
     scroll-padding-bottom: calc(var(--nav-height) + var(--safe-bottom, 0px) + 1rem);
-    scrollbar-gutter: stable; /* prevent layout shift when scrollbar appears/disappears on desktop */
   }
 
   body {
@@ -910,6 +909,12 @@
   body.zenflow-v2-edge-to-edge #root {
     min-height: var(--app-viewport-height);
     background: var(--v2-edge-bleed-background);
+  }
+
+  @media (min-width: 768px) {
+    html {
+      scrollbar-gutter: stable; /* prevent layout shift when scrollbar appears/disappears on desktop */
+    }
   }
 
   /* ===== Cross-platform tier-adaptive container widths ===== */
@@ -5757,15 +5762,15 @@ body.reduce-motion .diary-animated {
   isolation: isolate;
   overflow: hidden;
   background:
-    linear-gradient(180deg, hsl(var(--card) / 0.34), hsl(var(--background) / 0.16)),
-    linear-gradient(112deg, hsl(var(--zf-role-diary) / 0.07), transparent 34% 72%, hsl(var(--zf-role-rest) / 0.05)),
+    linear-gradient(180deg, hsl(var(--card) / 0.24), hsl(var(--background) / 0.10)),
+    linear-gradient(112deg, hsl(var(--zf-role-diary) / 0.10), transparent 34% 72%, hsl(var(--zf-role-rest) / 0.07)),
     repeating-linear-gradient(92deg, transparent 0 1.85rem, hsl(var(--foreground) / 0.022) 1.85rem 1.9rem, transparent 1.9rem 3.7rem);
-  background-color: hsl(var(--card) / 0.26);
+  background-color: hsl(var(--card) / 0.18);
   background-position: center;
   background-size: auto;
   background-blend-mode: normal, normal, multiply;
-  -webkit-backdrop-filter: blur(10px) saturate(1.04);
-  backdrop-filter: blur(10px) saturate(1.04);
+  -webkit-backdrop-filter: blur(8px) saturate(1.04);
+  backdrop-filter: blur(8px) saturate(1.04);
 }
 
 .journal-light-sidebar-panel::before,
@@ -5778,7 +5783,7 @@ body.reduce-motion .diary-animated {
   background:
     linear-gradient(90deg, hsl(var(--foreground) / 0.035), transparent 18% 82%, hsl(var(--foreground) / 0.028)),
     radial-gradient(ellipse 110% 48% at 50% 100%, hsl(var(--background) / 0.20), transparent 70%);
-  opacity: 0.62;
+  opacity: 0.42;
 }
 
 .journal-light-sidebar-panel > *,
@@ -5793,9 +5798,9 @@ body.reduce-motion .diary-animated {
 
 .journal-light-sidebar-rail {
   background:
-    linear-gradient(180deg, hsl(var(--card) / 0.36), hsl(var(--background) / 0.18)),
-    radial-gradient(ellipse 8rem 18rem at 50% 0%, hsl(var(--zf-role-diary) / 0.09), transparent 72%);
-  background-color: hsl(var(--card) / 0.28);
+    linear-gradient(180deg, hsl(var(--card) / 0.26), hsl(var(--background) / 0.12)),
+    radial-gradient(ellipse 8rem 18rem at 50% 0%, hsl(var(--zf-role-diary) / 0.11), transparent 72%);
+  background-color: hsl(var(--card) / 0.18);
 }
 
 @media (prefers-reduced-data: reduce) {

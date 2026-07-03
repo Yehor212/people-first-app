@@ -39,22 +39,21 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-      pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version-file: '.nvmrc'
           cache: npm
 
       - name: Install dependencies
-        # Use `npm install` (not `npm ci`) to tolerate Windows-vs-Linux
-        # optional-dep drift in package-lock.json (e.g. @emnapi/runtime).
-        # Mirrors deploy.yml install step.
-        run: npm install
+        # Mirrors deploy.yml install step so visual proof uses the same locked dependency graph.
+        run: npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -75,33 +74,73 @@ jobs:
         # auto-generate baselines and pass — that silently accepts whatever
         # the PR renders as "correct." Concrete industry anti-pattern
         # (Percy/Sauce 2026). Baselines MUST be committed locally via
-        # `npx playwright test e2e/design-system.spec.ts --update-snapshots`
+        # `npm run test:e2e:v2:visual -- --update-snapshots`
         # and pushed as part of the PR.
         run: |
           shopt -s nullglob
-          files=(e2e/design-system.spec.ts-snapshots/*.png e2e/design-system.spec.ts-snapshots/**/*.png)
-          if [ ${#files[@]} -eq 0 ]; then
+          design_files=(e2e/design-system.spec.ts-snapshots/*.png e2e/design-system.spec.ts-snapshots/**/*.png)
+          nav_files=(e2e/nav-v2.spec.ts-snapshots/*.png e2e/nav-v2.spec.ts-snapshots/**/*.png)
+          if [ ${#design_files[@]} -eq 0 ]; then
             echo "::error::No baseline PNGs found under e2e/design-system.spec.ts-snapshots/."
-            echo "::error::Run locally: npx playwright test e2e/design-system.spec.ts --update-snapshots"
+            echo "::error::Run locally: npm run test:e2e:v2:visual -- --update-snapshots"
             echo "::error::Then commit the generated PNGs. Do NOT rely on CI to auto-populate."
             exit 1
           fi
+          if [ ${#nav_files[@]} -eq 0 ]; then
+            echo "::error::No baseline PNGs found under e2e/nav-v2.spec.ts-snapshots/."
+            echo "::error::Run locally: npm run test:e2e:v2:visual -- --update-snapshots"
+            echo "::error::Then commit the generated PNGs. Do NOT rely on CI to auto-populate."
+            exit 1
+          fi
+          files=("${design_files[@]}" "${nav_files[@]}")
           echo "Found ${#files[@]} baseline PNG(s)."
 
-      - name: Run Playwright design-system visual tests
+      - name: Run Playwright V2 visual tests
         # Strict comparison; on legitimate baseline drift (e.g. mass Tailwind
         # class refactors like motion-safe: backfill), regenerate baselines
         # via a follow-up commit `chore(visual): refresh design-system baselines`.
         # Keep this as a hard gate so visual debt cannot be hidden behind a
         # successful workflow conclusion.
-        run: npx playwright test e2e/design-system.spec.ts
+        run: npm run test:e2e:v2:visual
         env:
           CI: "true"
           ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER: "true"
 
-      - name: Upload Playwright snapshots (always)
-        if: always()
-        uses: actions/upload-artifact@v7
+      - name: Scan visual artifacts before upload
+        id: visual_artifact_scan
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          paths=(
+            e2e/**/*-snapshots/**
+            e2e/**/test-results/**
+            test-results/**
+            playwright-report/**
+          )
+          existing=()
+          for path in "${paths[@]}"; do
+            if [ -e "$path" ]; then
+              existing+=("$path")
+            fi
+          done
+          if [ ${#existing[@]} -eq 0 ]; then
+            exit 0
+          fi
+          if find "${existing[@]}" -type f -name ".*" -print -quit | grep -q .; then
+            echo "::error title=Hidden visual artifact::Unexpected hidden file in visual artifacts."
+            find "${existing[@]}" -type f -name ".*" -print
+            exit 1
+          fi
+          if grep -R -I -n -E '(ghp_|github_pat_|sbp_|ctx7sk-|sk-[A-Za-z0-9_-]{20,}|Authorization:[[:space:]]*Bearer[[:space:]]+|access_token=|refresh_token=|BEGIN [A-Z ]*PRIVATE KEY)' "${existing[@]}"; then
+            echo "::error title=Sensitive visual artifact::Secret-like content detected before upload."
+            exit 1
+          fi
+
+      - name: Upload Playwright snapshots
+        if: ${{ !cancelled() && steps.visual_artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: visual-snapshots-${{ github.sha }}
           path: |

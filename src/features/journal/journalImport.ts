@@ -46,7 +46,46 @@ function validateEntry(entry: unknown): entry is JournalEntry {
     typeof e.id === "string" &&
     typeof e.date === "string" &&
     typeof e.content === "string" &&
-    typeof e.createdAt === "number"
+    typeof e.createdAt === "number" &&
+    Array.isArray(e.stickers) &&
+    e.stickers.every((item) => typeof item === "string") &&
+    Array.isArray(e.photoIds) &&
+    e.photoIds.every((item) => typeof item === "string") &&
+    Array.isArray(e.tags) &&
+    e.tags.every((item) => typeof item === "string") &&
+    (e.audioIds === undefined ||
+      (Array.isArray(e.audioIds) && e.audioIds.every((item) => typeof item === "string")))
+  );
+}
+
+function validatePhoto(photo: unknown): photo is JournalPhoto {
+  if (!photo || typeof photo !== "object") return false;
+  const p = photo as Record<string, unknown>;
+  return (
+    typeof p.id === "string" &&
+    typeof p.entryId === "string" &&
+    typeof p.data === "string" &&
+    typeof p.thumbnail === "string" &&
+    typeof p.width === "number" &&
+    typeof p.height === "number" &&
+    typeof p.createdAt === "number" &&
+    (p.storagePath === undefined || typeof p.storagePath === "string") &&
+    (p.storageUrl === undefined || typeof p.storageUrl === "string")
+  );
+}
+
+function validateAudio(audio: unknown): audio is JournalAudio {
+  if (!audio || typeof audio !== "object") return false;
+  const a = audio as Record<string, unknown>;
+  return (
+    typeof a.id === "string" &&
+    typeof a.entryId === "string" &&
+    typeof a.data === "string" &&
+    typeof a.duration === "number" &&
+    typeof a.mimeType === "string" &&
+    typeof a.createdAt === "number" &&
+    (a.storagePath === undefined || typeof a.storagePath === "string") &&
+    (a.storageUrl === undefined || typeof a.storageUrl === "string")
   );
 }
 
@@ -105,6 +144,7 @@ export async function importJournalBackup(
       // Get existing entry IDs for deduplication
       onProgress?.("Checking existing entries...");
       const existingIds = new Set((await db.journalEntries.toArray()).map((e) => e.id));
+      const importableEntryIds = new Set(existingIds);
 
       // Import entries
       onProgress?.("Importing entries...");
@@ -114,6 +154,8 @@ export async function importJournalBackup(
           result.errors.push(`Invalid entry: ${typeof entryId === "string" ? entryId : "unknown"}`);
           continue;
         }
+
+        importableEntryIds.add(entry.id);
 
         if (existingIds.has(entry.id)) {
           result.skipped++;
@@ -152,7 +194,8 @@ export async function importJournalBackup(
         const existingPhotoIds = new Set((await db.journalPhotos.toArray()).map((p) => p.id));
 
         for (const photo of backup.photos) {
-          if (!photo.id || existingPhotoIds.has(photo.id)) continue;
+          if (!validatePhoto(photo) || existingPhotoIds.has(photo.id)) continue;
+          if (!importableEntryIds.has(photo.entryId)) continue;
           try {
             const safePhoto: JournalPhoto = {
               ...photo,
@@ -173,7 +216,8 @@ export async function importJournalBackup(
         const existingAudioIds = new Set((await db.journalAudio.toArray()).map((a) => a.id));
 
         for (const audio of backup.audio) {
-          if (!audio.id || existingAudioIds.has(audio.id)) continue;
+          if (!validateAudio(audio) || existingAudioIds.has(audio.id)) continue;
+          if (!importableEntryIds.has(audio.entryId)) continue;
           try {
             const safeAudio: JournalAudio = {
               ...audio,

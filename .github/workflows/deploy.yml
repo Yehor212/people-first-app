@@ -23,8 +23,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: "pages"
@@ -39,7 +37,9 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
 
       - name: Validate Telegram-approved deploy target
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.telegram_approval == 'telegram-approved'
@@ -58,16 +58,16 @@ jobs:
           fi
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 24
           cache: npm
 
       - name: Install deps
-        run: npm install
+        run: npm ci
 
       - name: Security audit
-        run: npm audit --audit-level=critical
+        run: npm audit --audit-level=high
 
       - name: Lint
         run: npx eslint . --max-warnings=0
@@ -77,6 +77,9 @@ jobs:
 
       - name: Check i18n translations
         run: npm run i18n:check
+
+      - name: Check deep i18n audit
+        run: npm run i18n:deep
 
       - name: Check canonical orb visuals
         run: npm run check:canonical-orbs
@@ -105,6 +108,9 @@ jobs:
 
       - name: Run release unit tests
         run: npm run test:release -- --maxWorkers=2
+
+      - name: Run release workflow contract tests
+        run: npm run test:release-contracts
 
       - name: Run focused release coverage report
         continue-on-error: true
@@ -207,14 +213,28 @@ jobs:
           ZENFLOW_DIST_DIR: dist
         run: npm run check:sentry-artifacts
 
+      - name: Check final duplicate release artifacts
+        run: npm run check:release-artifacts
+
       # Phase 0-A: size-limit enforces JS+CSS budget ceilings (ratchet complements this with floor).
       # Use the local check instead of the PR comparison action: the action mutates the checkout while
       # comparing against main, which can make later release proof steps run against stale base files.
       - name: Size limit (bundle budgets)
         run: npm run check:size -- --json
 
+      - name: Stage Pages release artifact
+        run: npm run stage:release-artifacts
+
+      - name: Check staged Sentry public artifact
+        env:
+          ZENFLOW_DIST_DIR: output/pages-artifact.nosync
+        run: npm run check:sentry-artifacts
+
+      - name: Check staged release artifact integrity
+        run: npm run check:staged-release-artifacts
+
       - name: Cache Playwright browsers
-        uses: actions/cache@v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ hashFiles('package-lock.json') }}
@@ -229,27 +249,50 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          ZENFLOW_SYNC_TEST_EMAIL: ${{ secrets.ZENFLOW_SYNC_TEST_EMAIL }}
-          ZENFLOW_SYNC_TEST_PASSWORD: ${{ secrets.ZENFLOW_SYNC_TEST_PASSWORD }}
+          SYNC_TEST_EMAIL: ${{ secrets.ZENFLOW_SYNC_TEST_EMAIL }}
+          SYNC_TEST_PASSWORD: ${{ secrets.ZENFLOW_SYNC_TEST_PASSWORD }}
           ZENFLOW_TELEGRAM_SYNC_DRILL_OUTPUT: artifacts/telegram-sync-drill.json
-          ZENFLOW_SYNC_DRILL_URL: https://yehor212.github.io/people-first-app/settings?nav=v2&navLayout=phone&syncHealth=1
+          ZENFLOW_SYNC_DRILL_URL: http://127.0.0.1:4182/people-first-app/settings?nav=v2&navLayout=phone&syncHealth=1
         shell: bash
         run: |
+          set -euo pipefail
           mkdir -p artifacts
+          SYNC_TEST_EMAIL_VALUE="${SYNC_TEST_EMAIL:-}"
+          SYNC_TEST_PASSWORD_VALUE="${SYNC_TEST_PASSWORD:-}"
+          unset SYNC_TEST_EMAIL SYNC_TEST_PASSWORD ZENFLOW_SYNC_TEST_EMAIL ZENFLOW_SYNC_TEST_PASSWORD
+          npm run preview -- --host 127.0.0.1 --port 4182 --strictPort --outDir output/pages-artifact.nosync > artifacts/telegram-sync-drill-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..60}; do
+            if curl -fsS "http://127.0.0.1:4182/people-first-app/" > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
           {
-            echo "Public sync drill target: $ZENFLOW_SYNC_DRILL_URL"
-            curl -fsS "https://yehor212.github.io/people-first-app/" > /dev/null
+            echo "Staged sync drill target: $ZENFLOW_SYNC_DRILL_URL"
+            curl -fsS "http://127.0.0.1:4182/people-first-app/" > /dev/null
             curl -fsS "$ZENFLOW_SYNC_DRILL_URL" > /dev/null
-          } > artifacts/telegram-sync-drill-preview.log 2>&1
+          } >> artifacts/telegram-sync-drill-preview.log 2>&1
 
-          if [ -n "$ZENFLOW_SYNC_TEST_EMAIL" ] && [ -n "$ZENFLOW_SYNC_TEST_PASSWORD" ]; then
-            export ZENFLOW_TELEGRAM_SYNC_DRILL_REQUIRED=true
+          if [ -n "$SYNC_TEST_EMAIL_VALUE" ] && [ -n "$SYNC_TEST_PASSWORD_VALUE" ]; then
+            ZENFLOW_TELEGRAM_SYNC_DRILL_REQUIRED=true \
+            ZENFLOW_SYNC_TEST_EMAIL="$SYNC_TEST_EMAIL_VALUE" \
+            ZENFLOW_SYNC_TEST_PASSWORD="$SYNC_TEST_PASSWORD_VALUE" \
+              npm run smoke:telegram-sync-drill
+          else
+            npm run smoke:telegram-sync-drill
           fi
-          npm run smoke:telegram-sync-drill
+
+          if { [ -n "$SYNC_TEST_EMAIL_VALUE" ] && grep -R -F -q -- "$SYNC_TEST_EMAIL_VALUE" artifacts; } || \
+             { [ -n "$SYNC_TEST_PASSWORD_VALUE" ] && grep -R -F -q -- "$SYNC_TEST_PASSWORD_VALUE" artifacts; }; then
+            echo "Secret material leaked into uploaded sync drill artifacts."
+            exit 1
+          fi
 
       - name: Upload Telegram sync drill artifact
-        if: always() && steps.telegram-sync-drill.outcome != 'skipped'
-        uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() && steps.telegram-sync-drill.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: telegram-sync-drill
           path: |
@@ -270,6 +313,46 @@ jobs:
             echo "::warning::Visual regression baselines generated. Commit the snapshots directory to enable comparison."
           fi
 
+      - name: Run staged deploy smoke tests
+        timeout-minutes: 8
+        env:
+          ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER: true
+          ZENFLOW_PLAYWRIGHT_PREVIEW_DIR: output/pages-artifact.nosync
+          ZENFLOW_PLAYWRIGHT_LOCAL_PORT: 4181
+        run: npx playwright test e2e/deploy-smoke.spec.ts --project=chromium
+
+      - name: Run staged PWA offline tests
+        timeout-minutes: 10
+        env:
+          ZENFLOW_PWA_OFFLINE_PREVIEW_DIR: output/pages-artifact.nosync
+          ZENFLOW_PWA_OFFLINE_SKIP_BUILD: true
+        run: npm run test:e2e:v2:diary-pwa-offline -- --project=pwa-offline-chromium-phone
+
+      - name: Run staged PWA audio range tests
+        timeout-minutes: 10
+        env:
+          ZENFLOW_PWA_OFFLINE_PREVIEW_DIR: output/pages-artifact.nosync
+          ZENFLOW_PWA_OFFLINE_SKIP_BUILD: true
+        run: npm run test:e2e:v2:pwa-audio-range -- --project=pwa-offline-chromium-phone
+
+      - name: Run staged V2 Orb performance tests
+        timeout-minutes: 10
+        env:
+          CI: true
+          ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER: true
+          ZENFLOW_PLAYWRIGHT_PREVIEW_DIR: output/pages-artifact.nosync
+          ZENFLOW_PLAYWRIGHT_LOCAL_PORT: 4183
+        run: npx playwright test e2e/orb-user-flow-performance.spec.ts --project=chromium --workers=1 --retries=0
+
+      - name: Run staged V2 visual regression tests
+        timeout-minutes: 15
+        env:
+          CI: true
+          ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER: true
+          ZENFLOW_PLAYWRIGHT_PREVIEW_DIR: output/pages-artifact.nosync
+          ZENFLOW_PLAYWRIGHT_LOCAL_PORT: 4184
+        run: npm run test:e2e:v2:visual
+
       # Keep broad governance debt visible without blocking the static Pages release path.
       # The deploy-specific gates above still block on lint, typecheck, i18n, unit tests,
       # build, canonical orbs, sync contract, sync drill, and focused V1/V2 smoke coverage.
@@ -279,34 +362,36 @@ jobs:
 
       - name: Upload artifact
         if: github.event_name == 'push' || github.event.inputs.telegram_approval == 'telegram-approved'
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
-          path: dist
+          path: output/pages-artifact.nosync
+          include-hidden-files: true
           # Preserve hidden files such as .nojekyll so GitHub Pages serves the SPA fallback correctly.
           # We need .nojekyll to disable Jekyll on GH Pages so 404.html SPA fallback ships.
 
   android-gate:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 24
           cache: npm
 
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5
         with:
           distribution: temurin
           java-version: 21
 
       - name: Install deps
-        run: npm install
+        run: npm ci
 
       - name: Check Sentry readiness for Android web assets
         if: github.event_name != 'pull_request'
@@ -346,6 +431,9 @@ jobs:
       - name: Check Sentry public artifacts for Android web assets
         run: npm run check:sentry-artifacts
 
+      - name: Check duplicate release artifacts for Android web assets
+        run: npm run check:release-artifacts
+
       - name: Capacitor sync (generates cordova.variables.gradle)
         env:
           CAPACITOR_BUILD: "true"
@@ -353,6 +441,9 @@ jobs:
           npx cap sync android
           node scripts/capacitor-prune-assets.cjs
           node scripts/normalize-android-config.cjs
+
+      - name: Check Android synced duplicate release artifacts
+        run: npm run check:release-artifacts:android
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
@@ -370,7 +461,7 @@ jobs:
         run: cd android && ./gradlew lintDebug --console=plain
 
       - name: Upload Android lint report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: android-lint-report
           path: android/app/build/reports/lint-results-debug.html
@@ -380,16 +471,18 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 24
           cache: npm
 
       - name: Install deps
-        run: npm install
+        run: npm ci
 
       - name: Check Sentry readiness for iOS web assets
         if: github.event_name != 'pull_request'
@@ -429,6 +522,9 @@ jobs:
       - name: Check Sentry public artifacts for iOS web assets
         run: npm run check:sentry-artifacts
 
+      - name: Check duplicate release artifacts for iOS web assets
+        run: npm run check:release-artifacts
+
       - name: Capacitor sync iOS
         env:
           CAPACITOR_BUILD: "true"
@@ -438,6 +534,9 @@ jobs:
           node scripts/normalize-ios-config.cjs
           node scripts/normalize-ios-spm.cjs
 
+      - name: Check iOS synced duplicate release artifacts
+        run: npm run check:release-artifacts:ios
+
       - name: Resolve iOS packages
         run: xcodebuild -resolvePackageDependencies -project ios/App/App.xcodeproj -scheme App
 
@@ -446,8 +545,12 @@ jobs:
 
   deploy:
     if: github.event_name == 'push' || github.event.inputs.telegram_approval == 'telegram-approved'
-    needs: [build] # android-gate and ios-gate run in parallel; web deploy waits only for web release gates
+    needs: [build, android-gate, ios-gate]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     timeout-minutes: 15
     outputs:
       page_url: ${{ steps.deployment.outputs.page_url }}
@@ -457,7 +560,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5.0.0
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
         with:
           timeout: 600000 # 10 minutes (max allowed)
 
@@ -468,16 +571,18 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 24
           cache: npm
 
       - name: Install deps
-        run: npm install
+        run: npm ci
 
       - name: Smoke public auth providers
         env:

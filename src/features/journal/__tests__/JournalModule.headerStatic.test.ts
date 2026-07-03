@@ -83,7 +83,9 @@ describe("JournalModule V2 header", () => {
   it("makes the mobile diary settings sheet bounded, scrollable, and focus-owned", () => {
     expect(source).toContain("max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)]");
     expect(source).toContain("flex-col overflow-hidden");
-    expect(source).toContain("min-h-0 flex-1 overflow-y-auto overscroll-contain bg-card");
+    expect(source).toContain("journal-diary-glass-panel rounded-t-[28px]");
+    expect(source).toContain("min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pb-[max(1.25rem,var(--safe-bottom))]");
+    expect(source).toContain('showJournalSidebarAtmosphere ? "bg-transparent" : "bg-card"');
     expect(source).toContain("const mobileSettingsPanelRef = useRef<HTMLDivElement | null>(null)");
     expect(source).toContain("const mobileSettingsCloseRef = useRef<HTMLButtonElement>(null)");
     expect(source).toContain("ref={mobileSettingsPanelRef}");
@@ -162,6 +164,23 @@ describe("JournalModule V2 header", () => {
     expect(source).toContain("compact");
     expect(source).toContain("showFab={false}");
     expect(source).toContain("showSpaces={false}");
+  });
+
+  it("keeps desktop-only journal security affordances honest", () => {
+    expect(source).toContain('import { IS_DESKTOP_RUNTIME } from "@/lib/env"');
+    expect(source).toContain("const isEmailLockRemovalAvailable = !IS_DESKTOP_RUNTIME");
+    expect(source).toContain("const canOfferEmailLockRemoval = isEmailLockRemovalAvailable && !emailLockRemovalBlocked");
+    expect(source).toContain("onForgotPassword={canOfferEmailLockRemoval ? handleForgotPassword : undefined}");
+    expect(source).toContain("emailLockRemovalAvailable={canOfferEmailLockRemoval}");
+    expect(source).toContain("hasEncryptedJournalContent()");
+    expect(source).toContain("hasEncryptedJournalMedia()");
+
+    const desktopSettingsBlock = /data-testid="journal-settings-panel"[\s\S]*?<LazyJournalSettingsContent[\s\S]*?onRequestRemovePassword=\{\(\) => setShowRemovePasswordConfirm\(true\)\}/.exec(
+      source,
+    )?.[0] ?? "";
+    expect(desktopSettingsBlock).toContain("if (!isDiaryDesktopLayout)");
+    expect(desktopSettingsBlock).toContain("closeSettings(false)");
+    expect(desktopSettingsBlock).toContain("setShowExportPicker(true)");
   });
 
   it("keeps a diary-only sidebar drawer on phone layouts", () => {

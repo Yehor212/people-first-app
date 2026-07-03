@@ -122,6 +122,7 @@ export const DrawerV2 = memo(function DrawerV2({
     { id: "planning", icon: V2_NAV_ICONS.planning, label: tx.navV2Planning },
   ];
   const settingsLabel = tx.navV2Settings;
+  const loadingLabel = tx.loading || "loading";
   const isSettingsActive = activePage === "settings";
   const isSettingsNavigating = navigatingPage === "settings";
   const isSettingsSelected = isSettingsActive || isSettingsNavigating;
@@ -194,6 +195,7 @@ export const DrawerV2 = memo(function DrawerV2({
         </header>
 
         <nav
+          role="navigation"
           className="min-h-0 flex-1 overflow-y-auto px-3 py-4"
           aria-label={tx.navV2PrimaryNav || tx.mainNavigation || "Primary navigation"}
           data-testid="drawer-v2-primary-nav"
@@ -210,6 +212,8 @@ export const DrawerV2 = memo(function DrawerV2({
                   key={item.id}
                   type="button"
                   aria-current={isActive ? "page" : undefined}
+                  aria-label={isNavigating ? item.label + ", " + loadingLabel : item.label}
+                  aria-busy={isNavigating ? "true" : undefined}
                   data-active={isActive ? "true" : "false"}
                   data-navigating={isNavigating ? "true" : "false"}
                   data-visual-role={visualRole}
@@ -281,9 +285,11 @@ export const DrawerV2 = memo(function DrawerV2({
                     <ChevronRight
                       className={cn(
                         "relative h-4 w-4 shrink-0 opacity-35",
-                        isActive && "opacity-65"
+                        isActive && "opacity-65",
+                        isRTL && "rotate-180"
                       )}
                       aria-hidden="true"
+                      data-testid={"drawer-v2-destination-" + item.id + "-chevron"}
                     />
                   )}
                 </button>
@@ -293,6 +299,7 @@ export const DrawerV2 = memo(function DrawerV2({
         </nav>
 
         <nav
+          role="navigation"
           className="border-t border-[hsl(var(--nav-v2-drawer-divider)/0.42)] px-3 pb-[calc(var(--safe-bottom)+0.75rem)] pt-3"
           aria-label={settingsLabel}
           data-testid="drawer-v2-bottom-nav"
@@ -306,6 +313,8 @@ export const DrawerV2 = memo(function DrawerV2({
           <button
             type="button"
             aria-current={isSettingsActive ? "page" : undefined}
+            aria-label={isSettingsNavigating ? settingsLabel + ", " + loadingLabel : settingsLabel}
+            aria-busy={isSettingsNavigating ? "true" : undefined}
             data-active={isSettingsActive ? "true" : "false"}
             data-navigating={isSettingsNavigating ? "true" : "false"}
             data-visual-role="settings"
@@ -328,8 +337,7 @@ export const DrawerV2 = memo(function DrawerV2({
               "motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-300 motion-safe:ease-out",
               "active:scale-[0.992]",
               isSettingsSelected
-                ? getRoleTone("settings").activeSurfaceClass +
-                    " text-[hsl(var(--nav-v2-drawer-text))]"
+                ? "border-[hsl(var(--settings-v2-accent)/0.62)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-[hsl(var(--nav-v2-drawer-text))] shadow-[inset_0_0_0_1px_hsl(var(--settings-v2-accent)/0.18)]"
                 : "border-[hsl(var(--nav-v2-drawer-border)/0.20)] bg-[hsl(var(--nav-v2-item-surface)/0.52)] text-[hsl(var(--nav-v2-drawer-muted))] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] active:bg-[hsl(var(--nav-v2-item-hover))] " +
                     getRoleTone("settings").borderClass
             )}
@@ -339,7 +347,7 @@ export const DrawerV2 = memo(function DrawerV2({
               className={cn(
                 "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ring-1",
                 isSettingsSelected
-                  ? getRoleTone("settings").iconClass + " " + getRoleTone("settings").ringClass
+                  ? "bg-[hsl(var(--settings-v2-accent)/0.18)] text-[hsl(var(--settings-v2-accent))] ring-[hsl(var(--settings-v2-accent)/0.42)]"
                   : "bg-[hsl(var(--nav-v2-icon-surface)/0.76)] text-[hsl(var(--nav-v2-icon-muted))] ring-[hsl(var(--nav-v2-drawer-border)/0.22)] group-hover:text-[hsl(var(--nav-v2-drawer-text))]"
               )}
             >
@@ -353,7 +361,11 @@ export const DrawerV2 = memo(function DrawerV2({
                 data-testid="drawer-v2-destination-settings-progress"
               />
             ) : (
-              <ChevronRight className="h-4 w-4 shrink-0 opacity-40" aria-hidden="true" />
+              <ChevronRight
+                className={cn("h-4 w-4 shrink-0 opacity-40", isRTL && "rotate-180")}
+                aria-hidden="true"
+                data-testid="drawer-v2-destination-settings-chevron"
+              />
             )}
           </button>
         </nav>

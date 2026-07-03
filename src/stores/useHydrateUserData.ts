@@ -147,7 +147,7 @@ export function useHydrateUserData(): void {
   const [privacy, setPrivacy, isLoadingPrivacy] = useIndexedDB<PrivacySettings>({
     table: db.settings,
     localStorageKey: "zenflow-privacy",
-    initialValue: { noTracking: false, analytics: false, consentShown: false },
+    initialValue: { noTracking: false, analytics: false, consentShown: false, pushNotifications: false },
     idField: "key",
     objectSchema: privacySettingsSchema,
   });

@@ -225,6 +225,16 @@ describe('checkAppVersion', () => {
     expect(result).toBe(false);
   });
 
+  it('bounds version fetches so resume checks cannot hang the app', () => {
+    const source = readFileSync('src/lib/versionCheck.ts', 'utf8');
+
+    expect(source).toContain('VERSION_CHECK_TIMEOUT_MS');
+    expect(source).toContain('new AbortController()');
+    expect(source).toContain('signal: controller.signal');
+    expect(source).toContain('window.setTimeout(() => controller.abort(), VERSION_CHECK_TIMEOUT_MS)');
+    expect(source).toContain('window.clearTimeout(timeoutId)');
+  });
+
   it('returns true on fetch error (network failure)', async () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error('Network error'));
     vi.stubGlobal('fetch', fetchMock);

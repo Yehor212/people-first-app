@@ -189,12 +189,22 @@ function validateNoAiTemplatesPolicy(options = {}) {
   const driftWorkflow = readText(rootDir, ".github/workflows/drift-checks.yml", failures);
   const agentContext = readText(rootDir, "scripts/check-agent-context.mjs", failures);
   const testFile = readText(rootDir, "scripts/__tests__/no-ai-templates-policy.test.ts", failures);
+  const hookTestFile = readText(rootDir, "scripts/__tests__/no-ai-template-hook.test.ts", failures);
+  const codexHooks = readText(rootDir, ".codex/hooks.json", failures);
+  const noAiHook = readText(rootDir, ".codex/hooks/no-ai-template-gate.cjs", failures);
 
   requireIncludes("AGENTS.md", agents, [
     "No AI Templates Agent Gate",
     "docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md",
     "npm run check:no-ai-templates",
     "ИИ шаблоны",
+    "ZenFlow Idea Quality Gate",
+    "Do not answer brainstorming requests with standalone feature-name lists",
+    "Best-Practices-Only Proposal Gate",
+    "Do not present recommendations as best practices",
+    "SubagentStart",
+    "SubagentStop",
+    "subagent proof laundering",
   ], failures);
 
   requireIncludes("docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md", policy, [
@@ -204,13 +214,28 @@ function validateNoAiTemplatesPolicy(options = {}) {
     "Enforcement Layers",
     "An AI template is any output that looks generated first and ZenFlow-specific second.",
     "Templates, starter snippets, component examples, and generated drafts are allowed only as private scaffolding.",
+    "ZenFlow Idea Quality Gate",
+    "Feature-name lists are not product ideas",
+    "user failure mode",
+    "local ZenFlow evidence",
+    "acceptance or kill criteria",
+    "Best-Practices-Only Proposal Gate",
+    "best-practices laundering",
+    "source-backed applicability",
+    "tradeoffs and rejection criteria",
+    "verification path",
     "npm run check:no-ai-templates",
     "npm run check:agent-context",
     "https://www.nist.gov/itl/ai-risk-management-framework",
     "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+    "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html",
     "https://developers.openai.com/codex/guides/agents-md",
+    "https://developers.openai.com/codex/hooks",
+    "https://developers.openai.com/codex/subagents",
+    "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
     "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches",
     "https://google.github.io/eng-practices/review/developer/small-cls.html",
+    "https://pair.withgoogle.com/chapter/user-needs/",
     "UNVERIFIED",
   ], failures);
   requirePattern(
@@ -227,6 +252,25 @@ function validateNoAiTemplatesPolicy(options = {}) {
     /subagent/i,
     failures,
   );
+
+  requireIncludes(".codex/hooks.json", codexHooks, [
+    "UserPromptSubmit",
+    "Stop",
+    "SubagentStart",
+    "SubagentStop",
+    "no-ai-template-gate.cjs",
+  ], failures);
+
+  requireIncludes(".codex/hooks/no-ai-template-gate.cjs", noAiHook, [
+    "NO AI TEMPLATE GATE",
+    "SUBAGENT EVIDENCE CONTRACT",
+    "Best-Practices-Only Proposal Gate",
+    "best-practices laundering",
+    "subagent proof laundering",
+    "source-backed applicability",
+    "SubagentStop",
+    "process.exit(2)",
+  ], failures);
 
   requireIncludes(".github/PULL_REQUEST_TEMPLATE.md", prTemplate, [
     "No AI-template output",
@@ -250,6 +294,19 @@ function validateNoAiTemplatesPolicy(options = {}) {
     "Source Evidence",
     "No AI-template output",
     "rejects obvious AI-template markers",
+    "ZenFlow Idea Quality Gate",
+    "Best-Practices-Only Proposal Gate",
+  ], failures);
+
+  requireIncludes("scripts/__tests__/no-ai-template-hook.test.ts", hookTestFile, [
+    "no-ai-template-gate.cjs",
+    "UserPromptSubmit",
+    "Stop",
+    "SubagentStart",
+    "SubagentStop",
+    "SUBAGENT EVIDENCE CONTRACT",
+    "subagent proof laundering",
+    "best-practices laundering",
   ], failures);
 
   let packageJson = null;
@@ -301,7 +358,7 @@ function main() {
     return;
   }
 
-  console.log("[no-ai-templates] PASS - policy, AGENTS.md, PR review, drift CI, agent-context, package wiring, and obvious template markers verified.");
+  console.log("[no-ai-templates] PASS - policy, Codex main/subagent hook, AGENTS.md, PR review, drift CI, agent-context, package wiring, and obvious template markers verified.");
 }
 
 if (require.main === module) {

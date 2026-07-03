@@ -40,6 +40,12 @@ import {
   storageSetRaw,
   storageRemove,
 } from '@/lib/safeJson';
+import {
+  DEFAULT_THEME_CUSTOMIZATION,
+  applyThemeCustomizationToDOM,
+  normalizeThemeCustomization,
+  type ThemeCustomization,
+} from './themeCustomization';
 
 export type ThemePreference = 'paper' | 'ink' | 'oled' | 'auto';
 export type AppliedTheme = 'paper' | 'ink' | 'oled';
@@ -49,8 +55,22 @@ export interface ThemeStore {
   theme: ThemePreference;
   /** Resolved value that is actually active on the DOM — never 'auto' */
   appliedTheme: AppliedTheme;
+  /** Safe local visual customization layered on the resolved theme. */
+  themeCustomization: ThemeCustomization;
+  /** Previous committed customization, used for one-step undo. */
+  previousThemeCustomization: ThemeCustomization | null;
   /** Set the user preference (and immediately apply to DOM). */
   setTheme: (theme: ThemePreference) => void;
+  /** Apply and persist a validated customization. */
+  setThemeCustomization: (customization: ThemeCustomization) => void;
+  /** Preview a validated customization without persisting it. */
+  previewThemeCustomization: (customization: ThemeCustomization) => void;
+  /** Return DOM preview to the currently persisted customization. */
+  cancelThemeCustomizationPreview: () => void;
+  /** Reset customization to the ZenFlow default. */
+  resetThemeCustomization: () => void;
+  /** Restore the previous committed customization when available. */
+  undoThemeCustomization: () => void;
   /** Internal — re-evaluate applied theme from current preference + OS state. */
   _resolve: () => void;
 }
@@ -60,6 +80,7 @@ const STORAGE_KEY = 'zenflow:theme-v0c';
 interface PersistedThemePayload {
   state?: {
     theme?: ThemePreference;
+    themeCustomization?: unknown;
   };
 }
 
@@ -67,15 +88,20 @@ function isThemePreference(value: unknown): value is ThemePreference {
   return value === 'paper' || value === 'ink' || value === 'oled' || value === 'auto';
 }
 
-function readInitialThemePreference(): ThemePreference {
-  if (typeof window === 'undefined') return 'auto';
+function readPersistedThemePayload(): PersistedThemePayload | null {
+  if (typeof window === 'undefined') return null;
+  return safeJsonParse<PersistedThemePayload | null>(storageGetRaw(STORAGE_KEY, ''), null);
+}
 
-  const persisted = safeJsonParse<PersistedThemePayload | null>(
-    storageGetRaw(STORAGE_KEY, ''),
-    null,
-  );
-  const theme = persisted?.state?.theme;
+function readInitialThemePreference(payload: PersistedThemePayload | null): ThemePreference {
+  const theme = payload?.state?.theme;
   return isThemePreference(theme) ? theme : 'auto';
+}
+
+function readInitialThemeCustomization(
+  payload: PersistedThemePayload | null,
+): ThemeCustomization {
+  return normalizeThemeCustomization(payload?.state?.themeCustomization);
 }
 
 /** Pure: resolve user preference to an applied theme, consulting the OS
@@ -94,29 +120,62 @@ function resolvePreference(pref: ThemePreference): AppliedTheme {
 
 /** Side effect: write `data-theme` attribute on the <html> element. Safe to
  *  call in tests — no-op when `document` unavailable. */
-function applyToDOM(applied: AppliedTheme): void {
+function applyToDOM(applied: AppliedTheme, customization: ThemeCustomization): void {
   if (typeof document === 'undefined') return;
   document.documentElement.dataset.theme = applied;
+  applyThemeCustomizationToDOM(applied, customization);
 }
 
-const initialTheme = readInitialThemePreference();
+const initialPayload = readPersistedThemePayload();
+const initialTheme = readInitialThemePreference(initialPayload);
+const initialCustomization = readInitialThemeCustomization(initialPayload);
 const initialAppliedTheme = resolvePreference(initialTheme);
-applyToDOM(initialAppliedTheme);
+applyToDOM(initialAppliedTheme, initialCustomization);
 
 export const useThemeStore = create<ThemeStore>()(
   persist(
     (set, get) => ({
       theme: initialTheme,
       appliedTheme: initialAppliedTheme,
+      themeCustomization: initialCustomization,
+      previousThemeCustomization: null,
       setTheme: (theme) => {
         const applied = resolvePreference(theme);
-        applyToDOM(applied);
+        applyToDOM(applied, get().themeCustomization);
         set({ theme, appliedTheme: applied });
+      },
+      setThemeCustomization: (customization) => {
+        const nextCustomization = normalizeThemeCustomization(customization);
+        const previousThemeCustomization = get().themeCustomization;
+        applyToDOM(get().appliedTheme, nextCustomization);
+        set({ themeCustomization: nextCustomization, previousThemeCustomization });
+      },
+      previewThemeCustomization: (customization) => {
+        applyThemeCustomizationToDOM(
+          get().appliedTheme,
+          normalizeThemeCustomization(customization),
+        );
+      },
+      cancelThemeCustomizationPreview: () => {
+        applyThemeCustomizationToDOM(get().appliedTheme, get().themeCustomization);
+      },
+      resetThemeCustomization: () => {
+        const previousThemeCustomization = get().themeCustomization;
+        const themeCustomization = { ...DEFAULT_THEME_CUSTOMIZATION };
+        applyToDOM(get().appliedTheme, themeCustomization);
+        set({ themeCustomization, previousThemeCustomization });
+      },
+      undoThemeCustomization: () => {
+        const previous = get().previousThemeCustomization;
+        if (!previous) return;
+        const current = get().themeCustomization;
+        applyToDOM(get().appliedTheme, previous);
+        set({ themeCustomization: previous, previousThemeCustomization: current });
       },
       _resolve: () => {
         const applied = resolvePreference(get().theme);
+        applyToDOM(applied, get().themeCustomization);
         if (applied !== get().appliedTheme) {
-          applyToDOM(applied);
           set({ appliedTheme: applied });
         }
       },
@@ -130,13 +189,21 @@ export const useThemeStore = create<ThemeStore>()(
         setItem: (key, value) => storageSetRaw(key, value),
         removeItem: (key) => storageRemove(key),
       })),
-      // Only persist the user preference — appliedTheme re-derives on hydrate
-      partialize: (state) => ({ theme: state.theme }),
+      // Persist the user preference and local-only customization; appliedTheme re-derives.
+      partialize: (state) => ({
+        theme: state.theme,
+        themeCustomization: state.themeCustomization,
+      }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        const applied = resolvePreference(state.theme);
-        applyToDOM(applied);
+        const theme = isThemePreference(state.theme) ? state.theme : 'auto';
+        const applied = resolvePreference(theme);
+        const themeCustomization = normalizeThemeCustomization(state.themeCustomization);
+        applyToDOM(applied, themeCustomization);
+        state.theme = theme;
         state.appliedTheme = applied;
+        state.themeCustomization = themeCustomization;
+        state.previousThemeCustomization = null;
       },
     },
   ),

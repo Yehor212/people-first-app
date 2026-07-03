@@ -1,7 +1,8 @@
 import { forwardRef, type CSSProperties, type ReactNode } from "react";
-import { ChevronDown, SlidersHorizontal, type LucideIcon } from "lucide-react";
+import { ChevronRight, SlidersHorizontal, type LucideIcon } from "lucide-react";
 import { ThemeToggleV2 } from "@/components/navigation-v2/ThemeToggleV2";
-import { getRoleTone, type NonOrbVisualRole } from "@/lib/nonOrbVisualRoles";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import type { NonOrbVisualRole } from "@/lib/nonOrbVisualRoles";
 import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
 import { cn } from "@/lib/utils";
 import type { V2SettingsSectionId } from "../types";
@@ -50,7 +51,7 @@ export const SettingsPageShell = forwardRef<HTMLElement, SettingsPageShellProps>
         id="main-content-v2"
         role="main"
         tabIndex={-1}
-        className="v2-fullscreen-page v2-readable-page v2-readable-page--standard mx-auto flex min-h-[var(--app-viewport-height)] max-w-3xl flex-col gap-4 px-4 pt-[calc(var(--safe-top)+1.5rem)] pb-[calc(var(--safe-bottom)+1.5rem)] outline-none md:px-6 md:pt-[calc(var(--safe-top)+2.5rem)] md:pb-[calc(var(--safe-bottom)+2.5rem)]"
+        className="v2-fullscreen-page v2-readable-page v2-readable-page--standard mx-auto grid min-h-[var(--app-viewport-height)] w-full max-w-6xl grid-cols-1 content-start gap-3 px-4 pt-[calc(var(--safe-top)+4.75rem)] pb-[calc(var(--safe-bottom)+1.25rem)] outline-none sm:pt-[calc(var(--safe-top)+4.25rem)] md:px-6 md:pt-[calc(var(--safe-top)+2rem)] md:pb-[calc(var(--safe-bottom)+2rem)] lg:gap-4"
         aria-labelledby={labelledBy}
         data-testid="settings-page"
         data-v2-readable-page="settings"
@@ -65,50 +66,43 @@ export const SettingsPageShell = forwardRef<HTMLElement, SettingsPageShellProps>
 
 export function SettingsHeroCard({ title, lead, themeTitle, themeLabel }: SettingsHeroCardProps) {
   const SettingsIcon = V2_NAV_ICONS.settings;
-  const settingsTone = getRoleTone("settings");
 
   return (
     <section
-      className="relative overflow-hidden rounded-[1.75rem] border border-[hsl(var(--zf-role-settings)/0.24)] bg-[linear-gradient(145deg,hsl(var(--card)/0.92),hsl(var(--surface-elevated)/0.88)_52%,hsl(var(--zf-role-space)/0.08))] p-4 shadow-[var(--zen-shadow-soft)] backdrop-blur-xl md:p-5"
+      className="relative grid min-w-0 gap-3 rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.52)] bg-[hsl(var(--settings-v2-card)/0.92)] p-3 shadow-[var(--zen-shadow-card)] md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:p-4"
       data-testid="settings-page-control-card"
     >
-      <div className="relative flex items-start gap-3">
-        <span
-          className={cn(
-            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border shadow-sm",
-            settingsTone.iconClass
-          )}
-        >
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-panel)/0.72)] text-[hsl(var(--settings-v2-accent))]">
           <SettingsIcon className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--zf-role-settings)/0.76)]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             ZENFLOW
           </p>
           <h1
             id="settings-page-heading"
-            className="mt-1 font-display text-3xl font-semibold tracking-tight text-foreground"
+            className="mt-0.5 font-display text-2xl font-semibold tracking-normal text-foreground md:text-3xl"
           >
             {title}
           </h1>
-          <p className="mt-2 max-w-xl font-body text-sm leading-relaxed text-foreground/80 drop-shadow-[0_1px_6px_hsl(var(--background)/0.64)]">
+          <p className="mt-1 max-w-2xl font-body text-sm leading-relaxed text-muted-foreground">
             {lead}
           </p>
         </div>
       </div>
 
-      <div className="relative mt-4 flex min-h-[64px] items-center justify-between gap-3 rounded-2xl border-t border-[hsl(var(--border)/0.42)] bg-[hsl(var(--background)/0.24)] px-3 py-2 backdrop-blur-sm">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[hsl(var(--zf-role-mind)/0.12)] text-[hsl(var(--zf-role-mind))]">
-            <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
+      <div
+        className="flex min-h-[52px] min-w-0 items-center justify-between gap-3 rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.44)] bg-[hsl(var(--settings-v2-shell)/0.56)] px-3 py-2"
+        data-testid="settings-theme-strip"
+      >
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[hsl(var(--settings-v2-accent)/0.12)] text-[hsl(var(--settings-v2-accent))]">
+            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
           </span>
           <span className="min-w-0">
-            <span className="block text-sm font-semibold text-foreground drop-shadow-[0_1px_8px_hsl(var(--background)/0.72)]">
-              {themeTitle}
-            </span>
-            <span className="block truncate text-xs text-muted-foreground drop-shadow-[0_1px_8px_hsl(var(--background)/0.72)]">
-              {themeLabel}
-            </span>
+            <span className="block truncate text-sm font-semibold text-foreground">{themeTitle}</span>
+            <span className="block truncate text-xs text-muted-foreground">{themeLabel}</span>
           </span>
         </div>
         <ThemeToggleV2 collapsed presentation="settings-card" testId="settings-v2-theme-toggle" />
@@ -125,10 +119,19 @@ export function SettingsModuleList({
   label,
   renderPanel,
 }: SettingsModuleListProps) {
-  return (
-    <section aria-label={label} className="grid min-w-0 gap-3" data-testid="settings-module-list">
+  const activeItem = controlsWired
+    ? items.find((item) => item.id === expandedId) ?? items[0]
+    : null;
+  const activePanelId = activeItem ? `settings-module-panel-${activeItem.id}` : undefined;
+  const activeButtonId = activeItem ? `settings-module-card-${activeItem.id}` : undefined;
+  const isDesktopWorkspace = useMediaQuery("(min-width: 1024px)");
+  const moduleList = (
+    <div
+      className="order-2 grid min-w-0 gap-2 lg:order-1 lg:sticky lg:top-[calc(var(--safe-top)+1rem)]"
+      data-testid="settings-module-list"
+    >
       {items.map((item) => {
-        const expanded = expandedId === item.id;
+        const expanded = activeItem?.id === item.id;
         const panelId = `settings-module-panel-${item.id}`;
         const buttonId = `settings-module-card-${item.id}`;
 
@@ -141,21 +144,57 @@ export function SettingsModuleList({
             buttonId={buttonId}
             panelId={panelId}
             onOpen={onOpen}
-          >
-            {expanded && controlsWired ? (
-              <div
-                id={panelId}
-                role="region"
-                aria-labelledby={buttonId}
-                className="mt-3 min-w-0 rounded-3xl border border-[hsl(var(--border)/0.52)] bg-[hsl(var(--background)/0.34)] p-2 shadow-inner md:p-3"
-                data-testid={`settings-module-panel-${item.id}`}
-              >
-                {renderPanel(item)}
-              </div>
-            ) : null}
-          </SettingsModuleCard>
+          />
         );
       })}
+    </div>
+  );
+  const selectedPanel = activeItem && activePanelId && activeButtonId ? (
+    <section
+      className="order-1 min-w-0 lg:order-2"
+      data-testid="settings-selected-panel"
+      data-selected-section={activeItem.id}
+    >
+      <div
+        id={activePanelId}
+        role="region"
+        aria-labelledby={activeButtonId}
+        className="grid min-w-0 scroll-mt-[calc(var(--safe-top)+5.75rem)] gap-3 sm:scroll-mt-[calc(var(--safe-top)+5rem)] lg:scroll-mt-[calc(var(--safe-top)+1rem)]"
+        data-testid={activePanelId}
+      >
+        <div
+          id="settings-v2-control-deck"
+          className="grid min-w-0 gap-3"
+          data-testid="settings-page-control-deck"
+          data-selected-section={activeItem.id}
+        >
+          {renderPanel(activeItem)}
+        </div>
+      </div>
+    </section>
+  ) : null;
+
+  return (
+    <section
+      aria-label={label}
+      className={cn(
+        "grid min-w-0 gap-3",
+        controlsWired && "lg:grid-cols-[minmax(15rem,19rem)_minmax(0,1fr)] lg:items-start"
+      )}
+      data-testid="settings-page-workspace"
+      data-layout="control-surface"
+    >
+      {isDesktopWorkspace ? (
+        <>
+          {moduleList}
+          {selectedPanel}
+        </>
+      ) : (
+        <>
+          {selectedPanel}
+          {moduleList}
+        </>
+      )}
     </section>
   );
 }
@@ -167,7 +206,6 @@ function SettingsModuleCard({
   buttonId,
   panelId,
   onOpen,
-  children,
 }: {
   item: SettingsModuleCardData;
   expanded: boolean;
@@ -175,84 +213,85 @@ function SettingsModuleCard({
   buttonId: string;
   panelId: string;
   onOpen: (sectionId: V2SettingsSectionId) => void;
-  children: ReactNode;
 }) {
-  const tone = getRoleTone(item.role);
   const Icon = item.icon;
 
   return (
     <article
       className={cn(
-        "relative min-w-0 overflow-hidden rounded-3xl border bg-[hsl(var(--card)/0.76)] p-3 shadow-[var(--zen-shadow-card)]",
+        "relative min-w-0 overflow-hidden rounded-[8px] border bg-[hsl(var(--settings-v2-card)/0.76)] shadow-[var(--zen-shadow-card)]",
         "motion-safe:transition-[border-color,background-color,box-shadow] motion-safe:duration-200",
         expanded
-          ? "border-[hsl(var(--zf-role-settings)/0.52)] bg-[hsl(var(--card)/0.9)] shadow-[0_18px_46px_-28px_hsl(var(--zf-role-settings)/0.82)]"
-          : tone.borderClass
+          ? "border-[hsl(var(--settings-v2-accent)/0.55)] bg-[hsl(var(--settings-v2-panel)/0.78)] shadow-[0_14px_36px_-28px_hsl(var(--settings-v2-shadow)/0.56)]"
+          : "border-[hsl(var(--settings-v2-border)/0.4)]"
       )}
       data-visual-role={item.role}
       data-testid={`settings-module-${item.id}`}
     >
-      <span
-        aria-hidden="true"
-        className={cn("absolute inset-x-5 top-0 h-[2px] rounded-b-full", tone.railClass)}
-      />
+      {expanded ? (
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-2 start-0 w-1 rounded-e-full bg-[hsl(var(--settings-v2-accent)/0.84)]"
+        />
+      ) : null}
       <button
         id={buttonId}
         type="button"
         onClick={() => onOpen(item.id)}
+        disabled={!controlsWired}
         className={cn(
-          "relative flex min-h-[96px] w-full min-w-0 items-start gap-3 rounded-[1.35rem] p-3 text-start",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-settings)/0.52)] focus-visible:ring-offset-2",
-          "motion-safe:transition-[transform,background-color] motion-safe:duration-200 hover:-translate-y-0.5 hover:bg-[hsl(var(--card)/0.72)]"
+          "relative flex min-h-[72px] w-full min-w-0 items-start gap-3 rounded-[8px] p-3 text-start",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.65)] focus-visible:ring-offset-2",
+          "motion-safe:transition-[background-color,color] motion-safe:duration-200 hover:bg-[hsl(var(--settings-v2-panel)/0.72)] disabled:cursor-default disabled:hover:bg-transparent"
         )}
         data-testid={`settings-module-card-${item.id}`}
-        aria-expanded={expanded}
-        aria-controls={panelId}
+        {...(controlsWired
+          ? {
+              "aria-expanded": expanded,
+              "aria-controls": panelId,
+            }
+          : {})}
         aria-label={
           item.value
             ? `${item.label}: ${item.value}. ${item.description}`
             : `${item.label}: ${item.description}`
         }
-        aria-disabled={!controlsWired}
       >
-        <SettingsCardIcon icon={Icon} role={item.role} />
+        <SettingsCardIcon icon={Icon} selected={expanded} />
         <span className="min-w-0 flex-1" style={settingsModuleTextWrapStyle}>
-          <span className="block text-sm font-semibold text-foreground">
-            {item.label}
-          </span>
+          <span className="block text-sm font-semibold text-foreground">{item.label}</span>
           {item.value ? (
-            <span className="mt-2 block text-base font-semibold leading-tight text-foreground">
+            <span className="mt-1 block text-sm font-semibold leading-tight text-foreground">
               {item.value}
             </span>
           ) : null}
-          <span className="mt-2 block text-xs leading-relaxed text-muted-foreground">
+          <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
             {item.description}
           </span>
         </span>
-        <ChevronDown
+        <ChevronRight
           className={cn(
-            "mt-1 h-4 w-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:duration-200",
-            expanded && "rotate-180 text-foreground"
+            "mt-1 h-4 w-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:duration-200 rtl:rotate-180",
+            expanded && "text-foreground"
           )}
           aria-hidden="true"
         />
       </button>
-      {children}
     </article>
   );
 }
 
-function SettingsCardIcon({ icon: Icon, role }: { icon: LucideIcon; role: NonOrbVisualRole }) {
-  const tone = getRoleTone(role);
-
+function SettingsCardIcon({ icon: Icon, selected }: { icon: LucideIcon; selected: boolean }) {
   return (
     <span
       className={cn(
-        "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
-        tone.iconClass
+        "flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] border",
+        selected
+          ? "border-[hsl(var(--settings-v2-accent)/0.38)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-[hsl(var(--settings-v2-accent))]"
+          : "border-[hsl(var(--settings-v2-border)/0.42)] bg-[hsl(var(--settings-v2-shell)/0.58)] text-muted-foreground"
       )}
     >
-      <Icon className="h-5 w-5" aria-hidden="true" />
+      <Icon className="h-4 w-4" aria-hidden="true" />
     </span>
   );
 }

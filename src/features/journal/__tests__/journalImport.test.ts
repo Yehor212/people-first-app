@@ -232,6 +232,38 @@ describe("importJournalBackup", () => {
     expect(addedPhotos).toHaveLength(1);
   });
 
+  it("skips photos and audio that are not linked to a valid or existing entry", async () => {
+    const backup = makeBackup({
+      entries: [],
+      photos: [makePhoto({ id: "photo-orphan", entryId: "missing-entry" })],
+      audio: [makeAudioItem({ id: "audio-orphan", entryId: "missing-entry" })],
+    });
+    const file = makeFile(JSON.stringify(backup));
+
+    const result = await importJournalBackup(file);
+
+    expect(result.photosImported).toBe(0);
+    expect(result.audioImported).toBe(0);
+    expect(addedPhotos).toHaveLength(0);
+    expect(addedAudio).toHaveLength(0);
+  });
+
+  it("rejects malformed media rows instead of writing partial objects", async () => {
+    const backup = makeBackup({
+      entries: [makeEntry({ id: "e1", photoIds: ["photo-bad"], audioIds: ["audio-bad"] })],
+      photos: [{ id: "photo-bad", entryId: "e1", data: 123, thumbnail: null }],
+      audio: [{ id: "audio-bad", entryId: "e1", data: 123, duration: "long" }],
+    });
+    const file = makeFile(JSON.stringify(backup));
+
+    const result = await importJournalBackup(file);
+
+    expect(result.photosImported).toBe(0);
+    expect(result.audioImported).toBe(0);
+    expect(addedPhotos).toHaveLength(0);
+    expect(addedAudio).toHaveLength(0);
+  });
+
   it("skips duplicate photos", async () => {
     mockPhotos = [{ id: "photo-1" }];
     const backup = makeBackup({

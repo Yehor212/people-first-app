@@ -114,7 +114,8 @@ export const SidebarV2 = memo(function SidebarV2({
   };
 
   return (
-    <aside
+    <nav
+      role="navigation"
       className={cn(
         forceVisible ? "flex" : "hidden md:flex",
         "fixed inset-y-0 start-0 z-40 flex-col",
@@ -123,7 +124,6 @@ export const SidebarV2 = memo(function SidebarV2({
         "motion-safe:transition-[width] motion-safe:duration-300 ease-out",
         collapsed ? "w-[72px]" : "w-64"
       )}
-      role="navigation"
       aria-label={tx.navV2PrimaryNav || tx.mainNavigation || "Primary navigation"}
       data-testid="sidebar-v2"
     >
@@ -162,9 +162,9 @@ export const SidebarV2 = memo(function SidebarV2({
       </div>
 
       {/* Main items */}
-      <nav className="flex flex-col gap-1 p-3" aria-label="pages">
+      <div className="flex flex-col gap-1 p-3">
         {items.map((it) => renderItem(it))}
-      </nav>
+      </div>
 
       {/* Footer: theme toggle + settings + collapse toggle */}
       <div className="mt-auto flex flex-col gap-1 p-3 border-t border-border/40">
@@ -200,6 +200,6 @@ export const SidebarV2 = memo(function SidebarV2({
           </button>
         )}
       </div>
-    </aside>
+    </nav>
   );
 });

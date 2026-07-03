@@ -54,7 +54,9 @@ vi.mock("@/contexts/LanguageContext", () => ({
       orbAmbienceLabel: "Orb ambience",
       orbAmbiencePlay: "Play orb ambience",
       orbAmbiencePause: "Pause orb ambience",
+      audioLoading: "Loading...",
       audioRetry: "Retry",
+      settingsSoundSummaryOff: "Muted",
       soundOn: "On",
       soundOff: "Off",
     },
@@ -133,26 +135,12 @@ vi.mock("@/components/state-of-mind/EmotionTagGrid", () => ({
 }));
 
 vi.mock("@/components/state-of-mind/ValenceSlider", () => ({
-  ValenceSlider: ({
-    value,
-    onChange,
-  }: {
-    value: number;
-    onChange: (v: number) => void;
-  }) => (
+  ValenceSlider: ({ value, onChange }: { value: number; onChange: (v: number) => void }) => (
     <div data-testid="mood-orb-picker" data-value={value ?? ""}>
-      <button
-        type="button"
-        data-testid="mood-orb-option-good"
-        onClick={() => onChange(0.5)}
-      >
+      <button type="button" data-testid="mood-orb-option-good" onClick={() => onChange(0.5)}>
         good slider
       </button>
-      <button
-        type="button"
-        data-testid="mood-orb-option-bad"
-        onClick={() => onChange(-0.5)}
-      >
+      <button type="button" data-testid="mood-orb-option-bad" onClick={() => onChange(-0.5)}>
         bad slider
       </button>
     </div>
@@ -219,16 +207,26 @@ const media = vi.hoisted(() => ({
   pause: vi.fn(),
 }));
 
+function createDeferred<T = void>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+
+  return { promise, resolve, reject };
+}
+
 const themeState = vi.hoisted<{ appliedTheme: AppliedTheme }>(() => ({
   appliedTheme: "ink",
 }));
 const mockUseShouldAnimate = vi.hoisted(() =>
-  vi.fn((_options?: { respectRuntimePerformance?: boolean }) => true),
+  vi.fn((_options?: { respectRuntimePerformance?: boolean }) => true)
 );
 
 vi.mock("@/stores/themeStore", () => ({
-  useThemeStore: (selector: (s: unknown) => unknown) =>
-    selector(themeState),
+  useThemeStore: (selector: (s: unknown) => unknown) => selector(themeState),
 }));
 
 vi.mock("@/hooks/useShouldAnimate", () => ({
@@ -242,10 +240,10 @@ vi.mock("@/lib/motion", () => ({
 
 describe("OrbPage progressive flow", () => {
   beforeEach(() => {
-  appAudioSettingsState.muted = false;
-  appAudioSettingsState.volume = 1;
-  appAudioSettingsState.feedbackSoundsEnabled = true;
-  appAudioSettingsState.canPlayFeedback = true;
+    appAudioSettingsState.muted = false;
+    appAudioSettingsState.volume = 1;
+    appAudioSettingsState.feedbackSoundsEnabled = true;
+    appAudioSettingsState.canPlayFeedback = true;
     setMoodsSpy.mockClear();
     onAddMoodMock.mockClear();
     setActivePageMock.mockClear();
@@ -273,43 +271,31 @@ describe("OrbPage progressive flow", () => {
   it("renders the page landmark and V2 shell chrome", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
     expect(screen.getByTestId("orb-page")).toHaveAttribute("role", "main");
-    expect(screen.getByTestId("orb-page")).toHaveAttribute(
-      "aria-labelledby",
-      "orb-page-heading",
-    );
+    expect(screen.getByTestId("orb-page")).toHaveAttribute("aria-labelledby", "orb-page-heading");
     expect(screen.getByTestId("orb-page")).toHaveClass("orb-cosmic-scope");
     expect(screen.queryByTestId("cinematic-heading")).not.toBeInTheDocument();
     expect(document.getElementById("orb-page-heading")).toHaveClass("sr-only");
-    expect(screen.getByTestId("cosmic-orb-background")).toHaveAttribute(
-      "data-variant",
-      "auto",
-    );
+    expect(screen.getByTestId("cosmic-orb-background")).toHaveAttribute("data-variant", "auto");
     expect(screen.getByTestId("orb-page-select")).toBeInTheDocument();
   });
 
   it("does not let runtime-performance CSS suppress the V2 orb surface", () => {
     const css = readFileSync("src/pages/nav-v2/CosmicBgAdapter.css", "utf8");
 
-    expect(css).not.toContain(
-      ":root[data-runtime-perf] .orb-cosmic-scope .orb-page-rim-glow",
-    );
+    expect(css).not.toContain(":root[data-runtime-perf] .orb-cosmic-scope .orb-page-rim-glow");
     expect(css).not.toContain("orb-night-rim-orbit");
   });
 
   it("clips horizontal overflow inside the orb step scrollers", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
-    const selectScroller = screen
-      .getByTestId("orb-page-select")
-      .closest(".overflow-y-auto");
+    const selectScroller = screen.getByTestId("orb-page-select").closest(".overflow-y-auto");
 
     expect(selectScroller).toHaveClass("overflow-x-hidden");
 
     fireEvent.click(screen.getByTestId("orb-page-next"));
 
-    const refineScroller = screen
-      .getByTestId("orb-page-refine")
-      .closest(".overflow-y-auto");
+    const refineScroller = screen.getByTestId("orb-page-refine").closest(".overflow-y-auto");
 
     expect(refineScroller).toHaveClass("overflow-x-hidden");
   });
@@ -332,14 +318,23 @@ describe("OrbPage progressive flow", () => {
     expect(screen.queryByTestId("shooting-star-stub")).toBeNull();
   });
 
+  it("keeps orb ambience outside the animated Bloom subtree while preserving forward keyboard order", () => {
+    const source = readFileSync("src/pages/nav-v2/OrbPage.tsx", "utf8");
+    const ambienceIndex = source.indexOf("<OrbAmbienceControl");
+    const bloomIndex = source.indexOf("<Bloom");
+    const bloomCloseIndex = source.indexOf("</Bloom>");
+
+    expect(ambienceIndex).toBeGreaterThan(-1);
+    expect(bloomIndex).toBeGreaterThan(-1);
+    expect(bloomCloseIndex).toBeGreaterThan(bloomIndex);
+    expect(ambienceIndex).toBeGreaterThan(bloomCloseIndex);
+  });
+
   it("offers gentle water ambience as user-started orb audio without changing the canonical orb", async () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
     const audio = screen.getByTestId("orb-page-ambience-audio");
-    expect(audio).toHaveAttribute(
-      "src",
-      expect.stringContaining("/sounds/gentle-water-bed.mp3"),
-    );
+    expect(audio).toHaveAttribute("src", expect.stringContaining("/sounds/gentle-water-bed.mp3"));
     expect(audio).toHaveAttribute("preload", "none");
     expect(audio).toHaveAttribute("loop");
     expect(audio).not.toHaveAttribute("autoplay");
@@ -361,6 +356,39 @@ describe("OrbPage progressive flow", () => {
     await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
   });
 
+  it("keeps orb ambience off until the browser confirms playback", async () => {
+    const playback = createDeferred();
+    media.play.mockReturnValueOnce(playback.promise);
+
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    const toggle = screen.getByTestId("orb-page-ambience-toggle");
+    fireEvent.click(toggle);
+
+    expect(media.play).toHaveBeenCalledTimes(1);
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(toggle).toHaveAccessibleName("Orb ambience Loading...");
+
+    playback.resolve();
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
+    expect(toggle).toHaveAccessibleName("Pause orb ambience");
+  });
+
+  it("reveals the hidden orb ambience control on focus instead of trapping users invisibly", () => {
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    const toggle = screen.getByTestId("orb-page-ambience-toggle");
+    const chrome = toggle.parentElement;
+
+    const css = readFileSync("src/pages/nav-v2/OrbAmbienceControl.css", "utf8");
+
+    expect(chrome?.className).toContain("orb-ambience-focus-control");
+    expect(css).toContain(".orb-ambience-focus-control:focus-within");
+    expect(css).toContain("clip-path: inset(50%)");
+    expect(css).toContain("clip-path: none");
+    expect(toggle).not.toHaveAttribute("tabindex", "-1");
+  });
+
   it("does not start orb ambience while app sound is muted", () => {
     appAudioSettingsState.muted = true;
 
@@ -368,6 +396,8 @@ describe("OrbPage progressive flow", () => {
 
     const toggle = screen.getByTestId("orb-page-ambience-toggle");
     expect(toggle).toBeDisabled();
+    expect(toggle).toHaveAccessibleName("Muted");
+    expect(toggle).toHaveTextContent("Muted");
 
     fireEvent.click(toggle);
 
@@ -432,10 +462,7 @@ describe("OrbPage progressive flow", () => {
 
     fireEvent.click(screen.getByTestId("orb-page-ambience-toggle"));
     await waitFor(() =>
-      expect(screen.getByTestId("orb-page-ambience-toggle")).toHaveAttribute(
-        "aria-pressed",
-        "true",
-      ),
+      expect(screen.getByTestId("orb-page-ambience-toggle")).toHaveAttribute("aria-pressed", "true")
     );
 
     media.pause.mockClear();
@@ -462,44 +489,23 @@ describe("OrbPage progressive flow", () => {
 
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
-    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
-      "data-valence",
-      "-0.143",
-    );
-    expect(screen.getByTestId("mood-orb-picker")).toHaveAttribute(
-      "data-value",
-      "0",
-    );
-    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
-      "data-size",
-      "280",
-    );
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-valence", "-0.143");
+    expect(screen.getByTestId("mood-orb-picker")).toHaveAttribute("data-value", "0");
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-size", "280");
     expect(screen.getByTestId("valence-orb")).toHaveAttribute(
       "data-transition-profile",
-      "input-soft",
+      "input-soft"
     );
-    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
-      "data-animation-speed",
-      "1",
-    );
-    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
-      "data-renderer",
-      "webgpu",
-    );
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-animation-speed", "1");
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-renderer", "webgpu");
     expect(screen.queryByTestId("orb-aura")).not.toBeInTheDocument();
   });
 
   it("keeps neutral semantics but avoids the committed neutral orb before first choice", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
-    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
-      "data-valence",
-      "-0.143",
-    );
-    expect(screen.getByTestId("mood-orb-picker")).toHaveAttribute(
-      "data-value",
-      "0",
-    );
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-valence", "-0.143");
+    expect(screen.getByTestId("mood-orb-picker")).toHaveAttribute("data-value", "0");
   });
 
   it("keeps desktop and phone on the same restored full-speed canonical orb motion", () => {
@@ -508,37 +514,33 @@ describe("OrbPage progressive flow", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
     expect(screen.queryByTestId("orb-aura")).not.toBeInTheDocument();
-    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
-      "data-animation-speed",
-      "1",
-    );
-    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
-      "data-renderer",
-      "webgpu",
-    );
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-animation-speed", "1");
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-renderer", "webgpu");
   });
 
   it("keeps the Orb ambience control on the logical end edge for RTL-safe top chrome", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
     const chrome = screen.getByTestId("orb-page-ambience-toggle").parentElement;
-    expect(chrome?.className).toContain("end-4");
-    expect(chrome?.className).not.toContain("right-4");
+    const css = readFileSync("src/pages/nav-v2/OrbAmbienceControl.css", "utf8");
+
+    expect(chrome?.className).toContain("orb-ambience-focus-control");
+    expect(css).toContain("inset-inline-end");
+    expect(css).toContain("var(--safe-right)");
+    expect(css).toContain("var(--safe-left)");
+    expect(css).not.toContain("right:");
   });
 
   it("keeps the desktop ambient orb breathing alive during runtime performance startup", () => {
     mockUseShouldAnimate.mockImplementation(
       (options?: { respectRuntimePerformance?: boolean }) =>
-        options?.respectRuntimePerformance === false,
+        options?.respectRuntimePerformance === false
     );
     setViewport(1098, 768);
 
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
-    expect(screen.getByTestId("orb-page-rim-glow")).toHaveAttribute(
-      "data-orb-breathing",
-      "true",
-    );
+    expect(screen.getByTestId("orb-page-rim-glow")).toHaveAttribute("data-orb-breathing", "true");
     expect(screen.queryByTestId("shooting-star-stub")).toBeNull();
     expect(mockUseShouldAnimate).toHaveBeenCalledWith({
       respectRuntimePerformance: false,
@@ -565,9 +567,7 @@ describe("OrbPage progressive flow", () => {
 
     expect(screen.getByTestId("emotion-tag-grid")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeful"));
-    expect(screen.getByTestId("orb-page-refine-heading")).toHaveTextContent(
-      "Localized hopeful",
-    );
+    expect(screen.getByTestId("orb-page-refine-heading")).toHaveTextContent("Localized hopeful");
     fireEvent.change(screen.getByTestId("orb-page-note-input"), {
       target: { value: "A little more grounded now." },
     });
@@ -576,35 +576,21 @@ describe("OrbPage progressive flow", () => {
     expect(screen.getByTestId("orb-page-select")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("orb-page-next"));
-    expect(screen.getByTestId("emotion-tag-mock-hopeful")).toHaveAttribute(
-      "data-selected",
-      "true",
-    );
-    expect(screen.getByTestId("orb-page-note-input")).toHaveValue(
-      "A little more grounded now.",
-    );
+    expect(screen.getByTestId("emotion-tag-mock-hopeful")).toHaveAttribute("data-selected", "true");
+    expect(screen.getByTestId("orb-page-note-input")).toHaveValue("A little more grounded now.");
   });
 
   it("preserves the in-progress orb mood when the Orb tab unmounts during V2 navigation", () => {
     const { unmount } = render(<OrbPage onAddMood={onAddMoodMock} />);
 
     fireEvent.click(screen.getByTestId("mood-orb-option-good"));
-    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
-      "data-valence",
-      "0.5",
-    );
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-valence", "0.5");
 
     unmount();
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
-    expect(screen.getByTestId("valence-orb")).toHaveAttribute(
-      "data-valence",
-      "0.5",
-    );
-    expect(screen.getByTestId("mood-orb-picker")).toHaveAttribute(
-      "data-value",
-      "0.5",
-    );
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-valence", "0.5");
+    expect(screen.getByTestId("mood-orb-picker")).toHaveAttribute("data-value", "0.5");
   });
 
   it("opens Diary with a valid handoff even when no exact feeling is chosen", () => {
@@ -652,9 +638,7 @@ describe("OrbPage progressive flow", () => {
 
   it("prefers the orchestrator navigation callback for the final Diary transfer", () => {
     const navigateToPage = vi.fn();
-    render(
-      <OrbPage navigateToPage={navigateToPage} onAddMood={onAddMoodMock} />,
-    );
+    render(<OrbPage navigateToPage={navigateToPage} onAddMood={onAddMoodMock} />);
 
     fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("orb-page-open-diary"));
@@ -667,7 +651,7 @@ describe("OrbPage progressive flow", () => {
   it("keeps the mood flow owned by the V2 orchestrator instead of creating a second navigator", () => {
     const source = readFileSync("src/pages/nav-v2/useOrbMoodFlow.ts", "utf8");
 
-    expect(source).not.toContain('import { useNavigationV2 }');
+    expect(source).not.toContain("import { useNavigationV2 }");
     expect(source).not.toContain("useNavigationV2()");
   });
 });

@@ -15,21 +15,51 @@ interface SyncEvent extends ExtendableEvent {
 import { precacheAndRoute, cleanupOutdatedCaches, matchPrecache } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
 import { CacheFirst } from "workbox-strategies";
+import { CacheableResponsePlugin } from "workbox-cacheable-response";
 import { ExpirationPlugin } from "workbox-expiration";
+import { RangeRequestsPlugin } from "workbox-range-requests";
 import { setCacheNameDetails } from "workbox-core";
 import { logger } from "@/lib/logger";
 
 declare const self: ServiceWorkerGlobalScope;
 
-const CLIENT_MESSAGE_TYPES = ["SKIP_WAITING", "CLEAR_CACHES", "REGISTER_SYNC"] as const;
+const CLIENT_MESSAGE_TYPES = ["SKIP_WAITING", "CLEAR_CACHES", "REGISTER_SYNC", "WARM_RUNTIME_AUDIO_CACHE"] as const;
 type ClientMessageType = (typeof CLIENT_MESSAGE_TYPES)[number];
 const APP_SHELL_URL = "index.html";
+const RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio";
+const APP_AUDIO_SW_CACHE_PATHS = [
+  "sounds/gentle-water-bed.mp3",
+  "sounds/hyperfocus/hyperfocus-fireplace-deep.mp3",
+  "sounds/hyperfocus/hyperfocus-fireplace-intense.mp3",
+  "sounds/hyperfocus/hyperfocus-fireplace-soft.mp3",
+  "sounds/hyperfocus/hyperfocus-forest-deep.mp3",
+  "sounds/hyperfocus/hyperfocus-forest-intense.mp3",
+  "sounds/hyperfocus/hyperfocus-forest-soft.mp3",
+  "sounds/hyperfocus/hyperfocus-ocean-deep.mp3",
+  "sounds/hyperfocus/hyperfocus-ocean-intense.mp3",
+  "sounds/hyperfocus/hyperfocus-ocean-soft.mp3",
+  "sounds/hyperfocus/hyperfocus-rain-deep.mp3",
+  "sounds/hyperfocus/hyperfocus-rain-intense.mp3",
+  "sounds/hyperfocus/hyperfocus-rain-soft.mp3",
+  "sounds/hyperfocus/hyperfocus-river-deep.mp3",
+  "sounds/hyperfocus/hyperfocus-river-intense.mp3",
+  "sounds/hyperfocus/hyperfocus-river-soft.mp3",
+  "sounds/hyperfocus/hyperfocus-wind-deep.mp3",
+  "sounds/hyperfocus/hyperfocus-wind-intense.mp3",
+  "sounds/hyperfocus/hyperfocus-wind-soft.mp3",
+  "sounds/soft-air-veil.mp3",
+  "sounds/soft-rain-veil.mp3",
+] as const;
 const SAME_ORIGIN_RUNTIME_ASSET_DESTINATIONS = new Set<RequestDestination>([
   "font",
   "image",
   "script",
   "style",
 ]);
+const AUDIO_CACHE_WARM_CONCURRENCY = 3;
+const AUDIO_CACHE_WARM_FETCH_TIMEOUT_MS = 8000;
+const NAVIGATION_NETWORK_TIMEOUT_MS = 4000;
+let runtimeAudioCacheWarmPromise: Promise<void> | null = null;
 
 interface ClientMessage {
   type: ClientMessageType;
@@ -64,6 +94,68 @@ function isTrustedClientMessage(event: ExtendableMessageEvent): event is Extenda
   return isClientMessageData(event.data);
 }
 
+function makeScopedAudioRequest(publicPath: string): Request {
+  return new Request(new URL(publicPath, self.registration.scope).toString(), {
+    cache: "reload",
+    credentials: "same-origin",
+    mode: "same-origin",
+  });
+}
+
+async function fetchAudioForWarmCache(request: Request): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = self.setTimeout(() => controller.abort(), AUDIO_CACHE_WARM_FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(request, { signal: controller.signal });
+  } finally {
+    self.clearTimeout(timeoutId);
+  }
+}
+
+async function warmRuntimeAudioCache(): Promise<void> {
+  const cache = await caches.open(RUNTIME_AUDIO_CACHE_NAME);
+  const outcomes: PromiseSettledResult<void>[] = [];
+
+  for (let index = 0; index < APP_AUDIO_SW_CACHE_PATHS.length; index += AUDIO_CACHE_WARM_CONCURRENCY) {
+    const batch = APP_AUDIO_SW_CACHE_PATHS.slice(index, index + AUDIO_CACHE_WARM_CONCURRENCY);
+    const batchOutcomes = await Promise.allSettled(
+      batch.map(async (publicPath) => {
+        const request = makeScopedAudioRequest(publicPath);
+        if (await cache.match(request, { ignoreVary: true })) return;
+
+        const response = await fetchAudioForWarmCache(request);
+        if (response.status !== 200) {
+          throw new Error(publicPath + " returned HTTP " + response.status + " while warming audio cache");
+        }
+
+        await cache.put(request, response);
+      })
+    );
+    outcomes.push(...batchOutcomes);
+  }
+
+  const failedCount = outcomes.filter((outcome) => outcome.status === "rejected").length;
+  if (failedCount > 0) {
+    logger.warn("[SW] Runtime audio cache warm completed with failures:", failedCount);
+  }
+}
+
+function warmRuntimeAudioCacheOnce(): Promise<void> {
+  runtimeAudioCacheWarmPromise ??= warmRuntimeAudioCache().finally(() => {
+    runtimeAudioCacheWarmPromise = null;
+  });
+  return runtimeAudioCacheWarmPromise;
+}
+
+async function fetchNavigationWithTimeout(request: Request): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = self.setTimeout(() => controller.abort(), NAVIGATION_NETWORK_TIMEOUT_MS);
+  try {
+    return await fetch(request, { signal: controller.signal });
+  } finally {
+    self.clearTimeout(timeoutId);
+  }
+}
 // Set cache name prefix
 setCacheNameDetails({
   prefix: "zenflow",
@@ -117,16 +209,20 @@ registerRoute(
 );
 
 
-// Cache shipped app audio on first use so installed PWA sessions can replay
-// already-used ambience offline without bloating the service worker install.
+// Cache shipped app audio with full 200 responses, then serve browser media
+// Range requests from that complete cached body for installed/offline PWA use.
 registerRoute(
   ({ url, request }) =>
     url.origin === self.location.origin &&
     url.pathname.includes("/sounds/") &&
     (request.destination === "audio" || /\.mp3$/i.test(url.pathname)),
   new CacheFirst({
-    cacheName: "zenflow-runtime-audio",
+    cacheName: RUNTIME_AUDIO_CACHE_NAME,
     plugins: [
+      new CacheableResponsePlugin({
+        statuses: [200],
+      }),
+      new RangeRequestsPlugin(),
       new ExpirationPlugin({
         maxEntries: 32,
         maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
@@ -139,7 +235,7 @@ registerRoute(
 // Cache Supabase Storage (public assets only)
 registerRoute(
   ({ url }) =>
-    (url.hostname.includes("supabase.co") || url.hostname === "api.zenflowapp.online") &&
+    (url.hostname === "supabase.co" || url.hostname.endsWith(".supabase.co") || url.hostname === "api.zenflowapp.online") &&
     url.pathname.includes("/storage/v1/object/public/"),
   new CacheFirst({
     cacheName: "supabase-storage",
@@ -215,7 +311,7 @@ registerRoute(
     (request.mode === "navigate" || request.destination === "document"),
   async ({ request }) => {
     try {
-      return await fetch(request);
+      return await fetchNavigationWithTimeout(request);
     } catch (error) {
       const appShell = await matchPrecache(APP_SHELL_URL);
       if (appShell) return appShell;
@@ -273,12 +369,17 @@ self.onmessage = (event) => {
       logger.warn("[SW] Background sync registration failed:", err);
     });
   }
+
+  if (event.data.type === "WARM_RUNTIME_AUDIO_CACHE") {
+    logger.log("[SW] Runtime audio cache warm requested after app startup");
+    event.waitUntil(warmRuntimeAudioCacheOnce());
+  }
 };
 
 // Log service worker lifecycle
-self.addEventListener("install", () => {
+self.addEventListener("install", (event) => {
   logger.log("[SW] Installing — skip waiting for immediate activation");
-  void self.skipWaiting();
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("activate", (event) => {

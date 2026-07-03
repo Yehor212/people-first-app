@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { DEFAULT_THEME_CUSTOMIZATION } from '../themeCustomization';
 
 // Reset module state between tests because Zustand stores are module-level.
 async function loadStore(prefersDark = false) {
@@ -85,6 +86,88 @@ describe('themeStore', () => {
     expect(mod.useThemeStore.getState().appliedTheme).toBe('paper');
     mod.useThemeStore.getState().setTheme('auto');
     expect(mod.useThemeStore.getState().appliedTheme).toBe('ink');
+  });
+
+
+  it('normalizes corrupted persisted theme preference on hydrate', async () => {
+    localStorage.setItem(
+      'zenflow:theme-v0c',
+      JSON.stringify({
+        state: {
+          theme: 'laser-party',
+          themeCustomization: {
+            paletteId: 'morningHearth',
+            accentFamily: 'clay',
+            intensity: 'balanced',
+          },
+        },
+        version: 0,
+      }),
+    );
+
+    const { mod } = await loadStore(false);
+    const state = mod.useThemeStore.getState();
+
+    expect(state.theme).toBe('auto');
+    expect(state.appliedTheme).toBe('paper');
+    expect(document.documentElement.dataset.theme).toBe('paper');
+  });
+
+  it('normalizes corrupted persisted theme customization on hydrate', async () => {
+    localStorage.setItem(
+      'zenflow:theme-v0c',
+      JSON.stringify({
+        state: {
+          theme: 'paper',
+          themeCustomization: {
+            paletteId: 'raw-neon',
+            accentFamily: 'unsafe-css',
+            intensity: 99,
+          },
+        },
+        version: 0,
+      }),
+    );
+
+    const { mod } = await loadStore(false);
+
+    expect(mod.useThemeStore.getState().themeCustomization).toEqual(DEFAULT_THEME_CUSTOMIZATION);
+    expect(document.documentElement.dataset.themeStyle).toBe('zenflow');
+  });
+
+  it('previews, applies, resets, and undoes safe theme customization', async () => {
+    const { mod } = await loadStore(false);
+    const nextCustomization = {
+      ...DEFAULT_THEME_CUSTOMIZATION,
+      paletteId: 'morningHearth' as const,
+      accentFamily: 'clay' as const,
+      intensity: 'vivid' as const,
+      warmth: 'warm' as const,
+      depth: 'cozy' as const,
+    };
+
+    mod.useThemeStore.getState().previewThemeCustomization(nextCustomization);
+
+    expect(mod.useThemeStore.getState().themeCustomization).toEqual(DEFAULT_THEME_CUSTOMIZATION);
+    expect(document.documentElement.dataset.themeStyle).toBe('morningHearth');
+
+    mod.useThemeStore.getState().setThemeCustomization(nextCustomization);
+
+    expect(mod.useThemeStore.getState().themeCustomization).toEqual(nextCustomization);
+    expect(document.documentElement.dataset.themeStyle).toBe('morningHearth');
+
+    mod.useThemeStore.getState().resetThemeCustomization();
+
+    expect(mod.useThemeStore.getState().themeCustomization).toEqual(DEFAULT_THEME_CUSTOMIZATION);
+    expect(document.documentElement.dataset.themeStyle).toBe('zenflow');
+
+    mod.useThemeStore.getState().undoThemeCustomization();
+
+    expect(mod.useThemeStore.getState().themeCustomization).toEqual(nextCustomization);
+    expect(document.documentElement.dataset.themeStyle).toBe('morningHearth');
+
+    mod.useThemeStore.getState().cancelThemeCustomizationPreview();
+    expect(document.documentElement.dataset.themeStyle).toBe('morningHearth');
   });
 
   it('bindPrefersColorSchemeListener returns an unsubscribe', async () => {

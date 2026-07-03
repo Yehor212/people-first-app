@@ -76,6 +76,15 @@ describe("V2 fullscreen surface contract", () => {
     expect(css).not.toContain("background: hsl(var(--background));\n  }\n\n  body.zenflow-v2-edge-to-edge");
   });
 
+  it("keeps mobile V2 edge-to-edge surfaces from reserving a desktop scrollbar gutter", () => {
+    const css = read("src/index.css");
+    const htmlBlock = css.match(/html \{[\s\S]*?\n {2}\}/)?.[0] ?? "";
+
+    expect(htmlBlock).not.toContain("scrollbar-gutter: stable");
+    expect(css).toContain("@media (min-width: 768px)");
+    expect(css).toContain("scrollbar-gutter: stable;");
+  });
+
   it("keeps every V2 route on the shared fullscreen page layer", () => {
     for (const page of v2FullscreenPages) {
       const source = read(page.source);

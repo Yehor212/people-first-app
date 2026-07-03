@@ -157,6 +157,7 @@ export function AccountPanel({ controls }: { controls: V2SettingsControls }) {
               void auth.handleSignOut();
             }}
             disabled={auth.isSigningOut}
+            isLoading={auth.isSigningOut}
           >
             {auth.isSigningOut ? tx.signingOut || "Signing out..." : tx.signOut || "Sign out"}
           </ActionButton>
@@ -189,6 +190,7 @@ export function AccountPanel({ controls }: { controls: V2SettingsControls }) {
                 value={del.deleteConfirmInput}
                 onChange={del.setDeleteConfirmInput}
                 autoComplete="off"
+                disabled={del.isDeletingAccount}
                 tone="danger"
               />
               <SettingsButtonGrid columns="confirm">
@@ -197,10 +199,13 @@ export function AccountPanel({ controls }: { controls: V2SettingsControls }) {
                     del.setShowDeleteConfirm(false);
                     del.setDeleteConfirmInput("");
                   }}
+                  disabled={del.isDeletingAccount}
                 >
                   {tx.cancel}
                 </SettingsInlineButton>
                 <SettingsInlineButton
+                  icon={del.isDeletingAccount ? Loader2 : undefined}
+                  isLoading={del.isDeletingAccount}
                   onClick={() => {
                     void del.handleDeleteAccount();
                   }}

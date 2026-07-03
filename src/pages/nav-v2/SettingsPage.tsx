@@ -33,12 +33,12 @@ export type { V2SettingsControls };
 const SyncHealthCard = lazy(() =>
   import("@/components/sync/SyncHealthCard").then((module) => ({
     default: module.SyncHealthCard,
-  })),
+  }))
 );
 const DeviceSessionsCard = lazy(() =>
   import("@/components/sync/DeviceSessionsCard").then((module) => ({
     default: module.DeviceSessionsCard,
-  })),
+  }))
 );
 
 interface SettingsPageProps {
@@ -62,6 +62,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const mainRef = useRef<HTMLElement>(null);
+  const shouldScrollSelectedSectionRef = useRef(false);
   const [selectedSectionId, setSelectedSectionId] = useState<V2SettingsSectionId>(
     INITIAL_SECTION_TO_V2_SECTION[controls?.initialOpenSection || "profile"] || "profile"
   );
@@ -69,7 +70,9 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const audioSettings = useAppAudioSettings();
   const hasValidSession = useAppStore((s) => s.hasValidSession);
-  const settingsLead = `${tx.settingsCloudSyncTitle}: ${tx.settingsCloudSyncDescription}`;
+  const settingsLead =
+    tx.settingsOverviewDescription ||
+    "Adjust privacy, reminders, sound, appearance, and data controls in one place.";
 
   useEffect(() => {
     mainRef.current?.focus({ preventScroll: true });
@@ -81,8 +84,30 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   }, [controls?.initialOpenSection]);
 
   function openSection(sectionId: V2SettingsSectionId) {
+    shouldScrollSelectedSectionRef.current = true;
     setSelectedSectionId(sectionId);
   }
+
+  useEffect(() => {
+    if (!shouldScrollSelectedSectionRef.current) return;
+    shouldScrollSelectedSectionRef.current = false;
+
+    const frame = window.requestAnimationFrame(() => {
+      const isMobileWorkspace =
+        typeof window.matchMedia !== "function" || window.matchMedia("(max-width: 1023px)").matches;
+      if (!isMobileWorkspace) return;
+
+      const selectedPanel = document.getElementById(`settings-module-panel-${selectedSectionId}`);
+      if (typeof selectedPanel?.scrollIntoView !== "function") return;
+
+      selectedPanel.scrollIntoView({
+        block: "start",
+        behavior: "auto",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedSectionId]);
 
   const themeLabel =
     themePreference === "auto"
@@ -99,7 +124,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
     ? `${tx.moodReminder}: ${
         controls.reminders.moodTimeMorning || "09:00"
       } | ${tx.habitReminder}: ${controls.reminders.habitTime || "08:00"}`
-    : tx.notificationsComingSoon || "Off";
+    : tx.settingsRemindersOff || tx.soundOff || "Off";
   const dataSummary = controls
     ? `${controls.moods?.length ?? 0} ${tx.moodEntries} | ${controls.habits.length} ${
         tx.habits
@@ -246,16 +271,8 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
               controlsWired={true}
               onOpen={openSection}
               renderPanel={(item) => (
-                <div
-                  id="settings-v2-control-deck"
-                  className="grid min-w-0 gap-3"
-                  data-testid="settings-page-control-deck"
-                  data-selected-section={item.id}
-                >
-                  <V2SettingsControlDeck
-                    controls={controls}
-                    selectedSectionId={item.id}
-                  />
+                <>
+                  <V2SettingsControlDeck controls={controls} selectedSectionId={item.id} />
                   {item.id === "account" && (
                     <Suspense fallback={null}>
                       <section
@@ -279,7 +296,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
                       </section>
                     </Suspense>
                   )}
-                </div>
+                </>
               )}
               label={tx.settings || tx.navV2Settings}
             />

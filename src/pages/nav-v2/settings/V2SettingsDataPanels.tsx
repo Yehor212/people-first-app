@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  BellRing,
   CheckCircle2,
   Clock3,
   DatabaseBackup,
@@ -20,10 +21,12 @@ import {
   applyAdConsentPreference,
   applyAnalyticsPreference,
   applyNoTrackingPreference,
+  applyPushNotificationsPreference,
 } from "@/lib/privacyConsent";
 import { BASE_URL } from "@/lib/env";
 import { safeLocalStorageGet } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
+import { logger } from "@/lib/logger";
 import { useDataExport } from "@/components/settings/data-section/useDataExport";
 import { useDataImport } from "@/components/settings/data-section/useDataImport";
 import {
@@ -38,6 +41,7 @@ import {
   SettingsInset,
   SettingsSelectField,
   SettingsStatus,
+  SettingsTextInput,
   ToggleRow,
 } from "./components/V2SettingsControlPrimitives";
 import type { V2SettingsControls } from "./types";
@@ -97,6 +101,19 @@ export function PrivacyPanel({ controls }: { controls: V2SettingsControls }) {
         }
         testId="settings-v2-ad-consent"
       />
+      <ToggleRow
+        icon={BellRing}
+        title={tx.privacyPushNotifications || "Remote push notifications"}
+        description={
+          tx.privacyPushNotificationsHint ||
+          "Register this device for account-based push reminders. Local reminders work without this."
+        }
+        checked={controls.privacy.pushNotifications === true}
+        onCheckedChange={(checked) =>
+          controls.onPrivacyChange((prev) => applyPushNotificationsPreference(prev, checked))
+        }
+        testId="settings-v2-push-notifications"
+      />
 
       <SettingsInset>
         <SettingsFieldHeader
@@ -133,6 +150,7 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
   const tx = t as unknown as Record<string, string>;
   const [dataStatus, setDataStatus] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetConfirmInput, setResetConfirmInput] = useState("");
   const [isResettingData, setIsResettingData] = useState(false);
   const exp = useDataExport({
     setDataStatus,
@@ -145,8 +163,19 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
   });
   const imp = useDataImport({ setDataStatus, t: tx });
   const { handleImportCancel, showImportConfirm } = imp;
+  const resetConfirmWord = (tx.resetDataConfirmWord || "RESET").trim();
+  const resetTypeLabel = (tx.resetDataTypeConfirm || "Type RESET to confirm").replace(
+    "{word}",
+    resetConfirmWord
+  );
+  const resetConfirmMatches = resetConfirmInput.trim() === resetConfirmWord;
 
-  useBackHandler(showResetConfirm, () => setShowResetConfirm(false));
+  const closeResetConfirm = useCallback(() => {
+    setShowResetConfirm(false);
+    setResetConfirmInput("");
+  }, []);
+
+  useBackHandler(showResetConfirm, closeResetConfirm);
   useBackHandler(showImportConfirm, handleImportCancel);
   useScrollLock(showResetConfirm || showImportConfirm);
 
@@ -164,21 +193,23 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
       if (showImportConfirm) {
         handleImportCancel();
       } else {
-        setShowResetConfirm(false);
+        closeResetConfirm();
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [handleImportCancel, showImportConfirm, showResetConfirm]);
+  }, [closeResetConfirm, handleImportCancel, showImportConfirm, showResetConfirm]);
 
   const handleReset = async () => {
+    if (!resetConfirmMatches) return;
     setIsResettingData(true);
     setDataStatus(null);
     try {
       await controls.onResetData();
-      setShowResetConfirm(false);
+      closeResetConfirm();
       setDataStatus(tx.resetDataSuccess || "Your local ZenFlow data has been reset.");
-    } catch {
+    } catch (error) {
+      logger.error("[V2Settings] Data reset failed", error);
       setDataStatus(tx.resetDataError || "Data reset failed. Please try again.");
     } finally {
       setIsResettingData(false);
@@ -200,6 +231,7 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
               void exp.handleExport();
             }}
             disabled={exp.isExporting}
+            isLoading={exp.isExporting}
             variant="primary"
             testId="settings-v2-export-json"
           >
@@ -211,6 +243,7 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
             icon={exp.isExportingCSV ? Loader2 : FileSpreadsheet}
             onClick={exp.handleExportCSV}
             disabled={exp.isExportingCSV}
+            isLoading={exp.isExportingCSV}
             testId="settings-v2-export-csv"
           >
             {tx.exportCSV || "CSV"}
@@ -221,6 +254,7 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
               void exp.handleExportPDF();
             }}
             disabled={exp.isExportingPDF}
+            isLoading={exp.isExportingPDF}
             testId="settings-v2-export-pdf"
           >
             {tx.exportPDF || "PDF"}
@@ -229,14 +263,20 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
 
         <SettingsInset>
           <SettingsFieldHeader title={tx.importMode || "Import mode"} />
-          <SettingsButtonGrid columns="confirm" role="group" ariaLabel={tx.importMode || "Import mode"}>
+          <SettingsButtonGrid
+            columns="confirm"
+            role="group"
+            ariaLabel={tx.importMode || "Import mode"}
+          >
             {(["merge", "replace"] as const).map((mode) => (
               <SettingsChoiceButton
                 key={mode}
                 onClick={() => imp.setImportMode(mode)}
                 selected={imp.importMode === mode}
                 presentation="compact"
+                selectedTone={mode === "replace" ? "danger" : "subtle"}
                 surface="card"
+                testId={`settings-v2-import-mode-${mode}`}
               >
                 {mode === "merge" ? tx.importMerge || "Merge" : tx.importReplace || "Replace"}
               </SettingsChoiceButton>
@@ -253,6 +293,8 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
             icon={imp.isImporting ? Loader2 : Upload}
             onClick={imp.handleImportClick}
             disabled={imp.isImporting}
+            isLoading={imp.isImporting}
+            variant={imp.importMode === "replace" ? "danger" : "secondary"}
             testId="settings-v2-import"
           >
             {imp.isImporting
@@ -269,7 +311,10 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
           <ActionButton
             icon={Trash2}
             variant="danger"
-            onClick={() => setShowResetConfirm(true)}
+            onClick={() => {
+              setResetConfirmInput("");
+              setShowResetConfirm(true);
+            }}
             testId="settings-v2-reset-data"
           >
             {tx.resetAllData || "Reset all data"}
@@ -281,22 +326,40 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
               title={`${tx.areYouSure || "Are you sure?"} ${
                 tx.cannotBeUndone || "This cannot be undone."
               }`}
+              description={
+                tx.resetDataScope ||
+                "This removes local moods, habits, focus, gratitude, journal data, queues, and settings."
+              }
+            />
+            <SettingsFieldHeader
+              htmlFor="settings-v2-reset-confirm"
+              tone="danger"
+              title={resetTypeLabel}
+            />
+            <SettingsTextInput
+              id="settings-v2-reset-confirm"
+              value={resetConfirmInput}
+              onChange={setResetConfirmInput}
+              autoComplete="off"
+              disabled={isResettingData}
+              tone="danger"
             />
             <SettingsButtonGrid columns="confirm">
-              <SettingsInlineButton
-                onClick={() => setShowResetConfirm(false)}
-                disabled={isResettingData}
-              >
+              <SettingsInlineButton onClick={closeResetConfirm} disabled={isResettingData}>
                 {tx.cancel}
               </SettingsInlineButton>
               <SettingsInlineButton
+                icon={isResettingData ? Loader2 : undefined}
+                isLoading={isResettingData}
                 onClick={() => {
                   void handleReset();
                 }}
-                disabled={isResettingData}
+                disabled={isResettingData || !resetConfirmMatches}
                 variant="danger"
               >
-                {isResettingData ? tx.resetting || "Resetting..." : tx.delete || "Delete"}
+                {isResettingData
+                  ? tx.resetting || "Resetting..."
+                  : tx.resetDataConfirmAction || tx.resetAllData || "Reset data"}
               </SettingsInlineButton>
             </SettingsButtonGrid>
           </SettingsInset>
@@ -307,10 +370,20 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
         <SettingsDialog
           titleId="settings-v2-import-title"
           title={tx.importConfirmTitle || "Import Backup"}
-          description={tx.importConfirmMessage || "Import data from this file?"}
+          description={
+            imp.importMode === "replace"
+              ? tx.settingsImportReplaceTooltip ||
+                "All current data will be deleted and replaced with import"
+              : tx.importConfirmMessage || "Import data from this file?"
+          }
           detail={imp.pendingImportFile.name}
           cancelLabel={tx.cancel}
-          confirmLabel={tx.settingsImportTitle || tx.importData || "Import"}
+          confirmLabel={
+            imp.importMode === "replace"
+              ? tx.importReplace || "Replace"
+              : tx.settingsImportTitle || tx.importData || "Import"
+          }
+          confirmVariant={imp.importMode === "replace" ? "danger" : "primary"}
           onCancel={imp.handleImportCancel}
           onConfirm={() => {
             void imp.handleImportConfirm();

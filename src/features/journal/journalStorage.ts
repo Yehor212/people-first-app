@@ -829,8 +829,10 @@ export async function encryptPlaintextJournalEntries(vaultKey: string): Promise<
 }
 
 export async function hasEncryptedJournalContent(): Promise<boolean> {
-  const entries = await db.journalEntries.toArray();
-  return entries.some((entry) => Boolean(entry.content) && isEncryptedJournalContent(entry.content));
+  const encryptedEntry = await db.journalEntries
+    .filter((entry) => Boolean(entry.content) && isEncryptedJournalContent(entry.content))
+    .first();
+  return Boolean(encryptedEntry);
 }
 
 export async function decryptEncryptedJournalEntries(vaultKey: string): Promise<number> {
@@ -919,13 +921,18 @@ export async function encryptPlaintextJournalMedia(vaultKey: string): Promise<nu
 }
 
 export async function hasEncryptedJournalMedia(): Promise<boolean> {
-  const [photos, audios] = await Promise.all([db.journalPhotos.toArray(), db.journalAudio.toArray()]);
-  return (
-    photos.some((photo) =>
-      Boolean(photo.data && isEncryptedJournalMediaData(photo.data)) ||
-      Boolean(photo.thumbnail && isEncryptedJournalMediaData(photo.thumbnail)),
-    ) || audios.some((audio) => Boolean(audio.data && isEncryptedJournalMediaData(audio.data)))
-  );
+  const [encryptedPhoto, encryptedAudio] = await Promise.all([
+    db.journalPhotos
+      .filter((photo) =>
+        Boolean(photo.data && isEncryptedJournalMediaData(photo.data)) ||
+        Boolean(photo.thumbnail && isEncryptedJournalMediaData(photo.thumbnail)),
+      )
+      .first(),
+    db.journalAudio
+      .filter((audio) => Boolean(audio.data && isEncryptedJournalMediaData(audio.data)))
+      .first(),
+  ]);
+  return Boolean(encryptedPhoto || encryptedAudio);
 }
 
 export async function decryptEncryptedJournalMedia(vaultKey: string): Promise<number> {

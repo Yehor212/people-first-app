@@ -14,7 +14,9 @@ const mocks = vi.hoisted(() => ({
     Promise.resolve(key && data.startsWith("media-enc:" + key + ":") ? data.slice(("media-enc:" + key + ":").length) : ""),
   ),
   isEncryptedJournalMediaData: vi.fn((data: string) => data.startsWith("media-enc:")),
+  audioFilter: vi.fn(),
   photoToArray: vi.fn<() => Promise<JournalPhoto[]>>(() => Promise.resolve([])),
+  photoFilter: vi.fn(),
   photoUpdate: vi.fn(() => Promise.resolve(1)),
   transaction: vi.fn((_mode: string, _tables: unknown, fn: () => unknown) => Promise.resolve(fn())),
   syncJournalAudio: vi.fn(() => Promise.resolve()),
@@ -31,11 +33,13 @@ vi.mock("@/storage/db", () => ({
       update: vi.fn(() => Promise.resolve(1)),
     },
     journalPhotos: {
+      filter: mocks.photoFilter,
       toArray: mocks.photoToArray,
       update: mocks.photoUpdate,
     },
     journalAudio: {
       add: mocks.audioAdd,
+      filter: mocks.audioFilter,
       get: mocks.audioGet,
       toArray: mocks.audioToArray,
       update: mocks.audioUpdate,
@@ -83,6 +87,7 @@ import {
   decryptEncryptedJournalMedia,
   encryptPlaintextJournalMedia,
   getAudioForEntry,
+  hasEncryptedJournalMedia,
   storeAudio,
 } from "../journalStorage";
 
@@ -98,6 +103,35 @@ describe("journalStorage media encryption", () => {
         toArray: mocks.audioToArray,
       })),
     });
+    mocks.photoFilter.mockImplementation((predicate: (photo: JournalPhoto) => boolean) => ({
+      first: vi.fn(() =>
+        Promise.resolve([
+          {
+            id: "photo-plain",
+            entryId: "entry-1",
+            data: "data:image/jpeg;base64,photo",
+            thumbnail: "data:image/jpeg;base64,thumb",
+            width: 100,
+            height: 80,
+            createdAt: 1,
+          },
+        ].find(predicate)),
+      ),
+    }));
+    mocks.audioFilter.mockImplementation((predicate: (audio: JournalAudio) => boolean) => ({
+      first: vi.fn(() =>
+        Promise.resolve([
+          {
+            id: "audio-encrypted",
+            entryId: "entry-1",
+            data: "media-enc:" + vaultKey + ":data:audio/webm;base64,voice",
+            duration: 12,
+            mimeType: "audio/webm",
+            createdAt: 1,
+          },
+        ].find(predicate)),
+      ),
+    }));
   });
 
   it("stores encrypted audio locally and uploads the encrypted payload while returning plaintext to the UI", async () => {
@@ -216,6 +250,15 @@ describe("journalStorage media encryption", () => {
       data: "data:audio/webm;base64,voice",
       storagePath: undefined,
     }));
+  });
+
+  it("detects encrypted media without materializing all local media rows", async () => {
+    await expect(hasEncryptedJournalMedia()).resolves.toBe(true);
+
+    expect(mocks.photoFilter).toHaveBeenCalledTimes(1);
+    expect(mocks.audioFilter).toHaveBeenCalledTimes(1);
+    expect(mocks.photoToArray).not.toHaveBeenCalled();
+    expect(mocks.audioToArray).not.toHaveBeenCalled();
   });
 
   it("migrates plaintext stored media to encrypted rows", async () => {

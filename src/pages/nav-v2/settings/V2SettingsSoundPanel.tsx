@@ -90,11 +90,13 @@ export function SoundPanel() {
       label: t.settingsSoundMapFeedback,
       detail: String(APP_AUDIO_FEEDBACK_EVENTS.length),
     },
-  ];  const textureItems: readonly { texture: AppAudioComfortTexture; label: string }[] = [
+  ];
+  const textureItems: readonly { texture: AppAudioComfortTexture; label: string }[] = [
     { texture: "air", label: t.settingsSoundTextureAir },
     { texture: "water", label: t.settingsSoundTextureWater },
     { texture: "rain", label: t.settingsSoundTextureRain },
-  ];  const feedbackChoiceItems: readonly { choice: AudioComfortFeedbackChoice; label: string }[] = [
+  ];
+  const feedbackChoiceItems: readonly { choice: AudioComfortFeedbackChoice; label: string }[] = [
     { choice: "comfortable", label: t.settingsSoundFeedbackComfortable },
     { choice: "too_loud", label: t.settingsSoundFeedbackTooLoud },
     { choice: "distracting", label: t.settingsSoundFeedbackDistracting },
@@ -298,19 +300,24 @@ export function SoundPanel() {
           title={t.settingsSoundMapTitle}
           description={t.settingsSoundMapDescription}
         />
-        <div className="grid gap-2">
+        <ul
+          aria-label={t.settingsSoundMapTitle}
+          className="divide-y divide-[hsl(var(--settings-v2-border)/0.42)] rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.32)] bg-[hsl(var(--settings-v2-card)/0.26)]"
+        >
           {soundMapItems.map((item) => (
-            <div
+            <li
               key={item.key}
-              className="flex min-h-[44px] items-center justify-between gap-3 rounded-xl border border-[hsl(var(--border)/0.45)] bg-[hsl(var(--card)/0.42)] px-3 py-2"
+              className="flex min-h-[44px] items-center justify-between gap-3 px-3 py-2"
+              data-reference-row="true"
+              data-testid={`settings-v2-sound-map-${item.key}`}
             >
               <span className="min-w-0 text-sm font-medium text-foreground">{item.label}</span>
-              <span className="shrink-0 rounded-full border border-[hsl(var(--border)/0.45)] px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
+              <span className="shrink-0 rounded-[6px] bg-[hsl(var(--settings-v2-shell)/0.56)] px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
                 {item.detail}
               </span>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </SettingsInset>
 
       <SettingsInset testId="settings-v2-action-sound-map-card">
@@ -319,19 +326,24 @@ export function SoundPanel() {
           title={t.settingsSoundActionMapTitle}
           description={t.settingsSoundActionMapDescription}
         />
-        <div className="grid gap-2">
+        <ul
+          aria-label={t.settingsSoundActionMapTitle}
+          className="divide-y divide-[hsl(var(--settings-v2-border)/0.42)] rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.32)] bg-[hsl(var(--settings-v2-card)/0.26)]"
+        >
           {actionSoundItems.map((item) => (
-            <div
+            <li
               key={item.key}
-              className="flex min-h-[44px] items-center justify-between gap-3 rounded-xl border border-[hsl(var(--border)/0.45)] bg-[hsl(var(--card)/0.42)] px-3 py-2"
+              className="flex min-h-[44px] items-center justify-between gap-3 px-3 py-2"
+              data-reference-row="true"
+              data-testid={`settings-v2-action-sound-map-${item.key}`}
             >
               <span className="min-w-0 text-sm font-medium text-foreground">{item.label}</span>
-              <span className="shrink-0 rounded-full border border-[hsl(var(--border)/0.45)] px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
+              <span className="shrink-0 rounded-[6px] bg-[hsl(var(--settings-v2-shell)/0.56)] px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
                 {item.detail}
               </span>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </SettingsInset>
 
       <SettingsInset testId="settings-v2-sound-platform-card">

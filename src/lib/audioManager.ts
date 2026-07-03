@@ -55,7 +55,7 @@ function getAudioSettingsSnapshot(): AudioSettingsSnapshot {
     muted: state.isMuted,
     volume: state.volume,
     feedbackSoundsEnabled,
-    canPlayFeedback: !state.isMuted && feedbackSoundsEnabled,
+    canPlayFeedback: !state.isMuted && state.volume > 0 && feedbackSoundsEnabled,
   };
 }
 
@@ -168,7 +168,7 @@ function playTone(
   type: OscillatorType = 'sine',
   gainScale = 0.1,
 ): void {
-  if (state.isMuted) return;
+  if (state.isMuted || state.volume <= 0) return;
 
   const ctx = getAudioContext();
   if (!ctx) return;
@@ -183,9 +183,12 @@ function playTone(
     oscillator.frequency.value = frequency;
     oscillator.type = type;
 
-    const volume = Math.max(0.0001, state.volume * gainScale);
+    const scaledVolume = state.volume * gainScale;
+    if (scaledVolume <= 0) return;
+    const volume = Math.max(0.0001, scaledVolume);
+    const fadeTarget = Math.min(volume, 0.01);
     gainNode.gain.setValueAtTime(volume, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+    gainNode.gain.exponentialRampToValueAtTime(fadeTarget, ctx.currentTime + duration);
 
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + duration);
@@ -296,13 +299,13 @@ export function playLevelUp(): void {
 
 // Play notification ping
 function playNotificationTone(): void {
-  if (state.isMuted || !shouldPlaySounds()) return;
+  if (state.isMuted || state.volume <= 0 || !shouldPlaySounds()) return;
   playTone(587.33, 0.1, 'sine', 0.05);
 }
 
 export function playNotification(): void {
+  if (state.isMuted || state.volume <= 0 || !shouldPlaySounds()) return;
   if (!canPlayFeedbackSound('notification')) return;
-  if (state.isMuted || !shouldPlaySounds()) return;
   if (!consumeAudioFeedbackBudget('notification')) return;
   playNotificationTone();
 }
@@ -333,8 +336,11 @@ function playSoundNow(type: SoundType): void {
 // Play by sound type. Low-salience action cues are briefly deferred so a
 // rare milestone cue in the same transaction can replace them instead of stacking.
 export function playSound(type: SoundType): void {
+  if (state.isMuted || state.volume <= 0 || !shouldPlaySounds()) {
+    clearPendingActionSound();
+    return;
+  }
   if (!canPlayFeedbackSound(type)) return;
-  if (state.isMuted || !shouldPlaySounds()) return;
 
   if (HIGH_SALIENCE_SOUND_TYPES.has(type)) {
     clearPendingActionSound();
@@ -356,7 +362,7 @@ export function playSound(type: SoundType): void {
   const id = scheduleTimeout(() => {
     pendingActionSound = null;
     if (Date.now() - lastHighSalienceSoundAt < HIGH_SALIENCE_SUPPRESSION_MS) return;
-    if (!canPlayFeedbackSound(type) || state.isMuted || !shouldPlaySounds()) return;
+    if (!canPlayFeedbackSound(type) || state.isMuted || state.volume <= 0 || !shouldPlaySounds()) return;
     if (!consumeAudioFeedbackBudget(type)) return;
     playSoundNow(type);
   }, LOW_SALIENCE_DELAY_MS);

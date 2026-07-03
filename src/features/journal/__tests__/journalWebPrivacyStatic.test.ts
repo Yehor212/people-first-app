@@ -6,6 +6,7 @@ const journalEntryListSource = readFileSync("src/features/journal/JournalEntryLi
 const onThisDaySource = readFileSync("src/features/journal/OnThisDayCard.tsx", "utf8");
 const memoryPortalSource = readFileSync("src/features/journal/MemoryPortalCanvas.tsx", "utf8");
 const exportPickerDialogSource = readFileSync("src/features/journal/ExportPickerDialog.tsx", "utf8");
+const removePasswordDialogSource = readFileSync("src/features/journal/RemovePasswordConfirmDialog.tsx", "utf8");
 const localeSources = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"].map((language) => ({
   language,
   source: readFileSync(`src/i18n/languages/${language}.ts`, "utf8"),
@@ -14,15 +15,66 @@ const localeSources = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"].map((lang
 describe("web diary privacy and reset contracts", () => {
   it("requires password reset sign-in to match the requested account email", () => {
     const resetListenerBlock =
-      /onAuthStateChange\(async \(event, session\)[\s\S]*?subscription = data\.subscription;/.exec(journalModuleSource)?.[0] ?? "";
+      /Magic link fallback:[\s\S]*?subscription\?\.unsubscribe\(\);[\s\S]*?\}, \[consumeVerifiedPasswordReset, resetStep\]\);/.exec(
+        journalModuleSource,
+      )?.[0] ?? "";
+    const resetConsumerBlock =
+      /const consumeVerifiedPasswordReset = useCallback\([\s\S]*?\n\s{2}\);\n\n\s{2}\/\/ --- HOOKS/.exec(
+        journalModuleSource,
+      )?.[0] ?? "";
 
     expect(resetListenerBlock).toContain('event !== "SIGNED_IN"');
     expect(resetListenerBlock).not.toContain("TOKEN_REFRESHED");
+    expect(resetListenerBlock).toContain("hasJournalPasswordResetProof(pending)");
     expect(resetListenerBlock).toContain("parseJournalPasswordResetRequest");
     expect(resetListenerBlock).toContain("session?.user?.email");
-    expect(resetListenerBlock).toContain("signedInEmail !== pending.email");
-    expect(resetListenerBlock.indexOf("signedInEmail !== pending.email")).toBeLessThan(
-      resetListenerBlock.indexOf("security.removePassword()"),
+    expect(resetConsumerBlock).toContain("hasJournalPasswordResetProof(pending)");
+    expect(resetConsumerBlock).toContain("signedInEmail !== pending.email");
+    expect(resetConsumerBlock.indexOf("signedInEmail !== pending.email")).toBeLessThan(
+      resetConsumerBlock.indexOf("security.removePassword()"),
+    );
+    expect(resetConsumerBlock.indexOf("hasJournalPasswordResetProof(pending)")).toBeLessThan(
+      resetConsumerBlock.indexOf("security.removePassword()"),
+    );
+  });
+
+  it("cleans the one-time journal reset nonce from the URL after consuming proof", () => {
+    const resetConsumerBlock =
+      /const consumeVerifiedPasswordReset = useCallback\([\s\S]*?\n\s{2}\);\n\n\s{2}\/\/ --- HOOKS/.exec(
+        journalModuleSource,
+      )?.[0] ?? "";
+
+    expect(resetConsumerBlock).toContain("clearJournalPasswordResetParamFromCurrentUrl()");
+    const consumeIndex = resetConsumerBlock.indexOf("consumeJournalPasswordResetProof");
+    const successCleanupIndex = resetConsumerBlock.indexOf(
+      "clearJournalPasswordResetParamFromCurrentUrl()",
+      consumeIndex,
+    );
+    expect(consumeIndex).toBeGreaterThanOrEqual(0);
+    expect(successCleanupIndex).toBeGreaterThan(consumeIndex);
+    expect(successCleanupIndex).toBeLessThan(
+      resetConsumerBlock.indexOf("security.removePassword()"),
+    );
+  });
+
+  it("uses WebView-safe spaced calc syntax for journal security dialog safe areas", () => {
+    for (const [name, source] of [
+      ["JournalModule", journalModuleSource],
+      ["ExportPickerDialog", exportPickerDialogSource],
+      ["RemovePasswordConfirmDialog", removePasswordDialogSource],
+    ] as const) {
+      expect(source, name).not.toContain("100dvh-env(");
+      expect(source, name).not.toContain("env(safe-area-inset-top)-env");
+    }
+
+    expect(journalModuleSource).toContain(
+      "max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_2rem)]",
+    );
+    expect(exportPickerDialogSource).toContain(
+      "max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_1rem)]",
+    );
+    expect(removePasswordDialogSource).toContain(
+      "max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_2rem)]",
     );
   });
 

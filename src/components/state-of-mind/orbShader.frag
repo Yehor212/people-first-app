@@ -4,6 +4,8 @@ precision highp float;
 
 uniform vec2 uResolution;
 uniform float uTime;
+uniform float uMotionPhase;
+uniform float uNoisePhase;
 uniform float uValence;
 uniform float uIsDark;
 uniform vec3 uColor;
@@ -213,8 +215,9 @@ void main() {
 
   // ── Animation parameters ──
   float rotSpeed = mix(0.055, 0.015, (uValence + 1.0) * 0.5);
-  float rotation = uTime * rotSpeed;
+  float rotation = u_time > 0.0 ? uTime * rotSpeed : uMotionPhase;
   float noiseSpeed = mix(0.85, 0.20, (uValence + 1.0) * 0.5);
+  float noisePhase = u_time > 0.0 ? uTime * noiseSpeed : uNoisePhase;
   // Noise — barely perceptible organic life (Apple: ~1% body variation, clean edges)
   float noiseAmp = 0.003 + (uValence < 0.0 ? abs(uValence) * 0.007 : abs(uValence) * 0.003);
 
@@ -234,18 +237,18 @@ void main() {
   float ca = cos(rotAngle);
   float sa = sin(rotAngle);
   float nv1 = snoise(vec3(
-    ca * 2.5 + uTime * noiseSpeed,
-    sa * 2.5 + uTime * noiseSpeed * 0.7,
+    ca * 2.5 + noisePhase,
+    sa * 2.5 + noisePhase * 0.7,
     10.0
   ));
   float nv2 = snoise(vec3(
-    ca * 5.0 + uTime * noiseSpeed * 1.3 + 100.0,
-    sa * 5.0 + uTime * noiseSpeed * 0.9 + 100.0,
+    ca * 5.0 + noisePhase * 1.3 + 100.0,
+    sa * 5.0 + noisePhase * 0.9 + 100.0,
     10.0
   ));
   float nv3 = snoise(vec3(
-    ca * 10.0 + uTime * noiseSpeed * 1.7 + 200.0,
-    sa * 10.0 + uTime * noiseSpeed * 1.1 + 200.0,
+    ca * 10.0 + noisePhase * 1.7 + 200.0,
+    sa * 10.0 + noisePhase * 1.1 + 200.0,
     10.0
   ));
   float noiseDisp = (nv1 * 0.55 + nv2 * 0.30 + nv3 * 0.15) * noiseAmp * uGenesis;
@@ -254,13 +257,13 @@ void main() {
   float warpAmp = mix(0.006, 0.003, (uValence + 1.0) * 0.5);
   // -1.0 → 0.10 (strong chaotic warping), +1.0 → 0.015 (gentle organic flow)
   float warp1 = snoise(vec3(
-    ca * 1.8 + uTime * noiseSpeed * 0.4,
-    sa * 1.8 + uTime * noiseSpeed * 0.3,
+    ca * 1.8 + noisePhase * 0.4,
+    sa * 1.8 + noisePhase * 0.3,
     uTime * 0.05
   ));
   float warp2 = snoise(vec3(
-    ca * 3.5 + uTime * noiseSpeed * 0.7 + 50.0,
-    sa * 3.5 + uTime * noiseSpeed * 0.5 + 50.0,
+    ca * 3.5 + noisePhase * 0.7 + 50.0,
+    sa * 3.5 + noisePhase * 0.5 + 50.0,
     uTime * 0.08 + 100.0
   ));
   float warpedAngle = rotAngle + (warp1 * 0.65 + warp2 * 0.35) * warpAmp * 6.2832 * uGenesis;

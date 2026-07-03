@@ -165,6 +165,7 @@ describe('NotificationsSection', () => {
       expect(scheduleMoodQuickLogNotification).toHaveBeenCalledWith(
         { hour: 8, minute: 15 },
         'How are you feeling now?',
+        { days: reminders.days, quietHours: reminders.quietHours },
       );
     });
   });

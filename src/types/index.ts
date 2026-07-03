@@ -261,6 +261,7 @@ export interface PrivacySettings {
   analytics: boolean;
   consentShown?: boolean; // GDPR: track if user has been asked for consent
   adConsent?: boolean;    // GDPR: explicit rewarded-ad SDK consent
+  pushNotifications?: boolean; // Explicit consent for remote push token registration
 }
 
 export type ChallengeType =

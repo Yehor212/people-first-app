@@ -89,6 +89,7 @@ export function NotificationsSection({
         await scheduleMoodQuickLogNotification(
           parseReminderTime(reminders.moodTimeMorning),
           t.howAreYouNow || 'How are you feeling? Tap! 😊',
+          { days: reminders.days, quietHours: reminders.quietHours },
         );
       }
     } catch (error) {

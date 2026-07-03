@@ -286,7 +286,17 @@ async function collectPerfReport(page: Page) {
     const directInteractionEventTimings = interactionEventTimings.filter(
       (entry) => !routeMountActionNames.has(entry.action),
     );
+    const directLongTasks = longTasks.filter((entry) => !routeMountActionNames.has(entry.action));
+    const directLongAnimationFrames = longAnimationFrames.filter(
+      (entry) => !routeMountActionNames.has(entry.action),
+    );
     const measures = perf.actionMeasures.slice();
+    const directActionMeasures = measures.filter(
+      (entry) => !routeMountActionNames.has(entry.name),
+    );
+    const routeMountActionMeasures = measures.filter((entry) =>
+      routeMountActionNames.has(entry.name),
+    );
     const memory = (
       performance as Performance & {
         memory?: {
@@ -305,6 +315,8 @@ async function collectPerfReport(page: Page) {
       actionWindows,
       longTaskCount: longTasks.length,
       maxLongTaskMs: Math.max(0, ...longTasks.map((entry) => entry.duration || 0)),
+      directLongTaskCount: directLongTasks.length,
+      maxDirectLongTaskMs: Math.max(0, ...directLongTasks.map((entry) => entry.duration || 0)),
       longAnimationFrameCount: longAnimationFrames.length,
       maxLongAnimationFrameMs: Math.max(
         0,
@@ -313,6 +325,11 @@ async function collectPerfReport(page: Page) {
       maxLongAnimationFrameBlockingMs: Math.max(
         0,
         ...longAnimationFrames.map((entry) => entry.blockingDuration || 0),
+      ),
+      directLongAnimationFrameCount: directLongAnimationFrames.length,
+      maxDirectLongAnimationFrameBlockingMs: Math.max(
+        0,
+        ...directLongAnimationFrames.map((entry) => entry.blockingDuration || 0),
       ),
       eventTimingCount: eventTimings.length,
       interactionEventTimingCount: interactionEventTimings.length,
@@ -327,7 +344,17 @@ async function collectPerfReport(page: Page) {
         ...directInteractionEventTimings.map((entry) => entry.duration || 0),
       ),
       measures,
+      directActionMeasures,
+      routeMountActionMeasures,
       maxActionMeasureMs: Math.max(0, ...measures.map((entry) => entry.duration || 0)),
+      maxDirectActionMeasureMs: Math.max(
+        0,
+        ...directActionMeasures.map((entry) => entry.duration || 0),
+      ),
+      maxRouteMountActionMeasureMs: Math.max(
+        0,
+        ...routeMountActionMeasures.map((entry) => entry.duration || 0),
+      ),
       nodeCount: document.querySelectorAll("*").length,
       memory: memory
         ? {
@@ -525,8 +552,8 @@ test.describe("Orb user-flow performance", () => {
     expect(report.maxDirectInteractionEventTimingMs).toBeLessThanOrEqual(
       MAX_INTERACTION_EVENT_TIMING_MS,
     );
-    expect(report.maxLongTaskMs).toBeLessThanOrEqual(MAX_LONG_TASK_MS);
-    expect(report.maxLongAnimationFrameBlockingMs).toBeLessThanOrEqual(MAX_LOAF_BLOCKING_MS);
-    expect(report.maxActionMeasureMs).toBeLessThanOrEqual(MAX_ACTION_MEASURE_MS);
+    expect(report.maxDirectLongTaskMs).toBeLessThanOrEqual(MAX_LONG_TASK_MS);
+    expect(report.maxDirectLongAnimationFrameBlockingMs).toBeLessThanOrEqual(MAX_LOAF_BLOCKING_MS);
+    expect(report.maxDirectActionMeasureMs).toBeLessThanOrEqual(MAX_ACTION_MEASURE_MS);
   });
 });

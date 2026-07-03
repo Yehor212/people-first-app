@@ -25,6 +25,82 @@ describe("audio blind-spot release contracts", () => {
     expect(serviceWorker).toContain("purgeOnQuotaError: true");
   });
 
+
+  it("serves shipped PWA audio from a full-response-backed range-aware cache", () => {
+    const serviceWorker = read("src/sw.ts");
+
+    expect(serviceWorker).toContain('workbox-range-requests');
+    expect(serviceWorker).toContain('new RangeRequestsPlugin()');
+    expect(serviceWorker).toContain('workbox-cacheable-response');
+    expect(serviceWorker).toContain('new CacheableResponsePlugin');
+    expect(serviceWorker).toContain('statuses: [200]');
+    expect(serviceWorker).not.toContain('statuses: [200, 206]');
+    expect(serviceWorker).toContain('APP_AUDIO_SW_CACHE_PATHS');
+    expect(serviceWorker).toContain('warmRuntimeAudioCache');
+    expect(serviceWorker).toContain('sounds/soft-air-veil.mp3');
+    expect(serviceWorker).toContain('sounds/gentle-water-bed.mp3');
+    expect(serviceWorker).toContain('sounds/soft-rain-veil.mp3');
+    expect(serviceWorker).toContain('sounds/hyperfocus/hyperfocus-forest-soft.mp3');
+    expect(serviceWorker).toContain('sounds/hyperfocus/hyperfocus-wind-intense.mp3');
+  });
+
+  it("keeps shipped audio cache warming out of the blocking service-worker install path", () => {
+    const serviceWorker = read("src/sw.ts");
+    const mainEntry = read("src/main.tsx");
+    const installListener =
+      serviceWorker.match(/self\.addEventListener\("install", \(event\) => \{[\s\S]*?\n\}\);/)?.[0] ??
+      "";
+
+    expect(installListener).toContain("self.skipWaiting()");
+    expect(installListener).not.toContain("warmRuntimeAudioCache");
+    expect(serviceWorker).toContain('"WARM_RUNTIME_AUDIO_CACHE"');
+    expect(serviceWorker).toContain("AUDIO_CACHE_WARM_CONCURRENCY");
+    expect(serviceWorker).toContain("AUDIO_CACHE_WARM_FETCH_TIMEOUT_MS");
+    expect(serviceWorker).toContain("event.waitUntil(warmRuntimeAudioCacheOnce())");
+    expect(mainEntry).toContain('"WARM_RUNTIME_AUDIO_CACHE"');
+    expect(mainEntry).toContain("scheduleRuntimeAudioCacheWarmAfterStartup");
+    expect(mainEntry).toContain("scheduleIdle(");
+  });
+
+  it("only warms shipped audio after startup when network and app context make it low-risk", () => {
+    const mainEntry = read("src/main.tsx");
+
+    expect(mainEntry).toContain("shouldWarmRuntimeAudioCacheAfterStartup");
+    expect(mainEntry).toContain("getRuntimeAudioConnection");
+    expect(mainEntry).toContain("connection?: NetworkConnectionLike");
+    expect(mainEntry).toContain("saveData");
+    expect(mainEntry).toContain("effectiveType");
+    expect(mainEntry).toContain("(display-mode: standalone)");
+    expect(mainEntry).toContain('"audioCacheWarm"');
+    expect(mainEntry).toContain("if (!shouldWarmRuntimeAudioCacheAfterStartup()) return;");
+  });
+
+  it("bounds service-worker navigation fetches before falling back to the app shell", () => {
+    const serviceWorker = read("src/sw.ts");
+
+    expect(serviceWorker).toContain("NAVIGATION_NETWORK_TIMEOUT_MS");
+    expect(serviceWorker).toContain("fetchNavigationWithTimeout");
+    expect(serviceWorker).toContain("new AbortController()");
+    expect(serviceWorker).toContain("signal: controller.signal");
+    expect(serviceWorker).toContain("self.setTimeout(() => controller.abort(), NAVIGATION_NETWORK_TIMEOUT_MS)");
+    expect(serviceWorker).toContain("self.clearTimeout(timeoutId)");
+    expect(serviceWorker).toContain("return await fetchNavigationWithTimeout(request)");
+  });
+
+  it("keeps first-party app audio elements compatible with service-worker cached media", () => {
+    const audioSurfaces = [
+      read("src/components/auth-screen/AuthScreen.tsx"),
+      read("src/pages/nav-v2/OrbAmbienceControl.tsx"),
+      read("src/pages/nav-v2/settings/V2SettingsDiaryAmbienceControl.tsx"),
+      read("src/pages/nav-v2/DiaryPage.tsx"),
+      read("src/lib/ambientSounds.ts"),
+    ];
+
+    for (const source of audioSurfaces) {
+      expect(source).toContain('crossOrigin');
+    }
+  });
+
   it("wires the audio guard into local CI, deploy CI, and drift checks", () => {
     const packageJson = JSON.parse(read("package.json")) as { scripts: Record<string, string> };
     const deployWorkflow = read(".github/workflows/deploy.yml");

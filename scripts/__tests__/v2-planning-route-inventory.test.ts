@@ -38,7 +38,8 @@ describe("V2 Planning route inventory", () => {
 
     expect(workflow).toContain("name: Prepare V2 GitHub Pages artifact");
     expect(workflow).toContain("node scripts/prepare-pages-artifact.cjs");
-    expect(workflow).toContain("path: v2-src/dist");
+    expect(workflow).toContain("path: v2-src/output/pages-artifact.nosync");
+    expect(workflow).toContain("github.event.inputs.publish_target == 'overwrite-github-pages'");
     expect(workflow).not.toContain("v1-src");
   });
 

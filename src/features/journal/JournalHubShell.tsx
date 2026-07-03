@@ -70,6 +70,7 @@ interface JournalHubShellProps {
   onAddGratitude?: (entry: GratitudeEntry) => void;
   onReleaseThought?: () => void | Promise<void>;
   onOpenStats: () => void;
+  useSharedDiaryWallpaper?: boolean;
 }
 
 const VIEW_META: Record<
@@ -141,6 +142,7 @@ export function JournalHubShell({
   onAddGratitude,
   onReleaseThought,
   onOpenStats,
+  useSharedDiaryWallpaper = false,
 }: JournalHubShellProps) {
   const reducedMotion = useReducedMotion();
   const [preferences, setPreferences] = useState<JournalHubPreferences>(
@@ -360,6 +362,7 @@ export function JournalHubShell({
                   daysSinceLastEntry={daysSinceLastEntry}
                   privateMode={privateMode}
                   onAddGratitude={onAddGratitude}
+                  useSharedDiaryWallpaper={useSharedDiaryWallpaper}
                   showFab={false}
                 />
               </div>

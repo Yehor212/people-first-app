@@ -67,12 +67,14 @@ struct VertexOut {
 fn uResolution() -> vec2<f32> { return u.v[0].xy; }
 fn uTime() -> f32 { return u.v[0].z; }
 fn uValence() -> f32 { return u.v[0].w; }
+fn uMotionPhase() -> f32 { return u.v[1].w; }
 fn uIsDark() -> f32 { return u.v[1].x; }
 fn uGenesis() -> f32 { return u.v[1].y; }
 fn uShimmer() -> f32 { return u.v[1].z; }
 fn uColor() -> vec3<f32> { return u.v[2].xyz; }
 fn uShape() -> vec4<f32> { return u.v[3]; }
 fn uTouch() -> vec3<f32> { return u.v[4].xyz; }
+fn uNoisePhase() -> f32 { return u.v[4].w; }
 fn uParticle(i: i32) -> vec4<f32> { return u.v[5 + i]; }
 
 @vertex
@@ -204,9 +206,8 @@ fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
   let dist = length(center);
   let angle = atan2(center.y, center.x);
 
-  let rotSpeed = mix(0.055, 0.015, (valence + 1.0) * 0.5);
-  let rotation = time * rotSpeed;
-  let noiseSpeed = mix(0.85, 0.20, (valence + 1.0) * 0.5);
+  let rotation = uMotionPhase();
+  let noisePhase = uNoisePhase();
   let noiseAmp = 0.003 + select(abs(valence) * 0.003, abs(valence) * 0.007, valence < 0.0);
 
   let breathPeriod = mix(8.0, 16.0, (valence + 1.0) * 0.5);
@@ -221,14 +222,14 @@ fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
   let rotAngle = angle + rotation;
   let ca = cos(rotAngle);
   let sa = sin(rotAngle);
-  let nv1 = snoise(vec3<f32>(ca * 2.5 + time * noiseSpeed, sa * 2.5 + time * noiseSpeed * 0.7, 10.0));
-  let nv2 = snoise(vec3<f32>(ca * 5.0 + time * noiseSpeed * 1.3 + 100.0, sa * 5.0 + time * noiseSpeed * 0.9 + 100.0, 10.0));
-  let nv3 = snoise(vec3<f32>(ca * 10.0 + time * noiseSpeed * 1.7 + 200.0, sa * 10.0 + time * noiseSpeed * 1.1 + 200.0, 10.0));
+  let nv1 = snoise(vec3<f32>(ca * 2.5 + noisePhase, sa * 2.5 + noisePhase * 0.7, 10.0));
+  let nv2 = snoise(vec3<f32>(ca * 5.0 + noisePhase * 1.3 + 100.0, sa * 5.0 + noisePhase * 0.9 + 100.0, 10.0));
+  let nv3 = snoise(vec3<f32>(ca * 10.0 + noisePhase * 1.7 + 200.0, sa * 10.0 + noisePhase * 1.1 + 200.0, 10.0));
   let noiseDisp = (nv1 * 0.55 + nv2 * 0.30 + nv3 * 0.15) * noiseAmp * uGenesis();
 
   let warpAmp = mix(0.006, 0.003, (valence + 1.0) * 0.5);
-  let warp1 = snoise(vec3<f32>(ca * 1.8 + time * noiseSpeed * 0.4, sa * 1.8 + time * noiseSpeed * 0.3, time * 0.05));
-  let warp2 = snoise(vec3<f32>(ca * 3.5 + time * noiseSpeed * 0.7 + 50.0, sa * 3.5 + time * noiseSpeed * 0.5 + 50.0, time * 0.08 + 100.0));
+  let warp1 = snoise(vec3<f32>(ca * 1.8 + noisePhase * 0.4, sa * 1.8 + noisePhase * 0.3, time * 0.05));
+  let warp2 = snoise(vec3<f32>(ca * 3.5 + noisePhase * 0.7 + 50.0, sa * 3.5 + noisePhase * 0.5 + 50.0, time * 0.08 + 100.0));
   let warpedAngle = rotAngle + (warp1 * 0.65 + warp2 * 0.35) * warpAmp * 6.2832 * uGenesis();
 
   let stableShapeM = select(shape.x, 3.0, valence < 0.0);
@@ -653,7 +654,7 @@ export async function createOrbWebGPUAsync(
         uniformData[4] = params.isDark ? 1 : 0;
         uniformData[5] = params.genesis;
         uniformData[6] = params.shimmer;
-        uniformData[7] = params.dpr;
+        uniformData[7] = params.motionPhase;
 
         const [r, g, b] = hslToRgb(params.color.h, params.color.s, params.color.l);
         uniformData[8] = r;
@@ -669,7 +670,7 @@ export async function createOrbWebGPUAsync(
         uniformData[16] = params.touch.x;
         uniformData[17] = params.touch.y;
         uniformData[18] = params.touch.age;
-        uniformData[19] = 0;
+        uniformData[19] = params.noisePhase;
 
         for (let i = 0; i < PARTICLE_COUNT; i += 1) {
           const offset = (5 + i) * 4;

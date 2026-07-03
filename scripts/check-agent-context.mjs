@@ -179,6 +179,33 @@ function assertAgentChangeGovernance(agents) {
     }
   }
 
+  const codexHooks = assertGovernanceFile(".codex/hooks.json");
+  if (codexHooks) {
+    for (const marker of ["UserPromptSubmit", "Stop", "SubagentStart", "SubagentStop", "no-ai-template-gate.cjs"]) {
+      if (!codexHooks.includes(marker)) {
+        fail(`.codex/hooks.json must register no-AI-template hook marker ${marker}`);
+      }
+    }
+  }
+
+  const noAiHook = assertGovernanceFile(".codex/hooks/no-ai-template-gate.cjs");
+  if (noAiHook) {
+    for (const marker of [
+      "NO AI TEMPLATE GATE",
+      "SUBAGENT EVIDENCE CONTRACT",
+      "Best-Practices-Only Proposal Gate",
+      "best-practices laundering",
+      "subagent proof laundering",
+      "source-backed applicability",
+      "SubagentStop",
+      "process.exit(2)",
+    ]) {
+      if (!noAiHook.includes(marker)) {
+        fail(`.codex/hooks/no-ai-template-gate.cjs must include ${marker}`);
+      }
+    }
+  }
+
   const prTemplate = assertGovernanceFile(".github/PULL_REQUEST_TEMPLATE.md");
   if (prTemplate) {
     if (!hasHeading(prTemplate, "Agent Change Notice")) {
@@ -259,6 +286,12 @@ function assertAgentChangeGovernance(agents) {
   if (telegramWorkflow) {
     if (/git add -A/.test(telegramWorkflow)) {
       fail("telegram-control.yml must not use git add -A");
+    }
+    if (/\n\s+issues:\s+write\b/.test(telegramWorkflow)) {
+      fail("telegram-control.yml must not grant issues: write unless it creates or edits issues");
+    }
+    if (/run:\s+npm install\b/.test(telegramWorkflow)) {
+      fail("telegram-control.yml must use npm ci for reproducible privileged installs");
     }
     if (/--body[\s\S]{0,500}Prompt:\\n\$\{PROMPT\}/.test(telegramWorkflow)) {
       fail("telegram-control.yml must not write the raw Telegram prompt into PR bodies");
@@ -384,6 +417,14 @@ function assertNoAiTemplatesGateContract(agents) {
       "npm run check:no-ai-templates",
       "ИИ шаблоны",
       "layered enforcement",
+      "ZenFlow Idea Quality Gate",
+      "Do not answer brainstorming requests with standalone feature-name lists",
+      "Best-Practices-Only Proposal Gate",
+      "Do not present recommendations as best practices",
+      ".codex/hooks/no-ai-template-gate.cjs",
+      "SubagentStart",
+      "SubagentStop",
+      "subagent proof laundering",
     ]) {
       if (!agents.includes(marker)) {
         fail(`AGENTS.md must include no-AI-template marker "${marker}"`);
@@ -397,12 +438,27 @@ function assertNoAiTemplatesGateContract(agents) {
       "Source Evidence",
       "Enforcement Layers",
       "Required Agent Behavior",
+      "ZenFlow Idea Quality Gate",
+      "Feature-name lists are not product ideas",
+      "user failure mode",
+      "local ZenFlow evidence",
+      "acceptance or kill criteria",
+      "Best-Practices-Only Proposal Gate",
+      "best-practices laundering",
+      "source-backed applicability",
+      "tradeoffs and rejection criteria",
+      "verification path",
       "Static Guard",
       "https://www.nist.gov/itl/ai-risk-management-framework",
       "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+      "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html",
       "https://developers.openai.com/codex/guides/agents-md",
+      "https://developers.openai.com/codex/hooks",
+      "https://developers.openai.com/codex/subagents",
+      "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
       "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches",
       "https://google.github.io/eng-practices/review/developer/small-cls.html",
+      "https://pair.withgoogle.com/chapter/user-needs/",
       "UNVERIFIED",
     ]) {
       if (!policy.includes(marker)) {
@@ -448,6 +504,15 @@ function assertNoAiTemplatesGateContract(agents) {
     for (const marker of ["Source Evidence", "No AI-template output", "rejects obvious AI-template markers"]) {
       if (!tests.includes(marker)) {
         fail(`scripts/__tests__/no-ai-templates-policy.test.ts must cover ${marker}`);
+      }
+    }
+  }
+
+  const hookTests = assertGovernanceFile("scripts/__tests__/no-ai-template-hook.test.ts");
+  if (hookTests) {
+    for (const marker of ["no-ai-template-gate.cjs", "UserPromptSubmit", "Stop", "SubagentStart", "SubagentStop", "SUBAGENT EVIDENCE CONTRACT", "subagent proof laundering", "best-practices laundering"]) {
+      if (!hookTests.includes(marker)) {
+        fail(`scripts/__tests__/no-ai-template-hook.test.ts must cover ${marker}`);
       }
     }
   }

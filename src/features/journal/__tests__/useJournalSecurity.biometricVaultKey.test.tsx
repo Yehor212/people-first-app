@@ -22,6 +22,11 @@ const biometricMocks = vi.hoisted(() => ({
     Promise.resolve({ success: true, secret: biometricTestValues.vaultKey }),
   ),
 }));
+const syncMocks = vi.hoisted(() => ({
+  isCloudSyncEnabled: vi.fn(() => true),
+  syncSetting: vi.fn(() => Promise.resolve()),
+  deleteSettingFromCloud: vi.fn(() => Promise.resolve()),
+}));
 const vaultCryptoMocks = vi.hoisted(() => ({
   generateJournalVaultKey: vi.fn(() => biometricTestValues.vaultKey),
   wrapJournalVaultKey: vi.fn((vaultKey: string, password: string) =>
@@ -58,6 +63,15 @@ vi.mock("@/lib/logger", () => ({
     log: vi.fn(),
     warn: vi.fn(),
   },
+}));
+
+vi.mock("@/lib/cloudSyncSettings", () => ({
+  isCloudSyncEnabled: syncMocks.isCloudSyncEnabled,
+}));
+
+vi.mock("@/storage/sync/syncSettings", () => ({
+  syncSetting: syncMocks.syncSetting,
+  deleteSettingFromCloud: syncMocks.deleteSettingFromCloud,
 }));
 
 vi.mock("@/storage/db", () => ({
@@ -177,5 +191,111 @@ describe("useJournalSecurity iOS biometric vault key lifecycle", () => {
 
     expect(hook.result.current.isUnlocked).toBe(false);
     expect(hook.result.current.vaultKey).toBeNull();
+  });
+
+  it("reports biometric enrollment failure without enabling biometric unlock", async () => {
+    biometricMocks.enroll.mockResolvedValueOnce({ success: false });
+    const hook = renderHook(() => useJournalSecurity());
+
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await waitFor(() => expect(hook.result.current.biometricAvailable).toBe(true));
+
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+
+    await act(async () => {
+      await expect(hook.result.current.setBiometricEnabled(true)).resolves.toBe(false);
+    });
+
+    expect(hook.result.current.biometricEnabled).toBe(false);
+    expect(settingsStore.get("journal_biometric")?.value).toBe(false);
+  });
+
+  it("does not mark biometric unlock disabled when native unenroll reports failure", async () => {
+    const hook = renderHook(() => useJournalSecurity());
+
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await waitFor(() => expect(hook.result.current.biometricAvailable).toBe(true));
+
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+    await act(async () => {
+      await expect(hook.result.current.setBiometricEnabled(true)).resolves.toBe(true);
+    });
+    biometricMocks.unenroll.mockResolvedValueOnce({
+      success: false,
+      error: "Keychain item could not be deleted",
+    });
+
+    await act(async () => {
+      await expect(hook.result.current.setBiometricEnabled(false)).resolves.toBe(false);
+    });
+
+    expect(hook.result.current.biometricEnabled).toBe(true);
+    expect(settingsStore.get("journal_biometric")?.value).toBe(true);
+  });
+
+  it("does not leave biometric unlock marked enabled after native cleanup succeeds but password removal fails", async () => {
+    const hook = renderHook(() => useJournalSecurity());
+
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await waitFor(() => expect(hook.result.current.biometricAvailable).toBe(true));
+
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+    await act(async () => {
+      await expect(hook.result.current.setBiometricEnabled(true)).resolves.toBe(true);
+    });
+
+    syncMocks.deleteSettingFromCloud.mockRejectedValueOnce(new Error("cloud delete failed"));
+
+    await act(async () => {
+      await expect(hook.result.current.removePassword()).rejects.toThrow("cloud delete failed");
+    });
+
+    expect(biometricMocks.unenroll).toHaveBeenCalledTimes(1);
+    expect(journalStorageMocks.decryptEncryptedJournalEntries).not.toHaveBeenCalled();
+    expect(journalStorageMocks.decryptEncryptedJournalMedia).not.toHaveBeenCalled();
+    expect(settingsStore.has("journal_password")).toBe(true);
+    expect(settingsStore.has("journal_vault_key")).toBe(true);
+    expect(hook.result.current.hasPassword).toBe(true);
+    expect(hook.result.current.biometricEnabled).toBe(false);
+    expect(settingsStore.get("journal_biometric")?.value).toBe(false);
+  });
+
+  it("does not remove native biometric credentials when locked encrypted content blocks password removal", async () => {
+    const hook = renderHook(() => useJournalSecurity());
+
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await waitFor(() => expect(hook.result.current.biometricAvailable).toBe(true));
+
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+    await act(async () => {
+      await expect(hook.result.current.setBiometricEnabled(true)).resolves.toBe(true);
+    });
+    await act(async () => {
+      hook.result.current.lock();
+    });
+
+    vi.clearAllMocks();
+    journalStorageMocks.hasEncryptedJournalContent.mockResolvedValueOnce(true);
+
+    await act(async () => {
+      await expect(hook.result.current.removePassword()).rejects.toThrow(
+        "Unlock your diary before removing password protection.",
+      );
+    });
+
+    expect(biometricMocks.unenroll).not.toHaveBeenCalled();
+    expect(journalStorageMocks.decryptEncryptedJournalEntries).not.toHaveBeenCalled();
+    expect(settingsStore.has("journal_password")).toBe(true);
+    expect(settingsStore.has("journal_vault_key")).toBe(true);
+    expect(hook.result.current.hasPassword).toBe(true);
+    expect(hook.result.current.biometricEnabled).toBe(true);
   });
 });

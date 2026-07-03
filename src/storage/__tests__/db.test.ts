@@ -150,6 +150,8 @@ describe('clearLocalUserData', () => {
     await db.settings.put({ key: 'sync-last-seq', value: 42 });
     await db.settings.put({ key: 'zenflow-device-id', value: 'device-old' });
     await db.settings.put({ key: 'zenflow-deleted-habit-ids', value: ['habit-old'] });
+    await db.settings.put({ key: 'journal_vault_key', value: { wrappedKey: 'wrapped-key' } });
+    await db.settings.put({ key: 'journal_password_reset_proof', value: { nonce: 'reset-proof' } });
     await db.settings.put({ key: 'journal_draft_new', value: { title: 'private draft' } });
     await db.settings.put({ key: 'journal_draft_entry-1', value: { title: 'entry draft' } });
 
@@ -161,6 +163,8 @@ describe('clearLocalUserData', () => {
     localStorage.setItem('zenflow-device-id', 'device-old');
     localStorage.setItem('sync-last-seq', '42');
     localStorage.setItem('zenflow-deleted-habit-ids', '["habit-old"]');
+    localStorage.setItem('journal_vault_key', '{"wrappedKey":"wrapped-key"}');
+    localStorage.setItem('journal_password_reset_proof', '{"nonce":"reset-proof"}');
     localStorage.setItem('journal_draft_new', '{"title":"private draft"}');
   });
 
@@ -214,6 +218,20 @@ describe('clearLocalUserData', () => {
     expect(localStorage.getItem('sync-last-seq')).toBeNull();
     expect(localStorage.getItem('zenflow-device-id')).toBeNull();
     expect(localStorage.getItem('zenflow-deleted-habit-ids')).toBeNull();
+  });
+
+  it('clears wrapped journal vault keys at the account boundary', async () => {
+    await clearLocalUserData();
+
+    await expect(db.settings.get('journal_vault_key')).resolves.toBeUndefined();
+    expect(localStorage.getItem('journal_vault_key')).toBeNull();
+  });
+
+  it('clears pending journal reset proof at the account boundary', async () => {
+    await clearLocalUserData();
+
+    await expect(db.settings.get('journal_password_reset_proof')).resolves.toBeUndefined();
+    expect(localStorage.getItem('journal_password_reset_proof')).toBeNull();
   });
 
   it('clears dynamic unsaved journal draft settings at the account boundary', async () => {

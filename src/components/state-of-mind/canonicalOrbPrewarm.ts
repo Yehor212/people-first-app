@@ -52,6 +52,8 @@ function createPrewarmPayload() {
   return {
     valence,
     time: 0,
+    motionPhase: 0,
+    noisePhase: 0,
     size: PREWARM_SIZE,
     dpr: 1,
     isDark: document.documentElement.classList.contains("dark"),

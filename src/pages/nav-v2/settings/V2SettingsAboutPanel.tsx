@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Scale,
   Shield,
-  Smartphone,
   Sparkles,
   Type,
 } from "lucide-react";
@@ -36,7 +35,6 @@ import {
   SettingsInsetButton,
   SettingsStatus,
 } from "./components/V2SettingsControlPrimitives";
-import type { V2SettingsControls } from "./types";
 
 const FONT_SCALE_LABELS: Record<number, string> = {
   0.85: "fontScaleTiny",
@@ -48,7 +46,7 @@ const FONT_SCALE_LABELS: Record<number, string> = {
   1.5: "fontScaleXXL",
 };
 
-export function AboutPanel({ controls }: { controls: V2SettingsControls }) {
+export function AboutPanel() {
   const { t, language } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const { canInstall, isInstalled, promptInstall } = usePwaInstall();
@@ -122,11 +120,6 @@ export function AboutPanel({ controls }: { controls: V2SettingsControls }) {
           </span>
         </SettingsInsetButton>
 
-        {controls.onOpenWidgetSettings && (
-          <ActionButton icon={Smartphone} onClick={controls.onOpenWidgetSettings}>
-            {tx.widgetSettings || "Widget Settings"}
-          </ActionButton>
-        )}
 
         <SettingsInset>
           <SettingsFieldHeader
@@ -153,44 +146,67 @@ export function AboutPanel({ controls }: { controls: V2SettingsControls }) {
           />
         </SettingsInset>
 
-        <SettingsButtonGrid columns="two">
-          <ActionButton icon={Sparkles} onClick={() => setShowDopamineSettings(true)}>
-            {tx.dopamineSettings || "Feedback style"}
-          </ActionButton>
-          <ActionButton icon={History} onClick={() => setShowChangelog(true)}>
-            {tx.changelogTitle || "Version History"}
-          </ActionButton>
-          <ActionButton icon={MessageSquare} onClick={() => setShowFeedback(true)}>
-            {tx.sendFeedback || "Send feedback"}
-          </ActionButton>
-          <ActionButton
+        <div className="space-y-3" data-testid="settings-v2-about-experience-group">
+          <SettingsFieldHeader
+            icon={Sparkles}
+            title={tx.settingsAboutExperienceTitle || "Experience controls"}
+            description={
+              tx.settingsAboutExperienceDescription ||
+              "Motion preferences, release notes, and app feedback live together."
+            }
+          />
+          <SettingsButtonGrid columns="two">
+            <ActionButton icon={Sparkles} onClick={() => setShowDopamineSettings(true)}>
+              {tx.dopamineSettings || "Feedback style"}
+            </ActionButton>
+            <ActionButton icon={History} onClick={() => setShowChangelog(true)}>
+              {tx.changelogTitle || "Version History"}
+            </ActionButton>
+          </SettingsButtonGrid>
+        </div>
+
+        <div className="space-y-3" data-testid="settings-v2-about-support-legal-group">
+          <SettingsFieldHeader
             icon={Shield}
-            onClick={() => {
-              setLegalTab("privacy");
-              setShowLegal(true);
-            }}
-          >
-            {tx.privacyPolicy || "Privacy Policy"}
-          </ActionButton>
-          <ActionButton
-            icon={FileText}
-            onClick={() => {
-              setLegalTab("terms");
-              setShowLegal(true);
-            }}
-          >
-            {tx.termsOfService || "Terms of Service"}
-          </ActionButton>
-          <ActionButton
-            icon={Scale}
-            onClick={() => {
-              setLegalTab("licenses");
-              setShowLegal(true);
-            }}
-          >
-            {tx.openSourceLicenses || "Open source licenses"}
-          </ActionButton>
-        </SettingsButtonGrid>
+            title={tx.settingsAboutSupportLegalTitle || "Support and legal"}
+            description={
+              tx.settingsAboutSupportLegalDescription ||
+              "Privacy, terms, licenses, and contact options."
+            }
+          />
+          <SettingsButtonGrid columns="two">
+            <ActionButton icon={MessageSquare} onClick={() => setShowFeedback(true)}>
+              {tx.sendFeedback || "Send feedback"}
+            </ActionButton>
+            <ActionButton
+              icon={Shield}
+              onClick={() => {
+                setLegalTab("privacy");
+                setShowLegal(true);
+              }}
+            >
+              {tx.privacyPolicy || "Privacy Policy"}
+            </ActionButton>
+            <ActionButton
+              icon={FileText}
+              onClick={() => {
+                setLegalTab("terms");
+                setShowLegal(true);
+              }}
+            >
+              {tx.termsOfService || "Terms of Service"}
+            </ActionButton>
+            <ActionButton
+              icon={Scale}
+              onClick={() => {
+                setLegalTab("licenses");
+                setShowLegal(true);
+              }}
+            >
+              {tx.openSourceLicenses || "Open source licenses"}
+            </ActionButton>
+          </SettingsButtonGrid>
+        </div>
 
         {isInstalled && (
           <SettingsInset tone="success">

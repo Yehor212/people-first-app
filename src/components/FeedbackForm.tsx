@@ -65,8 +65,6 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
         app_version: APP_VERSION,
       };
 
-      logger.log("[Feedback] Submitting:", feedbackData);
-
       // Always save to localStorage as backup first
       const saveToLocalStorage = () => {
         try {
@@ -173,7 +171,12 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
             </button>
           </div>
 
-          <div className="space-y-4 pb-6">
+            <div className="space-y-4 pb-6">
+            <p className="rounded-xl border border-border bg-secondary/60 p-3 text-xs leading-relaxed text-muted-foreground">
+              {t.feedbackPrivacyNotice ||
+                "Feedback may include your message, optional email, app version, platform, screen size, language, and browser info. Do not use this for urgent safety or medical support."}
+            </p>
+
             {/* Category Selection */}
             <div className="flex gap-2">
               {categories.map((cat) => (

@@ -1,9 +1,13 @@
 import {
+  useEffect,
+  useRef,
   type AriaRole,
   type ChangeEvent,
+  type KeyboardEvent,
+  type KeyboardEventHandler,
   type ReactNode,
 } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SettingsButtonGridProps {
@@ -21,6 +25,7 @@ interface SettingsTextInputProps {
   autoComplete?: string;
   disabled?: boolean;
   fill?: boolean;
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   tone?: "neutral" | "danger";
 }
 
@@ -43,6 +48,16 @@ interface SettingsExternalLinkProps {
   size?: "xs" | "sm";
 }
 
+interface SettingsInlineButtonProps {
+  children: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  icon?: LucideIcon;
+  isLoading?: boolean;
+  testId?: string;
+  variant?: "primary" | "secondary" | "danger";
+}
+
 interface SettingsDialogProps {
   titleId: string;
   title: string;
@@ -52,6 +67,7 @@ interface SettingsDialogProps {
   confirmLabel: string;
   onCancel: () => void;
   onConfirm: () => void;
+  confirmVariant?: "primary" | "secondary" | "danger";
 }
 
 const SETTINGS_BUTTON_GRID_CLASS: Record<
@@ -65,11 +81,11 @@ const SETTINGS_BUTTON_GRID_CLASS: Record<
 
 const SETTINGS_INLINE_BUTTON_CLASS = {
   primary:
-    "zen-gradient text-primary-foreground focus-visible:ring-ring focus-visible:ring-offset-2",
+    "border border-[hsl(var(--settings-v2-accent)/0.45)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-[hsl(var(--settings-v2-accent))] hover:bg-[hsl(var(--settings-v2-accent)/0.2)] focus-visible:ring-[hsl(var(--settings-v2-accent)/0.65)] focus-visible:ring-offset-2",
   secondary:
-    "bg-secondary text-secondary-foreground hover:bg-muted focus-visible:ring-ring focus-visible:ring-offset-2",
+    "border border-[hsl(var(--settings-v2-border)/0.46)] bg-[hsl(var(--settings-v2-panel)/0.62)] text-foreground hover:bg-[hsl(var(--settings-v2-panel)/0.82)] focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] focus-visible:ring-offset-2",
   danger:
-    "bg-destructive text-destructive-foreground focus-visible:ring-destructive/40 disabled:opacity-60",
+    "border border-destructive/25 bg-destructive/10 text-destructive hover:bg-destructive/15 focus-visible:ring-destructive/40 disabled:opacity-60",
 };
 
 export function SettingsButtonGrid({
@@ -93,6 +109,7 @@ export function SettingsTextInput({
   autoComplete,
   disabled,
   fill = false,
+  onKeyDown,
   tone = "neutral",
 }: SettingsTextInputProps) {
   return (
@@ -103,12 +120,13 @@ export function SettingsTextInput({
       onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.target.value)}
       autoComplete={autoComplete}
       disabled={disabled}
+      onKeyDown={onKeyDown}
       className={cn(
-        "min-h-[48px] w-full rounded-2xl px-4 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60",
+        "min-h-[48px] w-full rounded-[8px] px-4 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] disabled:cursor-not-allowed disabled:opacity-60",
         fill && "flex-1",
         tone === "danger"
           ? "border border-destructive/20 bg-background"
-          : "border border-[hsl(var(--border)/0.55)] bg-[hsl(var(--background)/0.48)]",
+          : "border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-shell)/0.46)]",
       )}
     />
   );
@@ -126,7 +144,7 @@ export function SettingsSelectField({
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-[48px] w-full appearance-none rounded-2xl border border-[hsl(var(--border)/0.55)] bg-[hsl(var(--card)/0.58)] px-4 pe-11 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="min-h-[48px] w-full appearance-none rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-shell)/0.46)] px-4 pe-11 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)]"
       >
         {options.map((option) => (
           <option key={String(option.value)} value={option.value}>
@@ -141,26 +159,35 @@ export function SettingsSelectField({
 
 export function SettingsInlineButton({
   children,
+  icon: Icon,
+  isLoading = false,
   onClick,
   disabled,
+  testId,
   variant = "secondary",
-}: {
-  children: ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-  variant?: "primary" | "secondary" | "danger";
-}) {
+}: SettingsInlineButtonProps) {
+  const isDisabled = disabled || isLoading;
+
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
+      disabled={isDisabled}
+      aria-busy={isLoading ? "true" : undefined}
+      data-testid={testId}
       className={cn(
-        "min-h-[44px] rounded-xl px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2",
+        "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-[8px] px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-55",
         SETTINGS_INLINE_BUTTON_CLASS[variant],
       )}
     >
-      {children}
+      {Icon ? (
+        <Icon
+          className={cn("h-4 w-4 shrink-0", isLoading && "motion-safe:animate-spin")}
+          aria-hidden="true"
+          data-testid={testId ? testId + "-icon" : undefined}
+        />
+      ) : null}
+      <span>{children}</span>
     </button>
   );
 }
@@ -214,13 +241,62 @@ export function SettingsDialog({
   confirmLabel,
   onCancel,
   onConfirm,
+  confirmVariant = "primary",
 }: SettingsDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const descriptionId = `${titleId}-description`;
+
+  useEffect(() => {
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const firstFocusable = dialogRef.current
+      ?.querySelector<HTMLElement>("[data-dialog-panel]")
+      ?.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+    firstFocusable?.focus({ preventScroll: true });
+
+    return () => {
+      previousFocusRef.current?.focus({ preventScroll: true });
+    };
+  }, []);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Tab") return;
+
+    const focusable = Array.from(
+      dialogRef.current
+        ?.querySelector<HTMLElement>("[data-dialog-panel]")
+        ?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+    );
+    if (focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+
+    if (event.shiftKey && active === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
+      aria-describedby={descriptionId}
+      ref={dialogRef}
+      onKeyDown={handleKeyDown}
     >
       <button
         type="button"
@@ -228,15 +304,17 @@ export function SettingsDialog({
         aria-label={cancelLabel}
         onClick={onCancel}
       />
-      <div className="relative w-full max-w-sm rounded-[1.5rem] border border-[hsl(var(--border)/0.58)] bg-card p-5 shadow-2xl">
+      <div data-dialog-panel="true" className="relative w-full max-w-sm rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.58)] bg-[hsl(var(--settings-v2-card)/0.96)] p-5 shadow-[var(--zen-shadow-card)]">
         <h3 id={titleId} className="text-lg font-semibold text-foreground">
           {title}
         </h3>
-        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+        <p id={descriptionId} className="mt-2 text-sm text-muted-foreground">
+          {description}
+        </p>
         {detail ? <p className="mt-2 truncate text-xs text-muted-foreground">{detail}</p> : null}
         <div className="mt-4 grid gap-2 min-[360px]:grid-cols-2">
           <SettingsInlineButton onClick={onCancel}>{cancelLabel}</SettingsInlineButton>
-          <SettingsInlineButton onClick={onConfirm} variant="primary">
+          <SettingsInlineButton onClick={onConfirm} variant={confirmVariant}>
             {confirmLabel}
           </SettingsInlineButton>
         </div>

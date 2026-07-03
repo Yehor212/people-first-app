@@ -55,14 +55,14 @@ const COOLDOWN_STEPS = [
   { after: 5, seconds: 300 },
 ];
 
-async function unenrollNativeBiometrics(): Promise<void> {
-  if (!isNative) return;
-  try {
-    const { default: BiometricAuth } = await import("@/plugins/BiometricPlugin");
-    await BiometricAuth.unenroll();
-  } catch (err) {
-    logger.warn("[Journal]", "Biometric credential cleanup failed:", err);
+async function unenrollNativeBiometrics(): Promise<boolean> {
+  if (!isNative) return false;
+  const { default: BiometricAuth } = await import("@/plugins/BiometricPlugin");
+  const result = await BiometricAuth.unenroll();
+  if (!result?.success) {
+    throw new Error(result?.error || "Biometric credential cleanup failed.");
   }
+  return true;
 }
 
 function normalizeCooldownState(value: unknown): JournalUnlockCooldown | null {
@@ -145,11 +145,12 @@ async function syncVaultKeySetting(vaultSetting: JournalVaultKeySetting): Promis
 
 async function deleteSyncedVaultKeySetting(): Promise<void> {
   if (!isCloudSyncEnabled()) return;
-  try {
-    await deleteSettingFromCloud(JOURNAL_VAULT_KEY_SETTING_KEY);
-  } catch (err) {
-    logger.warn("[Journal]", "Journal vault key cloud delete failed:", err);
-  }
+  await deleteSettingFromCloud(JOURNAL_VAULT_KEY_SETTING_KEY);
+}
+
+async function restoreSyncedVaultKeySetting(vaultSetting: JournalVaultKeySetting | null): Promise<void> {
+  if (!vaultSetting || !isCloudSyncEnabled()) return;
+  await syncSetting(JOURNAL_VAULT_KEY_SETTING_KEY, vaultSetting);
 }
 
 async function writePasswordAndVaultKey(
@@ -179,6 +180,14 @@ async function deletePasswordAndVaultKey(): Promise<void> {
 
   await db.settings.delete(JOURNAL_PASSWORD_KEY);
   await db.settings.delete(JOURNAL_VAULT_KEY_SETTING_KEY);
+}
+
+async function restorePasswordAndVaultKey(
+  passwordData: JournalPassword | null,
+  vaultSetting: JournalVaultKeySetting | null,
+): Promise<void> {
+  if (!passwordData || !vaultSetting) return;
+  await writePasswordAndVaultKey(passwordData, vaultSetting);
 }
 
 async function loadOrCreateVaultKey(password: string): Promise<string> {
@@ -551,26 +560,73 @@ export function useJournalSecurity() {
 
   // Remove password (entries stay, lock removed)
   const removePassword = useCallback(async () => {
-    if (vaultKey) {
-      await decryptEncryptedJournalEntries(vaultKey);
-      await decryptEncryptedJournalMedia(vaultKey);
-    } else if ((await hasEncryptedJournalContent()) || (await hasEncryptedJournalMedia())) {
-      logger.warn("[Journal]", "Cannot remove diary password while encrypted content is locked");
-      throw new Error("Unlock your diary before removing password protection.");
-    }
+    let nativeBiometricsRemoved = false;
+    let passwordDataForRestore: JournalPassword | null = null;
+    let vaultSettingForRestore: JournalVaultKeySetting | null = null;
 
-    await deletePasswordAndVaultKey();
-    await deleteSyncedVaultKeySetting();
-    await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value: false });
-    await unenrollNativeBiometrics();
-    await persistUnlockCooldown(0, 0);
-    setHasPassword(false);
-    setIsUnlocked(false);
-    clearJournalVaultSession();
-    setVaultKey(null);
-    setBiometricEnabledState(false);
-    setFailedAttempts(0);
-    setCooldownUntil(0);
+    try {
+      if (!vaultKey && ((await hasEncryptedJournalContent()) || (await hasEncryptedJournalMedia()))) {
+        logger.warn("[Journal]", "Cannot remove diary password while encrypted content is locked");
+        throw new Error("Unlock your diary before removing password protection.");
+      }
+
+      const passwordEntry = await db.settings.get(JOURNAL_PASSWORD_KEY);
+      const vaultEntry = await db.settings.get(JOURNAL_VAULT_KEY_SETTING_KEY);
+      passwordDataForRestore = (passwordEntry?.value as JournalPassword | undefined) ?? null;
+      vaultSettingForRestore = normalizeVaultKeySetting(vaultEntry?.value);
+
+      nativeBiometricsRemoved = await unenrollNativeBiometrics();
+
+      await deleteSyncedVaultKeySetting();
+
+      try {
+        await deletePasswordAndVaultKey();
+      } catch (localDeleteError) {
+        try {
+          await restoreSyncedVaultKeySetting(vaultSettingForRestore);
+        } catch (restoreError) {
+          logger.warn("[Journal]", "Journal vault key restore after failed local password removal failed:", restoreError);
+        }
+        throw localDeleteError;
+      }
+
+      if (vaultKey) {
+        try {
+          await decryptEncryptedJournalEntries(vaultKey);
+          await decryptEncryptedJournalMedia(vaultKey);
+        } catch (decryptError) {
+          try {
+            await encryptPlaintextJournalEntries(vaultKey);
+            await encryptPlaintextJournalMedia(vaultKey);
+            await restorePasswordAndVaultKey(passwordDataForRestore, vaultSettingForRestore);
+            await restoreSyncedVaultKeySetting(vaultSettingForRestore);
+          } catch (restoreError) {
+            logger.warn("[Journal]", "Journal lock restore after failed password removal failed:", restoreError);
+          }
+          throw decryptError;
+        }
+      }
+
+      await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value: false });
+      await persistUnlockCooldown(0, 0);
+      setHasPassword(false);
+      setIsUnlocked(false);
+      clearJournalVaultSession();
+      setVaultKey(null);
+      setBiometricEnabledState(false);
+      setFailedAttempts(0);
+      setCooldownUntil(0);
+    } catch (err) {
+      if (nativeBiometricsRemoved) {
+        try {
+          await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value: false });
+        } catch (persistError) {
+          logger.warn("[Journal]", "Biometric cleanup state persistence failed:", persistError);
+        }
+        setBiometricEnabledState(false);
+      }
+      throw err;
+    }
   }, [vaultKey]);
 
   // Manual lock
@@ -613,12 +669,17 @@ export function useJournalSecurity() {
     return false;
   }, [biometricAvailable, biometricEnabled, cooldownLoaded, resetAutoLock]);
 
-  const setBiometricEnabled = useCallback(async (value: boolean) => {
+  const setBiometricEnabled = useCallback(async (value: boolean): Promise<boolean> => {
     if (!value) {
-      await unenrollNativeBiometrics();
-      setBiometricEnabledState(false);
-      await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value: false });
-      return;
+      try {
+        await unenrollNativeBiometrics();
+        setBiometricEnabledState(false);
+        await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value: false });
+        return true;
+      } catch (err) {
+        logger.warn("[Journal]", "Biometric unenrollment failed:", err);
+        return false;
+      }
     }
 
     if (!biometricAvailable || !hasPassword || !vaultKey) {
@@ -627,7 +688,7 @@ export function useJournalSecurity() {
       }
       setBiometricEnabledState(false);
       await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value: false });
-      return;
+      return false;
     }
 
     try {
@@ -639,15 +700,17 @@ export function useJournalSecurity() {
       if (!result.success) {
         setBiometricEnabledState(false);
         await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value: false });
-        return;
+        return false;
       }
 
       setBiometricEnabledState(true);
       await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value: true });
+      return true;
     } catch (err) {
       logger.warn("[Journal]", "Biometric enrollment failed:", err);
       setBiometricEnabledState(false);
       await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value: false });
+      return false;
     }
   }, [biometricAvailable, hasPassword, vaultKey]);
 

@@ -54,6 +54,19 @@ describe("MoodScopeSelector", () => {
     expect(useMoodEntryDraftStore.getState().scope).toBe("day");
   });
 
+  it("moves selection and focus with arrow keys", () => {
+    render(<MoodScopeSelector />);
+    const now = screen.getByTestId("mood-scope-chip-now");
+    const specific = screen.getByTestId("mood-scope-chip-specific");
+
+    now.focus();
+    fireEvent.keyDown(now, { key: "ArrowRight" });
+
+    expect(useMoodEntryDraftStore.getState().scope).toBe("specific");
+    expect(specific).toHaveAttribute("aria-checked", "true");
+    expect(document.activeElement).toBe(specific);
+  });
+
   it("does not render time picker for 'now' scope", () => {
     render(<MoodScopeSelector />);
     expect(

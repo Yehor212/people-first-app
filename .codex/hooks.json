@@ -8,6 +8,12 @@
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/skill-router-gate.cjs\"",
             "timeout": 5,
             "statusMessage": "Routing skills"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/no-ai-template-gate.cjs\"",
+            "timeout": 5,
+            "statusMessage": "Checking no-AI-template policy"
           }
         ]
       }
@@ -21,6 +27,44 @@
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/skill-router-gate.cjs\"",
             "timeout": 5,
             "statusMessage": "Checking skill routing"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/no-ai-template-gate.cjs\"",
+            "timeout": 5,
+            "statusMessage": "Checking no-AI-template output"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/no-ai-template-gate.cjs\"",
+            "timeout": 5,
+            "statusMessage": "Injecting no-AI-template subagent contract"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/no-ai-template-gate.cjs\"",
+            "timeout": 5,
+            "statusMessage": "Checking no-AI-template subagent output"
           }
         ]
       }

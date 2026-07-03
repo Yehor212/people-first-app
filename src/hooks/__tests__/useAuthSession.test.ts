@@ -121,6 +121,7 @@ vi.mock("@/lib/logger", () => ({
 
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { hasPendingAuthUrl, setPendingAuthUrl } from "@/lib/authRedirect";
+import { SK } from "@/lib/storageKeys";
 import { useAppStore, useUserDataStore } from "@/stores";
 import { isAuthFlowInProgress, resetAuthGuard, startAuthFlow } from "@/lib/authGuard";
 import { AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
@@ -202,6 +203,7 @@ describe("useAuthSession", () => {
     });
     mockIsNative.value = false;
     setPendingAuthUrl(null);
+    localStorage.removeItem(SK.JOURNAL_PASSWORD_RESET_PROOF);
     resetStores();
     resetAuthGuard();
   });
@@ -229,6 +231,25 @@ describe("useAuthSession", () => {
       expect(useUserDataStore.getState().googleAuthChecked).toBe(true);
       expect(useUserDataStore.getState().userName).toBe("Telegram Friend");
       expect(isAuthFlowInProgress()).toBe(false);
+    });
+
+    it("stores journal reset proof before cleaning a successful auth-event callback URL", async () => {
+      window.history.pushState(
+        {},
+        "",
+        "/orb?nav=v2&navLayout=phone&code=telegram-code&state=telegram-state&journalReset=event-proof-1",
+      );
+
+      renderHook(() => useAuthSession(false));
+
+      await waitFor(() => expect(useAppStore.getState().isProcessingWebOAuth).toBe(true));
+
+      emitAuthEvent("SIGNED_IN", telegramSession);
+
+      await waitFor(() => expect(useAppStore.getState().isProcessingWebOAuth).toBe(false));
+      expect(JSON.parse(localStorage.getItem(SK.JOURNAL_PASSWORD_RESET_PROOF) || "{}"))
+        .toMatchObject({ nonce: "event-proof-1" });
+      expect(window.location.pathname + window.location.search).toBe("/orb?nav=v2&navLayout=phone");
     });
 
     it("sanitizes unsafe OAuth error descriptions from web callback URLs", async () => {

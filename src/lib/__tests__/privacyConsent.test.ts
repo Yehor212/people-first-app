@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyPushNotificationsPreference,
   applyAdConsentPreference,
   applyAnalyticsPreference,
   applyNoTrackingPreference,
@@ -30,11 +31,15 @@ describe("privacyConsent", () => {
 
   it("turns off analytics and ads when no-tracking is enabled", () => {
     expect(
-      applyNoTrackingPreference({ ...base, analytics: true, adConsent: true }, true),
+      applyNoTrackingPreference(
+        { ...base, analytics: true, adConsent: true, pushNotifications: true },
+        true,
+      ),
     ).toMatchObject({
       noTracking: true,
       analytics: false,
       adConsent: false,
+      pushNotifications: false,
     });
   });
 
@@ -70,6 +75,21 @@ describe("privacyConsent", () => {
       noTracking: true,
       analytics: false,
       adConsent: false,
+    });
+    expect(applyPushNotificationsPreference({ ...base, pushNotifications: true }, false)).toMatchObject({
+      noTracking: true,
+      analytics: false,
+      adConsent: false,
+      pushNotifications: false,
+    });
+  });
+
+  it("requires explicit consent for remote push notifications without enabling analytics or ads", () => {
+    expect(applyPushNotificationsPreference({ ...base, noTracking: true }, true)).toMatchObject({
+      noTracking: false,
+      analytics: false,
+      adConsent: false,
+      pushNotifications: true,
     });
   });
 });

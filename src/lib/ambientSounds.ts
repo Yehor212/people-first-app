@@ -94,6 +94,7 @@ let blessedAudioElement: HTMLAudioElement | null = null;
 function getOrCreateBlessedElement(): HTMLAudioElement {
   if (!blessedAudioElement) {
     blessedAudioElement = new Audio();
+    blessedAudioElement.crossOrigin = "anonymous";
     blessedAudioElement.playsInline = true;
     blessedAudioElement.setAttribute("playsinline", "");
     blessedAudioElement.setAttribute("webkit-playsinline", "");
@@ -1295,6 +1296,7 @@ export function preloadAmbientSounds(soundIds: AmbientSoundType[] = []): void {
       const link = document.createElement("link");
       link.rel = "prefetch";
       link.as = "audio";
+      link.crossOrigin = "anonymous";
       link.setAttribute("as", "audio");
       link.href = sound.file;
       document.head.appendChild(link);

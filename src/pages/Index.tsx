@@ -24,6 +24,7 @@ import { useEmotionSync } from "@/hooks/useEmotionSync";
 import { useDeepLinkHandler } from "@/hooks/useDeepLinkHandler";
 import { useTelegramGradeSyncRuntime } from "@/hooks/useTelegramGradeSyncRuntime";
 import { useV2FullscreenSurface } from "@/hooks/useV2FullscreenSurface";
+import { useNotificationSetup } from "@/hooks/useNotificationSetup";
 import { useChallengeHandlers } from "@/hooks/useChallengeHandlers";
 import { useFocusHandlers } from "@/hooks/useFocusHandlers";
 import { useMoodHandlers } from "@/hooks/useMoodHandlers";
@@ -195,10 +196,11 @@ function IndexV2Impl() {
     setBadges,
   });
 
-  const { handleAddMood } = useMoodHandlers({
+  const { handleAddMood, handleQuickMood } = useMoodHandlers({
     updateChallengeProgress,
     rewardsEnabled: V2_REWARDS_ENABLED,
   });
+  useNotificationSetup({ handleQuickMood });
   const { handleAddGratitude } = useGratitudeHandlers({
     earnTreats,
     attractCreature,

@@ -95,6 +95,26 @@ describe("check-v2-paper-theme", () => {
     expect(findV2PaperThemeIssues({ rootDir: createPassingFixture() })).toEqual([]);
   });
 
+  it("accepts the paper/dark Orb flourish branch when it is formatted across lines", () => {
+    const root = createPassingFixture();
+    writeFixture(
+      root,
+      "src/pages/nav-v2/OrbPage.tsx",
+      `
+        <CosmicBgAdapter />
+        {shouldRunDecorativeMotion ? (
+          isPaperTheme ? (
+            <OrbDayFlourish />
+          ) : (
+            <ShootingStar />
+          )
+        ) : null}
+      `,
+    );
+
+    expect(findV2PaperThemeIssues({ rootDir: root })).toEqual([]);
+  });
+
   it("flags old dark defaults and forced starry Orb backgrounds", () => {
     const root = createPassingFixture();
     writeFixture(root, "src/pages/nav-v2/OrbPage.tsx", '<CosmicBgAdapter variant="starry" />');

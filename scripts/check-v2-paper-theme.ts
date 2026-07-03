@@ -11,7 +11,14 @@ interface CheckV2PaperThemeOptions {
   rootDir?: string;
 }
 
-const REQUIRED_TEXT: Array<{ file: string; text: string; detail: string }> = [
+type RequiredAnchor = {
+  file: string;
+  text?: string;
+  pattern?: RegExp;
+  detail: string;
+};
+
+const REQUIRED_TEXT: RequiredAnchor[] = [
   {
     file: "src/pages/nav-v2/OrbPage.tsx",
     text: "<CosmicBgAdapter />",
@@ -19,7 +26,7 @@ const REQUIRED_TEXT: Array<{ file: string; text: string; detail: string }> = [
   },
   {
     file: "src/pages/nav-v2/OrbPage.tsx",
-    text: "isPaperTheme ? <OrbDayFlourish /> : <ShootingStar />",
+    pattern: /isPaperTheme\s*\?\s*(?:\(\s*)?<OrbDayFlourish\s*\/>\s*(?:\)\s*)?:\s*(?:\(\s*)?<ShootingStar\s*\/>/s,
     detail: "OrbPage must reserve the falling star for dark themes and use a daylight flourish in paper.",
   },
   {
@@ -215,7 +222,13 @@ export function findV2PaperThemeIssues({
 
   for (const requirement of REQUIRED_TEXT) {
     const source = readProjectFile(rootDir, requirement.file);
-    if (source === null || !source.includes(requirement.text)) {
+    const matchesRequirement = Boolean(
+      source &&
+        ((requirement.text !== undefined && source.includes(requirement.text)) ||
+          (requirement.pattern !== undefined && requirement.pattern.test(source))),
+    );
+
+    if (!matchesRequirement) {
       issues.push({
         file: requirement.file,
         detail: requirement.detail,

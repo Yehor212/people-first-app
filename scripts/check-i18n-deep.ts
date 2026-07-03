@@ -72,9 +72,16 @@ const AUTH_PROVIDER_BRAND_KEYS = [
   "authProviderApple",
 ] as const;
 
+const LOCALE_INDEPENDENT_DESTRUCTIVE_CONFIRMATION_KEYS = [
+  // The surrounding label is localized, but the destructive reset token stays
+  // uppercase ASCII so the confirmation word is exact and supportable.
+  "resetDataConfirmWord",
+] as const;
+
 const ALLOWED_IDENTICAL_KEYS: Partial<Record<Language, ReadonlySet<string>>> = {
   uk: new Set([
     ...AUTH_PROVIDER_BRAND_KEYS,
+    ...LOCALE_INDEPENDENT_DESTRUCTIVE_CONFIRMATION_KEYS,
     "hiddenAchievement",
     "emailPlaceholder",
     "dopamineADHD",
@@ -85,6 +92,7 @@ const ALLOWED_IDENTICAL_KEYS: Partial<Record<Language, ReadonlySet<string>>> = {
   ]),
   es: new Set([
     ...AUTH_PROVIDER_BRAND_KEYS,
+    ...LOCALE_INDEPENDENT_DESTRUCTIVE_CONFIRMATION_KEYS,
     "min",
     "moodNeutral",
     "color",
@@ -114,6 +122,7 @@ const ALLOWED_IDENTICAL_KEYS: Partial<Record<Language, ReadonlySet<string>>> = {
   ]),
   de: new Set([
     ...AUTH_PROVIDER_BRAND_KEYS,
+    ...LOCALE_INDEPENDENT_DESTRUCTIVE_CONFIRMATION_KEYS,
     "okay",
     "scheduleStart",
     "moodOkay",
@@ -158,6 +167,7 @@ const ALLOWED_IDENTICAL_KEYS: Partial<Record<Language, ReadonlySet<string>>> = {
   ]),
   fr: new Set([
     ...AUTH_PROVIDER_BRAND_KEYS,
+    ...LOCALE_INDEPENDENT_DESTRUCTIVE_CONFIRMATION_KEYS,
     "minutes",
     "min",
     "moduleGratitude",
@@ -232,14 +242,15 @@ const ALLOWED_IDENTICAL_KEYS: Partial<Record<Language, ReadonlySet<string>>> = {
   ]),
   ja: new Set([
     ...AUTH_PROVIDER_BRAND_KEYS,
+    ...LOCALE_INDEPENDENT_DESTRUCTIVE_CONFIRMATION_KEYS,
     "hiddenAchievement",
     "emailPlaceholder",
     "dopamineADHD",
     "premium",
     "companionNight",
   ]),
-  ar: new Set([...AUTH_PROVIDER_BRAND_KEYS]),
-  he: new Set([...AUTH_PROVIDER_BRAND_KEYS]),
+  ar: new Set([...AUTH_PROVIDER_BRAND_KEYS, ...LOCALE_INDEPENDENT_DESTRUCTIVE_CONFIRMATION_KEYS]),
+  he: new Set([...AUTH_PROVIDER_BRAND_KEYS, ...LOCALE_INDEPENDENT_DESTRUCTIVE_CONFIRMATION_KEYS]),
 };
 
 function getKeyName(name: ts.PropertyName): string | undefined {

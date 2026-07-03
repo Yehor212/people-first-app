@@ -94,6 +94,67 @@ function scheduleCanonicalOrbPrewarmAfterStartup(): void {
 
 scheduleCanonicalOrbPrewarmAfterStartup();
 
+type NetworkConnectionLike = {
+  saveData?: boolean;
+  effectiveType?: string;
+};
+
+type NavigatorWithRuntimeAudioHints = Navigator & {
+  connection?: NetworkConnectionLike;
+  mozConnection?: NetworkConnectionLike;
+  webkitConnection?: NetworkConnectionLike;
+  standalone?: boolean;
+};
+
+const SLOW_RUNTIME_AUDIO_EFFECTIVE_TYPES = new Set(["slow-2g", "2g"]);
+
+function isStandaloneRuntimeContext(): boolean {
+  try {
+    return (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.matchMedia("(display-mode: fullscreen)").matches ||
+      (navigator as NavigatorWithRuntimeAudioHints).standalone === true
+    );
+  } catch {
+    return false;
+  }
+}
+
+function getRuntimeAudioConnection(): NetworkConnectionLike | undefined {
+  const nav = navigator as NavigatorWithRuntimeAudioHints;
+  return nav.connection ?? nav.mozConnection ?? nav.webkitConnection;
+}
+
+function shouldWarmRuntimeAudioCacheAfterStartup(): boolean {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const override = params.get("audioCacheWarm");
+    if (override === "off") return false;
+    if (override === "on") return true;
+  } catch {
+    // Keep warmup optional; malformed URLs should not affect startup.
+  }
+
+  const connection = getRuntimeAudioConnection();
+  if (connection?.saveData) return false;
+  if (connection?.effectiveType && SLOW_RUNTIME_AUDIO_EFFECTIVE_TYPES.has(connection.effectiveType)) return false;
+
+  return isStandaloneRuntimeContext();
+}
+function scheduleRuntimeAudioCacheWarmAfterStartup(): void {
+  if (isNative || !("serviceWorker" in navigator)) return;
+  if (!shouldWarmRuntimeAudioCacheAfterStartup()) return;
+
+  scheduleIdle(() => {
+    void navigator.serviceWorker.ready
+      .then((registration) => {
+        const worker = registration.active ?? navigator.serviceWorker.controller;
+        worker?.postMessage({ type: "WARM_RUNTIME_AUDIO_CACHE" });
+      })
+      .catch((err) => logger.warn("[Main] Runtime audio cache warm request failed:", err));
+  }, 10000, 3000);
+}
+
 // Set html lang attribute early (before React hydrates) for non-EN users (WCAG 3.1.1)
 // CSP blocks inline scripts in index.html, so we do it here in the module entry point.
 // useLocalStorage stores values as JSON strings, so we parse accordingly.
@@ -548,12 +609,14 @@ ensureFreshVersionBeforeRender()
     if (shouldRender) {
       createRoot(document.getElementById("root")!, rootOptions).render(<App />);
       scheduleVersionCheckAfterStartup();
+      scheduleRuntimeAudioCacheWarmAfterStartup();
     }
   })
   .catch((err) => {
     logger.error("[Init] Fatal:", err);
     createRoot(document.getElementById("root")!, rootOptions).render(<App />);
     scheduleVersionCheckAfterStartup();
+    scheduleRuntimeAudioCacheWarmAfterStartup();
   });
 
 // Defer Sentry initialization to after render — keeps @sentry/* off the critical path

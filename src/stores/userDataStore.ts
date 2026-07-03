@@ -153,7 +153,7 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
   focusSessions: [],
   gratitudeEntries: [],
   reminders: defaultReminderSettings,
-  privacy: { noTracking: false, analytics: false, consentShown: false },
+  privacy: { noTracking: false, analytics: false, consentShown: false, pushNotifications: false },
   scheduleEvents: [],
   microReflections: [],
   canvasGoals: [],

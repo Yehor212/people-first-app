@@ -120,7 +120,7 @@ export function TimeInputInline({
           aria-label={ariaLabel || label}
           className={cn(
             "appearance-none bg-background rounded-lg text-foreground font-semibold text-center",
-            "h-9 w-24 px-2 text-base md:text-sm",
+            "h-11 min-h-[44px] w-24 px-2 text-base md:text-sm",
             "border border-border",
             "focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20",
             "motion-safe:transition-all motion-safe:duration-150",

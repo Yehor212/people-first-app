@@ -91,7 +91,7 @@ describe("getDopamineSettings", () => {
     expect(settings.intensity).toBe("normal");
     expect(settings.animations).toBe(true);
     expect(settings.sounds).toBe(true);
-    expect(settings.haptics).toBe(true);
+    expect(settings.haptics).toBe(false);
     expect(settings.confetti).toBe(true);
     expect(settings.streakFire).toBe(true);
     expect(settings.moodDrivenUI).toBe(true);
@@ -107,7 +107,7 @@ describe("getDopamineSettings", () => {
     expect(settings.intensity).toBe("adhd");
     // Unset fields keep defaults
     expect(settings.sounds).toBe(true);
-    expect(settings.haptics).toBe(true);
+    expect(settings.haptics).toBe(false);
   });
 
   it("returns full defaults when stored value is null", () => {
@@ -164,8 +164,8 @@ describe("shouldPlaySounds", () => {
 // shouldTriggerHaptics
 // ============================================================
 describe("shouldTriggerHaptics", () => {
-  it("returns true by default", () => {
-    expect(shouldTriggerHaptics()).toBe(true);
+  it("keeps haptics opt-in by default", () => {
+    expect(shouldTriggerHaptics()).toBe(false);
   });
 
   it("returns false when haptics disabled", () => {

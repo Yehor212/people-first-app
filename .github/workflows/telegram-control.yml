@@ -42,10 +42,8 @@ on:
           - telegram-approved
 
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-  actions: write
+  contents: read
+
 
 concurrency:
   group: telegram-control-${{ inputs.job_id }}
@@ -62,18 +60,31 @@ env:
   HAS_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
   TELEGRAM_CONTROL_CALLBACK_URL: ${{ secrets.TELEGRAM_CONTROL_CALLBACK_URL }}
   TELEGRAM_CONTROL_CALLBACK_SECRET: ${{ secrets.TELEGRAM_CONTROL_CALLBACK_SECRET }}
-  GH_TOKEN: ${{ github.token }}
 
 jobs:
   control:
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
+      - name: Validate trusted base ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$BASE_REF" != "main" ] && [ "$BASE_REF" != "refs/heads/main" ]; then
+            echo "Only main is trusted for Telegram Control checkout."
+            exit 1
+          fi
+
       - name: Checkout base ref
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: ${{ env.BASE_REF }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Prepare callback helper
         shell: bash
@@ -149,13 +160,13 @@ jobs:
           echo "bytes=$prompt_bytes" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 24
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Create isolated work branch
         shell: bash
@@ -168,6 +179,8 @@ jobs:
       - name: Status mode
         if: ${{ inputs.mode == 'status' }}
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           . /tmp/telegram-control-notify.sh
@@ -191,6 +204,8 @@ jobs:
         id: rollback_pr
         if: ${{ inputs.mode == 'rollback' }}
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           . /tmp/telegram-control-notify.sh
@@ -233,6 +248,7 @@ jobs:
           npm run check:task-completion
           npm run check:sync-contract
 
+          gh auth setup-git
           git push --force-with-lease origin "$WORK_BRANCH"
           pr_url="$(gh pr create \
             --draft \
@@ -247,6 +263,8 @@ jobs:
         id: deploy_dispatch
         if: ${{ inputs.mode == 'deploy' }}
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           . /tmp/telegram-control-notify.sh
@@ -359,6 +377,8 @@ jobs:
         id: publish
         if: ${{ (inputs.mode == 'plan' || inputs.mode == 'fix' || inputs.mode == 'review' || inputs.mode == 'security') && env.HAS_OPENAI_API_KEY == 'true' }}
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           . /tmp/telegram-control-notify.sh
@@ -409,6 +429,7 @@ jobs:
           fi
 
           git commit -m "telegram control batch ${JOB_ID}"
+          gh auth setup-git
           git push --force-with-lease origin "$WORK_BRANCH"
 
           pr_url="$(gh pr create \
@@ -428,10 +449,30 @@ jobs:
           . /tmp/telegram-control-notify.sh
           notify_control "succeeded" "${MODE} gates completed."
 
+      - name: Scan control artifacts before upload
+        id: control_artifact_scan
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -d artifacts ]; then
+            exit 0
+          fi
+          if find artifacts -type f -name ".*" -print -quit | grep -q .; then
+            echo "::error title=Hidden control artifact::Unexpected hidden file in control artifacts."
+            find artifacts -type f -name ".*" -print
+            exit 1
+          fi
+          if grep -R -I -n -E '(ghp_|github_pat_|sbp_|ctx7sk-|sk-[A-Za-z0-9_-]{20,}|Authorization:[[:space:]]*Bearer[[:space:]]+|access_token=|refresh_token=|BEGIN [A-Z ]*PRIVATE KEY)' artifacts; then
+            echo "::error title=Sensitive control artifact::Secret-like content detected before upload."
+            exit 1
+          fi
+
       - name: Upload control artifacts
-        if: always()
-        uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() && steps.control_artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: telegram-control-${{ inputs.job_id }}
           path: artifacts
           if-no-files-found: ignore
+          retention-days: 7

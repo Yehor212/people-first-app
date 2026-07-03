@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useUserDataStore } from '@/stores';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { isNative } from '@/lib/platform';
@@ -12,7 +12,7 @@ import {
   scheduleMoodQuickLogNotification,
   initializeNotificationChannel,
 } from '@/lib/localNotifications';
-import { initializePushNotifications } from '@/lib/pushNotifications';
+import { initializePushNotifications, removePushToken } from '@/lib/pushNotifications';
 import type { MoodEntry } from '@/types';
 
 interface UseNotificationSetupParams {
@@ -27,6 +27,8 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
   const { t } = useLanguage();
   const reminders = useUserDataStore(s => s.reminders);
   const habits = useUserDataStore(s => s.habits);
+  const pushNotificationsEnabled = useUserDataStore(s => s.privacy.pushNotifications === true);
+  const previousPushConsentRef = useRef<boolean | null>(null);
   // Compute reminder copy for notification text (moved from Index.tsx)
   const reminderCopy = useMemo(() => {
     const safeHabits = Array.isArray(habits) ? habits : [];
@@ -73,13 +75,25 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
     });
   }, [habits, t.reminderHabitTitle, t.reminderHabitBody]);
 
-  // Initialize FCM push notifications (Android)
+  // FCM uses a remote device token, so it stays behind explicit privacy consent.
   useEffect(() => {
     if (!isNative) return;
-    initializePushNotifications().catch((error) => {
-      logger.error('Failed to initialize push notifications:', error);
+    if (pushNotificationsEnabled) {
+      previousPushConsentRef.current = true;
+      initializePushNotifications().catch((error) => {
+        logger.error('Failed to initialize push notifications:', error);
+      });
+      return;
+    }
+
+    const shouldRemoveRemoteToken = previousPushConsentRef.current !== false;
+    previousPushConsentRef.current = false;
+    if (!shouldRemoveRemoteToken) return;
+
+    removePushToken().catch((error) => {
+      logger.error('Failed to remove push notification token:', error);
     });
-  }, []);
+  }, [pushNotificationsEnabled]);
 
   // Set up one-tap mood notification actions
   useEffect(() => {
@@ -120,8 +134,9 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
     scheduleMoodQuickLogNotification(
       parseTime(reminders.moodTimeMorning),
       t.howAreYouNow || 'How are you feeling? Tap! 😊',
+      { days: reminders.days, quietHours: reminders.quietHours },
     ).catch((error) => {
       logger.error('Failed to schedule mood quick-log notification:', error);
     });
-  }, [reminders.enabled, reminders.moodTimeMorning, t.howAreYouNow]);
+  }, [reminders.days, reminders.enabled, reminders.moodTimeMorning, reminders.quietHours, t.howAreYouNow]);
 }

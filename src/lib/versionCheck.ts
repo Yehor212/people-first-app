@@ -23,6 +23,7 @@ interface VersionManifest {
   buildTime: number;
 }
 const VERSION_CHECK_INTERVAL = 1 * 60 * 1000; // 1 minute — aggressive for GitHub Pages (no custom cache headers)
+const VERSION_CHECK_TIMEOUT_MS = 5000;
 const SAFE_HARD_RELOAD_SEARCH_PARAMS = new Map<string, (value: string) => boolean>([
   ["nav", (value) => value === "v2"],
   ["navLayout", (value) => value === "phone" || value === "desktop"],
@@ -62,13 +63,21 @@ export async function checkAppVersion(): Promise<boolean> {
 
     // Fetch with no-store to bypass all caches
     // Cache-bust URL with timestamp to bypass GitHub Pages CDN cache
-    const response = await fetch(`${basePath}version.json?_t=${Date.now()}`, {
-      cache: "no-store",
-      headers: {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-      },
-    });
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), VERSION_CHECK_TIMEOUT_MS);
+    let response: Response;
+    try {
+      response = await fetch(`${basePath}version.json?_t=${Date.now()}`, {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
+        signal: controller.signal,
+      });
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       // version.json doesn't exist yet (first deploy) - assume OK

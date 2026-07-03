@@ -236,6 +236,85 @@ describe("importBackup deletion precedence", () => {
     expect(report.journalAudio).toEqual({ added: 0, updated: 0, skipped: 1 });
   });
 
+  it("skips malformed journal rows instead of writing broken backup data", async () => {
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-05-11T10:01:00.000Z",
+      deviceId: "device-test",
+      data: {
+        moods: [],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [
+          {
+            id: "journal-bad-arrays",
+            date: "2026-05-25",
+            title: "Bad arrays",
+            content: "This row should not be imported",
+            stickers: "not-an-array",
+            tags: "not-an-array",
+            photoIds: [],
+            createdAt: 1,
+            updatedAt: 2,
+          } as any,
+        ],
+        journalPhotos: [],
+        journalAudio: [],
+      },
+    };
+
+    const report = await importBackup(payload, "replace");
+
+    await expect(db.journalEntries.get("journal-bad-arrays")).resolves.toBeUndefined();
+    expect(report.journalEntries).toEqual({ added: 0, updated: 0, skipped: 1 });
+  });
+
+  it("skips orphan journal media that does not point to a valid imported or local entry", async () => {
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-05-11T10:01:00.000Z",
+      deviceId: "device-test",
+      data: {
+        moods: [],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [],
+        journalPhotos: [
+          {
+            id: "photo-orphan",
+            entryId: "missing-entry",
+            data: "data:image/jpeg;base64,abc",
+            thumbnail: "data:image/jpeg;base64,thumb",
+            width: 100,
+            height: 80,
+            createdAt: 1,
+          },
+        ],
+        journalAudio: [
+          {
+            id: "audio-orphan",
+            entryId: "missing-entry",
+            data: "data:audio/webm;base64,abc",
+            mimeType: "audio/webm",
+            duration: 1,
+            createdAt: 1,
+          },
+        ],
+      },
+    };
+
+    const report = await importBackup(payload, "replace");
+
+    await expect(db.journalPhotos.get("photo-orphan")).resolves.toBeUndefined();
+    await expect(db.journalAudio.get("audio-orphan")).resolves.toBeUndefined();
+    expect(report.journalPhotos).toEqual({ added: 0, updated: 0, skipped: 1 });
+    expect(report.journalAudio).toEqual({ added: 0, updated: 0, skipped: 1 });
+  });
+
   it("encrypts plaintext journal backup rows when a diary vault key is active", async () => {
     backupCryptoMocks.vaultKey = "vault-key-1";
     const payload: BackupPayloadV3 = {

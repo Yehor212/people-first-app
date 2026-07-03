@@ -276,6 +276,7 @@ export const privacySettingsSchema = z
     analytics: z.boolean(),
     consentShown: z.boolean().optional(),
     adConsent: z.boolean().optional(),
+    pushNotifications: z.boolean().optional(),
   })
   .passthrough();
 

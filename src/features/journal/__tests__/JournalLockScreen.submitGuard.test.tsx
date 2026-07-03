@@ -13,6 +13,11 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalPasswordWrong: "Wrong password",
       journalBiometricFailed: "Biometric unlock failed. Try again.",
       journalBiometricUnlock: "Unlock with biometrics",
+      journalLockHint:
+        "This password encrypts your diary on this device. Keep it somewhere safe; ZenFlow cannot reveal or recover it.",
+      journalLockHintLocalOnly:
+        "This password encrypts your diary on this device. Keep it somewhere safe; ZenFlow cannot reveal or recover it.",
+      journalPasswordForgot: "Can't open the lock?",
     },
   }),
 }));
@@ -87,5 +92,36 @@ describe("JournalLockScreen submit guard", () => {
 
     await waitFor(() => expect(onBiometricUnlock).toHaveBeenCalledTimes(1));
     expect(await screen.findByText("Biometric unlock failed. Try again.")).toBeInTheDocument();
+  });
+
+  it("hides email lock removal when desktop runtime cannot receive reset links", () => {
+    render(
+      <JournalLockScreen
+        mode="unlock"
+        cooldownRemaining={0}
+        failedAttempts={0}
+        onUnlock={vi.fn()}
+        onSetPassword={vi.fn()}
+        onForgotPassword={vi.fn()}
+        emailLockRemovalAvailable={false}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Can't open the lock?" })).not.toBeInTheDocument();
+  });
+
+  it("uses recovery-safe setup copy when email lock removal is unavailable", () => {
+    render(
+      <JournalLockScreen
+        mode="setup"
+        cooldownRemaining={0}
+        failedAttempts={0}
+        onUnlock={vi.fn()}
+        onSetPassword={vi.fn()}
+        emailLockRemovalAvailable={false}
+      />,
+    );
+
+    expect(screen.getByText(/cannot reveal or recover/i)).toBeInTheDocument();
   });
 });

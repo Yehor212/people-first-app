@@ -25,6 +25,7 @@ interface JournalLockScreenProps {
   onForgotPassword?: () => void;
   onBiometricUnlock?: () => Promise<boolean>;
   biometricAvailable?: boolean;
+  emailLockRemovalAvailable?: boolean;
 }
 
 export function JournalLockScreen({
@@ -37,6 +38,7 @@ export function JournalLockScreen({
   onForgotPassword,
   onBiometricUnlock,
   biometricAvailable,
+  emailLockRemovalAvailable = true,
 }: JournalLockScreenProps) {
   const { t } = useLanguage();
   const [password, setPassword] = useState("");
@@ -273,8 +275,11 @@ export function JournalLockScreen({
 
         {mode === "setup" && step === "enter" && (
           <p className="text-xs text-muted-foreground text-center mb-4 px-2">
-            {ts.journalLockHint ||
-              "This password protects only your diary. There is no recovery \u2014 remember it well."}
+            {emailLockRemovalAvailable
+              ? ts.journalLockHint ||
+                "This password encrypts your diary on this device. Keep it somewhere safe; ZenFlow cannot reveal or recover it."
+              : ts.journalLockHintLocalOnly ||
+                "This password encrypts your diary on this device. Keep it somewhere safe; ZenFlow cannot reveal or recover it."}
           </p>
         )}
 
@@ -397,12 +402,12 @@ export function JournalLockScreen({
           </button>
         )}
 
-        {mode === "unlock" && onForgotPassword && (
+        {mode === "unlock" && emailLockRemovalAvailable && onForgotPassword && (
           <button
             onClick={onForgotPassword}
             className="w-full mt-3 py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors text-center min-h-[44px]"
           >
-            {ts.journalPasswordForgot || "Forgot password?"}
+            {ts.journalPasswordForgot || "Can't open the lock?"}
           </button>
         )}
 

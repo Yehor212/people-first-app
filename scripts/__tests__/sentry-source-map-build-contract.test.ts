@@ -123,7 +123,7 @@ describe("Sentry source-map build contract", () => {
     const deployBuildGuard = indexOfOrThrow(deploy, "name: Check Sentry public artifacts");
     const deployPrepare = indexOfOrThrow(deploy, "name: Prepare GitHub Pages SPA artifact");
     const deployFinalGuard = indexOfOrThrow(deploy, "name: Check final Sentry public artifact");
-    const deployUpload = indexOfOrThrow(deploy, "uses: actions/upload-pages-artifact@v5");
+    const deployUpload = indexOfOrThrow(deploy, "uses: actions/upload-pages-artifact@");
     expect(deployBuild).toBeLessThan(deployBuildGuard);
     expect(deployBuildGuard).toBeLessThan(deployPrepare);
     expect(deployPrepare).toBeLessThan(deployFinalGuard);

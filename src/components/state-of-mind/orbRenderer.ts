@@ -186,6 +186,8 @@ function getOrCreateParticleSprites(
 export interface OrbSceneParams {
   valence: number;
   time: number;
+  motionPhase: number;
+  noisePhase: number;
   particles: Particle[];
   size: number;
   dpr: number;
@@ -1470,7 +1472,9 @@ export function drawOrbScene(
   const noiseAmp =
     0.01 + (valence < 0 ? Math.abs(valence) * 0.02 : Math.abs(valence) * 0.01);
   const noiseSpeed = mapRange(valence, -1, 1, 0.85, 0.2);
-  const rotSpeed = mapRange(valence, -1, 1, 0.055, 0.015);
+  const rotationPhase = params.motionPhase;
+  const noisePhase = params.noisePhase;
+  const noisePhaseTime = noiseSpeed > 0 ? noisePhase / noiseSpeed : time;
 
   // Subtle presence scale: lowest state contracts inward instead of adding harsh effects.
   const baseRadius = size * 0.25 * dpr * presenceScaleForValence(valence);
@@ -1509,8 +1513,8 @@ export function drawOrbScene(
     cy,
     baseRadius * 1.0,
     shape,
-    time,
-    time * rotSpeed,
+    noisePhaseTime,
+    rotationPhase,
     outerBreath,
     shimmerHSL,
     noiseAmp,
@@ -1537,8 +1541,8 @@ export function drawOrbScene(
       ocy,
       baseRadius * 1.06,
       shape,
-      time,
-      time * rotSpeed,
+      noisePhaseTime,
+      rotationPhase,
       outerBreath,
       isDark ? 0.22 : 0.16,
       shimmerHSL,
@@ -1559,8 +1563,8 @@ export function drawOrbScene(
       ocy,
       baseRadius * 1.0,
       shape,
-      time,
-      time * rotSpeed,
+      noisePhaseTime,
+      rotationPhase,
       bodyBreath,
       isDark ? 0.92 : 0.85,
       shimmerHSL,
@@ -1581,8 +1585,8 @@ export function drawOrbScene(
       ocy,
       baseRadius * 0.7,
       shape,
-      time,
-      -time * rotSpeed * 0.4,
+      noisePhaseTime,
+      -rotationPhase * 0.4,
       innerBreath,
       isDark ? 0.18 : 0.14,
       shimmerHSL,

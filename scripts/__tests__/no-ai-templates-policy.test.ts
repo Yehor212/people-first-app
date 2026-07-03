@@ -42,9 +42,11 @@ describe("no AI templates agent policy", () => {
       "Enforcement Layers",
       "https://www.nist.gov/itl/ai-risk-management-framework",
       "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+      "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html",
       "https://developers.openai.com/codex/guides/agents-md",
       "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches",
       "https://google.github.io/eng-practices/review/developer/small-cls.html",
+      "https://pair.withgoogle.com/chapter/user-needs/",
     ]) {
       expect(policy).toContain(marker);
     }
@@ -54,6 +56,48 @@ describe("no AI templates agent policy", () => {
     expect(driftWorkflow).toContain("npm run check:no-ai-templates");
     expect(agentContext).toContain("assertNoAiTemplatesGateContract");
     expect(agentContext).toContain("NO_AI_TEMPLATES_AGENT_POLICY.md");
+  });
+
+  it("requires evidence-backed idea quality instead of AI-template feature lists", () => {
+    const agents = readFileSync("AGENTS.md", "utf8");
+    const policy = readFileSync(POLICY, "utf8");
+    const checker = readFileSync(CHECKER, "utf8");
+
+    for (const marker of [
+      "ZenFlow Idea Quality Gate",
+      "Feature-name lists are not product ideas",
+      "user failure mode",
+      "local ZenFlow evidence",
+      "acceptance or kill criteria",
+    ]) {
+      expect(policy).toContain(marker);
+      expect(checker).toContain(marker);
+    }
+
+    expect(agents).toContain("ZenFlow Idea Quality Gate");
+    expect(agents).toContain("Do not answer brainstorming requests with standalone feature-name lists");
+  });
+
+  it("requires best-practices-only proposals instead of best-practices laundering", () => {
+    const agents = readFileSync("AGENTS.md", "utf8");
+    const policy = readFileSync(POLICY, "utf8");
+    const checker = readFileSync(CHECKER, "utf8");
+    const agentContext = readFileSync("scripts/check-agent-context.mjs", "utf8");
+
+    for (const marker of [
+      "Best-Practices-Only Proposal Gate",
+      "best-practices laundering",
+      "source-backed applicability",
+      "tradeoffs and rejection criteria",
+      "verification path",
+    ]) {
+      expect(policy).toContain(marker);
+      expect(checker).toContain(marker);
+      expect(agentContext).toContain(marker);
+    }
+
+    expect(agents).toContain("Best-Practices-Only Proposal Gate");
+    expect(agents).toContain("Do not present recommendations as best practices");
   });
 
   it("rejects obvious AI-template markers in tracked durable surfaces", () => {
@@ -68,6 +112,10 @@ describe("no AI templates agent policy", () => {
       "- docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md",
       "- npm run check:no-ai-templates",
       "- ИИ шаблоны",
+      "- ZenFlow Idea Quality Gate",
+      "- Do not answer brainstorming requests with standalone feature-name lists",
+      "- Best-Practices-Only Proposal Gate",
+      "- Do not present recommendations as best practices",
     ].join("\n"));
     writeFileSync(join(rootDir, POLICY), readFileSync(POLICY, "utf8"));
     writeFileSync(join(rootDir, CHECKER), readFileSync(CHECKER, "utf8"));

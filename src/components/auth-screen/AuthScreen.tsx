@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { AlertCircle } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { PluginListenerHandle } from "@capacitor/core";
+import { useEffect, useRef } from "react";
 import { EntryGateBackdrop } from "@/components/EntryGateBackdrop";
 import { EntryThemeSwitcher } from "@/components/EntryThemeSwitcher";
 import { AuthProviderButton } from "@/components/auth/AuthProviderButton";
@@ -12,9 +11,8 @@ import { shouldAnimate, zenMotion } from "@/lib/animationUtils";
 import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
 import { useAudioComfortSettings } from "@/hooks/useAudioComfortSettings";
 import { getAppAudioAssetSrc } from "@/lib/appAudioAssets";
-import { clearAppAudioMediaSession, setAppAudioMediaSession } from "@/lib/audioMediaSession";
+import { useUserStartedAmbienceAudio } from "@/hooks/useUserStartedAmbienceAudio";
 import { IS_DEV } from "@/lib/env";
-import { logger } from "@/lib/logger";
 import { isAndroid } from "@/lib/platform";
 import { getEnabledAuthScreenProviders } from "@/lib/authProviders";
 import { supabase } from "@/lib/supabaseClient";
@@ -55,105 +53,51 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const animated = !isAndroid && shouldAnimate();
   const breathAudioRef = useRef<HTMLAudioElement | null>(null);
-  const [isBreathAudioPlaying, setIsBreathAudioPlaying] = useState(false);
   const appAudioSettings = useAppAudioSettings();
   const audioComfort = useAudioComfortSettings();
-  const canPlayBreathAudio = !appAudioSettings.muted && audioComfort.canPlayAmbientAsset("soft-air-veil");
+  const canPlayBreathAudio =
+    !appAudioSettings.muted && audioComfort.canPlayAmbientAsset("soft-air-veil");
+  const breathAudioVolume = canPlayBreathAudio
+    ? Math.max(0, Math.min(1, appAudioSettings.volume * 0.18))
+    : 0;
+  const mutedAudioLabel = t.settingsSoundSummaryOff || "Muted";
+  const breathAudioUnavailableLabel = appAudioSettings.muted
+    ? mutedAudioLabel
+    : t.settingsSoundAmbientOff || t.soundOff;
+  const breathAudioDisabledStatusLabel = appAudioSettings.muted ? mutedAudioLabel : t.soundOff;
+  const breathAudioPlayback = useUserStartedAmbienceAudio({
+    audioRef: breathAudioRef,
+    canPlay: canPlayBreathAudio,
+    volume: breathAudioVolume,
+    mediaSessionTitle: t.authMeasuredBreathLabel,
+    loggerScope: "[AuthScreen] Breath ambience",
+  });
 
   const session = useAuthSession({ onComplete, webOAuthError, onClearError });
   const handlers = useAuthHandlers(session, t as unknown as Record<string, string>);
   const socialProviders = getEnabledAuthScreenProviders();
 
-  const breathAudioToggleLabel = isBreathAudioPlaying
-    ? t.authMeasuredBreathPause
-    : t.authMeasuredBreathPlay;
-  const breathAudioStatusLabel = isBreathAudioPlaying && canPlayBreathAudio ? t.soundOn : t.soundOff;
-
-  const stopBreathAudio = useCallback(() => {
-    const audio = breathAudioRef.current;
-    if (!audio) return;
-    audio.pause();
-    clearAppAudioMediaSession();
-    setIsBreathAudioPlaying(false);
-  }, []);
-
-  const handleBreathAudioToggle = useCallback(() => {
-    const audio = breathAudioRef.current;
-    if (!audio) return;
-
-    if (isBreathAudioPlaying) {
-      stopBreathAudio();
-      return;
-    }
-
-    if (!canPlayBreathAudio) {
-      stopBreathAudio();
-      return;
-    }
-
-    audio.volume = Math.max(0, Math.min(1, appAudioSettings.volume * 0.18));
-    setIsBreathAudioPlaying(true);
-    void audio.play().then(() => {
-      setAppAudioMediaSession({
-        title: t.authMeasuredBreathLabel,
-        onPause: stopBreathAudio,
-        onStop: stopBreathAudio,
-      });
-    }).catch((error) => {
-      logger.warn("[AuthScreen] Breath ambience failed:", error);
-      stopBreathAudio();
-    });
-  }, [appAudioSettings.volume, canPlayBreathAudio, isBreathAudioPlaying, stopBreathAudio, t.authMeasuredBreathLabel]);
+  const breathAudioToggleLabel = !canPlayBreathAudio
+    ? breathAudioUnavailableLabel
+    : breathAudioPlayback.isPlaying
+      ? t.authMeasuredBreathPause
+      : breathAudioPlayback.isPending
+        ? t.audioLoading
+        : breathAudioPlayback.hasError
+          ? t.audioRetry
+          : t.authMeasuredBreathPlay;
+  const breathAudioStatusLabel = !canPlayBreathAudio
+    ? breathAudioDisabledStatusLabel
+    : breathAudioPlayback.isPlaying
+      ? t.soundOn
+      : breathAudioPlayback.isPending
+        ? t.audioLoading
+        : breathAudioPlayback.hasError
+          ? t.audioRetry
+          : t.soundOff;
 
   useEffect(() => {
     resetEntryGateScroll("auth-screen");
-  }, []);
-
-  useEffect(() => {
-    if (canPlayBreathAudio) return;
-    stopBreathAudio();
-  }, [canPlayBreathAudio, stopBreathAudio]);
-
-  useEffect(() => {
-    const stopOnHidden = () => {
-      if (document.hidden) stopBreathAudio();
-    };
-    const stopOnPageHide = () => stopBreathAudio();
-    let cancelled = false;
-    let pauseListener: PluginListenerHandle | null = null;
-
-    document.addEventListener("visibilitychange", stopOnHidden);
-    window.addEventListener("pagehide", stopOnPageHide);
-    void import("@capacitor/app")
-      .then(({ App }) => App.addListener("pause", stopBreathAudio))
-      .then((listener) => {
-        if (cancelled) {
-          void listener.remove();
-          return;
-        }
-        pauseListener = listener;
-      })
-      .catch((error) => {
-        logger.warn("[AuthScreen] Failed to register audio pause listener:", error);
-      });
-
-    return () => {
-      cancelled = true;
-      document.removeEventListener("visibilitychange", stopOnHidden);
-      window.removeEventListener("pagehide", stopOnPageHide);
-      if (pauseListener) void pauseListener.remove();
-    };
-  }, [stopBreathAudio]);
-
-  useEffect(() => {
-    const audio = breathAudioRef.current;
-
-    return () => {
-      if (!audio) return;
-      audio.pause();
-      clearAppAudioMediaSession();
-      audio.removeAttribute("src");
-    };
   }, []);
 
   return (
@@ -171,14 +115,13 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
         aria-hidden="true"
         data-testid="auth-measured-breath-audio"
         src={MEASURED_BREATH_AUDIO_SRC}
+        crossOrigin="anonymous"
         preload="none"
         loop
         playsInline
-        onPlay={() => setIsBreathAudioPlaying(true)}
-        onPause={() => {
-          setIsBreathAudioPlaying(false);
-          clearAppAudioMediaSession();
-        }}
+        onPlay={breathAudioPlayback.handleMediaPlay}
+        onPause={breathAudioPlayback.handleMediaPause}
+        onError={breathAudioPlayback.handleMediaError}
       />
 
       <motion.section
@@ -204,12 +147,12 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
         <div className="space-y-2">
           <EntryThemeSwitcher />
           <AuthMeasuredBreathToggle
-            isPlaying={isBreathAudioPlaying}
+            isPlaying={breathAudioPlayback.isPlaying}
             isMuted={!canPlayBreathAudio}
             label={t.authMeasuredBreathLabel}
             statusLabel={breathAudioStatusLabel}
             toggleLabel={breathAudioToggleLabel}
-            onToggle={handleBreathAudioToggle}
+            onToggle={breathAudioPlayback.toggle}
           />
         </div>
 
@@ -220,10 +163,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
           data-testid="auth-screen-panel"
         >
           <div className="mb-4">
-            <h2
-              id="auth-methods-title"
-              className="text-xl font-bold leading-tight text-foreground"
-            >
+            <h2 id="auth-methods-title" className="text-xl font-bold leading-tight text-foreground">
               {t.authContinueWith}
             </h2>
           </div>
@@ -285,12 +225,12 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
                 {IS_DEV && session.debugInfo && (
                   <p className="text-xs text-muted-foreground mt-2">{session.debugInfo}</p>
                 )}
-                  {IS_DEV && (
-                    <button
-                      type="button"
-                      onClick={handlers.exportDebugInfo}
-                      aria-label={t.authExportDebugInfo}
-                      className="text-xs text-primary underline mt-2"
+                {IS_DEV && (
+                  <button
+                    type="button"
+                    onClick={handlers.exportDebugInfo}
+                    aria-label={t.authExportDebugInfo}
+                    className="text-xs text-primary underline mt-2"
                   >
                     {t.authExportDebugInfo}
                   </button>
@@ -301,7 +241,10 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
         </section>
 
         <div className="entry-auth-footer space-y-2 px-2 text-center text-xs leading-5">
-          <p className="entry-gate-muted-copy mx-auto max-w-[22rem]" data-testid="auth-privacy-copy">
+          <p
+            className="entry-gate-muted-copy mx-auto max-w-[22rem]"
+            data-testid="auth-privacy-copy"
+          >
             {t.authPrivacyNote}
           </p>
 

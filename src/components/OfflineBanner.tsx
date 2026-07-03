@@ -17,6 +17,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { logger } from '@/lib/logger';
 import { BASE_URL } from '@/lib/env';
 
+const CONNECTIVITY_PROBE_TIMEOUT_MS = 5000;
+
 export function getConnectivityProbeUrl(): string {
   if (typeof window === 'undefined') {
     return '/favicon.ico';
@@ -43,6 +45,15 @@ async function probeConnectivity(signal?: AbortSignal): Promise<boolean> {
   return response.ok;
 }
 
+async function probeConnectivityWithTimeout(): Promise<boolean> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), CONNECTIVITY_PROBE_TIMEOUT_MS);
+  try {
+    return await probeConnectivity(controller.signal);
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
 export function OfflineBanner() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isDismissed, setIsDismissed] = useState(false);
@@ -92,7 +103,7 @@ export function OfflineBanner() {
     }
 
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 5000);
+    const timeoutId = window.setTimeout(() => controller.abort(), CONNECTIVITY_PROBE_TIMEOUT_MS);
 
     probeConnectivity(controller.signal)
       .then((online) => {
@@ -131,7 +142,7 @@ export function OfflineBanner() {
   const handleRetry = () => {
     // Trigger a manual sync attempt
     window.dispatchEvent(new CustomEvent('zenflow:manual-sync-request'));
-    probeConnectivity()
+    probeConnectivityWithTimeout()
       .then((online) => setIsOnline(online))
       .catch(err => { logger.warn('[Network]', 'Connectivity check failed:', err); setIsOnline(false); });
   };

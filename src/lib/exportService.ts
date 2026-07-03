@@ -21,30 +21,53 @@ import { createSimplePdf } from './simplePdf';
 /**
  * Convert array of objects to CSV string
  */
+const CSV_FORMULA_PREFIX_PATTERN = /^[\t=+\-@\uFF1D\uFF0B\uFF0D\uFF20]/u;
+const CSV_FORMULA_AFTER_WHITESPACE_PATTERN = /^\s+[=+\-@\uFF1D\uFF0B\uFF0D\uFF20]/u;
+
+const stringifyCSVValue = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.map(item => stringifyCSVValue(item)).join('; ');
+  if (typeof value === 'object') {
+    try {
+      const serialized = JSON.stringify(value);
+      return typeof serialized === 'string' ? serialized : '';
+    } catch {
+      return '';
+    }
+  }
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  if (typeof value === 'symbol') return value.description ?? '';
+  return '';
+};
+
+const neutralizeCSVFormulaCell = (value: string): string => {
+  const normalized = value.replace(/[\r\n]+/g, ' ');
+  const formulaLike =
+    CSV_FORMULA_PREFIX_PATTERN.test(normalized) ||
+    CSV_FORMULA_AFTER_WHITESPACE_PATTERN.test(normalized);
+  return formulaLike ? `'${normalized}` : normalized;
+};
+
+const escapeCSVCell = (value: unknown): string => {
+  const safe = neutralizeCSVFormulaCell(stringifyCSVValue(value));
+  return `"${safe.replace(/"/g, '""')}"`;
+};
+
+const csvSectionRow = (title: string): string => [escapeCSVCell('Section'), escapeCSVCell(title)].join(',');
+
 const arrayToCSV = <T extends Record<string, unknown>>(
   data: T[],
   columns: Array<{ key: keyof T; header: string }>
 ): string => {
   if (data.length === 0) return '';
 
-  const headers = columns.map(c => `"${c.header}"`).join(',');
+  const headers = columns.map(c => escapeCSVCell(c.header)).join(',');
   const rows = data.map(item =>
     columns
-      .map(col => {
-        const value = item[col.key];
-        if (value === null || value === undefined) return '""';
-        if (typeof value === 'string') {
-          // Escape quotes and wrap in quotes
-          return `"${value.replace(/"/g, '""')}"`;
-        }
-        if (Array.isArray(value)) {
-          return `"${value.join('; ')}"`;
-        }
-        if (typeof value === 'object') {
-          return `"${JSON.stringify(value)}"`;
-        }
-        return `"${String(value)}"`;
-      })
+      .map(col => escapeCSVCell(item[col.key]))
       .join(',')
   );
 
@@ -167,7 +190,7 @@ export const exportAllToCSV = (data: {
   let csv = '';
 
   // Moods section
-  csv += '=== MOOD TRACKING ===\n';
+  csv += `${csvSectionRow('Mood tracking')}\n`;
   csv += arrayToCSV(data.moods as unknown as Record<string, unknown>[], [
     { key: 'date' as const, header: 'Date' },
     { key: 'mood' as const, header: 'Mood' },
@@ -175,7 +198,7 @@ export const exportAllToCSV = (data: {
   ]);
 
   // Habits section
-  csv += '\n\n=== HABITS ===\n';
+  csv += `\n\n${csvSectionRow('Habits')}\n`;
   csv += arrayToCSV(
     data.habits.map(h => ({
       name: h.name,
@@ -190,7 +213,7 @@ export const exportAllToCSV = (data: {
   );
 
   // Focus sessions section
-  csv += '\n\n=== FOCUS SESSIONS ===\n';
+  csv += `\n\n${csvSectionRow('Focus sessions')}\n`;
   csv += arrayToCSV(data.focusSessions as unknown as Record<string, unknown>[], [
     { key: 'date' as const, header: 'Date' },
     { key: 'duration' as const, header: 'Duration (min)' },
@@ -198,7 +221,7 @@ export const exportAllToCSV = (data: {
   ]);
 
   // Gratitude section
-  csv += '\n\n=== GRATITUDE JOURNAL ===\n';
+  csv += `\n\n${csvSectionRow('Gratitude journal')}\n`;
   csv += arrayToCSV(data.gratitudeEntries as unknown as Record<string, unknown>[], [
     { key: 'date' as const, header: 'Date' },
     { key: 'text' as const, header: 'Entry' },

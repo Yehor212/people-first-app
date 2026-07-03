@@ -112,6 +112,96 @@ export interface ImportReport {
 
 export const BACKUP_SCHEMA_VERSION = 3;
 const MAX_DELETION_TOMBSTONES_PER_COLLECTION = 100000;
+const MAX_JOURNAL_IMPORT_ITEMS_PER_COLLECTION = 100000;
+
+function sanitizeRecord(item: unknown): Record<string, unknown> | null {
+  if (!item || typeof item !== "object") return null;
+  return sanitizeObject(item as Record<string, unknown>);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function validateImportedJournalEntry(item: unknown): JournalEntry | null {
+  const entry = sanitizeRecord(item);
+  if (!entry) return null;
+  if (
+    typeof entry.id !== "string" ||
+    typeof entry.date !== "string" ||
+    typeof entry.content !== "string" ||
+    typeof entry.createdAt !== "number" ||
+    !isStringArray(entry.stickers) ||
+    !isStringArray(entry.photoIds) ||
+    !isStringArray(entry.tags) ||
+    (entry.audioIds !== undefined && !isStringArray(entry.audioIds))
+  ) {
+    return null;
+  }
+
+  return {
+    ...(entry as unknown as JournalEntry),
+    title: typeof entry.title === "string" ? entry.title : "",
+    stickers: entry.stickers,
+    photoIds: entry.photoIds,
+    audioIds: entry.audioIds,
+    tags: entry.tags,
+    updatedAt: typeof entry.updatedAt === "number" ? entry.updatedAt : entry.createdAt,
+  };
+}
+
+function validateImportedJournalPhoto(item: unknown): JournalPhoto | null {
+  const photo = sanitizeRecord(item);
+  if (!photo) return null;
+  if (
+    typeof photo.id !== "string" ||
+    typeof photo.entryId !== "string" ||
+    typeof photo.data !== "string" ||
+    typeof photo.thumbnail !== "string" ||
+    typeof photo.width !== "number" ||
+    typeof photo.height !== "number" ||
+    typeof photo.createdAt !== "number" ||
+    (photo.storagePath !== undefined && typeof photo.storagePath !== "string") ||
+    (photo.storageUrl !== undefined && typeof photo.storageUrl !== "string")
+  ) {
+    return null;
+  }
+  return photo as unknown as JournalPhoto;
+}
+
+function validateImportedJournalAudio(item: unknown): JournalAudio | null {
+  const audio = sanitizeRecord(item);
+  if (!audio) return null;
+  if (
+    typeof audio.id !== "string" ||
+    typeof audio.entryId !== "string" ||
+    typeof audio.data !== "string" ||
+    typeof audio.duration !== "number" ||
+    typeof audio.mimeType !== "string" ||
+    typeof audio.createdAt !== "number" ||
+    (audio.storagePath !== undefined && typeof audio.storagePath !== "string") ||
+    (audio.storageUrl !== undefined && typeof audio.storageUrl !== "string")
+  ) {
+    return null;
+  }
+  return audio as unknown as JournalAudio;
+}
+
+function validateJournalCollection<T>(
+  items: unknown,
+  validator: (item: unknown) => T | null
+): T[] {
+  const list = Array.isArray(items) ? items : [];
+  if (list.length > MAX_JOURNAL_IMPORT_ITEMS_PER_COLLECTION) {
+    throw new Error(
+      `Backup file too large (max ${MAX_JOURNAL_IMPORT_ITEMS_PER_COLLECTION} journal items per collection)`
+    );
+  }
+  return list.flatMap((item) => {
+    const validated = validator(item);
+    return validated ? [validated] : [];
+  });
+}
 
 async function encryptImportedJournalEntryForStorage(
   entry: JournalEntry,
@@ -444,15 +534,17 @@ export const importBackup = async (
     skipped: rawValidSettings.skipped + (rawValidSettings.valid.length - accountSyncedValidSettings.length),
   };
 
-  // Journal entries: lightweight validation (no Zod schema, just basic shape check)
-  let validJournalEntries = (journalEntries || []).filter(
-    (e) => !!e && typeof e === "object" && typeof e.id === "string" && typeof e.date === "string"
+  let validJournalEntries = validateJournalCollection<JournalEntry>(
+    journalEntries,
+    validateImportedJournalEntry
   );
-  let validJournalPhotos = (journalPhotos || []).filter(
-    (p) => !!p && typeof p === "object" && typeof p.id === "string" && typeof p.entryId === "string"
+  let validJournalPhotos = validateJournalCollection<JournalPhoto>(
+    journalPhotos,
+    validateImportedJournalPhoto
   );
-  let validJournalAudio = (journalAudio || []).filter(
-    (a) => !!a && typeof a === "object" && typeof a.id === "string" && typeof a.entryId === "string"
+  let validJournalAudio = validateJournalCollection<JournalAudio>(
+    journalAudio,
+    validateImportedJournalAudio
   );
 
   const journalVaultKey = getJournalContentVaultKey();
@@ -491,6 +583,23 @@ export const importBackup = async (
       ),
     ]);
   }
+
+  const existingJournalEntryKeys =
+    mode === "merge" ? await db.journalEntries.toCollection().primaryKeys() : [];
+  const importableJournalEntryIds = new Set<string>(
+    validJournalEntries.map((entry) => entry.id)
+  );
+  if (mode === "merge") {
+    existingJournalEntryKeys.forEach((key) => {
+      if (typeof key === "string") importableJournalEntryIds.add(key);
+    });
+  }
+  validJournalPhotos = validJournalPhotos.filter((photo) =>
+    importableJournalEntryIds.has(photo.entryId)
+  );
+  validJournalAudio = validJournalAudio.filter((audio) =>
+    importableJournalEntryIds.has(audio.entryId)
+  );
 
   // Extract remote deletion IDs before either replace or merge. A stale backup
   // can still contain an item and its tombstone; the tombstone must win.

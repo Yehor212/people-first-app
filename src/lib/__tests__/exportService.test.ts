@@ -61,6 +61,26 @@ import {
   exportAllToCSV,
 } from '@/lib/exportService';
 
+const getLastDownloadedText = async (): Promise<string> => {
+  const blob = mockCreateObjectURL.mock.calls.at(-1)?.[0];
+  expect(blob).toBeInstanceOf(Blob);
+  const text = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+        return;
+      }
+      reject(new Error('Expected downloaded blob text'));
+    };
+    reader.onerror = () => {
+      reject(reader.error instanceof Error ? reader.error : new Error('Failed to read blob text'));
+    };
+    reader.readAsText(blob as Blob);
+  });
+  return text.replace(/^\ufeff/, '');
+};
+
 // ─── Helper data ─────────────────────────────────────────────────
 
 const mockMoods = [
@@ -211,6 +231,80 @@ describe('CSV formatting', () => {
     ];
     exportMoodsToCSV(moodsWithTags as any);
     expect(mockCreateObjectURL).toHaveBeenCalled();
+  });
+});
+
+// ─── CSV injection safety ───────────────────────────────────────
+
+describe('CSV formula injection safety', () => {
+  it('neutralizes formula-like mood notes and tag cells before download', async () => {
+    exportMoodsToCSV([
+      {
+        date: '2024-01-01',
+        mood: 'good',
+        note: '=HYPERLINK("https://attacker.test","open")',
+        tags: ['@urgent'],
+      },
+    ] as any);
+
+    const csv = await getLastDownloadedText();
+    expect(csv).toContain('"\'=HYPERLINK(""https://attacker.test"",""open"")"');
+    expect(csv).toContain('"\'@urgent"');
+    expect(csv).not.toContain(',"=HYPERLINK');
+    expect(csv).not.toContain(',"@urgent"');
+  });
+
+  it('neutralizes formulas hidden behind leading whitespace or control characters', async () => {
+    exportFocusSessionsToCSV([
+      {
+        date: '2024-01-01',
+        duration: 25,
+        label: ' =SUM(1,1)',
+        status: 'completed',
+        reflection: '\r@SUM(1,1)',
+      },
+    ] as any);
+
+    const csv = await getLastDownloadedText();
+    expect(csv).toContain('"\' =SUM(1,1)"');
+    expect(csv).toContain('"\' @SUM(1,1)"');
+  });
+
+  it('neutralizes formula-like values in habit, gratitude, and combined exports', async () => {
+    exportAllToCSV({
+      moods: [{ date: '2024-01-01', mood: 'good', note: '\t+SUM(1,1)' }] as any,
+      habits: [{ ...mockHabits[0], name: '-cmd|\'/c calc\'!A0' }] as any,
+      focusSessions: [{ date: '2024-01-01', duration: 15, label: '＠SUM(1,1)' }] as any,
+      gratitudeEntries: [{ date: '2024-01-01', text: '＝1+1', timestamp: 1704067200000 }] as any,
+    });
+
+    const csv = await getLastDownloadedText();
+    expect(csv).toContain('"\'\t+SUM(1,1)"');
+    expect(csv).toContain('"\'-cmd|\'/c calc\'!A0"');
+    expect(csv).toContain('"\'＠SUM(1,1)"');
+    expect(csv).toContain('"\'＝1+1"');
+  });
+
+  it('writes combined export section rows as ordinary CSV cells, not formula-like cells', async () => {
+    exportAllToCSV({
+      moods: [],
+      habits: [],
+      focusSessions: [],
+      gratitudeEntries: [],
+    });
+
+    const csv = await getLastDownloadedText();
+    const sectionLines = csv
+      .split('\n')
+      .filter((line) => /mood tracking|habits|focus sessions|gratitude journal/i.test(line));
+
+    expect(sectionLines).toEqual([
+      '"Section","Mood tracking"',
+      '"Section","Habits"',
+      '"Section","Focus sessions"',
+      '"Section","Gratitude journal"',
+    ]);
+    expect(sectionLines.every((line) => !/^[\t=+\-@]/u.test(line))).toBe(true);
   });
 });
 

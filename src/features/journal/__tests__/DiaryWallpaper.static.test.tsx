@@ -111,6 +111,9 @@ describe("Diary wallpaper contract", () => {
     expect(cssSource).toContain(".journal-wallpaper--night ~ .relative :where");
     expect(cssSource).toContain(".journal-light-sidebar-panel");
     expect(cssSource).toContain(".journal-light-sidebar-rail");
+    expect(cssSource).toContain("background-color: hsl(var(--card) / 0.18);");
+    expect(cssSource).toContain("-webkit-backdrop-filter: blur(8px) saturate(1.04);");
+    expect(cssSource).toContain("opacity: 0.42;");
     expect(cssSource).toContain("@media (prefers-reduced-transparency: reduce)");
     expect(cssSource).toContain("--journal-wallpaper-scenic-opacity: 0.18;");
     expect(cssSource).toContain("--journal-wallpaper-scenic-blend: normal;");

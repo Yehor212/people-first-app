@@ -9,6 +9,7 @@ interface SwitchProps {
   disabled?: boolean;
   className?: string;
   'aria-label'?: string;
+  'aria-describedby'?: string;
 }
 
 /**
@@ -52,9 +53,9 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         className={cn(
-          // Exact ThemeToggle dimensions: 52×28px
+          // 52px visual width with a 44px accessible touch target
           "relative flex-shrink-0 rounded-full motion-safe:transition-colors motion-safe:duration-300 active:scale-[0.97]",
-          "w-[52px] h-[28px] min-w-[52px] min-h-[28px]",
+          "w-[52px] h-[44px] min-w-[52px] min-h-[44px]",
           // Colors - semantic theme colors
           isChecked ? "bg-primary" : "bg-muted-foreground/40",
           // Focus states
@@ -69,8 +70,8 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         {/* Thumb - absolute positioning like ThemeToggle, spring-like cubic-bezier */}
         <div
           className={cn(
-            // Exact thumb size: 22×22px positioned 3px from top
-            "absolute top-[3px] w-[22px] h-[22px] rounded-full",
+            // Thumb stays visually compact while the switch keeps a 44px tap target
+            "absolute top-[11px] w-[22px] h-[22px] rounded-full",
             // Background and shadow
             "bg-background shadow-sm",
             // Base position left-[3px]; checked slides 24px right via translateX (GPU-only)

@@ -239,7 +239,7 @@ describe("useAccountAuth native OAuth", () => {
     }
   });
 
-  it("resets the protected V2 auth gate after sign-out completes", async () => {
+  it("removes the remote push token before clearing local user data and resets the protected V2 auth gate", async () => {
     const onNameChange = vi.fn();
     mocks.getSession.mockResolvedValue({ data: { session: createSession() } });
 
@@ -257,6 +257,9 @@ describe("useAccountAuth native OAuth", () => {
     expect(mocks.triggerDataRefresh).toHaveBeenCalledTimes(1);
     expect(mocks.removePushToken).toHaveBeenCalledTimes(1);
     expect(mocks.signOut).toHaveBeenCalledTimes(1);
+    expect(mocks.removePushToken.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.clearLocalUserData.mock.invocationCallOrder[0]
+    );
     expect(mocks.resetAuthState).toHaveBeenCalledTimes(1);
     expect(mocks.setAuthGateChecked).toHaveBeenCalledWith(false);
     expect(onNameChange).toHaveBeenCalledWith("Friend");

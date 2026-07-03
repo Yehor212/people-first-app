@@ -40,6 +40,16 @@ const NAV_V2_THEME_VARS = [
   "--nav-v2-backdrop",
   "--nav-v2-shadow",
 ];
+const SETTINGS_V2_COMFORT_VARS = [
+  "--settings-v2-shell",
+  "--settings-v2-card",
+  "--settings-v2-panel",
+  "--settings-v2-border",
+  "--settings-v2-accent",
+  "--settings-v2-shadow",
+];
+const OLED_DRAWER_VISIBILITY_SELECTOR =
+  ':root[data-theme="oled"] [data-theme-region="drawer-v2"] [data-testid^="drawer-v2-destination-"]';
 
 function themeBlock(theme: "paper" | "ink" | "oled"): string {
   const pattern = new RegExp(
@@ -58,8 +68,31 @@ function readVar(block: string, name: string): string {
   return match[1].trim();
 }
 
+function cssRuleBlock(selector: string): string {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = css.match(new RegExp(`${escaped}\\s*\\{([\\s\\S]*?)\\n\\}`));
+  if (!match) {
+    throw new Error(`Missing CSS rule for ${selector}`);
+  }
+  return match[1];
+}
+
 function hslLightness(value: string): number {
   const match = value.match(/^\d+(?:\.\d+)?\s+\d+(?:\.\d+)?%\s+(\d+(?:\.\d+)?)%$/);
+  if (!match) {
+    throw new Error(`Expected HSL triplet, got: ${value}`);
+  }
+  return Number(match[1]);
+}
+function hslHue(value: string): number {
+  const match = value.match(/^(\d+(?:\.\d+)?)\s+\d+(?:\.\d+)?%\s+\d+(?:\.\d+)?%$/);
+  if (!match) {
+    throw new Error(`Expected HSL triplet, got: ${value}`);
+  }
+  return Number(match[1]);
+}
+function hslSaturation(value: string): number {
+  const match = value.match(/^\d+(?:\.\d+)?\s+(\d+(?:\.\d+)?)%\s+\d+(?:\.\d+)?%$/);
   if (!match) {
     throw new Error(`Expected HSL triplet, got: ${value}`);
   }
@@ -86,5 +119,104 @@ describe("theme bridge variables", () => {
         expect(readVar(block, cssVar)).toBeTruthy();
       }
     }
+  });
+
+  it("paper preserves the Solar Prism V2 snapshot palette", () => {
+    const paper = themeBlock("paper");
+    const snapshotCriticalVars = new Map([
+      ["--background", "174 41% 86%"],
+      ["--foreground", "176 48% 9%"],
+      ["--card", "158 42% 90%"],
+      ["--primary", "166 56% 31%"],
+      ["--surface-elevated", "43 52% 87%"],
+      ["--surface-overlay", "191 32% 82%"],
+      ["--nav-v2-drawer-start", "190 41% 85%"],
+      ["--nav-v2-drawer-mid", "158 38% 84%"],
+      ["--nav-v2-drawer-end", "263 35% 88%"],
+      ["--nav-v2-item-hover", "168 36% 82%"],
+    ]);
+
+    for (const [cssVar, value] of snapshotCriticalVars) {
+      expect(readVar(paper, cssVar)).toBe(value);
+    }
+
+    expect(paper).not.toMatch(/--zf-role-(body|mind|focus|rest|energy|release|diary|space|gratitude|settings):/);
+  });
+
+  it("settings surfaces have dedicated comfort tokens in every theme", () => {
+    for (const theme of ["paper", "ink", "oled"] as const) {
+      const block = themeBlock(theme);
+      for (const cssVar of SETTINGS_V2_COMFORT_VARS) {
+        expect(readVar(block, cssVar)).toBeTruthy();
+      }
+    }
+  });
+
+  it("paper settings tokens separate shell, cards, and panels without changing orb surfaces", () => {
+    const paper = themeBlock("paper");
+    const shell = readVar(paper, "--settings-v2-shell");
+    const card = readVar(paper, "--settings-v2-card");
+    const panel = readVar(paper, "--settings-v2-panel");
+    const settingsLightness = [shell, card, panel].map(hslLightness);
+
+    expect(Math.max(...settingsLightness) - Math.min(...settingsLightness)).toBeGreaterThanOrEqual(
+      7
+    );
+    expect(hslSaturation(shell)).toBeLessThanOrEqual(18);
+    expect(hslSaturation(panel)).toBeLessThanOrEqual(18);
+    expect(hslHue(shell)).toBeGreaterThanOrEqual(200);
+    expect(hslHue(shell)).toBeLessThanOrEqual(220);
+    expect(hslHue(panel)).toBeGreaterThanOrEqual(200);
+    expect(hslHue(panel)).toBeLessThanOrEqual(220);
+    expect(hslLightness(readVar(paper, "--settings-v2-border"))).toBeLessThanOrEqual(64);
+    expect(hslHue(readVar(paper, "--settings-v2-accent"))).toBeGreaterThanOrEqual(168);
+    expect(hslHue(readVar(paper, "--settings-v2-accent"))).toBeLessThanOrEqual(180);
+  });
+
+  it("ink theme preserves the night V2 snapshot bridge while keeping settings tokens separate", () => {
+    const ink = themeBlock("ink");
+    const snapshotCriticalVars = new Map([
+      ["--surface-glass", "hsl(var(--zf-surface-1) / 0.82)"],
+      ["--surface-glass-border", "hsl(var(--zf-primary) / 0.18)"],
+      ["--zen-shadow-soft", "0 4px 20px -4px hsl(var(--zf-primary) / 0.22)"],
+      ["--zf-text-muted", "165 8% 52%"],
+      ["--zf-role-body", "158 72% 64%"],
+      ["--zf-role-mind", "268 76% 76%"],
+      ["--zf-role-focus", "194 92% 64%"],
+      ["--zf-role-settings", "215 58% 72%"],
+      ["--background", "var(--zf-night-0)"],
+      ["--primary", "var(--zf-primary)"],
+      ["--secondary", "178 16% 16%"],
+      ["--muted", "178 14% 18%"],
+      ["--border", "174 16% 22%"],
+      ["--nav-v2-drawer-border", "174 16% 28%"],
+      ["--nav-v2-drawer-divider", "174 16% 22%"],
+      ["--nav-v2-item-hover", "var(--zf-surface-2)"],
+    ]);
+
+    for (const [cssVar, value] of snapshotCriticalVars) {
+      expect(readVar(ink, cssVar)).toBe(value);
+    }
+
+    expect(readVar(ink, "--settings-v2-shell")).toBe("170 18% 8%");
+    expect(readVar(ink, "--settings-v2-card")).toBe("170 12% 13%");
+    expect(readVar(ink, "--settings-v2-panel")).toBe("170 9% 18%");
+    expect(readVar(ink, "--settings-v2-border")).toBe("170 9% 30%");
+    expect(readVar(ink, "--settings-v2-accent")).toBe("172 30% 58%");
+  });
+
+  it("dark themes avoid theme-local edge-bleed haze overrides", () => {
+    expect(themeBlock("ink")).not.toContain("--v2-edge-bleed-background");
+    expect(themeBlock("oled")).not.toContain("--v2-edge-bleed-background");
+  });
+
+  it("oled drawer destination rows stay visible after motion settles", () => {
+    const oled = themeBlock("oled");
+    const visibilityRule = cssRuleBlock(OLED_DRAWER_VISIBILITY_SELECTOR);
+
+    expect(hslLightness(readVar(oled, "--nav-v2-item-surface"))).toBeGreaterThanOrEqual(9);
+    expect(hslLightness(readVar(oled, "--nav-v2-drawer-border"))).toBeGreaterThanOrEqual(30);
+    expect(visibilityRule).toContain("animation-name: none");
+    expect(visibilityRule).toContain("opacity: 1");
   });
 });

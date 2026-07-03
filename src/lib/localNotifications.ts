@@ -101,6 +101,94 @@ interface ReminderCopy {
   focus: { title: string; body: string };
 }
 
+interface GlobalReminderSpec {
+  id: number;
+  title: string;
+  body: string;
+  time: { hour: number; minute: number };
+}
+
+function toMinutes(time: { hour: number; minute: number }): number {
+  return time.hour * 60 + time.minute;
+}
+
+function isWithinQuietHours(
+  time: { hour: number; minute: number },
+  quietHours: ReminderSettings['quietHours'],
+): boolean {
+  const start = toMinutes(parseTime(quietHours.start, 22, 0));
+  const end = toMinutes(parseTime(quietHours.end, 7, 0));
+  const current = toMinutes(time);
+
+  if (start === end) return false;
+  if (start < end) return current >= start && current < end;
+  return current >= start || current < end;
+}
+
+function getSelectedReminderDays(days: number[]): number[] {
+  return [...new Set(days.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6))].sort(
+    (a, b) => a - b,
+  );
+}
+
+function toCapacitorWeekday(day: number): number {
+  return day === 0 ? 1 : day + 1;
+}
+
+const JOURNAL_REMINDER_ID = 10;
+const QUICK_LOG_NOTIFICATION_ID = 150;
+const HABIT_REMINDER_ID_BASE = 1000;
+const QUICK_LOG_WEEKDAY_ID_BASE = 9000;
+const HABIT_REMINDER_ID_MAX = QUICK_LOG_WEEKDAY_ID_BASE - 1;
+
+function isHabitReminderNotificationId(id: number): boolean {
+  return id >= HABIT_REMINDER_ID_BASE && id <= HABIT_REMINDER_ID_MAX;
+}
+
+function isGlobalReminderNotificationId(id: number): boolean {
+  if (id >= 1 && id <= 5) return true;
+  for (let baseId = 1; baseId <= 5; baseId += 1) {
+    for (let day = 0; day <= 6; day += 1) {
+      if (id === baseId * 100 + day) return true;
+    }
+  }
+  return false;
+}
+
+function buildGlobalReminderNotifications(
+  reminders: ReminderSettings,
+  specs: GlobalReminderSpec[],
+): Array<{
+  id: number;
+  title: string;
+  body: string;
+  channelId: string;
+  schedule: { on: { hour: number; minute: number; weekday?: number }; allowWhileIdle: boolean };
+}> {
+  const days = getSelectedReminderDays(reminders.days);
+  const activeSpecs = specs.filter((spec) => !isWithinQuietHours(spec.time, reminders.quietHours));
+
+  if (days.length === 0) {
+    return activeSpecs.map((spec) => ({
+      id: spec.id,
+      title: spec.title,
+      body: spec.body,
+      channelId: getActiveChannelId(),
+      schedule: { on: spec.time, allowWhileIdle: true },
+    }));
+  }
+
+  return activeSpecs.flatMap((spec) =>
+    days.map((day) => ({
+      id: spec.id * 100 + day,
+      title: spec.title,
+      body: spec.body,
+      channelId: getActiveChannelId(),
+      schedule: { on: { ...spec.time, weekday: toCapacitorWeekday(day) }, allowWhileIdle: true },
+    })),
+  );
+}
+
 // Mood action IDs for one-tap logging
 export const MOOD_ACTION_TYPE_ID = 'MOOD_QUICK_LOG';
 export const MOOD_ACTIONS = {
@@ -133,21 +221,16 @@ export async function scheduleLocalReminders(
 
     // Cancel all existing notifications
     const pending = await LocalNotifications.getPending();
-    if (pending.notifications.length > 0) {
-      await LocalNotifications.cancel({ notifications: pending.notifications });
+    const globalReminderNotifications = pending.notifications.filter((notification) =>
+      isGlobalReminderNotificationId(notification.id),
+    );
+    if (globalReminderNotifications.length > 0) {
+      await LocalNotifications.cancel({ notifications: globalReminderNotifications });
     }
 
     if (!reminders.enabled) {
       return;
     }
-
-    const notifications: Array<{
-      id: number;
-      title: string;
-      body: string;
-      channelId: string;
-      schedule: { on: { hour: number; minute: number }; every: 'day'; allowWhileIdle: boolean };
-    }> = [];
 
     // 3 mood reminders: morning, afternoon, evening
     const moodTimeMorning = parseTime(reminders.moodTimeMorning, 9, 0);
@@ -156,50 +239,18 @@ export async function scheduleLocalReminders(
     const habitTime = parseTime(reminders.habitTime, 21, 0);
     const focusTime = parseTime(reminders.focusTime, 10, 0);
 
-    // Mood - Morning
-    notifications.push({
-      id: 1,
-      title: copy.mood.title,
-      body: copy.mood.body,
-      channelId: getActiveChannelId(),
-      schedule: { on: moodTimeMorning, every: 'day', allowWhileIdle: true }
-    });
+    const notifications = buildGlobalReminderNotifications(reminders, [
+      { id: 1, title: copy.mood.title, body: copy.mood.body, time: moodTimeMorning },
+      { id: 2, title: copy.mood.title, body: copy.mood.body, time: moodTimeAfternoon },
+      { id: 3, title: copy.mood.title, body: copy.mood.body, time: moodTimeEvening },
+      { id: 4, title: copy.habit.title, body: copy.habit.body, time: habitTime },
+      { id: 5, title: copy.focus.title, body: copy.focus.body, time: focusTime },
+    ]);
 
-    // Mood - Afternoon
-    notifications.push({
-      id: 2,
-      title: copy.mood.title,
-      body: copy.mood.body,
-      channelId: getActiveChannelId(),
-      schedule: { on: moodTimeAfternoon, every: 'day', allowWhileIdle: true }
-    });
-
-    // Mood - Evening
-    notifications.push({
-      id: 3,
-      title: copy.mood.title,
-      body: copy.mood.body,
-      channelId: getActiveChannelId(),
-      schedule: { on: moodTimeEvening, every: 'day', allowWhileIdle: true }
-    });
-
-    // Habit reminder
-    notifications.push({
-      id: 4,
-      title: copy.habit.title,
-      body: copy.habit.body,
-      channelId: getActiveChannelId(),
-      schedule: { on: habitTime, every: 'day', allowWhileIdle: true }
-    });
-
-    // Focus reminder
-    notifications.push({
-      id: 5,
-      title: copy.focus.title,
-      body: copy.focus.body,
-      channelId: getActiveChannelId(),
-      schedule: { on: focusTime, every: 'day', allowWhileIdle: true }
-    });
+    if (notifications.length === 0) {
+      logger.log('No local reminders to schedule outside quiet hours');
+      return;
+    }
 
     await LocalNotifications.schedule({ notifications });
     logger.log('Local notifications scheduled successfully');
@@ -226,9 +277,11 @@ export async function scheduleHabitReminders(
       return;
     }
 
-    // Cancel all habit reminder notifications (IDs 1000+)
+    // Cancel only habit reminder notifications; quick mood weekday IDs start at 9000.
     const pending = await LocalNotifications.getPending();
-    const habitNotifications = pending.notifications.filter(n => n.id >= 1000);
+    const habitNotifications = pending.notifications.filter((notification) =>
+      isHabitReminderNotificationId(notification.id),
+    );
     if (habitNotifications.length > 0) {
       await LocalNotifications.cancel({ notifications: habitNotifications });
     }
@@ -241,43 +294,54 @@ export async function scheduleHabitReminders(
       schedule: { on: { hour: number; minute: number; weekday?: number }; allowWhileIdle: boolean };
     }> = [];
 
-    let notificationId = 1000; // Start from 1000 to avoid conflicts with global reminders
+    let notificationId = HABIT_REMINDER_ID_BASE;
+    let habitReminderCapacityReached = false;
+
+    const addHabitNotification = (
+      habit: Habit,
+      time: { hour: number; minute: number },
+      weekday?: number,
+    ): void => {
+      if (notificationId > HABIT_REMINDER_ID_MAX) {
+        if (!habitReminderCapacityReached) {
+          logger.warn('Habit reminder notification capacity reached; skipping remaining habit reminders');
+        }
+        habitReminderCapacityReached = true;
+        return;
+      }
+
+      notifications.push({
+        id: notificationId++,
+        title: `${habit.icon} ${habit.name}`,
+        body: translations.reminderBody.replace('{habit}', habit.name),
+        channelId: getActiveChannelId(),
+        schedule: {
+          on: weekday === undefined ? time : { ...time, weekday },
+          allowWhileIdle: true,
+        },
+      });
+    };
 
     // Schedule notifications for each habit
     for (const habit of habits) {
+      if (habitReminderCapacityReached) break;
       if (!habit.reminders || habit.reminders.length === 0) continue;
 
       for (const reminder of habit.reminders) {
+        if (habitReminderCapacityReached) break;
         if (!reminder.enabled) continue;
 
         const time = parseTime(reminder.time, 9, 0);
 
         // If specific days are set, schedule for each day
         if (reminder.days && reminder.days.length > 0) {
-          for (const day of reminder.days) {
-            notifications.push({
-              id: notificationId++,
-              title: `${habit.icon} ${habit.name}`,
-              body: translations.reminderBody.replace('{habit}', habit.name),
-              channelId: getActiveChannelId(),
-              schedule: {
-                on: { ...time, weekday: day },
-                allowWhileIdle: true
-              }
-            });
+          for (const day of getSelectedReminderDays(reminder.days)) {
+            if (habitReminderCapacityReached) break;
+            addHabitNotification(habit, time, toCapacitorWeekday(day));
           }
         } else {
           // Schedule for every day if no specific days
-          notifications.push({
-            id: notificationId++,
-            title: `${habit.icon} ${habit.name}`,
-            body: translations.reminderBody.replace('{habit}', habit.name),
-            channelId: getActiveChannelId(),
-            schedule: {
-              on: time,
-              allowWhileIdle: true
-            }
-          });
+          addHabitNotification(habit, time);
         }
       }
     }
@@ -358,7 +422,11 @@ export function setMoodActionCallback(callback: MoodActionCallback): void {
  * Schedule mood notification with quick-log action buttons
  */
 // ====== Journal Reminder ======
-const JOURNAL_REMINDER_ID = 10;
+type ReminderSchedulePolicy = Pick<ReminderSettings, 'days' | 'quietHours'>;
+
+function isQuickLogNotificationId(id: number): boolean {
+  return id === QUICK_LOG_NOTIFICATION_ID || (id >= QUICK_LOG_WEEKDAY_ID_BASE && id <= QUICK_LOG_WEEKDAY_ID_BASE + 6);
+}
 
 export async function scheduleJournalReminder(
   time: { hour: number; minute: number },
@@ -406,7 +474,8 @@ export async function cancelJournalReminder(): Promise<void> {
 
 export async function scheduleMoodQuickLogNotification(
   time: { hour: number; minute: number },
-  message: string
+  message: string,
+  policy?: ReminderSchedulePolicy,
 ): Promise<void> {
   try {
     await initializeNotificationChannel();
@@ -416,24 +485,45 @@ export async function scheduleMoodQuickLogNotification(
       return;
     }
 
-    // Cancel existing quick-log notification (ID 150)
     const pending = await LocalNotifications.getPending();
-    const quickLogNotification = pending.notifications.filter(n => n.id === 150);
-    if (quickLogNotification.length > 0) {
-      await LocalNotifications.cancel({ notifications: quickLogNotification });
+    const quickLogNotifications = pending.notifications.filter((notification) =>
+      isQuickLogNotificationId(notification.id),
+    );
+    if (quickLogNotifications.length > 0) {
+      await LocalNotifications.cancel({ notifications: quickLogNotifications });
     }
 
-    await LocalNotifications.schedule({
-      notifications: [
-        {
-          id: 150,
+    if (policy && isWithinQuietHours(time, policy.quietHours)) {
+      logger.log('Mood quick-log notification skipped during quiet hours');
+      return;
+    }
+
+    const days = policy ? getSelectedReminderDays(policy.days) : [];
+    const notifications = days.length === 0
+      ? [
+          {
+            id: QUICK_LOG_NOTIFICATION_ID,
+            title: '💜 ZenFlow',
+            body: message,
+            channelId: getActiveChannelId(),
+            schedule: { on: time, every: 'day' as const, allowWhileIdle: true },
+            actionTypeId: MOOD_ACTION_TYPE_ID,
+          },
+        ]
+      : days.map((day) => ({
+          id: QUICK_LOG_WEEKDAY_ID_BASE + day,
           title: '💜 ZenFlow',
           body: message,
           channelId: getActiveChannelId(),
-          schedule: { on: time, every: 'day', allowWhileIdle: true },
+          schedule: {
+            on: { ...time, weekday: toCapacitorWeekday(day) },
+            allowWhileIdle: true,
+          },
           actionTypeId: MOOD_ACTION_TYPE_ID,
-        },
-      ],
+        }));
+
+    await LocalNotifications.schedule({
+      notifications,
     });
 
     logger.log('Mood quick-log notification scheduled');

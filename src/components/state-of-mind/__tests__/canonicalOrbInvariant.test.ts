@@ -212,6 +212,27 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("preferIdle: true");
   });
 
+  it("keeps canonical renderer phase clocks required instead of falling back to wall-clock speed", () => {
+    const rendererSource = readSource("src/components/state-of-mind/orbRenderer.ts");
+    const shaderSource = readSource("src/components/state-of-mind/orbShader.ts");
+    const webGpuSource = readSource("src/components/state-of-mind/orbWebGpu.ts");
+
+    for (const source of [rendererSource, shaderSource, webGpuSource]) {
+      expect(source).not.toContain("motionPhase?:");
+      expect(source).not.toContain("noisePhase?:");
+      expect(source).not.toContain("params.motionPhase ??");
+      expect(source).not.toContain("params.noisePhase ??");
+    }
+
+    expect(rendererSource).not.toContain("const rotationPhase = params.motionPhase ??");
+    expect(rendererSource).not.toContain("const noisePhase = params.noisePhase ??");
+    expect(rendererSource).not.toContain("time * rotSpeed");
+    expect(shaderSource).not.toContain("params.time * (0.055");
+    expect(shaderSource).not.toContain("params.time * (0.85");
+    expect(webGpuSource).not.toContain("params.time * (0.055");
+    expect(webGpuSource).not.toContain("params.time * (0.85");
+  });
+
   it("keeps worker WebGL shader readiness asynchronous before status checks", () => {
     const source = readSource("src/components/state-of-mind/orbWorker.ts");
 

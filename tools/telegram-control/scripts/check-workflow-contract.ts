@@ -25,9 +25,13 @@ const telegramRequiredSubstrings = [
   "security",
   "deploy",
   "rollback",
-  "contents: write",
+  "permissions:\n  contents: read",
+  "permissions:\n      contents: write",
   "pull-requests: write",
   "actions: write",
+  "persist-credentials: false",
+  "Scan control artifacts before upload",
+  "retention-days: 7",
   "WORK_BRANCH: codex/telegram-${{ inputs.job_id }}",
   "^codex/telegram-[A-Za-z0-9_.-]+$",
   "Destructive mode requires Telegram approval.",
@@ -64,8 +68,8 @@ const deployRequiredSubstrings = [
   "Telegram-approved production deploys must run from main.",
   "github.event.inputs.telegram_approval == 'telegram-approved'",
   "TELEGRAM_AUTH_BOT_TOKEN",
-  "uses: actions/upload-pages-artifact@v5",
-  "uses: actions/deploy-pages@v5.0.0",
+  "uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5",
+  "uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0",
 ];
 
 const wranglerRequiredSubstrings = [
@@ -80,6 +84,12 @@ const wranglerRequiredSubstrings = [
   '"GITHUB_WEBHOOK_SECRET"',
   '"TELEGRAM_CONTROL_CALLBACK_SECRET"',
 ];
+
+const forbiddenWorkflowSubstrings = [
+  [workflowPath, workflow, "GH_TOKEN: ${{ github.token }}\njobs:"],
+  [deployWorkflowPath, deployWorkflow, "uses: actions/upload-pages-artifact@v5"],
+  [deployWorkflowPath, deployWorkflow, "uses: actions/deploy-pages@v5.0.0"],
+] as const;
 
 const sourceRequiredSubstrings = [
   [controlPath, controlSource, "APPROVAL_SIGNAL_TYPE"],
@@ -117,6 +127,9 @@ const missing = [
   ...sourceRequiredSubstrings
     .filter(([, source, value]) => !source.includes(value))
     .map(([path, , value]) => `${path.replace(`${root}\\`, "")}: ${value}`),
+  ...forbiddenWorkflowSubstrings
+    .filter(([, source, value]) => source.includes(value))
+    .map(([path, , value]) => `${path.replace(`${root}\\`, "")}: forbidden ${value}`),
 ];
 
 if (missing.length > 0) {
@@ -132,6 +145,7 @@ console.log(
     telegramRequiredSubstrings.length +
     deployRequiredSubstrings.length +
     wranglerRequiredSubstrings.length +
-    sourceRequiredSubstrings.length
+    sourceRequiredSubstrings.length +
+    forbiddenWorkflowSubstrings.length
   } invariants verified.`
 );

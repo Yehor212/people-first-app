@@ -58,6 +58,8 @@ interface ValenceOrbProps {
 type OrbWorkerPayload = {
   valence: number;
   time: number;
+  motionPhase: number;
+  noisePhase: number;
   size: number;
   dpr: number;
   isDark: boolean;
@@ -78,6 +80,8 @@ interface OrbRuntimeState {
   targetValence: number;
   currentValence: number;
   time: number;
+  motionPhase: number;
+  noisePhase: number;
   particles: Particle[];
   lastFrame: number;
 }
@@ -88,12 +92,51 @@ const ORB_FRAME_CLOCK_REANCHOR_GAP_MS = 750;
 const ORB_MAX_FRAME_DELTA_SECONDS = 0.05;
 const ORB_MAX_WORKER_VISIBLE_DELTA_SECONDS = WEBGL_FRAME_INTERVAL / 1000;
 const ORB_MAX_TRANSITION_DELTA_SECONDS = 0.12;
+const ORB_ROTATION_PHASE_WRAP_RADIANS = Math.PI * 2;
 export const ORB_SHADER_TIME_WRAP_SECONDS = Math.PI * 6000;
 export const ORB_REDUCED_MOTION_STILL_TIME_SECONDS = 1.2;
 
 export function resolveReducedMotionOrbStillTime(currentTime: number): number {
   if (Number.isFinite(currentTime) && currentTime >= 0.5) return currentTime;
   return ORB_REDUCED_MOTION_STILL_TIME_SECONDS;
+}
+
+export function resolveOrbRotationSpeed(valence: number): number {
+  const normalized = (Math.max(-1, Math.min(1, valence)) + 1) * 0.5;
+  return 0.055 + (0.015 - 0.055) * normalized;
+}
+
+export function resolveOrbNoiseSpeed(valence: number): number {
+  const normalized = (Math.max(-1, Math.min(1, valence)) + 1) * 0.5;
+  return 0.85 + (0.20 - 0.85) * normalized;
+}
+
+export function resolveOrbMotionPhase(
+  previousPhase: number,
+  deltaSeconds: number,
+  valence: number,
+  animationSpeed: number,
+): number {
+  const safeDelta = Number.isFinite(deltaSeconds) && deltaSeconds > 0 ? deltaSeconds : 0;
+  const safeSpeed = Number.isFinite(animationSpeed) && animationSpeed > 0 ? animationSpeed : 0;
+  return normalizeOrbShaderTime(
+    previousPhase + safeDelta * safeSpeed * resolveOrbRotationSpeed(valence),
+    ORB_ROTATION_PHASE_WRAP_RADIANS,
+  );
+}
+
+export function resolveOrbNoisePhase(
+  previousPhase: number,
+  deltaSeconds: number,
+  valence: number,
+  animationSpeed: number,
+): number {
+  const safeDelta = Number.isFinite(deltaSeconds) && deltaSeconds > 0 ? deltaSeconds : 0;
+  const safeSpeed = Number.isFinite(animationSpeed) && animationSpeed > 0 ? animationSpeed : 0;
+  return normalizeOrbShaderTime(
+    previousPhase + safeDelta * safeSpeed * resolveOrbNoiseSpeed(valence),
+    ORB_SHADER_TIME_WRAP_SECONDS,
+  );
 }
 
 function shouldAnimateCanonicalOrb(): boolean {
@@ -124,6 +167,8 @@ let nextMiniWebGLUpgradeStartAt = 0;
 type OrbRuntimeSnapshot = {
   targetValence: number;
   time: number;
+  motionPhase: number;
+  noisePhase: number;
   currentValence: number;
   smoothValence: number;
   storedAt: number;
@@ -180,6 +225,8 @@ function rememberOrbRuntimeSnapshot(
   orbRuntimeSnapshots.set(resolveOrbRuntimeSnapshotKey(renderer, size), {
     targetValence: state.targetValence,
     time: state.time,
+    motionPhase: state.motionPhase,
+    noisePhase: state.noisePhase,
     currentValence: state.currentValence,
     smoothValence,
     storedAt: now,
@@ -803,6 +850,19 @@ export const ValenceOrb = memo(function ValenceOrb({
     const initialCurrentValence = runtimeSnapshot?.currentValence ?? valenceRef.current;
     const initialSmoothValence = runtimeSnapshot?.smoothValence ?? valenceRef.current;
     const initialTime = runtimeSnapshot?.time ?? 0;
+    const snapshotMotionPhase = runtimeSnapshot?.motionPhase;
+    const snapshotNoisePhase = runtimeSnapshot?.noisePhase;
+    const initialMotionPhase =
+      typeof snapshotMotionPhase === "number" && Number.isFinite(snapshotMotionPhase)
+        ? snapshotMotionPhase
+        : normalizeOrbShaderTime(
+            initialTime * resolveOrbRotationSpeed(initialSmoothValence),
+            ORB_ROTATION_PHASE_WRAP_RADIANS,
+          );
+    const initialNoisePhase =
+      typeof snapshotNoisePhase === "number" && Number.isFinite(snapshotNoisePhase)
+        ? snapshotNoisePhase
+        : normalizeOrbShaderTime(initialTime * resolveOrbNoiseSpeed(initialSmoothValence));
 
     targetValenceRef.current = valenceRef.current;
     smoothValenceRef.current = initialSmoothValence;
@@ -810,6 +870,8 @@ export const ValenceOrb = memo(function ValenceOrb({
       targetValence: valenceRef.current,
       currentValence: initialCurrentValence,
       time: initialTime,
+      motionPhase: initialMotionPhase,
+      noisePhase: initialNoisePhase,
       particles: createParticlePool(PARTICLE_COUNT, cx, cy, innerR, outerR),
       lastFrame: 0,
     };
@@ -894,7 +956,14 @@ export const ValenceOrb = memo(function ValenceOrb({
     };
 
     // ── Render helpers ──
-    const renderGL = (v: number, t: number, particles: Particle[], timestamp = performance.now()) => {
+    const renderGL = (
+      v: number,
+      t: number,
+      motionPhase: number,
+      noisePhase: number,
+      particles: Particle[],
+      timestamp = performance.now(),
+    ) => {
       const gl = glRendererRef.current;
       if (!gl) return;
       // P5: Color breathing — ±2° hue oscillation for organic life
@@ -903,6 +972,8 @@ export const ValenceOrb = memo(function ValenceOrb({
       gl.render({
         valence: v,
         time: t,
+        motionPhase,
+        noisePhase,
         size,
         dpr,
         isDark: isDarkRead(),
@@ -919,6 +990,8 @@ export const ValenceOrb = memo(function ValenceOrb({
     const createWorkerPayload = (
       v: number,
       t: number,
+      motionPhase: number,
+      noisePhase: number,
       particles: Particle[],
       timestamp = performance.now(),
     ): OrbWorkerPayload => {
@@ -928,6 +1001,8 @@ export const ValenceOrb = memo(function ValenceOrb({
       return {
         valence: v,
         time: t,
+        motionPhase,
+        noisePhase,
         size,
         dpr,
         isDark: isDarkRead(),
@@ -943,18 +1018,29 @@ export const ValenceOrb = memo(function ValenceOrb({
     const renderWorkerGL = (
       v: number,
       t: number,
+      motionPhase: number,
+      noisePhase: number,
       particles: Particle[],
       timestamp = performance.now(),
     ) => {
-      workerRenderer?.render(createWorkerPayload(v, t, particles, timestamp));
+      workerRenderer?.render(createWorkerPayload(v, t, motionPhase, noisePhase, particles, timestamp));
     };
 
-    const renderCanvas2D = (v: number, t: number, particles: Particle[], _timestamp?: number) => {
+    const renderCanvas2D = (
+      v: number,
+      t: number,
+      motionPhase: number,
+      noisePhase: number,
+      particles: Particle[],
+      _timestamp?: number,
+    ) => {
       if (!ctx2d) return;
       const effectiveDpr = Math.max(1, (canvasElRef.current?.width ?? size) / size);
       drawOrbScene(ctx2d, {
         valence: v,
         time: t,
+        motionPhase,
+        noisePhase,
         particles,
         size,
         dpr: effectiveDpr,
@@ -969,7 +1055,13 @@ export const ValenceOrb = memo(function ValenceOrb({
       if (!ctx2d || !state || visualReadyRef.current) return;
 
       try {
-        renderCanvas2D(smoothValenceRef.current, state.time, state.particles);
+        renderCanvas2D(
+          smoothValenceRef.current,
+          state.time,
+          state.motionPhase,
+          state.noisePhase,
+          state.particles,
+        );
       } catch (err) {
         recordError(err, { component: 'ValenceOrb', action: 'canvas2d-first-paint' });
       }
@@ -997,7 +1089,13 @@ export const ValenceOrb = memo(function ValenceOrb({
 
         const state = stateRef.current;
         if (state) {
-          renderCanvas2D(smoothValenceRef.current, state.time, state.particles);
+          renderCanvas2D(
+            smoothValenceRef.current,
+            state.time,
+            state.motionPhase,
+            state.noisePhase,
+            state.particles,
+          );
         }
         return;
       }
@@ -1034,7 +1132,13 @@ export const ValenceOrb = memo(function ValenceOrb({
 
         const state = stateRef.current;
         if (state) {
-          renderCanvas2D(smoothValenceRef.current, state.time, state.particles);
+          renderCanvas2D(
+            smoothValenceRef.current,
+            state.time,
+            state.motionPhase,
+            state.noisePhase,
+            state.particles,
+          );
         }
       } else {
         setCtxFailed(true);
@@ -1078,7 +1182,15 @@ export const ValenceOrb = memo(function ValenceOrb({
       // Runtime dopamine gate
       if (!shouldAnimateCanonicalOrb()) {
         const stillTime = resolveReducedMotionOrbStillTime(state.time);
-        try { render(state.currentValence, stillTime, state.particles); } catch { /* graceful: static frame render failure invisible — orb just stays as-is */ }
+        try {
+          render(
+            state.currentValence,
+            stillTime,
+            state.motionPhase,
+            state.noisePhase,
+            state.particles,
+          );
+        } catch { /* graceful: static frame render failure invisible — orb just stays as-is */ }
         return;
       }
 
@@ -1155,6 +1267,18 @@ export const ValenceOrb = memo(function ValenceOrb({
       );
       const smoothLerp = frameRateIndependentLerp(visualBaseLerp, transitionDt, 60);
       smoothValenceRef.current += (state.currentValence - smoothValenceRef.current) * smoothLerp;
+      state.motionPhase = resolveOrbMotionPhase(
+        state.motionPhase,
+        dt,
+        smoothValenceRef.current,
+        animationSpeedRef.current,
+      );
+      state.noisePhase = resolveOrbNoisePhase(
+        state.noisePhase,
+        dt,
+        smoothValenceRef.current,
+        animationSpeedRef.current,
+      );
 
       // Update particles (skip when off-screen to save CPU)
       if (isVisibleRef.current) {
@@ -1183,7 +1307,14 @@ export const ValenceOrb = memo(function ValenceOrb({
       // Draw scene (skip when off-screen, catch errors to prevent loop death)
       if (isVisibleRef.current) {
         try {
-          render(smoothValenceRef.current, state.time, state.particles, timestamp);
+          render(
+            smoothValenceRef.current,
+            state.time,
+            state.motionPhase,
+            state.noisePhase,
+            state.particles,
+            timestamp,
+          );
         } catch (err) {
           recordError(err, { component: 'ValenceOrb', action: 'render' });
 
@@ -1416,7 +1547,13 @@ export const ValenceOrb = memo(function ValenceOrb({
             const firstFrameTime = shouldAnimateCanonicalOrb()
               ? state.time
               : resolveReducedMotionOrbStillTime(state.time);
-            renderGL(smoothValenceRef.current, firstFrameTime, state.particles);
+            renderGL(
+              smoothValenceRef.current,
+              firstFrameTime,
+              state.motionPhase,
+              state.noisePhase,
+              state.particles,
+            );
           } catch (err) {
             recordError(err, { component: 'ValenceOrb', action: `${result.tier}-first-frame` });
             result.renderer.dispose();
@@ -1624,7 +1761,13 @@ export const ValenceOrb = memo(function ValenceOrb({
             const firstWorkerFrameTime = shouldAnimateCanonicalOrb()
               ? state.time
               : resolveReducedMotionOrbStillTime(state.time);
-            controller.render(createWorkerPayload(smoothValenceRef.current, firstWorkerFrameTime, state.particles));
+            controller.render(createWorkerPayload(
+              smoothValenceRef.current,
+              firstWorkerFrameTime,
+              state.motionPhase,
+              state.noisePhase,
+              state.particles,
+            ));
           }
         };
 
@@ -1836,7 +1979,15 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     if (!shouldAnimateOrb && !forceCanonicalWebGL) {
       const stillTime = resolveReducedMotionOrbStillTime(stateRef.current.time);
-      try { render(valenceRef.current, stillTime, stateRef.current.particles); } catch { /* graceful: initial frame render failure leaves the canvas untouched */ }
+      try {
+        render(
+          valenceRef.current,
+          stillTime,
+          stateRef.current.motionPhase,
+          stateRef.current.noisePhase,
+          stateRef.current.particles,
+        );
+      } catch { /* graceful: initial frame render failure leaves the canvas untouched */ }
       return cleanup;
     }
 
@@ -1877,6 +2028,8 @@ export const ValenceOrb = memo(function ValenceOrb({
       workerRendererRef.current.render({
         valence,
         time: stillTime,
+        motionPhase: state.motionPhase,
+        noisePhase: state.noisePhase,
         size,
         dpr,
         isDark: document.documentElement.classList.contains('dark'),
@@ -1895,6 +2048,8 @@ export const ValenceOrb = memo(function ValenceOrb({
       glRendererRef.current.render({
         valence,
         time: stillTime,
+        motionPhase: state.motionPhase,
+        noisePhase: state.noisePhase,
         size,
         dpr,
         isDark: document.documentElement.classList.contains('dark'),
@@ -1914,6 +2069,8 @@ export const ValenceOrb = memo(function ValenceOrb({
       drawOrbScene(ctx, {
         valence,
         time: stillTime,
+        motionPhase: state.motionPhase,
+        noisePhase: state.noisePhase,
         particles: state.particles,
         size,
         dpr,

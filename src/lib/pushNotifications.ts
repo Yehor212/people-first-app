@@ -17,9 +17,8 @@ import {
 import { isNative, isAndroid } from "@/lib/platform";
 import { supabase, getCurrentUserId } from "./supabaseClient";
 import { logger } from "./logger";
-import { App } from "@capacitor/app";
 import { SK } from "./storageKeys";
-import { storageGetRaw, storageSetRaw } from "./safeJson";
+import { storageGetRaw, storageRemove, storageSetRaw } from "./safeJson";
 import { SUPABASE_URL } from "@/lib/env";
 
 /**
@@ -32,35 +31,24 @@ function cryptoRandomHex(bytes: number): string {
   return Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// Device ID for token management
-let deviceId: string | null = null;
+// Per-install ID for token management. App id/build is not unique enough for cleanup.
+let pushInstallId: string | null = null;
 
 /**
- * Get or generate device ID
+ * Get or generate a stable per-install push ID.
  */
-async function getDeviceId(): Promise<string> {
-  if (deviceId) return deviceId;
+async function getPushInstallId(): Promise<string> {
+  if (pushInstallId) return pushInstallId;
 
-  try {
-    const info = await App.getInfo();
-    // Use app ID + build as device identifier
-    deviceId = `${info.id}-${info.build}`;
-  } catch {
-    // Fallback to random ID stored in localStorage
-    try {
-      const stored = storageGetRaw(SK.DEVICE_ID);
-      if (stored) {
-        deviceId = stored;
-      } else {
-        deviceId = `device-${Date.now()}-${cryptoRandomHex(8)}`;
-        storageSetRaw(SK.DEVICE_ID, deviceId);
-      }
-    } catch {
-      deviceId = `device-${Date.now()}-${cryptoRandomHex(8)}`;
-    }
+  const stored = storageGetRaw(SK.PUSH_INSTALL_ID);
+  if (stored) {
+    pushInstallId = stored;
+    return pushInstallId;
   }
 
-  return deviceId;
+  pushInstallId = `push-${Date.now()}-${cryptoRandomHex(16)}`;
+  storageSetRaw(SK.PUSH_INSTALL_ID, pushInstallId);
+  return pushInstallId;
 }
 
 /**
@@ -143,7 +131,7 @@ export async function savePushToken(token: string): Promise<boolean> {
   }
 
   try {
-    const deviceIdValue = await getDeviceId();
+    const deviceIdValue = await getPushInstallId();
 
     const { error } = await supabase.from("push_device_tokens").upsert(
       {
@@ -164,6 +152,7 @@ export async function savePushToken(token: string): Promise<boolean> {
     }
 
     logger.log("[Push] Token saved successfully");
+    storageSetRaw(SK.PUSH_TOKEN, token);
     return true;
   } catch (error) {
     logger.error("[Push] Token save error:", error);
@@ -181,15 +170,30 @@ export async function removePushToken(): Promise<void> {
   if (!userId) return;
 
   try {
-    const deviceIdValue = await getDeviceId();
+    const currentToken = storageGetRaw(SK.PUSH_TOKEN);
+    const currentInstallId = pushInstallId ?? storageGetRaw(SK.PUSH_INSTALL_ID);
+    if (!currentToken && !currentInstallId) {
+      logger.log("[Push] No local token or install id to remove");
+      return;
+    }
 
-    await supabase
+    let deleteQuery = supabase
       .from("push_device_tokens")
       .delete()
-      .eq("user_id", userId)
-      .eq("device_id", deviceIdValue);
+      .eq("user_id", userId);
+
+    deleteQuery = currentToken
+      ? deleteQuery.eq("token", currentToken)
+      : deleteQuery.eq("device_id", currentInstallId);
+
+    const { error } = await deleteQuery;
+    if (error) {
+      logger.error("[Push] Failed to remove token:", error);
+      return;
+    }
 
     logger.log("[Push] Token removed");
+    storageRemove(SK.PUSH_TOKEN);
   } catch (error) {
     logger.error("[Push] Failed to remove token:", error);
   }

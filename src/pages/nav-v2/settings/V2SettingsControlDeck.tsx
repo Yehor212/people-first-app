@@ -32,7 +32,7 @@ export const V2SettingsControlDeck = memo(function V2SettingsControlDeck({
     case "account":
       return <AccountPanel controls={controls} />;
     case "about":
-      return <AboutPanel controls={controls} />;
+      return <AboutPanel />;
     case "profile":
     default:
       return <ProfilePanel controls={controls} />;

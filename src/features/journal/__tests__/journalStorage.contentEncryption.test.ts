@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   updateEntry: vi.fn(() => Promise.resolve(1)),
   getEntry: vi.fn<() => Promise<JournalEntry | undefined>>(() => Promise.resolve(undefined)),
   entriesToArray: vi.fn<() => Promise<JournalEntry[]>>(() => Promise.resolve([])),
+  entriesFilter: vi.fn(),
   orderBy: vi.fn(),
   photoGet: vi.fn(() => Promise.resolve(undefined)),
   photoUpdate: vi.fn(() => Promise.resolve(1)),
@@ -28,6 +29,7 @@ vi.mock("@/storage/db", () => ({
       add: mocks.addEntry,
       update: mocks.updateEntry,
       get: mocks.getEntry,
+      filter: mocks.entriesFilter,
       toArray: mocks.entriesToArray,
       orderBy: mocks.orderBy,
     },
@@ -78,6 +80,7 @@ import {
   decryptEncryptedJournalEntries,
   encryptPlaintextJournalEntries,
   getAllEntries,
+  hasEncryptedJournalContent,
   saveEntry,
   updateEntry,
 } from "../journalStorage";
@@ -105,6 +108,14 @@ describe("journalStorage content encryption", () => {
     setJournalContentVaultKey(null);
     mocks.isCloudSyncEnabled.mockReturnValue(true);
     mocks.transaction.mockImplementation((_mode: string, _tables: unknown, fn: () => unknown) => Promise.resolve(fn()));
+    mocks.entriesFilter.mockImplementation((predicate: (entry: JournalEntry) => boolean) => ({
+      first: vi.fn(() =>
+        Promise.resolve([
+          baseEntry({ id: "plain-1", content: "Legacy line" }),
+          baseEntry({ id: "enc-1", content: `enc:${sessionKey}:Already safe` }),
+        ].find(predicate)),
+      ),
+    }));
   });
 
   it("stores and syncs encrypted content while returning plaintext to the UI", async () => {
@@ -192,6 +203,13 @@ describe("journalStorage content encryption", () => {
       id: "plain-1",
       content: `enc:${sessionKey}:Legacy line`,
     }));
+  });
+
+  it("detects encrypted content without materializing every entry", async () => {
+    await expect(hasEncryptedJournalContent()).resolves.toBe(true);
+
+    expect(mocks.entriesFilter).toHaveBeenCalledTimes(1);
+    expect(mocks.entriesToArray).not.toHaveBeenCalled();
   });
 
   it("decrypts encrypted stored rows before removing password protection", async () => {

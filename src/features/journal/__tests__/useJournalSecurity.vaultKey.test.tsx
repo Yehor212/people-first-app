@@ -264,4 +264,53 @@ describe("useJournalSecurity vault key lifecycle", () => {
     expect(syncMocks.deleteSettingFromCloud).toHaveBeenCalledWith("journal_vault_key");
     expect(hook.result.current.vaultKey).toBeNull();
   });
+
+  it("keeps local diary lock material when synced vault-key deletion fails", async () => {
+    const hook = renderHook(() => useJournalSecurity());
+
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+
+    syncMocks.deleteSettingFromCloud.mockRejectedValueOnce(new Error("cloud delete failed"));
+
+    await act(async () => {
+      await expect(hook.result.current.removePassword()).rejects.toThrow("cloud delete failed");
+    });
+
+    expect(journalStorageMocks.decryptEncryptedJournalEntries).not.toHaveBeenCalled();
+    expect(journalStorageMocks.decryptEncryptedJournalMedia).not.toHaveBeenCalled();
+    expect(settingsStore.has("journal_password")).toBe(true);
+    expect(settingsStore.has("journal_vault_key")).toBe(true);
+    expect(hook.result.current.hasPassword).toBe(true);
+    expect(hook.result.current.vaultKey).toBe("vault-key-1");
+  });
+
+  it("restores the synced vault key when local content decryption fails after cloud deletion", async () => {
+    const hook = renderHook(() => useJournalSecurity());
+
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+
+    const wrappedVaultSetting = settingsStore.get("journal_vault_key")?.value;
+    syncMocks.syncSetting.mockClear();
+    journalStorageMocks.decryptEncryptedJournalEntries.mockRejectedValueOnce(
+      new Error("decrypt failed"),
+    );
+
+    await act(async () => {
+      await expect(hook.result.current.removePassword()).rejects.toThrow("decrypt failed");
+    });
+
+    expect(syncMocks.deleteSettingFromCloud).toHaveBeenCalledWith("journal_vault_key");
+    expect(syncMocks.syncSetting).toHaveBeenCalledWith("journal_vault_key", wrappedVaultSetting);
+    expect(journalStorageMocks.decryptEncryptedJournalMedia).not.toHaveBeenCalled();
+    expect(settingsStore.has("journal_password")).toBe(true);
+    expect(settingsStore.has("journal_vault_key")).toBe(true);
+    expect(hook.result.current.hasPassword).toBe(true);
+    expect(hook.result.current.vaultKey).toBe("vault-key-1");
+  });
 });

@@ -114,6 +114,13 @@
   --nav-v2-backdrop: 176 30% 8%;
   --nav-v2-shadow: 176 33% 12%;
   --zf-surface-3: 43 52% 78%;
+
+  --settings-v2-shell: 210 16% 90%;
+  --settings-v2-card: 42 20% 96%;
+  --settings-v2-panel: 210 12% 84%;
+  --settings-v2-border: 210 12% 62%;
+  --settings-v2-accent: 174 38% 34%;
+  --settings-v2-shadow: 174 22% 12%;
 }
 
 /* V2 Mist Paper guardrail.
@@ -580,31 +587,11 @@
     /* Phase 3-A.4c-ii-d-c — Shadcn-family bridge for V2 shell (SidebarV2,
      * DrawerV2, MobileNavV2, NavV2Orchestrator). Tailwind maps `bg-card`,
      * `border-border`, `text-muted-foreground` etc. to `hsl(var(--<name>))`.
-     * Since the Tailwind color function wraps vars in hsl(), we MUST emit
-     * HSL triplets (H S% L%) rather than oklch(). Values below are perceptual
-     * conversions of the --color-theme-ink-* OKLCH palette so ink theme stays
-     * tonally consistent across --zen-* (new-wave) and shadcn (legacy) consumers.
+     * Since the Tailwind color function wraps vars in hsl(), we emit CSS vars
+     * that match the existing dark V2 cascade instead of page-local overrides.
      * Legacy .dark class (src/index.css) is untouched — this attribute selector
      * has equal specificity and wins by source-order (themes.css loads after).
      */
-    --background: 30 3% 11%;       /* ≈ oklch(0.12 0.015 60)  — ink-surface */
-    --foreground: 46 4% 92%;       /* ≈ oklch(0.92 0.02 75)   — ink-ink */
-    --card: 34 4% 18%;             /* ≈ oklch(0.19 0.022 62)  — ink-surface-card */
-    --card-foreground: 46 4% 92%;
-    --popover: 34 4% 18%;
-    --popover-foreground: 46 4% 92%;
-    --primary: 22 45% 55%;         /* ≈ oklch(0.65 0.11 55)   — ink-primary (warm copper) */
-    --primary-foreground: 30 3% 11%;
-    --secondary: 34 4% 15%;
-    --secondary-foreground: 46 4% 92%;
-    --muted: 34 4% 15%;            /* ≈ oklch(0.16 0.02 62)   — ink-surface-muted */
-    --muted-foreground: 42 3% 70%; /* ≈ oklch(0.72 0.018 72)  — ink-ink-muted */
-    --accent: 22 45% 55%;
-    --accent-foreground: 30 3% 11%;
-    --border: 30 4% 28%;           /* tuned softer than raw ink-border for hairline feel */
-    --input: 30 4% 28%;
-    --ring: 22 45% 55%;
-
     --background: var(--zf-night-0);
     --foreground: var(--zf-text-strong);
     --card: var(--zf-surface-1);
@@ -615,6 +602,8 @@
     --primary-foreground: var(--zf-night-0);
     --secondary: 178 16% 16%;
     --secondary-foreground: var(--zf-text-strong);
+    --surface-overlay: 170 14% 19%;
+    --surface-elevated: var(--zf-surface-2);
     --muted: 178 14% 18%;
     --muted-foreground: var(--zf-text-soft);
     --accent: var(--zf-memory);
@@ -645,6 +634,13 @@
     --nav-v2-icon-muted: var(--zf-text-soft);
     --nav-v2-backdrop: 0 0% 0%;
     --nav-v2-shadow: 0 0% 0%;
+
+  --settings-v2-shell: 170 18% 8%;
+  --settings-v2-card: 170 12% 13%;
+  --settings-v2-panel: 170 9% 18%;
+  --settings-v2-border: 170 9% 30%;
+  --settings-v2-accent: 172 30% 58%;
+  --settings-v2-shadow: 0 0% 0%;
 }
 
 :root[data-theme="oled"] {
@@ -657,11 +653,11 @@
     --zen-border: var(--color-theme-oled-border);
     --zen-primary: var(--color-theme-oled-primary);
     --zen-primary-fg: var(--color-theme-oled-primary-fg);
-    --surface-glass: hsl(var(--zf-surface-1) / 0.84);
-    --surface-glass-border: hsl(var(--zf-primary) / 0.16);
+    --surface-glass: hsl(170 14% 5% / 0.86);
+    --surface-glass-border: hsl(172 26% 56% / 0.16);
     --surface-glass-blur: 16px;
-    --zen-shadow-soft: 0 0 16px hsl(var(--zf-primary) / 0.16);
-    --zf-text-muted: 165 8% 50%;
+    --zen-shadow-soft: 0 0 14px hsl(172 26% 56% / 0.12);
+    --zf-text-muted: 58 8% 52%;
   --zf-role-body: 158 72% 64%;
   --zf-role-mind: 268 76% 76%;
   --zf-role-focus: 194 92% 64%;
@@ -671,71 +667,127 @@
   --zf-role-diary: 266 76% 74%;
   --zf-role-space: 188 86% 62%;
   --zf-role-gratitude: 146 62% 62%;
-  --zf-role-settings: 215 58% 72%;
+  --zf-role-settings: 172 28% 62%;
 
     /* Phase 3-A.4c-ii-d-c — OLED shadcn bridge. Pure-black base (AMOLED
      * power saving) with ink-equivalent surfaces on raised elements so
      * SidebarV2 `bg-card/80` still reads as a visible panel (not invisible
      * on 0 0% 0% bg). Inner palette mirrors ink for visual continuity.
      */
-    --background: 0 0% 0%;         /* ≈ oklch(0 0 0)          — oled-surface */
-    --foreground: 46 4% 92%;
-    --card: 30 3% 11%;             /* ≈ oklch(0.12 0.015 60)  — oled-surface-card (raised) */
-    --card-foreground: 46 4% 92%;
-    --popover: 30 3% 11%;
-    --popover-foreground: 46 4% 92%;
-    --primary: 22 45% 55%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 34 4% 8%;         /* ≈ oklch(0.08 0.012 60)  — oled-surface-muted */
-    --secondary-foreground: 46 4% 92%;
-    --muted: 34 4% 8%;
-    --muted-foreground: 42 3% 68%;
-    --accent: 22 45% 55%;
-    --accent-foreground: 0 0% 0%;
-    --border: 30 4% 22%;
-    --input: 30 4% 22%;
-    --ring: 22 45% 55%;
-
     --background: 0 0% 0%;
-    --foreground: var(--zf-text-strong);
-    --card: var(--zf-surface-1);
-    --card-foreground: var(--zf-text-strong);
-    --popover: var(--zf-surface-2);
-    --popover-foreground: var(--zf-text-strong);
-    --primary: var(--zf-primary);
+    --foreground: 54 12% 92%;
+    --card: 170 14% 5%;
+    --card-foreground: 54 12% 92%;
+    --popover: 170 12% 8%;
+    --popover-foreground: 54 12% 92%;
+    --primary: 172 32% 56%;
     --primary-foreground: 0 0% 0%;
-    --secondary: 178 16% 8%;
-    --secondary-foreground: var(--zf-text-strong);
-    --muted: 178 14% 10%;
-    --muted-foreground: var(--zf-text-soft);
-    --accent: var(--zf-memory);
+    --secondary: 170 12% 7%;
+    --secondary-foreground: 54 12% 92%;
+    --surface-overlay: 170 12% 6%;
+    --surface-elevated: 170 12% 8%;
+    --muted: 170 10% 9%;
+    --muted-foreground: 58 8% 70%;
+    --accent: 222 22% 66%;
     --accent-foreground: 0 0% 0%;
-    --border: 174 16% 18%;
-    --input: 174 16% 18%;
-    --ring: var(--zf-primary);
+    --border: 170 10% 22%;
+    --input: 170 10% 22%;
+    --ring: 172 32% 56%;
 
-    --sidebar-background: var(--zf-surface-1);
-    --sidebar-foreground: var(--zf-text-strong);
-    --sidebar-primary: var(--zf-primary);
+    --sidebar-background: 170 14% 5%;
+    --sidebar-foreground: 54 12% 92%;
+    --sidebar-primary: 172 32% 56%;
     --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 178 16% 8%;
-    --sidebar-accent-foreground: var(--zf-text-strong);
-    --sidebar-border: 174 16% 18%;
-    --sidebar-ring: var(--zf-primary);
+    --sidebar-accent: 170 12% 7%;
+    --sidebar-accent-foreground: 54 12% 92%;
+    --sidebar-border: 170 10% 22%;
+    --sidebar-ring: 172 32% 56%;
 
-    --nav-v2-drawer-start: var(--zf-surface-1);
-    --nav-v2-drawer-mid: 178 16% 8%;
+    --nav-v2-drawer-start: 170 14% 5%;
+    --nav-v2-drawer-mid: 170 12% 7%;
     --nav-v2-drawer-end: 0 0% 0%;
-    --nav-v2-drawer-text: var(--zf-text-strong);
-    --nav-v2-drawer-muted: var(--zf-text-soft);
-    --nav-v2-drawer-border: 174 16% 24%;
-    --nav-v2-drawer-divider: 174 16% 18%;
-    --nav-v2-item-surface: var(--zf-surface-1);
-    --nav-v2-item-hover: var(--zf-surface-2);
-    --nav-v2-icon-surface: 178 16% 8%;
-    --nav-v2-icon-muted: var(--zf-text-soft);
+    --nav-v2-drawer-text: 54 12% 92%;
+    --nav-v2-drawer-muted: 58 8% 70%;
+    --nav-v2-drawer-border: 170 10% 30%;
+    --nav-v2-drawer-divider: 170 10% 18%;
+    --nav-v2-item-surface: 170 14% 9%;
+    --nav-v2-item-hover: 170 12% 10%;
+    --nav-v2-icon-surface: 170 12% 8%;
+    --nav-v2-icon-muted: 58 8% 70%;
     --nav-v2-backdrop: 0 0% 0%;
     --nav-v2-shadow: 0 0% 0%;
+  --zf-night-0: 0 0% 0%;
+  --zf-night-1: 170 12% 7%;
+  --zf-surface-1: 170 14% 5%;
+  --zf-surface-2: 170 12% 8%;
+  --zf-text-strong: 54 12% 92%;
+  --zf-text-soft: 58 8% 70%;
+  --zf-primary: 172 32% 56%;
+  --zf-memory: 222 22% 66%;
+  --zf-trace: 190 54% 60%;
+  --zf-growth: 142 36% 58%;
+  --zf-warm: 32 50% 68%;
+  --zf-warning: 43 70% 64%;
+  --settings-v2-shell: 0 0% 0%;
+  --settings-v2-card: 170 14% 5%;
+  --settings-v2-panel: 170 12% 8%;
+  --settings-v2-border: 170 10% 26%;
+  --settings-v2-accent: 172 32% 56%;
+  --settings-v2-shadow: 0 0% 0%;
+}
+
+
+/* OLED drawer visibility: keep true-black atmosphere without delayed near-invisible destination rows. */
+:root[data-theme="oled"] [data-theme-region="drawer-v2"] [data-testid^="drawer-v2-destination-"] {
+  animation-name: none;
+  opacity: 1;
+}
+
+/* V2 settings comfort layer: token-only color identity for settings/menu surfaces. */
+:root[data-theme="paper"] [data-v2-readable-page="settings"],
+:root[data-theme="ink"] [data-v2-readable-page="settings"],
+:root[data-theme="oled"] [data-v2-readable-page="settings"] {
+  --v2-readable-accent: var(--settings-v2-accent);
+  --v2-readable-surface: hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.88));
+  --v2-readable-surface-border: hsl(var(--settings-v2-border) / 0.58);
+}
+
+:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],
+:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],
+:root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],
+:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"],
+:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"],
+:root[data-theme="oled"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"] {
+  background:
+    linear-gradient(180deg, hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.96)), hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.72)));
+  border-color: hsl(var(--settings-v2-border) / 0.52);
+  box-shadow: var(--zen-shadow-card);
+}
+
+:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"],
+:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"],
+:root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"] {
+  background: hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.76));
+  border-color: hsl(var(--settings-v2-border) / 0.44);
+}
+
+@media (forced-colors: active) {
+  [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],
+  [data-v2-readable-page="settings"] [data-testid^="settings-module-"],
+  [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
+  [data-theme-region="drawer-v2"],
+  [data-theme-region="drawer-v2"] [data-testid^="drawer-v2-destination-"] {
+    background: Canvas;
+    border-color: ButtonBorder;
+    box-shadow: none;
+    color: CanvasText;
+  }
+
+  [data-v2-readable-page="settings"] button:focus-visible,
+  [data-theme-region="drawer-v2"] button:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
 }
 
 /* V2 habits night polish: scoped to habits quick-pick and library surfaces only.

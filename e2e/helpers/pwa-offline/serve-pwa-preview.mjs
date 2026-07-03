@@ -9,7 +9,16 @@ import { fileURLToPath } from "node:url";
 const port = Number(process.env.PORT || 4181);
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, "../../..");
-const root = resolve(repoRoot, "dist");
+const previewDir = process.env.ZENFLOW_PWA_OFFLINE_PREVIEW_DIR || "dist";
+
+function resolvePreviewRoot(rawDir) {
+  if (!/^[A-Za-z0-9._/-]+$/.test(rawDir) || rawDir.startsWith("/") || rawDir.split("/").includes("..")) {
+    throw new Error("ZENFLOW_PWA_OFFLINE_PREVIEW_DIR must be a safe repository-relative path.");
+  }
+  return resolve(repoRoot, rawDir);
+}
+
+const root = resolvePreviewRoot(previewDir);
 const fallback = join(root, "index.html");
 const artifactRoot = resolve(repoRoot, "output/playwright/pwa-offline-diary");
 const outputCertPath = join(artifactRoot, "localhost-cert.pem");
@@ -86,7 +95,7 @@ const certPath = process.env.HTTPS_CERT || (existsSync(outputCertPath) ? outputC
 const keyPath = process.env.HTTPS_KEY || (existsSync(outputKeyPath) ? outputKeyPath : tmpKeyPath);
 
 if (!existsSync(root) || !existsSync(fallback)) {
-  throw new Error("Run npm run build before starting the PWA offline preview server.");
+  throw new Error("Build or stage the PWA artifact before starting the PWA offline preview server.");
 }
 
 for (const asset of REQUIRED_PWA_ASSETS) {

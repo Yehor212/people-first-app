@@ -49,10 +49,7 @@ interface OrbPageProps {
   onAddMood?: (entry: MoodEntry) => void;
 }
 
-export const OrbPage = memo(function OrbPage({
-  navigateToPage,
-  onAddMood,
-}: OrbPageProps) {
+export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbPageProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const mainRef = useRef<HTMLElement>(null);
@@ -162,119 +159,122 @@ export const OrbPage = memo(function OrbPage({
     const denseMin = isUltraDenseSelectStep ? 220 : isDesktopViewport ? 260 : 240;
     const denseScale = isUltraDenseSelectStep ? 0.3 : isDesktopViewport ? 0.34 : 0.32;
     return Math.round(
-      Math.max(denseMin, Math.min(BASE_VALENCE_ORB_SIZE, viewport.height * denseScale)),
+      Math.max(denseMin, Math.min(BASE_VALENCE_ORB_SIZE, viewport.height * denseScale))
     );
-  }, [
-    isDenseSelectStep,
-    isDesktopViewport,
-    isUltraDenseSelectStep,
-    viewport.height,
-  ]);
+  }, [isDenseSelectStep, isDesktopViewport, isUltraDenseSelectStep, viewport.height]);
 
   const contentGapClass = isUltraDenseSelectStep
     ? "gap-1.5 md:gap-2"
     : isDenseSelectStep
-    ? "gap-2.5 md:gap-3"
-    : isShortViewport
-      ? "gap-3 md:gap-4"
-      : "gap-6 md:gap-7";
+      ? "gap-2.5 md:gap-3"
+      : isShortViewport
+        ? "gap-3 md:gap-4"
+        : "gap-6 md:gap-7";
   const pageChromePaddingClass = isUltraDenseSelectStep
     ? "pt-[calc(var(--safe-top)+0.75rem)]"
     : isDenseSelectStep
-    ? "pt-[calc(var(--safe-top)+0.75rem)]"
-    : isShortViewport
-    ? "pt-[calc(var(--safe-top)+1rem)]"
-    : "pt-[calc(var(--safe-top)+1.25rem)]";
+      ? "pt-[calc(var(--safe-top)+0.75rem)]"
+      : isShortViewport
+        ? "pt-[calc(var(--safe-top)+1rem)]"
+        : "pt-[calc(var(--safe-top)+1.25rem)]";
   const selectContentLayoutClass = isUltraDenseSelectStep
     ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 pt-12 md:pb-28 md:pt-10"
     : isDenseSelectStep
-    ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 pt-12 md:pb-28 md:pt-8"
-    : isShortViewport
-    ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 pt-8 md:pb-28"
-    : "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 md:pb-28";
+      ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 pt-12 md:pb-28 md:pt-8"
+      : isShortViewport
+        ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 pt-8 md:pb-28"
+        : "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 md:pb-28";
 
   return (
-    <Bloom key="orb-page" transition={staggerDelay("primary")}>
-      <main
-        ref={mainRef}
-        id="main-content-v2"
-        role="main"
-        tabIndex={-1}
-        className={cn(
-          scopeClass,
-          "v2-fullscreen-page v2-readable-page v2-readable-page--ambient relative min-h-[var(--app-viewport-height)] overflow-hidden outline-none",
-        )}
-        aria-labelledby="orb-page-heading"
-        data-testid="orb-page"
-        data-v2-readable-page="orb"
-      >
-        <h1 id="orb-page-heading" className="sr-only">
-          {tx.somLogFeeling || tx.navV2Orb || "Log how you feel"}
-        </h1>
-
-        <CosmicBgAdapter />
-
-        <div
-          ref={parallaxRef}
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
-          data-testid="cosmic-orb-flourish-layer"
-        >
-          {shouldRunDecorativeMotion ? (isPaperTheme ? <OrbDayFlourish /> : <ShootingStar />) : null}
-        </div>
-
-        <div
+    <>
+      <Bloom key="orb-page" transition={staggerDelay("primary")}>
+        <main
+          ref={mainRef}
+          id="main-content-v2"
+          role="main"
+          tabIndex={-1}
           className={cn(
-            "relative z-10 mx-auto flex h-[var(--app-viewport-height)] w-full min-w-0 max-w-3xl flex-col overflow-x-hidden px-4 pb-[calc(var(--safe-bottom)+1rem)] md:px-6 md:pb-[calc(var(--safe-bottom)+1.5rem)]",
-            pageChromePaddingClass,
+            scopeClass,
+            "v2-fullscreen-page v2-readable-page v2-readable-page--ambient relative min-h-[var(--app-viewport-height)] overflow-hidden outline-none"
           )}
+          aria-labelledby="orb-page-heading"
+          data-testid="orb-page"
+          data-v2-readable-page="orb"
         >
-          <OrbAmbienceControl audioSrc={ORB_AMBIENCE_AUDIO_SRC} tx={tx} />
+          <h1 id="orb-page-heading" className="sr-only">
+            {tx.somLogFeeling || tx.navV2Orb || "Log how you feel"}
+          </h1>
 
-          {step === "orb-select" ? (
-            <OrbSelectStep
-              tx={tx}
-              selectContentLayoutClass={selectContentLayoutClass}
-              contentGapClass={contentGapClass}
-              shouldAnimate={shouldRunAmbientMotion}
-              auraHue={auraHue}
-              auraRef={auraRef}
-              showOrbAura={false}
-              handleOrbTap={handleOrbTap}
-              orbValence={orbValence}
-              heroOrbSize={heroOrbSize}
-              orbAnimationSpeed={CANONICAL_ORB_ANIMATION_SPEED}
-              draftScope={draftScope}
-              draftValence={draftValence}
-              isDenseSelectStep={isDenseSelectStep}
-              isUltraDenseSelectStep={isUltraDenseSelectStep}
-              isShortViewport={isShortViewport}
-              whisperKey={whisperKey}
-              whisperText={whisperText}
-              canProceedFromSelect={canProceedFromSelect}
-              handleSliderCommit={handleSliderCommit}
-              handleNextStep={handleNextStep}
-            />
-          ) : (
-            <OrbRefineStep
-              tx={tx}
-              contentGapClass={contentGapClass}
-              resolvedValence={resolvedValence}
-              scopeLabel={scopeLabel}
-              moodLabel={moodLabel}
-              draftEmotion={draftEmotion}
-              draftNote={draftNote}
-              canOpenDiary={canOpenDiary}
-              handleEmotionToggle={handleEmotionToggle}
-              handleNoteChange={handleNoteChange}
-              handleBackStep={handleBackStep}
-              handleOpenDiary={handleOpenDiary}
-            />
-          )}
-        </div>
-      </main>
+          <CosmicBgAdapter />
+
+          <div
+            ref={parallaxRef}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+            data-testid="cosmic-orb-flourish-layer"
+          >
+            {shouldRunDecorativeMotion ? (
+              isPaperTheme ? (
+                <OrbDayFlourish />
+              ) : (
+                <ShootingStar />
+              )
+            ) : null}
+          </div>
+
+          <div
+            className={cn(
+              "relative z-10 mx-auto flex h-[var(--app-viewport-height)] w-full min-w-0 max-w-3xl flex-col overflow-x-hidden px-4 pb-[calc(var(--safe-bottom)+1rem)] md:px-6 md:pb-[calc(var(--safe-bottom)+1.5rem)]",
+              pageChromePaddingClass
+            )}
+          >
+            {step === "orb-select" ? (
+              <OrbSelectStep
+                tx={tx}
+                selectContentLayoutClass={selectContentLayoutClass}
+                contentGapClass={contentGapClass}
+                shouldAnimate={shouldRunAmbientMotion}
+                auraHue={auraHue}
+                auraRef={auraRef}
+                showOrbAura={false}
+                handleOrbTap={handleOrbTap}
+                orbValence={orbValence}
+                heroOrbSize={heroOrbSize}
+                orbAnimationSpeed={CANONICAL_ORB_ANIMATION_SPEED}
+                draftScope={draftScope}
+                draftValence={draftValence}
+                isDenseSelectStep={isDenseSelectStep}
+                isUltraDenseSelectStep={isUltraDenseSelectStep}
+                isShortViewport={isShortViewport}
+                whisperKey={whisperKey}
+                whisperText={whisperText}
+                canProceedFromSelect={canProceedFromSelect}
+                handleSliderCommit={handleSliderCommit}
+                handleNextStep={handleNextStep}
+              />
+            ) : (
+              <OrbRefineStep
+                tx={tx}
+                contentGapClass={contentGapClass}
+                resolvedValence={resolvedValence}
+                scopeLabel={scopeLabel}
+                moodLabel={moodLabel}
+                draftEmotion={draftEmotion}
+                draftNote={draftNote}
+                canOpenDiary={canOpenDiary}
+                handleEmotionToggle={handleEmotionToggle}
+                handleNoteChange={handleNoteChange}
+                handleBackStep={handleBackStep}
+                handleOpenDiary={handleOpenDiary}
+              />
+            )}
+          </div>
+        </main>
+      </Bloom>
+
+      <OrbAmbienceControl audioSrc={ORB_AMBIENCE_AUDIO_SRC} tx={tx} />
 
       <MoodFirstRunHint eligible={firstRunEligible} />
-    </Bloom>
+    </>
   );
 });

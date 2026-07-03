@@ -217,11 +217,11 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
         }
       }
       stopAutoSync();
+      await removePushToken();
       const { clearDeviceIdCache } = await import("@/storage/eventSync");
       clearDeviceIdCache();
       await clearLocalUserData();
       triggerDataRefresh();
-      await removePushToken();
       await supabase.auth.signOut();
       resetAuthState();
       setAuthGateChecked(false);

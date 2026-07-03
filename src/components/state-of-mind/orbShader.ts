@@ -75,6 +75,8 @@ export interface OrbGLRenderer {
   render: (params: {
     valence: number;
     time: number;
+    motionPhase: number;
+    noisePhase: number;
     size: number;
     dpr: number;
     isDark: boolean;
@@ -271,6 +273,8 @@ function createRendererFromLinkedProgram(
   const loc = {
     uResolution: gl.getUniformLocation(program, 'uResolution'),
     uTime: gl.getUniformLocation(program, 'uTime'),
+    uMotionPhase: gl.getUniformLocation(program, 'uMotionPhase'),
+    uNoisePhase: gl.getUniformLocation(program, 'uNoisePhase'),
     uValence: gl.getUniformLocation(program, 'uValence'),
     uIsDark: gl.getUniformLocation(program, 'uIsDark'),
     uColor: gl.getUniformLocation(program, 'uColor'),
@@ -304,6 +308,8 @@ function createRendererFromLinkedProgram(
       // Set uniforms
       gl.uniform2f(loc.uResolution, w, h);
       gl.uniform1f(loc.uTime, params.time);
+      gl.uniform1f(loc.uMotionPhase, params.motionPhase);
+      gl.uniform1f(loc.uNoisePhase, params.noisePhase);
       gl.uniform1f(loc.uValence, params.valence);
       gl.uniform1f(loc.uIsDark, isDark ? 1.0 : 0.0);
 

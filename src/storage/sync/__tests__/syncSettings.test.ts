@@ -159,6 +159,22 @@ describe("syncSettings", () => {
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
+  it("does not sync journal reset pending/proof security settings", async () => {
+    await syncSetting("journal_password_reset_pending", {
+      email: "owner@example.invalid",
+      nonce: "reset-proof",
+      startedAt: 1_781_580_000_000,
+    });
+    await syncSetting("journal_password_reset_proof", {
+      nonce: "reset-proof",
+      receivedAt: 1_781_580_000_000,
+    });
+
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
   it("queues the wrapped journal vault key while offline", async () => {
     Object.defineProperty(navigator, "onLine", {
       configurable: true,
@@ -175,6 +191,21 @@ describe("syncSettings", () => {
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
+  it("queues wrapped journal vault key deletion while offline", async () => {
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+
+    await deleteSettingFromCloud("journal_vault_key");
+
+    expect(mocks.enqueue).toHaveBeenCalledWith("DELETE_SETTINGS", "journal_vault_key", {
+      key: "journal_vault_key",
+    });
+    expect(mocks.delete).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
   it("does not queue password cooldown while offline", async () => {
     Object.defineProperty(navigator, "onLine", {
       configurable: true,
@@ -182,6 +213,19 @@ describe("syncSettings", () => {
     });
 
     await syncSetting("journal_password_cooldown", { failedAttempts: 4 });
+
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("does not queue journal reset pending/proof while offline", async () => {
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+
+    await syncSetting("journal_password_reset_pending", { nonce: "reset-proof" });
+    await syncSetting("journal_password_reset_proof", { nonce: "reset-proof" });
 
     expect(mocks.enqueue).not.toHaveBeenCalled();
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();

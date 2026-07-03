@@ -1,27 +1,47 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { translations, loadLanguage, Language, Translations } from "../src/i18n/translations";
+import { Language, Translations } from "../src/i18n/translations";
 
 // Get all supported languages
 const MAIN_LANGUAGES: Language[] = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
 
 // Reference language (English) - all other languages should have the same keys
 const REFERENCE_LANG: Language = "en";
+const languageLoaders: Record<Language, () => Promise<Record<string, Translations>>> = {
+  en: () => import("../src/i18n/languages/en"),
+  uk: () => import("../src/i18n/languages/uk"),
+  es: () => import("../src/i18n/languages/es"),
+  de: () => import("../src/i18n/languages/de"),
+  fr: () => import("../src/i18n/languages/fr"),
+  ja: () => import("../src/i18n/languages/ja"),
+  ar: () => import("../src/i18n/languages/ar"),
+  he: () => import("../src/i18n/languages/he"),
+};
+
+const loadedTranslations = {} as Record<Language, Translations>;
+
+function getLoadedTranslations(lang: Language): Translations {
+  const langTranslations = loadedTranslations[lang];
+  if (!langTranslations) {
+    throw new Error(`Translations for ${lang} not loaded`);
+  }
+  return langTranslations;
+}
 
 describe("i18n Translations", () => {
-  // Pre-load all languages (dynamically imported since i18n code-splitting)
   beforeAll(async () => {
-    await Promise.all(MAIN_LANGUAGES.map((lang) => loadLanguage(lang)));
+    await Promise.all(
+      MAIN_LANGUAGES.map(async (lang) => {
+        const module = await languageLoaders[lang]();
+        loadedTranslations[lang] = module[lang] || Object.values(module)[0];
+      })
+    );
   });
 
   describe("Key parity between languages", () => {
-    const referenceKeys = Object.keys(translations[REFERENCE_LANG] || {}).sort();
-
     MAIN_LANGUAGES.forEach((lang) => {
       it(`${lang} should have all keys from ${REFERENCE_LANG}`, () => {
-        const langTranslations = translations[lang];
-        if (!langTranslations) {
-          throw new Error(`Translations for ${lang} not found`);
-        }
+        const referenceKeys = Object.keys(getLoadedTranslations(REFERENCE_LANG)).sort();
+        const langTranslations = getLoadedTranslations(lang);
 
         const langKeys = Object.keys(langTranslations).sort();
         const missingKeys = referenceKeys.filter((key) => !langKeys.includes(key));
@@ -49,10 +69,7 @@ describe("i18n Translations", () => {
   describe("No empty values", () => {
     MAIN_LANGUAGES.forEach((lang) => {
       it(`${lang} should not have empty string values`, () => {
-        const langTranslations = translations[lang];
-        if (!langTranslations) {
-          throw new Error(`Translations for ${lang} not found`);
-        }
+        const langTranslations = getLoadedTranslations(lang);
 
         const emptyKeys: string[] = [];
 
@@ -76,10 +93,7 @@ describe("i18n Translations", () => {
       const keyCounts: Record<string, number> = {};
 
       MAIN_LANGUAGES.forEach((lang) => {
-        const langTranslations = translations[lang];
-        if (langTranslations) {
-          keyCounts[lang] = Object.keys(langTranslations).length;
-        }
+        keyCounts[lang] = Object.keys(getLoadedTranslations(lang)).length;
       });
 
       const counts = Object.values(keyCounts);
@@ -96,10 +110,7 @@ describe("i18n Translations", () => {
   describe("No duplicate keys with different casing", () => {
     MAIN_LANGUAGES.forEach((lang) => {
       it(`${lang} should not have keys that differ only by case`, () => {
-        const langTranslations = translations[lang];
-        if (!langTranslations) {
-          return;
-        }
+        const langTranslations = getLoadedTranslations(lang);
 
         const keys = Object.keys(langTranslations);
         const lowerCaseKeys = keys.map((k) => k.toLowerCase());
@@ -117,10 +128,7 @@ describe("i18n Translations", () => {
     const placeholderPattern = /\{(\w+)\}/g;
 
     it("placeholder patterns should be consistent across languages", () => {
-      const referenceTranslations = translations[REFERENCE_LANG];
-      if (!referenceTranslations) {
-        throw new Error(`Reference translations for ${REFERENCE_LANG} not found`);
-      }
+      const referenceTranslations = getLoadedTranslations(REFERENCE_LANG);
 
       const inconsistencies: string[] = [];
 
@@ -132,8 +140,7 @@ describe("i18n Translations", () => {
         if (refPlaceholders.length === 0) continue;
 
         MAIN_LANGUAGES.filter((l) => l !== REFERENCE_LANG).forEach((lang) => {
-          const langTranslations = translations[lang];
-          if (!langTranslations) return;
+          const langTranslations = getLoadedTranslations(lang);
 
           const langValue = langTranslations[key as keyof Translations];
           if (typeof langValue !== "string") return;
@@ -168,9 +175,9 @@ describe("i18n Translations", () => {
   describe("Translation sanity checks", () => {
     it("should have appName defined for all languages", () => {
       MAIN_LANGUAGES.forEach((lang) => {
-        const langTranslations = translations[lang];
-        expect(langTranslations?.appName).toBeDefined();
-        expect(langTranslations?.appName).not.toBe("");
+        const langTranslations = getLoadedTranslations(lang);
+        expect(langTranslations.appName).toBeDefined();
+        expect(langTranslations.appName).not.toBe("");
       });
     });
 
@@ -188,12 +195,41 @@ describe("i18n Translations", () => {
       ];
 
       MAIN_LANGUAGES.forEach((lang) => {
-        const langTranslations = translations[lang];
-        if (!langTranslations) return;
+        const langTranslations = getLoadedTranslations(lang);
 
         requiredKeys.forEach((key) => {
           expect(langTranslations[key]).toBeDefined();
           expect(langTranslations[key]).not.toBe("");
+        });
+      });
+    });
+
+    it("keeps settings copy grounded and free of medicalized feedback templates", () => {
+      const forbiddenSettingsCopy = [
+        /dopamine/i,
+        /maximum dopamine/i,
+        /adhd brains/i,
+        /need more dopamine/i,
+      ];
+      const feedbackKeys = [
+        "dopamineSettings",
+        "dopamineSettingsDesc",
+        "dopamineADHD",
+        "dopamineADHDDesc",
+        "dopamineTip",
+        "dopamineTipText",
+      ];
+
+      MAIN_LANGUAGES.forEach((lang) => {
+        const langTranslations = getLoadedTranslations(lang) as unknown as Record<string, string>;
+        expect(langTranslations.settingsOverviewDescription?.trim()).toBeTruthy();
+        expect(langTranslations.settingsRemindersOff?.trim()).toBeTruthy();
+
+        feedbackKeys.forEach((key) => {
+          const value = langTranslations[key] || "";
+          forbiddenSettingsCopy.forEach((pattern) => {
+            expect(value).not.toMatch(pattern);
+          });
         });
       });
     });

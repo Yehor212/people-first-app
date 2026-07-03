@@ -420,6 +420,84 @@ function checkCodexSkillRouting() {
       "Missing exit(2); guarded hook would fail open on error",
     );
   }
+  if (codexHookRegistered("UserPromptSubmit", [], "no-ai-template-gate.cjs")) {
+    pass(
+      "codex:no-ai-template-prompt",
+      "Registered for UserPromptSubmit no-template context injection",
+    );
+  } else {
+    fail(
+      "codex:no-ai-template-prompt",
+      "no-ai-template-gate.cjs must be registered for UserPromptSubmit",
+    );
+  }
+
+  if (codexHookRegistered("Stop", [], "no-ai-template-gate.cjs")) {
+    pass(
+      "codex:no-ai-template-stop",
+      "Registered for Stop output review",
+    );
+  } else {
+    fail(
+      "codex:no-ai-template-stop",
+      "no-ai-template-gate.cjs must be registered for Stop",
+    );
+  }
+
+  if (codexHookRegistered("SubagentStart", [], "no-ai-template-gate.cjs")) {
+    pass(
+      "codex:no-ai-template-subagent-start",
+      "Registered for SubagentStart context injection",
+    );
+  } else {
+    fail(
+      "codex:no-ai-template-subagent-start",
+      "no-ai-template-gate.cjs must be registered for SubagentStart",
+    );
+  }
+
+  if (codexHookRegistered("SubagentStop", [], "no-ai-template-gate.cjs")) {
+    pass(
+      "codex:no-ai-template-subagent-stop",
+      "Registered for SubagentStop output review",
+    );
+  } else {
+    fail(
+      "codex:no-ai-template-subagent-stop",
+      "no-ai-template-gate.cjs must be registered for SubagentStop",
+    );
+  }
+
+  const noAiHookPath = path.join(CODEX_HOOKS_DIR, "no-ai-template-gate.cjs");
+  if (!fs.existsSync(noAiHookPath)) {
+    fail(
+      "codex:no-ai-template-file",
+      ".codex/hooks/no-ai-template-gate.cjs missing",
+    );
+  } else {
+    pass("codex:no-ai-template-file", "Exists on disk");
+    const noAiContent = fs.readFileSync(noAiHookPath, "utf8");
+    if (noAiContent.includes("readFileSync(0")) {
+      pass("codex:no-ai-template-stdin", "Has stdin JSON parsing");
+    } else {
+      fail("codex:no-ai-template-stdin", "Missing stdin JSON parsing");
+    }
+    for (const marker of [
+      "NO AI TEMPLATE GATE",
+      "SUBAGENT EVIDENCE CONTRACT",
+      "Best-Practices-Only Proposal Gate",
+      "best-practices laundering",
+      "subagent proof laundering",
+      "SubagentStop",
+      "process.exit(2)",
+    ]) {
+      if (noAiContent.includes(marker)) {
+        pass("codex:no-ai-template-marker:" + marker, "Required marker present");
+      } else {
+        fail("codex:no-ai-template-marker:" + marker, "Required marker missing");
+      }
+    }
+  }
 }
 
 // ============================================================

@@ -93,6 +93,7 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
         await scheduleMoodQuickLogNotification(
           { hour, minute },
           t.howAreYouNow || "How are you feeling? Tap! 😊",
+          { days: controls.reminders.days, quietHours: controls.reminders.quietHours },
         );
       }
     } catch (error) {
@@ -223,6 +224,32 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
                   {label}
                 </SettingsChoiceButton>
               ))}
+            </div>
+          </div>
+
+          <div>
+            <SettingsFieldHeader title={tx.quietHours || "Quiet hours"} />
+            <div className="grid gap-2 sm:grid-cols-2">
+              <TimeInputInline
+                label={tx.quietHoursStart || "Quiet start"}
+                value={controls.reminders.quietHours.start || "22:00"}
+                onChange={(value) =>
+                  setReminder((prev) => ({
+                    ...prev,
+                    quietHours: { ...prev.quietHours, start: value },
+                  }))
+                }
+              />
+              <TimeInputInline
+                label={tx.quietHoursEnd || "Quiet end"}
+                value={controls.reminders.quietHours.end || "07:00"}
+                onChange={(value) =>
+                  setReminder((prev) => ({
+                    ...prev,
+                    quietHours: { ...prev.quietHours, end: value },
+                  }))
+                }
+              />
             </div>
           </div>
         </SettingsInset>

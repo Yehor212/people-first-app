@@ -32,6 +32,7 @@ import {
   getPendingAuthUrl,
   hasPendingAuthUrl,
 } from '@/lib/authRedirect';
+import { SK } from '@/lib/storageKeys';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -56,6 +57,7 @@ beforeEach(() => {
   mockBaseUrl = '/';
   vi.clearAllMocks();
   window.history.pushState({}, '', '/');
+  localStorage.removeItem(SK.JOURNAL_PASSWORD_RESET_PROOF);
   // Clear any pending auth URL from previous tests
   getPendingAuthUrl();
 });
@@ -140,7 +142,7 @@ describe('getAuthRedirectUrl', () => {
 describe('getCleanAuthCallbackUrl', () => {
   it('removes OAuth params while preserving V2 routing params', () => {
     const cleanUrl = getCleanAuthCallbackUrl(
-      'https://example.com/people-first-app/orb?nav=v2&navLayout=phone&code=abc&state=xyz'
+      'https://example.com/people-first-app/orb?nav=v2&navLayout=phone&code=abc&state=xyz&journalReset=proof-1'
     );
 
     expect(cleanUrl).toBe('/people-first-app/orb?nav=v2&navLayout=phone');
@@ -148,7 +150,7 @@ describe('getCleanAuthCallbackUrl', () => {
 
   it('removes OAuth tokens from the hash while preserving non-OAuth hash params', () => {
     const cleanUrl = getCleanAuthCallbackUrl(
-      'https://example.com/people-first-app/orb?nav=v2#section=mood&access_token=abc&refresh_token=def&provider_token=ghi&state=xyz'
+      'https://example.com/people-first-app/orb?nav=v2#section=mood&access_token=abc&refresh_token=def&provider_token=ghi&state=xyz&journalReset=proof-2'
     );
 
     expect(cleanUrl).toBe('/people-first-app/orb?nav=v2#section=mood');
@@ -221,6 +223,19 @@ describe('handleAuthCallback', () => {
     expect(mockSupabase.auth.exchangeCodeForSession).toHaveBeenCalledWith('validCode123');
   });
 
+  it('stores journal reset proof after a successful PKCE journal callback', async () => {
+    const mockSupabase = createMockSupabase();
+
+    await handleAuthCallback(
+      mockSupabase,
+      'com.zenflow.app://login-callback?code=validCode&journalReset=native-proof-1',
+    );
+
+    expect(JSON.parse(localStorage.getItem(SK.JOURNAL_PASSWORD_RESET_PROOF) || '{}')).toMatchObject({
+      nonce: 'native-proof-1',
+    });
+  });
+
   it('accepts code with special characters and forwards it', async () => {
     const mockSupabase = createMockSupabase();
     await handleAuthCallback(mockSupabase, 'https://example.com?code=invalid%3Ccode%3E');
@@ -245,6 +260,7 @@ describe('handleAuthCallback', () => {
     await expect(
       handleAuthCallback(mockSupabase, 'https://example.com?code=validCode')
     ).rejects.toThrow('Session exchange failed: Code expired');
+    expect(localStorage.getItem(SK.JOURNAL_PASSWORD_RESET_PROOF)).toBeNull();
   });
 
   it('throws when exchangeCodeForSession returns no session', async () => {
@@ -270,6 +286,19 @@ describe('handleAuthCallback', () => {
     expect(mockSupabase.auth.setSession).toHaveBeenCalledWith({
       access_token: 'abc123',
       refresh_token: 'def456',
+    });
+  });
+
+  it('stores journal reset proof after a successful implicit journal callback', async () => {
+    const mockSupabase = createMockSupabase();
+
+    await handleAuthCallback(
+      mockSupabase,
+      'https://example.com#access_token=abc123&refresh_token=def456&journalReset=hash-proof-1'
+    );
+
+    expect(JSON.parse(localStorage.getItem(SK.JOURNAL_PASSWORD_RESET_PROOF) || '{}')).toMatchObject({
+      nonce: 'hash-proof-1',
     });
   });
 
