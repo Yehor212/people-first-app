@@ -101,7 +101,7 @@ jobs:
         # via a follow-up commit `chore(visual): refresh design-system baselines`.
         # Keep this as a hard gate so visual debt cannot be hidden behind a
         # successful workflow conclusion.
-        run: npm run test:e2e:v2:visual
+        run: npm run test:e2e:v2:visual -- --workers=1
         env:
           CI: "true"
           ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER: "true"

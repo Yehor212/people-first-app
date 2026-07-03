@@ -373,7 +373,7 @@ describe("GitHub Pages deploy workflow contract", () => {
     const visualWorkflow = readFileSync(".github/workflows/visual-regression.yml", "utf8");
 
     expect(visualWorkflow).toContain("e2e/nav-v2.spec.ts-snapshots");
-    expect(visualWorkflow).toContain("npm run test:e2e:v2:visual");
+    expect(visualWorkflow).toContain("npm run test:e2e:v2:visual -- --workers=1");
     expect(visualWorkflow).not.toContain("npx playwright test e2e/design-system.spec.ts\n");
   });
 
@@ -411,7 +411,7 @@ describe("GitHub Pages deploy workflow contract", () => {
       workflow,
       "name: Run staged V2 visual regression tests"
     );
-    expect(workflow).toContain("npm run test:e2e:v2:visual");
+    expect(workflow).toContain("npm run test:e2e:v2:visual -- --workers=1");
     expect(productionStagedVisual).toBeLessThan(indexOfOrThrow(workflow, "name: Upload artifact"));
 
     const previewVerify = sliceBetween(
@@ -461,6 +461,7 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(previewWorkflow).toContain(
       "ZENFLOW_PWA_OFFLINE_PREVIEW_DIR: output/pages-artifact.nosync"
     );
+    expect(previewWorkflow).toContain("npm run test:e2e:v2:visual -- --workers=1");
   });
 
   it("hard-blocks native gates and verifies native public assets after sync", () => {

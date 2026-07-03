@@ -226,7 +226,7 @@ jobs:
           ZENFLOW_PLAYWRIGHT_USE_LOCAL_SERVER: true
           ZENFLOW_PLAYWRIGHT_PREVIEW_DIR: output/pages-artifact.nosync
           ZENFLOW_PLAYWRIGHT_LOCAL_PORT: 4187
-        run: npm run test:e2e:v2:visual
+        run: npm run test:e2e:v2:visual -- --workers=1
 
       - name: Upload V2 preview artifact for review
         if: github.event.inputs.publish_target == 'artifact-only'
