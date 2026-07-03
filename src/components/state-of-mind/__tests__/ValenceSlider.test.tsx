@@ -281,6 +281,16 @@ describe("ValenceSlider", () => {
 
   it("coalesces rapid keyboard updates while preserving the final snap", () => {
     vi.useFakeTimers();
+    const rafQueue: FrameRequestCallback[] = [];
+    const requestAnimationFrameSpy = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback: FrameRequestCallback) => {
+        rafQueue.push(callback);
+        return rafQueue.length;
+      });
+    const cancelAnimationFrameSpy = vi
+      .spyOn(window, "cancelAnimationFrame")
+      .mockImplementation(() => undefined);
     const onChange = vi.fn();
 
     try {
@@ -293,6 +303,12 @@ describe("ValenceSlider", () => {
       fireEvent.keyDown(slider, { key: "End" });
 
       expect(onChange).not.toHaveBeenCalled();
+      expect(rafQueue).toHaveLength(1);
+      expect(slider).toHaveAttribute("aria-valuenow", "3");
+
+      act(() => {
+        rafQueue.shift()?.(16);
+      });
       expect(slider).toHaveAttribute("aria-valuenow", "6");
 
       act(() => {
@@ -306,7 +322,10 @@ describe("ValenceSlider", () => {
 
       expect(onChange).toHaveBeenCalledTimes(1);
       expect(onChange).toHaveBeenLastCalledWith(1);
+      expect(cancelAnimationFrameSpy).not.toHaveBeenCalled();
     } finally {
+      requestAnimationFrameSpy.mockRestore();
+      cancelAnimationFrameSpy.mockRestore();
       vi.useRealTimers();
     }
   });

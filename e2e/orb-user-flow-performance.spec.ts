@@ -463,7 +463,8 @@ test.describe("Orb user-flow performance", () => {
           "ArrowLeft",
           "End",
         ]) {
-          await page.keyboard.press(key);
+          await page.keyboard.press(key, { delay: 12 });
+          await page.waitForTimeout(35);
         }
         await expect(slider).toHaveAttribute("aria-valuenow", "6");
         await page.waitForTimeout(140);

@@ -63,11 +63,18 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
   const onChangeRef = useRef(onChange);
   const pendingChangeRef = useRef<number | null>(null);
   const changeRafRef = useRef<number | null>(null);
+  const pendingDisplayValueRef = useRef<number | null>(null);
+  const displayRafRef = useRef<number | null>(null);
   const keyboardCommitTimeoutRef = useRef<number | null>(null);
   const activePointerIdRef = useRef<number | null>(null);
   onChangeRef.current = onChange;
 
   useEffect(() => {
+    if (displayRafRef.current !== null) {
+      window.cancelAnimationFrame(displayRafRef.current);
+      displayRafRef.current = null;
+    }
+    pendingDisplayValueRef.current = null;
     setDisplayValue(value);
     keyboardSnapRef.current = nearestSnapIndex(value);
   }, [value]);
@@ -125,6 +132,32 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
     });
   }, []);
 
+  const queueKeyboardDisplayValue = useCallback((next: number) => {
+    pendingDisplayValueRef.current = next;
+    if (displayRafRef.current !== null) return;
+
+    displayRafRef.current = window.requestAnimationFrame(() => {
+      displayRafRef.current = null;
+      const pending = pendingDisplayValueRef.current;
+      pendingDisplayValueRef.current = null;
+      if (pending !== null) {
+        setDisplayValue(pending);
+      }
+    });
+  }, []);
+
+  const flushKeyboardDisplayValue = useCallback(() => {
+    if (displayRafRef.current !== null) {
+      window.cancelAnimationFrame(displayRafRef.current);
+      displayRafRef.current = null;
+    }
+    const pending = pendingDisplayValueRef.current;
+    pendingDisplayValueRef.current = null;
+    if (pending !== null) {
+      setDisplayValue(pending);
+    }
+  }, []);
+
   const flushPendingChange = useCallback(() => {
     if (keyboardCommitTimeoutRef.current !== null) {
       window.clearTimeout(keyboardCommitTimeoutRef.current);
@@ -134,20 +167,21 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
       window.cancelAnimationFrame(changeRafRef.current);
       changeRafRef.current = null;
     }
+    flushKeyboardDisplayValue();
     const pending = pendingChangeRef.current;
     pendingChangeRef.current = null;
     if (pending !== null) {
       keyboardSnapRef.current = nearestSnapIndex(pending);
       onChangeRef.current(pending);
     }
-  }, []);
+  }, [flushKeyboardDisplayValue]);
 
   const scheduleKeyboardChange = useCallback((next: number) => {
     if (changeRafRef.current !== null) {
       window.cancelAnimationFrame(changeRafRef.current);
       changeRafRef.current = null;
     }
-    setDisplayValue(next);
+    queueKeyboardDisplayValue(next);
     pendingChangeRef.current = next;
     if (keyboardCommitTimeoutRef.current !== null) {
       window.clearTimeout(keyboardCommitTimeoutRef.current);
@@ -161,9 +195,14 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
         onChangeRef.current(pending);
       }
     }, KEYBOARD_COMMIT_DELAY_MS);
-  }, []);
+  }, [queueKeyboardDisplayValue]);
 
   const commitChange = useCallback((next: number) => {
+    if (displayRafRef.current !== null) {
+      window.cancelAnimationFrame(displayRafRef.current);
+      displayRafRef.current = null;
+    }
+    pendingDisplayValueRef.current = null;
     if (keyboardCommitTimeoutRef.current !== null) {
       window.clearTimeout(keyboardCommitTimeoutRef.current);
       keyboardCommitTimeoutRef.current = null;
@@ -188,6 +227,11 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
 
   useEffect(() => {
     return () => {
+      if (displayRafRef.current !== null) {
+        window.cancelAnimationFrame(displayRafRef.current);
+        displayRafRef.current = null;
+      }
+      pendingDisplayValueRef.current = null;
       if (changeRafRef.current !== null) {
         window.cancelAnimationFrame(changeRafRef.current);
         changeRafRef.current = null;

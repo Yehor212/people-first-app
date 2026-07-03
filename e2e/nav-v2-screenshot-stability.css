@@ -1,0 +1,24 @@
+/*
+ * Playwright-only visual stabilizer for mobile full-page Orb screenshots.
+ * The tests assert the hidden controls separately before the screenshot; this
+ * stylesheet keeps the committed baseline focused on shell/background layout
+ * instead of OS-specific font, canvas, and chip-wrap rasterization.
+ */
+html[data-zenflow-visual-stability^="mobile-orb"] [data-testid="cosmic-orb-flourish-layer"] {
+  visibility: hidden !important;
+}
+
+html[data-zenflow-visual-stability="mobile-orb-select"] [data-testid="orb-page-hero"],
+html[data-zenflow-visual-stability="mobile-orb-select"] [data-testid="orb-page-whisper"],
+html[data-zenflow-visual-stability="mobile-orb-select"] [data-testid="orb-page-scope"],
+html[data-zenflow-visual-stability="mobile-orb-select"] [data-testid="orb-page-picker"],
+html[data-zenflow-visual-stability="mobile-orb-select"] [data-testid="orb-page-footer"] {
+  visibility: hidden !important;
+}
+
+html[data-zenflow-visual-stability="mobile-orb-refine"] [data-testid="orb-page-refine"],
+html[data-zenflow-visual-stability="mobile-orb-refine"] [data-testid="orb-page-emotion-spectrum"],
+html[data-zenflow-visual-stability="mobile-orb-refine"] [data-testid="orb-page-note"],
+html[data-zenflow-visual-stability="mobile-orb-refine"] [data-testid="orb-page-footer"] {
+  visibility: hidden !important;
+}

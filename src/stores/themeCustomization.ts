@@ -85,6 +85,9 @@ const CUSTOMIZATION_CSS_VARS = [
   "--settings-v2-card-alpha",
   "--settings-v2-panel-alpha",
   "--settings-v2-shell-alpha",
+  "--settings-v2-glass-blur",
+  "--settings-v2-rim-light",
+  "--settings-v2-rim-alpha",
   "--ring",
   "--primary",
   "--primary-foreground",
@@ -97,11 +100,12 @@ const DEFAULT_THEME_COLOR = "#4a9d7c";
 const PAPER_PALETTES: Record<ThemePaletteId, Record<string, string>> = {
   zenflow: {},
   morningHearth: {
-    "--settings-v2-shell": "42 48% 90%",
-    "--settings-v2-card": "38 52% 96%",
-    "--settings-v2-panel": "26 42% 87%",
-    "--settings-v2-border": "28 24% 54%",
-    "--settings-v2-shadow": "22 28% 16%",
+    "--settings-v2-shell": "35 44% 92%",
+    "--settings-v2-card": "40 58% 97%",
+    "--settings-v2-panel": "33 38% 88%",
+    "--settings-v2-border": "31 24% 58%",
+    "--settings-v2-shadow": "24 24% 20%",
+    "--settings-v2-rim-light": "40 70% 99%",
   },
   velvetLibrary: {
     "--settings-v2-shell": "268 24% 91%",
@@ -136,11 +140,12 @@ const DARK_PALETTES: Record<ThemePaletteId, Record<string, string>> = {
     "--settings-v2-shadow": "24 34% 4%",
   },
   velvetLibrary: {
-    "--settings-v2-shell": "268 24% 8%",
-    "--settings-v2-card": "266 22% 13%",
-    "--settings-v2-panel": "263 18% 18%",
-    "--settings-v2-border": "266 16% 36%",
-    "--settings-v2-shadow": "268 34% 4%",
+    "--settings-v2-shell": "263 26% 8%",
+    "--settings-v2-card": "258 24% 12%",
+    "--settings-v2-panel": "254 18% 18%",
+    "--settings-v2-border": "262 18% 38%",
+    "--settings-v2-shadow": "260 38% 4%",
+    "--settings-v2-rim-light": "274 70% 78%",
   },
   botanicalPulse: {
     "--settings-v2-shell": "154 22% 8%",
@@ -161,7 +166,7 @@ const DARK_PALETTES: Record<ThemePaletteId, Record<string, string>> = {
 const ACCENTS: Record<AppliedTheme, Record<ThemeAccentFamily, Record<ThemeIntensity, string>>> = {
   paper: {
     teal: { quiet: "176 34% 36%", balanced: "174 38% 34%", vivid: "176 50% 28%" },
-    clay: { quiet: "18 42% 42%", balanced: "18 48% 38%", vivid: "17 58% 33%" },
+    clay: { quiet: "18 38% 45%", balanced: "18 44% 42%", vivid: "17 54% 36%" },
     plum: { quiet: "274 34% 44%", balanced: "274 40% 38%", vivid: "274 52% 34%" },
     moss: { quiet: "128 34% 36%", balanced: "130 42% 32%", vivid: "130 52% 27%" },
     amber: { quiet: "37 48% 37%", balanced: "37 58% 35%", vivid: "36 68% 30%" },
@@ -169,7 +174,7 @@ const ACCENTS: Record<AppliedTheme, Record<ThemeAccentFamily, Record<ThemeIntens
   ink: {
     teal: { quiet: "174 24% 62%", balanced: "172 30% 58%", vivid: "172 46% 62%" },
     clay: { quiet: "18 40% 66%", balanced: "18 48% 62%", vivid: "17 62% 66%" },
-    plum: { quiet: "274 32% 70%", balanced: "274 42% 68%", vivid: "274 58% 72%" },
+    plum: { quiet: "274 34% 70%", balanced: "274 44% 72%", vivid: "274 58% 74%" },
     moss: { quiet: "130 32% 64%", balanced: "130 42% 60%", vivid: "130 56% 64%" },
     amber: { quiet: "38 50% 68%", balanced: "38 62% 64%", vivid: "38 76% 66%" },
   },
@@ -184,8 +189,8 @@ const ACCENTS: Record<AppliedTheme, Record<ThemeAccentFamily, Record<ThemeIntens
 
 const META_THEME_COLORS: Record<ThemePaletteId, Record<ThemeAccentFamily, string>> = {
   zenflow: { teal: "#4a9d7c", clay: "#8e5640", plum: "#76519b", moss: "#3d7e48", amber: "#9b6b1f" },
-  morningHearth: { teal: "#42847e", clay: "#9b5a3f", plum: "#7a5795", moss: "#4f7d45", amber: "#9d6a22" },
-  velvetLibrary: { teal: "#4a807d", clay: "#995b49", plum: "#7250a0", moss: "#4b7a51", amber: "#9b6d27" },
+  morningHearth: { teal: "#5f8f88", clay: "#a46a4f", plum: "#80609a", moss: "#678b57", amber: "#a7772d" },
+  velvetLibrary: { teal: "#4f8986", clay: "#9a604d", plum: "#6d588f", moss: "#527d59", amber: "#9b742d" },
   botanicalPulse: { teal: "#3e837c", clay: "#8f5a3f", plum: "#795896", moss: "#357d49", amber: "#986e24" },
   quietOled: { teal: "#58aca6", clay: "#bd765f", plum: "#a687cf", moss: "#73ad76", amber: "#c69545" },
 };
@@ -232,18 +237,33 @@ function foregroundForTheme(appliedTheme: AppliedTheme): string {
   return appliedTheme === "paper" ? "160 42% 96%" : "170 22% 8%";
 }
 
-function transparencyVars(customization: ThemeCustomization): Record<string, string> {
+function transparencyVars(
+  appliedTheme: AppliedTheme,
+  customization: ThemeCustomization,
+): Record<string, string> {
   if (customization.reduceTransparency) {
     return {
       "--settings-v2-card-alpha": "1",
       "--settings-v2-panel-alpha": "0.96",
       "--settings-v2-shell-alpha": "0.9",
+      "--settings-v2-glass-blur": "0px",
+      "--settings-v2-rim-alpha": "0.18",
     };
   }
   return {
-    "--settings-v2-card-alpha": "0.96",
-    "--settings-v2-panel-alpha": customization.depth === "soft" ? "0.68" : "0.72",
+    "--settings-v2-card-alpha": customization.depth === "soft" ? "0.9" : "0.96",
+    "--settings-v2-panel-alpha": customization.depth === "soft"
+      ? appliedTheme === "paper"
+        ? "0.64"
+        : "0.7"
+      : "0.72",
     "--settings-v2-shell-alpha": customization.depth === "cozy" ? "0.66" : "0.56",
+    "--settings-v2-glass-blur": customization.depth === "soft"
+      ? appliedTheme === "paper"
+        ? "18px"
+        : "20px"
+      : "14px",
+    "--settings-v2-rim-alpha": customization.depth === "soft" ? "0.48" : "0.34",
   };
 }
 
@@ -294,7 +314,7 @@ export function getThemeCustomizationRecipe(
     cssVars: {
       ...palette,
       ...contrastBorder,
-      ...transparencyVars(customization),
+      ...transparencyVars(appliedTheme, customization),
       ...shadowVars(appliedTheme, customization),
       "--settings-v2-accent": accent,
       "--ring": accent,

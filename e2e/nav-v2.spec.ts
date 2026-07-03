@@ -13,9 +13,18 @@
  * otherwise). Mobile baseline regenerated in Phase 3-A.1 to drop MobileNavV2.
  */
 
+import path from "node:path";
+
 import { test, expect } from "@playwright/test";
 
 import { primeZenflowV2 } from "./helpers/zenflowV2State";
+
+const mobileOrbScreenshotStylePath = path.resolve(
+  process.cwd(),
+  "e2e/nav-v2-screenshot-stability.css"
+);
+
+type MobileOrbVisualStabilityMode = "mobile-orb-select" | "mobile-orb-refine";
 
 async function primeApp(
   page: import("@playwright/test").Page,
@@ -63,6 +72,15 @@ async function expectVisibleAboveFold(page: import("@playwright/test").Page, tes
 
 async function expectOrbPageReady(page: import("@playwright/test").Page) {
   await expect(page.getByTestId("orb-page")).toBeVisible({ timeout: 20_000 });
+}
+
+async function applyMobileOrbVisualStability(
+  page: import("@playwright/test").Page,
+  mode: MobileOrbVisualStabilityMode
+) {
+  await page.evaluate((nextMode) => {
+    document.documentElement.dataset.zenflowVisualStability = nextMode;
+  }, mode);
 }
 
 async function expectDarkThemeCardToken(
@@ -200,11 +218,13 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
       expect(await page.getByTestId(`mobile-nav-v2-tab-${id}`).count()).toBe(0);
     }
 
+    await applyMobileOrbVisualStability(page, "mobile-orb-select");
     await expect(page).toHaveScreenshot("nav-v2-mobile-orb-day.png", {
       fullPage: true,
       maxDiffPixelRatio: 0.03,
       animations: "disabled",
       timeout: 30_000,
+      stylePath: mobileOrbScreenshotStylePath,
     });
   });
 
@@ -218,12 +238,18 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
 
     await expectOrbPageReady(page);
     await expect(page.getByTestId("cosmic-orb-background")).toBeVisible();
+    await expect(page.getByTestId("orb-page-hero")).toBeVisible();
+    await expect(page.getByTestId("orb-page-scope")).toBeVisible();
+    await expect(page.getByTestId("orb-page-slider")).toBeVisible();
+    await expect(page.getByTestId("orb-page-next")).toBeVisible();
 
+    await applyMobileOrbVisualStability(page, "mobile-orb-select");
     await expect(page).toHaveScreenshot("nav-v2-mobile-orb-night.png", {
       fullPage: true,
       maxDiffPixelRatio: 0.03,
       animations: "disabled",
       timeout: 30_000,
+      stylePath: mobileOrbScreenshotStylePath,
     });
   });
 
@@ -475,12 +501,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
       expect(collapsedCount).toBeGreaterThanOrEqual(6);
       expect(collapsedCount).toBeLessThanOrEqual(16);
       await expect(page.getByTestId("emotion-more-precise")).toBeVisible();
-      const mobileEmotionGridMask = [
-        page.getByTestId("emotion-tag-chips"),
-        page.getByTestId("orb-page-note"),
-        page.getByTestId("orb-page-footer"),
-      ];
-
+      await applyMobileOrbVisualStability(page, "mobile-orb-refine");
       await expect(page).toHaveScreenshot(
         `nav-v2-mobile-orb-emotions-collapsed-${themeLabel}.png`,
         {
@@ -488,7 +509,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
           maxDiffPixelRatio: 0.04,
           animations: "disabled",
           timeout: 30_000,
-          mask: mobileEmotionGridMask,
+          stylePath: mobileOrbScreenshotStylePath,
         }
       );
     });
@@ -513,11 +534,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
         "aria-expanded",
         "true"
       );
-      const mobileEmotionGridMask = [
-        page.getByTestId("emotion-tag-chips"),
-        page.getByTestId("orb-page-note"),
-        page.getByTestId("orb-page-footer"),
-      ];
+      await applyMobileOrbVisualStability(page, "mobile-orb-refine");
 
       if (theme === "paper") {
         for (const key of ["nostalgic", "appreciated", "content", "loved", "brave"]) {
@@ -537,7 +554,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
             maxDiffPixelRatio: 0.04,
             animations: "disabled",
             timeout: 30_000,
-            mask: mobileEmotionGridMask,
+            stylePath: mobileOrbScreenshotStylePath,
           }
         );
         return;
@@ -548,7 +565,7 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
         maxDiffPixelRatio: 0.04,
         animations: "disabled",
         timeout: 30_000,
-        mask: mobileEmotionGridMask,
+        stylePath: mobileOrbScreenshotStylePath,
       });
     });
   }
