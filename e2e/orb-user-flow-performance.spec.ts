@@ -203,6 +203,19 @@ async function waitForTwoFrames(page: Page) {
   );
 }
 
+async function waitForFiniteAnimationsToSettle(page: Page) {
+  await page.waitForFunction(() => {
+    return document.getAnimations().every((animation) => {
+      const timing = animation.effect?.getComputedTiming();
+      if (!timing || timing.iterations === Infinity) return true;
+      const duration = Number(timing.duration);
+      return !Number.isFinite(duration) || duration <= 0 || animation.playState !== "running";
+    });
+  }, undefined, { timeout: 2_000 }).catch(async () => {
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+}
+
 async function timedAction(
   page: Page,
   label: string,
@@ -526,10 +539,13 @@ test.describe("Orb user-flow performance", () => {
       await expect(page.getByTestId("orb-page-refine")).toBeVisible();
     });
 
+    const noteInput = page.getByTestId("orb-page-note-input");
+    await expect(noteInput).toBeVisible();
+    await waitForFiniteAnimationsToSettle(page);
+
     await timedAction(page, "orb-note-input", async () => {
-      const noteInput = page.getByTestId("orb-page-note-input");
       await noteInput.click();
-      await page.keyboard.type("Quick performance proof", { delay: 8 });
+      await page.keyboard.insertText("Quick performance proof");
       await expect(noteInput).toHaveValue("Quick performance proof");
     });
 

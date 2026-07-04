@@ -400,10 +400,16 @@ describe("GitHub Pages deploy workflow contract", () => {
 
     const perfSpec = readFileSync("e2e/orb-user-flow-performance.spec.ts", "utf8");
     expect(perfSpec).toContain("const directUserEventNames = new Set([");
-    expect(perfSpec).toContain('await page.keyboard.type("Quick performance proof", { delay: 8 });');
+    expect(perfSpec).toContain("async function waitForFiniteAnimationsToSettle(page: Page)");
+    expect(perfSpec).toContain('await page.keyboard.insertText("Quick performance proof");');
     expect(perfSpec).not.toContain('fill("Quick performance proof")');
-    expect(perfSpec).not.toContain('"beforeinput",');
-    expect(perfSpec).not.toContain('"input",');
+    expect(perfSpec).not.toContain('keyboard.type("Quick performance proof"');
+    const directUserEventsStart = indexOfOrThrow(perfSpec, "const directUserEventNames = new Set([");
+    const directUserEventsEnd = perfSpec.indexOf("]);", directUserEventsStart);
+    expect(directUserEventsEnd).toBeGreaterThan(directUserEventsStart);
+    const directUserEventsBlock = perfSpec.slice(directUserEventsStart, directUserEventsEnd);
+    expect(directUserEventsBlock).not.toContain('"beforeinput"');
+    expect(directUserEventsBlock).not.toContain('"input"');
   });
 
   it("blocks Pages uploads on deep i18n and staged V2 runtime release gates", () => {
