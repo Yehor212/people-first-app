@@ -14,7 +14,7 @@ const ROOT = path.join(__dirname, "..");
 const TEMPLATE_FILE = path.join(ROOT, "docs", "release", "google-play", "ADMOB_OWNER_EVIDENCE_TEMPLATE.json");
 const DEFAULT_PRIVATE_FILE = "output/private/admob-owner-evidence.json";
 const SCHEMA_VERSION = "zenflow-admob-owner-evidence/v1";
-const VALID_STATUSES = new Set(["PASS", "PARTIAL", "UNVERIFIED", "FAIL", "WAIVED"]);
+const VALID_STATUSES = new Set(["PASS", "PARTIAL", "UNVERIFIED", "FAIL"]);
 const DEFAULT_MAX_PASS_AGE_DAYS = 14;
 const ALLOWED_TOP_LEVEL_KEYS = new Set(["schemaVersion", "packageName", "evidenceDate", "privateFilePath", "instructions", "items"]);
 const ALLOWED_ITEM_KEYS = new Set(["id", "status", "checkedAt", "evidence", "facts", "sourceUrls"]);
@@ -52,7 +52,19 @@ const REQUIRED_PASS_EVIDENCE_PATTERNS_BY_ITEM = Object.freeze({
   payments_payment_method: [/payment method/i, /eligible|no action required/i],
   payments_holds: [/no payment hold/i, /no tax hold/i, /no identity hold/i, /no compliance hold/i, /no self-hold/i],
   play_console_ads_data_safety: [/ads=yes/i, /advertising id=yes/i, /data safety includes google mobile ads sdk data/i, /privacy policy url matches listing/i],
-  live_ad_playback_device: [/release-equivalent android/i, /rewarded/i, /consent/i, /video opened/i, /reward callback granted/i, /revocation stopped new ad requests/i],
+  live_ad_playback_device: [
+    /release-equivalent android/i,
+    /rewarded/i,
+    /consent/i,
+    /video opened/i,
+    /reward callback granted/i,
+    /revocation stopped new ad requests/i,
+    /no prompt.{0,120}mood logging|mood logging.{0,120}no prompt/i,
+    /no prompt.{0,120}active focus|active focus.{0,120}no prompt/i,
+    /no prompt.{0,120}focus reflection|focus reflection.{0,120}no prompt/i,
+    /no prompt.{0,120}journal editor|journal editor.{0,120}no prompt/i,
+    /bad\/terrible mood states.{0,120}no prompt|no prompt.{0,120}bad\/terrible mood states/i,
+  ],
   full_cross_platform_ad_units: [/android/i, /ios/i, /banner/i, /rewarded/i, /owner-controlled/i, /non-sample/i, /same publisher/i],
 });
 
@@ -105,6 +117,11 @@ const REQUIRED_PASS_FACTS_BY_ITEM = Object.freeze({
     "dismissWithoutRewardChecked",
     "rewardCallbackGrantedAfterCompletion",
     "revocationStopsNewAdRequests",
+    "noMoodCheckInPromptOrRequest",
+    "noActiveFocusPromptOrRequest",
+    "noFocusReflectionPromptOrRequest",
+    "noJournalEditorPromptOrRequest",
+    "noBadOrTerribleMoodPromptOrRequest",
   ],
   full_cross_platform_ad_units: [
     "androidOwnerControlledNonSample",
@@ -385,7 +402,7 @@ function evaluateOwnerEvidence(input, options = {}) {
     byId.set(item.id, item);
 
     if (!VALID_STATUSES.has(item.status)) {
-      issues.push(issue("invalid_item_status", `${item.id} must use PASS, PARTIAL, UNVERIFIED, FAIL, or WAIVED`, item.id));
+      issues.push(issue("invalid_item_status", `${item.id} must use PASS, PARTIAL, UNVERIFIED, or FAIL`, item.id));
     }
     if (typeof item.evidence !== "string" || item.evidence.trim().length < 16) {
       issues.push(issue("missing_item_evidence", `${item.id} needs public-safe evidence text`, item.id));
@@ -501,8 +518,8 @@ function main() {
       console.log(`[admob-owner-evidence] UNVERIFIED - ${error.message}`);
       process.exit(2);
     }
-    printReport("OWNER_EVIDENCE_TEMPLATE is available; copy it to output/private/admob-owner-evidence.json after owner console checks", templateReport);
-    console.log(`[admob-owner-evidence] next=copy docs/release/google-play/ADMOB_OWNER_EVIDENCE_TEMPLATE.json to ${DEFAULT_PRIVATE_FILE}`);
+    printReport("OWNER_EVIDENCE_TEMPLATE is available; prepare output/private/admob-owner-evidence.json after owner console checks", templateReport);
+    console.log("[admob-owner-evidence] next=npm run google-play:admob:owner-evidence:prepare");
     console.log(`[admob-owner-evidence] next=run node scripts/check-admob-owner-evidence.cjs --file ${DEFAULT_PRIVATE_FILE}`);
     if (args.requirePass) {
       console.log(`[admob-owner-evidence] issue=missing_private_owner_evidence - strict mode needs --file ${DEFAULT_PRIVATE_FILE}`);

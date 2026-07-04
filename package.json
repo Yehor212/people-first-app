@@ -177,6 +177,7 @@
     "google-play:admob:external-check:full-pass": "node scripts/check-admob-external-readiness.cjs --require-pass --require-full-cross-platform",
     "google-play:admob:owner-runbook:check": "node scripts/check-admob-owner-finalization-runbook.cjs",
     "google-play:admob:owner-evidence:check": "node scripts/check-admob-owner-evidence.cjs",
+    "google-play:admob:owner-evidence:prepare": "node scripts/prepare-admob-owner-evidence.cjs",
     "google-play:admob:owner-evidence:apply": "node scripts/apply-admob-owner-evidence.cjs"
   },
   "dependencies": {

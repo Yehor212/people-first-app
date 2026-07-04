@@ -83,7 +83,7 @@ or water. The prompt must stay framed as an optional bonus.
 ┌─────────────┐
 │  AD_IDLE     │ ← Default: ad system ready, no prompt visible
 └──────┬──────┘
-       │ User navigates to a safe reward zone (settings or explicit optional rewards area)
+       │ User navigates to an approved separate Optional Rewards surface
        ▼
 ┌─────────────┐
 │ AD_AVAILABLE │ ← "Watch" button visible (passes all gates)

@@ -1,11 +1,13 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
 const checkerPath = join(process.cwd(), "scripts/check-admob-owner-evidence.cjs");
+const prepareScriptPath = join(process.cwd(), "scripts/prepare-admob-owner-evidence.cjs");
 const sourcePolicyPath = join(process.cwd(), "scripts/admob-readiness-sources.cjs");
 const templatePath = join(process.cwd(), "docs/release/google-play/ADMOB_OWNER_EVIDENCE_TEMPLATE.json");
 
@@ -41,7 +43,7 @@ const passEvidenceByItem: Record<string, string> = {
   payments_payment_method: "Payments settings showed payment method eligible for payouts.",
   payments_holds: "Payments page showed no payment hold, no tax hold, no identity hold, no compliance hold, and no self-hold.",
   play_console_ads_data_safety: "Play Console App content showed Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, and privacy policy URL matches listing.",
-  live_ad_playback_device: "Release-equivalent Android rewarded ad smoke completed after consent; video opened, reward callback granted reward only after completion, and revocation stopped new ad requests.",
+  live_ad_playback_device: "Release-equivalent Android rewarded ad smoke completed after consent; video opened, reward callback granted reward only after completion, revocation stopped new ad requests, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, or bad/terrible mood states.",
   full_cross_platform_ad_units: "Full cross-platform ad units check showed Android, iOS, banner, and rewarded IDs are owner-controlled non-sample units from the same publisher family.",
 };
 
@@ -100,6 +102,11 @@ const passFactsByItem: Record<string, Record<string, boolean>> = {
     dismissWithoutRewardChecked: true,
     rewardCallbackGrantedAfterCompletion: true,
     revocationStopsNewAdRequests: true,
+    noMoodCheckInPromptOrRequest: true,
+    noActiveFocusPromptOrRequest: true,
+    noFocusReflectionPromptOrRequest: true,
+    noJournalEditorPromptOrRequest: true,
+    noBadOrTerribleMoodPromptOrRequest: true,
   },
   full_cross_platform_ad_units: {
     androidOwnerControlledNonSample: true,
@@ -122,12 +129,8 @@ function loadChecker() {
 
 function completeOwnerEvidence(checkedAt = "2026-07-04") {
   const checker = loadChecker();
-  const requiredSourcesByItem: Record<string, string[]> = {
-    privacy_messages_cmp: requiredCmpSourceUrls,
-    play_console_ads_data_safety: [
-      "https://support.google.com/googleplay/android-developer/answer/9859455",
-      "https://developers.google.com/admob/android/privacy/play-data-disclosure",
-    ],
+  const { ADMOB_READINESS_REQUIRED_SOURCE_URLS_BY_ITEM } = require(sourcePolicyPath) as {
+    ADMOB_READINESS_REQUIRED_SOURCE_URLS_BY_ITEM: Record<string, string[]>;
   };
   return {
     schemaVersion: "zenflow-admob-owner-evidence/v1",
@@ -139,7 +142,12 @@ function completeOwnerEvidence(checkedAt = "2026-07-04") {
       checkedAt,
       evidence: passEvidenceByItem[id] || `Owner console showed a public-safe non-blocking status for ${id}.`,
       facts: passFactsByItem[id],
-      sourceUrls: ["https://support.google.com/admob/answer/10564477", ...(requiredSourcesByItem[id] || [])],
+      sourceUrls: [
+        ...new Set([
+          "https://support.google.com/admob/answer/10564477",
+          ...(ADMOB_READINESS_REQUIRED_SOURCE_URLS_BY_ITEM[id] || []),
+        ]),
+      ],
     })),
   };
 }
@@ -151,6 +159,9 @@ describe("AdMob owner evidence intake", () => {
 
     expect(packageJson.scripts["google-play:admob:owner-evidence:check"]).toBe(
       "node scripts/check-admob-owner-evidence.cjs",
+    );
+    expect(packageJson.scripts["google-play:admob:owner-evidence:prepare"]).toBe(
+      "node scripts/prepare-admob-owner-evidence.cjs",
     );
     expect(releaseContracts).toContain("scripts/__tests__/admob-owner-evidence.test.ts");
   });
@@ -348,6 +359,17 @@ describe("AdMob owner evidence intake", () => {
     expect(report.issues).toContainEqual(
       expect.objectContaining({ code: "unknown_owner_evidence_item", itemId: "random_console_status" }),
     );
+  });
+
+  it("requires row-specific official source policy for every owner evidence row", () => {
+    const checker = loadChecker();
+    const sourcePolicy = require(sourcePolicyPath) as {
+      ADMOB_READINESS_REQUIRED_SOURCE_URLS_BY_ITEM: Record<string, string[]>;
+    };
+
+    for (const id of checker.OWNER_EVIDENCE_ITEM_IDS) {
+      expect(sourcePolicy.ADMOB_READINESS_REQUIRED_SOURCE_URLS_BY_ITEM[id]?.length, id).toBeGreaterThan(0);
+    }
   });
 
   it("requires row-specific official sources for CMP and Play Data safety owner proof", () => {
@@ -612,6 +634,53 @@ describe("AdMob owner evidence intake", () => {
     );
   });
 
+  it("rejects live rewarded playback PASS when sacred-zone no-prompt facts are missing", () => {
+    const checker = loadChecker();
+    const evidence = completeOwnerEvidence();
+    evidence.items = evidence.items.map((item) =>
+      item.id === "live_ad_playback_device"
+        ? {
+            ...item,
+            evidence:
+              "Release-equivalent Android rewarded ad smoke completed after consent; video opened, reward callback granted reward only after completion, and revocation stopped new ad requests.",
+            facts: {
+              releaseEquivalentAndroid: true,
+              consentPathCompleted: true,
+              rewardedVideoOpened: true,
+              dismissWithoutRewardChecked: true,
+              rewardCallbackGrantedAfterCompletion: true,
+              revocationStopsNewAdRequests: true,
+            },
+          }
+        : item,
+    );
+
+    const report = checker.evaluateOwnerEvidence(evidence);
+
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: "missing_required_pass_evidence_fact", itemId: "live_ad_playback_device" }),
+    );
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: "required_pass_fact_not_true", itemId: "live_ad_playback_device" }),
+    );
+  });
+
+  it("rejects WAIVED as an owner evidence status because waivers cannot prove monetization readiness", () => {
+    const checker = loadChecker();
+    const evidence = completeOwnerEvidence();
+    evidence.items = evidence.items.map((item) =>
+      item.id === "payments_holds" ? { ...item, status: "WAIVED" } : item,
+    );
+
+    const report = checker.evaluateOwnerEvidence(evidence);
+
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: "invalid_item_status", itemId: "payments_holds" }),
+    );
+  });
+
   it("requires both Play declaration and Google Mobile Ads data disclosure sources for Play Data safety", () => {
     const checker = loadChecker();
     const evidence = completeOwnerEvidence();
@@ -689,6 +758,55 @@ describe("AdMob owner evidence intake", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("OWNER_EVIDENCE_TEMPLATE");
     expect(result.stdout).toContain("output/private/admob-owner-evidence.json");
+  });
+
+  it("prepares an ignored private owner evidence file from the public-safe template", () => {
+    const dir = mkdtempSync(join(tmpdir(), "zenflow-owner-evidence-"));
+    const outputFile = join(dir, "admob-owner-evidence.json");
+    const result = spawnSync(process.execPath, [prepareScriptPath, "--file", outputFile], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("PASS");
+    expect(result.stdout).toContain(outputFile);
+    expect(existsSync(outputFile)).toBe(true);
+
+    const prepared = JSON.parse(readFileSync(outputFile, "utf8"));
+    expect(prepared.schemaVersion).toBe("zenflow-admob-owner-evidence/v1");
+    expect(prepared.privateFilePath).toBe("output/private/admob-owner-evidence.json");
+    expect(prepared.items.every((item: { status: string }) => item.status === "UNVERIFIED")).toBe(true);
+
+    const checker = loadChecker();
+    const report = checker.evaluateOwnerEvidence(prepared);
+    expect(report.ok).toBe(true);
+    expect(report.ownerReady).toBe(false);
+  });
+
+  it("refuses to overwrite prepared owner evidence unless --force is used", () => {
+    const dir = mkdtempSync(join(tmpdir(), "zenflow-owner-evidence-"));
+    const outputFile = join(dir, "admob-owner-evidence.json");
+    writeFileSync(outputFile, '{"already":"filled"}\n');
+
+    const result = spawnSync(process.execPath, [prepareScriptPath, "--file", outputFile], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+    });
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toContain("UNVERIFIED");
+    expect(readFileSync(outputFile, "utf8")).toBe('{"already":"filled"}\n');
+
+    const forced = spawnSync(process.execPath, [prepareScriptPath, "--file", outputFile, "--force"], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+    });
+
+    expect(forced.status).toBe(0);
+    expect(JSON.parse(readFileSync(outputFile, "utf8")).schemaVersion).toBe(
+      "zenflow-admob-owner-evidence/v1",
+    );
   });
 
   it("fails strict owner pass mode when no private evidence file is supplied", () => {

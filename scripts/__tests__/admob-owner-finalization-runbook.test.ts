@@ -52,6 +52,9 @@ describe("AdMob owner finalization runbook", () => {
     expect(runbook).toContain("current Android rewarded-only gate");
     expect(runbook).toContain("not part of the approved current release path");
     expect(runbook).toContain("future expansion gate, not a blocker");
+    expect(runbook).toContain("Privacy controls are consent, disclosure, and withdrawal only");
+    expect(runbook).toContain("No production rewarded playback surface is approved inside Settings / Privacy");
+    expect(runbook).toContain("separate Optional Rewards surface");
     expect(runbook).toContain("google-play:admob:owner-evidence:apply");
     expect(runbook).toContain("google-play:admob:external-check:full-pass");
     expect(runbook).toContain("ADMOB_OWNER_EVIDENCE_TEMPLATE.json");
@@ -118,7 +121,7 @@ describe("AdMob owner finalization runbook", () => {
     expect(runbook).toContain("privacy_messages_cmp: published European regulations message, Google-certified CMP, TCF v2.3, and ZenFlow app selection");
     expect(runbook).toContain("play_console_ads_data_safety: Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, and privacy policy URL matches listing");
     expect(runbook).toContain("payments_holds: no payment hold, no tax hold, no identity hold, no compliance hold, and no self-hold");
-    expect(runbook).toContain("live_ad_playback_device: release-equivalent Android, consent path, rewarded video open, reward callback, and revocation stop check");
+    expect(runbook).toContain("live_ad_playback_device: release-equivalent Android, consent path, rewarded video open, reward callback, revocation stop check, and no prompts or ad requests in sacred zones");
     expect(runbook).toContain("full_cross_platform_ad_units: Android, iOS, banner, rewarded, owner-controlled non-sample IDs, and same publisher family");
     expect(runbook).toContain("Each owner evidence row also has a `facts` object");
     expect(runbook).toContain("free-text evidence alone is never enough");
@@ -127,6 +130,11 @@ describe("AdMob owner finalization runbook", () => {
     expect(runbook).toContain("googleMobileAdsSdkDataDisclosureReviewed");
     expect(runbook).toContain("rewardCallbackGrantedAfterCompletion");
     expect(runbook).toContain("revocationStopsNewAdRequests");
+    expect(runbook).toContain("noMoodCheckInPromptOrRequest");
+    expect(runbook).toContain("noActiveFocusPromptOrRequest");
+    expect(runbook).toContain("noFocusReflectionPromptOrRequest");
+    expect(runbook).toContain("noJournalEditorPromptOrRequest");
+    expect(runbook).toContain("noBadOrTerribleMoodPromptOrRequest");
     expect(runbook).toContain("samePublisherFamily");
   });
 
@@ -139,6 +147,16 @@ describe("AdMob owner finalization runbook", () => {
     expect(template).not.toMatch(/ca-app-pub-\d{16}[~/]\d+/i);
     expect(template).not.toMatch(/\bpub-\d{16}\b/i);
     expect(template).not.toMatch(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  });
+
+  it("keeps Privacy controls separate from rewarded playback surfaces", () => {
+    const runbook = readFileSync(runbookPath, "utf8");
+
+    expect(runbook).toContain("Privacy controls are consent, disclosure, and withdrawal only");
+    expect(runbook).toContain("No production rewarded playback surface is approved inside Settings / Privacy");
+    expect(runbook).toContain("separate Optional Rewards surface");
+    expect(runbook).not.toContain("Settings / Privacy optional rewarded-ad prompt");
+    expect(runbook).not.toContain("Settings privacy surface");
   });
 
   it("does not store raw account/payment/ad identifiers or pressure copy", () => {

@@ -33,14 +33,49 @@ const requiredCmpSourceUrls = [
   "https://developers.google.com/admob/ios/privacy",
 ];
 const requiredRowSources = {
-  privacy_messages_cmp: "https://support.google.com/admob/answer/10113207",
+  public_app_ads_root: "https://support.google.com/admob/answer/14538460",
+  admob_app_ads_txt_status: "https://support.google.com/admob/answer/14538460",
+  public_google_play_listing: "https://support.google.com/googleplay/android-developer/answer/9859455",
   public_privacy_policy: "https://support.google.com/googleplay/android-developer/answer/9859455",
+  admob_app_readiness: "https://support.google.com/admob/answer/10564477",
+  admob_policy_center: "https://support.google.com/admob/answer/10448801",
+  privacy_messages_cmp: "https://support.google.com/admob/answer/10113207",
+  payments_tax_info: "https://support.google.com/admob/answer/2772513",
+  payments_identity_address: "https://support.google.com/admob/answer/13030080",
+  payments_payment_method: "https://support.google.com/admob/answer/12835021",
+  payments_holds: "https://support.google.com/admob/answer/11601831",
   play_console_ads_data_safety: "https://developers.google.com/admob/android/privacy/play-data-disclosure",
+  live_ad_playback_device: "https://support.google.com/admob/answer/7313578",
+  full_cross_platform_ad_units: "https://support.google.com/admob/answer/7356431",
 };
 
 const passEvidenceByItem: Record<string, string> = {
+  public_app_ads_root:
+    "Public root app-ads check passed for https://yehor212.github.io/app-ads.txt with masked publisher pub-9501********2808.",
+  admob_app_ads_txt_status:
+    "AdMob Verify app page showed the ZenFlow app selected and confirmed with Done status.",
+  public_google_play_listing:
+    "Public listing check passed for com.zenflow.app with developer website, Contains ads signal, privacy policy, and rewarded ads copy.",
   public_privacy_policy:
-    "GitHub Pages post-deploy public privacy smoke passed, and public privacy policy check passed with google-play:privacy:public-check; it disclosed Google Mobile Ads, UMP privacy choices, Advertising ID, optional rewarded ads, and Google Mobile Ads SDK data categories.",
+    "GitHub Pages post-deploy public privacy smoke passed, and public privacy policy check passed with google-play:privacy:public-check; it disclosed Google Mobile Ads, UMP privacy choices, Advertising ID, optional rewarded ads, and Google Mobile Ads SDK data categories including IP address.",
+  admob_app_readiness:
+    "AdMob apps list showed ZenFlow Ready, ad serving enabled, Google Play linked, and active ad units.",
+  admob_policy_center:
+    "AdMob Policy Center showed no violations and no blocking issues for app ad serving.",
+  privacy_messages_cmp:
+    "AdMob Privacy & messaging European regulations message for ZenFlow was published through a Google-certified CMP using TCF v2.3.",
+  payments_tax_info: "Payments tax page showed tax setup with no action required.",
+  payments_identity_address:
+    "Payments verification showed identity and address no action required or verified.",
+  payments_payment_method: "Payments settings showed payment method eligible for payouts.",
+  payments_holds:
+    "Payments page showed no payment hold, no tax hold, no identity hold, no compliance hold, and no self-hold.",
+  play_console_ads_data_safety:
+    "Play Console App content showed Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, and privacy policy URL matches listing.",
+  live_ad_playback_device:
+    "Release-equivalent Android rewarded ad smoke completed after consent; video opened, reward callback granted reward only after completion, revocation stopped new ad requests, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, or bad/terrible mood states.",
+  full_cross_platform_ad_units:
+    "Full cross-platform ad units check showed Android, iOS, banner, and rewarded IDs are owner-controlled non-sample units from the same publisher family.",
 };
 
 function loadChecker() {
@@ -351,6 +386,49 @@ describe("AdMob external monetization readiness guard", () => {
     );
   });
 
+  it("requires row-specific official source policy for every external readiness row", () => {
+    const checker = loadChecker();
+
+    for (const id of checker.REQUIRED_EXTERNAL_READINESS_IDS) {
+      expect(checker.REQUIRED_OFFICIAL_SOURCE_URLS_BY_ITEM[id]?.length, id).toBeGreaterThan(0);
+    }
+  });
+
+  it("rejects generic PASS evidence for every external readiness row", () => {
+    const checker = loadChecker();
+
+    for (const id of checker.REQUIRED_EXTERNAL_READINESS_IDS) {
+      const ledger = completePassLedger();
+      const report = checker.evaluateExternalReadiness({
+        ...ledger,
+        items: ledger.items.map((item) =>
+          item.id === id ? { ...item, evidence: `Fresh public-safe evidence recorded for ${id}.` } : item,
+        ),
+      }, { requirePass: true, requireFullCrossPlatform: true, now: new Date("2026-07-04T12:00:00.000Z") });
+
+      expect(report.ok, id).toBe(false);
+      expect(report.issues, id).toContainEqual(
+        expect.objectContaining({ code: "missing_required_pass_evidence", itemId: id }),
+      );
+    }
+  });
+
+  it("rejects WAIVED as an external readiness status because waivers cannot prove monetization readiness", () => {
+    const checker = loadChecker();
+    const ledger = completePassLedger();
+    const report = checker.evaluateExternalReadiness({
+      ...ledger,
+      items: ledger.items.map((item) =>
+        item.id === "payments_holds" ? { ...item, status: "WAIVED" } : item,
+      ),
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: "invalid_item_status", itemId: "payments_holds" }),
+    );
+  });
+
   it("uses the shared source policy that also covers AdMob rewarded-video guidance", () => {
     const sourcePolicy = require(sourcePolicyPath) as {
       ADMOB_READINESS_APPROVED_SOURCE_URLS: Set<string>;
@@ -478,15 +556,9 @@ describe("AdMob external monetization readiness guard", () => {
     const checker = loadChecker();
     const ledger = JSON.parse(readFileSync(ledgerPath, "utf8"));
 
-    expect(checker.REQUIRED_OFFICIAL_SOURCE_URLS_BY_ITEM.privacy_messages_cmp).toContain(
-      requiredRowSources.privacy_messages_cmp,
-    );
-    expect(checker.REQUIRED_OFFICIAL_SOURCE_URLS_BY_ITEM.public_privacy_policy).toContain(
-      requiredRowSources.public_privacy_policy,
-    );
-    expect(checker.REQUIRED_OFFICIAL_SOURCE_URLS_BY_ITEM.play_console_ads_data_safety).toContain(
-      requiredRowSources.play_console_ads_data_safety,
-    );
+    for (const [id, requiredSource] of Object.entries(requiredRowSources)) {
+      expect(checker.REQUIRED_OFFICIAL_SOURCE_URLS_BY_ITEM[id]).toContain(requiredSource);
+    }
 
     const report = checker.evaluateExternalReadiness({
       ...ledger,

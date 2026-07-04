@@ -150,7 +150,12 @@
         "rewardedVideoOpened": false,
         "dismissWithoutRewardChecked": false,
         "rewardCallbackGrantedAfterCompletion": false,
-        "revocationStopsNewAdRequests": false
+        "revocationStopsNewAdRequests": false,
+        "noMoodCheckInPromptOrRequest": false,
+        "noActiveFocusPromptOrRequest": false,
+        "noFocusReflectionPromptOrRequest": false,
+        "noJournalEditorPromptOrRequest": false,
+        "noBadOrTerribleMoodPromptOrRequest": false
       },
       "sourceUrls": [
         "https://support.google.com/admob/answer/7313578",

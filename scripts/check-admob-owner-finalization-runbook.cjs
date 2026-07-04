@@ -28,6 +28,7 @@ const REQUIRED_RUNBOOK_SNIPPETS = [
   "google-play:admob:external-check:full-pass",
   "google-play:admob:owner-runbook:check",
   "google-play:admob:owner-evidence:check",
+  "google-play:admob:owner-evidence:prepare",
   "google-play:admob:owner-evidence:apply",
   "google-play:privacy:artifact-check",
   "post-deploy public privacy smoke",
@@ -47,6 +48,9 @@ const REQUIRED_RUNBOOK_SNIPPETS = [
   "current Android rewarded-only gate",
   "future expansion gate, not a blocker",
   "not part of the approved current release path",
+  "Privacy controls are consent, disclosure, and withdrawal only",
+  "No production rewarded playback surface is approved inside Settings / Privacy",
+  "separate Optional Rewards surface",
   "No scarcity or guilt copy",
   "PARTIAL",
   "UNVERIFIED",
@@ -79,12 +83,17 @@ const REQUIRED_RUNBOOK_SNIPPETS = [
   "privacy_messages_cmp: published European regulations message, Google-certified CMP, TCF v2.3, and ZenFlow app selection",
   "play_console_ads_data_safety: Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, and privacy policy URL matches listing",
   "payments_holds: no payment hold, no tax hold, no identity hold, no compliance hold, and no self-hold",
-  "live_ad_playback_device: release-equivalent Android, consent path, rewarded video open, reward callback, and revocation stop check",
+  "live_ad_playback_device: release-equivalent Android, consent path, rewarded video open, reward callback, revocation stop check, and no prompts or ad requests in sacred zones",
   "full_cross_platform_ad_units: Android, iOS, banner, rewarded, owner-controlled non-sample IDs, and same publisher family",
   "dataSafetyIncludesGoogleMobileAdsSdkData",
   "googleMobileAdsSdkDataDisclosureReviewed",
   "rewardCallbackGrantedAfterCompletion",
   "revocationStopsNewAdRequests",
+  "noMoodCheckInPromptOrRequest",
+  "noActiveFocusPromptOrRequest",
+  "noFocusReflectionPromptOrRequest",
+  "noJournalEditorPromptOrRequest",
+  "noBadOrTerribleMoodPromptOrRequest",
   "samePublisherFamily",
 ];
 
@@ -228,11 +237,17 @@ function main() {
   if (packageJson && !packageJson.includes('"google-play:admob:owner-evidence:check"')) {
     failures.push("package.json is missing google-play:admob:owner-evidence:check");
   }
+  if (packageJson && !packageJson.includes('"google-play:admob:owner-evidence:prepare"')) {
+    failures.push("package.json is missing google-play:admob:owner-evidence:prepare");
+  }
   if (packageJson && !packageJson.includes('"google-play:admob:owner-evidence:apply"')) {
     failures.push("package.json is missing google-play:admob:owner-evidence:apply");
   }
   if (taskCompletion && !taskCompletion.includes("google-play:admob:owner-runbook:check")) {
     failures.push("task completion guard is missing google-play:admob:owner-runbook:check");
+  }
+  if (taskCompletion && !taskCompletion.includes("google-play:admob:owner-evidence:prepare")) {
+    failures.push("task completion guard is missing google-play:admob:owner-evidence:prepare");
   }
   if (taskCompletion && !taskCompletion.includes("google-play:admob:owner-evidence:apply")) {
     failures.push("task completion guard is missing google-play:admob:owner-evidence:apply");

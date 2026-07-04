@@ -33,6 +33,7 @@ commands and the current-release ledger rows agree:
 ```bash
 npm run google-play:admob:owner-runbook:check
 npm run google-play:admob:owner-evidence:check
+npm run google-play:admob:owner-evidence:prepare
 npm run google-play:admob:owner-evidence:apply -- --file output/private/admob-owner-evidence.json
 npm run google-play:privacy:artifact-check
 # After GitHub Pages deploy, the post-deploy public privacy smoke must pass.
@@ -101,6 +102,10 @@ Owner action in AdMob:
    `ADMOB_EXTERNAL_READINESS.json`.
 
 Post-publish local/runtime expectations:
+
+Privacy controls are consent, disclosure, and withdrawal only. They may expose
+ZenFlow ad consent and Google privacy-options controls, but they must not become
+a reward-earning surface or contain rewarded playback calls to action.
 
 - `npm run google-play:admob:ump-check` must pass.
 - UMP consent information is refreshed at app launch.
@@ -176,18 +181,17 @@ Advertising ID declaration is complete.
 
 ## Owner evidence intake
 
-Use the tracked template only as a shape reference:
+Use `ADMOB_OWNER_EVIDENCE_TEMPLATE.json` only as a tracked shape reference:
 
 ```bash
 npm run google-play:admob:owner-evidence:check
 ```
 
-After checking owner-only AdMob, Payments, and Play Console pages, copy
-`ADMOB_OWNER_EVIDENCE_TEMPLATE.json` to
-`output/private/admob-owner-evidence.json`, fill only public-safe status
-summaries, and run:
+After checking owner-only AdMob, Payments, and Play Console pages, prepare the
+private working file, fill only public-safe status summaries, and run:
 
 ```bash
+npm run google-play:admob:owner-evidence:prepare
 node scripts/check-admob-owner-evidence.cjs --file output/private/admob-owner-evidence.json
 npm run google-play:admob:owner-evidence:apply -- --file output/private/admob-owner-evidence.json
 npm run google-play:admob:owner-evidence:apply -- --file output/private/admob-owner-evidence.json --write
@@ -223,14 +227,14 @@ Minimum public-safe facts by row:
 - payments_payment_method: payment method and eligible or no action required.
 - payments_holds: no payment hold, no tax hold, no identity hold, no compliance hold, and no self-hold.
 - play_console_ads_data_safety: Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, and privacy policy URL matches listing.
-- live_ad_playback_device: release-equivalent Android, consent path, rewarded video open, reward callback, and revocation stop check.
+- live_ad_playback_device: release-equivalent Android, consent path, rewarded video open, reward callback, revocation stop check, and no prompts or ad requests in sacred zones.
 - full_cross_platform_ad_units: Android, iOS, banner, rewarded, owner-controlled non-sample IDs, and same publisher family.
 
 Minimum structured facts by high-risk row:
 
 - payments_holds: `noPaymentHold`, `noTaxHold`, `noIdentityHold`, `noComplianceHold`, `noSelfHold`.
 - play_console_ads_data_safety: `adsDeclaredYes`, `advertisingIdDeclaredYes`, `dataSafetyIncludesGoogleMobileAdsSdkData`, `googleMobileAdsSdkDataDisclosureReviewed`, `privacyPolicyUrlMatchesListing`.
-- live_ad_playback_device: `releaseEquivalentAndroid`, `consentPathCompleted`, `rewardedVideoOpened`, `dismissWithoutRewardChecked`, `rewardCallbackGrantedAfterCompletion`, `revocationStopsNewAdRequests`.
+- live_ad_playback_device: `releaseEquivalentAndroid`, `consentPathCompleted`, `rewardedVideoOpened`, `dismissWithoutRewardChecked`, `rewardCallbackGrantedAfterCompletion`, `revocationStopsNewAdRequests`, `noMoodCheckInPromptOrRequest`, `noActiveFocusPromptOrRequest`, `noFocusReflectionPromptOrRequest`, `noJournalEditorPromptOrRequest`, `noBadOrTerribleMoodPromptOrRequest`.
 - full_cross_platform_ad_units: `androidOwnerControlledNonSample`, `iosOwnerControlledNonSample`, `bannerOwnerControlledNonSample`, `rewardedOwnerControlledNonSample`, `samePublisherFamily`.
 
 Do not add names, emails, tax forms, bank details, addresses, screenshots, raw
@@ -263,16 +267,21 @@ Smoke steps:
 
 1. Install the release-equivalent Android build.
 2. Open Settings -> Privacy.
-3. Enable rewarded ads if the local ZenFlow consent toggle is off.
+3. Enable ZenFlow ad consent if the local consent toggle is off.
 4. Complete the Google consent form if it appears.
-5. Confirm the rewarded-ad prompt appears only in the Settings privacy surface
-   or another explicitly approved optional rewards surface.
-6. Tap the optional rewarded-ad action.
-7. Confirm the video opens, can be dismissed without reward, and grants reward
+5. Leave Privacy and confirm it contains only consent, disclosure, withdrawal,
+   and Google privacy-options controls.
+6. Open a separate Optional Rewards surface that has explicit product and
+   psychological-safety approval.
+7. Confirm the rewarded prompt appears only on that separate surface and never in
+   mood logging, active focus, focus reflection, journal editor, onboarding, or
+   bad/terrible mood states.
+8. Tap the optional rewarded-ad action.
+9. Confirm the video opens, can be dismissed without reward, and grants reward
    only after the rewarded completion callback.
-8. Revoke ZenFlow ad consent and confirm the prompt disappears and no preload or
-   new ad request happens after revocation.
-9. Record public-safe result only: PASS, PARTIAL, UNVERIFIED, or FAIL.
+10. Revoke ZenFlow ad consent and confirm the prompt disappears and no preload or
+    new ad request happens after revocation.
+11. Record public-safe result only: PASS, PARTIAL, UNVERIFIED, or FAIL.
 
 Never use live ad playback proof to weaken the sacred-zone policy. Ads remain
 blocked in mood check-ins, active focus, journaling, meditation, onboarding,
@@ -301,17 +310,21 @@ approved format is optional rewarded ads only.
 
 ZenFlow is a wellness app. Rewarded ads must preserve user autonomy.
 
-Approved current surface:
+Approved current playback surface:
 
-- Settings / Privacy optional rewarded-ad prompt after ZenFlow ad consent and
-  native Google consent.
+- No production rewarded playback surface is approved inside Settings / Privacy.
+- Privacy controls are consent, disclosure, and withdrawal only.
+- Rewarded playback requires a separate Optional Rewards surface with explicit
+  product approval and psychological-safety review before it can be used for
+  live-device PASS evidence.
 
 Required constraints:
 
 - No auto-play.
 - No banners, pop-ups, interstitials, or app-open ads.
-- No ad prompt in mood check-ins, active focus, reflection decisions,
-  journaling, meditation, onboarding, or bad/terrible mood states.
+- No ad prompt or ad request in mood check-ins, active focus, reflection
+  decisions, journal editor, meditation, onboarding, or bad/terrible mood
+  states.
 - No scarcity or guilt copy.
 - No copy that implies failed care, relationship loss, low resources, urgency,
   or user obligation.

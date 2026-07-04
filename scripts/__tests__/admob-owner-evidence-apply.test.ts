@@ -39,7 +39,10 @@ const sourceByItem: Record<string, string[]> = {
     "https://support.google.com/googleplay/android-developer/answer/9859455",
     "https://developers.google.com/admob/android/privacy/play-data-disclosure",
   ],
-  live_ad_playback_device: ["https://support.google.com/admob/answer/7313578"],
+  live_ad_playback_device: [
+    "https://support.google.com/admob/answer/7313578",
+    "https://admob.google.com/home/resources/best-practices-for-in-app-rewarded-video-ads/",
+  ],
   full_cross_platform_ad_units: ["https://support.google.com/admob/answer/7356431"],
 };
 
@@ -53,7 +56,7 @@ const passEvidenceByItem: Record<string, string> = {
   payments_payment_method: "Payments settings showed payment method eligible for payouts.",
   payments_holds: "Payments page showed no payment hold, no tax hold, no identity hold, no compliance hold, and no self-hold.",
   play_console_ads_data_safety: "Play Console App content showed Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, and privacy policy URL matches listing.",
-  live_ad_playback_device: "Release-equivalent Android rewarded ad smoke completed after consent; video opened, reward callback granted reward only after completion, and revocation stopped new ad requests.",
+  live_ad_playback_device: "Release-equivalent Android rewarded ad smoke completed after consent; video opened, reward callback granted reward only after completion, revocation stopped new ad requests, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, or bad/terrible mood states.",
   full_cross_platform_ad_units: "Full cross-platform ad units check showed Android, iOS, banner, and rewarded IDs are owner-controlled non-sample units from the same publisher family.",
 };
 
@@ -87,6 +90,11 @@ const passFactsByItem: Record<string, Record<string, boolean>> = {
     dismissWithoutRewardChecked: true,
     rewardCallbackGrantedAfterCompletion: true,
     revocationStopsNewAdRequests: true,
+    noMoodCheckInPromptOrRequest: true,
+    noActiveFocusPromptOrRequest: true,
+    noFocusReflectionPromptOrRequest: true,
+    noJournalEditorPromptOrRequest: true,
+    noBadOrTerribleMoodPromptOrRequest: true,
   },
   full_cross_platform_ad_units: {
     androidOwnerControlledNonSample: true,

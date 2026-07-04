@@ -12,7 +12,7 @@ const {
 const ROOT = path.join(__dirname, "..");
 const DEFAULT_LEDGER = path.join(ROOT, "docs", "release", "google-play", "ADMOB_EXTERNAL_READINESS.json");
 const SCHEMA_VERSION = "zenflow-admob-external-readiness/v1";
-const VALID_STATUSES = new Set(["PASS", "PARTIAL", "UNVERIFIED", "FAIL", "WAIVED"]);
+const VALID_STATUSES = new Set(["PASS", "PARTIAL", "UNVERIFIED", "FAIL"]);
 const DEFAULT_MAX_PASS_AGE_DAYS = 14;
 const ALLOWED_TOP_LEVEL_KEYS = new Set(["schemaVersion", "packageName", "updatedAt", "purpose", "items"]);
 const ALLOWED_ITEM_KEYS = new Set(["id", "status", "checkedAt", "evidence", "ownerAction", "sourceUrls"]);
@@ -50,7 +50,16 @@ const LIVE_PLAYBACK_PREREQUISITE_IDS = [
   "admob_policy_center",
 ];
 
-const REQUIRED_PASS_EVIDENCE_PATTERNS_BY_ITEM = {
+const REQUIRED_PASS_EVIDENCE_PATTERNS_BY_ITEM = Object.freeze({
+  public_app_ads_root: [/public root app-ads check passed/i, /masked publisher/i],
+  admob_app_ads_txt_status: [/verify app/i, /zenflow/i, /confirmed|done status/i],
+  public_google_play_listing: [
+    /public listing check passed/i,
+    /developer website/i,
+    /contains ads/i,
+    /privacy policy/i,
+    /rewarded ads copy/i,
+  ],
   public_privacy_policy: [
     /google-play:privacy:public-check|public privacy policy check passed/i,
     /post-deploy public privacy smoke|GitHub Pages post-deploy/i,
@@ -60,7 +69,34 @@ const REQUIRED_PASS_EVIDENCE_PATTERNS_BY_ITEM = {
     /optional rewarded ads|rewarded ads/i,
     /Google Mobile Ads SDK data categories|IP address/i,
   ],
-};
+  admob_app_readiness: [/ready/i, /ad serving enabled/i, /google play linked/i, /active ad units/i],
+  admob_policy_center: [/policy center/i, /no violations|no blocking issues/i],
+  privacy_messages_cmp: [/published/i, /european regulations/i, /google-certified cmp/i, /tcf v2\.3/i, /zenflow/i],
+  payments_tax_info: [/tax/i, /no action required/i],
+  payments_identity_address: [/identity/i, /address/i, /no action required|verified/i],
+  payments_payment_method: [/payment method/i, /eligible|no action required/i],
+  payments_holds: [/no payment hold/i, /no tax hold/i, /no identity hold/i, /no compliance hold/i, /no self-hold/i],
+  play_console_ads_data_safety: [
+    /ads=yes/i,
+    /advertising id=yes/i,
+    /data safety includes google mobile ads sdk data/i,
+    /privacy policy url matches listing/i,
+  ],
+  live_ad_playback_device: [
+    /release-equivalent android/i,
+    /rewarded/i,
+    /consent/i,
+    /video opened/i,
+    /reward callback granted/i,
+    /revocation stopped new ad requests/i,
+    /no prompt.{0,120}mood logging|mood logging.{0,120}no prompt/i,
+    /no prompt.{0,120}active focus|active focus.{0,120}no prompt/i,
+    /no prompt.{0,120}focus reflection|focus reflection.{0,120}no prompt/i,
+    /no prompt.{0,120}journal editor|journal editor.{0,120}no prompt/i,
+    /bad\/terrible mood states.{0,120}no prompt|no prompt.{0,120}bad\/terrible mood states/i,
+  ],
+  full_cross_platform_ad_units: [/android/i, /ios/i, /banner/i, /rewarded/i, /owner-controlled/i, /non-sample/i, /same publisher/i],
+});
 
 const PRIVATE_VALUE_PATTERNS = [
   { code: "raw_admob_id", regex: /ca-app-pub-\d{16}[~/]\d+/i },
@@ -264,7 +300,7 @@ function evaluateExternalReadiness(input, options = {}) {
     byId.set(item.id, item);
 
     if (!VALID_STATUSES.has(item.status)) {
-      issues.push(issue("invalid_item_status", `${item.id} must use PASS, PARTIAL, UNVERIFIED, FAIL, or WAIVED`, item.id));
+      issues.push(issue("invalid_item_status", `${item.id} must use PASS, PARTIAL, UNVERIFIED, or FAIL`, item.id));
     }
     if (typeof item.evidence !== "string" || item.evidence.trim().length < 12) {
       issues.push(issue("missing_item_evidence", `${item.id} needs public-safe evidence text`, item.id));

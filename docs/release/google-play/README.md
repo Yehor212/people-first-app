@@ -48,6 +48,7 @@ npm run google-play:admob:check
 npm run google-play:admob:check:full
 npm run google-play:admob:owner-runbook:check
 npm run google-play:admob:owner-evidence:check
+npm run google-play:admob:owner-evidence:prepare
 npm run google-play:admob:owner-evidence:apply -- --file output/private/admob-owner-evidence.json
 npm run google-play:admob:external-check
 npm run google-play:admob:external-check:pass
@@ -69,9 +70,10 @@ device ad playback, and full cross-platform ad-unit status honest. Run
 payments/tax/holds, live-device smoke, cross-platform expansion, and
 psychological-safety handoff in `ADMOB_OWNER_FINALIZATION_RUNBOOK.md` linked and
 public-safe. Run `npm run google-play:admob:owner-evidence:check` before asking
-the owner to fill `output/private/admob-owner-evidence.json`; that private file
-must stay untracked and may contain only public-safe PASS/PARTIAL/UNVERIFIED/FAIL
-summaries. Run `npm run google-play:admob:owner-evidence:apply -- --file output/private/admob-owner-evidence.json`
+the owner to fill private evidence, then run `npm run google-play:admob:owner-evidence:prepare`
+to create `output/private/admob-owner-evidence.json` from the public-safe template.
+That private file must stay untracked and may contain only public-safe
+PASS/PARTIAL/UNVERIFIED/FAIL summaries. Run `npm run google-play:admob:owner-evidence:apply -- --file output/private/admob-owner-evidence.json`
 as a dry-run to promote only owner-owned rows into the public-safe external
 ledger, then rerun with `--write` only after reviewing the row changes. Run
 `npm run google-play:admob:external-check:pass` only before claiming production
