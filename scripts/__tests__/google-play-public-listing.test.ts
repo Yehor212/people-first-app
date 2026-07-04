@@ -6,6 +6,7 @@ const checker = require("../check-google-play-public-listing.cjs") as {
   evaluateGooglePlayListingHtml: (input: {
     html: string;
     expectedDeveloperWebsite?: string;
+    expectedPrivacyPolicyUrl?: string;
     requiredRewardedAdsText?: boolean;
     requireContainsAds?: boolean;
   }) => {
@@ -14,24 +15,60 @@ const checker = require("../check-google-play-public-listing.cjs") as {
     signals: Record<string, boolean>;
   };
   DEFAULT_DEVELOPER_WEBSITE: string;
+  DEFAULT_PRIVACY_POLICY_URL: string;
 };
 
 describe("Google Play public listing guard", () => {
-  it("passes when developer website, Contains ads, and rewarded copy are public", () => {
+  it("passes when developer website, privacy policy, Contains ads, and rewarded copy are public", () => {
     const report = checker.evaluateGooglePlayListingHtml({
-      html: "Developer website " + checker.DEFAULT_DEVELOPER_WEBSITE + " Contains ads ZenFlow may offer optional rewarded ads.",
+      html:
+        "Developer website " +
+        checker.DEFAULT_DEVELOPER_WEBSITE +
+        " Privacy Policy " +
+        checker.DEFAULT_PRIVACY_POLICY_URL +
+        " Contains ads ZenFlow may offer optional rewarded ads.",
     });
 
     expect(report.ok).toBe(true);
     expect(report.issues).toEqual([]);
     expect(report.signals.developerWebsiteVisible).toBe(true);
+    expect(report.signals.privacyPolicyVisible).toBe(true);
     expect(report.signals.containsAdsVisible).toBe(true);
     expect(report.signals.rewardedAdsVisible).toBe(true);
   });
 
+  it("rejects a listing that hides the public privacy policy URL", () => {
+    const report = checker.evaluateGooglePlayListingHtml({
+      html: checker.DEFAULT_DEVELOPER_WEBSITE + " Contains ads ZenFlow may offer optional rewarded ads.",
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual(expect.objectContaining({ code: "privacy_policy_missing" }));
+    expect(report.signals.privacyPolicyVisible).toBe(false);
+  });
+
+  it("supports an explicit expected privacy policy URL override", () => {
+    const customPrivacyUrl = "https://example.com/zenflow/privacy";
+    const report = checker.evaluateGooglePlayListingHtml({
+      expectedPrivacyPolicyUrl: customPrivacyUrl,
+      html:
+        checker.DEFAULT_DEVELOPER_WEBSITE +
+        " " +
+        customPrivacyUrl +
+        " Contains ads ZenFlow may offer optional rewarded ads.",
+    });
+
+    expect(report.ok).toBe(true);
+    expect(report.signals.privacyPolicyVisible).toBe(true);
+  });
+
   it("rejects the stale no-ads claim even when the website is present", () => {
     const report = checker.evaluateGooglePlayListingHtml({
-      html: checker.DEFAULT_DEVELOPER_WEBSITE + " Contains ads No ads. No selling your data. Ever.",
+      html:
+        checker.DEFAULT_DEVELOPER_WEBSITE +
+        " " +
+        checker.DEFAULT_PRIVACY_POLICY_URL +
+        " Contains ads No ads. No selling your data. Ever.",
     });
 
     expect(report.ok).toBe(false);
@@ -40,7 +77,7 @@ describe("Google Play public listing guard", () => {
 
   it("rejects missing public ads disclosure", () => {
     const report = checker.evaluateGooglePlayListingHtml({
-      html: checker.DEFAULT_DEVELOPER_WEBSITE + " optional rewarded ads",
+      html: checker.DEFAULT_DEVELOPER_WEBSITE + " " + checker.DEFAULT_PRIVACY_POLICY_URL + " optional rewarded ads",
     });
 
     expect(report.ok).toBe(false);

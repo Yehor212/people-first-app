@@ -19,6 +19,10 @@ import {
   canShowRewardedAd,
   showRewardedAd,
   getRemainingRewardedAds,
+  getAdState,
+  showAdPrivacyOptions,
+  refreshAdPrivacyOptionsStatus,
+  disableAds,
 } from '@/lib/adController';
 import { AD_REWARDS } from '@/lib/adConfig';
 import { logger } from '@/lib/logger';
@@ -36,6 +40,15 @@ interface AdContextValue {
 
   /** Remaining rewarded ads today */
   remainingToday: number;
+
+  /** Whether Google UMP currently allows ad requests */
+  googleConsentReady: boolean;
+
+  /** Whether Google UMP requires a visible privacy-options entry point */
+  privacyOptionsRequired: boolean;
+
+  /** Opens Google UMP privacy options when available */
+  openAdPrivacyOptions: () => Promise<boolean>;
 
   /** Show a rewarded ad. Returns true if user earned the reward. */
   watchRewardedAd: () => Promise<boolean>;
@@ -66,6 +79,8 @@ interface AdProviderProps {
   adConsent?: boolean;
   /** Whether user is premium (no ads) */
   isPremium?: boolean;
+  /** Latest mood used for mood-aware ad gating */
+  currentMood?: string | null;
 }
 
 export function AdProvider({
@@ -74,28 +89,91 @@ export function AdProvider({
   onEarnXp,
   adConsent = false,
   isPremium = false,
+  currentMood,
 }: AdProviderProps) {
   const [adsAvailable, setAdsAvailable] = useState(false);
   const [canShow, setCanShow] = useState(false);
   const [remaining, setRemaining] = useState(0);
+  const [googleConsentReady, setGoogleConsentReady] = useState(false);
+  const [privacyOptionsRequired, setPrivacyOptionsRequired] = useState(false);
   const currentMoodRef = useRef<string>('okay');
+
+  const syncControllerState = useCallback(() => {
+    const controllerState = getAdState();
+    setGoogleConsentReady(controllerState.canRequestAds);
+    setPrivacyOptionsRequired(controllerState.privacyOptionsRequired);
+    setRemaining(getRemainingRewardedAds());
+    const check = canShowRewardedAd(currentMoodRef.current);
+    setCanShow(check.allowed);
+    setAdsAvailable(controllerState.sdkAvailable);
+  }, []);
+
+  const syncPrivacyOptionsOnly = useCallback(() => {
+    const controllerState = getAdState();
+    setGoogleConsentReady(controllerState.canRequestAds);
+    setPrivacyOptionsRequired(controllerState.privacyOptionsRequired);
+    setRemaining(0);
+    setCanShow(false);
+    setAdsAvailable(false);
+  }, []);
+
+  useEffect(() => {
+    if (currentMood) {
+      currentMoodRef.current = currentMood;
+      const check = canShowRewardedAd(currentMood);
+      setCanShow(check.allowed);
+    }
+  }, [currentMood]);
 
   // Initialize SDK
   useEffect(() => {
-    if (isPremium || !adConsent) {
+    let cancelled = false;
+
+    const disableAdRequests = (clearPrivacyOptions: boolean) => {
+      if (cancelled) return;
+      disableAds({ clearPrivacyOptions });
       setAdsAvailable(false);
-      return;
+      setCanShow(false);
+      setGoogleConsentReady(false);
+      if (clearPrivacyOptions) setPrivacyOptionsRequired(false);
+      setRemaining(0);
+    };
+
+    if (isPremium) {
+      disableAdRequests(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!adConsent) {
+      disableAdRequests(false);
+      void refreshAdPrivacyOptionsStatus()
+        .catch(err => logger.warn('[Ads]', 'Privacy options refresh failed:', err))
+        .finally(() => {
+          if (!cancelled) syncPrivacyOptionsOnly();
+        });
+
+      return () => {
+        cancelled = true;
+      };
     }
 
     void initializeAds().then((available) => {
-      setAdsAvailable(available);
+      if (cancelled) return;
+      syncControllerState();
       if (available) {
-        setRemaining(getRemainingRewardedAds());
         const check = canShowRewardedAd(currentMoodRef.current);
         setCanShow(check.allowed);
       }
-    }).catch(err => logger.warn('[Ads]', 'Ad init failed:', err));
-  }, [adConsent, isPremium]);
+    }).catch(err => {
+      if (!cancelled) logger.warn('[Ads]', 'Ad init failed:', err);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [adConsent, isPremium, syncControllerState, syncPrivacyOptionsOnly]);
 
   // Refresh can-show status periodically
   useEffect(() => {
@@ -105,6 +183,9 @@ export function AdProvider({
       const check = canShowRewardedAd(currentMoodRef.current);
       setCanShow(check.allowed);
       setRemaining(getRemainingRewardedAds());
+      const controllerState = getAdState();
+      setGoogleConsentReady(controllerState.canRequestAds);
+      setPrivacyOptionsRequired(controllerState.privacyOptionsRequired);
     }, 30_000); // every 30s
 
     return () => clearInterval(interval);
@@ -131,24 +212,30 @@ export function AdProvider({
       onEarnXp?.(AD_REWARDS.rewardedVideoXp);
 
       // Refresh state
-      setRemaining(getRemainingRewardedAds());
-      const newCheck = canShowRewardedAd(currentMoodRef.current);
-      setCanShow(newCheck.allowed);
+      syncControllerState();
 
       return true;
     }
 
     // Refresh on dismiss too
-    const newCheck = canShowRewardedAd(currentMoodRef.current);
-    setCanShow(newCheck.allowed);
+    syncControllerState();
 
     return false;
-  }, [adsAvailable, onEarnTreats, onEarnXp]);
+  }, [adsAvailable, onEarnTreats, onEarnXp, syncControllerState]);
+
+  const openAdPrivacyOptions = useCallback(async (): Promise<boolean> => {
+    const result = await showAdPrivacyOptions();
+    syncControllerState();
+    return result.opened;
+  }, [syncControllerState]);
 
   const value: AdContextValue = {
     adsAvailable,
     canShowRewarded: canShow,
     remainingToday: remaining,
+    googleConsentReady,
+    privacyOptionsRequired,
+    openAdPrivacyOptions,
     watchRewardedAd,
     rewardTreats: AD_REWARDS.rewardedVideoTreats,
     rewardXp: AD_REWARDS.rewardedVideoXp,
@@ -170,6 +257,9 @@ export function useAds(): AdContextValue {
       adsAvailable: false,
       canShowRewarded: false,
       remainingToday: 0,
+      googleConsentReady: false,
+      privacyOptionsRequired: false,
+      openAdPrivacyOptions: async () => false,
       watchRewardedAd: async () => false,
       rewardTreats: 0,
       rewardXp: 0,

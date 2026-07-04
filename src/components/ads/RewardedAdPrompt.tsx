@@ -11,9 +11,16 @@ import { useAds } from '@/contexts/AdContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
+function formatTemplate(template: string, values: Record<string, string | number>): string {
+  return Object.entries(values).reduce(
+    (message, [key, value]) => message.split(`{${key}}`).join(String(value)),
+    template,
+  );
+}
+
 interface RewardedAdPromptProps {
   /** Context where the prompt is shown */
-  context: 'daily_rewards' | 'post_focus' | 'companion' | 'general';
+  context: 'daily_rewards' | 'post_focus' | 'companion' | 'settings';
   /** Custom CTA label override */
   ctaLabel?: string;
   /** Custom reward description override */
@@ -34,8 +41,9 @@ export function RewardedAdPrompt({
   compact = false,
   className,
 }: RewardedAdPromptProps) {
-  const { adsAvailable, canShowRewarded, watchRewardedAd, rewardTreats, remainingToday } = useAds();
+  const { adsAvailable, canShowRewarded, watchRewardedAd, rewardTreats } = useAds();
   const { t } = useLanguage();
+  const tx = t as unknown as Record<string, string | undefined>;
   const [loading, setLoading] = useState(false);
   const [justRewarded, setJustRewarded] = useState(false);
 
@@ -57,8 +65,14 @@ export function RewardedAdPrompt({
     }
   };
 
-  const defaultCtaLabel = t.adWatchToEarn || 'Watch to earn';
-  const defaultRewardLabel = `+${rewardTreats} ${t.treats || 'treats'}`;
+  const defaultCtaLabel = tx.adWatchToEarn || 'Optional ad: watch for a small bonus';
+  const defaultRewardLabel = formatTemplate(
+    tx.adRewardLabel || '+{treats} treats',
+    { treats: rewardTreats },
+  );
+  const watchLabel = tx.adWatch || 'Watch optional ad';
+  const resolvedCtaLabel = ctaLabel || defaultCtaLabel;
+  const resolvedRewardLabel = rewardLabel || defaultRewardLabel;
 
   const contextIcon = context === 'daily_rewards' ? (
     <Gift className={cn(compact ? 'w-4 h-4' : 'w-5 h-5')} />
@@ -69,18 +83,21 @@ export function RewardedAdPrompt({
   if (compact) {
     return (
       <button
+        type="button"
         onClick={handleWatch}
         disabled={loading}
+        aria-busy={loading ? 'true' : undefined}
+        aria-label={`${resolvedCtaLabel}. ${resolvedRewardLabel}`}
         className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium motion-safe:transition-all',
+          'flex min-h-[44px] items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium motion-safe:transition-all',
           'bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 active:scale-95',
           loading && 'opacity-50',
           className,
         )}
       >
         {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : contextIcon}
-        <span>{ctaLabel || defaultCtaLabel}</span>
-        <span className="font-bold">{rewardLabel || defaultRewardLabel}</span>
+        <span>{resolvedCtaLabel}</span>
+        <span className="font-bold">{resolvedRewardLabel}</span>
       </button>
     );
   }
@@ -97,20 +114,22 @@ export function RewardedAdPrompt({
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
-              {ctaLabel || defaultCtaLabel}
+              {resolvedCtaLabel}
             </p>
             <p className="text-xs text-muted-foreground">
-              {rewardLabel || defaultRewardLabel}
-              {remainingToday > 0 && ` · ${remainingToday} ${t.adRemaining || 'left today'}`}
+              {resolvedRewardLabel}
             </p>
           </div>
         </div>
 
         <button
+          type="button"
           onClick={handleWatch}
           disabled={loading}
+          aria-busy={loading ? 'true' : undefined}
+          aria-label={`${resolvedCtaLabel}. ${resolvedRewardLabel}`}
           className={cn(
-            'shrink-0 px-4 py-2 rounded-xl font-medium text-sm motion-safe:transition-all',
+            'min-h-[44px] shrink-0 px-4 py-2 rounded-xl font-medium text-sm motion-safe:transition-all',
             'bg-amber-500 text-white hover:bg-amber-600 active:scale-95',
             loading && 'opacity-50',
           )}
@@ -120,7 +139,7 @@ export function RewardedAdPrompt({
           ) : (
             <span className="flex items-center gap-1.5">
               <Play className="w-4 h-4" aria-hidden="true" />
-              {t.adWatch || 'Watch'}
+              {watchLabel}
             </span>
           )}
         </button>

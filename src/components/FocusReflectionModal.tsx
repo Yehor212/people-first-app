@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { zenMotion, zenTap } from "@/lib/animationUtils";
 import { useModalClose } from "@/hooks/useModalState";
-import { RewardedAdPrompt } from "@/components/ads/RewardedAdPrompt";
 import { CosmicStar, cosmicStars } from "@/components/cosmic/CosmicStarField";
 
 /**
@@ -79,7 +78,7 @@ export function FocusReflectionModal({
           {/* Close button */}
           <button
             onClick={onDismiss}
-            className="absolute top-3 end-3 p-2 rounded-lg bg-secondary hover:bg-secondary/80 text-slate-600 dark:text-white/60 hover:text-slate-800 dark:hover:text-white motion-safe:transition-colors"
+            className="absolute top-3 end-3 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-secondary text-slate-600 hover:bg-secondary/80 hover:text-slate-800 motion-safe:transition-colors dark:text-white/60 dark:hover:text-white"
             aria-label={t.close}
           >
             <X className="w-4 h-4" />
@@ -167,11 +166,6 @@ export function FocusReflectionModal({
               {t.focusExpandToJournal || "Write about it in your journal"}
             </button>
           )}
-
-          {/* Opt-in rewarded ad — earn bonus treats after focus */}
-          <div className="mt-4">
-            <RewardedAdPrompt context="post_focus" compact />
-          </div>
         </div>
       </motion.div>
     </motion.div>

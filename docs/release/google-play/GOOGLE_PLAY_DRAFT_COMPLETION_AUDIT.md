@@ -121,11 +121,12 @@ production monetization blockers.
 | Item | Status | Required next action |
 | --- | --- | --- |
 | Real AdMob Android app ID | LOCAL READY / RELEASE ENV GUARDED | Local env contains a real Android AdMob app ID for publisher `pub-9501********2808`; keep the value owner-controlled and verify release/CI env with `npm run google-play:admob:check`. Android release Gradle builds now fail fast if the native app ID is missing or still points at a Google sample app ID. |
-| Real rewarded ad unit ID | LOCAL READY / RELEASE ENV UNVERIFIED | 2026-06-30 AdMob contains `zenflow_rewarded_video_main` with the normal rewarded format (`З винагородою`), and local `.env.local` uses a real Android rewarded ad unit for publisher `pub-9501********2808`. `npm run google-play:admob:check` passes locally. Copy the same owner-controlled value into release/CI env before building a production Android artifact. Optional banner/iOS sample IDs remain warnings by default and can be made blocking with `npm run google-play:admob:check -- --strict-optional`. |
-| `public/app-ads.txt` | PUBLIC ROOT READY / ADMOB CRAWL PENDING | `ZENFLOW_APP_ADS_PUBLIC_URL=https://yehor212.github.io/app-ads.txt npm run google-play:app-ads:public-check` passes for publisher `pub-9501********2808`. If the publisher changes, regenerate only with `ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads`, verify with `npm run google-play:app-ads:check`, and Do not invent this value or use Google's sample publisher id. In AdMob, click `Verify app` / refresh verification after Google crawls the root of the developer website configured in Play Console/AdMob. |
+| Real rewarded ad unit ID | LOCAL READY / RELEASE ENV UNVERIFIED | 2026-06-30 AdMob contains `zenflow_rewarded_video_main` with the normal rewarded format (`З винагородою`), and local `.env.local` uses a real Android rewarded ad unit for publisher `pub-9501********2808`. `npm run google-play:admob:check` passes locally for the Android rewarded-only path. Copy the same owner-controlled value into release/CI env before building a production Android artifact. Optional banner/iOS sample IDs remain warnings by default; `npm run google-play:admob:check:full` is the blocking audit for full cross-platform/banner+iOS monetization readiness. |
+| `public/app-ads.txt` | PUBLIC ROOT READY / ADMOB CRAWL PENDING | `npm run google-play:app-ads:public-check:zenflow` passes for publisher `pub-9501********2808`. If the publisher changes, regenerate only with `ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads`, verify with `npm run google-play:app-ads:check`, and Do not invent this value or use Google's sample publisher id. In AdMob, click `Verify app` / refresh verification after Google crawls the root of the developer website configured in Play Console/AdMob. |
 | Public Play developer website | PASS / PUBLIC LISTING UPDATED | 2026-06-30 public listing probe for `com.zenflow.app` returned `https://yehor212.github.io/people-first-app/` as the developer website after Play Console Store listing contact details were updated. This fixes the previous `appstore:developer_url=about:invalid#navigation` blocker. |
 | Public Play ads label and copy | PASS / PUBLIC LISTING UPDATED | 2026-06-30 `npm run google-play:public-listing:check` passes: the public listing exposes the developer website, shows the Google Play `Contains ads` signal, includes rewarded ads copy, and no longer exposes the old `No ads` claim. |
 | Final Google Play review submission | PUBLISHED / ADMOB VERIFY PENDING | 2026-06-30 Play Console Publishing overview shows the update was published after the 6-change package: short description, full description, app icon, feature graphic, Ads declaration, Data safety, and Advertising ID declaration. Do not claim AdMob verification PASS until AdMob removes the app-ads.txt mismatch warning after its crawler refreshes. |
+| External monetization readiness ledger | UNVERIFIED / OWNER ACTION NEEDED | `npm run google-play:privacy:artifact-check`, the GitHub Pages post-deploy public privacy smoke, and `npm run google-play:privacy:public-check` must pass before public privacy can become PASS. `npm run google-play:admob:external-check` must keep AdMob app readiness, Policy Center, Privacy & messages/CMP, payments/tax, live device ad playback, and full cross-platform IDs explicit. `npm run google-play:admob:external-check:pass` must stay blocking until every required external item is freshly `PASS`. |
 
 ## Completion Decision
 
@@ -133,7 +134,10 @@ Google Play Console is now corrected and the 6-change package has been
 published. The public listing exposes the correct developer website, contains
 ads disclosure, rewarded ads copy, and no longer shows the stale no-ads claim.
 The local Android rewarded-only AdMob path now uses a real rewarded ad unit and
-passes `npm run google-play:admob:check`. Public production monetization remains
-AdMob crawler pending until AdMob verifies the app and removes the app-ads.txt
-mismatch warning; release/CI env still needs owner confirmation before a
-production Android artifact is built.
+passes `npm run google-play:admob:check`. Full cross-platform/banner+iOS
+monetization remains `UNVERIFIED` until `npm run google-play:admob:check:full`
+passes with owner-controlled production IDs. Public production monetization
+also remains `UNVERIFIED` until `npm run google-play:admob:external-check:pass`
+passes with fresh AdMob app readiness, Policy Center, Privacy & messages/CMP,
+payments/tax, and live device ad playback evidence. Release/CI env still needs
+owner confirmation before a production Android artifact is built.

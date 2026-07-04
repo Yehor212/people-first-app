@@ -17,7 +17,7 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 | Zustand stores (runtime) | **9** | `ls src/stores/*.ts` excl. hydrate + index |
 | Hydrate bridges | 2 | `useHydrate*.ts` |
 | Index.tsx LOC | **271** | `wc -l src/pages/Index.tsx` |
-| Components top-level dirs | **43** | `ls src/components/ -d` |
+| Components top-level dirs | **41** | `ls src/components/ -d` |
 | Features modules | 1 | `ls src/features/ -d` |
 | V2 coexistence files | 38 | `find src -name '*V2*' -o -name '*-v2*'` |
 | `it.todo(` occurrences | 39 | regex walk |

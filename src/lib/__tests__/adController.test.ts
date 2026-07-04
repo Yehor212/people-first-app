@@ -40,8 +40,8 @@ vi.mock('@/lib/adConfig', () => ({
     dismissCooldownMs: 10 * 60 * 1000,
   },
   AD_MOOD_RULES: {
-    blockedMoods: ['terrible'],
-    reducedMoods: ['bad'],
+    blockedMoods: ['terrible', 'bad'],
+    reducedMoods: [],
     reducedMaxPerSession: 1,
   },
 }));
@@ -51,10 +51,19 @@ vi.mock('@/lib/storageKeys', () => ({
     AD_DAILY_REWARDED: 'zenflow-ad-rewarded-count',
     AD_COUNT_DATE: 'zenflow-ad-count-date',
     AD_LAST_SHOWN: 'zenflow-ad-last-shown',
+    ONBOARDING_STATE: 'zenflow_onboarding_state',
   },
 }));
 
 vi.mock('@/lib/safeJson', () => ({
+  safeJsonParse: vi.fn((json: string | null | undefined, fallback: unknown) => {
+    if (!json) return fallback;
+    try {
+      return JSON.parse(json);
+    } catch {
+      return fallback;
+    }
+  }),
   storageGetRaw: vi.fn((key: string) => mockStorage[key] ?? null),
   storageSetRaw: vi.fn((key: string, val: string) => { mockStorage[key] = val; }),
 }));
@@ -72,6 +81,7 @@ describe('adController', () => {
     for (const key of Object.keys(mockStorage)) {
       delete mockStorage[key];
     }
+    mockStorage.zenflow_onboarding_state = JSON.stringify({ isNewUser: true, daysActive: 4 });
   });
 
   // ============================================

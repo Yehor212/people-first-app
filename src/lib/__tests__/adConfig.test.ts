@@ -52,12 +52,13 @@ describe('AD_FREQUENCY', () => {
 // ============================================
 
 describe('AD_MOOD_RULES', () => {
-  it('blocks ads for terrible mood', () => {
+  it('blocks ads for terrible and bad mood', () => {
     expect(AD_MOOD_RULES.blockedMoods).toContain('terrible');
+    expect(AD_MOOD_RULES.blockedMoods).toContain('bad');
   });
 
-  it('reduces ads for bad mood', () => {
-    expect(AD_MOOD_RULES.reducedMoods).toContain('bad');
+  it('does not reduce ads for low mood because low mood is blocked', () => {
+    expect(AD_MOOD_RULES.reducedMoods).not.toContain('bad');
   });
 
   it('has a reduced max per session that is less than normal', () => {

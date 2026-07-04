@@ -1,0 +1,177 @@
+{
+  "schemaVersion": "zenflow-admob-owner-evidence/v1",
+  "packageName": "com.zenflow.app",
+  "evidenceDate": "YYYY-MM-DD",
+  "privateFilePath": "output/private/admob-owner-evidence.json",
+  "instructions": "Copy this file to output/private/admob-owner-evidence.json after owner-only AdMob, Payments, and Play Console checks. Record only public-safe status summaries. Do not paste account, payment, tax, address, personal, or raw ad identifiers.",
+  "items": [
+    {
+      "id": "admob_app_ads_txt_status",
+      "status": "UNVERIFIED",
+      "checkedAt": "",
+      "evidence": "Owner console evidence not recorded yet. Replace with a public-safe summary of AdMob app-ads.txt or Verify app status.",
+      "facts": {
+        "verifyAppConfirmedDone": false,
+        "zenflowAppSelected": false
+      },
+      "sourceUrls": [
+        "https://support.google.com/admob/answer/14538460"
+      ]
+    },
+    {
+      "id": "admob_app_readiness",
+      "status": "UNVERIFIED",
+      "checkedAt": "",
+      "evidence": "Owner console evidence not recorded yet. Replace with a public-safe summary of AdMob app readiness status.",
+      "facts": {
+        "ready": false,
+        "adServingEnabled": false,
+        "googlePlayLinked": false,
+        "activeAdUnits": false
+      },
+      "sourceUrls": [
+        "https://support.google.com/admob/answer/10564477"
+      ]
+    },
+    {
+      "id": "admob_policy_center",
+      "status": "UNVERIFIED",
+      "checkedAt": "",
+      "evidence": "Owner console evidence not recorded yet. Replace with a public-safe summary of AdMob Policy Center status.",
+      "facts": {
+        "policyCenterReviewed": false,
+        "noViolations": false,
+        "noBlockingIssues": false
+      },
+      "sourceUrls": [
+        "https://support.google.com/admob/answer/10448801"
+      ]
+    },
+    {
+      "id": "privacy_messages_cmp",
+      "status": "UNVERIFIED",
+      "checkedAt": "",
+      "evidence": "Owner console evidence not recorded yet. Replace with a public-safe summary of AdMob Privacy & messaging publication status.",
+      "facts": {
+        "europeanRegulationsMessagePublished": false,
+        "googleCertifiedCmp": false,
+        "tcfV23": false,
+        "zenflowAppSelected": false,
+        "eeaUkSwitzerlandTargeting": false,
+        "privacyPolicyUrlMatched": false
+      },
+      "sourceUrls": [
+        "https://support.google.com/admob/answer/10113207",
+        "https://support.google.com/admob/answer/13554116",
+        "https://support.google.com/admob/answer/16918505",
+        "https://support.google.com/admob/answer/9999955",
+        "https://developers.google.com/admob/android/privacy",
+        "https://developers.google.com/admob/ios/privacy"
+      ]
+    },
+    {
+      "id": "payments_tax_info",
+      "status": "UNVERIFIED",
+      "checkedAt": "",
+      "evidence": "Owner console evidence not recorded yet. Replace with a public-safe tax status summary only.",
+      "facts": {
+        "taxNoActionRequired": false
+      },
+      "sourceUrls": [
+        "https://support.google.com/admob/answer/2772513"
+      ]
+    },
+    {
+      "id": "payments_identity_address",
+      "status": "UNVERIFIED",
+      "checkedAt": "",
+      "evidence": "Owner console evidence not recorded yet. Replace with a public-safe identity or address status summary only.",
+      "facts": {
+        "identityNoActionRequiredOrVerified": false,
+        "addressNoActionRequiredOrVerified": false
+      },
+      "sourceUrls": [
+        "https://support.google.com/admob/answer/13030080"
+      ]
+    },
+    {
+      "id": "payments_payment_method",
+      "status": "UNVERIFIED",
+      "checkedAt": "",
+      "evidence": "Owner console evidence not recorded yet. Replace with a public-safe payout setup status summary only.",
+      "facts": {
+        "paymentMethodEligible": false
+      },
+      "sourceUrls": [
+        "https://support.google.com/admob/answer/12835021"
+      ]
+    },
+    {
+      "id": "payments_holds",
+      "status": "UNVERIFIED",
+      "checkedAt": "",
+      "evidence": "Owner console evidence not recorded yet. Replace with a public-safe holds status summary only.",
+      "facts": {
+        "noPaymentHold": false,
+        "noTaxHold": false,
+        "noIdentityHold": false,
+        "noComplianceHold": false,
+        "noSelfHold": false
+      },
+      "sourceUrls": [
+        "https://support.google.com/admob/answer/11601831"
+      ]
+    },
+    {
+      "id": "play_console_ads_data_safety",
+      "status": "UNVERIFIED",
+      "checkedAt": "",
+      "evidence": "Owner console evidence not recorded yet. Replace with a public-safe summary of Ads, Advertising ID, and Data safety declarations.",
+      "facts": {
+        "adsDeclaredYes": false,
+        "advertisingIdDeclaredYes": false,
+        "dataSafetyIncludesGoogleMobileAdsSdkData": false,
+        "googleMobileAdsSdkDataDisclosureReviewed": false,
+        "privacyPolicyUrlMatchesListing": false
+      },
+      "sourceUrls": [
+        "https://support.google.com/googleplay/android-developer/answer/9859455",
+        "https://developers.google.com/admob/android/privacy/play-data-disclosure"
+      ]
+    },
+    {
+      "id": "live_ad_playback_device",
+      "status": "UNVERIFIED",
+      "checkedAt": "",
+      "evidence": "Owner device evidence not recorded yet. Replace with a public-safe release-device rewarded-ad smoke summary after consent and readiness checks are clear.",
+      "facts": {
+        "releaseEquivalentAndroid": false,
+        "consentPathCompleted": false,
+        "rewardedVideoOpened": false,
+        "dismissWithoutRewardChecked": false,
+        "rewardCallbackGrantedAfterCompletion": false,
+        "revocationStopsNewAdRequests": false
+      },
+      "sourceUrls": [
+        "https://support.google.com/admob/answer/7313578",
+        "https://admob.google.com/home/resources/best-practices-for-in-app-rewarded-video-ads/"
+      ]
+    },
+    {
+      "id": "full_cross_platform_ad_units",
+      "status": "UNVERIFIED",
+      "checkedAt": "",
+      "evidence": "Owner console evidence not recorded yet. Replace with a public-safe summary only when every iOS and banner ad unit is owner-controlled and non-sample.",
+      "facts": {
+        "androidOwnerControlledNonSample": false,
+        "iosOwnerControlledNonSample": false,
+        "bannerOwnerControlledNonSample": false,
+        "rewardedOwnerControlledNonSample": false,
+        "samePublisherFamily": false
+      },
+      "sourceUrls": [
+        "https://support.google.com/admob/answer/7356431"
+      ]
+    }
+  ]
+}

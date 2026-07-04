@@ -599,4 +599,81 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(visualJob).not.toContain("pull-requests: write");
     expect(visualJob).toContain("contents: read");
   });
+  it("runs a cache-busted public privacy policy smoke after Pages deployment", () => {
+    const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+    const previewWorkflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
+
+    expect(workflow).toContain("public-privacy-smoke:");
+    expect(workflow).toContain("needs: [deploy]");
+    expect(workflow).toContain("ZENFLOW_PUBLIC_PRIVACY_URL: ${{ needs.deploy.outputs.page_url }}privacy.html?admobPrivacyCheck=${{ github.sha }}");
+    expect(workflow).toContain("npm run google-play:privacy:public-check");
+    expect(workflow).toContain("Public privacy policy did not pass after Pages deployment.");
+
+    const deployJob = sliceBetween(workflow, "deploy:", "public-privacy-smoke:");
+    const privacyJob = sliceBetween(workflow, "public-privacy-smoke:", "public-auth-smoke:");
+    expect(deployJob).toContain("outputs:");
+    expect(deployJob).toContain("page_url: ${{ steps.deployment.outputs.page_url }}");
+    expect(privacyJob).toContain("needs: [deploy]");
+    expect(privacyJob).toContain("persist-credentials: false");
+    expect(privacyJob).toContain("for attempt in {1..12}");
+    expect(privacyJob).toContain("sleep 10");
+    expect(privacyJob).not.toContain("secrets.");
+
+    expect(previewWorkflow).toContain("public-privacy-smoke:");
+    expect(previewWorkflow).toContain("ZENFLOW_PUBLIC_PRIVACY_URL: ${{ needs.deploy.outputs.page_url }}privacy.html?admobPrivacyCheck=${{ github.sha }}");
+    expect(previewWorkflow).toContain("npm run google-play:privacy:public-check");
+
+    const previewDeploy = sliceBetween(previewWorkflow, "deploy:", "public-privacy-smoke:");
+    const previewPrivacy = previewWorkflow.slice(indexOfOrThrow(previewWorkflow, "public-privacy-smoke:"));
+    expect(previewDeploy).toContain("outputs:");
+    expect(previewDeploy).toContain("page_url: ${{ steps.deployment.outputs.page_url }}");
+    expect(previewPrivacy).toContain("needs: [deploy]");
+    expect(previewPrivacy).toContain("github.event.inputs.publish_target == 'overwrite-github-pages'");
+    expect(previewPrivacy).toContain("for attempt in {1..12}");
+    expect(previewPrivacy).toContain("sleep 10");
+    expect(previewPrivacy).not.toContain("secrets.");
+  });
+
+  it("checks the staged public privacy policy artifact before Pages uploads", () => {
+    const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+    const previewWorkflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
+    const pkg = JSON.parse(readFileSync("package.json", "utf8")) as {
+      scripts: Record<string, string>;
+    };
+
+    expect(pkg.scripts["google-play:privacy:artifact-check"]).toBe(
+      "node scripts/check-public-privacy-policy.cjs --file output/pages-artifact.nosync/privacy.html"
+    );
+    expect(workflow).toContain("name: Check staged public privacy policy");
+    expect(workflow).toContain("npm run google-play:privacy:artifact-check");
+    expect(previewWorkflow).toContain("name: Check staged public privacy policy for V2 preview");
+    expect(previewWorkflow).toContain("npm run google-play:privacy:artifact-check");
+
+    const productionIntegrity = indexOfOrThrow(
+      workflow,
+      "name: Check staged release artifact integrity"
+    );
+    const productionPrivacy = indexOfOrThrow(workflow, "name: Check staged public privacy policy");
+    const productionUpload = indexOfOrThrow(workflow, "name: Upload artifact");
+    expect(productionIntegrity).toBeLessThan(productionPrivacy);
+    expect(productionPrivacy).toBeLessThan(productionUpload);
+
+    const previewIntegrity = indexOfOrThrow(
+      previewWorkflow,
+      "name: Check staged release artifact integrity for V2 preview"
+    );
+    const previewPrivacy = indexOfOrThrow(
+      previewWorkflow,
+      "name: Check staged public privacy policy for V2 preview"
+    );
+    const previewReviewUpload = indexOfOrThrow(
+      previewWorkflow,
+      "name: Upload V2 preview artifact for review"
+    );
+    const previewPagesUpload = indexOfOrThrow(previewWorkflow, "name: Upload V2 Pages artifact");
+    expect(previewIntegrity).toBeLessThan(previewPrivacy);
+    expect(previewPrivacy).toBeLessThan(previewReviewUpload);
+    expect(previewPrivacy).toBeLessThan(previewPagesUpload);
+  });
+
 });
