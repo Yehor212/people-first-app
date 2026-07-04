@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const liveScript = "scripts/check-journal-magic-link-live.cjs";
 const proofScript = "scripts/check-journal-magic-link-proof-status.cjs";
-const proofFile = "docs/release/auth/JOURNAL_MAGIC_LINK_LIVE_PROOF.test.json";
+const proofFile = `docs/release/auth/JOURNAL_MAGIC_LINK_LIVE_PROOF.${process.pid}.test.json`;
 
 function run(script: string, env: NodeJS.ProcessEnv = {}, args: string[] = []) {
   return spawnSync(process.execPath, [script, ...args], {
@@ -76,6 +76,19 @@ describe("journal Magic Link readiness gates", () => {
     expect(result.stdout).toContain("[journal-magic-link-proof] UNVERIFIED");
   });
 
+  it("does not allow ambient env to satisfy required proof status", () => {
+    const result = run(
+      proofScript,
+      {
+        ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_STATUS: "PASS",
+      },
+      ["--require-pass"],
+    );
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toContain("[journal-magic-link-proof] UNVERIFIED");
+  });
+
   it("passes proof status from a public-safe owner proof file", () => {
     mkdirSync(join(process.cwd(), "docs/release/auth"), { recursive: true });
     writeFileSync(
@@ -98,8 +111,12 @@ describe("journal Magic Link readiness gates", () => {
     expect(pkg.scripts["check:journal-magic-link-live"]).toBe("node scripts/check-journal-magic-link-live.cjs");
     expect(pkg.scripts["check:journal-magic-link-proof-status"]).toBe("node scripts/check-journal-magic-link-proof-status.cjs");
     expect(pkg.scripts["check:journal-magic-link-proof-status:pass"]).toBe("node scripts/check-journal-magic-link-proof-status.cjs --require-pass");
+    expect(pkg.scripts["test:release-contracts"]).toContain("scripts/__tests__/journal-magic-link-readiness.test.ts");
     expect(deploy).toContain("npm run check:journal-magic-link-live");
+    expect(deploy).toContain("npm run check:journal-magic-link-proof-status");
     expect(deploy).toContain("npm run check:journal-magic-link-proof-status:pass");
     expect(preview).toContain("npm run check:journal-magic-link-live");
+    expect(preview).toContain("npm run check:journal-magic-link-proof-status");
+    expect(preview).toContain("npm run check:journal-magic-link-proof-status:pass");
   });
 });

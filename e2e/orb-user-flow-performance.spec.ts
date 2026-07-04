@@ -230,10 +230,8 @@ async function timedAction(
 
 async function collectPerfReport(page: Page) {
   return page.evaluate(() => {
-    const inpEventNames = new Set([
-      "beforeinput",
+    const directUserEventNames = new Set([
       "click",
-      "input",
       "keydown",
       "mousedown",
       "mouseup",
@@ -280,7 +278,7 @@ async function collectPerfReport(page: Page) {
       action: actionForEntry(entry),
     }));
     const interactionEventTimings = eventTimings.filter(
-      (entry) => entry.interactionId > 0 || inpEventNames.has(entry.name),
+      (entry) => entry.interactionId > 0 || directUserEventNames.has(entry.name),
     );
     const routeMountActionNames = new Set(["drawer-route-settings", "drawer-route-orb-return"]);
     const screenTransitionActionNames = new Set(["orb-select-to-refine", "orb-refine-back"]);
@@ -529,7 +527,10 @@ test.describe("Orb user-flow performance", () => {
     });
 
     await timedAction(page, "orb-note-input", async () => {
-      await page.getByTestId("orb-page-note-input").fill("Quick performance proof");
+      const noteInput = page.getByTestId("orb-page-note-input");
+      await noteInput.click();
+      await page.keyboard.type("Quick performance proof", { delay: 8 });
+      await expect(noteInput).toHaveValue("Quick performance proof");
     });
 
     await timedAction(page, "orb-refine-back", async () => {

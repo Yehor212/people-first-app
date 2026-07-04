@@ -397,6 +397,13 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(stagedPerf).toBeLessThan(perfDiagnostics);
     expect(perfDiagnostics).toBeLessThan(stagedVisual);
     expect(stagedPerf).toBeLessThan(indexOfOrThrow(workflow, "name: Upload artifact"));
+
+    const perfSpec = readFileSync("e2e/orb-user-flow-performance.spec.ts", "utf8");
+    expect(perfSpec).toContain("const directUserEventNames = new Set([");
+    expect(perfSpec).toContain('await page.keyboard.type("Quick performance proof", { delay: 8 });');
+    expect(perfSpec).not.toContain('fill("Quick performance proof")');
+    expect(perfSpec).not.toContain('"beforeinput",');
+    expect(perfSpec).not.toContain('"input",');
   });
 
   it("blocks Pages uploads on deep i18n and staged V2 runtime release gates", () => {

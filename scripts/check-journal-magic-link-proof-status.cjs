@@ -56,9 +56,8 @@ function output({ status, source, requirePass, reason, checkedAt }) {
 function main() {
   const args = parseArgs();
   const { source, proof } = loadProof(args.file);
-  const envStatus = normalizeStatus(process.env.ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_STATUS);
   const proofStatus = proof ? normalizeStatus(proof.status) : "UNVERIFIED";
-  const status = process.env.ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_STATUS ? envStatus : proofStatus;
+  const status = proofStatus;
   const checkedAt = proof && typeof proof.checkedAt === "string" ? proof.checkedAt : "";
   const reason = status === "PASS"
     ? "Owner-recorded Magic Link live proof is PASS"
