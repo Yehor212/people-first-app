@@ -147,6 +147,16 @@ jobs:
 
       - run: npm ci --prefer-offline --no-audit --no-fund
 
+      - name: Ensure app audio QC decoder
+        if: runner.os == 'Linux' && matrix.check.name == 'app-audio'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          fi
+
       - name: ${{ matrix.check.name }}
         run: ${{ matrix.check.cmd }}
 
