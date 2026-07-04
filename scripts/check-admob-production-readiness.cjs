@@ -125,7 +125,7 @@ function warningFromOptionalIssue(issue) {
   return { ...issue, code: `optional_${issue.code}` };
 }
 
-function evaluateAdMobProductionReadiness({ env, appAdsText, strictOptionalIds = false }) {
+function evaluateAdMobProductionReadiness({ env, appAdsText, strictOptionalIds = false, requireOptionalIds = false }) {
   const issues = [];
   const warnings = [];
   const summary = {};
@@ -146,7 +146,13 @@ function evaluateAdMobProductionReadiness({ env, appAdsText, strictOptionalIds =
 
   for (const entry of OPTIONAL_ADMOB_IDS) {
     const value = String(env[entry.key] || "").trim();
-    const result = checkAdMobValue({ key: entry.key, value, kind: entry.kind, appAdsPublisherId: appAds.publisherId, required: false });
+    const result = checkAdMobValue({
+      key: entry.key,
+      value,
+      kind: entry.kind,
+      appAdsPublisherId: appAds.publisherId,
+      required: requireOptionalIds,
+    });
     summary[entry.key] = result.status;
     if (strictOptionalIds) issues.push(...result.issues);
     else warnings.push(...result.issues.map(warningFromOptionalIssue));
@@ -158,12 +164,21 @@ function evaluateAdMobProductionReadiness({ env, appAdsText, strictOptionalIds =
 }
 
 function parseArgs(argv) {
-  const args = { envFiles: [], appAdsFile: DEFAULT_APP_ADS_FILE, strictOptionalIds: process.env.ZENFLOW_ADMOB_STRICT_OPTIONAL_IDS === "true" };
+  const args = {
+    envFiles: [],
+    appAdsFile: DEFAULT_APP_ADS_FILE,
+    strictOptionalIds: process.env.ZENFLOW_ADMOB_STRICT_OPTIONAL_IDS === "true",
+    requireOptionalIds: process.env.ZENFLOW_ADMOB_REQUIRE_OPTIONAL_IDS === "true",
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--env-file") args.envFiles.push(argv[++i]);
     else if (arg === "--app-ads-file") args.appAdsFile = path.resolve(ROOT, argv[++i]);
     else if (arg === "--strict-optional") args.strictOptionalIds = true;
+    else if (arg === "--require-optional") {
+      args.requireOptionalIds = true;
+      args.strictOptionalIds = true;
+    }
   }
   return args;
 }
@@ -175,9 +190,11 @@ function main() {
     env,
     appAdsText: readAppAdsFile(args.appAdsFile),
     strictOptionalIds: args.strictOptionalIds,
+    requireOptionalIds: args.requireOptionalIds,
   });
   const status = report.ok ? "PASS" : "UNVERIFIED";
-  console.log(`[admob-readiness] ${status} - Android production AdMob ids and local app-ads.txt ${report.ok ? "are ready" : "need release-owner action"}`);
+  const scope = args.requireOptionalIds ? "Full cross-platform AdMob ids" : "Android production AdMob ids";
+  console.log(`[admob-readiness] ${status} - ${scope} and local app-ads.txt ${report.ok ? "are ready" : "need release-owner action"}`);
   for (const [key, value] of Object.entries(report.summary)) {
     console.log(`[admob-readiness] ${key}=${value}`);
   }

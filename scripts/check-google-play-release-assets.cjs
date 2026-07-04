@@ -361,20 +361,51 @@ function assertAdDeclarationMatchesArtifact(packet) {
     fail("package.json must expose google-play:app-ads:public-check for deployed root-domain app-ads.txt proof");
   }
 
+  if (packageJson.scripts?.["google-play:app-ads:public-check:zenflow"] !== "node scripts/check-app-ads-public.cjs --url https://yehor212.github.io/app-ads.txt") {
+    fail("package.json must expose google-play:app-ads:public-check:zenflow for repeatable ZenFlow public app-ads.txt proof");
+  }
+
   if (packageJson.scripts?.["google-play:admob:check"] !== "node scripts/check-admob-production-readiness.cjs") {
     fail("package.json must expose google-play:admob:check for real non-sample AdMob app/ad-unit ids");
+  }
+
+  if (packageJson.scripts?.["google-play:admob:check:full"] !== "node scripts/check-admob-production-readiness.cjs --strict-optional --require-optional") {
+    fail("package.json must expose google-play:admob:check:full for full cross-platform/banner+iOS AdMob readiness proof");
+  }
+
+  if (packageJson.scripts?.["google-play:admob:external-check"] !== "node scripts/check-admob-external-readiness.cjs") {
+    fail("package.json must expose google-play:admob:external-check for public-safe external AdMob readiness evidence");
+  }
+
+  if (packageJson.scripts?.["google-play:admob:external-check:pass"] !== "node scripts/check-admob-external-readiness.cjs --require-pass") {
+    fail("package.json must expose google-play:admob:external-check:pass before production ad readiness can be claimed");
   }
 
   if (packageJson.scripts?.["google-play:public-listing:check"] !== "node scripts/check-google-play-public-listing.cjs") {
     fail("package.json must expose google-play:public-listing:check for public Play ads/developer website proof");
   }
 
+  if (packageJson.scripts?.["google-play:privacy:public-check"] !== "node scripts/check-public-privacy-policy.cjs") {
+    fail("package.json must expose google-play:privacy:public-check for deployed public privacy policy proof");
+  }
+
+  if (packageJson.scripts?.["google-play:privacy:artifact-check"] !== "node scripts/check-public-privacy-policy.cjs --file output/pages-artifact.nosync/privacy.html") {
+    fail("package.json must expose google-play:privacy:artifact-check for staged GitHub Pages privacy artifact proof");
+  }
+
   assertIncludes(GOOGLE_PLAY_FIELD_PACKET, [
     "ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads",
     "ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads:check",
     "ZENFLOW_APP_ADS_PUBLIC_URL=https://your-developer-domain.example/app-ads.txt npm run google-play:app-ads:public-check",
+    "npm run google-play:app-ads:public-check:zenflow",
     "npm run google-play:public-listing:check",
+    "npm run google-play:privacy:artifact-check",
+    "post-deploy public privacy smoke",
+    "npm run google-play:privacy:public-check",
     "npm run google-play:admob:check",
+    "npm run google-play:admob:check:full",
+    "npm run google-play:admob:external-check",
+    "npm run google-play:admob:external-check:pass",
     "Do not hand-write the file",
     "do not use Google's sample publisher id",
     "Play Console/AdMob",
@@ -392,8 +423,15 @@ function assertAdDeclarationMatchesArtifact(packet) {
     "ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads",
     "npm run google-play:app-ads:check",
     "npm run google-play:app-ads:public-check",
+    "npm run google-play:app-ads:public-check:zenflow",
     "npm run google-play:public-listing:check",
+    "npm run google-play:privacy:artifact-check",
+    "post-deploy public privacy smoke",
+    "npm run google-play:privacy:public-check",
     "npm run google-play:admob:check",
+    "npm run google-play:admob:check:full",
+    "npm run google-play:admob:external-check",
+    "npm run google-play:admob:external-check:pass",
     "Do not invent this value",
     "Google's sample publisher id",
     "PUBLIC ROOT READY / ADMOB CRAWL PENDING",
@@ -412,6 +450,12 @@ function assertAdDeclarationMatchesArtifact(packet) {
     "No ads",
     "Contains ads",
     "google-play:public-listing:check",
+    "google-play:privacy:artifact-check",
+    "post-deploy public privacy smoke",
+    "google-play:privacy:public-check",
+    "google-play:admob:check:full",
+    "google-play:admob:external-check",
+    "google-play:admob:external-check:pass",
     "Verify app",
   ]);
 

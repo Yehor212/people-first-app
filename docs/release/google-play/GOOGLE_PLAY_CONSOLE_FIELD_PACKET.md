@@ -163,7 +163,7 @@ Adults and general wellness users. Not directed to children.
 Data safety note:
 
 ```text
-Declare only the data types actually collected by the current Android artifact. Mood, habit, and journal content are user-entered wellness data and must not be described as advertising data. Advertising ID and Android ad services permissions are present for the installed Google Mobile Ads / AdMob release path and should be declared only for ads/analytics purposes tied to that SDK.
+Declare only the data types actually collected by the current Android artifact. Mood, habit, and journal content are user-entered wellness data and must not be described as advertising data. Advertising ID and Android ad services permissions are present for the installed Google Mobile Ads / AdMob release path and should be declared only for ads/analytics purposes tied to that SDK. Before submitting, run `npm run google-play:privacy:artifact-check`, require the GitHub Pages post-deploy public privacy smoke to pass, then run `npm run google-play:privacy:public-check` and confirm the public privacy policy discloses Google Mobile Ads, UMP privacy choices, Advertising ID, optional rewarded ads, and Google Mobile Ads SDK data categories.
 ```
 
 ## Pre-Submit Checklist
@@ -207,8 +207,15 @@ settings update.
 ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads
 ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads:check
 ZENFLOW_APP_ADS_PUBLIC_URL=https://your-developer-domain.example/app-ads.txt npm run google-play:app-ads:public-check
+npm run google-play:app-ads:public-check:zenflow
 npm run google-play:public-listing:check
+npm run google-play:privacy:artifact-check
+# After GitHub Pages deploy, the post-deploy public privacy smoke must pass.
+npm run google-play:privacy:public-check
 npm run google-play:admob:check
+npm run google-play:admob:check:full
+npm run google-play:admob:external-check
+npm run google-play:admob:external-check:pass
 ```
 
 Do not hand-write the file and do not use Google's sample publisher id.
@@ -220,17 +227,26 @@ and real rewarded ad unit ID before production monetization can be called ready.
 Android release Gradle builds must also fail fast when `ZENFLOW_ADMOB_ANDROID_APP_ID`
 / `VITE_ADMOB_APP_ID_ANDROID` is missing or still points at a Google sample app ID.
 Unused banner/iOS sample IDs are warnings for the Android rewarded-only release
-path; use `npm run google-play:admob:check -- --strict-optional` for a stricter
-all-configured-ad-ID audit.
+path. Use `npm run google-play:admob:check:full` only for full
+cross-platform/banner+iOS monetization readiness; it requires every banner and
+iOS ad-unit ID to be configured, non-sample, and matched to the same publisher.
+Use `npm run google-play:admob:external-check` for the public-safe external
+readiness ledger. Use `npm run google-play:admob:external-check:pass` only for
+the current Android rewarded-only production gate; it must stay blocking while
+AdMob app readiness, Policy Center, Privacy & messages/CMP, payments/tax, Play
+Console Ads/Data safety, or live device ad playback is not freshly `PASS`.
+Use `npm run google-play:admob:external-check:full-pass` only for future full
+cross-platform/banner+iOS monetization readiness.
 
 Current public root proof for this app:
 
 ```bash
-ZENFLOW_APP_ADS_PUBLIC_URL=https://yehor212.github.io/app-ads.txt npm run google-play:app-ads:public-check
+npm run google-play:app-ads:public-check:zenflow
 ```
 
 5. Re-run the Android release manifest/build proof.
 6. Re-check Play Console Ads, Advertising ID, Data safety, store listing copy,
-   and the public Play listing ads label with `npm run google-play:public-listing:check`.
+   the public Play listing ads label with `npm run google-play:public-listing:check`,
+   and the public privacy policy with `npm run google-play:privacy:public-check`.
    The 2026-06-30 public listing proof shows the developer website, Google Play
    `Contains ads` signal, rewarded ads copy, and no stale `No ads` claim.

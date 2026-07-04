@@ -29,7 +29,7 @@
 </head>
 <body>
   <h1><img class="title-logo" src="/people-first-app/pwa-72.png?v=zenflow-browser-leaf-20260627-r7" width="40" height="40" alt="" aria-hidden="true">ZenFlow Privacy Policy</h1>
-  <p class="updated">Last updated: June 30, 2026</p>
+  <p class="updated">Last updated: July 3, 2026</p>
 
   <div class="notice">
     <p><strong>Summary:</strong> ZenFlow is local-first. Optional account sync, crash diagnostics, ads after consent, and journal audio recording require clear user action or consent. We do not sell your personal data.</p>
@@ -48,12 +48,12 @@
   <ul>
     <li><strong>Supabase:</strong> authentication, optional sync, and storage for synced user content.</li>
     <li><strong>Sentry:</strong> crash and error diagnostics. Error reports must not include journal text, raw audio payloads, or unnecessary personal content.</li>
-    <li><strong>AdMob:</strong> optional rewarded ads after consent on supported app builds. Ads are not shown inside active journaling, mood check-in, or focus moments.</li>
+    <li><strong>AdMob / Google Mobile Ads:</strong> optional rewarded ads after ZenFlow consent and Google consent on supported app builds. The Google Mobile Ads SDK may collect and share IP address, user product interactions such as ad views, taps, or video views, diagnostic information, and device/account identifiers such as Android Advertising ID or app set ID for advertising, analytics, and fraud prevention. Ads are not shown inside active journaling, mood check-in, or focus moments.</li>
     <li><strong>Firebase/Google services:</strong> may support analytics, crash diagnostics, notifications, or ads depending on platform build and consent settings.</li>
   </ul>
 
   <h2>5. Analytics, Ads, and Consent</h2>
-  <p>No-tracking mode disables optional analytics and ad consent. Analytics events, when enabled, should use privacy-safe fields and avoid user-written content. Advertising ID and ad-services declarations are tied to ads-enabled Android builds.</p>
+  <p>No-tracking mode disables optional analytics and ZenFlow ad consent. Analytics events, when enabled, should use privacy-safe fields and avoid user-written content. Advertising ID and ad-services declarations are tied to ads-enabled Android builds. Where Google User Messaging Platform (UMP) requires it, ZenFlow shows a Google ad privacy choices entry point in Settings so you can change or withdraw ad consent.</p>
 
   <h2>6. Data Safety Notes for Store Review</h2>
   <p>Store forms must match the actual artifact submitted for review. If the artifact includes microphone recording, Supabase sync, AdMob, Sentry, Firebase, or journal audio storage, those surfaces must be reflected in Data safety and privacy declarations.</p>
@@ -63,6 +63,7 @@
     <li>Use ZenFlow without signing in for local-first use.</li>
     <li>Turn off app sound, ambience, completion cues, reminder cues, or milestone cues in Settings.</li>
     <li>Disable no-tracking exceptions by enabling no-tracking mode.</li>
+    <li>Review Google ad privacy choices in Settings when Google requires a privacy-options entry point.</li>
     <li>Export or delete your data from Settings where supported.</li>
     <li>Revoke microphone permission in your browser or operating system settings.</li>
   </ul>

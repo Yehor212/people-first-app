@@ -79,10 +79,10 @@ export const AD_FREQUENCY = {
 
 export const AD_MOOD_RULES = {
   /** Moods where NO ads are shown at all */
-  blockedMoods: ['terrible'] as string[],
+  blockedMoods: ['terrible', 'bad'] as string[],
 
   /** Moods where ads are reduced (max 1 per session) */
-  reducedMoods: ['bad'] as string[],
+  reducedMoods: [] as string[],
 
   /** Max ads when mood is reduced */
   reducedMaxPerSession: 1,
@@ -109,7 +109,7 @@ export const AD_SAFE_ZONES = [
   'post_focus',        // After completing a focus session
   'daily_rewards',     // Daily rewards screen
   'stats_view',        // Viewing stats/achievements
-  'companion_low',     // Companion needs treats (low balance)
+  'companion_rewards', // Explicit optional rewards area in companion surface
   'settings',          // Settings page
 ] as const;
 

@@ -7,7 +7,7 @@
 
 ## 1. Goal
 
-Allow users to **voluntarily watch rewarded video ads** to earn bonus treats (in-app currency) that feed their companion and water their tree. Monetize the free tier without degrading the mental health experience. Premium users see zero ads.
+Allow users to **voluntarily watch rewarded video ads** to earn bonus treats (in-app currency) that can be spent later in the companion/tree economy. Monetize the free tier without degrading the mental health experience. Premium users see zero ads.
 
 **Success metrics:**
 - Rewarded ad opt-in rate > 30%
@@ -23,17 +23,17 @@ Allow users to **voluntarily watch rewarded video ads** to earn bonus treats (in
 |---|---|---|
 | **Free User** | Can watch rewarded ads, can decline, can toggle ad consent | Default actor |
 | **Premium User** | All ads disabled, no ad UI shown | $4.99/mo or $29.99/yr |
-| **Anonymous User** | Ads disabled until explicit opt-in | No ad SDK startup without consent |
+| **Anonymous User** | Ads disabled until explicit opt-in | No ad requests or rewarded UI without ZenFlow ad consent; UMP status may still refresh privacy choices |
 | **Ad SDK (AdMob)** | Renders video, reports completion | Client-side only, no SSV yet |
 | **Mood Gatekeeper** | Blocks/reduces ads based on mood | Automatic, not user-visible |
 
 ### Permission matrix:
 ```
 Free + adConsent=true  → Opt-in rewarded ads may initialize
-Free + adConsent=false → No ad SDK initialization, no ad UI
+Free + adConsent=false → No ad requests and no rewarded ad UI; UMP privacy-options status may still refresh when Google requires a Settings entry point
 Premium                → No ads at all
 mood=terrible          → All ads blocked
-mood=bad               → Max 1 ad per session
+mood=bad               → All ads blocked
 ```
 
 ---
@@ -44,19 +44,31 @@ All entry points are **opt-in buttons**, never auto-play.
 
 | # | Location | Trigger | Format | Button Label |
 |---|---|---|---|---|
-| 1 | **Daily Rewards** | After claiming today's reward | Compact button | "Watch to earn +20 treats" |
-| 2 | **Focus Timer** | After completing focus session (reflection dialog) | Compact button | "Watch to earn +20 treats" |
-| 3 | **Companion** | When treats balance < 10 (can't feed) | Card prompt | "Watch to earn +20 treats" |
-| 4 | **Inner World** | When water level < 20% (can't water tree) | Card prompt | "Watch to earn +20 treats" |
+| 1 | **Optional Rewards surface** | Future approved surface after separate UX review; never inside Privacy controls | Card prompt | "Optional ad: watch for a small bonus +20 treats" |
+| 2 | **Focus Timer** | Future only: deferred until after reflection is saved/dismissed; never inside the reflection dialog | Compact button | "Optional ad: watch for a small bonus +20 treats" |
+| 3 | **Companion** | Future only: user opens an explicit optional rewards area from the companion surface | Card prompt | "Optional ad: watch for a small bonus +20 treats" |
+| 4 | **Inner World** | Future only: user opens an explicit optional rewards area from the inner-world surface | Card prompt | "Optional ad: watch for a small bonus +20 treats" |
+
+### Psychological Safety Copy Rule
+
+No scarcity or guilt copy is allowed for rewarded ads. Reward playback controls
+must not be placed inside Privacy controls; Privacy is for consent, disclosure,
+and withdrawal only. Future companion/tree placements must not imply that the
+user has failed to care, that the companion or tree is suffering, that a streak
+or relationship is at risk, or that an ad is needed urgently. Banned patterns
+include loss timers, dependency pressure, implied neglect, resource shortage
+pressure, and any copy that frames watching as required before the user can feed
+or water. The prompt must stay framed as an optional bonus.
 
 ### Where ads NEVER appear (Sacred Zones):
 - Focus timer while running
+- Inside the focus reflection decision dialog
 - Breathing exercise while active
 - During mood logging flow
 - Inside journal editor
 - During meditation
 - During onboarding (first 3 days)
-- When mood = "terrible"
+- When mood = "terrible" or "bad"
 
 ---
 
@@ -71,7 +83,7 @@ All entry points are **opt-in buttons**, never auto-play.
 ┌─────────────┐
 │  AD_IDLE     │ ← Default: ad system ready, no prompt visible
 └──────┬──────┘
-       │ User navigates to safe zone (post_focus, daily_rewards, etc.)
+       │ User navigates to a safe reward zone (settings or explicit optional rewards area)
        ▼
 ┌─────────────┐
 │ AD_AVAILABLE │ ← "Watch" button visible (passes all gates)
@@ -129,17 +141,17 @@ All entry points are **opt-in buttons**, never auto-play.
 ## 5. Verification & Authorization
 
 ### GDPR Consent Flow:
-1. First launch → `ConsentBanner` asks for analytics (existing)
-2. First time user enters a safe zone with ads available → small inline banner: "Earn bonus treats by watching short videos. We use ads to keep the app free." with "Allow" / "No thanks"
-3. Consent stored in `PrivacySettings.adConsent`
-4. Can be changed anytime in Settings → Privacy
+1. ZenFlow local preference gates whether rewarded ads may initialize: `PrivacySettings.adConsent === true` and no-tracking off.
+2. Native builds request fresh Google UMP consent information on ad initialization.
+3. If Google UMP requires consent, the native Google consent form is shown before ads can be requested.
+4. If Google UMP requires a privacy-options entry point, Settings shows "Google ad privacy choices" so consent can be changed or withdrawn.
 
 ### Ad Reward Verification:
-- **Phase 1 (current):** Client-side only. AdMob SDK reports completion → award treats.
+- **Phase 1 (current):** Client-side only. Award treats only after `RewardAdPluginEvents.Rewarded`; `Dismissed` alone never grants reward.
 - **Phase 2 (future):** Server-Side Verification (SSV) via Supabase Edge Function. AdMob callback → verify → award.
 
 ### Anti-Cheat (Phase 1 — simple):
-- Cooldown tracked via `performance.now()` (not `Date.now()`) — immune to clock manipulation
+- Cooldown tracked locally with persisted daily count and session memory. This is acceptable for a small optional reward; Phase 2 SSV can harden it.
 - Daily count in localStorage + date check
 - Session count in memory (resets on app restart)
 - Max 5 rewarded per day, 3 per session
@@ -174,7 +186,7 @@ All entry points are **opt-in buttons**, never auto-play.
 | Two tabs open (PWA) | localStorage-based count is shared, so double-counting prevented |
 | User clears localStorage | Counts reset — they get ads again (acceptable, no exploit concern) |
 | `mood` changes while ad is playing | Irrelevant — mood check happens before showing, not during |
-| Companion at max fullness | Button still shown (treats add to balance for later) |
+| Companion at max fullness | Optional reward surfaces do not depend on fullness or resource scarcity; treats add to balance for later |
 | First-time user (onboarding) | No ads for first 3 days (check `OnboardingState.daysActive < 4`) |
 
 ---
@@ -182,12 +194,12 @@ All entry points are **opt-in buttons**, never auto-play.
 ## 8. Copy (exact button labels/messages)
 
 ### Button Labels:
-| Key | EN | RU | UK |
-|---|---|---|---|
-| `adWatchToEarn` | Watch to earn | Смотри и получай | Дивись і отримуй |
-| `adWatch` | Watch | Смотреть | Дивитись |
-| `adRemaining` | left today | осталось сегодня | залишилось сьогодні |
-| `treats` | treats | угощений | ласощів |
+| Key | EN |
+|---|---|
+| `adWatchToEarn` | Optional ad: watch for a small bonus |
+| `adWatch` | Watch optional ad |
+| `adRewardLabel` | +{treats} treats |
+| `adRemainingToday` | Daily optional limit applies |
 
 ### Reward Toast (after watching):
 ```
@@ -211,17 +223,17 @@ N/A — the system is invisible when unavailable.
 | Vector | Mitigation |
 |---|---|
 | Rapid ad watching for treats | 3min cooldown + 5/day cap + 3/session cap |
-| Clock manipulation | `performance.now()` for cooldowns (monotonic) |
-| Fake ad completion | AdMob SDK validates completion; Phase 2: SSV |
+| Clock manipulation | Daily count is local and low-value; Phase 2 SSV can harden it |
+| Fake ad completion | Reward requires AdMob rewarded event; Phase 2: SSV |
 | Bot watching | Native-only (no PWA ads) + AdMob has bot detection |
 | Ad injection/tampering | HTTPS only + AdMob SDK integrity |
 
 ### Privacy:
-- **No ad SDK without consent.** `adConsent = false` → no ad initialization and no ad UI
-- **No data sent to ad networks** beyond what AdMob SDK collects (device ID, app context)
+- **No ad requests or rewarded UI without ZenFlow ad consent.** `adConsent = false` prevents ad initialization for requests and hides rewarded prompts; UMP privacy-options status may still be checked so required Google privacy choices remain reachable in Settings.
+- **No journal, mood note, habit name, gratitude text, or focus note is sent to ad networks.** The Google Mobile Ads SDK may process device identifiers, app context, ad interactions, and consent signals as needed to request ads.
 - **Mood data NEVER sent** to ad networks — mood gating is 100% client-side
 - **Premium removes all ad code paths** — no SDK initialization at all
-- User can revoke `adConsent` anytime in Settings → Privacy
+- User can revoke ZenFlow `adConsent` anytime in Settings → Privacy. When Google UMP requires it, the app also shows Google ad privacy choices.
 - GDPR Article 7: separate consent for analytics and ads
 
 ### Current release status:
@@ -230,10 +242,10 @@ N/A — the system is invisible when unavailable.
   manifest must request `com.google.android.gms.permission.AD_ID`.
 - **Play Console must match the artifact.** App content declarations for this
   release path are `Ads = Yes` and `Advertising ID = Yes`.
-- **Production monetization still needs real external AdMob values.** The repo
+- **Production monetization requires owner-controlled AdMob values.** The repo
   accepts `VITE_ADMOB_APP_ID_ANDROID` and `VITE_ADMOB_REWARDED_ID_ANDROID`;
-  test IDs are allowed only for development builds. Add `public/app-ads.txt`
-  only after copying the real AdMob publisher line.
+  test IDs are allowed only for development builds. `public/app-ads.txt` must
+  match the real AdMob publisher line and be verified at the public root domain.
 - **User experience stays opt-in.** No banners, pop-ups, or interstitials are
   allowed in mood check-ins, active focus, or journaling; rewarded ads initialize
   only after ZenFlow privacy consent plus native Google consent.
@@ -251,22 +263,22 @@ N/A — the system is invisible when unavailable.
 
 | Component | File | Purpose |
 |---|---|---|
-| `RewardedAdPrompt` | `src/components/ads/RewardedAdPrompt.tsx` | Opt-in "Watch to earn" button. Two modes: compact (inline) and card. |
+| `RewardedAdPrompt` | `src/components/ads/RewardedAdPrompt.tsx` | Opt-in optional-ad button. Two modes: compact (inline) and card. |
 | `AdProvider` | `src/contexts/AdContext.tsx` | React context. Manages SDK init, mood gating, reward callbacks. |
 
 ### Modified Components:
 
 | Component | Change |
 |---|---|
-| `DailyRewards.tsx` | Added `<RewardedAdPrompt context="daily_rewards" compact />` after claim |
-| `FocusTimer.tsx` | Added `<RewardedAdPrompt context="post_focus" compact />` in reflection dialog |
+| `PrivacySection.tsx` | Shows ad consent and Google UMP privacy-options controls only; it must not mount rewarded playback UI |
+| `V2SettingsDataPanels.tsx` | Shows V2 ad consent and Google UMP privacy-options controls only; it must not mount rewarded playback UI |
 
 ### Future Components (not yet built):
 
 | Component | Purpose |
 |---|---|
 | `AdConsentInline` | Small inline consent banner for first ad encounter |
-| `CompanionAdPrompt` | "Need treats? Watch a short video" when balance < 10 |
+| `OptionalRewardsPrompt` | Neutral optional bonus prompt, never tied to companion/tree dependency, urgency, or neglect pressure |
 
 ### Component Hierarchy:
 ```
@@ -274,13 +286,12 @@ N/A — the system is invisible when unavailable.
   <AdProvider adConsent={canInitializeRewardedAds(privacy)} isPremium={false}
               onEarnTreats={earnTreats} onEarnXp={awardXp}>
     <Index>
-      <DailyRewards>
-        <RewardedAdPrompt context="daily_rewards" />  ← after claim
-      </DailyRewards>
-      <FocusTimer>
-        [reflection dialog]
-          <RewardedAdPrompt context="post_focus" />    ← after save/skip
-      </FocusTimer>
+      <SettingsPrivacyPanel>
+        [ad consent toggle + Google privacy choices only]
+      </SettingsPrivacyPanel>
+      <OptionalRewardsSurface>
+        <RewardedAdPrompt context="settings" />  ← future approved rewards surface, outside Privacy controls
+      </OptionalRewardsSurface>
     </Index>
   </AdProvider>
 </App>
@@ -298,8 +309,13 @@ AdMob.initialize({ initializeForTesting: boolean });
 // Prepare rewarded ad
 AdMob.prepareRewardVideoAd({ adId: string }): Promise<void>;
 
-// Show rewarded ad
-AdMob.showRewardVideoAd(): Promise<{ type: 'earned' | 'dismissed' }>;
+// Show rewarded ad; reward is confirmed by event, not by dismissal.
+AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward) => void);
+AdMob.addListener(RewardAdPluginEvents.Dismissed, () => void);
+AdMob.showRewardVideoAd(): Promise<unknown>;
+
+// Google UMP privacy choices when required.
+AdMob.showPrivacyOptionsForm(): Promise<void>;
 ```
 
 ### Internal API (adController.ts):
@@ -312,6 +328,9 @@ canShowRewardedAd(currentMood?: string): { allowed: boolean; reason?: string };
 
 // Show ad
 showRewardedAd(): Promise<{ success: boolean; rewarded: boolean; error?: string }>;
+
+// Disable native ads fail-closed after local consent revocation or premium changes
+disableAds(options?: { clearPrivacyOptions?: boolean }): void;
 
 // State
 getAdState(): AdControllerState;
@@ -350,8 +369,8 @@ Phase 2 would add a Supabase Edge Function for SSV verification.
 ### Phase 2: Integration (DONE)
 | File | Status | Change |
 |---|---|---|
-| `src/components/DailyRewards.tsx` | ✅ Modified | Added RewardedAdPrompt after claim |
-| `src/components/FocusTimer.tsx` | ✅ Modified | Added RewardedAdPrompt in reflection |
+| `src/components/settings/PrivacySection.tsx` | ✅ Modified | Added rewarded prompt inside the privacy control surface |
+| `src/pages/nav-v2/settings/V2SettingsDataPanels.tsx` | ✅ Modified | Added rewarded prompt inside the V2 privacy control surface |
 | `src/i18n/translations.ts` | ✅ Modified | 4 keys × 9 languages |
 
 ### Phase 3: Native App Wiring
@@ -360,8 +379,8 @@ Phase 2 would add a Supabase Edge Function for SSV verification.
 | DONE | Install `@capacitor-community/admob` | `package.json` |
 | DONE | Wrap V1/V2 app shells with `<AdProvider>` | `src/pages/IndexV1Impl.tsx`, `src/pages/Index.tsx` |
 | DONE | Pass `earnTreats`/`awardXp` callbacks | `src/pages/IndexV1Impl.tsx`, `src/pages/Index.tsx` |
-| TODO | Feed current mood to `setCurrentMood()` | `src/pages/Index.tsx` |
-| TODO | Add companion low-treats prompt | `src/components/garden/CompanionCard.tsx` |
+| DONE | Feed current mood to AdProvider | `src/pages/Index.tsx` |
+| TODO | Add optional rewards entry without scarcity or guilt copy | Future component |
 | TODO | Add inline ad consent | New component |
 
 ### Phase 4: Premium Tier (TODO)
@@ -391,8 +410,8 @@ Phase 2 would add a Supabase Edge Function for SSV verification.
 | A4 | Session cap | 3 per session | 2, 5 | Low — can adjust |
 | A5 | Cooldown | 3 minutes | 1, 5, 10 min | Low — can adjust |
 | A6 | Dismiss cooldown | 10 minutes | 5, 15, 30 min | Low — can adjust |
-| A7 | Mood blocking | terrible = blocked | terrible+bad = blocked | Medium — chose less aggressive |
-| A8 | Mood reduction | bad = max 1/session | bad = max 0 | Medium — allows 1 for engagement |
+| A7 | Mood blocking | terrible+bad = blocked | terrible only | Medium — chose mental-health safety over engagement |
+| A8 | Mood reduction | none currently | bad = max 1/session | Low — low mood is blocked instead |
 | A9 | No interstitials | Correct — only rewarded | Could add 1 interstitial/day on comeback | **Strong opinion**: interstitials damage mental health apps |
 | A10 | No banners | Correct — clean UI | Could add small banner in stats | **Strong opinion**: banners cheapen the premium feel |
 | A11 | Premium price | $4.99/mo | $2.99, $6.99, $9.99 | Medium — market-dependent |
@@ -410,10 +429,10 @@ Phase 2 would add a Supabase Edge Function for SSV verification.
 | C3 | 20 treats per ad vs 10 for completing a habit | ✅ OK | Ad reward is intentionally generous to incentivize watching. But habits still give XP + streak + garden growth + companion mood — ads only give treats. |
 | C4 | Premium removes ads but ad system uses treats | ✅ OK | Premium users earn treats normally through activities. Treats economy works independently of ads. Ads are just a bonus earner. |
 | C5 | `canShowRewardedAd` checks mood but mood can change | ✅ OK | Check happens at button render time. If mood changes while button is visible, next render hides it. If mood changes while ad plays, irrelevant — ad is already shown. |
-| C6 | Sacred zones list vs safe zones list — overlap? | ✅ OK | No overlap. Sacred = actively doing something (focus running). Safe = viewing results (post-focus). Mutually exclusive. |
+| C6 | Sacred zones list vs safe zones list — overlap? | ✅ Fixed | No ads inside the focus reflection decision dialog. Post-focus ads must be deferred until after reflection save/dismiss if reintroduced. |
 | C7 | First-time user sees ad buttons before consent | ✅ Fixed | AdProvider checks `adConsent` — if false, `adsAvailable = false`, no buttons rendered. |
 | C8 | PWA users see broken ad buttons | ✅ OK | `Capacitor.isNativePlatform()` check — PWA skips SDK init entirely. All ad UI hidden. |
 | C9 | Arabic/Hebrew RTL + ad button layout | ✅ OK | Using flexbox `gap` and Tailwind — naturally RTL-compatible. No absolute positioning in ad prompt. |
-| C10 | Focus timer reflection + ad prompt — too much UI? | ✅ OK | Ad prompt is compact (small inline button below save/skip). Hidden when ads unavailable. Doesn't interfere with reflection flow. |
+| C10 | Focus timer reflection + ad prompt — too much UI? | ✅ Fixed | The reflection dialog no longer renders rewarded ads; the user's reflection choice is protected from monetization pressure. |
 | C11 | `performance.now()` resets on page reload | ✅ OK | Session cooldowns are in-memory (intentional). Only daily count persists in localStorage. Reloading the app resets the 3-min cooldown — acceptable trade-off vs complexity. |
 | C12 | User watches ad → app crashes → treats not saved | ✅ Acceptable | Small amount (20 treats). Treats are saved to IndexedDB via `setWorld()` which is called by `onEarnTreats` callback immediately after ad completion. Crash would have to happen in the <100ms between callback and IndexedDB write. |

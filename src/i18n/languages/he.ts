@@ -799,9 +799,9 @@ const hebrewOverrides: Partial<Translations> = {
   claim: "דרוש",
   streakBonus: "בונוס רצף",
   dailyRewardsTip: "התחבר יומית לתגמולים",
-  adWatchToEarn: "צפה והרוויח",
-  adWatch: "צפייה",
-  adRemaining: "נותרו היום",
+  adWatchToEarn: "מודעה אופציונלית: צפייה עבור בונוס קטן",
+  adWatch: "צפייה במודעה אופציונלית",
+  adRemaining: "חל מגבלה יומית אופציונלית",
   innerWorld: "העולם הפנימי",
   tapToInteract: "הקש לאינטראקציה",
 

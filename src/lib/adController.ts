@@ -18,7 +18,7 @@ import {
   isGoogleTestAdUnit,
 } from '@/lib/adConfig';
 import { SK } from '@/lib/storageKeys';
-import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
+import { safeJsonParse, storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 
 // ============================================
 // TYPES
@@ -27,6 +27,9 @@ import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 export interface AdControllerState {
   initialized: boolean;
   sdkAvailable: boolean;
+  canRequestAds: boolean;
+  privacyOptionsRequired: boolean;
+  consentStatus?: string;
   rewardedReady: boolean;
   sessionAdCount: number;
   lastAdTime: number;
@@ -39,6 +42,24 @@ interface RewardedAdResult {
   error?: string;
 }
 
+interface PrivacyOptionsResult {
+  opened: boolean;
+  canRequestAds: boolean;
+  privacyOptionsRequired: boolean;
+  error?: string;
+}
+
+interface AdPrivacyOptionsStatus {
+  canRequestAds: boolean;
+  privacyOptionsRequired: boolean;
+  error?: string;
+}
+
+interface RewardedOutcome {
+  rewarded: boolean;
+  error?: string;
+}
+
 // ============================================
 // STATE
 // ============================================
@@ -46,6 +67,8 @@ interface RewardedAdResult {
 const state: AdControllerState = {
   initialized: false,
   sdkAvailable: false,
+  canRequestAds: false,
+  privacyOptionsRequired: false,
   rewardedReady: false,
   sessionAdCount: 0,
   lastAdTime: 0,
@@ -53,34 +76,151 @@ const state: AdControllerState = {
 };
 
 let AdMobPlugin: any = null; // any: Capacitor AdMob plugin type is loaded dynamically
+let AdMobModule: any = null;
+let adLifecycleEpoch = 0;
+const AD_ONBOARDING_GRACE_DAYS = 3;
+
+interface StoredOnboardingAdState {
+  isNewUser?: boolean;
+  daysActive?: number;
+}
+
+interface DisableAdsOptions {
+  clearPrivacyOptions?: boolean;
+}
+
+function isLifecycleCurrent(epoch: number): boolean {
+  return epoch === adLifecycleEpoch;
+}
+
+function resetAdAvailability(options: DisableAdsOptions = {}): void {
+  state.initialized = false;
+  state.sdkAvailable = false;
+  state.canRequestAds = false;
+  if (options.clearPrivacyOptions) state.privacyOptionsRequired = false;
+  state.consentStatus = undefined;
+  state.rewardedReady = false;
+}
+
+export function disableAds(options: DisableAdsOptions = {}): void {
+  adLifecycleEpoch += 1;
+  resetAdAvailability(options);
+}
 
 function getNativeAdPlatform(): AdPlatform | null {
   return platform === 'android' || platform === 'ios' ? platform : null;
 }
 
-async function canRequestNativeAds(module: any): Promise<boolean> {
+function isWithinOnboardingAdGracePeriod(): boolean {
+  const raw = storageGetRaw(SK.ONBOARDING_STATE, '');
+  const onboarding = safeJsonParse<StoredOnboardingAdState | null>(raw, null);
+  if (onboarding?.isNewUser === false) return false;
+
+  const daysActive = Number(onboarding?.daysActive ?? 1);
+  const normalizedDaysActive = Number.isFinite(daysActive) && daysActive > 0 ? daysActive : 1;
+  return normalizedDaysActive <= AD_ONBOARDING_GRACE_DAYS;
+}
+
+async function canRequestNativeAds(module: any, lifecycleEpoch: number): Promise<boolean> {
   if (!AdMobPlugin || typeof AdMobPlugin.requestConsentInfo !== 'function') {
-    return true;
+    state.canRequestAds = false;
+    state.privacyOptionsRequired = false;
+    return false;
   }
 
   try {
-    const requiredStatus = module.AdmobConsentStatus?.REQUIRED ?? 'REQUIRED';
-    const obtainedStatus = module.AdmobConsentStatus?.OBTAINED ?? 'OBTAINED';
-    const notRequiredStatus = module.AdmobConsentStatus?.NOT_REQUIRED ?? 'NOT_REQUIRED';
-    let consentInfo = await AdMobPlugin.requestConsentInfo({
-      tagForUnderAgeOfConsent: false,
-    });
-
-    if (consentInfo?.isConsentFormAvailable && consentInfo.status === requiredStatus) {
-      consentInfo = await AdMobPlugin.showConsentForm();
-    }
-
-    return consentInfo?.canRequestAds === true ||
-      consentInfo?.status === obtainedStatus ||
-      consentInfo?.status === notRequiredStatus;
+    return await requestNativeConsentInfo(module, { showFormIfRequired: true, lifecycleEpoch });
   } catch (err) {
+    state.canRequestAds = false;
     logger.warn('[Ads] Consent check failed; ads disabled for this session:', err);
     return false;
+  }
+}
+
+function updateConsentState(module: any, consentInfo: any): boolean {
+  const privacyRequiredStatus = module?.PrivacyOptionsRequirementStatus?.REQUIRED ?? 'REQUIRED';
+  const canRequestAds = consentInfo?.canRequestAds === true;
+
+  state.canRequestAds = canRequestAds;
+  state.consentStatus = typeof consentInfo?.status === 'string' ? consentInfo.status : undefined;
+  state.privacyOptionsRequired =
+    consentInfo?.privacyOptionsRequirementStatus === privacyRequiredStatus;
+
+  return canRequestAds;
+}
+
+async function requestNativeConsentInfo(
+  module: any,
+  options: { showFormIfRequired: boolean; lifecycleEpoch?: number },
+): Promise<boolean> {
+  const requiredStatus = module?.AdmobConsentStatus?.REQUIRED ?? 'REQUIRED';
+  let consentInfo = await AdMobPlugin.requestConsentInfo({
+    tagForUnderAgeOfConsent: false,
+  });
+
+  if (options.lifecycleEpoch !== undefined && !isLifecycleCurrent(options.lifecycleEpoch)) {
+    return false;
+  }
+
+  updateConsentState(module, consentInfo);
+
+  if (
+    options.showFormIfRequired &&
+    consentInfo?.isConsentFormAvailable &&
+    consentInfo.status === requiredStatus &&
+    typeof AdMobPlugin.showConsentForm === 'function'
+  ) {
+    consentInfo = await AdMobPlugin.showConsentForm();
+    if (options.lifecycleEpoch !== undefined && !isLifecycleCurrent(options.lifecycleEpoch)) {
+      return false;
+    }
+    updateConsentState(module, consentInfo);
+  }
+
+  return state.canRequestAds;
+}
+
+async function loadAdMobModule(): Promise<any | null> {
+  if (!isNative) return null;
+  if (AdMobPlugin && AdMobModule) return AdMobModule;
+
+  // Dynamic import — if package isn't installed, this throws
+  // @vite-ignore keeps the app resilient if the native package is omitted in web-only builds.
+  const moduleName = '@capacitor-community/admob';
+  const module = await import(/* @vite-ignore */ moduleName);
+  AdMobPlugin = module.AdMob;
+  AdMobModule = module;
+  return module;
+}
+
+export async function refreshAdPrivacyOptionsStatus(): Promise<AdPrivacyOptionsStatus> {
+  if (!isNative) {
+    state.canRequestAds = false;
+    state.privacyOptionsRequired = false;
+    return { canRequestAds: false, privacyOptionsRequired: false, error: 'native_unavailable' };
+  }
+
+  try {
+    const module = await loadAdMobModule();
+    if (!module || !AdMobPlugin || typeof AdMobPlugin.requestConsentInfo !== 'function') {
+      state.canRequestAds = false;
+      state.privacyOptionsRequired = false;
+      return { canRequestAds: false, privacyOptionsRequired: false, error: 'consent_api_unavailable' };
+    }
+
+    await requestNativeConsentInfo(module, { showFormIfRequired: false });
+    return {
+      canRequestAds: state.canRequestAds,
+      privacyOptionsRequired: state.privacyOptionsRequired,
+    };
+  } catch (err) {
+    state.canRequestAds = false;
+    logger.warn('[Ads] Privacy options status refresh failed:', err);
+    return {
+      canRequestAds: false,
+      privacyOptionsRequired: state.privacyOptionsRequired,
+      error: 'privacy_options_status_failed',
+    };
   }
 }
 
@@ -94,6 +234,7 @@ async function canRequestNativeAds(module: any): Promise<boolean> {
  */
 export async function initializeAds(): Promise<boolean> {
   if (state.initialized) return state.sdkAvailable;
+  const lifecycleEpoch = adLifecycleEpoch;
 
   // Only native platforms have AdMob
   if (!isNative) {
@@ -112,11 +253,9 @@ export async function initializeAds(): Promise<boolean> {
       return false;
     }
 
-    // Dynamic import — if package isn't installed, this throws
-    // @vite-ignore keeps the app resilient if the native package is omitted in web-only builds.
-    const moduleName = '@capacitor-community/admob';
-    const module = await import(/* @vite-ignore */ moduleName);
-    AdMobPlugin = module.AdMob;
+    const module = await loadAdMobModule();
+    if (!module || !AdMobPlugin) throw new Error('AdMob module unavailable');
+    if (!isLifecycleCurrent(lifecycleEpoch)) return false;
 
     await AdMobPlugin.initialize({
       initializeForTesting: IS_DEV,
@@ -124,11 +263,22 @@ export async function initializeAds(): Promise<boolean> {
       tagForUnderAgeOfConsent: false,
       maxAdContentRating: module.MaxAdContentRating?.General ?? 'General',
     });
+    if (!isLifecycleCurrent(lifecycleEpoch)) return false;
 
-    if (!(await canRequestNativeAds(module))) {
+    if (!(await canRequestNativeAds(module, lifecycleEpoch))) {
+      if (!isLifecycleCurrent(lifecycleEpoch)) return false;
       state.initialized = true;
       state.sdkAvailable = false;
       logger.log('[Ads] Consent not available — ads disabled');
+      return false;
+    }
+    if (!isLifecycleCurrent(lifecycleEpoch)) return false;
+
+    if (isWithinOnboardingAdGracePeriod()) {
+      state.initialized = true;
+      state.sdkAvailable = false;
+      state.rewardedReady = false;
+      logger.log('[Ads] Onboarding grace period — rewarded ads disabled');
       return false;
     }
 
@@ -148,6 +298,48 @@ export async function initializeAds(): Promise<boolean> {
   }
 }
 
+/**
+ * Open the Google UMP privacy options form when the SDK requires a revocation entry point.
+ */
+export async function showAdPrivacyOptions(): Promise<PrivacyOptionsResult> {
+  if (!isNative || !AdMobPlugin || !AdMobModule || typeof AdMobPlugin.showPrivacyOptionsForm !== 'function') {
+    return {
+      opened: false,
+      canRequestAds: state.canRequestAds,
+      privacyOptionsRequired: state.privacyOptionsRequired,
+      error: 'privacy_options_unavailable',
+    };
+  }
+
+  try {
+    await AdMobPlugin.showPrivacyOptionsForm();
+
+    if (typeof AdMobPlugin.requestConsentInfo === 'function') {
+      await requestNativeConsentInfo(AdMobModule, { showFormIfRequired: false });
+    }
+
+    state.sdkAvailable = state.initialized && state.canRequestAds;
+
+    if (state.sdkAvailable) {
+      prepareRewardedAd().catch(err => logger.warn('[Ads]', 'Rewarded ad preload failed:', err));
+    }
+
+    return {
+      opened: true,
+      canRequestAds: state.canRequestAds,
+      privacyOptionsRequired: state.privacyOptionsRequired,
+    };
+  } catch (err) {
+    logger.warn('[Ads] Privacy options form failed:', err);
+    return {
+      opened: false,
+      canRequestAds: state.canRequestAds,
+      privacyOptionsRequired: state.privacyOptionsRequired,
+      error: 'privacy_options_failed',
+    };
+  }
+}
+
 // ============================================
 // REWARDED ADS — user-initiated, opt-in only
 // ============================================
@@ -157,6 +349,7 @@ export async function initializeAds(): Promise<boolean> {
  */
 async function prepareRewardedAd(): Promise<void> {
   if (!state.sdkAvailable || !AdMobPlugin) return;
+  const lifecycleEpoch = adLifecycleEpoch;
 
   try {
     const targetPlatform = getNativeAdPlatform();
@@ -168,11 +361,96 @@ async function prepareRewardedAd(): Promise<void> {
       isTesting: IS_DEV || isGoogleTestAdUnit(adId),
       npa: true,
     });
+    if (!isLifecycleCurrent(lifecycleEpoch) || !state.sdkAvailable) return;
     state.rewardedReady = true;
   } catch (err) {
     state.rewardedReady = false;
     logger.warn('[Ads] Failed to prepare rewarded ad:', err);
   }
+}
+
+function getRewardedEventNames(module: any): {
+  rewarded: string;
+  dismissed: string;
+  failedToShow: string;
+} {
+  const events = module?.RewardAdPluginEvents ?? {};
+
+  return {
+    rewarded: events.Rewarded ?? 'onRewardedVideoAdReward',
+    dismissed: events.Dismissed ?? 'onRewardedVideoAdDismissed',
+    failedToShow: events.FailedToShow ?? 'onRewardedVideoAdFailedToShow',
+  };
+}
+
+async function removeAdListeners(handles: Array<{ remove?: () => Promise<void> | void }>): Promise<void> {
+  await Promise.all(handles.map(async (handle) => {
+    try {
+      await handle.remove?.();
+    } catch (err) {
+      logger.warn('[Ads] Failed to remove ad listener:', err);
+    }
+  }));
+}
+
+async function showRewardVideoAndWaitForOutcome(): Promise<RewardedOutcome> {
+  if (!AdMobPlugin || typeof AdMobPlugin.showRewardVideoAd !== 'function') {
+    return { rewarded: false, error: 'sdk_unavailable' };
+  }
+
+  if (typeof AdMobPlugin.addListener !== 'function') {
+    const result = await AdMobPlugin.showRewardVideoAd();
+    return result && (result.amount !== undefined || result.type !== undefined)
+      ? { rewarded: true }
+      : { rewarded: false, error: 'dismissed_or_failed' };
+  }
+
+  const eventNames = getRewardedEventNames(AdMobModule);
+  const handles: Array<{ remove?: () => Promise<void> | void }> = [];
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const settle = (outcome: RewardedOutcome) => {
+      if (settled) return;
+      settled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+      void removeAdListeners(handles);
+      resolve(outcome);
+    };
+
+    const registerListeners = async () => {
+      handles.push(await AdMobPlugin.addListener(eventNames.rewarded, () => {
+        settle({ rewarded: true });
+      }));
+      handles.push(await AdMobPlugin.addListener(eventNames.dismissed, () => {
+        settle({ rewarded: false, error: 'dismissed_or_failed' });
+      }));
+      handles.push(await AdMobPlugin.addListener(eventNames.failedToShow, () => {
+        settle({ rewarded: false, error: 'dismissed_or_failed' });
+      }));
+
+      timeoutId = setTimeout(() => {
+        settle({ rewarded: false, error: 'dismissed_or_failed' });
+      }, 45_000);
+
+      try {
+        const result = await AdMobPlugin.showRewardVideoAd();
+        if (result && (result.amount !== undefined || result.type !== undefined)) {
+          settle({ rewarded: true });
+        }
+      } catch (err) {
+        logger.warn('[Ads] Rewarded ad show call failed:', err);
+        settle({ rewarded: false, error: 'dismissed_or_failed' });
+      }
+    };
+
+    registerListeners().catch((err) => {
+      logger.warn('[Ads] Rewarded ad listener setup failed:', err);
+      settle({ rewarded: false, error: 'dismissed_or_failed' });
+    });
+  });
 }
 
 /**
@@ -183,6 +461,10 @@ export function canShowRewardedAd(currentMood?: string): {
   allowed: boolean;
   reason?: string;
 } {
+  if (isWithinOnboardingAdGracePeriod()) {
+    return { allowed: false, reason: 'onboarding_grace_period' };
+  }
+
   if (!state.sdkAvailable) {
     return { allowed: false, reason: 'sdk_unavailable' };
   }
@@ -248,7 +530,17 @@ export async function showRewardedAd(): Promise<RewardedAdResult> {
       await prepareRewardedAd();
     }
 
-    const _result = await AdMobPlugin.showRewardVideoAd();
+    const outcome = await showRewardVideoAndWaitForOutcome();
+
+    if (!outcome.rewarded) {
+      state.lastDismissTime = Date.now();
+      state.rewardedReady = false;
+
+      // Pre-load next ad
+      prepareRewardedAd().catch(err => logger.warn('[Ads]', 'Rewarded ad preload failed:', err));
+
+      return { success: false, rewarded: false, error: outcome.error ?? 'dismissed_or_failed' };
+    }
 
     // Track counts
     state.sessionAdCount++;

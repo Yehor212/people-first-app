@@ -3,6 +3,7 @@
 
 const DEFAULT_PACKAGE_NAME = "com.zenflow.app";
 const DEFAULT_DEVELOPER_WEBSITE = "https://yehor212.github.io/people-first-app/";
+const DEFAULT_PRIVACY_POLICY_URL = "https://yehor212.github.io/people-first-app/privacy.html";
 const DEFAULT_LOCALE = "en_US";
 const OLD_NO_ADS_CLAIM = "No ads. No selling your data. Ever.";
 
@@ -13,6 +14,7 @@ function normalizeText(value) {
 function evaluateGooglePlayListingHtml({
   html,
   expectedDeveloperWebsite = DEFAULT_DEVELOPER_WEBSITE,
+  expectedPrivacyPolicyUrl = DEFAULT_PRIVACY_POLICY_URL,
   requiredRewardedAdsText = true,
   requireContainsAds = true,
 }) {
@@ -20,6 +22,7 @@ function evaluateGooglePlayListingHtml({
   const issues = [];
   const signals = {
     developerWebsiteVisible: body.includes(expectedDeveloperWebsite),
+    privacyPolicyVisible: body.includes(expectedPrivacyPolicyUrl),
     oldNoAdsClaimVisible: body.includes(OLD_NO_ADS_CLAIM),
     rewardedAdsVisible: /optional rewarded ads|rewarded ads/i.test(body),
     containsAdsVisible: /Contains ads/i.test(body),
@@ -27,6 +30,9 @@ function evaluateGooglePlayListingHtml({
 
   if (!signals.developerWebsiteVisible) {
     issues.push({ code: "developer_website_missing", message: "Public listing must expose " + expectedDeveloperWebsite });
+  }
+  if (!signals.privacyPolicyVisible) {
+    issues.push({ code: "privacy_policy_missing", message: "Public listing must expose " + expectedPrivacyPolicyUrl });
   }
   if (signals.oldNoAdsClaimVisible) {
     issues.push({ code: "old_no_ads_claim_visible", message: "Public listing must not expose the old no-ads claim" });
@@ -53,11 +59,12 @@ async function main() {
   const packageName = process.env.ZENFLOW_GOOGLE_PLAY_PACKAGE || DEFAULT_PACKAGE_NAME;
   const locale = process.env.ZENFLOW_GOOGLE_PLAY_LOCALE || DEFAULT_LOCALE;
   const expectedDeveloperWebsite = process.env.ZENFLOW_PLAY_DEVELOPER_WEBSITE || DEFAULT_DEVELOPER_WEBSITE;
+  const expectedPrivacyPolicyUrl = process.env.ZENFLOW_PLAY_PRIVACY_POLICY_URL || DEFAULT_PRIVACY_POLICY_URL;
   const url = process.env.ZENFLOW_GOOGLE_PLAY_LISTING_URL || listingUrl({ packageName, locale });
 
   const response = await fetch(url, { redirect: "follow" });
   const html = await response.text();
-  const report = evaluateGooglePlayListingHtml({ html, expectedDeveloperWebsite });
+  const report = evaluateGooglePlayListingHtml({ html, expectedDeveloperWebsite, expectedPrivacyPolicyUrl });
 
   if (response.status < 200 || response.status >= 300) {
     report.issues.unshift({ code: "http_status", message: "Google Play listing returned HTTP " + response.status });
@@ -66,6 +73,7 @@ async function main() {
 
   console.log("[google-play-public] " + (report.ok ? "PASS" : "UNVERIFIED") + " - " + packageName + " " + response.status);
   console.log("[google-play-public] developerWebsite=" + (report.signals.developerWebsiteVisible ? "present" : "missing"));
+  console.log("[google-play-public] privacyPolicy=" + (report.signals.privacyPolicyVisible ? "present" : "missing"));
   console.log("[google-play-public] containsAds=" + (report.signals.containsAdsVisible ? "present" : "missing"));
   console.log("[google-play-public] rewardedAdsCopy=" + (report.signals.rewardedAdsVisible ? "present" : "missing"));
   console.log("[google-play-public] oldNoAdsClaim=" + (report.signals.oldNoAdsClaimVisible ? "visible" : "absent"));
@@ -85,6 +93,7 @@ if (require.main === module) {
 module.exports = {
   DEFAULT_DEVELOPER_WEBSITE,
   DEFAULT_PACKAGE_NAME,
+  DEFAULT_PRIVACY_POLICY_URL,
   OLD_NO_ADS_CLAIM,
   evaluateGooglePlayListingHtml,
 };

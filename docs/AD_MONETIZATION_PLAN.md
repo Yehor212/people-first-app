@@ -1,5 +1,14 @@
 # План монетизации ZenFlow через рекламу
 
+> Status: superseded historical brainstorm.
+> Current approved release path is optional Android rewarded-only, gated by
+> `docs/release/google-play/ADMOB_OWNER_FINALIZATION_RUNBOOK.md` and
+> `docs/AD_SYSTEM_JOURNEY.md`.
+> Do not implement Native Ads, interstitials, banners, app-open ads,
+> companion/tree placements, or full cross-platform monetization from this
+> document. Those formats need a separate product, privacy, policy, and
+> psychological-safety review before any code or release work.
+
 ## Обзор
 
 Этот документ описывает стратегию внедрения рекламы в ZenFlow с сохранением качества пользовательского опыта и privacy-first подхода.

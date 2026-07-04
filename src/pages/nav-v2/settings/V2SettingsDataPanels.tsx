@@ -14,6 +14,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAds } from "@/contexts/AdContext";
 import { LOCK_TIMEOUT_OPTIONS, setAutoLockMs } from "@/features/journal";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -53,13 +54,25 @@ function getStoredLockTimeoutMs(): number {
 export function PrivacyPanel({ controls }: { controls: V2SettingsControls }) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
+  const { privacyOptionsRequired, openAdPrivacyOptions } = useAds();
   const [timeoutMs, setTimeoutMs] = useState(getStoredLockTimeoutMs);
+  const [isOpeningAdPrivacy, setIsOpeningAdPrivacy] = useState(false);
   const privacyHref = `${BASE_URL}privacy.html`;
   const termsHref = `${BASE_URL}terms.html`;
 
   const updateTimeout = (ms: number) => {
     setTimeoutMs(ms);
     setAutoLockMs(ms);
+  };
+
+  const handleOpenAdPrivacyOptions = async () => {
+    if (isOpeningAdPrivacy) return;
+    setIsOpeningAdPrivacy(true);
+    try {
+      await openAdPrivacyOptions();
+    } finally {
+      setIsOpeningAdPrivacy(false);
+    }
   };
 
   return (
@@ -93,14 +106,36 @@ export function PrivacyPanel({ controls }: { controls: V2SettingsControls }) {
       />
       <ToggleRow
         icon={Shield}
-        title={tx.privacyAds || "Personalized ads"}
-        description={tx.privacyAdsHint || "Allow ad personalization where available."}
+        title={tx.privacyAds || "Rewarded ads"}
+        description={
+          tx.privacyAdsHint ||
+          "Optional videos only. Ad requests stay off unless this is enabled; Google privacy choices may still appear when required."
+        }
         checked={controls.privacy.adConsent === true}
         onCheckedChange={(checked) =>
           controls.onPrivacyChange((prev) => applyAdConsentPreference(prev, checked))
         }
         testId="settings-v2-ad-consent"
       />
+      {privacyOptionsRequired && (
+        <SettingsInset testId="settings-v2-ad-privacy-options">
+          <SettingsFieldHeader
+            icon={Shield}
+            title={tx.adPrivacyOptions || "Google ad privacy choices"}
+            description={
+              tx.adPrivacyOptionsHint || "Change or withdraw Google ad consent where required."
+            }
+          />
+          <SettingsInlineButton
+            onClick={handleOpenAdPrivacyOptions}
+            disabled={isOpeningAdPrivacy}
+            isLoading={isOpeningAdPrivacy}
+            testId="settings-v2-open-ad-privacy-options"
+          >
+            {tx.adPrivacyOptionsOpen || "Review ad choices"}
+          </SettingsInlineButton>
+        </SettingsInset>
+      )}
       <ToggleRow
         icon={BellRing}
         title={tx.privacyPushNotifications || "Remote push notifications"}
