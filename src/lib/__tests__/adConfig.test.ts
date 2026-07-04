@@ -98,6 +98,8 @@ describe('AD_SAFE_ZONES', () => {
   it('includes post_focus and daily_rewards', () => {
     expect(AD_SAFE_ZONES).toContain('post_focus');
     expect(AD_SAFE_ZONES).toContain('daily_rewards');
+    expect(AD_SAFE_ZONES).toContain('optional_rewards');
+    expect(AD_SAFE_ZONES).not.toContain('settings');
   });
 });
 

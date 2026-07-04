@@ -27,6 +27,7 @@ const REQUIRED_RUNBOOK_SNIPPETS = [
   "google-play:admob:external-check:pass",
   "google-play:admob:external-check:full-pass",
   "google-play:admob:owner-runbook:check",
+  "google-play:admob:owner-next-steps",
   "google-play:admob:owner-evidence:check",
   "google-play:admob:owner-evidence:prepare",
   "google-play:admob:owner-evidence:apply",
@@ -35,6 +36,7 @@ const REQUIRED_RUNBOOK_SNIPPETS = [
   "google-play:privacy:public-check",
   "ADMOB_OWNER_EVIDENCE_TEMPLATE.json",
   "output/private/admob-owner-evidence.json",
+  "output/private/admob-owner-next-steps.md",
   "public_privacy_policy",
   "privacy_messages_cmp",
   "admob_app_ads_txt_status",
@@ -234,6 +236,9 @@ function main() {
   if (packageJson && !packageJson.includes('"google-play:admob:owner-runbook:check"')) {
     failures.push("package.json is missing google-play:admob:owner-runbook:check");
   }
+  if (packageJson && !packageJson.includes('"google-play:admob:owner-next-steps"')) {
+    failures.push("package.json is missing google-play:admob:owner-next-steps");
+  }
   if (packageJson && !packageJson.includes('"google-play:admob:owner-evidence:check"')) {
     failures.push("package.json is missing google-play:admob:owner-evidence:check");
   }
@@ -245,6 +250,9 @@ function main() {
   }
   if (taskCompletion && !taskCompletion.includes("google-play:admob:owner-runbook:check")) {
     failures.push("task completion guard is missing google-play:admob:owner-runbook:check");
+  }
+  if (taskCompletion && !taskCompletion.includes("google-play:admob:owner-next-steps")) {
+    failures.push("task completion guard is missing google-play:admob:owner-next-steps");
   }
   if (taskCompletion && !taskCompletion.includes("google-play:admob:owner-evidence:prepare")) {
     failures.push("task completion guard is missing google-play:admob:owner-evidence:prepare");

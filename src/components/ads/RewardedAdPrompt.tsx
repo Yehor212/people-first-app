@@ -20,7 +20,7 @@ function formatTemplate(template: string, values: Record<string, string | number
 
 interface RewardedAdPromptProps {
   /** Context where the prompt is shown */
-  context: 'daily_rewards' | 'post_focus' | 'companion' | 'settings';
+  context: 'daily_rewards' | 'post_focus' | 'companion' | 'optional_rewards';
   /** Custom CTA label override */
   ctaLabel?: string;
   /** Custom reward description override */

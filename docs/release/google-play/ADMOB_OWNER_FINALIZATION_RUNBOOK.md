@@ -32,6 +32,7 @@ commands and the current-release ledger rows agree:
 
 ```bash
 npm run google-play:admob:owner-runbook:check
+npm run google-play:admob:owner-next-steps
 npm run google-play:admob:owner-evidence:check
 npm run google-play:admob:owner-evidence:prepare
 npm run google-play:admob:owner-evidence:apply -- --file output/private/admob-owner-evidence.json
@@ -47,6 +48,14 @@ gate. It must keep failing while any current-release item in
 `ADMOB_EXTERNAL_READINESS.json` remains `PARTIAL` or `UNVERIFIED`.
 `full_cross_platform_ad_units` is intentionally excluded from that gate because
 banner/iOS expansion is not part of the approved current release path.
+
+Run `npm run google-play:admob:owner-next-steps` whenever the strict pass gate
+fails. It writes `output/private/admob-owner-next-steps.md` as a public-safe
+owner handoff and keeps support escalation marked NOT READY while owner-only
+rows such as CMP, payments, Play Console declarations, or live device playback
+are not PASS. Use `npm run google-play:admob:owner-next-steps -- --require-support-ready`
+only after owner-owned rows are closed; it must exit non-zero while owner
+blockers remain.
 
 ## Public-safe evidence rules
 

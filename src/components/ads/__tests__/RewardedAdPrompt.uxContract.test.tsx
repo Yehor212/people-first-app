@@ -56,9 +56,13 @@ vi.mock('@/contexts/LanguageContext', () => ({
 describe('RewardedAdPrompt UX contract', () => {
   it('does not allow generic rewarded-ad placement contexts', () => {
     const source = readFileSync(rewardedPromptPath, 'utf8');
+    const adConfig = readFileSync(adConfigPath, 'utf8');
 
     expect(source).not.toContain("'general'");
-    expect(source).toContain("'settings'");
+    expect(source).not.toContain("'settings'");
+    expect(source).toContain("'optional_rewards'");
+    expect(adConfig).not.toMatch(/'settings'\s*,\s*\/\/ Settings page/);
+    expect(adConfig).toContain("'optional_rewards'");
   });
 
   it('keeps rewarded playback out of privacy control surfaces', () => {

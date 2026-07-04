@@ -94,6 +94,7 @@ function main() {
     "google-play:admob:external-check",
     "google-play:admob:external-check:pass",
     "google-play:admob:owner-runbook:check",
+    "google-play:admob:owner-next-steps",
     "google-play:admob:owner-evidence:check",
     "google-play:admob:owner-evidence:prepare",
     "google-play:admob:owner-evidence:apply",

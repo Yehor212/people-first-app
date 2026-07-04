@@ -47,6 +47,7 @@ npm run google-play:privacy:public-check
 npm run google-play:admob:check
 npm run google-play:admob:check:full
 npm run google-play:admob:owner-runbook:check
+npm run google-play:admob:owner-next-steps
 npm run google-play:admob:owner-evidence:check
 npm run google-play:admob:owner-evidence:prepare
 npm run google-play:admob:owner-evidence:apply -- --file output/private/admob-owner-evidence.json
@@ -76,6 +77,10 @@ That private file must stay untracked and may contain only public-safe
 PASS/PARTIAL/UNVERIFIED/FAIL summaries. Run `npm run google-play:admob:owner-evidence:apply -- --file output/private/admob-owner-evidence.json`
 as a dry-run to promote only owner-owned rows into the public-safe external
 ledger, then rerun with `--write` only after reviewing the row changes. Run
+`npm run google-play:admob:owner-next-steps` to generate
+`output/private/admob-owner-next-steps.md`, a public-safe owner handoff that
+lists only current non-PASS rows and refuses support-ready mode while owner
+blockers remain. Run
 `npm run google-play:admob:external-check:pass` only before claiming production
 ad monetization is ready; it must fail while any Google-owned or owner-only item
 is still `UNVERIFIED`.

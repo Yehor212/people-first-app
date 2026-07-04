@@ -290,7 +290,7 @@ N/A — the system is invisible when unavailable.
         [ad consent toggle + Google privacy choices only]
       </SettingsPrivacyPanel>
       <OptionalRewardsSurface>
-        <RewardedAdPrompt context="settings" />  ← future approved rewards surface, outside Privacy controls
+        <RewardedAdPrompt context="optional_rewards" />  ← future approved rewards surface, outside Privacy controls
       </OptionalRewardsSurface>
     </Index>
   </AdProvider>

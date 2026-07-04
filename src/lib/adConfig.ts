@@ -110,7 +110,7 @@ export const AD_SAFE_ZONES = [
   'daily_rewards',     // Daily rewards screen
   'stats_view',        // Viewing stats/achievements
   'companion_rewards', // Explicit optional rewards area in companion surface
-  'settings',          // Settings page
+  'optional_rewards',  // Separate opt-in rewards surface, outside Settings/Privacy
 ] as const;
 
 // ============================================
