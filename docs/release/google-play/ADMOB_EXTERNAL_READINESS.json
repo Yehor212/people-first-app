@@ -36,10 +36,10 @@
     },
     {
       "id": "public_privacy_policy",
-      "status": "PARTIAL",
+      "status": "PASS",
       "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: public privacy policy URL returned HTTP 200 and disclosed AdMob, Advertising ID, and rewarded ads, but the deployed page did not yet disclose UMP and the full Google Mobile Ads SDK data categories. Local policy files have been updated and need deployment before PASS.",
-      "ownerAction": "Deploy the updated privacy policy, confirm the GitHub Pages post-deploy public privacy smoke passes, then rerun npm run google-play:privacy:public-check before Play Data safety or production ad-readiness claims.",
+      "evidence": "2026-07-04: GitHub Pages post-deploy public privacy smoke passed, and public privacy policy check passed with npm run google-play:privacy:public-check for the published privacy URL; it disclosed Google Mobile Ads, UMP privacy choices, Advertising ID, optional rewarded ads, and Google Mobile Ads SDK data categories including IP address.",
+      "ownerAction": "Re-run the GitHub Pages post-deploy public privacy smoke and npm run google-play:privacy:public-check after every privacy policy, ads SDK, consent, developer website, or Google Play Data safety change.",
       "sourceUrls": [
         "https://support.google.com/googleplay/android-developer/answer/9859455",
         "https://developers.google.com/admob/android/privacy",

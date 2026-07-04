@@ -15,7 +15,7 @@ Current state on 2026-07-04:
 | `public_app_ads_root` | PASS | Public root `app-ads.txt` was verified, but it must be rechecked after domain or publisher changes. |
 | `admob_app_ads_txt_status` | PASS | AdMob Verify app showed the ZenFlow Android app confirmed with a Done status; recheck after crawler, developer website, or publisher changes. |
 | `public_google_play_listing` | PASS | Public Play listing shows ads disclosure and optional rewarded-ad copy; recheck after listing edits. |
-| `public_privacy_policy` | PARTIAL | The public privacy URL is active but the deployed page still needs the updated UMP and Google Mobile Ads SDK data-category disclosure before PASS; staged artifact proof and the GitHub Pages post-deploy public privacy smoke are required before this row can become PASS. |
+| `public_privacy_policy` | PASS | GitHub Pages post-deploy public privacy smoke and `npm run google-play:privacy:public-check` passed for the published privacy URL; recheck after privacy policy, ads SDK, consent, developer website, or Play Data safety changes. |
 | `admob_app_readiness` | PASS | AdMob app list showed Ready and ad serving enabled; recheck before each release. |
 | `admob_policy_center` | PASS | Policy Center showed no violations; recheck before each release. |
 | `privacy_messages_cmp` | PARTIAL | Local UMP wiring passes, but AdMob Privacy & messages still needs owner confirmation/publishing. |
