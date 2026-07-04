@@ -542,9 +542,11 @@ test.describe("Orb user-flow performance", () => {
     const noteInput = page.getByTestId("orb-page-note-input");
     await expect(noteInput).toBeVisible();
     await waitForFiniteAnimationsToSettle(page);
+    await noteInput.focus();
+    await expect(noteInput).toBeFocused();
+    await waitForTwoFrames(page);
 
     await timedAction(page, "orb-note-input", async () => {
-      await noteInput.click();
       await page.keyboard.insertText("Quick performance proof");
       await expect(noteInput).toHaveValue("Quick performance proof");
     });
