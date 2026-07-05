@@ -26,6 +26,7 @@ type ExternalReadinessReport = {
 const officialSourceUrl = "https://support.google.com/admob/answer/10564477";
 const requiredCmpSourceUrls = [
   "https://support.google.com/admob/answer/10113207",
+  "https://support.google.com/admob/answer/10107561",
   "https://support.google.com/admob/answer/13554116",
   "https://support.google.com/admob/answer/16918505",
   "https://support.google.com/admob/answer/9999955",
@@ -61,7 +62,7 @@ const passEvidenceByItem: Record<string, string> = {
   admob_app_readiness:
     "AdMob apps list showed ZenFlow Ready, ad serving enabled, Google Play linked, and active ad units.",
   admob_policy_center:
-    "AdMob Policy Center showed no violations and no blocking issues for app ad serving.",
+    "AdMob Policy Center showed no violations, no blocking issues, no regulatory issues, no advertiser-preference restrictions, and no restricted or disabled ad requests for app ad serving.",
   privacy_messages_cmp:
     "AdMob Privacy & messaging European regulations message for ZenFlow was published through a Google-certified CMP using TCF v2.3.",
   payments_tax_info: "Payments tax page showed tax setup with no action required.",
@@ -73,7 +74,7 @@ const passEvidenceByItem: Record<string, string> = {
   play_console_ads_data_safety:
     "Play Console App content showed Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, and privacy policy URL matches listing.",
   live_ad_playback_device:
-    "Release-equivalent Android rewarded ad smoke completed after consent; video opened, reward callback granted reward only after completion, revocation stopped new ad requests, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, or bad/terrible mood states.",
+    "Release-equivalent Android rewarded ad smoke completed after consent; video opened, reward callback granted reward only after completion, revocation stopped new ad requests, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, onboarding, or bad/terrible mood states.",
   full_cross_platform_ad_units:
     "Full cross-platform ad units check showed Android, iOS, banner, and rewarded IDs are owner-controlled non-sample units from the same publisher family.",
 };
@@ -130,6 +131,7 @@ describe("AdMob external monetization readiness guard", () => {
 
     expect(taskCompletionGuard).toContain("google-play:admob:external-check");
     expect(taskCompletionGuard).toContain("google-play:admob:external-check:pass");
+    expect(taskCompletionGuard).toContain("google-play:admob:external-check:full-pass");
   });
 
   it("keeps a public-safe external readiness ledger in the release packet", () => {
@@ -176,6 +178,28 @@ describe("AdMob external monetization readiness guard", () => {
         code: "external_item_not_pass",
         itemId: "payments_holds",
       }),
+    );
+  });
+
+  it("rejects Policy Center PASS evidence that omits regulatory and advertiser-preference issue classes", () => {
+    const checker = loadChecker();
+    const ledger = completePassLedger();
+    const report = checker.evaluateExternalReadiness({
+      ...ledger,
+      items: ledger.items.map((item) =>
+        item.id === "admob_policy_center"
+          ? {
+              ...item,
+              evidence: "AdMob Policy Center showed no violations and no blocking issues for app ad serving.",
+            }
+          : item,
+      ),
+    }, { requirePass: true, now: new Date("2026-07-04T12:00:00.000Z") });
+
+    expect(report.ok).toBe(false);
+    expect(report.passReady).toBe(false);
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: "missing_required_pass_evidence", itemId: "admob_policy_center" }),
     );
   });
 
@@ -559,6 +583,9 @@ describe("AdMob external monetization readiness guard", () => {
     for (const [id, requiredSource] of Object.entries(requiredRowSources)) {
       expect(checker.REQUIRED_OFFICIAL_SOURCE_URLS_BY_ITEM[id]).toContain(requiredSource);
     }
+    expect(checker.REQUIRED_OFFICIAL_SOURCE_URLS_BY_ITEM.admob_policy_center).toContain(
+      "https://support.google.com/admob/answer/15697162",
+    );
 
     const report = checker.evaluateExternalReadiness({
       ...ledger,

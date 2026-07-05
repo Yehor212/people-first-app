@@ -13,6 +13,7 @@ const templatePath = join(process.cwd(), "docs/release/google-play/ADMOB_OWNER_E
 
 const requiredCmpSourceUrls = [
   "https://support.google.com/admob/answer/10113207",
+  "https://support.google.com/admob/answer/10107561",
   "https://support.google.com/admob/answer/13554116",
   "https://support.google.com/admob/answer/16918505",
   "https://support.google.com/admob/answer/9999955",
@@ -36,14 +37,14 @@ type OwnerEvidenceReport = {
 const passEvidenceByItem: Record<string, string> = {
   admob_app_ads_txt_status: "AdMob Verify app page showed ZenFlow confirmed with Done status.",
   admob_app_readiness: "AdMob apps list showed ZenFlow Ready, ad serving enabled, Google Play linked, and active ad units.",
-  admob_policy_center: "AdMob Policy Center showed no violations and no blocking issues.",
-  privacy_messages_cmp: "AdMob Privacy & messaging European regulations message for ZenFlow was published through a Google-certified CMP using TCF v2.3.",
+  admob_policy_center: "AdMob Policy Center showed no violations, no blocking issues, no regulatory issues, no advertiser-preference restrictions, and no restricted or disabled ad requests.",
+  privacy_messages_cmp: "AdMob Privacy & messaging European regulations message for ZenFlow was published through a Google-certified CMP using TCF v2.3; ZenFlow CMP languages en, uk, es, de, fr, and ja were all reviewed and available; Google supported-language list reviewed; Arabic (ar) and Hebrew (he) European regulations fallback was reviewed; no Arabic or Hebrew European regulations translation is claimed; Do not consent and Close do-not-consent choices reviewed; privacy-options entry point confirmed; canRequestAds gate confirmed.",
   payments_tax_info: "Payments tax information showed no action required for tax setup.",
   payments_identity_address: "Payments verification showed identity and address no action required.",
   payments_payment_method: "Payments settings showed payment method eligible for payouts.",
   payments_holds: "Payments page showed no payment hold, no tax hold, no identity hold, no compliance hold, and no self-hold.",
-  play_console_ads_data_safety: "Play Console App content showed Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, and privacy policy URL matches listing.",
-  live_ad_playback_device: "Release-equivalent Android rewarded ad smoke completed after consent; video opened, reward callback granted reward only after completion, revocation stopped new ad requests, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, or bad/terrible mood states.",
+  play_console_ads_data_safety: "Play Console App content showed Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, privacy policy URL matches listing, IP address, user product interactions, diagnostics, device or other identifiers, and Advertising ID matches the release manifest.",
+  live_ad_playback_device: "Release-equivalent Android rewarded ad smoke completed after consent; clear reward and action disclosure appeared before the ad, affirmative opt-in was required before each rewarded ad, video opened, dismissal or skip did not block normal use, reward callback granted reward only after completion, revocation stopped new ad requests, no pressure or misleading choice copy appeared, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, onboarding, or bad/terrible mood states.",
   full_cross_platform_ad_units: "Full cross-platform ad units check showed Android, iOS, banner, and rewarded IDs are owner-controlled non-sample units from the same publisher family.",
 };
 
@@ -62,6 +63,9 @@ const passFactsByItem: Record<string, Record<string, boolean>> = {
     policyCenterReviewed: true,
     noViolations: true,
     noBlockingIssues: true,
+    noRegulatoryIssues: true,
+    noAdvertiserPreferenceRestrictions: true,
+    noRestrictedOrDisabledAdRequests: true,
   },
   privacy_messages_cmp: {
     europeanRegulationsMessagePublished: true,
@@ -70,6 +74,19 @@ const passFactsByItem: Record<string, Record<string, boolean>> = {
     zenflowAppSelected: true,
     eeaUkSwitzerlandTargeting: true,
     privacyPolicyUrlMatched: true,
+    googleSupportedLanguageListReviewed: true,
+    cmpLanguageEnReviewed: true,
+    cmpLanguageUkReviewed: true,
+    cmpLanguageEsReviewed: true,
+    cmpLanguageDeReviewed: true,
+    cmpLanguageFrReviewed: true,
+    cmpLanguageJaReviewed: true,
+    cmpLanguageArFallbackReviewed: true,
+    cmpLanguageHeFallbackReviewed: true,
+    doNotConsentChoiceReviewed: true,
+    closeDoNotConsentReviewed: true,
+    privacyOptionsEntryPointConfirmed: true,
+    canRequestAdsGateConfirmed: true,
   },
   payments_tax_info: {
     taxNoActionRequired: true,
@@ -94,18 +111,28 @@ const passFactsByItem: Record<string, Record<string, boolean>> = {
     dataSafetyIncludesGoogleMobileAdsSdkData: true,
     googleMobileAdsSdkDataDisclosureReviewed: true,
     privacyPolicyUrlMatchesListing: true,
+    gmaIpAddressDisclosureReviewed: true,
+    gmaUserProductInteractionsDisclosureReviewed: true,
+    gmaDiagnosticsDisclosureReviewed: true,
+    gmaDeviceOrOtherIdentifiersDisclosureReviewed: true,
+    advertisingIdMatchesReleaseManifest: true,
   },
   live_ad_playback_device: {
     releaseEquivalentAndroid: true,
     consentPathCompleted: true,
+    clearRewardAndActionDisclosureConfirmed: true,
+    affirmativeOptInBeforeEachRewardedAd: true,
     rewardedVideoOpened: true,
     dismissWithoutRewardChecked: true,
+    dismissOrSkipDoesNotBlockNormalUse: true,
+    noPressureOrMisleadingChoiceCopy: true,
     rewardCallbackGrantedAfterCompletion: true,
     revocationStopsNewAdRequests: true,
     noMoodCheckInPromptOrRequest: true,
     noActiveFocusPromptOrRequest: true,
     noFocusReflectionPromptOrRequest: true,
     noJournalEditorPromptOrRequest: true,
+    noOnboardingPromptOrRequest: true,
     noBadOrTerribleMoodPromptOrRequest: true,
   },
   full_cross_platform_ad_units: {
@@ -370,6 +397,9 @@ describe("AdMob owner evidence intake", () => {
     for (const id of checker.OWNER_EVIDENCE_ITEM_IDS) {
       expect(sourcePolicy.ADMOB_READINESS_REQUIRED_SOURCE_URLS_BY_ITEM[id]?.length, id).toBeGreaterThan(0);
     }
+    expect(sourcePolicy.ADMOB_READINESS_REQUIRED_SOURCE_URLS_BY_ITEM.admob_policy_center).toContain(
+      "https://support.google.com/admob/answer/15697162",
+    );
   });
 
   it("requires row-specific official sources for CMP and Play Data safety owner proof", () => {
@@ -613,6 +643,133 @@ describe("AdMob owner evidence intake", () => {
     }
   });
 
+  it("rejects CMP PASS evidence when any ZenFlow language is unavailable or not reviewed", () => {
+    const checker = loadChecker();
+    const badLanguageEvidence = [
+      "AdMob Privacy & messaging European regulations message for ZenFlow was published through a Google-certified CMP using TCF v2.3; ZenFlow CMP languages en, uk, es, de, fr, ja, ar, and he were all reviewed and available; Do not consent and Close do-not-consent choices reviewed; privacy-options entry point confirmed; canRequestAds gate confirmed.",
+      "AdMob Privacy & messaging European regulations message for ZenFlow was published through a Google-certified CMP using TCF v2.3; ZenFlow languages en, uk, es, de, fr, ja, ar, and he were reviewed where available, but Arabic unavailable in the AdMob UI; Do not consent and Close do-not-consent choices reviewed; privacy-options entry point confirmed; canRequestAds gate confirmed.",
+      "AdMob Privacy & messaging European regulations message for ZenFlow was published through a Google-certified CMP using TCF v2.3; ZenFlow languages en, uk, es, de, fr, ja, ar, and he were reviewed where available, but Hebrew was not reviewed; Do not consent and Close do-not-consent choices reviewed; privacy-options entry point confirmed; canRequestAds gate confirmed.",
+      "AdMob Privacy & messaging European regulations message for ZenFlow was published through a Google-certified CMP using TCF v2.3; ZenFlow languages en, uk, es, de, fr, ja, ar, and he were reviewed where available, but Japanese missing; Do not consent and Close do-not-consent choices reviewed; privacy-options entry point confirmed; canRequestAds gate confirmed.",
+    ];
+
+    for (const evidenceText of badLanguageEvidence) {
+      const evidence = completeOwnerEvidence();
+      evidence.items = evidence.items.map((item) =>
+        item.id === "privacy_messages_cmp" ? { ...item, evidence: evidenceText } : item,
+      );
+
+      const report = checker.evaluateOwnerEvidence(evidence);
+
+      expect(report.ok, evidenceText).toBe(false);
+      expect(report.issues, evidenceText).toContainEqual(
+        expect.objectContaining({ code: "contradictory_pass_evidence", itemId: "privacy_messages_cmp" }),
+      );
+    }
+  });
+
+  it("requires per-language CMP facts instead of one aggregate language fact", () => {
+    const checker = loadChecker();
+    const evidence = completeOwnerEvidence();
+    evidence.items = evidence.items.map((item) =>
+      item.id === "privacy_messages_cmp"
+        ? {
+            ...item,
+            facts: {
+              europeanRegulationsMessagePublished: true,
+              googleCertifiedCmp: true,
+              tcfV23: true,
+              zenflowAppSelected: true,
+              eeaUkSwitzerlandTargeting: true,
+              privacyPolicyUrlMatched: true,
+              supportedZenflowLanguagesReviewed: true,
+              doNotConsentChoiceReviewed: true,
+              closeDoNotConsentReviewed: true,
+              privacyOptionsEntryPointConfirmed: true,
+              canRequestAdsGateConfirmed: true,
+            },
+          }
+        : item,
+    );
+
+    const report = checker.evaluateOwnerEvidence(evidence);
+
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: "unknown_fact_key", itemId: "privacy_messages_cmp" }),
+    );
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: "required_pass_fact_not_true", itemId: "privacy_messages_cmp" }),
+    );
+  });
+
+  it("rejects contradictory PASS evidence across every owner PASS row", () => {
+    const checker = loadChecker();
+    const contradictoryEvidenceByItem: Record<string, string> = {
+      admob_app_ads_txt_status: "AdMob Verify app page showed ZenFlow not confirmed with Done status.",
+      admob_app_readiness: "AdMob apps list showed ZenFlow not Ready, ad serving enabled, Google Play linked, and active ad units.",
+      admob_policy_center: "AdMob Policy Center showed no violations and no blocking issues, but no regulatory issues was not shown, no advertiser-preference restrictions was not shown, and no restricted or disabled ad requests was not shown.",
+      privacy_messages_cmp: "AdMob Privacy & messaging European regulations message for ZenFlow was not published through a Google-certified CMP using TCF v2.3; ZenFlow languages en, uk, es, de, fr, ja, ar, and he were reviewed where available; Do not consent and Close do-not-consent choices reviewed; privacy-options entry point and canRequestAds gate not confirmed.",
+      payments_tax_info: "Payments tax information did not show no action required for tax setup.",
+      payments_identity_address: "Payments verification showed identity and address were not verified and no action required was not shown.",
+      payments_payment_method: "Payments settings showed payment method not eligible for payouts.",
+      payments_holds: "Payments page showed no payment hold was not shown, no tax hold was not shown, no identity hold was not shown, no compliance hold was not shown, and no self-hold was not shown.",
+      play_console_ads_data_safety: "Play Console App content showed Ads=Yes, Advertising ID=Yes, Data safety includes no Google Mobile Ads SDK data, privacy policy URL matches listing, IP address, user product interactions, diagnostics, device or other identifiers, and Advertising ID matches the release manifest.",
+      live_ad_playback_device: "Release-equivalent Android rewarded ad smoke completed after consent; clear reward and action disclosure did not appear before the ad, affirmative opt-in was not required before each rewarded ad, video opened, dismissal or skip blocked normal use, reward callback granted reward only after completion, revocation stopped new ad requests, pressure or misleading choice copy appeared, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, onboarding, or bad/terrible mood states.",
+      full_cross_platform_ad_units: "Full cross-platform ad units check showed Android, iOS, banner, and rewarded IDs are not owner-controlled non-sample units from the same publisher family.",
+    };
+
+    for (const [itemId, evidenceText] of Object.entries(contradictoryEvidenceByItem)) {
+      const evidence = completeOwnerEvidence();
+      evidence.items = evidence.items.map((item) =>
+        item.id === itemId ? { ...item, evidence: evidenceText } : item,
+      );
+
+      const report = checker.evaluateOwnerEvidence(evidence);
+
+      expect(report.ok, itemId).toBe(false);
+      expect(report.issues, itemId).toContainEqual(
+        expect.objectContaining({ code: "contradictory_pass_evidence", itemId }),
+      );
+    }
+  });
+
+  it("rejects live rewarded playback PASS when anti-pressure rewarded facts are missing", () => {
+    const checker = loadChecker();
+    const evidence = completeOwnerEvidence();
+    evidence.items = evidence.items.map((item) =>
+      item.id === "live_ad_playback_device"
+        ? {
+            ...item,
+            evidence:
+              "Release-equivalent Android rewarded ad smoke completed after consent; video opened, reward callback granted reward only after completion, revocation stopped new ad requests, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, onboarding, or bad/terrible mood states.",
+            facts: {
+              releaseEquivalentAndroid: true,
+              consentPathCompleted: true,
+              rewardedVideoOpened: true,
+              dismissWithoutRewardChecked: true,
+              rewardCallbackGrantedAfterCompletion: true,
+              revocationStopsNewAdRequests: true,
+              noMoodCheckInPromptOrRequest: true,
+              noActiveFocusPromptOrRequest: true,
+              noFocusReflectionPromptOrRequest: true,
+              noJournalEditorPromptOrRequest: true,
+              noBadOrTerribleMoodPromptOrRequest: true,
+            },
+          }
+        : item,
+    );
+
+    const report = checker.evaluateOwnerEvidence(evidence);
+
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: "missing_required_pass_evidence_fact", itemId: "live_ad_playback_device" }),
+    );
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: "required_pass_fact_not_true", itemId: "live_ad_playback_device" }),
+    );
+  });
+
   it("rejects contradictory PASS evidence for live rewarded playback", () => {
     const checker = loadChecker();
     const evidence = completeOwnerEvidence();
@@ -631,6 +788,29 @@ describe("AdMob owner evidence intake", () => {
     expect(report.ok).toBe(false);
     expect(report.issues).toContainEqual(
       expect.objectContaining({ code: "contradictory_pass_evidence", itemId: "live_ad_playback_device" }),
+    );
+  });
+
+  it("rejects live rewarded playback PASS when onboarding no-prompt fact is missing", () => {
+    const checker = loadChecker();
+    const evidence = completeOwnerEvidence();
+    evidence.items = evidence.items.map((item) =>
+      item.id === "live_ad_playback_device"
+        ? {
+            ...item,
+            facts: {
+              ...passFactsByItem.live_ad_playback_device,
+              noOnboardingPromptOrRequest: false,
+            },
+          }
+        : item,
+    );
+
+    const report = checker.evaluateOwnerEvidence(evidence);
+
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: "required_pass_fact_not_true", itemId: "live_ad_playback_device" }),
     );
   });
 
@@ -769,13 +949,17 @@ describe("AdMob owner evidence intake", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("PASS");
+    expect(result.stdout).toContain("WROTE");
+    expect(result.stdout).toContain("readiness=UNVERIFIED");
+    expect(result.stdout).toContain("next=fill only public-safe owner summaries and boolean facts");
+    expect(result.stdout).not.toContain("PASS - prepared");
     expect(result.stdout).toContain(outputFile);
     expect(existsSync(outputFile)).toBe(true);
 
     const prepared = JSON.parse(readFileSync(outputFile, "utf8"));
     expect(prepared.schemaVersion).toBe("zenflow-admob-owner-evidence/v1");
     expect(prepared.privateFilePath).toBe("output/private/admob-owner-evidence.json");
+    expect(prepared.instructions).toContain("public-safe status summaries and boolean facts");
     expect(prepared.items.every((item: { status: string }) => item.status === "UNVERIFIED")).toBe(true);
 
     const checker = loadChecker();

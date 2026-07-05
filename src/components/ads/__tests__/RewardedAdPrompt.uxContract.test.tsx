@@ -131,5 +131,6 @@ describe('RewardedAdPrompt UX contract', () => {
     expect(adState.watchRewardedAd).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button'));
     expect(adState.watchRewardedAd).toHaveBeenCalledTimes(1);
+    expect(adState.watchRewardedAd).toHaveBeenCalledWith('daily_rewards');
   });
 });

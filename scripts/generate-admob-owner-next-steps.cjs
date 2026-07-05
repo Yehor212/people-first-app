@@ -27,6 +27,101 @@ const GOOGLE_SERVICE_IDS = new Set([
   "admob_policy_center",
 ]);
 
+const OWNER_FACT_LABELS_BY_ITEM = Object.freeze({
+  admob_app_ads_txt_status: [
+    ["verifyAppConfirmedDone", "AdMob Verify app/app-ads.txt status is confirmed done for the ZenFlow app."],
+    ["zenflowAppSelected", "The selected AdMob app is ZenFlow, without recording raw app or publisher IDs."],
+  ],
+  admob_app_readiness: [
+    ["ready", "AdMob app readiness shows Ready."],
+    ["adServingEnabled", "Ad serving is enabled for the app."],
+    ["googlePlayLinked", "The AdMob app is linked to the Google Play listing."],
+    ["activeAdUnits", "The app has active ad units for the intended release scope."],
+  ],
+  admob_policy_center: [
+    ["policyCenterReviewed", "Policy Center was opened for the ZenFlow app/account scope."],
+    ["noViolations", "No policy violations are shown."],
+    ["noBlockingIssues", "No blocking issue prevents ad serving."],
+    ["noRegulatoryIssues", "No regulatory issue is shown for the app/account."],
+    ["noAdvertiserPreferenceRestrictions", "No advertiser-preference restriction is shown."],
+    ["noRestrictedOrDisabledAdRequests", "No restricted or disabled ad-request status is shown."],
+  ],
+  privacy_messages_cmp: [
+    ["europeanRegulationsMessagePublished", "European regulations message is published."],
+    ["googleCertifiedCmp", "The message uses a Google-certified CMP."],
+    ["tcfV23", "TCF v2.3 is used where required."],
+    ["zenflowAppSelected", "The ZenFlow AdMob app is selected."],
+    ["eeaUkSwitzerlandTargeting", "EEA, UK, and Switzerland targeting is configured."],
+    ["privacyPolicyUrlMatched", "The privacy policy URL matches the published listing/policy URL."],
+    ["googleSupportedLanguageListReviewed", "Google Privacy & messaging supported-language list was reviewed for European regulations messages."],
+    ["cmpLanguageEnReviewed", "English (en) European regulations message was reviewed and available."],
+    ["cmpLanguageUkReviewed", "Ukrainian (uk) European regulations message was reviewed and available."],
+    ["cmpLanguageEsReviewed", "Spanish (es) European regulations message was reviewed and available."],
+    ["cmpLanguageDeReviewed", "German (de) European regulations message was reviewed and available."],
+    ["cmpLanguageFrReviewed", "French (fr) European regulations message was reviewed and available."],
+    ["cmpLanguageJaReviewed", "Japanese (ja) European regulations message was reviewed and available."],
+    ["cmpLanguageArFallbackReviewed", "Arabic (ar) fallback was reviewed because Google does not list Arabic for European regulations messages."],
+    ["cmpLanguageHeFallbackReviewed", "Hebrew (he) fallback was reviewed because Google does not list Hebrew for European regulations messages."],
+    ["doNotConsentChoiceReviewed", "Do not consent choice was reviewed."],
+    ["closeDoNotConsentReviewed", "Close/no-consent behavior was reviewed."],
+    ["privacyOptionsEntryPointConfirmed", "In-app privacy-options entry point is confirmed."],
+    ["canRequestAdsGateConfirmed", "canRequestAds gate is confirmed before ad requests."],
+  ],
+  payments_tax_info: [
+    ["taxNoActionRequired", "Tax page shows no action required, or the row remains non-PASS."],
+  ],
+  payments_identity_address: [
+    ["identityNoActionRequiredOrVerified", "Identity verification shows verified/no action required."],
+    ["addressNoActionRequiredOrVerified", "Address verification shows verified/no action required."],
+  ],
+  payments_payment_method: [
+    ["paymentMethodEligible", "Payment method is eligible for payouts/no action required."],
+  ],
+  payments_holds: [
+    ["noPaymentHold", "No payment hold is shown."],
+    ["noTaxHold", "No tax hold is shown."],
+    ["noIdentityHold", "No identity hold is shown."],
+    ["noComplianceHold", "No compliance hold is shown."],
+    ["noSelfHold", "No self-hold is shown."],
+  ],
+  play_console_ads_data_safety: [
+    ["adsDeclaredYes", "Play Console Ads declaration is Yes."],
+    ["advertisingIdDeclaredYes", "Advertising ID declaration is Yes."],
+    ["dataSafetyIncludesGoogleMobileAdsSdkData", "Data safety includes Google Mobile Ads SDK data."],
+    ["googleMobileAdsSdkDataDisclosureReviewed", "Google Mobile Ads SDK disclosure was reviewed."],
+    ["privacyPolicyUrlMatchesListing", "Privacy policy URL matches the public listing."],
+    ["gmaIpAddressDisclosureReviewed", "IP address disclosure was reviewed."],
+    ["gmaUserProductInteractionsDisclosureReviewed", "User product interactions disclosure was reviewed."],
+    ["gmaDiagnosticsDisclosureReviewed", "Diagnostics disclosure was reviewed."],
+    ["gmaDeviceOrOtherIdentifiersDisclosureReviewed", "Device or other identifiers disclosure was reviewed."],
+    ["advertisingIdMatchesReleaseManifest", "Advertising ID declaration matches the release manifest."],
+  ],
+  live_ad_playback_device: [
+    ["releaseEquivalentAndroid", "Release-equivalent Android build/device was used."],
+    ["consentPathCompleted", "Consent path completed before ad request."],
+    ["clearRewardAndActionDisclosureConfirmed", "Clear reward and required action disclosure appears before the ad."],
+    ["affirmativeOptInBeforeEachRewardedAd", "The user gives affirmative opt-in before each rewarded ad."],
+    ["rewardedVideoOpened", "Rewarded video opened only from an approved optional surface."],
+    ["dismissWithoutRewardChecked", "Dismissal without reward was checked."],
+    ["dismissOrSkipDoesNotBlockNormalUse", "Dismiss or skip does not block normal app use."],
+    ["noPressureOrMisleadingChoiceCopy", "No pressure, guilt, scarcity, or misleading choice copy appears."],
+    ["rewardCallbackGrantedAfterCompletion", "Reward callback grants only after completion."],
+    ["revocationStopsNewAdRequests", "Consent revocation stops new ad requests."],
+    ["noMoodCheckInPromptOrRequest", "No prompt/request in mood check-in."],
+    ["noActiveFocusPromptOrRequest", "No prompt/request during active focus."],
+    ["noFocusReflectionPromptOrRequest", "No prompt/request in focus reflection."],
+    ["noJournalEditorPromptOrRequest", "No prompt/request in journal editor."],
+    ["noOnboardingPromptOrRequest", "No prompt/request during onboarding."],
+    ["noBadOrTerribleMoodPromptOrRequest", "No prompt/request for bad or terrible mood states."],
+  ],
+  full_cross_platform_ad_units: [
+    ["androidOwnerControlledNonSample", "Android IDs are owner-controlled and non-sample."],
+    ["iosOwnerControlledNonSample", "iOS IDs are owner-controlled and non-sample."],
+    ["bannerOwnerControlledNonSample", "Banner IDs are owner-controlled and non-sample."],
+    ["rewardedOwnerControlledNonSample", "Rewarded IDs are owner-controlled and non-sample."],
+    ["samePublisherFamily", "All ad units belong to the same publisher family as app-ads.txt."],
+  ],
+});
 function usage() {
   return [
     "Usage: node scripts/generate-admob-owner-next-steps.cjs [--file docs/release/google-play/ADMOB_EXTERNAL_READINESS.json] [--out output/private/admob-owner-next-steps.md] [--date YYYY-MM-DD] [--require-support-ready]",
@@ -169,6 +264,27 @@ function tableFor(items) {
   return lines.join("\n");
 }
 
+function uniqueRows(items) {
+  const byId = new Map();
+  for (const item of items) byId.set(item.id, item);
+  return Array.from(byId.values());
+}
+
+function checklistFor(items) {
+  const rows = uniqueRows(items).filter((item) => OWNER_FACT_LABELS_BY_ITEM[item.id]?.length > 0);
+  if (rows.length === 0) return "_No public-safe owner evidence facts are pending._";
+
+  const lines = [];
+  for (const item of rows) {
+    lines.push(`### \`${markdownCell(item.id)}\``, "");
+    lines.push("Set `status` to `PASS` only when every fact below is true. PASS evidence must be affirmative, current, and non-conditional. If any required Google-supported language is unavailable, missing, not offered, or not reviewed, or if the Arabic/Hebrew fallback is not documented, or if the UI is unknown, negated, pending, or unclear, keep this row non-PASS (`PARTIAL`, `UNVERIFIED`, or `FAIL`).", "");
+    for (const [factKey, label] of OWNER_FACT_LABELS_BY_ITEM[item.id]) {
+      lines.push(`- \`${factKey}\`: ${label}`);
+    }
+    lines.push("", "Public-safe evidence: one sentence summarizing status only; no screenshots or pasted account, payment, tax, address, email, bank, or raw AdMob identifiers.", "");
+  }
+  return lines.join("\n");
+}
 function buildOwnerNextStepsPacket(ledger, options = {}) {
   const now = dateForReport(options.date);
   const generated = options.date || now.toISOString().slice(0, 10);
@@ -184,6 +300,7 @@ function buildOwnerNextStepsPacket(ledger, options = {}) {
   const ownerRows = currentBlockers.filter((item) => OWNER_ACTION_IDS.has(item.id));
   const serviceRows = currentBlockers.filter((item) => GOOGLE_SERVICE_IDS.has(item.id));
   const futureRows = fullBlockers.filter((item) => !CURRENT_ANDROID_REWARDED_READINESS_IDS.includes(item.id));
+  const checklistRows = uniqueRows([...ownerRows, ...serviceRows, ...futureRows]);
 
   const unsafeIssues = report.issues.map((itemIssue) => {
     const item = itemIssue.itemId ? ` item=${itemIssue.itemId}` : "";
@@ -224,6 +341,10 @@ function buildOwnerNextStepsPacket(ledger, options = {}) {
       ? tableFor(futureRows)
       : "_None. Current Android rewarded readiness and full cross-platform readiness now match._",
     "",
+    "## Public-Safe Owner Evidence Checklist",
+    "",
+    checklistFor(checklistRows),
+    "",
     "## Safe Workflow",
     "",
     "```bash",
@@ -242,7 +363,7 @@ function buildOwnerNextStepsPacket(ledger, options = {}) {
     "- Do not paste payment, tax, identity, address, email, bank, or raw AdMob identifiers into public files.",
     "- Do not run live rewarded playback inside Settings or Privacy; use only the separately approved optional rewards surface after CMP and Play Console declarations are closed.",
     "",
-    report.ok ? "## Ledger Validation\n\nPASS: The source ledger is public-safe and structurally valid." : "## Ledger Validation\n\nUNVERIFIED: The source ledger has validation issues.",
+    report.ok ? "## Ledger Validation\n\nSource ledger validation: STRUCTURALLY_VALID. This only means the ledger is public-safe and structurally valid; it does not mean monetization is ready." : "## Ledger Validation\n\nSource ledger validation: UNVERIFIED. The source ledger has validation issues.",
     "",
     unsafeIssues.length > 0 ? unsafeIssues.join("\n") : "_No ledger validation issues._",
     "",
@@ -298,7 +419,9 @@ function main() {
     process.exit(2);
   }
 
-  console.log(`[admob-owner-next-steps] PASS - wrote ${args.outFile}`);
+  const readinessStatus = report.passReady ? "READY" : "UNVERIFIED";
+  console.log(`[admob-owner-next-steps] WROTE - generated public-safe owner packet ${args.outFile}`);
+  console.log(`[admob-owner-next-steps] readiness=${readinessStatus}`);
   console.log(`[admob-owner-next-steps] support=${support.supportStatus.replaceAll(" ", "_")}`);
 }
 

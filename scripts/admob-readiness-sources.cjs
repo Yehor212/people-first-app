@@ -11,8 +11,10 @@ const ADMOB_READINESS_OFFICIAL_SOURCE_HOSTS = new Set([
 const ADMOB_READINESS_APPROVED_SOURCE_URLS = new Set([
   "https://support.google.com/admob/answer/10564477",
   "https://support.google.com/admob/answer/10448801",
+  "https://support.google.com/admob/answer/15697162",
   "https://support.google.com/admob/answer/14538460",
   "https://support.google.com/admob/answer/10113207",
+  "https://support.google.com/admob/answer/10107561",
   "https://support.google.com/admob/answer/13554116",
   "https://support.google.com/admob/answer/16918505",
   "https://support.google.com/admob/answer/9999955",
@@ -49,9 +51,11 @@ const ADMOB_READINESS_REQUIRED_SOURCE_URLS_BY_ITEM = Object.freeze({
   ],
   admob_policy_center: [
     "https://support.google.com/admob/answer/10448801",
+    "https://support.google.com/admob/answer/15697162",
   ],
   privacy_messages_cmp: [
     "https://support.google.com/admob/answer/10113207",
+    "https://support.google.com/admob/answer/10107561",
     "https://support.google.com/admob/answer/13554116",
     "https://support.google.com/admob/answer/16918505",
     "https://support.google.com/admob/answer/9999955",

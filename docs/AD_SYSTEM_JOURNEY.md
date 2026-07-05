@@ -70,6 +70,8 @@ or water. The prompt must stay framed as an optional bonus.
 - During onboarding (first 3 days)
 - When mood = "terrible" or "bad"
 
+The controller rejects sacred-zone calls before any rewarded preload or show request. Approved prompts must pass one of the allowlisted safe zones: `daily_rewards`, `post_focus`, `companion_rewards`, or `optional_rewards`.
+
 ---
 
 ## 4. State Machine
@@ -209,10 +211,11 @@ or water. The prompt must stay framed as an optional bonus.
 ### No Ads Available (never shown to user — button simply hidden):
 N/A — the system is invisible when unavailable.
 
-### Consent Inline Banner:
+### Consent / Privacy Entry Point:
 ```
-"Earn bonus treats by watching short videos."
-[Allow] [No thanks]
+Ad privacy choices are managed in Settings / Privacy through Google UMP.
+Do not promise treats, XP, streaks, companion care, or any reward in consent copy.
+[Manage ad privacy] [Not now]
 ```
 
 ---
@@ -324,10 +327,16 @@ AdMob.showPrivacyOptionsForm(): Promise<void>;
 initializeAds(): Promise<boolean>;
 
 // Gate check
-canShowRewardedAd(currentMood?: string): { allowed: boolean; reason?: string };
+canShowRewardedAd(
+  currentMood?: string,
+  zone?: AdSafeZone | AdSacredZone,
+): { allowed: boolean; reason?: string };
 
 // Show ad
-showRewardedAd(): Promise<{ success: boolean; rewarded: boolean; error?: string }>;
+showRewardedAd(options?: {
+  currentMood?: string;
+  zone?: AdSafeZone | AdSacredZone;
+}): Promise<{ success: boolean; rewarded: boolean; error?: string }>;
 
 // Disable native ads fail-closed after local consent revocation or premium changes
 disableAds(options?: { clearPrivacyOptions?: boolean }): void;
@@ -344,7 +353,7 @@ interface AdContextValue {
   adsAvailable: boolean;
   canShowRewarded: boolean;
   remainingToday: number;
-  watchRewardedAd: () => Promise<boolean>;
+  watchRewardedAd: (zone?: AdSafeZone) => Promise<boolean>;
   rewardTreats: number;
   rewardXp: number;
   setCurrentMood: (mood: string) => void;
@@ -369,8 +378,8 @@ Phase 2 would add a Supabase Edge Function for SSV verification.
 ### Phase 2: Integration (DONE)
 | File | Status | Change |
 |---|---|---|
-| `src/components/settings/PrivacySection.tsx` | ✅ Modified | Added rewarded prompt inside the privacy control surface |
-| `src/pages/nav-v2/settings/V2SettingsDataPanels.tsx` | ✅ Modified | Added rewarded prompt inside the V2 privacy control surface |
+| `src/components/settings/PrivacySection.tsx` | ✅ Guarded | Privacy remains consent/disclosure/withdrawal only; no rewarded prompt |
+| `src/pages/nav-v2/settings/V2SettingsDataPanels.tsx` | ✅ Guarded | V2 privacy controls remain ad-free |
 | `src/i18n/translations.ts` | ✅ Modified | 4 keys × 9 languages |
 
 ### Phase 3: Native App Wiring
@@ -428,8 +437,8 @@ Phase 2 would add a Supabase Edge Function for SSV verification.
 | C2 | Mood gating blocks ads when terrible, but user might WANT treats | ✅ OK | Mental health > monetization. A user feeling terrible shouldn't be nudged to watch ads. They can earn treats through activities instead. |
 | C3 | 20 treats per ad vs 10 for completing a habit | ✅ OK | Ad reward is intentionally generous to incentivize watching. But habits still give XP + streak + garden growth + companion mood — ads only give treats. |
 | C4 | Premium removes ads but ad system uses treats | ✅ OK | Premium users earn treats normally through activities. Treats economy works independently of ads. Ads are just a bonus earner. |
-| C5 | `canShowRewardedAd` checks mood but mood can change | ✅ OK | Check happens at button render time. If mood changes while button is visible, next render hides it. If mood changes while ad plays, irrelevant — ad is already shown. |
-| C6 | Sacred zones list vs safe zones list — overlap? | ✅ Fixed | No ads inside the focus reflection decision dialog. Post-focus ads must be deferred until after reflection save/dismiss if reintroduced. |
+| C5 | `canShowRewardedAd` checks mood but mood can change | ✅ OK | Check happens before playback using current mood and safe-zone context. If mood changes while the button is visible, the next render hides it; direct calls still re-check before SDK playback. |
+| C6 | Sacred zones list vs safe zones list — overlap? | ✅ Fixed | `canShowRewardedAd` and `showRewardedAd` reject sacred zones with `sacred_zone` before preload/show. Prompt UI maps each public context to an explicit safe zone. |
 | C7 | First-time user sees ad buttons before consent | ✅ Fixed | AdProvider checks `adConsent` — if false, `adsAvailable = false`, no buttons rendered. |
 | C8 | PWA users see broken ad buttons | ✅ OK | `Capacitor.isNativePlatform()` check — PWA skips SDK init entirely. All ad UI hidden. |
 | C9 | Arabic/Hebrew RTL + ad button layout | ✅ OK | Using flexbox `gap` and Tailwind — naturally RTL-compatible. No absolute positioning in ad prompt. |

@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { Play, Gift, Loader2 } from 'lucide-react';
 import { useAds } from '@/contexts/AdContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { type AdSafeZone } from '@/lib/adConfig';
 import { cn } from '@/lib/utils';
 
 function formatTemplate(template: string, values: Record<string, string | number>): string {
@@ -33,6 +34,13 @@ interface RewardedAdPromptProps {
   className?: string;
 }
 
+const REWARDED_PROMPT_SAFE_ZONE_BY_CONTEXT: Record<RewardedAdPromptProps['context'], AdSafeZone> = {
+  daily_rewards: 'daily_rewards',
+  post_focus: 'post_focus',
+  companion: 'companion_rewards',
+  optional_rewards: 'optional_rewards',
+};
+
 export function RewardedAdPrompt({
   context,
   ctaLabel,
@@ -55,7 +63,7 @@ export function RewardedAdPrompt({
     setLoading(true);
 
     try {
-      const earned = await watchRewardedAd();
+      const earned = await watchRewardedAd(REWARDED_PROMPT_SAFE_ZONE_BY_CONTEXT[context]);
       if (earned) {
         setJustRewarded(true);
         onRewarded?.(rewardTreats);

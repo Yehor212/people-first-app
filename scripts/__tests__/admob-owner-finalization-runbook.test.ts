@@ -25,6 +25,8 @@ describe("AdMob owner finalization runbook", () => {
     );
     expect(releaseContracts).toContain("scripts/__tests__/admob-owner-finalization-runbook.test.ts");
     expect(taskCompletionGuard).toContain("google-play:admob:owner-runbook:check");
+    expect(taskCompletionGuard).toContain('"google-play:admob:check",');
+    expect(taskCompletionGuard).toContain("google-play:admob:owner-next-steps -- --require-support-ready");
     expect(taskCompletionGuard).toContain("google-play:admob:owner-evidence:apply");
 
     const checkerSource = readFileSync(checkerPath, "utf8");
@@ -96,9 +98,19 @@ describe("AdMob owner finalization runbook", () => {
     expect(runbook).toContain("Countries subject to GDPR (EEA, UK, and Switzerland)");
     expect(runbook).toContain("Do not consent");
     expect(runbook).toContain("Close (do not consent)");
-    expect(runbook).toContain("English, Ukrainian, Spanish, German, French, Japanese, Arabic, and Hebrew");
+    expect(runbook).toContain("English (en)");
+    expect(runbook).toContain("Ukrainian (uk)");
+    expect(runbook).toContain("Spanish (es)");
+    expect(runbook).toContain("German (de)");
+    expect(runbook).toContain("French (fr)");
+    expect(runbook).toContain("Japanese (ja)");
+    expect(runbook).toContain("Arabic (ar)");
+    expect(runbook).toContain("Hebrew (he)");
+    expect(runbook).toContain("Google supported-language list");
+    expect(runbook).toContain("fallback review instead of claiming those translations");
     expect(runbook).toContain("privacy-options entry point");
     expect(runbook).toContain("canRequestAds");
+    expect(runbook).toContain("https://support.google.com/admob/answer/10107561");
     expect(runbook).toContain("https://support.google.com/admob/answer/13554116");
     expect(runbook).toContain("https://support.google.com/admob/answer/16918505");
     expect(runbook).toContain("https://support.google.com/admob/answer/9999955");
@@ -115,13 +127,45 @@ describe("AdMob owner finalization runbook", () => {
     expect(runbook).toContain("play_console_ads_data_safety");
   });
 
+
+
+  it("documents iOS SKAdNetwork attribution requirements", () => {
+    const runbook = readFileSync(runbookPath, "utf8");
+
+    expect(runbook).toContain("iOS SKAdNetwork attribution");
+    expect(runbook).toContain("SKAdNetworkItems");
+    expect(runbook).toContain("cstr6suwn9.skadnetwork");
+    expect(runbook).toContain("https://developers.google.com/admob/ios/quick-start");
+  });
+
+  it("documents the production AdMob environment secret gate without storing IDs", () => {
+    const runbook = readFileSync(runbookPath, "utf8");
+
+    expect(runbook).toContain("Production AdMob environment secrets");
+    expect(runbook).toContain("VITE_ADMOB_APP_ID_ANDROID");
+    expect(runbook).toContain("ZENFLOW_ADMOB_ANDROID_APP_ID");
+    expect(runbook).toContain("VITE_ADMOB_REWARDED_ID_ANDROID");
+    expect(runbook).toContain("VITE_ADMOB_BANNER_ID_ANDROID");
+    expect(runbook).toContain("VITE_ADMOB_REWARDED_ID_IOS");
+    expect(runbook).toContain("VITE_ADMOB_BANNER_ID_IOS");
+    expect(runbook).toContain("google-play:app-ads:check");
+    expect(runbook).toContain("google-play:admob:check");
+    expect(runbook).toContain("google-play:admob:check:full");
+    expect(runbook).toContain("must not use Google sample IDs");
+    expect(runbook).toContain("publisher family");
+    expect(runbook).toContain("same-publisher");
+    expect(runbook).toContain("Forbidden evidence: raw IDs");
+    expect(runbook).not.toMatch(/ca-app-pub-\d{16}[~/]\d+/i);
+    expect(runbook).not.toMatch(/\bpub-\d{16}\b/i);
+  });
+
   it("documents concrete public-safe facts required before owner PASS evidence", () => {
     const runbook = readFileSync(runbookPath, "utf8");
 
-    expect(runbook).toContain("privacy_messages_cmp: published European regulations message, Google-certified CMP, TCF v2.3, and ZenFlow app selection");
-    expect(runbook).toContain("play_console_ads_data_safety: Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, and privacy policy URL matches listing");
+    expect(runbook).toContain("privacy_messages_cmp: published European regulations message, Google-certified CMP, TCF v2.3, ZenFlow app selection, EEA/UK/Switzerland targeting, ZenFlow CMP languages en, uk, es, de, fr, and ja all reviewed and available, Google supported-language list reviewed, Arabic/Hebrew European regulations fallback reviewed without claiming unavailable translations, Do not consent and Close do-not-consent choices reviewed, privacy policy URL matched, privacy-options entry point confirmed, and canRequestAds gate confirmed");
+    expect(runbook).toContain("play_console_ads_data_safety: Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, privacy policy URL matches listing, IP address disclosure reviewed, user product interactions disclosure reviewed, diagnostics disclosure reviewed, device or other identifiers disclosure reviewed, and Advertising ID matches the release manifest");
     expect(runbook).toContain("payments_holds: no payment hold, no tax hold, no identity hold, no compliance hold, and no self-hold");
-    expect(runbook).toContain("live_ad_playback_device: release-equivalent Android, consent path, rewarded video open, reward callback, revocation stop check, and no prompts or ad requests in sacred zones");
+    expect(runbook).toContain("live_ad_playback_device: release-equivalent Android, consent path, clear reward/action disclosure, affirmative opt-in before each rewarded ad, rewarded video open, dismiss/skip does not block normal use, reward callback, revocation stop check, no pressure or misleading choice copy, and no prompts or ad requests in sacred zones");
     expect(runbook).toContain("full_cross_platform_ad_units: Android, iOS, banner, rewarded, owner-controlled non-sample IDs, and same publisher family");
     expect(runbook).toContain("Each owner evidence row also has a `facts` object");
     expect(runbook).toContain("free-text evidence alone is never enough");
@@ -134,8 +178,42 @@ describe("AdMob owner finalization runbook", () => {
     expect(runbook).toContain("noActiveFocusPromptOrRequest");
     expect(runbook).toContain("noFocusReflectionPromptOrRequest");
     expect(runbook).toContain("noJournalEditorPromptOrRequest");
+    expect(runbook).toContain("noOnboardingPromptOrRequest");
     expect(runbook).toContain("noBadOrTerribleMoodPromptOrRequest");
     expect(runbook).toContain("samePublisherFamily");
+  });
+
+
+  it("requires granular owner facts for Policy Center, CMP, and Play Data safety", () => {
+    const runbook = readFileSync(runbookPath, "utf8");
+
+    expect(runbook).toContain("noRegulatoryIssues");
+    expect(runbook).toContain("noAdvertiserPreferenceRestrictions");
+    expect(runbook).toContain("noRestrictedOrDisabledAdRequests");
+    expect(runbook).not.toContain("supportedZenflowLanguagesReviewed");
+    expect(runbook).toContain("cmpLanguageEnReviewed");
+    expect(runbook).toContain("cmpLanguageUkReviewed");
+    expect(runbook).toContain("cmpLanguageEsReviewed");
+    expect(runbook).toContain("cmpLanguageDeReviewed");
+    expect(runbook).toContain("cmpLanguageFrReviewed");
+    expect(runbook).toContain("cmpLanguageJaReviewed");
+    expect(runbook).toContain("googleSupportedLanguageListReviewed");
+    expect(runbook).toContain("cmpLanguageArFallbackReviewed");
+    expect(runbook).toContain("cmpLanguageHeFallbackReviewed");
+    expect(runbook).toContain("If any Google-supported language is unavailable");
+    expect(runbook).toContain("clearRewardAndActionDisclosureConfirmed");
+    expect(runbook).toContain("affirmativeOptInBeforeEachRewardedAd");
+    expect(runbook).toContain("dismissOrSkipDoesNotBlockNormalUse");
+    expect(runbook).toContain("noPressureOrMisleadingChoiceCopy");
+    expect(runbook).toContain("doNotConsentChoiceReviewed");
+    expect(runbook).toContain("closeDoNotConsentReviewed");
+    expect(runbook).toContain("privacyOptionsEntryPointConfirmed");
+    expect(runbook).toContain("canRequestAdsGateConfirmed");
+    expect(runbook).toContain("gmaIpAddressDisclosureReviewed");
+    expect(runbook).toContain("gmaUserProductInteractionsDisclosureReviewed");
+    expect(runbook).toContain("gmaDiagnosticsDisclosureReviewed");
+    expect(runbook).toContain("gmaDeviceOrOtherIdentifiersDisclosureReviewed");
+    expect(runbook).toContain("advertisingIdMatchesReleaseManifest");
   });
 
   it("keeps the owner evidence template public-safe", () => {

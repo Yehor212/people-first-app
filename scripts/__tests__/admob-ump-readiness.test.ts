@@ -124,6 +124,23 @@ describe("AdMob UMP/native privacy readiness guard", () => {
     );
   });
 
+
+  it("fails if iOS SKAdNetworkItems are missing", () => {
+    const checker = loadChecker();
+    const files = checker.readFileMap();
+    files.iosInfoPlist = files.iosInfoPlist.replace(/<key>SKAdNetworkItems<\/key>[\s\S]*?<\/array>\s*/, "");
+
+    const report = checker.evaluateAdMobUmpReadiness(files);
+
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: "missing_ios_skadnetwork_items" }),
+    );
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: "missing_ios_google_skadnetwork_identifier" }),
+    );
+  });
+
   it("prints only public-safe status and no raw AdMob identifiers", () => {
     const result = spawnSync(process.execPath, [checkerPath], {
       cwd: process.cwd(),

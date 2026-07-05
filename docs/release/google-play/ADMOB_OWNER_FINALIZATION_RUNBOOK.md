@@ -17,7 +17,7 @@ Current state on 2026-07-04:
 | `public_google_play_listing` | PASS | Public Play listing shows ads disclosure and optional rewarded-ad copy; recheck after listing edits. |
 | `public_privacy_policy` | PASS | GitHub Pages post-deploy public privacy smoke and `npm run google-play:privacy:public-check` passed for the published privacy URL; recheck after privacy policy, ads SDK, consent, developer website, or Play Data safety changes. |
 | `admob_app_readiness` | PASS | AdMob app list showed Ready and ad serving enabled; recheck before each release. |
-| `admob_policy_center` | PASS | Policy Center showed no violations; recheck before each release. |
+| `admob_policy_center` | PARTIAL | Policy Center no-violations/no-blocking review exists, but granular proof for no regulatory issues, no advertiser-preference restrictions, and no restricted or disabled ad requests is still required. |
 | `privacy_messages_cmp` | PARTIAL | Local UMP wiring passes, but AdMob Privacy & messages still needs owner confirmation/publishing. |
 | `payments_tax_info` | UNVERIFIED | Tax information status must be checked by the owner without recording tax details. |
 | `payments_identity_address` | UNVERIFIED | Identity/address verification status must be checked by the owner without recording personal data. |
@@ -61,8 +61,9 @@ blockers remain.
 
 Allowed evidence:
 
-- Status words from Google UI, such as Ready, No violations, published, or no
-  payment hold.
+- Status words from Google UI, such as Ready, No violations, no regulatory issues,
+  no advertiser-preference restrictions, no restricted or disabled ad requests,
+  published, or no payment hold.
 - Masked publisher/app/ad-unit fragments only when a script already masks them.
 - Screenshot references or local file paths that do not reveal personal,
   payment, account, tax, address, email, or raw ad identifiers.
@@ -95,8 +96,13 @@ Owner action in AdMob:
 4. Set targeting to Countries subject to GDPR (EEA, UK, and Switzerland). Use
    Everywhere only if there is a separate owner decision to show the European
    regulations message globally.
-5. Add the languages ZenFlow supports where practical: English, Ukrainian, Spanish, German, French, Japanese, Arabic, and Hebrew. English should remain
-   the safe default language when the device language cannot be matched.
+5. Add and review every Google-supported European regulations language that
+   ZenFlow supports: English (en), Ukrainian (uk), Spanish (es), German (de),
+   French (fr), and Japanese (ja). Google's supported-language list for
+   European regulations messages does not list Arabic (ar) or Hebrew (he), so
+   record a public-safe fallback review instead of claiming those translations
+   are selected. English should remain the safe default language when the device
+   language cannot be matched.
 6. Confirm the privacy policy URL matches the public Play listing and developer
    website.
 7. Choose user choices intentionally. For ZenFlow, the conservative default is
@@ -138,6 +144,7 @@ requested after `canRequestAds` allows it.
 Sources:
 
 - https://support.google.com/admob/answer/10113207
+- https://support.google.com/admob/answer/10107561
 - https://support.google.com/admob/answer/13554116
 - https://support.google.com/admob/answer/16918505
 - https://support.google.com/admob/answer/9999955
@@ -229,21 +236,23 @@ Minimum public-safe facts by row:
 
 - admob_app_ads_txt_status: Verify app, confirmed or Done, and ZenFlow.
 - admob_app_readiness: Ready, ad serving enabled, Google Play linked, and active ad units.
-- admob_policy_center: Policy Center and no violations or no blocking issues.
-- privacy_messages_cmp: published European regulations message, Google-certified CMP, TCF v2.3, and ZenFlow app selection.
+- admob_policy_center: Policy Center, no violations, no blocking issues, no regulatory issues, no advertiser-preference restrictions, and no restricted or disabled ad requests.
+- privacy_messages_cmp: published European regulations message, Google-certified CMP, TCF v2.3, ZenFlow app selection, EEA/UK/Switzerland targeting, ZenFlow CMP languages en, uk, es, de, fr, and ja all reviewed and available, Google supported-language list reviewed, Arabic/Hebrew European regulations fallback reviewed without claiming unavailable translations, Do not consent and Close do-not-consent choices reviewed, privacy policy URL matched, privacy-options entry point confirmed, and canRequestAds gate confirmed.
 - payments_tax_info: tax and no action required.
 - payments_identity_address: identity, address, and no action required or verified.
 - payments_payment_method: payment method and eligible or no action required.
 - payments_holds: no payment hold, no tax hold, no identity hold, no compliance hold, and no self-hold.
-- play_console_ads_data_safety: Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, and privacy policy URL matches listing.
-- live_ad_playback_device: release-equivalent Android, consent path, rewarded video open, reward callback, revocation stop check, and no prompts or ad requests in sacred zones.
+- play_console_ads_data_safety: Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, privacy policy URL matches listing, IP address disclosure reviewed, user product interactions disclosure reviewed, diagnostics disclosure reviewed, device or other identifiers disclosure reviewed, and Advertising ID matches the release manifest.
+- live_ad_playback_device: release-equivalent Android, consent path, clear reward/action disclosure, affirmative opt-in before each rewarded ad, rewarded video open, dismiss/skip does not block normal use, reward callback, revocation stop check, no pressure or misleading choice copy, and no prompts or ad requests in sacred zones including onboarding.
 - full_cross_platform_ad_units: Android, iOS, banner, rewarded, owner-controlled non-sample IDs, and same publisher family.
 
 Minimum structured facts by high-risk row:
 
+- admob_policy_center: `policyCenterReviewed`, `noViolations`, `noBlockingIssues`, `noRegulatoryIssues`, `noAdvertiserPreferenceRestrictions`, `noRestrictedOrDisabledAdRequests`.
+- privacy_messages_cmp: `europeanRegulationsMessagePublished`, `googleCertifiedCmp`, `tcfV23`, `zenflowAppSelected`, `eeaUkSwitzerlandTargeting`, `privacyPolicyUrlMatched`, `googleSupportedLanguageListReviewed`, `cmpLanguageEnReviewed`, `cmpLanguageUkReviewed`, `cmpLanguageEsReviewed`, `cmpLanguageDeReviewed`, `cmpLanguageFrReviewed`, `cmpLanguageJaReviewed`, `cmpLanguageArFallbackReviewed`, `cmpLanguageHeFallbackReviewed`, `doNotConsentChoiceReviewed`, `closeDoNotConsentReviewed`, `privacyOptionsEntryPointConfirmed`, `canRequestAdsGateConfirmed`. If any Google-supported language is unavailable, missing, not offered, or not reviewed, or if the Arabic/Hebrew fallback is not documented, keep `privacy_messages_cmp` non-PASS.
 - payments_holds: `noPaymentHold`, `noTaxHold`, `noIdentityHold`, `noComplianceHold`, `noSelfHold`.
-- play_console_ads_data_safety: `adsDeclaredYes`, `advertisingIdDeclaredYes`, `dataSafetyIncludesGoogleMobileAdsSdkData`, `googleMobileAdsSdkDataDisclosureReviewed`, `privacyPolicyUrlMatchesListing`.
-- live_ad_playback_device: `releaseEquivalentAndroid`, `consentPathCompleted`, `rewardedVideoOpened`, `dismissWithoutRewardChecked`, `rewardCallbackGrantedAfterCompletion`, `revocationStopsNewAdRequests`, `noMoodCheckInPromptOrRequest`, `noActiveFocusPromptOrRequest`, `noFocusReflectionPromptOrRequest`, `noJournalEditorPromptOrRequest`, `noBadOrTerribleMoodPromptOrRequest`.
+- play_console_ads_data_safety: `adsDeclaredYes`, `advertisingIdDeclaredYes`, `dataSafetyIncludesGoogleMobileAdsSdkData`, `googleMobileAdsSdkDataDisclosureReviewed`, `privacyPolicyUrlMatchesListing`, `gmaIpAddressDisclosureReviewed`, `gmaUserProductInteractionsDisclosureReviewed`, `gmaDiagnosticsDisclosureReviewed`, `gmaDeviceOrOtherIdentifiersDisclosureReviewed`, `advertisingIdMatchesReleaseManifest`.
+- live_ad_playback_device: `releaseEquivalentAndroid`, `consentPathCompleted`, `clearRewardAndActionDisclosureConfirmed`, `affirmativeOptInBeforeEachRewardedAd`, `rewardedVideoOpened`, `dismissWithoutRewardChecked`, `dismissOrSkipDoesNotBlockNormalUse`, `rewardCallbackGrantedAfterCompletion`, `revocationStopsNewAdRequests`, `noPressureOrMisleadingChoiceCopy`, `noMoodCheckInPromptOrRequest`, `noActiveFocusPromptOrRequest`, `noFocusReflectionPromptOrRequest`, `noJournalEditorPromptOrRequest`, `noOnboardingPromptOrRequest`, `noBadOrTerribleMoodPromptOrRequest`.
 - full_cross_platform_ad_units: `androidOwnerControlledNonSample`, `iosOwnerControlledNonSample`, `bannerOwnerControlledNonSample`, `rewardedOwnerControlledNonSample`, `samePublisherFamily`.
 
 Do not add names, emails, tax forms, bank details, addresses, screenshots, raw
@@ -295,6 +304,68 @@ Smoke steps:
 Never use live ad playback proof to weaken the sacred-zone policy. Ads remain
 blocked in mood check-ins, active focus, journaling, meditation, onboarding,
 and bad or terrible mood states.
+
+## Production AdMob environment secrets
+
+Current owner evidence can prove Google-side app readiness, but the release
+artifact still needs owner-controlled AdMob IDs injected through secrets before
+live monetization can be claimed. Do not write raw app IDs or ad-unit IDs into
+tracked files, screenshots, or runbook evidence.
+
+Current Android rewarded-only release requires:
+
+- `VITE_ADMOB_APP_ID_ANDROID` or `ZENFLOW_ADMOB_ANDROID_APP_ID` for the
+  Android application ID metadata placeholder.
+- `VITE_ADMOB_REWARDED_ID_ANDROID` for the Android rewarded unit.
+- The publisher family in both values must match the masked publisher already
+  verified in public `app-ads.txt`.
+- Values must be owner-controlled and must not use Google sample IDs.
+
+Future full cross-platform monetization additionally requires:
+
+- `VITE_ADMOB_BANNER_ID_ANDROID`
+- `VITE_ADMOB_REWARDED_ID_IOS`
+- `VITE_ADMOB_BANNER_ID_IOS`
+
+Safe proof workflow:
+
+```bash
+npm run google-play:app-ads:check
+npm run google-play:admob:check
+npm run google-play:admob:check:full
+npm run google-play:admob:external-check:pass
+npm run google-play:admob:external-check:full-pass
+```
+
+`google-play:admob:check` is the current Android rewarded environment gate.
+It must remain non-PASS while the required Android app ID or rewarded ad-unit ID
+is missing, invalid, sample, or from a publisher family that does not match
+`app-ads.txt`. `google-play:admob:check:full` must remain non-PASS until the
+future Android banner and iOS rewarded/banner IDs are also owner-controlled,
+non-sample, and same-publisher.
+
+Allowed evidence: command output with masked publisher fragments and PASS,
+PARTIAL, UNVERIFIED, or FAIL summaries. Forbidden evidence: raw IDs, ad-unit
+screenshots, account pages, or copied environment files.
+
+## iOS SKAdNetwork attribution
+
+Google's iOS AdMob setup requires both `GADApplicationIdentifier` and
+`SKAdNetworkItems` in `Info.plist`. ZenFlow includes Google's current
+published SKAdNetwork identifier list from the official AdMob iOS quick-start,
+including `cstr6suwn9.skadnetwork` for Google. Refresh this list from the
+Google source before an iOS monetization release, because Google may update
+participating buyer identifiers.
+
+Local proof:
+
+```bash
+npm run google-play:admob:ump-check
+```
+
+Source:
+
+- https://developers.google.com/admob/ios/quick-start
 
 ## Full cross-platform ad-unit expansion
 
@@ -355,6 +426,7 @@ Sources:
 
 - App readiness: https://support.google.com/admob/answer/10564477
 - Policy Center: https://support.google.com/admob/answer/10448801
+- Policy Center issue types/statuses: https://support.google.com/admob/answer/15697162
 - App-ads.txt verification: https://support.google.com/admob/answer/14538460
 - European regulations message for apps: https://support.google.com/admob/answer/10113207
 - Google-certified CMP requirement: https://support.google.com/admob/answer/13554116

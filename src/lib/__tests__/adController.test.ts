@@ -44,6 +44,14 @@ vi.mock('@/lib/adConfig', () => ({
     reducedMoods: [],
     reducedMaxPerSession: 1,
   },
+  AD_SACRED_ZONES: [
+    'focus_active',
+    'breathing_active',
+    'mood_logging',
+    'journaling',
+    'meditation',
+    'onboarding',
+  ],
 }));
 
 vi.mock('@/lib/storageKeys', () => ({

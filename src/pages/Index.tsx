@@ -153,6 +153,7 @@ function IndexV2Impl() {
     badgesRef.current = typeof next === "function" ? next(current) : next;
   }, []);
   const moods = useUserDataStore((s) => s.moods);
+  const latestMoodForAds = useMemo(() => moods[moods.length - 1]?.mood || "okay", [moods]);
   const habits = useUserDataStore((s) => s.habits);
   const focusSessions = useUserDataStore((s) => s.focusSessions);
   const gratitudeEntries = useUserDataStore((s) => s.gratitudeEntries);
@@ -253,6 +254,7 @@ function IndexV2Impl() {
           onEarnXp={() => undefined}
           adConsent={canInitializeRewardedAds(privacy)}
           isPremium={false}
+          currentMood={latestMoodForAds}
         >
           <NavV2Orchestrator
             onAddMood={handleAddMood}

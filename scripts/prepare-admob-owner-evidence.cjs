@@ -84,7 +84,8 @@ function main() {
       process.exit(2);
     }
 
-    console.log("[admob-owner-evidence-prepare] PASS - prepared " + args.file);
+    console.log("[admob-owner-evidence-prepare] WROTE - prepared private owner evidence working file " + args.file);
+    console.log("[admob-owner-evidence-prepare] readiness=UNVERIFIED");
     console.log("[admob-owner-evidence-prepare] next=fill only public-safe owner summaries and boolean facts");
     console.log(
       "[admob-owner-evidence-prepare] next=node scripts/check-admob-owner-evidence.cjs --file " +

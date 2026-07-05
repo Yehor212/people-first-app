@@ -3,7 +3,7 @@
   "packageName": "com.zenflow.app",
   "evidenceDate": "YYYY-MM-DD",
   "privateFilePath": "output/private/admob-owner-evidence.json",
-  "instructions": "Copy this file to output/private/admob-owner-evidence.json after owner-only AdMob, Payments, and Play Console checks. Record only public-safe status summaries. Do not paste account, payment, tax, address, personal, or raw ad identifiers.",
+  "instructions": "Copy this file to output/private/admob-owner-evidence.json after owner-only AdMob, Payments, and Play Console checks. Record only public-safe status summaries and boolean facts. PASS evidence must be affirmative, current, and non-conditional; if the UI is unknown, negated, pending, unclear, or any required language/fallback proof is missing, keep the row non-PASS. Do not paste account, payment, tax, address, personal, screenshots, or raw ad identifiers.",
   "items": [
     {
       "id": "admob_app_ads_txt_status",
@@ -41,10 +41,14 @@
       "facts": {
         "policyCenterReviewed": false,
         "noViolations": false,
-        "noBlockingIssues": false
+        "noBlockingIssues": false,
+        "noRegulatoryIssues": false,
+        "noAdvertiserPreferenceRestrictions": false,
+        "noRestrictedOrDisabledAdRequests": false
       },
       "sourceUrls": [
-        "https://support.google.com/admob/answer/10448801"
+        "https://support.google.com/admob/answer/10448801",
+        "https://support.google.com/admob/answer/15697162"
       ]
     },
     {
@@ -58,10 +62,24 @@
         "tcfV23": false,
         "zenflowAppSelected": false,
         "eeaUkSwitzerlandTargeting": false,
-        "privacyPolicyUrlMatched": false
+        "privacyPolicyUrlMatched": false,
+        "googleSupportedLanguageListReviewed": false,
+        "cmpLanguageEnReviewed": false,
+        "cmpLanguageUkReviewed": false,
+        "cmpLanguageEsReviewed": false,
+        "cmpLanguageDeReviewed": false,
+        "cmpLanguageFrReviewed": false,
+        "cmpLanguageJaReviewed": false,
+        "cmpLanguageArFallbackReviewed": false,
+        "cmpLanguageHeFallbackReviewed": false,
+        "doNotConsentChoiceReviewed": false,
+        "closeDoNotConsentReviewed": false,
+        "privacyOptionsEntryPointConfirmed": false,
+        "canRequestAdsGateConfirmed": false
       },
       "sourceUrls": [
         "https://support.google.com/admob/answer/10113207",
+        "https://support.google.com/admob/answer/10107561",
         "https://support.google.com/admob/answer/13554116",
         "https://support.google.com/admob/answer/16918505",
         "https://support.google.com/admob/answer/9999955",
@@ -132,7 +150,12 @@
         "advertisingIdDeclaredYes": false,
         "dataSafetyIncludesGoogleMobileAdsSdkData": false,
         "googleMobileAdsSdkDataDisclosureReviewed": false,
-        "privacyPolicyUrlMatchesListing": false
+        "privacyPolicyUrlMatchesListing": false,
+        "gmaIpAddressDisclosureReviewed": false,
+        "gmaUserProductInteractionsDisclosureReviewed": false,
+        "gmaDiagnosticsDisclosureReviewed": false,
+        "gmaDeviceOrOtherIdentifiersDisclosureReviewed": false,
+        "advertisingIdMatchesReleaseManifest": false
       },
       "sourceUrls": [
         "https://support.google.com/googleplay/android-developer/answer/9859455",
@@ -147,14 +170,19 @@
       "facts": {
         "releaseEquivalentAndroid": false,
         "consentPathCompleted": false,
+        "clearRewardAndActionDisclosureConfirmed": false,
+        "affirmativeOptInBeforeEachRewardedAd": false,
         "rewardedVideoOpened": false,
         "dismissWithoutRewardChecked": false,
+        "dismissOrSkipDoesNotBlockNormalUse": false,
+        "noPressureOrMisleadingChoiceCopy": false,
         "rewardCallbackGrantedAfterCompletion": false,
         "revocationStopsNewAdRequests": false,
         "noMoodCheckInPromptOrRequest": false,
         "noActiveFocusPromptOrRequest": false,
         "noFocusReflectionPromptOrRequest": false,
         "noJournalEditorPromptOrRequest": false,
+        "noOnboardingPromptOrRequest": false,
         "noBadOrTerribleMoodPromptOrRequest": false
       },
       "sourceUrls": [

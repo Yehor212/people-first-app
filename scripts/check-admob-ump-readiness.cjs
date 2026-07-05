@@ -225,6 +225,23 @@ function evaluateAdMobUmpReadiness(files) {
     "missing_ios_release_sample_id_guard",
     "iOS release builds must reject missing or Google sample AdMob app ids",
   );
+
+  requireContains(
+    issues,
+    files,
+    "iosInfoPlist",
+    "SKAdNetworkItems",
+    "missing_ios_skadnetwork_items",
+    "iOS Info.plist must declare SKAdNetworkItems for Google Mobile Ads attribution",
+  );
+  requireContains(
+    issues,
+    files,
+    "iosInfoPlist",
+    "cstr6suwn9.skadnetwork",
+    "missing_ios_google_skadnetwork_identifier",
+    "iOS Info.plist SKAdNetworkItems must include Google's SKAdNetworkIdentifier cstr6suwn9.skadnetwork",
+  );
   requireContains(
     issues,
     files,

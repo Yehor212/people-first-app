@@ -24,7 +24,7 @@ import {
   refreshAdPrivacyOptionsStatus,
   disableAds,
 } from '@/lib/adController';
-import { AD_REWARDS } from '@/lib/adConfig';
+import { AD_REWARDS, type AdSafeZone } from '@/lib/adConfig';
 import { logger } from '@/lib/logger';
 
 // ============================================
@@ -50,8 +50,8 @@ interface AdContextValue {
   /** Opens Google UMP privacy options when available */
   openAdPrivacyOptions: () => Promise<boolean>;
 
-  /** Show a rewarded ad. Returns true if user earned the reward. */
-  watchRewardedAd: () => Promise<boolean>;
+  /** Show a rewarded ad from an approved safe zone. Returns true if user earned the reward. */
+  watchRewardedAd: (zone?: AdSafeZone) => Promise<boolean>;
 
   /** Treats reward for watching */
   rewardTreats: number;
@@ -199,13 +199,13 @@ export function AdProvider({
     }
   }, [adsAvailable]);
 
-  const watchRewardedAd = useCallback(async (): Promise<boolean> => {
+  const watchRewardedAd = useCallback(async (zone: AdSafeZone = 'optional_rewards'): Promise<boolean> => {
     if (!adsAvailable) return false;
 
-    const check = canShowRewardedAd(currentMoodRef.current);
+    const check = canShowRewardedAd(currentMoodRef.current, zone);
     if (!check.allowed) return false;
 
-    const result = await showRewardedAd();
+    const result = await showRewardedAd({ currentMood: currentMoodRef.current, zone });
 
     if (result.success && result.rewarded) {
       onEarnTreats?.(AD_REWARDS.rewardedVideoTreats);

@@ -134,7 +134,7 @@ Complete: slide 8 → "Let's Go!" → onComplete()
 | Water tree | `treatsBalance >= waterCost (10)` — checked in `waterTree()` before deduction |
 | Touch tree | None — always allowed (XP reduced during cooldown) |
 | View journal | If password set: `JournalLockScreen` PIN entry required |
-| Watch ad | `canShowRewardedAd()` checks: SDK available, mood not blocked, frequency caps, cooldowns |
+| Watch ad | `canShowRewardedAd(currentMood, zone)` checks: sacred-zone block, SDK availability, mood block, frequency caps, cooldowns |
 | Push notifications | `secureCompare()` (timing-safe) validates cron secret or service role key |
 
 ---

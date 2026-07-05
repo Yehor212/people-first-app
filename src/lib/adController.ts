@@ -12,7 +12,10 @@ import { IS_DEV } from '@/lib/env';
 import {
   AD_FREQUENCY,
   AD_MOOD_RULES,
+  AD_SACRED_ZONES,
   type AdPlatform,
+  type AdSafeZone,
+  type AdSacredZone,
   getRewardedAdUnitId,
   hasRewardedAdUnitId,
   isGoogleTestAdUnit,
@@ -40,6 +43,13 @@ interface RewardedAdResult {
   success: boolean;
   rewarded: boolean;
   error?: string;
+}
+
+export type RewardedAdZone = AdSafeZone | AdSacredZone;
+
+interface RewardedAdOptions {
+  currentMood?: string;
+  zone?: RewardedAdZone;
 }
 
 interface PrivacyOptionsResult {
@@ -79,6 +89,7 @@ let AdMobPlugin: any = null; // any: Capacitor AdMob plugin type is loaded dynam
 let AdMobModule: any = null;
 let adLifecycleEpoch = 0;
 const AD_ONBOARDING_GRACE_DAYS = 3;
+const SACRED_AD_ZONES = new Set<string>(AD_SACRED_ZONES);
 
 interface StoredOnboardingAdState {
   isNewUser?: boolean;
@@ -119,6 +130,10 @@ function isWithinOnboardingAdGracePeriod(): boolean {
   const daysActive = Number(onboarding?.daysActive ?? 1);
   const normalizedDaysActive = Number.isFinite(daysActive) && daysActive > 0 ? daysActive : 1;
   return normalizedDaysActive <= AD_ONBOARDING_GRACE_DAYS;
+}
+
+function isSacredAdZone(zone?: RewardedAdZone): boolean {
+  return typeof zone === 'string' && SACRED_AD_ZONES.has(zone);
 }
 
 async function canRequestNativeAds(module: any, lifecycleEpoch: number): Promise<boolean> {
@@ -284,10 +299,8 @@ export async function initializeAds(): Promise<boolean> {
 
     state.initialized = true;
     state.sdkAvailable = true;
+    state.rewardedReady = false;
     logger.log('[Ads] AdMob initialized');
-
-    // Pre-load first rewarded ad
-    prepareRewardedAd().catch(err => logger.warn('[Ads]', 'Rewarded ad preload failed:', err));
 
     return true;
   } catch {
@@ -319,10 +332,7 @@ export async function showAdPrivacyOptions(): Promise<PrivacyOptionsResult> {
     }
 
     state.sdkAvailable = state.initialized && state.canRequestAds;
-
-    if (state.sdkAvailable) {
-      prepareRewardedAd().catch(err => logger.warn('[Ads]', 'Rewarded ad preload failed:', err));
-    }
+    state.rewardedReady = false;
 
     return {
       opened: true,
@@ -345,7 +355,7 @@ export async function showAdPrivacyOptions(): Promise<PrivacyOptionsResult> {
 // ============================================
 
 /**
- * Pre-load a rewarded ad so it's ready when user taps "Watch"
+ * Load a rewarded ad only after explicit user opt-in.
  */
 async function prepareRewardedAd(): Promise<void> {
   if (!state.sdkAvailable || !AdMobPlugin) return;
@@ -457,10 +467,14 @@ async function showRewardVideoAndWaitForOutcome(): Promise<RewardedOutcome> {
  * Check if a rewarded ad can be shown right now.
  * Respects frequency caps, mood gating, and cooldowns.
  */
-export function canShowRewardedAd(currentMood?: string): {
+export function canShowRewardedAd(currentMood?: string, zone?: RewardedAdZone): {
   allowed: boolean;
   reason?: string;
 } {
+  if (isSacredAdZone(zone)) {
+    return { allowed: false, reason: 'sacred_zone' };
+  }
+
   if (isWithinOnboardingAdGracePeriod()) {
     return { allowed: false, reason: 'onboarding_grace_period' };
   }
@@ -519,25 +533,28 @@ export function canShowRewardedAd(currentMood?: string): {
 /**
  * Show a rewarded video ad. Returns whether the user earned the reward.
  */
-export async function showRewardedAd(): Promise<RewardedAdResult> {
-  if (!state.sdkAvailable || !AdMobPlugin) {
-    return { success: false, rewarded: false, error: 'sdk_unavailable' };
+export async function showRewardedAd(options: RewardedAdOptions = {}): Promise<RewardedAdResult> {
+  const gate = canShowRewardedAd(options.currentMood, options.zone);
+  if (!gate.allowed) {
+    return { success: false, rewarded: false, error: gate.reason ?? 'not_allowed' };
   }
 
   try {
-    // Prepare ad if not ready
+    // Prepare inventory only after the user explicitly opted in from an approved safe zone.
     if (!state.rewardedReady) {
       await prepareRewardedAd();
     }
 
+    if (!state.rewardedReady) {
+      return { success: false, rewarded: false, error: 'ad_not_ready' };
+    }
+
+    state.rewardedReady = false;
     const outcome = await showRewardVideoAndWaitForOutcome();
 
     if (!outcome.rewarded) {
       state.lastDismissTime = Date.now();
       state.rewardedReady = false;
-
-      // Pre-load next ad
-      prepareRewardedAd().catch(err => logger.warn('[Ads]', 'Rewarded ad preload failed:', err));
 
       return { success: false, rewarded: false, error: outcome.error ?? 'dismissed_or_failed' };
     }
@@ -557,8 +574,7 @@ export async function showRewardedAd(): Promise<RewardedAdResult> {
     storageSetRaw(SK.AD_COUNT_DATE, today);
     storageSetRaw(SK.AD_LAST_SHOWN, String(Date.now()));
 
-    // Pre-load next ad
-    prepareRewardedAd().catch(err => logger.warn('[Ads]', 'Rewarded ad preload failed:', err));
+    state.rewardedReady = false;
 
     return {
       success: true,
@@ -566,10 +582,8 @@ export async function showRewardedAd(): Promise<RewardedAdResult> {
     };
   } catch (err) {
     state.lastDismissTime = Date.now();
+    state.rewardedReady = false;
     logger.warn('[Ads] Rewarded ad failed/dismissed:', err);
-
-    // Pre-load next ad
-    prepareRewardedAd().catch(err => logger.warn('[Ads]', 'Rewarded ad preload failed:', err));
 
     return { success: false, rewarded: false, error: 'dismissed_or_failed' };
   }

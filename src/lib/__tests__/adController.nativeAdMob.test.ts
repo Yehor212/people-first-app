@@ -102,7 +102,7 @@ vi.mock('@/lib/logger', () => ({
 
 vi.mock('@/lib/env', () => ({
   IS_DEV: false,
-  ADMOB_REWARDED_ID_ANDROID: 'ca-app-pub-9501460293702808/1381197135',
+  ADMOB_REWARDED_ID_ANDROID: 'ca-app-pub-3940256099942544/5224354917',
   ADMOB_BANNER_ID_ANDROID: '',
   ADMOB_REWARDED_ID_IOS: '',
   ADMOB_BANNER_ID_IOS: '',
@@ -120,7 +120,15 @@ vi.mock('@/lib/adConfig', () => ({
     reducedMoods: [],
     reducedMaxPerSession: 1,
   },
-  getRewardedAdUnitId: vi.fn(() => 'ca-app-pub-9501460293702808/1381197135'),
+  AD_SACRED_ZONES: [
+    'focus_active',
+    'breathing_active',
+    'mood_logging',
+    'journaling',
+    'meditation',
+    'onboarding',
+  ],
+  getRewardedAdUnitId: vi.fn(() => 'ca-app-pub-3940256099942544/5224354917'),
   hasRewardedAdUnitId: vi.fn(() => true),
   isGoogleTestAdUnit: vi.fn(() => false),
 }));
@@ -262,6 +270,109 @@ describe('adController native AdMob contracts', () => {
     expect(harness.adMob.prepareRewardVideoAd).not.toHaveBeenCalled();
   });
 
+  it('initializes the SDK without preloading rewarded inventory before user opt-in', async () => {
+    const { initializeAds, getAdState } = await import('../adController');
+
+    await expect(initializeAds()).resolves.toBe(true);
+
+    expect(getAdState()).toMatchObject({
+      sdkAvailable: true,
+      rewardedReady: false,
+    });
+    expect(harness.adMob.prepareRewardVideoAd).not.toHaveBeenCalled();
+  });
+
+  it('does not preload rewarded inventory after opening privacy options', async () => {
+    const { initializeAds, showAdPrivacyOptions, getAdState } = await import('../adController');
+
+    await expect(initializeAds()).resolves.toBe(true);
+    harness.adMob.prepareRewardVideoAd.mockClear();
+
+    await expect(showAdPrivacyOptions()).resolves.toMatchObject({ opened: true });
+
+    expect(getAdState()).toMatchObject({
+      sdkAvailable: true,
+      rewardedReady: false,
+    });
+    expect(harness.adMob.prepareRewardVideoAd).not.toHaveBeenCalled();
+  });
+
+  it('prepares rewarded inventory only after explicit optional opt-in', async () => {
+    const { initializeAds, showRewardedAd } = await import('../adController');
+
+    await expect(initializeAds()).resolves.toBe(true);
+    harness.adMob.prepareRewardVideoAd.mockClear();
+    harness.adMob.showRewardVideoAd.mockImplementationOnce(async () => {
+      harness.emit('onRewardedVideoAdReward', { type: 'treats', amount: 1 });
+    });
+
+    await expect(showRewardedAd({ currentMood: 'okay', zone: 'optional_rewards' })).resolves.toMatchObject({
+      success: true,
+      rewarded: true,
+    });
+
+    expect(harness.adMob.prepareRewardVideoAd).toHaveBeenCalledTimes(1);
+    expect(harness.adMob.showRewardVideoAd).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks onboarding rewarded calls before any ad request or show call', async () => {
+    const { initializeAds, showRewardedAd } = await import('../adController');
+
+    await expect(initializeAds()).resolves.toBe(true);
+    harness.adMob.prepareRewardVideoAd.mockClear();
+
+    await expect(showRewardedAd({ currentMood: 'okay', zone: 'onboarding' })).resolves.toEqual({
+      success: false,
+      rewarded: false,
+      error: 'sacred_zone',
+    });
+
+    expect(harness.adMob.prepareRewardVideoAd).not.toHaveBeenCalled();
+    expect(harness.adMob.showRewardVideoAd).not.toHaveBeenCalled();
+  });
+
+  it('does not keep or background-preload rewarded inventory after a dismissed attempt', async () => {
+    const { initializeAds, showRewardedAd, getAdState, getRemainingRewardedAds } = await import('../adController');
+
+    await expect(initializeAds()).resolves.toBe(true);
+    harness.adMob.prepareRewardVideoAd.mockClear();
+    harness.adMob.showRewardVideoAd.mockImplementationOnce(async () => {
+      harness.emit('onRewardedVideoAdDismissed');
+    });
+
+    await expect(showRewardedAd({ currentMood: 'okay', zone: 'optional_rewards' })).resolves.toMatchObject({
+      success: false,
+      rewarded: false,
+      error: 'dismissed_or_failed',
+    });
+    await Promise.resolve();
+
+    expect(getRemainingRewardedAds()).toBe(5);
+    expect(getAdState()).toMatchObject({ rewardedReady: false });
+    expect(harness.adMob.prepareRewardVideoAd).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not keep or background-preload rewarded inventory after a completed reward', async () => {
+    const { initializeAds, showRewardedAd, getAdState, getRemainingRewardedAds } = await import('../adController');
+
+    await expect(initializeAds()).resolves.toBe(true);
+    harness.adMob.prepareRewardVideoAd.mockClear();
+    harness.adMob.showRewardVideoAd.mockImplementationOnce(async () => {
+      harness.emit('onRewardedVideoAdReward', { type: 'treats', amount: 1 });
+      harness.emit('onRewardedVideoAdDismissed');
+    });
+
+    await expect(showRewardedAd({ currentMood: 'okay', zone: 'optional_rewards' })).resolves.toMatchObject({
+      success: true,
+      rewarded: true,
+    });
+    await Promise.resolve();
+
+    expect(getRemainingRewardedAds()).toBe(4);
+    expect(getAdState()).toMatchObject({ rewardedReady: false });
+    expect(harness.adMob.prepareRewardVideoAd).toHaveBeenCalledTimes(1);
+  });
+
   it('blocks rewarded ad prompts for low mood states', async () => {
     const { initializeAds, canShowRewardedAd } = await import('../adController');
 
@@ -287,6 +398,39 @@ describe('adController native AdMob contracts', () => {
       allowed: false,
       reason: 'onboarding_grace_period',
     });
+    expect(harness.adMob.prepareRewardVideoAd).not.toHaveBeenCalled();
+  });
+
+
+  it('blocks rewarded ad prompts for sacred zones through the controller API', async () => {
+    const { initializeAds, canShowRewardedAd } = await import('../adController');
+
+    await expect(initializeAds()).resolves.toBe(true);
+
+    expect(canShowRewardedAd('okay', 'journaling')).toEqual({
+      allowed: false,
+      reason: 'sacred_zone',
+    });
+    expect(canShowRewardedAd('okay', 'focus_active')).toEqual({
+      allowed: false,
+      reason: 'sacred_zone',
+    });
+  });
+
+  it('does not request or show rewarded ads from sacred zones when called directly', async () => {
+    const { initializeAds, showRewardedAd } = await import('../adController');
+
+    await expect(initializeAds()).resolves.toBe(true);
+    harness.adMob.prepareRewardVideoAd.mockClear();
+
+    const result = await showRewardedAd({ currentMood: 'okay', zone: 'journaling' });
+
+    expect(result).toEqual({
+      success: false,
+      rewarded: false,
+      error: 'sacred_zone',
+    });
+    expect(harness.adMob.showRewardVideoAd).not.toHaveBeenCalled();
     expect(harness.adMob.prepareRewardVideoAd).not.toHaveBeenCalled();
   });
 
