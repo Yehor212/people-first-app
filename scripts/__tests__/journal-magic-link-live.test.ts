@@ -308,6 +308,25 @@ describe("check-journal-magic-link-live", () => {
     );
   });
 
+  it("accepts compact first-party hosted redirect wildcard coverage", () => {
+    expect(typeof inspectHostedAuthConfig).toBe("function");
+
+    const failures = inspectHostedAuthConfig?.({
+      external_email_enabled: true,
+      uri_allow_list: [
+        "https://yehor212.github.io/people-first-app/?journalReset=*",
+        "https://yehor212.github.io/people-first-app/*\\?*journalReset=*",
+        "https://zenflow.app/?journalReset=*",
+        "https://zenflow.app/*\\?*journalReset=*",
+        "com.zenflow.app://login-callback?journalReset=*",
+      ].join(","),
+    });
+
+    expect(failures).not.toEqual(
+      expect.arrayContaining([expect.stringContaining("Missing hosted journal Magic Link redirect URL")]),
+    );
+  });
+
   it("requires custom SMTP evidence for production live mode", () => {
     expect(typeof inspectHostedAuthConfig).toBe("function");
 

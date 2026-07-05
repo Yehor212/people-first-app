@@ -39,6 +39,13 @@ const REQUIRED_JOURNAL_REDIRECT_URLS = [
   ]),
   "com.zenflow.app://login-callback?journalReset=*",
 ];
+const HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS = [
+  ...REQUIRED_WEB_AUTH_BASES.flatMap((base) => [
+    `${base}/?journalReset=*`,
+    `${base}/*\\?*journalReset=*`,
+  ]),
+  "com.zenflow.app://login-callback?journalReset=*",
+];
 
 function line(status, message) {
   console.log("[journal-magic-link-live] " + status + " " + message);
@@ -167,6 +174,47 @@ function getRedirectUrls(config) {
   );
 }
 
+function escapeRegExpChar(char) {
+  return char.replace(/[|\\{}()[\]^$+?.]/g, "\\$&");
+}
+
+function supabaseGlobToRegExp(pattern) {
+  let source = "^";
+  for (let index = 0; index < pattern.length; index += 1) {
+    const char = pattern[index];
+    const next = pattern[index + 1];
+    if (char === "\\" && next) {
+      source += escapeRegExpChar(next);
+      index += 1;
+    } else if (char === "*" && next === "*") {
+      source += ".*";
+      index += 1;
+    } else if (char === "*") {
+      source += "[^./]*";
+    } else if (char === "?") {
+      source += "[^./]";
+    } else {
+      source += escapeRegExpChar(char);
+    }
+  }
+  source += "$";
+  return new RegExp(source);
+}
+
+function redirectUrlMatchesAllowListEntry(requiredUrl, allowListEntry) {
+  if (requiredUrl === allowListEntry) return true;
+  if (!/[\\*?]/.test(allowListEntry)) return false;
+  try {
+    return supabaseGlobToRegExp(allowListEntry).test(requiredUrl);
+  } catch {
+    return false;
+  }
+}
+
+function isRedirectUrlAllowed(requiredUrl, allowListEntries) {
+  return allowListEntries.some((entry) => redirectUrlMatchesAllowListEntry(requiredUrl, entry));
+}
+
 function hasNestedSmtp(config) {
   const auth = config && typeof config.auth === "object" ? config.auth : null;
   const email = auth && typeof auth.email === "object" ? auth.email : null;
@@ -206,9 +254,9 @@ function inspectHostedAuthConfig(config, { requireCustomSmtp = false } = {}) {
     failures.push("Hosted Supabase email Auth provider is disabled");
   }
 
-  const redirectUrls = new Set(getRedirectUrls(config));
+  const redirectUrls = getRedirectUrls(config);
   for (const redirectUrl of REQUIRED_JOURNAL_REDIRECT_URLS) {
-    if (!redirectUrls.has(redirectUrl)) {
+    if (!isRedirectUrlAllowed(redirectUrl, redirectUrls)) {
       failures.push("Missing hosted journal Magic Link redirect URL: " + redirectUrl);
     }
   }
@@ -656,6 +704,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS,
   REQUIRED_JOURNAL_REDIRECT_URLS,
   SMOKE_NONCE,
   buildJournalMagicLinkRedirectTo,
