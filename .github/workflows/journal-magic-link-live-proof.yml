@@ -71,6 +71,7 @@ jobs:
           ZENFLOW_GITHUB_SECRET_SUPABASE_ACCESS_TOKEN_PRESENT: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && 'true' || 'false' }}
           ZENFLOW_GITHUB_SECRET_ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL_PRESENT: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL != '' && 'true' || 'false' }}
           ZENFLOW_GITHUB_SECRET_ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL_PRESENT: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN_PRESENT: ${{ secrets.ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN != '' && 'true' || 'false' }}
           ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_ADMIN_EMAIL_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_ADMIN_EMAIL != '' && 'true' || 'false' }}
           ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_HOST_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_HOST != '' && 'true' || 'false' }}
           ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_PORT_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_PORT != '' && 'true' || 'false' }}
@@ -109,6 +110,7 @@ jobs:
           npm run apply:supabase-auth-redirect-allow-list
 
       - name: Run journal Magic Link full live proof
+        id: full_live_proof
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
@@ -123,6 +125,13 @@ jobs:
           ZENFLOW_JOURNAL_MAGIC_LINK_VERIFY_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}
           ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}
         run: npm run check:journal-magic-link-live
+
+      - name: Clear consumed journal Magic Link captured URL secret
+        if: ${{ always() && inputs.consume_captured_url && steps.full_live_proof.outcome != 'skipped' }}
+        env:
+          GH_TOKEN: ${{ secrets.ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN }}
+          ZENFLOW_GITHUB_REPO: ${{ github.repository }}
+        run: npm run clear:journal-magic-link-captured-url:apply
 
       - name: Write journal Magic Link runtime proof status packet
         env:

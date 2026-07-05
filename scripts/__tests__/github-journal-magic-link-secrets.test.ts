@@ -95,6 +95,7 @@ describe("check-github-journal-magic-link-secrets", () => {
     expect(pkg.scripts?.["test:release-contracts"]).toContain("scripts/__tests__/github-journal-magic-link-secrets.test.ts");
     expect(source).toContain("SUPABASE_ACCESS_TOKEN");
     expect(source).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL");
+    expect(source).toContain("ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN");
     for (const name of smtpSecrets) expect(source).toContain(name);
     expect(source).toContain("VITE_SUPABASE_PUBLISHABLE_KEY");
     expect(source).toContain("VITE_SUPABASE_ANON_KEY");
@@ -114,6 +115,7 @@ describe("check-github-journal-magic-link-secrets", () => {
     expect(result.stdout).toContain("VITE_SUPABASE_PUBLISHABLE_KEY or VITE_SUPABASE_ANON_KEY");
     expect(result.stdout).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL");
     expect(result.stdout).toContain("ZENFLOW_AUTH_SMTP_PASS");
+    expect(result.stdout).toContain("ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN");
     expect(result.stdout).toContain("VITE_JOURNAL_MAGIC_LINK_LIVE_READY");
     expect(result.stdout).not.toContain("sbp_");
     expect(result.stdout).not.toContain("/auth/v1/verify");
@@ -132,6 +134,7 @@ describe("check-github-journal-magic-link-secrets", () => {
     expect(result.stdout).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL");
     expect(result.stdout).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL");
     expect(result.stdout).toContain("ZENFLOW_AUTH_SMTP_HOST");
+    expect(result.stdout).toContain("ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN");
   });
 
   it("passes when all required GitHub secret and variable names exist with the modern publishable key", () => {
@@ -142,6 +145,7 @@ describe("check-github-journal-magic-link-secrets", () => {
         "SUPABASE_ACCESS_TOKEN",
         "ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL",
         "ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL",
+        "ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN",
         ...smtpSecrets,
       ],
       variables: [
@@ -163,6 +167,7 @@ describe("check-github-journal-magic-link-secrets", () => {
         "SUPABASE_ACCESS_TOKEN",
         "ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL",
         "ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL",
+        "ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN",
         ...smtpSecrets,
       ],
       variables: [
@@ -207,6 +212,7 @@ describe("check-github-journal-magic-link-secrets", () => {
         "SUPABASE_ACCESS_TOKEN",
         "ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL",
         "ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL",
+        "ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN",
         ...smtpSecrets,
       ],
       presentVariables: [

@@ -243,6 +243,7 @@ describe("check-journal-magic-link-live", () => {
     expect(runbook).toContain("npm run check:journal-magic-link-proof-status");
     expect(runbook).toContain("npm run check:journal-magic-link-proof-status:pass");
     expect(runbook).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL");
+    expect(runbook).toContain("ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN");
     expect(runbook).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL=true");
     expect(runbook).toContain("custom SMTP configured");
     expect(runbook).toContain("npm run check:supabase-auth-smtp");
@@ -339,6 +340,23 @@ describe("check-journal-magic-link-live", () => {
     );
 
     expect(failures).toContain("Hosted Supabase custom SMTP is not configured for production Magic Link delivery");
+  });
+
+  it("requires a production email send rate limit for production live mode", () => {
+    expect(typeof inspectHostedAuthConfig).toBe("function");
+
+    const failures = inspectHostedAuthConfig?.(
+      {
+        external_email_enabled: true,
+        uri_allow_list: requiredHostedJournalRedirects(),
+        smtp_host: "smtp.resend.com",
+        smtp_admin_email: "no-reply@auth.zenflowapp.online",
+        rate_limit_email_sent: 2,
+      },
+      { requireCustomSmtp: true },
+    );
+
+    expect(failures).toContain("Hosted Supabase email send rate limit is below 30 per hour");
   });
 
 
@@ -513,6 +531,7 @@ describe("check-journal-magic-link-live", () => {
             external_email_enabled: true,
             mailer_smtp_host: "smtp.example.com",
             mailer_smtp_admin_email: "no-reply@auth.zenflowapp.online",
+            rate_limit_email_sent: 30,
             uri_allow_list: requiredHostedJournalRedirects(),
           }), { status: 200, headers: { "content-type": "application/json" } });
         }
@@ -561,6 +580,7 @@ describe("check-journal-magic-link-live", () => {
             external_email_enabled: true,
             mailer_smtp_host: "smtp.example.com",
             mailer_smtp_admin_email: "no-reply@auth.zenflowapp.online",
+            rate_limit_email_sent: 30,
             uri_allow_list: requiredHostedJournalRedirects(),
           }), { status: 200, headers: { "content-type": "application/json" } });
         }
@@ -625,6 +645,7 @@ describe("check-journal-magic-link-live", () => {
             external_email_enabled: true,
             mailer_smtp_host: "smtp.example.com",
             mailer_smtp_admin_email: "no-reply@auth.zenflowapp.online",
+            rate_limit_email_sent: 30,
             uri_allow_list: requiredHostedJournalRedirects(),
           }), { status: 200, headers: { "content-type": "application/json" } });
         }

@@ -10,6 +10,7 @@
  */
 
 const DEFAULT_MANAGEMENT_API_BASE_URL = "https://api.supabase.com/v1";
+const MIN_EMAIL_SEND_RATE_LIMIT_PER_HOUR = 30;
 const PLACEHOLDERS = new Set([
   "todo",
   "changeme",
@@ -97,6 +98,7 @@ function buildSmtpPatchPacket(env = process.env) {
     smtp_user: String(env.ZENFLOW_AUTH_SMTP_USER || "").trim(),
     smtp_pass: String(env.ZENFLOW_AUTH_SMTP_PASS || "").trim(),
     smtp_sender_name: String(env.ZENFLOW_AUTH_SMTP_SENDER_NAME || "").trim(),
+    rate_limit_email_sent: MIN_EMAIL_SEND_RATE_LIMIT_PER_HOUR,
   };
 
   return { errors, projectRef: String(env.SUPABASE_PROJECT_REF || "").trim(), token: String(env.SUPABASE_ACCESS_TOKEN || "").trim(), patch };
@@ -155,6 +157,12 @@ function hasCustomSmtp(config) {
     config.smtp_sender_name ||
     config.SMTP_SENDER_NAME;
   return Boolean(host && identity);
+}
+
+function hasProductionEmailSendRateLimit(config) {
+  if (!config || typeof config !== "object") return false;
+  const value = Number(config.rate_limit_email_sent || config.RATE_LIMIT_EMAIL_SENT || 0);
+  return Number.isFinite(value) && value >= MIN_EMAIL_SEND_RATE_LIMIT_PER_HOUR;
 }
 
 async function applySupabaseAuthSmtp({ env = process.env, dryRun = true, fetchImpl = fetch } = {}) {
@@ -225,7 +233,25 @@ async function applySupabaseAuthSmtp({ env = process.env, dryRun = true, fetchIm
     return { status: "UNVERIFIED", lines: [line("UNVERIFIED", "Supabase Auth config did not report custom SMTP after patch")] };
   }
 
-  return { status: "PASS", lines: [line("APPLY", "patched Supabase Auth SMTP config"), line("PASS", "verified Supabase Auth custom SMTP presence")] };
+  if (!hasProductionEmailSendRateLimit(body)) {
+    return {
+      status: "UNVERIFIED",
+      lines: [
+        line(
+          "UNVERIFIED",
+          "Supabase Auth email send rate limit is below " + MIN_EMAIL_SEND_RATE_LIMIT_PER_HOUR + " per hour after patch",
+        ),
+      ],
+    };
+  }
+
+  return {
+    status: "PASS",
+    lines: [
+      line("APPLY", "patched Supabase Auth SMTP config"),
+      line("PASS", "verified Supabase Auth custom SMTP presence and email send rate limit"),
+    ],
+  };
 }
 
 function parseArgs(argv) {
@@ -253,5 +279,6 @@ module.exports = {
   buildSmtpPatchPacket,
   formatValidationErrors,
   hasCustomSmtp,
+  hasProductionEmailSendRateLimit,
   sanitizeSupabaseErrorText,
 };
