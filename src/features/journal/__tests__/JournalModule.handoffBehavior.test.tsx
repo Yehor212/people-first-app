@@ -638,6 +638,35 @@ describe("JournalModule orb handoff behavior", () => {
     expect(screen.queryByRole("button", { name: /can't open the lock/i })).not.toBeInTheDocument();
   });
 
+  it("offers a direct account settings action when email lock removal needs sign-in", async () => {
+    Object.assign(securityMocks.state, {
+      hasPassword: true,
+      isLocked: true,
+    });
+    supabaseMocks.getSession.mockResolvedValueOnce({ data: { session: null } });
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /can't open the lock/i }));
+
+    const dialog = await screen.findByRole("dialog", { name: /can't open the lock/i });
+    expect(dialog).toHaveTextContent(/entries remain protected/i);
+    const settingsAction = within(dialog).getByRole("button", { name: /account settings/i });
+
+    fireEvent.click(settingsAction);
+
+    expect(window.location.pathname).toBe("/people-first-app/settings");
+    expect(window.location.search).toContain("nav=v2");
+    expect(window.location.search).toContain("settingsSection=account");
+    expect(securityMocks.removePassword).not.toHaveBeenCalled();
+  });
   it("does not start reset-link cooldown when the email send fails", async () => {
     Object.assign(securityMocks.state, {
       hasPassword: true,
@@ -883,6 +912,7 @@ describe("JournalModule orb handoff behavior", () => {
 
     expect(await screen.findByRole("dialog", { name: /can't open the lock/i })).toBeInTheDocument();
     expect(screen.getAllByText(/encrypted with your password/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/entries remain protected/i).length).toBeGreaterThan(0);
     expect(securityMocks.removePassword).not.toHaveBeenCalled();
     expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET)).toBe(false);
     expect(window.location.href).not.toContain("journalReset");
@@ -1105,6 +1135,7 @@ describe("JournalModule orb handoff behavior", () => {
     });
 
     expect(securityMocks.removePassword).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/nothing changed/i);
     expect(screen.queryByRole("dialog", { name: /diary lock removed/i })).not.toBeInTheDocument();
   });
 
@@ -1184,6 +1215,7 @@ describe("JournalModule orb handoff behavior", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Unlock your diary first, then try removing the lock again.",
     );
+    expect(screen.getAllByText(/entries remain protected/i).length).toBeGreaterThan(0);
     expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET)).toBe(false);
   });
 

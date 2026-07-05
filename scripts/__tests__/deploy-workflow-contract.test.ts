@@ -574,6 +574,50 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(visualUpload).not.toContain("if: always()");
   });
 
+  it("keeps normal deploy journal Magic Link checks smoke-free and one-time-link free", () => {
+    const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+    const previewWorkflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
+
+    for (const [file, source, readinessName, statusName] of [
+      [
+        ".github/workflows/deploy.yml",
+        workflow,
+        "name: Check journal Magic Link live readiness",
+        "name: Check journal Magic Link proof status",
+      ],
+      [
+        ".github/workflows/deploy-v2-preview.yml",
+        previewWorkflow,
+        "name: Check journal Magic Link live readiness for V2 preview",
+        "name: Check journal Magic Link proof status for V2 preview",
+      ],
+    ] as const) {
+      expect(source).toContain("name: Check journal Magic Link GitHub name inventory");
+      const readiness = sliceBetween(source, readinessName, statusName);
+      expect(readiness, file).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_LIVE_REQUIRED: false");
+      expect(readiness, file).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_SMTP_REQUIRED:");
+      expect(readiness, file).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_SEND_SMOKE: false");
+      expect(readiness, file).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_ALLOW_REAL_EMAIL: false");
+      expect(readiness, file).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_VERIFY_CAPTURED_URL: false");
+      expect(readiness, file).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: false");
+      expect(readiness, file).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
+    }
+  });
+
+  it("requires the manual journal Magic Link proof to consume a captured URL before SMTP apply", () => {
+    const workflow = readFileSync(".github/workflows/journal-magic-link-live-proof.yml", "utf8");
+    const validation = sliceBetween(workflow, "name: Validate production proof request", "name: Checkout");
+    const inventory = sliceBetween(workflow, "name: Check journal Magic Link GitHub names before proof", "name: Apply Supabase Auth custom SMTP");
+    const fullProof = sliceBetween(workflow, "name: Run journal Magic Link full live proof", "name: Check journal Magic Link proof status packet");
+
+    expect(validation).toContain("CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
+    expect(validation).toContain("Full live proof requires consuming the fresh captured Supabase verify URL.");
+    expect(inventory).toContain("ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_PASS_PRESENT");
+    expect(inventory).toContain("npm run check:github-journal-magic-link-secrets:pass");
+    expect(fullProof).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_SEND_SMOKE: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
+    expect(fullProof).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_ALLOW_REAL_EMAIL: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
+    expect(fullProof).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
+  });
   it("keeps workflow checkout credentials non-persistent on protected CI paths", () => {
     const files = [
       ".github/workflows/deploy.yml",

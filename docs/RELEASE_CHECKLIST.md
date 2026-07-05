@@ -35,6 +35,15 @@ Use this list before publishing on stores or web.
   icons come from the same no-filter ZenFlow logo source.
 - Run Lighthouse PWA audit.
 
+## Auth and Diary Recovery
+- For diary email lock removal, follow `docs/JOURNAL_MAGIC_LINK_LIVE_PROOF.md`.
+- Do not claim journal Magic Link live readiness until
+  `ZENFLOW_JOURNAL_MAGIC_LINK_LIVE_REQUIRED=true npm run check:journal-magic-link-live`
+  exits 0 with hosted Supabase config, smoke email delivery, and consumed
+  captured Supabase verify URL proof.
+- Clear or rotate `ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL` after the one-time
+  click-through proof is consumed.
+
 ## iOS
 - Run the GitHub Actions `ios-gate` job or locally run `npm run cap:sync:ios`
   and build `ios/App/App.xcodeproj` for an iOS simulator.

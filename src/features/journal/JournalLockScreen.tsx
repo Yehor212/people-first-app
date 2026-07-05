@@ -243,7 +243,7 @@ export function JournalLockScreen({
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             className="w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5"
           >
-            <Lock className="w-8 h-8 text-primary" />
+            <Lock className="w-8 h-8 text-primary" aria-hidden="true" />
           </motion.div>
         </div>
 
@@ -277,7 +277,7 @@ export function JournalLockScreen({
           <p className="text-xs text-muted-foreground text-center mb-4 px-2">
             {emailLockRemovalAvailable
               ? ts.journalLockHint ||
-                "This password encrypts your diary on this device. Keep it somewhere safe; ZenFlow cannot reveal or recover it."
+                "This password encrypts your diary on this device. ZenFlow cannot reveal it; verified email can remove the lock in supported sign-in flows."
               : ts.journalLockHintLocalOnly ||
                 "This password encrypts your diary on this device. Keep it somewhere safe; ZenFlow cannot reveal or recover it."}
           </p>
@@ -348,7 +348,7 @@ export function JournalLockScreen({
               animate={{ opacity: 1, y: 0 }}
               className="text-xs text-destructive text-center flex items-center justify-center gap-1"
             >
-              <AlertTriangle className="w-3 h-3" /> {error}
+              <AlertTriangle className="w-3 h-3" aria-hidden="true" /> {error}
             </motion.p>
           )}
 

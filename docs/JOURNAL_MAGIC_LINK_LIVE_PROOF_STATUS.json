@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "zenflow-journal-magic-link-live-proof/v1",
+  "updatedAt": "2026-07-05",
+  "feature": "diary-email-lock-removal",
+  "overallStatus": "UNVERIFIED",
+  "purpose": "Machine-readable completion audit for journal Magic Link live readiness. PASS is forbidden until every required item is PASS with fresh evidence.",
+  "items": [
+    {
+      "id": "app_side_reset_guard",
+      "status": "PASS",
+      "checkedAt": "2026-07-05",
+      "evidence": "Fresh journal/settings targeted tests passed 69 tests after the no-account handoff, missing-proof, encrypted-unavailable, Settings account deep-link, and French copy polish changes. Earlier combined suite passed 106 tests across journal/settings/workflow coverage.",
+      "verification": "npm test -- --run src/features/journal/__tests__/JournalLockScreen.submitGuard.test.tsx src/features/journal/__tests__/JournalModule.handoffBehavior.test.tsx src/pages/nav-v2/__tests__/SettingsPage.test.tsx --reporter=dot; npm test -- --run src/features/journal/__tests__/JournalLockScreen.submitGuard.test.tsx src/features/journal/__tests__/JournalModule.handoffBehavior.test.tsx src/pages/nav-v2/__tests__/SettingsPage.test.tsx scripts/__tests__/github-journal-magic-link-secrets.test.ts scripts/__tests__/deploy-workflow-contract.test.ts --reporter=dot",
+      "ownerAction": "Re-run the targeted auth/journal suite after every auth callback, journal reset, or deep-link change."
+    },
+    {
+      "id": "ci_secret_scope",
+      "status": "PASS",
+      "checkedAt": "2026-07-05",
+      "evidence": "Release workflow contract tests passed 236 tests and ensure normal deploy workflows do not consume one-time captured Magic Link URLs, do not apply Supabase SMTP, and keep the full live proof in the dedicated manual workflow guarded by main-branch and typed confirmation checks.",
+      "verification": "npm run test:release-contracts",
+      "ownerAction": "Keep captured URL secrets out of broad hosted-auth steps and off untrusted manual branches."
+    },
+    {
+      "id": "github_secret_and_var_names",
+      "status": "UNVERIFIED",
+      "evidence": "Fresh local inventory reports PARTIAL because the temporary one-time ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL value is intentionally absent after cleanup. A full PASS requires storing a fresh delivered verify URL only for the manual proof run, then clearing it again.",
+      "verification": "npm run check:github-journal-magic-link-secrets",
+      "ownerAction": "For a future live proof rerun, store a fresh delivered Supabase verify URL only temporarily, consume it once, then clear it again."
+    },
+    {
+      "id": "operator_runbook",
+      "status": "PASS",
+      "checkedAt": "2026-07-05",
+      "evidence": "docs/JOURNAL_MAGIC_LINK_LIVE_PROOF.md is linked from docs/RELEASE_CHECKLIST.md and covered by scripts/__tests__/journal-magic-link-live.test.ts, including safe custom SMTP bootstrap names and the zenflow.app proof caveat while DNS is parked.",
+      "verification": "npm test -- --run scripts/__tests__/journal-magic-link-live.test.ts",
+      "ownerAction": "Keep the runbook aligned with check:journal-magic-link-live and release checklist gates."
+    },
+    {
+      "id": "hosted_supabase_config",
+      "status": "UNVERIFIED",
+      "evidence": "Local config and readiness scripts require GitHub Pages, zenflow.app, V2 route, and native journalReset redirect URLs in the allow-list, but live proof accepts only currently trusted working callbacks. zenflow.app remains UNVERIFIED for proof while DNS/public route is parked; this run did not verify hosted Supabase config because SUPABASE_ACCESS_TOKEN and SMTP settings were not present in the local process environment.",
+      "verification": "ZENFLOW_JOURNAL_MAGIC_LINK_LIVE_REQUIRED=true npm run check:journal-magic-link-live; npm run check:supabase-auth-smtp",
+      "ownerAction": "Create or obtain real owner-controlled SMTP credentials, validate them with npm run check:supabase-auth-smtp, apply them with npm run apply:supabase-auth-smtp, then rerun the required live gate."
+    },
+    {
+      "id": "smoke_email_delivery",
+      "status": "UNVERIFIED",
+      "evidence": "Fresh local run did not send a smoke Magic Link because ZENFLOW_JOURNAL_MAGIC_LINK_SEND_SMOKE was not enabled with a controlled smoke inbox in this process environment.",
+      "verification": "ZENFLOW_JOURNAL_MAGIC_LINK_SEND_SMOKE=true ZENFLOW_JOURNAL_MAGIC_LINK_ALLOW_REAL_EMAIL=true npm run check:journal-magic-link-live",
+      "ownerAction": "Use a controlled smoke inbox for proof, but do not rely on Supabase built-in email for production users."
+    },
+    {
+      "id": "captured_verify_url_consumed",
+      "status": "UNVERIFIED",
+      "evidence": "Fresh local run did not receive or consume a captured Supabase /auth/v1/verify URL. The checker now verifies and optionally consumes a captured URL before sending any new smoke link, so a normal deploy cannot accidentally invalidate a one-time link.",
+      "verification": "ZENFLOW_JOURNAL_MAGIC_LINK_VERIFY_CAPTURED_URL=true ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL=true npm run check:journal-magic-link-live; npm test -- --run scripts/__tests__/journal-magic-link-github-bootstrap.test.ts; npm run clear:journal-magic-link-captured-url && npm run clear:journal-magic-link-captured-url:apply",
+      "ownerAction": "Never keep consumed Magic Link URLs in GitHub secrets; capture a fresh one only for the next proof run."
+    },
+    {
+      "id": "subagent_reapproval",
+      "status": "UNVERIFIED",
+      "evidence": "Post-fix specialist reviews gave GO for source-level psychology/readability/i18n, interaction/a11y logic, and security/live-proof workflow fixes. Subagent reapproval remains UNVERIFIED for full production readiness because hosted Supabase SMTP, real smoke delivery, fresh captured verify URL consumption, and custom-domain callback proof were not proven in this run.",
+      "verification": "Aristotle re-review GO after French register fixes; Euclid logic/a11y GO after Settings account handoff and consume-on-read deep link; Huygens security/live-proof GO after rejecting zenflow.app proof, updating SMTP runbook names, and refreshing release contract evidence. Live proof commands still report UNVERIFIED without owner-only external proof.",
+      "ownerAction": "Keep subagent reapproval fresh after future auth callback, journal reset, deep-link, GitHub secret, SMTP, or live-proof checker changes. Full production completion still requires custom SMTP credentials, a fresh delivered Supabase verify URL, temporary captured URL storage, one-time consumption, cleanup, and every required proof item to become PASS."
+    }
+  ]
+}

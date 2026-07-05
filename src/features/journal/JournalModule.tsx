@@ -250,6 +250,34 @@ function withJournalPasswordResetNonce(redirectUrl: string, nonce: string): stri
   }
 }
 
+function buildAccountSettingsUrl(): string {
+  if (typeof window === "undefined") return "/settings?nav=v2&navLayout=phone&settingsSection=account";
+
+  try {
+    const current = new URL(window.location.href);
+    const base = current.pathname === "/people-first-app" || current.pathname.startsWith("/people-first-app/")
+      ? "/people-first-app"
+      : "";
+    const params = new URLSearchParams(current.search);
+    params.set("nav", "v2");
+    if (!params.has("navLayout")) params.set("navLayout", "phone");
+    params.set("settingsSection", "account");
+    params.delete(JOURNAL_PASSWORD_RESET_PARAM);
+    return `${base}/settings?${params.toString()}`;
+  } catch {
+    return "/settings?nav=v2&navLayout=phone&settingsSection=account";
+  }
+}
+
+function dispatchNavigationPopState(): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+  } catch {
+    window.dispatchEvent(new Event("popstate"));
+  }
+}
 function hasJournalPasswordResetRedirectProof(pending: JournalPasswordResetRequest): boolean {
   if (typeof window === "undefined") return false;
 
@@ -781,6 +809,14 @@ export const JournalModule = memo(function JournalModule({
     setResetError("");
   }, [resetStep]);
 
+  const handleOpenAccountSettings = useCallback(() => {
+    closeResetDialog();
+    if (typeof window === "undefined") return;
+
+    const nextUrl = buildAccountSettingsUrl();
+    window.history.pushState({ navV2Page: "settings" }, "", nextUrl);
+    dispatchNavigationPopState();
+  }, [closeResetDialog]);
   const openSettings = useCallback((
     section: JournalSettingsSection = "overview",
     returnFocusElement?: HTMLElement | null,
@@ -1626,6 +1662,12 @@ export const JournalModule = memo(function JournalModule({
 
       if (!hasJournalPasswordResetProof(pending)) {
         logger.warn("[Journal] Ignored password reset session without redirect proof");
+        setResetEmail(pending.email);
+        setResetError(
+          ts.journalResetMissingProof ||
+            "This email link was not confirmed in this app. Nothing changed; your diary lock is still on and entries remain protected.",
+        );
+        setResetStep("sent");
         return false;
       }
 
@@ -1666,7 +1708,7 @@ export const JournalModule = memo(function JournalModule({
         return false;
       }
     },
-    [checkEmailLockRemovalAvailable, security, ts.journalLockRemoveFailed, ts.journalPasswordRemoveSuccess, ts.journalResetSuccess],
+    [checkEmailLockRemovalAvailable, security, ts.journalLockRemoveFailed, ts.journalPasswordRemoveSuccess, ts.journalResetMissingProof, ts.journalResetSuccess],
   );
 
   // --- HOOKS (all callbacks declared above — safe from TDZ in production minified chunks) ---
@@ -1896,7 +1938,7 @@ export const JournalModule = memo(function JournalModule({
               </h3>
               {security.hasPassword && (
                 <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
-                  <Lock className="w-2.5 h-2.5" />
+                  <Lock className="w-2.5 h-2.5" aria-hidden="true" />
                   {ts.journalProtected || "Protected"}
                 </span>
               )}
@@ -1913,7 +1955,7 @@ export const JournalModule = memo(function JournalModule({
             )}
             {hasTodayEntry ? (
               <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-2 py-1 rounded-full">
-                <CheckCircle2 className="w-3 h-3" />
+                <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
                 {ts.journalTodayComplete || "Done today"}
               </span>
             ) : (
@@ -2050,10 +2092,10 @@ export const JournalModule = memo(function JournalModule({
                       "Click the link in your email to remove the diary lock. This page will update automatically."
                     : resetStep === "no-account"
                       ? ts.journalResetNoAccount ||
-                        "Sign in to your account in Settings to use email lock removal"
+                        "Sign in from Account settings to remove this lock by email. Nothing changed; your diary entries remain protected."
                       : resetStep === "unavailable"
                         ? ts.journalResetEncryptedUnavailable ||
-                          "This diary is encrypted with your password. Email verification cannot remove this lock while encrypted content is locked."
+                          "This diary is encrypted with your password. Email verification cannot remove this lock while encrypted content is locked. Nothing changed; your entries remain protected."
                       : resetStep === "success"
                         ? ts.journalResetSuccess || "Diary lock removed"
                         : ts.journalResetConfirm || "We'll send a verification link to"}
@@ -2078,7 +2120,7 @@ export const JournalModule = memo(function JournalModule({
                   <>
                     <div className="flex justify-center mb-3">
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                        <Mail className="w-6 h-6 text-muted-foreground" />
+                        <Mail className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-2">
@@ -2086,15 +2128,25 @@ export const JournalModule = memo(function JournalModule({
                     </h3>
                     <p className="text-sm text-muted-foreground text-center mb-4">
                       {ts.journalResetNoAccount ||
-                        "Sign in to your account in Settings to use email lock removal"}
+                        "Sign in from Account settings to remove this lock by email. Nothing changed; your diary entries remain protected."}
                     </p>
-                    <button
-                      ref={resetCancelRef}
-                      onClick={closeResetDialog}
-                      className="w-full py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
-                    >
-                      {ts.journalClose || "Close"}
-                    </button>
+                    <div className="grid gap-2">
+                      <button
+                        type="button"
+                        onClick={handleOpenAccountSettings}
+                        className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium min-h-[44px]"
+                      >
+                        {ts.journalResetOpenAccountSettings || "Open account settings"}
+                      </button>
+                      <button
+                        ref={resetCancelRef}
+                        type="button"
+                        onClick={closeResetDialog}
+                        className="w-full py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
+                      >
+                        {ts.journalClose || "Close"}
+                      </button>
+                    </div>
                   </>
                 )}
 
@@ -2103,7 +2155,7 @@ export const JournalModule = memo(function JournalModule({
                   <>
                     <div className="flex justify-center mb-3">
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                        <Lock className="w-6 h-6 text-muted-foreground" />
+                        <Lock className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-2">
@@ -2111,7 +2163,7 @@ export const JournalModule = memo(function JournalModule({
                     </h3>
                     <p className="text-sm text-muted-foreground text-center mb-4">
                       {ts.journalResetEncryptedUnavailable ||
-                        "This diary is encrypted with your password. Email verification cannot remove this lock while encrypted content is locked. Unlock with your password to remove it."}
+                        "This diary is encrypted with your password. Email verification cannot remove this lock while encrypted content is locked. Nothing changed; your entries remain protected. Unlock with your password to remove it."}
                     </p>
                     {resetError && (
                       <p id={resetErrorId} role="alert" className="mb-3 text-center text-xs text-destructive">{resetError}</p>
@@ -2131,7 +2183,7 @@ export const JournalModule = memo(function JournalModule({
                   <>
                     <div className="flex justify-center mb-3">
                       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Mail className="w-6 h-6 text-primary" />
+                        <Mail className="w-6 h-6 text-primary" aria-hidden="true" />
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-1">
@@ -2178,7 +2230,7 @@ export const JournalModule = memo(function JournalModule({
                   <>
                     <div className="flex justify-center mb-3">
                       <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                        <Mail className="w-6 h-6 text-green-600 dark:text-green-400" />
+                        <Mail className="w-6 h-6 text-green-600 dark:text-green-400" aria-hidden="true" />
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-1">
@@ -2233,7 +2285,7 @@ export const JournalModule = memo(function JournalModule({
                         }}
                         className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center"
                       >
-                        <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
+                        <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" aria-hidden="true" />
                       </motion.div>
                     </div>
                     <p className="text-sm font-medium text-foreground text-center">

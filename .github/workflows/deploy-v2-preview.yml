@@ -91,6 +91,28 @@ jobs:
           npm --prefix tools/telegram-control run check:public-bot-profile-photo
           npm --prefix tools/telegram-control run check:bot-profile-photo
 
+      - name: Check journal Magic Link GitHub name inventory for V2 preview
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        working-directory: v2-src
+        env:
+          ZENFLOW_GITHUB_REPO: ${{ github.repository }}
+          ZENFLOW_GITHUB_JOURNAL_MAGIC_LINK_FROM_ENV: true
+          ZENFLOW_GITHUB_SECRET_VITE_SUPABASE_URL_PRESENT: ${{ secrets.VITE_SUPABASE_URL != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_VITE_SUPABASE_PUBLISHABLE_KEY_PRESENT: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_VITE_SUPABASE_ANON_KEY_PRESENT: ${{ secrets.VITE_SUPABASE_ANON_KEY != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_SUPABASE_ACCESS_TOKEN_PRESENT: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL_PRESENT: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL_PRESENT: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_ADMIN_EMAIL_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_ADMIN_EMAIL != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_HOST_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_HOST != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_PORT_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_PORT != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_USER_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_USER != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_PASS_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_PASS != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_SENDER_NAME_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_SENDER_NAME != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_VARIABLE_SUPABASE_PROJECT_REF_PRESENT: ${{ vars.SUPABASE_PROJECT_REF != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_VARIABLE_VITE_JOURNAL_MAGIC_LINK_LIVE_READY_PRESENT: ${{ vars.VITE_JOURNAL_MAGIC_LINK_LIVE_READY != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_VARIABLE_ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL_PRESENT: ${{ vars.ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL != '' && 'true' || 'false' }}
+        run: npm run check:github-journal-magic-link-secrets
       - name: Check journal Magic Link live readiness for V2 preview
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         working-directory: v2-src
@@ -100,13 +122,13 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
-          ZENFLOW_JOURNAL_MAGIC_LINK_LIVE_REQUIRED: ${{ vars.VITE_JOURNAL_MAGIC_LINK_LIVE_READY == 'true' && 'true' || 'false' }}
-          ZENFLOW_JOURNAL_MAGIC_LINK_SEND_SMOKE: ${{ vars.VITE_JOURNAL_MAGIC_LINK_LIVE_READY == 'true' && secrets.ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL != '' && 'true' || 'false' }}
-          ZENFLOW_JOURNAL_MAGIC_LINK_ALLOW_REAL_EMAIL: ${{ vars.VITE_JOURNAL_MAGIC_LINK_LIVE_READY == 'true' && secrets.ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL != '' && 'true' || 'false' }}
+          ZENFLOW_JOURNAL_MAGIC_LINK_LIVE_REQUIRED: false
+          ZENFLOW_JOURNAL_MAGIC_LINK_SMTP_REQUIRED: ${{ vars.VITE_JOURNAL_MAGIC_LINK_LIVE_READY == 'true' && 'true' || 'false' }}
+          ZENFLOW_JOURNAL_MAGIC_LINK_SEND_SMOKE: false
+          ZENFLOW_JOURNAL_MAGIC_LINK_ALLOW_REAL_EMAIL: false
           ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL }}
-          ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}
-          ZENFLOW_JOURNAL_MAGIC_LINK_VERIFY_CAPTURED_URL: ${{ vars.VITE_JOURNAL_MAGIC_LINK_LIVE_READY == 'true' && secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL != '' && vars.ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL == 'true' && 'true' || 'false' }}
-          ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: ${{ vars.VITE_JOURNAL_MAGIC_LINK_LIVE_READY == 'true' && secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL != '' && vars.ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL == 'true' && 'true' || 'false' }}
+          ZENFLOW_JOURNAL_MAGIC_LINK_VERIFY_CAPTURED_URL: false
+          ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: false
         run: npm run check:journal-magic-link-live
 
       - name: Check journal Magic Link proof status for V2 preview

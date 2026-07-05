@@ -978,6 +978,23 @@ describe("SettingsPage", () => {
     );
   });
 
+  it("opens the account module from a settingsSection query and clears the routing hint", () => {
+    window.history.replaceState({}, "", "/people-first-app/settings?nav=v2&navLayout=phone&settingsSection=account");
+
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
+      "data-selected-section",
+      "account",
+    );
+    expect(screen.getByTestId("settings-module-card-account")).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(screen.getByTestId("settings-v2-panel-account")).toBeInTheDocument();
+    expect(window.location.search).not.toContain("settingsSection");
+    expect(window.location.search).toContain("nav=v2");
+  });
   it("keeps the selected profile controls in the module without standalone sync status", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
 

@@ -58,14 +58,36 @@ const INITIAL_SECTION_TO_V2_SECTION: Record<string, V2SettingsSectionId> = {
   about: "about",
 };
 
+function consumeRequestedSettingsSection(): V2SettingsSectionId | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const url = new URL(window.location.href);
+    const section = url.searchParams.get("settingsSection");
+    if (!section) return null;
+
+    url.searchParams.delete("settingsSection");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    return INITIAL_SECTION_TO_V2_SECTION[section] || null;
+  } catch {
+    return null;
+  }
+}
 export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPageProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const mainRef = useRef<HTMLElement>(null);
   const shouldScrollSelectedSectionRef = useRef(false);
-  const [selectedSectionId, setSelectedSectionId] = useState<V2SettingsSectionId>(
-    INITIAL_SECTION_TO_V2_SECTION[controls?.initialOpenSection || "profile"] || "profile"
-  );
+  const didApplyRequestedSectionRef = useRef(false);
+  const [selectedSectionId, setSelectedSectionId] = useState<V2SettingsSectionId>(() => {
+    const requestedSection = consumeRequestedSettingsSection();
+    didApplyRequestedSectionRef.current = Boolean(requestedSection);
+    return (
+      requestedSection ||
+      INITIAL_SECTION_TO_V2_SECTION[controls?.initialOpenSection || "profile"] ||
+      "profile"
+    );
+  });
   const themePreference = useThemeStore((s) => s.theme);
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const audioSettings = useAppAudioSettings();
@@ -79,6 +101,16 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   }, []);
 
   useEffect(() => {
+    const requestedSection = consumeRequestedSettingsSection();
+    if (requestedSection) {
+      didApplyRequestedSectionRef.current = true;
+      setSelectedSectionId(requestedSection);
+      return;
+    }
+    if (didApplyRequestedSectionRef.current) {
+      didApplyRequestedSectionRef.current = false;
+      return;
+    }
     if (!controls?.initialOpenSection) return;
     setSelectedSectionId(INITIAL_SECTION_TO_V2_SECTION[controls.initialOpenSection] || "profile");
   }, [controls?.initialOpenSection]);
