@@ -30,7 +30,7 @@ describe("apply-supabase-auth-smtp", () => {
       mailer_autoconfirm: false,
       smtp_admin_email: "no-reply@auth.zenflowapp.online",
       smtp_host: "smtp.resend.com",
-      smtp_port: 465,
+      smtp_port: "465",
       smtp_user: "resend",
       smtp_pass: "secret-smtp-password",
       smtp_sender_name: "ZenFlow",

@@ -93,7 +93,7 @@ function buildSmtpPatchPacket(env = process.env) {
     mailer_autoconfirm: false,
     smtp_admin_email: adminEmail,
     smtp_host: host,
-    smtp_port: port,
+    smtp_port: String(port),
     smtp_user: String(env.ZENFLOW_AUTH_SMTP_USER || "").trim(),
     smtp_pass: String(env.ZENFLOW_AUTH_SMTP_PASS || "").trim(),
     smtp_sender_name: String(env.ZENFLOW_AUTH_SMTP_SENDER_NAME || "").trim(),
