@@ -186,7 +186,8 @@
     "clear:journal-magic-link-captured-url": "node scripts/bootstrap-journal-magic-link-github.cjs --clear-captured-url --dry-run",
     "clear:journal-magic-link-captured-url:apply": "node scripts/bootstrap-journal-magic-link-github.cjs --clear-captured-url --apply",
     "check:supabase-auth-smtp": "node scripts/apply-supabase-auth-smtp.cjs --dry-run",
-    "apply:supabase-auth-smtp": "node scripts/apply-supabase-auth-smtp.cjs --apply"
+    "apply:supabase-auth-smtp": "node scripts/apply-supabase-auth-smtp.cjs --apply",
+    "write:journal-magic-link-proof-status": "node scripts/write-journal-magic-link-proof-status.cjs"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",

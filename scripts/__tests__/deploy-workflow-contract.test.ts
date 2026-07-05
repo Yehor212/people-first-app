@@ -608,7 +608,9 @@ describe("GitHub Pages deploy workflow contract", () => {
     const workflow = readFileSync(".github/workflows/journal-magic-link-live-proof.yml", "utf8");
     const validation = sliceBetween(workflow, "name: Validate production proof request", "name: Checkout");
     const inventory = sliceBetween(workflow, "name: Check journal Magic Link GitHub names before proof", "name: Apply Supabase Auth custom SMTP");
-    const fullProof = sliceBetween(workflow, "name: Run journal Magic Link full live proof", "name: Check journal Magic Link proof status packet");
+    const fullProof = sliceBetween(workflow, "name: Run journal Magic Link full live proof", "name: Write journal Magic Link runtime proof status packet");
+    const runtimePacket = sliceBetween(workflow, "name: Write journal Magic Link runtime proof status packet", "name: Check journal Magic Link proof status packet");
+    const statusPacket = workflow.slice(indexOfOrThrow(workflow, "name: Check journal Magic Link proof status packet"));
 
     expect(validation).toContain("CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
     expect(validation).toContain("Full live proof requires consuming the fresh captured Supabase verify URL.");
@@ -617,6 +619,9 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(fullProof).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_SEND_SMOKE: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
     expect(fullProof).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_ALLOW_REAL_EMAIL: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
     expect(fullProof).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
+    expect(runtimePacket).toContain("npm run write:journal-magic-link-proof-status -- --file output/journal-magic-link-live-proof-status.json");
+    expect(statusPacket).toContain("npm run check:journal-magic-link-proof-status -- --file output/journal-magic-link-live-proof-status.json");
+    expect(statusPacket).toContain("npm run check:journal-magic-link-proof-status:pass -- --file output/journal-magic-link-live-proof-status.json");
   });
   it("keeps workflow checkout credentials non-persistent on protected CI paths", () => {
     const files = [

@@ -189,6 +189,31 @@ describe("check-journal-magic-link-live", () => {
     })).toMatchObject({ ok: true, passReady: true, issues: [] });
   });
 
+  it("writes a secret-free runtime PASS proof status packet after live workflow proof", () => {
+    const root = mkdtempSync(join(tmpdir(), "journal-magic-link-proof-status-"));
+    const output = join(root, "runtime-proof.json");
+    const result = spawnSync(process.execPath, ["scripts/write-journal-magic-link-proof-status.cjs", "--file", output], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_RUN_URL:
+          "https://github.com/Yehor212/people-first-app/actions/runs/123456789",
+      },
+      encoding: "utf8",
+    });
+
+    expect(result.status).toBe(0);
+    const packet = JSON.parse(readFileSync(output, "utf8"));
+    const evaluation = evaluateJournalMagicLinkProofStatus?.(packet, { requirePass: true });
+    const serializedPacket = JSON.stringify(packet);
+
+    expect(packet.overallStatus).toBe("PASS");
+    expect(evaluation?.ok).toBe(true);
+    expect(evaluation?.passReady).toBe(true);
+    expect(serializedPacket).not.toMatch(/token(?:_hash)?=/i);
+    expect(serializedPacket).not.toMatch(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  });
+
   it("keeps the journal Magic Link live proof runbook wired to release readiness", () => {
     const runbook = readFileSync(runbookPath, "utf8");
     const releaseChecklist = readFileSync(releaseChecklistPath, "utf8");
@@ -200,6 +225,9 @@ describe("check-journal-magic-link-live", () => {
     );
     expect(packageJson.scripts["check:journal-magic-link-proof-status:pass"]).toBe(
       "node scripts/check-journal-magic-link-proof-status.cjs --require-pass",
+    );
+    expect(packageJson.scripts["write:journal-magic-link-proof-status"]).toBe(
+      "node scripts/write-journal-magic-link-proof-status.cjs",
     );
     expect(packageJson.scripts["check:github-journal-magic-link-secrets"]).toBe(
       "node scripts/check-github-journal-magic-link-secrets.cjs",

@@ -115,9 +115,14 @@ jobs:
           ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}
         run: npm run check:journal-magic-link-live
 
+      - name: Write journal Magic Link runtime proof status packet
+        env:
+          ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: npm run write:journal-magic-link-proof-status -- --file output/journal-magic-link-live-proof-status.json
+
       - name: Check journal Magic Link proof status packet
         env:
           ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_STATUS_REQUIRED: true
         run: |
-          npm run check:journal-magic-link-proof-status
-          npm run check:journal-magic-link-proof-status:pass
+          npm run check:journal-magic-link-proof-status -- --file output/journal-magic-link-live-proof-status.json
+          npm run check:journal-magic-link-proof-status:pass -- --file output/journal-magic-link-live-proof-status.json
