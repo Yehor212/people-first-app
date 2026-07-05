@@ -8,16 +8,18 @@ import { describe, expect, it } from "vitest";
 const script = "scripts/check-apple-auth-live.cjs";
 const scriptPath = join(process.cwd(), script);
 const require = createRequire(import.meta.url);
-const { checkAppleAuthLive, inspectAuthConfig } = require("../check-apple-auth-live.cjs") as {
+const { checkAppleAuthLive, getProjectRef, inspectAuthConfig, parseSafeEnvFiles } = require("../check-apple-auth-live.cjs") as {
   checkAppleAuthLive?: (input?: {
     env?: NodeJS.ProcessEnv;
     rootDir?: string;
     fetchImpl?: typeof fetch;
   }) => Promise<{ status: string; message: string; exitCode: number }>;
+  getProjectRef?: (env?: NodeJS.ProcessEnv, safeFileEnv?: Map<string, string>) => string;
   inspectAuthConfig?: (
     config: Record<string, unknown>,
     options?: { expectedAdditionalClientIds?: string },
   ) => string[];
+  parseSafeEnvFiles?: (rootDir?: string) => Map<string, string>;
 };
 
 function runReadiness(env: NodeJS.ProcessEnv = {}) {
@@ -138,6 +140,26 @@ describe("check-apple-auth-live", () => {
     expect(result.stdout).not.toContain("SUPABASE_PROJECT_REF");
   });
 
+  it("ignores placeholder project refs from env files before hosted Apple auth checks", () => {
+    expect(typeof getProjectRef).toBe("function");
+    expect(typeof parseSafeEnvFiles).toBe("function");
+    const root = mkdtempSync(join(tmpdir(), "apple-auth-live-placeholders-"));
+    writeFileSync(
+      join(root, ".env.example"),
+      [
+        "SUPABASE_PROJECT_REF=your-project-ref",
+        "VITE_SUPABASE_URL=https://your-project-ref.supabase.co",
+      ].join("\n"),
+    );
+
+    const safeFileEnv = parseSafeEnvFiles?.(root) || new Map<string, string>();
+
+    expect(getProjectRef?.({}, safeFileEnv)).toBe("");
+    expect(getProjectRef?.({ SUPABASE_PROJECT_REF: "bwgfslmxmueyglpumkbf" }, safeFileEnv)).toBe(
+      "bwgfslmxmueyglpumkbf",
+    );
+  });
+
   it("does not print secret token values", () => {
     const token = "sbp_secret_token_value_that_must_not_appear";
     const result = runReadiness({
@@ -203,6 +225,7 @@ describe("check-apple-auth-live", () => {
       env: {
         SUPABASE_ACCESS_TOKEN: token,
         SUPABASE_PROJECT_REF: "bwgfslmxmueyglpumkbf",
+        SUPABASE_MANAGEMENT_API_BASE_URL: "https://attacker.example/v1",
         SUPABASE_EXPECTED_APPLE_CLIENT_ID: "com.zenflow.app.web",
         SUPABASE_EXPECTED_APPLE_ADDITIONAL_CLIENT_IDS: "com.zenflow.app",
       },

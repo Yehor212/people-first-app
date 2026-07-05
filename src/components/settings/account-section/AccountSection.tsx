@@ -85,12 +85,12 @@ export function AccountSection({
       <AccordionContent className="px-6 pb-6">
         <p className="text-muted-foreground mb-4">
           {t.accountDescription ||
-            "Manage your account and cloud sync settings."}
+            "Manage your account and devices."}
         </p>
 
         {!supabase ? (
           <p className="text-sm text-muted-foreground">
-            {t.cloudSyncDisabled || "Cloud sync is not available."}
+            {t.cloudSyncDisabled || "Online backup is not available."}
           </p>
         ) : auth.hasSession ? (
           <div className="space-y-3">
@@ -165,7 +165,7 @@ export function AccountSection({
                     )}
                   />
                   <span className="font-medium text-foreground">
-                    {t.settingsCloudSyncTitle || "Cloud Sync"}
+                    {t.settingsCloudSyncTitle || "Account updates"}
                   </span>
                 </div>
                 <span
@@ -179,13 +179,13 @@ export function AccountSection({
                 >
                   <CheckCircle className="h-3 w-3" aria-hidden="true" />
                   {sync.cloudSyncEnabled
-                    ? t.settingsCloudSyncEnabled || "Automatic sync is active"
-                    : t.sessionExpired || "Sync paused"}
+                    ? t.settingsCloudSyncEnabled || "Online backup is on"
+                    : t.sessionExpired || "Online backup paused"}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
                 {t.settingsCloudSyncDescription ||
-                  "Your signed-in account stays synced across devices automatically."}
+                  "When you sign in, ZenFlow keeps your data available on your devices."}
               </p>
             </div>
 
@@ -274,7 +274,7 @@ export function AccountSection({
                   className="text-xs text-muted-foreground"
                 >
                   {t.deleteAccountWarning ||
-                    "This action cannot be undone. All your cloud data will be permanently deleted."}
+                    "This action cannot be undone. Online data and account access will be removed."}
                 </p>
                 <div>
                   <label className="text-xs text-destructive font-medium block mb-1">
@@ -343,7 +343,7 @@ export function AccountSection({
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {t.localDataSafe ||
-                    "Your local data is safe. Sign in again to resume syncing."}
+                    "Your data on this device is safe. Sign in again to keep your devices updated."}
                 </p>
               </div>
             )}

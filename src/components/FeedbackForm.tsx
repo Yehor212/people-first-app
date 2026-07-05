@@ -174,7 +174,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
             <div className="space-y-4 pb-6">
             <p className="rounded-xl border border-border bg-secondary/60 p-3 text-xs leading-relaxed text-muted-foreground">
               {t.feedbackPrivacyNotice ||
-                "Feedback may include your message, optional email, app version, platform, screen size, language, and browser info. Do not use this for urgent safety or medical support."}
+                "Feedback may include your message, optional email, app version, device type, screen size, language, and browser info. Do not use this for urgent safety or medical support."}
             </p>
 
             {/* Category Selection */}

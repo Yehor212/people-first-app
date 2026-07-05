@@ -1,9 +1,9 @@
-# Treats Spending + Journal + Tutorial — End-to-End User Journey
+# Treats Spending + Journal Discovery — End-to-End User Journey
 
 ## Goal
 
 Let users **spend treats** they earn (mood=5, habit=10, focus=0.5/min, gratitude=8, breathing=5) on their virtual tree,
-**discover the personal journal** during onboarding, and see an **attractive journal card** in the garden tab —
+**discover the personal journal** after entry gates, and see an **attractive journal card** in the garden tab —
 while eliminating all hardcoded Russian text visible to non-Russian users.
 
 ---
@@ -31,10 +31,9 @@ Garden Tab → InnerWorldCard (always visible)
 
 ### 2. Journal Discovery
 ```
-First Launch → WelcomeTutorial
-  → Slide 7/9: "Personal Journal" (BookOpen, purple, float)
-    → Features: text/photos/audio, PIN lock, streaks, templates
-  → Slide 9: "Ready to start?" → Module Picker (OnboardingFlow)
+First Launch → Module Picker (OnboardingFlow)
+  → Journal remains discoverable through enabled modules and the Garden/Journal surfaces
+  → No blocking first-run carousel before first value
 ```
 
 ### 3. Journal Card (Garden Tab)
@@ -113,16 +112,12 @@ CARD → tap → OPEN (full overlay)
 OPEN → close/back → CARD
 ```
 
-### Tutorial States
+### First-Run Setup State
 
 ```
-currentSlide: 0..8
-  0: welcome → 1: brain → 2: features → 3: dayclock
-  → 4: moodtheme → 5: mood → 6: journal → 7: focus → 8: ready
-
-Navigation: swipe L/R, dots, Next/Back buttons
-Skip: any slide → onSkip()
-Complete: slide 8 → "Let's Go!" → onComplete()
+Removed: the former first-after-auth slide carousel no longer gates startup.
+Current order: language -> auth -> module onboarding -> notifications -> app.
+Preserved education now belongs inside the relevant feature surfaces.
 ```
 
 ---
@@ -147,7 +142,6 @@ Complete: slide 8 → "Let's Go!" → onComplete()
 | Ad SDK unavailable | PWA mode or missing plugin | Nothing — RewardedAdPrompt returns `null` | N/A (graceful) |
 | Ad dismissed | User closes ad early | Prompt remains, 10min dismiss cooldown | Wait cooldown, try again |
 | Journal storage error | IndexedDB failure | Toast notification via sonner | Retry on next open |
-| Tutorial stuck | Multiple taps with no transition | After 3 attempts: force-complete after 1s | Auto-recovery |
 
 ---
 
@@ -212,16 +206,6 @@ Complete: slide 8 → "Let's Go!" → onComplete()
 | `journalStreak` | streak | дней подряд |
 | `journalEntries` | entries | записей |
 
-### Tutorial Journal Slide
-| Key | English |
-|---|---|
-| `tutorialJournalTitle` | Personal Journal |
-| `tutorialJournalSubtitle` | Your private space to reflect |
-| `tutorialJournalDesc` | Write about your day, capture thoughts, and track your journey... |
-| `tutorialJournalFeature1` | ✍️ Text, photos, and audio entries |
-| `tutorialJournalFeature2` | 🔒 Lock with PIN for privacy |
-| `tutorialJournalFeature3` | 📊 Writing streaks and stats |
-| `tutorialJournalFeature4` | 🎨 Templates to get you started |
 
 ### Push Notifications (9 languages)
 | Type | English | Arabic | Hebrew |
@@ -306,27 +290,22 @@ Complete: slide 8 → "Let's Go!" → onComplete()
 └────────────────────────────┘
 ```
 
-### Screen 3: Tutorial — Journal Slide (7/9)
+### Screen 3: Module Onboarding — Choose Features
 ```
 ┌────────────────────────────┐
-│                    [Skip]   │
+│        Choose Features      │
+│   Pick the modules you use  │
 │                             │
-│     ┌─────────────────┐    │
-│     │ 📖 (floating)   │    │
-│     │ purple gradient  │    │
-│     └─────────────────┘    │
+│  ┌────────┐ ┌────────┐     │
+│  │Mood    │ │Habits  │     │
+│  │toggle  │ │toggle  │     │
+│  └────────┘ └────────┘     │
+│  ┌────────┐ ┌────────┐     │
+│  │Focus   │ │Journal │     │
+│  │toggle  │ │always  │     │
+│  └────────┘ └────────┘     │
 │                             │
-│    Personal Journal         │
-│    Your private space       │
-│    to reflect               │
-│                             │
-│  ┌─ ✍️ Text, photos... ──┐ │
-│  ├─ 🔒 Lock with PIN    ─┤ │
-│  ├─ 📊 Writing streaks  ─┤ │
-│  └─ 🎨 Templates        ─┘ │
-│                             │
-│  ○ ○ ○ ○ ○ ○ ● ○ ○        │
-│  [Back]        [Next →]     │
+│        [Get started]        │
 └─────────────────────────────┘
 ```
 
@@ -377,9 +356,8 @@ NOTIFICATION_STRINGS[language] || NOTIFICATION_STRINGS.en
 | 4 | `src/lib/utils.ts` | Delete `getGreeting`, `getMonthName`, `getDayName` | -20 |
 | 5 | `src/hooks/useInnerWorld.ts` | `'Луна'` → `'Luna'` | 1 |
 | 6 | `supabase/.../index.ts` | 9-language NOTIFICATION_STRINGS | +12 |
-| 7 | `src/components/WelcomeTutorial.tsx` | Add journal slide | +13 |
-| 8 | `src/features/journal/JournalModule.tsx` | Card redesign (purple, stats, badge) | ±50 |
-| 9 | `src/i18n/translations.ts` | +15 keys × 9 languages | +130 |
+| 7 | `src/features/journal/JournalModule.tsx` | Card redesign (purple, stats, badge) | ±50 |
+| 8 | `src/i18n/translations.ts` | +15 keys × 9 languages | +130 |
 
 **Total: +358 lines, -90 lines = net +268**
 
@@ -405,7 +383,7 @@ NOTIFICATION_STRINGS[language] || NOTIFICATION_STRINGS.en
 | 2 | Can touch + water fire simultaneously? | ✅ Fixed | `isAnimating` flag blocks both buttons |
 | 3 | Does deleting utils functions break imports? | ✅ Verified | `getGreeting`, `getMonthName`, `getDayName` have 0 imports |
 | 4 | Does `smartReminders.ts` break? | ✅ Safe | Has its OWN local `getDayName` (line 136) — unrelated |
-| 5 | Tutorial slide count matches dots? | ✅ 9 slides | Verified: welcome, brain, features, dayclock, moodtheme, mood, **journal**, focus, ready |
+| 5 | Removed first-run carousel cannot reappear as a gate? | ✅ Verified | No runtime gate, storage key, component, or i18n block remains; module onboarding stays canonical |
 | 6 | Journal card shows streak=0 without fire emoji? | ✅ Guarded | `streak > 0 &&` check before rendering |
 | 7 | RTL layout breaks in InnerWorldCard? | ✅ Safe | Flexbox + `text-start` auto-adapt |
 | 8 | TreePanel `newStage: number` vs `TreeStage` type? | ✅ Fixed | Changed props to accept `number` |

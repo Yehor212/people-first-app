@@ -33,6 +33,22 @@ function buildResult(status, message, exitCode, failures = []) {
   return { status, message, exitCode, ...(failures.length > 0 ? { failures } : {}) };
 }
 
+function isPlaceholderValue(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return true;
+  const normalized = raw.toLowerCase();
+  return (
+    /^<[^>]+>$/.test(raw) ||
+    normalized === "todo" ||
+    normalized === "changeme" ||
+    normalized.startsWith("your-") ||
+    normalized.startsWith("your_") ||
+    normalized.includes("placeholder") ||
+    normalized.includes("your-project-ref") ||
+    normalized === "https://your-project-ref.supabase.co"
+  );
+}
+
 function parseSafeEnvFiles(rootDir = process.cwd()) {
   const env = new Map();
   for (const fileName of ENV_FILE_NAMES) {
@@ -54,14 +70,16 @@ function parseSafeEnvFiles(rootDir = process.cwd()) {
       ) {
         value = value.slice(1, -1);
       }
-      if (value && !env.has(match[1])) env.set(match[1], value);
+      if (value && !isPlaceholderValue(value) && !env.has(match[1])) env.set(match[1], value);
     }
   }
   return env;
 }
 
 function getPublicEnv(env, safeFileEnv, key) {
-  return env[key] || safeFileEnv.get(key) || "";
+  const direct = String(env[key] || "").trim();
+  if (direct && !isPlaceholderValue(direct)) return direct;
+  return safeFileEnv.get(key) || "";
 }
 
 function getProjectRef(env = process.env, safeFileEnv = parseSafeEnvFiles()) {
@@ -229,7 +247,7 @@ async function checkAppleAuthLive({ env = process.env, rootDir = process.cwd(), 
   try {
     result = await fetchAuthConfig(projectRef, token, {
       fetchImpl,
-      apiBaseUrl: env.SUPABASE_MANAGEMENT_API_BASE_URL || DEFAULT_MANAGEMENT_API_BASE_URL,
+      apiBaseUrl: DEFAULT_MANAGEMENT_API_BASE_URL,
     });
   } catch (error) {
     const reason =

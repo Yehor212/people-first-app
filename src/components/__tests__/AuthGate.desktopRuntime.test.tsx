@@ -13,8 +13,6 @@ const { appState, userState, splashScreenMock } = vi.hoisted(() => {
     webOAuthError: null,
     setWebOAuthError: vi.fn(),
     hasValidSession: false,
-    tutorialBypassFlag: false,
-    setTutorialBypassFlag: vi.fn(),
     onboardingBypassFlag: false,
     setOnboardingBypassFlag: vi.fn(),
   };
@@ -23,8 +21,6 @@ const { appState, userState, splashScreenMock } = vi.hoisted(() => {
     setHasSelectedLanguage: vi.fn(),
     setUserName: vi.fn(),
     setUserNameCustom: vi.fn(),
-    tutorialComplete: false,
-    setTutorialComplete: vi.fn(),
     onboardingComplete: false,
     setOnboardingComplete: vi.fn(),
     notificationPermissionChecked: false,
@@ -57,10 +53,6 @@ vi.mock("@/components/LanguageSelector", () => ({
 
 vi.mock("@/components/AuthScreen", () => ({
   AuthScreen: () => <div data-testid="mock-auth-screen" />,
-}));
-
-vi.mock("@/components/WelcomeTutorial", () => ({
-  WelcomeTutorial: () => <div data-testid="mock-welcome-tutorial" />,
 }));
 
 vi.mock("@/components/OnboardingFlow", () => ({

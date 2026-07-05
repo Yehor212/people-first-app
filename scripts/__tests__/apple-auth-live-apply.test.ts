@@ -11,7 +11,7 @@ const scriptPath = join(process.cwd(), script);
 const generatorScript = "scripts/generate-apple-client-secret.cjs";
 const generatorScriptPath = join(process.cwd(), generatorScript);
 const require = createRequire(import.meta.url);
-const { applyAppleAuthLive, buildPatchBody } = require("../apply-apple-auth-live.cjs") as {
+const { applyAppleAuthLive, buildPatchBody, getProjectRef, parseSafeEnvFiles } = require("../apply-apple-auth-live.cjs") as {
   applyAppleAuthLive: (input?: {
     env?: NodeJS.ProcessEnv;
     rootDir?: string;
@@ -23,6 +23,8 @@ const { applyAppleAuthLive, buildPatchBody } = require("../apply-apple-auth-live
     appleSecret: string,
     additionalClientIds: string,
   ) => Record<string, unknown>;
+  getProjectRef: (env: NodeJS.ProcessEnv, safeFileEnv: Map<string, string>) => string;
+  parseSafeEnvFiles: (rootDir?: string) => Map<string, string>;
 };
 
 function testSecretFixture(...parts: string[]) {
@@ -129,6 +131,22 @@ describe("apply-apple-auth-live", () => {
     expect(result.stdout).toContain("SUPABASE_APPLE_CLIENT_SECRET");
   });
 
+  it("ignores placeholder project refs from env files before applying hosted Apple auth", () => {
+    const root = mkdtempSync(join(tmpdir(), "apple-auth-apply-placeholders-"));
+    writeFileSync(
+      join(root, ".env.example"),
+      [
+        "PROJECT_REF=your-project-ref",
+        "VITE_SUPABASE_URL=https://your-project-ref.supabase.co",
+      ].join("\n"),
+    );
+
+    const safeFileEnv = parseSafeEnvFiles(root);
+
+    expect(getProjectRef({}, safeFileEnv)).toBe("");
+    expect(getProjectRef({ PROJECT_REF: "bwgfslmxmueyglpumkbf" }, safeFileEnv)).toBe("bwgfslmxmueyglpumkbf");
+  });
+
   it("applies Apple Auth config through the Supabase Management API without returning secrets", async () => {
     const accessToken = testSecretFixture("sbp", "fixture", "must", "stay", "hidden");
     const appleSecret = testSecretFixture("apple", "fixture", "must", "stay", "hidden");
@@ -154,7 +172,7 @@ describe("apply-apple-auth-live", () => {
         SUPABASE_APPLE_CLIENT_ID: "com.zenflow.app.web",
         SUPABASE_APPLE_CLIENT_SECRET: appleSecret,
         SUPABASE_APPLE_ADDITIONAL_CLIENT_IDS: "com.zenflow.app",
-        SUPABASE_MANAGEMENT_API_BASE_URL: "https://api.supabase.example.test/v1",
+        SUPABASE_MANAGEMENT_API_BASE_URL: "https://attacker.example/v1",
         ZENFLOW_APPLE_AUTH_APPLY_CONFIRM: "true",
       },
       fetchImpl: (async (url: URL | RequestInfo, init?: RequestInit) => {
@@ -174,7 +192,10 @@ describe("apply-apple-auth-live", () => {
     expect(result.message).not.toContain(appleSecret);
 
     expect(requests.map((request) => request.method)).toEqual(["GET", "PATCH"]);
-    expect(requests[0].url).toContain("/projects/bwgfslmxmueyglpumkbf/config/auth");
+    expect(requests.map((request) => request.url)).toEqual([
+      "https://api.supabase.com/v1/projects/bwgfslmxmueyglpumkbf/config/auth",
+      "https://api.supabase.com/v1/projects/bwgfslmxmueyglpumkbf/config/auth",
+    ]);
     const patch = JSON.parse(requests[1].body) as Record<string, unknown>;
     expect(patch).toMatchObject({
       site_url: "https://yehor212.github.io/people-first-app/",
@@ -193,7 +214,7 @@ describe("apply-apple-auth-live", () => {
 
   it("generates the Apple client secret during apply when signing key inputs are present", async () => {
     const { privateKeyPem, publicKeyPem } = createPrivateKeyFixture();
-    const requests: Array<{ method: string; body: string }> = [];
+    const requests: Array<{ method: string; body: string; url: string }> = [];
     const responses = [
       new Response(JSON.stringify({ uri_allow_list: "" }), {
         status: 200,
@@ -213,11 +234,11 @@ describe("apply-apple-auth-live", () => {
         SUPABASE_APPLE_TEAM_ID: "TEAMID1234",
         SUPABASE_APPLE_KEY_ID: "KEYID12345",
         SUPABASE_APPLE_PRIVATE_KEY: privateKeyPem,
-        SUPABASE_MANAGEMENT_API_BASE_URL: "https://api.supabase.example.test/v1",
+        SUPABASE_MANAGEMENT_API_BASE_URL: "https://attacker.example/v1",
         ZENFLOW_APPLE_AUTH_APPLY_CONFIRM: "true",
       },
-      fetchImpl: (async (_url: URL | RequestInfo, init?: RequestInit) => {
-        requests.push({ method: init?.method || "GET", body: String(init?.body || "") });
+      fetchImpl: (async (url: URL | RequestInfo, init?: RequestInit) => {
+        requests.push({ method: init?.method || "GET", body: String(init?.body || ""), url: String(url) });
         const response = responses.shift();
         if (!response) throw new Error("unexpected request");
         return response;
@@ -228,6 +249,10 @@ describe("apply-apple-auth-live", () => {
     expect(result.message).not.toContain(privateKeyPem);
 
     const patch = JSON.parse(requests[1].body) as Record<string, string>;
+    expect(requests.map((request) => request.url)).toEqual([
+      "https://api.supabase.com/v1/projects/bwgfslmxmueyglpumkbf/config/auth",
+      "https://api.supabase.com/v1/projects/bwgfslmxmueyglpumkbf/config/auth",
+    ]);
     const generatedSecret = patch.external_apple_secret;
     expect(generatedSecret).toMatch(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
     expect(decodeJwtPart<{ alg: string; kid: string; typ: string }>(generatedSecret, 0)).toEqual({

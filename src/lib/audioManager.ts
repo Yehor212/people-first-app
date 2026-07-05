@@ -150,7 +150,7 @@ async function ensureContextResumed(): Promise<boolean> {
   const ctx = getAudioContext();
   if (!ctx) return false;
 
-  if (ctx.state === 'suspended' || (ctx.state as string) === 'interrupted') {
+  if (needsAudioContextResume(ctx)) {
     try {
       await ctx.resume();
     } catch (e) {
@@ -161,18 +161,17 @@ async function ensureContextResumed(): Promise<boolean> {
   return true;
 }
 
-// Play a simple tone (for UI feedback)
-function playTone(
+function needsAudioContextResume(ctx: AudioContext): boolean {
+  return ctx.state === 'suspended' || (ctx.state as string) === 'interrupted';
+}
+
+function emitToneWithContext(
+  ctx: AudioContext,
   frequency: number,
   duration: number,
-  type: OscillatorType = 'sine',
-  gainScale = 0.1,
+  type: OscillatorType,
+  gainScale: number,
 ): void {
-  if (state.isMuted || state.volume <= 0) return;
-
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
   try {
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
@@ -195,6 +194,34 @@ function playTone(
   } catch (_e) {
     // Audio not available - silent fail
   }
+}
+
+// Play a simple tone (for UI feedback)
+function playTone(
+  frequency: number,
+  duration: number,
+  type: OscillatorType = 'sine',
+  gainScale = 0.1,
+): void {
+  if (state.isMuted || state.volume <= 0) return;
+
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const emitIfStillAllowed = () => {
+    if (state.isMuted || state.volume <= 0 || needsAudioContextResume(ctx)) return;
+    emitToneWithContext(ctx, frequency, duration, type, gainScale);
+  };
+
+  if (needsAudioContextResume(ctx)) {
+    void ctx
+      .resume()
+      .then(emitIfStillAllowed)
+      .catch((e) => logger.warn('[AudioManager] Failed to resume context before tone:', e));
+    return;
+  }
+
+  emitToneWithContext(ctx, frequency, duration, type, gainScale);
 }
 
 // Play success chime (task completed)
@@ -307,6 +334,12 @@ export function playNotification(): void {
   if (state.isMuted || state.volume <= 0 || !shouldPlaySounds()) return;
   if (!canPlayFeedbackSound('notification')) return;
   if (!consumeAudioFeedbackBudget('notification')) return;
+  playNotificationTone();
+}
+
+export function playNotificationPreview(): void {
+  if (state.isMuted || state.volume <= 0 || !shouldPlaySounds()) return;
+  if (!canPlayFeedbackSound('notification')) return;
   playNotificationTone();
 }
 

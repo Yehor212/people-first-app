@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const journalModuleSource = readFileSync("src/features/journal/JournalModule.tsx", "utf8");
+const useAuthSessionSource = readFileSync("src/hooks/useAuthSession.ts", "utf8");
 const journalEntryListSource = readFileSync("src/features/journal/JournalEntryList.tsx", "utf8");
 const onThisDaySource = readFileSync("src/features/journal/OnThisDayCard.tsx", "utf8");
 const memoryPortalSource = readFileSync("src/features/journal/MemoryPortalCanvas.tsx", "utf8");
@@ -12,20 +13,35 @@ const localeSources = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"].map((lang
   source: readFileSync(`src/i18n/languages/${language}.ts`, "utf8"),
 }));
 
+function sliceRequiredBlock(source: string, startMarker: string, endMarker: string): string {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start);
+  expect(start, `Missing start marker: ${startMarker}`).toBeGreaterThanOrEqual(0);
+  expect(end, `Missing end marker after ${startMarker}: ${endMarker}`).toBeGreaterThan(start);
+  return source.slice(start, end);
+}
+
 describe("web diary privacy and reset contracts", () => {
   it("requires password reset sign-in to match the requested account email", () => {
-    const resetListenerBlock =
-      /Magic link fallback:[\s\S]*?subscription\?\.unsubscribe\(\);[\s\S]*?\}, \[consumeVerifiedPasswordReset, resetStep\]\);/.exec(
-        journalModuleSource,
-      )?.[0] ?? "";
-    const resetConsumerBlock =
-      /const consumeVerifiedPasswordReset = useCallback\([\s\S]*?\n\s{2}\);\n\n\s{2}\/\/ --- HOOKS/.exec(
-        journalModuleSource,
-      )?.[0] ?? "";
+    const resetListenerBlock = sliceRequiredBlock(
+      journalModuleSource,
+      "// Magic link fallback",
+      "const mobileDiarySectionButtonClass",
+    );
+    const resetConsumerBlock = sliceRequiredBlock(
+      journalModuleSource,
+      "const consumeVerifiedPasswordReset = useCallback(",
+      "// --- HOOKS",
+    );
 
-    expect(resetListenerBlock).toContain('event !== "SIGNED_IN"');
-    expect(resetListenerBlock).not.toContain("TOKEN_REFRESHED");
-    expect(resetListenerBlock).toContain("hasJournalPasswordResetProof(pending)");
+    expect(journalModuleSource).toContain(
+      'const JOURNAL_PASSWORD_RESET_AUTH_EVENTS = new Set(["SIGNED_IN", "TOKEN_REFRESHED", "INITIAL_SESSION"]);',
+    );
+    expect(journalModuleSource).toContain('import { AUTH_COMPLETE_EVENT, getAuthRedirectUrl } from "@/lib/authRedirect";');
+    expect(journalModuleSource).not.toContain("function hasJournalPasswordResetRedirectProof");
+    expect(resetListenerBlock).toContain("JOURNAL_PASSWORD_RESET_AUTH_EVENTS.has(event)");
+    expect(resetListenerBlock).toContain("window.addEventListener(AUTH_COMPLETE_EVENT");
+    expect(resetListenerBlock).toContain("hasJournalPasswordResetProof(currentPending)");
     expect(resetListenerBlock).toContain("parseJournalPasswordResetRequest");
     expect(resetListenerBlock).toContain("session?.user?.email");
     expect(resetConsumerBlock).toContain("hasJournalPasswordResetProof(pending)");
@@ -39,10 +55,11 @@ describe("web diary privacy and reset contracts", () => {
   });
 
   it("cleans the one-time journal reset nonce from the URL after consuming proof", () => {
-    const resetConsumerBlock =
-      /const consumeVerifiedPasswordReset = useCallback\([\s\S]*?\n\s{2}\);\n\n\s{2}\/\/ --- HOOKS/.exec(
-        journalModuleSource,
-      )?.[0] ?? "";
+    const resetConsumerBlock = sliceRequiredBlock(
+      journalModuleSource,
+      "const consumeVerifiedPasswordReset = useCallback(",
+      "// --- HOOKS",
+    );
 
     expect(resetConsumerBlock).toContain("clearJournalPasswordResetParamFromCurrentUrl()");
     const consumeIndex = resetConsumerBlock.indexOf("consumeJournalPasswordResetProof");
@@ -57,6 +74,17 @@ describe("web diary privacy and reset contracts", () => {
     );
   });
 
+  it("stores journal reset proof before notifying auth completion on web callbacks", () => {
+    const completeWebOAuthSessionBlock =
+      /const completeWebOAuthSession = \([\s\S]*?\n\s{4}};/.exec(useAuthSessionSource)?.[0] ?? "";
+
+    expect(completeWebOAuthSessionBlock).toContain("persistJournalPasswordResetProofFromUrl(window.location.href)");
+    expect(completeWebOAuthSessionBlock).toContain("notifyAuthComplete()");
+    expect(completeWebOAuthSessionBlock.indexOf("persistJournalPasswordResetProofFromUrl(window.location.href)")).toBeLessThan(
+      completeWebOAuthSessionBlock.indexOf("notifyAuthComplete()"),
+    );
+  });
+
   it("uses WebView-safe spaced calc syntax for journal security dialog safe areas", () => {
     for (const [name, source] of [
       ["JournalModule", journalModuleSource],
@@ -68,7 +96,7 @@ describe("web diary privacy and reset contracts", () => {
     }
 
     expect(journalModuleSource).toContain(
-      "max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_2rem)]",
+      "max-h-[calc(100dvh_-_var(--safe-top)_-_var(--safe-bottom)_-_2rem)]",
     );
     expect(exportPickerDialogSource).toContain(
       "max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_1rem)]",

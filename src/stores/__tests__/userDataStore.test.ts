@@ -41,7 +41,6 @@ function createMockSetters(): RegisteredSetters {
     setUserName: vi.fn(),
     setUserNameCustom: vi.fn(),
     setHasSelectedLanguage: vi.fn(),
-    setTutorialComplete: vi.fn(),
     setOnboardingComplete: vi.fn(),
     setNotificationPermissionChecked: vi.fn(),
     setAuthGateChecked: vi.fn(),
@@ -198,8 +197,9 @@ describe("userDataStore initial state", () => {
     expect(useUserDataStore.getState().hasSelectedLanguage).toBe(false);
   });
 
-  it("tutorialComplete defaults to false", () => {
-    expect(useUserDataStore.getState().tutorialComplete).toBe(false);
+  it("does not expose the removed tutorial completion gate", () => {
+    expect("tutorialComplete" in useUserDataStore.getState()).toBe(false);
+    expect("setTutorialComplete" in useUserDataStore.getState()).toBe(false);
   });
 
   it("onboardingComplete defaults to false", () => {
@@ -308,11 +308,6 @@ describe("direct value setters", () => {
   it("setHasSelectedLanguage sets hasSelectedLanguage", () => {
     useUserDataStore.getState().setHasSelectedLanguage(true);
     expect(useUserDataStore.getState().hasSelectedLanguage).toBe(true);
-  });
-
-  it("setTutorialComplete sets tutorialComplete", () => {
-    useUserDataStore.getState().setTutorialComplete(true);
-    expect(useUserDataStore.getState().tutorialComplete).toBe(true);
   });
 
   it("setOnboardingComplete sets onboardingComplete", () => {
@@ -430,13 +425,6 @@ describe("bridge pattern (_registerSetters)", () => {
     expect(setters.setUserName).toHaveBeenCalledWith("Alice");
   });
 
-  it("setTutorialComplete calls registered IndexedDB setter", () => {
-    const setters = createMockSetters();
-    useUserDataStore.getState()._registerSetters(setters);
-    useUserDataStore.getState().setTutorialComplete(true);
-    expect(setters.setTutorialComplete).toHaveBeenCalledWith(true);
-  });
-
   it("setPrivacy calls registered IndexedDB setter", () => {
     const setters = createMockSetters();
     useUserDataStore.getState()._registerSetters(setters);
@@ -477,7 +465,6 @@ describe("without registered setters", () => {
     useUserDataStore.getState().setUserName("Test");
     useUserDataStore.getState().setUserNameCustom(true);
     useUserDataStore.getState().setHasSelectedLanguage(true);
-    useUserDataStore.getState().setTutorialComplete(true);
     useUserDataStore.getState().setOnboardingComplete(true);
     useUserDataStore.getState().setNotificationPermissionChecked(true);
     useUserDataStore.getState().setAuthGateChecked(true);
@@ -490,7 +477,6 @@ describe("without registered setters", () => {
     expect(state.userName).toBe("Test");
     expect(state.userNameCustom).toBe(true);
     expect(state.hasSelectedLanguage).toBe(true);
-    expect(state.tutorialComplete).toBe(true);
     expect(state.onboardingComplete).toBe(true);
     expect(state.notificationPermissionChecked).toBe(true);
     expect(state.googleAuthChecked).toBe(true);
@@ -510,8 +496,8 @@ describe("without registered setters", () => {
 describe("_hydrateFromDB", () => {
   it("partial data merges correctly without overwriting other fields", () => {
     useUserDataStore.getState().setUserName("OriginalName");
-    useUserDataStore.getState()._hydrateFromDB({ tutorialComplete: true });
-    expect(useUserDataStore.getState().tutorialComplete).toBe(true);
+    useUserDataStore.getState()._hydrateFromDB({ onboardingComplete: true });
+    expect(useUserDataStore.getState().onboardingComplete).toBe(true);
     expect(useUserDataStore.getState().userName).toBe("OriginalName");
   });
 
@@ -596,7 +582,7 @@ describe("_hydrateFromDB", () => {
   it("undefined fields are not overwritten when key is absent", () => {
     useUserDataStore.getState().setUserName("Keep");
     // Hydrate with a partial that does not include userName at all
-    useUserDataStore.getState()._hydrateFromDB({ tutorialComplete: true });
+    useUserDataStore.getState()._hydrateFromDB({ onboardingComplete: true });
     expect(useUserDataStore.getState().userName).toBe("Keep");
   });
 

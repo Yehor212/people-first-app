@@ -1,10 +1,10 @@
 import { useCallback, useState } from "react";
-import { Bell, ListChecks, ListMusic, MessageSquare, MonitorSmartphone, SlidersHorizontal, Volume2, VolumeX, Waves } from "lucide-react";
+import { Bell, ListChecks, ListMusic, MessageSquare, SlidersHorizontal, Volume2, VolumeX, Waves } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { playNotification, setMuted, setVolume } from "@/lib/audioManager";
+import { playNotificationPreview, setMuted, setVolume } from "@/lib/audioManager";
 import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
 import { useAudioComfortSettings } from "@/hooks/useAudioComfortSettings";
-import { APP_AUDIO_ACTION_EVENTS, APP_AUDIO_ASSETS, APP_AUDIO_FEEDBACK_EVENTS, type AppAudioComfortTexture } from "@/lib/appAudioAssets";
+import { type AppAudioComfortTexture } from "@/lib/appAudioAssets";
 import {
   AUDIO_COMFORT_PROFILES,
   getVolumeBucket,
@@ -18,7 +18,6 @@ import {
   SettingsChoiceButton,
   SettingsFieldHeader,
   SettingsInset,
-  SettingsStatus,
   ToggleRow,
 } from "./components/V2SettingsControlPrimitives";
 import { V2SettingsDiaryAmbienceControl } from "./V2SettingsDiaryAmbienceControl";
@@ -29,68 +28,7 @@ export function SoundPanel() {
   const comfort = useAudioComfortSettings();
   const [lastFeedbackChoice, setLastFeedbackChoice] = useState<AudioComfortFeedbackChoice | null>(null);
   const volumePercent = Math.round(audio.volume * 100);
-  const focusAssetCount = APP_AUDIO_ASSETS.filter((asset) => asset.family === "focus").length;
   const canPreviewReminderCue = !audio.muted && comfort.settings.reminderCuesEnabled;
-  const actionSoundItems = [
-    {
-      key: "mood",
-      label: t.settingsSoundActionMapMood,
-      detail: "1",
-    },
-    {
-      key: "habit",
-      label: t.settingsSoundActionMapHabit,
-      detail: "1",
-    },
-    {
-      key: "journal",
-      label: t.settingsSoundActionMapJournal,
-      detail: "1",
-    },
-    {
-      key: "focus",
-      label: t.settingsSoundActionMapFocus,
-      detail: "1",
-    },
-    {
-      key: "breathing",
-      label: t.settingsSoundActionMapBreathing,
-      detail: "1",
-    },
-    {
-      key: "milestones",
-      label: t.settingsSoundActionMapMilestones,
-      detail: String(APP_AUDIO_ACTION_EVENTS.filter((event) => event.soundType === "milestone" || event.soundType === "streak").length),
-    },
-  ];
-
-  const soundMapItems = [
-    {
-      key: "auth",
-      label: t.settingsSoundMapAuth,
-      detail: "1",
-    },
-    {
-      key: "orb",
-      label: t.settingsSoundMapOrb,
-      detail: "1",
-    },
-    {
-      key: "diary",
-      label: t.settingsSoundMapDiary,
-      detail: "1",
-    },
-    {
-      key: "focus",
-      label: t.settingsSoundMapFocus,
-      detail: String(focusAssetCount),
-    },
-    {
-      key: "feedback",
-      label: t.settingsSoundMapFeedback,
-      detail: String(APP_AUDIO_FEEDBACK_EVENTS.length),
-    },
-  ];
   const textureItems: readonly { texture: AppAudioComfortTexture; label: string }[] = [
     { texture: "air", label: t.settingsSoundTextureAir },
     { texture: "water", label: t.settingsSoundTextureWater },
@@ -158,7 +96,7 @@ export function SoundPanel() {
             value={audio.volume}
             onChange={(event) => setVolume(Number(event.target.value))}
             aria-label={t.settingsSoundVolume}
-            className="h-2 min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-muted accent-primary disabled:cursor-not-allowed disabled:opacity-60"
+            className="settings-v2-range-control h-11 min-w-0 flex-1 cursor-pointer appearance-none disabled:cursor-not-allowed disabled:opacity-60"
           />
           <span
             className="w-12 shrink-0 text-end text-sm font-semibold tabular-nums text-foreground"
@@ -287,75 +225,12 @@ export function SoundPanel() {
 
       <ActionButton
         icon={Bell}
-        onClick={playNotification}
+        onClick={playNotificationPreview}
         disabled={!canPreviewReminderCue}
         testId="settings-v2-audio-preview"
       >
         {t.settingsSoundPreview}
       </ActionButton>
-
-      <SettingsInset testId="settings-v2-sound-map-card">
-        <SettingsFieldHeader
-          icon={ListMusic}
-          title={t.settingsSoundMapTitle}
-          description={t.settingsSoundMapDescription}
-        />
-        <ul
-          aria-label={t.settingsSoundMapTitle}
-          className="divide-y divide-[hsl(var(--settings-v2-border)/0.42)] rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.32)] bg-[hsl(var(--settings-v2-card)/0.26)]"
-        >
-          {soundMapItems.map((item) => (
-            <li
-              key={item.key}
-              className="flex min-h-[44px] items-center justify-between gap-3 px-3 py-2"
-              data-reference-row="true"
-              data-testid={`settings-v2-sound-map-${item.key}`}
-            >
-              <span className="min-w-0 text-sm font-medium text-foreground">{item.label}</span>
-              <span className="shrink-0 rounded-[6px] bg-[hsl(var(--settings-v2-shell)/0.56)] px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
-                {item.detail}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </SettingsInset>
-
-      <SettingsInset testId="settings-v2-action-sound-map-card">
-        <SettingsFieldHeader
-          icon={ListChecks}
-          title={t.settingsSoundActionMapTitle}
-          description={t.settingsSoundActionMapDescription}
-        />
-        <ul
-          aria-label={t.settingsSoundActionMapTitle}
-          className="divide-y divide-[hsl(var(--settings-v2-border)/0.42)] rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.32)] bg-[hsl(var(--settings-v2-card)/0.26)]"
-        >
-          {actionSoundItems.map((item) => (
-            <li
-              key={item.key}
-              className="flex min-h-[44px] items-center justify-between gap-3 px-3 py-2"
-              data-reference-row="true"
-              data-testid={`settings-v2-action-sound-map-${item.key}`}
-            >
-              <span className="min-w-0 text-sm font-medium text-foreground">{item.label}</span>
-              <span className="shrink-0 rounded-[6px] bg-[hsl(var(--settings-v2-shell)/0.56)] px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
-                {item.detail}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </SettingsInset>
-
-      <SettingsInset testId="settings-v2-sound-platform-card">
-        <SettingsFieldHeader
-          icon={MonitorSmartphone}
-          title={t.settingsSoundCrossPlatformTitle}
-          description={t.settingsSoundMapDescription}
-        />
-        <SettingsStatus>
-          {t.settingsSoundCrossPlatformNote}
-        </SettingsStatus>
-      </SettingsInset>
 
       <V2SettingsDiaryAmbienceControl />
     </PanelFrame>

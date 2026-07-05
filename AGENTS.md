@@ -95,6 +95,13 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 - Run `npm run check:no-ai-templates` when changing agent rules, docs, copy, UI patterns, generated assets, completion/release docs, or whenever the user explicitly mentions AI templates / ИИ шаблоны. If it cannot run, report it as `UNVERIFIED`, not `PASS`.
 - Treat this as layered enforcement: AGENTS.md routes agents, the policy defines the rubric, PR review and drift CI are backstops, `check:no-ai-templates` scans for drift, and `check:agent-context` keeps the contract discoverable. Do not claim absolute prevention; mark unchecked branch protection or review enforcement as `UNVERIFIED`.
 
+## Translation Quality Gate
+
+- For user-facing i18n values, fallback strings, and copy-only translation work, read and follow `docs/ai/TRANSLATION_QUALITY_POLICY.md`.
+- Use natural user language instead of implementation terms such as cloud sync, sync queue, local storage, debug info, database/cache, renderer/GPU/WebGL, PWA, or platform unless exact support/store wording requires it.
+- Preserve placeholders, i18n key parity, and RTL safety for `ar`/`he`; do not build translated sentences by concatenating fragments.
+- Run `npm run check:translation-quality` with `npm run i18n:check` and `npm run i18n:deep` before claiming translation-quality `PASS`.
+
 ## Best Practices Implied Requirements Gate
 
 - When the user asks for best practices, full implementation, deep research, "what did I miss", or a complete quality fix, read and follow `docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md` before narrowing scope.

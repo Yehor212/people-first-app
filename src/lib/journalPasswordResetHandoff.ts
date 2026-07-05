@@ -60,7 +60,12 @@ export function hasStoredJournalPasswordResetProof(expectedNonce: string, maxAge
     return false;
   }
 
-  return stored.nonce === expectedNonce;
+  if (stored.nonce !== expectedNonce) {
+    storageRemove(SK.JOURNAL_PASSWORD_RESET_PROOF);
+    return false;
+  }
+
+  return true;
 }
 
 export function consumeJournalPasswordResetProof(expectedNonce: string, maxAgeMs: number): boolean {

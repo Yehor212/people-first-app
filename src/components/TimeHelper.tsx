@@ -145,7 +145,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                   {t.timeBlindnessHelper || "Time Blindness Helper"}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  {t.visualTimeAwareness || "Visual time awareness for ADHD"}
+                  {t.visualTimeAwareness || "Visual time awareness for focus"}
                 </p>
               </div>
             </div>
@@ -340,7 +340,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
               <div className="text-2xl">💡</div>
               <div className="text-sm">
                 <div className="font-medium mb-1">
-                  {t.adhdTimeManagement || "ADHD Time Management"}
+                  {t.adhdTimeManagement || "Time planning support"}
                 </div>
                 <ul className="text-muted-foreground space-y-1 list-disc list-inside">
                   <li>{t.adhdTip1 || "Audio pings help track time passing"}</li>

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import {
   AuthGate,
+  hasStoredCompletedInteractiveGates,
   isLocalDevBypassHost,
   shouldBypassDesktopInteractiveGates,
 } from "@/components/AuthGate";
@@ -23,8 +24,6 @@ const { splashScreenMock, authScreenMock, authScreenProps, appState, userState }
       webOAuthError: null,
       setWebOAuthError: vi.fn(),
       hasValidSession: false,
-      tutorialBypassFlag: false,
-      setTutorialBypassFlag: vi.fn(),
       onboardingBypassFlag: false,
       setOnboardingBypassFlag: vi.fn(),
     };
@@ -34,8 +33,6 @@ const { splashScreenMock, authScreenMock, authScreenProps, appState, userState }
       setHasSelectedLanguage: vi.fn(),
       setUserName: vi.fn(),
       setUserNameCustom: vi.fn(),
-      tutorialComplete: true,
-      setTutorialComplete: vi.fn(),
       onboardingComplete: true,
       setOnboardingComplete: vi.fn(),
       notificationPermissionChecked: true,
@@ -78,6 +75,10 @@ vi.mock("@/components/AuthScreen", () => ({
   AuthScreen: authScreenMock,
 }));
 
+vi.mock("@/components/OnboardingFlow", () => ({
+  OnboardingFlow: () => <div data-testid="mock-onboarding-flow" />,
+}));
+
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
@@ -106,7 +107,6 @@ const setStandaloneDisplayMode = (matches: boolean) => {
 const storeCompletedInteractiveGates = () => {
   localStorage.setItem("zenflow-language-selected", "true");
   localStorage.setItem("zenflow-google-auth-checked", "true");
-  localStorage.setItem("zenflow-tutorial-complete", "true");
   localStorage.setItem("zenflow-onboarding-complete", "true");
   localStorage.setItem("zenflow-notification-permission-checked", "true");
 };
@@ -127,14 +127,12 @@ describe("AuthGate", () => {
     authScreenMock.mockClear();
     authScreenProps.length = 0;
     appState.setAuthBypassFlag.mockReset();
-    appState.setTutorialBypassFlag.mockReset();
     appState.setOnboardingBypassFlag.mockReset();
     appState.setWebOAuthError.mockReset();
     userState.setHasSelectedLanguage.mockReset();
     userState.setUserName.mockReset();
     userState.setUserNameCustom.mockReset();
     userState.setGoogleAuthChecked.mockReset();
-    userState.setTutorialComplete.mockReset();
     userState.setOnboardingComplete.mockReset();
     userState.setNotificationPermissionChecked.mockReset();
     userState.setAuthGateChecked.mockReset();
@@ -144,10 +142,8 @@ describe("AuthGate", () => {
     appState.isProcessingWebOAuth = false;
     appState.webOAuthError = null;
     appState.hasValidSession = false;
-    appState.tutorialBypassFlag = false;
     appState.onboardingBypassFlag = false;
     userState.hasSelectedLanguage = true;
-    userState.tutorialComplete = true;
     userState.onboardingComplete = true;
     userState.notificationPermissionChecked = true;
     userState.authGateChecked = true;
@@ -198,7 +194,6 @@ describe("AuthGate", () => {
     userState.hasSelectedLanguage = false;
     userState.authGateChecked = false;
     userState.googleAuthChecked = false;
-    userState.tutorialComplete = false;
     userState.onboardingComplete = false;
     userState.notificationPermissionChecked = false;
 
@@ -212,6 +207,15 @@ describe("AuthGate", () => {
     expect(screen.queryByTestId("mock-splash")).not.toBeInTheDocument();
   });
 
+  it("does not require the removed tutorial gate for installed web shell startup recovery", () => {
+    localStorage.setItem("zenflow-language-selected", "true");
+    localStorage.setItem("zenflow-google-auth-checked", "true");
+    localStorage.setItem("zenflow-onboarding-complete", "true");
+    localStorage.setItem("zenflow-notification-permission-checked", "true");
+
+    expect(hasStoredCompletedInteractiveGates()).toBe(true);
+  });
+
   it("opens an installed web shell with completed local gates while startup recovery is still initializing", () => {
     appState.initializationState = { isInitializing: true, error: null, wasUpdated: false };
     setStandaloneDisplayMode(true);
@@ -219,7 +223,6 @@ describe("AuthGate", () => {
     userState.hasSelectedLanguage = false;
     userState.authGateChecked = false;
     userState.googleAuthChecked = false;
-    userState.tutorialComplete = false;
     userState.onboardingComplete = false;
     userState.notificationPermissionChecked = false;
 
@@ -292,5 +295,22 @@ describe("AuthGate", () => {
     expect(userState.setAuthGateChecked).toHaveBeenCalledWith(true);
     expect(screen.getByText("App")).toBeInTheDocument();
     expect(screen.queryByTestId("mock-auth-screen")).not.toBeInTheDocument();
+  });
+
+  it("routes directly from completed auth to module onboarding without rendering WelcomeTutorial", () => {
+    appState.initializationState = { isInitializing: false, error: null, wasUpdated: false };
+    appState.hasValidSession = true;
+    userState.authGateChecked = true;
+    userState.googleAuthChecked = true;
+    userState.onboardingComplete = false;
+
+    render(
+      <AuthGate isLoading={false} splashTheme="ink">
+        <div>App</div>
+      </AuthGate>
+    );
+
+    expect(screen.getByTestId("mock-onboarding-flow")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome to ZenFlow")).not.toBeInTheDocument();
   });
 });

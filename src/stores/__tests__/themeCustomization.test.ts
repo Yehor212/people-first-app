@@ -83,16 +83,16 @@ describe("themeCustomization", () => {
       depth: "soft",
     });
 
-    expect(recipe.cssVars["--settings-v2-shell"]).toBe("198 32% 91%");
-    expect(recipe.cssVars["--settings-v2-card"]).toBe("0 0% 100%");
-    expect(recipe.cssVars["--settings-v2-panel"]).toBe("204 40% 96%");
-    expect(recipe.cssVars["--settings-v2-border"]).toBe("205 15% 72%");
-    expect(recipe.cssVars["--settings-v2-accent"]).toBe("211 84% 45%");
+    expect(recipe.cssVars["--settings-v2-shell"]).toBe("36 44% 93%");
+    expect(recipe.cssVars["--settings-v2-card"]).toBe("42 62% 98%");
+    expect(recipe.cssVars["--settings-v2-panel"]).toBe("30 70% 94%");
+    expect(recipe.cssVars["--settings-v2-border"]).toBe("34 24% 72%");
+    expect(recipe.cssVars["--settings-v2-accent"]).toBe("152 32% 36%");
     expect(recipe.cssVars["--settings-v2-card-alpha"]).toBe("0.64");
     expect(recipe.cssVars["--settings-v2-panel-alpha"]).toBe("0.5");
-    expect(recipe.cssVars["--settings-v2-glass-blur"]).toBe("28px");
+    expect(recipe.cssVars["--settings-v2-glass-blur"]).toBe("24px");
     expect(recipe.cssVars["--settings-v2-rim-light"]).toBe("0 0% 100%");
-    expect(recipe.metaThemeColor).toBe("#dbeef2");
+    expect(recipe.metaThemeColor).toBe("#f3eadf");
   });
 
   it("maps Deep Glass dark mode to platform-like Liquid Glass tokens", () => {
@@ -111,33 +111,51 @@ describe("themeCustomization", () => {
     expect(recipe.cssVars["--settings-v2-accent"]).toBe("258 70% 78%");
     expect(recipe.cssVars["--settings-v2-card-alpha"]).toBe("0.62");
     expect(recipe.cssVars["--settings-v2-panel-alpha"]).toBe("0.5");
-    expect(recipe.cssVars["--settings-v2-glass-blur"]).toBe("30px");
+    expect(recipe.cssVars["--settings-v2-glass-blur"]).toBe("24px");
     expect(recipe.cssVars["--settings-v2-rim-light"]).toBe("264 36% 82%");
     expect(recipe.metaThemeColor).toBe("#211d2b");
   });
 
-  it("keeps the Blue accent family blue across day, dark, and OLED recipes", () => {
+  it("keeps the Sea glass accent family green across day, dark, and OLED recipes", () => {
     expect(
       getThemeCustomizationRecipe("paper", {
         ...DEFAULT_THEME_CUSTOMIZATION,
         accentFamily: "teal",
         depth: "soft",
       }).cssVars["--settings-v2-accent"],
-    ).toBe("211 84% 45%");
+    ).toBe("152 32% 36%");
     expect(
       getThemeCustomizationRecipe("ink", {
         ...DEFAULT_THEME_CUSTOMIZATION,
         accentFamily: "teal",
         depth: "soft",
       }).cssVars["--settings-v2-accent"],
-    ).toBe("211 72% 76%");
+    ).toBe("155 29% 77%");
     expect(
       getThemeCustomizationRecipe("oled", {
         ...DEFAULT_THEME_CUSTOMIZATION,
         accentFamily: "teal",
         depth: "soft",
       }).cssVars["--settings-v2-accent"],
-    ).toBe("211 68% 74%");
+    ).toBe("155 29% 77%");
+  });
+
+  it("maps Botanical Pulse dark mode to reference-like optical glass", () => {
+    const recipe = getThemeCustomizationRecipe("ink", {
+      ...DEFAULT_THEME_CUSTOMIZATION,
+      paletteId: "botanicalPulse",
+      accentFamily: "plum",
+      intensity: "balanced",
+      depth: "soft",
+    });
+
+    expect(recipe.cssVars["--settings-v2-shell"]).toBe("64 11% 27%");
+    expect(recipe.cssVars["--settings-v2-card"]).toBe("89 12% 37%");
+    expect(recipe.cssVars["--settings-v2-panel"]).toBe("152 32% 36%");
+    expect(recipe.cssVars["--settings-v2-border"]).toBe("153 22% 54%");
+    expect(recipe.cssVars["--settings-v2-rim-light"]).toBe("148 31% 90%");
+    expect(recipe.cssVars["--settings-v2-accent"]).toBe("258 70% 78%");
+    expect(recipe.metaThemeColor).toBe("#4E896E");
   });
 
   it("returns allowlisted token recipes without accepting raw CSS values", () => {
@@ -194,7 +212,7 @@ describe("themeCustomization", () => {
       accentFamily: "clay",
     });
 
-    expect(meta.content).toBe("#dbeef2");
+    expect(meta.content).toBe("#f3eadf");
 
     applyThemeCustomizationToDOM("paper", DEFAULT_THEME_CUSTOMIZATION);
     expect(meta.content).toBe("#4a9d7c");

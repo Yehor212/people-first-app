@@ -41,7 +41,7 @@ import { consumePendingDiaryEditorOpen, subscribeToDiaryEditorOpen } from "@/lib
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { createFocusTrap, getFocusableElements, announceSuccess, announceError } from "@/lib/a11y";
-import { getAuthRedirectUrl } from "@/lib/authRedirect";
+import { AUTH_COMPLETE_EVENT, getAuthRedirectUrl } from "@/lib/authRedirect";
 import { IS_DESKTOP_RUNTIME } from "@/lib/env";
 import { Switch } from "@/components/ui/switch";
 import { SplashScreen, type SplashThemePreference } from "@/components/SplashScreen";
@@ -224,19 +224,46 @@ type JournalPasswordResetRequest = {
 };
 
 const JOURNAL_PASSWORD_RESET_WINDOW_MS = 600_000;
+const JOURNAL_PASSWORD_RESET_RESEND_COOLDOWN_MS = 60_000;
+const JOURNAL_PASSWORD_RESET_AUTH_EVENTS = new Set(["SIGNED_IN", "TOKEN_REFRESHED", "INITIAL_SESSION"]);
+const JOURNAL_RESET_PROTECTED_DETAIL_EN = "Nothing changed; your entries remain protected.";
+
+function withJournalResetProtectedDetail(message: string): string {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("nothing changed") || normalized.includes("entries remain protected")) {
+    return message;
+  }
+
+  const isLegacyEnglishResetCopy =
+    normalized.includes("this browser could not confirm the email link") ||
+    normalized.includes("this email link was not confirmed") ||
+    normalized.includes("encrypted with your password");
+
+  return isLegacyEnglishResetCopy ? message + " " + JOURNAL_RESET_PROTECTED_DETAIL_EN : message;
+}
 
 function normalizeJournalResetEmail(email: string | null | undefined): string {
   return typeof email === "string" ? email.trim().toLowerCase() : "";
 }
 
-function createJournalPasswordResetNonce(): string {
-  const bytes = new Uint8Array(16);
-  if (globalThis.crypto?.getRandomValues) {
-    globalThis.crypto.getRandomValues(bytes);
-    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-  }
+function createJournalPasswordResetNonce(): string | null {
+  const cryptoApi = globalThis.crypto;
+  if (!cryptoApi?.getRandomValues) return null;
 
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  const bytes = new Uint8Array(16);
+  cryptoApi.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function getJournalAuthErrorDebugInfo(error: unknown): { code?: string; name?: string; status?: number } {
+  if (!error || typeof error !== "object") return {};
+
+  const record = error as Record<string, unknown>;
+  return {
+    code: typeof record.code === "string" ? record.code : undefined,
+    name: typeof record.name === "string" ? record.name : undefined,
+    status: typeof record.status === "number" ? record.status : undefined,
+  };
 }
 
 function withJournalPasswordResetNonce(redirectUrl: string, nonce: string): string {
@@ -278,17 +305,10 @@ function dispatchNavigationPopState(): void {
     window.dispatchEvent(new Event("popstate"));
   }
 }
-function hasJournalPasswordResetRedirectProof(pending: JournalPasswordResetRequest): boolean {
-  if (typeof window === "undefined") return false;
 
-  return getJournalPasswordResetNonceFromUrl(window.location.href) === pending.nonce;
-}
 
 function hasJournalPasswordResetProof(pending: JournalPasswordResetRequest): boolean {
-  return (
-    hasJournalPasswordResetRedirectProof(pending) ||
-    hasStoredJournalPasswordResetProof(pending.nonce, JOURNAL_PASSWORD_RESET_WINDOW_MS)
-  );
+  return hasStoredJournalPasswordResetProof(pending.nonce, JOURNAL_PASSWORD_RESET_WINDOW_MS);
 }
 
 function serializeJournalPasswordResetRequest(email: string, nonce: string): string {
@@ -665,11 +685,20 @@ export const JournalModule = memo(function JournalModule({
 
   const [showExportPicker, setShowExportPicker] = useState(false);
   const [exporting, setExporting] = useState(false);
-  type ResetStep = "idle" | "checking" | "no-account" | "unavailable" | "confirm" | "sending" | "sent" | "success";
+  type ResetStep =
+    | "idle"
+    | "checking"
+    | "no-account"
+    | "service-error"
+    | "unavailable"
+    | "confirm"
+    | "sending"
+    | "sent"
+    | "success";
   const [resetStep, setResetStep] = useState<ResetStep>("idle");
   const [resetEmail, setResetEmail] = useState("");
   const [resetError, setResetError] = useState("");
-  const [emailLockRemovalBlocked, setEmailLockRemovalBlocked] = useState(true);
+  const [resetResendRemaining, setResetResendRemaining] = useState(0);
   const lastResetOtpRef = useRef(0);
   const resetRequestSeqRef = useRef(0);
   const resetDialogRef = useRef<HTMLDivElement | null>(null);
@@ -677,6 +706,10 @@ export const JournalModule = memo(function JournalModule({
   const resetTitleId = useId();
   const resetDescriptionId = useId();
   const resetErrorId = useId();
+  const resetEncryptedUnavailableMessage = withJournalResetProtectedDetail(
+    ts.journalResetEncryptedUnavailable ||
+      "This diary is encrypted with your password. Email verification cannot remove this lock while encrypted content is locked. Nothing changed; your entries remain protected. Unlock with your password to remove it.",
+  );
   const [importing, setImporting] = useState(false);
   const [importFeedback, setImportFeedback] = useState<{
     type: "success" | "error";
@@ -776,33 +809,8 @@ export const JournalModule = memo(function JournalModule({
     }
   }, [isEmailLockRemovalAvailable, security.vaultKey]);
 
-  const canOfferEmailLockRemoval = isEmailLockRemovalAvailable && !emailLockRemovalBlocked;
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!isEmailLockRemovalAvailable || !security.hasPassword || !security.isLocked || security.loading) {
-      setEmailLockRemovalBlocked(true);
-      return undefined;
-    }
-
-    setEmailLockRemovalBlocked(true);
-    void checkEmailLockRemovalAvailable().then((available) => {
-      if (!cancelled) setEmailLockRemovalBlocked(!available);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [checkEmailLockRemovalAvailable, isEmailLockRemovalAvailable, security.hasPassword, security.isLocked, security.loading]);
-
   const closeResetDialog = useCallback(() => {
     if (resetStep === "sending") return;
-    if (resetStep === "sent") {
-      storageRemove(SK.JOURNAL_PASSWORD_RESET);
-      clearJournalPasswordResetProof();
-      clearJournalPasswordResetParamFromCurrentUrl();
-    }
     resetRequestSeqRef.current += 1;
     setResetStep("idle");
     setResetEmail("");
@@ -817,6 +825,14 @@ export const JournalModule = memo(function JournalModule({
     window.history.pushState({ navV2Page: "settings" }, "", nextUrl);
     dispatchNavigationPopState();
   }, [closeResetDialog]);
+
+  const updateResetResendRemaining = useCallback((now = Date.now()) => {
+    const nextAllowedAt = lastResetOtpRef.current + JOURNAL_PASSWORD_RESET_RESEND_COOLDOWN_MS;
+    const remaining = Math.max(0, Math.ceil((nextAllowedAt - now) / 1000));
+    setResetResendRemaining(remaining);
+    return remaining;
+  }, []);
+
   const openSettings = useCallback((
     section: JournalSettingsSection = "overview",
     returnFocusElement?: HTMLElement | null,
@@ -1580,9 +1596,14 @@ export const JournalModule = memo(function JournalModule({
       }
       setResetEmail(session.user.email);
       setResetStep("confirm");
-    } catch {
+    } catch (error) {
       if (!isCurrentResetRequest()) return;
-      setResetStep("no-account");
+      logger.warn("[Journal] Password reset account check failed", getJournalAuthErrorDebugInfo(error));
+      setResetError(
+        ts.journalResetServiceUnavailable ||
+          "We could not check your account. Check your connection and try again.",
+      );
+      setResetStep("service-error");
     }
   };
 
@@ -1591,14 +1612,13 @@ export const JournalModule = memo(function JournalModule({
     if (!resetEmail) return;
     const requestSeq = ++resetRequestSeqRef.current;
     const requestedEmail = resetEmail;
-    const resetNonce = createJournalPasswordResetNonce();
 
     const isCurrentResetRequest = () => requestSeq === resetRequestSeqRef.current;
 
     // M2: OTP cooldown — prevent abuse by enforcing 60s between sends
     const now = Date.now();
-    if (now - lastResetOtpRef.current < 60_000) {
-      const remaining = Math.ceil((60_000 - (now - lastResetOtpRef.current)) / 1000);
+    const remaining = updateResetResendRemaining(now);
+    if (remaining > 0) {
       setResetError(
         (ts.journalResetCooldown || "Please wait {seconds}s before requesting another link.").replace(
           "{seconds}",
@@ -1607,6 +1627,15 @@ export const JournalModule = memo(function JournalModule({
       );
       return;
     }
+
+    const resetNonce = createJournalPasswordResetNonce();
+    if (!resetNonce) {
+      logger.warn("[Journal] Secure password reset nonce generation is unavailable");
+      setResetError(ts.journalResetSendFailed || "Failed to send link. Check your connection.");
+      setResetStep("confirm");
+      return;
+    }
+
     setResetStep("sending");
     setResetError("");
     try {
@@ -1626,21 +1655,31 @@ export const JournalModule = memo(function JournalModule({
       });
       if (!isCurrentResetRequest()) return;
       if (error) {
-        logger.warn("[Journal] Password reset link failed:", error);
+        logger.warn("[Journal] Password reset link failed", getJournalAuthErrorDebugInfo(error));
         setResetError(ts.journalResetSendFailed || "Failed to send link. Check your connection.");
         setResetStep("confirm");
         return;
       }
       lastResetOtpRef.current = now;
+      updateResetResendRemaining(now);
       storageSetRaw(SK.JOURNAL_PASSWORD_RESET, serializeJournalPasswordResetRequest(requestedEmail, resetNonce));
       clearJournalPasswordResetProof();
       setResetStep("sent");
-    } catch {
+    } catch (error) {
       if (!isCurrentResetRequest()) return;
+      logger.warn("[Journal] Password reset link failed", getJournalAuthErrorDebugInfo(error));
       setResetError(ts.journalResetSendFailed || "Failed to send link. Check your connection.");
       setResetStep("confirm");
     }
   };
+
+  const showResetLinkConfirmationError = useCallback((email: string, message?: string) => {
+    setResetEmail(email);
+    setResetError(withJournalResetProtectedDetail(
+      message || ts.journalResetCodeWrong || "Verification link could not be confirmed. Try again.",
+    ));
+    setResetStep("confirm");
+  }, [ts.journalResetCodeWrong]);
 
   const consumeVerifiedPasswordReset = useCallback(
     async (sessionEmail: string | null | undefined) => {
@@ -1651,23 +1690,33 @@ export const JournalModule = memo(function JournalModule({
         storageRemove(SK.JOURNAL_PASSWORD_RESET);
         clearJournalPasswordResetProof();
         clearJournalPasswordResetParamFromCurrentUrl();
+        showResetLinkConfirmationError(
+          pending.email,
+          ts.journalResetExpired || "This verification link expired. Send a new link.",
+        );
         return false;
       }
 
       const signedInEmail = normalizeJournalResetEmail(sessionEmail);
       if (!signedInEmail || signedInEmail !== pending.email) {
         logger.warn("[Journal] Ignored password reset sign-in for a different account");
+        clearJournalPasswordResetProof();
+        clearJournalPasswordResetParamFromCurrentUrl();
+        showResetLinkConfirmationError(
+          pending.email,
+          ts.journalResetWrongAccount || "Open this link while signed in to the same account that requested it.",
+        );
         return false;
       }
 
       if (!hasJournalPasswordResetProof(pending)) {
         logger.warn("[Journal] Ignored password reset session without redirect proof");
-        setResetEmail(pending.email);
-        setResetError(
-          ts.journalResetMissingProof ||
-            "This email link was not confirmed in this app. Nothing changed; your diary lock is still on and entries remain protected.",
+        clearJournalPasswordResetProof();
+        clearJournalPasswordResetParamFromCurrentUrl();
+        showResetLinkConfirmationError(
+          pending.email,
+          ts.journalResetMissingProof || "This browser could not confirm the email link. Open the link on the same device or request a new one.",
         );
-        setResetStep("sent");
         return false;
       }
 
@@ -1681,7 +1730,15 @@ export const JournalModule = memo(function JournalModule({
         return false;
       }
 
-      consumeJournalPasswordResetProof(pending.nonce, JOURNAL_PASSWORD_RESET_WINDOW_MS);
+      if (!consumeJournalPasswordResetProof(pending.nonce, JOURNAL_PASSWORD_RESET_WINDOW_MS)) {
+        logger.warn("[Journal] Ignored password reset session after proof could not be consumed");
+        clearJournalPasswordResetParamFromCurrentUrl();
+        showResetLinkConfirmationError(
+          pending.email,
+          ts.journalResetMissingProof || "This browser could not confirm the email link. Open the link on the same device or request a new one.",
+        );
+        return false;
+      }
       clearJournalPasswordResetParamFromCurrentUrl();
 
       setResetEmail(pending.email);
@@ -1700,16 +1757,28 @@ export const JournalModule = memo(function JournalModule({
         logger.warn("[Journal] Verified reset could not remove the diary lock:", error);
         storageRemove(SK.JOURNAL_PASSWORD_RESET);
         clearJournalPasswordResetProof();
-        setResetError(
+        const lockRemoveMessage =
           ts.journalLockRemoveFailed ||
-            "Unlock your diary first, then try removing the lock again.",
+          "Unlock your diary first, then try removing the lock again.";
+        setResetError(
+          lockRemoveMessage.includes("entries remain protected")
+            ? lockRemoveMessage
+            : `${lockRemoveMessage} Nothing changed; your entries remain protected.`,
         );
         setResetStep("unavailable");
         return false;
       }
     },
-    [checkEmailLockRemovalAvailable, security, ts.journalLockRemoveFailed, ts.journalPasswordRemoveSuccess, ts.journalResetMissingProof, ts.journalResetSuccess],
+    [checkEmailLockRemovalAvailable, security, showResetLinkConfirmationError, ts.journalLockRemoveFailed, ts.journalPasswordRemoveSuccess, ts.journalResetExpired, ts.journalResetMissingProof, ts.journalResetSuccess, ts.journalResetWrongAccount],
   );
+
+  const handleSetNewPasswordAfterReset = useCallback(() => {
+    resetRequestSeqRef.current += 1;
+    setResetStep("idle");
+    setResetEmail("");
+    setResetError("");
+    openSettings("password-setup");
+  }, [openSettings]);
 
   // --- HOOKS (all callbacks declared above — safe from TDZ in production minified chunks) ---
   useScrollLock(moduleState === "open" && !isPagePresentation);
@@ -1833,12 +1902,12 @@ export const JournalModule = memo(function JournalModule({
     if (moduleState === "open") security.touch();
   }, [moduleState, security]);
 
-  // Auto-close success after 2s
   useEffect(() => {
-    if (resetStep !== "success") return;
-    const timer = setTimeout(closeResetDialog, 2000);
-    return () => clearTimeout(timer);
-  }, [closeResetDialog, resetStep]);
+    if (resetResendRemaining <= 0) return;
+
+    const timer = setInterval(() => updateResetResendRemaining(), 1000);
+    return () => clearInterval(timer);
+  }, [resetResendRemaining, updateResetResendRemaining]);
 
   // Magic link fallback: pending reset can complete after reload or in a new tab.
   useEffect(() => {
@@ -1855,17 +1924,32 @@ export const JournalModule = memo(function JournalModule({
       storageRemove(SK.JOURNAL_PASSWORD_RESET);
       clearJournalPasswordResetProof();
       clearJournalPasswordResetParamFromCurrentUrl();
+      showResetLinkConfirmationError(
+        pending.email,
+        ts.journalResetExpired || "This verification link expired. Send a new link.",
+      );
       return;
+    }
+
+    if (lastResetOtpRef.current < pending.startedAt) {
+      lastResetOtpRef.current = pending.startedAt;
+      updateResetResendRemaining();
     }
 
     let disposed = false;
     let subscription: { unsubscribe: () => void } | undefined;
+    let removeAuthCompleteListener: (() => void) | undefined;
 
     void loadJournalSupabase()
       .then(async (supabase) => {
         if (disposed || !supabase) return;
 
-        if (resetStep === "idle" && hasJournalPasswordResetProof(pending)) {
+        const completeFromCurrentSessionIfProofReady = async () => {
+          if (disposed || (resetStep !== "idle" && resetStep !== "sent")) return;
+
+          const currentPending = parseJournalPasswordResetRequest(storageGetRaw(SK.JOURNAL_PASSWORD_RESET));
+          if (!currentPending || !hasJournalPasswordResetProof(currentPending)) return;
+
           try {
             const {
               data: { session },
@@ -1874,14 +1958,27 @@ export const JournalModule = memo(function JournalModule({
               await consumeVerifiedPasswordReset(session?.user?.email);
             }
           } catch (error) {
-            logger.warn("[Journal] Password reset session check failed:", error);
+            logger.warn(
+              "[Journal] Password reset session check failed",
+              getJournalAuthErrorDebugInfo(error),
+            );
           }
-        }
+        };
+
+        await completeFromCurrentSessionIfProofReady();
 
         if (disposed) return;
 
+        const handleAuthComplete = () => {
+          void completeFromCurrentSessionIfProofReady();
+        };
+        window.addEventListener(AUTH_COMPLETE_EVENT, handleAuthComplete);
+        removeAuthCompleteListener = () => window.removeEventListener(AUTH_COMPLETE_EVENT, handleAuthComplete);
+
         const { data } = supabase.auth.onAuthStateChange((event, session) => {
-          if (event !== "SIGNED_IN") return;
+          if (!JOURNAL_PASSWORD_RESET_AUTH_EVENTS.has(event)) return;
+          const currentPending = parseJournalPasswordResetRequest(storageGetRaw(SK.JOURNAL_PASSWORD_RESET));
+          if (!currentPending) return;
           void consumeVerifiedPasswordReset(session?.user?.email);
         });
         subscription = data.subscription;
@@ -1890,9 +1987,10 @@ export const JournalModule = memo(function JournalModule({
 
     return () => {
       disposed = true;
+      removeAuthCompleteListener?.();
       subscription?.unsubscribe();
     };
-  }, [consumeVerifiedPasswordReset, resetStep]);
+  }, [consumeVerifiedPasswordReset, resetStep, showResetLinkConfirmationError, ts.journalResetExpired, updateResetResendRemaining]);
 
   const mobileDiarySectionButtonClass = useCallback((active: boolean) => cn(
     "flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 text-center motion-safe:transition-[background-color,color,box-shadow,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]",
@@ -1938,7 +2036,7 @@ export const JournalModule = memo(function JournalModule({
               </h3>
               {security.hasPassword && (
                 <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
-                  <Lock className="w-2.5 h-2.5" aria-hidden="true" />
+                  <Lock className="w-2.5 h-2.5" />
                   {ts.journalProtected || "Protected"}
                 </span>
               )}
@@ -1955,7 +2053,7 @@ export const JournalModule = memo(function JournalModule({
             )}
             {hasTodayEntry ? (
               <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-2 py-1 rounded-full">
-                <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                <CheckCircle2 className="w-3 h-3" />
                 {ts.journalTodayComplete || "Done today"}
               </span>
             ) : (
@@ -2018,7 +2116,7 @@ export const JournalModule = memo(function JournalModule({
       {security.isLocked && !security.loading && (
         <>
           {/* Header with close */}
-          <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border/30">
+          <div className="flex items-center justify-between gap-3 border-b border-border/30 px-4 pb-3 pt-[max(0.75rem,var(--safe-top))]">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               {showAppNavMenuButton ? (
                 <button
@@ -2052,16 +2150,18 @@ export const JournalModule = memo(function JournalModule({
             failedAttempts={security.failedAttempts}
             onUnlock={security.unlock}
             onSetPassword={security.setPassword}
-            onForgotPassword={canOfferEmailLockRemoval ? handleForgotPassword : undefined}
+            onForgotPassword={handleForgotPassword}
             onBiometricUnlock={security.biometricEnabled ? security.unlockWithBiometric : undefined}
             biometricAvailable={security.biometricAvailable && security.biometricEnabled}
-            emailLockRemovalAvailable={canOfferEmailLockRemoval}
+            emailLockRemovalAvailable={isEmailLockRemovalAvailable}
           />
+        </>
+      )}
 
           {/* Secure password reset dialog (email verification) */}
           {resetStep !== "idle" && (
             <div
-              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] motion-safe:animate-fade-in dark:bg-black/50"
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4 pt-[max(1rem,var(--safe-top))] pb-[max(1rem,var(--safe-bottom))] motion-safe:animate-fade-in dark:bg-black/50"
               onClick={closeResetDialog}
             >
               <motion.div
@@ -2072,9 +2172,9 @@ export const JournalModule = memo(function JournalModule({
                 aria-describedby={resetError ? `${resetDescriptionId} ${resetErrorId}` : resetDescriptionId}
                 aria-busy={resetStep === "checking" || resetStep === "sending"}
                 tabIndex={-1}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_2rem)] w-full max-w-sm overflow-y-auto rounded-2xl bg-card p-5 shadow-xl lg:max-w-md"
+                initial={{ scale: 0.98 }}
+                animate={{ scale: 1 }}
+                className="isolate max-h-[calc(100dvh_-_var(--safe-top)_-_var(--safe-bottom)_-_2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-border/40 bg-popover p-5 text-popover-foreground shadow-2xl lg:max-w-md"
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 id={resetTitleId} className="sr-only">
@@ -2082,7 +2182,7 @@ export const JournalModule = memo(function JournalModule({
                     ? ts.journalResetSuccess || "Diary lock removed"
                     : resetStep === "sent"
                       ? ts.journalResetLinkSent || "Check your email"
-                      : resetStep === "no-account" || resetStep === "unavailable"
+                    : resetStep === "no-account" || resetStep === "service-error" || resetStep === "unavailable"
                         ? ts.journalPasswordForgot || "Can't open the lock?"
                         : ts.journalResetViaEmail || "Remove lock by email"}
                 </h3>
@@ -2093,17 +2193,29 @@ export const JournalModule = memo(function JournalModule({
                     : resetStep === "no-account"
                       ? ts.journalResetNoAccount ||
                         "Sign in from Account settings to remove this lock by email. Nothing changed; your diary entries remain protected."
+                      : resetStep === "service-error"
+                        ? ts.journalResetServiceUnavailable ||
+                          "We could not check your account. Check your connection and try again."
                       : resetStep === "unavailable"
-                        ? ts.journalResetEncryptedUnavailable ||
-                          "This diary is encrypted with your password. Email verification cannot remove this lock while encrypted content is locked. Nothing changed; your entries remain protected."
+                        ? resetEncryptedUnavailableMessage
                       : resetStep === "success"
-                        ? ts.journalResetSuccess || "Diary lock removed"
+                        ? ts.journalResetSuccessDetail ||
+                          "Your diary is now open without a diary password on this device. Set a new password if you want to keep it protected."
                         : ts.journalResetConfirm || "We'll send a verification link to"}
                 </p>
                 {/* Checking session */}
                 {resetStep === "checking" && (
                   <div className="flex flex-col items-center justify-center gap-4 py-6">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
+                    <div className="space-y-1 text-center">
+                      <p className="text-sm font-medium text-foreground">
+                        {ts.journalResetChecking || "Checking your account..."}
+                      </p>
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        {ts.journalResetCheckingHint ||
+                          "Keep this window open while we confirm email lock removal is available."}
+                      </p>
+                    </div>
                     <button
                       ref={resetCancelRef}
                       type="button"
@@ -2120,7 +2232,7 @@ export const JournalModule = memo(function JournalModule({
                   <>
                     <div className="flex justify-center mb-3">
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                        <Mail className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
+                        <Mail className="w-6 h-6 text-muted-foreground" />
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-2">
@@ -2128,7 +2240,7 @@ export const JournalModule = memo(function JournalModule({
                     </h3>
                     <p className="text-sm text-muted-foreground text-center mb-4">
                       {ts.journalResetNoAccount ||
-                        "Sign in from Account settings to remove this lock by email. Nothing changed; your diary entries remain protected."}
+                        "Sign in to your account in Settings to use email lock removal"}
                     </p>
                     <div className="grid gap-2">
                       <button
@@ -2137,6 +2249,13 @@ export const JournalModule = memo(function JournalModule({
                         className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium min-h-[44px]"
                       >
                         {ts.journalResetOpenAccountSettings || "Open account settings"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        className="w-full py-2.5 rounded-xl bg-background/70 text-foreground text-sm font-medium min-h-[44px] border border-border/45"
+                      >
+                        {ts.journalResetTryAgain || "Check again"}
                       </button>
                       <button
                         ref={resetCancelRef}
@@ -2150,20 +2269,52 @@ export const JournalModule = memo(function JournalModule({
                   </>
                 )}
 
+                {/* Service check failure */}
+                {resetStep === "service-error" && (
+                  <>
+                    <div className="flex justify-center mb-3">
+                      <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                        <AlertCircle className="w-6 h-6 text-destructive" />
+                      </div>
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground text-center mb-2">
+                      {ts.journalPasswordForgot || "Can't open the lock?"}
+                    </h3>
+                    <p id={resetErrorId} role="alert" className="text-sm text-muted-foreground text-center mb-4">
+                      {resetError ||
+                        ts.journalResetServiceUnavailable ||
+                        "We could not check your account. Check your connection and try again."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="mb-2 w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium min-h-[44px]"
+                    >
+                      {ts.journalResetTryAgain || "Try again"}
+                    </button>
+                    <button
+                      ref={resetCancelRef}
+                      onClick={closeResetDialog}
+                      className="w-full py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
+                    >
+                      {ts.journalClose || "Close"}
+                    </button>
+                  </>
+                )}
+
                 {/* Email removal unavailable for encrypted locked content */}
                 {resetStep === "unavailable" && (
                   <>
                     <div className="flex justify-center mb-3">
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                        <Lock className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
+                        <Lock className="w-6 h-6 text-muted-foreground" />
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-2">
                       {ts.journalPasswordForgot || "Can't open the lock?"}
                     </h3>
                     <p className="text-sm text-muted-foreground text-center mb-4">
-                      {ts.journalResetEncryptedUnavailable ||
-                        "This diary is encrypted with your password. Email verification cannot remove this lock while encrypted content is locked. Nothing changed; your entries remain protected. Unlock with your password to remove it."}
+                      {resetEncryptedUnavailableMessage}
                     </p>
                     {resetError && (
                       <p id={resetErrorId} role="alert" className="mb-3 text-center text-xs text-destructive">{resetError}</p>
@@ -2183,7 +2334,7 @@ export const JournalModule = memo(function JournalModule({
                   <>
                     <div className="flex justify-center mb-3">
                       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Mail className="w-6 h-6 text-primary" aria-hidden="true" />
+                        <Mail className="w-6 h-6 text-primary" />
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-1">
@@ -2201,19 +2352,21 @@ export const JournalModule = memo(function JournalModule({
                     <div className="flex gap-2">
                       <button
                         ref={resetCancelRef}
+                        type="button"
                         onClick={closeResetDialog}
-                        aria-disabled={resetStep === "sending"}
-                        className="flex-1 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px] aria-disabled:opacity-50"
+                        disabled={resetStep === "sending"}
+                        className="flex-1 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {ts.cancel || "Cancel"}
                       </button>
                       <button
+                        type="button"
                         onClick={handleSendResetLink}
-                        aria-disabled={resetStep === "sending"}
+                        disabled={resetStep === "sending"}
                         className={cn(
                           "flex-1 py-2.5 rounded-xl text-sm font-medium min-h-[44px]",
                           "bg-primary text-primary-foreground",
-                          "aria-disabled:opacity-50 flex items-center justify-center gap-2"
+                          "disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
                         )}
                       >
                         {resetStep === "sending" && (
@@ -2230,7 +2383,7 @@ export const JournalModule = memo(function JournalModule({
                   <>
                     <div className="flex justify-center mb-3">
                       <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                        <Mail className="w-6 h-6 text-green-600 dark:text-green-400" aria-hidden="true" />
+                        <Mail className="w-6 h-6 text-green-600 dark:text-green-400" />
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-1">
@@ -2244,29 +2397,53 @@ export const JournalModule = memo(function JournalModule({
                     </p>
                     <p className="text-xs text-muted-foreground text-center mb-4">
                       {ts.journalResetCheckEmail ||
-                        "Click the link in your email to remove the diary lock. This page will update automatically."}
+                        "Open the link on this device or browser, then return to the diary. It verifies your account and removes the lock without revealing the old password."}
+                    </p>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground text-center mb-4">
+                      {ts.journalResetTroubleshooting ||
+                        "If it does not arrive, check spam or junk, keep this device signed in, and resend after the timer."}
                     </p>
                     {resetError && (
                       <p id={resetErrorId} role="alert" className="mb-3 text-center text-xs text-destructive">{resetError}</p>
                     )}
-                    <div className="flex items-center justify-center gap-2 mb-3">
+                    <div role="status" aria-live="polite" className="flex items-center justify-center gap-2 mb-3">
                       <Loader2 className="w-4 h-4 animate-spin text-primary" aria-hidden="true" />
                       <span className="text-xs text-muted-foreground">
                         {ts.journalResetWaiting || "Waiting for verification..."}
                       </span>
                     </div>
                     <button
+                      type="button"
                       onClick={handleSendResetLink}
-                      className="w-full py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors min-h-[44px]"
+                      disabled={resetResendRemaining > 0}
+                      aria-describedby={resetResendRemaining > 0 ? "journal-reset-resend-cooldown" : undefined}
+                      className="w-full py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors min-h-[44px] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {ts.journalResetResend || "Resend link"}
                     </button>
+                    {resetResendRemaining > 0 && (
+                      <p
+                        id="journal-reset-resend-cooldown"
+                        role="status"
+                        aria-live="polite"
+                        aria-label={(ts.journalResetCooldown || "Please wait {seconds}s before requesting another link.").replace(
+                          "{seconds}",
+                          String(resetResendRemaining),
+                        )}
+                        className="text-center text-[11px] text-muted-foreground"
+                      >
+                        {(ts.journalResetCooldown || "Please wait {seconds}s before requesting another link.").replace(
+                          "{seconds}",
+                          String(resetResendRemaining),
+                        )}
+                      </p>
+                    )}
                     <button
                       ref={resetCancelRef}
                       onClick={closeResetDialog}
                       className="w-full py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors min-h-[44px]"
                     >
-                      {ts.cancel || "Cancel"}
+                      {ts.journalClose || "Close"}
                     </button>
                   </>
                 )}
@@ -2285,20 +2462,36 @@ export const JournalModule = memo(function JournalModule({
                         }}
                         className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center"
                       >
-                        <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" aria-hidden="true" />
+                        <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
                       </motion.div>
                     </div>
-                    <p className="text-sm font-medium text-foreground text-center">
+                    <h3 className="mb-2 text-center text-base font-semibold text-foreground">
                       {ts.journalResetSuccess || "Diary lock removed"}
+                    </h3>
+                    <p className="mb-4 text-center text-sm leading-relaxed text-muted-foreground">
+                      {ts.journalResetSuccessDetail ||
+                        "Your diary is now open without a diary password on this device. Set a new password if you want to keep it protected."}
                     </p>
+                    <button
+                      type="button"
+                      onClick={handleSetNewPasswordAfterReset}
+                      className="mb-2 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground min-h-[44px]"
+                    >
+                      {ts.journalResetSetNewPassword || "Set new diary password"}
+                    </button>
+                    <button
+                      ref={resetCancelRef}
+                      type="button"
+                      onClick={closeResetDialog}
+                      className="w-full rounded-xl bg-muted px-4 py-2.5 text-sm font-medium text-foreground min-h-[44px]"
+                    >
+                      {ts.journalClose || "Close"}
+                    </button>
                   </div>
                 )}
               </motion.div>
             </div>
           )}
-        </>
-      )}
-
       {/* Main content (unlocked or no password) */}
       {!security.isLocked && !security.loading && (
         <>

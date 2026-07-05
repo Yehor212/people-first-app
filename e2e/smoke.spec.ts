@@ -12,7 +12,7 @@ const packageJson = require("../package.json") as { version: string };
  */
 
 // Bypass all onboarding gates: inject localStorage values before any JS runs.
-// The app checks these gates in order: language → auth → tutorial → onboarding → notifications.
+// The app checks these gates in order: language → auth → onboarding → notifications.
 // useIndexedDB falls back to localStorage when IndexedDB has no data yet.
 // addInitScript runs before page scripts, ensuring values are ready for React.
 test.beforeEach(async ({ page }) => {
@@ -20,7 +20,6 @@ test.beforeEach(async ({ page }) => {
     localStorage.setItem("zenflow-language", JSON.stringify("en"));
     localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
     localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
-    localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
     localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
     localStorage.setItem("zenflow-notification-permission-checked", JSON.stringify(true));
     localStorage.setItem(
@@ -468,7 +467,6 @@ test.describe("Empty States", () => {
       localStorage.setItem("zenflow-language", JSON.stringify("en"));
       localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
       localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
-      localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
       localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
       localStorage.setItem("zenflow-notification-permission-checked", JSON.stringify(true));
       localStorage.setItem(

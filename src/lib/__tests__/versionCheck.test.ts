@@ -46,6 +46,8 @@ import { logger } from '@/lib/logger';
 
 import {
   buildSafeHardReloadUrl,
+  reloadAppForUpdate,
+  checkAppVersionStatus,
   checkAppVersion,
   shouldCheckVersion,
   markForVersionCheck,
@@ -148,6 +150,30 @@ describe('markVersionChecked', () => {
   });
 });
 
+// ─── user-triggered update reload ───────────────────────────────
+
+describe('reloadAppForUpdate', () => {
+  it('returns false when the user-triggered update reload loop guard blocks navigation', () => {
+    mockSessionStorage['zenflow_hard_reload_ts'] = Date.now().toString();
+
+    expect(reloadAppForUpdate()).toBe(false);
+  });
+
+  it('keeps user-triggered update reload scoped to cache-busted navigation without clearing all caches', () => {
+    const source = readFileSync('src/lib/versionCheck.ts', 'utf8');
+    const start = source.indexOf('export function reloadAppForUpdate');
+    expect(start).toBeGreaterThanOrEqual(0);
+    const end = source.indexOf('/**\n * Perform a hard reload', start);
+    expect(end).toBeGreaterThan(start);
+    const block = source.slice(start, end);
+
+    expect(block).toContain('buildSafeHardReloadUrl');
+    expect(block).not.toContain('caches.keys');
+    expect(block).not.toContain('getRegistrations');
+    expect(block).not.toContain('unregister');
+  });
+});
+
 // ─── checkAppVersion ────────────────────────────────────────────
 
 describe('forceHardReload', () => {
@@ -179,6 +205,37 @@ describe('forceHardReload', () => {
 // ─── checkAppVersion ────────────────────────────────────────────
 
 describe('checkAppVersion', () => {
+  it('returns stale status details when the deployed build differs from the open tab', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: () => Promise.resolve({ version: '1.0.0', buildTime: 2000 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await checkAppVersionStatus();
+
+    expect(result).toMatchObject({
+      status: 'stale',
+      clientVersion: '1.0.0',
+      clientBuildTime: 1000,
+      serverVersion: '1.0.0',
+      serverBuildTime: 2000,
+    });
+  });
+
+  it('returns unavailable status for a user-triggered check when version.json cannot be reached', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error('Network error'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await checkAppVersionStatus();
+
+    expect(result).toMatchObject({
+      status: 'unavailable',
+      reason: 'network',
+    });
+  });
+
   it('returns true when versions match', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

@@ -175,7 +175,6 @@ function resetStores() {
     isProcessingWebOAuth: false,
     webOAuthError: null,
     hasValidSession: false,
-    tutorialBypassFlag: false,
     onboardingBypassFlag: false,
   });
   useUserDataStore.setState({
@@ -250,6 +249,37 @@ describe("useAuthSession", () => {
       expect(JSON.parse(localStorage.getItem(SK.JOURNAL_PASSWORD_RESET_PROOF) || "{}"))
         .toMatchObject({ nonce: "event-proof-1" });
       expect(window.location.pathname + window.location.search).toBe("/orb?nav=v2&navLayout=phone");
+    });
+
+    it("does not store journal reset proof from an existing initial session when callback exchange fails", async () => {
+      vi.useFakeTimers();
+      try {
+        window.history.pushState(
+          {},
+          "",
+          "/orb?nav=v2&navLayout=phone&code=forged-code&state=telegram-state&journalReset=forged-proof-1",
+        );
+        mockGetSession.mockResolvedValue({ data: { session: telegramSession }, error: null });
+        mockExchangeCodeForSession.mockResolvedValue({
+          data: { session: null },
+          error: { message: "Code expired" },
+        });
+
+        renderHook(() => useAuthSession(false));
+        emitAuthEvent("INITIAL_SESSION", telegramSession);
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(5000);
+        });
+        await Promise.resolve();
+
+        expect(mockExchangeCodeForSession).toHaveBeenCalledWith("forged-code");
+        expect(localStorage.getItem(SK.JOURNAL_PASSWORD_RESET_PROOF)).toBeNull();
+        expect(useAppStore.getState().webOAuthError).toBe("Sign-in failed. Please try again.");
+        expect(window.location.pathname + window.location.search).toBe("/orb?nav=v2&navLayout=phone");
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it("sanitizes unsafe OAuth error descriptions from web callback URLs", async () => {

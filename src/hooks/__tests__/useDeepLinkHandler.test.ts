@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   appUrlOpenListeners,
+  appStateChangeListeners,
   authStateListeners,
   mockAddListener,
   mockGetLaunchUrl,
@@ -17,11 +18,14 @@ const {
   mockCloseOAuthBrowser,
 } = vi.hoisted(() => {
   const appUrlOpenListeners: Array<(event: { url?: string }) => void> = [];
+  const appStateChangeListeners: Array<(event: { isActive: boolean }) => void> = [];
   const authStateListeners: Array<(event: string, session: unknown) => void> = [];
   const mockAddListener = vi.fn(
     async (eventName: string, callback: (event: { url?: string; isActive?: boolean }) => void) => {
       if (eventName === "appUrlOpen") {
         appUrlOpenListeners.push(callback);
+      } else if (eventName === "appStateChange") {
+        appStateChangeListeners.push(callback);
       }
       return { remove: vi.fn() };
     }
@@ -29,9 +33,10 @@ const {
 
   return {
     appUrlOpenListeners,
+    appStateChangeListeners,
     authStateListeners,
     mockAddListener,
-    mockGetLaunchUrl: vi.fn(async () => null),
+    mockGetLaunchUrl: vi.fn(async (): Promise<{ url: string } | null> => null),
     mockGetSession: vi.fn(),
     mockOnAuthStateChange: vi.fn((callback: (event: string, session: unknown) => void) => {
       authStateListeners.push(callback);
@@ -122,11 +127,19 @@ function resetStores() {
   });
 }
 
+async function flushDeepLinkWork() {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
 describe("useDeepLinkHandler", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     appUrlOpenListeners.length = 0;
+    appStateChangeListeners.length = 0;
     authStateListeners.length = 0;
     mockGetLaunchUrl.mockResolvedValue(null);
     mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
@@ -389,7 +402,26 @@ describe("useDeepLinkHandler", () => {
   });
 
   describe("launch URL (cold start)", () => {
-    it.todo("processes launch URL on mount");
+    it("processes launch auth URL on mount", async () => {
+      const launchUrl = "com.zenflow.app://login-callback?code=launch-code&state=launch-state";
+      mockGetLaunchUrl.mockResolvedValue({ url: launchUrl });
+      mockGetSession.mockResolvedValue({
+        data: { session: createSession("Launch Friend") },
+        error: null,
+      });
+
+      renderHook(() => useDeepLinkHandler());
+
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+
+      expect(mockHandleAuthCallback).toHaveBeenCalledWith(expect.anything(), launchUrl);
+      expect(useAppStore.getState().hasValidSession).toBe(true);
+      expect(useUserDataStore.getState().userName).toBe("Launch Friend");
+      expect(appUrlOpenListeners).toHaveLength(1);
+    });
+
     it.todo("tries challenge URL before auth URL");
   });
 
@@ -401,8 +433,59 @@ describe("useDeepLinkHandler", () => {
   });
 
   describe("appStateChange", () => {
-    it.todo("checks launch URL when app becomes active");
-    it.todo("only processes login-callback URLs on resume");
+    it("checks launch auth URL when app becomes active", async () => {
+      renderHook(() => useDeepLinkHandler());
+
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+      expect(appStateChangeListeners).toHaveLength(1);
+
+      const resumeUrl = "com.zenflow.app://login-callback?code=resume-code&state=resume-state";
+      mockGetLaunchUrl.mockClear();
+      mockGetLaunchUrl.mockResolvedValueOnce({ url: resumeUrl });
+      mockGetSession.mockResolvedValue({
+        data: { session: createSession("Resume Friend") },
+        error: null,
+      });
+
+      act(() => {
+        appStateChangeListeners[0]({ isActive: true });
+      });
+
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+
+      expect(mockGetLaunchUrl).toHaveBeenCalledTimes(1);
+      expect(mockHandleAuthCallback).toHaveBeenCalledWith(expect.anything(), resumeUrl);
+      expect(useAppStore.getState().hasValidSession).toBe(true);
+      expect(useUserDataStore.getState().userName).toBe("Resume Friend");
+    });
+
+    it("only processes login-callback URLs on resume", async () => {
+      renderHook(() => useDeepLinkHandler());
+
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+      expect(appStateChangeListeners).toHaveLength(1);
+
+      mockGetLaunchUrl.mockClear();
+      mockGetLaunchUrl.mockResolvedValueOnce({ url: "https://zenflow.app/challenge?data=invite" });
+
+      act(() => {
+        appStateChangeListeners[0]({ isActive: true });
+      });
+
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+
+      expect(mockGetLaunchUrl).toHaveBeenCalledTimes(1);
+      expect(mockHandleAuthCallback).not.toHaveBeenCalled();
+      expect(useAppStore.getState().hasValidSession).toBe(false);
+    });
   });
 
   describe("native-only guard", () => {

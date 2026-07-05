@@ -40,6 +40,22 @@ function printResult(result) {
   process.exitCode = result.exitCode;
 }
 
+function isPlaceholderValue(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return true;
+  const normalized = raw.toLowerCase();
+  return (
+    /^<[^>]+>$/.test(raw) ||
+    normalized === "todo" ||
+    normalized === "changeme" ||
+    normalized.startsWith("your-") ||
+    normalized.startsWith("your_") ||
+    normalized.includes("placeholder") ||
+    normalized.includes("your-project-ref") ||
+    normalized === "https://your-project-ref.supabase.co"
+  );
+}
+
 function parseSafeEnvFiles(rootDir = process.cwd()) {
   const env = new Map();
   for (const fileName of ENV_FILE_NAMES) {
@@ -61,14 +77,16 @@ function parseSafeEnvFiles(rootDir = process.cwd()) {
       ) {
         value = value.slice(1, -1);
       }
-      if (value && !env.has(match[1])) env.set(match[1], value);
+      if (value && !isPlaceholderValue(value) && !env.has(match[1])) env.set(match[1], value);
     }
   }
   return env;
 }
 
 function getPublicEnv(env, safeFileEnv, key) {
-  return env[key] || safeFileEnv.get(key) || "";
+  const direct = String(env[key] || "").trim();
+  if (direct && !isPlaceholderValue(direct)) return direct;
+  return safeFileEnv.get(key) || "";
 }
 
 function getSecretEnv(env, ...keys) {
@@ -210,8 +228,7 @@ async function applyAppleAuthLive({ env = process.env, rootDir = process.cwd(), 
     );
   }
 
-  const apiBaseUrl = env.SUPABASE_MANAGEMENT_API_BASE_URL || DEFAULT_MANAGEMENT_API_BASE_URL;
-  const authConfigUrl = `${apiBaseUrl.replace(/\/$/, "")}/projects/${encodeURIComponent(projectRef)}/config/auth`;
+  const authConfigUrl = `${DEFAULT_MANAGEMENT_API_BASE_URL}/projects/${encodeURIComponent(projectRef)}/config/auth`;
 
   let existingResult;
   try {

@@ -22,6 +22,54 @@ interface VersionManifest {
   version: string;
   buildTime: number;
 }
+
+export type AppVersionCheckUnavailableReason = "missing" | "http" | "non_json" | "invalid" | "network" | "offline";
+
+interface AppVersionCheckBase {
+  clientVersion: string;
+  clientBuildTime: number;
+  checkedAt: number;
+}
+
+export type AppVersionCheckResult =
+  | (AppVersionCheckBase & {
+      status: "current";
+      serverVersion: string;
+      serverBuildTime: number;
+    })
+  | (AppVersionCheckBase & {
+      status: "stale";
+      serverVersion: string;
+      serverBuildTime: number;
+    })
+  | (AppVersionCheckBase & {
+      status: "unavailable";
+      reason: AppVersionCheckUnavailableReason;
+      httpStatus?: number;
+      errorMessage?: string;
+    });
+
+function makeUnavailableVersionCheckResult(
+  reason: AppVersionCheckUnavailableReason,
+  options: { httpStatus?: number; error?: unknown } = {}
+): AppVersionCheckResult {
+  const errorMessage = options.error instanceof Error ? options.error.message : undefined;
+  return {
+    status: "unavailable",
+    reason,
+    clientVersion: __APP_VERSION__,
+    clientBuildTime: __APP_BUILD_TIME__,
+    checkedAt: Date.now(),
+    httpStatus: options.httpStatus,
+    errorMessage,
+  };
+}
+
+function isVersionManifest(value: unknown): value is VersionManifest {
+  if (!value || typeof value !== "object") return false;
+  const manifest = value as { version?: unknown; buildTime?: unknown };
+  return typeof manifest.version === "string" && typeof manifest.buildTime === "number";
+}
 const VERSION_CHECK_INTERVAL = 1 * 60 * 1000; // 1 minute — aggressive for GitHub Pages (no custom cache headers)
 const VERSION_CHECK_TIMEOUT_MS = 5000;
 const SAFE_HARD_RELOAD_SEARCH_PARAMS = new Map<string, (value: string) => boolean>([
@@ -56,8 +104,12 @@ export function buildSafeHardReloadUrl(location: Location, cacheBustValue: numbe
  * Returns true if versions match (or if check fails/unavailable).
  * Returns false if server has a newer version.
  */
-export async function checkAppVersion(): Promise<boolean> {
+export async function checkAppVersionStatus(): Promise<AppVersionCheckResult> {
   try {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return makeUnavailableVersionCheckResult("offline");
+    }
+
     // Determine base path (same as Vite config)
     const basePath = BASE_URL;
 
@@ -80,35 +132,81 @@ export async function checkAppVersion(): Promise<boolean> {
     }
 
     if (!response.ok) {
-      // version.json doesn't exist yet (first deploy) - assume OK
-      logger.log("[VersionCheck] version.json not found, skipping check");
-      return true;
+      return makeUnavailableVersionCheckResult(response.status === 404 ? "missing" : "http", {
+        httpStatus: response.status,
+      });
     }
 
     const contentType = (response.headers?.get("content-type") || "").toLowerCase();
     if (contentType && !contentType.includes("application/json") && !contentType.includes("+json")) {
-      logger.log("[VersionCheck] version.json returned non-JSON, skipping check");
-      return true;
+      return makeUnavailableVersionCheckResult("non_json");
     }
 
-    const serverVersion: VersionManifest = await response.json();
+    const serverVersion: unknown = await response.json();
+    if (!isVersionManifest(serverVersion)) {
+      return makeUnavailableVersionCheckResult("invalid");
+    }
+
     const clientVersion = __APP_VERSION__;
     const clientBuildTime = __APP_BUILD_TIME__;
+    const status =
+      serverVersion.version !== clientVersion || serverVersion.buildTime !== clientBuildTime
+        ? "stale"
+        : "current";
 
-    if (serverVersion.version !== clientVersion || serverVersion.buildTime !== clientBuildTime) {
-      logger.log(
-        `[VersionCheck] Version mismatch! Client: ${clientVersion}@${clientBuildTime}, Server: ${serverVersion.version}@${serverVersion.buildTime}`
-      );
-      return false;
-    }
-
-    logger.log(`[VersionCheck] Version OK (${clientVersion})`);
-    return true;
+    return {
+      status,
+      clientVersion,
+      clientBuildTime,
+      serverVersion: serverVersion.version,
+      serverBuildTime: serverVersion.buildTime,
+      checkedAt: Date.now(),
+    };
   } catch (error) {
-    // Network error or parsing error - don't block the app
-    logger.warn("[VersionCheck] Check failed, continuing anyway:", error);
+    return makeUnavailableVersionCheckResult("network", { error });
+  }
+}
+
+export async function checkAppVersion(): Promise<boolean> {
+  const result = await checkAppVersionStatus();
+
+  if (result.status === "stale") {
+    logger.log(
+      `[VersionCheck] Version mismatch! Client: ${result.clientVersion}@${result.clientBuildTime}, Server: ${result.serverVersion}@${result.serverBuildTime}`
+    );
+    return false;
+  }
+
+  if (result.status === "unavailable") {
+    logger.log(`[VersionCheck] Version check unavailable (${result.reason}), skipping freshness decision`);
     return true;
   }
+
+  logger.log(`[VersionCheck] Version OK (${result.clientVersion})`);
+  return true;
+}
+
+/**
+ * Reload after a user-requested update check.
+ *
+ * This is intentionally lighter than forceHardReload(): Settings should not
+ * clear all origin caches or unregister service workers just because the user
+ * asked whether a deployed Web/PWA build is newer. The cache-busted navigation
+ * lets the online app shell fetch the current deploy while preserving existing
+ * emergency recovery behavior for stale chunk failures.
+ */
+export function reloadAppForUpdate(): boolean {
+  const lastReload = sessionStorage.getItem(SSK.HARD_RELOAD_TS);
+  const now = Date.now();
+
+  if (lastReload && now - parseInt(lastReload, 10) < 30000) {
+    logger.warn("[VersionCheck] Recent update reload detected, preventing loop");
+    return false;
+  }
+
+  sessionStorage.setItem(SSK.HARD_RELOAD_TS, now.toString());
+  window.location.replace(buildSafeHardReloadUrl(window.location, now));
+  return true;
 }
 
 /**

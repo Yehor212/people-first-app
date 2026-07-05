@@ -99,7 +99,7 @@ export function SyncStatusIndicator() {
   const getStatusText = () => {
     // Check if cloud sync is disabled by user
     if (!isCloudSyncEnabled()) {
-      return t.settingsCloudSyncDisabledByUser || "Sync disabled";
+      return t.settingsCloudSyncDisabledByUser || "Online backup is paused";
     }
 
     if (!state.isOnline) {
@@ -108,19 +108,19 @@ export function SyncStatusIndicator() {
 
     if (state.status === "syncing" && state.currentOperation) {
       const operationName = getSyncOperationName(state.currentOperation);
-      return t.syncSyncing || `Syncing ${operationName}...`;
+      return t.syncSyncing || `Updating ${operationName}...`;
     }
 
     if (state.status === "error") {
-      return t.syncError || "Sync error";
+      return t.syncError || "Could not update devices";
     }
 
     if (state.lastSyncTime) {
       const timeText = getLastSyncText();
-      return `${t.syncLastSync || "Synced"} ${timeText}`;
+      return `${t.syncLastSync || "Last updated"} ${timeText}`;
     }
 
-    return t.syncReady || "Ready to sync";
+    return t.syncReady || "Ready to update devices";
   };
 
   // Get friendly sync operation names
@@ -176,7 +176,7 @@ export function SyncStatusIndicatorCompact() {
   // Session expired: sync is enabled but no valid session
   if (isCloudSyncEnabled() && hasSession === false) {
     return (
-      <div className="relative" aria-label={t.sessionExpired || "Cloud sync paused"}>
+      <div className="relative" aria-label={t.sessionExpired || "Account update paused"}>
         <CloudOff className="w-5 h-5 text-amber-500" />
         <span
           className="absolute -top-1 -end-1 bg-amber-500 text-white text-[10px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold"
@@ -223,7 +223,7 @@ export function SyncStatusIndicatorCompact() {
   // Processing offline queue
   if (isProcessing) {
     return (
-      <div className="relative" aria-label={`${t.syncSyncing || "Syncing"} ${pendingCount}`}>
+      <div className="relative" aria-label={`${t.syncSyncing || "Updating"} ${pendingCount}`}>
         <Loader className="w-5 h-5 text-blue-500 motion-safe:animate-spin" />
         {pendingCount > 0 && (
           <span
@@ -242,15 +242,15 @@ export function SyncStatusIndicatorCompact() {
       return (
         <Loader
           className="w-5 h-5 text-blue-500 motion-safe:animate-spin"
-          aria-label={t.syncSyncing || "Syncing"}
+          aria-label={t.syncSyncing || "Updating"}
         />
       );
     case "success":
-      return <Cloud className="w-5 h-5 text-green-500" aria-label={t.syncSuccess || "Synced"} />;
+      return <Cloud className="w-5 h-5 text-green-500" aria-label={t.syncSuccess || "Up to date"} />;
     case "error":
     case "conflict":
       return (
-        <AlertCircle className="w-5 h-5 text-red-500" aria-label={t.syncError || "Sync error"} />
+        <AlertCircle className="w-5 h-5 text-red-500" aria-label={t.syncError || "Could not update devices"} />
       );
     default:
       return (

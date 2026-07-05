@@ -101,6 +101,13 @@ function main() {
     "google-play:admob:owner-evidence:check",
     "google-play:admob:owner-evidence:prepare",
     "google-play:admob:owner-evidence:apply",
+    "check:journal-magic-link-proof-status",
+    "check:journal-magic-link-proof-status:pass",
+    "check:journal-magic-link-live",
+    "check:github-journal-magic-link-secrets",
+    "check:github-journal-magic-link-secrets:pass",
+    "JOURNAL_MAGIC_LINK_LIVE_PROOF_STATUS.json",
+    "JOURNAL_MAGIC_LINK_LIVE_PROOF.md",
     "telegram-sync-drill",
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "TELEGRAM_GRADE_20_IDEA_LEDGER.md",
@@ -152,6 +159,7 @@ function main() {
     "Sync 100 percent closure matrix",
     "Desktop EXE contract",
     "Google Play AdMob/app-ads production contract",
+    "Journal Magic Link live proof contract",
     "google-play:admob:external-check",
     "google-play:admob:external-check:pass",
     "google-play:privacy:artifact-check",
@@ -184,6 +192,8 @@ function main() {
     "npm run check:task-completion",
     "Check Telegram-grade sync contract",
     "Run Telegram sync drill",
+    "Check staged public privacy policy",
+    "Check deployed public privacy policy",
   ]);
 
   requireIncludes("scripts/check-sync-contract.cjs", [

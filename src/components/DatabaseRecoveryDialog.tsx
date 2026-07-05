@@ -85,12 +85,12 @@ export function DatabaseRecoveryDialog() {
               <Database className="h-6 w-6 text-amber-500" />
             </div>
             <AlertDialogTitle>
-              {t.databaseRecoveryTitle || 'Local data was reset'}
+              {t.databaseRecoveryTitle || 'Saved data on this device was reset'}
             </AlertDialogTitle>
           </div>
           <AlertDialogDescription className="text-start">
             {t.databaseRecoveryDesc ||
-              'Your local storage was cleared (possibly from clearing browser data). We can try to restore your data from the cloud if you have an account.'}
+              'Saved app data on this device was cleared, possibly from browser settings. If you have an account, we can try to restore your backup.'}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-col sm:flex-row gap-2">
@@ -114,7 +114,7 @@ export function DatabaseRecoveryDialog() {
             )}
             {isRestoring
               ? (t.syncSyncing || 'Restoring...')
-              : (t.databaseRecoveryRestore || 'Restore from cloud')}
+              : (t.databaseRecoveryRestore || 'Restore from online backup')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -58,6 +58,10 @@ const INITIAL_SECTION_TO_V2_SECTION: Record<string, V2SettingsSectionId> = {
   about: "about",
 };
 
+function resolveInitialSettingsSection(initialOpenSection?: string): V2SettingsSectionId {
+  if (!initialOpenSection) return "appearance";
+  return INITIAL_SECTION_TO_V2_SECTION[initialOpenSection] || "profile";
+}
 function consumeRequestedSettingsSection(): V2SettingsSectionId | null {
   if (typeof window === "undefined") return null;
 
@@ -73,6 +77,7 @@ function consumeRequestedSettingsSection(): V2SettingsSectionId | null {
     return null;
   }
 }
+
 export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPageProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
@@ -82,11 +87,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   const [selectedSectionId, setSelectedSectionId] = useState<V2SettingsSectionId>(() => {
     const requestedSection = consumeRequestedSettingsSection();
     didApplyRequestedSectionRef.current = Boolean(requestedSection);
-    return (
-      requestedSection ||
-      INITIAL_SECTION_TO_V2_SECTION[controls?.initialOpenSection || "profile"] ||
-      "profile"
-    );
+    return requestedSection || resolveInitialSettingsSection(controls?.initialOpenSection);
   });
   const themePreference = useThemeStore((s) => s.theme);
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
@@ -97,7 +98,13 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
     "Adjust privacy, reminders, sound, appearance, and data controls in one place.";
 
   useEffect(() => {
-    mainRef.current?.focus({ preventScroll: true });
+    const frame = window.requestAnimationFrame(() => {
+      const activeElement = document.activeElement;
+      if (activeElement instanceof HTMLElement && activeElement !== document.body) return;
+      mainRef.current?.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -112,7 +119,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
       return;
     }
     if (!controls?.initialOpenSection) return;
-    setSelectedSectionId(INITIAL_SECTION_TO_V2_SECTION[controls.initialOpenSection] || "profile");
+    setSelectedSectionId(resolveInitialSettingsSection(controls.initialOpenSection));
   }, [controls?.initialOpenSection]);
 
   function openSection(sectionId: V2SettingsSectionId) {
@@ -130,12 +137,15 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
       if (!isMobileWorkspace) return;
 
       const selectedPanel = document.getElementById(`settings-module-panel-${selectedSectionId}`);
-      if (typeof selectedPanel?.scrollIntoView !== "function") return;
+      if (!selectedPanel) return;
 
-      selectedPanel.scrollIntoView({
-        block: "start",
-        behavior: "auto",
-      });
+      if (typeof selectedPanel.scrollIntoView === "function") {
+        selectedPanel.scrollIntoView({
+          block: "start",
+          behavior: "auto",
+        });
+      }
+      selectedPanel.focus({ preventScroll: true });
     });
 
     return () => window.cancelAnimationFrame(frame);
@@ -293,6 +303,8 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
           lead={settingsLead}
           themeTitle={tx.navV2Theme}
           themeLabel={themeLabel}
+          controlsWired={Boolean(controls)}
+          selectedSectionId={selectedSectionId}
         />
 
         {controls ? (

@@ -52,7 +52,7 @@ export const QuestCard = memo(function QuestCard({ quest, t, getQuestTypeLabel }
   const displayTitle = quest.type === 'weekly'
     ? `${tAny.weeklyQuestPrefix || 'Weekly:'} ${resolvedTitle}`
     : quest.type === 'bonus'
-    ? `\u{1F31F} ${tAny.bonusQuestPrefix || 'BONUS:'} ${resolvedTitle}`
+    ? `\u{1F31F} ${tAny.bonusQuestPrefix || 'Extra:'} ${resolvedTitle}`
     : resolvedTitle;
 
   const displayDesc = quest.type === 'bonus'

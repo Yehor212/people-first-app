@@ -71,7 +71,6 @@ async function main() {
     await page.addInitScript(() => {
       localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
       localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
-      localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
       localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
       localStorage.setItem("zenflow-notification-permission-checked", JSON.stringify(true));
       localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));

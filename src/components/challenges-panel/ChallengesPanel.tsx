@@ -239,7 +239,7 @@ export function ChallengesPanel({
                               />
                               <div className="flex-1">
                                 <p className="text-xs text-muted-foreground">
-                                  {t.reward || "Reward"}
+                                  {t.reward || "Badge"}
                                 </p>
                                 <p
                                   className={`text-sm font-semibold ${getRarityColor(badge.rarity)}`}
@@ -312,7 +312,7 @@ export function ChallengesPanel({
                             />
                             <div className="flex-1">
                               <p className="text-xs text-muted-foreground">
-                                {t.reward || "Reward"}
+                                {t.reward || "Badge"}
                               </p>
                               <p
                                 className={`text-sm font-semibold ${getRarityColor(badge.rarity)}`}

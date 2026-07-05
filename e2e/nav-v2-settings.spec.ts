@@ -27,8 +27,13 @@ async function readThemeEvidence(page: Page) {
   });
 }
 
-async function expectControlsFirstHierarchy(page: Page, selectedSectionId = "profile") {
-  await expect(page.getByTestId("settings-page-control-card")).toBeVisible();
+async function expectControlsFirstHierarchy(page: Page, selectedSectionId = "appearance") {
+  if (selectedSectionId === "appearance") {
+    await expect(page.getByTestId("settings-page-control-card")).toHaveCount(1);
+    await expect(page.getByTestId("settings-v2-appearance-studio-title")).toBeVisible();
+  } else {
+    await expect(page.getByTestId("settings-page-control-card")).toBeVisible();
+  }
   await expect(page.getByTestId("settings-module-list")).toBeVisible();
   await expect(page.getByTestId("settings-page-control-deck")).toBeVisible();
   if (selectedSectionId === "account") {
@@ -145,8 +150,8 @@ async function expectControlsFirstHierarchy(page: Page, selectedSectionId = "pro
   if (metrics.viewportWidth < 1024) {
     expect(metrics.deck.top).toBeLessThanOrEqual(metrics.moduleList.top + 1);
     expect(metrics.workspaceDomOrder.slice(0, 2)).toEqual([
-      "settings-selected-panel",
       "settings-module-list",
+      "settings-selected-panel",
     ]);
   } else {
     expect(metrics.deck.top).toBeGreaterThanOrEqual(metrics.moduleList.top);
@@ -171,6 +176,25 @@ async function expectControlsFirstHierarchy(page: Page, selectedSectionId = "pro
   expect(metrics.panelScrollWidth).toBeLessThanOrEqual(metrics.panelClientWidth + 1);
   expect(metrics.moduleListOverflowX).not.toBe("auto");
   expect(metrics.panelOverflowX).not.toBe("auto");
+}
+
+async function expectAppearanceCanvasOrder(page: Page) {
+  const metrics = await page.evaluate(() => {
+    const readTop = (testId: string) => {
+      const node = document.querySelector(`[data-testid="${testId}"]`);
+      if (!node) throw new Error(`Missing ${testId}`);
+      return node.getBoundingClientRect().top;
+    };
+
+    return {
+      accentTop: readTop("settings-v2-accent-field"),
+      modeTop: readTop("settings-v2-theme-mode-field"),
+      moodTop: readTop("settings-v2-mood-palette-field"),
+    };
+  });
+
+  expect(metrics.moodTop).toBeLessThan(metrics.modeTop);
+  expect(metrics.modeTop).toBeLessThan(metrics.accentTop);
 }
 
 test.describe("V2 Settings controls-first hierarchy", () => {
@@ -307,7 +331,7 @@ test.describe("V2 Settings controls-first hierarchy", () => {
 
     await page
       .getByTestId("settings-v2-oled-toggle")
-      .getByRole("switch", { name: "OLED Dark Mode" })
+      .getByRole("switch", { name: "Pure black mode" })
       .click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "oled");
     expect(await readThemeEvidence(page)).toMatchObject({
@@ -320,6 +344,7 @@ test.describe("V2 Settings controls-first hierarchy", () => {
     });
 
     await expectControlsFirstHierarchy(page, "appearance");
+    await expectAppearanceCanvasOrder(page);
     expect(page.url()).toBe(beforeUrl);
   });
 

@@ -53,6 +53,49 @@ function makeSecurity(overrides: Partial<JournalSecurityState> = {}): JournalSec
 }
 
 describe("JournalSettingsContent password error handling", () => {
+  it("adds a stable password-manager username to setup and change forms without account data", () => {
+    const setup = render(
+      <JournalSettingsContent
+        ts={ts}
+        security={makeSecurity()}
+        section="password-setup"
+        onSectionChange={vi.fn()}
+        privateMode={false}
+        onPrivateModeChange={vi.fn()}
+        onOpenExport={vi.fn()}
+        onRequestRemovePassword={vi.fn()}
+      />,
+    );
+
+    const setupUsername = setup.container.querySelector<HTMLInputElement>('input[autocomplete="username"]');
+    expect(setupUsername).toBeTruthy();
+    expect(setupUsername).toHaveValue("zenflow-diary-lock");
+    expect(screen.getByLabelText("Enter password")).toHaveAttribute("autocomplete", "new-password");
+    expect(screen.getByLabelText("Confirm your password")).toHaveAttribute("autocomplete", "new-password");
+
+    setup.unmount();
+
+    const change = render(
+      <JournalSettingsContent
+        ts={ts}
+        security={makeSecurity({ hasPassword: true })}
+        section="password-change"
+        onSectionChange={vi.fn()}
+        privateMode={false}
+        onPrivateModeChange={vi.fn()}
+        onOpenExport={vi.fn()}
+        onRequestRemovePassword={vi.fn()}
+      />,
+    );
+
+    const changeUsername = change.container.querySelector<HTMLInputElement>('input[autocomplete="username"]');
+    expect(changeUsername).toBeTruthy();
+    expect(changeUsername).toHaveValue("zenflow-diary-lock");
+    expect(screen.getByLabelText("Enter your current password")).toHaveAttribute("autocomplete", "current-password");
+    expect(screen.getByLabelText("Enter your new password")).toHaveAttribute("autocomplete", "new-password");
+    expect(screen.getByLabelText("Confirm your password")).toHaveAttribute("autocomplete", "new-password");
+  });
+
   it("keeps password setup open and shows feedback when setup fails", async () => {
     const onSectionChange = vi.fn();
     const security = makeSecurity({

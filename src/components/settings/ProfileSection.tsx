@@ -67,11 +67,11 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
     try {
       const success = await updateProfileName(sanitized);
       if (!success) {
-        setNameStatus(t.nameSavedLocally || "Saved locally");
+        setNameStatus(t.nameSavedLocally || "Saved on this device");
       }
     } catch (error) {
       logger.error("Failed to update profile name:", error);
-      setNameStatus(t.nameSavedLocally || "Saved locally");
+      setNameStatus(t.nameSavedLocally || "Saved on this device");
     }
   };
 

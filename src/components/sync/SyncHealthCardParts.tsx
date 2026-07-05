@@ -30,12 +30,12 @@ export const STATUS_META: Record<
   synced: {
     icon: CheckCircle2,
     className: "bg-primary/10 text-primary border-primary/25",
-    fallback: "Synced",
+    fallback: "Up to date",
   },
   syncing: {
     icon: Loader2,
     className: "bg-primary/10 text-primary border-primary/25",
-    fallback: "Syncing",
+    fallback: "Updating",
   },
   pending: {
     icon: Cloud,
@@ -75,15 +75,15 @@ export function actionDomainLabel(
   actionType: string | undefined,
   tx: Record<string, string>
 ): string {
-  if (!actionType) return tx.syncDomainDefault || "Sync";
+  if (!actionType) return tx.syncDomainDefault || "Update";
   if (actionType.includes("MOOD")) return tx.syncDomainMood || "Mood";
   if (actionType.includes("HABIT")) return tx.syncDomainHabits || "Habits";
   if (actionType.includes("JOURNAL")) return tx.syncDomainJournal || "Journal";
   if (actionType.includes("FOCUS")) return tx.syncDomainFocus || "Focus";
   if (actionType.includes("GRATITUDE")) return tx.syncDomainGratitude || "Gratitude";
   if (actionType.includes("SETTINGS")) return tx.syncDomainSettings || "Settings";
-  if (actionType.includes("SYNC_EVENT")) return tx.syncDomainEvent || "Sync event";
-  return tx.syncDomainDefault || "Sync";
+  if (actionType.includes("SYNC_EVENT")) return tx.syncDomainEvent || "Update event";
+  return tx.syncDomainDefault || "Update";
 }
 
 export function renderTemplate(
@@ -104,19 +104,19 @@ export function receiptText(
   const domain = actionDomainLabel(receipt.actionType, tx);
   switch (receipt.kind) {
     case "queued":
-      return renderTemplate(tx.syncActionSavedLocal || "{domain} saved locally", { domain });
+      return renderTemplate(tx.syncActionSavedLocal || "{domain} saved on this device", { domain });
     case "processed":
-      return renderTemplate(tx.syncActionSynced || "{domain} synced", { domain });
+      return renderTemplate(tx.syncActionSynced || "{domain} saved online", { domain });
     case "failed":
-      return renderTemplate(tx.syncActionNeedsRetry || "{domain} needs retry", { domain });
+      return renderTemplate(tx.syncActionNeedsRetry || "{domain} needs another try", { domain });
     case "delta-applied":
       return receipt.applied
-        ? tx.syncActionCloudApplied || "Cloud changes applied"
+        ? tx.syncActionCloudApplied || "Account updates applied"
         : tx.syncActionUpToDate || "Already up to date";
     case "gap-recovered":
-      return tx.syncActionGapRecovered || "Sync gap recovered";
+      return tx.syncActionGapRecovered || "Missing updates restored";
     case "leader-skipped":
-      return tx.syncActionAnotherTab || "Another tab is syncing";
+      return tx.syncActionAnotherTab || "Another ZenFlow window is updating";
     case "queue-draining":
       return tx.syncActionQueueDraining || "Sending saved actions";
     case "queue-drained":
@@ -124,22 +124,22 @@ export function receiptText(
     case "queue-blocked":
       return tx.syncActionQueueBlocked || "Saved actions need attention";
     case "session-missing":
-      return tx.syncActionSignIn || "Sign in to sync";
+      return tx.syncActionSignIn || "Sign in to keep devices updated";
     case "offline":
       return tx.syncActionWaitingConnection || "Waiting for connection";
     case "error":
-      return tx.syncActionNeedsAttention || "Sync needs attention";
+      return tx.syncActionNeedsAttention || "Device updates need attention";
     default:
-      return tx.syncActionUpdated || "Sync updated";
+      return tx.syncActionUpdated || "Updates changed";
   }
 }
 
 export function pendingActionText(action: OfflineAction, tx: Record<string, string>): string {
   const domain = actionDomainLabel(action.type, tx);
   if (action.lastError) {
-    return renderTemplate(tx.syncActionNeedsRetry || "{domain} needs retry", { domain });
+    return renderTemplate(tx.syncActionNeedsRetry || "{domain} needs another try", { domain });
   }
-  return renderTemplate(tx.syncActionSavedLocal || "{domain} saved locally", { domain });
+  return renderTemplate(tx.syncActionSavedLocal || "{domain} saved on this device", { domain });
 }
 
 export function Metric({ label, value }: { label: string; value: string }) {

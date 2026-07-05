@@ -177,7 +177,7 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
     const safeTitle = this.props.safeTitle || "Your data is safe";
     const safeBody =
       this.props.safeBody ||
-      "Recovery mode paused only this screen. Your recent error was saved locally.";
+      "Recovery mode paused only this screen. Recent error details were saved on this device.";
     const actionHint =
       this.props.actionHint || "Reload usually reconnects the app in a few seconds.";
 
@@ -263,7 +263,7 @@ export const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ childre
       safeTitle={t?.errorBoundarySafeTitle ?? "Your data is safe"}
       safeBody={
         t?.errorBoundarySafeBody ??
-        "Recovery mode paused only this screen. Your recent error was saved locally."
+        "Recovery mode paused only this screen. Recent error details were saved on this device."
       }
       actionHint={
         t?.errorBoundaryActionHint ?? "Reload usually reconnects the app in a few seconds."
@@ -300,7 +300,7 @@ export const RootErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ chi
       safeTitle={copy.safeTitle ?? "Your data is safe"}
       safeBody={
         copy.safeBody ??
-        "Recovery mode paused only this screen. Your recent error was saved locally."
+        "Recovery mode paused only this screen. Recent error details were saved on this device."
       }
       actionHint={copy.actionHint ?? "Reload usually reconnects the app in a few seconds."}
       reloadLabel={copy.reloadLabel}

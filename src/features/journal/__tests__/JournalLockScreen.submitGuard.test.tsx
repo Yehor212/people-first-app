@@ -11,6 +11,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalUnlock: "Unlock",
       journalLocked: "Diary Locked",
       journalPasswordWrong: "Wrong password",
+      journalPasswordCooldown: "Too many attempts. Wait",
       journalBiometricFailed: "Biometric unlock failed. Try again.",
       journalBiometricUnlock: "Unlock with biometrics",
       journalLockHintLocalOnly:
@@ -92,7 +93,9 @@ describe("JournalLockScreen submit guard", () => {
     expect(await screen.findByText("Biometric unlock failed. Try again.")).toBeInTheDocument();
   });
 
-  it("hides email lock removal when desktop runtime cannot receive reset links", () => {
+  it("shows local-only recovery guidance without starting email reset when email lock removal is unavailable", () => {
+    const onForgotPassword = vi.fn();
+
     render(
       <JournalLockScreen
         mode="unlock"
@@ -100,12 +103,56 @@ describe("JournalLockScreen submit guard", () => {
         failedAttempts={0}
         onUnlock={vi.fn()}
         onSetPassword={vi.fn()}
-        onForgotPassword={vi.fn()}
+        onForgotPassword={onForgotPassword}
         emailLockRemovalAvailable={false}
       />,
     );
 
     expect(screen.queryByRole("button", { name: "Can't open the lock?" })).not.toBeInTheDocument();
+    expect(screen.getByText(/email lock removal is available in the web or mobile app/i)).toBeInTheDocument();
+    expect(onForgotPassword).not.toHaveBeenCalled();
+  });
+
+  it("gives password managers a stable hidden username without exposing account data", () => {
+    const { container } = render(
+      <JournalLockScreen
+        mode="unlock"
+        cooldownRemaining={0}
+        failedAttempts={0}
+        onUnlock={vi.fn()}
+        onSetPassword={vi.fn()}
+      />,
+    );
+
+    const usernameInput = container.querySelector<HTMLInputElement>('input[autocomplete="username"]');
+    const passwordInput = screen.getByPlaceholderText("Enter password");
+
+    expect(usernameInput).toBeTruthy();
+    expect(usernameInput).toHaveValue("zenflow-diary-lock");
+    expect(usernameInput).toHaveAttribute("type", "text");
+    expect(usernameInput).toHaveAttribute("readonly");
+    expect(passwordInput).toHaveAttribute("autocomplete", "current-password");
+  });
+
+  it("labels the password field and announces lockout cooldowns", () => {
+    render(
+      <JournalLockScreen
+        mode="unlock"
+        cooldownRemaining={7}
+        failedAttempts={3}
+        onUnlock={vi.fn()}
+        onSetPassword={vi.fn()}
+      />,
+    );
+
+    const passwordInput = screen.getByLabelText("Enter password");
+
+    expect(passwordInput).toHaveAttribute("autocomplete", "current-password");
+    expect(passwordInput).toHaveAttribute(
+      "aria-describedby",
+      expect.stringContaining("lock-password-cooldown"),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Too many attempts. Wait 7s");
   });
 
   it("uses email-aware setup copy when email lock removal is available", () => {

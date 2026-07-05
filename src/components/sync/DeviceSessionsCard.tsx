@@ -148,7 +148,7 @@ export function DeviceSessionsCard({
             </h3>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               {tx.syncDeviceSessionsDescription ||
-                "See where your account is syncing without exposing private data."}
+                "See which devices have used your account without exposing private data."}
             </p>
           </div>
         </div>
@@ -171,7 +171,7 @@ export function DeviceSessionsCard({
           {tx.syncDeviceSessionsActive || "Active devices"}
         </p>
         <p className="mt-1 text-sm font-medium text-foreground">
-          {supabase ? String(activeCount) : tx.cloudSyncDisabled || "Cloud sync disabled"}
+          {supabase ? String(activeCount) : tx.cloudSyncDisabled || "Online backup is not available"}
         </p>
       </div>
 
@@ -181,7 +181,7 @@ export function DeviceSessionsCard({
           role="status"
         >
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          <span>{tx.syncDeviceSessionsError || "Device sync status is temporarily unavailable."}</span>
+          <span>{tx.syncDeviceSessionsError || "Device status is temporarily unavailable."}</span>
         </div>
       )}
 
@@ -189,8 +189,8 @@ export function DeviceSessionsCard({
         {!loading && sessions.length === 0 && (
           <p className="rounded-xl border border-border bg-muted/20 p-3 text-sm text-muted-foreground">
             {supabase
-              ? tx.syncDeviceSessionsEmpty || "Sign in to see synced devices."
-              : tx.cloudSyncDisabled || "Cloud sync disabled"}
+              ? tx.syncDeviceSessionsEmpty || "Sign in to see connected devices."
+              : tx.cloudSyncDisabled || "Online backup is not available"}
           </p>
         )}
 
@@ -244,7 +244,7 @@ export function DeviceSessionsCard({
 
       <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
         {tx.syncDeviceSessionsFootnote ||
-          "Marking a device inactive hides it from sync presence; it does not sign that device out."}
+          "Marking a device inactive hides it from this list; it does not sign that device out."}
       </p>
     </section>
   );

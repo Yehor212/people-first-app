@@ -90,7 +90,6 @@ async function primePage(page) {
     localStorage.setItem("zenflow-language", json("en"));
     localStorage.setItem("zenflow-language-selected", json(true));
     localStorage.setItem("zenflow-google-auth-checked", json(true));
-    localStorage.setItem("zenflow-tutorial-complete", json(true));
     localStorage.setItem("zenflow-onboarding-complete", json(true));
     localStorage.setItem("zenflow-notification-permission-checked", json(true));
     localStorage.setItem("zenflow_last_active", today);

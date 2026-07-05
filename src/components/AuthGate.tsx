@@ -7,7 +7,6 @@ import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 import { SplashScreen, type SplashThemePreference } from "@/components/SplashScreen";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { AuthScreen } from "@/components/AuthScreen";
-import { WelcomeTutorial } from "@/components/WelcomeTutorial";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { PremiumLoader } from "@/components/PremiumLoader";
 import { NotificationPermission } from "@/components/NotificationPermission";
@@ -41,7 +40,6 @@ export function hasStoredCompletedInteractiveGates(): boolean {
   return (
     safeLocalStorageGet<boolean>("zenflow-language-selected", false) === true &&
     safeLocalStorageGet<boolean>("zenflow-google-auth-checked", false) === true &&
-    safeLocalStorageGet<boolean>("zenflow-tutorial-complete", false) === true &&
     safeLocalStorageGet<boolean>("zenflow-onboarding-complete", false) === true &&
     safeLocalStorageGet<boolean>("zenflow-notification-permission-checked", false) === true
   );
@@ -49,7 +47,7 @@ export function hasStoredCompletedInteractiveGates(): boolean {
 
 /**
  * Orchestrates the app's initialization and onboarding gates.
- * Renders gate screens (splash, language, auth, tutorial, onboarding, notifications)
+ * Renders gate screens (splash, language, auth, onboarding, notifications)
  * or children when all gates pass.
  *
  * Reads all gate state from Zustand stores directly.
@@ -69,8 +67,6 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     webOAuthError,
     setWebOAuthError,
     hasValidSession,
-    tutorialBypassFlag,
-    setTutorialBypassFlag,
     onboardingBypassFlag,
     setOnboardingBypassFlag,
   } = useAppStore(
@@ -83,8 +79,6 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
       webOAuthError: s.webOAuthError,
       setWebOAuthError: s.setWebOAuthError,
       hasValidSession: s.hasValidSession,
-      tutorialBypassFlag: s.tutorialBypassFlag,
-      setTutorialBypassFlag: s.setTutorialBypassFlag,
       onboardingBypassFlag: s.onboardingBypassFlag,
       setOnboardingBypassFlag: s.setOnboardingBypassFlag,
     }))
@@ -96,8 +90,6 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     setHasSelectedLanguage,
     setUserName,
     setUserNameCustom,
-    tutorialComplete,
-    setTutorialComplete,
     onboardingComplete,
     setOnboardingComplete,
     notificationPermissionChecked,
@@ -110,8 +102,6 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
       setHasSelectedLanguage: s.setHasSelectedLanguage,
       setUserName: s.setUserName,
       setUserNameCustom: s.setUserNameCustom,
-      tutorialComplete: s.tutorialComplete,
-      setTutorialComplete: s.setTutorialComplete,
       onboardingComplete: s.onboardingComplete,
       setOnboardingComplete: s.setOnboardingComplete,
       notificationPermissionChecked: s.notificationPermissionChecked,
@@ -249,23 +239,6 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
         onComplete={handleAuthComplete}
         webOAuthError={webOAuthError}
         onClearError={() => setWebOAuthError(null)}
-      />
-    );
-  }
-
-  if (!tutorialComplete && !tutorialBypassFlag) {
-    return (
-      <WelcomeTutorial
-        onComplete={() => {
-          setTutorialBypassFlag(true);
-          safeLocalStorageSet("zenflow-tutorial-complete", true);
-          setTutorialComplete(true);
-        }}
-        onSkip={() => {
-          setTutorialBypassFlag(true);
-          safeLocalStorageSet("zenflow-tutorial-complete", true);
-          setTutorialComplete(true);
-        }}
       />
     );
   }

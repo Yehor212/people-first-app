@@ -259,7 +259,6 @@ async function primeEntryState(page: Page, scenario: PwaEntryScenario) {
     localStorage.setItem("zenflow-language", json(scenario.language));
     localStorage.setItem("zenflow-language-selected", json(scenario.screen === "auth"));
     localStorage.setItem("zenflow-google-auth-checked", json(false));
-    localStorage.setItem("zenflow-tutorial-complete", json(false));
     localStorage.setItem("zenflow-onboarding-complete", json(false));
     localStorage.setItem("zenflow-notification-permission-checked", json(false));
     localStorage.setItem("zenflow-theme", legacyTheme);

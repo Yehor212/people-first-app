@@ -748,4 +748,78 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(previewPrivacy).toBeLessThan(previewPagesUpload);
   });
 
+
+  it("runs journal Magic Link GitHub name inventory before live proof without exposing values", () => {
+    const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+    const previewWorkflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
+
+    const productionInventory = sliceBetween(
+      workflow,
+      "name: Check journal Magic Link GitHub name inventory",
+      "name: Check journal Magic Link live readiness"
+    );
+    expect(productionInventory).toContain("ZENFLOW_GITHUB_JOURNAL_MAGIC_LINK_FROM_ENV: true");
+    expect(productionInventory).toContain("ZENFLOW_GITHUB_JOURNAL_MAGIC_LINK_SECRETS_REQUIRED:");
+    expect(productionInventory).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_GITHUB_NAMES_REQUIRED:");
+    expect(productionInventory).toContain("npm run check:github-journal-magic-link-secrets");
+    expect(productionInventory).toContain("secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL != ''");
+    expect(productionInventory).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
+
+    const previewInventory = sliceBetween(
+      previewWorkflow,
+      "name: Check journal Magic Link GitHub name inventory for V2 preview",
+      "name: Check journal Magic Link live readiness for V2 preview"
+    );
+    expect(previewInventory).toContain("working-directory: v2-src");
+    expect(previewInventory).toContain("ZENFLOW_GITHUB_JOURNAL_MAGIC_LINK_FROM_ENV: true");
+    expect(previewInventory).toContain("ZENFLOW_GITHUB_JOURNAL_MAGIC_LINK_SECRETS_REQUIRED:");
+    expect(previewInventory).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_GITHUB_NAMES_REQUIRED:");
+    expect(previewInventory).toContain("npm run check:github-journal-magic-link-secrets");
+    expect(previewInventory).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
+  });
+
+  it("does not consume journal Magic Link proof material or mutate Supabase in deploy workflows", () => {
+    const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+    const previewWorkflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
+
+    for (const source of [workflow, previewWorkflow]) {
+      expect(source).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
+      expect(source).not.toContain("npm run apply:supabase-auth-smtp");
+      expect(source).not.toContain("npm run apply:journal-magic-link-github-secrets");
+      expect(source).not.toContain("npm run clear:journal-magic-link-captured-url:apply");
+    }
+  });
+
+  it("keeps Journal Magic Link SMTP apply and live proof behind a manual production workflow", () => {
+    const workflow = readFileSync(".github/workflows/journal-magic-link-live-proof.yml", "utf8");
+
+    expect(workflow).toContain("workflow_dispatch:");
+    expect(workflow).toContain("confirm_live_smtp_apply:");
+    expect(workflow).toContain("APPLY_JOURNAL_MAGIC_LINK_LIVE_PROOF");
+    expect(workflow).toContain("if [ \"$GITHUB_REF\" != \"refs/heads/main\" ]; then");
+    expect(workflow).toContain("Journal Magic Link live proof must run from main.");
+    expect(workflow).toContain("environment: production");
+    expect(workflow).toContain("permissions:");
+    expect(workflow).toContain("contents: read");
+    expect(workflow).not.toContain("contents: write");
+    expect(workflow).not.toContain("id-token: write");
+    expect(workflow).not.toContain("pull-requests: write");
+    expect(workflow).toContain("persist-credentials: false");
+    expect(workflow).toContain("npm run check:supabase-auth-smtp");
+    expect(workflow).toContain("npm run apply:supabase-auth-smtp");
+    expect(workflow).toContain("npm run check:github-journal-magic-link-secrets");
+    expect(workflow).toContain("npm run check:github-journal-magic-link-secrets:pass");
+    expect(workflow).toContain("ZENFLOW_GITHUB_JOURNAL_MAGIC_LINK_SECRETS_REQUIRED: true");
+    expect(workflow).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_GITHUB_NAMES_REQUIRED:");
+    expect(workflow).toContain("npm run check:journal-magic-link-live");
+    expect(workflow).toContain("npm run check:journal-magic-link-proof-status");
+    expect(workflow).toContain("npm run check:journal-magic-link-proof-status:pass");
+    expect(workflow).toContain("ZENFLOW_AUTH_SMTP_CONFIRM_PRODUCTION: true");
+    expect(workflow).toContain("ZENFLOW_AUTH_SMTP_PASS: ${{ secrets.ZENFLOW_AUTH_SMTP_PASS }}");
+    expect(workflow).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
+    expect(workflow).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_VERIFY_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
+    expect(workflow).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
+    expect(workflow).not.toContain("echo $ZENFLOW_AUTH_SMTP_PASS");
+    expect(workflow).not.toContain("echo $ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL");
+  });
 });

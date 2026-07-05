@@ -24,7 +24,7 @@ export function OrbAmbienceControl({ audioSrc, tx }: OrbAmbienceControlProps) {
   const mutedLabel = tx.settingsSoundSummaryOff || "Muted";
   const ambienceUnavailableLabel = appAudioSettings.muted
     ? mutedLabel
-    : tx.settingsSoundAmbientOff || "Ambient sound is off in Sensory comfort.";
+    : tx.settingsSoundAmbientOff || "Ambient sound is off in Sound comfort.";
   const disabledStatusLabel = appAudioSettings.muted ? mutedLabel : tx.soundOff || "Off";
 
   const ambiencePlayback = useUserStartedAmbienceAudio({

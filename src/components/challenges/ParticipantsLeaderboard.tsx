@@ -44,7 +44,7 @@ export function ParticipantsLeaderboard({
       );
 
       if (!cloudChallenge) {
-        setError(t.cloudSyncError || 'Could not sync with cloud');
+        setError(t.cloudSyncError || 'Could not update challenge online');
         setLoading(false);
         return;
       }

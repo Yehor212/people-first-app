@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-import { useJournalSecurity } from "./useJournalSecurity";
+import type { useJournalSecurity } from "./useJournalSecurity";
 
 export type JournalSettingsSection =
   | "overview"
@@ -121,6 +121,21 @@ function SettingsFormShell({
 
       <div className="mt-5">{children}</div>
     </section>
+  );
+}
+
+function JournalPasswordManagerUsernameField() {
+  return (
+    <input
+      type="text"
+      name="username"
+      autoComplete="username"
+      value="zenflow-diary-lock"
+      readOnly
+      aria-hidden="true"
+      tabIndex={-1}
+      className="sr-only"
+    />
   );
 }
 
@@ -322,6 +337,7 @@ export function JournalSettingsContent({
           }}
         >
           <form className="space-y-4" onSubmit={handleSetupSubmit}>
+            <JournalPasswordManagerUsernameField />
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground" htmlFor="journal-setup-password">
                 {ts.journalPasswordEnter || "Enter password"}
@@ -398,6 +414,7 @@ export function JournalSettingsContent({
           }}
         >
           <form className="space-y-4" onSubmit={handleChangeSubmit}>
+            <JournalPasswordManagerUsernameField />
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground" htmlFor="journal-current-password">
                 {ts.journalPasswordOldEnter || "Enter your current password"}

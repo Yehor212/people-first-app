@@ -311,7 +311,7 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
         <ToggleRow
           icon={Zap}
           title={tx.quickActions || "Quick actions"}
-          description={tx.quickActionsDescription || "Android lock-screen actions."}
+          description={tx.quickActionsDescription || "Reminder actions on the lock screen."}
           checked={quickActions.isEnabled}
           onCheckedChange={(checked) => {
             void quickActions.toggle(checked);

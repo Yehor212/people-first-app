@@ -24,6 +24,7 @@ import { usePwaInstall } from "@/hooks/usePwaInstall";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { checkForAppUpdate, openGooglePlayStore, type UpdateState } from "@/lib/appUpdateManager";
 import { APP_VERSION } from "@/lib/appVersion";
+import { checkAppVersionStatus, reloadAppForUpdate } from "@/lib/versionCheck";
 import { logger } from "@/lib/logger";
 import { isNative } from "@/lib/platform";
 import {
@@ -61,6 +62,7 @@ export function AboutPanel() {
     "idle" | "checking" | "available" | "latest" | "error"
   >("idle");
   const [updateState, setUpdateState] = useState<UpdateState | null>(null);
+  const [isRestartingUpdate, setIsRestartingUpdate] = useState(false);
   const versionTapCount = useRef(0);
   const versionTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentFontIndex = FONT_SCALE_LEVELS.indexOf(scale);
@@ -86,11 +88,33 @@ export function AboutPanel() {
     setUpdateCheckStatus("checking");
     setUpdateState(null);
     try {
-      const result = await checkForAppUpdate();
-      setUpdateState(result);
-      setUpdateCheckStatus(result.available ? "available" : result.error ? "error" : "latest");
+      if (isNative) {
+        const result = await checkForAppUpdate();
+        setUpdateState(result);
+        setUpdateCheckStatus(result.available ? "available" : result.error ? "error" : "latest");
+        return;
+      }
+
+      const result = await checkAppVersionStatus();
+      setUpdateCheckStatus(
+        result.status === "stale" ? "available" : result.status === "current" ? "latest" : "error"
+      );
     } catch (error) {
       logger.error("[V2Settings] Update check failed:", error);
+      setUpdateCheckStatus("error");
+    }
+  };
+
+  const handleRestartZenflow = () => {
+    setIsRestartingUpdate(true);
+    try {
+      const didStartReload = reloadAppForUpdate();
+      if (!didStartReload) {
+        setIsRestartingUpdate(false);
+      }
+    } catch (error) {
+      logger.error("[V2Settings] Restart after update failed:", error);
+      setIsRestartingUpdate(false);
       setUpdateCheckStatus("error");
     }
   };
@@ -141,7 +165,7 @@ export function AboutPanel() {
             step={1}
             value={currentFontIndex}
             onChange={(event) => setFontScale(FONT_SCALE_LEVELS[Number(event.target.value)])}
-            className="h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
+            className="settings-v2-range-control h-11 w-full cursor-pointer appearance-none"
             aria-label={tx.fontScaleTitle || "Text Size"}
           />
         </SettingsInset>
@@ -203,7 +227,7 @@ export function AboutPanel() {
                 setShowLegal(true);
               }}
             >
-              {tx.openSourceLicenses || "Open source licenses"}
+              {tx.openSourceLicenses || "Open-source library licenses"}
             </ActionButton>
           </SettingsButtonGrid>
         </div>
@@ -229,52 +253,115 @@ export function AboutPanel() {
           </ActionButton>
         )}
 
-        {isNative && (
-          <SettingsInset>
-            <ActionButton
-              icon={updateCheckStatus === "checking" ? Loader2 : RefreshCw}
-              onClick={() => {
-                void handleCheckForUpdates();
-              }}
-              disabled={updateCheckStatus === "checking"}
+        <SettingsInset testId="settings-v2-update-check">
+          <SettingsFieldHeader
+            icon={RefreshCw}
+            title={tx.settingsUpdateTitle || "App version"}
+            description={
+              isNative
+                ? tx.settingsNativeUpdateDescription || "Check whether the app store has a newer version of ZenFlow."
+                : tx.settingsWebUpdateDescription ||
+                  "ZenFlow can check whether a newer version is ready."
+            }
+          />
+          <ActionButton
+            icon={updateCheckStatus === "checking" ? Loader2 : RefreshCw}
+            onClick={() => {
+              void handleCheckForUpdates();
+            }}
+            disabled={updateCheckStatus === "checking" || isRestartingUpdate}
+            isLoading={updateCheckStatus === "checking"}
+            testId="settings-v2-check-updates"
+          >
+            {updateCheckStatus === "checking"
+              ? tx.checkingForUpdates || "Checking for updates..."
+              : tx.checkForUpdates || "Check for updates"}
+          </ActionButton>
+          {updateCheckStatus === "latest" && (
+            <SettingsStatus center ariaLabel={tx.appUpToDate || "You have the latest version"}>
+              {tx.appUpToDate || "You have the latest version"}
+            </SettingsStatus>
+          )}
+          {updateCheckStatus === "available" && !isNative && (
+            <SettingsStatus
+              center
+              ariaLabel={
+                (tx.webUpdateAvailable || "A newer version is ready") +
+                ". " +
+                (tx.webUpdateAvailableDescription ||
+                  "Restart ZenFlow to load the latest version. Finish anything you are typing first.")
+              }
             >
-              {updateCheckStatus === "checking"
-                ? tx.checkingForUpdates || "Checking..."
-                : tx.checkForUpdates || "Check for Updates"}
+              <span className="block font-semibold text-foreground">
+                {tx.webUpdateAvailable || "A newer version is ready"}
+              </span>
+              <span className="mt-1 block">
+                {tx.webUpdateAvailableDescription || "Restart ZenFlow to load the latest version. Finish anything you are typing first."}
+              </span>
+            </SettingsStatus>
+          )}
+          {updateCheckStatus === "available" && !isNative && (
+            <ActionButton
+              icon={isRestartingUpdate ? Loader2 : RefreshCw}
+              variant="primary"
+              onClick={() => {
+                handleRestartZenflow();
+              }}
+              disabled={isRestartingUpdate}
+              isLoading={isRestartingUpdate}
+              testId="settings-v2-restart-update"
+            >
+              {isRestartingUpdate
+                ? tx.restartingZenflow || "Restarting..."
+                : tx.restartZenflow || "Restart ZenFlow"}
             </ActionButton>
-            {updateCheckStatus === "latest" && (
-              <SettingsStatus center>
-                {tx.appUpToDate || "App is up to date"}
-              </SettingsStatus>
-            )}
-            {updateCheckStatus === "available" && updateState && (
-              <ActionButton
-                icon={ExternalLink}
-                variant="primary"
-                onClick={() => {
-                  void openGooglePlayStore();
-                }}
-              >
-                {tx.openGooglePlay || "Open Google Play"}
-              </ActionButton>
-            )}
-            {updateCheckStatus === "available" && updateState?.releaseNotes && (
-              <SettingsStatus center>
-                {typeof updateState.releaseNotes === "string"
-                  ? updateState.releaseNotes
-                  : updateState.releaseNotes[language] ||
-                    updateState.releaseNotes.en ||
-                    Object.values(updateState.releaseNotes)[0] ||
-                    ""}
-              </SettingsStatus>
-            )}
-            {updateCheckStatus === "error" && (
-              <SettingsStatus center>
-                {tx.updateCheckFailed || "Could not check for updates. Try again later."}
-              </SettingsStatus>
-            )}
-          </SettingsInset>
-        )}
+          )}
+          {updateCheckStatus === "available" && isNative && updateState && (
+            <ActionButton
+              icon={ExternalLink}
+              variant="primary"
+              onClick={() => {
+                void openGooglePlayStore();
+              }}
+            >
+              {tx.openGooglePlay || "Open Google Play"}
+            </ActionButton>
+          )}
+          {updateCheckStatus === "available" && isNative && updateState?.releaseNotes && (
+            <SettingsStatus center>
+              {typeof updateState.releaseNotes === "string"
+                ? updateState.releaseNotes
+                : updateState.releaseNotes[language] ||
+                  updateState.releaseNotes.en ||
+                  Object.values(updateState.releaseNotes)[0] ||
+                  ""}
+            </SettingsStatus>
+          )}
+          {updateCheckStatus === "error" && (
+            <SettingsStatus
+              center
+              tone="danger"
+              ariaLabel={
+                isNative
+                  ? tx.updateCheckFailed || "Could not check for updates"
+                  : (tx.updateCheckFailed || "Could not check for updates") +
+                    ". " +
+                    (tx.webUpdateCheckFailedDescription ||
+                      "ZenFlow needs a network check to confirm the latest version. Nothing changed on this device.")
+              }
+            >
+              <span className="block font-semibold">
+                {tx.updateCheckFailed || "Could not check for updates"}
+              </span>
+              {!isNative ? (
+                <span className="mt-1 block">
+                  {tx.webUpdateCheckFailedDescription ||
+                    "ZenFlow needs a network check to confirm the latest version. Nothing changed on this device."}
+                </span>
+              ) : null}
+            </SettingsStatus>
+          )}
+        </SettingsInset>
       </PanelFrame>
 
       <FeedbackForm open={showFeedback} onOpenChange={setShowFeedback} />

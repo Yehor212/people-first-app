@@ -3068,88 +3068,6 @@ body.mood-bad .mood-particle {
   }
 }
 
-/* Welcome tutorial slide animations */
-@keyframes heartbeat {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  25% {
-    transform: scale(1.1);
-  }
-  35% {
-    transform: scale(0.95);
-  }
-  45% {
-    transform: scale(1.05);
-  }
-}
-
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes zap {
-  0%,
-  100% {
-    transform: scale(1) rotate(0deg);
-    opacity: 1;
-  }
-  25% {
-    transform: scale(1.2) rotate(-5deg);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(0.9) rotate(5deg);
-    opacity: 1;
-  }
-  75% {
-    transform: scale(1.1) rotate(-3deg);
-    opacity: 0.9;
-  }
-}
-
-@keyframes color-shift {
-  0%,
-  100% {
-    filter: hue-rotate(0deg);
-    transform: scale(1);
-  }
-  25% {
-    filter: hue-rotate(60deg);
-    transform: scale(1.05);
-  }
-  50% {
-    filter: hue-rotate(120deg);
-    transform: scale(1);
-  }
-  75% {
-    filter: hue-rotate(180deg);
-    transform: scale(1.05);
-  }
-}
-
-.animate-heartbeat {
-  animation: heartbeat 1.5s ease-in-out infinite;
-}
-
-.animate-spin-slow {
-  animation: spin-slow 8s linear infinite;
-}
-
-.animate-zap {
-  animation: zap 2s ease-in-out infinite;
-}
-
-.animate-color-shift {
-  animation: color-shift 4s ease-in-out infinite;
-}
-
 /* UserProgressBar animations */
 @keyframes gradient {
   0%,
@@ -4104,6 +4022,56 @@ input::-moz-focus-inner {
 }
 
 /* Progress bars and sliders */
+.settings-v2-range-control {
+  height: 44px;
+  background: transparent;
+  accent-color: hsl(var(--settings-v2-accent));
+}
+
+.settings-v2-range-control::-webkit-slider-runnable-track {
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: hsl(var(--muted));
+}
+
+.settings-v2-range-control::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: -0.375rem;
+  border: 2px solid hsl(var(--settings-v2-card) / 0.92);
+  border-radius: 9999px;
+  background: hsl(var(--settings-v2-accent));
+  box-shadow: 0 4px 12px -7px hsl(var(--settings-v2-shadow) / 0.55);
+}
+
+.settings-v2-range-control::-moz-range-track {
+  height: 0.5rem;
+  border: 0;
+  border-radius: 9999px;
+  background: hsl(var(--muted));
+}
+
+.settings-v2-range-control::-moz-range-thumb {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid hsl(var(--settings-v2-card) / 0.92);
+  border-radius: 9999px;
+  background: hsl(var(--settings-v2-accent));
+  box-shadow: 0 4px 12px -7px hsl(var(--settings-v2-shadow) / 0.55);
+}
+
+.settings-v2-range-control:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid hsl(var(--settings-v2-accent) / 0.56);
+  outline-offset: 3px;
+}
+
+.settings-v2-range-control:focus-visible::-moz-range-thumb {
+  outline: 2px solid hsl(var(--settings-v2-accent) / 0.56);
+  outline-offset: 3px;
+}
+
 [dir="rtl"] .progress-bar {
   direction: rtl;
 }

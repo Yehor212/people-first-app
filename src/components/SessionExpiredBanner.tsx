@@ -28,10 +28,10 @@ export function SessionExpiredBanner({ onSignIn }: SessionExpiredBannerProps) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground">
-            {t.sessionExpired || "Cloud sync paused"}
+            {t.sessionExpired || "Online backup paused"}
           </p>
           <p className="text-xs text-muted-foreground">
-            {t.sessionExpiredMessage || "Sign in to sync your data"}
+            {t.sessionExpiredMessage || "Sign in to keep your data on your devices"}
           </p>
         </div>
         <ChevronRight className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 rtl:scale-x-[-1]" aria-hidden="true" />

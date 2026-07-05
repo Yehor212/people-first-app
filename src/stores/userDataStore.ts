@@ -36,7 +36,6 @@ export interface RegisteredSetters {
   setUserName: Setter<string>;
   setUserNameCustom: Setter<boolean>;
   setHasSelectedLanguage: Setter<boolean>;
-  setTutorialComplete: Setter<boolean>;
   setOnboardingComplete: Setter<boolean>;
   setNotificationPermissionChecked: Setter<boolean>;
   setAuthGateChecked: Setter<boolean>;
@@ -66,7 +65,6 @@ export interface UserDataState {
   userName: string;
   userNameCustom: boolean;
   hasSelectedLanguage: boolean;
-  tutorialComplete: boolean;
   onboardingComplete: boolean;
   notificationPermissionChecked: boolean;
   authGateChecked: boolean;
@@ -95,7 +93,6 @@ interface UserDataActions {
   setUserName: Setter<string>;
   setUserNameCustom: Setter<boolean>;
   setHasSelectedLanguage: Setter<boolean>;
-  setTutorialComplete: Setter<boolean>;
   setOnboardingComplete: Setter<boolean>;
   setNotificationPermissionChecked: Setter<boolean>;
   setAuthGateChecked: Setter<boolean>;
@@ -162,7 +159,6 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
   userName: "Friend",
   userNameCustom: false,
   hasSelectedLanguage: false,
-  tutorialComplete: false,
   onboardingComplete: false,
   notificationPermissionChecked: false,
   authGateChecked: false,
@@ -212,12 +208,6 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
   setHasSelectedLanguage: createFieldAction<boolean>(
     "hasSelectedLanguage",
     "setHasSelectedLanguage",
-    set,
-    get
-  ),
-  setTutorialComplete: createFieldAction<boolean>(
-    "tutorialComplete",
-    "setTutorialComplete",
     set,
     get
   ),

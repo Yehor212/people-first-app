@@ -153,8 +153,8 @@ export function SyncHealthCard({
       Boolean(lastActivityAt));
   const showLatestAction =
     !useQuietIdle && (!compact || waitingCount > 0 || failedPending > 0 || Boolean(lastReceipt));
-  const title = tx.settingsCloudSyncTitle || "Cloud sync";
-  const description = tx.settingsCloudSyncDescription || "Sync your data across devices.";
+  const title = tx.settingsCloudSyncTitle || "Account updates";
+  const description = tx.settingsCloudSyncDescription || "Keep your data available on your devices.";
 
   if (compact && hideWhenIdle && !hasActionableSyncState) {
     return null;
@@ -247,7 +247,7 @@ export function SyncHealthCard({
           </p>
           {failedPending > 0 && (
             <p className="mt-1 text-xs text-destructive">
-              {tx.syncRetryHint || "Some local actions need another sync attempt."}
+              {tx.syncRetryHint || "Some changes need another try."}
             </p>
           )}
         </div>
@@ -260,7 +260,7 @@ export function SyncHealthCard({
         >
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              {tx.syncInboxTitle || "Sync inbox"}
+              {tx.syncInboxTitle || "Updates from your devices"}
             </p>
             <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">
               {waitingCount}
@@ -269,14 +269,14 @@ export function SyncHealthCard({
 
           {pendingRows.length === 0 && waitingCount === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">
-              {tx.syncOutboxEmpty || "No local actions are waiting."}
+              {tx.syncOutboxEmpty || "No changes are waiting."}
             </p>
           ) : pendingRows.length === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">
               {tx.syncActionQueueDraining || "Sending saved actions"}
             </p>
           ) : (
-            <ul className="mt-3 space-y-2" aria-label={tx.syncInboxTitle || "Sync inbox"}>
+            <ul className="mt-3 space-y-2" aria-label={tx.syncInboxTitle || "Updates from your devices"}>
               {pendingRows.map((action) => (
                 <li
                   key={action.id}
@@ -289,12 +289,12 @@ export function SyncHealthCard({
                     <span className="block text-xs text-muted-foreground">
                       {action.priority === "critical"
                         ? tx.syncPriorityCritical || "Important"
-                        : tx.syncOutboxWaiting || "Waiting for sync"}
+                        : tx.syncOutboxWaiting || "Waiting to save online"}
                     </span>
                   </span>
                   {action.retries > 0 && (
                     <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">
-                      {renderTemplate(tx.syncRetryCount || "{count} retry", {
+                      {renderTemplate(tx.syncRetryCount || "{count} try", {
                         count: action.retries,
                       })}
                     </span>
@@ -320,11 +320,11 @@ export function SyncHealthCard({
           data-testid="sync-recent-activity"
         >
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-            {tx.syncRecentActivity || "Recent sync activity"}
+            {tx.syncRecentActivity || "Recent device updates"}
           </p>
           <ul
             className="mt-3 space-y-2"
-            aria-label={tx.syncRecentActivity || "Recent sync activity"}
+            aria-label={tx.syncRecentActivity || "Recent device updates"}
           >
             {recentReceipts.map((receipt, index) => (
               <li

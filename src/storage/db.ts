@@ -215,7 +215,7 @@ export const journalSpaceCapturesRepo = db.journalSpaceCaptures;
 /**
  * User-specific settings keys stored in db.settings IndexedDB table.
  * These are cleared on sign-out. Device-level keys are NOT listed here:
- * zenflow-language-selected, zenflow-tutorial-complete, zenflow-onboarding-complete,
+ * zenflow-language-selected, zenflow-onboarding-complete,
  * zenflow-google-auth-checked, zenflow-notification-permission-checked, zenflow-privacy
  */
 const USER_SETTINGS_KEYS = [

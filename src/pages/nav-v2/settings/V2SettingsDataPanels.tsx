@@ -97,7 +97,7 @@ export function PrivacyPanel({ controls }: { controls: V2SettingsControls }) {
       <ToggleRow
         icon={CheckCircle2}
         title={tx.privacyAnalytics || "Analytics"}
-        description={tx.privacyAnalyticsHint || "Help improve ZenFlow with basic diagnostics."}
+        description={tx.privacyAnalyticsHint || "Help improve ZenFlow with privacy-friendly app health signals."}
         checked={controls.privacy.analytics}
         onCheckedChange={(checked) =>
           controls.onPrivacyChange((prev) => applyAnalyticsPreference(prev, checked))
@@ -376,6 +376,7 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
               value={resetConfirmInput}
               onChange={setResetConfirmInput}
               autoComplete="off"
+              autoFocus
               disabled={isResettingData}
               tone="danger"
             />

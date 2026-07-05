@@ -13,7 +13,6 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript((appVersion: string) => {
     localStorage.setItem('zenflow-language-selected', JSON.stringify(true));
     localStorage.setItem('zenflow-google-auth-checked', JSON.stringify(true));
-    localStorage.setItem('zenflow-tutorial-complete', JSON.stringify(true));
     localStorage.setItem('zenflow-onboarding-complete', JSON.stringify(true));
     localStorage.setItem('zenflow-notification-permission-checked', JSON.stringify(true));
     localStorage.setItem('zenflow-privacy', JSON.stringify({ noTracking: false, analytics: false, consentShown: true }));

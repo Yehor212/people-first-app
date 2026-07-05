@@ -41,6 +41,7 @@ export function JournalLockScreen({
   emailLockRemovalAvailable = true,
 }: JournalLockScreenProps) {
   const { t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -56,7 +57,15 @@ export function JournalLockScreen({
   const submitInFlightRef = useRef(false);
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const glowTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
+  const passwordAutoComplete = mode === "unlock" || step === "current" ? "current-password" : "new-password";
+  const passwordInputLabel =
+    step === "current"
+      ? ts.journalPasswordOldEnter || "Current password"
+      : step === "confirm"
+        ? ts.journalPasswordConfirm || "Confirm password"
+        : mode === "change"
+          ? ts.journalPasswordNewEnter || "New password"
+          : ts.journalPasswordEnter || "Enter password";
   useEffect(() => {
     return () => {
       if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
@@ -66,6 +75,11 @@ export function JournalLockScreen({
 
   // Cooldown timer display
   const [countdown, setCountdown] = useState(cooldownRemaining);
+  const passwordErrorId = "lock-password-error";
+  const passwordCooldownId = "lock-password-cooldown";
+  const passwordDescriptionId = [error ? passwordErrorId : null, countdown > 0 ? passwordCooldownId : null]
+    .filter(Boolean)
+    .join(" ") || undefined;
   useEffect(() => {
     setCountdown(cooldownRemaining);
     if (cooldownRemaining <= 0) return;
@@ -199,10 +213,8 @@ export function JournalLockScreen({
     }
   };
 
-  const ts = t as unknown as Record<string, string>;
-
   return (
-    <div className="flex-1 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="flex-1 flex items-center justify-center px-4 py-4 pb-[max(1rem,var(--safe-bottom))] relative overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/3 pointer-events-none" />
 
@@ -290,6 +302,16 @@ export function JournalLockScreen({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            type="text"
+            name="username"
+            autoComplete="username"
+            value="zenflow-diary-lock"
+            readOnly
+            aria-hidden="true"
+            tabIndex={-1}
+            className="sr-only"
+          />
           <div className="relative">
             <input
               ref={inputRef}
@@ -302,15 +324,7 @@ export function JournalLockScreen({
                     ? setConfirm(e.target.value)
                     : setPassword(e.target.value)
               }
-              placeholder={
-                step === "current"
-                  ? ts.journalPasswordOldEnter || "Current password"
-                  : step === "confirm"
-                    ? ts.journalPasswordConfirm || "Confirm password"
-                    : mode === "change"
-                      ? ts.journalPasswordNewEnter || "New password"
-                      : ts.journalPasswordEnter || "Enter password"
-              }
+              placeholder={passwordInputLabel}
               className={cn(
                 "w-full px-4 py-3 pe-14 rounded-xl text-sm",
                 "bg-background/80 border border-border/50",
@@ -321,9 +335,10 @@ export function JournalLockScreen({
                 wrongGlow && "ring-2 ring-destructive/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
               )}
               inputMode="text"
-              autoComplete="off"
+              autoComplete={passwordAutoComplete}
               disabled={countdown > 0 || isSubmitting}
-              aria-describedby={error ? "lock-error" : undefined}
+              aria-label={passwordInputLabel}
+              aria-describedby={passwordDescriptionId}
             />
             <button
               type="button"
@@ -342,7 +357,7 @@ export function JournalLockScreen({
 
           {error && (
             <motion.p
-              id="lock-error"
+              id={passwordErrorId}
               role="alert"
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
@@ -353,7 +368,7 @@ export function JournalLockScreen({
           )}
 
           {countdown > 0 && (
-            <p className="text-xs text-orange-500 text-center">
+            <p id={passwordCooldownId} role="status" aria-live="polite" className="text-xs text-orange-500 text-center">
               {ts.journalPasswordCooldown || "Too many attempts. Wait"} {countdown}s
             </p>
           )}
@@ -402,13 +417,20 @@ export function JournalLockScreen({
           </button>
         )}
 
-        {mode === "unlock" && emailLockRemovalAvailable && onForgotPassword && (
+        {mode === "unlock" && onForgotPassword && emailLockRemovalAvailable && (
           <button
             onClick={onForgotPassword}
             className="w-full mt-3 py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors text-center min-h-[44px]"
           >
             {ts.journalPasswordForgot || "Can't open the lock?"}
           </button>
+        )}
+
+        {mode === "unlock" && onForgotPassword && !emailLockRemovalAvailable && (
+          <p className="mt-3 rounded-xl bg-muted/45 px-3 py-2 text-center text-xs leading-relaxed text-muted-foreground">
+            {ts.journalResetDesktopUnavailable ||
+              "Email lock removal is available in the web or mobile app. Unlock with your diary password on desktop."}
+          </p>
         )}
 
         {((mode === "setup" && step === "confirm") ||

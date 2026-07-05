@@ -153,7 +153,6 @@ function IndexV2Impl() {
     badgesRef.current = typeof next === "function" ? next(current) : next;
   }, []);
   const moods = useUserDataStore((s) => s.moods);
-  const latestMoodForAds = useMemo(() => moods[moods.length - 1]?.mood || "okay", [moods]);
   const habits = useUserDataStore((s) => s.habits);
   const focusSessions = useUserDataStore((s) => s.focusSessions);
   const gratitudeEntries = useUserDataStore((s) => s.gratitudeEntries);
@@ -164,6 +163,14 @@ function IndexV2Impl() {
   const isLoadingUserData = useUserDataStore((s) => s.isLoading);
   const privacy = useUserDataStore((s) => s.privacy);
   const setPrivacy = useUserDataStore((s) => s.setPrivacy);
+  const currentMoodForAds = useMemo(() => {
+    const latestMood = moods.reduce<(typeof moods)[number] | null>((latest, entry) => {
+      if (!latest) return entry;
+      return entry.timestamp > latest.timestamp ? entry : latest;
+    }, null);
+
+    return latestMood?.mood ?? null;
+  }, [moods]);
   useEffect(() => {
     analytics.init(privacy);
   }, [privacy]);
@@ -254,7 +261,7 @@ function IndexV2Impl() {
           onEarnXp={() => undefined}
           adConsent={canInitializeRewardedAds(privacy)}
           isPremium={false}
-          currentMood={latestMoodForAds}
+          currentMood={currentMoodForAds}
         >
           <NavV2Orchestrator
             onAddMood={handleAddMood}

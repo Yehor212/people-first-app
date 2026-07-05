@@ -97,6 +97,7 @@ jobs:
         env:
           ZENFLOW_GITHUB_REPO: ${{ github.repository }}
           ZENFLOW_GITHUB_JOURNAL_MAGIC_LINK_FROM_ENV: true
+          ZENFLOW_GITHUB_JOURNAL_MAGIC_LINK_SECRETS_REQUIRED: ${{ vars.VITE_JOURNAL_MAGIC_LINK_LIVE_READY == 'true' && github.ref == 'refs/heads/main' && 'true' || 'false' }}
           ZENFLOW_GITHUB_SECRET_VITE_SUPABASE_URL_PRESENT: ${{ secrets.VITE_SUPABASE_URL != '' && 'true' || 'false' }}
           ZENFLOW_GITHUB_SECRET_VITE_SUPABASE_PUBLISHABLE_KEY_PRESENT: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY != '' && 'true' || 'false' }}
           ZENFLOW_GITHUB_SECRET_VITE_SUPABASE_ANON_KEY_PRESENT: ${{ secrets.VITE_SUPABASE_ANON_KEY != '' && 'true' || 'false' }}

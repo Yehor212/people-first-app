@@ -20,7 +20,6 @@ test.use({
           { name: "zenflow-language", value: JSON.stringify("en") },
           { name: "zenflow-language-selected", value: JSON.stringify(true) },
           { name: "zenflow-google-auth-checked", value: JSON.stringify(true) },
-          { name: "zenflow-tutorial-complete", value: JSON.stringify(true) },
           { name: "zenflow-onboarding-complete", value: JSON.stringify(true) },
           { name: "zenflow-notification-permission-checked", value: JSON.stringify(true) },
           { name: "zenflow_last_seen_version", value: "2.0.0" },

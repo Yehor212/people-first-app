@@ -13,7 +13,10 @@ import {
   getCleanAuthCallbackUrl,
   sanitizeAuthErrorMessage,
 } from "@/lib/authRedirect";
-import { persistJournalPasswordResetProofFromUrl } from "@/lib/journalPasswordResetHandoff";
+import {
+  getJournalPasswordResetNonceFromUrl,
+  persistJournalPasswordResetProofFromUrl,
+} from "@/lib/journalPasswordResetHandoff";
 import { AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
 import { syncWithCloud, startAutoSync, stopAutoSync } from "@/storage/cloudSync";
 import { pullPreferences } from "@/storage/preferenceSync";
@@ -111,6 +114,7 @@ export function useAuthSession(isLoading: boolean): void {
     const hasImplicitTokens = hashParams.has("access_token") && hashParams.has("refresh_token");
     const hasCode = hasQueryCode || hasHashCode;
     const hasError = url.searchParams.has("error") || hashParams.has("error");
+    const requiresVerifiedJournalResetCallback = Boolean(getJournalPasswordResetNonceFromUrl(window.location.href));
     const errorDescription =
       url.searchParams.get("error_description") || hashParams.get("error_description");
 
@@ -154,9 +158,9 @@ export function useAuthSession(isLoading: boolean): void {
         setUserNameCustom(false);
       }
 
+      persistJournalPasswordResetProofFromUrl(window.location.href);
       notifyAuthComplete();
       endAuthFlow();
-      persistJournalPasswordResetProofFromUrl(window.location.href);
       window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
     };
 
@@ -195,7 +199,7 @@ export function useAuthSession(isLoading: boolean): void {
         if (settled) return;
 
         try {
-          if (await completeFromCurrentSession()) return;
+          if (!requiresVerifiedJournalResetCallback && (await completeFromCurrentSession())) return;
         } catch (sessionError) {
           logger.warn("[Index] Web OAuth fallback session check failed:", sessionError);
         }
@@ -212,7 +216,7 @@ export function useAuthSession(isLoading: boolean): void {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (settled) return;
 
-      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
+      if ((event === "SIGNED_IN" || (!requiresVerifiedJournalResetCallback && event === "INITIAL_SESSION")) && session) {
         settled = true;
         logger.log("[Index] Web OAuth code exchange succeeded (event:", event, ")");
         completeWebOAuthSession(session);
@@ -229,7 +233,7 @@ export function useAuthSession(isLoading: boolean): void {
       try {
         const { data } = await supabase.auth.getSession();
         if (settled) return;
-        if (data.session) {
+        if (data.session && !requiresVerifiedJournalResetCallback) {
           settled = true;
           logger.log("[Index] Web OAuth: fallback session check found valid session");
           completeWebOAuthSession(data.session);

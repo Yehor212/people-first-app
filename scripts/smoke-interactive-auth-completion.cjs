@@ -260,7 +260,6 @@ function initEntryState() {
   localStorage.setItem("zenflow-language", json("en"));
   localStorage.setItem("zenflow-language-selected", json(true));
   localStorage.setItem("zenflow-google-auth-checked", json(false));
-  localStorage.setItem("zenflow-tutorial-complete", json(false));
   localStorage.setItem("zenflow-onboarding-complete", json(false));
   localStorage.setItem("zenflow-notification-permission-checked", json(false));
   localStorage.setItem("zenflow-theme", "light");

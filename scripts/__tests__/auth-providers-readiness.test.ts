@@ -151,16 +151,60 @@ describe("check-auth-providers public key readiness", () => {
 
   it("requires GitHub Pages deploy to run hosted auth live checks", () => {
     const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+    const packageJson = readFileSync("package.json", "utf8");
+    const hostedAuthStep = workflow.slice(
+      workflow.indexOf("name: Check hosted auth providers"),
+      workflow.indexOf("name: Check journal Magic Link GitHub name inventory"),
+    );
+    const journalMagicLinkInventoryStep = workflow.slice(
+      workflow.indexOf("name: Check journal Magic Link GitHub name inventory"),
+      workflow.indexOf("name: Check journal Magic Link live readiness"),
+    );
+    const journalMagicLinkStep = workflow.slice(
+      workflow.indexOf("name: Check journal Magic Link live readiness"),
+      workflow.indexOf("name: Check journal Magic Link proof status"),
+    );
+    const journalMagicLinkProofStatusStep = workflow.slice(
+      workflow.indexOf("name: Check journal Magic Link proof status"),
+      workflow.indexOf("name: Check Supabase publishable key readiness"),
+    );
 
+    expect(packageJson).toContain('"check:journal-magic-link-live"');
+    expect(packageJson).toContain('"check:journal-magic-link-proof-status"');
+    expect(packageJson).toContain('"check:journal-magic-link-proof-status:pass"');
+    expect(packageJson).toContain('"check:github-journal-magic-link-secrets"');
+    expect(packageJson).toContain('"check:github-journal-magic-link-secrets:pass"');
     expect(workflow).toContain("npm run check:facebook-auth-public");
     expect(workflow).toContain("npm run check:facebook-auth-live");
     expect(workflow).toContain("npm run check:apple-auth-public");
     expect(workflow).toContain("npm run check:apple-auth-live");
+    expect(workflow).toContain("npm run check:journal-magic-link-live");
+    expect(workflow).toContain("npm run check:github-journal-magic-link-secrets");
     expect(workflow).toContain("npm run check:telegram-oidc-live");
     expect(workflow).toContain("secrets.VITE_SUPABASE_ANON_KEY != ''");
     expect(workflow).toContain("ZENFLOW_FACEBOOK_AUTH_LIVE_REQUIRED");
     expect(workflow).toContain("ZENFLOW_APPLE_AUTH_PUBLIC_REQUIRED");
     expect(workflow).toContain("ZENFLOW_APPLE_AUTH_LIVE_REQUIRED");
+    expect(workflow).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_LIVE_REQUIRED");
+    expect(hostedAuthStep).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL");
+    expect(journalMagicLinkInventoryStep).toContain("ZENFLOW_GITHUB_JOURNAL_MAGIC_LINK_FROM_ENV: true");
+    expect(journalMagicLinkInventoryStep).toContain("secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL != ''");
+    expect(journalMagicLinkInventoryStep).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
+    expect(journalMagicLinkStep).toContain(
+      "if: github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main')"
+    );
+    expect(journalMagicLinkStep).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_LIVE_REQUIRED: false");
+    expect(journalMagicLinkStep).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_SMTP_REQUIRED");
+    expect(journalMagicLinkStep).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_SEND_SMOKE: false");
+    expect(journalMagicLinkStep).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_VERIFY_CAPTURED_URL");
+    expect(journalMagicLinkStep).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL");
+    expect(journalMagicLinkStep).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
+    expect(journalMagicLinkStep).not.toContain("vars.ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL == 'true'");
+    expect(journalMagicLinkProofStatusStep).toContain("npm run check:journal-magic-link-proof-status");
+    expect(journalMagicLinkProofStatusStep).toContain("npm run check:journal-magic-link-proof-status:pass");
+    expect(journalMagicLinkProofStatusStep).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_STATUS_REQUIRED");
+    expect(journalMagicLinkProofStatusStep).toContain("vars.VITE_JOURNAL_MAGIC_LINK_LIVE_READY == 'true' && github.ref == 'refs/heads/main'");
+    expect(journalMagicLinkProofStatusStep).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL");
     expect(workflow).toContain("SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}");
     expect(workflow).toContain("SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}");
     expect(workflow).toContain("ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true");
@@ -230,17 +274,55 @@ describe("check-auth-providers public key readiness", () => {
   });
   it("requires V2 preview deploy to run hosted auth live checks", () => {
     const workflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
+    const hostedAuthStep = workflow.slice(
+      workflow.indexOf("name: Check hosted auth providers for V2 preview"),
+      workflow.indexOf("name: Check journal Magic Link GitHub name inventory for V2 preview"),
+    );
+    const journalMagicLinkPreviewInventoryStep = workflow.slice(
+      workflow.indexOf("name: Check journal Magic Link GitHub name inventory for V2 preview"),
+      workflow.indexOf("name: Check journal Magic Link live readiness for V2 preview"),
+    );
+    const journalMagicLinkStep = workflow.slice(
+      workflow.indexOf("name: Check journal Magic Link live readiness for V2 preview"),
+      workflow.indexOf("name: Check journal Magic Link proof status for V2 preview"),
+    );
+    const journalMagicLinkProofStatusStep = workflow.slice(
+      workflow.indexOf("name: Check journal Magic Link proof status for V2 preview"),
+      workflow.indexOf("name: Check Sentry readiness for V2 preview"),
+    );
 
     expect(workflow).toContain("Check hosted auth providers for V2 preview");
     expect(workflow).toContain("npm run check:facebook-auth-public");
     expect(workflow).toContain("npm run check:facebook-auth-live");
     expect(workflow).toContain("npm run check:apple-auth-public");
     expect(workflow).toContain("npm run check:apple-auth-live");
+    expect(workflow).toContain("npm run check:journal-magic-link-live");
     expect(workflow).toContain("npm run check:telegram-oidc-live");
     expect(workflow).toContain("secrets.VITE_SUPABASE_ANON_KEY != ''");
     expect(workflow).toContain("ZENFLOW_FACEBOOK_AUTH_LIVE_REQUIRED");
     expect(workflow).toContain("ZENFLOW_APPLE_AUTH_PUBLIC_REQUIRED");
     expect(workflow).toContain("ZENFLOW_APPLE_AUTH_LIVE_REQUIRED");
+    expect(workflow).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_LIVE_REQUIRED");
+    expect(hostedAuthStep).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL");
+    expect(journalMagicLinkPreviewInventoryStep).toContain("working-directory: v2-src");
+    expect(journalMagicLinkPreviewInventoryStep).toContain("ZENFLOW_GITHUB_JOURNAL_MAGIC_LINK_FROM_ENV: true");
+    expect(journalMagicLinkPreviewInventoryStep).toContain("secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL != ''");
+    expect(journalMagicLinkPreviewInventoryStep).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
+    expect(journalMagicLinkStep).toContain("if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'");
+    expect(journalMagicLinkStep).toContain("working-directory: v2-src");
+    expect(journalMagicLinkStep).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_LIVE_REQUIRED: false");
+    expect(journalMagicLinkStep).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_SMTP_REQUIRED");
+    expect(journalMagicLinkStep).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_SEND_SMOKE: false");
+    expect(journalMagicLinkStep).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_VERIFY_CAPTURED_URL");
+    expect(journalMagicLinkStep).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL");
+    expect(journalMagicLinkStep).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
+    expect(journalMagicLinkStep).not.toContain("vars.ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL == 'true'");
+    expect(journalMagicLinkProofStatusStep).toContain("working-directory: v2-src");
+    expect(journalMagicLinkProofStatusStep).toContain("npm run check:journal-magic-link-proof-status");
+    expect(journalMagicLinkProofStatusStep).toContain("npm run check:journal-magic-link-proof-status:pass");
+    expect(journalMagicLinkProofStatusStep).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_STATUS_REQUIRED");
+    expect(journalMagicLinkProofStatusStep).toContain("vars.VITE_JOURNAL_MAGIC_LINK_LIVE_READY == 'true' && github.ref == 'refs/heads/main'");
+    expect(journalMagicLinkProofStatusStep).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL");
     expect(workflow).toContain("SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}");
     expect(workflow).toContain("SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}");
     expect(workflow).toContain("ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED: true");
@@ -268,6 +350,24 @@ describe("check-auth-providers public key readiness", () => {
     );
     expect(result.stdout).toContain(
       "GitHub Pages deploy gates Apple hosted Auth readiness before public exposure"
+    );
+  });
+
+  it("requires general auth readiness to include the journal Magic Link live gate", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("GitHub Pages deploy runs journal Magic Link live readiness check");
+    expect(result.stdout).toContain("V2 preview deploy runs journal Magic Link live readiness check");
+    expect(result.stdout).toContain("GitHub Pages deploy runs journal Magic Link proof-status check");
+    expect(result.stdout).toContain("V2 preview deploy runs journal Magic Link proof-status check");
+    expect(result.stdout).toContain(
+      "GitHub Pages deploy gates journal Magic Link live proof before public release claims",
+    );
+    expect(result.stdout).toContain(
+      "GitHub Pages deploy gates journal Magic Link proof-status PASS before live-ready release claims",
     );
   });
 

@@ -26,14 +26,14 @@ const STATUS_CONFIG: Record<
     colorClass: "text-green-500",
     pulseClass: "motion-safe:animate-pulse",
     labelKey: "syncStatusSynced",
-    fallbackLabel: "Synced",
+    fallbackLabel: "Up to date",
   },
   syncing: {
     icon: Loader2,
     colorClass: "text-yellow-500",
     pulseClass: "animate-spin",
     labelKey: "syncStatusSyncing",
-    fallbackLabel: "Syncing...",
+    fallbackLabel: "Updating...",
   },
   pending: {
     icon: Cloud,

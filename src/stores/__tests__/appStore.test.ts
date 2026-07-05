@@ -223,23 +223,6 @@ describe('setHasValidSession', () => {
 
 // ─── Gate bypass flags ──────────────────────────────────────
 
-describe('setTutorialBypassFlag', () => {
-  it('defaults to false', () => {
-    expect(useAppStore.getState().tutorialBypassFlag).toBe(false);
-  });
-
-  it('sets to true', () => {
-    useAppStore.getState().setTutorialBypassFlag(true);
-    expect(useAppStore.getState().tutorialBypassFlag).toBe(true);
-  });
-
-  it('sets back to false', () => {
-    useAppStore.getState().setTutorialBypassFlag(true);
-    useAppStore.getState().setTutorialBypassFlag(false);
-    expect(useAppStore.getState().tutorialBypassFlag).toBe(false);
-  });
-});
-
 describe('setOnboardingBypassFlag', () => {
   it('defaults to false', () => {
     expect(useAppStore.getState().onboardingBypassFlag).toBe(false);
@@ -282,13 +265,11 @@ describe('resetAuthState', () => {
     expect(useAppStore.getState().isProcessingWebOAuth).toBe(true);
   });
 
-  it('does not affect gate bypass flags', () => {
-    useAppStore.getState().setTutorialBypassFlag(true);
+  it('does not affect the onboarding bypass flag', () => {
     useAppStore.getState().setOnboardingBypassFlag(true);
 
     useAppStore.getState().resetAuthState();
 
-    expect(useAppStore.getState().tutorialBypassFlag).toBe(true);
     expect(useAppStore.getState().onboardingBypassFlag).toBe(true);
   });
 

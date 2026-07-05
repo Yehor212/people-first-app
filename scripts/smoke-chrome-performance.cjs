@@ -70,7 +70,6 @@ async function seedApp(page) {
     const now = new Date().toISOString();
     localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
     localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
-    localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
     localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
     localStorage.setItem("zenflow-notification-permission-checked", JSON.stringify(true));
     localStorage.setItem("zenflow_last_seen_version", appVersion);

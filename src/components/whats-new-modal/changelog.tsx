@@ -86,7 +86,7 @@ export const CHANGELOG: Record<string, ChangelogItem[]> = {
       descriptionKey: "whatsNew.visualPolish172.description",
       title: "Visual Polish",
       description:
-        "Premium animations, GPU-optimized rendering, and smoother transitions across the app.",
+        "Smoother visuals, gentler motion, and cleaner transitions across the app.",
     },
     {
       icon: withAccent(<Bug className="w-5 h-5" aria-hidden="true" />, "orange"),
@@ -94,7 +94,7 @@ export const CHANGELOG: Record<string, ChangelogItem[]> = {
       descriptionKey: "whatsNew.bugFixes172.description",
       title: "Bug Fixes",
       description:
-        "Fixed sync errors, cache issues, and improved overall stability.",
+        "Fixed device update issues and improved overall stability.",
     },
   ],
   "1.7.1": [
@@ -110,9 +110,9 @@ export const CHANGELOG: Record<string, ChangelogItem[]> = {
       icon: withAccent(<Zap className="w-5 h-5" aria-hidden="true" />, "yellow"),
       titleKey: "whatsNew.codeQuality.title",
       descriptionKey: "whatsNew.codeQuality.description",
-      title: "Code Quality",
+      title: "Reliability",
       description:
-        "271 code quality warnings fixed to zero. Smoother, more reliable experience.",
+        "Cleaned up hidden issues for a smoother, more reliable experience.",
     },
   ],
   "1.7.0": [

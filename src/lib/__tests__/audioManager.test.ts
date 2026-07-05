@@ -56,6 +56,7 @@ import {
   playMilestone,
   playLevelUp,
   playNotification,
+  playNotificationPreview,
 } from '../audioManager';
 
 import { storageSetRaw } from '../safeJson';
@@ -70,21 +71,23 @@ type CapturedAudioShape = {
   waveforms: OscillatorType[];
   gains: number[];
   gainRampTargets: number[];
+  resumeCalls: number;
 };
 
-function installCapturedAudioContext(): CapturedAudioShape {
+function installCapturedAudioContext(options: { initialState?: AudioContextState | "interrupted" } = {}): CapturedAudioShape {
   const captured: CapturedAudioShape = {
     frequencies: [],
     durations: [],
     waveforms: [],
     gains: [],
     gainRampTargets: [],
+    resumeCalls: 0,
   };
 
   class MockAudioContext {
     currentTime = 10;
     destination = {};
-    state = 'running';
+    state = options.initialState ?? 'running';
 
     createOscillator() {
       const currentTime = this.currentTime;
@@ -122,6 +125,8 @@ function installCapturedAudioContext(): CapturedAudioShape {
     }
 
     resume() {
+      captured.resumeCalls += 1;
+      this.state = 'running';
       return Promise.resolve();
     }
 
@@ -195,6 +200,19 @@ describe('Volume control', () => {
     expect(Math.max(...captured.gains)).toBeLessThanOrEqual(0.03);
   });
 
+  it('resumes a suspended AudioContext before playing direct notification feedback', async () => {
+    const captured = installCapturedAudioContext({ initialState: 'suspended' });
+
+    playNotification();
+
+    expect(captured.resumeCalls).toBe(1);
+    expect(captured.frequencies).toEqual([]);
+
+    await Promise.resolve();
+
+    expect(captured.frequencies).toEqual([587.33]);
+  });
+
   it('treats master volume 0 as silence for direct notification feedback', () => {
     const captured = installCapturedAudioContext();
     setVolume(0);
@@ -237,6 +255,23 @@ describe('Volume control', () => {
       vi.runAllTimers();
 
       expect(captured.frequencies).toEqual([587.33]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps settings notification preview independent from the reminder fatigue budget', () => {
+    vi.useFakeTimers();
+    try {
+      const captured = installCapturedAudioContext();
+      for (let index = 0; index < 6; index += 1) playNotification();
+
+      expect(captured.frequencies).toEqual([587.33, 587.33, 587.33, 587.33]);
+
+      playNotificationPreview();
+      vi.runAllTimers();
+
+      expect(captured.frequencies).toEqual([587.33, 587.33, 587.33, 587.33, 587.33]);
     } finally {
       vi.useRealTimers();
     }

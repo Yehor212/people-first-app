@@ -36,7 +36,6 @@ export async function primeZenflowV2(page: Page, options: PrimeZenflowV2Options 
       localStorage.setItem("zenflow-language", JSON.stringify(options.language ?? "en"));
       localStorage.setItem("zenflow-language-selected", JSON.stringify(true));
       localStorage.setItem("zenflow-google-auth-checked", JSON.stringify(true));
-      localStorage.setItem("zenflow-tutorial-complete", JSON.stringify(true));
       localStorage.setItem("zenflow-onboarding-complete", JSON.stringify(true));
       localStorage.setItem("zenflow-notification-permission-checked", JSON.stringify(true));
       localStorage.setItem("zenflow_last_seen_version", appVersion);

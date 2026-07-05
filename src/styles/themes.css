@@ -106,18 +106,23 @@
   --nav-v2-shadow: 176 33% 12%;
   --zf-surface-3: 43 52% 78%;
 
-  --settings-v2-shell: 198 32% 91%;
-  --settings-v2-card: 0 0% 100%;
-  --settings-v2-panel: 204 40% 96%;
-  --settings-v2-border: 205 15% 72%;
-  --settings-v2-accent: 211 84% 45%;
-  --settings-v2-shadow: 212 24% 22%;
-  --settings-v2-card-alpha: 0.64;
-  --settings-v2-panel-alpha: 0.5;
-  --settings-v2-shell-alpha: 0.44;
-  --settings-v2-glass-blur: 28px;
-  --settings-v2-rim-light: 0 0% 100%;
-  --settings-v2-rim-alpha: 0.74;
+  --settings-v2-shell: 148 31% 90%;
+  --settings-v2-card: 148 31% 90%;
+  --settings-v2-panel: 155 29% 77%;
+  --settings-v2-border: 89 12% 37%;
+  --settings-v2-accent: 152 32% 36%;
+  --settings-v2-shadow: 89 12% 20%;
+  --settings-v2-card-alpha: 0.68;
+  --settings-v2-panel-alpha: 0.52;
+  --settings-v2-shell-alpha: 0.46;
+  --settings-v2-glass-blur: 24px;
+  --settings-v2-rim-light: 148 31% 90%;
+  --settings-v2-rim-alpha: 0.66;
+  --settings-v2-icon-glass-mid: 153 22% 54%;
+  --settings-v2-icon-glass: 153 27% 42%;
+  --settings-v2-icon-glass-dark: 152 32% 36%;
+  --settings-v2-icon-glyph: 148 31% 90%;
+  --settings-v2-icon-shadow: 89 12% 20%;
 }
 
 /* V2 Mist Paper guardrail.
@@ -632,18 +637,23 @@
     --nav-v2-backdrop: 0 0% 0%;
     --nav-v2-shadow: 0 0% 0%;
 
-  --settings-v2-shell: 252 16% 8%;
-  --settings-v2-card: 258 18% 12%;
-  --settings-v2-panel: 252 16% 18%;
-  --settings-v2-border: 252 14% 44%;
-  --settings-v2-accent: 258 70% 78%;
-  --settings-v2-shadow: 258 36% 4%;
+  --settings-v2-shell: 64 11% 27%;
+  --settings-v2-card: 89 12% 37%;
+  --settings-v2-panel: 152 32% 36%;
+  --settings-v2-border: 153 22% 54%;
+  --settings-v2-accent: 155 29% 77%;
+  --settings-v2-shadow: 64 11% 9%;
   --settings-v2-card-alpha: 0.62;
   --settings-v2-panel-alpha: 0.5;
   --settings-v2-shell-alpha: 0.5;
-  --settings-v2-glass-blur: 30px;
-  --settings-v2-rim-light: 264 36% 82%;
-  --settings-v2-rim-alpha: 0.24;
+  --settings-v2-glass-blur: 24px;
+  --settings-v2-rim-light: 148 31% 90%;
+  --settings-v2-rim-alpha: 0.22;
+  --settings-v2-icon-glass-mid: 153 22% 54%;
+  --settings-v2-icon-glass: 153 27% 42%;
+  --settings-v2-icon-glass-dark: 152 32% 36%;
+  --settings-v2-icon-glyph: 148 31% 90%;
+  --settings-v2-icon-shadow: 89 12% 20%;
 }
 
 :root[data-theme="oled"] {
@@ -732,17 +742,17 @@
   --zf-warm: 32 50% 68%;
   --zf-warning: 43 70% 64%;
   --settings-v2-shell: 0 0% 0%;
-  --settings-v2-card: 258 12% 5%;
-  --settings-v2-panel: 252 12% 9%;
-  --settings-v2-border: 252 12% 34%;
-  --settings-v2-accent: 258 66% 76%;
+  --settings-v2-card: 64 11% 14%;
+  --settings-v2-panel: 152 32% 18%;
+  --settings-v2-border: 153 22% 42%;
+  --settings-v2-accent: 155 29% 77%;
   --settings-v2-shadow: 0 0% 0%;
-  --settings-v2-card-alpha: 0.62;
-  --settings-v2-panel-alpha: 0.6;
-  --settings-v2-shell-alpha: 0.56;
-  --settings-v2-glass-blur: 24px;
-  --settings-v2-rim-light: 270 48% 82%;
-  --settings-v2-rim-alpha: 0.3;
+  --settings-v2-card-alpha: 0.64;
+  --settings-v2-panel-alpha: 0.58;
+  --settings-v2-shell-alpha: 0.54;
+  --settings-v2-glass-blur: 22px;
+  --settings-v2-rim-light: 148 31% 90%;
+  --settings-v2-rim-alpha: 0.22;
 }
 
 
@@ -766,8 +776,17 @@
   --v2-readable-surface: hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.88));
   --v2-readable-surface-border: hsl(var(--settings-v2-border) / 0.58);
   background:
-    linear-gradient(180deg, hsl(var(--settings-v2-rim-light) / 0.10), transparent 34%),
-    linear-gradient(135deg, hsl(var(--settings-v2-accent) / 0.045), transparent 56%),
+    radial-gradient(circle at 12% 6%, hsl(var(--settings-v2-rim-light) / 0.1), transparent 29rem),
+    radial-gradient(circle at 92% 2%, hsl(var(--settings-v2-accent) / 0.1), transparent 28rem),
+    linear-gradient(180deg, hsl(var(--settings-v2-rim-light) / 0.08), transparent 28%),
+    hsl(var(--settings-v2-shell) / 0.98);
+}
+
+:root[data-theme="ink"][data-theme-style="botanicalPulse"] [data-v2-readable-page="settings"] {
+  background:
+    radial-gradient(circle at 10% 7%, hsl(var(--settings-v2-rim-light) / 0.12), transparent 24rem),
+    radial-gradient(circle at 84% 16%, hsl(var(--settings-v2-accent) / 0.16), transparent 27rem),
+    linear-gradient(180deg, hsl(var(--settings-v2-card) / 0.52), hsl(var(--settings-v2-shell) / 0.98) 36%),
     hsl(var(--settings-v2-shell) / 0.98);
 }
 
@@ -779,32 +798,40 @@
 :root[data-theme="oled"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"] {
   background:
     linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / var(--settings-v2-rim-alpha, 0.34)), hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.7)) 42%, hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.58)));
-  border-color: hsl(var(--settings-v2-border) / 0.32);
+  border-color: hsl(var(--settings-v2-border) / 0.24);
   box-shadow:
-    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.62),
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.46),
     inset 0 -1px 0 hsl(var(--settings-v2-border) / 0.14),
     var(--zen-shadow-card);
-  -webkit-backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.35);
-  backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.35);
+  -webkit-backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.2);
+  backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.2);
+}
+
+[data-v2-readable-page="settings"] [data-testid="settings-page-control-card"][data-compact="true"] {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"][data-active="true"],
 :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"][data-active="true"],
 :root[data-theme="oled"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"][data-active="true"] {
-  border-color: hsl(var(--settings-v2-accent) / 0.54);
+  border-color: hsl(var(--settings-v2-accent) / 0.44);
 }
 
 :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"],
 :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"],
 :root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"] {
   background:
-    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.18), hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.66)) 48%, hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.58)));
-  border-color: hsl(var(--settings-v2-border) / 0.28);
+    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.12), hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.66)) 48%, hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.58)));
+  border-color: hsl(var(--settings-v2-border) / 0.22);
   box-shadow:
-    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.42),
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.24),
     inset 0 -1px 0 hsl(var(--settings-v2-border) / 0.12);
-  -webkit-backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.28);
-  backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.28);
+  -webkit-backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.16);
+  backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.16);
 }
 
 :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
@@ -816,17 +843,166 @@
 :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"],
 :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"],
 :root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"],
-:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-preview-card"],
-:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-preview-card"],
-:root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-preview-card"] {
+[data-v2-readable-page="settings"] [data-testid="settings-v2-appearance-glass-card"] {
   background:
-    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.14), hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.62)) 50%, hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.54)));
-  border-color: hsl(var(--settings-v2-border) / 0.3);
+    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.1), hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.62)) 50%, hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.54)));
+  border-color: hsl(var(--settings-v2-border) / 0.24);
   box-shadow:
-    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.36),
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.28),
     var(--zen-shadow-card);
-  -webkit-backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.24);
-  backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.24);
+  -webkit-backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.14);
+  backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.14);
+}
+
+:root[data-theme="ink"][data-theme-style="botanicalPulse"] [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],
+:root[data-theme="ink"][data-theme-style="botanicalPulse"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
+:root[data-theme="ink"][data-theme-style="botanicalPulse"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"],
+[data-v2-readable-page="settings"] [data-testid="settings-v2-appearance-glass-card"] {
+  background:
+    radial-gradient(circle at 7% 0%, hsl(var(--settings-v2-rim-light) / 0.14), transparent 18rem),
+    radial-gradient(circle at 94% 12%, hsl(var(--settings-v2-accent) / 0.1), transparent 20rem),
+    linear-gradient(145deg, hsl(var(--settings-v2-card) / 0.66), hsl(var(--settings-v2-panel) / 0.48));
+  border-color: hsl(var(--settings-v2-rim-light) / 0.2);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.24),
+    inset 0 -1px 0 hsl(var(--settings-v2-border) / 0.13),
+    0 20px 52px -42px hsl(var(--settings-v2-shadow) / 0.72);
+}
+
+:root[data-theme="ink"][data-theme-style="botanicalPulse"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
+:root[data-theme="ink"][data-theme-style="botanicalPulse"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"] [data-interaction-surface="settings-choice"] {
+  background:
+    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.09), hsl(var(--settings-v2-shell) / 0.46));
+  border-color: hsl(var(--settings-v2-border) / 0.36);
+}
+
+:root[data-theme="ink"][data-theme-style="botanicalPulse"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"],
+[data-v2-readable-page="settings"] [data-testid="settings-v2-appearance-glass-card"] {
+  background:
+    radial-gradient(circle at 0% 0%, hsl(var(--settings-v2-rim-light) / 0.07), transparent 14rem),
+    hsl(var(--settings-v2-shell) / 0.14);
+  border-color: hsl(var(--settings-v2-rim-light) / 0.10);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-theme="ink"][data-theme-style="botanicalPulse"] [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"][data-compact="true"] {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-theme="ink"][data-theme-style="botanicalPulse"] [data-v2-readable-page="settings"] [data-testid="settings-v2-theme-segmented-control"],
+:root[data-theme="ink"][data-theme-style="botanicalPulse"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"] [data-interaction-surface="settings-choice"] {
+  background:
+    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.055), hsl(var(--settings-v2-shell) / 0.32));
+  border-color: hsl(var(--settings-v2-border) / 0.24);
+  box-shadow: inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.12);
+}
+
+:root[data-theme="ink"][data-theme-style="botanicalPulse"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"] [data-interaction-surface="settings-choice"][aria-pressed="true"] {
+  background:
+    linear-gradient(145deg, hsl(var(--settings-v2-accent) / 0.16), hsl(var(--settings-v2-panel) / 0.36));
+  border-color: hsl(var(--settings-v2-accent) / 0.34);
+}
+
+[data-v2-readable-page="settings"] [data-testid="settings-page-control-card"][data-compact="true"] h1 {
+  text-shadow: 0 1px 18px hsl(var(--settings-v2-shadow) / 0.42);
+}
+
+[data-v2-readable-page="settings"] [data-testid="settings-page-workspace"][data-selected-section="appearance"] [data-testid="settings-selected-panel"] {
+  max-width: 48rem;
+}
+
+@media (min-width: 1024px) {
+  [data-v2-readable-page="settings"] [data-testid="settings-page-workspace"][data-selected-section="appearance"] [data-testid="settings-selected-panel"] {
+    max-width: none;
+  }
+}
+
+[data-v2-readable-page="settings"] [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] {
+  background:
+    radial-gradient(circle at 8% 0%, hsl(var(--settings-v2-rim-light) / 0.12), transparent 17rem),
+    radial-gradient(circle at 88% 6%, hsl(var(--settings-v2-accent) / 0.1), transparent 18rem),
+    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.08), hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.68)) 42%, hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.52)));
+  border-color: hsl(var(--settings-v2-rim-light) / 0.18);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.38),
+    inset 0 -1px 0 hsl(var(--settings-v2-border) / 0.14),
+    0 22px 62px -50px hsl(var(--settings-v2-shadow) / 0.72);
+}
+
+[data-v2-readable-page="settings"] [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] > div:last-child {
+  display: grid;
+  gap: 0.7rem;
+}
+
+[data-v2-readable-page="settings"] [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] [data-testid="settings-v2-style-customization"] {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+[data-v2-readable-page="settings"] [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] [data-testid="settings-v2-theme-segmented-control"] [aria-pressed="true"] {
+  background:
+    radial-gradient(circle at 84% 0%, hsl(var(--settings-v2-rim-light) / 0.24), transparent 42%),
+    radial-gradient(circle at 50% 100%, hsl(var(--settings-v2-accent) / 0.18), transparent 48%),
+    linear-gradient(145deg, hsl(var(--settings-v2-panel) / 0.72), hsl(var(--settings-v2-accent) / 0.12));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.24),
+    0 10px 24px -22px hsl(var(--settings-v2-accent) / 0.42);
+}
+
+[data-v2-readable-page="settings"] [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] [data-testid="settings-v2-style-customization"] [data-interaction-surface="settings-choice"][aria-pressed="true"] {
+  background:
+    radial-gradient(circle at 84% 0%, hsl(var(--settings-v2-rim-light) / 0.16), transparent 42%),
+    linear-gradient(145deg, hsl(var(--settings-v2-accent) / 0.1), hsl(var(--settings-v2-panel) / 0.34));
+  border-color: hsl(var(--settings-v2-accent) / 0.34);
+}
+
+.v2-edge-to-edge-surface[data-active-page="settings"]:has([data-testid="settings-page-workspace"][data-selected-section="appearance"]) [data-testid="nav-v2-open-drawer"] {
+  position: absolute;
+  inset-inline-start: max(1.9rem, calc((100vw - 52rem) / 2 + 2rem));
+  top: calc(var(--safe-top) + 3.9rem);
+  background:
+    radial-gradient(circle at 34% 18%, hsl(var(--settings-v2-rim-light) / 0.12), transparent 42%),
+    hsl(var(--settings-v2-card) / 0.36);
+  border-color: hsl(var(--settings-v2-rim-light) / 0.18);
+  color: hsl(var(--foreground) / 0.88);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.24),
+    0 14px 32px -22px hsl(var(--settings-v2-shadow) / 0.72);
+  -webkit-backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.2);
+  backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.2);
+}
+
+[data-v2-readable-page="settings"] [data-testid="settings-v2-appearance-glass-card"] {
+  background:
+    radial-gradient(circle at 10% 0%, hsl(var(--settings-v2-rim-light) / 0.16), transparent 12rem),
+    linear-gradient(145deg, hsl(var(--settings-v2-card) / 0.72), hsl(var(--settings-v2-panel) / 0.48));
+  border-color: hsl(var(--settings-v2-border) / 0.26);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.3),
+    0 18px 44px -34px hsl(var(--settings-v2-shadow) / 0.58);
+  -webkit-backdrop-filter: blur(calc(var(--settings-v2-glass-blur, 24px) * 0.64)) saturate(1.12);
+  backdrop-filter: blur(calc(var(--settings-v2-glass-blur, 24px) * 0.64)) saturate(1.12);
+}
+
+[data-v2-readable-page="settings"] [data-testid="settings-v2-accent-swatch-row"] [data-swatch-kind="accent"]::after {
+  content: "";
+  position: absolute;
+  inset: -0.35rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+[data-v2-readable-page="settings"] [data-testid="settings-v2-accent-swatch-row"] [data-swatch-kind="accent"][aria-pressed="true"]::after {
+  border-color: hsl(var(--settings-v2-accent) / 0.32);
 }
 
 :root[data-theme-transparency="solid"] [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],
@@ -835,7 +1011,7 @@
 :root[data-theme-transparency="solid"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
 :root[data-theme-transparency="solid"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
 :root[data-theme-transparency="solid"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"],
-:root[data-theme-transparency="solid"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-preview-card"] {
+:root[data-theme-transparency="solid"] [data-v2-readable-page="settings"] [data-testid="settings-v2-appearance-glass-card"] {
   background: hsl(var(--settings-v2-card) / 0.98);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -848,7 +1024,8 @@
   [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
   [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
   [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"],
-  [data-v2-readable-page="settings"] [data-testid="settings-v2-style-preview-card"] {
+  [data-v2-readable-page="settings"] [data-testid="settings-v2-appearance-glass-card"],
+  .v2-edge-to-edge-surface[data-active-page="settings"]:has([data-testid="settings-page-workspace"][data-selected-section="appearance"]) [data-testid="nav-v2-open-drawer"] {
     background: hsl(var(--settings-v2-card) / 0.98);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -871,6 +1048,25 @@
   [data-theme-region="drawer-v2"] button:focus-visible {
     outline: 2px solid Highlight;
     outline-offset: 2px;
+  }
+
+  [data-v2-readable-page="settings"] [data-swatch-kind="accent"] {
+    background: ButtonFace !important;
+    border-color: ButtonText !important;
+    box-shadow: none !important;
+  }
+
+  [data-v2-readable-page="settings"] [data-swatch-kind="accent"] > span {
+    background: ButtonText !important;
+  }
+
+  [data-v2-readable-page="settings"] [data-swatch-kind="accent"][aria-pressed="true"] {
+    outline: 3px solid Highlight;
+    outline-offset: 3px;
+  }
+
+  [data-v2-readable-page="settings"] [data-swatch-kind="accent"][aria-pressed="true"] > span {
+    background: Highlight !important;
   }
 }
 

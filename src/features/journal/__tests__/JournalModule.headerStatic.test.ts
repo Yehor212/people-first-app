@@ -169,11 +169,18 @@ describe("JournalModule V2 header", () => {
   it("keeps desktop-only journal security affordances honest", () => {
     expect(source).toContain('import { IS_DESKTOP_RUNTIME } from "@/lib/env"');
     expect(source).toContain("const isEmailLockRemovalAvailable = !IS_DESKTOP_RUNTIME");
-    expect(source).toContain("const canOfferEmailLockRemoval = isEmailLockRemovalAvailable && !emailLockRemovalBlocked");
-    expect(source).toContain("onForgotPassword={canOfferEmailLockRemoval ? handleForgotPassword : undefined}");
-    expect(source).toContain("emailLockRemovalAvailable={canOfferEmailLockRemoval}");
+    expect(source).toContain("onForgotPassword={handleForgotPassword}");
+    expect(source).toContain("emailLockRemovalAvailable={isEmailLockRemovalAvailable}");
+    expect(source).toContain("pt-[max(0.75rem,var(--safe-top))]");
+    expect(source).toContain("pt-[max(1rem,var(--safe-top))]");
+    expect(source).toContain("pb-[max(1rem,var(--safe-bottom))]");
+    expect(source).toContain("max-h-[calc(100dvh_-_var(--safe-top)_-_var(--safe-bottom)_-_2rem)]");
+    expect(source).not.toContain("env(safe-area-inset-");
     expect(source).toContain("hasEncryptedJournalContent()");
     expect(source).toContain("hasEncryptedJournalMedia()");
+    expect(source).toMatch(
+      /logger\.warn\(\s*"\[Journal\] Password reset session check failed"\s*,\s*getJournalAuthErrorDebugInfo\(error\)/,
+    );
 
     const desktopSettingsBlock = /data-testid="journal-settings-panel"[\s\S]*?<LazyJournalSettingsContent[\s\S]*?onRequestRemovePassword=\{\(\) => setShowRemovePasswordConfirm\(true\)\}/.exec(
       source,

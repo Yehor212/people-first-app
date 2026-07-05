@@ -201,7 +201,7 @@ export function WelcomeBackModal({
                     <Zap className="w-4 h-4 text-amber-500" />
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    {t.comebackChallengeSubtitle || "Special bonus for returning!"}
+                    {t.comebackChallengeSubtitle || "A gentle step back in"}
                   </p>
                 </div>
               </div>

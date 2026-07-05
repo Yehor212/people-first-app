@@ -74,13 +74,13 @@ export function AccountPanel({ controls }: { controls: V2SettingsControls }) {
     <PanelFrame
       icon={Cloud}
       title={tx.settingsCloudSyncTitle || tx.settingsGroupAccount || tx.account || "Account"}
-      description={tx.settingsCloudSyncDescription || "Signed-in data stays synced automatically."}
+      description={tx.settingsCloudSyncDescription || "When you sign in, ZenFlow keeps your data available on your devices."}
       testId="settings-v2-panel-account"
       showHeader={false}
     >
       {!supabase ? (
         <SettingsInset>
-          <SettingsStatus>{tx.cloudSyncDisabled || "Cloud sync is not available."}</SettingsStatus>
+          <SettingsStatus>{tx.cloudSyncDisabled || "Online backup is not available."}</SettingsStatus>
         </SettingsInset>
       ) : auth.hasSession ? (
         <>
@@ -190,6 +190,7 @@ export function AccountPanel({ controls }: { controls: V2SettingsControls }) {
                 value={del.deleteConfirmInput}
                 onChange={del.setDeleteConfirmInput}
                 autoComplete="off"
+                autoFocus
                 disabled={del.isDeletingAccount}
                 tone="danger"
               />
@@ -229,10 +230,10 @@ export function AccountPanel({ controls }: { controls: V2SettingsControls }) {
         <div className="space-y-3">
           <SettingsInset>
             <p className="text-sm font-semibold text-foreground">
-              {tx.sessionExpiredSettings || "Sign in to sync automatically."}
+              {tx.sessionExpiredSettings || "Sign in to keep devices updated."}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {tx.localDataSafe || "Your local data is safe."}
+              {tx.localDataSafe || "Your data on this device is safe."}
             </p>
           </SettingsInset>
           {auth.enabledProviders.map((provider) => (
@@ -252,7 +253,7 @@ export function AccountPanel({ controls }: { controls: V2SettingsControls }) {
         </div>
       )}
 
-      <div role="status" aria-live="polite">
+      <div>
         <SettingsStatus>{auth.authStatus}</SettingsStatus>
         <SettingsStatus>{del.deleteStatus}</SettingsStatus>
       </div>

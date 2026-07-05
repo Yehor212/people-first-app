@@ -287,7 +287,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                   )
                 }
                 label={t.dopamineSounds || "Sounds"}
-                description={t.dopamineSoundsDesc || "Local confirmation sounds and audio feedback"}
+                description={t.dopamineSoundsDesc || "Confirmation sounds and audio feedback"}
                 checked={settings.sounds}
                 onCheckedChange={(checked) => updateSettings({ sounds: checked })}
               />

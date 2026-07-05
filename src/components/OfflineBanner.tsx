@@ -177,7 +177,7 @@ export function OfflineBanner() {
               </p>
               {!dataDropWarning && pendingCount > 0 && (
                 <p className="text-xs opacity-90 truncate">
-                  {pendingCount} {t.offlineBannerPending || 'changes waiting to sync'}
+                  {pendingCount} {t.offlineBannerPending || 'changes waiting to save online'}
                 </p>
               )}
             </div>

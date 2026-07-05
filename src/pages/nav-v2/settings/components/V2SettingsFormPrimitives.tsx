@@ -23,6 +23,7 @@ interface SettingsTextInputProps {
   id?: string;
   type?: string;
   autoComplete?: string;
+  autoFocus?: boolean;
   disabled?: boolean;
   fill?: boolean;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
@@ -40,6 +41,7 @@ interface SettingsStatusProps {
   children?: ReactNode;
   tone?: "muted" | "danger";
   center?: boolean;
+  ariaLabel?: string;
 }
 
 interface SettingsExternalLinkProps {
@@ -107,18 +109,31 @@ export function SettingsTextInput({
   id,
   type = "text",
   autoComplete,
+  autoFocus = false,
   disabled,
   fill = false,
   onKeyDown,
   tone = "neutral",
 }: SettingsTextInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!autoFocus || disabled) return;
+    const focusInput = () => inputRef.current?.focus({ preventScroll: true });
+    focusInput();
+    const frame = window.requestAnimationFrame(focusInput);
+    return () => window.cancelAnimationFrame(frame);
+  }, [autoFocus, disabled]);
+
   return (
     <input
+      ref={inputRef}
       id={id}
       type={type}
       value={value}
       onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.target.value)}
       autoComplete={autoComplete}
+      autoFocus={autoFocus}
       disabled={disabled}
       onKeyDown={onKeyDown}
       className={cn(
@@ -190,11 +205,19 @@ export function SettingsInlineButton({
   );
 }
 
-export function SettingsStatus({ children, tone = "muted", center = false }: SettingsStatusProps) {
+export function SettingsStatus({
+  children,
+  tone = "muted",
+  center = false,
+  ariaLabel,
+}: SettingsStatusProps) {
   if (!children) return null;
 
   return (
     <p
+      role="status"
+      aria-live="polite"
+      aria-label={ariaLabel}
       className={cn(
         "text-sm",
         tone === "danger" ? "text-destructive" : "text-muted-foreground",

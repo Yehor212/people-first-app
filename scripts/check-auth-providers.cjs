@@ -27,6 +27,38 @@ const providerSecretKeys = [
   "SUPABASE_SERVICE_ROLE_KEY",
 ];
 const expectedProjectRef = "bwgfslmxmueyglpumkbf";
+const githubPagesAuthBase = "https://yehor212.github.io/people-first-app";
+const zenflowAppAuthBase = "https://zenflow.app";
+const journalWebAuthBases = [githubPagesAuthBase, zenflowAppAuthBase];
+const v2AuthRoutes = ["orb", "habits", "diary", "planning", "settings"];
+const loopbackAuthPorts = ["3000", "4173", "4174", "4175", "4176", "5173", "8080"];
+const loopbackAuthHosts = ["127.0.0.1", "localhost"];
+const loopbackRedirectUrls = loopbackAuthPorts.flatMap((port) =>
+  loopbackAuthHosts.map((host) => [
+    `http://${host}:${port}/**`,
+    `local loopback auth redirect ${host}:${port}`,
+  ]),
+);
+const journalResetRedirectUrls = [
+  ...journalWebAuthBases.flatMap((base) => [
+    [`${base}/?journalReset=*`, `canonical ${base} journal Magic Link fallback`],
+    ...v2AuthRoutes.flatMap((route) => [
+      [
+        `${base}/${route}?nav=v2&journalReset=*`,
+        `canonical ${base} V2 ${route} journal Magic Link redirect`,
+      ],
+      [
+        `${base}/${route}?nav=v2&navLayout=phone&journalReset=*`,
+        `canonical ${base} V2 phone ${route} journal Magic Link redirect`,
+      ],
+      [
+        `${base}/${route}?nav=v2&navLayout=web&journalReset=*`,
+        `canonical ${base} V2 web ${route} journal Magic Link redirect`,
+      ],
+    ]),
+  ]),
+  ["com.zenflow.app://login-callback?journalReset=*", "native journal Magic Link callback redirect"],
+];
 
 const checks = [];
 
@@ -337,6 +369,16 @@ checkSourceContains(
   "Facebook live OAuth readiness npm script is registered"
 );
 checkSourceContains(
+  "package.json",
+  '"check:journal-magic-link-live"',
+  "Journal Magic Link live readiness npm script is registered"
+);
+checkSourceContains(
+  "package.json",
+  '"check:github-journal-magic-link-secrets"',
+  "Journal Magic Link GitHub names readiness npm script is registered"
+);
+checkSourceContains(
   "scripts/check-facebook-auth-live.cjs",
   "facebook_invalid_scope_email",
   "Facebook live OAuth readiness detects Meta invalid-scope email errors"
@@ -363,6 +405,21 @@ checkSourceContains(
 );
 checkSourceContains(
   ".github/workflows/deploy.yml",
+  "npm run check:journal-magic-link-live",
+  "GitHub Pages deploy runs journal Magic Link live readiness check"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "npm run check:journal-magic-link-proof-status",
+  "GitHub Pages deploy runs journal Magic Link proof-status check"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_STATUS_REQUIRED",
+  "GitHub Pages deploy gates journal Magic Link proof-status PASS before live-ready release claims"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
   "ZENFLOW_APPLE_AUTH_PUBLIC_REQUIRED",
   "GitHub Pages deploy gates Apple public Auth readiness before public exposure"
 );
@@ -370,6 +427,11 @@ checkSourceContains(
   ".github/workflows/deploy.yml",
   "ZENFLOW_APPLE_AUTH_LIVE_REQUIRED",
   "GitHub Pages deploy gates Apple hosted Auth readiness before public exposure"
+);
+checkSourceContains(
+  ".github/workflows/deploy.yml",
+  "ZENFLOW_JOURNAL_MAGIC_LINK_LIVE_REQUIRED",
+  "GitHub Pages deploy gates journal Magic Link live proof before public release claims"
 );
 checkSourceContains(
   ".github/workflows/deploy-v2-preview.yml",
@@ -398,6 +460,21 @@ checkSourceContains(
 );
 checkSourceContains(
   ".github/workflows/deploy-v2-preview.yml",
+  "npm run check:journal-magic-link-live",
+  "V2 preview deploy runs journal Magic Link live readiness check"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "npm run check:journal-magic-link-proof-status",
+  "V2 preview deploy runs journal Magic Link proof-status check"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_STATUS_REQUIRED",
+  "V2 preview deploy gates journal Magic Link proof-status PASS before live-ready release claims"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
   "ZENFLOW_APPLE_AUTH_PUBLIC_REQUIRED",
   "V2 preview deploy gates Apple public Auth readiness before public exposure"
 );
@@ -405,6 +482,11 @@ checkSourceContains(
   ".github/workflows/deploy-v2-preview.yml",
   "ZENFLOW_APPLE_AUTH_LIVE_REQUIRED",
   "V2 preview deploy gates Apple hosted Auth readiness before public exposure"
+);
+checkSourceContains(
+  ".github/workflows/deploy-v2-preview.yml",
+  "ZENFLOW_JOURNAL_MAGIC_LINK_LIVE_REQUIRED",
+  "V2 preview deploy gates journal Magic Link live proof before public release claims"
 );
 checkSourceContains(
   ".github/workflows/deploy-v2-preview.yml",
@@ -593,8 +675,25 @@ for (const [url, label] of [
     "https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone",
     "canonical V2 phone auth redirect",
   ],
+  [
+    "https://yehor212.github.io/people-first-app/habits?nav=v2&navLayout=phone",
+    "canonical V2 phone habits auth redirect",
+  ],
+  [
+    "https://yehor212.github.io/people-first-app/diary?nav=v2&navLayout=phone",
+    "canonical V2 phone diary auth redirect",
+  ],
+  [
+    "https://yehor212.github.io/people-first-app/planning?nav=v2&navLayout=phone",
+    "canonical V2 phone planning auth redirect",
+  ],
+  [
+    "https://yehor212.github.io/people-first-app/settings?nav=v2&navLayout=phone",
+    "canonical V2 phone settings auth redirect",
+  ],
   ["com.zenflow.app://login-callback", "native OAuth callback redirect"],
-  ["http://localhost:5173/**", "local Vite OAuth wildcard redirect"],
+  ...loopbackRedirectUrls,
+  ...journalResetRedirectUrls,
 ]) {
   checkConfigContains(
     supabaseConfig,

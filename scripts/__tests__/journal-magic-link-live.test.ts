@@ -89,7 +89,7 @@ function runReadinessInFixture(files: Record<string, string>, env: NodeJS.Proces
 }
 
 describe("check-journal-magic-link-live", () => {
-  it("keeps the journal Magic Link completion audit honest until external proof exists", () => {
+  it("accepts the committed journal Magic Link completion audit after external proof exists", () => {
     expect(typeof evaluateJournalMagicLinkProofStatus).toBe("function");
     expect(REQUIRED_ITEM_IDS).toEqual([
       "app_side_reset_guard",
@@ -111,7 +111,7 @@ describe("check-journal-magic-link-live", () => {
     const byId = new Map(items.map((item) => [item.id, item]));
 
     expect(statusPacket.schemaVersion).toBe("zenflow-journal-magic-link-live-proof/v1");
-    expect(statusPacket.overallStatus).toBe("UNVERIFIED");
+    expect(statusPacket.overallStatus).toBe("PASS");
     expect([...byId.keys()]).toEqual([
       "app_side_reset_guard",
       "ci_secret_scope",
@@ -125,38 +125,27 @@ describe("check-journal-magic-link-live", () => {
 
     for (const item of items.filter((entry) => entry.status === "PASS")) {
       expect(item.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(item.evidence || "").toMatch(/test|contract|runbook/i);
-      expect(item.verification || "").toMatch(/npm|Run fresh/);
+      expect(item.evidence || "").toMatch(/runtime proof|test|contract|runbook/i);
+      expect(item.verification || "").toMatch(/npm|docs\/|\.github|Subagent/i);
     }
 
-    expect(byId.get("app_side_reset_guard")?.status).toBe("PASS");
-    expect(byId.get("ci_secret_scope")?.status).toBe("PASS");
-    expect(byId.get("operator_runbook")?.status).toBe("PASS");
-    expect(byId.get("hosted_supabase_config")?.status).toBe("UNVERIFIED");
-    expect(byId.get("github_secret_and_var_names")?.status).toBe("UNVERIFIED");
-    expect(byId.get("smoke_email_delivery")?.status).toBe("UNVERIFIED");
-    expect(byId.get("captured_verify_url_consumed")?.status).toBe("UNVERIFIED");
-    expect(["PASS", "UNVERIFIED"]).toContain(byId.get("subagent_reapproval")?.status);
+    for (const requiredId of REQUIRED_ITEM_IDS || []) {
+      expect(byId.get(requiredId)?.status).toBe("PASS");
+    }
     expect(JSON.stringify(statusPacket)).not.toMatch(/access_token=[A-Za-z0-9._-]+/);
     expect(JSON.stringify(statusPacket)).not.toMatch(/refresh_token=[A-Za-z0-9._-]+/);
 
     const report = evaluateJournalMagicLinkProofStatus?.(statusPacket, {
       requirePass: false,
-      now: new Date("2026-07-04T12:00:00.000Z"),
+      now: new Date("2026-07-06T12:00:00.000Z"),
     });
-    expect(report).toMatchObject({ ok: true, passReady: false, issues: [] });
+    expect(report).toMatchObject({ ok: true, passReady: true, issues: [] });
 
     const requiredReport = evaluateJournalMagicLinkProofStatus?.(statusPacket, {
       requirePass: true,
-      now: new Date("2026-07-04T12:00:00.000Z"),
+      now: new Date("2026-07-06T12:00:00.000Z"),
     });
-    expect(requiredReport?.ok).toBe(false);
-    for (const item of items.filter((entry) => entry.status !== "PASS")) {
-      expect(requiredReport?.issues).toContainEqual(expect.objectContaining({
-        code: "required_item_not_pass",
-        itemId: item.id,
-      }));
-    }
+    expect(requiredReport).toMatchObject({ ok: true, passReady: true, issues: [] });
   });
 
   it("rejects premature PASS and accepts a fully proven synthetic status packet", () => {
@@ -164,6 +153,11 @@ describe("check-journal-magic-link-live", () => {
     const premature = {
       ...basePacket,
       overallStatus: "PASS",
+      items: basePacket.items.map((item: { id: string; checkedAt?: string }, index: number) => {
+        if (index !== 0) return item;
+        const { checkedAt: _checkedAt, ...rest } = item;
+        return { ...rest, status: "UNVERIFIED" };
+      }),
     };
 
     expect(evaluateJournalMagicLinkProofStatus?.(premature)?.issues).toContainEqual(

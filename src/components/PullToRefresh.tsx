@@ -124,7 +124,7 @@ export function PullToRefresh({
         <div className="absolute left-4 right-4 top-2 z-20 flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-3 py-2 motion-safe:animate-fade-in">
           <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
           <span className="text-xs text-red-600 dark:text-red-400">
-            {t.syncRefreshFailed || "Sync paused — pull again to retry"}
+            {t.syncRefreshFailed || "Online backup paused. Try again in a moment."}
           </span>
         </div>
       )}

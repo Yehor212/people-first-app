@@ -111,13 +111,6 @@ export function useHydrateUserData(): void {
     objectSchema: reminderSettingsSchema,
   });
 
-  const [tutorialComplete, setTutorialComplete, isLoadingTutorial] = useIndexedDB({
-    table: db.settings,
-    localStorageKey: "zenflow-tutorial-complete",
-    initialValue: false,
-    idField: "key",
-  });
-
   const [onboardingComplete, setOnboardingComplete, isLoadingOnboarding] = useIndexedDB({
     table: db.settings,
     localStorageKey: "zenflow-onboarding-complete",
@@ -213,7 +206,6 @@ export function useHydrateUserData(): void {
     setUserName,
     setUserNameCustom,
     setHasSelectedLanguage,
-    setTutorialComplete,
     setOnboardingComplete,
     setNotificationPermissionChecked,
     setAuthGateChecked,
@@ -235,7 +227,6 @@ export function useHydrateUserData(): void {
     setUserName,
     setUserNameCustom,
     setHasSelectedLanguage,
-    setTutorialComplete,
     setOnboardingComplete,
     setNotificationPermissionChecked,
     setAuthGateChecked,
@@ -259,7 +250,6 @@ export function useHydrateUserData(): void {
       setUserName: (v) => settersRef.current.setUserName(v),
       setUserNameCustom: (v) => settersRef.current.setUserNameCustom(v),
       setHasSelectedLanguage: (v) => settersRef.current.setHasSelectedLanguage(v),
-      setTutorialComplete: (v) => settersRef.current.setTutorialComplete(v),
       setOnboardingComplete: (v) => settersRef.current.setOnboardingComplete(v),
       setNotificationPermissionChecked: (v) =>
         settersRef.current.setNotificationPermissionChecked(v),
@@ -280,7 +270,6 @@ export function useHydrateUserData(): void {
     isLoadingFocus ||
     isLoadingGratitude ||
     isLoadingReminders ||
-    isLoadingTutorial ||
     isLoadingOnboarding ||
     isLoadingPrivacy ||
     isLoadingNotificationPermission ||
@@ -315,7 +304,6 @@ export function useHydrateUserData(): void {
       userName,
       userNameCustom,
       hasSelectedLanguage,
-      tutorialComplete,
       onboardingComplete,
       notificationPermissionChecked,
       authGateChecked,
@@ -342,7 +330,6 @@ export function useHydrateUserData(): void {
     userName,
     userNameCustom,
     hasSelectedLanguage,
-    tutorialComplete,
     onboardingComplete,
     notificationPermissionChecked,
     authGateChecked,
