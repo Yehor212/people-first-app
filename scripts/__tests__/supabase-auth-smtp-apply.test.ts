@@ -94,6 +94,44 @@ describe("apply-supabase-auth-smtp", () => {
     expect(result.lines.join("\n")).not.toContain("resend");
   });
 
+  it("surfaces sanitized Management API rejection diagnostics without leaking SMTP values", async () => {
+    const { applySupabaseAuthSmtp, sanitizeSupabaseErrorText } = require(smtpScript) as {
+      applySupabaseAuthSmtp: (input: {
+        env: Record<string, string>;
+        dryRun: boolean;
+        fetchImpl: typeof fetch;
+      }) => Promise<{ status: string; lines: string[] }>;
+      sanitizeSupabaseErrorText: (text: string, env: Record<string, string>) => string;
+    };
+    const env = validEnv({
+      SUPABASE_ACCESS_TOKEN: "sbp_live_1234567890abcdef1234567890abcdef",
+      ZENFLOW_AUTH_SMTP_PASS: "re_secret_1234567890abcdef",
+    });
+    const rawBody = JSON.stringify({
+      message:
+        "SMTP sender no-reply@auth.zenflowapp.online for smtp.resend.com was rejected for user resend with password re_secret_1234567890abcdef",
+      hint: "Verify sender domain before retrying https://example.invalid/debug",
+    });
+
+    expect(sanitizeSupabaseErrorText(rawBody, env)).toContain("Verify sender domain before retrying <url>");
+
+    const result = await applySupabaseAuthSmtp({
+      env,
+      dryRun: false,
+      fetchImpl: (async () => new Response(rawBody, { status: 400 })) as typeof fetch,
+    });
+    const output = result.lines.join("\n");
+
+    expect(result.status).toBe("FAIL");
+    expect(output).toContain("HTTP 400");
+    expect(output).toContain("Verify sender domain before retrying <url>");
+    expect(output).not.toContain("no-reply@auth.zenflowapp.online");
+    expect(output).not.toContain("smtp.resend.com");
+    expect(output).not.toContain("resend");
+    expect(output).not.toContain("re_secret_1234567890abcdef");
+    expect(output).not.toContain("sbp_live_1234567890abcdef1234567890abcdef");
+  });
+
   it("applies SMTP settings with the Management API and verifies custom SMTP presence", async () => {
     const { applySupabaseAuthSmtp } = require(smtpScript) as {
       applySupabaseAuthSmtp: (input: {

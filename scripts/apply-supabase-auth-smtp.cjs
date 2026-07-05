@@ -106,6 +106,42 @@ function formatValidationErrors(errors) {
   return errors.map((error) => line("UNVERIFIED", error));
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function redactLiteral(text, value, replacement) {
+  const raw = String(value || "").trim();
+  if (!raw || isPlaceholderValue(raw)) return text;
+  return text.replace(new RegExp(escapeRegExp(raw), "gi"), replacement);
+}
+
+function sanitizeSupabaseErrorText(text, env = process.env) {
+  let sanitized = String(text || "").trim();
+  if (!sanitized) return "";
+
+  const redactions = [
+    ["SUPABASE_ACCESS_TOKEN", "<supabase-token>"],
+    ["ZENFLOW_AUTH_SMTP_ADMIN_EMAIL", "<smtp-admin-email>"],
+    ["ZENFLOW_AUTH_SMTP_HOST", "<smtp-host>"],
+    ["ZENFLOW_AUTH_SMTP_USER", "<smtp-user>"],
+    ["ZENFLOW_AUTH_SMTP_PASS", "<smtp-password>"],
+    ["ZENFLOW_AUTH_SMTP_SENDER_NAME", "<smtp-sender-name>"],
+  ];
+
+  for (const [key, replacement] of redactions) {
+    sanitized = redactLiteral(sanitized, env[key], replacement);
+  }
+
+  sanitized = sanitized
+    .replace(/sbp_[A-Za-z0-9_.-]{12,}/g, "<supabase-token>")
+    .replace(/re_[A-Za-z0-9_.-]{8,}/g, "<smtp-password>")
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "<email>")
+    .replace(/https?:\/\/[^\s"'<>]+/g, "<url>")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return sanitized.slice(0, 600);
+}
 function hasCustomSmtp(config) {
   if (!config || typeof config !== "object") return false;
   const host = config.smtp_host || config.mailer_smtp_host || config.SMTP_HOST || config.MAILER_SMTP_HOST;
@@ -150,7 +186,24 @@ async function applySupabaseAuthSmtp({ env = process.env, dryRun = true, fetchIm
     body: JSON.stringify(packet.patch),
   });
   if (!patchResponse.ok) {
-    return { status: "FAIL", lines: [line("FAIL", "Supabase Management API rejected Auth SMTP patch with HTTP " + patchResponse.status)] };
+    let errorText = "";
+    try {
+      errorText = await patchResponse.text();
+    } catch {
+      errorText = "";
+    }
+    const diagnostic = sanitizeSupabaseErrorText(errorText, env);
+    return {
+      status: "FAIL",
+      lines: [
+        line(
+          "FAIL",
+          "Supabase Management API rejected Auth SMTP patch with HTTP " +
+            patchResponse.status +
+            (diagnostic ? ": " + diagnostic : ""),
+        ),
+      ],
+    };
   }
 
   const verifyResponse = await fetchImpl(endpoint, {
@@ -200,4 +253,5 @@ module.exports = {
   buildSmtpPatchPacket,
   formatValidationErrors,
   hasCustomSmtp,
+  sanitizeSupabaseErrorText,
 };
