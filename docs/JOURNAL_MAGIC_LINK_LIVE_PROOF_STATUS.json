@@ -17,16 +17,16 @@
       "id": "ci_secret_scope",
       "status": "PASS",
       "checkedAt": "2026-07-05",
-      "evidence": "Release workflow contract tests passed 236 tests and ensure normal deploy workflows do not consume one-time captured Magic Link URLs, do not apply Supabase SMTP, and keep the full live proof in the dedicated manual workflow guarded by main-branch and typed confirmation checks.",
+      "evidence": "Release workflow contract tests passed 245 tests and ensure normal deploy workflows do not consume one-time captured Magic Link URLs, do not apply Supabase SMTP, and keep the full live proof in the dedicated manual workflow guarded by main-branch and typed confirmation checks.",
       "verification": "npm run test:release-contracts",
       "ownerAction": "Keep captured URL secrets out of broad hosted-auth steps and off untrusted manual branches."
     },
     {
       "id": "github_secret_and_var_names",
       "status": "UNVERIFIED",
-      "evidence": "Fresh local inventory reports PARTIAL because the temporary one-time ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL value is intentionally absent after cleanup. A full PASS requires storing a fresh delivered verify URL only for the manual proof run, then clearing it again.",
+      "evidence": "Fresh local inventory reports PARTIAL because the temporary one-time ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL value is intentionally absent after cleanup and the workflow cleanup credential ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN is not yet present. A full PASS requires storing a fresh delivered verify URL only for the manual proof run, having the least-privileged cleanup token available, then clearing the captured URL again.",
       "verification": "npm run check:github-journal-magic-link-secrets",
-      "ownerAction": "For a future live proof rerun, store a fresh delivered Supabase verify URL only temporarily, consume it once, then clear it again."
+      "ownerAction": "For a future live proof rerun, store a fresh delivered Supabase verify URL only temporarily, ensure ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN is present for post-consumption cleanup, consume the URL once, then clear it again."
     },
     {
       "id": "operator_runbook",
@@ -60,8 +60,8 @@
     {
       "id": "subagent_reapproval",
       "status": "UNVERIFIED",
-      "evidence": "Post-fix specialist reviews gave GO for source-level psychology/readability/i18n, interaction/a11y logic, and security/live-proof workflow fixes. Subagent reapproval remains UNVERIFIED for full production readiness because hosted Supabase SMTP, real smoke delivery, fresh captured verify URL consumption, and custom-domain callback proof were not proven in this run.",
-      "verification": "Aristotle re-review GO after French register fixes; Euclid logic/a11y GO after Settings account handoff and consume-on-read deep link; Huygens security/live-proof GO after rejecting zenflow.app proof, updating SMTP runbook names, and refreshing release contract evidence. Live proof commands still report UNVERIFIED without owner-only external proof.",
+      "evidence": "Current specialist review packet: Lorentz/Supabase Auth GO for SMTP rate-limit proof gates; Ohm/code quality GO; Hypatia/security GO for captured URL cleanup workflow, with live GitHub cleanup-token permissions still UNVERIFIED; Carver/CI GO for a code-only PR and STOP for any live production claim; Chandrasekhar/DNS STOP until Resend/domain DNS is verified; Heisenberg/UX ASK until the real user Magic Link journey is walked through. Full production readiness stays UNVERIFIED.",
+      "verification": "multi_agent_v1 specialist reviews on 2026-07-05 plus fresh local commands: npm run test:release-contracts (245 tests), targeted journal Magic Link workflow tests (64 tests), check:all, check:no-ai-templates, npm audit, git diff --check, and codex-security-suite. Live proof commands still report UNVERIFIED without owner-only external proof.",
       "ownerAction": "Keep subagent reapproval fresh after future auth callback, journal reset, deep-link, GitHub secret, SMTP, or live-proof checker changes. Full production completion still requires custom SMTP credentials, a fresh delivered Supabase verify URL, temporary captured URL storage, one-time consumption, cleanup, and every required proof item to become PASS."
     }
   ]

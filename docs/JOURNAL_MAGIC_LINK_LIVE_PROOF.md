@@ -36,6 +36,7 @@ GitHub secret names:
 - `SUPABASE_ACCESS_TOKEN`
 - `ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL`
 - `ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL`
+- `ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN`
 - `ZENFLOW_AUTH_SMTP_ADMIN_EMAIL`
 - `ZENFLOW_AUTH_SMTP_HOST`
 - `ZENFLOW_AUTH_SMTP_PORT`
@@ -80,7 +81,7 @@ The workflow order is deliberate:
 4. Consume the captured Supabase verify URL as part of `npm run check:journal-magic-link-live` before sending a new smoke Magic Link.
 5. Require the proof status packet to pass.
 
-After a successful proof run, clear or rotate `ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL`; do not leave a consumed one-time link in GitHub Secrets.
+After every proof attempt that consumes a captured URL, clear or rotate `ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL`; do not leave a consumed one-time link in GitHub Secrets. The manual workflow uses `ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN` only for this cleanup. Keep that token least-privileged, short-lived when possible, and limited to the canonical repository secret-management permission needed to delete this repository secret.
 
 ## Safe GitHub Bootstrap
 

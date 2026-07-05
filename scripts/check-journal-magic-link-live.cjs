@@ -46,6 +46,7 @@ const HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS = [
   ]),
   "com.zenflow.app://login-callback?journalReset=*",
 ];
+const MIN_EMAIL_SEND_RATE_LIMIT_PER_HOUR = 30;
 
 function line(status, message) {
   console.log("[journal-magic-link-live] " + status + " " + message);
@@ -263,6 +264,13 @@ function inspectHostedAuthConfig(config, { requireCustomSmtp = false } = {}) {
 
   if (requireCustomSmtp && !hasCustomSmtp(config)) {
     failures.push("Hosted Supabase custom SMTP is not configured for production Magic Link delivery");
+  }
+
+  if (requireCustomSmtp) {
+    const emailSendRateLimit = Number(getField(config, ["rate_limit_email_sent", "RATE_LIMIT_EMAIL_SENT"]) || 0);
+    if (!Number.isFinite(emailSendRateLimit) || emailSendRateLimit < MIN_EMAIL_SEND_RATE_LIMIT_PER_HOUR) {
+      failures.push("Hosted Supabase email send rate limit is below " + MIN_EMAIL_SEND_RATE_LIMIT_PER_HOUR + " per hour");
+    }
   }
 
   return failures;

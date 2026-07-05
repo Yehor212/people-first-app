@@ -34,6 +34,7 @@ describe("apply-supabase-auth-smtp", () => {
       smtp_user: "resend",
       smtp_pass: "secret-smtp-password",
       smtp_sender_name: "ZenFlow",
+      rate_limit_email_sent: 30,
     });
   });
 
@@ -69,6 +70,37 @@ describe("apply-supabase-auth-smtp", () => {
 
     expect(hasCustomSmtp({ smtp_admin_email: "no-reply@auth.zenflowapp.online" })).toBe(false);
     expect(hasCustomSmtp({ smtp_host: "smtp.resend.com", smtp_admin_email: "no-reply@auth.zenflowapp.online" })).toBe(true);
+  });
+
+  it("verifies the hosted email send rate limit after applying SMTP", async () => {
+    const { applySupabaseAuthSmtp } = require(smtpScript) as {
+      applySupabaseAuthSmtp: (input: {
+        env: Record<string, string>;
+        dryRun: boolean;
+        fetchImpl: typeof fetch;
+      }) => Promise<{ status: string; lines: string[] }>;
+    };
+    let call = 0;
+    const fetchImpl = (async () => {
+      call += 1;
+      return new Response(
+        JSON.stringify(
+          call === 1
+            ? { ok: true }
+            : { smtp_host: "smtp.resend.com", smtp_admin_email: "no-reply@auth.zenflowapp.online", rate_limit_email_sent: 2 },
+        ),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch;
+
+    const result = await applySupabaseAuthSmtp({
+      env: validEnv(),
+      dryRun: false,
+      fetchImpl,
+    });
+
+    expect(result.status).toBe("UNVERIFIED");
+    expect(result.lines.join("\n")).toContain("email send rate limit");
   });
 
   it("dry-runs without network access and without printing SMTP credentials", async () => {
@@ -144,7 +176,7 @@ describe("apply-supabase-auth-smtp", () => {
     const fetchImpl = (async (url: string | URL | Request, init?: RequestInit) => {
       const body = init?.body ? JSON.parse(String(init.body)) : undefined;
       calls.push({ url: String(url), init, body });
-      return new Response(JSON.stringify({ smtp_host: "smtp.resend.com", smtp_admin_email: "no-reply@auth.zenflowapp.online" }), {
+      return new Response(JSON.stringify({ smtp_host: "smtp.resend.com", smtp_admin_email: "no-reply@auth.zenflowapp.online", rate_limit_email_sent: 30 }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
@@ -161,7 +193,7 @@ describe("apply-supabase-auth-smtp", () => {
     expect(calls[0]?.url).toBe("https://api.supabase.com/v1/projects/bwgfslmxmueyglpumkbf/config/auth");
     expect(calls[1]?.url).toBe("https://api.supabase.com/v1/projects/bwgfslmxmueyglpumkbf/config/auth");
     expect(calls[0]?.init?.method).toBe("PATCH");
-    expect(calls[0]?.body).toMatchObject({ smtp_pass: "secret-smtp-password", smtp_user: "resend" });
+    expect(calls[0]?.body).toMatchObject({ smtp_pass: "secret-smtp-password", smtp_user: "resend", rate_limit_email_sent: 30 });
     expect(result.lines.join("\n")).not.toContain("secret-smtp-password");
     expect(result.lines.join("\n")).not.toContain("resend");
   });
