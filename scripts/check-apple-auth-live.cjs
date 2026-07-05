@@ -246,6 +246,15 @@ async function checkAppleAuthLive({ env = process.env, rootDir = process.cwd(), 
     expectedAdditionalClientIds: env.SUPABASE_EXPECTED_APPLE_ADDITIONAL_CLIENT_IDS || "",
   });
   if (failures.length > 0) {
+    if (!required) {
+      return buildResult(
+        "UNVERIFIED",
+        "Hosted Supabase Apple Auth is incomplete, but Apple Auth is not required for this deploy: " + failures.join("; "),
+        0,
+        failures,
+      );
+    }
+
     return buildResult("FAIL", "Hosted Supabase Apple Auth is incomplete: " + failures.join("; "), 1, failures);
   }
 

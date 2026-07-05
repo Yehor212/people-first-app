@@ -76,6 +76,58 @@ describe("check-apple-auth-live", () => {
     expect(result.stdout).toContain("[apple-auth-live] UNVERIFIED");
   });
 
+  it("does not fail deploy when hosted Apple Auth is incomplete but not required", async () => {
+    expect(typeof checkAppleAuthLive).toBe("function");
+
+    const result = await checkAppleAuthLive?.({
+      env: {
+        SUPABASE_ACCESS_TOKEN: "sbp_test_token",
+        SUPABASE_PROJECT_REF: "bwgfslmxmueyglpumkbf",
+        SUPABASE_EXPECTED_APPLE_CLIENT_ID: "com.zenflow.app.web",
+        SUPABASE_EXPECTED_APPLE_ADDITIONAL_CLIENT_IDS: "com.zenflow.app",
+        ZENFLOW_APPLE_AUTH_LIVE_REQUIRED: "false",
+      },
+      fetchImpl: (async () => new Response(JSON.stringify({
+        external_apple_enabled: false,
+        external_apple_client_id: "",
+        external_apple_additional_client_ids: "",
+        uri_allow_list: "",
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })) as typeof fetch,
+    });
+
+    expect(result).toMatchObject({ status: "UNVERIFIED", exitCode: 0 });
+    expect(result?.message).toContain("Apple Auth is not required");
+  });
+
+  it("still fails strict mode when hosted Apple Auth is incomplete", async () => {
+    expect(typeof checkAppleAuthLive).toBe("function");
+
+    const result = await checkAppleAuthLive?.({
+      env: {
+        SUPABASE_ACCESS_TOKEN: "sbp_test_token",
+        SUPABASE_PROJECT_REF: "bwgfslmxmueyglpumkbf",
+        SUPABASE_EXPECTED_APPLE_CLIENT_ID: "com.zenflow.app.web",
+        SUPABASE_EXPECTED_APPLE_ADDITIONAL_CLIENT_IDS: "com.zenflow.app",
+        ZENFLOW_APPLE_AUTH_LIVE_REQUIRED: "true",
+      },
+      fetchImpl: (async () => new Response(JSON.stringify({
+        external_apple_enabled: false,
+        external_apple_client_id: "",
+        external_apple_additional_client_ids: "",
+        uri_allow_list: "",
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })) as typeof fetch,
+    });
+
+    expect(result).toMatchObject({ status: "FAIL", exitCode: 1 });
+    expect(result?.message).toContain("Hosted Supabase Apple Auth is incomplete");
+  });
+
   it("infers project ref from public Supabase URL in env files", () => {
     const result = runReadinessInFixture({
       ".env.local": "VITE_SUPABASE_URL=https://bwgfslmxmueyglpumkbf.supabase.co\n",
