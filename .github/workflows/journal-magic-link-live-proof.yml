@@ -1,0 +1,123 @@
+name: Journal Magic Link Live Proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_live_smtp_apply:
+        description: Type APPLY_JOURNAL_MAGIC_LINK_LIVE_PROOF to apply Supabase Auth SMTP and run the one-time proof.
+        required: true
+        type: string
+      consume_captured_url:
+        description: Consume the one-time captured Supabase verify URL during this proof run.
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: journal-magic-link-live-proof
+  cancel-in-progress: false
+
+jobs:
+  live-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - name: Validate production proof request
+        shell: bash
+        env:
+          CONFIRM_LIVE_SMTP_APPLY: ${{ inputs.confirm_live_smtp_apply }}
+          CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Journal Magic Link live proof must run from main."
+            exit 1
+          fi
+          if [ "$CONFIRM_LIVE_SMTP_APPLY" != "APPLY_JOURNAL_MAGIC_LINK_LIVE_PROOF" ]; then
+            echo "Confirmation phrase did not match."
+            exit 1
+          fi
+          if [ "$CONSUME_CAPTURED_URL" != "true" ]; then
+            echo "Full live proof requires consuming the fresh captured Supabase verify URL."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check journal Magic Link GitHub names before proof
+        env:
+          ZENFLOW_GITHUB_REPO: ${{ github.repository }}
+          ZENFLOW_GITHUB_JOURNAL_MAGIC_LINK_FROM_ENV: true
+          ZENFLOW_GITHUB_JOURNAL_MAGIC_LINK_SECRETS_REQUIRED: true
+          ZENFLOW_GITHUB_SECRET_VITE_SUPABASE_URL_PRESENT: ${{ secrets.VITE_SUPABASE_URL != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_VITE_SUPABASE_PUBLISHABLE_KEY_PRESENT: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_VITE_SUPABASE_ANON_KEY_PRESENT: ${{ secrets.VITE_SUPABASE_ANON_KEY != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_SUPABASE_ACCESS_TOKEN_PRESENT: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL_PRESENT: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL_PRESENT: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_ADMIN_EMAIL_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_ADMIN_EMAIL != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_HOST_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_HOST != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_PORT_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_PORT != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_USER_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_USER != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_PASS_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_PASS != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_SENDER_NAME_PRESENT: ${{ secrets.ZENFLOW_AUTH_SMTP_SENDER_NAME != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_VARIABLE_SUPABASE_PROJECT_REF_PRESENT: ${{ vars.SUPABASE_PROJECT_REF != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_VARIABLE_VITE_JOURNAL_MAGIC_LINK_LIVE_READY_PRESENT: ${{ vars.VITE_JOURNAL_MAGIC_LINK_LIVE_READY != '' && 'true' || 'false' }}
+          ZENFLOW_GITHUB_VARIABLE_ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL_PRESENT: ${{ vars.ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL != '' && 'true' || 'false' }}
+        run: |
+          npm run check:github-journal-magic-link-secrets
+          npm run check:github-journal-magic-link-secrets:pass
+
+      - name: Apply Supabase Auth custom SMTP
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          ZENFLOW_AUTH_SMTP_CONFIRM_PRODUCTION: true
+          ZENFLOW_AUTH_SMTP_ADMIN_EMAIL: ${{ secrets.ZENFLOW_AUTH_SMTP_ADMIN_EMAIL }}
+          ZENFLOW_AUTH_SMTP_HOST: ${{ secrets.ZENFLOW_AUTH_SMTP_HOST }}
+          ZENFLOW_AUTH_SMTP_PORT: ${{ secrets.ZENFLOW_AUTH_SMTP_PORT }}
+          ZENFLOW_AUTH_SMTP_USER: ${{ secrets.ZENFLOW_AUTH_SMTP_USER }}
+          ZENFLOW_AUTH_SMTP_PASS: ${{ secrets.ZENFLOW_AUTH_SMTP_PASS }}
+          ZENFLOW_AUTH_SMTP_SENDER_NAME: ${{ secrets.ZENFLOW_AUTH_SMTP_SENDER_NAME }}
+        run: |
+          npm run check:supabase-auth-smtp
+          npm run apply:supabase-auth-smtp
+
+      - name: Run journal Magic Link full live proof
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          ZENFLOW_JOURNAL_MAGIC_LINK_LIVE_REQUIRED: true
+          ZENFLOW_JOURNAL_MAGIC_LINK_SEND_SMOKE: ${{ inputs.consume_captured_url && 'true' || 'false' }}
+          ZENFLOW_JOURNAL_MAGIC_LINK_ALLOW_REAL_EMAIL: ${{ inputs.consume_captured_url && 'true' || 'false' }}
+          ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL }}
+          ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}
+          ZENFLOW_JOURNAL_MAGIC_LINK_VERIFY_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}
+          ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}
+        run: npm run check:journal-magic-link-live
+
+      - name: Check journal Magic Link proof status packet
+        env:
+          ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_STATUS_REQUIRED: true
+        run: |
+          npm run check:journal-magic-link-proof-status
+          npm run check:journal-magic-link-proof-status:pass

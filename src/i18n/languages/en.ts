@@ -2670,8 +2670,7 @@ export const en: Translations = {
   journalPasswordSetup: "Set Diary Password",
   journalPasswordEnter: "Enter password",
   journalPasswordConfirm: "Confirm your password",
-  journalLockHint:
-    "This password encrypts your diary on this device. Keep it somewhere safe; ZenFlow cannot reveal or recover it.",
+  journalLockHint: "This password encrypts your diary on this device. ZenFlow cannot reveal it; verified email can remove the lock in supported sign-in flows.",
   journalLockHintLocalOnly:
     "This password encrypts your diary on this device. Keep it somewhere safe; ZenFlow cannot reveal or recover it.",
   journalLockTooShort: "Minimum 6 characters",
@@ -2690,9 +2689,10 @@ export const en: Translations = {
   journalResetEnterCode: "Verification link",
   journalResetVerify: "Open link",
   journalResetSuccess: "Diary lock removed",
-  journalResetNoAccount: "Sign in to your account in Settings to use email lock removal",
-  journalResetEncryptedUnavailable:
-    "This diary is encrypted with your password. Email verification cannot remove this lock while encrypted content is locked. Unlock with your password to remove it.",
+  journalResetNoAccount: "Sign in from Account settings to remove this lock by email. Nothing changed; your diary entries remain protected.",
+  journalResetOpenAccountSettings: "Open account settings",
+  journalResetEncryptedUnavailable: "This diary is encrypted with your password. Email verification cannot remove this lock while encrypted content is locked. Nothing changed; your entries remain protected. Unlock with your password to remove it.",
+  journalResetMissingProof: "This email link was not confirmed in this app. Nothing changed; your diary lock is still on and entries remain protected.",
   journalResetCodeWrong: "Verification link could not be confirmed. Try again.",
   journalResetSendFailed: "Failed to send link. Check your connection.",
   journalResetResend: "Resend link",

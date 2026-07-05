@@ -2692,8 +2692,7 @@ export const de: Translations = {
   journalPasswordSetup: "Tagebuch-Passwort festlegen",
   journalPasswordEnter: "Passwort eingeben",
   journalPasswordConfirm: "Passwort bestätigen",
-  journalLockHint:
-    "Dieses Passwort verschlüsselt dein Tagebuch auf diesem Gerät. Bewahre es sicher auf; ZenFlow kann es nicht anzeigen oder wiederherstellen.",
+  journalLockHint: "Dieses Passwort verschlüsselt dein Tagebuch auf diesem Gerät. ZenFlow kann es nicht anzeigen; eine bestätigte E-Mail kann die Sperre in unterstützten Anmeldeabläufen entfernen.",
   journalLockHintLocalOnly:
     "Dieses Passwort verschlüsselt dein Tagebuch auf diesem Gerät. Bewahre es sicher auf; ZenFlow kann es nicht anzeigen oder wiederherstellen.",
   journalLockTooShort: "Mindestens 6 Zeichen",
@@ -2712,10 +2711,10 @@ export const de: Translations = {
   journalResetEnterCode: "Bestätigungslink",
   journalResetVerify: "Link öffnen",
   journalResetSuccess: "Tagebuch-Sperre entfernt",
-  journalResetNoAccount:
-    "Melde dich in den Einstellungen an, um das Entfernen der Sperre per E-Mail zu nutzen",
-  journalResetEncryptedUnavailable:
-    "Dieses Tagebuch ist mit deinem Passwort verschlüsselt. Eine E-Mail-Bestätigung kann diese Sperre nicht entfernen, solange verschlüsselte Inhalte gesperrt sind. Entsperre es mit deinem Passwort, um die Sperre zu entfernen.",
+  journalResetNoAccount: "Melde dich in den Kontoeinstellungen an, um diese Sperre per E-Mail zu entfernen. Es wurde nichts geändert; deine Tagebucheinträge bleiben geschützt.",
+  journalResetOpenAccountSettings: "Kontoeinstellungen öffnen",
+  journalResetEncryptedUnavailable: "Dieses Tagebuch ist mit deinem Passwort verschlüsselt. Die E-Mail-Bestätigung kann diese Sperre nicht entfernen, solange verschlüsselte Inhalte gesperrt sind. Es wurde nichts geändert; deine Einträge bleiben geschützt. Öffne das Tagebuch mit deinem Passwort, um die Sperre zu entfernen.",
+  journalResetMissingProof: "Dieser E-Mail-Link wurde in der App nicht bestätigt. Es wurde nichts geändert; die Tagebuchsperre bleibt aktiv und deine Einträge bleiben geschützt.",
   journalResetCodeWrong: "Der Bestätigungslink konnte nicht bestätigt werden. Versuche es erneut.",
   journalResetSendFailed: "Link konnte nicht gesendet werden. Prüfe deine Verbindung.",
   journalResetResend: "Link erneut senden",

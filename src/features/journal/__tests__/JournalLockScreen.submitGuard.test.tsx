@@ -13,8 +13,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalPasswordWrong: "Wrong password",
       journalBiometricFailed: "Biometric unlock failed. Try again.",
       journalBiometricUnlock: "Unlock with biometrics",
-      journalLockHint:
-        "This password encrypts your diary on this device. Keep it somewhere safe; ZenFlow cannot reveal or recover it.",
       journalLockHintLocalOnly:
         "This password encrypts your diary on this device. Keep it somewhere safe; ZenFlow cannot reveal or recover it.",
       journalPasswordForgot: "Can't open the lock?",
@@ -110,6 +108,21 @@ describe("JournalLockScreen submit guard", () => {
     expect(screen.queryByRole("button", { name: "Can't open the lock?" })).not.toBeInTheDocument();
   });
 
+  it("uses email-aware setup copy when email lock removal is available", () => {
+    render(
+      <JournalLockScreen
+        mode="setup"
+        cooldownRemaining={0}
+        failedAttempts={0}
+        onUnlock={vi.fn()}
+        onSetPassword={vi.fn()}
+        emailLockRemovalAvailable
+      />,
+    );
+
+    expect(screen.getByText(/verified email can remove the lock/i)).toBeInTheDocument();
+    expect(screen.queryByText(/cannot reveal or recover/i)).not.toBeInTheDocument();
+  });
   it("uses recovery-safe setup copy when email lock removal is unavailable", () => {
     render(
       <JournalLockScreen

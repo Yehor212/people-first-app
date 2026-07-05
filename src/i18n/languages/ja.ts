@@ -2630,8 +2630,7 @@ export const ja: Translations = {
   journalPasswordSetup: "日記のパスワードを設定",
   journalPasswordEnter: "パスワードを入力",
   journalPasswordConfirm: "パスワードを確認",
-  journalLockHint:
-    "このパスワードはこの端末上の日記を暗号化します。安全な場所に保管してください。ZenFlow は表示も復元もできません。",
+  journalLockHint: "このパスワードはこのデバイス上の日記を暗号化します。ZenFlow はこのパスワードを表示できません。対応しているサインインでは、確認済みメールでロックを解除できます。",
   journalLockHintLocalOnly:
     "このパスワードはこの端末上の日記を暗号化します。安全な場所に保管してください。ZenFlow は表示も復元もできません。",
   journalLockTooShort: "6文字以上必要です",
@@ -2650,8 +2649,10 @@ export const ja: Translations = {
   journalResetEnterCode: "確認リンク",
   journalResetVerify: "リンクを開く",
   journalResetSuccess: "日記のロックを解除しました",
-  journalResetNoAccount: "メールでロックを解除するには、設定でアカウントにサインインしてください",
-  journalResetEncryptedUnavailable: "この日記はパスワードで暗号化されています。暗号化された内容がロックされている間は、メール確認だけではこのロックを解除できません。解除するにはパスワードで開いてください。",
+  journalResetNoAccount: "アカウント設定でサインインすると、メールでこのロックを解除できます。何も変更されていません。日記の記録は保護されたままです。",
+  journalResetOpenAccountSettings: "アカウント設定を開く",
+  journalResetEncryptedUnavailable: "この日記はパスワードで暗号化されています。暗号化された内容がロックされている間は、メール確認だけではこのロックを解除できません。何も変更されていません。記録は保護されたままです。解除するにはパスワードで開いてください。",
+  journalResetMissingProof: "このメールリンクはアプリで確認されませんでした。何も変更されていません。日記のロックは有効なままで、記録は保護されています。",
   journalResetCodeWrong: "確認リンクを確認できませんでした。もう一度お試しください。",
   journalResetSendFailed: "リンクの送信に失敗しました。接続を確認してください。",
   journalResetResend: "リンクを再送信",

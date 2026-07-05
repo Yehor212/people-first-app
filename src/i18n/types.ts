@@ -2666,7 +2666,9 @@ export interface Translations {
   journalResetVerify: string;
   journalResetSuccess: string;
   journalResetNoAccount: string;
+  journalResetOpenAccountSettings: string;
   journalResetEncryptedUnavailable: string;
+  journalResetMissingProof: string;
   journalResetCodeWrong: string;
   journalResetSendFailed: string;
   journalResetResend: string;
