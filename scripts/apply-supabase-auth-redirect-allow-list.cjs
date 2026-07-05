@@ -11,6 +11,7 @@
 
 const DEFAULT_MANAGEMENT_API_BASE_URL = "https://api.supabase.com/v1";
 const {
+  HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS,
   REQUIRED_JOURNAL_REDIRECT_URLS,
   inspectHostedAuthConfig,
   normalizeCsvList,
@@ -71,6 +72,13 @@ function uniqueUrls(urls) {
   return result;
 }
 
+function compactJournalRedirectUrls(urls) {
+  const redundantExactUrls = new Set(
+    REQUIRED_JOURNAL_REDIRECT_URLS.filter((url) => !HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS.includes(url)),
+  );
+  return urls.filter((url) => !redundantExactUrls.has(url));
+}
+
 function buildRedirectAllowListPatch({ env = process.env, currentConfig = {} } = {}) {
   const errors = [];
   addMissingOrPlaceholder(errors, env, "SUPABASE_ACCESS_TOKEN");
@@ -80,8 +88,8 @@ function buildRedirectAllowListPatch({ env = process.env, currentConfig = {} } =
     errors.push("ZENFLOW_AUTH_REDIRECT_ALLOW_LIST_CONFIRM_PRODUCTION must be true before applying hosted redirect URLs");
   }
 
-  const currentUrls = getHostedRedirectUrls(currentConfig);
-  const mergedUrls = uniqueUrls([...currentUrls, ...REQUIRED_JOURNAL_REDIRECT_URLS]);
+  const currentUrls = compactJournalRedirectUrls(getHostedRedirectUrls(currentConfig));
+  const mergedUrls = uniqueUrls([...currentUrls, ...HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS]);
   const patch = { uri_allow_list: mergedUrls.join(",") };
 
   return {

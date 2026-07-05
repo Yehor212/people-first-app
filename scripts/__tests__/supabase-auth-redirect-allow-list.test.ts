@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
 const redirectScript = "../apply-supabase-auth-redirect-allow-list.cjs";
-const { REQUIRED_JOURNAL_REDIRECT_URLS } = require("../check-journal-magic-link-live.cjs") as {
+const { HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS, REQUIRED_JOURNAL_REDIRECT_URLS } = require("../check-journal-magic-link-live.cjs") as {
+  HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS: string[];
   REQUIRED_JOURNAL_REDIRECT_URLS: string[];
 };
 
@@ -26,7 +27,7 @@ describe("apply-supabase-auth-redirect-allow-list", () => {
     expect(workflow).toContain("npm run apply:supabase-auth-redirect-allow-list");
   });
 
-  it("builds a merge-only uri_allow_list patch without removing existing redirects", () => {
+  it("builds a compact uri_allow_list patch without removing unrelated existing redirects", () => {
     const { buildRedirectAllowListPatch } = require(redirectScript) as {
       buildRedirectAllowListPatch: (input: {
         env: Record<string, string>;
@@ -44,11 +45,13 @@ describe("apply-supabase-auth-redirect-allow-list", () => {
 
     expect(packet.errors).toEqual([]);
     expect(urls).toContain(existingUrl);
-    expect(urls).toContain(alreadyPresent);
-    for (const requiredUrl of REQUIRED_JOURNAL_REDIRECT_URLS) {
-      expect(urls).toContain(requiredUrl);
+    expect(urls).not.toContain(alreadyPresent);
+    for (const hostedUrl of HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS) {
+      expect(urls).toContain(hostedUrl);
     }
+    expect(urls).not.toEqual(expect.arrayContaining(REQUIRED_JOURNAL_REDIRECT_URLS));
     expect(new Set(urls).size).toBe(urls.length);
+    expect(packet.patch.uri_allow_list.length).toBeLessThan(600);
   });
 
   it("requires explicit production confirmation before building a patch", () => {
@@ -101,7 +104,8 @@ describe("apply-supabase-auth-redirect-allow-list", () => {
 
     expect(result.status).toBe("PASS");
     expect(calls.map((call) => call.method)).toEqual(["GET", "PATCH", "GET"]);
-    expect(calls[1]?.body?.uri_allow_list).toContain("https://zenflow.app/diary?nav=v2&navLayout=phone&journalReset=*");
+    expect(calls[1]?.body?.uri_allow_list).toContain("https://zenflow.app/*\\?*journalReset=*");
+    expect(String(calls[1]?.body?.uri_allow_list || "").length).toBeLessThan(600);
     expect(result.lines.join("\n")).not.toContain("sbp_test_1234567890abcdef1234567890abcdef");
   });
 });
