@@ -41,6 +41,7 @@ Use the template at `./0000-template.md`. Numbering is sequential. Filenames: `N
 | 0007 | Telegram-grade runtime reliability | Accepted |
 | 0008 | ZenFlow Desktop EXE Runtime | Accepted |
 | 0009 | Local durable apply policy boundary | Accepted |
+| 0010 | Production Data Integrity Enforcement | Proposed |
 
 ## Relationship to other docs
 

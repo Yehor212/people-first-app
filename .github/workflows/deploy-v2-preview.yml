@@ -54,6 +54,10 @@ jobs:
         working-directory: v2-src
         run: npm ci
 
+      - name: Check production data integrity
+        working-directory: v2-src
+        run: npm run check:production-data-integrity
+
       - name: Verify V2-only shell
         working-directory: v2-src
         run: |
@@ -189,6 +193,10 @@ jobs:
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: npm run build
+
+      - name: Check V2 production bundle data integrity
+        working-directory: v2-src
+        run: npm run check:production-data-integrity:bundle
 
       - name: Prepare V2 GitHub Pages artifact
         working-directory: v2-src

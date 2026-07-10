@@ -112,6 +112,13 @@ function main() {
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "TELEGRAM_GRADE_20_IDEA_LEDGER.md",
     "DESKTOP_EXE_RUNTIME_CONTRACT.md",
+    "PRODUCTION_DATA_INTEGRITY_POLICY.md",
+    "Production data integrity/enforcement",
+    "check:production-data-integrity:diff",
+    "check:production-data-integrity:staged",
+    "check:production-data-integrity:bundle",
+    "config/production-data-integrity-baseline.json",
+    "config/production-data-integrity-waivers.json",
   ]);
 
   requireIncludes("docs/ai/SYNC_CONTRACT.md", [
@@ -165,6 +172,9 @@ function main() {
     "google-play:privacy:artifact-check",
     "post-deploy public privacy smoke",
     "google-play:app-ads:check",
+    "Production data integrity",
+    "PRODUCTION_DATA_INTEGRITY_POLICY.md",
+    "user_metadata.zenflow_sync_smoke",
   ]);
 
   requireIncludes("docs/RELEASE_CHECKLIST.md", [
@@ -174,6 +184,11 @@ function main() {
     "TELEGRAM_GRADE_SYNC_100_PERCENT_CLOSURE.md",
     "smoke:telegram-sync-drill",
     "telegram-sync-drill",
+    "Production Data Integrity Gate",
+    "check:production-data-integrity:diff",
+    "check:production-data-integrity:staged",
+    "check:production-data-integrity:bundle",
+    "user_metadata.zenflow_sync_smoke",
   ]);
 
   requireIncludes("package.json", [
@@ -183,6 +198,8 @@ function main() {
     "npm run check:task-completion",
     "npm run check:sync-contract",
     "npm run check:canonical-orbs",
+    '"check:production-data-integrity": "node scripts/check-production-data-integrity.cjs --all"',
+    '"check:production-data-integrity:bundle": "node scripts/check-production-data-integrity.cjs --all --bundle dist"',
   ]);
 
   requireIncludes(".github/workflows/deploy.yml", [
@@ -194,6 +211,9 @@ function main() {
     "Run Telegram sync drill",
     "Check staged public privacy policy",
     "Check deployed public privacy policy",
+    "Check production data integrity",
+    "Check production bundle data integrity",
+    "npm run check:production-data-integrity:bundle",
   ]);
 
   requireIncludes("scripts/check-sync-contract.cjs", [

@@ -2226,8 +2226,6 @@ export const uk: Translations = {
   notificationTestSuccess: "Тестове сповіщення надіслано! Перевірте через 5 секунд.",
   notificationTestFailed: "Не вдалося надіслати. Перевірте системні налаштування сповіщень.",
   notificationTestError: "Помилка",
-  demoModeEnabled: "Демо-режим увімкнено",
-  demoModeDisabled: "Демо-режим вимкнено",
 
   // Insight Card Details
   insightConfidence: "Впевненість",

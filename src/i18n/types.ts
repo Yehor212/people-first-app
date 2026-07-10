@@ -2241,9 +2241,6 @@ export interface Translations {
   notificationTestFailed: string;
   notificationTestError: string;
 
-  // Demo mode
-  demoModeEnabled: string;
-  demoModeDisabled: string;
 
   // Insight Card Details (v1.3.0)
   insightConfidence: string;

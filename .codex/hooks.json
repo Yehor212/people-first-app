@@ -14,19 +14,47 @@
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/no-ai-template-gate.cjs\"",
             "timeout": 5,
             "statusMessage": "Checking no-AI-template policy"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/production-data-integrity-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
+            "timeout": 5,
+            "statusMessage": "Routing production data integrity"
           }
         ]
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "apply_patch|functions.apply_patch|Edit|Write|MultiEdit",
+        "matcher": "Bash|apply_patch|functions.apply_patch|Edit|Write|MultiEdit",
         "hooks": [
           {
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/skill-router-gate.cjs\"",
             "timeout": 5,
             "statusMessage": "Checking skill routing"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/production-data-integrity-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
+            "timeout": 5,
+            "statusMessage": "Guarding production data integrity"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|apply_patch|functions.apply_patch|Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/production-data-integrity-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
+            "timeout": 20,
+            "statusMessage": "Checking production data diff"
           }
         ]
       }
@@ -39,6 +67,13 @@
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/no-ai-template-gate.cjs\"",
             "timeout": 5,
             "statusMessage": "Checking no-AI-template output"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/production-data-integrity-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
+            "timeout": 20,
+            "statusMessage": "Final production data integrity check"
           }
         ]
       }
@@ -52,6 +87,13 @@
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/no-ai-template-gate.cjs\"",
             "timeout": 5,
             "statusMessage": "Injecting no-AI-template subagent contract"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/production-data-integrity-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
+            "timeout": 5,
+            "statusMessage": "Injecting production data evidence contract"
           }
         ]
       }
@@ -65,6 +107,13 @@
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/no-ai-template-gate.cjs\"",
             "timeout": 5,
             "statusMessage": "Checking no-AI-template subagent output"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/production-data-integrity-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
+            "timeout": 5,
+            "statusMessage": "Checking production data evidence packet"
           }
         ]
       }

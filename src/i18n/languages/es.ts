@@ -2243,8 +2243,6 @@ export const es: Translations = {
   notificationTestSuccess: "¡Notificación de prueba enviada! Comprueba en 5 segundos.",
   notificationTestFailed: "No se pudo enviar. Comprueba los ajustes de notificaciones del sistema.",
   notificationTestError: "Error de prueba",
-  demoModeEnabled: "Modo demo activado",
-  demoModeDisabled: "Modo demo desactivado",
 
   // Insight Card Details
   insightConfidence: "Confianza",

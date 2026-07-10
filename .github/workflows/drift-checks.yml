@@ -28,6 +28,7 @@ on:
       - '.github/CODEOWNERS'
       - '.github/PULL_REQUEST_TEMPLATE.md'
       - '.claude/**'
+      - '.codex/**'
       - 'tools/telegram-control/**'
       - 'tools/zenflow-context/**'
       - 'tools/ruflow-plus/**'
@@ -48,6 +49,10 @@ on:
       - 'scripts/check-microsoft-store-msix-contract.cjs'
       - 'scripts/create-microsoft-store-msix.cjs'
       - 'scripts/check-no-ai-templates.cjs'
+      - 'scripts/check-production-data-integrity.cjs'
+      - 'scripts/production-data-integrity/**'
+      - 'scripts/__tests__/production-data-integrity*.test.ts'
+      - 'config/production-data-integrity*.json'
       - 'scripts/check-app-audio-assets.cjs'
       - 'scripts/__tests__/check-app-audio-assets.test.ts'
       - 'scripts/__tests__/no-ai-templates-policy.test.ts'
@@ -59,6 +64,7 @@ on:
       - 'scripts/check-oss-licenses.cjs'
       - 'scripts/a11y-icons-audit.cjs'
       - '.github/workflows/drift-checks.yml'
+      - '.github/workflows/production-data-integrity.yml'
       - '.github/workflows/telegram-control.yml'
   workflow_dispatch:
 
@@ -114,6 +120,9 @@ jobs:
           - name: no-ai-templates
             cmd: npm run check:no-ai-templates
             fix: restore docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md plus AGENTS, PR template, drift, agent-context, package, and checker wiring
+          - name: production-data-integrity
+            cmd: npm run check:production-data-integrity
+            fix: restore the AST/reachability checker, exact ledgers, hook, CI workflow, policy, tests, and production demo/smoke boundaries
           - name: app-audio
             cmd: npm run check:app-audio
             fix: regenerate non-Hyperfocus audio, update provenance, and keep app audio inventories in sync

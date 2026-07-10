@@ -1,0 +1,505 @@
+{
+  "$schema": "../docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md",
+  "schemaVersion": "1.0.0",
+  "entrypoints": [
+    "src/main.tsx",
+    "src/sw.ts",
+    "src/runtime-perf-bootstrap.js",
+    "vite.config.ts",
+    "capacitor.config.ts",
+    "src-tauri/src/main.rs",
+    "src-tauri/build.rs",
+    "public/404.html",
+    "public/offline.html",
+    "supabase/functions/*/index.ts",
+    "scripts/smoke-sync-account.cjs"
+  ],
+  "scanRoots": [
+    "src",
+    "supabase/functions",
+    "supabase/migrations",
+    "supabase/sql",
+    "src-tauri/src",
+    "src-tauri/build.rs",
+    "android/app/src/main/java",
+    "ios/App/App",
+    "ios/App/CapApp-SPM/Sources",
+    "public",
+    "docs/release",
+    "dist"
+  ],
+  "productionPathGlobs": [
+    "supabase/functions/**",
+    "supabase/migrations/**",
+    "supabase/sql/**",
+    "src-tauri/src/**",
+    "src-tauri/build.rs",
+    "android/app/src/main/java/**",
+    "ios/App/App/*.swift",
+    "ios/App/App/**/*.swift",
+    "ios/App/CapApp-SPM/Sources/**/*.swift",
+    "vite.config.ts",
+    "capacitor.config.ts",
+    "public/**",
+    "scripts/smoke-sync-account.cjs"
+  ],
+  "testPathGlobs": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.test.js",
+    "**/*.test.jsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/*.spec.js",
+    "**/*.spec.jsx",
+    "**/__tests__/**",
+    "**/test/**",
+    "test/**",
+    "e2e/**",
+    "src/test/**",
+    "scripts/__tests__/**",
+    "tools/**/test/**",
+    "**/fixtures/**"
+  ],
+  "devPathGlobs": [
+    "src/pages/__dev/**",
+    "**/*.stories.ts",
+    "**/*.stories.tsx"
+  ],
+  "scanExcludeGlobs": [
+    "ios/App/App/public/**",
+    "ios/App/App/Assets.xcassets/**"
+  ],
+  "generatedPathGlobs": [
+    "src/generated/**",
+    "dist/**",
+    "output/**"
+  ],
+  "documentationPathGlobs": [
+    "docs/**",
+    "README.md"
+  ],
+  "enforcementPathGlobs": [
+    "config/production-data-integrity*.json",
+    "scripts/check-production-data-integrity.cjs",
+    "scripts/production-data-integrity/**",
+    "scripts/__tests__/production-data-integrity*.test.ts",
+    ".codex/hooks/production-data-integrity-gate.cjs",
+    ".codex/hooks.json",
+    ".github/workflows/production-data-integrity.yml",
+    ".github/workflows/deploy.yml",
+    ".github/workflows/deploy-v2-preview.yml",
+    ".github/workflows/desktop-release.yml",
+    ".github/workflows/drift-checks.yml",
+    ".github/PULL_REQUEST_TEMPLATE.md",
+    ".github/CODEOWNERS",
+    "AGENTS.md",
+    "package.json",
+    "scripts/check-agent-context.mjs",
+    "scripts/check-enforcement-health.ts",
+    "scripts/check-task-completion-protocol.cjs",
+    "docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md",
+    "docs/ai/TASK_COMPLETION_PROTOCOL.md",
+    "docs/adr/0010-production-data-integrity-enforcement.md",
+    "docs/DEFINITION_OF_DONE.md",
+    "docs/RELEASE_CHECKLIST.md"
+  ],
+  "aliases": {
+    "@": "src"
+  },
+  "sourceExtensions": [
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".cjs",
+    ".json",
+    ".css",
+    ".frag",
+    ".vert",
+    ".svg"
+  ],
+  "auditedNonLiteralDynamicImports": [
+    "src/lib/adController.ts"
+  ],
+  "domainFields": [
+    "id",
+    "userId",
+    "user_id",
+    "mood",
+    "note",
+    "content",
+    "text",
+    "date",
+    "timestamp",
+    "createdAt",
+    "created_at",
+    "completedAt",
+    "completed_at",
+    "habitId",
+    "habit_id",
+    "entries",
+    "duration",
+    "focusMinutes",
+    "gratitudeEntries",
+    "journalEntries"
+  ],
+  "historySignalFields": [
+    "mood",
+    "note",
+    "content",
+    "text",
+    "entries",
+    "duration",
+    "habitId",
+    "habit_id"
+  ],
+  "timeSignalFields": [
+    "date",
+    "timestamp",
+    "createdAt",
+    "created_at",
+    "completedAt",
+    "completed_at",
+    "verifiedAt"
+  ],
+  "syntheticMarkers": [
+    "demo",
+    "fixture",
+    "mock",
+    "fake",
+    "sample",
+    "synthetic",
+    "test-user",
+    "test_data"
+  ],
+  "persistenceSinkNames": [
+    "add",
+    "put",
+    "bulkAdd",
+    "bulkPut",
+    "set",
+    "setState",
+    "enqueue",
+    "upsert",
+    "insert",
+    "update",
+    "storageSetRaw",
+    "importBackup",
+    "writeEvent",
+    "writeEventAndBroadcast",
+    "writeQueuedEventAndBroadcast"
+  ],
+  "externalSinkMarkers": [
+    "analytics",
+    "track",
+    "capture",
+    "export",
+    "backup",
+    "share",
+    "download"
+  ],
+  "userDataTables": [
+    "moods",
+    "habits",
+    "habit_completions",
+    "focus_sessions",
+    "gratitude_entries",
+    "journal_entries",
+    "journal_photos",
+    "journal_audio",
+    "user_backups",
+    "sync_events"
+  ],
+  "operationalSeedTables": [
+    "app_config",
+    "design_flags",
+    "storage.buckets",
+    "sync_seq_counters",
+    "sync_tombstones"
+  ],
+  "releaseEvidenceGlobs": [
+    "docs/release/**/*.json",
+    "output/*.json",
+    "output/*/*readiness*.json",
+    "output/release/**/*.json",
+    "artifacts/**/*.json"
+  ],
+  "releaseEvidenceRoots": [
+    "docs/release",
+    "output",
+    "artifacts"
+  ],
+  "releaseEvidenceExcludeGlobs": [
+    "output/**/node_modules/**",
+    "output/private/**",
+    "output/security/**",
+    "output/tooling/**",
+    "output/playwright/**",
+    "output/xcodebuild-*/**"
+  ],
+  "releaseEvidenceStatusFields": [
+    "verificationStatus",
+    "readinessStatus",
+    "proofStatus",
+    "status"
+  ],
+  "bundleDirectories": [
+    "dist"
+  ],
+  "bundleSentinels": [
+    "ZENFLOW_TEST_FIXTURE_SENTINEL_7F4C9A2E"
+  ],
+  "baselineFile": "config/production-data-integrity-baseline.json",
+  "waiversFile": "config/production-data-integrity-waivers.json",
+  "limits": {
+    "maxSourceFileBytes": 2097152,
+    "maxBundleFileBytes": 8388608,
+    "maxFiles": 10000,
+    "maxImportDepth": 256,
+    "maxEvidenceAgeHours": 168,
+    "maxEvidenceFileBytes": 8388608
+  },
+  "rules": {
+    "PDI001": { "name": "TEST_ARTIFACT_REACHABLE_FROM_PRODUCTION", "severity": "error", "confidence": "high" },
+    "PDI002": { "name": "SYNTHETIC_USER_HISTORY_IN_PRODUCTION", "severity": "error", "confidence": "high" },
+    "PDI003": { "name": "DECEPTIVE_ERROR_FALLBACK", "severity": "error", "confidence": "high" },
+    "PDI004": { "name": "SYNTHETIC_DATA_TO_PERSISTENCE_OR_SYNC", "severity": "error", "confidence": "high" },
+    "PDI005": { "name": "STUBBED_PRODUCTION_SUCCESS", "severity": "error", "confidence": "high" },
+    "PDI006": { "name": "UNSAFE_PRODUCTION_DEMO_MODE", "severity": "error", "confidence": "high" },
+    "PDI007": { "name": "SYNTHETIC_DATA_TO_ANALYTICS_EXPORT_OR_SHARE", "severity": "error", "confidence": "high" },
+    "PDI008": { "name": "PRODUCTION_MIGRATION_SEEDS_USER_DATA", "severity": "error", "confidence": "high" },
+    "PDI009": { "name": "PRODUCTION_BUNDLE_CONTAINS_TEST_FIXTURE", "severity": "error", "confidence": "high" },
+    "PDI010": { "name": "ENFORCEMENT_TAMPERING", "severity": "error", "confidence": "high" },
+    "PDI011": { "name": "FAKE_RELEASE_OR_VERIFICATION_EVIDENCE", "severity": "error", "confidence": "high" },
+    "PDI012": { "name": "UNCLASSIFIED_SYNTHETIC_SOURCE", "severity": "warning", "confidence": "medium" }
+  },
+  "repositoryContracts": [
+    {
+      "path": "config/production-data-integrity.json",
+      "requiredStrings": [
+        "ZENFLOW_TEST_FIXTURE_SENTINEL_7F4C9A2E",
+        "android/app/src/main/java",
+        "ios/App/App",
+        "ios/App/CapApp-SPM/Sources",
+        "src-tauri/build.rs",
+        "public/**",
+        "output/*/*readiness*.json",
+        "releaseEvidenceRoots",
+        "maxEvidenceAgeHours"
+      ],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "config/production-data-integrity-baseline.json",
+      "requiredStrings": ["schemaVersion", "entries"],
+      "forbiddenStrings": ["allowedViolations"]
+    },
+    {
+      "path": "config/production-data-integrity-waivers.json",
+      "requiredStrings": ["schemaVersion", "waivers"],
+      "forbiddenStrings": ["approvedBy\": \"codex", "approvedBy\": \"agent"]
+    },
+    {
+      "path": "scripts/production-data-integrity/core.cjs",
+      "requiredStrings": [
+        "REQUIRED_CONFIG_VALUES",
+        "PINNED_CONFIG_DIGESTS",
+        "materializeIndex",
+        "TextDecoder",
+        "assertExistingRealpathInsideRoot",
+        "findEvidenceStatuses",
+        "EVIDENCE_PROOF_KEYS",
+        "maxEvidenceAgeHours",
+        "explicit bundle directory is missing",
+        "entry.ruleId === \"PDI010\""
+      ],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "scripts/check-production-data-integrity.cjs",
+      "requiredStrings": [
+        "runIntegrityCheck",
+        "function parseArguments",
+        "report.status === \"FAIL\" ? 1 : 0",
+        "if (require.main === module) process.exitCode = main()"
+      ],
+      "forbiddenStrings": ["process.exit(0)", "integrity ok"]
+    },
+    {
+      "path": "package.json",
+      "requiredStrings": [
+        "node scripts/check-production-data-integrity.cjs --all",
+        "node scripts/check-production-data-integrity.cjs --diff",
+        "node scripts/check-production-data-integrity.cjs --staged",
+        "node scripts/check-production-data-integrity.cjs --all --bundle dist",
+        "scripts/__tests__/production-data-integrity-workflow.test.ts"
+      ],
+      "forbiddenStrings": [
+        "check:production-data-integrity || true"
+      ]
+    },
+    {
+      "path": ".github/workflows/production-data-integrity.yml",
+      "requiredStrings": [
+        "name: production-data-integrity",
+        "pull_request:",
+        "merge_group:",
+        "workflow_dispatch:",
+        "contents: read",
+        "npx vitest run --configLoader runner scripts/__tests__/production-data-integrity.test.ts",
+        "public/pdi-ci-source-canary.json",
+        "dist/assets/pdi-ci-bundle-canary.txt",
+        "node scripts/check-production-data-integrity.cjs --all",
+        "node scripts/check-production-data-integrity.cjs --all --bundle dist",
+        "PDI002",
+        "PDI009"
+      ],
+      "forbiddenStrings": [
+        "continue-on-error:",
+        "|| true",
+        "pull_request_target:",
+        "paths:"
+      ]
+    },
+    {
+      "path": ".codex/hooks.json",
+      "requiredStrings": [
+        "production-data-integrity-gate.cjs",
+        "PostToolUse",
+        "SubagentStop",
+        "Stop"
+      ],
+      "forbiddenStrings": []
+    },
+    {
+      "path": ".codex/hooks/production-data-integrity-gate.cjs",
+      "requiredStrings": [
+        "PRODUCTION DATA INTEGRITY GATE",
+        "resolveRepositoryRoot",
+        "stop_hook_active",
+        "SubagentStop",
+        "process.exit(2)"
+      ],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "scripts/__tests__/production-data-integrity.test.ts",
+      "requiredStrings": ["PDI001", "PDI012", "ZENFLOW_TEST_FIXTURE_SENTINEL_7F4C9A2E", "reads staged content from the Git index", "symlinked or oversized control JSON", "current exact HEAD", "pins code-owned semantic config field", "ancestor directory symlink", "verified zero-count failure fallback", "empty explicit bundles", "binds release proof to its positive claim", "CapApp Swift package history", "allows type-only re-exports", "mixed runtime/type re-export"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "scripts/__tests__/production-data-integrity-hook.test.ts",
+      "requiredStrings": ["stop_hook_active", "malformed stdin", "SubagentStop"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "scripts/__tests__/production-data-integrity-workflow.test.ts",
+      "requiredStrings": ["continue-on-error", "pull_request_target", "production-data-integrity", "pdi-ci-source-canary", "pdi-ci-bundle-canary", "result.status !== 1"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md",
+      "requiredStrings": ["Allowed test doubles", "Demo mode contract", "Known limitations", "Separation of duties"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "docs/adr/0010-production-data-integrity-enforcement.md",
+      "requiredStrings": ["Considered Alternatives", "Source Evidence", "Residual risks", "Rejected shortcuts"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "AGENTS.md",
+      "requiredStrings": ["Production Data Integrity Gate", "check:production-data-integrity"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "requiredStrings": ["Production data integrity", "baseline", "waiver"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": ".github/CODEOWNERS",
+      "requiredStrings": ["production-data-integrity"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": ".github/workflows/drift-checks.yml",
+      "requiredStrings": ["production-data-integrity", "npm run check:production-data-integrity"],
+      "forbiddenStrings": ["check:production-data-integrity || true"]
+    },
+    {
+      "path": ".github/workflows/deploy.yml",
+      "requiredStrings": [
+        "Check production data integrity",
+        "Check production data integrity for Android",
+        "Check production data integrity for iOS",
+        "Check production bundle data integrity",
+        "Check Android web bundle data integrity",
+        "Check iOS web bundle data integrity"
+      ],
+      "forbiddenStrings": ["check:production-data-integrity || true"]
+    },
+    {
+      "path": ".github/workflows/deploy-v2-preview.yml",
+      "requiredStrings": ["Check production data integrity", "Check V2 production bundle data integrity"],
+      "forbiddenStrings": ["check:production-data-integrity || true"]
+    },
+    {
+      "path": ".github/workflows/desktop-release.yml",
+      "requiredStrings": ["Check production data integrity", "Check desktop web bundle data integrity"],
+      "forbiddenStrings": ["check:production-data-integrity || true"]
+    },
+    {
+      "path": "scripts/check-agent-context.mjs",
+      "requiredStrings": ["assertProductionDataIntegrityContract", "PRODUCTION_DATA_INTEGRITY_POLICY.md"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "scripts/check-enforcement-health.ts",
+      "requiredStrings": ["checkProductionDataIntegrity", "production-data-integrity-gate.cjs"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "scripts/check-task-completion-protocol.cjs",
+      "requiredStrings": ["Production data integrity/enforcement", "check:production-data-integrity:bundle"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "docs/ai/TASK_COMPLETION_PROTOCOL.md",
+      "requiredStrings": ["Production data integrity/enforcement", "config/production-data-integrity-baseline.json", "Remote CI and branch protection remain `UNVERIFIED`"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "docs/DEFINITION_OF_DONE.md",
+      "requiredStrings": ["Production data integrity contract", "user_metadata.zenflow_sync_smoke"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "docs/RELEASE_CHECKLIST.md",
+      "requiredStrings": ["Production Data Integrity Gate", "check:production-data-integrity:staged", "user_metadata.zenflow_sync_smoke"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "scripts/smoke-sync-account.cjs",
+      "requiredStrings": ["runProvisionedSmoke", "user?.user_metadata?.zenflow_sync_smoke !== true", "authenticated account is not provisioned for sync smoke writes", "if (require.main === module)"],
+      "forbiddenStrings": ["PASS - userId="]
+    },
+    {
+      "path": "scripts/__tests__/smoke-sync-account-boundary.test.ts",
+      "requiredStrings": ["user_metadata?.zenflow_sync_smoke !== true", "firstDurableWrite", "runProvisionedSmoke", "unmarkedFrom", "toHaveBeenCalledWith(\"sync_events\")"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "src/lib/syncIntegrity.ts",
+      "requiredStrings": ["status: \"unavailable\"", "failureCode: \"count-read-failed\"", "Verification unavailable"],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "src/lib/__tests__/syncIntegrity.test.ts",
+      "requiredStrings": ["instead of fabricated zero counts", "Data consistent:", "status: \"unavailable\""],
+      "forbiddenStrings": []
+    }
+  ]
+}

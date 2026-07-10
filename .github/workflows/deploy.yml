@@ -66,6 +66,9 @@ jobs:
       - name: Install deps
         run: npm ci
 
+      - name: Check production data integrity
+        run: npm run check:production-data-integrity
+
       - name: Security audit
         run: npm audit --audit-level=high
 
@@ -247,6 +250,9 @@ jobs:
           VITE_DESKTOP_SIGNED_RELEASE_SHA256: ${{ vars.VITE_DESKTOP_SIGNED_RELEASE_SHA256 }}
           VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE: ${{ vars.VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE }}
         run: npm run build
+
+      - name: Check production bundle data integrity
+        run: npm run check:production-data-integrity:bundle
 
       - name: Check Sentry public artifacts
         run: npm run check:sentry-artifacts
@@ -455,6 +461,9 @@ jobs:
       - name: Install deps
         run: npm ci
 
+      - name: Check production data integrity for Android
+        run: npm run check:production-data-integrity
+
       - name: Check Sentry readiness for Android web assets
         if: github.event_name != 'pull_request'
         env:
@@ -489,6 +498,9 @@ jobs:
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: npm run build:android
+
+      - name: Check Android web bundle data integrity
+        run: npm run check:production-data-integrity:bundle
 
       - name: Check Sentry public artifacts for Android web assets
         run: npm run check:sentry-artifacts
@@ -546,6 +558,9 @@ jobs:
       - name: Install deps
         run: npm ci
 
+      - name: Check production data integrity for iOS
+        run: npm run check:production-data-integrity
+
       - name: Check Sentry readiness for iOS web assets
         if: github.event_name != 'pull_request'
         env:
@@ -580,6 +595,9 @@ jobs:
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: npm run build:ios
+
+      - name: Check iOS web bundle data integrity
+        run: npm run check:production-data-integrity:bundle
 
       - name: Check Sentry public artifacts for iOS web assets
         run: npm run check:sentry-artifacts

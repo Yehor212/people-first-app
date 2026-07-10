@@ -140,6 +140,7 @@ docs/visual-aesthetic.md
 *.preview.frag
 
 # Tauri desktop build artifacts
+build/
 src-tauri/target/
 src-tauri/gen/schemas/* 2.json
 src-tauri/gen/schemas/macOS-schema.json
@@ -172,6 +173,7 @@ src-tauri/gen/schemas/macOS-schema.json
 .last-verification
 .stop-block-count
 .claude-md-unlock
+.Codex-md-unlock
 .evolve-done
 .snyk-pending
 .snyk-scan-done

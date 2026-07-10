@@ -1997,8 +1997,6 @@ const arabicOverrides: Partial<Translations> = {
   notificationTestSuccess: "تم إرسال إشعار تجريبي! تحقق خلال 5 ثوانٍ.",
   notificationTestFailed: "فشل الإرسال. تحقق من إعدادات إشعارات النظام.",
   notificationTestError: "خطأ",
-  demoModeEnabled: "تم تفعيل الوضع التجريبي",
-  demoModeDisabled: "تم تعطيل الوضع التجريبي",
 
   // Insight Details
   insightConfidence: "الثقة",

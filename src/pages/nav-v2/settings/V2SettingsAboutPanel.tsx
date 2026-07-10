@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   Download,
   ExternalLink,
@@ -18,7 +18,6 @@ import { DopamineSettingsComponent } from "@/components/DopamineSettings";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { LegalModal } from "@/components/LegalModal";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useDemoMode } from "@/hooks/useDemoMode";
 import { FONT_SCALE_LEVELS, useFontScale } from "@/hooks/useFontScale";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -33,7 +32,6 @@ import {
   SettingsButtonGrid,
   SettingsFieldHeader,
   SettingsInset,
-  SettingsInsetButton,
   SettingsStatus,
 } from "./components/V2SettingsControlPrimitives";
 
@@ -51,7 +49,6 @@ export function AboutPanel() {
   const { t, language } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const { canInstall, isInstalled, promptInstall } = usePwaInstall();
-  const { toggleDemoMode } = useDemoMode();
   const { scale, setFontScale } = useFontScale();
   const [showFeedback, setShowFeedback] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
@@ -63,26 +60,9 @@ export function AboutPanel() {
   >("idle");
   const [updateState, setUpdateState] = useState<UpdateState | null>(null);
   const [isRestartingUpdate, setIsRestartingUpdate] = useState(false);
-  const versionTapCount = useRef(0);
-  const versionTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentFontIndex = FONT_SCALE_LEVELS.indexOf(scale);
 
   useScrollLock(showFeedback || showChangelog || showLegal || showDopamineSettings);
-
-  const handleVersionTap = () => {
-    versionTapCount.current += 1;
-    if (versionTapTimer.current) {
-      clearTimeout(versionTapTimer.current);
-    }
-    if (versionTapCount.current >= 5) {
-      versionTapCount.current = 0;
-      toggleDemoMode();
-      return;
-    }
-    versionTapTimer.current = setTimeout(() => {
-      versionTapCount.current = 0;
-    }, 2000);
-  };
 
   const handleCheckForUpdates = async () => {
     setUpdateCheckStatus("checking");
@@ -127,23 +107,14 @@ export function AboutPanel() {
         description={`ZenFlow ${APP_VERSION}`}
         testId="settings-v2-panel-about"
       >
-        <SettingsInsetButton
-          onClick={handleVersionTap}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              handleVersionTap();
-            }
-          }}
-        >
+        <div className="w-full rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.58)] bg-[hsl(var(--settings-v2-shell)/0.56)] p-4 text-center shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.42)]">
           <span className="block text-sm font-semibold text-foreground">
             {tx.appName || "ZenFlow"} v{APP_VERSION}
           </span>
           <span className="mt-1 block text-xs text-muted-foreground">
             {tx.tagline || "Mood, habits, and journal in one calm flow."}
           </span>
-        </SettingsInsetButton>
-
+        </div>
 
         <SettingsInset>
           <SettingsFieldHeader

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
   Sparkles,
   History,
@@ -20,7 +20,6 @@ import { APP_VERSION } from "@/lib/appVersion";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { ChangelogPanel } from "@/components/ChangelogPanel";
 import { LegalModal } from "@/components/LegalModal";
-import { useDemoMode } from "@/hooks/useDemoMode";
 import { useScrollLock } from "@/hooks/useScrollLock";
 
 export function AboutSection() {
@@ -35,28 +34,6 @@ export function AboutSection() {
     "idle" | "checking" | "available" | "latest" | "error"
   >("idle");
   const [updateState, setUpdateState] = useState<UpdateState | null>(null);
-
-  const { toggleDemoMode } = useDemoMode();
-  const versionTapCount = useRef(0);
-  const versionTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleVersionTap = () => {
-    versionTapCount.current += 1;
-
-    if (versionTapTimer.current) {
-      clearTimeout(versionTapTimer.current);
-    }
-
-    if (versionTapCount.current >= 5) {
-      versionTapCount.current = 0;
-      toggleDemoMode();
-      return;
-    }
-
-    versionTapTimer.current = setTimeout(() => {
-      versionTapCount.current = 0;
-    }, 2000);
-  };
 
   const handleCheckForUpdates = async () => {
     setUpdateCheckStatus("checking");
@@ -102,16 +79,7 @@ export function AboutSection() {
             {/* Version Info */}
             <div className="text-center text-muted-foreground py-2">
               <span
-                className="block text-sm font-medium text-foreground select-none cursor-default"
-                onClick={handleVersionTap}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleVersionTap();
-                  }
-                }}
+                className="block text-sm font-medium text-foreground"
               >
                 {t.appName} v{APP_VERSION}
               </span>

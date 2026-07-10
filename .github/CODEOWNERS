@@ -18,6 +18,13 @@ CONTRIBUTING.md @Yehor212
 docs/ai/ @Yehor212
 docs/adr/ @Yehor212
 scripts/ @Yehor212
+scripts/check-production-data-integrity.cjs @Yehor212
+scripts/production-data-integrity/ @Yehor212
+config/production-data-integrity*.json @Yehor212
+.codex/hooks/production-data-integrity-gate.cjs @Yehor212
+.github/workflows/production-data-integrity.yml @Yehor212
+docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md @Yehor212
+docs/adr/0010-production-data-integrity-enforcement.md @Yehor212
 tools/zenflow-context/ @Yehor212
 tools/ruflow-plus/ @Yehor212
 

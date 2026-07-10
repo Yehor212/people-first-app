@@ -12,6 +12,30 @@ Use this list before publishing on stores or web.
 - Run `npm run check:best-practices` before release claims that touch agent
   rules, completion docs, release docs, CI/drift gates, or quality-gate wiring.
 
+## Production Data Integrity Gate
+
+- Read `docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md` and run
+  `npm run check:production-data-integrity` before any release build.
+- Run the focused PDI checker, hook, and workflow contract tests; then run
+  `npm run check:production-data-integrity:diff` and
+  `npm run check:production-data-integrity:staged` for the final tree.
+- Build the actual Web, Android, iOS, or Desktop release assets, then run
+  `npm run check:production-data-integrity:bundle` against the resulting
+  `dist` bundle before packaging or upload.
+- Review `config/production-data-integrity-baseline.json` and
+  `config/production-data-integrity-waivers.json`. Entries must match one exact
+  stable fingerprint; waivers also require an owner, reason, narrow scope, and
+  non-expired expiry. Count-based or wildcard suppression is forbidden.
+- Production demo mode requires explicit labeling, isolation from real user
+  history, no persistence/sync/analytics/export, a visible exit/reset, and a
+  production-contract test. Otherwise it must not ship.
+- `npm run smoke:sync-account` may write only through a dedicated account with
+  `user_metadata.zenflow_sync_smoke === true`; its output must not reveal an
+  account id, token, email, journal text, habit name, or other PII.
+- Any high-confidence PDI finding, checker internal/configuration error, stale
+  baseline, expired waiver, or bundle sentinel blocks release. Remote CI and
+  branch-protection state is `UNVERIFIED` until checked on the final commit.
+
 ## Versioning
 - Update `package.json` version.
 - Update in-app version label if shown.

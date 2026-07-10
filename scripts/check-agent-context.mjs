@@ -143,6 +143,7 @@ function assertAgentChangeGovernance(agents) {
   assertFreeRagPreflightContract(agents);
   assertBestPracticesGateContract(agents);
   assertNoAiTemplatesGateContract(agents);
+  assertProductionDataIntegrityContract(agents);
 
   const governance = assertGovernanceFile("docs/ai/AGENT_CHANGE_GOVERNANCE.md");
   if (governance) {
@@ -515,6 +516,185 @@ function assertNoAiTemplatesGateContract(agents) {
         fail(`scripts/__tests__/no-ai-template-hook.test.ts must cover ${marker}`);
       }
     }
+  }
+}
+
+function assertProductionDataIntegrityContract(agents) {
+  if (agents) {
+    if (!hasHeading(agents, "Production Data Integrity Gate")) {
+      fail('AGENTS.md is missing required heading "Production Data Integrity Gate"');
+    }
+    for (const marker of [
+      "docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md",
+      "npm run check:production-data-integrity",
+      "npm run check:production-data-integrity:diff",
+      "npm run check:production-data-integrity:staged",
+      "npm run check:production-data-integrity:bundle",
+      "zenflow_sync_smoke",
+      "Internal/config checker errors are exit 2",
+    ]) {
+      if (!agents.includes(marker)) fail(`AGENTS.md must include production-data integrity marker "${marker}"`);
+    }
+  }
+
+  const policy = assertGovernanceFile("docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md");
+  if (policy) {
+    for (const heading of [
+      "Purpose",
+      "Scope",
+      "Definitions",
+      "Allowed test doubles",
+      "Forbidden production synthetic data",
+      "Product content distinction",
+      "Demo mode contract",
+      "Source/sink model",
+      "Rule catalog",
+      "Baseline policy",
+      "Waiver policy",
+      "Hook behavior",
+      "CI behavior",
+      "Separation of duties",
+      "Incident response",
+      "Rollback",
+      "Review checklist",
+      "Known limitations",
+    ]) {
+      if (!hasHeading(policy, heading)) fail(`PRODUCTION_DATA_INTEGRITY_POLICY.md is missing heading "${heading}"`);
+    }
+    for (const marker of ["PDI001", "PDI012", "production-data-integrity", "UNVERIFIED", "ZENFLOW_TEST_FIXTURE_SENTINEL_7F4C9A2E"]) {
+      if (!policy.includes(marker)) fail(`PRODUCTION_DATA_INTEGRITY_POLICY.md must include ${marker}`);
+    }
+  }
+
+  const packageJson = assertGovernanceFile("package.json");
+  if (packageJson) {
+    for (const script of [
+      "check:production-data-integrity",
+      "check:production-data-integrity:diff",
+      "check:production-data-integrity:staged",
+      "check:production-data-integrity:bundle",
+    ]) {
+      if (!packageJson.includes(`"${script}"`)) fail(`package.json must define ${script}`);
+    }
+    if (!/"ci:preflight"[\s\S]*npm run check:production-data-integrity[\s\S]*npm run build[\s\S]*npm run check:production-data-integrity:bundle/.test(packageJson)) {
+      fail("package.json ci:preflight must run source and bundle production-data checks around the build");
+    }
+  }
+
+  const config = assertGovernanceFile("config/production-data-integrity.json");
+  if (config) {
+    for (const marker of ["PDI001", "PDI012", "entrypoints", "repositoryContracts", "bundleSentinels", "android/app/src/main/java", "ios/App/App", "ios/App/CapApp-SPM/Sources", "src-tauri/build.rs", "public/**", "vite.config.ts", "output/*/*readiness*.json", "releaseEvidenceRoots", "maxEvidenceAgeHours"]) {
+      if (!config.includes(marker)) fail(`production-data-integrity config must include ${marker}`);
+    }
+  }
+
+  const core = assertGovernanceFile("scripts/production-data-integrity/core.cjs");
+  if (core) {
+    for (const marker of [
+      "REQUIRED_CONFIG_VALUES",
+      "PINNED_CONFIG_DIGESTS",
+      "CANONICAL_PACKAGE_SCRIPTS",
+      "materializeIndex",
+      "TextDecoder",
+      "assertExistingRealpathInsideRoot",
+      "findEvidenceStatuses",
+      "EVIDENCE_PROOF_KEYS",
+      "explicit bundle directory is missing",
+      'entry.ruleId === "PDI010"',
+    ]) {
+      if (!core.includes(marker)) fail(`production-data-integrity core must include hardening marker ${marker}`);
+    }
+  }
+
+  for (const [relativePath, arrayField] of [
+    ["config/production-data-integrity-baseline.json", "entries"],
+    ["config/production-data-integrity-waivers.json", "waivers"],
+  ]) {
+    const ledger = assertGovernanceFile(relativePath);
+    if (ledger) {
+      try {
+        const parsed = JSON.parse(ledger);
+        if (parsed.schemaVersion !== "1.0.0" || !Array.isArray(parsed[arrayField])) {
+          fail(`${relativePath} must use schemaVersion 1.0.0 and ${arrayField}[]`);
+        }
+      } catch {
+        fail(`${relativePath} must be valid JSON`);
+      }
+    }
+  }
+
+  const hooks = assertGovernanceFile(".codex/hooks.json");
+  if (hooks) {
+    for (const marker of ["production-data-integrity-gate.cjs", "PostToolUse", "Stop", "SubagentStart", "SubagentStop"]) {
+      if (!hooks.includes(marker)) fail(`.codex/hooks.json must register production-data hook marker ${marker}`);
+    }
+  }
+
+  const hook = assertGovernanceFile(".codex/hooks/production-data-integrity-gate.cjs");
+  if (hook) {
+    for (const marker of ["PRODUCTION DATA INTEGRITY GATE", "resolveRepositoryRoot", "stop_hook_active", "process.exit(2)", "SubagentStop"]) {
+      if (!hook.includes(marker)) fail(`production-data-integrity-gate.cjs must include ${marker}`);
+    }
+  }
+
+  const workflow = assertGovernanceFile(".github/workflows/production-data-integrity.yml");
+  if (workflow) {
+    for (const marker of [
+      "name: production-data-integrity",
+      "merge_group:",
+      "contents: read",
+      "node scripts/check-production-data-integrity.cjs --all --bundle dist",
+      "public/pdi-ci-source-canary.json",
+      "dist/assets/pdi-ci-bundle-canary.txt",
+      "result.status !== 1",
+    ]) {
+      if (!workflow.includes(marker)) fail(`production-data-integrity workflow must include ${marker}`);
+    }
+    for (const forbidden of ["continue-on-error:", "|| true", "pull_request_target:", "paths:"]) {
+      if (workflow.includes(forbidden)) fail(`production-data-integrity workflow must not include ${forbidden}`);
+    }
+  }
+
+  for (const relativePath of [
+    "scripts/__tests__/production-data-integrity.test.ts",
+    "scripts/__tests__/production-data-integrity-hook.test.ts",
+    "scripts/__tests__/production-data-integrity-workflow.test.ts",
+  ]) {
+    const test = assertGovernanceFile(relativePath);
+    if (test && !test.includes("production-data-integrity")) {
+      fail(`${relativePath} must exercise the production-data-integrity contract`);
+    }
+  }
+  const checkerTests = assertGovernanceFile("scripts/__tests__/production-data-integrity.test.ts");
+  if (checkerTests) {
+    for (const marker of [
+      "reads staged content from the Git index",
+      "symlinked or oversized control JSON",
+      "current exact HEAD",
+      "source maps",
+      "pins code-owned semantic config field",
+      "ancestor directory symlink",
+      "empty explicit bundles",
+      "binds release proof to its positive claim",
+      "CapApp Swift package history",
+      "allows type-only re-exports",
+      "mixed runtime/type re-export",
+    ]) {
+      if (!checkerTests.includes(marker)) fail(`production-data-integrity tests must cover ${marker}`);
+    }
+  }
+
+  const prTemplate = assertGovernanceFile(".github/PULL_REQUEST_TEMPLATE.md");
+  if (prTemplate && (!/Production data integrity/.test(prTemplate) || !/waiver/.test(prTemplate))) {
+    fail("PR template must include the production data integrity and waiver checklist");
+  }
+  const codeowners = assertGovernanceFile(".github/CODEOWNERS");
+  if (codeowners && !/production-data-integrity/.test(codeowners)) {
+    fail("CODEOWNERS must route production-data-integrity surfaces to the existing owner");
+  }
+  const drift = assertGovernanceFile(".github/workflows/drift-checks.yml");
+  if (drift && !/npm run check:production-data-integrity/.test(drift)) {
+    fail("drift-checks.yml must run npm run check:production-data-integrity");
   }
 }
 

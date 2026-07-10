@@ -2197,8 +2197,6 @@ export const ja: Translations = {
   notificationTestSuccess: "テスト通知を送信しました！5秒後に確認してください。",
   notificationTestFailed: "送信に失敗しました。システムの通知設定を確認してください。",
   notificationTestError: "エラー",
-  demoModeEnabled: "デモモードが有効になりました",
-  demoModeDisabled: "デモモードが無効になりました",
 
   // Insight Card Details
   insightConfidence: "信頼度",

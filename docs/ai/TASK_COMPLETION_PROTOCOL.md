@@ -10,6 +10,7 @@ state. It complements:
 
 - `docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md`
 - `docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md`
+- `docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md`
 - `docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md`
 - `docs/ai/V2_FULLSCREEN_EDGE_TO_EDGE_CONTRACT.md`
 - `docs/ai/SYNC_CONTRACT.md`
@@ -81,8 +82,8 @@ A task can be closed only after these steps are true:
      Standards Map, Acceptance Evidence, and the `UNVERIFIED` ledger are named.
 
 3. **Relevant contracts are read.**
-   - Runtime, sync, canonical orb, Supabase, security, release, and preflight
-     contracts are cited when touched.
+   - Runtime, sync, canonical orb, Supabase, security, production-data
+     integrity, release, and preflight contracts are cited when touched.
    - Protected docs such as `docs/law*.md` and `docs/visual-aesthetic.md` are
      not edited unless the user explicitly asks and the protected-file flow is
      satisfied.
@@ -96,6 +97,9 @@ A task can be closed only after these steps are true:
    - Commands, browser routes, screenshots, public URLs, SQL/RLS checks, and
      manual test matrices are named up front.
    - If a proof path is unavailable, it is marked `UNVERIFIED`, not hidden.
+   - Production-data work names source, diff/staged, and post-build bundle
+     checks before edits; exact baseline or waiver entries are reviewed as
+     evidence, never treated as a blanket pass.
 
 6. **Verification runs after the final change.**
    - Evidence must be from the final tree, final build, or final public deploy.
@@ -107,6 +111,8 @@ A task can be closed only after these steps are true:
      applicable.
    - Performance work gets route timing evidence.
    - Security and Supabase work gets policy, secret, and migration evidence.
+   - Enforcement work gets positive/negative fixtures, malformed-input and
+     internal-error proof, exact-ledger proof, and every production build path.
 
 8. **Done Packet is written.**
    - The packet is part of the final answer, PR description, release note, or
@@ -119,6 +125,7 @@ A task can be closed only after these steps are true:
 | Work type | Required completion proof |
 | --- | --- |
 | Docs-only | Relevant docs read, links valid enough for intent, docs consistency check, no protected law/visual docs touched by accident. |
+| Production data integrity/enforcement | Read `docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md`; run `npm run check:production-data-integrity`, focused PDI checker/hook/workflow tests, `npm run check:production-data-integrity:diff`, and `npm run check:production-data-integrity:staged`; build the actual release bundle and then run `npm run check:production-data-integrity:bundle`. Review `config/production-data-integrity-baseline.json` and `config/production-data-integrity-waivers.json` as exact fingerprint ledgers. A high-confidence finding or checker internal/configuration error blocks completion. Remote CI and branch protection remain `UNVERIFIED` until checked on the final commit. |
 | UI/layout/navigation | Screenshot or browser trace for target route, phone and desktop where applicable, scrollability, safe areas, focus, touch targets, dark/light or theme-sensitive states. V2 fullscreen or edge-to-edge work must also cite `docs/ai/V2_FULLSCREEN_EDGE_TO_EDGE_CONTRACT.md`. |
 | Canonical orb or adjacent visual runtime | `npm run check:canonical-orbs`, browser screenshot evidence, no non-canonical full or mini orb implementation, no late renderer swap that changes appearance. |
 | Brand logo/app icon/splash assets | `npm run assets:logos:check`, `npm run check:visual`, focused splash/loading tests when runtime splash is touched, contact sheet proof across favicon/PWA/Android/iOS/Tauri/Store surfaces, and no unapproved logo replacement or SVG-filter artifact regression. |
@@ -146,6 +153,11 @@ Stop and report instead of claiming completion when any of these are true:
 - A Supabase schema/auth claim lacks migration/RLS proof.
 - Native or PWA behavior is affected but only desktop web was checked.
 - CI or deploy status is stale or from a different commit.
+- A high-confidence `PDI001`-`PDI011` finding is active, the checker exits with
+  an internal/configuration error, or the built bundle contains a configured
+  fixture sentinel.
+- A production-data baseline is count-based/broad, or a waiver lacks an exact
+  fingerprint, owner, reason, scope, and non-expired expiry.
 - The verification command failed, timed out before running the relevant code,
   or was skipped without a user waiver.
 
@@ -168,6 +180,7 @@ Evidence:
 | --- | --- | --- |
 | User-visible outcome | PASS/PARTIAL/UNVERIFIED/FAIL/WAIVED | command, URL, screenshot, test, file path |
 | Regression guard | PASS/PARTIAL/UNVERIFIED/FAIL/WAIVED | command, URL, screenshot, test, file path |
+| Production data integrity | PASS/PARTIAL/UNVERIFIED/FAIL/WAIVED | source/diff/staged/bundle checks, exact baseline and waiver review, CI state |
 | Platform matrix | PASS/PARTIAL/UNVERIFIED/FAIL/WAIVED | web/PWA/Android/iOS/desktop/phone evidence |
 | Sync/runtime/security impact | PASS/PARTIAL/UNVERIFIED/FAIL/WAIVED | relevant proof |
 | 20-Idea ledger impact | PASS/PARTIAL/UNVERIFIED/FAIL/WAIVED | touched rows from TELEGRAM_GRADE_20_IDEA_LEDGER.md |
@@ -197,6 +210,9 @@ Commit/deploy:
   only with a server-only Supabase service-role key; otherwise mark the row
   `UNVERIFIED`.
 - Mention user waivers explicitly; do not invent waivers.
+- For production-data or enforcement work, distinguish local checker evidence
+  from remote CI/branch-protection evidence and list every exact baseline or
+  waiver entry. Empty ledgers must be reported as empty, not assumed.
 
 ## Agent Workflow
 
@@ -211,6 +227,8 @@ Commit/deploy:
 
 ## Maintenance
 
-This protocol is enforced by `npm run check:sync-contract` because completion
-quality is part of sync/runtime reliability. If the protocol changes, update
-that guard, `npm run check:best-practices`, and re-run the repo AI checks.
+This protocol is enforced by `npm run check:sync-contract`,
+`npm run check:task-completion`, and `npm run check:production-data-integrity`
+because completion quality is part of sync/runtime and data-integrity
+reliability. If the protocol changes, update those guards,
+`npm run check:best-practices`, and re-run the repo AI checks.

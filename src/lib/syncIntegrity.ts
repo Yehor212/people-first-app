@@ -10,7 +10,8 @@ import { db } from "@/storage/db";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { logger } from "@/lib/logger";
 
-export interface IntegrityReport {
+interface VerifiedIntegrityReport {
+  status: "verified";
   timestamp: number;
   localCounts: Record<string, number>;
   remoteCounts: Record<string, number>;
@@ -19,58 +20,64 @@ export interface IntegrityReport {
   needsReconciliation: boolean;
 }
 
+interface UnavailableIntegrityReport {
+  status: "unavailable";
+  timestamp: number;
+  localCounts: null;
+  remoteCounts: null;
+  divergence: Record<string, never>;
+  maxDivergence: null;
+  needsReconciliation: false;
+  failureCode: "count-read-failed";
+}
+
+export type IntegrityReport = VerifiedIntegrityReport | UnavailableIntegrityReport;
+
 const DIVERGENCE_THRESHOLD = 0.05; // 5% — trigger reconciliation above this
 
 /** Count all local entities in IndexedDB */
 async function getLocalCounts(): Promise<Record<string, number>> {
-  try {
-    const [moods, habits, focusSessions, gratitude, journal] = await Promise.all([
-      db.moods.count(),
-      db.habits.count(),
-      db.focusSessions.count(),
-      db.gratitudeEntries.count(),
-      db.journalEntries.count(),
-    ]);
-    return { moods, habits, focusSessions, gratitude, journal };
-  } catch (err) {
-    logger.error("[SyncIntegrity] Failed to count local entities:", err);
-    return { moods: 0, habits: 0, focusSessions: 0, gratitude: 0, journal: 0 };
-  }
+  const [moods, habits, focusSessions, gratitude, journal] = await Promise.all([
+    db.moods.count(),
+    db.habits.count(),
+    db.focusSessions.count(),
+    db.gratitudeEntries.count(),
+    db.journalEntries.count(),
+  ]);
+  return { moods, habits, focusSessions, gratitude, journal };
 }
 
 /** Count all remote entities in Supabase */
 async function getRemoteCounts(userId: string): Promise<Record<string, number>> {
-  if (!supabase) return { moods: 0, habits: 0, focusSessions: 0, gratitude: 0, journal: 0 };
+  if (!supabase) throw new Error("Supabase client is unavailable");
 
-  try {
-    const [moods, habits, focus, gratitude, journal] = await Promise.all([
-      supabase.from("moods").select("id", { count: "exact", head: true }).eq("user_id", userId),
-      supabase.from("habits").select("id", { count: "exact", head: true }).eq("user_id", userId),
-      supabase
-        .from("focus_sessions")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId),
-      supabase
-        .from("gratitude_entries")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId),
-      supabase
-        .from("journal_entries")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId),
-    ]);
-
-    return {
-      moods: moods.count ?? 0,
-      habits: habits.count ?? 0,
-      focusSessions: focus.count ?? 0,
-      gratitude: gratitude.count ?? 0,
-      journal: journal.count ?? 0,
-    };
-  } catch (err) {
-    logger.error("[SyncIntegrity] Failed to count remote entities:", err);
-    return { moods: 0, habits: 0, focusSessions: 0, gratitude: 0, journal: 0 };
+  const results = await Promise.all([
+    supabase.from("moods").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("habits").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase
+      .from("focus_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId),
+    supabase
+      .from("gratitude_entries")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId),
+    supabase
+      .from("journal_entries")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId),
+  ]);
+  const keys = ["moods", "habits", "focusSessions", "gratitude", "journal"] as const;
+  const counts: Record<string, number> = {};
+  for (let index = 0; index < results.length; index += 1) {
+    const result = results[index];
+    if (result.error) throw new Error(`Remote ${keys[index]} count failed`);
+    if (!Number.isInteger(result.count) || (result.count ?? -1) < 0) {
+      throw new Error(`Remote ${keys[index]} count is unavailable`);
+    }
+    counts[keys[index]] = result.count as number;
   }
+  return counts;
 }
 
 /** Calculate divergence ratio between two counts (0 = identical, 1 = completely different) */
@@ -91,10 +98,28 @@ export async function verifySyncIntegrity(): Promise<IntegrityReport | null> {
     return null;
   }
 
-  const [localCounts, remoteCounts] = await Promise.all([
-    getLocalCounts(),
-    getRemoteCounts(userId),
-  ]);
+  let localCounts: Record<string, number>;
+  let remoteCounts: Record<string, number>;
+  try {
+    [localCounts, remoteCounts] = await Promise.all([
+      getLocalCounts(),
+      getRemoteCounts(userId),
+    ]);
+  } catch (error) {
+    logger.error("[SyncIntegrity] Failed to read integrity counts:", error);
+    const unavailable: UnavailableIntegrityReport = {
+      status: "unavailable",
+      timestamp: Date.now(),
+      localCounts: null,
+      remoteCounts: null,
+      divergence: {},
+      maxDivergence: null,
+      needsReconciliation: false,
+      failureCode: "count-read-failed",
+    };
+    logger.warn("[SyncIntegrity] Verification unavailable:", unavailable);
+    return unavailable;
+  }
 
   const divergence: Record<string, number> = {};
   let maxDivergence = 0;
@@ -108,6 +133,7 @@ export async function verifySyncIntegrity(): Promise<IntegrityReport | null> {
   const needsReconciliation = maxDivergence > DIVERGENCE_THRESHOLD;
 
   const report: IntegrityReport = {
+    status: "verified",
     timestamp: Date.now(),
     localCounts,
     remoteCounts,

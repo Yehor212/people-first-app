@@ -24,16 +24,7 @@ function loadEnvFile(file) {
   }
 }
 
-loadEnvFile(".env.local");
-loadEnvFile(".env.production");
-
-const required = process.env.ZENFLOW_SYNC_ACCOUNT_REQUIRED === "true";
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
-const email = process.env.ZENFLOW_SYNC_TEST_EMAIL;
-const password = process.env.ZENFLOW_SYNC_TEST_PASSWORD;
-
-function stopUnverified(reason) {
+function stopUnverified(reason, required) {
   console.log(`[sync-account] UNVERIFIED - ${reason}`);
   console.log(
     "[sync-account] Set VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, ZENFLOW_SYNC_TEST_EMAIL, and ZENFLOW_SYNC_TEST_PASSWORD for same-account Supabase proof."
@@ -64,11 +55,20 @@ async function insertEvent(client, row) {
 }
 
 async function main() {
+  loadEnvFile(".env.local");
+  loadEnvFile(".env.production");
+
+  const required = process.env.ZENFLOW_SYNC_ACCOUNT_REQUIRED === "true";
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+  const email = process.env.ZENFLOW_SYNC_TEST_EMAIL;
+  const password = process.env.ZENFLOW_SYNC_TEST_PASSWORD;
+
   if (!supabaseUrl || !supabaseAnonKey) {
-    stopUnverified("Supabase public config is missing");
+    stopUnverified("Supabase public config is missing", required);
   }
   if (!email || !password) {
-    stopUnverified("test account credentials are missing");
+    stopUnverified("test account credentials are missing", required);
   }
 
   const client = createClient(supabaseUrl, supabaseAnonKey, {
@@ -85,6 +85,13 @@ async function main() {
   if (signInError) fail("test account sign-in failed", signInError);
   const userId = signInData.user?.id;
   if (!userId) fail("test account sign-in returned no user");
+  await runProvisionedSmoke(client, userId, signInData.user);
+}
+
+async function runProvisionedSmoke(client, userId, user) {
+  if (user?.user_metadata?.zenflow_sync_smoke !== true) {
+    throw new Error("authenticated account is not provisioned for sync smoke writes");
+  }
 
   const stamp = Date.now();
   const entityId = `sync-smoke-${stamp}`;
@@ -162,8 +169,12 @@ async function main() {
   }
 
   console.log(
-    `[sync-account] PASS - account=${userId.slice(0, 8)}..., upsertSeq=${upsert.seq}, deleteSeq=${deletion.seq}, tombstoneSeq=${tombstone.deleted_seq}`
+    `[sync-account] PASS - upsertSeq=${upsert.seq}, deleteSeq=${deletion.seq}, tombstoneSeq=${tombstone.deleted_seq}`
   );
 }
 
-main().catch((error) => fail("unexpected smoke error", error));
+if (require.main === module) {
+  main().catch((error) => fail("unexpected smoke error", error));
+}
+
+module.exports = { runProvisionedSmoke };

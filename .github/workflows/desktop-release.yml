@@ -39,6 +39,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check production data integrity
+        run: npm run check:production-data-integrity
+
       - name: Validate desktop release source and tag
         shell: pwsh
         env:
@@ -68,6 +71,9 @@ jobs:
 
       - name: Build desktop app
         run: npm run desktop:build
+
+      - name: Check desktop web bundle data integrity
+        run: npm run check:production-data-integrity:bundle
 
       - name: Sign Windows artifacts
         env:

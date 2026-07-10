@@ -95,6 +95,15 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 - Run `npm run check:no-ai-templates` when changing agent rules, docs, copy, UI patterns, generated assets, completion/release docs, or whenever the user explicitly mentions AI templates / ИИ шаблоны. If it cannot run, report it as `UNVERIFIED`, not `PASS`.
 - Treat this as layered enforcement: AGENTS.md routes agents, the policy defines the rubric, PR review and drift CI are backstops, `check:no-ai-templates` scans for drift, and `check:agent-context` keeps the contract discoverable. Do not claim absolute prevention; mark unchecked branch protection or review enforcement as `UNVERIFIED`.
 
+## Production Data Integrity Gate
+
+- Before work that adds or changes fixtures, demo/sample data, seeds, error fallbacks, persistence, sync, analytics, exports, backups, share payloads, migrations, readiness evidence, or enforcement, read `docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md` and run the task-relevant production data integrity modes.
+- Isolated mocks, fake timers, test factories, and test fixtures are allowed. Synthetic user history, backend facts, success/readiness claims, or demo data reachable from production or real-user sinks are forbidden.
+- Use `npm run check:production-data-integrity` for a full source/enforcement scan, `npm run check:production-data-integrity:diff` while editing, `npm run check:production-data-integrity:staged` before a staged handoff, and `npm run check:production-data-integrity:bundle` after a production build.
+- Baselines accept exact reviewed fingerprints only. Waivers require an exact path/fingerprint, expiry, tracking issue, removal condition, and real human approver; never generate or approve one as an agent.
+- Dedicated live sync smoke data is allowed only after the authenticated account proves `user_metadata.zenflow_sync_smoke === true`; missing credentials or remote proof is `UNVERIFIED`, not PASS.
+- Do not claim production data integrity PASS from a hook, subagent summary, stale report, warning-only scan, or a command that did not run. Internal/config checker errors are exit 2 and blocking.
+
 ## Translation Quality Gate
 
 - For user-facing i18n values, fallback strings, and copy-only translation work, read and follow `docs/ai/TRANSLATION_QUALITY_POLICY.md`.

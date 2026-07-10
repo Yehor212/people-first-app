@@ -99,6 +99,7 @@ function extractTargetPaths(data) {
     for (const key of ['file_path', 'path', 'filename']) {
       if (typeof input[key] === 'string') paths.push(input[key]);
     }
+    if (typeof input.command === 'string') paths.push(...extractPatchPaths(input.command));
     if (typeof input.patch === 'string') paths.push(...extractPatchPaths(input.patch));
     if (typeof input.input === 'string') paths.push(...extractPatchPaths(input.input));
   } else if (typeof input === 'string') {

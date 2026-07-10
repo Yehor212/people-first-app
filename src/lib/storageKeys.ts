@@ -148,7 +148,6 @@ export const SK = {
   CALENDAR_CACHE: "zenflow_calendar_cache",
 
   // ─── Misc ───
-  DEMO_MODE: "zenflow-demo-mode",
   QUICK_ACTIONS_ENABLED: "zenflow_quick_actions_enabled",
   WIDGET_DATA: "zenflow-widget-data",
   DISMISSED_URGENCY: "zenflow-dismissed-urgency",

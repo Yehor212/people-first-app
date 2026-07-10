@@ -12,6 +12,7 @@
  */
 import * as fs from "fs";
 import * as path from "path";
+import { execFileSync } from "node:child_process";
 
 const CANONICAL_WINDOWS_ROOT = "c:/project/people-first-app";
 const ROOT = path.resolve(process.env.ZENFLOW_REPO_ROOT ?? process.cwd());
@@ -500,6 +501,152 @@ function checkCodexSkillRouting() {
   }
 }
 
+function checkProductionDataIntegrity() {
+  console.log("\n  PRODUCTION DATA INTEGRITY\n");
+
+  const requiredFiles = [
+    "config/production-data-integrity.json",
+    "config/production-data-integrity-baseline.json",
+    "config/production-data-integrity-waivers.json",
+    "scripts/check-production-data-integrity.cjs",
+    "scripts/production-data-integrity/core.cjs",
+    ".codex/hooks/production-data-integrity-gate.cjs",
+    ".github/workflows/production-data-integrity.yml",
+    "docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md",
+    "docs/adr/0010-production-data-integrity-enforcement.md",
+    "scripts/__tests__/production-data-integrity.test.ts",
+    "scripts/__tests__/production-data-integrity-hook.test.ts",
+    "scripts/__tests__/production-data-integrity-workflow.test.ts",
+  ];
+  for (const relativePath of requiredFiles) {
+    if (fs.existsSync(path.join(ROOT, relativePath))) pass(`pdi:file:${relativePath}`, "Exists");
+    else fail(`pdi:file:${relativePath}`, "Required production-data integrity surface is missing");
+  }
+
+  try {
+    const hooks = JSON.parse(fs.readFileSync(CODEX_HOOKS_JSON, "utf8"));
+    for (const event of ["UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "SubagentStart", "SubagentStop"]) {
+      const registered = (hooks.hooks?.[event] || []).some((matcher: any) =>
+        (matcher.hooks || []).some((hook: any) => String(hook.command || "").includes("production-data-integrity-gate.cjs")),
+      );
+      if (registered) pass(`pdi:hook:${event}`, "Registered");
+      else fail(`pdi:hook:${event}`, "production-data-integrity-gate.cjs is not registered");
+    }
+  } catch (error) {
+    fail("pdi:hooks-json", `Cannot validate hook registration: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  const hookPath = path.join(CODEX_HOOKS_DIR, "production-data-integrity-gate.cjs");
+  if (fs.existsSync(hookPath)) {
+    const hook = fs.readFileSync(hookPath, "utf8");
+    for (const marker of ["PRODUCTION DATA INTEGRITY GATE", "resolveRepositoryRoot", "stop_hook_active", "SubagentStop", "process.exit(2)"]) {
+      if (hook.includes(marker)) pass(`pdi:hook-marker:${marker}`, "Present");
+      else fail(`pdi:hook-marker:${marker}`, "Missing");
+    }
+  }
+
+  const corePath = path.join(ROOT, "scripts/production-data-integrity/core.cjs");
+  if (fs.existsSync(corePath)) {
+    const core = fs.readFileSync(corePath, "utf8");
+    for (const marker of [
+      "REQUIRED_CONFIG_VALUES",
+      "PINNED_CONFIG_DIGESTS",
+      "CANONICAL_PACKAGE_SCRIPTS",
+      "materializeIndex",
+      "TextDecoder",
+      "assertExistingRealpathInsideRoot",
+      "findEvidenceStatuses",
+      "EVIDENCE_PROOF_KEYS",
+      "explicit bundle directory is missing",
+      'entry.ruleId === "PDI010"',
+    ]) {
+      if (core.includes(marker)) pass(`pdi:core-marker:${marker}`, "Present");
+      else fail(`pdi:core-marker:${marker}`, "Missing");
+    }
+  }
+
+  try {
+    const config = JSON.parse(fs.readFileSync(path.join(ROOT, "config/production-data-integrity.json"), "utf8"));
+    const ruleIds = Object.keys(config.rules || {}).sort();
+    const expected = Array.from({ length: 12 }, (_, index) => `PDI${String(index + 1).padStart(3, "0")}`);
+    if (JSON.stringify(ruleIds) === JSON.stringify(expected)) pass("pdi:rules", "PDI001-PDI012 present");
+    else fail("pdi:rules", `Expected ${expected.join(", ")}; got ${ruleIds.join(", ")}`);
+    if (config.rules?.PDI012?.severity === "warning" && config.rules?.PDI012?.confidence === "medium") {
+      pass("pdi:warning-boundary", "PDI012 remains medium warning");
+    } else {
+      fail("pdi:warning-boundary", "PDI012 severity/confidence contract changed");
+    }
+    for (const marker of ["android/app/src/main/java", "ios/App/App", "ios/App/CapApp-SPM/Sources", "src-tauri/build.rs", "public/**", "vite.config.ts", "output/*/*readiness*.json", "releaseEvidenceRoots"]) {
+      if (JSON.stringify(config).includes(marker)) pass(`pdi:config-marker:${marker}`, "Present");
+      else fail(`pdi:config-marker:${marker}`, "Missing canonical coverage");
+    }
+  } catch (error) {
+    fail("pdi:config", `Cannot parse config: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  for (const [file, field] of [
+    ["config/production-data-integrity-baseline.json", "entries"],
+    ["config/production-data-integrity-waivers.json", "waivers"],
+  ] as const) {
+    try {
+      const ledger = JSON.parse(fs.readFileSync(path.join(ROOT, file), "utf8"));
+      if (ledger.schemaVersion === "1.0.0" && Array.isArray(ledger[field])) pass(`pdi:ledger:${field}`, "Exact ledger schema valid");
+      else fail(`pdi:ledger:${field}`, "Ledger schema is invalid");
+    } catch (error) {
+      fail(`pdi:ledger:${field}`, `Cannot parse ${file}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  const workflowPath = path.join(ROOT, ".github/workflows/production-data-integrity.yml");
+  if (fs.existsSync(workflowPath)) {
+    const workflow = fs.readFileSync(workflowPath, "utf8");
+    for (const marker of [
+      "name: production-data-integrity",
+      "merge_group:",
+      "contents: read",
+      "node scripts/check-production-data-integrity.cjs --all --bundle dist",
+      "public/pdi-ci-source-canary.json",
+      "dist/assets/pdi-ci-bundle-canary.txt",
+      "result.status !== 1",
+    ]) {
+      if (workflow.includes(marker)) pass(`pdi:workflow:${marker}`, "Present");
+      else fail(`pdi:workflow:${marker}`, "Missing");
+    }
+    for (const forbidden of ["continue-on-error:", "|| true", "pull_request_target:", "paths:"]) {
+      if (workflow.includes(forbidden)) fail(`pdi:workflow-forbidden:${forbidden}`, "Forbidden masking/skip marker present");
+      else pass(`pdi:workflow-forbidden:${forbidden}`, "Absent");
+    }
+  }
+
+  const packageJson = fs.readFileSync(path.join(ROOT, "package.json"), "utf8");
+  for (const marker of ["check:production-data-integrity", "check:production-data-integrity:diff", "check:production-data-integrity:staged", "check:production-data-integrity:bundle"]) {
+    if (packageJson.includes(`\"${marker}\"`)) pass(`pdi:package:${marker}`, "Defined");
+    else fail(`pdi:package:${marker}`, "Missing package script");
+  }
+
+  const checkerPath = path.join(ROOT, "scripts/check-production-data-integrity.cjs");
+  if (fs.existsSync(checkerPath)) {
+    try {
+      const raw = execFileSync(process.execPath, [checkerPath, "--all", "--json"], {
+        cwd: ROOT,
+        encoding: "utf8",
+        timeout: 30000,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      const report = JSON.parse(raw);
+      if (report.status === "PASS") pass("pdi:behavior", `Checker PASS (${report.summary?.scannedFiles ?? "?"} files)`);
+      else fail("pdi:behavior", `Checker returned ${report.status}`);
+    } catch (error: any) {
+      let detail = error?.message || String(error);
+      try {
+        const report = JSON.parse(String(error?.stdout || ""));
+        detail = `${report.status}: ${report.summary?.errors ?? "?"} errors`;
+      } catch {}
+      fail("pdi:behavior", `Full checker did not pass: ${detail}`);
+    }
+  }
+}
+
 // ============================================================
 // SECTION 2: RULES SYSTEM INTEGRITY
 // ============================================================
@@ -769,6 +916,7 @@ function checkGitignore() {
     { pattern: ".preflight-token", desc: "PRE-FLIGHT token" },
     { pattern: ".test-first-token", desc: "TEST-FIRST token" },
     { pattern: ".skill-routing-token", desc: "SKILL-ROUTING token" },
+    { pattern: ".Codex-md-unlock", desc: "Codex one-time unlock token" },
     { pattern: ".postflight-done", desc: "POST-FLIGHT token" },
     { pattern: ".fullcycle-active", desc: "Full cycle flag" },
     { pattern: ".fullcycle-laws-read", desc: "Laws read token" },
@@ -875,6 +1023,7 @@ console.log("==================================================");
 
 checkHookSystem();
 checkCodexSkillRouting();
+checkProductionDataIntegrity();
 checkRulesSystem();
 checkMemorySystem();
 checkLawSpecs();

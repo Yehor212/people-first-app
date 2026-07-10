@@ -2248,8 +2248,6 @@ export const de: Translations = {
   notificationTestFailed:
     "Senden fehlgeschlagen. Überprüfe die Android-Benachrichtigungseinstellungen.",
   notificationTestError: "Fehler",
-  demoModeEnabled: "Demo-Modus aktiviert",
-  demoModeDisabled: "Demo-Modus deaktiviert",
 
   // Insight Card Details
   insightConfidence: "Vertrauen",

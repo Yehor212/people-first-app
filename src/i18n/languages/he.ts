@@ -2234,8 +2234,6 @@ const hebrewOverrides: Partial<Translations> = {
   notificationTestSuccess: "התראת ניסיון נשלחה! בדוק תוך 5 שניות.",
   notificationTestFailed: "השליחה נכשלה. בדוק את הגדרות ההתראות של המערכת.",
   notificationTestError: "שגיאה",
-  demoModeEnabled: "מצב הדגמה הופעל",
-  demoModeDisabled: "מצב הדגמה הושבת",
 
   // Insight Details
   insightConfidence: "ביטחון",

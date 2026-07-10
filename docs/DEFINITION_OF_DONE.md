@@ -19,6 +19,7 @@ These run on every push to `main` and every PR via `.github/workflows/deploy.yml
 | 7 | Coverage report | `npx vitest run --coverage` | **No** (informational) |
 | 8 | Security audit | `npm audit --audit-level=high` | **No** (informational) |
 | 9 | Best-practices implied requirements gate | `npm run check:best-practices` verifies `docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md`, AGENTS, CI, drift, release, and completion wiring | Yes for agent/process/release-gate changes |
+| 10 | Production data integrity | `npm run check:production-data-integrity` before build and `npm run check:production-data-integrity:bundle` after the release build; exact baseline/waiver ledgers only | Yes |
 
 ## Runtime Reliability Gates
 
@@ -47,6 +48,7 @@ cross-platform user-flow changes.
 | 17 | Google Play AdMob/app-ads production contract | `npm run google-play:assets:check`; before production monetization, `public/app-ads.txt` must be generated and verified with `ZENFLOW_ADMOB_PUBLISHER_ID=pub-0000000000000000 npm run google-play:app-ads` and `npm run google-play:app-ads:check`, real Android rewarded AdMob app/ad unit IDs must pass `npm run google-play:admob:check`, local Android/iOS UMP consent and privacy-options wiring must pass `npm run google-play:admob:ump-check`, owner-only finalization handoff must pass `npm run google-play:admob:owner-runbook:check`, owner-only console evidence shape must pass `npm run google-play:admob:owner-evidence:check` and, after owner checks, `node scripts/check-admob-owner-evidence.cjs --file output/private/admob-owner-evidence.json`, full cross-platform/banner+iOS monetization claims must also pass `npm run google-play:admob:check:full`, live root-domain app-ads proof must pass `ZENFLOW_APP_ADS_PUBLIC_URL=https://your-developer-domain.example/app-ads.txt npm run google-play:app-ads:public-check` or `npm run google-play:app-ads:public-check:zenflow`, public Play listing proof must pass `npm run google-play:public-listing:check`, staged privacy artifact proof must pass `npm run google-play:privacy:artifact-check`, post-deploy public privacy smoke must run from GitHub Pages, public privacy policy proof must pass `npm run google-play:privacy:public-check`, external owner/Google readiness must be tracked by `npm run google-play:admob:external-check`, and production ad-readiness claims must pass `npm run google-play:admob:external-check:pass` with current AdMob app readiness, AdMob console app-ads.txt status, Policy Center, Privacy & messages/CMP, tax, identity/address, payout method, payment holds, live device ad playback, and Play Console Ads/Advertising ID/Data safety proof. `live_ad_playback_device` cannot be PASS until app-ads console status, app readiness, Policy Center, Privacy & messages/CMP, and Play Console Ads/Data safety are PASS. Missing owner IDs, local UMP proof, staged artifact proof, post-deploy public privacy smoke, public privacy proof, public crawler proof, Play/AdMob console proof, or owner private evidence means Google Play production monetization remains `UNVERIFIED`, not PASS | Yes for Google Play, Android ads, AdMob, Advertising ID, or production monetization claims |
 
 | 18 | Journal Magic Link live proof contract | `npm run check:journal-magic-link-proof-status`, `npm run check:github-journal-magic-link-secrets`, `npm run check:journal-magic-link-live`, `docs/JOURNAL_MAGIC_LINK_LIVE_PROOF.md`, and `docs/JOURNAL_MAGIC_LINK_LIVE_PROOF_STATUS.json`; live readiness claims require `npm run check:github-journal-magic-link-secrets:pass`, `npm run check:journal-magic-link-proof-status:pass`, and `ZENFLOW_JOURNAL_MAGIC_LINK_LIVE_REQUIRED=true npm run check:journal-magic-link-live` to exit 0 with GitHub secret/variable names, hosted Supabase config, smoke email delivery, consumed captured Supabase verify URL proof, and fresh subagent reapproval. Missing GitHub names, Supabase token, smoke inbox, captured verify URL, or reapproval means the feature remains `UNVERIFIED`, not PASS | Yes for diary email lock removal, auth recovery, Supabase Magic Link, or public auth release claims |
+| 19 | Production data integrity contract | `docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md`, focused checker/hook/workflow tests, source + diff/staged scans, and the bundle scan after the final production build. Any high-confidence PDI finding, internal/config error, stale exact baseline, expired waiver, or bundle sentinel is blocking. | Yes for data, storage, sync, demo, release-evidence, CI/hook, or enforcement changes |
 
 AdMob owner evidence promotion must use `npm run google-play:admob:owner-evidence:apply -- --file output/private/admob-owner-evidence.json` as a dry-run before any `--write`. The command may update only owner-owned rows in `ADMOB_EXTERNAL_READINESS.json`; private owner evidence stays untracked.
 
@@ -67,6 +69,7 @@ AdMob owner evidence promotion must use `npm run google-play:admob:owner-evidenc
 | 11 | Desktop EXE contract reviewed | `docs/ai/DESKTOP_EXE_RUNTIME_CONTRACT.md` read when desktop/WebView2/runtime packaging is touched |
 | 12 | Microsoft Store/MSIX contract reviewed | `docs/ai/MICROSOFT_STORE_MSIX_CONTRACT.md` read when Partner Center, Store, MSIX, or Product Identity is touched |
 | 13 | Best Practices Packet reviewed | `docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md` used when the user asks for best practices, full implementation, deep research, hidden gaps, or cross-platform quality |
+| 14 | Production data integrity reviewed | Exact baseline and waiver ledgers inspected; no count-based suppression; dedicated smoke accounts carry `user_metadata.zenflow_sync_smoke === true`; remote CI/branch protection is marked `UNVERIFIED` unless freshly checked |
 
 ## Release-Only (before store/web publish)
 
@@ -77,6 +80,7 @@ AdMob owner evidence promotion must use `npm run google-play:admob:owner-evidenc
 | 3 | Git tag created | `git tag v<version> && git push --tags` |
 | 4 | Release checklist | `docs/RELEASE_CHECKLIST.md` - full QA pass |
 | 5 | Runtime contract | `docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md` gates reviewed |
+| 6 | Production data integrity | Source check passes before build and bundle check passes on the actual Web/Android/iOS/Desktop release assets; `docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md` reviewed |
 
 ## Hotfix Exception
 

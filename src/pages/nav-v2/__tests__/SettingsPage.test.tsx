@@ -712,10 +712,6 @@ vi.mock("@/hooks/useFontScale", () => ({
   useFontScale: () => ({ scale: 1, setFontScale: vi.fn() }),
 }));
 
-vi.mock("@/hooks/useDemoMode", () => ({
-  useDemoMode: () => ({ toggleDemoMode: vi.fn() }),
-}));
-
 vi.mock("@/features/journal", () => ({
   LOCK_TIMEOUT_OPTIONS: [{ ms: 300000, label: "5 minutes" }],
   setAutoLockMs: vi.fn(),
