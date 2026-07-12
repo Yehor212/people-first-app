@@ -3,29 +3,22 @@ import {
   Download,
   ExternalLink,
   FileText,
-  History,
   Info,
   Loader2,
   MessageSquare,
   RefreshCw,
   Scale,
   Shield,
-  Sparkles,
-  Type,
 } from "lucide-react";
-import { ChangelogPanel } from "@/components/ChangelogPanel";
-import { DopamineSettingsComponent } from "@/components/DopamineSettings";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { LegalModal } from "@/components/LegalModal";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { FONT_SCALE_LEVELS, useFontScale } from "@/hooks/useFontScale";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
-import { useScrollLock } from "@/hooks/useScrollLock";
 import { checkForAppUpdate, openGooglePlayStore, type UpdateState } from "@/lib/appUpdateManager";
+import { getAppUpdateCapability } from "@/lib/appUpdateCapability";
 import { APP_VERSION } from "@/lib/appVersion";
 import { checkAppVersionStatus, reloadAppForUpdate } from "@/lib/versionCheck";
 import { logger } from "@/lib/logger";
-import { isNative } from "@/lib/platform";
 import {
   ActionButton,
   PanelFrame,
@@ -35,46 +28,34 @@ import {
   SettingsStatus,
 } from "./components/V2SettingsControlPrimitives";
 
-const FONT_SCALE_LABELS: Record<number, string> = {
-  0.85: "fontScaleTiny",
-  0.9: "fontScaleSmall",
-  1: "fontScaleDefault",
-  1.1: "fontScaleMedium",
-  1.2: "fontScaleLarge",
-  1.3: "fontScaleXL",
-  1.5: "fontScaleXXL",
-};
-
 export function AboutPanel() {
   const { t, language } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const { canInstall, isInstalled, promptInstall } = usePwaInstall();
-  const { scale, setFontScale } = useFontScale();
+  const updateCapability = getAppUpdateCapability();
   const [showFeedback, setShowFeedback] = useState(false);
-  const [showChangelog, setShowChangelog] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
   const [legalTab, setLegalTab] = useState<"privacy" | "terms" | "licenses">("privacy");
-  const [showDopamineSettings, setShowDopamineSettings] = useState(false);
   const [updateCheckStatus, setUpdateCheckStatus] = useState<
     "idle" | "checking" | "available" | "latest" | "error"
   >("idle");
   const [updateState, setUpdateState] = useState<UpdateState | null>(null);
   const [isRestartingUpdate, setIsRestartingUpdate] = useState(false);
-  const currentFontIndex = FONT_SCALE_LEVELS.indexOf(scale);
-
-  useScrollLock(showFeedback || showChangelog || showLegal || showDopamineSettings);
+  const [googlePlayOpenFailed, setGooglePlayOpenFailed] = useState(false);
 
   const handleCheckForUpdates = async () => {
     setUpdateCheckStatus("checking");
     setUpdateState(null);
+    setGooglePlayOpenFailed(false);
     try {
-      if (isNative) {
+      if (updateCapability.kind === "android-store") {
         const result = await checkForAppUpdate();
         setUpdateState(result);
         setUpdateCheckStatus(result.available ? "available" : result.error ? "error" : "latest");
         return;
       }
 
+      if (updateCapability.kind !== "web-reload") return;
       const result = await checkAppVersionStatus();
       setUpdateCheckStatus(
         result.status === "stale" ? "available" : result.status === "current" ? "latest" : "error"
@@ -82,6 +63,17 @@ export function AboutPanel() {
     } catch (error) {
       logger.error("[V2Settings] Update check failed:", error);
       setUpdateCheckStatus("error");
+    }
+  };
+
+  const handleOpenGooglePlayStore = async () => {
+    setGooglePlayOpenFailed(false);
+    try {
+      const opened = await openGooglePlayStore();
+      if (!opened) setGooglePlayOpenFailed(true);
+    } catch (error) {
+      logger.error("[V2Settings] Could not open Google Play:", error);
+      setGooglePlayOpenFailed(true);
     }
   };
 
@@ -112,61 +104,18 @@ export function AboutPanel() {
             {tx.appName || "ZenFlow"} v{APP_VERSION}
           </span>
           <span className="mt-1 block text-xs text-muted-foreground">
-            {tx.tagline || "Mood, habits, and journal in one calm flow."}
+            {tx.settingsAboutProductSummary ||
+              "ZenFlow brings mood check-ins, habits, focus sessions, and your journal into one place."}
           </span>
-        </div>
-
-        <SettingsInset>
-          <SettingsFieldHeader
-            icon={Type}
-            title={tx.fontScaleTitle || "Text Size"}
-            description={tx.fontScalePreviewSub || "Adjust text size across the app."}
-          />
-          <div className="mb-2 flex items-center justify-between px-1">
-            <span className="text-xs text-muted-foreground">A</span>
-            <span className="text-sm font-semibold text-foreground">
-              {tx[FONT_SCALE_LABELS[scale]] || `${Math.round(scale * 100)}%`}
-            </span>
-            <span className="text-xl text-muted-foreground">A</span>
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={FONT_SCALE_LEVELS.length - 1}
-            step={1}
-            value={currentFontIndex}
-            onChange={(event) => setFontScale(FONT_SCALE_LEVELS[Number(event.target.value)])}
-            className="settings-v2-range-control h-11 w-full cursor-pointer appearance-none"
-            aria-label={tx.fontScaleTitle || "Text Size"}
-          />
-        </SettingsInset>
-
-        <div className="space-y-3" data-testid="settings-v2-about-experience-group">
-          <SettingsFieldHeader
-            icon={Sparkles}
-            title={tx.settingsAboutExperienceTitle || "Experience controls"}
-            description={
-              tx.settingsAboutExperienceDescription ||
-              "Motion preferences, release notes, and app feedback live together."
-            }
-          />
-          <SettingsButtonGrid columns="two">
-            <ActionButton icon={Sparkles} onClick={() => setShowDopamineSettings(true)}>
-              {tx.dopamineSettings || "Feedback style"}
-            </ActionButton>
-            <ActionButton icon={History} onClick={() => setShowChangelog(true)}>
-              {tx.changelogTitle || "Version History"}
-            </ActionButton>
-          </SettingsButtonGrid>
         </div>
 
         <div className="space-y-3" data-testid="settings-v2-about-support-legal-group">
           <SettingsFieldHeader
             icon={Shield}
-            title={tx.settingsAboutSupportLegalTitle || "Support and legal"}
+            title={tx.settingsAboutSupportLegalTitle || "Help and legal"}
             description={
               tx.settingsAboutSupportLegalDescription ||
-              "Privacy, terms, licenses, and contact options."
+              "Privacy, terms, licenses, and support."
             }
           />
           <SettingsButtonGrid columns="two">
@@ -198,7 +147,7 @@ export function AboutPanel() {
                 setShowLegal(true);
               }}
             >
-              {tx.openSourceLicenses || "Open-source library licenses"}
+              {tx.openSourceLicenses || "Licenses"}
             </ActionButton>
           </SettingsButtonGrid>
         </div>
@@ -224,15 +173,15 @@ export function AboutPanel() {
           </ActionButton>
         )}
 
+        {updateCapability.kind !== "unavailable" && (
         <SettingsInset testId="settings-v2-update-check">
           <SettingsFieldHeader
             icon={RefreshCw}
             title={tx.settingsUpdateTitle || "App version"}
             description={
-              isNative
-                ? tx.settingsNativeUpdateDescription || "Check whether the app store has a newer version of ZenFlow."
-                : tx.settingsWebUpdateDescription ||
-                  "ZenFlow can check whether a newer version is ready."
+              updateCapability.kind === "android-store"
+                ? tx.settingsNativeUpdateDescription || "Check for a newer version."
+                : tx.settingsWebUpdateDescription || "Check for a newer version."
             }
           />
           <ActionButton
@@ -253,7 +202,7 @@ export function AboutPanel() {
               {tx.appUpToDate || "You have the latest version"}
             </SettingsStatus>
           )}
-          {updateCheckStatus === "available" && !isNative && (
+          {updateCheckStatus === "available" && updateCapability.kind === "web-reload" && (
             <SettingsStatus
               center
               ariaLabel={
@@ -267,11 +216,12 @@ export function AboutPanel() {
                 {tx.webUpdateAvailable || "A newer version is ready"}
               </span>
               <span className="mt-1 block">
-                {tx.webUpdateAvailableDescription || "Restart ZenFlow to load the latest version. Finish anything you are typing first."}
+                {tx.webUpdateAvailableDescription ||
+                  "Restart ZenFlow to load the latest version. Finish anything you are typing first."}
               </span>
             </SettingsStatus>
           )}
-          {updateCheckStatus === "available" && !isNative && (
+          {updateCheckStatus === "available" && updateCapability.kind === "web-reload" && (
             <ActionButton
               icon={isRestartingUpdate ? Loader2 : RefreshCw}
               variant="primary"
@@ -287,18 +237,23 @@ export function AboutPanel() {
                 : tx.restartZenflow || "Restart ZenFlow"}
             </ActionButton>
           )}
-          {updateCheckStatus === "available" && isNative && updateState && (
+          {updateCheckStatus === "available" && updateCapability.kind === "android-store" && updateState && (
             <ActionButton
               icon={ExternalLink}
               variant="primary"
               onClick={() => {
-                void openGooglePlayStore();
+                void handleOpenGooglePlayStore();
               }}
             >
               {tx.openGooglePlay || "Open Google Play"}
             </ActionButton>
           )}
-          {updateCheckStatus === "available" && isNative && updateState?.releaseNotes && (
+          {googlePlayOpenFailed && (
+            <p role="alert" className="text-center text-sm text-destructive">
+              {tx.openGooglePlayFailed || "Could not open Google Play. Try again."}
+            </p>
+          )}
+          {updateCheckStatus === "available" && updateCapability.kind === "android-store" && updateState?.releaseNotes && (
             <SettingsStatus center>
               {typeof updateState.releaseNotes === "string"
                 ? updateState.releaseNotes
@@ -313,7 +268,7 @@ export function AboutPanel() {
               center
               tone="danger"
               ariaLabel={
-                isNative
+                updateCapability.kind === "android-store"
                   ? tx.updateCheckFailed || "Could not check for updates"
                   : (tx.updateCheckFailed || "Could not check for updates") +
                     ". " +
@@ -324,7 +279,7 @@ export function AboutPanel() {
               <span className="block font-semibold">
                 {tx.updateCheckFailed || "Could not check for updates"}
               </span>
-              {!isNative ? (
+              {updateCapability.kind === "web-reload" ? (
                 <span className="mt-1 block">
                   {tx.webUpdateCheckFailedDescription ||
                     "ZenFlow needs a network check to confirm the latest version. Nothing changed on this device."}
@@ -333,14 +288,11 @@ export function AboutPanel() {
             </SettingsStatus>
           )}
         </SettingsInset>
+        )}
       </PanelFrame>
 
       <FeedbackForm open={showFeedback} onOpenChange={setShowFeedback} />
-      {showChangelog && <ChangelogPanel onClose={() => setShowChangelog(false)} />}
       <LegalModal open={showLegal} onOpenChange={setShowLegal} initialTab={legalTab} />
-      {showDopamineSettings && (
-        <DopamineSettingsComponent onClose={() => setShowDopamineSettings(false)} />
-      )}
     </>
   );
 }

@@ -3,9 +3,11 @@ import { useUserDataStore } from '@/stores';
 import { logger } from '@/lib/logger';
 import { generateId } from '@/lib/utils';
 import { normalizeHabit } from '@/lib/habits';
-import { triggerDataRefresh } from '@/hooks/useIndexedDB';
+import { runWithDataWriteBarrier } from '@/hooks/useIndexedDB';
 import { clearLocalUserData, db } from '@/storage/db';
-import { stopAutoSync, syncWithCloud } from '@/storage/cloudSync';
+import { quiesceCloudSync, resumeCloudSync, startAutoSync, syncWithCloud } from '@/storage/cloudSync';
+import { offlineQueue } from '@/lib/offlineQueue';
+import { getCurrentSessionUserId } from '@/lib/supabaseClient';
 import type { ScheduleEvent } from '@/types';
 
 /**
@@ -38,12 +40,32 @@ export function useSettingsHandlers(allScheduleEvents: ScheduleEvent[]) {
   }, [setMoods, setHabits, setFocusSessions, setGratitudeEntries, setScheduleEvents, setCanvasGoals, setUserName, setUserNameCustom, setOnboardingComplete, setHasSelectedLanguage]);
 
   const handleResetData = useCallback(async () => {
-    stopAutoSync();
-    const { clearDeviceIdCache } = await import('@/storage/eventSync');
-    clearDeviceIdCache();
-    await clearLocalUserData();
-    resetInMemoryState();
-    triggerDataRefresh();
+    if (await getCurrentSessionUserId()) {
+      throw new Error('Sign out before clearing local-only data');
+    }
+    await quiesceCloudSync();
+    let queueSuspended = false;
+    try {
+      queueSuspended = true;
+      await offlineQueue.suspendAndClearForAccountBoundary();
+      await runWithDataWriteBarrier(
+        async () => {
+          if (await getCurrentSessionUserId()) {
+            throw new Error('Account session started before local data could be cleared');
+          }
+          const { clearDeviceIdCache } = await import('@/storage/eventSync');
+          clearDeviceIdCache();
+          await clearLocalUserData();
+          resetInMemoryState();
+        },
+        { deferredWrites: 'discard' },
+      );
+    } catch (error) {
+      resumeCloudSync();
+      startAutoSync();
+      if (queueSuspended) offlineQueue.resumeAfterAccountBoundary();
+      throw error;
+    }
   }, [resetInMemoryState]);
 
   const handleNameChange = useCallback((name: string) => {

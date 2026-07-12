@@ -26,16 +26,46 @@ import { pullFromCloud } from "@/storage/realtimeSync";
 import { isAbortError } from "@/lib/validation";
 import { recordSyncHealthReceipt } from "@/observability/syncHealthRecorder";
 import { scheduleIdle } from "@/lib/scheduleIdle";
+import { SyncOwnerBoundaryError } from "@/storage/sync/syncOwner";
 
 const DELTA_SYNC_INTERVAL = 5 * 60 * 1000;
 const MAX_GAP_SIZE = 1000;
 const GAP_WAIT_MS = 500;
 
-function pendingQueueCounts(): { pending: number; criticalPending: number } {
-  const actions = offlineQueue.getState().actions;
+interface DeltaSyncOwnerOperation {
+  ownerUserId: string;
+  generation: number;
+}
+
+class DeltaSyncOwnerChangedError extends Error {
+  constructor() {
+    super("[DeltaSync] Active account changed during sync");
+    this.name = "DeltaSyncOwnerChangedError";
+  }
+}
+
+function isOwnerBoundaryError(error: unknown): boolean {
+  return (
+    error instanceof DeltaSyncOwnerChangedError ||
+    error instanceof SyncOwnerBoundaryError
+  );
+}
+
+function pendingQueueCounts(ownerUserId: string): {
+  pending: number;
+  criticalPending: number;
+  criticalActionType?: string;
+} {
+  const actions = offlineQueue
+    .getState()
+    .actions.filter((action) => action.ownerUserId === ownerUserId);
+  const criticalActions = actions.filter(
+    (action) => action.type === "WRITE_SYNC_EVENT" || action.priority === "critical"
+  );
   return {
     pending: actions.length,
-    criticalPending: actions.filter((action) => action.type === "WRITE_SYNC_EVENT").length,
+    criticalPending: criticalActions.length,
+    criticalActionType: criticalActions[0]?.type,
   };
 }
 
@@ -46,15 +76,48 @@ export function useDeltaSyncEffects(): void {
   const [, dispatch] = useReducer(syncReducer, INITIAL_STATE);
   const stateRef = useRef(INITIAL_STATE);
   const abortRef = useRef<AbortController | null>(null);
+  const gapAbortRef = useRef<AbortController | null>(null);
   const gapDetectorRef = useRef<SyncGapDetector | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isRunningRef = useRef(false);
+  const authGenerationRef = useRef(0);
+  const observedAuthOwnerRef = useRef<string | null>(null);
+  const rerunAfterCurrentRef = useRef(false);
+  const effectActiveRef = useRef(false);
 
   const dispatchAndSync = (action: Parameters<typeof syncReducer>[1]) => {
     const next = syncReducer(stateRef.current, action);
     stateRef.current = next;
     dispatch(action);
+  };
+
+  const captureOwnerOperation = async (): Promise<DeltaSyncOwnerOperation | null> => {
+    const generation = authGenerationRef.current;
+    const ownerUserId = await getCurrentSessionUserId();
+    if (!ownerUserId) return null;
+    if (generation !== authGenerationRef.current) {
+      throw new DeltaSyncOwnerChangedError();
+    }
+    if (observedAuthOwnerRef.current === null) {
+      observedAuthOwnerRef.current = ownerUserId;
+    }
+    return { ownerUserId, generation };
+  };
+
+  const assertOwnerOperationCurrent = async (
+    operation: DeltaSyncOwnerOperation
+  ): Promise<void> => {
+    if (operation.generation !== authGenerationRef.current) {
+      throw new DeltaSyncOwnerChangedError();
+    }
+    const activeOwnerUserId = await getCurrentSessionUserId();
+    if (
+      operation.generation !== authGenerationRef.current ||
+      activeOwnerUserId !== operation.ownerUserId
+    ) {
+      throw new DeltaSyncOwnerChangedError();
+    }
   };
 
   const runDeltaSyncRef = useRef(async () => {
@@ -66,36 +129,44 @@ export function useDeltaSyncEffects(): void {
       recordSyncHealthReceipt({ kind: "offline", source: "delta" });
       return;
     }
-    if (!(await getCurrentSessionUserId())) {
+    let operation: DeltaSyncOwnerOperation | null;
+    try {
+      operation = await captureOwnerOperation();
+    } catch (error) {
+      if (isOwnerBoundaryError(error)) return;
+      throw error;
+    }
+    if (!operation) {
       logger.sync("[DeltaSync] Skipped; no authenticated session");
       recordSyncHealthReceipt({ kind: "session-missing", source: "delta" });
       return;
     }
 
     isRunningRef.current = true;
-    abortRef.current = new AbortController();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const locked = await runWithSyncLeaderLock("delta-sync", async () => {
-        const pendingBefore = pendingQueueCounts();
+        await offlineQueue.waitForInit();
+        await assertOwnerOperationCurrent(operation);
+        const pendingBefore = pendingQueueCounts(operation.ownerUserId);
         if (pendingBefore.pending > 0) {
           recordSyncHealthReceipt({
             kind: "queue-draining",
             source: "delta",
-            actionType:
-              pendingBefore.criticalPending > 0 ? "WRITE_SYNC_EVENT" : "offline-queue",
+            actionType: pendingBefore.criticalActionType ?? "offline-queue",
             priority: pendingBefore.criticalPending > 0 ? "critical" : "normal",
           });
           await offlineQueue.processQueue();
-          dispatchAndSync({ type: "QUEUE_DRAINED" });
+          await assertOwnerOperationCurrent(operation);
 
-          const pendingAfter = pendingQueueCounts();
+          const pendingAfter = pendingQueueCounts(operation.ownerUserId);
           if (pendingAfter.pending > 0) {
             recordSyncHealthReceipt({
               kind: "queue-blocked",
               source: "delta",
-              actionType:
-                pendingAfter.criticalPending > 0 ? "WRITE_SYNC_EVENT" : "offline-queue",
+              actionType: pendingAfter.criticalActionType ?? "offline-queue",
               priority: pendingAfter.criticalPending > 0 ? "critical" : "normal",
             });
             logger.sync(
@@ -104,11 +175,11 @@ export function useDeltaSyncEffects(): void {
             return;
           }
 
+          dispatchAndSync({ type: "QUEUE_DRAINED" });
           recordSyncHealthReceipt({
             kind: "queue-drained",
             source: "delta",
-            actionType:
-              pendingBefore.criticalPending > 0 ? "WRITE_SYNC_EVENT" : "offline-queue",
+            actionType: pendingBefore.criticalActionType ?? "offline-queue",
             priority: pendingBefore.criticalPending > 0 ? "critical" : "normal",
           });
         }
@@ -116,8 +187,13 @@ export function useDeltaSyncEffects(): void {
         dispatchAndSync({ type: "TRIGGER_DELTA" });
 
         const localSeq = await getLastSeq();
+        await assertOwnerOperationCurrent(operation);
         if (localSeq === 0) {
-          const result = await bootstrapSnapshotThenDelta(abortRef.current?.signal);
+          const result = await bootstrapSnapshotThenDelta(
+            controller.signal,
+            operation.ownerUserId
+          );
+          await assertOwnerOperationCurrent(operation);
           logger.sync(
             "[DeltaSync] Snapshot bootstrap complete, fetched=" +
               result.fetched +
@@ -139,7 +215,8 @@ export function useDeltaSyncEffects(): void {
         }
 
         const lastSeq = localSeq;
-        const events = await fetchAllDeltas(lastSeq, abortRef.current?.signal);
+        const events = await fetchAllDeltas(lastSeq, controller.signal);
+        await assertOwnerOperationCurrent(operation);
 
         if (events.length === 0) {
           gapDetectorRef.current?.resetTo(lastSeq);
@@ -149,7 +226,12 @@ export function useDeltaSyncEffects(): void {
         }
 
         const deviceId = await getPersistentDeviceId();
-        const applied = await applyDelta(events, deviceId);
+        await assertOwnerOperationCurrent(operation);
+        const applied = await applyDelta(events, deviceId, {
+          expectedOwnerUserId: operation.ownerUserId,
+          assertOwnerCurrent: () => assertOwnerOperationCurrent(operation),
+        });
+        await assertOwnerOperationCurrent(operation);
         const maxSeq = events[events.length - 1].seq;
 
         logger.sync("[DeltaSync] Applied " + applied + " events, seq=" + maxSeq);
@@ -168,11 +250,18 @@ export function useDeltaSyncEffects(): void {
       });
 
       if (!locked.acquired) {
+        await assertOwnerOperationCurrent(operation);
         logger.sync("[DeltaSync] Delta pull skipped; another tab is applying the cursor");
         recordSyncHealthReceipt({ kind: "leader-skipped", source: "delta" });
       }
     } catch (err) {
       if (isAbortError(err)) return;
+
+      if (isOwnerBoundaryError(err)) {
+        logger.sync("[DeltaSync] Discarded stale work at an account boundary");
+        dispatchAndSync({ type: "RESET", lastSeq: 0 });
+        return;
+      }
 
       if (err instanceof Error && err.name === "QuotaExceededError") {
         logger.error("[DeltaSync] Storage full");
@@ -194,22 +283,40 @@ export function useDeltaSyncEffects(): void {
       }, delay);
     } finally {
       isRunningRef.current = false;
-      abortRef.current = null;
+      if (abortRef.current === controller) abortRef.current = null;
+      const shouldRerun = rerunAfterCurrentRef.current && effectActiveRef.current;
+      rerunAfterCurrentRef.current = false;
+      if (shouldRerun) void runDeltaSyncRef.current();
     }
   });
 
   const runSnapshotSyncRef = useRef(async () => {
     if (isRunningRef.current) return;
-    if (!(await getCurrentSessionUserId())) {
+    let operation: DeltaSyncOwnerOperation | null;
+    try {
+      operation = await captureOwnerOperation();
+    } catch (error) {
+      if (isOwnerBoundaryError(error)) return;
+      throw error;
+    }
+    if (!operation) {
       logger.sync("[DeltaSync] Snapshot skipped; no authenticated session");
       return;
     }
     isRunningRef.current = true;
+    const controller = new AbortController();
+    abortRef.current = controller;
     dispatchAndSync({ type: "SNAPSHOT_START" });
 
     try {
-      await pullFromCloud();
-      const serverMax = await getServerMaxSeq();
+      await assertOwnerOperationCurrent(operation);
+      const snapshotApplied = await pullFromCloud(operation.ownerUserId);
+      await assertOwnerOperationCurrent(operation);
+      if (!snapshotApplied) {
+        throw new Error("[DeltaSync] Snapshot pull failed");
+      }
+      const serverMax = await getServerMaxSeq(operation.ownerUserId);
+      await assertOwnerOperationCurrent(operation);
       dispatchAndSync({ type: "SNAPSHOT_SUCCESS", lastSeq: serverMax });
       recordSyncHealthReceipt({ kind: "snapshot-applied", source: "delta", seq: serverMax });
 
@@ -219,35 +326,74 @@ export function useDeltaSyncEffects(): void {
 
       logger.sync("[DeltaSync] Snapshot complete, seq=" + serverMax);
     } catch (err) {
+      if (isAbortError(err)) return;
+      if (isOwnerBoundaryError(err)) {
+        logger.sync("[DeltaSync] Discarded stale snapshot at an account boundary");
+        dispatchAndSync({ type: "RESET", lastSeq: 0 });
+        return;
+      }
       logger.error("[DeltaSync] Snapshot failed:", err);
       const delay = getRetryDelay(stateRef.current.consecutiveErrors);
       dispatchAndSync({ type: "ERROR", retryDelayMs: delay });
     } finally {
       isRunningRef.current = false;
+      if (abortRef.current === controller) abortRef.current = null;
+      const shouldRerun = rerunAfterCurrentRef.current && effectActiveRef.current;
+      rerunAfterCurrentRef.current = false;
+      if (shouldRerun) void runDeltaSyncRef.current();
     }
   });
 
   useEffect(() => {
     if (!isDeltaSyncEnabled) return;
+    effectActiveRef.current = true;
 
     gapDetectorRef.current = new SyncGapDetector(stateRef.current.lastSeq, {
       gapWaitMs: GAP_WAIT_MS,
       maxGapSize: MAX_GAP_SIZE,
       onFallbackToSnapshot: () => void runSnapshotSyncRef.current(),
       onPullRange: async (fromSeq: number) => {
-        const events = await fetchAllDeltas(fromSeq, abortRef.current?.signal);
-        if (events.length > 0) {
-          const deviceId = await getPersistentDeviceId();
-          await applyDelta(events, deviceId);
-          const maxSeq = events[events.length - 1].seq;
-          gapDetectorRef.current?.resetTo(maxSeq);
-          dispatchAndSync({ type: "RESET", lastSeq: maxSeq });
-          recordSyncHealthReceipt({
-            kind: "gap-recovered",
-            source: "delta",
-            fetched: events.length,
-            seq: maxSeq,
-          });
+        let operation: DeltaSyncOwnerOperation | null;
+        try {
+          operation = await captureOwnerOperation();
+        } catch (error) {
+          if (isOwnerBoundaryError(error)) return;
+          throw error;
+        }
+        if (!operation) return;
+
+        const controller = new AbortController();
+        gapAbortRef.current = controller;
+        try {
+          await assertOwnerOperationCurrent(operation);
+          const events = await fetchAllDeltas(fromSeq, controller.signal);
+          await assertOwnerOperationCurrent(operation);
+          if (events.length > 0) {
+            const deviceId = await getPersistentDeviceId();
+            await assertOwnerOperationCurrent(operation);
+            await applyDelta(events, deviceId, {
+              expectedOwnerUserId: operation.ownerUserId,
+              assertOwnerCurrent: () => assertOwnerOperationCurrent(operation),
+            });
+            await assertOwnerOperationCurrent(operation);
+            const maxSeq = events[events.length - 1].seq;
+            gapDetectorRef.current?.resetTo(maxSeq);
+            dispatchAndSync({ type: "RESET", lastSeq: maxSeq });
+            recordSyncHealthReceipt({
+              kind: "gap-recovered",
+              source: "delta",
+              fetched: events.length,
+              seq: maxSeq,
+            });
+          }
+        } catch (error) {
+          if (isAbortError(error) || isOwnerBoundaryError(error)) {
+            logger.sync("[DeltaSync] Discarded stale gap recovery at an account boundary");
+            return;
+          }
+          throw error;
+        } finally {
+          if (gapAbortRef.current === controller) gapAbortRef.current = null;
         }
       },
     });
@@ -280,10 +426,17 @@ export function useDeltaSyncEffects(): void {
     document.addEventListener("visibilitychange", handleVisibility);
 
     const authSubscription = supabase?.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        void runDeltaSyncRef.current();
+      const nextOwnerUserId = session?.user?.id ?? null;
+      const previousOwnerUserId = observedAuthOwnerRef.current;
+      observedAuthOwnerRef.current = nextOwnerUserId;
+
+      if (previousOwnerUserId === nextOwnerUserId) {
+        if (nextOwnerUserId) void runDeltaSyncRef.current();
         return;
       }
+
+      authGenerationRef.current += 1;
+      dispatchAndSync({ type: "RESET", lastSeq: 0 });
 
       if (retryTimerRef.current) {
         clearTimeout(retryTimerRef.current);
@@ -291,6 +444,16 @@ export function useDeltaSyncEffects(): void {
       }
       if (abortRef.current) {
         abortRef.current.abort();
+      }
+      if (gapAbortRef.current) {
+        gapAbortRef.current.abort();
+      }
+      if (nextOwnerUserId) {
+        if (isRunningRef.current) {
+          rerunAfterCurrentRef.current = true;
+        } else {
+          void runDeltaSyncRef.current();
+        }
       }
     }).data.subscription;
 
@@ -330,6 +493,8 @@ export function useDeltaSyncEffects(): void {
 
     return () => {
       isMounted = false;
+      effectActiveRef.current = false;
+      rerunAfterCurrentRef.current = false;
       startupSyncHandle.cancel();
       unsubBroadcast();
       removeAppListener();
@@ -340,6 +505,7 @@ export function useDeltaSyncEffects(): void {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       if (abortRef.current) abortRef.current.abort();
+      if (gapAbortRef.current) gapAbortRef.current.abort();
       if (gapDetectorRef.current) gapDetectorRef.current.destroy();
     };
   }, [isDeltaSyncEnabled]);

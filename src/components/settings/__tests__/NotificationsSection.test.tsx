@@ -2,11 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Accordion } from '@/components/ui/accordion';
 import { NotificationsSection } from '../NotificationsSection';
-import {
-  scheduleHabitReminders,
-  scheduleLocalReminders,
-  scheduleMoodQuickLogNotification,
-} from '@/lib/localNotifications';
+import { reconcileReminderNotifications } from '@/lib/localNotifications';
 import { updateNotificationSound } from '@/lib/notificationSounds';
 import type { Habit, ReminderSettings } from '@/types';
 
@@ -35,12 +31,14 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 vi.mock('@/lib/localNotifications', () => ({
-  scheduleLocalReminders: vi.fn().mockResolvedValue(undefined),
-  scheduleHabitReminders: vi.fn().mockResolvedValue(undefined),
-  scheduleMoodQuickLogNotification: vi.fn().mockResolvedValue(undefined),
+  reconcileReminderNotifications: vi.fn().mockResolvedValue({
+    status: 'scheduled',
+    scheduledCount: 1,
+  }),
 }));
 
 vi.mock('@/lib/notificationSounds', () => ({
+  buildNotificationChannelCopy: vi.fn(() => ({})),
   NOTIFICATION_SOUNDS: [
     {
       id: 'default',
@@ -152,20 +150,13 @@ describe('NotificationsSection', () => {
 
     await waitFor(() => {
       expect(updateNotificationSound).toHaveBeenCalledWith('gentle');
-      expect(scheduleLocalReminders).toHaveBeenCalledWith(
+      expect(reconcileReminderNotifications).toHaveBeenCalledWith(
         reminders,
+        habits,
         expect.objectContaining({
           habit: expect.objectContaining({ body: 'Remember your habits: Stretch' }),
+          quickMoodBody: 'How are you feeling now?',
         }),
-      );
-      expect(scheduleHabitReminders).toHaveBeenCalledWith(habits, {
-        reminderTitle: 'Habit reminder',
-        reminderBody: 'Remember your habits:',
-      });
-      expect(scheduleMoodQuickLogNotification).toHaveBeenCalledWith(
-        { hour: 8, minute: 15 },
-        'How are you feeling now?',
-        { days: reminders.days, quietHours: reminders.quietHours },
       );
     });
   });

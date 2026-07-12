@@ -5,10 +5,13 @@ import { describe, expect, it } from "vitest";
 
 describe("V2 settings Appearance canvas hierarchy", () => {
   it("anchors Appearance with one icon-derived glass object before dense customization", () => {
-    const source = readFileSync(
-      resolve(__dirname, "../V2SettingsProfilePanels.tsx"),
-      "utf8",
-    );
+    const source = [
+      "../V2SettingsAppearanceBasics.tsx",
+      "../V2SettingsAppearanceAdvanced.tsx",
+      "../V2SettingsAppearancePanel.tsx",
+    ]
+      .map((file) => readFileSync(resolve(__dirname, file), "utf8"))
+      .join("\n");
 
     const anchor = source.indexOf('data-testid="settings-v2-identity-anchor"');
     const mode = source.indexOf('data-testid="settings-v2-theme-mode-field"');
@@ -36,7 +39,7 @@ describe("V2 settings Appearance canvas hierarchy", () => {
 
   it("keeps Apply tied to unsaved appearance changes instead of Preview state", () => {
     const source = readFileSync(
-      resolve(__dirname, "../V2SettingsProfilePanels.tsx"),
+      resolve(__dirname, "../V2SettingsAppearancePanel.tsx"),
       "utf8",
     );
 

@@ -6,8 +6,13 @@ const mocks = vi.hoisted(() => ({
   getLastSeq: vi.fn(),
   getPersistentDeviceId: vi.fn(),
   getServerMaxSeq: vi.fn(),
+  getCurrentUserId: vi.fn(),
   saveLastSeq: vi.fn(),
   pullFromCloud: vi.fn(),
+}));
+
+vi.mock("@/lib/supabaseClient", () => ({
+  getCurrentUserId: mocks.getCurrentUserId,
 }));
 
 vi.mock("@/storage/eventSync", () => ({
@@ -30,6 +35,7 @@ describe("bootstrapSnapshotThenDelta", () => {
     vi.clearAllMocks();
     mocks.getLastSeq.mockResolvedValue(0);
     mocks.getServerMaxSeq.mockResolvedValue(50);
+    mocks.getCurrentUserId.mockResolvedValue("user-1");
     mocks.pullFromCloud.mockResolvedValue(true);
     mocks.fetchAllDeltas.mockResolvedValue([]);
     mocks.getPersistentDeviceId.mockResolvedValue("device-current");
@@ -58,7 +64,14 @@ describe("bootstrapSnapshotThenDelta", () => {
     expect(mocks.getServerMaxSeq).toHaveBeenCalledBefore(mocks.pullFromCloud);
     expect(mocks.pullFromCloud).toHaveBeenCalledOnce();
     expect(mocks.fetchAllDeltas).toHaveBeenCalledWith(50, undefined);
-    expect(mocks.applyDelta).toHaveBeenCalledWith(tailEvents, "device-current");
+    expect(mocks.applyDelta).toHaveBeenCalledWith(
+      tailEvents,
+      "device-current",
+      expect.objectContaining({
+        expectedOwnerUserId: "user-1",
+        assertOwnerCurrent: expect.any(Function),
+      }),
+    );
     expect(mocks.saveLastSeq).not.toHaveBeenCalled();
     expect(result).toEqual({ fetched: 1, applied: 1, lastSeq: 51 });
   });
@@ -66,7 +79,13 @@ describe("bootstrapSnapshotThenDelta", () => {
   it("saves the snapshot baseline when no tail events arrive", async () => {
     const result = await bootstrapSnapshotThenDelta();
 
-    expect(mocks.saveLastSeq).toHaveBeenCalledWith(50);
+    expect(mocks.saveLastSeq).toHaveBeenCalledWith(
+      50,
+      expect.objectContaining({
+        expectedOwnerUserId: "user-1",
+        assertOwnerCurrent: expect.any(Function),
+      }),
+    );
     expect(mocks.applyDelta).not.toHaveBeenCalled();
     expect(result).toEqual({ fetched: 0, applied: 0, lastSeq: 50 });
   });
@@ -78,5 +97,32 @@ describe("bootstrapSnapshotThenDelta", () => {
 
     expect(mocks.fetchAllDeltas).not.toHaveBeenCalled();
     expect(mocks.saveLastSeq).not.toHaveBeenCalled();
+  });
+
+  it("does not apply a delayed account A delta after the active owner becomes account B", async () => {
+    const accountAEvents = [
+      {
+        id: "event-a-11",
+        seq: 11,
+        entity_type: "habit",
+        entity_id: "habit-a",
+        op: "upsert",
+        payload: { id: "habit-a" },
+        device_id: "device-a",
+        created_at: "2026-07-10T00:00:00.000Z",
+      },
+    ];
+    mocks.getLastSeq.mockResolvedValue(10);
+    mocks.fetchAllDeltas.mockResolvedValue(accountAEvents);
+    mocks.getCurrentUserId
+      .mockResolvedValueOnce("account-a")
+      .mockResolvedValueOnce("account-a")
+      .mockResolvedValue("account-b");
+
+    await expect(
+      bootstrapSnapshotThenDelta(undefined, "account-a")
+    ).rejects.toThrow("account boundary");
+
+    expect(mocks.applyDelta).not.toHaveBeenCalled();
   });
 });

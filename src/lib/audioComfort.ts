@@ -11,7 +11,6 @@ import {
 
 export type AudioComfortProfileId = "quiet" | "balanced" | "rich";
 export type AudioComfortFeedbackSoundType = "success" | "complete" | "streak" | "milestone" | "levelUp" | "notification";
-export type AudioComfortFeedbackChoice = "too_loud" | "distracting" | "comfortable" | "did_not_play" | "prefer_silent";
 export type AudioComfortSurface = "auth" | "orb" | "diary" | "focus" | "settings" | "notification";
 export type AudioVolumeBucket = "muted" | "low" | "medium" | "high";
 export type AudioTelemetryName =
@@ -39,16 +38,6 @@ export interface AudioComfortProfile {
   label: string;
   description: string;
   settings: AudioComfortSettings;
-}
-
-export interface AudioComfortFeedbackEntry {
-  choice: AudioComfortFeedbackChoice;
-  surface: AudioComfortSurface;
-  platform: AppAudioPlatform;
-  volumeBucket: AudioVolumeBucket;
-  muted: boolean;
-  ambientEnabled: boolean;
-  createdAt: string;
 }
 
 export interface AudioTelemetryEvent {
@@ -149,9 +138,7 @@ export const AUDIO_ROLLOUT_FLAGS = [
 ] as const;
 
 export const AUDIO_COMFORT_CHANGE_EVENT = "zenflow-audio-comfort-change";
-export const AUDIO_COMFORT_FEEDBACK_SCHEMA_VERSION = 1;
 export const AUDIO_SUPPORT_SNAPSHOT_SCHEMA_VERSION = 1;
-const FEEDBACK_STORAGE_LIMIT = 20;
 const FEEDBACK_BUDGET_WINDOW_MS = 30 * 60 * 1_000;
 const FEEDBACK_BUDGET_LIMIT: Record<AudioComfortFeedbackSoundType, number> = {
   success: 8,
@@ -172,56 +159,12 @@ function isTexture(value: unknown): value is AppAudioComfortTexture {
   return isOneOf(value, ["air", "water", "rain", "forest", "fire", "river", "wind"] as const);
 }
 
-function isFeedbackChoice(value: unknown): value is AudioComfortFeedbackChoice {
-  return isOneOf(value, ["too_loud", "distracting", "comfortable", "did_not_play", "prefer_silent"] as const);
-}
-
-function isFeedbackSurface(value: unknown): value is AudioComfortSurface {
-  return isOneOf(value, ["auth", "orb", "diary", "focus", "settings", "notification"] as const);
-}
-
-function isAudioPlatform(value: unknown): value is AppAudioPlatform {
-  return isOneOf(value, ["web", "pwa", "android", "ios", "desktop"] as const);
-}
-
-function isVolumeBucket(value: unknown): value is AudioVolumeBucket {
-  return isOneOf(value, ["muted", "low", "medium", "high"] as const);
-}
-
 function sanitizeErrorCode(value: unknown): string | undefined {
   return typeof value === "string" ? value.replace(/[^A-Z0-9_:-]/gi, "").slice(0, 48) || undefined : undefined;
 }
 
 function sanitizeAudioContextState(value: unknown): string | undefined {
   return isOneOf(value, ["running", "suspended", "closed", "interrupted", "unknown"] as const) ? value : undefined;
-}
-
-function normalizeFeedbackEntry(value: unknown): AudioComfortFeedbackEntry | null {
-  if (!value || typeof value !== "object") return null;
-  const candidate = value as Partial<AudioComfortFeedbackEntry>;
-  if (!isFeedbackChoice(candidate.choice)) return null;
-  if (!isFeedbackSurface(candidate.surface)) return null;
-  if (!isAudioPlatform(candidate.platform)) return null;
-  if (!isVolumeBucket(candidate.volumeBucket)) return null;
-  if (typeof candidate.muted !== "boolean") return null;
-  if (typeof candidate.ambientEnabled !== "boolean") return null;
-  if (typeof candidate.createdAt !== "string" || Number.isNaN(Date.parse(candidate.createdAt))) return null;
-
-  return {
-    choice: candidate.choice,
-    surface: candidate.surface,
-    platform: candidate.platform,
-    volumeBucket: candidate.volumeBucket,
-    muted: candidate.muted,
-    ambientEnabled: candidate.ambientEnabled,
-    createdAt: candidate.createdAt,
-  };
-}
-
-function getStoredAudioComfortFeedback(): AudioComfortFeedbackEntry[] {
-  const raw = safeLocalStorageGet<unknown>(SK.AUDIO_COMFORT_FEEDBACK, []);
-  if (!Array.isArray(raw)) return [];
-  return raw.map(normalizeFeedbackEntry).filter((entry): entry is AudioComfortFeedbackEntry => Boolean(entry)).slice(-FEEDBACK_STORAGE_LIMIT);
 }
 
 function normalizeSettings(value: Partial<AudioComfortSettings> | null | undefined): AudioComfortSettings {
@@ -319,22 +262,6 @@ export function getVolumeBucket(volume: number, muted = false): AudioVolumeBucke
   if (volume < 0.34) return "low";
   if (volume < 0.74) return "medium";
   return "high";
-}
-
-export function recordAudioComfortFeedback(input: Omit<AudioComfortFeedbackEntry, "createdAt">): AudioComfortFeedbackEntry {
-  const entry: AudioComfortFeedbackEntry = {
-    choice: input.choice,
-    surface: input.surface,
-    platform: input.platform,
-    volumeBucket: input.volumeBucket,
-    muted: input.muted,
-    ambientEnabled: input.ambientEnabled,
-    createdAt: new Date().toISOString(),
-  };
-  const current = getStoredAudioComfortFeedback();
-  const next = [...current, entry].slice(-FEEDBACK_STORAGE_LIMIT);
-  safeLocalStorageSet(SK.AUDIO_COMFORT_FEEDBACK, next);
-  return entry;
 }
 
 export function buildAudioTelemetryEvent(event: AudioTelemetryEvent): AudioTelemetryEvent {

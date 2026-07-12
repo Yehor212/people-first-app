@@ -33,6 +33,7 @@ function makeSecurity(overrides: Partial<JournalSecurityState> = {}): JournalSec
   return {
     biometricAvailable: false,
     biometricEnabled: false,
+    cloudProtectionPending: false,
     changePassword: vi.fn().mockResolvedValue(true),
     cooldownRemaining: 0,
     failedAttempts: 0,

@@ -14,9 +14,13 @@ function parseHslToken(token: string): [number, number, number] {
   return [Number(match[1]), Number(match[2]) / 100, Number(match[3]) / 100];
 }
 
-function hslToRgb([hue, saturation, lightness]: [number, number, number]): [number, number, number] {
+function hslToRgb([hue, saturation, lightness]: [number, number, number]): [
+  number,
+  number,
+  number,
+] {
   const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
-  const second = chroma * (1 - Math.abs((hue / 60) % 2 - 1));
+  const second = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
   const match = lightness - chroma / 2;
   let red = 0;
   let green = 0;
@@ -34,7 +38,7 @@ function hslToRgb([hue, saturation, lightness]: [number, number, number]): [numb
 
 function relativeLuminance(token: string): number {
   const [red, green, blue] = hslToRgb(parseHslToken(token)).map((channel) =>
-    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
+    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
   );
   return red * 0.2126 + green * 0.7152 + blue * 0.0722;
 }
@@ -42,8 +46,10 @@ function relativeLuminance(token: string): number {
 function contrastRatio(first: string, second: string): number {
   const firstLuminance = relativeLuminance(first);
   const secondLuminance = relativeLuminance(second);
-  return (Math.max(firstLuminance, secondLuminance) + 0.05) /
-    (Math.min(firstLuminance, secondLuminance) + 0.05);
+  return (
+    (Math.max(firstLuminance, secondLuminance) + 0.05) /
+    (Math.min(firstLuminance, secondLuminance) + 0.05)
+  );
 }
 
 describe("themeCustomization", () => {
@@ -69,7 +75,7 @@ describe("themeCustomization", () => {
         reduceGlow: "yes",
         reduceTransparency: 1,
         injectedCss: "body{display:none}",
-      }),
+      })
     ).toEqual(DEFAULT_THEME_CUSTOMIZATION);
   });
 
@@ -122,21 +128,21 @@ describe("themeCustomization", () => {
         ...DEFAULT_THEME_CUSTOMIZATION,
         accentFamily: "teal",
         depth: "soft",
-      }).cssVars["--settings-v2-accent"],
+      }).cssVars["--settings-v2-accent"]
     ).toBe("152 32% 36%");
     expect(
       getThemeCustomizationRecipe("ink", {
         ...DEFAULT_THEME_CUSTOMIZATION,
         accentFamily: "teal",
         depth: "soft",
-      }).cssVars["--settings-v2-accent"],
+      }).cssVars["--settings-v2-accent"]
     ).toBe("155 29% 77%");
     expect(
       getThemeCustomizationRecipe("oled", {
         ...DEFAULT_THEME_CUSTOMIZATION,
         accentFamily: "teal",
         depth: "soft",
-      }).cssVars["--settings-v2-accent"],
+      }).cssVars["--settings-v2-accent"]
     ).toBe("155 29% 77%");
   });
 
@@ -174,7 +180,6 @@ describe("themeCustomization", () => {
     expect(recipe.metaThemeColor).toMatch(/^#[0-9a-f]{6}$/i);
   });
 
-
   it("keeps custom primary action text at WCAG AA contrast", () => {
     for (const appliedTheme of ["paper", "ink", "oled"] as const) {
       for (const accent of THEME_ACCENT_FAMILIES) {
@@ -187,18 +192,17 @@ describe("themeCustomization", () => {
           });
           const ratio = contrastRatio(
             recipe.cssVars["--primary"],
-            recipe.cssVars["--primary-foreground"],
+            recipe.cssVars["--primary-foreground"]
           );
 
           expect(
             ratio,
-            `${appliedTheme}/${accent.id}/${intensity.id} primary contrast`,
+            `${appliedTheme}/${accent.id}/${intensity.id} primary contrast`
           ).toBeGreaterThanOrEqual(4.5);
         }
       }
     }
   });
-
 
   it("updates the browser theme-color meta when a custom style is previewed", () => {
     const meta = document.createElement("meta");
@@ -239,5 +243,25 @@ describe("themeCustomization", () => {
 
     expect(document.documentElement.dataset.themeStyle).toBe("zenflow");
     expect(document.documentElement.style.getPropertyValue("--settings-v2-accent")).toBe("");
+  });
+
+  it("makes high contrast affect text and focus tokens as well as borders", () => {
+    const paper = getThemeCustomizationRecipe("paper", {
+      ...DEFAULT_THEME_CUSTOMIZATION,
+      contrastMode: "high",
+    });
+    const ink = getThemeCustomizationRecipe("ink", {
+      ...DEFAULT_THEME_CUSTOMIZATION,
+      contrastMode: "high",
+    });
+
+    for (const recipe of [paper, ink]) {
+      expect(recipe.cssVars["--settings-v2-text-strong"]).toBeTruthy();
+      expect(recipe.cssVars["--settings-v2-text-muted"]).toBeTruthy();
+      expect(recipe.cssVars["--settings-v2-focus"]).toBeTruthy();
+    }
+    expect(paper.cssVars["--settings-v2-text-muted"]).not.toBe(
+      ink.cssVars["--settings-v2-text-muted"]
+    );
   });
 });

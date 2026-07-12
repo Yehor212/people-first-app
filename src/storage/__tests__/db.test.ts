@@ -4,14 +4,18 @@ vi.mock('@/lib/logger', () => ({
   logger: { log: vi.fn(), warn: vi.fn(), error: vi.fn(), sync: vi.fn(), auth: vi.fn() },
 }));
 
-vi.mock('@/lib/safeJson', () => ({
-  storageKeys: vi.fn(() => Object.keys(localStorage)),
-  storageRemove: vi.fn((key: string) => {
-    try {
-      localStorage.removeItem(key);
-    } catch { /* ignore */ }
-  }),
-}));
+vi.mock('@/lib/safeJson', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/safeJson')>('@/lib/safeJson');
+  return {
+    ...actual,
+    storageKeys: vi.fn(() => Object.keys(localStorage)),
+    storageRemove: vi.fn((key: string) => {
+      try {
+        localStorage.removeItem(key);
+      } catch { /* ignore */ }
+    }),
+  };
+});
 
 vi.mock('@/lib/storageKeys', async () => {
   const actual = await vi.importActual<typeof import('@/lib/storageKeys')>('@/lib/storageKeys');
@@ -35,6 +39,9 @@ import {
   journalEntryLinksRepo,
   journalSpaceCapturesRepo,
 } from '@/storage/db';
+import { SK, SSK } from '@/lib/storageKeys';
+import { useMoodEntryDraftStore } from '@/stores/moodEntryDraftStore';
+import { useUserDataStore } from '@/stores/userDataStore';
 
 const EXPECTED_TABLES = [
   'moods',
@@ -152,6 +159,11 @@ describe('clearLocalUserData', () => {
     await db.settings.put({ key: 'zenflow-deleted-habit-ids', value: ['habit-old'] });
     await db.settings.put({ key: 'journal_vault_key', value: { wrappedKey: 'wrapped-key' } });
     await db.settings.put({ key: 'journal_password_reset_proof', value: { nonce: 'reset-proof' } });
+    await db.settings.put({ key: SK.JOURNAL_VAULT_REVISION, value: 42 });
+    await db.settings.put({
+      key: SK.JOURNAL_SECURITY_REMOVAL,
+      value: { version: 1, revision: 'remove-a', ownerUserId: 'account-a', createdAt: 1, status: 'pending' },
+    });
     await db.settings.put({ key: 'journal_draft_new', value: { title: 'private draft' } });
     await db.settings.put({ key: 'journal_draft_entry-1', value: { title: 'entry draft' } });
 
@@ -220,6 +232,82 @@ describe('clearLocalUserData', () => {
     expect(localStorage.getItem('zenflow-deleted-habit-ids')).toBeNull();
   });
 
+  it('clears every non-Dexie account payload that could be reused by the next session', async () => {
+    const accountPayloadKeys = [
+      SK.TASKS,
+      SK.INNER_WORLD,
+      SK.CHALLENGES,
+      SK.QUESTS,
+      SK.FRIENDS,
+      SK.MY_FRIEND_PROFILE,
+      SK.FRIEND_ACTIVITIES,
+      SK.COACH_HISTORY,
+      SK.USER_BIRTH_DATE,
+      SK.CALENDAR_CACHE,
+      SK.WIDGET_DATA,
+    ];
+    for (const key of accountPayloadKeys) {
+      localStorage.setItem(key, JSON.stringify({ owner: 'account-a' }));
+      await db.settings.put({ key, value: { owner: 'account-a' } });
+    }
+
+    await clearLocalUserData();
+
+    for (const key of accountPayloadKeys) {
+      expect(localStorage.getItem(key), key).toBeNull();
+      await expect(db.settings.get(key), key).resolves.toBeUndefined();
+    }
+  });
+
+  it('clears account-bound session data and the in-memory mood draft', async () => {
+    useMoodEntryDraftStore.getState().setValence(-0.667);
+    useMoodEntryDraftStore.getState().setEmotion('overwhelmed');
+    useMoodEntryDraftStore.getState().setNote('Private account A note');
+    const accountAccessToken = crypto.randomUUID();
+    const accountRefreshToken = crypto.randomUUID();
+    sessionStorage.setItem(
+      SSK.SPOTIFY_TOKENS,
+      JSON.stringify({ accessToken: accountAccessToken, refreshToken: accountRefreshToken }),
+    );
+    sessionStorage.setItem(SSK.SPOTIFY_PKCE_VERIFIER, 'account-a-verifier');
+
+    await clearLocalUserData();
+
+    expect(sessionStorage.getItem(SSK.MOOD_ENTRY_DRAFT)).toBeNull();
+    expect(sessionStorage.getItem(SSK.SPOTIFY_TOKENS)).toBeNull();
+    expect(sessionStorage.getItem(SSK.SPOTIFY_PKCE_VERIFIER)).toBeNull();
+    expect(useMoodEntryDraftStore.getState()).toMatchObject({
+      valence: null,
+      scope: 'now',
+      specificTime: null,
+      emotion: null,
+      note: '',
+    });
+  });
+
+  it('does not carry privacy or remote-push consent into the next account', async () => {
+    const accountAPrivacy = {
+      noTracking: true,
+      analytics: false,
+      consentShown: true,
+      pushNotifications: true,
+    };
+    await db.settings.put({ key: SK.PRIVACY, value: accountAPrivacy });
+    localStorage.setItem(SK.PRIVACY, JSON.stringify(accountAPrivacy));
+    useUserDataStore.setState({ privacy: accountAPrivacy });
+
+    await clearLocalUserData();
+
+    await expect(db.settings.get(SK.PRIVACY)).resolves.toBeUndefined();
+    expect(localStorage.getItem(SK.PRIVACY)).toBeNull();
+    expect(useUserDataStore.getState().privacy).toEqual({
+      noTracking: false,
+      analytics: false,
+      consentShown: false,
+      pushNotifications: false,
+    });
+  });
+
   it('clears wrapped journal vault keys at the account boundary', async () => {
     await clearLocalUserData();
 
@@ -232,6 +320,13 @@ describe('clearLocalUserData', () => {
 
     await expect(db.settings.get('journal_password_reset_proof')).resolves.toBeUndefined();
     expect(localStorage.getItem('journal_password_reset_proof')).toBeNull();
+  });
+
+  it('clears the diary vault revision and pending removal intent only at the account boundary', async () => {
+    await clearLocalUserData();
+
+    await expect(db.settings.get(SK.JOURNAL_VAULT_REVISION)).resolves.toBeUndefined();
+    await expect(db.settings.get(SK.JOURNAL_SECURITY_REMOVAL)).resolves.toBeUndefined();
   });
 
   it('clears dynamic unsaved journal draft settings at the account boundary', async () => {
@@ -247,6 +342,42 @@ describe('clearLocalUserData', () => {
     // storageRemove is called for user keys
     const { storageRemove } = await import('@/lib/safeJson');
     expect(storageRemove).toHaveBeenCalled();
+  });
+
+  it('keeps the durable sign-out cleanup marker outside the real account purge', async () => {
+    const pendingCleanupKey = 'zenflow_pending_account_sign_out_cleanup';
+    const marker = JSON.stringify({
+      version: 1,
+      ownerUserId: 'account-a',
+      localDataOwnerUserId: 'account-a',
+      phase: 'purging-local-data',
+      createdAt: 1,
+    });
+    localStorage.setItem(pendingCleanupKey, marker);
+
+    try {
+      await clearLocalUserData();
+
+      await expect(db.moods.count()).resolves.toBe(0);
+      await expect(db.settings.get(SK.DATA_OWNER_ID)).resolves.toBeUndefined();
+      expect(localStorage.getItem(pendingCleanupKey)).toBe(marker);
+    } finally {
+      localStorage.removeItem(pendingCleanupKey);
+    }
+  });
+
+  it('rejects when both the transactional purge and database recreation fail', async () => {
+    vi.spyOn(db, 'transaction').mockRejectedValueOnce(new Error('transaction failed'));
+    vi.spyOn(db, 'delete').mockRejectedValueOnce(new Error('database recreation failed'));
+
+    await expect(clearLocalUserData()).rejects.toThrow('Unable to clear data on this device');
+  });
+
+  it('rejects when an account-bound browser-storage value cannot be removed', async () => {
+    const { storageRemove } = await import('@/lib/safeJson');
+    vi.mocked(storageRemove).mockReturnValue(false);
+
+    await expect(clearLocalUserData()).rejects.toThrow('Unable to clear data on this device');
   });
 });
 

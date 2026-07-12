@@ -10,6 +10,10 @@
 
 import { describe, expect, it, beforeEach, vi, afterEach } from 'vitest';
 
+const authState = vi.hoisted<{ ownerUserId: string | null }>(() => ({
+  ownerUserId: 'account-a',
+}));
+
 // Mock modules BEFORE importing syncOrchestrator
 vi.mock('@/lib/logger', () => ({
   logger: {
@@ -40,6 +44,7 @@ vi.mock('@/lib/apiClient', () => ({
 }));
 
 vi.mock('@/lib/supabaseClient', () => ({
+  getCurrentSessionUserId: vi.fn(async () => authState.ownerUserId),
   supabase: {
     auth: {
       getSession: vi.fn(() => Promise.resolve({ data: { session: null } })),
@@ -64,11 +69,17 @@ describe('SyncOrchestrator', () => {
     window.dispatchEvent(new Event('online'));
     // Ensure cloud sync is enabled
     vi.mocked(isCloudSyncEnabled).mockReturnValue(true);
+    authState.ownerUserId = 'account-a';
+    (
+      syncOrchestrator as unknown as { resumeAfterAccountBoundary?: () => void }
+    ).resumeAfterAccountBoundary?.();
   });
 
   afterEach(async () => {
     syncOrchestrator.clearQueue();
-    await settle(100);
+    await syncOrchestrator.suspendForAccountBoundary();
+    syncOrchestrator.resumeAfterAccountBoundary();
+    vi.useRealTimers();
   });
 
   // ─── Queue Enqueue & Processing ───────────────────────────────
@@ -97,11 +108,11 @@ describe('SyncOrchestrator', () => {
       void syncOrchestrator.sync('backup', async () => {
         await new Promise(resolve => setTimeout(resolve, 50));
         executionOrder.push('backup');
-      });
+      }).catch(() => undefined);
 
       void syncOrchestrator.sync('reminders', async () => {
         executionOrder.push('reminders');
-      });
+      }).catch(() => undefined);
 
       await settle(200);
 
@@ -114,17 +125,17 @@ describe('SyncOrchestrator', () => {
 
       void syncOrchestrator.sync('backup', async () => {
         await new Promise(resolve => setTimeout(resolve, 200));
-      }, { priority: 5 });
+      }, { priority: 5 }).catch(() => undefined);
 
       await settle(10);
 
       void syncOrchestrator.sync('tasks', async () => {
         // low priority
-      }, { priority: 1 });
+      }, { priority: 1 }).catch(() => undefined);
 
       void syncOrchestrator.sync('reminders', async () => {
         // high priority
-      }, { priority: 10 });
+      }, { priority: 10 }).catch(() => undefined);
 
       await settle(50);
 
@@ -178,7 +189,7 @@ describe('SyncOrchestrator', () => {
 
       void syncOrchestrator.sync('backup', async () => {
         throw new Error('Test error');
-      }, { maxRetries: 0 });
+      }, { maxRetries: 0 }).catch(() => undefined);
 
       await settle(200);
 
@@ -216,11 +227,11 @@ describe('SyncOrchestrator', () => {
 
       void syncOrchestrator.sync('backup', async () => {
         await new Promise(resolve => setTimeout(resolve, 50));
-      });
+      }).catch(() => undefined);
 
       void syncOrchestrator.sync('reminders', async () => {
         await new Promise(resolve => setTimeout(resolve, 50));
-      });
+      }).catch(() => undefined);
 
       await settle(300);
 
@@ -274,7 +285,7 @@ describe('SyncOrchestrator', () => {
 
       void syncOrchestrator.sync('backup', async () => {
         throw new Error('Test error message');
-      }, { maxRetries: 0 });
+      }, { maxRetries: 0 }).catch(() => undefined);
 
       await settle(200);
 
@@ -289,11 +300,11 @@ describe('SyncOrchestrator', () => {
       void syncOrchestrator.sync('backup', async () => {
         executed.push('backup');
         throw new Error('First operation failed');
-      }, { maxRetries: 0 });
+      }, { maxRetries: 0 }).catch(() => undefined);
 
       void syncOrchestrator.sync('reminders', async () => {
         executed.push('reminders');
-      });
+      }).catch(() => undefined);
 
       await settle(200);
 
@@ -329,7 +340,7 @@ describe('SyncOrchestrator', () => {
         if (attempts < 2) {
           throw new Error('Simulated failure');
         }
-      }, { maxRetries: 3 });
+      }, { maxRetries: 3 }).catch(() => undefined);
 
       // Wait for retries (exponential backoff: ~1s for first retry + jitter)
       await settle(4000);
@@ -340,12 +351,12 @@ describe('SyncOrchestrator', () => {
     it('stops retrying after max retries', async () => {
       let attempts = 0;
 
-      await syncOrchestrator.sync('backup', async () => {
-        attempts++;
-        throw new Error('Persistent failure');
-      }, { maxRetries: 2 });
-
-      await settle(8000);
+      await expect(
+        syncOrchestrator.sync('backup', async () => {
+          attempts++;
+          throw new Error('Persistent failure');
+        }, { maxRetries: 2 })
+      ).rejects.toThrow('Persistent failure');
 
       expect(attempts).toBeLessThanOrEqual(3);
     }, 15000);
@@ -360,8 +371,6 @@ describe('SyncOrchestrator', () => {
         }
       }, { maxRetries: 3 });
 
-      await settle(10000);
-
       if (retryTimes.length >= 2) {
         const firstDelay = retryTimes[1] - retryTimes[0];
         const secondDelay = retryTimes.length >= 3 ? retryTimes[2] - retryTimes[1] : 0;
@@ -375,12 +384,12 @@ describe('SyncOrchestrator', () => {
     it('does not retry client errors (4xx, duplicate key, etc.)', async () => {
       let attempts = 0;
 
-      void syncOrchestrator.sync('backup', async () => {
-        attempts++;
-        throw new Error('422 Unprocessable Entity');
-      }, { maxRetries: 3 });
-
-      await settle(3000);
+      await expect(
+        syncOrchestrator.sync('backup', async () => {
+          attempts++;
+          throw new Error('422 Unprocessable Entity');
+        }, { maxRetries: 3 })
+      ).rejects.toThrow('422 Unprocessable Entity');
 
       // Client errors are NOT retried
       expect(attempts).toBe(1);
@@ -391,15 +400,216 @@ describe('SyncOrchestrator', () => {
   // NOTE: These tests queue long-running executors. They are placed LAST
   // to avoid blocking isProcessing for subsequent tests.
 
+  describe('account-bound operation contract', () => {
+    it('rejects work stamped for a different authenticated owner before execution', async () => {
+      authState.ownerUserId = 'account-b';
+      const executor = vi.fn(async () => undefined);
+
+      await expect(
+        syncOrchestrator.sync('backup', executor, {
+          expectedOwnerUserId: 'account-a',
+          maxRetries: 0,
+        })
+      ).rejects.toThrow(/account boundary/i);
+
+      expect(executor).not.toHaveBeenCalled();
+    });
+
+    it('rejects newly submitted work while account cleanup is suspended', async () => {
+      await syncOrchestrator.suspendForAccountBoundary();
+      const executor = vi.fn(async () => undefined);
+
+      await expect(
+        syncOrchestrator.sync('backup', executor, {
+          expectedOwnerUserId: 'account-a',
+          maxRetries: 0,
+        })
+      ).rejects.toThrow(/suspended|cleanup/i);
+
+      expect(executor).not.toHaveBeenCalled();
+    });
+
+    it('keeps the sync promise pending until its executor actually completes', async () => {
+      let releaseExecutor!: () => void;
+      const executorGate = new Promise<void>(resolve => {
+        releaseExecutor = resolve;
+      });
+      let syncSettled = false;
+
+      const result = syncOrchestrator
+        .sync('backup', async () => executorGate, {
+          expectedOwnerUserId: 'account-a',
+          maxRetries: 0,
+        })
+        .then(() => {
+          syncSettled = true;
+        });
+
+      await settle(0);
+      expect(syncSettled).toBe(false);
+
+      releaseExecutor();
+      await result;
+      expect(syncSettled).toBe(true);
+    });
+
+    it('owner-stamps operations and waits for aborted account A executor unwind before boundary resolves', async () => {
+      let context:
+        | { ownerUserId: string; generation: number; signal: AbortSignal }
+        | undefined;
+      let releaseUnwind!: () => void;
+      let queuedAccountAStarted = false;
+
+      const activeOutcome = syncOrchestrator
+        .sync(
+          'backup',
+          async executionContext => {
+            context = executionContext;
+            await new Promise<void>((_resolve, reject) => {
+              executionContext.signal.addEventListener(
+                'abort',
+                () => {
+                  releaseUnwind = () =>
+                    reject(
+                      executionContext.signal.reason instanceof Error
+                        ? executionContext.signal.reason
+                        : new Error('Account boundary aborted sync')
+                    );
+                },
+                { once: true }
+              );
+            });
+          },
+          { expectedOwnerUserId: 'account-a', maxRetries: 0 }
+        )
+        .then(
+          () => ({ status: 'fulfilled' as const }),
+          error => ({ status: 'rejected' as const, error })
+        );
+
+      await vi.waitFor(() => {
+        expect(context?.ownerUserId).toBe('account-a');
+      });
+
+      const queuedOutcome = syncOrchestrator
+        .sync(
+          'reminders',
+          async () => {
+            queuedAccountAStarted = true;
+          },
+          { expectedOwnerUserId: 'account-a', maxRetries: 0 }
+        )
+        .then(
+          () => ({ status: 'fulfilled' as const }),
+          error => ({ status: 'rejected' as const, error })
+        );
+
+      authState.ownerUserId = 'account-b';
+      let boundarySettled = false;
+      const boundary = (
+        syncOrchestrator as unknown as { suspendForAccountBoundary: () => Promise<void> }
+      )
+        .suspendForAccountBoundary()
+        .then(() => {
+          boundarySettled = true;
+        });
+
+      await settle(0);
+      expect(context?.signal.aborted).toBe(true);
+      expect(boundarySettled).toBe(false);
+
+      releaseUnwind();
+      await boundary;
+
+      expect(boundarySettled).toBe(true);
+      expect(queuedAccountAStarted).toBe(false);
+      await expect(activeOutcome).resolves.toMatchObject({ status: 'rejected' });
+      await expect(queuedOutcome).resolves.toMatchObject({ status: 'rejected' });
+    });
+
+    it('aborts the executor on timeout and rejects only after the executor unwinds', async () => {
+      vi.useFakeTimers();
+      try {
+        let signal: AbortSignal | undefined;
+        let executorUnwound = false;
+
+        const result = syncOrchestrator
+          .sync(
+            'backup',
+            async executionContext => {
+              signal = executionContext.signal;
+              await new Promise<void>((_resolve, reject) => {
+                executionContext.signal.addEventListener(
+                  'abort',
+                  () => {
+                    executorUnwound = true;
+                    reject(
+                      executionContext.signal.reason instanceof Error
+                        ? executionContext.signal.reason
+                        : new Error('Timed out sync was aborted')
+                    );
+                  },
+                  { once: true }
+                );
+              });
+            },
+            { expectedOwnerUserId: 'account-a', maxRetries: 0 }
+          )
+          .then(
+            () => ({ status: 'fulfilled' as const, error: null }),
+            error => ({ status: 'rejected' as const, error })
+          );
+
+        await vi.advanceTimersByTimeAsync(45_000);
+
+        await expect(result).resolves.toMatchObject({
+          status: 'rejected',
+          error: expect.objectContaining({ message: expect.stringMatching(/timed out/i) }),
+        });
+        expect(signal?.aborted).toBe(true);
+        expect(executorUnwound).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('rejects overflow back to the caller instead of silently dropping work', async () => {
+      window.dispatchEvent(new Event('offline'));
+      const queuedOutcomes: Array<Promise<unknown>> = [];
+
+      for (let index = 0; index < 50; index += 1) {
+        queuedOutcomes.push(
+          syncOrchestrator
+            .sync('tasks', async () => undefined, {
+              expectedOwnerUserId: 'account-a',
+              maxRetries: 0,
+            })
+            .catch(error => error)
+        );
+      }
+
+      await expect(
+        syncOrchestrator.sync('quests', async () => undefined, {
+          expectedOwnerUserId: 'account-a',
+          maxRetries: 0,
+        })
+      ).rejects.toThrow(/queue.*full|overflow/i);
+
+      syncOrchestrator.clearQueue();
+      window.dispatchEvent(new Event('online'));
+      await Promise.all(queuedOutcomes);
+    });
+  });
+
   describe('queue management', () => {
     it('clears queue on demand', async () => {
       void syncOrchestrator.sync('backup', async () => {
         await new Promise(resolve => setTimeout(resolve, 100));
-      });
+      }).catch(() => undefined);
 
       void syncOrchestrator.sync('reminders', async () => {
         await new Promise(resolve => setTimeout(resolve, 100));
-      });
+      }).catch(() => undefined);
 
       syncOrchestrator.clearQueue();
 
@@ -410,13 +620,13 @@ describe('SyncOrchestrator', () => {
     it('provides queue info for debugging', async () => {
       void syncOrchestrator.sync('backup', async () => {
         await new Promise(resolve => setTimeout(resolve, 500));
-      }, { priority: 5 });
+      }, { priority: 5 }).catch(() => undefined);
 
       await settle(10);
 
       void syncOrchestrator.sync('reminders', async () => {
         await new Promise(resolve => setTimeout(resolve, 500));
-      }, { priority: 8 });
+      }, { priority: 8 }).catch(() => undefined);
 
       const queueInfo = syncOrchestrator.getQueueInfo();
 

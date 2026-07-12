@@ -58,6 +58,7 @@ import {
   playNotification,
   playNotificationPreview,
 } from '../audioManager';
+import * as audioManager from '../audioManager';
 
 import { storageSetRaw } from '../safeJson';
 import { shouldPlaySounds } from '../animationUtils';
@@ -278,6 +279,35 @@ describe('Volume control', () => {
   });
 });
 
+describe('Effective app audio authority', () => {
+  it('does not let the retired feedback-style sound flag override app audio', () => {
+    vi.mocked(shouldPlaySounds).mockReturnValue(false);
+    initAudioManager();
+
+    expect(audioManager.getAudioSettings()).toMatchObject({
+      muted: false,
+      volume: 0.3,
+      feedbackSoundsEnabled: true,
+      canPlayFeedback: true,
+    });
+  });
+
+  it('restores an audible default volume when the single master is enabled from zero', () => {
+    expect(audioManager).toHaveProperty('setAudioEnabled');
+    const setAudioEnabled = (
+      audioManager as typeof audioManager & { setAudioEnabled: (enabled: boolean) => void }
+    ).setAudioEnabled;
+
+    setVolume(0);
+    setMuted(true);
+    setAudioEnabled(true);
+
+    expect(isMuted()).toBe(false);
+    expect(getVolume()).toBe(0.3);
+    expect(audioManager.getAudioSettings().canPlayFeedback).toBe(true);
+  });
+});
+
 describe('Mute control', () => {
   it('not muted by default', () => {
     expect(isMuted()).toBe(false);
@@ -468,24 +498,6 @@ describe('playSound dispatch', () => {
       vi.runOnlyPendingTimers();
 
       setMuted(false);
-      playSound('notification');
-      vi.advanceTimersByTime(LOW_SALIENCE_TEST_DELAY_MS);
-
-      expect(captured.frequencies).toEqual([587.33]);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('does not consume fatigue budget while feedback style disables sounds', () => {
-    vi.useFakeTimers();
-    try {
-      const captured = installCapturedAudioContext();
-      vi.mocked(shouldPlaySounds).mockReturnValue(false);
-      for (let index = 0; index < 6; index += 1) playSound('notification');
-      vi.runOnlyPendingTimers();
-
-      vi.mocked(shouldPlaySounds).mockReturnValue(true);
       playSound('notification');
       vi.advanceTimersByTime(LOW_SALIENCE_TEST_DELAY_MS);
 

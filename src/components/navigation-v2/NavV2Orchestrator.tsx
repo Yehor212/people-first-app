@@ -1,5 +1,4 @@
 import { Suspense, lazy, memo, useCallback, useEffect } from "react";
-import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
 import { logger } from "@/lib/logger";
@@ -183,7 +182,6 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   const effectiveSidebarCollapsed = sidebarCollapsed || forceCompactWebRail;
   const shouldShowDrawerTrigger = !isWebNavigation && !unknownPath && activePage !== "diary";
   const MenuIcon = V2_SHELL_ICONS.menu;
-  const DrawerTriggerIcon = activePage === "settings" ? ChevronLeft : MenuIcon;
   const pendingRouteLabel = routePendingPage ? getNavV2RouteLabel(routePendingPage, tx) : null;
 
   useEffect(() => scheduleNavV2RoutePreload(activePage), [activePage]);
@@ -250,10 +248,14 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
       "ctrl+4": () => handlePrimaryPageChange("planning"),
       "ctrl+5": () => handlePrimaryPageChange("settings"),
       "ctrl+k": togglePalette,
-      escape: () => {
-        if (commandPaletteOpen) setCommandPaletteOpen(false);
-        else if (drawerOpen) closeDrawer();
-      },
+      ...(commandPaletteOpen || drawerOpen
+        ? {
+            escape: () => {
+              if (commandPaletteOpen) setCommandPaletteOpen(false);
+              else closeDrawer();
+            },
+          }
+        : {}),
     },
     isWebNavigation
   );
@@ -320,7 +322,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         onClick={handleOpenDrawer}
         aria-label={tx.navV2OpenMenu || "Open menu"}
         aria-expanded={drawerOpen}
-        aria-controls="nav-v2-drawer"
+        aria-controls={drawerOpen ? "nav-v2-drawer" : undefined}
         data-testid="nav-v2-open-drawer"
         className={cn(
           shouldShowDrawerTrigger ? "md:hidden flex" : "hidden",
@@ -333,10 +335,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
           "motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 motion-safe:active:translate-y-[1px] active:bg-muted/60"
         )}
       >
-        <DrawerTriggerIcon
-          className={cn("pointer-events-none h-5 w-5", activePage === "settings" && "rtl:scale-x-[-1]")}
-          aria-hidden="true"
-        />
+        <MenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />
       </button>
 
       {pendingRouteLabel && <NavV2RoutePending label={pendingRouteLabel} />}

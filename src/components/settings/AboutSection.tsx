@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   Sparkles,
-  History,
   RefreshCw,
   CheckCircle,
   ExternalLink,
@@ -11,25 +10,21 @@ import {
   FileText,
   Scale,
 } from "lucide-react";
-import { isNative } from "@/lib/platform";
+import { isAndroid } from "@/lib/platform";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { logger } from "@/lib/logger";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { checkForAppUpdate, openGooglePlayStore, UpdateState } from "@/lib/appUpdateManager";
 import { APP_VERSION } from "@/lib/appVersion";
 import { FeedbackForm } from "@/components/FeedbackForm";
-import { ChangelogPanel } from "@/components/ChangelogPanel";
 import { LegalModal } from "@/components/LegalModal";
-import { useScrollLock } from "@/hooks/useScrollLock";
 
 export function AboutSection() {
   const { t, language } = useLanguage();
 
   const [showFeedback, setShowFeedback] = useState(false);
-  const [showChangelog, setShowChangelog] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
   const [legalTab, setLegalTab] = useState<"privacy" | "terms" | "licenses">("privacy");
-  useScrollLock(showFeedback || showChangelog || showLegal);
   const [updateCheckStatus, setUpdateCheckStatus] = useState<
     "idle" | "checking" | "available" | "latest" | "error"
   >("idle");
@@ -86,17 +81,8 @@ export function AboutSection() {
               <p className="text-xs mt-1">{t.tagline}</p>
             </div>
 
-            {/* Version History Button */}
-            <button
-              onClick={() => setShowChangelog(true)}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted motion-safe:transition-colors flex items-center justify-center gap-2"
-            >
-              <History className="w-4 h-4" aria-hidden="true" />
-              {t.changelogTitle || "Version History"}
-            </button>
-
-            {/* Check for Updates Button - Only on native */}
-            {isNative && (
+            {/* Google Play update checks are available only in the Android build. */}
+            {isAndroid && (
               <div className="space-y-3">
                 <button
                   onClick={handleCheckForUpdates}
@@ -214,7 +200,6 @@ export function AboutSection() {
 
       {/* Modals */}
       <FeedbackForm open={showFeedback} onOpenChange={setShowFeedback} />
-      {showChangelog && <ChangelogPanel onClose={() => setShowChangelog(false)} />}
       <LegalModal open={showLegal} onOpenChange={setShowLegal} initialTab={legalTab} />
     </>
   );

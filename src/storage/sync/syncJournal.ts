@@ -6,7 +6,7 @@
 import { logger } from "@/lib/logger";
 import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSync";
 import { isAbortError } from "@/lib/validation";
-import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import type { Json } from "@/types/supabase";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
 import { offlineQueue } from "@/lib/offlineQueue";
@@ -14,6 +14,7 @@ import { detectNetworkError } from "./syncUtils";
 import { getDeletedJournalEntryIds, trackDeletedJournalEntryId } from "@/storage/deletionTracker";
 import { isEntityTombstonedOnServer } from "./serverTombstones";
 import { isCloudSyncEnabled } from "@/lib/cloudSyncSettings";
+import { validateSyncOwner } from "./syncOwner";
 
 type JournalPhotoSyncPayload = Pick<
   JournalPhoto,
@@ -24,6 +25,12 @@ type JournalAudioSyncPayload = Pick<
   JournalAudio,
   "id" | "entryId" | "duration" | "mimeType" | "createdAt" | "storagePath"
 >;
+
+async function validateJournalSyncOwner(
+  expectedOwnerUserId: string,
+): Promise<string | null> {
+  return validateSyncOwner(expectedOwnerUserId, "Journal sync");
+}
 
 function toPhotoSyncPayload(photo: JournalPhotoSyncPayload): JournalPhotoSyncPayload {
   return {
@@ -47,39 +54,51 @@ function toAudioSyncPayload(audio: JournalAudioSyncPayload): JournalAudioSyncPay
   };
 }
 
-async function queueJournalPhotoUploadRetry(photo: JournalPhotoSyncPayload): Promise<void> {
+async function queueJournalPhotoUploadRetry(
+  photo: JournalPhotoSyncPayload,
+  expectedOwnerUserId: string
+): Promise<void> {
   await offlineQueue.enqueue(
     "UPLOAD_JOURNAL_PHOTO_STORAGE",
     "journal-photo-upload:" + photo.id,
     { id: photo.id, metadata: toPhotoSyncPayload(photo) },
-    { priority: "high" }
+    { expectedOwnerUserId, priority: "high" }
   );
 }
 
-async function queueJournalAudioUploadRetry(audio: JournalAudioSyncPayload): Promise<void> {
+async function queueJournalAudioUploadRetry(
+  audio: JournalAudioSyncPayload,
+  expectedOwnerUserId: string
+): Promise<void> {
   await offlineQueue.enqueue(
     "UPLOAD_JOURNAL_AUDIO_STORAGE",
     "journal-audio-upload:" + audio.id,
     { id: audio.id, metadata: toAudioSyncPayload(audio) },
-    { priority: "high" }
+    { expectedOwnerUserId, priority: "high" }
   );
 }
 
-async function queueJournalPhotoDeleteRetry(photoId: string): Promise<void> {
+async function queueJournalPhotoDeleteRetry(
+  photoId: string,
+  expectedOwnerUserId: string
+): Promise<void> {
   await offlineQueue.enqueue(
     "DELETE_JOURNAL_PHOTO_STORAGE",
     "journal-photo-delete:" + photoId,
     { id: photoId },
-    { priority: "high" }
+    { expectedOwnerUserId, priority: "high" }
   );
 }
 
-async function queueJournalAudioDeleteRetry(audioId: string): Promise<void> {
+async function queueJournalAudioDeleteRetry(
+  audioId: string,
+  expectedOwnerUserId: string
+): Promise<void> {
   await offlineQueue.enqueue(
     "DELETE_JOURNAL_AUDIO_STORAGE",
     "journal-audio-delete:" + audioId,
     { id: audioId },
-    { priority: "high" }
+    { expectedOwnerUserId, priority: "high" }
   );
 }
 
@@ -91,10 +110,13 @@ async function queueJournalAudioDeleteRetry(audioId: string): Promise<void> {
  * Sync a journal entry to cloud (metadata only — media binary in Storage).
  * Uses last-write-wins conflict resolution via updated_at.
  */
-export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
+export const syncJournalEntry = async (
+  entry: JournalEntry,
+  expectedOwnerUserId: string,
+): Promise<void> => {
   if (!isCloudSyncEnabled()) return;
 
-  const userId = await getCurrentUserId();
+  const userId = await validateJournalSyncOwner(expectedOwnerUserId);
   if (!supabase) return;
   if (!userId) {
     logger.warn("[Sync] Cannot sync journal entry: User not authenticated");
@@ -108,12 +130,14 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
   }
 
   if (!navigator.onLine) {
-    await offlineQueue.enqueue("SYNC_JOURNAL_ENTRY", entry.id, entry);
+    await offlineQueue.enqueue("SYNC_JOURNAL_ENTRY", entry.id, entry, {
+      expectedOwnerUserId: userId,
+    });
     logger.log("[Sync] Journal entry queued for offline sync:", entry.id);
     return;
   }
 
-  if (await isEntityTombstonedOnServer("journal", entry.id)) {
+  if (await isEntityTombstonedOnServer("journal", entry.id, userId)) {
     await trackDeletedJournalEntryId(entry.id);
     logger.warn("[Sync] Skipping server-tombstoned journal entry upsert:", entry.id);
     return;
@@ -148,7 +172,8 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
       entry.id,
       "upsert",
       entry as unknown as Record<string, unknown>,
-      deviceId
+      deviceId,
+      { expectedOwnerUserId: userId }
     );
   } catch (error) {
     if (isAbortError(error)) {
@@ -157,7 +182,9 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
     }
     const isNetworkError = detectNetworkError(error);
     if (isNetworkError) {
-      await offlineQueue.enqueue("SYNC_JOURNAL_ENTRY", entry.id, entry);
+      await offlineQueue.enqueue("SYNC_JOURNAL_ENTRY", entry.id, entry, {
+        expectedOwnerUserId: userId,
+      });
       logger.log("[Sync] Journal entry queued after network error:", entry.id);
     } else {
       // Keep failed journal writes visible to queue handlers; IndexedDB still has the data.
@@ -167,18 +194,28 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
   }
 };
 
-export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void> => {
+export const deleteJournalEntryFromCloud = async (
+  entryId: string,
+  expectedOwnerUserId: string,
+): Promise<void> => {
   if (!isCloudSyncEnabled()) return;
 
   await trackDeletedJournalEntryId(entryId);
 
-  const userId = await getCurrentUserId();
+  const userId = await validateJournalSyncOwner(expectedOwnerUserId);
   if (!supabase || !userId) return;
 
   if (!navigator.onLine) {
-    await offlineQueue.enqueue("DELETE_JOURNAL_ENTRY", entryId, {
-      id: entryId,
-    });
+    await offlineQueue.enqueue(
+      "DELETE_JOURNAL_ENTRY",
+      entryId,
+      {
+        id: entryId,
+      },
+      {
+        expectedOwnerUserId: userId,
+      }
+    );
     logger.log("[Sync] Journal entry delete queued for offline:", entryId);
     return;
   }
@@ -198,16 +235,25 @@ export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void
 
     logger.log("[Sync] Journal entry deleted from cloud:", entryId);
     const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast("journal", entryId, "delete", null, deviceId);
+    await writeEventAndBroadcast("journal", entryId, "delete", null, deviceId, {
+      expectedOwnerUserId: userId,
+    });
   } catch (error) {
     if (isAbortError(error)) {
       logger.warn("[Sync] Journal entry delete aborted:", entryId);
       return;
     }
     if (detectNetworkError(error)) {
-      await offlineQueue.enqueue("DELETE_JOURNAL_ENTRY", entryId, {
-        id: entryId,
-      });
+      await offlineQueue.enqueue(
+        "DELETE_JOURNAL_ENTRY",
+        entryId,
+        {
+          id: entryId,
+        },
+        {
+          expectedOwnerUserId: userId,
+        }
+      );
       logger.log("[Sync] Journal entry delete queued after network error:", entryId);
       return;
     }
@@ -220,10 +266,13 @@ export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void
  * Sync photo metadata to cloud (NOT the binary — that's in Storage bucket).
  * Fire-and-forget: called after photo is saved to IndexedDB.
  */
-export const syncJournalPhoto = async (photo: JournalPhotoSyncPayload): Promise<void> => {
+export const syncJournalPhoto = async (
+  photo: JournalPhotoSyncPayload,
+  expectedOwnerUserId: string,
+): Promise<void> => {
   if (!isCloudSyncEnabled()) return;
 
-  const userId = await getCurrentUserId();
+  const userId = await validateJournalSyncOwner(expectedOwnerUserId);
   if (!supabase || !userId) return;
 
   const deletedEntryIds = await getDeletedJournalEntryIds();
@@ -233,12 +282,12 @@ export const syncJournalPhoto = async (photo: JournalPhotoSyncPayload): Promise<
   }
 
   if (!navigator.onLine) {
-    await queueJournalPhotoUploadRetry(photo);
+    await queueJournalPhotoUploadRetry(photo, userId);
     logger.log("[Sync] Journal photo queued for media upload/metadata retry:", photo.id);
     return;
   }
 
-  if (await isEntityTombstonedOnServer("journal", photo.entryId)) {
+  if (await isEntityTombstonedOnServer("journal", photo.entryId, userId)) {
     logger.warn("[Sync] Skipping server-tombstoned journal photo upsert:", photo.id);
     return;
   }
@@ -266,7 +315,7 @@ export const syncJournalPhoto = async (photo: JournalPhotoSyncPayload): Promise<
       return;
     }
     if (detectNetworkError(error)) {
-      await queueJournalPhotoUploadRetry(photo);
+      await queueJournalPhotoUploadRetry(photo, userId);
       logger.log("[Sync] Journal photo queued after network error:", photo.id);
       return;
     }
@@ -278,10 +327,13 @@ export const syncJournalPhoto = async (photo: JournalPhotoSyncPayload): Promise<
 /**
  * Sync audio metadata to cloud.
  */
-export const syncJournalAudio = async (audio: JournalAudioSyncPayload): Promise<void> => {
+export const syncJournalAudio = async (
+  audio: JournalAudioSyncPayload,
+  expectedOwnerUserId: string,
+): Promise<void> => {
   if (!isCloudSyncEnabled()) return;
 
-  const userId = await getCurrentUserId();
+  const userId = await validateJournalSyncOwner(expectedOwnerUserId);
   if (!supabase || !userId) return;
 
   const deletedEntryIds = await getDeletedJournalEntryIds();
@@ -291,12 +343,12 @@ export const syncJournalAudio = async (audio: JournalAudioSyncPayload): Promise<
   }
 
   if (!navigator.onLine) {
-    await queueJournalAudioUploadRetry(audio);
+    await queueJournalAudioUploadRetry(audio, userId);
     logger.log("[Sync] Journal audio queued for media upload/metadata retry:", audio.id);
     return;
   }
 
-  if (await isEntityTombstonedOnServer("journal", audio.entryId)) {
+  if (await isEntityTombstonedOnServer("journal", audio.entryId, userId)) {
     logger.warn("[Sync] Skipping server-tombstoned journal audio upsert:", audio.id);
     return;
   }
@@ -324,7 +376,7 @@ export const syncJournalAudio = async (audio: JournalAudioSyncPayload): Promise<
       return;
     }
     if (detectNetworkError(error)) {
-      await queueJournalAudioUploadRetry(audio);
+      await queueJournalAudioUploadRetry(audio, userId);
       logger.log("[Sync] Journal audio queued after network error:", audio.id);
       return;
     }
@@ -333,20 +385,27 @@ export const syncJournalAudio = async (audio: JournalAudioSyncPayload): Promise<
   }
 };
 
-export const deleteJournalPhotoFromCloud = async (photoId: string): Promise<void> => {
+export const deleteJournalPhotoFromCloud = async (
+  photoId: string,
+  expectedOwnerUserId: string,
+): Promise<void> => {
   if (!isCloudSyncEnabled()) return;
 
-  const userId = await getCurrentUserId();
+  const userId = await validateJournalSyncOwner(expectedOwnerUserId);
   if (!supabase || !userId) return;
 
   if (!navigator.onLine) {
-    await queueJournalPhotoDeleteRetry(photoId);
+    await queueJournalPhotoDeleteRetry(photoId, userId);
     logger.log("[Sync] Journal photo delete queued for offline:", photoId);
     return;
   }
 
   try {
-    const { error } = await supabase.from("journal_photos").delete().eq("id", photoId).eq("user_id", userId);
+    const { error } = await supabase
+      .from("journal_photos")
+      .delete()
+      .eq("id", photoId)
+      .eq("user_id", userId);
     if (error) throw error;
   } catch (error) {
     if (isAbortError(error)) {
@@ -354,7 +413,7 @@ export const deleteJournalPhotoFromCloud = async (photoId: string): Promise<void
       return;
     }
     if (detectNetworkError(error)) {
-      await queueJournalPhotoDeleteRetry(photoId);
+      await queueJournalPhotoDeleteRetry(photoId, userId);
       logger.log("[Sync] Journal photo delete queued after network error:", photoId);
       return;
     }
@@ -363,20 +422,27 @@ export const deleteJournalPhotoFromCloud = async (photoId: string): Promise<void
   }
 };
 
-export const deleteJournalAudioFromCloud = async (audioId: string): Promise<void> => {
+export const deleteJournalAudioFromCloud = async (
+  audioId: string,
+  expectedOwnerUserId: string,
+): Promise<void> => {
   if (!isCloudSyncEnabled()) return;
 
-  const userId = await getCurrentUserId();
+  const userId = await validateJournalSyncOwner(expectedOwnerUserId);
   if (!supabase || !userId) return;
 
   if (!navigator.onLine) {
-    await queueJournalAudioDeleteRetry(audioId);
+    await queueJournalAudioDeleteRetry(audioId, userId);
     logger.log("[Sync] Journal audio delete queued for offline:", audioId);
     return;
   }
 
   try {
-    const { error } = await supabase.from("journal_audio").delete().eq("id", audioId).eq("user_id", userId);
+    const { error } = await supabase
+      .from("journal_audio")
+      .delete()
+      .eq("id", audioId)
+      .eq("user_id", userId);
     if (error) throw error;
   } catch (error) {
     if (isAbortError(error)) {
@@ -384,7 +450,7 @@ export const deleteJournalAudioFromCloud = async (audioId: string): Promise<void
       return;
     }
     if (detectNetworkError(error)) {
-      await queueJournalAudioDeleteRetry(audioId);
+      await queueJournalAudioDeleteRetry(audioId, userId);
       logger.log("[Sync] Journal audio delete queued after network error:", audioId);
       return;
     }

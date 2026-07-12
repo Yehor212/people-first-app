@@ -23,6 +23,7 @@ interface AppState {
   isProcessingWebOAuth: boolean;
   webOAuthError: string | null;
   hasValidSession: boolean | null; // null = checking
+  isAccountBoundaryInProgress: boolean;
 
   // Gate bypass flag (synchronous — survives until page refresh)
   onboardingBypassFlag: boolean;
@@ -39,6 +40,7 @@ interface AppActions {
   setIsProcessingWebOAuth: (value: boolean) => void;
   setWebOAuthError: (error: string | null) => void;
   setHasValidSession: (value: boolean | null) => void;
+  setAccountBoundaryInProgress: (value: boolean) => void;
   setOnboardingBypassFlag: (value: boolean) => void;
   resetAuthState: () => void;
 }
@@ -59,6 +61,7 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
   isProcessingWebOAuth: false,
   webOAuthError: null,
   hasValidSession: null,
+  isAccountBoundaryInProgress: false,
 
   // Actions
   setActiveTab: (tab) => set((state) => ({
@@ -74,9 +77,12 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
   setIsProcessingWebOAuth: (isProcessingWebOAuth) => set({ isProcessingWebOAuth }),
   setWebOAuthError: (webOAuthError) => set({ webOAuthError }),
   setHasValidSession: (hasValidSession) => set({ hasValidSession }),
+  setAccountBoundaryInProgress: (isAccountBoundaryInProgress) =>
+    set({ isAccountBoundaryInProgress }),
   setOnboardingBypassFlag: (onboardingBypassFlag) => set({ onboardingBypassFlag }),
   resetAuthState: () => set({
     hasValidSession: false,
     authBypassFlag: false,
+    isAccountBoundaryInProgress: false,
   }),
 }));

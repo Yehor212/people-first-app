@@ -44,11 +44,12 @@ import {
   DEFAULT_THEME_CUSTOMIZATION,
   applyThemeCustomizationToDOM,
   normalizeThemeCustomization,
+  type AppliedTheme,
   type ThemeCustomization,
 } from './themeCustomization';
 
 export type ThemePreference = 'paper' | 'ink' | 'oled' | 'auto';
-export type AppliedTheme = 'paper' | 'ink' | 'oled';
+export type { AppliedTheme } from './themeCustomization';
 
 export interface ThemeStore {
   /** User-selected preference — may be 'auto' */

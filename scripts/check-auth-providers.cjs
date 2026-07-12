@@ -182,6 +182,15 @@ function checkSourceContains(relativePath, needle, label) {
   }
 }
 
+function checkSourceNotContains(relativePath, needle, label) {
+  const content = readText(relativePath);
+  if (!content.includes(needle)) {
+    add("PASS", label, `${relativePath} does not contain ${needle}`);
+  } else {
+    add("FAIL", label, `${relativePath} must not contain ${needle}`);
+  }
+}
+
 const env = mergeEnv();
 const supabaseConfig = readText("supabase/config.toml");
 const authSection = getTomlSection(supabaseConfig, "auth");
@@ -273,10 +282,10 @@ checkSourceContains(
   "https://t.me",
   "Telegram bot profile photo public verifier checks the t.me public profile avatar"
 );
-checkSourceContains(
+checkSourceNotContains(
   "src/components/settings/account-section/useAccountAuth.ts",
   "linkIdentity",
-  "Settings supports provider account linking"
+  "Settings does not expose current-session identity linking"
 );
 checkSourceContains(
   "src/lib/nativeOAuthBrowser.ts",

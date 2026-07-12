@@ -9,8 +9,9 @@
  * This service handles cloud upload/download as a background layer.
  */
 
-import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { logger } from "@/lib/logger";
+import { SyncOwnerBoundaryError, validateSyncOwner } from "@/storage/sync/syncOwner";
 
 const PHOTO_BUCKET = "journal-photos";
 const AUDIO_BUCKET = "journal-audio";
@@ -81,6 +82,10 @@ function storagePath(userId: string, fileId: string, ext: string): string {
   return `${userId}/${fileId}.${ext}`;
 }
 
+async function assertExpectedOwnerCurrent(expectedOwnerUserId: string): Promise<void> {
+  await validateSyncOwner(expectedOwnerUserId, "Journal media storage");
+}
+
 // ============================================
 // UPLOAD
 // ============================================
@@ -88,11 +93,11 @@ async function uploadRawStorageBlob(
   bucket: typeof PHOTO_BUCKET | typeof AUDIO_BUCKET,
   fileId: string,
   blob: Blob,
+  expectedOwnerUserId: string,
   options: { contentType: string; ext: string; maxSize: number; label: string },
 ): Promise<UploadResult | null> {
   if (!supabase) return null;
-  const userId = await getCurrentUserId();
-  if (!userId) return null;
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
 
   try {
     if (blob.size > options.maxSize) {
@@ -100,7 +105,7 @@ async function uploadRawStorageBlob(
       throw new Error(options.label + " too large.");
     }
 
-    const path = storagePath(userId, fileId, options.ext);
+    const path = storagePath(expectedOwnerUserId, fileId, options.ext);
     const { error: uploadError } = await supabase.storage.from(bucket).upload(path, blob, {
       contentType: options.contentType,
       upsert: true,
@@ -128,10 +133,13 @@ export interface UploadResult {
  * Upload a photo (base64 data URL) to Supabase Storage.
  * Returns the storage path only; signed URLs are minted on demand.
  */
-export async function uploadPhoto(photoId: string, dataUrl: string): Promise<UploadResult | null> {
+export async function uploadPhoto(
+  photoId: string,
+  dataUrl: string,
+  expectedOwnerUserId: string,
+): Promise<UploadResult | null> {
   if (!supabase) return null;
-  const userId = await getCurrentUserId();
-  if (!userId) return null;
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
 
   try {
     const blob = base64ToBlob(dataUrl);
@@ -149,7 +157,7 @@ export async function uploadPhoto(photoId: string, dataUrl: string): Promise<Upl
     }
 
     const ext = extFromMime(blob.type);
-    const path = storagePath(userId, photoId, ext);
+    const path = storagePath(expectedOwnerUserId, photoId, ext);
 
     const { error: uploadError } = await supabase.storage.from(PHOTO_BUCKET).upload(path, blob, {
       contentType: blob.type,
@@ -171,8 +179,12 @@ export async function uploadPhoto(photoId: string, dataUrl: string): Promise<Upl
   }
 }
 
-export async function uploadEncryptedPhoto(photoId: string, encryptedPayload: Blob): Promise<UploadResult | null> {
-  return uploadRawStorageBlob(PHOTO_BUCKET, photoId, encryptedPayload, {
+export async function uploadEncryptedPhoto(
+  photoId: string,
+  encryptedPayload: Blob,
+  expectedOwnerUserId: string,
+): Promise<UploadResult | null> {
+  return uploadRawStorageBlob(PHOTO_BUCKET, photoId, encryptedPayload, expectedOwnerUserId, {
     contentType: ENCRYPTED_MEDIA_MIME,
     ext: ENCRYPTED_MEDIA_EXTENSION,
     maxSize: MAX_ENCRYPTED_PHOTO_SIZE,
@@ -186,11 +198,11 @@ export async function uploadEncryptedPhoto(photoId: string, encryptedPayload: Bl
 export async function uploadAudio(
   audioId: string,
   dataUrl: string,
-  mimeType: string
+  mimeType: string,
+  expectedOwnerUserId: string,
 ): Promise<UploadResult | null> {
   if (!supabase) return null;
-  const userId = await getCurrentUserId();
-  if (!userId) return null;
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
 
   try {
     // M13: Validate MIME type against allowlist
@@ -208,7 +220,7 @@ export async function uploadAudio(
     }
 
     const ext = extFromMime(mimeType);
-    const path = storagePath(userId, audioId, ext);
+    const path = storagePath(expectedOwnerUserId, audioId, ext);
 
     const { error: uploadError } = await supabase.storage.from(AUDIO_BUCKET).upload(path, blob, {
       contentType: mimeType,
@@ -230,8 +242,12 @@ export async function uploadAudio(
   }
 }
 
-export async function uploadEncryptedAudio(audioId: string, encryptedPayload: Blob): Promise<UploadResult | null> {
-  return uploadRawStorageBlob(AUDIO_BUCKET, audioId, encryptedPayload, {
+export async function uploadEncryptedAudio(
+  audioId: string,
+  encryptedPayload: Blob,
+  expectedOwnerUserId: string,
+): Promise<UploadResult | null> {
+  return uploadRawStorageBlob(AUDIO_BUCKET, audioId, encryptedPayload, expectedOwnerUserId, {
     contentType: ENCRYPTED_MEDIA_MIME,
     ext: ENCRYPTED_MEDIA_EXTENSION,
     maxSize: MAX_ENCRYPTED_AUDIO_SIZE,
@@ -249,9 +265,14 @@ export async function uploadEncryptedAudio(audioId: string, encryptedPayload: Bl
  */
 export async function downloadAsBase64(
   bucket: "journal-photos" | "journal-audio",
-  path: string
+  path: string,
+  expectedOwnerUserId: string,
 ): Promise<string | null> {
   if (!supabase) return null;
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
+  if (!path.startsWith(`${expectedOwnerUserId}/`)) {
+    throw new Error("Journal media path does not belong to the expected account");
+  }
 
   try {
     const { data, error } = await supabase.storage.from(bucket).download(path);
@@ -261,13 +282,17 @@ export async function downloadAsBase64(
       return null;
     }
 
-    return new Promise((resolve) => {
+    await assertExpectedOwnerCurrent(expectedOwnerUserId);
+    const dataUrl = await new Promise<string | null>((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
       reader.onerror = () => resolve(null);
       reader.readAsDataURL(data);
     });
+    await assertExpectedOwnerCurrent(expectedOwnerUserId);
+    return dataUrl;
   } catch (err) {
+    if (err instanceof SyncOwnerBoundaryError) throw err;
     logger.warn("[Storage] Download error:", err);
     return null;
   }
@@ -280,9 +305,14 @@ export async function downloadAsBase64(
 export async function getSignedUrl(
   bucket: "journal-photos" | "journal-audio",
   path: string,
+  expectedOwnerUserId: string,
   expiresInSeconds = 60 * 10
 ): Promise<string | null> {
   if (!supabase) return null;
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
+  if (!path.startsWith(`${expectedOwnerUserId}/`)) {
+    throw new Error("Journal media path does not belong to the expected account");
+  }
 
   try {
     const { data, error } = await supabase.storage
@@ -294,8 +324,10 @@ export async function getSignedUrl(
       return null;
     }
 
+    await assertExpectedOwnerCurrent(expectedOwnerUserId);
     return data.signedUrl;
   } catch (err) {
+    if (err instanceof SyncOwnerBoundaryError) throw err;
     logger.warn("[Storage] getSignedUrl error:", err);
     return null;
   }
@@ -307,9 +339,14 @@ export async function getSignedUrl(
 
 export async function deleteJournalMediaStoragePath(
   bucket: "journal-photos" | "journal-audio",
-  path: string
+  path: string,
+  expectedOwnerUserId: string,
 ): Promise<void> {
   if (!supabase) return;
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
+  if (!path.startsWith(`${expectedOwnerUserId}/`)) {
+    throw new Error("Journal media path does not belong to the expected account");
+  }
 
   try {
     const { error } = await supabase.storage.from(bucket).remove([path]);
@@ -323,15 +360,17 @@ export async function deleteJournalMediaStoragePath(
 /**
  * Delete a photo from Supabase Storage.
  */
-export async function deletePhotoFromStorage(photoId: string): Promise<void> {
+export async function deletePhotoFromStorage(
+  photoId: string,
+  expectedOwnerUserId: string,
+): Promise<void> {
   if (!supabase) return;
-  const userId = await getCurrentUserId();
-  if (!userId) return;
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
 
   try {
     // Try common extensions since we may not know the exact one
     const exts = ["jpg", "png", "webp", "bin"];
-    const paths = exts.map((ext) => storagePath(userId, photoId, ext));
+    const paths = exts.map((ext) => storagePath(expectedOwnerUserId, photoId, ext));
     const { error } = await supabase.storage.from(PHOTO_BUCKET).remove(paths);
     if (error) throw error;
   } catch (err) {
@@ -343,14 +382,16 @@ export async function deletePhotoFromStorage(photoId: string): Promise<void> {
 /**
  * Delete an audio file from Supabase Storage.
  */
-export async function deleteAudioFromStorage(audioId: string): Promise<void> {
+export async function deleteAudioFromStorage(
+  audioId: string,
+  expectedOwnerUserId: string,
+): Promise<void> {
   if (!supabase) return;
-  const userId = await getCurrentUserId();
-  if (!userId) return;
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
 
   try {
     const exts = ["webm", "mp4", "mp3", "ogg", "wav", "bin"];
-    const paths = exts.map((ext) => storagePath(userId, audioId, ext));
+    const paths = exts.map((ext) => storagePath(expectedOwnerUserId, audioId, ext));
     const { error } = await supabase.storage.from(AUDIO_BUCKET).remove(paths);
     if (error) throw error;
   } catch (err) {
@@ -364,10 +405,11 @@ export async function deleteAudioFromStorage(audioId: string): Promise<void> {
  */
 export async function deleteEntryMediaFromStorage(
   photoIds: string[],
-  audioIds: string[]
+  audioIds: string[],
+  expectedOwnerUserId: string,
 ): Promise<void> {
   const tasks: Promise<void>[] = [];
-  for (const id of photoIds) tasks.push(deletePhotoFromStorage(id));
-  for (const id of audioIds) tasks.push(deleteAudioFromStorage(id));
+  for (const id of photoIds) tasks.push(deletePhotoFromStorage(id, expectedOwnerUserId));
+  for (const id of audioIds) tasks.push(deleteAudioFromStorage(id, expectedOwnerUserId));
   await Promise.allSettled(tasks);
 }

@@ -3,7 +3,6 @@ import { CheckCircle, Cloud, Link2, Loader2, Mail } from "lucide-react";
 import { AuthProviderButton } from "@/components/auth/AuthProviderButton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
-import { useScrollLock } from "@/hooks/useScrollLock";
 import { getAuthProviderConfig, type SocialAuthProviderConfig } from "@/lib/authProviders";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
@@ -34,36 +33,37 @@ export function AccountSection({
     setAuthStatus: auth.setAuthStatus,
     t: tRecord,
   });
-  const del = useDeleteAccount({ onResetData, t: tRecord });
+  const del = useDeleteAccount({
+    onResetData,
+    t: tRecord,
+    activeUserId: auth.sessionUserId,
+  });
 
-  useBackHandler(del.showDeleteConfirm, () => del.setShowDeleteConfirm(false));
-  useScrollLock(del.showDeleteConfirm);
+  useBackHandler(del.showDeleteConfirm, () => {
+    del.closeDeleteConfirmation();
+  });
 
   // Escape key: dismiss delete confirmation
-  const { showDeleteConfirm, setShowDeleteConfirm } = del;
+  const { closeDeleteConfirmation, showDeleteConfirm } = del;
   useEffect(() => {
     if (!showDeleteConfirm) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        setShowDeleteConfirm(false);
+        e.stopPropagation();
+        closeDeleteConfirmation();
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [showDeleteConfirm, setShowDeleteConfirm]);
+  }, [closeDeleteConfirmation, showDeleteConfirm]);
 
   const baseUrl = BASE_URL;
   const deleteAccountHref = `${baseUrl}delete-account.html`;
   const getProviderName = (provider: SocialAuthProviderConfig) =>
     tRecord[provider.nameKey] || provider.fallbackName;
-  const formatProviderText = (template: string | undefined, provider: SocialAuthProviderConfig) =>
-    (template || "Connect {provider}").replace("{provider}", getProviderName(provider));
   const linkedProviderLabels = auth.linkedProviderIds.map((providerId) =>
     getProviderName(getAuthProviderConfig(providerId)),
-  );
-  const linkableProviders = auth.enabledProviders.filter(
-    (provider) => !auth.linkedProviderIds.includes(provider.id),
   );
 
   return (
@@ -118,34 +118,6 @@ export function AccountSection({
                       {label}
                     </span>
                   ))}
-                </div>
-              )}
-              {linkableProviders.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    {t.authConnectMoreProviders ||
-                      "Connect another sign-in method to keep this account across devices."}
-                  </p>
-                  {linkableProviders.map((provider) => {
-                    const isLinking = auth.linkingProvider === provider.id;
-                    const linkLabel = formatProviderText(t.authConnectProvider, provider);
-                    const linkingLabel = formatProviderText(t.authLinkingProvider, provider);
-                    return (
-                      <AuthProviderButton
-                        key={provider.id}
-                        provider={provider}
-                        label={linkLabel}
-                        loadingLabel={linkingLabel}
-                        isLoading={isLinking}
-                        disabled={auth.linkingProvider !== null}
-                        onClick={() => {
-                          void auth.handleLinkProvider(provider.id);
-                        }}
-                        size="compact"
-                        surface="subtle"
-                      />
-                    );
-                  })}
                 </div>
               )}
             </div>
@@ -239,7 +211,7 @@ export function AccountSection({
                 void auth.handleSignOut();
               }}
               className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted motion-safe:transition-colors btn-press flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={auth.isSigningOut}
+              disabled={auth.isSigningOut || del.isDeletingAccount}
             >
               {auth.isSigningOut && (
                 <Loader2
@@ -253,8 +225,7 @@ export function AccountSection({
             {!del.showDeleteConfirm ? (
               <button
                 onClick={() => {
-                  del.setShowDeleteConfirm(true);
-                  del.setDeleteConfirmInput("");
+                  del.openDeleteConfirmation();
                 }}
                 className="w-full py-3 bg-destructive/10 text-destructive rounded-xl font-medium hover:bg-destructive/20 motion-safe:transition-colors btn-press"
               >
@@ -290,14 +261,15 @@ export function AccountSection({
                     }
                     className="w-full p-2 bg-secondary rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-destructive/30"
                     autoComplete="off"
+                    disabled={del.isDeletingAccount}
                   />
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      del.setShowDeleteConfirm(false);
-                      del.setDeleteConfirmInput("");
+                      del.closeDeleteConfirmation();
                     }}
+                    disabled={del.isDeletingAccount}
                     className="flex-1 py-2 min-h-[44px] bg-secondary text-secondary-foreground rounded-lg"
                   >
                     {t.cancel || "Cancel"}
@@ -307,9 +279,7 @@ export function AccountSection({
                       void del.handleDeleteAccount();
                     }}
                     disabled={
-                      del.deleteConfirmInput !==
-                        (t.deleteConfirmWord || "DELETE") ||
-                      del.isDeletingAccount
+                      !del.deleteConfirmMatches || del.isDeletingAccount
                     }
                     className="flex-1 py-2 min-h-[44px] bg-destructive text-destructive-foreground rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                   >

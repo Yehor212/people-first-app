@@ -12,9 +12,15 @@ interface UseAuthSessionOptions {
   onComplete: (userData: { name: string; email: string }) => void;
   webOAuthError?: string | null;
   onClearError?: () => void;
+  suspendSessionCompletion?: boolean;
 }
 
-export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseAuthSessionOptions) {
+export function useAuthSession({
+  onComplete,
+  webOAuthError,
+  onClearError,
+  suspendSessionCompletion = false,
+}: UseAuthSessionOptions) {
   const [loadingProvider, setLoadingProvider] = useState<AuthProvider>(null);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
@@ -64,6 +70,7 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
   useEffect(() => {
     const checkSession = async () => {
       if (!supabase) return;
+      if (suspendSessionCompletion) return;
       if (hasCompletedRef.current) return;
       try {
         const { data, error: sessionError } = await supabase.auth.getSession();
@@ -89,7 +96,11 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
     if (supabase) {
       const { data } = supabase.auth.onAuthStateChange((event, session) => {
         logger.log("[Auth] Auth state changed:", event);
-        if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user) {
+        if (
+          !suspendSessionCompletion &&
+          (event === "SIGNED_IN" || event === "INITIAL_SESSION") &&
+          session?.user
+        ) {
           endAuthFlow();
           const name = getAuthUserDisplayName(session.user);
           const email = session.user.email || "";
@@ -117,12 +128,12 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
       window.removeEventListener(AUTH_COMPLETE_EVENT, handleAuthComplete);
       if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
     };
-  }, []);
+  }, [suspendSessionCompletion]);
 
   // Check session when app resumes from OAuth browser
   useEffect(() => {
     const client = supabase;
-    if (!client) return;
+    if (!client || suspendSessionCompletion) return;
 
     let isMounted = true;
     let listenerHandle: { remove: () => Promise<void> } | null = null;
@@ -192,7 +203,7 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
       isMounted = false;
       window.removeEventListener("focus", handleFocus);
     };
-  }, [loadingProvider]);
+  }, [loadingProvider, suspendSessionCompletion]);
 
   return {
     loadingProvider,

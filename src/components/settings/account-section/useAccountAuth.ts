@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
@@ -6,11 +6,7 @@ import { isNative } from "@/lib/platform";
 import { authenticateWithGoogleNative } from "@/lib/nativeGoogleAuth";
 import { authStateManager } from "@/lib/authStateManager";
 import { resetAuthGuard, canStartAuthFlow, startAuthFlow, endAuthFlow } from "@/lib/authGuard";
-import { removePushToken } from "@/lib/pushNotifications";
-import { offlineQueue } from "@/lib/offlineQueue";
-import { stopAutoSync } from "@/storage/cloudSync";
-import { clearLocalUserData } from "@/storage/db";
-import { triggerDataRefresh } from "@/hooks/useIndexedDB";
+import { initializePushNotifications } from "@/lib/pushNotifications";
 import { useAppStore, useUserDataStore } from "@/stores";
 import {
   buildOAuthCredentials,
@@ -25,28 +21,65 @@ import {
 } from "@/lib/authUser";
 import { openOAuthUrl } from "@/lib/nativeOAuthBrowser";
 import { logger } from "@/lib/logger";
+import { performOwnerSafeSignOut } from "@/lib/accountSignOutCleanup";
 
 interface UseAccountAuthOptions {
   onNameChange: (name: string) => void;
   t: Record<string, string>;
 }
 
+type SignOutBlockReason = "pending-changes" | "cleanup-failed" | "sign-out-failed";
+type SessionCheckState = "checking" | "signed-in" | "signed-out" | "error";
+
 export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
   const [authStatus, setAuthStatus] = useState<string | null>(null);
   const [sessionUser, setSessionUser] = useState<User | null>(null);
+  const [sessionCheckState, setSessionCheckState] = useState<SessionCheckState>(
+    supabase ? "checking" : "signed-out",
+  );
   const [signingInProvider, setSigningInProvider] = useState<SocialAuthProviderId | null>(null);
-  const [linkingProvider, setLinkingProvider] = useState<SocialAuthProviderId | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutBlockReason, setSignOutBlockReason] = useState<SignOutBlockReason | null>(null);
   const resetAuthState = useAppStore((s) => s.resetAuthState);
   const setAuthGateChecked = useUserDataStore((s) => s.setAuthGateChecked);
+  const pushNotificationsEnabled = useUserDataStore(
+    (s) => s.privacy.pushNotifications === true,
+  );
   const nativeOAuthTimeoutRef = useRef<number | null>(null);
+  const sessionCheckRequestRef = useRef(0);
+  const isMountedRef = useRef(true);
   const enabledProviders = useMemo(() => getEnabledAccountAuthProviders(), []);
 
+  const refreshSession = useCallback(async () => {
+    if (!supabase) {
+      setSessionUser(null);
+      setSessionCheckState("signed-out");
+      return;
+    }
+
+    const requestId = ++sessionCheckRequestRef.current;
+    setSessionCheckState("checking");
+
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      if (!isMountedRef.current || requestId !== sessionCheckRequestRef.current) return;
+
+      const nextUser = data.session?.user ?? null;
+      setSessionUser(nextUser);
+      setSessionCheckState(nextUser ? "signed-in" : "signed-out");
+    } catch (error) {
+      if (!isMountedRef.current || requestId !== sessionCheckRequestRef.current) return;
+      logger.warn("[Account]", "Session check failed:", error);
+      setSessionCheckState("error");
+    }
+  }, []);
+
   useEffect(() => {
-    if (!authStatus) return;
+    if (!authStatus || signOutBlockReason) return;
     const timer = window.setTimeout(() => setAuthStatus(null), 3000);
     return () => window.clearTimeout(timer);
-  }, [authStatus]);
+  }, [authStatus, signOutBlockReason]);
 
   useEffect(() => {
     return () => {
@@ -58,36 +91,37 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
   }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!supabase) return;
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        setSessionUser(data.session?.user ?? null);
-      })
-      .catch((err) => logger.warn("[Account]", "Session check failed:", err));
+    void refreshSession();
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSessionUser(session?.user ?? null);
-      if (session?.user) {
+      sessionCheckRequestRef.current += 1;
+      const nextUser = session?.user ?? null;
+      setSessionUser(nextUser);
+      setSessionCheckState(nextUser ? "signed-in" : "signed-out");
+      if (nextUser) {
         if (nativeOAuthTimeoutRef.current !== null) {
           window.clearTimeout(nativeOAuthTimeoutRef.current);
           nativeOAuthTimeoutRef.current = null;
           endAuthFlow();
         }
         setSigningInProvider(null);
-        setLinkingProvider(null);
       }
     });
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [refreshSession]);
 
-  const runOAuth = async (
-    provider: SocialAuthProviderId,
-    mode: "signIn" | "link",
-  ): Promise<void> => {
+  const runOAuth = async (provider: SocialAuthProviderId): Promise<void> => {
     if (!supabase) {
       setAuthStatus(t.authNotConfigured);
       return;
@@ -99,9 +133,8 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
     }
 
     startAuthFlow();
-    const setLoading = mode === "link" ? setLinkingProvider : setSigningInProvider;
     let waitingForNativeOAuthCallback = false;
-    setLoading(provider);
+    setSigningInProvider(provider);
     setAuthStatus(null);
 
     try {
@@ -110,16 +143,13 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
         redirectTo: redirectUrl,
         skipBrowserRedirect: isNative,
       });
-      logger.log(`[AccountSection] Starting ${provider} ${mode} with redirect:`, redirectUrl);
+      logger.log(`[AccountSection] Starting ${provider} sign-in with redirect:`, redirectUrl);
 
-      const { data, error } =
-        mode === "link"
-          ? await supabase.auth.linkIdentity(credentials)
-          : await supabase.auth.signInWithOAuth(credentials);
+      const { data, error } = await supabase.auth.signInWithOAuth(credentials);
 
       if (error) {
-        logger.error(`[AccountSection] ${provider} ${mode} error:`, error);
-        setAuthStatus(mode === "link" ? t.authProviderLinkFailed : t.authError);
+        logger.error(`[AccountSection] ${provider} sign-in error:`, error);
+        setAuthStatus(t.authError);
         return;
       }
 
@@ -137,7 +167,7 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
         nativeOAuthTimeoutRef.current = window.setTimeout(() => {
           nativeOAuthTimeoutRef.current = null;
           logger.warn(
-            `[AccountSection] ${provider} ${mode} timed out waiting for native OAuth callback`,
+            `[AccountSection] ${provider} sign-in timed out waiting for native OAuth callback`,
           );
           setAuthStatus(
             t.authSignInTooLong ||
@@ -145,16 +175,16 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
               "Sign-in took too long. Please try again.",
           );
           endAuthFlow();
-          setLoading(null);
+          setSigningInProvider(null);
         }, 60_000);
       }
     } catch (err) {
-      logger.error(`[AccountSection] ${provider} ${mode} exception:`, err);
-      setAuthStatus(mode === "link" ? t.authProviderLinkFailed : t.authUnexpectedError);
+      logger.error(`[AccountSection] ${provider} sign-in exception:`, err);
+      setAuthStatus(t.authUnexpectedError);
     } finally {
       if (!waitingForNativeOAuthCallback) {
         endAuthFlow();
-        setLoading(null);
+        setSigningInProvider(null);
       }
     }
   };
@@ -191,48 +221,83 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
       return;
     }
 
-    await runOAuth(provider, "signIn");
+    await runOAuth(provider);
   };
 
-  const handleLinkProvider = async (provider: SocialAuthProviderId) => {
-    await runOAuth(provider, "link");
-  };
-
-  const handleSignOut = async () => {
+  const handleSignOut = async (options: { discardPendingChanges?: boolean } = {}) => {
     if (!supabase) return;
     setIsSigningOut(true);
+    setAuthStatus(null);
+    setSignOutBlockReason(null);
     try {
-      if (offlineQueue.hasPendingActions()) {
-        logger.log("[AccountSection] Flushing offline queue before sign-out...");
-        try {
-          await Promise.race([
-            offlineQueue.processQueue(),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("Queue flush timeout")), 10000),
-            ),
-          ]);
-          logger.log("[AccountSection] Offline queue flushed successfully");
-        } catch (flushError) {
-          logger.warn("[AccountSection] Could not flush offline queue:", flushError);
-        }
+      const result = await performOwnerSafeSignOut({
+        discardPendingChanges: options.discardPendingChanges,
+        restorePushRegistration: pushNotificationsEnabled
+          ? initializePushNotifications
+          : undefined,
+      });
+
+      if (result.status === "pending-changes") {
+        setSignOutBlockReason("pending-changes");
+        setAuthStatus(t.authSignOutPendingChanges || t.authUnexpectedError);
+        return;
       }
-      stopAutoSync();
-      await removePushToken();
-      const { clearDeviceIdCache } = await import("@/storage/eventSync");
-      clearDeviceIdCache();
-      await clearLocalUserData();
-      triggerDataRefresh();
-      await supabase.auth.signOut();
+
+      if (result.status === "sign-out-failed") {
+        setSignOutBlockReason("sign-out-failed");
+        setAuthStatus(t.authSignOutFailed || t.authUnexpectedError);
+        return;
+      }
+
+      if (result.status === "session-changed") {
+        setSignOutBlockReason(null);
+        setAuthStatus(t.authSignOutFailed || t.authUnexpectedError);
+        return;
+      }
+
+      if (result.status === "cleanup-failed") {
+        if (result.sessionEnded) {
+          resetAuthState();
+          setAuthGateChecked(false);
+          authStateManager.reset();
+          resetAuthGuard();
+        }
+        setSignOutBlockReason("cleanup-failed");
+        setAuthStatus(t.authSignOutCleanupFailed || t.authUnexpectedError);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("zenflow:account-cleanup-blocked", {
+              detail: {
+                retry: () => {
+                  void handleSignOut(options);
+                },
+              },
+            }),
+          );
+        }
+        return;
+      }
+
+      // `no-session` is an idempotent success for a retry after another tab or
+      // the auth listener already finished the durable cleanup.
       resetAuthState();
       setAuthGateChecked(false);
       authStateManager.reset();
       resetAuthGuard();
       onNameChange("Friend");
+      setSignOutBlockReason(null);
       setAuthStatus(t.authSignedOut);
+    } catch (error) {
+      logger.error("[AccountSection] Sign-out failed:", error);
+      setSignOutBlockReason("sign-out-failed");
+      setAuthStatus(t.authSignOutFailed || t.authUnexpectedError);
     } finally {
       setIsSigningOut(false);
     }
   };
+
+  const handleDiscardPendingAndSignOut = () =>
+    handleSignOut({ discardPendingChanges: true });
 
   return {
     authStatus,
@@ -243,13 +308,15 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
     sessionDisplayName: getAuthUserDisplayName(sessionUser),
     linkedProviderIds: getLinkedAuthProviderIds(sessionUser),
     enabledProviders,
-    hasSession: !!sessionUser,
+    hasSession: sessionCheckState === "signed-in" && !!sessionUser,
+    sessionCheckState,
+    refreshSession,
     signingInProvider,
-    linkingProvider,
     isSigningIn: signingInProvider !== null,
     isSigningOut,
+    signOutBlockReason,
     handleProvider,
-    handleLinkProvider,
     handleSignOut,
+    handleDiscardPendingAndSignOut,
   };
 }

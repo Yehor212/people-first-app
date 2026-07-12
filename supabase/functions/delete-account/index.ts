@@ -1,7 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { extractBearerToken } from "../_shared/auth.ts";
-import { createJsonResponse, createNoContentResponse } from "../_shared/http.ts";
+import { createJsonResponse, createNoContentResponse, parseJsonBody } from "../_shared/http.ts";
 import { deleteUserJournalMedia } from "./storageCleanup.ts";
+import { runAccountDeletionBarrier } from "./deletionBarrier.ts";
+import { deletionRequestMatchesAuthenticatedOwner } from "./requestContract.ts";
+import { deleteAccountOwnedRows } from "./rowCleanup.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -27,24 +30,39 @@ Deno.serve(async (req) => {
     }
 
     const userId = data.user.id;
-
-    await deleteUserJournalMedia(supabase.storage, userId);
-
-    // Pre-delete user data from tables that may not CASCADE automatically.
-    // Individual failures are non-critical: auth.users ON DELETE CASCADE
-    // handles remaining child rows in habits, moods, journal_entries, etc.
-    try { await supabase.from("profiles").delete().eq("id", userId); } catch { /* cascade fallback */ }
-    try { await supabase.from("user_backups").delete().eq("user_id", userId); } catch { /* cascade fallback */ }
-    try { await supabase.from("push_subscriptions").delete().eq("user_id", userId); } catch { /* cascade fallback */ }
-
-    // This is the critical operation — deletes auth.users row,
-    // which CASCADE-deletes all child rows in user data tables.
-    const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
-    if (deleteError) {
-      return createJsonResponse(origin, 500, { error: "Failed to delete account" });
+    const [body, bodyError] = await parseJsonBody<{ expectedOwnerUserId?: string }>(
+      req,
+      origin,
+      1024,
+    );
+    if (bodyError) return bodyError;
+    if (!deletionRequestMatchesAuthenticatedOwner(body?.expectedOwnerUserId, userId)) {
+      return createJsonResponse(origin, 409, { error: "Account changed before deletion" });
     }
 
-    return createJsonResponse(origin, 200, { status: "deleted" });
+    await runAccountDeletionBarrier({
+      blockStorageWrites: async () => {
+        const { error: blockError } = await supabase
+          .from("account_deletion_blocks")
+          .upsert({ user_id: userId, blocked_at: new Date().toISOString() });
+        if (blockError) throw new Error("Failed to block account storage writes");
+      },
+      purgeMedia: () => deleteUserJournalMedia(supabase.storage, userId),
+      purgeRows: () => deleteAccountOwnedRows(supabase, userId),
+      deleteAuthUser: async () => {
+        const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
+        if (deleteError) throw new Error("Failed to delete account");
+      },
+      releaseStorageBlock: async () => {
+        const { error: releaseError } = await supabase
+          .from("account_deletion_blocks")
+          .delete()
+          .eq("user_id", userId);
+        if (releaseError) throw new Error("Failed to release account storage block");
+      },
+    });
+
+    return createJsonResponse(origin, 200, { status: "deleted", userId });
   } catch (_err) {
     return createJsonResponse(origin, 500, { error: "Internal error" });
   }

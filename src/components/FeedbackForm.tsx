@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useThrottledCallback } from "@/hooks/useThrottledCallback";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -8,8 +9,6 @@ import { platform } from "@/lib/platform";
 import { logger } from "@/lib/logger";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
-import { SK } from "@/lib/storageKeys";
 import { submitDetailedFeedback } from "@/lib/feedbackService";
 import { emailSchema } from "@/lib/validation";
 
@@ -23,7 +22,7 @@ type FeedbackCategory = "bug" | "feature" | "other";
 export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   const { t } = useLanguage();
   const closeFeedback = useCallback(() => onOpenChange(false), [onOpenChange]);
-  useModalA11y(open, closeFeedback);
+  const { modalRef, handleKeyDown } = useModalA11y(open, closeFeedback);
   useScrollLock(open);
 
   const [category, setCategory] = useState<FeedbackCategory>("bug");
@@ -31,6 +30,26 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearSuccessTimeout = useCallback(() => {
+    if (successTimeoutRef.current === null) return;
+    clearTimeout(successTimeoutRef.current);
+    successTimeoutRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    if (open) return;
+    clearSuccessTimeout();
+    if (status === "success") {
+      setMessage("");
+      setEmail("");
+      setCategory("bug");
+      setStatus("idle");
+    }
+  }, [clearSuccessTimeout, open, status]);
+
+  useEffect(() => clearSuccessTimeout, [clearSuccessTimeout]);
 
   const handleSubmit = async () => {
     if (!message.trim() || status === "sending") return;
@@ -65,30 +84,19 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
         app_version: APP_VERSION,
       };
 
-      // Always save to localStorage as backup first
-      const saveToLocalStorage = () => {
-        try {
-          const stored = safeLocalStorageGet<Record<string, unknown>[]>(SK.FEEDBACK, []);
-          stored.push({ ...feedbackData, created_at: new Date().toISOString() });
-          safeLocalStorageSet(SK.FEEDBACK, stored.slice(-20));
-          logger.log("[Feedback] Saved to localStorage backup");
-        } catch (e) {
-          logger.warn("[Feedback] Failed to save to localStorage:", e);
-        }
-      };
-
-      // Try to send to Supabase, fall back to local storage
       const sent = await submitDetailedFeedback(feedbackData);
       if (!sent) {
-        saveToLocalStorage();
+        logger.warn("[Feedback] Delivery did not complete; keeping the form for retry");
+        setStatus("error");
+        return;
       }
 
-      // Always show success if we saved at least locally
-      // Feedback is captured even if cloud sync failed
       setStatus("success");
 
       // Reset form after success
-      setTimeout(() => {
+      clearSuccessTimeout();
+      successTimeoutRef.current = setTimeout(() => {
+        successTimeoutRef.current = null;
         setMessage("");
         setEmail("");
         setCategory("bug");
@@ -98,13 +106,12 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
     } catch (error) {
       logger.error("[Feedback] Failed to submit:", error);
       setStatus("error");
-      setTimeout(() => setStatus("idle"), 3000);
     }
   };
 
   const throttledSubmit = useThrottledCallback(handleSubmit, 2000);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
   const handleClose = () => {
     onOpenChange(false);
@@ -130,7 +137,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
     { value: "other", icon: <HelpCircle className="w-4 h-4" />, label: t.feedbackCategoryOther },
   ];
 
-  return (
+  return createPortal(
     <>
       {/* A11Y-OK: decorative backdrop — aria-hidden="true" removes from a11y tree, no aria-label needed */}
       <div
@@ -139,12 +146,14 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
         aria-hidden="true"
       />
       <div
+        ref={modalRef}
         className="fixed inset-0 z-[60] bg-black/80 dark:bg-black/80 flex items-end justify-center md:items-center md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
         onMouseDown={handleOverlayMouseDown}
         onTouchEnd={handleOverlayTouchEnd}
         role="dialog"
         aria-modal="true"
         aria-labelledby="feedback-form-title"
+        onKeyDown={handleKeyDown}
       >
         <div
           className="w-full max-w-lg bg-background rounded-t-3xl p-6 max-h-[85dvh] overflow-y-auto motion-safe:animate-in motion-safe:slide-in-from-bottom motion-safe:duration-300 pb-safe"
@@ -178,21 +187,21 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
             </p>
 
             {/* Category Selection */}
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[520px]:grid-cols-3">
               {categories.map((cat) => (
                 <button
                   key={cat.value}
                   onClick={() => setCategory(cat.value)}
                   aria-pressed={category === cat.value}
                   aria-label={cat.label}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium motion-safe:transition-all ${
+                  className={`flex min-h-[48px] min-w-0 items-center justify-start gap-2 rounded-xl px-3 py-2.5 text-start text-sm font-medium motion-safe:transition-[background-color,color,transform] min-[520px]:justify-center min-[520px]:text-center ${
                     category === cat.value
                       ? "bg-primary text-primary-foreground"
                       : "bg-secondary text-secondary-foreground hover:bg-muted"
                   }`}
                 >
                   {cat.icon}
-                  <span className="hidden sm:inline">{cat.label}</span>
+                  <span className="min-w-0 break-words hyphens-auto">{cat.label}</span>
                 </button>
               ))}
             </div>
@@ -200,7 +209,10 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
             {/* Message Input */}
             <textarea
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => {
+                setMessage(e.target.value);
+                if (status === "error") setStatus("idle");
+              }}
               placeholder={t.feedbackMessagePlaceholder}
               aria-label={t.feedbackMessagePlaceholder || "Message"}
               className="w-full h-32 p-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -210,25 +222,43 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
             {/* Email Input (Optional) */}
             <div>
               <input
+                id="feedback-email"
                 type="email"
                 inputMode="email"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
                   setEmailError(null); // Clear error when user types
+                  if (status === "error") setStatus("idle");
                 }}
                 placeholder={t.feedbackEmailPlaceholder}
                 aria-label={t.feedbackEmailPlaceholder || "Email (optional)"}
+                aria-invalid={emailError ? "true" : undefined}
+                aria-describedby={emailError ? "feedback-email-error" : undefined}
                 autoComplete="email"
                 className={`w-full p-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 ${
                   emailError
-                    ? "ring-2 ring-red-500 focus-visible:ring-red-500"
+                    ? "ring-2 ring-destructive focus-visible:ring-destructive"
                     : "focus-visible:ring-primary"
                 }`}
                 disabled={status === "sending"}
               />
-              {emailError && <p className="text-sm text-red-500 mt-1">{emailError}</p>}
+              {emailError && (
+                <p
+                  id="feedback-email-error"
+                  role="alert"
+                  className="mt-1 text-sm text-destructive"
+                >
+                  {emailError}
+                </p>
+              )}
             </div>
+
+            {status === "error" && (
+              <p role="status" className="text-sm text-destructive">
+                {t.feedbackError || "Could not send. Your message is still here — try again."}
+              </p>
+            )}
 
             {/* Submit Button */}
             <Button
@@ -243,8 +273,6 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
                 </>
               ) : status === "success" ? (
                 t.feedbackSuccess
-              ) : status === "error" ? (
-                t.feedbackError
               ) : (
                 <>
                   <Send className="w-5 h-5 me-2" />
@@ -260,6 +288,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 };

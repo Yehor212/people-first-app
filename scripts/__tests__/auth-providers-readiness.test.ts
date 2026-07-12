@@ -75,12 +75,12 @@ describe("check-auth-providers public key readiness", () => {
     );
   });
 
-  it("requires manual identity linking for Telegram account linking readiness", () => {
+  it("keeps unsafe current-session identity linking out of Settings", () => {
     const result = runReadiness({
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
     });
 
-    expect(result.stdout).toContain("Local Supabase manual identity linking is enabled");
+    expect(result.stdout).toContain("Settings does not expose current-session identity linking");
   });
 
   it("requires the Telegram OIDC compatibility endpoint to be public and documented", () => {

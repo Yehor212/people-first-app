@@ -19,13 +19,18 @@ export function V2SettingsDiaryAmbienceControl() {
   const comfort = useAudioComfortSettings();
   const diaryAmbienceAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const canPlayDiaryAmbience = !audio.muted && comfort.canPlayAmbientAsset("diary-reflection-loop");
+  const canPlayDiaryAmbience =
+    audio.canPlayFeedback && comfort.canPlayAmbientAsset("diary-reflection-loop");
   const diaryAmbienceVolume = canPlayDiaryAmbience
     ? Math.max(0, Math.min(1, audio.volume * 0.32))
     : 0;
   const mutedAudioLabel = t.settingsSoundSummaryOff || "Muted";
-  const diaryAmbienceUnavailableLabel = audio.muted ? mutedAudioLabel : t.settingsSoundAmbientOff;
-  const diaryAmbienceDisabledStatusLabel = audio.muted ? mutedAudioLabel : t.soundOff;
+  const diaryAmbienceUnavailableLabel = !audio.canPlayFeedback
+    ? mutedAudioLabel
+    : !comfort.settings.ambientEnabled
+      ? t.settingsSoundAmbientOff
+      : t.settingsSoundDiaryRainOff;
+  const diaryAmbienceDisabledStatusLabel = !audio.canPlayFeedback ? mutedAudioLabel : t.soundOff;
   const diaryAmbience = useUserStartedAmbienceAudio({
     audioRef: diaryAmbienceAudioRef,
     canPlay: canPlayDiaryAmbience,
@@ -56,13 +61,9 @@ export function V2SettingsDiaryAmbienceControl() {
     !canPlayDiaryAmbience || diaryAmbience.isPending || diaryAmbience.hasError
       ? t.diaryAmbienceLabel + ", " + diaryAmbienceToggleLabel
       : diaryAmbienceToggleLabel;
-  const settingsStatusLabel = audio.muted
-    ? mutedAudioLabel
-    : !comfort.settings.ambientEnabled
-      ? t.settingsSoundAmbientOff
-      : audio.feedbackSoundsEnabled
-        ? t.settingsSoundFeedbackOn
-        : t.settingsSoundFeedbackOff;
+  const settingsStatusLabel = canPlayDiaryAmbience
+    ? t.settingsSoundDiaryReady
+    : diaryAmbienceUnavailableLabel;
 
   return (
     <SettingsInset testId="settings-v2-diary-ambience-control">

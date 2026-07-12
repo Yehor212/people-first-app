@@ -75,6 +75,24 @@ describe("runtime performance guards", () => {
     expect(source).not.toContain('request.mode === "navigate", new NetworkOnly()');
   });
 
+  it("lets quarantined other-account queue rows coexist with resume delta sync", () => {
+    const source = readSource("src/main.tsx");
+    const resumeBlock = extractBlock(
+      source,
+      "async function handleAppResume(): Promise<void> {",
+      "// Clean up stale share cache files",
+    );
+
+    expect(resumeBlock).toContain("const resumeOwnerUserId = await getCurrentSessionUserId();");
+    expect(resumeBlock).toContain(
+      "await offlineQueue.hasPendingActionsForOwnerReady(resumeOwnerUserId)",
+    );
+    expect(resumeBlock).toContain(
+      "!offlineQueue.hasPendingActionsForOwner(resumeOwnerUserId)",
+    );
+    expect(resumeBlock).not.toContain("offlineQueue.hasPendingActions()");
+  });
+
   it("strips the PWA manifest link from native Capacitor bundles", () => {
     const source = readSource("scripts/capacitor-prune-assets.cjs");
 

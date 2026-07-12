@@ -1,6 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
-import { safeJsonParse, safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
-import { SK } from "@/lib/storageKeys";
+import { useState, useCallback } from "react";
 import {
   Award,
   Brush,
@@ -21,47 +19,16 @@ import { cn } from "@/lib/utils";
 import { SettingToggle } from "@/components/SettingToggle";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { isNative } from "@/lib/platform";
+import {
+  readDopamineSettings,
+  updateDopamineSettings,
+  type DopamineSettings,
+} from "@/lib/dopamineSettings";
 
-export interface DopamineSettings {
-  intensity: "minimal" | "normal" | "adhd";
-  animations: boolean;
-  sounds: boolean;
-  haptics: boolean;
-  confetti: boolean;
-  streakFire: boolean;
-  moodDrivenUI: boolean;
-}
-
-/**
- * Respect OS prefers-reduced-motion as the baseline default (WCAG 2.1 §2.3.3).
- * When the user has NOT explicitly saved feedback settings, the OS preference
- * determines the animations default. Once saved, the user's choice takes over.
- */
-function getOSPrefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-}
-
-const DEFAULT_SETTINGS: DopamineSettings = {
-  intensity: "normal",
-  animations: true,
-  sounds: true,
-  haptics: false,
-  confetti: true,
-  streakFire: true,
-  moodDrivenUI: true,
-};
-
-/** Returns defaults with OS prefers-reduced-motion applied when no user preference is stored */
-function getDefaultsWithOSPreference(): DopamineSettings {
-  if (getOSPrefersReducedMotion()) {
-    return { ...DEFAULT_SETTINGS, animations: false, confetti: false, streakFire: false };
-  }
-  return DEFAULT_SETTINGS;
-}
+export { updateDopamineSettings };
+export type { DopamineSettings };
+export { useDopamineSettings } from "@/hooks/useDopamineSettings";
 
 interface DopamineSettingsProps {
   onClose: () => void;
@@ -73,28 +40,11 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
   const { modalRef, handleKeyDown } = useModalA11y(true, onClose);
   useScrollLock(true);
 
-  const [settings, setSettings] = useState<DopamineSettings>(getDefaultsWithOSPreference);
-
-  // Load feedback settings from localStorage
-  useEffect(() => {
-    const parsed = safeLocalStorageGet<DopamineSettings | null>(SK.DOPAMINE_SETTINGS, null);
-    if (parsed) {
-      setSettings({ ...DEFAULT_SETTINGS, ...parsed });
-    } else {
-      // No stored preference — apply OS prefers-reduced-motion as baseline
-      setSettings(getDefaultsWithOSPreference());
-    }
-  }, []);
+  const [settings, setSettings] = useState<DopamineSettings>(readDopamineSettings);
 
   // Save settings to localStorage and dispatch event
   const updateSettings = useCallback((newSettings: Partial<DopamineSettings>) => {
-    setSettings((prev) => {
-      const updated = { ...prev, ...newSettings };
-      safeLocalStorageSet(SK.DOPAMINE_SETTINGS, updated);
-      // Dispatch custom event for same-tab updates
-      window.dispatchEvent(new CustomEvent("dopamine-settings-change", { detail: updated }));
-      return updated;
-    });
+    setSettings(updateDopamineSettings(newSettings));
   }, []);
 
   const handleIntensityChange = useCallback(
@@ -105,7 +55,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
           intensity,
           animations: true,
           sounds: true,
-          haptics: true,
+          haptics: isNative,
           confetti: true,
           streakFire: true,
           moodDrivenUI: true,
@@ -172,8 +122,11 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                     {t.dopamineSettings || "Feedback & motion"}
                   </h2>
                   <p id="dopamine-settings-description" className="text-sm text-muted-foreground">
-                    {t.dopamineSettingsDesc ||
-                      "Choose how much animation, sound, and haptics ZenFlow uses."}
+                    {isNative
+                      ? t.dopamineSettingsDesc ||
+                        "Choose how much animation, sound, and haptics ZenFlow uses."
+                      : t.dopamineSettingsDescNoHaptics ||
+                        "Choose how much animation and sound ZenFlow uses."}
                   </p>
                 </div>
               </div>
@@ -291,13 +244,20 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                 checked={settings.sounds}
                 onCheckedChange={(checked) => updateSettings({ sounds: checked })}
               />
-              <SettingToggle
-                icon={<Vibrate className="w-5 h-5 text-primary" data-testid="dopamine-haptics-icon" />}
-                label={t.dopamineHaptics || "Haptics"}
-                description={t.dopamineHapticsDesc || "Vibration feedback (mobile only)"}
-                checked={settings.haptics}
-                onCheckedChange={(checked) => updateSettings({ haptics: checked })}
-              />
+              {isNative && (
+                <SettingToggle
+                  icon={
+                    <Vibrate
+                      className="w-5 h-5 text-primary"
+                      data-testid="dopamine-haptics-icon"
+                    />
+                  }
+                  label={t.dopamineHaptics || "Haptics"}
+                  description={t.dopamineHapticsDesc || "Vibration feedback"}
+                  checked={settings.haptics}
+                  onCheckedChange={(checked) => updateSettings({ haptics: checked })}
+                />
+              )}
               <SettingToggle
                 icon={<PartyPopper className="w-5 h-5 text-primary" />}
                 label={t.dopamineConfetti || "Confetti"}
@@ -354,44 +314,4 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
       </div>
     </>
   );
-}
-
-// Hook to use feedback settings in components
-export function useDopamineSettings(): DopamineSettings {
-  const [settings, setSettings] = useState<DopamineSettings>(() => {
-    // Initialize from localStorage on first render
-    if (typeof window !== "undefined") {
-      const parsed = safeLocalStorageGet<DopamineSettings | null>(SK.DOPAMINE_SETTINGS, null);
-      if (parsed) {
-        return { ...DEFAULT_SETTINGS, ...parsed };
-      }
-    }
-    // No stored preference — respect OS prefers-reduced-motion as baseline (WCAG 2.1 §2.3.3)
-    return getDefaultsWithOSPreference();
-  });
-
-  useEffect(() => {
-    // Listen for cross-tab storage changes
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === SK.DOPAMINE_SETTINGS && e.newValue) {
-        const parsed = safeJsonParse(e.newValue, DEFAULT_SETTINGS);
-        setSettings({ ...DEFAULT_SETTINGS, ...parsed });
-      }
-    };
-
-    // Listen for same-tab custom event
-    const handleCustomChange = (e: CustomEvent<DopamineSettings>) => {
-      setSettings(e.detail);
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("dopamine-settings-change", handleCustomChange as EventListener);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("dopamine-settings-change", handleCustomChange as EventListener);
-    };
-  }, []);
-
-  return settings;
 }

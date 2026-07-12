@@ -23,4 +23,18 @@ describe("Index V2 runtime bridge contract", () => {
     expect(source).toContain("useReminderMigration();");
     expect(source).toContain("useEmotionSync();");
   });
+
+  it("mounts the durable critical-sync retry surface in the V2 shell", () => {
+    const source = indexSource();
+
+    expect(source).toContain('import { StorageErrorBanner } from "@/components/StorageErrorBanner";');
+    expect(source).toContain("<StorageErrorBanner />");
+  });
+
+  it("keeps the retired analytics runtime disabled until a real provider and consent flow exist", () => {
+    const source = indexSource();
+
+    expect(source).not.toContain('import { analytics } from "@/lib/analytics";');
+    expect(source).not.toContain("analytics.init(");
+  });
 });

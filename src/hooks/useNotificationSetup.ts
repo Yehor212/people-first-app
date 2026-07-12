@@ -1,23 +1,27 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useUserDataStore } from '@/stores';
+import { useAppStore, useUserDataStore } from '@/stores';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { isNative } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 import {
-  scheduleLocalReminders,
-  scheduleHabitReminders,
+  reconcileReminderNotifications,
   registerMoodNotificationActions,
   setupNotificationActionListener,
   setMoodActionCallback,
-  scheduleMoodQuickLogNotification,
-  initializeNotificationChannel,
+  clearMoodActionCallback,
+  resumeAccountNotifications,
 } from '@/lib/localNotifications';
 import { initializePushNotifications, removePushToken } from '@/lib/pushNotifications';
+import { buildNotificationChannelCopy } from '@/lib/notificationSounds';
+import { getCurrentSessionUserId } from '@/lib/supabaseClient';
 import type { MoodEntry } from '@/types';
 
 interface UseNotificationSetupParams {
   handleQuickMood: (mood: MoodEntry['mood']) => void;
 }
+
+const PUSH_REVOCATION_INCOMPLETE_EVENT = 'zenflow:push-revocation-incomplete';
+const REMINDER_RECONCILE_FAILED_EVENT = 'zenflow:reminder-reconcile-failed';
 
 /**
  * Sets up all native notification systems: local reminders, per-habit reminders,
@@ -28,7 +32,22 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
   const reminders = useUserDataStore(s => s.reminders);
   const habits = useUserDataStore(s => s.habits);
   const pushNotificationsEnabled = useUserDataStore(s => s.privacy.pushNotifications === true);
+  const hasValidSession = useAppStore(s => s.hasValidSession);
   const previousPushConsentRef = useRef<boolean | null>(null);
+  const pushRevocationInFlightRef = useRef(false);
+  const reminderReconcileRetryRef = useRef<() => void>(() => undefined);
+  const pushRevocationCopyRef = useRef({
+    message:
+      t.pushRevocationIncomplete ||
+      'ZenFlow could not fully disconnect remote notifications from this device.',
+    retryLabel: t.retry || 'Retry',
+  });
+  pushRevocationCopyRef.current = {
+    message:
+      t.pushRevocationIncomplete ||
+      'ZenFlow could not fully disconnect remote notifications from this device.',
+    retryLabel: t.retry || 'Retry',
+  };
   // Compute reminder copy for notification text (moved from Index.tsx)
   const reminderCopy = useMemo(() => {
     const safeHabits = Array.isArray(habits) ? habits : [];
@@ -47,42 +66,82 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
       focus: { title: t.reminderFocusTitle, body: t.reminderFocusBody },
     };
   }, [habits, reminders.habitIds, t]);
+  const notificationChannelCopy = useMemo(
+    () => buildNotificationChannelCopy(t as unknown as Record<string, string>),
+    [t],
+  );
 
-  // Initialize notification channel before any schedule call (Android 8+ requirement)
+  useEffect(() => {
+    if (!isNative || hasValidSession !== true) return;
+    resumeAccountNotifications();
+  }, [hasValidSession]);
+
+  // Reconcile every app-owned master reminder in one serialized pass.
   useEffect(() => {
     if (!isNative) return;
-    initializeNotificationChannel().catch((error) => {
-      logger.error('Failed to initialize notification channel:', error);
-    });
-  }, []);
+    let active = true;
 
-  // Schedule local reminders
-  useEffect(() => {
-    if (!isNative) return;
-    scheduleLocalReminders(reminders, reminderCopy).catch((error) => {
-      logger.error("Failed to schedule local reminders:", error);
-    });
-  }, [reminders, reminderCopy]);
+    const reconcile = async (): Promise<void> => {
+      try {
+        await reconcileReminderNotifications(
+          reminders,
+          reminders.enabled ? habits : [],
+          {
+            ...reminderCopy,
+            quickMoodBody: t.howAreYouNow || 'How are you feeling? Tap! 😊',
+            channelCopy: notificationChannelCopy,
+          },
+        );
+      } catch (error) {
+        if (!active) return;
+        logger.error('Failed to reconcile local reminders:', error);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent(REMINDER_RECONCILE_FAILED_EVENT, {
+              detail: {
+                message:
+                  t.reminderReconcileFailed ||
+                  'ZenFlow could not update reminders. Your device may still use the previous schedule. Try again.',
+                retryLabel: t.retry || 'Retry',
+                retry: () => reminderReconcileRetryRef.current(),
+              },
+            }),
+          );
+        }
+      }
+    };
+    const retryCurrentReconcile = () => {
+      void reconcile();
+    };
+    reminderReconcileRetryRef.current = retryCurrentReconcile;
+    void reconcile();
 
-  // Schedule per-habit push notifications
-  useEffect(() => {
-    if (!isNative) return;
-    scheduleHabitReminders(habits, {
-      reminderTitle: t.reminderHabitTitle,
-      reminderBody: t.reminderHabitBody,
-    }).catch((error) => {
-      logger.error("Failed to schedule habit reminders:", error);
-    });
-  }, [habits, t.reminderHabitTitle, t.reminderHabitBody]);
+    return () => {
+      active = false;
+      if (reminderReconcileRetryRef.current === retryCurrentReconcile) {
+        reminderReconcileRetryRef.current = () => undefined;
+      }
+    };
+  }, [
+    habits,
+    notificationChannelCopy,
+    reminderCopy,
+    reminders,
+    t.howAreYouNow,
+    t.reminderReconcileFailed,
+    t.retry,
+  ]);
 
   // FCM uses a remote device token, so it stays behind explicit privacy consent.
   useEffect(() => {
     if (!isNative) return;
     if (pushNotificationsEnabled) {
       previousPushConsentRef.current = true;
-      initializePushNotifications().catch((error) => {
-        logger.error('Failed to initialize push notifications:', error);
-      });
+      if (hasValidSession === true) {
+        initializePushNotifications().catch((error) => {
+          logger.error('Failed to initialize push notifications:', error);
+        });
+      }
       return;
     }
 
@@ -90,16 +149,79 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
     previousPushConsentRef.current = false;
     if (!shouldRemoveRemoteToken) return;
 
-    removePushToken().catch((error) => {
-      logger.error('Failed to remove push notification token:', error);
-    });
-  }, [pushNotificationsEnabled]);
+    const revokePushRegistration = async (): Promise<void> => {
+      if (useUserDataStore.getState().privacy.pushNotifications === true) return;
+      if (pushRevocationInFlightRef.current) return;
+      pushRevocationInFlightRef.current = true;
+
+      try {
+        const result = await removePushToken();
+        if (useUserDataStore.getState().privacy.pushNotifications === true) return;
+        if (result.status === 'revoked') return;
+
+        const copy = pushRevocationCopyRef.current;
+        const detail = {
+          status: result.status,
+          remote: result.remote,
+          native: result.native,
+          retryable: true,
+          message: copy.message,
+          retryLabel: copy.retryLabel,
+          retry: () => {
+            void revokePushRegistration();
+          },
+        } as const;
+        logger.warn(
+          '[Push] Registration cleanup is incomplete after consent was disabled',
+          {
+            status: result.status,
+            remote: result.remote,
+            native: result.native,
+          },
+        );
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent(PUSH_REVOCATION_INCOMPLETE_EVENT, { detail }),
+          );
+        }
+      } catch (error) {
+        if (useUserDataStore.getState().privacy.pushNotifications === true) return;
+        logger.error('Failed to remove push notification token:', error);
+        const copy = pushRevocationCopyRef.current;
+        const detail = {
+          status: 'failed',
+          remote: 'unknown',
+          native: 'unknown',
+          retryable: true,
+          message: copy.message,
+          retryLabel: copy.retryLabel,
+          retry: () => {
+            void revokePushRegistration();
+          },
+        } as const;
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent(PUSH_REVOCATION_INCOMPLETE_EVENT, { detail }),
+          );
+        }
+      } finally {
+        pushRevocationInFlightRef.current = false;
+      }
+    };
+
+    void revokePushRegistration();
+  }, [hasValidSession, pushNotificationsEnabled]);
 
   // Set up one-tap mood notification actions
   useEffect(() => {
     if (!isNative) return;
+    if (hasValidSession !== true) {
+      clearMoodActionCallback();
+      return;
+    }
 
-    let cleanupListener: (() => void) | null = null;
+    let cleanupListener: (() => Promise<void>) | null = null;
+    let disposed = false;
 
     const setupMoodActions = async () => {
       // Register notification action types (mood emoji buttons)
@@ -108,8 +230,15 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
       // Set up listener for action taps
       cleanupListener = await setupNotificationActionListener();
 
+      const expectedOwnerUserId = await getCurrentSessionUserId();
+      if (disposed || !expectedOwnerUserId) {
+        if (cleanupListener) await cleanupListener();
+        cleanupListener = null;
+        return;
+      }
+
       // Register callback to handle quick mood logging
-      setMoodActionCallback(handleQuickMood);
+      setMoodActionCallback(handleQuickMood, expectedOwnerUserId);
     };
 
     setupMoodActions().catch((error) => {
@@ -117,26 +246,10 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
     });
 
     return () => {
-      if (cleanupListener) cleanupListener();
+      disposed = true;
+      clearMoodActionCallback(handleQuickMood);
+      if (cleanupListener) void cleanupListener();
     };
-  }, [handleQuickMood]);
+  }, [handleQuickMood, hasValidSession]);
 
-  // Schedule mood quick-log notification with action buttons (morning check-in)
-  useEffect(() => {
-    if (!isNative || !reminders.enabled) return;
-
-    const parseTime = (time: string) => {
-      const [hours, minutes] = time.split(':').map(Number);
-      return { hour: hours, minute: minutes };
-    };
-
-    // Use morning time for the quick-log notification
-    scheduleMoodQuickLogNotification(
-      parseTime(reminders.moodTimeMorning),
-      t.howAreYouNow || 'How are you feeling? Tap! 😊',
-      { days: reminders.days, quietHours: reminders.quietHours },
-    ).catch((error) => {
-      logger.error('Failed to schedule mood quick-log notification:', error);
-    });
-  }, [reminders.days, reminders.enabled, reminders.moodTimeMorning, reminders.quietHours, t.howAreYouNow]);
 }

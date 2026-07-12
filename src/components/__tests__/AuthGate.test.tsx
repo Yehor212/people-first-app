@@ -11,6 +11,13 @@ type MockAuthScreenProps = {
   onComplete: (userData: { name: string; email: string }) => void;
   webOAuthError?: string | null;
   onClearError?: () => void;
+  suspendSessionCompletion?: boolean;
+  recoveryAction?: {
+    confirmLabel: string;
+    cancelLabel: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+  };
 };
 
 const { splashScreenMock, authScreenMock, authScreenProps, appState, userState } = vi.hoisted(
@@ -21,9 +28,10 @@ const { splashScreenMock, authScreenMock, authScreenProps, appState, userState }
       authBypassFlag: false,
       setAuthBypassFlag: vi.fn(),
       isProcessingWebOAuth: false,
-      webOAuthError: null,
+      webOAuthError: null as string | null,
       setWebOAuthError: vi.fn(),
       hasValidSession: false,
+      isAccountBoundaryInProgress: false,
       onboardingBypassFlag: false,
       setOnboardingBypassFlag: vi.fn(),
     };
@@ -142,6 +150,7 @@ describe("AuthGate", () => {
     appState.isProcessingWebOAuth = false;
     appState.webOAuthError = null;
     appState.hasValidSession = false;
+    appState.isAccountBoundaryInProgress = false;
     appState.onboardingBypassFlag = false;
     userState.hasSelectedLanguage = true;
     userState.onboardingComplete = true;
@@ -251,6 +260,23 @@ describe("AuthGate", () => {
     expect(screen.queryByText("App")).not.toBeInTheDocument();
   });
 
+  it("never renders previous-account children while an account boundary is in progress", () => {
+    appState.initializationState = { isInitializing: false, error: null, wasUpdated: false };
+    appState.isAccountBoundaryInProgress = true;
+    appState.hasValidSession = false;
+    setStandaloneDisplayMode(true);
+    storeCompletedInteractiveGates();
+
+    render(
+      <AuthGate isLoading={false} splashTheme="ink">
+        <div>Private account A content</div>
+      </AuthGate>
+    );
+
+    expect(screen.getByTestId("mock-splash")).toBeInTheDocument();
+    expect(screen.queryByText("Private account A content")).not.toBeInTheDocument();
+  });
+
   it("renders children immediately when dev bypass query is present", () => {
     window.history.pushState({}, "", "/people-first-app/diary?nav=v2&dev=true");
 
@@ -295,6 +321,33 @@ describe("AuthGate", () => {
     expect(userState.setAuthGateChecked).toHaveBeenCalledWith(true);
     expect(screen.getByText("App")).toBeInTheDocument();
     expect(screen.queryByTestId("mock-auth-screen")).not.toBeInTheDocument();
+  });
+
+  it("keeps legacy pending work gated behind an explicit recovery choice", () => {
+    appState.initializationState = { isInitializing: false, error: null, wasUpdated: false };
+    appState.hasValidSession = false;
+    appState.webOAuthError = "account-switch-pending-writes";
+    userState.authGateChecked = false;
+    userState.googleAuthChecked = false;
+    const dispatch = vi.spyOn(window, "dispatchEvent");
+
+    render(
+      <AuthGate isLoading={false} splashTheme="ink">
+        <div>Private app</div>
+      </AuthGate>,
+    );
+
+    const props = authScreenProps.at(-1);
+    expect(props?.suspendSessionCompletion).toBe(true);
+    expect(props?.onClearError).toBeUndefined();
+    expect(props?.recoveryAction?.confirmLabel).toBeTruthy();
+    expect(props?.recoveryAction?.cancelLabel).toBeTruthy();
+    props?.recoveryAction?.onConfirm();
+    expect(dispatch.mock.calls.some(([event]) =>
+      event.type === "zenflow:recover-legacy-offline-queue"
+    )).toBe(true);
+    expect(screen.queryByText("Private app")).not.toBeInTheDocument();
+    dispatch.mockRestore();
   });
 
   it("routes directly from completed auth to module onboarding without rendering WelcomeTutorial", () => {

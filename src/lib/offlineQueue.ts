@@ -36,8 +36,10 @@ import { logger } from "./logger";
 import { generateSecureRandom } from "./validation";
 import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from "./safeJson";
 import { SK } from "./storageKeys";
-import { db, OfflineQueueItem } from "@/storage/db";
+import { db, getLocalDataOwnerId, OfflineQueueItem } from "@/storage/db";
 import { recordSyncHealthReceipt } from "@/observability/syncHealthRecorder";
+import { getCurrentSessionUserId } from "./supabaseClient";
+import { runWithOriginExclusiveLock } from "./originExclusiveLock";
 
 // Action types that can be queued
 export type OfflineActionType =
@@ -59,14 +61,60 @@ export type OfflineActionType =
   | "UPLOAD_JOURNAL_AUDIO_STORAGE"
   | "DELETE_JOURNAL_PHOTO_STORAGE"
   | "DELETE_JOURNAL_AUDIO_STORAGE"
+  | "MIGRATE_JOURNAL_SECURITY"
   | "WRITE_SYNC_EVENT";
 
 export type OfflineActionPriority = "critical" | "high" | "normal" | "low";
+
+export interface OfflineQueueEnqueueOptions {
+  /** Owner observed by the caller before it began preparing this payload. */
+  expectedOwnerUserId: string;
+  maxRetries?: number;
+  deduplicate?: boolean;
+  priority?: OfflineActionPriority;
+}
+
+function isCriticalAction(action: OfflineAction): boolean {
+  // WRITE_SYNC_EVENT predates queue priorities and remains critical for
+  // backwards-compatible persisted rows. New privacy/security migrations opt
+  // in explicitly with priority=critical and must never be silently discarded.
+  return action.type === "WRITE_SYNC_EVENT" || action.priority === "critical";
+}
+
+function isBlockedCriticalAction(action: OfflineAction): boolean {
+  return isCriticalAction(action) && action.retries >= action.maxRetries;
+}
+
+export interface OfflineQueueHandlerContext {
+  /** Owner persisted on the queue row and re-verified by the queue. */
+  readonly ownerUserId: string;
+  /**
+   * Re-check the active session at the last possible point before a mutation.
+   * The owner is queue-bound; handlers cannot substitute a caller-provided id.
+   */
+  runIfOwnerCurrent<T>(operation: () => Promise<T> | T): Promise<T>;
+}
+
+class OfflineQueueOwnerBoundaryError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OfflineQueueOwnerBoundaryError";
+  }
+}
+
+class OfflineQueueActionRequeuedError extends Error {
+  constructor() {
+    super("Offline queue action was requeued while its handler was running");
+    this.name = "OfflineQueueActionRequeuedError";
+  }
+}
 
 export interface OfflineAction {
   id: string;
   type: OfflineActionType;
   entityId: string; // ID of the entity being modified
+  /** Account that created the action. Missing only on quarantined legacy rows. */
+  ownerUserId?: string;
   payload: unknown;
   timestamp: number;
   retries: number;
@@ -94,7 +142,7 @@ export function compactQueue(actions: OfflineAction[]): OfflineAction[] {
   const byEntity = new Map<string, OfflineAction[]>();
 
   for (const action of compactableActions) {
-    const key = `${action.entityId}`;
+    const key = `${action.ownerUserId ?? "__legacy_unowned__"}:${action.entityId}`;
     const existing = byEntity.get(key) || [];
     existing.push(action);
     byEntity.set(key, existing);
@@ -149,6 +197,7 @@ const MAX_QUEUE_SIZE = 1000; // Prevent unbounded growth
 const DEFAULT_MAX_RETRIES = 5;
 const RETRY_BASE_DELAY = 1000; // 1 second
 const RETRY_MAX_DELAY = 60000; // 1 minute
+const DATA_WRITE_BARRIER_LOCK = "zenflow:data-write-barrier";
 
 class OfflineQueue {
   private state: QueueState = {
@@ -157,9 +206,16 @@ class OfflineQueue {
     isProcessing: false,
   };
   private listeners: Set<(state: QueueState) => void> = new Set();
-  private syncHandlers: Map<OfflineActionType, (action: OfflineAction) => Promise<void>> =
-    new Map();
+  private syncHandlers: Map<
+    OfflineActionType,
+    (action: OfflineAction, context: OfflineQueueHandlerContext) => Promise<void>
+  > = new Map();
   private processingPromise: Promise<void> | null = null;
+  private accountBoundarySuspended = false;
+  private processingActionIds = new Set<string>();
+  private requeuedDuringProcessing = new Set<string>();
+  private observedAuthOwnerUserId: string | null | undefined;
+  private authOwnerGeneration = 0;
 
   // Promise to track initialization - operations must await this before modifying queue
   private initPromise: Promise<void> | null = null;
@@ -226,9 +282,24 @@ class OfflineQueue {
    */
   registerHandler(
     type: OfflineActionType,
-    handler: (action: OfflineAction) => Promise<void>
+    handler: (action: OfflineAction, context: OfflineQueueHandlerContext) => Promise<void>
   ): void {
     this.syncHandlers.set(type, handler);
+  }
+
+  /**
+   * Records every auth identity transition, including A -> B -> A sequences.
+   * Owner equality alone cannot detect that ABA boundary after async work.
+   */
+  observeAuthStateOwner(ownerUserId: string | null): number {
+    if (
+      this.observedAuthOwnerUserId === undefined ||
+      this.observedAuthOwnerUserId !== ownerUserId
+    ) {
+      this.observedAuthOwnerUserId = ownerUserId;
+      this.authOwnerGeneration += 1;
+    }
+    return this.authOwnerGeneration;
   }
 
   /**
@@ -240,11 +311,17 @@ class OfflineQueue {
     type: OfflineActionType,
     entityId: string,
     payload: unknown,
-    options: { maxRetries?: number; deduplicate?: boolean; priority?: OfflineActionPriority } = {}
+    options: OfflineQueueEnqueueOptions
   ): Promise<void> {
     // Wait for initialization to complete before modifying queue
     if (this.initPromise) {
       await this.initPromise;
+    }
+
+    if (this.accountBoundarySuspended) {
+      throw new OfflineQueueOwnerBoundaryError(
+        "Offline queue is suspended for an account boundary",
+      );
     }
 
     // P0-2 Fix: Acquire mutex lock to serialize state modifications
@@ -253,6 +330,12 @@ class OfflineQueue {
     // and both create duplicates (bypassing deduplication logic)
     if (this.enqueueLock) {
       await this.enqueueLock;
+    }
+
+    if (this.accountBoundarySuspended) {
+      throw new OfflineQueueOwnerBoundaryError(
+        "Offline queue is suspended for an account boundary",
+      );
     }
 
     // Create a new lock promise for this operation
@@ -280,9 +363,37 @@ class OfflineQueue {
     type: OfflineActionType,
     entityId: string,
     payload: unknown,
-    options: { maxRetries?: number; deduplicate?: boolean; priority?: OfflineActionPriority } = {}
+    options: OfflineQueueEnqueueOptions
   ): Promise<void> {
-    const { maxRetries = DEFAULT_MAX_RETRIES, deduplicate = true, priority = "normal" } = options;
+    if (!options?.expectedOwnerUserId) {
+      throw new OfflineQueueOwnerBoundaryError(
+        "Offline queue owner mismatch: an originating account is required"
+      );
+    }
+
+    const {
+      expectedOwnerUserId,
+      maxRetries = DEFAULT_MAX_RETRIES,
+      deduplicate = true,
+      priority = "normal",
+    } = options;
+
+    const activeOwnerUserId = await getCurrentSessionUserId();
+    this.observeAuthStateOwner(activeOwnerUserId);
+
+    if (!activeOwnerUserId) {
+      logger.warn("[OfflineQueue] Refusing to queue a cloud action without an active account");
+      throw new Error("Sign in before queuing changes for sync");
+    }
+
+    if (activeOwnerUserId !== expectedOwnerUserId) {
+      logger.warn("[OfflineQueue] Refusing to queue an action after the active account changed");
+      throw new OfflineQueueOwnerBoundaryError(
+        "Offline queue owner mismatch: the active account changed before enqueue"
+      );
+    }
+
+    const ownerUserId = expectedOwnerUserId;
 
     // Check queue size limit - BLOCK instead of silently dropping
     // This prevents critical data loss without user awareness
@@ -331,16 +442,21 @@ class OfflineQueue {
     // Deduplicate: update existing action in-place to preserve queue order
     if (deduplicate) {
       const existingIndex = this.state.actions.findIndex(
-        (a) => a.entityId === entityId && a.type === type
+        (a) => a.ownerUserId === ownerUserId && a.entityId === entityId && a.type === type
       );
 
       if (existingIndex !== -1) {
         // Update existing action in-place (preserve position in queue)
         const existing = this.state.actions[existingIndex];
+        const requeuedWhileProcessing = this.processingActionIds.has(existing.id);
         existing.payload = payload;
         existing.timestamp = Date.now();
-        existing.retries = 0; // Reset retries for updated action
-        existing.lastError = undefined;
+        if (requeuedWhileProcessing) {
+          this.requeuedDuringProcessing.add(existing.id);
+        } else {
+          existing.retries = 0; // A new user edit gets a fresh retry budget.
+          existing.lastError = undefined;
+        }
         logger.log("[OfflineQueue] Action deduplicated in-place:", type, entityId);
         await this.persistToStorage();
         this.notifyListeners();
@@ -359,6 +475,7 @@ class OfflineQueue {
       id: `${type}_${entityId}_${Date.now()}_${generateSecureRandom()}`,
       type,
       entityId,
+      ownerUserId,
       payload,
       timestamp: Date.now(),
       retries: 0,
@@ -448,11 +565,15 @@ class OfflineQueue {
       await this.initPromise;
     }
 
+    if (this.accountBoundarySuspended) return;
+
     // Mutex: prevent concurrent processing
     if (this.processingPromise) {
       await this.processingPromise;
       // After waiting, check if there are still items to process (may have been added during wait)
-      if (navigator.onLine && this.state.actions.length > 0 && this.processingPromise === null) {
+      const currentOwnerUserId = await getCurrentSessionUserId();
+      const hasCurrentOwnerActions = this.hasProcessableActionsForOwner(currentOwnerUserId);
+      if (navigator.onLine && hasCurrentOwnerActions && this.processingPromise === null) {
         // Recursively process new items
         return this.processQueue();
       }
@@ -460,6 +581,13 @@ class OfflineQueue {
     }
 
     if (!navigator.onLine || this.state.actions.length === 0) {
+      return;
+    }
+
+    const ownerUserId = await getCurrentSessionUserId();
+    const ownerGeneration = this.observeAuthStateOwner(ownerUserId);
+    if (!ownerUserId) {
+      logger.warn("[OfflineQueue] Queue paused because no account is active");
       return;
     }
 
@@ -473,7 +601,7 @@ class OfflineQueue {
       }
     }
 
-    this.processingPromise = this.doProcessQueue();
+    this.processingPromise = this.doProcessQueue(ownerUserId, ownerGeneration);
     try {
       await this.processingPromise;
     } finally {
@@ -481,12 +609,16 @@ class OfflineQueue {
     }
 
     // After processing, check if new items were added during processing
-    if (navigator.onLine && this.state.actions.length > 0) {
+    const currentOwnerUserId = await getCurrentSessionUserId();
+    const currentOwnerGeneration = this.observeAuthStateOwner(currentOwnerUserId);
+    if (currentOwnerGeneration !== ownerGeneration) return;
+    const hasCurrentOwnerActions = this.hasProcessableActionsForOwner(currentOwnerUserId);
+    if (!this.accountBoundarySuspended && navigator.onLine && hasCurrentOwnerActions) {
       return this.processQueue();
     }
   }
 
-  private async doProcessQueue(): Promise<void> {
+  private async doProcessQueue(ownerUserId: string, ownerGeneration: number): Promise<void> {
     if (this.state.isProcessing) return;
 
     this.state.isProcessing = true;
@@ -498,20 +630,56 @@ class OfflineQueue {
     const actionsToProcess = [...this.state.actions];
 
     for (const action of actionsToProcess) {
+      if (this.accountBoundarySuspended) {
+        logger.log("[OfflineQueue] Account boundary requested, pausing queue");
+        break;
+      }
       if (!navigator.onLine) {
         logger.log("[OfflineQueue] Went offline during processing, pausing");
         break;
       }
 
+      // Legacy rows have no trustworthy owner. Rows from a different account
+      // stay quarantined until that account is active again.
+      if (!action.ownerUserId || action.ownerUserId !== ownerUserId) {
+        continue;
+      }
+      if (isBlockedCriticalAction(action)) {
+        continue;
+      }
+
       const handler = this.syncHandlers.get(action.type);
       if (!handler) {
         logger.warn("[OfflineQueue] No handler for action type:", action.type);
+        // Startup hydration can finish before feature handlers register. A
+        // restored critical intent must stay durable through that window;
+        // handler initialization will trigger the next processing pass.
+        if (isCriticalAction(action)) {
+          continue;
+        }
         await this.removeAction(action.id);
         continue;
       }
 
+      this.processingActionIds.add(action.id);
       try {
-        await handler(action);
+        // Verify again immediately before handing control to the mutation handler.
+        const actionOwnerGeneration = await this.assertActiveOwner(
+          action.ownerUserId,
+          ownerGeneration,
+        );
+        await handler(
+          action,
+          this.createHandlerContext(action.ownerUserId, actionOwnerGeneration),
+        );
+        if (this.requeuedDuringProcessing.delete(action.id)) {
+          throw new OfflineQueueActionRequeuedError();
+        }
+        // A handler can finish its domain mutation after auth changes while a
+        // secondary ordered-event write refuses the stale owner. Never
+        // acknowledge the durable queue intent until the same owner is still
+        // active after the complete handler returns.
+        await this.assertActiveOwner(action.ownerUserId, actionOwnerGeneration);
         await this.removeAction(action.id);
         logger.log("[OfflineQueue] Action processed:", action.type, action.entityId);
         recordSyncHealthReceipt({
@@ -521,6 +689,28 @@ class OfflineQueue {
           priority: action.priority || "normal",
         });
       } catch (error) {
+        if (error instanceof OfflineQueueOwnerBoundaryError) {
+          logger.warn("[OfflineQueue] Queue paused because the active account changed");
+          break;
+        }
+
+        if (this.accountBoundarySuspended) {
+          logger.warn("[OfflineQueue] Queue paused for account-boundary cleanup");
+          break;
+        }
+
+        if (error instanceof OfflineQueueActionRequeuedError) {
+          action.retries = 0;
+          action.lastError = undefined;
+          await this.persistToStorage();
+          logger.log(
+            "[OfflineQueue] Newer payload kept for the next processing pass:",
+            action.type,
+            action.entityId,
+          );
+          continue;
+        }
+
         logger.error("[OfflineQueue] Action failed:", action.type, error);
         recordSyncHealthReceipt({
           kind: "failed",
@@ -534,8 +724,11 @@ class OfflineQueue {
         action.lastError = error instanceof Error ? error.message : String(error);
 
         if (action.retries >= action.maxRetries) {
-          if (action.type === "WRITE_SYNC_EVENT") {
-            logger.error("[OfflineQueue] Critical sync event blocked after max retries:", action.id);
+          if (isCriticalAction(action)) {
+            logger.error(
+              "[OfflineQueue] Critical action blocked after max retries:",
+              action.id
+            );
             recordSyncHealthReceipt({
               kind: "queue-blocked",
               source: "queue",
@@ -543,6 +736,7 @@ class OfflineQueue {
               priority: action.priority || "normal",
               errorName: error instanceof Error ? error.name : "UnknownError",
             });
+            this.dispatchBlockedCriticalAction(action);
           } else {
             logger.error("[OfflineQueue] Max retries reached, discarding action:", action.id);
             await this.removeAction(action.id);
@@ -555,6 +749,9 @@ class OfflineQueue {
         }
 
         await this.persistToStorage();
+      } finally {
+        this.processingActionIds.delete(action.id);
+        this.requeuedDuringProcessing.delete(action.id);
       }
     }
 
@@ -566,6 +763,16 @@ class OfflineQueue {
     logger.log("[OfflineQueue] Queue processing complete, remaining:", this.state.actions.length);
   }
 
+  private hasProcessableActionsForOwner(ownerUserId: string | null): boolean {
+    if (!ownerUserId) return false;
+    return this.state.actions.some(
+      (action) =>
+        action.ownerUserId === ownerUserId &&
+        !isBlockedCriticalAction(action) &&
+        this.syncHandlers.has(action.type)
+    );
+  }
+
   /**
    * Get current queue state
    */
@@ -574,17 +781,123 @@ class OfflineQueue {
   }
 
   /**
-   * Get pending actions count
+   * Get the device-wide pending count, including quarantined legacy/other-owner rows.
+   * Account decisions should use getPendingCountForOwner instead.
    */
   getPendingCount(): number {
     return this.state.actions.length;
   }
 
+  /** Pending work belonging to one verified account; quarantined rows are excluded. */
+  getPendingCountForOwner(ownerUserId: string): number {
+    if (!ownerUserId) return 0;
+    return this.state.actions.filter((action) => action.ownerUserId === ownerUserId).length;
+  }
+
   /**
-   * Check if there are pending actions
+   * Device-wide pending check. Account sign-out/timeout gates should use
+   * hasPendingActionsForOwner with a separately verified session owner.
    */
   hasPendingActions(): boolean {
     return this.state.actions.length > 0;
+  }
+
+  /** Whether one verified account has work; legacy and other-owner rows do not block it. */
+  hasPendingActionsForOwner(ownerUserId: string): boolean {
+    return this.getPendingCountForOwner(ownerUserId) > 0;
+  }
+
+  /**
+   * Destructive account flows must await persisted initialization and any
+   * in-flight enqueue before deciding that an owner's queue is empty.
+   */
+  async hasPendingActionsForOwnerReady(ownerUserId: string): Promise<boolean> {
+    if (!ownerUserId) return false;
+    if (this.initPromise) await this.initPromise;
+    if (this.enqueueLock) await this.enqueueLock;
+    // A pre-owner-schema row cannot be assigned to an arbitrary session, but
+    // it is still unsaved user work. Treat it as blocking for every destructive
+    // account boundary until a trusted cold-start session claims it.
+    return (
+      this.hasPendingActionsForOwner(ownerUserId) ||
+      this.state.actions.some((action) => !action.ownerUserId)
+    );
+  }
+
+  /** Whether an upgrade left queue rows that have not yet been owner-bound. */
+  async hasUnownedLegacyActionsReady(): Promise<boolean> {
+    if (this.initPromise) await this.initPromise;
+    if (this.enqueueLock) await this.enqueueLock;
+    return this.state.actions.some((action) => !action.ownerUserId);
+  }
+
+  /**
+   * Bind pre-owner-schema rows only after auth and the local database have
+   * independently been bound to the same account. The shared DATA lock keeps
+   * this migration mutually exclusive with account cleanup in every tab.
+   */
+  async claimLegacyActionsForOwner(ownerUserId: string): Promise<number> {
+    if (!ownerUserId) {
+      throw new OfflineQueueOwnerBoundaryError(
+        "Offline queue owner mismatch: a legacy claim requires an account",
+      );
+    }
+    if (this.initPromise) await this.initPromise;
+    if (this.enqueueLock) await this.enqueueLock;
+
+    let releaseLock: () => void = () => {
+      /* replaced by Promise resolve */
+    };
+    this.enqueueLock = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+
+    try {
+      return await runWithOriginExclusiveLock(DATA_WRITE_BARRIER_LOCK, async () => {
+        if (this.accountBoundarySuspended) {
+          throw new OfflineQueueOwnerBoundaryError(
+            "Offline queue is suspended for an account boundary",
+          );
+        }
+
+        const activeOwnerUserId = await getCurrentSessionUserId();
+        const localOwnerUserId = await getLocalDataOwnerId();
+        const ownerGeneration = this.observeAuthStateOwner(activeOwnerUserId);
+        if (activeOwnerUserId !== ownerUserId || localOwnerUserId !== ownerUserId) {
+          throw new OfflineQueueOwnerBoundaryError(
+            "Offline queue owner mismatch: legacy rows cannot be claimed by this account",
+          );
+        }
+
+        const legacyActions = this.state.actions.filter((action) => !action.ownerUserId);
+        if (legacyActions.length === 0) return 0;
+
+        for (const action of legacyActions) action.ownerUserId = ownerUserId;
+        try {
+          await this.persistToStorage();
+          await this.assertActiveOwner(ownerUserId, ownerGeneration);
+          if ((await getLocalDataOwnerId()) !== ownerUserId) {
+            throw new OfflineQueueOwnerBoundaryError(
+              "Offline queue owner mismatch: local data changed during legacy migration",
+            );
+          }
+        } catch (error) {
+          for (const action of legacyActions) action.ownerUserId = undefined;
+          await this.persistToStorage();
+          throw error;
+        }
+
+        this.notifyListeners();
+        logger.log(
+          "[OfflineQueue] Claimed legacy actions for the verified local owner:",
+          legacyActions.length,
+        );
+        return legacyActions.length;
+      });
+    } finally {
+      releaseLock();
+      this.enqueueLock = null;
+    }
   }
 
   /**
@@ -611,7 +924,142 @@ class OfflineQueue {
     logger.log("[OfflineQueue] Queue cleared");
   }
 
+  /**
+   * Stop new queue work and wait for all older initialization, enqueue, and
+   * processing turns without deleting their durable actions.
+   */
+  async suspendForAccountBoundary(): Promise<void> {
+    this.accountBoundarySuspended = true;
+    if (this.initPromise) await this.initPromise;
+    if (this.enqueueLock) await this.enqueueLock;
+    if (this.processingPromise) await this.processingPromise;
+
+    this.state.isProcessing = false;
+    this.notifyListeners();
+    logger.log("[OfflineQueue] Suspended for account boundary");
+  }
+
+  /** Remove actions only after the destructive remote operation is committed. */
+  async discardSuspendedActionsForAccountBoundary(): Promise<void> {
+    if (!this.accountBoundarySuspended) {
+      throw new Error("Offline queue must be suspended before boundary discard");
+    }
+
+    this.state.actions = [];
+    this.state.isProcessing = false;
+    this.processingActionIds.clear();
+    this.requeuedDuringProcessing.clear();
+    await this.persistToStorage();
+    storageRemove(SK.OFFLINE_QUEUE);
+    this.notifyListeners();
+    logger.log("[OfflineQueue] Suspended and cleared for account boundary");
+  }
+
+  /**
+   * Stop queue work and remove both in-memory and durable rows before an
+   * account/device boundary. The queue remains suspended until the caller has
+   * either bound the next account or recovered the current session safely.
+   */
+  async suspendAndClearForAccountBoundary(): Promise<void> {
+    await this.suspendForAccountBoundary();
+    await this.discardSuspendedActionsForAccountBoundary();
+  }
+
+  resumeAfterAccountBoundary(): void {
+    this.accountBoundarySuspended = false;
+    this.notifyListeners();
+    if (navigator.onLine && this.state.actions.length > 0) {
+      void this.processQueue();
+    }
+  }
+
+  private async retryBlockedCriticalAction(actionId: string): Promise<void> {
+    if (this.initPromise) await this.initPromise;
+    if (this.accountBoundarySuspended) {
+      throw new OfflineQueueOwnerBoundaryError(
+        "Offline queue is suspended for an account boundary",
+      );
+    }
+
+    const action = this.state.actions.find((candidate) => candidate.id === actionId);
+    if (!action || !isBlockedCriticalAction(action) || !action.ownerUserId) return;
+    await this.assertActiveOwner(action.ownerUserId);
+    action.retries = 0;
+    action.lastError = undefined;
+    await this.persistToStorage();
+    this.notifyListeners();
+    if (navigator.onLine) void this.processQueue();
+  }
+
+  private dispatchBlockedCriticalAction(action: OfflineAction): void {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("zenflow:offline-queue-critical-blocked", {
+        detail: {
+          actionType: action.type,
+          entityId: action.entityId,
+          retry: () => {
+            void this.retryBlockedCriticalAction(action.id).catch((retryError) =>
+              logger.error("[OfflineQueue] Critical sync event retry failed:", retryError)
+            );
+          },
+        },
+      })
+    );
+  }
+
+  async replayBlockedCriticalActionsForActiveOwner(): Promise<number> {
+    if (this.initPromise) await this.initPromise;
+    const activeOwnerUserId = await getCurrentSessionUserId();
+    this.observeAuthStateOwner(activeOwnerUserId);
+    if (!activeOwnerUserId || this.accountBoundarySuspended) return 0;
+
+    let replayed = 0;
+    for (const action of this.state.actions) {
+      if (
+        action.ownerUserId === activeOwnerUserId &&
+        isBlockedCriticalAction(action)
+      ) {
+        this.dispatchBlockedCriticalAction(action);
+        replayed += 1;
+      }
+    }
+    return replayed;
+  }
+
   // Private methods
+
+  private async assertActiveOwner(
+    ownerUserId: string,
+    expectedGeneration?: number,
+  ): Promise<number> {
+    const activeOwnerUserId = await getCurrentSessionUserId();
+    const activeGeneration = this.observeAuthStateOwner(activeOwnerUserId);
+    if (
+      activeOwnerUserId !== ownerUserId ||
+      (expectedGeneration !== undefined && activeGeneration !== expectedGeneration)
+    ) {
+      throw new OfflineQueueOwnerBoundaryError(
+        "Offline queue owner mismatch: the active account changed during processing"
+      );
+    }
+    return activeGeneration;
+  }
+
+  private createHandlerContext(
+    ownerUserId: string,
+    ownerGeneration: number,
+  ): OfflineQueueHandlerContext {
+    return Object.freeze({
+      ownerUserId,
+      runIfOwnerCurrent: async <T>(operation: () => Promise<T> | T): Promise<T> => {
+        await this.assertActiveOwner(ownerUserId, ownerGeneration);
+        const result = await operation();
+        await this.assertActiveOwner(ownerUserId, ownerGeneration);
+        return result;
+      },
+    });
+  }
 
   private handleOnline(): void {
     logger.log("[OfflineQueue] Device came online");
@@ -635,6 +1083,7 @@ class OfflineQueue {
           id: item.id,
           type: item.type as OfflineActionType,
           entityId: item.entityId,
+          ownerUserId: item.ownerUserId,
           payload: item.payload,
           timestamp: item.timestamp,
           retries: item.retries,
@@ -731,6 +1180,7 @@ class OfflineQueue {
             id: action.id,
             type: action.type,
             entityId: action.entityId,
+            ownerUserId: action.ownerUserId,
             payload: action.payload,
             timestamp: action.timestamp,
             retries: action.retries,

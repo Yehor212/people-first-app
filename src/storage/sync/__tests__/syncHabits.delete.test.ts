@@ -85,7 +85,8 @@ describe("deleteHabitFromCloud", () => {
       "legacy-habit-id",
       "delete",
       null,
-      "device-1"
+      "device-1",
+      { expectedOwnerUserId: "user-1" }
     );
   });
 
@@ -97,9 +98,16 @@ describe("deleteHabitFromCloud", () => {
 
     await deleteHabitFromCloud("legacy-habit-id");
 
-    expect(mocks.enqueue).toHaveBeenCalledWith("DELETE_HABIT", "legacy-habit-id", {
-      id: "legacy-habit-id",
-    });
+    expect(mocks.enqueue).toHaveBeenCalledWith(
+      "DELETE_HABIT",
+      "legacy-habit-id",
+      {
+        id: "legacy-habit-id",
+      },
+      {
+        expectedOwnerUserId: "user-1",
+      }
+    );
     expect(mocks.trackDeletedHabitId).toHaveBeenCalledWith("legacy-habit-id");
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
@@ -118,7 +126,8 @@ describe("deleteHabitFromCloud", () => {
       habitId,
       "delete",
       null,
-      "device-1"
+      "device-1",
+      { expectedOwnerUserId: "user-1" }
     );
   });
 
@@ -156,7 +165,11 @@ describe("deleteHabitFromCloud", () => {
       updatedAt: "2026-05-25T10:00:00.000Z",
     } as any);
 
-    expect(mocks.isEntityTombstonedOnServer).toHaveBeenCalledWith("habit", habitId);
+    expect(mocks.isEntityTombstonedOnServer).toHaveBeenCalledWith(
+      "habit",
+      habitId,
+      "user-1",
+    );
     expect(mocks.trackDeletedHabitId).toHaveBeenCalledWith(habitId);
     expect(mocks.from).not.toHaveBeenCalledWith("habits");
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
@@ -209,7 +222,8 @@ describe("deleteHabitFromCloud", () => {
       habitId,
       "upsert",
       expect.objectContaining({ id: habitId, isArchived: true }),
-      "device-1"
+      "device-1",
+      { expectedOwnerUserId: "user-1" }
     );
   });
 
@@ -235,7 +249,11 @@ describe("deleteHabitFromCloud", () => {
       entryValue: 2,
     });
 
-    expect(mocks.isEntityTombstonedOnServer).toHaveBeenCalledWith("habit", habitId);
+    expect(mocks.isEntityTombstonedOnServer).toHaveBeenCalledWith(
+      "habit",
+      habitId,
+      "user-1",
+    );
     expect(mocks.trackDeletedHabitId).toHaveBeenCalledWith(habitId);
     expect(mocks.from).not.toHaveBeenCalledWith("habit_completions");
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();

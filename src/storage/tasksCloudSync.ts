@@ -9,6 +9,7 @@ import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
 import { triggerDataRefresh } from '@/hooks/useIndexedDB';
 import type { Json } from '@/types/supabase';
+import { validateSyncOwner } from '@/storage/sync/syncOwner';
 
 /**
  * Convert Task to Supabase row format (matches DB Insert type)
@@ -91,18 +92,19 @@ function rowToQuest(row: Record<string, unknown>): Quest {
  * Pull tasks from Supabase
  * Returns null if there's an error to prevent data loss
  */
-export async function pullTasksFromCloud(): Promise<Task[] | null> {
+export async function pullTasksFromCloud(expectedOwnerUserId: string): Promise<Task[] | null> {
   if (!supabase) return null;
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) return null; // Not authenticated - return null to keep local data
-  const user = session.user;
+  const ownerUserId = await validateSyncOwner(expectedOwnerUserId, 'Task pull');
+  if (!ownerUserId) return null;
 
   const { data, error } = await supabase
     .from('user_tasks')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', ownerUserId)
     .order('updated_at', { ascending: false })
     .limit(500);
+
+  if (!(await validateSyncOwner(ownerUserId, 'Task pull'))) return null;
 
   if (error) {
     logger.error('Error pulling tasks:', error);
@@ -115,15 +117,18 @@ export async function pullTasksFromCloud(): Promise<Task[] | null> {
 /**
  * Push tasks to Supabase
  */
-export async function pushTasksToCloud(tasks: Task[]): Promise<void> {
+export async function pushTasksToCloud(
+  tasks: Task[],
+  expectedOwnerUserId: string
+): Promise<void> {
   if (!supabase) return;
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) return;
-  const user = session.user;
+  const ownerUserId = await validateSyncOwner(expectedOwnerUserId, 'Task push');
+  if (!ownerUserId) return;
 
   // Upsert tasks
-  const rows = tasks.map(task => taskToRow(task, user.id));
+  const rows = tasks.map(task => taskToRow(task, ownerUserId));
 
+  if (!(await validateSyncOwner(ownerUserId, 'Task push'))) return;
   const { error } = await supabase
     .from('user_tasks')
     .upsert(rows, {
@@ -207,7 +212,7 @@ export async function deleteQuestFromCloud(questId: string, questType: 'daily' |
  * Uses orchestrator for queue-based sync
  * Never loses local data on sync errors
  */
-export async function syncTasks(): Promise<Task[]> {
+export async function syncTasks(expectedOwnerUserId: string): Promise<Task[]> {
   let mergedTasks: Task[] = [];
 
   await syncOrchestrator.sync('tasks', async () => {
@@ -215,7 +220,7 @@ export async function syncTasks(): Promise<Task[]> {
     const localTasks = safeLocalStorageGet<Task[]>(SK.TASKS, []);
 
     // Pull from cloud
-    const cloudTasks = await pullTasksFromCloud();
+    const cloudTasks = await pullTasksFromCloud(expectedOwnerUserId);
 
     // If cloud pull failed, keep local data and skip sync
     if (cloudTasks === null) {
@@ -263,15 +268,21 @@ export async function syncTasks(): Promise<Task[]> {
     mergedTasks = Array.from(taskMap.values());
 
     // Save merged to local
+    const localOwnerUserId = await validateSyncOwner(
+      expectedOwnerUserId,
+      'Task local merge'
+    );
+    if (!localOwnerUserId) return;
     safeLocalStorageSet(SK.TASKS, mergedTasks);
 
     // Trigger React state refresh so UI updates
-    triggerDataRefresh();
+    await triggerDataRefresh();
     logger.log('[TasksSync] Data refresh triggered after merge');
 
     // Push merged to cloud
-    await pushTasksToCloud(mergedTasks);
-  }, { priority: 7, maxRetries: 3 }); // Higher priority for user tasks
+    if (!(await validateSyncOwner(localOwnerUserId, 'Task sync continuation'))) return;
+    await pushTasksToCloud(mergedTasks, localOwnerUserId);
+  }, { priority: 7, maxRetries: 3, expectedOwnerUserId }); // Higher priority for user tasks
 
   return mergedTasks;
 }
@@ -282,18 +293,21 @@ type QuestsState = { daily: Quest | null; weekly: Quest | null; bonus: Quest | n
  * Pull quests from Supabase
  * Returns undefined if there's an error to prevent data loss
  */
-export async function pullQuestsFromCloud(): Promise<QuestsState | undefined> {
+export async function pullQuestsFromCloud(
+  expectedOwnerUserId: string
+): Promise<QuestsState | undefined> {
   if (!supabase) return undefined;
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) return undefined; // Not authenticated - return undefined to keep local data
-  const user = session.user;
+  const ownerUserId = await validateSyncOwner(expectedOwnerUserId, 'Quest pull');
+  if (!ownerUserId) return undefined;
 
   const { data, error } = await supabase
     .from('user_quests')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', ownerUserId)
     .order('updated_at', { ascending: false })
     .limit(50);
+
+  if (!(await validateSyncOwner(ownerUserId, 'Quest pull'))) return undefined;
 
   if (error) {
     logger.error('Error pulling quests:', error);
@@ -312,20 +326,23 @@ export async function pullQuestsFromCloud(): Promise<QuestsState | undefined> {
 /**
  * Push quests to Supabase
  */
-export async function pushQuestsToCloud(quests: { daily: Quest | null; weekly: Quest | null; bonus: Quest | null }): Promise<void> {
+export async function pushQuestsToCloud(
+  quests: { daily: Quest | null; weekly: Quest | null; bonus: Quest | null },
+  expectedOwnerUserId: string
+): Promise<void> {
   if (!supabase) return;
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) return;
-  const user = session.user;
+  const ownerUserId = await validateSyncOwner(expectedOwnerUserId, 'Quest push');
+  if (!ownerUserId) return;
 
   const rows: ReturnType<typeof questToRow>[] = [];
 
-  if (quests.daily) rows.push(questToRow(quests.daily, user.id));
-  if (quests.weekly) rows.push(questToRow(quests.weekly, user.id));
-  if (quests.bonus) rows.push(questToRow(quests.bonus, user.id));
+  if (quests.daily) rows.push(questToRow(quests.daily, ownerUserId));
+  if (quests.weekly) rows.push(questToRow(quests.weekly, ownerUserId));
+  if (quests.bonus) rows.push(questToRow(quests.bonus, ownerUserId));
 
   if (rows.length === 0) return;
 
+  if (!(await validateSyncOwner(ownerUserId, 'Quest push'))) return;
   const { error } = await supabase
     .from('user_quests')
     .upsert(rows, {
@@ -344,7 +361,7 @@ export async function pushQuestsToCloud(quests: { daily: Quest | null; weekly: Q
  * Uses orchestrator for queue-based sync
  * Never loses local data on sync errors
  */
-export async function syncQuests(): Promise<QuestsState> {
+export async function syncQuests(expectedOwnerUserId: string): Promise<QuestsState> {
   const defaultQuests: QuestsState = { daily: null, weekly: null, bonus: null };
   let mergedQuests: QuestsState = defaultQuests;
 
@@ -353,7 +370,7 @@ export async function syncQuests(): Promise<QuestsState> {
     const localQuests = safeLocalStorageGet<QuestsState>(SK.QUESTS, defaultQuests);
 
     // Pull from cloud
-    const cloudQuests = await pullQuestsFromCloud();
+    const cloudQuests = await pullQuestsFromCloud(expectedOwnerUserId);
 
     // If cloud pull failed, keep local data and skip sync
     if (cloudQuests === undefined) {
@@ -390,15 +407,21 @@ export async function syncQuests(): Promise<QuestsState> {
     };
 
     // Save merged to local
+    const localOwnerUserId = await validateSyncOwner(
+      expectedOwnerUserId,
+      'Quest local merge'
+    );
+    if (!localOwnerUserId) return;
     safeLocalStorageSet(SK.QUESTS, mergedQuests);
 
     // Trigger React state refresh so UI updates
-    triggerDataRefresh();
+    await triggerDataRefresh();
     logger.log('[QuestsSync] Data refresh triggered after merge');
 
     // Push merged to cloud
-    await pushQuestsToCloud(mergedQuests);
-  }, { priority: 7, maxRetries: 3 }); // Higher priority for user tasks
+    if (!(await validateSyncOwner(localOwnerUserId, 'Quest sync continuation'))) return;
+    await pushQuestsToCloud(mergedQuests, localOwnerUserId);
+  }, { priority: 7, maxRetries: 3, expectedOwnerUserId }); // Higher priority for user tasks
 
   return mergedQuests;
 }

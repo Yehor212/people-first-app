@@ -42,6 +42,26 @@
   }
 }
 
+/* The Settings high-contrast control must change more than decorative borders. */
+:root[data-theme-comfort="high-contrast"] [data-v2-readable-page="settings"] {
+  --foreground: var(--settings-v2-text-strong);
+  --muted-foreground: var(--settings-v2-text-muted);
+}
+
+:root[data-theme-comfort="high-contrast"] [data-v2-readable-page="settings"] :where(button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid hsl(var(--settings-v2-focus));
+  outline-offset: 3px;
+}
+
+:root[data-theme-comfort="high-contrast"] [data-v2-readable-page="settings"] :where(
+  [data-interaction-surface],
+  [data-testid^="settings-module-"],
+  [data-testid^="settings-v2-panel-"],
+  [data-testid="settings-theme-strip"]
+) {
+  border-color: hsl(var(--settings-v2-border) / 0.82);
+}
+
 /* Solar Prism Paper bridge.
  *
  * Paper is a daylight atmosphere, not a white fallback and not an inversion of
@@ -782,6 +802,12 @@
     hsl(var(--settings-v2-shell) / 0.98);
 }
 
+/* Ink's layered Settings surfaces need the strong text token for normal-size guidance. */
+:root[data-theme="ink"] [data-v2-readable-page="settings"].v2-readable-page {
+  --v2-readable-muted: var(--foreground);
+  --settings-v2-selected-text: var(--settings-v2-text-strong, 54 20% 98%);
+}
+
 :root[data-theme="ink"][data-theme-style="botanicalPulse"] [data-v2-readable-page="settings"] {
   background:
     radial-gradient(circle at 10% 7%, hsl(var(--settings-v2-rim-light) / 0.12), transparent 24rem),
@@ -958,6 +984,11 @@
     0 10px 24px -22px hsl(var(--settings-v2-accent) / 0.42);
 }
 
+:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] [data-testid="settings-v2-theme-segmented-control"] [data-testid^="settings-v2-theme-choice-"][aria-pressed="true"] {
+  color: hsl(var(--settings-v2-selected-text));
+  border-color: hsl(var(--settings-v2-accent));
+}
+
 [data-v2-readable-page="settings"] [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] [data-testid="settings-v2-style-customization"] [data-interaction-surface="settings-choice"][aria-pressed="true"] {
   background:
     radial-gradient(circle at 84% 0%, hsl(var(--settings-v2-rim-light) / 0.16), transparent 42%),
@@ -966,9 +997,6 @@
 }
 
 .v2-edge-to-edge-surface[data-active-page="settings"]:has([data-testid="settings-page-workspace"][data-selected-section="appearance"]) [data-testid="nav-v2-open-drawer"] {
-  position: absolute;
-  inset-inline-start: max(1.9rem, calc((100vw - 52rem) / 2 + 2rem));
-  top: calc(var(--safe-top) + 3.9rem);
   background:
     radial-gradient(circle at 34% 18%, hsl(var(--settings-v2-rim-light) / 0.12), transparent 42%),
     hsl(var(--settings-v2-card) / 0.36);

@@ -28,7 +28,6 @@ import {
   consumeAudioFeedbackBudget,
   getAudioComfortSettings,
   getAudioSupportSnapshot,
-  recordAudioComfortFeedback,
   resetAudioComfortRuntimeForTests,
   setAudioComfortSettings,
 } from "../audioComfort";
@@ -105,95 +104,6 @@ describe("audioComfort", () => {
 
     expect(consumeAudioFeedbackBudget("complete", 1_000)).toBe(false);
     expect(consumeAudioFeedbackBudget("complete", 31 * 60 * 1_000)).toBe(true);
-  });
-
-  it("stores structured audio comfort feedback without raw text, mood, journal, or user identifiers", () => {
-    const entry = recordAudioComfortFeedback({
-      choice: "too_loud",
-      surface: "settings",
-      platform: "web",
-      volumeBucket: "medium",
-      muted: false,
-      ambientEnabled: true,
-    });
-
-    expect(entry).toEqual({
-      choice: "too_loud",
-      surface: "settings",
-      platform: "web",
-      volumeBucket: "medium",
-      muted: false,
-      ambientEnabled: true,
-      createdAt: expect.any(String),
-    });
-    expect(JSON.stringify(mockStorage)).not.toMatch(/journal|mood|user|email|text/i);
-  });
-
-
-  it("normalizes tainted stored comfort feedback before appending a new entry", () => {
-    mockStorage.zenflow_audio_comfort_feedback = [
-      {
-        choice: "comfortable",
-        surface: "settings",
-        platform: "web",
-        volumeBucket: "low",
-        muted: false,
-        ambientEnabled: true,
-        createdAt: "2026-06-30T00:00:00.000Z",
-        email: "private@example.test",
-        rawText: "do not keep",
-      },
-      { choice: "too_loud", surface: "settings", createdAt: "bad" },
-    ];
-
-    recordAudioComfortFeedback({
-      choice: "did_not_play",
-      surface: "settings",
-      platform: "desktop",
-      volumeBucket: "muted",
-      muted: true,
-      ambientEnabled: false,
-    });
-
-    expect(mockStorage.zenflow_audio_comfort_feedback).toHaveLength(2);
-    expect(mockStorage.zenflow_audio_comfort_feedback).toEqual([
-      {
-        choice: "comfortable",
-        surface: "settings",
-        platform: "web",
-        volumeBucket: "low",
-        muted: false,
-        ambientEnabled: true,
-        createdAt: "2026-06-30T00:00:00.000Z",
-      },
-      {
-        choice: "did_not_play",
-        surface: "settings",
-        platform: "desktop",
-        volumeBucket: "muted",
-        muted: true,
-        ambientEnabled: false,
-        createdAt: expect.any(String),
-      },
-    ]);
-    expect(JSON.stringify(mockStorage.zenflow_audio_comfort_feedback)).not.toMatch(/email|rawText|private/i);
-  });
-
-  it("recovers from wrong-shaped stored comfort feedback", () => {
-    mockStorage.zenflow_audio_comfort_feedback = { broken: true };
-
-    expect(() => recordAudioComfortFeedback({
-      choice: "comfortable",
-      surface: "settings",
-      platform: "pwa",
-      volumeBucket: "medium",
-      muted: false,
-      ambientEnabled: true,
-    })).not.toThrow();
-
-    expect(mockStorage.zenflow_audio_comfort_feedback).toEqual([
-      expect.objectContaining({ choice: "comfortable", platform: "pwa" }),
-    ]);
   });
 
   it("sanitizes support snapshots before they can be attached to support evidence", () => {

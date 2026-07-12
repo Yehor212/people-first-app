@@ -502,11 +502,13 @@ export function JournalSettingsContent({
             <>
               <SettingsActionButton
                 label={ts.journalPasswordChange || "Change Password"}
+                disabled={security.cloudProtectionPending}
                 onClick={() => onSectionChange("password-change")}
               />
               <SettingsActionButton
                 label={ts.journalPasswordRemove || "Remove Password Lock"}
                 tone="danger"
+                disabled={security.cloudProtectionPending}
                 onClick={onRequestRemovePassword}
               />
             </>
@@ -517,6 +519,15 @@ export function JournalSettingsContent({
             />
           )}
         </div>
+        {security.cloudProtectionPending ? (
+          <p
+            role="status"
+            className="mt-4 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm leading-6 text-foreground"
+          >
+            {ts.journalProtectionCloudPending ||
+              "Protected on this device. ZenFlow is still replacing an older online copy; keep the app open and connect to the internet."}
+          </p>
+        ) : null}
       </SectionCard>
 
       {security.hasPassword && security.biometricAvailable ? (

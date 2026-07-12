@@ -301,9 +301,13 @@ export function useNavigationV2(): UseNavigationV2Return {
           if (typeof window !== "undefined") {
             const base = getNavV2BasePath(window.location.pathname);
             const path = PAGE_TO_PATH[page];
-            // Preserve ?nav=v2 (and other) query params across navigation.
+            const params = new URLSearchParams(window.location.search);
+            if (page !== "settings") {
+              params.delete("settingsSection");
+            }
+            const search = params.toString();
             // Prepend Vite base so GH Pages deploys keep /people-first-app/ prefix.
-            const newUrl = base + path + window.location.search + window.location.hash;
+            const newUrl = `${base}${path}${search ? `?${search}` : ""}${window.location.hash}`;
             try {
               window.history.pushState({ navV2Page: page }, "", newUrl);
             } catch {

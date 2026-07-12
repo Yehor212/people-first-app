@@ -5,7 +5,7 @@
  * Each handler knows how to sync a specific type of action to the cloud.
  */
 
-import { offlineQueue, type OfflineAction } from "./offlineQueue";
+import { offlineQueue, type OfflineQueueHandlerContext } from "./offlineQueue";
 import { syncMood, deleteMoodFromCloud } from "@/storage/realtimeSync";
 import { syncHabit, deleteHabitFromCloud, syncHabitCompletion } from "@/storage/realtimeSync";
 import { syncFocusSession } from "@/storage/realtimeSync";
@@ -37,6 +37,9 @@ import {
   gratitudeEntrySchema,
   safeValidate,
 } from "./validation";
+import { getCurrentSessionUserId } from "./supabaseClient";
+import { SyncOwnerBoundaryError } from "@/storage/sync/syncOwner";
+import { runJournalSecurityMigration } from "@/features/journal/journalSecurityMigration";
 
 // Use Zod schemas for robust payload validation
 // This validates field types, value constraints, and prevents corrupted data from syncing
@@ -65,6 +68,23 @@ function isValidGratitudeEntry(payload: unknown): payload is GratitudeEntry {
   return validated !== null;
 }
 
+async function runOwnerBoundCloudMutation(
+  context: OfflineQueueHandlerContext,
+  operation: () => Promise<void>
+): Promise<void> {
+  try {
+    await context.runIfOwnerCurrent(operation);
+  } catch (error) {
+    if (error instanceof SyncOwnerBoundaryError) {
+      // Convert the helper's verified owner mismatch into the queue's own
+      // boundary signal. The queue then pauses without acknowledging or
+      // consuming this account's retry budget.
+      await context.runIfOwnerCurrent(() => undefined);
+    }
+    throw error;
+  }
+}
+
 /**
  * Initialize all offline queue handlers
  * Call this once when the app starts
@@ -74,49 +94,57 @@ export function initializeOfflineQueueHandlers(): void {
 
   // Mood handlers
   // Validate payload before processing
-  offlineQueue.registerHandler("CREATE_MOOD", async (action: OfflineAction) => {
+  offlineQueue.registerHandler("CREATE_MOOD", async (action, context) => {
     if (!isValidMoodEntry(action.payload)) {
       logger.warn("[OfflineQueue] Invalid mood payload, skipping:", action.entityId);
       return;
     }
-    await syncMood(action.payload);
+    const mood = action.payload;
+    await runOwnerBoundCloudMutation(context, () => syncMood(mood, context.ownerUserId));
   });
 
-  offlineQueue.registerHandler("UPDATE_MOOD", async (action: OfflineAction) => {
+  offlineQueue.registerHandler("UPDATE_MOOD", async (action, context) => {
     if (!isValidMoodEntry(action.payload)) {
       logger.warn("[OfflineQueue] Invalid mood payload, skipping:", action.entityId);
       return;
     }
-    await syncMood(action.payload);
+    const mood = action.payload;
+    await runOwnerBoundCloudMutation(context, () => syncMood(mood, context.ownerUserId));
   });
 
-  offlineQueue.registerHandler("DELETE_MOOD", async (action: OfflineAction) => {
-    await deleteMoodFromCloud(action.entityId);
+  offlineQueue.registerHandler("DELETE_MOOD", async (action, context) => {
+    await runOwnerBoundCloudMutation(context, () =>
+      deleteMoodFromCloud(action.entityId, context.ownerUserId)
+    );
   });
 
   // Habit handlers
   // Validate payload before processing
-  offlineQueue.registerHandler("CREATE_HABIT", async (action: OfflineAction) => {
+  offlineQueue.registerHandler("CREATE_HABIT", async (action, context) => {
     if (!isValidHabit(action.payload)) {
       logger.warn("[OfflineQueue] Invalid habit payload, skipping:", action.entityId);
       return;
     }
-    await syncHabit(action.payload);
+    const habit = action.payload;
+    await runOwnerBoundCloudMutation(context, () => syncHabit(habit, context.ownerUserId));
   });
 
-  offlineQueue.registerHandler("UPDATE_HABIT", async (action: OfflineAction) => {
+  offlineQueue.registerHandler("UPDATE_HABIT", async (action, context) => {
     if (!isValidHabit(action.payload)) {
       logger.warn("[OfflineQueue] Invalid habit payload, skipping:", action.entityId);
       return;
     }
-    await syncHabit(action.payload);
+    const habit = action.payload;
+    await runOwnerBoundCloudMutation(context, () => syncHabit(habit, context.ownerUserId));
   });
 
-  offlineQueue.registerHandler("DELETE_HABIT", async (action: OfflineAction) => {
-    await deleteHabitFromCloud(action.entityId);
+  offlineQueue.registerHandler("DELETE_HABIT", async (action, context) => {
+    await runOwnerBoundCloudMutation(context, () =>
+      deleteHabitFromCloud(action.entityId, context.ownerUserId)
+    );
   });
 
-  offlineQueue.registerHandler("TOGGLE_HABIT", async (action: OfflineAction) => {
+  offlineQueue.registerHandler("TOGGLE_HABIT", async (action, context) => {
     const p = action.payload as {
       habitId?: string;
       date?: string;
@@ -131,98 +159,140 @@ export function initializeOfflineQueueHandlers(): void {
       logger.warn("[OfflineQueue] Invalid habit completion payload, skipping:", action.entityId);
       return;
     }
-    await syncHabitCompletion(p.habitId, p.date, p.completed ?? false, p.count, p.duration, {
-      habitType: p.habitType,
-      targetType: p.targetType,
-      entryValue: p.entryValue,
-    });
+    await runOwnerBoundCloudMutation(context, () =>
+      syncHabitCompletion(
+        p.habitId!,
+        p.date!,
+        p.completed ?? false,
+        p.count,
+        p.duration,
+        {
+          habitType: p.habitType,
+          targetType: p.targetType,
+          entryValue: p.entryValue,
+        },
+        context.ownerUserId
+      )
+    );
   });
 
   // Focus session handler
   // Validate payload before processing
-  offlineQueue.registerHandler("CREATE_FOCUS_SESSION", async (action: OfflineAction) => {
+  offlineQueue.registerHandler("CREATE_FOCUS_SESSION", async (action, context) => {
     if (!isValidFocusSession(action.payload)) {
       logger.warn("[OfflineQueue] Invalid focus session payload, skipping:", action.entityId);
       return;
     }
-    await syncFocusSession(action.payload);
+    const session = action.payload;
+    await runOwnerBoundCloudMutation(context, () =>
+      syncFocusSession(session, context.ownerUserId)
+    );
   });
 
   // Gratitude handlers
   // Validate payload before processing
-  offlineQueue.registerHandler("CREATE_GRATITUDE", async (action: OfflineAction) => {
+  offlineQueue.registerHandler("CREATE_GRATITUDE", async (action, context) => {
     if (!isValidGratitudeEntry(action.payload)) {
       logger.warn("[OfflineQueue] Invalid gratitude payload, skipping:", action.entityId);
       return;
     }
-    await syncGratitude(action.payload);
+    const entry = action.payload;
+    await runOwnerBoundCloudMutation(context, () =>
+      syncGratitude(entry, context.ownerUserId)
+    );
   });
 
-  offlineQueue.registerHandler("DELETE_GRATITUDE", async (action: OfflineAction) => {
-    await deleteGratitudeFromCloud(action.entityId);
+  offlineQueue.registerHandler("DELETE_GRATITUDE", async (action, context) => {
+    await runOwnerBoundCloudMutation(context, () =>
+      deleteGratitudeFromCloud(action.entityId, context.ownerUserId)
+    );
   });
 
   // Settings handler — sync individual setting to cloud
-  offlineQueue.registerHandler("UPDATE_SETTINGS", async (action: OfflineAction) => {
+  offlineQueue.registerHandler("UPDATE_SETTINGS", async (action, context) => {
     const payload = action.payload as { key?: string; value?: unknown } | null;
     if (!payload || typeof payload.key !== "string") {
       logger.warn("[OfflineQueue] Invalid settings payload, skipping:", action.entityId);
       return;
     }
-    await syncSetting(payload.key, payload.value);
+    await runOwnerBoundCloudMutation(context, () =>
+      syncSetting(payload.key!, payload.value, context.ownerUserId)
+    );
   });
 
-  offlineQueue.registerHandler("DELETE_SETTINGS", async (action: OfflineAction) => {
+  offlineQueue.registerHandler("DELETE_SETTINGS", async (action, context) => {
     const payload = action.payload as { key?: string } | null;
     const key = typeof payload?.key === "string" ? payload.key : action.entityId;
     if (!key) {
       logger.warn("[OfflineQueue] Invalid settings delete payload, skipping:", action.entityId);
       return;
     }
-    await deleteSettingFromCloud(key);
+    await runOwnerBoundCloudMutation(context, () =>
+      deleteSettingFromCloud(key, context.ownerUserId)
+    );
   });
 
   // Journal handlers
-  offlineQueue.registerHandler("SYNC_JOURNAL_ENTRY", async (action: OfflineAction) => {
+  offlineQueue.registerHandler("SYNC_JOURNAL_ENTRY", async (action, context) => {
     const entry = action.payload as JournalEntry;
     if (!entry || typeof entry.id !== "string" || typeof entry.date !== "string") {
       logger.warn("[OfflineQueue] Invalid journal entry payload, skipping:", action.entityId);
       return;
     }
-    await syncJournalEntry(entry);
+    await runOwnerBoundCloudMutation(context, () =>
+      syncJournalEntry(entry, context.ownerUserId)
+    );
   });
 
-  offlineQueue.registerHandler("DELETE_JOURNAL_ENTRY", async (action: OfflineAction) => {
-    await deleteJournalEntryFromCloud(action.entityId);
+  offlineQueue.registerHandler("DELETE_JOURNAL_ENTRY", async (action, context) => {
+    await runOwnerBoundCloudMutation(context, () =>
+      deleteJournalEntryFromCloud(action.entityId, context.ownerUserId)
+    );
   });
 
-  offlineQueue.registerHandler("UPLOAD_JOURNAL_PHOTO_STORAGE", async (action: OfflineAction) => {
-    await retryJournalPhotoUpload(action.payload ?? { id: action.entityId });
+  offlineQueue.registerHandler("UPLOAD_JOURNAL_PHOTO_STORAGE", async (action, context) => {
+    await runOwnerBoundCloudMutation(context, () =>
+      retryJournalPhotoUpload(action.payload ?? { id: action.entityId }, context.ownerUserId)
+    );
   });
 
-  offlineQueue.registerHandler("UPLOAD_JOURNAL_AUDIO_STORAGE", async (action: OfflineAction) => {
-    await retryJournalAudioUpload(action.payload ?? { id: action.entityId });
+  offlineQueue.registerHandler("UPLOAD_JOURNAL_AUDIO_STORAGE", async (action, context) => {
+    await runOwnerBoundCloudMutation(context, () =>
+      retryJournalAudioUpload(action.payload ?? { id: action.entityId }, context.ownerUserId)
+    );
   });
 
-  offlineQueue.registerHandler("DELETE_JOURNAL_PHOTO_STORAGE", async (action: OfflineAction) => {
-    await retryJournalPhotoDelete(action.payload ?? { id: action.entityId });
+  offlineQueue.registerHandler("DELETE_JOURNAL_PHOTO_STORAGE", async (action, context) => {
+    await runOwnerBoundCloudMutation(context, () =>
+      retryJournalPhotoDelete(action.payload ?? { id: action.entityId }, context.ownerUserId)
+    );
   });
 
-  offlineQueue.registerHandler("DELETE_JOURNAL_AUDIO_STORAGE", async (action: OfflineAction) => {
-    await retryJournalAudioDelete(action.payload ?? { id: action.entityId });
+  offlineQueue.registerHandler("DELETE_JOURNAL_AUDIO_STORAGE", async (action, context) => {
+    await runOwnerBoundCloudMutation(context, () =>
+      retryJournalAudioDelete(action.payload ?? { id: action.entityId }, context.ownerUserId)
+    );
+  });
+
+  offlineQueue.registerHandler("MIGRATE_JOURNAL_SECURITY", async (action, context) => {
+    await runOwnerBoundCloudMutation(context, () =>
+      runJournalSecurityMigration(action.payload, context.ownerUserId)
+    );
   });
 
   // Durable event-log outbox.
   // If the domain row was already saved but sync_events failed transiently,
   // retry the ordered event before waking other clients.
-  offlineQueue.registerHandler("WRITE_SYNC_EVENT", async (action: OfflineAction) => {
+  offlineQueue.registerHandler("WRITE_SYNC_EVENT", async (action, context) => {
     if (!isSyncEventWriteIntent(action.payload)) {
       logger.warn("[OfflineQueue] Invalid sync event payload, skipping:", action.entityId);
       return;
     }
     const intent = normalizeSyncEventWriteIntent(action.payload);
     action.payload = intent;
-    await writeQueuedEventAndBroadcast(intent);
+    await context.runIfOwnerCurrent(() =>
+      writeQueuedEventAndBroadcast(intent, context.ownerUserId)
+    );
   });
 
   logger.log("[OfflineQueue] Handlers initialized");
@@ -240,7 +310,8 @@ export const queueMoodSync = async (
   action: "CREATE_MOOD" | "UPDATE_MOOD" | "DELETE_MOOD",
   mood: MoodEntry
 ): Promise<void> => {
-  await offlineQueue.enqueue(action, mood.id, mood);
+  const expectedOwnerUserId = await requireCurrentQueueOwner();
+  await offlineQueue.enqueue(action, mood.id, mood, { expectedOwnerUserId });
 };
 
 /**
@@ -250,14 +321,18 @@ export const queueHabitSync = async (
   action: "CREATE_HABIT" | "UPDATE_HABIT" | "DELETE_HABIT" | "TOGGLE_HABIT",
   habit: Habit
 ): Promise<void> => {
-  await offlineQueue.enqueue(action, habit.id, habit);
+  const expectedOwnerUserId = await requireCurrentQueueOwner();
+  await offlineQueue.enqueue(action, habit.id, habit, { expectedOwnerUserId });
 };
 
 /**
  * Helper to queue a focus session with offline support
  */
 export const queueFocusSessionSync = async (session: FocusSession): Promise<void> => {
-  await offlineQueue.enqueue("CREATE_FOCUS_SESSION", session.id, session);
+  const expectedOwnerUserId = await requireCurrentQueueOwner();
+  await offlineQueue.enqueue("CREATE_FOCUS_SESSION", session.id, session, {
+    expectedOwnerUserId,
+  });
 };
 
 /**
@@ -267,7 +342,16 @@ export const queueGratitudeSync = async (
   action: "CREATE_GRATITUDE" | "DELETE_GRATITUDE",
   entry: GratitudeEntry
 ): Promise<void> => {
-  await offlineQueue.enqueue(action, entry.id, entry);
+  const expectedOwnerUserId = await requireCurrentQueueOwner();
+  await offlineQueue.enqueue(action, entry.id, entry, { expectedOwnerUserId });
 };
+
+async function requireCurrentQueueOwner(): Promise<string> {
+  const expectedOwnerUserId = await getCurrentSessionUserId();
+  if (!expectedOwnerUserId) {
+    throw new Error("Sign in before queuing changes for sync");
+  }
+  return expectedOwnerUserId;
+}
 
 export default initializeOfflineQueueHandlers;

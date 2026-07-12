@@ -10,6 +10,19 @@ const journalStorageMocks = vi.hoisted(() => ({
   hasEncryptedJournalContent: vi.fn(() => Promise.resolve(false)),
   hasEncryptedJournalMedia: vi.fn(() => Promise.resolve(false)),
 }));
+const migrationMocks = vi.hoisted(() => ({
+  activate: vi.fn(),
+  captureBoundary: vi.fn(() =>
+    Promise.resolve({ generation: 1, sessionOwnerUserId: "account-a", localOwnerUserId: "account-a" })
+  ),
+  assertBoundary: vi.fn(() => Promise.resolve()),
+  runBoundary: vi.fn(<T,>(_: unknown, operation: () => Promise<T>) => operation()),
+  ensureQueued: vi.fn(() => Promise.resolve(false)),
+  ensureRemovalQueued: vi.fn(() => Promise.resolve(false)),
+  getIntent: vi.fn(() => Promise.resolve(null)),
+  getRemovalIntent: vi.fn(() => Promise.resolve(null)),
+  removeAtomic: vi.fn(() => Promise.resolve({ cloudMigrationPending: false })),
+}));
 const vaultCryptoMocks = vi.hoisted(() => ({
   generateJournalVaultKey: vi.fn(() => "vault-key-test"),
   wrapJournalVaultKey: vi.fn((vaultKey: string, password: string) =>
@@ -73,6 +86,28 @@ vi.mock("@/storage/db", () => ({
 
 vi.mock("../journalVaultCrypto", () => vaultCryptoMocks);
 vi.mock("../journalStorage", () => journalStorageMocks);
+vi.mock("../journalDraftStorage", () => ({
+  decryptEncryptedJournalDrafts: vi.fn(() => Promise.resolve(0)),
+  encryptPlaintextJournalDrafts: vi.fn(() => Promise.resolve(0)),
+  hasEncryptedJournalDrafts: vi.fn(() => Promise.resolve(false)),
+}));
+vi.mock("../journalHubStorage", () => ({
+  decryptEncryptedJournalHubContent: vi.fn(() => Promise.resolve(0)),
+  encryptPlaintextJournalHubContent: vi.fn(() => Promise.resolve(0)),
+  hasEncryptedJournalHubContent: vi.fn(() => Promise.resolve(false)),
+}));
+vi.mock("../journalSecurityMigration", () => ({
+  activateJournalPasswordProtection: migrationMocks.activate,
+  assertJournalSecurityBoundary: migrationMocks.assertBoundary,
+  captureJournalSecurityBoundary: migrationMocks.captureBoundary,
+  ensureJournalSecurityMigrationQueued: migrationMocks.ensureQueued,
+  ensureJournalSecurityRemovalQueued: migrationMocks.ensureRemovalQueued,
+  getJournalSecurityMigrationIntent: migrationMocks.getIntent,
+  getJournalSecurityRemovalIntent: migrationMocks.getRemovalIntent,
+  removeJournalPasswordProtectionAtomically: migrationMocks.removeAtomic,
+  runWithJournalSecurityBoundary: migrationMocks.runBoundary,
+  JOURNAL_SECURITY_MIGRATION_EVENT: "zenflow:journal-security-migration-updated",
+}));
 
 import { useJournalSecurity } from "../useJournalSecurity";
 
@@ -85,6 +120,16 @@ describe("useJournalSecurity native pause lock", () => {
     nativeListeners.clear();
     settingsStore.clear();
     vi.clearAllMocks();
+    migrationMocks.getIntent.mockResolvedValue(null);
+    migrationMocks.ensureQueued.mockResolvedValue(false);
+    migrationMocks.activate.mockImplementation(async ({ passwordData, vaultSetting }: {
+      passwordData: unknown;
+      vaultSetting: unknown;
+    }) => {
+      settingsStore.set("journal_password", { key: "journal_password", value: passwordData });
+      settingsStore.set("journal_vault_key", { key: "journal_vault_key", value: vaultSetting });
+      return { cloudMigrationPending: false };
+    });
     vi.spyOn(Date, "now").mockReturnValue(1_781_580_000_000);
 
     Object.defineProperty(globalThis, "crypto", {

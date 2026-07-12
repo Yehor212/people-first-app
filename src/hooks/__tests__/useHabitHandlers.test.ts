@@ -114,9 +114,13 @@ vi.mock("@/lib/challengeStorage", () => ({
   saveChallenges: vi.fn(),
 }));
 
-vi.mock("@/lib/storageKeys", () => ({
-  SK: { SPECIAL_BADGES: "zenflow-special-badges" },
-}));
+vi.mock("@/lib/storageKeys", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/storageKeys")>();
+  return {
+    ...actual,
+    SK: { ...actual.SK, SPECIAL_BADGES: "zenflow-special-badges" },
+  };
+});
 
 vi.mock("@/lib/safeJson", () => ({
   safeLocalStorageGet: vi.fn(() => ({})),

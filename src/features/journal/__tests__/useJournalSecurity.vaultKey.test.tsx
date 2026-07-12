@@ -2,18 +2,57 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const settingsStore = new Map<string, { key: string; value: unknown }>();
+const ownerState = vi.hoisted<{ current: string | null }>(() => ({ current: "account-a" }));
 const journalStorageMocks = vi.hoisted(() => ({
-  decryptEncryptedJournalEntries: vi.fn(() => Promise.resolve(0)),
-  decryptEncryptedJournalMedia: vi.fn(() => Promise.resolve(0)),
-  encryptPlaintextJournalEntries: vi.fn(() => Promise.resolve(0)),
-  encryptPlaintextJournalMedia: vi.fn(() => Promise.resolve(0)),
+  decryptEncryptedJournalEntries: vi.fn((_vaultKey: string) => Promise.resolve(0)),
+  decryptEncryptedJournalMedia: vi.fn((_vaultKey: string) => Promise.resolve(0)),
+  encryptPlaintextJournalEntries: vi.fn((_vaultKey: string) => Promise.resolve(0)),
+  encryptPlaintextJournalMedia: vi.fn((_vaultKey: string) => Promise.resolve(0)),
   hasEncryptedJournalContent: vi.fn(() => Promise.resolve(false)),
   hasEncryptedJournalMedia: vi.fn(() => Promise.resolve(false)),
 }));
+const draftStorageMocks = vi.hoisted(() => ({
+  decryptEncryptedJournalDrafts: vi.fn((_vaultKey: string) => Promise.resolve(0)),
+  encryptPlaintextJournalDrafts: vi.fn(() => Promise.resolve(0)),
+  hasEncryptedJournalDrafts: vi.fn(() => Promise.resolve(false)),
+}));
+const hubStorageMocks = vi.hoisted(() => ({
+  decryptEncryptedJournalHubContent: vi.fn((_vaultKey: string) => Promise.resolve(0)),
+  encryptPlaintextJournalHubContent: vi.fn(() => Promise.resolve(0)),
+  hasEncryptedJournalHubContent: vi.fn(() => Promise.resolve(false)),
+}));
 const syncMocks = vi.hoisted(() => ({
   isCloudSyncEnabled: vi.fn(() => true),
-  syncSetting: vi.fn(() => Promise.resolve()),
-  deleteSettingFromCloud: vi.fn(() => Promise.resolve()),
+  syncSetting: vi.fn(
+    (_key: string, _value: unknown, _expectedOwnerUserId?: string, _options?: unknown) =>
+      Promise.resolve(),
+  ),
+  deleteSettingFromCloud: vi.fn(
+    (_key: string, _expectedOwnerUserId?: string, _options?: unknown) => Promise.resolve(),
+  ),
+}));
+const migrationMocks = vi.hoisted(() => ({
+  activate: vi.fn(),
+  captureBoundary: vi.fn<
+    () => Promise<{
+      generation: number;
+      sessionOwnerUserId: string | null;
+      localOwnerUserId: string | null;
+    }>
+  >(() =>
+    Promise.resolve({
+      generation: 1,
+      sessionOwnerUserId: "account-a",
+      localOwnerUserId: "account-a",
+    }),
+  ),
+  assertBoundary: vi.fn(),
+  runBoundary: vi.fn(),
+  ensureQueued: vi.fn(() => Promise.resolve(false)),
+  ensureRemovalQueued: vi.fn(() => Promise.resolve(false)),
+  getIntent: vi.fn(() => Promise.resolve(null)),
+  getRemovalIntent: vi.fn(() => Promise.resolve(null)),
+  removeAtomic: vi.fn(),
 }));
 
 const vaultCryptoMocks = vi.hoisted(() => ({
@@ -71,8 +110,23 @@ vi.mock("@/storage/db", () => ({
 
 vi.mock("../journalVaultCrypto", () => vaultCryptoMocks);
 vi.mock("../journalStorage", () => journalStorageMocks);
+vi.mock("../journalDraftStorage", () => draftStorageMocks);
+vi.mock("../journalHubStorage", () => hubStorageMocks);
+vi.mock("../journalSecurityMigration", () => ({
+  activateJournalPasswordProtection: migrationMocks.activate,
+  assertJournalSecurityBoundary: migrationMocks.assertBoundary,
+  captureJournalSecurityBoundary: migrationMocks.captureBoundary,
+  ensureJournalSecurityMigrationQueued: migrationMocks.ensureQueued,
+  ensureJournalSecurityRemovalQueued: migrationMocks.ensureRemovalQueued,
+  getJournalSecurityMigrationIntent: migrationMocks.getIntent,
+  getJournalSecurityRemovalIntent: migrationMocks.getRemovalIntent,
+  removeJournalPasswordProtectionAtomically: migrationMocks.removeAtomic,
+  runWithJournalSecurityBoundary: migrationMocks.runBoundary,
+  JOURNAL_SECURITY_MIGRATION_EVENT: "zenflow:journal-security-migration-updated",
+}));
 
 import { useJournalSecurity } from "../useJournalSecurity";
+import { runWithJournalSecurityWriteLock } from "../journalSecurityWriteLock";
 
 function bytesToString(bytes: Uint8Array): string {
   return Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
@@ -82,6 +136,100 @@ describe("useJournalSecurity vault key lifecycle", () => {
   beforeEach(() => {
     settingsStore.clear();
     vi.clearAllMocks();
+    ownerState.current = "account-a";
+    migrationMocks.ensureQueued.mockResolvedValue(false);
+    migrationMocks.ensureRemovalQueued.mockResolvedValue(false);
+    migrationMocks.getIntent.mockResolvedValue(null);
+    migrationMocks.getRemovalIntent.mockResolvedValue(null);
+    migrationMocks.captureBoundary.mockImplementation(() =>
+      Promise.resolve({
+        generation: 1,
+        sessionOwnerUserId: ownerState.current,
+        localOwnerUserId: ownerState.current,
+      })
+    );
+    migrationMocks.assertBoundary.mockImplementation(
+      async (boundary: { sessionOwnerUserId: string | null; localOwnerUserId: string | null }) => {
+        if (
+          boundary.sessionOwnerUserId !== ownerState.current ||
+          boundary.localOwnerUserId !== ownerState.current
+        ) {
+          throw new Error("Account boundary changed during diary protection");
+        }
+      }
+    );
+    migrationMocks.runBoundary.mockImplementation(
+      async <T,>(
+        boundary: { sessionOwnerUserId: string | null; localOwnerUserId: string | null },
+        operation: () => Promise<T>
+      ): Promise<T> => {
+        await migrationMocks.assertBoundary(boundary);
+        const result = await runWithJournalSecurityWriteLock(operation);
+        await migrationMocks.assertBoundary(boundary);
+        return result;
+      }
+    );
+    migrationMocks.removeAtomic.mockImplementation(
+      async (
+        activeVaultKey: string | null,
+        boundary: { sessionOwnerUserId: string | null; localOwnerUserId: string | null }
+      ) => {
+        await migrationMocks.assertBoundary(boundary);
+        return runWithJournalSecurityWriteLock(async () => {
+          if (!activeVaultKey) {
+            const encrypted = await Promise.all([
+              journalStorageMocks.hasEncryptedJournalContent(),
+              journalStorageMocks.hasEncryptedJournalMedia(),
+              draftStorageMocks.hasEncryptedJournalDrafts(),
+              hubStorageMocks.hasEncryptedJournalHubContent(),
+            ]);
+            if (encrypted.some(Boolean)) {
+              throw new Error("Unlock your diary before removing password protection.");
+            }
+          } else {
+            await journalStorageMocks.decryptEncryptedJournalEntries(activeVaultKey);
+            await draftStorageMocks.decryptEncryptedJournalDrafts(activeVaultKey);
+            await hubStorageMocks.decryptEncryptedJournalHubContent(activeVaultKey);
+            await journalStorageMocks.decryptEncryptedJournalMedia(activeVaultKey);
+          }
+          settingsStore.delete("journal_password");
+          settingsStore.delete("journal_vault_key");
+          settingsStore.delete("journal_biometric");
+          settingsStore.delete("journal_password_cooldown");
+          await migrationMocks.assertBoundary(boundary);
+          return {
+            cloudMigrationPending: Boolean(
+              syncMocks.isCloudSyncEnabled() && boundary.sessionOwnerUserId
+            ),
+          };
+        });
+      }
+    );
+    migrationMocks.ensureRemovalQueued.mockImplementation(async () => {
+      if (!ownerState.current) return false;
+      await syncMocks.deleteSettingFromCloud("journal_vault_key", ownerState.current);
+      return true;
+    });
+    migrationMocks.activate.mockImplementation(async ({
+      passwordData,
+      vaultSetting,
+      vaultKey,
+    }: {
+      passwordData: unknown;
+      vaultSetting: { updatedAt: number };
+      vaultKey: string;
+    }) => {
+      settingsStore.set("journal_password", { key: "journal_password", value: passwordData });
+      settingsStore.set("journal_vault_key", { key: "journal_vault_key", value: vaultSetting });
+      settingsStore.set("journal_vault_revision_v1", {
+        key: "journal_vault_revision_v1",
+        value: vaultSetting.updatedAt,
+      });
+      await syncMocks.syncSetting("journal_vault_key", vaultSetting);
+      await journalStorageMocks.encryptPlaintextJournalEntries(vaultKey);
+      await journalStorageMocks.encryptPlaintextJournalMedia(vaultKey);
+      return { cloudMigrationPending: false, vaultRevision: vaultSetting.updatedAt };
+    });
     vi.spyOn(Date, "now").mockReturnValue(1_781_580_000_000);
 
     Object.defineProperty(globalThis, "crypto", {
@@ -141,6 +289,97 @@ describe("useJournalSecurity vault key lifecycle", () => {
     expect(journalStorageMocks.encryptPlaintextJournalMedia).toHaveBeenCalledWith("vault-key-1");
   });
 
+  it("captures the account boundary before slow password crypto and rejects activation after A to B switch", async () => {
+    const boundaryA = {
+      generation: 7,
+      sessionOwnerUserId: "account-a",
+      localOwnerUserId: "account-a",
+    };
+    migrationMocks.captureBoundary.mockResolvedValueOnce(boundaryA);
+    let currentOwner = "account-a";
+    let releaseCrypto!: () => void;
+    const cryptoGate = new Promise<void>((resolve) => {
+      releaseCrypto = resolve;
+    });
+    let markCryptoStarted!: () => void;
+    const cryptoStarted = new Promise<void>((resolve) => {
+      markCryptoStarted = resolve;
+    });
+    const deriveBits = crypto.subtle.deriveBits as ReturnType<typeof vi.fn>;
+    deriveBits.mockImplementationOnce(
+      async (algorithm: { salt: ArrayBuffer; iterations: number }, key: { password: string }) => {
+        markCryptoStarted();
+        await cryptoGate;
+        const salt = bytesToString(new Uint8Array(algorithm.salt));
+        return new TextEncoder().encode(`${key.password}:${salt}:${algorithm.iterations}`).buffer;
+      }
+    );
+    migrationMocks.activate.mockImplementationOnce(
+      async (_input: unknown, boundary: typeof boundaryA) => {
+        if (boundary.sessionOwnerUserId !== currentOwner) {
+          throw new Error("Account boundary changed during diary protection");
+        }
+        return { cloudMigrationPending: false };
+      }
+    );
+    const hook = renderHook(() => useJournalSecurity());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+
+    let activationError: unknown;
+    const activation = hook.result.current
+      .setPassword("slow protected password")
+      .catch((error: unknown) => {
+        activationError = error;
+      });
+    await cryptoStarted;
+    currentOwner = "account-b";
+    releaseCrypto();
+    await activation;
+
+    expect(activationError).toMatchObject({
+      message: "Account boundary changed during diary protection",
+    });
+    expect(migrationMocks.captureBoundary).toHaveBeenCalledTimes(1);
+    expect(migrationMocks.captureBoundary.mock.invocationCallOrder[0]).toBeLessThan(
+      deriveBits.mock.invocationCallOrder[0]
+    );
+    expect(migrationMocks.activate).toHaveBeenCalledWith(
+      expect.objectContaining({ vaultKey: "vault-key-1" }),
+      boundaryA
+    );
+    expect(settingsStore.has("journal_password")).toBe(false);
+    expect(settingsStore.has("journal_vault_key")).toBe(false);
+  });
+
+  it("does not re-enqueue a migration that is already queued when progress events arrive", async () => {
+    migrationMocks.getIntent.mockResolvedValue({ status: "queued" } as never);
+    const hook = renderHook(() => useJournalSecurity());
+
+    await waitFor(() => expect(hook.result.current.cloudProtectionPending).toBe(true));
+    window.dispatchEvent(new CustomEvent("zenflow:journal-security-migration-updated"));
+    await Promise.resolve();
+
+    expect(migrationMocks.ensureQueued).not.toHaveBeenCalled();
+  });
+
+  it("requeues an enqueue-failed migration once and then observes queued progress", async () => {
+    const failedIntent = { status: "enqueue-failed" };
+    const queuedIntent = { status: "queued" };
+    migrationMocks.getIntent.mockResolvedValueOnce(failedIntent as never);
+    migrationMocks.ensureQueued.mockImplementationOnce(async () => {
+      migrationMocks.getIntent.mockResolvedValue(queuedIntent as never);
+      window.dispatchEvent(new CustomEvent("zenflow:journal-security-migration-updated"));
+      return true;
+    });
+    const hook = renderHook(() => useJournalSecurity());
+
+    await waitFor(() => expect(hook.result.current.cloudProtectionPending).toBe(true));
+    await waitFor(() => expect(migrationMocks.ensureQueued).toHaveBeenCalledTimes(1));
+    await Promise.resolve();
+
+    expect(migrationMocks.ensureQueued).toHaveBeenCalledTimes(1);
+  });
+
   it("clears the session vault key on lock and restores it only after password unlock", async () => {
     const hook = renderHook(() => useJournalSecurity());
 
@@ -164,6 +403,51 @@ describe("useJournalSecurity vault key lifecycle", () => {
     expect(hook.result.current.vaultKey).toBe("vault-key-1");
   });
 
+  it("does not unlock or encrypt account B after password verification started for account A", async () => {
+    const hook = renderHook(() => useJournalSecurity());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+      hook.result.current.lock();
+    });
+    migrationMocks.captureBoundary.mockClear();
+    journalStorageMocks.encryptPlaintextJournalEntries.mockClear();
+    journalStorageMocks.encryptPlaintextJournalMedia.mockClear();
+
+    let markHashStarted!: () => void;
+    const hashStarted = new Promise<void>((resolve) => {
+      markHashStarted = resolve;
+    });
+    let releaseHash!: () => void;
+    const hashGate = new Promise<void>((resolve) => {
+      releaseHash = resolve;
+    });
+    const deriveBits = crypto.subtle.deriveBits as ReturnType<typeof vi.fn>;
+    deriveBits.mockImplementationOnce(
+      async (algorithm: { salt: ArrayBuffer; iterations: number }, key: { password: string }) => {
+        markHashStarted();
+        await hashGate;
+        const salt = bytesToString(new Uint8Array(algorithm.salt));
+        return new TextEncoder().encode(`${key.password}:${salt}:${algorithm.iterations}`).buffer;
+      }
+    );
+
+    const unlockPromise = hook.result.current.unlock("correct horse battery staple");
+    await hashStarted;
+    ownerState.current = "account-b";
+    releaseHash();
+    let unlocked: boolean | undefined;
+    await act(async () => {
+      unlocked = await unlockPromise;
+    });
+
+    expect(unlocked).toBe(false);
+    expect(migrationMocks.captureBoundary).toHaveBeenCalledTimes(1);
+    expect(journalStorageMocks.encryptPlaintextJournalEntries).not.toHaveBeenCalled();
+    expect(journalStorageMocks.encryptPlaintextJournalMedia).not.toHaveBeenCalled();
+    expect(hook.result.current.vaultKey).toBeNull();
+  });
+
   it("syncs a vault key created during unlock for legacy password-only diaries", async () => {
     const hook = renderHook(() => useJournalSecurity());
 
@@ -184,13 +468,13 @@ describe("useJournalSecurity vault key lifecycle", () => {
     expect(settingsStore.get("journal_vault_key")?.value).toEqual({
       wrappedKey: "wrapped:legacy password:vault-key-1",
       createdAt: 1_781_580_000_000,
-      updatedAt: 1_781_580_000_000,
+      updatedAt: 1_781_580_000_001,
     });
     expect(syncMocks.syncSetting).toHaveBeenCalledWith("journal_vault_key", {
       wrappedKey: "wrapped:legacy password:vault-key-1",
       createdAt: 1_781_580_000_000,
-      updatedAt: 1_781_580_000_000,
-    });
+      updatedAt: 1_781_580_000_001,
+    }, "account-a");
   });
 
   it("rewraps the same vault key when the diary password changes", async () => {
@@ -211,9 +495,73 @@ describe("useJournalSecurity vault key lifecycle", () => {
     );
     expect(settingsStore.get("journal_vault_key")?.value).toMatchObject({
       wrappedKey: "wrapped:new password:vault-key-1",
-      updatedAt: 1_781_580_000_000,
+      updatedAt: 1_781_580_000_001,
     });
     expect(hook.result.current.vaultKey).toBe("vault-key-1");
+  });
+
+  it("never infers a newly signed-in cloud owner for an operation captured local-only", async () => {
+    ownerState.current = null;
+    syncMocks.isCloudSyncEnabled.mockReturnValue(false);
+    const hook = renderHook(() => useJournalSecurity());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await act(async () => {
+      await hook.result.current.setPassword("local-only password");
+    });
+
+    syncMocks.isCloudSyncEnabled.mockReturnValue(true);
+    syncMocks.syncSetting.mockClear();
+    await act(async () => {
+      await expect(
+        hook.result.current.changePassword("local-only password", "new local-only password")
+      ).resolves.toBe(true);
+    });
+    expect(syncMocks.syncSetting).not.toHaveBeenCalled();
+
+    syncMocks.deleteSettingFromCloud.mockClear();
+    await act(async () => {
+      await hook.result.current.removePassword();
+    });
+    expect(syncMocks.deleteSettingFromCloud).not.toHaveBeenCalled();
+  });
+
+  it("does not change account B diary settings after account A password rewrap has started", async () => {
+    const hook = renderHook(() => useJournalSecurity());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await act(async () => {
+      await hook.result.current.setPassword("old password");
+    });
+    const originalPassword = settingsStore.get("journal_password")?.value;
+    const originalVault = settingsStore.get("journal_vault_key")?.value;
+    migrationMocks.captureBoundary.mockClear();
+
+    let markRewrapStarted!: () => void;
+    const rewrapStarted = new Promise<void>((resolve) => {
+      markRewrapStarted = resolve;
+    });
+    let releaseRewrap!: () => void;
+    const rewrapGate = new Promise<void>((resolve) => {
+      releaseRewrap = resolve;
+    });
+    vaultCryptoMocks.rewrapJournalVaultKey.mockImplementationOnce(async () => {
+      markRewrapStarted();
+      await rewrapGate;
+      return "wrapped:new password:vault-key-1";
+    });
+
+    const changePromise = hook.result.current.changePassword("old password", "new password");
+    await rewrapStarted;
+    ownerState.current = "account-b";
+    releaseRewrap();
+    let changed: boolean | undefined;
+    await act(async () => {
+      changed = await changePromise;
+    });
+
+    expect(changed).toBe(false);
+    expect(migrationMocks.captureBoundary).toHaveBeenCalledTimes(1);
+    expect(settingsStore.get("journal_password")?.value).toEqual(originalPassword);
+    expect(settingsStore.get("journal_vault_key")?.value).toEqual(originalVault);
   });
 
   it("treats a synced wrapped vault key as a locked diary on a new device", async () => {
@@ -259,13 +607,169 @@ describe("useJournalSecurity vault key lifecycle", () => {
 
     expect(journalStorageMocks.decryptEncryptedJournalEntries).toHaveBeenCalledWith("vault-key-1");
     expect(journalStorageMocks.decryptEncryptedJournalMedia).toHaveBeenCalledWith("vault-key-1");
+    expect(draftStorageMocks.decryptEncryptedJournalDrafts).toHaveBeenCalledWith("vault-key-1");
+    expect(hubStorageMocks.decryptEncryptedJournalHubContent).toHaveBeenCalledWith("vault-key-1");
     expect(settingsStore.has("journal_password")).toBe(false);
     expect(settingsStore.has("journal_vault_key")).toBe(false);
-    expect(syncMocks.deleteSettingFromCloud).toHaveBeenCalledWith("journal_vault_key");
+    expect(syncMocks.deleteSettingFromCloud).toHaveBeenCalledWith(
+      "journal_vault_key",
+      "account-a"
+    );
     expect(hook.result.current.vaultKey).toBeNull();
   });
 
-  it("keeps local diary lock material when synced vault-key deletion fails", async () => {
+  it("waits for an in-flight protected write and leaves no ciphertext after removing protection", async () => {
+    const hook = renderHook(() => useJournalSecurity());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+
+    let persistedContent = "plaintext";
+    let releaseWrite!: () => void;
+    const writeGate = new Promise<void>((resolve) => {
+      releaseWrite = resolve;
+    });
+    let markWriteStarted!: () => void;
+    const writeStarted = new Promise<void>((resolve) => {
+      markWriteStarted = resolve;
+    });
+    const protectedWrite = runWithJournalSecurityWriteLock(async () => {
+      markWriteStarted();
+      await writeGate;
+      persistedContent = "encrypted-after-write";
+    });
+    await writeStarted;
+    let markRemovalMigrationStarted!: () => void;
+    const removalMigrationStarted = new Promise<void>((resolve) => {
+      markRemovalMigrationStarted = resolve;
+    });
+    journalStorageMocks.decryptEncryptedJournalEntries.mockImplementationOnce(async () => {
+      markRemovalMigrationStarted();
+      if (persistedContent.startsWith("encrypted")) persistedContent = "plaintext-after-removal";
+      return 1;
+    });
+
+    let removalError: unknown;
+    await act(async () => {
+      const removal = hook.result.current.removePassword();
+      await Promise.race([
+        removalMigrationStarted,
+        new Promise<void>((resolve) => setTimeout(resolve, 10)),
+      ]);
+      releaseWrite();
+      try {
+        await Promise.all([protectedWrite, removal]);
+      } catch (error) {
+        removalError = error;
+      }
+    });
+
+    expect(removalError).toBeUndefined();
+    expect(persistedContent).toBe("plaintext-after-removal");
+  });
+
+  it("keeps durable local removal and never retargets its remote completion to account B", async () => {
+    const hook = renderHook(() => useJournalSecurity());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+    const originalPassword = settingsStore.get("journal_password")?.value;
+    const originalVault = settingsStore.get("journal_vault_key")?.value;
+    migrationMocks.captureBoundary.mockClear();
+
+    let markCloudDeleteStarted!: () => void;
+    const cloudDeleteStarted = new Promise<void>((resolve) => {
+      markCloudDeleteStarted = resolve;
+    });
+    let releaseCloudDelete!: () => void;
+    const cloudDeleteGate = new Promise<void>((resolve) => {
+      releaseCloudDelete = resolve;
+    });
+    syncMocks.deleteSettingFromCloud.mockImplementationOnce(async () => {
+      markCloudDeleteStarted();
+      await cloudDeleteGate;
+    });
+
+    const removalPromise = hook.result.current.removePassword();
+    await cloudDeleteStarted;
+    ownerState.current = "account-b";
+    releaseCloudDelete();
+    let removalError: unknown;
+    await act(async () => {
+      try {
+        await removalPromise;
+      } catch (error) {
+        removalError = error;
+      }
+    });
+
+    expect(removalError).toBeUndefined();
+    expect(migrationMocks.captureBoundary).toHaveBeenCalledTimes(1);
+    expect(originalPassword).toBeDefined();
+    expect(originalVault).toBeDefined();
+    expect(settingsStore.has("journal_password")).toBe(false);
+    expect(settingsStore.has("journal_vault_key")).toBe(false);
+    expect(syncMocks.deleteSettingFromCloud).toHaveBeenCalledWith(
+      "journal_vault_key",
+      "account-a"
+    );
+    expect(syncMocks.deleteSettingFromCloud).not.toHaveBeenCalledWith(
+      "journal_vault_key",
+      "account-b"
+    );
+  });
+
+  it("blocks password removal when an encrypted draft exists in a locked tab", async () => {
+    settingsStore.set("journal_password", {
+      key: "journal_password",
+      value: { hash: "hash", salt: "salt", iterations: 600_000, createdAt: 1 },
+    });
+    settingsStore.set("journal_vault_key", {
+      key: "journal_vault_key",
+      value: { wrappedKey: "wrapped", createdAt: 1, updatedAt: 1 },
+    });
+    draftStorageMocks.hasEncryptedJournalDrafts.mockResolvedValueOnce(true);
+    const hook = renderHook(() => useJournalSecurity());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+
+    await act(async () => {
+      await expect(hook.result.current.removePassword()).rejects.toThrow(
+        "Unlock your diary before removing password protection."
+      );
+    });
+
+    expect(settingsStore.has("journal_password")).toBe(true);
+    expect(settingsStore.has("journal_vault_key")).toBe(true);
+    expect(syncMocks.deleteSettingFromCloud).not.toHaveBeenCalled();
+  });
+
+  it("blocks password removal when encrypted Space content exists in a locked tab", async () => {
+    settingsStore.set("journal_password", {
+      key: "journal_password",
+      value: { hash: "hash", salt: "salt", iterations: 600_000, createdAt: 1 },
+    });
+    settingsStore.set("journal_vault_key", {
+      key: "journal_vault_key",
+      value: { wrappedKey: "wrapped", createdAt: 1, updatedAt: 1 },
+    });
+    hubStorageMocks.hasEncryptedJournalHubContent.mockResolvedValueOnce(true);
+    const hook = renderHook(() => useJournalSecurity());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+
+    await act(async () => {
+      await expect(hook.result.current.removePassword()).rejects.toThrow(
+        "Unlock your diary before removing password protection."
+      );
+    });
+
+    expect(settingsStore.has("journal_password")).toBe(true);
+    expect(settingsStore.has("journal_vault_key")).toBe(true);
+    expect(syncMocks.deleteSettingFromCloud).not.toHaveBeenCalled();
+  });
+
+  it("keeps local removal complete and marks cloud completion pending when remote deletion fails", async () => {
     const hook = renderHook(() => useJournalSecurity());
 
     await waitFor(() => expect(hook.result.current.loading).toBe(false));
@@ -276,18 +780,19 @@ describe("useJournalSecurity vault key lifecycle", () => {
     syncMocks.deleteSettingFromCloud.mockRejectedValueOnce(new Error("cloud delete failed"));
 
     await act(async () => {
-      await expect(hook.result.current.removePassword()).rejects.toThrow("cloud delete failed");
+      await expect(hook.result.current.removePassword()).resolves.toBeUndefined();
     });
 
-    expect(journalStorageMocks.decryptEncryptedJournalEntries).not.toHaveBeenCalled();
-    expect(journalStorageMocks.decryptEncryptedJournalMedia).not.toHaveBeenCalled();
-    expect(settingsStore.has("journal_password")).toBe(true);
-    expect(settingsStore.has("journal_vault_key")).toBe(true);
-    expect(hook.result.current.hasPassword).toBe(true);
-    expect(hook.result.current.vaultKey).toBe("vault-key-1");
+    expect(journalStorageMocks.decryptEncryptedJournalEntries).toHaveBeenCalledWith("vault-key-1");
+    expect(journalStorageMocks.decryptEncryptedJournalMedia).toHaveBeenCalledWith("vault-key-1");
+    expect(settingsStore.has("journal_password")).toBe(false);
+    expect(settingsStore.has("journal_vault_key")).toBe(false);
+    expect(hook.result.current.hasPassword).toBe(false);
+    expect(hook.result.current.vaultKey).toBeNull();
+    expect(hook.result.current.cloudProtectionPending).toBe(true);
   });
 
-  it("restores the synced vault key when local content decryption fails after cloud deletion", async () => {
+  it("does not start remote deletion when atomic local decryption preparation fails", async () => {
     const hook = renderHook(() => useJournalSecurity());
 
     await waitFor(() => expect(hook.result.current.loading).toBe(false));
@@ -305,12 +810,42 @@ describe("useJournalSecurity vault key lifecycle", () => {
       await expect(hook.result.current.removePassword()).rejects.toThrow("decrypt failed");
     });
 
-    expect(syncMocks.deleteSettingFromCloud).toHaveBeenCalledWith("journal_vault_key");
-    expect(syncMocks.syncSetting).toHaveBeenCalledWith("journal_vault_key", wrappedVaultSetting);
+    expect(wrappedVaultSetting).toBeDefined();
+    expect(syncMocks.deleteSettingFromCloud).not.toHaveBeenCalled();
+    expect(syncMocks.syncSetting).not.toHaveBeenCalled();
     expect(journalStorageMocks.decryptEncryptedJournalMedia).not.toHaveBeenCalled();
     expect(settingsStore.has("journal_password")).toBe(true);
     expect(settingsStore.has("journal_vault_key")).toBe(true);
     expect(hook.result.current.hasPassword).toBe(true);
     expect(hook.result.current.vaultKey).toBe("vault-key-1");
+  });
+
+  it("does not run compensating re-encryption when atomic removal preparation fails", async () => {
+    const hook = renderHook(() => useJournalSecurity());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+
+    let draftContent = "encrypted-draft";
+    draftStorageMocks.decryptEncryptedJournalDrafts.mockResolvedValueOnce(1);
+    draftStorageMocks.encryptPlaintextJournalDrafts.mockImplementationOnce(async () => {
+      draftContent = "encrypted-draft";
+      return 1;
+    });
+    journalStorageMocks.decryptEncryptedJournalMedia.mockRejectedValueOnce(
+      new Error("media decrypt failed")
+    );
+
+    await act(async () => {
+      await expect(hook.result.current.removePassword()).rejects.toThrow("media decrypt failed");
+    });
+
+    expect(draftStorageMocks.decryptEncryptedJournalDrafts).toHaveBeenCalledWith("vault-key-1");
+    expect(draftStorageMocks.encryptPlaintextJournalDrafts).not.toHaveBeenCalled();
+    expect(hubStorageMocks.encryptPlaintextJournalHubContent).not.toHaveBeenCalled();
+    expect(draftContent).toBe("encrypted-draft");
+    expect(settingsStore.has("journal_password")).toBe(true);
+    expect(settingsStore.has("journal_vault_key")).toBe(true);
   });
 });

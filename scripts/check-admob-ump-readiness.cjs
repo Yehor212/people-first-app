@@ -11,7 +11,7 @@ const DEFAULT_FILES = {
   adController: "src/lib/adController.ts",
   adContext: "src/contexts/AdContext.tsx",
   privacySection: "src/components/settings/PrivacySection.tsx",
-  v2SettingsDataPanels: "src/pages/nav-v2/settings/V2SettingsDataPanels.tsx",
+  v2SettingsPrivacyPanel: "src/pages/nav-v2/settings/V2SettingsPrivacyPanel.tsx",
   androidManifest: "android/app/src/main/AndroidManifest.xml",
   androidBuildGradle: "android/app/build.gradle",
   iosInfoPlist: "ios/App/App/Info.plist",
@@ -154,7 +154,7 @@ function evaluateAdMobUmpReadiness(files) {
   requireContains(
     issues,
     files,
-    "v2SettingsDataPanels",
+    "v2SettingsPrivacyPanel",
     "openAdPrivacyOptions",
     "missing_v2_settings_privacy_options_entry",
     "V2 settings must expose the Google ad privacy options entry point when required",

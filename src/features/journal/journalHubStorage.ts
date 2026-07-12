@@ -1,6 +1,13 @@
 import { db } from "@/storage/db";
 import { logger } from "@/lib/logger";
 import { formatDate } from "@/lib/utils";
+import {
+  decryptJournalContentIfNeeded,
+  encryptJournalContent,
+  isEncryptedJournalContent,
+} from "./journalCrypto";
+import { runWithJournalSecurityWriteLock } from "./journalSecurityWriteLock";
+import { getJournalVaultKeyForWrite, JournalWriteLockedError } from "./journalWriteSecurity";
 import type { GratitudeEntry } from "@/types";
 import type {
   JournalEntryLink,
@@ -17,6 +24,231 @@ export const QUIET_RELEASE_PRACTICE_ID = "quiet-release";
 export const GRATITUDE_SPACE_ID = "space-gratitude";
 
 const now = () => Date.now();
+
+interface JournalHubReadContext {
+  vaultKey: string | null;
+  protectedAndLocked: boolean;
+}
+
+async function getJournalHubReadContext(): Promise<JournalHubReadContext> {
+  try {
+    return {
+      vaultKey: await getJournalVaultKeyForWrite(),
+      protectedAndLocked: false,
+    };
+  } catch (error) {
+    if (error instanceof JournalWriteLockedError) {
+      return { vaultKey: null, protectedAndLocked: true };
+    }
+    throw error;
+  }
+}
+
+async function protectHubString(value: string | undefined, vaultKey: string): Promise<string | undefined> {
+  if (!value || isEncryptedJournalContent(value)) return value;
+  return encryptJournalContent(value, vaultKey);
+}
+
+async function revealHubString(
+  value: string | undefined,
+  context: JournalHubReadContext
+): Promise<string | undefined> {
+  if (!value) return value;
+  if (context.protectedAndLocked) return undefined;
+  if (!isEncryptedJournalContent(value)) return value;
+  if (!context.vaultKey) return undefined;
+  try {
+    return await decryptJournalContentIfNeeded(value, context.vaultKey);
+  } catch (error) {
+    logger.warn("[JournalHub] Protected field could not be decrypted", error);
+    return undefined;
+  }
+}
+
+async function decryptHubStringForStorage(
+  value: string | undefined,
+  vaultKey: string
+): Promise<string | undefined> {
+  if (!value || !isEncryptedJournalContent(value)) return value;
+  // Storage migration must be lossless. Unlike UI reads, authentication or
+  // corruption failures propagate so password removal can roll back instead
+  // of persisting redacted/empty fields as if decryption succeeded.
+  return decryptJournalContentIfNeeded(value, vaultKey);
+}
+
+export async function encryptJournalSpaceForStorage(
+  space: JournalSpace,
+  vaultKey: string
+): Promise<JournalSpace> {
+  return {
+    ...space,
+    name: await protectHubString(space.name, vaultKey),
+    description: await protectHubString(space.description, vaultKey),
+  };
+}
+
+export async function encryptJournalSpaceCaptureForStorage(
+  capture: JournalSpaceCapture,
+  vaultKey: string
+): Promise<JournalSpaceCapture> {
+  return {
+    ...capture,
+    spaceName: (await protectHubString(capture.spaceName, vaultKey)) ?? "",
+    title: (await protectHubString(capture.title, vaultKey)) ?? "",
+    fields: await Promise.all(
+      capture.fields.map(async (field) => ({
+        prompt: (await protectHubString(field.prompt, vaultKey)) ?? "",
+        value: (await protectHubString(field.value, vaultKey)) ?? "",
+      }))
+    ),
+  };
+}
+
+async function revealJournalSpace(
+  space: JournalSpace,
+  context: JournalHubReadContext
+): Promise<JournalSpace> {
+  return {
+    ...space,
+    name: await revealHubString(space.name, context),
+    description: await revealHubString(space.description, context),
+  };
+}
+
+async function revealJournalSpaceCapture(
+  capture: JournalSpaceCapture,
+  context: JournalHubReadContext
+): Promise<JournalSpaceCapture> {
+  if (context.protectedAndLocked) {
+    return { ...capture, spaceName: "", title: "", fields: [] };
+  }
+  return {
+    ...capture,
+    spaceName: (await revealHubString(capture.spaceName, context)) ?? "",
+    title: (await revealHubString(capture.title, context)) ?? "",
+    fields: await Promise.all(
+      capture.fields.map(async (field) => ({
+        prompt: (await revealHubString(field.prompt, context)) ?? "",
+        value: (await revealHubString(field.value, context)) ?? "",
+      }))
+    ),
+  };
+}
+
+function hasEncryptedSpaceFields(space: JournalSpace): boolean {
+  return Boolean(
+    (space.name && isEncryptedJournalContent(space.name)) ||
+      (space.description && isEncryptedJournalContent(space.description))
+  );
+}
+
+function hasEncryptedCaptureFields(capture: JournalSpaceCapture): boolean {
+  return Boolean(
+    isEncryptedJournalContent(capture.spaceName) ||
+      isEncryptedJournalContent(capture.title) ||
+      capture.fields.some(
+        (field) =>
+          isEncryptedJournalContent(field.prompt) || isEncryptedJournalContent(field.value)
+      )
+  );
+}
+
+function hasPlaintextSpaceFields(space: JournalSpace): boolean {
+  return Boolean(
+    (space.name && !isEncryptedJournalContent(space.name)) ||
+      (space.description && !isEncryptedJournalContent(space.description))
+  );
+}
+
+function hasPlaintextCaptureFields(capture: JournalSpaceCapture): boolean {
+  return Boolean(
+    (capture.spaceName && !isEncryptedJournalContent(capture.spaceName)) ||
+      (capture.title && !isEncryptedJournalContent(capture.title)) ||
+      capture.fields.some(
+        (field) =>
+          Boolean(field.prompt && !isEncryptedJournalContent(field.prompt)) ||
+          Boolean(field.value && !isEncryptedJournalContent(field.value))
+      )
+  );
+}
+
+export async function decryptJournalSpaceForStorage(
+  space: JournalSpace,
+  vaultKey: string
+): Promise<JournalSpace> {
+  return {
+    ...space,
+    name: await decryptHubStringForStorage(space.name, vaultKey),
+    description: await decryptHubStringForStorage(space.description, vaultKey),
+  };
+}
+
+export async function decryptJournalSpaceCaptureForStorage(
+  capture: JournalSpaceCapture,
+  vaultKey: string
+): Promise<JournalSpaceCapture> {
+  return {
+    ...capture,
+    spaceName: (await decryptHubStringForStorage(capture.spaceName, vaultKey)) ?? "",
+    title: (await decryptHubStringForStorage(capture.title, vaultKey)) ?? "",
+    fields: await Promise.all(
+      capture.fields.map(async (field) => ({
+        prompt: (await decryptHubStringForStorage(field.prompt, vaultKey)) ?? "",
+        value: (await decryptHubStringForStorage(field.value, vaultKey)) ?? "",
+      }))
+    ),
+  };
+}
+
+export async function hasEncryptedJournalHubContent(): Promise<boolean> {
+  const [spaces, captures] = await Promise.all([
+    db.journalSpaces.toArray(),
+    db.journalSpaceCaptures.toArray(),
+  ]);
+  return spaces.some(hasEncryptedSpaceFields) || captures.some(hasEncryptedCaptureFields);
+}
+
+export async function decryptEncryptedJournalHubContent(vaultKey: string): Promise<number> {
+  const [spaces, captures] = await Promise.all([
+    db.journalSpaces.toArray(),
+    db.journalSpaceCaptures.toArray(),
+  ]);
+  const encryptedSpaces = spaces.filter(hasEncryptedSpaceFields);
+  const encryptedCaptures = captures.filter(hasEncryptedCaptureFields);
+  const [spaceUpdates, captureUpdates] = await Promise.all([
+    Promise.all(encryptedSpaces.map((space) => decryptJournalSpaceForStorage(space, vaultKey))),
+    Promise.all(
+      encryptedCaptures.map((capture) => decryptJournalSpaceCaptureForStorage(capture, vaultKey))
+    ),
+  ]);
+  if (spaceUpdates.length === 0 && captureUpdates.length === 0) return 0;
+  await db.transaction("rw", [db.journalSpaces, db.journalSpaceCaptures], async () => {
+    if (spaceUpdates.length) await db.journalSpaces.bulkPut(spaceUpdates);
+    if (captureUpdates.length) await db.journalSpaceCaptures.bulkPut(captureUpdates);
+  });
+  return spaceUpdates.length + captureUpdates.length;
+}
+
+export async function encryptPlaintextJournalHubContent(vaultKey: string): Promise<number> {
+  const [spaces, captures] = await Promise.all([
+    db.journalSpaces.toArray(),
+    db.journalSpaceCaptures.toArray(),
+  ]);
+  const plaintextSpaces = spaces.filter(hasPlaintextSpaceFields);
+  const plaintextCaptures = captures.filter(hasPlaintextCaptureFields);
+  const [spaceUpdates, captureUpdates] = await Promise.all([
+    Promise.all(plaintextSpaces.map((space) => encryptJournalSpaceForStorage(space, vaultKey))),
+    Promise.all(
+      plaintextCaptures.map((capture) => encryptJournalSpaceCaptureForStorage(capture, vaultKey))
+    ),
+  ]);
+  if (spaceUpdates.length === 0 && captureUpdates.length === 0) return 0;
+  await db.transaction("rw", [db.journalSpaces, db.journalSpaceCaptures], async () => {
+    if (spaceUpdates.length) await db.journalSpaces.bulkPut(spaceUpdates);
+    if (captureUpdates.length) await db.journalSpaceCaptures.bulkPut(captureUpdates);
+  });
+  return spaceUpdates.length + captureUpdates.length;
+}
 
 function createId(prefix: string): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -70,34 +302,42 @@ export async function getJournalHubPreferences(): Promise<JournalHubPreferences>
 export async function saveJournalHubPreferences(
   patch: Partial<Omit<JournalHubPreferences, "id" | "updatedAt">>,
 ): Promise<JournalHubPreferences> {
-  const current = await getJournalHubPreferences();
-  const next: JournalHubPreferences = {
-    ...current,
-    ...patch,
-    id: DEFAULT_PREFERENCES_ID,
-    updatedAt: now(),
-  };
+  return runWithJournalSecurityWriteLock(async () => {
+    const current = await getJournalHubPreferences();
+    const next: JournalHubPreferences = {
+      ...current,
+      ...patch,
+      id: DEFAULT_PREFERENCES_ID,
+      updatedAt: now(),
+    };
 
-  await db.journalHubPreferences.put(next);
-  return next;
+    await db.journalHubPreferences.put(next);
+    return next;
+  });
 }
 
 export async function resetJournalHubPreferences(): Promise<JournalHubPreferences> {
-  const next = { ...DEFAULT_JOURNAL_HUB_PREFERENCES, updatedAt: now() };
-  await db.journalHubPreferences.put(next);
-  return next;
+  return runWithJournalSecurityWriteLock(async () => {
+    const next = { ...DEFAULT_JOURNAL_HUB_PREFERENCES, updatedAt: now() };
+    await db.journalHubPreferences.put(next);
+    return next;
+  });
 }
 
 export async function getJournalSpaces(): Promise<JournalSpace[]> {
   try {
-    const spaces = await db.journalSpaces.toArray();
-    return spaces
+    const [spaces, context] = await Promise.all([
+      db.journalSpaces.toArray(),
+      getJournalHubReadContext(),
+    ]);
+    const visibleSpaces = spaces
       .filter((space) => {
         if (space.id === GRATITUDE_SPACE_ID || space.autoSource === "gratitude") return true;
         if (LEGACY_SYSTEM_SPACE_IDS.has(space.id)) return false;
         return space.kind !== "system";
       })
       .sort((a, b) => a.sortOrder - b.sortOrder);
+    return Promise.all(visibleSpaces.map((space) => revealJournalSpace(space, context)));
   } catch (error) {
     logger.error("[JournalHub] Failed to load spaces", error);
     return DEFAULT_JOURNAL_SPACES;
@@ -105,37 +345,48 @@ export async function getJournalSpaces(): Promise<JournalSpace[]> {
 }
 
 export async function ensureGratitudeSpace(): Promise<JournalSpace> {
-  const timestamp = now();
-  const saved = await db.journalSpaces.get(GRATITUDE_SPACE_ID);
-  const next: JournalSpace = {
-    ...GRATITUDE_SPACE_TEMPLATE,
-    ...saved,
-    id: GRATITUDE_SPACE_ID,
-    nameKey: saved?.name ? saved.nameKey : GRATITUDE_SPACE_TEMPLATE.nameKey,
-    descriptionKey: saved?.descriptionKey ?? GRATITUDE_SPACE_TEMPLATE.descriptionKey,
-    iconKey: saved?.iconKey ?? GRATITUDE_SPACE_TEMPLATE.iconKey,
-    accent: saved?.accent ?? GRATITUDE_SPACE_TEMPLATE.accent,
-    private: saved?.private ?? GRATITUDE_SPACE_TEMPLATE.private,
-    kind: "system",
-    autoSource: "gratitude",
-    locked: true,
-    coverKey: saved?.coverKey ?? GRATITUDE_SPACE_TEMPLATE.coverKey,
-    pinnedAction: saved?.pinnedAction ?? GRATITUDE_SPACE_TEMPLATE.pinnedAction,
-    sortOrder: saved?.sortOrder ?? GRATITUDE_SPACE_TEMPLATE.sortOrder,
-    createdAt: saved?.createdAt ?? timestamp,
-    updatedAt: saved?.updatedAt ?? timestamp,
-  };
+  return runWithJournalSecurityWriteLock(async () => {
+    const timestamp = now();
+    const [saved, context] = await Promise.all([
+      db.journalSpaces.get(GRATITUDE_SPACE_ID),
+      getJournalHubReadContext(),
+    ]);
+    const next: JournalSpace = {
+      ...GRATITUDE_SPACE_TEMPLATE,
+      ...saved,
+      id: GRATITUDE_SPACE_ID,
+      nameKey: saved?.name ? saved.nameKey : GRATITUDE_SPACE_TEMPLATE.nameKey,
+      descriptionKey: saved?.descriptionKey ?? GRATITUDE_SPACE_TEMPLATE.descriptionKey,
+      iconKey: saved?.iconKey ?? GRATITUDE_SPACE_TEMPLATE.iconKey,
+      accent: saved?.accent ?? GRATITUDE_SPACE_TEMPLATE.accent,
+      private: saved?.private ?? GRATITUDE_SPACE_TEMPLATE.private,
+      kind: "system",
+      autoSource: "gratitude",
+      locked: true,
+      coverKey: saved?.coverKey ?? GRATITUDE_SPACE_TEMPLATE.coverKey,
+      pinnedAction: saved?.pinnedAction ?? GRATITUDE_SPACE_TEMPLATE.pinnedAction,
+      sortOrder: saved?.sortOrder ?? GRATITUDE_SPACE_TEMPLATE.sortOrder,
+      createdAt: saved?.createdAt ?? timestamp,
+      updatedAt: saved?.updatedAt ?? timestamp,
+    };
+    const needsRepair =
+      !saved ||
+      saved.kind !== "system" ||
+      saved.autoSource !== "gratitude" ||
+      saved.locked !== true ||
+      saved.coverKey == null;
+    let stored = next;
 
-  if (
-    !saved ||
-    saved.kind !== "system" ||
-    saved.autoSource !== "gratitude" ||
-    saved.locked !== true ||
-    saved.coverKey == null
-  ) {
-    await db.journalSpaces.put(next);
-  }
-  return next;
+    if (needsRepair) {
+      if (context.protectedAndLocked) throw new JournalWriteLockedError();
+      stored = context.vaultKey
+        ? await encryptJournalSpaceForStorage(next, context.vaultKey)
+        : next;
+      await db.journalSpaces.put(stored);
+    }
+
+    return revealJournalSpace(stored, context);
+  });
 }
 
 export async function saveJournalSpace(
@@ -148,17 +399,24 @@ export async function saveJournalSpace(
     updatedAt: timestamp,
   };
 
-  await db.journalSpaces.put(next);
+  await runWithJournalSecurityWriteLock(async () => {
+    const vaultKey = await getJournalVaultKeyForWrite();
+    await db.journalSpaces.put(
+      vaultKey ? await encryptJournalSpaceForStorage(next, vaultKey) : next
+    );
+  });
   return next;
 }
 
 export async function deleteJournalSpace(spaceId: string): Promise<void> {
-  const space = await db.journalSpaces.get(spaceId);
-  if (space?.locked) {
-    logger.warn("[JournalHub] Refused to delete locked space", { spaceId });
-    return;
-  }
-  await db.journalSpaces.delete(spaceId);
+  await runWithJournalSecurityWriteLock(async () => {
+    const space = await db.journalSpaces.get(spaceId);
+    if (space?.locked) {
+      logger.warn("[JournalHub] Refused to delete locked space", { spaceId });
+      return;
+    }
+    await db.journalSpaces.delete(spaceId);
+  });
 }
 
 export async function createJournalPracticeSession(
@@ -175,7 +433,7 @@ export async function createJournalPracticeSession(
     completedAt: input.completedAt ?? startedAt,
   };
 
-  await db.journalPracticeSessions.put(session);
+  await runWithJournalSecurityWriteLock(() => db.journalPracticeSessions.put(session));
   return session;
 }
 
@@ -242,7 +500,7 @@ export async function linkJournalEntry(
     createdAt: now(),
   };
 
-  await db.journalEntryLinks.put(link);
+  await runWithJournalSecurityWriteLock(() => db.journalEntryLinks.put(link));
   return link;
 }
 
@@ -259,12 +517,14 @@ export async function linkEntryToSpace(entryId: string, spaceId: string): Promis
 }
 
 export async function unlinkEntryFromSpace(entryId: string, spaceId: string): Promise<void> {
-  const links = await getJournalEntryLinks(entryId);
-  await Promise.all(
-    links
-      .filter((link) => link.targetType === "space" && link.targetId === spaceId)
-      .map((link) => db.journalEntryLinks.delete(link.id)),
-  );
+  await runWithJournalSecurityWriteLock(async () => {
+    const links = await getJournalEntryLinks(entryId);
+    await Promise.all(
+      links
+        .filter((link) => link.targetType === "space" && link.targetId === spaceId)
+        .map((link) => db.journalEntryLinks.delete(link.id)),
+    );
+  });
 }
 
 export async function getSpaceEntryLinks(spaceId?: string): Promise<JournalEntryLink[]> {
@@ -280,10 +540,14 @@ export async function getSpaceEntryLinks(spaceId?: string): Promise<JournalEntry
 
 export async function getJournalSpaceCaptures(spaceId?: string): Promise<JournalSpaceCapture[]> {
   try {
-    const captures = spaceId
-      ? await db.journalSpaceCaptures.where("spaceId").equals(spaceId).toArray()
-      : await db.journalSpaceCaptures.toArray();
-    return captures.sort((a, b) => b.createdAt - a.createdAt);
+    const [captures, context] = await Promise.all([
+      spaceId
+        ? db.journalSpaceCaptures.where("spaceId").equals(spaceId).toArray()
+        : db.journalSpaceCaptures.toArray(),
+      getJournalHubReadContext(),
+    ]);
+    const sorted = captures.sort((a, b) => b.createdAt - a.createdAt);
+    return Promise.all(sorted.map((capture) => revealJournalSpaceCapture(capture, context)));
   } catch (error) {
     logger.error("[JournalHub] Failed to load space captures", error);
     return [];
@@ -317,7 +581,12 @@ export async function createJournalSpaceCapture(input: {
     sourceId: input.sourceId,
   };
 
-  await db.journalSpaceCaptures.put(capture);
+  await runWithJournalSecurityWriteLock(async () => {
+    const vaultKey = await getJournalVaultKeyForWrite();
+    await db.journalSpaceCaptures.put(
+      vaultKey ? await encryptJournalSpaceCaptureForStorage(capture, vaultKey) : capture
+    );
+  });
   return capture;
 }
 

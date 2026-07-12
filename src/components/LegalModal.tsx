@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import { X, Shield, FileText, Scale, ExternalLink } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { useBackHandler } from "@/hooks/useBackHandler";
 
 type LegalTab = "privacy" | "terms" | "licenses";
 
@@ -75,13 +75,21 @@ const OSS_LICENSES = [
 export function LegalModal({ open, onOpenChange, initialTab = "privacy" }: LegalModalProps) {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<LegalTab>(initialTab);
+  const tabRefs = useRef<Record<LegalTab, HTMLButtonElement | null>>({
+    privacy: null,
+    terms: null,
+    licenses: null,
+  });
   const onClose = () => onOpenChange(false);
 
-  useModalA11y(open, onClose);
+  const { modalRef, handleKeyDown } = useModalA11y(open, onClose);
   useScrollLock(open);
-  useBackHandler(open, onClose);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (open) setActiveTab(initialTab);
+  }, [initialTab, open]);
+
+  if (!open || typeof document === "undefined") return null;
 
   const tabs: { key: LegalTab; label: string; icon: typeof Shield }[] = [
     { key: "privacy", label: t.privacyPolicy, icon: Shield },
@@ -93,20 +101,40 @@ export function LegalModal({ open, onOpenChange, initialTab = "privacy" }: Legal
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  return (
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let nextIndex: number | null = null;
+    const rtlDirection = document.documentElement.dir === "rtl" ? -1 : 1;
+
+    if (event.key === "ArrowRight") nextIndex = index + rtlDirection;
+    if (event.key === "ArrowLeft") nextIndex = index - rtlDirection;
+    if (event.key === "ArrowDown") nextIndex = index + 1;
+    if (event.key === "ArrowUp") nextIndex = index - 1;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = tabs.length - 1;
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    const nextTab = tabs[(nextIndex + tabs.length) % tabs.length];
+    setActiveTab(nextTab.key);
+    tabRefs.current[nextTab.key]?.focus();
+  };
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-4 pt-[max(1rem,var(--safe-top))] pb-[max(1rem,var(--safe-bottom))] backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
       onClick={onClose}
     >
       <div
-        className="bg-card rounded-2xl shadow-zen-card w-full max-w-md max-h-[80dvh] flex flex-col overflow-y-auto overscroll-contain"
+        ref={modalRef}
+        className="flex max-h-[calc(var(--app-viewport-height)-var(--safe-top)-var(--safe-bottom)-2rem)] w-full max-w-md min-h-0 flex-col overflow-hidden rounded-2xl bg-card shadow-zen-card"
         role="dialog"
         aria-modal="true"
         aria-labelledby="legal-modal-title"
+        onKeyDown={handleKeyDown}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b">
+        <div className="flex shrink-0 items-center justify-between border-b px-5 py-4">
           <h2 id="legal-modal-title" className="text-lg font-semibold text-foreground">
             {tabs.find((tab) => tab.key === activeTab)?.label}
           </h2>
@@ -120,27 +148,42 @@ export function LegalModal({ open, onOpenChange, initialTab = "privacy" }: Legal
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b px-2" role="tablist">
-          {tabs.map(({ key, label, icon: Icon }) => (
+        <div
+          className="grid shrink-0 gap-1 border-b p-2 min-[520px]:grid-cols-3"
+          role="tablist"
+        >
+          {tabs.map(({ key, label, icon: Icon }, index) => (
             <button
               key={key}
+              ref={(node) => {
+                tabRefs.current[key] = node;
+              }}
+              id={`legal-tab-${key}`}
               role="tab"
+              aria-controls={`legal-panel-${key}`}
               aria-selected={activeTab === key}
+              tabIndex={activeTab === key ? 0 : -1}
               onClick={() => setActiveTab(key)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium motion-safe:transition-colors min-h-[48px] ${
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
+              className={`flex min-h-[48px] min-w-0 items-center justify-start gap-2 rounded-[8px] border border-transparent px-3 py-2 text-start text-sm font-medium motion-safe:transition-[background-color,border-color,color] min-[520px]:justify-center min-[520px]:text-center ${
                 activeTab === key
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
               }`}
             >
-              <Icon className="w-4 h-4" />
-              <span className="truncate">{label}</span>
+              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="min-w-0 whitespace-normal break-words hyphens-auto">{label}</span>
             </button>
           ))}
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-5" role="tabpanel">
+        <div
+          id={`legal-panel-${activeTab}`}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5"
+          role="tabpanel"
+          aria-labelledby={`legal-tab-${activeTab}`}
+        >
           {activeTab === "privacy" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">{t.legalPrivacyDescription}</p>
@@ -186,6 +229,7 @@ export function LegalModal({ open, onOpenChange, initialTab = "privacy" }: Legal
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -2,7 +2,6 @@ import { memo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useUIStore, useUserDataStore, getModalToggle } from "@/stores";
 import { ConfettiBurst } from "@/components/ConfettiBurst";
-import { ConsentBanner } from "@/components/ConsentBanner";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
 import { dismissUpdate } from "@/lib/appUpdateManager";
 import { OnboardingOverlay } from "@/components/OnboardingOverlay";
@@ -47,14 +46,7 @@ export const OverlayLayer = memo(function OverlayLayer({ awardXp, earnTreats }: 
   })));
 
   // User data — single subscription (was 4 individual)
-  const {
-    privacy, setPrivacy, onboardingComplete, setMoods,
-  } = useUserDataStore(useShallow((s) => ({
-    privacy: s.privacy,
-    setPrivacy: s.setPrivacy,
-    onboardingComplete: s.onboardingComplete,
-    setMoods: s.setMoods,
-  })));
+  const setMoods = useUserDataStore((s) => s.setMoods);
 
   return (
     <>
@@ -64,20 +56,6 @@ export const OverlayLayer = memo(function OverlayLayer({ awardXp, earnTreats }: 
           x={confettiBurst.x}
           y={confettiBurst.y}
           onComplete={() => setConfettiBurst(null)}
-        />
-      )}
-
-      {/* GDPR Consent Banner - shows once after onboarding */}
-      {!privacy.consentShown && onboardingComplete && !showWelcomeOverlay && (
-        <ConsentBanner
-          onConsent={(analyticsAllowed) => {
-            setPrivacy({
-              ...privacy,
-              analytics: analyticsAllowed,
-              noTracking: !analyticsAllowed,
-              consentShown: true,
-            });
-          }}
         />
       )}
 

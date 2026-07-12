@@ -193,6 +193,22 @@ describe("useNavigationV2", () => {
       expect(window.location.search).toContain("nav=v2");
     });
 
+    it("removes the settings detail query when navigating to another page", async () => {
+      setPath("/settings?nav=v2&navLayout=phone&settingsSection=account&debug=1");
+      const { result } = renderHook(() => useNavigationV2());
+
+      await act(async () => {
+        result.current.setActivePage("habits");
+      });
+
+      const params = new URLSearchParams(window.location.search);
+      expect(window.location.pathname).toBe("/habits");
+      expect(params.get("nav")).toBe("v2");
+      expect(params.get("navLayout")).toBe("phone");
+      expect(params.get("debug")).toBe("1");
+      expect(params.has("settingsSection")).toBe(false);
+    });
+
     it("closes drawer when navigating", async () => {
       const { result } = renderHook(() => useNavigationV2());
       act(() => result.current.openDrawer());

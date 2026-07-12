@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { logger } from "@/lib/logger";
+import { getCurrentSessionUserId } from "@/lib/supabaseClient";
 import { useIndexedDB } from "./useIndexedDB";
 import { db } from "@/storage/db";
 import { innerWorldSchema } from "@/lib/schemas";
@@ -100,7 +101,18 @@ export function useInnerWorld() {
   // Sync streak to friends profile when it changes
   useEffect(() => {
     if (isLoading || !world.currentActiveStreak) return;
-    updateMyStreak(world.currentActiveStreak);
+
+    let isCurrentWorld = true;
+    void getCurrentSessionUserId()
+      .then((expectedOwnerUserId) => {
+        if (!isCurrentWorld || !expectedOwnerUserId) return;
+        return updateMyStreak(world.currentActiveStreak, expectedOwnerUserId);
+      })
+      .catch((err) => logger.error("Failed to schedule inner world streak sync:", err));
+
+    return () => {
+      isCurrentWorld = false;
+    };
   }, [isLoading, world.currentActiveStreak]);
 
   // Cloud sync - push to Supabase when world changes (debounced)
@@ -108,18 +120,30 @@ export function useInnerWorld() {
   useEffect(() => {
     if (isLoading) return;
 
+    let isCurrentWorld = true;
+
     // Debounce sync to avoid too many requests
     if (syncTimeoutRef.current) {
       clearTimeout(syncTimeoutRef.current);
     }
 
-    syncTimeoutRef.current = setTimeout(() => {
-      pushInnerWorldToCloud(world).catch((err) =>
-        logger.error("Failed to push inner world to cloud:", err)
-      );
-    }, 5000); // Sync 5 seconds after last change
+    const scheduleCloudPush = async () => {
+      const expectedOwnerUserId = await getCurrentSessionUserId();
+      if (!isCurrentWorld || !expectedOwnerUserId) return;
+
+      syncTimeoutRef.current = setTimeout(() => {
+        pushInnerWorldToCloud(world, expectedOwnerUserId).catch((err) =>
+          logger.error("Failed to push inner world to cloud:", err)
+        );
+      }, 5000); // Sync 5 seconds after last change
+    };
+
+    void scheduleCloudPush().catch((err) =>
+      logger.error("Failed to schedule inner world cloud sync:", err)
+    );
 
     return () => {
+      isCurrentWorld = false;
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
       }

@@ -149,4 +149,19 @@ describe("AccountSection auth state", () => {
     expect(screen.queryByRole("button", { name: "Sync Now" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign Out" })).toBeInTheDocument();
   });
+
+  it("disables sign out while account deletion is in progress", () => {
+    deleteAccount.isDeletingAccount = true;
+    try {
+      render(
+        <Accordion type="single" defaultValue="account">
+          <AccountSection userName="Friend" onNameChange={vi.fn()} onResetData={vi.fn()} />
+        </Accordion>,
+      );
+
+      expect(screen.getByRole("button", { name: "Sign Out" })).toBeDisabled();
+    } finally {
+      deleteAccount.isDeletingAccount = false;
+    }
+  });
 });

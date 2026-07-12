@@ -276,7 +276,8 @@ export const uk: Translations = {
   habitScheduleFlexibleAnyDays: "Будь-які дні цього тижня",
   habitScheduleFlexibleHint: "Окремий пропущений день не ламає звичку до кінця тижня.",
   habitScheduleSpecificDays: "Обрати дні",
-  habitScheduleSpecificHint: "Лише вибрані дні вважаються обов'язковими. Нагадування йдуть за ними.",
+  habitScheduleSpecificHint:
+    "Лише вибрані дні вважаються обов'язковими. Нагадування йдуть за ними.",
   habitScheduleDueDays: "Дні виконання",
   habitDurationRequired: "Потребує часу?",
   habitTargetDuration: "Цільовий час (хвилини)",
@@ -527,21 +528,54 @@ export const uk: Translations = {
   completedTimes2: "разів",
   profile: "Профіль",
   yourName: "Ваше ім'я",
+  profileNamePlaceholder: "Введіть своє ім’я",
   saveName: "Зберегти імʼя",
   nameSaved: "Імʼя збережено",
   nameSavedLocally: "Збережено на цьому пристрої",
   invalidNameFormat: "Невірний формат імені",
   notifications: "Сповіщення",
   notificationsComingSoon: "Сповіщення будуть доступні в наступних оновленнях.",
-  settingsOverviewDescription: "Налаштуйте приватність, нагадування, звук, вигляд і керування даними в одному місці.",
-  settingsAboutExperienceTitle: "Налаштування досвіду",
-  settingsAboutExperienceDescription: "Рух, історія версій і відгук про додаток зібрані разом.",
-  settingsAboutSupportLegalTitle: "Підтримка та юридичне",
-  settingsAboutSupportLegalDescription: "Приватність, умови, ліцензії та контактні дії.",
+  settingsOverviewDescription:
+    "Оберіть, як ZenFlow виглядає, звучить, нагадує про важливе й працює з вашими даними.",
+  settingsAccountBackupTitle: "Акаунт і резервна копія",
+  settingsAccountBackupDescription:
+    "Ваш акаунт підключено. Якщо ZenFlow не зможе зберегти зміни онлайн, вони залишаться на цьому пристрої.",
+  settingsAccountSignedIn: "Ви ввійшли",
+  settingsAccountSignedOut: "Ви не ввійшли",
+  settingsAccountDataOnDevice:
+    "Ваші дані залишаються на цьому пристрої. Увійдіть, щоб створити резервну копію та користуватися ними на інших пристроях.",
+  settingsAccountBackupChecking: "Перевіряємо ваш акаунт…",
+  settingsAccountBackupCheckingDescription:
+    "Поки ZenFlow перевіряє ваш акаунт, дані залишаються на цьому пристрої.",
+  settingsAccountCheckFailed: "Не вдалося перевірити ваш акаунт",
+  settingsAccountCheckFailedDescription:
+    "Ваші дані залишаються на цьому пристрої. Перевірте з’єднання й спробуйте знову.",
+  settingsAccountBackupUnavailable: "У цій версії резервне копіювання недоступне",
+  settingsAccountBackupUnavailableDescription:
+    "Ваші дані залишаються на цьому пристрої.",
+  settingsRemindersMobileApp: "Мобільний застосунок",
+  settingsPrivacyDataDescription:
+    "Ви вирішуєте, які додаткові сервіси може використовувати ZenFlow. Резервне копіювання починається лише після входу.",
+  settingsDataBackupReportsDescription:
+    "Збережіть резервну копію для подальшого імпорту або створіть звіт.",
+  settingsBackupRestoreTitle: "Резервне копіювання й відновлення",
+  settingsReportsTitle: "Звіти",
+  settingsReportsDescription:
+    "Звіти містять дані про настрій, звички, фокус і подяки. PDF-файл наразі англійською. Звіти не є резервними копіями.",
+  settingsReportSpreadsheetAction: "Дані для таблиці (CSV)",
+  settingsReportProgressAction: "Звіт про прогрес (PDF)",
+  settingsSoundDiaryRainOff: "Звук дощу вимкнено в розділі фонових звуків.",
+  settingsSoundDiaryReady: "Готово до відтворення.",
+  settingsAboutProductSummary:
+    "ZenFlow об’єднує відмітки настрою, звички, сеанси фокусування та ваш щоденник.",
+  settingsAboutSupportLegalTitle: "Допомога та юридична інформація",
+  settingsAboutSupportLegalDescription:
+    "Конфіденційність, умови, ліцензії та підтримка.",
   settingsRemindersOff: "Нагадування вимкнено",
   resetDataConfirmWord: "RESET",
   resetDataTypeConfirm: "Введіть {word}, щоб підтвердити",
-  resetDataScope: "Це видалить із цього пристрою настрої, звички, фокус-сесії, подяки, записи журналу, налаштування та зміни, що чекали онлайн-збереження.",
+  resetDataScope:
+    "Це видалить із цього пристрою настрої, звички, фокус-сесії, подяки, записи журналу, налаштування та зміни, що чекали онлайн-збереження.",
   resetDataConfirmAction: "Очистити дані пристрою",
   data: "Дані",
   exportData: "Експорт даних",
@@ -551,10 +585,36 @@ export const uk: Translations = {
   importReplace: "Замінити наявні дані",
   exportSuccess: "Експорт готовий.",
   exportError: "Не вдалося експортувати дані.",
+  exportJournalUnlockRequired:
+    "Розблокуйте щоденник, перш ніж експортувати захищений вміст.",
+  exportJournalDecryptionFailed:
+    "ZenFlow не зміг прочитати захищений щоденник. Нічого не експортовано.",
+  exportJournalMediaUnavailable:
+    "ZenFlow не зміг прочитати одне або кілька вкладень щоденника. Нічого не експортовано.",
+  exportBackupTooLarge:
+    "Ця резервна копія перевищує ліміт відновлення ZenFlow у 32 МБ. Нічого не експортовано. Видаліть частину вкладень щоденника й спробуйте ще раз.",
+  exportCleanupError:
+    "Резервну копію надіслано, але ZenFlow не зміг видалити її тимчасову копію з цього пристрою.",
+  pushRevocationIncomplete:
+    "ZenFlow не вдалося повністю вимкнути віддалені сповіщення на цьому пристрої.",
+  sessionTimeoutDelayedTitle: "Вихід відкладено",
+  sessionTimeoutPendingChanges:
+    "ZenFlow залишив вас у системі, бо деякі зміни ще очікують збереження. Незабаром буде ще одна спроба.",
+  sessionTimeoutCleanupFailed:
+    "ZenFlow залишив вас у системі, бо безпечно очистити цей пристрій не вдалося. Незабаром буде ще одна спроба.",
+  syncCriticalBlocked:
+    "Важливе онлайн-збереження не завершилося. Зміна лишилася на цьому пристрої. Спробуйте знову після підключення.",
   exportCSV: "Файл таблиці (CSV)",
   exportPDF: "Файл для друку (PDF)",
   importSuccess: "Імпорт завершено.",
+  importResultSummary:
+    "Імпорт завершено — додано: {added}, оновлено: {updated}, пропущено: {skipped}. Щоденник — записи: {journalEntries}, фото: {journalPhotos}, аудіозаписи: {journalAudio}.",
   importError: "Не вдалося імпортувати файл.",
+  importJournalUnlockRequired: "Розблокуйте щоденник, перш ніж замінювати дані на цьому пристрої.",
+  importJournalUnreadable:
+    "Ця резервна копія містить захищені дані щоденника, які цей пристрій не може прочитати.",
+  importJournalReauthorizationRequired:
+    "Задля безпеки заблокуйте й знову розблокуйте щоденник, потім поверніться сюди та повторіть заміну.",
   importedItems: "Додано",
   importAdded: "додано",
   importUpdated: "оновлено",
@@ -571,18 +631,19 @@ export const uk: Translations = {
   comingSoon: "скоро",
   resetAllData: "Очистити дані на цьому пристрої",
   privacyTitle: "Конфіденційність",
-  privacyDescription: "Без прихованого відстеження. Синхронізація пристроїв починається лише після входу й увімкнення онлайн-резервної копії.",
-  privacyNoTracking: "Без відстеження",
-  privacyNoTrackingHint: "Ми не збираємо поведінкові дані.",
-  privacyAnalytics: "Аналітика",
-  privacyAnalyticsHint: "Допомагає покращувати додаток. Можна вимкнути.",
-  privacyAds: "Необов'язкова реклама",
-  privacyAdsHint: "Лише необов’язкові відео. Запити реклами вимкнені, доки це не ввімкнено; вибір конфіденційності Google може з’являтися, коли це потрібно.",
-  privacyPushNotifications: "Сповіщення-нагадування з акаунта",
-  privacyPushNotificationsHint: "Дозвольте цьому пристрою отримувати нагадування з вашого акаунта. Нагадування, збережені на цьому пристрої, працюють і без цього.",
+  privacyDescription:
+    "Без прихованого відстеження. Синхронізація пристроїв починається лише після входу й увімкнення онлайн-резервної копії.",
+  privacyAds: "Відео з винагородою",
+  privacyAdsHint:
+    "Вони завантажуються лише після ввімкнення. За потреби Google може попросити вас обрати налаштування конфіденційності.",
+  privacyOptionalServicesOn: "Додаткові сервіси ввімкнено",
+  privacyOptionalServicesOff: "Додаткові сервіси вимкнено",
+  privacyPushNotifications: "Нагадування з акаунта",
+  privacyPushNotificationsHint:
+    "Отримуйте на цьому пристрої нагадування з акаунта. Нагадування, налаштовані на цьому пристрої, працюють і без цієї опції.",
   privacyPolicy: "Політика конфіденційності",
   termsOfService: "Умови користування",
-  openSourceLicenses: "Ліцензії відкритого коду",
+  openSourceLicenses: "Ліцензії",
   legalPrivacyDescription:
     "Дізнайтеся, як ZenFlow збирає, використовує та захищає ваші персональні дані. Ваша конфіденційність — наш пріоритет.",
   legalTermsDescription: "Ознайомтеся з умовами використання ZenFlow.",
@@ -601,9 +662,10 @@ export const uk: Translations = {
   themeDark: "Темна",
   themeSystem: "Системна",
   themeStyleTitle: "Палітра настрою",
-  themeStyleDescription: "Оберіть підготовлений вигляд, який задає тон.",
+  themeAdvancedAppearanceTitle: "Розширені налаштування вигляду",
+  themeStyleDescription: "Оберіть стиль, який вам підходить.",
   themeAccentTitle: "Акцент",
-  themeAccentDescription: "Колір для фокуса, вибраних станів і ключових кнопок.",
+  themeAccentDescription: "Колір кнопок, вибраних елементів і виділень.",
   themeIntensityTitle: "Інтенсивність",
   themeComfortTitle: "Комфорт",
   themePreviewAction: "Перегляд",
@@ -677,9 +739,10 @@ export const uk: Translations = {
     "Після входу ZenFlow зберігає ваші дані доступними на ваших пристроях. Зміни безпечно чекають, коли зв'язок слабкий.",
   settingsCloudSyncEnabled: "Онлайн-резервна копія увімкнена",
   settingsCloudSyncDisabledByUser: "Онлайн-резервну копію призупинено",
-  settingsExportTitle: "Експорт резервної копії",
-  settingsExportDescription: "Збережіть усі дані у файл",
-  settingsImportTitle: "Імпорт резервної копії",
+  settingsExportTitle: "Зберегти резервну копію",
+  settingsExportDescription:
+    "Резервна копія містить настрої, звички, фокус, подяки й щоденник. Захищений щоденник треба спочатку розблокувати; файл експорту не зашифрований, тому зберігайте його лише в надійному місці.",
+  settingsImportTitle: "Імпортувати резервну копію",
   settingsImportMergeTooltip:
     "Нові записи буде додано, наявні можуть оновитися, а записи, позначені в резервній копії як видалені, буде видалено з цього пристрою.",
   settingsImportReplaceTooltip:
@@ -688,7 +751,7 @@ export const uk: Translations = {
     'Введіть "REPLACE", щоб замінити дані на цьому пристрої вибраною резервною копією',
   // Import validation (v1.4.1)
   invalidFileType: "Невірний тип файлу. Потрібен JSON.",
-  fileTooLarge: "Файл завеликий (макс. 10 МБ)",
+  fileTooLarge: "Файл завеликий (макс. 32 МБ)",
   importConfirm: "Підтвердити імпорт",
   invalidBackupFormat: "Невірний формат резервної копії",
   settingsWhatsNewGotIt: "Зрозуміло!",
@@ -696,7 +759,8 @@ export const uk: Translations = {
   settingsWhatsNewFeatureToggles: "Перемикачі модулів",
   settingsWhatsNewFeatureTogglesDesc: "Обирайте модулі під час онбордингу",
   settingsWhatsNewBugFixes158: "Виправлення помилок",
-  settingsWhatsNewBugFixes158Desc: "Виправлено проблеми з оновленням пристроїв і покращено стабільність",
+  settingsWhatsNewBugFixes158Desc:
+    "Виправлено проблеми з оновленням пристроїв і покращено стабільність",
   settingsWhatsNewUIImprovements: "Покращення інтерфейсу",
   settingsWhatsNewUIImprovementsDesc: "Покращені перемикачі та організація налаштувань",
   settingsSectionAccount: "Акаунт і пристрої",
@@ -726,13 +790,24 @@ export const uk: Translations = {
   settingsGroupProfile: "Профіль і оформлення",
   settingsGroupNotifications: "Сповіщення",
   settingsGroupData: "Дані та приватність",
+  settingsExportImportTitle: "Резервні копії та звіти",
   settingsGroupAccount: "Акаунт",
   settingsGroupSecurity: "Безпека",
   settingsSecurityDesc: "Налаштування блокування щоденника та безпеки",
   journalLockTimeout: "Автоблокування щоденника",
   journalLockTimeoutDesc: "Автоматично блокувати щоденник після періоду неактивності",
   journalLockImmediateWarning: "Щоденник блокуватиметься щоразу, коли ви залишите екран щоденника",
+  journalLockTimeoutImmediately: "Одразу",
+  journalLockTimeoutOneMinute: "Через 1 хвилину",
+  journalLockTimeoutFiveMinutes: "Через 5 хвилин",
+  journalLockTimeoutFifteenMinutes: "Через 15 хвилин",
+  journalLockTimeoutThirtyMinutes: "Через 30 хвилин",
   settingsGroupAbout: "Про додаток",
+  settingsGroupAppearanceAccessibility: "Вигляд і доступність",
+  settingsGroupReminders: "Нагадування",
+  settingsGroupPrivacyData: "Конфіденційність і дані",
+  settingsGroupHelpAbout: "Допомога та інформація",
+  settingsDataSummary: "Настрій: {moods} · звички: {habits} · фокус-сесії: {focus}",
 
   // Feature Toggles / Modules (v1.5.9)
   settingsGroupModules: "Модулі",
@@ -767,16 +842,6 @@ export const uk: Translations = {
   coreModulesNote: "Трекер настрою та Звички завжди увімкнені",
 
   // GDPR Consent
-  consentTitle: "Налаштування приватності",
-  consentDescription:
-    "Ми поважаємо вашу приватність. Дозволити анонімну аналітику для покращення додатку?",
-  consentAnalyticsTitle: "Анонімна аналітика",
-  consentAnalyticsDesc:
-    "Лише патерни використання. Без особистих даних. Можна змінити в налаштуваннях.",
-  consentAccept: "Дозволити",
-  consentDecline: "Ні, дякую",
-  consentFooter: "Можна змінити в будь-який час в Налаштування > Приватність",
-
   installApp: "Встановити додаток",
   installAppDescription: "Встановіть ZenFlow для швидшого запуску та офлайн-доступу.",
   installBannerTitle: "Встановити ZenFlow",
@@ -790,17 +855,20 @@ export const uk: Translations = {
   checkingForUpdates: "Перевірка оновлень...",
   appUpToDate: "У вас найновіша версія",
   openGooglePlay: "Відкрити Google Play",
+  openGooglePlayFailed: "Не вдалося відкрити Google Play. Спробуйте ще раз.",
   updateCheckFailed: "Не вдалося перевірити оновлення",
   settingsUpdateTitle: "Версія застосунку",
-  settingsWebUpdateDescription: "ZenFlow може перевірити, чи готова новіша версія.",
-  settingsNativeUpdateDescription: "Перевірити, чи доступне оновлення в магазині застосунків.",
+  settingsWebUpdateDescription: "Перевірити, чи є новіша версія.",
+  settingsNativeUpdateDescription: "Перевірити, чи є новіша версія.",
   webUpdateAvailable: "Доступна новіша версія",
-  webUpdateAvailableDescription: "Перезапустіть ZenFlow, щоб завантажити найновішу версію. Спершу завершіть те, що вводите.",
+  webUpdateAvailableDescription:
+    "Перезапустіть ZenFlow, щоб завантажити найновішу версію. Спершу завершіть те, що вводите.",
   restartZenflow: "Перезапустити ZenFlow",
   restartingZenflow: "Перезапуск...",
-  webUpdateCheckFailedDescription: "ZenFlow потрібна мережева перевірка, щоб підтвердити останню версію. На цьому пристрої нічого не змінено.",
+  webUpdateCheckFailedDescription:
+    "ZenFlow потрібна мережева перевірка, щоб підтвердити останню версію. На цьому пристрої нічого не змінено.",
   remindersTitle: "Нагадування",
-  remindersDescription: "Дружні нагадування, щоб підтримувати тебе.",
+  remindersDescription: "Оберіть, коли ZenFlow нагадуватиме про настрій і фокус.",
   moodReminder: "Час перевірки настрою",
   habitReminder: "Час нагадування про звички",
   focusReminder: "Час нагадування про фокус",
@@ -907,18 +975,21 @@ export const uk: Translations = {
   authProviderApple: "Apple",
   authLinkedProviders: "Підключені способи входу",
   authConnectProvider: "Підключити {provider}",
-  authConnectMoreProviders: "Підключіть ще один спосіб входу, щоб зберегти цей акаунт на всіх пристроях.",
+  authConnectMoreProviders:
+    "Підключіть ще один спосіб входу, щоб зберегти цей акаунт на всіх пристроях.",
   authProviderLinkFailed: "Не вдалося підключити цей спосіб входу. Спробуйте ще раз.",
   authLinkingProvider: "Підключення {provider}...",
   signOut: "Вийти",
   syncNow: "Оновити пристрої зараз",
   cloudSyncDisabled: "Онлайн-резервна копія недоступна.",
   syncDeviceSessionsTitle: "Ваші пристрої",
-  syncDeviceSessionsDescription: "Перегляньте, які пристрої використовували ваш акаунт, без розкриття приватних даних.",
+  syncDeviceSessionsDescription:
+    "Перегляньте, які пристрої використовували ваш акаунт, без розкриття приватних даних.",
   syncDeviceSessionsActive: "Активні пристрої",
   syncDeviceSessionsError: "Стан пристроїв тимчасово недоступний.",
   syncDeviceSessionsEmpty: "Увійдіть, щоб побачити підключені пристрої.",
-  syncDeviceSessionsFootnote: "Позначення пристрою неактивним приховує його з цього списку, але не виходить з акаунта на цьому пристрої.",
+  syncDeviceSessionsFootnote:
+    "Позначення пристрою неактивним приховує його з цього списку, але не виходить з акаунта на цьому пристрої.",
   syncDeviceCurrent: "Поточний пристрій",
   syncDeviceRevoked: "Неактивний",
   syncDeviceLastSeen: "Востаннє",
@@ -956,17 +1027,33 @@ export const uk: Translations = {
   sessionExpired: "Онлайн-резервну копію призупинено",
   sessionExpiredMessage: "Увійдіть, щоб дані були на ваших пристроях",
   sessionExpiredSettings: "Сесія закінчилася",
-  localDataSafe: "Ваші дані на цьому пристрої в безпеці. Увійдіть знову, щоб пристрої залишалися оновленими.",
+  localDataSafe:
+    "Ваші дані на цьому пристрої в безпеці. Увійдіть знову, щоб пристрої залишалися оновленими.",
   deleteAccount: "Видалити акаунт",
   deleteAccountConfirm: "Видалити акаунт?",
   deleteAccountTypeConfirm: 'Введіть "ВИДАЛИТИ" для підтвердження:',
   deleteAccountWarning: "Буде видалено онлайн-дані та доступ до акаунту.",
   deleteAccountSuccess: "Акаунт видалено.",
   deleteAccountError: "Не вдалося видалити акаунт.",
+  deleteAccountDeletedCleanupFailed:
+    "Акаунт видалено, але деякі дані можуть залишатися на цьому пристрої. Перезапустіть ZenFlow, перш ніж використовувати інший акаунт.",
   deleteAccountLink: "Як видалити акаунт і дані",
   deleteConfirmWord: "ВИДАЛИТИ",
   authEmailSent: "Посилання для входу надіслано на вашу пошту.",
   authSignedOut: "Ви вийшли.",
+  authSignOutPendingChanges:
+    "У ZenFlow ще є зміни, які очікують збереження онлайн. Підключіться до інтернету й спробуйте ще раз.",
+  authSignOutRecoveryTitle: "Завершити вихід",
+  authDiscardAndSignOut: "Відкинути зміни й вийти",
+  authDiscardSignOutConfirm: "Відкинути незбережені зміни й вийти?",
+  authDiscardSignOutWarning:
+    "Зміни, що очікують збереження онлайн, буде назавжди видалено з цього пристрою.",
+  authAccountSwitchPendingChanges:
+    "Знову увійдіть у попередній обліковий запис, підключіться до інтернету й дочекайтеся, поки ZenFlow збереже зміни. Потім ще раз змініть обліковий запис.",
+  authRecoverLegacyChanges: "Відновити зміни з цим обліковим записом",
+  authUseDifferentAccount: "Використати інший обліковий запис",
+  authSignOutCleanupFailed: "ZenFlow не зміг безпечно завершити вихід. Спробуйте ще раз.",
+  authSignOutFailed: "Вихід не завершено. Спробуйте ще раз.",
   authError: "Не вдалося надіслати посилання.",
   authNotConfigured: "Вхід зараз недоступний.",
   syncSuccess: "Пристрої оновлені.",
@@ -1008,7 +1095,10 @@ export const uk: Translations = {
   pushDisabled: "Push вимкнено.",
   pushError: "Не вдалося увімкнути push.",
   pushNeedsAccount: "Увійдіть, щоб увімкнути push.",
-  pushPermissionDenied: "Дозвіл на сповіщення відхилено.",
+  pushPermissionDenied: "Увімкніть сповіщення для ZenFlow у налаштуваннях пристрою.",
+  remindersNativeOnly:
+    "Щоб налаштувати нагадування, відкрийте мобільний застосунок ZenFlow.",
+  habitRemindersManagedInHabits: "Налаштуйте нагадування в меню потрібної звички.",
   areYouSure: "Ви впевнені?",
   cannotBeUndone: "Цю дію не можна скасувати.",
   delete: "Видалити",
@@ -1489,6 +1579,7 @@ export const uk: Translations = {
 
   dopamineSettings: "Відгук і рух",
   dopamineSettingsDesc: "Оберіть, скільки анімації, звуку й вібрації використовує ZenFlow.",
+  dopamineSettingsDescNoHaptics: "Оберіть, скільки анімації та звуку використовує ZenFlow.",
   dopamineIntensity: "Рівень відгуку",
   dopamineMinimal: "Тихо",
   dopamineNormal: "Збалансовано",
@@ -1546,6 +1637,8 @@ export const uk: Translations = {
   adPrivacyOptions: "Вибір конфіденційності реклами Google",
   adPrivacyOptionsHint: "Змініть або відкличте згоду на рекламу Google, якщо це потрібно.",
   adPrivacyOptionsOpen: "Переглянути вибір реклами",
+  adPrivacyOptionsError:
+    "Не вдалося відкрити налаштування конфіденційності реклами Google. Спробуйте ще раз.",
   innerWorld: "Внутрішній світ",
   tapToInteract: "Натисніть для взаємодії",
   spinWheel: "Крути колесо!",
@@ -1969,8 +2062,7 @@ export const uk: Translations = {
   pageNotFound: "Сторінку не знайдено",
   goHome: "На головну",
   notFoundKicker: "Маршрут не знайдено",
-  notFoundBody:
-    "Посилання застаріло або цього екрана більше немає. Ваші дані залишилися на місці.",
+  notFoundBody: "Посилання застаріло або цього екрана більше немає. Ваші дані залишилися на місці.",
   notFoundRequestedPath: "Запитаний шлях",
   notFoundBack: "Назад",
   notFoundHint: "Натисніть «На головну», щоб повернутися до ZenFlow.",
@@ -1983,8 +2075,7 @@ export const uk: Translations = {
     "Поки не виявлено сильних патернів. Продовжуйте відстеження, щоб дізнатися, що працює найкраще для вас!",
   insightsHelpTitle: "Про Аналітика",
   insightsHelp1: "Аналітика генеруються з ваших даних за допомогою статистичного аналізу.",
-  insightsHelp2:
-    "Увесь аналіз відбувається на вашому пристрої - ваші дані нікуди не передаються.",
+  insightsHelp2: "Увесь аналіз відбувається на вашому пристрої - ваші дані нікуди не передаються.",
   insightsHelp3: "Патерни з вищою впевненістю показуються першими.",
   insightsDismiss: "Приховати",
   insightsShowMore: "Показати більше",
@@ -2187,7 +2278,7 @@ export const uk: Translations = {
     "Відгук може містити ваше повідомлення, необов'язковий email, версію застосунку, тип пристрою, розмір екрана, мову та дані браузера. Не використовуйте відгук для термінової безпеки чи медичної допомоги.",
   feedbackSubmit: "Надіслати",
   feedbackSuccess: "Дякуємо за зворотний зв'язок!",
-  feedbackError: "Не вдалося надіслати. Спробуйте пізніше.",
+  feedbackError: "Не вдалося надіслати. Повідомлення залишилося тут — спробуйте ще раз.",
   feedbackSending: "Надсилання...",
   sendFeedback: "Написати нам",
 
@@ -2216,20 +2307,27 @@ export const uk: Translations = {
   // Notification Sounds
   notificationSound: "Звук сповіщень",
   notificationSoundDescription: "Оберіть звук для нагадувань",
+  notificationSoundUpdateFailed:
+    "ZenFlow не вдалося застосувати цей звук нагадувань. Попередній звук усе ще вибрано. Спробуйте ще раз.",
+  reminderReconcileFailed:
+    "ZenFlow не вдалося оновити нагадування. Пристрій може й надалі використовувати попередній розклад. Спробуйте ще раз.",
   soundDefault: "За замовчуванням",
   soundDefaultDesc: "Системний звук сповіщення",
   soundGentle: "М'який",
   soundGentleDesc: "Тільки вібрація",
-  soundChime: "Короткий",
-  soundChimeDesc: "Короткий тон сповіщення",
   soundSilent: "Тихий",
   soundSilentDesc: "Без звуку та вібрації",
-  notificationSystemSettingsTitle: "Системні налаштування сповіщень",
-  notificationSystemSettingsDescription: "Пристрій або браузер можуть вимкнути чи приглушити нагадування ZenFlow. Звуки застосунку залишаються на цьому пристрої та під вашим контролем.",
-  notificationSystemSettingsAndroidDescription: "Ваш телефон остаточно керує звуком, вібрацією та видимістю кожного нагадування.",
-  notificationSystemSettingsIosDescription: "Налаштування iPhone або iPad і режими Фокус остаточно керують звуком, доставкою та стилем сповіщень.",
-  notificationSystemSettingsWebDescription: "Ваш браузер або пристрій усе ще може вимкнути нагадування. Звуки ZenFlow залишаються на цьому пристрої й починаються тільки після дотику.",
-  notificationSystemSettingsDesktopDescription: "Ваш комп’ютер остаточно керує доставкою та звуком нагадувань.",
+  notificationSystemSettingsTitle: "Якщо нагадування не чути",
+  notificationSystemSettingsDescription:
+    "Пристрій або браузер можуть вимкнути чи приглушити нагадування ZenFlow. Звуки застосунку залишаються на цьому пристрої та під вашим контролем.",
+  notificationSystemSettingsAndroidDescription:
+    "Налаштування звуку, вібрації та сповіщень на телефоні можуть вимкнути звук або приховати нагадування.",
+  notificationSystemSettingsIosDescription:
+    "Налаштування сповіщень і режими «Фокус» на iPhone або iPad можуть вимкнути звук або приховати нагадування.",
+  notificationSystemSettingsWebDescription:
+    "Ваш браузер або пристрій усе ще може вимкнути нагадування. Звуки ZenFlow залишаються на цьому пристрої й починаються тільки після дотику.",
+  notificationSystemSettingsDesktopDescription:
+    "Ваш комп’ютер остаточно керує доставкою та звуком нагадувань.",
   testNotification: "Тестове сповіщення",
   testNotificationHint: "Надсилає тестове сповіщення через 5 секунд для перевірки роботи.",
   notificationTestSending: "Надсилання...",
@@ -2335,7 +2433,8 @@ export const uk: Translations = {
   indexedDBTimeoutDesc: "Збереження триває довше, ніж очікувалося.",
   // Database recovery
   databaseRecoveryTitle: "Дані на цьому пристрої скинуто",
-  databaseRecoveryDesc: "Сховище на цьому пристрої було очищено. Ми спробуємо відновити дані з онлайн-резервної копії.",
+  databaseRecoveryDesc:
+    "Сховище на цьому пристрої було очищено. Ми спробуємо відновити дані з онлайн-резервної копії.",
   databaseRecoveryRestore: "Відновити з онлайн-резервної копії",
   databaseRecoveryStartFresh: "Почати заново",
   // Update required
@@ -2623,8 +2722,10 @@ export const uk: Translations = {
   journalPasswordSetup: "Встановити пароль щоденника",
   journalPasswordEnter: "Введіть пароль",
   journalPasswordConfirm: "Підтвердіть пароль",
-  journalLockHint: "Цей пароль шифрує щоденник на цьому пристрої. Збережіть його в безпечному місці; ZenFlow не може показати або відновити його.",
-  journalLockHintLocalOnly: "Цей пароль шифрує щоденник на цьому пристрої. Збережіть його в безпечному місці; ZenFlow не може показати або відновити його.",
+  journalLockHint:
+    "Цей пароль шифрує тексти й вкладення щоденника на цьому пристрої. Дати, назви, теги та дані про активність щоденника не шифруються. Збережіть пароль у безпечному місці: ZenFlow не може показати або відновити його.",
+  journalLockHintLocalOnly:
+    "Цей пароль шифрує тексти й вкладення щоденника на цьому пристрої. Дати, назви, теги та дані про активність щоденника не шифруються. Збережіть пароль у безпечному місці: ZenFlow не може показати або відновити його.",
   journalLockTooShort: "Мінімум 6 символів",
   journalPasswordMismatch: "Паролі не збігаються",
   journalPasswordWrong: "Невірний пароль",
@@ -2637,27 +2738,38 @@ export const uk: Translations = {
   journalResetConfirm: "Ми надішлемо посилання для підтвердження на",
   journalResetSendCode: "Надіслати посилання",
   journalResetCodeSent: "Перевірте пошту",
-  journalResetCodeSentHint: "Відкрийте посилання з листа на цьому пристрої або в цьому браузері, а потім поверніться до щоденника. Воно підтвердить акаунт і прибере замок, не розкриваючи старий пароль.",
+  journalResetCodeSentHint:
+    "Відкрийте посилання з листа на цьому пристрої або в цьому браузері, а потім поверніться до щоденника. Воно підтвердить акаунт і прибере замок, не розкриваючи старий пароль.",
   journalResetEnterCode: "Посилання для підтвердження",
   journalResetVerify: "Відкрити посилання",
   journalResetSuccess: "Захист щоденника прибрано",
-  journalResetSuccessDetail: "Щоденник тепер відкритий без пароля на цьому пристрої. Встановіть новий пароль, якщо хочете зберегти захист.",
+  journalResetSuccessDetail:
+    "Щоденник тепер відкритий без пароля на цьому пристрої. Встановіть новий пароль, якщо хочете зберегти захист.",
   journalResetSetNewPassword: "Встановити новий пароль щоденника",
   journalResetChecking: "Перевіряємо акаунт...",
-  journalResetCheckingHint: "Залиште це вікно відкритим, поки ми перевіряємо, чи доступне зняття замка через email.",
-  journalResetNoAccount: "Увійдіть у розділі акаунта в Налаштуваннях, щоб зняти цей захист через email. Нічого не змінилося; записи щоденника залишаються захищеними.",  journalResetOpenAccountSettings: "Відкрити налаштування акаунта",
-  journalResetServiceUnavailable: "Не вдалося перевірити акаунт. Перевірте з'єднання й спробуйте знову.",
-  journalResetEncryptedUnavailable: "Цей щоденник зашифрований вашим паролем. Підтвердження email не може зняти цей захист, доки зашифрований вміст заблокований. Нічого не змінилося; записи залишаються захищеними. Розблокуйте щоденник паролем, щоб зняти захист.",
+  journalResetCheckingHint:
+    "Залиште це вікно відкритим, поки ми перевіряємо, чи доступне зняття замка через email.",
+  journalResetNoAccount:
+    "Увійдіть у розділі акаунта в Налаштуваннях, щоб зняти цей захист через email. Нічого не змінилося; записи щоденника залишаються захищеними.",
+  journalResetOpenAccountSettings: "Відкрити налаштування акаунта",
+  journalResetServiceUnavailable:
+    "Не вдалося перевірити акаунт. Перевірте з'єднання й спробуйте знову.",
+  journalResetEncryptedUnavailable:
+    "Цей щоденник зашифрований вашим паролем. Підтвердження email не може зняти цей захист, доки зашифрований вміст заблокований. Нічого не змінилося; записи залишаються захищеними. Розблокуйте щоденник паролем, щоб зняти захист.",
   journalResetCodeWrong: "Не вдалося підтвердити посилання. Спробуйте знову.",
   journalResetExpired: "Термін дії посилання минув. Надішліть нове посилання.",
-  journalResetWrongAccount: "Відкрийте це посилання, увійшовши в той самий акаунт, з якого його запитали.",
-  journalResetMissingProof: "Це email-посилання не підтвердилося в застосунку. Нічого не змінилося; захист щоденника досі увімкнений, а записи залишаються захищеними.",
+  journalResetWrongAccount:
+    "Відкрийте це посилання, увійшовши в той самий акаунт, з якого його запитали.",
+  journalResetMissingProof:
+    "Це email-посилання не підтвердилося в застосунку. Нічого не змінилося; захист щоденника досі увімкнений, а записи залишаються захищеними.",
   journalResetSendFailed: "Не вдалося надіслати посилання. Перевірте з'єднання.",
   journalResetResend: "Надіслати посилання ще раз",
   journalResetCooldown: "Зачекайте {seconds} с, перш ніж запросити нове посилання.",
-  journalResetTroubleshooting: "Якщо лист не прийшов, перевірте спам, залишайтеся в акаунті на цьому пристрої та надішліть посилання ще раз після таймера.",
+  journalResetTroubleshooting:
+    "Якщо лист не прийшов, перевірте спам, залишайтеся в акаунті на цьому пристрої та надішліть посилання ще раз після таймера.",
   journalResetTryAgain: "Спробувати ще раз",
-  journalResetDesktopUnavailable: "Зняття замка через email доступне у вебверсії або мобільному застосунку. На desktop відкрийте щоденник паролем.",
+  journalResetDesktopUnavailable:
+    "Зняття замка через email доступне у вебверсії або мобільному застосунку. На desktop відкрийте щоденник паролем.",
   journalClose: "Закрити",
   journalSearch: "Пошук записів...",
   journalAiSearchPlaceholder: "Опишіть, що хочете знайти...",
@@ -2808,7 +2920,8 @@ export const uk: Translations = {
   journalReminderTime: "Час",
   journalReminderNotifTitle: "Час писати \u270D\uFE0F",
   journalReminderNotifBody: "Знайдіть хвилинку, щоб записати свої думки та почуття.",
-  journalInactiveBanner: "Останній запис був {days} дн. тому. Почніть нотатку, якщо зараз це допоможе.",
+  journalInactiveBanner:
+    "Останній запис був {days} дн. тому. Почніть нотатку, якщо зараз це допоможе.",
   journalToolbarSticker: "Стікер",
   journalToolbarPhoto: "Фото",
   journalToolbarMood: "Настрій",
@@ -2930,8 +3043,11 @@ export const uk: Translations = {
   journalPasswordChangeSuccess: "Пароль успішно змінено",
   journalPasswordChangeFailed: "Не вдалося оновити захист щоденника. Спробуйте ще раз.",
   journalPasswordActiveHint: "Захист щоденника увімкнено. Тут його можна змінити або прибрати.",
+  journalProtectionCloudPending:
+    "На цьому пристрої щоденник уже захищено. ZenFlow ще замінює старішу онлайн-копію — залиште застосунок відкритим і під’єднайтеся до інтернету.",
   journalPasswordRemoveConfirm: "Ви впевнені? Щоденник буде доступний без пароля.",
-  journalLockRemoveDetail: "Ваші записи залишаться збереженими, але захист щоденника й біометричне розблокування буде вимкнено. Новий захист можна налаштувати пізніше.",
+  journalLockRemoveDetail:
+    "Ваші записи залишаться збереженими, але захист щоденника й біометричне розблокування буде вимкнено. Новий захист можна налаштувати пізніше.",
   journalLockRemoveFailed: "Спершу розблокуйте щоденник, а потім спробуйте прибрати захист ще раз.",
   journalPasswordRemovePending: "Прибираємо захист...",
   journalPasswordRemoveSuccess: "Захист щоденника прибрано.",
@@ -2965,7 +3081,8 @@ export const uk: Translations = {
   journalExportPDFDesc: "Для друку",
   journalExportText: "Markdown",
   journalExportTextDesc: "Текстовий формат",
-  journalExportPrivacyWarning: "Експорт створює приватні файли, які ZenFlow не шифрує. Зберігайте їх лише там, де довіряєте.",
+  journalExportPrivacyWarning:
+    "Експорт створює приватні файли, які ZenFlow не шифрує. Зберігайте їх лише там, де довіряєте.",
   journalExportSuccess: "Експорт завершено",
   journalExportFailed: "Не вдалося експортувати. Спробуйте ще раз.",
   journalNoMatchingEntries: "Немає записів за вашим пошуком",
@@ -2977,7 +3094,8 @@ export const uk: Translations = {
   journalQuickMoodSaved: "Настрій збережено",
   journalNoAiResults: "Схожих записів не знайдено",
   journalNoAiResultsHint: "Спробуйте описати спогад інакше.",
-  journalAiSearchUnavailableHint: "Ваші записи залишаються на місці. Скористайтеся звичайним пошуком або спробуйте пізніше.",
+  journalAiSearchUnavailableHint:
+    "Ваші записи залишаються на місці. Скористайтеся звичайним пошуком або спробуйте пізніше.",
   journalAiSearchUnavailable: "AI-пошук зараз недоступний",
   journalSlashCommands: "Команди щоденника",
   journalSlashNoResults: "Команди щоденника не знайдено",
@@ -3050,35 +3168,6 @@ export const uk: Translations = {
   journalSlashPhotoDescription: "Додати фото",
   journalSlashAudioLabel: "Аудіо",
   journalSlashAudioDescription: "Записати аудіо",
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   // Premium Diary (Immersive Mode)
   diaryPremiumEntry: "Режим занурення",

@@ -112,7 +112,7 @@ export const HabitTracker = memo(function HabitTracker({
 
   // Drag-to-reorder: persist order to localStorage
   const [habitOrder, setHabitOrder] = useState<string[]>(() => {
-    const stored = storageGetRaw("habit-order");
+    const stored = storageGetRaw(SK.HABIT_ORDER);
     return stored ? (JSON.parse(stored) as string[]) : [];
   });
 
@@ -128,7 +128,7 @@ export const HabitTracker = memo(function HabitTracker({
 
   const handleReorder = useCallback((newOrder: string[]) => {
     setHabitOrder(newOrder);
-    storageSetRaw("habit-order", JSON.stringify(newOrder));
+    storageSetRaw(SK.HABIT_ORDER, JSON.stringify(newOrder));
   }, []);
 
   const isCompletedToday = useCallback(

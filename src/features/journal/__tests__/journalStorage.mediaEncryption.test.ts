@@ -24,6 +24,9 @@ const mocks = vi.hoisted(() => ({
   triggerSync: vi.fn(),
   uploadAudio: vi.fn(() => Promise.resolve(null)),
   uploadEncryptedAudio: vi.fn(() => Promise.resolve({ path: "user-1/audio-1.bin", signedUrl: "" })),
+  settingsGet: vi.fn<() => Promise<{ value: unknown } | undefined>>(() =>
+    Promise.resolve(undefined)
+  ),
 }));
 
 vi.mock("@/storage/db", () => ({
@@ -45,6 +48,9 @@ vi.mock("@/storage/db", () => ({
       update: mocks.audioUpdate,
       where: mocks.audioWhere,
     },
+    settings: {
+      get: mocks.settingsGet,
+    },
     transaction: mocks.transaction,
   },
 }));
@@ -60,6 +66,9 @@ vi.mock("@/storage/realtimeSync", () => ({
 
 vi.mock("@/storage/cloudSync", () => ({ triggerSync: mocks.triggerSync }));
 vi.mock("@/lib/cloudSyncSettings", () => ({ isCloudSyncEnabled: vi.fn(() => true) }));
+vi.mock("@/lib/supabaseClient", () => ({
+  getCurrentSessionUserId: vi.fn(() => Promise.resolve("user-1")),
+}));
 vi.mock("@/lib/offlineQueue", () => ({ offlineQueue: { enqueue: vi.fn(() => Promise.resolve()) } }));
 vi.mock("@/storage/deletionTracker", () => ({ trackDeletedJournalEntryId: vi.fn(() => Promise.resolve()) }));
 vi.mock("@/storage/journalStorageService", () => ({
@@ -97,6 +106,7 @@ describe("journalStorage media encryption", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setJournalContentVaultKey(null);
+    mocks.settingsGet.mockResolvedValue(undefined);
     mocks.audioWhere.mockReturnValue({
       equals: vi.fn(() => ({
         count: mocks.audioCount,
@@ -135,7 +145,10 @@ describe("journalStorage media encryption", () => {
   });
 
   it("stores encrypted audio locally and uploads the encrypted payload while returning plaintext to the UI", async () => {
-    setJournalContentVaultKey(vaultKey);
+    setJournalContentVaultKey(vaultKey, 2);
+    mocks.settingsGet.mockResolvedValue({
+      value: { wrappedKey: "persisted", createdAt: 1, updatedAt: 2 },
+    });
 
     const result = await storeAudio("entry-1", "data:audio/webm;base64,voice", 12, "audio/webm");
     await Promise.resolve();
@@ -150,6 +163,7 @@ describe("journalStorage media encryption", () => {
     expect(mocks.uploadEncryptedAudio).toHaveBeenCalledWith(
       "audio-1",
       expect.any(Blob),
+      "user-1",
     );
   });
 

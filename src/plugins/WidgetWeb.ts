@@ -1,10 +1,14 @@
 import { WebPlugin } from '@capacitor/core';
 import type { WidgetPlugin, WidgetData } from './widgetTypes';
 import { logger } from '@/lib/logger';
-import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
 
 export class WidgetWeb extends WebPlugin implements WidgetPlugin {
+  async clearAccountData(): Promise<void> {
+    storageRemove(SK.WIDGET_DATA);
+  }
+
   async updateWidget(data: WidgetData): Promise<void> {
     logger.log('[Widget] update (web platform - no-op):', data);
     // On web, we don't have native widgets

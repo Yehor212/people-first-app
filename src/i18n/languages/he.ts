@@ -477,21 +477,54 @@ const hebrewOverrides: Partial<Translations> = {
   // Settings
   profile: "פרופיל",
   yourName: "השם שלך",
+  profileNamePlaceholder: "הזינו את השם שלכם",
   saveName: "שמירת השם",
   nameSaved: "השם נשמר",
   nameSavedLocally: "נשמר במכשיר הזה",
   invalidNameFormat: "פורמט שם לא חוקי",
   notifications: "התראות",
   notificationsComingSoon: "התראות יהיו זמינות בעדכונים הבאים.",
-  settingsOverviewDescription: "התאימו פרטיות, תזכורות, צליל, מראה וניהול נתונים במקום אחד.",
-  settingsAboutExperienceTitle: "בקרות חוויה",
-  settingsAboutExperienceDescription: "העדפות תנועה, הערות גרסה ומשוב לאפליקציה במקום אחד.",
-  settingsAboutSupportLegalTitle: "תמיכה ומשפטי",
-  settingsAboutSupportLegalDescription: "פרטיות, תנאים, רישיונות ואפשרויות יצירת קשר.",
+  settingsOverviewDescription:
+    "אפשר לבחור איך ZenFlow ייראה, יישמע, יזכיר דברים ויטפל בנתונים.",
+  settingsAccountBackupTitle: "חשבון וגיבוי",
+  settingsAccountBackupDescription:
+    "החשבון שלך מחובר. אם ZenFlow לא יכול לשמור שינויים באינטרנט, הם נשארים במכשיר הזה.",
+  settingsAccountSignedIn: "החשבון מחובר",
+  settingsAccountSignedOut: "אין כניסה לחשבון",
+  settingsAccountDataOnDevice:
+    "הנתונים נשארים במכשיר הזה. לאחר הכניסה הם יגובו ויהיו זמינים גם במכשירים האחרים.",
+  settingsAccountBackupChecking: "בודקים את החשבון…",
+  settingsAccountBackupCheckingDescription:
+    "הנתונים נשארים במכשיר הזה בזמן ש-ZenFlow בודק את החשבון.",
+  settingsAccountCheckFailed: "לא הצלחנו לבדוק את החשבון",
+  settingsAccountCheckFailedDescription:
+    "הנתונים נשארים במכשיר הזה. יש לבדוק את החיבור ולנסות שוב.",
+  settingsAccountBackupUnavailable: "הגיבוי לא זמין בגרסה הזאת",
+  settingsAccountBackupUnavailableDescription:
+    "הנתונים נשארים במכשיר הזה.",
+  settingsRemindersMobileApp: "אפליקציה לנייד",
+  settingsPrivacyDataDescription:
+    "אפשר לבחור באילו שירותים אופציונליים ZenFlow ישתמש. הגיבוי מתחיל רק לאחר הכניסה לחשבון.",
+  settingsDataBackupReportsDescription:
+    "אפשר לשמור גיבוי לייבוא מאוחר יותר או ליצור דוח.",
+  settingsBackupRestoreTitle: "גיבוי ושחזור",
+  settingsReportsTitle: "דוחות",
+  settingsReportsDescription:
+    "הדוחות כוללים נתוני מצב רוח, הרגלים, מיקוד והכרת תודה. קובץ ה-PDF נוצר כרגע באנגלית. הדוחות אינם גיבויים.",
+  settingsReportSpreadsheetAction: "נתונים לגיליון אלקטרוני (CSV)",
+  settingsReportProgressAction: "דוח התקדמות (PDF)",
+  settingsSoundDiaryRainOff: "צליל הגשם כבוי תחת צלילי רקע.",
+  settingsSoundDiaryReady: "מוכן להפעלה.",
+  settingsAboutProductSummary:
+    "ZenFlow מרכז במקום אחד רישומי מצב רוח, הרגלים, מקטעי מיקוד ואת היומן שלכם.",
+  settingsAboutSupportLegalTitle: "עזרה ומידע משפטי",
+  settingsAboutSupportLegalDescription:
+    "פרטיות, תנאים, רישיונות ותמיכה.",
   settingsRemindersOff: "התזכורות כבויות",
   resetDataConfirmWord: "RESET",
   resetDataTypeConfirm: "הקלידו {word} כדי לאשר",
-  resetDataScope: "הפעולה תמחק מהמכשיר הזה מצבי רוח, הרגלים, מפגשי מיקוד, הכרת תודה, יומן, הגדרות ושינויים שחיכו לשמירה אונליין.",
+  resetDataScope:
+    "הפעולה תמחק מהמכשיר הזה מצבי רוח, הרגלים, מפגשי מיקוד, הכרת תודה, יומן, הגדרות ושינויים שחיכו לשמירה אונליין.",
   resetDataConfirmAction: "ניקוי נתוני המכשיר",
   data: "נתונים",
   exportData: "יצוא נתונים",
@@ -501,10 +534,34 @@ const hebrewOverrides: Partial<Translations> = {
   importReplace: "החלפת הנתונים הקיימים",
   exportSuccess: "היצוא הושלם.",
   exportError: "יצוא הנתונים נכשל.",
+  exportJournalUnlockRequired:
+    "יש לפתוח את נעילת היומן לפני ייצוא התוכן המוגן.",
+  exportJournalDecryptionFailed:
+    "ZenFlow לא הצליח לקרוא את היומן המוגן. דבר לא יוצא.",
+  exportJournalMediaUnavailable:
+    "ZenFlow לא הצליח לקרוא קובץ מצורף אחד או יותר של היומן. דבר לא יוצא.",
+  exportBackupTooLarge:
+    "הגיבוי הזה חורג ממגבלת השחזור של ZenFlow, שהיא 32 MB. דבר לא יוצא. יש למחוק כמה קבצים מצורפים מהיומן ולנסות שוב.",
+  exportCleanupError: "הגיבוי שותף, אך ZenFlow לא הצליח למחוק את העותק הזמני מהמכשיר הזה.",
+  pushRevocationIncomplete: "ZenFlow לא הצליח לנתק לחלוטין את ההתראות המרוחקות מהמכשיר הזה.",
+  sessionTimeoutDelayedTitle: "היציאה נדחתה",
+  sessionTimeoutPendingChanges:
+    "ZenFlow השאיר אותך מחובר כי יש שינויים שעדיין ממתינים לשמירה. ניסיון נוסף יתבצע בקרוב.",
+  sessionTimeoutCleanupFailed:
+    "ZenFlow השאיר אותך מחובר כי לא ניתן היה לנקות את המכשיר הזה בבטחה. ניסיון נוסף יתבצע בקרוב.",
+  syncCriticalBlocked:
+    "שמירה חשובה אונליין לא הושלמה. השינוי עדיין נמצא במכשיר הזה. נסה שוב כשיש חיבור.",
   exportCSV: "קובץ גיליון אלקטרוני (CSV)",
   exportPDF: "קובץ להדפסה (PDF)",
   importSuccess: "היבוא הושלם.",
+  importResultSummary:
+    "הייבוא הושלם: נוספו {added}, עודכנו {updated}, ודולגו {skipped}. יומן: {journalEntries} רשומות, {journalPhotos} תמונות, ו-{journalAudio} הקלטות.",
   importError: "יבוא הקובץ נכשל.",
+  importJournalUnlockRequired: "יש לבטל את נעילת היומן לפני החלפת הנתונים במכשיר הזה.",
+  importJournalUnreadable:
+    "גיבוי זה מכיל נתוני יומן מוגנים שהמכשיר הזה אינו יכול לקרוא.",
+  importJournalReauthorizationRequired:
+    "למען הבטיחות, נעל את היומן ופתח אותו מחדש. לאחר מכן חזור לכאן ונסה שוב להחליף.",
   importedItems: "נוספו",
   importAdded: "נוסף",
   importUpdated: "עודכן",
@@ -524,17 +581,17 @@ const hebrewOverrides: Partial<Translations> = {
   // Privacy
   privacyTitle: "פרטיות",
   privacyDescription: "אין מעקב מוסתר. סנכרון מכשירים מתחיל רק אחרי כניסה והפעלת הגיבוי המקוון.",
-  privacyNoTracking: "ללא מעקב",
-  privacyNoTrackingHint: "אנחנו לא אוספים נתוני התנהגות.",
-  privacyAnalytics: "אנליטיקה",
-  privacyAnalyticsHint: "עוזרת לשפר את האפליקציה. ניתן לכבות.",
-  privacyAds: "מודעות אופציונליות",
-  privacyAdsHint: "סרטונים אופציונליים בלבד. בקשות למודעות נשארות כבויות עד שתפעיל זאת; בחירות הפרטיות של Google עשויות להופיע כשנדרש.",
-  privacyPushNotifications: "התראות תזכורת מהחשבון",
-  privacyPushNotificationsHint: "אפשר למכשיר הזה לקבל התראות תזכורת מהחשבון שלך. תזכורות שנשמרו במכשיר הזה ימשיכו לעבוד גם בלי זה.",
+  privacyAds: "סרטוני תגמול",
+  privacyAdsHint:
+    "הסרטונים נטענים רק לאחר הפעלתם. Google עשויה לבקש בחירת העדפות פרטיות כשנדרש.",
+  privacyOptionalServicesOn: "שירותים אופציונליים פעילים",
+  privacyOptionalServicesOff: "שירותים אופציונליים כבויים",
+  privacyPushNotifications: "תזכורות מהחשבון",
+  privacyPushNotificationsHint:
+    "קבלת תזכורות מהחשבון במכשיר הזה. תזכורות שהוגדרו במכשיר ממשיכות לפעול גם כשהאפשרות כבויה.",
   privacyPolicy: "מדיניות פרטיות",
   termsOfService: "תנאי שימוש",
-  openSourceLicenses: "רישיונות קוד פתוח",
+  openSourceLicenses: "רישיונות",
   legalPrivacyDescription:
     "למד כיצד ZenFlow אוסף, משתמש ומגן על הנתונים האישיים שלך. הפרטיות שלך היא העדיפות שלנו.",
   legalTermsDescription: "קרא את התנאים וההגבלות המסדירים את השימוש שלך ב-ZenFlow.",
@@ -552,9 +609,10 @@ const hebrewOverrides: Partial<Translations> = {
   themeDark: "כהה",
   themeSystem: "מערכת",
   themeStyleTitle: "פלטת מצב רוח",
-  themeStyleDescription: "בחרו מראה שנבחר בקפידה וקובע את האווירה.",
+  themeAdvancedAppearanceTitle: "מראה מתקדם",
+  themeStyleDescription: "אפשר לבחור סגנון שמתאים.",
   themeAccentTitle: "צבע הדגשה",
-  themeAccentDescription: "צבע לפוקוס, מצבי בחירה ופקדים מרכזיים.",
+  themeAccentDescription: "צבע לכפתורים, לבחירות ולהדגשות.",
   themeIntensityTitle: "עוצמה",
   themeComfortTitle: "נוחות",
   themePreviewAction: "תצוגה מקדימה",
@@ -639,7 +697,7 @@ const hebrewOverrides: Partial<Translations> = {
 
   // Import validation
   invalidFileType: "סוג קובץ לא חוקי",
-  fileTooLarge: "הקובץ גדול מדי",
+  fileTooLarge: "הקובץ גדול מדי (עד 32 MB)",
   importConfirm: "אשר יבוא",
   invalidBackupFormat: "פורמט גיבוי לא חוקי",
 
@@ -680,13 +738,24 @@ const hebrewOverrides: Partial<Translations> = {
   settingsGroupProfile: "פרופיל ומראה",
   settingsGroupNotifications: "התראות",
   settingsGroupData: "נתונים וגיבוי",
+  settingsExportImportTitle: "גיבויים ודוחות",
   settingsGroupAccount: "חשבון",
   settingsGroupSecurity: "אבטחה",
   settingsSecurityDesc: "הגדרת נעילת היומן והעדפות אבטחה",
   journalLockTimeout: "נעילה אוטומטית של היומן",
   journalLockTimeoutDesc: "נעילת היומן אוטומטית לאחר תקופה של חוסר פעילות",
   journalLockImmediateWarning: "היומן יינעל בכל פעם שתעזוב את מסך היומן",
+  journalLockTimeoutImmediately: "מיד",
+  journalLockTimeoutOneMinute: "אחרי דקה",
+  journalLockTimeoutFiveMinutes: "אחרי 5 דקות",
+  journalLockTimeoutFifteenMinutes: "אחרי 15 דקות",
+  journalLockTimeoutThirtyMinutes: "אחרי 30 דקות",
   settingsGroupAbout: "אודות",
+  settingsGroupAppearanceAccessibility: "מראה ונגישות",
+  settingsGroupReminders: "תזכורות",
+  settingsGroupPrivacyData: "פרטיות ונתונים",
+  settingsGroupHelpAbout: "עזרה ומידע",
+  settingsDataSummary: "רישומי מצב רוח: {moods} · הרגלים: {habits} · מפגשי מיקוד: {focus}",
 
   // Modules
   settingsGroupModules: "מודולים",
@@ -721,14 +790,6 @@ const hebrewOverrides: Partial<Translations> = {
   coreModulesNote: "מעקב מצב רוח והרגלים תמיד זמינים",
 
   // GDPR
-  consentTitle: "הגדרות פרטיות",
-  consentDescription: "אנחנו מכבדים את פרטיותך. לאפשר אנליטיקה אנונימית לשיפור האפליקציה?",
-  consentAnalyticsTitle: "אנליטיקה אנונימית",
-  consentAnalyticsDesc: "דפוסי שימוש בלבד. ללא נתונים אישיים. אפשר לשנות זאת בהגדרות.",
-  consentAccept: "קבל",
-  consentDecline: "דחה",
-  consentFooter: "אפשר לשנות זאת בכל זמן בהגדרות > פרטיות",
-
   areYouSure: "בטוח?",
   cannotBeUndone: "לא ניתן לבטל פעולה זו.",
   delete: "מחק",
@@ -810,6 +871,7 @@ const hebrewOverrides: Partial<Translations> = {
   adPrivacyOptions: "אפשרויות פרטיות למודעות Google",
   adPrivacyOptionsHint: "שנה או בטל הסכמה למודעות Google כאשר נדרש.",
   adPrivacyOptionsOpen: "סקירת אפשרויות מודעות",
+  adPrivacyOptionsError: "לא ניתן לפתוח את אפשרויות הפרטיות של מודעות Google. נסו שוב.",
   innerWorld: "העולם הפנימי",
   tapToInteract: "הקש לאינטראקציה",
 
@@ -834,8 +896,7 @@ const hebrewOverrides: Partial<Translations> = {
 
   // 404
   notFoundKicker: "הנתיב לא נמצא",
-  notFoundBody:
-    "הקישור הזה מיושן או שהמסך הזה כבר לא קיים. הנתונים שלך עדיין כאן.",
+  notFoundBody: "הקישור הזה מיושן או שהמסך הזה כבר לא קיים. הנתונים שלך עדיין כאן.",
   notFoundRequestedPath: "הנתיב שהתבקש",
   notFoundBack: "חזרה",
   notFoundHint: "השתמש במסך הבית כדי לחזור למרחב ZenFlow שלך.",
@@ -887,7 +948,8 @@ const hebrewOverrides: Partial<Translations> = {
   syncDeviceSessionsActive: "מכשירים פעילים",
   syncDeviceSessionsError: "מצב המכשירים אינו זמין זמנית.",
   syncDeviceSessionsEmpty: "יש להתחבר כדי לראות מכשירים מחוברים.",
-  syncDeviceSessionsFootnote: "סימון מכשיר כלא פעיל מסתיר אותו מהרשימה הזאת; הוא לא מנתק את המכשיר מהחשבון.",
+  syncDeviceSessionsFootnote:
+    "סימון מכשיר כלא פעיל מסתיר אותו מהרשימה הזאת; הוא לא מנתק את המכשיר מהחשבון.",
   syncDeviceCurrent: "המכשיר הנוכחי",
   syncDeviceRevoked: "לא פעיל",
   syncDeviceLastSeen: "נראה לאחרונה",
@@ -1076,19 +1138,22 @@ const hebrewOverrides: Partial<Translations> = {
   checkingForUpdates: "בודק עדכונים...",
   appUpToDate: "יש לך את הגרסה האחרונה",
   openGooglePlay: "פתח Google Play",
+  openGooglePlayFailed: "לא ניתן לפתוח את Google Play. נסו שוב.",
   updateCheckFailed: "בדיקת עדכונים נכשלה",
   settingsUpdateTitle: "גרסת האפליקציה",
-  settingsWebUpdateDescription: "ZenFlow יכול לבדוק אם גרסה חדשה יותר מוכנה.",
-  settingsNativeUpdateDescription: "בדיקה אם יש עדכון זמין בחנות האפליקציות.",
+  settingsWebUpdateDescription: "בדיקה אם קיימת גרסה חדשה יותר.",
+  settingsNativeUpdateDescription: "בדיקה אם קיימת גרסה חדשה יותר.",
   webUpdateAvailable: "גרסה חדשה יותר מוכנה",
-  webUpdateAvailableDescription: "הפעילו מחדש את ZenFlow כדי לטעון את הגרסה האחרונה. סיימו קודם כל טקסט שאתם מקלידים.",
+  webUpdateAvailableDescription:
+    "הפעילו מחדש את ZenFlow כדי לטעון את הגרסה האחרונה. סיימו קודם כל טקסט שאתם מקלידים.",
   restartZenflow: "להפעיל מחדש את ZenFlow",
   restartingZenflow: "מפעיל מחדש...",
-  webUpdateCheckFailedDescription: "ZenFlow צריך בדיקת רשת כדי לאשר את הגרסה האחרונה. שום דבר לא השתנה במכשיר הזה.",
+  webUpdateCheckFailedDescription:
+    "ZenFlow צריך בדיקת רשת כדי לאשר את הגרסה האחרונה. שום דבר לא השתנה במכשיר הזה.",
 
   // Reminders
   remindersTitle: "תזכורות",
-  remindersDescription: "דחיפות עדינות לשמור על הקצב.",
+  remindersDescription: "אפשר לבחור מתי ZenFlow יזכיר לתעד מצב רוח ולהתמקד.",
   moodReminder: "שעת צ'ק-אין מצב רוח",
   habitReminder: "שעת תזכורת הרגלים",
   focusReminder: "שעת דחיפת מיקוד",
@@ -1207,10 +1272,25 @@ const hebrewOverrides: Partial<Translations> = {
   deleteAccountWarning: "פעולה זו תמחק נתונים שנשמרו אונליין ואת הגישה לחשבון.",
   deleteAccountSuccess: "החשבון נמחק.",
   deleteAccountError: "מחיקת חשבון נכשלה.",
+  deleteAccountDeletedCleanupFailed:
+    "החשבון נמחק, אך ייתכן שחלק מהנתונים עדיין נמצאים במכשיר הזה. יש להפעיל מחדש את ZenFlow לפני שימוש בחשבון אחר.",
   deleteAccountLink: "איך למחוק חשבון/נתונים",
   deleteConfirmWord: "מחיקה",
   authEmailSent: "קישור כניסה נשלח לאימייל שלך.",
   authSignedOut: "התנתקת.",
+  authSignOutPendingChanges:
+    "ב-ZenFlow עדיין יש שינויים שממתינים לשמירה באינטרנט. יש להתחבר לאינטרנט ולנסות שוב.",
+  authSignOutRecoveryTitle: "השלמת היציאה",
+  authDiscardAndSignOut: "מחיקת השינויים ויציאה",
+  authDiscardSignOutConfirm: "למחוק את השינויים שלא נשמרו ולצאת?",
+  authDiscardSignOutWarning:
+    "שינויים שממתינים לשמירה מקוונת יימחקו לצמיתות מהמכשיר הזה.",
+  authAccountSwitchPendingChanges:
+    "יש להיכנס שוב לחשבון הקודם, להתחבר לאינטרנט ולהמתין עד ש-ZenFlow יסיים לשמור את השינויים. לאחר מכן אפשר להחליף חשבון שוב.",
+  authRecoverLegacyChanges: "שחזור השינויים עם החשבון הזה",
+  authUseDifferentAccount: "שימוש בחשבון אחר",
+  authSignOutCleanupFailed: "ZenFlow לא הצליח להשלים את היציאה בבטחה. יש לנסות שוב.",
+  authSignOutFailed: "היציאה לא הושלמה. יש לנסות שוב.",
   authError: "שליחת הקישור נכשלה.",
   authNotConfigured: "התחברות אינה זמינה כעת.",
   syncPulled: "נתונים מקוונים שוחזרו.",
@@ -1235,7 +1315,9 @@ const hebrewOverrides: Partial<Translations> = {
   pushDisabled: "דחיפה בוטלה.",
   pushError: "הפעלת דחיפה נכשלה.",
   pushNeedsAccount: "התחבר/י כדי להפעיל דחיפה.",
-  pushPermissionDenied: "הרשאת התראות נדחתה.",
+  pushPermissionDenied: "יש להפעיל התראות עבור ZenFlow בהגדרות המכשיר.",
+  remindersNativeOnly: "אפשר להגדיר תזכורות באפליקציית ZenFlow לנייד.",
+  habitRemindersManagedInHabits: "אפשר להגדיר תזכורת מתוך התפריט של כל הרגל.",
 
   // Share
   shareAchievements: "שתף את ההתקדמות שלך",
@@ -1659,6 +1741,7 @@ const hebrewOverrides: Partial<Translations> = {
   // Feedback and motion
   dopamineSettings: "משוב ותנועה",
   dopamineSettingsDesc: "בחרו כמה אנימציה, צליל ורטט ZenFlow ישתמש.",
+  dopamineSettingsDescNoHaptics: "בחרו כמה אנימציה וצליל ZenFlow ישתמש.",
   dopamineIntensity: "רמת משוב",
   dopamineMinimal: "שקט",
   dopamineNormal: "מאוזן",
@@ -2055,7 +2138,8 @@ const hebrewOverrides: Partial<Translations> = {
 
   // Smart Reminders
   smartReminders: "תזכורות חכמות",
-  smartRemindersNotEnoughData: "המשיכו להשתמש באפליקציה כדי לראות הצעות תזכורת על סמך פעילות אחרונה.",
+  smartRemindersNotEnoughData:
+    "המשיכו להשתמש באפליקציה כדי לראות הצעות תזכורת על סמך פעילות אחרונה.",
   smartRemindersOptimized: "שעות התזכורת הנוכחיות תואמות לדפוסים האחרונים שלך.",
   smartRemindersDescription: "הצעות על סמך פעילות אחרונה",
   suggestions: "הצעות",
@@ -2110,8 +2194,7 @@ const hebrewOverrides: Partial<Translations> = {
     "המלווה הווירטואלי גדל איתך, חוגג ניצחונות ותומך ברגעים קשים. בחר/י מ-5 סוגים!",
   onboardingtasksUnlockTitle: "📝 משימות נפתחו!",
   onboardingtasksUnlockSubtitle: "גישה מלאה!",
-  onboardingtasksDescription:
-    "מומנטום משימות עוזר לבחור את הצעד הבא לפי דחיפות ואנרגיה.",
+  onboardingtasksDescription: "מומנטום משימות עוזר לבחור את הצעד הבא לפי דחיפות ואנרגיה.",
   onboardingchallengesUnlockTitle: "🏆 אתגרים נפתחו!",
   onboardingchallengesUnlockSubtitle: "גישה מלאה!",
   onboardingchallengesDescription:
@@ -2201,7 +2284,7 @@ const hebrewOverrides: Partial<Translations> = {
     "משוב עשוי לכלול את ההודעה שלך, אימייל אופציונלי, גרסת האפליקציה, סוג המכשיר, גודל המסך, שפה ופרטי דפדפן. אין להשתמש במשוב לבקשות בטיחות דחופות או לתמיכה רפואית.",
   feedbackSubmit: "שלח",
   feedbackSuccess: "תודה על המשוב!",
-  feedbackError: "השליחה נכשלה. נסה/י שוב.",
+  feedbackError: "לא ניתן לשלוח. ההודעה שלך עדיין כאן — אפשר לנסות שוב.",
   feedbackSending: "שולח...",
   sendFeedback: "שלח משוב",
   rateAppTitle: "נהנה מ-ZenFlow?",
@@ -2224,20 +2307,27 @@ const hebrewOverrides: Partial<Translations> = {
   quickActionViewHabits: "צפה בהרגלים",
   notificationSound: "צליל התראות",
   notificationSoundDescription: "בחר צליל לתזכורות",
+  notificationSoundUpdateFailed:
+    "ZenFlow לא הצליח להחיל את צליל התזכורת הזה. הצליל הקודם עדיין נבחר. אפשר לנסות שוב.",
+  reminderReconcileFailed:
+    "ZenFlow לא הצליח לעדכן את התזכורות. ייתכן שהמכשיר עדיין משתמש בלוח הזמנים הקודם. אפשר לנסות שוב.",
   soundDefault: "ברירת מחדל",
   soundDefaultDesc: "צליל התראת מערכת",
   soundGentle: "עדין",
   soundGentleDesc: "רטט בלבד",
-  soundChime: "צלצול",
-  soundChimeDesc: "צליל התראה קצר",
   soundSilent: "שקט",
   soundSilentDesc: "ללא צליל או רטט",
-  notificationSystemSettingsTitle: "בקרות התראות מערכת",
-  notificationSystemSettingsDescription: "המכשיר או הדפדפן עדיין יכולים להשתיק או לרכך את תזכורות ZenFlow. צלילי האפליקציה נשארים במכשיר הזה ובשליטתך.",
-  notificationSystemSettingsAndroidDescription: "הטלפון שלך שומר על השליטה הסופית בצליל, ברטט ובנראות של כל תזכורת.",
-  notificationSystemSettingsIosDescription: "הגדרות ה-iPhone או ה-iPad ומצבי הריכוז שומרים על השליטה הסופית בצליל ההתראה, במסירה ובסגנון.",
-  notificationSystemSettingsWebDescription: "הדפדפן או המכשיר שלך עדיין יכולים להשתיק תזכורות. צלילי ZenFlow נשארים במכשיר ומתחילים רק לאחר נגיעה.",
-  notificationSystemSettingsDesktopDescription: "המחשב שלך שומר על השליטה הסופית במסירה ובצליל של תזכורות.",
+  notificationSystemSettingsTitle: "אם אין צליל לתזכורות",
+  notificationSystemSettingsDescription:
+    "המכשיר או הדפדפן עדיין יכולים להשתיק או לרכך את תזכורות ZenFlow. צלילי האפליקציה נשארים במכשיר הזה ובשליטתך.",
+  notificationSystemSettingsAndroidDescription:
+    "הגדרות הצליל, הרטט וההתראות בטלפון יכולות להשתיק או להסתיר תזכורות.",
+  notificationSystemSettingsIosDescription:
+    "הגדרות ההתראות ומצבי הריכוז ב-iPhone או ב-iPad יכולים להשתיק או להסתיר תזכורות.",
+  notificationSystemSettingsWebDescription:
+    "הדפדפן או המכשיר שלך עדיין יכולים להשתיק תזכורות. צלילי ZenFlow נשארים במכשיר ומתחילים רק לאחר נגיעה.",
+  notificationSystemSettingsDesktopDescription:
+    "המחשב שלך שומר על השליטה הסופית במסירה ובצליל של תזכורות.",
   testNotification: "בדוק התראה",
   testNotificationHint: "שולח התראת בדיקה בעוד 5 שניות כדי לוודא שההתראות עובדות.",
   notificationTestSending: "שולח...",
@@ -2592,8 +2682,10 @@ const hebrewOverrides: Partial<Translations> = {
   journalPasswordSetup: "הגדר סיסמת היומן",
   journalPasswordEnter: "הכנס סיסמה",
   journalPasswordConfirm: "אשר סיסמה",
-  journalLockHint: "הסיסמה הזו מצפינה את היומן במכשיר הזה. שמור אותה במקום בטוח; ZenFlow לא יכול להציג או לשחזר אותה.",
-  journalLockHintLocalOnly: "הסיסמה הזו מצפינה את היומן במכשיר הזה. שמור אותה במקום בטוח; ZenFlow לא יכול להציג או לשחזר אותה.",
+  journalLockHint:
+    "הסיסמה הזו מצפינה את תוכן היומן ואת הקבצים המצורפים במכשיר הזה. תאריכים, כותרות, תגיות ונתוני פעילות ביומן אינם מוצפנים. חשוב לשמור את הסיסמה במקום בטוח; ZenFlow לא יכול להציג או לשחזר אותה.",
+  journalLockHintLocalOnly:
+    "הסיסמה הזו מצפינה את תוכן היומן ואת הקבצים המצורפים במכשיר הזה. תאריכים, כותרות, תגיות ונתוני פעילות ביומן אינם מוצפנים. חשוב לשמור את הסיסמה במקום בטוח; ZenFlow לא יכול להציג או לשחזר אותה.",
   journalLockTooShort: "מינימום 6 תווים",
   journalPasswordMismatch: "הסיסמאות לא תואמות",
   journalPasswordWrong: "סיסמה שגויה",
@@ -2606,27 +2698,36 @@ const hebrewOverrides: Partial<Translations> = {
   journalResetConfirm: "נשלח קישור אימות אל",
   journalResetSendCode: "שלח קישור",
   journalResetCodeSent: "בדוק את האימייל שלך",
-  journalResetCodeSentHint: "פתח את הקישור באימייל במכשיר או בדפדפן הזה, ואז חזור ליומן. הוא מאמת את החשבון ומסיר את הנעילה בלי לחשוף את הסיסמה הישנה.",
+  journalResetCodeSentHint:
+    "פתח את הקישור באימייל במכשיר או בדפדפן הזה, ואז חזור ליומן. הוא מאמת את החשבון ומסיר את הנעילה בלי לחשוף את הסיסמה הישנה.",
   journalResetEnterCode: "קישור אימות",
   journalResetVerify: "פתח קישור",
   journalResetSuccess: "נעילת היומן הוסרה",
-  journalResetSuccessDetail: "היומן פתוח עכשיו ללא סיסמת יומן במכשיר הזה. הגדר סיסמה חדשה אם ברצונך להשאיר אותו מוגן.",
+  journalResetSuccessDetail:
+    "היומן פתוח עכשיו ללא סיסמת יומן במכשיר הזה. הגדר סיסמה חדשה אם ברצונך להשאיר אותו מוגן.",
   journalResetSetNewPassword: "הגדר סיסמת יומן חדשה",
   journalResetChecking: "בודקים את החשבון...",
-  journalResetCheckingHint: "השאר את החלון הזה פתוח בזמן שאנחנו בודקים אם אפשר להסיר את הנעילה באימייל.",
-  journalResetNoAccount: "היכנס דרך הגדרות החשבון כדי להסיר את הנעילה באימייל. שום דבר לא השתנה; רשומות היומן שלך נשארות מוגנות.",  journalResetOpenAccountSettings: "פתח הגדרות חשבון",
+  journalResetCheckingHint:
+    "השאר את החלון הזה פתוח בזמן שאנחנו בודקים אם אפשר להסיר את הנעילה באימייל.",
+  journalResetNoAccount:
+    "היכנס דרך הגדרות החשבון כדי להסיר את הנעילה באימייל. שום דבר לא השתנה; רשומות היומן שלך נשארות מוגנות.",
+  journalResetOpenAccountSettings: "פתח הגדרות חשבון",
   journalResetServiceUnavailable: "לא הצלחנו לבדוק את החשבון שלך. בדוק את החיבור ונסה שוב.",
-  journalResetEncryptedUnavailable: "היומן הזה מוצפן באמצעות הסיסמה שלך. אימות באימייל לא יכול להסיר את הנעילה כל עוד התוכן המוצפן נעול. שום דבר לא השתנה; הרשומות שלך נשארות מוגנות. פתח אותו עם הסיסמה כדי להסיר את הנעילה.",
+  journalResetEncryptedUnavailable:
+    "היומן הזה מוצפן באמצעות הסיסמה שלך. אימות באימייל לא יכול להסיר את הנעילה כל עוד התוכן המוצפן נעול. שום דבר לא השתנה; הרשומות שלך נשארות מוגנות. פתח אותו עם הסיסמה כדי להסיר את הנעילה.",
   journalResetCodeWrong: "לא ניתן היה לאמת את קישור האימות. נסה שוב.",
   journalResetExpired: "תוקף קישור האימות פג. שלח קישור חדש.",
   journalResetWrongAccount: "פתח את הקישור כאשר אתה מחובר לאותו חשבון שביקש אותו.",
-  journalResetMissingProof: "קישור האימייל הזה לא אומת באפליקציה. שום דבר לא השתנה; נעילת היומן עדיין פעילה והרשומות שלך נשארות מוגנות.",
+  journalResetMissingProof:
+    "קישור האימייל הזה לא אומת באפליקציה. שום דבר לא השתנה; נעילת היומן עדיין פעילה והרשומות שלך נשארות מוגנות.",
   journalResetSendFailed: "שליחת הקישור נכשלה. בדוק את החיבור.",
   journalResetResend: "שלח קישור מחדש",
   journalResetCooldown: "המתן {seconds} שניות לפני בקשת קישור נוסף.",
-  journalResetTroubleshooting: "אם האימייל לא מגיע, בדוק ספאם או דואר זבל, הישאר מחובר במכשיר הזה ושלח את הקישור שוב אחרי הטיימר.",
+  journalResetTroubleshooting:
+    "אם האימייל לא מגיע, בדוק ספאם או דואר זבל, הישאר מחובר במכשיר הזה ושלח את הקישור שוב אחרי הטיימר.",
   journalResetTryAgain: "לנסות שוב",
-  journalResetDesktopUnavailable: "הסרת נעילה באימייל זמינה בגרסת הווב או באפליקציה לנייד. בדסקטופ, פתח את היומן עם סיסמת היומן.",
+  journalResetDesktopUnavailable:
+    "הסרת נעילה באימייל זמינה בגרסת הווב או באפליקציה לנייד. בדסקטופ, פתח את היומן עם סיסמת היומן.",
   journalClose: "סגור",
   journalSearch: "חיפוש רשומות...",
   journalAiSearchPlaceholder: "תארו מה אתם רוצים למצוא...",
@@ -2899,8 +3000,11 @@ const hebrewOverrides: Partial<Translations> = {
   journalPasswordChangeSuccess: "הסיסמה שונתה בהצלחה",
   journalPasswordChangeFailed: "לא הצלחנו לעדכן את נעילת היומן. נסה שוב.",
   journalPasswordActiveHint: "נעילת היומן פעילה. כאן אפשר לשנות או להסיר אותה.",
+  journalProtectionCloudPending:
+    "היומן כבר מוגן במכשיר הזה. ZenFlow עדיין מחליף עותק ישן יותר שמאוחסן אונליין; השאירו את האפליקציה פתוחה והתחברו לאינטרנט.",
   journalPasswordRemoveConfirm: "האם אתה בטוח? היומן שלך יהיה נגיש ללא סיסמה.",
-  journalLockRemoveDetail: "הרשומות שלך יישארו שמורות, אך נעילת היומן והפתיחה הביומטרית של היומן יכובו. אפשר להגדיר נעילה חדשה אחר כך.",
+  journalLockRemoveDetail:
+    "הרשומות שלך יישארו שמורות, אך נעילת היומן והפתיחה הביומטרית של היומן יכובו. אפשר להגדיר נעילה חדשה אחר כך.",
   journalLockRemoveFailed: "פתח תחילה את היומן, ואז נסה להסיר את הנעילה שוב.",
   journalPasswordRemovePending: "מסיר את הנעילה...",
   journalPasswordRemoveSuccess: "נעילת היומן הוסרה.",
@@ -2934,7 +3038,8 @@ const hebrewOverrides: Partial<Translations> = {
   journalExportPDFDesc: "מסמך להדפסה",
   journalExportText: "Markdown",
   journalExportTextDesc: "פורמט טקסט רגיל",
-  journalExportPrivacyWarning: "הייצוא יוצר קובץ פרטי לא מוצפן על ידי ZenFlow. שמור אותו במקום שאתה סומך עליו.",
+  journalExportPrivacyWarning:
+    "הייצוא יוצר קובץ פרטי לא מוצפן על ידי ZenFlow. שמור אותו במקום שאתה סומך עליו.",
   journalExportSuccess: "הייצוא הושלם",
   journalExportFailed: "הייצוא נכשל. נסה שוב.",
   journalNoMatchingEntries: "אין רשומות תואמות",
@@ -3019,35 +3124,6 @@ const hebrewOverrides: Partial<Translations> = {
   journalSlashPhotoDescription: "צרף תמונה",
   journalSlashAudioLabel: "שמע",
   journalSlashAudioDescription: "הקלט שמע",
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   // Premium Diary (Immersive Mode)
   diaryPremiumEntry: "מצב טבילה",

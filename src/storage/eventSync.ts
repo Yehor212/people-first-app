@@ -15,7 +15,7 @@ import { isAbortError } from "@/lib/validation";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
 import { broadcastChange, type SyncEntity } from "@/lib/syncBroadcast";
 import type { Json } from "@/types/supabase";
-import type { IndexableType, Table } from "dexie";
+import Dexie, { type IndexableType, type Table } from "dexie";
 import type { LoopHabitType } from "@/types";
 import { decodeHabitCompletionFromCloud } from "@/storage/sync/habitCompletionCodec";
 import { storageRemove } from "@/lib/safeJson";
@@ -24,6 +24,8 @@ import {
   normalizeDeletedIdsForStorage,
 } from "@/storage/deletionTracker";
 import { isAccountSyncedSettingKey } from "@/storage/sync/settingSyncPolicy";
+import { applyIncomingAccountSetting } from "@/storage/sync/journalVaultSyncPolicy";
+import { SyncOwnerBoundaryError, validateSyncOwner } from "@/storage/sync/syncOwner";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -61,6 +63,13 @@ export interface SyncEventWriteIntent {
   payload: Record<string, unknown> | null;
   deviceId: string;
   idempotencyKey?: string;
+}
+
+class AccountOwnerChangedError extends Error {
+  constructor() {
+    super("[EventSync] Active account changed before event write");
+    this.name = "AccountOwnerChangedError";
+  }
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -190,12 +199,19 @@ export async function getPersistentDeviceId(): Promise<string> {
  * Bootstrap lastSeq for first-time delta sync enablement.
  * Sets cursor to server max so we don't replay entire event history.
  */
-export async function bootstrapLastSeq(): Promise<number> {
+export async function bootstrapLastSeq(expectedOwnerUserId?: string): Promise<number> {
+  const ownerUserId = await resolveDeltaOwner(
+    { expectedOwnerUserId },
+    "Delta cursor bootstrap",
+  );
   const localSeq = await getLastSeq();
+  await assertDeltaOwnerCurrent(ownerUserId, undefined, "Delta cursor bootstrap");
   if (localSeq > 0) return localSeq;
-  const serverMax = await getServerMaxSeq();
+  const serverMax = await getServerMaxSeq(ownerUserId);
   if (serverMax > 0) {
-    await saveLastSeq(serverMax);
+    await saveLastSeq(serverMax, {
+      expectedOwnerUserId: ownerUserId,
+    });
     logger.sync(`[EventSync] Bootstrapped lastSeq to ${serverMax}`);
   }
   return serverMax;
@@ -206,8 +222,20 @@ export async function getLastSeq(): Promise<number> {
   return (entry?.value as number) ?? 0;
 }
 
-export async function saveLastSeq(seq: number): Promise<void> {
-  await db.settings.put({ key: SYNC_SEQ_KEY, value: seq });
+export async function saveLastSeq(
+  seq: number,
+  ownerOptions?: ApplyDeltaOwnerOptions,
+): Promise<void> {
+  const ownerUserId = await resolveDeltaOwner(ownerOptions, "Delta cursor update");
+  await db.transaction("rw", [db.settings], async () => {
+    await Dexie.waitFor(
+      assertDeltaOwnerCurrent(ownerUserId, ownerOptions, "Delta cursor update transaction"),
+    );
+    await db.settings.put({ key: SYNC_SEQ_KEY, value: seq });
+    await Dexie.waitFor(
+      assertDeltaOwnerCurrent(ownerUserId, ownerOptions, "Delta cursor update transaction"),
+    );
+  });
 }
 
 // ── Write event (called after successful sync op) ─────────────────────
@@ -218,10 +246,15 @@ export async function saveLastSeq(seq: number): Promise<void> {
  * Callers that need cross-device convergence should use writeEventAndBroadcast()
  * so transient failures enter the durable WRITE_SYNC_EVENT outbox.
  */
-async function writeEventStrict(intent: SyncEventWriteIntent): Promise<SyncEvent> {
+async function writeEventStrict(
+  intent: SyncEventWriteIntent,
+  expectedOwnerUserId: string
+): Promise<SyncEvent> {
   if (!supabase) throw new Error("[EventSync] Supabase not configured");
   const userId = await getCurrentUserId();
-  if (!userId) throw new Error("[EventSync] User not authenticated");
+  if (userId !== expectedOwnerUserId) {
+    throw new AccountOwnerChangedError();
+  }
   const stableIntent = withIdempotencyKey(intent);
 
   const { data, error } = await supabase
@@ -266,13 +299,17 @@ async function fetchEventByIdempotencyKey(
   return data as SyncEvent;
 }
 
-async function queueSyncEventWrite(intent: SyncEventWriteIntent): Promise<void> {
+async function queueSyncEventWrite(
+  intent: SyncEventWriteIntent,
+  expectedOwnerUserId: string
+): Promise<void> {
   const stableIntent = withIdempotencyKey(intent);
   await offlineQueue.enqueue(
     "WRITE_SYNC_EVENT",
     `sync-event:${stableIntent.entityType}:${stableIntent.entityId}:${stableIntent.op}:${Date.now()}`,
     stableIntent,
     {
+      expectedOwnerUserId,
       deduplicate: false,
       maxRetries: 20,
       priority: "critical",
@@ -285,10 +322,14 @@ export async function writeEvent(
   entityId: string,
   op: SyncOp,
   payload: Record<string, unknown> | null,
-  deviceId: string
+  deviceId: string,
+  expectedOwnerUserId: string
 ): Promise<SyncEvent | null> {
   try {
-    return await writeEventStrict({ entityType, entityId, op, payload, deviceId });
+    return await writeEventStrict(
+      { entityType, entityId, op, payload, deviceId },
+      expectedOwnerUserId
+    );
   } catch (err) {
     if (isAbortError(err)) return null;
     logger.warn("[EventSync] writeEvent error:", err);
@@ -306,28 +347,34 @@ export async function writeEventAndBroadcast(
   op: SyncOp,
   payload: Record<string, unknown> | null,
   deviceId: string,
-  options: { queueOnFailure?: boolean } = {}
+  options: { expectedOwnerUserId: string; queueOnFailure?: boolean }
 ): Promise<SyncEvent | null> {
   const intent = withIdempotencyKey({ entityType, entityId, op, payload, deviceId });
+  const { expectedOwnerUserId } = options;
   try {
-    const event = await writeEventStrict(intent);
+    const event = await writeEventStrict(intent, expectedOwnerUserId);
     broadcastChange(SYNC_ENTITY_BROADCAST_MAP[entityType], event.seq);
     return event;
   } catch (err) {
+    if (err instanceof AccountOwnerChangedError) {
+      logger.warn("[EventSync] Event write stopped at an account boundary");
+      return null;
+    }
     if (!isAbortError(err)) {
       logger.warn("[EventSync] Durable event write failed; queued for retry:", err);
     }
     if (options.queueOnFailure !== false) {
-      await queueSyncEventWrite(intent);
+      await queueSyncEventWrite(intent, expectedOwnerUserId);
     }
     return null;
   }
 }
 
 export async function writeQueuedEventAndBroadcast(
-  intent: SyncEventWriteIntent
+  intent: SyncEventWriteIntent,
+  expectedOwnerUserId: string
 ): Promise<SyncEvent> {
-  const event = await writeEventStrict(intent);
+  const event = await writeEventStrict(intent, expectedOwnerUserId);
   broadcastChange(SYNC_ENTITY_BROADCAST_MAP[intent.entityType], event.seq);
   return event;
 }
@@ -391,6 +438,30 @@ export interface PullAndApplyDeltaResult {
   lastSeq: number;
 }
 
+export interface ApplyDeltaOwnerOptions {
+  expectedOwnerUserId?: string;
+  assertOwnerCurrent?: () => Promise<void>;
+}
+
+async function resolveDeltaOwner(
+  options: ApplyDeltaOwnerOptions | undefined,
+  operation: string,
+): Promise<string> {
+  await options?.assertOwnerCurrent?.();
+  const ownerUserId = await validateSyncOwner(options?.expectedOwnerUserId, operation);
+  if (!ownerUserId) throw new SyncOwnerBoundaryError(operation);
+  return ownerUserId;
+}
+
+async function assertDeltaOwnerCurrent(
+  ownerUserId: string,
+  options: ApplyDeltaOwnerOptions | undefined,
+  operation: string,
+): Promise<void> {
+  await options?.assertOwnerCurrent?.();
+  await validateSyncOwner(ownerUserId, operation);
+}
+
 /**
  * Pull and apply events from the same cursor used by eventSync.
  * Keep lifecycle callers away from syncCursor-v2; eventSync persists its cursor
@@ -399,6 +470,7 @@ export interface PullAndApplyDeltaResult {
 export async function pullAndApplyDeltasFromLastSeq(
   signal?: AbortSignal
 ): Promise<PullAndApplyDeltaResult> {
+  const ownerUserId = await resolveDeltaOwner(undefined, "Delta pull and apply");
   const lastSeq = await getLastSeq();
   const events = await fetchAllDeltas(lastSeq, signal);
 
@@ -407,7 +479,9 @@ export async function pullAndApplyDeltasFromLastSeq(
   }
 
   const deviceId = await getPersistentDeviceId();
-  const applied = await applyDelta(events, deviceId);
+  const applied = await applyDelta(events, deviceId, {
+    expectedOwnerUserId: ownerUserId,
+  });
   const maxSeq = events[events.length - 1].seq;
 
   return { fetched: events.length, applied, lastSeq: maxSeq };
@@ -528,8 +602,7 @@ async function applySettingEvent(event: SyncEvent): Promise<boolean> {
   }
 
   if (!Object.prototype.hasOwnProperty.call(payload, "value")) return false;
-  await db.settings.put({ key, value: payload.value });
-  return true;
+  return applyIncomingAccountSetting(key, payload.value);
 }
 
 function readDeletedIdsSettingValue(value: unknown): string[] {
@@ -570,13 +643,27 @@ async function rememberAppliedDelete(event: SyncEvent): Promise<void> {
  * guard a newer local write that has not yet reached the durable event log.
  * Handles QuotaExceededError gracefully.
  */
-export async function applyDelta(events: SyncEvent[], currentDeviceId: string): Promise<number> {
+export async function applyDelta(
+  events: SyncEvent[],
+  currentDeviceId: string,
+  ownerOptions?: ApplyDeltaOwnerOptions,
+): Promise<number> {
   if (events.length === 0) return 0;
+
+  const ownerUserId = await resolveDeltaOwner(ownerOptions, "Delta apply");
+  const assertOwnerInTransaction = () =>
+    Dexie.waitFor(
+      assertDeltaOwnerCurrent(ownerUserId, ownerOptions, "Delta apply transaction"),
+    );
 
   const remoteEvents = events.filter((e) => e.device_id !== currentDeviceId);
   if (remoteEvents.length === 0) {
     const maxSeq = events[events.length - 1].seq;
-    await saveLastSeq(maxSeq);
+    await db.transaction("rw", [db.settings], async () => {
+      await assertOwnerInTransaction();
+      await db.settings.put({ key: SYNC_SEQ_KEY, value: maxSeq });
+      await assertOwnerInTransaction();
+    });
     return 0;
   }
 
@@ -613,6 +700,7 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
     // applied is set AFTER successful commit — rolled-back tx won't trigger refresh
     let txApplied = 0;
     await db.transaction("rw", tables, async () => {
+      await assertOwnerInTransaction();
       for (const event of remoteEvents) {
         const tableName = ENTITY_TABLE_MAP[event.entity_type];
         if (!tableName) continue;
@@ -665,6 +753,7 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
         }
       }
 
+      await assertOwnerInTransaction();
       await db.settings.put({ key: SYNC_SEQ_KEY, value: maxSeq });
     });
     applied = txApplied; // only count after successful commit
@@ -678,8 +767,10 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
     throw err;
   }
 
+  await assertDeltaOwnerCurrent(ownerUserId, ownerOptions, "Delta apply completion");
+
   if (applied > 0) {
-    triggerDataRefresh();
+    await triggerDataRefresh();
   }
 
   logger.sync(`[EventSync] Applied ${applied} events, cursor at seq=${maxSeq}`);
@@ -688,13 +779,14 @@ export async function applyDelta(events: SyncEvent[], currentDeviceId: string): 
 
 // ── Server max seq ────────────────────────────────────────────────────
 
-export async function getServerMaxSeq(): Promise<number> {
+export async function getServerMaxSeq(expectedOwnerUserId?: string): Promise<number> {
   if (!supabase) return 0;
-  const userId = await getCurrentUserId();
-  if (!userId) return 0;
+  const ownerUserId = await validateSyncOwner(expectedOwnerUserId, "Server max sequence");
+  if (!ownerUserId) return 0;
 
   const { data, error } = await supabase.from("sync_seq_counters").select("last_seq").single();
 
+  await validateSyncOwner(ownerUserId, "Server max sequence");
   if (error || !data) return 0;
   return data.last_seq;
 }

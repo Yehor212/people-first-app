@@ -134,6 +134,32 @@ public class WidgetPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void clearAccountData(PluginCall call) {
+        try {
+            Context context = getContext();
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            if (!prefs.edit().remove(DATA_KEY).commit()) {
+                call.reject("Failed to clear widget account data");
+                return;
+            }
+
+            AppWidgetManager manager = AppWidgetManager.getInstance(context);
+            int[] smallIds = manager.getAppWidgetIds(new ComponentName(context, WidgetProviderSmall.class));
+            for (int id : smallIds) WidgetProviderSmall.updateAppWidget(context, manager, id);
+            int[] mediumIds = manager.getAppWidgetIds(new ComponentName(context, WidgetProviderMedium.class));
+            for (int id : mediumIds) WidgetProviderMedium.updateAppWidget(context, manager, id);
+            int[] largeIds = manager.getAppWidgetIds(new ComponentName(context, WidgetProviderLarge.class));
+            for (int id : largeIds) WidgetProviderLarge.updateAppWidget(context, manager, id);
+            int[] miniIds = manager.getAppWidgetIds(new ComponentName(context, WidgetProviderMini.class));
+            for (int id : miniIds) WidgetProviderMini.updateAppWidget(context, manager, id);
+
+            call.resolve();
+        } catch (Exception error) {
+            call.reject("Failed to clear widget account data: " + error.getMessage());
+        }
+    }
+
+    @PluginMethod
     public void isSupported(PluginCall call) {
         JSObject result = new JSObject();
         result.put("supported", true);

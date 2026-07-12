@@ -29,6 +29,10 @@ vi.mock("@/lib/offlineQueue", () => ({
   },
 }));
 
+vi.mock("@/lib/supabaseClient", () => ({
+  getCurrentSessionUserId: vi.fn(async () => "account-a"),
+}));
+
 // Mock cloud sync functions
 vi.mock("@/storage/realtimeSync", () => ({
   syncMood: vi.fn(() => Promise.resolve()),
@@ -50,6 +54,10 @@ vi.mock("@/features/journal/journalStorage", () => ({
   retryJournalAudioUpload: vi.fn(() => Promise.resolve()),
   retryJournalPhotoDelete: vi.fn(() => Promise.resolve()),
   retryJournalAudioDelete: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("@/features/journal/journalSecurityMigration", () => ({
+  runJournalSecurityMigration: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("@/storage/eventSync", () => ({
@@ -84,7 +92,11 @@ import {
   queueFocusSessionSync,
   queueGratitudeSync,
 } from "../offlineQueueHandlers";
-import { offlineQueue, type OfflineAction } from "@/lib/offlineQueue";
+import {
+  offlineQueue,
+  type OfflineAction,
+  type OfflineQueueHandlerContext,
+} from "@/lib/offlineQueue";
 import {
   syncMood,
   deleteMoodFromCloud,
@@ -105,7 +117,9 @@ import {
   retryJournalPhotoDelete,
   retryJournalAudioDelete,
 } from "@/features/journal/journalStorage";
+import { runJournalSecurityMigration } from "@/features/journal/journalSecurityMigration";
 import { writeQueuedEventAndBroadcast } from "@/storage/eventSync";
+import { SyncOwnerBoundaryError } from "@/storage/sync/syncOwner";
 import { safeValidate } from "@/lib/validation";
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
 
@@ -191,12 +205,13 @@ describe("offlineQueueHandlers", () => {
       expect(registeredTypes).toContain("UPLOAD_JOURNAL_AUDIO_STORAGE");
       expect(registeredTypes).toContain("DELETE_JOURNAL_PHOTO_STORAGE");
       expect(registeredTypes).toContain("DELETE_JOURNAL_AUDIO_STORAGE");
+      expect(registeredTypes).toContain("MIGRATE_JOURNAL_SECURITY");
       expect(registeredTypes).toContain("WRITE_SYNC_EVENT");
     });
 
-    it("registers exactly 19 handlers", () => {
+    it("registers exactly 20 handlers", () => {
       initializeOfflineQueueHandlers();
-      expect(offlineQueue.registerHandler).toHaveBeenCalledTimes(19);
+      expect(offlineQueue.registerHandler).toHaveBeenCalledTimes(20);
     });
 
     it("calls processQueue when online", () => {
@@ -222,7 +237,10 @@ describe("offlineQueueHandlers", () => {
      * Helper: extract the registered handler function for a given action type.
      * Calls initializeOfflineQueueHandlers() then finds the matching registration.
      */
-    function getHandler(actionType: string): (action: OfflineAction) => Promise<void> {
+    function getHandler(
+      actionType: string,
+      handlerContext?: OfflineQueueHandlerContext
+    ): (action: OfflineAction) => Promise<void> {
       vi.mocked(offlineQueue.registerHandler).mockClear();
       initializeOfflineQueueHandlers();
 
@@ -230,7 +248,11 @@ describe("offlineQueueHandlers", () => {
         .mocked(offlineQueue.registerHandler)
         .mock.calls.find((c) => c[0] === actionType);
       if (!call) throw new Error(`No handler registered for ${actionType}`);
-      return call[1];
+      const context: OfflineQueueHandlerContext = handlerContext ?? {
+        ownerUserId: "account-a",
+        runIfOwnerCurrent: async (operation) => operation(),
+      };
+      return (action) => call[1](action, context);
     }
 
     function makeAction(type: string, payload: unknown, entityId = "entity-1"): OfflineAction {
@@ -250,7 +272,7 @@ describe("offlineQueueHandlers", () => {
       const mood = makeMoodEntry();
       await handler(makeAction("CREATE_MOOD", mood, mood.id));
 
-      expect(syncMood).toHaveBeenCalledWith(mood);
+      expect(syncMood).toHaveBeenCalledWith(mood, "account-a");
     });
 
     it("CREATE_MOOD handler skips invalid payload", async () => {
@@ -267,14 +289,14 @@ describe("offlineQueueHandlers", () => {
       const mood = makeMoodEntry({ id: "mood-2" });
       await handler(makeAction("UPDATE_MOOD", mood, mood.id));
 
-      expect(syncMood).toHaveBeenCalledWith(mood);
+      expect(syncMood).toHaveBeenCalledWith(mood, "account-a");
     });
 
     it("DELETE_MOOD handler calls deleteMoodFromCloud with entityId", async () => {
       const handler = getHandler("DELETE_MOOD");
       await handler(makeAction("DELETE_MOOD", null, "mood-to-delete"));
 
-      expect(deleteMoodFromCloud).toHaveBeenCalledWith("mood-to-delete");
+      expect(deleteMoodFromCloud).toHaveBeenCalledWith("mood-to-delete", "account-a");
     });
 
     it("CREATE_HABIT handler calls syncHabit with valid payload", async () => {
@@ -282,7 +304,7 @@ describe("offlineQueueHandlers", () => {
       const habit = makeHabit();
       await handler(makeAction("CREATE_HABIT", habit, habit.id));
 
-      expect(syncHabit).toHaveBeenCalledWith(habit);
+      expect(syncHabit).toHaveBeenCalledWith(habit, "account-a");
     });
 
     it("CREATE_HABIT handler skips invalid payload", async () => {
@@ -298,7 +320,7 @@ describe("offlineQueueHandlers", () => {
       const handler = getHandler("DELETE_HABIT");
       await handler(makeAction("DELETE_HABIT", null, "habit-del"));
 
-      expect(deleteHabitFromCloud).toHaveBeenCalledWith("habit-del");
+      expect(deleteHabitFromCloud).toHaveBeenCalledWith("habit-del", "account-a");
     });
 
     it("TOGGLE_HABIT handler calls syncHabitCompletion with completion payload", async () => {
@@ -322,6 +344,7 @@ describe("offlineQueueHandlers", () => {
           habitType: undefined,
           targetType: undefined,
         },
+        "account-a"
       );
     });
 
@@ -330,7 +353,7 @@ describe("offlineQueueHandlers", () => {
       const session = makeFocusSession();
       await handler(makeAction("CREATE_FOCUS_SESSION", session, session.id));
 
-      expect(syncFocusSession).toHaveBeenCalledWith(session);
+      expect(syncFocusSession).toHaveBeenCalledWith(session, "account-a");
     });
 
     it("CREATE_FOCUS_SESSION handler skips invalid payload", async () => {
@@ -347,14 +370,14 @@ describe("offlineQueueHandlers", () => {
       const entry = makeGratitudeEntry();
       await handler(makeAction("CREATE_GRATITUDE", entry, entry.id));
 
-      expect(syncGratitude).toHaveBeenCalledWith(entry);
+      expect(syncGratitude).toHaveBeenCalledWith(entry, "account-a");
     });
 
     it("DELETE_GRATITUDE handler calls deleteGratitudeFromCloud", async () => {
       const handler = getHandler("DELETE_GRATITUDE");
       await handler(makeAction("DELETE_GRATITUDE", null, "grat-del"));
 
-      expect(deleteGratitudeFromCloud).toHaveBeenCalledWith("grat-del");
+      expect(deleteGratitudeFromCloud).toHaveBeenCalledWith("grat-del", "account-a");
     });
 
     it("SYNC_JOURNAL_ENTRY handler calls syncJournalEntry with valid payload", async () => {
@@ -362,7 +385,7 @@ describe("offlineQueueHandlers", () => {
       const entry = { id: "journal-1", date: "2026-03-14", content: "Today was good" };
       await handler(makeAction("SYNC_JOURNAL_ENTRY", entry, entry.id));
 
-      expect(syncJournalEntry).toHaveBeenCalledWith(entry);
+      expect(syncJournalEntry).toHaveBeenCalledWith(entry, "account-a");
     });
 
     it("SYNC_JOURNAL_ENTRY handler skips payload with missing id", async () => {
@@ -385,35 +408,74 @@ describe("offlineQueueHandlers", () => {
       const handler = getHandler("DELETE_JOURNAL_ENTRY");
       await handler(makeAction("DELETE_JOURNAL_ENTRY", null, "journal-del"));
 
-      expect(deleteJournalEntryFromCloud).toHaveBeenCalledWith("journal-del");
+      expect(deleteJournalEntryFromCloud).toHaveBeenCalledWith("journal-del", "account-a");
     });
 
     it("UPLOAD_JOURNAL_PHOTO_STORAGE handler retries photo upload from an id-only payload", async () => {
       const handler = getHandler("UPLOAD_JOURNAL_PHOTO_STORAGE");
-      await handler(makeAction("UPLOAD_JOURNAL_PHOTO_STORAGE", { id: "photo-1" }, "journal-photo-upload:photo-1"));
+      await handler(
+        makeAction(
+          "UPLOAD_JOURNAL_PHOTO_STORAGE",
+          { id: "photo-1" },
+          "journal-photo-upload:photo-1"
+        )
+      );
 
-      expect(retryJournalPhotoUpload).toHaveBeenCalledWith({ id: "photo-1" });
+      expect(retryJournalPhotoUpload).toHaveBeenCalledWith({ id: "photo-1" }, "account-a");
     });
 
     it("UPLOAD_JOURNAL_AUDIO_STORAGE handler retries audio upload from an id-only payload", async () => {
       const handler = getHandler("UPLOAD_JOURNAL_AUDIO_STORAGE");
-      await handler(makeAction("UPLOAD_JOURNAL_AUDIO_STORAGE", { id: "audio-1" }, "journal-audio-upload:audio-1"));
+      await handler(
+        makeAction(
+          "UPLOAD_JOURNAL_AUDIO_STORAGE",
+          { id: "audio-1" },
+          "journal-audio-upload:audio-1"
+        )
+      );
 
-      expect(retryJournalAudioUpload).toHaveBeenCalledWith({ id: "audio-1" });
+      expect(retryJournalAudioUpload).toHaveBeenCalledWith({ id: "audio-1" }, "account-a");
     });
 
     it("DELETE_JOURNAL_PHOTO_STORAGE handler retries photo delete from an id-only payload", async () => {
       const handler = getHandler("DELETE_JOURNAL_PHOTO_STORAGE");
-      await handler(makeAction("DELETE_JOURNAL_PHOTO_STORAGE", { id: "photo-1" }, "journal-photo-delete:photo-1"));
+      await handler(
+        makeAction(
+          "DELETE_JOURNAL_PHOTO_STORAGE",
+          { id: "photo-1" },
+          "journal-photo-delete:photo-1"
+        )
+      );
 
-      expect(retryJournalPhotoDelete).toHaveBeenCalledWith({ id: "photo-1" });
+      expect(retryJournalPhotoDelete).toHaveBeenCalledWith({ id: "photo-1" }, "account-a");
     });
 
     it("DELETE_JOURNAL_AUDIO_STORAGE handler retries audio delete from an id-only payload", async () => {
       const handler = getHandler("DELETE_JOURNAL_AUDIO_STORAGE");
-      await handler(makeAction("DELETE_JOURNAL_AUDIO_STORAGE", { id: "audio-1" }, "journal-audio-delete:audio-1"));
+      await handler(
+        makeAction(
+          "DELETE_JOURNAL_AUDIO_STORAGE",
+          { id: "audio-1" },
+          "journal-audio-delete:audio-1"
+        )
+      );
 
-      expect(retryJournalAudioDelete).toHaveBeenCalledWith({ id: "audio-1" });
+      expect(retryJournalAudioDelete).toHaveBeenCalledWith({ id: "audio-1" }, "account-a");
+    });
+
+    it("MIGRATE_JOURNAL_SECURITY runs the durable migration for the queue owner", async () => {
+      const handler = getHandler("MIGRATE_JOURNAL_SECURITY");
+      const payload = { revision: "revision-1" };
+
+      await handler(
+        makeAction(
+          "MIGRATE_JOURNAL_SECURITY",
+          payload,
+          "journal-security:revision-1",
+        ),
+      );
+
+      expect(runJournalSecurityMigration).toHaveBeenCalledWith(payload, "account-a");
     });
 
     it("WRITE_SYNC_EVENT handler retries the durable event-log write", async () => {
@@ -428,7 +490,7 @@ describe("offlineQueueHandlers", () => {
 
       await handler(makeAction("WRITE_SYNC_EVENT", intent, "sync-event:habit:habit-1:delete"));
 
-      expect(writeQueuedEventAndBroadcast).toHaveBeenCalledWith(intent);
+      expect(writeQueuedEventAndBroadcast).toHaveBeenCalledWith(intent, "account-a");
     });
 
     it("UPDATE_SETTINGS handler calls syncSetting with valid payload", async () => {
@@ -441,7 +503,69 @@ describe("offlineQueueHandlers", () => {
         )
       );
 
-      expect(syncSetting).toHaveBeenCalledWith("journal_draft_new", { title: "draft" });
+      expect(syncSetting).toHaveBeenCalledWith(
+        "journal_draft_new",
+        { title: "draft" },
+        "account-a"
+      );
+    });
+
+    it("turns an in-helper owner switch into a queue owner-boundary stop", async () => {
+      const queueBoundary = new Error("queue-owner-boundary-stop");
+      let ownerChecks = 0;
+      const context: OfflineQueueHandlerContext = {
+        ownerUserId: "account-a",
+        runIfOwnerCurrent: async (operation) => {
+          ownerChecks += 1;
+          if (ownerChecks === 2) throw queueBoundary;
+          return operation();
+        },
+      };
+      vi.mocked(syncSetting).mockRejectedValueOnce(
+        new SyncOwnerBoundaryError("Setting sync")
+      );
+      const handler = getHandler("UPDATE_SETTINGS", context);
+
+      await expect(
+        handler(
+          makeAction(
+            "UPDATE_SETTINGS",
+            { key: "mood-reminder-enabled", value: true },
+            "mood-reminder-enabled"
+          )
+        )
+      ).rejects.toBe(queueBoundary);
+
+      expect(ownerChecks).toBe(2);
+    });
+
+    it("keeps a journal action queued when its helper detects an owner switch", async () => {
+      const queueBoundary = new Error("queue-owner-boundary-stop");
+      let ownerChecks = 0;
+      const context: OfflineQueueHandlerContext = {
+        ownerUserId: "account-a",
+        runIfOwnerCurrent: async (operation) => {
+          ownerChecks += 1;
+          if (ownerChecks === 2) throw queueBoundary;
+          return operation();
+        },
+      };
+      vi.mocked(syncJournalEntry).mockRejectedValueOnce(
+        new SyncOwnerBoundaryError("Journal sync"),
+      );
+      const handler = getHandler("SYNC_JOURNAL_ENTRY", context);
+
+      await expect(
+        handler(
+          makeAction(
+            "SYNC_JOURNAL_ENTRY",
+            { id: "journal-a", date: "2026-07-10", content: "private" },
+            "journal-a",
+          ),
+        ),
+      ).rejects.toBe(queueBoundary);
+
+      expect(ownerChecks).toBe(2);
     });
 
     it("UPDATE_SETTINGS handler skips invalid payload", async () => {
@@ -457,7 +581,7 @@ describe("offlineQueueHandlers", () => {
         makeAction("DELETE_SETTINGS", { key: "journal_draft_new" }, "journal_draft_new")
       );
 
-      expect(deleteSettingFromCloud).toHaveBeenCalledWith("journal_draft_new");
+      expect(deleteSettingFromCloud).toHaveBeenCalledWith("journal_draft_new", "account-a");
     });
   });
 
@@ -468,35 +592,45 @@ describe("offlineQueueHandlers", () => {
       const mood = makeMoodEntry({ id: "mood-q1" });
       await queueMoodSync("CREATE_MOOD", mood);
 
-      expect(offlineQueue.enqueue).toHaveBeenCalledWith("CREATE_MOOD", "mood-q1", mood);
+      expect(offlineQueue.enqueue).toHaveBeenCalledWith("CREATE_MOOD", "mood-q1", mood, {
+        expectedOwnerUserId: "account-a",
+      });
     });
 
     it("queueMoodSync supports UPDATE_MOOD action", async () => {
       const mood = makeMoodEntry({ id: "mood-q2" });
       await queueMoodSync("UPDATE_MOOD", mood);
 
-      expect(offlineQueue.enqueue).toHaveBeenCalledWith("UPDATE_MOOD", "mood-q2", mood);
+      expect(offlineQueue.enqueue).toHaveBeenCalledWith("UPDATE_MOOD", "mood-q2", mood, {
+        expectedOwnerUserId: "account-a",
+      });
     });
 
     it("queueMoodSync supports DELETE_MOOD action", async () => {
       const mood = makeMoodEntry({ id: "mood-q3" });
       await queueMoodSync("DELETE_MOOD", mood);
 
-      expect(offlineQueue.enqueue).toHaveBeenCalledWith("DELETE_MOOD", "mood-q3", mood);
+      expect(offlineQueue.enqueue).toHaveBeenCalledWith("DELETE_MOOD", "mood-q3", mood, {
+        expectedOwnerUserId: "account-a",
+      });
     });
 
     it("queueHabitSync enqueues with correct parameters", async () => {
       const habit = makeHabit({ id: "habit-q1" });
       await queueHabitSync("CREATE_HABIT", habit);
 
-      expect(offlineQueue.enqueue).toHaveBeenCalledWith("CREATE_HABIT", "habit-q1", habit);
+      expect(offlineQueue.enqueue).toHaveBeenCalledWith("CREATE_HABIT", "habit-q1", habit, {
+        expectedOwnerUserId: "account-a",
+      });
     });
 
     it("queueHabitSync supports TOGGLE_HABIT action", async () => {
       const habit = makeHabit({ id: "habit-q2" });
       await queueHabitSync("TOGGLE_HABIT", habit);
 
-      expect(offlineQueue.enqueue).toHaveBeenCalledWith("TOGGLE_HABIT", "habit-q2", habit);
+      expect(offlineQueue.enqueue).toHaveBeenCalledWith("TOGGLE_HABIT", "habit-q2", habit, {
+        expectedOwnerUserId: "account-a",
+      });
     });
 
     it("queueFocusSessionSync enqueues with CREATE_FOCUS_SESSION", async () => {
@@ -506,7 +640,8 @@ describe("offlineQueueHandlers", () => {
       expect(offlineQueue.enqueue).toHaveBeenCalledWith(
         "CREATE_FOCUS_SESSION",
         "focus-q1",
-        session
+        session,
+        { expectedOwnerUserId: "account-a" }
       );
     });
 
@@ -514,14 +649,18 @@ describe("offlineQueueHandlers", () => {
       const entry = makeGratitudeEntry({ id: "grat-q1" });
       await queueGratitudeSync("CREATE_GRATITUDE", entry);
 
-      expect(offlineQueue.enqueue).toHaveBeenCalledWith("CREATE_GRATITUDE", "grat-q1", entry);
+      expect(offlineQueue.enqueue).toHaveBeenCalledWith("CREATE_GRATITUDE", "grat-q1", entry, {
+        expectedOwnerUserId: "account-a",
+      });
     });
 
     it("queueGratitudeSync supports DELETE_GRATITUDE action", async () => {
       const entry = makeGratitudeEntry({ id: "grat-q2" });
       await queueGratitudeSync("DELETE_GRATITUDE", entry);
 
-      expect(offlineQueue.enqueue).toHaveBeenCalledWith("DELETE_GRATITUDE", "grat-q2", entry);
+      expect(offlineQueue.enqueue).toHaveBeenCalledWith("DELETE_GRATITUDE", "grat-q2", entry, {
+        expectedOwnerUserId: "account-a",
+      });
     });
   });
 });

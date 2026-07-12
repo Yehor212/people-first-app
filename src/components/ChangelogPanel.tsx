@@ -8,14 +8,16 @@
  */
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, ChevronDown, ChevronUp, Sparkles, Bug, Zap, Trash2, History } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useModalClose } from "@/hooks/useModalState";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import changelog from "virtual:changelog";
 import type { ChangelogVersion } from "@/types/changelog";
 
 interface ChangelogPanelProps {
+  open: boolean;
   onClose: () => void;
 }
 
@@ -131,10 +133,10 @@ function VersionCard({
   );
 }
 
-export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
+export function ChangelogPanel({ open, onClose }: ChangelogPanelProps) {
   const { t } = useLanguage();
-  useModalClose(true, onClose);
-  useScrollLock(true);
+  const { modalRef, handleKeyDown } = useModalA11y(open, onClose);
+  useScrollLock(open);
   const [expandedVersions, setExpandedVersions] = useState<Set<string>>(() => {
     // Expand the first (latest) version by default
     if (changelog.length > 0) {
@@ -163,7 +165,9 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
     setExpandedVersions(new Set());
   };
 
-  return (
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
     <>
       {/* Desktop backdrop */}
       <div
@@ -172,10 +176,12 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
         aria-hidden="true"
       />
       <div
-        className="fixed inset-0 md:mx-auto md:my-6 md:max-w-2xl md:rounded-2xl md:shadow-2xl z-[80] bg-background motion-safe:animate-fade-in overflow-hidden flex flex-col"
+        ref={modalRef}
+        className="fixed inset-0 z-[80] flex min-h-0 flex-col overflow-hidden bg-background pt-[var(--safe-top)] pb-[var(--safe-bottom)] motion-safe:animate-fade-in md:inset-x-4 md:inset-y-[max(1.5rem,var(--safe-top))] md:mx-auto md:max-w-2xl md:rounded-2xl md:py-0 md:shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="changelog-title"
+        onKeyDown={handleKeyDown}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-card/80 backdrop-blur-sm">
@@ -229,7 +235,8 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
           )}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 

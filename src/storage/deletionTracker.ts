@@ -1,3 +1,4 @@
+import Dexie from "dexie";
 import { db } from "@/storage/db";
 import { logger } from "@/lib/logger";
 
@@ -8,6 +9,9 @@ export const DELETION_TRACKER_KEYS = {
   focus: "zenflow-deleted-focus-session-ids",
   gratitude: "zenflow-deleted-gratitude-ids",
 } as const;
+
+export type DeletionTrackerKey =
+  (typeof DELETION_TRACKER_KEYS)[keyof typeof DELETION_TRACKER_KEYS];
 
 export function getDeletionTrackerKeyForSyncEntity(entityType: string): string | null {
   return (DELETION_TRACKER_KEYS as Partial<Record<string, string>>)[entityType] ?? null;
@@ -67,37 +71,73 @@ export function normalizeDeletedIdsForStorage(ids: string[]): string[] {
   return normalized;
 }
 
-async function trackDeletedId(key: string, id: string): Promise<void> {
-  rememberInFlightDeletedId(key, id);
+/**
+ * Merge tombstones into the current Dexie read-write transaction.
+ *
+ * Backup import uses this seam so tracker persistence, imported rows, and the
+ * final owner check share one commit boundary. In-flight IDs stay visible to
+ * concurrent readers until that transaction completes or aborts.
+ */
+export async function mergeDeletionTrackerIdsInCurrentTransaction(
+  key: DeletionTrackerKey,
+  remoteIds: string[],
+): Promise<Set<string>> {
+  const transaction = Dexie.currentTransaction;
+  if (!transaction || transaction.mode !== "readwrite") {
+    throw new Error("Deletion tracker merge requires an active read-write transaction");
+  }
+
+  const idsToMerge = normalizeDeletedIdsForStorage(remoteIds);
+  for (const id of idsToMerge) {
+    rememberInFlightDeletedId(key, id);
+  }
+
   try {
-    await db.transaction("rw", db.settings, async () => {
-      const existing = await getDeletedIds(key);
-      existing.add(id);
+    const entry = await db.settings.get(key);
+    const persisted = entry?.value && Array.isArray(entry.value)
+      ? (entry.value as string[])
+      : [];
+    const existing = new Set([...(inFlightDeletedIds.get(key) ?? []), ...persisted]);
+
+    if (idsToMerge.length) {
       await db.settings.put({ key, value: normalizeDeletedIdsForStorage([...existing]) });
-    });
-    forgetInFlightDeletedIds(key, [id]);
+
+      let cleaned = false;
+      const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        forgetInFlightDeletedIds(key, idsToMerge);
+      };
+      transaction.on("complete", cleanup);
+      transaction.on("abort", cleanup);
+    }
+
+    return existing;
   } catch (error) {
-    logger.error(`[DeletionTracker] Failed to track ${key}:`, error);
+    forgetInFlightDeletedIds(key, idsToMerge);
+    logger.error(`[DeletionTracker] Failed to merge ${key}:`, error);
+    throw error;
   }
 }
 
-async function mergeDeletedIds(key: string, remoteIds: string[]): Promise<void> {
-  if (!remoteIds.length) return;
-  for (const id of remoteIds) {
+async function mergeDeletedIds(key: DeletionTrackerKey, remoteIds: string[]): Promise<void> {
+  const idsToMerge = normalizeDeletedIdsForStorage(remoteIds);
+  if (!idsToMerge.length) return;
+  for (const id of idsToMerge) {
     rememberInFlightDeletedId(key, id);
   }
   try {
-    await db.transaction("rw", db.settings, async () => {
-      const existing = await getDeletedIds(key);
-      for (const id of remoteIds) {
-        existing.add(id);
-      }
-      await db.settings.put({ key, value: normalizeDeletedIdsForStorage([...existing]) });
-    });
-    forgetInFlightDeletedIds(key, remoteIds);
+    await db.transaction("rw", db.settings, () =>
+      mergeDeletionTrackerIdsInCurrentTransaction(key, idsToMerge),
+    );
   } catch (error) {
-    logger.error(`[DeletionTracker] Failed to merge ${key}:`, error);
+    forgetInFlightDeletedIds(key, idsToMerge);
+    throw error;
   }
+}
+
+async function trackDeletedId(key: DeletionTrackerKey, id: string): Promise<void> {
+  await mergeDeletedIds(key, [id]);
 }
 
 // Habit deletion tracking

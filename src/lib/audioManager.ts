@@ -13,7 +13,6 @@ declare global {
 import { safeParseFloat } from '@/lib/validation';
 import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
-import { shouldPlaySounds } from './animationUtils';
 import { canPlayFeedbackSound, consumeAudioFeedbackBudget } from './audioComfort';
 
 export type SoundType = 'success' | 'complete' | 'streak' | 'milestone' | 'levelUp' | 'notification';
@@ -41,6 +40,8 @@ const state: AudioManagerState = {
   activeTimeouts: [],
 };
 
+const DEFAULT_AUDIO_VOLUME = 0.3;
+
 const HIGH_SALIENCE_SOUND_TYPES = new Set<SoundType>(['streak', 'milestone', 'levelUp']);
 const DEFERRED_ACTION_SOUND_TYPES = new Set<SoundType>(['success', 'complete', 'notification']);
 const LOW_SALIENCE_DELAY_MS = 160;
@@ -50,12 +51,12 @@ let pendingActionSound: { id: number; type: SoundType } | null = null;
 let lastHighSalienceSoundAt = 0;
 
 function getAudioSettingsSnapshot(): AudioSettingsSnapshot {
-  const feedbackSoundsEnabled = shouldPlaySounds();
+  const canPlayFeedback = !state.isMuted && state.volume > 0;
   return {
     muted: state.isMuted,
     volume: state.volume,
-    feedbackSoundsEnabled,
-    canPlayFeedback: !state.isMuted && state.volume > 0 && feedbackSoundsEnabled,
+    feedbackSoundsEnabled: canPlayFeedback,
+    canPlayFeedback,
   };
 }
 
@@ -90,8 +91,7 @@ export function subscribeAudioSettings(
   const handleStorage = (event: StorageEvent) => {
     if (
       event.key !== SK.AUDIO_MUTED &&
-      event.key !== SK.AUDIO_VOLUME &&
-      event.key !== SK.DOPAMINE_SETTINGS
+      event.key !== SK.AUDIO_VOLUME
     ) {
       return;
     }
@@ -101,12 +101,10 @@ export function subscribeAudioSettings(
   };
 
   window.addEventListener(AUDIO_SETTINGS_CHANGE_EVENT, notify);
-  window.addEventListener('dopamine-settings-change', notify);
   window.addEventListener('storage', handleStorage);
 
   return () => {
     window.removeEventListener(AUDIO_SETTINGS_CHANGE_EVENT, notify);
-    window.removeEventListener('dopamine-settings-change', notify);
     window.removeEventListener('storage', handleStorage);
   };
 }
@@ -326,19 +324,19 @@ export function playLevelUp(): void {
 
 // Play notification ping
 function playNotificationTone(): void {
-  if (state.isMuted || state.volume <= 0 || !shouldPlaySounds()) return;
+  if (state.isMuted || state.volume <= 0) return;
   playTone(587.33, 0.1, 'sine', 0.05);
 }
 
 export function playNotification(): void {
-  if (state.isMuted || state.volume <= 0 || !shouldPlaySounds()) return;
+  if (state.isMuted || state.volume <= 0) return;
   if (!canPlayFeedbackSound('notification')) return;
   if (!consumeAudioFeedbackBudget('notification')) return;
   playNotificationTone();
 }
 
 export function playNotificationPreview(): void {
-  if (state.isMuted || state.volume <= 0 || !shouldPlaySounds()) return;
+  if (state.isMuted || state.volume <= 0) return;
   if (!canPlayFeedbackSound('notification')) return;
   playNotificationTone();
 }
@@ -369,7 +367,7 @@ function playSoundNow(type: SoundType): void {
 // Play by sound type. Low-salience action cues are briefly deferred so a
 // rare milestone cue in the same transaction can replace them instead of stacking.
 export function playSound(type: SoundType): void {
-  if (state.isMuted || state.volume <= 0 || !shouldPlaySounds()) {
+  if (state.isMuted || state.volume <= 0) {
     clearPendingActionSound();
     return;
   }
@@ -395,7 +393,7 @@ export function playSound(type: SoundType): void {
   const id = scheduleTimeout(() => {
     pendingActionSound = null;
     if (Date.now() - lastHighSalienceSoundAt < HIGH_SALIENCE_SUPPRESSION_MS) return;
-    if (!canPlayFeedbackSound(type) || state.isMuted || state.volume <= 0 || !shouldPlaySounds()) return;
+    if (!canPlayFeedbackSound(type) || state.isMuted || state.volume <= 0) return;
     if (!consumeAudioFeedbackBudget(type)) return;
     playSoundNow(type);
   }, LOW_SALIENCE_DELAY_MS);
@@ -406,6 +404,16 @@ export function playSound(type: SoundType): void {
 export function setMuted(muted: boolean): void {
   state.isMuted = muted;
   storageSetRaw(SK.AUDIO_MUTED, muted ? '1' : '0');
+  emitAudioSettingsChange();
+}
+
+export function setAudioEnabled(enabled: boolean): void {
+  state.isMuted = !enabled;
+  if (enabled && state.volume <= 0) {
+    state.volume = DEFAULT_AUDIO_VOLUME;
+    storageSetRaw(SK.AUDIO_VOLUME, state.volume.toString());
+  }
+  storageSetRaw(SK.AUDIO_MUTED, state.isMuted ? '1' : '0');
   emitAudioSettingsChange();
 }
 
@@ -430,7 +438,9 @@ export function initAudioManager(): void {
   state.isMuted = mutedStr === '1';
 
   const volumeStr = storageGetRaw(SK.AUDIO_VOLUME);
-  state.volume = volumeStr ? safeParseFloat(volumeStr, 0.3, 0, 1) : 0.3;
+  state.volume = volumeStr
+    ? safeParseFloat(volumeStr, DEFAULT_AUDIO_VOLUME, 0, 1)
+    : DEFAULT_AUDIO_VOLUME;
 }
 
 // Resume context on user interaction (required for mobile)

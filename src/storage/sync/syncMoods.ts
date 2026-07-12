@@ -30,13 +30,17 @@ import type { Json } from "@/types/supabase";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { detectNetworkError } from "./syncUtils";
 import { isEntityTombstonedOnServer } from "./serverTombstones";
+import { validateSyncOwner } from "./syncOwner";
 
 // ============================================
 // MOOD SYNC
 // ============================================
 
-export const syncMood = async (mood: MoodEntry): Promise<void> => {
-  const userId = await getCurrentUserId();
+export const syncMood = async (
+  mood: MoodEntry,
+  expectedOwnerUserId?: string
+): Promise<void> => {
+  const userId = await validateSyncOwner(expectedOwnerUserId, "Mood sync");
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
@@ -63,7 +67,9 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
-    await offlineQueue.enqueue("CREATE_MOOD", mood.id, mood);
+    await offlineQueue.enqueue("CREATE_MOOD", mood.id, mood, {
+      expectedOwnerUserId: userId,
+    });
     lazyCategorizedBreadcrumb("sync", "Mood queued (offline)", {
       moodId: mood.id,
     });
@@ -71,13 +77,14 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
     return;
   }
 
-  if (await isEntityTombstonedOnServer("mood", mood.id)) {
+  if (await isEntityTombstonedOnServer("mood", mood.id, userId)) {
     await trackDeletedMoodId(mood.id);
     logger.warn("[Sync] Skipping server-tombstoned mood upsert:", mood.id);
     return;
   }
 
   try {
+    if (!(await validateSyncOwner(userId, "Mood sync"))) return;
     const { error } = await supabase.from("moods").upsert(
       {
         id: mood.id,
@@ -111,7 +118,8 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
       mood.id,
       "upsert",
       mood as unknown as Record<string, unknown>,
-      deviceId
+      deviceId,
+      { expectedOwnerUserId: userId }
     );
   } catch (error) {
     // Handle AbortError separately - it's intentional, don't retry/queue
@@ -126,7 +134,9 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
     const isNetworkError = detectNetworkError(error);
 
     if (isNetworkError) {
-      await offlineQueue.enqueue("CREATE_MOOD", mood.id, mood);
+      await offlineQueue.enqueue("CREATE_MOOD", mood.id, mood, {
+        expectedOwnerUserId: userId,
+      });
       lazyCategorizedBreadcrumb(
         "sync",
         "Mood queued (network error)",
@@ -150,10 +160,13 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
   }
 };
 
-export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
+export const deleteMoodFromCloud = async (
+  moodId: string,
+  expectedOwnerUserId?: string
+): Promise<void> => {
   await trackDeletedMoodId(moodId);
 
-  const userId = await getCurrentUserId();
+  const userId = await validateSyncOwner(expectedOwnerUserId, "Mood delete");
   if (!supabase || !userId) return;
 
   // Skip granular sync for non-UUID IDs (nanoid)
@@ -164,18 +177,28 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
 
   // If offline, queue for later
   if (!navigator.onLine) {
-    await offlineQueue.enqueue("DELETE_MOOD", moodId, { id: moodId });
+    await offlineQueue.enqueue(
+      "DELETE_MOOD",
+      moodId,
+      { id: moodId },
+      {
+        expectedOwnerUserId: userId,
+      }
+    );
     logger.log("[Sync] Mood delete queued for offline:", moodId);
     return;
   }
 
   try {
+    if (!(await validateSyncOwner(userId, "Mood delete"))) return;
     const { error } = await supabase.from("moods").delete().eq("id", moodId).eq("user_id", userId);
 
     if (error) throw error;
     logger.log("[Sync] Mood deleted + tracked:", moodId);
     const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast("mood", moodId, "delete", null, deviceId);
+    await writeEventAndBroadcast("mood", moodId, "delete", null, deviceId, {
+      expectedOwnerUserId: userId,
+    });
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -231,7 +254,7 @@ export const pullMoodsFromCloud = async (): Promise<boolean> => {
         deletedMoodIds.size > 0 ? merged.filter((m) => !deletedMoodIds.has(m.id)) : merged;
       if (toWrite.length) await db.moods.bulkPut(toWrite);
     });
-    triggerDataRefresh();
+    await triggerDataRefresh();
     return true;
   } catch (err) {
     logger.error("[Pull] Moods failed:", err);

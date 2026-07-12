@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useIndexedDB } from './useIndexedDB';
-import { db } from '@/storage/db';
+import { db, getLocalDataOwnerId } from '@/storage/db';
 import { gamificationStateSchema } from '@/lib/schemas';
 import {
   AchievementId,
@@ -13,7 +13,10 @@ import {
 import { addFriendActivity, loadMyProfile, updateMyLevel } from '@/storage/friendsSync';
 import { analytics } from '@/lib/analytics';
 import { playSound } from '@/lib/audioManager';
+import { logger } from '@/lib/logger';
+import { getCurrentSessionUserId } from '@/lib/supabaseClient';
 import { useUserDataStore } from '@/stores/userDataStore';
+import { useAppStore } from '@/stores/appStore';
 
 interface GamificationState {
   totalXp: number;
@@ -36,6 +39,9 @@ interface UseGamificationOptions {
 
 export function useGamification(options: UseGamificationOptions = {}) {
   const enabled = options.enabled ?? true;
+  const isAccountBoundaryInProgress = useAppStore(
+    (state) => state.isAccountBoundaryInProgress
+  );
   const [gamificationState, setGamificationState] = useIndexedDB<GamificationState>({
     table: db.settings,
     localStorageKey: 'gamification',
@@ -69,7 +75,18 @@ export function useGamification(options: UseGamificationOptions = {}) {
       lastDataHashRef.current = `${moods.length}-${habits.length}-${focusSessions.length}-${gratitudeEntries.length}`;
       return;
     }
-    if (moods.length === 0 && habits.length === 0) return;
+    if (isAccountBoundaryInProgress) {
+      initialLoadRef.current = true;
+      lastDataHashRef.current = '';
+      return;
+    }
+
+    let isCurrentAchievementCheck = true;
+    if (moods.length === 0 && habits.length === 0) {
+      return () => {
+        isCurrentAchievementCheck = false;
+      };
+    }
 
     // Create a hash of the current data to detect real changes
     const dataHash = `${moods.length}-${habits.length}-${focusSessions.length}-${gratitudeEntries.length}`;
@@ -96,6 +113,12 @@ export function useGamification(options: UseGamificationOptions = {}) {
         // Side effects (toasts/analytics) — schedule outside updater
         if (!initialLoadRef.current && isRealChange && achievementsToShow.length > 0) {
           queueMicrotask(() => {
+            if (
+              !isCurrentAchievementCheck ||
+              useAppStore.getState().isAccountBoundaryInProgress
+            ) {
+              return;
+            }
             const profile = loadMyProfile();
             const milestoneSound = achievementsToShow.some((achievement) => achievement.id.startsWith('streak_'))
               ? 'streak'
@@ -137,8 +160,12 @@ export function useGamification(options: UseGamificationOptions = {}) {
     if (initialLoadRef.current) {
       initialLoadRef.current = false;
     }
+
+    return () => {
+      isCurrentAchievementCheck = false;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- gamificationState read via functional updater (prev), not closure
-  }, [enabled, moods, habits, focusSessions, gratitudeEntries]);
+  }, [enabled, isAccountBoundaryInProgress, moods, habits, focusSessions, gratitudeEntries]);
 
   // Award XP for actions
   const awardXp = useCallback(
@@ -158,24 +185,50 @@ export function useGamification(options: UseGamificationOptions = {}) {
   // Track level-up for friends activity feed + sync level to profile
   const prevLevelRef = useRef(userLevel.level);
   useEffect(() => {
-    if (!enabled) return;
-    // Always sync current level to friends profile
-    updateMyLevel(userLevel.level);
+    if (!enabled || isAccountBoundaryInProgress) return;
+    let isCurrentLevel = true;
+    const didLevelUp =
+      prevLevelRef.current > 0 && userLevel.level > prevLevelRef.current;
 
-    if (prevLevelRef.current > 0 && userLevel.level > prevLevelRef.current) {
-      const profile = loadMyProfile();
-      if (profile) {
-        addFriendActivity({
-          friendId: profile.friendCode,
-          friendName: profile.displayName,
-          activityType: 'level_up',
-          description: `${userLevel.title} (${userLevel.level})`,
-          icon: '⭐',
-        });
-      }
-    }
+    // Always sync current level to friends profile
+    void Promise.all([getCurrentSessionUserId(), getLocalDataOwnerId()])
+      .then(async ([expectedOwnerUserId, localOwnerUserId]) => {
+        if (
+          !isCurrentLevel ||
+          !expectedOwnerUserId ||
+          localOwnerUserId !== expectedOwnerUserId
+        ) {
+          return;
+        }
+        await updateMyLevel(userLevel.level, expectedOwnerUserId);
+        if (
+          !isCurrentLevel ||
+          useAppStore.getState().isAccountBoundaryInProgress ||
+          !didLevelUp
+        ) {
+          return;
+        }
+
+        const profile = loadMyProfile();
+        if (profile) {
+          addFriendActivity({
+            friendId: profile.friendCode,
+            friendName: profile.displayName,
+            activityType: 'level_up',
+            description: `${userLevel.title} (${userLevel.level})`,
+            icon: '⭐',
+          });
+        }
+      })
+      .catch((error) => {
+        logger.warn('[Gamification] Failed to schedule level sync:', error);
+      });
     prevLevelRef.current = userLevel.level;
-  }, [enabled, userLevel.level, userLevel.title]);
+
+    return () => {
+      isCurrentLevel = false;
+    };
+  }, [enabled, isAccountBoundaryInProgress, userLevel.level, userLevel.title]);
 
   return {
     stats,

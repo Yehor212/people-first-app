@@ -14,13 +14,13 @@ import { isNative } from '@/lib/platform';
 import { logger } from './logger';
 import { SK } from './storageKeys';
 import { storageGetRaw, storageSetRaw } from './safeJson';
+import { QUICK_ACTIONS_NOTIFICATION_ID } from './notificationIds';
 
 // ============================================
 // CONSTANTS
 // ============================================
 
 const QUICK_ACTIONS_CHANNEL_ID = 'zenflow_quick_actions';
-const QUICK_ACTIONS_NOTIFICATION_ID = 8888;
 const QUICK_ACTIONS_TYPE_ID = 'zenflow_quick_actions';
 
 // Action IDs
