@@ -1,29 +1,39 @@
 /**
- * <Bloom> — thin wrapper that applies the Bloom verb to a `motion.div`,
- * gated through `useShouldAnimate()`. When animations are disabled, renders
- * a plain `<div>` with children and no motion overhead.
+ * <Bloom> — thin wrapper that applies the Bloom verb to a stable `motion.div`,
+ * gated through `useShouldAnimate()`. Reduced motion uses the zero-duration
+ * identity variant so preference changes never remount stateful children.
  */
 
-import { motion, type HTMLMotionProps } from 'framer-motion';
+import { isValidMotionProp, motion, type HTMLMotionProps } from 'framer-motion';
 import type { ReactNode } from 'react';
-import { bloom } from '../bloom';
+import { bloom, bloomStatic } from '../bloom';
 import { useShouldAnimate } from '@/hooks/useShouldAnimate';
 
 export interface BloomProps extends HTMLMotionProps<'div'> {
   children?: ReactNode;
   /** Optional className forwarded to the rendered element. */
   className?: string;
-  /** When true, skip the verb and render children wrapped in a plain div. */
+  /** When true, settle immediately without remounting the wrapper or its children. */
   disabled?: boolean;
 }
 
+function keepNonMotionProps(props: HTMLMotionProps<'div'>): HTMLMotionProps<'div'> {
+  return Object.fromEntries(
+    Object.entries(props).filter(([key]) => key === 'style' || !isValidMotionProp(key)),
+  );
+}
+
 export function Bloom({ children, className, disabled, ...rest }: BloomProps) {
-  const animate = useShouldAnimate();
-  if (!animate || disabled) {
-    return <div className={className}>{children}</div>;
-  }
+  const animate = useShouldAnimate() && !disabled;
+  const resolvedProps = animate
+    ? { ...bloom, ...rest }
+    : { ...keepNonMotionProps(rest), ...bloomStatic };
+
   return (
-    <motion.div className={className} {...bloom} {...rest}>
+    <motion.div
+      className={className}
+      {...resolvedProps}
+    >
       {children}
     </motion.div>
   );

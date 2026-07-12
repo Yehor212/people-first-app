@@ -30,13 +30,20 @@ import { SSK } from '@/lib/storageKeys';
 import { createParticlePool, updateParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
-import { createOrbGL2, createOrbGL, createOrbGL2Async, createOrbGLAsync } from './orbShader';
+import { createOrbGL2Async, createOrbGLAsync } from './orbShader';
 import { createOrbWebGPUAsync } from './orbWebGpu';
 import type { Particle } from './particleSystem';
 import type { OrbGLBuildResult, OrbGLRenderer } from './orbShader';
 
 // Module-level: genesis plays only once per browser session
 let genesisPlayed = false;
+
+function recordCanonicalOrbFailure(action: string) {
+  recordError(
+    new Error(`Canonical orb runtime failure: ${action}`),
+    { component: 'ValenceOrb', action },
+  );
+}
 
 interface ValenceOrbProps {
   /** Current valence value (-1.0 to 1.0) */
@@ -53,13 +60,19 @@ interface ValenceOrbProps {
   onFirstPaintReady?: () => void;
   /** Fires once the stable renderer has produced its first real frame. */
   onVisualReady?: () => void;
+  /** Fires once when no canonical renderer can produce a real frame. */
+  onVisualError?: () => void;
 }
 
 type OrbWorkerPayload = {
   valence: number;
   time: number;
+  organicTime: number;
+  paletteTime: number;
   motionPhase: number;
   noisePhase: number;
+  pulsePhase: number;
+  breathPhase: number;
   size: number;
   dpr: number;
   isDark: boolean;
@@ -76,24 +89,82 @@ type OrbWorkerController = {
   dispose: () => void;
 };
 
+export type OrbRuntimeProbeSource = "canvas2d" | "webgl-main" | "webgpu-main" | "webgl-worker";
+
+export interface OrbRuntimeProbeSample {
+  source: OrbRuntimeProbeSource;
+  rendererPolicy: OrbRendererMode;
+  rendererTier: string | null;
+  size: number;
+  renderedValence: number;
+  time: number;
+  motionPhase: number;
+  noisePhase: number;
+  pulsePhase: number;
+  breathPhase: number;
+  renderedAt: number;
+  postedAt?: number;
+  requestId?: number;
+}
+
+export interface OrbLifecycleProbeEvent {
+  at: number;
+  event: string;
+  details?: Record<string, boolean | number | string | null>;
+}
+
+declare global {
+  interface Window {
+    __zenOrbClockProbeSink?: (sample: OrbRuntimeProbeSample) => void;
+    __zenOrbLifecycleProbeSink?: (event: OrbLifecycleProbeEvent) => void;
+  }
+}
+
+type OrbClockProbeLocation = Pick<Location | URL, "hostname" | "port" | "protocol">;
+
+export function isOrbClockProbeAllowed(
+  location: OrbClockProbeLocation,
+  mode = import.meta.env.MODE,
+): boolean {
+  if (location.protocol !== "http:") return false;
+  if (
+    location.hostname === "127.0.0.1" ||
+    location.hostname === "::1" ||
+    location.hostname === "[::1]"
+  ) {
+    return true;
+  }
+  if (location.hostname !== "localhost") return false;
+  return location.port !== "" || mode === "development" || mode === "test";
+}
+
 interface OrbRuntimeState {
   targetValence: number;
   currentValence: number;
   time: number;
   motionPhase: number;
   noisePhase: number;
+  pulsePhase: number;
+  breathPhase: number;
   particles: Particle[];
   lastFrame: number;
+  lastWallFrame: number;
 }
 
 const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for healthy WebGL sessions.
 const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
+const ORB_FRAME_INTERVAL_EARLY_TOLERANCE_MS = 1;
 const ORB_FRAME_CLOCK_REANCHOR_GAP_MS = 750;
+const ORB_FRAME_CLOCK_BURST_SKEW_MS = 20;
 const ORB_MAX_FRAME_DELTA_SECONDS = 0.05;
-const ORB_MAX_WORKER_VISIBLE_DELTA_SECONDS = WEBGL_FRAME_INTERVAL / 1000;
 const ORB_MAX_TRANSITION_DELTA_SECONDS = 0.12;
 const ORB_ROTATION_PHASE_WRAP_RADIANS = Math.PI * 2;
+const ORB_PULSE_PHASE_WRAP = 1;
+export const ORB_CANONICAL_PULSE_CYCLES_PER_SECOND = 0.15;
 export const ORB_SHADER_TIME_WRAP_SECONDS = Math.PI * 6000;
+export const ORB_GPU_ORGANIC_TIME_WRAP_SECONDS = 86_700;
+export const ORB_GPU_NOISE_PHASE_WRAP = 8_670;
+export const ORB_GPU_PALETTE_TIME_WRAP_SECONDS = 250;
 export const ORB_REDUCED_MOTION_STILL_TIME_SECONDS = 1.2;
 
 export function resolveReducedMotionOrbStillTime(currentTime: number): number {
@@ -133,9 +204,66 @@ export function resolveOrbNoisePhase(
 ): number {
   const safeDelta = Number.isFinite(deltaSeconds) && deltaSeconds > 0 ? deltaSeconds : 0;
   const safeSpeed = Number.isFinite(animationSpeed) && animationSpeed > 0 ? animationSpeed : 0;
+  const safePrevious = Number.isFinite(previousPhase) && previousPhase >= 0
+    ? previousPhase
+    : 0;
+  return safePrevious + safeDelta * safeSpeed * resolveOrbNoiseSpeed(valence);
+}
+
+export function resolveOrbPulsePhase(
+  previousPhase: number,
+  deltaSeconds: number,
+  animationSpeed: number,
+): number {
+  const safeDelta = Number.isFinite(deltaSeconds) && deltaSeconds > 0 ? deltaSeconds : 0;
+  const safeSpeed = Number.isFinite(animationSpeed) && animationSpeed > 0 ? animationSpeed : 0;
   return normalizeOrbShaderTime(
-    previousPhase + safeDelta * safeSpeed * resolveOrbNoiseSpeed(valence),
-    ORB_SHADER_TIME_WRAP_SECONDS,
+    previousPhase + safeDelta * safeSpeed * ORB_CANONICAL_PULSE_CYCLES_PER_SECOND,
+    ORB_PULSE_PHASE_WRAP,
+  );
+}
+
+export function resolveOrbPulsePhaseAtTime(
+  timeSeconds: number,
+  animationSpeed: number,
+): number {
+  const safeTime = Number.isFinite(timeSeconds) && timeSeconds > 0 ? timeSeconds : 0;
+  const safeSpeed = Number.isFinite(animationSpeed) && animationSpeed > 0 ? animationSpeed : 0;
+  return normalizeOrbShaderTime(
+    safeTime * safeSpeed * ORB_CANONICAL_PULSE_CYCLES_PER_SECOND,
+    ORB_PULSE_PHASE_WRAP,
+  );
+}
+
+export function resolveOrbBreathPeriodSeconds(valence: number): number {
+  return 12 + Math.max(-1, Math.min(1, valence)) * 4;
+}
+
+export function resolveOrbBreathPhase(
+  previousPhase: number,
+  deltaSeconds: number,
+  valence: number,
+  animationSpeed: number,
+): number {
+  const safeDelta = Number.isFinite(deltaSeconds) && deltaSeconds > 0 ? deltaSeconds : 0;
+  const safeSpeed = Number.isFinite(animationSpeed) && animationSpeed > 0 ? animationSpeed : 0;
+  return normalizeOrbShaderTime(
+    previousPhase +
+      (safeDelta * safeSpeed) / resolveOrbBreathPeriodSeconds(valence),
+    ORB_PULSE_PHASE_WRAP,
+  );
+}
+
+export function resolveOrbBreathPhaseAtTime(
+  timeSeconds: number,
+  valence: number,
+  animationSpeed: number,
+): number {
+  const safeTime = Number.isFinite(timeSeconds) && timeSeconds > 0 ? timeSeconds : 0;
+  const safeSpeed = Number.isFinite(animationSpeed) && animationSpeed > 0 ? animationSpeed : 0;
+  return normalizeOrbShaderTime(
+    (safeTime * safeSpeed) / resolveOrbBreathPeriodSeconds(valence),
+    ORB_PULSE_PHASE_WRAP,
   );
 }
 
@@ -149,8 +277,15 @@ export const WEBGL_WORKER_READY_BUDGET_MS = 700;
 const WEBGL_READINESS_TIMEOUT_MS = 8000;
 const FORCED_WEBGL_READINESS_TIMEOUT_MS = 900;
 export const WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS = 30000;
-export const WEBGL_VISIBILITY_RETRY_INTERVAL_MS = 250;
-const FORCED_WEBGL_WORKER_STARTUP_TIMEOUT_MS = 30000;
+export const ORB_WORKER_STARTUP_TIMEOUT_MS = 12000;
+export const ORB_WORKER_RENDER_ACK_TIMEOUT_MS = 1500;
+export const ORB_WORKER_FIRST_PRESENTATION_ACK_TIMEOUT_MS = 12000;
+const ORB_WORKER_RENDER_ACK_TIMEOUT_MAX_MS = 4000;
+const ORB_WORKER_RENDER_ACK_LATENCY_MULTIPLIER = 4;
+export const ORB_WORKER_STATIC_HEALTHCHECK_MS = 5000;
+const ORB_GPU_RECOVERY_MAX_ATTEMPTS = 2;
+export const ORB_GPU_RECOVERY_LIFETIME_MAX_ATTEMPTS = 3;
+export const ORB_GPU_RECOVERY_WINDOW_MS = 1500;
 export const WEBGL_VISIBLE_UPGRADE_DEADLINE_MS = 1200;
 const WEBGL_UPGRADE_DELAY_MS = 180;
 const MINI_WEBGL_UPGRADE_DELAY_MS = 900;
@@ -161,14 +296,55 @@ const ORB_SUBTLE_TRANSITION_SHIMMER_DELTA = 0.3;
 const MINI_ORB_CANONICAL_SIZE = 120;
 const ORB_RUNTIME_SNAPSHOT_TTL_MS = 10_000;
 const ORB_RUNTIME_SNAPSHOT_VALENCE_EPSILON = 0.001;
+const ORB_FIRST_VISIBLE_PRESENTATION_BUDGET_MS = 3000;
 
 let nextMiniWebGLUpgradeStartAt = 0;
+
+export function resolveOrbWorkerAckTimeoutMs(
+  lastAckLatencyMs?: number | null,
+  firstPresentationPending = false,
+): number {
+  if (firstPresentationPending) {
+    return ORB_WORKER_FIRST_PRESENTATION_ACK_TIMEOUT_MS;
+  }
+  if (!Number.isFinite(lastAckLatencyMs) || (lastAckLatencyMs ?? 0) <= 0) {
+    return ORB_WORKER_RENDER_ACK_TIMEOUT_MS;
+  }
+
+  return Math.min(
+    ORB_WORKER_RENDER_ACK_TIMEOUT_MAX_MS,
+    Math.max(
+      ORB_WORKER_RENDER_ACK_TIMEOUT_MS,
+      Math.ceil((lastAckLatencyMs as number) * ORB_WORKER_RENDER_ACK_LATENCY_MULTIPLIER),
+    ),
+  );
+}
+
+function waitForNextOrbPresentationFrame(signal: AbortSignal): Promise<boolean> {
+  if (signal.aborted) return Promise.resolve(false);
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (ready: boolean) => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', handleAbort);
+      if (!ready) cancelAnimationFrame(frameId);
+      resolve(ready);
+    };
+    const handleAbort = () => finish(false);
+    const frameId = requestAnimationFrame(() => finish(true));
+    signal.addEventListener('abort', handleAbort, { once: true });
+  });
+}
 
 type OrbRuntimeSnapshot = {
   targetValence: number;
   time: number;
   motionPhase: number;
   noisePhase: number;
+  pulsePhase: number;
+  breathPhase: number;
   currentValence: number;
   smoothValence: number;
   storedAt: number;
@@ -227,6 +403,8 @@ function rememberOrbRuntimeSnapshot(
     time: state.time,
     motionPhase: state.motionPhase,
     noisePhase: state.noisePhase,
+    pulsePhase: state.pulsePhase,
+    breathPhase: state.breathPhase,
     currentValence: state.currentValence,
     smoothValence,
     storedAt: now,
@@ -240,6 +418,19 @@ export function resetOrbRuntimeSnapshotsForTests(): void {
 
 export type OrbTransitionProfile = "standard" | "v1-soft" | "input-soft";
 export type OrbRendererMode = "auto" | "canvas" | "webgpu" | "webgl";
+
+export function isActiveOrbWorkerRenderAck(
+  requestId: number | undefined,
+  activeRequestId: number,
+  renderInFlight: boolean,
+): requestId is number {
+  return (
+    renderInFlight &&
+    requestId !== undefined &&
+    activeRequestId !== 0 &&
+    requestId === activeRequestId
+  );
+}
 
 interface OrbTransitionSettings {
   targetBaseLerp: number;
@@ -280,16 +471,34 @@ export function resolveOrbFrameInterval(
   return WEBGL_FRAME_INTERVAL;
 }
 
+export function isOrbFrameDue(
+  previousFrameAtMs: number,
+  currentFrameAtMs: number,
+  frameIntervalMs: number,
+): boolean {
+  if (!Number.isFinite(currentFrameAtMs)) return false;
+  if (!Number.isFinite(previousFrameAtMs) || previousFrameAtMs <= 0) return true;
+  if (!Number.isFinite(frameIntervalMs) || frameIntervalMs <= 0) return true;
+
+  const elapsedMs = currentFrameAtMs - previousFrameAtMs;
+  return Number.isFinite(elapsedMs) &&
+    elapsedMs >= 0 &&
+    elapsedMs + ORB_FRAME_INTERVAL_EARLY_TOLERANCE_MS >= frameIntervalMs;
+}
+
 export function resolveOrbFrameDeltaSeconds(
   previousFrameAtMs: number,
   currentFrameAtMs: number,
+  previousWallFrameAtMs = previousFrameAtMs,
+  currentWallFrameAtMs = currentFrameAtMs,
 ): number {
-  if (!Number.isFinite(previousFrameAtMs) || previousFrameAtMs <= 0) return 0;
-  if (!Number.isFinite(currentFrameAtMs)) return 0;
-
-  const elapsedMs = currentFrameAtMs - previousFrameAtMs;
-  if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 0;
-  if (elapsedMs > ORB_FRAME_CLOCK_REANCHOR_GAP_MS) return 0;
+  const elapsedMs = resolveOrbVisibleFrameElapsedMs(
+    previousFrameAtMs,
+    currentFrameAtMs,
+    previousWallFrameAtMs,
+    currentWallFrameAtMs,
+  );
+  if (elapsedMs <= 0) return 0;
 
   return Math.min(elapsedMs / 1000, ORB_MAX_FRAME_DELTA_SECONDS);
 }
@@ -297,13 +506,16 @@ export function resolveOrbFrameDeltaSeconds(
 export function resolveOrbTransitionDeltaSeconds(
   previousFrameAtMs: number,
   currentFrameAtMs: number,
+  previousWallFrameAtMs = previousFrameAtMs,
+  currentWallFrameAtMs = currentFrameAtMs,
 ): number {
-  if (!Number.isFinite(previousFrameAtMs) || previousFrameAtMs <= 0) return 0;
-  if (!Number.isFinite(currentFrameAtMs)) return 0;
-
-  const elapsedMs = currentFrameAtMs - previousFrameAtMs;
-  if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 0;
-  if (elapsedMs > ORB_FRAME_CLOCK_REANCHOR_GAP_MS) return 0;
+  const elapsedMs = resolveOrbVisibleFrameElapsedMs(
+    previousFrameAtMs,
+    currentFrameAtMs,
+    previousWallFrameAtMs,
+    currentWallFrameAtMs,
+  );
+  if (elapsedMs <= 0) return 0;
 
   return Math.min(elapsedMs / 1000, ORB_MAX_TRANSITION_DELTA_SECONDS);
 }
@@ -311,22 +523,61 @@ export function resolveOrbTransitionDeltaSeconds(
 export function resolveOrbWorkerFrameDeltaSeconds(
   previousFrameAtMs: number,
   currentFrameAtMs: number,
+  previousWallFrameAtMs = previousFrameAtMs,
+  currentWallFrameAtMs = currentFrameAtMs,
+): number {
+  const elapsedMs = resolveOrbVisibleFrameElapsedMs(
+    previousFrameAtMs,
+    currentFrameAtMs,
+    previousWallFrameAtMs,
+    currentWallFrameAtMs,
+  );
+  if (elapsedMs <= 0) return 0;
+
+  return Math.min(elapsedMs / 1000, ORB_MAX_FRAME_DELTA_SECONDS);
+}
+
+export function resolveOrbVisibleFrameElapsedMs(
+  previousFrameAtMs: number,
+  currentFrameAtMs: number,
+  previousWallFrameAtMs: number,
+  currentWallFrameAtMs: number,
 ): number {
   if (!Number.isFinite(previousFrameAtMs) || previousFrameAtMs <= 0) return 0;
   if (!Number.isFinite(currentFrameAtMs)) return 0;
+  if (!Number.isFinite(previousWallFrameAtMs) || previousWallFrameAtMs <= 0) return 0;
+  if (!Number.isFinite(currentWallFrameAtMs)) return 0;
 
-  const elapsedMs = currentFrameAtMs - previousFrameAtMs;
-  if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 0;
-  if (elapsedMs > ORB_FRAME_CLOCK_REANCHOR_GAP_MS) return 0;
+  const frameElapsedMs = currentFrameAtMs - previousFrameAtMs;
+  const wallElapsedMs = currentWallFrameAtMs - previousWallFrameAtMs;
+  if (!Number.isFinite(frameElapsedMs) || frameElapsedMs <= 0) return 0;
+  if (!Number.isFinite(wallElapsedMs) || wallElapsedMs <= 0) return 0;
+  if (
+    frameElapsedMs > ORB_FRAME_CLOCK_REANCHOR_GAP_MS ||
+    wallElapsedMs > ORB_FRAME_CLOCK_REANCHOR_GAP_MS
+  ) {
+    return 0;
+  }
 
-  return Math.min(elapsedMs / 1000, ORB_MAX_WORKER_VISIBLE_DELTA_SECONDS);
+  if (frameElapsedMs - wallElapsedMs > ORB_FRAME_CLOCK_BURST_SKEW_MS) {
+    return wallElapsedMs;
+  }
+
+  return frameElapsedMs;
 }
 
 export function resolveOrbWorkerTransitionDeltaSeconds(
   previousFrameAtMs: number,
   currentFrameAtMs: number,
+  previousWallFrameAtMs = previousFrameAtMs,
+  currentWallFrameAtMs = currentFrameAtMs,
 ): number {
-  return resolveOrbWorkerFrameDeltaSeconds(previousFrameAtMs, currentFrameAtMs);
+  return resolveOrbTransitionDeltaSeconds(
+    previousFrameAtMs,
+    currentFrameAtMs,
+    previousWallFrameAtMs,
+    currentWallFrameAtMs,
+  );
 }
 
 function normalizeOrbShaderTime(timeSeconds: number, wrapSeconds = ORB_SHADER_TIME_WRAP_SECONDS): number {
@@ -356,15 +607,30 @@ export function resolveOrbShaderTime(
   previousTimeSeconds: number,
   deltaSeconds: number,
   animationSpeed: number,
-  wrapSeconds = ORB_SHADER_TIME_WRAP_SECONDS,
 ): number {
-  if (!Number.isFinite(wrapSeconds) || wrapSeconds <= 0) return 0;
-
-  const previous = normalizeOrbShaderTime(previousTimeSeconds, wrapSeconds);
+  const previous = Number.isFinite(previousTimeSeconds) && previousTimeSeconds >= 0
+    ? previousTimeSeconds
+    : 0;
   const safeDelta = Number.isFinite(deltaSeconds) && deltaSeconds > 0 ? deltaSeconds : 0;
   const safeSpeed = Number.isFinite(animationSpeed) && animationSpeed > 0 ? animationSpeed : 0;
 
-  return normalizeOrbShaderTime(previous + safeDelta * safeSpeed, wrapSeconds);
+  return previous + safeDelta * safeSpeed;
+}
+
+export function resolveOrbGpuShaderTime(timeSeconds: number): number {
+  return normalizeOrbShaderTime(timeSeconds, ORB_SHADER_TIME_WRAP_SECONDS);
+}
+
+export function resolveOrbGpuOrganicTime(timeSeconds: number): number {
+  return normalizeOrbShaderTime(timeSeconds, ORB_GPU_ORGANIC_TIME_WRAP_SECONDS);
+}
+
+export function resolveOrbGpuPaletteTime(timeSeconds: number): number {
+  return normalizeOrbShaderTime(timeSeconds, ORB_GPU_PALETTE_TIME_WRAP_SECONDS);
+}
+
+export function resolveOrbGpuNoisePhase(noisePhase: number): number {
+  return normalizeOrbShaderTime(noisePhase, ORB_GPU_NOISE_PHASE_WRAP);
 }
 
 export function resolveOrbTransitionSettings(
@@ -689,6 +955,7 @@ export const ValenceOrb = memo(function ValenceOrb({
   renderer = "auto",
   onFirstPaintReady,
   onVisualReady,
+  onVisualError,
 }: ValenceOrbProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
@@ -696,9 +963,11 @@ export const ValenceOrb = memo(function ValenceOrb({
   const isVisibleRef = useRef(true);
   const glRendererRef = useRef<OrbGLRenderer | null>(null);
   const workerRendererRef = useRef<OrbWorkerController | null>(null);
+  const recoverCanonicalGpuLossRef = useRef<(allowRestoredContext?: boolean) => void>(() => {});
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const firstPaintReadyRef = useRef(false);
   const visualReadyRef = useRef(false);
+  const visualErrorReportedRef = useRef(false);
   const firstVisualReadyAtRef = useRef(0);
   const [ctxFailed, setCtxFailed] = useState(false);
   const genesisStartRef = useRef(0);
@@ -723,6 +992,17 @@ export const ValenceOrb = memo(function ValenceOrb({
   onFirstPaintReadyRef.current = onFirstPaintReady;
   const onVisualReadyRef = useRef(onVisualReady);
   onVisualReadyRef.current = onVisualReady;
+  const onVisualErrorRef = useRef(onVisualError);
+  onVisualErrorRef.current = onVisualError;
+  const markVisualErrorRef = useRef<() => void>(() => {});
+  markVisualErrorRef.current = () => {
+    wrapperRef.current?.querySelectorAll('canvas').forEach((canvas) => canvas.remove());
+    canvasElRef.current = null;
+    setCtxFailed(true);
+    if (visualErrorReportedRef.current) return;
+    visualErrorReportedRef.current = true;
+    onVisualErrorRef.current?.();
+  };
   const markFirstPaintReadyRef = useRef<() => void>(() => {});
   markFirstPaintReadyRef.current = () => {
     const alreadyReady = firstPaintReadyRef.current;
@@ -733,6 +1013,7 @@ export const ValenceOrb = memo(function ValenceOrb({
   };
   const markVisualReadyRef = useRef<() => void>(() => {});
   markVisualReadyRef.current = () => {
+    if (visualErrorReportedRef.current) return;
     const alreadyReady = visualReadyRef.current;
     const revealCanonicalCanvas = (orbCanvas: HTMLCanvasElement) => {
       orbCanvas.style.setProperty('transition', 'none', 'important');
@@ -783,8 +1064,13 @@ export const ValenceOrb = memo(function ValenceOrb({
       return;
     }
 
-    if (Math.abs(valence - state.currentValence) > ORB_SUBTLE_TRANSITION_SHIMMER_DELTA) {
+    if (
+      shouldAnimateCanonicalOrb() &&
+      Math.abs(valence - state.currentValence) > ORB_SUBTLE_TRANSITION_SHIMMER_DELTA
+    ) {
       shimmerRef.current = Math.max(shimmerRef.current, ORB_SUBTLE_TRANSITION_SHIMMER);
+    } else if (!shouldAnimateCanonicalOrb()) {
+      shimmerRef.current = 0;
     }
 
     const now = performance.now();
@@ -852,6 +1138,8 @@ export const ValenceOrb = memo(function ValenceOrb({
     const initialTime = runtimeSnapshot?.time ?? 0;
     const snapshotMotionPhase = runtimeSnapshot?.motionPhase;
     const snapshotNoisePhase = runtimeSnapshot?.noisePhase;
+    const snapshotPulsePhase = runtimeSnapshot?.pulsePhase;
+    const snapshotBreathPhase = runtimeSnapshot?.breathPhase;
     const initialMotionPhase =
       typeof snapshotMotionPhase === "number" && Number.isFinite(snapshotMotionPhase)
         ? snapshotMotionPhase
@@ -863,6 +1151,20 @@ export const ValenceOrb = memo(function ValenceOrb({
       typeof snapshotNoisePhase === "number" && Number.isFinite(snapshotNoisePhase)
         ? snapshotNoisePhase
         : normalizeOrbShaderTime(initialTime * resolveOrbNoiseSpeed(initialSmoothValence));
+    const initialPulsePhase =
+      typeof snapshotPulsePhase === "number" && Number.isFinite(snapshotPulsePhase)
+        ? snapshotPulsePhase
+        : normalizeOrbShaderTime(
+            initialTime * ORB_CANONICAL_PULSE_CYCLES_PER_SECOND,
+            ORB_PULSE_PHASE_WRAP,
+          );
+    const initialBreathPhase =
+      typeof snapshotBreathPhase === "number" && Number.isFinite(snapshotBreathPhase)
+        ? snapshotBreathPhase
+        : normalizeOrbShaderTime(
+            initialTime / resolveOrbBreathPeriodSeconds(initialSmoothValence),
+            ORB_PULSE_PHASE_WRAP,
+          );
 
     targetValenceRef.current = valenceRef.current;
     smoothValenceRef.current = initialSmoothValence;
@@ -872,9 +1174,26 @@ export const ValenceOrb = memo(function ValenceOrb({
       time: initialTime,
       motionPhase: initialMotionPhase,
       noisePhase: initialNoisePhase,
+      pulsePhase: initialPulsePhase,
+      breathPhase: initialBreathPhase,
       particles: createParticlePool(PARTICLE_COUNT, cx, cy, innerR, outerR),
       lastFrame: 0,
+      lastWallFrame: 0,
     };
+    const shouldAnimateOrb = shouldAnimateCanonicalOrb();
+    if (!shouldAnimateOrb) {
+      const stillTime = resolveReducedMotionOrbStillTime(stateRef.current.time);
+      stateRef.current.time = stillTime;
+      stateRef.current.pulsePhase = resolveOrbPulsePhaseAtTime(
+        stillTime,
+        animationSpeedRef.current,
+      );
+      stateRef.current.breathPhase = resolveOrbBreathPhaseAtTime(
+        stillTime,
+        initialSmoothValence,
+        animationSpeedRef.current,
+      );
+    }
 
     // Genesis plays once per session — skip on re-mounts (tab switches, etc.)
     if (genesisPlayed) {
@@ -907,19 +1226,92 @@ export const ValenceOrb = memo(function ValenceOrb({
     let nextWorkerRenderId = 0;
     let workerRenderInFlight = false;
     let latestWorkerPayload: OrbWorkerPayload | null = null;
+    let lastWorkerPayload: OrbWorkerPayload | null = null;
+    const workerProbePayloads = new Map<number, { payload: OrbWorkerPayload; postedAt: number }>();
     let forceWebGLStartupRecovered = false;
+    let canonicalGpuLossRecoveryStarted = false;
+    let canonicalGpuRecoveryAttemptTimes: number[] = [];
+    let canonicalGpuRecoveryLifetimeAttempts = 0;
+    let canonicalGpuRecoveryBudgetReported = false;
+    let canonicalGpuRecoveryLifetimeBudgetReported = false;
+    let canonicalRestoredContextBypassUsed = false;
+    let canonicalGpuRecoveryRetryTimeoutId = 0;
+    let canonicalWebGLContextRestorePending = false;
+    let canonicalRestoredContextRetryPending = false;
+    let recoverCanonicalGpuLoss = (_allowRestoredContext = false) => {};
+    let clearWorkerWatchdogs = () => {};
+    let resumeWorkerWatchdogs = () => {};
+    let webglUpgradeStarted = false;
+    let webglUpgradePendingUntilVisible = false;
+    let armForcedWebGLFirstFrameTimeout = () => {};
+    let mainRendererUpgradeGeneration = 0;
+    const orbClockProbeEnabled =
+      isOrbClockProbeAllowed(window.location) &&
+      new URLSearchParams(window.location.search).get("orbClockProbe") === "true";
+    let orbClockProbeFailed = false;
+    let orbLifecycleProbeFailed = false;
+
+    const publishOrbLifecycleProbe = (
+      event: string,
+      details?: OrbLifecycleProbeEvent["details"],
+    ) => {
+      if (!orbClockProbeEnabled || orbLifecycleProbeFailed) return;
+      const sink = window.__zenOrbLifecycleProbeSink;
+      if (!sink) return;
+
+      try {
+        sink({ at: performance.now(), event, ...(details ? { details } : {}) });
+      } catch {
+        orbLifecycleProbeFailed = true;
+        recordCanonicalOrbFailure('lifecycle-probe');
+      }
+    };
+
+    const publishOrbClockProbeSample = (
+      source: OrbRuntimeProbeSource,
+      payload: Pick<
+        OrbWorkerPayload,
+        "valence" | "time" | "motionPhase" | "noisePhase" | "pulsePhase" | "breathPhase"
+      >,
+      metadata: { renderedAt?: number; postedAt?: number; requestId?: number } = {},
+    ) => {
+      if (!orbClockProbeEnabled || orbClockProbeFailed) return;
+      const sink = window.__zenOrbClockProbeSink;
+      if (!sink) return;
+
+      try {
+        sink({
+          source,
+          rendererPolicy: renderer,
+          rendererTier: canvasElRef.current?.getAttribute("data-orb-renderer-tier") ?? null,
+          size,
+          renderedValence: payload.valence,
+          time: payload.time,
+          motionPhase: payload.motionPhase,
+          noisePhase: payload.noisePhase,
+          pulsePhase: payload.pulsePhase,
+          breathPhase: payload.breathPhase,
+          renderedAt: metadata.renderedAt ?? performance.now(),
+          ...(metadata.postedAt === undefined ? {} : { postedAt: metadata.postedAt }),
+          ...(metadata.requestId === undefined ? {} : { requestId: metadata.requestId }),
+        });
+      } catch {
+        orbClockProbeFailed = true;
+        recordCanonicalOrbFailure('clock-probe');
+      }
+    };
 
     if (canUseCanonicalCanvasRecovery) {
       markRendererTier(activeCanvas, 'canvas2d');
       try {
         ctx2d = activeCanvas.getContext('2d', { willReadFrequently: false });
-      } catch (err) {
-        recordError(err, { component: 'ValenceOrb', action: 'canvas2d-probe' });
+      } catch {
+        recordCanonicalOrbFailure('canvas2d-probe');
         ctx2d = null;
       }
 
       if (!ctx2d && !forceCanonicalWebGL) {
-        setCtxFailed(true);
+        markVisualErrorRef.current();
         return;
       }
     }
@@ -956,6 +1348,58 @@ export const ValenceOrb = memo(function ValenceOrb({
     };
 
     // ── Render helpers ──
+    const createMainGLPayload = (
+      v: number,
+      t: number,
+      motionPhase: number,
+      noisePhase: number,
+      particles: Particle[],
+      timestamp = performance.now(),
+    ): Parameters<OrbGLRenderer['render']>[0] => {
+      // P5: Color breathing — ±2° hue oscillation for organic life
+      const color = valenceToHSL(v);
+      color.h = (color.h + Math.sin(t * 0.5) * 2 + 360) % 360;
+
+      return {
+        valence: v,
+        time: resolveOrbGpuShaderTime(t),
+        organicTime: resolveOrbGpuOrganicTime(t),
+        paletteTime: resolveOrbGpuPaletteTime(t),
+        motionPhase,
+        noisePhase: resolveOrbGpuNoisePhase(noisePhase),
+        pulsePhase: stateRef.current?.pulsePhase ?? 0,
+        breathPhase: stateRef.current?.breathPhase ?? 0,
+        size,
+        dpr,
+        isDark: isDarkRead(),
+        color,
+        shape: getShapeParams(v),
+        particles,
+        genesis: resolveOrbGenesis(timestamp),
+        touch: computeTouch(t),
+        shimmer: shimmerRef.current,
+      };
+    };
+
+    const publishMainGLPresentation = (
+      canvas: HTMLCanvasElement | null,
+      v: number,
+      t: number,
+      motionPhase: number,
+      noisePhase: number,
+    ) => {
+      const rendererTier = canvas?.getAttribute("data-orb-renderer-tier");
+      publishOrbClockProbeSample(rendererTier === "webgpu-main" ? "webgpu-main" : "webgl-main", {
+        valence: v,
+        time: t,
+        motionPhase,
+        noisePhase,
+        pulsePhase: stateRef.current?.pulsePhase ?? 0,
+        breathPhase: stateRef.current?.breathPhase ?? 0,
+      });
+      markVisualReadyRef.current();
+    };
+
     const renderGL = (
       v: number,
       t: number,
@@ -966,25 +1410,8 @@ export const ValenceOrb = memo(function ValenceOrb({
     ) => {
       const gl = glRendererRef.current;
       if (!gl) return;
-      // P5: Color breathing — ±2° hue oscillation for organic life
-      const color = valenceToHSL(v);
-      color.h = (color.h + Math.sin(t * 0.5) * 2 + 360) % 360;
-      gl.render({
-        valence: v,
-        time: t,
-        motionPhase,
-        noisePhase,
-        size,
-        dpr,
-        isDark: isDarkRead(),
-        color,
-        shape: getShapeParams(v),
-        particles,
-        genesis: resolveOrbGenesis(timestamp),
-        touch: computeTouch(t),
-        shimmer: shimmerRef.current,
-      });
-      markVisualReadyRef.current();
+      gl.render(createMainGLPayload(v, t, motionPhase, noisePhase, particles, timestamp));
+      publishMainGLPresentation(canvasElRef.current, v, t, motionPhase, noisePhase);
     };
 
     const createWorkerPayload = (
@@ -1000,9 +1427,13 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       return {
         valence: v,
-        time: t,
+        time: resolveOrbGpuShaderTime(t),
+        organicTime: resolveOrbGpuOrganicTime(t),
+        paletteTime: resolveOrbGpuPaletteTime(t),
         motionPhase,
-        noisePhase,
+        noisePhase: resolveOrbGpuNoisePhase(noisePhase),
+        pulsePhase: stateRef.current?.pulsePhase ?? 0,
+        breathPhase: stateRef.current?.breathPhase ?? 0,
         size,
         dpr,
         isDark: isDarkRead(),
@@ -1041,11 +1472,20 @@ export const ValenceOrb = memo(function ValenceOrb({
         time: t,
         motionPhase,
         noisePhase,
+        breathPhase: stateRef.current?.breathPhase ?? 0,
         particles,
         size,
         dpr: effectiveDpr,
         isDark: isDarkRead(),
         shimmer: shimmerRef.current,
+      });
+      publishOrbClockProbeSample("canvas2d", {
+        valence: v,
+        time: t,
+        motionPhase,
+        noisePhase,
+        pulsePhase: stateRef.current?.pulsePhase ?? 0,
+        breathPhase: stateRef.current?.breathPhase ?? 0,
       });
       markVisualReadyRef.current();
     };
@@ -1062,12 +1502,15 @@ export const ValenceOrb = memo(function ValenceOrb({
           state.noisePhase,
           state.particles,
         );
-      } catch (err) {
-        recordError(err, { component: 'ValenceOrb', action: 'canvas2d-first-paint' });
+      } catch {
+        recordCanonicalOrbFailure('canvas2d-first-paint');
       }
     };
 
-    const renderPendingWebGL = () => {};
+    let renderPendingCanonicalFrame: typeof renderWorkerGL | null = null;
+    const renderPendingWebGL: typeof renderWorkerGL = (...args) => {
+      renderPendingCanonicalFrame?.(...args);
+    };
     let render = glRenderer ? renderGL : (ctx2d ? renderCanvas2D : renderPendingWebGL);
     let disposed = false;
     let rafScheduled = false;
@@ -1078,7 +1521,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     const degradeToCanvas2D = () => {
       if (!canUseCanonicalCanvasRecovery) {
         render = renderPendingWebGL;
-        setCtxFailed(true);
+        markVisualErrorRef.current();
         return;
       }
 
@@ -1110,6 +1553,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       try {
         ctx2d = fallbackCanvas.getContext('2d', { willReadFrequently: false });
       } catch {
+        recordCanonicalOrbFailure('canvas2d-recovery-probe');
         ctx2d = null;
       }
 
@@ -1141,7 +1585,7 @@ export const ValenceOrb = memo(function ValenceOrb({
           );
         }
       } else {
-        setCtxFailed(true);
+        markVisualErrorRef.current();
       }
     };
 
@@ -1154,7 +1598,185 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     const resetFrameClock = () => {
       const state = stateRef.current;
-      if (state) state.lastFrame = 0;
+      if (state) {
+        state.lastFrame = 0;
+        state.lastWallFrame = 0;
+      }
+    };
+
+    const clearCanonicalGpuRecoveryRetry = () => {
+      if (canonicalGpuRecoveryRetryTimeoutId !== 0) {
+        window.clearTimeout(canonicalGpuRecoveryRetryTimeoutId);
+        canonicalGpuRecoveryRetryTimeoutId = 0;
+      }
+    };
+
+    const exhaustCanonicalGpuRecoveryLifetime = (source: string) => {
+      clearCanonicalGpuRecoveryRetry();
+      if (!canonicalGpuRecoveryLifetimeBudgetReported) {
+        canonicalGpuRecoveryLifetimeBudgetReported = true;
+        recordError(
+          new Error('Canonical GPU recovery stopped after the lifetime attempt budget'),
+          { component: 'ValenceOrb', action: 'canonical-gpu-recovery-lifetime-budget' },
+        );
+        publishOrbLifecycleProbe('canonical-gpu-recovery-lifetime-exhausted', {
+          attempts: canonicalGpuRecoveryLifetimeAttempts,
+          maxAttempts: ORB_GPU_RECOVERY_LIFETIME_MAX_ATTEMPTS,
+          source,
+        });
+      }
+      markVisualErrorRef.current();
+    };
+
+    const claimCanonicalGpuRecovery = (
+      source: string,
+      allowRestoredContext = false,
+    ) => {
+      if (canonicalGpuLossRecoveryStarted || disposed || !mountedRef.current) return false;
+      if (
+        canonicalGpuRecoveryLifetimeAttempts >=
+        ORB_GPU_RECOVERY_LIFETIME_MAX_ATTEMPTS
+      ) {
+        exhaustCanonicalGpuRecoveryLifetime(source);
+        return false;
+      }
+
+      const now = performance.now();
+      canonicalGpuRecoveryAttemptTimes = canonicalGpuRecoveryAttemptTimes.filter(
+        (attemptedAt) => now >= attemptedAt && now - attemptedAt < ORB_GPU_RECOVERY_WINDOW_MS,
+      );
+      if (canonicalGpuRecoveryAttemptTimes.length === 0) {
+        canonicalGpuRecoveryBudgetReported = false;
+        canonicalRestoredContextBypassUsed = false;
+      }
+      if (canonicalGpuRecoveryAttemptTimes.length >= ORB_GPU_RECOVERY_MAX_ATTEMPTS) {
+        if (allowRestoredContext && !canonicalRestoredContextBypassUsed) {
+          canonicalRestoredContextBypassUsed = true;
+          publishOrbLifecycleProbe('canonical-gpu-recovery-restored-context', {
+            source,
+            windowMs: ORB_GPU_RECOVERY_WINDOW_MS,
+          });
+        } else {
+          if (!canonicalGpuRecoveryBudgetReported) {
+            canonicalGpuRecoveryBudgetReported = true;
+            recordError(
+              new Error('Canonical GPU recovery stopped after repeated context loss'),
+              { component: 'ValenceOrb', action: 'canonical-gpu-recovery-budget' },
+            );
+            publishOrbLifecycleProbe('canonical-gpu-recovery-exhausted', {
+              attempts: canonicalGpuRecoveryAttemptTimes.length,
+              source,
+              windowMs: ORB_GPU_RECOVERY_WINDOW_MS,
+            });
+          }
+          return false;
+        }
+      }
+
+      canonicalGpuRecoveryBudgetReported = false;
+      clearCanonicalGpuRecoveryRetry();
+      canonicalGpuRecoveryAttemptTimes.push(now);
+      canonicalGpuRecoveryLifetimeAttempts += 1;
+      canonicalGpuLossRecoveryStarted = true;
+      publishOrbLifecycleProbe('canonical-gpu-recovery-claimed', {
+        attempt: canonicalGpuRecoveryAttemptTimes.length,
+        lifetimeAttempt: canonicalGpuRecoveryLifetimeAttempts,
+        source,
+      });
+      return true;
+    };
+
+    const scheduleCanonicalGpuRecoveryRetry = (
+      source: string,
+      retry: () => void,
+    ) => {
+      if (
+        canonicalGpuRecoveryLifetimeAttempts >=
+        ORB_GPU_RECOVERY_LIFETIME_MAX_ATTEMPTS
+      ) {
+        exhaustCanonicalGpuRecoveryLifetime(source);
+        return;
+      }
+      if (
+        canonicalGpuRecoveryRetryTimeoutId !== 0 ||
+        disposed ||
+        !mountedRef.current
+      ) {
+        return;
+      }
+
+      const now = performance.now();
+      const oldestAttemptAt = canonicalGpuRecoveryAttemptTimes[0] ?? now;
+      const delayMs = Math.max(1, oldestAttemptAt + ORB_GPU_RECOVERY_WINDOW_MS - now);
+      publishOrbLifecycleProbe('canonical-gpu-recovery-retry-scheduled', {
+        delayMs,
+        source,
+      });
+      canonicalGpuRecoveryRetryTimeoutId = window.setTimeout(() => {
+        canonicalGpuRecoveryRetryTimeoutId = 0;
+        if (disposed || !mountedRef.current) return;
+        publishOrbLifecycleProbe('canonical-gpu-recovery-retry-start', { source });
+        retry();
+      }, delayMs);
+    };
+
+    const finishFailedCanonicalGpuRecovery = (source: string) => {
+      const shouldRetryRestoredContext =
+        canonicalGpuLossRecoveryStarted && canonicalRestoredContextRetryPending;
+      const shouldRetry = canonicalGpuLossRecoveryStarted && forceCanonicalWebGL;
+      canonicalGpuLossRecoveryStarted = false;
+      if (shouldRetryRestoredContext) {
+        canonicalRestoredContextRetryPending = false;
+        publishOrbLifecycleProbe('canonical-gpu-restored-context-retry-start', { source });
+        recoverCanonicalGpuLoss(true);
+        return;
+      }
+      if (shouldRetry) {
+        scheduleCanonicalGpuRecoveryRetry(source, recoverCanonicalGpuLoss);
+      }
+    };
+
+    const renderReducedMotionStill = () => {
+      const state = stateRef.current;
+      if (!state) return;
+      const selectedValence = valenceRef.current;
+      state.targetValence = selectedValence;
+      state.currentValence = selectedValence;
+      targetValenceRef.current = selectedValence;
+      smoothValenceRef.current = selectedValence;
+      shimmerRef.current = 0;
+      const stillTime = resolveReducedMotionOrbStillTime(state.time);
+      state.time = stillTime;
+      try {
+        render(
+          selectedValence,
+          stillTime,
+          state.motionPhase,
+          state.noisePhase,
+          state.particles,
+        );
+      } catch {
+        recordCanonicalOrbFailure('reduced-motion-still');
+        if (glRendererRef.current) {
+          if (
+            forceCanonicalWebGL ||
+            canvasElRef.current?.dataset.orbRendererTier === 'webgpu-main'
+          ) {
+            recoverCanonicalGpuLoss();
+            return;
+          }
+
+          glRendererRef.current.dispose();
+          glRendererRef.current = null;
+          glRenderer = null;
+          if (canUseCanonicalCanvasRecovery) {
+            degradeToCanvas2D();
+          } else {
+            render = renderPendingWebGL;
+            markVisualErrorRef.current();
+          }
+        }
+      }
     };
 
     const requestNextFrame = () => {
@@ -1172,6 +1794,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       const state = stateRef.current;
       if (!state) return;
+      const frameWallNow = performance.now();
 
       const documentHidden = typeof document !== "undefined" && document.hidden;
       if (documentHidden || !isVisibleRef.current) {
@@ -1181,16 +1804,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       // Runtime dopamine gate
       if (!shouldAnimateCanonicalOrb()) {
-        const stillTime = resolveReducedMotionOrbStillTime(state.time);
-        try {
-          render(
-            state.currentValence,
-            stillTime,
-            state.motionPhase,
-            state.noisePhase,
-            state.particles,
-          );
-        } catch { /* graceful: static frame render failure invisible — orb just stays as-is */ }
+        renderReducedMotionStill();
         return;
       }
 
@@ -1205,20 +1819,40 @@ export const ValenceOrb = memo(function ValenceOrb({
       // Throttle: healthy WebGL stays 60fps; strained Chrome/WebView sessions keep
       // the canonical renderer but reduce compositor pressure to the fallback cadence.
       const frameInterval = resolveOrbFrameInterval(Boolean(glRendererRef.current || workerRenderer));
-      const elapsed = state.lastFrame > 0 ? timestamp - state.lastFrame : frameInterval;
-      if (state.lastFrame > 0 && elapsed < frameInterval) {
+      if (!isOrbFrameDue(state.lastFrame, timestamp, frameInterval)) {
         requestNextFrame();
         return;
       }
       // Re-anchor instead of catching up after hidden tabs, reload restore, or long stalls.
       const isWorkerFrame = Boolean(workerRenderer);
       const dt = isWorkerFrame
-        ? resolveOrbWorkerFrameDeltaSeconds(state.lastFrame, timestamp)
-        : resolveOrbFrameDeltaSeconds(state.lastFrame, timestamp);
+        ? resolveOrbWorkerFrameDeltaSeconds(
+            state.lastFrame,
+            timestamp,
+            state.lastWallFrame,
+            frameWallNow,
+          )
+        : resolveOrbFrameDeltaSeconds(
+            state.lastFrame,
+            timestamp,
+            state.lastWallFrame,
+            frameWallNow,
+          );
       const transitionDt = isWorkerFrame
-        ? resolveOrbWorkerTransitionDeltaSeconds(state.lastFrame, timestamp)
-        : resolveOrbTransitionDeltaSeconds(state.lastFrame, timestamp);
+        ? resolveOrbWorkerTransitionDeltaSeconds(
+            state.lastFrame,
+            timestamp,
+            state.lastWallFrame,
+            frameWallNow,
+          )
+        : resolveOrbTransitionDeltaSeconds(
+            state.lastFrame,
+            timestamp,
+            state.lastWallFrame,
+            frameWallNow,
+          );
       state.lastFrame = timestamp;
+      state.lastWallFrame = frameWallNow;
 
       // Shimmer decay: dt-based exponential (~0.8s half-life, frame-rate independent).
       // Keep it as a quiet target-change glow; delayed high-energy bursts read as
@@ -1252,7 +1886,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       state.currentValence += targetDelta * lerpRate;
 
       // P4: keep shader time stable while preserving subtle idle visual calm.
-      const idleElapsed = timestamp - lastInteractionRef.current;
+      const idleElapsed = frameWallNow - lastInteractionRef.current;
       const idleFactor = Math.max(0, Math.min(1, (idleElapsed - 8000) / 4000));
       state.time = resolveOrbShaderTime(state.time, dt, animationSpeedRef.current);
 
@@ -1279,6 +1913,17 @@ export const ValenceOrb = memo(function ValenceOrb({
         smoothValenceRef.current,
         animationSpeedRef.current,
       );
+      state.pulsePhase = resolveOrbPulsePhase(
+        state.pulsePhase,
+        dt,
+        animationSpeedRef.current,
+      );
+      state.breathPhase = resolveOrbBreathPhase(
+        state.breathPhase,
+        dt,
+        smoothValenceRef.current,
+        animationSpeedRef.current,
+      );
 
       // Update particles (skip when off-screen to save CPU)
       if (isVisibleRef.current) {
@@ -1294,13 +1939,20 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       // Proactive context loss detection (iOS 17+ WKWebView — context lost without event)
       if (glRendererRef.current?.isContextLost()) {
+        if (
+          forceCanonicalWebGL ||
+          canvasElRef.current?.dataset.orbRendererTier === 'webgpu-main'
+        ) {
+          recoverCanonicalGpuLoss();
+          return;
+        }
         glRendererRef.current.dispose();
         glRendererRef.current = null;
         if (canUseCanonicalCanvasRecovery) {
           degradeToCanvas2D();
         } else {
           render = renderPendingWebGL;
-          setCtxFailed(true);
+          markVisualErrorRef.current();
         }
       }
 
@@ -1313,26 +1965,34 @@ export const ValenceOrb = memo(function ValenceOrb({
             state.motionPhase,
             state.noisePhase,
             state.particles,
-            timestamp,
+            frameWallNow,
           );
-        } catch (err) {
-          recordError(err, { component: 'ValenceOrb', action: 'render' });
+        } catch {
+          recordCanonicalOrbFailure('render');
 
           if (glRendererRef.current) {
-            // WebGL render threw — degrade to Canvas 2D
+            if (
+              forceCanonicalWebGL ||
+              canvasElRef.current?.dataset.orbRendererTier === 'webgpu-main'
+            ) {
+              recoverCanonicalGpuLoss();
+              return;
+            }
+
+            // Optional WebGL surface can still degrade to Canvas 2D.
             glRendererRef.current.dispose();
             glRendererRef.current = null;
             if (canUseCanonicalCanvasRecovery) {
               degradeToCanvas2D();
             } else {
               render = renderPendingWebGL;
-              setCtxFailed(true);
+              markVisualErrorRef.current();
               return;
             }
           } else {
             // Canvas 2D render also threw — give up
             cancelNextFrame();
-            setCtxFailed(true);
+            markVisualErrorRef.current();
             return;
           }
         }
@@ -1344,6 +2004,13 @@ export const ValenceOrb = memo(function ValenceOrb({
     // ── Context loss recovery (Law 22, Part 10) ──
     const handleContextLost = (e: Event) => {
       e.preventDefault();
+
+      if (forceCanonicalWebGL) {
+        canonicalWebGLContextRestorePending = true;
+        recoverCanonicalGpuLoss();
+        return;
+      }
+
       cancelNextFrame();
       glRendererRef.current?.dispose();
       glRendererRef.current = null;
@@ -1353,7 +2020,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         degradeToCanvas2D();
       } else {
         render = renderPendingWebGL;
-        setCtxFailed(true);
+        markVisualErrorRef.current();
       }
 
       // Restart RAF loop only when a non-forced/debug Canvas 2D recovery exists.
@@ -1362,16 +2029,17 @@ export const ValenceOrb = memo(function ValenceOrb({
       }
 
       recordError(
-        new Error(
-          forceCanonicalWebGL
-            ? 'WebGL context lost without using a substitute orb'
-            : 'WebGL context lost — degraded to Canvas 2D',
-        ),
+        new Error('WebGL context lost — degraded to Canvas 2D'),
         { component: 'ValenceOrb' },
       );
     };
 
     const handleContextRestored = () => {
+      if (forceCanonicalWebGL && canonicalWebGLContextRestorePending) {
+        recoverCanonicalGpuLoss(true);
+        return;
+      }
+
       // Keep Canvas 2D after a context loss. Recompiling immediately can repeat
       // the same Chrome/GPU stall that caused the fallback in the first place.
       if (shouldAnimateCanonicalOrb() && mountedRef.current) {
@@ -1381,6 +2049,10 @@ export const ValenceOrb = memo(function ValenceOrb({
     };
 
     const attachWebGLListeners = (canvas: HTMLCanvasElement) => {
+      if (webglEventCanvas && webglEventCanvas !== canvas) {
+        webglEventCanvas.removeEventListener('webglcontextlost', handleContextLost);
+        webglEventCanvas.removeEventListener('webglcontextrestored', handleContextRestored);
+      }
       webglEventCanvas = canvas;
       canvas.addEventListener('webglcontextlost', handleContextLost);
       canvas.addEventListener('webglcontextrestored', handleContextRestored);
@@ -1402,32 +2074,149 @@ export const ValenceOrb = memo(function ValenceOrb({
       cancelNextFrame();
     };
 
+    let staticRendererHealthcheckTimeoutId = 0;
+    const clearStaticRendererHealthcheck = () => {
+      if (staticRendererHealthcheckTimeoutId !== 0) {
+        window.clearTimeout(staticRendererHealthcheckTimeoutId);
+        staticRendererHealthcheckTimeoutId = 0;
+      }
+    };
+    const scheduleStaticRendererHealthcheck = () => {
+      clearStaticRendererHealthcheck();
+      if (
+        shouldAnimateCanonicalOrb() ||
+        disposed ||
+        !mountedRef.current ||
+        document.hidden ||
+        !isVisibleRef.current
+      ) {
+        return;
+      }
+
+      staticRendererHealthcheckTimeoutId = window.setTimeout(() => {
+        staticRendererHealthcheckTimeoutId = 0;
+        if (shouldAnimateCanonicalOrb() || disposed || !mountedRef.current) return;
+        if (document.hidden || !isVisibleRef.current) {
+          return;
+        }
+        if (workerRenderer) {
+          return;
+        }
+
+        const rendererInstance = glRendererRef.current;
+        if (!rendererInstance) {
+          scheduleStaticRendererHealthcheck();
+          return;
+        }
+        if (!rendererInstance.isContextLost()) {
+          scheduleStaticRendererHealthcheck();
+          return;
+        }
+
+        if (
+          forceCanonicalWebGL ||
+          canvasElRef.current?.dataset.orbRendererTier === 'webgpu-main'
+        ) {
+          recoverCanonicalGpuLoss();
+          return;
+        }
+
+        rendererInstance.dispose();
+        glRendererRef.current = null;
+        glRenderer = null;
+        if (canUseCanonicalCanvasRecovery) {
+          degradeToCanvas2D();
+        } else {
+          render = renderPendingWebGL;
+          markVisualErrorRef.current();
+        }
+      }, ORB_WORKER_STATIC_HEALTHCHECK_MS);
+    };
+
+    const suspendRendererWatchdogs = () => {
+      clearStaticRendererHealthcheck();
+      clearWorkerWatchdogs();
+      if (forceWebGLFirstFrameTimeoutId !== 0) {
+        window.clearTimeout(forceWebGLFirstFrameTimeoutId);
+        forceWebGLFirstFrameTimeoutId = 0;
+      }
+    };
+
+    const resumeRendererWatchdogs = () => {
+      if (disposed || !mountedRef.current || document.hidden || !isVisibleRef.current) return;
+      resumeWorkerWatchdogs();
+      if (!shouldAnimateCanonicalOrb() && !workerRenderer) {
+        scheduleStaticRendererHealthcheck();
+      }
+      if (forceCanonicalWebGL && webglUpgradeStarted && !visualReadyRef.current) {
+        armForcedWebGLFirstFrameTimeout();
+      }
+    };
+
+    let animationAllowed = shouldAnimateCanonicalOrb();
+    const syncAnimationPreference = () => {
+      const nextAnimationAllowed = shouldAnimateCanonicalOrb();
+      if (nextAnimationAllowed === animationAllowed) return;
+      animationAllowed = nextAnimationAllowed;
+
+      if (nextAnimationAllowed) {
+        clearStaticRendererHealthcheck();
+        restartAnimationClock();
+        return;
+      }
+
+      pauseAnimationClock();
+      renderReducedMotionStill();
+      scheduleStaticRendererHealthcheck();
+    };
+
     const handleVisibilityChange = () => {
       if (document.hidden) {
         pauseAnimationClock();
+        suspendRendererWatchdogs();
         return;
       }
 
       restartAnimationClock();
+      resumeRendererWatchdogs();
     };
 
     const handlePageHide = () => {
       pauseAnimationClock();
+      suspendRendererWatchdogs();
     };
 
     const handlePageShow = () => {
       restartAnimationClock();
+      resumeRendererWatchdogs();
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('freeze', handlePageHide);
+    document.addEventListener('resume', handlePageShow);
     window.addEventListener('pagehide', handlePageHide);
     window.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('dopamine-settings-change', syncAnimationPreference);
+    const reducedMotionMedia = window.matchMedia?.('(prefers-reduced-motion: reduce)') ?? null;
+    reducedMotionMedia?.addEventListener?.('change', syncAnimationPreference);
+    reducedMotionMedia?.addListener?.(syncAnimationPreference);
+    const animationPreferenceObserver = typeof MutationObserver === 'undefined'
+      ? null
+      : new MutationObserver(syncAnimationPreference);
+    animationPreferenceObserver?.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-reduced-motion'],
+    });
 
-    const upgradeToWebGL = async (signal: AbortSignal) => {
+    const upgradeToWebGL = async (
+      signal: AbortSignal,
+      skipWebGPU = false,
+    ) => {
       if (!shouldTryWebGL(renderer) || signal.aborted) return;
 
       let webglStartupRecoveryStarted = false;
       const shouldKeepCurrentVisibleCanvas = () => {
+        if (canonicalGpuLossRecoveryStarted) return false;
         const visibleUpgradeAgeMs =
           performance.now() - (firstVisualReadyAtRef.current || visibleCanvasMountedAt);
 
@@ -1439,16 +2228,38 @@ export const ValenceOrb = memo(function ValenceOrb({
         });
       };
 
-      const upgradeToMainThreadWebGL = async (webgpuOnly = false): Promise<boolean> => {
+      const upgradeToMainThreadWebGL = async (
+        webgpuOnly = false,
+        skipWebGPU = false,
+      ): Promise<boolean> => {
+        const upgradeGeneration = ++mainRendererUpgradeGeneration;
+        publishOrbLifecycleProbe("main-upgrade-start", {
+          allowSyncRecovery: false,
+          skipWebGPU,
+          webgpuOnly,
+        });
         const readinessTimeoutMs = forceCanonicalWebGL
           ? FORCED_WEBGL_READINESS_TIMEOUT_MS
           : WEBGL_READINESS_TIMEOUT_MS;
-        const webgpuCanvas = createCanvas(size, dpr);
-        let result: OrbGLBuildResult | null = await createOrbWebGPUAsync(webgpuCanvas, {
-          signal,
-          timeoutMs: readinessTimeoutMs,
-        });
-        let upgradeCanvas = webgpuCanvas;
+        let upgradeCanvas = createCanvas(size, dpr);
+        let result: OrbGLBuildResult | null = null;
+        let webGpuCandidateRenderer: OrbGLRenderer | null = null;
+        let webGpuCandidateLost = false;
+        if (!skipWebGPU) {
+          result = await createOrbWebGPUAsync(upgradeCanvas, {
+            signal,
+            timeoutMs: readinessTimeoutMs,
+            onContextLost: () => {
+              webGpuCandidateLost = true;
+              if (glRendererRef.current === webGpuCandidateRenderer) {
+                recoverCanonicalGpuLoss();
+              }
+            },
+          });
+          if (result?.tier === 'webgpu') {
+            webGpuCandidateRenderer = result.renderer;
+          }
+        }
 
         if (webgpuOnly && !result) return false;
 
@@ -1463,20 +2274,6 @@ export const ValenceOrb = memo(function ValenceOrb({
           upgradeCanvas = gl1Canvas;
         }
 
-        if (!result && !forceCanonicalWebGL && !signal.aborted) {
-          const syncStartedAt = performance.now();
-          const syncCanvas = createCanvas(size, dpr);
-          const syncRenderer = createOrbGL(syncCanvas);
-          if (syncRenderer) {
-            result = {
-              renderer: syncRenderer,
-              durationMs: performance.now() - syncStartedAt,
-              tier: 'webgl',
-            };
-            upgradeCanvas = syncCanvas;
-          }
-        }
-
         if (!result && !signal.aborted) {
           const gl2Canvas = createCanvas(size, dpr);
           result = await createOrbGL2Async(gl2Canvas, {
@@ -1486,22 +2283,24 @@ export const ValenceOrb = memo(function ValenceOrb({
           upgradeCanvas = gl2Canvas;
         }
 
-        if (!result && !forceCanonicalWebGL && !signal.aborted) {
-          const syncStartedAt = performance.now();
-          const syncCanvas = createCanvas(size, dpr);
-          const syncRenderer = createOrbGL2(syncCanvas);
-          if (syncRenderer) {
-            result = {
-              renderer: syncRenderer,
-              durationMs: performance.now() - syncStartedAt,
-              tier: 'webgl2',
-            };
-            upgradeCanvas = syncCanvas;
-          }
+        if (
+          signal.aborted ||
+          !mountedRef.current ||
+          forceWebGLStartupRecovered ||
+          upgradeGeneration !== mainRendererUpgradeGeneration
+        ) {
+          result?.renderer.dispose();
+          publishOrbLifecycleProbe("main-upgrade-aborted", {
+            generationSuperseded: upgradeGeneration !== mainRendererUpgradeGeneration,
+            mounted: mountedRef.current,
+            signalAborted: signal.aborted,
+          });
+          return false;
         }
-
-        if (signal.aborted || !mountedRef.current) return false;
-        if (!result) return false;
+        if (!result) {
+          publishOrbLifecycleProbe("main-upgrade-unavailable");
+          return false;
+        }
         if (forceWebGLFirstFrameTimeoutId !== 0) {
           window.clearTimeout(forceWebGLFirstFrameTimeoutId);
           forceWebGLFirstFrameTimeoutId = 0;
@@ -1516,6 +2315,10 @@ export const ValenceOrb = memo(function ValenceOrb({
         if (!shouldApplyWorkerWebGLUpgrade(visibleUpgradeAgeMs, forceCanonicalWebGL || explicitWebGLOverride)) {
           rememberSlowWebGL(visibleUpgradeAgeMs);
           result.renderer.dispose();
+          publishOrbLifecycleProbe("main-upgrade-rejected", {
+            tier: result.tier,
+            visibleUpgradeAgeMs,
+          });
           return false;
         }
 
@@ -1526,6 +2329,117 @@ export const ValenceOrb = memo(function ValenceOrb({
         if (shouldKeepCurrentVisibleCanvas()) {
           rememberSlowWebGL(performance.now() - visibleCanvasMountedAt);
           result.renderer.dispose();
+          publishOrbLifecycleProbe("main-upgrade-kept-visible-canvas", {
+            tier: result.tier,
+          });
+          return true;
+        }
+
+        const webGpuCandidateConnectedForValidation =
+          result.tier === 'webgpu' && !wrapper.contains(upgradeCanvas);
+        if (webGpuCandidateConnectedForValidation) {
+          upgradeCanvas.style.opacity = '0';
+          wrapper.appendChild(upgradeCanvas);
+        }
+        const removeUnpublishedWebGpuCandidate = () => {
+          if (webGpuCandidateConnectedForValidation && wrapper.contains(upgradeCanvas)) {
+            wrapper.removeChild(upgradeCanvas);
+          }
+        };
+        const state = stateRef.current;
+        if (!state) {
+          removeUnpublishedWebGpuCandidate();
+          result.renderer.dispose();
+          return false;
+        }
+
+        let firstFrameTime = shouldAnimateCanonicalOrb()
+          ? state.time
+          : resolveReducedMotionOrbStillTime(state.time);
+        let firstPresentationValidated = false;
+        const firstPresentationDeadline =
+          performance.now() + ORB_FIRST_VISIBLE_PRESENTATION_BUDGET_MS;
+        try {
+          while (
+            !firstPresentationValidated &&
+            performance.now() <= firstPresentationDeadline
+          ) {
+            const currentState = stateRef.current;
+            if (!currentState || signal.aborted || !mountedRef.current) break;
+            firstFrameTime = shouldAnimateCanonicalOrb()
+              ? currentState.time
+              : resolveReducedMotionOrbStillTime(currentState.time);
+            const candidatePayload = createMainGLPayload(
+              smoothValenceRef.current,
+              firstFrameTime,
+              currentState.motionPhase,
+              currentState.noisePhase,
+              currentState.particles,
+            );
+            if (candidatePayload.genesis <= 0.15) {
+              if (!(await waitForNextOrbPresentationFrame(signal))) break;
+              continue;
+            }
+            const renderResult = result.renderer.render(candidatePayload);
+            firstPresentationValidated = renderResult !== false;
+            if (firstPresentationValidated && result.renderer.waitForFirstPresentation) {
+              firstPresentationValidated = await result.renderer.waitForFirstPresentation();
+            }
+            if (
+              (result.tier === 'webgpu' && webGpuCandidateLost) ||
+              result.renderer.isContextLost?.()
+            ) {
+              throw new Error('GPU renderer was lost before publication');
+            }
+            if (!firstPresentationValidated && candidatePayload.genesis > 0.15) {
+              throw new Error('GPU first presentation remained transparent after genesis');
+            }
+            if (
+              !firstPresentationValidated &&
+              !(await waitForNextOrbPresentationFrame(signal))
+            ) {
+              break;
+            }
+          }
+          if (!firstPresentationValidated) {
+            throw new Error('GPU first presentation was not validated');
+          }
+        } catch {
+          recordCanonicalOrbFailure(`${result.tier}-first-frame`);
+          publishOrbLifecycleProbe("main-upgrade-first-frame-failed", {
+            tier: result.tier,
+          });
+          removeUnpublishedWebGpuCandidate();
+          result.renderer.dispose();
+
+          if (result.tier === 'webgpu' && !skipWebGPU && !signal.aborted && mountedRef.current) {
+            publishOrbLifecycleProbe("main-upgrade-webgpu-first-frame-fallback");
+            return upgradeToMainThreadWebGL(false, true);
+          }
+          return false;
+        }
+
+        if (
+          signal.aborted ||
+          !mountedRef.current ||
+          forceWebGLStartupRecovered ||
+          upgradeGeneration !== mainRendererUpgradeGeneration
+        ) {
+          removeUnpublishedWebGpuCandidate();
+          result.renderer.dispose();
+          publishOrbLifecycleProbe("main-upgrade-first-frame-aborted", {
+            generationSuperseded: upgradeGeneration !== mainRendererUpgradeGeneration,
+            tier: result.tier,
+          });
+          return false;
+        }
+
+        if (shouldKeepCurrentVisibleCanvas()) {
+          removeUnpublishedWebGpuCandidate();
+          result.renderer.dispose();
+          publishOrbLifecycleProbe("main-upgrade-kept-visible-canvas-after-first-frame", {
+            tier: result.tier,
+          });
           return true;
         }
 
@@ -1537,41 +2451,39 @@ export const ValenceOrb = memo(function ValenceOrb({
         ctx2d = null;
         activeCanvas = upgradeCanvas;
         render = renderGL;
+
         if (result.tier !== 'webgpu') {
           attachWebGLListeners(upgradeCanvas);
         }
 
-        const state = stateRef.current;
-        if (state) {
-          try {
-            const firstFrameTime = shouldAnimateCanonicalOrb()
-              ? state.time
-              : resolveReducedMotionOrbStillTime(state.time);
-            renderGL(
-              smoothValenceRef.current,
-              firstFrameTime,
-              state.motionPhase,
-              state.noisePhase,
-              state.particles,
-            );
-          } catch (err) {
-            recordError(err, { component: 'ValenceOrb', action: `${result.tier}-first-frame` });
-            result.renderer.dispose();
-            glRenderer = null;
-            glRendererRef.current = null;
-            canvasElRef.current = null;
-            render = renderPendingWebGL;
-            return false;
+        if (webGpuCandidateConnectedForValidation) {
+          if (previousCanvas !== upgradeCanvas && wrapper.contains(previousCanvas)) {
+            wrapper.removeChild(previousCanvas);
           }
-        }
-
-        if (wrapper.contains(previousCanvas)) {
+        } else if (wrapper.contains(previousCanvas)) {
           wrapper.replaceChild(upgradeCanvas, previousCanvas);
         } else {
           wrapper.appendChild(upgradeCanvas);
         }
         visibleCanvasMountedAt = performance.now();
+        publishMainGLPresentation(
+          upgradeCanvas,
+          smoothValenceRef.current,
+          firstFrameTime,
+          state.motionPhase,
+          state.noisePhase,
+        );
+        clearCanonicalGpuRecoveryRetry();
+        canonicalWebGLContextRestorePending = false;
+        canonicalRestoredContextRetryPending = false;
+        canonicalGpuLossRecoveryStarted = false;
+        publishOrbLifecycleProbe("main-upgrade-applied", {
+          tier: result.tier === 'webgpu' ? 'webgpu-main' : 'webgl-main',
+        });
         restartAnimationClock();
+        if (!shouldAnimateCanonicalOrb()) {
+          scheduleStaticRendererHealthcheck();
+        }
 
         return true;
       };
@@ -1585,18 +2497,17 @@ export const ValenceOrb = memo(function ValenceOrb({
           return;
         }
 
-        if (!explicitWebGLOverride && visualReadyRef.current) {
-          rememberSlowWebGL(performance.now() - visibleCanvasMountedAt);
-          return;
-        }
-
         void (async () => {
-          const recoveredWithWebGL = await upgradeToMainThreadWebGL();
+          const recoveredWithWebGL = await upgradeToMainThreadWebGL(
+            false,
+            skipWebGPU,
+          );
           if (!recoveredWithWebGL && !signal.aborted && mountedRef.current) {
+            finishFailedCanonicalGpuRecovery('main-startup-recovery');
             if (canUseCanonicalCanvasRecovery) {
               degradeToCanvas2D();
             } else {
-              setCtxFailed(true);
+              markVisualErrorRef.current();
             }
           }
         })();
@@ -1608,10 +2519,33 @@ export const ValenceOrb = memo(function ValenceOrb({
       );
       const recoveredWithWebGPU = preferWorkerWebGLFirst
         ? false
-        : await upgradeToMainThreadWebGL(true);
+        : await upgradeToMainThreadWebGL(true, skipWebGPU);
       if (recoveredWithWebGPU) return;
 
+      const recoverFromSynchronousWorkerSetupFailure = async (
+        _error: unknown,
+        action: string,
+        failedWorker: Worker | null = null,
+      ) => {
+        recordCanonicalOrbFailure(action);
+        failedWorker?.terminate();
+        if (webglWorker === failedWorker) webglWorker = null;
+        const recoveredWithWebGL = await upgradeToMainThreadWebGL(
+          false,
+          skipWebGPU,
+        );
+        if (!recoveredWithWebGL && !signal.aborted && mountedRef.current) {
+          finishFailedCanonicalGpuRecovery('worker-setup-recovery');
+          if (canUseCanonicalCanvasRecovery) {
+            degradeToCanvas2D();
+          } else {
+            markVisualErrorRef.current();
+          }
+        }
+      };
+
       if ((renderer === 'auto' || renderer === 'webgpu' || renderer === 'webgl') && shouldUseWorkerWebGL(forceCanonicalWebGL, size)) {
+        publishOrbLifecycleProbe("worker-upgrade-start", { size, skipWebGPU });
         const workerStartedAt = performance.now();
         const workerCanvas = createCanvas(size, dpr);
         if (forceCanonicalWebGL) {
@@ -1619,16 +2553,37 @@ export const ValenceOrb = memo(function ValenceOrb({
           workerCanvas.style.transition = 'opacity 160ms ease-out';
         }
         markRendererTier(workerCanvas, 'webgl-worker');
-        const offscreen = workerCanvas.transferControlToOffscreen();
-        const worker = new Worker(new URL('./orbWorker.ts', import.meta.url), {
-          type: 'module',
-          name: 'zenflow-orb-renderer',
-        });
+        let offscreen: OffscreenCanvas;
+        let worker: Worker;
+        try {
+          offscreen = workerCanvas.transferControlToOffscreen();
+          worker = new Worker(new URL('./orbWorker.ts', import.meta.url), {
+            type: 'module',
+            name: 'zenflow-orb-renderer',
+          });
+        } catch (error) {
+          await recoverFromSynchronousWorkerSetupFailure(
+            error,
+            'worker-webgl-construction',
+          );
+          return;
+        }
         webglWorker = worker;
+        mainRendererUpgradeGeneration += 1;
         nextWorkerRenderId = 0;
         workerRenderInFlight = false;
         latestWorkerPayload = null;
+        lastWorkerPayload = null;
         let workerStartupTimeoutId = 0;
+        let workerRenderAckTimeoutId = 0;
+        let workerStaticHealthcheckTimeoutId = 0;
+        let currentWorkerRequestId = 0;
+        let currentWorkerRequestPostedAt = 0;
+        let lastWorkerAckLatencyMs: number | null = null;
+        let workerRenderedFrame = false;
+        let workerFrameAwaitingVisibleConfirmation = false;
+        let workerCanvasConnectedForValidation = false;
+        let workerController: OrbWorkerController | null = null;
 
         const clearWorkerStartupTimeout = () => {
           if (workerStartupTimeoutId !== 0) {
@@ -1637,15 +2592,313 @@ export const ValenceOrb = memo(function ValenceOrb({
           }
         };
 
+        const clearWorkerRenderAckTimeout = () => {
+          if (workerRenderAckTimeoutId !== 0) {
+            window.clearTimeout(workerRenderAckTimeoutId);
+            workerRenderAckTimeoutId = 0;
+          }
+        };
+
+        const clearWorkerStaticHealthcheck = () => {
+          if (workerStaticHealthcheckTimeoutId !== 0) {
+            window.clearTimeout(workerStaticHealthcheckTimeoutId);
+            workerStaticHealthcheckTimeoutId = 0;
+          }
+        };
+
+        const clearCurrentWorkerWatchdogs = () => {
+          clearWorkerStartupTimeout();
+          clearWorkerRenderAckTimeout();
+          clearWorkerStaticHealthcheck();
+        };
+
+        clearWorkerWatchdogs();
+        clearWorkerWatchdogs = clearCurrentWorkerWatchdogs;
+
+        const clearFailedWorkerState = () => {
+          const failedController = workerRenderer;
+          clearCurrentWorkerWatchdogs();
+          worker.onmessage = null;
+          worker.onerror = null;
+          worker.terminate();
+          if (webglWorker === worker) webglWorker = null;
+          if (workerRendererRef.current === failedController) {
+            workerRendererRef.current = null;
+          }
+          workerRenderer = null;
+          renderPendingCanonicalFrame = null;
+          workerRenderInFlight = false;
+          currentWorkerRequestId = 0;
+          currentWorkerRequestPostedAt = 0;
+          workerFrameAwaitingVisibleConfirmation = false;
+          latestWorkerPayload = null;
+          lastWorkerPayload = null;
+          workerProbePayloads.clear();
+          if (
+            workerCanvasConnectedForValidation &&
+            activeCanvas !== workerCanvas &&
+            wrapper.contains(workerCanvas)
+          ) {
+            wrapper.removeChild(workerCanvas);
+          }
+          workerCanvasConnectedForValidation = false;
+          render = glRendererRef.current
+            ? renderGL
+            : (ctx2d ? renderCanvas2D : renderPendingWebGL);
+        };
+
+        const recoverFromWorkerRuntimeFailure = () => {
+          if (
+            canonicalGpuLossRecoveryStarted ||
+            signal.aborted ||
+            disposed ||
+            !mountedRef.current
+          ) {
+            publishOrbLifecycleProbe("worker-runtime-recovery-skipped", {
+              canonicalRecoveryStarted: canonicalGpuLossRecoveryStarted,
+              disposed,
+              mounted: mountedRef.current,
+              signalAborted: signal.aborted,
+            });
+            return;
+          }
+
+          if (!forceCanonicalWebGL) {
+            degradeToCanvas2D();
+            restartAnimationClock();
+            return;
+          }
+
+          if (!claimCanonicalGpuRecovery('worker-runtime')) {
+            cancelNextFrame();
+            render = renderPendingWebGL;
+            resetFrameClock();
+            scheduleCanonicalGpuRecoveryRetry(
+              'worker-runtime',
+              recoverFromWorkerRuntimeFailure,
+            );
+            return;
+          }
+          publishOrbLifecycleProbe("worker-runtime-recovery-start", {
+            forceCanonicalWebGL,
+          });
+          cancelNextFrame();
+          render = renderPendingWebGL;
+          resetFrameClock();
+
+          void (async () => {
+            const recoveredWithWebGL = await upgradeToMainThreadWebGL(
+              false,
+              true,
+            );
+            publishOrbLifecycleProbe("worker-runtime-main-recovery-result", {
+              recovered: recoveredWithWebGL,
+            });
+            if (!recoveredWithWebGL && !signal.aborted && mountedRef.current) {
+              publishOrbLifecycleProbe("worker-runtime-worker-retry-start");
+              await upgradeToWebGL(signal, true);
+            }
+          })();
+        };
+
+        const handleWorkerFailure = (
+          reason: string,
+          action: string,
+        ) => {
+          const failedAfterVisibleFrame =
+            activeCanvas === workerCanvas &&
+            canvasElRef.current === workerCanvas &&
+            visualReadyRef.current;
+
+          publishOrbLifecycleProbe("worker-failure", {
+            action,
+            canonicalRecoveryStarted: canonicalGpuLossRecoveryStarted,
+            failedAfterVisibleFrame,
+            visualReady: visualReadyRef.current,
+          });
+
+          recordError(
+            new Error('Canonical orb worker renderer failed'),
+            { component: 'ValenceOrb', action },
+          );
+          clearFailedWorkerState();
+
+          if (failedAfterVisibleFrame) {
+            recoverFromWorkerRuntimeFailure();
+          } else {
+            recoverFromWebGLStartupFailure();
+          }
+        };
+
+        const armWorkerStartupTimeout = () => {
+          clearWorkerStartupTimeout();
+          if (
+            !forceCanonicalWebGL ||
+            signal.aborted ||
+            disposed ||
+            !mountedRef.current ||
+            workerRenderedFrame ||
+            document.hidden ||
+            !isVisibleRef.current
+          ) {
+            return;
+          }
+
+          workerStartupTimeoutId = window.setTimeout(() => {
+            workerStartupTimeoutId = 0;
+            if (
+              signal.aborted ||
+              disposed ||
+              !mountedRef.current ||
+              workerRenderedFrame ||
+              document.hidden ||
+              !isVisibleRef.current
+            ) {
+              return;
+            }
+            handleWorkerFailure(
+              'Worker WebGL first frame timed out',
+              'worker-webgl-startup-timeout',
+            );
+          }, ORB_WORKER_STARTUP_TIMEOUT_MS);
+        };
+
+        const armWorkerRenderAckTimeout = (requestId: number) => {
+          clearWorkerRenderAckTimeout();
+          currentWorkerRequestId = requestId;
+          if (document.hidden || !isVisibleRef.current) return;
+          const ackTimeoutMs = resolveOrbWorkerAckTimeoutMs(
+            lastWorkerAckLatencyMs,
+            !workerRenderedFrame,
+          );
+          workerRenderAckTimeoutId = window.setTimeout(() => {
+            workerRenderAckTimeoutId = 0;
+            if (
+              signal.aborted ||
+              disposed ||
+              !mountedRef.current ||
+              !workerRenderInFlight ||
+              currentWorkerRequestId !== requestId
+            ) {
+              return;
+            }
+
+            if (document.hidden || !isVisibleRef.current) {
+              return;
+            }
+
+            handleWorkerFailure(
+              `Worker WebGL render acknowledgement timed out after ${ackTimeoutMs}ms`,
+              'worker-webgl-render-timeout',
+            );
+          }, ackTimeoutMs);
+        };
+
         const postWorkerRender = (payload: OrbWorkerPayload) => {
           if (signal.aborted || !mountedRef.current) return;
+          clearWorkerStaticHealthcheck();
           workerRenderInFlight = true;
-          worker.postMessage({
-            type: 'render',
-            requestId: ++nextWorkerRenderId,
-            payload,
-          });
+          const requestId = ++nextWorkerRenderId;
+          const postedAt = performance.now();
+          currentWorkerRequestPostedAt = postedAt;
+          if (orbClockProbeEnabled) {
+            workerProbePayloads.set(requestId, { payload, postedAt });
+          }
+          try {
+            worker.postMessage({
+              type: 'render',
+              requestId,
+              payload,
+            });
+          } catch {
+            workerProbePayloads.delete(requestId);
+            handleWorkerFailure(
+              'Worker WebGL render post failed',
+              'worker-webgl-render-send',
+            );
+            return;
+          }
+          armWorkerRenderAckTimeout(requestId);
         };
+
+        const scheduleWorkerStaticHealthcheck = () => {
+          clearWorkerStaticHealthcheck();
+          if (
+            signal.aborted ||
+            disposed ||
+            !mountedRef.current ||
+            shouldAnimateCanonicalOrb() ||
+            workerController === null ||
+            workerRenderer !== workerController ||
+            document.hidden ||
+            !isVisibleRef.current
+          ) {
+            return;
+          }
+
+          workerStaticHealthcheckTimeoutId = window.setTimeout(() => {
+            workerStaticHealthcheckTimeoutId = 0;
+            if (
+              signal.aborted ||
+              disposed ||
+              !mountedRef.current ||
+              shouldAnimateCanonicalOrb() ||
+              workerController === null ||
+              workerRenderer !== workerController
+            ) {
+              return;
+            }
+
+            if (document.hidden || !isVisibleRef.current) {
+              return;
+            }
+
+            const state = stateRef.current;
+            if (!state) return;
+            const healthcheckPayload = lastWorkerPayload;
+            if (!healthcheckPayload) {
+              scheduleWorkerStaticHealthcheck();
+              return;
+            }
+            workerController.render(healthcheckPayload);
+          }, ORB_WORKER_STATIC_HEALTHCHECK_MS);
+        };
+
+        const resumeCurrentWorkerWatchdogs = () => {
+          if (
+            signal.aborted ||
+            disposed ||
+            !mountedRef.current ||
+            document.hidden ||
+            !isVisibleRef.current ||
+            webglWorker !== worker
+          ) {
+            return;
+          }
+
+          if (!workerRenderedFrame && workerController === null) {
+            armWorkerStartupTimeout();
+            return;
+          }
+          if (workerRenderInFlight && currentWorkerRequestId !== 0) {
+            armWorkerRenderAckTimeout(currentWorkerRequestId);
+            return;
+          }
+          if (
+            workerFrameAwaitingVisibleConfirmation &&
+            workerController &&
+            lastWorkerPayload
+          ) {
+            workerFrameAwaitingVisibleConfirmation = false;
+            workerRenderedFrame = false;
+            workerController.render(lastWorkerPayload);
+            return;
+          }
+          if (!shouldAnimateCanonicalOrb() && workerController === workerRenderer) {
+            scheduleWorkerStaticHealthcheck();
+          }
+        };
+        resumeWorkerWatchdogs = resumeCurrentWorkerWatchdogs;
 
         const flushWorkerRender = () => {
           if (signal.aborted || !mountedRef.current) {
@@ -1661,19 +2914,77 @@ export const ValenceOrb = memo(function ValenceOrb({
             return;
           }
           workerRenderInFlight = false;
+          scheduleWorkerStaticHealthcheck();
         };
 
         worker.onmessage = (
-          event: MessageEvent<{ type: 'ready' | 'failed' | 'rendered'; reason?: string; requestId?: number }>,
+          event: MessageEvent<{
+            type: 'ready' | 'failed' | 'rendered' | 'unpresented';
+            code?:
+              | 'first-presentation-context-lost'
+              | 'first-presentation-readback-error'
+              | 'first-presentation-readback-exception'
+              | 'first-presentation-transparent';
+            reason?: string;
+            requestId?: number;
+          }>,
         ) => {
           if (signal.aborted || !mountedRef.current) return;
 
-          if (event.data.type === 'rendered') {
+          if (event.data.type === 'rendered' || event.data.type === 'unpresented') {
+            const renderedAt = performance.now();
+            const presented = event.data.type === 'rendered';
+            const requestId = event.data.requestId;
+            if (!isActiveOrbWorkerRenderAck(
+              requestId,
+              currentWorkerRequestId,
+              workerRenderInFlight,
+            )) {
+              return;
+            }
+            clearWorkerRenderAckTimeout();
+            const ackLatencyMs = renderedAt - currentWorkerRequestPostedAt;
+            if (Number.isFinite(ackLatencyMs) && ackLatencyMs > 0) {
+              lastWorkerAckLatencyMs = lastWorkerAckLatencyMs === null
+                ? ackLatencyMs
+                : Math.max(ackLatencyMs, lastWorkerAckLatencyMs * 0.8);
+            }
+            currentWorkerRequestId = 0;
+            currentWorkerRequestPostedAt = 0;
+            if (!presented) {
+              workerProbePayloads.delete(requestId);
+              flushWorkerRender();
+              return;
+            }
+            workerRenderedFrame = true;
+            if (forceWebGLFirstFrameTimeoutId !== 0) {
+              window.clearTimeout(forceWebGLFirstFrameTimeoutId);
+              forceWebGLFirstFrameTimeoutId = 0;
+            }
+            const probePayload = workerProbePayloads.get(requestId);
+            workerProbePayloads.delete(requestId);
+            if (probePayload) {
+              publishOrbClockProbeSample("webgl-worker", probePayload.payload, {
+                renderedAt,
+                postedAt: probePayload.postedAt,
+                requestId,
+              });
+            }
             clearWorkerStartupTimeout();
-            if (activeCanvas !== workerCanvas || !wrapper.contains(workerCanvas)) {
+            if (
+              (document.hidden || !isVisibleRef.current) &&
+              !visualReadyRef.current
+            ) {
+              workerFrameAwaitingVisibleConfirmation = true;
+              publishOrbLifecycleProbe('worker-frame-deferred-until-visible');
+              flushWorkerRender();
+              return;
+            }
+            const appliesWorkerCanvas = activeCanvas !== workerCanvas || !wrapper.contains(workerCanvas);
+            if (appliesWorkerCanvas) {
               if (shouldKeepCurrentVisibleCanvas()) {
                 rememberSlowWebGL(performance.now() - visibleCanvasMountedAt);
-                clearWorkerStartupTimeout();
+                clearCurrentWorkerWatchdogs();
                 worker.terminate();
                 if (webglWorker === worker) webglWorker = null;
                 if (workerRendererRef.current === workerRenderer) {
@@ -1682,6 +2993,12 @@ export const ValenceOrb = memo(function ValenceOrb({
                 workerRenderer = null;
                 workerRenderInFlight = false;
                 latestWorkerPayload = null;
+                lastWorkerPayload = null;
+                workerProbePayloads.clear();
+                if (workerCanvasConnectedForValidation && wrapper.contains(workerCanvas)) {
+                  wrapper.removeChild(workerCanvas);
+                }
+                workerCanvasConnectedForValidation = false;
                 if (glRendererRef.current) {
                   render = renderGL;
                 } else if (ctx2d) {
@@ -1701,11 +3018,26 @@ export const ValenceOrb = memo(function ValenceOrb({
               }
               visibleCanvasMountedAt = performance.now();
             }
+            workerCanvasConnectedForValidation = false;
             workerRendererRef.current = workerRenderer;
+            renderPendingCanonicalFrame = null;
             canvasElRef.current = workerCanvas;
             ctx2d = null;
             render = renderWorkerGL;
-            const shouldRestartAnimationClock = !visualReadyRef.current;
+            const initialWorkerPaint = !visualReadyRef.current;
+            const recoveredWorkerPaint = canonicalGpuLossRecoveryStarted;
+            const shouldRestartAnimationClock = initialWorkerPaint || recoveredWorkerPaint;
+            clearCanonicalGpuRecoveryRetry();
+            canonicalWebGLContextRestorePending = false;
+            canonicalRestoredContextRetryPending = false;
+            canonicalGpuLossRecoveryStarted = false;
+            if (appliesWorkerCanvas) {
+              publishOrbLifecycleProbe("worker-upgrade-applied", {
+                initial: initialWorkerPaint,
+                recovery: recoveredWorkerPaint,
+                size,
+              });
+            }
             markVisualReadyRef.current();
             if (shouldRestartAnimationClock) {
               restartAnimationClock();
@@ -1715,14 +3047,13 @@ export const ValenceOrb = memo(function ValenceOrb({
           }
 
           if (event.data.type === 'failed') {
-            recordError(
-              new Error(event.data.reason || 'Worker WebGL renderer failed'),
-              { component: 'ValenceOrb', action: 'worker-webgl' },
+            const failureAction = event.data.code
+              ? `worker-webgl-${event.data.code}`
+              : 'worker-webgl';
+            handleWorkerFailure(
+              event.data.reason || 'Worker WebGL renderer failed',
+              failureAction,
             );
-            clearWorkerStartupTimeout();
-            worker.terminate();
-            if (webglWorker === worker) webglWorker = null;
-            recoverFromWebGLStartupFailure();
             return;
           }
 
@@ -1742,6 +3073,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
           const controller: OrbWorkerController = {
             render(payload) {
+              lastWorkerPayload = payload;
               if (workerRenderInFlight) {
                 latestWorkerPayload = payload;
                 return;
@@ -1749,12 +3081,36 @@ export const ValenceOrb = memo(function ValenceOrb({
               postWorkerRender(payload);
             },
             dispose() {
-              worker.postMessage({ type: 'dispose' });
-              worker.terminate();
+              clearCurrentWorkerWatchdogs();
+              try {
+                worker.postMessage({ type: 'dispose' });
+              } catch {
+                recordCanonicalOrbFailure('worker-webgl-dispose-send');
+              } finally {
+                worker.terminate();
+              }
             },
           };
 
+          workerController = controller;
           workerRenderer = controller;
+          renderPendingCanonicalFrame = (
+            v,
+            t,
+            motionPhase,
+            noisePhase,
+            particles,
+            timestamp,
+          ) => {
+            controller.render(createWorkerPayload(
+              v,
+              t,
+              motionPhase,
+              noisePhase,
+              particles,
+              timestamp,
+            ));
+          };
 
           const state = stateRef.current;
           if (state) {
@@ -1772,42 +3128,43 @@ export const ValenceOrb = memo(function ValenceOrb({
         };
 
         worker.onerror = () => {
-          recordError(
-            new Error('Worker WebGL renderer errored before first paint'),
-            { component: 'ValenceOrb', action: 'worker-webgl-error' },
+          handleWorkerFailure(
+            activeCanvas === workerCanvas
+              ? 'Worker WebGL renderer errored after first paint'
+              : 'Worker WebGL renderer errored before first paint',
+            'worker-webgl-error',
           );
-          clearWorkerStartupTimeout();
-          worker.terminate();
-          if (webglWorker === worker) webglWorker = null;
-          recoverFromWebGLStartupFailure();
         };
 
-        if (forceCanonicalWebGL) {
-          workerStartupTimeoutId = window.setTimeout(() => {
-            if (signal.aborted || !mountedRef.current || visualReadyRef.current) return;
-            clearWorkerStartupTimeout();
-            worker.terminate();
-            if (webglWorker === worker) webglWorker = null;
-            if (workerRendererRef.current === workerRenderer) {
-              workerRendererRef.current = null;
-            }
-            workerRenderer = null;
-            workerRenderInFlight = false;
-            latestWorkerPayload = null;
-            recoverFromWebGLStartupFailure();
-          }, FORCED_WEBGL_WORKER_STARTUP_TIMEOUT_MS);
+        armWorkerStartupTimeout();
+
+        if (forceCanonicalWebGL && !wrapper.contains(workerCanvas)) {
+          wrapper.appendChild(workerCanvas);
+          workerCanvasConnectedForValidation = true;
         }
 
-        worker.postMessage({ type: 'init', canvas: offscreen, size, dpr }, [offscreen]);
+        try {
+          worker.postMessage({ type: 'init', canvas: offscreen, size, dpr }, [offscreen]);
+        } catch (error) {
+          clearFailedWorkerState();
+          await recoverFromSynchronousWorkerSetupFailure(
+            error,
+            'worker-webgl-init-send',
+          );
+        }
         return;
       }
 
-      const recoveredWithWebGL = await upgradeToMainThreadWebGL();
+      const recoveredWithWebGL = await upgradeToMainThreadWebGL(
+        false,
+        skipWebGPU,
+      );
       if (!recoveredWithWebGL && !signal.aborted && mountedRef.current) {
+        finishFailedCanonicalGpuRecovery('main-renderer-build');
         if (canUseCanonicalCanvasRecovery) {
           degradeToCanvas2D();
         } else {
-          setCtxFailed(true);
+          markVisualErrorRef.current();
         }
       }
     };
@@ -1829,68 +3186,101 @@ export const ValenceOrb = memo(function ValenceOrb({
     wrapper.addEventListener('pointerdown', handlePointerDown, { passive: true });
 
     const webglUpgradeAbort = new AbortController();
-    let cancelWebGLUpgrade = () => {};
-    let webglUpgradeStarted = false;
-    let webglUpgradePendingUntilVisible = false;
-    let pendingVisibilityRetryId = 0;
-    const clearPendingVisibilityRetry = () => {
-      if (pendingVisibilityRetryId !== 0) {
-        window.clearTimeout(pendingVisibilityRetryId);
-        pendingVisibilityRetryId = 0;
+    recoverCanonicalGpuLoss = (allowRestoredContext = false) => {
+      if (
+        webglUpgradeAbort.signal.aborted ||
+        disposed ||
+        !mountedRef.current
+      ) {
+        return;
       }
-    };
-    const schedulePendingVisibilityRetry = () => {
-      if (pendingVisibilityRetryId !== 0 || webglUpgradeAbort.signal.aborted) return;
-      pendingVisibilityRetryId = window.setTimeout(() => {
-        pendingVisibilityRetryId = 0;
-        if (
-          webglUpgradeAbort.signal.aborted ||
-          webglUpgradeStarted ||
-          !webglUpgradePendingUntilVisible
-        ) {
-          return;
+
+      if (canonicalGpuLossRecoveryStarted) {
+        if (allowRestoredContext) {
+          canonicalRestoredContextRetryPending = true;
+          publishOrbLifecycleProbe('canonical-gpu-restored-context-retry-pending');
         }
-        if (isVisibleRef.current) {
-          startWebGLUpgradeWhenVisible();
-          return;
-        }
-        schedulePendingVisibilityRetry();
-      }, WEBGL_VISIBILITY_RETRY_INTERVAL_MS);
+        publishOrbLifecycleProbe('canonical-gpu-recovery-already-active');
+        return;
+      }
+
+      if (allowRestoredContext) {
+        canonicalRestoredContextRetryPending = false;
+      }
+
+      if (!claimCanonicalGpuRecovery('main-renderer', allowRestoredContext)) {
+        cancelNextFrame();
+        render = renderPendingWebGL;
+        resetFrameClock();
+        scheduleCanonicalGpuRecoveryRetry('main-renderer', recoverCanonicalGpuLoss);
+        return;
+      }
+      recordError(
+        new Error('Canonical GPU context lost; rebuilding the renderer'),
+        { component: 'ValenceOrb', action: 'canonical-gpu-recovery' },
+      );
+      cancelNextFrame();
+      glRendererRef.current?.dispose();
+      glRendererRef.current = null;
+      glRenderer = null;
+      ctx2d = null;
+      render = renderPendingWebGL;
+      resetFrameClock();
+      void upgradeToWebGL(webglUpgradeAbort.signal, true);
     };
-    const armForcedWebGLFirstFrameTimeout = () => {
-      if (!forceCanonicalWebGL || forceWebGLFirstFrameTimeoutId !== 0) return;
+    recoverCanonicalGpuLossRef.current = recoverCanonicalGpuLoss;
+    let cancelWebGLUpgrade = () => {};
+    armForcedWebGLFirstFrameTimeout = () => {
+      if (
+        !forceCanonicalWebGL ||
+        !webglUpgradeStarted ||
+        forceWebGLFirstFrameTimeoutId !== 0 ||
+        document.hidden ||
+        !isVisibleRef.current
+      ) {
+        return;
+      }
       forceWebGLFirstFrameTimeoutId = window.setTimeout(
         recoverForcedWebGLFirstFrame,
         WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS,
       );
     };
     const recoverForcedWebGLFirstFrame = () => {
+      forceWebGLFirstFrameTimeoutId = 0;
       if (
         !forceCanonicalWebGL ||
         forceWebGLStartupRecovered ||
         visualReadyRef.current ||
         webglUpgradeAbort.signal.aborted ||
-        !mountedRef.current
+        !mountedRef.current ||
+        document.hidden ||
+        !isVisibleRef.current
       ) {
         return;
       }
 
       forceWebGLStartupRecovered = true;
-      forceWebGLFirstFrameTimeoutId = 0;
+      mainRendererUpgradeGeneration += 1;
       cancelWebGLUpgrade();
-      webglWorker?.terminate();
+      if (webglWorker) {
+        webglWorker.onmessage = null;
+        webglWorker.onerror = null;
+        webglWorker.terminate();
+      }
       webglWorker = null;
+      renderPendingCanonicalFrame = null;
       workerRendererRef.current?.dispose();
       workerRendererRef.current = null;
       glRendererRef.current?.dispose();
       glRendererRef.current = null;
       workerRenderer = null;
       glRenderer = null;
+      workerProbePayloads.clear();
 
       if (canUseCanonicalCanvasRecovery) {
         degradeToCanvas2D();
       } else {
-        setCtxFailed(true);
+        markVisualErrorRef.current();
       }
     };
     const startWebGLUpgradeWhenVisible = () => {
@@ -1898,11 +3288,9 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       if (!isVisibleRef.current) {
         webglUpgradePendingUntilVisible = true;
-        schedulePendingVisibilityRetry();
         return;
       }
 
-      clearPendingVisibilityRetry();
       webglUpgradePendingUntilVisible = false;
       webglUpgradeStarted = true;
       armForcedWebGLFirstFrameTimeout();
@@ -1915,9 +3303,11 @@ export const ValenceOrb = memo(function ValenceOrb({
         ([entry]) => {
           isVisibleRef.current = entry.isIntersecting;
           if (!entry.isIntersecting) {
-            resetFrameClock();
+            pauseAnimationClock();
+            suspendRendererWatchdogs();
           } else {
             restartAnimationClock();
+            resumeRendererWatchdogs();
           }
           if (entry.isIntersecting && webglUpgradePendingUntilVisible) {
             startWebGLUpgradeWhenVisible();
@@ -1940,26 +3330,43 @@ export const ValenceOrb = memo(function ValenceOrb({
       );
       webglUpgradeAbort.abort();
       window.clearTimeout(forceWebGLFirstFrameTimeoutId);
-      clearPendingVisibilityRetry();
+      clearStaticRendererHealthcheck();
+      clearCanonicalGpuRecoveryRetry();
+      clearWorkerWatchdogs();
       cancelWebGLUpgrade();
       cancelNextFrame();
       upgradeVisibilityObserver?.disconnect();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('freeze', handlePageHide);
+      document.removeEventListener('resume', handlePageShow);
       window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('dopamine-settings-change', syncAnimationPreference);
+      reducedMotionMedia?.removeEventListener?.('change', syncAnimationPreference);
+      reducedMotionMedia?.removeListener?.(syncAnimationPreference);
+      animationPreferenceObserver?.disconnect();
       wrapper.removeEventListener('pointerdown', handlePointerDown);
       if (webglEventCanvas) {
         webglEventCanvas.removeEventListener('webglcontextlost', handleContextLost);
         webglEventCanvas.removeEventListener('webglcontextrestored', handleContextRestored);
       }
-      if (workerRendererRef.current === workerRenderer) {
-        workerRendererRef.current?.dispose();
+      const activeWorkerRenderer = workerRendererRef.current;
+      if (activeWorkerRenderer && activeWorkerRenderer === workerRenderer) {
+        activeWorkerRenderer.dispose();
         workerRendererRef.current = null;
+        workerRenderer = null;
+        webglWorker = null;
       } else if (webglWorker) {
+        webglWorker.onmessage = null;
+        webglWorker.onerror = null;
         webglWorker.terminate();
+        webglWorker = null;
       }
       glRendererRef.current?.dispose();
       glRendererRef.current = null;
+      if (recoverCanonicalGpuLossRef.current === recoverCanonicalGpuLoss) {
+        recoverCanonicalGpuLossRef.current = () => {};
+      }
       canvasElRef.current = null;
 
       // Remove canvas elements from DOM
@@ -1972,7 +3379,6 @@ export const ValenceOrb = memo(function ValenceOrb({
     };
 
     // ── Animation gate ──
-    const shouldAnimateOrb = shouldAnimateCanonicalOrb();
     if (canUseCanonicalCanvasRecovery) {
       renderCanonicalCanvasFirstPaint();
     }
@@ -1987,7 +3393,9 @@ export const ValenceOrb = memo(function ValenceOrb({
           stateRef.current.noisePhase,
           stateRef.current.particles,
         );
-      } catch { /* graceful: initial frame render failure leaves the canvas untouched */ }
+      } catch {
+        recordCanonicalOrbFailure('reduced-motion-first-frame');
+      }
       return cleanup;
     }
 
@@ -2006,6 +3414,8 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     if (shouldAnimateOrb) {
       requestNextFrame();
+    } else {
+      scheduleStaticRendererHealthcheck();
     }
 
     return cleanup;
@@ -2022,14 +3432,22 @@ export const ValenceOrb = memo(function ValenceOrb({
 
     const dpr = Math.max(1, canvas.width / size);
     const stillTime = resolveReducedMotionOrbStillTime(state.time);
+    state.time = stillTime;
+    state.targetValence = valence;
     state.currentValence = valence;
+    targetValenceRef.current = valence;
+    smoothValenceRef.current = valence;
 
     if (workerRendererRef.current) {
       workerRendererRef.current.render({
         valence,
-        time: stillTime,
+        time: resolveOrbGpuShaderTime(stillTime),
+        organicTime: resolveOrbGpuOrganicTime(stillTime),
+        paletteTime: resolveOrbGpuPaletteTime(stillTime),
         motionPhase: state.motionPhase,
-        noisePhase: state.noisePhase,
+        noisePhase: resolveOrbGpuNoisePhase(state.noisePhase),
+        pulsePhase: state.pulsePhase,
+        breathPhase: state.breathPhase,
         size,
         dpr,
         isDark: document.documentElement.classList.contains('dark'),
@@ -2045,21 +3463,31 @@ export const ValenceOrb = memo(function ValenceOrb({
     }
 
     if (glRendererRef.current) {
-      glRendererRef.current.render({
-        valence,
-        time: stillTime,
-        motionPhase: state.motionPhase,
-        noisePhase: state.noisePhase,
-        size,
-        dpr,
-        isDark: document.documentElement.classList.contains('dark'),
-        color: valenceToHSL(valence),
-        shape: getShapeParams(valence),
-        particles: state.particles,
-        genesis: 1.0,
-        touch: { x: 0, y: 0, age: 0 },
-        shimmer: 0,
-      });
+      try {
+        glRendererRef.current.render({
+          valence,
+          time: resolveOrbGpuShaderTime(stillTime),
+          organicTime: resolveOrbGpuOrganicTime(stillTime),
+          paletteTime: resolveOrbGpuPaletteTime(stillTime),
+          motionPhase: state.motionPhase,
+          noisePhase: resolveOrbGpuNoisePhase(state.noisePhase),
+          pulsePhase: state.pulsePhase,
+          breathPhase: state.breathPhase,
+          size,
+          dpr,
+          isDark: document.documentElement.classList.contains('dark'),
+          color: valenceToHSL(valence),
+          shape: getShapeParams(valence),
+          particles: state.particles,
+          genesis: 1.0,
+          touch: { x: 0, y: 0, age: 0 },
+          shimmer: 0,
+        });
+      } catch {
+        recordCanonicalOrbFailure('reduced-motion-valence');
+        recoverCanonicalGpuLossRef.current();
+        return;
+      }
       markVisualReadyRef.current();
     } else {
       const rendererOverride = getRendererOverride();
@@ -2071,6 +3499,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         time: stillTime,
         motionPhase: state.motionPhase,
         noisePhase: state.noisePhase,
+        breathPhase: state.breathPhase,
         particles: state.particles,
         size,
         dpr,

@@ -120,13 +120,16 @@ describe("canonical orb invariant", () => {
   it("does not report expected WebGPU device disposal as a crash", () => {
     const webgpuSource = readSource("src/components/state-of-mind/orbWebGpu.ts");
     const lostHandlerStart = webgpuSource.indexOf("device.lost?.then");
-    const lostRecordErrorStart = webgpuSource.indexOf("recordError(", lostHandlerStart);
+    const lostReportStart = webgpuSource.indexOf(
+      "recordOrbWebGpuFailure(",
+      lostHandlerStart,
+    );
 
     expect(webgpuSource).toContain("info?.reason === 'destroyed'");
     expect(lostHandlerStart).toBeGreaterThan(-1);
-    expect(lostRecordErrorStart).toBeGreaterThan(-1);
+    expect(lostReportStart).toBeGreaterThan(-1);
     expect(webgpuSource.indexOf("info?.reason === 'destroyed'")).toBeLessThan(
-      lostRecordErrorStart,
+      lostReportStart,
     );
   });
 
@@ -146,13 +149,14 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("worker.onerror");
     expect(source).toContain("recoverFromWebGLStartupFailure");
     expect(source).toContain("upgradeToMainThreadWebGL");
-    expect(source).toContain("const recoveredWithWebGL = await upgradeToMainThreadWebGL()");
+    expect(source).toContain("const recoveredWithWebGL = await upgradeToMainThreadWebGL(");
+    expect(source).toContain("forceCanonicalWebGL,");
   });
 
   it("keeps forced WebGL recovery WebGL-only while forbidding ad-hoc first-paint substitutes", () => {
     const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
 
-    expect(source).toContain("createOrbWebGPUAsync(webgpuCanvas");
+    expect(source).toContain("result = await createOrbWebGPUAsync(upgradeCanvas");
     expect(source).toContain("createOrbGL2Async(gl2Canvas");
     expect(source).toContain("markRendererTier(upgradeCanvas, result.tier === 'webgpu' ? 'webgpu-main' : 'webgl-main')");
     expect(source).toContain("canUseCanonicalCanvasRecovery");
@@ -239,7 +243,7 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("KHR_parallel_shader_compile");
     expect(source).toContain("COMPLETION_STATUS_KHR");
     expect(source).toContain("waitForParallelCompile");
-    expect(source).toContain("requestId?: string");
+    expect(source).toContain("requestId?: number");
     expect(source).toContain("type: 'rendered'");
     const asyncStart = source.indexOf("async function buildRendererAsync");
     expect(source.indexOf("waitForParallelCompile", asyncStart)).toBeLessThan(
@@ -255,6 +259,10 @@ describe("canonical orb invariant", () => {
     expect(prewarmSource).toContain("new OffscreenCanvas");
     expect(prewarmSource).toContain("getShapeParams");
     expect(prewarmSource).toContain("valenceToHSL");
+    expect(prewarmSource).toContain("pulsePhase: 0");
+    expect(prewarmSource).toContain("breathPhase: 0");
+    expect(prewarmSource).toContain("requestId: number");
+    expect(prewarmSource).toContain("const requestId = 1");
     expect(prewarmSource).not.toContain("document.createElement(\"canvas\")");
     expect(mainSource).toContain("scheduleCanonicalOrbPrewarmAfterStartup");
     expect(mainSource).toContain("prewarmCanonicalOrbWebGL");
@@ -280,9 +288,33 @@ describe("canonical orb invariant", () => {
     expect(source).toContain("workerRenderInFlight");
     expect(source).toContain("latestWorkerPayload");
     expect(source).toContain("flushWorkerRender");
-    expect(source).toContain("requestId: ++nextWorkerRenderId");
+    expect(source).toContain("const requestId = ++nextWorkerRenderId");
+    expect(source).toContain("requestId,");
     expect(workerSource).toContain("type: 'rendered'");
     expect(workerSource).toContain("requestId: message.requestId");
+    expect(workerSource).toContain("isContextLost: () => boolean");
+    expect(workerSource).toContain("WebGL worker context lost during render");
+  });
+
+  it("recovers a lost WebGPU device through canonical WebGL without a Canvas substitute", () => {
+    const source = readSource("src/components/state-of-mind/ValenceOrb.tsx");
+    const webGpuSource = readSource("src/components/state-of-mind/orbWebGpu.ts");
+
+    expect(webGpuSource).toContain("options.onContextLost?.()");
+    expect(webGpuSource).toMatch(
+      /if \(options\.signal\?\.aborted\) \{\s*device\.destroy\?\.\(\);\s*return null;/,
+    );
+    expect(source).toContain("canonicalGpuLossRecoveryStarted");
+    expect(source).toContain("recoverCanonicalGpuLoss");
+    expect(source).toContain("onContextLost: () => {");
+    expect(source).toContain("webGpuCandidateLost = true");
+    expect(source).toContain("glRendererRef.current === webGpuCandidateRenderer");
+    expect(source).toContain("result.renderer.isContextLost?.()");
+    expect(source).toContain("if (!skipWebGPU)");
+    expect(source).toContain("void upgradeToWebGL(webglUpgradeAbort.signal, true)");
+    expect(source).not.toContain("createOrbGL(syncCanvas)");
+    expect(source).not.toContain("createOrbGL2(syncCanvas)");
+    expect(source).toContain("render = renderPendingWebGL");
   });
 
   it("prevents runtime performance mode from changing canonical orb cadence or visuals", () => {

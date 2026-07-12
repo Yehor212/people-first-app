@@ -4,8 +4,12 @@ precision highp float;
 
 uniform vec2 uResolution;
 uniform float uTime;
+uniform float uOrganicTime;
+uniform float uPaletteTime;
 uniform float uMotionPhase;
 uniform float uNoisePhase;
+uniform float uPulsePhase;
+uniform float uBreathPhase;
 uniform float uValence;
 uniform float uIsDark;
 uniform vec3 uColor;
@@ -108,6 +112,8 @@ float previewValence_p() {
 
 // Self-referential macros (C99 §6.10.3.4): production u_time=0 → originals; preview u_time>0 → live
 #define uTime (uTime + u_time)
+#define uOrganicTime (u_time > 0.0 ? uTime : uOrganicTime)
+#define uPaletteTime (u_time > 0.0 ? uTime : uPaletteTime)
 #define uResolution max(uResolution, u_resolution)
 #define uValence (u_time > 0.0 ? previewValence_p() : uValence)
 #define uColor (u_time > 0.0 ? valenceColor_p(previewValence_p()) : uColor)
@@ -224,8 +230,9 @@ void main() {
   // ── Physiological Breathing (inhale 4 → hold 1 → exhale 5 → pause 2 beats) ──
   // Valence-adaptive period: anxious breathes fast, calm breathes slow
   float breathPeriod = mix(8.0, 16.0, (uValence + 1.0) * 0.5);
-  float breathJitter = snoise(vec3(uTime * 0.03, 500.0, 0.0)) * 0.05; // bounded ±5% phase drift
-  float breathPhase = fract(uTime / breathPeriod + breathJitter);
+  float breathJitter = snoise(vec3(uOrganicTime * 0.03, 500.0, 0.0)) * 0.05; // bounded ±5% phase drift
+  float breathBasePhase = u_time > 0.0 ? fract(uTime / breathPeriod) : uBreathPhase;
+  float breathPhase = fract(breathBasePhase + breathJitter);
   float breathInhale = smoothstep(0.0, 0.333, breathPhase);
   float breathExhale = 1.0 - smoothstep(0.417, 0.833, breathPhase);
   float breathPause = step(0.833, breathPhase);
@@ -259,12 +266,12 @@ void main() {
   float warp1 = snoise(vec3(
     ca * 1.8 + noisePhase * 0.4,
     sa * 1.8 + noisePhase * 0.3,
-    uTime * 0.05
+    uOrganicTime * 0.05
   ));
   float warp2 = snoise(vec3(
     ca * 3.5 + noisePhase * 0.7 + 50.0,
     sa * 3.5 + noisePhase * 0.5 + 50.0,
-    uTime * 0.08 + 100.0
+    uOrganicTime * 0.08 + 100.0
   ));
   float warpedAngle = rotAngle + (warp1 * 0.65 + warp2 * 0.35) * warpAmp * 6.2832 * uGenesis;
 
@@ -322,8 +329,8 @@ void main() {
 
   // ── Iridescence (body-wide — visible across entire surface, stronger at rim) ──
   float filmThickness = 0.3 + 0.7 * (1.0 - max(dot(normal, viewDir), 0.0));
-  filmThickness += snoise(vec3(center * 4.0, uTime * 0.15)) * 0.12;
-  float iriPhase = uTime * 0.08;
+  filmThickness += snoise(vec3(center * 4.0, uOrganicTime * 0.15)) * 0.12;
+  float iriPhase = uPaletteTime * 0.08;
   vec3 iridescent = cosinePalette(
     filmThickness + iriPhase,
     vec3(0.60, 0.50, 0.75),  // bias: wider color range
@@ -337,8 +344,8 @@ void main() {
 
   // ── Multi-color flowing surface (2-3 colors simultaneously, Apple Siri style) ──
   float nv = (uValence + 1.0) * 0.5;
-  float colorFlow1 = snoise(vec3(center * 1.5 + uTime * 0.06, uTime * 0.04));
-  float colorFlow2 = snoise(vec3(center * 1.8 - uTime * 0.05, uTime * 0.03 + 50.0));
+  float colorFlow1 = snoise(vec3(center * 1.5 + uOrganicTime * 0.06, uOrganicTime * 0.04));
+  float colorFlow2 = snoise(vec3(center * 1.8 - uOrganicTime * 0.05, uOrganicTime * 0.03 + 50.0));
   float hueShift1 = 0.78 + sin(uTime * 0.05) * 0.35;
   float hueShift2 = -(0.78 + cos(uTime * 0.07) * 0.35);
   vec3 color2 = hueRotate(uColor, hueShift1);
@@ -365,8 +372,8 @@ void main() {
   vec3 specular2 = vec3(1.0) * ggxD2 * specF * 0.45;
 
   // ── Visible Caustics (wider patterns, 4× intensity, light-tinted) ──
-  float cSeed = snoise(vec3(center * 4.0 + uTime * 0.08, uTime * 0.05));
-  float cSeed2 = snoise(vec3(center * 6.0 - uTime * 0.06, uTime * 0.04 + 30.0));
+  float cSeed = snoise(vec3(center * 4.0 + uOrganicTime * 0.08, uOrganicTime * 0.05));
+  float cSeed2 = snoise(vec3(center * 6.0 - uOrganicTime * 0.06, uOrganicTime * 0.04 + 30.0));
   float cPattern = pow(max(0.0, 1.0 - abs(cSeed)), 2.5)
                  + pow(max(0.0, 1.0 - abs(cSeed2)), 3.0) * 0.6;
   float cStr = mix(0.06, 0.18, nv);
@@ -388,15 +395,15 @@ void main() {
   ao = mix(ao, 1.0, 0.65); // subtle — don't crush shadows
 
   // ── Surface Texture (Apple Quality: barely-visible marble for all valences) ──
-  float texNoise = snoise(vec3(center * 15.0, uTime * 0.08));
+  float texNoise = snoise(vec3(center * 15.0, uOrganicTime * 0.08));
   float surfaceTex = 1.0 + texNoise * 0.02;
 
   // [REMOVED] Chromatic dispersion — Apple Quality: iridescence covers spectral rim
 
   // ── Hope Sparkle (warm light within darkness — even at v=-1, a spark persists) ──
   float hopeIntensity = (1.0 - nv) * (1.0 - nv); // strongest at v=-1, zero at v=+1
-  float hopeFlicker = pow(max(0.0, snoise(vec3(center * 3.0, uTime * 0.8))), 8.0);
-  float hopePulse = pow(max(0.0, sin(uTime * 0.7 + snoise(vec3(uTime * 0.15, 0.0, 0.0)) * 3.0)), 4.0);
+  float hopeFlicker = pow(max(0.0, snoise(vec3(center * 3.0, uOrganicTime * 0.8))), 8.0);
+  float hopePulse = pow(max(0.0, sin(uTime * 0.7 + snoise(vec3(uOrganicTime * 0.15, 0.0, 0.0)) * 3.0)), 4.0);
   float hopeGlow = hopeFlicker * hopePulse * hopeIntensity * 0.35;
   vec3 hopeColor = vec3(1.0, 0.85, 0.6) * hopeGlow * edge; // warm amber
 
@@ -405,7 +412,7 @@ void main() {
   float envAngle = atan(reflected.y, reflected.x) * 0.1591 + 0.5;
   float envHeight = reflected.z * 0.5 + 0.5;
   vec3 envColor = cosinePalette(
-    envAngle + envHeight * 0.3 + uTime * 0.02,
+    envAngle + envHeight * 0.3 + uPaletteTime * 0.02,
     vec3(0.5, 0.5, 0.6), vec3(0.25, 0.20, 0.30),
     vec3(1.0, 1.0, 0.8), vec3(0.0, 0.33, 0.67)
   );
@@ -447,7 +454,7 @@ void main() {
   float auraLightBoost = uIsDark > 0.5 ? 1.0 : 1.3;
   vec3 auraColor = shimmerColor * 1.15 * auraLightBoost;
   // Organic atmosphere edge — noise-driven fade, ALL atmospheric effects clamp here
-  float auraEdgeNoise = 0.92 + snoise(vec3(angle * 2.0, uTime * 0.1, 0.0)) * 0.08;
+  float auraEdgeNoise = 0.92 + snoise(vec3(angle * 2.0, uOrganicTime * 0.1, 0.0)) * 0.08;
   float atmosphereFade = 1.0 - smoothstep(shapeR * 1.6, shapeR * 2.8 * auraEdgeNoise, dist);
   aura *= atmosphereFade;
   innerGlow *= atmosphereFade;
@@ -457,13 +464,14 @@ void main() {
 
   // ── Volumetric Light Rays (god rays behind orb) ──
   float rayAngle = angle + uTime * 0.03;
+  float rayNoiseAngle = angle + uOrganicTime * 0.03;
   float raySharpHi = mix(4.0, 12.0, nv);  // foggy at negative → sharp at positive
   float raySharpLo = mix(3.0, 8.0, nv);
   float rays = pow(abs(cos(rayAngle * 5.0)), raySharpHi) * 0.6
              + pow(abs(cos(rayAngle * 8.0 + 1.0)), raySharpLo) * 0.3;
   float rayDecay = mix(8.0, 4.0, nv);
   float rayFalloff = exp(-max(sdf, 0.0) * rayDecay);
-  float rayNoise = snoise(vec3(rayAngle * 2.0, uTime * 0.2, 5.0)) * 0.3 + 0.7;
+  float rayNoise = snoise(vec3(rayNoiseAngle * 2.0, uOrganicTime * 0.2, 5.0)) * 0.3 + 0.7;
   float rayStr = mix(0.04, 0.14, nv) * darkMult; // P5: -35% volumetric rays
   float rayIntensity = rays * rayFalloff * rayNoise * rayStr * atmosphereFade;
 
@@ -545,9 +553,10 @@ void main() {
   float ringTravel = 0.55;  // travel: 1.08 → 1.63 × body (wider sweep, more visible)
 
   // 3 rings at 33% phase intervals — more impact per ring, more spacing
-  float wp1 = fract(uTime * pulseSpeed);
-  float wp2 = fract(uTime * pulseSpeed + 0.333);
-  float wp3 = fract(uTime * pulseSpeed + 0.667);
+  float pulsePhase = u_time > 0.0 ? fract(uTime * pulseSpeed) : uPulsePhase;
+  float wp1 = fract(pulsePhase);
+  float wp2 = fract(pulsePhase + 0.333);
+  float wp3 = fract(pulsePhase + 0.667);
 
   // Position: ease-out cubic — fast emergence near body, decelerates outward
   float ws1 = ringGap + (1.0 - pow(1.0 - wp1, 3.0)) * ringTravel;

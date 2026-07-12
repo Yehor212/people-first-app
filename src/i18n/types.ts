@@ -3417,6 +3417,7 @@ export interface Translations {
   dailySurpriseTap: string;
   swipeToExplore: string;
   initializationError: string;
+  orbPreparationError: string;
   journalMapLabel: string;
 
   // i18n audit — P1 aria-labels

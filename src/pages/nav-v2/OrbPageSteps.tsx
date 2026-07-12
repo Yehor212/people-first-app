@@ -29,6 +29,9 @@ interface OrbSelectStepProps {
   orbValence: number;
   heroOrbSize: number;
   orbAnimationSpeed?: number;
+  orbAttempt: number;
+  onOrbVisualReady: () => void;
+  onOrbVisualError: () => void;
   draftScope: "now" | "day" | "specific";
   draftValence: number | null;
   isDenseSelectStep: boolean;
@@ -53,6 +56,9 @@ export function OrbSelectStep({
   orbValence,
   heroOrbSize,
   orbAnimationSpeed = CANONICAL_ORB_ANIMATION_SPEED,
+  orbAttempt,
+  onOrbVisualReady,
+  onOrbVisualError,
   draftScope,
   draftValence,
   isDenseSelectStep,
@@ -106,11 +112,14 @@ export function OrbSelectStep({
                 className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background motion-safe:transition-transform motion-safe:duration-200 active:scale-[0.98]"
               >
                 <ValenceOrb
+                  key={orbAttempt}
                   valence={orbValence}
                   size={heroOrbSize}
                   animationSpeed={orbAnimationSpeed}
                   transitionProfile="input-soft"
                   renderer="webgpu"
+                  onVisualReady={onOrbVisualReady}
+                  onVisualError={onOrbVisualError}
                 />
               </button>
             </div>
@@ -173,7 +182,7 @@ export function OrbSelectStep({
               data-testid="orb-page-next"
             >
               <span>{tx.next || "Next"}</span>
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              <ArrowRight className="h-4 w-4 rtl:scale-x-[-1]" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -318,7 +327,7 @@ export function OrbRefineStep({
               className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-border/60 bg-background/70 px-5 py-2.5 text-sm font-medium text-foreground backdrop-blur-md transition-colors hover:bg-[hsl(var(--zf-memory)/0.14)]"
               data-testid="orb-page-back"
             >
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              <ArrowLeft className="h-4 w-4 rtl:scale-x-[-1]" aria-hidden="true" />
               <span>{tx.back || "Back"}</span>
             </button>
 
@@ -330,7 +339,7 @@ export function OrbRefineStep({
               data-testid="orb-page-open-diary"
             >
               <span>{tx.journalStartToday || "Open Diary"}</span>
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              <ArrowRight className="h-4 w-4 rtl:scale-x-[-1]" aria-hidden="true" />
             </button>
           </div>
         </div>

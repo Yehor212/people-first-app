@@ -12,6 +12,18 @@ import { recordError } from '@/lib/crashReporting';
 const UNIFORM_VEC4_COUNT = 32;
 const PARTICLE_COUNT = 22;
 const WEBGPU_PIPELINE_TIMEOUT_MS = 650;
+const WEBGPU_CANVAS_USAGE = 0x0010 | 0x0001; // RENDER_ATTACHMENT | COPY_SRC
+const WEBGPU_READBACK_BUFFER_USAGE = 0x0008 | 0x0001; // COPY_DST | MAP_READ
+const WEBGPU_MAP_READ = 0x0001;
+const WEBGPU_READBACK_ROW_ALIGNMENT = 256;
+const WEBGPU_MIN_VISIBLE_ALPHA_PIXELS = 32;
+
+function recordOrbWebGpuFailure(action: string) {
+  recordError(
+    new Error(`Canonical orb WebGPU failure: ${action}`),
+    { component: 'ValenceOrb', action },
+  );
+}
 
 type WebGPUAny = {
   requestAdapter?: (options?: Record<string, unknown>) => Promise<unknown>;
@@ -19,6 +31,13 @@ type WebGPUAny = {
 };
 
 type GPUAdapterAny = {
+  info?: {
+    architecture?: string;
+    description?: string;
+    device?: string;
+    vendor?: string;
+  };
+  isFallbackAdapter?: boolean;
   requestDevice?: () => Promise<GPUDeviceAny>;
 };
 
@@ -26,19 +45,38 @@ type GPUDeviceAny = {
   queue: {
     writeBuffer: (buffer: unknown, offset: number, data: ArrayBufferView) => void;
     submit: (commands: unknown[]) => void;
+    onSubmittedWorkDone?: () => Promise<void>;
   };
   createShaderModule: (descriptor: Record<string, unknown>) => unknown;
   createRenderPipelineAsync: (descriptor: Record<string, unknown>) => Promise<unknown>;
-  createBuffer: (descriptor: Record<string, unknown>) => unknown;
+  createBuffer: (descriptor: Record<string, unknown>) => GPUBufferAny;
   createBindGroup: (descriptor: Record<string, unknown>) => unknown;
   createCommandEncoder: () => GPUCommandEncoderAny;
+  pushErrorScope?: (filter: 'validation' | 'out-of-memory') => void;
+  popErrorScope?: () => Promise<unknown | null>;
   destroy?: () => void;
-  lost?: Promise<{ reason?: string; message?: string }>;
+  lost?: Promise<{ reason?: string }>;
 };
 
 type GPUCommandEncoderAny = {
   beginRenderPass: (descriptor: Record<string, unknown>) => GPURenderPassEncoderAny;
+  copyTextureToBuffer?: (
+    source: { texture: GPUTextureAny },
+    destination: { buffer: GPUBufferAny; bytesPerRow: number; rowsPerImage: number },
+    copySize: { width: number; height: number; depthOrArrayLayers: number },
+  ) => void;
   finish: () => unknown;
+};
+
+type GPUBufferAny = {
+  destroy?: () => void;
+  getMappedRange?: () => ArrayBuffer;
+  mapAsync?: (mode: number) => Promise<void>;
+  unmap?: () => void;
+};
+
+type GPUTextureAny = {
+  createView: () => unknown;
 };
 
 type GPURenderPassEncoderAny = {
@@ -50,8 +88,31 @@ type GPURenderPassEncoderAny = {
 
 type GPUCanvasContextAny = {
   configure: (descriptor: Record<string, unknown>) => void;
-  getCurrentTexture: () => { createView: () => unknown };
+  getCurrentTexture: () => GPUTextureAny;
 };
+
+function alignWebGpuReadbackRow(bytesPerRow: number): number {
+  return Math.ceil(bytesPerRow / WEBGPU_READBACK_ROW_ALIGNMENT) * WEBGPU_READBACK_ROW_ALIGNMENT;
+}
+
+function hasVisibleWebGpuPixels(
+  bytes: Uint8Array,
+  width: number,
+  height: number,
+  bytesPerRow: number,
+): boolean {
+  let visiblePixels = 0;
+  for (let y = 0; y < height; y += 1) {
+    const rowStart = y * bytesPerRow;
+    for (let x = 0; x < width; x += 1) {
+      if (bytes[rowStart + x * 4 + 3] >= 8) {
+        visiblePixels += 1;
+        if (visiblePixels >= WEBGPU_MIN_VISIBLE_ALPHA_PIXELS) return true;
+      }
+    }
+  }
+  return false;
+}
 
 const WGSL_SRC = /* wgsl */ `
 struct OrbUniforms {
@@ -72,10 +133,14 @@ fn uIsDark() -> f32 { return u.v[1].x; }
 fn uGenesis() -> f32 { return u.v[1].y; }
 fn uShimmer() -> f32 { return u.v[1].z; }
 fn uColor() -> vec3<f32> { return u.v[2].xyz; }
+fn uBreathPhase() -> f32 { return u.v[2].w; }
 fn uShape() -> vec4<f32> { return u.v[3]; }
 fn uTouch() -> vec3<f32> { return u.v[4].xyz; }
 fn uNoisePhase() -> f32 { return u.v[4].w; }
 fn uParticle(i: i32) -> vec4<f32> { return u.v[5 + i]; }
+fn uPulsePhase() -> f32 { return u.v[27].x; }
+fn uOrganicTime() -> f32 { return u.v[27].y; }
+fn uPaletteTime() -> f32 { return u.v[27].z; }
 
 @vertex
 fn vs_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOut {
@@ -211,8 +276,9 @@ fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
   let noiseAmp = 0.003 + select(abs(valence) * 0.003, abs(valence) * 0.007, valence < 0.0);
 
   let breathPeriod = mix(8.0, 16.0, (valence + 1.0) * 0.5);
-  let breathJitter = snoise(vec3<f32>(time * 0.03, 500.0, 0.0)) * 0.05;
-  let breathPhase = fract(time / breathPeriod + breathJitter);
+  let organicTime = uOrganicTime();
+  let breathJitter = snoise(vec3<f32>(organicTime * 0.03, 500.0, 0.0)) * 0.05;
+  let breathPhase = fract(uBreathPhase() + breathJitter);
   let breathInhale = smoothstep(0.0, 0.333, breathPhase);
   let breathExhale = 1.0 - smoothstep(0.417, 0.833, breathPhase);
   let breathPause = step(0.833, breathPhase);
@@ -228,8 +294,8 @@ fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
   let noiseDisp = (nv1 * 0.55 + nv2 * 0.30 + nv3 * 0.15) * noiseAmp * uGenesis();
 
   let warpAmp = mix(0.006, 0.003, (valence + 1.0) * 0.5);
-  let warp1 = snoise(vec3<f32>(ca * 1.8 + noisePhase * 0.4, sa * 1.8 + noisePhase * 0.3, time * 0.05));
-  let warp2 = snoise(vec3<f32>(ca * 3.5 + noisePhase * 0.7 + 50.0, sa * 3.5 + noisePhase * 0.5 + 50.0, time * 0.08 + 100.0));
+  let warp1 = snoise(vec3<f32>(ca * 1.8 + noisePhase * 0.4, sa * 1.8 + noisePhase * 0.3, organicTime * 0.05));
+  let warp2 = snoise(vec3<f32>(ca * 3.5 + noisePhase * 0.7 + 50.0, sa * 3.5 + noisePhase * 0.5 + 50.0, organicTime * 0.08 + 100.0));
   let warpedAngle = rotAngle + (warp1 * 0.65 + warp2 * 0.35) * warpAmp * 6.2832 * uGenesis();
 
   let stableShapeM = select(shape.x, 3.0, valence < 0.0);
@@ -266,9 +332,10 @@ fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
   let fresnelStr = select(0.60, 0.75, uIsDark() > 0.5);
   let sss = max(dot(-normal, lightDir1), 0.0) * 0.22;
 
-  let filmThickness = 0.3 + 0.7 * (1.0 - max(dot(normal, viewDir), 0.0)) + snoise(vec3<f32>(center * 4.0, time * 0.15)) * 0.12;
+  let filmThickness = 0.3 + 0.7 * (1.0 - max(dot(normal, viewDir), 0.0)) + snoise(vec3<f32>(center * 4.0, organicTime * 0.15)) * 0.12;
+  let iriPhase = uPaletteTime() * 0.08;
   let iridescent = cosinePalette(
-    filmThickness + time * 0.08,
+    filmThickness + iriPhase,
     vec3<f32>(0.60, 0.50, 0.75),
     vec3<f32>(0.45, 0.40, 0.35),
     vec3<f32>(1.0, 1.0, 1.2),
@@ -277,8 +344,8 @@ fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
   let iriMaskBody = 0.3 + 0.7 * smoothstep(0.0, 0.7, fresnel);
   let iriStrength = iriMaskBody * mix(0.20, 0.40, nv);
 
-  let colorFlow1 = snoise(vec3<f32>(center * 1.5 + vec2<f32>(time * 0.06), time * 0.04));
-  let colorFlow2 = snoise(vec3<f32>(center * 1.8 - vec2<f32>(time * 0.05), time * 0.03 + 50.0));
+  let colorFlow1 = snoise(vec3<f32>(center * 1.5 + vec2<f32>(organicTime * 0.06), organicTime * 0.04));
+  let colorFlow2 = snoise(vec3<f32>(center * 1.8 - vec2<f32>(organicTime * 0.05), organicTime * 0.03 + 50.0));
   let color2 = hueRotate(uColor(), 0.78 + sin(time * 0.05) * 0.35);
   let color3 = hueRotate(uColor(), -(0.78 + cos(time * 0.07) * 0.35));
   let blend1 = smoothstep(-0.2, 0.5, colorFlow1);
@@ -299,8 +366,8 @@ fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
   let ggxDenom2 = NdotH2 * NdotH2 * (ggxA2 - 1.0) + 1.0;
   let specular2 = vec3<f32>(1.0) * (ggxA2 / (3.14159 * ggxDenom2 * ggxDenom2)) * specF * 0.45;
 
-  let cSeed = snoise(vec3<f32>(center * 4.0 + vec2<f32>(time * 0.08), time * 0.05));
-  let cSeed2 = snoise(vec3<f32>(center * 6.0 - vec2<f32>(time * 0.06), time * 0.04 + 30.0));
+  let cSeed = snoise(vec3<f32>(center * 4.0 + vec2<f32>(organicTime * 0.08), organicTime * 0.05));
+  let cSeed2 = snoise(vec3<f32>(center * 6.0 - vec2<f32>(organicTime * 0.06), organicTime * 0.04 + 30.0));
   let cPattern = pow(max(0.0, 1.0 - abs(cSeed)), 2.5) + pow(max(0.0, 1.0 - abs(cSeed2)), 3.0) * 0.6;
   let causticColor = mix(vec3<f32>(1.0), shimmerColor, 0.4) * cPattern * mix(0.06, 0.18, nv);
 
@@ -309,18 +376,18 @@ fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
   let depthPulse = sin(time * 1.2) * 0.09 + 0.91;
   let depthGlow = depthZone1 * depthPulse + depthZone2 * (1.0 - depthPulse * 0.3);
   let ao = mix(smoothstep(0.0, 0.25, normalZ), 1.0, 0.65);
-  let surfaceTex = 1.0 + snoise(vec3<f32>(center * 15.0, time * 0.08)) * 0.02;
+  let surfaceTex = 1.0 + snoise(vec3<f32>(center * 15.0, organicTime * 0.08)) * 0.02;
 
   let hopeIntensity = (1.0 - nv) * (1.0 - nv);
-  let hopeFlicker = pow(max(0.0, snoise(vec3<f32>(center * 3.0, time * 0.8))), 8.0);
-  let hopePulse = pow(max(0.0, sin(time * 0.7 + snoise(vec3<f32>(time * 0.15, 0.0, 0.0)) * 3.0)), 4.0);
+  let hopeFlicker = pow(max(0.0, snoise(vec3<f32>(center * 3.0, organicTime * 0.8))), 8.0);
+  let hopePulse = pow(max(0.0, sin(time * 0.7 + snoise(vec3<f32>(organicTime * 0.15, 0.0, 0.0)) * 3.0)), 4.0);
   let hopeColor = vec3<f32>(1.0, 0.85, 0.6) * hopeFlicker * hopePulse * hopeIntensity * 0.35 * edge;
 
   let reflected = reflect(-viewDir, normal);
   let envAngle = atan2(reflected.y, reflected.x) * 0.1591 + 0.5;
   let envHeight = reflected.z * 0.5 + 0.5;
   let envColor = cosinePalette(
-    envAngle + envHeight * 0.3 + time * 0.02,
+    envAngle + envHeight * 0.3 + uPaletteTime() * 0.02,
     vec3<f32>(0.5, 0.5, 0.6),
     vec3<f32>(0.25, 0.20, 0.30),
     vec3<f32>(1.0, 1.0, 0.8),
@@ -349,19 +416,21 @@ fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
   let darkMult = select(1.0, 1.15, uIsDark() > 0.5);
   var innerGlow = exp(-max(sdf, 0.0) * 14.0) * 0.27 * darkMult;
   var aura = exp(-dist * 2.8) * 0.18 * darkMult;
-  let bloom = exp(-dist * 5.0) * 0.07 * darkMult;
+  var bloom = exp(-dist * 5.0) * 0.07 * darkMult;
   let auraLightBoost = select(1.3, 1.0, uIsDark() > 0.5);
   let auraColor = shimmerColor * 1.15 * auraLightBoost;
-  let auraEdgeNoise = 0.92 + snoise(vec3<f32>(angle * 2.0, time * 0.1, 0.0)) * 0.08;
+  let auraEdgeNoise = 0.92 + snoise(vec3<f32>(angle * 2.0, organicTime * 0.1, 0.0)) * 0.08;
   let atmosphereFade = 1.0 - smoothstep(shapeR * 1.6, shapeR * 2.8 * auraEdgeNoise, dist);
   aura *= atmosphereFade;
   innerGlow *= atmosphereFade;
+  bloom *= atmosphereFade;
 
   let rayAngle = angle + time * 0.03;
+  let rayNoiseAngle = angle + organicTime * 0.03;
   let rays = pow(abs(cos(rayAngle * 5.0)), mix(4.0, 12.0, nv)) * 0.6
     + pow(abs(cos(rayAngle * 8.0 + 1.0)), mix(3.0, 8.0, nv)) * 0.3;
   let rayIntensity = rays * exp(-max(sdf, 0.0) * mix(8.0, 4.0, nv))
-    * (snoise(vec3<f32>(rayAngle * 2.0, time * 0.2, 5.0)) * 0.3 + 0.7)
+    * (snoise(vec3<f32>(rayNoiseAngle * 2.0, organicTime * 0.2, 5.0)) * 0.3 + 0.7)
     * mix(0.04, 0.14, nv) * darkMult * atmosphereFade;
 
   var particleGlow = 0.0;
@@ -404,9 +473,10 @@ fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
   let pulseSpeed = 0.15;
   let ringGap = 1.08;
   let ringTravel = 0.55;
-  let wp1 = fract(time * pulseSpeed);
-  let wp2 = fract(time * pulseSpeed + 0.333);
-  let wp3 = fract(time * pulseSpeed + 0.667);
+  let pulsePhase = uPulsePhase();
+  let wp1 = fract(pulsePhase);
+  let wp2 = fract(pulsePhase + 0.333);
+  let wp3 = fract(pulsePhase + 0.667);
   let ws1 = ringGap + (1.0 - pow(1.0 - wp1, 3.0)) * ringTravel;
   let ws2 = ringGap + (1.0 - pow(1.0 - wp2, 3.0)) * ringTravel;
   let ws3 = ringGap + (1.0 - pow(1.0 - wp3, 3.0)) * ringTravel;
@@ -482,51 +552,65 @@ function getNavigatorGpu(): WebGPUAny | null {
 function getWebGPUContext(canvas: HTMLCanvasElement): GPUCanvasContextAny | null {
   try {
     return canvas.getContext('webgpu') as GPUCanvasContextAny | null;
-  } catch (err) {
-    recordError(err, { component: 'ValenceOrb', action: 'webgpu-context' });
+  } catch {
+    recordOrbWebGpuFailure('webgpu-context');
     return null;
   }
+}
+
+function isSoftwareWebGpuAdapter(adapter: GPUAdapterAny): boolean {
+  if (adapter.isFallbackAdapter === true) return true;
+
+  const adapterIdentity = [
+    adapter.info?.architecture,
+    adapter.info?.description,
+    adapter.info?.device,
+    adapter.info?.vendor,
+  ]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+    .toLowerCase();
+
+  return [
+    'swiftshader',
+    'llvmpipe',
+    'software rasterizer',
+    'microsoft basic render driver',
+    'warp adapter',
+  ].some((marker) => adapterIdentity.includes(marker));
 }
 
 async function withTimeout<T>(
   promise: Promise<T>,
   options: OrbGLBuildOptions,
   timeoutMs: number,
+  failureAction: string,
 ): Promise<T | null> {
   if (options.signal?.aborted) return null;
 
   return await new Promise<T | null>((resolve) => {
     let done = false;
-    const timeout = window.setTimeout(() => {
+    let timeout = 0;
+    let abort = () => {};
+    const settle = (value: T | null) => {
       if (done) return;
       done = true;
-      resolve(null);
-    }, timeoutMs);
-
-    const abort = () => {
-      if (done) return;
-      done = true;
-      window.clearTimeout(timeout);
-      resolve(null);
+      if (timeout !== 0) window.clearTimeout(timeout);
+      options.signal?.removeEventListener('abort', abort);
+      resolve(value);
     };
+    abort = () => settle(null);
+    timeout = window.setTimeout(() => settle(null), timeoutMs);
 
     options.signal?.addEventListener('abort', abort, { once: true });
+    if (options.signal?.aborted) abort();
 
     promise.then(
-      (value) => {
+      (value) => settle(value),
+      () => {
         if (done) return;
-        done = true;
-        window.clearTimeout(timeout);
-        options.signal?.removeEventListener('abort', abort);
-        resolve(value);
-      },
-      (err) => {
-        if (done) return;
-        done = true;
-        window.clearTimeout(timeout);
-        options.signal?.removeEventListener('abort', abort);
-        recordError(err, { component: 'ValenceOrb', action: 'webgpu-build' });
-        resolve(null);
+        recordOrbWebGpuFailure(failureAction);
+        settle(null);
       },
     );
   });
@@ -540,27 +624,64 @@ export async function createOrbWebGPUAsync(
   const gpu = getNavigatorGpu();
   const context = getWebGPUContext(canvas);
   if (!gpu?.requestAdapter || !context) return null;
+  let acquiredDevice: GPUDeviceAny | null = null;
 
   try {
     const adapter = await withTimeout(
       gpu.requestAdapter({ powerPreference: 'low-power' }),
       options,
       options.timeoutMs ?? WEBGPU_PIPELINE_TIMEOUT_MS,
+      'webgpu-adapter-request',
     ) as GPUAdapterAny | null;
-    if (!adapter?.requestDevice || options.signal?.aborted) return null;
+    if (
+      !adapter?.requestDevice ||
+      options.signal?.aborted ||
+      isSoftwareWebGpuAdapter(adapter)
+    ) return null;
 
+    const devicePromise = adapter.requestDevice();
     const device = await withTimeout(
-      adapter.requestDevice(),
+      devicePromise,
       options,
       options.timeoutMs ?? WEBGPU_PIPELINE_TIMEOUT_MS,
+      'webgpu-device-request',
     );
-    if (!device || options.signal?.aborted) return null;
+    if (!device) {
+      void devicePromise.then((lateDevice) => {
+        lateDevice.destroy?.();
+      }).catch(() => {
+        recordOrbWebGpuFailure('webgpu-late-device');
+      });
+      return null;
+    }
+    if (options.signal?.aborted) {
+      device.destroy?.();
+      return null;
+    }
+    acquiredDevice = device;
+    let deviceLost = false;
+    let rendererPresented = false;
+    let firstPresentationPromise: Promise<boolean> | null = null;
+    device.lost?.then((info) => {
+      deviceLost = true;
+      if (info?.reason === 'destroyed') {
+        return;
+      }
+      recordOrbWebGpuFailure(
+        info?.reason === 'failed' ? 'webgpu-device-lost-failed' : 'webgpu-device-lost',
+      );
+      if (rendererPresented) options.onContextLost?.();
+    }).catch(() => {
+      deviceLost = true;
+      if (rendererPresented) options.onContextLost?.();
+    });
 
     const format = gpu.getPreferredCanvasFormat?.() ?? 'bgra8unorm';
     context.configure({
       device,
       format,
       alphaMode: 'premultiplied',
+      usage: WEBGPU_CANVAS_USAGE,
     });
 
     const shaderModule = device.createShaderModule({
@@ -603,9 +724,10 @@ export async function createOrbWebGPUAsync(
       }),
       options,
       options.timeoutMs ?? WEBGPU_PIPELINE_TIMEOUT_MS,
+      'webgpu-pipeline-create',
     );
 
-    if (!pipeline || options.signal?.aborted) {
+    if (!pipeline || options.signal?.aborted || deviceLost) {
       device.destroy?.();
       return null;
     }
@@ -627,84 +749,197 @@ export async function createOrbWebGPUAsync(
       ],
     });
 
-    let deviceLost = false;
-    device.lost?.then((info) => {
-      deviceLost = true;
-      if (info?.reason === 'destroyed') {
-        return;
-      }
-      recordError(
-        new Error(`WebGPU device lost: ${info?.reason ?? 'unknown'} ${info?.message ?? ''}`.trim()),
-        { component: 'ValenceOrb', action: 'webgpu-device-lost' },
-      );
-    }).catch(() => {
-      deviceLost = true;
-    });
-
     const renderer: OrbGLRenderer = {
       render(params) {
-        if (deviceLost) return;
+        if (deviceLost) throw new Error('WebGPU device is lost');
 
-        const width = params.size * params.dpr;
-        const height = params.size * params.dpr;
-        uniformData[0] = width;
-        uniformData[1] = height;
-        uniformData[2] = params.time;
-        uniformData[3] = params.valence;
-        uniformData[4] = params.isDark ? 1 : 0;
-        uniformData[5] = params.genesis;
-        uniformData[6] = params.shimmer;
-        uniformData[7] = params.motionPhase;
-
-        const [r, g, b] = hslToRgb(params.color.h, params.color.s, params.color.l);
-        uniformData[8] = r;
-        uniformData[9] = g;
-        uniformData[10] = b;
-        uniformData[11] = 0;
-
-        uniformData[12] = params.shape.m;
-        uniformData[13] = params.shape.n1;
-        uniformData[14] = params.shape.n2;
-        uniformData[15] = params.shape.n3;
-
-        uniformData[16] = params.touch.x;
-        uniformData[17] = params.touch.y;
-        uniformData[18] = params.touch.age;
-        uniformData[19] = params.noisePhase;
-
-        for (let i = 0; i < PARTICLE_COUNT; i += 1) {
-          const offset = (5 + i) * 4;
-          const particle = params.particles[i];
-          if (particle) {
-            uniformData[offset] = particle.x / params.size;
-            uniformData[offset + 1] = 1.0 - particle.y / params.size;
-            uniformData[offset + 2] = particle.radius / params.size;
-            uniformData[offset + 3] = particle.alpha;
-          } else {
-            uniformData[offset] = 0;
-            uniformData[offset + 1] = 0;
-            uniformData[offset + 2] = 0;
-            uniformData[offset + 3] = 0;
-          }
+        const validatingFirstPresentation =
+          !rendererPresented && firstPresentationPromise === null;
+        const canValidateFirstPresentation =
+          typeof device.pushErrorScope === 'function' &&
+          typeof device.popErrorScope === 'function' &&
+          typeof device.queue.onSubmittedWorkDone === 'function';
+        let pushedErrorScopeCount = 0;
+        let firstPresentationReadback: {
+          buffer: GPUBufferAny;
+          bytesPerRow: number;
+          height: number;
+          width: number;
+        } | null = null;
+        if (validatingFirstPresentation && canValidateFirstPresentation) {
+          device.pushErrorScope?.('validation');
+          device.pushErrorScope?.('out-of-memory');
+          pushedErrorScopeCount = 2;
         }
 
-        device.queue.writeBuffer(uniformBuffer, 0, uniformData);
-        const encoder = device.createCommandEncoder();
-        const pass = encoder.beginRenderPass({
-          colorAttachments: [
-            {
-              view: context.getCurrentTexture().createView(),
-              loadOp: 'clear',
-              clearValue: { r: 0, g: 0, b: 0, a: 0 },
-              storeOp: 'store',
-            },
-          ],
+        try {
+          const width = params.size * params.dpr;
+          const height = params.size * params.dpr;
+          uniformData[0] = width;
+          uniformData[1] = height;
+          uniformData[2] = params.time;
+          uniformData[3] = params.valence;
+          uniformData[4] = params.isDark ? 1 : 0;
+          uniformData[5] = params.genesis;
+          uniformData[6] = params.shimmer;
+          uniformData[7] = params.motionPhase;
+
+          const [r, g, b] = hslToRgb(params.color.h, params.color.s, params.color.l);
+          uniformData[8] = r;
+          uniformData[9] = g;
+          uniformData[10] = b;
+          uniformData[11] = params.breathPhase;
+
+          uniformData[12] = params.shape.m;
+          uniformData[13] = params.shape.n1;
+          uniformData[14] = params.shape.n2;
+          uniformData[15] = params.shape.n3;
+
+          uniformData[16] = params.touch.x;
+          uniformData[17] = params.touch.y;
+          uniformData[18] = params.touch.age;
+          uniformData[19] = params.noisePhase;
+          uniformData[27 * 4] = params.pulsePhase;
+          uniformData[27 * 4 + 1] = params.organicTime;
+          uniformData[27 * 4 + 2] = params.paletteTime;
+
+          for (let i = 0; i < PARTICLE_COUNT; i += 1) {
+            const offset = (5 + i) * 4;
+            const particle = params.particles[i];
+            if (particle) {
+              uniformData[offset] = particle.x / params.size;
+              uniformData[offset + 1] = 1.0 - particle.y / params.size;
+              uniformData[offset + 2] = particle.radius / params.size;
+              uniformData[offset + 3] = particle.alpha;
+            } else {
+              uniformData[offset] = 0;
+              uniformData[offset + 1] = 0;
+              uniformData[offset + 2] = 0;
+              uniformData[offset + 3] = 0;
+            }
+          }
+
+          device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+          const encoder = device.createCommandEncoder();
+          const currentTexture = context.getCurrentTexture();
+          const pass = encoder.beginRenderPass({
+            colorAttachments: [
+              {
+                view: currentTexture.createView(),
+                loadOp: 'clear',
+                clearValue: { r: 0, g: 0, b: 0, a: 0 },
+                storeOp: 'store',
+              },
+            ],
+          });
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, bindGroup);
+          pass.draw(3);
+          pass.end();
+          if (validatingFirstPresentation) {
+            const readbackWidth = Math.max(1, Math.floor(width));
+            const readbackHeight = Math.max(1, Math.floor(height));
+            const bytesPerRow = alignWebGpuReadbackRow(readbackWidth * 4);
+            const readbackBuffer = device.createBuffer({
+              label: 'zenflow-valence-orb-webgpu-first-frame-readback',
+              size: bytesPerRow * readbackHeight,
+              usage: WEBGPU_READBACK_BUFFER_USAGE,
+            });
+            if (
+              typeof encoder.copyTextureToBuffer === 'function' &&
+              typeof readbackBuffer.mapAsync === 'function' &&
+              typeof readbackBuffer.getMappedRange === 'function' &&
+              typeof readbackBuffer.unmap === 'function'
+            ) {
+              encoder.copyTextureToBuffer(
+                { texture: currentTexture },
+                {
+                  buffer: readbackBuffer,
+                  bytesPerRow,
+                  rowsPerImage: readbackHeight,
+                },
+                {
+                  width: readbackWidth,
+                  height: readbackHeight,
+                  depthOrArrayLayers: 1,
+                },
+              );
+              firstPresentationReadback = {
+                buffer: readbackBuffer,
+                bytesPerRow,
+                height: readbackHeight,
+                width: readbackWidth,
+              };
+            } else {
+              readbackBuffer.destroy?.();
+            }
+          }
+          device.queue.submit([encoder.finish()]);
+        } catch (error) {
+          firstPresentationReadback?.buffer.destroy?.();
+          for (let i = 0; i < pushedErrorScopeCount; i += 1) {
+            void device.popErrorScope?.().catch(() => undefined);
+          }
+          throw error;
+        }
+
+        if (!validatingFirstPresentation) return;
+        if (!canValidateFirstPresentation) {
+          firstPresentationPromise = Promise.resolve(false);
+          return;
+        }
+
+        const scopeResults: Promise<unknown | null>[] = [];
+        for (let i = 0; i < pushedErrorScopeCount; i += 1) {
+          scopeResults.push(device.popErrorScope?.() ?? Promise.resolve(new Error()));
+        }
+        const submittedWork = device.queue.onSubmittedWorkDone?.() ?? Promise.reject(new Error());
+        firstPresentationPromise = withTimeout(
+          (async () => {
+            const [, ...errors] = await Promise.all([submittedWork, ...scopeResults]);
+            if (
+              deviceLost ||
+              errors.some((error) => error !== null) ||
+              !firstPresentationReadback
+            ) {
+              firstPresentationReadback?.buffer.destroy?.();
+              return false;
+            }
+
+            const { buffer, bytesPerRow, height, width } = firstPresentationReadback;
+            let mapped = false;
+            try {
+              await buffer.mapAsync?.(WEBGPU_MAP_READ);
+              mapped = true;
+              const mappedRange = buffer.getMappedRange?.();
+              return mappedRange instanceof ArrayBuffer && hasVisibleWebGpuPixels(
+                new Uint8Array(mappedRange),
+                width,
+                height,
+                bytesPerRow,
+              );
+            } catch {
+              return false;
+            } finally {
+              if (mapped) buffer.unmap?.();
+              buffer.destroy?.();
+            }
+          })(),
+          options,
+          options.timeoutMs ?? WEBGPU_PIPELINE_TIMEOUT_MS,
+          'webgpu-first-presentation',
+        ).then((validated) => {
+          const presented = validated === true && !deviceLost;
+          if (presented) {
+            rendererPresented = true;
+          } else {
+            firstPresentationPromise = null;
+          }
+          return presented;
         });
-        pass.setPipeline(pipeline);
-        pass.setBindGroup(0, bindGroup);
-        pass.draw(3);
-        pass.end();
-        device.queue.submit([encoder.finish()]);
+      },
+      waitForFirstPresentation() {
+        return firstPresentationPromise ?? Promise.resolve(false);
       },
       dispose() {
         deviceLost = true;
@@ -715,13 +950,25 @@ export async function createOrbWebGPUAsync(
       },
     };
 
-    return {
+    const result: OrbGLBuildResult = {
       renderer,
       durationMs: performance.now() - started,
       tier: 'webgpu',
     };
-  } catch (err) {
-    recordError(err, { component: 'ValenceOrb', action: 'createOrbWebGPUAsync' });
+    await Promise.resolve();
+    if (deviceLost || options.signal?.aborted) {
+      device.destroy?.();
+      return null;
+    }
+    acquiredDevice = null;
+    return result;
+  } catch {
+    try {
+      acquiredDevice?.destroy?.();
+    } catch {
+      recordOrbWebGpuFailure('createOrbWebGPUAsync-cleanup');
+    }
+    recordOrbWebGpuFailure('createOrbWebGPUAsync');
     return null;
   }
 }

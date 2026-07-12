@@ -75,8 +75,12 @@ export interface OrbGLRenderer {
   render: (params: {
     valence: number;
     time: number;
+    organicTime: number;
+    paletteTime: number;
     motionPhase: number;
     noisePhase: number;
+    pulsePhase: number;
+    breathPhase: number;
     size: number;
     dpr: number;
     isDark: boolean;
@@ -86,7 +90,8 @@ export interface OrbGLRenderer {
     genesis: number;
     touch: { x: number; y: number; age: number };
     shimmer: number;
-  }) => void;
+  }) => boolean | void;
+  waitForFirstPresentation?: () => Promise<boolean>;
   dispose: () => void;
   isContextLost: () => boolean;
 }
@@ -124,6 +129,7 @@ interface KHRParallelShaderCompile {
 export interface OrbGLBuildOptions {
   signal?: AbortSignal;
   timeoutMs?: number;
+  onContextLost?: () => void;
 }
 
 export interface OrbGLBuildResult {
@@ -133,6 +139,16 @@ export interface OrbGLBuildResult {
 }
 
 const DEFAULT_ASYNC_BUILD_TIMEOUT_MS = 500;
+
+function recordOrbWebGlFailure(
+  action: string,
+  context: Record<string, string> = {},
+) {
+  recordError(
+    new Error(`Canonical orb WebGL failure: ${action}`),
+    { component: 'ValenceOrb', action, ...context },
+  );
+}
 
 function compileShader(
   gl: GLContext,
@@ -146,10 +162,9 @@ function compileShader(
   gl.compileShader(shader);
 
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    const infoLog = gl.getShaderInfoLog(shader);
-    recordError(
-      new Error(`WebGL shader compile failed: ${infoLog?.slice(0, 300) ?? 'unknown'}`),
-      { component: 'ValenceOrb', shaderType: type === gl.VERTEX_SHADER ? 'vertex' : 'fragment' },
+    recordOrbWebGlFailure(
+      'webgl-shader-compile',
+      { shaderType: type === gl.VERTEX_SHADER ? 'vertex' : 'fragment' },
     );
     gl.deleteShader(shader);
     return null;
@@ -187,30 +202,43 @@ function waitForParallelCompile(
   extension: KHRParallelShaderCompile,
   options: OrbGLBuildOptions,
 ): Promise<boolean> {
-  const started = performance.now();
   const timeoutMs = options.timeoutMs ?? DEFAULT_ASYNC_BUILD_TIMEOUT_MS;
 
   return new Promise((resolve) => {
+    let settled = false;
+    let rafId = 0;
+    let timeoutId = 0;
+    const finish = (completed: boolean) => {
+      if (settled) return;
+      settled = true;
+      if (rafId !== 0) cancelAnimationFrame(rafId);
+      if (timeoutId !== 0) window.clearTimeout(timeoutId);
+      options.signal?.removeEventListener('abort', handleAbort);
+      resolve(completed);
+    };
+    const handleAbort = () => finish(false);
     const poll = () => {
+      rafId = 0;
       if (options.signal?.aborted || gl.isContextLost()) {
-        resolve(false);
+        finish(false);
         return;
       }
 
       if (gl.getProgramParameter(program, extension.COMPLETION_STATUS_KHR)) {
-        resolve(true);
+        finish(true);
         return;
       }
 
-      if (performance.now() - started >= timeoutMs) {
-        resolve(false);
-        return;
-      }
-
-      requestAnimationFrame(poll);
+      rafId = requestAnimationFrame(poll);
     };
 
-    requestAnimationFrame(poll);
+    options.signal?.addEventListener('abort', handleAbort, { once: true });
+    timeoutId = window.setTimeout(() => finish(false), timeoutMs);
+    if (options.signal?.aborted) {
+      handleAbort();
+      return;
+    }
+    rafId = requestAnimationFrame(poll);
   });
 }
 
@@ -241,11 +269,7 @@ function buildRenderer(
   gl.linkProgram(program);
 
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    const linkLog = gl.getProgramInfoLog(program);
-    recordError(
-      new Error(`WebGL program link failed: ${linkLog?.slice(0, 300) ?? 'unknown'}`),
-      { component: 'ValenceOrb' },
-    );
+    recordOrbWebGlFailure('webgl-program-link');
     gl.deleteProgram(program);
     gl.deleteShader(vs);
     gl.deleteShader(fs);
@@ -264,17 +288,38 @@ function createRendererFromLinkedProgram(
   // Fullscreen triangle (3 vertices, covers entire [-1,1] viewport)
   const vertices = new Float32Array([-1, -1, 3, -1, -1, 3]);
   const vbo = gl.createBuffer();
+  if (!vbo) {
+    recordOrbWebGlFailure('webgl-vertex-buffer-allocation');
+    cleanupProgram(gl, program, vs, fs);
+    return null;
+  }
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
   gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+  if (gl.isContextLost() || gl.getError() !== gl.NO_ERROR) {
+    recordOrbWebGlFailure('webgl-vertex-buffer-upload');
+    gl.deleteBuffer(vbo);
+    cleanupProgram(gl, program, vs, fs);
+    return null;
+  }
 
   const aPosition = gl.getAttribLocation(program, 'aPosition');
+  if (aPosition < 0) {
+    recordOrbWebGlFailure('webgl-position-attribute');
+    gl.deleteBuffer(vbo);
+    cleanupProgram(gl, program, vs, fs);
+    return null;
+  }
 
   // Uniform locations
   const loc = {
     uResolution: gl.getUniformLocation(program, 'uResolution'),
     uTime: gl.getUniformLocation(program, 'uTime'),
+    uOrganicTime: gl.getUniformLocation(program, 'uOrganicTime'),
+    uPaletteTime: gl.getUniformLocation(program, 'uPaletteTime'),
     uMotionPhase: gl.getUniformLocation(program, 'uMotionPhase'),
     uNoisePhase: gl.getUniformLocation(program, 'uNoisePhase'),
+    uPulsePhase: gl.getUniformLocation(program, 'uPulsePhase'),
+    uBreathPhase: gl.getUniformLocation(program, 'uBreathPhase'),
     uValence: gl.getUniformLocation(program, 'uValence'),
     uIsDark: gl.getUniformLocation(program, 'uIsDark'),
     uColor: gl.getUniformLocation(program, 'uColor'),
@@ -290,6 +335,7 @@ function createRendererFromLinkedProgram(
 
   // Pre-allocate particle data buffer (22 particles × 4 floats)
   const particleData = new Float32Array(22 * 4);
+  let firstPresentationPending = true;
 
   return {
     render(params) {
@@ -308,8 +354,12 @@ function createRendererFromLinkedProgram(
       // Set uniforms
       gl.uniform2f(loc.uResolution, w, h);
       gl.uniform1f(loc.uTime, params.time);
+      gl.uniform1f(loc.uOrganicTime, params.organicTime);
+      gl.uniform1f(loc.uPaletteTime, params.paletteTime);
       gl.uniform1f(loc.uMotionPhase, params.motionPhase);
       gl.uniform1f(loc.uNoisePhase, params.noisePhase);
+      gl.uniform1f(loc.uPulsePhase, params.pulsePhase);
+      gl.uniform1f(loc.uBreathPhase, params.breathPhase);
       gl.uniform1f(loc.uValence, params.valence);
       gl.uniform1f(loc.uIsDark, isDark ? 1.0 : 0.0);
 
@@ -343,6 +393,41 @@ function createRendererFromLinkedProgram(
       gl.enableVertexAttribArray(aPosition);
       gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (firstPresentationPending) {
+        if (params.genesis <= 0.15) return false;
+        const readbackWidth = Math.max(1, Math.floor(w * 0.8));
+        const firstFrameStrip = new Uint8Array(readbackWidth * 4);
+        try {
+          gl.readPixels(
+            Math.max(0, Math.floor((w - readbackWidth) / 2)),
+            Math.max(0, Math.floor(h / 2)),
+            readbackWidth,
+            1,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            firstFrameStrip,
+          );
+        } catch {
+          recordOrbWebGlFailure('webgl-first-presentation-readback');
+        }
+        let hasVisiblePixel = false;
+        for (let alphaIndex = 3; alphaIndex < firstFrameStrip.length; alphaIndex += 4) {
+          if (firstFrameStrip[alphaIndex] > 0) {
+            hasVisiblePixel = true;
+            break;
+          }
+        }
+        if (
+          gl.isContextLost() ||
+          gl.getError() !== gl.NO_ERROR ||
+          !hasVisiblePixel
+        ) {
+          recordOrbWebGlFailure('webgl-first-presentation');
+          throw new Error('WebGL first presentation failed');
+        }
+        firstPresentationPending = false;
+      }
+      return true;
     },
 
     dispose() {
@@ -357,6 +442,16 @@ function createRendererFromLinkedProgram(
       return gl.isContextLost();
     },
   };
+}
+
+function releaseAbandonedContext(gl: GLContext, action: string) {
+  try {
+    if (!gl.isContextLost()) {
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+    }
+  } catch {
+    recordOrbWebGlFailure(action);
+  }
 }
 
 // ── Public API ──
@@ -398,40 +493,34 @@ async function buildRendererAsync(
   const durationMs = performance.now() - started;
 
   if (!completed) {
-    recordError(
-      new Error(`WebGL shader compile deferred or timed out after ${Math.round(durationMs)}ms`),
-      { component: 'ValenceOrb', action: 'parallel-shader-compile', tier },
+    recordOrbWebGlFailure(
+      'parallel-shader-compile',
+      { durationMs: String(Math.round(durationMs)), tier },
     );
     cleanupProgram(gl, program, vs, fs);
     return null;
   }
 
   if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
-    const infoLog = gl.getShaderInfoLog(vs);
-    recordError(
-      new Error(`WebGL vertex shader compile failed: ${infoLog?.slice(0, 300) ?? 'unknown'}`),
-      { component: 'ValenceOrb', shaderType: 'vertex', tier },
+    recordOrbWebGlFailure(
+      'webgl-async-shader-compile',
+      { shaderType: 'vertex', tier },
     );
     cleanupProgram(gl, program, vs, fs);
     return null;
   }
 
   if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
-    const infoLog = gl.getShaderInfoLog(fs);
-    recordError(
-      new Error(`WebGL fragment shader compile failed: ${infoLog?.slice(0, 300) ?? 'unknown'}`),
-      { component: 'ValenceOrb', shaderType: 'fragment', tier },
+    recordOrbWebGlFailure(
+      'webgl-async-shader-compile',
+      { shaderType: 'fragment', tier },
     );
     cleanupProgram(gl, program, vs, fs);
     return null;
   }
 
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    const linkLog = gl.getProgramInfoLog(program);
-    recordError(
-      new Error(`WebGL program link failed: ${linkLog?.slice(0, 300) ?? 'unknown'}`),
-      { component: 'ValenceOrb', tier },
-    );
+    recordOrbWebGlFailure('webgl-async-program-link', { tier });
     cleanupProgram(gl, program, vs, fs);
     return null;
   }
@@ -442,12 +531,16 @@ async function buildRendererAsync(
 }
 
 export function createOrbGL2(canvas: HTMLCanvasElement): OrbGLRenderer | null {
+  let gl: WebGL2RenderingContext | null = null;
   try {
-    const gl = canvas.getContext('webgl2', GL_OPTIONS);
+    gl = canvas.getContext('webgl2', GL_OPTIONS);
     if (!gl) return null;
-    return buildRenderer(gl, VERT_SRC_300, FRAG_SRC_300);
-  } catch (err) {
-    recordError(err, { component: 'ValenceOrb', action: 'createOrbGL2' });
+    const renderer = buildRenderer(gl, VERT_SRC_300, FRAG_SRC_300);
+    if (!renderer) releaseAbandonedContext(gl, 'release-abandoned-webgl2');
+    return renderer;
+  } catch {
+    if (gl) releaseAbandonedContext(gl, 'release-abandoned-webgl2-error');
+    recordOrbWebGlFailure('createOrbGL2');
     return null;
   }
 }
@@ -456,12 +549,16 @@ export async function createOrbGL2Async(
   canvas: HTMLCanvasElement,
   options: OrbGLBuildOptions = {},
 ): Promise<OrbGLBuildResult | null> {
+  let gl: WebGL2RenderingContext | null = null;
   try {
-    const gl = canvas.getContext('webgl2', GL_OPTIONS);
+    gl = canvas.getContext('webgl2', GL_OPTIONS);
     if (!gl) return null;
-    return await buildRendererAsync(gl, VERT_SRC_300, FRAG_SRC_300, 'webgl2', options);
-  } catch (err) {
-    recordError(err, { component: 'ValenceOrb', action: 'createOrbGL2Async' });
+    const result = await buildRendererAsync(gl, VERT_SRC_300, FRAG_SRC_300, 'webgl2', options);
+    if (!result) releaseAbandonedContext(gl, 'release-abandoned-webgl2-async');
+    return result;
+  } catch {
+    if (gl) releaseAbandonedContext(gl, 'release-abandoned-webgl2-async-error');
+    recordOrbWebGlFailure('createOrbGL2Async');
     return null;
   }
 }
@@ -471,13 +568,17 @@ export async function createOrbGL2Async(
  * Returns null if WebGL is unavailable → ValenceOrb uses Canvas 2D fallback.
  */
 export function createOrbGL(canvas: HTMLCanvasElement): OrbGLRenderer | null {
+  let gl: WebGLRenderingContext | null = null;
   try {
-    const gl = canvas.getContext('webgl', GL_OPTIONS);
+    gl = canvas.getContext('webgl', GL_OPTIONS);
     if (!gl) return null;
     gl.getExtension('OES_standard_derivatives'); // Required for fwidth() in GLSL ES 1.0
-    return buildRenderer(gl, VERT_SRC, FRAG_SRC);
-  } catch (err) {
-    recordError(err, { component: 'ValenceOrb', action: 'createOrbGL' });
+    const renderer = buildRenderer(gl, VERT_SRC, FRAG_SRC);
+    if (!renderer) releaseAbandonedContext(gl, 'release-abandoned-webgl');
+    return renderer;
+  } catch {
+    if (gl) releaseAbandonedContext(gl, 'release-abandoned-webgl-error');
+    recordOrbWebGlFailure('createOrbGL');
     return null;
   }
 }
@@ -486,13 +587,17 @@ export async function createOrbGLAsync(
   canvas: HTMLCanvasElement,
   options: OrbGLBuildOptions = {},
 ): Promise<OrbGLBuildResult | null> {
+  let gl: WebGLRenderingContext | null = null;
   try {
-    const gl = canvas.getContext('webgl', GL_OPTIONS);
+    gl = canvas.getContext('webgl', GL_OPTIONS);
     if (!gl) return null;
     gl.getExtension('OES_standard_derivatives'); // Required for fwidth() in GLSL ES 1.0
-    return await buildRendererAsync(gl, VERT_SRC, FRAG_SRC, 'webgl', options);
-  } catch (err) {
-    recordError(err, { component: 'ValenceOrb', action: 'createOrbGLAsync' });
+    const result = await buildRendererAsync(gl, VERT_SRC, FRAG_SRC, 'webgl', options);
+    if (!result) releaseAbandonedContext(gl, 'release-abandoned-webgl-async');
+    return result;
+  } catch {
+    if (gl) releaseAbandonedContext(gl, 'release-abandoned-webgl-async-error');
+    recordOrbWebGlFailure('createOrbGLAsync');
     return null;
   }
 }

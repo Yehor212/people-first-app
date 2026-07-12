@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import type { AppliedTheme } from "@/stores/themeStore";
 
@@ -8,6 +8,16 @@ const appAudioSettingsState = vi.hoisted(() => ({
   volume: 1,
   feedbackSoundsEnabled: true,
   canPlayFeedback: true,
+}));
+
+const orbVisualControl = vi.hoisted(() => ({
+  mode: "auto",
+  readyCallbacks: [] as Array<() => void>,
+  errorCallbacks: [] as Array<() => void>,
+}));
+
+const androidBackControl = vi.hoisted(() => ({
+  callback: null as null | (() => boolean),
 }));
 
 import { OrbPage } from "../OrbPage";
@@ -59,6 +69,11 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settingsSoundSummaryOff: "Muted",
       soundOn: "On",
       soundOff: "Off",
+      loading: "Loading",
+      initializingApp: "Preparing ZenFlow",
+      initializationError: "Initialization Error",
+      orbPreparationError: "We couldn't open your mood check-in. Try again.",
+      tryAgain: "Try again",
     },
     language: "en",
     isRTL: false,
@@ -77,31 +92,68 @@ vi.mock("@/lib/haptics", () => ({
   hapticMedium: vi.fn(),
 }));
 
-vi.mock("@/components/state-of-mind/ValenceOrb", () => ({
-  CANONICAL_ORB_ANIMATION_SPEED: 1,
-  ValenceOrb: ({
-    valence,
-    size,
-    transitionProfile = "input-soft",
-    animationSpeed = 1,
-    renderer = "auto",
-  }: {
-    valence: number;
-    size?: number;
-    transitionProfile?: string;
-    animationSpeed?: number;
-    renderer?: string;
-  }) => (
-    <div
-      data-testid="valence-orb"
-      data-valence={valence}
-      data-size={size}
-      data-transition-profile={transitionProfile}
-      data-animation-speed={animationSpeed}
-      data-renderer={renderer}
-    >
-      orb
-    </div>
+vi.mock("@/lib/androidBackHandler", () => ({
+  registerModalCloseCallback: (callback: () => boolean) => {
+    androidBackControl.callback = callback;
+    return () => {
+      if (androidBackControl.callback === callback) androidBackControl.callback = null;
+    };
+  },
+}));
+
+vi.mock("@/components/state-of-mind/ValenceOrb", async () => {
+  const { useEffect } = await import("react");
+  return {
+    CANONICAL_ORB_ANIMATION_SPEED: 1,
+    ValenceOrb: ({
+      valence,
+      size,
+      transitionProfile = "input-soft",
+      animationSpeed = 1,
+      renderer = "auto",
+      onVisualReady,
+      onVisualError,
+    }: {
+      valence: number;
+      size?: number;
+      transitionProfile?: string;
+      animationSpeed?: number;
+      renderer?: string;
+      onVisualReady?: () => void;
+      onVisualError?: () => void;
+    }) => {
+      useEffect(() => {
+        if (onVisualReady) orbVisualControl.readyCallbacks.push(onVisualReady);
+        if (onVisualError) orbVisualControl.errorCallbacks.push(onVisualError);
+        if (orbVisualControl.mode === "auto") onVisualReady?.();
+        if (orbVisualControl.mode === "error") onVisualError?.();
+      }, [onVisualError, onVisualReady, size]);
+
+      return (
+        <div
+          data-testid="valence-orb"
+          data-valence={valence}
+          data-size={size}
+          data-transition-profile={transitionProfile}
+          data-animation-speed={animationSpeed}
+          data-renderer={renderer}
+        >
+          orb
+        </div>
+      );
+    },
+  };
+});
+
+vi.mock("@/components/SplashScreen", () => ({
+  SplashScreen: ({ subtitle }: { subtitle: string }) => (
+    <div data-testid="orb-cold-loading-screen">{subtitle}</div>
+  ),
+}));
+
+vi.mock("@/components/PremiumLoader", () => ({
+  PremiumLoader: ({ label }: { label?: string }) => (
+    <div role="status" data-testid="orb-warm-loading-indicator" aria-label={label} />
   ),
 }));
 
@@ -198,6 +250,27 @@ function setViewport(width: number, height: number) {
   window.dispatchEvent(new Event("resize"));
 }
 
+function installManualRaf() {
+  const callbacks = new Map<number, FrameRequestCallback>();
+  let nextId = 1;
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+    const id = nextId++;
+    callbacks.set(id, callback);
+    return id;
+  });
+  vi.stubGlobal("cancelAnimationFrame", (id: number) => callbacks.delete(id));
+
+  return {
+    pendingCount: () => callbacks.size,
+    flushNext: () => {
+      const next = callbacks.entries().next().value;
+      if (!next) return;
+      callbacks.delete(next[0]);
+      next[1](performance.now());
+    },
+  };
+}
+
 vi.mock("@/stores", () => ({
   useUserDataStore: (selector: (s: unknown) => unknown) => selector(moodsSnapshot),
 }));
@@ -250,6 +323,16 @@ describe("OrbPage progressive flow", () => {
     themeState.appliedTheme = "ink";
     mockUseShouldAnimate.mockReset();
     mockUseShouldAnimate.mockReturnValue(true);
+    orbVisualControl.mode = "auto";
+    orbVisualControl.readyCallbacks = [];
+    orbVisualControl.errorCallbacks = [];
+    androidBackControl.callback = null;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      callback(performance.now());
+      return 1;
+    });
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    window.history.replaceState({ navV2Page: "orb" }, "", window.location.href);
     mockMoods = [];
     rebuildMoodsSnapshot();
     setViewport(1024, 900);
@@ -266,6 +349,201 @@ describe("OrbPage progressive flow", () => {
       configurable: true,
       value: media.pause,
     });
+  });
+
+  it("keeps a cold orb route inert until a real orb frame survives the next paint", async () => {
+    orbVisualControl.mode = "manual";
+    window.history.replaceState({}, "", window.location.href);
+    const raf = installManualRaf();
+
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    const main = screen.getByTestId("orb-page");
+    expect(screen.getByTestId("orb-cold-loading-screen")).toBeInTheDocument();
+    expect(main).toHaveAttribute("aria-hidden", "true");
+    expect(main).toHaveAttribute("inert");
+    expect(screen.queryByTestId("orb-page-ambience-toggle")).toBeNull();
+    expect(document.activeElement).not.toBe(main);
+
+    act(() => orbVisualControl.readyCallbacks[0]?.());
+    expect(main).toHaveAttribute("data-orb-visual-status", "pending");
+    expect(raf.pendingCount()).toBe(1);
+
+    act(() => raf.flushNext());
+    await waitFor(() =>
+      expect(main).toHaveAttribute("data-orb-visual-status", "ready"),
+    );
+    expect(screen.queryByTestId("orb-cold-loading-screen")).toBeNull();
+    expect(main).not.toHaveAttribute("aria-hidden");
+    expect(main).not.toHaveAttribute("inert");
+    expect(screen.getByTestId("orb-page-ambience-toggle")).toBeInTheDocument();
+    expect(document.activeElement).toBe(main);
+  });
+
+  it("requires a fresh renderer frame after a responsive orb resize", async () => {
+    orbVisualControl.mode = "manual";
+    const raf = installManualRaf();
+
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+    const main = screen.getByTestId("orb-page");
+    const firstReady = orbVisualControl.readyCallbacks[0];
+
+    act(() => firstReady?.());
+    act(() => raf.flushNext());
+    await waitFor(() =>
+      expect(main).toHaveAttribute("data-orb-visual-status", "ready"),
+    );
+
+    act(() => setViewport(1024, 760));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-size", "260");
+      expect(main).toHaveAttribute("data-orb-visual-status", "pending");
+      expect(orbVisualControl.readyCallbacks.length).toBeGreaterThanOrEqual(2);
+    });
+
+    act(() => firstReady?.());
+    expect(raf.pendingCount()).toBe(0);
+    expect(main).toHaveAttribute("data-orb-visual-status", "pending");
+
+    act(() => orbVisualControl.readyCallbacks.at(-1)?.());
+    expect(raf.pendingCount()).toBe(1);
+    act(() => raf.flushNext());
+    await waitFor(() =>
+      expect(main).toHaveAttribute("data-orb-visual-status", "ready"),
+    );
+  });
+
+  it("waits for a visible paint after a hidden-tab readiness signal", async () => {
+    orbVisualControl.mode = "manual";
+    const raf = installManualRaf();
+    const hiddenDescriptor = Object.getOwnPropertyDescriptor(document, "hidden");
+
+    try {
+      Object.defineProperty(document, "hidden", { configurable: true, value: true });
+      render(<OrbPage onAddMood={onAddMoodMock} />);
+
+      act(() => orbVisualControl.readyCallbacks[0]?.());
+      expect(raf.pendingCount()).toBe(0);
+      expect(screen.getByTestId("orb-page")).toHaveAttribute(
+        "data-orb-visual-status",
+        "pending",
+      );
+
+      Object.defineProperty(document, "hidden", { configurable: true, value: false });
+      act(() => {
+        document.dispatchEvent(new Event("visibilitychange"));
+      });
+      expect(raf.pendingCount()).toBe(1);
+      expect(screen.getByTestId("orb-page")).toHaveAttribute(
+        "data-orb-visual-status",
+        "pending",
+      );
+
+      act(() => raf.flushNext());
+      await waitFor(() =>
+        expect(screen.getByTestId("orb-page")).toHaveAttribute(
+          "data-orb-visual-status",
+          "ready",
+        ),
+      );
+    } finally {
+      if (hiddenDescriptor) {
+        Object.defineProperty(document, "hidden", hiddenDescriptor);
+      } else {
+        Reflect.deleteProperty(document, "hidden");
+      }
+    }
+  });
+
+  it("shows a localized recovery state and ignores stale readiness after retry", async () => {
+    orbVisualControl.mode = "manual";
+    const raf = installManualRaf();
+
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+    const firstReady = orbVisualControl.readyCallbacks[0];
+    const firstError = orbVisualControl.errorCallbacks[0];
+
+    act(() => firstError?.());
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "We couldn't open your mood check-in. Try again.",
+    );
+    expect(screen.getByTestId("orb-page-retry")).toHaveAccessibleName("Try again");
+    expect(screen.getByTestId("orb-page-error-back")).toHaveAccessibleName("Back");
+
+    act(() => firstReady?.());
+    expect(raf.pendingCount()).toBe(0);
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("orb-page-retry"));
+    await waitFor(() => expect(orbVisualControl.readyCallbacks.length).toBe(2));
+    expect(screen.getByTestId("orb-warm-loading-indicator")).toBeInTheDocument();
+
+    act(() => firstReady?.());
+    expect(raf.pendingCount()).toBe(0);
+    expect(screen.getByTestId("orb-page")).toHaveAttribute(
+      "data-orb-visual-status",
+      "pending",
+    );
+
+    act(() => orbVisualControl.readyCallbacks.at(-1)?.());
+    expect(raf.pendingCount()).toBe(1);
+    act(() => raf.flushNext());
+    await waitFor(() =>
+      expect(screen.getByTestId("orb-page")).toHaveAttribute(
+        "data-orb-visual-status",
+        "ready",
+      ),
+    );
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("routes Android Back through refine and terminal renderer states", async () => {
+    const navigateToPage = vi.fn();
+    render(<OrbPage navigateToPage={navigateToPage} onAddMood={onAddMoodMock} />);
+
+    fireEvent.click(screen.getByTestId("orb-page-next"));
+    expect(screen.getByTestId("orb-page-refine")).toBeInTheDocument();
+    expect(androidBackControl.callback).not.toBeNull();
+    let handled = false;
+    act(() => {
+      handled = androidBackControl.callback?.() ?? false;
+    });
+    expect(handled).toBe(true);
+    expect(screen.getByTestId("orb-page-select")).toBeInTheDocument();
+
+    const backSpy = vi.spyOn(window.history, "back").mockImplementation(() => {});
+    act(() => orbVisualControl.errorCallbacks.at(-1)?.());
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    act(() => {
+      handled = androidBackControl.callback?.() ?? false;
+    });
+    expect(handled).toBe(true);
+    expect(backSpy.mock.calls.length + navigateToPage.mock.calls.length).toBe(1);
+    if (navigateToPage.mock.calls.length > 0) {
+      expect(navigateToPage).toHaveBeenCalledWith("habits");
+    }
+  });
+
+  it("preserves the in-progress mood draft across terminal renderer retry", async () => {
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-valence", "0.5");
+
+    act(() => orbVisualControl.errorCallbacks.at(-1)?.());
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.getByTestId("orb-page-retry")).toHaveClass("min-h-[44px]");
+    expect(screen.getByTestId("orb-page-error-back")).toHaveClass("min-h-[44px]");
+
+    fireEvent.click(screen.getByTestId("orb-page-retry"));
+    await waitFor(() =>
+      expect(screen.getByTestId("orb-page")).toHaveAttribute(
+        "data-orb-visual-status",
+        "ready",
+      ),
+    );
+    expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-valence", "0.5");
+    expect(screen.getByTestId("mood-orb-picker")).toHaveAttribute("data-value", "0.5");
   });
 
   it("renders the page landmark and V2 shell chrome", () => {

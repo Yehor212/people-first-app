@@ -3,12 +3,63 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
+import { ORB_SHADER_TIME_WRAP_SECONDS } from "../ValenceOrb";
 import { getShapeParams, resolveStableBreathPhase } from "../orbRenderer";
 
 const shaderSource = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "../orbShader.frag"),
   "utf8",
 );
+const webGpuSource = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../orbWebGpu.ts"),
+  "utf8",
+);
+const shaderRendererSource = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../orbShader.ts"),
+  "utf8",
+);
+const workerSource = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../orbWorker.ts"),
+  "utf8",
+);
+const rendererSource = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../orbRenderer.ts"),
+  "utf8",
+);
+
+function extractFunctionCalls(source: string, functionName: string): string[] {
+  const calls: string[] = [];
+  const marker = `${functionName}(`;
+  let searchFrom = 0;
+
+  while (searchFrom < source.length) {
+    const start = source.indexOf(marker, searchFrom);
+    if (start === -1) break;
+
+    let depth = 0;
+    let end = start + marker.length;
+    for (; end < source.length; end += 1) {
+      const character = source[end];
+      if (character === "(") depth += 1;
+      if (character !== ")") continue;
+      if (depth === 0) {
+        end += 1;
+        break;
+      }
+      depth -= 1;
+    }
+
+    calls.push(source.slice(start, end));
+    searchFrom = end;
+  }
+
+  return calls;
+}
+
+function extractDirectTimeFrequencies(source: string, variableName: string): number[] {
+  const matcher = new RegExp(`\\b${variableName}\\s*\\*\\s*(\\d+(?:\\.\\d+)?)`, "g");
+  return [...source.matchAll(matcher)].map((match) => Number(match[1]));
+}
 
 function superformula(
   theta: number,
@@ -82,8 +133,109 @@ describe("orb shape presets", () => {
     expect(lateStep).toBeCloseTo(frameSeconds / period, 8);
   });
 
-  it("does not divide absolute shader time by a changing jittered period", () => {
-    expect(shaderSource).toContain("float breathPhase = fract(uTime / breathPeriod + breathJitter);");
-    expect(shaderSource).not.toContain("uTime / (breathPeriod * (1.0 + breathJitter))");
+  it("integrates one age-independent breath phase across every renderer tier", () => {
+    expect(shaderSource).toContain("uniform float uBreathPhase;");
+    expect(shaderSource).toContain(
+      "float breathBasePhase = u_time > 0.0 ? fract(uTime / breathPeriod) : uBreathPhase;",
+    );
+    expect(shaderSource).not.toContain("fract(uTime / breathPeriod + breathJitter)");
+    expect(webGpuSource).toContain("fn uBreathPhase() -> f32");
+    expect(webGpuSource).toContain("fract(uBreathPhase() + breathJitter)");
+    expect(workerSource).toContain("uBreathPhase: gl.getUniformLocation");
+    expect(workerSource).toContain("gl.uniform1f(loc.uBreathPhase, params.breathPhase)");
+    expect(rendererSource).toContain("breathCycleFromPhase(breathPhase + breathJitter)");
+  });
+
+  it("applies the canonical atmosphere fade to every glow on both GPU tiers", () => {
+    expect(shaderSource).toContain("bloom *= atmosphereFade;");
+    expect(webGpuSource).toContain("var bloom = exp(-dist * 5.0) * 0.07 * darkMult;");
+    expect(webGpuSource).toContain("bloom *= atmosphereFade;");
+  });
+
+  it("keeps non-periodic simplex noise on the exact-period organic clock across GPU tiers", () => {
+    const glslNoiseCalls = extractFunctionCalls(shaderSource, "snoise");
+    const wgslNoiseCalls = extractFunctionCalls(webGpuSource, "snoise");
+
+    expect(shaderSource).toContain("uniform float uOrganicTime;");
+    expect(shaderRendererSource).toContain(
+      "uOrganicTime: gl.getUniformLocation(program, 'uOrganicTime')",
+    );
+    expect(shaderRendererSource).toContain(
+      "gl.uniform1f(loc.uOrganicTime, params.organicTime)",
+    );
+    expect(workerSource).toContain(
+      "uOrganicTime: gl.getUniformLocation(program, 'uOrganicTime')",
+    );
+    expect(workerSource).toContain(
+      "gl.uniform1f(loc.uOrganicTime, params.organicTime)",
+    );
+    expect(webGpuSource).toContain("fn uOrganicTime() -> f32");
+    expect(webGpuSource).toContain("uniformData[27 * 4 + 1] = params.organicTime");
+    expect(glslNoiseCalls.length).toBeGreaterThan(10);
+    expect(wgslNoiseCalls.length).toBeGreaterThan(10);
+
+    for (const call of glslNoiseCalls) {
+      expect(call).not.toMatch(/\buTime\b/);
+    }
+    for (const call of wgslNoiseCalls) {
+      expect(call).not.toMatch(/\btime\b/);
+    }
+  });
+
+  it("wraps the direct trigonometric GPU clock only at a shared full-cycle boundary", () => {
+    const glslFrequencies = extractDirectTimeFrequencies(shaderSource, "uTime");
+    const wgslFrequencies = extractDirectTimeFrequencies(webGpuSource, "time");
+    const frequencies = [...new Set([...glslFrequencies, ...wgslFrequencies])];
+
+    expect(frequencies.length).toBeGreaterThanOrEqual(5);
+    expect([...new Set(glslFrequencies)].sort()).toEqual(
+      [...new Set(wgslFrequencies)].sort(),
+    );
+    for (const frequency of frequencies) {
+      const cyclesAtWrap = (ORB_SHADER_TIME_WRAP_SECONDS * frequency) / (Math.PI * 2);
+      expect(cyclesAtWrap).toBeCloseTo(Math.round(cyclesAtWrap), 8);
+    }
+  });
+
+  it("routes palette cycles and transitive ray noise through exact-period GPU clocks", () => {
+    const palettePeriodSeconds = 250;
+    const paletteCycleRates = [0.08, 0.08 * 1.2, 0.02, 0.02 * 0.8];
+
+    expect(shaderSource).toContain("uniform float uPaletteTime;");
+    expect(shaderRendererSource).toContain(
+      "uPaletteTime: gl.getUniformLocation(program, 'uPaletteTime')",
+    );
+    expect(shaderRendererSource).toContain(
+      "gl.uniform1f(loc.uPaletteTime, params.paletteTime)",
+    );
+    expect(workerSource).toContain(
+      "uPaletteTime: gl.getUniformLocation(program, 'uPaletteTime')",
+    );
+    expect(workerSource).toContain(
+      "gl.uniform1f(loc.uPaletteTime, params.paletteTime)",
+    );
+    expect(shaderSource).toContain("float iriPhase = uPaletteTime * 0.08;");
+    expect(shaderSource).toContain("envAngle + envHeight * 0.3 + uPaletteTime * 0.02");
+    expect(shaderSource).toContain(
+      "float rayNoiseAngle = angle + uOrganicTime * 0.03;",
+    );
+    expect(shaderSource).toContain(
+      "snoise(vec3(rayNoiseAngle * 2.0, uOrganicTime * 0.2, 5.0))",
+    );
+    expect(webGpuSource).toContain("fn uPaletteTime() -> f32");
+    expect(webGpuSource).toContain("uniformData[27 * 4 + 2] = params.paletteTime");
+    expect(webGpuSource).toContain("let iriPhase = uPaletteTime() * 0.08;");
+    expect(webGpuSource).toContain("envAngle + envHeight * 0.3 + uPaletteTime() * 0.02");
+    expect(webGpuSource).toContain(
+      "let rayNoiseAngle = angle + organicTime * 0.03;",
+    );
+    expect(webGpuSource).toContain(
+      "snoise(vec3<f32>(rayNoiseAngle * 2.0, organicTime * 0.2, 5.0))",
+    );
+
+    for (const cycleRate of paletteCycleRates) {
+      const cyclesAtWrap = palettePeriodSeconds * cycleRate;
+      expect(cyclesAtWrap).toBeCloseTo(Math.round(cyclesAtWrap), 8);
+    }
   });
 });

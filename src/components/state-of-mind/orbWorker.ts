@@ -18,8 +18,12 @@ type ParticlePayload = {
 type OrbWorkerPayload = {
   valence: number;
   time: number;
+  organicTime: number;
+  paletteTime: number;
   motionPhase: number;
   noisePhase: number;
+  pulsePhase: number;
+  breathPhase: number;
   size: number;
   dpr: number;
   isDark: boolean;
@@ -33,13 +37,27 @@ type OrbWorkerPayload = {
 
 type WorkerMessage =
   | { type: 'init'; canvas: OffscreenCanvas; size: number; dpr: number }
-  | { type: 'render'; payload: OrbWorkerPayload; requestId?: string }
+  | { type: 'render'; payload: OrbWorkerPayload; requestId?: number }
   | { type: 'dispose' };
 
 type OrbWorkerRenderer = {
-  render: (params: OrbWorkerPayload) => void;
+  render: (params: OrbWorkerPayload) => boolean;
   dispose: () => void;
+  isContextLost: () => boolean;
 };
+
+type WorkerPresentationFailureCode =
+  | 'first-presentation-context-lost'
+  | 'first-presentation-readback-error'
+  | 'first-presentation-readback-exception'
+  | 'first-presentation-transparent';
+
+class WorkerPresentationError extends Error {
+  constructor(readonly code: WorkerPresentationFailureCode) {
+    super(code);
+    this.name = 'WorkerPresentationError';
+  }
+}
 
 const workerScope = self as DedicatedWorkerGlobalScope;
 
@@ -61,19 +79,6 @@ attribute vec2 aPosition;
 void main() {
   gl_Position = vec4(aPosition, 0.0, 1.0);
 }`;
-
-const VERT_SRC_300 = `#version 300 es
-in vec2 aPosition;
-void main() {
-  gl_Position = vec4(aPosition, 0.0, 1.0);
-}`;
-
-const FRAG_SRC_300 = FRAG_SRC
-  .replace(
-    '\n#extension GL_OES_standard_derivatives : enable\nprecision highp float;',
-    '#version 300 es\nprecision highp float;\nout vec4 fragColor;',
-  )
-  .replace('gl_FragColor', 'fragColor');
 
 let renderer: OrbWorkerRenderer | null = null;
 let pendingRender: Extract<WorkerMessage, { type: 'render' }> | null = null;
@@ -212,90 +217,7 @@ function buildRenderer(
     return null;
   }
 
-  const vertices = new Float32Array([-1, -1, 3, -1, -1, 3]);
-  const vbo = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-
-  const aPosition = gl.getAttribLocation(program, 'aPosition');
-  const loc = {
-    uResolution: gl.getUniformLocation(program, 'uResolution'),
-    uTime: gl.getUniformLocation(program, 'uTime'),
-    uMotionPhase: gl.getUniformLocation(program, 'uMotionPhase'),
-    uNoisePhase: gl.getUniformLocation(program, 'uNoisePhase'),
-    uValence: gl.getUniformLocation(program, 'uValence'),
-    uIsDark: gl.getUniformLocation(program, 'uIsDark'),
-    uColor: gl.getUniformLocation(program, 'uColor'),
-    uShapeM: gl.getUniformLocation(program, 'uShapeM'),
-    uShapeN1: gl.getUniformLocation(program, 'uShapeN1'),
-    uShapeN2: gl.getUniformLocation(program, 'uShapeN2'),
-    uShapeN3: gl.getUniformLocation(program, 'uShapeN3'),
-    uParticles: gl.getUniformLocation(program, 'uParticles'),
-    uGenesis: gl.getUniformLocation(program, 'uGenesis'),
-    uTouch: gl.getUniformLocation(program, 'uTouch'),
-    uShimmer: gl.getUniformLocation(program, 'uShimmer'),
-  };
-  const particleData = new Float32Array(22 * 4);
-
-  return {
-    render(params) {
-      const { size, dpr, isDark, color, shape, particles } = params;
-      const w = size * dpr;
-      const h = size * dpr;
-
-      gl.viewport(0, 0, w, h);
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-
-      gl.useProgram(program);
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-
-      gl.uniform2f(loc.uResolution, w, h);
-      gl.uniform1f(loc.uTime, params.time);
-      gl.uniform1f(loc.uMotionPhase, params.motionPhase);
-      gl.uniform1f(loc.uNoisePhase, params.noisePhase);
-      gl.uniform1f(loc.uValence, params.valence);
-      gl.uniform1f(loc.uIsDark, isDark ? 1.0 : 0.0);
-
-      const [r, g, b] = hslToRgb(color.h, color.s, color.l);
-      gl.uniform3f(loc.uColor, r, g, b);
-
-      gl.uniform1f(loc.uShapeM, shape.m);
-      gl.uniform1f(loc.uShapeN1, shape.n1);
-      gl.uniform1f(loc.uShapeN2, shape.n2);
-      gl.uniform1f(loc.uShapeN3, shape.n3);
-      gl.uniform1f(loc.uGenesis, params.genesis);
-      gl.uniform3f(loc.uTouch, params.touch.x, params.touch.y, params.touch.age);
-      gl.uniform1f(loc.uShimmer, params.shimmer);
-
-      for (let i = 0; i < 22; i += 1) {
-        if (i < particles.length) {
-          const p = particles[i];
-          particleData[i * 4] = p.x / size;
-          particleData[i * 4 + 1] = 1.0 - p.y / size;
-          particleData[i * 4 + 2] = p.radius / size;
-          particleData[i * 4 + 3] = p.alpha;
-        } else {
-          particleData[i * 4 + 3] = 0;
-        }
-      }
-      gl.uniform4fv(loc.uParticles, particleData);
-
-      gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-      gl.enableVertexAttribArray(aPosition);
-      gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
-    },
-
-    dispose() {
-      gl.deleteProgram(program);
-      gl.deleteShader(vs);
-      gl.deleteShader(fs);
-      if (vbo) gl.deleteBuffer(vbo);
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
-    },
-  };
+  return createRendererFromLinkedProgram(gl, program, vs, fs);
 }
 
 function createRendererFromLinkedProgram(
@@ -306,15 +228,33 @@ function createRendererFromLinkedProgram(
 ): OrbWorkerRenderer | null {
   const vertices = new Float32Array([-1, -1, 3, -1, -1, 3]);
   const vbo = gl.createBuffer();
+  if (!vbo) {
+    cleanupProgram(gl, program, vs, fs);
+    return null;
+  }
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
   gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+  if (gl.isContextLost() || gl.getError() !== gl.NO_ERROR) {
+    gl.deleteBuffer(vbo);
+    cleanupProgram(gl, program, vs, fs);
+    return null;
+  }
 
   const aPosition = gl.getAttribLocation(program, 'aPosition');
+  if (aPosition < 0) {
+    gl.deleteBuffer(vbo);
+    cleanupProgram(gl, program, vs, fs);
+    return null;
+  }
   const loc = {
     uResolution: gl.getUniformLocation(program, 'uResolution'),
     uTime: gl.getUniformLocation(program, 'uTime'),
+    uOrganicTime: gl.getUniformLocation(program, 'uOrganicTime'),
+    uPaletteTime: gl.getUniformLocation(program, 'uPaletteTime'),
     uMotionPhase: gl.getUniformLocation(program, 'uMotionPhase'),
     uNoisePhase: gl.getUniformLocation(program, 'uNoisePhase'),
+    uPulsePhase: gl.getUniformLocation(program, 'uPulsePhase'),
+    uBreathPhase: gl.getUniformLocation(program, 'uBreathPhase'),
     uValence: gl.getUniformLocation(program, 'uValence'),
     uIsDark: gl.getUniformLocation(program, 'uIsDark'),
     uColor: gl.getUniformLocation(program, 'uColor'),
@@ -328,6 +268,7 @@ function createRendererFromLinkedProgram(
     uShimmer: gl.getUniformLocation(program, 'uShimmer'),
   };
   const particleData = new Float32Array(22 * 4);
+  let firstPresentationPending = true;
 
   return {
     render(params) {
@@ -345,8 +286,12 @@ function createRendererFromLinkedProgram(
 
       gl.uniform2f(loc.uResolution, w, h);
       gl.uniform1f(loc.uTime, params.time);
+      gl.uniform1f(loc.uOrganicTime, params.organicTime);
+      gl.uniform1f(loc.uPaletteTime, params.paletteTime);
       gl.uniform1f(loc.uMotionPhase, params.motionPhase);
       gl.uniform1f(loc.uNoisePhase, params.noisePhase);
+      gl.uniform1f(loc.uPulsePhase, params.pulsePhase);
+      gl.uniform1f(loc.uBreathPhase, params.breathPhase);
       gl.uniform1f(loc.uValence, params.valence);
       gl.uniform1f(loc.uIsDark, isDark ? 1.0 : 0.0);
 
@@ -378,6 +323,42 @@ function createRendererFromLinkedProgram(
       gl.enableVertexAttribArray(aPosition);
       gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (firstPresentationPending) {
+        if (params.genesis <= 0.15) return false;
+        const readbackWidth = Math.max(1, Math.floor(w * 0.8));
+        const firstFrameStrip = new Uint8Array(readbackWidth * 4);
+        try {
+          gl.readPixels(
+            Math.max(0, Math.floor((w - readbackWidth) / 2)),
+            Math.max(0, Math.floor(h / 2)),
+            readbackWidth,
+            1,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            firstFrameStrip,
+          );
+        } catch {
+          throw new WorkerPresentationError('first-presentation-readback-exception');
+        }
+        let hasVisiblePixel = false;
+        for (let alphaIndex = 3; alphaIndex < firstFrameStrip.length; alphaIndex += 4) {
+          if (firstFrameStrip[alphaIndex] > 0) {
+            hasVisiblePixel = true;
+            break;
+          }
+        }
+        if (gl.isContextLost()) {
+          throw new WorkerPresentationError('first-presentation-context-lost');
+        }
+        if (gl.getError() !== gl.NO_ERROR) {
+          throw new WorkerPresentationError('first-presentation-readback-error');
+        }
+        if (!hasVisiblePixel) {
+          throw new WorkerPresentationError('first-presentation-transparent');
+        }
+        firstPresentationPending = false;
+      }
+      return true;
     },
 
     dispose() {
@@ -386,6 +367,10 @@ function createRendererFromLinkedProgram(
       gl.deleteShader(fs);
       if (vbo) gl.deleteBuffer(vbo);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
+    },
+
+    isContextLost() {
+      return gl.isContextLost();
     },
   };
 }
@@ -441,23 +426,12 @@ async function buildRendererAsync(
 }
 
 async function createRenderer(canvas: OffscreenCanvas): Promise<OrbWorkerRenderer | null> {
-  // Cold-start stability beats API tier here. The canonical fragment shader is
-  // authored for WebGL1 and WebGL2 derives from it; trying WebGL1 first avoids
-  // Chrome/WebView WebGL2 pipeline stalls without changing the orb visual.
+  // A canvas can bind only one rendering-context mode. The canonical Worker
+  // shader is authored for WebGL1; any later tier gets a fresh main-thread canvas.
   const gl = canvas.getContext('webgl', GL_OPTIONS);
-  if (gl) {
-    gl.getExtension('OES_standard_derivatives');
-    const glRenderer = await buildRendererAsync(gl, VERT_SRC, FRAG_SRC);
-    if (glRenderer) return glRenderer;
-    const syncRenderer = buildRenderer(gl, VERT_SRC, FRAG_SRC);
-    if (syncRenderer) return syncRenderer;
-  }
-
-  const gl2 = canvas.getContext('webgl2', GL_OPTIONS);
-  if (!gl2) return null;
-  const gl2Renderer = await buildRendererAsync(gl2, VERT_SRC_300, FRAG_SRC_300);
-  if (gl2Renderer) return gl2Renderer;
-  return buildRenderer(gl2, VERT_SRC_300, FRAG_SRC_300);
+  if (!gl) return null;
+  gl.getExtension('OES_standard_derivatives');
+  return buildRendererAsync(gl, VERT_SRC, FRAG_SRC);
 }
 
 async function handleWorkerMessage(message: WorkerMessage) {
@@ -478,8 +452,24 @@ async function handleWorkerMessage(message: WorkerMessage) {
       return;
     }
 
-    renderer.render(message.payload);
+    if (renderer.isContextLost()) {
+      renderer.dispose();
+      renderer = null;
+      workerScope.postMessage({ type: 'failed', reason: 'WebGL worker context lost' });
+      return;
+    }
+    const presented = renderer.render(message.payload);
+    if (renderer.isContextLost()) {
+      renderer.dispose();
+      renderer = null;
+      workerScope.postMessage({ type: 'failed', reason: 'WebGL worker context lost during render' });
+      return;
+    }
     if (message.requestId) {
+      if (!presented) {
+        workerScope.postMessage({ type: 'unpresented', requestId: message.requestId });
+        return;
+      }
       workerScope.postMessage({ type: 'rendered', requestId: message.requestId });
     }
     return;
@@ -505,23 +495,65 @@ async function handleWorkerMessage(message: WorkerMessage) {
       if (pendingRender) {
         const renderMessage = pendingRender;
         pendingRender = null;
-        renderer.render(renderMessage.payload);
+        if (renderer.isContextLost()) {
+          renderer.dispose();
+          renderer = null;
+          workerScope.postMessage({ type: 'failed', reason: 'WebGL worker context lost' });
+          return;
+        }
+        const presented = renderer.render(renderMessage.payload);
+        if (renderer.isContextLost()) {
+          renderer.dispose();
+          renderer = null;
+          workerScope.postMessage({
+            type: 'failed',
+            reason: 'WebGL worker context lost during render',
+          });
+          return;
+        }
         if (renderMessage.requestId) {
+          if (!presented) {
+            workerScope.postMessage({
+              type: 'unpresented',
+              requestId: renderMessage.requestId,
+            });
+            return;
+          }
           workerScope.postMessage({
             type: 'rendered',
             requestId: renderMessage.requestId,
           });
         }
       }
-    } catch (error) {
+    } catch {
       workerScope.postMessage({
         type: 'failed',
-        reason: error instanceof Error ? error.message : String(error),
+        reason: 'Worker WebGL renderer initialization failed',
       });
     }
   }
 }
 
 workerScope.onmessage = (event: MessageEvent<WorkerMessage>) => {
-  void handleWorkerMessage(event.data);
+  void handleWorkerMessage(event.data).catch((error: unknown) => {
+    if (disposed) return;
+    try {
+      renderer?.dispose();
+    } catch {
+      renderer = null;
+      pendingRender = null;
+      workerScope.postMessage({
+        type: 'failed',
+        reason: 'Worker WebGL renderer operation and disposal failed',
+      });
+      return;
+    }
+    renderer = null;
+    pendingRender = null;
+    workerScope.postMessage({
+      type: 'failed',
+      reason: 'Worker WebGL renderer operation failed',
+      ...(error instanceof WorkerPresentationError ? { code: error.code } : {}),
+    });
+  });
 };

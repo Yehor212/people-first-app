@@ -17,6 +17,7 @@ const MAX_INTERACTION_EVENT_TIMING_MS = readBudget(
   readBudget("ZENFLOW_USER_FLOW_MAX_EVENT_TIMING_MS", 500),
 );
 const MAX_ORB_VISUAL_READY_MS = readBudget("ZENFLOW_USER_FLOW_MAX_ORB_VISUAL_READY_MS", 2500);
+const REAL_CHROME_CHANNEL = process.env.ZENFLOW_ORB_CHROME_CHANNEL === "true";
 
 type UserFlowPerfWindow = typeof window & {
   __zenflowUserFlowPerf?: {
@@ -449,6 +450,10 @@ async function collectPerfReport(page: Page) {
     };
   });
 }
+
+test.use({
+  ...(REAL_CHROME_CHANNEL ? { channel: "chrome" as const } : {}),
+});
 
 test.describe("Orb user-flow performance", () => {
   test("keeps repeated V2 mood and settings interactions responsive", async ({
