@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { User, Globe, Palette, Moon, Sun, Smartphone } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Language, languageNames, languageFlags } from "@/i18n/translations";
@@ -12,6 +12,11 @@ import { sanitizeUserName } from "@/lib/sanitize";
 import { useTheme, ThemeOption } from "@/components/ThemeToggle";
 import { SK } from "@/lib/storageKeys";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
+import { getCurrentSessionUserId } from "@/lib/supabaseClient";
+import {
+  assertSettingsOwnerCurrent,
+  SettingsOwnerBoundaryError,
+} from "@/lib/settingsOwnerBoundary";
 
 interface ProfileSectionProps {
   userName: string;
@@ -26,6 +31,7 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
 
   const [name, setName] = useState(userName);
   const [nameStatus, setNameStatus] = useState<string | null>(null);
+  const nameSaveGenerationRef = useRef(0);
   const [oledMode, setOledMode] = useState(() => {
     return storageGetRaw(SK.OLED_MODE) === "true";
   });
@@ -61,15 +67,40 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
       return;
     }
 
-    onNameChange(sanitized);
-    setNameStatus(t.nameSaved);
+    const operationGeneration = ++nameSaveGenerationRef.current;
+    let expectedOwnerUserId: string | null = null;
+    let ownerCaptured = false;
 
     try {
-      const success = await updateProfileName(sanitized);
+      expectedOwnerUserId = await getCurrentSessionUserId();
+      ownerCaptured = true;
+      await assertSettingsOwnerCurrent(expectedOwnerUserId, "Profile name save");
+      if (operationGeneration !== nameSaveGenerationRef.current) return;
+
+      onNameChange(sanitized);
+      setNameStatus(t.nameSaved);
+      if (!expectedOwnerUserId) {
+        setNameStatus(t.nameSavedLocally || "Saved on this device");
+        return;
+      }
+
+      const success = await updateProfileName(expectedOwnerUserId, sanitized);
+      await assertSettingsOwnerCurrent(expectedOwnerUserId, "Profile name save");
+      if (operationGeneration !== nameSaveGenerationRef.current) return;
       if (!success) {
         setNameStatus(t.nameSavedLocally || "Saved on this device");
       }
     } catch (error) {
+      if (error instanceof SettingsOwnerBoundaryError) return;
+      if (ownerCaptured) {
+        try {
+          await assertSettingsOwnerCurrent(expectedOwnerUserId, "Profile name save error");
+        } catch (ownerError) {
+          if (ownerError instanceof SettingsOwnerBoundaryError) return;
+          throw ownerError;
+        }
+      }
+      if (operationGeneration !== nameSaveGenerationRef.current) return;
       logger.error("Failed to update profile name:", error);
       setNameStatus(t.nameSavedLocally || "Saved on this device");
     }

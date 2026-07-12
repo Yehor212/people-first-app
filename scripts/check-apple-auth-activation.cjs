@@ -33,6 +33,7 @@ function line(status, message) {
 
 function isExamplePlaceholder(key, value) {
   if (!value) return true;
+  if (value === "your-project-ref" || value === "your_project_ref") return true;
   if (value === "your_supabase_anon_key") return true;
   if (value === "sb_publishable_your_public_key") return true;
   if (value.includes("your-project-ref.supabase.co")) return true;

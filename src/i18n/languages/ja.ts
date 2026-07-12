@@ -513,40 +513,100 @@ export const ja: Translations = {
   completedTimes2: "回",
   profile: "プロフィール",
   yourName: "あなたの名前",
+  profileNamePlaceholder: "名前を入力",
   saveName: "名前を保存",
   nameSaved: "名前を保存しました",
   nameSavedLocally: "このデバイスに保存しました",
   invalidNameFormat: "無効な名前の形式",
   notifications: "通知",
   notificationsComingSoon: "通知機能は今後のアップデートで利用可能になります。",
-  settingsOverviewDescription: "プライバシー、リマインダー、音、表示、データ管理をここで調整できます。",
-  settingsAboutExperienceTitle: "体験の調整",
-  settingsAboutExperienceDescription: "モーション設定、更新履歴、アプリへのフィードバックをまとめています。",
-  settingsAboutSupportLegalTitle: "サポートと法務",
-  settingsAboutSupportLegalDescription: "プライバシー、利用規約、ライセンス、連絡先の項目です。",
+  settingsOverviewDescription:
+    "ZenFlowの見た目、音、リマインダー、データの扱いを選べます。",
+  settingsAccountBackupTitle: "アカウントとバックアップ",
+  settingsAccountBackupDescription:
+    "アカウントに接続されています。ZenFlowが変更をオンラインに保存できない場合、その変更はこの端末に残ります。",
+  settingsAccountSignedIn: "サインイン済み",
+  settingsAccountSignedOut: "サインインしていません",
+  settingsAccountDataOnDevice:
+    "データはこの端末に保存されています。サインインするとバックアップされ、ほかの端末でも使えます。",
+  settingsAccountBackupChecking: "アカウントを確認しています…",
+  settingsAccountBackupCheckingDescription:
+    "ZenFlowがアカウントを確認している間、データはこの端末に保存されます。",
+  settingsAccountCheckFailed: "アカウントを確認できませんでした",
+  settingsAccountCheckFailedDescription:
+    "データはこの端末に保存されています。接続を確認して、もう一度お試しください。",
+  settingsAccountBackupUnavailable:
+    "このバージョンではバックアップを利用できません",
+  settingsAccountBackupUnavailableDescription:
+    "データはこの端末に保存されます。",
+  settingsRemindersMobileApp: "モバイル版",
+  settingsPrivacyDataDescription:
+    "ZenFlowで使用する任意のサービスを選べます。バックアップはサインイン後にのみ始まります。",
+  settingsDataBackupReportsDescription:
+    "後でインポートできるバックアップを保存するか、レポートを作成します。",
+  settingsBackupRestoreTitle: "バックアップと復元",
+  settingsReportsTitle: "レポート",
+  settingsReportsDescription:
+    "レポートには、気分、習慣、集中、感謝のデータが含まれます。PDFは現在英語で作成されます。レポートはバックアップではありません。",
+  settingsReportSpreadsheetAction: "表計算用データ（CSV）",
+  settingsReportProgressAction: "進捗レポート（PDF）",
+  settingsSoundDiaryRainOff: "「背景音」で雨音がオフになっています。",
+  settingsSoundDiaryReady: "再生できます。",
+  settingsAboutProductSummary:
+    "ZenFlowでは、気分の記録、習慣、集中セッション、日記を一か所で管理できます。",
+  settingsAboutSupportLegalTitle: "ヘルプと法的情報",
+  settingsAboutSupportLegalDescription:
+    "プライバシー、利用規約、ライセンス、サポート。",
   settingsRemindersOff: "リマインダーはオフ",
   resetDataConfirmWord: "RESET",
   resetDataTypeConfirm: "確認するには {word} と入力してください",
-  resetDataScope: "このデバイスから、気分、習慣、集中セッション、感謝、日記、設定、オンライン保存を待っていた変更が削除されます。",
+  resetDataScope:
+    "このデバイスから、気分、習慣、集中セッション、感謝、日記、設定、オンライン保存を待っていた変更が削除されます。",
   resetDataConfirmAction: "デバイスのデータを消去",
   data: "データ",
   exportData: "データをエクスポート",
   importData: "データをインポート",
-  importMode: "インポートモード",
-  importMerge: "統合",
-  importReplace: "置換",
+  importMode: "インポート方法",
+  importMerge: "現在のデータに追加",
+  importReplace: "現在のデータを置き換える",
   exportSuccess: "エクスポート完了。",
   exportError: "エクスポートに失敗しました。",
+  exportJournalUnlockRequired:
+    "保護された内容をエクスポートする前に、日記のロックを解除してください。",
+  exportJournalDecryptionFailed:
+    "保護された日記を読み取れませんでした。何もエクスポートされていません。",
+  exportJournalMediaUnavailable:
+    "日記の添付ファイルを一部読み取れませんでした。何もエクスポートされていません。",
+  exportBackupTooLarge:
+    "このバックアップはZenFlowの復元上限32 MBを超えています。何もエクスポートされていません。日記の添付ファイルをいくつか削除して、もう一度お試しください。",
+  exportCleanupError:
+    "バックアップは共有されましたが、このデバイスから一時コピーを削除できませんでした。",
+  pushRevocationIncomplete: "このデバイスのリモート通知を完全に解除できませんでした。",
+  sessionTimeoutDelayedTitle: "サインアウトを延期しました",
+  sessionTimeoutPendingChanges:
+    "保存待ちの変更があるため、サインインしたままにしました。まもなく再試行します。",
+  sessionTimeoutCleanupFailed:
+    "このデバイスを安全に消去できなかったため、サインインしたままにしました。まもなく再試行します。",
+  syncCriticalBlocked:
+    "重要なオンライン保存を完了できませんでした。変更はこのデバイスに残っています。接続後にもう一度お試しください。",
   exportCSV: "スプレッドシートファイル（CSV）",
   exportPDF: "印刷用ファイル（PDF）",
   importSuccess: "インポート完了。",
+  importResultSummary:
+    "インポート完了：追加 {added}、更新 {updated}、スキップ {skipped}。日記：記録 {journalEntries} 件、写真 {journalPhotos} 枚、音声 {journalAudio} 件。",
   importError: "ファイルのインポートに失敗しました。",
+  importJournalUnlockRequired:
+    "このデバイス上のデータを置き換える前に、日記のロックを解除してください。",
+  importJournalUnreadable:
+    "このバックアップには、このデバイスで読み取れない保護された日記データが含まれています。",
+  importJournalReauthorizationRequired:
+    "安全のため日記を一度ロックして再び解除し、ここに戻って［置き換える］をもう一度お試しください。",
   importedItems: "追加",
   importAdded: "追加",
   importUpdated: "更新",
   importSkipped: "スキップ",
   importConfirmTitle: "バックアップをインポート",
-  importConfirmMessage: "このファイルからデータをインポートしますか？",
+  importConfirmMessage: "このバックアップからデータをインポートしますか？",
   syncing: "更新中...",
   signingIn: "サインイン中...",
   signingOut: "サインアウト中...",
@@ -556,18 +616,19 @@ export const ja: Translations = {
   comingSoon: "近日公開",
   resetAllData: "このデバイスのデータを消去",
   privacyTitle: "プライバシー",
-  privacyDescription: "隠れた追跡はありません。デバイス同期は、サインインしてオンラインバックアップをオンにした後だけ始まります。",
-  privacyNoTracking: "トラッキングなし",
-  privacyNoTrackingHint: "行動データは収集しません。",
-  privacyAnalytics: "アナリティクス",
-  privacyAnalyticsHint: "アプリ改善に役立ちます。オフにできます。",
-  privacyAds: "任意広告",
-  privacyAdsHint: "任意の動画のみです。この設定をオンにするまで広告リクエストは行いません。必要な場合は Google のプライバシー選択が表示されることがあります。",
-  privacyPushNotifications: "アカウントのリマインダー通知",
-  privacyPushNotificationsHint: "この端末でアカウントのリマインダー通知を受け取れるようにします。この端末に保存されたリマインダーは、これがなくても動作します。",
+  privacyDescription:
+    "隠れた追跡はありません。デバイス同期は、サインインしてオンラインバックアップをオンにした後だけ始まります。",
+  privacyAds: "特典付き動画",
+  privacyAdsHint:
+    "オンにした場合のみ読み込まれます。必要に応じて、Googleからプライバシー設定の選択を求められることがあります。",
+  privacyOptionalServicesOn: "オプション機能：オン",
+  privacyOptionalServicesOff: "オプション機能：オフ",
+  privacyPushNotifications: "アカウントのリマインダー",
+  privacyPushNotificationsHint:
+    "この端末でアカウントのリマインダーを受け取ります。端末で設定したリマインダーは、この設定がオフでも動作します。",
   privacyPolicy: "プライバシーポリシー",
   termsOfService: "利用規約",
-  openSourceLicenses: "オープンソースライセンス",
+  openSourceLicenses: "ライセンス",
   legalPrivacyDescription:
     "ZenFlowがお客様の個人データをどのように収集、使用、保護するかをご確認ください。",
   legalTermsDescription: "ZenFlowの利用を規定する利用規約をお読みください。",
@@ -585,9 +646,10 @@ export const ja: Translations = {
   themeDark: "ダーク",
   themeSystem: "システム",
   themeStyleTitle: "気分のパレット",
-  themeStyleDescription: "雰囲気を整えるための厳選された見た目を選びます。",
+  themeAdvancedAppearanceTitle: "詳細な外観設定",
+  themeStyleDescription: "自分に合うスタイルを選べます。",
   themeAccentTitle: "アクセント",
-  themeAccentDescription: "フォーカス、選択状態、主要操作に使う色です。",
+  themeAccentDescription: "ボタン、選択項目、強調表示に使う色です。",
   themeIntensityTitle: "強さ",
   themeComfortTitle: "快適さ",
   themePreviewAction: "プレビュー",
@@ -634,8 +696,7 @@ export const ja: Translations = {
     },
     visualPolish172: {
       title: "ビジュアル改善",
-      description:
-        "よりなめらかな表示、やさしい動き、すっきりした画面遷移になりました。",
+      description: "よりなめらかな表示、やさしい動き、すっきりした画面遷移になりました。",
     },
     bugFixes172: {
       title: "バグ修正",
@@ -661,16 +722,18 @@ export const ja: Translations = {
     "サインインすると、ZenFlow がデータを各デバイスで使える状態に保ちます。接続が弱いときは、変更が安全に待機します。",
   settingsCloudSyncEnabled: "オンラインバックアップはオンです",
   settingsCloudSyncDisabledByUser: "オンラインバックアップを一時停止中",
-  settingsExportTitle: "バックアップをエクスポート",
-  settingsExportDescription: "すべてのデータをファイルに保存",
+  settingsExportTitle: "バックアップを保存",
+  settingsExportDescription:
+    "バックアップには、気分、習慣、集中、感謝、日記が含まれます。保護された日記は先にロックを解除してください。エクスポートしたファイルは暗号化されないため、信頼できる場所に保管してください。",
   settingsImportTitle: "バックアップをインポート",
   settingsImportMergeTooltip:
     "インポートしたデータは既存のデータに追加されます。重複はスキップされます。",
-  settingsImportReplaceTooltip: "⚠️ 現在のデータはすべて削除され、インポートに置き換えられます",
+  settingsImportReplaceTooltip:
+    "現在の気分、習慣、集中セッション、感謝、バックアップ対象の設定が置き換わります。日記の各項目は、バックアップに含まれている場合のみ置き換わります。この端末の保護設定は変わりません。",
   settingsImportReplaceConfirm: "すべてのデータ削除を確認するには「REPLACE」と入力",
   // Import validation (v1.4.1)
   invalidFileType: "無効なファイル形式です。JSONが必要です。",
-  fileTooLarge: "ファイルが大きすぎます（最大10 MB）",
+  fileTooLarge: "ファイルが大きすぎます（最大32 MB）",
   importConfirm: "インポートを確認",
   invalidBackupFormat: "無効なバックアップ形式",
   settingsWhatsNewGotIt: "了解！",
@@ -708,13 +771,24 @@ export const ja: Translations = {
   settingsGroupProfile: "プロフィールと外観",
   settingsGroupNotifications: "通知",
   settingsGroupData: "データとプライバシー",
+  settingsExportImportTitle: "バックアップとレポート",
   settingsGroupAccount: "アカウント",
   settingsGroupSecurity: "セキュリティ",
   settingsSecurityDesc: "日記のロックとセキュリティ設定を構成する",
   journalLockTimeout: "日記の自動ロック",
   journalLockTimeoutDesc: "一定時間操作がない場合、日記を自動的にロックします",
   journalLockImmediateWarning: "日記画面を離れるたびにロックされます",
+  journalLockTimeoutImmediately: "すぐに",
+  journalLockTimeoutOneMinute: "1分後",
+  journalLockTimeoutFiveMinutes: "5分後",
+  journalLockTimeoutFifteenMinutes: "15分後",
+  journalLockTimeoutThirtyMinutes: "30分後",
   settingsGroupAbout: "情報",
+  settingsGroupAppearanceAccessibility: "外観とアクセシビリティ",
+  settingsGroupReminders: "リマインダー",
+  settingsGroupPrivacyData: "プライバシーとデータ",
+  settingsGroupHelpAbout: "ヘルプとアプリ情報",
+  settingsDataSummary: "気分記録 {moods}件・習慣 {habits}件・集中セッション {focus}件",
 
   // Feature Toggles / Modules (v1.5.9)
   settingsGroupModules: "モジュール",
@@ -749,14 +823,6 @@ export const ja: Translations = {
   coreModulesNote: "気分トラッカーと習慣は常に有効です",
 
   // GDPR Consent
-  consentTitle: "プライバシー設定",
-  consentDescription: "プライバシーを尊重します。匿名アナリティクスでアプリ改善にご協力ください。",
-  consentAnalyticsTitle: "匿名アナリティクス",
-  consentAnalyticsDesc: "使用パターンのみ。個人データはありません。設定でいつでも変更できます。",
-  consentAccept: "許可",
-  consentDecline: "許可しない",
-  consentFooter: "設定 > プライバシーでいつでも変更可能",
-
   installApp: "アプリをインストール",
   installAppDescription: "ZenFlowをインストールして高速起動とオフラインアクセス。",
   installBannerTitle: "ZenFlowをインストール",
@@ -770,17 +836,20 @@ export const ja: Translations = {
   checkingForUpdates: "アップデートを確認中...",
   appUpToDate: "最新バージョンです",
   openGooglePlay: "Google Playを開く",
+  openGooglePlayFailed: "Google Play を開けませんでした。もう一度お試しください。",
   updateCheckFailed: "アップデート確認に失敗しました",
   settingsUpdateTitle: "アプリのバージョン",
-  settingsWebUpdateDescription: "ZenFlow は新しいバージョンが利用できるか確認できます。",
-  settingsNativeUpdateDescription: "アプリストアで更新が利用できるか確認します。",
+  settingsWebUpdateDescription: "新しいバージョンがあるか確認します。",
+  settingsNativeUpdateDescription: "新しいバージョンがあるか確認します。",
   webUpdateAvailable: "新しいバージョンがあります",
-  webUpdateAvailableDescription: "最新バージョンを読み込むには ZenFlow を再起動してください。入力中の内容があれば先に終えてください。",
+  webUpdateAvailableDescription:
+    "最新バージョンを読み込むには ZenFlow を再起動してください。入力中の内容があれば先に終えてください。",
   restartZenflow: "ZenFlow を再起動",
   restartingZenflow: "再起動中...",
-  webUpdateCheckFailedDescription: "最新バージョンを確認するにはネットワーク確認が必要です。このデバイス上の内容は変更されていません。",
+  webUpdateCheckFailedDescription:
+    "最新バージョンを確認するにはネットワーク確認が必要です。このデバイス上の内容は変更されていません。",
   remindersTitle: "リマインダー",
-  remindersDescription: "軌道に乗せるための優しい通知。",
+  remindersDescription: "気分の記録や集中を促すリマインダーの時刻を選べます。",
   moodReminder: "気分チェック時間",
   habitReminder: "習慣リマインダー時間",
   focusReminder: "集中通知時間",
@@ -830,7 +899,8 @@ export const ja: Translations = {
   notificationFeature3Desc: "生産的な休憩を取るリマインダー",
   notificationAllow: "通知を有効化",
   notificationDeny: "後で",
-  notificationPrivacyNote: "これは設定でいつでも変更できます。通知はこのデバイス内でプライベートに保たれます。",
+  notificationPrivacyNote:
+    "これは設定でいつでも変更できます。通知はこのデバイス内でプライベートに保たれます。",
   onboardingStep: "ステップ",
   onboardingValueTitle: "1日30秒で気分と習慣を追跡",
   onboardingValueBody: "素早いチェックイン、シンプル、完全プライベート。",
@@ -886,18 +956,21 @@ export const ja: Translations = {
   authProviderApple: "Apple",
   authLinkedProviders: "接続済みのサインイン方法",
   authConnectProvider: "{provider}を接続",
-  authConnectMoreProviders: "別のサインイン方法を接続して、このアカウントをすべてのデバイスで使えるようにします。",
+  authConnectMoreProviders:
+    "別のサインイン方法を接続して、このアカウントをすべてのデバイスで使えるようにします。",
   authProviderLinkFailed: "このサインイン方法を接続できませんでした。もう一度お試しください。",
   authLinkingProvider: "{provider}を接続中...",
   signOut: "サインアウト",
   syncNow: "デバイスを今すぐ更新",
   cloudSyncDisabled: "オンラインバックアップは利用できません。",
   syncDeviceSessionsTitle: "あなたのデバイス",
-  syncDeviceSessionsDescription: "プライベートデータを公開せずに、アカウントを使ったデバイスを確認します。",
+  syncDeviceSessionsDescription:
+    "プライベートデータを公開せずに、アカウントを使ったデバイスを確認します。",
   syncDeviceSessionsActive: "アクティブなデバイス",
   syncDeviceSessionsError: "デバイスの状態を一時的に確認できません。",
   syncDeviceSessionsEmpty: "サインインすると接続済みデバイスを確認できます。",
-  syncDeviceSessionsFootnote: "デバイスを非アクティブにするとこの一覧から隠れますが、そのデバイスからサインアウトはしません。",
+  syncDeviceSessionsFootnote:
+    "デバイスを非アクティブにするとこの一覧から隠れますが、そのデバイスからサインアウトはしません。",
   syncDeviceCurrent: "現在のデバイス",
   syncDeviceRevoked: "非アクティブ",
   syncDeviceLastSeen: "最終表示",
@@ -935,17 +1008,33 @@ export const ja: Translations = {
   sessionExpired: "オンラインバックアップを一時停止中",
   sessionExpiredMessage: "サインインすると、データを各デバイスで使えます",
   sessionExpiredSettings: "セッションの有効期限が切れました",
-  localDataSafe: "このデバイスのデータは安全です。もう一度サインインすると、デバイスを最新に保てます。",
+  localDataSafe:
+    "このデバイスのデータは安全です。もう一度サインインすると、デバイスを最新に保てます。",
   deleteAccount: "アカウントを削除",
   deleteAccountConfirm: "アカウントを削除しますか？",
   deleteAccountTypeConfirm: "確認のため「削除」と入力：",
   deleteAccountWarning: "オンラインに保存されたデータとアカウントへのアクセスが削除されます。",
   deleteAccountSuccess: "アカウントを削除しました。",
   deleteAccountError: "アカウント削除に失敗しました。",
+  deleteAccountDeletedCleanupFailed:
+    "アカウントは削除されましたが、このデバイスに一部のデータが残っている可能性があります。別のアカウントを使う前にZenFlowを再起動してください。",
   deleteAccountLink: "アカウント/データ削除方法",
   deleteConfirmWord: "削除",
   authEmailSent: "メールにログインリンクを送信しました。",
   authSignedOut: "サインアウトしました。",
+  authSignOutPendingChanges:
+    "ZenFlowにオンライン保存待ちの変更があります。インターネットに接続して、もう一度お試しください。",
+  authSignOutRecoveryTitle: "ログアウトを完了",
+  authDiscardAndSignOut: "変更を破棄してログアウト",
+  authDiscardSignOutConfirm: "未保存の変更を破棄してログアウトしますか？",
+  authDiscardSignOutWarning:
+    "オンライン保存を待っている変更は、このデバイスから完全に削除されます。",
+  authAccountSwitchPendingChanges:
+    "以前のアカウントにもう一度サインインし、インターネットに接続して、ZenFlowの保存が完了するまでお待ちください。その後、改めてアカウントを切り替えてください。",
+  authRecoverLegacyChanges: "このアカウントで変更を復元",
+  authUseDifferentAccount: "別のアカウントを使う",
+  authSignOutCleanupFailed: "安全にサインアウトを完了できませんでした。もう一度お試しください。",
+  authSignOutFailed: "サインアウトが完了しませんでした。もう一度お試しください。",
   authError: "リンク送信に失敗しました。",
   authNotConfigured: "サインイン設定は現在利用できません。",
   syncSuccess: "デバイスは最新です。",
@@ -987,7 +1076,9 @@ export const ja: Translations = {
   pushDisabled: "プッシュを無効にしました。",
   pushError: "プッシュの有効化に失敗しました。",
   pushNeedsAccount: "プッシュを有効にするにはサインインしてください。",
-  pushPermissionDenied: "通知許可が拒否されました。",
+  pushPermissionDenied: "端末の設定でZenFlowの通知をオンにしてください。",
+  remindersNativeOnly: "リマインダーはモバイル版ZenFlowで設定できます。",
+  habitRemindersManagedInHabits: "各習慣のメニューからリマインダーを設定できます。",
   areYouSure: "本当によろしいですか？",
   cannotBeUndone: "この操作は取り消せません。",
   delete: "削除",
@@ -1190,64 +1281,43 @@ export const ja: Translations = {
   muteSound: "ミュート",
   unmuteSound: "ミュート解除",
   settingsSoundTitle: "サウンド",
-  settingsSoundDescription: "アプリの環境音とフィードバック音量。",
+  settingsSoundDescription: "背景音、操作音、音量を選べます。",
   settingsSoundSummaryOn: "サウンドオン",
   settingsSoundSummaryOff: "ミュート",
   settingsSoundMaster: "アプリのサウンド",
-  settingsSoundMasterDesc: "成功音、オーブの環境音、日記の環境音を制御します。",
+  settingsSoundMasterDesc: "ZenFlowの音を再生します。",
   settingsSoundVolume: "音量",
   settingsSoundVolumeDesc: "アプリ音声の既定レベルを設定します。",
   settingsSoundPreview: "サウンドを試す",
-  settingsSoundAmbienceTitle: "環境音トラック",
-  settingsSoundAmbienceNote: "オーブの環境音はオーブから開始します。日記の音はここで管理し、執筆画面を覆わないようにしています。",
-  settingsSoundFeedbackOn: "フィードバック音はこの音量に従います。",
-  settingsSoundFeedbackOff: "フィードバック音はフィードバックスタイルで無効です。",
+  settingsSoundAmbienceTitle: "日記の背景音",
+  settingsSoundAmbienceNote:
+    "日記を書きながら穏やかな雨音を流せます。再生を押したときだけ始まります。",
   settingsSoundTextureAir: "空気",
   settingsSoundTextureWater: "水",
   settingsSoundTextureRain: "雨",
-  settingsSoundFeedbackComfortable: "快適",
-  settingsSoundFeedbackTooLoud: "大きすぎる",
-  settingsSoundFeedbackDistracting: "気が散る",
-  settingsSoundFeedbackPreferSilent: "無音がよい",
-  settingsSoundFeedbackDidNotPlay: "再生されなかった",
-  settingsSoundComfortTitle: "音の心地よさ",
-  settingsSoundComfortDescription: "対応している端末で、背景音と短い合図をプロフィールごとに調整します。",
+  settingsSoundComfortTitle: "サウンドスタイル",
+  settingsSoundComfortDescription:
+    "サウンドスタイルを選び、下で個別の音を調整できます。",
   settingsSoundProfileQuiet: "静か",
-  settingsSoundProfileRich: "リッチ",
-  settingsSoundProfileBalanced: "バランス",
-  settingsSoundProfileQuietDesc: "環境音なし。やさしい完了音だけ。",
-  settingsSoundProfileRichDesc: "対応環境で環境音と合図を最大限使います。",
-  settingsSoundProfileBalancedDesc: "穏やかな環境音と必要な合図。",
+  settingsSoundProfileBalanced: "すべての音",
+  settingsSoundProfileQuietDesc: "背景音はなく、控えめな操作音のみです。",
+  settingsSoundProfileBalancedDesc:
+    "背景音、操作音、通知音、節目の音を再生します。",
   settingsSoundAmbientToggle: "環境音",
-  settingsSoundAmbientToggleDesc: "Hyperfocus以外のサインイン、Orb、日記の環境音を制御します。",
-  settingsSoundCompletionCues: "完了の合図",
-  settingsSoundCompletionCuesDesc: "意味のある完了後に静かな確認音を許可します。",
-  settingsSoundReminderCues: "リマインダーのプレビュー",
-  settingsSoundReminderCuesDesc: "任意のリマインダー試聴音を許可します。",
-  settingsSoundMilestoneCues: "節目の合図",
-  settingsSoundMilestoneCuesDesc: "通常タップ音なしで、まれな進捗の合図だけを許可します。",
-  settingsSoundTextureTitle: "Hyperfocus以外の質感",
-  settingsSoundTextureDescription: "サインイン、Orb、日記で使う空気・水・雨の質感を選びます。",
-  settingsSoundFeedbackTitle: "この音はどう感じましたか？",
-  settingsSoundFeedbackDescription: "快適さの選択、デバイスの種類、ミュート設定、音量帯だけを保存します。",
-  settingsSoundAmbientOff: "音の心地よさで背景音がオフになっています。",
-  settingsSoundMapTitle: "音が使われる場所",
-  settingsSoundMapDescription: "アプリの音はタップ後だけ始まり、サウンド設定に従います。",
-  settingsSoundMapAuth: "サインインのやわらかな空気音",
-  settingsSoundMapOrb: "オーブの環境音",
-  settingsSoundMapDiary: "日記の環境音",
-  settingsSoundMapFocus: "集中用環境音ライブラリ",
-  settingsSoundMapFeedback: "完了とリマインダーのやわらかな合図",
-  settingsSoundCrossPlatformTitle: "音が使える場所",
-  settingsSoundCrossPlatformNote: "端末が許可する範囲で、ZenFlow は同じサウンド設定を使います。",
-  settingsSoundActionMapTitle: "ZenFlow が音を鳴らすとき",
-  settingsSoundActionMapDescription: "短い音は、大切な完了とまれな節目だけに使います。",
-  settingsSoundActionMapMood: "気分を保存",
-  settingsSoundActionMapHabit: "習慣を完了",
-  settingsSoundActionMapJournal: "日記を保存",
-  settingsSoundActionMapFocus: "集中を完了",
-  settingsSoundActionMapBreathing: "呼吸を完了",
-  settingsSoundActionMapMilestones: "まれな進捗の節目",
+  settingsSoundAmbientToggleDesc:
+    "集中セッション中を除き、ZenFlowで背景音を再生します。",
+  settingsSoundCompletionCues: "操作の完了音",
+  settingsSoundCompletionCuesDesc:
+    "操作を完了したときに控えめな音を再生します。",
+  settingsSoundReminderCues: "ZenFlow内の通知音",
+  settingsSoundReminderCuesDesc:
+    "タイマー通知とリマインダーの試聴音をZenFlow内で再生します。スマートフォンの通知音は変わりません。",
+  settingsSoundMilestoneCues: "節目の音",
+  settingsSoundMilestoneCuesDesc:
+    "連続記録や実績の節目で音を再生します。",
+  settingsSoundTextureTitle: "背景音",
+  settingsSoundTextureDescription: "ZenFlowで再生する背景音を選べます。",
+  settingsSoundAmbientOff: "背景音はオフです。",
 
   // Leaderboard
   leaderboard: "リーダーボード",
@@ -1430,8 +1500,7 @@ export const ja: Translations = {
   identityVerbPlaceholder: "例：体を大切にする人",
   identityIcon: "習慣の絵文字をシンボルとして使用",
   identityDefaultVerb: "約束を守る人",
-  identityVotePreview:
-    "保存後、カードにこの目的が表示され、完了するたびに小さな一歩になります。",
+  identityVotePreview: "保存後、カードにこの目的が表示され、完了するたびに小さな一歩になります。",
   identityVoteFor: "{identity}への一歩",
   identityVoteCast: "一歩を記録済み",
   identityVotePending: "記録できます",
@@ -1454,6 +1523,7 @@ export const ja: Translations = {
 
   dopamineSettings: "フィードバックと動き",
   dopamineSettingsDesc: "ZenFlow が使うアニメーション、音、触覚の量を選びます。",
+  dopamineSettingsDescNoHaptics: "ZenFlow が使うアニメーションと音の量を選びます。",
   dopamineIntensity: "フィードバック量",
   dopamineMinimal: "静か",
   dopamineNormal: "バランス",
@@ -1511,6 +1581,8 @@ export const ja: Translations = {
   adPrivacyOptions: "Google 広告プライバシーの選択",
   adPrivacyOptionsHint: "必要な場合は Google 広告の同意を変更または撤回できます。",
   adPrivacyOptionsOpen: "広告の選択を確認",
+  adPrivacyOptionsError:
+    "Google の広告プライバシー設定を開けませんでした。もう一度お試しください。",
   innerWorld: "内なる世界",
   tapToInteract: "タップして操作",
   spinWheel: "ホイールを回そう！",
@@ -1933,8 +2005,7 @@ export const ja: Translations = {
   pageNotFound: "ページが見つかりません",
   goHome: "ホームに戻る",
   notFoundKicker: "ルートが見つかりません",
-  notFoundBody:
-    "このリンクは古いか、この画面はもう存在しません。データはそのまま残っています。",
+  notFoundBody: "このリンクは古いか、この画面はもう存在しません。データはそのまま残っています。",
   notFoundRequestedPath: "要求されたパス",
   notFoundBack: "戻る",
   notFoundHint: "ホームに戻ると、ZenFlow のスペースに戻れます。",
@@ -2147,7 +2218,7 @@ export const ja: Translations = {
     "フィードバックには、メッセージ、任意のメールアドレス、アプリのバージョン、デバイスの種類、画面サイズ、言語、ブラウザ情報が含まれる場合があります。緊急の安全確認や医療サポートにはフィードバックを使わないでください。",
   feedbackSubmit: "送信",
   feedbackSuccess: "フィードバックありがとうございます！",
-  feedbackError: "送信に失敗しました。もう一度お試しください。",
+  feedbackError: "送信できませんでした。メッセージはそのまま残っています。もう一度お試しください。",
   feedbackSending: "送信中...",
   sendFeedback: "フィードバックを送信",
 
@@ -2176,20 +2247,27 @@ export const ja: Translations = {
   // Notification Sounds
   notificationSound: "通知音",
   notificationSoundDescription: "リマインダーの音を選択",
+  notificationSoundUpdateFailed:
+    "このリマインダー音を適用できませんでした。以前の音が選択されたままです。もう一度お試しください。",
+  reminderReconcileFailed:
+    "リマインダーを更新できませんでした。端末では以前のスケジュールが引き続き使われている可能性があります。もう一度お試しください。",
   soundDefault: "デフォルト",
   soundDefaultDesc: "システム通知音",
   soundGentle: "優しい",
   soundGentleDesc: "振動のみ",
-  soundChime: "チャイム",
-  soundChimeDesc: "短い通知音",
   soundSilent: "サイレント",
   soundSilentDesc: "音も振動もなし",
-  notificationSystemSettingsTitle: "システム通知コントロール",
-  notificationSystemSettingsDescription: "端末やブラウザ側の設定で、ZenFlowのリマインダーをミュートまたは控えめにできます。アプリ内の音はこのデバイス内で、ユーザーが制御します。",
-  notificationSystemSettingsAndroidDescription: "各リマインダーの音、振動、表示は最終的にスマートフォン側で管理されます。",
-  notificationSystemSettingsIosDescription: "通知音、配信、表示スタイルは最終的にiPhoneまたはiPadの設定と集中モードで管理されます。",
-  notificationSystemSettingsWebDescription: "ブラウザまたはデバイス側でリマインダーを消音できます。ZenFlowの音はこのデバイス内に留まり、タップ後だけ再生されます。",
-  notificationSystemSettingsDesktopDescription: "リマインダーの配信と音は最終的にコンピューター側で管理されます。",
+  notificationSystemSettingsTitle: "リマインダーの音が聞こえない場合",
+  notificationSystemSettingsDescription:
+    "端末やブラウザ側の設定で、ZenFlowのリマインダーをミュートまたは控えめにできます。アプリ内の音はこのデバイス内で、ユーザーが制御します。",
+  notificationSystemSettingsAndroidDescription:
+    "スマートフォンの音、バイブレーション、通知の設定によって、リマインダーが消音または非表示になることがあります。",
+  notificationSystemSettingsIosDescription:
+    "iPhoneまたはiPadの通知設定や集中モードによって、リマインダーが消音または非表示になることがあります。",
+  notificationSystemSettingsWebDescription:
+    "ブラウザまたはデバイス側でリマインダーを消音できます。ZenFlowの音はこのデバイス内に留まり、タップ後だけ再生されます。",
+  notificationSystemSettingsDesktopDescription:
+    "リマインダーの配信と音は最終的にコンピューター側で管理されます。",
   testNotification: "通知をテスト",
   testNotificationHint: "5秒後にテスト通知を送信して通知が機能することを確認します。",
   notificationTestSending: "送信中...",
@@ -2249,8 +2327,7 @@ export const ja: Translations = {
   authSigningInGoogle: "Googleでサインイン中...",
   authSigningInFacebook: "Facebookでサインイン中...",
   authSigningInTelegram: "Telegramでサインイン中...",
-  authNotConfiguredMessage:
-    "サインイン設定は現在利用できません。後でもう一度お試しください。",
+  authNotConfiguredMessage: "サインイン設定は現在利用できません。後でもう一度お試しください。",
   authExportDebugInfo: "サポート用情報をダウンロード",
   authOr: "または",
   authContinueEmail: "メールで続行",
@@ -2260,7 +2337,8 @@ export const ja: Translations = {
   authSignInTooLong: "サインインに時間がかかりすぎました。もう一度お試しください。",
   authTooManyAttempts: "サインイン試行が多すぎます。しばらく待ってからもう一度お試しください。",
   authSupabaseNotConfigured: "サインイン設定は現在利用できません。",
-  authAppleUnavailable: "Appleでのサインインはまだ利用できません。別の方法でサインインしてください。",
+  authAppleUnavailable:
+    "Appleでのサインインはまだ利用できません。別の方法でサインインしてください。",
   authUnexpectedError: "予期しないエラーが発生しました。もう一度お試しください。",
   authGoogleSignInFailed: "Googleログインに失敗しました。もう一度お試しください。",
 
@@ -2280,7 +2358,8 @@ export const ja: Translations = {
   thanksFeedback: "フィードバックありがとうございます！",
   feedbackFailed: "フィードバックの送信に失敗しました",
   noVersionHistory: "バージョン履歴がありません",
-  syncFailedLocal: "オンラインバックアップを更新できませんでした。変更はこのデバイスに保存されています。",
+  syncFailedLocal:
+    "オンラインバックアップを更新できませんでした。変更はこのデバイスに保存されています。",
   syncRefreshFailed: "オンラインバックアップを一時停止中です。少ししてからもう一度試してください。",
   // Sync status notifications
   syncQueueFull: "待機中の変更が多すぎます",
@@ -2559,7 +2638,8 @@ export const ja: Translations = {
   journalEntryTitle: "タイトル（任意）",
   journalEntryDate: "エントリーの日付",
   journalRetryLoad: "再読み込み",
-  journalLoadFailedHint: "この読み込み操作でエントリーは変更されていません。もう一度読み込んでください。",
+  journalLoadFailedHint:
+    "この読み込み操作でエントリーは変更されていません。もう一度読み込んでください。",
   journalLoadFailed: "日記の読み込みにもう少し時間が必要です",
   journalEntryPlaceholder: "何を考えていますか？",
   journalSave: "保存",
@@ -2586,9 +2666,9 @@ export const ja: Translations = {
   journalPasswordEnter: "パスワードを入力",
   journalPasswordConfirm: "パスワードを確認",
   journalLockHint:
-    "このパスワードはこの端末上の日記を暗号化します。安全な場所に保管してください。ZenFlow は表示も復元もできません。",
+    "このパスワードは、この端末上の日記本文と添付ファイルを暗号化します。日付、タイトル、タグ、日記の利用情報は暗号化されません。パスワードは安全に保管してください。ZenFlowでは表示も復元もできません。",
   journalLockHintLocalOnly:
-    "このパスワードはこの端末上の日記を暗号化します。安全な場所に保管してください。ZenFlow は表示も復元もできません。",
+    "このパスワードは、この端末上の日記本文と添付ファイルを暗号化します。日付、タイトル、タグ、日記の利用情報は暗号化されません。パスワードは安全に保管してください。ZenFlowでは表示も復元もできません。",
   journalLockTooShort: "6文字以上必要です",
   journalPasswordMismatch: "パスワードが一致しません",
   journalPasswordWrong: "パスワードが間違っています",
@@ -2601,27 +2681,38 @@ export const ja: Translations = {
   journalResetConfirm: "確認リンクを送信します",
   journalResetSendCode: "リンクを送信",
   journalResetCodeSent: "メールを確認してください",
-  journalResetCodeSentHint: "この端末またはブラウザでメールのリンクを開き、そのあと日記に戻ってください。アカウントを確認し、古いパスワードを明かさずにロックを解除します。",
+  journalResetCodeSentHint:
+    "この端末またはブラウザでメールのリンクを開き、そのあと日記に戻ってください。アカウントを確認し、古いパスワードを明かさずにロックを解除します。",
   journalResetEnterCode: "確認リンク",
   journalResetVerify: "リンクを開く",
   journalResetSuccess: "日記のロックを解除しました",
-  journalResetSuccessDetail: "この端末では日記がパスワードなしで開ける状態です。保護を続けたい場合は新しいパスワードを設定してください。",
+  journalResetSuccessDetail:
+    "この端末では日記がパスワードなしで開ける状態です。保護を続けたい場合は新しいパスワードを設定してください。",
   journalResetSetNewPassword: "新しい日記パスワードを設定",
   journalResetChecking: "アカウントを確認しています...",
-  journalResetCheckingHint: "メールでロック解除できるか確認する間、この画面を開いたままにしてください。",
-  journalResetNoAccount: "アカウント設定でサインインすると、メールでこのロックを解除できます。何も変更されていません。日記の記録は保護されたままです。",  journalResetOpenAccountSettings: "アカウント設定を開く",
-  journalResetServiceUnavailable: "アカウントを確認できませんでした。接続を確認して、もう一度お試しください。",
-  journalResetEncryptedUnavailable: "この日記はパスワードで暗号化されています。暗号化された内容がロックされている間は、メール確認だけではこのロックを解除できません。何も変更されていません。記録は保護されたままです。解除するにはパスワードで開いてください。",
+  journalResetCheckingHint:
+    "メールでロック解除できるか確認する間、この画面を開いたままにしてください。",
+  journalResetNoAccount:
+    "アカウント設定でサインインすると、メールでこのロックを解除できます。何も変更されていません。日記の記録は保護されたままです。",
+  journalResetOpenAccountSettings: "アカウント設定を開く",
+  journalResetServiceUnavailable:
+    "アカウントを確認できませんでした。接続を確認して、もう一度お試しください。",
+  journalResetEncryptedUnavailable:
+    "この日記はパスワードで暗号化されています。暗号化された内容がロックされている間は、メール確認だけではこのロックを解除できません。何も変更されていません。記録は保護されたままです。解除するにはパスワードで開いてください。",
   journalResetCodeWrong: "確認リンクを確認できませんでした。もう一度お試しください。",
   journalResetExpired: "確認リンクの有効期限が切れました。新しいリンクを送信してください。",
-  journalResetWrongAccount: "このリンクをリクエストした同じアカウントでサインインして開いてください。",
-  journalResetMissingProof: "このメールリンクはアプリで確認されませんでした。何も変更されていません。日記のロックは有効なままで、記録は保護されています。",
+  journalResetWrongAccount:
+    "このリンクをリクエストした同じアカウントでサインインして開いてください。",
+  journalResetMissingProof:
+    "このメールリンクはアプリで確認されませんでした。何も変更されていません。日記のロックは有効なままで、記録は保護されています。",
   journalResetSendFailed: "リンクの送信に失敗しました。接続を確認してください。",
   journalResetResend: "リンクを再送信",
   journalResetCooldown: "別のリンクをリクエストする前に {seconds} 秒お待ちください。",
-  journalResetTroubleshooting: "メールが届かない場合は、迷惑メールを確認し、このデバイスでサインインしたままにして、タイマー後にリンクを再送してください。",
+  journalResetTroubleshooting:
+    "メールが届かない場合は、迷惑メールを確認し、このデバイスでサインインしたままにして、タイマー後にリンクを再送してください。",
   journalResetTryAgain: "もう一度試す",
-  journalResetDesktopUnavailable: "メールでのロック解除はWeb版またはモバイルアプリで利用できます。デスクトップでは日記のパスワードで解除してください。",
+  journalResetDesktopUnavailable:
+    "メールでのロック解除はWeb版またはモバイルアプリで利用できます。デスクトップでは日記のパスワードで解除してください。",
   journalClose: "閉じる",
   journalSearch: "エントリーを検索...",
   journalAiSearchPlaceholder: "探したい内容を説明してください...",
@@ -2638,7 +2729,8 @@ export const ja: Translations = {
   journalCompressing: "圧縮中...",
   journalPhotoError: "写真の追加に失敗しました",
   journalPhotoTooLarge: "画像が大きすぎます（最大10 MB）",
-  journalPhotoInvalidType: "対応していないファイル形式です。JPEG、PNG、WebP、またはHEICを使用してください。",
+  journalPhotoInvalidType:
+    "対応していないファイル形式です。JPEG、PNG、WebP、またはHEICを使用してください。",
   journalDraftFound: "未保存の下書きが見つかりました",
   journalRestore: "復元",
   journalDiscardTitle: "未保存の変更",
@@ -2772,7 +2864,8 @@ export const ja: Translations = {
   journalReminderTime: "時間",
   journalReminderNotifTitle: "書く時間です ✍️",
   journalReminderNotifBody: "思いや気持ちを記録する時間を取りましょう。",
-  journalInactiveBanner: "最後の記録から{days}日たちました。今助けになるなら、短く書き始めましょう。",
+  journalInactiveBanner:
+    "最後の記録から{days}日たちました。今助けになるなら、短く書き始めましょう。",
   journalToolbarSticker: "スタンプ",
   journalToolbarPhoto: "写真",
   journalToolbarMood: "気分",
@@ -2894,12 +2987,13 @@ export const ja: Translations = {
   journalPasswordChangeSuccess: "パスワードが正常に変更されました",
   journalPasswordChangeFailed: "日記のロックを更新できませんでした。もう一度お試しください。",
   journalPasswordActiveHint: "日記のロックは有効です。ここで変更または解除できます。",
+  journalProtectionCloudPending:
+    "この端末の日記は保護されています。ZenFlow は古いオンラインコピーを更新中です。アプリを開いたままインターネットに接続してください。",
   journalPasswordRemoveConfirm:
     "よろしいですか？日記はパスワードなしでアクセスできるようになります。",
   journalLockRemoveDetail:
     "記録は保存されたままですが、日記のロックと生体認証による日記のロック解除はオフになります。あとで新しいロックを設定できます。",
-  journalLockRemoveFailed:
-    "まず日記のロックを解除してから、もう一度ロックの解除をお試しください。",
+  journalLockRemoveFailed: "まず日記のロックを解除してから、もう一度ロックの解除をお試しください。",
   journalPasswordRemovePending: "ロックを解除しています...",
   journalPasswordRemoveSuccess: "日記のロックを解除しました。",
   journalPasswordSetupFailed: "日記のロックを有効にできませんでした。もう一度お試しください。",
@@ -2911,7 +3005,8 @@ export const ja: Translations = {
   journalBiometricSubtitle: "指紋または顔でロック解除",
   journalBiometricUnlock: "生体認証で解除",
   journalBiometricFailed: "生体認証で解除できませんでした。もう一度お試しください。",
-  journalBiometricUpdateFailed: "生体認証ロック解除を更新できませんでした。もう一度お試しください。",
+  journalBiometricUpdateFailed:
+    "生体認証ロック解除を更新できませんでした。もう一度お試しください。",
   journalScreenshotBlock: "スクリーンショットをブロック",
   journalScreenshotBlockSubtitle: "日記を開いている間の画面キャプチャを防止",
   journalDataSection: "データ",
@@ -2932,7 +3027,8 @@ export const ja: Translations = {
   journalExportPDFDesc: "印刷用ドキュメント",
   journalExportText: "Markdown",
   journalExportTextDesc: "プレーンテキスト形式",
-  journalExportPrivacyWarning: "エクスポートはプライベートなファイルで、ZenFlow では暗号化されません。信頼できる場所に保管してください。",
+  journalExportPrivacyWarning:
+    "エクスポートはプライベートなファイルで、ZenFlow では暗号化されません。信頼できる場所に保管してください。",
   journalExportSuccess: "エクスポート完了",
   journalExportFailed: "エクスポートに失敗しました。もう一度お試しください。",
   journalNoMatchingEntries: "一致するエントリがありません",
@@ -2944,7 +3040,8 @@ export const ja: Translations = {
   journalQuickMoodSaved: "気分を保存しました",
   journalNoAiResults: "似たエントリーは見つかりませんでした",
   journalNoAiResultsHint: "記憶を別の言葉で説明してみてください。",
-  journalAiSearchUnavailableHint: "エントリーはそのままです。通常検索を使うか、後でもう一度試してください。",
+  journalAiSearchUnavailableHint:
+    "エントリーはそのままです。通常検索を使うか、後でもう一度試してください。",
   journalAiSearchUnavailable: "AI検索は現在利用できません",
   journalSlashCommands: "日記コマンド",
   journalSlashNoResults: "日記コマンドが見つかりません",
@@ -3017,35 +3114,6 @@ export const ja: Translations = {
   journalSlashPhotoDescription: "写真を添付",
   journalSlashAudioLabel: "音声",
   journalSlashAudioDescription: "音声を録音",
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   // Premium Diary (Immersive Mode)
   diaryPremiumEntry: "没入モード",

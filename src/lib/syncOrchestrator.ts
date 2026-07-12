@@ -29,7 +29,7 @@ const lazyCategorizedBreadcrumb = (
 import { isCloudSyncEnabled } from "@/lib/cloudSyncSettings";
 import { generateSecureRandom } from "@/lib/validation";
 import { is401Error, AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
-import { supabase } from "@/lib/supabaseClient";
+import { getCurrentSessionUserId, supabase } from "@/lib/supabaseClient";
 
 // Sync operation types
 export type SyncOperationType =
@@ -49,17 +49,55 @@ export type SyncStatus =
   | "error" // Last sync failed
   | "conflict"; // Conflict detected
 
+export interface SyncExecutionContext {
+  ownerUserId: string;
+  generation: number;
+  signal: AbortSignal;
+}
+
+export interface SyncOptions {
+  priority?: number;
+  maxRetries?: number;
+  expectedOwnerUserId?: string;
+}
+
+export class SyncOrchestratorAccountBoundaryError extends Error {
+  constructor(message = "Sync operation stopped at an account boundary") {
+    super(message);
+    this.name = "SyncOrchestratorAccountBoundaryError";
+  }
+}
+
+export class SyncQueueOverflowError extends Error {
+  constructor(maxQueueSize: number) {
+    super(`Sync queue is full (maximum ${maxQueueSize} operations)`);
+    this.name = "SyncQueueOverflowError";
+  }
+}
+
+class SyncOperationTimeoutError extends Error {
+  constructor(operationType: SyncOperationType, timeoutMs: number) {
+    super(`Sync operation '${operationType}' timed out after ${timeoutMs}ms`);
+    this.name = "SyncOperationTimeoutError";
+  }
+}
+
 export interface SyncOperation {
   id: string;
   type: SyncOperationType;
   priority: number; // Higher = higher priority (0-10)
-  executor: () => Promise<void>;
+  executor: (context: SyncExecutionContext) => Promise<void>;
+  ownerUserId: string;
+  generation: number;
   retries: number; // Number of retries attempted
   maxRetries: number; // Maximum retries allowed
   createdAt: number;
   startedAt?: number;
   completedAt?: number;
   error?: Error;
+  completionSettled: boolean;
+  resolveCompletion: () => void;
+  rejectCompletion: (error: Error) => void;
 }
 
 export interface SyncState {
@@ -78,6 +116,10 @@ class SyncOrchestrator {
   private queue: SyncOperation[] = [];
   private isProcessing = false;
   private processingPromise: Promise<void> | null = null; // Mutex lock for process queue
+  private activeOperation: SyncOperation | null = null;
+  private activeController: AbortController | null = null;
+  private accountGeneration = 0;
+  private accountBoundarySuspended = false;
   private listeners: Set<SyncStateListener> = new Set();
   private state: SyncState = {
     status: "idle",
@@ -123,11 +165,8 @@ class SyncOrchestrator {
    */
   async sync(
     type: SyncOperationType,
-    executor: () => Promise<void>,
-    options: {
-      priority?: number;
-      maxRetries?: number;
-    } = {}
+    executor: (context: SyncExecutionContext) => Promise<void>,
+    options: SyncOptions = {}
   ): Promise<void> {
     // Check if cloud sync is enabled by user
     if (!isCloudSyncEnabled()) {
@@ -135,41 +174,65 @@ class SyncOrchestrator {
       return; // Skip sync silently
     }
 
-    const operation: SyncOperation = {
-      id: `${type}-${Date.now()}-${generateSecureRandom()}`,
-      type,
-      priority: options.priority ?? 5,
-      executor,
-      retries: 0,
-      maxRetries: options.maxRetries ?? 3,
-      createdAt: Date.now(),
-    };
+    const enqueueGeneration = this.accountGeneration;
+    if (this.accountBoundarySuspended) {
+      throw new SyncOrchestratorAccountBoundaryError("Sync is suspended for account cleanup");
+    }
 
-    // Add to queue sorted by priority (higher first)
-    this.queue.push(operation);
-    this.queue.sort((a, b) => b.priority - a.priority);
+    const activeOwnerUserId = await getCurrentSessionUserId();
+    const ownerUserId = options.expectedOwnerUserId ?? activeOwnerUserId;
+    if (
+      this.accountBoundarySuspended ||
+      enqueueGeneration !== this.accountGeneration ||
+      !ownerUserId ||
+      activeOwnerUserId !== ownerUserId
+    ) {
+      throw new SyncOrchestratorAccountBoundaryError();
+    }
 
-    // Drop lowest-priority operation if queue exceeds limit
-    if (this.queue.length > this.MAX_QUEUE_SIZE) {
-      const dropped = this.queue.pop();
-      logger.warn(
-        `[SyncOrchestrator] Queue overflow (>${this.MAX_QUEUE_SIZE}), dropped: ${dropped?.type}`
-      );
-
-      // Notify UI so user knows their action may not sync (Law 5: Loud Failure)
+    if (this.queue.length >= this.MAX_QUEUE_SIZE) {
+      const overflowError = new SyncQueueOverflowError(this.MAX_QUEUE_SIZE);
+      logger.warn(`[SyncOrchestrator] ${overflowError.message}`);
       if (typeof window !== "undefined") {
         window.dispatchEvent(
           new CustomEvent("zenflow:offline-queue-full", {
             detail: {
               queueSize: this.queue.length,
               maxSize: this.MAX_QUEUE_SIZE,
-              message: "Sync queue is full. Some changes may not be saved to cloud.",
-              actionType: dropped?.type,
+              message: "Sync queue is full. This sync request was not queued.",
+              actionType: type,
             },
           })
         );
       }
+      throw overflowError;
     }
+
+    let resolveCompletion!: () => void;
+    let rejectCompletion!: (error: Error) => void;
+    const completion = new Promise<void>((resolve, reject) => {
+      resolveCompletion = resolve;
+      rejectCompletion = reject;
+    });
+
+    const operation: SyncOperation = {
+      id: `${type}-${Date.now()}-${generateSecureRandom()}`,
+      type,
+      priority: options.priority ?? 5,
+      executor,
+      ownerUserId,
+      generation: enqueueGeneration,
+      retries: 0,
+      maxRetries: options.maxRetries ?? 3,
+      createdAt: Date.now(),
+      completionSettled: false,
+      resolveCompletion,
+      rejectCompletion,
+    };
+
+    // Add to queue sorted by priority (higher first)
+    this.queue.push(operation);
+    this.sortQueueByPriority();
 
     this.updateState({ queueLength: this.queue.length });
 
@@ -177,9 +240,51 @@ class SyncOrchestrator {
 
     // Start processing using mutex pattern to avoid race conditions
     // If already processing, wait for current batch to complete then check queue again
-    this.startProcessing().catch((err) => {
-      logger.sync("Failed to start queue processing", err);
+    void this.startProcessing().catch((error: unknown) => {
+      const normalized = this.normalizeError(error);
+      logger.error("Failed to start queue processing", normalized);
+      if (this.removeOperation(operation)) {
+        this.rejectOperation(operation, normalized);
+        this.updateState({ queueLength: this.queue.length });
+      }
     });
+
+    return completion;
+  }
+
+  private sortQueueByPriority(): void {
+    if (this.activeOperation && this.queue[0] === this.activeOperation) {
+      const [active, ...pending] = this.queue;
+      pending.sort((a, b) => b.priority - a.priority);
+      this.queue = [active, ...pending];
+      return;
+    }
+    this.queue.sort((a, b) => b.priority - a.priority);
+  }
+
+  private removeOperation(operation: SyncOperation): boolean {
+    const index = this.queue.findIndex((item) => item.id === operation.id);
+    if (index < 0) return false;
+    this.queue.splice(index, 1);
+    return true;
+  }
+
+  private resolveOperation(operation: SyncOperation): void {
+    if (operation.completionSettled) return;
+    operation.completionSettled = true;
+    operation.resolveCompletion();
+  }
+
+  private rejectOperation(operation: SyncOperation, error: Error): void {
+    if (operation.completionSettled) return;
+    operation.completionSettled = true;
+    operation.rejectCompletion(error);
+  }
+
+  private normalizeError(error: unknown): Error {
+    return error instanceof Error
+      ? error
+      : new Error(typeof error === "string" ? error : "Sync error");
   }
 
   /**
@@ -187,23 +292,66 @@ class SyncOrchestrator {
    * Lock release is now inside processQueue() to prevent race condition
    */
   private async startProcessing(): Promise<void> {
-    // If already processing, wait for it to complete
     if (this.processingPromise) {
-      await this.processingPromise;
-      // After waiting, recursively check if we need to process more
-      // Both isProcessing and processingPromise are now cleared atomically in processQueue()
-      if (this.queue.length > 0 && !this.isProcessing) {
-        this.startProcessing().catch(() => {
-          /* errors handled inside processQueue */
-        });
-      }
-      return;
+      return this.processingPromise;
     }
 
-    // Acquire the lock by creating the promise
-    this.processingPromise = this.processQueue();
-    await this.processingPromise;
-    // Lock release moved inside processQueue() to ensure atomic release with isProcessing
+    const processing = this.processQueue().finally(() => {
+      if (this.processingPromise === processing) {
+        this.processingPromise = null;
+      }
+      if (
+        this.queue.length > 0 &&
+        this.state.isOnline &&
+        !this.accountBoundarySuspended
+      ) {
+        void this.startProcessing().catch((error: unknown) => {
+          logger.error("[SyncOrchestrator] Failed to continue queue processing", error);
+        });
+      }
+    });
+    this.processingPromise = processing;
+    return processing;
+  }
+
+  private async assertOperationCurrent(operation: SyncOperation): Promise<void> {
+    if (
+      this.accountBoundarySuspended ||
+      operation.generation !== this.accountGeneration
+    ) {
+      throw new SyncOrchestratorAccountBoundaryError();
+    }
+
+    const activeOwnerUserId = await getCurrentSessionUserId();
+    if (
+      this.accountBoundarySuspended ||
+      operation.generation !== this.accountGeneration ||
+      activeOwnerUserId !== operation.ownerUserId
+    ) {
+      throw new SyncOrchestratorAccountBoundaryError();
+    }
+  }
+
+  private async requeueAfterDelay(
+    operation: SyncOperation,
+    delay: number,
+    controller: AbortController
+  ): Promise<boolean> {
+    this.removeOperation(operation);
+    this.updateState({ queueLength: this.queue.length });
+
+    try {
+      await this.sleep(delay, controller.signal);
+      await this.assertOperationCurrent(operation);
+    } catch (error) {
+      this.rejectOperation(operation, this.normalizeError(error));
+      return false;
+    }
+
+    this.queue.push(operation);
+    this.sortQueueByPriority();
+    this.updateState({ queueLength: this.queue.length });
+    return true;
   }
 
   /**
@@ -214,6 +362,8 @@ class SyncOrchestrator {
     if (this.isProcessing || this.queue.length === 0) {
       return;
     }
+
+    if (this.accountBoundarySuspended) return;
 
     // Check if online
     if (!this.state.isOnline) {
@@ -226,10 +376,14 @@ class SyncOrchestrator {
     this.updateState({ status: "syncing" });
 
     try {
-      while (this.queue.length > 0) {
+      while (this.queue.length > 0 && !this.accountBoundarySuspended) {
         const operation = this.queue[0];
+        const controller = new AbortController();
+        this.activeOperation = operation;
+        this.activeController = controller;
 
         try {
+          await this.assertOperationCurrent(operation);
           lazyCategorizedBreadcrumb("sync", `Starting ${operation.type} sync`, {
             operationId: operation.id,
             priority: operation.priority,
@@ -243,7 +397,7 @@ class SyncOrchestrator {
           });
 
           // P2-5 Fix: Execute the sync operation with timeout protection
-          await this.executeWithTimeout(operation.executor, operation.type);
+          await this.executeWithTimeout(operation, controller);
 
           operation.completedAt = Date.now();
           const duration = operation.completedAt - operation.startedAt;
@@ -254,8 +408,8 @@ class SyncOrchestrator {
           });
           logger.sync(`Completed ${operation.type} sync in ${duration}ms`);
 
-          // Remove from queue
-          this.queue.shift();
+          this.removeOperation(operation);
+          this.resolveOperation(operation);
 
           this.updateState({
             status: "success",
@@ -266,22 +420,35 @@ class SyncOrchestrator {
             lastError: undefined, // Clear previous errors on success
           });
         } catch (error) {
+          const normalizedError = this.normalizeError(error);
+
+          if (normalizedError instanceof SyncOrchestratorAccountBoundaryError) {
+            this.removeOperation(operation);
+            this.rejectOperation(operation, normalizedError);
+            this.updateState({
+              status: "idle",
+              queueLength: this.queue.length,
+              currentOperation: undefined,
+            });
+            continue;
+          }
+
           lazyCategorizedBreadcrumb(
             "sync",
             `Sync error for ${operation.type}`,
             {
-              error: (error as Error).message,
+              error: normalizedError.message,
               retries: operation.retries,
             },
             "error"
           );
-          logger.error(`Sync error for ${operation.type}:`, error);
+          logger.error(`Sync error for ${operation.type}:`, normalizedError);
 
-          operation.error = error as Error;
+          operation.error = normalizedError;
           operation.retries++;
 
           // Check for 401 authentication errors - these need special handling
-          if (is401Error(error)) {
+          if (is401Error(normalizedError)) {
             logger.warn(
               `[SyncOrchestrator] 401 error on ${operation.type} - checking if session truly expired`
             );
@@ -289,7 +456,10 @@ class SyncOrchestrator {
             // If we already emitted session expired, just clear and stop
             if (this.sessionExpiredEmitted) {
               logger.log(`[SyncOrchestrator] Session already expired, clearing remaining queue`);
-              this.clearQueue();
+              const sessionError = new Error("Session expired. Please sign in again.");
+              this.removeOperation(operation);
+              this.rejectOperation(operation, sessionError);
+              this.clearQueue(sessionError);
               break;
             }
 
@@ -314,10 +484,7 @@ class SyncOrchestrator {
               // Note: retries was already incremented above (line 216), so check against maxRetries
               if (operation.retries < operation.maxRetries) {
                 const delay = this.calculateRetryDelay(operation.retries);
-                this.queue.shift();
-                await this.sleep(delay);
-                this.queue.push(operation);
-                this.queue.sort((a, b) => b.priority - a.priority);
+                await this.requeueAfterDelay(operation, delay, controller);
                 continue;
               }
             }
@@ -334,8 +501,10 @@ class SyncOrchestrator {
             // Set flag BEFORE dispatching to prevent race condition
             this.sessionExpiredEmitted = true;
 
-            // Clear entire queue - no point retrying with expired session
-            this.clearQueue();
+            const sessionError = new Error("Session expired. Please sign in again.");
+            this.removeOperation(operation);
+            this.rejectOperation(operation, sessionError);
+            this.clearQueue(sessionError);
 
             // Notify UI that session has expired (only once due to flag)
             window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
@@ -352,8 +521,9 @@ class SyncOrchestrator {
 
           // Don't retry on client errors (400, 404, 422) - these won't succeed on retry
           // Also check for Supabase/Postgres-specific error messages
-          const errorMessage = (error as Error).message || "";
+          const errorMessage = normalizedError.message || "";
           const isClientError =
+            normalizedError instanceof SyncOperationTimeoutError ||
             errorMessage.includes("400") ||
             errorMessage.includes("404") ||
             errorMessage.includes("422") ||
@@ -379,23 +549,23 @@ class SyncOrchestrator {
             operation.priority = Math.max(0, operation.priority - 1);
 
             // Move to end of queue and retry after delay
-            this.queue.shift();
-            await this.sleep(delay);
-            this.queue.push(operation);
-            this.queue.sort((a, b) => b.priority - a.priority);
+            await this.requeueAfterDelay(operation, delay, controller);
           } else {
             logger.error(`Max retries exceeded for ${operation.type}`);
 
-            // Remove failed operation from queue
-            this.queue.shift();
+            this.removeOperation(operation);
+            this.rejectOperation(operation, normalizedError);
 
             this.updateState({
               status: "error",
-              lastError: (error as Error).message,
+              lastError: normalizedError.message,
               queueLength: this.queue.length,
               currentOperation: undefined,
             });
           }
+        } finally {
+          if (this.activeOperation === operation) this.activeOperation = null;
+          if (this.activeController === controller) this.activeController = null;
         }
       }
 
@@ -406,10 +576,7 @@ class SyncOrchestrator {
         });
       }
     } finally {
-      // Release both flags atomically to prevent race condition
-      // where another caller sees processingPromise = null but isProcessing = true
       this.isProcessing = false;
-      this.processingPromise = null;
     }
   }
 
@@ -425,66 +592,97 @@ class SyncOrchestrator {
   /**
    * Sleep utility
    */
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  private sleep(ms: number, signal?: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(
+          signal.reason instanceof Error
+            ? signal.reason
+            : new SyncOrchestratorAccountBoundaryError()
+        );
+        return;
+      }
+
+      const timeoutId = setTimeout(() => {
+        signal?.removeEventListener("abort", handleAbort);
+        resolve();
+      }, ms);
+      const handleAbort = () => {
+        clearTimeout(timeoutId);
+        reject(
+          signal?.reason instanceof Error
+            ? signal.reason
+            : new SyncOrchestratorAccountBoundaryError()
+        );
+      };
+      signal?.addEventListener("abort", handleAbort, { once: true });
+    });
   }
 
   /**
    * P2-5 Fix: Execute operation with timeout protection
    * Prevents individual operations from blocking the queue indefinitely
    */
-  private executeWithTimeout(
-    executor: () => Promise<void>,
-    operationType: SyncOperationType
+  private async executeWithTimeout(
+    operation: SyncOperation,
+    controller: AbortController
   ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      let timeoutId: ReturnType<typeof setTimeout> | null = null;
-      let settled = false;
+    const timeoutError = new SyncOperationTimeoutError(
+      operation.type,
+      this.OPERATION_TIMEOUT
+    );
+    const executorPromise = Promise.resolve().then(() =>
+      operation.executor({
+        ownerUserId: operation.ownerUserId,
+        generation: operation.generation,
+        signal: controller.signal,
+      })
+    );
 
-      // Set up timeout
-      timeoutId = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          logger.warn(
-            `[SyncOrchestrator] ${operationType} operation timed out after ${this.OPERATION_TIMEOUT}ms`
-          );
-          // Emit event for UI awareness
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("zenflow:sync-operation-timeout", {
-                detail: { operationType, timeoutMs: this.OPERATION_TIMEOUT },
-              })
-            );
-          }
-          reject(
-            new Error(
-              `Sync operation '${operationType}' timed out after ${this.OPERATION_TIMEOUT}ms`
-            )
-          );
-        }
-      }, this.OPERATION_TIMEOUT);
-
-      // Execute the operation
-      executor()
-        .then(() => {
-          if (!settled) {
-            settled = true;
-            if (timeoutId) clearTimeout(timeoutId);
-            resolve();
-          }
-        })
-        .catch((error: unknown) => {
-          if (!settled) {
-            settled = true;
-            if (timeoutId) clearTimeout(timeoutId);
-            reject(
-              error instanceof Error
-                ? error
-                : new Error(typeof error === "string" ? error : "Sync error")
-            );
-          }
-        });
+    let rejectOnAbort!: (error: Error) => void;
+    const abortPromise = new Promise<never>((_resolve, reject) => {
+      rejectOnAbort = reject;
     });
+    const handleAbort = () => {
+      rejectOnAbort(
+        controller.signal.reason instanceof Error
+          ? controller.signal.reason
+          : new SyncOrchestratorAccountBoundaryError()
+      );
+    };
+    controller.signal.addEventListener("abort", handleAbort, { once: true });
+
+    const timeoutId = setTimeout(() => {
+      logger.warn(
+        `[SyncOrchestrator] ${operation.type} operation timed out after ${this.OPERATION_TIMEOUT}ms`
+      );
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("zenflow:sync-operation-timeout", {
+            detail: { operationType: operation.type, timeoutMs: this.OPERATION_TIMEOUT },
+          })
+        );
+      }
+      controller.abort(timeoutError);
+    }, this.OPERATION_TIMEOUT);
+
+    try {
+      await Promise.race([executorPromise, abortPromise]);
+    } catch (error) {
+      const normalizedError = this.normalizeError(error);
+      if (controller.signal.aborted) {
+        // Abort is cooperative. Do not let the next account or queued operation
+        // start until the old executor has actually stopped touching resources.
+        await executorPromise.catch(() => undefined);
+        throw controller.signal.reason instanceof Error
+          ? controller.signal.reason
+          : normalizedError;
+      }
+      throw normalizedError;
+    } finally {
+      clearTimeout(timeoutId);
+      controller.signal.removeEventListener("abort", handleAbort);
+    }
   }
 
   /**
@@ -495,7 +693,12 @@ class SyncOrchestrator {
     this.updateState({ isOnline });
 
     // Resume processing when back online using mutex-protected method
-    if (isOnline && this.queue.length > 0 && !this.isProcessing) {
+    if (
+      isOnline &&
+      this.queue.length > 0 &&
+      !this.isProcessing &&
+      !this.accountBoundarySuspended
+    ) {
       this.startProcessing().catch((err) => {
         logger.sync("Failed to resume processing on network recovery", err);
       });
@@ -541,14 +744,74 @@ class SyncOrchestrator {
   /**
    * Clear the queue (emergency stop)
    */
-  clearQueue(): void {
+  clearQueue(reason: Error = new Error("Sync queue cleared")): void {
     logger.sync("Clearing sync queue");
-    this.queue = [];
+    const activeOperation = this.activeOperation;
+    const pendingOperations = this.queue.filter(
+      (operation) => operation !== activeOperation
+    );
+    this.queue = activeOperation ? this.queue.filter((operation) => operation === activeOperation) : [];
+
+    for (const operation of pendingOperations) {
+      this.rejectOperation(operation, reason);
+    }
+    if (activeOperation && !this.activeController?.signal.aborted) {
+      this.activeController?.abort(reason);
+    }
+
     this.updateState({
-      queueLength: 0,
+      queueLength: this.queue.length,
       status: "idle",
       currentOperation: undefined,
     });
+  }
+
+  /**
+   * Stop accepting account work, cancel queued operations, abort the active
+   * executor, and wait until it has actually unwound before local data is purged.
+   */
+  async suspendForAccountBoundary(): Promise<void> {
+    if (!this.accountBoundarySuspended) {
+      this.accountBoundarySuspended = true;
+      this.accountGeneration += 1;
+    }
+
+    const boundaryError = new SyncOrchestratorAccountBoundaryError();
+    const activeOperation = this.activeOperation;
+    const pendingOperations = this.queue.filter(
+      (operation) => operation !== activeOperation
+    );
+    this.queue = activeOperation ? this.queue.filter((operation) => operation === activeOperation) : [];
+
+    for (const operation of pendingOperations) {
+      this.rejectOperation(operation, boundaryError);
+    }
+    if (this.activeController && !this.activeController.signal.aborted) {
+      this.activeController.abort(boundaryError);
+    }
+
+    this.updateState({
+      status: "idle",
+      currentOperation: undefined,
+      queueLength: this.queue.length,
+    });
+
+    const processing = this.processingPromise;
+    if (processing) {
+      await processing.catch((error: unknown) => {
+        logger.warn("[SyncOrchestrator] Account-boundary unwind failed", error);
+      });
+    }
+  }
+
+  resumeAfterAccountBoundary(): void {
+    this.accountBoundarySuspended = false;
+    logger.sync("[SyncOrchestrator] Resumed after account-boundary cleanup");
+    if (this.queue.length > 0 && this.state.isOnline) {
+      void this.startProcessing().catch((error: unknown) => {
+        logger.error("[SyncOrchestrator] Failed to resume queue", error);
+      });
+    }
   }
 
   /**
@@ -563,7 +826,7 @@ class SyncOrchestrator {
    * Get queue info for debugging
    */
   getQueueInfo(): Array<{ type: SyncOperationType; priority: number; retries: number }> {
-    return this.queue.map((op) => ({
+    return [...this.queue].sort((a, b) => b.priority - a.priority).map((op) => ({
       type: op.type,
       priority: op.priority,
       retries: op.retries,

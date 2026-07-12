@@ -1,4 +1,4 @@
-import type { AppliedTheme } from "./themeStore";
+export type AppliedTheme = "paper" | "ink" | "oled";
 
 export type ThemePaletteId =
   | "zenflow"
@@ -68,7 +68,7 @@ export const THEME_INTENSITIES: Array<ThemeCustomizationOption<ThemeIntensity>> 
 
 const PALETTE_IDS = new Set<ThemePaletteId>(THEME_CUSTOMIZATION_PRESETS.map((option) => option.id));
 const ACCENT_FAMILIES = new Set<ThemeAccentFamily>(
-  THEME_ACCENT_FAMILIES.map((option) => option.id),
+  THEME_ACCENT_FAMILIES.map((option) => option.id)
 );
 const INTENSITIES = new Set<ThemeIntensity>(THEME_INTENSITIES.map((option) => option.id));
 const WARMTHS = new Set<ThemeWarmth>(["cool", "neutral", "warm"]);
@@ -88,6 +88,9 @@ const CUSTOMIZATION_CSS_VARS = [
   "--settings-v2-glass-blur",
   "--settings-v2-rim-light",
   "--settings-v2-rim-alpha",
+  "--settings-v2-text-strong",
+  "--settings-v2-text-muted",
+  "--settings-v2-focus",
   "--ring",
   "--primary",
   "--primary-foreground",
@@ -191,10 +194,34 @@ const ACCENTS: Record<AppliedTheme, Record<ThemeAccentFamily, Record<ThemeIntens
 
 const META_THEME_COLORS: Record<ThemePaletteId, Record<ThemeAccentFamily, string>> = {
   zenflow: { teal: "#4a9d7c", clay: "#8e5640", plum: "#76519b", moss: "#3d7e48", amber: "#9b6b1f" },
-  morningHearth: { teal: "#f3eadf", clay: "#f3eadf", plum: "#f3eadf", moss: "#f3eadf", amber: "#f3eadf" },
-  velvetLibrary: { teal: "#211d2b", clay: "#211d2b", plum: "#211d2b", moss: "#211d2b", amber: "#211d2b" },
-  botanicalPulse: { teal: "#4E896E", clay: "#606B54", plum: "#4E896E", moss: "#3E795D", amber: "#606B54" },
-  quietOled: { teal: "#58aca6", clay: "#bd765f", plum: "#a687cf", moss: "#73ad76", amber: "#c69545" },
+  morningHearth: {
+    teal: "#f3eadf",
+    clay: "#f3eadf",
+    plum: "#f3eadf",
+    moss: "#f3eadf",
+    amber: "#f3eadf",
+  },
+  velvetLibrary: {
+    teal: "#211d2b",
+    clay: "#211d2b",
+    plum: "#211d2b",
+    moss: "#211d2b",
+    amber: "#211d2b",
+  },
+  botanicalPulse: {
+    teal: "#4E896E",
+    clay: "#606B54",
+    plum: "#4E896E",
+    moss: "#3E795D",
+    amber: "#606B54",
+  },
+  quietOled: {
+    teal: "#58aca6",
+    clay: "#bd765f",
+    plum: "#a687cf",
+    moss: "#73ad76",
+    amber: "#c69545",
+  },
 };
 
 function enumValue<T extends string>(value: unknown, allowed: Set<T>, fallback: T): T {
@@ -213,7 +240,7 @@ export function normalizeThemeCustomization(value: unknown): ThemeCustomization 
     accentFamily: enumValue(
       source.accentFamily,
       ACCENT_FAMILIES,
-      DEFAULT_THEME_CUSTOMIZATION.accentFamily,
+      DEFAULT_THEME_CUSTOMIZATION.accentFamily
     ),
     intensity: enumValue(source.intensity, INTENSITIES, DEFAULT_THEME_CUSTOMIZATION.intensity),
     warmth: enumValue(source.warmth, WARMTHS, DEFAULT_THEME_CUSTOMIZATION.warmth),
@@ -221,17 +248,20 @@ export function normalizeThemeCustomization(value: unknown): ThemeCustomization 
     contrastMode: enumValue(
       source.contrastMode,
       CONTRAST_MODES,
-      DEFAULT_THEME_CUSTOMIZATION.contrastMode,
+      DEFAULT_THEME_CUSTOMIZATION.contrastMode
     ),
     reduceGlow: booleanValue(source.reduceGlow, DEFAULT_THEME_CUSTOMIZATION.reduceGlow),
     reduceTransparency: booleanValue(
       source.reduceTransparency,
-      DEFAULT_THEME_CUSTOMIZATION.reduceTransparency,
+      DEFAULT_THEME_CUSTOMIZATION.reduceTransparency
     ),
   };
 }
 
-function paletteForTheme(appliedTheme: AppliedTheme, paletteId: ThemePaletteId): Record<string, string> {
+function paletteForTheme(
+  appliedTheme: AppliedTheme,
+  paletteId: ThemePaletteId
+): Record<string, string> {
   return appliedTheme === "paper" ? PAPER_PALETTES[paletteId] : DARK_PALETTES[paletteId];
 }
 
@@ -241,7 +271,7 @@ function foregroundForTheme(appliedTheme: AppliedTheme): string {
 
 function transparencyVars(
   appliedTheme: AppliedTheme,
-  customization: ThemeCustomization,
+  customization: ThemeCustomization
 ): Record<string, string> {
   if (customization.reduceTransparency) {
     return {
@@ -253,27 +283,21 @@ function transparencyVars(
     };
   }
   return {
-    "--settings-v2-card-alpha": customization.depth === "soft"
-      ? appliedTheme === "paper"
-        ? "0.64"
-        : "0.62"
-      : "0.86",
-    "--settings-v2-panel-alpha": customization.depth === "soft"
-      ? appliedTheme === "paper"
-        ? "0.5"
-        : "0.5"
-      : "0.72",
+    "--settings-v2-card-alpha":
+      customization.depth === "soft" ? (appliedTheme === "paper" ? "0.64" : "0.62") : "0.86",
+    "--settings-v2-panel-alpha":
+      customization.depth === "soft" ? (appliedTheme === "paper" ? "0.5" : "0.5") : "0.72",
     "--settings-v2-shell-alpha": customization.depth === "cozy" ? "0.58" : "0.44",
     "--settings-v2-glass-blur": customization.depth === "soft" ? "24px" : "14px",
-    "--settings-v2-rim-alpha": customization.depth === "soft"
-      ? appliedTheme === "paper"
-        ? "0.66"
-        : "0.22"
-      : "0.28",
+    "--settings-v2-rim-alpha":
+      customization.depth === "soft" ? (appliedTheme === "paper" ? "0.66" : "0.22") : "0.28",
   };
 }
 
-function shadowVars(appliedTheme: AppliedTheme, customization: ThemeCustomization): Record<string, string> {
+function shadowVars(
+  appliedTheme: AppliedTheme,
+  customization: ThemeCustomization
+): Record<string, string> {
   if (customization.reduceGlow || customization.depth === "crisp") {
     return {
       "--zen-shadow-card":
@@ -300,7 +324,7 @@ function shadowVars(appliedTheme: AppliedTheme, customization: ThemeCustomizatio
 
 export function getThemeCustomizationRecipe(
   appliedTheme: AppliedTheme,
-  value: ThemeCustomization,
+  value: ThemeCustomization
 ): ThemeCustomizationRecipe {
   const customization = normalizeThemeCustomization(value);
   if (JSON.stringify(customization) === JSON.stringify(DEFAULT_THEME_CUSTOMIZATION)) {
@@ -309,17 +333,27 @@ export function getThemeCustomizationRecipe(
 
   const accent = ACCENTS[appliedTheme][customization.accentFamily][customization.intensity];
   const palette = paletteForTheme(appliedTheme, customization.paletteId);
-  const contrastBorder: Record<string, string> =
+  const contrastTokens: Record<string, string> =
     customization.contrastMode === "high"
       ? appliedTheme === "paper"
-        ? { "--settings-v2-border": "210 12% 38%" }
-        : { "--settings-v2-border": "170 10% 48%" }
+        ? {
+            "--settings-v2-border": "176 26% 30%",
+            "--settings-v2-text-strong": "176 58% 6%",
+            "--settings-v2-text-muted": "176 35% 20%",
+            "--settings-v2-focus": "166 72% 23%",
+          }
+        : {
+            "--settings-v2-border": "155 20% 68%",
+            "--settings-v2-text-strong": "54 20% 98%",
+            "--settings-v2-text-muted": "58 18% 84%",
+            "--settings-v2-focus": "155 52% 82%",
+          }
       : {};
 
   return {
     cssVars: {
       ...palette,
-      ...contrastBorder,
+      ...contrastTokens,
       ...transparencyVars(appliedTheme, customization),
       ...shadowVars(appliedTheme, customization),
       "--settings-v2-accent": accent,
@@ -339,7 +373,7 @@ function setMetaThemeColor(color: string): void {
 
 export function applyThemeCustomizationToDOM(
   appliedTheme: AppliedTheme,
-  value: ThemeCustomization,
+  value: ThemeCustomization
 ): void {
   if (typeof document === "undefined") return;
   const customization = normalizeThemeCustomization(value);

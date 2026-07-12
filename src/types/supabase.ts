@@ -1621,6 +1621,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_push_install: {
+        Args: { p_device_id: string; p_platform?: string; p_token: string }
+        Returns: string
+      }
       calculate_streak: { Args: { p_user_id: string }; Returns: number }
       get_challenge_leaderboard: {
         Args: { p_challenge_id: string }
@@ -1673,6 +1677,10 @@ export type Database = {
       }
       reset_monthly_leaderboard: { Args: never; Returns: undefined }
       reset_weekly_leaderboard: { Args: never; Returns: undefined }
+      revoke_push_install: {
+        Args: { p_device_id: string; p_token?: string | null }
+        Returns: number
+      }
       update_member_progress: {
         Args: {
           p_challenge_id: string

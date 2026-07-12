@@ -98,7 +98,7 @@ describe("journal sync tombstones", () => {
       photoIds: [],
       createdAt: 1,
       updatedAt: 2,
-    });
+    }, "user-1");
 
     expect(upsert).toHaveBeenCalled();
     expect(mocks.writeEventAndBroadcast).toHaveBeenCalledWith(
@@ -107,6 +107,7 @@ describe("journal sync tombstones", () => {
       "upsert",
       expect.objectContaining({ id: "entry-1" }),
       "device-1",
+      { expectedOwnerUserId: "user-1" }
     );
     expect(mocks.generateEmbeddings).not.toHaveBeenCalled();
   });
@@ -124,7 +125,7 @@ describe("journal sync tombstones", () => {
       photoIds: [],
       createdAt: 1,
       updatedAt: 2,
-    });
+    }, "user-1");
     await syncJournalPhoto({
       id: "photo-local",
       entryId: "entry-local",
@@ -132,7 +133,7 @@ describe("journal sync tombstones", () => {
       height: 480,
       createdAt: 1,
       storagePath: "user/photo.jpg",
-    });
+    }, "user-1");
     await syncJournalAudio({
       id: "audio-local",
       entryId: "entry-local",
@@ -140,10 +141,10 @@ describe("journal sync tombstones", () => {
       mimeType: "audio/mp4",
       createdAt: 1,
       storagePath: "user/audio.m4a",
-    });
-    await deleteJournalEntryFromCloud("entry-local");
-    await deleteJournalPhotoFromCloud("photo-local");
-    await deleteJournalAudioFromCloud("audio-local");
+    }, "user-1");
+    await deleteJournalEntryFromCloud("entry-local", "user-1");
+    await deleteJournalPhotoFromCloud("photo-local", "user-1");
+    await deleteJournalAudioFromCloud("audio-local", "user-1");
 
     expect(mocks.getCurrentUserId).not.toHaveBeenCalled();
     expect(mocks.from).not.toHaveBeenCalled();
@@ -165,7 +166,7 @@ describe("journal sync tombstones", () => {
       photoIds: [],
       createdAt: 1,
       updatedAt: 2,
-    });
+    }, "user-1");
 
     expect(mocks.from).not.toHaveBeenCalled();
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
@@ -188,7 +189,7 @@ describe("journal sync tombstones", () => {
       createdAt: 1,
     };
 
-    await syncJournalPhoto(photoWithPrivateData);
+    await syncJournalPhoto(photoWithPrivateData, "user-1");
 
     expect(mocks.enqueue).toHaveBeenCalledWith(
       "UPLOAD_JOURNAL_PHOTO_STORAGE",
@@ -203,7 +204,7 @@ describe("journal sync tombstones", () => {
           createdAt: 1,
         },
       },
-      expect.objectContaining({ priority: "high" }),
+      expect.objectContaining({ priority: "high" })
     );
     expect(JSON.stringify(mocks.enqueue.mock.calls[0][2])).not.toContain("private-photo");
   });
@@ -219,14 +220,14 @@ describe("journal sync tombstones", () => {
       height: 480,
       createdAt: 1,
       storagePath: "user-1/photo-1.jpg",
-    });
+    }, "user-1");
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         storage_path: "user-1/photo-1.jpg",
         storage_url: null,
       }),
-      expect.objectContaining({ onConflict: "id" }),
+      expect.objectContaining({ onConflict: "id" })
     );
   });
 
@@ -236,13 +237,13 @@ describe("journal sync tombstones", () => {
       value: false,
     });
 
-    await deleteJournalPhotoFromCloud("photo-1");
+    await deleteJournalPhotoFromCloud("photo-1", "user-1");
 
     expect(mocks.enqueue).toHaveBeenCalledWith(
       "DELETE_JOURNAL_PHOTO_STORAGE",
       "journal-photo-delete:photo-1",
       { id: "photo-1" },
-      expect.objectContaining({ priority: "high" }),
+      expect.objectContaining({ priority: "high" })
     );
   });
 
@@ -261,7 +262,7 @@ describe("journal sync tombstones", () => {
       createdAt: 1,
     };
 
-    await syncJournalAudio(audioWithPrivateData);
+    await syncJournalAudio(audioWithPrivateData, "user-1");
 
     expect(mocks.enqueue).toHaveBeenCalledWith(
       "UPLOAD_JOURNAL_AUDIO_STORAGE",
@@ -276,7 +277,7 @@ describe("journal sync tombstones", () => {
           createdAt: 1,
         },
       },
-      expect.objectContaining({ priority: "high" }),
+      expect.objectContaining({ priority: "high" })
     );
     expect(JSON.stringify(mocks.enqueue.mock.calls[0][2])).not.toContain("private-audio");
   });
@@ -292,14 +293,14 @@ describe("journal sync tombstones", () => {
       mimeType: "audio/mp4",
       createdAt: 1,
       storagePath: "user-1/audio-1.m4a",
-    });
+    }, "user-1");
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         storage_path: "user-1/audio-1.m4a",
         storage_url: null,
       }),
-      expect.objectContaining({ onConflict: "id" }),
+      expect.objectContaining({ onConflict: "id" })
     );
   });
 
@@ -309,13 +310,13 @@ describe("journal sync tombstones", () => {
       value: false,
     });
 
-    await deleteJournalAudioFromCloud("audio-1");
+    await deleteJournalAudioFromCloud("audio-1", "user-1");
 
     expect(mocks.enqueue).toHaveBeenCalledWith(
       "DELETE_JOURNAL_AUDIO_STORAGE",
       "journal-audio-delete:audio-1",
       { id: "audio-1" },
-      expect.objectContaining({ priority: "high" }),
+      expect.objectContaining({ priority: "high" })
     );
   });
 
@@ -326,12 +327,19 @@ describe("journal sync tombstones", () => {
     const deleteQuery = vi.fn(() => ({ eq: eqOnce }));
     mocks.from.mockReturnValue({ delete: deleteQuery });
 
-    await deleteJournalEntryFromCloud("entry-1");
+    await deleteJournalEntryFromCloud("entry-1", "user-1");
 
     expect(mocks.trackDeletedJournalEntryId).toHaveBeenCalledWith("entry-1");
-    expect(mocks.enqueue).toHaveBeenCalledWith("DELETE_JOURNAL_ENTRY", "entry-1", {
-      id: "entry-1",
-    });
+    expect(mocks.enqueue).toHaveBeenCalledWith(
+      "DELETE_JOURNAL_ENTRY",
+      "entry-1",
+      {
+        id: "entry-1",
+      },
+      {
+        expectedOwnerUserId: "user-1",
+      }
+    );
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
@@ -341,12 +349,19 @@ describe("journal sync tombstones", () => {
       value: false,
     });
 
-    await deleteJournalEntryFromCloud("entry-1");
+    await deleteJournalEntryFromCloud("entry-1", "user-1");
 
     expect(mocks.trackDeletedJournalEntryId).toHaveBeenCalledWith("entry-1");
-    expect(mocks.enqueue).toHaveBeenCalledWith("DELETE_JOURNAL_ENTRY", "entry-1", {
-      id: "entry-1",
-    });
+    expect(mocks.enqueue).toHaveBeenCalledWith(
+      "DELETE_JOURNAL_ENTRY",
+      "entry-1",
+      {
+        id: "entry-1",
+      },
+      {
+        expectedOwnerUserId: "user-1",
+      }
+    );
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 });

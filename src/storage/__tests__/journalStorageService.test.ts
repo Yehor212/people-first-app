@@ -40,7 +40,12 @@ describe("journalStorageService", () => {
   });
 
   it("uploads wav diary audio with a wav storage path", async () => {
-    const result = await uploadAudio("audio-1", "data:audio/wav;base64,UklGRg==", "audio/wav");
+    const result = await uploadAudio(
+      "audio-1",
+      "data:audio/wav;base64,UklGRg==",
+      "audio/wav",
+      "user-1",
+    );
 
     expect(mocks.upload).toHaveBeenCalledWith(
       "user-1/audio-1.wav",
@@ -52,7 +57,11 @@ describe("journalStorageService", () => {
   });
 
   it("uploads diary photos without minting persistent signed URLs", async () => {
-    const result = await uploadPhoto("photo-1", "data:image/jpeg;base64,/9j/4AAQSkZJRg==");
+    const result = await uploadPhoto(
+      "photo-1",
+      "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
+      "user-1",
+    );
 
     expect(mocks.upload).toHaveBeenCalledWith(
       "user-1/photo-1.jpg",
@@ -63,12 +72,25 @@ describe("journalStorageService", () => {
     expect(result).toStrictEqual({ path: "user-1/photo-1.jpg", signedUrl: "" });
   });
 
+  it("refuses to upload account-A media after the authenticated account changes to B", async () => {
+    mocks.getCurrentUserId.mockResolvedValue("user-b");
+
+    await expect(
+      uploadPhoto(
+        "photo-owned-by-a",
+        "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
+        "user-a",
+      ),
+    ).rejects.toThrow("account boundary");
+    expect(mocks.upload).not.toHaveBeenCalled();
+  });
+
   it("uploads encrypted diary media as binary payloads without persistent signed URLs", async () => {
     const photoBlob = new Blob(["encrypted-photo"], { type: "application/octet-stream" });
     const audioBlob = new Blob(["encrypted-audio"], { type: "application/octet-stream" });
 
-    const photoResult = await uploadEncryptedPhoto("photo-1", photoBlob);
-    const audioResult = await uploadEncryptedAudio("audio-1", audioBlob);
+    const photoResult = await uploadEncryptedPhoto("photo-1", photoBlob, "user-1");
+    const audioResult = await uploadEncryptedAudio("audio-1", audioBlob, "user-1");
 
     expect(mocks.upload).toHaveBeenNthCalledWith(
       1,
@@ -88,7 +110,7 @@ describe("journalStorageService", () => {
   });
 
   it("deletes wav diary audio and legacy bin residue", async () => {
-    await deleteAudioFromStorage("audio-1");
+    await deleteAudioFromStorage("audio-1", "user-1");
 
     expect(mocks.remove).toHaveBeenCalledWith(
       expect.arrayContaining(["user-1/audio-1.wav", "user-1/audio-1.bin"]),

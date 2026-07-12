@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
   mergeSyncTombstones: vi.fn(),
 }));
 
+let protectedDiary = true;
+
 vi.mock("@/lib/supabaseClient", () => ({
   supabase: { from: mocks.from },
   getCurrentUserId: mocks.getCurrentUserId,
@@ -84,6 +86,7 @@ vi.mock("@/storage/db", () => {
 });
 
 import { pullFromCloud } from "@/storage/realtimeSync";
+import { runWithJournalSecurityWriteLock } from "@/features/journal/journalSecurityWriteLock";
 
 function queryResult(data: unknown[]) {
   const response = { data, error: null };
@@ -98,12 +101,23 @@ function queryResult(data: unknown[]) {
   return chain;
 }
 
+async function flushAsyncTurns(turns = 24): Promise<void> {
+  for (let index = 0; index < turns; index += 1) {
+    await Promise.resolve();
+  }
+}
+
 describe("pullFromCloud diary privacy", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    protectedDiary = true;
     mocks.getCurrentUserId.mockResolvedValue("user-1");
     mocks.settingsGet.mockImplementation((key: string) =>
-      Promise.resolve(key === "journal_password" ? { key, value: { hash: "local-lock" } } : undefined)
+      Promise.resolve(
+        key === "journal_password" && protectedDiary
+          ? { key, value: { hash: "local-lock" } }
+          : undefined
+      )
     );
     mocks.settingsPut.mockResolvedValue(undefined);
     mocks.transaction.mockImplementation(
@@ -230,5 +244,135 @@ describe("pullFromCloud diary privacy", () => {
     expect(JSON.stringify(mocks.journalEntriesBulkPut.mock.calls)).not.toContain("entry-plain");
     expect(JSON.stringify(mocks.journalPhotosBulkPut.mock.calls)).not.toContain("photo-plain");
     expect(JSON.stringify(mocks.journalAudioBulkPut.mock.calls)).not.toContain("audio-plain");
+  });
+
+  it("discards an account A snapshot response when account B is active before local writes", async () => {
+    mocks.getCurrentUserId.mockResolvedValueOnce("account-a").mockResolvedValue("account-b");
+    mocks.from.mockImplementation(() => queryResult([]));
+
+    await expect(pullFromCloud("account-a")).resolves.toBe(false);
+
+    expect(mocks.mergeSyncTombstones).not.toHaveBeenCalled();
+    expect(mocks.transaction).not.toHaveBeenCalled();
+    expect(mocks.settingsPut).not.toHaveBeenCalled();
+  });
+
+  it("does not resurrect a removed diary vault from a stale cloud snapshot", async () => {
+    protectedDiary = false;
+    mocks.settingsGet.mockImplementation((key: string) => {
+      if (key === "journal_vault_revision_v1") {
+        return Promise.resolve({ key, value: 101 });
+      }
+      return Promise.resolve(undefined);
+    });
+    const dataByTable: Record<string, unknown[]> = {
+      moods: [],
+      habits: [],
+      habit_completions: [],
+      habit_reminders: [],
+      focus_sessions: [],
+      gratitude_entries: [],
+      user_settings: [
+        {
+          key: "journal_vault_key",
+          value: { wrappedKey: "stale", createdAt: 100, updatedAt: 101 },
+        },
+      ],
+      journal_entries: [],
+      journal_photos: [],
+      journal_audio: [],
+      sync_tombstones: [],
+    };
+    mocks.from.mockImplementation((table: string) => queryResult(dataByTable[table] ?? []));
+
+    await expect(pullFromCloud("user-1")).resolves.toBe(true);
+
+    expect(mocks.settingsPut).not.toHaveBeenCalledWith({
+      key: "journal_vault_key",
+      value: expect.anything(),
+    });
+    expect(mocks.settingsPut).not.toHaveBeenCalledWith({
+      key: "journal_vault_revision_v1",
+      value: expect.anything(),
+    });
+  });
+
+  it("rechecks diary protection after waiting for activation before committing a pulled snapshot", async () => {
+    protectedDiary = false;
+    const dataByTable: Record<string, unknown[]> = {
+      moods: [],
+      habits: [],
+      habit_completions: [],
+      habit_reminders: [],
+      focus_sessions: [],
+      gratitude_entries: [],
+      user_settings: [],
+      journal_entries: [
+        {
+          id: "entry-race",
+          date: "2026-07-10",
+          title: "Private",
+          content: "plaintext fetched before activation",
+          stickers: [],
+          mood: null,
+          tags: [],
+          template_id: null,
+          habit_snapshot: null,
+          photo_ids: ["photo-race"],
+          audio_ids: ["audio-race"],
+          created_at: 1,
+          updated_at: 2,
+        },
+      ],
+      journal_photos: [
+        {
+          id: "photo-race",
+          entry_id: "entry-race",
+          width: 100,
+          height: 80,
+          created_at: 1,
+          storage_path: "user-1/photo-race.jpg",
+        },
+      ],
+      journal_audio: [
+        {
+          id: "audio-race",
+          entry_id: "entry-race",
+          duration: 5,
+          mime_type: "audio/webm",
+          created_at: 1,
+          storage_path: "user-1/audio-race.webm",
+        },
+      ],
+      sync_tombstones: [],
+    };
+    mocks.from.mockImplementation((table: string) => queryResult(dataByTable[table] ?? []));
+
+    let releaseActivation!: () => void;
+    let activationEntered!: () => void;
+    const activationEnteredPromise = new Promise<void>((resolve) => {
+      activationEntered = resolve;
+    });
+    const activationReleasePromise = new Promise<void>((resolve) => {
+      releaseActivation = resolve;
+    });
+    const activation = runWithJournalSecurityWriteLock(async () => {
+      activationEntered();
+      await activationReleasePromise;
+      protectedDiary = true;
+    });
+    await activationEnteredPromise;
+
+    const pullPromise = pullFromCloud("user-1");
+    await flushAsyncTurns();
+    const transactionsCommittedDuringActivation = mocks.transaction.mock.calls.length;
+    releaseActivation();
+    await activation;
+
+    await expect(pullPromise).resolves.toBe(true);
+    expect(transactionsCommittedDuringActivation).toBe(0);
+    expect(mocks.journalEntriesBulkPut).not.toHaveBeenCalled();
+    expect(mocks.journalPhotosBulkPut).not.toHaveBeenCalled();
+    expect(mocks.journalAudioBulkPut).not.toHaveBeenCalled();
   });
 });

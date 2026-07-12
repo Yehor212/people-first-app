@@ -22,6 +22,7 @@ beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
   vi.restoreAllMocks();
+  vi.clearAllMocks();
 });
 
 // ─── safeJsonParse ───────────────────────────────────────────────
@@ -126,23 +127,35 @@ describe('safeJsonParse', () => {
       );
     });
 
-    it('log warning includes input preview', () => {
-      safeJsonParse('{broken', 'default');
-      expect(mockedLogger.warn).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({ inputPreview: expect.stringContaining('{broken') }),
-      );
+    it('never includes malformed user content in logs', () => {
+      safeJsonParse('{"privateJournal":"do not log"', null);
+
+      expect(mockedLogger.warn).toHaveBeenCalled();
+      const details = mockedLogger.warn.mock.calls.at(-1)?.[1];
+      expect(details).not.toHaveProperty('inputPreview');
+      expect(JSON.stringify(details)).not.toContain('privateJournal');
+      expect(JSON.stringify(details)).not.toContain('do not log');
     });
 
-    it('truncates preview for long invalid input', () => {
-      const longInput = 'x'.repeat(100);
-      safeJsonParse(longInput, null);
-      expect(mockedLogger.warn).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          inputPreview: expect.stringContaining('...'),
-        }),
-      );
+    it('never leaks an unquoted private marker through any logger argument', () => {
+      const privateMarker = 'PRIVATE_JOURNAL_MARKER_91f30';
+      const malformedInput = `{${privateMarker}`;
+
+      safeJsonParse(malformedInput, null);
+
+      const latestCall = mockedLogger.warn.mock.calls.at(-1);
+      expect(latestCall).toEqual([
+        '[SafeJSON] Parse failed:',
+        {
+          reason: 'invalid-json',
+          errorName: 'SyntaxError',
+          inputLength: malformedInput.length,
+        },
+      ]);
+      for (const argument of latestCall ?? []) {
+        const serialized = typeof argument === 'string' ? argument : JSON.stringify(argument);
+        expect(serialized).not.toContain(privateMarker);
+      }
     });
   });
 });

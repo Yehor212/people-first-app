@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-06-30 (V2-only shell cleanup + freshness metrics refreshed — Law 6 Reality Anchor).
+> Last updated: 2026-07-10 (Settings Variant A split + freshness metrics refreshed — Law 6 Reality Anchor).
 
 ---
 
@@ -13,15 +13,15 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 <!-- BEGIN:counts -->
 | Metric | Value | Source |
 | --- | ---: | --- |
-| Hooks (src/hooks, non-test) | **76** | `ls src/hooks/*.ts` |
+| Hooks (src/hooks, non-test) | **77** | `ls src/hooks/*.ts` |
 | Zustand stores (runtime) | **9** | `ls src/stores/*.ts` excl. hydrate + index |
 | Hydrate bridges | 2 | `useHydrate*.ts` |
-| Index.tsx LOC | **280** | `wc -l src/pages/Index.tsx` |
+| Index.tsx LOC | **279** | `wc -l src/pages/Index.tsx` |
 | Components top-level dirs | **40** | `ls src/components/ -d` |
 | Features modules | 1 | `ls src/features/ -d` |
-| V2 coexistence files | 39 | `find src -name '*V2*' -o -name '*-v2*'` |
+| V2 coexistence files | 45 | `find src -name '*V2*' -o -name '*-v2*'` |
 | `it.todo(` occurrences | 36 | regex walk |
-| `as any` total | 132 (132 in tests, ~0 prod) | regex walk |
+| `as any` total | 155 (155 in tests, ~0 prod) | regex walk |
 | Console.\* in prod (excl. logger/crashReporting) | **3** | regex walk |
 | ADR files (`docs/adr/NNNN-*.md`) | 11 | ls |
 | SECURITY.md | yes | fs |
@@ -40,14 +40,14 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 
 | Metric | Value | Source |
 | --- | ---: | --- |
-| Source files | **886** | `find src -name '*.ts' -o -name '*.tsx' ...` |
-| Test files | **422** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
+| Source files | **910** | `find src -name '*.ts' -o -name '*.tsx' ...` |
+| Test files | **463** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
 | Silent `.catch(() => {})` | **0** | `grep -rn '.catch.*=> {}' src/` |
 | React.memo | **117** | `grep -rl 'memo(' src/ --include='*.tsx'` |
 | index.css LOC | **17,932** | `wc -l < src/index.css` |
-| Inline style={{}} | **319** | `grep -rn 'style={{' src/ --include='*.tsx'` |
+| Inline style={{}} | **318** | `grep -rn 'style={{' src/ --include='*.tsx'` |
 | exhaustive-deps suppressions | **20** | `grep -rn 'eslint-disable.*exhaustive-deps' src/` |
-| Hook coverage | **63** | `48/76 hook tests` |
+| Hook coverage | **69** | `53/77 hook tests` |
 
 > Historical snapshot (2026-04-04): 687 source files, 147 test files, 3202 tests, 0 lint/TS errors, React.memo 56/80+, lazyWithRetry 31, exhaustive-deps suppressions 21, index.css 4,480 LOC, inline style 304 in 136 files, i18n 2,429 keys × 8 langs, ratchet 9.9/10. Held here for delta comparisons — do not edit in place.
 
@@ -1013,16 +1013,16 @@ On PR to main:
 | TD-17 | ~~HIGH~~ → DONE                   | ~~Silent `.catch(() => {})` swallowing errors~~                    | **Fixed 2026-02-16**: All 34 instances replaced with `logger.warn`/`logger.error` across 20 files. Categorized by risk: fire-and-forget (warn), data ops (error), with-fallback (warn + fallback).                                                                              | Various                                               |
 | TD-18 | ~~HIGH~~ → DONE                   | ~~Memory leaks: uncleaned setTimeout in contexts~~                 | **Fixed 2026-02-16**: MoodThemeContext — added useRef + clearTimeout cleanup (EmotionThemeContext already correct).                                                                                                                                                             | src/contexts/MoodThemeContext.tsx                     |
 | TD-19 | ~~HIGH~~ → DONE                   | ~~Raw console.\* calls bypassing logger.ts~~                       | **Fixed 2026-02-16**: 16 calls replaced with logger.\* in 4 files (main.tsx, sw.ts, sentry.ts, gamificationStore.ts). Remaining: logger.ts (6, implementation) + crashReporting.ts (7, implementation).                                                                         | Various                                               |
-| TD-20 | ~~HIGH~~ → **PARTIALLY RESOLVED** | God components violating 400-line / 5-useState / 3-useEffect rules | **33 components + 3 hooks + 3 hook-only resolved**, DayClock deleted, 1 SKIP (sidebar). **17 current violations** remain by fresh `npm run constitution:check` evidence.                                                                                                     | See God Components table below                        |
+| TD-20 | ~~HIGH~~ → **PARTIALLY RESOLVED** | God components violating 400-line / 5-useState / 3-useEffect rules | **37 components + 3 hooks + 3 hook-only resolved**, DayClock deleted, 1 SKIP (sidebar). **15 current violations** remain by fresh `npm run constitution:check` evidence.                                                                                                     | See God Components table below                        |
 | TD-21 | ~~MEDIUM~~ → DONE                 | ~~Scattered Capacitor platform checks~~                            | **Fixed 2026-02-16**: Created `src/lib/platform.ts` — single source of truth for isNative, platform, isAndroid, isIos, isWeb. ~58 scattered calls → 0 outside platform.ts. 44 files updated, 3 test files migrated to mock `@/lib/platform`.                                    | src/lib/platform.ts                                   |
 | TD-22 | ~~MEDIUM~~ → DONE                 | ~~Scattered import.meta.env access~~                               | **Fixed 2026-02-16**: Created `src/lib/env.ts` — single source of truth for 11 env vars. 26 scattered calls → 0 outside env.ts. 15 files updated.                                                                                                                               | src/lib/env.ts                                        |
 | TD-23 | ~~MEDIUM~~ → DONE                 | ~~Direct Supabase calls in UI components~~                         | **Fixed 2026-02-17**: Created `feedbackService.ts` + `accountService.ts`. Extracted 10 data/function operations from 5 UI files. 14 auth-only calls remain in place (by design). Original "71 calls" was inflated by grep matching imports/comments; actual was 21.             | src/lib/feedbackService.ts, src/lib/accountService.ts |
-| TD-24 | LOW                               | Low memoization + lazy loading coverage                            | React.memo improved: **118 files** currently contain `memo(`. Only **3** lazy() imports (was 6). Heavy components not lazy-loaded.                                                                                                                                              | Various                                               |
+| TD-24 | LOW                               | Low memoization + lazy loading coverage                            | React.memo improved: **117 files** currently contain `memo(`. Only **3** lazy() imports (was 6). Heavy components not lazy-loaded.                                                                                                                                              | Various                                               |
 | TD-25 | P2                                | index.css monolith                                                 | **17,932 lines** in a single CSS file. Split plan needed (per-feature partials or CSS modules).                                                                                                                                                                                  | src/index.css                                         |
 | TD-26 | P2                                | Feature flags hardcoded                                            | `CANVAS_ENABLED`, `HABIT_HUB_ENABLED` are `const` in Index.tsx (lines 79-80). Extract to central registry with name, default, description per flag.                                                                                                                             | src/pages/Index.tsx                                   |
-| TD-27 | P2                                | Inline style={{}} proliferation                                    | **319 instances** across TSX files by the 2026-07-09 constitution check. On `React.memo` components, inline objects break memoization. Extract to `useMemo` or module-level constants.                                                                                          | Various                                               |
+| TD-27 | P2                                | Inline style={{}} proliferation                                    | **318 instances** across TSX files by the 2026-07-11 constitution check. On `React.memo` components, inline objects break memoization. Extract to `useMemo` or module-level constants.                                                                                          | Various                                               |
 | TD-28 | P3                                | Feature module migration stalled                                   | Only `features/journal/` migrated. Planned domains (mood, habits, focus, challenges, mindfulness, canvas) remain in `components/` + `hooks/`.                                                                                                                                   | src/components/, src/hooks/                           |
-| TD-29 | P3                                | Multi-tab sync coordination                                        | `BroadcastChannel` only used for token refresh (`apiClient.ts`). Sync operations lack multi-tab coordination — concurrent tabs can create conflicts.                                                                                                                            | src/storage/cloudSync.ts                              |
+| TD-29 | ~~P3~~ → **PARTIALLY RESOLVED**   | Multi-tab sync coordination                                        | Account-bound DATA/JOURNAL writes now serialize through named Web Locks with a same-origin Dexie transaction fallback and passive account-generation invalidation. Full live multi-device sync convergence remains separately unverified.                                      | src/lib/originExclusiveLock.ts, src/hooks/useIndexedDB.ts |
 | TD-30 | P3                                | Missing aria-labels on SVG emojis                                  | 20+ SVG emoji components (coolEmojis.tsx, warmEmojis.tsx) lack `role="img"` + `aria-label`. Screen readers see empty icons.                                                                                                                                                     | src/components/animated-emotion-emoji/                |
 | TD-31 | ~~P2~~ → DONE                     | Silent `.catch(() => {})` reappeared                               | **Fixed 2026-03-16**: Standardized `// graceful:` annotations across 14 catch blocks in 11 files. All silent catches now explain WHY silence is acceptable per Law 5.                                                                                                           | Various                                               |
 | TD-32 | P2                                | i18n `as unknown as Record<string, string>` pattern                | **122 instances** in 45+ files. Translation object `t` from `useLanguage()` is double-cast to bypass type inference. Root cause: `LanguageContext.tsx` generic typing. Fix: refactor i18n types to export properly indexed type.                                                | src/contexts/LanguageContext.tsx                      |
@@ -1030,11 +1030,11 @@ On PR to main:
 
 ### God Components (TD-20 Detail)
 
-> Last audit: 2026-07-09 via `npm run constitution:check`. Limit: 400 lines, 5 useState, 3 useEffect.
+> Last audit: 2026-07-11 via `npm run constitution:check`. Limit: 400 lines, 5 useState, 3 useEffect.
 > Every PASS must include evidence: command output, file path, or test checklist. No evidence = FAIL.
-> **TD-20 PARTIALLY RESOLVED**: 33 original violations resolved. **17 current violations** remain (components grew or were added after Phase 6).
+> **TD-20 PARTIALLY RESOLVED**: 37 tracked component violations resolved; the three July Settings regressions were removed. **15 current violations** remain.
 
-#### Resolved (33 components)
+#### Resolved (37 components)
 
 | File                           | Was                   | Now            | Resolution                                                                                               |
 | ------------------------------ | --------------------- | -------------- | -------------------------------------------------------------------------------------------------------- |
@@ -1050,6 +1050,10 @@ On PR to main:
 | Leaderboard.tsx                | 526L / 10st / 2eff    | max 230L / 2st | `leaderboard/` — 5 files                                                                                 |
 | AccountSection.tsx             | 548L / 14st / 5eff    | max 232L / 0st | `account-section/` — 6 files                                                                             |
 | DataSection.tsx                | 419L / 9st / 1eff     | max 260L / 2st | `data-section/` — 4 files                                                                                |
+| V2SettingsProfilePanels.tsx    | 855L                  | max 288L       | Split into profile, language, appearance shell, basics, and advanced Settings modules                   |
+| V2SettingsDataPanels.tsx       | 432L                  | max 282L       | Split privacy into `V2SettingsPrivacyPanel.tsx` (184L); data keeps import/export and owner-gated local reset |
+| SettingsPage.tsx               | 402L                  | 361L           | Extracted URL/deep-link state into `settings/settingsNavigation.ts`                                      |
+| DopamineSettings.tsx           | 407L                  | 317L           | Extracted shared persistence into `lib/dopamineSettings.ts` and the listener hook into `hooks/useDopamineSettings.ts` |
 | AnimatedStatsComponents.tsx    | 694L / 4st / 3eff     | max 349L / 2st | `animated-stats/` — 3 files                                                                              |
 | AnimatedEmotionEmoji.tsx       | 650L / 0st / 0eff     | max 305L / 0st | `animated-emotion-emoji/` — 3 files                                                                      |
 | CompactHabitCard.tsx           | 605L / 2st / 1eff     | max 400L / 2st | `compact-habit-card/` — 4 files                                                                          |
@@ -1094,15 +1098,14 @@ On PR to main:
 | ---------------- | ----- | -------- | --------- | ------------------------------------------------------------------- |
 | Celebrations.tsx | 311   | 4        | 4         | 4 components × 1 useEffect each — no single component exceeds limit |
 
-#### New Violations (17 files >400L — verified 2026-07-09)
+#### New Violations (15 files >400L — verified 2026-07-11)
 
 | File                                      | Lines   | Severity | Notes                                                    |
 | ----------------------------------------- | ------- | -------- | -------------------------------------------------------- |
 | components/state-of-mind/ValenceOrb.tsx   | **2,126** | P2     | Shader/orb shell remains over 400L                       |
 | components/habit-creation-form/HabitCreationForm.tsx | **1,159** | P2 | Regressed above 400L after feature growth                |
-| pages/nav-v2/settings/V2SettingsProfilePanels.tsx | **765** | P2 | V2 settings profile shell remains over 400L              |
 | components/habit-hub/HabitDetailSheet.tsx | **710** | P2       | Detail sheet remains over 400L                           |
-| main.tsx                                  | **641** | P2       | Bootstrap/root wiring remains over 400L                  |
+| main.tsx                                  | **654** | P2       | Bootstrap/root wiring remains over 400L                  |
 | pages/nav-v2/habits/HabitsPage.tsx        | **595** | P2       | V2 habits page shell remains over 400L                   |
 | components/SplashScreen.tsx               | **573** | P2       | Startup shell remains over 400L                          |
 | components/habit-creation-form/FormSelectors.tsx | **556** | P2 | Form selector shell remains over 400L                    |
@@ -1111,7 +1114,6 @@ On PR to main:
 | pages/nav-v2/habits/hero/HeroWeeklyHabitCard.tsx | **477** | P3 | V2 habit hero card remains over 400L                     |
 | components/reflection/DailyRitualCard.tsx | **472** | P3       | Reflection ritual card remains over 400L                 |
 | components/hyperfocus/HyperfocusMode.tsx  | **442** | P3       | Hyperfocus shell remains over 400L                       |
-| pages/nav-v2/settings/V2SettingsDataPanels.tsx | **432** | P3 | V2 settings data shell remains over 400L                 |
 | components/state-of-mind/ValenceSlider.tsx | **419** | P3      | Valence slider remains over 400L                         |
 | components/stats/ring-detail-sheet/RingDetailSheet.tsx | **414** | P3 | Stats sheet shell remains over 400L                      |
 | components/challenges-panel/ChallengesPanel.tsx | **413** | P3 | Challenges panel shell remains over 400L                 |

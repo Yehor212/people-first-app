@@ -2,7 +2,7 @@
  * Feedback Button Component
  *
  * Floating button that opens a feedback form.
- * Submits feedback to Supabase (if configured) or stores locally.
+ * Submits feedback to the configured service and keeps the draft visible on failure.
  */
 
 import { useState } from "react";
@@ -15,8 +15,6 @@ import { haptics } from "@/lib/haptics";
 import { useModalState } from "@/hooks/useModalState";
 
 import { logger } from "@/lib/logger";
-import { SK } from "@/lib/storageKeys";
-import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 
 type FeedbackType = "bug" | "feature" | "other";
 
@@ -32,12 +30,14 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
   const [type, setType] = useState<FeedbackType>("bug");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deliveryFailed, setDeliveryFailed] = useState(false);
 
   const { isOpen, open, close } = useModalState({
     onClose: () => {
       void haptics.light();
       setMessage("");
       setType("bug");
+      setDeliveryFailed(false);
     },
   });
 
@@ -55,6 +55,7 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
 
     void haptics.medium();
     setIsSubmitting(true);
+    setDeliveryFailed(false);
 
     try {
       const feedbackData = {
@@ -66,15 +67,17 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
         created_at: new Date().toISOString(),
       };
 
-      // Try to submit to Supabase, fall back to local storage
       const sent = await submitQuickFeedback(feedbackData);
       if (!sent) {
-        storeFeedbackLocally(feedbackData);
+        logger.warn("[Feedback] Delivery did not complete; keeping the draft for retry");
+        setDeliveryFailed(true);
+        return;
       }
 
       handleClose();
     } catch (error) {
       logger.error("[Feedback] Error:", error);
+      setDeliveryFailed(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -163,7 +166,10 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
               {/* Message Input */}
               <textarea
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={(e) => {
+                  setMessage(e.target.value);
+                  setDeliveryFailed(false);
+                }}
                 placeholder={t.feedbackPlaceholder || "Describe your feedback..."}
                 className="w-full h-32 p-3 rounded-xl border bg-background resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 maxLength={1000}
@@ -171,6 +177,12 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
 
               {/* Character count */}
               <p className="text-xs text-muted-foreground text-end">{message.length}/1000</p>
+
+              {deliveryFailed && (
+                <p role="status" className="text-sm text-destructive">
+                  {t.feedbackError || "Could not send. Your message is still here — try again."}
+                </p>
+              )}
 
               {/* Submit Button */}
               <button
@@ -192,15 +204,4 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
       )}
     </>
   );
-}
-
-// Store feedback locally when Supabase is unavailable
-function storeFeedbackLocally(data: Record<string, unknown>): void {
-  try {
-    const pending = safeLocalStorageGet<Record<string, unknown>[]>(SK.PENDING_FEEDBACK, []);
-    pending.push(data);
-    safeLocalStorageSet(SK.PENDING_FEEDBACK, pending);
-  } catch (error) {
-    logger.error("[Feedback] Failed to store locally:", error);
-  }
 }

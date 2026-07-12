@@ -1,5 +1,6 @@
-import { supabase } from './supabaseClient';
+import { getCurrentSessionUserId, supabase } from './supabaseClient';
 import { logger } from './logger';
+import { SyncOwnerBoundaryError, validateSyncOwner } from '@/storage/sync/syncOwner';
 
 /**
  * Account Service - Supabase operations for account/settings management
@@ -56,31 +57,77 @@ export async function updateWeeklyDigest(userId: string, enabled: boolean): Prom
   }
 }
 
-/** Update user profile display name in Supabase Auth. Returns true on success. */
-export async function updateProfileName(name: string): Promise<boolean> {
-  if (!supabase) return false;
+/** Update the explicitly owned profile row. Returns true on success. */
+export async function updateProfileName(
+  expectedOwnerUserId: string,
+  name: string,
+): Promise<boolean> {
+  if (!supabase || !expectedOwnerUserId.trim()) return false;
 
   try {
-    await supabase.auth.updateUser({ data: { full_name: name } });
+    await validateSyncOwner(expectedOwnerUserId, 'Profile name update');
+    // Auth.updateUser mutates whichever session the SDK considers current when
+    // its internal request executes. The profiles row is explicitly bound to
+    // the owner captured by the Settings action, and RLS fails closed.
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        display_name: name,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', expectedOwnerUserId);
+    await validateSyncOwner(expectedOwnerUserId, 'Profile name update');
+    if (error) {
+      logger.error('[AccountService] Failed to update profile name:', error);
+      return false;
+    }
     return true;
   } catch (error) {
+    if (error instanceof SyncOwnerBoundaryError) throw error;
     logger.error('[AccountService] Failed to update profile name:', error);
     return false;
   }
 }
 
-/** Delete user account via edge function + sign out. */
-export async function deleteAccount(): Promise<{ success: boolean; error?: string }> {
-  if (!supabase) return { success: false, error: 'Supabase not configured' };
+export type RemoteAccountDeletionResult =
+  | { status: 'deleted'; userId: string }
+  | {
+      status: 'not-deleted';
+      code: 'not-configured' | 'invoke-failed' | 'invalid-response' | 'owner-changed';
+    };
+
+/** Delete the remote account via the edge function. Client cleanup is a separate boundary. */
+export async function deleteAccount(
+  expectedOwnerUserId: string,
+): Promise<RemoteAccountDeletionResult> {
+  if (!supabase) return { status: 'not-deleted', code: 'not-configured' };
+  if (!expectedOwnerUserId.trim()) return { status: 'not-deleted', code: 'owner-changed' };
 
   try {
-    const { error } = await supabase.functions.invoke('delete-account');
+    if ((await getCurrentSessionUserId()) !== expectedOwnerUserId) {
+      return { status: 'not-deleted', code: 'owner-changed' };
+    }
+
+    const { data, error } = await supabase.functions.invoke('delete-account', {
+      body: { expectedOwnerUserId },
+    });
     if (error) throw error;
 
-    await supabase.auth.signOut();
-    return { success: true };
+    if (
+      !data ||
+      typeof data !== 'object' ||
+      !('status' in data) ||
+      data.status !== 'deleted' ||
+      !('userId' in data) ||
+      data.userId !== expectedOwnerUserId
+    ) {
+      logger.error('[AccountService] Delete account returned an unconfirmed response');
+      return { status: 'not-deleted', code: 'invalid-response' };
+    }
+
+    return { status: 'deleted', userId: expectedOwnerUserId };
   } catch (error) {
     logger.error('[AccountService] Delete account failed:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    return { status: 'not-deleted', code: 'invoke-failed' };
   }
 }

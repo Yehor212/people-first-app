@@ -3,7 +3,7 @@
 import { logger } from "@/lib/logger";
 import { safeLocalStorageSet } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
-import { supabase } from "@/lib/supabaseClient";
+import { getCurrentUserId, supabase } from "@/lib/supabaseClient";
 import { InnerWorld } from "@/types";
 import { Json } from "@/types/supabase";
 import { z } from "zod";
@@ -62,22 +62,31 @@ function validateInnerWorldData(data: unknown): InnerWorld | null {
 // With a Promise, concurrent callers wait for and return the same result
 let syncInnerWorldPromise: Promise<InnerWorld> | null = null;
 
+async function isExpectedOwnerCurrent(expectedOwnerUserId: string): Promise<boolean> {
+  const activeUserId = await getCurrentUserId();
+  if (activeUserId === expectedOwnerUserId) return true;
+
+  logger.warn("[InnerWorld] Skipping cloud operation because the account owner changed");
+  return false;
+}
+
 /**
  * Push Inner World state to Supabase
  */
-export async function pushInnerWorldToCloud(world: InnerWorld): Promise<void> {
-  if (!supabase) return;
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.user) return;
-  const user = session.user;
+export async function pushInnerWorldToCloud(
+  world: InnerWorld,
+  expectedOwnerUserId: string
+): Promise<void> {
+  if (!supabase || !expectedOwnerUserId.trim()) return;
 
   try {
+    // Keep the originating owner explicit. If auth changed while a debounced
+    // write was waiting, do not issue a request under the new account.
+    if (!(await isExpectedOwnerCurrent(expectedOwnerUserId))) return;
+
     const { error } = await supabase.from("user_inner_world").upsert(
       {
-        user_id: user.id,
+        user_id: expectedOwnerUserId,
         world_data: world as unknown as Json,
         updated_at: new Date().toISOString(),
       },
@@ -101,21 +110,23 @@ export async function pushInnerWorldToCloud(world: InnerWorld): Promise<void> {
 /**
  * Pull Inner World state from Supabase
  */
-export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
-  if (!supabase) return null;
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.user) return null;
-  const user = session.user;
+export async function pullInnerWorldFromCloud(
+  expectedOwnerUserId: string
+): Promise<InnerWorld | null> {
+  if (!supabase || !expectedOwnerUserId.trim()) return null;
 
   try {
+    if (!(await isExpectedOwnerCurrent(expectedOwnerUserId))) return null;
+
     const { data, error } = await supabase
       .from("user_inner_world")
       .select("world_data")
-      .eq("user_id", user.id)
+      .eq("user_id", expectedOwnerUserId)
       .maybeSingle();
+
+    // The account may change while the network request is in flight. Discard
+    // the old owner's response before it can reach local state.
+    if (!(await isExpectedOwnerCurrent(expectedOwnerUserId))) return null;
 
     if (error) {
       // Table might not exist - that's ok
@@ -141,7 +152,10 @@ export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
  * P1-8 Fix: Uses Promise-based lock to prevent race conditions
  * Concurrent callers will wait for and receive the same result
  */
-export async function syncInnerWorld(localWorld: InnerWorld): Promise<InnerWorld> {
+export async function syncInnerWorld(
+  localWorld: InnerWorld,
+  expectedOwnerUserId: string
+): Promise<InnerWorld> {
   // P1-8 Fix: If sync is already in progress, wait for it and return its result
   // This prevents duplicate syncs and ensures all callers get consistent data
   if (syncInnerWorldPromise) {
@@ -154,7 +168,7 @@ export async function syncInnerWorld(localWorld: InnerWorld): Promise<InnerWorld
   }
 
   // Create a new sync promise
-  syncInnerWorldPromise = doSyncInnerWorld(localWorld);
+  syncInnerWorldPromise = doSyncInnerWorld(localWorld, expectedOwnerUserId);
 
   try {
     return await syncInnerWorldPromise;
@@ -166,12 +180,15 @@ export async function syncInnerWorld(localWorld: InnerWorld): Promise<InnerWorld
 /**
  * Internal sync implementation (called within Promise lock)
  */
-async function doSyncInnerWorld(localWorld: InnerWorld): Promise<InnerWorld> {
-  const cloudWorld = await pullInnerWorldFromCloud();
+async function doSyncInnerWorld(
+  localWorld: InnerWorld,
+  expectedOwnerUserId: string
+): Promise<InnerWorld> {
+  const cloudWorld = await pullInnerWorldFromCloud(expectedOwnerUserId);
 
   if (!cloudWorld) {
     // No cloud data - push local to cloud
-    await pushInnerWorldToCloud(localWorld);
+    await pushInnerWorldToCloud(localWorld, expectedOwnerUserId);
     return localWorld;
   }
 
@@ -196,8 +213,9 @@ async function doSyncInnerWorld(localWorld: InnerWorld): Promise<InnerWorld> {
   }
 
   // Save merged state (use safe wrapper for Safari Private Mode)
+  if (!(await isExpectedOwnerCurrent(expectedOwnerUserId))) return localWorld;
   safeLocalStorageSet(SK.INNER_WORLD, winner);
-  await pushInnerWorldToCloud(winner);
+  await pushInnerWorldToCloud(winner, expectedOwnerUserId);
 
   return winner;
 }

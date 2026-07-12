@@ -131,14 +131,15 @@ describe("audio blind-spot release contracts", () => {
     expect(notices).not.toContain("mixkit-small-waves-harbor-rocks-1208.wav");
   });
 
-  it("keeps public privacy copy aligned with microphone, sync, ads, crash, and audio feedback surfaces", () => {
+  it("keeps public privacy copy aligned with microphone, sync, ads, crash, and current app-audio surfaces", () => {
     const privacy = read("public/privacy.html");
 
     expect(privacy).toContain("Microphone and journal audio recordings");
     expect(privacy).toContain("Supabase");
     expect(privacy).toContain("AdMob");
     expect(privacy).toContain("Sentry");
-    expect(privacy).toContain("Audio comfort feedback");
+    expect(privacy).toContain("App Audio");
+    expect(privacy).not.toContain("Audio comfort feedback");
     expect(privacy).not.toContain("Any data to external servers");
     expect(privacy).not.toContain("Usage analytics or tracking data</li>");
   });

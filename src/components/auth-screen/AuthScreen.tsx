@@ -47,7 +47,13 @@ const authProviderItemVariants = {
   visible: { opacity: 1, y: 0, scale: 1 },
 };
 
-export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScreenProps) {
+export function AuthScreen({
+  onComplete,
+  webOAuthError,
+  onClearError,
+  suspendSessionCompletion = false,
+  recoveryAction,
+}: AuthScreenProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
@@ -73,7 +79,12 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
     loggerScope: "[AuthScreen] Breath ambience",
   });
 
-  const session = useAuthSession({ onComplete, webOAuthError, onClearError });
+  const session = useAuthSession({
+    onComplete,
+    webOAuthError,
+    onClearError,
+    suspendSessionCompletion,
+  });
   const handlers = useAuthHandlers(session, t as unknown as Record<string, string>);
   const socialProviders = getEnabledAuthScreenProviders();
 
@@ -185,7 +196,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
                   label={ts[provider.labelKey] || provider.fallbackLabel}
                   loadingLabel={ts[provider.loadingLabelKey] || provider.fallbackLoadingLabel}
                   isLoading={session.loadingProvider === provider.id}
-                  disabled={session.isLoading || !supabase}
+                  disabled={suspendSessionCompletion || session.isLoading || !supabase}
                   onClick={() => handlers.handleProviderSignIn(provider.id)}
                   size="large"
                   surface="glass"
@@ -194,7 +205,9 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
             ))}
           </motion.div>
 
-          <AuthPhoneAuthPanel session={session} handlers={handlers} />
+          {!suspendSessionCompletion && (
+            <AuthPhoneAuthPanel session={session} handlers={handlers} />
+          )}
 
           {!supabase && (
             <div
@@ -222,6 +235,24 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
               />
               <div className="flex-1">
                 <p className="text-sm text-destructive whitespace-pre-wrap">{session.error}</p>
+                {recoveryAction && (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={recoveryAction.onConfirm}
+                      className="min-h-[44px] rounded-xl border border-primary/35 bg-primary/10 px-3 py-2 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      {recoveryAction.confirmLabel}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={recoveryAction.onCancel}
+                      className="min-h-[44px] rounded-xl border border-border/70 px-3 py-2 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      {recoveryAction.cancelLabel}
+                    </button>
+                  </div>
+                )}
                 {IS_DEV && session.debugInfo && (
                   <p className="text-xs text-muted-foreground mt-2">{session.debugInfo}</p>
                 )}

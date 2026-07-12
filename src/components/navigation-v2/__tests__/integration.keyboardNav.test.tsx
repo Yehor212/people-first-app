@@ -182,4 +182,21 @@ describe("Integration #2 — Ctrl+1..5 keyboard navigation", () => {
     fireKey("3");
     expect(root()?.getAttribute("data-active-page")).toBe("orb");
   });
+
+  it("does not consume Escape when no global navigation overlay is open", async () => {
+    render(<NavV2Orchestrator />);
+    const localEscapeHandler = vi.fn();
+    document.addEventListener("keydown", localEscapeHandler);
+
+    (await screen.findByTestId("page-orb-marker")).dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    expect(localEscapeHandler).toHaveBeenCalledOnce();
+    document.removeEventListener("keydown", localEscapeHandler);
+  });
 });

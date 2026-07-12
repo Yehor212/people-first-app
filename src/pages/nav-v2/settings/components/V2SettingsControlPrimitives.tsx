@@ -1,4 +1,10 @@
-import { type KeyboardEventHandler, type ReactNode } from "react";
+import {
+  useId,
+  type AriaRole,
+  type KeyboardEventHandler,
+  type ReactNode,
+  type Ref,
+} from "react";
 import { type LucideIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -30,12 +36,14 @@ interface ToggleRowProps {
   onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
   testId?: string;
+  surfaceWeight?: "default" | "quiet";
 }
 
 interface ActionButtonProps {
   icon: LucideIcon;
   children: ReactNode;
   onClick: () => void;
+  buttonRef?: Ref<HTMLButtonElement>;
   disabled?: boolean;
   isLoading?: boolean;
   variant?: "primary" | "secondary" | "danger";
@@ -44,9 +52,13 @@ interface ActionButtonProps {
 
 interface SettingsInsetProps {
   children: ReactNode;
+  containerRef?: Ref<HTMLDivElement>;
   tone?: "neutral" | "danger" | "success";
   testId?: string;
   className?: string;
+  tabIndex?: number;
+  role?: AriaRole;
+  ariaLabel?: string;
 }
 
 interface SettingsInsetButtonProps {
@@ -178,33 +190,41 @@ export function ToggleRow({
   onCheckedChange,
   disabled,
   testId,
+  surfaceWeight = "default",
 }: ToggleRowProps) {
+  const descriptionId = useId();
+
   return (
     <div
       className={cn(
-        "flex min-h-[58px] items-start justify-between gap-4 rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.36)] bg-[hsl(var(--settings-v2-shell)/0.38)] p-3 md:p-3.5",
+        "grid min-h-[58px] grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-x-3 gap-y-1 rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.36)] bg-[hsl(var(--settings-v2-shell)/0.38)] p-3 min-[420px]:grid-cols-[2.25rem_minmax(0,1fr)_auto] md:p-3.5",
+        surfaceWeight === "quiet" &&
+          "border-transparent bg-[hsl(var(--settings-v2-shell)/0.28)] focus-within:border-[hsl(var(--settings-v2-accent)/0.34)]",
         disabled && "opacity-60"
       )}
+      data-surface-weight={surfaceWeight}
       data-testid={testId}
     >
-      <div className="flex min-w-0 items-start gap-3">
-        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[hsl(var(--settings-v2-accent)/0.1)] text-[hsl(var(--settings-v2-accent))]">
-          <Icon className="h-4 w-4" aria-hidden="true" />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold text-foreground">{title}</span>
-          <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-            {description}
-          </span>
-        </span>
-      </div>
+      <span className="col-start-1 row-start-1 mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[hsl(var(--settings-v2-accent)/0.1)] text-[hsl(var(--settings-v2-accent))]">
+        <Icon className="h-4 w-4" aria-hidden="true" />
+      </span>
+      <span className="col-start-2 row-start-1 min-w-0 self-center break-words hyphens-auto text-sm font-semibold text-foreground">
+        {title}
+      </span>
       <Switch
         checked={checked}
         onCheckedChange={onCheckedChange}
         disabled={disabled}
         aria-label={title}
-        className="mt-0.5 shrink-0"
+        aria-describedby={descriptionId}
+        className="col-start-2 row-start-3 mt-1 shrink-0 justify-self-end min-[420px]:col-start-3 min-[420px]:row-start-1 min-[420px]:mt-0.5 min-[420px]:justify-self-auto"
       />
+      <span
+        id={descriptionId}
+        className="col-start-2 col-end-3 row-start-2 min-w-0 text-xs leading-relaxed text-muted-foreground min-[420px]:col-end-4"
+      >
+        {description}
+      </span>
     </div>
   );
 }
@@ -213,6 +233,7 @@ export function ActionButton({
   icon: Icon,
   children,
   onClick,
+  buttonRef,
   disabled,
   isLoading = false,
   variant = "secondary",
@@ -222,6 +243,7 @@ export function ActionButton({
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       onClick={onClick}
       disabled={isDisabled}
@@ -229,22 +251,42 @@ export function ActionButton({
       data-button-tone={variant}
       data-testid={testId}
       className={cn(
-        "flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[8px] px-4 py-3 text-sm font-semibold motion-safe:transition-[opacity,transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex min-h-[48px] w-full min-w-0 items-center justify-center gap-2 whitespace-normal rounded-[8px] px-4 py-3 text-sm font-semibold motion-safe:transition-[opacity,transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
         "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
         ACTION_BUTTON_VARIANT_CLASS[variant]
       )}
     >
-      <Icon className={cn("h-4 w-4", isLoading && "motion-safe:animate-spin")} aria-hidden="true" />
-      <span>{children}</span>
+      <Icon
+        className={cn("h-4 w-4 shrink-0", isLoading && "motion-safe:animate-spin")}
+        aria-hidden="true"
+      />
+      <span className="min-w-0 break-words hyphens-auto [overflow-wrap:anywhere]">{children}</span>
     </button>
   );
 }
 
-export function SettingsInset({ children, tone = "neutral", testId, className }: SettingsInsetProps) {
+export function SettingsInset({
+  children,
+  containerRef,
+  tone = "neutral",
+  testId,
+  className,
+  tabIndex,
+  role,
+  ariaLabel,
+}: SettingsInsetProps) {
   return (
     <div
-      className={cn("space-y-2.5 rounded-[8px] border p-3 md:p-3.5", SETTINGS_INSET_TONE_CLASS[tone], className)}
+      ref={containerRef}
+      className={cn(
+        "space-y-2.5 rounded-[8px] border p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] focus-visible:ring-offset-2 md:p-3.5",
+        SETTINGS_INSET_TONE_CLASS[tone],
+        className,
+      )}
       data-testid={testId}
+      tabIndex={tabIndex}
+      role={role}
+      aria-label={ariaLabel}
     >
       {children}
     </div>

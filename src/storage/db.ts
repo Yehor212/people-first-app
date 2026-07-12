@@ -11,8 +11,9 @@ import type {
   JournalSpaceCapture,
 } from "@/features/journal/types";
 import { logger } from "@/lib/logger";
-import { SK } from "@/lib/storageKeys";
+import { SK, SSK } from "@/lib/storageKeys";
 import { storageKeys, storageRemove } from "@/lib/safeJson";
+import { resetAccountBoundaryRuntimeState } from "@/storage/accountBoundaryRuntime";
 import { isLocalOnlySettingKey } from "@/storage/sync/settingSyncPolicy";
 
 /**
@@ -23,6 +24,8 @@ export interface OfflineQueueItem {
   id: string;
   type: string;
   entityId: string;
+  /** Account that created the action. Missing only on quarantined legacy rows. */
+  ownerUserId?: string;
   payload: unknown;
   timestamp: number;
   retries: number;
@@ -216,7 +219,7 @@ export const journalSpaceCapturesRepo = db.journalSpaceCaptures;
  * User-specific settings keys stored in db.settings IndexedDB table.
  * These are cleared on sign-out. Device-level keys are NOT listed here:
  * zenflow-language-selected, zenflow-onboarding-complete,
- * zenflow-google-auth-checked, zenflow-notification-permission-checked, zenflow-privacy
+ * zenflow-google-auth-checked, zenflow-notification-permission-checked
  */
 const USER_SETTINGS_KEYS = [
   "zenflow-moods",
@@ -236,6 +239,85 @@ const USER_SETTINGS_KEYS = [
   "gamification",
 ];
 
+/**
+ * Account payloads kept outside the primary Dexie domain tables. These must
+ * never survive a sign-out/account switch because several mounted runtimes
+ * can otherwise upload them under the next active Supabase session.
+ */
+const USER_BOUNDARY_ACCOUNT_STORAGE_KEYS = [
+  SK.TASKS,
+  SK.TASK_MOMENTUM,
+  SK.INNER_WORLD,
+  SK.CHALLENGES,
+  SK.LAST_STATE,
+  SK.USER_BIRTH_DATE,
+  SK.QUESTS,
+  SK.OFFLINE_QUEUE,
+  SK.MOOD_SLIDER_V2_LAST_COMMIT,
+  SK.COMBO_STATE,
+  SK.DAILY_LOGIN,
+  SK.LOGIN_STREAK,
+  SK.LAST_LOGIN,
+  SK.SPIN_TOKENS,
+  SK.MYSTERY_BOXES,
+  SK.TIME_CHALLENGES,
+  SK.ACTIVE_POWERUPS,
+  SK.DOPAMINE_SETTINGS,
+  SK.HOME_LAYOUT,
+  SK.BADGES,
+  SK.SPECIAL_BADGES,
+  SK.DAILY_SURPRISE_SEEN,
+  SK.LAST_SHOWN_STREAK,
+  SK.TIMER_STATE,
+  SK.JOURNAL_PASSWORD,
+  SK.JOURNAL_VAULT_KEY,
+  SK.JOURNAL_PASSWORD_COOLDOWN,
+  SK.JOURNAL_BIOMETRIC,
+  SK.JOURNAL_REMINDER,
+  SK.JOURNAL_SCREENSHOT_BLOCK,
+  SK.JOURNAL_PRIVATE_MODE,
+  SK.JOURNAL_AI_SEARCH_CONSENT,
+  SK.JOURNAL_LOCK_TIMEOUT,
+  SK.JOURNAL_PASSWORD_RESET,
+  SK.JOURNAL_PASSWORD_RESET_PROOF,
+  SK.JOURNAL_CALENDAR_MODE,
+  SK.JOURNAL_LEGEND_SEEN,
+  SK.JOURNAL_RECENT_STICKERS,
+  SK.JOURNAL_STICKER_PACKS,
+  SK.JOURNAL_SIDEBAR_COLLAPSED,
+  SK.JOURNAL_SIDEBAR_STATE,
+  SK.JOURNAL_STREAK_FREEZES,
+  SK.JOURNAL_OTD_DISMISSED,
+  SK.HABIT_ORDER,
+  SK.PENDING_FEEDBACK,
+  SK.FEEDBACK,
+  SK.ERROR_LOG,
+  SK.CRASH_LOG,
+  SK.INSIGHTS_LAST_GENERATED,
+  SK.INSIGHTS_DISMISSED,
+  SK.ONBOARDING_STATE,
+  SK.HABIT_SWIPE_HINT_SEEN,
+  SK.DIARY_FORMAT_HINT_SEEN,
+  SK.HABITS_EVER_CREATED,
+  SK.FRIENDS,
+  SK.MY_FRIEND_PROFILE,
+  SK.FRIEND_ACTIVITIES,
+  SK.CLOUD_SYNC_ENABLED,
+  SK.COACH_HISTORY,
+  SK.COACH_ONBOARDING,
+  SK.LAST_ACTIVE_DATE,
+  SK.WELCOME_BACK_SHOWN,
+  SK.COMEBACK_CHALLENGE,
+  SK.REVIEW_PROMPT,
+  SK.WEEKLY_REPORT,
+  SK.SEASONAL_PROGRESS,
+  SK.CALENDAR_CACHE,
+  SK.QUICK_ACTIONS_ENABLED,
+  SK.WIDGET_DATA,
+  SK.DISMISSED_URGENCY,
+  SK.PRIVACY,
+] as const;
+
 const USER_BOUNDARY_LOCAL_ONLY_KEYS = [
   "sync-last-seq",
   "sync-cursor-v2",
@@ -246,6 +328,7 @@ const USER_BOUNDARY_LOCAL_ONLY_KEYS = [
   "zenflow-deleted-focus-session-ids",
   "zenflow-deleted-gratitude-ids",
   SK.DEVICE_ID,
+  SK.DATA_OWNER_ID,
   SK.PUSH_INSTALL_ID,
   SK.PUSH_TOKEN,
   SK.LAST_SYNC_SEQ,
@@ -258,7 +341,18 @@ const USER_BOUNDARY_LOCAL_ONLY_KEYS = [
   SK.JOURNAL_LOCK_TIMEOUT,
   SK.JOURNAL_PASSWORD_RESET,
   SK.JOURNAL_PASSWORD_RESET_PROOF,
+  SK.JOURNAL_SECURITY_MIGRATION,
+  SK.JOURNAL_SECURITY_REMOVAL,
+  SK.JOURNAL_VAULT_REVISION,
 ];
+
+const USER_BOUNDARY_SESSION_STORAGE_KEYS = [
+  SSK.MOOD_ENTRY_DRAFT,
+  SSK.SPOTIFY_TOKENS,
+  SSK.SPOTIFY_PKCE_VERIFIER,
+  SSK.DISMISSED_EVENTS,
+  SSK.HABITS_SESSION_CREATED,
+] as const;
 
 interface ClearLocalUserDataOptions {
   /**
@@ -269,7 +363,7 @@ interface ClearLocalUserDataOptions {
 }
 
 /**
- * Clear all user data from IndexedDB and localStorage.
+ * Clear all user data from IndexedDB, browser storage, and mounted runtime state.
  * Called on sign-out / delete-account to prevent data leakage between accounts.
  *
  * IMPORTANT: Call stopAutoSync() BEFORE this function to prevent
@@ -279,10 +373,13 @@ export const clearLocalUserData = async (
   options: ClearLocalUserDataOptions = {}
 ): Promise<void> => {
   const { includeUserBoundaryState = true } = options;
-  const settingsKeysToDelete = includeUserBoundaryState
-    ? [...USER_SETTINGS_KEYS, ...USER_BOUNDARY_LOCAL_ONLY_KEYS]
-    : USER_SETTINGS_KEYS;
+  const settingsKeysToDelete = [
+    ...USER_SETTINGS_KEYS,
+    ...USER_BOUNDARY_ACCOUNT_STORAGE_KEYS,
+    ...(includeUserBoundaryState ? USER_BOUNDARY_LOCAL_ONLY_KEYS : []),
+  ];
 
+  let indexedDbCleanupFailed = false;
   try {
     await db.transaction(
       "rw",
@@ -337,6 +434,7 @@ export const clearLocalUserData = async (
       await db.open();
     } catch (fallbackError) {
       logger.error("[DB] Database recreation failed:", fallbackError);
+      indexedDbCleanupFailed = true;
     }
   }
 
@@ -347,12 +445,53 @@ export const clearLocalUserData = async (
   // Clear user-data localStorage keys (must match IndexedDB keys above)
   const allUserKeys = [
     ...USER_SETTINGS_KEYS,
-    SK.CLOUD_SYNC_ENABLED, // Cloud sync preference (per-account)
-    SK.OFFLINE_QUEUE, // Offline queue localStorage fallback
+    ...USER_BOUNDARY_ACCOUNT_STORAGE_KEYS,
     ...(includeUserBoundaryState ? USER_BOUNDARY_LOCAL_ONLY_KEYS : []),
     ...dynamicLocalOnlyStorageKeys,
   ];
-  allUserKeys.forEach((key) => storageRemove(key));
+  let browserStorageCleanupFailed = false;
+  for (const key of new Set(allUserKeys)) {
+    if (storageRemove(key) === false) {
+      browserStorageCleanupFailed = true;
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    for (const key of USER_BOUNDARY_SESSION_STORAGE_KEYS) {
+      try {
+        window.sessionStorage.removeItem(key);
+      } catch (error) {
+        logger.error("[DB] Failed to clear account-bound session storage:", { key, error });
+        browserStorageCleanupFailed = true;
+      }
+    }
+  }
+
+  let runtimeCleanupFailed = false;
+  try {
+    resetAccountBoundaryRuntimeState();
+  } catch (error) {
+    logger.error("[DB] Failed to clear mounted account state:", error);
+    runtimeCleanupFailed = true;
+  }
+
+  if (indexedDbCleanupFailed || browserStorageCleanupFailed || runtimeCleanupFailed) {
+    throw new Error("Unable to clear data on this device");
+  }
+};
+
+export const getLocalDataOwnerId = async (): Promise<string | null> => {
+  const owner = await db.settings.get(SK.DATA_OWNER_ID);
+  return typeof owner?.value === "string" && owner.value.trim().length > 0
+    ? owner.value
+    : null;
+};
+
+export const setLocalDataOwnerId = async (userId: string): Promise<void> => {
+  if (!userId.trim()) {
+    throw new Error("Cannot bind local data to an empty account id");
+  }
+  await db.settings.put({ key: SK.DATA_OWNER_ID, value: userId });
 };
 
 // Helper to check database health with timeout

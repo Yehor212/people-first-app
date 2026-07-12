@@ -9,10 +9,6 @@ vi.mock("@/components/ConfettiBurst", () => ({
   ConfettiBurst: () => null,
 }));
 
-vi.mock("@/components/ConsentBanner", () => ({
-  ConsentBanner: () => <div data-testid="consent-banner">Consent</div>,
-}));
-
 vi.mock("@/components/UpdatePrompt", () => ({
   UpdatePrompt: () => null,
 }));
@@ -66,9 +62,8 @@ describe("OverlayLayer", () => {
     resetStores();
   });
 
-  it("does not render the consent banner under the welcome overlay", () => {
+  it("does not block completed onboarding with a dormant analytics prompt", () => {
     resetStores();
-    useUIStore.setState({ showWelcomeOverlay: true });
     useUserDataStore.setState({
       privacy: { noTracking: false, analytics: false, consentShown: false },
       onboardingComplete: true,
@@ -78,7 +73,6 @@ describe("OverlayLayer", () => {
       <OverlayLayer awardXp={defaultAwardXp} earnTreats={defaultEarnTreats} />,
     );
 
-    expect(screen.getByTestId("welcome-overlay")).toBeInTheDocument();
-    expect(screen.queryByTestId("consent-banner")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

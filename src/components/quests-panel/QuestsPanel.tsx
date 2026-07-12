@@ -16,6 +16,7 @@ import {
 } from "@/lib/randomQuests";
 import { pushQuestsToCloud } from "@/storage/tasksCloudSync";
 import { QuestCard } from "./QuestCard";
+import { getCurrentSessionUserId } from "@/lib/supabaseClient";
 
 interface QuestsPanelProps {
   onClose?: () => void;
@@ -40,20 +41,41 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
   const [weeklyQuest, setWeeklyQuest] = useState<Quest | null>(null);
   const [bonusQuest, setBonusQuest] = useState<Quest | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [expectedOwnerUserId, setExpectedOwnerUserId] = useState<
+    string | null | undefined
+  >(undefined);
 
-  // Load quests from localStorage
+  // Capture the account that owns the local quest snapshot before loading it.
   useEffect(() => {
-    const parsed = safeLocalStorageGet<{
-      daily?: Quest | null;
-      weekly?: Quest | null;
-      bonus?: Quest | null;
-    } | null>(SK.QUESTS, null);
-    if (parsed) {
-      setDailyQuest(parsed.daily || null);
-      setWeeklyQuest(parsed.weekly || null);
-      setBonusQuest(parsed.bonus || null);
-    }
-    setIsLoaded(true);
+    let active = true;
+
+    const loadOwnedQuests = async () => {
+      let ownerUserId: string | null = null;
+      try {
+        ownerUserId = await getCurrentSessionUserId();
+      } catch (error) {
+        logger.error("Failed to identify the quest owner:", error);
+      }
+      if (!active) return;
+
+      setExpectedOwnerUserId(ownerUserId);
+      const parsed = safeLocalStorageGet<{
+        daily?: Quest | null;
+        weekly?: Quest | null;
+        bonus?: Quest | null;
+      } | null>(SK.QUESTS, null);
+      if (parsed) {
+        setDailyQuest(parsed.daily || null);
+        setWeeklyQuest(parsed.weekly || null);
+        setBonusQuest(parsed.bonus || null);
+      }
+      setIsLoaded(true);
+    };
+
+    void loadOwnedQuests();
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Save quests to localStorage
@@ -65,11 +87,12 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
       bonus: bonusQuest,
     };
     safeLocalStorageSet(SK.QUESTS, data);
-    pushQuestsToCloud(data).catch((err) => {
+    if (!expectedOwnerUserId) return;
+    pushQuestsToCloud(data, expectedOwnerUserId).catch((err) => {
       // graceful: local save succeeded; cloud is secondary, retry on next sync
       logger.error("Failed to push quests to cloud:", err);
     });
-  }, [dailyQuest, weeklyQuest, bonusQuest, isLoaded]);
+  }, [dailyQuest, weeklyQuest, bonusQuest, isLoaded, expectedOwnerUserId]);
 
   // Check and regenerate expired/completed quests
   useEffect(() => {

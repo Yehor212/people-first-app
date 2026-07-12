@@ -4,7 +4,7 @@ import { useShouldAnimate } from "../useShouldAnimate";
 import { SSK } from "@/lib/storageKeys";
 
 // We mock the composition pieces so we can drive the 8 combinations directly.
-vi.mock("@/components/DopamineSettings", () => ({
+vi.mock("@/hooks/useDopamineSettings", () => ({
   useDopamineSettings: vi.fn(),
 }));
 vi.mock("@/hooks/useMediaQuery", () => ({
@@ -14,7 +14,7 @@ vi.mock("@/hooks/useBatteryState", () => ({
   useBatteryState: vi.fn(),
 }));
 
-import { useDopamineSettings } from "@/components/DopamineSettings";
+import { useDopamineSettings } from "@/hooks/useDopamineSettings";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useBatteryState } from "@/hooks/useBatteryState";
 

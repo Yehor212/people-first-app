@@ -107,7 +107,8 @@ function main() {
     "seq",
     "fetchAllDeltas",
     "applyDelta",
-    "await saveLastSeq(maxSeq)",
+    "await saveLastSeq(serverMax, {",
+    "expectedOwnerUserId: ownerUserId",
     "getDeletionTrackerKeyForSyncEntity",
     "WRITE_SYNC_EVENT",
     "writeQueuedEventAndBroadcast",
@@ -224,10 +225,11 @@ function main() {
   requireNotIncludes("src/pages/Index.tsx", ['from "@/hooks/useDeltaSyncEffects"']);
 
   requireIncludes("src/storage/initialDeltaSync.ts", [
-    "getServerMaxSeq()",
-    "pullFromCloud()",
+    "getServerMaxSeq(ownerUserId)",
+    "pullFromCloud(ownerUserId)",
     "fetchAllDeltas(baselineSeq",
-    "saveLastSeq(baselineSeq)",
+    "saveLastSeq(baselineSeq, {",
+    "assertOwnerCurrent",
     "applyDelta(tailEvents",
   ]);
 
@@ -247,11 +249,11 @@ function main() {
     "TombstonedSyncEntity",
     "collectSyncTombstoneIds",
     "mergeSyncTombstones",
-    "mergeDeletedMoodIds",
-    "mergeDeletedHabitIds",
-    "mergeDeletedFocusSessionIds",
-    "mergeDeletedGratitudeIds",
-    "mergeDeletedJournalEntryIds",
+    "DELETION_TRACKER_KEYS",
+    "normalizeDeletedIdsForStorage",
+    "TOMBSTONE_ENTITY_TYPES",
+    "assertTombstoneOwnerCurrent",
+    "purgeLocalRowsForSyncTombstones",
   ]);
 
   requireIncludes("src/storage/__tests__/initialDeltaSync.test.ts", [
@@ -291,12 +293,14 @@ function main() {
     "DELETE_JOURNAL_PHOTO_STORAGE",
     "DELETE_JOURNAL_AUDIO_STORAGE",
     "syncEventActions",
-    "deduplicate?: boolean; priority?: OfflineActionPriority",
+    "expectedOwnerUserId: string;",
+    "deduplicate?: boolean;",
+    "priority?: OfflineActionPriority;",
     "await this.persistToStorage()",
     "priority: item.priority as OfflineActionPriority | undefined",
     "priority: action.priority",
     "Failed to persist queue to IndexedDB and localStorage",
-    "Critical sync event blocked after max retries",
+    "Critical action blocked after max retries",
   ]);
 
   requireIncludes("src/storage/db.ts", [
@@ -331,12 +335,18 @@ function main() {
     "SK.journalDraft",
     "settingsRepo.put",
     "Draft IndexedDB save failed",
-    "deleteSettingFromCloud(key)",
+    "getCurrentSessionUserId",
+    "deleteSettingFromCloud(key, expectedOwnerUserId)",
     "clearJournalDraft",
   ]);
   requireNotIncludes("src/features/journal/journalDraftStorage.ts", [
     "syncSetting(key, data)",
     "safeLocalStorageSet",
+  ]);
+
+  requireIncludes("src/features/journal/__tests__/journalDraftStorage.test.ts", [
+    'getCurrentSessionUserId: vi.fn(() => Promise.resolve("account-a"))',
+    'toHaveBeenCalledWith(draftKey, "account-a")',
   ]);
 
   requireIncludes("src/storage/sync/syncSettings.ts", [
@@ -368,7 +378,8 @@ function main() {
     "Legacy habit delete tracked + evented",
     "is_archived: Boolean(habit.isArchived)",
     "Skipping server-tombstoned habit completion sync",
-    "await writeEventAndBroadcast(\"habit\", habitId, \"delete\", null, deviceId)",
+    "await writeEventAndBroadcast(\"habit\", habitId, \"delete\", null, deviceId, {",
+    "expectedOwnerUserId: userId",
   ]);
 
   for (const file of [

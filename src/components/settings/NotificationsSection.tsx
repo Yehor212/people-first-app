@@ -10,12 +10,11 @@ import { SmartRemindersCard } from '@/components/SmartRemindersCard';
 import { useQuickActions } from '@/hooks/useQuickActions';
 import { logger } from '@/lib/logger';
 import {
-  scheduleHabitReminders,
-  scheduleLocalReminders,
-  scheduleMoodQuickLogNotification,
+  reconcileReminderNotifications,
 } from '@/lib/localNotifications';
 import {
   NOTIFICATION_SOUNDS,
+  buildNotificationChannelCopy,
   getNotificationSound,
   getNotificationSystemSettingsCopyKey,
   updateNotificationSound,
@@ -65,14 +64,6 @@ export function NotificationsSection({
     };
   }, [habits, reminders.habitIds, t]);
 
-  const parseReminderTime = (time: string | undefined) => {
-    const [hour = 9, minute = 0] = (time || '09:00').split(':').map(Number);
-    return {
-      hour: Number.isFinite(hour) ? hour : 9,
-      minute: Number.isFinite(minute) ? minute : 0,
-    };
-  };
-
   const handleSoundChange = async (sound: NotificationSoundType) => {
     setSelectedSound(sound);
     await updateNotificationSound(sound);
@@ -80,18 +71,15 @@ export function NotificationsSection({
     if (!isNative) return;
 
     try {
-      await scheduleLocalReminders(reminders, reminderCopy);
-      await scheduleHabitReminders(habits, {
-        reminderTitle: t.reminderHabitTitle,
-        reminderBody: t.reminderHabitBody,
-      });
-      if (reminders.enabled) {
-        await scheduleMoodQuickLogNotification(
-          parseReminderTime(reminders.moodTimeMorning),
-          t.howAreYouNow || 'How are you feeling? Tap! 😊',
-          { days: reminders.days, quietHours: reminders.quietHours },
-        );
-      }
+      await reconcileReminderNotifications(
+        reminders,
+        reminders.enabled ? habits : [],
+        {
+          ...reminderCopy,
+          quickMoodBody: t.howAreYouNow || 'How are you feeling? Tap! 😊',
+          channelCopy: buildNotificationChannelCopy(tx),
+        },
+      );
     } catch (error) {
       logger.error('[Notifications] Failed to reschedule reminders after sound change:', error);
     }

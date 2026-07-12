@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const settingsStore = new Map<string, { key: string; value: unknown }>();
+const ownerState = vi.hoisted(() => ({ current: "account-a" }));
 const journalStorageMocks = vi.hoisted(() => ({
   decryptEncryptedJournalEntries: vi.fn(() => Promise.resolve(0)),
   decryptEncryptedJournalMedia: vi.fn(() => Promise.resolve(0)),
@@ -9,6 +10,19 @@ const journalStorageMocks = vi.hoisted(() => ({
   encryptPlaintextJournalMedia: vi.fn(() => Promise.resolve(0)),
   hasEncryptedJournalContent: vi.fn(() => Promise.resolve(false)),
   hasEncryptedJournalMedia: vi.fn(() => Promise.resolve(false)),
+}));
+const migrationMocks = vi.hoisted(() => ({
+  activate: vi.fn(),
+  captureBoundary: vi.fn(() =>
+    Promise.resolve({ generation: 1, sessionOwnerUserId: "account-a", localOwnerUserId: "account-a" })
+  ),
+  assertBoundary: vi.fn(),
+  runBoundary: vi.fn(),
+  ensureQueued: vi.fn(() => Promise.resolve(false)),
+  ensureRemovalQueued: vi.fn(() => Promise.resolve(false)),
+  getIntent: vi.fn(() => Promise.resolve(null)),
+  getRemovalIntent: vi.fn(() => Promise.resolve(null)),
+  removeAtomic: vi.fn(() => Promise.resolve({ cloudMigrationPending: false })),
 }));
 type BiometricAuthMockResult = { success: boolean; error?: string; secret?: string };
 const biometricTestValues = vi.hoisted(() => ({
@@ -92,6 +106,28 @@ vi.mock("@/storage/db", () => ({
 
 vi.mock("../journalVaultCrypto", () => vaultCryptoMocks);
 vi.mock("../journalStorage", () => journalStorageMocks);
+vi.mock("../journalDraftStorage", () => ({
+  decryptEncryptedJournalDrafts: vi.fn(() => Promise.resolve(0)),
+  encryptPlaintextJournalDrafts: vi.fn(() => Promise.resolve(0)),
+  hasEncryptedJournalDrafts: vi.fn(() => Promise.resolve(false)),
+}));
+vi.mock("../journalHubStorage", () => ({
+  decryptEncryptedJournalHubContent: vi.fn(() => Promise.resolve(0)),
+  encryptPlaintextJournalHubContent: vi.fn(() => Promise.resolve(0)),
+  hasEncryptedJournalHubContent: vi.fn(() => Promise.resolve(false)),
+}));
+vi.mock("../journalSecurityMigration", () => ({
+  activateJournalPasswordProtection: migrationMocks.activate,
+  assertJournalSecurityBoundary: migrationMocks.assertBoundary,
+  captureJournalSecurityBoundary: migrationMocks.captureBoundary,
+  ensureJournalSecurityMigrationQueued: migrationMocks.ensureQueued,
+  ensureJournalSecurityRemovalQueued: migrationMocks.ensureRemovalQueued,
+  getJournalSecurityMigrationIntent: migrationMocks.getIntent,
+  getJournalSecurityRemovalIntent: migrationMocks.getRemovalIntent,
+  removeJournalPasswordProtectionAtomically: migrationMocks.removeAtomic,
+  runWithJournalSecurityBoundary: migrationMocks.runBoundary,
+  JOURNAL_SECURITY_MIGRATION_EVENT: "zenflow:journal-security-migration-updated",
+}));
 
 import { useJournalSecurity } from "../useJournalSecurity";
 
@@ -103,6 +139,45 @@ describe("useJournalSecurity iOS biometric vault key lifecycle", () => {
   beforeEach(() => {
     settingsStore.clear();
     vi.clearAllMocks();
+    ownerState.current = "account-a";
+    migrationMocks.getIntent.mockResolvedValue(null);
+    migrationMocks.ensureQueued.mockResolvedValue(false);
+    migrationMocks.captureBoundary.mockImplementation(() =>
+      Promise.resolve({
+        generation: 1,
+        sessionOwnerUserId: ownerState.current,
+        localOwnerUserId: ownerState.current,
+      })
+    );
+    migrationMocks.assertBoundary.mockImplementation(
+      async (boundary: { sessionOwnerUserId: string | null; localOwnerUserId: string | null }) => {
+        if (
+          boundary.sessionOwnerUserId !== ownerState.current ||
+          boundary.localOwnerUserId !== ownerState.current
+        ) {
+          throw new Error("Account boundary changed during diary protection");
+        }
+      }
+    );
+    migrationMocks.runBoundary.mockImplementation(
+      async <T,>(
+        boundary: { sessionOwnerUserId: string | null; localOwnerUserId: string | null },
+        operation: () => Promise<T>
+      ): Promise<T> => {
+        await migrationMocks.assertBoundary(boundary);
+        const result = await operation();
+        await migrationMocks.assertBoundary(boundary);
+        return result;
+      }
+    );
+    migrationMocks.activate.mockImplementation(async ({ passwordData, vaultSetting }: {
+      passwordData: unknown;
+      vaultSetting: unknown;
+    }) => {
+      settingsStore.set("journal_password", { key: "journal_password", value: passwordData });
+      settingsStore.set("journal_vault_key", { key: "journal_vault_key", value: vaultSetting });
+      return { cloudMigrationPending: false };
+    });
     vi.spyOn(Date, "now").mockReturnValue(1_781_580_000_000);
 
     Object.defineProperty(globalThis, "crypto", {
@@ -166,6 +241,54 @@ describe("useJournalSecurity iOS biometric vault key lifecycle", () => {
     expect(biometricMocks.authenticate).toHaveBeenCalledWith({ reason: "Unlock your journal" });
     expect(hook.result.current.isUnlocked).toBe(true);
     expect(hook.result.current.vaultKey).toBe(biometricTestValues.vaultKey);
+  });
+
+  it("does not biometric-unlock or encrypt account B after authentication started for account A", async () => {
+    const hook = renderHook(() => useJournalSecurity());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await waitFor(() => expect(hook.result.current.biometricAvailable).toBe(true));
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+    await act(async () => {
+      await hook.result.current.setBiometricEnabled(true);
+    });
+    await act(async () => {
+      hook.result.current.lock();
+    });
+    migrationMocks.captureBoundary.mockClear();
+    journalStorageMocks.encryptPlaintextJournalEntries.mockClear();
+    journalStorageMocks.encryptPlaintextJournalMedia.mockClear();
+
+    let markAuthenticationStarted!: () => void;
+    const authenticationStarted = new Promise<void>((resolve) => {
+      markAuthenticationStarted = resolve;
+    });
+    let releaseAuthentication!: () => void;
+    const authenticationGate = new Promise<void>((resolve) => {
+      releaseAuthentication = resolve;
+    });
+    biometricMocks.authenticate.mockImplementationOnce(async () => {
+      markAuthenticationStarted();
+      await authenticationGate;
+      return { success: true, secret: biometricTestValues.vaultKey };
+    });
+
+    const unlockPromise = hook.result.current.unlockWithBiometric();
+    await authenticationStarted;
+    ownerState.current = "account-b";
+    releaseAuthentication();
+    let unlocked: boolean | undefined;
+    await act(async () => {
+      unlocked = await unlockPromise;
+    });
+
+    expect(unlocked).toBe(false);
+    expect(migrationMocks.captureBoundary).toHaveBeenCalledTimes(1);
+    expect(journalStorageMocks.encryptPlaintextJournalEntries).not.toHaveBeenCalled();
+    expect(journalStorageMocks.encryptPlaintextJournalMedia).not.toHaveBeenCalled();
+    expect(hook.result.current.vaultKey).toBeNull();
+    expect(hook.result.current.isUnlocked).toBe(false);
   });
 
   it("does not unlock when native biometric succeeds without returning a vault key", async () => {
@@ -237,7 +360,7 @@ describe("useJournalSecurity iOS biometric vault key lifecycle", () => {
     expect(settingsStore.get("journal_biometric")?.value).toBe(true);
   });
 
-  it("does not leave biometric unlock marked enabled after native cleanup succeeds but password removal fails", async () => {
+  it("does not leave biometric unlock marked enabled after native cleanup succeeds but atomic removal fails", async () => {
     const hook = renderHook(() => useJournalSecurity());
 
     await waitFor(() => expect(hook.result.current.loading).toBe(false));
@@ -250,10 +373,10 @@ describe("useJournalSecurity iOS biometric vault key lifecycle", () => {
       await expect(hook.result.current.setBiometricEnabled(true)).resolves.toBe(true);
     });
 
-    syncMocks.deleteSettingFromCloud.mockRejectedValueOnce(new Error("cloud delete failed"));
+    migrationMocks.removeAtomic.mockRejectedValueOnce(new Error("atomic removal failed"));
 
     await act(async () => {
-      await expect(hook.result.current.removePassword()).rejects.toThrow("cloud delete failed");
+      await expect(hook.result.current.removePassword()).rejects.toThrow("atomic removal failed");
     });
 
     expect(biometricMocks.unenroll).toHaveBeenCalledTimes(1);

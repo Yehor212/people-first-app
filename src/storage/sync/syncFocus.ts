@@ -13,13 +13,17 @@ import { db } from "@/storage/db";
 import { FocusSession } from "@/types";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { isEntityTombstonedOnServer } from "./serverTombstones";
+import { validateSyncOwner } from "./syncOwner";
 
 // ============================================
 // FOCUS SESSION SYNC
 // ============================================
 
-export const syncFocusSession = async (session: FocusSession): Promise<void> => {
-  const userId = await getCurrentUserId();
+export const syncFocusSession = async (
+  session: FocusSession,
+  expectedOwnerUserId?: string
+): Promise<void> => {
+  const userId = await validateSyncOwner(expectedOwnerUserId, "Focus session sync");
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
@@ -41,17 +45,20 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
-    await offlineQueue.enqueue("CREATE_FOCUS_SESSION", session.id, session);
+    await offlineQueue.enqueue("CREATE_FOCUS_SESSION", session.id, session, {
+      expectedOwnerUserId: userId,
+    });
     logger.log("[Sync] Focus session queued for offline sync:", session.id);
     return;
   }
 
-  if (await isEntityTombstonedOnServer("focus", session.id)) {
+  if (await isEntityTombstonedOnServer("focus", session.id, userId)) {
     logger.warn("[Sync] Skipping server-tombstoned focus session upsert:", session.id);
     return;
   }
 
   try {
+    if (!(await validateSyncOwner(userId, "Focus session sync"))) return;
     const { error } = await supabase.from("focus_sessions").upsert(
       {
         id: session.id,
@@ -77,7 +84,8 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
       session.id,
       "upsert",
       session as unknown as Record<string, unknown>,
-      deviceId
+      deviceId,
+      { expectedOwnerUserId: userId }
     );
   } catch (error) {
     // Handle AbortError separately
@@ -128,7 +136,7 @@ export const pullFocusFromCloud = async (): Promise<boolean> => {
         deletedFocusIds.size > 0 ? merged.filter((f) => !deletedFocusIds.has(f.id)) : merged;
       if (toWriteFocus.length) await db.focusSessions.bulkPut(toWriteFocus);
     });
-    triggerDataRefresh();
+    await triggerDataRefresh();
     return true;
   } catch (err) {
     logger.error("[Pull] Focus failed:", err);

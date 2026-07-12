@@ -6,11 +6,12 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { springs } from "@/config/animations";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { hapticTap } from "@/lib/haptics";
+import { SK } from "@/lib/storageKeys";
 import type { JournalEntry } from "./types";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
 import { formatLocalizedCount } from "./journalWordCount";
 
-const DISMISS_KEY = "journal-otd-dismissed";
+const DISMISS_KEY = SK.JOURNAL_OTD_DISMISSED;
 
 /* ── Helpers ── */
 

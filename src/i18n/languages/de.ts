@@ -531,40 +531,100 @@ export const de: Translations = {
   completedTimes2: "Mal",
   profile: "Profil",
   yourName: "Dein Name",
+  profileNamePlaceholder: "Gib deinen Namen ein",
   saveName: "Namen speichern",
   nameSaved: "Name gespeichert",
   nameSavedLocally: "Auf diesem Gerät gespeichert",
   invalidNameFormat: "Ungültiges Namensformat",
   notifications: "Benachrichtigungen",
   notificationsComingSoon: "Benachrichtigungen werden in zukünftigen Updates verfügbar sein.",
-  settingsOverviewDescription: "Passe Datenschutz, Erinnerungen, Ton, Darstellung und Daten an einem Ort an.",
-  settingsAboutExperienceTitle: "Erlebnis-Einstellungen",
-  settingsAboutExperienceDescription: "Bewegung, Versionshinweise und App-Feedback an einem Ort.",
-  settingsAboutSupportLegalTitle: "Support und Rechtliches",
-  settingsAboutSupportLegalDescription: "Datenschutz, Bedingungen, Lizenzen und Kontaktoptionen.",
+  settingsOverviewDescription:
+    "Lege fest, wie ZenFlow aussieht und klingt, dich erinnert und mit deinen Daten umgeht.",
+  settingsAccountBackupTitle: "Konto & Backup",
+  settingsAccountBackupDescription:
+    "Dein Konto ist verbunden. Wenn ZenFlow Änderungen nicht online speichern kann, bleiben sie auf diesem Gerät.",
+  settingsAccountSignedIn: "Du bist angemeldet",
+  settingsAccountSignedOut: "Du bist nicht angemeldet",
+  settingsAccountDataOnDevice:
+    "Deine Daten bleiben auf diesem Gerät. Melde dich an, um sie zu sichern und auf deinen anderen Geräten zu verwenden.",
+  settingsAccountBackupChecking: "Konto wird geprüft…",
+  settingsAccountBackupCheckingDescription:
+    "Während ZenFlow dein Konto prüft, bleiben deine Daten auf diesem Gerät.",
+  settingsAccountCheckFailed: "Dein Konto konnte nicht geprüft werden",
+  settingsAccountCheckFailedDescription:
+    "Deine Daten bleiben auf diesem Gerät. Prüfe deine Verbindung und versuche es erneut.",
+  settingsAccountBackupUnavailable: "Backup ist in dieser Version nicht verfügbar",
+  settingsAccountBackupUnavailableDescription:
+    "Deine Daten bleiben auf diesem Gerät.",
+  settingsRemindersMobileApp: "Mobile App",
+  settingsPrivacyDataDescription:
+    "Du entscheidest, welche optionalen Dienste ZenFlow verwenden darf. Das Backup beginnt erst nach der Anmeldung.",
+  settingsDataBackupReportsDescription:
+    "Speichere ein Backup für einen späteren Import oder erstelle einen Bericht.",
+  settingsBackupRestoreTitle: "Backup und Wiederherstellung",
+  settingsReportsTitle: "Berichte",
+  settingsReportsDescription:
+    "Berichte enthalten Daten zu Stimmung, Gewohnheiten, Fokus und Dankbarkeit. Der PDF-Bericht ist derzeit auf Englisch. Berichte sind keine Backups.",
+  settingsReportSpreadsheetAction: "Tabellendaten (CSV)",
+  settingsReportProgressAction: "Fortschrittsbericht (PDF)",
+  settingsSoundDiaryRainOff: "Regen ist bei den Hintergrundklängen ausgeschaltet.",
+  settingsSoundDiaryReady: "Bereit zur Wiedergabe.",
+  settingsAboutProductSummary:
+    "ZenFlow bringt Stimmungseinträge, Gewohnheiten, Fokuszeiten und dein Tagebuch an einem Ort zusammen.",
+  settingsAboutSupportLegalTitle: "Hilfe und Rechtliches",
+  settingsAboutSupportLegalDescription:
+    "Datenschutz, Bedingungen, Lizenzen und Support.",
   settingsRemindersOff: "Erinnerungen aus",
   resetDataConfirmWord: "RESET",
   resetDataTypeConfirm: "Gib {word} ein, um zu bestätigen",
-  resetDataScope: "Dies entfernt Stimmungen, Gewohnheiten, Fokus-Sitzungen, Dankbarkeit, Journal-Einträge, Einstellungen und Änderungen, die noch online gespeichert werden sollten, von diesem Gerät.",
+  resetDataScope:
+    "Dies entfernt Stimmungen, Gewohnheiten, Fokus-Sitzungen, Dankbarkeit, Journal-Einträge, Einstellungen und Änderungen, die noch online gespeichert werden sollten, von diesem Gerät.",
   resetDataConfirmAction: "Gerätedaten löschen",
   data: "Daten",
   exportData: "Daten exportieren",
   importData: "Daten importieren",
-  importMode: "Importmodus",
-  importMerge: "Zusammenführen",
-  importReplace: "Ersetzen",
+  importMode: "Wie soll importiert werden?",
+  importMerge: "Zu vorhandenen Daten hinzufügen",
+  importReplace: "Vorhandene Daten ersetzen",
   exportSuccess: "Export bereit.",
   exportError: "Export fehlgeschlagen.",
+  exportJournalUnlockRequired:
+    "Entsperre dein Tagebuch, bevor du geschützte Inhalte exportierst.",
+  exportJournalDecryptionFailed:
+    "ZenFlow konnte das geschützte Tagebuch nicht lesen. Es wurde nichts exportiert.",
+  exportJournalMediaUnavailable:
+    "ZenFlow konnte mindestens einen Tagebuchanhang nicht lesen. Es wurde nichts exportiert.",
+  exportBackupTooLarge:
+    "Dieses Backup überschreitet das ZenFlow-Wiederherstellungslimit von 32 MB. Es wurde nichts exportiert. Entfernen Sie einige Tagebuchanhänge und versuchen Sie es erneut.",
+  exportCleanupError:
+    "Das Backup wurde geteilt, aber ZenFlow konnte die temporäre Kopie nicht von diesem Gerät entfernen.",
+  pushRevocationIncomplete:
+    "ZenFlow konnte Remote-Benachrichtigungen auf diesem Gerät nicht vollständig trennen.",
+  sessionTimeoutDelayedTitle: "Abmeldung verzögert",
+  sessionTimeoutPendingChanges:
+    "ZenFlow hat dich angemeldet gelassen, weil noch Änderungen gespeichert werden müssen. Ein neuer Versuch folgt in Kürze.",
+  sessionTimeoutCleanupFailed:
+    "ZenFlow hat dich angemeldet gelassen, weil dieses Gerät nicht sicher bereinigt werden konnte. Ein neuer Versuch folgt in Kürze.",
+  syncCriticalBlocked:
+    "Eine wichtige Online-Speicherung konnte nicht abgeschlossen werden. Die Änderung bleibt auf diesem Gerät. Versuche es mit Verbindung erneut.",
   exportCSV: "Tabellendatei (CSV)",
   exportPDF: "Druckbare Datei (PDF)",
   importSuccess: "Import abgeschlossen.",
+  importResultSummary:
+    "Import abgeschlossen: {added} hinzugefügt, {updated} aktualisiert, {skipped} übersprungen. Tagebuch: {journalEntries} Einträge, {journalPhotos} Fotos, {journalAudio} Aufnahmen.",
   importError: "Dateiimport fehlgeschlagen.",
+  importJournalUnlockRequired:
+    "Entsperre dein Tagebuch, bevor du die Daten auf diesem Gerät ersetzt.",
+  importJournalUnreadable:
+    "Dieses Backup enthält geschützte Tagebuchdaten, die dieses Gerät nicht lesen kann.",
+  importJournalReauthorizationRequired:
+    "Sperre dein Tagebuch zur Sicherheit und entsperre es erneut. Kehre dann hierher zurück und versuche Ersetzen noch einmal.",
   importedItems: "Hinzugefügt",
   importAdded: "hinzugefügt",
   importUpdated: "aktualisiert",
   importSkipped: "übersprungen",
   importConfirmTitle: "Backup importieren",
-  importConfirmMessage: "Daten aus dieser Datei importieren?",
+  importConfirmMessage: "Daten aus diesem Backup importieren?",
   syncing: "Aktualisierung...",
   signingIn: "Anmeldung...",
   signingOut: "Abmeldung...",
@@ -574,18 +634,19 @@ export const de: Translations = {
   comingSoon: "bald verfügbar",
   resetAllData: "Daten auf diesem Gerät löschen",
   privacyTitle: "Datenschutz",
-  privacyDescription: "Kein verstecktes Tracking. Die Gerätesynchronisierung startet erst, wenn du dich anmeldest und die Online-Sicherung aktivierst.",
-  privacyNoTracking: "Kein Tracking",
-  privacyNoTrackingHint: "Wir sammeln keine Verhaltensdaten.",
-  privacyAnalytics: "Analytik",
-  privacyAnalyticsHint: "Hilft, die App zu verbessern. Du kannst es deaktivieren.",
-  privacyAds: "Optionale Anzeigen",
-  privacyAdsHint: "Nur optionale Videos. Anzeigenanfragen bleiben aus, bis du dies aktivierst; Google-Datenschutzauswahlen können weiterhin erscheinen, wenn sie erforderlich sind.",
-  privacyPushNotifications: "Konto-Erinnerungsalarme",
-  privacyPushNotificationsHint: "Erlaube diesem Gerät, Erinnerungsalarme von deinem Konto zu erhalten. Auf diesem Gerät gespeicherte Erinnerungen funktionieren auch ohne das.",
+  privacyDescription:
+    "Kein verstecktes Tracking. Die Gerätesynchronisierung startet erst, wenn du dich anmeldest und die Online-Sicherung aktivierst.",
+  privacyAds: "Belohnungsvideos",
+  privacyAdsHint:
+    "Sie werden nur geladen, wenn du sie aktivierst. Google kann dich bei Bedarf nach deinen Datenschutzeinstellungen fragen.",
+  privacyOptionalServicesOn: "Optionale Dienste aktiv",
+  privacyOptionalServicesOff: "Optionale Dienste aus",
+  privacyPushNotifications: "Konto-Erinnerungen",
+  privacyPushNotificationsHint:
+    "Empfange auf diesem Gerät Konto-Erinnerungen. Erinnerungen, die du hier erstellt hast, funktionieren auch ohne diese Option.",
   privacyPolicy: "Datenschutzerklärung",
   termsOfService: "Nutzungsbedingungen",
-  openSourceLicenses: "Open-Source-Lizenzen",
+  openSourceLicenses: "Lizenzen",
   legalPrivacyDescription:
     "Erfahre, wie ZenFlow deine persönlichen Daten erhebt, verwendet und schützt. Deine Privatsphäre hat Priorität.",
   legalTermsDescription: "Lies die Nutzungsbedingungen für die Verwendung von ZenFlow.",
@@ -603,19 +664,21 @@ export const de: Translations = {
   themeDark: "Dunkel",
   themeSystem: "System",
   themeStyleTitle: "Stimmungspalette",
-  themeStyleDescription: "Wähle einen kuratierten Look, der den Ton setzt.",
+  themeAdvancedAppearanceTitle: "Erweiterte Darstellung",
+  themeStyleDescription: "Wähle einen Stil, der zu dir passt.",
   themeAccentTitle: "Akzent",
-  themeAccentDescription: "Farbe fur Fokus, Auswahlzustande und wichtige Steuerelemente.",
-  themeIntensityTitle: "Intensitat",
+  themeAccentDescription:
+    "Farbe für Schaltflächen, Auswahlen und Hervorhebungen.",
+  themeIntensityTitle: "Intensität",
   themeComfortTitle: "Komfort",
   themePreviewAction: "Vorschau",
   themeApplyAction: "Anwenden",
-  themeResetAction: "Zurucksetzen",
-  themeUndoAction: "Ruckgangig",
+  themeResetAction: "Zurücksetzen",
+  themeUndoAction: "Rückgängig",
   themeMoreActions: "Weitere Designaktionen",
   themePreviewing: "Stilvorschau aktiv",
   themeApplied: "Stil angewendet",
-  themeReset: "Stil zuruckgesetzt",
+  themeReset: "Stil zurückgesetzt",
   themeUndone: "Stil wiederhergestellt",
   themePreviewChanged: "Vorschau nach Änderungen gelöscht",
   themePaletteZenflow: "ZenFlow",
@@ -632,11 +695,11 @@ export const de: Translations = {
   themeIntensityBalanced: "Ausgewogen",
   themeIntensityVivid: "Lebendig",
   themeHighContrast: "Hoher Kontrast",
-  themeHighContrastHint: "Verstarkt Text, Rahmen und Fokusindikatoren.",
+  themeHighContrastHint: "Verstärkt Text, Rahmen und Fokusindikatoren.",
   themeReduceGlow: "Glanz reduzieren",
-  themeReduceGlowHint: "Halt Oberflachen bei wenig Licht ruhiger.",
+  themeReduceGlowHint: "Hält Oberflächen bei wenig Licht ruhiger.",
   themeReduceTransparency: "Transparenz reduzieren",
-  themeReduceTransparencyHint: "Nutzt festere Flachen fur bessere Lesbarkeit.",
+  themeReduceTransparencyHint: "Nutzt festere Flächen für bessere Lesbarkeit.",
 
   // What's New Modal
   whatsNewTitle: "Was ist neu",
@@ -657,7 +720,8 @@ export const de: Translations = {
     },
     bugFixes172: {
       title: "Fehlerbehebungen",
-      description: "Probleme mit Geräteaktualisierungen behoben und allgemeine Stabilität verbessert.",
+      description:
+        "Probleme mit Geräteaktualisierungen behoben und allgemeine Stabilität verbessert.",
     },
     googleOnly: {
       title: "Nur Google-Anmeldung",
@@ -666,8 +730,7 @@ export const de: Translations = {
     },
     codeQuality: {
       title: "Zuverlässigkeit",
-      description:
-        "Versteckte Probleme bereinigt für eine sanftere, zuverlässigere Erfahrung.",
+      description: "Versteckte Probleme bereinigt für eine sanftere, zuverlässigere Erfahrung.",
     },
   },
 
@@ -680,16 +743,18 @@ export const de: Translations = {
     "Wenn du angemeldet bist, hält ZenFlow deine Daten auf deinen Geräten verfügbar. Änderungen warten sicher, wenn die Verbindung schwach ist.",
   settingsCloudSyncEnabled: "Online-Sicherung ist aktiv",
   settingsCloudSyncDisabledByUser: "Online-Sicherung pausiert",
-  settingsExportTitle: "Backup exportieren",
-  settingsExportDescription: "Speichere alle deine Daten in einer Datei",
+  settingsExportTitle: "Backup speichern",
+  settingsExportDescription:
+    "Das Backup enthält Stimmungen, Gewohnheiten, Fokus, Dankbarkeit und dein Tagebuch. Entsperre ein geschütztes Tagebuch zuerst; die exportierte Datei ist nicht verschlüsselt und sollte nur an einem vertrauenswürdigen Ort gespeichert werden.",
   settingsImportTitle: "Backup importieren",
   settingsImportMergeTooltip:
     "Importierte Daten werden zu bestehenden hinzugefügt. Duplikate übersprungen.",
-  settingsImportReplaceTooltip: "⚠️ Alle aktuellen Daten werden gelöscht und durch Import ersetzt",
+  settingsImportReplaceTooltip:
+    "Dadurch werden vorhandene Stimmungen, Gewohnheiten, Fokussitzungen, Dankbarkeit und im Backup enthaltene Einstellungen ersetzt. Tagebuchbereiche werden nur ersetzt, wenn sie im Backup enthalten sind. Der Schutz dieses Geräts bleibt unverändert.",
   settingsImportReplaceConfirm: 'Gib "REPLACE" ein, um das Löschen aller Daten zu bestätigen',
   // Import validation (v1.4.1)
   invalidFileType: "Ungültiger Dateityp. JSON erforderlich.",
-  fileTooLarge: "Datei zu groß (max. 10 MB)",
+  fileTooLarge: "Datei zu groß (max. 32 MB)",
   importConfirm: "Import bestätigen",
   invalidBackupFormat: "Ungültiges Backup-Format",
   settingsWhatsNewGotIt: "Verstanden!",
@@ -697,7 +762,8 @@ export const de: Translations = {
   settingsWhatsNewFeatureToggles: "Funktions-Schalter",
   settingsWhatsNewFeatureTogglesDesc: "Module beim Einstieg auswählen",
   settingsWhatsNewBugFixes158: "Fehlerbehebungen",
-  settingsWhatsNewBugFixes158Desc: "Probleme mit Geräteaktualisierungen behoben und Stabilität verbessert",
+  settingsWhatsNewBugFixes158Desc:
+    "Probleme mit Geräteaktualisierungen behoben und Stabilität verbessert",
   settingsWhatsNewUIImprovements: "UI-Verbesserungen",
   settingsWhatsNewUIImprovementsDesc: "Bessere Schalter und Einstellungsorganisation",
   settingsSectionAccount: "Konto & Geräte",
@@ -728,6 +794,7 @@ export const de: Translations = {
   settingsGroupProfile: "Profil & Erscheinung",
   settingsGroupNotifications: "Benachrichtigungen",
   settingsGroupData: "Daten & Datenschutz",
+  settingsExportImportTitle: "Backups und Berichte",
   settingsGroupAccount: "Konto",
   settingsGroupSecurity: "Sicherheit",
   settingsSecurityDesc: "Tagebuch-Sperre und Sicherheitseinstellungen konfigurieren",
@@ -735,7 +802,17 @@ export const de: Translations = {
   journalLockTimeoutDesc: "Tagebuch nach einer Inaktivitätsperiode automatisch sperren",
   journalLockImmediateWarning:
     "Das Tagebuch wird jedes Mal gesperrt, wenn du den Tagebuch-Bildschirm verlässt",
+  journalLockTimeoutImmediately: "Sofort",
+  journalLockTimeoutOneMinute: "Nach 1 Minute",
+  journalLockTimeoutFiveMinutes: "Nach 5 Minuten",
+  journalLockTimeoutFifteenMinutes: "Nach 15 Minuten",
+  journalLockTimeoutThirtyMinutes: "Nach 30 Minuten",
   settingsGroupAbout: "Über",
+  settingsGroupAppearanceAccessibility: "Darstellung & Barrierefreiheit",
+  settingsGroupReminders: "Erinnerungen",
+  settingsGroupPrivacyData: "Datenschutz & Daten",
+  settingsGroupHelpAbout: "Hilfe & Informationen",
+  settingsDataSummary: "Stimmung: {moods} · Gewohnheiten: {habits} · Fokussitzungen: {focus}",
 
   // Feature Toggles / Modules (v1.5.9)
   settingsGroupModules: "Module",
@@ -770,16 +847,6 @@ export const de: Translations = {
   coreModulesNote: "Stimmungs-Tracker und Gewohnheiten sind immer aktiviert",
 
   // GDPR Consent
-  consentTitle: "Datenschutzeinstellungen",
-  consentDescription:
-    "Wir respektieren deine Privatsphäre. Anonyme Analysen erlauben, um die App zu verbessern?",
-  consentAnalyticsTitle: "Anonyme Analysen",
-  consentAnalyticsDesc:
-    "Nur Nutzungsmuster. Keine persönlichen Daten. Du kannst dies jederzeit in den Einstellungen ändern.",
-  consentAccept: "Erlauben",
-  consentDecline: "Nein danke",
-  consentFooter: "Du kannst dies jederzeit unter Einstellungen > Datenschutz ändern",
-
   installApp: "App installieren",
   installAppDescription: "Installiere ZenFlow für schnelleren Start und Offline-Zugriff.",
   installBannerTitle: "ZenFlow installieren",
@@ -793,17 +860,21 @@ export const de: Translations = {
   checkingForUpdates: "Suche nach Updates...",
   appUpToDate: "Du hast die neueste Version",
   openGooglePlay: "Google Play öffnen",
+  openGooglePlayFailed: "Google Play konnte nicht geöffnet werden. Versuche es erneut.",
   updateCheckFailed: "Update-Prüfung fehlgeschlagen",
   settingsUpdateTitle: "App-Version",
-  settingsWebUpdateDescription: "ZenFlow kann prüfen, ob eine neuere Version bereit ist.",
-  settingsNativeUpdateDescription: "Prüfen, ob im App Store ein Update verfügbar ist.",
+  settingsWebUpdateDescription: "Prüfe, ob eine neuere Version verfügbar ist.",
+  settingsNativeUpdateDescription: "Prüfe, ob eine neuere Version verfügbar ist.",
   webUpdateAvailable: "Eine neuere Version ist bereit",
-  webUpdateAvailableDescription: "Starte ZenFlow neu, um die neueste Version zu laden. Beende vorher alles, was du gerade eingibst.",
+  webUpdateAvailableDescription:
+    "Starte ZenFlow neu, um die neueste Version zu laden. Beende vorher alles, was du gerade eingibst.",
   restartZenflow: "ZenFlow neu starten",
   restartingZenflow: "Neustart...",
-  webUpdateCheckFailedDescription: "ZenFlow braucht eine Netzwerkprüfung, um die neueste Version zu bestätigen. Auf diesem Gerät wurde nichts geändert.",
+  webUpdateCheckFailedDescription:
+    "ZenFlow braucht eine Netzwerkprüfung, um die neueste Version zu bestätigen. Auf diesem Gerät wurde nichts geändert.",
   remindersTitle: "Erinnerungen",
-  remindersDescription: "Sanfte Stupser um dich auf Kurs zu halten.",
+  remindersDescription:
+    "Lege fest, wann ZenFlow dich an einen Stimmungs-Check-in und deine Fokuszeit erinnert.",
   moodReminder: "Stimmungs-Check Zeit",
   habitReminder: "Gewohnheits-Erinnerung",
   focusReminder: "Fokus-Erinnerung",
@@ -910,18 +981,22 @@ export const de: Translations = {
   authProviderApple: "Apple",
   authLinkedProviders: "Verbundene Anmeldemethoden",
   authConnectProvider: "{provider} verbinden",
-  authConnectMoreProviders: "Verbinde eine weitere Anmeldemethode, um dieses Konto auf allen Geräten zu behalten.",
-  authProviderLinkFailed: "Diese Anmeldemethode konnte nicht verbunden werden. Bitte versuche es erneut.",
+  authConnectMoreProviders:
+    "Verbinde eine weitere Anmeldemethode, um dieses Konto auf allen Geräten zu behalten.",
+  authProviderLinkFailed:
+    "Diese Anmeldemethode konnte nicht verbunden werden. Bitte versuche es erneut.",
   authLinkingProvider: "{provider} wird verbunden...",
   signOut: "Abmelden",
   syncNow: "Geräte jetzt aktualisieren",
   cloudSyncDisabled: "Online-Sicherung ist nicht verfügbar.",
   syncDeviceSessionsTitle: "Deine Geräte",
-  syncDeviceSessionsDescription: "Sieh, welche Geräte dein Konto genutzt haben, ohne private Daten offenzulegen.",
+  syncDeviceSessionsDescription:
+    "Sieh, welche Geräte dein Konto genutzt haben, ohne private Daten offenzulegen.",
   syncDeviceSessionsActive: "Aktive Geräte",
   syncDeviceSessionsError: "Der Gerätestatus ist vorübergehend nicht verfügbar.",
   syncDeviceSessionsEmpty: "Melde dich an, um verbundene Geräte zu sehen.",
-  syncDeviceSessionsFootnote: "Als inaktiv markierte Geräte werden aus dieser Liste ausgeblendet; dadurch wird das Gerät nicht abgemeldet.",
+  syncDeviceSessionsFootnote:
+    "Als inaktiv markierte Geräte werden aus dieser Liste ausgeblendet; dadurch wird das Gerät nicht abgemeldet.",
   syncDeviceCurrent: "Aktuelles Gerät",
   syncDeviceRevoked: "Inaktiv",
   syncDeviceLastSeen: "Zuletzt gesehen",
@@ -964,13 +1039,30 @@ export const de: Translations = {
   deleteAccount: "Konto löschen",
   deleteAccountConfirm: "Konto löschen?",
   deleteAccountTypeConfirm: 'Geben Sie "LÖSCHEN" zur Bestätigung ein:',
-  deleteAccountWarning: "Dabei werden online gespeicherte Daten und der Zugriff auf dein Konto entfernt.",
+  deleteAccountWarning:
+    "Dabei werden online gespeicherte Daten und der Zugriff auf dein Konto entfernt.",
   deleteAccountSuccess: "Konto gelöscht.",
   deleteAccountError: "Konto konnte nicht gelöscht werden.",
+  deleteAccountDeletedCleanupFailed:
+    "Ihr Konto wurde gelöscht, aber auf diesem Gerät können noch Daten vorhanden sein. Starten Sie ZenFlow neu, bevor Sie ein anderes Konto verwenden.",
   deleteAccountLink: "Konto/Daten löschen",
   deleteConfirmWord: "LÖSCHEN",
   authEmailSent: "Anmeldelink wurde an Ihre E-Mail gesendet.",
   authSignedOut: "Abgemeldet.",
+  authSignOutPendingChanges:
+    "In ZenFlow warten noch Änderungen darauf, online gespeichert zu werden. Stellen Sie eine Internetverbindung her und versuchen Sie es erneut.",
+  authSignOutRecoveryTitle: "Abmeldung abschließen",
+  authDiscardAndSignOut: "Änderungen verwerfen und abmelden",
+  authDiscardSignOutConfirm: "Nicht gespeicherte Änderungen verwerfen und abmelden?",
+  authDiscardSignOutWarning:
+    "Änderungen, die noch nicht online gespeichert wurden, werden dauerhaft von diesem Gerät entfernt.",
+  authAccountSwitchPendingChanges:
+    "Melden Sie sich erneut bei Ihrem vorherigen Konto an, stellen Sie eine Internetverbindung her und warten Sie, bis ZenFlow alle Änderungen gespeichert hat. Wechseln Sie danach erneut das Konto.",
+  authRecoverLegacyChanges: "Änderungen mit diesem Konto wiederherstellen",
+  authUseDifferentAccount: "Ein anderes Konto verwenden",
+  authSignOutCleanupFailed:
+    "ZenFlow konnte die Abmeldung nicht sicher abschließen. Versuchen Sie es erneut.",
+  authSignOutFailed: "Die Abmeldung wurde nicht abgeschlossen. Versuchen Sie es erneut.",
   authError: "Link konnte nicht gesendet werden.",
   authNotConfigured: "Anmeldung ist derzeit nicht verfügbar.",
   syncSuccess: "Geräte sind aktuell.",
@@ -979,8 +1071,7 @@ export const de: Translations = {
   syncError: "Geräte konnten nicht aktualisiert werden.",
   weeklyDigestError: "Wochenbericht konnte nicht aktualisiert werden. Versuchen Sie es erneut.",
   authGateTitle: "Anmelden",
-  authGateBody:
-    "Melde dich per E-Mail an, damit dein Fortschritt auf deinen Geräten bleibt.",
+  authGateBody: "Melde dich per E-Mail an, damit dein Fortschritt auf deinen Geräten bleibt.",
   authGateContinue: "Ohne Konto fortfahren",
   errorBoundaryTitle: "Etwas ist schief gelaufen",
   errorBoundaryBody: "Lade die App neu.",
@@ -1015,7 +1106,10 @@ export const de: Translations = {
   pushDisabled: "Push deaktiviert.",
   pushError: "Push konnte nicht aktiviert werden.",
   pushNeedsAccount: "Melden Sie sich an, um Push zu aktivieren.",
-  pushPermissionDenied: "Benachrichtigungsberechtigung verweigert.",
+  pushPermissionDenied:
+    "Aktiviere Mitteilungen für ZenFlow in den Einstellungen deines Geräts.",
+  remindersNativeOnly: "Richte Erinnerungen in der mobilen ZenFlow-App ein.",
+  habitRemindersManagedInHabits: "Lege die Erinnerung im Menü der jeweiligen Gewohnheit fest.",
   areYouSure: "Bist du sicher?",
   cannotBeUndone: "Diese Aktion kann nicht rückgängig gemacht werden.",
   delete: "Löschen",
@@ -1222,64 +1316,45 @@ export const de: Translations = {
   muteSound: "Ton stumm schalten",
   unmuteSound: "Ton einschalten",
   settingsSoundTitle: "Ton",
-  settingsSoundDescription: "App-Ambiente und Feedback-Lautstärke.",
+  settingsSoundDescription: "Wähle Hintergrundklänge, Aktivitätsklänge und Lautstärke.",
   settingsSoundSummaryOn: "Ton an",
   settingsSoundSummaryOff: "Stumm",
   settingsSoundMaster: "App-Ton",
-  settingsSoundMasterDesc: "Steuert Erfolgsklänge, Orb-Ambiente und Tagebuch-Ambiente.",
+  settingsSoundMasterDesc: "Spielt Klänge in ZenFlow ab.",
   settingsSoundVolume: "Lautstärke",
   settingsSoundVolumeDesc: "Legt die Standardlautstärke für App-Audio fest.",
   settingsSoundPreview: "Ton testen",
-  settingsSoundAmbienceTitle: "Ambient-Tracks",
-  settingsSoundAmbienceNote: "Das Orb-Ambiente startet im Orb. Der Tagebuchklang wird hier verwaltet, damit er dein Schreiben nie überdeckt.",
-  settingsSoundFeedbackOn: "Feedback-Töne verwenden diese Lautstärke.",
-  settingsSoundFeedbackOff: "Feedback-Töne sind im Feedback-Stil deaktiviert.",
+  settingsSoundAmbienceTitle: "Hintergrundklang fürs Tagebuch",
+  settingsSoundAmbienceNote:
+    "Höre sanften Regen, während du in dein Tagebuch schreibst. Er startet erst, wenn du auf Wiedergabe tippst.",
   settingsSoundTextureAir: "Luft",
   settingsSoundTextureWater: "Wasser",
   settingsSoundTextureRain: "Regen",
-  settingsSoundFeedbackComfortable: "Angenehm",
-  settingsSoundFeedbackTooLoud: "Zu laut",
-  settingsSoundFeedbackDistracting: "Lenkt ab",
-  settingsSoundFeedbackPreferSilent: "Lieber still",
-  settingsSoundFeedbackDidNotPlay: "Wurde nicht abgespielt",
-  settingsSoundComfortTitle: "Sound-Komfort",
-  settingsSoundComfortDescription: "Profile stimmen Hintergrundklang und kurze Hinweise auf unterstützten Geräten ab.",
+  settingsSoundComfortTitle: "Klangstil",
+  settingsSoundComfortDescription:
+    "Wähle einen Klangstil und passe die einzelnen Klänge darunter an.",
   settingsSoundProfileQuiet: "Ruhig",
-  settingsSoundProfileRich: "Voll",
-  settingsSoundProfileBalanced: "Ausgewogen",
-  settingsSoundProfileQuietDesc: "Kein Ambiente, nur sanfte Abschlussklänge.",
-  settingsSoundProfileRichDesc: "Volles Ambiente und Hinweise, wo unterstützt.",
-  settingsSoundProfileBalancedDesc: "Sanftes Ambiente und sinnvolle Hinweise.",
+  settingsSoundProfileBalanced: "Alle Klänge",
+  settingsSoundProfileQuietDesc:
+    "Keine Hintergrundklänge; nur leise Aktivitätsklänge.",
+  settingsSoundProfileBalancedDesc:
+    "Spielt Hintergrund-, Aktivitäts-, Hinweis- und Meilensteinklänge ab.",
   settingsSoundAmbientToggle: "Umgebungsklang",
-  settingsSoundAmbientToggleDesc: "Steuert Anmelde-, Orb- und Tagebuchambiente außerhalb von Hyperfocus.",
-  settingsSoundCompletionCues: "Abschlusshinweise",
-  settingsSoundCompletionCuesDesc: "Erlaubt leise Bestätigungen nach wichtigen Abschlüssen.",
-  settingsSoundReminderCues: "Erinnerungsvorschau",
-  settingsSoundReminderCuesDesc: "Erlaubt optionale Vorschauklänge für Erinnerungen.",
-  settingsSoundMilestoneCues: "Meilenstein-Hinweise",
-  settingsSoundMilestoneCuesDesc: "Erlaubt seltene Fortschrittshinweise ohne Routine-Tap-Sounds.",
-  settingsSoundTextureTitle: "Texturen außerhalb von Hyperfocus",
-  settingsSoundTextureDescription: "Wähle Luft-, Wasser- und Regentexturen für Anmeldung, Orb und Tagebuch.",
-  settingsSoundFeedbackTitle: "Wie hat sich dieser Klang angefühlt?",
-  settingsSoundFeedbackDescription: "Speichert nur deine Komfortwahl, Gerätetyp, Stummschaltung und Lautstärkebereich.",
-  settingsSoundAmbientOff: "Umgebungsklang ist im Sound-Komfort ausgeschaltet.",
-  settingsSoundMapTitle: "Wo Klang erscheint",
-  settingsSoundMapDescription: "App-Sounds starten erst nach deinem Tippen und folgen deinen Sound-Einstellungen.",
-  settingsSoundMapAuth: "Sanfte Luft beim Anmelden",
-  settingsSoundMapOrb: "Orb-Atmosphäre",
-  settingsSoundMapDiary: "Tagebuch-Atmosphäre",
-  settingsSoundMapFocus: "Fokus-Umgebungsbibliothek",
-  settingsSoundMapFeedback: "Sanfte Abschluss- und Erinnerungssignale",
-  settingsSoundCrossPlatformTitle: "Wo Sounds funktionieren",
-  settingsSoundCrossPlatformNote: "ZenFlow nutzt dieselben Sound-Einstellungen, wo dein Gerät sie erlaubt.",
-  settingsSoundActionMapTitle: "Wann ZenFlow einen Klang abspielt",
-  settingsSoundActionMapDescription: "Kurze Klänge bleiben wichtigen Abschlüssen und seltenen Meilensteinen vorbehalten.",
-  settingsSoundActionMapMood: "Stimmung gespeichert",
-  settingsSoundActionMapHabit: "Gewohnheit abgeschlossen",
-  settingsSoundActionMapJournal: "Tagebuch gespeichert",
-  settingsSoundActionMapFocus: "Fokus abgeschlossen",
-  settingsSoundActionMapBreathing: "Atemübung abgeschlossen",
-  settingsSoundActionMapMilestones: "Seltene Fortschrittsmomente",
+  settingsSoundAmbientToggleDesc:
+    "Spielt Hintergrundklänge in ZenFlow ab, außer während einer Fokussitzung.",
+  settingsSoundCompletionCues: "Aktivitätsklänge",
+  settingsSoundCompletionCuesDesc:
+    "Spielt nach einer abgeschlossenen Aktivität einen leisen Ton ab.",
+  settingsSoundReminderCues: "Hinweistöne in ZenFlow",
+  settingsSoundReminderCuesDesc:
+    "Spielt Timer-Hinweise und Erinnerungsvorschauen in ZenFlow ab. Der Mitteilungston deines Smartphones ändert sich dadurch nicht.",
+  settingsSoundMilestoneCues: "Meilensteinklänge",
+  settingsSoundMilestoneCuesDesc:
+    "Spielt einen Ton bei gelegentlichen Serien- und Erfolgsmeilensteinen ab.",
+  settingsSoundTextureTitle: "Hintergrundklänge",
+  settingsSoundTextureDescription:
+    "Wähle, welche Hintergrundklänge ZenFlow abspielen darf.",
+  settingsSoundAmbientOff: "Hintergrundklänge sind ausgeschaltet.",
 
   // Leaderboard
   leaderboard: "Bestenliste",
@@ -1344,7 +1419,8 @@ export const de: Translations = {
   journalSaving: "Speichere...",
   journalSaved: "Gespeichert",
   journalSaveFailed: "Speichern fehlgeschlagen",
-  journalSaveFailedHint: "Dein Text ist noch auf dem Bildschirm. Versuche es erneut, wenn du bereit bist.",
+  journalSaveFailedHint:
+    "Dein Text ist noch auf dem Bildschirm. Versuche es erneut, wenn du bereit bist.",
   journalRetry: "Wiederholen",
   journalSynced: "Aktuell",
   journalMilestone: "Wörter!",
@@ -1460,8 +1536,7 @@ export const de: Translations = {
   habitDescription: "Notizen (optional)",
   habitDescriptionPlaceholder: "Zusätzliche Details...",
   identityMapping: "Zweck der Gewohnheit",
-  identityMappingHint:
-    "Optional: Beschreibe, wer du durch diese Handlung wirst.",
+  identityMappingHint: "Optional: Beschreibe, wer du durch diese Handlung wirst.",
   identityCluster: "Lebensbereich",
   identityClusterPlaceholder: "z. B. Gesundheit, Fokus, Schlaf",
   identityVerb: "Ich werde",
@@ -1491,6 +1566,7 @@ export const de: Translations = {
 
   dopamineSettings: "Feedback und Bewegung",
   dopamineSettingsDesc: "Wähle, wie viel Animation, Ton und Haptik ZenFlow nutzt.",
+  dopamineSettingsDescNoHaptics: "Wähle, wie viel Animation und Ton ZenFlow nutzt.",
   dopamineIntensity: "Feedback-Level",
   dopamineMinimal: "Ruhig",
   dopamineNormal: "Ausgewogen",
@@ -1546,8 +1622,11 @@ export const de: Translations = {
   adRewardLabel: "Fügt {treats} Leckerlis hinzu",
   adRemainingToday: "Taegliches optionales Limit gilt",
   adPrivacyOptions: "Google-Werbedatenschutzoptionen",
-  adPrivacyOptionsHint: "Ändere oder widerrufe die Google-Werbeeinwilligung, wenn dies erforderlich ist.",
+  adPrivacyOptionsHint:
+    "Ändere oder widerrufe die Google-Werbeeinwilligung, wenn dies erforderlich ist.",
   adPrivacyOptionsOpen: "Werbeoptionen prüfen",
+  adPrivacyOptionsError:
+    "Die Google-Datenschutzoptionen für Werbung konnten nicht geöffnet werden. Versuche es erneut.",
   innerWorld: "Innere Welt",
   tapToInteract: "Tippen zum Interagieren",
   spinWheel: "Dreh das Rad!",
@@ -1986,8 +2065,7 @@ export const de: Translations = {
   insightsHelpTitle: "Über Einblicke",
   insightsHelp1:
     "Einblicke werden aus deinen persönlichen Daten mithilfe statistischer Analysen generiert.",
-  insightsHelp2:
-    "Die gesamte Analyse erfolgt auf deinem Gerät - deine Daten verlassen es nie.",
+  insightsHelp2: "Die gesamte Analyse erfolgt auf deinem Gerät - deine Daten verlassen es nie.",
   insightsHelp3: "Muster mit höherer Zuverlässigkeit werden zuerst angezeigt.",
   insightsDismiss: "Ausblenden",
   insightsShowMore: "Mehr anzeigen",
@@ -2195,7 +2273,7 @@ export const de: Translations = {
     "Feedback kann deine Nachricht, optionale E-Mail, App-Version, Gerätetyp, Bildschirmgröße, Sprache und Browserdetails enthalten. Nutze Feedback nicht für dringende Sicherheits- oder medizinische Hilfe.",
   feedbackSubmit: "Senden",
   feedbackSuccess: "Danke für dein Feedback!",
-  feedbackError: "Senden fehlgeschlagen. Versuche es erneut.",
+  feedbackError: "Senden nicht möglich. Deine Nachricht ist noch hier – versuche es erneut.",
   feedbackSending: "Wird gesendet...",
   sendFeedback: "Feedback senden",
 
@@ -2225,20 +2303,27 @@ export const de: Translations = {
   // Notification Sounds
   notificationSound: "Benachrichtigungston",
   notificationSoundDescription: "Wähle den Ton für Erinnerungen",
+  notificationSoundUpdateFailed:
+    "ZenFlow konnte diesen Erinnerungston nicht übernehmen. Der vorherige Ton bleibt ausgewählt. Versuche es erneut.",
+  reminderReconcileFailed:
+    "ZenFlow konnte die Erinnerungen nicht aktualisieren. Möglicherweise verwendet dein Gerät weiterhin den vorherigen Zeitplan. Versuche es erneut.",
   soundDefault: "Standard",
   soundDefaultDesc: "System-Benachrichtigungston",
   soundGentle: "Sanft",
   soundGentleDesc: "Nur Vibration",
-  soundChime: "Klingel",
-  soundChimeDesc: "Kurzer Benachrichtigungston",
   soundSilent: "Lautlos",
   soundSilentDesc: "Kein Ton oder Vibration",
-  notificationSystemSettingsTitle: "System-Benachrichtigungssteuerung",
-  notificationSystemSettingsDescription: "Dein Gerät oder Browser kann ZenFlow-Erinnerungen weiterhin stummschalten oder leiser machen. App-Sounds bleiben auf diesem Gerät und unter deiner Kontrolle.",
-  notificationSystemSettingsAndroidDescription: "Dein Telefon behält die letzte Kontrolle über Ton, Vibration und Sichtbarkeit jedes Reminders.",
-  notificationSystemSettingsIosDescription: "Die Einstellungen deines iPhone oder iPad und Fokusmodi behalten die letzte Kontrolle über Hinweiston, Zustellung und Stil.",
-  notificationSystemSettingsWebDescription: "Dein Browser oder Gerät kann Erinnerungen weiterhin stummschalten. ZenFlow-Sounds bleiben auf diesem Gerät und starten erst nach deinem Tippen.",
-  notificationSystemSettingsDesktopDescription: "Dein Computer behält die letzte Kontrolle über Zustellung und Ton der Reminder.",
+  notificationSystemSettingsTitle: "Wenn Erinnerungen stumm bleiben",
+  notificationSystemSettingsDescription:
+    "Dein Gerät oder Browser kann ZenFlow-Erinnerungen weiterhin stummschalten oder leiser machen. App-Sounds bleiben auf diesem Gerät und unter deiner Kontrolle.",
+  notificationSystemSettingsAndroidDescription:
+    "Die Ton-, Vibrations- und Mitteilungseinstellungen deines Smartphones können Erinnerungen stummschalten oder ausblenden.",
+  notificationSystemSettingsIosDescription:
+    "Die Mitteilungseinstellungen und Fokusmodi auf deinem iPhone oder iPad können Erinnerungen stummschalten oder ausblenden.",
+  notificationSystemSettingsWebDescription:
+    "Dein Browser oder Gerät kann Erinnerungen weiterhin stummschalten. ZenFlow-Sounds bleiben auf diesem Gerät und starten erst nach deinem Tippen.",
+  notificationSystemSettingsDesktopDescription:
+    "Dein Computer behält die letzte Kontrolle über Zustellung und Ton der Reminder.",
   testNotification: "Testbenachrichtigung",
   testNotificationHint: "Sendet in 5 Sekunden eine Testbenachrichtigung zur Überprüfung.",
   notificationTestSending: "Wird gesendet...",
@@ -2310,8 +2395,7 @@ export const de: Translations = {
   authSignInTooLong: "Die Anmeldung hat zu lange gedauert. Bitte versuchen Sie es erneut.",
   authTooManyAttempts:
     "Zu viele Anmeldeversuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
-  authSupabaseNotConfigured:
-    "Anmeldung ist derzeit nicht verfügbar.",
+  authSupabaseNotConfigured: "Anmeldung ist derzeit nicht verfügbar.",
   authAppleUnavailable:
     "Die Anmeldung mit Apple ist noch nicht verfügbar. Bitte verwenden Sie eine andere Anmeldemethode.",
   authUnexpectedError: "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
@@ -2333,12 +2417,12 @@ export const de: Translations = {
   thanksFeedback: "Danke für Ihr Feedback!",
   feedbackFailed: "Feedback konnte nicht gesendet werden",
   noVersionHistory: "Keine Versionshistorie verfügbar",
-  syncFailedLocal: "Online-Sicherung konnte nicht aktualisiert werden. Änderungen wurden auf diesem Gerät gespeichert.",
+  syncFailedLocal:
+    "Online-Sicherung konnte nicht aktualisiert werden. Änderungen wurden auf diesem Gerät gespeichert.",
   syncRefreshFailed: "Online-Sicherung pausiert. Versuche es gleich noch einmal.",
   // Sync status notifications
   syncQueueFull: "Zu viele Änderungen warten",
-  syncQueueFullDesc:
-    "Einige Änderungen können warten. Bitte mit dem Internet verbinden.",
+  syncQueueFullDesc: "Einige Änderungen können warten. Bitte mit dem Internet verbinden.",
   syncQueueWarning: "Viele Änderungen warten",
   syncQueueWarningDesc: "Mit dem Internet verbinden, um Änderungen online zu speichern.",
   storageError: "Speicherfehler",
@@ -2620,7 +2704,8 @@ export const de: Translations = {
   journalEntryTitle: "Titel (optional)",
   journalEntryDate: "Eintragsdatum",
   journalRetryLoad: "Erneut laden",
-  journalLoadFailedHint: "Dieser Ladeversuch hat deine Einträge nicht verändert. Versuche erneut zu laden.",
+  journalLoadFailedHint:
+    "Dieser Ladeversuch hat deine Einträge nicht verändert. Versuche erneut zu laden.",
   journalLoadFailed: "Das Tagebuch braucht noch einen Moment zum Laden",
   journalEntryPlaceholder: "Was beschäftigt dich?",
   journalSave: "Speichern",
@@ -2630,7 +2715,8 @@ export const de: Translations = {
   journalDeleteEntry: "Eintrag löschen?",
   journalDeleteConfirm: "Möchten Sie diesen Eintrag wirklich löschen?",
   entryDeleted: "Eintrag gelöscht",
-  entryDeleteFailedRestored: "Dieser Eintrag konnte nicht gelöscht werden. Er wurde wiederhergestellt.",
+  entryDeleteFailedRestored:
+    "Dieser Eintrag konnte nicht gelöscht werden. Er wurde wiederhergestellt.",
   goalAddSubtask: "Unteraufgabe hinzufügen",
   goalMarkComplete: "Als erledigt markieren",
   goalMarkIncomplete: "Als unerledigt markieren",
@@ -2647,9 +2733,9 @@ export const de: Translations = {
   journalPasswordEnter: "Passwort eingeben",
   journalPasswordConfirm: "Passwort bestätigen",
   journalLockHint:
-    "Dieses Passwort verschlüsselt dein Tagebuch auf diesem Gerät. Bewahre es sicher auf; ZenFlow kann es nicht anzeigen oder wiederherstellen.",
+    "Dieses Passwort verschlüsselt deine Tagebuchtexte und Anhänge auf diesem Gerät. Daten, Titel, Tags und Angaben zur Tagebuchaktivität werden nicht verschlüsselt. Bewahre das Passwort sicher auf; ZenFlow kann es weder anzeigen noch wiederherstellen.",
   journalLockHintLocalOnly:
-    "Dieses Passwort verschlüsselt dein Tagebuch auf diesem Gerät. Bewahre es sicher auf; ZenFlow kann es nicht anzeigen oder wiederherstellen.",
+    "Dieses Passwort verschlüsselt deine Tagebuchtexte und Anhänge auf diesem Gerät. Daten, Titel, Tags und Angaben zur Tagebuchaktivität werden nicht verschlüsselt. Bewahre das Passwort sicher auf; ZenFlow kann es weder anzeigen noch wiederherstellen.",
   journalLockTooShort: "Mindestens 6 Zeichen",
   journalPasswordMismatch: "Passwörter stimmen nicht überein",
   journalPasswordWrong: "Falsches Passwort",
@@ -2662,28 +2748,38 @@ export const de: Translations = {
   journalResetConfirm: "Wir senden einen Bestätigungslink an",
   journalResetSendCode: "Link senden",
   journalResetCodeSent: "Überprüfe deine E-Mail",
-  journalResetCodeSentHint: "Öffne den Link aus der E-Mail auf diesem Gerät oder in diesem Browser und kehre dann zum Tagebuch zurück. Er bestätigt dein Konto und entfernt die Sperre, ohne das alte Passwort offenzulegen.",
+  journalResetCodeSentHint:
+    "Öffne den Link aus der E-Mail auf diesem Gerät oder in diesem Browser und kehre dann zum Tagebuch zurück. Er bestätigt dein Konto und entfernt die Sperre, ohne das alte Passwort offenzulegen.",
   journalResetEnterCode: "Bestätigungslink",
   journalResetVerify: "Link öffnen",
   journalResetSuccess: "Tagebuch-Sperre entfernt",
-  journalResetSuccessDetail: "Dein Tagebuch ist auf diesem Gerät jetzt ohne Tagebuch-Passwort geöffnet. Lege ein neues Passwort fest, wenn es geschützt bleiben soll.",
+  journalResetSuccessDetail:
+    "Dein Tagebuch ist auf diesem Gerät jetzt ohne Tagebuch-Passwort geöffnet. Lege ein neues Passwort fest, wenn es geschützt bleiben soll.",
   journalResetSetNewPassword: "Neues Tagebuch-Passwort festlegen",
   journalResetChecking: "Konto wird geprüft...",
-  journalResetCheckingHint: "Lass dieses Fenster offen, während wir prüfen, ob die Sperre per E-Mail entfernt werden kann.",
-  journalResetNoAccount: "Melde dich in den Kontoeinstellungen an, um diese Sperre per E-Mail zu entfernen. Es wurde nichts geändert; deine Tagebucheinträge bleiben geschützt.",  journalResetOpenAccountSettings: "Kontoeinstellungen öffnen",
+  journalResetCheckingHint:
+    "Lass dieses Fenster offen, während wir prüfen, ob die Sperre per E-Mail entfernt werden kann.",
+  journalResetNoAccount:
+    "Melde dich in den Kontoeinstellungen an, um diese Sperre per E-Mail zu entfernen. Es wurde nichts geändert; deine Tagebucheinträge bleiben geschützt.",
+  journalResetOpenAccountSettings: "Kontoeinstellungen öffnen",
   journalResetServiceUnavailable:
     "Dein Konto konnte nicht geprüft werden. Prüfe deine Verbindung und versuche es erneut.",
-  journalResetEncryptedUnavailable: "Dieses Tagebuch ist mit deinem Passwort verschlüsselt. Die E-Mail-Bestätigung kann diese Sperre nicht entfernen, solange verschlüsselte Inhalte gesperrt sind. Es wurde nichts geändert; deine Einträge bleiben geschützt. Öffne das Tagebuch mit deinem Passwort, um die Sperre zu entfernen.",
+  journalResetEncryptedUnavailable:
+    "Dieses Tagebuch ist mit deinem Passwort verschlüsselt. Die E-Mail-Bestätigung kann diese Sperre nicht entfernen, solange verschlüsselte Inhalte gesperrt sind. Es wurde nichts geändert; deine Einträge bleiben geschützt. Öffne das Tagebuch mit deinem Passwort, um die Sperre zu entfernen.",
   journalResetCodeWrong: "Der Bestätigungslink konnte nicht bestätigt werden. Versuche es erneut.",
   journalResetExpired: "Dieser Bestätigungslink ist abgelaufen. Sende einen neuen Link.",
-  journalResetWrongAccount: "Öffne diesen Link, während du mit demselben Konto angemeldet bist, das ihn angefordert hat.",
-  journalResetMissingProof: "Dieser E-Mail-Link wurde in der App nicht bestätigt. Es wurde nichts geändert; die Tagebuchsperre bleibt aktiv und deine Einträge bleiben geschützt.",
+  journalResetWrongAccount:
+    "Öffne diesen Link, während du mit demselben Konto angemeldet bist, das ihn angefordert hat.",
+  journalResetMissingProof:
+    "Dieser E-Mail-Link wurde in der App nicht bestätigt. Es wurde nichts geändert; die Tagebuchsperre bleibt aktiv und deine Einträge bleiben geschützt.",
   journalResetSendFailed: "Link konnte nicht gesendet werden. Prüfe deine Verbindung.",
   journalResetResend: "Link erneut senden",
   journalResetCooldown: "Warte {seconds} s, bevor du einen weiteren Link anforderst.",
-  journalResetTroubleshooting: "Wenn die E-Mail nicht ankommt, prüfe Spam oder Junk, bleib auf diesem Gerät angemeldet und sende den Link nach dem Timer erneut.",
+  journalResetTroubleshooting:
+    "Wenn die E-Mail nicht ankommt, prüfe Spam oder Junk, bleib auf diesem Gerät angemeldet und sende den Link nach dem Timer erneut.",
   journalResetTryAgain: "Erneut versuchen",
-  journalResetDesktopUnavailable: "Die Sperre per E-Mail zu entfernen ist in der Web- oder Mobile-App verfügbar. Entsperre dein Tagebuch auf dem Desktop mit dem Passwort.",
+  journalResetDesktopUnavailable:
+    "Die Sperre per E-Mail zu entfernen ist in der Web- oder Mobile-App verfügbar. Entsperre dein Tagebuch auf dem Desktop mit dem Passwort.",
   journalClose: "Schließen",
   journalSearch: "Einträge suchen...",
   journalAiSearchPlaceholder: "Beschreibe, wonach du suchst...",
@@ -2700,7 +2796,8 @@ export const de: Translations = {
   journalCompressing: "Komprimiere...",
   journalPhotoError: "Foto konnte nicht hinzugefügt werden",
   journalPhotoTooLarge: "Bild zu groß (max. 10 MB)",
-  journalPhotoInvalidType: "Nicht unterstützter Dateityp. Bitte JPEG, PNG, WebP oder HEIC verwenden.",
+  journalPhotoInvalidType:
+    "Nicht unterstützter Dateityp. Bitte JPEG, PNG, WebP oder HEIC verwenden.",
   journalDraftFound: "Ungespeicherter Entwurf gefunden",
   journalRestore: "Wiederherstellen",
   journalDiscardTitle: "Ungespeicherte Änderungen",
@@ -2834,7 +2931,8 @@ export const de: Translations = {
   journalReminderTime: "Zeit",
   journalReminderNotifTitle: "Zeit zum Schreiben ✍️",
   journalReminderNotifBody: "Nimm dir einen Moment, um deine Gedanken und Gefühle festzuhalten.",
-  journalInactiveBanner: "Der letzte Eintrag war vor {days} Tagen. Starte eine Notiz, wenn es dir jetzt hilft.",
+  journalInactiveBanner:
+    "Der letzte Eintrag war vor {days} Tagen. Starte eine Notiz, wenn es dir jetzt hilft.",
   journalToolbarSticker: "Aufkleber",
   journalToolbarPhoto: "Foto",
   journalToolbarMood: "Stimmung",
@@ -2955,14 +3053,21 @@ export const de: Translations = {
   journalResetSendLink: "Link senden",
   journalPasswordChange: "Passwort ändern",
   journalPasswordChangeSuccess: "Passwort erfolgreich geändert",
-  journalPasswordChangeFailed: "Die Tagebuch-Sperre konnte nicht aktualisiert werden. Versuche es erneut.",
-  journalPasswordActiveHint: "Die Tagebuch-Sperre ist aktiv. Du kannst sie hier ändern oder entfernen.",
+  journalPasswordChangeFailed:
+    "Die Tagebuch-Sperre konnte nicht aktualisiert werden. Versuche es erneut.",
+  journalPasswordActiveHint:
+    "Die Tagebuch-Sperre ist aktiv. Du kannst sie hier ändern oder entfernen.",
+  journalProtectionCloudPending:
+    "Auf diesem Gerät ist dein Tagebuch bereits geschützt. ZenFlow ersetzt noch eine ältere Online-Kopie; lass die App geöffnet und stelle eine Internetverbindung her.",
   journalPasswordRemoveConfirm: "Bist du sicher? Dein Tagebuch wird ohne Passwort zugänglich sein.",
-  journalLockRemoveDetail: "Deine Einträge bleiben gespeichert, aber die Tagebuch-Sperre und die biometrische Tagebuch-Entsperrung werden deaktiviert. Du kannst später eine neue Sperre einrichten.",
-  journalLockRemoveFailed: "Entsperre zuerst dein Tagebuch und versuche dann erneut, die Sperre zu entfernen.",
+  journalLockRemoveDetail:
+    "Deine Einträge bleiben gespeichert, aber die Tagebuch-Sperre und die biometrische Tagebuch-Entsperrung werden deaktiviert. Du kannst später eine neue Sperre einrichten.",
+  journalLockRemoveFailed:
+    "Entsperre zuerst dein Tagebuch und versuche dann erneut, die Sperre zu entfernen.",
   journalPasswordRemovePending: "Sperre wird entfernt...",
   journalPasswordRemoveSuccess: "Tagebuch-Sperre entfernt.",
-  journalPasswordSetupFailed: "Die Tagebuch-Sperre konnte nicht aktiviert werden. Versuche es erneut.",
+  journalPasswordSetupFailed:
+    "Die Tagebuch-Sperre konnte nicht aktiviert werden. Versuche es erneut.",
   journalPasswordOldWrong: "Aktuelles Passwort ist falsch",
   journalPasswordOldEnter: "Aktuelles Passwort eingeben",
   journalPasswordNewEnter: "Neues Passwort eingeben",
@@ -2971,7 +3076,8 @@ export const de: Translations = {
   journalBiometricSubtitle: "Mit Fingerabdruck oder Gesicht entsperren",
   journalBiometricUnlock: "Mit Biometrie entsperren",
   journalBiometricFailed: "Biometrisches Entsperren fehlgeschlagen. Versuche es erneut.",
-  journalBiometricUpdateFailed: "Biometrische Entsperrung konnte nicht aktualisiert werden. Versuche es erneut.",
+  journalBiometricUpdateFailed:
+    "Biometrische Entsperrung konnte nicht aktualisiert werden. Versuche es erneut.",
   journalScreenshotBlock: "Screenshots blockieren",
   journalScreenshotBlockSubtitle: "Bildschirmaufnahme bei geöffnetem Tagebuch verhindern",
   journalDataSection: "Daten",
@@ -2992,7 +3098,8 @@ export const de: Translations = {
   journalExportPDFDesc: "Druckbares Dokument",
   journalExportText: "Markdown",
   journalExportTextDesc: "Klartextformat",
-  journalExportPrivacyWarning: "Exporte sind private Dateien und werden von ZenFlow nicht verschlüsselt. Bewahre sie an einem vertrauenswürdigen Ort auf.",
+  journalExportPrivacyWarning:
+    "Exporte sind private Dateien und werden von ZenFlow nicht verschlüsselt. Bewahre sie an einem vertrauenswürdigen Ort auf.",
   journalExportSuccess: "Export abgeschlossen",
   journalExportFailed: "Export fehlgeschlagen. Versuche es erneut.",
   journalNoMatchingEntries: "Keine passenden Einträge gefunden",
@@ -3004,7 +3111,8 @@ export const de: Translations = {
   journalQuickMoodSaved: "Stimmung gespeichert",
   journalNoAiResults: "Keine ähnlichen Einträge gefunden",
   journalNoAiResultsHint: "Beschreibe die Erinnerung anders.",
-  journalAiSearchUnavailableHint: "Deine Einträge sind noch da. Nutze die normale Suche oder versuche es später erneut.",
+  journalAiSearchUnavailableHint:
+    "Deine Einträge sind noch da. Nutze die normale Suche oder versuche es später erneut.",
   journalAiSearchUnavailable: "KI-Suche ist gerade nicht verfügbar",
   journalSlashCommands: "Tagebuchbefehle",
   journalSlashNoResults: "Keine Tagebuchbefehle gefunden",
@@ -3018,7 +3126,8 @@ export const de: Translations = {
   journalReflectionPrompt1: "Benenne den Moment, der Aufmerksamkeit braucht.",
   journalReflectionPrompt2: "Schreibe einen wahren Satz über heute.",
   journalReflectionPrompt3: "Beobachte, was sich in Körper, Stimmung oder Fokus verändert hat.",
-  journalReflectionPrompt4: "Behalte nur das Detail, an das dein zukünftiges Ich sich erinnern soll.",
+  journalReflectionPrompt4:
+    "Behalte nur das Detail, an das dein zukünftiges Ich sich erinnern soll.",
   journalReflectionPrompt5: "Beginne klein: ein Ort, ein Gefühl, ein nächster Schritt.",
   journalReflectionPrompt6: "Parke den Gedanken hier, damit du später zurückkehren kannst.",
   journalReflectionQuoteLabel: "Ein leises Zitat",
@@ -3083,35 +3192,6 @@ export const de: Translations = {
   journalSlashPhotoDescription: "Foto anhängen",
   journalSlashAudioLabel: "Tonaufnahme",
   journalSlashAudioDescription: "Audio aufnehmen",
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   // Premium Diary (Immersive Mode)
   diaryPremiumEntry: "Immersiver Modus",

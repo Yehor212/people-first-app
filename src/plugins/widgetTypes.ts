@@ -24,6 +24,9 @@ export interface WidgetPlugin {
    */
   updateWidget(data: WidgetData): Promise<void>;
 
+  /** Remove all account-owned widget data and refresh every installed widget. */
+  clearAccountData(): Promise<void>;
+
   /**
    * Get current widget data
    */

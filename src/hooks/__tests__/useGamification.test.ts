@@ -7,6 +7,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useGamification } from '../useGamification';
 import { playSound } from '@/lib/audioManager';
+import { useAppStore } from '@/stores/appStore';
+import { useUserDataStore } from '@/stores/userDataStore';
+import { checkAchievements } from '@/lib/gamification';
+
+const ownerMocks = vi.hoisted(() => ({
+  getCurrentSessionUserId: vi.fn(),
+  getLocalDataOwnerId: vi.fn(),
+  updateMyLevel: vi.fn(),
+  addFriendActivity: vi.fn(),
+  loadMyProfile: vi.fn(),
+}));
 
 // Mock dependencies
 vi.mock('@/lib/logger', () => ({
@@ -19,6 +30,16 @@ vi.mock('@/lib/logger', () => ({
 
 vi.mock('@/lib/audioManager', () => ({
   playSound: vi.fn(),
+}));
+
+vi.mock('@/lib/supabaseClient', () => ({
+  getCurrentSessionUserId: ownerMocks.getCurrentSessionUserId,
+}));
+
+vi.mock('@/storage/friendsSync', () => ({
+  addFriendActivity: ownerMocks.addFriendActivity,
+  loadMyProfile: ownerMocks.loadMyProfile,
+  updateMyLevel: ownerMocks.updateMyLevel,
 }));
 
 vi.mock('sonner', () => ({
@@ -55,6 +76,7 @@ vi.mock('../useIndexedDB', () => ({
 
 // Mock db
 vi.mock('@/storage/db', () => ({
+  getLocalDataOwnerId: ownerMocks.getLocalDataOwnerId,
   db: {
     settings: {},
     moods: {
@@ -105,6 +127,16 @@ describe('useGamification', () => {
       achievementProgress: {},
       shownAchievementToasts: [],
     };
+    ownerMocks.getCurrentSessionUserId.mockResolvedValue('user-a');
+    ownerMocks.getLocalDataOwnerId.mockResolvedValue('user-a');
+    ownerMocks.loadMyProfile.mockReturnValue(null);
+    useAppStore.setState({ isAccountBoundaryInProgress: false });
+    useUserDataStore.setState({
+      moods: [],
+      habits: [],
+      focusSessions: [],
+      gratitudeEntries: [],
+    });
   });
 
   afterEach(() => {
@@ -266,6 +298,101 @@ describe('useGamification', () => {
   });
 
   describe('level calculation', () => {
+    it('stamps the originating account on level sync', async () => {
+      renderHook(() => useGamification());
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(ownerMocks.updateMyLevel).toHaveBeenCalledWith(1, 'user-a');
+    });
+
+    it('cancels a delayed account-A level sync when an account boundary starts', async () => {
+      let resolveOwner!: (ownerUserId: string | null) => void;
+      ownerMocks.getCurrentSessionUserId.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveOwner = resolve;
+        })
+      );
+
+      renderHook(() => useGamification());
+
+      act(() => {
+        useAppStore.getState().setAccountBoundaryInProgress(true);
+      });
+      await act(async () => {
+        resolveOwner('user-b');
+        await Promise.resolve();
+      });
+
+      expect(ownerMocks.updateMyLevel).not.toHaveBeenCalled();
+    });
+
+    it('does not apply account-A local level to an already active account-B session', async () => {
+      ownerMocks.getCurrentSessionUserId.mockResolvedValue('user-b');
+      ownerMocks.getLocalDataOwnerId.mockResolvedValue('user-a');
+
+      renderHook(() => useGamification());
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(ownerMocks.updateMyLevel).not.toHaveBeenCalled();
+    });
+
+    it('does not write account-A level-up activity when the active session is B', async () => {
+      ownerMocks.loadMyProfile.mockReturnValue({
+        friendCode: 'ZF-ACCOUNT-A',
+        displayName: 'Account A',
+      });
+      const { rerender } = renderHook(() => useGamification());
+      await act(async () => {
+        await Promise.resolve();
+      });
+      ownerMocks.addFriendActivity.mockClear();
+      ownerMocks.updateMyLevel.mockClear();
+
+      ownerMocks.getCurrentSessionUserId.mockResolvedValue('user-b');
+      ownerMocks.getLocalDataOwnerId.mockResolvedValue('user-a');
+      mockGamificationState.totalXp = 100;
+      rerender();
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(ownerMocks.addFriendActivity).not.toHaveBeenCalled();
+      expect(ownerMocks.updateMyLevel).not.toHaveBeenCalled();
+    });
+
+    it('keeps legitimate level-up activity for the verified local owner', async () => {
+      ownerMocks.loadMyProfile.mockReturnValue({
+        friendCode: 'ZF-ACCOUNT-A',
+        displayName: 'Account A',
+      });
+      const { rerender } = renderHook(() => useGamification());
+      await act(async () => {
+        await Promise.resolve();
+      });
+      ownerMocks.addFriendActivity.mockClear();
+
+      mockGamificationState.totalXp = 100;
+      rerender();
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(ownerMocks.addFriendActivity).toHaveBeenCalledWith(
+        expect.objectContaining({
+          friendId: 'ZF-ACCOUNT-A',
+          activityType: 'level_up',
+          description: 'Level 2 (2)',
+        })
+      );
+    });
+
     it('starts at level 1 with 0 XP', () => {
       mockGamificationState.totalXp = 0;
 
@@ -290,6 +417,49 @@ describe('useGamification', () => {
       // xp=50, nextLevelXp=100 → 50% progress
       expect(result.current.userLevel.xp).toBe(50);
       expect(result.current.userLevel.nextLevelXp).toBe(100);
+    });
+  });
+
+  describe('account-bound side effects', () => {
+    it('drops queued account-A achievement activity after an account boundary starts', () => {
+      const queuedMicrotasks: VoidFunction[] = [];
+      vi.spyOn(globalThis, 'queueMicrotask').mockImplementation((callback) => {
+        queuedMicrotasks.push(callback);
+      });
+      ownerMocks.loadMyProfile.mockReturnValue({
+        friendCode: 'ZF-ACCOUNT-A',
+        displayName: 'Account A',
+      });
+      useUserDataStore.setState({ moods: [{ id: 'mood-a-1' }] as never[] });
+
+      renderHook(() => useGamification());
+
+      vi.mocked(checkAchievements).mockReturnValueOnce({
+        newAchievements: [
+          {
+            id: 'first_mood',
+            name: 'First mood',
+            description: 'Recorded a mood',
+            icon: 'mood',
+            rarity: 'common',
+            points: 10,
+          },
+        ],
+        updatedProgress: { first_mood: 1 } as never,
+      });
+      act(() => {
+        useUserDataStore.setState({
+          moods: [{ id: 'mood-a-1' }, { id: 'mood-a-2' }] as never[],
+        });
+      });
+
+      expect(queuedMicrotasks).toHaveLength(1);
+      act(() => {
+        useAppStore.getState().setAccountBoundaryInProgress(true);
+        queuedMicrotasks[0]();
+      });
+
+      expect(ownerMocks.addFriendActivity).not.toHaveBeenCalled();
     });
   });
 

@@ -12,6 +12,7 @@ let mockVaultKey: string | null = null;
 
 vi.mock("../journalContentSession", () => ({
   getJournalContentVaultKey: vi.fn(() => mockVaultKey),
+  getJournalContentVaultRevision: vi.fn(() => (mockVaultKey ? 2 : null)),
 }));
 
 vi.mock("../journalCrypto", () => ({
@@ -33,7 +34,17 @@ vi.mock("@/storage/cloudSync", () => ({
 }));
 
 vi.mock("@/storage/db", () => ({
+  getLocalDataOwnerId: vi.fn(() => Promise.resolve(null)),
   db: {
+    settings: {
+      get: vi.fn(() =>
+        Promise.resolve(
+          mockVaultKey
+            ? { value: { wrappedKey: "persisted", createdAt: 1, updatedAt: 2 } }
+            : undefined
+        )
+      ),
+    },
     journalEntries: {
       toArray: vi.fn(() => Promise.resolve(mockEntries)),
       add: vi.fn((entry: any) => {
@@ -61,6 +72,7 @@ vi.mock("@/storage/db", () => ({
 
 import { triggerSync } from "@/storage/cloudSync";
 import { importJournalBackup } from "../journalImport";
+import { runWithJournalSecurityWriteLock } from "../journalSecurityWriteLock";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -122,6 +134,12 @@ function makeAudioItem(overrides: Record<string, unknown> = {}) {
     createdAt: 1000,
     ...overrides,
   };
+}
+
+async function flushAsyncTurns(turns = 12): Promise<void> {
+  for (let index = 0; index < turns; index += 1) {
+    await Promise.resolve();
+  }
 }
 
 // ─── Setup ────────────────────────────────────────────────────
@@ -312,17 +330,106 @@ describe("importJournalBackup", () => {
     const result = await importJournalBackup(file);
 
     expect(result.errors).toHaveLength(0);
-    expect(addedEntries[0].content).toBe(
-      "encrypted-entry:vault-key-1:private imported entry"
-    );
-    expect(addedPhotos[0].data).toBe(
-      "encrypted-media:vault-key-1:data:image/jpeg;base64,abc"
-    );
+    expect(addedEntries[0].content).toBe("encrypted-entry:vault-key-1:private imported entry");
+    expect(addedPhotos[0].data).toBe("encrypted-media:vault-key-1:data:image/jpeg;base64,abc");
     expect(addedPhotos[0].thumbnail).toBe(
       "encrypted-media:vault-key-1:data:image/jpeg;base64,thumb"
     );
-    expect(addedAudio[0].data).toBe(
-      "encrypted-media:vault-key-1:data:audio/webm;base64,abc"
+    expect(addedAudio[0].data).toBe("encrypted-media:vault-key-1:data:audio/webm;base64,abc");
+  });
+
+  it("does not retain plaintext cloud media paths when importing into a protected diary", async () => {
+    mockVaultKey = "vault-key-1";
+    const backup = makeBackup({
+      entries: [
+        makeEntry({
+          id: "e1",
+          photoIds: ["photo-1"],
+          audioIds: ["audio-1"],
+        }),
+      ],
+      photos: [
+        makePhoto({
+          id: "photo-1",
+          entryId: "e1",
+          storagePath: "user-1/photo-1.jpg",
+          storageUrl: "https://storage.invalid/plain-photo",
+        }),
+      ],
+      audio: [
+        makeAudioItem({
+          id: "audio-1",
+          entryId: "e1",
+          storagePath: "user-1/audio-1.webm",
+          storageUrl: "https://storage.invalid/plain-audio",
+        }),
+      ],
+    });
+
+    const result = await importJournalBackup(makeFile(JSON.stringify(backup)));
+
+    expect(result.errors).toHaveLength(0);
+    expect(addedPhotos[0]).toEqual(
+      expect.objectContaining({
+        data: "encrypted-media:vault-key-1:data:image/jpeg;base64,abc",
+        storagePath: undefined,
+        storageUrl: undefined,
+      })
+    );
+    expect(addedAudio[0]).toEqual(
+      expect.objectContaining({
+        data: "encrypted-media:vault-key-1:data:audio/webm;base64,abc",
+        storagePath: undefined,
+        storageUrl: undefined,
+      })
+    );
+  });
+
+  it("waits for password activation and re-reads the vault key before the import commit", async () => {
+    let releaseActivation!: () => void;
+    let activationEntered!: () => void;
+    const activationEnteredPromise = new Promise<void>((resolve) => {
+      activationEntered = resolve;
+    });
+    const activationReleasePromise = new Promise<void>((resolve) => {
+      releaseActivation = resolve;
+    });
+
+    const activation = runWithJournalSecurityWriteLock(async () => {
+      activationEntered();
+      await activationReleasePromise;
+      mockVaultKey = "vault-key-after-activation";
+    });
+    await activationEnteredPromise;
+
+    const file = makeFile(
+      JSON.stringify(
+        makeBackup({
+          entries: [makeEntry({ id: "race-entry", content: "private import" })],
+          photos: [makePhoto({ id: "race-photo", entryId: "race-entry" })],
+          audio: [makeAudioItem({ id: "race-audio", entryId: "race-entry" })],
+        })
+      )
+    );
+    const importPromise = importJournalBackup(file);
+
+    await flushAsyncTurns();
+    const rowsCommittedDuringActivation =
+      addedEntries.length + addedPhotos.length + addedAudio.length;
+    releaseActivation();
+    await activation;
+    const result = await importPromise;
+
+    expect(rowsCommittedDuringActivation).toBe(0);
+    expect(result.errors).toHaveLength(0);
+    expect(addedEntries[0]?.content).toBe(
+      "encrypted-entry:vault-key-after-activation:private import"
+    );
+    expect(addedPhotos[0]?.data).toBe(
+      "encrypted-media:vault-key-after-activation:data:image/jpeg;base64,abc"
+    );
+    expect(addedAudio[0]?.data).toBe(
+      "encrypted-media:vault-key-after-activation:data:audio/webm;base64,abc"
     );
   });
 

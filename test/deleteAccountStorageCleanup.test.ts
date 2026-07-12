@@ -23,7 +23,7 @@ class MockBucket {
   public readonly removeCalls: string[][] = [];
 
   public constructor(
-    private readonly entries: MockStorageEntry[],
+    private entries: MockStorageEntry[],
     private readonly options: {
       listErrorAtOffset?: number;
       removeErrorAtCall?: number;
@@ -60,6 +60,13 @@ class MockBucket {
     if (this.removeCalls.length === this.options.removeErrorAtCall) {
       return { data: [], error: { message: "remove failed" } };
     }
+
+    const removedNames = new Set(
+      paths.map((path) => path.slice(path.lastIndexOf("/") + 1)),
+    );
+    this.entries = this.entries.filter(
+      (entry) => entry.metadata === null || !removedNames.has(entry.name),
+    );
 
     return { data: [], error: null };
   }
@@ -101,15 +108,17 @@ describe("deleteUserJournalMedia", () => {
 
     expect(photoBucket.listCalls).toEqual([
       { path: "user-123", limit: LIST_PAGE_SIZE, offset: 0 },
+      { path: "user-123", limit: LIST_PAGE_SIZE, offset: 0 },
     ]);
     expect(audioBucket.listCalls).toEqual([
+      { path: "user-123", limit: LIST_PAGE_SIZE, offset: 0 },
       { path: "user-123", limit: LIST_PAGE_SIZE, offset: 0 },
     ]);
     expect(photoBucket.removeCalls).toEqual([["user-123/photo-1.jpg"]]);
     expect(audioBucket.removeCalls).toEqual([["user-123/audio-1.webm"]]);
   });
 
-  it("paginates through large buckets", async () => {
+  it("deletes large mutable buckets without skipping shifted rows", async () => {
     const photoBucket = new MockBucket(makeFileEntries(LIST_PAGE_SIZE + 2, "photo"));
     const audioBucket = new MockBucket([]);
     const storage = new MockStorage({
@@ -121,7 +130,8 @@ describe("deleteUserJournalMedia", () => {
 
     expect(photoBucket.listCalls).toEqual([
       { path: "user-123", limit: LIST_PAGE_SIZE, offset: 0 },
-      { path: "user-123", limit: LIST_PAGE_SIZE, offset: LIST_PAGE_SIZE },
+      { path: "user-123", limit: LIST_PAGE_SIZE, offset: 0 },
+      { path: "user-123", limit: LIST_PAGE_SIZE, offset: 0 },
     ]);
     expect(photoBucket.removeCalls).toHaveLength(2);
     expect(photoBucket.removeCalls[0]).toHaveLength(LIST_PAGE_SIZE);
@@ -131,7 +141,7 @@ describe("deleteUserJournalMedia", () => {
     ]);
   });
 
-  it("ignores folder entries returned by list", async () => {
+  it("fails closed when a storage provider reports a self-repeating nested folder", async () => {
     const photoBucket = new MockBucket([
       { name: "nested-folder", metadata: null },
       { name: "photo-1.jpg", metadata: { size: 1 } },
@@ -142,7 +152,9 @@ describe("deleteUserJournalMedia", () => {
       [AUDIO_BUCKET]: audioBucket,
     });
 
-    await deleteUserJournalMedia(storage, "user-123");
+    await expect(deleteUserJournalMedia(storage, "user-123")).rejects.toThrow(
+      "Exceeded folder depth safety limit for journal-photos objects",
+    );
 
     expect(photoBucket.removeCalls).toEqual([["user-123/photo-1.jpg"]]);
   });

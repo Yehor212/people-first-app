@@ -11,18 +11,43 @@ import {
   unwrapJournalVaultKey,
   wrapJournalVaultKey,
 } from "./journalVaultCrypto";
-import { setJournalContentVaultKey } from "./journalContentSession";
 import {
-  decryptEncryptedJournalEntries,
-  decryptEncryptedJournalMedia,
+  clearJournalContentSession,
+  issueJournalReplaceAuthorization,
+  notifyJournalProtectionRemoved,
+  setJournalContentVaultKey,
+  type JournalReplaceAuthorizationInvalidationReason,
+} from "@/lib/journalContentSession";
+import {
   encryptPlaintextJournalEntries,
   encryptPlaintextJournalMedia,
-  hasEncryptedJournalContent,
-  hasEncryptedJournalMedia,
 } from "./journalStorage";
+import {
+  encryptPlaintextJournalDrafts,
+} from "./journalDraftStorage";
+import {
+  encryptPlaintextJournalHubContent,
+} from "./journalHubStorage";
 import { logger } from "@/lib/logger";
 import { isCloudSyncEnabled } from "@/lib/cloudSyncSettings";
-import { deleteSettingFromCloud, syncSetting } from "@/storage/sync/syncSettings";
+import { syncSetting } from "@/storage/sync/syncSettings";
+import { clearNativeJournalBiometricCredential } from "@/lib/journalBiometricCredentials";
+import {
+  activateJournalPasswordProtection,
+  assertJournalSecurityBoundary,
+  captureJournalSecurityBoundary,
+  ensureJournalSecurityMigrationQueued,
+  ensureJournalSecurityRemovalQueued,
+  getJournalSecurityMigrationIntent,
+  getJournalSecurityRemovalIntent,
+  JOURNAL_SECURITY_MIGRATION_EVENT,
+  runWithJournalSecurityBoundary,
+  removeJournalPasswordProtectionAtomically,
+} from "./journalSecurityMigration";
+import {
+  getJournalVaultKeyForWrite,
+  JournalWriteLockedError,
+} from "./journalWriteSecurity";
 
 const BIOMETRIC_SETTINGS_KEY = SK.JOURNAL_BIOMETRIC;
 const SECURITY_COOLDOWN_KEY = SK.JOURNAL_PASSWORD_COOLDOWN;
@@ -54,16 +79,6 @@ const COOLDOWN_STEPS = [
   { after: 3, seconds: 30 },
   { after: 5, seconds: 300 },
 ];
-
-async function unenrollNativeBiometrics(): Promise<boolean> {
-  if (!isNative) return false;
-  const { default: BiometricAuth } = await import("@/plugins/BiometricPlugin");
-  const result = await BiometricAuth.unenroll();
-  if (!result?.success) {
-    throw new Error(result?.error || "Biometric credential cleanup failed.");
-  }
-  return true;
-}
 
 function normalizeCooldownState(value: unknown): JournalUnlockCooldown | null {
   if (!value || typeof value !== "object") return null;
@@ -134,84 +149,142 @@ async function createPasswordData(password: string, createdAt = Date.now()): Pro
   };
 }
 
-async function syncVaultKeySetting(vaultSetting: JournalVaultKeySetting): Promise<void> {
-  if (!isCloudSyncEnabled()) return;
+async function syncVaultKeySetting(
+  vaultSetting: JournalVaultKeySetting,
+  expectedOwnerUserId: string | null
+): Promise<void> {
+  if (!isCloudSyncEnabled() || !expectedOwnerUserId) return;
   try {
-    await syncSetting(JOURNAL_VAULT_KEY_SETTING_KEY, vaultSetting);
+    await syncSetting(JOURNAL_VAULT_KEY_SETTING_KEY, vaultSetting, expectedOwnerUserId);
   } catch (err) {
     logger.warn("[Journal]", "Journal vault key sync failed:", err);
   }
 }
 
-async function deleteSyncedVaultKeySetting(): Promise<void> {
-  if (!isCloudSyncEnabled()) return;
-  await deleteSettingFromCloud(JOURNAL_VAULT_KEY_SETTING_KEY);
-}
-
-async function restoreSyncedVaultKeySetting(vaultSetting: JournalVaultKeySetting | null): Promise<void> {
-  if (!vaultSetting || !isCloudSyncEnabled()) return;
-  await syncSetting(JOURNAL_VAULT_KEY_SETTING_KEY, vaultSetting);
-}
-
 async function writePasswordAndVaultKey(
   passwordData: JournalPassword,
-  vaultSetting: JournalVaultKeySetting,
-): Promise<void> {
-  if (typeof db.transaction === "function") {
-    await db.transaction("rw", db.settings, async () => {
-      await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: passwordData });
-      await db.settings.put({ key: JOURNAL_VAULT_KEY_SETTING_KEY, value: vaultSetting });
+  vaultSetting: JournalVaultKeySetting
+): Promise<JournalVaultKeySetting> {
+  const persist = async (): Promise<JournalVaultKeySetting> => {
+    const revisionRecord = await db.settings.get(SK.JOURNAL_VAULT_REVISION);
+    const previousRevision = Number(revisionRecord?.value);
+    const nextRevision = Math.max(
+      Number.isSafeInteger(previousRevision) ? previousRevision + 1 : 0,
+      Math.max(0, Math.trunc(vaultSetting.updatedAt))
+    );
+    const persistedVaultSetting = { ...vaultSetting, updatedAt: nextRevision };
+    await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: passwordData });
+    await db.settings.put({
+      key: JOURNAL_VAULT_KEY_SETTING_KEY,
+      value: persistedVaultSetting,
     });
-    return;
-  }
+    await db.settings.put({ key: SK.JOURNAL_VAULT_REVISION, value: nextRevision });
+    return persistedVaultSetting;
+  };
 
-  await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: passwordData });
-  await db.settings.put({ key: JOURNAL_VAULT_KEY_SETTING_KEY, value: vaultSetting });
+  if (typeof db.transaction === "function") {
+    return db.transaction("rw", db.settings, persist);
+  }
+  return persist();
 }
 
-async function deletePasswordAndVaultKey(): Promise<void> {
-  if (typeof db.transaction === "function") {
-    await db.transaction("rw", db.settings, async () => {
-      await db.settings.delete(JOURNAL_PASSWORD_KEY);
-      await db.settings.delete(JOURNAL_VAULT_KEY_SETTING_KEY);
-    });
-    return;
-  }
-
-  await db.settings.delete(JOURNAL_PASSWORD_KEY);
-  await db.settings.delete(JOURNAL_VAULT_KEY_SETTING_KEY);
+async function writeVaultKeyWithMonotonicRevision(
+  vaultSetting: JournalVaultKeySetting
+): Promise<JournalVaultKeySetting> {
+  const revisionRecord = await db.settings.get(SK.JOURNAL_VAULT_REVISION);
+  const previousRevision = Number(revisionRecord?.value);
+  const nextRevision = Math.max(
+    Number.isSafeInteger(previousRevision) ? previousRevision + 1 : 0,
+    Math.max(0, Math.trunc(vaultSetting.updatedAt))
+  );
+  const persistedVaultSetting = { ...vaultSetting, updatedAt: nextRevision };
+  await db.settings.put({ key: JOURNAL_VAULT_KEY_SETTING_KEY, value: persistedVaultSetting });
+  await db.settings.put({ key: SK.JOURNAL_VAULT_REVISION, value: nextRevision });
+  return persistedVaultSetting;
 }
 
-async function restorePasswordAndVaultKey(
-  passwordData: JournalPassword | null,
+function vaultRevisionMatchesMarker(
   vaultSetting: JournalVaultKeySetting | null,
-): Promise<void> {
-  if (!passwordData || !vaultSetting) return;
-  await writePasswordAndVaultKey(passwordData, vaultSetting);
+  markerValue: unknown
+): boolean {
+  if (!vaultSetting) return true;
+  const marker = Number(markerValue);
+  return !Number.isSafeInteger(marker) || marker === vaultSetting.updatedAt;
 }
 
-async function loadOrCreateVaultKey(password: string): Promise<string> {
-  const entry = await db.settings.get(JOURNAL_VAULT_KEY_SETTING_KEY);
-  const existing = normalizeVaultKeySetting(entry?.value);
-
+async function prepareVaultKey(
+  password: string,
+  existing: JournalVaultKeySetting | null
+): Promise<{
+  vaultKey: string;
+  vaultSetting: JournalVaultKeySetting;
+  needsPersistence: boolean;
+}> {
   if (existing) {
-    return unwrapJournalVaultKey(existing.wrappedKey, password);
+    return {
+      vaultKey: await unwrapJournalVaultKey(existing.wrappedKey, password),
+      vaultSetting: existing,
+      needsPersistence: false,
+    };
   }
 
-  const { vaultKey, setting } = await createWrappedVaultKey(password);
-  await db.settings.put({ key: JOURNAL_VAULT_KEY_SETTING_KEY, value: setting });
-  await syncVaultKeySetting(setting);
-  return vaultKey;
+  const { vaultKey, setting: vaultSetting } = await createWrappedVaultKey(password);
+  return { vaultKey, vaultSetting, needsPersistence: true };
 }
 
-async function encryptExistingPlaintextEntries(vaultKey: string): Promise<void> {
-  setJournalContentVaultKey(vaultKey);
+async function encryptExistingPlaintextJournalData(vaultKey: string): Promise<void> {
   await encryptPlaintextJournalEntries(vaultKey);
+  await encryptPlaintextJournalDrafts(vaultKey);
+  await encryptPlaintextJournalHubContent(vaultKey);
   await encryptPlaintextJournalMedia(vaultKey);
 }
 
-function clearJournalVaultSession(): void {
-  setJournalContentVaultKey(null);
+function journalPasswordMatches(value: unknown, expected: JournalPassword | null): boolean {
+  if (!expected) return value == null;
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<JournalPassword>;
+  return (
+    candidate.hash === expected.hash &&
+    candidate.salt === expected.salt &&
+    candidate.iterations === expected.iterations &&
+    candidate.createdAt === expected.createdAt
+  );
+}
+
+function journalVaultSettingMatches(
+  value: unknown,
+  expected: JournalVaultKeySetting | null
+): boolean {
+  const candidate = normalizeVaultKeySetting(value);
+  if (!expected) return candidate === null;
+  return Boolean(
+    candidate &&
+      candidate.wrappedKey === expected.wrappedKey &&
+      candidate.createdAt === expected.createdAt &&
+      candidate.updatedAt === expected.updatedAt
+  );
+}
+
+async function assertJournalProtectionRecordsUnchanged(
+  expectedPassword: JournalPassword | null,
+  expectedVault: JournalVaultKeySetting | null
+): Promise<void> {
+  const [passwordEntry, vaultEntry] = await Promise.all([
+    db.settings.get(JOURNAL_PASSWORD_KEY),
+    db.settings.get(JOURNAL_VAULT_KEY_SETTING_KEY),
+  ]);
+  if (
+    !journalPasswordMatches(passwordEntry?.value, expectedPassword) ||
+    !journalVaultSettingMatches(vaultEntry?.value, expectedVault)
+  ) {
+    throw new Error("Diary protection changed during the operation");
+  }
+}
+
+function clearJournalVaultSession(
+  reason: JournalReplaceAuthorizationInvalidationReason = "manual-lock"
+): void {
+  clearJournalContentSession(reason);
 }
 
 function arrayBufferToBase64(buf: ArrayBuffer): string {
@@ -254,13 +327,14 @@ export function useJournalSecurity() {
   const [cooldownLoaded, setCooldownLoaded] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
+  const [cloudProtectionPending, setCloudProtectionPending] = useState(false);
   const unlockedAtRef = useRef(0);
   const unlockInFlightRef = useRef(false);
   const autoLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const lockNow = useCallback(() => {
     if (!isUnlocked) {
-      clearJournalVaultSession();
+      clearJournalVaultSession("background");
       setVaultKey(null);
       return;
     }
@@ -269,7 +343,7 @@ export function useJournalSecurity() {
       autoLockTimerRef.current = null;
     }
     setIsUnlocked(false);
-    clearJournalVaultSession();
+    clearJournalVaultSession("background");
     setVaultKey(null);
     unlockedAtRef.current = 0;
   }, [isUnlocked]);
@@ -327,6 +401,40 @@ export function useJournalSecurity() {
       .catch((err) => logger.warn("[Journal]", "Biometric setting load failed:", err));
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    const refreshMigrationState = async () => {
+      try {
+        const [intent, removalIntent] = await Promise.all([
+          getJournalSecurityMigrationIntent(),
+          getJournalSecurityRemovalIntent(),
+        ]);
+        if (active) setCloudProtectionPending(Boolean(intent || removalIntent));
+        if (intent && (intent.status === "pending" || intent.status === "enqueue-failed")) {
+          await ensureJournalSecurityMigrationQueued(intent);
+        }
+        if (
+          removalIntent &&
+          (removalIntent.status === "pending" || removalIntent.status === "enqueue-failed")
+        ) {
+          await ensureJournalSecurityRemovalQueued(removalIntent);
+        }
+      } catch (error) {
+        logger.warn("[Journal]", "Diary protection migration remains pending:", error);
+        if (active) setCloudProtectionPending(true);
+      }
+    };
+    const handleMigrationUpdate = () => {
+      void refreshMigrationState();
+    };
+    void refreshMigrationState();
+    window.addEventListener(JOURNAL_SECURITY_MIGRATION_EVENT, handleMigrationUpdate);
+    return () => {
+      active = false;
+      window.removeEventListener(JOURNAL_SECURITY_MIGRATION_EVENT, handleMigrationUpdate);
+    };
+  }, []);
+
   // Auto-lock timer (reads configurable timeout from localStorage)
   const resetAutoLock = useCallback(() => {
     if (autoLockTimerRef.current) clearTimeout(autoLockTimerRef.current);
@@ -336,7 +444,7 @@ export function useJournalSecurity() {
     // ROOT-CAUSE: setTimeout is the standard idle-lock pattern (Bitwarden/1Password use same approach)
     autoLockTimerRef.current = setTimeout(() => {
       setIsUnlocked(false);
-      clearJournalVaultSession();
+      clearJournalVaultSession("background");
       setVaultKey(null);
       unlockedAtRef.current = 0;
     }, timeoutMs);
@@ -388,13 +496,22 @@ export function useJournalSecurity() {
   // Set password
   const setPassword = useCallback(
     async (password: string) => {
+      const boundary = await captureJournalSecurityBoundary();
       const data = await createPasswordData(password);
       const { vaultKey: nextVaultKey, setting: vaultSetting } = await createWrappedVaultKey(password);
-      await writePasswordAndVaultKey(data, vaultSetting);
-      await syncVaultKeySetting(vaultSetting);
-      await encryptExistingPlaintextEntries(nextVaultKey);
+      const activation = await activateJournalPasswordProtection(
+        {
+          passwordData: data,
+          vaultSetting,
+          vaultKey: nextVaultKey,
+        },
+        boundary
+      );
       await persistUnlockCooldown(0, 0);
-      setJournalContentVaultKey(nextVaultKey);
+      const vaultRevision = activation.vaultRevision ?? vaultSetting.updatedAt;
+      setJournalContentVaultKey(nextVaultKey, vaultRevision);
+      issueJournalReplaceAuthorization(vaultRevision);
+      setCloudProtectionPending(activation.cloudMigrationPending);
       setHasPassword(true);
       setIsUnlocked(true);
       setVaultKey(nextVaultKey);
@@ -412,34 +529,52 @@ export function useJournalSecurity() {
       if (!cooldownLoaded || Date.now() < cooldownUntil || unlockInFlightRef.current) return false;
       unlockInFlightRef.current = true;
 
-      const recordFailedUnlock = async () => {
-        const newAttempts = failedAttempts + 1;
-        const now = Date.now();
-        let nextCooldownUntil = 0;
-        for (const step of COOLDOWN_STEPS) {
-          if (newAttempts >= step.after) {
-            nextCooldownUntil = now + step.seconds * 1000;
-          }
-        }
-        setFailedAttempts(newAttempts);
-        setCooldownUntil(nextCooldownUntil);
-        await persistUnlockCooldown(newAttempts, nextCooldownUntil);
-      };
-
       try {
-        const [entry, vaultEntry] = await Promise.all([
+        const boundary = await captureJournalSecurityBoundary();
+        const [entry, vaultEntry, revisionEntry] = await Promise.all([
           db.settings.get(JOURNAL_PASSWORD_KEY),
           db.settings.get(JOURNAL_VAULT_KEY_SETTING_KEY),
+          db.settings.get(SK.JOURNAL_VAULT_REVISION),
         ]);
+        const storedPassword = (entry?.value as JournalPassword | undefined) ?? null;
         const syncedVaultSetting = normalizeVaultKeySetting(vaultEntry?.value);
+        if (!vaultRevisionMatchesMarker(syncedVaultSetting, revisionEntry?.value)) return false;
+        const recordFailedUnlock = async () => {
+          const newAttempts = failedAttempts + 1;
+          const currentTime = Date.now();
+          let nextCooldownUntil = 0;
+          for (const step of COOLDOWN_STEPS) {
+            if (newAttempts >= step.after) {
+              nextCooldownUntil = currentTime + step.seconds * 1000;
+            }
+          }
+          await runWithJournalSecurityBoundary(boundary, async () => {
+            await assertJournalProtectionRecordsUnchanged(storedPassword, syncedVaultSetting);
+            await persistUnlockCooldown(newAttempts, nextCooldownUntil);
+          });
+          setFailedAttempts(newAttempts);
+          setCooldownUntil(nextCooldownUntil);
+        };
 
-        if (!entry?.value) {
+        if (!storedPassword) {
           if (!syncedVaultSetting) return false;
           try {
             const unlockedVaultKey = await unwrapJournalVaultKey(syncedVaultSetting.wrappedKey, password);
-            await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: await createPasswordData(password) });
-            await encryptExistingPlaintextEntries(unlockedVaultKey);
-            await persistUnlockCooldown(0, 0);
+            const restoredPassword = await createPasswordData(password);
+            await runWithJournalSecurityBoundary(boundary, async () => {
+              await assertJournalProtectionRecordsUnchanged(null, syncedVaultSetting);
+              await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: restoredPassword });
+              if (!Number.isSafeInteger(Number(revisionEntry?.value))) {
+                await db.settings.put({
+                  key: SK.JOURNAL_VAULT_REVISION,
+                  value: syncedVaultSetting.updatedAt,
+                });
+              }
+              await encryptExistingPlaintextJournalData(unlockedVaultKey);
+              await persistUnlockCooldown(0, 0);
+            });
+            setJournalContentVaultKey(unlockedVaultKey, syncedVaultSetting.updatedAt);
+            issueJournalReplaceAuthorization(syncedVaultSetting.updatedAt);
             setHasPassword(true);
             setIsUnlocked(true);
             setVaultKey(unlockedVaultKey);
@@ -450,44 +585,75 @@ export function useJournalSecurity() {
             return true;
           } catch (err) {
             logger.warn("[Journal]", "Synced journal vault key unlock failed:", err);
-            await recordFailedUnlock();
+            try {
+              await recordFailedUnlock();
+            } catch (boundaryError) {
+              logger.warn("[Journal]", "Diary unlock account boundary changed:", boundaryError);
+            }
             return false;
           }
         }
 
-        const stored = entry.value as JournalPassword;
-        const salt = base64ToArrayBuffer(stored.salt);
+        const salt = base64ToArrayBuffer(storedPassword.salt);
 
         // Use stored iteration count (supports legacy 100K + current 600K)
-        const storedIterations = stored.iterations || _LEGACY_PBKDF2_ITERATIONS;
+        const storedIterations = storedPassword.iterations || _LEGACY_PBKDF2_ITERATIONS;
         const hash = await deriveKey(password, salt, storedIterations);
 
-        if (hash === stored.hash) {
+        if (hash === storedPassword.hash) {
           // Transparent migration: re-hash with current iterations if needed
+          let migratedPassword: JournalPassword | null = null;
           if (storedIterations < PBKDF2_ITERATIONS) {
             const newSalt = crypto.getRandomValues(new Uint8Array(16));
             const newHash = await deriveKey(password, newSalt.buffer, PBKDF2_ITERATIONS);
-            const migrated: JournalPassword = {
+            migratedPassword = {
               hash: newHash,
               salt: arrayBufferToBase64(newSalt.buffer),
               iterations: PBKDF2_ITERATIONS,
-              createdAt: stored.createdAt,
+              createdAt: storedPassword.createdAt,
             };
-            await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: migrated });
-            logger.log("[Journal]", "Password hash migrated to current iterations");
           }
-          let unlockedVaultKey: string;
+
+          let preparedVault: Awaited<ReturnType<typeof prepareVaultKey>>;
           try {
-            unlockedVaultKey = await loadOrCreateVaultKey(password);
+            preparedVault = await prepareVaultKey(password, syncedVaultSetting);
           } catch (err) {
             logger.warn("[Journal]", "Journal vault key unlock failed:", err);
             return false;
           }
 
-          await encryptExistingPlaintextEntries(unlockedVaultKey);
-          await persistUnlockCooldown(0, 0);
+          await runWithJournalSecurityBoundary(boundary, async () => {
+            await assertJournalProtectionRecordsUnchanged(storedPassword, syncedVaultSetting);
+            if (migratedPassword) {
+              await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: migratedPassword });
+            }
+            if (preparedVault.needsPersistence) {
+              preparedVault.vaultSetting = await writeVaultKeyWithMonotonicRevision(
+                preparedVault.vaultSetting
+              );
+              await syncVaultKeySetting(
+                preparedVault.vaultSetting,
+                boundary.sessionOwnerUserId
+              );
+            } else if (!Number.isSafeInteger(Number(revisionEntry?.value))) {
+              await db.settings.put({
+                key: SK.JOURNAL_VAULT_REVISION,
+                value: preparedVault.vaultSetting.updatedAt,
+              });
+            }
+            await encryptExistingPlaintextJournalData(preparedVault.vaultKey);
+            await persistUnlockCooldown(0, 0);
+          });
+          if (migratedPassword) {
+            logger.log("[Journal]", "Password hash migrated to current iterations");
+          }
+          setJournalContentVaultKey(
+            preparedVault.vaultKey,
+            preparedVault.vaultSetting.updatedAt
+          );
+          issueJournalReplaceAuthorization(preparedVault.vaultSetting.updatedAt);
           setIsUnlocked(true);
-          setVaultKey(unlockedVaultKey);
+          setVaultKey(preparedVault.vaultKey);
           setFailedAttempts(0);
           setCooldownUntil(0);
           unlockedAtRef.current = Date.now();
@@ -496,6 +662,9 @@ export function useJournalSecurity() {
         }
 
         await recordFailedUnlock();
+        return false;
+      } catch (err) {
+        logger.warn("[Journal]", "Journal unlock failed:", err);
         return false;
       } finally {
         unlockInFlightRef.current = false;
@@ -508,6 +677,11 @@ export function useJournalSecurity() {
   const changePassword = useCallback(
     async (oldPw: string, newPw: string): Promise<boolean> => {
       try {
+        const boundary = await captureJournalSecurityBoundary();
+        if (await getJournalSecurityMigrationIntent()) {
+          logger.warn("[Journal]", "Wait for diary protection migration before changing password");
+          return false;
+        }
         const entry = await db.settings.get(JOURNAL_PASSWORD_KEY);
         if (!entry?.value) return false;
         const stored = entry.value as JournalPassword;
@@ -516,8 +690,12 @@ export function useJournalSecurity() {
         const oldHash = await deriveKey(oldPw, oldSalt, storedIterations);
         if (oldHash !== stored.hash) return false;
 
-        const vaultEntry = await db.settings.get(JOURNAL_VAULT_KEY_SETTING_KEY);
+        const [vaultEntry, revisionEntry] = await Promise.all([
+          db.settings.get(JOURNAL_VAULT_KEY_SETTING_KEY),
+          db.settings.get(SK.JOURNAL_VAULT_REVISION),
+        ]);
         const existingVaultSetting = normalizeVaultKeySetting(vaultEntry?.value);
+        if (!vaultRevisionMatchesMarker(existingVaultSetting, revisionEntry?.value)) return false;
         let nextVaultKey: string;
         let nextVaultSetting: JournalVaultKeySetting;
 
@@ -544,9 +722,16 @@ export function useJournalSecurity() {
           createdAt: Date.now(),
         };
 
-        await writePasswordAndVaultKey(newData, nextVaultSetting);
-        await syncVaultKeySetting(nextVaultSetting);
-        setJournalContentVaultKey(nextVaultKey);
+        await runWithJournalSecurityBoundary(boundary, async () => {
+          if (await getJournalSecurityMigrationIntent()) {
+            throw new Error("Diary protection migration changed during password update");
+          }
+          await assertJournalProtectionRecordsUnchanged(stored, existingVaultSetting);
+          nextVaultSetting = await writePasswordAndVaultKey(newData, nextVaultSetting);
+          await syncVaultKeySetting(nextVaultSetting, boundary.sessionOwnerUserId);
+        });
+        setJournalContentVaultKey(nextVaultKey, nextVaultSetting.updatedAt);
+        issueJournalReplaceAuthorization(nextVaultSetting.updatedAt);
         setVaultKey(nextVaultKey);
         resetAutoLock();
         return true;
@@ -559,75 +744,63 @@ export function useJournalSecurity() {
   );
 
   // Remove password (entries stay, lock removed)
-  const removePassword = useCallback(async () => {
-    let nativeBiometricsRemoved = false;
-    let passwordDataForRestore: JournalPassword | null = null;
-    let vaultSettingForRestore: JournalVaultKeySetting | null = null;
-
-    try {
-      if (!vaultKey && ((await hasEncryptedJournalContent()) || (await hasEncryptedJournalMedia()))) {
-        logger.warn("[Journal]", "Cannot remove diary password while encrypted content is locked");
-        throw new Error("Unlock your diary before removing password protection.");
-      }
-
-      const passwordEntry = await db.settings.get(JOURNAL_PASSWORD_KEY);
-      const vaultEntry = await db.settings.get(JOURNAL_VAULT_KEY_SETTING_KEY);
-      passwordDataForRestore = (passwordEntry?.value as JournalPassword | undefined) ?? null;
-      vaultSettingForRestore = normalizeVaultKeySetting(vaultEntry?.value);
-
-      nativeBiometricsRemoved = await unenrollNativeBiometrics();
-
-      await deleteSyncedVaultKeySetting();
-
+  const removePassword = useCallback(
+    async () => {
+      const boundary = await captureJournalSecurityBoundary();
+      let nativeBiometricsRemoved = false;
       try {
-        await deletePasswordAndVaultKey();
-      } catch (localDeleteError) {
+        let activeVaultKey: string | null;
         try {
-          await restoreSyncedVaultKeySetting(vaultSettingForRestore);
-        } catch (restoreError) {
-          logger.warn("[Journal]", "Journal vault key restore after failed local password removal failed:", restoreError);
-        }
-        throw localDeleteError;
-      }
-
-      if (vaultKey) {
-        try {
-          await decryptEncryptedJournalEntries(vaultKey);
-          await decryptEncryptedJournalMedia(vaultKey);
-        } catch (decryptError) {
-          try {
-            await encryptPlaintextJournalEntries(vaultKey);
-            await encryptPlaintextJournalMedia(vaultKey);
-            await restorePasswordAndVaultKey(passwordDataForRestore, vaultSettingForRestore);
-            await restoreSyncedVaultKeySetting(vaultSettingForRestore);
-          } catch (restoreError) {
-            logger.warn("[Journal]", "Journal lock restore after failed password removal failed:", restoreError);
+          activeVaultKey = await runWithJournalSecurityBoundary(boundary, () =>
+            getJournalVaultKeyForWrite()
+          );
+        } catch (error) {
+          if (error instanceof JournalWriteLockedError) {
+            throw new Error("Unlock your diary before removing password protection.");
           }
-          throw decryptError;
+          throw error;
         }
-      }
+        nativeBiometricsRemoved =
+          (await clearNativeJournalBiometricCredential()) === "removed";
+        await assertJournalSecurityBoundary(boundary);
+        const removal = await removeJournalPasswordProtectionAtomically(
+          activeVaultKey ?? vaultKey,
+          boundary
+        );
 
-      await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value: false });
-      await persistUnlockCooldown(0, 0);
-      setHasPassword(false);
-      setIsUnlocked(false);
-      clearJournalVaultSession();
-      setVaultKey(null);
-      setBiometricEnabledState(false);
-      setFailedAttempts(0);
-      setCooldownUntil(0);
-    } catch (err) {
-      if (nativeBiometricsRemoved) {
-        try {
-          await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value: false });
-        } catch (persistError) {
-          logger.warn("[Journal]", "Biometric cleanup state persistence failed:", persistError);
-        }
+        setHasPassword(false);
+        setIsUnlocked(false);
+        notifyJournalProtectionRemoved();
+        setVaultKey(null);
         setBiometricEnabledState(false);
+        setFailedAttempts(0);
+        setCooldownUntil(0);
+        setCloudProtectionPending(removal.cloudMigrationPending);
+        if (removal.cloudMigrationPending) {
+          try {
+            await ensureJournalSecurityRemovalQueued();
+          } catch (queueError) {
+            logger.warn(
+              "[Journal]",
+              "Diary protection removal remains pending for online completion:",
+              queueError
+            );
+          }
+        }
+      } catch (err) {
+        if (nativeBiometricsRemoved) {
+          try {
+            await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value: false });
+          } catch (persistError) {
+            logger.warn("[Journal]", "Biometric cleanup state persistence failed:", persistError);
+          }
+          setBiometricEnabledState(false);
+        }
+        throw err;
       }
-      throw err;
-    }
-  }, [vaultKey]);
+    },
+    [vaultKey]
+  );
 
   // Manual lock
   const lock = useCallback(() => {
@@ -646,6 +819,18 @@ export function useJournalSecurity() {
   const unlockWithBiometric = useCallback(async (): Promise<boolean> => {
     if (!cooldownLoaded || !biometricAvailable || !biometricEnabled) return false;
     try {
+      const boundary = await captureJournalSecurityBoundary();
+      const [passwordEntry, vaultEntry, revisionEntry] = await Promise.all([
+        db.settings.get(JOURNAL_PASSWORD_KEY),
+        db.settings.get(JOURNAL_VAULT_KEY_SETTING_KEY),
+        db.settings.get(SK.JOURNAL_VAULT_REVISION),
+      ]);
+      const expectedPassword =
+        (passwordEntry?.value as JournalPassword | undefined) ?? null;
+      const vaultSetting = normalizeVaultKeySetting(vaultEntry?.value);
+      if (!vaultSetting || !vaultRevisionMatchesMarker(vaultSetting, revisionEntry?.value)) {
+        return false;
+      }
       const { default: BiometricAuth } = await import("@/plugins/BiometricPlugin");
       const result = await BiometricAuth.authenticate({ reason: "Unlock your journal" });
       if (!result.success || !result.secret) {
@@ -653,9 +838,13 @@ export function useJournalSecurity() {
         return false;
       }
 
-      await encryptExistingPlaintextEntries(result.secret);
-      await persistUnlockCooldown(0, 0);
-      setJournalContentVaultKey(result.secret);
+      await runWithJournalSecurityBoundary(boundary, async () => {
+        await assertJournalProtectionRecordsUnchanged(expectedPassword, vaultSetting);
+        await encryptExistingPlaintextJournalData(result.secret!);
+        await persistUnlockCooldown(0, 0);
+      });
+      setJournalContentVaultKey(result.secret, vaultSetting.updatedAt);
+      issueJournalReplaceAuthorization(vaultSetting.updatedAt);
       setIsUnlocked(true);
       setVaultKey(result.secret);
       setFailedAttempts(0);
@@ -672,7 +861,7 @@ export function useJournalSecurity() {
   const setBiometricEnabled = useCallback(async (value: boolean): Promise<boolean> => {
     if (!value) {
       try {
-        await unenrollNativeBiometrics();
+        await clearNativeJournalBiometricCredential();
         setBiometricEnabledState(false);
         await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value: false });
         return true;
@@ -728,6 +917,7 @@ export function useJournalSecurity() {
     cooldownRemaining,
     biometricAvailable,
     biometricEnabled,
+    cloudProtectionPending,
     setPassword,
     changePassword,
     unlock,

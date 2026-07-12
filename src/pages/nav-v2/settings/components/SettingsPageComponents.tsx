@@ -1,5 +1,5 @@
 import { forwardRef, type CSSProperties, type ReactNode } from "react";
-import { ChevronRight, SlidersHorizontal, type LucideIcon } from "lucide-react";
+import { ArrowLeft, ChevronRight, SlidersHorizontal, type LucideIcon } from "lucide-react";
 import { ThemeToggleV2 } from "@/components/navigation-v2/ThemeToggleV2";
 import type { NonOrbVisualRole } from "@/lib/nonOrbVisualRoles";
 import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
@@ -30,7 +30,7 @@ interface SettingsHeroCardProps {
   themeTitle: string;
   themeLabel: string;
   controlsWired: boolean;
-  selectedSectionId?: V2SettingsSectionId;
+  compactMobileDetail: boolean;
 }
 
 interface SettingsModuleListProps {
@@ -39,10 +39,18 @@ interface SettingsModuleListProps {
   onOpen: (sectionId: V2SettingsSectionId) => void;
   controlsWired: boolean;
   label: string;
+  backLabel: string;
+  desktopLayout: boolean;
+  mobileDetailOpen: boolean;
+  onBack: () => void;
   renderPanel: (item: SettingsModuleCardData) => ReactNode;
 }
 
-const settingsModuleTextWrapStyle: CSSProperties = { overflowWrap: "anywhere" };
+const settingsModuleTextWrapStyle: CSSProperties = {
+  overflowWrap: "break-word",
+  wordBreak: "normal",
+  hyphens: "auto",
+};
 
 export const SettingsPageShell = forwardRef<HTMLElement, SettingsPageShellProps>(
   function SettingsPageShell({ children, controlsWired, labelledBy }, ref) {
@@ -76,40 +84,29 @@ export function SettingsHeroCard({
   themeTitle,
   themeLabel,
   controlsWired,
-  selectedSectionId,
+  compactMobileDetail,
 }: SettingsHeroCardProps) {
   const SettingsIcon = V2_NAV_ICONS.settings;
-
-  if (controlsWired && selectedSectionId === "appearance") {
-    return (
-      <section
-        className="sr-only"
-        data-compact="true"
-        data-testid="settings-page-control-card"
-      >
-        <h1 id="settings-page-heading" data-testid="settings-page-heading">
-          {title}
-        </h1>
-        <p>{lead}</p>
-      </section>
-    );
-  }
 
   return (
     <section
       className={cn(
         "relative grid min-w-0 gap-2.5 rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.38)] bg-[hsl(var(--settings-v2-card)/0.68)] p-3 shadow-[var(--zen-shadow-card)] md:items-center md:p-3.5",
         controlsWired
-          ? "place-items-center border-transparent bg-transparent px-8 py-1.5 text-center shadow-none sm:px-10 md:py-2"
+          ? compactMobileDetail
+            ? "place-items-center gap-0 border-transparent bg-transparent px-3 py-1 text-center shadow-none"
+            : "place-items-center border-transparent bg-transparent px-8 py-1.5 text-center shadow-none sm:px-10 md:py-2"
           : "md:grid-cols-[minmax(0,1fr)_auto]"
       )}
       data-compact={controlsWired ? "true" : "false"}
+      data-mobile-detail-compact={compactMobileDetail ? "true" : "false"}
       data-testid="settings-page-control-card"
     >
       <div
         className={cn(
           "flex min-w-0 items-start gap-3",
-          controlsWired && "flex-col items-center justify-center gap-1 text-center"
+          controlsWired && "flex-col items-center justify-center gap-1 text-center",
+          compactMobileDetail && "gap-0"
         )}
       >
         {!controlsWired ? (
@@ -132,7 +129,11 @@ export function SettingsHeroCard({
           <p
             className={cn(
               "mt-1 max-w-2xl font-body text-xs leading-relaxed text-muted-foreground sm:text-sm",
-              controlsWired ? "mx-auto block max-w-[24rem]" : "hidden sm:block"
+              controlsWired
+                ? compactMobileDetail
+                  ? "hidden"
+                  : "mx-auto block max-w-[24rem]"
+                : "hidden sm:block"
             )}
           >
             {lead}
@@ -169,21 +170,30 @@ export function SettingsModuleList({
   onOpen,
   controlsWired,
   label,
+  backLabel,
+  desktopLayout,
+  mobileDetailOpen,
+  onBack,
   renderPanel,
 }: SettingsModuleListProps) {
+  const detailVisible = desktopLayout || mobileDetailOpen;
+  const listVisible = !controlsWired || desktopLayout || !mobileDetailOpen;
   const activeItem = controlsWired
     ? (items.find((item) => item.id === expandedId) ?? items[0])
     : null;
   const activePanelId = activeItem ? `settings-module-panel-${activeItem.id}` : undefined;
   const activeButtonId = activeItem ? `settings-module-card-${activeItem.id}` : undefined;
-  const moduleList = (
+  const moduleList = listVisible ? (
     <div
-      className="order-2 grid min-w-0 gap-2 lg:order-1 lg:sticky lg:top-[calc(var(--safe-top)+1rem)]"
+      className={cn(
+        "order-2 grid min-w-0 gap-2 lg:order-1 lg:sticky lg:top-[calc(var(--safe-top)+1rem)]",
+        controlsWired && mobileDetailOpen && "lg:grid"
+      )}
       id="settings-module-list"
       data-testid="settings-module-list"
     >
       {items.map((item) => {
-        const expanded = activeItem?.id === item.id;
+        const expanded = detailVisible && activeItem?.id === item.id;
         const panelId = `settings-module-panel-${item.id}`;
         const buttonId = `settings-module-card-${item.id}`;
 
@@ -195,14 +205,15 @@ export function SettingsModuleList({
             controlsWired={controlsWired}
             buttonId={buttonId}
             panelId={panelId}
+            panelMounted={expanded}
             onOpen={onOpen}
           />
         );
       })}
     </div>
-  );
+  ) : null;
   const selectedPanel =
-    activeItem && activePanelId && activeButtonId ? (
+    detailVisible && activeItem && activePanelId && activeButtonId ? (
       <section
         className={cn(
           "order-1 min-w-0 lg:order-2",
@@ -211,14 +222,29 @@ export function SettingsModuleList({
         data-testid="settings-selected-panel"
         data-selected-section={activeItem.id}
       >
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-1 inline-flex min-h-11 w-fit items-center gap-2 rounded-[8px] px-2.5 text-sm font-semibold text-foreground outline-none transition-colors hover:bg-[hsl(var(--settings-v2-panel)/0.72)] focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent))] focus-visible:ring-offset-2 lg:hidden"
+          data-testid="settings-mobile-back"
+        >
+          <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
+          <span>{backLabel}</span>
+        </button>
         <div
           id={activePanelId}
           role="region"
-          aria-labelledby={activeButtonId}
+          aria-labelledby={`settings-module-panel-heading-${activeItem.id}`}
           tabIndex={-1}
           className="grid min-w-0 scroll-mt-[calc(var(--safe-top)+4rem)] gap-2.5 outline-none sm:scroll-mt-[calc(var(--safe-top)+4rem)] lg:scroll-mt-[calc(var(--safe-top)+1rem)]"
           data-testid={activePanelId}
         >
+          <h2
+            id={`settings-module-panel-heading-${activeItem.id}`}
+            className="px-1 font-display text-xl font-semibold leading-tight text-foreground"
+          >
+            {activeItem.label}
+          </h2>
           <div
             id="settings-v2-control-deck"
             className="grid min-w-0 gap-2.5"
@@ -240,6 +266,7 @@ export function SettingsModuleList({
       )}
       data-testid="settings-page-workspace"
       data-layout="control-surface"
+      data-mobile-view={mobileDetailOpen ? "detail" : "overview"}
       data-selected-section={activeItem?.id}
     >
       {moduleList}
@@ -254,6 +281,7 @@ function SettingsModuleCard({
   controlsWired,
   buttonId,
   panelId,
+  panelMounted,
   onOpen,
 }: {
   item: SettingsModuleCardData;
@@ -261,6 +289,7 @@ function SettingsModuleCard({
   controlsWired: boolean;
   buttonId: string;
   panelId: string;
+  panelMounted: boolean;
   onOpen: (sectionId: V2SettingsSectionId) => void;
 }) {
   const Icon = item.icon;
@@ -298,8 +327,8 @@ function SettingsModuleCard({
         data-testid={`settings-module-card-${item.id}`}
         {...(controlsWired
           ? {
-              "aria-expanded": expanded,
-              "aria-controls": panelId,
+              "aria-controls": panelMounted ? panelId : undefined,
+              "aria-current": expanded ? ("page" as const) : undefined,
             }
           : {})}
         aria-label={
@@ -310,13 +339,15 @@ function SettingsModuleCard({
       >
         <SettingsCardIcon icon={Icon} selected={expanded} />
         <span className="min-w-0 flex-1" style={settingsModuleTextWrapStyle}>
-          <span className="block text-sm font-semibold text-foreground">{item.label}</span>
+          <span className="block text-pretty text-sm font-semibold text-foreground">
+            {item.label}
+          </span>
           {item.value ? (
-            <span className="mt-1 block text-sm font-semibold leading-tight text-foreground">
+            <span className="mt-1 block text-pretty text-sm font-semibold leading-tight text-foreground">
               {item.value}
             </span>
           ) : null}
-          <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+          <span className="mt-1 block text-pretty text-xs leading-relaxed text-muted-foreground">
             {item.description}
           </span>
         </span>

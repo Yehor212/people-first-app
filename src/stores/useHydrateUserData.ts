@@ -3,7 +3,12 @@ import { useIndexedDB } from "@/hooks/useIndexedDB";
 import { db } from "@/storage/db";
 import { getDeletedHabitIds } from "@/storage/deletionTracker";
 import { defaultReminderSettings } from "@/lib/reminders";
-import { useUserDataStore, type RegisteredSetters } from "./userDataStore";
+import {
+  defaultPrivacySettings,
+  useUserDataStore,
+  type RegisteredSetters,
+} from "./userDataStore";
+import { SK } from "@/lib/storageKeys";
 import type {
   MoodEntry,
   Habit,
@@ -139,8 +144,8 @@ export function useHydrateUserData(): void {
 
   const [privacy, setPrivacy, isLoadingPrivacy] = useIndexedDB<PrivacySettings>({
     table: db.settings,
-    localStorageKey: "zenflow-privacy",
-    initialValue: { noTracking: false, analytics: false, consentShown: false, pushNotifications: false },
+    localStorageKey: SK.PRIVACY,
+    initialValue: defaultPrivacySettings,
     idField: "key",
     objectSchema: privacySettingsSchema,
   });

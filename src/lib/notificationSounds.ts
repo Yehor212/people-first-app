@@ -15,7 +15,7 @@ import { SK } from '@/lib/storageKeys';
 // TYPES
 // ============================================
 
-export type NotificationSoundType = 'default' | 'gentle' | 'chime' | 'silent';
+export type NotificationSoundType = 'default' | 'gentle' | 'silent';
 export type NotificationSoundImportance = 1 | 2 | 3;
 export type NotificationSystemSurface = 'android' | 'ios' | 'web' | 'desktop';
 
@@ -34,6 +34,11 @@ export interface NotificationSoundOption {
   vibrate: boolean;
   importance: NotificationSoundImportance;
 }
+
+export type NotificationChannelCopy = Record<
+  NotificationSoundType,
+  { name: string; description: string }
+>;
 
 // ============================================
 // CONSTANTS
@@ -71,15 +76,6 @@ export const NOTIFICATION_SOUNDS: NotificationSoundOption[] = [
     importance: 2,
   },
   {
-    id: 'chime',
-    labelKey: 'soundChime',
-    description: 'Short notification tone',
-    channelId: 'zenflow_chime_v2',
-    sound: 'default',
-    vibrate: true,
-    importance: 3,
-  },
-  {
     id: 'silent',
     labelKey: 'soundSilent',
     description: 'No sound or vibration',
@@ -89,6 +85,29 @@ export const NOTIFICATION_SOUNDS: NotificationSoundOption[] = [
     importance: 1,
   },
 ];
+
+export function buildNotificationChannelCopy(
+  translations: Partial<Record<string, string>>,
+): NotificationChannelCopy {
+  const copyFor = (
+    id: NotificationSoundType,
+    fallbackLabel: string,
+    fallbackDescription: string,
+  ) => ({
+    name: `ZenFlow — ${translations[`sound${id.charAt(0).toUpperCase()}${id.slice(1)}`] || fallbackLabel}`,
+    description:
+      translations[`sound${id.charAt(0).toUpperCase()}${id.slice(1)}Desc`] ||
+      fallbackDescription,
+  });
+
+  return {
+    default: copyFor('default', 'Default', 'System default notification sound'),
+    gentle: copyFor('gentle', 'Gentle', 'Soft vibration only'),
+    silent: copyFor('silent', 'Silent', 'No sound or vibration'),
+  };
+}
+
+let activeNotificationChannelCopy: NotificationChannelCopy | null = null;
 
 // ============================================
 // PLATFORM GUIDANCE
@@ -133,6 +152,10 @@ export function getNotificationSystemSettingsCopyKey(
  */
 export function getNotificationSound(): NotificationSoundType {
   const saved = storageGetRaw(SK.NOTIFICATION_SOUND);
+  if (saved === 'chime') {
+    storageSetRaw(SK.NOTIFICATION_SOUND, 'default');
+    return 'default';
+  }
   if (saved && NOTIFICATION_SOUNDS.some(s => s.id === saved)) {
     return saved as NotificationSoundType;
   }
@@ -164,15 +187,21 @@ export function getCurrentChannelId(): string {
  * Android channel sound/importance are immutable after first creation, so
  * behavior changes must use a versioned channel ID.
  */
-export async function initializeNotificationChannels(): Promise<void> {
+export async function initializeNotificationChannels(
+  copy?: NotificationChannelCopy,
+): Promise<void> {
   if (!isNative) return;
+
+  if (copy) activeNotificationChannelCopy = copy;
+  const effectiveCopy =
+    activeNotificationChannelCopy ?? buildNotificationChannelCopy({});
 
   try {
     for (const soundOption of NOTIFICATION_SOUNDS) {
       const channel: Channel = {
         id: soundOption.channelId,
-        name: 'ZenFlow - ' + soundOption.id.charAt(0).toUpperCase() + soundOption.id.slice(1),
-        description: soundOption.description,
+        name: effectiveCopy[soundOption.id].name,
+        description: effectiveCopy[soundOption.id].description,
         importance: soundOption.importance,
         visibility: 1, // PUBLIC
         vibration: soundOption.vibrate,
@@ -186,6 +215,7 @@ export async function initializeNotificationChannels(): Promise<void> {
     }
   } catch (error) {
     logger.error('[NotificationSounds] Failed to create channels:', error);
+    throw error;
   }
 }
 

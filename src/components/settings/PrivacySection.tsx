@@ -7,8 +7,6 @@ import { Switch } from "@/components/ui/switch";
 import { BASE_URL } from "@/lib/env";
 import {
   applyAdConsentPreference,
-  applyAnalyticsPreference,
-  applyNoTrackingPreference,
 } from "@/lib/privacyConsent";
 
 interface PrivacySectionProps {
@@ -30,14 +28,6 @@ export function PrivacySection({
   const baseUrl = BASE_URL;
   const privacyHref = `${baseUrl}privacy.html`;
   const termsHref = `${baseUrl}terms.html`;
-
-  const handleNoTrackingChange = (checked: boolean) => {
-    onPrivacyChange((prev) => applyNoTrackingPreference(prev, checked));
-  };
-
-  const handleAnalyticsChange = (checked: boolean) => {
-    onPrivacyChange((prev) => applyAnalyticsPreference(prev, checked));
-  };
 
   const handleAdConsentChange = (checked: boolean) => {
     onPrivacyChange((prev) => applyAdConsentPreference(prev, checked));
@@ -66,40 +56,6 @@ export function PrivacySection({
       </p>
 
       <div className="space-y-3">
-        <div className="flex items-start justify-between gap-4 p-4 bg-secondary/50 rounded-xl">
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              {t.privacyNoTracking}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t.privacyNoTrackingHint}
-            </p>
-          </div>
-          <Switch
-            checked={privacy.noTracking}
-            onCheckedChange={handleNoTrackingChange}
-            aria-label={t.privacyNoTracking}
-            className="mt-0.5 shrink-0"
-          />
-        </div>
-
-        <div className="flex items-start justify-between gap-4 p-4 bg-secondary/50 rounded-xl">
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              {t.privacyAnalytics}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t.privacyAnalyticsHint}
-            </p>
-          </div>
-          <Switch
-            checked={privacy.analytics}
-            onCheckedChange={handleAnalyticsChange}
-            aria-label={t.privacyAnalytics}
-            className="mt-0.5 shrink-0"
-          />
-        </div>
-
         <div className="flex items-start justify-between gap-4 p-4 bg-secondary/50 rounded-xl">
           <div>
             <p className="text-sm font-medium text-foreground">

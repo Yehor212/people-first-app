@@ -1,5 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+interface MockJournalEntryLink {
+  id: string;
+  entryId: string;
+  targetType: 'space';
+  targetId: string;
+  createdAt: number;
+}
+
+const journalBoundaryMocks = vi.hoisted(() => ({
+  blocked: false,
+  run: vi.fn(async <T>(operation: () => Promise<T>): Promise<T> => {
+    if (journalBoundaryMocks.blocked) throw new Error('Account boundary changed');
+    return operation();
+  }),
+}));
+
 const {
   mockPreferencesTable,
   mockSpacesTable,
@@ -37,7 +53,7 @@ const {
     delete: vi.fn(() => Promise.resolve()),
     where: vi.fn(() => ({
       equals: vi.fn(() => ({
-        toArray: vi.fn(() => Promise.resolve([])),
+        toArray: vi.fn<() => Promise<MockJournalEntryLink[]>>(() => Promise.resolve([])),
       })),
     })),
   };
@@ -63,12 +79,24 @@ const {
 
 vi.mock('@/storage/db', () => ({
   db: {
+    settings: {
+      get: vi.fn(() => Promise.resolve(undefined)),
+    },
     journalHubPreferences: mockPreferencesTable,
     journalSpaces: mockSpacesTable,
     journalPracticeSessions: mockPracticeSessionsTable,
     journalEntryLinks: mockEntryLinksTable,
     journalSpaceCaptures: mockSpaceCapturesTable,
   },
+}));
+
+vi.mock('../journalContentSession', () => ({
+  getJournalContentVaultKey: vi.fn(() => null),
+  getJournalContentVaultRevision: vi.fn(() => null),
+}));
+
+vi.mock('../journalSecurityWriteLock', () => ({
+  runWithJournalSecurityWriteLock: journalBoundaryMocks.run,
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -83,6 +111,7 @@ import {
   createJournalSpaceCapture,
   createQuietReleaseSession,
   createJournalPracticeSession,
+  deleteJournalSpace,
   ensureGratitudeSpace,
   getQuietReleaseTraceSummaries,
   getJournalSpaceCaptures,
@@ -102,6 +131,52 @@ import {
 describe('journalHubStorage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    journalBoundaryMocks.blocked = false;
+    journalBoundaryMocks.run.mockImplementation(async <T>(operation: () => Promise<T>) => {
+      if (journalBoundaryMocks.blocked) throw new Error('Account boundary changed');
+      return operation();
+    });
+  });
+
+  it('rejects every direct Hub mutation when the journal account boundary is stale', async () => {
+    mockSpacesTable.get.mockResolvedValue({ id: 'space-user', locked: false });
+    mockEntryLinksTable.where.mockReturnValue({
+      equals: vi.fn(() => ({
+        toArray: vi.fn(() =>
+          Promise.resolve([
+            {
+              id: 'link-stale',
+              entryId: 'entry-1',
+              targetType: 'space',
+              targetId: 'space-user',
+              createdAt: 1,
+            },
+          ])
+        ),
+      })),
+    });
+    journalBoundaryMocks.blocked = true;
+
+    await expect(saveJournalHubPreferences({ density: 'compact' })).rejects.toThrow(
+      /account boundary/i
+    );
+    await expect(resetJournalHubPreferences()).rejects.toThrow(/account boundary/i);
+    await expect(deleteJournalSpace('space-user')).rejects.toThrow(/account boundary/i);
+    await expect(
+      createJournalPracticeSession({ practiceId: 'focus-note' })
+    ).rejects.toThrow(/account boundary/i);
+    await expect(
+      linkJournalEntry({ entryId: 'entry-1', targetType: 'space', targetId: 'space-user' })
+    ).rejects.toThrow(/account boundary/i);
+    await expect(unlinkEntryFromSpace('entry-1', 'space-user')).rejects.toThrow(
+      /account boundary/i
+    );
+
+    expect(mockPreferencesTable.put).not.toHaveBeenCalled();
+    expect(mockSpacesTable.delete).not.toHaveBeenCalled();
+    expect(mockPracticeSessionsTable.put).not.toHaveBeenCalled();
+    expect(mockEntryLinksTable.put).not.toHaveBeenCalled();
+    expect(mockEntryLinksTable.delete).not.toHaveBeenCalled();
   });
 
   it('returns stable default preferences when no saved row exists', async () => {
@@ -318,7 +393,7 @@ describe('journalHubStorage', () => {
       equals: vi.fn(() => ({
         toArray: vi.fn(() => Promise.resolve([existing])),
       })),
-    } as ReturnType<typeof mockEntryLinksTable.where>);
+    });
 
     const link = await linkEntryToSpace('entry-1', 'space-projects');
 
@@ -341,7 +416,7 @@ describe('journalHubStorage', () => {
           ]),
         ),
       })),
-    } as ReturnType<typeof mockEntryLinksTable.where>);
+    });
 
     await unlinkEntryFromSpace('entry-1', 'space-projects');
 
@@ -359,7 +434,7 @@ describe('journalHubStorage', () => {
           ]),
         ),
       })),
-    } as ReturnType<typeof mockEntryLinksTable.where>);
+    });
 
     const links = await getSpaceEntryLinks('space-projects');
 
@@ -418,8 +493,8 @@ describe('journalHubStorage', () => {
 
   it('sorts local space captures newest first', async () => {
     mockSpaceCapturesTable.toArray.mockResolvedValueOnce([
-      { id: 'old', spaceId: 'space-projects', createdAt: 1 },
-      { id: 'new', spaceId: 'space-projects', createdAt: 3 },
+      { id: 'old', spaceId: 'space-projects', spaceName: '', title: '', fields: [], createdAt: 1 },
+      { id: 'new', spaceId: 'space-projects', spaceName: '', title: '', fields: [], createdAt: 3 },
     ] as any);
 
     const captures = await getJournalSpaceCaptures();

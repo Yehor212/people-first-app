@@ -10,6 +10,7 @@ import { initAndroidBackHandler } from "./lib/androidBackHandler";
 import { logger } from "./lib/logger";
 import { setupDeepLinks } from "./lib/deepLinks";
 import { offlineQueue } from "./lib/offlineQueue";
+import { getCurrentSessionUserId } from "./lib/supabaseClient";
 import { hapticSuccess } from "./lib/haptics";
 import { flushSync as flushCloudSync } from "./storage/cloudSync";
 import { runWithSyncLeaderLock } from "@/lib/syncLeader";
@@ -405,12 +406,18 @@ async function handleAppResume(): Promise<void> {
   await yieldToNextTask();
 
   if (navigator.onLine) {
-    let queueReadyForDelta = true;
-    if (offlineQueue.hasPendingActions()) {
+    const resumeOwnerUserId = await getCurrentSessionUserId();
+    let queueReadyForDelta = Boolean(resumeOwnerUserId);
+    if (
+      resumeOwnerUserId &&
+      (await offlineQueue.hasPendingActionsForOwnerReady(resumeOwnerUserId))
+    ) {
       logger.log("[Main] Processing pending offline queue on resume");
       try {
         await offlineQueue.processQueue();
-        queueReadyForDelta = !offlineQueue.hasPendingActions();
+        queueReadyForDelta =
+          (await getCurrentSessionUserId()) === resumeOwnerUserId &&
+          !offlineQueue.hasPendingActionsForOwner(resumeOwnerUserId);
         if (queueReadyForDelta) {
           void hapticSuccess(); // Subtle feedback: queued changes synced
         }
@@ -418,6 +425,12 @@ async function handleAppResume(): Promise<void> {
         queueReadyForDelta = false;
         logger.warn("[Main] Offline queue processing on resume failed:", err);
       }
+    }
+    if (
+      queueReadyForDelta &&
+      (await getCurrentSessionUserId()) !== resumeOwnerUserId
+    ) {
+      queueReadyForDelta = false;
     }
     // Delta pull on resume — fetch and apply new events from the eventSync cursor.
     if (queueReadyForDelta) {

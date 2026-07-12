@@ -69,7 +69,7 @@ const { handlers, providers, session } = vi.hoisted(() => {
       phoneStep: "idle",
       phoneNumber: "",
       otpCode: "",
-      error: null,
+      error: null as string | null,
       debugInfo: null,
       setPhoneNumber: vi.fn(),
       setOtpCode: vi.fn(),
@@ -161,6 +161,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settingsSoundAmbientOff: "Ambient sound is off in Sensory comfort.",
       soundOn: "On",
       soundOff: "Off",
+      authRecoverLegacyChanges: "Recover changes with this account",
+      authUseDifferentAccount: "Use a different account",
     },
   }),
 }));
@@ -220,6 +222,7 @@ describe("AuthScreen provider buttons", () => {
     themeState.setThemePreference.mockClear();
     themeState.storageSetRaw.mockClear();
     handlers.handleProviderSignIn.mockClear();
+    session.error = null;
     media.play.mockClear();
     media.pause.mockClear();
     media.load.mockClear();
@@ -265,6 +268,31 @@ describe("AuthScreen provider buttons", () => {
     expect(screen.getAllByTestId("entry-gate-backdrop-ribbon")).toHaveLength(3);
     expect(screen.getByTestId("auth-privacy-copy")).toHaveClass("entry-gate-muted-copy");
     expect(screen.getByTestId("auth-legal-copy")).toHaveClass("entry-gate-muted-copy");
+  });
+
+  it("disables provider changes and exposes explicit legacy recovery actions", () => {
+    session.error = "Older changes need an owner.";
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+
+    render(
+      <AuthScreen
+        onComplete={vi.fn()}
+        suspendSessionCompletion
+        recoveryAction={{
+          confirmLabel: "Recover changes with this account",
+          cancelLabel: "Use a different account",
+          onConfirm,
+          onCancel,
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Continue with Google" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Recover changes with this account" }));
+    fireEvent.click(screen.getByRole("button", { name: "Use a different account" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
   it("keeps provider buttons as safe button actions and delegates provider selection", () => {

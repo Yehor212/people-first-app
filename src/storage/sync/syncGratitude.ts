@@ -13,13 +13,17 @@ import { db } from "@/storage/db";
 import { GratitudeEntry } from "@/types";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { isEntityTombstonedOnServer } from "./serverTombstones";
+import { validateSyncOwner } from "./syncOwner";
 
 // ============================================
 // GRATITUDE SYNC
 // ============================================
 
-export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
-  const userId = await getCurrentUserId();
+export const syncGratitude = async (
+  entry: GratitudeEntry,
+  expectedOwnerUserId?: string
+): Promise<void> => {
+  const userId = await validateSyncOwner(expectedOwnerUserId, "Gratitude sync");
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
@@ -41,18 +45,21 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
-    await offlineQueue.enqueue("CREATE_GRATITUDE", entry.id, entry);
+    await offlineQueue.enqueue("CREATE_GRATITUDE", entry.id, entry, {
+      expectedOwnerUserId: userId,
+    });
     logger.log("[Sync] Gratitude queued for offline sync:", entry.id);
     return;
   }
 
-  if (await isEntityTombstonedOnServer("gratitude", entry.id)) {
+  if (await isEntityTombstonedOnServer("gratitude", entry.id, userId)) {
     await trackDeletedGratitudeId(entry.id);
     logger.warn("[Sync] Skipping server-tombstoned gratitude upsert:", entry.id);
     return;
   }
 
   try {
+    if (!(await validateSyncOwner(userId, "Gratitude sync"))) return;
     const { error } = await supabase.from("gratitude_entries").upsert(
       {
         id: entry.id,
@@ -75,7 +82,8 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
       entry.id,
       "upsert",
       entry as unknown as Record<string, unknown>,
-      deviceId
+      deviceId,
+      { expectedOwnerUserId: userId }
     );
   } catch (error) {
     // Handle AbortError separately
@@ -89,10 +97,13 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
   }
 };
 
-export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> => {
+export const deleteGratitudeFromCloud = async (
+  entryId: string,
+  expectedOwnerUserId?: string
+): Promise<void> => {
   await trackDeletedGratitudeId(entryId);
 
-  const userId = await getCurrentUserId();
+  const userId = await validateSyncOwner(expectedOwnerUserId, "Gratitude delete");
   if (!supabase || !userId) return;
 
   // Skip granular sync for non-UUID IDs (nanoid)
@@ -103,12 +114,20 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
 
   // If offline, queue for later
   if (!navigator.onLine) {
-    await offlineQueue.enqueue("DELETE_GRATITUDE", entryId, { id: entryId });
+    await offlineQueue.enqueue(
+      "DELETE_GRATITUDE",
+      entryId,
+      { id: entryId },
+      {
+        expectedOwnerUserId: userId,
+      }
+    );
     logger.log("[Sync] Gratitude delete queued for offline:", entryId);
     return;
   }
 
   try {
+    if (!(await validateSyncOwner(userId, "Gratitude delete"))) return;
     const { error } = await supabase
       .from("gratitude_entries")
       .delete()
@@ -118,7 +137,9 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
     if (error) throw error;
     logger.log("[Sync] Gratitude deleted + tracked:", entryId);
     const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast("gratitude", entryId, "delete", null, deviceId);
+    await writeEventAndBroadcast("gratitude", entryId, "delete", null, deviceId, {
+      expectedOwnerUserId: userId,
+    });
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -165,7 +186,7 @@ export const pullGratitudeFromCloud = async (): Promise<boolean> => {
         deletedGratIds.size > 0 ? merged.filter((g) => !deletedGratIds.has(g.id)) : merged;
       if (toWriteGrat.length) await db.gratitudeEntries.bulkPut(toWriteGrat);
     });
-    triggerDataRefresh();
+    await triggerDataRefresh();
     return true;
   } catch (err) {
     logger.error("[Pull] Gratitude failed:", err);

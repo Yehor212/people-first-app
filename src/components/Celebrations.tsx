@@ -2,7 +2,7 @@ import { useEffect, useCallback, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { EmojiOrIcon } from "@/components/icons";
-import { useDopamineSettings } from "./DopamineSettings";
+import { useDopamineSettings } from "@/hooks/useDopamineSettings";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useBackHandler } from "@/hooks/useBackHandler";
 

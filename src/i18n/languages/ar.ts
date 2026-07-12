@@ -516,40 +516,98 @@ const arabicOverrides: Partial<Translations> = {
   // Settings
   profile: "الملف الشخصي",
   yourName: "اسمك",
+  profileNamePlaceholder: "أدخل اسمك",
   saveName: "حفظ الاسم",
   nameSaved: "تم حفظ الاسم",
   nameSavedLocally: "تم الحفظ على هذا الجهاز",
   invalidNameFormat: "صيغة الاسم غير صالحة",
   notifications: "الإشعارات",
   notificationsComingSoon: "الإشعارات متاحة في التحديثات القادمة.",
-  settingsOverviewDescription: "اضبط الخصوصية والتذكيرات والصوت والمظهر والبيانات من مكان واحد.",
-  settingsAboutExperienceTitle: "عناصر التحكم في التجربة",
-  settingsAboutExperienceDescription: "تفضيلات الحركة وملاحظات الإصدار وملاحظات التطبيق في مكان واحد.",
-  settingsAboutSupportLegalTitle: "الدعم والقانوني",
-  settingsAboutSupportLegalDescription: "الخصوصية والشروط والتراخيص وخيارات التواصل.",
+  settingsOverviewDescription:
+    "يمكن اختيار مظهر ZenFlow وأصواته وتذكيراته وطريقة تعامله مع البيانات.",
+  settingsAccountBackupTitle: "الحساب والنسخ الاحتياطي",
+  settingsAccountBackupDescription:
+    "حسابك متصل. إذا تعذّر على ZenFlow حفظ تغييراتك عبر الإنترنت، فستبقى على هذا الجهاز.",
+  settingsAccountSignedIn: "تم تسجيل الدخول",
+  settingsAccountSignedOut: "لم يتم تسجيل الدخول",
+  settingsAccountDataOnDevice:
+    "تبقى بياناتك على هذا الجهاز. يتيح تسجيل الدخول نسخها احتياطيًا واستخدامها على أجهزتك الأخرى.",
+  settingsAccountBackupChecking: "جارٍ التحقق من الحساب…",
+  settingsAccountBackupCheckingDescription:
+    "تبقى بياناتك على هذا الجهاز أثناء تحقق ZenFlow من الحساب.",
+  settingsAccountCheckFailed: "تعذّر التحقق من حسابك",
+  settingsAccountCheckFailedDescription:
+    "تبقى بياناتك على هذا الجهاز. يُرجى التحقق من الاتصال والمحاولة مرة أخرى.",
+  settingsAccountBackupUnavailable: "النسخ الاحتياطي غير متاح في هذا الإصدار",
+  settingsAccountBackupUnavailableDescription:
+    "تبقى بياناتك على هذا الجهاز.",
+  settingsRemindersMobileApp: "تطبيق الهاتف",
+  settingsPrivacyDataDescription:
+    "يمكن اختيار الخدمات الاختيارية التي يستخدمها ZenFlow. لا يبدأ النسخ الاحتياطي إلا بعد تسجيل الدخول.",
+  settingsDataBackupReportsDescription:
+    "يمكن حفظ نسخة احتياطية لاستيرادها لاحقًا أو إنشاء تقرير.",
+  settingsBackupRestoreTitle: "النسخ الاحتياطي والاستعادة",
+  settingsReportsTitle: "التقارير",
+  settingsReportsDescription:
+    "تتضمن التقارير بيانات المزاج والعادات والتركيز والامتنان. يُنشأ ملف PDF حاليًا باللغة الإنجليزية. التقارير ليست نسخًا احتياطية.",
+  settingsReportSpreadsheetAction: "بيانات جدول بيانات (CSV)",
+  settingsReportProgressAction: "تقرير التقدّم (PDF)",
+  settingsSoundDiaryRainOff: "صوت المطر متوقف ضمن أصوات الخلفية.",
+  settingsSoundDiaryReady: "جاهز للتشغيل.",
+  settingsAboutProductSummary:
+    "يجمع ZenFlow تسجيلات المزاج والعادات وجلسات التركيز ويومياتك في مكان واحد.",
+  settingsAboutSupportLegalTitle: "المساعدة والمعلومات القانونية",
+  settingsAboutSupportLegalDescription:
+    "الخصوصية والشروط والتراخيص والدعم.",
   settingsRemindersOff: "التذكيرات متوقفة",
   resetDataConfirmWord: "RESET",
   resetDataTypeConfirm: "اكتب {word} للتأكيد",
-  resetDataScope: "سيؤدي ذلك إلى حذف المزاج والعادات وجلسات التركيز والامتنان واليوميات والإعدادات وأي تغييرات كانت تنتظر الحفظ عبر الإنترنت من هذا الجهاز.",
+  resetDataScope:
+    "سيؤدي ذلك إلى حذف المزاج والعادات وجلسات التركيز والامتنان واليوميات والإعدادات وأي تغييرات كانت تنتظر الحفظ عبر الإنترنت من هذا الجهاز.",
   resetDataConfirmAction: "مسح بيانات الجهاز",
   data: "البيانات",
   exportData: "تصدير البيانات",
   importData: "استيراد البيانات",
-  importMode: "وضع الاستيراد",
-  importMerge: "دمج",
-  importReplace: "استبدال",
+  importMode: "طريقة الاستيراد",
+  importMerge: "إضافة إلى البيانات الحالية",
+  importReplace: "استبدال البيانات الحالية",
   exportSuccess: "تم التصدير.",
   exportError: "فشل تصدير البيانات.",
+  exportJournalUnlockRequired:
+    "افتح قفل اليوميات قبل تصدير محتواها المحمي.",
+  exportJournalDecryptionFailed:
+    "تعذّر على ZenFlow قراءة اليوميات المحمية. لم يتم تصدير أي شيء.",
+  exportJournalMediaUnavailable:
+    "تعذّر على ZenFlow قراءة مرفق واحد أو أكثر من مرفقات اليوميات. لم يتم تصدير أي شيء.",
+  exportBackupTooLarge:
+    "تتجاوز هذه النسخة الاحتياطية حد الاستعادة في ZenFlow البالغ 32 ميغابايت. لم يتم تصدير أي شيء. احذف بعض مرفقات اليوميات وحاول مرة أخرى.",
+  exportCleanupError:
+    "تمت مشاركة النسخة الاحتياطية، لكن ZenFlow لم يتمكن من حذف النسخة المؤقتة من هذا الجهاز.",
+  pushRevocationIncomplete: "تعذّر على ZenFlow فصل الإشعارات عن بُعد عن هذا الجهاز بالكامل.",
+  sessionTimeoutDelayedTitle: "تم تأجيل تسجيل الخروج",
+  sessionTimeoutPendingChanges:
+    "أبقاك ZenFlow مسجّلًا لأن بعض التغييرات ما زالت بانتظار الحفظ. سيحاول مرة أخرى قريبًا.",
+  sessionTimeoutCleanupFailed:
+    "أبقاك ZenFlow مسجّلًا لأنه تعذّر تنظيف هذا الجهاز بأمان. سيحاول مرة أخرى قريبًا.",
+  syncCriticalBlocked:
+    "تعذّر إكمال حفظ مهم عبر الإنترنت. ما زال التغيير محفوظًا على هذا الجهاز. حاول مرة أخرى عند الاتصال.",
   exportCSV: "ملف جدول بيانات (CSV)",
   exportPDF: "ملف قابل للطباعة (PDF)",
   importSuccess: "تم الاستيراد.",
+  importResultSummary:
+    "اكتمل الاستيراد: تمت إضافة {added} وتحديث {updated} وتخطي {skipped}. اليوميات: {journalEntries} إدخالات و{journalPhotos} صور و{journalAudio} تسجيلات.",
   importError: "فشل استيراد الملف.",
+  importJournalUnlockRequired: "افتح قفل اليوميات قبل استبدال البيانات الموجودة على هذا الجهاز.",
+  importJournalUnreadable:
+    "تحتوي هذه النسخة الاحتياطية على بيانات يوميات محمية لا يستطيع هذا الجهاز قراءتها.",
+  importJournalReauthorizationRequired:
+    "للحماية، اقفل اليوميات ثم افتحها مجددًا، وبعدها عُد إلى هنا وحاول الاستبدال مرة أخرى.",
   importedItems: "تمت الإضافة",
   importAdded: "مضاف",
   importUpdated: "محدث",
   importSkipped: "تم تخطيه",
-  importConfirmTitle: "استيراد النسخة الاحتياطية",
-  importConfirmMessage: "استيراد البيانات من هذا الملف؟",
+  importConfirmTitle: "استيراد نسخة احتياطية",
+  importConfirmMessage: "هل تريد استيراد البيانات من هذه النسخة الاحتياطية؟",
   syncing: "جارٍ التحديث...",
   signingIn: "جارٍ تسجيل الدخول...",
   signingOut: "جارٍ تسجيل الخروج...",
@@ -561,18 +619,19 @@ const arabicOverrides: Partial<Translations> = {
 
   // Privacy
   privacyTitle: "الخصوصية",
-  privacyDescription: "لا يوجد تتبع مخفي. تبدأ مزامنة الأجهزة فقط بعد تسجيل الدخول وتفعيل النسخة الاحتياطية عبر الإنترنت.",
-  privacyNoTracking: "بدون تتبع",
-  privacyNoTrackingHint: "لا نجمع بيانات سلوكية.",
-  privacyAnalytics: "التحليلات",
-  privacyAnalyticsHint: "تساعد على تحسين التطبيق. يمكن إيقافها.",
-  privacyAds: "إعلانات اختيارية",
-  privacyAdsHint: "فيديوهات اختيارية فقط. تبقى طلبات الإعلانات متوقفة حتى تفعّل هذا الخيار؛ وقد تظهر خيارات خصوصية Google عند الحاجة.",
-  privacyPushNotifications: "تنبيهات تذكير الحساب",
-  privacyPushNotificationsHint: "اسمح لهذا الجهاز بتلقي تنبيهات التذكير من حسابك. تظل التذكيرات المحفوظة على هذا الجهاز تعمل بدون ذلك.",
+  privacyDescription:
+    "لا يوجد تتبع مخفي. تبدأ مزامنة الأجهزة فقط بعد تسجيل الدخول وتفعيل النسخة الاحتياطية عبر الإنترنت.",
+  privacyAds: "مقاطع فيديو بمكافأة",
+  privacyAdsHint:
+    "لا يتم تحميلها إلا بعد تفعيلها. قد تطلب Google اختيار إعدادات الخصوصية عند الحاجة.",
+  privacyOptionalServicesOn: "الخدمات الاختيارية مفعّلة",
+  privacyOptionalServicesOff: "الخدمات الاختيارية متوقفة",
+  privacyPushNotifications: "تذكيرات الحساب",
+  privacyPushNotificationsHint:
+    "يستقبل هذا الجهاز تذكيرات الحساب. وتستمر التذكيرات التي تم إعدادها على هذا الجهاز في العمل عند إيقاف هذا الخيار.",
   privacyPolicy: "سياسة الخصوصية",
   termsOfService: "شروط الاستخدام",
-  openSourceLicenses: "تراخيص المصدر المفتوح",
+  openSourceLicenses: "التراخيص",
   legalPrivacyDescription:
     "تعرف على كيفية جمع ZenFlow لبياناتك الشخصية واستخدامها وحمايتها. خصوصيتك هي أولويتنا.",
   legalTermsDescription: "اقرأ الشروط والأحكام التي تحكم استخدامك لـ ZenFlow.",
@@ -590,9 +649,10 @@ const arabicOverrides: Partial<Translations> = {
   themeDark: "داكن",
   themeSystem: "النظام",
   themeStyleTitle: "لوحة المزاج",
-  themeStyleDescription: "اختر مظهرًا منسقًا يحدد الإحساس العام.",
+  themeAdvancedAppearanceTitle: "مظهر متقدم",
+  themeStyleDescription: "يمكن اختيار النمط الأنسب.",
   themeAccentTitle: "لون التمييز",
-  themeAccentDescription: "لون التركيز وحالات الاختيار وعناصر التحكم المهمة.",
+  themeAccentDescription: "لون الأزرار والاختيارات والعناصر البارزة.",
   themeIntensityTitle: "الشدة",
   themeComfortTitle: "الراحة",
   themePreviewAction: "معاينة",
@@ -665,16 +725,18 @@ const arabicOverrides: Partial<Translations> = {
     "عند تسجيل الدخول، يبقي ZenFlow بياناتك متاحة على أجهزتك. تنتظر التغييرات بأمان عندما يكون الاتصال ضعيفًا.",
   settingsCloudSyncEnabled: "النسخة الاحتياطية عبر الإنترنت مفعّلة",
   settingsCloudSyncDisabledByUser: "النسخة الاحتياطية عبر الإنترنت متوقفة مؤقتًا",
-  settingsExportTitle: "تصدير البيانات",
-  settingsExportDescription: "تنزيل نسخة احتياطية من بياناتك",
-  settingsImportTitle: "استيراد البيانات",
+  settingsExportTitle: "حفظ نسخة احتياطية",
+  settingsExportDescription:
+    "تشمل النسخة الاحتياطية حالاتك المزاجية وعاداتك وجلسات التركيز والامتنان ويومياتك. افتح اليوميات المحمية أولًا؛ ملف التصدير غير مشفّر، لذا احتفظ به في مكان تثق به.",
+  settingsImportTitle: "استيراد نسخة احتياطية",
   settingsImportMergeTooltip: "دمج البيانات المستوردة مع الموجودة",
-  settingsImportReplaceTooltip: "⚠️ سيتم حذف كل البيانات الحالية واستبدالها ببيانات الاستيراد",
+  settingsImportReplaceTooltip:
+    "يستبدل هذا الإجراء بيانات المزاج والعادات وجلسات التركيز والامتنان والإعدادات المشمولة بالنسخ الاحتياطية. لا تُستبدل أقسام اليوميات إلا إذا كانت موجودة في النسخة الاحتياطية. تبقى إعدادات الحماية الخاصة بهذا الجهاز كما هي.",
   settingsImportReplaceConfirm: 'اكتب "REPLACE" لتأكيد حذف كل البيانات',
 
   // Import validation
   invalidFileType: "نوع ملف غير صالح",
-  fileTooLarge: "الملف كبير جداً",
+  fileTooLarge: "الملف كبير جدًا (الحد الأقصى 32 ميغابايت)",
   importConfirm: "تأكيد الاستيراد",
   invalidBackupFormat: "صيغة نسخة احتياطية غير صالحة",
 
@@ -715,13 +777,24 @@ const arabicOverrides: Partial<Translations> = {
   settingsGroupProfile: "الملف والمظهر",
   settingsGroupNotifications: "الإشعارات",
   settingsGroupData: "البيانات والنسخ الاحتياطي",
+  settingsExportImportTitle: "النسخ الاحتياطية والتقارير",
   settingsGroupAccount: "الحساب",
   settingsGroupSecurity: "الأمان",
   settingsSecurityDesc: "إعداد قفل اليوميات وتفضيلات الأمان",
   journalLockTimeout: "القفل التلقائي لليوميات",
   journalLockTimeoutDesc: "قفل اليوميات تلقائياً بعد فترة من عدم النشاط",
   journalLockImmediateWarning: "سيتم قفل اليوميات في كل مرة تغادر فيها شاشة اليوميات",
+  journalLockTimeoutImmediately: "فورًا",
+  journalLockTimeoutOneMinute: "بعد دقيقة واحدة",
+  journalLockTimeoutFiveMinutes: "بعد 5 دقائق",
+  journalLockTimeoutFifteenMinutes: "بعد 15 دقيقة",
+  journalLockTimeoutThirtyMinutes: "بعد 30 دقيقة",
   settingsGroupAbout: "حول التطبيق",
+  settingsGroupAppearanceAccessibility: "المظهر وإمكانية الوصول",
+  settingsGroupReminders: "التذكيرات",
+  settingsGroupPrivacyData: "الخصوصية والبيانات",
+  settingsGroupHelpAbout: "المساعدة والمعلومات",
+  settingsDataSummary: "تسجيلات المزاج: {moods} · العادات: {habits} · جلسات التركيز: {focus}",
 
   // Modules
   settingsGroupModules: "الوحدات",
@@ -756,14 +829,6 @@ const arabicOverrides: Partial<Translations> = {
   coreModulesNote: "تتبع المزاج والعادات دائماً متاحة",
 
   // GDPR
-  consentTitle: "إعدادات الخصوصية",
-  consentDescription: "نحترم خصوصيتك. هل تسمح بتحليلات مجهولة لتحسين التطبيق؟",
-  consentAnalyticsTitle: "تحليلات مجهولة",
-  consentAnalyticsDesc: "أنماط الاستخدام فقط. لا بيانات شخصية. يمكنك تغيير ذلك في الإعدادات.",
-  consentAccept: "قبول",
-  consentDecline: "رفض",
-  consentFooter: "يمكنك تغيير ذلك في أي وقت من الإعدادات > الخصوصية",
-
   areYouSure: "هل أنت متأكد؟",
   cannotBeUndone: "لا يمكن التراجع عن هذا الإجراء.",
   delete: "حذف",
@@ -971,64 +1036,44 @@ const arabicOverrides: Partial<Translations> = {
   muteSound: "كتم الصوت",
   unmuteSound: "إلغاء كتم الصوت",
   settingsSoundTitle: "الصوت",
-  settingsSoundDescription: "أجواء التطبيق ومستوى صوت الاستجابة.",
+  settingsSoundDescription: "يمكن اختيار أصوات الخلفية والنشاط ومستوى الصوت.",
   settingsSoundSummaryOn: "الصوت مفعل",
   settingsSoundSummaryOff: "مكتوم",
   settingsSoundMaster: "صوت التطبيق",
-  settingsSoundMasterDesc: "يتحكم في نغمات النجاح وأجواء الكرة وأجواء اليوميات.",
+  settingsSoundMasterDesc: "يشغّل الأصوات في ZenFlow.",
   settingsSoundVolume: "مستوى الصوت",
   settingsSoundVolumeDesc: "يضبط المستوى الافتراضي لصوت التطبيق.",
   settingsSoundPreview: "معاينة الصوت",
-  settingsSoundAmbienceTitle: "مسارات الأجواء",
-  settingsSoundAmbienceNote: "تبدأ أجواء الكرة من الكرة نفسها. يُدار صوت اليوميات هنا حتى لا يغطي مساحة الكتابة.",
-  settingsSoundFeedbackOn: "أصوات الاستجابة تتبع هذا المستوى.",
-  settingsSoundFeedbackOff: "أصوات الاستجابة معطلة في نمط الاستجابة.",
+  settingsSoundAmbienceTitle: "صوت خلفية لليوميات",
+  settingsSoundAmbienceNote:
+    "يمكن تشغيل صوت مطر هادئ أثناء الكتابة في اليوميات. لا يبدأ إلا عند الضغط على زر التشغيل.",
   settingsSoundTextureAir: "هواء",
   settingsSoundTextureWater: "ماء",
   settingsSoundTextureRain: "مطر",
-  settingsSoundFeedbackComfortable: "مريح",
-  settingsSoundFeedbackTooLoud: "مرتفع جدًا",
-  settingsSoundFeedbackDistracting: "مشتت",
-  settingsSoundFeedbackPreferSilent: "أفضل الصمت",
-  settingsSoundFeedbackDidNotPlay: "لم يتم التشغيل",
-  settingsSoundComfortTitle: "راحة الصوت",
-  settingsSoundComfortDescription: "تضبط الملفات صوت الخلفية والإشارات القصيرة على الأجهزة المدعومة.",
+  settingsSoundComfortTitle: "نمط الصوت",
+  settingsSoundComfortDescription:
+    "يمكن اختيار نمط الصوت ثم ضبط كل صوت أدناه.",
   settingsSoundProfileQuiet: "هادئ",
-  settingsSoundProfileRich: "غني",
-  settingsSoundProfileBalanced: "متوازن",
-  settingsSoundProfileQuietDesc: "بلا أجواء، مع إشارات إكمال لطيفة فقط.",
-  settingsSoundProfileRichDesc: "أجواء وإشارات كاملة حيثما تكون مدعومة.",
-  settingsSoundProfileBalancedDesc: "أجواء لطيفة وإشارات ذات معنى.",
+  settingsSoundProfileBalanced: "كل الأصوات",
+  settingsSoundProfileQuietDesc: "بلا أصوات خلفية؛ أصوات هادئة للأنشطة فقط.",
+  settingsSoundProfileBalancedDesc:
+    "يشغّل أصوات الخلفية والنشاط والتنبيه والإنجازات.",
   settingsSoundAmbientToggle: "صوت الأجواء",
-  settingsSoundAmbientToggleDesc: "يتحكم في أجواء تسجيل الدخول وOrb واليوميات خارج Hyperfocus.",
-  settingsSoundCompletionCues: "إشارات الإكمال",
-  settingsSoundCompletionCuesDesc: "يسمح بتأكيدات هادئة بعد الإكمالات المهمة.",
-  settingsSoundReminderCues: "معاينة التذكيرات",
-  settingsSoundReminderCuesDesc: "يسمح بأصوات معاينة التذكيرات عند اختيارها.",
-  settingsSoundMilestoneCues: "إشارات المحطات",
-  settingsSoundMilestoneCuesDesc: "يسمح بإشارات تقدم نادرة دون أصوات نقر روتينية.",
-  settingsSoundTextureTitle: "أنسجة خارج Hyperfocus",
-  settingsSoundTextureDescription: "اختر أنسجة الهواء والماء والمطر المستخدمة في تسجيل الدخول وOrb واليوميات.",
-  settingsSoundFeedbackTitle: "كيف شعرت بهذا الصوت؟",
-  settingsSoundFeedbackDescription: "يحفظ فقط اختيار الراحة ونوع الجهاز وحالة الكتم ونطاق مستوى الصوت.",
-  settingsSoundAmbientOff: "صوت الأجواء متوقف في راحة الصوت.",
-  settingsSoundMapTitle: "أماكن ظهور الصوت",
-  settingsSoundMapDescription: "تبدأ أصوات التطبيق فقط بعد لمستك وتتبع اختيارات الصوت لديك.",
-  settingsSoundMapAuth: "هواء ناعم عند تسجيل الدخول",
-  settingsSoundMapOrb: "أجواء الكرة",
-  settingsSoundMapDiary: "أجواء اليوميات",
-  settingsSoundMapFocus: "مكتبة أجواء التركيز",
-  settingsSoundMapFeedback: "إشارات ناعمة للإكمال والتذكير",
-  settingsSoundCrossPlatformTitle: "أين تعمل الأصوات",
-  settingsSoundCrossPlatformNote: "يستخدم ZenFlow اختيارات الصوت نفسها عندما يسمح جهازك بذلك.",
-  settingsSoundActionMapTitle: "متى يشغّل ZenFlow صوتًا",
-  settingsSoundActionMapDescription: "الأصوات القصيرة مخصصة للإكمالات المهمة والمعالم النادرة.",
-  settingsSoundActionMapMood: "تم حفظ المزاج",
-  settingsSoundActionMapHabit: "اكتملت العادة",
-  settingsSoundActionMapJournal: "تم حفظ اليوميات",
-  settingsSoundActionMapFocus: "اكتمل التركيز",
-  settingsSoundActionMapBreathing: "اكتمل التنفس",
-  settingsSoundActionMapMilestones: "لحظات تقدم نادرة",
+  settingsSoundAmbientToggleDesc:
+    "يشغّل أصوات الخلفية في ZenFlow، ما عدا أثناء جلسات التركيز.",
+  settingsSoundCompletionCues: "أصوات إكمال الأنشطة",
+  settingsSoundCompletionCuesDesc:
+    "يشغّل صوتًا هادئًا بعد إكمال نشاط.",
+  settingsSoundReminderCues: "أصوات التنبيه داخل ZenFlow",
+  settingsSoundReminderCuesDesc:
+    "يشغّل تنبيهات المؤقت ومعاينات التذكير داخل ZenFlow. لا يغيّر صوت إشعارات الهاتف.",
+  settingsSoundMilestoneCues: "أصوات الإنجازات",
+  settingsSoundMilestoneCuesDesc:
+    "يشغّل صوتًا عند بعض إنجازات السلاسل والتقدّم.",
+  settingsSoundTextureTitle: "أصوات الخلفية",
+  settingsSoundTextureDescription:
+    "يمكن اختيار أصوات الخلفية التي يشغّلها ZenFlow.",
+  settingsSoundAmbientOff: "أصوات الخلفية متوقفة.",
 
   // Leaderboard
   leaderboard: "لوحة المتصدرين",
@@ -1052,7 +1097,8 @@ const arabicOverrides: Partial<Translations> = {
   widgetPreview: "معاينة",
   widgetSetup: "الإعداد",
   widgetInfo: "معلومات",
-  widgetInfoDesc: "تتحدث الويدجات عندما تحدّث العادات أو تكمل جلسات التركيز أو تحصل على شارات جديدة.",
+  widgetInfoDesc:
+    "تتحدث الويدجات عندما تحدّث العادات أو تكمل جلسات التركيز أو تحصل على شارات جديدة.",
   widgetStatus: "الحالة",
   widgetPlatform: "نوع الجهاز",
   widgetWeb: "المتصفح (الويدجات غير متاحة)",
@@ -1071,7 +1117,8 @@ const arabicOverrides: Partial<Translations> = {
   widgetStep3Android: "ابحث عن ZenFlow",
   widgetStep4Android: "اسحب للشاشة الرئيسية",
   widgetWebWarning: "الويدجات غير متاحة في المتصفح",
-  widgetWebWarningDesc: "تعمل الويدجات في تطبيق الهاتف على iPhone و iPad وهواتف Android. ثبّت التطبيق لإضافة الويدجات.",
+  widgetWebWarningDesc:
+    "تعمل الويدجات في تطبيق الهاتف على iPhone و iPad وهواتف Android. ثبّت التطبيق لإضافة الويدجات.",
   widgetWebTip: "ثبت التطبيق للوصول السريع",
   widgetFeatures: "الميزات",
   widgetFeature1: "سلسلتك الحالية",
@@ -1240,6 +1287,7 @@ const arabicOverrides: Partial<Translations> = {
   // Dopamine Settings
   dopamineSettings: "التغذية الراجعة والحركة",
   dopamineSettingsDesc: "اختر مقدار الحركة والصوت والاهتزاز الذي يستخدمه ZenFlow.",
+  dopamineSettingsDescNoHaptics: "اختر مقدار الحركة والصوت الذي يستخدمه ZenFlow.",
   dopamineIntensity: "مستوى التغذية الراجعة",
   dopamineMinimal: "هادئ",
   dopamineNormal: "متوازن",
@@ -1261,7 +1309,8 @@ const arabicOverrides: Partial<Translations> = {
   dopamineMoodDrivenUI: "واجهة حسب المزاج",
   dopamineMoodDrivenUIDesc: "يمكن أن يتبع اللون والأجواء مزاجك",
   dopamineTip: "ملاحظة راحة",
-  dopamineTipText: "ابدأ بالوضع الهادئ إذا كانت التأثيرات تشتتك. زد التغذية الراجعة فقط عندما تساعدك على التوجه.",
+  dopamineTipText:
+    "ابدأ بالوضع الهادئ إذا كانت التأثيرات تشتتك. زد التغذية الراجعة فقط عندما تساعدك على التوجه.",
   dopamineSave: "تم",
 
   fontScaleTitle: "حجم النص",
@@ -1299,6 +1348,7 @@ const arabicOverrides: Partial<Translations> = {
   adPrivacyOptions: "خيارات خصوصية إعلانات Google",
   adPrivacyOptionsHint: "غيّر موافقة إعلانات Google أو اسحبها عند الحاجة.",
   adPrivacyOptionsOpen: "مراجعة خيارات الإعلانات",
+  adPrivacyOptionsError: "تعذّر فتح خيارات خصوصية إعلانات Google. حاول مرة أخرى.",
   treats: "مكافآت",
   innerWorld: "العالم الداخلي",
   tapToInteract: "انقر للتفاعل",
@@ -1743,8 +1793,7 @@ const arabicOverrides: Partial<Translations> = {
 
   // 404
   notFoundKicker: "المسار غير موجود",
-  notFoundBody:
-    "هذا الرابط قديم أو لم تعد هذه الشاشة موجودة. بياناتك ما زالت محفوظة هنا.",
+  notFoundBody: "هذا الرابط قديم أو لم تعد هذه الشاشة موجودة. بياناتك ما زالت محفوظة هنا.",
   notFoundRequestedPath: "المسار المطلوب",
   notFoundBack: "رجوع",
   notFoundHint: "استخدم الرئيسية للعودة إلى مساحة ZenFlow الخاصة بك.",
@@ -1801,7 +1850,8 @@ const arabicOverrides: Partial<Translations> = {
 
   // Smart Reminders
   smartReminders: "تذكيرات ذكية",
-  smartRemindersNotEnoughData: "استمر في استخدام التطبيق لرؤية اقتراحات تذكير مبنية على النشاط الأخير.",
+  smartRemindersNotEnoughData:
+    "استمر في استخدام التطبيق لرؤية اقتراحات تذكير مبنية على النشاط الأخير.",
   smartRemindersOptimized: "أوقات التذكير الحالية تتماشى مع أنماطك الأخيرة.",
   smartRemindersDescription: "اقتراحات بناءً على النشاط الأخير",
   suggestions: "اقتراحات",
@@ -1918,13 +1968,15 @@ const arabicOverrides: Partial<Translations> = {
   // Feature Unlock Messages
   onboardingfocusTimerUnlockTitle: "مؤقت التركيز!",
   onboardingfocusTimerUnlockSubtitle: "جلسات عمل عميق",
-  onboardingfocusTimerDescription: "استخدم مؤقت بومودورو للتركيز العميق. اضبط 25 دقيقة، ركز على مهمة واحدة، ثم خذ استراحة.",
+  onboardingfocusTimerDescription:
+    "استخدم مؤقت بومودورو للتركيز العميق. اضبط 25 دقيقة، ركز على مهمة واحدة، ثم خذ استراحة.",
   onboardingxpUnlockTitle: "نظام XP!",
   onboardingxpUnlockSubtitle: "اكسب نقاط خبرة",
   onboardingxpDescription: "ترقى وافتح مكافآت",
   onboardingquestsUnlockTitle: "المهام!",
   onboardingquestsUnlockSubtitle: "تحديات يومية",
-  onboardingquestsDescription: "تضيف المهام اليومية والأسبوعية تنوعًا إلى روتينك. أكملها عندما تريد بعض البنية.",
+  onboardingquestsDescription:
+    "تضيف المهام اليومية والأسبوعية تنوعًا إلى روتينك. أكملها عندما تريد بعض البنية.",
   onboardingcompanionUnlockTitle: "رفيق!",
   onboardingcompanionUnlockSubtitle: "صديق افتراضي",
   onboardingcompanionDescription: "اعتني برفيقك",
@@ -1947,7 +1999,7 @@ const arabicOverrides: Partial<Translations> = {
     "قد يتضمن التعليق رسالتك وبريدك الإلكتروني الاختياري وإصدار التطبيق ونوع الجهاز وحجم الشاشة واللغة وتفاصيل المتصفح. لا تستخدم التعليقات لطلب دعم عاجل للسلامة أو الدعم الطبي.",
   feedbackSubmit: "إرسال",
   feedbackSuccess: "شكراً على ملاحظاتك!",
-  feedbackError: "فشل الإرسال",
+  feedbackError: "تعذّر الإرسال. رسالتك ما زالت هنا — حاول مرة أخرى.",
   feedbackSending: "جاري الإرسال...",
   sendFeedback: "إرسال ملاحظات",
 
@@ -1976,20 +2028,27 @@ const arabicOverrides: Partial<Translations> = {
   // Notification Sounds
   notificationSound: "صوت الإشعار",
   notificationSoundDescription: "اختر صوت الإشعارات",
+  notificationSoundUpdateFailed:
+    "تعذّر على ZenFlow تطبيق صوت التذكير هذا. ما زال الصوت السابق محددًا. حاول مرة أخرى.",
+  reminderReconcileFailed:
+    "تعذّر على ZenFlow تحديث التذكيرات. قد يواصل جهازك استخدام الجدول السابق. حاول مرة أخرى.",
   soundDefault: "افتراضي",
   soundDefaultDesc: "صوت النظام",
   soundGentle: "لطيف",
   soundGentleDesc: "اهتزاز فقط",
-  soundChime: "رنين",
-  soundChimeDesc: "صوت جرس",
   soundSilent: "صامت",
   soundSilentDesc: "بدون صوت أو اهتزاز",
-  notificationSystemSettingsTitle: "عناصر تحكم إشعارات النظام",
-  notificationSystemSettingsDescription: "قد يظل الجهاز أو المتصفح قادرًا على كتم تذكيرات ZenFlow أو تهدئتها. تبقى أصوات التطبيق على هذا الجهاز وتحت تحكمك.",
-  notificationSystemSettingsAndroidDescription: "يحتفظ هاتفك بالتحكم النهائي في صوت كل تذكير واهتزازه وظهوره.",
-  notificationSystemSettingsIosDescription: "تحتفظ إعدادات iPhone أو iPad وأوضاع التركيز بالتحكم النهائي في صوت التنبيه وتسليمه ونمطه.",
-  notificationSystemSettingsWebDescription: "يمكن للمتصفح أو الجهاز كتم التذكيرات. تبقى أصوات ZenFlow على هذا الجهاز ولا تبدأ إلا بعد اللمس.",
-  notificationSystemSettingsDesktopDescription: "يحتفظ جهاز الكمبيوتر بالتحكم النهائي في تسليم التذكيرات وصوتها.",
+  notificationSystemSettingsTitle: "إذا كانت التذكيرات بلا صوت",
+  notificationSystemSettingsDescription:
+    "قد يظل الجهاز أو المتصفح قادرًا على كتم تذكيرات ZenFlow أو تهدئتها. تبقى أصوات التطبيق على هذا الجهاز وتحت تحكمك.",
+  notificationSystemSettingsAndroidDescription:
+    "قد تؤدي إعدادات الصوت والاهتزاز والإشعارات في الهاتف إلى كتم التذكيرات أو إخفائها.",
+  notificationSystemSettingsIosDescription:
+    "قد تؤدي إعدادات الإشعارات وأوضاع التركيز في iPhone أو iPad إلى كتم التذكيرات أو إخفائها.",
+  notificationSystemSettingsWebDescription:
+    "يمكن للمتصفح أو الجهاز كتم التذكيرات. تبقى أصوات ZenFlow على هذا الجهاز ولا تبدأ إلا بعد اللمس.",
+  notificationSystemSettingsDesktopDescription:
+    "يحتفظ جهاز الكمبيوتر بالتحكم النهائي في تسليم التذكيرات وصوتها.",
   testNotification: "اختبار الإشعار",
   testNotificationHint: "اختبر الصوت المختار",
   notificationTestSending: "جارٍ الإرسال...",
@@ -2053,7 +2112,8 @@ const arabicOverrides: Partial<Translations> = {
   authOr: "أو",
   authContinueEmail: "المتابعة بالبريد الإلكتروني",
   authSkipForNow: "تخطي الآن",
-  authPrivacyNote: "تُحفظ بياناتك على هذا الجهاز، ويمكن حفظها عبر الإنترنت عند تسجيل الدخول. نحن نحترم خصوصيتك.",
+  authPrivacyNote:
+    "تُحفظ بياناتك على هذا الجهاز، ويمكن حفظها عبر الإنترنت عند تسجيل الدخول. نحن نحترم خصوصيتك.",
   authSignInTooLong: "استغرق تسجيل الدخول وقتاً طويلاً. حاول مرة أخرى.",
   authTooManyAttempts: "محاولات تسجيل دخول كثيرة. انتظر لحظة وحاول مرة أخرى.",
   authSupabaseNotConfigured: "تسجيل الدخول غير متاح الآن.",
@@ -2094,7 +2154,8 @@ const arabicOverrides: Partial<Translations> = {
   indexedDBTimeoutDesc: "يستغرق الحفظ وقتاً أطول من المتوقع.",
   // Database recovery
   databaseRecoveryTitle: "تمت إعادة تعيين البيانات على هذا الجهاز",
-  databaseRecoveryDesc: "تم مسح مساحة التخزين على هذا الجهاز. سنحاول استعادة بياناتك من النسخة الاحتياطية عبر الإنترنت.",
+  databaseRecoveryDesc:
+    "تم مسح مساحة التخزين على هذا الجهاز. سنحاول استعادة بياناتك من النسخة الاحتياطية عبر الإنترنت.",
   databaseRecoveryRestore: "استعادة من النسخة الاحتياطية عبر الإنترنت",
   databaseRecoveryStartFresh: "البدء من جديد",
   // Update required
@@ -2203,7 +2264,8 @@ const arabicOverrides: Partial<Translations> = {
   syncDeviceSessionsActive: "الأجهزة النشطة",
   syncDeviceSessionsError: "حالة الأجهزة غير متاحة مؤقتًا.",
   syncDeviceSessionsEmpty: "سجّل الدخول لرؤية الأجهزة المتصلة.",
-  syncDeviceSessionsFootnote: "وضع علامة غير نشط يخفي الجهاز من هذه القائمة، ولا يسجّل الخروج من ذلك الجهاز.",
+  syncDeviceSessionsFootnote:
+    "وضع علامة غير نشط يخفي الجهاز من هذه القائمة، ولا يسجّل الخروج من ذلك الجهاز.",
   syncDeviceCurrent: "الجهاز الحالي",
   syncDeviceRevoked: "غير نشط",
   syncDeviceLastSeen: "آخر ظهور",
@@ -2248,10 +2310,25 @@ const arabicOverrides: Partial<Translations> = {
   deleteAccountWarning: "سيؤدي هذا إلى حذف البيانات المحفوظة عبر الإنترنت وإزالة الوصول إلى حسابك.",
   deleteAccountSuccess: "تم حذف الحساب",
   deleteAccountError: "فشل حذف الحساب",
+  deleteAccountDeletedCleanupFailed:
+    "تم حذف حسابك، لكن قد تبقى بعض البيانات على هذا الجهاز. أعد تشغيل ZenFlow قبل استخدام حساب آخر.",
   deleteAccountLink: "طلب حذف الحساب",
   deleteConfirmWord: "حذف",
   authEmailSent: "تم إرسال البريد!",
   authSignedOut: "تم تسجيل الخروج",
+  authSignOutPendingChanges:
+    "لا تزال هناك تغييرات في ZenFlow تنتظر الحفظ عبر الإنترنت. اتصل بالإنترنت وحاول مرة أخرى.",
+  authSignOutRecoveryTitle: "إكمال تسجيل الخروج",
+  authDiscardAndSignOut: "تجاهل التغييرات وتسجيل الخروج",
+  authDiscardSignOutConfirm: "هل تريد تجاهل التغييرات غير المحفوظة وتسجيل الخروج؟",
+  authDiscardSignOutWarning:
+    "ستُحذف نهائيًا من هذا الجهاز التغييرات التي تنتظر الحفظ عبر الإنترنت.",
+  authAccountSwitchPendingChanges:
+    "سجّل الدخول مجددًا إلى حسابك السابق، واتصل بالإنترنت، وانتظر حتى ينتهي ZenFlow من حفظ التغييرات. بعد ذلك بدّل الحساب مرة أخرى.",
+  authRecoverLegacyChanges: "استعادة التغييرات باستخدام هذا الحساب",
+  authUseDifferentAccount: "استخدام حساب آخر",
+  authSignOutCleanupFailed: "تعذّر على ZenFlow إكمال تسجيل الخروج بأمان. حاول مرة أخرى.",
+  authSignOutFailed: "لم يكتمل تسجيل الخروج. حاول مرة أخرى.",
   authError: "خطأ في المصادقة",
   authNotConfigured: "تسجيل الدخول غير متاح الآن.",
   syncSuccess: "أجهزتك محدّثة.",
@@ -2266,8 +2343,7 @@ const arabicOverrides: Partial<Translations> = {
   errorBoundaryBody: "أعد تحميل التطبيق.",
   errorBoundaryKicker: "وضع استعادة ZenFlow",
   errorBoundarySafeTitle: "بياناتك آمنة",
-  errorBoundarySafeBody:
-    "وضع الاسترداد أوقف هذه الشاشة فقط. تم حفظ الخطأ الأخير على هذا الجهاز.",
+  errorBoundarySafeBody: "وضع الاسترداد أوقف هذه الشاشة فقط. تم حفظ الخطأ الأخير على هذا الجهاز.",
   errorBoundaryActionHint: "إعادة التحميل تعيد الاتصال عادة خلال ثوان.",
   errorBoundaryReload: "إعادة تحميل",
   modalErrorTitle: "حدث خطأ",
@@ -2295,7 +2371,9 @@ const arabicOverrides: Partial<Translations> = {
   pushDisabled: "الإشعارات معطلة",
   pushError: "خطأ في الإشعارات",
   pushNeedsAccount: "سجل الدخول للإشعارات",
-  pushPermissionDenied: "تم رفض الإذن",
+  pushPermissionDenied: "يرجى تفعيل إشعارات ZenFlow من إعدادات الجهاز.",
+  remindersNativeOnly: "يمكن إعداد التذكيرات في تطبيق ZenFlow للهاتف.",
+  habitRemindersManagedInHabits: "اضبط التذكير من قائمة العادة نفسها.",
 
   // Install App
   installApp: "ثبت التطبيق",
@@ -2312,19 +2390,23 @@ const arabicOverrides: Partial<Translations> = {
   checkingForUpdates: "جاري التحقق...",
   appUpToDate: "التطبيق محدث",
   openGooglePlay: "فتح Google Play",
+  openGooglePlayFailed: "تعذّر فتح Google Play. حاول مرة أخرى.",
   updateCheckFailed: "فشل التحقق",
   settingsUpdateTitle: "إصدار التطبيق",
-  settingsWebUpdateDescription: "يمكن لـ ZenFlow التحقق مما إذا كان إصدار أحدث جاهزًا.",
-  settingsNativeUpdateDescription: "تحقق مما إذا كان تحديث متجر التطبيقات متاحًا.",
+  settingsWebUpdateDescription: "التحقق من توفر إصدار أحدث.",
+  settingsNativeUpdateDescription: "التحقق من توفر إصدار أحدث.",
   webUpdateAvailable: "يتوفر إصدار أحدث",
-  webUpdateAvailableDescription: "أعد تشغيل ZenFlow لتحميل أحدث إصدار. أنهِ أولًا أي نص تكتبه الآن.",
+  webUpdateAvailableDescription:
+    "أعد تشغيل ZenFlow لتحميل أحدث إصدار. أنهِ أولًا أي نص تكتبه الآن.",
   restartZenflow: "إعادة تشغيل ZenFlow",
   restartingZenflow: "جارٍ إعادة التشغيل...",
-  webUpdateCheckFailedDescription: "يحتاج ZenFlow إلى فحص عبر الشبكة لتأكيد أحدث إصدار. لم يتغير أي شيء على هذا الجهاز.",
+  webUpdateCheckFailedDescription:
+    "يحتاج ZenFlow إلى فحص عبر الشبكة لتأكيد أحدث إصدار. لم يتغير أي شيء على هذا الجهاز.",
 
   // Reminders
   remindersTitle: "التذكيرات",
-  remindersDescription: "إدارة تذكيراتك",
+  remindersDescription:
+    "يمكن تحديد مواعيد تذكيرات ZenFlow لتسجيل المزاج ووقت التركيز.",
   moodReminder: "تذكير المزاج",
   habitReminder: "تذكير العادات",
   focusReminder: "تذكير التركيز",
@@ -2375,7 +2457,8 @@ const arabicOverrides: Partial<Translations> = {
   notificationFeature3Desc: "ابق منتجاً",
   notificationAllow: "السماح",
   notificationDeny: "الآن لا",
-  notificationPrivacyNote: "يمكنك تغيير ذلك في أي وقت من الإعدادات. تبقى الإشعارات خاصة على هذا الجهاز.",
+  notificationPrivacyNote:
+    "يمكنك تغيير ذلك في أي وقت من الإعدادات. تبقى الإشعارات خاصة على هذا الجهاز.",
 
   // Onboarding Steps
   onboardingStep: "الخطوة",
@@ -2508,8 +2591,10 @@ const arabicOverrides: Partial<Translations> = {
   journalPasswordSetup: "تعيين كلمة مرور اليوميات",
   journalPasswordEnter: "أدخل كلمة المرور",
   journalPasswordConfirm: "تأكيد كلمة المرور",
-  journalLockHint: "كلمة المرور هذه تشفر يومياتك على هذا الجهاز. احتفظ بها في مكان آمن؛ لا يستطيع ZenFlow عرضها أو استعادتها.",
-  journalLockHintLocalOnly: "كلمة المرور هذه تشفر يومياتك على هذا الجهاز. احتفظ بها في مكان آمن؛ لا يستطيع ZenFlow عرضها أو استعادتها.",
+  journalLockHint:
+    "تشفّر كلمة المرور هذه نصوص اليوميات ومرفقاتها على هذا الجهاز. لا يتم تشفير التواريخ والعناوين والوسوم وبيانات نشاط اليوميات. احتفظ بكلمة المرور في مكان آمن؛ لا يستطيع ZenFlow عرضها أو استعادتها.",
+  journalLockHintLocalOnly:
+    "تشفّر كلمة المرور هذه نصوص اليوميات ومرفقاتها على هذا الجهاز. لا يتم تشفير التواريخ والعناوين والوسوم وبيانات نشاط اليوميات. احتفظ بكلمة المرور في مكان آمن؛ لا يستطيع ZenFlow عرضها أو استعادتها.",
   journalLockTooShort: "6 أحرف كحد أدنى",
   journalPasswordMismatch: "كلمات المرور غير متطابقة",
   journalPasswordWrong: "كلمة مرور خاطئة",
@@ -2522,27 +2607,36 @@ const arabicOverrides: Partial<Translations> = {
   journalResetConfirm: "سنرسل رابط تحقق إلى",
   journalResetSendCode: "إرسال الرابط",
   journalResetCodeSent: "تحقق من بريدك",
-  journalResetCodeSentHint: "افتح رابط البريد على هذا الجهاز أو في هذا المتصفح، ثم عُد إلى اليوميات. سيتحقق من حسابك ويزيل القفل من دون كشف كلمة المرور القديمة.",
+  journalResetCodeSentHint:
+    "افتح رابط البريد على هذا الجهاز أو في هذا المتصفح، ثم عُد إلى اليوميات. سيتحقق من حسابك ويزيل القفل من دون كشف كلمة المرور القديمة.",
   journalResetEnterCode: "رابط التحقق",
   journalResetVerify: "فتح الرابط",
   journalResetSuccess: "تمت إزالة قفل اليوميات",
-  journalResetSuccessDetail: "أصبحت اليوميات مفتوحة على هذا الجهاز من دون كلمة مرور. عيّن كلمة مرور جديدة إذا أردت إبقاءها محمية.",
+  journalResetSuccessDetail:
+    "أصبحت اليوميات مفتوحة على هذا الجهاز من دون كلمة مرور. عيّن كلمة مرور جديدة إذا أردت إبقاءها محمية.",
   journalResetSetNewPassword: "تعيين كلمة مرور جديدة لليوميات",
   journalResetChecking: "جارٍ التحقق من حسابك...",
-  journalResetCheckingHint: "أبقِ هذه النافذة مفتوحة بينما نتحقق من إمكانية إزالة القفل عبر البريد.",
-  journalResetNoAccount: "سجّل الدخول من إعدادات الحساب لإزالة هذا القفل عبر البريد. لم يتغير شيء؛ تظل إدخالات يومياتك محمية.",  journalResetOpenAccountSettings: "فتح إعدادات الحساب",
+  journalResetCheckingHint:
+    "أبقِ هذه النافذة مفتوحة بينما نتحقق من إمكانية إزالة القفل عبر البريد.",
+  journalResetNoAccount:
+    "سجّل الدخول من إعدادات الحساب لإزالة هذا القفل عبر البريد. لم يتغير شيء؛ تظل إدخالات يومياتك محمية.",
+  journalResetOpenAccountSettings: "فتح إعدادات الحساب",
   journalResetServiceUnavailable: "تعذر التحقق من حسابك. تحقق من اتصالك وحاول مرة أخرى.",
-  journalResetEncryptedUnavailable: "هذه اليوميات مشفرة بكلمة مرورك. لا يمكن للتحقق عبر البريد إزالة هذا القفل ما دام المحتوى المشفر مقفلا. لم يتغير شيء؛ تظل إدخالاتك محمية. افتحها بكلمة المرور لإزالة القفل.",
+  journalResetEncryptedUnavailable:
+    "هذه اليوميات مشفرة بكلمة مرورك. لا يمكن للتحقق عبر البريد إزالة هذا القفل ما دام المحتوى المشفر مقفلا. لم يتغير شيء؛ تظل إدخالاتك محمية. افتحها بكلمة المرور لإزالة القفل.",
   journalResetCodeWrong: "تعذر تأكيد رابط التحقق. حاول مرة أخرى.",
   journalResetExpired: "انتهت صلاحية رابط التحقق. أرسل رابطا جديدا.",
   journalResetWrongAccount: "افتح هذا الرابط وأنت مسجل الدخول إلى الحساب نفسه الذي طلبه.",
-  journalResetMissingProof: "لم يتم تأكيد رابط البريد هذا داخل التطبيق. لم يتغير شيء؛ لا يزال قفل اليوميات مفعلا وتظل إدخالاتك محمية.",
+  journalResetMissingProof:
+    "لم يتم تأكيد رابط البريد هذا داخل التطبيق. لم يتغير شيء؛ لا يزال قفل اليوميات مفعلا وتظل إدخالاتك محمية.",
   journalResetSendFailed: "فشل إرسال الرابط. تحقق من اتصالك.",
   journalResetResend: "إعادة إرسال الرابط",
   journalResetCooldown: "انتظر {seconds} ثانية قبل طلب رابط آخر.",
-  journalResetTroubleshooting: "إذا لم تصل الرسالة، فتحقق من البريد غير المرغوب فيه، وابقَ مسجّل الدخول على هذا الجهاز، ثم أعد إرسال الرابط بعد انتهاء المؤقت.",
+  journalResetTroubleshooting:
+    "إذا لم تصل الرسالة، فتحقق من البريد غير المرغوب فيه، وابقَ مسجّل الدخول على هذا الجهاز، ثم أعد إرسال الرابط بعد انتهاء المؤقت.",
   journalResetTryAgain: "حاول مرة أخرى",
-  journalResetDesktopUnavailable: "إزالة القفل عبر البريد متاحة في الويب أو تطبيق الهاتف. على سطح المكتب، افتح اليوميات بكلمة مرورها.",
+  journalResetDesktopUnavailable:
+    "إزالة القفل عبر البريد متاحة في الويب أو تطبيق الهاتف. على سطح المكتب، افتح اليوميات بكلمة مرورها.",
   journalClose: "إغلاق",
   journalSearch: "البحث في المدخلات...",
   journalAiSearchPlaceholder: "صف ما تريد العثور عليه...",
@@ -2815,8 +2909,11 @@ const arabicOverrides: Partial<Translations> = {
   journalPasswordChangeSuccess: "تم تغيير كلمة المرور بنجاح",
   journalPasswordChangeFailed: "تعذر تحديث قفل اليوميات. حاول مرة أخرى.",
   journalPasswordActiveHint: "قفل اليوميات مفعّل. يمكنك تغييره أو إزالته من هنا.",
+  journalProtectionCloudPending:
+    "يومياتك محمية على هذا الجهاز. ما زال ZenFlow يستبدل نسخة أقدم على الإنترنت؛ أبقِ التطبيق مفتوحًا واتصل بالإنترنت.",
   journalPasswordRemoveConfirm: "هل أنت متأكد؟ ستكون يومياتك متاحة بدون كلمة مرور.",
-  journalLockRemoveDetail: "ستبقى إدخالاتك محفوظة، لكن قفل اليوميات والفتح بالبصمة الحيوية لليوميات سيتم إيقافهما. يمكنك إعداد قفل جديد لاحقًا.",
+  journalLockRemoveDetail:
+    "ستبقى إدخالاتك محفوظة، لكن قفل اليوميات والفتح بالبصمة الحيوية لليوميات سيتم إيقافهما. يمكنك إعداد قفل جديد لاحقًا.",
   journalLockRemoveFailed: "افتح اليوميات أولًا، ثم حاول إزالة القفل مرة أخرى.",
   journalPasswordRemovePending: "جارٍ إزالة القفل...",
   journalPasswordRemoveSuccess: "تمت إزالة قفل اليوميات.",
@@ -2850,7 +2947,8 @@ const arabicOverrides: Partial<Translations> = {
   journalExportPDFDesc: "مستند قابل للطباعة",
   journalExportText: "Markdown",
   journalExportTextDesc: "صيغة نص عادي",
-  journalExportPrivacyWarning: "ملفات التصدير خاصة ولا يتم تشفيرها بواسطة ZenFlow. احفظها في مكان تثق به.",
+  journalExportPrivacyWarning:
+    "ملفات التصدير خاصة ولا يتم تشفيرها بواسطة ZenFlow. احفظها في مكان تثق به.",
   journalExportSuccess: "اكتمل التصدير",
   journalExportFailed: "فشل التصدير. حاول مرة أخرى.",
   journalNoMatchingEntries: "لا توجد إدخالات مطابقة",
@@ -2862,7 +2960,8 @@ const arabicOverrides: Partial<Translations> = {
   journalQuickMoodSaved: "تم حفظ المزاج",
   journalNoAiResults: "لم يتم العثور على مداخل مشابهة",
   journalNoAiResultsHint: "حاول وصف الذكرى بطريقة أخرى.",
-  journalAiSearchUnavailableHint: "مداخل يومياتك ما زالت موجودة. استخدم البحث العادي أو حاول لاحقا.",
+  journalAiSearchUnavailableHint:
+    "مداخل يومياتك ما زالت موجودة. استخدم البحث العادي أو حاول لاحقا.",
   journalAiSearchUnavailable: "بحث الذكاء الاصطناعي غير متاح الآن",
   journalSlashCommands: "أوامر اليوميات",
   journalSlashNoResults: "لم يتم العثور على أوامر يوميات",
@@ -2935,35 +3034,6 @@ const arabicOverrides: Partial<Translations> = {
   journalSlashPhotoDescription: "إرفاق صورة",
   journalSlashAudioLabel: "صوت",
   journalSlashAudioDescription: "تسجيل صوت",
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   // Premium Diary (Immersive Mode)
   diaryPremiumEntry: "الوضع الغامر",

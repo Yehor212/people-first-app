@@ -108,7 +108,7 @@ export const DrawerV2 = memo(function DrawerV2({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [open, onClose]);
 
-  if (!shouldRender) return null;
+  if (!open && !shouldRender) return null;
   if (typeof document === "undefined") return null;
 
   const destinations: Array<{

@@ -7,59 +7,105 @@
  * - Native (Android/iOS): disabled — personal device, session managed by Supabase refresh token (90 days)
  * - Web: 24 hours of inactivity triggers sign-out
  *
- * Flushes offline queue before sign-out to prevent data loss.
+ * Suspends account writers and blocks sign-out while durable writes remain,
+ * preventing both data loss and cross-account replay.
  */
 
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { isNative } from '@/lib/platform';
 import { logger } from '@/lib/logger';
-import { offlineQueue } from '@/lib/offlineQueue';
+import { initializePushNotifications } from '@/lib/pushNotifications';
+import { performOwnerSafeSignOut } from '@/lib/accountSignOutCleanup';
+import { useUserDataStore } from '@/stores';
 
 const WEB_IDLE_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
-const QUEUE_FLUSH_TIMEOUT = 10000; // 10 seconds max to flush queue
+const BLOCKED_SIGN_OUT_RETRY_DELAY = 5 * 60 * 1000;
+
+type BlockedIdleSignOutReason =
+  | 'pending-changes'
+  | 'cleanup-failed'
+  | 'sign-out-failed';
+
+function reportBlockedIdleSignOut(
+  reason: BlockedIdleSignOutReason,
+  retry: () => void,
+): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent('zenflow:session-timeout-blocked', {
+      detail: { reason, retry },
+    })
+  );
+}
 
 export function useSessionTimeout(enabled: boolean = true) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const pushNotificationsEnabled = useUserDataStore(
+    (state) => state.privacy.pushNotifications === true,
+  );
 
   useEffect(() => {
     // Disabled on native — personal device, no idle logout needed
     if (!enabled || !supabase || isNative) return;
+    let retryPending = false;
 
-    const resetTimer = () => {
+    const scheduleTimer = (delay: number) => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
 
-      timeoutRef.current = setTimeout(async () => {
-        logger.log('[SessionTimeout] Idle timeout reached, signing out');
+      timeoutRef.current = setTimeout(() => {
+        void attemptIdleSignOut();
+      }, delay);
+    };
 
-        try {
-          // Flush offline queue before signing out to prevent data loss
-          if (offlineQueue.hasPendingActions()) {
-            logger.log('[SessionTimeout] Flushing offline queue before logout...');
-            try {
-              // Process queue with timeout to prevent hanging
-              await Promise.race([
-                offlineQueue.processQueue(),
-                new Promise((_, reject) =>
-                  setTimeout(() => reject(new Error('Queue flush timeout')), QUEUE_FLUSH_TIMEOUT)
-                )
-              ]);
-              logger.log('[SessionTimeout] Offline queue flushed successfully');
-            } catch (flushError) {
-              logger.warn('[SessionTimeout] Could not flush offline queue:', flushError);
-              // Continue with logout even if flush fails
-            }
-          }
+    const reportAndRetry = (reason: BlockedIdleSignOutReason) => {
+      retryPending = true;
+      reportBlockedIdleSignOut(reason, () => {
+        void attemptIdleSignOut();
+      });
+      scheduleTimer(BLOCKED_SIGN_OUT_RETRY_DELAY);
+    };
 
-          await supabase?.auth.signOut();
-          // Reload to show login screen
+    async function attemptIdleSignOut(): Promise<void> {
+      logger.log('[SessionTimeout] Idle timeout reached, signing out');
+
+      try {
+        const result = await performOwnerSafeSignOut({
+          restorePushRegistration: pushNotificationsEnabled
+            ? initializePushNotifications
+            : undefined,
+        });
+
+        if (result.status === 'signed-out' || result.status === 'no-session') {
+          retryPending = false;
           window.location.reload();
-        } catch (error) {
-          logger.error('[SessionTimeout] Error signing out:', error);
+          return;
         }
-      }, WEB_IDLE_TIMEOUT);
+        if (result.status === 'pending-changes') {
+          reportAndRetry('pending-changes');
+          return;
+        }
+        if (result.status === 'session-changed') {
+          retryPending = false;
+          scheduleTimer(WEB_IDLE_TIMEOUT);
+          return;
+        }
+        reportAndRetry(
+          result.status === 'sign-out-failed'
+            ? 'sign-out-failed'
+            : 'cleanup-failed',
+        );
+      } catch (error) {
+        logger.error('[SessionTimeout] Error signing out:', error);
+        reportAndRetry('cleanup-failed');
+      }
+    }
+
+    const resetTimer = () => {
+      if (retryPending) return;
+      scheduleTimer(WEB_IDLE_TIMEOUT);
     };
 
     // Events that indicate user activity
@@ -83,5 +129,5 @@ export function useSessionTimeout(enabled: boolean = true) {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [enabled]);
+  }, [enabled, pushNotificationsEnabled]);
 }

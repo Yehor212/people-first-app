@@ -1,7 +1,7 @@
 import { broadcastChange } from "@/lib/syncBroadcast";
 import { exportBackup, importBackup, type BackupPayload } from "@/storage/backup";
 import { supabase } from "@/lib/supabaseClient";
-import { triggerDataRefresh } from "@/hooks/useIndexedDB";
+import { runWithDataWriteBarrier } from "@/hooks/useIndexedDB";
 import logger from "@/lib/logger";
 import type { Json } from "@/types/supabase";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
@@ -9,6 +9,7 @@ import { generateSecureRandom, isAbortError } from "@/lib/validation";
 import { fetchAndMergeServerTombstones } from "@/storage/sync/serverTombstones";
 import type { SeverityLevel } from "@sentry/core";
 import type { ErrorCategory } from "@/lib/sentry";
+import { getJournalReplaceAuthorization } from "@/lib/journalContentSession";
 
 // Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
 // Breadcrumbs are fire-and-forget telemetry — async import is safe.
@@ -32,12 +33,13 @@ let syncTimeout: ReturnType<typeof setTimeout> | null = null;
 let lastSyncTime = 0;
 let autoSyncStarted = false;
 
-// P1-11 Fix: Promise-based sync lock instead of boolean
-// The boolean lock had issues:
-// 1. Concurrent callers that see syncLock===true would return 'skipped' and miss the result
-// 2. Race condition where two callers could both see syncLock===false
-// With Promise-based lock, concurrent callers wait for and return the same result
+// Cloud operations are serialized. Blindly sharing an in-flight promise is unsafe:
+// a Replace requested after an account switch must never inherit the previous
+// account's Merge result.
 let currentSyncPromise: Promise<{ status: string }> | null = null;
+let syncQueueTail: Promise<void> = Promise.resolve();
+let syncGeneration = 0;
+let syncSuspended = false;
 let syncLockTimeout: ReturnType<typeof setTimeout> | null = null;
 let syncLockStartTime: number | null = null; // Track when lock was acquired
 let syncAbortController: AbortController | null = null; // AbortController for timeout cancellation
@@ -55,50 +57,60 @@ const generateOperationId = (): string => {
 let visibilityChangeHandler: (() => void) | null = null;
 let beforeUnloadHandler: (() => void) | null = null;
 
-export const syncWithCloud = async (
-  mode: "merge" | "replace" = "merge"
+export const syncWithCloud = (
+  mode: "merge" | "replace" = "merge",
+  expectedOwnerUserId?: string,
+  externalSignal?: AbortSignal,
 ): Promise<{ status: string }> => {
   lazyCategorizedBreadcrumb("sync", "syncWithCloud called", { mode });
 
-  // P1-11 Fix: If sync is already in progress, wait for it and return the same result
-  // This prevents "skipped" status and ensures all callers get consistent data
-  if (currentSyncPromise) {
-    logger.sync("Sync already in progress, waiting for completion...");
-    lazyCategorizedBreadcrumb("sync", "Waiting for existing sync");
-    try {
-      return await currentSyncPromise;
-    } catch (error) {
-      // Handle AbortError gracefully - don't re-throw aborts
-      if (isAbortError(error)) {
-        lazyCategorizedBreadcrumb("sync", "Sync wait aborted", {}, "warning");
-        logger.warn("[Sync] Sync wait aborted");
-        return { status: "aborted" };
-      }
-      // Re-throw so caller knows sync failed
-      throw error;
-    }
-  }
-
   if (!supabase) {
-    throw new Error("Supabase not configured.");
+    return Promise.reject(new Error("Supabase not configured."));
+  }
+  if (syncSuspended) {
+    return Promise.reject(new Error("Cloud sync is suspended for account-boundary cleanup."));
   }
 
-  // Create the sync promise
-  const operationId = generateOperationId();
-  syncLockStartTime = Date.now();
-  // Create AbortController for timeout cancellation
-  syncAbortController = new AbortController();
-  const abortSignal = syncAbortController.signal;
-  logger.sync(`Sync started (operation: ${operationId})`);
+  const requestGeneration = syncGeneration;
+  const queuedSync = syncQueueTail.catch(() => undefined).then(async () => {
+    if (requestGeneration !== syncGeneration) {
+      return { status: "aborted" };
+    }
 
-  // P1-11 Fix: Wrap the sync operation in a promise that concurrent callers can await
-  currentSyncPromise = doSyncWithCloud(mode, operationId, abortSignal);
+    const operationId = generateOperationId();
+    syncLockStartTime = Date.now();
+    const operationController = new AbortController();
+    syncAbortController = operationController;
+    const abortSignal = operationController.signal;
+    const forwardExternalAbort = () => {
+      if (!abortSignal.aborted) {
+        operationController.abort(externalSignal?.reason);
+      }
+    };
+    if (externalSignal?.aborted) {
+      forwardExternalAbort();
+    } else {
+      externalSignal?.addEventListener("abort", forwardExternalAbort, { once: true });
+    }
+    logger.sync(`Sync started (operation: ${operationId})`);
 
-  try {
-    return await currentSyncPromise;
-  } finally {
-    currentSyncPromise = null;
-  }
+    const operation = doSyncWithCloud(mode, operationId, abortSignal, expectedOwnerUserId);
+    currentSyncPromise = operation;
+    try {
+      return await operation;
+    } finally {
+      externalSignal?.removeEventListener("abort", forwardExternalAbort);
+      if (currentSyncPromise === operation) {
+        currentSyncPromise = null;
+      }
+    }
+  });
+
+  syncQueueTail = queuedSync.then(
+    () => undefined,
+    () => undefined
+  );
+  return queuedSync;
 };
 
 /**
@@ -108,7 +120,8 @@ export const syncWithCloud = async (
 const doSyncWithCloud = async (
   mode: "merge" | "replace",
   operationId: string,
-  abortSignal: AbortSignal
+  abortSignal: AbortSignal,
+  expectedOwnerUserId?: string,
 ): Promise<{ status: string }> => {
   // Set timeout to abort operation if it takes too long
   // P1-11 Fix: Simplified - just abort the controller, Promise-based lock handles cleanup
@@ -130,22 +143,29 @@ const doSyncWithCloud = async (
       throw new Error("Sync operation aborted due to timeout");
     }
 
-    const {
-      data: { session },
-    } = await supabase!.auth.getSession();
-    const user = session?.user;
+    const assertAuthenticatedOwner = async (expected?: string) => {
+      const {
+        data: { session },
+      } = await supabase!.auth.getSession();
+      const user = session?.user;
+      if (!user) throw new Error("Not authenticated.");
+      if (expected && user.id !== expected) {
+        throw new Error("Authenticated account changed during cloud sync");
+      }
+      return user;
+    };
 
-    if (!user) {
-      throw new Error("Not authenticated.");
-    }
+    const user = await assertAuthenticatedOwner(expectedOwnerUserId);
+    const syncOwnerUserId = expectedOwnerUserId ?? user.id;
 
     // Check abort status before heavy operations
     if (abortSignal.aborted) {
       throw new Error("Sync operation aborted due to timeout");
     }
 
-    await fetchAndMergeServerTombstones();
+    await fetchAndMergeServerTombstones(100000, syncOwnerUserId);
     const localBackup = await exportBackup();
+    await assertAuthenticatedOwner(syncOwnerUserId);
 
     // Check abort status before network call
     if (abortSignal.aborted) {
@@ -162,45 +182,90 @@ const doSyncWithCloud = async (
       throw fetchError;
     }
 
+    await assertAuthenticatedOwner(syncOwnerUserId);
+
     // Check abort status after network call
     if (abortSignal.aborted) {
       throw new Error("Sync operation aborted due to timeout");
     }
 
+    const localData = localBackup.data;
+    const localItemCount =
+      (localData.moods?.length || 0) +
+      (localData.habits?.length || 0) +
+      (localData.focusSessions?.length || 0) +
+      (localData.gratitudeEntries?.length || 0) +
+      (localData.journalEntries?.length || 0);
+    const remotePayload = remote?.payload
+      ? (remote.payload as unknown as BackupPayload)
+      : null;
+    const remoteData = (remotePayload?.data || {}) as Record<string, unknown[]>;
+    const remoteItemCount =
+      (remoteData.moods?.length || 0) +
+      (remoteData.habits?.length || 0) +
+      (remoteData.focusSessions?.length || 0) +
+      (remoteData.gratitudeEntries?.length || 0) +
+      (remoteData.journalEntries?.length || 0);
+
+    logger.sync(`Local items: ${localItemCount}, Remote items: ${remoteItemCount}`);
+
     let syncStatus: "pulled" | "pushed" | "merged" = "pushed";
+    let appliedRemoteData = false;
 
-    if (remote?.payload) {
-      const remotePayload = remote.payload as Record<string, unknown>;
-      const remoteData = (remotePayload.data || {}) as Record<string, unknown[]>;
-      const localData = localBackup.data;
+    if (mode === "replace") {
+      // Replace is an account boundary: an empty backup and an absent backup row
+      // are both authoritative empty states. Never upload the pre-switch snapshot.
+      const authoritativePayload: BackupPayload =
+        remotePayload ?? {
+          ...localBackup,
+          createdAt: new Date().toISOString(),
+          data: {
+            moods: [],
+            habits: [],
+            focusSessions: [],
+            gratitudeEntries: [],
+            settings: [],
+            journalEntries: [],
+            journalPhotos: [],
+            journalAudio: [],
+          },
+          deletedHabitIds: undefined,
+          deletedJournalEntryIds: undefined,
+          deletedMoodIds: undefined,
+          deletedFocusSessionIds: undefined,
+          deletedGratitudeIds: undefined,
+        };
 
-      // Count items for logging
-      const localItemCount =
-        (localData.moods?.length || 0) +
-        (localData.habits?.length || 0) +
-        (localData.focusSessions?.length || 0) +
-        (localData.gratitudeEntries?.length || 0) +
-        (localData.journalEntries?.length || 0);
-
-      const remoteItemCount =
-        (remoteData.moods?.length || 0) +
-        (remoteData.habits?.length || 0) +
-        (remoteData.focusSessions?.length || 0) +
-        (remoteData.gratitudeEntries?.length || 0) +
-        (remoteData.journalEntries?.length || 0);
-
-      logger.sync(`Local items: ${localItemCount}, Remote items: ${remoteItemCount}`);
-
-      // ALWAYS merge if remote has any data - this ensures cross-device sync works
-      // The importBackup with mode="merge" will use bulkPut which updates existing or adds new
-      if (remoteItemCount > 0) {
-        logger.sync("Merging remote data into local...");
-        await importBackup(remotePayload as unknown as BackupPayload, mode);
-        syncStatus = localItemCount === 0 ? "pulled" : "merged";
-        // Trigger React state refresh after importing cloud data
-        triggerDataRefresh();
-        logger.sync("Data refreshed after cloud merge");
-      }
+      await runWithDataWriteBarrier(async () => {
+        await assertAuthenticatedOwner(syncOwnerUserId);
+        const authorization = getJournalReplaceAuthorization();
+        if (authorization) {
+          await importBackup(authoritativePayload, "replace", {
+            journalReplaceAuthorization: authorization,
+            expectedOwnerUserId: syncOwnerUserId,
+          });
+        } else {
+          await importBackup(authoritativePayload, "replace", {
+            expectedOwnerUserId: syncOwnerUserId,
+          });
+        }
+        await assertAuthenticatedOwner(syncOwnerUserId);
+      });
+      appliedRemoteData = true;
+      syncStatus = "pulled";
+      logger.sync("Authoritative cloud backup applied");
+    } else if (remotePayload) {
+      logger.sync("Merging remote data into local...");
+      await runWithDataWriteBarrier(async () => {
+        await assertAuthenticatedOwner(syncOwnerUserId);
+        await importBackup(remotePayload, "merge", {
+          expectedOwnerUserId: syncOwnerUserId,
+        });
+        await assertAuthenticatedOwner(syncOwnerUserId);
+      });
+      appliedRemoteData = true;
+      syncStatus = localItemCount === 0 ? "pulled" : "merged";
+      logger.sync("Data refreshed after cloud merge");
     } else {
       logger.sync("No remote data found, will push local data");
     }
@@ -212,8 +277,8 @@ const doSyncWithCloud = async (
 
     // Only re-export if we actually merged remote data into local
     // For single-device users (most common), this saves a full IndexedDB scan
-    const finalBackup =
-      syncStatus === "merged" || syncStatus === "pulled" ? await exportBackup() : localBackup;
+    const finalBackup = appliedRemoteData ? await exportBackup() : localBackup;
+    await assertAuthenticatedOwner(syncOwnerUserId);
 
     // Final abort check before upsert
     if (abortSignal.aborted) {
@@ -232,6 +297,8 @@ const doSyncWithCloud = async (
     if (upsertError) {
       throw upsertError;
     }
+
+    await assertAuthenticatedOwner(syncOwnerUserId);
 
     lastSyncTime = Date.now();
 
@@ -285,9 +352,9 @@ export const silentSync = async () => {
   // Use orchestrator for queue-based sync
   await syncOrchestrator.sync(
     "backup",
-    async () => {
+    async ({ ownerUserId, signal }) => {
       try {
-        await syncWithCloud("merge");
+        await syncWithCloud("merge", ownerUserId, signal);
         logger.sync("Auto-sync completed");
         lazyCategorizedBreadcrumb("sync", "Auto-sync completed");
         // Reset failure counter and emit success on successful sync
@@ -317,7 +384,9 @@ export const silentSync = async () => {
       }
     },
     { priority: 5, maxRetries: 3 }
-  );
+  ).catch((error: unknown) => {
+    logger.warn("[Sync] Auto-sync orchestration stopped:", error);
+  });
 };
 
 // Start periodic sync
@@ -393,6 +462,37 @@ export const stopAutoSync = () => {
   logger.sync("Auto-sync stopped");
 };
 
+/**
+ * Suspend new sync work, invalidate queued turns, abort the active operation,
+ * and wait until every older turn has unwound. Account-boundary cleanup must
+ * await this before clearing IndexedDB.
+ */
+export const quiesceCloudSync = async (): Promise<void> => {
+  syncSuspended = true;
+  syncGeneration += 1;
+  stopAutoSync();
+
+  const orchestratorQuiesce = syncOrchestrator.suspendForAccountBoundary();
+  const activeOperation = currentSyncPromise;
+  const queuedOperations = syncQueueTail;
+  syncAbortController?.abort();
+
+  await Promise.allSettled([
+    orchestratorQuiesce,
+    activeOperation ?? Promise.resolve({ status: "idle" }),
+    queuedOperations,
+  ]);
+
+  currentSyncPromise = null;
+  syncLockStartTime = null;
+};
+
+export const resumeCloudSync = (): void => {
+  syncSuspended = false;
+  syncOrchestrator.resumeAfterAccountBoundary();
+  logger.sync("CloudSync resumed after account-boundary cleanup");
+};
+
 // Trigger debounced sync (call after data changes)
 export const triggerSync = () => {
   if (!supabase) return;
@@ -427,6 +527,8 @@ export const flushSync = () => {
  * This cleans up ALL intervals, timeouts, listeners, and abort controllers.
  */
 export const destroyCloudSync = () => {
+  syncGeneration += 1;
+  syncSuspended = false;
   // Stop auto-sync (clears syncInterval, syncTimeout, and event listeners)
   stopAutoSync();
 
@@ -442,7 +544,8 @@ export const destroyCloudSync = () => {
     syncAbortController = null;
   }
 
-  // P1-11 Fix: Reset Promise-based lock state
+  // Invalidate queued requests from the previous lifecycle. The queue itself is
+  // retained so a fresh request cannot overlap an operation that is unwinding.
   currentSyncPromise = null;
   syncLockStartTime = null;
 

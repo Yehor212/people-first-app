@@ -5,6 +5,19 @@ import { getChallenges, saveChallenges, getBadges, saveBadges } from '@/lib/chal
 import { syncOrchestrator } from '@/lib/syncOrchestrator';
 import { triggerDataRefresh } from '@/hooks/useIndexedDB';
 import type { Json } from '@/types/supabase';
+import {
+  SyncOwnerBoundaryError,
+  validateSyncOwner,
+} from '@/storage/sync/syncOwner';
+
+async function assertChallengeSyncOwner(
+  expectedOwnerUserId: string,
+  operation: string
+): Promise<void> {
+  if (!(await validateSyncOwner(expectedOwnerUserId, operation))) {
+    throw new SyncOwnerBoundaryError(operation);
+  }
+}
 
 // Convert local Challenge to Supabase format (matches DB Insert type)
 function challengeToSupabase(challenge: Challenge, userId: string) {
@@ -85,6 +98,7 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
 }> {
   const client = supabase;
   if (!client) return { challenges: getChallenges() };
+  await assertChallengeSyncOwner(userId, 'Challenge sync start');
 
   // Use orchestrator for queue-based sync
   let result: { challenges: Challenge[]; error?: string } = {
@@ -174,22 +188,24 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
       }
 
       // 5. Save merged challenges locally
+      await assertChallengeSyncOwner(userId, 'Challenge local merge');
       saveChallenges(merged);
 
       // Trigger React state refresh so UI updates
-      triggerDataRefresh();
+      await triggerDataRefresh();
+      await assertChallengeSyncOwner(userId, 'Challenge refresh completion');
       logger.log('[ChallengesSync] Data refresh triggered after merge');
 
       result = { challenges: merged };
     } catch (error) {
       logger.error('Sync challenges error:', error);
       result = {
-        challenges: getChallenges(),
+        challenges: result.challenges,
         error: error instanceof Error ? error.message : 'Unknown error'
       };
       throw error;
     }
-  }, { priority: 6, maxRetries: 3 });
+  }, { priority: 6, maxRetries: 3, expectedOwnerUserId: userId });
 
   if (result.error) {
     logger.warn('[Sync] Operation failed, will retry via orchestrator');
@@ -292,6 +308,7 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
 }> {
   const client = supabase;
   if (!client) return { badges: getBadges() };
+  await assertChallengeSyncOwner(userId, 'Badge sync start');
 
   // Use orchestrator for queue-based sync
   let result: { badges: Badge[]; error?: string } = {
@@ -377,22 +394,24 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
       }
 
       // 5. Save merged badges locally
+      await assertChallengeSyncOwner(userId, 'Badge local merge');
       saveBadges(merged);
 
       // Trigger React state refresh so UI updates
-      triggerDataRefresh();
+      await triggerDataRefresh();
+      await assertChallengeSyncOwner(userId, 'Badge refresh completion');
       logger.log('[BadgesSync] Data refresh triggered after merge');
 
       result = { badges: merged };
     } catch (error) {
       logger.error('Sync badges error:', error);
       result = {
-        badges: getBadges(),
+        badges: result.badges,
         error: error instanceof Error ? error.message : 'Unknown error'
       };
       throw error;
     }
-  }, { priority: 6, maxRetries: 3 });
+  }, { priority: 6, maxRetries: 3, expectedOwnerUserId: userId });
 
   if (result.error) {
     logger.warn('[Sync] Operation failed, will retry via orchestrator');

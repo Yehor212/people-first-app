@@ -1,18 +1,12 @@
 import {
-  getDeletedFocusSessionIds,
-  getDeletedGratitudeIds,
-  getDeletedHabitIds,
-  getDeletedJournalEntryIds,
-  getDeletedMoodIds,
-  mergeDeletedFocusSessionIds,
-  mergeDeletedGratitudeIds,
-  mergeDeletedHabitIds,
-  mergeDeletedJournalEntryIds,
-  mergeDeletedMoodIds,
+  DELETION_TRACKER_KEYS,
+  normalizeDeletedIdsForStorage,
 } from "@/storage/deletionTracker";
 import { db } from "@/storage/db";
 import { logger } from "@/lib/logger";
-import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
+import Dexie from "dexie";
+import { SyncOwnerBoundaryError, validateSyncOwner } from "@/storage/sync/syncOwner";
 
 export type TombstonedSyncEntity = "mood" | "habit" | "focus" | "gratitude" | "journal";
 
@@ -32,6 +26,50 @@ const EMPTY_TOMBSTONE_LISTS: SyncTombstoneIdLists = {
   gratitude: [],
   journal: [],
 };
+
+const TOMBSTONE_ENTITY_TYPES: TombstonedSyncEntity[] = [
+  "mood",
+  "habit",
+  "focus",
+  "gratitude",
+  "journal",
+];
+
+function createEmptyTombstoneSets(): SyncTombstoneIdSets {
+  return {
+    mood: new Set(),
+    habit: new Set(),
+    focus: new Set(),
+    gratitude: new Set(),
+    journal: new Set(),
+  };
+}
+
+function readStoredTombstoneIds(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((id): id is string => typeof id === "string" && id.length > 0)
+    : [];
+}
+
+async function resolveTombstoneOwner(
+  expectedOwnerUserId: string | undefined,
+  operation: string,
+  assertOwnerCurrent?: () => Promise<void>,
+): Promise<string> {
+  await assertOwnerCurrent?.();
+  const ownerUserId = await validateSyncOwner(expectedOwnerUserId, operation);
+  if (!ownerUserId) throw new SyncOwnerBoundaryError(operation);
+  return ownerUserId;
+}
+
+async function assertTombstoneOwnerCurrent(
+  ownerUserId: string,
+  operation: string,
+  assertOwnerCurrent?: () => Promise<void>,
+): Promise<void> {
+  await assertOwnerCurrent?.();
+  await validateSyncOwner(ownerUserId, operation);
+}
 
 function isTombstonedSyncEntity(value: string): value is TombstonedSyncEntity {
   return (
@@ -73,27 +111,50 @@ export function collectSyncTombstoneIds(rows: SyncTombstoneRow[]): SyncTombstone
 }
 
 export async function mergeSyncTombstones(
-  rows: SyncTombstoneRow[]
+  rows: SyncTombstoneRow[],
+  expectedOwnerUserId?: string,
+  assertOwnerCurrent?: () => Promise<void>,
 ): Promise<SyncTombstoneIdSets> {
+  const ownerUserId = await resolveTombstoneOwner(
+    expectedOwnerUserId,
+    "Server tombstone merge",
+    assertOwnerCurrent,
+  );
   const ids = rows.length > 0 ? collectSyncTombstoneIds(rows) : EMPTY_TOMBSTONE_LISTS;
+  const merged = createEmptyTombstoneSets();
 
-  await Promise.all([
-    ids.mood.length > 0 ? mergeDeletedMoodIds(ids.mood) : Promise.resolve(),
-    ids.habit.length > 0 ? mergeDeletedHabitIds(ids.habit) : Promise.resolve(),
-    ids.focus.length > 0 ? mergeDeletedFocusSessionIds(ids.focus) : Promise.resolve(),
-    ids.gratitude.length > 0 ? mergeDeletedGratitudeIds(ids.gratitude) : Promise.resolve(),
-    ids.journal.length > 0 ? mergeDeletedJournalEntryIds(ids.journal) : Promise.resolve(),
-  ]);
+  await db.transaction("rw", [db.settings], async () => {
+    await Dexie.waitFor(
+      assertTombstoneOwnerCurrent(
+        ownerUserId,
+        "Server tombstone merge transaction",
+        assertOwnerCurrent,
+      ),
+    );
 
-  const [mood, habit, focus, gratitude, journal] = await Promise.all([
-    getDeletedMoodIds(),
-    getDeletedHabitIds(),
-    getDeletedFocusSessionIds(),
-    getDeletedGratitudeIds(),
-    getDeletedJournalEntryIds(),
-  ]);
+    for (const entityType of TOMBSTONE_ENTITY_TYPES) {
+      const key = DELETION_TRACKER_KEYS[entityType];
+      const existing = await db.settings.get(key);
+      const normalized = normalizeDeletedIdsForStorage([
+        ...readStoredTombstoneIds(existing?.value),
+        ...ids[entityType],
+      ]);
+      merged[entityType] = new Set(normalized);
+      if (ids[entityType].length > 0) {
+        await db.settings.put({ key, value: normalized });
+      }
+    }
 
-  return { mood, habit, focus, gratitude, journal };
+    await Dexie.waitFor(
+      assertTombstoneOwnerCurrent(
+        ownerUserId,
+        "Server tombstone merge transaction",
+        assertOwnerCurrent,
+      ),
+    );
+  });
+
+  return merged;
 }
 
 function hasAnyTombstoneIds(ids: SyncTombstoneIdSets): boolean {
@@ -107,9 +168,17 @@ function hasAnyTombstoneIds(ids: SyncTombstoneIdSets): boolean {
 }
 
 export async function purgeLocalRowsForSyncTombstones(
-  ids: SyncTombstoneIdSets
+  ids: SyncTombstoneIdSets,
+  expectedOwnerUserId?: string,
+  assertOwnerCurrent?: () => Promise<void>,
 ): Promise<boolean> {
   if (!hasAnyTombstoneIds(ids)) return false;
+
+  const ownerUserId = await resolveTombstoneOwner(
+    expectedOwnerUserId,
+    "Server tombstone purge",
+    assertOwnerCurrent,
+  );
 
   await db.transaction(
     "rw",
@@ -123,6 +192,13 @@ export async function purgeLocalRowsForSyncTombstones(
       db.journalAudio,
     ],
     async () => {
+      await Dexie.waitFor(
+        assertTombstoneOwnerCurrent(
+          ownerUserId,
+          "Server tombstone purge transaction",
+          assertOwnerCurrent,
+        ),
+      );
       if (ids.mood.size > 0) await db.moods.bulkDelete([...ids.mood]);
       if (ids.habit.size > 0) await db.habits.bulkDelete([...ids.habit]);
       if (ids.focus.size > 0) await db.focusSessions.bulkDelete([...ids.focus]);
@@ -133,21 +209,35 @@ export async function purgeLocalRowsForSyncTombstones(
         await db.journalPhotos.where("entryId").anyOf(journalIds).delete();
         await db.journalAudio.where("entryId").anyOf(journalIds).delete();
       }
+      await Dexie.waitFor(
+        assertTombstoneOwnerCurrent(
+          ownerUserId,
+          "Server tombstone purge transaction",
+          assertOwnerCurrent,
+        ),
+      );
     }
   );
 
   return true;
 }
 
-export async function fetchAndMergeServerTombstones(limit = 100000): Promise<SyncTombstoneIdSets> {
-  if (!supabase) return mergeSyncTombstones([]);
-  const userId = await getCurrentUserId();
-  if (!userId) return mergeSyncTombstones([]);
+export async function fetchAndMergeServerTombstones(
+  limit = 100000,
+  expectedOwnerUserId?: string,
+  assertOwnerCurrent?: () => Promise<void>,
+): Promise<SyncTombstoneIdSets> {
+  if (!supabase) return createEmptyTombstoneSets();
+  const ownerUserId = await resolveTombstoneOwner(
+    expectedOwnerUserId,
+    "Server tombstone fetch",
+    assertOwnerCurrent,
+  );
 
   const { data, error } = await supabase
     .from("sync_tombstones")
     .select("entity_type, entity_id, deleted_seq")
-    .eq("user_id", userId)
+    .eq("user_id", ownerUserId)
     .order("deleted_seq", { ascending: true })
     .limit(limit);
 
@@ -155,8 +245,13 @@ export async function fetchAndMergeServerTombstones(limit = 100000): Promise<Syn
     throw new Error(`[Sync] Failed to fetch server tombstones: ${error.message}`);
   }
 
-  const ids = await mergeSyncTombstones(data || []);
-  if (await purgeLocalRowsForSyncTombstones(ids)) {
+  await assertTombstoneOwnerCurrent(
+    ownerUserId,
+    "Server tombstone fetch",
+    assertOwnerCurrent,
+  );
+  const ids = await mergeSyncTombstones(data || [], ownerUserId, assertOwnerCurrent);
+  if (await purgeLocalRowsForSyncTombstones(ids, ownerUserId, assertOwnerCurrent)) {
     logger.sync("[Sync] Purged locally stale tombstoned rows before push");
   }
   return ids;
@@ -164,16 +259,21 @@ export async function fetchAndMergeServerTombstones(limit = 100000): Promise<Syn
 
 export async function isEntityTombstonedOnServer(
   entityType: TombstonedSyncEntity,
-  entityId: string
+  entityId: string,
+  expectedOwnerUserId?: string,
+  assertOwnerCurrent?: () => Promise<void>,
 ): Promise<boolean> {
   if (!supabase) return false;
-  const userId = await getCurrentUserId();
-  if (!userId) return false;
+  const ownerUserId = await resolveTombstoneOwner(
+    expectedOwnerUserId,
+    "Server tombstone check",
+    assertOwnerCurrent,
+  );
 
   const { data, error } = await supabase
     .from("sync_tombstones")
     .select("entity_id")
-    .eq("user_id", userId)
+    .eq("user_id", ownerUserId)
     .eq("entity_type", entityType)
     .eq("entity_id", entityId)
     .maybeSingle();
@@ -182,9 +282,19 @@ export async function isEntityTombstonedOnServer(
     throw new Error(`[Sync] Failed to check server tombstone for ${entityType}:${entityId}`);
   }
 
+  await assertTombstoneOwnerCurrent(
+    ownerUserId,
+    "Server tombstone check",
+    assertOwnerCurrent,
+  );
+
   if (data?.entity_id === entityId) {
-    const ids = await mergeSyncTombstones([{ entity_type: entityType, entity_id: entityId }]);
-    await purgeLocalRowsForSyncTombstones(ids);
+    const ids = await mergeSyncTombstones(
+      [{ entity_type: entityType, entity_id: entityId }],
+      ownerUserId,
+      assertOwnerCurrent,
+    );
+    await purgeLocalRowsForSyncTombstones(ids, ownerUserId, assertOwnerCurrent);
     return true;
   }
 

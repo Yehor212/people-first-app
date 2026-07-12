@@ -20,8 +20,17 @@ const mockSetOnboardingComplete = vi.fn();
 const mockSetHasSelectedLanguage = vi.fn();
 const mockClearLocalUserData = vi.fn(() => Promise.resolve());
 const mockStopAutoSync = vi.fn();
+const mockQuiesceCloudSync = vi.fn(() => Promise.resolve());
 const mockClearDeviceIdCache = vi.fn();
 const mockTriggerDataRefresh = vi.fn();
+const mockRunWithDataWriteBarrier = vi.fn(async (mutation: () => Promise<unknown>) => {
+  const result = await mutation();
+  await mockTriggerDataRefresh();
+  return result;
+});
+const mockSuspendAndClearForAccountBoundary = vi.fn(() => Promise.resolve());
+const mockResumeAfterAccountBoundary = vi.fn();
+const mockGetCurrentSessionUserId = vi.fn(() => Promise.resolve<string | null>(null));
 const mockScheduleEvents = [
   { id: 'e1', title: 'Manual Event', date: '2026-02-19', startHour: 9, startMinute: 0, endHour: 10, endMinute: 0, color: '#ff0000', source: 'manual' as const },
   { id: 'e2', title: 'Habit Event', date: '2026-02-19', startHour: 11, startMinute: 0, endHour: 12, endMinute: 0, color: '#00ff00', source: 'habit' as const },
@@ -61,6 +70,20 @@ const mockSyncWithCloud = vi.fn((_mode: unknown) => Promise.resolve());
 vi.mock('@/storage/cloudSync', () => ({
   syncWithCloud: (mode: unknown) => mockSyncWithCloud(mode),
   stopAutoSync: () => mockStopAutoSync(),
+  quiesceCloudSync: () => mockQuiesceCloudSync(),
+  resumeCloudSync: vi.fn(),
+  startAutoSync: vi.fn(),
+}));
+
+vi.mock('@/lib/offlineQueue', () => ({
+  offlineQueue: {
+    suspendAndClearForAccountBoundary: () => mockSuspendAndClearForAccountBoundary(),
+    resumeAfterAccountBoundary: () => mockResumeAfterAccountBoundary(),
+  },
+}));
+
+vi.mock('@/lib/supabaseClient', () => ({
+  getCurrentSessionUserId: () => mockGetCurrentSessionUserId(),
 }));
 
 const mockMoodsToArray = vi.fn(() => Promise.resolve([{ id: 'm1' }]));
@@ -84,6 +107,8 @@ vi.mock('@/storage/eventSync', () => ({
 
 vi.mock('@/hooks/useIndexedDB', () => ({
   triggerDataRefresh: () => mockTriggerDataRefresh(),
+  runWithDataWriteBarrier: (mutation: () => Promise<unknown>, _options?: unknown) =>
+    mockRunWithDataWriteBarrier(mutation),
 }));
 
 // --- import under test after mocks ---
@@ -105,7 +130,7 @@ describe('useSettingsHandlers', () => {
       await result.current.handleResetData();
     });
 
-    expect(mockStopAutoSync).toHaveBeenCalled();
+    expect(mockQuiesceCloudSync).toHaveBeenCalled();
     expect(mockClearDeviceIdCache).toHaveBeenCalled();
     expect(mockClearLocalUserData).toHaveBeenCalled();
     expect(mockSetMoods).toHaveBeenCalledWith([]);
@@ -119,6 +144,35 @@ describe('useSettingsHandlers', () => {
     expect(mockSetOnboardingComplete).toHaveBeenCalledWith(false);
     expect(mockSetHasSelectedLanguage).toHaveBeenCalledWith(false);
     expect(mockTriggerDataRefresh).toHaveBeenCalled();
+  });
+
+  it('handleResetData refuses a local-only wipe when an account session is active', async () => {
+    mockGetCurrentSessionUserId.mockResolvedValueOnce('account-a');
+    const { result } = renderHook(() => useSettingsHandlers(allScheduleEvents));
+
+    await act(async () => {
+      await expect(result.current.handleResetData()).rejects.toThrow(/sign out|account/i);
+    });
+
+    expect(mockQuiesceCloudSync).not.toHaveBeenCalled();
+    expect(mockSuspendAndClearForAccountBoundary).not.toHaveBeenCalled();
+    expect(mockClearLocalUserData).not.toHaveBeenCalled();
+  });
+
+  it('handleResetData rechecks the session inside the destructive data barrier', async () => {
+    mockGetCurrentSessionUserId
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce('account-a');
+    const { result } = renderHook(() => useSettingsHandlers(allScheduleEvents));
+
+    await act(async () => {
+      await expect(result.current.handleResetData()).rejects.toThrow(/sign out|account/i);
+    });
+
+    expect(mockQuiesceCloudSync).toHaveBeenCalledTimes(1);
+    expect(mockRunWithDataWriteBarrier).toHaveBeenCalledTimes(1);
+    expect(mockClearLocalUserData).not.toHaveBeenCalled();
+    expect(mockResumeAfterAccountBoundary).toHaveBeenCalledTimes(1);
   });
 
   it('handleNameChange sets name and custom flag', () => {

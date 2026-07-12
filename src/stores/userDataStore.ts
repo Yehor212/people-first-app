@@ -15,6 +15,14 @@ import type {
 import { defaultReminderSettings } from "@/lib/reminders";
 import { needsMigration, migrateAllHabits } from "@/lib/habitMigration";
 import { logger } from "@/lib/logger";
+import { registerAccountBoundaryRuntimeReset } from "@/storage/accountBoundaryRuntime";
+
+export const defaultPrivacySettings: PrivacySettings = {
+  noTracking: false,
+  analytics: false,
+  consentShown: false,
+  pushNotifications: false,
+};
 
 // Module-level guard: prevents _hydrateFromDB from re-running migration in a loop.
 // The loop occurs when migration calls dbSetter → useIndexedDB setState → useLayoutEffect
@@ -150,7 +158,7 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
   focusSessions: [],
   gratitudeEntries: [],
   reminders: defaultReminderSettings,
-  privacy: { noTracking: false, analytics: false, consentShown: false, pushNotifications: false },
+  privacy: { ...defaultPrivacySettings },
   scheduleEvents: [],
   microReflections: [],
   canvasGoals: [],
@@ -296,3 +304,7 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
     set(payload);
   },
 }));
+
+registerAccountBoundaryRuntimeReset(() => {
+  useUserDataStore.setState({ privacy: { ...defaultPrivacySettings } });
+});

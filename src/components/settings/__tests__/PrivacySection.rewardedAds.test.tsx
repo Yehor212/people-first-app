@@ -29,10 +29,6 @@ vi.mock('@/contexts/LanguageContext', () => ({
     t: {
       privacyTitle: 'Privacy',
       privacyDescription: 'Control privacy settings.',
-      privacyNoTracking: 'No tracking',
-      privacyNoTrackingHint: 'Disable analytics and ads.',
-      privacyAnalytics: 'Analytics',
-      privacyAnalyticsHint: 'Help improve the app.',
       privacyAds: 'Rewarded ads',
       privacyAdsHint: 'Optional rewarded ads after consent.',
       privacyPolicy: 'Privacy Policy',

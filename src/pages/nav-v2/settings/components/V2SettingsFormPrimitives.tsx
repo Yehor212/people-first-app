@@ -7,6 +7,7 @@ import {
   type KeyboardEventHandler,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ interface SettingsTextInputProps {
   id?: string;
   type?: string;
   autoComplete?: string;
+  placeholder?: string;
   autoFocus?: boolean;
   disabled?: boolean;
   fill?: boolean;
@@ -109,6 +111,7 @@ export function SettingsTextInput({
   id,
   type = "text",
   autoComplete,
+  placeholder,
   autoFocus = false,
   disabled,
   fill = false,
@@ -133,6 +136,7 @@ export function SettingsTextInput({
       value={value}
       onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.target.value)}
       autoComplete={autoComplete}
+      placeholder={placeholder}
       autoFocus={autoFocus}
       disabled={disabled}
       onKeyDown={onKeyDown}
@@ -236,7 +240,7 @@ export function SettingsExternalLink({ href, children, size = "xs" }: SettingsEx
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "text-primary underline hover:text-primary/90",
+        "inline-flex min-h-11 items-center rounded-[8px] px-1 text-primary underline hover:text-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         size === "sm" ? "text-sm" : "text-xs"
       )}
     >
@@ -257,6 +261,7 @@ export function SettingsDialog({
   confirmVariant = "primary",
 }: SettingsDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const descriptionId = `${titleId}-description`;
 
@@ -264,12 +269,7 @@ export function SettingsDialog({
     previousFocusRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
-    const firstFocusable = dialogRef.current
-      ?.querySelector<HTMLElement>("[data-dialog-panel]")
-      ?.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-    firstFocusable?.focus({ preventScroll: true });
+    panelRef.current?.focus({ preventScroll: true });
 
     return () => {
       previousFocusRef.current?.focus({ preventScroll: true });
@@ -292,7 +292,10 @@ export function SettingsDialog({
     const last = focusable[focusable.length - 1];
     const active = document.activeElement;
 
-    if (event.shiftKey && active === first) {
+    if (active === panelRef.current) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    } else if (event.shiftKey && active === first) {
       event.preventDefault();
       last.focus();
     } else if (!event.shiftKey && active === last) {
@@ -301,9 +304,11 @@ export function SettingsDialog({
     }
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain p-4 pt-[max(1rem,var(--safe-top))] pb-[max(1rem,var(--safe-bottom))]"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -318,8 +323,10 @@ export function SettingsDialog({
         onClick={onCancel}
       />
       <div
+        ref={panelRef}
         data-dialog-panel="true"
-        className="relative w-full max-w-sm rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.58)] bg-[hsl(var(--settings-v2-card)/0.96)] p-5 shadow-[var(--zen-shadow-card)]"
+        tabIndex={-1}
+        className="relative max-h-[calc(var(--app-viewport-height)-var(--safe-top)-var(--safe-bottom)-2rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.58)] bg-[hsl(var(--settings-v2-card)/0.96)] p-5 shadow-[var(--zen-shadow-card)]"
       >
         <h3 id={titleId} className="text-lg font-semibold text-foreground">
           {title}
@@ -335,6 +342,7 @@ export function SettingsDialog({
           </SettingsInlineButton>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

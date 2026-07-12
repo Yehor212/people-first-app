@@ -107,7 +107,7 @@ function createCountersQuery() {
 describe("eventSync auth guards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.getCurrentUserId.mockResolvedValue(null);
+    mocks.getCurrentUserId.mockResolvedValue("user-1");
     mocks.limit.mockResolvedValue({ data: [], error: null });
     mocks.single.mockResolvedValue({ data: { last_seq: 42 }, error: null });
     mocks.insert.mockReturnValue({
@@ -172,6 +172,7 @@ describe("eventSync auth guards", () => {
   });
 
   it("returns an empty delta without querying supabase when the user is signed out", async () => {
+    mocks.getCurrentUserId.mockResolvedValue(null);
     const result = await fetchDelta(10);
 
     expect(result).toEqual({ events: [], hasMore: false });
@@ -179,10 +180,19 @@ describe("eventSync auth guards", () => {
   });
 
   it("returns zero max seq without querying supabase when the user is signed out", async () => {
+    mocks.getCurrentUserId.mockResolvedValue(null);
     const result = await getServerMaxSeq();
 
     expect(result).toBe(0);
     expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("discards a max-seq response when the authenticated owner changes", async () => {
+    mocks.getCurrentUserId
+      .mockResolvedValueOnce("account-a")
+      .mockResolvedValue("account-b");
+
+    await expect(getServerMaxSeq("account-a")).rejects.toThrow(/account boundary/i);
   });
 
   it("pulls from the eventSync cursor and applies fetched remote events", async () => {
@@ -211,6 +221,73 @@ describe("eventSync auth guards", () => {
     expect(mocks.habitTablePut).toHaveBeenCalledWith(remoteHabit);
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 11 });
     expect(result).toEqual({ fetched: 1, applied: 1, lastSeq: 11 });
+  });
+
+  it("revalidates the expected owner inside the apply transaction before writing", async () => {
+    mocks.getCurrentUserId
+      .mockResolvedValueOnce("account-a")
+      .mockResolvedValue("account-b");
+    const remoteHabit = { id: "habit-owner-race", title: "Account A habit" };
+
+    await expect(
+      applyDelta(
+        [
+          {
+            id: "event-owner-race",
+            seq: 12,
+            entity_type: "habit",
+            entity_id: "habit-owner-race",
+            op: "upsert",
+            payload: remoteHabit,
+            device_id: "remote-device",
+            created_at: "2026-07-10T00:00:00.000Z",
+          },
+        ],
+        "current-device",
+        { expectedOwnerUserId: "account-a" },
+      ),
+    ).rejects.toThrow(/account boundary/i);
+
+    expect(mocks.habitTablePut).not.toHaveBeenCalled();
+    expect(mocks.settingsPut).not.toHaveBeenCalledWith({
+      key: "sync-last-seq",
+      value: 12,
+    });
+  });
+
+  it("rolls back apply when the caller generation changes for the same owner", async () => {
+    let generationChecks = 0;
+    const assertOwnerCurrent = vi.fn(async () => {
+      generationChecks += 1;
+      if (generationChecks > 1) {
+        throw new Error("Delta generation changed");
+      }
+    });
+
+    await expect(
+      applyDelta(
+        [
+          {
+            id: "event-generation-race",
+            seq: 13,
+            entity_type: "habit",
+            entity_id: "habit-generation-race",
+            op: "upsert",
+            payload: { id: "habit-generation-race" },
+            device_id: "remote-device",
+            created_at: "2026-07-10T00:00:00.000Z",
+          },
+        ],
+        "current-device",
+        {
+          expectedOwnerUserId: "user-1",
+          assertOwnerCurrent,
+        },
+      ),
+    ).rejects.toThrow("Delta generation changed");
+
+    expect(assertOwnerCurrent).toHaveBeenCalledTimes(2);
+    expect(mocks.habitTablePut).not.toHaveBeenCalled();
   });
 
   it("applies habit completion events into embedded habit entries", async () => {
@@ -375,6 +452,114 @@ describe("eventSync auth guards", () => {
       value: "remote-device-id",
     });
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 16 });
+  });
+
+  it("rejects a stale remote diary vault that matches the durable removal tombstone", async () => {
+    mocks.settingsGet.mockImplementation(async (key: string) => {
+      if (key === "sync-last-seq") return { key, value: 16 };
+      if (key === "zenflow-device-id") return { key, value: "current-device" };
+      if (key === "journal_vault_revision_v1") return { key, value: 101 };
+      return undefined;
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-stale-journal-vault",
+          seq: 17,
+          entity_type: "setting",
+          entity_id: "journal_vault_key",
+          op: "upsert",
+          payload: {
+            key: "journal_vault_key",
+            value: { wrappedKey: "stale", createdAt: 100, updatedAt: 101 },
+          },
+          device_id: "remote-device",
+          created_at: "2026-05-11T10:05:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(0);
+    expect(mocks.settingsPut).not.toHaveBeenCalledWith({
+      key: "journal_vault_key",
+      value: expect.anything(),
+    });
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 17 });
+  });
+
+  it("accepts only a newer remote diary vault and advances its local revision atomically", async () => {
+    mocks.settingsGet.mockImplementation(async (key: string) => {
+      if (key === "sync-last-seq") return { key, value: 17 };
+      if (key === "zenflow-device-id") return { key, value: "current-device" };
+      if (key === "journal_vault_revision_v1") return { key, value: 101 };
+      return undefined;
+    });
+    const newerVault = { wrappedKey: "newer", createdAt: 200, updatedAt: 202 };
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-newer-journal-vault",
+          seq: 18,
+          entity_type: "setting",
+          entity_id: "journal_vault_key",
+          op: "upsert",
+          payload: { key: "journal_vault_key", value: newerVault },
+          device_id: "remote-device",
+          created_at: "2026-05-11T10:06:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.settingsPut).toHaveBeenCalledWith({
+      key: "journal_vault_key",
+      value: newerVault,
+    });
+    expect(mocks.settingsPut).toHaveBeenCalledWith({
+      key: "journal_vault_revision_v1",
+      value: 202,
+    });
+  });
+
+  it("rejects every remote diary vault while owner-bound removal is pending", async () => {
+    mocks.settingsGet.mockImplementation(async (key: string) => {
+      if (key === "sync-last-seq") return { key, value: 18 };
+      if (key === "zenflow-device-id") return { key, value: "current-device" };
+      if (key === "journal_vault_revision_v1") return { key, value: 101 };
+      if (key === "journal_security_removal_v1") {
+        return { key, value: { ownerUserId: "user-1", revision: "remove-1" } };
+      }
+      return undefined;
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-racing-journal-vault",
+          seq: 19,
+          entity_type: "setting",
+          entity_id: "journal_vault_key",
+          op: "upsert",
+          payload: {
+            key: "journal_vault_key",
+            value: { wrappedKey: "racing", createdAt: 300, updatedAt: 303 },
+          },
+          device_id: "remote-device",
+          created_at: "2026-05-11T10:07:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(0);
+    expect(mocks.settingsPut).not.toHaveBeenCalledWith({
+      key: "journal_vault_key",
+      value: expect.anything(),
+    });
   });
 
   it("records tombstones when applying remote delete events", async () => {
@@ -557,7 +742,8 @@ describe("eventSync auth guards", () => {
       "habit-written",
       "upsert",
       { id: "habit-written" },
-      "device-1"
+      "device-1",
+      { expectedOwnerUserId: "user-1" }
     );
 
     expect(mocks.insert).toHaveBeenCalledWith({
@@ -574,6 +760,24 @@ describe("eventSync auth guards", () => {
     expect(event?.seq).toBe(21);
   });
 
+  it("does not write or queue an account-A event after the active account changes to B", async () => {
+    mocks.getCurrentUserId.mockResolvedValue("user-b");
+
+    const event = await writeEventAndBroadcast(
+      "journal",
+      "entry-owned-by-a",
+      "upsert",
+      { id: "entry-owned-by-a" },
+      "device-1",
+      { expectedOwnerUserId: "user-a" }
+    );
+
+    expect(event).toBeNull();
+    expect(mocks.insert).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.broadcastChange).not.toHaveBeenCalled();
+  });
+
   it("queues a durable event retry and avoids stale wake-up when the event write is unavailable", async () => {
     mocks.getCurrentUserId.mockResolvedValue("user-1");
     mocks.insertSingle.mockResolvedValueOnce({
@@ -581,7 +785,9 @@ describe("eventSync auth guards", () => {
       error: { message: "temporary insert failure" },
     });
 
-    const event = await writeEventAndBroadcast("mood", "mood-1", "delete", null, "device-1");
+    const event = await writeEventAndBroadcast("mood", "mood-1", "delete", null, "device-1", {
+      expectedOwnerUserId: "user-1",
+    });
 
     expect(event).toBeNull();
     expect(mocks.broadcastChange).not.toHaveBeenCalled();
@@ -597,6 +803,7 @@ describe("eventSync auth guards", () => {
         idempotencyKey: expect.stringMatching(UUID_RE),
       },
       {
+        expectedOwnerUserId: "user-1",
         deduplicate: false,
         maxRetries: 20,
         priority: "critical",

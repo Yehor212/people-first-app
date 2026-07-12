@@ -32,6 +32,7 @@ export const SK = {
   FONT_SCALE: "zenflow_font_scale",
   LANGUAGE: "zenflow-language",
   LANGUAGE_SELECTED: "zenflow-language-selected",
+  PRIVACY: "zenflow-privacy",
   INSIGHTS_COLLAPSED: "zenflow-insights-collapsed",
   FEATURE_FLAGS: "zenflow-feature-flags",
   ANON_ID: "zen-anon-id",
@@ -78,12 +79,20 @@ export const SK = {
   JOURNAL_LOCK_TIMEOUT: "zenflow-journal-lock-timeout",
   JOURNAL_PASSWORD_RESET: "journal_password_reset_pending",
   JOURNAL_PASSWORD_RESET_PROOF: "journal_password_reset_proof",
+  JOURNAL_SECURITY_MIGRATION: "journal_security_migration_v1",
+  JOURNAL_SECURITY_REMOVAL: "journal_security_removal_v1",
+  JOURNAL_VAULT_REVISION: "journal_vault_revision_v1",
   JOURNAL_CALENDAR_MODE: "journal-calendar-mode",
   JOURNAL_LEGEND_SEEN: "journal-legend-seen",
   JOURNAL_RECENT_STICKERS: "journal-recent-stickers",
   JOURNAL_STICKER_PACKS: "journal-sticker-packs",
   JOURNAL_SIDEBAR_COLLAPSED: "journal-sidebar-collapsed",
   JOURNAL_SIDEBAR_STATE: "journal_sidebar_state",
+  JOURNAL_STREAK_FREEZES: "journal-streak-freezes",
+  JOURNAL_OTD_DISMISSED: "journal-otd-dismissed",
+
+  // ─── Habit presentation (account-bound because it contains habit IDs) ───
+  HABIT_ORDER: "habit-order",
 
   // ─── Audio ───
   AUDIO_MUTED: "zenflow-audio-muted",
@@ -124,6 +133,11 @@ export const SK = {
   // ─── Cloud Sync ───
   CLOUD_SYNC_ENABLED: "zenflow_cloud_sync_enabled",
   DEVICE_ID: "zenflow_device_id",
+  DATA_OWNER_ID: "zenflow_data_owner_id",
+  ACCOUNT_BOUNDARY_GENERATION: "zenflow_account_boundary_generation",
+  // Durable account-boundary intent. This key must stay outside every user-data
+  // purge list so an interrupted sign-out can finish after reload.
+  PENDING_ACCOUNT_SIGN_OUT_CLEANUP: "zenflow_pending_account_sign_out_cleanup",
   PUSH_INSTALL_ID: "zenflow_push_install_id",
   PUSH_TOKEN: "zenflow_push_token",
   LAST_SYNC_SEQ: "zenflow_last_sync_seq",

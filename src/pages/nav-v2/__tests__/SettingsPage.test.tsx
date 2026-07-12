@@ -1,5 +1,5 @@
 import type React from "react";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsPage } from "../SettingsPage";
 
@@ -101,6 +101,19 @@ const platformMock = vi.hoisted(() => ({
   platform: "web",
 }));
 
+const journalProtectionMock = vi.hoisted(() => ({
+  hasProtection: false,
+  hasPersistentJournalProtection: vi.fn(),
+}));
+
+const appStoreMock = vi.hoisted<{ hasValidSession: boolean | null }>(() => ({
+  hasValidSession: true,
+}));
+
+const supabaseClientMock = vi.hoisted<{ client: Record<string, unknown> | null }>(() => ({
+  client: {},
+}));
+
 const localNotificationsMock = vi.hoisted(() => ({
   checkPermissions: vi.fn(),
   requestPermissions: vi.fn(),
@@ -135,25 +148,40 @@ const capacitorAppMock = vi.hoisted(() => ({
 }));
 
 const accountAuthMock = vi.hoisted(() => ({
-  authStatus: null,
+  authStatus: null as string | null,
   setAuthStatus: vi.fn(),
   sessionUserId: "user-1",
   sessionAccountLabel: "avery@example.com",
   sessionDisplayName: "Avery",
-  linkedProviderIds: [],
-  enabledProviders: [],
+  linkedProviderIds: [] as string[],
+  enabledProviders: [] as Array<{
+    id: string;
+    labelKey: string;
+    loadingLabelKey: string;
+    fallbackLabel: string;
+    fallbackLoadingLabel: string;
+  }>,
   hasSession: true,
+  sessionCheckState: "signed-in",
+  refreshSession: vi.fn(),
   signingInProvider: null,
   linkingProvider: null,
   isSigningIn: false,
   isSigningOut: false,
+  signOutBlockReason: null as null | "pending-changes" | "cleanup-failed" | "sign-out-failed",
   handleProvider: vi.fn(),
   handleLinkProvider: vi.fn(),
   handleSignOut: vi.fn(),
+  handleDiscardPendingAndSignOut: vi.fn(),
 }));
 
 const accountServiceMock = vi.hoisted(() => ({
   updateProfileName: vi.fn().mockResolvedValue(true),
+}));
+
+const settingsOwnerMock = vi.hoisted(() => ({
+  currentOwnerUserId: "user-1",
+  getCurrentSessionUserId: vi.fn(),
 }));
 
 const versionCheckMock = vi.hoisted(() => ({
@@ -161,16 +189,42 @@ const versionCheckMock = vi.hoisted(() => ({
   reloadAppForUpdate: vi.fn(),
 }));
 
+const appUpdateManagerMock = vi.hoisted(() => ({
+  checkForAppUpdate: vi.fn(),
+  openGooglePlayStore: vi.fn(),
+}));
+
+const adContextMock = vi.hoisted(() => ({
+  privacyOptionsRequired: false,
+  openAdPrivacyOptions: vi.fn(),
+}));
+
+const dataStatusHarness = vi.hoisted(() => ({
+  setDataStatus: null as null | ((status: string | null) => void),
+}));
+
 const deleteAccountMock = vi.hoisted(() => ({
   showDeleteConfirm: false,
   setShowDeleteConfirm: vi.fn((show: boolean) => {
     deleteAccountMock.showDeleteConfirm = show;
+  }),
+  openDeleteConfirmation: vi.fn(() => {
+    deleteAccountMock.showDeleteConfirm = true;
+    deleteAccountMock.deleteConfirmInput = "";
+    return true;
+  }),
+  closeDeleteConfirmation: vi.fn(() => {
+    if (deleteAccountMock.isDeletingAccount) return false;
+    deleteAccountMock.showDeleteConfirm = false;
+    deleteAccountMock.deleteConfirmInput = "";
+    return true;
   }),
   deleteStatus: null as string | null,
   deleteConfirmInput: "",
   setDeleteConfirmInput: vi.fn((value: string) => {
     deleteAccountMock.deleteConfirmInput = value;
   }),
+  deleteConfirmMatches: false,
   isDeletingAccount: false,
   handleDeleteAccount: vi.fn(),
 }));
@@ -194,13 +248,22 @@ const dataImportMock = vi.hoisted(() => {
   return state;
 });
 
+const dataExportMock = vi.hoisted(() => ({
+  isExporting: false,
+  isExportingCSV: false,
+  isExportingPDF: false,
+  handleExport: vi.fn(),
+  handleExportCSV: vi.fn(),
+  handleExportPDF: vi.fn(),
+}));
+
 const audioManagerMock = vi.hoisted(() => {
-  const state = { muted: false, volume: 0.3 };
+  const state = { muted: false, volume: 0.3, canPlayFeedback: true };
   const getAudioSettings = vi.fn(() => ({
     muted: state.muted,
     volume: state.volume,
     feedbackSoundsEnabled: true,
-    canPlayFeedback: !state.muted,
+    canPlayFeedback: state.canPlayFeedback,
   }));
 
   return {
@@ -210,10 +273,18 @@ const audioManagerMock = vi.hoisted(() => {
     getVolume: vi.fn(() => state.volume),
     setMuted: vi.fn((muted: boolean) => {
       state.muted = muted;
+      state.canPlayFeedback = !muted && state.volume > 0;
       window.dispatchEvent(new CustomEvent("zenflow-audio-settings-change"));
     }),
     setVolume: vi.fn((volume: number) => {
       state.volume = volume;
+      state.canPlayFeedback = !state.muted && volume > 0;
+      window.dispatchEvent(new CustomEvent("zenflow-audio-settings-change"));
+    }),
+    setAudioEnabled: vi.fn((enabled: boolean) => {
+      state.muted = !enabled;
+      if (enabled && state.volume <= 0) state.volume = 0.3;
+      state.canPlayFeedback = enabled && state.volume > 0;
       window.dispatchEvent(new CustomEvent("zenflow-audio-settings-change"));
     }),
     playNotification: vi.fn(),
@@ -226,6 +297,22 @@ const audioManagerMock = vi.hoisted(() => {
         return () => window.removeEventListener("zenflow-audio-settings-change", handleChange);
       }
     ),
+  };
+});
+
+const dopamineSettingsMock = vi.hoisted(() => {
+  const state = {
+    animations: true,
+    haptics: false,
+  };
+
+  return {
+    state,
+    updateDopamineSettings: vi.fn((patch: Partial<typeof state>) => {
+      Object.assign(state, patch);
+      window.dispatchEvent(new CustomEvent("dopamine-settings-change", { detail: { ...state } }));
+      return { ...state };
+    }),
   };
 });
 
@@ -249,14 +336,17 @@ function expectDeckInsideModulePanel(sectionId: string) {
   expect(moduleList).not.toContainElement(panel);
   expect(panel).toContainElement(deck);
   expect(panel).toHaveAttribute("role", "region");
-  expect(panel).toHaveAttribute("aria-labelledby", `settings-module-card-${sectionId}`);
+  expect(panel).toHaveAttribute("aria-labelledby", `settings-module-panel-heading-${sectionId}`);
+  expect(document.getElementById(`settings-module-panel-heading-${sectionId}`)).toBeInTheDocument();
   expect(selectedButton).toHaveAttribute("aria-controls", `settings-module-panel-${sectionId}`);
 }
 
 function installScrollIntoViewSpy() {
   const scrollDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, "scrollIntoView");
+  const windowScrollDescriptor = Object.getOwnPropertyDescriptor(window, "scrollTo");
   const rafDescriptor = Object.getOwnPropertyDescriptor(window, "requestAnimationFrame");
   const scrollIntoView = vi.fn();
+  const scrollTo = vi.fn();
 
   Object.defineProperty(Element.prototype, "scrollIntoView", {
     configurable: true,
@@ -269,14 +359,24 @@ function installScrollIntoViewSpy() {
       return 0;
     },
   });
+  Object.defineProperty(window, "scrollTo", {
+    configurable: true,
+    value: scrollTo,
+  });
 
   return {
     scrollIntoView,
+    scrollTo,
     restore: () => {
       if (scrollDescriptor) {
         Object.defineProperty(Element.prototype, "scrollIntoView", scrollDescriptor);
       } else {
         Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+      }
+      if (windowScrollDescriptor) {
+        Object.defineProperty(window, "scrollTo", windowScrollDescriptor);
+      } else {
+        Reflect.deleteProperty(window, "scrollTo");
       }
       if (rafDescriptor) {
         Object.defineProperty(window, "requestAnimationFrame", rafDescriptor);
@@ -338,9 +438,19 @@ vi.mock("@/contexts/LanguageContext", () => ({
       themeLabel: "Theme",
       appearance: "Appearance",
       themeStyleTitle: "Mood palette",
-      themeStyleDescription: "Choose a curated look that sets the tone.",
+      themeAdvancedAppearanceTitle: "Advanced appearance",
+      themeStyleDescription: "Choose a style that feels right for you.",
+      profileNamePlaceholder: "Enter your name",
+      settingsAboutProductSummary:
+        "ZenFlow brings mood check-ins, habits, focus sessions, and your journal into one place.",
+      settingsAboutSupportLegalTitle: "Help and legal",
+      settingsAboutSupportLegalDescription:
+        "Privacy, terms, licenses, and support.",
+      settingsWebUpdateDescription: "Check for a newer version.",
+      settingsNativeUpdateDescription: "Check for a newer version.",
+      openSourceLicenses: "Licenses",
       themeAccentTitle: "Accent",
-      themeAccentDescription: "Color used for focus, selected states, and key controls.",
+      themeAccentDescription: "Color for buttons, selections, and highlights.",
       themeIntensityTitle: "Intensity",
       themeComfortTitle: "Comfort",
       themePreviewAction: "Preview",
@@ -379,7 +489,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settingsGroupModules: "Modules",
       settingsModulesDescription: "Choose modules.",
       notifications: "Notifications",
-      remindersDescription: "Reminder controls.",
+      remindersDescription: "Choose when ZenFlow reminds you about mood and focus.",
       language: "Language",
       selectLanguage: "Choose language.",
       privacy: "Privacy",
@@ -390,6 +500,10 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settingsGroupAccount: "Account",
       settingsAccountDesc: "Account controls.",
       settingsGroupAbout: "About",
+      settingsGroupAppearanceAccessibility: "Appearance & accessibility",
+      settingsGroupReminders: "Reminders",
+      settingsGroupPrivacyData: "Privacy & data",
+      settingsGroupHelpAbout: "Help & information",
       settingsCloudSyncTitle: "Automatic sync",
       settingsCloudSyncEnabled: "Automatic sync active",
       settingsCloudSyncDescription: "Signed-in data stays synced across devices.",
@@ -399,12 +513,73 @@ vi.mock("@/contexts/LanguageContext", () => ({
       localDataSafe: "Your local data is safe.",
       syncing: "Syncing...",
       settingsGroupData: "Data & Privacy",
+      settingsExportImportTitle: "Backups & reports",
+      settingsExportTitle: "Save backup",
+      settingsImportTitle: "Import backup",
+      importMode: "How to import",
+      importMerge: "Add to current data",
+      importReplace: "Replace current data",
+      importConfirmTitle: "Import backup",
+      importConfirmMessage: "Import data from this backup?",
+      settingsImportReplaceTooltip:
+        "This replaces current moods, habits, focus sessions, gratitude, and settings included in backups. Diary areas are replaced only when they are present in the backup. Protection settings for this device stay unchanged.",
+      fontScaleTitle: "Text Size",
+      fontScalePreviewSub: "Adjust text size across the app.",
+      fontScaleTiny: "Tiny",
+      fontScaleSmall: "Small",
+      fontScaleDefault: "Default",
+      fontScaleMedium: "Medium",
+      fontScaleLarge: "Large",
+      fontScaleXL: "Extra large",
+      fontScaleXXL: "Largest",
+      weeklyDigestTitle: "Weekly Progress Report",
+      weeklyDigestDescription: "A weekly summary of your habits, focus time, and mood trends.",
+      authLinkedProviders: "Connected sign-in methods",
+      authSignOutRecoveryTitle: "Finish signing out",
+      authDiscardAndSignOut: "Discard changes and sign out",
+      authDiscardSignOutConfirm: "Discard unsaved changes and sign out?",
+      authDiscardSignOutWarning:
+        "Changes waiting to be saved online will be permanently removed from this device.",
+      authSignOutPendingChanges: "Changes are still waiting to be saved online.",
+      retry: "Retry",
+      exportData: "Export data",
+      cancel: "Cancel",
+      authGoogle: "Google",
       moodReminder: "Mood",
       habitReminder: "Habit",
       notificationsComingSoon: "Notifications will be available in future updates.",
       settingsOverviewDescription:
-        "Adjust privacy, reminders, sound, appearance, and data controls in one place.",
+        "Choose how ZenFlow looks, sounds, reminds you, and handles your data.",
+      settingsAccountBackupTitle: "Account & backup",
+      settingsAccountBackupDescription:
+        "Your account is connected. If ZenFlow can’t save an update online, your changes stay on this device.",
+      settingsAccountSignedIn: "Signed in",
+      settingsAccountSignedOut: "You’re not signed in",
+      settingsAccountDataOnDevice:
+        "Your data stays on this device. Sign in to back it up and use it on your other devices.",
+      settingsAccountBackupChecking: "Checking your account…",
+      settingsAccountBackupCheckingDescription:
+        "Your data stays on this device while ZenFlow checks your account.",
+      settingsAccountCheckFailed: "We couldn’t check your account",
+      settingsAccountCheckFailedDescription:
+        "Your data stays on this device. Check your connection and try again.",
+      settingsAccountBackupUnavailable: "Backup isn’t available in this version",
+      settingsAccountBackupUnavailableDescription: "Your data stays on this device.",
+      settingsRemindersMobileApp: "Mobile app",
+      settingsPrivacyDataDescription:
+        "You choose which optional services ZenFlow can use. Backup starts only after you sign in.",
+      settingsDataBackupReportsDescription:
+        "Save a backup you can import later, or create a report.",
+      settingsBackupRestoreTitle: "Backup & restore",
+      settingsReportsTitle: "Reports",
+      settingsReportsDescription:
+        "Reports include mood, habits, focus, and gratitude. The PDF is currently in English. Reports are not backups.",
+      settingsReportSpreadsheetAction: "Spreadsheet data (CSV)",
+      settingsReportProgressAction: "Progress report (PDF)",
+      settingsSoundDiaryRainOff: "Rain is turned off under Background sounds.",
+      settingsSoundDiaryReady: "Ready to play.",
       settingsRemindersOff: "Reminders off",
+      settingsDataSummary: "Mood check-ins: {moods} · habits: {habits} · focus sessions: {focus}",
       resetDataConfirmWord: "RESET",
       resetDataTypeConfirm: "Type RESET to confirm",
       resetDataScope:
@@ -413,73 +588,73 @@ vi.mock("@/contexts/LanguageContext", () => ({
       moodEntries: "Mood entries",
       habits: "Habits",
       focus: "Focus",
+      journalLockTimeout: "Journal auto-lock",
+      journalLockTimeoutDesc: "Lock the journal after inactivity.",
+      journalLockTimeoutImmediately: "Right away",
+      journalLockTimeoutOneMinute: "After one minute",
+      journalLockTimeoutFiveMinutes: "After five minutes",
+      journalLockTimeoutFifteenMinutes: "After fifteen minutes",
+      journalLockTimeoutThirtyMinutes: "After thirty minutes",
       privacyTitle: "Privacy",
       privacyDescription: "Your data stays on device.",
-      privacyNoTracking: "No tracking",
-      privacyAnalytics: "Analytics",
-      privacyPushNotifications: "Account reminder alerts",
-      privacyPushNotificationsHint: "Let this device receive reminder alerts from your account.",
+      privacyAds: "Rewarded videos",
+      privacyAdsHint:
+        "They load only when you turn them on. Google may ask for your privacy choice when required.",
+      privacyPushNotifications: "Account reminders",
+      privacyPushNotificationsHint:
+        "Receive reminders from your account on this device. Reminders you set on this device still work when this is off.",
       enableReminders: "Enable reminders",
       quietHours: "Quiet hours",
       quietHoursStart: "Quiet start",
       quietHoursEnd: "Quiet end",
-      pushPermissionDenied: "Notification permission denied.",
+      pushPermissionDenied: "Turn on notifications for ZenFlow in your device settings.",
+      remindersNativeOnly: "To set reminders, open the ZenFlow mobile app.",
+      habitRemindersManagedInHabits: "Set a reminder from the habit's own menu.",
       settingsSoundTitle: "Sound",
-      settingsSoundDescription: "App ambience and feedback volume.",
+      settingsSoundDescription: "Choose background sounds, activity sounds, and volume.",
       settingsSoundSummaryOn: "Sound on",
       settingsSoundSummaryOff: "Muted",
       settingsSoundMaster: "App sound",
-      settingsSoundMasterDesc: "Controls success chimes, orb ambience, and diary ambience.",
+      settingsSoundMasterDesc: "Play sounds in ZenFlow.",
+      dopamineAnimations: "Animations",
+      dopamineAnimationsDesc: "Motion used for state changes and transitions",
+      dopamineHaptics: "Haptics",
+      dopamineHapticsDesc: "Vibration feedback on supported devices",
+      adPrivacyOptions: "Google ad privacy choices",
+      adPrivacyOptionsHint: "Change or withdraw Google ad consent where required.",
+      adPrivacyOptionsOpen: "Review ad choices",
+      adPrivacyOptionsError: "Could not open Google ad privacy choices. Try again.",
       settingsSoundVolume: "Volume",
       settingsSoundVolumeDesc: "Sets the default level for app audio.",
       settingsSoundPreview: "Preview sound",
       settingsSoundPreviewDesc: "Play a short local preview.",
-      settingsSoundAmbienceTitle: "Ambient tracks",
-      settingsSoundMapTitle: "Where sound appears",
-      settingsSoundMapDescription:
-        "App audio stays local, starts from your tap, and follows your sound choices.",
-      settingsSoundMapAuth: "Sign-in soft air",
-      settingsSoundMapOrb: "Orb ambience",
-      settingsSoundMapDiary: "Diary ambience",
-      settingsSoundMapFocus: "Focus ambient library",
-      settingsSoundMapFeedback: "Completion and reminder cues",
-      settingsSoundCrossPlatformTitle: "Where sounds work",
-      settingsSoundCrossPlatformNote:
-        "ZenFlow uses the same sound choices where your device allows them.",
-      settingsSoundComfortTitle: "Sound comfort",
+      settingsSoundAmbienceTitle: "Diary background sound",
+      settingsSoundComfortTitle: "Sound style",
       settingsSoundComfortDescription:
-        "Profiles tune background sound and short cues on supported devices.",
+        "Choose a sound style, then adjust individual sounds below.",
       settingsSoundProfileQuiet: "Quiet",
-      settingsSoundProfileQuietDesc: "No ambience, soft completion cues only.",
-      settingsSoundProfileBalanced: "Balanced",
-      settingsSoundProfileBalancedDesc: "Gentle ambience and meaningful cues.",
-      settingsSoundProfileRich: "Rich",
-      settingsSoundProfileRichDesc: "Full ambience and cues where supported.",
+      settingsSoundProfileQuietDesc: "No background sounds; only quiet activity sounds.",
+      settingsSoundProfileBalanced: "All sounds",
+      settingsSoundProfileBalancedDesc:
+        "Play background, activity, alert, and milestone sounds.",
       settingsSoundAmbientToggle: "Ambient sound",
       settingsSoundAmbientToggleDesc:
-        "Controls sign-in, mood orb, and diary background sound outside focus sessions.",
-      settingsSoundCompletionCues: "Completion cues",
-      settingsSoundCompletionCuesDesc: "Allows quiet confirmations after meaningful completions.",
-      settingsSoundReminderCues: "Reminder previews",
-      settingsSoundReminderCuesDesc: "Allows opt-in reminder preview sounds.",
-      settingsSoundMilestoneCues: "Milestone cues",
+        "Play background sounds in ZenFlow, except during focus sessions.",
+      settingsSoundCompletionCues: "Activity sounds",
+      settingsSoundCompletionCuesDesc: "Play a quiet sound after completing an activity.",
+      settingsSoundReminderCues: "In-app alert sounds",
+      settingsSoundReminderCuesDesc:
+        "Play timer alerts and reminder previews inside ZenFlow. This does not change phone notification sounds.",
+      settingsSoundMilestoneCues: "Milestone sounds",
       settingsSoundMilestoneCuesDesc:
-        "Allows rare streak and achievement cues without routine tap sounds.",
-      settingsSoundTextureTitle: "Background sound layers",
+        "Play a sound for occasional streak and achievement milestones.",
+      settingsSoundTextureTitle: "Background sounds",
       settingsSoundTextureDescription:
-        "Choose which air, water, and rain layers ZenFlow may use for gentle background sound.",
+        "Choose which background sounds ZenFlow may play.",
       settingsSoundTextureAir: "Air",
       settingsSoundTextureWater: "Water",
       settingsSoundTextureRain: "Rain",
-      settingsSoundFeedbackTitle: "How did this sound feel?",
-      settingsSoundFeedbackDescription:
-        "Stores only your comfort choice, device type, mute setting, and volume range.",
-      settingsSoundFeedbackComfortable: "Comfortable",
-      settingsSoundFeedbackTooLoud: "Too loud",
-      settingsSoundFeedbackDistracting: "Distracting",
-      settingsSoundFeedbackPreferSilent: "Prefer silent",
-      settingsSoundFeedbackDidNotPlay: "Did not play",
-      settingsSoundAmbientOff: "Ambient sound is off in Sound comfort.",
+      settingsSoundAmbientOff: "Background sounds are off.",
       diaryAmbienceLabel: "Soft rain",
       diaryAmbiencePlay: "Play soft rain",
       diaryAmbiencePause: "Pause soft rain",
@@ -488,35 +663,27 @@ vi.mock("@/contexts/LanguageContext", () => ({
       soundOn: "On",
       soundOff: "Off",
       settingsSoundAmbienceNote:
-        "Orb ambience starts from Orb. Diary sound is managed here so it never covers your writing.",
-      settingsSoundActionMapMilestones: "Achievements and streak milestones",
-      settingsSoundActionMapBreathing: "Breathing completed",
-      settingsSoundActionMapFocus: "Focus completed",
-      settingsSoundActionMapJournal: "Journal saved",
-      settingsSoundActionMapHabit: "Habit completed",
-      settingsSoundActionMapMood: "Mood saved",
-      settingsSoundActionMapDescription:
-        "Short sounds are reserved for meaningful completions and rare milestones.",
-      settingsSoundActionMapTitle: "When ZenFlow plays a sound",
+        "Play soft rain while you write in your diary. It starts only when you press play.",
       notificationSound: "Notification sound",
       notificationSoundDescription: "Choose sound for reminders",
       soundDefault: "Default",
       soundDefaultDesc: "System notification sound",
       soundGentle: "Gentle",
       soundGentleDesc: "Vibration only",
-      soundChime: "Chime",
-      soundChimeDesc: "Short notification tone",
       soundSilent: "Silent",
       soundSilentDesc: "No sound or vibration",
-      notificationSystemSettingsTitle: "System notification controls",
+      notificationSystemSettingsTitle: "If reminders are silent",
       notificationSystemSettingsWebDescription:
         "Browser and OS notification settings can mute or quiet reminders. App sounds stay local and tap-started.",
       notificationSystemSettingsAndroidDescription:
-        "Android notification categories keep the final sound and vibration setting for each channel.",
+        "Your phone’s sound, vibration, and notification settings can silence or hide reminders.",
       notificationSystemSettingsIosDescription:
-        "iOS notification settings and Focus modes keep final control over alert sound and delivery.",
+        "Your iPhone or iPad’s notification settings and Focus modes can silence or hide reminders.",
       notificationSystemSettingsDesktopDescription:
         "Computer browser and device notification settings keep final control over reminder delivery and sound.",
+      notificationSoundUpdateFailed:
+        "ZenFlow could not apply this reminder sound. Your previous sound is still selected. Try again.",
+      openGooglePlayFailed: "Could not open Google Play. Try again.",
     },
   }),
 }));
@@ -579,6 +746,14 @@ vi.mock("@/components/SmartRemindersCard", () => ({
 
 vi.mock("@/components/DopamineSettings", () => ({
   DopamineSettingsComponent: () => <section data-testid="dopamine-settings-modal" />,
+  useDopamineSettings: () => ({ ...dopamineSettingsMock.state }),
+  updateDopamineSettings: dopamineSettingsMock.updateDopamineSettings,
+}));
+vi.mock("@/hooks/useDopamineSettings", () => ({
+  useDopamineSettings: () => ({ ...dopamineSettingsMock.state }),
+}));
+vi.mock("@/lib/dopamineSettings", () => ({
+  updateDopamineSettings: dopamineSettingsMock.updateDopamineSettings,
 }));
 
 vi.mock("@/components/FeedbackForm", () => ({
@@ -634,8 +809,8 @@ vi.mock("@/stores/themeStore", () => ({
 }));
 
 vi.mock("@/stores", () => ({
-  useAppStore: (selector: (s: { hasValidSession: boolean }) => unknown) =>
-    selector({ hasValidSession: true }),
+  useAppStore: (selector: (s: { hasValidSession: boolean | null }) => unknown) =>
+    selector({ hasValidSession: appStoreMock.hasValidSession }),
 }));
 
 vi.mock("@/contexts/FeatureFlagsContext", () => ({
@@ -655,7 +830,10 @@ vi.mock("@/contexts/FeatureFlagsContext", () => ({
 }));
 
 vi.mock("@/lib/supabaseClient", () => ({
-  supabase: {},
+  get supabase() {
+    return supabaseClientMock.client;
+  },
+  getCurrentSessionUserId: settingsOwnerMock.getCurrentSessionUserId,
 }));
 
 vi.mock("@/components/settings/account-section/useAccountAuth", () => ({
@@ -678,14 +856,10 @@ vi.mock("@/components/settings/account-section/useDeleteAccount", () => ({
 }));
 
 vi.mock("@/components/settings/data-section/useDataExport", () => ({
-  useDataExport: () => ({
-    isExporting: false,
-    isExportingCSV: false,
-    isExportingPDF: false,
-    handleExport: vi.fn(),
-    handleExportCSV: vi.fn(),
-    handleExportPDF: vi.fn(),
-  }),
+  useDataExport: (options: { setDataStatus: (status: string | null) => void }) => {
+    dataStatusHarness.setDataStatus = options.setDataStatus;
+    return dataExportMock;
+  },
 }));
 
 vi.mock("@/components/settings/data-section/useDataImport", () => ({
@@ -713,7 +887,14 @@ vi.mock("@/hooks/useFontScale", () => ({
 }));
 
 vi.mock("@/features/journal", () => ({
-  LOCK_TIMEOUT_OPTIONS: [{ ms: 300000, label: "5 minutes" }],
+  hasPersistentJournalProtection: journalProtectionMock.hasPersistentJournalProtection,
+  LOCK_TIMEOUT_OPTIONS: [
+    { ms: 0, label: "Immediately" },
+    { ms: 60000, label: "1 minute" },
+    { ms: 300000, label: "5 minutes" },
+    { ms: 900000, label: "15 minutes" },
+    { ms: 1800000, label: "30 minutes" },
+  ],
   setAutoLockMs: vi.fn(),
 }));
 
@@ -744,6 +925,7 @@ vi.mock("@/lib/env", () => ({
 }));
 
 vi.mock("@/lib/notificationSounds", () => ({
+  buildNotificationChannelCopy: vi.fn(() => ({})),
   NOTIFICATION_SOUNDS: [
     {
       id: "default",
@@ -784,16 +966,28 @@ vi.mock("@/lib/notificationSounds", () => ({
 
 vi.mock("@/lib/audioManager", () => audioManagerMock);
 
+vi.mock("@/contexts/AdContext", () => ({
+  useAds: () => ({
+    adsAvailable: false,
+    canShowRewarded: false,
+    remainingToday: 0,
+    googleConsentReady: false,
+    privacyOptionsRequired: adContextMock.privacyOptionsRequired,
+    openAdPrivacyOptions: adContextMock.openAdPrivacyOptions,
+    watchRewardedAd: vi.fn(),
+    rewardTreats: 0,
+    rewardXp: 0,
+    setCurrentMood: vi.fn(),
+  }),
+}));
+
 vi.mock("@capacitor/app", () => ({
   App: {
     addListener: capacitorAppMock.addListener,
   },
 }));
 
-vi.mock("@/lib/appUpdateManager", () => ({
-  checkForAppUpdate: vi.fn(),
-  openGooglePlayStore: vi.fn(),
-}));
+vi.mock("@/lib/appUpdateManager", () => appUpdateManagerMock);
 
 vi.mock("@/lib/versionCheck", () => versionCheckMock);
 
@@ -845,6 +1039,15 @@ describe("SettingsPage", () => {
     platformMock.isIos = false;
     platformMock.isDesktopViewport = false;
     platformMock.platform = "web";
+    journalProtectionMock.hasProtection = false;
+    journalProtectionMock.hasPersistentJournalProtection.mockReset();
+    journalProtectionMock.hasPersistentJournalProtection.mockImplementation(
+      async () => journalProtectionMock.hasProtection,
+    );
+    delete (window as typeof window & { __TAURI__?: unknown }).__TAURI__;
+    delete (window as typeof window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__;
+    appStoreMock.hasValidSession = true;
+    supabaseClientMock.client = {};
     localNotificationsMock.checkPermissions.mockReset();
     localNotificationsMock.requestPermissions.mockReset();
     localNotificationsMock.getPending.mockReset();
@@ -862,20 +1065,48 @@ describe("SettingsPage", () => {
     capacitorAppMock.addListener.mockClear();
     audioManagerMock.state.muted = false;
     audioManagerMock.state.volume = 0.3;
+    audioManagerMock.state.canPlayFeedback = true;
     audioManagerMock.initAudioManager.mockClear();
     audioManagerMock.isMuted.mockClear();
     audioManagerMock.getVolume.mockClear();
     audioManagerMock.setMuted.mockClear();
     audioManagerMock.setVolume.mockClear();
+    audioManagerMock.setAudioEnabled.mockClear();
     audioManagerMock.playNotification.mockClear();
     audioManagerMock.playNotificationPreview.mockClear();
     audioManagerMock.getAudioSettings.mockClear();
     audioManagerMock.subscribeAudioSettings.mockClear();
+    dopamineSettingsMock.state.animations = true;
+    dopamineSettingsMock.state.haptics = false;
+    dopamineSettingsMock.updateDopamineSettings.mockClear();
     accountAuthMock.handleSignOut.mockClear();
+    accountAuthMock.handleDiscardPendingAndSignOut.mockClear();
     accountAuthMock.handleProvider.mockClear();
     accountAuthMock.handleLinkProvider.mockClear();
+    accountAuthMock.authStatus = null;
+    accountAuthMock.sessionUserId = "user-1";
+    accountAuthMock.sessionAccountLabel = "avery@example.com";
+    accountAuthMock.sessionDisplayName = "Avery";
+    accountAuthMock.linkedProviderIds = [];
+    accountAuthMock.enabledProviders = [];
+    accountAuthMock.hasSession = true;
+    accountAuthMock.sessionCheckState = "signed-in";
+    accountAuthMock.refreshSession.mockClear();
+    accountAuthMock.signingInProvider = null;
+    accountAuthMock.linkingProvider = null;
+    accountAuthMock.isSigningIn = false;
+    accountAuthMock.isSigningOut = false;
+    accountAuthMock.signOutBlockReason = null;
+    dataExportMock.handleExport.mockClear();
+    dataExportMock.handleExportCSV.mockClear();
+    dataExportMock.handleExportPDF.mockClear();
     accountServiceMock.updateProfileName.mockReset();
     accountServiceMock.updateProfileName.mockResolvedValue(true);
+    settingsOwnerMock.currentOwnerUserId = "user-1";
+    settingsOwnerMock.getCurrentSessionUserId.mockReset();
+    settingsOwnerMock.getCurrentSessionUserId.mockImplementation(
+      async () => settingsOwnerMock.currentOwnerUserId
+    );
     versionCheckMock.checkAppVersionStatus.mockReset();
     versionCheckMock.checkAppVersionStatus.mockResolvedValue({
       status: "current",
@@ -886,11 +1117,21 @@ describe("SettingsPage", () => {
     });
     versionCheckMock.reloadAppForUpdate.mockReset();
     versionCheckMock.reloadAppForUpdate.mockResolvedValue(undefined);
+    appUpdateManagerMock.checkForAppUpdate.mockReset();
+    appUpdateManagerMock.openGooglePlayStore.mockReset();
+    appUpdateManagerMock.openGooglePlayStore.mockResolvedValue(true);
+    adContextMock.privacyOptionsRequired = false;
+    adContextMock.openAdPrivacyOptions.mockReset();
+    adContextMock.openAdPrivacyOptions.mockResolvedValue(true);
+    dataStatusHarness.setDataStatus = null;
     deleteAccountMock.showDeleteConfirm = false;
     deleteAccountMock.deleteStatus = null;
     deleteAccountMock.deleteConfirmInput = "";
+    deleteAccountMock.deleteConfirmMatches = false;
     deleteAccountMock.isDeletingAccount = false;
     deleteAccountMock.setShowDeleteConfirm.mockClear();
+    deleteAccountMock.openDeleteConfirmation.mockClear();
+    deleteAccountMock.closeDeleteConfirmation.mockClear();
     deleteAccountMock.setDeleteConfirmInput.mockClear();
     deleteAccountMock.handleDeleteAccount.mockClear();
     dataImportMock.importMode = "merge";
@@ -906,6 +1147,7 @@ describe("SettingsPage", () => {
     delete document.documentElement.dataset.theme;
     document.documentElement.classList.remove("oled", "dark");
     localStorage.clear();
+    window.history.replaceState({}, "", "/people-first-app/?nav=v2&navLayout=phone");
   });
 
   it("renders a passive V2 settings overview when controls are not wired", () => {
@@ -921,20 +1163,19 @@ describe("SettingsPage", () => {
     expect(screen.queryByTestId("settings-cockpit")).not.toBeInTheDocument();
     expect(screen.queryByTestId("settings-page-sections")).not.toBeInTheDocument();
     expect(screen.getByTestId("settings-module-list")).toBeInTheDocument();
-    expect(screen.getByTestId("settings-module-card-profile")).toHaveTextContent("Profile");
-    expect(screen.getByTestId("settings-module-card-profile")).not.toHaveTextContent(
-      "Profile & Appearance"
-    );
-    expect(screen.getByTestId("settings-module-card-profile")).not.toHaveAttribute("aria-expanded");
-    expect(screen.getByTestId("settings-module-card-profile")).not.toHaveAttribute("aria-controls");
-    expect(screen.getByTestId("settings-module-card-profile")).toBeDisabled();
-    expect(screen.getByTestId("settings-module-card-profile")).not.toHaveAttribute("aria-disabled");
     expect(screen.getByTestId("settings-module-card-account")).toHaveTextContent(
-      "Automatic sync active"
+      "Account & backup"
+    );
+    expect(screen.getByTestId("settings-module-card-account")).not.toHaveAttribute("aria-current");
+    expect(screen.getByTestId("settings-module-card-account")).not.toHaveAttribute("aria-controls");
+    expect(screen.getByTestId("settings-module-card-account")).toBeDisabled();
+    expect(screen.getByTestId("settings-module-card-account")).not.toHaveAttribute("aria-disabled");
+    expect(screen.getByTestId("settings-module-card-account")).toHaveTextContent(
+      "Signed in"
     );
     expect(screen.queryByTestId("settings-module-card-modules")).not.toBeInTheDocument();
     expect(screen.getByTestId("settings-module-card-appearance")).not.toHaveAttribute(
-      "aria-expanded"
+      "aria-current"
     );
     expect(screen.getByTestId("settings-module-appearance")).toHaveAttribute(
       "data-visual-role",
@@ -950,6 +1191,49 @@ describe("SettingsPage", () => {
     );
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "false");
   });
+
+  it.each([
+    [
+      "backend unavailable",
+      null,
+      true,
+      "Backup isn’t available in this version",
+      "Your data stays on this device.",
+    ],
+    [
+      "signed out",
+      {},
+      false,
+      "You’re not signed in",
+      "Your data stays on this device. Sign in to back it up and use it on your other devices.",
+    ],
+    [
+      "checking",
+      {},
+      null,
+      "Checking your account…",
+      "Your data stays on this device while ZenFlow checks your account.",
+    ],
+    [
+      "signed in",
+      {},
+      true,
+      "Signed in",
+      "Your account is connected. If ZenFlow can’t save an update online, your changes stay on this device.",
+    ],
+  ] as const)(
+    "shows the truthful account state for %s",
+    (_name, client, session, expectedStatus, expectedDescription) => {
+      supabaseClientMock.client = client;
+      appStoreMock.hasValidSession = session;
+
+      render(<SettingsPage controls={createSettingsControls()} />);
+
+      const card = screen.getByTestId("settings-module-card-account");
+      expect(card).toHaveTextContent(expectedStatus);
+      expect(card).toHaveTextContent(expectedDescription);
+    },
+  );
 
   it("does not expose broken aria-controls links when controls are not wired", () => {
     render(<SettingsPage />);
@@ -984,28 +1268,210 @@ describe("SettingsPage", () => {
     expect(workspace).toContainElement(selectedPanel);
     expect(selectedPanel).toContainElement(deck);
     expect(moduleList).not.toContainElement(deck);
-    expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
+    expect(screen.getByTestId("settings-module-card-appearance")).toHaveAttribute(
       "aria-controls",
-      "settings-module-panel-profile"
+      "settings-module-panel-appearance"
     );
   });
 
-  it("opens the account module from a settingsSection query and clears the routing hint", () => {
-    window.history.replaceState({}, "", "/people-first-app/settings?nav=v2&navLayout=phone&settingsSection=account");
+  it("shows exactly the six approved user-oriented settings groups", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    const cards = screen.getAllByTestId(/^settings-module-card-/);
+    expect(cards.map((card) => card.dataset.testid)).toEqual([
+      "settings-module-card-account",
+      "settings-module-card-appearance",
+      "settings-module-card-sound",
+      "settings-module-card-notifications",
+      "settings-module-card-privacy",
+      "settings-module-card-about",
+    ]);
+    expect(cards.map((card) => card.textContent)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Account & backup"),
+        expect.stringContaining("Appearance & accessibility"),
+        expect.stringContaining("Reminders"),
+        expect.stringContaining("Privacy & data"),
+        expect.stringContaining("Help & information"),
+      ])
+    );
+  });
+
+  it("renders the privacy data count from one localized template", () => {
+    const controls = createSettingsControls();
+    controls.moods = [{ id: "mood-1" }, { id: "mood-2" }] as never[];
+    controls.habits = [{ id: "habit-1" }] as never[];
+    controls.focusSessions = [{ id: "focus-1" }, { id: "focus-2" }, { id: "focus-3" }] as never[];
+
+    render(<SettingsPage controls={controls} />);
+
+    expect(screen.getByTestId("settings-module-card-privacy")).toHaveTextContent(
+      "Mood check-ins: 2 · habits: 1 · focus sessions: 3"
+    );
+  });
+
+  it("hides journal auto-lock until durable diary protection exists", async () => {
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "privacy" }} />
+    );
+
+    await waitFor(() =>
+      expect(journalProtectionMock.hasPersistentJournalProtection).toHaveBeenCalled(),
+    );
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.queryByText("Journal auto-lock")).not.toBeInTheDocument();
+  });
+
+  it("uses localized journal auto-lock labels when diary protection exists", async () => {
+    journalProtectionMock.hasProtection = true;
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "privacy" }} />
+    );
+
+    const select = await screen.findByRole("combobox");
+    expect(
+      within(select)
+        .getAllByRole("option")
+        .map((option) => option.textContent)
+    ).toEqual([
+      "Right away",
+      "After one minute",
+      "After five minutes",
+      "After fifteen minutes",
+      "After thirty minutes",
+    ]);
+  });
+
+  it("uses overview, URL-backed detail, and back navigation on mobile", async () => {
+    window.history.replaceState({}, "", "/people-first-app/settings?nav=v2&navLayout=phone");
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    const workspace = screen.getByTestId("settings-page-workspace");
+    expect(workspace).toHaveAttribute("data-mobile-view", "overview");
+
+    fireEvent.click(screen.getByTestId("settings-module-card-account"));
+    expect(workspace).toHaveAttribute("data-mobile-view", "detail");
+    expect(window.location.search).toContain("settingsSection=account");
+
+    fireEvent.click(screen.getByTestId("settings-mobile-back"));
+    await waitFor(() => expect(workspace).toHaveAttribute("data-mobile-view", "overview"));
+    expect(window.location.search).not.toContain("settingsSection");
+  });
+
+  it("does not expose aria-controls references to unmounted mobile panels", () => {
+    const media = installSettingsMotionMediaQuery({
+      isMobileWorkspace: true,
+      prefersReducedMotion: false,
+    });
+    try {
+      render(<SettingsPage controls={createSettingsControls()} />);
+
+      for (const card of screen.getAllByTestId(/^settings-module-card-/)) {
+        const targetId = card.getAttribute("aria-controls");
+        if (targetId) expect(document.getElementById(targetId)).toBeInTheDocument();
+      }
+    } finally {
+      media.restore();
+    }
+  });
+
+  it("labels a mobile detail region with its own stable section heading", () => {
+    const media = installSettingsMotionMediaQuery({
+      isMobileWorkspace: true,
+      prefersReducedMotion: false,
+    });
+    try {
+      render(<SettingsPage controls={createSettingsControls()} />);
+      fireEvent.click(screen.getByTestId("settings-module-card-account"));
+
+      const panel = screen.getByTestId("settings-module-panel-account");
+      expect(panel).toHaveAttribute("aria-labelledby", "settings-module-panel-heading-account");
+      expect(
+        screen.getByRole("heading", { level: 2, name: "Account & backup" })
+      ).toBeInTheDocument();
+    } finally {
+      media.restore();
+    }
+  });
+
+  it("opens the account module from a settingsSection query and keeps the detail URL", () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/people-first-app/settings?nav=v2&navLayout=phone&settingsSection=account"
+    );
 
     render(<SettingsPage controls={createSettingsControls()} />);
 
     expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
       "data-selected-section",
-      "account",
+      "account"
     );
     expect(screen.getByTestId("settings-module-card-account")).toHaveAttribute(
-      "aria-expanded",
-      "true",
+      "aria-current",
+      "page"
     );
     expect(screen.getByTestId("settings-v2-panel-account")).toBeInTheDocument();
-    expect(window.location.search).not.toContain("settingsSection");
+    expect(window.location.search).toContain("settingsSection=account");
     expect(window.location.search).toContain("nav=v2");
+  });
+
+  it("restores the URL-consistent Appearance panel and focus after desktop history back", async () => {
+    const originalWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 1280 });
+    try {
+      window.history.replaceState({}, "", "/people-first-app/settings?nav=v2&navLayout=desktop");
+      render(<SettingsPage controls={createSettingsControls()} />);
+
+      fireEvent.click(screen.getByTestId("settings-module-card-account"));
+      expect(window.location.search).toContain("settingsSection=account");
+
+      window.history.replaceState({}, "", "/people-first-app/settings?nav=v2&navLayout=desktop");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+
+      await waitFor(() =>
+        expect(screen.getByTestId("settings-module-card-appearance")).toHaveAttribute(
+          "aria-current",
+          "page"
+        )
+      );
+      expect(screen.getByTestId("settings-module-card-account")).not.toHaveAttribute(
+        "aria-current"
+      );
+      expect(screen.getByTestId("settings-module-panel-appearance")).toBeInTheDocument();
+      await waitFor(() =>
+        expect(screen.getByTestId("settings-module-card-appearance")).toHaveFocus()
+      );
+    } finally {
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: originalWidth });
+    }
+  });
+
+  it("does not push duplicate history entries when the active desktop Settings card is clicked again", async () => {
+    const originalWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 1280 });
+    const pushState = vi.spyOn(window.history, "pushState");
+
+    try {
+      render(<SettingsPage controls={createSettingsControls()} />);
+
+      const appearanceCard = screen.getByTestId("settings-module-card-appearance");
+      fireEvent.click(appearanceCard);
+      fireEvent.click(appearanceCard);
+      expect(pushState).not.toHaveBeenCalled();
+
+      const accountCard = screen.getByTestId("settings-module-card-account");
+      fireEvent.click(accountCard);
+      fireEvent.click(accountCard);
+      expect(pushState).toHaveBeenCalledTimes(1);
+
+      window.history.replaceState({}, "", "/people-first-app/settings?nav=v2&navLayout=desktop");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      await waitFor(() => expect(appearanceCard).toHaveAttribute("aria-current", "page"));
+    } finally {
+      pushState.mockRestore();
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: originalWidth });
+    }
   });
   it("opens appearance customization first when Settings controls are wired", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
@@ -1015,47 +1481,65 @@ describe("SettingsPage", () => {
       "appearance"
     );
     expect(screen.getByTestId("settings-module-card-appearance")).toHaveAttribute(
-      "aria-expanded",
-      "true"
+      "aria-current",
+      "page"
     );
     expect(screen.getByTestId("settings-v2-panel-appearance")).toBeInTheDocument();
     expectDeckInsideModulePanel("appearance");
   });
 
-  it("keeps the selected profile controls in the module without standalone sync status", () => {
+  it("keeps one Settings heading in the appearance detail hierarchy", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
-    fireEvent.click(screen.getByTestId("settings-module-card-profile"));
+
+    expect(screen.getAllByRole("heading", { name: "Settings" })).toHaveLength(1);
+  });
+
+  it("keeps the Text Size control in Appearance and removes it from Help & about", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    const textSize = screen.getByRole("slider", { name: "Text Size" });
+    expect(textSize).toHaveClass("settings-v2-range-control", "h-11");
+
+    fireEvent.click(screen.getByTestId("settings-module-card-about"));
+    expect(screen.queryByRole("slider", { name: "Text Size" })).not.toBeInTheDocument();
+  });
+
+  it("keeps profile, account, and shared sync status together in Account & backup", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+    fireEvent.click(screen.getByTestId("settings-module-card-account"));
 
     expect(screen.getByTestId("settings-page")).toHaveAttribute("data-controls-wired", "true");
     expect(screen.getByTestId("settings-module-list")).toBeInTheDocument();
     expect(screen.queryByTestId("settings-section-switcher")).not.toBeInTheDocument();
     expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
       "data-selected-section",
-      "profile"
+      "account"
     );
     expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
       "id",
       "settings-v2-control-deck"
     );
-    expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
+    expect(screen.getByTestId("settings-module-card-account")).toHaveAttribute(
       "aria-controls",
-      "settings-module-panel-profile"
-    );
-    expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
-      "aria-expanded",
-      "true"
+      "settings-module-panel-account"
     );
     expect(screen.getByTestId("settings-module-card-account")).toHaveAttribute(
-      "aria-expanded",
-      "false"
+      "aria-current",
+      "page"
     );
-    expectDeckInsideModulePanel("profile");
+    expectDeckInsideModulePanel("account");
     expect(screen.getByTestId("settings-v2-panel-profile")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-v2-panel-account")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-module-card-account")).toHaveTextContent(
+      "Account & backup"
+    );
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Account & backup" })
+    ).toBeInTheDocument();
     expect(screen.getByDisplayValue("Avery")).toBeInTheDocument();
     expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("settings-status-overview")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("sync-health-card")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("device-sessions-card")).not.toBeInTheDocument();
+    expect(screen.getByTestId("settings-status-overview")).toBeInTheDocument();
+    expect(screen.getByTestId("sync-health-card")).toBeInTheDocument();
     expect(screen.getByTestId("settings-v2-panel-profile")).toHaveTextContent("Profile");
     expect(screen.getByTestId("settings-v2-panel-profile")).not.toHaveTextContent(
       "Profile & Appearance"
@@ -1071,9 +1555,158 @@ describe("SettingsPage", () => {
     );
   });
 
+  it("hides the blocked Weekly Digest control and an empty connected-methods section", () => {
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "account" }} />
+    );
+
+    const accountPanel = screen.getByTestId("settings-v2-panel-account");
+    expect(within(accountPanel).queryByText("Connected sign-in methods")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-v2-weekly-digest")).not.toBeInTheDocument();
+    expect(within(accountPanel).queryByText(/Weekly Progress/i)).not.toBeInTheDocument();
+    expect(within(accountPanel).queryByText(/weekly summary/i)).not.toBeInTheDocument();
+  });
+
+  it("shows connected sign-in methods only when the account has a provider", () => {
+    accountAuthMock.linkedProviderIds = ["google"];
+
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "account" }} />
+    );
+
+    const accountPanel = screen.getByTestId("settings-v2-panel-account");
+    expect(within(accountPanel).getByText("Connected sign-in methods")).toBeInTheDocument();
+    expect(within(accountPanel).getByText("Google")).toBeInTheDocument();
+  });
+
+  it("does not expose sign-in actions while signed-in account details are still loading", () => {
+    appStoreMock.hasValidSession = true;
+    accountAuthMock.hasSession = false;
+    accountAuthMock.sessionCheckState = "checking";
+    accountAuthMock.enabledProviders = [
+      {
+        id: "google",
+        labelKey: "continueWithGoogle",
+        loadingLabelKey: "connectingGoogle",
+        fallbackLabel: "Continue with Google",
+        fallbackLoadingLabel: "Connecting to Google...",
+      },
+    ];
+
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "account" }} />
+    );
+
+    const accountPanel = screen.getByTestId("settings-v2-panel-account");
+    expect(accountPanel).toHaveTextContent("Checking your account…");
+    expect(accountPanel).toHaveTextContent(
+      "Your data stays on this device while ZenFlow checks your account."
+    );
+    expect(screen.queryByTestId("auth-provider-button")).not.toBeInTheDocument();
+  });
+
+  it("offers a safe retry when signed-in account details cannot be checked", () => {
+    appStoreMock.hasValidSession = true;
+    accountAuthMock.hasSession = false;
+    accountAuthMock.sessionCheckState = "error";
+    accountAuthMock.enabledProviders = [
+      {
+        id: "google",
+        labelKey: "continueWithGoogle",
+        loadingLabelKey: "connectingGoogle",
+        fallbackLabel: "Continue with Google",
+        fallbackLoadingLabel: "Connecting to Google...",
+      },
+    ];
+
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "account" }} />
+    );
+
+    const accountPanel = screen.getByTestId("settings-v2-panel-account");
+    expect(accountPanel).toHaveTextContent("We couldn’t check your account");
+    expect(accountPanel).toHaveTextContent(
+      "Your data stays on this device. Check your connection and try again."
+    );
+    expect(screen.queryByTestId("auth-provider-button")).not.toBeInTheDocument();
+
+    fireEvent.click(within(accountPanel).getByRole("button", { name: "Retry" }));
+    expect(accountAuthMock.refreshSession).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a retryable account error when the global boolean cannot prove sign-out", () => {
+    appStoreMock.hasValidSession = false;
+    accountAuthMock.hasSession = false;
+    accountAuthMock.sessionCheckState = "error";
+    accountAuthMock.enabledProviders = [
+      {
+        id: "google",
+        labelKey: "continueWithGoogle",
+        loadingLabelKey: "connectingGoogle",
+        fallbackLabel: "Continue with Google",
+        fallbackLoadingLabel: "Connecting to Google...",
+      },
+    ];
+
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "account" }} />
+    );
+
+    expect(screen.getByTestId("settings-v2-account-check-error")).toHaveTextContent(
+      "We couldn’t check your account"
+    );
+    expect(screen.queryByTestId("auth-provider-button")).not.toBeInTheDocument();
+  });
+
+  it("keeps signed-out account actions without a duplicate sync-health surface", () => {
+    appStoreMock.hasValidSession = false;
+    accountAuthMock.hasSession = false;
+    accountAuthMock.sessionCheckState = "signed-out";
+    accountAuthMock.enabledProviders = [
+      {
+        id: "google",
+        labelKey: "continueWithGoogle",
+        loadingLabelKey: "connectingGoogle",
+        fallbackLabel: "Continue with Google",
+        fallbackLoadingLabel: "Connecting to Google...",
+      },
+    ];
+
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "account" }} />
+    );
+
+    const accountPanel = screen.getByTestId("settings-v2-panel-account");
+    expect(accountPanel).toHaveTextContent("You’re not signed in");
+    expect(accountPanel).toHaveTextContent(
+      "Your data stays on this device. Sign in to back it up and use it on your other devices."
+    );
+    expect(accountPanel).not.toHaveTextContent(/expired|again/i);
+    expect(screen.getByTestId("auth-provider-button")).toBeInTheDocument();
+    expect(screen.queryByTestId("settings-status-overview")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sync-health-card")).not.toBeInTheDocument();
+    expect(screen.queryByText("Connected sign-in methods")).not.toBeInTheDocument();
+  });
+
+  it("shows backend-unavailable guidance once in the detail without sync diagnostics", () => {
+    supabaseClientMock.client = null;
+
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "account" }} />
+    );
+
+    const accountPanel = screen.getByTestId("settings-v2-panel-account");
+    expect(within(accountPanel).getAllByText("Backup isn’t available in this version")).toHaveLength(1);
+    expect(within(accountPanel).getAllByText("Your data stays on this device.")).toHaveLength(1);
+    expect(screen.queryByTestId("settings-status-overview")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sync-health-card")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("device-sessions-card")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("auth-provider-button")).not.toBeInTheDocument();
+  });
+
   it("uses a calm tokenized profile save action instead of a solid accent block", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
-    fireEvent.click(screen.getByTestId("settings-module-card-profile"));
+    fireEvent.click(screen.getByTestId("settings-module-card-account"));
 
     const saveButton = screen.getByTestId("settings-v2-profile-save");
     const saveClassName = saveButton.getAttribute("class") || "";
@@ -1088,10 +1721,73 @@ describe("SettingsPage", () => {
     expect(saveClassName).not.toContain("bg-[hsl(var(--settings-v2-accent))]");
   });
 
+  it("does not present the legacy Friend default as a name the user chose", () => {
+    const controls = {
+      ...createSettingsControls(),
+      userName: "Friend",
+      userNameCustom: false,
+      initialOpenSection: "account",
+    };
+    const view = render(<SettingsPage controls={controls} />);
+
+    expect(screen.getByLabelText("Your name")).toHaveValue("");
+    expect(screen.getByLabelText("Your name")).toHaveAttribute("placeholder", "Enter your name");
+
+    view.rerender(<SettingsPage controls={{ ...controls, userNameCustom: true }} />);
+    expect(screen.getByLabelText("Your name")).toHaveValue("Friend");
+  });
+
+  it("labels the full advanced appearance disclosure without duplicating Mood palette", () => {
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "appearance" }} />
+    );
+
+    const advanced = screen.getByTestId("settings-v2-advanced-appearance-details");
+    expect(within(advanced).getByText("Advanced appearance")).toBeInTheDocument();
+    expect(within(advanced).getAllByText("Mood palette")).toHaveLength(1);
+  });
+
+  it("explains what the Accent choice changes in Advanced appearance", () => {
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "appearance" }} />
+    );
+
+    const advanced = screen.getByTestId("settings-v2-advanced-appearance-details");
+    fireEvent.click(within(advanced).getByText("Advanced appearance"));
+
+    expect(within(screen.getByTestId("settings-v2-accent-field")).getByText(
+      "Color for buttons, selections, and highlights.",
+    )).toBeInTheDocument();
+  });
+
+  it("wraps compact appearance actions instead of truncating translated labels", () => {
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "appearance" }} />
+    );
+
+    const actions = screen.getByTestId("settings-v2-appearance-actions");
+    for (const button of within(actions).getAllByRole("button")) {
+      const label = button.querySelector("span");
+      expect(label?.className).not.toContain("truncate");
+    }
+  });
+
+  it("describes the actual ZenFlow product in About instead of a generic wellness tagline", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+    fireEvent.click(screen.getByTestId("settings-module-card-about"));
+
+    expect(
+      screen.getByText(
+        "ZenFlow brings mood check-ins, habits, focus sessions, and your journal into one place."
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Your path to mindful living 🌿")).not.toBeInTheDocument();
+  });
+
   it("saves profile name only after a scoped dirty change", async () => {
     const controls = createSettingsControls();
     render(<SettingsPage controls={controls} />);
-    fireEvent.click(screen.getByTestId("settings-module-card-profile"));
+    fireEvent.click(screen.getByTestId("settings-module-card-account"));
 
     const nameInput = screen.getByLabelText("Your name");
     const saveButton = screen.getByTestId("settings-v2-profile-save");
@@ -1102,21 +1798,163 @@ describe("SettingsPage", () => {
     fireEvent.keyDown(nameInput, { key: "Enter", code: "Enter" });
 
     await waitFor(() => expect(controls.onNameChange).toHaveBeenCalledWith("Avery Stone"));
-    expect(accountServiceMock.updateProfileName).toHaveBeenCalledWith("Avery Stone");
+    expect(accountServiceMock.updateProfileName).toHaveBeenCalledWith("user-1", "Avery Stone");
     await waitFor(() => expect(saveButton).toBeDisabled());
+  });
+
+  it("ignores account A's delayed profile completion after account B becomes active", async () => {
+    const deferred = createDeferred<boolean>();
+    accountServiceMock.updateProfileName.mockReturnValueOnce(deferred.promise);
+    const controls = createSettingsControls();
+    const view = render(<SettingsPage controls={controls} />);
+    fireEvent.click(screen.getByTestId("settings-module-card-account"));
+
+    fireEvent.change(screen.getByLabelText("Your name"), {
+      target: { value: "Avery Updated" },
+    });
+    fireEvent.click(screen.getByTestId("settings-v2-profile-save"));
+
+    await waitFor(() => {
+      expect(controls.onNameChange).toHaveBeenCalledWith("Avery Updated");
+      expect(accountServiceMock.updateProfileName).toHaveBeenCalledWith("user-1", "Avery Updated");
+    });
+
+    settingsOwnerMock.currentOwnerUserId = "user-2";
+    const accountBControls = { ...controls, userName: "Bailey B" };
+    view.rerender(<SettingsPage controls={accountBControls} />);
+
+    await act(async () => {
+      deferred.resolve(false);
+      await deferred.promise;
+    });
+
+    expect(screen.queryByText("Saved on this device")).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue("Bailey B")).toBeInTheDocument();
+    expect(controls.onNameChange).toHaveBeenCalledTimes(1);
   });
 
   it("keeps data export primary actions tonal instead of louder than the Settings panel", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
 
-    fireEvent.click(screen.getByTestId("settings-module-card-data"));
+    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
 
     const exportButton = screen.getByTestId("settings-v2-export-json");
     const exportClassName = exportButton.getAttribute("class") || "";
 
-    expect(exportButton).toHaveAccessibleName(/Export/);
+    expect(exportButton).toHaveAccessibleName("Save backup");
     expect(exportClassName).toContain("bg-[hsl(var(--settings-v2-accent)/0.14)]");
     expect(exportClassName).not.toContain("bg-[hsl(var(--settings-v2-accent))]");
+  });
+
+  it("separates restorable backups from reports inside Privacy & data", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
+
+    const dataPanel = screen.getByTestId("settings-v2-panel-data");
+    const backupRegion = screen.getByRole("region", { name: "Backup & restore" });
+    const reportsRegion = screen.getByRole("region", { name: "Reports" });
+
+    expect(dataPanel).toHaveTextContent("Backups & reports");
+    expect(dataPanel).not.toHaveTextContent("Data & Privacy");
+    expect(within(backupRegion).getByTestId("settings-v2-export-json")).toHaveAccessibleName(
+      "Save backup"
+    );
+    expect(within(backupRegion).getByTestId("settings-v2-import")).toHaveAccessibleName(
+      "Import backup"
+    );
+    expect(within(backupRegion).getByTestId("settings-v2-import-options")).toBeInTheDocument();
+    expect(within(reportsRegion).getByTestId("settings-v2-export-csv")).toHaveAccessibleName(
+      "Spreadsheet data (CSV)"
+    );
+    expect(within(reportsRegion).getByTestId("settings-v2-export-pdf")).toHaveAccessibleName(
+      "Progress report (PDF)"
+    );
+    expect(reportsRegion).toHaveTextContent("Reports are not backups.");
+  });
+
+  it("uses quiet tokenized surfaces for real privacy controls and import options", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
+
+    for (const testId of ["settings-v2-ad-consent"]) {
+      const row = screen.getByTestId(testId);
+      expect(row).toHaveAttribute("data-surface-weight", "quiet");
+      expect(row.className).toContain("border-transparent");
+      expect(within(row).getByRole("switch")).toHaveAccessibleName();
+    }
+
+    const importOptions = screen.getByTestId("settings-v2-import-options");
+    expect(importOptions.className).toContain("border-t");
+    expect(importOptions.className).toContain("pt-3");
+    expect(importOptions.className).toContain(
+      "border-[hsl(var(--settings-v2-border)/0.24)]"
+    );
+    expect(importOptions.className).not.toContain("border-transparent");
+    expect(within(importOptions).getByRole("group", { name: "How to import" })).toBeInTheDocument();
+  });
+
+  it("keeps backup and report actions wired to their original handlers", () => {
+    render(
+      <SettingsPage
+        controls={{ ...createSettingsControls(), initialOpenSection: "privacy" }}
+      />
+    );
+
+    expect(screen.getByRole("region", { name: "Backup & restore" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Reports" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("settings-v2-export-json"));
+    expect(dataExportMock.handleExport).toHaveBeenCalledTimes(1);
+    expect(dataExportMock.handleExportCSV).not.toHaveBeenCalled();
+    expect(dataExportMock.handleExportPDF).not.toHaveBeenCalled();
+    expect(dataImportMock.handleImportClick).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId("settings-v2-export-csv"));
+    expect(dataExportMock.handleExportCSV).toHaveBeenCalledTimes(1);
+    expect(dataExportMock.handleExportPDF).not.toHaveBeenCalled();
+    expect(dataImportMock.handleImportClick).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId("settings-v2-export-pdf"));
+    expect(dataExportMock.handleExportPDF).toHaveBeenCalledTimes(1);
+    expect(dataImportMock.handleImportClick).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId("settings-v2-import"));
+    expect(dataImportMock.handleImportClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("associates every ToggleRow switch with its visible description", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    const row = screen.getByTestId("settings-v2-motion-toggle");
+    const toggle = within(row).getByRole("switch", { name: "Animations" });
+    const descriptionId = toggle.getAttribute("aria-describedby");
+
+    expect(descriptionId).toBeTruthy();
+    expect(document.getElementById(descriptionId as string)).toHaveTextContent(
+      "Motion used for state changes and transitions"
+    );
+  });
+
+  it("keeps critical data errors visible until the next user action", () => {
+    vi.useFakeTimers();
+    try {
+      render(<SettingsPage controls={createSettingsControls()} />);
+      fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
+
+      act(() => {
+        dataStatusHarness.setDataStatus?.("Backup could not be decrypted.");
+      });
+      expect(screen.getByText("Backup could not be decrypted.")).toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(3_100);
+      });
+      expect(screen.getByText("Backup could not be decrypted.")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("uses destructive hierarchy for replace-mode import confirmation", () => {
@@ -1127,21 +1965,26 @@ describe("SettingsPage", () => {
     });
 
     render(<SettingsPage controls={createSettingsControls()} />);
-    fireEvent.click(screen.getByTestId("settings-module-card-data"));
+    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
 
     const replaceChoice = screen.getByTestId("settings-v2-import-mode-replace");
     const importButton = screen.getByTestId("settings-v2-import");
-    const dialog = screen.getByRole("dialog", { name: "Import Backup" });
-    const confirmButton = within(dialog).getByRole("button", { name: "Replace" });
+    const dialog = screen.getByRole("dialog", { name: "Import backup" });
+    const dialogPanel = dialog.querySelector<HTMLElement>('[data-dialog-panel="true"]');
+    const confirmButton = within(dialog).getByRole("button", { name: "Replace current data" });
 
     expect(replaceChoice).toHaveAttribute("aria-pressed", "true");
     expect(replaceChoice.className).toContain("bg-destructive/10");
     expect(importButton.className).toContain("text-destructive");
-    expect(dialog).toHaveTextContent("All current data will be deleted and replaced with import");
-    expect(confirmButton.className).toContain("text-destructive");
+    expect(dialog).toHaveTextContent(
+      "This replaces current moods, habits, focus sessions, gratitude, and settings included in backups. Diary areas are replaced only when they are present in the backup. Protection settings for this device stay unchanged."
+    );
+    expect(confirmButton).toHaveClass("text-destructive");
+    expect(dialogPanel).toHaveFocus();
+    expect(screen.getByTestId("settings-page-control-deck")).not.toContainElement(dialog);
   });
 
-  it("falls back to profile when the removed modules section is requested initially", () => {
+  it("falls back to Account & backup when a removed section is requested initially", () => {
     render(
       <SettingsPage
         controls={{
@@ -1153,15 +1996,15 @@ describe("SettingsPage", () => {
 
     expect(screen.queryByTestId("settings-module-card-modules")).not.toBeInTheDocument();
     expect(screen.queryByTestId("settings-section-switcher")).not.toBeInTheDocument();
-    expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
-      "aria-expanded",
-      "true"
+    expect(screen.getByTestId("settings-module-card-account")).toHaveAttribute(
+      "aria-current",
+      "page"
     );
     expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
       "data-selected-section",
-      "profile"
+      "account"
     );
-    expectDeckInsideModulePanel("profile");
+    expectDeckInsideModulePanel("account");
     expect(screen.queryByTestId("settings-v2-panel-modules")).not.toBeInTheDocument();
   });
 
@@ -1171,32 +2014,28 @@ describe("SettingsPage", () => {
     try {
       render(<SettingsPage controls={createSettingsControls()} />);
 
-      fireEvent.click(screen.getByTestId("settings-module-card-data"));
+      fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
 
       expect(screen.queryByTestId("settings-section-switcher")).not.toBeInTheDocument();
-      expect(screen.getByTestId("settings-module-card-data")).toHaveAttribute(
-        "aria-expanded",
-        "true"
-      );
-      expect(screen.getByTestId("settings-module-card-profile")).toHaveAttribute(
-        "aria-expanded",
-        "false"
+      expect(screen.getByTestId("settings-module-card-privacy")).toHaveAttribute(
+        "aria-current",
+        "page"
       );
       expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
         "data-selected-section",
-        "data"
+        "privacy"
       );
-      expectDeckInsideModulePanel("data");
+      expectDeckInsideModulePanel("privacy");
       expect(screen.getByTestId("settings-v2-panel-data")).toBeInTheDocument();
       expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
       expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(1);
-      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView).not.toHaveBeenCalled();
     } finally {
       restore();
     }
   });
 
-  it("uses instant panel scroll on mobile settings module changes", () => {
+  it("resets the mobile document scroll without aligning detail under the floating menu", () => {
     const scroll = installScrollIntoViewSpy();
     const media = installSettingsMotionMediaQuery({
       isMobileWorkspace: true,
@@ -1206,11 +2045,13 @@ describe("SettingsPage", () => {
     try {
       render(<SettingsPage controls={createSettingsControls()} />);
 
-      fireEvent.click(screen.getByTestId("settings-module-card-data"));
+      fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
 
-      expect(scroll.scrollIntoView).toHaveBeenCalledWith({
-        block: "start",
+      expect(scroll.scrollIntoView).not.toHaveBeenCalled();
+      expect(scroll.scrollTo).toHaveBeenCalledWith({
         behavior: "auto",
+        left: 0,
+        top: 0,
       });
       expect(media.matchMedia).toHaveBeenCalledWith("(max-width: 1023px)");
       expect(media.matchMedia).not.toHaveBeenCalledWith("(prefers-reduced-motion: reduce)");
@@ -1256,9 +2097,38 @@ describe("SettingsPage", () => {
     expect(accountAuthMock.handleSignOut).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps pending-change recovery visible and requires a second discard confirmation", () => {
+    accountAuthMock.signOutBlockReason = "pending-changes";
+    accountAuthMock.authStatus = "Changes are still waiting to be saved online.";
+
+    render(
+      <SettingsPage
+        controls={{
+          ...createSettingsControls(),
+          initialOpenSection: "account",
+        }}
+      />
+    );
+
+    expect(screen.getByText("Finish signing out")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(accountAuthMock.handleSignOut).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Export data" }));
+    expect(dataExportMock.handleExport).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Discard changes and sign out" }));
+    expect(accountAuthMock.handleDiscardPendingAndSignOut).not.toHaveBeenCalled();
+    expect(screen.getByText("Discard unsaved changes and sign out?")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Discard changes and sign out" }));
+    expect(accountAuthMock.handleDiscardPendingAndSignOut).toHaveBeenCalledTimes(1);
+  });
+
   it("marks the account delete confirmation action busy while deletion is running", () => {
     deleteAccountMock.showDeleteConfirm = true;
     deleteAccountMock.deleteConfirmInput = "DELETE";
+    deleteAccountMock.deleteConfirmMatches = true;
     deleteAccountMock.isDeletingAccount = true;
 
     render(
@@ -1273,10 +2143,32 @@ describe("SettingsPage", () => {
     const deletingButton = screen.getByRole("button", { name: "Deleting..." });
     expect(deletingButton).toHaveAttribute("aria-busy", "true");
     expect(deletingButton).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeDisabled();
     expect(screen.getByLabelText("Type DELETE to confirm:")).toBeDisabled();
   });
 
-  it("focuses the account delete confirmation input when the destructive panel is shown", () => {
+  it("does not hide an in-progress account deletion on Escape", () => {
+    deleteAccountMock.showDeleteConfirm = true;
+    deleteAccountMock.deleteConfirmInput = "DELETE";
+    deleteAccountMock.deleteConfirmMatches = true;
+    deleteAccountMock.isDeletingAccount = true;
+
+    render(
+      <SettingsPage
+        controls={{ ...createSettingsControls(), initialOpenSection: "account" }}
+      />
+    );
+    deleteAccountMock.setShowDeleteConfirm.mockClear();
+    deleteAccountMock.setDeleteConfirmInput.mockClear();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(deleteAccountMock.setShowDeleteConfirm).not.toHaveBeenCalledWith(false);
+    expect(deleteAccountMock.setDeleteConfirmInput).not.toHaveBeenCalledWith("");
+    expect(screen.getByRole("button", { name: "Deleting..." })).toBeDisabled();
+  });
+
+  it("focuses the account delete warning before its destructive input", async () => {
     deleteAccountMock.showDeleteConfirm = true;
     deleteAccountMock.deleteConfirmInput = "";
     deleteAccountMock.isDeletingAccount = false;
@@ -1290,7 +2182,42 @@ describe("SettingsPage", () => {
       />
     );
 
-    expect(screen.getByLabelText("Type DELETE to confirm:")).toHaveFocus();
+    await waitFor(() =>
+      expect(screen.getByTestId("settings-v2-delete-confirmation")).toHaveFocus(),
+    );
+  });
+
+  it("keeps the inline account-delete confirmation scrollable and restores its trigger", async () => {
+    const { restore, scrollIntoView } = installScrollIntoViewSpy();
+    const controls = createSettingsControls();
+    const view = render(
+      <SettingsPage controls={{ ...controls, initialOpenSection: "account" }} />
+    );
+
+    try {
+      const trigger = screen.getByRole("button", { name: "Delete account" });
+      trigger.focus();
+      fireEvent.click(trigger);
+      view.rerender(
+        <SettingsPage controls={{ ...controls, initialOpenSection: "account" }} />
+      );
+
+      const confirmationInput = screen.getByLabelText("Type DELETE to confirm:");
+      expect(document.body.style.position).not.toBe("fixed");
+      expect(scrollIntoView).toHaveBeenCalled();
+
+      expect(confirmationInput).toBeVisible();
+      fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+      view.rerender(
+        <SettingsPage controls={{ ...controls, initialOpenSection: "account" }} />
+      );
+
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Delete account" })).toHaveFocus()
+      );
+    } finally {
+      restore();
+    }
   });
 
   it("keeps automatic sync status inside the active account module without a manual sync button", () => {
@@ -1303,8 +2230,8 @@ describe("SettingsPage", () => {
 
       expect(screen.queryByTestId("settings-section-switcher")).not.toBeInTheDocument();
       expect(screen.getByTestId("settings-module-card-account")).toHaveAttribute(
-        "aria-expanded",
-        "true"
+        "aria-current",
+        "page"
       );
       expect(screen.getByTestId("settings-page-control-deck")).toHaveAttribute(
         "data-selected-section",
@@ -1348,7 +2275,7 @@ describe("SettingsPage", () => {
       ).not.toBeInTheDocument();
       expect(screen.queryByTestId("settings-panel")).not.toBeInTheDocument();
       expect(document.querySelectorAll('[data-testid^="settings-module-panel-"]')).toHaveLength(1);
-      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView).not.toHaveBeenCalled();
     } finally {
       restore();
     }
@@ -1488,11 +2415,38 @@ describe("SettingsPage", () => {
     expect(morningHearthChoice).toHaveAttribute("data-interaction-surface", "settings-choice");
     expect(morningHearthChoice.className).toContain("active:translate-y-[1px]");
     expect(within(actions).queryByTestId("settings-v2-style-reset")).toBeNull();
-    expect(moreAction).toHaveAttribute("aria-haspopup", "menu");
+    expect(moreAction).not.toHaveAttribute("aria-haspopup");
+    expect(moreAction).toHaveAttribute("aria-expanded", "false");
+    expect(moreAction).not.toHaveAttribute("aria-controls");
     expect(previewAction).toHaveAttribute("data-button-tone", "secondary");
     expect(previewAction.className).toContain("active:translate-y-[1px]");
     expect(applyAction).toHaveAttribute("data-button-tone", "primary");
     expect(applyAction.className).toContain("shadow-[");
+  });
+
+  it("uses a keyboard-safe disclosure for the single appearance reset action", async () => {
+    render(
+      <SettingsPage
+        controls={{
+          ...createSettingsControls(),
+          initialOpenSection: "appearance",
+        }}
+      />
+    );
+
+    const trigger = screen.getByTestId("settings-v2-appearance-more");
+    expect(trigger).not.toHaveAttribute("aria-controls");
+    fireEvent.click(trigger);
+
+    const reset = screen.getByTestId("settings-v2-style-reset");
+    expect(trigger).toHaveAttribute("aria-controls", "settings-v2-appearance-more-menu");
+    expect(document.getElementById("settings-v2-appearance-more-menu")).toBeInTheDocument();
+    await waitFor(() => expect(reset).toHaveFocus());
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByTestId("settings-v2-style-reset")).toBeNull());
+    expect(trigger).not.toHaveAttribute("aria-controls");
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it("clears a live preview when the draft changes before apply", () => {
@@ -1525,7 +2479,7 @@ describe("SettingsPage", () => {
   it("wires language choices to the language context", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
 
-    fireEvent.click(screen.getByTestId("settings-module-card-language"));
+    fireEvent.click(screen.getByTestId("settings-module-card-appearance"));
     fireEvent.click(screen.getByRole("button", { name: "Українська" }));
 
     expect(languageContextMock.setLanguage).toHaveBeenCalledWith("uk");
@@ -1540,22 +2494,36 @@ describe("SettingsPage", () => {
 
     fireEvent.click(soundCard);
 
-    expect(screen.getByTestId("settings-v2-panel-sound")).toBeInTheDocument();
+    const soundPanel = screen.getByTestId("settings-v2-panel-sound");
+    expect(soundPanel).toBeInTheDocument();
+    expect(soundPanel).toHaveTextContent("Choose background sounds, activity sounds, and volume.");
     expect(
       screen.getByText(
-        "Orb ambience starts from Orb. Diary sound is managed here so it never covers your writing."
+        "Play soft rain while you write in your diary. It starts only when you press play."
       )
     ).toBeInTheDocument();
-    expect(screen.getByText("Sound comfort")).toBeInTheDocument();
+    expect(screen.getByText("Sound style")).toBeInTheDocument();
+    expect(
+      screen.getByText("Choose a sound style, then adjust individual sounds below."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("In-app alert sounds")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Play timer alerts and reminder previews inside ZenFlow. This does not change phone notification sounds.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("Ambient sound")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-v2-audio-ambient-toggle")).not.toHaveTextContent(
+      /orb|Hyperfocus/i,
+    );
     expect(screen.getByTestId("settings-v2-diary-ambience-control")).toHaveTextContent("Soft rain");
     expect(screen.queryByText("Where sound appears")).not.toBeInTheDocument();
     expect(screen.queryByText("Action feedback map")).not.toBeInTheDocument();
     expect(screen.queryByTestId("settings-v2-sound-map-card")).not.toBeInTheDocument();
     expect(screen.queryByTestId("settings-v2-action-sound-map-card")).not.toBeInTheDocument();
     expect(screen.queryByTestId("settings-v2-sound-platform-card")).not.toBeInTheDocument();
-    expect(screen.getByTestId("settings-v2-panel-sound")).not.toHaveTextContent(
-      /\b(PWA|Android|iOS|Desktop|Web)\b/
+    expect(soundPanel).not.toHaveTextContent(
+      /\b(Android|iOS|PWA|Desktop|Web|supported devices|orb|Hyperfocus)\b/i,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Preview sound" }));
@@ -1567,11 +2535,67 @@ describe("SettingsPage", () => {
         name: "App sound",
       })
     );
-    expect(audioManagerMock.setMuted).toHaveBeenLastCalledWith(true);
+    expect(audioManagerMock.setAudioEnabled).toHaveBeenLastCalledWith(false);
 
     const volume = screen.getByTestId("settings-v2-audio-volume");
     fireEvent.change(volume, { target: { value: "0.7" } });
     expect(audioManagerMock.setVolume).toHaveBeenLastCalledWith(0.7);
+  });
+
+  it("shows the audio manager effective state in both the Sound overview and master control", () => {
+    audioManagerMock.state.muted = false;
+    audioManagerMock.state.volume = 0;
+    audioManagerMock.state.canPlayFeedback = false;
+
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    const soundCard = screen.getByTestId("settings-module-card-sound");
+    expect(soundCard).toHaveTextContent("Muted");
+    fireEvent.click(soundCard);
+
+    const master = within(screen.getByTestId("settings-v2-app-sound-toggle")).getByRole("switch", {
+      name: "App sound",
+    });
+    expect(master).toHaveAttribute("aria-checked", "false");
+
+    fireEvent.click(master);
+    expect(audioManagerMock.setAudioEnabled).toHaveBeenLastCalledWith(true);
+  });
+
+  it("keeps motion in Appearance, hides native-only haptics on web, and removes the unused comfort survey", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    const motion = within(screen.getByTestId("settings-v2-motion-toggle")).getByRole("switch", {
+      name: "Animations",
+    });
+    fireEvent.click(motion);
+    expect(dopamineSettingsMock.updateDopamineSettings).toHaveBeenLastCalledWith({
+      animations: false,
+    });
+
+    fireEvent.click(screen.getByTestId("settings-module-card-sound"));
+    expect(screen.queryByTestId("settings-v2-haptics-toggle")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-v2-audio-feedback-card")).not.toBeInTheDocument();
+    expect(screen.queryByText("How did this sound feel?")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("settings-module-card-about"));
+    expect(screen.queryByRole("button", { name: "Feedback style" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dopamine-settings-modal")).not.toBeInTheDocument();
+  });
+
+  it("offers the haptics preference in Sound on native devices", () => {
+    platformMock.isNative = true;
+    platformMock.isAndroid = true;
+    platformMock.platform = "android";
+
+    render(<SettingsPage controls={createSettingsControls()} />);
+    fireEvent.click(screen.getByTestId("settings-module-card-sound"));
+
+    const haptics = within(screen.getByTestId("settings-v2-haptics-toggle")).getByRole("switch", {
+      name: "Haptics",
+    });
+    fireEvent.click(haptics);
+    expect(dopamineSettingsMock.updateDopamineSettings).toHaveBeenLastCalledWith({ haptics: true });
   });
 
   it("keeps V2 sound settings focused on active controls instead of reference maps", () => {
@@ -1590,6 +2614,86 @@ describe("SettingsPage", () => {
     expect(soundPanel).not.toHaveTextContent(/\b(PWA|Android|iOS|Desktop|Web)\b/);
   });
 
+  it("presents a stored rich profile as one honest All sounds choice", () => {
+    const storedRich = JSON.stringify({
+      profile: "rich",
+      ambientEnabled: true,
+      completionCuesEnabled: true,
+      milestoneCuesEnabled: true,
+      reminderCuesEnabled: true,
+      hapticsEnabled: false,
+      avoidedTextures: [],
+    });
+    localStorage.setItem(
+      "zenflow-audio-comfort",
+      storedRich,
+    );
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "sound" }} />,
+    );
+
+    const profileCard = screen.getByTestId("settings-v2-sensory-comfort-card");
+    expect(within(profileCard).getAllByRole("button")).toHaveLength(2);
+    expect(screen.queryByTestId("settings-v2-audio-comfort-profile-rich")).toBeNull();
+    expect(screen.getByTestId("settings-v2-audio-comfort-profile-quiet")).toHaveTextContent("Quiet");
+    expect(screen.getByTestId("settings-v2-audio-comfort-profile-balanced"))
+      .toHaveTextContent("All sounds");
+    expect(screen.getByTestId("settings-v2-audio-comfort-profile-balanced"))
+      .toHaveAttribute("aria-pressed", "true");
+    expect(localStorage.getItem("zenflow-audio-comfort")).toBe(storedRich);
+  });
+
+  it.each([
+    ["rich", { ambientEnabled: false }],
+    ["balanced", { reminderCuesEnabled: false }],
+  ] as const)("leaves customized %s settings outside both presets", (profile, override) => {
+    const stored = JSON.stringify({
+      profile,
+      ambientEnabled: true,
+      completionCuesEnabled: true,
+      milestoneCuesEnabled: true,
+      reminderCuesEnabled: true,
+      hapticsEnabled: false,
+      avoidedTextures: [],
+      ...override,
+    });
+    localStorage.setItem("zenflow-audio-comfort", stored);
+
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "sound" }} />,
+    );
+
+    expect(screen.getByTestId("settings-v2-audio-comfort-profile-quiet"))
+      .toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByTestId("settings-v2-audio-comfort-profile-balanced"))
+      .toHaveAttribute("aria-pressed", "false");
+    expect(localStorage.getItem("zenflow-audio-comfort")).toBe(stored);
+  });
+
+  it("explains when rain is excluded instead of claiming sound is ready", () => {
+    localStorage.setItem(
+      "zenflow-audio-comfort",
+      JSON.stringify({
+        profile: "balanced",
+        ambientEnabled: true,
+        completionCuesEnabled: true,
+        milestoneCuesEnabled: true,
+        reminderCuesEnabled: true,
+        hapticsEnabled: false,
+        avoidedTextures: ["rain"],
+      }),
+    );
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "sound" }} />,
+    );
+
+    const diaryControl = screen.getByTestId("settings-v2-diary-ambience-control");
+    expect(screen.getByTestId("settings-v2-diary-ambience-toggle")).toBeDisabled();
+    expect(diaryControl).toHaveTextContent("Rain is turned off under Background sounds.");
+    expect(diaryControl).not.toHaveTextContent("Feedback sounds follow this volume.");
+    expect(diaryControl).not.toHaveTextContent("Background sounds are off.");
+  });
+
   it("keeps settings range controls at a finger-size target without a thicker visible track", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
 
@@ -1598,7 +2702,7 @@ describe("SettingsPage", () => {
     expect(volume).toHaveClass("settings-v2-range-control", "h-11");
     expect(volume).not.toHaveClass("bg-muted", "py-[18px]");
 
-    fireEvent.click(screen.getByTestId("settings-module-card-about"));
+    fireEvent.click(screen.getByTestId("settings-module-card-appearance"));
     const textSize = screen.getByLabelText("Text Size");
     expect(textSize).toHaveClass("settings-v2-range-control", "h-11");
     expect(textSize).not.toHaveClass("bg-muted", "py-[18px]");
@@ -1682,6 +2786,7 @@ describe("SettingsPage", () => {
 
   it("names the disabled diary ambience button by control and status", () => {
     audioManagerMock.state.muted = true;
+    audioManagerMock.state.canPlayFeedback = false;
     const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
 
     try {
@@ -1700,7 +2805,82 @@ describe("SettingsPage", () => {
     }
   });
 
+  it.each([
+    {
+      state: "muted",
+      canPlayFeedback: false,
+      muted: true,
+      comfortOverride: null,
+      disabled: true,
+      accessibleName: "Soft rain, Muted",
+      status: "Muted",
+    },
+    {
+      state: "background sounds off",
+      canPlayFeedback: true,
+      muted: false,
+      comfortOverride: { ambientEnabled: false, avoidedTextures: [] },
+      disabled: true,
+      accessibleName: "Soft rain, Background sounds are off.",
+      status: "Background sounds are off.",
+    },
+    {
+      state: "rain excluded",
+      canPlayFeedback: true,
+      muted: false,
+      comfortOverride: { ambientEnabled: true, avoidedTextures: ["rain"] },
+      disabled: true,
+      accessibleName: "Soft rain, Rain is turned off under Background sounds.",
+      status: "Rain is turned off under Background sounds.",
+    },
+    {
+      state: "ready",
+      canPlayFeedback: true,
+      muted: false,
+      comfortOverride: { ambientEnabled: true, avoidedTextures: [] },
+      disabled: false,
+      accessibleName: "Play soft rain",
+      status: "Ready to play.",
+    },
+  ] as const)(
+    "reports the $state diary ambience state truthfully",
+    ({ canPlayFeedback, muted, comfortOverride, disabled, accessibleName, status }) => {
+      audioManagerMock.state.canPlayFeedback = canPlayFeedback;
+      audioManagerMock.state.muted = muted;
+      if (comfortOverride) {
+        localStorage.setItem(
+          "zenflow-audio-comfort",
+          JSON.stringify({
+            profile: "balanced",
+            completionCuesEnabled: true,
+            milestoneCuesEnabled: true,
+            reminderCuesEnabled: true,
+            hapticsEnabled: false,
+            ...comfortOverride,
+          }),
+        );
+      }
+
+      render(
+        <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "sound" }} />,
+      );
+
+      const control = screen.getByTestId("settings-v2-diary-ambience-control");
+      const toggle = within(control).getByTestId("settings-v2-diary-ambience-toggle");
+      if (disabled) {
+        expect(toggle).toBeDisabled();
+      } else {
+        expect(toggle).toBeEnabled();
+      }
+      expect(toggle).toHaveAccessibleName(accessibleName);
+      expect(within(control).getByRole("status")).toHaveTextContent(status);
+    },
+  );
+
   it("wires notification reminder controls to the settings callback", () => {
+    platformMock.isNative = true;
+    platformMock.isAndroid = true;
+    platformMock.platform = "android";
     const controls = createSettingsControls();
     render(<SettingsPage controls={controls} />);
 
@@ -1737,16 +2917,77 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("shows cross-platform system notification guidance on web/PWA settings", () => {
+  it("shows one mobile-app reminder instruction on web without native recovery", () => {
+    platformMock.isNative = false;
+    platformMock.isAndroid = false;
+    platformMock.isIos = false;
+    platformMock.platform = "web";
     const controls = createSettingsControls();
-    render(<SettingsPage controls={controls} />);
+    controls.reminders = { ...controls.reminders, enabled: false };
 
-    fireEvent.click(screen.getByTestId("settings-module-card-notifications"));
+    render(
+      <SettingsPage
+        controls={{ ...controls, initialOpenSection: "notifications" }}
+      />,
+    );
+
+    expect(screen.getByTestId("settings-module-card-notifications")).toHaveTextContent(
+      "Mobile app",
+    );
+    const panel = screen.getByTestId("settings-v2-panel-notifications");
+    expect(
+      within(panel).getAllByText("To set reminders, open the ZenFlow mobile app."),
+    ).toHaveLength(1);
+    const toggle = within(panel).getByRole("switch", { name: "Enable reminders" });
+
+    expect(toggle).toBeDisabled();
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    expect(within(panel).queryByTestId("settings-v2-notification-system-guidance")).toBeNull();
+    expect(within(panel).queryByTestId("settings-v2-quick-actions-toggle")).toBeNull();
+    for (const label of [
+      "Morning",
+      "Afternoon",
+      "Evening",
+      "Focus reminder",
+      "Quiet start",
+      "Quiet end",
+    ]) {
+      expect(within(panel).queryByLabelText(label)).toBeNull();
+    }
+    expect(controls.onRemindersChange).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      "android",
+      true,
+      false,
+      "Your phone’s sound, vibration, and notification settings can silence or hide reminders.",
+    ],
+    [
+      "ios",
+      false,
+      true,
+      "Your iPhone or iPad’s notification settings and Focus modes can silence or hide reminders.",
+    ],
+  ] as const)("shows %s reminder recovery", (platform, android, ios, description) => {
+    platformMock.isNative = true;
+    platformMock.isAndroid = android;
+    platformMock.isIos = ios;
+    platformMock.platform = platform;
+
+    render(
+      <SettingsPage
+        controls={{ ...createSettingsControls(), initialOpenSection: "notifications" }}
+      />,
+    );
 
     const guidance = screen.getByTestId("settings-v2-notification-system-guidance");
-    expect(guidance).toHaveTextContent("System notification controls");
-    expect(guidance).toHaveTextContent("Browser and OS notification settings");
-    expect(guidance).not.toHaveTextContent("Android notification categories");
+    expect(guidance).toHaveTextContent("If reminders are silent");
+    expect(guidance).toHaveTextContent(description);
+    if (platform === "android") {
+      expect(screen.queryByTestId("settings-v2-quick-actions-toggle")).toBeNull();
+    }
   });
 
   it("requests native notification permission before enabling reminders", async () => {
@@ -1770,8 +3011,21 @@ describe("SettingsPage", () => {
     expect(enabledUpdater(controls.reminders)).toMatchObject({ enabled: true });
   });
 
+  it("keeps reminder settings limited to controls that have a real delivery path", () => {
+    platformMock.isNative = true;
+    const controls = createSettingsControls();
+    render(<SettingsPage controls={controls} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-notifications"));
+
+    expect(screen.queryByLabelText("Habit reminder")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("smart-reminders-card")).not.toBeInTheDocument();
+    expect(screen.getByText("Set a reminder from the habit's own menu.")).toBeInTheDocument();
+  });
+
   it("reschedules native reminders onto the selected notification sound channel", async () => {
     platformMock.isNative = true;
+    platformMock.isAndroid = true;
     platformMock.platform = "android";
     localNotificationsMock.checkPermissions.mockResolvedValue({ display: "granted" });
     localNotificationsMock.getPending.mockResolvedValue({ notifications: [] });
@@ -1793,7 +3047,7 @@ describe("SettingsPage", () => {
     expect(scheduled).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: 101,
+          id: 201,
           channelId: "zenflow_gentle_v2",
           schedule: expect.objectContaining({ on: expect.objectContaining({ weekday: 2 }) }),
         }),
@@ -1807,6 +3061,117 @@ describe("SettingsPage", () => {
     );
     expect(scheduled).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: 1 })]));
     expect(scheduled).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: 150 })]));
+  });
+
+  it("rolls back a native sound choice and keeps the scheduling failure visible", async () => {
+    platformMock.isNative = true;
+    platformMock.isAndroid = true;
+    platformMock.platform = "android";
+    notificationSoundsMock.initializeNotificationChannels.mockRejectedValueOnce(
+      new Error("channel creation failed"),
+    );
+    localNotificationsMock.getPending.mockResolvedValue({
+      notifications: [{ id: 201, title: "Mood", body: "Existing reminder" }],
+    });
+    localNotificationsMock.checkPermissions.mockResolvedValue({ display: "granted" });
+    const controls = createSettingsControls();
+    render(<SettingsPage controls={controls} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-notifications"));
+    fireEvent.click(screen.getByRole("button", { name: /Gentle/ }));
+
+    expect(
+      await screen.findByRole("alert", {
+        name: "ZenFlow could not apply this reminder sound. Your previous sound is still selected. Try again.",
+      }),
+    ).toBeInTheDocument();
+    expect(notificationSoundsMock.updateNotificationSound).toHaveBeenNthCalledWith(1, "gentle");
+    expect(notificationSoundsMock.updateNotificationSound).toHaveBeenNthCalledWith(2, "default");
+    expect(screen.getByRole("button", { name: /Default/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(localNotificationsMock.cancel).not.toHaveBeenCalled();
+    expect(localNotificationsMock.schedule).not.toHaveBeenCalled();
+  });
+
+  it("restores the previous sound channel when replacement scheduling fails after cancellation", async () => {
+    platformMock.isNative = true;
+    platformMock.isAndroid = true;
+    platformMock.platform = "android";
+    localNotificationsMock.checkPermissions.mockResolvedValue({ display: "granted" });
+    localNotificationsMock.getPending.mockResolvedValue({
+      notifications: [
+        {
+          id: 201,
+          title: "Previous mood",
+          body: "Previous check-in",
+          schedule: {
+            on: { hour: 14, minute: 0, weekday: 2 },
+            allowWhileIdle: true,
+          },
+        },
+      ],
+    });
+    localNotificationsMock.cancel.mockResolvedValue(undefined);
+    const replacementError = new Error("replacement schedule failed");
+    let scheduleAttempts = 0;
+    localNotificationsMock.schedule.mockImplementation(async () => {
+      scheduleAttempts += 1;
+      if (scheduleAttempts === 1) throw replacementError;
+      return { notifications: [{ id: 201 }] };
+    });
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-notifications"));
+    fireEvent.click(screen.getByRole("button", { name: /Gentle/ }));
+
+    expect(
+      await screen.findByRole("alert", {
+        name: "ZenFlow could not apply this reminder sound. Your previous sound is still selected. Try again.",
+      }),
+    ).toBeInTheDocument();
+    expect(localNotificationsMock.schedule).toHaveBeenCalledTimes(2);
+    expect(localNotificationsMock.schedule).toHaveBeenNthCalledWith(2, {
+      notifications: [
+        expect.objectContaining({
+          id: 201,
+          channelId: "zenflow_default_v2",
+        }),
+      ],
+    });
+    expect(screen.getByRole("button", { name: /Default/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("shows Android notification channel sounds on Android", () => {
+    platformMock.isNative = true;
+    platformMock.isAndroid = true;
+    platformMock.platform = "android";
+
+    render(<SettingsPage controls={createSettingsControls()} />);
+    fireEvent.click(screen.getByTestId("settings-module-card-notifications"));
+
+    expect(screen.getByText("Notification sound")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Gentle/ })).toBeInTheDocument();
+  });
+
+  it("does not show Android notification channel sounds on iOS", () => {
+    platformMock.isNative = true;
+    platformMock.isAndroid = false;
+    platformMock.isIos = true;
+    platformMock.platform = "ios";
+
+    render(<SettingsPage controls={createSettingsControls()} />);
+    fireEvent.click(screen.getByTestId("settings-module-card-notifications"));
+
+    expect(screen.queryByText("Notification sound")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Gentle/ })).not.toBeInTheDocument();
+    expect(screen.getByTestId("settings-v2-notification-system-guidance")).toHaveTextContent(
+      "Your iPhone or iPad’s notification settings and Focus modes"
+    );
   });
 
   it("keeps native reminders off and shows feedback when notification permission is denied", async () => {
@@ -1825,12 +3190,30 @@ describe("SettingsPage", () => {
     );
 
     expect(await screen.findByTestId("settings-v2-reminders-permission-warning")).toHaveTextContent(
-      "Notification permission denied."
+      "Turn on notifications for ZenFlow in your device settings."
     );
     expect(controls.onRemindersChange).not.toHaveBeenCalled();
   });
 
-  it("lets the explicit no-tracking switch turn off no-tracking without enabling analytics", () => {
+  it("describes optional privacy services without sync jargon", () => {
+    render(
+      <SettingsPage
+        controls={{ ...createSettingsControls(), initialOpenSection: "privacy" }}
+      />,
+    );
+
+    const privacyPanel = screen.getByTestId("settings-v2-panel-privacy");
+    expect(privacyPanel).toHaveTextContent(
+      "You choose which optional services ZenFlow can use. Backup starts only after you sign in.",
+    );
+    expect(privacyPanel).toHaveTextContent("Rewarded videos");
+    expect(privacyPanel).toHaveTextContent(
+      "They load only when you turn them on. Google may ask for your privacy choice when required.",
+    );
+    expect(privacyPanel).not.toHaveTextContent(/device sync|turn it on for backup/i);
+  });
+
+  it("does not expose retired analytics or no-tracking controls", () => {
     const controls = {
       ...createSettingsControls(),
       privacy: { noTracking: true, analytics: false, consentShown: true, adConsent: false },
@@ -1838,23 +3221,29 @@ describe("SettingsPage", () => {
     render(<SettingsPage controls={controls} />);
 
     fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
-    fireEvent.click(
-      within(screen.getByTestId("settings-v2-no-tracking")).getByRole("switch", {
-        name: "No tracking",
-      })
-    );
 
-    const updater = controls.onPrivacyChange.mock.calls.at(-1)?.[0];
-    expect(typeof updater).toBe("function");
-    expect(updater(controls.privacy)).toMatchObject({
-      noTracking: false,
-      analytics: false,
-      adConsent: false,
-      pushNotifications: false,
-    });
+    expect(screen.queryByTestId("settings-v2-no-tracking")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-v2-analytics")).not.toBeInTheDocument();
+    expect(screen.getByTestId("settings-v2-ad-consent")).toBeInTheDocument();
+  });
+
+  it("shows a retryable error when Google ad privacy choices do not open", async () => {
+    adContextMock.privacyOptionsRequired = true;
+    adContextMock.openAdPrivacyOptions.mockResolvedValueOnce(false);
+
+    render(<SettingsPage controls={createSettingsControls()} />);
+    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
+    fireEvent.click(screen.getByTestId("settings-v2-open-ad-privacy-options"));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not open Google ad privacy choices. Try again."
+    );
   });
 
   it("wires account reminder alerts to explicit privacy consent", () => {
+    platformMock.isNative = true;
+    platformMock.isAndroid = true;
+    platformMock.platform = "android";
     const controls = {
       ...createSettingsControls(),
       privacy: {
@@ -1870,18 +3259,27 @@ describe("SettingsPage", () => {
     fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
     fireEvent.click(
       within(screen.getByTestId("settings-v2-push-notifications")).getByRole("switch", {
-        name: "Account reminder alerts",
+        name: "Account reminders",
       })
     );
 
     const updater = controls.onPrivacyChange.mock.calls.at(-1)?.[0];
     expect(typeof updater).toBe("function");
     expect(updater(controls.privacy)).toMatchObject({
-      noTracking: false,
+      noTracking: true,
       analytics: false,
       adConsent: false,
       pushNotifications: true,
     });
+  });
+
+  it("does not show an unusable remote-push control outside supported Android builds", () => {
+    const controls = createSettingsControls();
+    render(<SettingsPage controls={controls} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
+
+    expect(screen.queryByTestId("settings-v2-push-notifications")).not.toBeInTheDocument();
   });
 
   it("does not expose the legacy widget settings action inside the V2 about panel", () => {
@@ -1959,76 +3357,193 @@ describe("SettingsPage", () => {
     const status = await screen.findByRole("status", {
       name: /Could not check for updates.*Nothing changed on this device./,
     });
-    expect(status).toHaveTextContent("ZenFlow needs a network check to confirm the latest version.");
+    expect(status).toHaveTextContent(
+      "ZenFlow needs a network check to confirm the latest version."
+    );
     expect(screen.queryByText("You have the latest version")).not.toBeInTheDocument();
   });
 
-  it("groups About actions into experience and support/legal areas", () => {
+  it("does not claim the Android updater is available on iOS", () => {
+    platformMock.isNative = true;
+    platformMock.isIos = true;
+    platformMock.platform = "ios";
+
+    render(<SettingsPage controls={createSettingsControls()} />);
+    fireEvent.click(screen.getByTestId("settings-module-card-about"));
+
+    expect(screen.queryByTestId("settings-v2-check-updates")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Open Google Play" })).not.toBeInTheDocument();
+  });
+
+  it("shows an error when Android cannot open Google Play", async () => {
+    platformMock.isNative = true;
+    platformMock.isAndroid = true;
+    platformMock.platform = "android";
+    appUpdateManagerMock.checkForAppUpdate.mockResolvedValueOnce({
+      available: true,
+      currentVersion: "2.0.0",
+      availableVersion: "2.1.0",
+    });
+    appUpdateManagerMock.openGooglePlayStore.mockResolvedValueOnce(false);
+
+    render(<SettingsPage controls={createSettingsControls()} />);
+    fireEvent.click(screen.getByTestId("settings-module-card-about"));
+    fireEvent.click(screen.getByTestId("settings-v2-check-updates"));
+    fireEvent.click(await screen.findByRole("button", { name: "Open Google Play" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not open Google Play. Try again."
+    );
+  });
+
+  it("does not present the Web reload check as a packaged Desktop updater", () => {
+    (window as typeof window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {};
+
+    render(<SettingsPage controls={createSettingsControls()} />);
+    fireEvent.click(screen.getByTestId("settings-module-card-about"));
+
+    expect(screen.queryByTestId("settings-v2-check-updates")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Restart ZenFlow" })).not.toBeInTheDocument();
+  });
+
+  it("uses natural help, license, and update wording", () => {
+    render(
+      <SettingsPage
+        controls={{ ...createSettingsControls(), initialOpenSection: "about" }}
+      />
+    );
+    const aboutPanel = screen.getByTestId("settings-v2-panel-about");
+    expect(aboutPanel).toHaveTextContent("Help and legal");
+    expect(aboutPanel).toHaveTextContent("Privacy, terms, licenses, and support.");
+    expect(within(aboutPanel).getByRole("button", { name: "Licenses" })).toBeInTheDocument();
+    expect(aboutPanel).toHaveTextContent("Check for a newer version.");
+    expect(aboutPanel).not.toHaveTextContent(/all libraries|complete license/i);
+  });
+
+  it("keeps support and legal actions without exposing developer release notes", () => {
     const controls = createSettingsControls();
     render(<SettingsPage controls={controls} />);
 
     fireEvent.click(screen.getByTestId("settings-module-card-about"));
 
-    const experience = screen.getByTestId("settings-v2-about-experience-group");
     const supportLegal = screen.getByTestId("settings-v2-about-support-legal-group");
 
-    expect(experience).toHaveTextContent("Experience controls");
-    expect(experience).toHaveTextContent("Feedback style");
-    expect(experience).toHaveTextContent("Version History");
-    expect(supportLegal).toHaveTextContent("Support and legal");
+    expect(screen.queryByTestId("settings-v2-about-experience-group")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Version History" })).not.toBeInTheDocument();
+    expect(supportLegal).toHaveTextContent("Help and legal");
     expect(supportLegal).toHaveTextContent("Send feedback");
     expect(supportLegal).toHaveTextContent("Privacy Policy");
     expect(supportLegal).toHaveTextContent("Terms of Service");
-    expect(supportLegal).toHaveTextContent("Open-source library licenses");
+    expect(supportLegal).toHaveTextContent("Licenses");
   });
 
-  it("requires typed confirmation before resetting local data", async () => {
+  it("does not offer an ambiguous local wipe while the account remains signed in", () => {
+    const controls = createSettingsControls();
+    render(<SettingsPage controls={controls} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
+    expect(screen.queryByTestId("settings-v2-reset-data")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Type RESET to confirm")).not.toBeInTheDocument();
+    expect(controls.onResetData).not.toHaveBeenCalled();
+  });
+
+  it("offers a typed local-data wipe to a local-first user without an account", async () => {
+    appStoreMock.hasValidSession = false;
     const controls = createSettingsControls();
     controls.onResetData.mockResolvedValue(undefined);
     render(<SettingsPage controls={controls} />);
 
-    fireEvent.click(screen.getByTestId("settings-module-card-data"));
+    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
     fireEvent.click(screen.getByTestId("settings-v2-reset-data"));
 
-    const confirmButton = screen.getByRole("button", { name: "Clear local data" });
-    expect(confirmButton).toBeDisabled();
-    expect(screen.getByLabelText("Type RESET to confirm")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId("settings-v2-reset-confirmation")).toHaveFocus(),
+    );
+    const confirmation = screen.getByLabelText("Type RESET to confirm");
+    const clearButton = screen.getByRole("button", { name: "Clear local data" });
+    expect(clearButton).toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText("Type RESET to confirm"), {
-      target: { value: "RESET" },
-    });
-    expect(confirmButton).not.toBeDisabled();
-
-    fireEvent.click(confirmButton);
+    fireEvent.change(confirmation, { target: { value: "RESET" } });
+    expect(clearButton).toBeEnabled();
+    fireEvent.click(clearButton);
 
     await waitFor(() => expect(controls.onResetData).toHaveBeenCalledTimes(1));
   });
 
-  it("focuses the reset confirmation input before accepting destructive local data removal", () => {
-    render(<SettingsPage controls={createSettingsControls()} />);
-
-    fireEvent.click(screen.getByTestId("settings-module-card-data"));
-    fireEvent.click(screen.getByTestId("settings-v2-reset-data"));
-
-    expect(screen.getByLabelText("Type RESET to confirm")).toHaveFocus();
-  });
-
-  it("marks the reset confirmation action busy while reset is running", async () => {
+  it("does not hide an in-progress local-data reset on Escape", async () => {
+    const pendingReset = createDeferred<void>();
+    appStoreMock.hasValidSession = false;
     const controls = createSettingsControls();
-    controls.onResetData.mockReturnValue(new Promise(() => undefined));
+    controls.onResetData.mockReturnValue(pendingReset.promise);
     render(<SettingsPage controls={controls} />);
 
-    fireEvent.click(screen.getByTestId("settings-module-card-data"));
+    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
     fireEvent.click(screen.getByTestId("settings-v2-reset-data"));
     fireEvent.change(screen.getByLabelText("Type RESET to confirm"), {
       target: { value: "RESET" },
     });
-
     fireEvent.click(screen.getByRole("button", { name: "Clear local data" }));
+    await waitFor(() => expect(controls.onResetData).toHaveBeenCalledTimes(1));
 
-    const resettingButton = await screen.findByRole("button", { name: "Resetting..." });
-    expect(resettingButton).toHaveAttribute("aria-busy", "true");
-    expect(resettingButton).toBeDisabled();
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(screen.getByTestId("settings-v2-reset-confirmation")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Resetting..." })).toBeDisabled();
+
+    await act(async () => {
+      pendingReset.resolve();
+      await pendingReset.promise;
+    });
+  });
+
+  it("does not hide an in-progress local-data reset when a session appears", async () => {
+    const pendingReset = createDeferred<void>();
+    appStoreMock.hasValidSession = false;
+    const controls = createSettingsControls();
+    controls.onResetData.mockReturnValue(pendingReset.promise);
+    const view = render(<SettingsPage controls={controls} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
+    fireEvent.click(screen.getByTestId("settings-v2-reset-data"));
+    fireEvent.change(screen.getByLabelText("Type RESET to confirm"), {
+      target: { value: "RESET" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Clear local data" }));
+    await waitFor(() => expect(controls.onResetData).toHaveBeenCalledTimes(1));
+
+    appStoreMock.hasValidSession = true;
+    view.rerender(<SettingsPage controls={{ ...controls }} />);
+
+    expect(screen.getByTestId("settings-v2-reset-confirmation")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Resetting..." })).toBeDisabled();
+
+    await act(async () => {
+      pendingReset.resolve();
+      await pendingReset.promise;
+    });
+  });
+
+  it("keeps the inline local-data confirmation scrollable and restores its trigger", async () => {
+    const { restore, scrollIntoView } = installScrollIntoViewSpy();
+    appStoreMock.hasValidSession = false;
+
+    try {
+      render(<SettingsPage controls={createSettingsControls()} />);
+      fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
+
+      const trigger = screen.getByTestId("settings-v2-reset-data");
+      trigger.focus();
+      fireEvent.click(trigger);
+
+      const confirmation = screen.getByTestId("settings-v2-reset-confirmation");
+      expect(document.body.style.position).not.toBe("fixed");
+      expect(scrollIntoView).toHaveBeenCalled();
+
+      fireEvent.click(within(confirmation).getByRole("button", { name: "Cancel" }));
+      await waitFor(() => expect(screen.getByTestId("settings-v2-reset-data")).toHaveFocus());
+    } finally {
+      restore();
+    }
   });
 
   it("renders working settings without future-update placeholder copy", () => {
@@ -2039,7 +3554,7 @@ describe("SettingsPage", () => {
 
     expect(screen.getByTestId("settings-page-heading")).toHaveTextContent("Settings");
     const notificationsCard = screen.getByTestId("settings-module-card-notifications");
-    expect(notificationsCard).toHaveTextContent("Reminders off");
+    expect(notificationsCard).toHaveTextContent("Mobile app");
     expect(notificationsCard).not.toHaveTextContent(
       "Notifications will be available in future updates."
     );

@@ -4,13 +4,23 @@ const backupCryptoMocks = vi.hoisted(() => ({
   vaultKey: null as string | null,
 }));
 
-vi.mock("@/features/journal/journalContentSession", () => ({
+const backupOwnerMocks = vi.hoisted(() => ({
+  validateSyncOwner: vi.fn(
+    async (expectedOwnerUserId?: string) => expectedOwnerUserId ?? null,
+  ),
+}));
+
+vi.mock("@/lib/journalContentSession", () => ({
   getJournalContentVaultKey: vi.fn(() => backupCryptoMocks.vaultKey),
+  consumeJournalReplaceAuthorization: vi.fn(() => true),
 }));
 
 vi.mock("@/features/journal/journalCrypto", () => ({
   encryptJournalContent: vi.fn((content: string, key: string) =>
     Promise.resolve(`encrypted-entry:${key}:${content}`)
+  ),
+  decryptJournalContentIfNeeded: vi.fn((content: string, key: string) =>
+    Promise.resolve(content.replace(`encrypted-entry:${key}:`, "")),
   ),
   isEncryptedJournalContent: vi.fn((content: string) => content.startsWith("encrypted-entry:")),
 }));
@@ -19,20 +29,163 @@ vi.mock("@/features/journal/journalMediaCrypto", () => ({
   encryptJournalMediaDataUrl: vi.fn((dataUrl: string, key: string) =>
     Promise.resolve(`encrypted-media:${key}:${dataUrl}`)
   ),
+  decryptJournalMediaDataUrlIfNeeded: vi.fn((dataUrl: string, key: string | null) =>
+    Promise.resolve(key ? dataUrl.replace(`encrypted-media:${key}:`, "") : ""),
+  ),
+  encryptedJournalMediaFromStorageDataUrl: vi.fn((dataUrl: string) => dataUrl),
   isEncryptedJournalMediaData: vi.fn((dataUrl: string) => dataUrl.startsWith("encrypted-media:")),
 }));
+
+vi.mock("@/storage/sync/syncOwner", () => ({
+  validateSyncOwner: backupOwnerMocks.validateSyncOwner,
+}));
 import { db } from "@/storage/db";
-import { exportBackup, importBackup, type BackupPayloadV3 } from "@/storage/backup";
 import {
+  exportBackup,
+  exportPortableBackup,
+  importBackup,
+  type BackupPayloadV1,
+  type BackupPayloadV3,
+} from "@/storage/backup";
+import {
+  DELETION_TRACKER_KEYS,
+  getDeletedFocusSessionIds,
+  getDeletedGratitudeIds,
   getDeletedHabitIds,
+  getDeletedJournalEntryIds,
+  getDeletedMoodIds,
+  mergeDeletedFocusSessionIds,
+  mergeDeletedGratitudeIds,
   mergeDeletedHabitIds,
   mergeDeletedJournalEntryIds,
+  mergeDeletedMoodIds,
 } from "@/storage/deletionTracker";
 import { makeTestHabit } from "@/test/habitFixtures";
+import { runWithJournalSecurityWriteLock } from "@/features/journal/journalSecurityWriteLock";
+
+const sortByPrimaryKey = <T extends { id: string }>(rows: T[]): T[] =>
+  [...rows].sort((left, right) => left.id.localeCompare(right.id));
+
+const readImportedCollectionsSnapshot = async () => ({
+  moods: sortByPrimaryKey(await db.moods.toArray()),
+  habits: sortByPrimaryKey(await db.habits.toArray()),
+  focusSessions: sortByPrimaryKey(await db.focusSessions.toArray()),
+  gratitudeEntries: sortByPrimaryKey(await db.gratitudeEntries.toArray()),
+  settings: [...(await db.settings.toArray())].sort((left, right) =>
+    left.key.localeCompare(right.key)
+  ),
+  journalEntries: sortByPrimaryKey(await db.journalEntries.toArray()),
+  journalPhotos: sortByPrimaryKey(await db.journalPhotos.toArray()),
+  journalAudio: sortByPrimaryKey(await db.journalAudio.toArray()),
+});
+
+const readDeletionTrackerSnapshot = async () => ({
+  moods: [...(await getDeletedMoodIds())].sort(),
+  habits: [...(await getDeletedHabitIds())].sort(),
+  focusSessions: [...(await getDeletedFocusSessionIds())].sort(),
+  gratitudeEntries: [...(await getDeletedGratitudeIds())].sort(),
+  journalEntries: [...(await getDeletedJournalEntryIds())].sort(),
+});
+
+const makeAtomicityCollections = (
+  scope: "local" | "remote",
+  reminderEnabled: boolean,
+): BackupPayloadV3["data"] => {
+  const journalEntryId = `${scope}-atomic-journal`;
+  return {
+    moods: [
+      {
+        id: `${scope}-atomic-mood`,
+        mood: scope === "local" ? "okay" : "good",
+        date: scope === "local" ? "2026-07-10" : "2026-07-11",
+        timestamp: scope === "local" ? 10 : 20,
+        updatedAt: scope === "local" ? 10 : 20,
+      },
+    ],
+    habits: [
+      makeTestHabit({
+        id: `${scope}-atomic-habit`,
+        name: `${scope} atomic habit`,
+        updatedAt:
+          scope === "local" ? "2026-07-10T00:00:00.000Z" : "2026-07-11T00:00:00.000Z",
+      }),
+    ],
+    focusSessions: [
+      {
+        id: `${scope}-atomic-focus`,
+        duration: 600,
+        completedAt: scope === "local" ? 10 : 20,
+        date: scope === "local" ? "2026-07-10" : "2026-07-11",
+        status: "completed",
+        updatedAt: scope === "local" ? 10 : 20,
+      },
+    ],
+    gratitudeEntries: [
+      {
+        id: `${scope}-atomic-gratitude`,
+        text: `${scope} atomic gratitude`,
+        date: scope === "local" ? "2026-07-10" : "2026-07-11",
+        timestamp: scope === "local" ? 10 : 20,
+        updatedAt: scope === "local" ? 10 : 20,
+      },
+    ],
+    settings: [{ key: "mood-reminder-enabled", value: reminderEnabled }],
+    journalEntries: [
+      {
+        id: journalEntryId,
+        date: scope === "local" ? "2026-07-10" : "2026-07-11",
+        title: `${scope} atomic journal`,
+        content: `${scope} atomic content`,
+        stickers: [],
+        tags: [],
+        photoIds: [`${scope}-atomic-photo`],
+        audioIds: [`${scope}-atomic-audio`],
+        createdAt: scope === "local" ? 10 : 20,
+        updatedAt: scope === "local" ? 10 : 20,
+      },
+    ],
+    journalPhotos: [
+      {
+        id: `${scope}-atomic-photo`,
+        entryId: journalEntryId,
+        data: `data:image/jpeg;base64,${scope}`,
+        thumbnail: `data:image/jpeg;base64,${scope}-thumbnail`,
+        width: 100,
+        height: 80,
+        createdAt: scope === "local" ? 10 : 20,
+      },
+    ],
+    journalAudio: [
+      {
+        id: `${scope}-atomic-audio`,
+        entryId: journalEntryId,
+        data: `data:audio/webm;base64,${scope}`,
+        mimeType: "audio/webm",
+        duration: 1,
+        createdAt: scope === "local" ? 10 : 20,
+      },
+    ],
+  };
+};
+
+const seedImportedCollections = async (data: BackupPayloadV3["data"]): Promise<void> => {
+  await db.moods.bulkPut(data.moods);
+  await db.habits.bulkPut(data.habits);
+  await db.focusSessions.bulkPut(data.focusSessions);
+  await db.gratitudeEntries.bulkPut(data.gratitudeEntries);
+  await db.settings.bulkPut(data.settings);
+  await db.journalEntries.bulkPut(data.journalEntries ?? []);
+  await db.journalPhotos.bulkPut(data.journalPhotos ?? []);
+  await db.journalAudio.bulkPut(data.journalAudio ?? []);
+};
 
 describe("importBackup deletion precedence", () => {
   beforeEach(async () => {
     backupCryptoMocks.vaultKey = null;
+    backupOwnerMocks.validateSyncOwner.mockReset();
+    backupOwnerMocks.validateSyncOwner.mockImplementation(
+      async (expectedOwnerUserId?: string) => expectedOwnerUserId ?? null,
+    );
     await db.open();
     await db.moods.clear();
     await db.habits.clear();
@@ -42,6 +195,11 @@ describe("importBackup deletion precedence", () => {
     await db.journalEntries.clear();
     await db.journalPhotos.clear();
     await db.journalAudio.clear();
+    await db.journalHubPreferences.clear();
+    await db.journalSpaces.clear();
+    await db.journalPracticeSessions.clear();
+    await db.journalEntryLinks.clear();
+    await db.journalSpaceCaptures.clear();
   });
 
   it("keeps diary security settings local-only in full backup export", async () => {
@@ -61,9 +219,13 @@ describe("importBackup deletion precedence", () => {
   });
 
   it("preserves local diary security settings during replace backup import", async () => {
+    backupCryptoMocks.vaultKey = "active-local-vault-key";
     await db.settings.bulkPut([
       { key: "journal_password", value: { hash: "local-verifier" } },
-      { key: "journal_vault_key", value: { wrappedKey: "local-wrapped-key" } },
+      {
+        key: "journal_vault_key",
+        value: { wrappedKey: "local-wrapped-key", createdAt: 1, updatedAt: 2 },
+      },
       { key: "mood-reminder-enabled", value: false },
     ]);
     const payload: BackupPayloadV3 = {
@@ -87,7 +249,15 @@ describe("importBackup deletion precedence", () => {
       },
     };
 
-    const report = await importBackup(payload, "replace");
+    const report = await importBackup(payload, "replace", {
+      journalReplaceAuthorization: {
+        id: "test-authorization",
+        expiresAt: 10,
+        vaultRevision: 2,
+        sessionGeneration: 1,
+      },
+      now: 3,
+    });
 
     await expect(db.settings.get("journal_password")).resolves.toEqual({
       key: "journal_password",
@@ -95,7 +265,7 @@ describe("importBackup deletion precedence", () => {
     });
     await expect(db.settings.get("journal_vault_key")).resolves.toEqual({
       key: "journal_vault_key",
-      value: { wrappedKey: "local-wrapped-key" },
+      value: { wrappedKey: "local-wrapped-key", createdAt: 1, updatedAt: 2 },
     });
     await expect(db.settings.get("journal_password_cooldown")).resolves.toBeUndefined();
     await expect(db.settings.get("mood-reminder-enabled")).resolves.toEqual({
@@ -176,8 +346,135 @@ describe("importBackup deletion precedence", () => {
     expect(deletedIds.has(tombstones[tombstones.length - 1])).toBe(true);
   });
 
-  it("skips plaintext journal rows during locked protected backup import", async () => {
-    await db.settings.put({ key: "journal_password", value: { hash: "local-verifier" } });
+  it("requires an unlocked protected journal before replace and preserves every seeded collection", async () => {
+    const localMood = {
+      id: "local-mood",
+      mood: "good" as const,
+      date: "2026-05-24",
+      timestamp: 10,
+      updatedAt: 20,
+    };
+    const localHabit = makeTestHabit({ id: "local-habit", name: "Keep local habit" });
+    const localFocus = {
+      id: "local-focus",
+      duration: 1500,
+      completedAt: 20,
+      date: "2026-05-24",
+      status: "completed" as const,
+      updatedAt: 20,
+    };
+    const localGratitude = {
+      id: "local-gratitude",
+      text: "Keep local gratitude",
+      date: "2026-05-24",
+      timestamp: 10,
+      updatedAt: 20,
+    };
+    const localEntry = {
+      id: "local-journal",
+      date: "2026-05-24",
+      title: "Keep local journal",
+      content: "encrypted-entry:local-key:ciphertext",
+      stickers: [],
+      tags: ["private"],
+      photoIds: ["local-photo"],
+      audioIds: ["local-audio"],
+      createdAt: 10,
+      updatedAt: 20,
+    };
+    const localPhoto = {
+      id: "local-photo",
+      entryId: localEntry.id,
+      data: "encrypted-media:local-key:photo",
+      thumbnail: "encrypted-media:local-key:thumbnail",
+      width: 100,
+      height: 80,
+      createdAt: 10,
+    };
+    const localAudio = {
+      id: "local-audio",
+      entryId: localEntry.id,
+      data: "encrypted-media:local-key:audio",
+      mimeType: "audio/webm",
+      duration: 4,
+      createdAt: 10,
+    };
+
+    await db.settings.bulkPut([
+      { key: "journal_password", value: { hash: "local-verifier" } },
+      { key: "mood-reminder-enabled", value: true },
+    ]);
+    await db.moods.put(localMood);
+    await db.habits.put(localHabit);
+    await db.focusSessions.put(localFocus);
+    await db.gratitudeEntries.put(localGratitude);
+    await db.journalEntries.put(localEntry);
+    await db.journalPhotos.put(localPhoto);
+    await db.journalAudio.put(localAudio);
+    await db.journalHubPreferences.put({
+      id: "default",
+      homeView: "entries",
+      visibleViews: ["entries", "spaces"],
+      dockActions: ["write"],
+      density: "balanced",
+      motion: "system",
+      background: "clean",
+      updatedAt: 20,
+    });
+    await db.journalSpaces.put({
+      id: "local-space",
+      name: "Keep local space",
+      iconKey: "folder",
+      accent: "primary",
+      private: true,
+      sortOrder: 0,
+      createdAt: 10,
+      updatedAt: 20,
+    });
+    await db.journalPracticeSessions.put({
+      id: "local-practice",
+      practiceId: "reflection",
+      entryId: localEntry.id,
+      startedAt: 10,
+      completedAt: 20,
+    });
+    await db.journalEntryLinks.put({
+      id: "local-link",
+      entryId: localEntry.id,
+      targetType: "space",
+      targetId: "local-space",
+      createdAt: 10,
+    });
+    await db.journalSpaceCaptures.put({
+      id: "local-capture",
+      spaceId: "local-space",
+      spaceName: "Keep local space",
+      mode: "reflection",
+      title: "Keep local capture",
+      fields: [{ prompt: "Prompt", value: "Private answer" }],
+      date: "2026-05-24",
+      createdAt: 10,
+      updatedAt: 20,
+      entryId: localEntry.id,
+    });
+    await mergeDeletedHabitIds(["existing-local-tombstone"]);
+
+    const snapshot = {
+      moods: await db.moods.toArray(),
+      habits: await db.habits.toArray(),
+      focusSessions: await db.focusSessions.toArray(),
+      gratitudeEntries: await db.gratitudeEntries.toArray(),
+      settings: await db.settings.toArray(),
+      journalEntries: await db.journalEntries.toArray(),
+      journalPhotos: await db.journalPhotos.toArray(),
+      journalAudio: await db.journalAudio.toArray(),
+      journalHubPreferences: await db.journalHubPreferences.toArray(),
+      journalSpaces: await db.journalSpaces.toArray(),
+      journalPracticeSessions: await db.journalPracticeSessions.toArray(),
+      journalEntryLinks: await db.journalEntryLinks.toArray(),
+      journalSpaceCaptures: await db.journalSpaceCaptures.toArray(),
+    };
+
     const payload: BackupPayloadV3 = {
       schemaVersion: 3,
       createdAt: "2026-05-11T10:01:00.000Z",
@@ -224,17 +521,284 @@ describe("importBackup deletion precedence", () => {
           },
         ],
       },
+      deletedHabitIds: ["remote-delete-must-not-merge"],
     };
 
-    const report = await importBackup(payload, "replace");
+    const tombstonesBefore = await getDeletedHabitIds();
+    const transactionSpy = vi.spyOn(db, "transaction");
+    let importError: unknown;
+    try {
+      await importBackup(payload, "replace");
+    } catch (error) {
+      importError = error;
+    }
 
-    await expect(db.journalEntries.get("journal-plaintext")).resolves.toBeUndefined();
-    await expect(db.journalPhotos.get("photo-plaintext")).resolves.toBeUndefined();
-    await expect(db.journalAudio.get("audio-plaintext")).resolves.toBeUndefined();
-    expect(report.journalEntries).toEqual({ added: 0, updated: 0, skipped: 1 });
-    expect(report.journalPhotos).toEqual({ added: 0, updated: 0, skipped: 1 });
-    expect(report.journalAudio).toEqual({ added: 0, updated: 0, skipped: 1 });
+    expect(importError).toMatchObject({ code: "JOURNAL_UNLOCK_REQUIRED" });
+    expect(transactionSpy).not.toHaveBeenCalled();
+    await expect(db.moods.toArray()).resolves.toEqual(snapshot.moods);
+    await expect(db.habits.toArray()).resolves.toEqual(snapshot.habits);
+    await expect(db.focusSessions.toArray()).resolves.toEqual(snapshot.focusSessions);
+    await expect(db.gratitudeEntries.toArray()).resolves.toEqual(snapshot.gratitudeEntries);
+    await expect(db.settings.toArray()).resolves.toEqual(snapshot.settings);
+    await expect(db.journalEntries.toArray()).resolves.toEqual(snapshot.journalEntries);
+    await expect(db.journalPhotos.toArray()).resolves.toEqual(snapshot.journalPhotos);
+    await expect(db.journalAudio.toArray()).resolves.toEqual(snapshot.journalAudio);
+    await expect(db.journalHubPreferences.toArray()).resolves.toEqual(
+      snapshot.journalHubPreferences
+    );
+    await expect(db.journalSpaces.toArray()).resolves.toEqual(snapshot.journalSpaces);
+    await expect(db.journalPracticeSessions.toArray()).resolves.toEqual(
+      snapshot.journalPracticeSessions
+    );
+    await expect(db.journalEntryLinks.toArray()).resolves.toEqual(snapshot.journalEntryLinks);
+    await expect(db.journalSpaceCaptures.toArray()).resolves.toEqual(
+      snapshot.journalSpaceCaptures
+    );
+    await expect(getDeletedHabitIds()).resolves.toEqual(tombstonesBefore);
+    transactionSpy.mockRestore();
   });
+
+  it("blocks replace for a locked vault-only journal before clearing local data", async () => {
+    const localHabit = makeTestHabit({ id: "vault-only-habit", name: "Keep vault-only data" });
+    const localEntry = {
+      id: "vault-only-journal",
+      date: "2026-05-24",
+      title: "Keep vault-only journal",
+      content: "encrypted-entry:remote-key:ciphertext",
+      stickers: [],
+      tags: [],
+      photoIds: [],
+      audioIds: [],
+      createdAt: 10,
+      updatedAt: 20,
+    };
+    await db.settings.put({
+      key: "journal_vault_key",
+      value: { wrappedKey: "synced-wrapped-key", createdAt: 10, updatedAt: 20 },
+    });
+    await db.habits.put(localHabit);
+    await db.journalEntries.put(localEntry);
+
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-05-25T10:00:00.000Z",
+      deviceId: "device-remote",
+      data: {
+        moods: [],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [],
+        journalPhotos: [],
+        journalAudio: [],
+      },
+    };
+
+    await expect(importBackup(payload, "replace")).rejects.toMatchObject({
+      code: "JOURNAL_UNLOCK_REQUIRED",
+    });
+    await expect(db.habits.toArray()).resolves.toEqual([localHabit]);
+    await expect(db.journalEntries.toArray()).resolves.toEqual([localEntry]);
+  });
+
+  it("keeps locked merge non-destructive while accepting safe non-journal collections", async () => {
+    const localEntry = {
+      id: "locked-merge-local",
+      date: "2026-05-24",
+      title: "Keep locked merge journal",
+      content: "encrypted-entry:local-key:ciphertext",
+      stickers: [],
+      tags: [],
+      photoIds: [],
+      audioIds: [],
+      createdAt: 10,
+      updatedAt: 20,
+    };
+    const incomingHabit = makeTestHabit({ id: "locked-merge-habit", name: "Safe habit" });
+    await db.settings.put({ key: "journal_password", value: { hash: "local-verifier" } });
+    await db.journalEntries.put(localEntry);
+
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-05-25T10:00:00.000Z",
+      deviceId: "device-remote",
+      data: {
+        moods: [],
+        habits: [incomingHabit],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [
+          {
+            id: "locked-merge-plaintext",
+            date: "2026-05-25",
+            title: "Unsafe while locked",
+            content: "plaintext must not be stored while locked",
+            stickers: [],
+            tags: [],
+            photoIds: [],
+            audioIds: [],
+            createdAt: 30,
+            updatedAt: 30,
+          },
+        ],
+        journalPhotos: [],
+        journalAudio: [],
+      },
+    };
+
+    const report = await importBackup(payload, "merge");
+
+    await expect(db.habits.get(incomingHabit.id)).resolves.toEqual(incomingHabit);
+    await expect(db.journalEntries.get(localEntry.id)).resolves.toEqual(localEntry);
+    await expect(db.journalEntries.get("locked-merge-plaintext")).resolves.toBeUndefined();
+    expect(report.journalEntries).toEqual({ added: 0, updated: 0, skipped: 1 });
+  });
+
+  it("preserves journal collections when a legacy Replace payload never contained them", async () => {
+    const localEntry = {
+      id: "legacy-replace-local-journal",
+      date: "2026-05-24",
+      title: "Keep legacy journal",
+      content: "A legacy backup has no journal fields.",
+      stickers: [],
+      tags: [],
+      photoIds: ["legacy-replace-photo"],
+      audioIds: ["legacy-replace-audio"],
+      createdAt: 10,
+      updatedAt: 20,
+    };
+    const localPhoto = {
+      id: "legacy-replace-photo",
+      entryId: localEntry.id,
+      data: "data:image/jpeg;base64,local",
+      thumbnail: "data:image/jpeg;base64,local-thumb",
+      width: 100,
+      height: 80,
+      createdAt: 10,
+    };
+    const localAudio = {
+      id: "legacy-replace-audio",
+      entryId: localEntry.id,
+      data: "data:audio/webm;base64,local",
+      mimeType: "audio/webm",
+      duration: 1,
+      createdAt: 10,
+    };
+    await db.journalEntries.put(localEntry);
+    await db.journalPhotos.put(localPhoto);
+    await db.journalAudio.put(localAudio);
+
+    const legacyPayload: BackupPayloadV1 = {
+      schemaVersion: 1,
+      exportedAt: "2026-05-25T10:00:00.000Z",
+      data: {
+        moods: [],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+      },
+    };
+
+    await importBackup(legacyPayload, "replace");
+
+    await expect(db.journalEntries.toArray()).resolves.toEqual([localEntry]);
+    await expect(db.journalPhotos.toArray()).resolves.toEqual([localPhoto]);
+    await expect(db.journalAudio.toArray()).resolves.toEqual([localAudio]);
+  });
+
+  it("keeps existing entries addressable when partial V3 Replace contains only journal media", async () => {
+    const localEntry = {
+      id: "partial-v3-existing-entry",
+      date: "2026-05-24",
+      title: "Existing entry",
+      content: "The partial backup adds media to this entry.",
+      stickers: [],
+      tags: [],
+      photoIds: [],
+      audioIds: [],
+      createdAt: 10,
+      updatedAt: 20,
+    };
+    const incomingPhoto = {
+      id: "partial-v3-photo",
+      entryId: localEntry.id,
+      data: "data:image/jpeg;base64,incoming",
+      thumbnail: "data:image/jpeg;base64,incoming-thumb",
+      width: 100,
+      height: 80,
+      createdAt: 30,
+    };
+    await db.journalEntries.put(localEntry);
+
+    const partialPayload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-05-25T10:00:00.000Z",
+      deviceId: "device-test",
+      data: {
+        moods: [],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalPhotos: [incomingPhoto],
+      },
+    };
+
+    await importBackup(partialPayload, "replace");
+
+    await expect(db.journalEntries.get(localEntry.id)).resolves.toEqual(localEntry);
+    await expect(db.journalPhotos.get(incomingPhoto.id)).resolves.toEqual(incomingPhoto);
+  });
+
+  it.each(["moods", "settings", "journalEntries"] as const)(
+    "rejects a non-array %s collection before mutating local data",
+    async (collection) => {
+      const seededMood = { id: "seeded-mood", timestamp: 1 };
+      const seededSetting = { key: "seeded-setting", value: "keep" };
+      const seededEntry = {
+        id: "seeded-entry",
+        date: "2026-05-24",
+        title: "Keep",
+        content: "Keep",
+        stickers: [],
+        tags: [],
+        photoIds: [],
+        audioIds: [],
+        createdAt: 1,
+        updatedAt: 1,
+      };
+      await db.moods.put(seededMood as any);
+      await db.settings.put(seededSetting);
+      await db.journalEntries.put(seededEntry);
+
+      const malformed = {
+        schemaVersion: 3,
+        createdAt: "2026-05-25T10:00:00.000Z",
+        deviceId: "device-test",
+        data: {
+          moods: [],
+          habits: [],
+          focusSessions: [],
+          gratitudeEntries: [],
+          settings: [],
+          journalEntries: [],
+          journalPhotos: [],
+          journalAudio: [],
+          [collection]: { not: "an array" },
+        },
+      };
+
+      await expect(importBackup(malformed as any, "replace")).rejects.toThrow(
+        new RegExp(collection, "i"),
+      );
+      await expect(db.moods.toArray()).resolves.toEqual([seededMood]);
+      await expect(db.settings.get(seededSetting.key)).resolves.toEqual(seededSetting);
+      await expect(db.journalEntries.get(seededEntry.id)).resolves.toEqual(seededEntry);
+    },
+  );
 
   it("skips malformed journal rows instead of writing broken backup data", async () => {
     const payload: BackupPayloadV3 = {
@@ -376,7 +940,167 @@ describe("importBackup deletion precedence", () => {
     expect(audio?.data).toBe("encrypted-media:vault-key-1:data:audio/webm;base64,abc");
   });
 
-  it("retains journal media data when storagePath does not match encryption state", async () => {
+  it("waits for password activation before deciding how imported diary content is stored", async () => {
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-07-11T00:00:00.000Z",
+      deviceId: "device-security-race",
+      data: {
+        moods: [],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [
+          {
+            id: "journal-during-password-activation",
+            date: "2026-07-11",
+            title: "Imported during activation",
+            content: "private plaintext",
+            stickers: [],
+            tags: [],
+            photoIds: [],
+            audioIds: [],
+            createdAt: 1,
+            updatedAt: 2,
+          },
+        ],
+        journalPhotos: [],
+        journalAudio: [],
+      },
+    };
+
+    let releaseActivation!: () => void;
+    const activationGate = new Promise<void>((resolve) => {
+      releaseActivation = resolve;
+    });
+    let markActivationEntered!: () => void;
+    const activationEntered = new Promise<void>((resolve) => {
+      markActivationEntered = resolve;
+    });
+    const activation = runWithJournalSecurityWriteLock(async () => {
+      markActivationEntered();
+      await activationGate;
+      backupCryptoMocks.vaultKey = "activated-vault-key";
+      await db.settings.put({
+        key: "journal_vault_key",
+        value: { wrappedKey: "wrapped", createdAt: 1, updatedAt: 2 },
+      });
+    });
+
+    await activationEntered;
+    let importSettled = false;
+    const imported = importBackup(payload, "merge").finally(() => {
+      importSettled = true;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const settledBeforeActivationCompleted = importSettled;
+
+    releaseActivation();
+    await activation;
+    await imported;
+
+    expect(settledBeforeActivationCompleted).toBe(false);
+    await expect(db.journalEntries.get("journal-during-password-activation")).resolves.toMatchObject({
+      content: "encrypted-entry:activated-vault-key:private plaintext",
+    });
+  });
+
+  it("keeps an import transaction active across a delayed owner check", async () => {
+    backupOwnerMocks.validateSyncOwner.mockImplementation(async (expectedOwnerUserId?: string) => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return expectedOwnerUserId ?? null;
+    });
+    const remoteMood = {
+      id: "owner-checked-mood",
+      mood: "good" as const,
+      date: "2026-07-11",
+      timestamp: 1,
+      updatedAt: 2,
+    };
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-07-11T00:00:00.000Z",
+      deviceId: "device-owner-check",
+      data: {
+        moods: [remoteMood],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [],
+        journalPhotos: [],
+        journalAudio: [],
+      },
+    };
+
+    await importBackup(payload, "replace", { expectedOwnerUserId: "owner-a" });
+
+    await expect(db.moods.get(remoteMood.id)).resolves.toMatchObject({
+      id: remoteMood.id,
+      mood: remoteMood.mood,
+      date: remoteMood.date,
+      timestamp: remoteMood.timestamp,
+    });
+  });
+
+  it("rolls back every imported row when the owner changes before commit", async () => {
+    const localMood = {
+      id: "local-before-owner-change",
+      mood: "okay" as const,
+      date: "2026-07-10",
+      timestamp: 1,
+      updatedAt: 2,
+    };
+    const remoteMood = {
+      id: "remote-after-owner-change",
+      mood: "good" as const,
+      date: "2026-07-11",
+      timestamp: 3,
+      updatedAt: 4,
+    };
+    await db.moods.put(localMood);
+
+    let ownerChanged = false;
+    backupOwnerMocks.validateSyncOwner.mockImplementation(async (expectedOwnerUserId?: string) => {
+      if (!ownerChanged) return expectedOwnerUserId ?? null;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      throw new Error("owner changed during import");
+    });
+    const markOwnerChanged = () => {
+      ownerChanged = true;
+    };
+    db.moods.hook("creating", markOwnerChanged);
+
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-07-11T00:00:00.000Z",
+      deviceId: "device-owner-rollback",
+      data: {
+        moods: [remoteMood],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [],
+        journalPhotos: [],
+        journalAudio: [],
+      },
+    };
+
+    try {
+      await expect(
+        importBackup(payload, "replace", { expectedOwnerUserId: "owner-a" }),
+      ).rejects.toThrow("owner changed during import");
+    } finally {
+      db.moods.hook("creating").unsubscribe(markOwnerChanged);
+    }
+
+    await expect(db.moods.toArray()).resolves.toEqual([localMood]);
+  });
+
+  it("exports portable journal media when legacy storage paths do not match encryption state", async () => {
+    backupCryptoMocks.vaultKey = "vault-key-1";
     await db.journalPhotos.bulkAdd([
       {
         id: "photo-encrypted-old-path",
@@ -420,16 +1144,18 @@ describe("importBackup deletion precedence", () => {
       },
     ]);
 
-    const backup = await exportBackup();
+    const backup = await exportPortableBackup();
 
     expect(backup.data.journalPhotos?.map((photo) => photo.data)).toEqual([
-      "encrypted-media:vault-key-1:data:image/jpeg;base64,photo",
+      "data:image/jpeg;base64,photo",
       "data:image/jpeg;base64,photo",
     ]);
     expect(backup.data.journalAudio?.map((audio) => audio.data)).toEqual([
-      "encrypted-media:vault-key-1:data:audio/webm;base64,voice",
+      "data:audio/webm;base64,voice",
       "data:audio/webm;base64,voice",
     ]);
+    expect(backup.data.journalPhotos?.every((photo) => !photo.storagePath)).toBe(true);
+    expect(backup.data.journalAudio?.every((audio) => !audio.storagePath)).toBe(true);
   });
 
   it("does not export locally tombstoned habits or journal media from stale IndexedDB rows", async () => {
@@ -501,5 +1227,127 @@ describe("importBackup deletion precedence", () => {
     expect(backup.data.journalAudio?.map((audio) => audio.id)).toEqual(["audio-live"]);
     expect(backup.deletedHabitIds).toContain(deletedHabit.id);
     expect(backup.deletedJournalEntryIds).toContain("journal-stale");
+  });
+
+  it("rolls back every merge collection and deletion tracker when ownership changes between the primary write and tombstone purge", async () => {
+    await seedImportedCollections(makeAtomicityCollections("local", false));
+    await mergeDeletedMoodIds(["local-atomic-mood-tombstone"]);
+    await mergeDeletedHabitIds(["local-atomic-habit-tombstone"]);
+    await mergeDeletedFocusSessionIds(["local-atomic-focus-tombstone"]);
+    await mergeDeletedGratitudeIds(["local-atomic-gratitude-tombstone"]);
+    await mergeDeletedJournalEntryIds(["local-atomic-journal-tombstone"]);
+
+    const collectionsBefore = await readImportedCollectionsSnapshot();
+    const trackersBefore = await readDeletionTrackerSnapshot();
+    let ownerValidationCount = 0;
+    backupOwnerMocks.validateSyncOwner.mockImplementation(async (expectedOwnerUserId?: string) => {
+      ownerValidationCount += 1;
+      if (ownerValidationCount === 4) {
+        throw new Error("owner changed between backup merge phases");
+      }
+      return expectedOwnerUserId ?? null;
+    });
+
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-07-11T00:00:00.000Z",
+      deviceId: "device-merge-atomicity",
+      data: makeAtomicityCollections("remote", true),
+      deletedMoodIds: ["remote-atomic-mood-tombstone"],
+      deletedHabitIds: ["remote-atomic-habit-tombstone"],
+      deletedFocusSessionIds: ["remote-atomic-focus-tombstone"],
+      deletedGratitudeIds: ["remote-atomic-gratitude-tombstone"],
+      deletedJournalEntryIds: ["remote-atomic-journal-tombstone"],
+    };
+
+    await expect(
+      importBackup(payload, "merge", { expectedOwnerUserId: "owner-a" }),
+    ).rejects.toThrow("owner changed between backup merge phases");
+
+    expect.soft(await readImportedCollectionsSnapshot()).toEqual(collectionsBefore);
+    expect(await readDeletionTrackerSnapshot()).toEqual(trackersBefore);
+  });
+
+  it("rolls back a replace import when its authoritative tombstone tracker cannot be committed", async () => {
+    await seedImportedCollections(makeAtomicityCollections("local", false));
+    const collectionsBefore = await readImportedCollectionsSnapshot();
+    const trackersBefore = await readDeletionTrackerSnapshot();
+    const remoteTombstoneId = "remote-replace-habit-tombstone";
+    const trackerWriteError = new Error("habit tombstone tracker write failed");
+    const failHabitTrackerWrite = (primaryKey: string) => {
+      if (primaryKey === DELETION_TRACKER_KEYS.habit) {
+        throw trackerWriteError;
+      }
+    };
+    db.settings.hook("creating", failHabitTrackerWrite);
+
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-07-11T00:00:00.000Z",
+      deviceId: "device-replace-atomicity",
+      data: makeAtomicityCollections("remote", true),
+      deletedHabitIds: [remoteTombstoneId],
+    };
+
+    let importError: unknown;
+    try {
+      try {
+        await importBackup(payload, "replace");
+      } catch (error) {
+        importError = error;
+      }
+
+      expect.soft(importError).toBe(trackerWriteError);
+      expect.soft(await readImportedCollectionsSnapshot()).toEqual(collectionsBefore);
+      expect(await readDeletionTrackerSnapshot()).toEqual(trackersBefore);
+    } finally {
+      db.settings.hook("creating").unsubscribe(failHabitTrackerWrite);
+      // Prove the failed write did not poison a later real merge, then remove
+      // the persisted test row so this fault-injection case stays isolated.
+      await mergeDeletedHabitIds([remoteTombstoneId]);
+      await db.settings.delete(DELETION_TRACKER_KEYS.habit);
+    }
+  });
+
+  it("reports merge counts from rows that remain committed after tombstone precedence", async () => {
+    const tombstoned = makeAtomicityCollections("remote", true);
+    const moodId = tombstoned.moods[0].id;
+    const habitId = tombstoned.habits[0].id;
+    const focusId = tombstoned.focusSessions[0].id;
+    const gratitudeId = tombstoned.gratitudeEntries[0].id;
+    const journalEntryId = tombstoned.journalEntries?.[0].id;
+    if (!journalEntryId) throw new Error("Atomicity fixture must contain a journal entry");
+
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-07-11T00:00:00.000Z",
+      deviceId: "device-report-tombstone-counts",
+      data: {
+        ...tombstoned,
+        settings: [],
+      },
+      deletedMoodIds: [moodId],
+      deletedHabitIds: [habitId],
+      deletedFocusSessionIds: [focusId],
+      deletedGratitudeIds: [gratitudeId],
+      deletedJournalEntryIds: [journalEntryId],
+    };
+
+    const report = await importBackup(payload, "merge");
+
+    await expect(db.moods.toArray()).resolves.toEqual([]);
+    await expect(db.habits.toArray()).resolves.toEqual([]);
+    await expect(db.focusSessions.toArray()).resolves.toEqual([]);
+    await expect(db.gratitudeEntries.toArray()).resolves.toEqual([]);
+    await expect(db.journalEntries.toArray()).resolves.toEqual([]);
+    await expect(db.journalPhotos.toArray()).resolves.toEqual([]);
+    await expect(db.journalAudio.toArray()).resolves.toEqual([]);
+    expect.soft(report.moods).toEqual({ added: 0, updated: 0, skipped: 1 });
+    expect.soft(report.habits).toEqual({ added: 0, updated: 0, skipped: 1 });
+    expect.soft(report.focusSessions).toEqual({ added: 0, updated: 0, skipped: 1 });
+    expect.soft(report.gratitudeEntries).toEqual({ added: 0, updated: 0, skipped: 1 });
+    expect.soft(report.journalEntries).toEqual({ added: 0, updated: 0, skipped: 1 });
+    expect.soft(report.journalPhotos).toEqual({ added: 0, updated: 0, skipped: 1 });
+    expect(report.journalAudio).toEqual({ added: 0, updated: 0, skipped: 1 });
   });
 });

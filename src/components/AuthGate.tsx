@@ -11,6 +11,11 @@ import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { PremiumLoader } from "@/components/PremiumLoader";
 import { NotificationPermission } from "@/components/NotificationPermission";
 import { IS_DESKTOP_RUNTIME } from "@/lib/env";
+import {
+  AUTH_ACCOUNT_SWITCH_PENDING_WRITES_ERROR,
+  LEGACY_OFFLINE_QUEUE_CANCEL_EVENT,
+  LEGACY_OFFLINE_QUEUE_RECOVERY_EVENT,
+} from "@/lib/authErrors";
 
 interface AuthGateProps {
   isLoading: boolean;
@@ -67,6 +72,7 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     webOAuthError,
     setWebOAuthError,
     hasValidSession,
+    isAccountBoundaryInProgress,
     onboardingBypassFlag,
     setOnboardingBypassFlag,
   } = useAppStore(
@@ -79,6 +85,7 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
       webOAuthError: s.webOAuthError,
       setWebOAuthError: s.setWebOAuthError,
       hasValidSession: s.hasValidSession,
+      isAccountBoundaryInProgress: s.isAccountBoundaryInProgress,
       onboardingBypassFlag: s.onboardingBypassFlag,
       setOnboardingBypassFlag: s.setOnboardingBypassFlag,
     }))
@@ -179,6 +186,17 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     );
   }
 
+  if (isAccountBoundaryInProgress) {
+    return (
+      <SplashScreen
+        loadingFadeOut={false}
+        subtitle={t.initializingApp || "Preparing your zen space..."}
+        theme={splashTheme}
+        instant
+      />
+    );
+  }
+
   if (shouldOpenInstalledWebShellDuringStartup) {
     return <>{children}</>;
   }
@@ -234,11 +252,35 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
       );
     }
 
+    const isLegacyQueueRecovery =
+      webOAuthError === AUTH_ACCOUNT_SWITCH_PENDING_WRITES_ERROR;
+
     return (
       <AuthScreen
         onComplete={handleAuthComplete}
-        webOAuthError={webOAuthError}
-        onClearError={() => setWebOAuthError(null)}
+        webOAuthError={
+          isLegacyQueueRecovery
+            ? t.authAccountSwitchPendingChanges
+            : webOAuthError
+        }
+        onClearError={isLegacyQueueRecovery ? undefined : () => setWebOAuthError(null)}
+        suspendSessionCompletion={isLegacyQueueRecovery}
+        recoveryAction={
+          isLegacyQueueRecovery
+            ? {
+                confirmLabel:
+                  t.authRecoverLegacyChanges || "Recover changes with this account",
+                cancelLabel:
+                  t.authUseDifferentAccount || "Use a different account",
+                onConfirm: () => {
+                  window.dispatchEvent(new Event(LEGACY_OFFLINE_QUEUE_RECOVERY_EVENT));
+                },
+                onCancel: () => {
+                  window.dispatchEvent(new Event(LEGACY_OFFLINE_QUEUE_CANCEL_EVENT));
+                },
+              }
+            : undefined
+        }
       />
     );
   }

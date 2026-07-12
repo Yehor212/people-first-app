@@ -10,6 +10,13 @@ export interface AuthScreenProps {
   onComplete: (userData: { name: string; email: string }) => void;
   webOAuthError?: string | null;
   onClearError?: () => void;
+  suspendSessionCompletion?: boolean;
+  recoveryAction?: {
+    confirmLabel: string;
+    cancelLabel: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+  };
 }
 
 // Track which provider is currently loading

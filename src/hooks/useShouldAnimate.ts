@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useDopamineSettings } from "@/components/DopamineSettings";
+import { useDopamineSettings } from "@/hooks/useDopamineSettings";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useBatteryState } from "@/hooks/useBatteryState";
 import {

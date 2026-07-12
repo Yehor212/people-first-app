@@ -18,6 +18,9 @@ describe("Android diary biometric unlock bridge", () => {
     const gradle = readSource("android/app/build.gradle");
     const pluginBridgeSource = readSource("src/plugins/BiometricPlugin.ts");
     const journalSecuritySource = readSource("src/features/journal/useJournalSecurity.ts");
+    const credentialCleanupSource = readSource(
+      "src/lib/journalBiometricCredentials.ts",
+    );
 
     expect(pluginSource).toContain('@CapacitorPlugin(name = "BiometricAuth")');
     expect(pluginSource).toContain("BiometricManager.Authenticators.BIOMETRIC_STRONG");
@@ -34,6 +37,8 @@ describe("Android diary biometric unlock bridge", () => {
     expect(pluginSource).toContain("public void isAvailable(PluginCall call)");
     expect(pluginSource).toContain("public void enroll(PluginCall call)");
     expect(pluginSource).toContain("public void unenroll(PluginCall call)");
+    expect(pluginSource).toContain("getCredentialPrefs().edit().clear().apply()");
+    expect(pluginSource).toContain("keyStore.deleteEntry(KEY_ALIAS)");
     expect(pluginSource).toContain("public void authenticate(PluginCall call)");
     expect(pluginSource).not.toContain("setDeviceCredentialAllowed");
 
@@ -43,7 +48,9 @@ describe("Android diary biometric unlock bridge", () => {
     expect(pluginBridgeSource).toContain("enroll(options: { reason: string; secret?: string })");
     expect(pluginBridgeSource).toContain("unenroll(): Promise<BiometricAuthResult>");
     expect(journalSecuritySource).toContain("const result = await BiometricAuth.enroll");
-    expect(journalSecuritySource).toContain("await BiometricAuth.unenroll()");
+    expect(journalSecuritySource).toContain("await clearNativeJournalBiometricCredential()");
+    expect(credentialCleanupSource).toContain("const result = await BiometricAuth.unenroll()");
+    expect(credentialCleanupSource).toContain("if (!result?.success)");
   });
 
   it("returns the enrolled journal vault secret after biometric authentication", () => {

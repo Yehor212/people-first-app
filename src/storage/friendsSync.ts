@@ -8,12 +8,17 @@
  * - Activity sharing with friends
  */
 
-import { supabase } from "@/lib/supabaseClient";
+import {
+  getCurrentSessionUserId,
+  getCurrentUserId,
+  supabase,
+} from "@/lib/supabaseClient";
 import { logger } from "@/lib/logger";
 import { generateSecureId } from "@/lib/validation";
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 import { isAbortError } from "@/lib/validation";
+import { getLocalDataOwnerId } from "@/storage/db";
 import type { SeverityLevel } from "@sentry/core";
 
 // Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
@@ -101,6 +106,66 @@ export interface MyProfile {
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const CODE_PREFIX = "ZF";
+
+// ============================================
+// ACCOUNT OWNER BOUNDARY
+// ============================================
+
+interface FriendsOwnerBoundResult<T> {
+  ownerUserId: string;
+  value: T;
+}
+
+/**
+ * Execute a synchronous local read/write only after the verified Supabase
+ * user, cached session, and persisted local-data owner agree. Keeping the
+ * callback synchronous means an auth event cannot interleave between the final
+ * owner check and the shared-local operation.
+ */
+async function runWithFriendsLocalOwner<T>(
+  expectedOwnerUserId: string | undefined,
+  operation: string,
+  localOperation: () => T
+): Promise<FriendsOwnerBoundResult<T> | null> {
+  try {
+    const activeUserId = await getCurrentUserId();
+    const ownerUserId = expectedOwnerUserId ?? activeUserId;
+    if (!ownerUserId || activeUserId !== ownerUserId) {
+      logger.warn(`[FriendsSync] ${operation} stopped at an account boundary`);
+      return null;
+    }
+
+    const localOwnerUserId = await getLocalDataOwnerId();
+    const sessionUserId = await getCurrentSessionUserId();
+    if (localOwnerUserId !== ownerUserId || sessionUserId !== ownerUserId) {
+      logger.warn(`[FriendsSync] ${operation} stopped at an account boundary`);
+      return null;
+    }
+
+    return { ownerUserId, value: localOperation() };
+  } catch (error) {
+    if (!isAbortError(error)) {
+      logger.warn(`[FriendsSync] ${operation} owner check failed:`, error);
+    }
+    return null;
+  }
+}
+
+/**
+ * Revalidate ownership after a remote await and perform the local write in the
+ * same continuation. This prevents a delayed account-A response from landing
+ * in account B's shared local keys.
+ */
+async function saveFriendsForOwner(
+  expectedOwnerUserId: string,
+  friends: Friend[],
+  operation: string
+): Promise<boolean> {
+  const result = await runWithFriendsLocalOwner(expectedOwnerUserId, operation, () => {
+    saveFriends(friends);
+  });
+  return result !== null;
+}
 
 // ============================================
 // LOCAL STORAGE HELPERS
@@ -205,32 +270,50 @@ export function updateMyProfile(updates: Partial<MyProfile>): MyProfile {
 /**
  * Update my streak (called when streak changes)
  */
-export function updateMyStreak(streak: number): void {
-  const profile = loadMyProfile();
-  if (profile) {
-    profile.currentStreak = streak;
-    saveMyProfile(profile);
+export async function updateMyStreak(
+  streak: number,
+  expectedOwnerUserId: string
+): Promise<void> {
+  const update = await runWithFriendsLocalOwner(
+    expectedOwnerUserId,
+    "Update friend streak",
+    () => {
+      const profile = loadMyProfile();
+      if (!profile) return null;
 
-    // Sync to cloud if available
-    syncMyProfileToCloud(profile).catch((err) => {
-      logger.warn("[FriendsSync] Failed to sync profile to cloud:", err);
-    });
+      const updatedProfile = { ...profile, currentStreak: streak };
+      saveMyProfile(updatedProfile);
+      return updatedProfile;
+    }
+  );
+
+  if (update?.value) {
+    await syncMyProfileToCloud(update.value, expectedOwnerUserId);
   }
 }
 
 /**
  * Update my level (called when level changes)
  */
-export function updateMyLevel(level: number): void {
-  const profile = loadMyProfile();
-  if (profile) {
-    profile.level = level;
-    saveMyProfile(profile);
+export async function updateMyLevel(
+  level: number,
+  expectedOwnerUserId: string
+): Promise<void> {
+  const update = await runWithFriendsLocalOwner(
+    expectedOwnerUserId,
+    "Update friend level",
+    () => {
+      const profile = loadMyProfile();
+      if (!profile) return null;
 
-    // Sync to cloud if available
-    syncMyProfileToCloud(profile).catch((err) => {
-      logger.warn("[FriendsSync] Failed to sync profile to cloud:", err);
-    });
+      const updatedProfile = { ...profile, level };
+      saveMyProfile(updatedProfile);
+      return updatedProfile;
+    }
+  );
+
+  if (update?.value) {
+    await syncMyProfileToCloud(update.value, expectedOwnerUserId);
   }
 }
 
@@ -252,15 +335,31 @@ export async function addFriendByCode(friendCode: string): Promise<{
     return { success: false, error: "Invalid friend code format" };
   }
 
+  // Bind both local reads to one owner before the remote lookup starts. A
+  // local-only build has no Supabase account boundary to stamp.
+  const localSnapshot = supabase
+    ? await runWithFriendsLocalOwner(undefined, "Add friend", () => ({
+        friends: loadFriends(),
+        myProfile: loadMyProfile(),
+      }))
+    : {
+        ownerUserId: null,
+        value: { friends: loadFriends(), myProfile: loadMyProfile() },
+      };
+  if (!localSnapshot) {
+    return { success: false };
+  }
+
+  const { friends, myProfile } = localSnapshot.value;
+  const operationOwnerUserId = localSnapshot.ownerUserId;
+
   // Check if already friends
-  const friends = loadFriends();
   const existing = friends.find((f) => f.friendCode === normalizedCode);
   if (existing) {
     return { success: false, error: "Already friends with this user" };
   }
 
   // Check if it's own code
-  const myProfile = loadMyProfile();
   if (myProfile?.friendCode === normalizedCode) {
     return { success: false, error: "Cannot add yourself as a friend" };
   }
@@ -277,14 +376,22 @@ export async function addFriendByCode(friendCode: string): Promise<{
           displayName: friendData.displayName,
           avatarEmoji: friendData.avatarEmoji,
           currentStreak: friendData.currentStreak,
-          lastActive: friendData.lastActive || new Date().toISOString(),
+          lastActive: friendData.lastActive,
           level: friendData.level,
           friendsSince: new Date().toISOString(),
           status: friendData.status,
+          streakHidden: friendData.streakHidden,
+          levelHidden: friendData.levelHidden,
         };
 
-        friends.push(friend);
-        saveFriends(friends);
+        const nextFriends = [...friends, friend];
+        if (
+          operationOwnerUserId &&
+          !(await saveFriendsForOwner(operationOwnerUserId, nextFriends, "Add friend"))
+        ) {
+          return { success: false };
+        }
+        if (!operationOwnerUserId) saveFriends(nextFriends);
 
         return { success: true, friend };
       }
@@ -295,22 +402,10 @@ export async function addFriendByCode(friendCode: string): Promise<{
     }
   }
 
-  // If no cloud data, create with defaults
-  const friend: Friend = {
-    id: generateSecureId("friend"),
-    friendCode: normalizedCode,
-    displayName: "Zen Friend",
-    avatarEmoji: "🧘",
-    currentStreak: 0,
-    lastActive: new Date().toISOString(),
-    level: 1,
-    friendsSince: new Date().toISOString(),
-  };
-
-  friends.push(friend);
-  saveFriends(friends);
-
-  return { success: true, friend };
+  // A friend must be backed by an authoritative cloud profile. Missing data,
+  // an offline lookup, or an unavailable backend is an honest retryable
+  // failure, never permission to persist a fabricated user.
+  return { success: false };
 }
 
 /**
@@ -358,19 +453,22 @@ export function isCloudSyncAvailable(): boolean {
 /**
  * Sync my profile to cloud
  */
-async function syncMyProfileToCloud(profile: MyProfile): Promise<void> {
-  if (!supabase) return;
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.user) return;
-  const user = session.user;
+async function syncMyProfileToCloud(
+  profile: MyProfile,
+  expectedOwnerUserId: string
+): Promise<void> {
+  if (!supabase || !expectedOwnerUserId.trim()) return;
 
   try {
+    const activeUserId = await getCurrentUserId();
+    if (activeUserId !== expectedOwnerUserId) {
+      logger.warn("[FriendsSync] Skipping profile sync because the account owner changed");
+      return;
+    }
+
     const query = supabase.from("user_profiles").upsert(
       {
-        user_id: user.id,
+        user_id: expectedOwnerUserId,
         friend_code: profile.friendCode,
         display_name: profile.displayName,
         avatar_emoji: profile.avatarEmoji,
@@ -405,8 +503,10 @@ async function findFriendByCode(friendCode: string): Promise<{
   avatarEmoji: string;
   currentStreak: number;
   level: number;
-  lastActive?: string;
+  lastActive: string;
   status?: string;
+  streakHidden: boolean;
+  levelHidden: boolean;
 } | null> {
   if (!supabase) return null;
 
@@ -420,14 +520,28 @@ async function findFriendByCode(friendCode: string): Promise<{
 
     if (error || !data) return null;
 
+    const userId = typeof data.user_id === "string" ? data.user_id.trim() : "";
+    const displayName =
+      typeof data.display_name === "string" ? data.display_name.trim() : "";
+    const avatarEmoji =
+      typeof data.avatar_emoji === "string" ? data.avatar_emoji.trim() : "";
+    const lastActive =
+      typeof data.updated_at === "string" ? data.updated_at.trim() : "";
+    if (!userId || !displayName || !avatarEmoji || !lastActive) {
+      logger.warn("[FriendsSync] Ignoring incomplete cloud friend profile");
+      return null;
+    }
+
     return {
-      userId: data.user_id,
-      displayName: data.display_name || "Zen Friend",
-      avatarEmoji: data.avatar_emoji || "🧘",
-      currentStreak: data.current_streak || 0,
-      level: data.level || 1,
-      lastActive: data.updated_at ?? undefined,
+      userId,
+      displayName,
+      avatarEmoji,
+      currentStreak: data.current_streak ?? 0,
+      level: data.level ?? 1,
+      lastActive,
       status: data.status ?? undefined,
+      streakHidden: data.current_streak === null,
+      levelHidden: data.level === null,
     };
   } catch (error) {
     if (!isAbortError(error)) {
@@ -443,7 +557,11 @@ async function findFriendByCode(friendCode: string): Promise<{
 export async function refreshFriendsData(): Promise<void> {
   if (!supabase) return;
 
-  const friends = loadFriends();
+  const localSnapshot = await runWithFriendsLocalOwner(undefined, "Refresh friends", loadFriends);
+  if (!localSnapshot) return;
+
+  const operationOwnerUserId = localSnapshot.ownerUserId;
+  const friends = localSnapshot.value;
   if (friends.length === 0) return;
 
   lazyBreadcrumb({
@@ -487,7 +605,7 @@ export async function refreshFriendsData(): Promise<void> {
       return friend;
     });
 
-    saveFriends(updatedFriends);
+    await saveFriendsForOwner(operationOwnerUserId, updatedFriends, "Refresh friends");
   } catch (error) {
     if (!isAbortError(error)) {
       logger.warn("[FriendsSync] Refresh failed:", error);

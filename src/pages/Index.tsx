@@ -2,7 +2,6 @@ import {
   lazy,
   Suspense,
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   type Dispatch,
@@ -31,17 +30,17 @@ import { useMoodHandlers } from "@/hooks/useMoodHandlers";
 import { useGratitudeHandlers } from "@/hooks/useGratitudeHandlers";
 import { useSettingsHandlers } from "@/hooks/useSettingsHandlers";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { StorageErrorBanner } from "@/components/StorageErrorBanner";
 import { AuthGate } from "@/components/AuthGate";
 import { useThemeStore } from "@/stores/themeStore";
 import { useInnerWorld } from "@/hooks/useInnerWorld";
 import { useGamification } from "@/hooks/useGamification";
 import { AdProvider } from "@/contexts/AdContext";
-import { analytics } from "@/lib/analytics";
 import { supabase } from "@/lib/supabaseClient";
 import { canInitializeRewardedAds } from "@/lib/privacyConsent";
 import { getChallenges, getBadges } from "@/lib/challengeStorage";
 const DesktopDownloadPage = lazy(() =>
-  import("./DesktopDownloadPage").then((m) => ({ default: m.DesktopDownloadPage })),
+  import("./DesktopDownloadPage").then((m) => ({ default: m.DesktopDownloadPage }))
 );
 const HabitStickerPreview = import.meta.env.DEV
   ? lazy(() => import("./__dev/HabitStickerPreview"))
@@ -58,12 +57,9 @@ function getCurrentAppPath(): string {
 
   const base = (import.meta.env?.BASE_URL || "/").replace(/\/$/, "");
   const pathname = window.location.pathname;
-  const rawAppPath = base && pathname.startsWith(base)
-    ? pathname.slice(base.length) || "/"
-    : pathname;
-  return rawAppPath.length > 1 && rawAppPath.endsWith("/")
-    ? rawAppPath.slice(0, -1)
-    : rawAppPath;
+  const rawAppPath =
+    base && pathname.startsWith(base) ? pathname.slice(base.length) || "/" : pathname;
+  return rawAppPath.length > 1 && rawAppPath.endsWith("/") ? rawAppPath.slice(0, -1) : rawAppPath;
 }
 
 function isPublicRouteLocation(): boolean {
@@ -85,7 +81,10 @@ function PublicRouteFallback({ label }: { label: string }) {
       className="flex min-h-[var(--app-viewport-height)] items-center justify-center bg-background px-4 py-10 text-foreground"
     >
       <div className="inline-flex min-h-[44px] items-center gap-3 rounded-2xl border border-border/50 bg-card/75 px-4 py-3 text-sm font-semibold text-muted-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]">
-        <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-primary motion-safe:animate-pulse" />
+        <span
+          aria-hidden="true"
+          className="h-2.5 w-2.5 rounded-full bg-primary motion-safe:animate-pulse"
+        />
         <span>{label}</span>
       </div>
     </main>
@@ -157,6 +156,7 @@ function IndexV2Impl() {
   const focusSessions = useUserDataStore((s) => s.focusSessions);
   const gratitudeEntries = useUserDataStore((s) => s.gratitudeEntries);
   const userName = useUserDataStore((s) => s.userName);
+  const userNameCustom = useUserDataStore((s) => s.userNameCustom);
   const reminders = useUserDataStore((s) => s.reminders);
   const setReminders = useUserDataStore((s) => s.setReminders);
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
@@ -171,10 +171,6 @@ function IndexV2Impl() {
 
     return latestMood?.mood ?? null;
   }, [moods]);
-  useEffect(() => {
-    analytics.init(privacy);
-  }, [privacy]);
-
   const emptyScheduleEvents = useMemo(() => [], []);
   const { handleNameChange, handleResetData } = useSettingsHandlers(emptyScheduleEvents);
   const {
@@ -225,6 +221,7 @@ function IndexV2Impl() {
   const settingsControls = useMemo(
     () => ({
       userName,
+      userNameCustom,
       onNameChange: handleNameChange,
       onResetData: handleResetData,
       reminders,
@@ -249,12 +246,14 @@ function IndexV2Impl() {
       setPrivacy,
       setReminders,
       userName,
-    ],
+      userNameCustom,
+    ]
   );
 
   return (
     <>
       <OfflineBanner />
+      <StorageErrorBanner />
       <AuthGate isLoading={isLoading} splashTheme={appliedTheme}>
         <AdProvider
           onEarnTreats={(amount) => earnTreats("ad", amount, "Ad reward")}

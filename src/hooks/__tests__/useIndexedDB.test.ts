@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { useIndexedDB, triggerDataRefresh } from "../useIndexedDB";
+import { runWithDataWriteBarrier, useIndexedDB, triggerDataRefresh } from "../useIndexedDB";
 
 // Mock logger
 vi.mock("@/lib/logger", () => ({
@@ -38,8 +38,14 @@ const createMockTable = (initialData: Record<string, unknown> = {}) => {
     }),
     bulkPut: vi.fn((items: unknown[]) => {
       items.forEach((item, i) => {
-        storage[`item_${i}`] = item;
+        const itemId =
+          item && typeof item === "object" && "id" in item ? String(item.id) : `item_${i}`;
+        storage[itemId] = item;
       });
+      return Promise.resolve();
+    }),
+    bulkDelete: vi.fn((keys: string[]) => {
+      for (const key of keys) delete storage[key];
       return Promise.resolve();
     }),
     _getStorage: () => storage,
@@ -394,6 +400,63 @@ describe("useIndexedDB", () => {
   });
 
   describe("triggerDataRefresh", () => {
+    it("uses an origin-wide exclusive lock for authoritative mutations", async () => {
+      const originalLocks = Object.getOwnPropertyDescriptor(navigator, "locks");
+      const request = vi.fn(
+        async <T>(
+          _name: string,
+          _options: { mode: "exclusive" },
+          callback: (lock: unknown) => T | Promise<T>
+        ): Promise<T> => callback({ name: "zenflow:data-write-barrier" })
+      );
+      Object.defineProperty(navigator, "locks", {
+        configurable: true,
+        value: { request },
+      });
+
+      try {
+        await runWithDataWriteBarrier(async () => "done");
+        expect(request).toHaveBeenCalledWith(
+          "zenflow:data-write-barrier",
+          { mode: "exclusive" },
+          expect.any(Function)
+        );
+      } finally {
+        if (originalLocks) {
+          Object.defineProperty(navigator, "locks", originalLocks);
+        } else {
+          Reflect.deleteProperty(navigator, "locks");
+        }
+      }
+    });
+
+    it("resolves only after mounted hooks have reloaded their IndexedDB state", async () => {
+      mockTable._setStorage({
+        test_key: { key: "test_key", value: { count: 1 } },
+      });
+      const { result } = renderHook(() =>
+        useIndexedDB({
+          table: mockTable as any,
+          localStorageKey: "test_key",
+          initialValue: { count: 0 },
+          idField: "key",
+        })
+      );
+      await waitFor(() => expect(result.current[0]).toEqual({ count: 1 }));
+
+      mockTable._setStorage({
+        test_key: { key: "test_key", value: { count: 2 } },
+      });
+
+      await act(async () => {
+        const refresh = triggerDataRefresh();
+        expect(refresh).toBeInstanceOf(Promise);
+        await refresh;
+      });
+
+      expect(result.current[0]).toEqual({ count: 2 });
+    });
+
     it("reloads data for all hooks", async () => {
       mockTable._setStorage({
         test_key: { key: "test_key", value: { count: 1 } },
@@ -420,8 +483,8 @@ describe("useIndexedDB", () => {
       });
 
       // Trigger refresh
-      act(() => {
-        triggerDataRefresh();
+      await act(async () => {
+        await triggerDataRefresh();
       });
 
       await waitFor(() => {
@@ -455,8 +518,8 @@ describe("useIndexedDB", () => {
 
       mockTable._setStorage({});
 
-      act(() => {
-        triggerDataRefresh();
+      await act(async () => {
+        await triggerDataRefresh();
       });
 
       await waitFor(() => {
@@ -486,14 +549,277 @@ describe("useIndexedDB", () => {
 
       mockTable._setStorage({});
 
-      act(() => {
-        triggerDataRefresh();
+      await act(async () => {
+        await triggerDataRefresh();
       });
 
       await waitFor(() => {
         expect(result.current[0]).toEqual({ count: 0 });
       });
       expect(localStorageMock.test_key).toBe(JSON.stringify({ count: 0 }));
+    });
+
+    it("replays a local array edit over authoritative remote additions", async () => {
+      const local = { id: "local", name: "Before" };
+      const remote = { id: "remote", name: "From cloud" };
+      mockTable._setStorage({ local });
+
+      const { result } = renderHook(() =>
+        useIndexedDB({
+          table: mockTable as any,
+          localStorageKey: "items",
+          initialValue: [] as Array<{ id: string; name: string }>,
+          idField: "id",
+        })
+      );
+      await waitFor(() => expect(result.current[0]).toEqual([local]));
+
+      let releaseMutation!: () => void;
+      const mutationGate = new Promise<void>((resolve) => {
+        releaseMutation = resolve;
+      });
+      const mutation = runWithDataWriteBarrier(async () => {
+        mockTable._setStorage({ local, remote });
+        await mutationGate;
+      });
+      await Promise.resolve();
+
+      act(() => {
+        result.current[1]([{ id: "local", name: "Edited locally" }]);
+      });
+      expect(result.current[0]).toEqual([local]);
+
+      await act(async () => {
+        releaseMutation();
+        await mutation;
+      });
+
+      await waitFor(() =>
+        expect(result.current[0]).toEqual(
+          expect.arrayContaining([{ id: "local", name: "Edited locally" }, remote])
+        )
+      );
+      expect(Object.values(mockTable._getStorage())).toEqual(
+        expect.arrayContaining([{ id: "local", name: "Edited locally" }, remote])
+      );
+    });
+
+    it("composes multiple deferred setting updates over authoritative fields", async () => {
+      mockTable._setStorage({
+        preferences: {
+          key: "preferences",
+          value: { first: false, second: false },
+        },
+      });
+      const { result } = renderHook(() =>
+        useIndexedDB({
+          table: mockTable as any,
+          localStorageKey: "preferences",
+          initialValue: { first: false, second: false, remote: false },
+          idField: "key",
+        })
+      );
+      await waitFor(() =>
+        expect(result.current[0]).toEqual({ first: false, second: false, remote: false })
+      );
+
+      let releaseMutation!: () => void;
+      const mutationGate = new Promise<void>((resolve) => {
+        releaseMutation = resolve;
+      });
+      const mutation = runWithDataWriteBarrier(async () => {
+        mockTable._setStorage({
+          preferences: {
+            key: "preferences",
+            value: { first: false, second: false, remote: true },
+          },
+        });
+        await mutationGate;
+      });
+      await Promise.resolve();
+
+      act(() => {
+        result.current[1]((previous) => ({ ...previous, first: true }));
+        result.current[1]((previous) => ({ ...previous, second: true }));
+      });
+
+      await act(async () => {
+        releaseMutation();
+        await mutation;
+      });
+
+      await waitFor(() =>
+        expect(result.current[0]).toEqual({ first: true, second: true, remote: true })
+      );
+    });
+
+    it("rejects an authoritative mutation when a deferred setting replay cannot commit", async () => {
+      mockTable._setStorage({
+        preferences: {
+          key: "preferences",
+          value: { local: false, remote: false },
+        },
+      });
+      const { result } = renderHook(() =>
+        useIndexedDB({
+          table: mockTable as any,
+          localStorageKey: "preferences",
+          initialValue: { local: false, remote: false },
+          idField: "key",
+        })
+      );
+      await waitFor(() =>
+        expect(result.current[0]).toEqual({ local: false, remote: false })
+      );
+
+      let releaseMutation!: () => void;
+      const mutationGate = new Promise<void>((resolve) => {
+        releaseMutation = resolve;
+      });
+      const mutation = runWithDataWriteBarrier(async () => {
+        mockTable._setStorage({
+          preferences: {
+            key: "preferences",
+            value: { local: false, remote: true },
+          },
+        });
+        await mutationGate;
+      });
+      await Promise.resolve();
+
+      mockTable.put.mockRejectedValueOnce(new Error("deferred setting replay failed"));
+      act(() => {
+        result.current[1]((previous) => ({ ...previous, local: true }));
+      });
+
+      releaseMutation();
+      await expect(mutation).rejects.toThrow("deferred setting replay failed");
+    });
+
+    it("rejects an authoritative mutation when a deferred collection replay cannot commit", async () => {
+      const local = { id: "local", name: "Before" };
+      const remote = { id: "remote", name: "From cloud" };
+      mockTable._setStorage({ local });
+      const { result } = renderHook(() =>
+        useIndexedDB({
+          table: mockTable as any,
+          localStorageKey: "items",
+          initialValue: [] as Array<{ id: string; name: string }>,
+          idField: "id",
+        })
+      );
+      await waitFor(() => expect(result.current[0]).toEqual([local]));
+
+      let releaseMutation!: () => void;
+      const mutationGate = new Promise<void>((resolve) => {
+        releaseMutation = resolve;
+      });
+      const mutation = runWithDataWriteBarrier(async () => {
+        mockTable._setStorage({ local, remote });
+        await mutationGate;
+      });
+      await Promise.resolve();
+
+      mockTable.bulkPut.mockRejectedValueOnce(new Error("deferred collection replay failed"));
+      act(() => {
+        result.current[1]([{ id: "local", name: "Edited locally" }]);
+      });
+
+      releaseMutation();
+      await expect(mutation).rejects.toThrow("deferred collection replay failed");
+    });
+
+    it("discards writes attempted during an account-boundary purge", async () => {
+      mockTable._setStorage({
+        test_key: { key: "test_key", value: { owner: "account-a" } },
+      });
+      const { result } = renderHook(() =>
+        useIndexedDB({
+          table: mockTable as any,
+          localStorageKey: "test_key",
+          initialValue: { owner: "none" },
+          idField: "key",
+        })
+      );
+      await waitFor(() => expect(result.current[0]).toEqual({ owner: "account-a" }));
+
+      let releaseMutation!: () => void;
+      const mutationGate = new Promise<void>((resolve) => {
+        releaseMutation = resolve;
+      });
+      const mutation = runWithDataWriteBarrier(
+        async () => {
+          mockTable._setStorage({});
+          await mutationGate;
+        },
+        { deferredWrites: "discard" }
+      );
+      await Promise.resolve();
+
+      act(() => {
+        result.current[1]({ owner: "account-a-write-during-purge" });
+      });
+
+      await act(async () => {
+        releaseMutation();
+        await mutation;
+      });
+
+      await waitFor(() => expect(result.current[0]).toEqual({ owner: "none" }));
+      expect(mockTable._getStorage()).toEqual({});
+    });
+
+    it("discards a stale account-A read that resolves after an account-boundary purge", async () => {
+      const accountAItem = { id: "account-a", name: "Private A data" };
+      mockTable._setStorage({ [accountAItem.id]: accountAItem });
+
+      const { result } = renderHook(() =>
+        useIndexedDB({
+          table: mockTable as any,
+          localStorageKey: "items",
+          initialValue: [] as Array<{ id: string; name: string }>,
+          idField: "id",
+        })
+      );
+      await waitFor(() => expect(result.current[0]).toEqual([accountAItem]));
+
+      let releaseStaleRead!: () => void;
+      const staleReadGate = new Promise<void>((resolve) => {
+        releaseStaleRead = resolve;
+      });
+      let deferNextRead = true;
+      mockTable.toArray.mockImplementation(async () => {
+        if (deferNextRead) {
+          deferNextRead = false;
+          const staleSnapshot = [accountAItem];
+          await staleReadGate;
+          return staleSnapshot;
+        }
+        return Object.values(mockTable._getStorage());
+      });
+
+      const staleRefresh = triggerDataRefresh();
+      await Promise.resolve();
+
+      await act(async () => {
+        await runWithDataWriteBarrier(
+          async () => {
+            mockTable._setStorage({});
+          },
+          { deferredWrites: "discard" }
+        );
+      });
+
+      await waitFor(() => expect(result.current[0]).toEqual([]));
+      expect(localStorageMock.items).toBe(JSON.stringify([]));
+
+      await act(async () => {
+        releaseStaleRead();
+        await staleRefresh;
+      });
+
+      expect(result.current[0]).toEqual([]);
+      expect(localStorageMock.items).toBe(JSON.stringify([]));
     });
   });
 

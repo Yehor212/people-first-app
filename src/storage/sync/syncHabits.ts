@@ -7,7 +7,7 @@ import { logger } from "@/lib/logger";
 import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSync";
 import { getDeletedHabitIds, trackDeletedHabitId } from "@/storage/deletionTracker";
 import { isAbortError, isValidUUID } from "@/lib/validation";
-import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { ENTRY, type Habit, type LoopHabitType, type TargetType } from "@/types";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { getHabitPlanState } from "@/lib/habitPlan";
@@ -20,13 +20,17 @@ import {
   getCloudHabitTypeForSync,
   isHabitEntrySyncableToCloud,
 } from "./habitCompletionCodec";
+import { validateSyncOwner } from "./syncOwner";
 
 // ============================================
 // HABIT SYNC
 // ============================================
 
-export const syncHabit = async (habit: Habit): Promise<void> => {
-  const userId = await getCurrentUserId();
+export const syncHabit = async (
+  habit: Habit,
+  expectedOwnerUserId?: string
+): Promise<void> => {
+  const userId = await validateSyncOwner(expectedOwnerUserId, "Habit sync");
   // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
@@ -48,12 +52,14 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
-    await offlineQueue.enqueue("UPDATE_HABIT", habit.id, habit);
+    await offlineQueue.enqueue("UPDATE_HABIT", habit.id, habit, {
+      expectedOwnerUserId: userId,
+    });
     logger.log("[Sync] Habit queued for offline sync:", habit.id);
     return;
   }
 
-  if (await isEntityTombstonedOnServer("habit", habit.id)) {
+  if (await isEntityTombstonedOnServer("habit", habit.id, userId)) {
     await trackDeletedHabitId(habit.id);
     logger.warn("[Sync] Skipping server-tombstoned habit upsert:", habit.id);
     return;
@@ -71,6 +77,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
     const schedule = normalizeHabitSchedule(habit);
     const updatedAt = habit.updatedAt || new Date().toISOString();
 
+    if (!(await validateSyncOwner(userId, "Habit sync"))) return;
     const { error: habitError } = await supabase.from("habits").upsert(
       {
         id: habit.id,
@@ -133,6 +140,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
         };
       });
 
+      if (!(await validateSyncOwner(userId, "Habit completion batch sync"))) return;
       const { error: completionError } = await supabase
         .from("habit_completions")
         .upsert(completions, { onConflict: "habit_id,date" });
@@ -156,6 +164,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
       }));
 
       // Upsert reminders (safe - won't lose data on failure)
+      if (!(await validateSyncOwner(userId, "Habit reminder sync"))) return;
       const { error: reminderError } = await supabase
         .from("habit_reminders")
         .upsert(reminders, { onConflict: "id" });
@@ -166,6 +175,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
       // Security fix: sanitize IDs to prevent PostgREST filter injection
       const currentIds = reminders.map((r) => r.id.replace(/[^a-zA-Z0-9\-_]/g, ""));
       const filterTuple = `(${currentIds.map((id) => `"${id}"`).join(",")})`;
+      if (!(await validateSyncOwner(userId, "Habit reminder cleanup"))) return;
       const { error: cleanupError } = await supabase
         .from("habit_reminders")
         .delete()
@@ -178,6 +188,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
       }
     } else {
       // No reminders - safe to delete all
+      if (!(await validateSyncOwner(userId, "Habit reminder cleanup"))) return;
       const { error: deleteError } = await supabase
         .from("habit_reminders")
         .delete()
@@ -195,7 +206,8 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
       habit.id,
       "upsert",
       habit as unknown as Record<string, unknown>,
-      deviceId
+      deviceId,
+      { expectedOwnerUserId: userId }
     );
   } catch (error) {
     // Handle AbortError separately
@@ -209,15 +221,25 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
   }
 };
 
-export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
+export const deleteHabitFromCloud = async (
+  habitId: string,
+  expectedOwnerUserId?: string
+): Promise<void> => {
   await trackDeletedHabitId(habitId);
 
-  const userId = await getCurrentUserId();
+  const userId = await validateSyncOwner(expectedOwnerUserId, "Habit delete");
   if (!supabase || !userId) return;
 
   // If offline, queue for later
   if (!navigator.onLine) {
-    await offlineQueue.enqueue("DELETE_HABIT", habitId, { id: habitId });
+    await offlineQueue.enqueue(
+      "DELETE_HABIT",
+      habitId,
+      { id: habitId },
+      {
+        expectedOwnerUserId: userId,
+      }
+    );
     logger.log("[Sync] Habit delete queued for offline:", habitId);
     return;
   }
@@ -225,11 +247,14 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
   try {
     if (!isValidUUID(habitId)) {
       const deviceId = await getPersistentDeviceId();
-      await writeEventAndBroadcast("habit", habitId, "delete", null, deviceId);
+      await writeEventAndBroadcast("habit", habitId, "delete", null, deviceId, {
+        expectedOwnerUserId: userId,
+      });
       logger.log("[Sync] Legacy habit delete tracked + evented:", habitId);
       return;
     }
 
+    if (!(await validateSyncOwner(userId, "Habit delete"))) return;
     const { error } = await supabase
       .from("habits")
       .delete()
@@ -240,7 +265,9 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
 
     logger.log("[Sync] Habit deleted + tracked:", habitId);
     const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast("habit", habitId, "delete", null, deviceId);
+    await writeEventAndBroadcast("habit", habitId, "delete", null, deviceId, {
+      expectedOwnerUserId: userId,
+    });
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
@@ -267,9 +294,10 @@ export const syncHabitCompletion = async (
     habitType?: LoopHabitType;
     targetType?: TargetType;
     entryValue?: number;
-  }
+  },
+  expectedOwnerUserId?: string
 ): Promise<void> => {
-  const userId = await getCurrentUserId();
+  const userId = await validateSyncOwner(expectedOwnerUserId, "Habit completion sync");
   if (!supabase || !userId) return;
 
   // Skip granular sync for non-UUID habit IDs (nanoid)
@@ -286,21 +314,28 @@ export const syncHabitCompletion = async (
 
   // P1-9 Fix: Add offline queue support (was missing)
   if (!navigator.onLine) {
-    await offlineQueue.enqueue("TOGGLE_HABIT", `${habitId}_${date}`, {
-      habitId,
-      date,
-      completed,
-      count,
-      duration,
-      habitType: options?.habitType,
-      targetType: options?.targetType,
-      entryValue: options?.entryValue,
-    });
+    await offlineQueue.enqueue(
+      "TOGGLE_HABIT",
+      `${habitId}_${date}`,
+      {
+        habitId,
+        date,
+        completed,
+        count,
+        duration,
+        habitType: options?.habitType,
+        targetType: options?.targetType,
+        entryValue: options?.entryValue,
+      },
+      {
+        expectedOwnerUserId: userId,
+      }
+    );
     logger.log("[Sync] Habit completion queued for offline:", habitId, date);
     return;
   }
 
-  if (await isEntityTombstonedOnServer("habit", habitId)) {
+  if (await isEntityTombstonedOnServer("habit", habitId, userId)) {
     await trackDeletedHabitId(habitId);
     logger.warn("[Sync] Skipping server-tombstoned habit completion sync:", habitId, date);
     return;
@@ -331,6 +366,7 @@ export const syncHabitCompletion = async (
         habitType,
         entryValue: entryValue ?? 0,
       });
+      if (!(await validateSyncOwner(userId, "Habit completion sync"))) return;
       const { error } = await supabase.from("habit_completions").upsert(
         {
           user_id: userId,
@@ -350,6 +386,7 @@ export const syncHabitCompletion = async (
 
       if (error) throw error;
     } else {
+      if (!(await validateSyncOwner(userId, "Habit completion delete"))) return;
       const { error } = await supabase
         .from("habit_completions")
         .delete()
@@ -376,7 +413,8 @@ export const syncHabitCompletion = async (
             targetType: options?.targetType,
           }
         : null,
-      deviceId
+      deviceId,
+      { expectedOwnerUserId: userId }
     );
   } catch (error) {
     // Handle AbortError separately

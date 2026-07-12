@@ -32,7 +32,10 @@ async function blobToBase64(blob: Blob): Promise<string> {
 /**
  * Delete file with retry logic
  */
-async function deleteFileWithRetry(fileName: string): Promise<void> {
+async function deleteFileWithRetry(
+  fileName: string,
+  options: { failClosed?: boolean } = {},
+): Promise<void> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= DELETE_RETRY_DELAYS.length; attempt++) {
@@ -51,6 +54,37 @@ async function deleteFileWithRetry(fileName: string): Promise<void> {
   }
 
   logger.warn('[ShareActions] Failed to delete file after retries:', fileName, lastError?.message);
+  if (options.failClosed && lastError) {
+    throw lastError;
+  }
+}
+
+/**
+ * Remove account-owned temporary artifacts before an account boundary.
+ *
+ * Unlike best-effort stale cleanup, this deliberately rejects when an owned
+ * artifact cannot be removed so callers do not complete sign-out/account
+ * switching while private export or share data remains in the native cache.
+ */
+export async function cleanupAllAccountCacheFiles(): Promise<void> {
+  if (!isNative) return;
+
+  const result = await Filesystem.readdir({
+    path: '',
+    directory: Directory.Cache,
+  });
+
+  const ownedFiles = result.files.filter(
+    (file) =>
+      file.name.startsWith(CACHE_FILE_PREFIX) ||
+      file.name.startsWith('ZenFlow_Backup_'),
+  );
+
+  await Promise.all(
+    ownedFiles.map((file) =>
+      deleteFileWithRetry(file.name, { failClosed: true }),
+    ),
+  );
 }
 
 /**

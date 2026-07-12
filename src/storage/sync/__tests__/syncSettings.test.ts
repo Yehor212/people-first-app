@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getCurrentUserId: vi.fn(),
@@ -9,10 +9,13 @@ const mocks = vi.hoisted(() => ({
   enqueue: vi.fn(),
   getPersistentDeviceId: vi.fn(),
   writeEventAndBroadcast: vi.fn(),
+  supabase: null as { from: ReturnType<typeof vi.fn> } | null,
 }));
 
 vi.mock("@/lib/supabaseClient", () => ({
-  supabase: { from: mocks.from },
+  get supabase() {
+    return mocks.supabase;
+  },
   getCurrentUserId: mocks.getCurrentUserId,
 }));
 
@@ -38,9 +41,11 @@ vi.mock("../syncUtils", () => ({
 }));
 
 import { deleteSettingFromCloud, syncSetting } from "../syncSettings";
+import { db } from "@/storage/db";
+import { SK } from "@/lib/storageKeys";
 
 describe("syncSettings", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     Object.defineProperty(navigator, "onLine", {
       configurable: true,
@@ -51,7 +56,13 @@ describe("syncSettings", () => {
     mocks.match.mockResolvedValue({ error: null });
     mocks.delete.mockReturnValue({ match: mocks.match });
     mocks.from.mockReturnValue({ upsert: mocks.upsert, delete: mocks.delete });
+    mocks.supabase = { from: mocks.from };
     mocks.getPersistentDeviceId.mockResolvedValue("device-1");
+    await db.settings.clear();
+  });
+
+  afterAll(() => {
+    db.close();
   });
 
   it("writes a setting sync event after a successful cloud upsert", async () => {
@@ -75,8 +86,23 @@ describe("syncSettings", () => {
         value: true,
         updatedAt: expect.any(String),
       }),
-      "device-1"
+      "device-1",
+      { expectedOwnerUserId: "user-1" }
     );
+  });
+
+  it("refuses an owner-bound upsert when the active account changes before the mutation", async () => {
+    mocks.getCurrentUserId
+      .mockResolvedValueOnce("account-a")
+      .mockResolvedValueOnce("account-b");
+
+    await expect(
+      syncSetting("mood-reminder-enabled", true, "account-a")
+    ).rejects.toThrow("account boundary");
+
+    expect(mocks.getCurrentUserId).toHaveBeenCalledTimes(2);
+    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
   it("does not resolve before the durable sync event/outbox write finishes", async () => {
@@ -110,10 +136,17 @@ describe("syncSettings", () => {
 
     await syncSetting("mood-reminder-enabled", false);
 
-    expect(mocks.enqueue).toHaveBeenCalledWith("UPDATE_SETTINGS", "mood-reminder-enabled", {
-      key: "mood-reminder-enabled",
-      value: false,
-    });
+    expect(mocks.enqueue).toHaveBeenCalledWith(
+      "UPDATE_SETTINGS",
+      "mood-reminder-enabled",
+      {
+        key: "mood-reminder-enabled",
+        value: false,
+      },
+      {
+        expectedOwnerUserId: "user-1",
+      }
+    );
     expect(mocks.upsert).not.toHaveBeenCalled();
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
@@ -128,11 +161,17 @@ describe("syncSettings", () => {
   });
 
   it("syncs the wrapped journal vault key so another device can recover encrypted diary data", async () => {
-    await syncSetting("journal_vault_key", {
+    const vaultSetting = {
       wrappedKey: "wrapped-key-fixture",
       createdAt: 1_781_580_000_000,
       updatedAt: 1_781_580_000_000,
-    });
+    };
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_VAULT_KEY, value: vaultSetting },
+      { key: SK.JOURNAL_VAULT_REVISION, value: vaultSetting.updatedAt },
+    ]);
+
+    await syncSetting("journal_vault_key", vaultSetting);
 
     expect(mocks.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -181,17 +220,100 @@ describe("syncSettings", () => {
       value: false,
     });
 
-    await syncSetting("journal_vault_key", { wrappedKey: "wrapped-key-fixture" });
+    const vaultSetting = {
+      wrappedKey: "wrapped-key-fixture",
+      createdAt: 1_781_580_000_000,
+      updatedAt: 1_781_580_000_000,
+    };
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_VAULT_KEY, value: vaultSetting },
+      { key: SK.JOURNAL_VAULT_REVISION, value: vaultSetting.updatedAt },
+    ]);
 
-    expect(mocks.enqueue).toHaveBeenCalledWith("UPDATE_SETTINGS", "journal_vault_key", {
-      key: "journal_vault_key",
-      value: { wrappedKey: "wrapped-key-fixture" },
-    });
+    await syncSetting("journal_vault_key", vaultSetting);
+
+    expect(mocks.enqueue).toHaveBeenCalledWith(
+      "UPDATE_SETTINGS",
+      "journal_vault_key",
+      {
+        key: "journal_vault_key",
+        value: vaultSetting,
+      },
+      {
+        expectedOwnerUserId: "user-1",
+      }
+    );
     expect(mocks.upsert).not.toHaveBeenCalled();
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
-  it("queues wrapped journal vault key deletion while offline", async () => {
+  it("drops a stale queued vault upsert after local password removal", async () => {
+    const removedVault = {
+      wrappedKey: "removed-wrapped-key",
+      createdAt: 100,
+      updatedAt: 101,
+    };
+    await db.settings.put({ key: SK.JOURNAL_VAULT_REVISION, value: 101 });
+
+    await syncSetting(SK.JOURNAL_VAULT_KEY, removedVault, "user-1");
+
+    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("does not upload a vault while durable password removal is pending", async () => {
+    const vaultSetting = {
+      wrappedKey: "wrapped-key-raced-back",
+      createdAt: 100,
+      updatedAt: 101,
+    };
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_VAULT_KEY, value: vaultSetting },
+      { key: SK.JOURNAL_VAULT_REVISION, value: 101 },
+      {
+        key: SK.JOURNAL_SECURITY_REMOVAL,
+        value: {
+          version: 1,
+          revision: "removal-1",
+          ownerUserId: "user-1",
+          createdAt: 102,
+          status: "queued",
+        },
+      },
+    ]);
+
+    await syncSetting(SK.JOURNAL_VAULT_KEY, vaultSetting, "user-1");
+
+    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("rechecks the active owner after validating the local vault state", async () => {
+    const vaultSetting = {
+      wrappedKey: "owner-a-wrapped-key",
+      createdAt: 100,
+      updatedAt: 101,
+    };
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_VAULT_KEY, value: vaultSetting },
+      { key: SK.JOURNAL_VAULT_REVISION, value: 101 },
+    ]);
+    mocks.getCurrentUserId
+      .mockResolvedValueOnce("account-a")
+      .mockResolvedValueOnce("account-b");
+
+    await expect(
+      syncSetting(SK.JOURNAL_VAULT_KEY, vaultSetting, "account-a")
+    ).rejects.toThrow("account boundary");
+
+    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("does not let a generic settings delete bypass the durable journal removal workflow", async () => {
     Object.defineProperty(navigator, "onLine", {
       configurable: true,
       value: false,
@@ -199,10 +321,122 @@ describe("syncSettings", () => {
 
     await deleteSettingFromCloud("journal_vault_key");
 
-    expect(mocks.enqueue).toHaveBeenCalledWith("DELETE_SETTINGS", "journal_vault_key", {
-      key: "journal_vault_key",
-    });
+    expect(mocks.enqueue).not.toHaveBeenCalled();
     expect(mocks.delete).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("keeps the durable removal intent when its authorized vault delete is offline", async () => {
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_VAULT_REVISION, value: 101 },
+      {
+        key: SK.JOURNAL_SECURITY_REMOVAL,
+        value: {
+          version: 1,
+          revision: "remove-101",
+          ownerUserId: "user-1",
+          createdAt: 102,
+          status: "queued",
+        },
+      },
+    ]);
+
+    await expect(
+      deleteSettingFromCloud(SK.JOURNAL_VAULT_KEY, "user-1", {
+        journalSecurityRemovalRevision: "remove-101",
+        queueOnNetworkError: false,
+      })
+    ).rejects.toThrow(/online.*removal/i);
+
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.delete).not.toHaveBeenCalled();
+    await expect(db.settings.get(SK.JOURNAL_SECURITY_REMOVAL)).resolves.toBeDefined();
+  });
+
+  it("allows the exact owner-bound removal intent to delete the remote vault online", async () => {
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_VAULT_REVISION, value: 101 },
+      {
+        key: SK.JOURNAL_SECURITY_REMOVAL,
+        value: {
+          version: 1,
+          revision: "remove-online-101",
+          ownerUserId: "user-1",
+          createdAt: 102,
+          status: "queued",
+        },
+      },
+    ]);
+
+    await deleteSettingFromCloud(SK.JOURNAL_VAULT_KEY, "user-1", {
+      journalSecurityRemovalRevision: "remove-online-101",
+      queueOnNetworkError: false,
+    });
+
+    expect(mocks.delete).toHaveBeenCalled();
+    expect(mocks.match).toHaveBeenCalledWith({
+      user_id: "user-1",
+      key: SK.JOURNAL_VAULT_KEY,
+    });
+    expect(mocks.writeEventAndBroadcast).toHaveBeenCalledWith(
+      "setting",
+      SK.JOURNAL_VAULT_KEY,
+      "delete",
+      expect.objectContaining({ key: SK.JOURNAL_VAULT_KEY }),
+      "device-1",
+      { expectedOwnerUserId: "user-1" }
+    );
+  });
+
+  it("fails closed when an authorized vault removal has no Supabase client", async () => {
+    await db.settings.put({
+      key: SK.JOURNAL_SECURITY_REMOVAL,
+      value: {
+        version: 1,
+        revision: "remove-without-client",
+        ownerUserId: "user-1",
+        createdAt: 102,
+        status: "queued",
+      },
+    });
+    mocks.supabase = null;
+
+    await expect(
+      deleteSettingFromCloud(SK.JOURNAL_VAULT_KEY, "user-1", {
+        journalSecurityRemovalRevision: "remove-without-client",
+        queueOnNetworkError: false,
+      })
+    ).rejects.toThrow(/Supabase.*unavailable/i);
+
+    await expect(db.settings.get(SK.JOURNAL_SECURITY_REMOVAL)).resolves.toBeDefined();
+    expect(mocks.delete).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for the durable vault migration step when Supabase is unavailable", async () => {
+    const vaultSetting = {
+      wrappedKey: "wrapped-without-client",
+      createdAt: 100,
+      updatedAt: 101,
+    };
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_VAULT_KEY, value: vaultSetting },
+      { key: SK.JOURNAL_VAULT_REVISION, value: 101 },
+    ]);
+    mocks.supabase = null;
+
+    await expect(
+      syncSetting(SK.JOURNAL_VAULT_KEY, vaultSetting, "user-1", {
+        requireRemoteCommit: true,
+      })
+    ).rejects.toThrow(/Supabase.*unavailable/i);
+
+    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
@@ -276,7 +510,8 @@ describe("syncSettings", () => {
         key: "journal_draft_new",
         deletedAt: expect.any(String),
       }),
-      "device-1"
+      "device-1",
+      { expectedOwnerUserId: "user-1" }
     );
   });
 
@@ -288,9 +523,16 @@ describe("syncSettings", () => {
 
     await deleteSettingFromCloud("journal_draft_new");
 
-    expect(mocks.enqueue).toHaveBeenCalledWith("DELETE_SETTINGS", "journal_draft_new", {
-      key: "journal_draft_new",
-    });
+    expect(mocks.enqueue).toHaveBeenCalledWith(
+      "DELETE_SETTINGS",
+      "journal_draft_new",
+      {
+        key: "journal_draft_new",
+      },
+      {
+        expectedOwnerUserId: "user-1",
+      }
+    );
     expect(mocks.delete).not.toHaveBeenCalled();
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });

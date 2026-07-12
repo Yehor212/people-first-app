@@ -2,9 +2,7 @@ import { useEffect, useRef } from "react";
 import { useAppStore, useUserDataStore } from "@/stores";
 import { supabase as _supabase } from "@/lib/supabaseClient";
 
-// supabase is guaranteed non-null here — this hook is only called inside AuthGate
-// which verifies Supabase is configured before rendering auth-dependent components
-const supabase = _supabase!;
+const supabase = _supabase;
 import {
   handleAuthCallback,
   isNativePlatform,
@@ -18,7 +16,15 @@ import {
   persistJournalPasswordResetProofFromUrl,
 } from "@/lib/journalPasswordResetHandoff";
 import { AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
-import { syncWithCloud, startAutoSync, stopAutoSync } from "@/storage/cloudSync";
+import {
+  quiesceCloudSync,
+  resumeCloudSync,
+  syncWithCloud,
+  startAutoSync,
+  stopAutoSync,
+} from "@/storage/cloudSync";
+import { clearLocalUserData, getLocalDataOwnerId, setLocalDataOwnerId } from "@/storage/db";
+import { runWithDataWriteBarrier } from "@/hooks/useIndexedDB";
 import { pullPreferences } from "@/storage/preferenceSync";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
 import { joinPresence, leavePresence } from "@/lib/presenceService";
@@ -28,6 +34,19 @@ import { endAuthFlow } from "@/lib/authGuard";
 import { APP_VERSION } from "@/lib/appVersion";
 import { getAuthUserDisplayName } from "@/lib/authUser";
 import { closeOAuthBrowser } from "@/lib/nativeOAuthBrowser";
+import { clearJournalContentSession } from "@/lib/journalContentSession";
+import { offlineQueue } from "@/lib/offlineQueue";
+import { revokePushForAccountBoundary } from "@/lib/pushNotifications";
+import {
+  AUTH_ACCOUNT_SWITCH_PENDING_WRITES_ERROR,
+  LEGACY_OFFLINE_QUEUE_CANCEL_EVENT,
+  LEGACY_OFFLINE_QUEUE_RECOVERY_EVENT,
+} from "@/lib/authErrors";
+import { clearNativeJournalBiometricCredential } from "@/lib/journalBiometricCredentials";
+import { hasPendingJournalSecurityMigrationForOwner } from "@/features/journal";
+import { clearAccountNotificationsForBoundary } from "@/lib/localNotifications";
+import { clearAccountDeviceSurfaces } from "@/lib/accountDeviceCleanup";
+import { reconcilePendingAccountSignOutCleanup } from "@/lib/accountSignOutCleanup";
 
 /**
  * Manages Supabase auth session lifecycle:
@@ -40,6 +59,7 @@ import { closeOAuthBrowser } from "@/lib/nativeOAuthBrowser";
  */
 export function useAuthSession(isLoading: boolean): void {
   const setHasValidSession = useAppStore((s) => s.setHasValidSession);
+  const setAccountBoundaryInProgress = useAppStore((s) => s.setAccountBoundaryInProgress);
   const setAuthBypassFlag = useAppStore((s) => s.setAuthBypassFlag);
   const setIsProcessingWebOAuth = useAppStore((s) => s.setIsProcessingWebOAuth);
   const setWebOAuthError = useAppStore((s) => s.setWebOAuthError);
@@ -55,6 +75,7 @@ export function useAuthSession(isLoading: boolean): void {
   const lastSyncedUserIdRef = useRef<string | null>(null);
   const hadSignOutRef = useRef(false);
   const lastSessionExpiredRef = useRef<number>(0);
+  const syncIfNeededRef = useRef<((userId?: string | null) => Promise<void>) | null>(null);
 
   // Refs for values used inside effects to prevent listener re-subscription
   const authGateCheckedRef = useRef(authGateChecked);
@@ -71,6 +92,11 @@ export function useAuthSession(isLoading: boolean): void {
   // Check Supabase session on mount - restore auth state if session exists
   // Note: continuous auth state listening is consolidated in the cloud sync useEffect below
   useEffect(() => {
+    if (!supabase) {
+      setHasValidSession(false);
+      return;
+    }
+
     let active = true;
 
     const checkSession = async () => {
@@ -79,7 +105,9 @@ export function useAuthSession(isLoading: boolean): void {
         if (!active) return;
 
         const sessionExists = !!data.session;
-        setHasValidSession(sessionExists);
+        if (!sessionExists) {
+          setHasValidSession(false);
+        }
 
         // If session exists but the auth gate flag is false, restore it
         // This prevents the login loop after OAuth redirect
@@ -114,7 +142,9 @@ export function useAuthSession(isLoading: boolean): void {
     const hasImplicitTokens = hashParams.has("access_token") && hashParams.has("refresh_token");
     const hasCode = hasQueryCode || hasHashCode;
     const hasError = url.searchParams.has("error") || hashParams.has("error");
-    const requiresVerifiedJournalResetCallback = Boolean(getJournalPasswordResetNonceFromUrl(window.location.href));
+    const requiresVerifiedJournalResetCallback = Boolean(
+      getJournalPasswordResetNonceFromUrl(window.location.href)
+    );
     const errorDescription =
       url.searchParams.get("error_description") || hashParams.get("error_description");
 
@@ -148,7 +178,7 @@ export function useAuthSession(isLoading: boolean): void {
       const name = getAuthUserDisplayName(session.user);
 
       setAuthBypassFlag(true);
-      setHasValidSession(true);
+      setHasValidSession(false);
       setWebOAuthError(null);
       setIsProcessingWebOAuth(false);
       setAuthGateChecked(true);
@@ -162,6 +192,7 @@ export function useAuthSession(isLoading: boolean): void {
       notifyAuthComplete();
       endAuthFlow();
       window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
+      void syncIfNeededRef.current?.(session.user.id);
     };
 
     const failWebOAuthSession = (message: string) => {
@@ -216,7 +247,11 @@ export function useAuthSession(isLoading: boolean): void {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (settled) return;
 
-      if ((event === "SIGNED_IN" || (!requiresVerifiedJournalResetCallback && event === "INITIAL_SESSION")) && session) {
+      if (
+        (event === "SIGNED_IN" ||
+          (!requiresVerifiedJournalResetCallback && event === "INITIAL_SESSION")) &&
+        session
+      ) {
         settled = true;
         logger.log("[Index] Web OAuth code exchange succeeded (event:", event, ")");
         completeWebOAuthSession(session);
@@ -294,7 +329,7 @@ export function useAuthSession(isLoading: boolean): void {
             logger.log("[Auth] Pending auth processed successfully");
             void closeOAuthBrowser();
             setAuthBypassFlag(true);
-            setHasValidSession(true);
+            setHasValidSession(false);
             setWebOAuthError(null);
             notifyAuthComplete();
             if (!userNameCustomRef.current) {
@@ -303,6 +338,7 @@ export function useAuthSession(isLoading: boolean): void {
             }
             setAuthGateChecked(true);
             endAuthFlow();
+            void syncIfNeededRef.current?.(data.session.user.id);
           } else {
             logger.error("[Index] Pending auth callback had no session");
             setWebOAuthError("Sign-in did not complete. Please try again.");
@@ -330,39 +366,398 @@ export function useAuthSession(isLoading: boolean): void {
   useEffect(() => {
     if (!supabase) return;
     let active = true;
+    let transitionGeneration = 0;
+    let activeSessionUserId: string | null = null;
+    let transitionTail: Promise<void> = Promise.resolve();
 
-    const syncIfNeeded = async (userId?: string | null) => {
-      if (!active || !userId || isLoadingRef.current) return;
+    const isCurrentTransition = (userId: string, generation: number): boolean =>
+      active && transitionGeneration === generation && activeSessionUserId === userId;
+
+    const reportCleanupBlocked = () => {
+      if (typeof window === "undefined") return;
+      window.dispatchEvent(
+        new CustomEvent("zenflow:account-cleanup-blocked", {
+          detail: {
+            retry: () => {
+              void supabase.auth
+                .getSession()
+                .then(({ data, error }) => {
+                  if (error) {
+                    logger.error("[Auth] Cleanup retry could not verify the session:", error);
+                    reportCleanupBlocked();
+                    return;
+                  }
+                  void scheduleSync(data.session?.user?.id ?? null);
+                })
+                .catch((error) => {
+                  logger.error("[Auth] Cleanup retry could not verify the session:", error);
+                  reportCleanupBlocked();
+                });
+            },
+          },
+        }),
+      );
+    };
+
+    const syncIfNeeded = async (
+      userId: string,
+      generation: number,
+      allowLegacyQueueClaim: boolean,
+    ) => {
+      if (!isCurrentTransition(userId, generation)) return;
+
+      const pendingCleanup = await reconcilePendingAccountSignOutCleanup(userId);
+      if (!isCurrentTransition(userId, generation)) return;
+      if (pendingCleanup.status === "blocked") {
+        setHasValidSession(false);
+        setAccountBoundaryInProgress(true);
+        reportCleanupBlocked();
+        return;
+      }
+
+      if (isLoadingRef.current) return;
       if (lastSyncedUserIdRef.current === userId) return;
 
       // Use 'replace' if: (a) sign-out happened, or (b) different user was synced before
+      const previousSyncedUserId = lastSyncedUserIdRef.current;
+      const previousHadSignOut = hadSignOutRef.current;
+      const persistedOwnerUserId = await getLocalDataOwnerId();
+      if (!isCurrentTransition(userId, generation) || lastSyncedUserIdRef.current === userId)
+        return;
+      const hasUnownedLegacyActions = await offlineQueue.hasUnownedLegacyActionsReady();
+      if (!isCurrentTransition(userId, generation) || lastSyncedUserIdRef.current === userId)
+        return;
+
+      let localOwnerEstablished = persistedOwnerUserId !== null;
+      let recoveredLegacyQueueForCurrentUser = false;
+      try {
+        if (hasUnownedLegacyActions && persistedOwnerUserId === null) {
+          if (!allowLegacyQueueClaim) {
+            setHasValidSession(false);
+            setAuthBypassFlag(false);
+            setAuthGateChecked(false);
+            setWebOAuthError(AUTH_ACCOUNT_SWITCH_PENDING_WRITES_ERROR);
+            setAccountBoundaryInProgress(false);
+            lastSyncedUserIdRef.current = null;
+            hadSignOutRef.current = true;
+            return;
+          }
+
+          // Only a session already present at cold start may establish the first
+          // owner marker for a pre-owner-schema database. Later interactive
+          // sign-ins must not guess which account created legacy queued work.
+          await runWithDataWriteBarrier(async () => {
+            if (!isCurrentTransition(userId, generation)) return;
+            await setLocalDataOwnerId(userId);
+          });
+          if (!isCurrentTransition(userId, generation)) return;
+          await offlineQueue.claimLegacyActionsForOwner(userId);
+          if (!isCurrentTransition(userId, generation)) return;
+          localOwnerEstablished = true;
+          recoveredLegacyQueueForCurrentUser = true;
+        } else if (hasUnownedLegacyActions && persistedOwnerUserId === userId) {
+          await offlineQueue.claimLegacyActionsForOwner(userId);
+          if (!isCurrentTransition(userId, generation)) return;
+          recoveredLegacyQueueForCurrentUser = true;
+        }
+      } catch (error) {
+        if (!isCurrentTransition(userId, generation)) return;
+        setHasValidSession(false);
+        setAuthBypassFlag(false);
+        setAuthGateChecked(false);
+        setWebOAuthError(AUTH_ACCOUNT_SWITCH_PENDING_WRITES_ERROR);
+        setAccountBoundaryInProgress(false);
+        logger.error("[Auth] Legacy offline queue ownership recovery failed:", error);
+        return;
+      }
+
       const isAccountSwitch =
-        hadSignOutRef.current ||
-        (lastSyncedUserIdRef.current !== null && lastSyncedUserIdRef.current !== userId);
+        !recoveredLegacyQueueForCurrentUser &&
+        (persistedOwnerUserId !== null
+          ? persistedOwnerUserId !== userId
+          : previousHadSignOut ||
+            (previousSyncedUserId !== null && previousSyncedUserId !== userId));
+      const previousOwnerUserId = persistedOwnerUserId ?? previousSyncedUserId;
+
+      if (
+        isAccountSwitch &&
+        previousOwnerUserId &&
+        previousOwnerUserId !== userId &&
+        ((await offlineQueue.hasPendingActionsForOwnerReady(previousOwnerUserId)) ||
+          (await hasPendingJournalSecurityMigrationForOwner(previousOwnerUserId)))
+      ) {
+        setHasValidSession(false);
+        setAuthBypassFlag(false);
+        setAuthGateChecked(false);
+        setWebOAuthError(AUTH_ACCOUNT_SWITCH_PENDING_WRITES_ERROR);
+        setAccountBoundaryInProgress(false);
+        lastSyncedUserIdRef.current = null;
+        hadSignOutRef.current = true;
+        const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+        if (signOutError) {
+          logger.error(
+            "[Auth] Failed to close the new session while preserving pending writes:",
+            signOutError
+          );
+        }
+        return;
+      }
 
       lastSyncedUserIdRef.current = userId;
       hadSignOutRef.current = false;
+      let accountBoundaryPrepared = false;
+      let boundarySuspended = false;
 
       try {
+        if (isAccountSwitch) {
+          await quiesceCloudSync();
+          if (!isCurrentTransition(userId, generation)) return;
+          try {
+            await offlineQueue.suspendForAccountBoundary();
+            boundarySuspended = true;
+            if (!isCurrentTransition(userId, generation)) return;
+            if (
+              previousOwnerUserId &&
+              previousOwnerUserId !== userId &&
+              ((await offlineQueue.hasPendingActionsForOwnerReady(previousOwnerUserId)) ||
+                (await hasPendingJournalSecurityMigrationForOwner(previousOwnerUserId)))
+            ) {
+              setHasValidSession(false);
+              setAuthBypassFlag(false);
+              setAuthGateChecked(false);
+              setWebOAuthError(AUTH_ACCOUNT_SWITCH_PENDING_WRITES_ERROR);
+              const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+              if (signOutError) {
+                logger.error(
+                  "[Auth] Failed to close the new session while preserving pending writes:",
+                  signOutError
+                );
+              }
+              lastSyncedUserIdRef.current = previousOwnerUserId;
+              hadSignOutRef.current = false;
+              resumeCloudSync();
+              offlineQueue.resumeAfterAccountBoundary();
+              boundarySuspended = false;
+              setAccountBoundaryInProgress(false);
+              return;
+            }
+            if (previousOwnerUserId && previousOwnerUserId !== userId) {
+              await clearAccountNotificationsForBoundary();
+              if (!isCurrentTransition(userId, generation)) return;
+              const pushCleanup = await revokePushForAccountBoundary(previousOwnerUserId);
+              if (!isCurrentTransition(userId, generation)) return;
+              if (pushCleanup.native === "failed") {
+                throw new Error("Unable to unregister the previous account's push token");
+              }
+              if (pushCleanup.remote === "failed" || pushCleanup.remote === "owner-changed") {
+                logger.warn(
+                  "[Auth] Previous push row could not be removed after the session changed; native token was invalidated",
+                  { remote: pushCleanup.remote }
+                );
+              }
+              await clearAccountNotificationsForBoundary();
+              if (!isCurrentTransition(userId, generation)) return;
+            }
+            await offlineQueue.discardSuspendedActionsForAccountBoundary();
+            if (!isCurrentTransition(userId, generation)) return;
+            await clearNativeJournalBiometricCredential();
+            if (!isCurrentTransition(userId, generation)) return;
+            await clearAccountDeviceSurfaces();
+            if (!isCurrentTransition(userId, generation)) return;
+            await runWithDataWriteBarrier(
+              async () => {
+                clearJournalContentSession("sign-out");
+                const { clearDeviceIdCache } = await import("@/storage/eventSync");
+                clearDeviceIdCache();
+                await clearLocalUserData();
+                if (!isCurrentTransition(userId, generation)) return;
+                await setLocalDataOwnerId(userId);
+              },
+              { deferredWrites: "discard" }
+            );
+            if (!isCurrentTransition(userId, generation)) return;
+            setAuthGateChecked(true);
+          } catch (cleanupError) {
+            setHasValidSession(false);
+            setAuthBypassFlag(false);
+            setAuthGateChecked(false);
+            try {
+              const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+              if (signOutError) {
+                logger.error(
+                  "[Auth] Failed to close the new session after boundary cleanup:",
+                  signOutError
+                );
+              }
+            } catch (signOutError) {
+              logger.error(
+                "[Auth] Failed to close the new session after boundary cleanup:",
+                signOutError
+              );
+            }
+            setAccountBoundaryInProgress(false);
+            throw cleanupError;
+          }
+          if (!isCurrentTransition(userId, generation)) return;
+          resumeCloudSync();
+          offlineQueue.resumeAfterAccountBoundary();
+          boundarySuspended = false;
+          accountBoundaryPrepared = true;
+        }
+
+        // Enable sync only after any previous account has been fully removed.
+        migrateExistingUser();
+
         // Use 'replace' on account switch to avoid merging different users' data
-        await syncWithCloud(isAccountSwitch ? "replace" : "merge");
+        await syncWithCloud(isAccountSwitch ? "replace" : "merge", userId);
+        if (!isCurrentTransition(userId, generation)) return;
+        if (!isAccountSwitch && !localOwnerEstablished) {
+          await setLocalDataOwnerId(userId);
+          if (!isCurrentTransition(userId, generation)) return;
+        }
         // Start auto-sync after successful initial sync
         startAutoSync();
         // Join Presence channel for friend online status
         joinPresence().catch((err) => logger.warn("[Auth]", "Presence join failed:", err));
+        if (active) {
+          setAuthGateChecked(true);
+          setAccountBoundaryInProgress(false);
+          setHasValidSession(true);
+        }
       } catch (error) {
+        if (!isCurrentTransition(userId, generation)) return;
+        if (boundarySuspended) {
+          // Remain suspended: local cleanup did not complete, so no old-account
+          // work may resume under the new session.
+        } else if (accountBoundaryPrepared) {
+          // Local data is already clean and bound to the new account. Keep the
+          // session safe and let periodic Merge retry a transient pull failure.
+          startAutoSync();
+          if (active) {
+            setAuthGateChecked(true);
+            setAccountBoundaryInProgress(false);
+            setHasValidSession(true);
+          }
+        } else if (lastSyncedUserIdRef.current === userId) {
+          lastSyncedUserIdRef.current = previousSyncedUserId;
+          hadSignOutRef.current = previousHadSignOut;
+          if (active) {
+            setAuthGateChecked(true);
+            setAccountBoundaryInProgress(false);
+            setHasValidSession(true);
+          }
+        }
         logger.error("Cloud sync failed:", error);
       }
     };
 
+    const scheduleSync = (
+      userId?: string | null,
+      options: { allowLegacyQueueClaim?: boolean } = {},
+    ): Promise<void> => {
+      const normalizedUserId = userId ?? null;
+      const previousSessionUserId = activeSessionUserId;
+      const generation = ++transitionGeneration;
+      activeSessionUserId = normalizedUserId;
+
+      if (!normalizedUserId) {
+        if (active) setHasValidSession(false);
+        const scheduled = transitionTail
+          .catch(() => undefined)
+          .then(async () => {
+            if (!active || transitionGeneration !== generation) return;
+            const pendingCleanup = await reconcilePendingAccountSignOutCleanup(null);
+            if (!active || transitionGeneration !== generation) return;
+            if (pendingCleanup.status === "blocked") {
+              setAccountBoundaryInProgress(true);
+              reportCleanupBlocked();
+              return;
+            }
+            setAccountBoundaryInProgress(false);
+          });
+        transitionTail = scheduled.then(
+          () => undefined,
+          () => undefined
+        );
+        return scheduled;
+      }
+
+      if (
+        previousSessionUserId !== normalizedUserId ||
+        lastSyncedUserIdRef.current !== normalizedUserId
+      ) {
+        setAccountBoundaryInProgress(true);
+        setHasValidSession(false);
+      }
+
+      const scheduled = transitionTail
+        .catch(() => undefined)
+        .then(() =>
+          syncIfNeeded(
+            normalizedUserId,
+            generation,
+            options.allowLegacyQueueClaim === true,
+          ),
+        );
+      transitionTail = scheduled.then(
+        () => undefined,
+        () => undefined
+      );
+      return scheduled;
+    };
+
+    syncIfNeededRef.current = scheduleSync;
+
+    const handleLegacyQueueRecovery = () => {
+      void supabase.auth
+        .getSession()
+        .then(({ data, error }) => {
+          if (error || !data.session?.user?.id) {
+            logger.error(
+              "[Auth] Could not verify the account selected for legacy queue recovery:",
+              error,
+            );
+            return;
+          }
+          setWebOAuthError(null);
+          void scheduleSync(data.session.user.id, { allowLegacyQueueClaim: true });
+        })
+        .catch((error) => {
+          logger.error(
+            "[Auth] Could not verify the account selected for legacy queue recovery:",
+            error,
+          );
+        });
+    };
+    const handleLegacyQueueRecoveryCancel = () => {
+      void supabase.auth
+        .signOut({ scope: "local" })
+        .then(({ error }) => {
+          if (error) {
+            logger.error("[Auth] Could not cancel legacy queue recovery:", error);
+            return;
+          }
+          setWebOAuthError(null);
+        })
+        .catch((error) => {
+          logger.error("[Auth] Could not cancel legacy queue recovery:", error);
+        });
+    };
+    window.addEventListener(LEGACY_OFFLINE_QUEUE_RECOVERY_EVENT, handleLegacyQueueRecovery);
+    window.addEventListener(
+      LEGACY_OFFLINE_QUEUE_CANCEL_EVENT,
+      handleLegacyQueueRecoveryCancel,
+    );
+
+    const initialLookupGeneration = transitionGeneration;
     supabase.auth
       .getSession()
       .then(({ data }) => {
-        // v1.1.1 Migration: Auto-enable cloud sync for existing users
-        if (data.session) {
-          migrateExistingUser();
-        }
-        void syncIfNeeded(data.session?.user?.id ?? null);
+        if (!active || transitionGeneration !== initialLookupGeneration) return;
+        offlineQueue.observeAuthStateOwner(data.session?.user?.id ?? null);
+        void scheduleSync(data.session?.user?.id ?? null, {
+          allowLegacyQueueClaim: Boolean(data.session?.user?.id),
+        });
       })
       .catch((err) => logger.warn("[Auth]", "Session check failed:", err));
 
@@ -371,26 +766,34 @@ export function useAuthSession(isLoading: boolean): void {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      // Keep session validity state in sync (was separate subscription)
-      if (active) {
-        setHasValidSession(!!session);
-      }
-
+      offlineQueue.observeAuthStateOwner(session?.user?.id ?? null);
       // Reset sync refs on sign-out so next sign-in uses 'replace' mode
       if (event === "SIGNED_OUT") {
+        clearJournalContentSession("sign-out");
         lastSyncedUserIdRef.current = null;
         hadSignOutRef.current = true;
       }
-      // v1.1.1 Migration: Auto-enable cloud sync when user signs in
       if (session) {
-        migrateExistingUser();
         // Reset sync orchestrator's session-expired flag so 401 errors
         // are properly surfaced again after re-authentication
         syncOrchestrator.resetSessionExpired();
-        // Pull UI preferences (sidebar, theme, default tab) from cloud
-        void pullPreferences();
       }
-      void syncIfNeeded(session?.user?.id ?? null);
+      void scheduleSync(session?.user?.id ?? null, {
+        allowLegacyQueueClaim: event === "INITIAL_SESSION" && Boolean(session?.user?.id),
+      }).then(() => {
+        if (
+          session &&
+          active &&
+          activeSessionUserId === session.user.id &&
+          useAppStore.getState().hasValidSession
+        ) {
+          // Preferences can only enter local state after the account boundary.
+          void pullPreferences();
+          void offlineQueue.replayBlockedCriticalActionsForActiveOwner().catch((error) => {
+            logger.warn("[Auth] Failed to replay blocked sync actions:", error);
+          });
+        }
+      });
 
       // Track app_version in profiles on login (was separate subscription)
       if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user?.id) {
@@ -408,11 +811,30 @@ export function useAuthSession(isLoading: boolean): void {
 
     return () => {
       active = false;
+      transitionGeneration += 1;
+      activeSessionUserId = null;
+      if (syncIfNeededRef.current === scheduleSync) {
+        syncIfNeededRef.current = null;
+      }
+      window.removeEventListener(
+        LEGACY_OFFLINE_QUEUE_RECOVERY_EVENT,
+        handleLegacyQueueRecovery,
+      );
+      window.removeEventListener(
+        LEGACY_OFFLINE_QUEUE_CANCEL_EVENT,
+        handleLegacyQueueRecoveryCancel,
+      );
       subscription?.unsubscribe();
       stopAutoSync();
       leavePresence().catch((err) => logger.warn("[Auth]", "Presence leave failed:", err));
     };
-  }, [setHasValidSession]);
+  }, [
+    setAccountBoundaryInProgress,
+    setAuthBypassFlag,
+    setAuthGateChecked,
+    setHasValidSession,
+    setWebOAuthError,
+  ]);
 
   // Sync user name from Supabase metadata (uses cached session, no network call)
   useEffect(() => {
@@ -453,6 +875,8 @@ export function useAuthSession(isLoading: boolean): void {
   // Session expired handler - listens for 401 errors from API/sync
   // Verify actual session state before resetting auth
   useEffect(() => {
+    if (!supabase) return;
+
     const handleSessionExpired = async () => {
       // Throttle - ignore if we just handled one
       const now = Date.now();

@@ -124,7 +124,7 @@ vi.mock("../DrawerV2", () => ({
     onPageChange: (page: "habits" | "planning") => void;
   }) =>
     open ? (
-      <div data-testid="drawer-v2-open">
+      <div id="nav-v2-drawer" data-testid="drawer-v2-open">
         drawer open
         <button type="button" onClick={() => onPageChange("habits")}>
           Habits
@@ -279,7 +279,21 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     // ARIA: drawer control semantics
     expect(trigger).toHaveAttribute("aria-label", "Open menu");
     expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).not.toHaveAttribute("aria-controls");
+
+    fireEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-controls", "nav-v2-drawer");
+    expect(document.getElementById("nav-v2-drawer")).toBeInTheDocument();
+  });
+
+  it("keeps the menu glyph when Settings is the active phone page", () => {
+    window.history.replaceState({}, "", "/settings?nav=v2&navLayout=phone");
+
+    render(<NavV2Orchestrator />);
+
+    const trigger = screen.getByTestId("nav-v2-open-drawer");
+    expect(trigger.querySelector(".lucide-menu")).toBeInTheDocument();
+    expect(trigger.querySelector(".lucide-chevron-left")).not.toBeInTheDocument();
   });
 
   it("drawer trigger is fixed in the safe top-left corner and does not reserve content width", () => {

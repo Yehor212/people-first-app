@@ -2,12 +2,15 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DopamineSettingsComponent } from "../DopamineSettings";
 
+const platformMock = vi.hoisted(() => ({ isNative: false }));
+
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
       close: "Close",
       dopamineSettings: "Feedback & motion",
       dopamineSettingsDesc: "Choose how much animation, sound, and haptics ZenFlow uses.",
+      dopamineSettingsDescNoHaptics: "Choose how much animation and sound ZenFlow uses.",
       dopamineIntensity: "Feedback level",
       dopamineMinimal: "Quiet",
       dopamineNormal: "Balanced",
@@ -20,9 +23,12 @@ vi.mock("@/contexts/LanguageContext", () => ({
 vi.mock("@/hooks/useBackHandler", () => ({
   useBackHandler: vi.fn(),
 }));
+vi.mock("@/lib/platform", () => platformMock);
 
 describe("DopamineSettingsComponent", () => {
   beforeEach(() => {
+    localStorage.clear();
+    platformMock.isNative = false;
     Object.defineProperty(window, "matchMedia", {
       configurable: true,
       value: vi.fn(() => ({
@@ -70,7 +76,22 @@ describe("DopamineSettingsComponent", () => {
     expect(screen.getByRole("button", { name: "Close" })).toHaveTextContent("");
   });
 
-  it("uses a vibration-specific icon for the haptics setting", () => {
+  it("hides the native-only haptics setting and copy on web", () => {
+    render(<DopamineSettingsComponent onClose={vi.fn()} />);
+
+    expect(screen.queryByRole("switch", { name: "Haptics" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dopamine-haptics-icon")).not.toBeInTheDocument();
+    expect(screen.getByText("Choose how much animation and sound ZenFlow uses.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "High feedback" }));
+    expect(JSON.parse(localStorage.getItem("zenflow_dopamine_settings") || "{}")).toMatchObject({
+      intensity: "adhd",
+      haptics: false,
+    });
+  });
+
+  it("uses a vibration-specific icon for haptics on native devices", () => {
+    platformMock.isNative = true;
     render(<DopamineSettingsComponent onClose={vi.fn()} />);
 
     expect(screen.getByRole("switch", { name: "Haptics" })).toBeInTheDocument();

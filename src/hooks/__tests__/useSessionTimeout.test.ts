@@ -16,21 +16,129 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
-const mockSignOut = vi.fn(() => Promise.resolve());
+const mockSignOut = vi.fn(
+  (_options?: { scope?: string }): Promise<{ error: { message: string } | null }> =>
+    Promise.resolve({ error: null })
+);
+const mockGetSession = vi.fn(() =>
+  Promise.resolve({
+    data: { session: { user: { id: 'idle-user' } } },
+    error: null,
+  }),
+);
+const mockGetCurrentSessionUserId = vi.fn(() => Promise.resolve('idle-user'));
 vi.mock('@/lib/supabaseClient', () => ({
   supabase: {
     auth: {
-      signOut: () => mockSignOut(),
+      getSession: () => mockGetSession(),
+      signOut: (options?: { scope?: string }) => mockSignOut(options),
     },
   },
+  getCurrentSessionUserId: () => mockGetCurrentSessionUserId(),
 }));
 
-const mockProcessQueue = vi.fn(() => Promise.resolve());
+const mockRemovePushToken = vi.fn(() =>
+  Promise.resolve({ status: 'revoked' as const, remote: 'deleted' as const, native: 'not-applicable' as const })
+);
+const mockInitializePushNotifications = vi.fn(() => Promise.resolve());
+vi.mock('@/lib/pushNotifications', () => ({
+  removePushToken: () => mockRemovePushToken(),
+  initializePushNotifications: () => mockInitializePushNotifications(),
+}));
+
+const mockStopAutoSync = vi.fn();
+const mockStartAutoSync = vi.fn();
+const mockQuiesceCloudSync = vi.fn(() => Promise.resolve());
+const mockResumeCloudSync = vi.fn();
+vi.mock('@/storage/cloudSync', () => ({
+  startAutoSync: () => mockStartAutoSync(),
+  stopAutoSync: () => mockStopAutoSync(),
+  quiesceCloudSync: () => mockQuiesceCloudSync(),
+  resumeCloudSync: () => mockResumeCloudSync(),
+}));
+
+const mockClearDeviceIdCache = vi.fn();
+vi.mock('@/storage/eventSync', () => ({
+  clearDeviceIdCache: () => mockClearDeviceIdCache(),
+}));
+
+const mockClearLocalUserData = vi.fn(() => Promise.resolve());
+const mockGetLocalDataOwnerId = vi.fn(() => Promise.resolve<string | null>('idle-user'));
+vi.mock('@/storage/db', () => ({
+  clearLocalUserData: () => mockClearLocalUserData(),
+  getLocalDataOwnerId: () => mockGetLocalDataOwnerId(),
+}));
+
+vi.mock('@/lib/originExclusiveLock', () => ({
+  runWithOriginExclusiveLock: async <T>(
+    _name: string,
+    operation: () => Promise<T>,
+  ) => operation(),
+}));
+
+const mockTriggerDataRefresh = vi.fn(() => Promise.resolve());
+const mockRunWithDataWriteBarrier = vi.fn(async (mutation: () => Promise<unknown>) => {
+  const result = await mutation();
+  await mockTriggerDataRefresh();
+  return result;
+});
+vi.mock('../useIndexedDB', () => ({
+  triggerDataRefresh: () => mockTriggerDataRefresh(),
+  runWithDataWriteBarrier: (
+    mutation: () => Promise<unknown>,
+    _options?: { deferredWrites?: 'replay' | 'discard' },
+  ) => mockRunWithDataWriteBarrier(mutation),
+}));
+
+const mockClearJournalContentSession = vi.fn();
+vi.mock('@/lib/journalContentSession', () => ({
+  clearJournalContentSession: (reason: string) => mockClearJournalContentSession(reason),
+}));
+
+const mockClearNativeJournalBiometricCredential = vi.fn(() =>
+  Promise.resolve<'removed' | 'not-native'>('not-native')
+);
+vi.mock('@/lib/journalBiometricCredentials', () => ({
+  clearNativeJournalBiometricCredential: () =>
+    mockClearNativeJournalBiometricCredential(),
+}));
+
+const mockClearAccountDeviceSurfaces = vi.fn(() => Promise.resolve());
+vi.mock('@/lib/accountDeviceCleanup', () => ({
+  clearAccountDeviceSurfaces: () => mockClearAccountDeviceSurfaces(),
+}));
+
+const mockClearAccountNotificationsForBoundary = vi.fn(() => Promise.resolve());
+const mockResumeAccountNotifications = vi.fn();
+vi.mock('@/lib/localNotifications', () => ({
+  clearAccountNotificationsForBoundary: () => mockClearAccountNotificationsForBoundary(),
+  resumeAccountNotifications: () => mockResumeAccountNotifications(),
+}));
+
+const mockHasPendingJournalSecurityMigrationForOwner = vi.fn(
+  (_ownerUserId: string) => Promise.resolve(false),
+);
+vi.mock('@/features/journal', () => ({
+  hasPendingJournalSecurityMigrationForOwner: (ownerUserId: string) =>
+    mockHasPendingJournalSecurityMigrationForOwner(ownerUserId),
+}));
+
 const mockHasPendingActions = vi.fn(() => false);
+const mockHasPendingActionsForOwner = vi.fn((_ownerUserId: string) => false);
+const mockSuspendForAccountBoundary = vi.fn(() => Promise.resolve());
+const mockDiscardSuspendedActionsForAccountBoundary = vi.fn(() => Promise.resolve());
+const mockResumeAfterAccountBoundary = vi.fn();
 vi.mock('@/lib/offlineQueue', () => ({
   offlineQueue: {
-    processQueue: () => mockProcessQueue(),
     hasPendingActions: () => mockHasPendingActions(),
+    hasPendingActionsForOwner: (ownerUserId: string) =>
+      mockHasPendingActionsForOwner(ownerUserId),
+    hasPendingActionsForOwnerReady: async (ownerUserId: string) =>
+      mockHasPendingActionsForOwner(ownerUserId),
+    suspendForAccountBoundary: () => mockSuspendForAccountBoundary(),
+    discardSuspendedActionsForAccountBoundary: () =>
+      mockDiscardSuspendedActionsForAccountBoundary(),
+    resumeAfterAccountBoundary: () => mockResumeAfterAccountBoundary(),
   },
 }));
 
@@ -56,6 +164,29 @@ describe('useSessionTimeout', () => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     mockIsNative.mockReturnValue(false); // default to web
+    mockSignOut.mockResolvedValue({ error: null });
+    mockGetSession.mockResolvedValue({
+      data: { session: { user: { id: 'idle-user' } } },
+      error: null,
+    });
+    mockRemovePushToken.mockResolvedValue({
+      status: 'revoked',
+      remote: 'deleted',
+      native: 'not-applicable',
+    });
+    mockClearLocalUserData.mockResolvedValue(undefined);
+    mockGetLocalDataOwnerId.mockResolvedValue('idle-user');
+    mockTriggerDataRefresh.mockResolvedValue(undefined);
+    mockGetCurrentSessionUserId.mockResolvedValue('idle-user');
+    mockHasPendingActionsForOwner.mockReturnValue(false);
+    mockQuiesceCloudSync.mockResolvedValue(undefined);
+    mockSuspendForAccountBoundary.mockResolvedValue(undefined);
+    mockDiscardSuspendedActionsForAccountBoundary.mockResolvedValue(undefined);
+    mockClearNativeJournalBiometricCredential.mockResolvedValue('not-native');
+    mockClearAccountDeviceSurfaces.mockResolvedValue(undefined);
+    mockClearAccountNotificationsForBoundary.mockResolvedValue(undefined);
+    mockHasPendingJournalSecurityMigrationForOwner.mockResolvedValue(false);
+    localStorage.removeItem('zenflow_pending_account_sign_out_cleanup');
   });
 
   afterEach(() => {
@@ -245,9 +376,9 @@ describe('useSessionTimeout', () => {
     });
   });
 
-  describe('offline queue flushing', () => {
-    it('flushes queue before signing out when pending actions exist', async () => {
-      mockHasPendingActions.mockReturnValue(true);
+  describe('offline queue account boundary', () => {
+    it('blocks sign-out without mutating the queue when pending owner writes exist', async () => {
+      mockHasPendingActionsForOwner.mockReturnValue(true);
 
       renderHook(() => useSessionTimeout(true));
 
@@ -256,12 +387,49 @@ describe('useSessionTimeout', () => {
         await Promise.resolve();
       });
 
-      expect(mockProcessQueue).toHaveBeenCalled();
+      expect(mockSignOut).not.toHaveBeenCalled();
+      expect(mockClearLocalUserData).not.toHaveBeenCalled();
+      expect(mockResumeAfterAccountBoundary).toHaveBeenCalledTimes(1);
+    });
+
+    it('clears private device data only after local sign-out succeeds', async () => {
+      mockHasPendingActionsForOwner.mockReturnValue(false);
+
+      renderHook(() => useSessionTimeout(true));
+
+      await act(async () => {
+        vi.advanceTimersByTime(DAY_MS);
+        await Promise.resolve();
+      });
+
+      expect(mockClearLocalUserData).toHaveBeenCalledTimes(1);
+      expect(mockClearNativeJournalBiometricCredential).toHaveBeenCalledTimes(1);
+      expect(mockClearAccountNotificationsForBoundary).toHaveBeenCalledTimes(1);
+      expect(mockClearAccountDeviceSurfaces).toHaveBeenCalledTimes(1);
+      expect(mockQuiesceCloudSync).toHaveBeenCalledTimes(1);
+      expect(mockTriggerDataRefresh).toHaveBeenCalledTimes(1);
+      expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+      expect(mockSignOut.mock.invocationCallOrder[0]).toBeLessThan(
+        mockClearLocalUserData.mock.invocationCallOrder[0]
+      );
+    });
+
+    it('completes idle sign-out when the suspended queue has no owner writes', async () => {
+      mockHasPendingActionsForOwner.mockReturnValue(false);
+
+      renderHook(() => useSessionTimeout(true));
+
+      await act(async () => {
+        vi.advanceTimersByTime(DAY_MS);
+        await Promise.resolve();
+      });
+
       expect(mockSignOut).toHaveBeenCalled();
     });
 
-    it('does not flush queue when no pending actions', async () => {
-      mockHasPendingActions.mockReturnValue(false);
+    it('does not let quarantined work from another owner block idle sign-out', async () => {
+      mockHasPendingActions.mockReturnValue(true);
+      mockHasPendingActionsForOwner.mockReturnValue(false);
 
       renderHook(() => useSessionTimeout(true));
 
@@ -270,13 +438,11 @@ describe('useSessionTimeout', () => {
         await Promise.resolve();
       });
 
-      expect(mockProcessQueue).not.toHaveBeenCalled();
-      expect(mockSignOut).toHaveBeenCalled();
+      expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
     });
 
-    it('signs out even if queue flush fails', async () => {
-      mockHasPendingActions.mockReturnValue(true);
-      mockProcessQueue.mockRejectedValueOnce(new Error('Network error'));
+    it('keeps the signed-out boundary suspended when local purge must retry', async () => {
+      mockClearLocalUserData.mockRejectedValueOnce(new Error('purge failed'));
 
       renderHook(() => useSessionTimeout(true));
 
@@ -285,26 +451,100 @@ describe('useSessionTimeout', () => {
         await Promise.resolve();
       });
 
-      expect(mockSignOut).toHaveBeenCalled();
+      expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+      expect(mockResumeCloudSync).not.toHaveBeenCalled();
+      expect(mockStartAutoSync).not.toHaveBeenCalled();
     });
 
-    it('signs out if queue flush times out', async () => {
-      mockHasPendingActions.mockReturnValue(true);
-      // Make processQueue hang
-      mockProcessQueue.mockImplementationOnce(() => new Promise(() => {}));
+    it('fails closed without clearing the owner context when journal credential cleanup fails', async () => {
+      mockClearNativeJournalBiometricCredential.mockRejectedValueOnce(
+        new Error('native journal credential delete failed')
+      );
 
       renderHook(() => useSessionTimeout(true));
 
       await act(async () => {
-        // Trigger timeout
         vi.advanceTimersByTime(DAY_MS);
-        await Promise.resolve();
-        // Advance past queue flush timeout (10 seconds)
-        vi.advanceTimersByTime(10 * 1000);
         await Promise.resolve();
       });
 
-      expect(mockSignOut).toHaveBeenCalled();
+      expect(mockClearLocalUserData).not.toHaveBeenCalled();
+      expect(mockClearDeviceIdCache).not.toHaveBeenCalled();
+      expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+      expect(mockReload).not.toHaveBeenCalled();
+      expect(mockResumeCloudSync).not.toHaveBeenCalled();
+      expect(mockStartAutoSync).not.toHaveBeenCalled();
+      expect(mockResumeAfterAccountBoundary).not.toHaveBeenCalled();
+    });
+
+    it('fails closed when widget or account cache cleanup cannot complete', async () => {
+      mockClearAccountDeviceSurfaces.mockRejectedValueOnce(
+        new Error('widget cleanup failed')
+      );
+
+      renderHook(() => useSessionTimeout(true));
+
+      await act(async () => {
+        vi.advanceTimersByTime(DAY_MS);
+        await Promise.resolve();
+      });
+
+      expect(mockClearLocalUserData).not.toHaveBeenCalled();
+      expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+      expect(mockResumeCloudSync).not.toHaveBeenCalled();
+      expect(mockResumeAfterAccountBoundary).not.toHaveBeenCalled();
+    });
+
+    it('resumes safe sync recovery when local Supabase sign-out fails', async () => {
+      mockSignOut.mockResolvedValueOnce({ error: { message: 'sign-out failed' } });
+
+      renderHook(() => useSessionTimeout(true));
+
+      await act(async () => {
+        vi.advanceTimersByTime(DAY_MS);
+        await Promise.resolve();
+      });
+
+      expect(mockResumeCloudSync).toHaveBeenCalledTimes(1);
+      expect(mockStartAutoSync).toHaveBeenCalledTimes(1);
+      expect(mockClearLocalUserData).not.toHaveBeenCalled();
+      expect(mockDiscardSuspendedActionsForAccountBoundary).not.toHaveBeenCalled();
+      expect(mockClearNativeJournalBiometricCredential).not.toHaveBeenCalled();
+      expect(mockClearAccountDeviceSurfaces).not.toHaveBeenCalled();
+      expect(mockReload).not.toHaveBeenCalled();
+    });
+
+    it('retries a blocked idle sign-out after pending changes clear', async () => {
+      mockHasPendingActionsForOwner.mockReturnValue(true);
+      renderHook(() => useSessionTimeout(true));
+
+      await act(async () => {
+        vi.advanceTimersByTime(DAY_MS);
+        await Promise.resolve();
+      });
+      expect(mockSignOut).not.toHaveBeenCalled();
+
+      mockHasPendingActionsForOwner.mockReturnValue(false);
+      await act(async () => {
+        vi.advanceTimersByTime(5 * 60 * 1000);
+        await Promise.resolve();
+      });
+
+      expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    });
+
+    it('keeps the session while pending actions remain after queue suspension', async () => {
+      mockHasPendingActionsForOwner.mockReturnValue(true);
+
+      renderHook(() => useSessionTimeout(true));
+
+      await act(async () => {
+        vi.advanceTimersByTime(DAY_MS);
+        await Promise.resolve();
+      });
+
+      expect(mockSignOut).not.toHaveBeenCalled();
+      expect(mockClearLocalUserData).not.toHaveBeenCalled();
     });
   });
 

@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Shield } from "lucide-react";
 import { springs } from "@/config/animations";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
 
 // --- Types ---
 
@@ -11,7 +12,7 @@ interface FreezeData {
   earned: number;
 }
 
-const STORAGE_KEY = "journal-streak-freezes";
+const STORAGE_KEY = SK.JOURNAL_STREAK_FREEZES;
 const MAX_FREEZES = 3;
 const DAYS_PER_FREEZE = 7;
 const RETENTION_DAYS = 30;

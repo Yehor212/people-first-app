@@ -21,7 +21,8 @@ interface DetailedFeedbackData {
 /**
  * Submit quick feedback to 'feedback' table (used by FeedbackButton)
  * Maps QuickFeedbackData fields to the feedback table schema.
- * Returns true if sent to Supabase, false if failed (caller handles local fallback)
+ * Returns true only after Supabase accepts the row. Callers keep the draft
+ * visible for retry when this returns false.
  */
 export async function submitQuickFeedback(data: QuickFeedbackData): Promise<boolean> {
   if (!supabase) return false;

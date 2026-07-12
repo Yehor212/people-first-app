@@ -69,6 +69,7 @@ describe('RewardedAdPrompt UX contract', () => {
     const privacySurfaces = [
       'src/components/settings/PrivacySection.tsx',
       'src/pages/nav-v2/settings/V2SettingsDataPanels.tsx',
+      'src/pages/nav-v2/settings/V2SettingsPrivacyPanel.tsx',
     ];
 
     for (const path of privacySurfaces) {

@@ -530,6 +530,7 @@ export interface Translations {
   // Settings
   profile: string;
   yourName: string;
+  profileNamePlaceholder: string;
   saveName: string;
   nameSaved: string;
   nameSavedLocally: string;
@@ -537,8 +538,28 @@ export interface Translations {
   notifications: string;
   notificationsComingSoon: string;
   settingsOverviewDescription: string;
-  settingsAboutExperienceTitle: string;
-  settingsAboutExperienceDescription: string;
+  settingsAccountBackupTitle: string;
+  settingsAccountBackupDescription: string;
+  settingsAccountSignedIn: string;
+  settingsAccountSignedOut: string;
+  settingsAccountDataOnDevice: string;
+  settingsAccountBackupChecking: string;
+  settingsAccountBackupCheckingDescription: string;
+  settingsAccountCheckFailed: string;
+  settingsAccountCheckFailedDescription: string;
+  settingsAccountBackupUnavailable: string;
+  settingsAccountBackupUnavailableDescription: string;
+  settingsRemindersMobileApp: string;
+  settingsPrivacyDataDescription: string;
+  settingsDataBackupReportsDescription: string;
+  settingsBackupRestoreTitle: string;
+  settingsReportsTitle: string;
+  settingsReportsDescription: string;
+  settingsReportSpreadsheetAction: string;
+  settingsReportProgressAction: string;
+  settingsSoundDiaryRainOff: string;
+  settingsSoundDiaryReady: string;
+  settingsAboutProductSummary: string;
   settingsAboutSupportLegalTitle: string;
   settingsAboutSupportLegalDescription: string;
   settingsRemindersOff: string;
@@ -554,10 +575,24 @@ export interface Translations {
   importReplace: string;
   exportSuccess: string;
   exportError: string;
+  exportJournalUnlockRequired: string;
+  exportJournalDecryptionFailed: string;
+  exportJournalMediaUnavailable: string;
+  exportBackupTooLarge: string;
+  exportCleanupError: string;
+  pushRevocationIncomplete: string;
+  sessionTimeoutDelayedTitle: string;
+  sessionTimeoutPendingChanges: string;
+  sessionTimeoutCleanupFailed: string;
+  syncCriticalBlocked: string;
   exportCSV: string;
   exportPDF: string;
   importSuccess: string;
+  importResultSummary: string;
   importError: string;
+  importJournalUnlockRequired: string;
+  importJournalUnreadable: string;
+  importJournalReauthorizationRequired: string;
   importedItems: string;
   importAdded: string;
   importUpdated: string;
@@ -585,6 +620,7 @@ export interface Translations {
   checkingForUpdates: string;
   appUpToDate: string;
   openGooglePlay: string;
+  openGooglePlayFailed: string;
   updateCheckFailed: string;
   settingsUpdateTitle: string;
   settingsWebUpdateDescription: string;
@@ -756,10 +792,21 @@ export interface Translations {
   deleteAccountWarning: string;
   deleteAccountSuccess: string;
   deleteAccountError: string;
+  deleteAccountDeletedCleanupFailed: string;
   deleteAccountLink: string;
   deleteConfirmWord: string;
   authEmailSent: string;
   authSignedOut: string;
+  authSignOutPendingChanges: string;
+  authSignOutRecoveryTitle: string;
+  authDiscardAndSignOut: string;
+  authDiscardSignOutConfirm: string;
+  authDiscardSignOutWarning: string;
+  authAccountSwitchPendingChanges: string;
+  authRecoverLegacyChanges: string;
+  authUseDifferentAccount: string;
+  authSignOutCleanupFailed: string;
+  authSignOutFailed: string;
   authError: string;
   authNotConfigured: string;
   syncSuccess: string;
@@ -801,14 +848,14 @@ export interface Translations {
   pushError: string;
   pushNeedsAccount: string;
   pushPermissionDenied: string;
+  remindersNativeOnly: string;
+  habitRemindersManagedInHabits: string;
   privacyTitle: string;
   privacyDescription: string;
-  privacyNoTracking: string;
-  privacyNoTrackingHint: string;
-  privacyAnalytics: string;
-  privacyAnalyticsHint: string;
   privacyAds: string;
   privacyAdsHint: string;
+  privacyOptionalServicesOn: string;
+  privacyOptionalServicesOff: string;
   privacyPushNotifications: string;
   privacyPushNotificationsHint: string;
   privacyPolicy: string;
@@ -832,6 +879,7 @@ export interface Translations {
   themeDark: string;
   themeSystem: string;
   themeStyleTitle: string;
+  themeAdvancedAppearanceTitle: string;
   themeStyleDescription: string;
   themeAccentTitle: string;
   themeAccentDescription: string;
@@ -936,13 +984,24 @@ export interface Translations {
   settingsGroupProfile: string;
   settingsGroupNotifications: string;
   settingsGroupData: string;
+  settingsExportImportTitle: string;
   settingsGroupAccount: string;
   settingsGroupSecurity: string;
   settingsSecurityDesc: string;
   journalLockTimeout: string;
   journalLockTimeoutDesc: string;
   journalLockImmediateWarning: string;
+  journalLockTimeoutImmediately: string;
+  journalLockTimeoutOneMinute: string;
+  journalLockTimeoutFiveMinutes: string;
+  journalLockTimeoutFifteenMinutes: string;
+  journalLockTimeoutThirtyMinutes: string;
   settingsGroupAbout: string;
+  settingsGroupAppearanceAccessibility: string;
+  settingsGroupReminders: string;
+  settingsGroupPrivacyData: string;
+  settingsGroupHelpAbout: string;
+  settingsDataSummary: string;
 
   // Feature Toggles / Modules (v1.5.9)
   settingsGroupModules: string;
@@ -975,15 +1034,6 @@ export interface Translations {
   modulesOnboardingSubtitle: string;
   modulesSelected: string;
   coreModulesNote: string;
-
-  // GDPR Consent
-  consentTitle: string;
-  consentDescription: string;
-  consentAnalyticsTitle: string;
-  consentAnalyticsDesc: string;
-  consentAccept: string;
-  consentDecline: string;
-  consentFooter: string;
 
   areYouSure: string;
   cannotBeUndone: string;
@@ -1205,23 +1255,14 @@ export interface Translations {
   settingsSoundPreview: string;
   settingsSoundAmbienceTitle: string;
   settingsSoundAmbienceNote: string;
-  settingsSoundFeedbackOn: string;
-  settingsSoundFeedbackOff: string;
   settingsSoundTextureAir: string;
   settingsSoundTextureWater: string;
   settingsSoundTextureRain: string;
-  settingsSoundFeedbackComfortable: string;
-  settingsSoundFeedbackTooLoud: string;
-  settingsSoundFeedbackDistracting: string;
-  settingsSoundFeedbackPreferSilent: string;
-  settingsSoundFeedbackDidNotPlay: string;
   settingsSoundComfortTitle: string;
   settingsSoundComfortDescription: string;
   settingsSoundProfileQuiet: string;
-  settingsSoundProfileRich: string;
   settingsSoundProfileBalanced: string;
   settingsSoundProfileQuietDesc: string;
-  settingsSoundProfileRichDesc: string;
   settingsSoundProfileBalancedDesc: string;
   settingsSoundAmbientToggle: string;
   settingsSoundAmbientToggleDesc: string;
@@ -1233,26 +1274,7 @@ export interface Translations {
   settingsSoundMilestoneCuesDesc: string;
   settingsSoundTextureTitle: string;
   settingsSoundTextureDescription: string;
-  settingsSoundFeedbackTitle: string;
-  settingsSoundFeedbackDescription: string;
   settingsSoundAmbientOff: string;
-  settingsSoundMapTitle: string;
-  settingsSoundMapDescription: string;
-  settingsSoundMapAuth: string;
-  settingsSoundMapOrb: string;
-  settingsSoundMapDiary: string;
-  settingsSoundMapFocus: string;
-  settingsSoundMapFeedback: string;
-  settingsSoundCrossPlatformTitle: string;
-  settingsSoundCrossPlatformNote: string;
-  settingsSoundActionMapTitle: string;
-  settingsSoundActionMapDescription: string;
-  settingsSoundActionMapMood: string;
-  settingsSoundActionMapHabit: string;
-  settingsSoundActionMapJournal: string;
-  settingsSoundActionMapFocus: string;
-  settingsSoundActionMapBreathing: string;
-  settingsSoundActionMapMilestones: string;
 
   // Leaderboard
   // Note: weekly/monthly defined above in Personal Goals section
@@ -1469,6 +1491,7 @@ export interface Translations {
   // Dopamine Settings
   dopamineSettings: string;
   dopamineSettingsDesc: string;
+  dopamineSettingsDescNoHaptics: string;
   dopamineIntensity: string;
   dopamineMinimal: string;
   dopamineNormal: string;
@@ -1530,6 +1553,7 @@ export interface Translations {
   adPrivacyOptions: string;
   adPrivacyOptionsHint: string;
   adPrivacyOptionsOpen: string;
+  adPrivacyOptionsError: string;
   innerWorld: string;
   tapToInteract: string;
   spinWheel: string;
@@ -2219,12 +2243,12 @@ export interface Translations {
   // Notification Sounds (v1.2.0)
   notificationSound: string;
   notificationSoundDescription: string;
+  notificationSoundUpdateFailed: string;
+  reminderReconcileFailed: string;
   soundDefault: string;
   soundDefaultDesc: string;
   soundGentle: string;
   soundGentleDesc: string;
-  soundChime: string;
-  soundChimeDesc: string;
   soundSilent: string;
   soundSilentDesc: string;
   notificationSystemSettingsTitle: string;
@@ -2240,7 +2264,6 @@ export interface Translations {
   notificationTestSuccess: string;
   notificationTestFailed: string;
   notificationTestError: string;
-
 
   // Insight Card Details (v1.3.0)
   insightConfidence: string;
@@ -2913,6 +2936,7 @@ export interface Translations {
   journalPasswordChangeSuccess: string;
   journalPasswordChangeFailed: string;
   journalPasswordActiveHint: string;
+  journalProtectionCloudPending: string;
   journalPasswordRemoveConfirm: string;
   journalLockRemoveDetail: string;
   journalLockRemoveFailed: string;

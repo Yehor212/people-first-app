@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { ReminderSettings } from "@/types";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
 import { logger } from "@/lib/logger";
+import { validateSyncOwner } from "@/storage/sync/syncOwner";
 
 // Circuit breaker: after first schema/table error, skip all attempts this session.
 // Resets on page reload (module re-import).
@@ -9,24 +10,19 @@ let reminderSyncDisabled = false;
 
 export const syncReminderSettings = async (
   reminders: ReminderSettings,
-  language: string
+  language: string,
+  expectedOwnerUserId: string
 ) => {
   const client = supabase;
   if (!client || reminderSyncDisabled) return;
 
   // Use orchestrator for queue-based sync
   await syncOrchestrator.sync('reminders', async () => {
-    const {
-      data: { session },
-      error: authError
-    } = await client.auth.getSession();
-
-    if (authError || !session?.user) {
-      // Silently skip if not authenticated - not an error condition
-      logger.log('[ReminderSync] Not authenticated, skipping sync');
-      return;
-    }
-    const user = session.user;
+    const ownerUserId = await validateSyncOwner(
+      expectedOwnerUserId,
+      "Reminder settings sync"
+    );
+    if (!ownerUserId) return;
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
@@ -39,7 +35,7 @@ export const syncReminderSettings = async (
       : [];
 
     const payload = {
-      user_id: user.id,
+      user_id: ownerUserId,
       enabled: Boolean(reminders.enabled),
       // mood_time is required by DB — use morning time as primary
       mood_time: reminders.moodTimeMorning || reminders.moodTimeAfternoon || '09:00',
@@ -58,6 +54,7 @@ export const syncReminderSettings = async (
       updated_at: new Date().toISOString()
     };
 
+    if (!(await validateSyncOwner(ownerUserId, "Reminder settings sync"))) return;
     const { error } = await client.from("user_reminder_settings").upsert(payload, {
       onConflict: "user_id"
     });
@@ -79,5 +76,5 @@ export const syncReminderSettings = async (
       }
       return;
     }
-  }, { priority: 7, maxRetries: 0 }); // No retries - settings sync failures shouldn't loop
+  }, { priority: 7, maxRetries: 0, expectedOwnerUserId }); // No retries - settings sync failures shouldn't loop
 };

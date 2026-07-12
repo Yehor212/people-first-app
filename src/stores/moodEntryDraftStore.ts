@@ -17,6 +17,7 @@
 import { create } from "zustand";
 import { safeSessionStorageGet, safeSessionStorageSet } from "@/lib/safeJson";
 import { SSK } from "@/lib/storageKeys";
+import { registerAccountBoundaryRuntimeReset } from "@/storage/accountBoundaryRuntime";
 
 export type MoodDraftScope = "now" | "day" | "specific";
 
@@ -181,3 +182,7 @@ export const useMoodEntryDraftStore = create<MoodEntryDraftStore>((set, get) => 
     return s.valence !== null;
   },
 }));
+
+registerAccountBoundaryRuntimeReset(() => {
+  useMoodEntryDraftStore.getState().reset();
+});

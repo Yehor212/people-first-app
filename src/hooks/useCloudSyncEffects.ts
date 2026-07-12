@@ -8,7 +8,7 @@ import {
 import { useAppStore, useUserDataStore } from "@/stores";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuickActions, type QuickActionType } from "@/hooks/useQuickActions";
-import { supabase } from "@/lib/supabaseClient";
+import { getCurrentSessionUserId, supabase } from "@/lib/supabaseClient";
 import { syncReminderSettings } from "@/storage/reminderSync";
 import {
   syncChallengesWithCloud,
@@ -79,20 +79,37 @@ export function useCloudSyncEffects({
 
     if (!supabase || reminderSyncPendingRef.current) return;
 
-    reminderSyncPendingRef.current = true;
-    const timeoutId = window.setTimeout(() => {
-      syncReminderSettings(reminders, language)
-        .catch((error) => {
-          logger.error("Failed to sync reminder settings:", error);
-        })
-        .finally(() => {
-          reminderSyncPendingRef.current = false;
-        });
-    }, 500);
+    let active = true;
+    let syncStarted = false;
+    let timeoutId: number | null = null;
+
+    const scheduleReminderSync = async () => {
+      const expectedOwnerUserId = await getCurrentSessionUserId();
+      if (!active || !expectedOwnerUserId) return;
+
+      reminderSyncPendingRef.current = true;
+      timeoutId = window.setTimeout(() => {
+        syncStarted = true;
+        syncReminderSettings(reminders, language, expectedOwnerUserId)
+          .catch((error) => {
+            logger.error("Failed to sync reminder settings:", error);
+          })
+          .finally(() => {
+            reminderSyncPendingRef.current = false;
+          });
+      }, 500);
+    };
+
+    void scheduleReminderSync().catch((error) => {
+      logger.error("Failed to schedule reminder settings sync:", error);
+    });
 
     return () => {
-      window.clearTimeout(timeoutId);
-      // Don't reset pending flag here - let the promise complete
+      active = false;
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+        if (!syncStarted) reminderSyncPendingRef.current = false;
+      }
     };
   }, [reminders, language]);
 
@@ -163,8 +180,8 @@ export function useCloudSyncEffects({
           if (!active) return;
 
           // Sync tasks and quests (updates localStorage for Panels to read)
-          await syncTasks();
-          await syncQuests();
+          await syncTasks(user.id);
+          await syncQuests(user.id);
 
           if (!active) return;
 

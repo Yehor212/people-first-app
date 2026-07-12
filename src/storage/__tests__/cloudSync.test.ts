@@ -35,6 +35,7 @@ vi.mock("@/storage/sync/serverTombstones", () => ({
 
 vi.mock("@/hooks/useIndexedDB", () => ({
   triggerDataRefresh: vi.fn(),
+  runWithDataWriteBarrier: vi.fn(async (mutation: () => Promise<unknown>) => mutation()),
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -44,6 +45,8 @@ vi.mock("@/lib/logger", () => ({
 vi.mock("@/lib/syncOrchestrator", () => ({
   syncOrchestrator: {
     sync: vi.fn(),
+    suspendForAccountBoundary: vi.fn(async () => undefined),
+    resumeAfterAccountBoundary: vi.fn(),
   },
 }));
 
@@ -66,11 +69,13 @@ import {
   triggerSync,
   flushSync,
   destroyCloudSync,
+  quiesceCloudSync,
+  resumeCloudSync,
 } from "@/storage/cloudSync";
 
 import { exportBackup, importBackup } from "@/storage/backup";
 import { fetchAndMergeServerTombstones } from "@/storage/sync/serverTombstones";
-import { triggerDataRefresh } from "@/hooks/useIndexedDB";
+import { runWithDataWriteBarrier, triggerDataRefresh } from "@/hooks/useIndexedDB";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
 import { isAbortError } from "@/lib/validation";
 
@@ -79,8 +84,17 @@ import { isAbortError } from "@/lib/validation";
 const mockExportBackup = vi.mocked(exportBackup);
 const mockImportBackup = vi.mocked(importBackup);
 const mockFetchAndMergeServerTombstones = vi.mocked(fetchAndMergeServerTombstones);
+const mockRunWithDataWriteBarrier = vi.mocked(runWithDataWriteBarrier);
 const mockTriggerDataRefresh = vi.mocked(triggerDataRefresh);
 const mockOrchestratorSync = vi.mocked(syncOrchestrator.sync);
+const mockOrchestratorSuspend = vi.mocked(syncOrchestrator.suspendForAccountBoundary);
+const mockOrchestratorResume = vi.mocked(syncOrchestrator.resumeAfterAccountBoundary);
+
+const createOrchestratorContext = () => ({
+  ownerUserId: "user-1",
+  generation: 0,
+  signal: new AbortController().signal,
+});
 
 function createMockSupabase() {
   mockMaybeSingle.mockResolvedValue({ data: null, error: null });
@@ -143,6 +157,14 @@ beforeEach(() => {
   destroyCloudSync();
   // Clear all mock call history
   vi.clearAllMocks();
+  mockOrchestratorSuspend.mockResolvedValue(undefined);
+  mockOrchestratorResume.mockImplementation(() => undefined);
+  mockTriggerDataRefresh.mockResolvedValue(undefined);
+  mockRunWithDataWriteBarrier.mockImplementation(async (mutation) => {
+    const result = await mutation();
+    await mockTriggerDataRefresh();
+    return result;
+  });
   // Restore isAbortError to its default factory behavior in case a test overrode it
   vi.mocked(isAbortError).mockImplementation(
     (err: unknown) => err instanceof DOMException && err.name === "AbortError"
@@ -184,6 +206,21 @@ describe("syncWithCloud", () => {
     expect(mockUpsert).toHaveBeenCalled();
   });
 
+  it("aborts an owner-bound sync when the authenticated account changes mid-flight", async () => {
+    mockSupabase = createMockSupabase();
+    mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    mockGetSession
+      .mockResolvedValueOnce({ data: { session: { user: { id: "user-1" } } } })
+      .mockResolvedValue({ data: { session: { user: { id: "user-2" } } } });
+
+    await expect(syncWithCloud("merge", "user-1")).rejects.toThrow(
+      "Authenticated account changed during cloud sync",
+    );
+
+    expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
   it("merges server tombstones before exporting the backup safety net", async () => {
     mockSupabase = createMockSupabase();
     mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
@@ -208,8 +245,76 @@ describe("syncWithCloud", () => {
     const result = await syncWithCloud();
 
     expect(result).toEqual({ status: "merged" });
-    expect(mockImportBackup).toHaveBeenCalledWith(REMOTE_PAYLOAD, "merge");
+    expect(mockImportBackup).toHaveBeenCalledWith(REMOTE_PAYLOAD, "merge", {
+      expectedOwnerUserId: "user-1",
+    });
     expect(mockTriggerDataRefresh).toHaveBeenCalled();
+  });
+
+  it("merges a settings-only remote backup instead of overwriting it", async () => {
+    const settingsOnly = {
+      ...EMPTY_BACKUP,
+      data: {
+        ...EMPTY_BACKUP.data,
+        settings: [{ key: "zenflow-reminders", value: { enabled: true } }],
+      },
+    };
+    mockSupabase = createMockSupabase();
+    mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
+    mockMaybeSingle.mockResolvedValue({
+      data: { payload: settingsOnly, updated_at: "2024-01-01" },
+      error: null,
+    });
+
+    await syncWithCloud();
+
+    expect(mockImportBackup).toHaveBeenCalledWith(settingsOnly, "merge", {
+      expectedOwnerUserId: "user-1",
+    });
+  });
+
+  it("merges a tombstone-only remote backup instead of resurrecting local data", async () => {
+    const tombstoneOnly = {
+      ...EMPTY_BACKUP,
+      deletedMoodIds: ["deleted-mood"],
+    };
+    mockSupabase = createMockSupabase();
+    mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
+    mockMaybeSingle.mockResolvedValue({
+      data: { payload: tombstoneOnly, updated_at: "2024-01-01" },
+      error: null,
+    });
+
+    await syncWithCloud();
+
+    expect(mockImportBackup).toHaveBeenCalledWith(tombstoneOnly, "merge", {
+      expectedOwnerUserId: "user-1",
+    });
+  });
+
+  it("waits for mounted data hooks to refresh before re-exporting and upserting", async () => {
+    mockSupabase = createMockSupabase();
+    mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
+    mockMaybeSingle.mockResolvedValue({
+      data: { payload: REMOTE_PAYLOAD, updated_at: "2024-01-01" },
+      error: null,
+    });
+    let releaseRefresh!: () => void;
+    const refreshGate = new Promise<void>((resolve) => {
+      releaseRefresh = resolve;
+    });
+    mockTriggerDataRefresh.mockReturnValueOnce(refreshGate);
+
+    const sync = syncWithCloud();
+    await vi.waitFor(() => expect(mockImportBackup).toHaveBeenCalledTimes(1));
+
+    expect(mockExportBackup).toHaveBeenCalledTimes(1);
+    expect(mockUpsert).not.toHaveBeenCalled();
+
+    releaseRefresh();
+    await expect(sync).resolves.toEqual({ status: "merged" });
+    expect(mockExportBackup).toHaveBeenCalledTimes(2);
+    expect(mockUpsert).toHaveBeenCalledTimes(1);
   });
 
   it("returns pulled status when local is empty but remote has data", async () => {
@@ -223,7 +328,9 @@ describe("syncWithCloud", () => {
     const result = await syncWithCloud();
 
     expect(result).toEqual({ status: "pulled" });
-    expect(mockImportBackup).toHaveBeenCalledWith(REMOTE_PAYLOAD, "merge");
+    expect(mockImportBackup).toHaveBeenCalledWith(REMOTE_PAYLOAD, "merge", {
+      expectedOwnerUserId: "user-1",
+    });
     expect(mockTriggerDataRefresh).toHaveBeenCalled();
   });
 
@@ -236,7 +343,7 @@ describe("syncWithCloud", () => {
     await expect(syncWithCloud()).rejects.toThrow("Upsert failed");
   });
 
-  it("concurrent callers share the same promise (P1-11 lock)", async () => {
+  it("serializes concurrent callers without blindly sharing an account result", async () => {
     mockSupabase = createMockSupabase();
     // Use a deferred pattern so we can control resolution timing
     let resolveExport!: (val: any) => void;
@@ -255,12 +362,12 @@ describe("syncWithCloud", () => {
 
     const [result1, result2] = await Promise.all([promise1, promise2]);
 
-    // Both should get the same result
+    // Both requests complete, but each gets its own account-safe sync turn.
     expect(result1).toEqual({ status: "pushed" });
     expect(result2).toEqual({ status: "pushed" });
 
-    // exportBackup should only be called once (second caller waits for same promise)
-    expect(mockExportBackup).toHaveBeenCalledTimes(1);
+    expect(mockExportBackup).toHaveBeenCalledTimes(2);
+    expect(mockGetSession.mock.calls.length).toBeGreaterThanOrEqual(4);
   });
 
   it("calls exportBackup and passes result to upsert", async () => {
@@ -290,7 +397,54 @@ describe("syncWithCloud", () => {
 
     await syncWithCloud("replace");
 
-    expect(mockImportBackup).toHaveBeenCalledWith(REMOTE_PAYLOAD, "replace");
+    expect(mockImportBackup).toHaveBeenCalledWith(REMOTE_PAYLOAD, "replace", {
+      expectedOwnerUserId: "user-1",
+    });
+  });
+
+  it("treats an empty remote backup as authoritative during replace", async () => {
+    mockSupabase = createMockSupabase();
+    mockExportBackup
+      .mockResolvedValueOnce(LOCAL_BACKUP as any)
+      .mockResolvedValueOnce(EMPTY_BACKUP as any);
+    mockMaybeSingle.mockResolvedValue({
+      data: { payload: EMPTY_BACKUP, updated_at: "2024-01-01" },
+      error: null,
+    });
+
+    await syncWithCloud("replace");
+
+    expect(mockImportBackup).toHaveBeenCalledWith(EMPTY_BACKUP, "replace", {
+      expectedOwnerUserId: "user-1",
+    });
+    expect(mockExportBackup).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(mockUpsert.mock.calls[0]?.[0]?.payload)).not.toContain("m1");
+  });
+
+  it("clears local account data instead of uploading it when replace finds no remote row", async () => {
+    mockSupabase = createMockSupabase();
+    mockExportBackup
+      .mockResolvedValueOnce(LOCAL_BACKUP as any)
+      .mockResolvedValueOnce(EMPTY_BACKUP as any);
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+    await syncWithCloud("replace");
+
+    expect(mockImportBackup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          moods: [],
+          habits: [],
+          focusSessions: [],
+          gratitudeEntries: [],
+          journalEntries: [],
+        }),
+      }),
+      "replace",
+      { expectedOwnerUserId: "user-1" },
+    );
+    expect(mockExportBackup).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(mockUpsert.mock.calls[0]?.[0]?.payload)).not.toContain("m1");
   });
 
   it("throws when fetch (select) returns an error", async () => {
@@ -335,6 +489,42 @@ describe("syncWithCloud", () => {
     // Only one exportBackup call (the initial one)
     expect(mockExportBackup).toHaveBeenCalledTimes(1);
   });
+
+  it("aborts and awaits an active sync before an account-boundary purge", async () => {
+    mockSupabase = createMockSupabase();
+    mockExportBackup.mockResolvedValue(LOCAL_BACKUP as any);
+    mockMaybeSingle.mockResolvedValue({
+      data: { payload: REMOTE_PAYLOAD, updated_at: "2024-01-01" },
+      error: null,
+    });
+    let releaseImport!: () => void;
+    mockImportBackup.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        releaseImport = resolve;
+      }) as never
+    );
+
+    const activeSync = syncWithCloud("merge");
+    await vi.waitFor(() => expect(mockImportBackup).toHaveBeenCalledTimes(1));
+
+    let quiesceSettled = false;
+    const quiesce = quiesceCloudSync().then(() => {
+      quiesceSettled = true;
+    });
+    await Promise.resolve();
+
+    expect(mockOrchestratorSuspend).toHaveBeenCalledTimes(1);
+    expect(quiesceSettled).toBe(false);
+    await expect(syncWithCloud("merge")).rejects.toThrow("suspended");
+
+    releaseImport();
+    await expect(activeSync).rejects.toThrow("aborted");
+    await quiesce;
+    expect(mockUpsert).not.toHaveBeenCalled();
+
+    resumeCloudSync();
+    expect(mockOrchestratorResume).toHaveBeenCalledTimes(1);
+  });
 });
 
 // ─── silentSync ──────────────────────────────────────────────────────────────
@@ -358,7 +548,7 @@ describe("silentSync", () => {
 
     // Capture the callback and execute it
     mockOrchestratorSync.mockImplementation(async (_type, callback) => {
-      await callback();
+      await callback(createOrchestratorContext());
     });
 
     await silentSync();
@@ -368,13 +558,42 @@ describe("silentSync", () => {
     expect(mockGetSession).toHaveBeenCalled();
   });
 
+  it("propagates the orchestrator abort signal into the active cloud sync", async () => {
+    mockSupabase = createMockSupabase();
+    let releaseExport!: () => void;
+    mockExportBackup.mockReturnValueOnce(
+      new Promise(resolve => {
+        releaseExport = () => resolve(LOCAL_BACKUP);
+      }) as never
+    );
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    const controller = new AbortController();
+
+    mockOrchestratorSync.mockImplementation(async (_type, callback) => {
+      await callback({
+        ...createOrchestratorContext(),
+        signal: controller.signal,
+      });
+    });
+
+    const result = silentSync();
+    await vi.waitFor(() => expect(mockExportBackup).toHaveBeenCalledTimes(1));
+
+    controller.abort(new Error("Account boundary"));
+    releaseExport();
+
+    await expect(result).resolves.toBeUndefined();
+    expect(mockSelect).not.toHaveBeenCalled();
+    expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
   it("callback swallows non-abort errors to prevent unhandled rejections", async () => {
     mockSupabase = createMockSupabase();
     const syncError = new Error("Network failure");
     mockExportBackup.mockRejectedValue(syncError);
 
     mockOrchestratorSync.mockImplementation(async (_type, callback) => {
-      await callback();
+      await callback(createOrchestratorContext());
     });
 
     // silentSync must NOT throw — prevents unhandled rejections from setInterval/visibilitychange
@@ -391,7 +610,7 @@ describe("silentSync", () => {
     vi.mocked(isAbortError).mockReturnValue(true);
 
     mockOrchestratorSync.mockImplementation(async (_type, callback) => {
-      await callback();
+      await callback(createOrchestratorContext());
     });
 
     // Should not throw
@@ -411,7 +630,7 @@ describe("silentSync", () => {
       // - dispatching sync-failure event
       // We do this by calling the actual callback, which calls syncWithCloud internally
       try {
-        await callback();
+        await callback(createOrchestratorContext());
       } catch {
         // Expected: the callback re-throws for orchestrator retry
       }

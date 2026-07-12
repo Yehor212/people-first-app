@@ -30,9 +30,9 @@ export const safeJsonParse = <T>(
     return parsed as T;
   } catch (error) {
     logger.warn('[SafeJSON] Parse failed:', {
-      error: error instanceof Error ? error.message : 'Unknown error',
+      reason: 'invalid-json',
+      errorName: error instanceof Error ? error.name : 'UnknownError',
       inputLength: json.length,
-      inputPreview: json.slice(0, 50) + (json.length > 50 ? '...' : ''),
     });
     return fallback;
   }
@@ -159,6 +159,17 @@ export function storageGetRaw(key: string, fallback = ''): string {
   }
 }
 
+/** Read a raw localStorage value while preserving unavailable-vs-absent state. */
+export function storageReadRaw(
+  key: string,
+): { ok: true; value: string | null } | { ok: false; value: null } {
+  try {
+    return { ok: true, value: localStorage.getItem(key) };
+  } catch {
+    return { ok: false, value: null };
+  }
+}
+
 /** Safe raw string set to localStorage. */
 export function storageSetRaw(key: string, value: string): void {
   try {
@@ -171,10 +182,13 @@ export function storageSetRaw(key: string, value: string): void {
 }
 
 /** Safe localStorage remove. */
-export function storageRemove(key: string): void {
+export function storageRemove(key: string): boolean {
   try {
     localStorage.removeItem(key);
-  } catch { /* graceful: storage removal is best-effort, failure has no user impact */ }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Safely enumerate localStorage keys for cleanup routines. */

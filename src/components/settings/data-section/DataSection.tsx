@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import {
   Download,
   Upload,
-  Trash2,
   Loader2,
   FileText,
   FileSpreadsheet,
@@ -41,7 +40,6 @@ interface DataSectionProps {
 }
 
 export function DataSection({
-  onResetData,
   privacy,
   onPrivacyChange,
   moods = [],
@@ -54,8 +52,6 @@ export function DataSection({
   const tRecord = t as unknown as Record<string, string>;
 
   const [dataStatus, setDataStatus] = useState<string | null>(null);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [isResettingData, setIsResettingData] = useState(false);
 
   const exp = useDataExport({
     setDataStatus,
@@ -68,29 +64,22 @@ export function DataSection({
   });
   const imp = useDataImport({ setDataStatus, t: tRecord });
 
-  // Back handler + scroll lock for reset confirmation
-  useBackHandler(showResetConfirm, () => setShowResetConfirm(false));
-  // Back handler + scroll lock for import confirmation modal
   useBackHandler(imp.showImportConfirm, () => imp.handleImportCancel());
-  useScrollLock(showResetConfirm || imp.showImportConfirm);
+  useScrollLock(imp.showImportConfirm);
 
   // Escape key: dismiss import confirm or reset confirm
   const { showImportConfirm, handleImportCancel } = imp;
   useEffect(() => {
-    if (!showResetConfirm && !showImportConfirm) return;
+    if (!showImportConfirm) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        if (showImportConfirm) {
-          handleImportCancel();
-        } else {
-          setShowResetConfirm(false);
-        }
+        handleImportCancel();
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [showResetConfirm, showImportConfirm, handleImportCancel]);
+  }, [showImportConfirm, handleImportCancel]);
 
   // Auto-clear dataStatus after 3 seconds
   useEffect(() => {
@@ -98,20 +87,6 @@ export function DataSection({
     const timer = window.setTimeout(() => setDataStatus(null), 3000);
     return () => window.clearTimeout(timer);
   }, [dataStatus]);
-
-  const handleReset = async () => {
-    setIsResettingData(true);
-    setDataStatus(null);
-    try {
-      await onResetData();
-      setShowResetConfirm(false);
-      setDataStatus(tRecord.resetDataSuccess || "Your local ZenFlow data has been reset.");
-    } catch {
-      setDataStatus(tRecord.resetDataError || "Data reset failed. Please try again.");
-    } finally {
-      setIsResettingData(false);
-    }
-  };
 
   return (
     <>
@@ -285,41 +260,6 @@ export function DataSection({
                 onPrivacyChange={onPrivacyChange}
               />
 
-              {/* Reset All Data - at the bottom after Privacy */}
-              {!showResetConfirm ? (
-                <button
-                  onClick={() => setShowResetConfirm(true)}
-                  aria-label={t.resetAllData}
-                  className="w-full py-3 bg-destructive/10 text-destructive rounded-xl font-medium hover:bg-destructive/20 motion-safe:transition-colors flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" aria-hidden="true" />
-                  <span>{t.resetAllData}</span>
-                </button>
-              ) : (
-                <div className="p-4 bg-destructive/10 rounded-xl motion-safe:animate-scale-in">
-                  <p className="text-destructive font-medium mb-3">
-                    {t.areYouSure} {t.cannotBeUndone}
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowResetConfirm(false)}
-                      aria-label={t.cancel}
-                      disabled={isResettingData}
-                      className="flex-1 py-2 min-h-[44px] bg-secondary text-secondary-foreground rounded-lg"
-                    >
-                      {t.cancel}
-                    </button>
-                    <button
-                      onClick={() => void handleReset()}
-                      aria-label={t.delete}
-                      disabled={isResettingData}
-                      className="flex-1 py-2 min-h-[44px] bg-destructive text-destructive-foreground rounded-lg"
-                    >
-                      {isResettingData ? tRecord.resetting || "Resetting..." : t.delete}
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </AccordionContent>

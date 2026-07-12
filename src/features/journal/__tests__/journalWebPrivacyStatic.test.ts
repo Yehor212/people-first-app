@@ -270,4 +270,28 @@ describe("web diary privacy and reset contracts", () => {
       );
     }
   });
+
+  it("scopes password encryption honestly in every supported locale", () => {
+    for (const { language, source } of localeSources) {
+      const hints = ["journalLockHint", "journalLockHintLocalOnly"].map((key) => ({
+        key,
+        value: new RegExp(`${key}:\\s*"([^"]+)"`).exec(source)?.[1] ?? "",
+      }));
+
+      for (const { key, value } of hints) {
+        expect(value, `${language} ${key} encrypted content scope`).toMatch(
+          /writing|content|текст|contenido|Tagebuchtext|textes|本文|نصوص|תוכן/i,
+        );
+        expect(value, `${language} ${key} encrypted attachment scope`).toMatch(
+          /attachment|вкладенн|archivo|Anhänge|pièces jointes|添付|مرفق|קבצים.*מצורפים/i,
+        );
+        expect(value, `${language} ${key} metadata exclusion`).toMatch(
+          /not encrypted|не шифр|no se cifr|nicht verschlüsselt|ne sont pas chiffr|暗号化されません|لا يتم تشفير|אינם מוצפנים/i,
+        );
+        expect(value, `${language} ${key} title metadata`).toMatch(
+          /titles|назви|títulos|Titel|titres|タイトル|العناوين|כותרות/i,
+        );
+      }
+    }
+  });
 });

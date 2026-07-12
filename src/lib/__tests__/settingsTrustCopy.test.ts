@@ -52,6 +52,29 @@ describe("Settings trust copy", () => {
     expect(form).not.toContain("logger.log(\"[Feedback] Submitting:\"");
   });
 
+  it("keeps public privacy copy aligned with the retired analytics controls", () => {
+    const privacy = read("public/privacy.html");
+    const privacyAlias = read("public/privacy-policy.html");
+
+    expect(privacyAlias).toBe(privacy);
+    expect(privacy).not.toMatch(/audio comfort feedback/i);
+    expect(privacy).not.toMatch(/no-tracking mode|no-tracking exceptions/i);
+    expect(privacy).toContain(
+      "ZenFlow does not initialize its optional in-app behavioral analytics runtime.",
+    );
+    expect(privacy).toContain(
+      "Optional rewarded ads are controlled separately through the Optional ads setting",
+    );
+  });
+
+  it("disables automatic Firebase Analytics collection in the Android app artifact", () => {
+    const manifest = read("android/app/src/main/AndroidManifest.xml");
+
+    expect(manifest).toMatch(
+      /android:name="firebase_analytics_collection_enabled"\s+android:value="false"/,
+    );
+  });
+
   it("keeps English reminder copy and runtime fallbacks calm and evidence-scoped", () => {
     const en = read("src/i18n/languages/en.ts");
     const smartReminderI18n = readBlock(en, "// Smart Reminders", "// Sync status");
@@ -137,5 +160,128 @@ describe("Settings trust copy", () => {
         expect(block, `${file} should not include ${phrase}`).not.toContain(phrase);
       }
     }
+  });
+
+  it("keeps V2 account copy separate from shared sync copy", () => {
+    const settingsPage = read("src/pages/nav-v2/SettingsPage.tsx");
+    const accountPanel = read("src/pages/nav-v2/settings/V2SettingsAccountPanel.tsx");
+    const v2AccountSources = `${settingsPage}\n${accountPanel}`;
+
+    for (const required of [
+      "settingsAccountBackupTitle",
+      "settingsAccountBackupDescription",
+      "settingsAccountSignedIn",
+      "settingsAccountSignedOut",
+      "settingsAccountDataOnDevice",
+      "settingsAccountBackupChecking",
+      "settingsAccountBackupCheckingDescription",
+      "settingsAccountBackupUnavailable",
+      "settingsAccountBackupUnavailableDescription",
+    ]) {
+      expect(v2AccountSources).toContain(required);
+    }
+    expect(v2AccountSources).not.toMatch(/\bsettingsCloudSync[A-Za-z0-9_]*/);
+    expect(v2AccountSources).not.toMatch(/\b(?:is|has been) backed up\b/i);
+    for (const forbidden of [
+      "settingsGroupAccountSync",
+      "settingsAccountBackupEnabled",
+      "sessionExpiredSettings",
+      "localDataSafe",
+      "weeklyDigestTitle",
+      "useAccountSync",
+    ]) {
+      expect(v2AccountSources).not.toContain(forbidden);
+    }
+  });
+
+  it("keeps native reminder recovery out of web and removes dead quick actions", () => {
+    const source = read("src/pages/nav-v2/settings/V2SettingsNotificationsPanel.tsx");
+
+    expect(source).toMatch(
+      /\{isNative\s*&&\s*\(\s*<SettingsInset\s+testId="settings-v2-notification-system-guidance"/s,
+    );
+    expect(source).toContain('title={tx.settingsGroupReminders || "Reminders"}');
+    for (const forbidden of [
+      "useQuickActions",
+      "quickActions.",
+      "settings-v2-quick-actions-toggle",
+    ]) {
+      expect(source).not.toContain(forbidden);
+    }
+    expect(source).not.toMatch(/\bZap\b/);
+  });
+
+  it("keeps V2 sound choices and diary availability truthful", () => {
+    const sound = read("src/pages/nav-v2/settings/V2SettingsSoundPanel.tsx");
+    const diary = read("src/pages/nav-v2/settings/V2SettingsDiaryAmbienceControl.tsx");
+
+    expect(sound).toContain('profile.id !== "rich"');
+    expect(sound).toContain('comfort.settings.profile === "rich" ? "balanced"');
+    expect(sound).toContain("profileMatchesEffectiveSettings");
+    expect(sound).not.toContain("settingsSoundProfileRich");
+    expect(sound).not.toContain("settingsSoundProfileRichDesc");
+    expect(diary).toContain("settingsSoundDiaryRainOff");
+    expect(diary).toContain("settingsSoundDiaryReady");
+    expect(diary).not.toContain("settingsSoundFeedbackOn");
+    expect(diary).not.toContain("settingsSoundFeedbackOff");
+  });
+
+  it("keeps the V2 privacy description separate from legacy security copy", () => {
+    const source = read("src/pages/nav-v2/settings/V2SettingsPrivacyPanel.tsx");
+
+    expect(source).toContain("settingsPrivacyDataDescription");
+    expect(source).not.toContain("settingsSecurityDesc");
+  });
+
+  it("keeps V2 privacy fallbacks aligned with the approved Settings copy", () => {
+    const source = read("src/pages/nav-v2/settings/V2SettingsPrivacyPanel.tsx");
+
+    for (const expected of [
+      'title={tx.privacyAds || "Rewarded videos"}',
+      "They load only when you turn them on. Google may ask for your privacy choice when required.",
+      'title={tx.privacyPushNotifications || "Account reminders"}',
+      "Receive reminders from your account on this device. Reminders you set on this device still work when this is off.",
+    ]) {
+      expect.soft(source).toContain(expected);
+    }
+    for (const legacy of [
+      'title={tx.privacyAds || "Rewarded ads"}',
+      "Optional videos only. Ad requests stay off unless this is enabled",
+      'title={tx.privacyPushNotifications || "Remote push notifications"}',
+      "Register this device for account-based push reminders",
+    ]) {
+      expect.soft(source).not.toContain(legacy);
+    }
+  });
+
+  it("keeps backup and report actions distinct without rewiring handlers", () => {
+    const source = read("src/pages/nav-v2/settings/V2SettingsDataPanels.tsx");
+
+    for (const required of [
+      "settings-v2-backup-restore-group",
+      "settings-v2-reports-group",
+      "exp.handleExport()",
+      "exp.handleExportCSV",
+      "exp.handleExportPDF()",
+      "imp.handleImportClick",
+    ]) {
+      expect(source).toContain(required);
+    }
+    expect(source).not.toContain("tx.exportCSV");
+    expect(source).not.toContain("tx.exportPDF");
+  });
+
+  it("keeps V2 help, license, and update fallbacks modest and actionable", () => {
+    const source = read("src/pages/nav-v2/settings/V2SettingsAboutPanel.tsx");
+
+    for (const required of [
+      '"Help and legal"',
+      '"Privacy, terms, licenses, and support."',
+      '"Licenses"',
+      '"Check for a newer version."',
+    ]) {
+      expect(source).toContain(required);
+    }
+    expect(source).not.toMatch(/Open-source library licenses|all libraries|complete license/i);
   });
 });

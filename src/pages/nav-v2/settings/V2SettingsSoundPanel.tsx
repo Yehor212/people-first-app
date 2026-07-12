@@ -1,17 +1,14 @@
-import { useCallback, useState } from "react";
-import { Bell, ListChecks, ListMusic, MessageSquare, SlidersHorizontal, Volume2, VolumeX, Waves } from "lucide-react";
+import { useCallback } from "react";
+import { Bell, ListChecks, ListMusic, SlidersHorizontal, Vibrate, Volume2, VolumeX, Waves } from "lucide-react";
+import { updateDopamineSettings } from "@/lib/dopamineSettings";
+import { useDopamineSettings } from "@/hooks/useDopamineSettings";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { playNotificationPreview, setMuted, setVolume } from "@/lib/audioManager";
+import { playNotificationPreview, setAudioEnabled, setVolume } from "@/lib/audioManager";
 import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
 import { useAudioComfortSettings } from "@/hooks/useAudioComfortSettings";
 import { type AppAudioComfortTexture } from "@/lib/appAudioAssets";
-import {
-  AUDIO_COMFORT_PROFILES,
-  getVolumeBucket,
-  recordAudioComfortFeedback,
-  type AudioComfortFeedbackChoice,
-} from "@/lib/audioComfort";
-import { getAppAudioPlatform } from "@/lib/platform";
+import { AUDIO_COMFORT_PROFILES } from "@/lib/audioComfort";
+import { isNative } from "@/lib/platform";
 import {
   ActionButton,
   PanelFrame,
@@ -26,22 +23,30 @@ export function SoundPanel() {
   const { t } = useLanguage();
   const audio = useAppAudioSettings();
   const comfort = useAudioComfortSettings();
-  const [lastFeedbackChoice, setLastFeedbackChoice] = useState<AudioComfortFeedbackChoice | null>(null);
+  const dopamine = useDopamineSettings();
   const volumePercent = Math.round(audio.volume * 100);
-  const canPreviewReminderCue = !audio.muted && comfort.settings.reminderCuesEnabled;
+  const canPreviewReminderCue = audio.canPlayFeedback && comfort.settings.reminderCuesEnabled;
+  const visibleProfiles = AUDIO_COMFORT_PROFILES.filter((profile) => profile.id !== "rich");
+  const savedProfile =
+    comfort.settings.profile === "rich" ? "balanced" : comfort.settings.profile;
+  const profileMatchesEffectiveSettings = (profile: (typeof visibleProfiles)[number]) =>
+    comfort.settings.ambientEnabled === profile.settings.ambientEnabled &&
+    comfort.settings.completionCuesEnabled === profile.settings.completionCuesEnabled &&
+    comfort.settings.milestoneCuesEnabled === profile.settings.milestoneCuesEnabled &&
+    comfort.settings.reminderCuesEnabled === profile.settings.reminderCuesEnabled &&
+    comfort.settings.avoidedTextures.length === profile.settings.avoidedTextures.length &&
+    profile.settings.avoidedTextures.every((texture) =>
+      comfort.settings.avoidedTextures.includes(texture),
+    );
+  const activeProfile =
+    visibleProfiles.find(
+      (profile) => profile.id === savedProfile && profileMatchesEffectiveSettings(profile),
+    )?.id ?? null;
   const textureItems: readonly { texture: AppAudioComfortTexture; label: string }[] = [
     { texture: "air", label: t.settingsSoundTextureAir },
     { texture: "water", label: t.settingsSoundTextureWater },
     { texture: "rain", label: t.settingsSoundTextureRain },
   ];
-  const feedbackChoiceItems: readonly { choice: AudioComfortFeedbackChoice; label: string }[] = [
-    { choice: "comfortable", label: t.settingsSoundFeedbackComfortable },
-    { choice: "too_loud", label: t.settingsSoundFeedbackTooLoud },
-    { choice: "distracting", label: t.settingsSoundFeedbackDistracting },
-    { choice: "prefer_silent", label: t.settingsSoundFeedbackPreferSilent },
-    { choice: "did_not_play", label: t.settingsSoundFeedbackDidNotPlay },
-  ];
-
   const toggleAvoidedTexture = useCallback((texture: AppAudioComfortTexture) => {
     const current = comfort.settings.avoidedTextures;
     const next = current.includes(texture)
@@ -50,33 +55,32 @@ export function SoundPanel() {
     comfort.updateSettings({ avoidedTextures: next });
   }, [comfort]);
 
-  const submitComfortFeedback = useCallback((choice: AudioComfortFeedbackChoice) => {
-    recordAudioComfortFeedback({
-      choice,
-      surface: "settings",
-      platform: getAppAudioPlatform(),
-      volumeBucket: getVolumeBucket(audio.volume, audio.muted),
-      muted: audio.muted,
-      ambientEnabled: comfort.settings.ambientEnabled,
-    });
-    setLastFeedbackChoice(choice);
-  }, [audio.muted, audio.volume, comfort.settings.ambientEnabled]);
-
   return (
     <PanelFrame
-      icon={audio.muted ? VolumeX : Volume2}
+      icon={audio.canPlayFeedback ? Volume2 : VolumeX}
       title={t.settingsSoundTitle}
       description={t.settingsSoundDescription}
       testId="settings-v2-panel-sound"
     >
       <ToggleRow
-        icon={audio.muted ? VolumeX : Volume2}
+        icon={audio.canPlayFeedback ? Volume2 : VolumeX}
         title={t.settingsSoundMaster}
         description={t.settingsSoundMasterDesc}
-        checked={!audio.muted}
-        onCheckedChange={(checked) => setMuted(!checked)}
+        checked={audio.canPlayFeedback}
+        onCheckedChange={setAudioEnabled}
         testId="settings-v2-app-sound-toggle"
       />
+
+      {isNative && (
+        <ToggleRow
+          icon={Vibrate}
+          title={t.dopamineHaptics}
+          description={t.dopamineHapticsDesc}
+          checked={dopamine.haptics}
+          onCheckedChange={(checked) => updateDopamineSettings({ haptics: checked })}
+          testId="settings-v2-haptics-toggle"
+        />
+      )}
 
       <SettingsInset testId="settings-v2-audio-volume-card">
         <SettingsFieldHeader
@@ -113,25 +117,30 @@ export function SoundPanel() {
           title={t.settingsSoundComfortTitle}
           description={t.settingsSoundComfortDescription}
         />
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {AUDIO_COMFORT_PROFILES.map((profile) => (
-            <SettingsChoiceButton
-              key={profile.id}
-              selected={comfort.settings.profile === profile.id}
-              onClick={() => comfort.applyProfile(profile.id)}
-              presentation="compact"
-              selectedTone="solid"
-              surface="card"
-              testId={`settings-v2-audio-comfort-profile-${profile.id}`}
-            >
-              <span className="block text-sm">
-                {profile.id === "quiet" ? t.settingsSoundProfileQuiet : profile.id === "rich" ? t.settingsSoundProfileRich : t.settingsSoundProfileBalanced}
-              </span>
-              <span className="mt-1 block text-xs font-normal leading-snug opacity-80">
-                {profile.id === "quiet" ? t.settingsSoundProfileQuietDesc : profile.id === "rich" ? t.settingsSoundProfileRichDesc : t.settingsSoundProfileBalancedDesc}
-              </span>
-            </SettingsChoiceButton>
-          ))}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {visibleProfiles.map((profile) => {
+            const isQuiet = profile.id === "quiet";
+            return (
+              <SettingsChoiceButton
+                key={profile.id}
+                selected={activeProfile === profile.id}
+                onClick={() => comfort.applyProfile(profile.id)}
+                presentation="stacked"
+                selectedTone="solid"
+                surface="card"
+                testId={`settings-v2-audio-comfort-profile-${profile.id}`}
+              >
+                <span className="block text-sm">
+                  {isQuiet ? t.settingsSoundProfileQuiet : t.settingsSoundProfileBalanced}
+                </span>
+                <span className="mt-1 block text-xs font-normal leading-snug opacity-80">
+                  {isQuiet
+                    ? t.settingsSoundProfileQuietDesc
+                    : t.settingsSoundProfileBalancedDesc}
+                </span>
+              </SettingsChoiceButton>
+            );
+          })}
         </div>
       </SettingsInset>
 
@@ -197,29 +206,6 @@ export function SoundPanel() {
               </SettingsChoiceButton>
             );
           })}
-        </div>
-      </SettingsInset>
-
-      <SettingsInset testId="settings-v2-audio-feedback-card">
-        <SettingsFieldHeader
-          icon={MessageSquare}
-          title={t.settingsSoundFeedbackTitle}
-          description={t.settingsSoundFeedbackDescription}
-        />
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {feedbackChoiceItems.map((item) => (
-            <SettingsChoiceButton
-              key={item.choice}
-              selected={lastFeedbackChoice === item.choice}
-              onClick={() => submitComfortFeedback(item.choice)}
-              presentation="compact"
-              selectedTone="subtle"
-              surface="card"
-              testId={`settings-v2-audio-feedback-${item.choice}`}
-            >
-              {item.label}
-            </SettingsChoiceButton>
-          ))}
         </div>
       </SettingsInset>
 

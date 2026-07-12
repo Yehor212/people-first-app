@@ -15,7 +15,7 @@ import { DatabaseRecoveryDialog } from "@/components/DatabaseRecoveryDialog";
 import { UpdateRequiredDialog } from "@/components/UpdateRequiredDialog";
 import Index from "./pages/Index";
 import { preloadShareCardAssets } from "@/lib/shareCards";
-import { useDopamineSettings } from "@/components/DopamineSettings";
+import { useDopamineSettings } from "@/hooks/useDopamineSettings";
 import { useFontScaleInit } from "@/hooks/useFontScale";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useMediaQuery } from "@/hooks/useMediaQuery";

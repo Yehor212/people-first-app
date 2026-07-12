@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
     put: vi.fn(),
     get: vi.fn(),
     delete: vi.fn(),
+    toArray: vi.fn(),
+    bulkPut: vi.fn(),
   },
   syncSetting: vi.fn(),
   deleteSettingFromCloud: vi.fn(),
@@ -21,6 +23,11 @@ const cryptoMocks = vi.hoisted(() => ({
   isEncryptedJournalContent: vi.fn((content: string) => content.startsWith("enc:")),
 }));
 
+const writeSecurityMocks = vi.hoisted(() => ({
+  getJournalVaultKeyForWrite: vi.fn<() => Promise<string | null>>(() => Promise.resolve(null)),
+  runWithJournalSecurityWriteLock: vi.fn(<T>(operation: () => Promise<T>) => operation()),
+}));
+
 vi.mock("@/storage/db", () => ({
   settingsRepo: mocks.settingsRepo,
 }));
@@ -28,6 +35,10 @@ vi.mock("@/storage/db", () => ({
 vi.mock("@/storage/realtimeSync", () => ({
   syncSetting: mocks.syncSetting,
   deleteSettingFromCloud: mocks.deleteSettingFromCloud,
+}));
+
+vi.mock("@/lib/supabaseClient", () => ({
+  getCurrentSessionUserId: vi.fn(() => Promise.resolve("account-a")),
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -40,6 +51,20 @@ vi.mock("../journalContentSession", () => ({
   getJournalContentVaultKey: cryptoMocks.getJournalContentVaultKey,
 }));
 
+vi.mock("../journalWriteSecurity", () => ({
+  JournalWriteLockedError: class JournalWriteLockedError extends Error {
+    constructor() {
+      super("Unlock the protected diary before writing private content");
+      this.name = "JournalWriteLockedError";
+    }
+  },
+  getJournalVaultKeyForWrite: writeSecurityMocks.getJournalVaultKeyForWrite,
+}));
+
+vi.mock("../journalSecurityWriteLock", () => ({
+  runWithJournalSecurityWriteLock: writeSecurityMocks.runWithJournalSecurityWriteLock,
+}));
+
 vi.mock("../journalCrypto", () => ({
   encryptJournalContent: cryptoMocks.encryptJournalContent,
   decryptJournalContentIfNeeded: cryptoMocks.decryptJournalContentIfNeeded,
@@ -48,7 +73,10 @@ vi.mock("../journalCrypto", () => ({
 
 import {
   clearJournalDraft,
+  decryptEncryptedJournalDrafts,
+  encryptPlaintextJournalDrafts,
   getJournalDraftKey,
+  hasEncryptedJournalDrafts,
   loadJournalDraft,
   saveJournalDraft,
   type JournalDraftData,
@@ -72,9 +100,15 @@ describe("journalDraftStorage", () => {
     mocks.settingsRepo.put.mockResolvedValue(undefined);
     mocks.settingsRepo.get.mockResolvedValue(undefined);
     mocks.settingsRepo.delete.mockResolvedValue(undefined);
+    mocks.settingsRepo.toArray.mockResolvedValue([]);
+    mocks.settingsRepo.bulkPut.mockResolvedValue(undefined);
     mocks.syncSetting.mockResolvedValue(undefined);
     mocks.deleteSettingFromCloud.mockResolvedValue(undefined);
     cryptoMocks.getJournalContentVaultKey.mockReturnValue(null);
+    writeSecurityMocks.getJournalVaultKeyForWrite.mockResolvedValue(null);
+    writeSecurityMocks.runWithJournalSecurityWriteLock.mockImplementation(
+      <T>(operation: () => Promise<T>) => operation()
+    );
     cryptoMocks.encryptJournalContent.mockClear();
     cryptoMocks.decryptJournalContentIfNeeded.mockClear();
     cryptoMocks.isEncryptedJournalContent.mockClear();
@@ -89,6 +123,8 @@ describe("journalDraftStorage", () => {
     await saveJournalDraft(draftKey, draft);
 
     expect(mocks.settingsRepo.put).toHaveBeenCalledWith({ key: draftKey, value: draft });
+    expect(writeSecurityMocks.runWithJournalSecurityWriteLock).toHaveBeenCalledTimes(1);
+    expect(writeSecurityMocks.getJournalVaultKeyForWrite).toHaveBeenCalledTimes(1);
     expect(mocks.syncSetting).not.toHaveBeenCalled();
   });
 
@@ -115,6 +151,7 @@ describe("journalDraftStorage", () => {
 
   it("encrypts protected draft content when a journal vault key is available", async () => {
     cryptoMocks.getJournalContentVaultKey.mockReturnValue("vault-key");
+    writeSecurityMocks.getJournalVaultKeyForWrite.mockResolvedValue("vault-key");
 
     await saveJournalDraft(draftKey, draft);
 
@@ -125,6 +162,31 @@ describe("journalDraftStorage", () => {
         content: `enc:vault-key:${draft.content}`,
       }),
     });
+  });
+
+  it("refuses a plaintext draft save when persistent protection exists but this tab is locked", async () => {
+    writeSecurityMocks.getJournalVaultKeyForWrite.mockRejectedValueOnce(
+      Object.assign(new Error("Unlock the protected diary before writing private content"), {
+        name: "JournalWriteLockedError",
+      })
+    );
+
+    await expect(saveJournalDraft(draftKey, draft)).rejects.toMatchObject({
+      name: "JournalWriteLockedError",
+    });
+
+    expect(mocks.settingsRepo.put).not.toHaveBeenCalled();
+    expect(localStorage.getItem(draftKey)).toBeNull();
+  });
+
+  it("does not encrypt with a stale in-memory key after persistent protection was removed", async () => {
+    cryptoMocks.getJournalContentVaultKey.mockReturnValue("stale-vault-key");
+    writeSecurityMocks.getJournalVaultKeyForWrite.mockResolvedValue(null);
+
+    await saveJournalDraft(draftKey, draft);
+
+    expect(cryptoMocks.encryptJournalContent).not.toHaveBeenCalled();
+    expect(mocks.settingsRepo.put).toHaveBeenCalledWith({ key: draftKey, value: draft });
   });
 
   it("decrypts protected draft content after journal unlock", async () => {
@@ -143,6 +205,56 @@ describe("journalDraftStorage", () => {
     expect(loaded).toStrictEqual(draft);
   });
 
+  it("keeps a legacy plaintext draft quarantined while persistent protection is locked", async () => {
+    localStorage.setItem(draftKey, JSON.stringify(draft));
+    writeSecurityMocks.getJournalVaultKeyForWrite.mockRejectedValueOnce(
+      Object.assign(new Error("Unlock the protected diary before writing private content"), {
+        name: "JournalWriteLockedError",
+      })
+    );
+
+    await expect(loadJournalDraft(draftKey)).resolves.toBeNull();
+
+    expect(mocks.settingsRepo.put).not.toHaveBeenCalled();
+    expect(localStorage.getItem(draftKey)).toBe(JSON.stringify(draft));
+  });
+
+  it("detects and decrypts only encrypted journal draft settings during password removal", async () => {
+    const protectedDraft = { ...draft, content: `enc:vault-key:${draft.content}` };
+    mocks.settingsRepo.toArray.mockResolvedValueOnce([
+      { key: draftKey, value: protectedDraft },
+      { key: "theme", value: { content: "enc:vault-key:unrelated" } },
+    ]);
+
+    await expect(hasEncryptedJournalDrafts()).resolves.toBe(true);
+
+    mocks.settingsRepo.toArray.mockResolvedValueOnce([
+      { key: draftKey, value: protectedDraft },
+      { key: "theme", value: { content: "enc:vault-key:unrelated" } },
+    ]);
+    await expect(decryptEncryptedJournalDrafts("vault-key")).resolves.toBe(1);
+
+    expect(mocks.settingsRepo.bulkPut).toHaveBeenCalledWith([
+      { key: draftKey, value: draft },
+    ]);
+  });
+
+  it("re-encrypts plaintext drafts so a failed password removal can restore protection", async () => {
+    mocks.settingsRepo.toArray.mockResolvedValueOnce([
+      { key: draftKey, value: draft },
+      { key: "journal_draft_empty", value: { ...draft, content: "" } },
+    ]);
+
+    await expect(encryptPlaintextJournalDrafts("vault-key")).resolves.toBe(1);
+
+    expect(mocks.settingsRepo.bulkPut).toHaveBeenCalledWith([
+      {
+        key: draftKey,
+        value: { ...draft, content: `enc:vault-key:${draft.content}` },
+      },
+    ]);
+  });
+
   it("clears local drafts and writes an ordered setting delete event", async () => {
     localStorage.setItem(draftKey, JSON.stringify(draft));
 
@@ -150,6 +262,19 @@ describe("journalDraftStorage", () => {
 
     expect(mocks.settingsRepo.delete).toHaveBeenCalledWith(draftKey);
     expect(localStorage.getItem(draftKey)).toBeNull();
-    expect(mocks.deleteSettingFromCloud).toHaveBeenCalledWith(draftKey);
+    expect(mocks.deleteSettingFromCloud).toHaveBeenCalledWith(draftKey, "account-a");
+  });
+
+  it("does not clear any draft sink after the journal account boundary becomes stale", async () => {
+    localStorage.setItem(draftKey, JSON.stringify(draft));
+    writeSecurityMocks.runWithJournalSecurityWriteLock.mockRejectedValueOnce(
+      new Error("Account boundary changed")
+    );
+
+    await expect(clearJournalDraft(draftKey)).rejects.toThrow(/account boundary/i);
+
+    expect(mocks.settingsRepo.delete).not.toHaveBeenCalled();
+    expect(localStorage.getItem(draftKey)).toBe(JSON.stringify(draft));
+    expect(mocks.deleteSettingFromCloud).not.toHaveBeenCalled();
   });
 });

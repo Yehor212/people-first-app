@@ -15,7 +15,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, calculateStreak } from '@/lib/utils';
 import { isHabitCompletedOnDate, getHabitCompletedDates } from '@/lib/habits';
-import { useDopamineSettings } from './DopamineSettings';
+import { useDopamineSettings } from '@/hooks/useDopamineSettings';
 import { UnifiedShareModal } from '@/components/share';
 
 const FireAnimation = lazyWithRetry(() => import('./FireAnimation'), 'FireAnimation');

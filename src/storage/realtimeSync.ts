@@ -33,8 +33,12 @@ import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
 import { getJournalContentVaultKey } from "@/features/journal/journalContentSession";
 import { isEncryptedJournalContent } from "@/features/journal/journalCrypto";
+import { runWithJournalSecurityWriteLock } from "@/features/journal/journalSecurityWriteLock";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { fetchAndMergeServerTombstones, mergeSyncTombstones } from "@/storage/sync/serverTombstones";
+import {
+  fetchAndMergeServerTombstones,
+  mergeSyncTombstones,
+} from "@/storage/sync/serverTombstones";
 import {
   runtimeMoodEntrySchema,
   runtimeHabitSchema,
@@ -44,6 +48,8 @@ import {
 } from "@/lib/schemas";
 import { decodeHabitCompletionFromCloud } from "./sync/habitCompletionCodec";
 import { isAccountSyncedSettingKey } from "./sync/settingSyncPolicy";
+import { applyIncomingAccountSetting } from "./sync/journalVaultSyncPolicy";
+import { SyncOwnerBoundaryError, validateSyncOwner } from "./sync/syncOwner";
 
 // Re-export all per-entity sync functions so existing imports continue to work
 export {
@@ -113,18 +119,18 @@ function canPullJournalMediaWhileLocked(media: { storage_path?: string | null })
 // FULL PULL FROM CLOUD
 // ============================================
 
-export const pullFromCloud = async (): Promise<boolean> => {
-  const userId = await getCurrentUserId();
-  // Explicit validation to prevent RLS violations with undefined user_id
+export const pullFromCloud = async (expectedOwnerUserId?: string): Promise<boolean> => {
   if (!supabase) return false;
-  if (!userId) {
-    logger.warn("[Sync] Cannot pull from cloud: User not authenticated");
-    return false;
-  }
-
-  lazyCategorizedBreadcrumb("sync", "Starting pullFromCloud");
 
   try {
+    const userId = await validateSyncOwner(expectedOwnerUserId, "Cloud snapshot pull");
+    if (!userId) {
+      logger.warn("[Sync] Cannot pull from cloud: User not authenticated");
+      return false;
+    }
+
+    lazyCategorizedBreadcrumb("sync", "Starting pullFromCloud");
+
     // Fetch all data in parallel
     const [
       moodsRes,
@@ -182,6 +188,10 @@ export const pullFromCloud = async (): Promise<boolean> => {
         .limit(100000),
     ]);
 
+    // The response belongs to the account captured before the parallel fetch.
+    // Discard it before any local tombstone or data mutation if auth changed.
+    await validateSyncOwner(userId, "Cloud snapshot pull");
+
     // Check for errors
     if (moodsRes.error) throw moodsRes.error;
     if (habitsRes.error) throw habitsRes.error;
@@ -206,7 +216,8 @@ export const pullFromCloud = async (): Promise<boolean> => {
     const journalEntriesData = journalEntriesRes.data || [];
     const journalPhotosData = journalPhotosRes.data || [];
     const journalAudioData = journalAudioRes.data || [];
-    const deletedIds = await mergeSyncTombstones(tombstonesRes.data || []);
+    await validateSyncOwner(userId, "Cloud snapshot tombstone merge");
+    const deletedIds = await mergeSyncTombstones(tombstonesRes.data || [], userId);
     const lockedProtectedJournal =
       Boolean(await db.settings.get(SK.JOURNAL_PASSWORD)) && !getJournalContentVaultKey();
     const pullableJournalEntriesData = lockedProtectedJournal
@@ -219,14 +230,16 @@ export const pullFromCloud = async (): Promise<boolean> => {
       ? journalPhotosData.filter(
           (photo) =>
             canPullJournalMediaWhileLocked(photo) &&
-            (!shouldFilterJournalMediaByPulledEntries || pullableJournalEntryIds.has(photo.entry_id))
+            (!shouldFilterJournalMediaByPulledEntries ||
+              pullableJournalEntryIds.has(photo.entry_id))
         )
       : journalPhotosData;
     const pullableJournalAudioData = lockedProtectedJournal
       ? journalAudioData.filter(
           (audio) =>
             canPullJournalMediaWhileLocked(audio) &&
-            (!shouldFilterJournalMediaByPulledEntries || pullableJournalEntryIds.has(audio.entry_id))
+            (!shouldFilterJournalMediaByPulledEntries ||
+              pullableJournalEntryIds.has(audio.entry_id))
         )
       : journalAudioData;
 
@@ -376,7 +389,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
     // Transform journal data from cloud to local format
     // Note: photos/audio only have metadata here — binary data lives in Storage
     // and will be lazily downloaded when the user views an entry
-    const journalEntries: JournalEntry[] = pullableJournalEntriesData.map((e) => ({
+    let journalEntries: JournalEntry[] = pullableJournalEntriesData.map((e) => ({
       id: e.id,
       date: e.date,
       title: e.title,
@@ -392,7 +405,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       updatedAt: e.updated_at,
     }));
 
-    const journalPhotos: JournalPhoto[] = pullableJournalPhotosData.map((p) => ({
+    let journalPhotos: JournalPhoto[] = pullableJournalPhotosData.map((p) => ({
       id: p.id,
       entryId: p.entry_id,
       data: "", // Binary data not stored in Supabase table — download from Storage on demand
@@ -403,7 +416,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       storagePath: p.storage_path || undefined,
     }));
 
-    const journalAudioItems: JournalAudio[] = pullableJournalAudioData.map((a) => ({
+    let journalAudioItems: JournalAudio[] = pullableJournalAudioData.map((a) => ({
       id: a.id,
       entryId: a.entry_id,
       data: "", // Binary data not stored in Supabase table — download from Storage on demand
@@ -416,156 +429,181 @@ export const pullFromCloud = async (): Promise<boolean> => {
     // P2-4 Fix: Save to local DB with explicit transaction error handling
     // Dexie transactions are atomic - if any operation fails, all changes roll back
     try {
-      await db.transaction(
-        "rw",
-        [
-          db.moods,
-          db.habits,
-          db.focusSessions,
-          db.gratitudeEntries,
-          db.settings,
-          db.journalEntries,
-          db.journalPhotos,
-          db.journalAudio,
-        ],
-        async () => {
-          // Upsert all data
-          if (deletedIds.mood.size > 0) {
-            await db.moods.bulkDelete([...deletedIds.mood]);
-          }
-          if (moods.length) {
-            const filteredMoods =
-              deletedIds.mood.size > 0 ? moods.filter((m) => !deletedIds.mood.has(m.id)) : moods;
-            if (filteredMoods.length) await db.moods.bulkPut(filteredMoods);
-          }
+      await validateSyncOwner(userId, "Cloud snapshot local apply");
+      await runWithJournalSecurityWriteLock(async () => {
+        // The snapshot was fetched outside the lock. Password activation may
+        // have completed while the network request was in flight, so both the
+        // account owner and diary-protection epoch must be checked again at the
+        // local commit boundary.
+        await validateSyncOwner(userId, "Cloud snapshot journal commit");
+        const protectedJournalAtCommit = Boolean(await db.settings.get(SK.JOURNAL_PASSWORD));
+        if (protectedJournalAtCommit) {
+          const snapshotContainedEntries = journalEntries.length > 0;
+          journalEntries = journalEntries.filter(canPullJournalEntryWhileLocked);
+          const protectedEntryIds = new Set(journalEntries.map((entry) => entry.id));
+          journalPhotos = journalPhotos.filter(
+            (photo) =>
+              isEncryptedJournalMediaStoragePath(photo.storagePath) &&
+              (!snapshotContainedEntries || protectedEntryIds.has(photo.entryId))
+          );
+          journalAudioItems = journalAudioItems.filter(
+            (audio) =>
+              isEncryptedJournalMediaStoragePath(audio.storagePath) &&
+              (!snapshotContainedEntries || protectedEntryIds.has(audio.entryId))
+          );
+        }
 
-          // Filter out tombstoned habits before saving; deletes beat stale snapshots.
-          if (deletedIds.habit.size > 0) {
-            await db.habits.bulkDelete([...deletedIds.habit]);
-          }
-          if (habits.length) {
-            const filteredHabits =
-              deletedIds.habit.size > 0
-                ? habits.filter((h) => !deletedIds.habit.has(h.id))
-                : habits;
-            if (filteredHabits.length) await db.habits.bulkPut(filteredHabits);
-          }
-          if (deletedIds.focus.size > 0) {
-            await db.focusSessions.bulkDelete([...deletedIds.focus]);
-          }
-          if (focusSessions.length) {
-            const filteredFocus =
-              deletedIds.focus.size > 0
-                ? focusSessions.filter((f) => !deletedIds.focus.has(f.id))
-                : focusSessions;
-            if (filteredFocus.length) await db.focusSessions.bulkPut(filteredFocus);
-          }
-          if (deletedIds.gratitude.size > 0) {
-            await db.gratitudeEntries.bulkDelete([...deletedIds.gratitude]);
-          }
-          if (gratitudeEntries.length) {
-            const filteredGratitude =
-              deletedIds.gratitude.size > 0
-                ? gratitudeEntries.filter((g) => !deletedIds.gratitude.has(g.id))
-                : gratitudeEntries;
-            if (filteredGratitude.length) await db.gratitudeEntries.bulkPut(filteredGratitude);
-          }
-
-          // Journal entries: use updatedAt-based conflict resolution + deletion tracking
-          if (journalEntries.length) {
-            const localEntries = await db.journalEntries.toArray();
-            const localMap = new Map(localEntries.map((e) => [e.id, e]));
-            const merged = journalEntries
-              .filter((remote) => !deletedIds.journal.has(remote.id))
-              .map((remote) => {
-                const local = localMap.get(remote.id);
-                if (!local) return remote;
-                // Keep whichever has the newer updatedAt
-                return local.updatedAt > remote.updatedAt ? local : remote;
-              });
-            if (merged.length) await db.journalEntries.bulkPut(merged);
-
-            // Journal photos: merge — filter out deleted entries + preserve local binary data
-            if (journalPhotos.length) {
-              const filteredPhotos =
-                deletedIds.journal.size > 0
-                  ? journalPhotos.filter((p) => !deletedIds.journal.has(p.entryId))
-                  : journalPhotos;
-              if (filteredPhotos.length) {
-                const localPhotos = await db.journalPhotos.toArray();
-                const localPhotoMap = new Map(localPhotos.map((p) => [p.id, p]));
-                const mergedPhotos = filteredPhotos.map((remote) => {
-                  const local = localPhotoMap.get(remote.id);
-                  if (local && local.data)
-                    return {
-                      ...remote,
-                      data: local.data,
-                      thumbnail: local.thumbnail,
-                    };
-                  return remote;
-                });
-                await db.journalPhotos.bulkPut(mergedPhotos);
-              }
+        await db.transaction(
+          "rw",
+          [
+            db.moods,
+            db.habits,
+            db.focusSessions,
+            db.gratitudeEntries,
+            db.settings,
+            db.journalEntries,
+            db.journalPhotos,
+            db.journalAudio,
+          ],
+          async () => {
+            // Upsert all data
+            if (deletedIds.mood.size > 0) {
+              await db.moods.bulkDelete([...deletedIds.mood]);
+            }
+            if (moods.length) {
+              const filteredMoods =
+                deletedIds.mood.size > 0 ? moods.filter((m) => !deletedIds.mood.has(m.id)) : moods;
+              if (filteredMoods.length) await db.moods.bulkPut(filteredMoods);
             }
 
-            // Journal audio: same logic as photos
-            if (journalAudioItems.length) {
-              const filteredAudio =
-                deletedIds.journal.size > 0
-                  ? journalAudioItems.filter((a) => !deletedIds.journal.has(a.entryId))
-                  : journalAudioItems;
-              if (filteredAudio.length) {
+            // Filter out tombstoned habits before saving; deletes beat stale snapshots.
+            if (deletedIds.habit.size > 0) {
+              await db.habits.bulkDelete([...deletedIds.habit]);
+            }
+            if (habits.length) {
+              const filteredHabits =
+                deletedIds.habit.size > 0
+                  ? habits.filter((h) => !deletedIds.habit.has(h.id))
+                  : habits;
+              if (filteredHabits.length) await db.habits.bulkPut(filteredHabits);
+            }
+            if (deletedIds.focus.size > 0) {
+              await db.focusSessions.bulkDelete([...deletedIds.focus]);
+            }
+            if (focusSessions.length) {
+              const filteredFocus =
+                deletedIds.focus.size > 0
+                  ? focusSessions.filter((f) => !deletedIds.focus.has(f.id))
+                  : focusSessions;
+              if (filteredFocus.length) await db.focusSessions.bulkPut(filteredFocus);
+            }
+            if (deletedIds.gratitude.size > 0) {
+              await db.gratitudeEntries.bulkDelete([...deletedIds.gratitude]);
+            }
+            if (gratitudeEntries.length) {
+              const filteredGratitude =
+                deletedIds.gratitude.size > 0
+                  ? gratitudeEntries.filter((g) => !deletedIds.gratitude.has(g.id))
+                  : gratitudeEntries;
+              if (filteredGratitude.length) await db.gratitudeEntries.bulkPut(filteredGratitude);
+            }
+
+            // Journal entries: use updatedAt-based conflict resolution + deletion tracking
+            if (journalEntries.length) {
+              const localEntries = await db.journalEntries.toArray();
+              const localMap = new Map(localEntries.map((e) => [e.id, e]));
+              const merged = journalEntries
+                .filter((remote) => !deletedIds.journal.has(remote.id))
+                .map((remote) => {
+                  const local = localMap.get(remote.id);
+                  if (!local) return remote;
+                  // Keep whichever has the newer updatedAt
+                  return local.updatedAt > remote.updatedAt ? local : remote;
+                });
+              if (merged.length) await db.journalEntries.bulkPut(merged);
+
+              // Journal photos: merge — filter out deleted entries + preserve local binary data
+              if (journalPhotos.length) {
+                const filteredPhotos =
+                  deletedIds.journal.size > 0
+                    ? journalPhotos.filter((p) => !deletedIds.journal.has(p.entryId))
+                    : journalPhotos;
+                if (filteredPhotos.length) {
+                  const localPhotos = await db.journalPhotos.toArray();
+                  const localPhotoMap = new Map(localPhotos.map((p) => [p.id, p]));
+                  const mergedPhotos = filteredPhotos.map((remote) => {
+                    const local = localPhotoMap.get(remote.id);
+                    if (local && local.data)
+                      return {
+                        ...remote,
+                        data: local.data,
+                        thumbnail: local.thumbnail,
+                      };
+                    return remote;
+                  });
+                  await db.journalPhotos.bulkPut(mergedPhotos);
+                }
+              }
+
+              // Journal audio: same logic as photos
+              if (journalAudioItems.length) {
+                const filteredAudio =
+                  deletedIds.journal.size > 0
+                    ? journalAudioItems.filter((a) => !deletedIds.journal.has(a.entryId))
+                    : journalAudioItems;
+                if (filteredAudio.length) {
+                  const localAudio = await db.journalAudio.toArray();
+                  const localAudioMap = new Map(localAudio.map((a) => [a.id, a]));
+                  const mergedAudio = filteredAudio.map((remote) => {
+                    const local = localAudioMap.get(remote.id);
+                    if (local && local.data) return { ...remote, data: local.data };
+                    return remote;
+                  });
+                  await db.journalAudio.bulkPut(mergedAudio);
+                }
+              }
+            } else {
+              // No journal entries to merge, but still handle photos/audio
+              if (journalPhotos.length) {
+                const localPhotos = await db.journalPhotos.toArray();
+                const localPhotoMap = new Map(localPhotos.map((p) => [p.id, p]));
+                const mergedPhotos = journalPhotos
+                  .filter((remote) => !deletedIds.journal.has(remote.entryId))
+                  .map((remote) => {
+                    const local = localPhotoMap.get(remote.id);
+                    if (local && local.data)
+                      return {
+                        ...remote,
+                        data: local.data,
+                        thumbnail: local.thumbnail,
+                      };
+                    return remote;
+                  });
+                await db.journalPhotos.bulkPut(mergedPhotos);
+              }
+
+              if (journalAudioItems.length) {
                 const localAudio = await db.journalAudio.toArray();
                 const localAudioMap = new Map(localAudio.map((a) => [a.id, a]));
-                const mergedAudio = filteredAudio.map((remote) => {
-                  const local = localAudioMap.get(remote.id);
-                  if (local && local.data) return { ...remote, data: local.data };
-                  return remote;
-                });
+                const mergedAudio = journalAudioItems
+                  .filter((remote) => !deletedIds.journal.has(remote.entryId))
+                  .map((remote) => {
+                    const local = localAudioMap.get(remote.id);
+                    if (local && local.data) return { ...remote, data: local.data };
+                    return remote;
+                  });
                 await db.journalAudio.bulkPut(mergedAudio);
               }
             }
-          } else {
-            // No journal entries to merge, but still handle photos/audio
-            if (journalPhotos.length) {
-              const localPhotos = await db.journalPhotos.toArray();
-              const localPhotoMap = new Map(localPhotos.map((p) => [p.id, p]));
-              const mergedPhotos = journalPhotos
-                .filter((remote) => !deletedIds.journal.has(remote.entryId))
-                .map((remote) => {
-                  const local = localPhotoMap.get(remote.id);
-                  if (local && local.data)
-                    return {
-                      ...remote,
-                      data: local.data,
-                      thumbnail: local.thumbnail,
-                    };
-                  return remote;
-                });
-              await db.journalPhotos.bulkPut(mergedPhotos);
-            }
 
-            if (journalAudioItems.length) {
-              const localAudio = await db.journalAudio.toArray();
-              const localAudioMap = new Map(localAudio.map((a) => [a.id, a]));
-              const mergedAudio = journalAudioItems
-                .filter((remote) => !deletedIds.journal.has(remote.entryId))
-                .map((remote) => {
-                  const local = localAudioMap.get(remote.id);
-                  if (local && local.data) return { ...remote, data: local.data };
-                  return remote;
-                });
-              await db.journalAudio.bulkPut(mergedAudio);
+            // Settings
+            for (const s of settingsData) {
+              if (!isAccountSyncedSettingKey(s.key)) continue;
+              await applyIncomingAccountSetting(s.key, s.value);
             }
           }
-
-          // Settings
-          for (const s of settingsData) {
-            if (!isAccountSyncedSettingKey(s.key)) continue;
-            await db.settings.put({ key: s.key, value: s.value });
-          }
-        }
-      );
+        );
+      });
     } catch (transactionError) {
       // P2-4 Fix: Emit event for UI awareness when transaction fails
       logger.error("[Sync] Transaction failed during pullFromCloud:", transactionError);
@@ -607,6 +645,10 @@ export const pullFromCloud = async (): Promise<boolean> => {
 
     return true;
   } catch (error) {
+    if (error instanceof SyncOwnerBoundaryError) {
+      logger.warn("[Sync] pullFromCloud discarded at an account boundary");
+      return false;
+    }
     // Handle AbortError gracefully
     if (isAbortError(error)) {
       lazyCategorizedBreadcrumb("sync", "pullFromCloud aborted", {}, "warning");
@@ -641,7 +683,7 @@ export const pushToCloud = async (): Promise<boolean> => {
   lazyCategorizedBreadcrumb("sync", "Starting pushToCloud");
 
   try {
-    const deletedIds = await fetchAndMergeServerTombstones();
+    const deletedIds = await fetchAndMergeServerTombstones(100000, userId);
     const [
       moods,
       habits,
@@ -696,11 +738,11 @@ export const pushToCloud = async (): Promise<boolean> => {
     await processBatched(liveGratitudeEntries, (g) => syncGratitude(g));
     await processBatched(
       settings.filter((s) => isAccountSyncedSettingKey(s.key)),
-      (s) => syncSetting(s.key, s.value)
+      (s) => syncSetting(s.key, s.value, userId)
     );
-    await processBatched(liveJournalEntries, (e) => syncJournalEntry(e));
-    await processBatched(liveJournalPhotos, (p) => syncJournalPhoto(p));
-    await processBatched(liveJournalAudio, (a) => syncJournalAudio(a));
+    await processBatched(liveJournalEntries, (e) => syncJournalEntry(e, userId));
+    await processBatched(liveJournalPhotos, (p) => syncJournalPhoto(p, userId));
+    await processBatched(liveJournalAudio, (a) => syncJournalAudio(a, userId));
 
     lazyCategorizedBreadcrumb("sync", "pushToCloud completed", {
       moods: moods.length,
