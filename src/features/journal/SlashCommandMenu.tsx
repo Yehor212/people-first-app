@@ -10,23 +10,101 @@ interface SlashCommandMenuProps {
   editorRef: React.RefObject<HTMLDivElement>;
   onCommand: (cmd: string) => void;
   onClose: () => void;
+  disabledCommandIds?: ReadonlySet<CommandId>;
 }
 
 const COMMANDS = [
-  { id: "mood", icon: "\u{1F60A}", labelKey: "journalSlashMoodLabel", descriptionKey: "journalSlashMoodDescription", fallbackLabel: "Mood", fallbackDescription: "Set entry mood" },
-  { id: "heading", icon: "H", labelKey: "journalSlashHeadingLabel", descriptionKey: "journalSlashHeadingDescription", fallbackLabel: "Heading", fallbackDescription: "Insert a heading" },
-  { id: "quote", icon: "\u275D", labelKey: "journalSlashQuoteLabel", descriptionKey: "journalSlashQuoteDescription", fallbackLabel: "Quote", fallbackDescription: "Insert a quote block" },
-  { id: "checklist", icon: "\u2611", labelKey: "journalSlashChecklistLabel", descriptionKey: "journalSlashChecklistDescription", fallbackLabel: "Checklist", fallbackDescription: "Insert a checklist" },
-  { id: "breathe", icon: "\u{1F9D8}", labelKey: "journalSlashBreatheLabel", descriptionKey: "journalSlashBreatheDescription", fallbackLabel: "Breathe", fallbackDescription: "Open a breathing exercise" },
-  { id: "gratitude", icon: "\u{1F331}", labelKey: "journalSlashGratitudeLabel", descriptionKey: "journalSlashGratitudeDescription", fallbackLabel: "Gratitude", fallbackDescription: "Add a gratitude prompt" },
-  { id: "burn", icon: "\u{1F525}", labelKey: "journalSlashBurnLabel", descriptionKey: "journalSlashBurnDescription", fallbackLabel: "Release", fallbackDescription: "Let go of a thought" },
-  { id: "focus", icon: "\u270D\uFE0F", labelKey: "journalSlashFocusLabel", descriptionKey: "journalSlashFocusDescription", fallbackLabel: "Focus", fallbackDescription: "Open focused writing mode" },
-  { id: "template", icon: "\u{1F4CB}", labelKey: "journalSlashTemplateLabel", descriptionKey: "journalSlashTemplateDescription", fallbackLabel: "Template", fallbackDescription: "Choose a diary template" },
-  { id: "photo", icon: "\u{1F4F8}", labelKey: "journalSlashPhotoLabel", descriptionKey: "journalSlashPhotoDescription", fallbackLabel: "Photo", fallbackDescription: "Attach a photo" },
-  { id: "audio", icon: "\u{1F3A4}", labelKey: "journalSlashAudioLabel", descriptionKey: "journalSlashAudioDescription", fallbackLabel: "Audio", fallbackDescription: "Record audio" },
+  {
+    id: "mood",
+    icon: "\u{1F60A}",
+    labelKey: "journalSlashMoodLabel",
+    descriptionKey: "journalSlashMoodDescription",
+    fallbackLabel: "Mood",
+    fallbackDescription: "Set entry mood",
+  },
+  {
+    id: "heading",
+    icon: "H",
+    labelKey: "journalSlashHeadingLabel",
+    descriptionKey: "journalSlashHeadingDescription",
+    fallbackLabel: "Heading",
+    fallbackDescription: "Insert a heading",
+  },
+  {
+    id: "quote",
+    icon: "\u275D",
+    labelKey: "journalSlashQuoteLabel",
+    descriptionKey: "journalSlashQuoteDescription",
+    fallbackLabel: "Quote",
+    fallbackDescription: "Insert a quote block",
+  },
+  {
+    id: "checklist",
+    icon: "\u2611",
+    labelKey: "journalSlashChecklistLabel",
+    descriptionKey: "journalSlashChecklistDescription",
+    fallbackLabel: "Checklist",
+    fallbackDescription: "Insert a checklist",
+  },
+  {
+    id: "breathe",
+    icon: "\u{1F9D8}",
+    labelKey: "journalSlashBreatheLabel",
+    descriptionKey: "journalSlashBreatheDescription",
+    fallbackLabel: "Breathe",
+    fallbackDescription: "Open a breathing exercise",
+  },
+  {
+    id: "gratitude",
+    icon: "\u{1F331}",
+    labelKey: "journalSlashGratitudeLabel",
+    descriptionKey: "journalSlashGratitudeDescription",
+    fallbackLabel: "Gratitude",
+    fallbackDescription: "Add a gratitude prompt",
+  },
+  {
+    id: "burn",
+    icon: "\u{1F525}",
+    labelKey: "journalSlashBurnLabel",
+    descriptionKey: "journalSlashBurnDescription",
+    fallbackLabel: "Release",
+    fallbackDescription: "Let go of a thought",
+  },
+  {
+    id: "focus",
+    icon: "\u270D\uFE0F",
+    labelKey: "journalSlashFocusLabel",
+    descriptionKey: "journalSlashFocusDescription",
+    fallbackLabel: "Focus",
+    fallbackDescription: "Open focused writing mode",
+  },
+  {
+    id: "template",
+    icon: "\u{1F4CB}",
+    labelKey: "journalSlashTemplateLabel",
+    descriptionKey: "journalSlashTemplateDescription",
+    fallbackLabel: "Template",
+    fallbackDescription: "Choose a diary template",
+  },
+  {
+    id: "photo",
+    icon: "\u{1F4F8}",
+    labelKey: "journalSlashPhotoLabel",
+    descriptionKey: "journalSlashPhotoDescription",
+    fallbackLabel: "Photo",
+    fallbackDescription: "Attach a photo",
+  },
+  {
+    id: "audio",
+    icon: "\u{1F3A4}",
+    labelKey: "journalSlashAudioLabel",
+    descriptionKey: "journalSlashAudioDescription",
+    fallbackLabel: "Audio",
+    fallbackDescription: "Record audio",
+  },
 ] as const;
 
-type CommandId = (typeof COMMANDS)[number]["id"];
+export type CommandId = (typeof COMMANDS)[number]["id"];
 
 const SPRING = { type: "spring" as const, stiffness: 500, damping: 30 };
 const INSTANT = { duration: 0 };
@@ -50,9 +128,10 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
   editorRef,
   onCommand,
   onClose,
+  disabledCommandIds = new Set<CommandId>(),
 }: SlashCommandMenuProps) {
   const { t } = useLanguage();
-  const ts = t as unknown as Record<string, string>;
+  const ts = t;
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -68,10 +147,11 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
         label: ts[cmd.labelKey] || cmd.fallbackLabel,
         description: ts[cmd.descriptionKey] || cmd.fallbackDescription,
       })),
-    [ts],
+    [ts]
   );
 
   const filtered = localizedCommands.filter((cmd) => {
+    if (disabledCommandIds.has(cmd.id)) return false;
     const normalizedFilter = filter.toLocaleLowerCase();
     return (
       cmd.label.toLocaleLowerCase().includes(normalizedFilter) ||
@@ -103,7 +183,7 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
       onCommand(id);
       close();
     },
-    [editorRef, onCommand, close],
+    [editorRef, onCommand, close]
   );
 
   // Viewport-clamped position update
@@ -129,8 +209,12 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
-    const onStart = () => { composingRef.current = true; };
-    const onEnd = () => { composingRef.current = false; };
+    const onStart = () => {
+      composingRef.current = true;
+    };
+    const onEnd = () => {
+      composingRef.current = false;
+    };
     editor.addEventListener("compositionstart", onStart);
     editor.addEventListener("compositionend", onEnd);
     return () => {
@@ -147,7 +231,8 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
     const handleInput = (e: Event) => {
       if (composingRef.current) return;
       const inputEvent = e as InputEvent;
-      if (inputEvent.inputType === "insertFromPaste" || inputEvent.inputType === "insertFromDrop") return;
+      if (inputEvent.inputType === "insertFromPaste" || inputEvent.inputType === "insertFromDrop")
+        return;
 
       const sel = window.getSelection();
       if (!sel || sel.rangeCount === 0) return;
@@ -158,7 +243,10 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
       const textBeforeCursor = text.slice(0, cursorOffset);
       const lastSlash = textBeforeCursor.lastIndexOf("/");
 
-      if (lastSlash === -1 || (lastSlash > 0 && text[lastSlash - 1] !== " " && text[lastSlash - 1] !== "\n")) {
+      if (
+        lastSlash === -1 ||
+        (lastSlash > 0 && text[lastSlash - 1] !== " " && text[lastSlash - 1] !== "\n")
+      ) {
         if (open) close();
         return;
       }
@@ -198,7 +286,12 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.preventDefault(); close(); return; }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        close();
+        return;
+      }
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setSelectedIndex((i) => Math.min(i + 1, Math.max(filtered.length - 1, 0)));
@@ -209,16 +302,27 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
         setSelectedIndex((i) => Math.max(i - 1, 0));
         return;
       }
-      if (e.key === "Enter") { e.preventDefault(); const cmd = filtered[selectedIndex]; if (cmd) executeCommand(cmd.id); return; }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const cmd = filtered[selectedIndex];
+        if (cmd) executeCommand(cmd.id);
+        return;
+      }
       if (e.key === "Backspace") {
         requestAnimationFrame(() => {
           const text = editorRef.current?.textContent ?? "";
-          if (!slashRangeRef.current) { close(); return; }
+          if (!slashRangeRef.current) {
+            close();
+            return;
+          }
           const node = slashRangeRef.current.node;
           const offset = slashRangeRef.current.offset;
           if (!node.parentNode || (node.textContent?.charAt(offset) ?? "") !== "/") close();
           else {
-            const cursorText = text.slice(0, getCursorOffsetFromEditor(editorRef.current!, window.getSelection()));
+            const cursorText = text.slice(
+              0,
+              getCursorOffsetFromEditor(editorRef.current!, window.getSelection())
+            );
             if (!cursorText.includes("/")) close();
           }
         });
@@ -254,13 +358,47 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
   }, [open, editorRef, close]);
 
   const animate = shouldAnimate();
+  const slashListboxId = "journal-slash-command-listbox";
   const activeId = filtered[selectedIndex] ? `slash-cmd-${filtered[selectedIndex].id}` : undefined;
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    if (!open) {
+      editor.removeAttribute("aria-controls");
+      editor.removeAttribute("aria-activedescendant");
+      editor.removeAttribute("aria-expanded");
+      editor.removeAttribute("aria-haspopup");
+      editor.removeAttribute("aria-autocomplete");
+      return;
+    }
+
+    editor.setAttribute("aria-controls", slashListboxId);
+    editor.setAttribute("aria-expanded", "true");
+    editor.setAttribute("aria-haspopup", "listbox");
+    editor.setAttribute("aria-autocomplete", "list");
+    if (activeId) {
+      editor.setAttribute("aria-activedescendant", activeId);
+    } else {
+      editor.removeAttribute("aria-activedescendant");
+    }
+
+    return () => {
+      editor.removeAttribute("aria-controls");
+      editor.removeAttribute("aria-activedescendant");
+      editor.removeAttribute("aria-expanded");
+      editor.removeAttribute("aria-haspopup");
+      editor.removeAttribute("aria-autocomplete");
+    };
+  }, [activeId, editorRef, open]);
 
   return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
           ref={menuRef}
+          id={slashListboxId}
           role="listbox"
           aria-label={ts.journalSlashCommands || "Diary commands"}
           aria-activedescendant={activeId}
@@ -272,43 +410,46 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
           exit="exit"
           transition={animate ? SPRING : INSTANT}
         >
-          {filtered.length > 0 ? filtered.map((cmd, i) => (
-            <motion.div
-              key={cmd.id}
-              id={`slash-cmd-${cmd.id}`}
-              role="option"
-              aria-selected={i === selectedIndex}
-              custom={i}
-              variants={itemVariants}
-              initial={animate ? "hidden" : false}
-              animate="visible"
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-xl text-sm cursor-pointer min-h-[44px] motion-safe:transition-colors",
-                i === selectedIndex && "bg-primary/10",
-              )}
-              onClick={() => executeCommand(cmd.id)}
-              onMouseEnter={() => setSelectedIndex(i)}
-            >
-              <span className="w-8 h-8 rounded-lg bg-muted/30 flex items-center justify-center text-base shrink-0">
-                {cmd.icon}
-              </span>
-              <span className="flex flex-col min-w-0">
-                <span className="font-medium text-foreground">{cmd.label}</span>
-                <span className="text-xs text-muted-foreground truncate">{cmd.description}</span>
-              </span>
-            </motion.div>
-          )) : (
-            <div
-              role="status"
-              className="px-3 py-3 text-sm text-muted-foreground"
-            >
+          {filtered.length > 0 ? (
+            filtered.map((cmd, i) => (
+              <motion.div
+                key={cmd.id}
+                id={`slash-cmd-${cmd.id}`}
+                role="option"
+                aria-selected={i === selectedIndex}
+                custom={i}
+                variants={itemVariants}
+                initial={animate ? "hidden" : false}
+                animate="visible"
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-xl text-sm cursor-pointer min-h-[44px] motion-safe:transition-colors",
+                  i === selectedIndex && "bg-primary/10"
+                )}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  executeCommand(cmd.id);
+                }}
+                onMouseEnter={() => setSelectedIndex(i)}
+              >
+                <span className="w-8 h-8 rounded-lg bg-muted/30 flex items-center justify-center text-base shrink-0">
+                  {cmd.icon}
+                </span>
+                <span className="flex flex-col min-w-0">
+                  <span className="font-medium text-foreground">{cmd.label}</span>
+                  <span className="text-xs text-muted-foreground truncate">{cmd.description}</span>
+                </span>
+              </motion.div>
+            ))
+          ) : (
+            <div role="status" className="px-3 py-3 text-sm text-muted-foreground">
               {ts.journalSlashNoResults || "No diary commands found"}
             </div>
           )}
         </motion.div>
       )}
     </AnimatePresence>,
-    document.body,
+    document.body
   );
 });
 

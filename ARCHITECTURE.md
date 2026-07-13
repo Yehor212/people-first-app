@@ -21,7 +21,7 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 | Features modules | 1 | `ls src/features/ -d` |
 | V2 coexistence files | 45 | `find src -name '*V2*' -o -name '*-v2*'` |
 | `it.todo(` occurrences | 14 | regex walk |
-| `as any` total | 153 (153 in tests, ~0 prod) | regex walk |
+| `as any` total | 154 (154 in tests, ~0 prod) | regex walk |
 | Console.\* in prod (excl. logger/crashReporting) | **3** | regex walk |
 | ADR files (`docs/adr/NNNN-*.md`) | 11 | ls |
 | SECURITY.md | yes | fs |
@@ -41,7 +41,7 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 | Metric | Value | Source |
 | --- | ---: | --- |
 | Source files | **888** | `find src -name '*.ts' -o -name '*.tsx' ...` |
-| Test files | **465** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
+| Test files | **470** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
 | Silent `.catch(() => {})` | **0** | `grep -rn '.catch.*=> {}' src/` |
 | React.memo | **117** | `grep -rl 'memo(' src/ --include='*.tsx'` |
 | index.css LOC | **17,914** | `readFileSync(...).split("\\n").length` (constitution guard) |
@@ -1480,18 +1480,15 @@ cause mis-taps, especially on mid-range phones with lower digitizer precision.
 - `tests.json` created — structured tracking of all quality gates, security status, and store readiness
 - Security audit step added to GitHub Actions (informational, non-blocking)
 
-**Phase 5 — Claude Code Hooks:**
+**Historical Phase 5 — retired agent hooks:**
 
-- `.claude/settings.json` created with:
-  - `PreToolUse` hook: blocks writes to `.env*`, `android/keystore/*`, `supabase/functions/_shared/auth.ts`
-  - `PostToolUse` hook: logs TypeScript file modifications
-  - `Stop` hook: reminder to run `npm run check:all` before completing tasks
+- The February 2026 external-agent hook setup was retired on 2026-07-13.
+- Active tracked enforcement now lives in `.codex/hooks.json` and `.codex/hooks/*.cjs`; validate it with `npm run enforcement:check`.
 
 #### Files Created
 
 - `src/components/LegalModal.tsx` (139 LOC)
 - `tests.json` (structured quality tracking)
-- `.claude/settings.json` (security hooks)
 
 #### Files Modified
 

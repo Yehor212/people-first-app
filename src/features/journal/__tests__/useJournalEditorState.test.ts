@@ -16,7 +16,9 @@ import { readFileSync } from "node:fs";
 import { renderHook, act } from "@testing-library/react";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import type { SaveState } from "../SaveIndicator";
-import { sanitizeJournalTag } from "../useJournalEditorState";
+import type { JournalEntry } from "../types";
+import { PAPER_COLORS } from "../types";
+import { createEditorSnapshot, sanitizeJournalTag } from "../useJournalEditorState";
 
 const hookSource = readFileSync("src/features/journal/useJournalEditorState.ts", "utf8");
 
@@ -194,6 +196,46 @@ describe("journal tag sanitization", () => {
 
   it("strips spaces and symbols without dropping Unicode letters", () => {
     expect(sanitizeJournalTag(" calm مساء! ")).toBe("calmمساء");
+  });
+});
+
+describe("journal editor legacy style initialization", () => {
+  it("uses valid theme fallbacks without mutating the stored entry", () => {
+    const legacyEntry = {
+      id: "legacy-style-entry",
+      date: "2026-07-13",
+      title: "Legacy style",
+      content: "Readable after reopening.",
+      stickers: [],
+      tags: [],
+      photoIds: [],
+      audioIds: [],
+      createdAt: 1,
+      updatedAt: 2,
+      theme: "unsupported-theme",
+      font: "unsupported-font",
+      paperTexture: "unsupported-texture",
+      paperColor: "unsupported-color",
+      bgIntensity: "unsupported-intensity",
+      particleSpeed: "unsupported-speed",
+      bgPattern: "unsupported-pattern",
+      fontSize: "unsupported-size",
+    } as unknown as JournalEntry;
+
+    const snapshot = createEditorSnapshot(legacyEntry, null, "paper");
+
+    expect(snapshot).toMatchObject({
+      theme: "light",
+      font: "caveat",
+      paperTexture: "clean",
+      paperColor: "milky",
+      bgIntensity: "dim",
+      particleSpeed: "slow",
+      bgPattern: "none",
+      fontSize: "medium",
+    });
+    expect(PAPER_COLORS[snapshot.paperColor]).toBeDefined();
+    expect(legacyEntry.paperColor).toBe("unsupported-color");
   });
 });
 
@@ -970,7 +1012,7 @@ describe("T07: iOS editor safety contracts", () => {
   it("restores draft audio rows so saved draft recordings remain reviewable", () => {
     expect(hookSource).toContain("const restoredAudioIds = draftAvailable.audioIds || [];");
     expect(hookSource).toContain("getAudioById(audioId)");
-    expect(hookSource).toContain("setAudioRecordings(recordings.filter");
+    expect(hookSource).toMatch(/setAudioRecordings\(\s*recordings\.filter/);
   });
 
   it("lets photo picker failures reject so the picker can stay open and show recovery UI", () => {

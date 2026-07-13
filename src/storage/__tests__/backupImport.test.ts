@@ -835,6 +835,121 @@ describe("importBackup deletion precedence", () => {
     expect(report.journalEntries).toEqual({ added: 0, updated: 0, skipped: 1 });
   });
 
+  it("normalizes diary visual state from a full backup before persistence", async () => {
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-07-13T00:00:00.000Z",
+      deviceId: "device-visual-state",
+      data: {
+        moods: [],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [
+          {
+            id: "journal-visual-state",
+            date: "2026-07-13",
+            title: "Imported visual state",
+            content: "The entry remains readable.",
+            stickers: [],
+            tags: [],
+            photoIds: ["photo-linked"],
+            createdAt: 1,
+            updatedAt: 2,
+            theme: "unknown-theme",
+            font: "missing-font",
+            inkColor: "javascript:alert(1)",
+            paperTexture: "plastic",
+            bgPattern: "unknown-pattern",
+            paperColor: "neon",
+            bgIntensity: "maximum",
+            particleSpeed: "fast",
+            fontSize: "huge",
+            photoLayout: {
+              "photo-linked": { x: 150, y: -20, width: 900 },
+              "photo-orphan": { x: 20, y: 30, width: 200 },
+            },
+          } as any,
+        ],
+        journalPhotos: [],
+        journalAudio: [],
+      },
+    };
+
+    await importBackup(payload, "replace");
+
+    await expect(db.journalEntries.get("journal-visual-state")).resolves.toMatchObject({
+      title: "Imported visual state",
+      photoIds: [],
+    });
+    const imported = await db.journalEntries.get("journal-visual-state");
+    expect(imported).not.toHaveProperty("photoLayout");
+    expect(imported).not.toHaveProperty("theme");
+    expect(imported).not.toHaveProperty("font");
+    expect(imported).not.toHaveProperty("inkColor");
+    expect(imported).not.toHaveProperty("paperTexture");
+    expect(imported).not.toHaveProperty("bgPattern");
+    expect(imported).not.toHaveProperty("paperColor");
+    expect(imported).not.toHaveProperty("bgIntensity");
+    expect(imported).not.toHaveProperty("particleSpeed");
+    expect(imported).not.toHaveProperty("fontSize");
+  });
+
+  it("keeps imported photo references, media, and layout within the shared five-photo limit", async () => {
+    const photoIds = Array.from({ length: 6 }, (_, index) => `photo-${index + 1}`);
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-07-13T00:00:00.000Z",
+      deviceId: "device-photo-limit",
+      data: {
+        moods: [],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [
+          {
+            id: "journal-photo-limit",
+            date: "2026-07-13",
+            title: "Imported photo limit",
+            content: "The first five linked photos stay consistent.",
+            stickers: [],
+            tags: [],
+            photoIds,
+            createdAt: 1,
+            updatedAt: 2,
+            photoLayout: Object.fromEntries(
+              photoIds.map((photoId, index) => [
+                photoId,
+                { x: index * 10, y: index * 12, width: 220 },
+              ]),
+            ),
+          },
+        ],
+        journalPhotos: photoIds.map((photoId, index) => ({
+          id: photoId,
+          entryId: "journal-photo-limit",
+          data: `data:image/jpeg;base64,full-${index + 1}`,
+          thumbnail: `data:image/jpeg;base64,thumb-${index + 1}`,
+          width: 1200,
+          height: 800,
+          createdAt: index + 1,
+        })),
+        journalAudio: [],
+      },
+    };
+
+    const report = await importBackup(payload, "replace");
+
+    const expectedPhotoIds = photoIds.slice(0, 5);
+    const importedEntry = await db.journalEntries.get("journal-photo-limit");
+    expect(importedEntry?.photoIds).toEqual(expectedPhotoIds);
+    expect(Object.keys(importedEntry?.photoLayout ?? {})).toEqual(expectedPhotoIds);
+    await expect(db.journalPhotos.toCollection().primaryKeys()).resolves.toEqual(expectedPhotoIds);
+    expect(report.journalPhotos).toEqual({ added: 5, updated: 0, skipped: 1 });
+  });
+
   it("skips orphan journal media that does not point to a valid imported or local entry", async () => {
     const payload: BackupPayloadV3 = {
       schemaVersion: 3,

@@ -1,7 +1,7 @@
 import type { Translations } from "@/i18n/types";
 import { EMOTION_TAGS } from "./emotionTags";
 
-type TranslationMap = Record<string, unknown>;
+type TranslationMap = Partial<Translations>;
 
 const EMOTION_TAG_KEYS = new Set(EMOTION_TAGS.map((tag) => tag.key));
 

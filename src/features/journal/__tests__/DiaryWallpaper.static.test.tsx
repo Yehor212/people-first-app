@@ -60,7 +60,8 @@ describe("Diary wallpaper contract", () => {
     expect(editorSource).toContain('data-testid="journal-editor-paper"');
     expect(editorSource).toContain('backgroundColor: useSharedDiaryWallpaper ? "transparent" : diaryStyle.backgroundColor');
     expect(editorSource).toContain('const sharedWallpaperPaperStyle = useSharedDiaryWallpaper');
-    expect(editorSource).toContain('backgroundColor: "hsl(var(--card) / 0.54)"');
+    expect(editorSource).toContain('backgroundColor: `color-mix(in srgb, ${paperColors.bg} 68%, transparent)`');
+    expect(editorSource).not.toContain('backgroundColor: "hsl(var(--card) / 0.54)"');
     expect(editorSource).toContain('WebkitBackdropFilter: "blur(22px) saturate(1.12)"');
     expect(editorSource).toContain('backdropFilter: "blur(22px) saturate(1.12)"');
     expect(moduleSource).not.toContain('data-testid="journal-light-atmosphere"');

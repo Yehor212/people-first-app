@@ -31,6 +31,8 @@ import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
 import { db } from "@/storage/db";
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
+import { normalizeJournalPhotoLayout } from "@/features/journal/photoLayout";
+import { normalizeJournalStyleFieldsFromCloud } from "@/features/journal/journalStyleFields";
 import { getJournalContentVaultKey } from "@/features/journal/journalContentSession";
 import { isEncryptedJournalContent } from "@/features/journal/journalCrypto";
 import { runWithJournalSecurityWriteLock } from "@/features/journal/journalSecurityWriteLock";
@@ -401,6 +403,8 @@ export const pullFromCloud = async (expectedOwnerUserId?: string): Promise<boole
       habitSnapshot: (e.habit_snapshot as JournalEntry["habitSnapshot"]) || undefined,
       photoIds: e.photo_ids,
       audioIds: e.audio_ids,
+      photoLayout: normalizeJournalPhotoLayout(e.photo_layout, e.photo_ids),
+      ...normalizeJournalStyleFieldsFromCloud(e),
       createdAt: e.created_at,
       updatedAt: e.updated_at,
     }));

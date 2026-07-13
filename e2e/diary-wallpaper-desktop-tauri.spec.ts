@@ -390,7 +390,9 @@ test.describe("Desktop/Tauri V2 Diary wallpaper", () => {
           backgroundColor: style.backgroundColor,
         };
       });
-      expect(editorFacts.backgroundColor).toContain("rgba");
+      expect(editorFacts.backgroundColor).toMatch(
+        /^(?:rgba\([^)]*,\s*0\.\d+\)|color\(srgb [^)]+ \/ 0\.\d+\))$/
+      );
       expect(editorFacts.backdropFilter).not.toBe("none");
 
       const visibleEditorWallpaper = await clippedPaneScreenshot(page, "journal-editor-paper");

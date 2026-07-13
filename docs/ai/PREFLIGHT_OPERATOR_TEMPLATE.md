@@ -311,7 +311,7 @@ Mark the pre-flight `PASS` only when all of these are true:
 
 ## Token Alignment
 
-If this work also needs a `.preflight-token`, map the block to the validator fields in `.claude/hooks/preflight-validate.cjs`:
+If this work also needs a `.preflight-token`, map the block to the Codex change-gate fields validated by `scripts/codex-governance/change-gate-core.cjs`:
 
 | Template area | Token field |
 | --- | --- |

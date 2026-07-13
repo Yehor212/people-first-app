@@ -15,7 +15,7 @@ const watchedArtifactDirs = [
   "public",
   "screenshots",
   "tmp",
-  ".claude",
+  ".codex/auto-context",
   ".codex-artifacts",
   ".swarm",
 ];

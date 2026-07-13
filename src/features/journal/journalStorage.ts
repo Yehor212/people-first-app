@@ -835,7 +835,9 @@ async function hydratePhotoFromStorage(
       await validateSyncOwner(expectedOwnerUserId, "Diary photo hydration commit");
     }
     const storedData = await encryptMediaDataForStorage(sourceData);
-    const storedThumbnail = await encryptMediaDataForStorage(photo.thumbnail || storedData);
+    const storedThumbnail = photo.thumbnail
+      ? await encryptMediaDataForStorage(photo.thumbnail)
+      : "";
     const changes: Partial<JournalPhoto> = {};
     if (photo.data !== storedData) changes.data = storedData;
     if (photo.thumbnail !== storedThumbnail) changes.thumbnail = storedThumbnail;
@@ -843,7 +845,16 @@ async function hydratePhotoFromStorage(
     return { storedData, storedThumbnail };
   });
 
-  return decryptPhotoForDisplay({ ...photo, data: storedData, thumbnail: storedThumbnail });
+  const displayPhoto = await decryptPhotoForDisplay({
+    ...photo,
+    data: storedData,
+    thumbnail: storedThumbnail,
+  });
+  if (!displayPhoto.thumbnail && displayPhoto.data) {
+    queuePhotoThumbnailRegeneration(photo.id, displayPhoto.data, expectedOwnerUserId);
+    return { ...displayPhoto, thumbnail: displayPhoto.data };
+  }
+  return displayPhoto;
 }
 
 async function hydrateAudioFromStorage(
@@ -1315,10 +1326,10 @@ export async function decryptEncryptedJournalMedia(vaultKey: string): Promise<nu
 // PHOTO COMPRESSION + STORAGE
 // ============================================
 
-const MAX_DIMENSION = 1200;
-const JPEG_QUALITY = 0.7;
-const THUMB_WIDTH = 100;
-const THUMB_QUALITY = 0.5;
+const MAX_DIMENSION = 1600;
+const JPEG_QUALITY = 0.82;
+const THUMB_WIDTH = 320;
+const THUMB_QUALITY = 0.72;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -1347,6 +1358,33 @@ function resizeAndCompress(
   if (!ctx) throw new Error("Canvas 2D context not available");
   ctx.drawImage(img, 0, 0, width, height);
   return { dataUrl: canvas.toDataURL("image/jpeg", quality), width, height };
+}
+
+async function createPhotoThumbnail(dataUrl: string): Promise<string> {
+  const image = await loadImage(dataUrl);
+  return resizeAndCompress(image, THUMB_WIDTH, THUMB_QUALITY).dataUrl;
+}
+
+function queuePhotoThumbnailRegeneration(
+  photoId: string,
+  displayData: string,
+  expectedOwnerUserId: string | null
+): void {
+  void createPhotoThumbnail(displayData)
+    .then((thumbnail) =>
+      runWithJournalSecurityWriteLock(async () => {
+        if (expectedOwnerUserId) {
+          await validateSyncOwner(expectedOwnerUserId, "Diary thumbnail regeneration commit");
+        }
+        const current = await db.journalPhotos.get(photoId);
+        if (!current || current.thumbnail) return;
+        const storedThumbnail = await encryptMediaDataForStorage(thumbnail);
+        await db.journalPhotos.update(photoId, { thumbnail: storedThumbnail });
+      })
+    )
+    .catch((error) => {
+      logger.warn("[Journal]", "Photo thumbnail regeneration failed:", error);
+    });
 }
 
 export async function compressAndStorePhoto(file: File, entryId: string): Promise<JournalPhoto> {
@@ -1405,6 +1443,18 @@ export async function getPhotoById(id: string): Promise<JournalPhoto | undefined
   return photo ? hydratePhotoFromStorage(photo, expectedOwnerUserId) : undefined;
 }
 
+export async function getPhotoPreviewById(id: string): Promise<JournalPhoto | undefined> {
+  const photo = await db.journalPhotos.get(id);
+  if (!photo) return undefined;
+  if (!photo.thumbnail) return getPhotoById(id);
+
+  return {
+    ...photo,
+    data: "",
+    thumbnail: await decryptMediaDataForDisplay(photo.thumbnail),
+  };
+}
+
 export async function deletePhoto(id: string, entryId: string): Promise<void> {
   const syncOwnerPromise = captureJournalSyncOwner();
   await runWithJournalSecurityWriteLock(async () => {
@@ -1412,8 +1462,14 @@ export async function deletePhoto(id: string, entryId: string): Promise<void> {
       await db.journalPhotos.delete(id);
       const entry = await db.journalEntries.get(entryId);
       if (entry) {
+        const nextPhotoLayout = entry.photoLayout ? { ...entry.photoLayout } : undefined;
+        if (nextPhotoLayout) delete nextPhotoLayout[id];
         await db.journalEntries.update(entryId, {
           photoIds: entry.photoIds.filter((pid) => pid !== id),
+          photoLayout:
+            nextPhotoLayout && Object.keys(nextPhotoLayout).length > 0
+              ? nextPhotoLayout
+              : undefined,
           updatedAt: Date.now(),
         });
       }

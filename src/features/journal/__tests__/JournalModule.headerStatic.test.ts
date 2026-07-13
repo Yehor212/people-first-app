@@ -156,7 +156,7 @@ describe("JournalModule V2 header", () => {
   it("keeps the diary-only desktop sidebar rail and wide panel", () => {
     expect(sidebarSource).toContain('data-testid="journal-sidebar-rail"');
     expect(sidebarSource).toContain('data-testid="journal-sidebar-disclosure"');
-    expect(sidebarSource).toContain("<MoodDotStrip");
+    expect(sidebarSource).not.toContain("<MoodDotStrip");
     expect(source).toContain('data-testid="journal-sidebar-wide"');
     expect(source).toContain('const isDiaryDesktopLayout = useMediaQuery("(min-width: 1280px)")');
     expect(source).toContain('const JOURNAL_SIDEBAR_PANEL_ID = "journal-sidebar-panel"');
@@ -164,6 +164,25 @@ describe("JournalModule V2 header", () => {
     expect(source).toContain("compact");
     expect(source).toContain("showFab={false}");
     expect(source).toContain("showSpaces={false}");
+  });
+
+  it("keeps exactly four section actions above one disclosure action in the desktop rail", () => {
+    const expectedOrder = [
+      'data-testid="journal-sidebar-nav-entry"',
+      'data-testid="journal-sidebar-nav-stats"',
+      'data-testid="journal-sidebar-nav-favorites"',
+      'data-testid="journal-sidebar-nav-settings"',
+      'data-testid="journal-sidebar-disclosure"',
+    ];
+    const buttonCount = sidebarSource.match(/<button/g)?.length ?? 0;
+
+    expect(buttonCount).toBe(5);
+    expect(sidebarSource).not.toContain('data-testid="journal-sidebar-new-entry"');
+    for (let index = 1; index < expectedOrder.length; index += 1) {
+      expect(sidebarSource.indexOf(expectedOrder[index - 1])).toBeLessThan(
+        sidebarSource.indexOf(expectedOrder[index]),
+      );
+    }
   });
 
   it("keeps desktop-only journal security affordances honest", () => {

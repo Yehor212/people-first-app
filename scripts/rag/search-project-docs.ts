@@ -1,5 +1,3 @@
-import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
 import process from "node:process";
 import {
   createFreeProjectRagIndex,
@@ -9,13 +7,15 @@ import {
   type FreeRagResult,
 } from "./freeProjectRag";
 import { expandRagCorpusDocuments, loadRagCorpusManifest } from "./ragCorpus";
+import { readRegularFileInsideRoot } from "./safeFilesystem";
 
 export const DEFAULT_AGENT_RAG_FILES = [
   "AGENTS.md",
   "ARCHITECTURE.md",
   "docs/ai/TEST_FIRST_AGENT_POLICY.md",
   "docs/ai/SKILL_ROUTING_AGENT_POLICY.md",
-  "docs/ai/RUFLOW_PLUS_BLUEPRINT.md",
+  "config/persistent-agent-orchestra.json",
+  "docs/ai/PERSISTENT_AGENT_ORCHESTRA_EVAL_PROTOCOL.md",
   "docs/ai/AGENT_CHANGE_GOVERNANCE.md",
   "docs/ai/FREE_RAG_AND_COACH_LITE.md",
 ];
@@ -38,14 +38,19 @@ export function loadProjectRagDocuments(
   files = DEFAULT_AGENT_RAG_FILES
 ): FreeRagDocument[] {
   return files.flatMap((relativePath) => {
-    const absolutePath = path.join(rootDir, relativePath);
-    if (!existsSync(absolutePath)) return [];
-    return [
-      {
-        source: relativePath,
-        text: readFileSync(absolutePath, "utf8"),
-      },
-    ];
+    try {
+      return [
+        {
+          source: relativePath,
+          text: readRegularFileInsideRoot(rootDir, relativePath),
+        },
+      ];
+    } catch (error) {
+      if (error instanceof Error && /ENOENT|Missing RAG parent directory/.test(error.message)) {
+        return [];
+      }
+      throw error;
+    }
   });
 }
 

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import type { ClipboardEvent as ReactClipboardEvent, DragEvent as ReactDragEvent } from "react";
 import { getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationStrings } from "@/i18n/types";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { usePanicGesture } from "@/hooks/usePanicGesture";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
@@ -25,6 +27,7 @@ import type { MoodType } from "@/types";
 import {
   JOURNAL_DRAFT_ENTRY_ID,
   MAX_STICKERS_PER_ENTRY,
+  MAX_PHOTOS_PER_ENTRY,
   MAX_AUDIO_PER_ENTRY,
   countWordsHtml,
   PAPER_COLORS,
@@ -46,6 +49,8 @@ import {
   type JournalDraftData as DraftData,
 } from "./journalDraftStorage";
 import { commitDraftMediaToEntry, deleteDraftMedia } from "./journalStorage";
+import { isSupportedJournalPhotoFile, MAX_JOURNAL_PHOTO_FILE_SIZE } from "./JournalPhotoPicker";
+import { normalizeJournalStyleFields } from "./journalStyleFields";
 
 interface EditorSnapshot {
   title: string;
@@ -69,10 +74,9 @@ interface EditorSnapshot {
   photoLayout: string;
 }
 
-function getDefaultEditorTheme(appliedTheme: AppliedTheme): Pick<
-  EditorSnapshot,
-  "theme" | "inkColor" | "paperColor" | "bgIntensity" | "particleSpeed"
-> {
+function getDefaultEditorTheme(
+  appliedTheme: AppliedTheme
+): Pick<EditorSnapshot, "theme" | "inkColor" | "paperColor" | "bgIntensity" | "particleSpeed"> {
   if (appliedTheme === "paper") {
     return {
       theme: "light",
@@ -97,7 +101,7 @@ function isMicrophonePermissionError(error: unknown): boolean {
   return ["NotAllowedError", "PermissionDeniedError", "SecurityError"].includes(error.name);
 }
 
-function getAudioStartFailureMessage(ts: Record<string, string>, error: unknown): string {
+function getAudioStartFailureMessage(ts: TranslationStrings, error: unknown): string {
   if (isMicrophonePermissionError(error)) {
     return (
       ts.journalAudioPermissionDenied ||
@@ -112,12 +116,54 @@ export function sanitizeJournalTag(value: string): string {
   return value.trim().replace(/[^\p{L}\p{M}\p{N}_-]/gu, "");
 }
 
-function createEditorSnapshot(
+function insertPlainTextIntoEditor(editor: HTMLElement, value: string): void {
+  if (!value) return;
+  editor.focus();
+
+  if (typeof document !== "undefined" && document.queryCommandSupported?.("insertText")) {
+    const inserted = document.execCommand("insertText", false, value);
+    if (inserted) return;
+  }
+
+  const selection = typeof window !== "undefined" ? window.getSelection() : null;
+  if (!selection || selection.rangeCount === 0 || !editor.contains(selection.anchorNode)) {
+    editor.appendChild(document.createTextNode(value));
+    return;
+  }
+
+  const range = selection.getRangeAt(0);
+  range.deleteContents();
+  const textNode = document.createTextNode(value);
+  range.insertNode(textNode);
+  range.setStartAfter(textNode);
+  range.setEndAfter(textNode);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+function getDroppedPhotoLayout(
+  clientX: number,
+  clientY: number,
+  container: HTMLElement | null
+): { x: number; y: number; width: number } {
+  if (!container) return { x: 50, y: 64, width: 200 };
+  const rect = container.getBoundingClientRect();
+  const x = rect.width > 0 ? ((clientX - rect.left) / rect.width) * 100 : 50;
+  const y = rect.height > 0 ? ((clientY - rect.top) / rect.height) * 100 : 64;
+  return {
+    x: Math.max(8, Math.min(92, x)),
+    y: Math.max(8, Math.min(92, Math.max(64, y))),
+    width: 200,
+  };
+}
+
+export function createEditorSnapshot(
   entry: JournalEntry | null,
   prefill: JournalEntryPrefill | null,
-  appliedTheme: AppliedTheme = "ink",
+  appliedTheme: AppliedTheme = "ink"
 ): EditorSnapshot {
   const defaults = getDefaultEditorTheme(appliedTheme);
+  const style = normalizeJournalStyleFields(entry);
   return {
     title: entry?.title || prefill?.title || "",
     date: entry?.date || prefill?.date || getToday(),
@@ -128,15 +174,15 @@ function createEditorSnapshot(
     mood: entry?.mood || prefill?.mood,
     tags: JSON.stringify(entry?.tags || prefill?.tags || []),
     habitSnapshot: JSON.stringify(entry?.habitSnapshot || []),
-    theme: entry?.theme || defaults.theme,
-    font: entry?.font || "caveat",
-    inkColor: entry?.inkColor || defaults.inkColor,
-    paperTexture: entry?.paperTexture || "clean",
-    paperColor: entry?.paperColor || defaults.paperColor,
-    bgIntensity: entry?.bgIntensity || defaults.bgIntensity,
-    particleSpeed: entry?.particleSpeed || defaults.particleSpeed,
-    bgPattern: entry?.bgPattern || "none",
-    fontSize: entry?.fontSize || "medium",
+    theme: style.theme || defaults.theme,
+    font: style.font || "caveat",
+    inkColor: style.inkColor || defaults.inkColor,
+    paperTexture: style.paperTexture || "clean",
+    paperColor: style.paperColor || defaults.paperColor,
+    bgIntensity: style.bgIntensity || defaults.bgIntensity,
+    particleSpeed: style.particleSpeed || defaults.particleSpeed,
+    bgPattern: style.bgPattern || "none",
+    fontSize: style.fontSize || "medium",
     photoLayout: JSON.stringify(entry?.photoLayout || {}),
   };
 }
@@ -167,7 +213,7 @@ const PROMPT_KEYS = [
   "journalPrompt8",
   "journalPrompt9",
   "journalPrompt10",
-];
+] as const;
 
 // ── Props ──
 
@@ -234,9 +280,9 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const { t, language } = useLanguage();
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   useScrollLock(!desktop);
-  const ts = t as unknown as Record<string, string>;
+  const ts = t;
 
-  const prefill = !entry ? entryPrefill ?? null : null;
+  const prefill = !entry ? (entryPrefill ?? null) : null;
   const initialSnapshotRef = useRef(createEditorSnapshot(entry, prefill, appliedTheme));
 
   // === Refs ===
@@ -271,9 +317,10 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const [audioIds, setAudioIds] = useState<string[]>(entry?.audioIds || []);
   const [audioRecordings, setAudioRecordings] = useState<JournalAudio[]>([]);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [audioNotice, setAudioNotice] = useState<string | null>(null);
   const [mood, setMood] = useState<MoodType | undefined>(initialSnapshotRef.current.mood);
   const [tags, setTags] = useState<string[]>(
-    safeJsonParse<string[]>(initialSnapshotRef.current.tags, []),
+    safeJsonParse<string[]>(initialSnapshotRef.current.tags, [])
   );
   const [habitSnapshot, setHabitSnapshot] = useState<
     {
@@ -307,6 +354,8 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const [showSettingsConfirm, setShowSettingsConfirm] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showRecordingOverlay, setShowRecordingOverlay] = useState(false);
+  const [showVoicePrivacyConfirm, setShowVoicePrivacyConfirm] = useState(false);
+  const [voicePrivacyAccepted, setVoicePrivacyAccepted] = useState(false);
   const [showPromptsDropdown, setShowPromptsDropdown] = useState(false);
 
   // === Draft State ===
@@ -316,7 +365,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   // === Diary Premium Features ===
   const diaryTheme = useDiaryTheme(
     initialSnapshotRef.current.theme,
-    initialSnapshotRef.current.font,
+    initialSnapshotRef.current.font
   );
   const [showStyleBar, setShowStyleBar] = useState(false);
   const [showBurnWidget, setShowBurnWidget] = useState(false);
@@ -328,20 +377,20 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
 
   // === Canvas/Atmosphere State ===
   const [bgIntensity, setBgIntensity] = useState<BackgroundIntensity>(
-    initialSnapshotRef.current.bgIntensity,
+    initialSnapshotRef.current.bgIntensity
   );
   const [particleSpeed, setParticleSpeed] = useState<ParticleSpeed>(
-    initialSnapshotRef.current.particleSpeed,
+    initialSnapshotRef.current.particleSpeed
   );
   const [inkColor, setInkColor] = useState(initialSnapshotRef.current.inkColor);
   const [paperTexture, setPaperTexture] = useState<PaperTexture>(
-    initialSnapshotRef.current.paperTexture,
+    initialSnapshotRef.current.paperTexture
   );
-  const [paperColor, setPaperColor] = useState<PaperColor>(
-    initialSnapshotRef.current.paperColor,
+  const [paperColor, setPaperColor] = useState<PaperColor>(initialSnapshotRef.current.paperColor);
+  const [bgPattern, setBgPattern] = useState<DiaryBgPattern>(
+    initialSnapshotRef.current.bgPattern
   );
-  const [bgPattern, setBgPattern] = useState<DiaryBgPattern>(entry?.bgPattern || "none");
-  const [fontSize, setFontSize] = useState<FontSizeName>(entry?.fontSize || "medium");
+  const [fontSize, setFontSize] = useState<FontSizeName>(initialSnapshotRef.current.fontSize);
   const [photoLayout, setPhotoLayout] = useState<
     Record<string, { x: number; y: number; width: number }>
   >(entry?.photoLayout || {});
@@ -361,6 +410,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
 
   // === Prompt State ===
   const [promptSeed, setPromptSeed] = useState(0);
+  const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
 
   const paperColors = PAPER_COLORS[paperColor];
   const entryId = entry?.id || JOURNAL_DRAFT_ENTRY_ID;
@@ -551,7 +601,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
       bgPattern,
       fontSize,
       photoLayout,
-    ],
+    ]
   );
 
   // === Effects ===
@@ -573,7 +623,9 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   useEffect(() => {
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
-      void saveDraftSnapshot(audioIds).catch((err) => logger.warn("[Journal] Draft autosave failed:", err));
+      void saveDraftSnapshot(audioIds).catch((err) =>
+        logger.warn("[Journal] Draft autosave failed:", err)
+      );
     }, 3000);
     return () => {
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
@@ -678,7 +730,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
             data,
             duration,
             mimeType,
-            isExistingEntry ? JOURNAL_DRAFT_ENTRY_ID : entryId,
+            isExistingEntry ? JOURNAL_DRAFT_ENTRY_ID : entryId
           );
           if (cancelled) return;
           if (isExistingEntry) stagedAddedAudioIdsRef.current.add(audio.id);
@@ -688,7 +740,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
           setAudioIds(nextAudioIds);
           setAudioRecordings((prev) => [...prev, audio]);
           void saveDraftSnapshot(nextAudioIds).catch((err) =>
-            logger.warn("[Journal] Recording draft save failed:", err),
+            logger.warn("[Journal] Recording draft save failed:", err)
           );
           resetRecorder();
           setShowRecordingOverlay(false);
@@ -707,7 +759,18 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
         cancelled = true;
       };
     }
-  }, [audioData, isRecording, onAddAudio, entryId, isExistingEntry, duration, mimeType, resetRecorder, saveDraftSnapshot, ts]);
+  }, [
+    audioData,
+    isRecording,
+    onAddAudio,
+    entryId,
+    isExistingEntry,
+    duration,
+    mimeType,
+    resetRecorder,
+    saveDraftSnapshot,
+    ts,
+  ]);
 
   useEffect(() => {
     audioIdsRef.current = audioIds;
@@ -748,10 +811,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     if (!vv) return;
 
     const updateKeyboardInset = () => {
-      const nextInset = Math.max(
-        0,
-        Math.round(window.innerHeight - vv.height - vv.offsetTop),
-      );
+      const nextInset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
       setKeyboardInset(nextInset);
       if (nextInset > 48) {
         setToolbarHidden(false);
@@ -780,39 +840,42 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     }
   }, [isDirty, draftKey, onBack]);
 
-  const flushActiveRecordingForSave = useCallback(async (force = false): Promise<string[]> => {
-    if (!force && !recorder.isRecording) return audioIdsRef.current;
-    const captured = await recorder.stop();
-    if (!captured?.data) return audioIdsRef.current;
+  const flushActiveRecordingForSave = useCallback(
+    async (force = false): Promise<string[]> => {
+      if (!force && !recorder.isRecording) return audioIdsRef.current;
+      const captured = await recorder.stop();
+      if (!captured?.data) return audioIdsRef.current;
 
-    saveHandledAudioDataRef.current = captured.data;
-    try {
-      const audio = await onAddAudio(
-        captured.data,
-        captured.duration,
-        captured.mimeType,
-        isExistingEntry ? JOURNAL_DRAFT_ENTRY_ID : entryId,
-      );
-      if (isExistingEntry) stagedAddedAudioIdsRef.current.add(audio.id);
-      const nextAudioIds = [...audioIdsRef.current, audio.id];
-      audioIdsRef.current = nextAudioIds;
-      setAudioError(null);
-      setAudioIds(nextAudioIds);
-      setAudioRecordings((prev) => [...prev, audio]);
-      resetRecorder();
-      setShowRecordingOverlay(false);
-      return nextAudioIds;
-    } catch (err) {
-      const message = ts.journalAudioError || "Failed to save audio";
-      setAudioError(message);
-      announceError(message);
-      resetRecorder();
-      setShowRecordingOverlay(false);
-      throw err;
-    } finally {
-      saveHandledAudioDataRef.current = null;
-    }
-  }, [entryId, isExistingEntry, onAddAudio, recorder, resetRecorder, ts]);
+      saveHandledAudioDataRef.current = captured.data;
+      try {
+        const audio = await onAddAudio(
+          captured.data,
+          captured.duration,
+          captured.mimeType,
+          isExistingEntry ? JOURNAL_DRAFT_ENTRY_ID : entryId
+        );
+        if (isExistingEntry) stagedAddedAudioIdsRef.current.add(audio.id);
+        const nextAudioIds = [...audioIdsRef.current, audio.id];
+        audioIdsRef.current = nextAudioIds;
+        setAudioError(null);
+        setAudioIds(nextAudioIds);
+        setAudioRecordings((prev) => [...prev, audio]);
+        resetRecorder();
+        setShowRecordingOverlay(false);
+        return nextAudioIds;
+      } catch (err) {
+        const message = ts.journalAudioError || "Failed to save audio";
+        setAudioError(message);
+        announceError(message);
+        resetRecorder();
+        setShowRecordingOverlay(false);
+        throw err;
+      } finally {
+        saveHandledAudioDataRef.current = null;
+      }
+    },
+    [entryId, isExistingEntry, onAddAudio, recorder, resetRecorder, ts]
+  );
 
   const handleSave = useCallback(async () => {
     if (!hasContent) return;
@@ -927,7 +990,9 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     photoLayout,
   ]);
 
-  const handleRetry = useCallback(() => { void handleSave(); }, [handleSave]);
+  const handleRetry = useCallback(() => {
+    void handleSave();
+  }, [handleSave]);
 
   const handleSaveAndClose = useCallback(async () => {
     setShowUnsavedDialog(false);
@@ -937,13 +1002,13 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const persistDraftNow = useCallback(async () => {
     const hasDraftPayload = Boolean(
       title.trim() ||
-        contentRef.current.trim() ||
-        stickers.length > 0 ||
-        photoIds.length > 0 ||
-        audioIdsRef.current.length > 0 ||
-        mood ||
-        tags.length > 0 ||
-        habitSnapshot.length > 0,
+      contentRef.current.trim() ||
+      stickers.length > 0 ||
+      photoIds.length > 0 ||
+      audioIdsRef.current.length > 0 ||
+      mood ||
+      tags.length > 0 ||
+      habitSnapshot.length > 0
     );
     if (!(isDirty || hasContent || hasDraftPayload)) return false;
 
@@ -997,7 +1062,9 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
 
   useEffect(() => {
     const flushDraftForBackground = () => {
-      void persistDraftNow().catch((err) => logger.warn("[Journal] Background draft save failed:", err));
+      void persistDraftNow().catch((err) =>
+        logger.warn("[Journal] Background draft save failed:", err)
+      );
     };
     const flushDraftWhenHidden = () => {
       if (document.hidden) flushDraftForBackground();
@@ -1070,6 +1137,10 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
           setShowTags(false);
           return;
         }
+        if (showVoicePrivacyConfirm) {
+          setShowVoicePrivacyConfirm(false);
+          return;
+        }
         if (showRecordingOverlay) {
           void recorder.stop();
           setShowRecordingOverlay(false);
@@ -1105,6 +1176,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     showPhotos,
     showMood,
     showTags,
+    showVoicePrivacyConfirm,
     showRecordingOverlay,
     showTemplatePicker,
     showDeleteConfirm,
@@ -1138,6 +1210,11 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
       return registerModalCloseCallback(() => {
         void recorder.stop();
         setShowRecordingOverlay(false);
+        return true;
+      });
+    if (showVoicePrivacyConfirm)
+      return registerModalCloseCallback(() => {
+        setShowVoicePrivacyConfirm(false);
         return true;
       });
     if (showTemplatePicker)
@@ -1174,6 +1251,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     showUnsavedDialog,
     showDeleteConfirm,
     showRecordingOverlay,
+    showVoicePrivacyConfirm,
     showTemplatePicker,
     showStickers,
     showPhotos,
@@ -1194,10 +1272,10 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     if (isExistingEntry) {
       const originalPhotoIds = new Set(entry?.photoIds || []);
       stagedAddedPhotoIdsRef.current = new Set(
-        draftAvailable.photoIds.filter((photoId) => !originalPhotoIds.has(photoId)),
+        draftAvailable.photoIds.filter((photoId) => !originalPhotoIds.has(photoId))
       );
       stagedRemovedPhotoIdsRef.current = new Set(
-        (entry?.photoIds || []).filter((photoId) => !draftAvailable.photoIds.includes(photoId)),
+        (entry?.photoIds || []).filter((photoId) => !draftAvailable.photoIds.includes(photoId))
       );
     }
     const restoredAudioIds = draftAvailable.audioIds || [];
@@ -1206,17 +1284,21 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     if (isExistingEntry) {
       const originalAudioIds = new Set(entry?.audioIds || []);
       stagedAddedAudioIdsRef.current = new Set(
-        restoredAudioIds.filter((audioId) => !originalAudioIds.has(audioId)),
+        restoredAudioIds.filter((audioId) => !originalAudioIds.has(audioId))
       );
       stagedRemovedAudioIdsRef.current = new Set(
-        (entry?.audioIds || []).filter((audioId) => !restoredAudioIds.includes(audioId)),
+        (entry?.audioIds || []).filter((audioId) => !restoredAudioIds.includes(audioId))
       );
     }
     if (restoredAudioIds.length > 0) {
       import("./journalStorage")
         .then(async ({ getAudioById }) => {
-          const recordings = await Promise.all(restoredAudioIds.map((audioId) => getAudioById(audioId)));
-          setAudioRecordings(recordings.filter((audio): audio is NonNullable<typeof audio> => !!audio));
+          const recordings = await Promise.all(
+            restoredAudioIds.map((audioId) => getAudioById(audioId))
+          );
+          setAudioRecordings(
+            recordings.filter((audio): audio is NonNullable<typeof audio> => !!audio)
+          );
         })
         .catch((err) => {
           logger.warn("[Journal] Draft audio restore failed:", err);
@@ -1240,16 +1322,25 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     if (draftAvailable.fontSize) setFontSize(draftAvailable.fontSize);
     if (draftAvailable.photoLayout) setPhotoLayout(draftAvailable.photoLayout);
     setDraftAvailable(null);
-  }, [draftAvailable, diaryTheme, entry?.audioIds, entry?.photoIds, isExistingEntry, setEditorContent]);
+  }, [
+    draftAvailable,
+    diaryTheme,
+    entry?.audioIds,
+    entry?.photoIds,
+    isExistingEntry,
+    setEditorContent,
+  ]);
 
   const handleDismissDraft = useCallback(async () => {
     await clearDraft(draftKey);
     if (isExistingEntry && draftAvailable) {
       const originalPhotoIds = new Set(entry?.photoIds || []);
       const originalAudioIds = new Set(entry?.audioIds || []);
-      const draftAddedPhotoIds = draftAvailable.photoIds.filter((photoId) => !originalPhotoIds.has(photoId));
+      const draftAddedPhotoIds = draftAvailable.photoIds.filter(
+        (photoId) => !originalPhotoIds.has(photoId)
+      );
       const draftAddedAudioIds = (draftAvailable.audioIds || []).filter(
-        (audioId) => !originalAudioIds.has(audioId),
+        (audioId) => !originalAudioIds.has(audioId)
       );
       await Promise.all([
         ...draftAddedPhotoIds.map((photoId) => onRemovePhoto(photoId, JOURNAL_DRAFT_ENTRY_ID)),
@@ -1259,7 +1350,16 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
       await deleteNewEntryDraftMedia();
     }
     setDraftAvailable(null);
-  }, [deleteNewEntryDraftMedia, draftAvailable, draftKey, entry?.audioIds, entry?.photoIds, isExistingEntry, onRemoveAudio, onRemovePhoto]);
+  }, [
+    deleteNewEntryDraftMedia,
+    draftAvailable,
+    draftKey,
+    entry?.audioIds,
+    entry?.photoIds,
+    isExistingEntry,
+    onRemoveAudio,
+    onRemovePhoto,
+  ]);
 
   const handleAddSticker = useCallback(
     (sticker: string) => {
@@ -1275,11 +1375,12 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   }, []);
 
   const handleAddPhoto = useCallback(
-    async (file: File) => {
+    async (file: File): Promise<JournalPhoto> => {
       try {
         const photo = await onAddPhoto(file, isExistingEntry ? JOURNAL_DRAFT_ENTRY_ID : entryId);
         if (isExistingEntry) stagedAddedPhotoIdsRef.current.add(photo.id);
         setPhotoIds((prev) => [...prev, photo.id]);
+        return photo;
       } catch (error) {
         logger.error("[Journal] Photo upload failed:", error);
         throw error;
@@ -1365,23 +1466,45 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     [onRemoveAudio, entryId, isExistingEntry]
   );
 
+  const getVoiceUnsupportedMessage = useCallback(
+    () =>
+      ts.journalVoiceNotSupported ||
+      voice.error ||
+      "Speech recognition is not supported in this browser.",
+    [ts.journalVoiceNotSupported, voice.error]
+  );
+
+  const handleConfirmDictation = useCallback(() => {
+    setShowVoicePrivacyConfirm(false);
+    if (!voice.isSupported) {
+      const message = getVoiceUnsupportedMessage();
+      setAudioError(message);
+      announceError(message);
+      return;
+    }
+    setVoicePrivacyAccepted(true);
+    setAudioError(null);
+    voice.start();
+  }, [getVoiceUnsupportedMessage, voice]);
+
   const handleToggleDictation = useCallback(() => {
     if (voice.isListening) {
       voice.stop();
-    } else {
-      if (!voice.isSupported) {
-        const message =
-          ts.journalVoiceNotSupported ||
-          voice.error ||
-          "Speech recognition is not supported in this browser.";
-        setAudioError(message);
-        announceError(message);
-        return;
-      }
-      setAudioError(null);
-      voice.start();
+      return;
     }
-  }, [voice, ts]);
+    if (!voice.isSupported) {
+      const message = getVoiceUnsupportedMessage();
+      setAudioError(message);
+      announceError(message);
+      return;
+    }
+    if (!voicePrivacyAccepted) {
+      setShowVoicePrivacyConfirm(true);
+      return;
+    }
+    setAudioError(null);
+    voice.start();
+  }, [getVoiceUnsupportedMessage, voice, voicePrivacyAccepted]);
 
   const handleStartRecording = useCallback(async () => {
     if (!recorder.isSupported) {
@@ -1394,8 +1517,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
       return;
     }
     if (audioIds.length >= MAX_AUDIO_PER_ENTRY) {
-      const message =
-        ts.journalAudioMaxReached || `Maximum ${MAX_AUDIO_PER_ENTRY} recordings`;
+      const message = ts.journalAudioMaxReached || `Maximum ${MAX_AUDIO_PER_ENTRY} recordings`;
       setAudioError(message);
       announceError(message);
       return;
@@ -1406,8 +1528,10 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     setShowTags(false);
     setShowStyleBar(false);
     setShowActionSheet(false);
+    setShowVoicePrivacyConfirm(false);
     setShowRecordingOverlay(true);
     setAudioError(null);
+    setAudioNotice(null);
     try {
       await recorder.start();
     } catch (err) {
@@ -1424,6 +1548,14 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     // audioData effect will handle storing
   }, [recorder]);
 
+  const handleDiscardRecording = useCallback(() => {
+    void recorder.discard();
+    resetRecorder();
+    setShowRecordingOverlay(false);
+    setAudioError(null);
+    setAudioNotice(null);
+  }, [recorder, resetRecorder]);
+
   const closeAllPickers = useCallback(() => {
     setShowStickers(false);
     setShowPhotos(false);
@@ -1431,11 +1563,13 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     setShowTags(false);
     setShowStyleBar(false);
     setShowActionSheet(false);
+    setShowVoicePrivacyConfirm(false);
   }, []);
 
   const handlePromptTap = useCallback((prompt: string) => {
-    setTitle(prompt);
+    setSelectedPrompt(prompt);
     setShowPromptsDropdown(false);
+    focusTimeoutRef.current = setTimeout(() => editorRef.current?.focus(), 100);
   }, []);
 
   const hasImmediateChanges = useCallback(() => {
@@ -1492,6 +1626,72 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     contentSyncRef.current = setTimeout(() => setContent(html), 300);
   }, []);
 
+  const syncEditorContentSoon = useCallback(() => {
+    handleEditorInput();
+    requestAnimationFrame(() => handleEditorInput());
+  }, [handleEditorInput]);
+
+  const handleEditorPaste = useCallback(
+    (event: ReactClipboardEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      const text = event.clipboardData.getData("text/plain");
+      insertPlainTextIntoEditor(editorRef.current ?? event.currentTarget, text);
+      syncEditorContentSoon();
+    },
+    [syncEditorContentSoon]
+  );
+
+  const handleEditorDrop = useCallback(
+    (event: ReactDragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      const files = Array.from(event.dataTransfer.files);
+      if (files.length > 0) {
+        if (photoIds.length >= MAX_PHOTOS_PER_ENTRY) {
+          announceError(ts.journalPhotoRemainingCountZero || "No photos remaining");
+          return;
+        }
+        const file = files.find(isSupportedJournalPhotoFile);
+        if (!file) {
+          announceError(
+            ts.journalPhotoInvalidType ||
+              "Unsupported file type. Please use JPEG, PNG, WebP, or HEIC."
+          );
+          return;
+        }
+        if (file.size > MAX_JOURNAL_PHOTO_FILE_SIZE) {
+          announceError(
+            ts.journalPhotoTooLarge || "Image too large (max 10 MB). Try a smaller image."
+          );
+          return;
+        }
+
+        const paperSurface = event.currentTarget.closest<HTMLElement>(
+          '[data-testid="journal-editor-paper"]'
+        );
+        const layout = getDroppedPhotoLayout(
+          event.clientX,
+          event.clientY,
+          paperSurface ?? contentAreaRef.current ?? event.currentTarget
+        );
+        void handleAddPhoto(file)
+          .then((photo) => {
+            setPhotoLayout((previous) => ({ ...previous, [photo.id]: layout }));
+            announceSuccess(ts.journalPhotoAdd || "Photo added");
+          })
+          .catch((error) => {
+            logger.error("[Journal] Dropped photo upload failed:", error);
+            announceError(ts.journalPhotoError || "Failed to add photo. Try again.");
+          });
+        return;
+      }
+
+      const text = event.dataTransfer.getData("text/plain");
+      insertPlainTextIntoEditor(editorRef.current ?? event.currentTarget, text);
+      syncEditorContentSoon();
+    },
+    [handleAddPhoto, photoIds.length, syncEditorContentSoon, ts]
+  );
+
   const cycleFontSize = useCallback(() => {
     setFontSize((s) => (s === "small" ? "medium" : s === "medium" ? "large" : "small"));
   }, []);
@@ -1512,12 +1712,11 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
 
   // Scoped CSS vars for diary theme (no body mutation — isolated to this overlay)
   const diaryStyle = useMemo(
-    () =>
-      ({
-        ...diaryTheme.themeVars,
-        backgroundColor: diaryTheme.themeVars["--diary-bg"],
-        color: diaryTheme.themeVars["--diary-text"],
-      }),
+    () => ({
+      ...diaryTheme.themeVars,
+      backgroundColor: diaryTheme.themeVars["--diary-bg"],
+      color: diaryTheme.themeVars["--diary-text"],
+    }),
     [diaryTheme.themeVars]
   );
 
@@ -1565,6 +1764,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     audioIds,
     audioRecordings,
     audioError,
+    audioNotice,
     mood,
     setMood,
     tags,
@@ -1600,7 +1800,10 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     showSettingsConfirm,
     setShowSettingsConfirm,
     showTemplatePicker,
+    setShowTemplatePicker,
     showRecordingOverlay,
+    showVoicePrivacyConfirm,
+    setShowVoicePrivacyConfirm,
     showPromptsDropdown,
     setShowPromptsDropdown,
 
@@ -1658,6 +1861,8 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     promptSeed,
     setPromptSeed,
     randomPrompts,
+    selectedPrompt,
+    setSelectedPrompt,
 
     // derived
     isDirty,
@@ -1692,11 +1897,15 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     handleAddTag,
     handleRemoveAudio,
     handleToggleDictation,
+    handleConfirmDictation,
     handleStartRecording,
     handleStopRecording,
+    handleDiscardRecording,
     closeAllPickers,
     handlePromptTap,
     handleEditorInput,
+    handleEditorPaste,
+    handleEditorDrop,
     cycleFontSize,
     handleContentScroll,
     handleTemplateSelect,

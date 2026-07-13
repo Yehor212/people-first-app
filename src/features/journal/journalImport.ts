@@ -21,7 +21,16 @@ import { encryptJournalContent, isEncryptedJournalContent } from "./journalCrypt
 import { encryptJournalMediaDataUrl, isEncryptedJournalMediaData } from "./journalMediaCrypto";
 import { runWithJournalSecurityWriteLock } from "./journalSecurityWriteLock";
 import { getJournalVaultKeyForWrite } from "./journalWriteSecurity";
-import type { JournalEntry, JournalPhoto, JournalAudio } from "./types";
+import {
+  MAX_AUDIO_PER_ENTRY,
+  MAX_PHOTOS_PER_ENTRY,
+  MAX_STICKERS_PER_ENTRY,
+  type JournalEntry,
+  type JournalPhoto,
+  type JournalAudio,
+} from "./types";
+import { normalizeJournalPhotoLayout } from "./photoLayout";
+import { normalizeJournalStyleFields } from "./journalStyleFields";
 
 interface JournalBackup {
   version: number;
@@ -29,6 +38,24 @@ interface JournalBackup {
   entries: JournalEntry[];
   photos: JournalPhoto[];
   audio?: JournalAudio[];
+}
+
+const JOURNAL_BACKUP_VERSION = 2;
+const MAX_HABIT_SNAPSHOT_ITEMS = 100;
+
+function validateHabitSnapshot(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!Array.isArray(value) || value.length > MAX_HABIT_SNAPSHOT_ITEMS) return false;
+  return value.every((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+    const habit = item as Record<string, unknown>;
+    return (
+      typeof habit.habitId === "string" &&
+      typeof habit.habitName === "string" &&
+      typeof habit.habitIcon === "string" &&
+      typeof habit.completed === "boolean"
+    );
+  });
 }
 
 export interface ImportResult {
@@ -57,13 +84,18 @@ function validateEntry(entry: unknown): entry is JournalEntry {
     typeof e.content === "string" &&
     typeof e.createdAt === "number" &&
     Array.isArray(e.stickers) &&
+    e.stickers.length <= MAX_STICKERS_PER_ENTRY &&
     e.stickers.every((item) => typeof item === "string") &&
     Array.isArray(e.photoIds) &&
+    e.photoIds.length <= MAX_PHOTOS_PER_ENTRY &&
     e.photoIds.every((item) => typeof item === "string") &&
     Array.isArray(e.tags) &&
     e.tags.every((item) => typeof item === "string") &&
     (e.audioIds === undefined ||
-      (Array.isArray(e.audioIds) && e.audioIds.every((item) => typeof item === "string")))
+      (Array.isArray(e.audioIds) &&
+        e.audioIds.length <= MAX_AUDIO_PER_ENTRY &&
+        e.audioIds.every((item) => typeof item === "string"))) &&
+    validateHabitSnapshot(e.habitSnapshot)
   );
 }
 
@@ -203,6 +235,10 @@ export async function importJournalBackup(
   }
 
   const backup = data;
+  if (backup.version !== JOURNAL_BACKUP_VERSION) {
+    result.errors.push(`Unsupported backup version: ${backup.version}`);
+    return result;
+  }
 
   // Prepare non-IndexedDB work before the write transaction. IndexedDB can
   // auto-commit while WebCrypto is pending, which would break atomicity.
@@ -251,9 +287,15 @@ export async function importJournalBackup(
               stickers: Array.isArray(entry.stickers) ? entry.stickers : [],
               photoIds: Array.isArray(entry.photoIds) ? entry.photoIds : [],
               audioIds: Array.isArray(entry.audioIds) ? entry.audioIds : undefined,
+              photoLayout: normalizeJournalPhotoLayout(
+                (entry as { photoLayout?: unknown }).photoLayout,
+                Array.isArray(entry.photoIds) ? entry.photoIds : [],
+              ),
+              ...normalizeJournalStyleFields(entry),
               mood: entry.mood,
               tags: Array.isArray(entry.tags) ? entry.tags : [],
               templateId: entry.templateId,
+              habitSnapshot: entry.habitSnapshot,
               createdAt: entry.createdAt,
               updatedAt: entry.updatedAt || entry.createdAt,
             });
@@ -326,6 +368,7 @@ export async function importJournalBackup(
           entry.photoIds = entry.photoIds.filter(
             (photoId) => importedPhotoOwners.get(photoId) === entry.id
           );
+          entry.photoLayout = normalizeJournalPhotoLayout(entry.photoLayout, entry.photoIds);
           if (entry.audioIds) {
             entry.audioIds = entry.audioIds.filter(
               (audioId) => importedAudioOwners.get(audioId) === entry.id

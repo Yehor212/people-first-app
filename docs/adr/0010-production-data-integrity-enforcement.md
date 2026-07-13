@@ -89,7 +89,7 @@ The OpenAI manual helper was attempted first but returned no required content ha
 
 - Canonical remote: `https://github.com/Yehor212/people-first-app.git`; investigation started at commit `292e7ea41d79703cbd81bd1e7447c113210e6bea`.
 - Installed Node is 22.22.0; installed TypeScript is 5.9.3 (`package.json` range `^5.8.3`).
-- `npm run doc-counts`, `check:agent-context`, and `ai:ruflow-plus:check` passed before edits.
+- The then-current doc-count and agent-context checks passed before the original edits; that historical result is not current verification evidence.
 - `npm run constitution:check` already failed before edits: source 888 vs 880, tests 422 vs 398, `index.css` 17,932 vs 17,698, and 17 vs 14 oversized components. After the scoped removals and an explicit freshness update, final `doc-counts` and `constitution:check` pass at 886 source files, 422 test files, 17,932 CSS lines, 319 inline styles, 48/76 hook coverage, and 17 recorded oversized components. This refresh records existing debt; it does not claim that the CSS or component debt was fixed.
 - A read-only GitHub API check on 2026-07-09 returned `Branch not protected` for `main` (HTTP 404). The local workflow is implemented, but remote required-status enforcement is currently FAIL/not configured and cannot be claimed from this branch.
 - No production source imported `DEMO_DATA`; `useDemoMode` was nevertheless shipped through both settings surfaces.

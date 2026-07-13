@@ -664,48 +664,78 @@ export type Database = {
       journal_entries: {
         Row: {
           audio_ids: string[]
+          bg_intensity: string | null
+          bg_pattern: string | null
           content: string
           created_at: number
           date: string
+          font: string | null
+          font_size: string | null
           habit_snapshot: Json | null
           id: string
+          ink_color: string | null
           mood: string | null
+          paper_color: string | null
+          paper_texture: string | null
+          particle_speed: string | null
+          photo_layout: Json | null
           photo_ids: string[]
           stickers: string[]
           tags: string[]
           template_id: string | null
+          theme: string | null
           title: string
           updated_at: number
           user_id: string
         }
         Insert: {
           audio_ids?: string[]
+          bg_intensity?: string | null
+          bg_pattern?: string | null
           content?: string
           created_at: number
           date: string
+          font?: string | null
+          font_size?: string | null
           habit_snapshot?: Json | null
           id: string
+          ink_color?: string | null
           mood?: string | null
+          paper_color?: string | null
+          paper_texture?: string | null
+          particle_speed?: string | null
+          photo_layout?: Json | null
           photo_ids?: string[]
           stickers?: string[]
           tags?: string[]
           template_id?: string | null
+          theme?: string | null
           title?: string
           updated_at: number
           user_id: string
         }
         Update: {
           audio_ids?: string[]
+          bg_intensity?: string | null
+          bg_pattern?: string | null
           content?: string
           created_at?: number
           date?: string
+          font?: string | null
+          font_size?: string | null
           habit_snapshot?: Json | null
           id?: string
+          ink_color?: string | null
           mood?: string | null
+          paper_color?: string | null
+          paper_texture?: string | null
+          particle_speed?: string | null
+          photo_layout?: Json | null
           photo_ids?: string[]
           stickers?: string[]
           tags?: string[]
           template_id?: string | null
+          theme?: string | null
           title?: string
           updated_at?: number
           user_id?: string

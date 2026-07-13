@@ -221,7 +221,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
       : formatLocalizedCount(
           planState.remainingDays,
           language,
-          t as unknown as Record<string, string>,
+          t,
           "daysLeftCount",
           t.daysLeft || "days left"
         )

@@ -40,26 +40,14 @@ android/build/
 *.aab
 
 # ============================================
-# Claude / AI agent temp files
+# Local agent temp files
 # ============================================
-tmpclaude*
 CLAUDE.local.md
 AGENTS.local.md
-.claude/*
-!.claude/rules/
-!.claude/hooks/
-!.claude/settings.json
-!.claude/agents/
-!.claude/skills/
-.claude/settings.local.json
-.claude-flow/
-.swarm/
 .mcp.json
 .mcp.local.json
 memory/
 .superpowers/
-docs/superpowers/
-supabase/functions/claude-agent/
 
 # ============================================
 # Extra lockfiles (use only package-lock.json)
@@ -76,7 +64,6 @@ pnpm-lock.yaml
 !.vscode/settings.json
 .idea
 .DS_Store
-.claude.bak/
 Thumbs.db
 *.suo
 *.ntvs*
@@ -145,7 +132,7 @@ src-tauri/target/
 src-tauri/gen/schemas/* 2.json
 src-tauri/gen/schemas/macOS-schema.json
 
-# Claude Code enforcement tokens (one-time gate files)
+# Codex enforcement tokens (one-time gate files)
 .preflight-token*
 .test-first-token*
 .skill-routing-token*
@@ -160,7 +147,7 @@ src-tauri/gen/schemas/macOS-schema.json
 .ide-ack-done
 .worktree-verify-pending
 .user-requirements
-.claude-audit.log
+.codex-audit.log
 .evidence-chain
 .verification-done*
 .control-flow-pending
@@ -168,11 +155,8 @@ src-tauri/gen/schemas/macOS-schema.json
 .user-goal-contract
 .audit-active
 .audit-checklist.json
-.ruflo-last-action
-.ruflo-session-snapshot
 .last-verification
 .stop-block-count
-.claude-md-unlock
 .Codex-md-unlock
 .evolve-done
 .snyk-pending
@@ -224,5 +208,5 @@ output/snyk-code*.err
 output/snyk-*.json
 output/snyk-tracked-scan*/
 
-# Ruflo / AgentDB local databases
+# Legacy local vector databases
 vectors.db

@@ -1,7 +1,8 @@
 import type { Language } from "@/i18n/translations";
+import type { TranslationStrings } from "@/i18n/types";
 import { getLocale } from "@/lib/timeUtils";
 
-type JournalWordCountTranslations = Record<string, string | undefined>;
+type JournalWordCountTranslations = Partial<TranslationStrings>;
 
 const PLURAL_SUFFIXES: Record<Intl.LDMLPluralRule, string> = {
   zero: "Zero",
@@ -29,6 +30,14 @@ const PLURAL_NOUN_KEYS: Record<Intl.LDMLPluralRule, string> = {
   many: "journalWordsMany",
   other: "journalWordsOther",
 };
+
+function readTranslation(
+  translations: JournalWordCountTranslations,
+  key: string
+): string | undefined {
+  const value = (translations as Record<string, unknown>)[key];
+  return typeof value === "string" && value ? value : undefined;
+}
 
 function getPluralCategory(count: number, locale: string): Intl.LDMLPluralRule {
   if (count === 0) return "zero";
@@ -63,8 +72,8 @@ export function formatLocalizedCount(
   const formattedCount = formatNumber(count, locale);
   const category = getPluralCategory(count, locale);
   const template =
-    translations[`${keyPrefix}${PLURAL_SUFFIXES[category]}`] ??
-    translations[`${keyPrefix}Other`];
+    readTranslation(translations, `${keyPrefix}${PLURAL_SUFFIXES[category]}`) ??
+    readTranslation(translations, `${keyPrefix}Other`);
 
   if (template) {
     return template.includes("{count}")
@@ -84,7 +93,7 @@ export function formatJournalWordCount(
   const formattedCount = formatNumber(count, locale);
   const category = getPluralCategory(count, locale);
   const template =
-    translations[PLURAL_TEMPLATE_KEYS[category]] ??
+    readTranslation(translations, PLURAL_TEMPLATE_KEYS[category]) ??
     translations.journalWordCountOther ??
     translations.journalWords;
 
@@ -93,8 +102,8 @@ export function formatJournalWordCount(
   }
 
   const noun =
-    translations[PLURAL_NOUN_KEYS[category]] ??
-    translations.journalWordsOther ??
+    readTranslation(translations, PLURAL_NOUN_KEYS[category]) ??
+    readTranslation(translations, "journalWordsOther") ??
     translations.journalWords ??
     "words";
 

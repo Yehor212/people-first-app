@@ -12,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { analyzeToolEvent } = require('../../scripts/codex-governance/tool-targets.cjs');
 
 const ROOT = process.cwd();
 const HOOK_NAME = 'skill-router-gate';
@@ -27,25 +28,20 @@ const ALWAYS_ALLOW_PATTERNS = [
   '.verification-done',
   '.ci-evidence',
   '.Codex-md-unlock',
-  '.claude-md-unlock',
   'memory/',
   'output/',
 ];
 
 const GUARDED_PREFIXES = [
   '.codex/',
-  '.Codex/',
-  '.claude/hooks/',
-  '.claude/agents/',
-  '.claude/rules/',
-  '.agents/',
+  '.github/',
+  'config/',
   'docs/ai/',
   'scripts/',
   'src/',
   'supabase/',
   'android/',
   'ios/',
-  'tools/ruflow-plus/',
   'tools/zenflow-context/',
 ];
 
@@ -67,7 +63,7 @@ const CONFIG_PATTERN = /(^|\/)(tsconfig(\..+)?\.json|playwright|vite|vitest|tail
 function audit(event, detail) {
   try {
     const line = JSON.stringify({ ts: Date.now(), hook: HOOK_NAME, event, detail }) + '\n';
-    fs.appendFileSync(path.join(ROOT, '.claude-audit.log'), line);
+    fs.appendFileSync(path.join(ROOT, '.codex-audit.log'), line);
   } catch {}
 }
 
@@ -75,38 +71,6 @@ function normalizeRel(filePath) {
   const normalized = String(filePath || '').replace(/\\/g, '/');
   const root = ROOT.replace(/\\/g, '/');
   return normalized.replace(root, '').replace(/^\/+/, '');
-}
-
-function unique(values) {
-  return [...new Set(values.filter(Boolean))];
-}
-
-function extractPatchPaths(text) {
-  const paths = [];
-  const raw = String(text || '');
-  const patchPattern = /^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm;
-  let match;
-  while ((match = patchPattern.exec(raw)) !== null) {
-    paths.push(match[1].trim());
-  }
-  return paths;
-}
-
-function extractTargetPaths(data) {
-  const input = data && data.tool_input;
-  const paths = [];
-  if (input && typeof input === 'object') {
-    for (const key of ['file_path', 'path', 'filename']) {
-      if (typeof input[key] === 'string') paths.push(input[key]);
-    }
-    if (typeof input.command === 'string') paths.push(...extractPatchPaths(input.command));
-    if (typeof input.patch === 'string') paths.push(...extractPatchPaths(input.patch));
-    if (typeof input.input === 'string') paths.push(...extractPatchPaths(input.input));
-  } else if (typeof input === 'string') {
-    paths.push(...extractPatchPaths(input));
-  }
-  if (typeof data.patch === 'string') paths.push(...extractPatchPaths(data.patch));
-  return unique(paths).map(normalizeRel);
 }
 
 function isAllowedWithoutRouting(relPath) {
@@ -279,9 +243,14 @@ try {
     process.exit(0);
   }
 
-  const relPaths = extractTargetPaths(data);
+  const analysis = analyzeToolEvent(data);
+  const relPaths = analysis.targets.map(normalizeRel);
   if (relPaths.length === 0) {
-    block('Hook input did not include an editable file path, so the target cannot be verified.');
+    if (!analysis.mutationIntent) {
+      audit('allow', 'read-only-command-without-target');
+      process.exit(0);
+    }
+    block('Write-like hook input did not expose a bounded editable file path.');
   }
 
   const guarded = relPaths.filter(requiresSkillRouting);

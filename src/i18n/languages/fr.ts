@@ -549,8 +549,7 @@ export const fr: Translations = {
   settingsSoundRestoreDescription:
     "Les sons désactivés auparavant le restent jusqu’à ce que vous les réactiviez.",
   settingsSoundRestoreAction: "Réactiver les sons",
-  settingsSoundMasterDisabledHint:
-    "Activez le son de l’app pour utiliser ces réglages.",
+  settingsSoundMasterDisabledHint: "Activez le son de l’app pour utiliser ces réglages.",
   settingsAccountBackupTitle: "Compte et sauvegarde",
   settingsAccountBackupDescription:
     "Votre compte est connecté. Si ZenFlow ne peut pas enregistrer vos modifications en ligne, elles restent sur cet appareil.",
@@ -564,10 +563,8 @@ export const fr: Translations = {
   settingsAccountCheckFailed: "Nous n’avons pas pu vérifier votre compte",
   settingsAccountCheckFailedDescription:
     "Vos données restent sur cet appareil. Vérifiez votre connexion et réessayez.",
-  settingsAccountBackupUnavailable:
-    "La sauvegarde n’est pas disponible dans cette version",
-  settingsAccountBackupUnavailableDescription:
-    "Vos données restent sur cet appareil.",
+  settingsAccountBackupUnavailable: "La sauvegarde n’est pas disponible dans cette version",
+  settingsAccountBackupUnavailableDescription: "Vos données restent sur cet appareil.",
   settingsRemindersMobileApp: "App mobile",
   settingsPrivacyDataDescription:
     "Vous choisissez les services facultatifs que ZenFlow peut utiliser.",
@@ -584,8 +581,7 @@ export const fr: Translations = {
   settingsAboutProductSummary:
     "ZenFlow réunit vos bilans d’humeur, habitudes, séances de concentration et votre journal.",
   settingsAboutSupportLegalTitle: "Aide et informations légales",
-  settingsAboutSupportLegalDescription:
-    "Confidentialité, conditions, licences et assistance.",
+  settingsAboutSupportLegalDescription: "Confidentialité, conditions, licences et assistance.",
   settingsRemindersOff: "Rappels désactivés",
   resetDataConfirmWord: "RESET",
   resetDataTypeConfirm: "Saisissez {word} pour confirmer",
@@ -600,8 +596,7 @@ export const fr: Translations = {
   importReplace: "Remplacer les données",
   exportSuccess: "Export prêt.",
   exportError: "Échec de l'export.",
-  exportJournalUnlockRequired:
-    "Déverrouillez votre journal avant d’exporter son contenu protégé.",
+  exportJournalUnlockRequired: "Déverrouillez votre journal avant d’exporter son contenu protégé.",
   exportJournalDecryptionFailed:
     "ZenFlow n’a pas pu lire le journal protégé. Aucun fichier n’a été exporté.",
   exportJournalMediaUnavailable:
@@ -683,16 +678,13 @@ export const fr: Translations = {
   settingsPreferenceSaveError:
     "Cette modification n’a pas pu être enregistrée. Le réglage précédent reste actif.",
   settingsReduceMotion: "Réduire les animations",
-  settingsReduceMotionDescription:
-    "Réduit les transitions animées et les effets décoratifs.",
-  settingsReduceMotionSystemDescription:
-    "L’appareil est déjà réglé pour réduire les animations.",
+  settingsReduceMotionDescription: "Réduit les transitions animées et les effets décoratifs.",
+  settingsReduceMotionSystemDescription: "L’appareil est déjà réglé pour réduire les animations.",
   themeStyleTitle: "Palette d’humeur",
   themeAdvancedAppearanceTitle: "Apparence avancée",
   themeStyleDescription: "Choisir le mode d’affichage, la couleur d’accent et la taille du texte.",
   themeAccentTitle: "Couleur d’accent",
-  themeAccentDescription:
-    "Couleur des boutons, sélections et éléments mis en avant.",
+  themeAccentDescription: "Couleur des boutons, sélections et éléments mis en avant.",
   themeIntensityTitle: "Intensité",
   themeComfortTitle: "Confort",
   themePreviewAction: "Aperçu",
@@ -778,7 +770,7 @@ export const fr: Translations = {
   settingsImportReplaceTooltip:
     "Les données que ZenFlow inclut dans ses sauvegardes seront d’abord supprimées de cet appareil. Seuls les éléments de la sauvegarde choisie seront ensuite restaurés ; ceux qui n’y figurent pas seront supprimés. Les réglages enregistrés uniquement sur cet appareil resteront inchangés.",
   settingsImportReplaceConfirm:
-    'Saisissez « REPLACE » pour remplacer les données de cet appareil par la sauvegarde choisie',
+    "Saisissez « REPLACE » pour remplacer les données de cet appareil par la sauvegarde choisie",
   // Import validation (v1.4.1)
   invalidFileType: "Type de fichier invalide. JSON requis.",
   fileTooLarge: "Fichier trop volumineux (max 32 Mo)",
@@ -908,8 +900,7 @@ export const fr: Translations = {
   settingsMoodCheckInsDescription: "Des rappels discrets pour noter son ressenti.",
   settingsFocusReminder: "Rappel de concentration",
   settingsFocusReminderDescription: "Un rappel vers l’heure choisie.",
-  settingsReminderChooseDay:
-    "Choisir au moins un jour. Aucun rappel ne sera envoyé avant.",
+  settingsReminderChooseDay: "Choisir au moins un jour. Aucun rappel ne sera envoyé avant.",
   selectedHabits: "Habitudes à rappeler",
   noHabitsYet: "Pas encore d'habitudes.",
   noHabitsInCategory: "Aucune habitude dans cette catégorie",
@@ -1129,8 +1120,7 @@ export const fr: Translations = {
   pushDisabled: "Notifications désactivées.",
   pushError: "Échec de l'activation des notifications.",
   pushNeedsAccount: "Connectez-vous pour activer les notifications.",
-  pushPermissionDenied:
-    "Activez les notifications de ZenFlow dans les réglages de votre appareil.",
+  pushPermissionDenied: "Activez les notifications de ZenFlow dans les réglages de votre appareil.",
   remindersNativeOnly: "Pour régler les rappels, ouvrez l’app mobile ZenFlow.",
   habitRemindersManagedInHabits: "Réglez le rappel dans le menu de chaque habitude.",
   areYouSure: "Êtes-vous sûr?",
@@ -1367,7 +1357,8 @@ export const fr: Translations = {
   settingsSoundProfileQuiet: "Discret",
   settingsSoundProfileRich: "Complet",
   settingsSoundProfileBalanced: "Équilibré",
-  settingsSoundProfileQuietDesc: "Pas de son d’ambiance, uniquement de discrets sons de confirmation.",
+  settingsSoundProfileQuietDesc:
+    "Pas de son d’ambiance, uniquement de discrets sons de confirmation.",
   settingsSoundProfileRichDesc: "Ambiance et signaux complets quand ils sont pris en charge.",
   settingsSoundProfileBalancedDesc:
     "Diffuser les sons d’ambiance, d’activité, d’alerte et d’étape.",
@@ -1381,8 +1372,7 @@ export const fr: Translations = {
   settingsSoundActivityDescription:
     "Diffuser un son discret après une activité terminée, un minuteur ou certains paliers.",
   settingsSoundCompletionCues: "Sons de confirmation",
-  settingsSoundCompletionCuesDesc:
-    "Diffuser un son discret après une activité terminée.",
+  settingsSoundCompletionCuesDesc: "Diffuser un son discret après une activité terminée.",
   settingsSoundReminderCues: "Sons de rappel dans ZenFlow",
   settingsSoundReminderCuesDesc:
     "Diffuser les alertes du minuteur et les aperçus de rappels dans ZenFlow. Cela ne modifie pas le son des notifications de votre téléphone.",
@@ -1397,16 +1387,19 @@ export const fr: Translations = {
     "Enregistre sur cet appareil votre réponse, l’heure et l’écran, le type d’appareil et les réglages sonores actuels.",
   settingsSoundAmbientOff: "Le son d’arrière-plan est désactivé.",
   settingsSoundMapTitle: "Où le son apparaît",
-  settingsSoundMapDescription: "Les sons de l’app démarrent seulement après votre toucher et suivent vos choix sonores.",
+  settingsSoundMapDescription:
+    "Les sons de l’app démarrent seulement après votre toucher et suivent vos choix sonores.",
   settingsSoundMapAuth: "Air doux à la connexion",
   settingsSoundMapOrb: "Ambiance de l’orbe",
   settingsSoundMapDiary: "Ambiance du journal",
   settingsSoundMapFocus: "Bibliothèque d’ambiance focus",
   settingsSoundMapFeedback: "Signaux doux de fin et de rappel",
   settingsSoundCrossPlatformTitle: "Où les sons fonctionnent",
-  settingsSoundCrossPlatformNote: "ZenFlow utilise les mêmes choix sonores lorsque votre appareil le permet.",
+  settingsSoundCrossPlatformNote:
+    "ZenFlow utilise les mêmes choix sonores lorsque votre appareil le permet.",
   settingsSoundActionMapTitle: "Quand ZenFlow joue un son",
-  settingsSoundActionMapDescription: "Les sons courts sont réservés aux fins importantes et aux jalons rares.",
+  settingsSoundActionMapDescription:
+    "Les sons courts sont réservés aux fins importantes et aux jalons rares.",
   settingsSoundActionMapMood: "Humeur enregistrée",
   settingsSoundActionMapHabit: "Habitude terminée",
   settingsSoundActionMapJournal: "Journal enregistré",
@@ -3406,7 +3399,7 @@ export const fr: Translations = {
   diaryFontSans: "Sans empattement",
   diaryFontSerif: "Avec empattement",
   diaryFontHandwriting: "Manuscrite",
-  diaryFontScript: "Cursive",
+  diaryFontScript: "Italique",
   diarySnapshot: "Image",
   diaryRecord: "Enregistrer",
   diaryFocusRay: "Faisceau de concentration",
@@ -3433,6 +3426,55 @@ export const fr: Translations = {
   diaryPhotoSizeFull: "Pleine largeur",
   diaryPhotoReturn: "Remettre la photo dans la galerie",
   diaryPhotoResize: "Redimensionner la photo",
+  diaryBackgroundDim: "Adouci",
+  diaryBackgroundFull: "Plein",
+  diaryBackgroundOff: "Désactivé",
+  diaryFormatHintLabel: "Outils de texte",
+  diaryMotion: "Mouvement",
+  diaryParticleSpeed: "Vitesse",
+  diaryParticleSpeedDrift: "Flottant",
+  diaryParticleSpeedOff: "Désactivé",
+  diaryParticleSpeedSlow: "Lent",
+  diaryPhotoGestureHint: "Glissez, touchez taille, maintenez pour remettre",
+  diaryPhotoGestureInstructions:
+    "Faites glisser pour déplacer. Touchez pour changer la taille. Le pincement redimensionne aussi. Appuyez sur Origine pour centrer. Utilisez les flèches pour déplacer, plus ou moins pour redimensionner, et Suppr pour remettre la photo dans la galerie. Sur écran tactile, appuyez longuement pour remettre la photo dans la galerie.",
+  diaryPhotoMove: "Déplacer la photo",
+  diaryScene: "Scène",
+  diaryTexture: "Grain",
+  diaryTextureClean: "Net",
+  diaryTextureCraft: "Papier brut",
+  diaryTextureDots: "Points",
+  diaryTextureGrid: "Grille",
+  diaryTextureLinen: "Lin",
+  diaryTextureLines: "Lignes",
+  journalDraftSaveFailed: "Impossible d’enregistrer le brouillon",
+  journalFormatToolbar: "Outils de mise en forme",
+  journalInkEmerald: "Encre émeraude",
+  journalInkGold: "Encre dorée",
+  journalInkRose: "Encre rose",
+  journalInkWhite: "Encre par défaut",
+  journalPanicLockDescription: "Déverrouille pour revenir à ton journal privé.",
+  journalPanicLockTitle: "Journal verrouillé",
+  journalPanicLockUnlockRequired: "Utilise Déverrouiller pour revenir à ton journal.",
+  journalPaperDark: "Sombre",
+  journalPaperMilky: "Papier",
+  journalPaperSoftWhite: "Blanc doux",
+  journalPhotoNext: "Photo suivante",
+  journalPhotoPrevious: "Photo précédente",
+  journalRecordingDiscard: "Ignorer",
+  journalRecordingStopKeep: "Arrêter et garder",
+  journalRemoveAudio: "Retirer l’audio {duration}",
+  journalRemoveTag: "Retirer l’étiquette {tag}",
+  journalStyleTools: "Outils de style",
+  journalToolbarInk: "Encre",
+  journalToolbarPaper: "Papier",
+  journalVoicePrivacyCancel: "Pas maintenant",
+  journalVoicePrivacyContinue: "Démarrer la voix",
+  journalVoicePrivacyDescription:
+    "Le navigateur peut traiter la reconnaissance vocale hors de ZenFlow. Lancez la voix seulement si cela vous convient pour cette entrée.",
+  journalVoicePrivacyTitle: "Vérification de confidentialité vocale",
+  openPhoto: "Ouvrir la photo",
+  previous: "Précédent",
   // State of Mind
   somLogFeeling: "Notez comment vous vous sentez",
   somHowAreYouFeeling: "Comment vous sentez-vous ?",

@@ -26,12 +26,9 @@ Before editing first-party production code:
 
 ## Hook Enforcement
 
-The repository enforces this policy for guarded code edits with `.claude/hooks/test-first-gate.cjs`, registered in `.claude/settings.json` for `PreToolUse` on `Edit|Write|MultiEdit`.
+The repository checks this policy for guarded Codex edits with `.codex/hooks/change-governance-gate.cjs`, registered in `.codex/hooks.json` for `PreToolUse`. The hook is a local guardrail and CI/review backstop, not tamper-proof proof that every client or shell mutation passed through it.
 
-The hook allows tests, docs-only files, discovery artifacts, and token files before implementation. For guarded production, enforcement, config, platform, or agent files, provide fresh evidence before editing by either:
-
-- writing `.test-first-token`; or
-- adding a `test_first` object inside the structured `.preflight-token`.
+The hook allows focused tests, plan files, discovery artifacts, and token files before implementation. For guarded production, enforcement, config, platform, or agent files, add a `test_first` object inside a fresh structured `.preflight-token`. Legacy standalone token names remain ignored local artifacts but are not sufficient for the Codex change gate.
 
 Required evidence fields:
 

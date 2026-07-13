@@ -54,14 +54,14 @@ Default configuration for every integrity automation:
 - destination: `Triage`
 
 Mandatory run contract:
-- Start with a visible `<thinking>` block.
+- Start with a visible `PRE-FLIGHT ARTIFACT` containing decisions, evidence needs, risks, and the audit plan.
 - Read repo truth before judging anything.
 - Build an invariant register before the first verdict.
 - Keep static and runtime evidence separate.
 - Group findings by root cause.
 - Include self-reflection and residual risks even on a green verdict.
 
-The `<thinking>` block must include:
+The `PRE-FLIGHT ARTIFACT` must include:
 1. implicit requirements or missing context and how the run will resolve them from repo truth
 2. systemic impact and which subsystems or platforms are most likely to hide regressions
 3. the top 2 blind spots or failure modes of the audit itself and how the run will reduce them
@@ -87,7 +87,7 @@ Evidence hierarchy:
 ## Common Output Schema
 
 Every run must produce:
-1. `<thinking>`
+1. `PRE-FLIGHT ARTIFACT`
 2. `Overall verdict: GREEN | YELLOW | RED`
 3. `Coverage matrix` with top-level domains, critical subdomains, status, confidence, and evidence
 4. `Representative flow matrix` with runtime/static/unverified coverage notes
@@ -160,14 +160,14 @@ Run a ZenFlow integrity audit in FAST mode for C:\project\people-first-app.
 
 Default mode is REPORT-ONLY. Do not edit files, create patches, stage changes, commit, push, open PRs, or modify automations.
 
-Before substantive work, print a visible <thinking> block with:
+Before substantive work, print a visible PRE-FLIGHT ARTIFACT with:
 1. missing context and how you will resolve it from repo truth,
 2. systemic impact and likely blind spots,
 3. the top 2 audit failure modes in FAST mode,
 4. a strict audit plan.
 
 Execution order:
-1. Read repo truth first: AGENTS.md, ARCHITECTURE.md, package scripts, CI/preflight docs, .Codex/hooks/, .Codex/rules/, key configs, i18n files, and critical entry points.
+1. Read repo truth first: AGENTS.md, ARCHITECTURE.md, package scripts, CI/preflight docs, .codex/hooks/, config/persistent-agent-orchestra.json, generated docs/ai/PERSISTENT_AGENT_ORCHESTRA.md, key configs, i18n files, and critical entry points.
 2. Build an invariant register before judging anything.
 3. Run the strongest fresh non-destructive repo-native checks available.
 4. Inspect code and config for static risks that those checks do not prove.
@@ -190,7 +190,7 @@ Rules:
 - include self-reflection and residual risks
 
 Output:
-1. <thinking>
+1. PRE-FLIGHT ARTIFACT
 2. Overall verdict: GREEN, YELLOW, or RED
 3. Coverage matrix with confidence and evidence
 4. Findings grouped by root cause
@@ -227,7 +227,7 @@ Run a ZenFlow integrity audit in DEEP-UI mode for C:\project\people-first-app.
 
 Default mode is REPORT-ONLY. Do not edit files, create patches, stage changes, commit, push, open PRs, or modify automations.
 
-Before substantive work, print a visible <thinking> block with:
+Before substantive work, print a visible PRE-FLIGHT ARTIFACT with:
 1. missing context and how you will resolve it from repo truth,
 2. the subsystems and platforms most likely to hide UI regressions,
 3. the top 2 audit blind spots in DEEP-UI mode,
@@ -258,7 +258,7 @@ Rules:
 - include self-reflection and residual risks even on GREEN
 
 Output:
-1. <thinking>
+1. PRE-FLIGHT ARTIFACT
 2. Overall verdict: GREEN, YELLOW, or RED
 3. Coverage matrix with confidence and evidence
 4. Representative flow matrix
@@ -295,14 +295,14 @@ Run a ZenFlow integrity audit in ARCHITECTURE mode for C:\project\people-first-a
 
 Default mode is REPORT-ONLY. Do not edit files, create patches, stage changes, commit, push, open PRs, or modify automations.
 
-Before substantive work, print a visible <thinking> block with:
+Before substantive work, print a visible PRE-FLIGHT ARTIFACT with:
 1. missing context and how you will resolve it from repo truth,
 2. the subsystems most likely to drift silently,
 3. the top 2 architecture-audit blind spots,
 4. a strict audit plan.
 
 Execution order:
-1. Read repo truth first: AGENTS.md, ARCHITECTURE.md, package scripts, CI/preflight docs, .Codex/hooks/, .Codex/rules/, critical store files, storage/backend integration points, and platform configs.
+1. Read repo truth first: AGENTS.md, ARCHITECTURE.md, package scripts, CI/preflight docs, .codex/hooks/, config/persistent-agent-orchestra.json, generated docs/ai/PERSISTENT_AGENT_ORCHESTRA.md, critical store files, storage/backend integration points, and platform configs.
 2. Build an invariant register before the first verdict.
 3. Run the strongest fresh non-destructive checks available.
 4. Inspect code, docs, and config for structural drift and governance gaps.
@@ -323,7 +323,7 @@ Rules:
 - include self-reflection and residual risks
 
 Output:
-1. <thinking>
+1. PRE-FLIGHT ARTIFACT
 2. Overall verdict: GREEN, YELLOW, or RED
 3. Coverage matrix with confidence and evidence
 4. Findings grouped by root cause
@@ -359,7 +359,7 @@ Run a ZenFlow integrity audit in RELEASE-GATE mode for C:\project\people-first-a
 
 Default mode is REPORT-ONLY. Do not edit files, create patches, stage changes, commit, push, open PRs, or modify automations.
 
-Before substantive work, print a visible <thinking> block with:
+Before substantive work, print a visible PRE-FLIGHT ARTIFACT with:
 1. missing context and how you will resolve it from repo truth,
 2. the release-critical surfaces most likely to hide regressions,
 3. the top 2 release-gate blind spots,
@@ -391,7 +391,7 @@ Rules:
 - include self-reflection and residual risks even on GREEN
 
 Output:
-1. <thinking>
+1. PRE-FLIGHT ARTIFACT
 2. Overall verdict: GREEN, YELLOW, or RED
 3. Coverage matrix with confidence and evidence
 4. Representative flow matrix

@@ -22,7 +22,7 @@ export default tseslint.config(
       "knip.config.ts",
       ".size-limit.json",
       // Agent worktrees (isolated branches) — not part of main lint/type scope.
-      ".claude/worktrees/**",
+      ".codex/worktrees/**",
       // Build-time Vite plugins (Node CLI tooling, console.log allowed for build feedback).
       "vite-plugin-*.ts",
     ],

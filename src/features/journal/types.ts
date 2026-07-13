@@ -15,23 +15,35 @@ export interface DiaryThemeConfig {
 }
 
 export const DIARY_THEMES: Record<DiaryThemeName, DiaryThemeConfig> = {
-  light:  { '--diary-bg': '#FFFEF5', '--diary-text': '#2D2D2D', '--diary-accent': '#4A7C59', '--diary-muted': '#999999', '--diary-border': 'rgba(0,0,0,0.08)' },
+  light:  { '--diary-bg': '#FFFEF5', '--diary-text': '#2D2D2D', '--diary-accent': '#4A7C59', '--diary-muted': '#666A63', '--diary-border': 'rgba(0,0,0,0.08)' },
   dark:   { '--diary-bg': '#020611', '--diary-text': '#f1f5f9', '--diary-accent': '#2dd4bf', '--diary-muted': '#94a3b8', '--diary-border': 'rgba(255,255,255,0.06)' },
-  sepia:  { '--diary-bg': '#F4ECD8', '--diary-text': '#5B4636', '--diary-accent': '#8B6914', '--diary-muted': '#9E8B6E', '--diary-border': 'rgba(91,70,54,0.12)' },
+  sepia:  { '--diary-bg': '#F4ECD8', '--diary-text': '#5B4636', '--diary-accent': '#8B6914', '--diary-muted': '#75644E', '--diary-border': 'rgba(91,70,54,0.12)' },
   forest: { '--diary-bg': '#1B2D1B', '--diary-text': '#D4E7D4', '--diary-accent': '#6EBF8B', '--diary-muted': '#7A9E7A', '--diary-border': 'rgba(212,231,212,0.08)' },
   ocean:  { '--diary-bg': '#0F1B2D', '--diary-text': '#B8D4E3', '--diary-accent': '#4AA3DF', '--diary-muted': '#6B8FA3', '--diary-border': 'rgba(184,212,227,0.08)' },
   sunset:   { '--diary-bg': '#2D1B1B', '--diary-text': '#F4D6C8', '--diary-accent': '#E8834A', '--diary-muted': '#B48D7A', '--diary-border': 'rgba(244,214,200,0.08)' },
   lavender: { '--diary-bg': '#1E1A2E', '--diary-text': '#E0D4F5', '--diary-accent': '#A78BFA', '--diary-muted': '#8B7EB0', '--diary-border': 'rgba(167,139,250,0.10)' },
   rose:     { '--diary-bg': '#2D1B24', '--diary-text': '#F5D4E0', '--diary-accent': '#F472B6', '--diary-muted': '#B07A94', '--diary-border': 'rgba(244,114,182,0.10)' },
   midnight: { '--diary-bg': '#0A0E1A', '--diary-text': '#C8D6E5', '--diary-accent': '#60A5FA', '--diary-muted': '#6B7FA3', '--diary-border': 'rgba(96,165,250,0.08)' },
-  cherry:   { '--diary-bg': '#FFF5F5', '--diary-text': '#4A2020', '--diary-accent': '#E84393', '--diary-muted': '#9E6B6B', '--diary-border': 'rgba(232,67,147,0.12)' },
+  cherry:   { '--diary-bg': '#FFF5F5', '--diary-text': '#4A2020', '--diary-accent': '#E84393', '--diary-muted': '#7B4B4B', '--diary-border': 'rgba(232,67,147,0.12)' },
 };
 
-export const DIARY_FONTS: Record<DiaryFontName, { family: string; url: string }> = {
-  caveat:    { family: "'Caveat', cursive",              url: 'https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap' },
-  cormorant: { family: "'Cormorant Garamond', serif",    url: 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap' },
-  outfit:    { family: "'Outfit', sans-serif",           url: 'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap' },
-  dancing:   { family: "'Dancing Script', cursive",     url: 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&display=swap' },
+export const DIARY_FONTS: Record<DiaryFontName, { family: string; style: "normal" | "italic" }> = {
+  caveat: {
+    family: '"Caveat Variable", "Comic Sans MS", cursive',
+    style: "normal",
+  },
+  cormorant: {
+    family: '"Fraunces Variable", "Literata Variable", Georgia, Cambria, "Times New Roman", serif',
+    style: "normal",
+  },
+  outfit: {
+    family: '"Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    style: "normal",
+  },
+  dancing: {
+    family: '"Fraunces Variable", "Literata Variable", Georgia, Cambria, "Times New Roman", serif',
+    style: "italic",
+  },
 };
 
 export const DIARY_THEME_NAMES: DiaryThemeName[] = ['light', 'dark', 'sepia', 'forest', 'ocean', 'sunset', 'lavender', 'rose', 'midnight', 'cherry'];
@@ -72,9 +84,9 @@ export type ParticleSpeed = 'off' | 'slow' | 'drift';
 export type PaperColor = 'white' | 'dark' | 'milky';
 
 export const PAPER_COLORS: Record<PaperColor, { bg: string; text: string; muted: string; border: string; label: string }> = {
-  white: { bg: '#FBFDF8', text: '#17302F', muted: '#657A76', border: 'rgba(23,48,47,0.10)', label: 'Soft white' },
+  white: { bg: '#FBFDF8', text: '#17302F', muted: '#5E716D', border: 'rgba(23,48,47,0.10)', label: 'Soft white' },
   dark:  { bg: '#0D0D14', text: '#e2e8f0', muted: '#94a3b8', border: 'rgba(255,255,255,0.06)', label: 'Dark' },
-  milky: { bg: '#F6F3E9', text: '#243936', muted: '#71827E', border: 'rgba(36,57,54,0.10)', label: 'Paper' },
+  milky: { bg: '#F6F3E9', text: '#243936', muted: '#62716D', border: 'rgba(36,57,54,0.10)', label: 'Paper' },
 };
 
 /** A single journal/diary entry */

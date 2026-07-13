@@ -135,6 +135,33 @@ function assertNoSecrets(relativePath, text) {
   }
 }
 
+function assertAgentOrchestra() {
+  for (const relativePath of [
+    "config/persistent-agent-orchestra.json",
+    "config/persistent-agent-orchestra.evals.json",
+    "config/persistent-agent-orchestra.eval-baseline.json",
+    "config/persistent-agent-orchestra.source-waivers.json",
+    "scripts/sync-persistent-agent-orchestra.mjs",
+    ".codex/config.toml",
+    "docs/ai/PERSISTENT_AGENT_ORCHESTRA.md",
+    "docs/ai/PERSISTENT_AGENT_ORCHESTRA_EVAL_PROTOCOL.md",
+  ]) {
+    assertGovernanceFile(relativePath);
+  }
+
+  try {
+    execFileSync(process.execPath, ["scripts/sync-persistent-agent-orchestra.mjs", "--check"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 15_000,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  } catch (error) {
+    const output = [error?.stdout, error?.stderr].filter(Boolean).join("\n").trim();
+    fail(`check:agent-orchestra failed closed${output ? `: ${output}` : ""}`);
+  }
+}
+
 function assertAgentChangeGovernance(agents) {
   if (agents && !hasHeading(agents, "Agent Change Governance")) {
     fail('AGENTS.md is missing required heading "Agent Change Governance"');
@@ -224,8 +251,11 @@ function assertAgentChangeGovernance(agents) {
 
   const driftWorkflow = assertGovernanceFile(".github/workflows/drift-checks.yml");
   if (driftWorkflow) {
-    if (!/npm run ai:ruflow-plus:check/.test(driftWorkflow)) {
-      fail("drift-checks.yml must run npm run ai:ruflow-plus:check");
+    if (!/npm run check:agent-orchestra/.test(driftWorkflow)) {
+      fail("drift-checks.yml must run npm run check:agent-orchestra");
+    }
+    if (!/npm run check:agent-orchestra:eval/.test(driftWorkflow)) {
+      fail("drift-checks.yml must run npm run check:agent-orchestra:eval");
     }
     if (!/npm run enforcement:check/.test(driftWorkflow)) {
       fail("drift-checks.yml must run npm run enforcement:check");
@@ -235,33 +265,18 @@ function assertAgentChangeGovernance(agents) {
     }
   }
 
-  const claudeSettings = assertGovernanceFile(".claude/settings.json");
-  if (claudeSettings) {
-    if (!/"PreToolUse"/.test(claudeSettings)) {
-      fail(".claude/settings.json must register PreToolUse hooks");
-    }
-    if (!/\.claude\/hooks\/tool-guard\.cjs/.test(claudeSettings)) {
-      fail(".claude/settings.json must register tool-guard.cjs");
-    }
-    if (!/\.claude\/hooks\/protected-files\.cjs/.test(claudeSettings)) {
-      fail(".claude/settings.json must register protected-files.cjs");
-    }
+  if (codexHooks && !/change-governance-gate\.cjs/.test(codexHooks)) {
+    fail(".codex/hooks.json must register change-governance-gate.cjs for PreToolUse");
   }
-
-  if (isTracked(".claude/settings.local.json")) {
-    fail(".claude/settings.local.json must stay untracked; local agent permissions are machine-local");
+  const changeGuard = assertGovernanceFile(".codex/hooks/change-governance-gate.cjs");
+  const changeGuardCore = assertGovernanceFile("scripts/codex-governance/change-gate-core.cjs");
+  if (changeGuard && !/Malformed hook input/.test(changeGuard)) {
+    fail("Codex change governance hook must fail closed on malformed input");
   }
-
-  const toolGuard = assertGovernanceFile(".claude/hooks/tool-guard.cjs");
-  if (toolGuard && !/BLOCKED_PARSE_ERROR/.test(toolGuard)) {
-    fail("tool-guard.cjs must fail closed on malformed hook input");
-  }
-
-  const protectedFiles = assertGovernanceFile(".claude/hooks/protected-files.cjs");
-  if (protectedFiles) {
-    for (const marker of ["AGENTS.md", ".Codex-md-unlock", ".claude-md-unlock"]) {
-      if (!protectedFiles.includes(marker)) {
-        fail(`protected-files.cjs must protect or recognize ${marker}`);
+  if (changeGuardCore) {
+    for (const marker of ["AGENTS.md", ".Codex-md-unlock", ".preflight-token", "test_first", "skill_routing"]) {
+      if (!changeGuardCore.includes(marker)) {
+        fail(`Codex change governance core must protect or recognize ${marker}`);
       }
     }
   }
@@ -276,7 +291,12 @@ function assertAgentChangeGovernance(agents) {
 
   const subagentCheck = assertGovernanceFile("scripts/check-subagent-teamlead-governance.mjs");
   if (subagentCheck) {
-    for (const marker of ["Subagent Safety Contract", "Runtime Availability Rule", "Tool Availability Rule"]) {
+    for (const marker of [
+      "canonical exact-ten structure",
+      "READ_ONLY_INTENT",
+      "counter_hypotheses",
+      "runCanonicalCheck",
+    ]) {
       if (!subagentCheck.includes(marker)) {
         fail(`scripts/check-subagent-teamlead-governance.mjs must enforce ${marker}`);
       }
@@ -326,7 +346,7 @@ function assertFreeRagPreflightContract(agents) {
     if (!/npm run rag:preflight/.test(freeRag)) {
       fail("FREE_RAG_AND_COACH_LITE.md must document npm run rag:preflight");
     }
-    if (!/\.Codex\/auto-context\/rag-current\.md/.test(freeRag)) {
+    if (!/\.codex\/auto-context\/rag-current\.md/.test(freeRag)) {
       fail("FREE_RAG_AND_COACH_LITE.md must document the generated RAG auto-context file");
     }
     if (!/scripts\/rag\/corpus-manifest\.json/.test(freeRag)) {
@@ -339,7 +359,7 @@ function assertFreeRagPreflightContract(agents) {
 
   const contextPersistence = assertGovernanceFile("docs/ai/AGENT_CONTEXT_PERSISTENCE.md");
   if (contextPersistence) {
-    if (!/\.Codex\/auto-context\/rag-current\.md/.test(contextPersistence)) {
+    if (!/\.codex\/auto-context\/rag-current\.md/.test(contextPersistence)) {
       fail("AGENT_CONTEXT_PERSISTENCE.md must include the RAG auto-context artifact path");
     }
     if (!/scripts\/rag\/corpus-manifest\.json/.test(contextPersistence)) {
@@ -747,7 +767,7 @@ async function main() {
       "Snyk Security At Inception",
       "Architecture",
       "Agent Entry Points",
-      "Ruflow+ And Work Mode",
+      "Persistent Codex Agent Orchestra",
       "Agent Change Governance",
       "Snyk And Security Fallback",
     ]) {
@@ -771,6 +791,7 @@ async function main() {
   assertNoRepoIgnoreForCanonicalFiles();
   assertLocalMcpBoundary();
   assertAgentChangeGovernance(agents);
+  assertAgentOrchestra();
 
   for (const example of [
     "tools/zenflow-context/mcp-server.example.json",

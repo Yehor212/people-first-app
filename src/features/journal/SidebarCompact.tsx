@@ -1,42 +1,30 @@
 import { memo } from "react";
-import { BarChart3, PanelLeftClose, PanelLeftOpen, PenLine, Plus, Settings, Star } from "lucide-react";
+import { BarChart3, PanelLeftClose, PanelLeftOpen, PenLine, Settings, Star } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { MoodDotStrip } from "./MoodDotStrip";
-import type { JournalEntry } from "./types";
 
 export type DiarySidebarSection = "entry" | "stats" | "favorites" | "settings";
 
 interface SidebarCompactProps {
   activeSection: DiarySidebarSection;
-  entries: JournalEntry[];
-  activeEntryId: string | null;
-  onOpenEntry: (id: string) => void;
-  onNewEntry: () => void;
   onOpenStats: () => void;
   onOpenFavorites: () => void;
   onOpenSettings: () => void;
   onShowList: () => void;
   onToggleSidebar: () => void;
   collapsed: boolean;
-  privateMode?: boolean;
   useSharedDiaryWallpaper?: boolean;
 }
 
 export const SidebarCompact = memo(function SidebarCompact({
   activeSection,
-  entries,
-  activeEntryId,
-  onOpenEntry,
-  onNewEntry,
   onOpenStats,
   onOpenFavorites,
   onOpenSettings,
   onShowList,
   onToggleSidebar,
   collapsed,
-  privateMode = false,
   useSharedDiaryWallpaper = false,
 }: SidebarCompactProps) {
   const { t, isRTL } = useLanguage();
@@ -113,13 +101,6 @@ export const SidebarCompact = memo(function SidebarCompact({
         </button>
       </div>
 
-      <MoodDotStrip
-        entries={entries}
-        activeEntryId={activeEntryId}
-        onOpenEntry={onOpenEntry}
-        privateMode={privateMode}
-      />
-
       <div className="mt-auto border-t border-border/20 px-2 py-3">
         <div className="flex flex-col items-center gap-1">
           <button
@@ -137,19 +118,6 @@ export const SidebarCompact = memo(function SidebarCompact({
             ) : (
               <PanelLeftClose className="w-4 h-4" aria-hidden="true" />
             )}
-          </button>
-        </div>
-
-        <div className="mt-2 flex flex-col items-center">
-          <button
-            type="button"
-            onClick={onNewEntry}
-            className="flex h-[44px] w-[44px] items-center justify-center rounded-xl border border-primary/20 bg-primary/[0.10] p-0 text-primary motion-safe:transition-[background-color,transform] hover:bg-primary/[0.16] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45"
-            title={ts.journalNewEntry || "New entry"}
-            aria-label={ts.journalNewEntry || "New entry"}
-            data-testid="journal-sidebar-new-entry"
-          >
-            <Plus className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
       </div>

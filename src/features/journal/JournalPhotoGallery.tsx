@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback, memo } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
+import { createPortal } from "react-dom";
 import { X, Trash2, ZoomIn, ChevronLeft, ChevronRight, MoveDiagonal2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { useBackHandler } from "@/hooks/useBackHandler";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useDeviceTier } from "@/hooks/useDeviceTier";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { JournalPhoto } from "./types";
-import { getPhotoById } from "./journalStorage";
+import { getPhotoById, getPhotoPreviewById } from "./journalStorage";
 import { logger } from "@/lib/logger";
 
 interface JournalPhotoGalleryProps {
@@ -25,18 +25,34 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
   onFloatPhoto,
   editable = false,
 }: JournalPhotoGalleryProps) {
-  const { t } = useLanguage();
-  const ts = t as unknown as Record<string, string>;
+  const { t, isRTL } = useLanguage();
+  const ts = t;
   const { isDesktopClass } = useDeviceTier();
   const [photos, setPhotos] = useState<JournalPhoto[]>([]);
   const [lightboxPhoto, setLightboxPhoto] = useState<JournalPhoto | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [fullData, setFullData] = useState<string | null>(null);
+  const lightboxRequestIdRef = useRef(0);
 
-  const closeLightbox = () => {
+  const closeLightbox = useCallback(() => {
+    lightboxRequestIdRef.current += 1;
     setLightboxPhoto(null);
     setFullData(null);
-  };
+  }, []);
+
+  const hydrateLightboxPhoto = useCallback((photo: JournalPhoto) => {
+    const requestId = ++lightboxRequestIdRef.current;
+    setFullData(null);
+    getPhotoById(photo.id)
+      .then((full) => {
+        if (requestId !== lightboxRequestIdRef.current) return;
+        setFullData(full?.data ?? photo.thumbnail);
+      })
+      .catch(() => {
+        if (requestId !== lightboxRequestIdRef.current) return;
+        setFullData(photo.thumbnail);
+      });
+  }, []);
 
   const navigateLightbox = useCallback(
     (direction: -1 | 1) => {
@@ -45,28 +61,29 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
       const nextPhoto = photos[nextIndex];
       setLightboxIndex(nextIndex);
       setLightboxPhoto(nextPhoto);
-      setFullData(null);
-      getPhotoById(nextPhoto.id)
-        .then((full) => setFullData(full?.data ?? nextPhoto.thumbnail))
-        .catch(() => setFullData(nextPhoto.thumbnail));
+      hydrateLightboxPhoto(nextPhoto);
     },
-    [photos, lightboxIndex]
+    [hydrateLightboxPhoto, photos, lightboxIndex]
   );
+
+  const backwardDirection = isRTL ? 1 : -1;
+  const forwardDirection = isRTL ? -1 : 1;
+  const PreviousIcon = isRTL ? ChevronRight : ChevronLeft;
+  const NextIcon = isRTL ? ChevronLeft : ChevronRight;
 
   // Keyboard navigation in lightbox
   useEffect(() => {
     if (!lightboxPhoto) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") navigateLightbox(-1);
-      if (e.key === "ArrowRight") navigateLightbox(1);
+      if (e.key === "ArrowLeft") navigateLightbox(backwardDirection);
+      if (e.key === "ArrowRight") navigateLightbox(forwardDirection);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [lightboxPhoto, navigateLightbox]);
+  }, [backwardDirection, forwardDirection, lightboxPhoto, navigateLightbox]);
 
   useScrollLock(!!lightboxPhoto);
-  useBackHandler(!!lightboxPhoto, closeLightbox);
-  useModalA11y(!!lightboxPhoto, closeLightbox);
+  const lightboxA11y = useModalA11y(!!lightboxPhoto, closeLightbox);
 
   useEffect(() => {
     if (photoIds.length === 0) {
@@ -74,7 +91,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
       return;
     }
     let cancelled = false;
-    Promise.all(photoIds.map((photoId) => getPhotoById(photoId)))
+    Promise.all(photoIds.map((photoId) => getPhotoPreviewById(photoId)))
       .then((items) => {
         if (cancelled) return;
         setPhotos(items.filter((photo): photo is JournalPhoto => Boolean(photo)));
@@ -89,11 +106,10 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
     };
   }, [photoIds]);
 
-  const openLightbox = async (photo: JournalPhoto, index: number) => {
+  const openLightbox = (photo: JournalPhoto, index: number) => {
     setLightboxPhoto(photo);
     setLightboxIndex(index);
-    const full = await getPhotoById(photo.id);
-    setFullData(full?.data ?? photo.thumbnail);
+    hydrateLightboxPhoto(photo);
   };
 
   if (photos.length === 0) return null;
@@ -116,7 +132,7 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
               aria-label={ts.openPhoto || "Open photo"}
             >
               <img
-                src={photo.thumbnail}
+                src={photo.thumbnail || photo.data}
                 alt=""
                 width={64}
                 height={64}
@@ -127,7 +143,10 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-black/0 dark:bg-black/0 group-hover:bg-black/20 dark:group-hover:bg-black/20 motion-safe:transition-colors rounded-xl flex items-center justify-center">
-                <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 motion-safe:transition-opacity" aria-hidden="true" />
+                <ZoomIn
+                  className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 motion-safe:transition-opacity"
+                  aria-hidden="true"
+                />
               </div>
             </button>
             {editable && onRemovePhoto && (
@@ -157,90 +176,96 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
       </div>
 
       {/* Lightbox */}
-      <AnimatePresence>
-        {lightboxPhoto && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            role="dialog"
-            aria-modal="true"
-            aria-label={t.ariaPhotoLightbox}
-            className="fixed inset-0 z-[70] bg-black/90 dark:bg-black/90 flex items-center justify-center"
-            onClick={closeLightbox}
-          >
-            <button
-              onClick={closeLightbox}
-              className="absolute top-[max(1rem,env(safe-area-inset-top))] end-4 p-2.5 bg-white/10 dark:bg-white/10 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center"
-              aria-label={ts.close || "Close"}
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
-
-            {editable && onRemovePhoto && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemovePhoto(lightboxPhoto.id);
-                  closeLightbox();
-                }}
-                className="absolute top-[max(1rem,env(safe-area-inset-top))] start-4 p-2.5 bg-destructive/80 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                aria-label={ts.delete || "Delete"}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {lightboxPhoto && (
+              <motion.div
+                ref={lightboxA11y.modalRef}
+                onKeyDown={lightboxA11y.handleKeyDown}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                role="dialog"
+                aria-modal="true"
+                aria-label={t.ariaPhotoLightbox}
+                className="fixed inset-0 z-[70] bg-black/90 dark:bg-black/90 flex items-center justify-center"
+                onClick={closeLightbox}
               >
-                <Trash2 className="w-5 h-5 text-white" />
-              </button>
-            )}
-
-            {/* Prev/Next navigation */}
-            {photos.length > 1 && (
-              <>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigateLightbox(-1);
-                  }}
-                  className="absolute start-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 dark:bg-white/10 hover:bg-white/20 dark:hover:bg-white/20 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-colors"
-                  aria-label="Previous photo"
+                  onClick={closeLightbox}
+                  className="absolute top-[max(1rem,env(safe-area-inset-top))] end-4 p-2.5 bg-white/10 dark:bg-white/10 rounded-full z-20 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  aria-label={ts.close || "Close"}
                 >
-                  <ChevronLeft className="w-5 h-5 text-white" />
+                  <X className="w-5 h-5 text-white" />
                 </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigateLightbox(1);
-                  }}
-                  className="absolute end-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 dark:bg-white/10 hover:bg-white/20 dark:hover:bg-white/20 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-colors"
-                  aria-label="Next photo"
-                >
-                  <ChevronRight className="w-5 h-5 text-white" />
-                </button>
-              </>
-            )}
 
-            {/* Photo counter */}
-            {photos.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 dark:bg-black/50 rounded-full text-xs text-white/80 z-10">
-                {lightboxIndex + 1} / {photos.length}
-              </div>
-            )}
+                {editable && onRemovePhoto && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemovePhoto(lightboxPhoto.id);
+                      closeLightbox();
+                    }}
+                    className="absolute top-[max(1rem,env(safe-area-inset-top))] start-4 p-2.5 bg-destructive/80 rounded-full z-20 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    aria-label={ts.delete || "Delete"}
+                  >
+                    <Trash2 className="w-5 h-5 text-white" />
+                  </button>
+                )}
 
-            <motion.img
-              key={lightboxPhoto.id}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              src={fullData || lightboxPhoto.thumbnail}
-              alt=""
-              className={cn(
-                "max-w-[95vw] max-h-[90dvh] object-contain rounded-lg",
-                !fullData && "blur-sm"
-              )}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </motion.div>
+                {/* Prev/Next navigation */}
+                {photos.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigateLightbox(backwardDirection);
+                      }}
+                      className="absolute start-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 dark:bg-white/10 hover:bg-white/20 dark:hover:bg-white/20 rounded-full z-20 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-colors"
+                      aria-label={ts.journalPhotoPrevious || ts.previous || "Previous photo"}
+                    >
+                      <PreviousIcon className="w-5 h-5 text-white" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigateLightbox(forwardDirection);
+                      }}
+                      className="absolute end-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 dark:bg-white/10 hover:bg-white/20 dark:hover:bg-white/20 rounded-full z-20 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-colors"
+                      aria-label={ts.journalPhotoNext || ts.next || "Next photo"}
+                    >
+                      <NextIcon className="w-5 h-5 text-white" />
+                    </button>
+                  </>
+                )}
+
+                {/* Photo counter */}
+                {photos.length > 1 && (
+                  <div className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 dark:bg-black/50 rounded-full text-xs text-white/80 z-20">
+                    {lightboxIndex + 1} / {photos.length}
+                  </div>
+                )}
+
+                <motion.img
+                  key={lightboxPhoto.id}
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                  src={fullData || lightboxPhoto.thumbnail}
+                  alt=""
+                  className={cn(
+                    "relative z-0 max-w-[95vw] max-h-[90dvh] object-contain rounded-lg",
+                    !fullData && "blur-sm"
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </>
   );
 });

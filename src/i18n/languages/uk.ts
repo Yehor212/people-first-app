@@ -544,8 +544,7 @@ export const uk: Translations = {
   settingsSoundRestoreDescription:
     "Звуки, які ви вимкнули раніше, залишатимуться вимкненими, доки ви їх не відновите.",
   settingsSoundRestoreAction: "Відновити звуки",
-  settingsSoundMasterDisabledHint:
-    "Увімкніть звук застосунку, щоб змінювати ці налаштування.",
+  settingsSoundMasterDisabledHint: "Увімкніть звук застосунку, щоб змінювати ці налаштування.",
   settingsAccountBackupTitle: "Акаунт і резервна копія",
   settingsAccountBackupDescription:
     "Ваш акаунт підключено. Якщо ZenFlow не зможе зберегти зміни онлайн, вони залишаться на цьому пристрої.",
@@ -560,8 +559,7 @@ export const uk: Translations = {
   settingsAccountCheckFailedDescription:
     "Ваші дані залишаються на цьому пристрої. Перевірте з’єднання й спробуйте знову.",
   settingsAccountBackupUnavailable: "У цій версії резервне копіювання недоступне",
-  settingsAccountBackupUnavailableDescription:
-    "Ваші дані залишаються на цьому пристрої.",
+  settingsAccountBackupUnavailableDescription: "Ваші дані залишаються на цьому пристрої.",
   settingsRemindersMobileApp: "Мобільний застосунок",
   settingsPrivacyDataDescription:
     "Ви вирішуєте, які додаткові сервіси може використовувати ZenFlow.",
@@ -578,8 +576,7 @@ export const uk: Translations = {
   settingsAboutProductSummary:
     "ZenFlow об’єднує відмітки настрою, звички, сеанси фокусування та ваш щоденник.",
   settingsAboutSupportLegalTitle: "Допомога та юридична інформація",
-  settingsAboutSupportLegalDescription:
-    "Конфіденційність, умови, ліцензії та підтримка.",
+  settingsAboutSupportLegalDescription: "Конфіденційність, умови, ліцензії та підтримка.",
   settingsRemindersOff: "Нагадування вимкнено",
   resetDataConfirmWord: "RESET",
   resetDataTypeConfirm: "Введіть {word}, щоб підтвердити",
@@ -594,8 +591,7 @@ export const uk: Translations = {
   importReplace: "Замінити наявні дані",
   exportSuccess: "Експорт готовий.",
   exportError: "Не вдалося експортувати дані.",
-  exportJournalUnlockRequired:
-    "Розблокуйте щоденник, перш ніж експортувати захищений вміст.",
+  exportJournalUnlockRequired: "Розблокуйте щоденник, перш ніж експортувати захищений вміст.",
   exportJournalDecryptionFailed:
     "ZenFlow не зміг прочитати захищений щоденник. Нічого не експортовано.",
   exportJournalMediaUnavailable:
@@ -678,10 +674,8 @@ export const uk: Translations = {
   settingsPreferenceSaveError:
     "Не вдалося зберегти зміну. Попереднє налаштування залишається активним.",
   settingsReduceMotion: "Менше руху",
-  settingsReduceMotionDescription:
-    "Зменшує кількість рухомих переходів і декоративних ефектів.",
-  settingsReduceMotionSystemDescription:
-    "На вашому пристрої вже ввімкнено зменшення руху.",
+  settingsReduceMotionDescription: "Зменшує кількість рухомих переходів і декоративних ефектів.",
+  settingsReduceMotionSystemDescription: "На вашому пристрої вже ввімкнено зменшення руху.",
   themeStyleTitle: "Палітра настрою",
   themeAdvancedAppearanceTitle: "Розширені налаштування вигляду",
   themeStyleDescription: "Оберіть режим оформлення, колір акценту та розмір тексту.",
@@ -896,8 +890,7 @@ export const uk: Translations = {
   settingsMoodCheckInsDescription: "М’яко нагадує записати, як ви почуваєтеся.",
   settingsFocusReminder: "Нагадування про фокус",
   settingsFocusReminderDescription: "Одне нагадування приблизно у вибраний вами час.",
-  settingsReminderChooseDay:
-    "Оберіть принаймні один день. До цього нагадування не надходитимуть.",
+  settingsReminderChooseDay: "Оберіть принаймні один день. До цього нагадування не надходитимуть.",
   selectedHabits: "Звички для нагадування",
   noHabitsYet: "Поки немає звичок.",
   noHabitsInCategory: "Немає звичок у цій категорії",
@@ -1117,8 +1110,7 @@ export const uk: Translations = {
   pushError: "Не вдалося увімкнути push.",
   pushNeedsAccount: "Увійдіть, щоб увімкнути push.",
   pushPermissionDenied: "Увімкніть сповіщення для ZenFlow у налаштуваннях пристрою.",
-  remindersNativeOnly:
-    "Щоб налаштувати нагадування, відкрийте мобільний застосунок ZenFlow.",
+  remindersNativeOnly: "Щоб налаштувати нагадування, відкрийте мобільний застосунок ZenFlow.",
   habitRemindersManagedInHabits: "Налаштуйте нагадування в меню потрібної звички.",
   areYouSure: "Ви впевнені?",
   cannotBeUndone: "Цю дію не можна скасувати.",
@@ -1365,8 +1357,7 @@ export const uk: Translations = {
   settingsSoundActivityDescription:
     "Тихо підтверджує завершені дії, сигнали таймера та окремі важливі етапи.",
   settingsSoundCompletionCues: "Сигнали завершення",
-  settingsSoundCompletionCuesDesc:
-    "Відтворює тихий сигнал підтвердження після важливих дій.",
+  settingsSoundCompletionCuesDesc: "Відтворює тихий сигнал підтвердження після важливих дій.",
   settingsSoundReminderCues: "Звуки нагадувань у ZenFlow",
   settingsSoundReminderCuesDesc:
     "Керує короткими звуками нагадувань у ZenFlow. Звуки сповіщень на пристрої налаштовуються в розділі «Сповіщення».",
@@ -1381,16 +1372,19 @@ export const uk: Translations = {
     "Зберігає на цьому пристрої вашу відповідь, час і екран, тип пристрою та поточні налаштування звуку.",
   settingsSoundAmbientOff: "Фоновий звук вимкнено.",
   settingsSoundMapTitle: "Де звучить аудіо",
-  settingsSoundMapDescription: "Звуки застосунку починаються лише після вашого дотику та слухаються ваших налаштувань.",
+  settingsSoundMapDescription:
+    "Звуки застосунку починаються лише після вашого дотику та слухаються ваших налаштувань.",
   settingsSoundMapAuth: "М’яке повітря на вході",
   settingsSoundMapOrb: "Атмосфера орба",
   settingsSoundMapDiary: "Атмосфера щоденника",
   settingsSoundMapFocus: "Бібліотека фокусної атмосфери",
   settingsSoundMapFeedback: "М’які сигнали завершення й нагадувань",
   settingsSoundCrossPlatformTitle: "Де працюють звуки",
-  settingsSoundCrossPlatformNote: "ZenFlow використовує ті самі звукові налаштування там, де це дозволяє ваш пристрій.",
+  settingsSoundCrossPlatformNote:
+    "ZenFlow використовує ті самі звукові налаштування там, де це дозволяє ваш пристрій.",
   settingsSoundActionMapTitle: "Коли ZenFlow відтворює звук",
-  settingsSoundActionMapDescription: "Короткі звуки лишаються для важливих завершень і рідкісних віх.",
+  settingsSoundActionMapDescription:
+    "Короткі звуки лишаються для важливих завершень і рідкісних віх.",
   settingsSoundActionMapMood: "Настрій збережено",
   settingsSoundActionMapHabit: "Звичку завершено",
   settingsSoundActionMapJournal: "Запис щоденника збережено",
@@ -3356,7 +3350,7 @@ export const uk: Translations = {
   diaryFontSans: "Без засічок",
   diaryFontSerif: "Із засічками",
   diaryFontHandwriting: "Рукопис",
-  diaryFontScript: "Скрипт",
+  diaryFontScript: "Курсив",
   diarySnapshot: "Фото",
   diaryRecord: "Запис",
   diaryFocusRay: "Фокус",
@@ -3383,6 +3377,55 @@ export const uk: Translations = {
   diaryPhotoSizeFull: "На всю ширину",
   diaryPhotoReturn: "Повернути фото до галереї",
   diaryPhotoResize: "Змінити розмір фото",
+  diaryBackgroundDim: "Приглушений",
+  diaryBackgroundFull: "Повний",
+  diaryBackgroundOff: "Вимкнено",
+  diaryFormatHintLabel: "Інструменти тексту",
+  diaryMotion: "Рух",
+  diaryParticleSpeed: "Швидкість",
+  diaryParticleSpeedDrift: "Плинно",
+  diaryParticleSpeedOff: "Вимкнено",
+  diaryParticleSpeedSlow: "Повільно",
+  diaryPhotoGestureHint: "Перетягніть, торкніться для розміру, утримуйте для повернення",
+  diaryPhotoGestureInstructions:
+    "Перетягніть, щоб перемістити. Торкніться, щоб змінити розмір. Зведення або розведення пальців теж змінює розмір. Натисніть Home, щоб центрувати. Стрілки переміщують фото, плюс і мінус змінюють розмір, Delete повертає фото до галереї. На сенсорному екрані натисніть і утримуйте, щоб повернути фото до галереї.",
+  diaryPhotoMove: "Перемістити фото",
+  diaryScene: "Сцена",
+  diaryTexture: "Текстура",
+  diaryTextureClean: "Чисто",
+  diaryTextureCraft: "Крафт",
+  diaryTextureDots: "Крапки",
+  diaryTextureGrid: "Сітка",
+  diaryTextureLinen: "Льон",
+  diaryTextureLines: "Лінії",
+  journalDraftSaveFailed: "Не вдалося зберегти чернетку",
+  journalFormatToolbar: "Інструменти форматування",
+  journalInkEmerald: "Смарагдове чорнило",
+  journalInkGold: "Золоте чорнило",
+  journalInkRose: "Рожеве чорнило",
+  journalInkWhite: "Автоматичне чорнило",
+  journalPanicLockDescription: "Розблокуйте, щоб повернутися до приватного щоденника.",
+  journalPanicLockTitle: "Щоденник заблоковано",
+  journalPanicLockUnlockRequired: "Натисніть «Розблокувати», щоб повернутися до щоденника.",
+  journalPaperDark: "Темний",
+  journalPaperMilky: "Папір",
+  journalPaperSoftWhite: "Мʼякий білий",
+  journalPhotoNext: "Наступне фото",
+  journalPhotoPrevious: "Попереднє фото",
+  journalRecordingDiscard: "Відкинути",
+  journalRecordingStopKeep: "Зупинити й зберегти",
+  journalRemoveAudio: "Видалити аудіо {duration}",
+  journalRemoveTag: "Видалити тег {tag}",
+  journalStyleTools: "Інструменти стилю",
+  journalToolbarInk: "Чорнило",
+  journalToolbarPaper: "Папір",
+  journalVoicePrivacyCancel: "Не зараз",
+  journalVoicePrivacyContinue: "Почати голос",
+  journalVoicePrivacyDescription:
+    "Браузер може обробляти розпізнавання мовлення поза ZenFlow. Починайте голос лише якщо це підходить для цього запису.",
+  journalVoicePrivacyTitle: "Перевірка приватності голосу",
+  openPhoto: "Відкрити фото",
+  previous: "Попереднє",
   // State of Mind
   somLogFeeling: "Запишіть свої почуття",
   somHowAreYouFeeling: "Як ви себе почуваєте?",

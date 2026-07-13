@@ -1,4 +1,4 @@
-import { memo, useEffect, useCallback, useState, useRef, useLayoutEffect } from "react";
+import { memo, useEffect, useCallback, useState, useRef, useLayoutEffect, useMemo } from "react";
 import {
   ArrowLeft,
   AlertCircle,
@@ -53,6 +53,7 @@ import type {
   PaperTexture,
 } from "./types";
 import type { MoodType } from "@/types";
+import { getJournalDisplayTag } from "./journalDisplay";
 import {
   MAX_PHOTOS_PER_ENTRY,
   MAX_STICKERS_PER_ENTRY,
@@ -78,7 +79,7 @@ import { ZenFocusMode } from "./ZenFocusMode";
 import { PrivacyShield } from "./PrivacyShield";
 import { FloatingMediaLayer } from "./FloatingMediaLayer";
 import { DiaryFormatToolbar } from "./DiaryFormatToolbar";
-import { SlashCommandMenu } from "./SlashCommandMenu";
+import { SlashCommandMenu, type CommandId } from "./SlashCommandMenu";
 import { SaveIndicator } from "./SaveIndicator";
 import { ThemeTransitionOverlay, useThemeTransition } from "./ThemeTransitionOverlay";
 import { formatJournalWordCount, formatLocalizedCount } from "./journalWordCount";
@@ -90,10 +91,21 @@ import { useJournalEditorState } from "./useJournalEditorState";
 import { formatRecordingTime } from "./useJournalEditorHelpers";
 import { useTypingDynamics } from "@/hooks/useTypingDynamics";
 import { TypingDynamicsMirror } from "@/components/diary/TypingDynamicsMirror";
+import type { TranslationStrings } from "@/i18n/types";
 
 // Local aliases to avoid name collision with the hook's `theme` state
 const DIARY_FONTS_LOCAL = DIARY_FONTS;
 const DIARY_FONT_NAMES_LOCAL = DIARY_FONT_NAMES;
+
+function getJournalTranslation(
+  translations: TranslationStrings,
+  key: string,
+  fallback: string
+): string {
+  if (!(key in translations)) return fallback;
+  const value = translations[key as keyof TranslationStrings];
+  return typeof value === "string" && value ? value : fallback;
+}
 
 type DiaryAccentStyle = Readonly<{
   backgroundColor?: string;
@@ -103,14 +115,46 @@ type DiaryAccentStyle = Readonly<{
 }>;
 
 const DIARY_ACCENTS = {
-  purple: { backgroundColor: "rgba(168, 85, 247, 0.15)", color: "#c084fc", borderColor: "rgba(168, 85, 247, 0.30)" },
-  cyan: { backgroundColor: "rgba(6, 182, 212, 0.15)", color: "#22d3ee", borderColor: "rgba(6, 182, 212, 0.30)" },
-  emerald: { backgroundColor: "rgba(16, 185, 129, 0.15)", color: "#34d399", borderColor: "rgba(16, 185, 129, 0.30)" },
-  orange: { backgroundColor: "rgba(249, 115, 22, 0.15)", color: "#fb923c", borderColor: "rgba(249, 115, 22, 0.30)" },
-  violet: { backgroundColor: "rgba(139, 92, 246, 0.15)", color: "#a78bfa", borderColor: "rgba(139, 92, 246, 0.30)" },
-  pink: { backgroundColor: "rgba(236, 72, 153, 0.15)", color: "#f472b6", borderColor: "rgba(236, 72, 153, 0.30)" },
-  blue: { backgroundColor: "rgba(59, 130, 246, 0.15)", color: "#60a5fa", borderColor: "rgba(59, 130, 246, 0.30)" },
-  rose: { backgroundColor: "rgba(244, 63, 94, 0.15)", color: "#fb7185", borderColor: "rgba(244, 63, 94, 0.30)" },
+  purple: {
+    backgroundColor: "rgba(168, 85, 247, 0.15)",
+    color: "#c084fc",
+    borderColor: "rgba(168, 85, 247, 0.30)",
+  },
+  cyan: {
+    backgroundColor: "rgba(6, 182, 212, 0.15)",
+    color: "#22d3ee",
+    borderColor: "rgba(6, 182, 212, 0.30)",
+  },
+  emerald: {
+    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    color: "#34d399",
+    borderColor: "rgba(16, 185, 129, 0.30)",
+  },
+  orange: {
+    backgroundColor: "rgba(249, 115, 22, 0.15)",
+    color: "#fb923c",
+    borderColor: "rgba(249, 115, 22, 0.30)",
+  },
+  violet: {
+    backgroundColor: "rgba(139, 92, 246, 0.15)",
+    color: "#a78bfa",
+    borderColor: "rgba(139, 92, 246, 0.30)",
+  },
+  pink: {
+    backgroundColor: "rgba(236, 72, 153, 0.15)",
+    color: "#f472b6",
+    borderColor: "rgba(236, 72, 153, 0.30)",
+  },
+  blue: {
+    backgroundColor: "rgba(59, 130, 246, 0.15)",
+    color: "#60a5fa",
+    borderColor: "rgba(59, 130, 246, 0.30)",
+  },
+  rose: {
+    backgroundColor: "rgba(244, 63, 94, 0.15)",
+    color: "#fb7185",
+    borderColor: "rgba(244, 63, 94, 0.30)",
+  },
   green: { backgroundColor: "rgba(34, 197, 94, 0.15)", color: "#4ade80" },
   amber: { backgroundColor: "rgba(245, 158, 11, 0.15)", color: "#fbbf24" },
   red: { backgroundColor: "rgba(239, 68, 68, 0.15)", color: "#f87171" },
@@ -169,7 +213,7 @@ const ATMOSPHERE_THEMES = [
     label: "Cherry",
     activeStyle: DIARY_ACCENTS.rose,
   },
-];
+] as const;
 
 const MOOD_OPTIONS: {
   mood: MoodType;
@@ -204,6 +248,40 @@ const INK_COLORS = [
   { hex: "#fb7185", label: "Rose" },
 ];
 
+const LIGHT_PAPER_READABLE_INK_COLORS: Record<string, string> = {
+  "#34d399": "#047857",
+  "#fbbf24": "#92400e",
+  "#fb7185": "#be123c",
+};
+
+function resolveReadableInkColor(inkColor: string, paperColor: PaperColor): string {
+  if (inkColor === "#ffffff") return PAPER_COLORS[paperColor].text;
+  if (paperColor === "dark") return inkColor;
+  return LIGHT_PAPER_READABLE_INK_COLORS[inkColor] || inkColor;
+}
+
+const JOURNAL_STYLE_TOOLBAR_SURFACE_CLASS =
+  "rounded-3xl border border-border/60 bg-background/90 p-2 shadow-lg shadow-foreground/5 backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)] dark:border-white/10 dark:bg-background/75";
+const JOURNAL_STYLE_TOOLBAR_FLOW_CLASS = "flex flex-wrap items-center gap-2";
+const JOURNAL_STYLE_TOOLBAR_GROUP_CLASS =
+  "flex min-w-0 flex-wrap items-center gap-1.5 rounded-2xl border border-border/60 bg-background/85 p-1.5 shadow-sm dark:border-white/10 dark:bg-background/70";
+const JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS =
+  "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border px-3 py-2 text-sm font-semibold motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+const JOURNAL_STYLE_TOOLBAR_BUTTON_IDLE_CLASS =
+  "border-border/60 bg-background/90 text-foreground hover:border-primary/35 hover:bg-primary/10 hover:text-primary dark:border-white/10 dark:bg-background/70 dark:text-foreground dark:hover:bg-primary/15";
+const JOURNAL_STYLE_TOOLBAR_BUTTON_ACTIVE_CLASS =
+  "border-primary/60 bg-background/95 text-foreground shadow-sm shadow-primary/10 ring-1 ring-primary/35 dark:bg-background/80";
+const JOURNAL_STYLE_TOOLBAR_BUTTON_MUTED_ACTIVE_CLASS = "border-border/70 bg-muted text-foreground";
+const JOURNAL_STYLE_TOOLBAR_BUTTON_DANGER_ACTIVE_CLASS =
+  "border-destructive/45 bg-destructive/10 text-foreground";
+const JOURNAL_STYLE_TOOLBAR_SWATCH_BASE_CLASS =
+  "h-11 w-11 rounded-full shrink-0 border-2 motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+const JOURNAL_STYLE_TOOLBAR_SWATCH_IDLE_CLASS = "border-border/70 shadow-sm dark:border-white/20";
+const JOURNAL_STYLE_TOOLBAR_SWATCH_ACTIVE_CLASS =
+  "scale-110 border-primary shadow-md shadow-primary/20";
+const JOURNAL_STYLE_TOOLBAR_PATTERN_BASE_CLASS =
+  "flex h-11 w-11 rounded-lg flex-shrink-0 items-center justify-center border-2 motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+
 // ── Component ──
 
 interface JournalEntryEditorProps {
@@ -217,6 +295,7 @@ interface JournalEntryEditorProps {
     audioIds?: string[];
     mood?: MoodType;
     tags: string[];
+    templateId?: string;
     date?: string;
     habitSnapshot?: {
       habitId: string;
@@ -274,6 +353,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   onBindSettingsRequestHandler,
 }: JournalEntryEditorProps) {
   const themeTransition = useThemeTransition();
+  const paperRef = useRef<HTMLDivElement>(null);
+  const [floatingFocusPhotoId, setFloatingFocusPhotoId] = useState<string | null>(null);
   const state = useJournalEditorState({
     entry,
     entryPrefill,
@@ -311,6 +392,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     audioIds,
     audioRecordings,
     audioError,
+    audioNotice,
     mood,
     setMood,
     tags,
@@ -341,7 +423,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     showSettingsConfirm,
     setShowSettingsConfirm,
     showTemplatePicker,
+    setShowTemplatePicker,
     showRecordingOverlay,
+    showVoicePrivacyConfirm,
+    setShowVoicePrivacyConfirm,
     showPromptsDropdown,
     setShowPromptsDropdown,
     // draft
@@ -391,6 +476,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     promptSeed,
     setPromptSeed,
     randomPrompts,
+    selectedPrompt,
+    setSelectedPrompt,
     // derived
     isDirty,
     hasImmediateChanges,
@@ -422,15 +509,31 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     handleAddTag,
     handleRemoveAudio,
     handleToggleDictation,
+    handleConfirmDictation,
     handleStartRecording,
     handleStopRecording,
+    handleDiscardRecording,
     handlePromptTap,
     handleEditorInput,
+    handleEditorPaste,
+    handleEditorDrop,
     cycleFontSize,
     handleContentScroll,
     handleTemplateSelect,
     handleTemplateClose,
   } = state;
+
+  const handleFloatPhotoWithFocus = useCallback(
+    (photoId: string) => {
+      handleFloatPhoto(photoId);
+      setFloatingFocusPhotoId(photoId);
+    },
+    [handleFloatPhoto]
+  );
+
+  const handleFloatingPhotoFocusHandled = useCallback((photoId: string) => {
+    setFloatingFocusPhotoId((current) => (current === photoId ? null : current));
+  }, []);
 
   // EP8_US002: Typing dynamics for mini-orb with delayed unmount
   const typingDynamics = useTypingDynamics(editorRef);
@@ -439,6 +542,100 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   const [settingsDraftError, setSettingsDraftError] = useState<string | null>(null);
   const [panicUnlockError, setPanicUnlockError] = useState<string | null>(null);
   const orbTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+  const panicUnlockButtonRef = useRef<HTMLButtonElement>(null);
+
+  const styleToolsLabel = ts.journalStyleTools || "Style tools";
+  const sceneToolLabel = ts.diaryScene || "Scene";
+  const backgroundToolLabel = ts.journalHubBackground || "Background";
+  const motionToolLabel = ts.diaryMotion || ts.diaryParticleSpeed || "Motion";
+  const textureToolLabel = ts.diaryTexture || "Texture";
+  const tagsToolLabel = ts.journalToolbarTags || "Tags";
+  const stickerToolLabel = ts.journalToolbarSticker || "Sticker";
+  const paperToolLabel = ts.journalToolbarPaper || "Paper";
+  const inkToolLabel = ts.journalToolbarInk || "Ink";
+  const paperColorLabels: Record<PaperColor, string> = {
+    white: ts.journalPaperSoftWhite || PAPER_COLORS.white.label,
+    dark: ts.journalPaperDark || PAPER_COLORS.dark.label,
+    milky: ts.journalPaperMilky || PAPER_COLORS.milky.label,
+  };
+  const inkColorLabels: Record<string, string> = {
+    "#ffffff": ts.journalInkWhite || "Default ink",
+    "#34d399": ts.journalInkEmerald || "Emerald",
+    "#fbbf24": ts.journalInkGold || "Gold",
+    "#fb7185": ts.journalInkRose || "Rose",
+  };
+  const paperTextureLabels: Record<PaperTexture, string> = {
+    clean: ts.diaryTextureClean || "Clean",
+    dots: ts.diaryTextureDots || "Dots",
+    grid: ts.diaryTextureGrid || "Grid",
+    lines: ts.diaryTextureLines || "Lines",
+    linen: ts.diaryTextureLinen || "Linen",
+    craft: ts.diaryTextureCraft || "Craft",
+  };
+  const recordToolLabel = ts.journalToolbarRecord || ts.diaryRecord || "Record";
+  const voiceToolLabel = ts.journalToolbarVoice || ts.diaryVoice || "Voice";
+  const photoToolLabel = ts.journalToolbarPhoto || ts.diarySnapshot || "Photo";
+  const fontSizeToolLabel = t.ariaFontSize + ": " + FONT_SIZES[fontSize];
+  const backgroundIntensityLabel =
+    bgIntensity === "full"
+      ? ts.diaryBackgroundFull || "Full"
+      : bgIntensity === "dim"
+        ? ts.diaryBackgroundDim || "Dim"
+        : ts.diaryBackgroundOff || "Off";
+  const particleSpeedLabel =
+    particleSpeed === "slow"
+      ? ts.diaryParticleSpeedSlow || "Slow"
+      : particleSpeed === "drift"
+        ? ts.diaryParticleSpeedDrift || "Drift"
+        : ts.diaryParticleSpeedOff || "Off";
+  const paperTextureLabel = paperTextureLabels[paperTexture];
+  const backgroundAriaLabel = `${backgroundToolLabel}: ${backgroundIntensityLabel}`;
+  const particleSpeedAriaLabel = `${motionToolLabel}: ${particleSpeedLabel}`;
+  const textureAriaLabel = `${textureToolLabel}: ${paperTextureLabel}`;
+  const selectedSceneMeta = BG_PATTERN_LIST.find((pat) => pat.name === bgPattern);
+  const selectedSceneLabel = selectedSceneMeta
+    ? getJournalTranslation(ts, selectedSceneMeta.i18nKey, selectedSceneMeta.name)
+    : bgPattern;
+  const selectedStyleStatusItems = [
+    `${sceneToolLabel}: ${selectedSceneLabel}`,
+    `${textureToolLabel}: ${paperTextureLabel}`,
+  ];
+  if (!useSharedDiaryWallpaper) {
+    selectedStyleStatusItems.push(backgroundAriaLabel, particleSpeedAriaLabel);
+  }
+  const selectedStyleStatus = selectedStyleStatusItems.join(". ");
+  const readableInkColor = resolveReadableInkColor(inkColor, paperColor);
+  const inkSwatchColor = (hex: string) =>
+    hex === "#ffffff" ? paperColors.text : resolveReadableInkColor(hex, paperColor);
+  const formatRemoveTagLabel = (tag: string) =>
+    (ts.journalRemoveTag || "Remove tag {tag}").replace("{tag}", tag);
+  const formatRemoveAudioLabel = (audio: JournalAudio) =>
+    (ts.journalRemoveAudio || "Remove audio {duration}").replace(
+      "{duration}",
+      formatRecordingTime(audio.duration)
+    );
+  const stickerLimitLabel = stickerToolLabel + ": " + MAX_STICKERS_PER_ENTRY;
+  const recordLimitLabel =
+    ts.journalAudioMaxReached || recordToolLabel + ": " + MAX_AUDIO_PER_ENTRY;
+  const photoLimitLabel =
+    photoToolLabel + ": " + (ts.journalPhotoRemainingCountZero || "0 photos remaining");
+  const moodLabels: Record<MoodType, string> = {
+    great: ts.moodGreat || "Great",
+    good: ts.moodGood || "Good",
+    okay: ts.moodOkay || "Okay",
+    bad: ts.moodBad || "Bad",
+    terrible: ts.moodTerrible || ts.terrible || "Terrible",
+  };
+  const slashDisabledCommandIds = useMemo(
+    () => (entry || draftAvailable ? new Set<CommandId>(["template"]) : new Set<CommandId>()),
+    [entry, draftAvailable]
+  );
+
+  const handlePanicLockCloseRequest = useCallback(() => {
+    setPanicUnlockError(ts.journalPanicLockUnlockRequired || "Use Unlock to return to your diary.");
+    requestAnimationFrame(() => panicUnlockButtonRef.current?.focus());
+  }, [ts.journalPanicLockUnlockRequired]);
 
   const handlePanicUnlock = useCallback(async () => {
     void hapticTap();
@@ -455,7 +652,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
         return;
       }
 
-      setPanicUnlockError(result.error || ts.authUnexpectedError || "Unlock failed. Please try again.");
+      setPanicUnlockError(
+        result.error || ts.authUnexpectedError || "Unlock failed. Please try again."
+      );
     } catch {
       setPanicUnlockError(ts.authUnexpectedError || "Unlock failed. Please try again.");
     }
@@ -465,7 +664,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     void hapticTap();
     setMobileToolsCollapsed(true);
     setShowStyleBar(false);
-  }, [setShowStyleBar]);
+    setShowPromptsDropdown(false);
+  }, [setShowPromptsDropdown, setShowStyleBar]);
 
   const handleMobileToolsExpand = useCallback(() => {
     void hapticTap();
@@ -475,15 +675,27 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   const handleMobileStyleToggle = useCallback(() => {
     void hapticTap();
     setMobileToolsCollapsed(false);
+    setShowPromptsDropdown(false);
     setShowStyleBar((value) => !value);
-  }, [setShowStyleBar]);
+  }, [setShowPromptsDropdown, setShowStyleBar]);
 
   const collapseMobileToolsForSurface = useCallback(() => {
-    if (desktop) return;
-    setMobileToolsCollapsed(true);
+    if (!desktop) {
+      setMobileToolsCollapsed(true);
+    }
     setShowStyleBar(false);
     setShowPromptsDropdown(false);
   }, [desktop, setShowPromptsDropdown, setShowStyleBar]);
+
+  useEffect(() => {
+    if (!showTags) return;
+    const frame = requestAnimationFrame(() => {
+      const input = tagInputRef.current;
+      input?.focus({ preventScroll: true });
+      input?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [showTags]);
 
   const closeDeleteConfirm = useCallback(() => {
     setShowDeleteConfirm(false);
@@ -497,9 +709,27 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     setShowSettingsConfirm(false);
   }, [setShowSettingsConfirm]);
 
+  const closeVoicePrivacyConfirm = useCallback(() => {
+    setShowVoicePrivacyConfirm(false);
+  }, [setShowVoicePrivacyConfirm]);
+
+  const closeRecordingOverlay = useCallback(() => {
+    handleDiscardRecording();
+  }, [handleDiscardRecording]);
+
+  const recordingDialogTitleId = "journal-recording-dialog-title";
+  const recordingDialogDescriptionId = "journal-recording-dialog-description";
+  const voicePrivacyDialogTitleId = "journal-voice-privacy-title";
+  const voicePrivacyDialogDescriptionId = "journal-voice-privacy-description";
+  const panicLockDialogTitleId = "journal-panic-lock-title";
+  const panicLockDialogDescriptionId = "journal-panic-lock-description";
+
   const deleteDialogA11y = useModalA11y(showDeleteConfirm, closeDeleteConfirm);
   const unsavedDialogA11y = useModalA11y(showUnsavedDialog, closeUnsavedDialog);
   const settingsDialogA11y = useModalA11y(showSettingsConfirm, closeSettingsConfirm);
+  const recordingDialogA11y = useModalA11y(showRecordingOverlay, closeRecordingOverlay);
+  const voicePrivacyDialogA11y = useModalA11y(showVoicePrivacyConfirm, closeVoicePrivacyConfirm);
+  const panicLockDialogA11y = useModalA11y(panicLocked, handlePanicLockCloseRequest);
 
   useEffect(() => {
     if (typingDynamics.isTyping) {
@@ -630,6 +860,11 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     [editorRef, handleEditorInput]
   );
 
+  const syncEditorCommandContent = useCallback(() => {
+    handleEditorInput();
+    requestAnimationFrame(() => handleEditorInput());
+  }, [handleEditorInput]);
+
   // T3: Attach markdown shortcut listener to editor
   useEffect(() => {
     const editor = editorRef.current;
@@ -660,7 +895,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       setSettingsDraftError(
         ts.journalDraftSaveFailed ||
           ts.settingsSaveFailed ||
-          "Could not save this draft. Please try again.",
+          "Could not save this draft. Please try again."
       );
     }
   }, [persistDraftNow, onRequestSettings, setShowSettingsConfirm, ts]);
@@ -679,8 +914,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
 
   const sharedWallpaperPaperStyle = useSharedDiaryWallpaper
     ? ({
-        backgroundColor: "hsl(var(--card) / 0.54)",
-        borderColor: "hsl(var(--border) / 0.52)",
+        backgroundColor: `color-mix(in srgb, ${paperColors.bg} 68%, transparent)`,
+        borderColor: `color-mix(in srgb, ${paperColors.border} 62%, hsl(var(--border)))`,
         boxShadow: "0 24px 80px hsl(var(--background) / 0.34)",
         WebkitBackdropFilter: "blur(22px) saturate(1.12)",
         backdropFilter: "blur(22px) saturate(1.12)",
@@ -690,12 +925,11 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   const editorShell = (
     <div
       ref={editorOverlayRef}
-      role={desktop ? undefined : "dialog"}
-      aria-modal={desktop ? undefined : true}
+      role={desktop ? undefined : "region"}
       aria-label={ts.journalEntryTitle || "Diary Entry"}
       data-testid="journal-entry-editor"
       className={cn(
-        "flex flex-col overflow-hidden text-foreground",
+        "journal-entry-editor-shell flex flex-col overflow-hidden text-foreground",
         desktop
           ? "relative isolate h-full min-h-0 overflow-hidden"
           : "fixed inset-x-0 top-0 z-[60] min-h-0 max-h-[var(--app-viewport-height)]"
@@ -716,7 +950,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       )}
 
       {/* Atmospheric background pattern overlay (Layer 1 — behind paper, above canvas) */}
-      {bgPattern !== "none" && !desktop && (
+      {bgPattern !== "none" && (
         <div
           className="absolute inset-0 z-[1] pointer-events-none"
           style={getBgPatternStyle(bgPattern)}
@@ -726,7 +960,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       {/* ═══ GLASS TOOLBAR ═══ */}
       <div
         className={cn(
-          "relative z-50 flex-shrink-0 w-full flex flex-col border-b",
+          "journal-editor-chrome relative z-50 flex-shrink-0 w-full flex flex-col border-b",
           desktop
             ? "gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] bg-background/95 backdrop-blur-sm shadow-sm border-border/15"
             : "gap-2 px-3 py-2 pt-[max(0.5rem,var(--safe-top))] bg-background/90 backdrop-blur-xl shadow-lg border-border/20"
@@ -791,7 +1025,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             {desktop && (
               <motion.button
                 whileTap={{ scale: 0.92 }}
-                onClick={() => setShowStyleBar((v) => !v)}
+                onClick={() => {
+                  setShowPromptsDropdown(false);
+                  setShowStyleBar((v) => !v);
+                }}
                 className={cn(
                   "p-2 rounded-lg motion-safe:transition-all min-w-[44px] min-h-[44px] flex items-center justify-center",
                   showStyleBar
@@ -835,8 +1072,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             <motion.button
               whileTap={saveSuccess ? {} : { scale: 0.92 }}
               whileHover={saveSuccess ? {} : { scale: 1.03 }}
-              onClick={saveSuccess ? undefined : handleSave}
-              disabled={!saveSuccess && (saveState === "saving" || !hasContent)}
+              onClick={handleSave}
+              disabled={saveState === "saving" || !hasContent}
               aria-label={ts.journalSave || "Save"}
               aria-busy={saveState === "saving"}
               className={cn(
@@ -891,359 +1128,459 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
               className="overflow-hidden"
             >
-              <div className="flex items-center gap-2 overflow-x-auto scrollbar-none -mx-1.5 px-1.5 pt-1">
-                {/* Atmosphere capsule */}
-                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
-                  {ATMOSPHERE_THEMES.map((at) => {
-                    const isActive = at.name === diaryTheme.theme;
-                    return (
-                      <motion.button
-                        key={at.name}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                          themeTransition.triggerTransition();
-                          diaryTheme.setTheme(at.name);
-                          setBgPattern("none");
-                        }}
-                        className={cn(
-                          "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border px-3 py-1.5 text-xs font-medium motion-safe:transition-all",
-                          isActive
-                            ? ""
-                            : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
-                        )}
-                        style={isActive ? at.activeStyle : undefined}
-                      >
-                        {ts[at.i18nKey] || at.label}
-                      </motion.button>
-                    );
-                  })}
-                </div>
+              <div className={JOURNAL_STYLE_TOOLBAR_SURFACE_CLASS}>
+                <div
+                  className={JOURNAL_STYLE_TOOLBAR_FLOW_CLASS}
+                  role="group"
+                  aria-label={styleToolsLabel}
+                >
+                  <span className="sr-only" aria-live="polite">
+                    {selectedStyleStatus}
+                  </span>
+                  {/* Atmosphere capsule */}
+                  <div className={JOURNAL_STYLE_TOOLBAR_GROUP_CLASS}>
+                    {ATMOSPHERE_THEMES.map((at) => {
+                      const isActive = at.name === diaryTheme.theme;
+                      return (
+                        <motion.button
+                          key={at.name}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            themeTransition.triggerTransition();
+                            diaryTheme.setTheme(at.name);
+                          }}
+                          className={cn(
+                            JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
+                            "text-xs",
+                            isActive
+                              ? JOURNAL_STYLE_TOOLBAR_BUTTON_ACTIVE_CLASS
+                              : JOURNAL_STYLE_TOOLBAR_BUTTON_IDLE_CLASS
+                          )}
+                          style={
+                            isActive
+                              ? {
+                                  borderColor: at.activeStyle.borderColor,
+                                }
+                              : undefined
+                          }
+                          aria-pressed={isActive}
+                        >
+                          {ts[at.i18nKey] || at.label}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
 
-                {/* Fonts + Size capsule */}
-                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
-                  {DIARY_FONT_NAMES_LOCAL.map((name) => {
-                    const isActive = name === diaryTheme.font;
-                    const label =
-                      name === "outfit"
-                        ? ts.diaryFontSans || "Sans"
-                        : name === "cormorant"
-                          ? ts.diaryFontSerif || "Serif"
-                          : name === "dancing"
-                            ? ts.diaryFontScript || "Script"
-                            : ts.diaryFontHandwriting || "Hand";
-                    return (
-                      <motion.button
-                        key={name}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => diaryTheme.setFont(name)}
-                        className={cn(
-                          "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium motion-safe:transition-all",
-                          isActive
-                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                            : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
-                        )}
-                        style={{ fontFamily: DIARY_FONTS_LOCAL[name].family }}
-                      >
-                        Aa <span className="text-[11px]">{label}</span>
-                      </motion.button>
-                    );
-                  })}
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={cycleFontSize}
-                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all"
-                    aria-label={t.ariaFontSize}
-                  >
-                    A<span className="text-[10px] ms-0.5 opacity-60">{FONT_SIZES[fontSize]}</span>
-                  </motion.button>
-                </div>
-
-                {/* Prompts button (new entries only) */}
-                {!entry && (
-                  <div className="relative flex-shrink-0">
+                  {/* Fonts + Size capsule */}
+                  <div className={JOURNAL_STYLE_TOOLBAR_GROUP_CLASS}>
+                    {DIARY_FONT_NAMES_LOCAL.map((name) => {
+                      const isActive = name === diaryTheme.font;
+                      const label =
+                        name === "outfit"
+                          ? ts.diaryFontSans || "Sans"
+                          : name === "cormorant"
+                            ? ts.diaryFontSerif || "Serif"
+                            : name === "dancing"
+                              ? ts.diaryFontScript || "Italic"
+                              : ts.diaryFontHandwriting || "Hand";
+                      return (
+                        <motion.button
+                          key={name}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => diaryTheme.setFont(name)}
+                          className={cn(
+                            JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
+                            "gap-1.5 px-4",
+                            isActive
+                              ? JOURNAL_STYLE_TOOLBAR_BUTTON_ACTIVE_CLASS
+                              : JOURNAL_STYLE_TOOLBAR_BUTTON_IDLE_CLASS
+                          )}
+                          style={{
+                            fontFamily: DIARY_FONTS_LOCAL[name].family,
+                            fontStyle: DIARY_FONTS_LOCAL[name].style,
+                          }}
+                          aria-pressed={name === diaryTheme.font}
+                        >
+                          Aa <span className="text-[11px]">{label}</span>
+                        </motion.button>
+                      );
+                    })}
                     <motion.button
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => setShowPromptsDropdown(!showPromptsDropdown)}
+                      onClick={cycleFontSize}
                       className={cn(
-                        "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium motion-safe:transition-all",
-                        showPromptsDropdown
-                          ? "bg-[hsl(var(--zf-memory)/0.14)] text-[hsl(var(--zf-memory))] border-[hsl(var(--zf-memory)/0.30)]"
-                          : "bg-black/30 dark:bg-black/30 text-muted-foreground border-white/5 dark:border-white/5 hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
+                        JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
+                        JOURNAL_STYLE_TOOLBAR_BUTTON_IDLE_CLASS
                       )}
+                      aria-label={fontSizeToolLabel}
                     >
-                      <Lightbulb className="w-4 h-4" aria-hidden="true" />
-                      {ts.journalPromptsShort || ts.journalPrompt || "Prompts"}
+                      A
+                      <span className="ms-0.5 text-[11px] font-medium">{FONT_SIZES[fontSize]}</span>
                     </motion.button>
                   </div>
-                )}
 
-                {/* Features capsule */}
-                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
-                  {MOOD_OPTIONS.map((opt) => (
-                    <motion.button
-                      key={opt.mood}
-                      whileTap={{ scale: 0.85 }}
-                      onClick={() => setMood(mood === opt.mood ? undefined : opt.mood)}
-                      aria-label={opt.mood}
-                      aria-pressed={mood === opt.mood}
-                      className={cn(
-                        "h-11 w-11 rounded-full flex items-center justify-center text-muted-foreground motion-safe:transition-all",
-                        mood === opt.mood
-                          ? ""
-                          : "hover:bg-white/10 dark:hover:bg-white/10"
-                      )}
-                      style={mood === opt.mood ? opt.activeStyle : undefined}
-                    >
-                      <DiaryMiniOrb
-                        mood={opt.mood}
-                        size="micro"
-                        className={cn(
-                          "scale-[0.56] opacity-70 motion-safe:transition-all",
-                          mood === opt.mood && "scale-[0.72] opacity-100"
-                        )}
-                      />
-                    </motion.button>
-                  ))}
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowTags(!showTags)}
-                    className={cn(
-                      "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium motion-safe:transition-all",
-                      showTags
-                        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
-                    )}
-                    aria-pressed={showTags}
-                    aria-expanded={showTags}
-                  >
-                    #
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      collapseMobileToolsForSurface();
-                      setShowStickers(true);
-                    }}
-                    disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
-                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 motion-safe:transition-all disabled:opacity-40"
-                    aria-label={ts.journalToolbarSticker || "Sticker"}
-                  >
-                    <Sticker className="w-4 h-4" aria-hidden="true" />
-                  </motion.button>
-                </div>
-
-                {/* Paper color capsule */}
-                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
-                  {(["dark", "milky", "white"] as PaperColor[]).map((pc) => (
-                    <motion.button
-                      key={pc}
-                      whileTap={{ scale: 0.85 }}
-                      onClick={() => setPaperColor(pc)}
-                      className={cn(
-                        "h-11 w-11 rounded-full border-2 motion-safe:transition-all",
-                        paperColor === pc
-                          ? "border-white/60 dark:border-white/60 scale-110"
-                          : "border-white/10 dark:border-white/10"
-                      )}
-                      style={{ background: PAPER_COLORS[pc].bg }}
-                      aria-label={PAPER_COLORS[pc].label}
-                    />
-                  ))}
-                </div>
-
-                {/* Ink capsule */}
-                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
-                  {INK_COLORS.map((c) => (
-                    <motion.button
-                      key={c.hex}
-                      whileTap={{ scale: 0.85 }}
-                      onClick={() => setInkColor(c.hex)}
-                      className={cn(
-                        "h-11 w-11 rounded-full border-2 motion-safe:transition-all",
-                        inkColor === c.hex
-                          ? "border-white/60 dark:border-white/60 scale-110"
-                          : "border-white/10 dark:border-white/10"
-                      )}
-                      style={{ background: c.hex }}
-                      aria-label={c.label}
-                    />
-                  ))}
-                </div>
-
-                {/* Media capsule (Record + Voice — Photo moved to bottom toolbar) */}
-                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleStartRecording()}
-                    disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
-                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-lg border border-transparent px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all disabled:opacity-40"
-                  >
-                    <Mic className="w-4 h-4" aria-hidden="true" />
-                    {ts.diaryRecord || "Record"}
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleToggleDictation}
-                    className={cn(
-                      "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium motion-safe:transition-all",
-                      voice.isListening
-                        ? "bg-red-500/15 text-red-400 border-red-500/30"
-                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
-                    )}
-                  >
-                    <Mic2 className="w-4 h-4" aria-hidden="true" />
-                    {voice.isListening ? ts.journalDictateStop || "Stop" : ts.diaryVoice || "Voice"}
-                  </motion.button>
-                </div>
-
-                {/* Visual capsule (BG + Speed + Texture) */}
-                <div className="flex items-center gap-1.5 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() =>
-                      setBgIntensity((prev) =>
-                        prev === "full" ? "dim" : prev === "dim" ? "off" : "full"
-                      )
-                    }
-                    className={cn(
-                      "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium motion-safe:transition-all",
-                      bgIntensity === "full"
-                        ? "bg-purple-500/15 text-purple-400 border-purple-500/30"
-                        : bgIntensity === "dim"
-                          ? "bg-muted-foreground/15 text-muted-foreground border-muted-foreground/30"
-                          : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
-                    )}
-                  >
-                    {bgIntensity === "full" ? (
-                      <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
-                    ) : bgIntensity === "dim" ? (
-                      <Moon className="w-3.5 h-3.5" aria-hidden="true" />
-                    ) : (
-                      <CircleOff className="w-3.5 h-3.5" aria-hidden="true" />
-                    )}
-                    <span>BG</span>
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() =>
-                      setParticleSpeed((prev) =>
-                        prev === "slow" ? "drift" : prev === "drift" ? "off" : "slow"
-                      )
-                    }
-                    className={cn(
-                      "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium motion-safe:transition-all",
-                      particleSpeed === "drift"
-                        ? "bg-cyan-500/15 text-cyan-400 border-cyan-500/30"
-                        : particleSpeed === "slow"
-                          ? "bg-indigo-500/15 text-indigo-300 border-indigo-500/30"
-                          : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
-                    )}
-                  >
-                    <Gauge className="w-3.5 h-3.5" aria-hidden="true" />
-                    {ts.diaryParticleSpeed || "Speed"}
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      const idx = PAPER_TEXTURE_NAMES.indexOf(paperTexture);
-                      setPaperTexture(PAPER_TEXTURE_NAMES[(idx + 1) % PAPER_TEXTURE_NAMES.length]);
-                    }}
-                    className={cn(
-                      "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium motion-safe:transition-all",
-                      paperTexture !== "clean"
-                        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                        : "bg-transparent text-muted-foreground border-transparent hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground"
-                    )}
-                  >
-                    <Layers className="w-3.5 h-3.5" aria-hidden="true" />
-                    {paperTexture === "clean" ? ts.diaryTexture || "Texture" : paperTexture}
-                  </motion.button>
-                </div>
-
-                {/* Atmospheric pattern capsule */}
-                <div className="flex items-center gap-1 bg-black/30 dark:bg-black/30 p-1.5 rounded-xl border border-white/5 dark:border-white/5 flex-shrink-0">
-                  {BG_PATTERN_LIST.map((pat) => {
-                    const isActive = pat.name === bgPattern;
-                    const isNone = pat.name === "none";
-                    return (
+                  {/* Prompts button (new entries only) */}
+                  {!entry && (
+                    <div className="relative flex-shrink-0">
                       <motion.button
-                        key={pat.name}
-                        whileTap={{ scale: 0.85 }}
-                        onClick={() => setBgPattern(pat.name)}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setShowPromptsDropdown(!showPromptsDropdown)}
                         className={cn(
-                          "h-11 w-11 rounded-lg border-2 motion-safe:transition-all flex-shrink-0 flex items-center justify-center",
-                          isActive
-                            ? "border-white/60 dark:border-white/60 scale-110 shadow-lg"
-                            : "border-white/10 dark:border-white/10 hover:border-white/25 dark:hover:border-white/25",
-                          isNone &&
-                            !isActive &&
-                            "border-dashed border-white/20 dark:border-white/20"
+                          JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
+                          "gap-1.5",
+                          showPromptsDropdown
+                            ? JOURNAL_STYLE_TOOLBAR_BUTTON_ACTIVE_CLASS
+                            : JOURNAL_STYLE_TOOLBAR_BUTTON_IDLE_CLASS
                         )}
-                        style={isNone ? undefined : { background: pat.swatch }}
-                        aria-label={ts[pat.i18nKey] || pat.name}
-                        title={ts[pat.i18nKey] || pat.name}
+                        aria-expanded={showPromptsDropdown}
                       >
-                        {isNone && <CircleOff className="w-3.5 h-3.5 text-muted-foreground" />}
+                        <Lightbulb className="w-4 h-4" aria-hidden="true" />
+                        {ts.journalPromptsShort || ts.journalPrompt || "Prompts"}
                       </motion.button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Prompts dropdown */}
-              <AnimatePresence>
-                {showPromptsDropdown && (
-                  <motion.div
-                    ref={promptsDropdownRef}
-                    className="mx-4 mt-2 p-3 rounded-xl bg-popover/95 backdrop-blur-xl border border-white/10 dark:border-white/10 shadow-2xl space-y-1.5"
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={zenMotion.gentle}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground/70 flex items-center gap-1.5">
-                        <Lightbulb className="w-3 h-3" aria-hidden="true" />
-                        {ts.journalWritingPrompts || "Writing prompts"}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => setPromptSeed((s) => s + 1)}
-                          className="p-1.5 rounded-lg hover:bg-white/10 dark:hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                          aria-label={t.ariaShufflePrompts}
-                        >
-                          <Shuffle className="w-3 h-3 text-foreground/70" />
-                        </button>
-                        <button
-                          onClick={() => setShowPromptsDropdown(false)}
-                          className="p-1 rounded hover:bg-white/10 dark:hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                          aria-label={ts.close || "Close"}
-                        >
-                          <X className="w-3 h-3 text-foreground/70" />
-                        </button>
-                      </div>
                     </div>
-                    {randomPrompts.map((prompt, i) => (
+                  )}
+
+                  {/* Features capsule */}
+                  <div className={JOURNAL_STYLE_TOOLBAR_GROUP_CLASS}>
+                    {MOOD_OPTIONS.map((opt) => (
                       <motion.button
-                        key={`${promptSeed}-${i}`}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        whileTap={{ scale: 0.97 }}
-                        transition={{
-                          delay: i * 0.04,
-                          type: "spring",
-                          stiffness: 300,
-                          damping: 25,
-                        }}
-                        onClick={() => handlePromptTap(prompt)}
-                        className="block w-full text-start text-xs px-3 py-2.5 rounded-xl min-h-[44px] text-muted-foreground hover:text-white hover:bg-white/10 dark:hover:bg-white/10 motion-safe:transition-all"
+                        key={opt.mood}
+                        whileTap={{ scale: 0.85 }}
+                        onClick={() => setMood(mood === opt.mood ? undefined : opt.mood)}
+                        aria-label={moodLabels[opt.mood]}
+                        aria-pressed={mood === opt.mood}
+                        className={cn(
+                          "flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-transparent text-foreground motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                          mood === opt.mood
+                            ? ""
+                            : "hover:border-primary/35 hover:bg-primary/10 hover:text-primary"
+                        )}
+                        style={mood === opt.mood ? opt.activeStyle : undefined}
                       >
-                        {prompt}
+                        <DiaryMiniOrb
+                          mood={opt.mood}
+                          size="micro"
+                          className={cn(
+                            "scale-[0.72] opacity-100 brightness-125 saturate-150 motion-safe:transition-all",
+                            mood === opt.mood && "scale-[0.86] brightness-110"
+                          )}
+                        />
                       </motion.button>
                     ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowTags(!showTags)}
+                      className={cn(
+                        JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
+                        "gap-1.5",
+                        showTags
+                          ? JOURNAL_STYLE_TOOLBAR_BUTTON_ACTIVE_CLASS
+                          : JOURNAL_STYLE_TOOLBAR_BUTTON_IDLE_CLASS
+                      )}
+                      aria-label={tagsToolLabel}
+                      aria-pressed={showTags}
+                      aria-expanded={showTags}
+                    >
+                      <ListChecks className="w-4 h-4" aria-hidden="true" />
+                      {tagsToolLabel}
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        collapseMobileToolsForSurface();
+                        setShowStickers(true);
+                      }}
+                      disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
+                      className={cn(
+                        JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
+                        JOURNAL_STYLE_TOOLBAR_BUTTON_IDLE_CLASS,
+                        "gap-1.5 disabled:opacity-40"
+                      )}
+                      aria-label={
+                        stickers.length >= MAX_STICKERS_PER_ENTRY
+                          ? stickerLimitLabel
+                          : stickerToolLabel
+                      }
+                      title={
+                        stickers.length >= MAX_STICKERS_PER_ENTRY
+                          ? stickerLimitLabel
+                          : stickerToolLabel
+                      }
+                    >
+                      <Sticker className="w-4 h-4" aria-hidden="true" />
+                      {stickerToolLabel}
+                    </motion.button>
+                  </div>
+
+                  {/* Paper color capsule */}
+                  <div className={JOURNAL_STYLE_TOOLBAR_GROUP_CLASS} aria-label={paperToolLabel}>
+                    <span className="px-1 text-[11px] font-semibold uppercase text-muted-foreground/80">
+                      {paperToolLabel}
+                    </span>
+                    {(["dark", "milky", "white"] as PaperColor[]).map((pc) => (
+                      <motion.button
+                        key={pc}
+                        whileTap={{ scale: 0.85 }}
+                        onClick={() => setPaperColor(pc)}
+                        className={cn(
+                          JOURNAL_STYLE_TOOLBAR_SWATCH_BASE_CLASS,
+                          paperColor === pc
+                            ? JOURNAL_STYLE_TOOLBAR_SWATCH_ACTIVE_CLASS
+                            : JOURNAL_STYLE_TOOLBAR_SWATCH_IDLE_CLASS
+                        )}
+                        style={{ background: PAPER_COLORS[pc].bg }}
+                        aria-label={paperColorLabels[pc]}
+                        aria-pressed={paperColor === pc}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Ink capsule */}
+                  <div className={JOURNAL_STYLE_TOOLBAR_GROUP_CLASS} aria-label={inkToolLabel}>
+                    <span className="px-1 text-[11px] font-semibold uppercase text-muted-foreground/80">
+                      {inkToolLabel}
+                    </span>
+                    {INK_COLORS.map((c) => (
+                      <motion.button
+                        key={c.hex}
+                        whileTap={{ scale: 0.85 }}
+                        onClick={() => setInkColor(c.hex)}
+                        className={cn(
+                          JOURNAL_STYLE_TOOLBAR_SWATCH_BASE_CLASS,
+                          inkColor === c.hex
+                            ? JOURNAL_STYLE_TOOLBAR_SWATCH_ACTIVE_CLASS
+                            : JOURNAL_STYLE_TOOLBAR_SWATCH_IDLE_CLASS
+                        )}
+                        style={{ background: inkSwatchColor(c.hex) }}
+                        aria-label={inkColorLabels[c.hex] || c.label}
+                        aria-pressed={inkColor === c.hex}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Media capsule (Record + Voice — Photo moved to bottom toolbar) */}
+                  <div className={JOURNAL_STYLE_TOOLBAR_GROUP_CLASS}>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleStartRecording()}
+                      disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
+                      className={cn(
+                        JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
+                        JOURNAL_STYLE_TOOLBAR_BUTTON_IDLE_CLASS,
+                        "gap-2 px-4 disabled:opacity-40"
+                      )}
+                      aria-label={
+                        audioIds.length >= MAX_AUDIO_PER_ENTRY ? recordLimitLabel : recordToolLabel
+                      }
+                      title={
+                        audioIds.length >= MAX_AUDIO_PER_ENTRY ? recordLimitLabel : recordToolLabel
+                      }
+                    >
+                      <Mic className="w-4 h-4" aria-hidden="true" />
+                      {recordToolLabel}
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleToggleDictation}
+                      className={cn(
+                        JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
+                        "gap-2 px-4",
+                        voice.isListening
+                          ? JOURNAL_STYLE_TOOLBAR_BUTTON_DANGER_ACTIVE_CLASS
+                          : JOURNAL_STYLE_TOOLBAR_BUTTON_IDLE_CLASS
+                      )}
+                      aria-label={voiceToolLabel}
+                      aria-pressed={voice.isListening}
+                    >
+                      <Mic2 className="w-4 h-4" aria-hidden="true" />
+                      {voice.isListening ? ts.journalDictateStop || "Stop" : voiceToolLabel}
+                    </motion.button>
+                  </div>
+
+                  {/* Visual capsule (BG + Speed + Texture) */}
+                  <div className={JOURNAL_STYLE_TOOLBAR_GROUP_CLASS}>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() =>
+                        setBgIntensity((prev) =>
+                          prev === "full" ? "dim" : prev === "dim" ? "off" : "full"
+                        )
+                      }
+                      className={cn(
+                        JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
+                        "gap-1.5 text-xs",
+                        useSharedDiaryWallpaper && "hidden",
+                        bgIntensity === "full"
+                          ? JOURNAL_STYLE_TOOLBAR_BUTTON_ACTIVE_CLASS
+                          : bgIntensity === "dim"
+                            ? JOURNAL_STYLE_TOOLBAR_BUTTON_MUTED_ACTIVE_CLASS
+                            : JOURNAL_STYLE_TOOLBAR_BUTTON_IDLE_CLASS
+                      )}
+                      aria-label={backgroundAriaLabel}
+                      aria-pressed={bgIntensity !== "off"}
+                    >
+                      {bgIntensity === "full" ? (
+                        <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+                      ) : bgIntensity === "dim" ? (
+                        <Moon className="w-3.5 h-3.5" aria-hidden="true" />
+                      ) : (
+                        <CircleOff className="w-3.5 h-3.5" aria-hidden="true" />
+                      )}
+                      <span className="sr-only">
+                        {backgroundToolLabel}: {backgroundIntensityLabel}
+                      </span>
+                      <span aria-hidden="true">{backgroundToolLabel}</span>
+                      <span aria-hidden="true" className="text-[10px] font-medium opacity-75">
+                        {backgroundIntensityLabel}
+                      </span>
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() =>
+                        setParticleSpeed((prev) =>
+                          prev === "slow" ? "drift" : prev === "drift" ? "off" : "slow"
+                        )
+                      }
+                      className={cn(
+                        JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
+                        "gap-1.5 text-xs",
+                        useSharedDiaryWallpaper && "hidden",
+                        particleSpeed === "drift"
+                          ? JOURNAL_STYLE_TOOLBAR_BUTTON_ACTIVE_CLASS
+                          : particleSpeed === "slow"
+                            ? JOURNAL_STYLE_TOOLBAR_BUTTON_ACTIVE_CLASS
+                            : JOURNAL_STYLE_TOOLBAR_BUTTON_IDLE_CLASS
+                      )}
+                      aria-label={particleSpeedAriaLabel}
+                      aria-pressed={particleSpeed !== "off"}
+                    >
+                      <Gauge className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span className="sr-only">
+                        {motionToolLabel}: {particleSpeedLabel}
+                      </span>
+                      <span aria-hidden="true">{motionToolLabel}</span>
+                      <span aria-hidden="true" className="text-[10px] font-medium opacity-75">
+                        {particleSpeedLabel}
+                      </span>
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        const idx = PAPER_TEXTURE_NAMES.indexOf(paperTexture);
+                        setPaperTexture(
+                          PAPER_TEXTURE_NAMES[(idx + 1) % PAPER_TEXTURE_NAMES.length]
+                        );
+                      }}
+                      className={cn(
+                        JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
+                        "gap-1.5 text-xs",
+                        paperTexture !== "clean"
+                          ? JOURNAL_STYLE_TOOLBAR_BUTTON_ACTIVE_CLASS
+                          : JOURNAL_STYLE_TOOLBAR_BUTTON_IDLE_CLASS
+                      )}
+                      aria-label={textureAriaLabel}
+                      aria-pressed={paperTexture !== "clean"}
+                    >
+                      <Layers className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span className="sr-only">
+                        {textureToolLabel}: {paperTextureLabel}
+                      </span>
+                      <span aria-hidden="true">{textureToolLabel}</span>
+                      <span aria-hidden="true" className="text-[10px] font-medium opacity-75">
+                        {paperTextureLabel}
+                      </span>
+                    </motion.button>
+                  </div>
+
+                  {/* Atmospheric pattern capsule */}
+                  <div className={JOURNAL_STYLE_TOOLBAR_GROUP_CLASS} aria-label={sceneToolLabel}>
+                    <span className="px-1 text-[11px] font-semibold uppercase text-muted-foreground/80">
+                      {sceneToolLabel}
+                    </span>
+                    {BG_PATTERN_LIST.map((pat) => {
+                      const isActive = pat.name === bgPattern;
+                      const isNone = pat.name === "none";
+                      return (
+                        <motion.button
+                          key={pat.name}
+                          whileTap={{ scale: 0.85 }}
+                          onClick={() => setBgPattern(pat.name)}
+                          className={cn(
+                            JOURNAL_STYLE_TOOLBAR_PATTERN_BASE_CLASS,
+                            isActive
+                              ? "scale-110 border-primary shadow-lg shadow-primary/20"
+                              : "border-border/70 hover:border-primary/35 dark:border-white/20 dark:hover:border-primary/40",
+                            isNone &&
+                              !isActive &&
+                              "border-dashed border-border/70 dark:border-white/25"
+                          )}
+                          style={isNone ? undefined : { background: pat.swatch }}
+                          aria-label={getJournalTranslation(ts, pat.i18nKey, pat.name)}
+                          aria-pressed={isActive}
+                          title={getJournalTranslation(ts, pat.i18nKey, pat.name)}
+                        >
+                          {isNone && <CircleOff className="w-3.5 h-3.5 text-muted-foreground" />}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Prompts dropdown */}
+                <AnimatePresence>
+                  {showPromptsDropdown && (
+                    <motion.div
+                      ref={promptsDropdownRef}
+                      className="mx-1 mt-2 space-y-1.5 rounded-2xl border border-border/60 bg-popover/95 p-3 shadow-2xl backdrop-blur-xl dark:border-white/10"
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={zenMotion.gentle}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground/70 flex items-center gap-1.5">
+                          <Lightbulb className="w-3 h-3" aria-hidden="true" />
+                          {ts.journalWritingPrompts || "Writing prompts"}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setPromptSeed((s) => s + 1)}
+                            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-foreground/75 hover:bg-primary/10 hover:text-primary"
+                            aria-label={t.ariaShufflePrompts}
+                          >
+                            <Shuffle className="w-3 h-3 text-foreground/70" />
+                          </button>
+                          <button
+                            onClick={() => setShowPromptsDropdown(false)}
+                            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-foreground/75 hover:bg-primary/10 hover:text-primary"
+                            aria-label={ts.close || "Close"}
+                          >
+                            <X className="w-3 h-3 text-foreground/70" />
+                          </button>
+                        </div>
+                      </div>
+                      {randomPrompts.map((prompt, i) => (
+                        <motion.button
+                          key={`${promptSeed}-${i}`}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          whileTap={{ scale: 0.97 }}
+                          transition={{
+                            delay: i * 0.04,
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 25,
+                          }}
+                          onClick={() => handlePromptTap(prompt)}
+                          className="block min-h-[44px] w-full rounded-xl px-3 py-2.5 text-start text-xs text-foreground/75 motion-safe:transition-all hover:bg-primary/10 hover:text-foreground"
+                        >
+                          {prompt}
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1252,17 +1589,6 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       {/* ROW 3: Content area */}
       {/* ═══ CONTENT AREA ═══ */}
       <div ref={contentAreaRef} className="flex-1 relative overflow-hidden">
-        {/* Floating photos layer (above content, pointer-events-none container) */}
-        {Object.keys(photoLayout).length > 0 && (
-          <FloatingMediaLayer
-            entryId={entryId}
-            photoIds={photoIds}
-            layout={photoLayout}
-            onLayoutChange={setPhotoLayout}
-            onReturnToGallery={handleReturnToGallery}
-            containerRef={contentAreaRef}
-          />
-        )}
         <div
           ref={scrollAreaRef}
           className={cn(
@@ -1274,9 +1600,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
           onScroll={handleContentScroll}
         >
           <div
+            ref={paperRef}
             data-testid="journal-editor-paper"
             className={cn(
-              "relative max-w-4xl mx-auto rounded-2xl border p-4 sm:p-6 md:p-8 min-h-[60dvh] space-y-4 [contain:layout_style_paint]",
+              "journal-editor-paper-surface relative max-w-4xl mx-auto rounded-2xl border p-4 sm:p-6 md:p-8 min-h-[60dvh] space-y-4 [contain:layout_style_paint]",
               desktop ? "shadow-md max-w-3xl" : "shadow-2xl",
               zenFocusActive && "zen-focus-active"
             )}
@@ -1288,6 +1615,20 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               ...sharedWallpaperPaperStyle,
             }}
           >
+            {/* Floating photos live on the paper itself so saved coordinates match what the user sees. */}
+            {Object.keys(photoLayout).length > 0 && (
+              <FloatingMediaLayer
+                entryId={entryId}
+                photoIds={photoIds}
+                layout={photoLayout}
+                onLayoutChange={setPhotoLayout}
+                onReturnToGallery={handleReturnToGallery}
+                containerRef={paperRef}
+                focusPhotoId={floatingFocusPhotoId}
+                onPhotoFocusHandled={handleFloatingPhotoFocusHandled}
+              />
+            )}
+
             {/* Draft restore banner */}
             <AnimatePresence>
               {draftAvailable && (
@@ -1331,8 +1672,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               autoFocus={!entry}
               className="w-full text-2xl font-bold tracking-tight bg-transparent border-none outline-none"
               style={{
-                color: paperColors.text,
+                color: readableInkColor,
                 fontFamily: diaryTheme.fontFamily,
+                fontStyle: diaryTheme.fontStyle,
               }}
               maxLength={100}
               onFocus={(e) => {
@@ -1340,6 +1682,34 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
               }}
             />
+
+            {/* Selected writing prompt; guidance only, never saved into the entry body. */}
+            <AnimatePresence>
+              {selectedPrompt && (
+                <motion.div
+                  id="journal-selected-prompt"
+                  data-testid="journal-selected-prompt"
+                  role="note"
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={zenMotion.gentle}
+                  className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/[0.08] px-4 py-3 text-sm leading-relaxed"
+                  style={{ color: paperColors.text }}
+                >
+                  <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                  <span className="min-w-0 flex-1">{selectedPrompt}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPrompt(null)}
+                    className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                    aria-label={ts.close || "Close"}
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Stickers */}
             {stickers.length > 0 && (
@@ -1349,9 +1719,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     key={i}
                     onClick={() => handleRemoveSticker(i)}
                     className="px-1.5 py-0.5 rounded-lg hover:bg-muted/50 active:scale-90 motion-safe:transition-transform min-w-[44px] min-h-[44px] flex items-center justify-center"
-                    aria-label={
-                      `${ts.journalRemoveSticker || "Remove sticker"} ${s}`
-                    }
+                    aria-label={`${ts.journalRemoveSticker || "Remove sticker"} ${s}`}
                   >
                     <StickerRenderer emoji={s} size="md" />
                   </button>
@@ -1365,7 +1733,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 entryId={entryId}
                 photoIds={photoIds.filter((id) => !photoLayout[id])}
                 onRemovePhoto={handleRemovePhoto}
-                onFloatPhoto={handleFloatPhoto}
+                onFloatPhoto={handleFloatPhotoWithFocus}
                 editable
               />
             )}
@@ -1381,12 +1749,23 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     <button
                       onClick={() => handleRemoveAudio(audio.id)}
                       className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground/50 hover:text-destructive motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-                      aria-label={ts.delete || "Remove"}
+                      aria-label={formatRemoveAudioLabel(audio)}
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {audioNotice && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex min-h-[44px] items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-[var(--diary-text,hsl(var(--foreground)))]"
+              >
+                <AlertCircle className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                <span className="min-w-0">{audioNotice}</span>
               </div>
             )}
 
@@ -1432,15 +1811,20 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             {/* Tags */}
             {tags.length > 0 && (
               <div className="flex gap-1.5 flex-wrap">
-                {tags.map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => setTags((prev) => prev.filter((t2) => t2 !== tag))}
-                    className="flex min-h-[44px] items-center gap-1 rounded-full bg-primary/10 px-3 py-2 text-xs text-primary hover:bg-primary/20 motion-safe:transition-colors"
-                  >
-                    #{tag} &times;
-                  </button>
-                ))}
+                {tags.map((tag) => {
+                  const displayTag = getJournalDisplayTag(tag);
+                  if (!displayTag) return null;
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => setTags((prev) => prev.filter((t2) => t2 !== tag))}
+                      className="flex min-h-[44px] items-center gap-1 rounded-full bg-primary/10 px-3 py-2 text-xs text-primary hover:bg-primary/20 motion-safe:transition-colors"
+                      aria-label={formatRemoveTagLabel(displayTag)}
+                    >
+                      {displayTag} &times;
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -1461,6 +1845,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     className="flex gap-2"
                   >
                     <input
+                      ref={tagInputRef}
                       type="text"
                       value={tagInput}
                       onChange={(e) => setTagInput(e.target.value)}
@@ -1542,14 +1927,18 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               aria-multiline="true"
               aria-label={ts.journalEntryBody || "Diary entry body"}
               dir="auto"
+              tabIndex={0}
               suppressContentEditableWarning
-              className="w-full max-w-prose mx-auto min-h-[260px] bg-transparent border-none outline-none resize-none rounded-xl focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent [&_blockquote]:border-s-2 [&_blockquote]:border-current/20 [&_blockquote]:ps-3 [&_blockquote]:italic [&_code]:bg-black/5 dark:[&_code]:bg-black/5 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 empty:before:pointer-events-none leading-[1.8]"
+              className="w-full max-w-prose mx-auto min-h-[260px] bg-transparent border-none outline-none resize-none rounded-xl focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent [&_blockquote]:border-s-2 [&_blockquote]:border-current/20 [&_blockquote]:ps-3 [&_blockquote]:italic [&_code]:bg-black/5 dark:[&_code]:bg-black/5 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:text-current empty:before:pointer-events-none leading-[1.8]"
               style={{
                 fontSize: FONT_SIZES[fontSize],
                 fontFamily: diaryTheme.fontFamily,
-                color: inkColor !== "#ffffff" ? inkColor : paperColors.text,
+                fontStyle: diaryTheme.fontStyle,
+                color: readableInkColor,
               }}
               onInput={handleEditorInput}
+              onPaste={handleEditorPaste}
+              onDrop={handleEditorDrop}
               onFocus={(e) => {
                 const el = e.currentTarget;
                 const scrollArea = scrollAreaRef.current;
@@ -1557,7 +1946,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 setTimeout(() => {
                   const targetTop = Math.max(
                     0,
-                    el.offsetTop - (scrollArea.clientHeight - el.clientHeight) / 2,
+                    el.offsetTop - (scrollArea.clientHeight - el.clientHeight) / 2
                   );
                   scrollArea.scrollTo({ behavior: "smooth", top: targetTop });
                 }, 300);
@@ -1569,10 +1958,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             <div className="flex items-center gap-3 pt-2">
               {wordCount > 0 && (
                 <div className="flex items-center gap-2" style={{ color: paperColors.muted }}>
-                  <span className="text-[10px] opacity-60">
+                  <span className="text-[11px] font-medium">
                     {formatJournalWordCount(wordCount, language, ts)}
                   </span>
-                  <span className="text-[10px] opacity-40">
+                  <span className="text-[11px] font-medium">
                     {formatLocalizedCount(
                       content.length,
                       language,
@@ -1582,8 +1971,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     )}
                   </span>
                   {wordCount >= 50 && (
-                    <span className="text-[10px] opacity-40">
-                      ~{formatLocalizedCount(
+                    <span className="text-[11px] font-medium">
+                      ~
+                      {formatLocalizedCount(
                         Math.ceil(wordCount / 200),
                         language,
                         ts,
@@ -1637,7 +2027,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       {/* ═══ BOTTOM GLASS TOOLBAR (Magic) ═══ */}
       <div
         className={cn(
-          "relative z-50 flex-shrink-0 w-full border-t backdrop-blur-[20px] motion-safe:transition-all",
+          "journal-editor-chrome relative z-50 flex-shrink-0 w-full border-t backdrop-blur-[20px] motion-safe:transition-all",
           desktop
             ? "px-6 py-3 pb-[max(0.75rem,var(--safe-bottom))] bg-background/85 border-border/20 shadow-lg"
             : mobileToolsCollapsed
@@ -1692,10 +2082,15 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   animate={{ opacity: 1, height: "auto", y: 0 }}
                   exit={{ opacity: 0, height: 0, y: 10 }}
                   transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+                  role="group"
+                  aria-label={styleToolsLabel}
                   className="mb-2 overflow-hidden rounded-3xl border border-primary/15 bg-primary/5 p-2 shadow-inner"
                 >
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                    <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-border/50 bg-background/75 p-1">
+                  <span className="sr-only" aria-live="polite">
+                    {selectedStyleStatus}
+                  </span>
+                  <div className="grid gap-2 grid-cols-2 pb-1">
+                    <div className="col-span-2 flex flex-wrap items-center gap-1 rounded-2xl border border-border/50 bg-background/75 p-1">
                       {ATMOSPHERE_THEMES.map((at) => {
                         const isActive = at.name === diaryTheme.theme;
                         return (
@@ -1705,7 +2100,6 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                             onClick={() => {
                               themeTransition.triggerTransition();
                               diaryTheme.setTheme(at.name);
-                              setBgPattern("none");
                             }}
                             className={cn(
                               "min-h-[44px] rounded-xl border px-3 text-xs font-semibold motion-safe:transition-all",
@@ -1713,6 +2107,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                                 ? "border-primary/30 bg-primary text-primary-foreground"
                                 : "border-transparent text-muted-foreground hover:bg-primary/10 hover:text-primary"
                             )}
+                            aria-pressed={isActive}
                           >
                             {ts[at.i18nKey] || at.label}
                           </button>
@@ -1724,7 +2119,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       type="button"
                       onClick={cycleFontSize}
                       className="flex min-h-[44px] shrink-0 items-center gap-1 rounded-2xl border border-border/60 bg-background/75 px-3 text-sm font-semibold text-foreground"
-                      aria-label={t.ariaFontSize}
+                      aria-label={fontSizeToolLabel}
                     >
                       A
                       <span className="text-[10px] text-muted-foreground">
@@ -1742,25 +2137,27 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                             ? "border-primary/30 bg-primary/15 text-primary"
                             : "border-border/60 bg-background/75 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                         )}
+                        aria-expanded={showPromptsDropdown}
                       >
                         <Lightbulb className="h-4 w-4" aria-hidden="true" />
                         {ts.journalWritingPrompts || "Prompts"}
                       </button>
                     )}
 
-                    <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-border/50 bg-background/75 p-1">
+                    <div className="col-span-2 flex flex-wrap items-center gap-1 rounded-2xl border border-border/50 bg-background/75 p-1">
+                      <span className="w-full px-1 text-[11px] font-semibold uppercase text-muted-foreground/80">
+                        {ts.journalToolbarMood || "Mood"}
+                      </span>
                       {MOOD_OPTIONS.map((opt) => (
                         <button
                           key={opt.mood}
                           type="button"
                           onClick={() => setMood(mood === opt.mood ? undefined : opt.mood)}
-                          aria-label={opt.mood}
+                          aria-label={moodLabels[opt.mood]}
                           aria-pressed={mood === opt.mood}
                           className={cn(
                             "flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground motion-safe:transition-all",
-                            mood === opt.mood
-                              ? ""
-                              : "hover:bg-primary/10 hover:text-primary"
+                            mood === opt.mood ? "" : "hover:bg-primary/10 hover:text-primary"
                           )}
                           style={mood === opt.mood ? opt.activeStyle : undefined}
                         >
@@ -1768,46 +2165,96 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                             mood={opt.mood}
                             size="micro"
                             className={cn(
-                              "scale-[0.56] opacity-70 motion-safe:transition-all",
-                              mood === opt.mood && "scale-[0.72] opacity-100"
+                              "scale-[0.72] opacity-100 brightness-125 saturate-150 motion-safe:transition-all",
+                              mood === opt.mood && "scale-[0.86] brightness-110"
                             )}
                           />
                         </button>
                       ))}
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-border/50 bg-background/75 p-1">
+                    <div className="col-span-2 flex flex-wrap items-center gap-1 rounded-2xl border border-border/50 bg-background/75 p-1">
+                      <span className="w-full px-1 text-[11px] font-semibold uppercase text-muted-foreground/80">
+                        {paperToolLabel}
+                      </span>
                       {(["dark", "milky", "white"] as PaperColor[]).map((pc) => (
                         <button
                           key={pc}
                           type="button"
                           onClick={() => setPaperColor(pc)}
                           className={cn(
-                            "h-11 w-11 rounded-full border-2 motion-safe:transition-all",
-                            paperColor === pc ? "scale-110 border-primary" : "border-border"
+                            JOURNAL_STYLE_TOOLBAR_SWATCH_BASE_CLASS,
+                            paperColor === pc
+                              ? JOURNAL_STYLE_TOOLBAR_SWATCH_ACTIVE_CLASS
+                              : JOURNAL_STYLE_TOOLBAR_SWATCH_IDLE_CLASS
                           )}
                           style={{ background: PAPER_COLORS[pc].bg }}
-                          aria-label={PAPER_COLORS[pc].label}
+                          aria-label={paperColorLabels[pc]}
                           aria-pressed={paperColor === pc}
                         />
                       ))}
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-border/50 bg-background/75 p-1">
+                    <div className="col-span-2 flex flex-wrap items-center gap-1 rounded-2xl border border-border/50 bg-background/75 p-1">
+                      <span className="w-full px-1 text-[11px] font-semibold uppercase text-muted-foreground/80">
+                        {inkToolLabel}
+                      </span>
                       {INK_COLORS.map((c) => (
                         <button
                           key={c.hex}
                           type="button"
                           onClick={() => setInkColor(c.hex)}
                           className={cn(
-                            "h-11 w-11 rounded-full border-2 motion-safe:transition-all",
-                            inkColor === c.hex ? "scale-110 border-primary" : "border-border"
+                            JOURNAL_STYLE_TOOLBAR_SWATCH_BASE_CLASS,
+                            inkColor === c.hex
+                              ? JOURNAL_STYLE_TOOLBAR_SWATCH_ACTIVE_CLASS
+                              : JOURNAL_STYLE_TOOLBAR_SWATCH_IDLE_CLASS
                           )}
-                          style={{ background: c.hex }}
-                          aria-label={c.label}
+                          style={{ background: inkSwatchColor(c.hex) }}
+                          aria-label={inkColorLabels[c.hex] || c.label}
                           aria-pressed={inkColor === c.hex}
                         />
                       ))}
+                    </div>
+
+                    <div
+                      className="col-span-2 flex flex-wrap items-center gap-1 rounded-2xl border border-border/50 bg-background/75 p-1"
+                      aria-label={sceneToolLabel}
+                    >
+                      <span className="w-full px-1 text-[11px] font-semibold uppercase text-muted-foreground/80">
+                        {sceneToolLabel}
+                      </span>
+                      {BG_PATTERN_LIST.map((pat) => {
+                        const isActive = pat.name === bgPattern;
+                        const isNone = pat.name === "none";
+                        return (
+                          <button
+                            key={pat.name}
+                            type="button"
+                            onClick={() => setBgPattern(pat.name)}
+                            className={cn(
+                              JOURNAL_STYLE_TOOLBAR_PATTERN_BASE_CLASS,
+                              isActive
+                                ? "scale-110 border-primary shadow-lg shadow-primary/20"
+                                : "border-border/70 hover:border-primary/35 dark:border-white/20 dark:hover:border-primary/40",
+                              isNone &&
+                                !isActive &&
+                                "border-dashed border-border/70 dark:border-white/25"
+                            )}
+                            style={isNone ? undefined : { background: pat.swatch }}
+                            aria-label={getJournalTranslation(ts, pat.i18nKey, pat.name)}
+                            aria-pressed={isActive}
+                            title={getJournalTranslation(ts, pat.i18nKey, pat.name)}
+                          >
+                            {isNone && (
+                              <CircleOff
+                                className="h-4 w-4 text-muted-foreground"
+                                aria-hidden="true"
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
 
                     <button
@@ -1819,10 +2266,13 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       }
                       className={cn(
                         "flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border px-3 text-xs font-semibold motion-safe:transition-all",
+                        useSharedDiaryWallpaper && "hidden",
                         bgIntensity !== "off"
                           ? "border-primary/30 bg-primary/15 text-primary"
                           : "border-border/60 bg-background/75 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                       )}
+                      aria-label={backgroundAriaLabel}
+                      aria-pressed={bgIntensity !== "off"}
                     >
                       {bgIntensity === "full" ? (
                         <Sparkles className="h-4 w-4" aria-hidden="true" />
@@ -1831,7 +2281,12 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       ) : (
                         <CircleOff className="h-4 w-4" aria-hidden="true" />
                       )}
-                      BG
+                      <span className="flex flex-col items-start leading-tight">
+                        <span>{backgroundToolLabel}</span>
+                        <span className="text-[10px] font-medium opacity-75">
+                          {backgroundIntensityLabel}
+                        </span>
+                      </span>
                     </button>
 
                     <button
@@ -1843,13 +2298,21 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       }
                       className={cn(
                         "flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border px-3 text-xs font-semibold motion-safe:transition-all",
+                        useSharedDiaryWallpaper && "hidden",
                         particleSpeed !== "off"
                           ? "border-primary/30 bg-primary/15 text-primary"
                           : "border-border/60 bg-background/75 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                       )}
+                      aria-label={particleSpeedAriaLabel}
+                      aria-pressed={particleSpeed !== "off"}
                     >
                       <Gauge className="h-4 w-4" aria-hidden="true" />
-                      {ts.diaryParticleSpeed || "Speed"}
+                      <span className="flex flex-col items-start leading-tight">
+                        <span>{motionToolLabel}</span>
+                        <span className="text-[10px] font-medium opacity-75">
+                          {particleSpeedLabel}
+                        </span>
+                      </span>
                     </button>
 
                     <button
@@ -1866,24 +2329,33 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           ? "border-primary/30 bg-primary/15 text-primary"
                           : "border-border/60 bg-background/75 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                       )}
+                      aria-label={textureAriaLabel}
+                      aria-pressed={paperTexture !== "clean"}
                     >
                       <Layers className="h-4 w-4" aria-hidden="true" />
-                      {paperTexture === "clean" ? ts.diaryTexture || "Texture" : paperTexture}
+                      <span className="flex flex-col items-start leading-tight">
+                        <span>{textureToolLabel}</span>
+                        <span className="text-[10px] font-medium opacity-75">
+                          {paperTextureLabel}
+                        </span>
+                      </span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setShowTags(!showTags)}
                       className={cn(
-                        "flex min-h-[44px] shrink-0 items-center rounded-2xl border px-3 text-sm font-semibold motion-safe:transition-all",
+                        "flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border px-3 text-xs font-semibold motion-safe:transition-all",
                         showTags
                           ? "border-primary/30 bg-primary/15 text-primary"
                           : "border-border/60 bg-background/75 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                       )}
+                      aria-label={tagsToolLabel}
                       aria-pressed={showTags}
                       aria-expanded={showTags}
                     >
-                      #
+                      <ListChecks className="h-4 w-4" aria-hidden="true" />
+                      {tagsToolLabel}
                     </button>
 
                     <button
@@ -1894,7 +2366,16 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       }}
                       disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
                       className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border border-border/60 bg-background/75 px-3 text-xs font-semibold text-muted-foreground motion-safe:transition-all hover:bg-primary/10 hover:text-primary disabled:opacity-40"
-                      aria-label={ts.journalToolbarSticker || "Sticker"}
+                      aria-label={
+                        stickers.length >= MAX_STICKERS_PER_ENTRY
+                          ? stickerLimitLabel
+                          : stickerToolLabel
+                      }
+                      title={
+                        stickers.length >= MAX_STICKERS_PER_ENTRY
+                          ? stickerLimitLabel
+                          : stickerToolLabel
+                      }
                     >
                       <Sticker className="h-4 w-4" aria-hidden="true" />
                       {ts.journalToolbarSticker || "Sticker"}
@@ -1908,9 +2389,15 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       }}
                       disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
                       className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl border border-border/60 bg-background/75 px-3 text-xs font-semibold text-muted-foreground motion-safe:transition-all hover:bg-primary/10 hover:text-primary disabled:opacity-40"
+                      aria-label={
+                        audioIds.length >= MAX_AUDIO_PER_ENTRY ? recordLimitLabel : recordToolLabel
+                      }
+                      title={
+                        audioIds.length >= MAX_AUDIO_PER_ENTRY ? recordLimitLabel : recordToolLabel
+                      }
                     >
                       <Mic className="h-4 w-4" aria-hidden="true" />
-                      {ts.journalToolbarRecord || ts.diaryRecord || "Record"}
+                      {recordToolLabel}
                     </button>
 
                     <button
@@ -1922,11 +2409,11 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           ? "border-destructive/30 bg-destructive/10 text-destructive"
                           : "border-border/60 bg-background/75 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                       )}
+                      aria-label={voiceToolLabel}
+                      aria-pressed={voice.isListening}
                     >
                       <Mic2 className="h-4 w-4" aria-hidden="true" />
-                      {voice.isListening
-                        ? ts.journalDictateStop || "Stop"
-                        : ts.journalToolbarVoice || "Voice"}
+                      {voice.isListening ? ts.journalDictateStop || "Stop" : voiceToolLabel}
                     </button>
                   </div>
 
@@ -1952,6 +2439,14 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                             aria-label={t.ariaShufflePrompts}
                           >
                             <Shuffle className="h-3.5 w-3.5" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowPromptsDropdown(false)}
+                            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            aria-label={ts.close || "Close"}
+                          >
+                            <X className="h-3.5 w-3.5" aria-hidden="true" />
                           </button>
                         </div>
                         {randomPrompts.map((prompt, i) => (
@@ -2005,6 +2500,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   setShowPhotos(true);
                 }}
                 disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
+                aria-label={
+                  photoIds.length >= MAX_PHOTOS_PER_ENTRY ? photoLimitLabel : photoToolLabel
+                }
+                title={photoIds.length >= MAX_PHOTOS_PER_ENTRY ? photoLimitLabel : photoToolLabel}
                 className={cn(
                   "rounded-2xl font-medium text-muted-foreground border border-transparent hover:bg-primary/10 hover:text-primary motion-safe:transition-all flex items-center disabled:opacity-40",
                   desktop
@@ -2081,7 +2580,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     ? "bg-primary/15 text-primary border-primary/30"
                     : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
                 )}
-              aria-pressed={showBreathe}
+                aria-pressed={showBreathe}
               >
                 <Wind className="w-4 h-4" aria-hidden="true" />
                 <span className="max-w-full truncate">{ts.diaryBreathe || "Breathe"}</span>
@@ -2102,7 +2601,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     ? "bg-primary/15 text-primary border-primary/30"
                     : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
                 )}
-              aria-pressed={zenFocusActive}
+                aria-pressed={zenFocusActive}
               >
                 <Target className="w-4 h-4" aria-hidden="true" />
                 <span className="max-w-full truncate">{ts.diaryFocusRay || "Focus"}</span>
@@ -2123,7 +2622,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     ? "bg-primary/15 text-primary border-primary/30"
                     : "bg-transparent text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary"
                 )}
-              aria-pressed={showHabits}
+                aria-pressed={showHabits}
               >
                 <ListChecks className="w-4 h-4" aria-hidden="true" />
                 <span className="max-w-full truncate">{ts.journalHabitsSection || "Habits"}</span>
@@ -2149,7 +2648,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
 
       {showPhotos && (
         <JournalPhotoPicker
-          onSelectFile={(file) => handleAddPhoto(file)}
+          onSelectFile={async (file) => {
+            await handleAddPhoto(file);
+          }}
           onClose={() => setShowPhotos(false)}
           currentCount={photoIds.length}
           maxCount={MAX_PHOTOS_PER_ENTRY}
@@ -2161,6 +2662,61 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
         <JournalTemplatePicker onSelect={handleTemplateSelect} onClose={handleTemplateClose} />
       )}
 
+      {/* Voice privacy confirmation */}
+      {showVoicePrivacyConfirm && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 dark:bg-black/50 motion-safe:animate-fade-in"
+          onClick={closeVoicePrivacyConfirm}
+        >
+          <motion.div
+            ref={voicePrivacyDialogA11y.modalRef}
+            onKeyDown={voicePrivacyDialogA11y.handleKeyDown}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby={voicePrivacyDialogTitleId}
+            aria-describedby={voicePrivacyDialogDescriptionId}
+            tabIndex={-1}
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={zenMotion.gentle}
+            className="mx-4 max-w-[340px] rounded-2xl border border-[var(--diary-border,hsl(var(--border)/0.3))] bg-[var(--diary-bg,hsl(var(--card)))] p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center gap-2 text-[var(--diary-text,hsl(var(--foreground)))]">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Mic2 className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <h3 id={voicePrivacyDialogTitleId} className="text-base font-semibold">
+                {ts.journalVoicePrivacyTitle || "Voice privacy check"}
+              </h3>
+            </div>
+            <p
+              id={voicePrivacyDialogDescriptionId}
+              className="mb-4 text-sm leading-relaxed text-[var(--diary-muted,hsl(var(--muted-foreground)))]"
+            >
+              {ts.journalVoicePrivacyDescription ||
+                "Your browser may process speech recognition outside ZenFlow. Use it only if you are comfortable with that."}
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={closeVoicePrivacyConfirm}
+                className="flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-muted px-3 text-sm font-medium text-foreground"
+              >
+                {ts.journalVoicePrivacyCancel || ts.cancel || "Not now"}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDictation}
+                className="flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground"
+              >
+                {ts.journalVoicePrivacyContinue || ts.journalToolbarVoice || "Start voice"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* Recording overlay */}
       <AnimatePresence>
         {showRecordingOverlay && (
@@ -2170,10 +2726,14 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             exit={{ opacity: 0 }}
             role="dialog"
             aria-modal="true"
-            aria-label={t.ariaRecording}
+            aria-labelledby={recordingDialogTitleId}
+            aria-describedby={recordingDialogDescriptionId}
             className="fixed inset-0 z-[65] bg-black/60 dark:bg-black/60 flex items-center justify-center"
           >
             <motion.div
+              ref={recordingDialogA11y.modalRef}
+              onKeyDown={recordingDialogA11y.handleKeyDown}
+              tabIndex={-1}
               initial={{ opacity: 0, scale: 0.92, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
@@ -2197,13 +2757,19 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 </motion.div>
               </div>
 
-              <p className="text-sm font-semibold mb-1 text-[var(--diary-text,hsl(var(--foreground)))]">
+              <p
+                id={recordingDialogTitleId}
+                className="text-sm font-semibold mb-1 text-[var(--diary-text,hsl(var(--foreground)))]"
+              >
                 {ts.journalRecording || "Recording"}
               </p>
               <p className="text-2xl font-mono font-bold tabular-nums mb-4 text-[var(--diary-text,hsl(var(--foreground)))]">
                 {formatRecordingTime(recorder.duration)}
               </p>
-              <p className="text-[10px] mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
+              <p
+                id={recordingDialogDescriptionId}
+                className="text-[10px] mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]"
+              >
                 {ts.journalAudioMaxDuration || "Max 5 minutes"}
               </p>
 
@@ -2217,7 +2783,19 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 )}
               >
                 <Square className="w-4 h-4" aria-hidden="true" />
-                {ts.journalRecordingStop || "Stop Recording"}
+                {ts.journalRecordingStopKeep || ts.journalRecordingStop || "Stop & keep"}
+              </button>
+              <button
+                onClick={handleDiscardRecording}
+                className={cn(
+                  "mt-2 w-full py-3 rounded-xl text-sm font-semibold",
+                  "bg-background/70 text-foreground border border-border/60",
+                  "flex items-center justify-center gap-2",
+                  "active:scale-[0.98] motion-safe:transition-transform min-h-[44px]"
+                )}
+              >
+                <X className="w-4 h-4" aria-hidden="true" />
+                {ts.journalRecordingDiscard || "Discard"}
               </button>
             </motion.div>
           </motion.div>
@@ -2243,11 +2821,17 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             className="rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl bg-[var(--diary-bg,hsl(var(--card)))] border border-[var(--diary-border,hsl(var(--border)/0.3))]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 id="journal-delete-confirm-title" className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]">
+            <h3
+              id="journal-delete-confirm-title"
+              className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]"
+            >
               {ts.journalDeleteEntry || "Delete Entry?"}
             </h3>
-            <p id="journal-delete-confirm-description" className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
-              {ts.journalDeleteConfirm || "This action cannot be undone."}
+            <p
+              id="journal-delete-confirm-description"
+              className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]"
+            >
+              {ts.journalDeleteConfirm || "Are you sure you want to delete this entry?"}
             </p>
             <div className="flex gap-2">
               <button
@@ -2289,16 +2873,23 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             className="rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl bg-[var(--diary-bg,hsl(var(--card)))] border border-[var(--diary-border,hsl(var(--border)/0.3))]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 id="journal-unsaved-confirm-title" className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]">
+            <h3
+              id="journal-unsaved-confirm-title"
+              className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]"
+            >
               {ts.journalDiscardTitle || "Unsaved Changes"}
             </h3>
-            <p id="journal-unsaved-confirm-description" className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
+            <p
+              id="journal-unsaved-confirm-description"
+              className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]"
+            >
               {ts.journalDiscardMessage || "You have unsaved changes."}
             </p>
             <div className="flex flex-col gap-2">
               <button
                 onClick={handleSaveAndClose}
-                disabled={saveState === "saving"}
+                disabled={saveState === "saving" || !hasContent}
+                aria-describedby={!hasContent ? "journal-save-close-disabled-hint" : undefined}
                 className={cn(
                   "w-full py-2.5 rounded-xl text-sm font-medium min-h-[44px]",
                   "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground",
@@ -2307,6 +2898,14 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               >
                 {ts.journalSaveClose || "Save & Close"}
               </button>
+              {!hasContent && (
+                <p
+                  id="journal-save-close-disabled-hint"
+                  className="px-2 text-xs leading-relaxed text-[var(--diary-muted,hsl(var(--muted-foreground)))]"
+                >
+                  {ts.journalWriteFirstEntry || "Write first entry"}
+                </p>
+              )}
               <button
                 onClick={handleDiscard}
                 className="w-full py-2.5 rounded-xl bg-destructive/10 text-destructive text-sm font-medium min-h-[44px]"
@@ -2342,10 +2941,16 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             className="rounded-2xl p-5 max-w-[320px] mx-4 shadow-xl bg-[var(--diary-bg,hsl(var(--card)))] border border-[var(--diary-border,hsl(var(--border)/0.3))]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 id="journal-settings-confirm-title" className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]">
+            <h3
+              id="journal-settings-confirm-title"
+              className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]"
+            >
               {ts.journalSettings || "Diary Settings"}
             </h3>
-            <p id="journal-settings-confirm-description" className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
+            <p
+              id="journal-settings-confirm-description"
+              className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]"
+            >
               {ts.journalSaveDraftOpenSettingsDescription}
             </p>
             {settingsDraftError ? (
@@ -2386,14 +2991,29 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       <AnimatePresence>
         {panicLocked && (
           <motion.div
+            ref={panicLockDialogA11y.modalRef}
+            onKeyDown={panicLockDialogA11y.handleKeyDown}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={panicLockDialogTitleId}
+            aria-describedby={panicLockDialogDescriptionId}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             className="fixed inset-0 z-[300] flex flex-col items-center justify-center gap-6 backdrop-blur-[20px] bg-[rgba(2,6,17,0.8)]"
           >
+            <div className="max-w-sm px-6 text-center">
+              <h2 id={panicLockDialogTitleId} className="text-lg font-semibold text-white">
+                {ts.journalPanicLockTitle || "Diary locked"}
+              </h2>
+              <p id={panicLockDialogDescriptionId} className="mt-2 text-sm text-white/70">
+                {ts.journalPanicLockDescription || "Unlock to return to your private diary."}
+              </p>
+            </div>
             <DiaryBreatheWidget />
             <button
+              ref={panicUnlockButtonRef}
               type="button"
               onClick={() => {
                 void handlePanicUnlock();
@@ -2423,50 +3043,71 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       />
 
       {/* Floating format toolbar (Telegram-style — appears on text selection) */}
-      <DiaryFormatToolbar editorRef={editorRef} scrollContainerRef={scrollAreaRef} />
+      <DiaryFormatToolbar
+        editorRef={editorRef}
+        scrollContainerRef={scrollAreaRef}
+        onContentChange={handleEditorInput}
+      />
 
       {/* Slash command menu (Notion-style — appears on typing /) */}
       <SlashCommandMenu
         editorRef={editorRef}
+        disabledCommandIds={slashDisabledCommandIds}
         onCommand={(cmd) => {
           switch (cmd) {
             case "mood":
-              /* scroll to mood section — already visible at top */ break;
+              setMobileToolsCollapsed(false);
+              setShowStyleBar(true);
+              setShowPromptsDropdown(false);
+              syncEditorCommandContent();
+              break;
             case "heading":
               document.execCommand("formatBlock", false, "h2");
+              syncEditorCommandContent();
               break;
             case "quote":
               document.execCommand("formatBlock", false, "blockquote");
+              syncEditorCommandContent();
               break;
             case "checklist":
-              document.execCommand("insertHTML", false, '<div><input type="checkbox" /> </div>');
+              document.execCommand("insertHTML", false, "<div>☐&nbsp;</div>");
+              syncEditorCommandContent();
               break;
             case "breathe":
               collapseMobileToolsForSurface();
               setShowBreathe(true);
+              syncEditorCommandContent();
               break;
             case "gratitude":
               collapseMobileToolsForSurface();
               setShowGratitudeWidget(true);
               setShowBurnWidget(false);
+              syncEditorCommandContent();
               break;
             case "burn":
               collapseMobileToolsForSurface();
               setShowBurnWidget(true);
               setShowGratitudeWidget(false);
+              syncEditorCommandContent();
               break;
             case "focus":
               collapseMobileToolsForSurface();
               setZenFocusActive(true);
+              syncEditorCommandContent();
               break;
             case "template":
-              /* template auto-shows for new entries */ break;
+              collapseMobileToolsForSurface();
+              setShowTemplatePicker(true);
+              syncEditorCommandContent();
+              break;
             case "photo":
               collapseMobileToolsForSurface();
               setShowPhotos(true);
+              syncEditorCommandContent();
               break;
             case "audio":
               collapseMobileToolsForSurface();
+              syncEditorCommandContent();
               void handleStartRecording();
               break;
           }

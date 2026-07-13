@@ -18,4 +18,16 @@ describe("JournalPhotoGallery iOS touch targets", () => {
     expect(floatButton).not.toContain("group-hover:opacity-100");
     expect(source).toContain("MoveDiagonal2");
   });
+
+  it("decodes thumbnails in the grid and hydrates full data only for the lightbox", () => {
+    expect(source).toContain("getPhotoPreviewById");
+    expect(source).toContain("src={photo.thumbnail || photo.data}");
+    expect(source).toContain("getPhotoById(photo.id)");
+    expect(source).toContain("requestId !== lightboxRequestIdRef.current");
+    expect(source).toContain("src={fullData || lightboxPhoto.thumbnail}");
+  });
+
+  it("keeps the lightbox counter above the bottom safe area", () => {
+    expect(source).toContain("bottom-[max(1rem,env(safe-area-inset-bottom))]");
+  });
 });

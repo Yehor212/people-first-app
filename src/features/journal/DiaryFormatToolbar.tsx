@@ -21,15 +21,26 @@ import { hapticTap } from "@/lib/haptics";
 interface DiaryFormatToolbarProps {
   editorRef: React.RefObject<HTMLDivElement>;
   scrollContainerRef?: React.RefObject<HTMLDivElement>;
+  onContentChange?: () => void;
 }
 
 const FORMAT_ACTIONS = [
   { cmd: "bold", icon: "B", style: "font-bold", labelKey: "journalFormatBold" },
   { cmd: "italic", icon: "I", style: "italic", labelKey: "journalFormatItalic" },
   { cmd: "underline", icon: "U", style: "underline", labelKey: "journalFormatUnderline" },
-  { cmd: "strikeThrough", icon: "S", style: "line-through", labelKey: "journalFormatStrikethrough" },
+  {
+    cmd: "strikeThrough",
+    icon: "S",
+    style: "line-through",
+    labelKey: "journalFormatStrikethrough",
+  },
   { cmd: "formatBlock:blockquote", icon: "\u275D", style: "", labelKey: "journalFormatQuote" },
-  { cmd: "insertHTML:<code>", icon: "</>", style: "font-mono text-[11px]", labelKey: "journalFormatCode" },
+  {
+    cmd: "insertHTML:<code>",
+    icon: "</>",
+    style: "font-mono text-[11px]",
+    labelKey: "journalFormatCode",
+  },
   { cmd: "createLink", icon: "\uD83D\uDD17", style: "", labelKey: "journalFormatLink" },
 ] as const;
 
@@ -56,9 +67,10 @@ const getMotionProps = () => {
 export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
   editorRef,
   scrollContainerRef,
+  onContentChange,
 }: DiaryFormatToolbarProps) {
   const { t } = useLanguage();
-  const ts = t as unknown as Record<string, string>;
+  const ts = t;
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
   const [visible, setVisible] = useState(false);
@@ -75,6 +87,13 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
       if (document.queryCommandState("italic")) formats.add("italic");
       if (document.queryCommandState("underline")) formats.add("underline");
       if (document.queryCommandState("strikeThrough")) formats.add("strikeThrough");
+
+      const sel = window.getSelection();
+      const node = sel?.rangeCount ? sel.getRangeAt(0).commonAncestorContainer : null;
+      const element = node instanceof Element ? node : (node?.parentElement ?? null);
+      if (element?.closest("blockquote")) formats.add("formatBlock:blockquote");
+      if (element?.closest("code")) formats.add("insertHTML:<code>");
+      if (element?.closest("a[href]")) formats.add("createLink");
     } catch {
       // queryCommandState may fail in some contexts
     }
@@ -273,6 +292,8 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
         document.execCommand(cmd, false);
       }
 
+      onContentChange?.();
+
       // T3: Button pulse animation feedback
       setPulsingBtn(cmd);
       setTimeout(() => setPulsingBtn(null), 150);
@@ -282,7 +303,7 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
       // Re-read position after formatting (selection may shift)
       setTimeout(updateSelectionImmediate, 0);
     },
-    [editorRef, checkActiveFormats, updateSelectionImmediate, ts]
+    [editorRef, checkActiveFormats, updateSelectionImmediate, ts, onContentChange]
   );
 
   // T1: Render via createPortal to escape transform ancestors
@@ -293,25 +314,20 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
           ref={toolbarRef}
           {...getMotionProps()}
           style={getPosition()}
+          role="toolbar"
+          aria-label={ts.journalFormatToolbar || "Formatting tools"}
           className="z-[80] flex items-center gap-1 bg-popover/90 backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)] p-1.5 rounded-2xl border border-border shadow-[0_8px_32px_rgba(0,0,0,0.5)] gpu-layer"
           onPointerDown={(e) => e.preventDefault()}
         >
           {FORMAT_ACTIONS.map((action) => {
-            const baseCmdName = action.cmd.includes(":") ? action.cmd.split(":")[0] : action.cmd;
-            const isActive = activeFormats.has(
-              baseCmdName === "formatBlock" ? "formatBlock" : action.cmd
-            );
+            const isActive = activeFormats.has(action.cmd);
             const isPulsing = pulsingBtn === action.cmd;
             return (
               <motion.button
                 key={action.cmd}
                 whileTap={shouldAnimate() ? { scale: 0.85 } : undefined}
                 whileHover={shouldAnimate() ? { scale: 1.05 } : undefined}
-                animate={
-                  isPulsing && shouldAnimate()
-                    ? { scale: [1, 1.15, 1] }
-                    : { scale: 1 }
-                }
+                animate={isPulsing && shouldAnimate() ? { scale: [1, 1.15, 1] } : { scale: 1 }}
                 transition={{ type: "spring", stiffness: 500, damping: 25 }}
                 onClick={() => execFormat(action.cmd)}
                 className={cn(

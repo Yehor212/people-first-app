@@ -13,6 +13,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
+const { analyzeToolEvent } = require("../../scripts/codex-governance/tool-targets.cjs");
 
 function resolveRepositoryRoot() {
   const result = spawnSync("git", ["rev-parse", "--show-toplevel"], {
@@ -37,31 +38,17 @@ function normalizePath(value) {
   return String(value || "").normalize("NFC").replace(/\\/g, "/").replace(ROOT.replace(/\\/g, "/"), "").replace(/^\/+/, "");
 }
 
-function extractPatchPaths(text) {
-  const paths = [];
-  const pattern = /^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm;
-  let match;
-  while ((match = pattern.exec(String(text || ""))) !== null) paths.push(normalizePath(match[1].trim()));
-  return paths;
-}
-
 function toolText(data) {
   const input = data && data.tool_input;
   if (typeof input === "string") return input;
   if (!input || typeof input !== "object") return "";
-  return [input.command, input.patch, input.input, input.content, input.new_string, input.old_string]
+  return [input.command, input.cmd, input.patch, input.input, input.content, input.new_string, input.old_string]
     .filter((value) => typeof value === "string")
     .join("\n");
 }
 
 function targetPaths(data) {
-  const input = data && data.tool_input;
-  const paths = [];
-  if (input && typeof input === "object") {
-    for (const key of ["file_path", "path", "filename"]) if (typeof input[key] === "string") paths.push(normalizePath(input[key]));
-  }
-  paths.push(...extractPatchPaths(toolText(data)));
-  return [...new Set(paths.filter(Boolean))];
+  return analyzeToolEvent(data).targets.map(normalizePath).filter(Boolean);
 }
 
 function emit(value) {
@@ -95,9 +82,16 @@ function relevantToolChange(data) {
 
 function obviousTampering(data) {
   const text = toolText(data);
-  const protectedTarget = targetPaths(data).some((candidate) => PROTECTED_PATH.test(candidate))
+  const analysis = analyzeToolEvent(data);
+  const protectedTarget = analysis.targets.map(normalizePath).some((candidate) => PROTECTED_PATH.test(candidate))
     || /(?:scripts\/(?:check-production-data-integrity|production-data-integrity|check-agent-context|check-enforcement-health|check-task-completion-protocol|smoke-sync-account)|config\/production-data-integrity|\.codex\/hooks(?:\.json|\/production-data-integrity)|\.github\/workflows\/(?:production-data-integrity|deploy|deploy-v2-preview|desktop-release|drift-checks)|docs\/(?:ai\/(?:PRODUCTION_DATA_INTEGRITY_POLICY|TASK_COMPLETION_PROTOCOL)|DEFINITION_OF_DONE|RELEASE_CHECKLIST))/.test(text);
   if (!protectedTarget) return null;
+  if (analysis.shellMutation) {
+    return "Direct shell mutation of production-data-integrity enforcement is blocked; use a reviewable patch with fresh test-first and governance evidence.";
+  }
+  if (/\brm(?:\s+-[^\s;&|]+)*\s+(?:docs\/ai\/PRODUCTION_DATA_INTEGRITY_POLICY\.md|scripts\/check-production-data-integrity\.cjs|\.codex\/hooks\/production-data-integrity-gate\.cjs)\b/.test(text)) {
+    return "production-data-integrity enforcement cannot be removed or weakened in the same command.";
+  }
   const removedContract = text.split(/\r?\n/).some((line) => /^-(?!-)/.test(line) && /production(?:-| )data(?:-| )integrity|PDI0(?:0[1-9]|1[0-2])|process\.exit\(2\)|stop_hook_active/i.test(line));
   if (removedContract) return "production-data-integrity enforcement cannot be removed or weakened in the same patch. Preserve the contract and update independent behavior tests first.";
   if (/^\+(?!\+).*\bcontinue-on-error\s*:\s*true/m.test(text) || /^\+(?!\+).*\|\|\s*true/m.test(text)) {

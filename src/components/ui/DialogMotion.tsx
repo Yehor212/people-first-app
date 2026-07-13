@@ -9,7 +9,7 @@
  *   `import { DialogMotion as Dialog, DialogMotionContent as DialogContent, ... } from '@/components/ui/DialogMotion'`
  * Original Dialog stays untouched so dozens of call sites keep working.
  *
- * Honours .claude/rules/modal-standard.md:
+ * Honours AGENTS.md and docs/ai/V2_FULLSCREEN_EDGE_TO_EDGE_CONTRACT.md:
  *   - max-w-lg default, rounded-2xl, shadow-2xl on desktop
  *   - z-[70] content, z-[60] overlay (per existing Dialog numbering)
  *   - overflow-y-auto — never clips

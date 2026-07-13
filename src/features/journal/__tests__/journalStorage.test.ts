@@ -104,6 +104,7 @@ import {
   getEntryCount,
   getPhotosForEntry,
   getPhotoById,
+  getPhotoPreviewById,
   deletePhoto,
   storeAudio,
   getAudioForEntry,
@@ -795,7 +796,6 @@ describe("getPhotosForEntry", () => {
     );
     expect(db.journalPhotos.update).toHaveBeenCalledWith("photo-cloud", {
       data: "data:image/jpeg;base64,cloud",
-      thumbnail: "data:image/jpeg;base64,cloud",
     });
     expect(result[0]).toEqual(
       expect.objectContaining({
@@ -818,6 +818,23 @@ describe("getPhotoById", () => {
     expect(db.journalPhotos.get).toHaveBeenCalledWith("photo-1");
     expect(result).toEqual(photo);
   });
+
+  it("returns thumbnail-only data for gallery previews", async () => {
+    const photo = makePhoto({
+      data: "data:image/jpeg;base64,full-resolution",
+      thumbnail: "data:image/jpeg;base64,thumbnail",
+    });
+    vi.mocked(db.journalPhotos.get).mockResolvedValue(photo);
+
+    const result = await getPhotoPreviewById("photo-1");
+
+    expect(result).toEqual({
+      ...photo,
+      data: "",
+      thumbnail: "data:image/jpeg;base64,thumbnail",
+    });
+    expect(downloadAsBase64).not.toHaveBeenCalled();
+  });
 });
 
 // ============================================================
@@ -825,7 +842,13 @@ describe("getPhotoById", () => {
 // ============================================================
 describe("deletePhoto", () => {
   it("removes photo from db and updates entry photoIds", async () => {
-    const entry = makeEntry({ photoIds: ["photo-1", "photo-2"] });
+    const entry = makeEntry({
+      photoIds: ["photo-1", "photo-2"],
+      photoLayout: {
+        "photo-1": { x: 20, y: 30, width: 180 },
+        "photo-2": { x: 60, y: 70, width: 220 },
+      },
+    });
     vi.mocked(db.journalEntries.get).mockResolvedValue(entry);
 
     await deletePhoto("photo-1", "entry-1");
@@ -834,7 +857,10 @@ describe("deletePhoto", () => {
     expect(db.journalEntries.get).toHaveBeenCalledWith("entry-1");
     expect(db.journalEntries.update).toHaveBeenCalledWith(
       "entry-1",
-      expect.objectContaining({ photoIds: ["photo-2"] })
+      expect.objectContaining({
+        photoIds: ["photo-2"],
+        photoLayout: { "photo-2": { x: 60, y: 70, width: 220 } },
+      })
     );
   });
 
@@ -1034,6 +1060,25 @@ describe("draft media privacy", () => {
     );
     expect(deleteJournalPhotoFromCloud).toHaveBeenCalledWith("photo-draft", "user-1");
     expect(deleteJournalAudioFromCloud).toHaveBeenCalledWith("audio-draft", "user-1");
+  });
+});
+
+describe("photo quality contract", () => {
+  it("keeps a high-density full image and a distinct lightweight thumbnail", () => {
+    const source = readFileSync("src/features/journal/journalStorage.ts", "utf8");
+    const readNumber = (name: string): number => {
+      const match = source.match(new RegExp(`const ${name} = ([0-9.]+);`));
+      expect(match, `${name} must remain an explicit reviewed constant`).not.toBeNull();
+      return Number(match?.[1]);
+    };
+
+    expect(readNumber("MAX_DIMENSION")).toBeGreaterThanOrEqual(1600);
+    expect(readNumber("JPEG_QUALITY")).toBeGreaterThanOrEqual(0.8);
+    expect(readNumber("THUMB_WIDTH")).toBeGreaterThanOrEqual(256);
+    expect(readNumber("THUMB_WIDTH")).toBeLessThanOrEqual(480);
+    expect(readNumber("THUMB_QUALITY")).toBeGreaterThanOrEqual(0.7);
+    expect(source).toContain("createPhotoThumbnail");
+    expect(source).not.toContain("photo.thumbnail || storedData");
   });
 });
 

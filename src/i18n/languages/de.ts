@@ -547,8 +547,7 @@ export const de: Translations = {
   settingsSoundRestoreDescription:
     "Früher ausgeschaltete Klänge bleiben aus, bis du sie wieder aktivierst.",
   settingsSoundRestoreAction: "Klänge wieder aktivieren",
-  settingsSoundMasterDisabledHint:
-    "Schalte den App-Ton ein, um diese Einstellungen zu verwenden.",
+  settingsSoundMasterDisabledHint: "Schalte den App-Ton ein, um diese Einstellungen zu verwenden.",
   settingsAccountBackupTitle: "Konto & Backup",
   settingsAccountBackupDescription:
     "Dein Konto ist verbunden. Wenn ZenFlow Änderungen nicht online speichern kann, bleiben sie auf diesem Gerät.",
@@ -563,8 +562,7 @@ export const de: Translations = {
   settingsAccountCheckFailedDescription:
     "Deine Daten bleiben auf diesem Gerät. Prüfe deine Verbindung und versuche es erneut.",
   settingsAccountBackupUnavailable: "Backup ist in dieser Version nicht verfügbar",
-  settingsAccountBackupUnavailableDescription:
-    "Deine Daten bleiben auf diesem Gerät.",
+  settingsAccountBackupUnavailableDescription: "Deine Daten bleiben auf diesem Gerät.",
   settingsRemindersMobileApp: "Mobile App",
   settingsPrivacyDataDescription:
     "Du entscheidest, welche optionalen Dienste ZenFlow verwenden darf.",
@@ -581,8 +579,7 @@ export const de: Translations = {
   settingsAboutProductSummary:
     "ZenFlow bringt Stimmungseinträge, Gewohnheiten, Fokuszeiten und dein Tagebuch an einem Ort zusammen.",
   settingsAboutSupportLegalTitle: "Hilfe und Rechtliches",
-  settingsAboutSupportLegalDescription:
-    "Datenschutz, Bedingungen, Lizenzen und Support.",
+  settingsAboutSupportLegalDescription: "Datenschutz, Bedingungen, Lizenzen und Support.",
   settingsRemindersOff: "Erinnerungen aus",
   resetDataConfirmWord: "RESET",
   resetDataTypeConfirm: "Gib {word} ein, um zu bestätigen",
@@ -597,8 +594,7 @@ export const de: Translations = {
   importReplace: "Vorhandene Daten ersetzen",
   exportSuccess: "Export bereit.",
   exportError: "Export fehlgeschlagen.",
-  exportJournalUnlockRequired:
-    "Entsperre dein Tagebuch, bevor du geschützte Inhalte exportierst.",
+  exportJournalUnlockRequired: "Entsperre dein Tagebuch, bevor du geschützte Inhalte exportierst.",
   exportJournalDecryptionFailed:
     "ZenFlow konnte das geschützte Tagebuch nicht lesen. Es wurde nichts exportiert.",
   exportJournalMediaUnavailable:
@@ -681,16 +677,13 @@ export const de: Translations = {
   settingsPreferenceSaveError:
     "Diese Änderung konnte nicht gespeichert werden. Die vorherige Einstellung bleibt aktiv.",
   settingsReduceMotion: "Weniger Bewegung",
-  settingsReduceMotionDescription:
-    "Reduziert bewegte Übergänge und dekorative Effekte.",
-  settingsReduceMotionSystemDescription:
-    "Auf diesem Gerät ist weniger Bewegung bereits aktiviert.",
+  settingsReduceMotionDescription: "Reduziert bewegte Übergänge und dekorative Effekte.",
+  settingsReduceMotionSystemDescription: "Auf diesem Gerät ist weniger Bewegung bereits aktiviert.",
   themeStyleTitle: "Stimmungspalette",
   themeAdvancedAppearanceTitle: "Erweiterte Darstellung",
   themeStyleDescription: "Wähle Farbmodus, Akzentfarbe und Textgröße.",
   themeAccentTitle: "Akzentfarbe",
-  themeAccentDescription:
-    "Farbe für Schaltflächen, Auswahlen und Hervorhebungen.",
+  themeAccentDescription: "Farbe für Schaltflächen, Auswahlen und Hervorhebungen.",
   themeIntensityTitle: "Intensität",
   themeComfortTitle: "Komfort",
   themePreviewAction: "Vorschau",
@@ -1128,8 +1121,7 @@ export const de: Translations = {
   pushDisabled: "Push deaktiviert.",
   pushError: "Push konnte nicht aktiviert werden.",
   pushNeedsAccount: "Melden Sie sich an, um Push zu aktivieren.",
-  pushPermissionDenied:
-    "Aktiviere Mitteilungen für ZenFlow in den Einstellungen deines Geräts.",
+  pushPermissionDenied: "Aktiviere Mitteilungen für ZenFlow in den Einstellungen deines Geräts.",
   remindersNativeOnly: "Richte Erinnerungen in der mobilen ZenFlow-App ein.",
   habitRemindersManagedInHabits: "Lege die Erinnerung im Menü der jeweiligen Gewohnheit fest.",
   areYouSure: "Bist du sicher?",
@@ -1395,16 +1387,19 @@ export const de: Translations = {
     "Speichert auf diesem Gerät deine Antwort, Zeitpunkt und Bereich, den Gerätetyp sowie die aktuellen Klangeinstellungen.",
   settingsSoundAmbientOff: "Der Hintergrundklang ist ausgeschaltet.",
   settingsSoundMapTitle: "Wo Klang erscheint",
-  settingsSoundMapDescription: "App-Sounds starten erst nach deinem Tippen und folgen deinen Sound-Einstellungen.",
+  settingsSoundMapDescription:
+    "App-Sounds starten erst nach deinem Tippen und folgen deinen Sound-Einstellungen.",
   settingsSoundMapAuth: "Sanfte Luft beim Anmelden",
   settingsSoundMapOrb: "Orb-Atmosphäre",
   settingsSoundMapDiary: "Tagebuch-Atmosphäre",
   settingsSoundMapFocus: "Fokus-Umgebungsbibliothek",
   settingsSoundMapFeedback: "Sanfte Abschluss- und Erinnerungssignale",
   settingsSoundCrossPlatformTitle: "Wo Sounds funktionieren",
-  settingsSoundCrossPlatformNote: "ZenFlow nutzt dieselben Sound-Einstellungen, wo dein Gerät sie erlaubt.",
+  settingsSoundCrossPlatformNote:
+    "ZenFlow nutzt dieselben Sound-Einstellungen, wo dein Gerät sie erlaubt.",
   settingsSoundActionMapTitle: "Wann ZenFlow einen Klang abspielt",
-  settingsSoundActionMapDescription: "Kurze Klänge bleiben wichtigen Abschlüssen und seltenen Meilensteinen vorbehalten.",
+  settingsSoundActionMapDescription:
+    "Kurze Klänge bleiben wichtigen Abschlüssen und seltenen Meilensteinen vorbehalten.",
   settingsSoundActionMapMood: "Stimmung gespeichert",
   settingsSoundActionMapHabit: "Gewohnheit abgeschlossen",
   settingsSoundActionMapJournal: "Tagebuch gespeichert",
@@ -3411,7 +3406,7 @@ export const de: Translations = {
   diaryFontSans: "Serifenlos",
   diaryFontSerif: "Mit Serifen",
   diaryFontHandwriting: "Handschrift",
-  diaryFontScript: "Schrift",
+  diaryFontScript: "Kursiv",
   diarySnapshot: "Foto",
   diaryRecord: "Aufnahme",
   diaryFocusRay: "Fokus",
@@ -3438,6 +3433,55 @@ export const de: Translations = {
   diaryPhotoSizeFull: "Volle Breite",
   diaryPhotoReturn: "Foto zur Galerie zurückgeben",
   diaryPhotoResize: "Fotogröße ändern",
+  diaryBackgroundDim: "Gedimmt",
+  diaryBackgroundFull: "Voll",
+  diaryBackgroundOff: "Aus",
+  diaryFormatHintLabel: "Textwerkzeuge",
+  diaryMotion: "Bewegung",
+  diaryParticleSpeed: "Geschwindigkeit",
+  diaryParticleSpeedDrift: "Gleitend",
+  diaryParticleSpeedOff: "Aus",
+  diaryParticleSpeedSlow: "Langsam",
+  diaryPhotoGestureHint: "Ziehen, Größe tippen, halten zum Zurücklegen",
+  diaryPhotoGestureInstructions:
+    "Zum Verschieben ziehen. Zum Ändern der Größe tippen. Pinchen ändert die Größe ebenfalls. Pos1 zentriert das Foto. Pfeiltasten verschieben, Plus und Minus ändern die Größe, Entf gibt das Foto an die Galerie zurück. Auf Touchscreens lange drücken, um das Foto an die Galerie zurückzugeben.",
+  diaryPhotoMove: "Foto verschieben",
+  diaryScene: "Szene",
+  diaryTexture: "Textur",
+  diaryTextureClean: "Klar",
+  diaryTextureCraft: "Kraftpapier",
+  diaryTextureDots: "Punkte",
+  diaryTextureGrid: "Raster",
+  diaryTextureLinen: "Leinen",
+  diaryTextureLines: "Linien",
+  journalDraftSaveFailed: "Entwurf konnte nicht gespeichert werden",
+  journalFormatToolbar: "Formatierungswerkzeuge",
+  journalInkEmerald: "Smaragd-Tinte",
+  journalInkGold: "Goldene Tinte",
+  journalInkRose: "Rosé-Tinte",
+  journalInkWhite: "Standardtinte",
+  journalPanicLockDescription: "Entsperre, um zu deinem privaten Tagebuch zurückzukehren.",
+  journalPanicLockTitle: "Tagebuch gesperrt",
+  journalPanicLockUnlockRequired: "Nutze Entsperren, um zu deinem Tagebuch zurückzukehren.",
+  journalPaperDark: "Dunkel",
+  journalPaperMilky: "Papier",
+  journalPaperSoftWhite: "Weiches Weiß",
+  journalPhotoNext: "Nächstes Foto",
+  journalPhotoPrevious: "Vorheriges Foto",
+  journalRecordingDiscard: "Verwerfen",
+  journalRecordingStopKeep: "Stoppen & behalten",
+  journalRemoveAudio: "Audio {duration} entfernen",
+  journalRemoveTag: "Schlagwort {tag} entfernen",
+  journalStyleTools: "Stilwerkzeuge",
+  journalToolbarInk: "Tinte",
+  journalToolbarPaper: "Papier",
+  journalVoicePrivacyCancel: "Nicht jetzt",
+  journalVoicePrivacyContinue: "Sprache starten",
+  journalVoicePrivacyDescription:
+    "Der Browser kann Spracherkennung außerhalb von ZenFlow verarbeiten. Starte Sprache nur, wenn das für diesen Eintrag passt.",
+  journalVoicePrivacyTitle: "Datenschutzcheck für Sprache",
+  openPhoto: "Foto öffnen",
+  previous: "Zurück",
   // State of Mind
   somLogFeeling: "Wie fühlst du dich?",
   somHowAreYouFeeling: "Wie geht es dir?",

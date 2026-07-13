@@ -2511,11 +2511,6 @@ export const JournalModule = memo(function JournalModule({
                             : diaryTabSection
                   }
                   collapsed={isSidebarCollapsed}
-                  entries={journal.allEntries}
-                  activeEntryId={journal.activeEntryId}
-                  privateMode={privateMode}
-                  onOpenEntry={handleOpenEntryFromShell}
-                  onNewEntry={handleNewEntryFromShell}
                   onOpenStats={handleOpenStats}
                   onOpenFavorites={handleOpenFavorites}
                   onOpenSettings={handleShellSettingsRequest}
@@ -2689,6 +2684,7 @@ export const JournalModule = memo(function JournalModule({
                               showSpaces={false}
                               useSharedDiaryWallpaper={showJournalSidebarAtmosphere}
                               activeEntryId={journal.activeEntryId}
+                              selectedDateOnly
                             />
                           </Suspense>
                         )}
@@ -3428,6 +3424,7 @@ export const JournalModule = memo(function JournalModule({
                                       showSpaces={false}
                                       activeEntryId={journal.activeEntryId}
                                       useSharedDiaryWallpaper={showJournalSidebarAtmosphere}
+                                      selectedDateOnly
                                     />
                                   </Suspense>
                                 )}

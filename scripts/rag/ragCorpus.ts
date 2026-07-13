@@ -1,7 +1,8 @@
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import type { FreeRagDocument } from "./freeProjectRag";
+import { readRegularFileInsideRoot } from "./safeFilesystem";
 
 export type RagCorpusGroupId =
   | "agent_rules"
@@ -50,7 +51,9 @@ const PRUNED_DIRECTORIES = new Set([
 ]);
 
 export function loadRagCorpusManifest(manifestPath = DEFAULT_MANIFEST_PATH): RagCorpusManifest {
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as RagCorpusManifest;
+  const manifest = JSON.parse(
+    readRegularFileInsideRoot(path.dirname(manifestPath), path.basename(manifestPath))
+  ) as RagCorpusManifest;
   validateRagCorpusManifest(manifest);
   return manifest;
 }
@@ -74,13 +77,11 @@ export function expandRagCorpusDocuments(
       for (const source of matches) {
         if (seenSources.has(`${group.id}:${source}`)) continue;
         if (matchesAnyGlob(source, excludePatterns)) continue;
-        const absolutePath = path.join(rootDir, source);
-        if (!existsSync(absolutePath)) continue;
-        const fileStats = statSync(absolutePath);
-        if (!fileStats.isFile() || fileStats.size > maxFileBytes) continue;
+        const text = readRegularFileInsideRoot(rootDir, source);
+        if (Buffer.byteLength(text, "utf8") > maxFileBytes) continue;
         documents.push({
           source,
-          text: readFileSync(absolutePath, "utf8"),
+          text,
           title: group.description,
           group: group.id,
           tags: group.tags,

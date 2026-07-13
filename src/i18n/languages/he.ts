@@ -484,17 +484,13 @@ const hebrewOverrides: Partial<Translations> = {
   invalidNameFormat: "יש להזין שם באורך 1 עד 100 תווים.",
   notifications: "התראות",
   notificationsComingSoon: "התראות יהיו זמינות בעדכונים הבאים.",
-  settingsOverviewDescription:
-    "אפשר לבחור איך ZenFlow ייראה, יישמע, יזכיר דברים ויטפל בנתונים.",
-  settingsOverviewDescriptionWithoutReminders:
-    "אפשר לבחור איך ZenFlow ייראה, יישמע ויטפל בנתונים.",
+  settingsOverviewDescription: "אפשר לבחור איך ZenFlow ייראה, יישמע, יזכיר דברים ויטפל בנתונים.",
+  settingsOverviewDescriptionWithoutReminders: "אפשר לבחור איך ZenFlow ייראה, יישמע ויטפל בנתונים.",
   settingsReminderDaysMissing: "בחרו ימים לתזכורות",
   settingsSoundRestoreTitle: "חלק מצלילי הרקע כבויים",
-  settingsSoundRestoreDescription:
-    "צלילים שכיבית בעבר יישארו כבויים עד להפעלתם מחדש.",
+  settingsSoundRestoreDescription: "צלילים שכיבית בעבר יישארו כבויים עד להפעלתם מחדש.",
   settingsSoundRestoreAction: "הפעלת הצלילים מחדש",
-  settingsSoundMasterDisabledHint:
-    "יש להפעיל את צליל האפליקציה כדי להשתמש בהגדרות האלה.",
+  settingsSoundMasterDisabledHint: "יש להפעיל את צליל האפליקציה כדי להשתמש בהגדרות האלה.",
   settingsAccountBackupTitle: "חשבון וגיבוי",
   settingsAccountBackupDescription:
     "החשבון שלך מחובר. אם ZenFlow לא יכול לשמור שינויים באינטרנט, הם נשארים במכשיר הזה.",
@@ -509,13 +505,10 @@ const hebrewOverrides: Partial<Translations> = {
   settingsAccountCheckFailedDescription:
     "הנתונים נשארים במכשיר הזה. יש לבדוק את החיבור ולנסות שוב.",
   settingsAccountBackupUnavailable: "הגיבוי לא זמין בגרסה הזאת",
-  settingsAccountBackupUnavailableDescription:
-    "הנתונים נשארים במכשיר הזה.",
+  settingsAccountBackupUnavailableDescription: "הנתונים נשארים במכשיר הזה.",
   settingsRemindersMobileApp: "אפליקציה לנייד",
-  settingsPrivacyDataDescription:
-    "אפשר לבחור באילו שירותים אופציונליים ZenFlow ישתמש.",
-  settingsDataBackupReportsDescription:
-    "אפשר לשמור גיבוי לייבוא מאוחר יותר או ליצור דוח.",
+  settingsPrivacyDataDescription: "אפשר לבחור באילו שירותים אופציונליים ZenFlow ישתמש.",
+  settingsDataBackupReportsDescription: "אפשר לשמור גיבוי לייבוא מאוחר יותר או ליצור דוח.",
   settingsBackupRestoreTitle: "גיבוי ושחזור",
   settingsReportsTitle: "דוחות",
   settingsReportsDescription:
@@ -527,8 +520,7 @@ const hebrewOverrides: Partial<Translations> = {
   settingsAboutProductSummary:
     "ZenFlow מרכז במקום אחד רישומי מצב רוח, הרגלים, מקטעי מיקוד ואת היומן שלכם.",
   settingsAboutSupportLegalTitle: "עזרה ומידע משפטי",
-  settingsAboutSupportLegalDescription:
-    "פרטיות, תנאים, רישיונות ותמיכה.",
+  settingsAboutSupportLegalDescription: "פרטיות, תנאים, רישיונות ותמיכה.",
   settingsRemindersOff: "התזכורות כבויות",
   resetDataConfirmWord: "RESET",
   resetDataTypeConfirm: "הקלידו {word} כדי לאשר",
@@ -543,10 +535,8 @@ const hebrewOverrides: Partial<Translations> = {
   importReplace: "החלפת הנתונים הקיימים",
   exportSuccess: "היצוא הושלם.",
   exportError: "יצוא הנתונים נכשל.",
-  exportJournalUnlockRequired:
-    "יש לפתוח את נעילת היומן לפני ייצוא התוכן המוגן.",
-  exportJournalDecryptionFailed:
-    "ZenFlow לא הצליח לקרוא את היומן המוגן. דבר לא יוצא.",
+  exportJournalUnlockRequired: "יש לפתוח את נעילת היומן לפני ייצוא התוכן המוגן.",
+  exportJournalDecryptionFailed: "ZenFlow לא הצליח לקרוא את היומן המוגן. דבר לא יוצא.",
   exportJournalMediaUnavailable:
     "ZenFlow לא הצליח לקרוא קובץ מצורף אחד או יותר של היומן. דבר לא יוצא.",
   exportBackupTooLarge:
@@ -567,8 +557,7 @@ const hebrewOverrides: Partial<Translations> = {
     "הייבוא הושלם: נוספו {added}, עודכנו {updated}, ודולגו {skipped}. יומן: {journalEntries} רשומות, {journalPhotos} תמונות, ו-{journalAudio} הקלטות.",
   importError: "יבוא הקובץ נכשל.",
   importJournalUnlockRequired: "יש לבטל את נעילת היומן לפני החלפת הנתונים במכשיר הזה.",
-  importJournalUnreadable:
-    "גיבוי זה מכיל נתוני יומן מוגנים שהמכשיר הזה אינו יכול לקרוא.",
+  importJournalUnreadable: "גיבוי זה מכיל נתוני יומן מוגנים שהמכשיר הזה אינו יכול לקרוא.",
   importJournalReauthorizationRequired:
     "למען הבטיחות, נעל את היומן ופתח אותו מחדש. לאחר מכן חזור לכאן ונסה שוב להחליף.",
   importedItems: "נוספו",
@@ -591,8 +580,7 @@ const hebrewOverrides: Partial<Translations> = {
   privacyTitle: "פרטיות",
   privacyDescription: "אין מעקב מוסתר. סנכרון מכשירים מתחיל רק אחרי כניסה והפעלת הגיבוי המקוון.",
   privacyAds: "סרטוני תגמול",
-  privacyAdsHint:
-    "הסרטונים נטענים רק לאחר הפעלתם. Google עשויה לבקש בחירת העדפות פרטיות כשנדרש.",
+  privacyAdsHint: "הסרטונים נטענים רק לאחר הפעלתם. Google עשויה לבקש בחירת העדפות פרטיות כשנדרש.",
   privacyOptionalServicesOn: "שירותים אופציונליים פעילים",
   privacyOptionalServicesOff: "שירותים אופציונליים כבויים",
   privacyPushNotifications: "תזכורות מהחשבון",
@@ -618,17 +606,13 @@ const hebrewOverrides: Partial<Translations> = {
   themeDark: "כהה",
   themeSystem: "מערכת",
   themeModeTitle: "מצב צבע",
-  themeModeDescription:
-    "אפשר להתאים להגדרת המכשיר או לבחור מראה בהיר, כהה או שחור.",
+  themeModeDescription: "אפשר להתאים להגדרת המכשיר או לבחור מראה בהיר, כהה או שחור.",
   themeBlack: "שחור",
   themeChangeSaved: "השינוי נשמר",
-  settingsPreferenceSaveError:
-    "לא היה אפשר לשמור את השינוי. ההגדרה הקודמת עדיין פעילה.",
+  settingsPreferenceSaveError: "לא היה אפשר לשמור את השינוי. ההגדרה הקודמת עדיין פעילה.",
   settingsReduceMotion: "הפחתת תנועה",
-  settingsReduceMotionDescription:
-    "מפחית מעברים בתנועה ואפקטים דקורטיביים.",
-  settingsReduceMotionSystemDescription:
-    "הפחתת תנועה כבר מופעלת במכשיר הזה.",
+  settingsReduceMotionDescription: "מפחית מעברים בתנועה ואפקטים דקורטיביים.",
+  settingsReduceMotionSystemDescription: "הפחתת תנועה כבר מופעלת במכשיר הזה.",
   themeStyleTitle: "פלטת מצב רוח",
   themeAdvancedAppearanceTitle: "מראה מתקדם",
   themeStyleDescription: "אפשר לבחור מצב צבע, צבע הדגשה וגודל טקסט.",
@@ -1180,8 +1164,7 @@ const hebrewOverrides: Partial<Translations> = {
   settingsMoodCheckInsDescription: "תזכורות עדינות לתיעוד ההרגשה הנוכחית.",
   settingsFocusReminder: "תזכורת למיקוד",
   settingsFocusReminderDescription: "תזכורת אחת בסביבות השעה שנבחרה.",
-  settingsReminderChooseDay:
-    "יש לבחור לפחות יום אחד. עד אז לא יישלחו תזכורות.",
+  settingsReminderChooseDay: "יש לבחור לפחות יום אחד. עד אז לא יישלחו תזכורות.",
   selectedHabits: "הרגלים לתזכורת",
   noHabitsYet: "אין הרגלים עדיין.",
   noHabitsInCategory: "אין הרגלים בקטגוריה זו",
@@ -1304,8 +1287,7 @@ const hebrewOverrides: Partial<Translations> = {
   authSignOutRecoveryTitle: "השלמת היציאה",
   authDiscardAndSignOut: "מחיקת השינויים ויציאה",
   authDiscardSignOutConfirm: "למחוק את השינויים שלא נשמרו ולצאת?",
-  authDiscardSignOutWarning:
-    "שינויים שממתינים לשמירה מקוונת יימחקו לצמיתות מהמכשיר הזה.",
+  authDiscardSignOutWarning: "שינויים שממתינים לשמירה מקוונת יימחקו לצמיתות מהמכשיר הזה.",
   authAccountSwitchPendingChanges:
     "יש להיכנס שוב לחשבון הקודם, להתחבר לאינטרנט ולהמתין עד ש-ZenFlow יסיים לשמור את השינויים. לאחר מכן אפשר להחליף חשבון שוב.",
   authRecoverLegacyChanges: "שחזור השינויים עם החשבון הזה",
@@ -1510,8 +1492,7 @@ const hebrewOverrides: Partial<Translations> = {
   unmuteSound: "בטל השתקה",
   settingsSoundTitle: "צליל",
   settingsVibration: "רטט",
-  settingsVibrationDescription:
-    "רטט קצר בהקשות ובאישורים, במכשירים שתומכים בכך.",
+  settingsVibrationDescription: "רטט קצר בהקשות ובאישורים, במכשירים שתומכים בכך.",
   settingsSoundDescription: "צלילים בתוך \u2066ZenFlow\u2069 והעוצמה שלהם.",
   settingsSoundSummaryOn: "צליל פעיל",
   settingsSoundSummaryOff: "מושתק",
@@ -1532,8 +1513,7 @@ const hebrewOverrides: Partial<Translations> = {
   settingsSoundFeedbackPreferSilent: "עדיף שקט",
   settingsSoundFeedbackDidNotPlay: "לא התנגן",
   settingsSoundComfortTitle: "נוחות הצליל",
-  settingsSoundComfortDescription:
-    "אפשר לבחור הגדרה התחלתית ואז להתאים כל צליל בהמשך.",
+  settingsSoundComfortDescription: "אפשר לבחור הגדרה התחלתית ואז להתאים כל צליל בהמשך.",
   settingsSoundProfileQuiet: "שקט",
   settingsSoundProfileRich: "מלא",
   settingsSoundProfileBalanced: "מאוזן",
@@ -1547,16 +1527,14 @@ const hebrewOverrides: Partial<Translations> = {
   settingsSoundBackgroundDescription:
     "מאפשר צלילי רקע עדינים ב־⁦ZenFlow⁩. ההשמעה מתחילה רק אחרי לחיצה על הפעלה.",
   settingsSoundActivityTitle: "צלילי פעילות",
-  settingsSoundActivityDescription:
-    "משמיע משוב שקט אחרי פעילויות שהושלמו, טיימרים וכמה אבני דרך.",
+  settingsSoundActivityDescription: "משמיע משוב שקט אחרי פעילויות שהושלמו, טיימרים וכמה אבני דרך.",
   settingsSoundCompletionCues: "צלילי אישור",
   settingsSoundCompletionCuesDesc: "משמיע צליל אישור שקט אחרי פעולות חשובות.",
   settingsSoundReminderCues: "צלילי תזכורת בתוך \u2066ZenFlow\u2069",
   settingsSoundReminderCuesDesc:
     "שולט בצלילי תזכורת קצרים בתוך \u2066ZenFlow\u2069. צלילי ההתראות של המכשיר מוגדרים תחת התראות.",
   settingsSoundMilestoneCues: "צלילי התקדמות",
-  settingsSoundMilestoneCuesDesc:
-    "מאפשר צלילי התקדמות מדי פעם, בלי להוסיף צליל לכל פעולה.",
+  settingsSoundMilestoneCuesDesc: "מאפשר צלילי התקדמות מדי פעם, בלי להוסיף צליל לכל פעולה.",
   settingsSoundTextureTitle: "צלילי רקע",
   settingsSoundTextureDescription:
     "אפשר לבחור באילו צלילי רקע עדינים \u2066ZenFlow\u2069 ישתמש מחוץ למפגשי מיקוד: אוויר, מים או גשם.",
@@ -3312,7 +3290,7 @@ const hebrewOverrides: Partial<Translations> = {
   diaryFontSans: "ללא תגים",
   diaryFontSerif: "עם תגים",
   diaryFontHandwriting: "כתב יד",
-  diaryFontScript: "כתב נאה",
+  diaryFontScript: "נטוי",
   diarySnapshot: "תמונה",
   diaryRecord: "הקלטה",
   diaryFocusRay: "מיקוד",
@@ -3339,6 +3317,55 @@ const hebrewOverrides: Partial<Translations> = {
   diaryPhotoSizeFull: "רוחב מלא",
   diaryPhotoReturn: "החזר תמונה לגלריה",
   diaryPhotoResize: "שנה גודל תמונה",
+  diaryBackgroundDim: "מעומעם",
+  diaryBackgroundFull: "מלא",
+  diaryBackgroundOff: "כבוי",
+  diaryFormatHintLabel: "כלי טקסט",
+  diaryMotion: "תנועה",
+  diaryParticleSpeed: "מהירות",
+  diaryParticleSpeedDrift: "נסחף",
+  diaryParticleSpeedOff: "כבוי",
+  diaryParticleSpeedSlow: "איטי",
+  diaryPhotoGestureHint: "גררו, הקישו לגודל, לחצו ארוכות להחזרה",
+  diaryPhotoGestureInstructions:
+    "גרור כדי להזיז. הקש כדי לשנות גודל. צביטה משנה גודל גם כן. לחץ Home כדי למרכז. השתמש במקשי החצים להזזה, בפלוס ובמינוס לשינוי גודל, וב-Delete כדי להחזיר את התמונה לגלריה. במסך מגע, לחץ לחיצה ארוכה כדי להחזיר את התמונה לגלריה.",
+  diaryPhotoMove: "הזזת תמונה",
+  diaryScene: "סצנה",
+  diaryTexture: "מרקם",
+  diaryTextureClean: "נקי",
+  diaryTextureCraft: "נייר קראפט",
+  diaryTextureDots: "נקודות",
+  diaryTextureGrid: "רשת",
+  diaryTextureLinen: "פשתן",
+  diaryTextureLines: "שורות",
+  journalDraftSaveFailed: "לא ניתן לשמור את הטיוטה",
+  journalFormatToolbar: "כלי עיצוב",
+  journalInkEmerald: "דיו אזמרגד",
+  journalInkGold: "דיו זהב",
+  journalInkRose: "דיו ורוד",
+  journalInkWhite: "דיו ברירת מחדל",
+  journalPanicLockDescription: "בטל נעילה כדי לחזור ליומן הפרטי שלך.",
+  journalPanicLockTitle: "היומן נעול",
+  journalPanicLockUnlockRequired: "השתמש בביטול נעילה כדי לחזור ליומן.",
+  journalPaperDark: "כהה",
+  journalPaperMilky: "נייר",
+  journalPaperSoftWhite: "לבן רך",
+  journalPhotoNext: "התמונה הבאה",
+  journalPhotoPrevious: "התמונה הקודמת",
+  journalRecordingDiscard: "מחק",
+  journalRecordingStopKeep: "עצור ושמור",
+  journalRemoveAudio: "הסרת שמע {duration}",
+  journalRemoveTag: "הסרת התגית {tag}",
+  journalStyleTools: "כלי סגנון",
+  journalToolbarInk: "דיו",
+  journalToolbarPaper: "נייר",
+  journalVoicePrivacyCancel: "לא עכשיו",
+  journalVoicePrivacyContinue: "התחל קול",
+  journalVoicePrivacyDescription:
+    "הדפדפן עשוי לעבד זיהוי דיבור מחוץ ל-ZenFlow. התחילו קול רק אם זה מתאים לרשומה הזו.",
+  journalVoicePrivacyTitle: "בדיקת פרטיות קול",
+  openPhoto: "פתיחת תמונה",
+  previous: "הקודם",
   // State of Mind
   somLogFeeling: "רשום איך אתה מרגיש",
   somHowAreYouFeeling: "איך אתה מרגיש?",

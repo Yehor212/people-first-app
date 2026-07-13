@@ -706,7 +706,7 @@ interface SeasonalTreeProps {
 
 ### 10.3 TreePanel Layout (src/components/TreePanel.tsx)
 
-**Modal type:** Custom `<motion.div>` with `position: fixed`, slide-up from bottom. NOT Radix Sheet (which is broken in this project -- see CLAUDE_CONTEXT.md).
+**Modal type:** Custom `<motion.div>` with `position: fixed`, sliding up from the bottom.
 
 **Z-index:** `var(--z-overlay)` (consistent with other modals).
 

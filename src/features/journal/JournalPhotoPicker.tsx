@@ -15,7 +15,7 @@ interface JournalPhotoPickerProps {
   maxCount: number;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+export const MAX_JOURNAL_PHOTO_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"];
 
@@ -63,7 +63,7 @@ export function JournalPhotoPicker({
       return;
     }
 
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > MAX_JOURNAL_PHOTO_FILE_SIZE) {
       setError(ts.journalPhotoTooLarge || "Image too large (max 10 MB). Try a smaller image.");
       e.target.value = "";
       return;

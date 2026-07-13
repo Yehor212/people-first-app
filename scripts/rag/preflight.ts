@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
 import { searchProjectDocs } from "./search-project-docs";
+import { writePrivateFilesAtomicallyInsideRoot } from "./safeFilesystem";
 
 export interface RagPreflightOptions {
   task: string;
@@ -15,7 +15,6 @@ export interface RagPreflightOptions {
 export interface RagPreflightContext {
   generatedAt: string;
   taskHash: string;
-  taskPreview: string;
   groups: string[];
   indexedFiles: string[];
   resultCount: number;
@@ -29,7 +28,7 @@ export interface WrittenRagPreflightFiles {
 
 const DEFAULT_MAX_CHARS = 5000;
 const DEFAULT_LIMIT = 8;
-const OUTPUT_DIR = path.join(".Codex", "auto-context");
+const OUTPUT_DIR = path.join(".codex", "auto-context");
 const RAG_MARKDOWN_PATH = path.join(OUTPUT_DIR, "rag-current.md");
 const RAG_METADATA_PATH = path.join(OUTPUT_DIR, "rag-current.json");
 
@@ -111,7 +110,6 @@ export function buildRagPreflightContext(options: RagPreflightOptions): RagPrefl
   return {
     generatedAt,
     taskHash,
-    taskPreview: task.slice(0, 240),
     groups,
     indexedFiles,
     resultCount: search.results.length,
@@ -124,26 +122,27 @@ export function writeRagPreflightFiles(
   options: { rootDir?: string } = {}
 ): WrittenRagPreflightFiles {
   const rootDir = options.rootDir ?? process.cwd();
-  const outputDir = path.join(rootDir, OUTPUT_DIR);
-  mkdirSync(outputDir, { recursive: true });
-  writeFileSync(path.join(rootDir, RAG_MARKDOWN_PATH), `${preflight.markdown.trimEnd()}\n`, "utf8");
-  writeFileSync(
-    path.join(rootDir, RAG_METADATA_PATH),
-    `${JSON.stringify(
-      {
-        generatedAt: preflight.generatedAt,
-        taskHash: preflight.taskHash,
-        taskPreview: preflight.taskPreview,
-        groups: preflight.groups,
-        resultCount: preflight.resultCount,
-        indexedFileCount: preflight.indexedFiles.length,
-        markdownPath: RAG_MARKDOWN_PATH,
-      },
-      null,
-      2
-    )}\n`,
-    "utf8"
-  );
+  writePrivateFilesAtomicallyInsideRoot(rootDir, [
+    {
+      relativePath: RAG_MARKDOWN_PATH,
+      contents: `${preflight.markdown.trimEnd()}\n`,
+    },
+    {
+      relativePath: RAG_METADATA_PATH,
+      contents: `${JSON.stringify(
+        {
+          generatedAt: preflight.generatedAt,
+          taskHash: preflight.taskHash,
+          groups: preflight.groups,
+          resultCount: preflight.resultCount,
+          indexedFileCount: preflight.indexedFiles.length,
+          markdownPath: RAG_MARKDOWN_PATH,
+        },
+        null,
+        2
+      )}\n`,
+    },
+  ]);
 
   return {
     markdownPath: RAG_MARKDOWN_PATH,
@@ -157,7 +156,7 @@ function clampMaxChars(value: number): number {
 }
 
 function hash(value: string): string {
-  return createHash("sha256").update(value).digest("hex").slice(0, 12);
+  return createHash("sha256").update(value).digest("hex");
 }
 
 function truncateMarkdown(markdown: string, maxChars: number): string {
@@ -181,15 +180,22 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const task = parseCliTask(args);
   const maxChars = Number(argValue(args, "--max-chars") ?? DEFAULT_MAX_CHARS);
   const asJson = args.includes("--json");
+  const noWrite = args.includes("--no-write");
 
   try {
     const preflight = buildRagPreflightContext({ task, maxChars });
-    const written = writeRagPreflightFiles(preflight);
+    const written = noWrite
+      ? { markdownPath: RAG_MARKDOWN_PATH, metadataPath: RAG_METADATA_PATH }
+      : writeRagPreflightFiles(preflight);
     if (asJson) {
-      console.log(JSON.stringify({ ...preflight, ...written }, null, 2));
+      console.log(JSON.stringify({ ...preflight, ...written, writes: !noWrite }, null, 2));
     } else {
       console.log(preflight.markdown);
-      console.log(`\nWrote ${written.markdownPath} and ${written.metadataPath}`);
+      console.log(
+        noWrite
+          ? "\nCheck-only mode: no files written"
+          : `\nWrote ${written.markdownPath} and ${written.metadataPath}`
+      );
     }
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

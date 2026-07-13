@@ -1,9 +1,11 @@
-# ADR-0003: 28-law enforcement via Claude Code hooks (mechanical quality gates)
+# ADR-0003: Historical 28-law enforcement via external-agent hooks
 
-- **Status:** Accepted (retroactive — framework built across 2025-Q4 / 2026-Q1)
+- **Status:** Superseded on 2026-07-13 by the tracked Codex control plane in `.codex/hooks.json`, `AGENTS.md`, and `docs/ai/PERSISTENT_AGENT_ORCHESTRA.md`
 - **Date:** 2026-04-18 (retroactively recorded)
 - **Deciders:** Team Lead
 - **Tags:** process, quality-gates, tooling, meta
+
+This file preserves the original decision context only. Its hook paths, counts, token names, and verification claims are not current operating instructions; use `npm run enforcement:check` for the active structural control-plane status.
 
 ## Context
 

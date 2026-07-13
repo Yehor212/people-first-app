@@ -183,6 +183,35 @@ describe("importJournalBackup", () => {
     expect(result.errors).toContain("Invalid backup format");
   });
 
+  it("rejects unsupported backup versions before writing", async () => {
+    const result = await importJournalBackup(makeFile(JSON.stringify(makeBackup({ version: 3 }))));
+
+    expect(result.errors).toContain("Unsupported backup version: 3");
+    expect(addedEntries).toHaveLength(0);
+  });
+
+  it("rejects entries that exceed journal media limits", async () => {
+    const result = await importJournalBackup(makeFile(JSON.stringify(makeBackup({
+      entries: [makeEntry({
+        stickers: Array.from({ length: 11 }, (_, index) => `sticker-${index}`),
+        photoIds: Array.from({ length: 6 }, (_, index) => `photo-${index}`),
+        audioIds: Array.from({ length: 4 }, (_, index) => `audio-${index}`),
+      })],
+    }))));
+
+    expect(result.errors).toContain("Invalid entry: entry-1");
+    expect(addedEntries).toHaveLength(0);
+  });
+
+  it("rejects malformed habit snapshots instead of persisting crashable data", async () => {
+    const result = await importJournalBackup(makeFile(JSON.stringify(makeBackup({
+      entries: [makeEntry({ habitSnapshot: [{ habitId: "habit-1", completed: "yes" }] })],
+    }))));
+
+    expect(result.errors).toContain("Invalid entry: entry-1");
+    expect(addedEntries).toHaveLength(0);
+  });
+
   it("imports 2 valid entries successfully", async () => {
     const backup = makeBackup({
       entries: [makeEntry({ id: "e1" }), makeEntry({ id: "e2" })],
@@ -248,6 +277,43 @@ describe("importJournalBackup", () => {
     expect(result.imported).toBe(1);
     expect(result.photosImported).toBe(1);
     expect(addedPhotos).toHaveLength(1);
+  });
+
+  it("preserves entry style fields so imported wallpaper and text settings restore", async () => {
+    const backup = makeBackup({
+      entries: [
+        makeEntry({
+          id: "styled-entry",
+          theme: "ocean",
+          font: "outfit",
+          inkColor: "#34d399",
+          paperTexture: "linen",
+          bgPattern: "aurora",
+          paperColor: "milky",
+          bgIntensity: "dim",
+          particleSpeed: "drift",
+          fontSize: "large",
+        }),
+      ],
+    });
+    const file = makeFile(JSON.stringify(backup));
+
+    const result = await importJournalBackup(file);
+
+    expect(result.imported).toBe(1);
+    expect(addedEntries[0]).toEqual(
+      expect.objectContaining({
+        theme: "ocean",
+        font: "outfit",
+        inkColor: "#34d399",
+        paperTexture: "linen",
+        bgPattern: "aurora",
+        paperColor: "milky",
+        bgIntensity: "dim",
+        particleSpeed: "drift",
+        fontSize: "large",
+      })
+    );
   });
 
   it("skips photos and audio that are not linked to a valid or existing entry", async () => {

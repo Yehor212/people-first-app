@@ -1,6 +1,6 @@
 # No AI Templates Agent Policy
 
-Purpose: forbid generic AI-template work across ZenFlow agent workflows. This is an operator protocol, not application runtime code. It applies to Codex, Claude Code, Ruflow+, local subagents, connector-backed agents, and any future agent that follows this repository guidance.
+Purpose: forbid generic AI-template work across ZenFlow agent workflows. This is an operator protocol, not application runtime code. It applies to Codex project roles, built-in workers, local subagents, connector-backed agents, and any future agent that follows this repository guidance.
 
 ## Source Evidence
 

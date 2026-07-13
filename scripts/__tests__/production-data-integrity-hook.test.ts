@@ -123,6 +123,33 @@ describe("production data integrity Codex hook", () => {
     expect(JSON.stringify(result.json)).toContain("deny");
   });
 
+  it.each([
+    ["redirect without whitespace", "echo weakened>docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md"],
+    ["colon truncation redirect", ":>docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md"],
+    [
+      "inline Node filesystem write",
+      `node -e "require('fs').writeFileSync('docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md','x')"`,
+    ],
+    [
+      "inline Python filesystem write",
+      `python3 -c "open('docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md','w').write('x')"`,
+    ],
+    [
+      "find exec mutation",
+      "find . -exec rm docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md \\;",
+    ],
+    ["target-directory copy", "cp -t docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md source.txt"],
+  ])("denies protected shell mutation through %s", (_label, command) => {
+    const result = invoke({
+      hook_event_name: "PreToolUse",
+      tool_name: "Bash",
+      tool_input: { command },
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.stringify(result.json)).toContain("deny");
+  });
+
   it("allows a neutral edit and returns JSON without diagnostics in stdout", () => {
     const result = invoke({
       hook_event_name: "PreToolUse",

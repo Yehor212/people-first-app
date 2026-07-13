@@ -1,10 +1,12 @@
 name: Drift Checks
 
-# PR-only gate enforcing regression guards introduced in the 2026-04-18 tech-debt
-# audit. Each job is cheap (<30s). Parallel matrix for fail-fast signal.
+# PR and direct-main-push gate enforcing regression guards introduced in the
+# 2026-04-18 tech-debt audit. Parallel matrix provides focused failure signals.
 # Not a replacement for the full `ci:preflight` pipeline — complements it.
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
     paths:
@@ -27,11 +29,10 @@ on:
       - 'AGENTS.md'
       - '.github/CODEOWNERS'
       - '.github/PULL_REQUEST_TEMPLATE.md'
-      - '.claude/**'
       - '.codex/**'
+      - 'config/persistent-agent-orchestra*.json'
       - 'tools/telegram-control/**'
       - 'tools/zenflow-context/**'
-      - 'tools/ruflow-plus/**'
       - 'supabase/migrations/**'
       - 'package.json'
       - 'package-lock.json'
@@ -58,6 +59,11 @@ on:
       - 'scripts/__tests__/no-ai-templates-policy.test.ts'
       - 'scripts/__tests__/best-practices-gate-contract.test.ts'
       - 'scripts/check-subagent-teamlead-governance.mjs'
+      - 'scripts/sync-persistent-agent-orchestra.mjs'
+      - 'scripts/run-persistent-agent-orchestra-evals.mjs'
+      - 'scripts/validate-persistent-agent-orchestra-eval-report.mjs'
+      - 'scripts/persistent-agent-orchestra/**'
+      - 'scripts/codex-governance/**'
       - 'scripts/doc-counts.cjs'
       - 'scripts/check-types-freshness.cjs'
       - 'scripts/check-supabase-migration-prefixes.cjs'
@@ -101,10 +107,16 @@ jobs:
             fix: keep scripts/rag/corpus-manifest.json curated and rerun npm run rag:preflight for task-specific context
           - name: subagent-governance
             cmd: npm run check:subagent-governance
-            fix: remove stale static test counts, fake mandatory Ruflo/tool claims, or untrusted subagent-output gaps
-          - name: ruflow-plus
-            cmd: npm run ai:ruflow-plus:check
-            fix: run npm run ai:ruflow-plus:sync and commit regenerated tracked templates
+            fix: restore the exact-ten evidence, trust, routing, and independent-review contracts
+          - name: agent-orchestra
+            cmd: npm run check:agent-orchestra
+            fix: run npm run ai:agent-orchestra:sync and commit the exact generated Codex profiles and reference
+          - name: agent-orchestra-contracts
+            cmd: npm run test:agent-orchestra
+            fix: repair the exact-ten registry, evidence, RAG parity, hook-target, or integration regression; do not weaken the contract
+          - name: agent-orchestra-eval-catalog
+            cmd: npm run check:agent-orchestra:eval
+            fix: repair scenario coverage or the honest UNVERIFIED baseline; do not fabricate semantic or human PASS
           - name: enforcement-health
             cmd: npm run enforcement:check
             fix: register missing blocking hooks or document intentional advisory-only enforcement

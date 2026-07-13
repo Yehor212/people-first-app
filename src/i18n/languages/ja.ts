@@ -520,17 +520,13 @@ export const ja: Translations = {
   invalidNameFormat: "1〜100文字で名前を入力してください。",
   notifications: "通知",
   notificationsComingSoon: "通知機能は今後のアップデートで利用可能になります。",
-  settingsOverviewDescription:
-    "ZenFlowの見た目、音、リマインダー、データの扱いを選べます。",
-  settingsOverviewDescriptionWithoutReminders:
-    "ZenFlowの見た目、音、データの扱いを選べます。",
+  settingsOverviewDescription: "ZenFlowの見た目、音、リマインダー、データの扱いを選べます。",
+  settingsOverviewDescriptionWithoutReminders: "ZenFlowの見た目、音、データの扱いを選べます。",
   settingsReminderDaysMissing: "リマインダーを受け取る曜日を選択",
   settingsSoundRestoreTitle: "一部の背景音がオフになっています",
-  settingsSoundRestoreDescription:
-    "以前オフにした音は、元に戻すまでオフのままです。",
+  settingsSoundRestoreDescription: "以前オフにした音は、元に戻すまでオフのままです。",
   settingsSoundRestoreAction: "背景音を元に戻す",
-  settingsSoundMasterDisabledHint:
-    "これらの設定を使うには、アプリのサウンドをオンにしてください。",
+  settingsSoundMasterDisabledHint: "これらの設定を使うには、アプリのサウンドをオンにしてください。",
   settingsAccountBackupTitle: "アカウントとバックアップ",
   settingsAccountBackupDescription:
     "アカウントに接続されています。ZenFlowが変更をオンラインに保存できない場合、その変更はこの端末に残ります。",
@@ -544,13 +540,10 @@ export const ja: Translations = {
   settingsAccountCheckFailed: "アカウントを確認できませんでした",
   settingsAccountCheckFailedDescription:
     "データはこの端末に保存されています。接続を確認して、もう一度お試しください。",
-  settingsAccountBackupUnavailable:
-    "このバージョンではバックアップを利用できません",
-  settingsAccountBackupUnavailableDescription:
-    "データはこの端末に保存されます。",
+  settingsAccountBackupUnavailable: "このバージョンではバックアップを利用できません",
+  settingsAccountBackupUnavailableDescription: "データはこの端末に保存されます。",
   settingsRemindersMobileApp: "モバイル版",
-  settingsPrivacyDataDescription:
-    "ZenFlowで使用する任意のサービスを選べます。",
+  settingsPrivacyDataDescription: "ZenFlowで使用する任意のサービスを選べます。",
   settingsDataBackupReportsDescription:
     "後でインポートできるバックアップを保存するか、レポートを作成します。",
   settingsBackupRestoreTitle: "バックアップと復元",
@@ -564,8 +557,7 @@ export const ja: Translations = {
   settingsAboutProductSummary:
     "ZenFlowでは、気分の記録、習慣、集中セッション、日記を一か所で管理できます。",
   settingsAboutSupportLegalTitle: "ヘルプと法的情報",
-  settingsAboutSupportLegalDescription:
-    "プライバシー、利用規約、ライセンス、サポート。",
+  settingsAboutSupportLegalDescription: "プライバシー、利用規約、ライセンス、サポート。",
   settingsRemindersOff: "リマインダーはオフ",
   resetDataConfirmWord: "RESET",
   resetDataTypeConfirm: "確認するには {word} と入力してください",
@@ -656,16 +648,13 @@ export const ja: Translations = {
   themeDark: "ダーク",
   themeSystem: "システム",
   themeModeTitle: "表示モード",
-  themeModeDescription:
-    "端末の設定に合わせるか、ライト、ダーク、ブラックから選べます。",
+  themeModeDescription: "端末の設定に合わせるか、ライト、ダーク、ブラックから選べます。",
   themeBlack: "ブラック",
   themeChangeSaved: "変更しました",
-  settingsPreferenceSaveError:
-    "変更を保存できませんでした。以前の設定が引き続き使われます。",
+  settingsPreferenceSaveError: "変更を保存できませんでした。以前の設定が引き続き使われます。",
   settingsReduceMotion: "視覚効果を減らす",
   settingsReduceMotionDescription: "画面の動きや装飾的な効果を少なくします。",
-  settingsReduceMotionSystemDescription:
-    "端末側で視覚効果を減らす設定が有効になっています。",
+  settingsReduceMotionSystemDescription: "端末側で視覚効果を減らす設定が有効になっています。",
   themeStyleTitle: "気分のパレット",
   themeAdvancedAppearanceTitle: "詳細な外観設定",
   themeStyleDescription: "表示モード、アクセントカラー、文字サイズを選べます。",
@@ -1304,8 +1293,7 @@ export const ja: Translations = {
   unmuteSound: "ミュート解除",
   settingsSoundTitle: "サウンド",
   settingsVibration: "振動",
-  settingsVibrationDescription:
-    "対応している端末では、タップや確認時に短く振動します。",
+  settingsVibrationDescription: "対応している端末では、タップや確認時に短く振動します。",
   settingsSoundDescription: "ZenFlow内のサウンドと音量を設定します。",
   settingsSoundSummaryOn: "サウンドオン",
   settingsSoundSummaryOff: "ミュート",
@@ -1340,16 +1328,14 @@ export const ja: Translations = {
   settingsSoundBackgroundDescription:
     "ZenFlowの画面で穏やかな背景音を使えます。再生ボタンを押したときだけ始まります。",
   settingsSoundActivityTitle: "操作音",
-  settingsSoundActivityDescription:
-    "活動の完了、タイマー、一部の節目を静かな音で知らせます。",
+  settingsSoundActivityDescription: "活動の完了、タイマー、一部の節目を静かな音で知らせます。",
   settingsSoundCompletionCues: "完了音",
   settingsSoundCompletionCuesDesc: "大切な操作の後に、静かな確認音を鳴らします。",
   settingsSoundReminderCues: "ZenFlow内のリマインダー音",
   settingsSoundReminderCuesDesc:
     "ZenFlow内で鳴る短いリマインダー音を設定します。端末の通知音は「通知」で設定します。",
   settingsSoundMilestoneCues: "節目の音",
-  settingsSoundMilestoneCuesDesc:
-    "操作のたびではなく、節目にだけ音を鳴らします。",
+  settingsSoundMilestoneCuesDesc: "操作のたびではなく、節目にだけ音を鳴らします。",
   settingsSoundTextureTitle: "環境音の種類",
   settingsSoundTextureDescription:
     "集中セッション以外で使う「そよ風」「水音」「雨音」を、個別にオン・オフできます。",
@@ -3329,7 +3315,7 @@ export const ja: Translations = {
   diaryFontSans: "サンセリフ",
   diaryFontSerif: "セリフ",
   diaryFontHandwriting: "手書き",
-  diaryFontScript: "スクリプト",
+  diaryFontScript: "斜体",
   diarySnapshot: "写真",
   diaryRecord: "録音",
   diaryFocusRay: "集中",
@@ -3356,6 +3342,55 @@ export const ja: Translations = {
   diaryPhotoSizeFull: "フル幅",
   diaryPhotoReturn: "写真をギャラリーに戻す",
   diaryPhotoResize: "写真のサイズを変更",
+  diaryBackgroundDim: "控えめ",
+  diaryBackgroundFull: "フル",
+  diaryBackgroundOff: "オフ",
+  diaryFormatHintLabel: "テキストツール",
+  diaryMotion: "動き",
+  diaryParticleSpeed: "速度",
+  diaryParticleSpeedDrift: "漂う",
+  diaryParticleSpeedOff: "オフ",
+  diaryParticleSpeedSlow: "ゆっくり",
+  diaryPhotoGestureHint: "ドラッグ、タップでサイズ、長押しで戻す",
+  diaryPhotoGestureInstructions:
+    "ドラッグして移動します。タップでサイズを変更します。ピンチでもサイズを変更できます。Homeキーで中央に戻します。矢印キーで移動し、プラスまたはマイナスでサイズを変更し、Deleteキーで写真をギャラリーに戻します。タッチ操作では長押しすると写真をギャラリーに戻せます。",
+  diaryPhotoMove: "写真を移動",
+  diaryScene: "シーン",
+  diaryTexture: "質感",
+  diaryTextureClean: "クリーン",
+  diaryTextureCraft: "クラフト",
+  diaryTextureDots: "ドット",
+  diaryTextureGrid: "グリッド",
+  diaryTextureLinen: "リネン",
+  diaryTextureLines: "罫線",
+  journalDraftSaveFailed: "下書きを保存できませんでした",
+  journalFormatToolbar: "書式設定ツール",
+  journalInkEmerald: "エメラルドインク",
+  journalInkGold: "ゴールドインク",
+  journalInkRose: "ローズインク",
+  journalInkWhite: "標準インク",
+  journalPanicLockDescription: "ロックを解除すると、非公開の日記に戻れます。",
+  journalPanicLockTitle: "日記はロックされています",
+  journalPanicLockUnlockRequired: "日記に戻るには「ロック解除」を使ってください。",
+  journalPaperDark: "ダーク",
+  journalPaperMilky: "ペーパー",
+  journalPaperSoftWhite: "ソフトホワイト",
+  journalPhotoNext: "次の写真",
+  journalPhotoPrevious: "前の写真",
+  journalRecordingDiscard: "破棄",
+  journalRecordingStopKeep: "停止して保存",
+  journalRemoveAudio: "音声 {duration} を削除",
+  journalRemoveTag: "タグ「{tag}」を削除",
+  journalStyleTools: "スタイルツール",
+  journalToolbarInk: "インク",
+  journalToolbarPaper: "用紙",
+  journalVoicePrivacyCancel: "今はしない",
+  journalVoicePrivacyContinue: "音声を開始",
+  journalVoicePrivacyDescription:
+    "ブラウザの音声認識は ZenFlow の外で処理される場合があります。この記録で問題ないと感じるときだけ開始してください。",
+  journalVoicePrivacyTitle: "音声プライバシー確認",
+  openPhoto: "写真を開く",
+  previous: "前へ",
   // State of Mind
   somLogFeeling: "気分を記録する",
   somHowAreYouFeeling: "今の気分は？",

@@ -293,32 +293,29 @@ function measureMetrics(): Record<string, number> {
     consoleLogs: countConsoleLogs(),
     todoFixme: countTodoFixme(),
     bundleSizeKB: measureBundleSizeKB(),
-    // Enforcement metrics (Pillar 1)
+    // Active Codex enforcement inventory (validated semantically by enforcement:check)
     "enforcement.blockingHooks": countBlockingHooks(),
     "enforcement.totalHooks": countHookFiles(),
-    "enforcement.uncoveredAntiPatterns": 0, // manual — verified in audit
     // Dependency staleness (Pillar 5)
     npmOutdated: countNpmOutdated(),
   };
 }
 
-/** Count BLOCKING hooks (exit 2 fail-closed).
- *  Returns -1 if .claude/hooks/ doesn't exist (remote CI: hooks are gitignored). */
+/** Count active Codex hooks with an explicit process.exit(2) blocking path. */
 function countBlockingHooks(): number {
-  if (!fs.existsSync(path.join(ROOT, ".claude/hooks"))) return -1;
+  if (!fs.existsSync(path.join(ROOT, ".codex/hooks"))) return 0;
   return fs
-    .readdirSync(path.join(ROOT, ".claude/hooks"))
+    .readdirSync(path.join(ROOT, ".codex/hooks"))
     .filter((f) => f.endsWith(".cjs") && !f.startsWith("test-"))
-    .filter((f) => readText(path.join(ROOT, ".claude/hooks", f)).includes("process.exit(2)"))
+    .filter((f) => readText(path.join(ROOT, ".codex/hooks", f)).includes("process.exit(2)"))
     .length;
 }
 
-/** Count total hook .cjs files in .claude/hooks/.
- *  Returns -1 if .claude/hooks/ doesn't exist (remote CI: hooks are gitignored). */
+/** Count tracked active Codex hook files. */
 function countHookFiles(): number {
-  if (!fs.existsSync(path.join(ROOT, ".claude/hooks"))) return -1;
+  if (!fs.existsSync(path.join(ROOT, ".codex/hooks"))) return 0;
   return fs
-    .readdirSync(path.join(ROOT, ".claude/hooks"))
+    .readdirSync(path.join(ROOT, ".codex/hooks"))
     .filter((f) => f.endsWith(".cjs") && !f.startsWith("test-")).length;
 }
 
@@ -639,20 +636,22 @@ function computeQualityScore(
     detail: "jscpd",
   });
 
-  // Enforcement Health: 5% — absolute blocking hook count (Pillar 2 expansion)
-  // Rationale: ratio-based scoring penalizes advisory hook growth (6/32=9.4 but 6/30=10).
-  // 6 blocking hooks covering 6 event types = excellent enforcement regardless of advisory count.
-  // Formula: min(10, blockingHooks * 1.7) — 6 blocking = 10.0, 5 = 8.5, 4 = 6.8
-  // When hooks dir absent (remote CI: -1), assume perfect score to avoid false regression
+  // Enforcement Health: registration coverage is checked by enforcement:check.
+  // This supporting score rewards a complete four-file active Codex guard set;
+  // it does not claim runtime loading or semantic effectiveness.
   const blockingHooks = actual["enforcement.blockingHooks"];
   const totalHooks = actual["enforcement.totalHooks"];
-  const hooksAbsent = blockingHooks === -1 || totalHooks === -1;
-  const enforcementScore = hooksAbsent ? 10 : Math.min(10, (blockingHooks || 0) * 1.7);
+  const enforcementScore =
+    totalHooks >= 4 && blockingHooks === totalHooks
+      ? 10
+      : totalHooks > 0
+        ? Math.min(9, (blockingHooks / totalHooks) * 10)
+        : 0;
   dimensions.push({
     name: "Enforcement",
     weight: 0.03,
     score: enforcementScore,
-    detail: hooksAbsent ? "skipped (hooks gitignored)" : `${blockingHooks}/${totalHooks} blocking`,
+    detail: `${blockingHooks}/${totalHooks} active Codex hooks with blocking paths`,
   });
 
   const total = dimensions.reduce((sum, d) => sum + d.score * d.weight, 0);
@@ -794,12 +793,6 @@ function checkRatchet(): void {
       continue;
     }
 
-    // Skip enforcement metrics when .claude/hooks/ doesn't exist (remote CI — hooks gitignored)
-    if (value === -1 && metric.startsWith("enforcement.")) {
-      console.log(`  ~  ${metric.padEnd(22)} skipped (hooks dir not present — gitignored)`);
-      continue;
-    }
-
     // Tolerance: optional per-metric percentage (e.g. 0.005 = 0.5%) from quality-ledger.json
     // Only applied to metrics with explicit tolerance field (BundleMon maxPercentIncrease pattern)
     // Count metrics (tests, errors) keep zero tolerance by default
@@ -904,7 +897,7 @@ function checkRatchet(): void {
   }
 
   // Hook file staleness (Pillar 5 — enforcement staleness detection)
-  const hooksDir = path.join(ROOT, ".claude/hooks");
+  const hooksDir = path.join(ROOT, ".codex/hooks");
   try {
     const hookFiles = fs
       .readdirSync(hooksDir)

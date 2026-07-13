@@ -118,9 +118,8 @@ export default defineConfig(({ mode }) => {
       port: 8080,
       watch: {
         ignored: [
-          "**/.claude/**",
+          "**/.codex/auto-context/**",
           "**/.codex-artifacts/**",
-          "**/.swarm/**",
           "**/android/app/build/**",
           "**/coverage/**",
           "**/dist/**",

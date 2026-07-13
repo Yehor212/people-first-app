@@ -26,8 +26,6 @@ const WORKFLOW_FILES = [
   ".github/workflows/visual-regression.yml",
   ".github/workflows/desktop-release.yml",
   ".github/workflows/drift-checks.yml",
-  ".github/workflows/claude-agent.yml",
-  ".github/workflows/claude-review.yml",
 ] as const;
 
 function findMutableActionRefs(source: string): string[] {
@@ -286,6 +284,9 @@ describe("GitHub Pages deploy workflow contract", () => {
 
     expect(pkg.scripts["ci:preflight"]).toContain("npm run build");
     expect(pkg.scripts["ci:preflight"]).not.toContain("vite build --configLoader runner");
+    expect(pkg.scripts["ci:preflight"]).toContain("npm run test:agent-orchestra");
+    expect(pkg.scripts["ci:preflight"]).toContain("npm run check:agent-orchestra");
+    expect(pkg.scripts["ci:preflight"]).toContain("npm run check:agent-orchestra:eval");
     expect(pkg.scripts["prune:release-artifacts"]).toBe(
       "node scripts/prune-duplicate-artifacts.cjs dist"
     );
@@ -296,6 +297,28 @@ describe("GitHub Pages deploy workflow contract", () => {
       "node scripts/check-release-artifact-integrity.cjs"
     );
     expect(pkg.scripts["stage:release-artifacts"]).toBe("node scripts/stage-release-artifact.cjs");
+  });
+
+  it("runs exact-ten governance checks on pull requests and direct pushes to main", () => {
+    const workflow = readFileSync(".github/workflows/drift-checks.yml", "utf8");
+    const pkg = JSON.parse(readFileSync("package.json", "utf8")) as {
+      scripts: Record<string, string>;
+    };
+
+    expect(workflow).toMatch(/on:\s*\n\s+push:\s*\n\s+branches:\s*\[main\]/);
+    expect(workflow).toContain("name: agent-orchestra-contracts");
+    expect(workflow).toContain("cmd: npm run test:agent-orchestra");
+    expect(workflow).toContain("cmd: npm run check:agent-orchestra");
+    expect(workflow).toContain("cmd: npm run check:agent-orchestra:eval");
+    expect(pkg.scripts["test:agent-orchestra"]).toContain(
+      "scripts/__tests__/persistent-agent-orchestra-evidence.test.mjs",
+    );
+    expect(pkg.scripts["test:agent-orchestra"]).toContain(
+      "scripts/__tests__/codex-change-governance-gate.test.mjs",
+    );
+    expect(pkg.scripts["test:release-contracts"]).toContain(
+      "scripts/__tests__/skill-routing-hook-payload.test.ts",
+    );
   });
 
   it("wires release workflow contract tests into blocking deploy CI", () => {
@@ -637,7 +660,6 @@ describe("GitHub Pages deploy workflow contract", () => {
       ".github/workflows/telegram-control.yml",
       ".github/workflows/visual-regression.yml",
       ".github/workflows/desktop-release.yml",
-      ".github/workflows/claude-review.yml",
     ];
 
     for (const file of files) {
@@ -650,18 +672,6 @@ describe("GitHub Pages deploy workflow contract", () => {
         );
       }
     }
-  });
-
-  it("gates Claude issue-comment reviews to trusted PR collaborators", () => {
-    const workflow = readFileSync(".github/workflows/claude-review.yml", "utf8");
-    const topPermissions = sliceBetween(workflow, "permissions:", "jobs:");
-    const jobCondition = sliceBetween(workflow, "if: >", "runs-on:");
-
-    expect(topPermissions).not.toContain("id-token: write");
-    expect(jobCondition).toContain("github.event.comment.author_association");
-    expect(jobCondition).toContain("MEMBER");
-    expect(jobCondition).toContain("OWNER");
-    expect(jobCondition).toContain("COLLABORATOR");
   });
 
   it("keeps visual regression workflow read-only", () => {

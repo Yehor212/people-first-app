@@ -15,6 +15,10 @@ const mocks = vi.hoisted(() => ({
   habitTableGet: vi.fn(),
   habitTablePut: vi.fn(),
   habitTableDelete: vi.fn(),
+  journalTableGet: vi.fn(),
+  journalTablePut: vi.fn(),
+  journalTableDelete: vi.fn(),
+  runJournalSecurityWriteLock: vi.fn(),
   broadcastChange: vi.fn(),
   enqueue: vi.fn(),
   storageRemove: vi.fn(),
@@ -52,6 +56,10 @@ vi.mock("@/lib/offlineQueue", () => ({
 
 vi.mock("@/lib/safeJson", () => ({
   storageRemove: mocks.storageRemove,
+}));
+
+vi.mock("@/features/journal/journalSecurityWriteLock", () => ({
+  runWithJournalSecurityWriteLock: mocks.runJournalSecurityWriteLock,
 }));
 
 vi.mock("@/storage/db", () => ({
@@ -138,6 +146,12 @@ describe("eventSync auth guards", () => {
     mocks.habitTableGet.mockResolvedValue(undefined);
     mocks.habitTablePut.mockResolvedValue(undefined);
     mocks.habitTableDelete.mockResolvedValue(undefined);
+    mocks.journalTableGet.mockResolvedValue(undefined);
+    mocks.journalTablePut.mockResolvedValue(undefined);
+    mocks.journalTableDelete.mockResolvedValue(undefined);
+    mocks.runJournalSecurityWriteLock.mockImplementation(
+      async (operation: () => Promise<unknown>) => operation()
+    );
     mocks.enqueue.mockResolvedValue(undefined);
     mocks.table.mockImplementation((tableName: string) => {
       if (tableName === "habits") {
@@ -152,6 +166,13 @@ describe("eventSync auth guards", () => {
           get: mocks.settingsGet,
           put: mocks.settingsPut,
           delete: mocks.settingsDelete,
+        };
+      }
+      if (tableName === "journalEntries") {
+        return {
+          get: mocks.journalTableGet,
+          put: mocks.journalTablePut,
+          delete: mocks.journalTableDelete,
         };
       }
       throw new Error(`Unexpected Dexie table: ${tableName}`);
@@ -523,6 +544,92 @@ describe("eventSync auth guards", () => {
       key: "journal_vault_revision_v1",
       value: 202,
     });
+  });
+
+  it("applies journal deltas inside the security lock and normalizes visual state", async () => {
+    const payload = {
+      id: "journal-visual-1",
+      date: "2026-07-13",
+      title: "A day",
+      content: "plain content",
+      stickers: [],
+      photoIds: ["photo-1"],
+      audioIds: [],
+      tags: [],
+      theme: "not-a-theme",
+      font: "outfit",
+      inkColor: "#12345",
+      photoLayout: {
+        "photo-1": { x: 140, y: -20, width: 900 },
+        orphan: { x: 20, y: 20, width: 120 },
+      },
+      createdAt: 10,
+      updatedAt: 20,
+    };
+
+    const applied = await applyDelta(
+      [{
+        id: "event-journal-visual-1",
+        seq: 19,
+        entity_type: "journal",
+        entity_id: payload.id,
+        op: "upsert",
+        payload,
+        device_id: "remote-device",
+        created_at: "2026-07-13T10:00:00.000Z",
+      }],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.runJournalSecurityWriteLock).toHaveBeenCalledTimes(1);
+    expect(mocks.journalTablePut).toHaveBeenCalledWith({
+      ...payload,
+      font: "outfit",
+      theme: undefined,
+      inkColor: undefined,
+      photoLayout: {
+        "photo-1": { x: 100, y: 0, width: 500 },
+      },
+    });
+  });
+
+  it("rejects a plaintext journal delta when diary protection is enabled", async () => {
+    mocks.settingsGet.mockImplementation(async (key: string) => {
+      if (key === "journal_password") return { key, value: "protected" };
+      if (key === "sync-last-seq") return { key, value: 19 };
+      if (key === "zenflow-device-id") return { key, value: "current-device" };
+      return undefined;
+    });
+
+    const applied = await applyDelta(
+      [{
+        id: "event-journal-plaintext",
+        seq: 20,
+        entity_type: "journal",
+        entity_id: "journal-plaintext",
+        op: "upsert",
+        payload: {
+          id: "journal-plaintext",
+          date: "2026-07-13",
+          title: "Private",
+          content: "must not cross the protected boundary",
+          stickers: [],
+          photoIds: [],
+          audioIds: [],
+          tags: [],
+          createdAt: 10,
+          updatedAt: 20,
+        },
+        device_id: "remote-device",
+        created_at: "2026-07-13T10:00:00.000Z",
+      }],
+      "current-device"
+    );
+
+    expect(applied).toBe(0);
+    expect(mocks.journalTablePut).not.toHaveBeenCalled();
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 20 });
   });
 
   it("rejects every remote diary vault while owner-bound removal is pending", async () => {

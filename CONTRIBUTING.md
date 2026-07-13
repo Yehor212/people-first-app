@@ -231,7 +231,7 @@ src/
 - **Input validation**: Zod schemas for all external input
 - **HTML sanitization**: DOMPurify for any user-generated content
 - **CSP**: Maintained in `index.html` — no `unsafe-eval`, no `unsafe-inline` for scripts
-- **Secrets**: Never commit `.env`, `*.keystore`, `google-services.json` (enforced by `.gitignore` + Claude Code hooks)
+- **Secrets**: Never commit `.env`, `*.keystore`, or `google-services.json`; keep them ignored and run the repository security gates before handoff
 - **RLS**: All Supabase tables must have Row Level Security enabled (currently 25 tables)
 - **Auth**: PKCE OAuth + Google Native via Supabase
 - **Error monitoring**: Sentry with PII filtering (`src/lib/sentry.ts`)

@@ -412,8 +412,8 @@ jobs:
               git add "$path"
             fi
           done
-          git reset -- artifacts output coverage dist node_modules .mcp.json .mcp.local.json .claude/settings.local.json || true
-          if git diff --cached --name-only | grep -E '(^|/)(\.env|\.env\..*|\.mcp\.json|\.mcp\.local\.json|google-services\.json|GoogleService-Info\.plist|.*\.keystore|.*\.jks|\.claude/settings\.local\.json)$' >/dev/null; then
+          git reset -- artifacts output coverage dist node_modules .mcp.json .mcp.local.json || true
+          if git diff --cached --name-only | grep -E '(^|/)(\.env|\.env\..*|\.mcp\.json|\.mcp\.local\.json|google-services\.json|GoogleService-Info\.plist|.*\.keystore|.*\.jks)$' >/dev/null; then
             echo "::error title=Sensitive staged path::A forbidden sensitive/local file was staged."
             git diff --cached --name-only
             exit 1

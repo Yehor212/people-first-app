@@ -136,7 +136,6 @@ describe("Journal accessibility, copy, and wallpaper static contracts", () => {
 
   it("keeps every V2 page-mode diary list and settings sheet on the shared wallpaper material", () => {
     const listCalls = source.module.match(/<LazyJournalEntryList[\s\S]*?\/>/g) ?? [];
-    const mobileSelectedDayList = listCalls.find((call) => call.includes("selectedDateOnly"));
     const hubListBlock = /<JournalEntryList[\s\S]*?showFab=\{false\}/.exec(source.hubShell)?.[0] ?? "";
     const mobileSettingsPanelBlock =
       /data-testid="journal-mobile-settings-panel"[\s\S]*?journal-mobile-settings-close/.exec(
@@ -147,7 +146,9 @@ describe("Journal accessibility, copy, and wallpaper static contracts", () => {
     for (const listCall of listCalls) {
       expect(listCall).toContain("useSharedDiaryWallpaper={showJournalSidebarAtmosphere}");
     }
-    expect(mobileSelectedDayList).toBeTruthy();
+    for (const listCall of listCalls) {
+      expect(listCall).toContain("selectedDateOnly");
+    }
     expect(source.hubShell).toContain("useSharedDiaryWallpaper?: boolean;");
     expect(source.hubShell).toContain("useSharedDiaryWallpaper = false");
     expect(hubListBlock).toContain("useSharedDiaryWallpaper={useSharedDiaryWallpaper}");
@@ -234,6 +235,27 @@ describe("Journal accessibility, copy, and wallpaper static contracts", () => {
       expect(locale.source, "quoteJournal1 missing from " + locale.language).toContain("quoteJournal1:");
       expect(locale.source, "quoteJournal30 missing from " + locale.language).toContain("quoteJournal30:");
     }
+  });
+
+  it("does not announce hidden shared-wallpaper background and motion controls", () => {
+    expect(source.editor).toContain("const selectedStyleStatusItems = [");
+    expect(source.editor).toContain("if (!useSharedDiaryWallpaper) {");
+    expect(source.editor).toContain(
+      "selectedStyleStatusItems.push(backgroundAriaLabel, particleSpeedAriaLabel);"
+    );
+    expect(source.editor).toContain("selectedStyleStatusItems.join");
+  });
+
+  it("lets shared-wallpaper paper color visibly affect the editor paper", () => {
+    expect(source.editor).toContain("color-mix(in srgb, ${paperColors.bg}");
+    expect(source.editor).toContain("color-mix(in srgb, ${paperColors.border}");
+    expect(source.editor).not.toContain('backgroundColor: "hsl(var(--card) / 0.54)"');
+  });
+
+  it("keeps editor helper and meta text readable on paper surfaces", () => {
+    expect(source.editor).not.toContain("empty:before:opacity-40");
+    expect(source.editor).not.toContain('className="text-[10px] opacity-60"');
+    expect(source.editor).not.toContain('className="text-[10px] opacity-40"');
   });
 
 });

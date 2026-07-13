@@ -3,24 +3,45 @@ import { ArrowLeft, Pencil, Trash2, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationStrings } from "@/i18n/types";
 import { getLocale } from "@/lib/timeUtils";
-import type { JournalEntry, JournalAudio } from "./types";
-import { countWords, DIARY_THEMES, DIARY_FONTS } from "./types";
+import type { JournalEntry, JournalAudio, PaperColor } from "./types";
+import type { MoodType } from "@/types";
+import { countWords, DIARY_THEMES, DIARY_FONTS, FONT_SIZES, PAPER_COLORS } from "./types";
 import { getBgPatternStyle, getPaperTextureStyle } from "./diaryBgPatterns";
 import { JournalPhotoGallery } from "./JournalPhotoGallery";
+import { ReadOnlyFloatingMediaLayer } from "./FloatingMediaLayer";
 import { JournalAudioPlayer } from "./JournalAudioPlayer";
 import { StickerRenderer } from "./StickerRenderer";
 import { logger } from "@/lib/logger";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
 import { getLocalizedEmotionLabel } from "@/components/state-of-mind/emotionI18n";
-import { getJournalDisplayText } from "./journalDisplay";
+import { getJournalDisplayTag, getJournalDisplayText } from "./journalDisplay";
 import { getDiaryAura } from "./journalAura";
 import { formatJournalRelativeTime, formatJournalWordCount } from "./journalWordCount";
 
-function getLocalizedMoodLabel(mood: string | null | undefined, ts: Record<string, string>): string {
+const LIGHT_PAPER_READABLE_INK_COLORS: Record<string, string> = {
+  "#34d399": "#047857",
+  "#fbbf24": "#92400e",
+  "#fb7185": "#be123c",
+};
+
+function resolveViewerInkColor(inkColor: string | undefined, paperColor: PaperColor): string {
+  if (!inkColor || inkColor === "#ffffff") return PAPER_COLORS[paperColor].text;
+  if (paperColor === "dark") return inkColor;
+  return LIGHT_PAPER_READABLE_INK_COLORS[inkColor] || inkColor;
+}
+
+function getLocalizedMoodLabel(mood: MoodType | null | undefined, ts: TranslationStrings): string {
   if (!mood) return "";
-  const key = `mood${mood.charAt(0).toUpperCase()}${mood.slice(1)}`;
-  return ts[key] || ts[mood] || getLocalizedEmotionLabel(mood, ts);
+  const moodLabels: Record<MoodType, string> = {
+    great: ts.moodGreat,
+    good: ts.moodGood,
+    okay: ts.moodOkay,
+    bad: ts.moodBad,
+    terrible: ts.moodTerrible,
+  };
+  return moodLabels[mood] || getLocalizedEmotionLabel(mood, ts);
 }
 
 /** Lightweight markdown renderer: **bold**, *italic*, ## headings, - lists, > quotes, --- hr */
@@ -130,7 +151,7 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
   onBack,
 }: JournalEntryViewerProps) {
   const { t, language } = useLanguage();
-  const ts = t as unknown as Record<string, string>;
+  const ts = t;
 
   // Load audio recordings
   const [audioRecordings, setAudioRecordings] = useState<JournalAudio[]>([]);
@@ -178,7 +199,9 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
     [entry.content, ts]
   );
   const displayTitle = entry.title ? getLocalizedEmotionLabel(entry.title, ts) : "";
-  const displayTags = entry.tags.map((tag) => getLocalizedEmotionLabel(tag, ts));
+  const displayTags = entry.tags
+    .map((tag) => getLocalizedEmotionLabel(getJournalDisplayTag(tag), ts))
+    .filter(Boolean);
   const displayMood = getLocalizedMoodLabel(entry.mood, ts);
   const moodAura = getDiaryAura(entry.mood);
   const moodHeroStyle = moodAura
@@ -212,6 +235,14 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
     : undefined;
 
   const wordCount = useMemo(() => countWords(displayContent), [displayContent]);
+  const floatingPhotoIds = useMemo(
+    () => entry.photoIds.filter((photoId) => Boolean(entry.photoLayout?.[photoId])),
+    [entry.photoIds, entry.photoLayout]
+  );
+  const galleryPhotoIds = useMemo(
+    () => entry.photoIds.filter((photoId) => !entry.photoLayout?.[photoId]),
+    [entry.photoIds, entry.photoLayout]
+  );
 
   // Diary theme/font for themed entries
   const themeStyle = useMemo(() => {
@@ -224,7 +255,13 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
     };
   }, [entry.theme]);
 
-  const fontFamily = entry.font ? DIARY_FONTS[entry.font]?.family : undefined;
+  const fontConfig = entry.font ? DIARY_FONTS[entry.font] : undefined;
+  const fontFamily = fontConfig?.family;
+  const fontStyle = fontConfig?.style;
+  const paperColor = PAPER_COLORS[entry.paperColor ?? "dark"] ? (entry.paperColor ?? "dark") : "dark";
+  const paperColors = PAPER_COLORS[paperColor];
+  const viewerInkColor = resolveViewerInkColor(entry.inkColor, paperColor);
+  const viewerFontSize = entry.fontSize ? FONT_SIZES[entry.fontSize] : undefined;
 
   const handleShare = async () => {
     const text = [entry.title, entry.content].filter(Boolean).join("\n\n");
@@ -419,10 +456,28 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
           </div>
         )}
 
-        <div className={cn("px-5 space-y-4", entry.mood ? "pt-4 pb-5" : "py-5")}>
+        <div
+          data-testid="journal-entry-viewer-paper"
+          className={cn(
+            "px-5 space-y-4",
+            entry.mood ? "pt-4 pb-5" : "py-5",
+            floatingPhotoIds.length > 0 && "relative min-h-[60dvh] overflow-hidden"
+          )}
+          style={{
+            backgroundColor: paperColors.bg,
+            borderColor: paperColors.border,
+            color: paperColors.text,
+          }}
+        >
+          {floatingPhotoIds.length > 0 && entry.photoLayout && (
+            <ReadOnlyFloatingMediaLayer photoIds={floatingPhotoIds} layout={entry.photoLayout} />
+          )}
           {/* Title */}
           {entry.title && (
-            <h1 className="text-xl font-bold text-foreground leading-snug tracking-tight">
+            <h1
+              className="text-xl font-bold leading-snug tracking-tight"
+              style={{ color: paperColors.text, fontFamily, fontStyle }}
+            >
               {displayTitle}
             </h1>
           )}
@@ -431,7 +486,8 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
           {(!entry.mood || wordCount > 0) && (
             <div
               data-testid="journal-entry-body-meta"
-              className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground/70"
+              className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium"
+              style={{ color: paperColors.muted }}
             >
               {!entry.mood && (
                 <>
@@ -458,8 +514,8 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
           )}
 
           {/* Photos */}
-          {entry.photoIds.length > 0 && (
-            <JournalPhotoGallery entryId={entry.id} photoIds={entry.photoIds} />
+          {galleryPhotoIds.length > 0 && (
+            <JournalPhotoGallery entryId={entry.id} photoIds={galleryPhotoIds} />
           )}
 
           {/* Audio recordings */}
@@ -473,17 +529,20 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
 
           {/* Content */}
           {displayContent && (
-            <div className="text-[15px] leading-7 text-foreground/90" style={{ fontFamily }}>
+            <div
+              className="leading-7"
+              style={{ fontFamily, fontStyle, color: viewerInkColor, fontSize: viewerFontSize }}
+            >
               {renderContent(displayContent)}
             </div>
           )}
 
           {/* Tags */}
-          {entry.tags.length > 0 && (
+          {displayTags.length > 0 && (
             <div className="flex gap-1.5 flex-wrap pt-2">
               {displayTags.map((tag, index) => (
                 <span
-                  key={`${entry.tags[index]}-${tag}`}
+                  key={`${entry.id}-tag-${index}-${tag}`}
                   className={cn(
                     "text-xs px-3 py-1.5 rounded-full border",
                     "bg-primary/10 text-primary/80 border-primary/10"
@@ -491,7 +550,7 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
                   data-testid="journal-entry-tag"
                   style={moodTagStyle}
                 >
-                  #{tag}
+                  {tag}
                 </span>
               ))}
             </div>

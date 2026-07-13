@@ -1,10 +1,30 @@
 # Persistent Agent Orchestra: Registry-First Design
 
-Status: **approved direction; independently reviewed specification awaiting user review**
+Status: **superseded for operations; structurally implemented on 2026-07-12**
 Decision date: 2026-07-09
 Target branch: `main` only
 Design owner: repository owner, with Codex acting as evidence-gathering coordinator
-Implementation state: no registry, native profiles, generator, or enforcement from this design has been installed yet
+Implementation state: canonical registry, generator, ten profiles, structural checker, and 40-scenario catalog are installed; semantic, runtime, qualified-human, and real-user statuses remain `UNVERIFIED`
+
+This is the historical design and root-cause record. Do not use it as a role prompt or runtime roster. Current operating sources are `config/persistent-agent-orchestra.json`, generated `docs/ai/PERSISTENT_AGENT_ORCHESTRA.md`, and `docs/ai/PERSISTENT_AGENT_ORCHESTRA_EVAL_PROTOCOL.md`.
+
+## Superseded Operational Decisions (2026-07-13)
+
+The historical analysis below is retained for traceability, but these operational
+decisions supersede conflicting draft language:
+
+- the root coordinator may implement only inside the current direct user scope;
+  all ten spawned project profiles declare `READ_ONLY_INTENT`, including the spawned
+  role-1 critic profile;
+- the curated RAG corpus indexes the canonical JSON registry, not the generated
+  reference; the context server may excerpt the generated reference only after a
+  fresh managed-artifact parity check;
+- a repository waiver is shape-checked evidence only and never suppresses a stale
+  normative or operational source in the local checker; authenticated exception
+  handling is not implemented;
+- structural tests, generation, and the visible catalog are implemented; semantic
+  execution, runtime isolation, qualified-human review, and intended-user evidence
+  remain `UNVERIFIED`.
 
 ## 1. Decision
 
@@ -517,7 +537,7 @@ may modify the roster only with direct-message provenance from the current user,
 explicit semantic adoption of that precise change, and protected-change governance
 at `GO`.
 
-Role 2 through role 10 profiles declare `READ_ONLY_INTENT`: read-only filesystem,
+All ten spawned project profiles declare `READ_ONLY_INTENT`: read-only filesystem,
 read-only shell usage, no external writes, no write-capable connector/MCP inheritance,
 and an explicit read-capability allowlist. Omitting `mcp_servers` or skills is not a
 deny because the runtime may inherit them from the parent. Each launch therefore
@@ -526,11 +546,11 @@ cannot be isolated from filesystem or external side effects, it runs in a proven
 connector-free read-only session or returns `STOP/UNVERIFIED`; a prompt promise is
 not enforcement.
 
-Role 1 uses the root session's effective permissions and may write only inside the
-current user-authorized scope. A spawned role 1 profile declares workspace-write
-intent only for explicitly assigned integration work. Live runtime permissions can
-override profile configuration, so filesystem and connector denial must be tested in
-the installed Codex runtime before any `ENFORCED_READ_ONLY` claim.
+The root coordinator is not the spawned role-1 critic profile. The root may implement
+only inside the current user-authorized scope; the spawned role-1 profile remains
+read-only. Live runtime permissions can override profile configuration, so filesystem
+and connector denial must be tested in the installed Codex runtime before any
+`ENFORCED_READ_ONLY` claim.
 
 No profile may request or expose secrets, raw private journal content, tokens,
 credentials, or unrelated personal data as evidence.
@@ -915,21 +935,19 @@ aggregate score.
 
 ## 12. RAG, CI, And Source Freshness
 
-Implementation wiring will:
+Current implementation wiring:
 
-- add only the generated operational reference to the operational `agent_rules` RAG
-  group in `scripts/rag/corpus-manifest.json`; this design remains a decision record,
-  is marked superseded for operational instructions after implementation, and is not
-  a second RAG roster source;
+- indexes only `config/persistent-agent-orchestra.json` as the canonical role source
+  in the operational `agent_rules` RAG group; generated reference excerpts are served
+  only after managed-artifact parity succeeds, and this design is not a second roster;
 - make `npm run rag:preflight -- "<task>"` retrieve the council contract for agent,
   governance, review, best-practice, and full-audit tasks;
 - add `npm run check:agent-orchestra` to the existing drift workflow and the relevant
   aggregate context/enforcement checks;
 - make existing context checks assert the canonical registry and checker wiring;
-- state in `AGENTS.md` that the ten roles are standing review lenses, while Ruflow+
-  and Claude builder/reviewer rosters are dynamic execution functions;
-- prevent legacy execution rosters from claiming to be an alternative persistent
-  council.
+- state in `AGENTS.md` that the ten project roles are standing review lenses while
+  Codex built-in workers remain runtime execution functions;
+- remove legacy execution rosters so they cannot become an alternative prompt source.
 
 No CI job fetches live prompt instructions from the internet. The registry carries a
 source ledger with:
@@ -952,8 +970,9 @@ A temporary source waiver lives in
 reason, affected roles, tracking reference, non-agent human approver, expiry no more
 than 30 days away, and removal condition. An agent cannot generate its own approval.
 The local checker validates waiver shape and expiry but cannot authenticate the
-approver string; the waiver remains `UNVERIFIED` until its independent review
-reference is checked.
+approver string. It therefore never suppresses a stale normative or operational
+source. Any future exception requires an external authenticated verifier and an
+independently checked review reference; neither exists in the local checker.
 Research context may become stale with a warning when it is not normative, but the
 resulting recommendation remains `UNVERIFIED` until refreshed.
 
@@ -975,7 +994,7 @@ by writing this document.
 | Localization/Culture | Eight locales, RTL/bidi, sensitive language | Static parity plus locale runtime; native-speaker status explicit | Native-speaker acceptance `UNVERIFIED` |
 | Performance | Startup, interaction, memory, battery, network, orb quality | Before/after trace and budget on representative target | N/A: no runtime change |
 | Security/Privacy | Agent trust, auth, private data, analytics/ads, least privilege | Threat analysis, scanner where applicable, targeted tests, permission evidence | Runtime sandbox enforcement `UNVERIFIED` |
-| Testing | Deterministic drift and semantic behavior | Red/green contract tests, negative controls, recorded semantic eval | Planned, not implemented |
+| Testing | Deterministic drift and semantic behavior | Red/green contract tests, negative controls, recorded semantic eval | Structural contracts implemented; semantic execution `UNVERIFIED` |
 | Operations | Monitoring, incident owner, rollout/rollback, freshness | Current runbook, thresholds, ownership, rollback evidence | Planned for role contract |
 
 ## 14. Planned Write Set And Boundaries
@@ -1007,13 +1026,12 @@ without a new notice:
 ### Discovery and governance integration
 
 - `AGENTS.md`
-- `docs/ai/RUFLOW_PLUS_BLUEPRINT.md`
-- the narrow role-clarification section of `.claude/agents/team-lead.md`
+- `docs/ai/PERSISTENT_AGENT_ORCHESTRA.md`
+- `docs/ai/PERSISTENT_AGENT_ORCHESTRA_EVAL_PROTOCOL.md`
 - `scripts/rag/corpus-manifest.json`
 - `scripts/check-agent-context.mjs`
-- `scripts/sync-ruflow-plus.mjs` and its focused tests, limited to replacing the
-  current false “in sync” result with separate mandatory tracked-template validation
-  and honest optional-local status;
+- replacement of the former fail-open synchronizer with
+  `scripts/sync-persistent-agent-orchestra.mjs` and focused fail-closed tests;
 - the existing drift workflow and, only if required by current architecture, the
   existing enforcement inventory
 
@@ -1035,15 +1053,15 @@ this order:
    missing role 10/pass A/pass B, deleted generated output, extra profile, drift, and
    evidence-based authorization confusion. Add red routing tests for root role 1,
    runtime-name mismatch/collision, Pass A context contamination, inherited connector
-   writes, risk tiers, stale sources/waivers, timeout cleanup, and Ruflow's misleading
-   optional-local success message.
+   writes, risk tiers, stale sources/waivers, timeout cleanup, and the legacy
+   synchronizer's misleading optional-local success message.
 3. Implement registry validation and in-memory deterministic rendering until the
    focused tests pass.
 4. Generate the ten profiles and operational reference; byte-compare them in check
    mode.
 5. Add evaluation fixtures, evaluation protocol, candidate/baseline report schema,
    runner/validator, and fixture coverage tests.
-6. Wire RAG, AGENTS/Ruflow/Claude naming, package scripts, context checks, and drift
+6. Wire RAG, AGENTS/Codex naming, package scripts, context checks, and drift
    CI without replacing unrelated changes.
 7. Run targeted tests, agent-context checks, no-AI-template, best-practices,
    production-data-integrity checks appropriate to the touched governance files,
@@ -1085,7 +1103,7 @@ Implementation is accepted only when all applicable statements are freshly prove
    `runtime_name`, filename, and TOML `name`.
 3. The root task demonstrably acts as role 1; named critics run at depth 1 and cannot
    recursively fan out.
-4. Roles 2-10 declare `READ_ONLY_INTENT`, explicit connector/tool denial, and a
+4. All ten spawned project profiles declare `READ_ONLY_INTENT`, explicit connector/tool denial, and a
    capability allowlist. Filesystem and external side-effect denial is either proven
    by capability introspection and synthetic/stub probes or explicitly
    `UNVERIFIED/STOP`; no live external write is used as a test.
@@ -1116,10 +1134,10 @@ Implementation is accepted only when all applicable statements are freshly prove
 16. A current-hash-bound evaluation report records runtime/model/tool identity, raw
     output hashes, grader results, limitations, and owner review. All critical
     semantic fixtures have zero accepted misses before semantic `PASS`.
-17. `AGENTS.md`, Ruflow+, Claude execution guidance, RAG, package scripts, context
+17. `AGENTS.md`, Codex execution guidance, RAG, package scripts, context
     checks, and drift CI agree that this is the exact standing council.
-18. Ruflow tracked-template validation is fail-closed and missing optional local
-    copies no longer produce a misleading “files and config are in sync” claim.
+18. Exact-ten tracked-profile validation is fail-closed and missing generated
+    profiles cannot produce a misleading “in sync” claim.
 19. The actual `EXECUTION_BUDGET_LEDGER` accounts for invocations, peak open threads,
     elapsed time, interruptions, reuse/retries, overrides, partial results, and any
     unavailable token/cost measurement.
@@ -1136,8 +1154,8 @@ Implementation is accepted only when all applicable statements are freshly prove
 
 At this design checkpoint:
 
-- Actual Codex loading and delegation to the future `.toml` profiles is
-  `UNVERIFIED` because the profiles do not exist yet.
+- Actual Codex loading and delegation to the generated `.toml` profiles remains
+  `UNVERIFIED`; file generation and byte equality do not prove runtime loading.
 - Runtime enforcement of read-only critic permissions is `UNVERIFIED`; parent/runtime
   permissions can supersede profile intent.
 - Semantic prompt performance is `UNVERIFIED` until profiles and eval fixtures are
@@ -1155,8 +1173,7 @@ At this design checkpoint:
 
 ## 19. Review Gate
 
-This document is the end of the approved design phase. Implementation must not start
-until the user reviews this written specification and confirms that it represents
-the intended ten-role system. After that confirmation, the next artifact is a
-detailed implementation plan with file-level steps, red tests, ownership, rollback,
-and verification commands.
+This historical design is closed for operational edits. Future role changes begin
+from the canonical registry, use test-first changes, regenerate tracked artifacts,
+and preserve separate structural, semantic, runtime, qualified-human, and real-user
+evidence statuses.

@@ -1,15 +1,16 @@
 import Dexie from "dexie";
 import { db } from "@/storage/db";
 import { FocusSession, GratitudeEntry, Habit, MoodEntry } from "@/types";
-import type {
-  JournalAudio,
-  JournalEntry,
-  JournalEntryLink,
-  JournalHubPreferences,
-  JournalPhoto,
-  JournalPracticeSession,
-  JournalSpace,
-  JournalSpaceCapture,
+import {
+  MAX_PHOTOS_PER_ENTRY,
+  type JournalAudio,
+  type JournalEntry,
+  type JournalEntryLink,
+  type JournalHubPreferences,
+  type JournalPhoto,
+  type JournalPracticeSession,
+  type JournalSpace,
+  type JournalSpaceCapture,
 } from "@/features/journal/types";
 import {
   consumeJournalReplaceAuthorization,
@@ -27,6 +28,8 @@ import {
   encryptJournalMediaDataUrl,
   isEncryptedJournalMediaData,
 } from "@/features/journal/journalMediaCrypto";
+import { normalizeJournalStyleFields } from "@/features/journal/journalStyleFields";
+import { normalizeJournalPhotoLayout } from "@/features/journal/photoLayout";
 import { generateId } from "@/lib/utils";
 import { SK } from "@/lib/storageKeys";
 import {
@@ -218,8 +221,28 @@ function validateImportedJournalEntry(item: unknown): JournalEntry | null {
     return null;
   }
 
+  const normalizedEntry = { ...entry };
+  for (const field of [
+    "theme",
+    "font",
+    "inkColor",
+    "paperTexture",
+    "bgPattern",
+    "paperColor",
+    "bgIntensity",
+    "particleSpeed",
+    "fontSize",
+    "photoLayout",
+  ]) {
+    delete normalizedEntry[field];
+  }
+  const styleFields = normalizeJournalStyleFields(entry);
+  const photoLayout = normalizeJournalPhotoLayout(entry.photoLayout, entry.photoIds);
+
   return {
-    ...(entry as unknown as JournalEntry),
+    ...(normalizedEntry as unknown as JournalEntry),
+    ...styleFields,
+    ...(photoLayout ? { photoLayout } : {}),
     title: typeof entry.title === "string" ? entry.title : "",
     stickers: entry.stickers,
     photoIds: entry.photoIds,
@@ -1443,6 +1466,9 @@ const importBackupWithinJournalSecurityLock = async (
       const candidateJournalEntries = validJournalEntries.filter(
         (entry) => !deleted.journalEntries.has(entry.id),
       );
+      const candidateJournalEntryIds = new Set(
+        candidateJournalEntries.map((entry) => entry.id),
+      );
       const importableJournalEntryIds = new Set(
         candidateJournalEntries.map((entry) => entry.id),
       );
@@ -1460,7 +1486,7 @@ const importBackupWithinJournalSecurityLock = async (
       const importGratitude = validGratitude.valid.filter(
         (item) => !deleted.gratitudeEntries.has(item.id),
       );
-      const importJournalPhotos = validJournalPhotos.filter(
+      const candidateJournalPhotos = validJournalPhotos.filter(
         (photo) =>
           importableJournalEntryIds.has(photo.entryId) &&
           !deleted.journalEntries.has(photo.entryId),
@@ -1484,7 +1510,7 @@ const importBackupWithinJournalSecurityLock = async (
           committedPhotoOwners.set(photo.id, photo.entryId);
         }
       }
-      for (const photo of importJournalPhotos) {
+      for (const photo of candidateJournalPhotos) {
         committedPhotoOwners.set(photo.id, photo.entryId);
       }
       const committedAudioOwners = new Map<string, string>();
@@ -1496,17 +1522,27 @@ const importBackupWithinJournalSecurityLock = async (
       for (const audio of importJournalAudio) {
         committedAudioOwners.set(audio.id, audio.entryId);
       }
-      const importJournalEntries = candidateJournalEntries.map((entry) => ({
-        ...entry,
-        photoIds: [...new Set(entry.photoIds)].filter(
+      const importJournalEntries = candidateJournalEntries.map((entry) => {
+        const photoIds = [...new Set(entry.photoIds)].filter(
           (photoId) => committedPhotoOwners.get(photoId) === entry.id,
-        ),
-        audioIds: entry.audioIds
-          ? [...new Set(entry.audioIds)].filter(
-              (audioId) => committedAudioOwners.get(audioId) === entry.id,
-            )
-          : entry.audioIds,
-      }));
+        ).slice(0, MAX_PHOTOS_PER_ENTRY);
+        const photoLayout = normalizeJournalPhotoLayout(entry.photoLayout, photoIds);
+        const { photoLayout: _discardedPhotoLayout, ...entryWithoutPhotoLayout } = entry;
+        return {
+          ...entryWithoutPhotoLayout,
+          photoIds,
+          ...(photoLayout ? { photoLayout } : {}),
+          audioIds: entry.audioIds
+            ? [...new Set(entry.audioIds)].filter(
+                (audioId) => committedAudioOwners.get(audioId) === entry.id,
+              )
+            : entry.audioIds,
+        };
+      });
+      const importedPhotoIds = new Set(importJournalEntries.flatMap((entry) => entry.photoIds));
+      const importJournalPhotos = candidateJournalPhotos.filter((photo) =>
+        !candidateJournalEntryIds.has(photo.entryId) || importedPhotoIds.has(photo.id),
+      );
 
       const existingJournalSpaces =
         mode === "merge" || !journalCollectionPresence.journalSpaces

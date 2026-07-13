@@ -35,9 +35,10 @@
       "include": [
         "AGENTS.md",
         "ARCHITECTURE.md",
+        "config/persistent-agent-orchestra.json",
         "docs/ai/TEST_FIRST_AGENT_POLICY.md",
         "docs/ai/SKILL_ROUTING_AGENT_POLICY.md",
-        "docs/ai/RUFLOW_PLUS_BLUEPRINT.md",
+        "docs/ai/PERSISTENT_AGENT_ORCHESTRA_EVAL_PROTOCOL.md",
         "docs/ai/AGENT_CHANGE_GOVERNANCE.md",
         "docs/ai/AGENT_CONTEXT_PERSISTENCE.md",
         "docs/ai/FREE_RAG_AND_COACH_LITE.md"

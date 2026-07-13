@@ -112,6 +112,51 @@ describe("journal sync tombstones", () => {
     expect(mocks.generateEmbeddings).not.toHaveBeenCalled();
   });
 
+  it("syncs style fields so customized entries restore on another device", async () => {
+    const upsert = vi.fn(() => Promise.resolve({ error: null }));
+    mocks.from.mockReturnValue({ upsert });
+
+    await syncJournalEntry(
+      {
+        id: "entry-styled",
+        date: "2026-05-25",
+        title: "Styled",
+        content: "Private styled diary content",
+        stickers: [],
+        tags: [],
+        photoIds: [],
+        audioIds: [],
+        theme: "ocean",
+        font: "cormorant",
+        inkColor: "#34d399",
+        paperTexture: "linen",
+        bgPattern: "aurora",
+        paperColor: "milky",
+        bgIntensity: "dim",
+        particleSpeed: "drift",
+        fontSize: "large",
+        createdAt: 1,
+        updatedAt: 2,
+      },
+      "user-1"
+    );
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        theme: "ocean",
+        font: "cormorant",
+        ink_color: "#34d399",
+        paper_texture: "linen",
+        bg_pattern: "aurora",
+        paper_color: "milky",
+        bg_intensity: "dim",
+        particle_speed: "drift",
+        font_size: "large",
+      }),
+      expect.objectContaining({ onConflict: "id" })
+    );
+  });
+
   it("does not write or queue private journal data when cloud sync is disabled", async () => {
     mocks.isCloudSyncEnabled.mockReturnValue(false);
 

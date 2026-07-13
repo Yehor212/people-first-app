@@ -90,6 +90,7 @@ async function expectDarkThemeCardToken(
   const tokens = await page.evaluate(() => {
     const styles = getComputedStyle(document.documentElement);
     return {
+      background: styles.getPropertyValue("--background").trim(),
       card: styles.getPropertyValue("--card").trim(),
       surface: styles.getPropertyValue("--zf-surface-1").trim(),
       theme: document.documentElement.dataset.theme,
@@ -97,7 +98,15 @@ async function expectDarkThemeCardToken(
   });
 
   expect(tokens.theme).toBe(expectedTheme);
-  expect(tokens.card).toBe(tokens.surface);
+  if (expectedTheme === "oled") {
+    // `.dark.oled` is the authoritative AMOLED bridge: a pure-black canvas
+    // with a barely raised neutral card. It intentionally differs from the
+    // green-tinted V2 surface token used by role-colored components.
+    expect(tokens.background).toBe("0 0% 0%");
+    expect(tokens.card).toBe("0 0% 5%");
+  } else {
+    expect(tokens.card).toBe(tokens.surface);
+  }
   expect(tokens.card).not.toBe("165 18% 99%");
 }
 
@@ -1175,6 +1184,9 @@ test.describe("SidebarV2 Theme Coverage (Phase 3-A.4c-ii-d-c)", () => {
     await expect(page.getByTestId("orb-page")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("sidebar-v2")).toBeVisible({
       timeout: 10_000,
+    });
+    await expect(page.getByTestId("splash-theme-shell")).toBeHidden({
+      timeout: 20_000,
     });
 
     // Empirical veracity check: --card must be ink/oled, not paper.

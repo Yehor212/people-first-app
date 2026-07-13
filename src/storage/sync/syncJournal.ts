@@ -9,6 +9,7 @@ import { isAbortError } from "@/lib/validation";
 import { supabase } from "@/lib/supabaseClient";
 import type { Json } from "@/types/supabase";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
+import { journalStyleFieldsToCloud } from "@/features/journal/journalStyleFields";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { detectNetworkError } from "./syncUtils";
 import { getDeletedJournalEntryIds, trackDeletedJournalEntryId } from "@/storage/deletionTracker";
@@ -158,6 +159,8 @@ export const syncJournalEntry = async (
         habit_snapshot: (entry.habitSnapshot as unknown as Json) || null,
         photo_ids: entry.photoIds,
         audio_ids: entry.audioIds || [],
+        photo_layout: (entry.photoLayout as unknown as Json) || null,
+        ...journalStyleFieldsToCloud(entry),
         created_at: entry.createdAt,
         updated_at: entry.updatedAt,
       },

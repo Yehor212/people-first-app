@@ -22,16 +22,22 @@ ZenFlow Context MCP answers: "Which ZenFlow repo context pack should I retrieve,
 - `architecture`: app structure, state, storage, sync, Supabase boundaries, and `docs/ai/SYNC_CONTRACT.md`.
 - `ui`: visual, motion, accessibility, i18n/RTL, mobile parity.
 - `verification`: CI, quality gates, evidence rules.
+- `governance`: exact-ten roles, protected changes, source freshness, and owner escalation.
 - `external_docs`: route framework/library questions to Context7 plus repo package versions.
 
 ## How Agents Should Use It
 
-Automatic path:
+Repository path:
 
-1. Claude Code project hooks call `tools/zenflow-context/auto-context.mjs` on `SessionStart`, `UserPromptSubmit`, and `SubagentStart`.
-2. The hook writes `.Codex/auto-context/current.md` and `.Codex/auto-context/current.json`.
-3. The hook injects the current context pack through `additionalContext`.
-4. Coordinator agents pass the same pack to specialists, and subagents receive it again through `SubagentStart`.
+1. `npm run ai:context:auto` calls `tools/zenflow-context/auto-context.mjs` for the current task.
+2. The script writes `.codex/auto-context/current.md` and `.codex/auto-context/current.json`.
+3. `npm run rag:preflight -- "<task>"` writes the focused RAG pack used by the project working agreement.
+4. The coordinator passes only the task-relevant cited context to specialists; generated packs remain routing context, never proof.
+
+The free lexical RAG corpus indexes the canonical exact-ten JSON registry. Context
+profiles may excerpt the generated operational reference only after a fresh
+registry/profile/reference parity check; drift stops the request instead of returning
+stale role instructions.
 
 Manual/MCP path:
 

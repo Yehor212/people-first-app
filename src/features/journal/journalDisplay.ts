@@ -1,8 +1,13 @@
-type JournalDisplayTranslations = Record<string, string | undefined>;
+import type { TranslationStrings } from "@/i18n/types";
+
+type JournalDisplayTranslations = Partial<
+  Pick<TranslationStrings, "orbCapturedAt" | "orbScopeDay" | "orbScopeSpecific">
+>;
 
 const LEGACY_CAPTURED_AT_RE = /^Captured at\s+[0-9]{1,2}:\d{2}(?:\s?[AP]M)?$/i;
 const LEGACY_SCOPE_DAY_RE = /^For the whole day$/i;
-const LEGACY_SCOPE_SPECIFIC_RE = /^At a specific time(?:\s*[-–]\s*[0-9]{1,2}:\d{2}(?:\s?[AP]M)?)?$/i;
+const LEGACY_SCOPE_SPECIFIC_RE =
+  /^At a specific time(?:\s*[-–]\s*[0-9]{1,2}:\d{2}(?:\s?[AP]M)?)?$/i;
 const LEGACY_METADATA_HTML_RE =
   /^\s*<p>\s*<strong>\s*(?:Captured at\s+[0-9]{1,2}:\d{2}(?:\s?[AP]M)?|For the whole day|At a specific time(?:\s*[-–]\s*[0-9]{1,2}:\d{2}(?:\s?[AP]M)?)?)\s*<\/strong>\s*<\/p>\s*/i;
 const LEGACY_METADATA_TEXT_RE =
@@ -20,7 +25,7 @@ function decodeHtmlEntities(value: string): string {
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, "\"")
+    .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'");
 }
 
@@ -76,16 +81,38 @@ function formatCapturedAtLabel(time: string, ts: JournalDisplayTranslations): st
 function localizeGeneratedPreview(preview: string, ts: JournalDisplayTranslations): string {
   return preview
     .replace(/^Captured at\s+([0-9]{1,2}:\d{2}(?:\s?[AP]M)?)\b/i, (_match, time: string) =>
-      formatCapturedAtLabel(time, ts),
+      formatCapturedAtLabel(time, ts)
     )
     .replace(/^For the whole day\b/i, ts.orbScopeDay || "For the whole day")
-    .replace(/^At a specific time\s*[-–]\s*([0-9]{1,2}:\d{2}(?:\s?[AP]M)?)\b/i, (_match, time: string) =>
-      `${ts.orbScopeSpecific || "At a specific time"} - ${time}`,
+    .replace(
+      /^At a specific time\s*[-–]\s*([0-9]{1,2}:\d{2}(?:\s?[AP]M)?)\b/i,
+      (_match, time: string) => `${ts.orbScopeSpecific || "At a specific time"} - ${time}`
     )
     .trim();
 }
 
-export function getJournalDisplayText(content: string, _ts: JournalDisplayTranslations = {}): string {
+export function getJournalDisplayTag(value: string): string {
+  return value.trim().replace(/^#+/, "").trim();
+}
+
+export function getJournalDisplayTags(tags: string[]): string[] {
+  const seen = new Set<string>();
+  const displayTags: string[] = [];
+
+  for (const rawTag of tags) {
+    const tag = getJournalDisplayTag(rawTag);
+    if (!tag || seen.has(tag)) continue;
+    seen.add(tag);
+    displayTags.push(tag);
+  }
+
+  return displayTags;
+}
+
+export function getJournalDisplayText(
+  content: string,
+  _ts: JournalDisplayTranslations = {}
+): string {
   const plain = journalHtmlToPlainText(stripLegacyJournalMetadataHtml(content));
   return plain
     .split("\n")
@@ -94,7 +121,10 @@ export function getJournalDisplayText(content: string, _ts: JournalDisplayTransl
     .trim();
 }
 
-export function getJournalPreviewText(content: string, ts: JournalDisplayTranslations = {}): string {
+export function getJournalPreviewText(
+  content: string,
+  ts: JournalDisplayTranslations = {}
+): string {
   return localizeGeneratedPreview(journalHtmlToPlainText(content), ts).replace(/\s+/g, " ").trim();
 }
 

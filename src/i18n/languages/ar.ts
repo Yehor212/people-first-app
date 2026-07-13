@@ -529,11 +529,9 @@ const arabicOverrides: Partial<Translations> = {
     "يمكن اختيار مظهر ZenFlow وأصواته وطريقة تعامله مع البيانات.",
   settingsReminderDaysMissing: "اختر أيام التذكير",
   settingsSoundRestoreTitle: "بعض أصوات الخلفية متوقفة",
-  settingsSoundRestoreDescription:
-    "ستبقى الأصوات التي أوقفتها سابقًا متوقفة إلى أن تعيد تشغيلها.",
+  settingsSoundRestoreDescription: "ستبقى الأصوات التي أوقفتها سابقًا متوقفة إلى أن تعيد تشغيلها.",
   settingsSoundRestoreAction: "إعادة تشغيل الأصوات",
-  settingsSoundMasterDisabledHint:
-    "شغّل صوت التطبيق لاستخدام هذه الإعدادات.",
+  settingsSoundMasterDisabledHint: "شغّل صوت التطبيق لاستخدام هذه الإعدادات.",
   settingsAccountBackupTitle: "الحساب والنسخ الاحتياطي",
   settingsAccountBackupDescription:
     "حسابك متصل. إذا تعذّر على ZenFlow حفظ تغييراتك عبر الإنترنت، فستبقى على هذا الجهاز.",
@@ -548,13 +546,10 @@ const arabicOverrides: Partial<Translations> = {
   settingsAccountCheckFailedDescription:
     "تبقى بياناتك على هذا الجهاز. يُرجى التحقق من الاتصال والمحاولة مرة أخرى.",
   settingsAccountBackupUnavailable: "النسخ الاحتياطي غير متاح في هذا الإصدار",
-  settingsAccountBackupUnavailableDescription:
-    "تبقى بياناتك على هذا الجهاز.",
+  settingsAccountBackupUnavailableDescription: "تبقى بياناتك على هذا الجهاز.",
   settingsRemindersMobileApp: "تطبيق الهاتف",
-  settingsPrivacyDataDescription:
-    "يمكن اختيار الخدمات الاختيارية التي يستخدمها ZenFlow.",
-  settingsDataBackupReportsDescription:
-    "يمكن حفظ نسخة احتياطية لاستيرادها لاحقًا أو إنشاء تقرير.",
+  settingsPrivacyDataDescription: "يمكن اختيار الخدمات الاختيارية التي يستخدمها ZenFlow.",
+  settingsDataBackupReportsDescription: "يمكن حفظ نسخة احتياطية لاستيرادها لاحقًا أو إنشاء تقرير.",
   settingsBackupRestoreTitle: "النسخ الاحتياطي والاستعادة",
   settingsReportsTitle: "التقارير",
   settingsReportsDescription:
@@ -566,8 +561,7 @@ const arabicOverrides: Partial<Translations> = {
   settingsAboutProductSummary:
     "يجمع ZenFlow تسجيلات المزاج والعادات وجلسات التركيز ويومياتك في مكان واحد.",
   settingsAboutSupportLegalTitle: "المساعدة والمعلومات القانونية",
-  settingsAboutSupportLegalDescription:
-    "الخصوصية والشروط والتراخيص والدعم.",
+  settingsAboutSupportLegalDescription: "الخصوصية والشروط والتراخيص والدعم.",
   settingsRemindersOff: "التذكيرات متوقفة",
   resetDataConfirmWord: "RESET",
   resetDataTypeConfirm: "اكتب {word} للتأكيد",
@@ -582,10 +576,8 @@ const arabicOverrides: Partial<Translations> = {
   importReplace: "استبدال البيانات الحالية",
   exportSuccess: "تم التصدير.",
   exportError: "فشل تصدير البيانات.",
-  exportJournalUnlockRequired:
-    "افتح قفل اليوميات قبل تصدير محتواها المحمي.",
-  exportJournalDecryptionFailed:
-    "تعذّر على ZenFlow قراءة اليوميات المحمية. لم يتم تصدير أي شيء.",
+  exportJournalUnlockRequired: "افتح قفل اليوميات قبل تصدير محتواها المحمي.",
+  exportJournalDecryptionFailed: "تعذّر على ZenFlow قراءة اليوميات المحمية. لم يتم تصدير أي شيء.",
   exportJournalMediaUnavailable:
     "تعذّر على ZenFlow قراءة مرفق واحد أو أكثر من مرفقات اليوميات. لم يتم تصدير أي شيء.",
   exportBackupTooLarge:
@@ -659,17 +651,13 @@ const arabicOverrides: Partial<Translations> = {
   themeDark: "داكن",
   themeSystem: "النظام",
   themeModeTitle: "نمط الألوان",
-  themeModeDescription:
-    "اتباع إعداد الجهاز، أو اختيار مظهر فاتح أو داكن أو أسود.",
+  themeModeDescription: "اتباع إعداد الجهاز، أو اختيار مظهر فاتح أو داكن أو أسود.",
   themeBlack: "أسود",
   themeChangeSaved: "تم حفظ التغيير",
-  settingsPreferenceSaveError:
-    "تعذّر حفظ هذا التغيير. لا يزال الإعداد السابق مفعّلًا.",
+  settingsPreferenceSaveError: "تعذّر حفظ هذا التغيير. لا يزال الإعداد السابق مفعّلًا.",
   settingsReduceMotion: "تقليل الحركة",
-  settingsReduceMotionDescription:
-    "يقلل الانتقالات المتحركة والتأثيرات الزخرفية.",
-  settingsReduceMotionSystemDescription:
-    "إعداد تقليل الحركة مفعّل بالفعل على هذا الجهاز.",
+  settingsReduceMotionDescription: "يقلل الانتقالات المتحركة والتأثيرات الزخرفية.",
+  settingsReduceMotionSystemDescription: "إعداد تقليل الحركة مفعّل بالفعل على هذا الجهاز.",
   themeStyleTitle: "لوحة المزاج",
   themeAdvancedAppearanceTitle: "مظهر متقدم",
   themeStyleDescription: "يمكن اختيار نمط الألوان ولون التمييز وحجم النص.",
@@ -1055,8 +1043,7 @@ const arabicOverrides: Partial<Translations> = {
   unmuteSound: "إلغاء كتم الصوت",
   settingsSoundTitle: "الصوت",
   settingsVibration: "الاهتزاز",
-  settingsVibrationDescription:
-    "اهتزاز قصير عند اللمس والتأكيد، إذا كان الجهاز يدعمه.",
+  settingsVibrationDescription: "اهتزاز قصير عند اللمس والتأكيد، إذا كان الجهاز يدعمه.",
   settingsSoundDescription: "أصوات \u2066ZenFlow\u2069 ومستوى صوتها.",
   settingsSoundSummaryOn: "الصوت مفعل",
   settingsSoundSummaryOff: "مكتوم",
@@ -1066,8 +1053,7 @@ const arabicOverrides: Partial<Translations> = {
   settingsSoundVolumeDesc: "يضبط مستوى الأصوات داخل \u2066ZenFlow\u2069.",
   settingsSoundPreview: "معاينة صوت التذكير",
   settingsSoundAmbienceTitle: "صوت للكتابة",
-  settingsSoundAmbienceNote:
-    "يمكن تشغيل مطر هادئ أثناء الكتابة. لن يبدأ قبل الضغط على زر التشغيل.",
+  settingsSoundAmbienceNote: "يمكن تشغيل مطر هادئ أثناء الكتابة. لن يبدأ قبل الضغط على زر التشغيل.",
   settingsSoundTextureAir: "هواء",
   settingsSoundTextureWater: "ماء",
   settingsSoundTextureRain: "مطر",
@@ -1077,8 +1063,7 @@ const arabicOverrides: Partial<Translations> = {
   settingsSoundFeedbackPreferSilent: "أفضل الصمت",
   settingsSoundFeedbackDidNotPlay: "لم يتم التشغيل",
   settingsSoundComfortTitle: "راحة الصوت",
-  settingsSoundComfortDescription:
-    "اختر إعدادًا أوليًا للصوت، ثم عدّل كل صوت أدناه.",
+  settingsSoundComfortDescription: "اختر إعدادًا أوليًا للصوت، ثم عدّل كل صوت أدناه.",
   settingsSoundProfileQuiet: "هادئ",
   settingsSoundProfileRich: "غني",
   settingsSoundProfileBalanced: "متوازن",
@@ -1100,8 +1085,7 @@ const arabicOverrides: Partial<Translations> = {
   settingsSoundReminderCuesDesc:
     "يتحكم في أصوات التذكير القصيرة داخل \u2066ZenFlow\u2069. وتُضبط أصوات إشعارات الجهاز من قسم الإشعارات.",
   settingsSoundMilestoneCues: "أصوات التقدم",
-  settingsSoundMilestoneCuesDesc:
-    "يسمح بأصوات تقدم من حين لآخر، دون إضافة صوت إلى كل إجراء.",
+  settingsSoundMilestoneCuesDesc: "يسمح بأصوات تقدم من حين لآخر، دون إضافة صوت إلى كل إجراء.",
   settingsSoundTextureTitle: "أصوات الخلفية",
   settingsSoundTextureDescription:
     "يمكن اختيار أصوات الخلفية الهادئة التي قد يشغّلها \u2066ZenFlow\u2069 خارج جلسات التركيز: الهواء أو الماء أو المطر.",
@@ -2425,8 +2409,7 @@ const arabicOverrides: Partial<Translations> = {
 
   // Reminders
   remindersTitle: "التذكيرات",
-  remindersDescription:
-    "يمكن تحديد مواعيد تذكيرات ZenFlow لتسجيل المزاج ووقت التركيز.",
+  remindersDescription: "يمكن تحديد مواعيد تذكيرات ZenFlow لتسجيل المزاج ووقت التركيز.",
   moodReminder: "تذكير المزاج",
   habitReminder: "تذكير العادات",
   focusReminder: "تذكير التركيز",
@@ -2438,8 +2421,7 @@ const arabicOverrides: Partial<Translations> = {
   settingsMoodCheckInsDescription: "تذكيرات لطيفة لتسجيل المشاعر الحالية.",
   settingsFocusReminder: "تذكير التركيز",
   settingsFocusReminderDescription: "تذكير واحد قرابة الوقت الذي تختاره.",
-  settingsReminderChooseDay:
-    "اختر يومًا واحدًا على الأقل. لن تُرسل أي تذكيرات قبل ذلك.",
+  settingsReminderChooseDay: "اختر يومًا واحدًا على الأقل. لن تُرسل أي تذكيرات قبل ذلك.",
   selectedHabits: "العادات المختارة",
   noHabitsYet: "لا عادات بعد",
   noHabitsInCategory: "لا عادات في هذه الفئة",
@@ -3249,7 +3231,7 @@ const arabicOverrides: Partial<Translations> = {
   diaryFontSans: "بلا زخارف",
   diaryFontSerif: "بزخارف",
   diaryFontHandwriting: "خط يدوي",
-  diaryFontScript: "خط مزخرف",
+  diaryFontScript: "مائل",
   diarySnapshot: "صورة",
   diaryRecord: "تسجيل",
   diaryFocusRay: "تركيز",
@@ -3276,6 +3258,55 @@ const arabicOverrides: Partial<Translations> = {
   diaryPhotoSizeFull: "عرض كامل",
   diaryPhotoReturn: "إرجاع الصورة إلى المعرض",
   diaryPhotoResize: "تغيير حجم الصورة",
+  diaryBackgroundDim: "هادئ",
+  diaryBackgroundFull: "كامل",
+  diaryBackgroundOff: "إيقاف",
+  diaryFormatHintLabel: "أدوات النص",
+  diaryMotion: "الحركة",
+  diaryParticleSpeed: "السرعة",
+  diaryParticleSpeedDrift: "انسيابي",
+  diaryParticleSpeedOff: "إيقاف",
+  diaryParticleSpeedSlow: "بطيء",
+  diaryPhotoGestureHint: "اسحب، انقر للحجم، اضغط مطولًا للإرجاع",
+  diaryPhotoGestureInstructions:
+    "اسحب لنقل الصورة. انقر لتغيير الحجم. حركة القرص تغيّر الحجم أيضًا. اضغط Home للتوسيط. استخدم مفاتيح الأسهم للنقل، وزري زائد وناقص لتغيير الحجم، وDelete لإرجاع الصورة إلى المعرض. على الشاشة اللمسية، اضغط مطولًا لإرجاع الصورة إلى المعرض.",
+  diaryPhotoMove: "نقل الصورة",
+  diaryScene: "المشهد",
+  diaryTexture: "الملمس",
+  diaryTextureClean: "نظيف",
+  diaryTextureCraft: "ورق حرفي",
+  diaryTextureDots: "نقاط",
+  diaryTextureGrid: "شبكة",
+  diaryTextureLinen: "كتان",
+  diaryTextureLines: "خطوط",
+  journalDraftSaveFailed: "تعذر حفظ المسودة",
+  journalFormatToolbar: "أدوات التنسيق",
+  journalInkEmerald: "حبر زمردي",
+  journalInkGold: "حبر ذهبي",
+  journalInkRose: "حبر وردي",
+  journalInkWhite: "حبر تلقائي",
+  journalPanicLockDescription: "افتح القفل للعودة إلى يومياتك الخاصة.",
+  journalPanicLockTitle: "اليوميات مقفلة",
+  journalPanicLockUnlockRequired: "استخدم فتح القفل للعودة إلى يومياتك.",
+  journalPaperDark: "داكن",
+  journalPaperMilky: "ورق",
+  journalPaperSoftWhite: "أبيض هادئ",
+  journalPhotoNext: "الصورة التالية",
+  journalPhotoPrevious: "الصورة السابقة",
+  journalRecordingDiscard: "تجاهل",
+  journalRecordingStopKeep: "إيقاف والاحتفاظ",
+  journalRemoveAudio: "إزالة الصوت {duration}",
+  journalRemoveTag: "إزالة الوسم {tag}",
+  journalStyleTools: "أدوات النمط",
+  journalToolbarInk: "الحبر",
+  journalToolbarPaper: "الورق",
+  journalVoicePrivacyCancel: "ليس الآن",
+  journalVoicePrivacyContinue: "بدء الصوت",
+  journalVoicePrivacyDescription:
+    "قد يعالج المتصفح التعرف على الكلام خارج ZenFlow. ابدأ الصوت فقط إذا كان ذلك مناسباً لهذا الإدخال.",
+  journalVoicePrivacyTitle: "فحص خصوصية الصوت",
+  openPhoto: "فتح الصورة",
+  previous: "السابق",
   // State of Mind
   somLogFeeling: "سجّل كيف تشعر",
   somHowAreYouFeeling: "كيف تشعر؟",

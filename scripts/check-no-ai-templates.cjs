@@ -45,7 +45,7 @@ const SCAN_ALLOWLIST = new Set([
 
 const SKIP_PREFIXES = [
   ".git/",
-  ".Codex/auto-context/",
+  ".codex/auto-context/",
   "coverage/",
   "dist/",
   "node_modules/",
@@ -209,7 +209,7 @@ function validateNoAiTemplatesPolicy(options = {}) {
 
   requireIncludes("docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md", policy, [
     "Purpose: forbid generic AI-template work across ZenFlow agent workflows.",
-    "Codex, Claude Code, Ruflow+, local subagents, connector-backed agents",
+    "Codex project roles, built-in workers, local subagents, connector-backed agents",
     "Source Evidence",
     "Enforcement Layers",
     "An AI template is any output that looks generated first and ZenFlow-specific second.",

@@ -1,6 +1,6 @@
 /**
  * DiaryFormatHint — one-time onboarding hint for the formatting toolbar.
- * Shows "Select text to format" message, auto-dismisses after 5s or on tap.
+ * Shows a compact text-tools affordance, auto-dismisses after 5s or on tap.
  */
 
 import { useEffect } from "react";
@@ -15,7 +15,7 @@ interface DiaryFormatHintProps {
 
 export function DiaryFormatHint({ onDismiss }: DiaryFormatHintProps) {
   const { t } = useLanguage();
-  const ts = t as unknown as Record<string, string>;
+  const ts = t;
   const HintIcon = V2_SHELL_ICONS.insight;
 
   useEffect(() => {
@@ -38,11 +38,12 @@ export function DiaryFormatHint({ onDismiss }: DiaryFormatHintProps) {
           onDismiss();
         }
       }}
+      aria-label={ts.diaryFormatHint || "Select text to format (bold, italic, etc.)"}
       className="flex items-center gap-2 px-3 py-2 rounded-xl bg-foreground/5 border border-foreground/10 backdrop-blur-sm cursor-pointer"
     >
       <HintIcon className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
       <span className="text-xs text-muted-foreground">
-        {ts.diaryFormatHint || "Select text to format (bold, italic, etc.)"}
+        {ts.diaryFormatHintLabel || ts.journalFormatToolbar || "Text tools"}
       </span>
     </motion.div>
   );

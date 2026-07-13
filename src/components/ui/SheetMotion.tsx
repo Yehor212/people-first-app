@@ -3,7 +3,7 @@
  * Bloom (enter) and Fold (exit) verbs instead of the default slide classes.
  * Sibling of the original Sheet — opt-in per call site, original untouched.
  *
- * Honours .claude/rules/modal-standard.md: safe-area insets preserved on
+ * Honours AGENTS.md and docs/ai/V2_FULLSCREEN_EDGE_TO_EDGE_CONTRACT.md: safe-area insets preserved on
  * `bottom` side, 44px touch target on close button, z-[60] content, z-[55]
  * overlay. Side choreography:
  *   - right  (default)  bloom from slight scale-up on the end edge

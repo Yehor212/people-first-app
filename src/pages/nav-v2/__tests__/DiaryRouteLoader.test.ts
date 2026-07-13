@@ -83,9 +83,8 @@ describe("V2 diary loading surface", () => {
     expect(viteConfigSource).toContain('dep.startsWith("assets/RemovePasswordConfirmDialog-")');
 
     for (const ignored of [
-      "**/.claude/**",
+      "**/.codex/auto-context/**",
       "**/.codex-artifacts/**",
-      "**/.swarm/**",
       "**/android/app/build/**",
       "**/coverage/**",
       "**/dist/**",

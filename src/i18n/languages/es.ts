@@ -549,8 +549,7 @@ export const es: Translations = {
   settingsSoundRestoreDescription:
     "Los sonidos que desactivaste antes seguirán así hasta que los restaures.",
   settingsSoundRestoreAction: "Restaurar sonidos",
-  settingsSoundMasterDisabledHint:
-    "Activa el sonido de la app para usar estos ajustes.",
+  settingsSoundMasterDisabledHint: "Activa el sonido de la app para usar estos ajustes.",
   settingsAccountBackupTitle: "Cuenta y copia de seguridad",
   settingsAccountBackupDescription:
     "Tu cuenta está conectada. Si ZenFlow no puede guardar tus cambios en línea, se quedan en este dispositivo.",
@@ -564,13 +563,10 @@ export const es: Translations = {
   settingsAccountCheckFailed: "No pudimos comprobar tu cuenta",
   settingsAccountCheckFailedDescription:
     "Tus datos se quedan en este dispositivo. Revisa tu conexión e inténtalo de nuevo.",
-  settingsAccountBackupUnavailable:
-    "La copia de seguridad no está disponible en esta versión",
-  settingsAccountBackupUnavailableDescription:
-    "Tus datos se quedan en este dispositivo.",
+  settingsAccountBackupUnavailable: "La copia de seguridad no está disponible en esta versión",
+  settingsAccountBackupUnavailableDescription: "Tus datos se quedan en este dispositivo.",
   settingsRemindersMobileApp: "App móvil",
-  settingsPrivacyDataDescription:
-    "Tú eliges qué servicios opcionales puede usar ZenFlow.",
+  settingsPrivacyDataDescription: "Tú eliges qué servicios opcionales puede usar ZenFlow.",
   settingsDataBackupReportsDescription:
     "Guarda una copia para importarla más adelante o crea un informe.",
   settingsBackupRestoreTitle: "Copia de seguridad y restauración",
@@ -584,8 +580,7 @@ export const es: Translations = {
   settingsAboutProductSummary:
     "ZenFlow reúne tus registros de ánimo, hábitos, sesiones de concentración y diario en un solo lugar.",
   settingsAboutSupportLegalTitle: "Ayuda y aspectos legales",
-  settingsAboutSupportLegalDescription:
-    "Privacidad, condiciones, licencias y soporte.",
+  settingsAboutSupportLegalDescription: "Privacidad, condiciones, licencias y soporte.",
   settingsRemindersOff: "Recordatorios desactivados",
   resetDataConfirmWord: "RESET",
   resetDataTypeConfirm: "Escribe {word} para confirmar",
@@ -600,10 +595,8 @@ export const es: Translations = {
   importReplace: "Reemplazar datos actuales",
   exportSuccess: "Exportación lista.",
   exportError: "No se pudo exportar los datos.",
-  exportJournalUnlockRequired:
-    "Desbloquea el diario antes de exportar su contenido protegido.",
-  exportJournalDecryptionFailed:
-    "ZenFlow no pudo leer el diario protegido. No se exportó nada.",
+  exportJournalUnlockRequired: "Desbloquea el diario antes de exportar su contenido protegido.",
+  exportJournalDecryptionFailed: "ZenFlow no pudo leer el diario protegido. No se exportó nada.",
   exportJournalMediaUnavailable:
     "ZenFlow no pudo leer uno o varios archivos adjuntos del diario. No se exportó nada.",
   exportBackupTooLarge:
@@ -677,12 +670,10 @@ export const es: Translations = {
   themeDark: "Oscuro",
   themeSystem: "Sistema",
   themeModeTitle: "Modo de color",
-  themeModeDescription:
-    "Sigue el ajuste del dispositivo o elige un aspecto claro, oscuro o negro.",
+  themeModeDescription: "Sigue el ajuste del dispositivo o elige un aspecto claro, oscuro o negro.",
   themeBlack: "Negro",
   themeChangeSaved: "Cambio guardado",
-  settingsPreferenceSaveError:
-    "No se pudo guardar este cambio. El ajuste anterior sigue activo.",
+  settingsPreferenceSaveError: "No se pudo guardar este cambio. El ajuste anterior sigue activo.",
   settingsReduceMotion: "Reducir movimiento",
   settingsReduceMotionDescription:
     "Reduce las transiciones con movimiento y los efectos decorativos.",
@@ -692,8 +683,7 @@ export const es: Translations = {
   themeAdvancedAppearanceTitle: "Apariencia avanzada",
   themeStyleDescription: "Elige el modo de color, el color de acento y el tamaño del texto.",
   themeAccentTitle: "Color de acento",
-  themeAccentDescription:
-    "Color de los botones, las selecciones y los elementos destacados.",
+  themeAccentDescription: "Color de los botones, las selecciones y los elementos destacados.",
   themeIntensityTitle: "Intensidad",
   themeComfortTitle: "Comodidad",
   themePreviewAction: "Vista previa",
@@ -1127,10 +1117,8 @@ export const es: Translations = {
   pushDisabled: "Push desactivado.",
   pushError: "Error al activar push.",
   pushNeedsAccount: "Inicia sesión para activar push.",
-  pushPermissionDenied:
-    "Activa las notificaciones de ZenFlow en los ajustes de tu dispositivo.",
-  remindersNativeOnly:
-    "Para configurar los recordatorios, abre la app móvil de ZenFlow.",
+  pushPermissionDenied: "Activa las notificaciones de ZenFlow en los ajustes de tu dispositivo.",
+  remindersNativeOnly: "Para configurar los recordatorios, abre la app móvil de ZenFlow.",
   habitRemindersManagedInHabits: "Configura el recordatorio desde el menú de cada hábito.",
   areYouSure: "¿Estás seguro?",
   cannotBeUndone: "Esta acción no se puede deshacer.",
@@ -1361,8 +1349,7 @@ export const es: Translations = {
   settingsSoundFeedbackPreferSilent: "Prefiero silencio",
   settingsSoundFeedbackDidNotPlay: "No sonó",
   settingsSoundComfortTitle: "Comodidad del sonido",
-  settingsSoundComfortDescription:
-    "Elige una configuración inicial y ajusta cada sonido debajo.",
+  settingsSoundComfortDescription: "Elige una configuración inicial y ajusta cada sonido debajo.",
   settingsSoundProfileQuiet: "Suave",
   settingsSoundProfileRich: "Completo",
   settingsSoundProfileBalanced: "Equilibrado",
@@ -1379,8 +1366,7 @@ export const es: Translations = {
   settingsSoundActivityDescription:
     "Ofrece una confirmación discreta al completar actividades, temporizadores y algunos hitos.",
   settingsSoundCompletionCues: "Sonidos de confirmación",
-  settingsSoundCompletionCuesDesc:
-    "Reproduce un sonido discreto cuando completas algo importante.",
+  settingsSoundCompletionCuesDesc: "Reproduce un sonido discreto cuando completas algo importante.",
   settingsSoundReminderCues: "Sonidos de recordatorio en ZenFlow",
   settingsSoundReminderCuesDesc:
     "Controla los sonidos breves de recordatorio dentro de ZenFlow. Los sonidos de las notificaciones del dispositivo se configuran en Notificaciones.",
@@ -1395,16 +1381,19 @@ export const es: Translations = {
     "Guarda en este dispositivo tu respuesta, la hora y la pantalla, el tipo de dispositivo y los ajustes de sonido actuales.",
   settingsSoundAmbientOff: "El sonido de fondo está desactivado.",
   settingsSoundMapTitle: "Dónde aparece el sonido",
-  settingsSoundMapDescription: "Los sonidos de la app empiezan solo después de tu toque y siguen tus preferencias.",
+  settingsSoundMapDescription:
+    "Los sonidos de la app empiezan solo después de tu toque y siguen tus preferencias.",
   settingsSoundMapAuth: "Aire suave al iniciar sesión",
   settingsSoundMapOrb: "Ambiente del orbe",
   settingsSoundMapDiary: "Ambiente del diario",
   settingsSoundMapFocus: "Biblioteca ambiental de enfoque",
   settingsSoundMapFeedback: "Señales suaves de finalización y recordatorio",
   settingsSoundCrossPlatformTitle: "Dónde funcionan los sonidos",
-  settingsSoundCrossPlatformNote: "ZenFlow usa las mismas opciones de sonido cuando tu dispositivo lo permite.",
+  settingsSoundCrossPlatformNote:
+    "ZenFlow usa las mismas opciones de sonido cuando tu dispositivo lo permite.",
   settingsSoundActionMapTitle: "Cuándo ZenFlow reproduce un sonido",
-  settingsSoundActionMapDescription: "Los sonidos cortos se reservan para cierres importantes e hitos poco frecuentes.",
+  settingsSoundActionMapDescription:
+    "Los sonidos cortos se reservan para cierres importantes e hitos poco frecuentes.",
   settingsSoundActionMapMood: "Estado de ánimo guardado",
   settingsSoundActionMapHabit: "Hábito completado",
   settingsSoundActionMapJournal: "Diario guardado",
@@ -3390,7 +3379,7 @@ export const es: Translations = {
   diaryFontSans: "Sin serifas",
   diaryFontSerif: "Con serifas",
   diaryFontHandwriting: "Manuscrita",
-  diaryFontScript: "Caligrafía",
+  diaryFontScript: "Cursiva",
   diarySnapshot: "Foto",
   diaryRecord: "Grabar",
   diaryFocusRay: "Enfoque",
@@ -3417,6 +3406,55 @@ export const es: Translations = {
   diaryPhotoSizeFull: "Ancho completo",
   diaryPhotoReturn: "Devolver foto a la galería",
   diaryPhotoResize: "Cambiar tamaño de foto",
+  diaryBackgroundDim: "Suave",
+  diaryBackgroundFull: "Completo",
+  diaryBackgroundOff: "Apagado",
+  diaryFormatHintLabel: "Herramientas de texto",
+  diaryMotion: "Movimiento",
+  diaryParticleSpeed: "Velocidad",
+  diaryParticleSpeedDrift: "Fluido",
+  diaryParticleSpeedOff: "Apagado",
+  diaryParticleSpeedSlow: "Lento",
+  diaryPhotoGestureHint: "Arrastra, toca tamaño, mantén para devolver",
+  diaryPhotoGestureInstructions:
+    "Arrastra para mover. Toca para cambiar el tamaño. Pellizcar también cambia el tamaño. Pulsa Home para centrar. Usa las flechas para mover, más o menos para cambiar el tamaño y Supr para devolver la foto a la galería. En pantalla táctil, mantén pulsado para devolver la foto a la galería.",
+  diaryPhotoMove: "Mover foto",
+  diaryScene: "Escena",
+  diaryTexture: "Textura",
+  diaryTextureClean: "Limpio",
+  diaryTextureCraft: "Artesanal",
+  diaryTextureDots: "Puntos",
+  diaryTextureGrid: "Cuadrícula",
+  diaryTextureLinen: "Lino",
+  diaryTextureLines: "Líneas",
+  journalDraftSaveFailed: "No se pudo guardar el borrador",
+  journalFormatToolbar: "Herramientas de formato",
+  journalInkEmerald: "Tinta esmeralda",
+  journalInkGold: "Tinta dorada",
+  journalInkRose: "Tinta rosa",
+  journalInkWhite: "Tinta predeterminada",
+  journalPanicLockDescription: "Desbloquea para volver a tu diario privado.",
+  journalPanicLockTitle: "Diario bloqueado",
+  journalPanicLockUnlockRequired: "Usa Desbloquear para volver a tu diario.",
+  journalPaperDark: "Oscuro",
+  journalPaperMilky: "Papel",
+  journalPaperSoftWhite: "Blanco suave",
+  journalPhotoNext: "Foto siguiente",
+  journalPhotoPrevious: "Foto anterior",
+  journalRecordingDiscard: "Descartar",
+  journalRecordingStopKeep: "Detener y guardar",
+  journalRemoveAudio: "Quitar audio {duration}",
+  journalRemoveTag: "Quitar etiqueta {tag}",
+  journalStyleTools: "Herramientas de estilo",
+  journalToolbarInk: "Tinta",
+  journalToolbarPaper: "Papel",
+  journalVoicePrivacyCancel: "Ahora no",
+  journalVoicePrivacyContinue: "Iniciar voz",
+  journalVoicePrivacyDescription:
+    "El navegador puede procesar el reconocimiento de voz fuera de ZenFlow. Inicia la voz solo si te parece bien para esta entrada.",
+  journalVoicePrivacyTitle: "Revisión de privacidad de voz",
+  openPhoto: "Abrir foto",
+  previous: "Anterior",
   // State of Mind
   somLogFeeling: "Registra cómo te sientes",
   somHowAreYouFeeling: "¿Cómo te sientes?",

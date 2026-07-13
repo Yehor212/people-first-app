@@ -26,6 +26,17 @@ import {
 import { isAccountSyncedSettingKey } from "@/storage/sync/settingSyncPolicy";
 import { applyIncomingAccountSetting } from "@/storage/sync/journalVaultSyncPolicy";
 import { SyncOwnerBoundaryError, validateSyncOwner } from "@/storage/sync/syncOwner";
+import { SK } from "@/lib/storageKeys";
+import {
+  MAX_AUDIO_PER_ENTRY,
+  MAX_PHOTOS_PER_ENTRY,
+  MAX_STICKERS_PER_ENTRY,
+  type JournalEntry,
+} from "@/features/journal/types";
+import { normalizeJournalPhotoLayout } from "@/features/journal/photoLayout";
+import { normalizeJournalStyleFields } from "@/features/journal/journalStyleFields";
+import { isEncryptedJournalContent } from "@/features/journal/journalCrypto";
+import { runWithJournalSecurityWriteLock } from "@/features/journal/journalSecurityWriteLock";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -117,6 +128,88 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+const JOURNAL_MOODS = new Set(["great", "good", "okay", "bad", "terrible"]);
+const MAX_JOURNAL_TAGS = 100;
+const MAX_JOURNAL_HABIT_SNAPSHOT_ITEMS = 100;
+
+function normalizeBoundedStringArray(value: unknown, maximum: number): string[] | null {
+  if (!Array.isArray(value) || value.length > maximum) return null;
+  if (!value.every((item) => typeof item === "string")) return null;
+  return [...new Set(value)];
+}
+
+function normalizeJournalHabitSnapshot(value: unknown): JournalEntry["habitSnapshot"] {
+  if (value === undefined || value === null) return undefined;
+  if (!Array.isArray(value) || value.length > MAX_JOURNAL_HABIT_SNAPSHOT_ITEMS) return undefined;
+
+  const normalized = value.filter(
+    (item): item is NonNullable<JournalEntry["habitSnapshot"]>[number] =>
+      isRecord(item) &&
+      typeof item.habitId === "string" &&
+      typeof item.habitName === "string" &&
+      typeof item.habitIcon === "string" &&
+      typeof item.completed === "boolean"
+  );
+  return normalized.length === value.length ? normalized : undefined;
+}
+
+function normalizeJournalDeltaPayload(
+  payload: Record<string, unknown>,
+  entityId: string
+): JournalEntry | null {
+  const photoIds = normalizeBoundedStringArray(payload.photoIds, MAX_PHOTOS_PER_ENTRY);
+  const stickers = normalizeBoundedStringArray(payload.stickers, MAX_STICKERS_PER_ENTRY);
+  const tags = normalizeBoundedStringArray(payload.tags, MAX_JOURNAL_TAGS);
+  const audioIds =
+    payload.audioIds === undefined
+      ? undefined
+      : normalizeBoundedStringArray(payload.audioIds, MAX_AUDIO_PER_ENTRY);
+
+  if (
+    payload.id !== entityId ||
+    typeof payload.date !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(payload.date) ||
+    typeof payload.title !== "string" ||
+    typeof payload.content !== "string" ||
+    typeof payload.createdAt !== "number" ||
+    !Number.isFinite(payload.createdAt) ||
+    typeof payload.updatedAt !== "number" ||
+    !Number.isFinite(payload.updatedAt) ||
+    !photoIds ||
+    !stickers ||
+    !tags ||
+    audioIds === null
+  ) {
+    return null;
+  }
+
+  const habitSnapshot = normalizeJournalHabitSnapshot(payload.habitSnapshot);
+  if (payload.habitSnapshot !== undefined && payload.habitSnapshot !== null && !habitSnapshot) {
+    return null;
+  }
+
+  return {
+    id: entityId,
+    date: payload.date,
+    title: payload.title,
+    content: payload.content,
+    stickers,
+    photoIds,
+    audioIds,
+    mood:
+      typeof payload.mood === "string" && JOURNAL_MOODS.has(payload.mood)
+        ? (payload.mood as JournalEntry["mood"])
+        : undefined,
+    tags,
+    templateId: typeof payload.templateId === "string" ? payload.templateId : undefined,
+    habitSnapshot,
+    photoLayout: normalizeJournalPhotoLayout(payload.photoLayout, photoIds),
+    ...normalizeJournalStyleFields(payload),
+    createdAt: payload.createdAt,
+    updatedAt: payload.updatedAt,
+  };
+}
+
 export function isSyncEventWriteIntent(value: unknown): value is SyncEventWriteIntent {
   if (!isRecord(value)) return false;
 
@@ -200,10 +293,7 @@ export async function getPersistentDeviceId(): Promise<string> {
  * Sets cursor to server max so we don't replay entire event history.
  */
 export async function bootstrapLastSeq(expectedOwnerUserId?: string): Promise<number> {
-  const ownerUserId = await resolveDeltaOwner(
-    { expectedOwnerUserId },
-    "Delta cursor bootstrap",
-  );
+  const ownerUserId = await resolveDeltaOwner({ expectedOwnerUserId }, "Delta cursor bootstrap");
   const localSeq = await getLastSeq();
   await assertDeltaOwnerCurrent(ownerUserId, undefined, "Delta cursor bootstrap");
   if (localSeq > 0) return localSeq;
@@ -224,16 +314,16 @@ export async function getLastSeq(): Promise<number> {
 
 export async function saveLastSeq(
   seq: number,
-  ownerOptions?: ApplyDeltaOwnerOptions,
+  ownerOptions?: ApplyDeltaOwnerOptions
 ): Promise<void> {
   const ownerUserId = await resolveDeltaOwner(ownerOptions, "Delta cursor update");
   await db.transaction("rw", [db.settings], async () => {
     await Dexie.waitFor(
-      assertDeltaOwnerCurrent(ownerUserId, ownerOptions, "Delta cursor update transaction"),
+      assertDeltaOwnerCurrent(ownerUserId, ownerOptions, "Delta cursor update transaction")
     );
     await db.settings.put({ key: SYNC_SEQ_KEY, value: seq });
     await Dexie.waitFor(
-      assertDeltaOwnerCurrent(ownerUserId, ownerOptions, "Delta cursor update transaction"),
+      assertDeltaOwnerCurrent(ownerUserId, ownerOptions, "Delta cursor update transaction")
     );
   });
 }
@@ -445,7 +535,7 @@ export interface ApplyDeltaOwnerOptions {
 
 async function resolveDeltaOwner(
   options: ApplyDeltaOwnerOptions | undefined,
-  operation: string,
+  operation: string
 ): Promise<string> {
   await options?.assertOwnerCurrent?.();
   const ownerUserId = await validateSyncOwner(options?.expectedOwnerUserId, operation);
@@ -456,7 +546,7 @@ async function resolveDeltaOwner(
 async function assertDeltaOwnerCurrent(
   ownerUserId: string,
   options: ApplyDeltaOwnerOptions | undefined,
-  operation: string,
+  operation: string
 ): Promise<void> {
   await options?.assertOwnerCurrent?.();
   await validateSyncOwner(ownerUserId, operation);
@@ -646,15 +736,13 @@ async function rememberAppliedDelete(event: SyncEvent): Promise<void> {
 export async function applyDelta(
   events: SyncEvent[],
   currentDeviceId: string,
-  ownerOptions?: ApplyDeltaOwnerOptions,
+  ownerOptions?: ApplyDeltaOwnerOptions
 ): Promise<number> {
   if (events.length === 0) return 0;
 
   const ownerUserId = await resolveDeltaOwner(ownerOptions, "Delta apply");
   const assertOwnerInTransaction = () =>
-    Dexie.waitFor(
-      assertDeltaOwnerCurrent(ownerUserId, ownerOptions, "Delta apply transaction"),
-    );
+    Dexie.waitFor(assertDeltaOwnerCurrent(ownerUserId, ownerOptions, "Delta apply transaction"));
 
   const remoteEvents = events.filter((e) => e.device_id !== currentDeviceId);
   if (remoteEvents.length === 0) {
@@ -699,63 +787,91 @@ export async function applyDelta(
   try {
     // applied is set AFTER successful commit — rolled-back tx won't trigger refresh
     let txApplied = 0;
-    await db.transaction("rw", tables, async () => {
-      await assertOwnerInTransaction();
-      for (const event of remoteEvents) {
-        const tableName = ENTITY_TABLE_MAP[event.entity_type];
-        if (!tableName) continue;
+    const applyTransaction = async () => {
+      await db.transaction("rw", tables, async () => {
+        await assertOwnerInTransaction();
+        for (const event of remoteEvents) {
+          const tableName = ENTITY_TABLE_MAP[event.entity_type];
+          if (!tableName) continue;
 
-        if (event.entity_type === "habit_completion") {
-          if (
-            await applyHabitCompletionEvent(event, (habitId) =>
-              isTombstonedInApply("habit", habitId)
+          if (event.entity_type === "habit_completion") {
+            if (
+              await applyHabitCompletionEvent(event, (habitId) =>
+                isTombstonedInApply("habit", habitId)
+              )
             )
-          )
-            txApplied++;
-          continue;
-        }
-        if (event.entity_type === "setting") {
-          if (await applySettingEvent(event)) txApplied++;
-          continue;
-        }
-
-        const table = db.table(tableName);
-
-        switch (event.op) {
-          case "upsert":
-            if (event.payload) {
-              if (await isTombstonedInApply(event.entity_type, event.entity_id)) {
-                break;
-              }
-              // Timestamp-based conflict resolution: keep newer entry
-              const entityId = event.payload.id as string;
-              if (entityId) {
-                const local = await table.get(entityId);
-                if (local) {
-                  const localTime = readEntityTimestampMs(local);
-                  const remoteTime = Math.max(
-                    readEntityTimestampMs(event.payload),
-                    readTimestampMs(event.created_at)
-                  );
-                  if (localTime > remoteTime) break; // local is newer, skip
-                }
-              }
-              await table.put(event.payload);
               txApplied++;
-            }
-            break;
-          case "delete":
-            await table.delete(event.entity_id);
-            await rememberAppliedDelete(event);
-            markBatchTombstone(event);
-            txApplied++;
-            break;
-        }
-      }
+            continue;
+          }
+          if (event.entity_type === "setting") {
+            if (await applySettingEvent(event)) txApplied++;
+            continue;
+          }
 
-      await assertOwnerInTransaction();
-      await db.settings.put({ key: SYNC_SEQ_KEY, value: maxSeq });
-    });
+          const table = db.table(tableName);
+
+          switch (event.op) {
+            case "upsert":
+              if (event.payload) {
+                if (await isTombstonedInApply(event.entity_type, event.entity_id)) {
+                  break;
+                }
+                let payload: Record<string, unknown> = event.payload;
+                if (event.entity_type === "journal") {
+                  const normalizedJournalEntry = normalizeJournalDeltaPayload(
+                    event.payload,
+                    event.entity_id
+                  );
+                  if (!normalizedJournalEntry) break;
+
+                  const protectedJournalAtCommit = Boolean(
+                    await db.settings.get(SK.JOURNAL_PASSWORD)
+                  );
+                  if (
+                    protectedJournalAtCommit &&
+                    normalizedJournalEntry.content &&
+                    !isEncryptedJournalContent(normalizedJournalEntry.content)
+                  ) {
+                    break;
+                  }
+                  payload = normalizedJournalEntry as unknown as Record<string, unknown>;
+                }
+
+                // Timestamp-based conflict resolution: keep newer entry
+                const entityId = payload.id as string;
+                if (entityId) {
+                  const local = await table.get(entityId);
+                  if (local) {
+                    const localTime = readEntityTimestampMs(local);
+                    const remoteTime = Math.max(
+                      readEntityTimestampMs(payload),
+                      readTimestampMs(event.created_at)
+                    );
+                    if (localTime > remoteTime) break; // local is newer, skip
+                  }
+                }
+                await table.put(payload);
+                txApplied++;
+              }
+              break;
+            case "delete":
+              await table.delete(event.entity_id);
+              await rememberAppliedDelete(event);
+              markBatchTombstone(event);
+              txApplied++;
+              break;
+          }
+        }
+
+        await assertOwnerInTransaction();
+        await db.settings.put({ key: SYNC_SEQ_KEY, value: maxSeq });
+      });
+    };
+    if (remoteEvents.some((event) => event.entity_type === "journal")) {
+      await runWithJournalSecurityWriteLock(applyTransaction);
+    } else {
+      await applyTransaction();
+    }
     applied = txApplied; // only count after successful commit
   } catch (err) {
     // QuotaExceededError: stop retrying, notify user

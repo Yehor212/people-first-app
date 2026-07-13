@@ -1,4 +1,11 @@
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import {
+  linkSync,
+  mkdtempSync,
+  mkdirSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -31,12 +38,47 @@ describe("curated Free RAG corpus", () => {
     expect(manifest.groups.find((group) => group.id === "agent_rules")?.include).toContain(
       "AGENTS.md"
     );
+    expect(manifest.groups.find((group) => group.id === "agent_rules")?.include).toContain(
+      "config/persistent-agent-orchestra.json"
+    );
+    expect(manifest.groups.find((group) => group.id === "agent_rules")?.include).not.toContain(
+      "docs/ai/PERSISTENT_AGENT_ORCHESTRA.md"
+    );
     expect(manifest.groups.find((group) => group.id === "telegram_control")?.include).toContain(
       ".github/workflows/telegram-control.yml"
     );
     expect(manifest.groups.find((group) => group.id === "coach_journal")?.include).toContain(
       "supabase/functions/ai-coach/index.ts"
     );
+  });
+
+  it("rejects curated inputs that escape the root through symlinks or hardlinks", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "zenflow-rag-input-root-"));
+    const outsideDir = mkdtempSync(join(tmpdir(), "zenflow-rag-input-outside-"));
+    const outsidePath = join(outsideDir, "private-journal.md");
+    writeFileSync(outsidePath, "PRIVATE_JOURNAL_SENTINEL");
+
+    const manifest: RagCorpusManifest = {
+      version: 1,
+      globalExclude: [],
+      groups: [
+        {
+          id: "agent_rules",
+          description: "test rules",
+          tags: ["rules"],
+          include: ["AGENTS.md"],
+        },
+      ],
+    };
+
+    symlinkSync(outsidePath, join(rootDir, "AGENTS.md"));
+    expect(() => expandRagCorpusDocuments(manifest, { rootDir })).toThrow(/symlink/i);
+
+    unlinkSync(join(rootDir, "AGENTS.md"));
+    writeFileSync(join(rootDir, "AGENTS.md"), "local");
+    linkSync(outsidePath, join(rootDir, "HARDLINK.md"));
+    manifest.groups[0].include = ["HARDLINK.md"];
+    expect(() => expandRagCorpusDocuments(manifest, { rootDir })).toThrow(/hardlink/i);
   });
 
   it("expands only curated source files and excludes generated, asset, build, dependency, and secret paths", () => {

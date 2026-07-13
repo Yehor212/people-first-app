@@ -1519,9 +1519,11 @@ describe("JournalModule orb handoff behavior", () => {
       />,
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "This browser could not confirm the email link. Open the link on the same device or request a new one.",
-    );
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "This browser could not confirm the email link. Open the link on the same device or request a new one.",
+      );
+    });
     expect(securityMocks.removePassword).not.toHaveBeenCalled();
     expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET)).toBe(true);
     expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET_PROOF)).toBe(false);

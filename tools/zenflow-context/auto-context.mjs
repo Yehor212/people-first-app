@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,7 +10,7 @@ import { getZenflowContext, resolveZenflowContext } from "./server.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot =
   process.env.ZENFLOW_CONTEXT_ROOT || path.resolve(__dirname, "..", "..");
-const outputDir = path.join(repoRoot, ".Codex", "auto-context");
+const outputDir = path.join(repoRoot, ".codex", "auto-context");
 const currentPackPath = path.join(outputDir, "current.md");
 const currentMetaPath = path.join(outputDir, "current.json");
 const maxChars = Number(process.env.ZENFLOW_CONTEXT_AUTO_MAX_CHARS || "8500");
@@ -102,7 +101,7 @@ function compactForHook(pack, metadata) {
   return `${header}${body}`;
 }
 
-async function generateAutoContext({ eventName, topic, source }) {
+async function generateAutoContext({ eventName, topic, source, write = true }) {
   const resolved = resolveZenflowContext({ task: topic, maxContexts: 3 });
   const selected = resolved.filter((item) => item.score > 0).slice(0, 2);
   const selectedContexts = selected.length > 0 ? selected : [resolved[0] || { id: "startup" }];
@@ -121,7 +120,7 @@ async function generateAutoContext({ eventName, topic, source }) {
     packs.push(`<!-- auto-context profile: ${item.id} -->\n${pack}`);
   }
   const contextPack = packs.join("\n\n---\n\n");
-  const ragPreflight = generateRagPreflight(topic);
+  const ragPreflight = generateRagPreflight(topic, { write });
   const pack = [contextPack, "<!-- rag-preflight -->", ragPreflight.markdown]
     .filter(Boolean)
     .join("\n\n---\n\n");
@@ -129,36 +128,39 @@ async function generateAutoContext({ eventName, topic, source }) {
     generatedAt: new Date().toISOString(),
     eventName,
     source,
-    topicPreview: topic.slice(0, 240),
     promptHash: hash(topic),
     contextId,
     contextIds: selectedContexts.map((item) => item.id),
     resolved,
-    packPath: ".Codex/auto-context/current.md",
+    packPath: ".codex/auto-context/current.md",
     ragPreflight: ragPreflight.metadata,
   };
 
-  await mkdir(outputDir, { recursive: true });
-  await writeFile(currentPackPath, pack, "utf8");
-  await writeFile(currentMetaPath, `${JSON.stringify(metadata, null, 2)}\n`, "utf8");
+  if (write) {
+    await mkdir(outputDir, { recursive: true });
+    await writeFile(currentPackPath, pack, "utf8");
+    await writeFile(currentMetaPath, `${JSON.stringify(metadata, null, 2)}\n`, "utf8");
+  }
 
   return { pack, metadata };
 }
 
-function generateRagPreflight(topic) {
+function generateRagPreflight(topic, { write = true } = {}) {
   try {
+    const preflightArgs = [
+      "--import",
+      "tsx",
+      "scripts/rag/preflight.ts",
+      "--json",
+      "--task",
+      topic,
+      "--max-chars",
+      "3200",
+    ];
+    if (!write) preflightArgs.push("--no-write");
     const output = execFileSync(
       process.execPath,
-      [
-        "--import",
-        "tsx",
-        "scripts/rag/preflight.ts",
-        "--json",
-        "--task",
-        topic,
-        "--max-chars",
-        "3200",
-      ],
+      preflightArgs,
       {
         cwd: repoRoot,
         encoding: "utf8",
@@ -171,8 +173,8 @@ function generateRagPreflight(topic) {
       markdown: parsed.markdown,
       metadata: {
         ok: true,
-        path: parsed.markdownPath || ".Codex/auto-context/rag-current.md",
-        metadataPath: parsed.metadataPath || ".Codex/auto-context/rag-current.json",
+        path: parsed.markdownPath || ".codex/auto-context/rag-current.md",
+        metadataPath: parsed.metadataPath || ".codex/auto-context/rag-current.json",
         groups: parsed.groups || [],
         resultCount: parsed.resultCount || 0,
         taskHash: parsed.taskHash || hash(topic),
@@ -191,7 +193,7 @@ function generateRagPreflight(topic) {
       ].join("\n"),
       metadata: {
         ok: false,
-        path: ".Codex/auto-context/rag-current.md",
+        path: ".codex/auto-context/rag-current.md",
         groups: [],
         resultCount: 0,
         taskHash: hash(topic),
@@ -206,17 +208,16 @@ async function checkAutoContext() {
     eventName: "Check",
     topic: "startup verification",
     source: "ai:context:auto-check",
+    write: false,
   });
 
   if (!pack.includes("ZenFlow Context Pack")) {
     throw new Error("generated context pack is missing its expected heading");
   }
-  if (!existsSync(currentPackPath) || !existsSync(currentMetaPath)) {
-    throw new Error("auto-context files were not written");
-  }
-
   console.log(JSON.stringify({
     ok: true,
+    writes: false,
+    containsRagPreflight: pack.includes("<!-- rag-preflight -->") && pack.includes("# ZenFlow Free RAG Preflight"),
     contextId: metadata.contextId,
     packPath: metadata.packPath,
     promptHash: metadata.promptHash,
