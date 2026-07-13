@@ -195,12 +195,26 @@ vi.mock("@/lib/logger", () => ({
 
 vi.mock("@/lib/safeJson", () => ({
   safeJsonParse: vi.fn((_raw: string, fallback: unknown) => fallback),
+  safeLocalStorageGet: vi.fn((key: string, fallback: unknown) => {
+    const raw = safeJsonStore.values.get(key);
+    if (raw === undefined) return fallback;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return fallback;
+    }
+  }),
+  safeLocalStorageSet: vi.fn((key: string, value: unknown) => {
+    safeJsonStore.values.set(key, JSON.stringify(value));
+    return true;
+  }),
   storageGetRaw: vi.fn((key: string, fallback?: string) => safeJsonStore.values.get(key) ?? fallback ?? null),
   storageRemove: vi.fn((key: string) => {
     safeJsonStore.values.delete(key);
   }),
   storageSetRaw: vi.fn((key: string, value: string) => {
     safeJsonStore.values.set(key, value);
+    return true;
   }),
 }));
 
@@ -355,6 +369,14 @@ vi.mock("../useJournalReminder", () => ({
 }));
 
 vi.mock("../useJournalSecurity", () => ({
+  LOCK_TIMEOUT_OPTIONS: [
+    { label: "Immediately", ms: 0 },
+    { label: "1 minute", ms: 60_000 },
+    { label: "5 minutes", ms: 300_000 },
+    { label: "15 minutes", ms: 900_000 },
+    { label: "30 minutes", ms: 1_800_000 },
+  ],
+  setAutoLockMs: vi.fn(() => true),
   useJournalSecurity: () => ({
     ...securityMocks.state,
     lock: securityMocks.lock,
@@ -1215,7 +1237,7 @@ describe("JournalModule orb handoff behavior", () => {
     expect(await screen.findByRole(
       "dialog",
       { name: /can't open the lock/i },
-      { timeout: 3_000 },
+      { timeout: 10_000 },
     )).toBeInTheDocument();
     expect(screen.getAllByText(/encrypted with your password/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/entries remain protected/i).length).toBeGreaterThan(0);

@@ -28,6 +28,8 @@ export function LanguagePanel() {
             key={lang}
             onClick={() => setLanguage(lang)}
             selected={language === lang}
+            lang={lang}
+            dir={lang === "ar" || lang === "he" ? "rtl" : "ltr"}
           >
             {languageNames[lang]}
           </SettingsChoiceButton>

@@ -164,8 +164,11 @@ describe("Settings trust copy", () => {
 
   it("keeps V2 account copy separate from shared sync copy", () => {
     const settingsPage = read("src/pages/nav-v2/SettingsPage.tsx");
+    const overviewModules = read(
+      "src/pages/nav-v2/settings/useSettingsOverviewModules.ts",
+    );
     const accountPanel = read("src/pages/nav-v2/settings/V2SettingsAccountPanel.tsx");
-    const v2AccountSources = `${settingsPage}\n${accountPanel}`;
+    const v2AccountSources = `${settingsPage}\n${overviewModules}\n${accountPanel}`;
 
     for (const required of [
       "settingsAccountBackupTitle",
@@ -213,15 +216,17 @@ describe("Settings trust copy", () => {
 
   it("keeps V2 sound choices and diary availability truthful", () => {
     const sound = read("src/pages/nav-v2/settings/V2SettingsSoundPanel.tsx");
-    const diary = read("src/pages/nav-v2/settings/V2SettingsDiaryAmbienceControl.tsx");
+    const diary = read("src/features/journal/JournalAmbienceSetting.tsx");
 
-    expect(sound).toContain('profile.id !== "rich"');
-    expect(sound).toContain('comfort.settings.profile === "rich" ? "balanced"');
-    expect(sound).toContain("profileMatchesEffectiveSettings");
+    expect(sound).toContain("settingsSoundBackgroundTitle");
+    expect(sound).toContain("settingsSoundActivityTitle");
+    expect(sound).not.toContain("applyProfile");
+    expect(sound).not.toContain("profileMatchesEffectiveSettings");
     expect(sound).not.toContain("settingsSoundProfileRich");
     expect(sound).not.toContain("settingsSoundProfileRichDesc");
     expect(diary).toContain("settingsSoundDiaryRainOff");
-    expect(diary).toContain("settingsSoundDiaryReady");
+    expect(diary).toContain("useUserStartedAmbienceAudio");
+    expect(diary).toContain('preload="none"');
     expect(diary).not.toContain("settingsSoundFeedbackOn");
     expect(diary).not.toContain("settingsSoundFeedbackOff");
   });
@@ -234,15 +239,20 @@ describe("Settings trust copy", () => {
   });
 
   it("keeps V2 privacy fallbacks aligned with the approved Settings copy", () => {
-    const source = read("src/pages/nav-v2/settings/V2SettingsPrivacyPanel.tsx");
+    const privacy = read("src/pages/nav-v2/settings/V2SettingsPrivacyPanel.tsx");
+    const reminders = read("src/pages/nav-v2/settings/V2SettingsNotificationsPanel.tsx");
 
     for (const expected of [
       'title={tx.privacyAds || "Rewarded videos"}',
       "They load only when you turn them on. Google may ask for your privacy choice when required.",
-      'title={tx.privacyPushNotifications || "Account reminders"}',
-      "Receive reminders from your account on this device. Reminders you set on this device still work when this is off.",
     ]) {
-      expect.soft(source).toContain(expected);
+      expect.soft(privacy).toContain(expected);
+    }
+    for (const expected of [
+      'title={tx.privacyPushNotifications || "Account reminders"}',
+      "Receive reminders from your account on this device. Reminders you set here work separately.",
+    ]) {
+      expect.soft(reminders).toContain(expected);
     }
     for (const legacy of [
       'title={tx.privacyAds || "Rewarded ads"}',
@@ -250,8 +260,9 @@ describe("Settings trust copy", () => {
       'title={tx.privacyPushNotifications || "Remote push notifications"}',
       "Register this device for account-based push reminders",
     ]) {
-      expect.soft(source).not.toContain(legacy);
+      expect.soft(`${privacy}\n${reminders}`).not.toContain(legacy);
     }
+    expect(privacy).not.toContain("privacyPushNotifications");
   });
 
   it("keeps backup and report actions distinct without rewiring handlers", () => {
@@ -275,10 +286,10 @@ describe("Settings trust copy", () => {
     const source = read("src/pages/nav-v2/settings/V2SettingsAboutPanel.tsx");
 
     for (const required of [
-      '"Help and legal"',
-      '"Privacy, terms, licenses, and support."',
+      '"Help and information"',
+      '"Send feedback"',
       '"Licenses"',
-      '"Check for a newer version."',
+      '"Check for updates"',
     ]) {
       expect(source).toContain(required);
     }

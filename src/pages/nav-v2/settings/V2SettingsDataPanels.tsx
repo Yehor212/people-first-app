@@ -38,6 +38,8 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
   const [resetConfirmInput, setResetConfirmInput] = useState("");
   const [isResettingData, setIsResettingData] = useState(false);
   const resetTriggerRef = useRef<HTMLButtonElement>(null);
+  const importTriggerRef = useRef<HTMLButtonElement>(null);
+  const importStatusFocusRef = useRef<HTMLElement>(null);
   const resetConfirmationRef = useRef<HTMLDivElement>(null);
   const shouldRestoreResetFocusRef = useRef(false);
   const exp = useDataExport({
@@ -74,7 +76,6 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
   useBackHandler(showResetConfirm && (canResetLocalData || isResettingData), () => {
     closeResetConfirm();
   });
-  useBackHandler(showImportConfirm, handleImportCancel);
   useScrollLock(showImportConfirm);
 
   useEffect(() => {
@@ -150,6 +151,8 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
         <section
           aria-label={tx.settingsBackupRestoreTitle || "Backup & restore"}
           data-testid="settings-v2-backup-restore-group"
+          ref={importStatusFocusRef}
+          tabIndex={-1}
         >
           <SettingsInset>
             <SettingsFieldHeader
@@ -175,28 +178,6 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
               className="space-y-2.5 border-t border-[hsl(var(--settings-v2-border)/0.24)] pt-3"
               data-testid="settings-v2-import-options"
             >
-              <SettingsFieldHeader title={tx.importMode || "How to import"} />
-              <SettingsButtonGrid
-                columns="confirm"
-                role="group"
-                ariaLabel={tx.importMode || "How to import"}
-              >
-                {(["merge", "replace"] as const).map((mode) => (
-                  <SettingsChoiceButton
-                    key={mode}
-                    onClick={() => imp.setImportMode(mode)}
-                    selected={imp.importMode === mode}
-                    presentation="compact"
-                    selectedTone={mode === "replace" ? "danger" : "subtle"}
-                    surface="card"
-                    testId={`settings-v2-import-mode-${mode}`}
-                  >
-                    {mode === "merge"
-                      ? tx.importMerge || "Add to current data"
-                      : tx.importReplace || "Replace current data"}
-                  </SettingsChoiceButton>
-                ))}
-              </SettingsButtonGrid>
               <input
                 ref={imp.fileInputRef}
                 type="file"
@@ -205,6 +186,7 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
                 onChange={imp.handleImportFile}
               />
               <ActionButton
+                buttonRef={importTriggerRef}
                 icon={imp.isImporting ? Loader2 : Upload}
                 onClick={imp.handleImportClick}
                 disabled={imp.isImporting}
@@ -357,10 +339,35 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
           }
           confirmVariant={imp.importMode === "replace" ? "danger" : "primary"}
           onCancel={imp.handleImportCancel}
+          confirmFocusRef={importStatusFocusRef}
+          returnFocusRef={importTriggerRef}
           onConfirm={() => {
             void imp.handleImportConfirm();
           }}
-        />
+        >
+          <SettingsFieldHeader title={tx.importMode || "How to import"} />
+          <SettingsButtonGrid
+            columns="confirm"
+            role="group"
+            ariaLabel={tx.importMode || "How to import"}
+          >
+            {(["merge", "replace"] as const).map((mode) => (
+              <SettingsChoiceButton
+                key={mode}
+                onClick={() => imp.setImportMode(mode)}
+                selected={imp.importMode === mode}
+                presentation="compact"
+                selectedTone={mode === "replace" ? "danger" : "subtle"}
+                surface="card"
+                testId={`settings-v2-import-mode-${mode}`}
+              >
+                {mode === "merge"
+                  ? tx.importMerge || "Add to current data"
+                  : tx.importReplace || "Replace current data"}
+              </SettingsChoiceButton>
+            ))}
+          </SettingsButtonGrid>
+        </SettingsDialog>
       )}
     </>
   );

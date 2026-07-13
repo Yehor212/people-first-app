@@ -6,7 +6,7 @@
  * the focal point — it exists to prove the surface is "alive".
  *
  * IMPORTANT: Always pair with `useShouldAnimate()` gating. When reduced-motion
- * is on OR battery low OR Dopamine off, consume `breatheStatic` instead so the
+ * is on, battery is low, or app motion is off, consume `breatheStatic` instead so the
  * infinite animation does NOT run (GPU + accessibility).
  */
 

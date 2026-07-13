@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
+import { useThemeStore } from "@/stores/themeStore";
 
 const RECENT_KEY = "zenflow-cmd-recent";
 const MAX_RECENT = 5;
@@ -46,6 +47,9 @@ export default function CommandPalette({ open, onClose, onNavigate }: CommandPal
   const ts = t as unknown as Record<string, string>;
   const [search, setSearch] = useState("");
   const [recentIds] = useState(() => getRecent());
+  const [themeError, setThemeError] = useState<string | null>(null);
+  const appliedTheme = useThemeStore((state) => state.appliedTheme);
+  const setTheme = useThemeStore((state) => state.setTheme);
 
   useEffect(() => {
     if (open) setSearch("");
@@ -81,14 +85,23 @@ export default function CommandPalette({ open, onClose, onNavigate }: CommandPal
   );
 
   const toggleTheme = useCallback(() => {
-    runAction("action-theme", () => {
-      document.documentElement.classList.toggle("dark");
-    });
-  }, [runAction]);
+    pushRecent("action-theme");
+    const nextTheme = appliedTheme === "paper" ? "ink" : "paper";
+    const result = setTheme(nextTheme);
+    if (!result.ok) {
+      setThemeError(
+        ts.settingsPreferenceSaveError ||
+          "Could not save this change. Your previous setting is still active.",
+      );
+      return;
+    }
+    setThemeError(null);
+    onClose();
+  }, [appliedTheme, onClose, setTheme, ts.settingsPreferenceSaveError]);
 
   if (!open) return null;
 
-  const isDark = document.documentElement.classList.contains("dark");
+  const isDark = appliedTheme !== "paper";
 
   const navItems = [
     {
@@ -159,6 +172,11 @@ export default function CommandPalette({ open, onClose, onNavigate }: CommandPal
         onClick={(e) => e.stopPropagation()}
         shouldFilter
       >
+        {themeError ? (
+          <p role="alert" className="border-b border-destructive/25 bg-destructive/10 px-4 py-2 text-xs text-destructive">
+            {themeError}
+          </p>
+        ) : null}
         <div className="flex items-center gap-2 px-4 border-b border-border/20">
           <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <Command.Input

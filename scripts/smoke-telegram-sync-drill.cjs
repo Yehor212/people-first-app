@@ -26,7 +26,6 @@ const TARGETED_SYNC_TESTS = [
   "src/storage/__tests__/eventSync.test.ts",
   "src/storage/__tests__/initialDeltaSync.test.ts",
   "src/hooks/__tests__/useDeltaSyncEffects.test.ts",
-  "src/hooks/__tests__/useCloudSyncEffects.test.ts",
   "src/lib/__tests__/syncBroadcast.test.ts",
   "src/lib/__tests__/syncGapDetector.test.ts",
   "src/lib/__tests__/syncLeader.test.ts",

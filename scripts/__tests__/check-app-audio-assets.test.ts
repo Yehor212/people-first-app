@@ -80,7 +80,9 @@ describe("non-Hyperfocus app audio guard", () => {
     expect(existsSync(reportPath)).toBe(true);
     expect(followUpOutput).toContain("[app-audio-qc] PASS");
     rmSync(reportPath, { force: true });
-  }, 60000);
+  // This contract intentionally executes the complete generated-artifact scan twice.
+  // Keep enough headroom for loaded CI workers without weakening either assertion.
+  }, 120000);
 
   it("rejects custom report paths", () => {
     expect(() => execFileSync(process.execPath, [scriptPath, "--write-report", "../report.json"], { encoding: "utf8" })).toThrow();

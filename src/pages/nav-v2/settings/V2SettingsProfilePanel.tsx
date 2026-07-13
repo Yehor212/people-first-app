@@ -1,16 +1,14 @@
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Loader2, Save, UserRound } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { updateProfileName } from "@/lib/accountService";
 import { logger } from "@/lib/logger";
-import { safeLocalStorageGet } from "@/lib/safeJson";
 import { sanitizeUserName } from "@/lib/sanitize";
 import {
   assertSettingsOwnerCurrent,
   SettingsOwnerBoundaryError,
 } from "@/lib/settingsOwnerBoundary";
-import { SK } from "@/lib/storageKeys";
 import { getCurrentSessionUserId } from "@/lib/supabaseClient";
 import { userNameSchema } from "@/lib/validation";
 
@@ -23,10 +21,6 @@ import {
 } from "./components/V2SettingsControlPrimitives";
 import type { V2SettingsControls } from "./types";
 
-export function getStoredLockTimeoutMs(): number {
-  return safeLocalStorageGet<number | null>(SK.JOURNAL_LOCK_TIMEOUT, null) ?? 300_000;
-}
-
 export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
@@ -36,12 +30,15 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
   const [nameStatus, setNameStatus] = useState<string | null>(null);
   const [lastSavedName, setLastSavedName] = useState(visibleName);
   const [isSavingName, setIsSavingName] = useState(false);
+  const [nameTouched, setNameTouched] = useState(false);
   const nameSaveGenerationRef = useRef(0);
+  const nameErrorId = useId();
 
   useEffect(() => {
     setName(visibleName);
     setLastSavedName(visibleName);
     setNameStatus(null);
+    setNameTouched(false);
   }, [visibleName]);
 
   useEffect(() => {
@@ -50,28 +47,28 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
     return () => window.clearTimeout(timer);
   }, [nameStatus]);
 
-  const sanitizedName = sanitizeUserName(name);
+  const trimmedName = name.trim();
+  const sanitizedName = sanitizeUserName(trimmedName);
   const sanitizedCurrentName = sanitizeUserName(lastSavedName);
-  let isNameValid = Boolean(sanitizedName);
-
-  if (isNameValid) {
-    try {
-      userNameSchema.parse(sanitizedName);
-    } catch {
-      isNameValid = false;
-    }
-  }
+  const isNameValid =
+    userNameSchema.safeParse(trimmedName).success && sanitizedName === trimmedName;
+  const nameValidationMessage =
+    nameTouched && !isNameValid
+      ? tx.invalidNameFormat || "Enter a name between 1 and 100 characters."
+      : null;
 
   const isNameSaveDisabled = isSavingName || !isNameValid || sanitizedName === sanitizedCurrentName;
 
   const handleNameSave = async () => {
-    const sanitized = sanitizeUserName(name);
+    const trimmed = name.trim();
+    const sanitized = sanitizeUserName(trimmed);
     if (isSavingName || !sanitized) return;
 
     try {
-      userNameSchema.parse(sanitized);
+      userNameSchema.parse(trimmed);
+      if (sanitized !== trimmed) throw new Error("unsupported-name-content");
     } catch {
-      setNameStatus(tx.invalidNameFormat || "Invalid name format");
+      setNameTouched(true);
       return;
     }
 
@@ -139,11 +136,18 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
         <SettingsTextInput
           id="settings-v2-name"
           value={name}
-          onChange={setName}
+          onChange={(value) => {
+            setName(value);
+            setNameTouched(true);
+            setNameStatus(null);
+          }}
           autoComplete="name"
           placeholder={tx.profileNamePlaceholder || "Enter your name"}
           fill
           onKeyDown={handleNameKeyDown}
+          tone={nameValidationMessage ? "danger" : "neutral"}
+          ariaInvalid={Boolean(nameValidationMessage)}
+          ariaDescribedBy={nameValidationMessage ? nameErrorId : undefined}
         />
         <SettingsInlineButton
           icon={isSavingName ? Loader2 : Save}
@@ -158,6 +162,11 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
           {isSavingName ? tx.saving || "Saving..." : tx.saveName || "Save name"}
         </SettingsInlineButton>
       </div>
+      {nameValidationMessage ? (
+        <p id={nameErrorId} role="alert" className="text-sm text-destructive">
+          {nameValidationMessage}
+        </p>
+      ) : null}
       <div>
         <SettingsStatus>{nameStatus}</SettingsStatus>
       </div>

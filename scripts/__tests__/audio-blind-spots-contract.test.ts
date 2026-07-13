@@ -91,8 +91,7 @@ describe("audio blind-spot release contracts", () => {
     const audioSurfaces = [
       read("src/components/auth-screen/AuthScreen.tsx"),
       read("src/pages/nav-v2/OrbAmbienceControl.tsx"),
-      read("src/pages/nav-v2/settings/V2SettingsDiaryAmbienceControl.tsx"),
-      read("src/pages/nav-v2/DiaryPage.tsx"),
+      read("src/features/journal/JournalAmbienceSetting.tsx"),
       read("src/lib/ambientSounds.ts"),
     ];
 

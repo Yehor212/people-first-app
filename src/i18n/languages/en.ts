@@ -530,11 +530,19 @@ export const en: Translations = {
   saveName: "Save name",
   nameSaved: "Name saved",
   nameSavedLocally: "Saved on this device",
-  invalidNameFormat: "Invalid name format",
+  invalidNameFormat: "Enter a name between 1 and 100 characters.",
   notifications: "Notifications",
   notificationsComingSoon: "Notifications will be available in future updates.",
   settingsOverviewDescription:
     "Choose how ZenFlow looks, sounds, reminds you, and handles your data.",
+  settingsOverviewDescriptionWithoutReminders:
+    "Choose how ZenFlow looks, sounds, and handles your data.",
+  settingsReminderDaysMissing: "Choose reminder days",
+  settingsSoundRestoreTitle: "Some background sounds are off",
+  settingsSoundRestoreDescription:
+    "Sounds you turned off earlier stay off until you restore them.",
+  settingsSoundRestoreAction: "Restore sounds",
+  settingsSoundMasterDisabledHint: "Turn on App sound to use these settings.",
   settingsAccountBackupTitle: "Account & backup",
   settingsAccountBackupDescription:
     "Your account is connected. If ZenFlow can’t save an update online, your changes stay on this device.",
@@ -552,7 +560,7 @@ export const en: Translations = {
   settingsAccountBackupUnavailableDescription: "Your data stays on this device.",
   settingsRemindersMobileApp: "Mobile app",
   settingsPrivacyDataDescription:
-    "You choose which optional services ZenFlow can use. Backup starts only after you sign in.",
+    "Choose which optional services ZenFlow may use.",
   settingsDataBackupReportsDescription:
     "Save a backup you can import later, or create a report.",
   settingsBackupRestoreTitle: "Backup & restore",
@@ -577,7 +585,7 @@ export const en: Translations = {
   data: "Data",
   exportData: "Export data",
   importData: "Import data",
-  importMode: "Import mode",
+  importMode: "How should this backup be added?",
   importMerge: "Update current data",
   importReplace: "Replace current data",
   exportSuccess: "Export ready.",
@@ -615,7 +623,7 @@ export const en: Translations = {
   importAdded: "added",
   importUpdated: "updated",
   importSkipped: "skipped",
-  importConfirmTitle: "Import Backup",
+  importConfirmTitle: "Import backup",
   importConfirmMessage:
     "This backup may add or update items on this device and remove items it records as deleted.",
   syncing: "Updating...",
@@ -656,16 +664,25 @@ export const en: Translations = {
   themeLight: "Light",
   themeDark: "Dark",
   themeSystem: "System",
+  themeModeTitle: "Color mode",
+  themeModeDescription: "Follow your device or choose a light, dark, or black look.",
+  themeBlack: "Black",
+  themeChangeSaved: "Changed",
+  settingsPreferenceSaveError:
+    "Couldn’t save this change. Your previous setting is still active.",
+  settingsReduceMotion: "Reduce motion",
+  settingsReduceMotionDescription: "Uses fewer moving transitions and decorative effects.",
+  settingsReduceMotionSystemDescription: "Your device is set to reduce motion.",
   themeStyleTitle: "Mood palette",
   themeAdvancedAppearanceTitle: "Advanced appearance",
-  themeStyleDescription: "Choose a style that feels right for you.",
-  themeAccentTitle: "Accent",
+  themeStyleDescription: "Choose a color mode, accent color, and text size.",
+  themeAccentTitle: "Accent color",
   themeAccentDescription: "Color for buttons, selections, and highlights.",
   themeIntensityTitle: "Intensity",
   themeComfortTitle: "Comfort",
   themePreviewAction: "Preview",
   themeApplyAction: "Apply",
-  themeResetAction: "Reset",
+  themeResetAction: "Reset accent and contrast",
   themeUndoAction: "Undo",
   themeMoreActions: "More appearance actions",
   themePreviewing: "Previewing style",
@@ -678,8 +695,8 @@ export const en: Translations = {
   themePaletteVelvetLibrary: "Velvet Library",
   themePaletteBotanicalPulse: "Botanical Pulse",
   themePaletteQuietOled: "Quiet Black",
-  themeAccentTeal: "Sea glass",
-  themeAccentClay: "Clay",
+  themeAccentTeal: "Green",
+  themeAccentClay: "Blue",
   themeAccentPlum: "Violet",
   themeAccentMoss: "Moss",
   themeAccentAmber: "Amber",
@@ -734,9 +751,9 @@ export const en: Translations = {
     "When you sign in, ZenFlow keeps your data available on your devices. Changes wait safely when the connection is weak.",
   settingsCloudSyncEnabled: "Online backup is on",
   settingsCloudSyncDisabledByUser: "Online backup is paused",
-  settingsExportTitle: "Export Backup",
+  settingsExportTitle: "Save backup",
   settingsExportDescription: "Save all your data to a file",
-  settingsImportTitle: "Import Backup",
+  settingsImportTitle: "Import backup",
   settingsImportMergeTooltip:
     "New items will be added, matching items may be updated, and items marked as deleted in the backup will be removed from this device.",
   settingsImportReplaceTooltip:
@@ -758,12 +775,6 @@ export const en: Translations = {
   settingsWhatsNewUIImprovementsDesc: "Better toggle switches and settings organization",
   settingsSectionAccount: "Account & devices",
   settingsSectionData: "Data & Backup",
-
-  // Weekly Digest (v1.3.0)
-  weeklyDigestTitle: "Weekly Progress Report",
-  weeklyDigestDescription:
-    "Receive a weekly summary of your habits, focus time, and mood trends every Sunday.",
-  weeklyDigestEnabled: "You'll receive reports at your email",
 
   // Google Calendar
   googleCalendar: "Google Calendar",
@@ -791,7 +802,7 @@ export const en: Translations = {
   journalLockTimeout: "Journal auto-lock",
   journalLockTimeoutDesc: "Automatically lock journal after period of inactivity",
   journalLockImmediateWarning: "Journal will lock every time you leave the diary screen",
-  journalLockTimeoutImmediately: "Immediately",
+  journalLockTimeoutImmediately: "When you leave the app",
   journalLockTimeoutOneMinute: "After 1 minute",
   journalLockTimeoutFiveMinutes: "After 5 minutes",
   journalLockTimeoutFifteenMinutes: "After 15 minutes",
@@ -870,6 +881,12 @@ export const en: Translations = {
   quietHoursStart: "Quiet start",
   quietHoursEnd: "Quiet end",
   reminderDays: "Days of week",
+  settingsMoodCheckIns: "Mood check-ins",
+  settingsMoodCheckInsDescription: "Gentle prompts to record how you feel.",
+  settingsFocusReminder: "Focus reminder",
+  settingsFocusReminderDescription: "One prompt around the time you choose.",
+  settingsReminderChooseDay:
+    "Choose at least one day. No reminders will be sent until you do.",
   selectedHabits: "Habits to remind",
   noHabitsYet: "No habits yet.",
   noHabitsInCategory: "No habits in this category",
@@ -1052,7 +1069,6 @@ export const en: Translations = {
   syncPulled: "Online data restored.",
   syncPushed: "Online backup updated.",
   syncError: "Could not update devices.",
-  weeklyDigestError: "Could not update weekly digest. Try again.",
   authGateTitle: "Sign in",
   authGateBody: "Sign in by email to keep your progress on your devices.",
   authGateContinue: "Continue without account",
@@ -1294,6 +1310,9 @@ export const en: Translations = {
   muteSound: "Mute sound",
   unmuteSound: "Unmute sound",
   settingsSoundTitle: "Sound",
+  settingsVibration: "Vibration",
+  settingsVibrationDescription:
+    "Brief vibration for taps and confirmations, when supported.",
   settingsSoundDescription: "Sounds inside ZenFlow and their volume.",
   settingsSoundSummaryOn: "Sound on",
   settingsSoundSummaryOff: "Muted",
@@ -1302,11 +1321,9 @@ export const en: Translations = {
   settingsSoundVolume: "Volume",
   settingsSoundVolumeDesc: "Sets the volume for sounds inside ZenFlow.",
   settingsSoundPreview: "Preview reminder sound",
-  settingsSoundAmbienceTitle: "Diary background sound",
+  settingsSoundAmbienceTitle: "Writing sound",
   settingsSoundAmbienceNote:
-    "Start background sound from the mood screen. Preview diary background sound here.",
-  settingsSoundFeedbackOn: "Short feedback sounds use this volume.",
-  settingsSoundFeedbackOff: "Feedback sounds are off under Feedback & motion.",
+    "Play soft rain while you write. It starts only when you press play.",
   settingsSoundTextureAir: "Air",
   settingsSoundTextureWater: "Water",
   settingsSoundTextureRain: "Rain",
@@ -1326,6 +1343,12 @@ export const en: Translations = {
   settingsSoundAmbientToggle: "Background sound",
   settingsSoundAmbientToggleDesc:
     "Controls background sound on sign-in, mood, and diary screens outside focus sessions.",
+  settingsSoundBackgroundTitle: "Background sounds",
+  settingsSoundBackgroundDescription:
+    "Allow soft background audio on ZenFlow screens. Playback starts only when you press play.",
+  settingsSoundActivityTitle: "Activity sounds",
+  settingsSoundActivityDescription:
+    "Play quiet feedback after completed activities, timers, and occasional milestones.",
   settingsSoundCompletionCues: "Completion sounds",
   settingsSoundCompletionCuesDesc:
     "Plays a quiet confirmation sound after important actions.",
@@ -1573,34 +1596,6 @@ export const en: Translations = {
   completedHabitReason: "Completed habit",
   comebackChallengeComplete: "Comeback Challenge Complete!",
   questPrefix: "Quest",
-
-  dopamineSettings: "Feedback & motion",
-  dopamineSettingsDesc: "Choose how much animation, sound, and haptics ZenFlow uses.",
-  dopamineSettingsDescNoHaptics: "Choose how much animation and sound ZenFlow uses.",
-  dopamineIntensity: "Feedback level",
-  dopamineMinimal: "Quiet",
-  dopamineNormal: "Balanced",
-  dopamineADHD: "High feedback",
-  dopamineMinimalDesc: "Reduced motion and fewer celebration effects.",
-  dopamineNormalDesc: "A steady mix of helpful feedback.",
-  dopamineADHDDesc: "All optional effects are on; you can turn any off below.",
-  dopamineCustomize: "Fine-tune feedback",
-  dopamineAnimations: "Animations",
-  dopamineAnimationsDesc: "Motion used for state changes and transitions",
-  dopamineSounds: "Sounds",
-  dopamineSoundsDesc: "Confirmation sounds and audio feedback",
-  dopamineHaptics: "Haptics",
-  dopamineHapticsDesc: "Vibration feedback (mobile only)",
-  dopamineConfetti: "Confetti",
-  dopamineConfettiDesc: "Optional celebration effects after completions",
-  dopamineStreakFire: "Streak Fire",
-  dopamineStreakFireDesc: "Animated streak emphasis",
-  dopamineMoodDrivenUI: "Mood Visuals",
-  dopamineMoodDrivenUIDesc: "Color and atmosphere can follow your mood",
-  dopamineTip: "Comfort note",
-  dopamineTipText:
-    "Start with Quiet if effects feel distracting. Increase feedback only when it helps you stay oriented.",
-  dopamineSave: "Done",
 
   fontScaleTitle: "Text Size",
   fontScalePreview: "Preview: How your text will look",
@@ -2294,11 +2289,7 @@ export const en: Translations = {
   updateNow: "Update Now",
   updateAvailableFor: "Available for {days} days",
 
-  // Lock Screen Quick Actions
-  quickActions: "Quick Actions",
-  quickActionsDescription: "Show reminder actions on the lock screen",
-  quickActionsEnabled: "Quick actions enabled",
-  quickActionsDisabled: "Quick actions disabled",
+  // Contextual shortcuts
   quickActionLogMood: "Log Mood",
   quickActionStartFocus: "Start Focus",
   quickActionViewHabits: "View Habits",
@@ -2308,6 +2299,8 @@ export const en: Translations = {
   notificationSoundDescription: "Choose sound for reminders",
   notificationSoundUpdateFailed:
     "ZenFlow could not apply this reminder sound. Your previous sound is still selected. Try again.",
+  notificationSoundUpdateUncertain:
+    "ZenFlow could not finish changing the reminder sound. Check the selected sound and try again.",
   reminderReconcileFailed:
     "ZenFlow could not update reminders. Your device may still use the previous schedule. Try again.",
   soundDefault: "Default",

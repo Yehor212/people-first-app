@@ -168,6 +168,24 @@ describe("useDataImport completion boundary", () => {
     expect(setDataStatus).not.toHaveBeenCalled();
   });
 
+  it("starts each file choice in safe merge mode and resets replace on cancel", () => {
+    const { hook } = renderSubject();
+
+    act(() => hook.result.current.setImportMode("replace"));
+    expect(hook.result.current.importMode).toBe("replace");
+
+    act(() => hook.result.current.handleImportClick());
+    expect(hook.result.current.importMode).toBe("merge");
+
+    selectBackupFile(hook);
+    act(() => hook.result.current.setImportMode("replace"));
+    act(() => hook.result.current.handleImportCancel());
+
+    expect(hook.result.current.importMode).toBe("merge");
+    expect(hook.result.current.showImportConfirm).toBe(false);
+    expect(hook.result.current.pendingImportFile).toBeNull();
+  });
+
   it("shows an actionable journal-unlock message for a blocked replace", async () => {
     const blocked = Object.assign(new Error("JOURNAL_UNLOCK_REQUIRED"), {
       code: "JOURNAL_UNLOCK_REQUIRED",

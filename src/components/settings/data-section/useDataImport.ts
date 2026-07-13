@@ -36,6 +36,7 @@ export function useDataImport({ setDataStatus, t }: UseDataImportOptions) {
   const importGenerationRef = useRef(0);
 
   const handleImportClick = () => {
+    setImportMode("merge");
     fileInputRef.current?.click();
   };
 
@@ -70,6 +71,7 @@ export function useDataImport({ setDataStatus, t }: UseDataImportOptions) {
     importGenerationRef.current += 1;
     setShowImportConfirm(false);
     setPendingImportFile(null);
+    setImportMode("merge");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }

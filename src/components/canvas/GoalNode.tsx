@@ -5,12 +5,11 @@
  * - Glassmorphic pill (--surface-glass) with border
  * - SVG progress ring that fills based on progressPercent
  * - Completed state: checkmark overlay, muted opacity
- * - One-shot completion burst on the <1 → ≥1 transition
  * - Tap → opens GoalActionMenu (via onTap callback)
  * - Pop-in animation via framer-motion
  */
 
-import { memo, useCallback, useEffect, useRef, useState, Suspense } from "react";
+import { memo, useCallback } from "react";
 import { motion, useTransform, type MotionValue } from "framer-motion";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,16 +17,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { haptics } from "@/lib/haptics";
 import { zenMotion } from "@/lib/animationUtils";
 import { GOAL_ICON_MAP } from "./GoalInput";
-import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import type { CanvasGoal } from "@/types";
-
-const CompletionBurstLottie = lazyWithRetry(
-  () =>
-    import("./CompletionBurstLottie").then((m) => ({
-      default: m.CompletionBurstLottie,
-    })),
-  "CompletionBurstLottie"
-);
 
 /** Preset color palette for goal customization. Key = stored in CanvasGoal.color */
 export const GOAL_COLORS: Record<string, string> = {
@@ -79,25 +69,6 @@ export const GoalNode = memo(
     const isComplete = goal.completed || progressPercent >= 1;
     const rColor = ringColor(progressPercent, goal.color);
     const GoalIcon = goal.icon ? (GOAL_ICON_MAP[goal.icon] ?? null) : null;
-
-    // ── One-shot burst detection ──
-    // Track previous progress to detect the <1 → ≥1 transition
-    const prevProgressRef = useRef(progressPercent);
-    const [showBurst, setShowBurst] = useState(false);
-
-    useEffect(() => {
-      const prev = prevProgressRef.current;
-      prevProgressRef.current = progressPercent;
-
-      // Fire burst ONLY on the transition from incomplete to complete
-      if (prev < 1 && progressPercent >= 1) {
-        setShowBurst(true);
-        void haptics.buttonPress();
-        // Auto-dismiss after animation duration (1.2s)
-        const timer = setTimeout(() => setShowBurst(false), 1200);
-        return () => clearTimeout(timer);
-      }
-    }, [progressPercent]);
 
     const handleTap = useCallback(() => {
       void haptics.light();
@@ -157,13 +128,6 @@ export const GoalNode = memo(
             />
           )}
         </svg>
-
-        {/* One-shot completion burst */}
-        {showBurst && (
-          <Suspense fallback={null}>
-            <CompletionBurstLottie onComplete={() => setShowBurst(false)} />
-          </Suspense>
-        )}
 
         {/* Pill body — tappable */}
         <button

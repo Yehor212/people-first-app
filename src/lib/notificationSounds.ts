@@ -44,7 +44,7 @@ export type NotificationChannelCopy = Record<
 // CONSTANTS
 // ============================================
 
-export const NOTIFICATION_SOUND_CHANNEL_VERSION = 'v2';
+export const NOTIFICATION_SOUND_CHANNEL_VERSION = 'v3';
 
 export const NOTIFICATION_SYSTEM_SETTINGS_DESCRIPTION_KEYS: Record<
   NotificationSystemSurface,
@@ -61,7 +61,7 @@ export const NOTIFICATION_SOUNDS: NotificationSoundOption[] = [
     id: 'default',
     labelKey: 'soundDefault',
     description: 'System default notification sound',
-    channelId: 'zenflow_default_v2',
+    channelId: 'zenflow_default_v3',
     sound: 'default',
     vibrate: true,
     importance: 3,
@@ -70,7 +70,7 @@ export const NOTIFICATION_SOUNDS: NotificationSoundOption[] = [
     id: 'gentle',
     labelKey: 'soundGentle',
     description: 'Soft vibration only',
-    channelId: 'zenflow_gentle_v2',
+    channelId: 'zenflow_gentle_v3',
     sound: undefined,
     vibrate: true,
     importance: 2,
@@ -79,7 +79,7 @@ export const NOTIFICATION_SOUNDS: NotificationSoundOption[] = [
     id: 'silent',
     labelKey: 'soundSilent',
     description: 'No sound or vibration',
-    channelId: 'zenflow_silent_v2',
+    channelId: 'zenflow_silent_v3',
     sound: undefined,
     vibrate: false,
     importance: 1,
@@ -129,6 +129,12 @@ export function getNotificationSystemSurface(
   return runtime.isDesktopViewportRuntime ? 'desktop' : 'web';
 }
 
+export function supportsNativeNotificationChannels(
+  runtime: NotificationSystemRuntime = getDefaultNotificationSystemRuntime(),
+): boolean {
+  return runtime.isNativeRuntime && runtime.platformName === 'android';
+}
+
 export function getNotificationSystemSettingsCopyKey(
   runtime?: Partial<NotificationSystemRuntime>
 ): string {
@@ -165,8 +171,8 @@ export function getNotificationSound(): NotificationSoundType {
 /**
  * Save notification sound preference
  */
-export function setNotificationSound(sound: NotificationSoundType): void {
-  storageSetRaw(SK.NOTIFICATION_SOUND, sound);
+export function setNotificationSound(sound: NotificationSoundType): boolean {
+  return storageSetRaw(SK.NOTIFICATION_SOUND, sound);
 }
 
 /**
@@ -175,7 +181,11 @@ export function setNotificationSound(sound: NotificationSoundType): void {
 export function getCurrentChannelId(): string {
   const soundType = getNotificationSound();
   const sound = NOTIFICATION_SOUNDS.find(s => s.id === soundType);
-  return sound?.channelId || 'zenflow_default_v2';
+  return sound?.channelId || 'zenflow_default_v3';
+}
+
+export function isCurrentNotificationSoundChannelId(channelId: string | undefined): boolean {
+  return Boolean(channelId && NOTIFICATION_SOUNDS.some((sound) => sound.channelId === channelId));
 }
 
 // ============================================
@@ -190,7 +200,7 @@ export function getCurrentChannelId(): string {
 export async function initializeNotificationChannels(
   copy?: NotificationChannelCopy,
 ): Promise<void> {
-  if (!isNative) return;
+  if (!supportsNativeNotificationChannels()) return;
 
   if (copy) activeNotificationChannelCopy = copy;
   const effectiveCopy =
@@ -203,7 +213,7 @@ export async function initializeNotificationChannels(
         name: effectiveCopy[soundOption.id].name,
         description: effectiveCopy[soundOption.id].description,
         importance: soundOption.importance,
-        visibility: 1, // PUBLIC
+        visibility: 0, // PRIVATE: conceal wellness reminder content on secure lock screens.
         vibration: soundOption.vibrate,
         sound: soundOption.sound,
         lights: soundOption.importance >= 3,
@@ -231,7 +241,9 @@ export function getCurrentSoundOption(): NotificationSoundOption {
  * Update notification sound and return new channel ID
  */
 export async function updateNotificationSound(sound: NotificationSoundType): Promise<string> {
-  setNotificationSound(sound);
+  if (!setNotificationSound(sound)) {
+    throw new Error('Reminder sound could not be saved');
+  }
   logger.log('[NotificationSounds] Sound preference updated:', sound);
   return getCurrentChannelId();
 }

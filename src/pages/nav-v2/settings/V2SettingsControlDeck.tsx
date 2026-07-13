@@ -1,5 +1,4 @@
 import { memo } from "react";
-import { AboutPanel } from "./V2SettingsAboutPanel";
 import { AccountPanel } from "./V2SettingsAccountPanel";
 import { DataPanel } from "./V2SettingsDataPanels";
 import { PrivacyPanel } from "./V2SettingsPrivacyPanel";
@@ -45,8 +44,6 @@ export const V2SettingsControlDeck = memo(function V2SettingsControlDeck({
           <AccountPanel controls={controls} accountSessionState={accountSessionState} />
         </>
       );
-    case "about":
-      return <AboutPanel />;
     default:
       return <AccountPanel controls={controls} accountSessionState={accountSessionState} />;
   }

@@ -17,7 +17,7 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 
 - Read `ARCHITECTURE.md` before code changes; it is the single source of truth for app structure and live counts.
 - Do not hand-edit generated count blocks in `ARCHITECTURE.md`; use `npm run doc-counts:update`.
-- Current architecture: `src/pages/Index.tsx` orchestrates app shell; runtime state uses 8 Zustand stores plus 2 hydrate bridges; IndexedDB is the local source of truth.
+- Current architecture: `src/pages/Index.tsx` orchestrates app shell; runtime state uses 9 Zustand stores plus 2 hydrate bridges; IndexedDB is the local source of truth.
 - Modal rendering goes through `ModalLayer` and `OverlayLayer`.
 - Feature-module target is documented in `ARCHITECTURE.md`; only migrate features when the task explicitly justifies it.
 

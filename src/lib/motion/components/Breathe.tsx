@@ -2,7 +2,7 @@
  * <Breathe> — infinite idle pulse, reduced-motion aware.
  *
  * When animations are permitted, applies the breathing scale + opacity loop.
- * When NOT permitted (OS reduced-motion, Dopamine off, low battery), renders
+ * When NOT permitted (app/OS reduced motion or low battery), renders
  * a plain `<div>` — the pulse stops, visuals stay visible.
  */
 

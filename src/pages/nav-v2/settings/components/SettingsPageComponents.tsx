@@ -1,22 +1,21 @@
-import { forwardRef, type CSSProperties, type ReactNode } from "react";
-import { ArrowLeft, ChevronRight, SlidersHorizontal, type LucideIcon } from "lucide-react";
+import {
+  forwardRef,
+  type ReactNode,
+} from "react";
+import { AnimatePresence } from "framer-motion";
+import { ArrowLeft, SlidersHorizontal } from "lucide-react";
 import { ThemeToggleV2 } from "@/components/navigation-v2/ThemeToggleV2";
-import type { NonOrbVisualRole } from "@/lib/nonOrbVisualRoles";
+import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
 import { cn } from "@/lib/utils";
 import type { V2SettingsSectionId } from "../types";
+import {
+  SettingsModuleCard,
+  type SettingsModuleCardData,
+} from "./SettingsModuleCard";
+import { SettingsMotionSurface } from "./SettingsMotionSurface";
 
-export interface SettingsPageCardData {
-  id: V2SettingsSectionId;
-  icon: LucideIcon;
-  label: string;
-  description: string;
-  role: NonOrbVisualRole;
-}
-
-export interface SettingsModuleCardData extends SettingsPageCardData {
-  value?: string;
-}
+export type { SettingsModuleCardData } from "./SettingsModuleCard";
 
 interface SettingsPageShellProps {
   children: ReactNode;
@@ -30,7 +29,6 @@ interface SettingsHeroCardProps {
   themeTitle: string;
   themeLabel: string;
   controlsWired: boolean;
-  compactMobileDetail: boolean;
 }
 
 interface SettingsModuleListProps {
@@ -43,14 +41,13 @@ interface SettingsModuleListProps {
   desktopLayout: boolean;
   mobileDetailOpen: boolean;
   onBack: () => void;
+  onMobileSurfaceReady: (
+    view: "overview" | "detail",
+    sectionId: V2SettingsSectionId,
+    element: HTMLElement,
+  ) => void;
   renderPanel: (item: SettingsModuleCardData) => ReactNode;
 }
-
-const settingsModuleTextWrapStyle: CSSProperties = {
-  overflowWrap: "break-word",
-  wordBreak: "normal",
-  hyphens: "auto",
-};
 
 export const SettingsPageShell = forwardRef<HTMLElement, SettingsPageShellProps>(
   function SettingsPageShell({ children, controlsWired, labelledBy }, ref) {
@@ -61,10 +58,10 @@ export const SettingsPageShell = forwardRef<HTMLElement, SettingsPageShellProps>
         role="main"
         tabIndex={-1}
         className={cn(
-          "v2-fullscreen-page v2-readable-page v2-readable-page--standard mx-auto grid min-h-[var(--app-viewport-height)] w-full grid-cols-1 content-start outline-none",
+          "v2-fullscreen-page v2-readable-page v2-readable-page--standard mx-auto grid min-h-[var(--app-viewport-height)] w-full grid-cols-1 content-start outline-none focus-visible:!outline-none",
           controlsWired
-            ? "max-w-[52rem] gap-3 px-5 pt-[calc(var(--safe-top)+3.5rem)] pb-[calc(var(--safe-bottom)+1.5rem)] sm:px-6 sm:pt-[calc(var(--safe-top)+3.5rem)] md:max-w-6xl md:px-6 md:pt-[calc(var(--safe-top)+1.75rem)] md:pb-[calc(var(--safe-bottom)+2rem)] lg:gap-3"
-            : "max-w-6xl gap-2.5 px-4 pt-[calc(var(--safe-top)+3.5rem)] pb-[calc(var(--safe-bottom)+1.25rem)] sm:pt-[calc(var(--safe-top)+3.5rem)] md:px-6 md:pt-[calc(var(--safe-top)+1.5rem)] md:pb-[calc(var(--safe-bottom)+2rem)] lg:gap-3"
+            ? "max-w-[52rem] gap-3 pl-[max(1.25rem,var(--safe-left))] pr-[max(1.25rem,var(--safe-right))] pt-[calc(var(--safe-top)+3.5rem)] pb-[calc(var(--safe-bottom)+1.5rem)] sm:pl-[max(1.5rem,var(--safe-left))] sm:pr-[max(1.5rem,var(--safe-right))] sm:pt-[calc(var(--safe-top)+3.5rem)] md:max-w-6xl md:pt-[calc(var(--safe-top)+1.75rem)] md:pb-[calc(var(--safe-bottom)+2rem)] lg:gap-3"
+            : "max-w-6xl gap-2.5 pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pt-[calc(var(--safe-top)+3.5rem)] pb-[calc(var(--safe-bottom)+1.25rem)] sm:pt-[calc(var(--safe-top)+3.5rem)] md:pl-[max(1.5rem,var(--safe-left))] md:pr-[max(1.5rem,var(--safe-right))] md:pt-[calc(var(--safe-top)+1.5rem)] md:pb-[calc(var(--safe-bottom)+2rem)] lg:gap-3"
         )}
         aria-labelledby={labelledBy}
         data-testid="settings-page"
@@ -84,7 +81,6 @@ export function SettingsHeroCard({
   themeTitle,
   themeLabel,
   controlsWired,
-  compactMobileDetail,
 }: SettingsHeroCardProps) {
   const SettingsIcon = V2_NAV_ICONS.settings;
 
@@ -93,20 +89,16 @@ export function SettingsHeroCard({
       className={cn(
         "relative grid min-w-0 gap-2.5 rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.38)] bg-[hsl(var(--settings-v2-card)/0.68)] p-3 shadow-[var(--zen-shadow-card)] md:items-center md:p-3.5",
         controlsWired
-          ? compactMobileDetail
-            ? "place-items-center gap-0 border-transparent bg-transparent px-3 py-1 text-center shadow-none"
-            : "place-items-center border-transparent bg-transparent px-8 py-1.5 text-center shadow-none sm:px-10 md:py-2"
+          ? "place-items-center border-transparent bg-transparent px-8 py-1.5 text-center shadow-none sm:px-10 md:py-2"
           : "md:grid-cols-[minmax(0,1fr)_auto]"
       )}
       data-compact={controlsWired ? "true" : "false"}
-      data-mobile-detail-compact={compactMobileDetail ? "true" : "false"}
       data-testid="settings-page-control-card"
     >
       <div
         className={cn(
           "flex min-w-0 items-start gap-3",
-          controlsWired && "flex-col items-center justify-center gap-1 text-center",
-          compactMobileDetail && "gap-0"
+          controlsWired && "flex-col items-center justify-center gap-1 text-center"
         )}
       >
         {!controlsWired ? (
@@ -129,11 +121,7 @@ export function SettingsHeroCard({
           <p
             className={cn(
               "mt-1 max-w-2xl font-body text-xs leading-relaxed text-muted-foreground sm:text-sm",
-              controlsWired
-                ? compactMobileDetail
-                  ? "hidden"
-                  : "mx-auto block max-w-[24rem]"
-                : "hidden sm:block"
+              controlsWired ? "mx-auto block max-w-[24rem]" : "hidden sm:block"
             )}
           >
             {lead}
@@ -174,8 +162,10 @@ export function SettingsModuleList({
   desktopLayout,
   mobileDetailOpen,
   onBack,
+  onMobileSurfaceReady,
   renderPanel,
 }: SettingsModuleListProps) {
+  const shouldAnimate = useShouldAnimate();
   const detailVisible = desktopLayout || mobileDetailOpen;
   const listVisible = !controlsWired || desktopLayout || !mobileDetailOpen;
   const activeItem = controlsWired
@@ -185,6 +175,11 @@ export function SettingsModuleList({
   const activeButtonId = activeItem ? `settings-module-card-${activeItem.id}` : undefined;
   const moduleList = listVisible ? (
     <div
+      ref={(node) => {
+        if (node && !desktopLayout && activeItem) {
+          onMobileSurfaceReady("overview", activeItem.id, node);
+        }
+      }}
       className={cn(
         "order-2 grid min-w-0 gap-2 lg:order-1 lg:sticky lg:top-[calc(var(--safe-top)+1rem)]",
         controlsWired && mobileDetailOpen && "lg:grid"
@@ -232,6 +227,11 @@ export function SettingsModuleList({
           <span>{backLabel}</span>
         </button>
         <div
+          ref={(node) => {
+            if (node && !desktopLayout) {
+              onMobileSurfaceReady("detail", activeItem.id, node);
+            }
+          }}
           id={activePanelId}
           role="region"
           aria-labelledby={`settings-module-panel-heading-${activeItem.id}`}
@@ -257,6 +257,8 @@ export function SettingsModuleList({
       </section>
     ) : null;
 
+  const mobileSurface = mobileDetailOpen && selectedPanel ? selectedPanel : moduleList;
+
   return (
     <section
       aria-label={label}
@@ -269,111 +271,22 @@ export function SettingsModuleList({
       data-mobile-view={mobileDetailOpen ? "detail" : "overview"}
       data-selected-section={activeItem?.id}
     >
-      {moduleList}
-      {selectedPanel}
+      {desktopLayout || !controlsWired ? (
+        <>
+          {moduleList}
+          {selectedPanel}
+        </>
+      ) : (
+        <AnimatePresence initial={false} mode="wait">
+          <SettingsMotionSurface
+            key={mobileDetailOpen ? `detail-${activeItem?.id ?? "none"}` : "overview"}
+            view={mobileDetailOpen ? "detail" : "overview"}
+            shouldAnimate={shouldAnimate}
+          >
+            {mobileSurface}
+          </SettingsMotionSurface>
+        </AnimatePresence>
+      )}
     </section>
-  );
-}
-
-function SettingsModuleCard({
-  item,
-  expanded,
-  controlsWired,
-  buttonId,
-  panelId,
-  panelMounted,
-  onOpen,
-}: {
-  item: SettingsModuleCardData;
-  expanded: boolean;
-  controlsWired: boolean;
-  buttonId: string;
-  panelId: string;
-  panelMounted: boolean;
-  onOpen: (sectionId: V2SettingsSectionId) => void;
-}) {
-  const Icon = item.icon;
-
-  return (
-    <article
-      className={cn(
-        "relative min-w-0 overflow-hidden rounded-[8px] border bg-[hsl(var(--settings-v2-card)/0.76)] shadow-[var(--zen-shadow-card)]",
-        "motion-safe:transition-[border-color,background-color,box-shadow] motion-safe:duration-200",
-        expanded
-          ? "border-[hsl(var(--settings-v2-accent)/0.46)] bg-[hsl(var(--settings-v2-accent)/0.1)] shadow-[0_14px_36px_-30px_hsl(var(--settings-v2-shadow)/0.42)]"
-          : "border-[hsl(var(--settings-v2-border)/0.52)]"
-      )}
-      data-active={expanded ? "true" : "false"}
-      data-visual-role={item.role}
-      data-testid={`settings-module-${item.id}`}
-    >
-      {expanded ? (
-        <span
-          aria-hidden="true"
-          className="absolute inset-y-2 start-0 w-1 rounded-e-full bg-[hsl(var(--settings-v2-accent))]"
-        />
-      ) : null}
-      <button
-        id={buttonId}
-        type="button"
-        onClick={() => onOpen(item.id)}
-        disabled={!controlsWired}
-        className={cn(
-          "relative flex min-h-[72px] w-full min-w-0 items-start gap-3 rounded-[8px] p-3 text-start",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent))] focus-visible:ring-offset-2",
-          "shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.42)] motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none hover:bg-[hsl(var(--settings-v2-panel)/0.72)] disabled:cursor-default disabled:hover:bg-transparent"
-        )}
-        data-interaction-surface="settings-module"
-        data-testid={`settings-module-card-${item.id}`}
-        {...(controlsWired
-          ? {
-              "aria-controls": panelMounted ? panelId : undefined,
-              "aria-current": expanded ? ("page" as const) : undefined,
-            }
-          : {})}
-        aria-label={
-          item.value
-            ? `${item.label}: ${item.value}. ${item.description}`
-            : `${item.label}: ${item.description}`
-        }
-      >
-        <SettingsCardIcon icon={Icon} selected={expanded} />
-        <span className="min-w-0 flex-1" style={settingsModuleTextWrapStyle}>
-          <span className="block text-pretty text-sm font-semibold text-foreground">
-            {item.label}
-          </span>
-          {item.value ? (
-            <span className="mt-1 block text-pretty text-sm font-semibold leading-tight text-foreground">
-              {item.value}
-            </span>
-          ) : null}
-          <span className="mt-1 block text-pretty text-xs leading-relaxed text-muted-foreground">
-            {item.description}
-          </span>
-        </span>
-        <ChevronRight
-          className={cn(
-            "mt-1 h-4 w-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:duration-200 rtl:rotate-180",
-            expanded && "text-foreground"
-          )}
-          aria-hidden="true"
-        />
-      </button>
-    </article>
-  );
-}
-
-function SettingsCardIcon({ icon: Icon, selected }: { icon: LucideIcon; selected: boolean }) {
-  return (
-    <span
-      className={cn(
-        "flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] border",
-        selected
-          ? "border-[hsl(var(--settings-v2-accent)/0.46)] bg-[hsl(var(--settings-v2-accent)/0.1)] text-[hsl(var(--settings-v2-accent))]"
-          : "border-[hsl(var(--settings-v2-border)/0.54)] bg-[hsl(var(--settings-v2-shell)/0.62)] text-muted-foreground"
-      )}
-    >
-      <Icon className="h-4 w-4" aria-hidden="true" />
-    </span>
   );
 }

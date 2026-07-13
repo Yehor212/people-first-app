@@ -9,9 +9,7 @@ import { useThrottledCallback } from "@/hooks/useThrottledCallback";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { haptics } from "@/lib/haptics";
 import { announceSuccess } from "@/lib/a11y";
-import { LocalNotifications } from "@capacitor/local-notifications";
-import { isNative } from "@/lib/platform";
-import { getCurrentChannelId } from "@/lib/notificationSounds";
+import { scheduleFocusCompletionNotification } from "@/lib/focusCompletionNotification";
 
 import { useUIStore, setFocusControls } from "@/stores";
 import { DEFAULT_FOCUS_MINUTES, loadTimerState, createFocusSession } from "@/types/focusTimerTypes";
@@ -273,18 +271,9 @@ export function useFocusTimer({
 
           announceSuccess(t.focusCompletedShort || "Focus session complete");
 
-          if (isNative) {
-            LocalNotifications.schedule({
-              notifications: [
-                {
-                  title: "ZenFlow",
-                  body: t.focusCompletedShort || "Focus session complete",
-                  id: Date.now(),
-                  channelId: getCurrentChannelId(),
-                },
-              ],
-            }).catch((err) => logger.warn("[Focus]", "Notification failed:", err));
-          }
+          void scheduleFocusCompletionNotification(
+            t.focusCompletedShort || "Focus session complete",
+          ).catch((err) => logger.warn("[Focus]", "Notification failed:", err));
 
           // Switch to break mode
           focusStartRef.current = null;

@@ -116,4 +116,18 @@ describe("V2 fullscreen surface contract", () => {
       expect(source).not.toContain("100svh");
     }
   });
+
+  it("protects Settings foreground controls from horizontal display cutouts", () => {
+    const settings = read(
+      "src/pages/nav-v2/settings/components/SettingsPageComponents.tsx",
+    );
+    const forms = read(
+      "src/pages/nav-v2/settings/components/V2SettingsFormPrimitives.tsx",
+    );
+
+    expect(settings).toContain("var(--safe-left)");
+    expect(settings).toContain("var(--safe-right)");
+    expect(forms).toContain("var(--safe-left)");
+    expect(forms).toContain("var(--safe-right)");
+  });
 });

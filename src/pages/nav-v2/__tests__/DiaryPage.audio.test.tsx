@@ -77,21 +77,11 @@ describe("DiaryPage ambience audio", () => {
     });
   });
 
-  it("keeps the soft rain reflection loop non-autoplaying without a page-level overlay control", () => {
+  it("does not mount a hidden ambience player on the diary page", () => {
     render(<DiaryPage />);
 
-    const audio = screen.getByTestId("diary-page-ambience-audio");
-    expect(audio).toHaveAttribute(
-      "src",
-      expect.stringContaining("/sounds/soft-rain-veil.mp3"),
-    );
-    expect(audio).toHaveAttribute("preload", "none");
-    expect(audio).toHaveAttribute("loop");
-    expect(audio).not.toHaveAttribute("autoplay");
+    expect(screen.queryByTestId("diary-page-ambience-audio")).toBeNull();
     expect(media.play).not.toHaveBeenCalled();
-
-    expect(screen.queryByTestId("diary-page-ambience-control")).toBeNull();
-    expect(screen.queryByTestId("diary-page-ambience-toggle")).toBeNull();
   });
 
   it("keeps the diary surface free from ambience controls even while app sound is muted", () => {

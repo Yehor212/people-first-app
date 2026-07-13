@@ -3,8 +3,8 @@ import {
   applyAudioComfortProfile,
   canPlayAmbientAsset,
   getAudioComfortSettings,
-  setAudioComfortSettings,
   subscribeAudioComfortSettings,
+  trySetAudioComfortSettings,
   type AudioComfortProfileId,
   type AudioComfortSettings,
 } from "@/lib/audioComfort";
@@ -16,7 +16,9 @@ export function useAudioComfortSettings() {
   useEffect(() => subscribeAudioComfortSettings(setSettingsState), []);
 
   const updateSettings = useCallback((partial: Partial<AudioComfortSettings>) => {
-    setSettingsState(setAudioComfortSettings(partial));
+    const result = trySetAudioComfortSettings(partial);
+    if (result.ok) setSettingsState(result.settings);
+    return result.ok;
   }, []);
 
   const applyProfile = useCallback((profile: AudioComfortProfileId) => {

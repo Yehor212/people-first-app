@@ -532,11 +532,20 @@ export const uk: Translations = {
   saveName: "Зберегти імʼя",
   nameSaved: "Імʼя збережено",
   nameSavedLocally: "Збережено на цьому пристрої",
-  invalidNameFormat: "Невірний формат імені",
+  invalidNameFormat: "Введіть ім’я від 1 до 100 символів.",
   notifications: "Сповіщення",
   notificationsComingSoon: "Сповіщення будуть доступні в наступних оновленнях.",
   settingsOverviewDescription:
     "Оберіть, як ZenFlow виглядає, звучить, нагадує про важливе й працює з вашими даними.",
+  settingsOverviewDescriptionWithoutReminders:
+    "Оберіть, як ZenFlow виглядає, звучить і працює з вашими даними.",
+  settingsReminderDaysMissing: "Оберіть дні для нагадувань",
+  settingsSoundRestoreTitle: "Деякі фонові звуки вимкнено",
+  settingsSoundRestoreDescription:
+    "Звуки, які ви вимкнули раніше, залишатимуться вимкненими, доки ви їх не відновите.",
+  settingsSoundRestoreAction: "Відновити звуки",
+  settingsSoundMasterDisabledHint:
+    "Увімкніть звук застосунку, щоб змінювати ці налаштування.",
   settingsAccountBackupTitle: "Акаунт і резервна копія",
   settingsAccountBackupDescription:
     "Ваш акаунт підключено. Якщо ZenFlow не зможе зберегти зміни онлайн, вони залишаться на цьому пристрої.",
@@ -555,7 +564,7 @@ export const uk: Translations = {
     "Ваші дані залишаються на цьому пристрої.",
   settingsRemindersMobileApp: "Мобільний застосунок",
   settingsPrivacyDataDescription:
-    "Ви вирішуєте, які додаткові сервіси може використовувати ZenFlow. Резервне копіювання починається лише після входу.",
+    "Ви вирішуєте, які додаткові сервіси може використовувати ZenFlow.",
   settingsDataBackupReportsDescription:
     "Збережіть резервну копію для подальшого імпорту або створіть звіт.",
   settingsBackupRestoreTitle: "Резервне копіювання й відновлення",
@@ -580,7 +589,7 @@ export const uk: Translations = {
   data: "Дані",
   exportData: "Експорт даних",
   importData: "Імпорт даних",
-  importMode: "Режим імпорту",
+  importMode: "Як додати цю резервну копію?",
   importMerge: "Оновити наявні дані",
   importReplace: "Замінити наявні дані",
   exportSuccess: "Експорт готовий.",
@@ -661,16 +670,28 @@ export const uk: Translations = {
   themeLight: "Світла",
   themeDark: "Темна",
   themeSystem: "Системна",
+  themeModeTitle: "Режим оформлення",
+  themeModeDescription:
+    "Використовуйте налаштування пристрою або виберіть світле, темне чи чорне оформлення.",
+  themeBlack: "Чорна",
+  themeChangeSaved: "Змінено",
+  settingsPreferenceSaveError:
+    "Не вдалося зберегти зміну. Попереднє налаштування залишається активним.",
+  settingsReduceMotion: "Менше руху",
+  settingsReduceMotionDescription:
+    "Зменшує кількість рухомих переходів і декоративних ефектів.",
+  settingsReduceMotionSystemDescription:
+    "На вашому пристрої вже ввімкнено зменшення руху.",
   themeStyleTitle: "Палітра настрою",
   themeAdvancedAppearanceTitle: "Розширені налаштування вигляду",
-  themeStyleDescription: "Оберіть стиль, який вам підходить.",
-  themeAccentTitle: "Акцент",
+  themeStyleDescription: "Оберіть режим оформлення, колір акценту та розмір тексту.",
+  themeAccentTitle: "Колір акценту",
   themeAccentDescription: "Колір кнопок, вибраних елементів і виділень.",
   themeIntensityTitle: "Інтенсивність",
   themeComfortTitle: "Комфорт",
   themePreviewAction: "Перегляд",
   themeApplyAction: "Застосувати",
-  themeResetAction: "Скинути",
+  themeResetAction: "Скинути акцент і контраст",
   themeUndoAction: "Повернути",
   themeMoreActions: "Більше дій вигляду",
   themePreviewing: "Показуємо стиль",
@@ -683,11 +704,11 @@ export const uk: Translations = {
   themePaletteVelvetLibrary: "Оксамитова бібліотека",
   themePaletteBotanicalPulse: "Ботанічний пульс",
   themePaletteQuietOled: "Тихий чорний",
-  themeAccentTeal: "Морське скло",
-  themeAccentClay: "Глина",
+  themeAccentTeal: "Зелений",
+  themeAccentClay: "Синій",
   themeAccentPlum: "Фіолетовий",
   themeAccentMoss: "Мох",
-  themeAccentAmber: "Бурштин",
+  themeAccentAmber: "Бурштиновий",
   themeIntensityQuiet: "Тихо",
   themeIntensityBalanced: "Збалансовано",
   themeIntensityVivid: "Живо",
@@ -766,11 +787,6 @@ export const uk: Translations = {
   settingsSectionAccount: "Акаунт і пристрої",
   settingsSectionData: "Дані та резервне копіювання",
 
-  // Weekly Digest (v1.3.0)
-  weeklyDigestTitle: "Щотижневий звіт",
-  weeklyDigestDescription: "Отримуйте підсумок звичок, фокусу та настрою щонеділі.",
-  weeklyDigestEnabled: "Звіти надходять на вашу пошту",
-
   // Google Calendar
   googleCalendar: "Google Календар",
   googleCalendarDescription: "Показувати події Google Календаря на часовій шкалі",
@@ -797,7 +813,7 @@ export const uk: Translations = {
   journalLockTimeout: "Автоблокування щоденника",
   journalLockTimeoutDesc: "Автоматично блокувати щоденник після періоду неактивності",
   journalLockImmediateWarning: "Щоденник блокуватиметься щоразу, коли ви залишите екран щоденника",
-  journalLockTimeoutImmediately: "Одразу",
+  journalLockTimeoutImmediately: "Коли ви виходите із застосунку",
   journalLockTimeoutOneMinute: "Через 1 хвилину",
   journalLockTimeoutFiveMinutes: "Через 5 хвилин",
   journalLockTimeoutFifteenMinutes: "Через 15 хвилин",
@@ -876,6 +892,12 @@ export const uk: Translations = {
   quietHoursStart: "Початок тиші",
   quietHoursEnd: "Кінець тиші",
   reminderDays: "Дні тижня",
+  settingsMoodCheckIns: "Нагадування про настрій",
+  settingsMoodCheckInsDescription: "М’яко нагадує записати, як ви почуваєтеся.",
+  settingsFocusReminder: "Нагадування про фокус",
+  settingsFocusReminderDescription: "Одне нагадування приблизно у вибраний вами час.",
+  settingsReminderChooseDay:
+    "Оберіть принаймні один день. До цього нагадування не надходитимуть.",
   selectedHabits: "Звички для нагадування",
   noHabitsYet: "Поки немає звичок.",
   noHabitsInCategory: "Немає звичок у цій категорії",
@@ -1060,7 +1082,6 @@ export const uk: Translations = {
   syncPulled: "Онлайн-дані відновлено.",
   syncPushed: "Онлайн-резервну копію оновлено.",
   syncError: "Не вдалося оновити пристрої.",
-  weeklyDigestError: "Не вдалося оновити дайджест. Спробуйте ще раз.",
   authGateTitle: "Вхід",
   authGateBody: "Увійдіть через email, щоб ваш прогрес був на ваших пристроях.",
   authGateContinue: "Продовжити без акаунта",
@@ -1303,6 +1324,9 @@ export const uk: Translations = {
   muteSound: "Вимкнути звук",
   unmuteSound: "Увімкнути звук",
   settingsSoundTitle: "Звук",
+  settingsVibration: "Вібрація",
+  settingsVibrationDescription:
+    "Коротка вібрація під час натискань і підтверджень, якщо пристрій її підтримує.",
   settingsSoundDescription: "Фонові звуки та гучність сигналів у ZenFlow.",
   settingsSoundSummaryOn: "Звук увімкнено",
   settingsSoundSummaryOff: "Вимкнено",
@@ -1311,11 +1335,9 @@ export const uk: Translations = {
   settingsSoundVolume: "Гучність",
   settingsSoundVolumeDesc: "Встановлює гучність звуків усередині ZenFlow.",
   settingsSoundPreview: "Прослухати звук нагадування",
-  settingsSoundAmbienceTitle: "Фоновий звук щоденника",
+  settingsSoundAmbienceTitle: "Звук для письма",
   settingsSoundAmbienceNote:
-    "Фоновий звук запускається на екрані настрою. Фоновий звук щоденника можна прослухати тут.",
-  settingsSoundFeedbackOn: "Звукові сигнали відтворюються з вибраною гучністю.",
-  settingsSoundFeedbackOff: "Звукові сигнали вимкнено в налаштуваннях «Відгук і рух».",
+    "Увімкніть тихий дощ під час письма. Він почнеться лише після натискання кнопки відтворення.",
   settingsSoundTextureAir: "Повітря",
   settingsSoundTextureWater: "Вода",
   settingsSoundTextureRain: "Дощ",
@@ -1336,6 +1358,12 @@ export const uk: Translations = {
   settingsSoundAmbientToggle: "Фоновий звук",
   settingsSoundAmbientToggleDesc:
     "Керує фоновим звуком поза фокус-сесіями: на екрані входу та в розділах настрою й щоденника.",
+  settingsSoundBackgroundTitle: "Фонові звуки",
+  settingsSoundBackgroundDescription:
+    "Дозволяє тихі фонові звуки на екранах ZenFlow. Відтворення починається лише після вашого натискання.",
+  settingsSoundActivityTitle: "Звуки дій",
+  settingsSoundActivityDescription:
+    "Тихо підтверджує завершені дії, сигнали таймера та окремі важливі етапи.",
   settingsSoundCompletionCues: "Сигнали завершення",
   settingsSoundCompletionCuesDesc:
     "Відтворює тихий сигнал підтвердження після важливих дій.",
@@ -1576,34 +1604,6 @@ export const uk: Translations = {
   completedHabitReason: "Звичку виконано",
   comebackChallengeComplete: "Челендж повернення завершено!",
   questPrefix: "Квест",
-
-  dopamineSettings: "Відгук і рух",
-  dopamineSettingsDesc: "Оберіть, скільки анімації, звуку й вібрації використовує ZenFlow.",
-  dopamineSettingsDescNoHaptics: "Оберіть, скільки анімації та звуку використовує ZenFlow.",
-  dopamineIntensity: "Рівень відгуку",
-  dopamineMinimal: "Тихо",
-  dopamineNormal: "Збалансовано",
-  dopamineADHD: "Більше відгуку",
-  dopamineMinimalDesc: "Менше руху та менше святкових ефектів.",
-  dopamineNormalDesc: "Спокійне поєднання корисного відгуку.",
-  dopamineADHDDesc: "Усі додаткові ефекти ввімкнені; будь-який можна вимкнути нижче.",
-  dopamineCustomize: "Точне налаштування відгуку",
-  dopamineAnimations: "Анімації",
-  dopamineAnimationsDesc: "Рух для змін стану та переходів",
-  dopamineSounds: "Звуки",
-  dopamineSoundsDesc: "Звуки підтвердження та звуковий відгук",
-  dopamineHaptics: "Вібрація",
-  dopamineHapticsDesc: "Тактильний зворотний зв'язок (тільки на мобільному)",
-  dopamineConfetti: "Конфеті",
-  dopamineConfettiDesc: "Додаткові святкові ефекти після завершень",
-  dopamineStreakFire: "Вогонь стріка",
-  dopamineStreakFireDesc: "Анімований акцент для серій",
-  dopamineMoodDrivenUI: "Візуали настрою",
-  dopamineMoodDrivenUIDesc: "Колір і атмосфера можуть відповідати настрою",
-  dopamineTip: "Нотатка комфорту",
-  dopamineTipText:
-    "Почніть із режиму Тихо, якщо ефекти відволікають. Збільшуйте відгук лише коли він допомагає орієнтуватися.",
-  dopamineSave: "Готово",
 
   fontScaleTitle: "Розмір тексту",
   fontScalePreview: "Попередній перегляд тексту",
@@ -2295,11 +2295,7 @@ export const uk: Translations = {
   updateNow: "Оновити зараз",
   updateAvailableFor: "Доступно {days} дн.",
 
-  // Lock Screen Quick Actions
-  quickActions: "Швидкі дії",
-  quickActionsDescription: "Показувати сповіщення з швидкими діями на екрані блокування",
-  quickActionsEnabled: "Швидкі дії увімкнено",
-  quickActionsDisabled: "Швидкі дії вимкнено",
+  // Contextual shortcuts
   quickActionLogMood: "Записати настрій",
   quickActionStartFocus: "Почати фокус",
   quickActionViewHabits: "Звички",
@@ -2309,6 +2305,8 @@ export const uk: Translations = {
   notificationSoundDescription: "Оберіть звук для нагадувань",
   notificationSoundUpdateFailed:
     "ZenFlow не вдалося застосувати цей звук нагадувань. Попередній звук усе ще вибрано. Спробуйте ще раз.",
+  notificationSoundUpdateUncertain:
+    "ZenFlow не вдалося завершити зміну звуку нагадувань. Перевірте вибраний звук і спробуйте знову.",
   reminderReconcileFailed:
     "ZenFlow не вдалося оновити нагадування. Пристрій може й надалі використовувати попередній розклад. Спробуйте ще раз.",
   soundDefault: "За замовчуванням",

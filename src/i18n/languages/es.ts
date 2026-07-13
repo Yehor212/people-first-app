@@ -537,11 +537,20 @@ export const es: Translations = {
   saveName: "Guardar nombre",
   nameSaved: "Nombre guardado",
   nameSavedLocally: "Guardado en este dispositivo",
-  invalidNameFormat: "Formato de nombre no válido",
+  invalidNameFormat: "Escribe un nombre de entre 1 y 100 caracteres.",
   notifications: "Notificaciones",
   notificationsComingSoon: "Las notificaciones estarán disponibles en futuras actualizaciones.",
   settingsOverviewDescription:
     "Elige cómo se ve y suena ZenFlow, cómo te recuerda lo importante y cómo trata tus datos.",
+  settingsOverviewDescriptionWithoutReminders:
+    "Elige cómo se ve y suena ZenFlow y cómo trata tus datos.",
+  settingsReminderDaysMissing: "Elige los días de los recordatorios",
+  settingsSoundRestoreTitle: "Algunos sonidos de fondo están desactivados",
+  settingsSoundRestoreDescription:
+    "Los sonidos que desactivaste antes seguirán así hasta que los restaures.",
+  settingsSoundRestoreAction: "Restaurar sonidos",
+  settingsSoundMasterDisabledHint:
+    "Activa el sonido de la app para usar estos ajustes.",
   settingsAccountBackupTitle: "Cuenta y copia de seguridad",
   settingsAccountBackupDescription:
     "Tu cuenta está conectada. Si ZenFlow no puede guardar tus cambios en línea, se quedan en este dispositivo.",
@@ -561,7 +570,7 @@ export const es: Translations = {
     "Tus datos se quedan en este dispositivo.",
   settingsRemindersMobileApp: "App móvil",
   settingsPrivacyDataDescription:
-    "Tú eliges qué servicios opcionales puede usar ZenFlow. La copia de seguridad empieza solo después de iniciar sesión.",
+    "Tú eliges qué servicios opcionales puede usar ZenFlow.",
   settingsDataBackupReportsDescription:
     "Guarda una copia para importarla más adelante o crea un informe.",
   settingsBackupRestoreTitle: "Copia de seguridad y restauración",
@@ -586,7 +595,7 @@ export const es: Translations = {
   data: "Datos",
   exportData: "Exportar datos",
   importData: "Importar datos",
-  importMode: "Modo de importación",
+  importMode: "¿Cómo quieres añadir esta copia?",
   importMerge: "Actualizar datos actuales",
   importReplace: "Reemplazar datos actuales",
   exportSuccess: "Exportación lista.",
@@ -667,17 +676,29 @@ export const es: Translations = {
   themeLight: "Claro",
   themeDark: "Oscuro",
   themeSystem: "Sistema",
+  themeModeTitle: "Modo de color",
+  themeModeDescription:
+    "Sigue el ajuste del dispositivo o elige un aspecto claro, oscuro o negro.",
+  themeBlack: "Negro",
+  themeChangeSaved: "Cambio guardado",
+  settingsPreferenceSaveError:
+    "No se pudo guardar este cambio. El ajuste anterior sigue activo.",
+  settingsReduceMotion: "Reducir movimiento",
+  settingsReduceMotionDescription:
+    "Reduce las transiciones con movimiento y los efectos decorativos.",
+  settingsReduceMotionSystemDescription:
+    "El dispositivo ya está configurado para reducir el movimiento.",
   themeStyleTitle: "Paleta de ánimo",
   themeAdvancedAppearanceTitle: "Apariencia avanzada",
-  themeStyleDescription: "Elige un estilo que encaje contigo.",
-  themeAccentTitle: "Acento",
+  themeStyleDescription: "Elige el modo de color, el color de acento y el tamaño del texto.",
+  themeAccentTitle: "Color de acento",
   themeAccentDescription:
     "Color de los botones, las selecciones y los elementos destacados.",
   themeIntensityTitle: "Intensidad",
   themeComfortTitle: "Comodidad",
   themePreviewAction: "Vista previa",
   themeApplyAction: "Aplicar",
-  themeResetAction: "Restablecer",
+  themeResetAction: "Restablecer color de acento y contraste",
   themeUndoAction: "Deshacer",
   themeMoreActions: "Más acciones de apariencia",
   themePreviewing: "Mostrando estilo",
@@ -690,8 +711,8 @@ export const es: Translations = {
   themePaletteVelvetLibrary: "Biblioteca de terciopelo",
   themePaletteBotanicalPulse: "Pulso botánico",
   themePaletteQuietOled: "Negro tranquilo",
-  themeAccentTeal: "Vidrio marino",
-  themeAccentClay: "Arcilla",
+  themeAccentTeal: "Verde",
+  themeAccentClay: "Azul",
   themeAccentPlum: "Violeta",
   themeAccentMoss: "Musgo",
   themeAccentAmber: "Ámbar",
@@ -775,12 +796,6 @@ export const es: Translations = {
   settingsSectionAccount: "Cuenta y dispositivos",
   settingsSectionData: "Datos y copia de seguridad",
 
-  // Weekly Digest (v1.3.0)
-  weeklyDigestTitle: "Informe semanal de progreso",
-  weeklyDigestDescription:
-    "Recibe un resumen semanal de tus hábitos, tiempo de enfoque y tendencias de ánimo cada domingo.",
-  weeklyDigestEnabled: "Recibirás informes en tu correo",
-
   // Google Calendar
   googleCalendar: "Google Calendar",
   googleCalendarDescription: "Mostrar eventos de Google Calendar en la línea de tiempo",
@@ -808,7 +823,7 @@ export const es: Translations = {
   journalLockTimeoutDesc: "Bloquear automáticamente el diario tras un período de inactividad",
   journalLockImmediateWarning:
     "El diario se bloqueará cada vez que salgas de la pantalla del diario",
-  journalLockTimeoutImmediately: "De inmediato",
+  journalLockTimeoutImmediately: "Al salir de la app",
   journalLockTimeoutOneMinute: "Después de 1 minuto",
   journalLockTimeoutFiveMinutes: "Después de 5 minutos",
   journalLockTimeoutFifteenMinutes: "Después de 15 minutos",
@@ -888,6 +903,12 @@ export const es: Translations = {
   quietHoursStart: "Inicio tranquilo",
   quietHoursEnd: "Fin tranquilo",
   reminderDays: "Días de la semana",
+  settingsMoodCheckIns: "Registro del estado de ánimo",
+  settingsMoodCheckInsDescription: "Recordatorios suaves para anotar cómo te sientes.",
+  settingsFocusReminder: "Recordatorio de concentración",
+  settingsFocusReminderDescription: "Un recordatorio aproximadamente a la hora que elijas.",
+  settingsReminderChooseDay:
+    "Elige al menos un día. Hasta entonces, no se enviará ningún recordatorio.",
   selectedHabits: "Hábitos a recordar",
   noHabitsYet: "Sin hábitos aún.",
   noHabitsInCategory: "No hay hábitos en esta categoría",
@@ -1072,7 +1093,6 @@ export const es: Translations = {
   syncPulled: "Datos en línea restaurados.",
   syncPushed: "Copia en línea actualizada.",
   syncError: "No se pudieron actualizar tus dispositivos.",
-  weeklyDigestError: "No se pudo actualizar el resumen semanal. Inténtalo de nuevo.",
   authGateTitle: "Iniciar sesión",
   authGateBody: "Inicia sesión con tu email para tener tu progreso en tus dispositivos.",
   authGateContinue: "Continuar sin cuenta",
@@ -1318,6 +1338,9 @@ export const es: Translations = {
   muteSound: "Silenciar sonido",
   unmuteSound: "Activar sonido",
   settingsSoundTitle: "Sonido",
+  settingsVibration: "Vibración",
+  settingsVibrationDescription:
+    "Vibración breve al tocar y confirmar acciones, si el dispositivo la admite.",
   settingsSoundDescription: "Sonidos dentro de ZenFlow y su volumen.",
   settingsSoundSummaryOn: "Sonido activado",
   settingsSoundSummaryOff: "Silenciado",
@@ -1326,11 +1349,9 @@ export const es: Translations = {
   settingsSoundVolume: "Volumen",
   settingsSoundVolumeDesc: "Ajusta el volumen de los sonidos dentro de ZenFlow.",
   settingsSoundPreview: "Probar sonido de recordatorio",
-  settingsSoundAmbienceTitle: "Sonido de fondo del diario",
+  settingsSoundAmbienceTitle: "Sonido para escribir",
   settingsSoundAmbienceNote:
-    "El sonido de fondo se inicia en la pantalla de estado de ánimo. Aquí puedes probar el sonido de fondo del diario.",
-  settingsSoundFeedbackOn: "Los sonidos breves usan este volumen.",
-  settingsSoundFeedbackOff: "Los sonidos breves están desactivados en «Respuesta y movimiento».",
+    "Reproduce lluvia suave mientras escribes. Solo empieza al pulsar el botón de reproducción.",
   settingsSoundTextureAir: "Aire",
   settingsSoundTextureWater: "Agua",
   settingsSoundTextureRain: "Lluvia",
@@ -1351,6 +1372,12 @@ export const es: Translations = {
   settingsSoundAmbientToggle: "Sonido de fondo",
   settingsSoundAmbientToggleDesc:
     "Controla el sonido de fondo en las pantallas de inicio de sesión, estado de ánimo y diario, excepto durante las sesiones de enfoque.",
+  settingsSoundBackgroundTitle: "Sonidos de fondo",
+  settingsSoundBackgroundDescription:
+    "Permite sonidos suaves de fondo en las pantallas de ZenFlow. Solo empiezan cuando pulsas reproducir.",
+  settingsSoundActivityTitle: "Sonidos de actividad",
+  settingsSoundActivityDescription:
+    "Ofrece una confirmación discreta al completar actividades, temporizadores y algunos hitos.",
   settingsSoundCompletionCues: "Sonidos de confirmación",
   settingsSoundCompletionCuesDesc:
     "Reproduce un sonido discreto cuando completas algo importante.",
@@ -1591,34 +1618,6 @@ export const es: Translations = {
   completedHabitReason: "Hábito completado",
   comebackChallengeComplete: "¡Desafío de regreso completado!",
   questPrefix: "Misión",
-
-  dopamineSettings: "Respuesta y movimiento",
-  dopamineSettingsDesc: "Elige cuánta animación, sonido y vibración usa ZenFlow.",
-  dopamineSettingsDescNoHaptics: "Elige cuánta animación y sonido usa ZenFlow.",
-  dopamineIntensity: "Nivel de respuesta",
-  dopamineMinimal: "Silencioso",
-  dopamineNormal: "Equilibrado",
-  dopamineADHD: "Más respuesta",
-  dopamineMinimalDesc: "Menos movimiento y menos efectos de celebración.",
-  dopamineNormalDesc: "Una mezcla estable de respuesta útil.",
-  dopamineADHDDesc: "Todos los efectos opcionales están activos; puedes apagar cualquiera abajo.",
-  dopamineCustomize: "Ajustar respuesta",
-  dopamineAnimations: "Animaciones",
-  dopamineAnimationsDesc: "Movimiento para cambios de estado y transiciones",
-  dopamineSounds: "Sonidos",
-  dopamineSoundsDesc: "Sonidos de confirmación y respuesta de audio",
-  dopamineHaptics: "Hápticos",
-  dopamineHapticsDesc: "Retroalimentación por vibración (solo móvil)",
-  dopamineConfetti: "Confeti",
-  dopamineConfettiDesc: "Efectos opcionales de celebración tras completar algo",
-  dopamineStreakFire: "Fuego de racha",
-  dopamineStreakFireDesc: "Énfasis animado para rachas",
-  dopamineMoodDrivenUI: "Visuales de ánimo",
-  dopamineMoodDrivenUIDesc: "El color y el ambiente pueden seguir tu estado de ánimo",
-  dopamineTip: "Nota de comodidad",
-  dopamineTipText:
-    "Empieza con Silencioso si los efectos distraen. Aumenta la respuesta solo cuando te ayude a orientarte.",
-  dopamineSave: "Listo",
 
   fontScaleTitle: "Tamaño del texto",
   fontScalePreview: "Vista previa del texto",
@@ -2317,11 +2316,7 @@ export const es: Translations = {
   updateNow: "Actualizar ahora",
   updateAvailableFor: "Disponible hace {days} días",
 
-  // Lock Screen Quick Actions
-  quickActions: "Acciones rápidas",
-  quickActionsDescription: "Mostrar notificación con acciones rápidas en pantalla de bloqueo",
-  quickActionsEnabled: "Acciones rápidas activadas",
-  quickActionsDisabled: "Acciones rápidas desactivadas",
+  // Contextual shortcuts
   quickActionLogMood: "Registrar estado",
   quickActionStartFocus: "Iniciar enfoque",
   quickActionViewHabits: "Ver hábitos",
@@ -2331,6 +2326,8 @@ export const es: Translations = {
   notificationSoundDescription: "Elige el sonido para recordatorios",
   notificationSoundUpdateFailed:
     "ZenFlow no pudo aplicar este sonido de recordatorio. El sonido anterior sigue seleccionado. Inténtalo de nuevo.",
+  notificationSoundUpdateUncertain:
+    "ZenFlow no pudo terminar de cambiar el sonido del recordatorio. Revisa el sonido seleccionado e inténtalo de nuevo.",
   reminderReconcileFailed:
     "ZenFlow no pudo actualizar los recordatorios. Es posible que el dispositivo siga usando el horario anterior. Inténtalo de nuevo.",
   soundDefault: "Predeterminado",

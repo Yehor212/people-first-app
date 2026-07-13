@@ -109,7 +109,7 @@ vi.mock("../journalSecurityMigration", () => ({
   JOURNAL_SECURITY_MIGRATION_EVENT: "zenflow:journal-security-migration-updated",
 }));
 
-import { useJournalSecurity } from "../useJournalSecurity";
+import { setAutoLockMs, useJournalSecurity } from "../useJournalSecurity";
 
 function bytesToString(bytes: Uint8Array): string {
   return Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
@@ -117,6 +117,7 @@ function bytesToString(bytes: Uint8Array): string {
 
 describe("useJournalSecurity native pause lock", () => {
   beforeEach(() => {
+    localStorage.clear();
     nativeListeners.clear();
     settingsStore.clear();
     vi.clearAllMocks();
@@ -186,5 +187,95 @@ describe("useJournalSecurity native pause lock", () => {
     });
 
     expect(hook.result.current.isUnlocked).toBe(false);
+  });
+
+  it("replaces the active auto-lock timer after a durable timeout change", async () => {
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
+    const hook = renderHook(() => useJournalSecurity());
+
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+    expect(hook.result.current.isUnlocked).toBe(true);
+    expect(setTimeoutSpy.mock.calls.some(([, delay]) => delay === 300_000)).toBe(true);
+
+    await act(async () => {
+      expect(setAutoLockMs(1_800_000)).toBe(true);
+    });
+
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+    expect(setTimeoutSpy.mock.calls.some(([, delay]) => delay === 1_800_000)).toBe(true);
+  });
+
+  it("adopts a validated auto-lock timeout from another tab", async () => {
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
+    const hook = renderHook(() => useJournalSecurity());
+
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+
+    localStorage.setItem("zenflow-journal-lock-timeout", JSON.stringify(60_000));
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "zenflow-journal-lock-timeout",
+          newValue: JSON.stringify(60_000),
+        }),
+      );
+    });
+
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+    expect(setTimeoutSpy.mock.calls.some(([, delay]) => delay === 60_000)).toBe(true);
+  });
+
+  it.each(["zenflow-journal-lock-timeout", null])(
+    "returns to the five-minute default when another tab clears %s",
+    async (key) => {
+      localStorage.setItem("zenflow-journal-lock-timeout", JSON.stringify(1_800_000));
+      const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+      const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
+      const hook = renderHook(() => useJournalSecurity());
+
+      await waitFor(() => expect(hook.result.current.loading).toBe(false));
+      await act(async () => {
+        await hook.result.current.setPassword("correct horse battery staple");
+      });
+      localStorage.removeItem("zenflow-journal-lock-timeout");
+
+      act(() => {
+        window.dispatchEvent(new StorageEvent("storage", { key, newValue: null }));
+      });
+
+      expect(clearTimeoutSpy).toHaveBeenCalled();
+      expect(setTimeoutSpy.mock.calls.some(([, delay]) => delay === 300_000)).toBe(true);
+    },
+  );
+
+  it("resets the active auto-lock timer after meaningful user activity", async () => {
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
+    const hook = renderHook(() => useJournalSecurity());
+
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+    const scheduledBeforeActivity = setTimeoutSpy.mock.calls.filter(
+      ([, delay]) => delay === 300_000,
+    ).length;
+
+    act(() => {
+      document.dispatchEvent(new Event("pointerdown"));
+    });
+
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+    expect(
+      setTimeoutSpy.mock.calls.filter(([, delay]) => delay === 300_000).length,
+    ).toBeGreaterThan(scheduledBeforeActivity);
   });
 });

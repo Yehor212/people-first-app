@@ -1,8 +1,0 @@
-export { ProfileSection } from "./ProfileSection";
-export { AboutSection } from "./AboutSection";
-export { PrivacySection } from "./PrivacySection";
-export { NotificationsSection } from "./NotificationsSection";
-export { DataSection } from "./DataSection";
-export { AccountSection } from "./AccountSection";
-export { SecuritySection } from "./SecuritySection";
-export { WhatsNewBanner } from "./WhatsNewBanner";

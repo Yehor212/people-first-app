@@ -98,7 +98,7 @@ describe('useScrollLock', () => {
   });
 
   it('handles nested locks — body stays locked until ALL consumers unlock', () => {
-    // Simulates: SettingsPanel locks + DopamineSettings locks
+    // Simulates two nested modal surfaces holding independent locks.
     const parent = renderHook(
       ({ locked }) => useScrollLock(locked),
       { initialProps: { locked: true } }
@@ -112,7 +112,7 @@ describe('useScrollLock', () => {
     // Body should still be locked
     expect(document.body.style.overflow).toBe('hidden');
 
-    // Child unmounts first (DopamineSettings closes)
+    // Child surface unmounts first.
     child.unmount();
 
     // Body should STILL be locked (parent still holds lock)

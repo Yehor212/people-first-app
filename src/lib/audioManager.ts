@@ -11,7 +11,7 @@ declare global {
   }
 }
 import { safeParseFloat } from '@/lib/validation';
-import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
+import { storageGetRaw, storageReadRaw, storageRemove, storageSetRaw } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
 import { canPlayFeedbackSound, consumeAudioFeedbackBudget } from './audioComfort';
 
@@ -401,20 +401,32 @@ export function playSound(type: SoundType): void {
 }
 
 // Mute control
-export function setMuted(muted: boolean): void {
+export function setMuted(muted: boolean): boolean {
+  if (!storageSetRaw(SK.AUDIO_MUTED, muted ? '1' : '0')) return false;
   state.isMuted = muted;
-  storageSetRaw(SK.AUDIO_MUTED, muted ? '1' : '0');
   emitAudioSettingsChange();
+  return true;
 }
 
-export function setAudioEnabled(enabled: boolean): void {
-  state.isMuted = !enabled;
-  if (enabled && state.volume <= 0) {
-    state.volume = DEFAULT_AUDIO_VOLUME;
-    storageSetRaw(SK.AUDIO_VOLUME, state.volume.toString());
+export function setAudioEnabled(enabled: boolean): boolean {
+  const nextMuted = !enabled;
+  const nextVolume = enabled && state.volume <= 0 ? DEFAULT_AUDIO_VOLUME : state.volume;
+  const previousMuted = storageReadRaw(SK.AUDIO_MUTED);
+
+  if (!storageSetRaw(SK.AUDIO_MUTED, nextMuted ? '1' : '0')) return false;
+  if (nextVolume !== state.volume && !storageSetRaw(SK.AUDIO_VOLUME, nextVolume.toString())) {
+    if (previousMuted.ok && previousMuted.value !== null) {
+      storageSetRaw(SK.AUDIO_MUTED, previousMuted.value);
+    } else {
+      storageRemove(SK.AUDIO_MUTED);
+    }
+    return false;
   }
-  storageSetRaw(SK.AUDIO_MUTED, state.isMuted ? '1' : '0');
+
+  state.isMuted = nextMuted;
+  state.volume = nextVolume;
   emitAudioSettingsChange();
+  return true;
 }
 
 export function isMuted(): boolean {
@@ -422,10 +434,12 @@ export function isMuted(): boolean {
 }
 
 // Volume control (0.0 - 1.0)
-export function setVolume(volume: number): void {
-  state.volume = Math.max(0, Math.min(1, volume));
-  storageSetRaw(SK.AUDIO_VOLUME, state.volume.toString());
+export function setVolume(volume: number): boolean {
+  const nextVolume = Math.max(0, Math.min(1, volume));
+  if (!storageSetRaw(SK.AUDIO_VOLUME, nextVolume.toString())) return false;
+  state.volume = nextVolume;
   emitAudioSettingsChange();
+  return true;
 }
 
 export function getVolume(): number {

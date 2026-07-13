@@ -122,6 +122,11 @@ function getNativeAdPlatform(): AdPlatform | null {
   return platform === 'android' || platform === 'ios' ? platform : null;
 }
 
+export function isRewardedAdsSupported(): boolean {
+  const targetPlatform = getNativeAdPlatform();
+  return Boolean(isNative && targetPlatform && hasRewardedAdUnitId(targetPlatform));
+}
+
 function isWithinOnboardingAdGracePeriod(): boolean {
   const raw = storageGetRaw(SK.ONBOARDING_STATE, '');
   const onboarding = safeJsonParse<StoredOnboardingAdState | null>(raw, null);
@@ -261,7 +266,7 @@ export async function initializeAds(): Promise<boolean> {
 
   try {
     const targetPlatform = getNativeAdPlatform();
-    if (!targetPlatform || !hasRewardedAdUnitId(targetPlatform)) {
+    if (!isRewardedAdsSupported() || !targetPlatform) {
       state.initialized = true;
       state.sdkAvailable = false;
       logger.log('[Ads] No rewarded ad unit configured — ads disabled');

@@ -3,7 +3,7 @@
  *
  * Consumes the existing `transition()` wrapper from src/lib/viewTransitions.ts
  * which already handles reduced-motion, API-missing fallback (Firefox, older
- * Safari) and Dopamine gating. We add only the verb-level semantics:
+ * Safari) and effective-motion gating. We add only the verb-level semantics:
  * intended duration (420ms) + cinematic ease-out-expo feel.
  *
  * The DURATION + EASING for Morph are communicated to CSS via verbs.css

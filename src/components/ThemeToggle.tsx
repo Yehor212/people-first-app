@@ -2,11 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { isNative } from '@/lib/platform';
-import { StatusBarStyle, Style } from '@/lib/statusBarStyle';
-import { logger } from '@/lib/logger';
-import { SK } from '@/lib/storageKeys';
-import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
+import { useThemeStore, type ThemePreference } from '@/stores/themeStore';
 
 /** Theme options: light, dark, or follow system preference */
 export type ThemeOption = 'light' | 'dark' | 'system';
@@ -22,35 +18,26 @@ export const getSystemTheme = (): EffectiveTheme => {
 
 /** Get stored theme preference */
 export const getStoredTheme = (): ThemeOption => {
-  if (typeof window === 'undefined') return 'system';
-  const stored = storageGetRaw(SK.THEME);
-  if (stored === 'light' || stored === 'dark' || stored === 'system') {
-    return stored;
-  }
-  return 'system'; // Default to system
+  const stored = useThemeStore.getState().theme;
+  if (stored === 'paper') return 'light';
+  if (stored === 'auto') return 'system';
+  return 'dark';
 };
 
-/** Apply theme to document and update native status bar */
+/** Compatibility bridge. The canonical store owns every derived theme side effect. */
 export const applyTheme = (effectiveTheme: EffectiveTheme) => {
-  const root = document.documentElement;
-  root.classList.toggle('dark', effectiveTheme === 'dark');
-
-  if (isNative) {
-    const isDark = effectiveTheme === 'dark';
-    StatusBarStyle.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(err => logger.warn('[Theme]', 'StatusBar style failed:', err));
+  const current = useThemeStore.getState();
+  if (current.theme === 'auto') current._resolve();
+  else if ((current.appliedTheme === 'paper' ? 'light' : 'dark') !== effectiveTheme) {
+    current.setTheme(effectiveTheme === 'light' ? 'paper' : 'ink');
   }
 };
 
 /** Save theme preference */
 export const setThemePreference = (theme: ThemeOption) => {
-  storageSetRaw(SK.THEME, theme);
-
-  // Apply immediately
-  const effective = theme === 'system' ? getSystemTheme() : theme;
-  applyTheme(effective);
-
-  // Dispatch event so other components can react
-  window.dispatchEvent(new CustomEvent('zenflow:theme-change', { detail: { theme, effective } }));
+  const canonical: ThemePreference =
+    theme === 'light' ? 'paper' : theme === 'dark' ? 'ink' : 'auto';
+  return useThemeStore.getState().setTheme(canonical);
 };
 
 /** Hook to use and manage theme */
@@ -65,28 +52,9 @@ export function useTheme() {
     const stored = getStoredTheme();
     setTheme(stored);
 
-    const effective = stored === 'system' ? getSystemTheme() : stored;
+    const effective = useThemeStore.getState().appliedTheme === 'paper' ? 'light' : 'dark';
     setEffectiveTheme(effective);
-    applyTheme(effective);
   }, []);
-
-  // Listen for system preference changes when theme is 'system'
-  useEffect(() => {
-    if (!mounted) return;
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      if (theme === 'system') {
-        const newEffective = e.matches ? 'dark' : 'light';
-        setEffectiveTheme(newEffective);
-        applyTheme(newEffective);
-      }
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [theme, mounted]);
 
   // Listen for theme changes from other components
   useEffect(() => {
@@ -100,9 +68,6 @@ export function useTheme() {
   }, []);
 
   const changeTheme = useCallback((newTheme: ThemeOption) => {
-    setTheme(newTheme);
-    const effective = newTheme === 'system' ? getSystemTheme() : newTheme;
-    setEffectiveTheme(effective);
     setThemePreference(newTheme);
   }, []);
 

@@ -9,7 +9,7 @@ import { shouldAnimate } from "@/lib/animationUtils";
  * directly so the DOM mutation still happens.
  *
  * New code should prefer `transition()` which honours reduced-motion +
- * battery + Dopamine gating.
+ * battery + reduced-motion gating.
  */
 export function startViewTransition(callback: () => void): void {
   if (typeof document === "undefined") {
@@ -86,7 +86,7 @@ export interface TransitionOptions {
  *   - `document.startViewTransition` is not a function (Firefox, older Safari)
  *   - installed app display mode is standalone/fullscreen (PWA shell input stability)
  *   - native shells such as Capacitor/Tauri (desktop/mobile WebView input stability)
- *   - `shouldAnimate()` returns false (Dopamine off, OS reduced-motion, low battery)
+ *   - `shouldAnimate()` returns false (app/OS reduced motion or low battery)
  *
  * When `options.name` is provided, `view-transition-name` is set on
  * `documentElement` for the transition and removed afterwards (success or fail).

@@ -2,7 +2,7 @@ import { createContext, useContext, ReactNode, useEffect, useRef, useMemo, useSt
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Language, Translations, translations, loadLanguage } from "@/i18n/translations";
 import { SK } from "@/lib/storageKeys";
-import { storageGetRaw } from "@/lib/safeJson";
+import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 
 // Extend Navigator for IE compatibility (userLanguage property)
 declare global {
@@ -60,6 +60,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // Wrap setLanguage to also persist the validated value if it was corrected
   const setLanguage = useMemo(
     () => (lang: Language) => {
+      storageSetRaw(SK.LANGUAGE_SELECTED, "true");
       setLanguageRaw(lang);
     },
     [setLanguageRaw]

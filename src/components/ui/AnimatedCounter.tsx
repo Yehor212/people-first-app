@@ -3,7 +3,7 @@
  *
  * Counts from 0 to target with spring overshoot settle (~800ms).
  * Triggers on scroll-into-view via IntersectionObserver.
- * Respects prefers-reduced-motion / dopamine settings.
+ * Respects the effective reduced-motion preference.
  *
  * EP6_US006 T2: Animated Counter & Streak Display
  */

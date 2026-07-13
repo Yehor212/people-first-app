@@ -481,11 +481,20 @@ const hebrewOverrides: Partial<Translations> = {
   saveName: "שמירת השם",
   nameSaved: "השם נשמר",
   nameSavedLocally: "נשמר במכשיר הזה",
-  invalidNameFormat: "פורמט שם לא חוקי",
+  invalidNameFormat: "יש להזין שם באורך 1 עד 100 תווים.",
   notifications: "התראות",
   notificationsComingSoon: "התראות יהיו זמינות בעדכונים הבאים.",
   settingsOverviewDescription:
     "אפשר לבחור איך ZenFlow ייראה, יישמע, יזכיר דברים ויטפל בנתונים.",
+  settingsOverviewDescriptionWithoutReminders:
+    "אפשר לבחור איך ZenFlow ייראה, יישמע ויטפל בנתונים.",
+  settingsReminderDaysMissing: "בחרו ימים לתזכורות",
+  settingsSoundRestoreTitle: "חלק מצלילי הרקע כבויים",
+  settingsSoundRestoreDescription:
+    "צלילים שכיבית בעבר יישארו כבויים עד להפעלתם מחדש.",
+  settingsSoundRestoreAction: "הפעלת הצלילים מחדש",
+  settingsSoundMasterDisabledHint:
+    "יש להפעיל את צליל האפליקציה כדי להשתמש בהגדרות האלה.",
   settingsAccountBackupTitle: "חשבון וגיבוי",
   settingsAccountBackupDescription:
     "החשבון שלך מחובר. אם ZenFlow לא יכול לשמור שינויים באינטרנט, הם נשארים במכשיר הזה.",
@@ -504,7 +513,7 @@ const hebrewOverrides: Partial<Translations> = {
     "הנתונים נשארים במכשיר הזה.",
   settingsRemindersMobileApp: "אפליקציה לנייד",
   settingsPrivacyDataDescription:
-    "אפשר לבחור באילו שירותים אופציונליים ZenFlow ישתמש. הגיבוי מתחיל רק לאחר הכניסה לחשבון.",
+    "אפשר לבחור באילו שירותים אופציונליים ZenFlow ישתמש.",
   settingsDataBackupReportsDescription:
     "אפשר לשמור גיבוי לייבוא מאוחר יותר או ליצור דוח.",
   settingsBackupRestoreTitle: "גיבוי ושחזור",
@@ -529,7 +538,7 @@ const hebrewOverrides: Partial<Translations> = {
   data: "נתונים",
   exportData: "יצוא נתונים",
   importData: "יבוא נתונים",
-  importMode: "מצב יבוא",
+  importMode: "איך להוסיף את הגיבוי הזה?",
   importMerge: "עדכון הנתונים הקיימים",
   importReplace: "החלפת הנתונים הקיימים",
   exportSuccess: "היצוא הושלם.",
@@ -608,16 +617,28 @@ const hebrewOverrides: Partial<Translations> = {
   themeLight: "בהיר",
   themeDark: "כהה",
   themeSystem: "מערכת",
+  themeModeTitle: "מצב צבע",
+  themeModeDescription:
+    "אפשר להתאים להגדרת המכשיר או לבחור מראה בהיר, כהה או שחור.",
+  themeBlack: "שחור",
+  themeChangeSaved: "השינוי נשמר",
+  settingsPreferenceSaveError:
+    "לא היה אפשר לשמור את השינוי. ההגדרה הקודמת עדיין פעילה.",
+  settingsReduceMotion: "הפחתת תנועה",
+  settingsReduceMotionDescription:
+    "מפחית מעברים בתנועה ואפקטים דקורטיביים.",
+  settingsReduceMotionSystemDescription:
+    "הפחתת תנועה כבר מופעלת במכשיר הזה.",
   themeStyleTitle: "פלטת מצב רוח",
   themeAdvancedAppearanceTitle: "מראה מתקדם",
-  themeStyleDescription: "אפשר לבחור סגנון שמתאים.",
+  themeStyleDescription: "אפשר לבחור מצב צבע, צבע הדגשה וגודל טקסט.",
   themeAccentTitle: "צבע הדגשה",
   themeAccentDescription: "צבע לכפתורים, לבחירות ולהדגשות.",
   themeIntensityTitle: "עוצמה",
   themeComfortTitle: "נוחות",
   themePreviewAction: "תצוגה מקדימה",
   themeApplyAction: "החל",
-  themeResetAction: "איפוס",
+  themeResetAction: "איפוס צבע ההדגשה והניגודיות",
   themeUndoAction: "בטל",
   themeMoreActions: "פעולות מראה נוספות",
   themePreviewing: "מציגים סגנון",
@@ -630,8 +651,8 @@ const hebrewOverrides: Partial<Translations> = {
   themePaletteVelvetLibrary: "ספרייה קטיפתית",
   themePaletteBotanicalPulse: "דופק בוטני",
   themePaletteQuietOled: "שחור שקט",
-  themeAccentTeal: "זכוכית ים",
-  themeAccentClay: "חמר",
+  themeAccentTeal: "ירוק",
+  themeAccentClay: "כחול",
   themeAccentPlum: "סגול",
   themeAccentMoss: "טחב",
   themeAccentAmber: "ענבר",
@@ -685,7 +706,7 @@ const hebrewOverrides: Partial<Translations> = {
     "לאחר הכניסה, ZenFlow שומר את הנתונים זמינים במכשירים שלך. שינויים ממתינים בבטחה כשהחיבור חלש.",
   settingsCloudSyncEnabled: "הגיבוי המקוון פעיל",
   settingsCloudSyncDisabledByUser: "הגיבוי המקוון מושהה",
-  settingsExportTitle: "יצוא נתונים",
+  settingsExportTitle: "שמירת גיבוי",
   settingsExportDescription: "הורד גיבוי של הנתונים שלך",
   settingsImportTitle: "יבוא נתונים",
   settingsImportMergeTooltip:
@@ -714,11 +735,6 @@ const hebrewOverrides: Partial<Translations> = {
   settingsSectionAccount: "חשבון ומכשירים",
   settingsSectionData: "נתונים",
 
-  // Weekly Digest
-  weeklyDigestTitle: "סיכום שבועי",
-  weeklyDigestDescription: "קבל דוח התקדמות כל שבוע",
-  weeklyDigestEnabled: "סיכום שבועי פעיל",
-
   // Google Calendar
   googleCalendar: "יומן גוגל",
   googleCalendarDescription: "הצג אירועי יומן גוגל בציר הזמן",
@@ -745,7 +761,7 @@ const hebrewOverrides: Partial<Translations> = {
   journalLockTimeout: "נעילה אוטומטית של היומן",
   journalLockTimeoutDesc: "נעילת היומן אוטומטית לאחר תקופה של חוסר פעילות",
   journalLockImmediateWarning: "היומן יינעל בכל פעם שתעזוב את מסך היומן",
-  journalLockTimeoutImmediately: "מיד",
+  journalLockTimeoutImmediately: "בעת יציאה מהאפליקציה",
   journalLockTimeoutOneMinute: "אחרי דקה",
   journalLockTimeoutFiveMinutes: "אחרי 5 דקות",
   journalLockTimeoutFifteenMinutes: "אחרי 15 דקות",
@@ -941,7 +957,6 @@ const hebrewOverrides: Partial<Translations> = {
   syncNow: "עדכן/י מכשירים עכשיו",
   syncSuccess: "המכשירים מעודכנים.",
   syncError: "לא ניתן לעדכן את המכשירים.",
-  weeklyDigestError: "לא ניתן לעדכן את הסיכום השבועי. נסה שוב.",
   cloudSyncDisabled: "גיבוי מקוון לא זמין.",
   syncDeviceSessionsTitle: "המכשירים שלך",
   syncDeviceSessionsDescription: "ראו אילו מכשירים השתמשו בחשבון בלי לחשוף נתונים פרטיים.",
@@ -1161,6 +1176,12 @@ const hebrewOverrides: Partial<Translations> = {
   quietHoursStart: "תחילת השקט",
   quietHoursEnd: "סיום השקט",
   reminderDays: "ימים בשבוע",
+  settingsMoodCheckIns: "תזכורות למצב הרוח",
+  settingsMoodCheckInsDescription: "תזכורות עדינות לתיעוד ההרגשה הנוכחית.",
+  settingsFocusReminder: "תזכורת למיקוד",
+  settingsFocusReminderDescription: "תזכורת אחת בסביבות השעה שנבחרה.",
+  settingsReminderChooseDay:
+    "יש לבחור לפחות יום אחד. עד אז לא יישלחו תזכורות.",
   selectedHabits: "הרגלים לתזכורת",
   noHabitsYet: "אין הרגלים עדיין.",
   noHabitsInCategory: "אין הרגלים בקטגוריה זו",
@@ -1488,6 +1509,9 @@ const hebrewOverrides: Partial<Translations> = {
   muteSound: "השתק",
   unmuteSound: "בטל השתקה",
   settingsSoundTitle: "צליל",
+  settingsVibration: "רטט",
+  settingsVibrationDescription:
+    "רטט קצר בהקשות ובאישורים, במכשירים שתומכים בכך.",
   settingsSoundDescription: "צלילים בתוך \u2066ZenFlow\u2069 והעוצמה שלהם.",
   settingsSoundSummaryOn: "צליל פעיל",
   settingsSoundSummaryOff: "מושתק",
@@ -1496,11 +1520,9 @@ const hebrewOverrides: Partial<Translations> = {
   settingsSoundVolume: "עוצמה",
   settingsSoundVolumeDesc: "מגדיר את עוצמת הצלילים בתוך \u2066ZenFlow\u2069.",
   settingsSoundPreview: "להשמיע צליל תזכורת לדוגמה",
-  settingsSoundAmbienceTitle: "צליל הרקע של היומן",
+  settingsSoundAmbienceTitle: "צליל לכתיבה",
   settingsSoundAmbienceNote:
-    "את צליל הרקע מפעילים במסך מצב הרוח. כאן אפשר להאזין לצליל הרקע של היומן.",
-  settingsSoundFeedbackOn: "צלילי משוב קצרים משתמשים בעוצמה הזו.",
-  settingsSoundFeedbackOff: "צלילי המשוב כבויים בהגדרות ״משוב ותנועה״.",
+    "אפשר להשמיע גשם עדין בזמן הכתיבה. הצליל מתחיל רק אחרי לחיצה על הפעלה.",
   settingsSoundTextureAir: "אוויר",
   settingsSoundTextureWater: "מים",
   settingsSoundTextureRain: "גשם",
@@ -1521,6 +1543,12 @@ const hebrewOverrides: Partial<Translations> = {
   settingsSoundAmbientToggle: "צליל רקע",
   settingsSoundAmbientToggleDesc:
     "מפעיל או מכבה את צלילי הרקע במסכי הכניסה, מצב הרוח והיומן מחוץ למפגשי מיקוד.",
+  settingsSoundBackgroundTitle: "צלילי רקע",
+  settingsSoundBackgroundDescription:
+    "מאפשר צלילי רקע עדינים ב־⁦ZenFlow⁩. ההשמעה מתחילה רק אחרי לחיצה על הפעלה.",
+  settingsSoundActivityTitle: "צלילי פעילות",
+  settingsSoundActivityDescription:
+    "משמיע משוב שקט אחרי פעילויות שהושלמו, טיימרים וכמה אבני דרך.",
   settingsSoundCompletionCues: "צלילי אישור",
   settingsSoundCompletionCuesDesc: "משמיע צליל אישור שקט אחרי פעולות חשובות.",
   settingsSoundReminderCues: "צלילי תזכורת בתוך \u2066ZenFlow\u2069",
@@ -1737,34 +1765,6 @@ const hebrewOverrides: Partial<Translations> = {
   completedHabitReason: "הרגל הושלם",
   comebackChallengeComplete: "אתגר החזרה הושלם!",
   questPrefix: "משימה",
-
-  // Feedback and motion
-  dopamineSettings: "משוב ותנועה",
-  dopamineSettingsDesc: "בחרו כמה אנימציה, צליל ורטט ZenFlow ישתמש.",
-  dopamineSettingsDescNoHaptics: "בחרו כמה אנימציה וצליל ZenFlow ישתמש.",
-  dopamineIntensity: "רמת משוב",
-  dopamineMinimal: "שקט",
-  dopamineNormal: "מאוזן",
-  dopamineADHD: "יותר משוב",
-  dopamineMinimalDesc: "פחות תנועה ופחות אפקטים של חגיגה.",
-  dopamineNormalDesc: "שילוב יציב של משוב מועיל.",
-  dopamineADHDDesc: "כל האפקטים האופציונליים פעילים; אפשר לכבות כל אחד בהמשך.",
-  dopamineCustomize: "כוונון משוב",
-  dopamineAnimations: "אנימציות",
-  dopamineAnimationsDesc: "תנועה לשינויי מצב ומעברים",
-  dopamineSounds: "צלילים",
-  dopamineSoundsDesc: "צלילי אישור ומשוב קולי",
-  dopamineHaptics: "רטט",
-  dopamineHapticsDesc: "משוב רטט (נייד בלבד)",
-  dopamineConfetti: "קונפטי",
-  dopamineConfettiDesc: "אפקטי חגיגה אופציונליים אחרי השלמות",
-  dopamineStreakFire: "אש רצף",
-  dopamineStreakFireDesc: "הדגשה מונפשת לרצפים",
-  dopamineMoodDrivenUI: "ויזואליות מצב רוח",
-  dopamineMoodDrivenUIDesc: "הצבע והאווירה יכולים לעקוב אחרי מצב הרוח",
-  dopamineTip: "הערת נוחות",
-  dopamineTipText: "התחילו בשקט אם האפקטים מסיחים את הדעת. הגבירו משוב רק כשהוא עוזר להתמצא.",
-  dopamineSave: "סיום",
 
   fontScaleTitle: "גודל טקסט",
   fontScalePreview: "תצוגה מקדימה של הטקסט",
@@ -2297,11 +2297,7 @@ const hebrewOverrides: Partial<Translations> = {
   updateNow: "עדכן עכשיו",
   updateAvailableFor: "זמין כבר {days} ימים",
 
-  // Quick Actions & Notifications
-  quickActions: "פעולות מהירות",
-  quickActionsDescription: "הצג התראה עם פעולות מהירות במסך הנעילה",
-  quickActionsEnabled: "פעולות מהירות מופעלות",
-  quickActionsDisabled: "פעולות מהירות מבוטלות",
+  // Contextual shortcuts
   quickActionLogMood: "רשום מצב רוח",
   quickActionStartFocus: "התחל מיקוד",
   quickActionViewHabits: "צפה בהרגלים",
@@ -2309,6 +2305,8 @@ const hebrewOverrides: Partial<Translations> = {
   notificationSoundDescription: "בחר צליל לתזכורות",
   notificationSoundUpdateFailed:
     "ZenFlow לא הצליח להחיל את צליל התזכורת הזה. הצליל הקודם עדיין נבחר. אפשר לנסות שוב.",
+  notificationSoundUpdateUncertain:
+    "ZenFlow לא הצליח להשלים את שינוי צליל התזכורת. יש לבדוק את הצליל שנבחר ולנסות שוב.",
   reminderReconcileFailed:
     "ZenFlow לא הצליח לעדכן את התזכורות. ייתכן שהמכשיר עדיין משתמש בלוח הזמנים הקודם. אפשר לנסות שוב.",
   soundDefault: "ברירת מחדל",

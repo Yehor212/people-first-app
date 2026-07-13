@@ -7,7 +7,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useRef, useMemo, useCallback } from 'react';
 import { PrimaryEmotion, MoodEntry } from '@/types';
 import { getToday } from '@/lib/utils';
-import { shouldShowMoodEffects } from '@/lib/animationUtils';
 
 // Theme configuration for each emotion
 export interface EmotionTheme {
@@ -223,27 +222,10 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
   const [currentEmotion, setCurrentEmotion] = useState<PrimaryEmotion | 'neutral'>('neutral');
   const [currentTheme, setCurrentTheme] = useState<EmotionTheme>(emotionThemes.neutral);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [moodDrivenUIEnabled, setMoodDrivenUIEnabled] = useState(() => shouldShowMoodEffects());
 
   // Store timeout refs for cleanup
   const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const endTransitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Listen for dopamine settings changes
-  useEffect(() => {
-    const handleSettingsChange = () => {
-      setMoodDrivenUIEnabled(shouldShowMoodEffects());
-    };
-
-    // Listen for both storage events (cross-tab) and custom events (same-tab)
-    window.addEventListener('storage', handleSettingsChange);
-    window.addEventListener('dopamine-settings-change', handleSettingsChange);
-
-    return () => {
-      window.removeEventListener('storage', handleSettingsChange);
-      window.removeEventListener('dopamine-settings-change', handleSettingsChange);
-    };
-  }, []);
 
   // Smooth transition between emotions
   // Use refs and cleanup previous timeouts to prevent race conditions
@@ -320,8 +302,7 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
 
-    // Determine which theme to apply based on moodDrivenUI setting
-    const themeToApply = moodDrivenUIEnabled ? currentTheme : emotionThemes.neutral;
+    const themeToApply = currentTheme;
 
     // Apply theme CSS variables
     root.style.setProperty('--emotion-primary-hue', String(themeToApply.primaryHue));
@@ -360,14 +341,9 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
     ];
     document.body.classList.remove(...allEmotionClasses);
 
-    // Add mood-disabled class when feature is off, or emotion class when on
-    if (moodDrivenUIEnabled) {
-      document.body.classList.add(`emotion-${currentEmotion}`);
-    } else {
-      document.body.classList.add('mood-disabled');
-    }
+    document.body.classList.add(`emotion-${currentEmotion}`);
 
-  }, [currentTheme, currentEmotion, moodDrivenUIEnabled]);
+  }, [currentTheme, currentEmotion]);
 
   // Memoize provider value to prevent unnecessary re-renders
   const value = useMemo(() => ({

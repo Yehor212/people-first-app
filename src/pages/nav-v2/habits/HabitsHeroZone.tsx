@@ -9,30 +9,15 @@
 
 import {
   memo,
-  Suspense,
   useCallback,
-  useEffect,
   useMemo,
-  useRef,
-  useState,
   type CSSProperties,
 } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { hapticTap } from "@/lib/haptics";
-import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { getRoleTone } from "@/lib/nonOrbVisualRoles";
 import { V2_HABIT_JOURNEY_ICONS } from "@/lib/v2IconSystem";
-import { AllHabitsDoneAnimation } from "@/components/animations/AllHabitsDoneAnimation";
-import { useStreakMilestones } from "./hero/useStreakMilestones";
-
-const HabitCompletionCelebrationLazy = lazyWithRetry(
-  () =>
-    import("@/components/habit-completion-celebration/HabitCompletionCelebration").then((m) => ({
-      default: m.HabitCompletionCelebration,
-    })),
-  "HabitCompletionCelebration"
-);
 
 import type { Habit } from "@/types";
 import type { NumericalEntryAction } from "@/lib/habitNumericalInteraction";
@@ -87,20 +72,6 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
 
   const groups = useMemo(() => groupHabitsByTimeOfDay(todaysHabits), [todaysHabits]);
   const dayOfMonth = useMemo(() => new Date().getDate(), []);
-
-  const [celebrating, setCelebrating] = useState(false);
-  const prevRatioRef = useRef<number>(dailyProgress.ratio);
-  useEffect(() => {
-    const prev = prevRatioRef.current;
-    const now = dailyProgress.ratio;
-    if (prev < 1 && now >= 1 && dailyProgress.total > 0) {
-      setCelebrating(true);
-    }
-    prevRatioRef.current = now;
-  }, [dailyProgress.ratio, dailyProgress.total]);
-  const handleCelebrationDone = useCallback(() => setCelebrating(false), []);
-
-  const { event: milestoneEvent, dismiss: dismissMilestone } = useStreakMilestones(todaysHabits);
 
   const handleCreate = useCallback(() => {
     void hapticTap();
@@ -262,19 +233,6 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
         </div>
       )}
 
-      {celebrating && animate && <AllHabitsDoneAnimation onComplete={handleCelebrationDone} />}
-
-      {milestoneEvent && animate && (
-        <Suspense fallback={null}>
-          <HabitCompletionCelebrationLazy
-            habitName={milestoneEvent.habit.name}
-            habitIcon={milestoneEvent.habit.icon}
-            habitColor={milestoneEvent.habit.color}
-            streakDays={milestoneEvent.streak}
-            onComplete={dismissMilestone}
-          />
-        </Suspense>
-      )}
     </section>
   );
 });

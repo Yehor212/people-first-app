@@ -16,24 +16,40 @@ export function useReminderMigration(): void {
   useEffect(() => {
     if (isLoading) return;
 
-    const needsMigration = reminders.moodTime && !reminders.moodTimeMorning;
+    const needsTimeMigration = !reminders.moodTimeMorning;
+    const needsCategoryMigration =
+      typeof reminders.moodCheckInsEnabled !== 'boolean' ||
+      typeof reminders.focusReminderEnabled !== 'boolean';
 
-    if (needsMigration) {
-      const oldTime = reminders.moodTime || '09:00';
-      setReminders(prev => ({
+    if (!needsTimeMigration && !needsCategoryMigration) return;
+
+    setReminders(prev => {
+      const legacyScheduleWasActive = prev.enabled === true;
+      return {
         ...defaultReminderSettings,
         ...prev,
-        moodTimeMorning: oldTime,
-        moodTimeAfternoon: '14:00',
-        moodTimeEvening: '20:00',
-        moodTime: undefined,
-      }));
-      logger.log('[Migration] Migrated reminder settings to 3-time mood format');
-    } else if (!reminders.moodTimeMorning) {
-      setReminders(prev => ({
-        ...defaultReminderSettings,
-        ...prev,
-      }));
-    }
-  }, [isLoading, reminders.moodTime, reminders.moodTimeMorning, setReminders]);
+        ...(needsTimeMigration && {
+          moodTimeMorning: prev.moodTime || '09:00',
+          moodTimeAfternoon: prev.moodTimeAfternoon || '14:00',
+          moodTimeEvening: prev.moodTimeEvening || '20:00',
+          moodTime: undefined,
+        }),
+        moodCheckInsEnabled:
+          typeof prev.moodCheckInsEnabled === 'boolean'
+            ? prev.moodCheckInsEnabled
+            : legacyScheduleWasActive,
+        focusReminderEnabled:
+          typeof prev.focusReminderEnabled === 'boolean'
+            ? prev.focusReminderEnabled
+            : legacyScheduleWasActive,
+      };
+    });
+    logger.log('[Migration] Normalized reminder times and category consent');
+  }, [
+    isLoading,
+    reminders.focusReminderEnabled,
+    reminders.moodCheckInsEnabled,
+    reminders.moodTimeMorning,
+    setReminders,
+  ]);
 }

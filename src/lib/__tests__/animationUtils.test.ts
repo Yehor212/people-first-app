@@ -1,257 +1,74 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// ─── In-memory storage mock ────────────────────────────────────
-let mockStorage: Record<string, unknown> = {};
-let mockSessionStorage: Record<string, unknown> = {};
+const motionPreference = vi.hoisted(() => ({ reduceMotion: false }));
+const runtime = vi.hoisted(() => ({ limited: false }));
 
-vi.mock("../safeJson", () => ({
-  safeLocalStorageGet: vi.fn(<T>(key: string, defaultValue: T): T => {
-    return key in mockStorage ? (mockStorage[key] as T) : defaultValue;
-  }),
-  safeSessionStorageGet: vi.fn(<T>(key: string, defaultValue: T): T => {
-    return key in mockSessionStorage ? (mockSessionStorage[key] as T) : defaultValue;
-  }),
+vi.mock("@/lib/motionPreference", () => ({
+  getMotionPreference: () => ({ ...motionPreference }),
 }));
 
-vi.mock("../storageKeys", () => ({
-  SK: { DOPAMINE_SETTINGS: "zenflow_dopamine_settings" },
-  SSK: { RUNTIME_PERF_GUARD: "zenflow-runtime-perf-guard" },
+vi.mock("@/observability/runtimePerformanceMode", () => ({
+  isRuntimePerformanceLimited: () => runtime.limited,
 }));
-
-// ─── matchMedia mock ───────────────────────────────────────────
-const mockMatchMedia = vi.fn().mockReturnValue({ matches: false });
-Object.defineProperty(window, "matchMedia", {
-  value: mockMatchMedia,
-  writable: true,
-});
 
 import {
-  motionPresets,
-  getDopamineSettings,
-  shouldAnimate,
-  shouldPlaySounds,
-  shouldTriggerHaptics,
-  shouldShowConfetti,
-  shouldShowStreakFire,
-  shouldShowMoodEffects,
+  _getLowBatteryMirror,
   applyReduceMotionClass,
-  applyMoodDisabledClass,
+  motionPresets,
+  setLowBatteryMirror,
+  shouldAnimate,
+  zenMotion,
+  zenTap,
 } from "../animationUtils";
 
-// ─── Setup ─────────────────────────────────────────────────────
-
-beforeEach(() => {
-  mockStorage = {};
-  mockSessionStorage = {};
-  mockMatchMedia.mockReturnValue({ matches: false });
-  delete document.documentElement.dataset.runtimePerf;
-  document.body.classList.remove("reduce-motion", "mood-disabled");
-  vi.clearAllMocks();
-});
-
-// ============================================================
-// motionPresets
-// ============================================================
-describe("motionPresets", () => {
-  it("has fadeIn preset with initial/animate/transition", () => {
-    expect(motionPresets.fadeIn).toHaveProperty("initial");
-    expect(motionPresets.fadeIn).toHaveProperty("animate");
-    expect(motionPresets.fadeIn).toHaveProperty("transition");
+describe("animationUtils", () => {
+  beforeEach(() => {
+    motionPreference.reduceMotion = false;
+    runtime.limited = false;
+    setLowBatteryMirror(false);
+    document.body.classList.remove("reduce-motion");
+    vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
   });
 
-  it("has slideUp preset with y offset", () => {
-    expect(motionPresets.slideUp.initial).toHaveProperty("y", 20);
-    expect(motionPresets.slideUp.animate).toHaveProperty("y", 0);
+  it("keeps shared motion tokens stable", () => {
+    expect(motionPresets.fadeIn.transition.duration).toBe(0.2);
+    expect(zenMotion.instant).toEqual({ duration: 0 });
+    expect(zenTap.button).toEqual({ scale: 0.96 });
   });
 
-  it("has scaleIn preset with scale", () => {
-    expect(motionPresets.scaleIn.initial).toHaveProperty("scale", 0.95);
-    expect(motionPresets.scaleIn.animate).toHaveProperty("scale", 1);
-  });
-
-  it("has modalEnter preset with spring transition", () => {
-    expect(motionPresets.modalEnter.transition).toHaveProperty(
-      "type",
-      "spring",
-    );
-    expect(motionPresets.modalEnter.transition).toHaveProperty("damping", 25);
-    expect(motionPresets.modalEnter.transition).toHaveProperty(
-      "stiffness",
-      300,
-    );
-  });
-});
-
-// ============================================================
-// getDopamineSettings
-// ============================================================
-describe("getDopamineSettings", () => {
-  it("returns defaults when nothing stored", () => {
-    const settings = getDopamineSettings();
-    expect(settings.intensity).toBe("normal");
-    expect(settings.animations).toBe(true);
-    expect(settings.sounds).toBe(true);
-    expect(settings.haptics).toBe(false);
-    expect(settings.confetti).toBe(true);
-    expect(settings.streakFire).toBe(true);
-    expect(settings.moodDrivenUI).toBe(true);
-  });
-
-  it("merges stored settings with defaults", () => {
-    mockStorage["zenflow_dopamine_settings"] = {
-      animations: false,
-      intensity: "adhd",
-    };
-    const settings = getDopamineSettings();
-    expect(settings.animations).toBe(false);
-    expect(settings.intensity).toBe("adhd");
-    // Unset fields keep defaults
-    expect(settings.sounds).toBe(true);
-    expect(settings.haptics).toBe(false);
-  });
-
-  it("returns full defaults when stored value is null", () => {
-    mockStorage["zenflow_dopamine_settings"] = null;
-    const settings = getDopamineSettings();
-    expect(settings.animations).toBe(true);
-  });
-});
-
-// ============================================================
-// shouldAnimate
-// ============================================================
-describe("shouldAnimate", () => {
-  it("returns true when animations enabled", () => {
+  it("allows motion when every effective-motion input allows it", () => {
     expect(shouldAnimate()).toBe(true);
   });
 
-  it("returns false when animations disabled in settings", () => {
-    mockStorage["zenflow_dopamine_settings"] = { animations: false };
+  it("stops motion for the direct in-app preference", () => {
+    motionPreference.reduceMotion = true;
     expect(shouldAnimate()).toBe(false);
   });
 
-  it("respects OS prefers-reduced-motion as secondary check (WCAG 2.3.3)", () => {
-    mockMatchMedia.mockReturnValue({ matches: true });
+  it("stops motion for the system preference", () => {
+    vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true }));
     expect(shouldAnimate()).toBe(false);
   });
 
-  it("respects runtime performance guard in non-React animation paths", () => {
-    document.documentElement.dataset.runtimePerf = "strained";
+  it("stops decorative motion while runtime performance is limited", () => {
+    runtime.limited = true;
     expect(shouldAnimate()).toBe(false);
-  });
-
-  it("allows canonical renderers to opt out of runtime guard visual swaps", () => {
-    document.documentElement.dataset.runtimePerf = "strained";
     expect(shouldAnimate({ respectRuntimePerformance: false })).toBe(true);
   });
-});
 
-// ============================================================
-// shouldPlaySounds
-// ============================================================
-describe("shouldPlaySounds", () => {
-  it("returns true by default", () => {
-    expect(shouldPlaySounds()).toBe(true);
+  it("stops motion for the low-battery mirror", () => {
+    setLowBatteryMirror(true);
+    expect(_getLowBatteryMirror()).toBe(true);
+    expect(shouldAnimate()).toBe(false);
   });
 
-  it("returns false when sounds disabled", () => {
-    mockStorage["zenflow_dopamine_settings"] = { sounds: false };
-    expect(shouldPlaySounds()).toBe(false);
-  });
-});
-
-// ============================================================
-// shouldTriggerHaptics
-// ============================================================
-describe("shouldTriggerHaptics", () => {
-  it("keeps haptics opt-in by default", () => {
-    expect(shouldTriggerHaptics()).toBe(false);
-  });
-
-  it("returns false when haptics disabled", () => {
-    mockStorage["zenflow_dopamine_settings"] = { haptics: false };
-    expect(shouldTriggerHaptics()).toBe(false);
-  });
-});
-
-// ============================================================
-// shouldShowConfetti
-// ============================================================
-describe("shouldShowConfetti", () => {
-  it("returns true by default", () => {
-    expect(shouldShowConfetti()).toBe(true);
-  });
-
-  it("returns false when confetti disabled", () => {
-    mockStorage["zenflow_dopamine_settings"] = { confetti: false };
-    expect(shouldShowConfetti()).toBe(false);
-  });
-});
-
-// ============================================================
-// shouldShowStreakFire
-// ============================================================
-describe("shouldShowStreakFire", () => {
-  it("returns true by default", () => {
-    expect(shouldShowStreakFire()).toBe(true);
-  });
-
-  it("returns false when streakFire disabled", () => {
-    mockStorage["zenflow_dopamine_settings"] = { streakFire: false };
-    expect(shouldShowStreakFire()).toBe(false);
-  });
-});
-
-// ============================================================
-// shouldShowMoodEffects
-// ============================================================
-describe("shouldShowMoodEffects", () => {
-  it("returns true by default", () => {
-    expect(shouldShowMoodEffects()).toBe(true);
-  });
-
-  it("returns false when moodDrivenUI disabled", () => {
-    mockStorage["zenflow_dopamine_settings"] = { moodDrivenUI: false };
-    expect(shouldShowMoodEffects()).toBe(false);
-  });
-});
-
-// ============================================================
-// applyReduceMotionClass
-// ============================================================
-describe("applyReduceMotionClass", () => {
-  it("removes reduce-motion class when animations are on", () => {
-    document.body.classList.add("reduce-motion");
+  it("applies the document fallback class from the same effective gate", () => {
+    motionPreference.reduceMotion = true;
     applyReduceMotionClass();
-    expect(document.body.classList.contains("reduce-motion")).toBe(false);
-  });
+    expect(document.body).toHaveClass("reduce-motion");
 
-  it("adds reduce-motion class when animations are off", () => {
-    mockStorage["zenflow_dopamine_settings"] = { animations: false };
+    motionPreference.reduceMotion = false;
     applyReduceMotionClass();
-    expect(document.body.classList.contains("reduce-motion")).toBe(true);
-  });
-
-  it("adds reduce-motion class when OS prefers-reduced-motion is set (WCAG 2.3.3)", () => {
-    mockMatchMedia.mockReturnValue({ matches: true });
-    applyReduceMotionClass();
-    expect(document.body.classList.contains("reduce-motion")).toBe(true);
-  });
-});
-
-// ============================================================
-// applyMoodDisabledClass
-// ============================================================
-describe("applyMoodDisabledClass", () => {
-  it("removes mood-disabled class when mood effects are on", () => {
-    document.body.classList.add("mood-disabled");
-    applyMoodDisabledClass();
-    expect(document.body.classList.contains("mood-disabled")).toBe(false);
-  });
-
-  it("adds mood-disabled class when moodDrivenUI is off", () => {
-    mockStorage["zenflow_dopamine_settings"] = { moodDrivenUI: false };
-    applyMoodDisabledClass();
-    expect(document.body.classList.contains("mood-disabled")).toBe(true);
+    expect(document.body).not.toHaveClass("reduce-motion");
   });
 });

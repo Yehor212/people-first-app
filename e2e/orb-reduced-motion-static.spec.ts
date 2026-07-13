@@ -326,17 +326,11 @@ test("animation preference changes preserve one continuously painted canonical c
 
   const setInAppAnimations = async (enabled: boolean) => {
     await page.evaluate((animations) => {
-      const settings = {
-        intensity: "normal",
-        animations,
-        sounds: true,
-        haptics: false,
-        confetti: true,
-        streakFire: true,
-        moodDrivenUI: true,
-      };
-      localStorage.setItem("zenflow_dopamine_settings", JSON.stringify(settings));
-      window.dispatchEvent(new CustomEvent("dopamine-settings-change", { detail: settings }));
+      const preference = { reduceMotion: !animations };
+      localStorage.setItem("zenflow_reduce_motion", JSON.stringify(preference));
+      window.dispatchEvent(
+        new CustomEvent("zenflow-motion-preference-change", { detail: preference }),
+      );
     }, enabled);
   };
 

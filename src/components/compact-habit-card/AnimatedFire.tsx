@@ -12,7 +12,7 @@ export function AnimatedFire({ intensity = 1, size = 'sm' }: { intensity?: numbe
   const svgRef = useRef<SVGSVGElement>(null);
   const animate = shouldAnimate();
 
-  // Pause SVG SMIL animations when Dopamine Settings has animations disabled
+  // Pause SVG SMIL animations when effective motion is disabled.
   useEffect(() => {
     if (!animate && svgRef.current) {
       svgRef.current.pauseAnimations();

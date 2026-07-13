@@ -537,11 +537,20 @@ export const fr: Translations = {
   saveName: "Enregistrer le nom",
   nameSaved: "Nom enregistré",
   nameSavedLocally: "Enregistré sur cet appareil",
-  invalidNameFormat: "Format de nom invalide",
+  invalidNameFormat: "Saisissez un nom de 1 à 100 caractères.",
   notifications: "Notifications",
   notificationsComingSoon: "Les notifications seront disponibles dans les prochaines mises à jour.",
   settingsOverviewDescription:
     "Choisissez l’apparence et les sons de ZenFlow, ses rappels et la façon dont vos données sont traitées.",
+  settingsOverviewDescriptionWithoutReminders:
+    "Choisissez l’apparence et les sons de ZenFlow, ainsi que la façon dont vos données sont traitées.",
+  settingsReminderDaysMissing: "Choisissez les jours de rappel",
+  settingsSoundRestoreTitle: "Certains sons d’ambiance sont désactivés",
+  settingsSoundRestoreDescription:
+    "Les sons désactivés auparavant le restent jusqu’à ce que vous les réactiviez.",
+  settingsSoundRestoreAction: "Réactiver les sons",
+  settingsSoundMasterDisabledHint:
+    "Activez le son de l’app pour utiliser ces réglages.",
   settingsAccountBackupTitle: "Compte et sauvegarde",
   settingsAccountBackupDescription:
     "Votre compte est connecté. Si ZenFlow ne peut pas enregistrer vos modifications en ligne, elles restent sur cet appareil.",
@@ -561,7 +570,7 @@ export const fr: Translations = {
     "Vos données restent sur cet appareil.",
   settingsRemindersMobileApp: "App mobile",
   settingsPrivacyDataDescription:
-    "Vous choisissez les services facultatifs que ZenFlow peut utiliser. La sauvegarde commence uniquement après votre connexion.",
+    "Vous choisissez les services facultatifs que ZenFlow peut utiliser.",
   settingsDataBackupReportsDescription:
     "Enregistrez une sauvegarde à importer plus tard ou créez un rapport.",
   settingsBackupRestoreTitle: "Sauvegarde et restauration",
@@ -586,7 +595,7 @@ export const fr: Translations = {
   data: "Données",
   exportData: "Exporter les données",
   importData: "Importer les données",
-  importMode: "Mode d'importation",
+  importMode: "Comment ajouter cette sauvegarde ?",
   importMerge: "Mettre à jour les données",
   importReplace: "Remplacer les données",
   exportSuccess: "Export prêt.",
@@ -666,9 +675,21 @@ export const fr: Translations = {
   themeLight: "Clair",
   themeDark: "Sombre",
   themeSystem: "Système",
+  themeModeTitle: "Mode d’affichage",
+  themeModeDescription:
+    "Suivre le réglage de l’appareil ou choisir un affichage clair, sombre ou noir.",
+  themeBlack: "Noir",
+  themeChangeSaved: "Modification enregistrée",
+  settingsPreferenceSaveError:
+    "Cette modification n’a pas pu être enregistrée. Le réglage précédent reste actif.",
+  settingsReduceMotion: "Réduire les animations",
+  settingsReduceMotionDescription:
+    "Réduit les transitions animées et les effets décoratifs.",
+  settingsReduceMotionSystemDescription:
+    "L’appareil est déjà réglé pour réduire les animations.",
   themeStyleTitle: "Palette d’humeur",
   themeAdvancedAppearanceTitle: "Apparence avancée",
-  themeStyleDescription: "Choisissez un style qui vous ressemble.",
+  themeStyleDescription: "Choisir le mode d’affichage, la couleur d’accent et la taille du texte.",
   themeAccentTitle: "Couleur d’accent",
   themeAccentDescription:
     "Couleur des boutons, sélections et éléments mis en avant.",
@@ -676,7 +697,7 @@ export const fr: Translations = {
   themeComfortTitle: "Confort",
   themePreviewAction: "Aperçu",
   themeApplyAction: "Appliquer",
-  themeResetAction: "Réinitialiser",
+  themeResetAction: "Réinitialiser la couleur d’accent et le contraste",
   themeUndoAction: "Annuler",
   themeMoreActions: "Plus d’actions d’apparence",
   themePreviewing: "Aperçu du style",
@@ -689,8 +710,8 @@ export const fr: Translations = {
   themePaletteVelvetLibrary: "Bibliothèque velours",
   themePaletteBotanicalPulse: "Pouls botanique",
   themePaletteQuietOled: "Noir calme",
-  themeAccentTeal: "Verre de mer",
-  themeAccentClay: "Argile",
+  themeAccentTeal: "Vert",
+  themeAccentClay: "Bleu",
   themeAccentPlum: "Pourpre",
   themeAccentMoss: "Mousse",
   themeAccentAmber: "Ambre",
@@ -775,12 +796,6 @@ export const fr: Translations = {
   settingsSectionAccount: "Compte et appareils",
   settingsSectionData: "Données et sauvegarde",
 
-  // Weekly Digest (v1.3.0)
-  weeklyDigestTitle: "Rapport de progression hebdomadaire",
-  weeklyDigestDescription:
-    "Recevez un résumé hebdomadaire de vos habitudes, temps de concentration et tendances d'humeur chaque dimanche.",
-  weeklyDigestEnabled: "Vous recevrez les rapports par email",
-
   // Google Calendar
   googleCalendar: "Google Agenda",
   googleCalendarDescription: "Afficher les événements Google Agenda dans la chronologie",
@@ -808,7 +823,7 @@ export const fr: Translations = {
   journalLockTimeoutDesc: "Verrouiller automatiquement le journal après une période d'inactivité",
   journalLockImmediateWarning:
     "Le journal se verrouillera chaque fois que vous quitterez l'écran du journal",
-  journalLockTimeoutImmediately: "Immédiatement",
+  journalLockTimeoutImmediately: "Quand vous quittez l’app",
   journalLockTimeoutOneMinute: "Après 1 minute",
   journalLockTimeoutFiveMinutes: "Après 5 minutes",
   journalLockTimeoutFifteenMinutes: "Après 15 minutes",
@@ -889,6 +904,12 @@ export const fr: Translations = {
   quietHoursStart: "Début du calme",
   quietHoursEnd: "Fin du calme",
   reminderDays: "Jours de la semaine",
+  settingsMoodCheckIns: "Points d’humeur",
+  settingsMoodCheckInsDescription: "Des rappels discrets pour noter son ressenti.",
+  settingsFocusReminder: "Rappel de concentration",
+  settingsFocusReminderDescription: "Un rappel vers l’heure choisie.",
+  settingsReminderChooseDay:
+    "Choisir au moins un jour. Aucun rappel ne sera envoyé avant.",
   selectedHabits: "Habitudes à rappeler",
   noHabitsYet: "Pas encore d'habitudes.",
   noHabitsInCategory: "Aucune habitude dans cette catégorie",
@@ -1074,7 +1095,6 @@ export const fr: Translations = {
   syncPulled: "Données en ligne restaurées.",
   syncPushed: "Sauvegarde en ligne mise à jour.",
   syncError: "Impossible de mettre à jour vos appareils.",
-  weeklyDigestError: "Impossible de mettre à jour le résumé hebdomadaire. Réessayez.",
   authGateTitle: "Se connecter",
   authGateBody: "Connectez-vous par e-mail pour garder votre progression sur vos appareils.",
   authGateContinue: "Continuer sans compte",
@@ -1319,19 +1339,20 @@ export const fr: Translations = {
   muteSound: "Couper le son",
   unmuteSound: "Activer le son",
   settingsSoundTitle: "Son",
+  settingsVibration: "Vibration",
+  settingsVibrationDescription:
+    "Brève vibration lors des appuis et des confirmations, si l’appareil la prend en charge.",
   settingsSoundDescription: "Sons dans ZenFlow et leur volume.",
   settingsSoundSummaryOn: "Son activé",
   settingsSoundSummaryOff: "Muet",
   settingsSoundMaster: "Son de l’app",
-  settingsSoundMasterDesc: "Permet d’activer ou de désactiver tous les sons dans ZenFlow.",
+  settingsSoundMasterDesc: "Diffuser les sons dans ZenFlow.",
   settingsSoundVolume: "Niveau sonore",
   settingsSoundVolumeDesc: "Règle le volume des sons dans ZenFlow.",
   settingsSoundPreview: "Tester le son de rappel",
-  settingsSoundAmbienceTitle: "Son d’arrière-plan du journal",
+  settingsSoundAmbienceTitle: "Son pour écrire",
   settingsSoundAmbienceNote:
-    "Le son d’arrière-plan démarre depuis l’écran d’humeur. Vous pouvez écouter ici celui du journal.",
-  settingsSoundFeedbackOn: "Les sons brefs utilisent ce volume.",
-  settingsSoundFeedbackOff: "Les sons brefs sont désactivés dans « Retour et mouvement ».",
+    "Lancer une pluie douce pendant l’écriture. Elle ne démarre qu’après avoir appuyé sur Lecture.",
   settingsSoundTextureAir: "Souffle",
   settingsSoundTextureWater: "Eau",
   settingsSoundTextureRain: "Pluie",
@@ -1348,19 +1369,26 @@ export const fr: Translations = {
   settingsSoundProfileBalanced: "Équilibré",
   settingsSoundProfileQuietDesc: "Pas de son d’ambiance, uniquement de discrets sons de confirmation.",
   settingsSoundProfileRichDesc: "Ambiance et signaux complets quand ils sont pris en charge.",
-  settingsSoundProfileBalancedDesc: "Ambiance douce et sons pour les moments importants.",
+  settingsSoundProfileBalancedDesc:
+    "Diffuser les sons d’ambiance, d’activité, d’alerte et d’étape.",
   settingsSoundAmbientToggle: "Son d’arrière-plan",
   settingsSoundAmbientToggleDesc:
-    "Contrôle le son d’arrière-plan sur les écrans de connexion, d’humeur et de journal, hors des sessions de concentration.",
+    "Diffuser les sons d’ambiance dans ZenFlow, sauf pendant une séance de concentration.",
+  settingsSoundBackgroundTitle: "Sons d’ambiance",
+  settingsSoundBackgroundDescription:
+    "Autorise des sons d’ambiance discrets dans ZenFlow. La lecture commence uniquement après avoir appuyé sur Lecture.",
+  settingsSoundActivityTitle: "Sons d’activité",
+  settingsSoundActivityDescription:
+    "Diffuser un son discret après une activité terminée, un minuteur ou certains paliers.",
   settingsSoundCompletionCues: "Sons de confirmation",
   settingsSoundCompletionCuesDesc:
-    "Joue un son discret lorsque vous terminez une action importante.",
+    "Diffuser un son discret après une activité terminée.",
   settingsSoundReminderCues: "Sons de rappel dans ZenFlow",
   settingsSoundReminderCuesDesc:
-    "Contrôle les brefs sons de rappel dans ZenFlow. Les sons des notifications de l’appareil se règlent dans Notifications.",
+    "Diffuser les alertes du minuteur et les aperçus de rappels dans ZenFlow. Cela ne modifie pas le son des notifications de votre téléphone.",
   settingsSoundMilestoneCues: "Sons pour les étapes clés",
   settingsSoundMilestoneCuesDesc:
-    "Joue un son uniquement pour certaines étapes clés, pas à chaque action.",
+    "Diffuser un son lors de certains paliers de série et de réussite.",
   settingsSoundTextureTitle: "Sons d’arrière-plan",
   settingsSoundTextureDescription:
     "Choisissez les sons d’arrière-plan doux que ZenFlow peut utiliser hors des sessions de concentration : souffle, eau ou pluie.",
@@ -1593,37 +1621,6 @@ export const fr: Translations = {
   completedHabitReason: "Habitude complétée",
   comebackChallengeComplete: "Défi de retour terminé !",
   questPrefix: "Quête",
-
-  dopamineSettings: "Retour et mouvement",
-  dopamineSettingsDesc:
-    "Choisissez la quantité d’animation, de son et d’haptique utilisée par ZenFlow.",
-  dopamineSettingsDescNoHaptics:
-    "Choisissez la quantité d’animation et de son utilisée par ZenFlow.",
-  dopamineIntensity: "Niveau de retour",
-  dopamineMinimal: "Calme",
-  dopamineNormal: "Équilibré",
-  dopamineADHD: "Plus de retour",
-  dopamineMinimalDesc: "Moins de mouvement et moins d’effets de célébration.",
-  dopamineNormalDesc: "Un mélange stable de retours utiles.",
-  dopamineADHDDesc:
-    "Tous les effets optionnels sont activés; vous pouvez les désactiver ci-dessous.",
-  dopamineCustomize: "Ajuster le retour",
-  dopamineAnimations: "Animations",
-  dopamineAnimationsDesc: "Mouvement pour les changements d’état et les transitions",
-  dopamineSounds: "Sons",
-  dopamineSoundsDesc: "Sons de confirmation et retour audio",
-  dopamineHaptics: "Haptique",
-  dopamineHapticsDesc: "Retour par vibration (mobile uniquement)",
-  dopamineConfetti: "Confettis",
-  dopamineConfettiDesc: "Effets de célébration optionnels après les accomplissements",
-  dopamineStreakFire: "Feu de série",
-  dopamineStreakFireDesc: "Mise en valeur animée des séries",
-  dopamineMoodDrivenUI: "Visuels d'humeur",
-  dopamineMoodDrivenUIDesc: "La couleur et l’ambiance peuvent suivre votre humeur",
-  dopamineTip: "Note de confort",
-  dopamineTipText:
-    "Commencez par Calme si les effets distraient. Augmentez le retour seulement quand il vous aide à vous repérer.",
-  dopamineSave: "Terminé",
 
   fontScaleTitle: "Taille du texte",
   fontScalePreview: "Aperçu du texte",
@@ -2326,12 +2323,7 @@ export const fr: Translations = {
   updateNow: "Mettre à jour",
   updateAvailableFor: "Disponible depuis {days} jours",
 
-  // Lock Screen Quick Actions
-  quickActions: "Actions rapides",
-  quickActionsDescription:
-    "Afficher une notification avec des actions rapides sur l'écran de verrouillage",
-  quickActionsEnabled: "Actions rapides activées",
-  quickActionsDisabled: "Actions rapides désactivées",
+  // Contextual shortcuts
   quickActionLogMood: "Enregistrer humeur",
   quickActionStartFocus: "Démarrer focus",
   quickActionViewHabits: "Voir habitudes",
@@ -2341,6 +2333,8 @@ export const fr: Translations = {
   notificationSoundDescription: "Choisissez le son pour les rappels",
   notificationSoundUpdateFailed:
     "ZenFlow n’a pas pu appliquer ce son de rappel. Le son précédent reste sélectionné. Réessayez.",
+  notificationSoundUpdateUncertain:
+    "ZenFlow n’a pas pu terminer le changement du son de rappel. Vérifiez le son sélectionné et réessayez.",
   reminderReconcileFailed:
     "ZenFlow n’a pas pu mettre à jour les rappels. Votre appareil utilise peut-être encore l’ancien programme. Réessayez.",
   soundDefault: "Par défaut",

@@ -59,7 +59,7 @@ export function AnimatedMoodEmoji({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const animate = shouldAnimate();
 
-  // Pause/unpause SVG SMIL animations based on Dopamine Settings
+  // Pause/unpause SVG SMIL animations using the effective motion preference.
   useEffect(() => {
     if (!wrapperRef.current) return;
     const svg = wrapperRef.current.querySelector("svg");

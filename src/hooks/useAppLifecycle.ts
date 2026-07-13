@@ -6,8 +6,6 @@ import { getToday } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { isNative } from '@/lib/platform';
-import { SK } from '@/lib/storageKeys';
-import { storageGetRaw } from '@/lib/safeJson';
 
 const WEB_MIN_DISPLAY_MS = 350;
 const NATIVE_MIN_DISPLAY_MS = 800;
@@ -39,11 +37,6 @@ export function useAppLifecycle(): void {
 
       // Initialize offline queue handlers for offline-first sync
       initializeOfflineQueueHandlers();
-
-      // Apply OLED mode if previously enabled
-      if (storageGetRaw(SK.OLED_MODE) === 'true') {
-        document.documentElement.classList.add('oled');
-      }
 
       const result = await initializeApp();
 

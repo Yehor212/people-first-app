@@ -12,14 +12,13 @@ export type V2SettingsSectionId =
   | "appearance"
   | "sound"
   | "notifications"
-  | "privacy"
-  | "about";
+  | "privacy";
 
 export interface V2SettingsControls {
   userName: string;
   /** Distinguishes the historical "Friend" seed from a name the user chose. */
   userNameCustom?: boolean;
-  onNameChange: (name: string) => void;
+  onNameChange: (name: string, userChosen?: boolean) => void;
   onResetData: () => void | Promise<void>;
   reminders: ReminderSettings;
   onRemindersChange: (

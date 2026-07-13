@@ -170,14 +170,16 @@ export function storageReadRaw(
   }
 }
 
-/** Safe raw string set to localStorage. */
-export function storageSetRaw(key: string, value: string): void {
+/** Safe raw string set to localStorage. Returns whether the write succeeded. */
+export function storageSetRaw(key: string, value: string): boolean {
   try {
     localStorage.setItem(key, value);
+    return true;
   } catch (error) {
     if (error instanceof DOMException && error.name === 'QuotaExceededError') {
       notifyStorageFull(key);
     }
+    return false;
   }
 }
 

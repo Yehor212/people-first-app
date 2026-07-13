@@ -67,7 +67,6 @@ describe('RewardedAdPrompt UX contract', () => {
 
   it('keeps rewarded playback out of privacy control surfaces', () => {
     const privacySurfaces = [
-      'src/components/settings/PrivacySection.tsx',
       'src/pages/nav-v2/settings/V2SettingsDataPanels.tsx',
       'src/pages/nav-v2/settings/V2SettingsPrivacyPanel.tsx',
     ];

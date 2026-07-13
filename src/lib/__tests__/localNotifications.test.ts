@@ -18,9 +18,11 @@ import {
 } from "../localNotifications";
 import { initializeNotificationChannels } from "../notificationSounds";
 import type { Habit, ReminderSettings } from "@/types";
+import { SK } from "@/lib/storageKeys";
 
 vi.mock("@/lib/platform", () => ({
   isNative: true,
+  platform: "android",
 }));
 
 const ownerMocks = vi.hoisted(() => ({
@@ -40,8 +42,10 @@ vi.mock("../logger", () => ({
 }));
 
 vi.mock("../notificationSounds", () => ({
-  getCurrentChannelId: () => "zenflow_gentle_v2",
+  getCurrentChannelId: () => "zenflow_gentle_v3",
   initializeNotificationChannels: vi.fn(),
+  isCurrentNotificationSoundChannelId: (channelId: string | undefined) =>
+    typeof channelId === "string" && channelId.endsWith("_v3"),
 }));
 
 vi.mock("@capacitor/local-notifications", () => ({
@@ -71,12 +75,14 @@ vi.mock("@capacitor/push-notifications", () => ({
 
 const reminders: ReminderSettings = {
   enabled: true,
+  moodCheckInsEnabled: true,
+  focusReminderEnabled: true,
   moodTimeMorning: "09:00",
   moodTimeAfternoon: "14:00",
   moodTimeEvening: "20:00",
   habitTime: "21:00",
   focusTime: "10:00",
-  days: [],
+  days: [1],
   quietHours: {
     start: "22:00",
     end: "07:00",
@@ -139,6 +145,7 @@ const makeHabit = (overrides: Partial<Habit> = {}): Habit => ({
 describe("reconcileReminderNotifications", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     resumeAccountNotifications();
     ownerMocks.getCurrentSessionUserId.mockResolvedValue("user-a");
     vi.mocked(LocalNotifications.checkPermissions).mockResolvedValue({ display: "granted" });
@@ -191,12 +198,174 @@ describe("reconcileReminderNotifications", () => {
     expect(scheduled.map(({ id }) => id)).not.toContain(101);
   });
 
+  it("treats an empty global day selection as no delivery", async () => {
+    const result = await reconcileReminderNotifications(
+      { ...reminders, days: [] },
+      [],
+      reconcileCopy,
+    );
+
+    expect(result).toEqual({ status: "scheduled", scheduledCount: 0 });
+    expect(LocalNotifications.schedule).not.toHaveBeenCalled();
+  });
+
+  it("cancels obsolete categories before returning when notification permission is denied", async () => {
+    localStorage.setItem(SK.NOTIFICATION_PRIVATE_CHANNEL_MIGRATION, "complete");
+    vi.mocked(LocalNotifications.checkPermissions).mockResolvedValue({ display: "denied" });
+    vi.mocked(LocalNotifications.getPending).mockResolvedValue({
+      notifications: [
+        { id: 201, title: "Mood", body: "Old" },
+        { id: 501, title: "Focus", body: "Keep" },
+        { id: 9001, title: "Quick mood", body: "Old" },
+        { id: 10, title: "Journal", body: "Keep" },
+      ],
+    });
+
+    const result = await reconcileReminderNotifications(
+      { ...reminders, moodCheckInsEnabled: false, focusReminderEnabled: true },
+      [],
+      reconcileCopy,
+    );
+
+    expect(result).toEqual({ status: "permission-required", scheduledCount: 0 });
+    expect(LocalNotifications.cancel).toHaveBeenCalledWith({
+      notifications: [
+        expect.objectContaining({ id: 201 }),
+        expect.objectContaining({ id: 9001 }),
+      ],
+    });
+    expect(LocalNotifications.schedule).not.toHaveBeenCalled();
+  });
+
+  it("cancels every owned reminder when no delivery day remains even if permission is denied", async () => {
+    vi.mocked(LocalNotifications.checkPermissions).mockResolvedValue({ display: "denied" });
+    vi.mocked(LocalNotifications.getPending).mockResolvedValue({
+      notifications: [
+        { id: 201, title: "Mood", body: "Old" },
+        { id: 501, title: "Focus", body: "Old" },
+        { id: 9001, title: "Quick mood", body: "Old" },
+      ],
+    });
+
+    const result = await reconcileReminderNotifications(
+      { ...reminders, days: [] },
+      [],
+      reconcileCopy,
+    );
+
+    expect(result).toEqual({ status: "permission-required", scheduledCount: 0 });
+    expect(
+      vi.mocked(LocalNotifications.cancel).mock.calls[0]?.[0].notifications.map(({ id }) => id),
+    ).toEqual([201, 501, 9001]);
+    expect(LocalNotifications.schedule).not.toHaveBeenCalled();
+  });
+
+  it("removes pre-v3 pending reminders before returning on denied permission", async () => {
+    vi.mocked(LocalNotifications.checkPermissions).mockResolvedValue({ display: "denied" });
+    vi.mocked(LocalNotifications.getPending).mockResolvedValue({
+      notifications: [
+        { id: 501, title: "Focus", body: "Old" },
+        { id: 10, title: "Journal", body: "Keep" },
+      ],
+    });
+
+    const result = await reconcileReminderNotifications(reminders, [], reconcileCopy);
+
+    expect(result).toEqual({ status: "permission-required", scheduledCount: 0 });
+    expect(LocalNotifications.cancel).toHaveBeenCalledWith({
+      notifications: [expect.objectContaining({ id: 501 })],
+    });
+    expect(LocalNotifications.schedule).not.toHaveBeenCalled();
+  });
+
+  it("rehydrates only still-desired reminders onto v3 when first-migration replacement fails", async () => {
+    let nativePending: LocalNotificationSchema[] = [
+      {
+        id: 201,
+        title: "Old mood",
+        body: "Do not restore",
+        schedule: { on: { hour: 14, minute: 0, weekday: 2 }, allowWhileIdle: true },
+      },
+      {
+        id: 501,
+        title: "Old focus",
+        body: "Restore me",
+        schedule: { on: { hour: 10, minute: 30, weekday: 2 }, allowWhileIdle: true },
+      },
+      {
+        id: 9001,
+        title: "Old mood action",
+        body: "Do not restore",
+        schedule: { on: { hour: 9, minute: 0, weekday: 2 }, allowWhileIdle: true },
+      },
+    ];
+    vi.mocked(LocalNotifications.getPending).mockImplementation(async () => ({
+      notifications: [...nativePending],
+    }));
+    vi.mocked(LocalNotifications.cancel).mockImplementation(async ({ notifications }) => {
+      const cancelledIds = new Set(notifications.map(({ id }) => id));
+      nativePending = nativePending.filter(({ id }) => !cancelledIds.has(id));
+    });
+    let scheduleAttempt = 0;
+    vi.mocked(LocalNotifications.schedule).mockImplementation(async ({ notifications }) => {
+      scheduleAttempt += 1;
+      if (scheduleAttempt === 1) throw new Error("replacement failed");
+      nativePending = [...notifications];
+      return { notifications };
+    });
+
+    await expect(
+      reconcileReminderNotifications(
+        { ...reminders, moodCheckInsEnabled: false, focusReminderEnabled: true },
+        [],
+        reconcileCopy,
+      ),
+    ).rejects.toThrow("replacement failed");
+
+    expect(LocalNotifications.getPending).toHaveBeenCalledTimes(1);
+    expect(LocalNotifications.schedule).toHaveBeenCalledTimes(2);
+    expect(LocalNotifications.schedule).toHaveBeenNthCalledWith(2, {
+      notifications: [
+        expect.objectContaining({
+          id: 501,
+          body: "Restore me",
+          channelId: "zenflow_gentle_v3",
+          schedule: expect.objectContaining({
+            on: expect.objectContaining({ hour: 10, minute: 30, weekday: 2 }),
+          }),
+        }),
+      ],
+    });
+    expect(nativePending.map(({ id }) => id)).toEqual([501]);
+    expect(localStorage.getItem(SK.NOTIFICATION_PRIVATE_CHANNEL_MIGRATION)).toBe("complete");
+  });
+
+  it("schedules only reminder categories the user explicitly enabled", async () => {
+    const result = await reconcileReminderNotifications(
+      {
+        ...reminders,
+        days: [1],
+        moodCheckInsEnabled: false,
+        focusReminderEnabled: true,
+      },
+      [],
+      reconcileCopy,
+    );
+
+    expect(result).toEqual({ status: "scheduled", scheduledCount: 1 });
+    const scheduled = vi.mocked(LocalNotifications.schedule).mock.calls[0]?.[0].notifications ?? [];
+    expect(scheduled.map(({ id }) => id)).toEqual([501]);
+  });
+
   it("preserves the existing schedule and rejects when notification channels cannot be prepared", async () => {
+    localStorage.setItem(SK.NOTIFICATION_PRIVATE_CHANNEL_MIGRATION, "complete");
     vi.mocked(initializeNotificationChannels).mockRejectedValueOnce(
       new Error("channel creation failed"),
     );
     vi.mocked(LocalNotifications.getPending).mockResolvedValue({
-      notifications: [{ id: 201, title: "Mood", body: "Existing reminder" }],
+      notifications: [
+        { id: 201, title: "Mood", body: "Existing reminder" },
+      ],
     });
 
     await expect(
@@ -217,7 +386,7 @@ describe("reconcileReminderNotifications", () => {
         id: 201,
         title: "Previous mood",
         body: "Previous check-in",
-        channelId: "zenflow_gentle_v2",
+        channelId: "zenflow_gentle_v3",
         schedule: {
           on: { hour: 12, minute: 30, weekday: 2 },
           allowWhileIdle: true,
@@ -227,7 +396,7 @@ describe("reconcileReminderNotifications", () => {
         id: 9001,
         title: "Previous quick mood",
         body: "Previous quick check-in",
-        channelId: "zenflow_gentle_v2",
+        channelId: "zenflow_gentle_v3",
         schedule: {
           on: { hour: 8, minute: 15, weekday: 2 },
           allowWhileIdle: true,
@@ -345,7 +514,7 @@ describe("reconcileReminderNotifications", () => {
         { ...reminders, days: [1] },
         [makeHabit()],
         reconcileCopy,
-        { rollbackChannelId: "zenflow_default_v2" },
+        { rollbackChannelId: "zenflow_default_v3" },
       ),
     ).rejects.toBe(scheduleError);
 
@@ -354,7 +523,7 @@ describe("reconcileReminderNotifications", () => {
     expect(restoredNotifications).toEqual([
       expect.objectContaining({
         id: 201,
-        channelId: "zenflow_default_v2",
+        channelId: "zenflow_default_v3",
       }),
     ]);
   });
@@ -399,7 +568,7 @@ describe("reconcileReminderNotifications", () => {
         id: 201,
         title: "Account A mood",
         body: "Account A check-in",
-        channelId: "zenflow_gentle_v2",
+        channelId: "zenflow_gentle_v3",
         schedule: {
           on: { hour: 12, minute: 30, weekday: 2 },
           allowWhileIdle: true,
@@ -517,23 +686,31 @@ describe("scheduleLocalReminders", () => {
     expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
     expect(LocalNotifications.schedule).toHaveBeenCalledWith({
       notifications: expect.arrayContaining([
-        expect.objectContaining({ id: 2, title: "Mood" }),
-        expect.objectContaining({ id: 3, title: "Mood" }),
-        expect.objectContaining({ id: 5, title: "Focus" }),
+        expect.objectContaining({ id: 201, title: "Mood" }),
+        expect.objectContaining({ id: 301, title: "Mood" }),
+        expect.objectContaining({ id: 501, title: "Focus" }),
       ]),
     });
     const scheduled = vi.mocked(LocalNotifications.schedule).mock.calls[0]?.[0].notifications ?? [];
-    expect(scheduled.every((notification) => notification.channelId === "zenflow_gentle_v2")).toBe(true);
+    expect(scheduled.every((notification) => notification.channelId === "zenflow_gentle_v3")).toBe(true);
     expect(scheduled.some((notification) => notification.channelId === "zenflow_reminders")).toBe(false);
     expect(LocalNotifications.schedule).toHaveBeenCalledWith({
       notifications: expect.arrayContaining([
-        expect.objectContaining({ id: 2, title: "Mood" }),
-        expect.objectContaining({ id: 3, title: "Mood" }),
-        expect.objectContaining({ id: 5, title: "Focus" }),
+        expect.objectContaining({ id: 201, title: "Mood" }),
+        expect.objectContaining({ id: 301, title: "Mood" }),
+        expect.objectContaining({ id: 501, title: "Focus" }),
       ]),
     });
     expect(scheduled.map((notification) => notification.id)).not.toContain(1);
     expect(scheduled.map((notification) => notification.id)).not.toContain(4);
+  });
+
+  it("does not turn an empty global day selection into daily reminders", async () => {
+    vi.mocked(LocalNotifications.checkPermissions).mockResolvedValue({ display: "granted" });
+
+    await scheduleLocalReminders({ ...reminders, days: [] }, copy);
+
+    expect(LocalNotifications.schedule).not.toHaveBeenCalled();
   });
 
   it("schedules global reminders only on the selected weekdays", async () => {
@@ -659,7 +836,7 @@ describe("scheduleLocalReminders", () => {
     ).toBeLessThan(vi.mocked(LocalNotifications.checkPermissions).mock.invocationCallOrder[0]);
     expect(LocalNotifications.schedule).toHaveBeenCalledWith({
       notifications: expect.arrayContaining([
-        expect.objectContaining({ channelId: "zenflow_gentle_v2" }),
+        expect.objectContaining({ channelId: "zenflow_gentle_v3" }),
       ]),
     });
   });
@@ -762,6 +939,15 @@ describe("scheduleMoodQuickLogNotification", () => {
         }),
       ]),
     });
+  });
+
+  it("does not turn an empty selected-day policy into a daily quick mood reminder", async () => {
+    await scheduleMoodQuickLogNotification({ hour: 8, minute: 15 }, "How are you?", {
+      days: [],
+      quietHours: { start: "22:00", end: "07:00" },
+    });
+
+    expect(LocalNotifications.schedule).not.toHaveBeenCalled();
   });
 
   it("does not schedule quick mood actions inside quiet hours", async () => {

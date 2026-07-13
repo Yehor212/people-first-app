@@ -15,7 +15,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, calculateStreak } from '@/lib/utils';
 import { isHabitCompletedOnDate, getHabitCompletedDates } from '@/lib/habits';
-import { useDopamineSettings } from '@/hooks/useDopamineSettings';
+import { useShouldAnimate } from '@/hooks/useShouldAnimate';
 import { UnifiedShareModal } from '@/components/share';
 
 const FireAnimation = lazyWithRetry(() => import('./FireAnimation'), 'FireAnimation');
@@ -34,13 +34,12 @@ interface StreakBannerProps {
 
 export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSessions, gratitudeEntries, restDays = [], onRestMode, isRestMode = false, canActivateRestMode = true, daysUntilRestAvailable = 0 }: StreakBannerProps) {
   const { t } = useLanguage();
-  const dopamine = useDopamineSettings();
+  const showAnimations = useShouldAnimate();
   const today = getToday();
   const [showShareModal, setShowShareModal] = useState(false);
 
   // Animation flags
-  const showAnimations = dopamine.animations;
-  const showStreakFire = dopamine.streakFire && showAnimations;
+  const showStreakFire = showAnimations;
 
   // Calculate streak based on ANY activity (including rest days)
   const streak = useMemo(() => {

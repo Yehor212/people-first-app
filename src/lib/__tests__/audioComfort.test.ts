@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let mockStorage: Record<string, unknown> = {};
+let storageWritesSucceed = true;
 
 vi.mock("../safeJson", () => ({
   safeLocalStorageGet: vi.fn((key: string, fallback: unknown) => mockStorage[key] ?? fallback),
   safeLocalStorageSet: vi.fn((key: string, value: unknown) => {
+    if (!storageWritesSucceed) return false;
     mockStorage[key] = value;
     return true;
   }),
@@ -30,11 +32,13 @@ import {
   getAudioSupportSnapshot,
   resetAudioComfortRuntimeForTests,
   setAudioComfortSettings,
+  trySetAudioComfortSettings,
 } from "../audioComfort";
 
 describe("audioComfort", () => {
   beforeEach(() => {
     mockStorage = {};
+    storageWritesSucceed = true;
     resetAudioComfortRuntimeForTests();
   });
 
@@ -45,7 +49,6 @@ describe("audioComfort", () => {
       completionCuesEnabled: true,
       milestoneCuesEnabled: true,
       reminderCuesEnabled: true,
-      hapticsEnabled: false,
       avoidedTextures: [],
     });
   });
@@ -70,7 +73,6 @@ describe("audioComfort", () => {
       completionCuesEnabled: true,
       milestoneCuesEnabled: true,
       reminderCuesEnabled: true,
-      hapticsEnabled: false,
     });
   });
 
@@ -81,6 +83,19 @@ describe("audioComfort", () => {
     expect(canPlayAmbientAsset("diary-reflection-loop")).toBe(false);
     expect(canPlayAmbientAsset("soft-air-veil")).toBe(true);
     expect(canPlayFeedbackSound("complete")).toBe(true);
+  });
+
+  it("does not publish an audio preference that could not be persisted", () => {
+    const listener = vi.fn();
+    window.addEventListener("zenflow-audio-comfort-change", listener);
+    storageWritesSucceed = false;
+
+    const result = trySetAudioComfortSettings({ ambientEnabled: false });
+
+    expect(result.ok).toBe(false);
+    expect(result.settings.ambientEnabled).toBe(true);
+    expect(listener).not.toHaveBeenCalled();
+    window.removeEventListener("zenflow-audio-comfort-change", listener);
   });
 
   it("separates completion, milestone, and reminder cues", () => {

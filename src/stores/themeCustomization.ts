@@ -1,26 +1,11 @@
 export type AppliedTheme = "paper" | "ink" | "oled";
 
-export type ThemePaletteId =
-  | "zenflow"
-  | "morningHearth"
-  | "velvetLibrary"
-  | "botanicalPulse"
-  | "quietOled";
-export type ThemeAccentFamily = "teal" | "clay" | "plum" | "moss" | "amber";
-export type ThemeIntensity = "quiet" | "balanced" | "vivid";
-export type ThemeWarmth = "cool" | "neutral" | "warm";
-export type ThemeDepth = "crisp" | "cozy" | "soft";
-export type ThemeContrastMode = "standard" | "high";
+export type ThemeAccentFamily = "green" | "blue" | "violet" | "amber";
 
 export interface ThemeCustomization {
-  paletteId: ThemePaletteId;
+  schemaVersion: 1;
   accentFamily: ThemeAccentFamily;
-  intensity: ThemeIntensity;
-  warmth: ThemeWarmth;
-  depth: ThemeDepth;
-  contrastMode: ThemeContrastMode;
-  reduceGlow: boolean;
-  reduceTransparency: boolean;
+  highContrast: boolean;
 }
 
 export interface ThemeCustomizationRecipe {
@@ -34,46 +19,37 @@ export interface ThemeCustomizationOption<T extends string> {
 }
 
 export const DEFAULT_THEME_CUSTOMIZATION: ThemeCustomization = Object.freeze({
-  paletteId: "zenflow",
-  accentFamily: "teal",
-  intensity: "balanced",
-  warmth: "neutral",
-  depth: "crisp",
-  contrastMode: "standard",
-  reduceGlow: false,
-  reduceTransparency: false,
+  schemaVersion: 1,
+  accentFamily: "green",
+  highContrast: false,
 });
 
-export const THEME_CUSTOMIZATION_PRESETS: Array<ThemeCustomizationOption<ThemePaletteId>> = [
-  { id: "zenflow", labelKey: "themePaletteZenflow" },
-  { id: "morningHearth", labelKey: "themePaletteMorningHearth" },
-  { id: "velvetLibrary", labelKey: "themePaletteVelvetLibrary" },
-  { id: "botanicalPulse", labelKey: "themePaletteBotanicalPulse" },
-  { id: "quietOled", labelKey: "themePaletteQuietOled" },
-];
-
 export const THEME_ACCENT_FAMILIES: Array<ThemeCustomizationOption<ThemeAccentFamily>> = [
-  { id: "teal", labelKey: "themeAccentTeal" },
-  { id: "clay", labelKey: "themeAccentClay" },
-  { id: "plum", labelKey: "themeAccentPlum" },
-  { id: "moss", labelKey: "themeAccentMoss" },
+  { id: "green", labelKey: "themeAccentTeal" },
+  { id: "blue", labelKey: "themeAccentClay" },
+  { id: "violet", labelKey: "themeAccentPlum" },
   { id: "amber", labelKey: "themeAccentAmber" },
 ];
 
-export const THEME_INTENSITIES: Array<ThemeCustomizationOption<ThemeIntensity>> = [
-  { id: "quiet", labelKey: "themeIntensityQuiet" },
-  { id: "balanced", labelKey: "themeIntensityBalanced" },
-  { id: "vivid", labelKey: "themeIntensityVivid" },
-];
-
-const PALETTE_IDS = new Set<ThemePaletteId>(THEME_CUSTOMIZATION_PRESETS.map((option) => option.id));
-const ACCENT_FAMILIES = new Set<ThemeAccentFamily>(
-  THEME_ACCENT_FAMILIES.map((option) => option.id)
+const ACCENT_IDS = new Set<ThemeAccentFamily>(
+  THEME_ACCENT_FAMILIES.map((option) => option.id),
 );
-const INTENSITIES = new Set<ThemeIntensity>(THEME_INTENSITIES.map((option) => option.id));
-const WARMTHS = new Set<ThemeWarmth>(["cool", "neutral", "warm"]);
-const DEPTHS = new Set<ThemeDepth>(["crisp", "cozy", "soft"]);
-const CONTRAST_MODES = new Set<ThemeContrastMode>(["standard", "high"]);
+
+const LEGACY_ACCENT_MAP: Record<string, ThemeAccentFamily> = {
+  teal: "green",
+  moss: "green",
+  clay: "amber",
+  plum: "violet",
+  amber: "amber",
+};
+
+const LEGACY_PALETTE_MAP: Record<string, ThemeAccentFamily> = {
+  zenflow: "green",
+  morningHearth: "amber",
+  velvetLibrary: "violet",
+  botanicalPulse: "green",
+  quietOled: "green",
+};
 
 const CUSTOMIZATION_CSS_VARS = [
   "--settings-v2-shell",
@@ -98,270 +74,128 @@ const CUSTOMIZATION_CSS_VARS = [
   "--zen-shadow-hover",
 ] as const;
 
-const DEFAULT_THEME_COLOR = "#4a9d7c";
-
-const PAPER_PALETTES: Record<ThemePaletteId, Record<string, string>> = {
-  zenflow: {},
-  morningHearth: {
-    "--settings-v2-shell": "36 44% 93%",
-    "--settings-v2-card": "42 62% 98%",
-    "--settings-v2-panel": "30 70% 94%",
-    "--settings-v2-border": "34 24% 72%",
-    "--settings-v2-shadow": "28 30% 20%",
-    "--settings-v2-rim-light": "0 0% 100%",
-  },
-  velvetLibrary: {
-    "--settings-v2-shell": "268 24% 91%",
-    "--settings-v2-card": "43 34% 96%",
-    "--settings-v2-panel": "265 22% 84%",
-    "--settings-v2-border": "266 18% 52%",
-    "--settings-v2-shadow": "266 28% 14%",
-  },
-  botanicalPulse: {
-    "--settings-v2-shell": "148 31% 90%",
-    "--settings-v2-card": "148 31% 90%",
-    "--settings-v2-panel": "155 29% 77%",
-    "--settings-v2-border": "89 12% 37%",
-    "--settings-v2-shadow": "89 12% 20%",
-  },
-  quietOled: {
-    "--settings-v2-shell": "205 20% 91%",
-    "--settings-v2-card": "210 24% 97%",
-    "--settings-v2-panel": "210 18% 85%",
-    "--settings-v2-border": "210 13% 53%",
-    "--settings-v2-shadow": "210 24% 14%",
-  },
-};
-
-const DARK_PALETTES: Record<ThemePaletteId, Record<string, string>> = {
-  zenflow: {},
-  morningHearth: {
-    "--settings-v2-shell": "26 26% 9%",
-    "--settings-v2-card": "28 24% 13%",
-    "--settings-v2-panel": "25 22% 18%",
-    "--settings-v2-border": "30 20% 34%",
-    "--settings-v2-shadow": "24 34% 4%",
-  },
-  velvetLibrary: {
-    "--settings-v2-shell": "252 16% 8%",
-    "--settings-v2-card": "258 18% 12%",
-    "--settings-v2-panel": "252 16% 18%",
-    "--settings-v2-border": "252 14% 44%",
-    "--settings-v2-shadow": "258 36% 4%",
-    "--settings-v2-rim-light": "264 36% 82%",
-  },
-  botanicalPulse: {
-    "--settings-v2-shell": "64 11% 27%",
-    "--settings-v2-card": "89 12% 37%",
-    "--settings-v2-panel": "152 32% 36%",
-    "--settings-v2-border": "153 22% 54%",
-    "--settings-v2-shadow": "64 11% 9%",
-    "--settings-v2-rim-light": "148 31% 90%",
-  },
-  quietOled: {
-    "--settings-v2-shell": "0 0% 0%",
-    "--settings-v2-card": "156 12% 5%",
-    "--settings-v2-panel": "150 10% 8%",
-    "--settings-v2-border": "145 8% 30%",
-    "--settings-v2-shadow": "0 0% 0%",
-    "--settings-v2-rim-light": "139 36% 74%",
-  },
-};
-
-const ACCENTS: Record<AppliedTheme, Record<ThemeAccentFamily, Record<ThemeIntensity, string>>> = {
+const ACCENTS: Record<AppliedTheme, Record<ThemeAccentFamily, string>> = {
   paper: {
-    teal: { quiet: "152 32% 36%", balanced: "152 32% 36%", vivid: "89 12% 37%" },
-    clay: { quiet: "18 38% 45%", balanced: "18 44% 42%", vivid: "17 54% 36%" },
-    plum: { quiet: "274 34% 44%", balanced: "274 40% 38%", vivid: "274 52% 34%" },
-    moss: { quiet: "128 34% 36%", balanced: "130 42% 32%", vivid: "130 52% 27%" },
-    amber: { quiet: "37 48% 37%", balanced: "37 58% 35%", vivid: "36 68% 30%" },
+    green: "154 48% 28%",
+    blue: "215 68% 38%",
+    violet: "267 48% 38%",
+    amber: "34 72% 30%",
   },
   ink: {
-    teal: { quiet: "155 29% 77%", balanced: "155 29% 77%", vivid: "148 31% 90%" },
-    clay: { quiet: "18 40% 66%", balanced: "18 48% 62%", vivid: "17 62% 66%" },
-    plum: { quiet: "258 48% 74%", balanced: "258 70% 78%", vivid: "258 84% 82%" },
-    moss: { quiet: "130 32% 64%", balanced: "130 42% 60%", vivid: "130 56% 64%" },
-    amber: { quiet: "38 50% 68%", balanced: "38 62% 64%", vivid: "38 76% 66%" },
+    green: "154 42% 72%",
+    blue: "211 76% 72%",
+    violet: "268 62% 78%",
+    amber: "42 76% 70%",
   },
   oled: {
-    teal: { quiet: "155 29% 77%", balanced: "155 29% 77%", vivid: "148 31% 90%" },
-    clay: { quiet: "18 40% 66%", balanced: "18 50% 62%", vivid: "17 64% 66%" },
-    plum: { quiet: "258 42% 72%", balanced: "258 66% 76%", vivid: "258 80% 80%" },
-    moss: { quiet: "130 34% 64%", balanced: "130 44% 60%", vivid: "130 58% 64%" },
-    amber: { quiet: "38 52% 68%", balanced: "38 64% 64%", vivid: "38 78% 66%" },
+    green: "154 42% 72%",
+    blue: "211 76% 72%",
+    violet: "268 62% 78%",
+    amber: "42 76% 70%",
   },
 };
 
-const META_THEME_COLORS: Record<ThemePaletteId, Record<ThemeAccentFamily, string>> = {
-  zenflow: { teal: "#4a9d7c", clay: "#8e5640", plum: "#76519b", moss: "#3d7e48", amber: "#9b6b1f" },
-  morningHearth: {
-    teal: "#f3eadf",
-    clay: "#f3eadf",
-    plum: "#f3eadf",
-    moss: "#f3eadf",
-    amber: "#f3eadf",
-  },
-  velvetLibrary: {
-    teal: "#211d2b",
-    clay: "#211d2b",
-    plum: "#211d2b",
-    moss: "#211d2b",
-    amber: "#211d2b",
-  },
-  botanicalPulse: {
-    teal: "#4E896E",
-    clay: "#606B54",
-    plum: "#4E896E",
-    moss: "#3E795D",
-    amber: "#606B54",
-  },
-  quietOled: {
-    teal: "#58aca6",
-    clay: "#bd765f",
-    plum: "#a687cf",
-    moss: "#73ad76",
-    amber: "#c69545",
-  },
+const META_THEME_COLORS: Record<AppliedTheme, string> = {
+  paper: "#f6f4ef",
+  ink: "#111613",
+  oled: "#000000",
 };
 
-function enumValue<T extends string>(value: unknown, allowed: Set<T>, fallback: T): T {
-  return typeof value === "string" && allowed.has(value as T) ? (value as T) : fallback;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object";
 }
 
-function booleanValue(value: unknown, fallback: boolean): boolean {
-  return typeof value === "boolean" ? value : fallback;
+function isThemeAccent(value: unknown): value is ThemeAccentFamily {
+  return typeof value === "string" && ACCENT_IDS.has(value as ThemeAccentFamily);
+}
+
+function legacyAccentFor(source: Record<string, unknown>): ThemeAccentFamily {
+  if (typeof source.accentFamily === "string" && LEGACY_ACCENT_MAP[source.accentFamily]) {
+    return LEGACY_ACCENT_MAP[source.accentFamily];
+  }
+  if (typeof source.paletteId === "string" && LEGACY_PALETTE_MAP[source.paletteId]) {
+    return LEGACY_PALETTE_MAP[source.paletteId];
+  }
+  return DEFAULT_THEME_CUSTOMIZATION.accentFamily;
 }
 
 export function normalizeThemeCustomization(value: unknown): ThemeCustomization {
-  if (!value || typeof value !== "object") return { ...DEFAULT_THEME_CUSTOMIZATION };
-  const source = value as Partial<Record<keyof ThemeCustomization, unknown>>;
+  if (!isRecord(value)) return { ...DEFAULT_THEME_CUSTOMIZATION };
+
+  if (value.schemaVersion === 1) {
+    return {
+      schemaVersion: 1,
+      accentFamily: isThemeAccent(value.accentFamily)
+        ? value.accentFamily
+        : DEFAULT_THEME_CUSTOMIZATION.accentFamily,
+      highContrast:
+        typeof value.highContrast === "boolean"
+          ? value.highContrast
+          : DEFAULT_THEME_CUSTOMIZATION.highContrast,
+    };
+  }
+
   return {
-    paletteId: enumValue(source.paletteId, PALETTE_IDS, DEFAULT_THEME_CUSTOMIZATION.paletteId),
-    accentFamily: enumValue(
-      source.accentFamily,
-      ACCENT_FAMILIES,
-      DEFAULT_THEME_CUSTOMIZATION.accentFamily
-    ),
-    intensity: enumValue(source.intensity, INTENSITIES, DEFAULT_THEME_CUSTOMIZATION.intensity),
-    warmth: enumValue(source.warmth, WARMTHS, DEFAULT_THEME_CUSTOMIZATION.warmth),
-    depth: enumValue(source.depth, DEPTHS, DEFAULT_THEME_CUSTOMIZATION.depth),
-    contrastMode: enumValue(
-      source.contrastMode,
-      CONTRAST_MODES,
-      DEFAULT_THEME_CUSTOMIZATION.contrastMode
-    ),
-    reduceGlow: booleanValue(source.reduceGlow, DEFAULT_THEME_CUSTOMIZATION.reduceGlow),
-    reduceTransparency: booleanValue(
-      source.reduceTransparency,
-      DEFAULT_THEME_CUSTOMIZATION.reduceTransparency
-    ),
+    schemaVersion: 1,
+    accentFamily: legacyAccentFor(value),
+    highContrast: value.contrastMode === "high" || value.reduceTransparency === true,
   };
 }
 
-function paletteForTheme(
-  appliedTheme: AppliedTheme,
-  paletteId: ThemePaletteId
-): Record<string, string> {
-  return appliedTheme === "paper" ? PAPER_PALETTES[paletteId] : DARK_PALETTES[paletteId];
+function primaryForeground(appliedTheme: AppliedTheme): string {
+  return appliedTheme === "paper" ? "0 0% 100%" : "165 20% 8%";
 }
 
-function foregroundForTheme(appliedTheme: AppliedTheme): string {
-  return appliedTheme === "paper" ? "160 42% 96%" : "170 22% 8%";
-}
-
-function transparencyVars(
-  appliedTheme: AppliedTheme,
-  customization: ThemeCustomization
-): Record<string, string> {
-  if (customization.reduceTransparency) {
+function highContrastVars(appliedTheme: AppliedTheme): Record<string, string> {
+  if (appliedTheme === "paper") {
     return {
+      "--settings-v2-shell": "50 30% 98%",
+      "--settings-v2-card": "50 20% 96%",
+      "--settings-v2-panel": "150 16% 90%",
+      "--settings-v2-border": "165 18% 28%",
+      "--settings-v2-text-strong": "165 35% 8%",
+      "--settings-v2-text-muted": "165 22% 24%",
+      "--settings-v2-focus": "165 35% 8%",
       "--settings-v2-card-alpha": "1",
-      "--settings-v2-panel-alpha": "0.96",
-      "--settings-v2-shell-alpha": "0.9",
+      "--settings-v2-panel-alpha": "1",
+      "--settings-v2-shell-alpha": "1",
       "--settings-v2-glass-blur": "0px",
-      "--settings-v2-rim-alpha": "0.18",
+      "--settings-v2-rim-alpha": "0.08",
     };
   }
-  return {
-    "--settings-v2-card-alpha":
-      customization.depth === "soft" ? (appliedTheme === "paper" ? "0.64" : "0.62") : "0.86",
-    "--settings-v2-panel-alpha":
-      customization.depth === "soft" ? (appliedTheme === "paper" ? "0.5" : "0.5") : "0.72",
-    "--settings-v2-shell-alpha": customization.depth === "cozy" ? "0.58" : "0.44",
-    "--settings-v2-glass-blur": customization.depth === "soft" ? "24px" : "14px",
-    "--settings-v2-rim-alpha":
-      customization.depth === "soft" ? (appliedTheme === "paper" ? "0.66" : "0.22") : "0.28",
-  };
-}
 
-function shadowVars(
-  appliedTheme: AppliedTheme,
-  customization: ThemeCustomization
-): Record<string, string> {
-  if (customization.reduceGlow || customization.depth === "crisp") {
-    return {
-      "--zen-shadow-card":
-        appliedTheme === "paper"
-          ? "0 8px 24px -22px hsl(var(--settings-v2-shadow) / 0.28)"
-          : "0 10px 28px -24px hsl(var(--settings-v2-shadow) / 0.62)",
-      "--zen-shadow-hover":
-        appliedTheme === "paper"
-          ? "0 12px 30px -24px hsl(var(--settings-v2-shadow) / 0.32)"
-          : "0 14px 34px -26px hsl(var(--settings-v2-shadow) / 0.68)",
-    };
-  }
   return {
-    "--zen-shadow-card":
-      appliedTheme === "paper"
-        ? "0 16px 38px -28px hsl(var(--settings-v2-shadow) / 0.34)"
-        : "0 18px 44px -30px hsl(var(--settings-v2-shadow) / 0.74)",
-    "--zen-shadow-hover":
-      appliedTheme === "paper"
-        ? "0 20px 48px -30px hsl(var(--settings-v2-shadow) / 0.4)"
-        : "0 22px 54px -32px hsl(var(--settings-v2-shadow) / 0.78)",
+    "--settings-v2-shell": "170 14% 5%",
+    "--settings-v2-card": "170 12% 9%",
+    "--settings-v2-panel": "170 10% 14%",
+    "--settings-v2-border": "150 12% 70%",
+    "--settings-v2-text-strong": "45 20% 98%",
+    "--settings-v2-text-muted": "45 12% 82%",
+    "--settings-v2-focus": "45 20% 98%",
+    "--settings-v2-card-alpha": "1",
+    "--settings-v2-panel-alpha": "1",
+    "--settings-v2-shell-alpha": "1",
+    "--settings-v2-glass-blur": "0px",
+    "--settings-v2-rim-alpha": "0.08",
   };
 }
 
 export function getThemeCustomizationRecipe(
   appliedTheme: AppliedTheme,
-  value: ThemeCustomization
+  value: ThemeCustomization,
 ): ThemeCustomizationRecipe {
   const customization = normalizeThemeCustomization(value);
-  if (JSON.stringify(customization) === JSON.stringify(DEFAULT_THEME_CUSTOMIZATION)) {
-    return { cssVars: {}, metaThemeColor: DEFAULT_THEME_COLOR };
-  }
-
-  const accent = ACCENTS[appliedTheme][customization.accentFamily][customization.intensity];
-  const palette = paletteForTheme(appliedTheme, customization.paletteId);
-  const contrastTokens: Record<string, string> =
-    customization.contrastMode === "high"
-      ? appliedTheme === "paper"
-        ? {
-            "--settings-v2-border": "176 26% 30%",
-            "--settings-v2-text-strong": "176 58% 6%",
-            "--settings-v2-text-muted": "176 35% 20%",
-            "--settings-v2-focus": "166 72% 23%",
-          }
-        : {
-            "--settings-v2-border": "155 20% 68%",
-            "--settings-v2-text-strong": "54 20% 98%",
-            "--settings-v2-text-muted": "58 18% 84%",
-            "--settings-v2-focus": "155 52% 82%",
-          }
-      : {};
+  const accent = ACCENTS[appliedTheme][customization.accentFamily];
 
   return {
     cssVars: {
-      ...palette,
-      ...contrastTokens,
-      ...transparencyVars(appliedTheme, customization),
-      ...shadowVars(appliedTheme, customization),
+      ...(customization.highContrast ? highContrastVars(appliedTheme) : {}),
       "--settings-v2-accent": accent,
       "--ring": accent,
       "--primary": accent,
-      "--primary-foreground": foregroundForTheme(appliedTheme),
+      "--primary-foreground": primaryForeground(appliedTheme),
     },
-    metaThemeColor: META_THEME_COLORS[customization.paletteId][customization.accentFamily],
+    metaThemeColor: META_THEME_COLORS[appliedTheme],
   };
 }
 
@@ -373,7 +207,7 @@ function setMetaThemeColor(color: string): void {
 
 export function applyThemeCustomizationToDOM(
   appliedTheme: AppliedTheme,
-  value: ThemeCustomization
+  value: ThemeCustomization,
 ): void {
   if (typeof document === "undefined") return;
   const customization = normalizeThemeCustomization(value);
@@ -384,13 +218,14 @@ export function applyThemeCustomizationToDOM(
     root.style.removeProperty(name);
   }
 
-  root.dataset.themeStyle = customization.paletteId;
+  delete root.dataset.themeStyle;
+  delete root.dataset.themeIntensity;
+  delete root.dataset.themeDepth;
+  delete root.dataset.themeComfort;
+  delete root.dataset.themeTransparency;
+  delete root.dataset.themeGlow;
   root.dataset.themeAccent = customization.accentFamily;
-  root.dataset.themeIntensity = customization.intensity;
-  root.dataset.themeDepth = customization.depth;
-  root.dataset.themeComfort = customization.contrastMode === "high" ? "high-contrast" : "standard";
-  root.dataset.themeTransparency = customization.reduceTransparency ? "solid" : "layered";
-  root.dataset.themeGlow = customization.reduceGlow ? "reduced" : "standard";
+  root.dataset.themeContrast = customization.highContrast ? "high" : "standard";
 
   for (const [name, token] of Object.entries(recipe.cssVars)) {
     root.style.setProperty(name, token);

@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
-import { flushSync } from "react-dom";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeStore } from "@/stores/themeStore";
 import { haptics } from "@/lib/haptics";
-import { logger } from "@/lib/logger";
 
 /**
  * ThemeToggleV2 — Sidebar-embedded theme switcher for Nav-V2.
@@ -13,46 +11,37 @@ import { logger } from "@/lib/logger";
  * Visual: compact 52×36 tactile switch (Sun ↔ Moon) wired through the V2
  * paper/ink theme store.
  *
- * Animation: 2026-standard circle-reveal via View Transitions API — the new
- * theme grows from the click origin as a clip-path circle until it covers
- * the viewport. Gracefully falls back to instant swap on browsers without
- * the API and when `prefers-reduced-motion: reduce` is set.
+ * Theme changes commit immediately. This avoids root-level compositor
+ * artifacts on glass surfaces and keeps the control consistent across Web,
+ * PWA, WebView, and browsers without View Transitions support.
  *
  * Accessibility: Law 9 — 44×44 tap surface (via padding), aria-label,
  * keyboard activation (Enter/Space). Haptic feedback on native.
  */
 
-const TRANSITION_DURATION_MS = 500;
 const DRAWER_THEME_SWAP_ATTR = "data-theme-swap-mode";
 const DRAWER_THEME_SWAP_VALUE = "drawer-instant";
 const DRAWER_THEME_SWAP_RESET_MS = 140;
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function")
-    return false;
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function supportsViewTransition(): boolean {
-  return (
-    typeof document !== "undefined" &&
-    typeof document.startViewTransition === "function"
-  );
-}
 
 function isInsideModalDialog(target: HTMLElement): boolean {
   return Boolean(target.closest('[role="dialog"][aria-modal="true"]'));
 }
 
-function swapDrawerThemeInstantly(nextTheme: "paper" | "ink", setTheme: (theme: "paper" | "ink") => void) {
+function swapDrawerThemeInstantly(
+  nextTheme: "paper" | "ink",
+  commitTheme: (theme: "paper" | "ink") => boolean,
+) {
   if (typeof document === "undefined" || typeof window === "undefined") {
-    setTheme(nextTheme);
+    commitTheme(nextTheme);
     return;
   }
 
   const root = document.documentElement;
   root.setAttribute(DRAWER_THEME_SWAP_ATTR, DRAWER_THEME_SWAP_VALUE);
-  setTheme(nextTheme);
+  if (!commitTheme(nextTheme)) {
+    root.removeAttribute(DRAWER_THEME_SWAP_ATTR);
+    return;
+  }
   window.setTimeout(() => {
     if (root.getAttribute(DRAWER_THEME_SWAP_ATTR) === DRAWER_THEME_SWAP_VALUE) {
       root.removeAttribute(DRAWER_THEME_SWAP_ATTR);
@@ -97,74 +86,42 @@ export function ThemeToggleV2({
 
   // Prevent hydration mismatch — only render interactive state after mount.
   const [mounted, setMounted] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const isDark = appliedTheme === "ink" || appliedTheme === "oled";
+  const feedbackId = `${testId}-feedback`;
+
+  const commitTheme = useCallback(
+    (nextTheme: "paper" | "ink") => {
+      const result = setTheme(nextTheme);
+      if (!result.ok) {
+        setSaveError(
+          t.settingsPreferenceSaveError ||
+            "Could not save this change. Your previous setting is still active.",
+        );
+        return false;
+      }
+      setSaveError(null);
+      return true;
+    },
+    [setTheme, t.settingsPreferenceSaveError],
+  );
 
   const handleToggle = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
       const nextTheme = isDark ? "paper" : "ink";
       void haptics.tabChanged();
 
-      // Compute click origin for circle-reveal (fallback to element center).
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX || rect.left + rect.width / 2;
-      const y = e.clientY || rect.top + rect.height / 2;
-
       if (isInsideModalDialog(e.currentTarget)) {
-        swapDrawerThemeInstantly(nextTheme, setTheme);
+        swapDrawerThemeInstantly(nextTheme, commitTheme);
         return;
       }
-
-      if (!supportsViewTransition() || prefersReducedMotion()) {
-        setTheme(nextTheme);
-        return;
-      }
-
-      // Mark document root so CSS can scope the circle-reveal animation.
-      document.documentElement.setAttribute("data-theme-swap", "active");
-
-      try {
-        const vt = document.startViewTransition!(() => {
-          flushSync(() => setTheme(nextTheme));
-        });
-
-        vt.ready
-          .then(() => {
-            const endRadius = Math.hypot(
-              Math.max(x, window.innerWidth - x),
-              Math.max(y, window.innerHeight - y),
-            );
-            document.documentElement.animate(
-              {
-                clipPath: [
-                  `circle(0px at ${x}px ${y}px)`,
-                  `circle(${endRadius}px at ${x}px ${y}px)`,
-                ],
-              },
-              {
-                duration: TRANSITION_DURATION_MS,
-                easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-                pseudoElement: "::view-transition-new(root)",
-              },
-            );
-          })
-          .catch((err) => {
-            logger.warn("[ThemeToggleV2]", "view-transition failed", err);
-          });
-
-        void vt.finished.finally(() => {
-          document.documentElement.removeAttribute("data-theme-swap");
-        });
-      } catch (err) {
-        logger.warn("[ThemeToggleV2]", "startViewTransition threw", err);
-        document.documentElement.removeAttribute("data-theme-swap");
-        setTheme(nextTheme);
-      }
+      commitTheme(nextTheme);
     },
-    [isDark, setTheme],
+    [commitTheme, isDark],
   );
 
   const ariaLabel = t.themeDark || "Dark mode";
@@ -187,22 +144,24 @@ export function ThemeToggleV2({
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleToggle}
-      aria-label={ariaLabel}
-      aria-pressed={isDark}
-      data-testid={testId}
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 min-h-[44px]",
-        "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--nav-v2-item-hover)/0.72)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-        "motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200",
-        "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
-        collapsed && "justify-center px-2",
-        presentationClasses.button,
-      )}
-    >
+    <div className={cn("relative", presentation === "drawer" && "w-full")}>
+      <button
+        type="button"
+        onClick={handleToggle}
+        aria-label={ariaLabel}
+        aria-pressed={isDark}
+        aria-describedby={saveError ? feedbackId : undefined}
+        data-testid={testId}
+        className={cn(
+          "flex items-center gap-3 rounded-lg px-3 py-2 min-h-[44px]",
+          "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--nav-v2-item-hover)/0.72)]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+          "motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200",
+          "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
+          collapsed && "justify-center px-2",
+          presentationClasses.button,
+        )}
+      >
       <span
         data-testid={`${testId}-track`}
         className={cn(
@@ -217,11 +176,12 @@ export function ThemeToggleV2({
         <span
           data-testid={`${testId}-thumb`}
           className={cn(
-            "absolute top-[5px] h-[26px] w-[22px] rounded-[6px] motion-safe:transition-[left,background-color,color,box-shadow] motion-safe:duration-300 flex items-center justify-center shadow-[0_8px_16px_-12px_hsl(var(--settings-v2-shadow)/0.68)] ring-1",
+            "absolute top-[5px] h-[26px] w-[22px] rounded-[6px] motion-safe:transition-[transform,background-color,color,box-shadow] motion-safe:duration-300 flex items-center justify-center shadow-[0_8px_16px_-12px_hsl(var(--settings-v2-shadow)/0.68)] ring-1",
             isDark
-              ? "left-[25px] bg-[hsl(var(--settings-v2-accent)/0.18)] text-[hsl(var(--settings-v2-accent))] ring-[hsl(var(--settings-v2-accent)/0.34)]"
-              : "left-[5px] bg-[hsl(var(--settings-v2-panel)/0.94)] text-[hsl(var(--settings-v2-accent))] ring-[hsl(var(--settings-v2-border)/0.42)]",
+              ? "ltr:translate-x-[20px] rtl:-translate-x-[20px] bg-[hsl(var(--settings-v2-accent)/0.18)] text-[hsl(var(--settings-v2-accent))] ring-[hsl(var(--settings-v2-accent)/0.34)]"
+              : "translate-x-0 bg-[hsl(var(--settings-v2-panel)/0.94)] text-[hsl(var(--settings-v2-accent))] ring-[hsl(var(--settings-v2-border)/0.42)]",
           )}
+          style={{ insetInlineStart: "5px" }}
         >
           {isDark ? (
             <Moon className="w-3.5 h-3.5" aria-hidden="true" />
@@ -231,11 +191,21 @@ export function ThemeToggleV2({
         </span>
       </span>
 
-      {!collapsed && (
-        <span className={presentationClasses.label}>
-          {isDark ? t.themeDark || "Dark" : t.themeLight || "Light"}
+        {!collapsed && (
+          <span className={presentationClasses.label}>
+            {isDark ? t.themeDark || "Dark" : t.themeLight || "Light"}
+          </span>
+        )}
+      </button>
+      {saveError ? (
+        <span
+          id={feedbackId}
+          role="alert"
+          className="absolute end-0 top-[calc(100%+0.25rem)] z-[70] w-56 rounded-[8px] border border-destructive/30 bg-background px-3 py-2 text-xs leading-relaxed text-destructive shadow-[var(--zen-shadow-card)]"
+        >
+          {saveError}
         </span>
-      )}
-    </button>
+      ) : null}
+    </div>
   );
 }

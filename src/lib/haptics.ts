@@ -1,11 +1,8 @@
-/**
- * Haptic Feedback Utility for ADHD-friendly interactions
- * Provides tactile confirmation for actions, helping with focus and engagement
- */
+/** Native tactile feedback for short, causal confirmations. */
 
 import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 import { isNative } from "@/lib/platform";
-import { shouldTriggerHaptics } from "./animationUtils";
+import { getHapticsPreference } from "./hapticsPreference";
 import { logger } from "@/lib/logger";
 
 // Check if haptics are available (native platform only)
@@ -13,7 +10,7 @@ const isHapticsAvailable = isNative;
 
 // Combined check for availability AND user preference
 function canTriggerHaptics(): boolean {
-  return isHapticsAvailable && shouldTriggerHaptics();
+  return isHapticsAvailable && getHapticsPreference().enabled;
 }
 
 /**
@@ -92,12 +89,7 @@ export async function hapticError(): Promise<void> {
  * Selection changed haptic - for scrolling through options
  */
 export async function hapticSelection(): Promise<void> {
-  if (!canTriggerHaptics()) return;
-  try {
-    await Haptics.selectionChanged();
-  } catch (error) {
-    logger.log("Haptic selection failed:", error);
-  }
+  await hapticTap();
 }
 
 /**
@@ -162,7 +154,7 @@ export const haptics = {
   // Navigation & UI
   buttonPress: hapticTap,
   buttonTap: hapticTap, // Alias for AI Coach compatibility
-  tabChanged: hapticSelection,
+  tabChanged: hapticTap,
   panelOpened: hapticTap,
   panelClosed: hapticTap,
 

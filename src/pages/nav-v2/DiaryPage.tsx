@@ -5,14 +5,11 @@ import { useThemeStore } from "@/stores/themeStore";
 import type { JournalEntryPrefill, JournalEntrySuggestion } from "@/features/journal";
 import { useDiaryDraftStore } from "@/stores/diaryDraftStore";
 import { formatDate } from "@/lib/utils";
-import { getAppAudioAssetSrc } from "@/lib/appAudioAssets";
 import type { GratitudeEntry, MoodType } from "@/types";
 
 const JournalModule = lazy(
   () => import("@/features/journal/JournalModule").then((m) => ({ default: m.JournalModule })),
 );
-
-const DIARY_AMBIENCE_AUDIO_SRC = getAppAudioAssetSrc("diary-reflection-loop");
 
 function valenceToMood(v: number): MoodType {
   if (v < -0.75) return "terrible";
@@ -182,18 +179,6 @@ export const DiaryPage = memo(function DiaryPage({
         >
           {tx.navV2Diary || t.diary || "Diary"}
         </h1>
-
-        {/* Ambient diary music is configured from Settings; keep the asset non-autoplaying and off the writing surface. */}
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <audio
-          aria-hidden="true"
-          data-testid="diary-page-ambience-audio"
-          src={DIARY_AMBIENCE_AUDIO_SRC}
-          crossOrigin="anonymous"
-          preload="none"
-          loop
-          playsInline
-        />
 
         <Suspense
           fallback={

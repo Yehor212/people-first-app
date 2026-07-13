@@ -159,7 +159,6 @@ export function checkMotionSafe(
         content.includes("prefers-reduced-motion") ||
         content.includes("prefersReducedMotion") ||
         content.includes("motionSafe") ||
-        content.includes("dopamineEnabled") ||
         content.includes("useShouldAnimate") ||
         content.includes("shouldAnimate()") ||
         options.hasGlobalMotionGate === true;
@@ -171,7 +170,7 @@ export function checkMotionSafe(
               file,
               line: i + 1,
               rule: "motion-safe",
-              detail: "Framer Motion without useReducedMotion or dopamineEnabled",
+              detail: "Framer Motion without an effective reduced-motion guard",
               severity: "MEDIUM",
             });
             break;

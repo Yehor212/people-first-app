@@ -71,7 +71,7 @@ describe("app audio asset manifest", () => {
       "utf8",
     );
     const diarySource = readFileSync(
-      join(process.cwd(), "src/pages/nav-v2/DiaryPage.tsx"),
+      join(process.cwd(), "src/features/journal/JournalAmbienceSetting.tsx"),
       "utf8",
     );
 

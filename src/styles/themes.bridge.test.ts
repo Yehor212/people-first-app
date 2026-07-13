@@ -240,4 +240,38 @@ describe("theme bridge variables", () => {
     expect(visibilityRule).toContain("animation-name: none");
     expect(visibilityRule).toContain("opacity: 1");
   });
+
+  it("does not retain selectors for removed appearance controls", () => {
+    expect(css).not.toContain("data-theme-style");
+    expect(css).not.toContain("data-theme-transparency");
+    expect(css).not.toContain("settings-v2-appearance-glass-card");
+    expect(css).not.toContain("settings-v2-accent-swatch-row");
+  });
+
+  it("applies high-contrast readability and focus tokens across V2 instead of only Settings", () => {
+    expect(css).toContain(':root[data-theme-contrast="high"]');
+    expect(css).toContain('--foreground: var(--settings-v2-text-strong)');
+    expect(css).toContain('--muted-foreground: var(--settings-v2-text-muted)');
+    expect(css).toContain('--ring: var(--settings-v2-focus)');
+    expect(css).not.toContain(
+      ':root[data-theme-contrast="high"] [data-v2-readable-page="settings"] {',
+    );
+  });
+
+  it("uses a strong readable label color for every selected Settings choice", () => {
+    const primitiveSource = readFileSync(
+      join(__dirname, "../pages/nav-v2/settings/components/V2SettingsControlPrimitives.tsx"),
+      "utf-8",
+    );
+    expect(primitiveSource).toContain(
+      'bg-[hsl(var(--settings-v2-accent)/0.1)] text-foreground',
+    );
+    const selectedChoiceSource = primitiveSource.slice(
+      primitiveSource.indexOf("const SETTINGS_CHOICE_SELECTED_CLASS"),
+      primitiveSource.indexOf("export function PanelFrame"),
+    );
+    expect(selectedChoiceSource).not.toContain(
+      'bg-[hsl(var(--settings-v2-accent)/0.1)] text-[hsl(var(--settings-v2-accent))]',
+    );
+  });
 });

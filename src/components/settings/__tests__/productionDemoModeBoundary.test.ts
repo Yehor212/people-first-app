@@ -3,7 +3,6 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const PRODUCTION_SETTINGS = [
-  "src/components/settings/AboutSection.tsx",
   "src/pages/nav-v2/settings/V2SettingsAboutPanel.tsx",
 ];
 
@@ -17,9 +16,10 @@ describe("production demo-mode boundary", () => {
       expect(source).not.toContain("SettingsInsetButton");
     }
 
-    const v2 = readFileSync(PRODUCTION_SETTINGS[1], "utf8");
-    expect(v2).toContain("border-[hsl(var(--settings-v2-border)/0.58)]");
-    expect(v2).toContain("bg-[hsl(var(--settings-v2-shell)/0.56)] p-4 text-center");
+    const v2 = readFileSync(PRODUCTION_SETTINGS[0], "utf8");
+    expect(v2).toContain('data-testid="settings-support-footer"');
+    expect(v2).toContain("border-t border-[hsl(var(--settings-v2-border)/0.3)]");
+    expect(v2).not.toContain("PanelFrame");
     expect(existsSync("src/hooks/useDemoMode.ts")).toBe(false);
     expect(existsSync("src/lib/demoData.ts")).toBe(false);
   });

@@ -9,6 +9,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { logger } from "@/lib/logger";
+import { useThemeStore, type ThemePreference } from "@/stores/themeStore";
 
 interface UIPreferences {
   sidebarCollapsed?: boolean;
@@ -38,8 +39,10 @@ export async function pullPreferences(): Promise<void> {
       storageSetRaw(PREF_KEYS.sidebarCollapsed, String(prefs.sidebarCollapsed));
     }
     if (prefs.theme) {
-      storageSetRaw(PREF_KEYS.theme, prefs.theme);
-      document.documentElement.classList.toggle("dark", prefs.theme === "dark");
+      const canonicalTheme: ThemePreference =
+        prefs.theme === "light" ? "paper" : prefs.theme === "dark" ? "ink" : "auto";
+      const result = useThemeStore.getState().setTheme(canonicalTheme);
+      if (!result.ok) logger.warn("[PreferenceSync] Theme preference could not be saved");
     }
     if (prefs.defaultTab) {
       storageSetRaw(PREF_KEYS.defaultTab, prefs.defaultTab);

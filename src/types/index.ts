@@ -240,6 +240,10 @@ export interface Goal {
 
 export interface ReminderSettings {
   enabled: boolean;
+  /** Explicit device-delivery consent for mood check-ins. Undefined only on legacy records. */
+  moodCheckInsEnabled?: boolean;
+  /** Explicit device-delivery consent for focus reminders. Undefined only on legacy records. */
+  focusReminderEnabled?: boolean;
   // Mood reminders - 3 times per day
   moodTimeMorning: string;
   moodTimeAfternoon: string;

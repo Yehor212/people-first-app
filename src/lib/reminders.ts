@@ -2,6 +2,8 @@ import { ReminderSettings } from '@/types';
 
 export const defaultReminderSettings: ReminderSettings = {
   enabled: false,
+  moodCheckInsEnabled: false,
+  focusReminderEnabled: false,
   // Mood check-ins: morning, afternoon, evening
   moodTimeMorning: '09:00',
   moodTimeAfternoon: '14:00',

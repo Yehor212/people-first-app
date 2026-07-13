@@ -7,56 +7,6 @@ import { SyncOwnerBoundaryError, validateSyncOwner } from '@/storage/sync/syncOw
  * Extracted from UI components per TD-23.
  */
 
-/** Load weekly digest enabled setting for a user (key-value schema) */
-export async function loadWeeklyDigest(userId: string): Promise<boolean | null> {
-  if (!supabase) return null;
-
-  try {
-    const { data, error } = await supabase
-      .from('user_settings')
-      .select('value')
-      .eq('user_id', userId)
-      .eq('key', 'weekly_digest_enabled')
-      .maybeSingle();
-
-    if (error) {
-      logger.error('[AccountService] Failed to load weekly digest:', error);
-      return null;
-    }
-
-    return data?.value === true;
-  } catch (error) {
-    logger.error('[AccountService] Error loading weekly digest:', error);
-    return null;
-  }
-}
-
-/** Update weekly digest setting for a user (key-value schema). Returns true on success. */
-export async function updateWeeklyDigest(userId: string, enabled: boolean): Promise<boolean> {
-  if (!supabase) return false;
-
-  try {
-    const { error } = await supabase
-      .from('user_settings')
-      .upsert({
-        user_id: userId,
-        key: 'weekly_digest_enabled',
-        value: enabled,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,key' });
-
-    if (error) {
-      logger.error('[AccountService] Failed to update weekly digest:', error);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    logger.error('[AccountService] Weekly digest update error:', error);
-    return false;
-  }
-}
-
 /** Update the explicitly owned profile row. Returns true on success. */
 export async function updateProfileName(
   expectedOwnerUserId: string,

@@ -1,17 +1,36 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+
+const notificationPlugin = vi.hoisted(() => ({ createChannel: vi.fn() }));
+
+vi.mock("@/lib/platform", () => ({
+  isDesktopViewport: false,
+  isNative: true,
+  platform: "android",
+}));
+
+vi.mock("@capacitor/local-notifications", () => ({
+  LocalNotifications: notificationPlugin,
+}));
+
 import {
   buildNotificationChannelCopy,
   getNotificationSystemSettingsCopyKey,
   getCurrentChannelId,
   getCurrentSoundOption,
   getNotificationSound,
+  initializeNotificationChannels,
   NOTIFICATION_SOUND_CHANNEL_VERSION,
   NOTIFICATION_SOUNDS,
+  setNotificationSound,
+  supportsNativeNotificationChannels,
+  updateNotificationSound,
 } from "../notificationSounds";
 
 describe("notification sound channels", () => {
   beforeEach(() => {
     localStorage.clear();
+    notificationPlugin.createChannel.mockClear().mockResolvedValue(undefined);
   });
 
   it("builds Android channel names and descriptions from the active language", () => {
@@ -32,11 +51,11 @@ describe("notification sound channels", () => {
   });
 
   it("uses versioned Android channels so immutable old channel behavior is not reused", () => {
-    expect(NOTIFICATION_SOUND_CHANNEL_VERSION).toBe("v2");
+    expect(NOTIFICATION_SOUND_CHANNEL_VERSION).toBe("v3");
     expect(NOTIFICATION_SOUNDS.map((sound) => sound.channelId)).toEqual([
-      "zenflow_default_v2",
-      "zenflow_gentle_v2",
-      "zenflow_silent_v2",
+      "zenflow_default_v3",
+      "zenflow_gentle_v3",
+      "zenflow_silent_v3",
     ]);
     expect(NOTIFICATION_SOUNDS.some((sound) => sound.channelId === "zenflow_reminders")).toBe(false);
   });
@@ -57,8 +76,18 @@ describe("notification sound channels", () => {
   });
 
   it("routes new reminder schedules through the selected versioned channel", () => {
-    expect(getCurrentSoundOption().channelId).toBe("zenflow_default_v2");
-    expect(getCurrentChannelId()).toBe("zenflow_default_v2");
+    expect(getCurrentSoundOption().channelId).toBe("zenflow_default_v3");
+    expect(getCurrentChannelId()).toBe("zenflow_default_v3");
+  });
+
+  it("creates only private Android channels so reminder content is concealed on lock screens", async () => {
+    await initializeNotificationChannels();
+
+    expect(notificationPlugin.createChannel).toHaveBeenCalledTimes(3);
+    for (const [channel] of notificationPlugin.createChannel.mock.calls) {
+      expect(channel).toMatchObject({ visibility: 0 });
+      expect(channel.id).toMatch(/_v3$/);
+    }
   });
 
   it("maps system notification guidance to every supported runtime surface", () => {
@@ -93,5 +122,41 @@ describe("notification sound channels", () => {
         isDesktopViewportRuntime: true,
       })
     ).toBe("notificationSystemSettingsDesktopDescription");
+  });
+
+  it("creates native notification channels only on Android", () => {
+    expect(
+      supportsNativeNotificationChannels({
+        isNativeRuntime: true,
+        platformName: "android",
+        isDesktopViewportRuntime: false,
+      }),
+    ).toBe(true);
+    expect(
+      supportsNativeNotificationChannels({
+        isNativeRuntime: true,
+        platformName: "ios",
+        isDesktopViewportRuntime: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not request restricted exact-alarm access for non-critical wellness reminders", () => {
+    const manifest = readFileSync("android/app/src/main/AndroidManifest.xml", "utf8");
+    expect(manifest).not.toContain("android.permission.USE_EXACT_ALARM");
+    expect(manifest).not.toContain("android.permission.SCHEDULE_EXACT_ALARM");
+  });
+
+  it("rejects an Android sound choice when the durable preference cannot be written", async () => {
+    localStorage.setItem("zenflow_notification_sound", "default");
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("blocked", "QuotaExceededError");
+    });
+
+    expect(setNotificationSound("gentle")).toBe(false);
+    await expect(updateNotificationSound("gentle")).rejects.toThrow(
+      "Reminder sound could not be saved",
+    );
+    expect(getNotificationSound()).toBe("default");
   });
 });

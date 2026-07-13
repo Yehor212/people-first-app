@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DEFAULT_THEME_CUSTOMIZATION,
   THEME_ACCENT_FAMILIES,
-  THEME_INTENSITIES,
   applyThemeCustomizationToDOM,
   getThemeCustomizationRecipe,
   normalizeThemeCustomization,
@@ -38,7 +37,7 @@ function hslToRgb([hue, saturation, lightness]: [number, number, number]): [
 
 function relativeLuminance(token: string): number {
   const [red, green, blue] = hslToRgb(parseHslToken(token)).map((channel) =>
-    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
   );
   return red * 0.2126 + green * 0.7152 + blue * 0.0722;
 }
@@ -52,216 +51,223 @@ function contrastRatio(first: string, second: string): number {
   );
 }
 
-describe("themeCustomization", () => {
+describe("themeCustomization Variant A", () => {
   beforeEach(() => {
-    document.documentElement.removeAttribute("data-theme-style");
-    document.documentElement.removeAttribute("data-theme-accent");
-    document.documentElement.removeAttribute("data-theme-comfort");
+    for (const name of [
+      "themeStyle",
+      "themeAccent",
+      "themeIntensity",
+      "themeDepth",
+      "themeComfort",
+      "themeTransparency",
+      "themeGlow",
+      "themeContrast",
+    ] as const) {
+      delete document.documentElement.dataset[name];
+    }
   });
 
   afterEach(() => {
     applyThemeCustomizationToDOM("paper", DEFAULT_THEME_CUSTOMIZATION);
   });
 
-  it("normalizes corrupted persisted values back to the ZenFlow default", () => {
+  it("ships only four familiar accent choices", () => {
+    expect(THEME_ACCENT_FAMILIES.map((option) => option.id)).toEqual([
+      "green",
+      "blue",
+      "violet",
+      "amber",
+    ]);
+  });
+
+  it("normalizes corrupted persisted values to the visible default model", () => {
     expect(
       normalizeThemeCustomization({
-        paletteId: "raw-neon",
+        schemaVersion: 1,
         accentFamily: "unsafe-css",
-        intensity: 99,
-        warmth: "lava",
-        depth: "floating-card-stack",
-        contrastMode: "invisible",
-        reduceGlow: "yes",
-        reduceTransparency: 1,
+        highContrast: "yes",
         injectedCss: "body{display:none}",
-      })
+      }),
     ).toEqual(DEFAULT_THEME_CUSTOMIZATION);
   });
 
-  it("maps Soft Light paper mode to platform-like Liquid Glass tokens", () => {
+  it("migrates active legacy appearance fields without retaining hidden controls", () => {
+    expect(
+      normalizeThemeCustomization({
+        paletteId: "velvetLibrary",
+        accentFamily: "plum",
+        intensity: "vivid",
+        warmth: "warm",
+        depth: "soft",
+        contrastMode: "high",
+        reduceGlow: true,
+        reduceTransparency: false,
+      }),
+    ).toEqual({
+      schemaVersion: 1,
+      accentFamily: "violet",
+      highContrast: true,
+    });
+  });
+
+  it("maps legacy reduced transparency to the coherent high-contrast outcome", () => {
+    expect(
+      normalizeThemeCustomization({
+        paletteId: "morningHearth",
+        accentFamily: "clay",
+        reduceTransparency: true,
+      }),
+    ).toEqual({
+      schemaVersion: 1,
+      accentFamily: "amber",
+      highContrast: true,
+    });
+  });
+
+  it("does not mistake a legacy amber accent for the current schema", () => {
+    expect(
+      normalizeThemeCustomization({
+        accentFamily: "amber",
+        contrastMode: "high",
+        reduceTransparency: true,
+      }),
+    ).toEqual({
+      schemaVersion: 1,
+      accentFamily: "amber",
+      highContrast: true,
+    });
+  });
+
+  it("uses a legacy palette as a fallback accent without changing the theme mode", () => {
+    expect(normalizeThemeCustomization({ paletteId: "morningHearth" }).accentFamily).toBe(
+      "amber",
+    );
+    expect(normalizeThemeCustomization({ paletteId: "velvetLibrary" }).accentFamily).toBe(
+      "violet",
+    );
+    expect(normalizeThemeCustomization({ paletteId: "botanicalPulse" }).accentFamily).toBe(
+      "green",
+    );
+  });
+
+  it("keeps an accent change isolated from surface opacity, blur, depth, and shadow", () => {
     const recipe = getThemeCustomizationRecipe("paper", {
-      ...DEFAULT_THEME_CUSTOMIZATION,
-      paletteId: "morningHearth",
-      accentFamily: "teal",
-      intensity: "balanced",
-      warmth: "cool",
-      depth: "soft",
-    });
-
-    expect(recipe.cssVars["--settings-v2-shell"]).toBe("36 44% 93%");
-    expect(recipe.cssVars["--settings-v2-card"]).toBe("42 62% 98%");
-    expect(recipe.cssVars["--settings-v2-panel"]).toBe("30 70% 94%");
-    expect(recipe.cssVars["--settings-v2-border"]).toBe("34 24% 72%");
-    expect(recipe.cssVars["--settings-v2-accent"]).toBe("152 32% 36%");
-    expect(recipe.cssVars["--settings-v2-card-alpha"]).toBe("0.64");
-    expect(recipe.cssVars["--settings-v2-panel-alpha"]).toBe("0.5");
-    expect(recipe.cssVars["--settings-v2-glass-blur"]).toBe("24px");
-    expect(recipe.cssVars["--settings-v2-rim-light"]).toBe("0 0% 100%");
-    expect(recipe.metaThemeColor).toBe("#f3eadf");
-  });
-
-  it("maps Deep Glass dark mode to platform-like Liquid Glass tokens", () => {
-    const recipe = getThemeCustomizationRecipe("ink", {
-      ...DEFAULT_THEME_CUSTOMIZATION,
-      paletteId: "velvetLibrary",
-      accentFamily: "plum",
-      intensity: "balanced",
-      depth: "soft",
-    });
-
-    expect(recipe.cssVars["--settings-v2-shell"]).toBe("252 16% 8%");
-    expect(recipe.cssVars["--settings-v2-card"]).toBe("258 18% 12%");
-    expect(recipe.cssVars["--settings-v2-panel"]).toBe("252 16% 18%");
-    expect(recipe.cssVars["--settings-v2-border"]).toBe("252 14% 44%");
-    expect(recipe.cssVars["--settings-v2-accent"]).toBe("258 70% 78%");
-    expect(recipe.cssVars["--settings-v2-card-alpha"]).toBe("0.62");
-    expect(recipe.cssVars["--settings-v2-panel-alpha"]).toBe("0.5");
-    expect(recipe.cssVars["--settings-v2-glass-blur"]).toBe("24px");
-    expect(recipe.cssVars["--settings-v2-rim-light"]).toBe("264 36% 82%");
-    expect(recipe.metaThemeColor).toBe("#211d2b");
-  });
-
-  it("keeps the Sea glass accent family green across day, dark, and OLED recipes", () => {
-    expect(
-      getThemeCustomizationRecipe("paper", {
-        ...DEFAULT_THEME_CUSTOMIZATION,
-        accentFamily: "teal",
-        depth: "soft",
-      }).cssVars["--settings-v2-accent"]
-    ).toBe("152 32% 36%");
-    expect(
-      getThemeCustomizationRecipe("ink", {
-        ...DEFAULT_THEME_CUSTOMIZATION,
-        accentFamily: "teal",
-        depth: "soft",
-      }).cssVars["--settings-v2-accent"]
-    ).toBe("155 29% 77%");
-    expect(
-      getThemeCustomizationRecipe("oled", {
-        ...DEFAULT_THEME_CUSTOMIZATION,
-        accentFamily: "teal",
-        depth: "soft",
-      }).cssVars["--settings-v2-accent"]
-    ).toBe("155 29% 77%");
-  });
-
-  it("maps Botanical Pulse dark mode to reference-like optical glass", () => {
-    const recipe = getThemeCustomizationRecipe("ink", {
-      ...DEFAULT_THEME_CUSTOMIZATION,
-      paletteId: "botanicalPulse",
-      accentFamily: "plum",
-      intensity: "balanced",
-      depth: "soft",
-    });
-
-    expect(recipe.cssVars["--settings-v2-shell"]).toBe("64 11% 27%");
-    expect(recipe.cssVars["--settings-v2-card"]).toBe("89 12% 37%");
-    expect(recipe.cssVars["--settings-v2-panel"]).toBe("152 32% 36%");
-    expect(recipe.cssVars["--settings-v2-border"]).toBe("153 22% 54%");
-    expect(recipe.cssVars["--settings-v2-rim-light"]).toBe("148 31% 90%");
-    expect(recipe.cssVars["--settings-v2-accent"]).toBe("258 70% 78%");
-    expect(recipe.metaThemeColor).toBe("#4E896E");
-  });
-
-  it("returns allowlisted token recipes without accepting raw CSS values", () => {
-    const recipe = getThemeCustomizationRecipe("paper", {
-      ...DEFAULT_THEME_CUSTOMIZATION,
-      paletteId: "morningHearth",
-      accentFamily: "teal",
-      intensity: "vivid",
-      warmth: "warm",
-      depth: "cozy",
+      schemaVersion: 1,
+      accentFamily: "blue",
+      highContrast: false,
     });
 
     expect(recipe.cssVars["--settings-v2-accent"]).toBeDefined();
-    expect(recipe.cssVars["--settings-v2-card"]).toBeDefined();
-    expect(Object.keys(recipe.cssVars)).not.toContain("injectedCss");
-    expect(recipe.metaThemeColor).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(recipe.cssVars["--ring"]).toBe(recipe.cssVars["--settings-v2-accent"]);
+    expect(recipe.cssVars["--primary"]).toBe(recipe.cssVars["--settings-v2-accent"]);
+    for (const unrelatedRole of [
+      "--settings-v2-shell",
+      "--settings-v2-card",
+      "--settings-v2-panel",
+      "--settings-v2-card-alpha",
+      "--settings-v2-panel-alpha",
+      "--settings-v2-shell-alpha",
+      "--settings-v2-glass-blur",
+      "--zen-shadow-card",
+      "--zen-shadow-hover",
+    ]) {
+      expect(recipe.cssVars[unrelatedRole], unrelatedRole).toBeUndefined();
+    }
   });
 
-  it("keeps custom primary action text at WCAG AA contrast", () => {
+  it("makes high contrast own readable text, borders, focus, and solid surfaces", () => {
+    for (const appliedTheme of ["paper", "ink", "oled"] as const) {
+      const recipe = getThemeCustomizationRecipe(appliedTheme, {
+        schemaVersion: 1,
+        accentFamily: "green",
+        highContrast: true,
+      });
+
+      expect(recipe.cssVars["--settings-v2-text-strong"]).toBeTruthy();
+      expect(recipe.cssVars["--settings-v2-text-muted"]).toBeTruthy();
+      expect(recipe.cssVars["--settings-v2-border"]).toBeTruthy();
+      expect(recipe.cssVars["--settings-v2-focus"]).toBeTruthy();
+      expect(recipe.cssVars["--settings-v2-card-alpha"]).toBe("1");
+      expect(recipe.cssVars["--settings-v2-glass-blur"]).toBe("0px");
+      for (const surface of [
+        "--settings-v2-shell",
+        "--settings-v2-card",
+        "--settings-v2-panel",
+      ]) {
+        expect(recipe.cssVars[surface], surface).toBeTruthy();
+        expect(
+          contrastRatio(
+            recipe.cssVars["--settings-v2-text-strong"],
+            recipe.cssVars[surface],
+          ),
+          `${appliedTheme}/${surface}`,
+        ).toBeGreaterThanOrEqual(7);
+      }
+    }
+  });
+
+  it("keeps every shipped primary role pair at WCAG AA contrast", () => {
     for (const appliedTheme of ["paper", "ink", "oled"] as const) {
       for (const accent of THEME_ACCENT_FAMILIES) {
-        for (const intensity of THEME_INTENSITIES) {
+        for (const highContrast of [false, true]) {
           const recipe = getThemeCustomizationRecipe(appliedTheme, {
-            ...DEFAULT_THEME_CUSTOMIZATION,
-            paletteId: "morningHearth",
+            schemaVersion: 1,
             accentFamily: accent.id,
-            intensity: intensity.id,
+            highContrast,
           });
           const ratio = contrastRatio(
             recipe.cssVars["--primary"],
-            recipe.cssVars["--primary-foreground"]
+            recipe.cssVars["--primary-foreground"],
           );
 
           expect(
             ratio,
-            `${appliedTheme}/${accent.id}/${intensity.id} primary contrast`
+            `${appliedTheme}/${accent.id}/${highContrast ? "high" : "standard"}`,
           ).toBeGreaterThanOrEqual(4.5);
         }
       }
     }
   });
 
-  it("updates the browser theme-color meta when a custom style is previewed", () => {
-    const meta = document.createElement("meta");
-    meta.name = "theme-color";
-    meta.content = "#000000";
-    document.head.appendChild(meta);
-
-    applyThemeCustomizationToDOM("paper", {
-      ...DEFAULT_THEME_CUSTOMIZATION,
-      paletteId: "morningHearth",
-      accentFamily: "clay",
+  it("keeps the browser surface color tied to mode rather than accent", () => {
+    const bluePaper = getThemeCustomizationRecipe("paper", {
+      schemaVersion: 1,
+      accentFamily: "blue",
+      highContrast: false,
+    });
+    const amberPaper = getThemeCustomizationRecipe("paper", {
+      schemaVersion: 1,
+      accentFamily: "amber",
+      highContrast: false,
     });
 
-    expect(meta.content).toBe("#f3eadf");
-
-    applyThemeCustomizationToDOM("paper", DEFAULT_THEME_CUSTOMIZATION);
-    expect(meta.content).toBe("#4a9d7c");
-
-    meta.remove();
-  });
-
-  it("applies custom tokens for preview and clears them for the default style", () => {
-    applyThemeCustomizationToDOM("paper", {
-      ...DEFAULT_THEME_CUSTOMIZATION,
-      paletteId: "velvetLibrary",
-      accentFamily: "plum",
-      contrastMode: "high",
-      reduceGlow: true,
-      reduceTransparency: true,
-    });
-
-    expect(document.documentElement.dataset.themeStyle).toBe("velvetLibrary");
-    expect(document.documentElement.dataset.themeAccent).toBe("plum");
-    expect(document.documentElement.dataset.themeComfort).toBe("high-contrast");
-    expect(document.documentElement.style.getPropertyValue("--settings-v2-accent")).not.toBe("");
-
-    applyThemeCustomizationToDOM("paper", DEFAULT_THEME_CUSTOMIZATION);
-
-    expect(document.documentElement.dataset.themeStyle).toBe("zenflow");
-    expect(document.documentElement.style.getPropertyValue("--settings-v2-accent")).toBe("");
-  });
-
-  it("makes high contrast affect text and focus tokens as well as borders", () => {
-    const paper = getThemeCustomizationRecipe("paper", {
-      ...DEFAULT_THEME_CUSTOMIZATION,
-      contrastMode: "high",
-    });
-    const ink = getThemeCustomizationRecipe("ink", {
-      ...DEFAULT_THEME_CUSTOMIZATION,
-      contrastMode: "high",
-    });
-
-    for (const recipe of [paper, ink]) {
-      expect(recipe.cssVars["--settings-v2-text-strong"]).toBeTruthy();
-      expect(recipe.cssVars["--settings-v2-text-muted"]).toBeTruthy();
-      expect(recipe.cssVars["--settings-v2-focus"]).toBeTruthy();
-    }
-    expect(paper.cssVars["--settings-v2-text-muted"]).not.toBe(
-      ink.cssVars["--settings-v2-text-muted"]
+    expect(bluePaper.metaThemeColor).toBe(amberPaper.metaThemeColor);
+    expect(getThemeCustomizationRecipe("oled", DEFAULT_THEME_CUSTOMIZATION).metaThemeColor).toBe(
+      "#000000",
     );
+  });
+
+  it("emits only live data attributes and clears obsolete legacy attributes", () => {
+    document.documentElement.dataset.themeStyle = "morningHearth";
+    document.documentElement.dataset.themeIntensity = "vivid";
+    document.documentElement.dataset.themeDepth = "soft";
+    document.documentElement.dataset.themeComfort = "high-contrast";
+    document.documentElement.dataset.themeTransparency = "solid";
+    document.documentElement.dataset.themeGlow = "reduced";
+
+    applyThemeCustomizationToDOM("ink", {
+      schemaVersion: 1,
+      accentFamily: "violet",
+      highContrast: true,
+    });
+
+    expect(document.documentElement.dataset.themeAccent).toBe("violet");
+    expect(document.documentElement.dataset.themeContrast).toBe("high");
+    expect(document.documentElement.dataset.themeStyle).toBeUndefined();
+    expect(document.documentElement.dataset.themeIntensity).toBeUndefined();
+    expect(document.documentElement.dataset.themeDepth).toBeUndefined();
+    expect(document.documentElement.dataset.themeComfort).toBeUndefined();
+    expect(document.documentElement.dataset.themeTransparency).toBeUndefined();
+    expect(document.documentElement.dataset.themeGlow).toBeUndefined();
   });
 });

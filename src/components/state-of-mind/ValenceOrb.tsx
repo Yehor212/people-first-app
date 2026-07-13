@@ -12,7 +12,7 @@
  *
  * Law 12 (Performance): 30fps RAF, IntersectionObserver pause, DPR cap at 2x.
  * Law 18 (Cleanup): mounted guard, RAF cancel, observer disconnect, GL dispose, listener removal.
- * Dopamine gate: user/accessibility disables animation; runtime perf guard
+ * Effective-motion gate: user/accessibility disables animation; runtime guard
  * keeps the canonical renderer and reduces cadence instead of changing visuals.
  *
  * Canvas management: canvases are created programmatically (not via JSX ref) to allow
@@ -23,8 +23,8 @@
 
 import { useRef, useEffect, useLayoutEffect, useState, memo } from 'react';
 import { shouldAnimate } from '@/lib/animationUtils';
+import { MOTION_PREFERENCE_CHANGE_EVENT } from '@/lib/motionPreference';
 import { recordError } from '@/lib/crashReporting';
-import { hapticTap } from '@/lib/haptics';
 import { safeSessionStorageGet, safeSessionStorageSet } from '@/lib/safeJson';
 import { SSK } from '@/lib/storageKeys';
 import { createParticlePool, updateParticles } from './particleSystem';
@@ -1802,7 +1802,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         return;
       }
 
-      // Runtime dopamine gate
+      // Runtime effective-motion gate
       if (!shouldAnimateCanonicalOrb()) {
         renderReducedMotionStill();
         return;
@@ -2196,7 +2196,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     document.addEventListener('resume', handlePageShow);
     window.addEventListener('pagehide', handlePageHide);
     window.addEventListener('pageshow', handlePageShow);
-    window.addEventListener('dopamine-settings-change', syncAnimationPreference);
+    window.addEventListener(MOTION_PREFERENCE_CHANGE_EVENT, syncAnimationPreference);
     const reducedMotionMedia = window.matchMedia?.('(prefers-reduced-motion: reduce)') ?? null;
     reducedMotionMedia?.addEventListener?.('change', syncAnimationPreference);
     reducedMotionMedia?.addListener?.(syncAnimationPreference);
@@ -3179,7 +3179,6 @@ export const ValenceOrb = memo(function ValenceOrb({
       if (state) {
         touchRef.current = { x, y, startTime: state.time };
         lastInteractionRef.current = performance.now(); // P4: reset idle
-        void hapticTap(); // Tactile feedback on touch (Law 22 — sensory pairing)
       }
     };
     // passive: true — never blocks scroll/swipe gestures
@@ -3341,7 +3340,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       document.removeEventListener('resume', handlePageShow);
       window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('pageshow', handlePageShow);
-      window.removeEventListener('dopamine-settings-change', syncAnimationPreference);
+      window.removeEventListener(MOTION_PREFERENCE_CHANGE_EVENT, syncAnimationPreference);
       reducedMotionMedia?.removeEventListener?.('change', syncAnimationPreference);
       reducedMotionMedia?.removeListener?.(syncAnimationPreference);
       animationPreferenceObserver?.disconnect();

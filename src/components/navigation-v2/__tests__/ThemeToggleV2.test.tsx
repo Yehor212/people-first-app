@@ -1,7 +1,10 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { ThemeToggleV2 } from "../ThemeToggleV2";
 import { useThemeStore } from "@/stores/themeStore";
+
+const rootCss = readFileSync("src/index.css", "utf8");
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -10,6 +13,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
       switchToLight: "Switch to light mode",
       themeLight: "Light",
       themeDark: "Dark",
+      settingsPreferenceSaveError:
+        "Could not save this change. Your previous setting is still active.",
     },
   }),
 }));
@@ -18,12 +23,9 @@ vi.mock("@/lib/haptics", () => ({
   haptics: { tabChanged: vi.fn().mockResolvedValue(undefined) },
 }));
 
-vi.mock("@/lib/logger", () => ({
-  logger: { warn: vi.fn() },
-}));
-
 describe("ThemeToggleV2", () => {
   beforeEach(() => {
+    document.documentElement.dir = "ltr";
     useThemeStore.setState({ theme: "paper", appliedTheme: "paper" });
     document.documentElement.removeAttribute("data-theme-swap");
     document.documentElement.removeAttribute("data-theme-swap-mode");
@@ -48,7 +50,9 @@ describe("ThemeToggleV2", () => {
     expect(track.className).toContain("--settings-v2-shell");
     expect(track.className).not.toContain("theme-toggle-v1");
     expect(thumb.className).toContain("top-[5px] h-[26px] w-[22px]");
-    expect(thumb.className).toContain("left-[5px]");
+    expect(thumb.style.insetInlineStart).toBe("5px");
+    expect(thumb.className).toContain("translate-x-0");
+    expect(thumb.className).not.toContain("left-");
     expect(thumb.className).toContain("rounded-[6px]");
   });
 
@@ -59,8 +63,21 @@ describe("ThemeToggleV2", () => {
     const thumb = screen.getByTestId("sidebar-v2-theme-toggle-thumb");
     expect(track.className).toContain("--nav-v2-item-surface");
     expect(track.className).not.toContain("theme-toggle-v1");
-    expect(thumb.className).toContain("left-[25px]");
+    expect(thumb).toHaveClass("ltr:translate-x-[20px]", "rtl:-translate-x-[20px]");
+    expect(thumb.className).not.toContain("left-");
     expect(thumb.className).toContain("--settings-v2-accent");
+  });
+
+  it("moves the active thumb toward logical end in RTL", () => {
+    document.documentElement.dir = "rtl";
+    useThemeStore.setState({ theme: "ink", appliedTheme: "ink" });
+
+    render(<ThemeToggleV2 />);
+    const thumb = screen.getByTestId("sidebar-v2-theme-toggle-thumb");
+
+    expect(thumb.style.insetInlineStart).toBe("5px");
+    expect(thumb).toHaveClass("ltr:translate-x-[20px]", "rtl:-translate-x-[20px]");
+    expect(thumb.className).not.toContain("left-");
   });
 
   it("uses a stable pressed-state label when theme is paper", () => {
@@ -92,6 +109,43 @@ describe("ThemeToggleV2", () => {
     render(<ThemeToggleV2 />);
     fireEvent.click(screen.getByTestId("sidebar-v2-theme-toggle"));
     expect(useThemeStore.getState().appliedTheme).toBe("paper");
+  });
+
+  it("uses the reliable instant theme commit even when View Transitions are available", () => {
+    const startViewTransition = vi.fn(() => ({
+      ready: Promise.resolve(),
+      finished: Promise.resolve(),
+    }));
+    Object.defineProperty(document, "startViewTransition", {
+      value: startViewTransition,
+      configurable: true,
+    });
+
+    render(<ThemeToggleV2 />);
+    fireEvent.click(screen.getByTestId("sidebar-v2-theme-toggle"));
+
+    expect(startViewTransition).not.toHaveBeenCalled();
+    expect(useThemeStore.getState().appliedTheme).toBe("ink");
+    expect(document.documentElement).not.toHaveAttribute("data-theme-swap");
+  });
+
+  it("keeps only the live drawer-specific theme-swap CSS", () => {
+    expect(rootCss).not.toContain('html[data-theme-swap="active"]');
+    expect(rootCss).toContain('html[data-theme-swap-mode="drawer-instant"]');
+  });
+
+  it("keeps the previous theme and explains a persistence failure", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
+      throw new DOMException("blocked", "QuotaExceededError");
+    });
+    render(<ThemeToggleV2 />);
+
+    fireEvent.click(screen.getByTestId("sidebar-v2-theme-toggle"));
+
+    expect(useThemeStore.getState().appliedTheme).toBe("paper");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Could not save this change. Your previous setting is still active.",
+    );
   });
 
   it("hides label when collapsed (icon-only sidebar rail)", () => {

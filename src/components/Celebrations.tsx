@@ -2,7 +2,7 @@ import { useEffect, useCallback, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { EmojiOrIcon } from "@/components/icons";
-import { useDopamineSettings } from "@/hooks/useDopamineSettings";
+import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useBackHandler } from "@/hooks/useBackHandler";
 
@@ -16,12 +16,11 @@ interface StreakCelebrationProps {
 
 export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProps) {
   const { t } = useLanguage();
-  const dopamine = useDopamineSettings();
+  const showAnimations = useShouldAnimate();
   const [show, setShow] = useState(false);
   const innerTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const showAnimations = dopamine.animations;
-  const showStreakFire = dopamine.streakFire && showAnimations;
+  const showStreakFire = showAnimations;
 
   useBackHandler(show, onClose);
 
@@ -118,11 +117,9 @@ interface HabitCompletionProps {
 }
 
 export function HabitCompletion({ habitName, onClose }: HabitCompletionProps) {
-  const dopamine = useDopamineSettings();
+  const showAnimations = useShouldAnimate();
   const [show, setShow] = useState(false);
   const innerTimerRef = useRef<ReturnType<typeof setTimeout>>();
-
-  const showAnimations = dopamine.animations;
 
   useEffect(() => {
     setShow(true);
@@ -165,12 +162,11 @@ interface AllHabitsCompleteProps {
 
 export function AllHabitsComplete({ onClose }: AllHabitsCompleteProps) {
   const { t } = useLanguage();
-  const dopamine = useDopamineSettings();
+  const showAnimations = useShouldAnimate();
   const [show, setShow] = useState(false);
   const innerTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const showAnimations = dopamine.animations;
-  const showConfetti = dopamine.confetti && showAnimations;
+  const showConfetti = showAnimations;
 
   useBackHandler(show, onClose);
 
@@ -258,11 +254,9 @@ interface MoodChangedToastProps {
 
 export function MoodChangedToast({ emoji, message, onClose }: MoodChangedToastProps) {
   const { t } = useLanguage();
-  const dopamine = useDopamineSettings();
+  const showAnimations = useShouldAnimate();
   const [show, setShow] = useState(true);
   const innerTimerRef = useRef<ReturnType<typeof setTimeout>>();
-
-  const showAnimations = dopamine.animations;
 
   useEffect(() => {
     const timer = setTimeout(() => {

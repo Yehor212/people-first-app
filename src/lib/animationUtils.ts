@@ -1,9 +1,6 @@
-// Animation utilities - global dopamine settings checker
-// Used by non-React code (audioManager, haptics) to check user preferences
-// Also provides standard Framer Motion presets for consistent animations
+// Shared motion tokens and the non-React effective-motion gate.
 
-import { safeLocalStorageGet } from "./safeJson";
-import { SK } from "./storageKeys";
+import { getMotionPreference } from "@/lib/motionPreference";
 import { isRuntimePerformanceLimited } from "@/observability/runtimePerformanceMode";
 
 /**
@@ -46,6 +43,9 @@ export const motionPresets = {
  *   <motion.div transition={zenMotion.gentle}>
  */
 export const zenMotion = {
+  /** No transition — accessibility/runtime fallback when effective motion is off. */
+  instant: { duration: 0 },
+
   /** Quick response — buttons, toggles, checkboxes (150-200ms feel) */
   snappy: { type: "spring" as const, stiffness: 400, damping: 30 },
 
@@ -92,44 +92,6 @@ export const zenHover = {
   glow: { scale: 1.01 },
 } as const;
 
-interface DopamineSettings {
-  intensity: "minimal" | "normal" | "adhd";
-  animations: boolean;
-  sounds: boolean;
-  haptics: boolean;
-  confetti: boolean;
-  streakFire: boolean;
-  moodDrivenUI: boolean;
-}
-
-const DEFAULT_DOPAMINE_SETTINGS: DopamineSettings = {
-  intensity: "normal",
-  animations: true,
-  sounds: true,
-  haptics: false,
-  confetti: true,
-  streakFire: true,
-  moodDrivenUI: true,
-};
-
-/**
- * Get current dopamine settings from localStorage
- * Works in non-React contexts (audioManager, haptics, etc.)
- */
-export function getDopamineSettings(): DopamineSettings {
-  if (typeof window === "undefined") {
-    return DEFAULT_DOPAMINE_SETTINGS;
-  }
-
-  const parsed = safeLocalStorageGet<DopamineSettings | null>(
-    SK.DOPAMINE_SETTINGS,
-    null,
-  );
-  return parsed
-    ? { ...DEFAULT_DOPAMINE_SETTINGS, ...parsed }
-    : DEFAULT_DOPAMINE_SETTINGS;
-}
-
 /**
  * Module-level mirror of the "low battery" signal, written by the React
  * AnimationGate via `setLowBatteryMirror()`. Non-React call sites (audioManager,
@@ -158,7 +120,7 @@ export function _getLowBatteryMirror(): boolean {
  * Check if animations should be shown.
  *
  * AND-logic (WCAG 2.3.3, Law 9):
- *   - Dopamine.animations must be ON.
+ *   - The in-app Reduce motion preference must be OFF.
  *   - OS `prefers-reduced-motion` must NOT be "reduce".
  *   - `lowBatteryMirror` must be false.
  *   - Runtime performance guard must NOT be in startup/strained mode.
@@ -175,7 +137,7 @@ export interface ShouldAnimateOptions {
 
 export function shouldAnimate(options: ShouldAnimateOptions = {}): boolean {
   const { respectRuntimePerformance = true } = options;
-  if (!getDopamineSettings().animations) return false;
+  if (getMotionPreference().reduceMotion) return false;
   if (respectRuntimePerformance && isRuntimePerformanceLimited()) return false;
   if (
     typeof window !== "undefined" &&
@@ -189,44 +151,8 @@ export function shouldAnimate(options: ShouldAnimateOptions = {}): boolean {
 }
 
 /**
- * Check if sounds should play
- */
-export function shouldPlaySounds(): boolean {
-  return getDopamineSettings().sounds;
-}
-
-/**
- * Check if haptic feedback should trigger
- */
-export function shouldTriggerHaptics(): boolean {
-  return getDopamineSettings().haptics;
-}
-
-/**
- * Check if confetti should show
- */
-export function shouldShowConfetti(): boolean {
-  return getDopamineSettings().confetti;
-}
-
-/**
- * Check if streak fire animation should show
- */
-export function shouldShowStreakFire(): boolean {
-  return getDopamineSettings().streakFire;
-}
-
-/**
- * Check if mood-driven UI effects should show
- * This controls dynamic theming based on user's mood
- */
-export function shouldShowMoodEffects(): boolean {
-  return getDopamineSettings().moodDrivenUI;
-}
-
-/**
  * Apply or remove reduce-motion class on document body
- * Call this when dopamine settings change
+ * Call this when effective motion inputs change.
  */
 export function applyReduceMotionClass(): void {
   if (typeof document === "undefined") return;
@@ -237,21 +163,5 @@ export function applyReduceMotionClass(): void {
     document.body.classList.remove("reduce-motion");
   } else {
     document.body.classList.add("reduce-motion");
-  }
-}
-
-/**
- * Apply or remove mood-disabled class on document body
- * Call this when dopamine settings change
- */
-export function applyMoodDisabledClass(): void {
-  if (typeof document === "undefined") return;
-
-  const showMood = shouldShowMoodEffects();
-
-  if (showMood) {
-    document.body.classList.remove("mood-disabled");
-  } else {
-    document.body.classList.add("mood-disabled");
   }
 }

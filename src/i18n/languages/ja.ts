@@ -517,11 +517,20 @@ export const ja: Translations = {
   saveName: "名前を保存",
   nameSaved: "名前を保存しました",
   nameSavedLocally: "このデバイスに保存しました",
-  invalidNameFormat: "無効な名前の形式",
+  invalidNameFormat: "1〜100文字で名前を入力してください。",
   notifications: "通知",
   notificationsComingSoon: "通知機能は今後のアップデートで利用可能になります。",
   settingsOverviewDescription:
     "ZenFlowの見た目、音、リマインダー、データの扱いを選べます。",
+  settingsOverviewDescriptionWithoutReminders:
+    "ZenFlowの見た目、音、データの扱いを選べます。",
+  settingsReminderDaysMissing: "リマインダーを受け取る曜日を選択",
+  settingsSoundRestoreTitle: "一部の背景音がオフになっています",
+  settingsSoundRestoreDescription:
+    "以前オフにした音は、元に戻すまでオフのままです。",
+  settingsSoundRestoreAction: "背景音を元に戻す",
+  settingsSoundMasterDisabledHint:
+    "これらの設定を使うには、アプリのサウンドをオンにしてください。",
   settingsAccountBackupTitle: "アカウントとバックアップ",
   settingsAccountBackupDescription:
     "アカウントに接続されています。ZenFlowが変更をオンラインに保存できない場合、その変更はこの端末に残ります。",
@@ -541,7 +550,7 @@ export const ja: Translations = {
     "データはこの端末に保存されます。",
   settingsRemindersMobileApp: "モバイル版",
   settingsPrivacyDataDescription:
-    "ZenFlowで使用する任意のサービスを選べます。バックアップはサインイン後にのみ始まります。",
+    "ZenFlowで使用する任意のサービスを選べます。",
   settingsDataBackupReportsDescription:
     "後でインポートできるバックアップを保存するか、レポートを作成します。",
   settingsBackupRestoreTitle: "バックアップと復元",
@@ -566,7 +575,7 @@ export const ja: Translations = {
   data: "データ",
   exportData: "データをエクスポート",
   importData: "データをインポート",
-  importMode: "インポートモード",
+  importMode: "このバックアップをどう取り込みますか？",
   importMerge: "現在のデータに反映",
   importReplace: "現在のデータを置き換える",
   exportSuccess: "エクスポート完了。",
@@ -646,16 +655,27 @@ export const ja: Translations = {
   themeLight: "ライト",
   themeDark: "ダーク",
   themeSystem: "システム",
+  themeModeTitle: "表示モード",
+  themeModeDescription:
+    "端末の設定に合わせるか、ライト、ダーク、ブラックから選べます。",
+  themeBlack: "ブラック",
+  themeChangeSaved: "変更しました",
+  settingsPreferenceSaveError:
+    "変更を保存できませんでした。以前の設定が引き続き使われます。",
+  settingsReduceMotion: "視覚効果を減らす",
+  settingsReduceMotionDescription: "画面の動きや装飾的な効果を少なくします。",
+  settingsReduceMotionSystemDescription:
+    "端末側で視覚効果を減らす設定が有効になっています。",
   themeStyleTitle: "気分のパレット",
   themeAdvancedAppearanceTitle: "詳細な外観設定",
-  themeStyleDescription: "自分に合うスタイルを選べます。",
-  themeAccentTitle: "アクセント",
+  themeStyleDescription: "表示モード、アクセントカラー、文字サイズを選べます。",
+  themeAccentTitle: "アクセントカラー",
   themeAccentDescription: "ボタン、選択項目、強調表示に使う色です。",
   themeIntensityTitle: "強さ",
   themeComfortTitle: "快適さ",
   themePreviewAction: "プレビュー",
   themeApplyAction: "適用",
-  themeResetAction: "リセット",
+  themeResetAction: "アクセントカラーとコントラストをリセット",
   themeUndoAction: "戻す",
   themeMoreActions: "外観のその他の操作",
   themePreviewing: "スタイルをプレビュー中",
@@ -668,8 +688,8 @@ export const ja: Translations = {
   themePaletteVelvetLibrary: "ベルベットの書斎",
   themePaletteBotanicalPulse: "植物の鼓動",
   themePaletteQuietOled: "静かなブラック",
-  themeAccentTeal: "シーグラス",
-  themeAccentClay: "クレイ",
+  themeAccentTeal: "グリーン",
+  themeAccentClay: "ブルー",
   themeAccentPlum: "バイオレット",
   themeAccentMoss: "モス",
   themeAccentAmber: "アンバー",
@@ -749,11 +769,6 @@ export const ja: Translations = {
   settingsSectionAccount: "アカウントとデバイス",
   settingsSectionData: "データとバックアップ",
 
-  // Weekly Digest (v1.3.0)
-  weeklyDigestTitle: "ウィークリー進捗レポート",
-  weeklyDigestDescription: "毎週日曜日に習慣、集中時間、気分の傾向のサマリーを受け取ります。",
-  weeklyDigestEnabled: "レポートがメールに届きます",
-
   // Google Calendar
   googleCalendar: "Googleカレンダー",
   googleCalendarDescription: "Googleカレンダーのイベントをタイムラインに表示",
@@ -780,7 +795,7 @@ export const ja: Translations = {
   journalLockTimeout: "日記の自動ロック",
   journalLockTimeoutDesc: "一定時間操作がない場合、日記を自動的にロックします",
   journalLockImmediateWarning: "日記画面を離れるたびにロックされます",
-  journalLockTimeoutImmediately: "すぐに",
+  journalLockTimeoutImmediately: "アプリを離れたとき",
   journalLockTimeoutOneMinute: "1分後",
   journalLockTimeoutFiveMinutes: "5分後",
   journalLockTimeoutFifteenMinutes: "15分後",
@@ -859,6 +874,12 @@ export const ja: Translations = {
   quietHoursStart: "静かな時間の開始",
   quietHoursEnd: "静かな時間の終了",
   reminderDays: "曜日",
+  settingsMoodCheckIns: "気分の記録",
+  settingsMoodCheckInsDescription: "今の気分を記録するためのやさしいリマインダーです。",
+  settingsFocusReminder: "集中リマインダー",
+  settingsFocusReminderDescription: "選んだ時刻の前後に1回お知らせします。",
+  settingsReminderChooseDay:
+    "少なくとも1つの曜日を選んでください。選ぶまでリマインダーは届きません。",
   selectedHabits: "リマインドする習慣",
   noHabitsYet: "まだ習慣がありません。",
   noHabitsInCategory: "このカテゴリに習慣はありません",
@@ -1043,7 +1064,6 @@ export const ja: Translations = {
   syncPulled: "オンラインデータを復元しました。",
   syncPushed: "オンラインバックアップを更新しました。",
   syncError: "デバイスを更新できませんでした。",
-  weeklyDigestError: "週間ダイジェストを更新できませんでした。もう一度お試しください。",
   authGateTitle: "サインイン",
   authGateBody: "メールでサインインすると、進捗を各デバイスで使えます。",
   authGateContinue: "アカウントなしで続ける",
@@ -1283,6 +1303,9 @@ export const ja: Translations = {
   muteSound: "ミュート",
   unmuteSound: "ミュート解除",
   settingsSoundTitle: "サウンド",
+  settingsVibration: "振動",
+  settingsVibrationDescription:
+    "対応している端末では、タップや確認時に短く振動します。",
   settingsSoundDescription: "ZenFlow内のサウンドと音量を設定します。",
   settingsSoundSummaryOn: "サウンドオン",
   settingsSoundSummaryOff: "ミュート",
@@ -1291,11 +1314,9 @@ export const ja: Translations = {
   settingsSoundVolume: "音量",
   settingsSoundVolumeDesc: "ZenFlow内の音量を設定します。",
   settingsSoundPreview: "リマインダー音を試す",
-  settingsSoundAmbienceTitle: "日記の背景音",
+  settingsSoundAmbienceTitle: "書くときの音",
   settingsSoundAmbienceNote:
-    "背景音は気分画面から開始します。日記の背景音はここで試聴できます。",
-  settingsSoundFeedbackOn: "短い確認音はこの音量で再生されます。",
-  settingsSoundFeedbackOff: "「フィードバックと動き」の「サウンド」がオフになっています。",
+    "書いている間、やさしい雨音を流せます。再生ボタンを押すまで始まりません。",
   settingsSoundTextureAir: "そよ風",
   settingsSoundTextureWater: "水音",
   settingsSoundTextureRain: "雨音",
@@ -1315,6 +1336,12 @@ export const ja: Translations = {
   settingsSoundAmbientToggle: "背景音",
   settingsSoundAmbientToggleDesc:
     "集中セッション中を除き、サインイン、気分、日記の各画面の背景音をオンまたはオフにします。",
+  settingsSoundBackgroundTitle: "背景音",
+  settingsSoundBackgroundDescription:
+    "ZenFlowの画面で穏やかな背景音を使えます。再生ボタンを押したときだけ始まります。",
+  settingsSoundActivityTitle: "操作音",
+  settingsSoundActivityDescription:
+    "活動の完了、タイマー、一部の節目を静かな音で知らせます。",
   settingsSoundCompletionCues: "完了音",
   settingsSoundCompletionCuesDesc: "大切な操作の後に、静かな確認音を鳴らします。",
   settingsSoundReminderCues: "ZenFlow内のリマインダー音",
@@ -1549,34 +1576,6 @@ export const ja: Translations = {
   completedHabitReason: "習慣を達成",
   comebackChallengeComplete: "カムバックチャレンジ達成！",
   questPrefix: "クエスト",
-
-  dopamineSettings: "フィードバックと動き",
-  dopamineSettingsDesc: "ZenFlow が使うアニメーション、音、触覚の量を選びます。",
-  dopamineSettingsDescNoHaptics: "ZenFlow が使うアニメーションと音の量を選びます。",
-  dopamineIntensity: "フィードバック量",
-  dopamineMinimal: "静か",
-  dopamineNormal: "バランス",
-  dopamineADHD: "多め",
-  dopamineMinimalDesc: "動きとお祝い効果を少なめにします。",
-  dopamineNormalDesc: "役立つフィードバックを落ち着いて組み合わせます。",
-  dopamineADHDDesc: "任意の効果をすべてオンにします。下で個別にオフにできます。",
-  dopamineCustomize: "フィードバックを調整",
-  dopamineAnimations: "アニメーション",
-  dopamineAnimationsDesc: "状態変化や画面遷移に使う動き",
-  dopamineSounds: "サウンド",
-  dopamineSoundsDesc: "確認音と音声フィードバック",
-  dopamineHaptics: "触覚",
-  dopamineHapticsDesc: "振動フィードバック（モバイルのみ）",
-  dopamineConfetti: "紙吹雪",
-  dopamineConfettiDesc: "完了後の任意のお祝い効果",
-  dopamineStreakFire: "連続の炎",
-  dopamineStreakFireDesc: "連続記録のアニメーション強調",
-  dopamineMoodDrivenUI: "ムードビジュアル",
-  dopamineMoodDrivenUIDesc: "色と雰囲気を気分に合わせられます",
-  dopamineTip: "快適さのメモ",
-  dopamineTipText:
-    "効果が気になる場合は「静か」から始めてください。見通しに役立つときだけフィードバックを増やしましょう。",
-  dopamineSave: "完了",
 
   fontScaleTitle: "文字サイズ",
   fontScalePreview: "プレビュー：テキストの表示",
@@ -2264,11 +2263,7 @@ export const ja: Translations = {
   updateNow: "今すぐアップデート",
   updateAvailableFor: "{days}日間利用可能",
 
-  // Lock Screen Quick Actions
-  quickActions: "クイックアクション",
-  quickActionsDescription: "ロック画面にクイックアクション通知を表示",
-  quickActionsEnabled: "クイックアクションが有効です",
-  quickActionsDisabled: "クイックアクションが無効です",
+  // Contextual shortcuts
   quickActionLogMood: "気分を記録",
   quickActionStartFocus: "集中開始",
   quickActionViewHabits: "習慣を見る",
@@ -2278,6 +2273,8 @@ export const ja: Translations = {
   notificationSoundDescription: "リマインダーの音を選択",
   notificationSoundUpdateFailed:
     "このリマインダー音を適用できませんでした。以前の音が選択されたままです。もう一度お試しください。",
+  notificationSoundUpdateUncertain:
+    "リマインダー音の変更を完了できませんでした。選択中の音を確認して、もう一度お試しください。",
   reminderReconcileFailed:
     "リマインダーを更新できませんでした。端末では以前のスケジュールが引き続き使われている可能性があります。もう一度お試しください。",
   soundDefault: "デフォルト",

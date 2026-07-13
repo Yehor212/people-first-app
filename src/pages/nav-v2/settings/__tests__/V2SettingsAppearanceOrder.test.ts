@@ -3,48 +3,38 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-describe("V2 settings Appearance canvas hierarchy", () => {
-  it("anchors Appearance with one icon-derived glass object before dense customization", () => {
-    const source = [
+describe("V2 settings Appearance hierarchy", () => {
+  const readAppearance = () =>
+    [
       "../V2SettingsAppearanceBasics.tsx",
-      "../V2SettingsAppearanceAdvanced.tsx",
+      "../V2SettingsAppearanceAccent.tsx",
       "../V2SettingsAppearancePanel.tsx",
     ]
       .map((file) => readFileSync(resolve(__dirname, file), "utf8"))
       .join("\n");
 
-    const anchor = source.indexOf('data-testid="settings-v2-identity-anchor"');
-    const mode = source.indexOf('data-testid="settings-v2-theme-mode-field"');
-    const advanced = source.indexOf('data-testid="settings-v2-advanced-appearance-details"');
-    const mood = source.indexOf('data-testid="settings-v2-mood-palette-field"');
-    const accent = source.indexOf('data-testid="settings-v2-accent-field"');
-    const actions = source.indexOf('data-testid="settings-v2-appearance-actions"');
+  it("keeps only recognizable mode, text, accent, contrast, and motion controls", () => {
+    const source = readAppearance();
 
-    expect({ anchor, mode, advanced, mood, accent, actions }).toEqual({
-      anchor: expect.any(Number),
-      mode: expect.any(Number),
-      advanced: expect.any(Number),
-      mood: expect.any(Number),
-      accent: expect.any(Number),
-      actions: expect.any(Number),
-    });
-    expect(anchor, "The first viewport needs one ZenFlow glass anchor before controls").toBeGreaterThan(-1);
-    expect(advanced, "Dense palette and accent controls must be behind progressive disclosure").toBeGreaterThan(-1);
-    expect(anchor).toBeLessThan(mode);
-    expect(mode).toBeLessThan(advanced);
-    expect(advanced).toBeLessThan(mood);
-    expect(mood).toBeLessThan(accent);
-    expect(accent).toBeLessThan(actions);
+    for (const testId of [
+      "settings-v2-theme-mode-field",
+      "settings-v2-text-size-field",
+      "settings-v2-accent-field",
+      "settings-v2-high-contrast-toggle",
+      "settings-v2-motion-toggle",
+    ]) {
+      expect(source).toMatch(new RegExp(`(?:data-testid|testId)="${testId}"`));
+    }
+    expect(source).not.toMatch(/Mood palette|Advanced appearance|Comfort|Sparkles/);
+    expect(source).not.toMatch(/settings-v2-(style-preview|style-apply|appearance-actions)/);
   });
 
-  it("keeps Apply tied to unsaved appearance changes instead of Preview state", () => {
-    const source = readFileSync(
-      resolve(__dirname, "../V2SettingsAppearancePanel.tsx"),
-      "utf8",
-    );
+  it("writes each customization immediately and shows only transient undo feedback", () => {
+    const source = readAppearance();
 
-    expect(source).toContain("hasUnsavedAppearanceChanges");
-    expect(source).toContain("disabled={!hasUnsavedAppearanceChanges}");
-    expect(source).not.toContain("disabled={!previewActiveRef.current}");
+    expect(source).toContain("setThemeCustomization({ ...themeCustomization, ...patch })");
+    expect(source).toContain("undoThemeCustomization()");
+    expect(source).toContain("window.setTimeout(() => setFeedback(null), 4_000)");
+    expect(source).not.toMatch(/draft|handlePreview|handleApply|previewThemeCustomization/);
   });
 });

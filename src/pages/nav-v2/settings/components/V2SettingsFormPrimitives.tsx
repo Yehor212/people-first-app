@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   type AriaRole,
@@ -6,9 +7,11 @@ import {
   type KeyboardEvent,
   type KeyboardEventHandler,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, type LucideIcon } from "lucide-react";
+import { useBackHandler } from "@/hooks/useBackHandler";
 import { cn } from "@/lib/utils";
 
 interface SettingsButtonGridProps {
@@ -30,6 +33,8 @@ interface SettingsTextInputProps {
   fill?: boolean;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   tone?: "neutral" | "danger";
+  ariaInvalid?: boolean;
+  ariaDescribedBy?: string;
 }
 
 interface SettingsSelectFieldProps {
@@ -37,6 +42,7 @@ interface SettingsSelectFieldProps {
   value: string | number;
   options: Array<{ value: string | number; label: string }>;
   onChange: (value: string) => void;
+  ariaDescribedBy?: string;
 }
 
 interface SettingsStatusProps {
@@ -72,6 +78,9 @@ interface SettingsDialogProps {
   onCancel: () => void;
   onConfirm: () => void;
   confirmVariant?: "primary" | "secondary" | "danger";
+  confirmFocusRef?: RefObject<HTMLElement | null>;
+  returnFocusRef?: RefObject<HTMLElement | null>;
+  children?: ReactNode;
 }
 
 const SETTINGS_BUTTON_GRID_CLASS: Record<
@@ -117,6 +126,8 @@ export function SettingsTextInput({
   fill = false,
   onKeyDown,
   tone = "neutral",
+  ariaInvalid,
+  ariaDescribedBy,
 }: SettingsTextInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -140,6 +151,9 @@ export function SettingsTextInput({
       autoFocus={autoFocus}
       disabled={disabled}
       onKeyDown={onKeyDown}
+      aria-invalid={ariaInvalid || undefined}
+      aria-describedby={ariaDescribedBy}
+      dir="auto"
       className={cn(
         "min-h-[48px] w-full rounded-[8px] px-4 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] disabled:cursor-not-allowed disabled:opacity-60",
         fill && "flex-1",
@@ -151,13 +165,20 @@ export function SettingsTextInput({
   );
 }
 
-export function SettingsSelectField({ id, value, options, onChange }: SettingsSelectFieldProps) {
+export function SettingsSelectField({
+  id,
+  value,
+  options,
+  onChange,
+  ariaDescribedBy,
+}: SettingsSelectFieldProps) {
   return (
     <div className="relative">
       <select
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        aria-describedby={ariaDescribedBy}
         className="min-h-[48px] w-full appearance-none rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-shell)/0.46)] px-4 pe-11 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)]"
       >
         {options.map((option) => (
@@ -259,24 +280,49 @@ export function SettingsDialog({
   onCancel,
   onConfirm,
   confirmVariant = "primary",
+  confirmFocusRef,
+  returnFocusRef,
+  children,
 }: SettingsDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const restoreTargetRef = useRef<RefObject<HTMLElement | null> | undefined>(returnFocusRef);
   const descriptionId = `${titleId}-description`;
 
   useEffect(() => {
     previousFocusRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    restoreTargetRef.current = returnFocusRef;
 
     panelRef.current?.focus({ preventScroll: true });
 
     return () => {
-      previousFocusRef.current?.focus({ preventScroll: true });
+      (restoreTargetRef.current?.current ?? previousFocusRef.current)?.focus({
+        preventScroll: true,
+      });
     };
-  }, []);
+  }, [returnFocusRef]);
+
+  const handleCancel = useCallback(() => {
+    restoreTargetRef.current = returnFocusRef;
+    onCancel();
+  }, [onCancel, returnFocusRef]);
+
+  useBackHandler(true, handleCancel);
+
+  const handleConfirm = () => {
+    restoreTargetRef.current = confirmFocusRef ?? returnFocusRef;
+    onConfirm();
+  };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      handleCancel();
+      return;
+    }
     if (event.key !== "Tab") return;
 
     const focusable = Array.from(
@@ -308,7 +354,7 @@ export function SettingsDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain p-4 pt-[max(1rem,var(--safe-top))] pb-[max(1rem,var(--safe-bottom))]"
+      className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain py-4 pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pt-[max(1rem,var(--safe-top))] pb-[max(1rem,var(--safe-bottom))]"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -318,9 +364,10 @@ export function SettingsDialog({
     >
       <button
         type="button"
+        tabIndex={-1}
+        aria-hidden="true"
         className="fixed inset-0 bg-background/70 backdrop-blur-md"
-        aria-label={cancelLabel}
-        onClick={onCancel}
+        onClick={handleCancel}
       />
       <div
         ref={panelRef}
@@ -335,9 +382,10 @@ export function SettingsDialog({
           {description}
         </p>
         {detail ? <p className="mt-2 truncate text-xs text-muted-foreground">{detail}</p> : null}
+        {children ? <div className="mt-4 space-y-2.5">{children}</div> : null}
         <div className="mt-4 grid gap-2 min-[360px]:grid-cols-2">
-          <SettingsInlineButton onClick={onCancel}>{cancelLabel}</SettingsInlineButton>
-          <SettingsInlineButton onClick={onConfirm} variant={confirmVariant}>
+          <SettingsInlineButton onClick={handleCancel}>{cancelLabel}</SettingsInlineButton>
+          <SettingsInlineButton onClick={handleConfirm} variant={confirmVariant}>
             {confirmLabel}
           </SettingsInlineButton>
         </div>

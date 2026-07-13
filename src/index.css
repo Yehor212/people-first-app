@@ -3172,10 +3172,9 @@ body.mood-bad .mood-particle {
 }
 
 /* =============================================
-   User-controlled Reduced Motion (.reduce-motion on body)
-   Applied when user disables animations in Dopamine Settings.
-   OS prefers-reduced-motion is intentionally NOT used — ZenFlow
-   is a premium visual app; the in-app toggle is the sole gate.
+   Effective Reduced Motion (.reduce-motion on body)
+   AnimationGate applies this class from the combined in-app preference,
+   OS reduced-motion, battery, and runtime-performance decision.
    ============================================= */
 body.reduce-motion *,
 body.reduce-motion *::before,
@@ -8123,23 +8122,6 @@ button.press-stable:active:not(:disabled),
     --line-height-body: 1.6;
     --content-density: dense;
   }
-}
-
-/* ========================================================================
- * Theme-swap View Transition — circle-reveal from click origin.
- * Scoped via `html[data-theme-swap="active"]` so it never conflicts with
- * page-level view transitions used by motion/morph.ts.
- * ------------------------------------------------------------------------ */
-html[data-theme-swap="active"]::view-transition-old(root),
-html[data-theme-swap="active"]::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-html[data-theme-swap="active"]::view-transition-old(root) {
-  z-index: 1;
-}
-html[data-theme-swap="active"]::view-transition-new(root) {
-  z-index: 2;
 }
 
 /* Drawer theme switches must not interpolate text and surface colors across

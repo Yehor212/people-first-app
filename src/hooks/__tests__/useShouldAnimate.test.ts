@@ -4,8 +4,8 @@ import { useShouldAnimate } from "../useShouldAnimate";
 import { SSK } from "@/lib/storageKeys";
 
 // We mock the composition pieces so we can drive the 8 combinations directly.
-vi.mock("@/hooks/useDopamineSettings", () => ({
-  useDopamineSettings: vi.fn(),
+vi.mock("@/hooks/useMotionPreference", () => ({
+  useMotionPreference: vi.fn(),
 }));
 vi.mock("@/hooks/useMediaQuery", () => ({
   useMediaQuery: vi.fn(),
@@ -14,28 +14,20 @@ vi.mock("@/hooks/useBatteryState", () => ({
   useBatteryState: vi.fn(),
 }));
 
-import { useDopamineSettings } from "@/hooks/useDopamineSettings";
+import { useMotionPreference } from "@/hooks/useMotionPreference";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useBatteryState } from "@/hooks/useBatteryState";
 
-const useDopamineSettingsMock = vi.mocked(useDopamineSettings);
+const useMotionPreferenceMock = vi.mocked(useMotionPreference);
 const useMediaQueryMock = vi.mocked(useMediaQuery);
 const useBatteryStateMock = vi.mocked(useBatteryState);
 
 function setInputs(opts: {
-  dopamineAnimations: boolean;
+  appMotionEnabled: boolean;
   osReduce: boolean;
   battery: { level: number; charging: boolean } | null;
 }) {
-  useDopamineSettingsMock.mockReturnValue({
-    intensity: "normal",
-    animations: opts.dopamineAnimations,
-    sounds: true,
-    haptics: true,
-    confetti: true,
-    streakFire: true,
-    moodDrivenUI: true,
-  });
+  useMotionPreferenceMock.mockReturnValue({ reduceMotion: !opts.appMotionEnabled });
   useMediaQueryMock.mockReturnValue(opts.osReduce);
   useBatteryStateMock.mockReturnValue(opts.battery);
 }
@@ -47,57 +39,57 @@ describe("useShouldAnimate — 8-combination truth table", () => {
     sessionStorage.removeItem(SSK.RUNTIME_PERF_GUARD);
   });
 
-  it("T1: Dopamine=on, OS=no, battery=normal → animate", () => {
-    setInputs({ dopamineAnimations: true, osReduce: false, battery: { level: 0.9, charging: false } });
+  it("T1: app motion=on, OS=no, battery=normal → animate", () => {
+    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.9, charging: false } });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(true);
   });
 
-  it("T2: Dopamine=on, OS=no, battery=null (unsupported) → animate", () => {
-    setInputs({ dopamineAnimations: true, osReduce: false, battery: null });
+  it("T2: app motion=on, OS=no, battery=null (unsupported) → animate", () => {
+    setInputs({ appMotionEnabled: true, osReduce: false, battery: null });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(true);
   });
 
-  it("T3: Dopamine=on, OS=no, battery=low+not-charging → NO animate", () => {
-    setInputs({ dopamineAnimations: true, osReduce: false, battery: { level: 0.1, charging: false } });
+  it("T3: app motion=on, OS=no, battery=low+not-charging → NO animate", () => {
+    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.1, charging: false } });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(false);
   });
 
-  it("T4: Dopamine=on, OS=no, battery=low+charging → animate (charging overrides)", () => {
-    setInputs({ dopamineAnimations: true, osReduce: false, battery: { level: 0.05, charging: true } });
+  it("T4: app motion=on, OS=no, battery=low+charging → animate (charging overrides)", () => {
+    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.05, charging: true } });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(true);
   });
 
-  it("T5: Dopamine=on, OS=reduce, battery=normal → NO animate (WCAG)", () => {
-    setInputs({ dopamineAnimations: true, osReduce: true, battery: { level: 0.9, charging: false } });
+  it("T5: app motion=on, OS=reduce, battery=normal → NO animate (WCAG)", () => {
+    setInputs({ appMotionEnabled: true, osReduce: true, battery: { level: 0.9, charging: false } });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(false);
   });
 
-  it("T6: Dopamine=off, OS=no, battery=normal → NO animate", () => {
-    setInputs({ dopamineAnimations: false, osReduce: false, battery: { level: 0.9, charging: false } });
+  it("T6: app motion=off, OS=no, battery=normal → NO animate", () => {
+    setInputs({ appMotionEnabled: false, osReduce: false, battery: { level: 0.9, charging: false } });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(false);
   });
 
-  it("T7: Dopamine=off, OS=reduce, battery=low → NO animate (all-off)", () => {
-    setInputs({ dopamineAnimations: false, osReduce: true, battery: { level: 0.05, charging: false } });
+  it("T7: app motion=off, OS=reduce, battery=low → NO animate (all-off)", () => {
+    setInputs({ appMotionEnabled: false, osReduce: true, battery: { level: 0.05, charging: false } });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(false);
   });
 
-  it("T8: Dopamine=on, OS=reduce, battery=low → NO animate (two signals)", () => {
-    setInputs({ dopamineAnimations: true, osReduce: true, battery: { level: 0.05, charging: false } });
+  it("T8: app motion=on, OS=reduce, battery=low → NO animate (two signals)", () => {
+    setInputs({ appMotionEnabled: true, osReduce: true, battery: { level: 0.05, charging: false } });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(false);
   });
 
   it("T9: runtime performance strained → NO animate even when user/system allow motion", () => {
     document.documentElement.dataset.runtimePerf = "strained";
-    setInputs({ dopamineAnimations: true, osReduce: false, battery: { level: 0.9, charging: false } });
+    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.9, charging: false } });
 
     const { result } = renderHook(() => useShouldAnimate());
 
@@ -105,7 +97,7 @@ describe("useShouldAnimate — 8-combination truth table", () => {
   });
 
   it("T10: runtime performance event disables already-mounted animation hooks", () => {
-    setInputs({ dopamineAnimations: true, osReduce: false, battery: { level: 0.9, charging: false } });
+    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.9, charging: false } });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(true);
 
@@ -119,7 +111,7 @@ describe("useShouldAnimate — 8-combination truth table", () => {
 
   it("T11: runtime performance startup warmup -> NO animate before a proven slow device repeats lag", () => {
     document.documentElement.dataset.runtimePerf = "startup";
-    setInputs({ dopamineAnimations: true, osReduce: false, battery: { level: 0.9, charging: false } });
+    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.9, charging: false } });
 
     const { result } = renderHook(() => useShouldAnimate());
 
@@ -128,7 +120,7 @@ describe("useShouldAnimate — 8-combination truth table", () => {
 
   it("T12: canonical visual flourishes can opt out of runtime perf guard", () => {
     document.documentElement.dataset.runtimePerf = "startup";
-    setInputs({ dopamineAnimations: true, osReduce: false, battery: { level: 0.9, charging: false } });
+    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.9, charging: false } });
 
     const { result } = renderHook(() =>
       useShouldAnimate({ respectRuntimePerformance: false }),

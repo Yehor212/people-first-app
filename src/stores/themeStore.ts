@@ -1,102 +1,74 @@
-/**
- * Theme Store — Phase 0-C (Paper Theme Core)
- *
- * Zustand store for the new paper/ink/oled theme family, opt-in via the
- * `data-theme` attribute on <html>. This store is ORTHOGONAL to the existing
- * src/components/ThemeToggle.tsx useTheme() hook which continues to drive the
- * legacy `.dark` classList family for unmigrated components (Phase 2 will
- * deprecate that path).
- *
- * Design decisions:
- *  - Four values: 'paper' | 'ink' | 'oled' | 'auto'
- *  - 'auto' resolves to 'ink' on prefers-color-scheme: dark, else 'paper'
- *  - Default is 'auto' until Phase 2 default-flip — safe reversible preview
- *  - Persist via Zustand persist middleware (localStorage key 'zenflow:theme-v0c')
- *  - Side effect: on theme change, write document.documentElement.dataset.theme
- *  - Listens to OS prefers-color-scheme only when theme === 'auto'
- *
- * Cross-platform safety (Law 10):
- *  - Guarded with typeof window !== 'undefined' for SSR/test envs
- *  - document.documentElement.dataset is standard DOM, works in jsdom
- *
- * State Integrity (Law 14):
- *  - Single source of truth — no duplicate theme keys elsewhere
- *  - appliedTheme always derived, never written directly
- *
- * Usage:
- *   import { useThemeStore } from '@/stores/themeStore';
- *   const theme = useThemeStore((s) => s.theme);
- *   const setTheme = useThemeStore((s) => s.setTheme);
- *
- * Not yet wired to main app — Phase 2 will surface in Settings Panel + flip
- * default to 'paper'.
- */
-
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from "zustand";
 import {
   safeJsonParse,
+  safeJsonStringify,
   storageGetRaw,
   storageSetRaw,
-  storageRemove,
-} from '@/lib/safeJson';
+} from "@/lib/safeJson";
+import { logger } from "@/lib/logger";
+import { isNative } from "@/lib/platform";
+import { StatusBarStyle, Style } from "@/lib/statusBarStyle";
+import { SK } from "@/lib/storageKeys";
 import {
   DEFAULT_THEME_CUSTOMIZATION,
   applyThemeCustomizationToDOM,
   normalizeThemeCustomization,
   type AppliedTheme,
   type ThemeCustomization,
-} from './themeCustomization';
+} from "./themeCustomization";
 
-export type ThemePreference = 'paper' | 'ink' | 'oled' | 'auto';
-export type { AppliedTheme } from './themeCustomization';
+export type ThemePreference = "paper" | "ink" | "oled" | "auto";
+export type { AppliedTheme } from "./themeCustomization";
+
+export type ThemeWriteResult =
+  | { ok: true }
+  | { ok: false; reason: "storage-unavailable" };
 
 export interface ThemeStore {
-  /** User-selected preference — may be 'auto' */
   theme: ThemePreference;
-  /** Resolved value that is actually active on the DOM — never 'auto' */
   appliedTheme: AppliedTheme;
-  /** Safe local visual customization layered on the resolved theme. */
   themeCustomization: ThemeCustomization;
-  /** Previous committed customization, used for one-step undo. */
   previousThemeCustomization: ThemeCustomization | null;
-  /** Set the user preference (and immediately apply to DOM). */
-  setTheme: (theme: ThemePreference) => void;
-  /** Apply and persist a validated customization. */
-  setThemeCustomization: (customization: ThemeCustomization) => void;
-  /** Preview a validated customization without persisting it. */
-  previewThemeCustomization: (customization: ThemeCustomization) => void;
-  /** Return DOM preview to the currently persisted customization. */
-  cancelThemeCustomizationPreview: () => void;
-  /** Reset customization to the ZenFlow default. */
-  resetThemeCustomization: () => void;
-  /** Restore the previous committed customization when available. */
-  undoThemeCustomization: () => void;
-  /** Internal — re-evaluate applied theme from current preference + OS state. */
+  setTheme: (theme: ThemePreference) => ThemeWriteResult;
+  setThemeCustomization: (customization: ThemeCustomization) => ThemeWriteResult;
+  resetThemeCustomization: () => ThemeWriteResult;
+  undoThemeCustomization: () => ThemeWriteResult;
   _resolve: () => void;
 }
 
-const STORAGE_KEY = 'zenflow:theme-v0c';
+const STORAGE_KEY = "zenflow:theme-v0c";
 
 interface PersistedThemePayload {
   state?: {
-    theme?: ThemePreference;
+    theme?: unknown;
     themeCustomization?: unknown;
   };
+  version?: unknown;
 }
 
 function isThemePreference(value: unknown): value is ThemePreference {
-  return value === 'paper' || value === 'ink' || value === 'oled' || value === 'auto';
+  return value === "paper" || value === "ink" || value === "oled" || value === "auto";
 }
 
 function readPersistedThemePayload(): PersistedThemePayload | null {
-  if (typeof window === 'undefined') return null;
-  return safeJsonParse<PersistedThemePayload | null>(storageGetRaw(STORAGE_KEY, ''), null);
+  if (typeof window === "undefined") return null;
+  return safeJsonParse<PersistedThemePayload | null>(storageGetRaw(STORAGE_KEY, ""), null);
 }
 
 function readInitialThemePreference(payload: PersistedThemePayload | null): ThemePreference {
   const theme = payload?.state?.theme;
-  return isThemePreference(theme) ? theme : 'auto';
+  if (isThemePreference(theme)) return theme;
+  if (typeof window === "undefined") return "auto";
+
+  const legacyTheme = storageGetRaw(SK.THEME);
+  const legacyOled = storageGetRaw(SK.OLED_MODE) === "true";
+  if (legacyTheme === "light") return "paper";
+  if (legacyTheme === "dark") return legacyOled ? "oled" : "ink";
+  const legacySystemWasDark =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches;
+  if (legacyOled && legacySystemWasDark) return "oled";
+  return "auto";
 }
 
 function readInitialThemeCustomization(
@@ -105,129 +77,190 @@ function readInitialThemeCustomization(
   return normalizeThemeCustomization(payload?.state?.themeCustomization);
 }
 
-/** Pure: resolve user preference to an applied theme, consulting the OS
- *  prefers-color-scheme media query for 'auto'. Guarded for environments
- *  without window.matchMedia (Node, partial jsdom mocks) — falls back to
- *  'paper' to avoid init-time crashes. */
-function resolvePreference(pref: ThemePreference): AppliedTheme {
-  if (pref === 'paper' || pref === 'ink' || pref === 'oled') return pref;
-  // 'auto'
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-    return 'paper';
+function resolvePreference(preference: ThemePreference): AppliedTheme {
+  if (preference === "paper" || preference === "ink" || preference === "oled") {
+    return preference;
   }
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  return prefersDark ? 'ink' : 'paper';
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return "paper";
+  }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "ink" : "paper";
 }
 
-/** Side effect: write `data-theme` attribute on the <html> element. Safe to
- *  call in tests — no-op when `document` unavailable. */
-function applyToDOM(applied: AppliedTheme, customization: ThemeCustomization): void {
-  if (typeof document === 'undefined') return;
-  document.documentElement.dataset.theme = applied;
-  applyThemeCustomizationToDOM(applied, customization);
+function toLegacyThemePreference(theme: ThemePreference): "light" | "dark" | "system" {
+  if (theme === "paper") return "light";
+  if (theme === "auto") return "system";
+  return "dark";
+}
+
+function applyToDOM(
+  theme: ThemePreference,
+  appliedTheme: AppliedTheme,
+  customization: ThemeCustomization,
+): void {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  const effectiveTheme = appliedTheme === "paper" ? "light" : "dark";
+  root.dataset.theme = appliedTheme;
+  root.classList.toggle("dark", effectiveTheme === "dark");
+  root.classList.toggle("oled", appliedTheme === "oled");
+  applyThemeCustomizationToDOM(appliedTheme, customization);
+
+  if (isNative) {
+    void StatusBarStyle.setStyle({
+      style: effectiveTheme === "dark" ? Style.Dark : Style.Light,
+    }).catch((error: unknown) => {
+      logger.warn("[Theme]", "StatusBar style failed:", error);
+    });
+  }
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("zenflow:theme-change", {
+        detail: { theme: toLegacyThemePreference(theme), effective: effectiveTheme },
+      }),
+    );
+  }
+}
+
+function persistThemeState(
+  theme: ThemePreference,
+  themeCustomization: ThemeCustomization,
+): boolean {
+  if (typeof window === "undefined") return true;
+  const serialized = safeJsonStringify({
+    state: { theme, themeCustomization },
+    version: 1,
+  });
+  return serialized !== null && storageSetRaw(STORAGE_KEY, serialized);
+}
+
+function writeFailure(): ThemeWriteResult {
+  return { ok: false, reason: "storage-unavailable" };
 }
 
 const initialPayload = readPersistedThemePayload();
 const initialTheme = readInitialThemePreference(initialPayload);
 const initialCustomization = readInitialThemeCustomization(initialPayload);
 const initialAppliedTheme = resolvePreference(initialTheme);
-applyToDOM(initialAppliedTheme, initialCustomization);
+applyToDOM(initialTheme, initialAppliedTheme, initialCustomization);
 
-export const useThemeStore = create<ThemeStore>()(
-  persist(
-    (set, get) => ({
-      theme: initialTheme,
-      appliedTheme: initialAppliedTheme,
-      themeCustomization: initialCustomization,
-      previousThemeCustomization: null,
-      setTheme: (theme) => {
-        const applied = resolvePreference(theme);
-        applyToDOM(applied, get().themeCustomization);
-        set({ theme, appliedTheme: applied });
-      },
-      setThemeCustomization: (customization) => {
-        const nextCustomization = normalizeThemeCustomization(customization);
-        const previousThemeCustomization = get().themeCustomization;
-        applyToDOM(get().appliedTheme, nextCustomization);
-        set({ themeCustomization: nextCustomization, previousThemeCustomization });
-      },
-      previewThemeCustomization: (customization) => {
-        applyThemeCustomizationToDOM(
-          get().appliedTheme,
-          normalizeThemeCustomization(customization),
-        );
-      },
-      cancelThemeCustomizationPreview: () => {
-        applyThemeCustomizationToDOM(get().appliedTheme, get().themeCustomization);
-      },
-      resetThemeCustomization: () => {
-        const previousThemeCustomization = get().themeCustomization;
-        const themeCustomization = { ...DEFAULT_THEME_CUSTOMIZATION };
-        applyToDOM(get().appliedTheme, themeCustomization);
-        set({ themeCustomization, previousThemeCustomization });
-      },
-      undoThemeCustomization: () => {
-        const previous = get().previousThemeCustomization;
-        if (!previous) return;
-        const current = get().themeCustomization;
-        applyToDOM(get().appliedTheme, previous);
-        set({ themeCustomization: previous, previousThemeCustomization: current });
-      },
-      _resolve: () => {
-        const applied = resolvePreference(get().theme);
-        applyToDOM(applied, get().themeCustomization);
-        if (applied !== get().appliedTheme) {
-          set({ appliedTheme: applied });
-        }
-      },
-    }),
-    {
-      name: STORAGE_KEY,
-      // Route through safe storage accessors (no direct localStorage per
-      // project rules — see .claude/rules/* and no-restricted-globals lint).
-      storage: createJSONStorage(() => ({
-        getItem: (key) => storageGetRaw(key, ''),
-        setItem: (key, value) => storageSetRaw(key, value),
-        removeItem: (key) => storageRemove(key),
-      })),
-      // Persist the user preference and local-only customization; appliedTheme re-derives.
-      partialize: (state) => ({
-        theme: state.theme,
-        themeCustomization: state.themeCustomization,
-      }),
-      onRehydrateStorage: () => (state) => {
-        if (!state) return;
-        const theme = isThemePreference(state.theme) ? state.theme : 'auto';
-        const applied = resolvePreference(theme);
-        const themeCustomization = normalizeThemeCustomization(state.themeCustomization);
-        applyToDOM(applied, themeCustomization);
-        state.theme = theme;
-        state.appliedTheme = applied;
-        state.themeCustomization = themeCustomization;
-        state.previousThemeCustomization = null;
-      },
-    },
-  ),
-);
+export const useThemeStore = create<ThemeStore>((set, get) => ({
+  theme: initialTheme,
+  appliedTheme: initialAppliedTheme,
+  themeCustomization: initialCustomization,
+  previousThemeCustomization: null,
+  setTheme: (theme) => {
+    const current = get();
+    if (!persistThemeState(theme, current.themeCustomization)) return writeFailure();
 
-/** Bind the OS prefers-color-scheme listener. Returns an unsubscribe. Idempotent
- *  — call once from app bootstrap (e.g. main.tsx) to pick up live OS changes
- *  when theme === 'auto'. */
-export function bindPrefersColorSchemeListener(): () => void {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {};
-  const mql = window.matchMedia('(prefers-color-scheme: dark)');
-  const handler = () => {
-    if (useThemeStore.getState().theme === 'auto') {
-      useThemeStore.getState()._resolve();
-    }
+    const appliedTheme = resolvePreference(theme);
+    storageSetRaw(SK.THEME, toLegacyThemePreference(theme));
+    storageSetRaw(SK.OLED_MODE, String(theme === "oled"));
+    applyToDOM(theme, appliedTheme, current.themeCustomization);
+    set({ theme, appliedTheme });
+    return { ok: true };
+  },
+  setThemeCustomization: (customization) => {
+    const next = normalizeThemeCustomization(customization);
+    const current = get();
+    if (!persistThemeState(current.theme, next)) return writeFailure();
+
+    applyToDOM(current.theme, current.appliedTheme, next);
+    set({
+      themeCustomization: next,
+      previousThemeCustomization: current.themeCustomization,
+    });
+    return { ok: true };
+  },
+  resetThemeCustomization: () => {
+    const current = get();
+    const next = { ...DEFAULT_THEME_CUSTOMIZATION };
+    if (!persistThemeState(current.theme, next)) return writeFailure();
+
+    applyToDOM(current.theme, current.appliedTheme, next);
+    set({
+      themeCustomization: next,
+      previousThemeCustomization: current.themeCustomization,
+    });
+    return { ok: true };
+  },
+  undoThemeCustomization: () => {
+    const current = get();
+    if (!current.previousThemeCustomization) return { ok: true };
+    const next = current.previousThemeCustomization;
+    if (!persistThemeState(current.theme, next)) return writeFailure();
+
+    applyToDOM(current.theme, current.appliedTheme, next);
+    set({
+      themeCustomization: next,
+      previousThemeCustomization: current.themeCustomization,
+    });
+    return { ok: true };
+  },
+  _resolve: () => {
+    const current = get();
+    const appliedTheme = resolvePreference(current.theme);
+    applyToDOM(current.theme, appliedTheme, current.themeCustomization);
+    if (appliedTheme !== current.appliedTheme) set({ appliedTheme });
+  },
+}));
+
+function parseExternalPayload(raw: string | null): {
+  theme: ThemePreference;
+  themeCustomization: ThemeCustomization;
+} | null {
+  if (!raw) return null;
+  const payload = safeJsonParse<PersistedThemePayload | null>(raw, null);
+  const theme = payload?.state?.theme;
+  if (!isThemePreference(theme)) return null;
+  return {
+    theme,
+    themeCustomization: normalizeThemeCustomization(payload?.state?.themeCustomization),
   };
-  if (typeof mql.addEventListener === 'function') {
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
-  }
-  if (typeof mql.addListener === 'function') {
-    mql.addListener(handler);
-    return () => mql.removeListener(handler);
-  }
-  return () => {};
 }
+
+/**
+ * Owns live System theme resolution and device-local multi-tab convergence.
+ * External values are adopted directly so a storage event cannot echo another write.
+ */
+export function bindThemeRuntimeListeners(): () => void {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return () => {};
+
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  const handleColorScheme = () => {
+    if (useThemeStore.getState().theme === "auto") useThemeStore.getState()._resolve();
+  };
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key !== STORAGE_KEY) return;
+    const external = parseExternalPayload(event.newValue);
+    if (!external) return;
+    const appliedTheme = resolvePreference(external.theme);
+    applyToDOM(external.theme, appliedTheme, external.themeCustomization);
+    useThemeStore.setState({
+      theme: external.theme,
+      appliedTheme,
+      themeCustomization: external.themeCustomization,
+      previousThemeCustomization: null,
+    });
+  };
+
+  if (typeof media.addEventListener === "function") {
+    media.addEventListener("change", handleColorScheme);
+  } else if (typeof media.addListener === "function") {
+    media.addListener(handleColorScheme);
+  }
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    if (typeof media.removeEventListener === "function") {
+      media.removeEventListener("change", handleColorScheme);
+    } else if (typeof media.removeListener === "function") {
+      media.removeListener(handleColorScheme);
+    }
+    window.removeEventListener("storage", handleStorage);
+  };
+}
+
+/** Backward-compatible bootstrap name; the implementation now includes storage convergence. */
+export const bindPrefersColorSchemeListener = bindThemeRuntimeListeners;

@@ -1,11 +1,18 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ChevronLeft, Download, Fingerprint, KeyRound, Lock, Shield } from "lucide-react";
+import { ChevronLeft, Clock3, Download, Fingerprint, KeyRound, Lock, Shield } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { safeLocalStorageGet } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
 
-import type { useJournalSecurity } from "./useJournalSecurity";
+import {
+  LOCK_TIMEOUT_OPTIONS,
+  setAutoLockMs,
+  type useJournalSecurity,
+} from "./useJournalSecurity";
+import { JournalAmbienceSetting } from "./JournalAmbienceSetting";
 
 export type JournalSettingsSection =
   | "overview"
@@ -13,6 +20,11 @@ export type JournalSettingsSection =
   | "password-change";
 
 type JournalSecurityState = ReturnType<typeof useJournalSecurity>;
+
+function getStoredAutoLockMs(): number {
+  const stored = safeLocalStorageGet<number | null>(SK.JOURNAL_LOCK_TIMEOUT, null);
+  return LOCK_TIMEOUT_OPTIONS.some((option) => option.ms === stored) ? stored! : 300_000;
+}
 
 interface JournalSettingsContentProps {
   ts: Record<string, string>;
@@ -110,7 +122,7 @@ function SettingsFormShell({
         disabled={disabled}
         className="inline-flex min-h-[44px] items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+        <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
         <span>{backLabel}</span>
       </button>
 
@@ -161,11 +173,21 @@ export function JournalSettingsContent({
   const [changeSubmitting, setChangeSubmitting] = useState(false);
   const [biometricSubmitting, setBiometricSubmitting] = useState(false);
   const [biometricError, setBiometricError] = useState("");
+  const [autoLockMs, setAutoLockMsState] = useState(getStoredAutoLockMs);
+  const [autoLockError, setAutoLockError] = useState(false);
   const setupRequestSeqRef = useRef(0);
   const changeRequestSeqRef = useRef(0);
   const setupErrorId = useId();
   const changeErrorId = useId();
   const biometricErrorId = useId();
+  const autoLockErrorId = useId();
+  const autoLockLabels = {
+    0: ts.journalLockTimeoutImmediately,
+    60_000: ts.journalLockTimeoutOneMinute,
+    300_000: ts.journalLockTimeoutFiveMinutes,
+    900_000: ts.journalLockTimeoutFifteenMinutes,
+    1_800_000: ts.journalLockTimeoutThirtyMinutes,
+  } satisfies Record<(typeof LOCK_TIMEOUT_OPTIONS)[number]["ms"], string>;
 
   const clearSetupForm = () => {
     setupRequestSeqRef.current += 1;
@@ -563,6 +585,48 @@ export function JournalSettingsContent({
         </SectionCard>
       ) : null}
 
+      {security.hasPassword ? (
+        <SectionCard
+          title={ts.journalLockTimeout || "Journal auto-lock"}
+          description={
+            ts.journalLockTimeoutDesc ||
+            "Automatically lock the diary after a period of inactivity."
+          }
+          icon={Clock3}
+        >
+          <label className="sr-only" htmlFor="journal-auto-lock-timeout">
+            {ts.journalLockTimeout || "Journal auto-lock"}
+          </label>
+          <select
+            id="journal-auto-lock-timeout"
+            value={autoLockMs}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              if (!setAutoLockMs(next)) {
+                setAutoLockError(true);
+                return;
+              }
+              setAutoLockError(false);
+              setAutoLockMsState(next);
+            }}
+            aria-describedby={autoLockError ? autoLockErrorId : undefined}
+            className="min-h-[44px] w-full rounded-2xl border border-border/70 bg-background/80 px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            {LOCK_TIMEOUT_OPTIONS.map((option) => (
+              <option key={option.ms} value={option.ms}>
+                {autoLockLabels[option.ms]}
+              </option>
+            ))}
+          </select>
+          {autoLockError ? (
+            <p id={autoLockErrorId} role="alert" className="mt-3 text-sm text-destructive">
+              {ts.settingsPreferenceSaveError ||
+                "Could not save this change. Your previous setting is still active."}
+            </p>
+          ) : null}
+        </SectionCard>
+      ) : null}
+
       <SectionCard
         title={ts.journalPrivateMode || "Hide previews"}
         description={
@@ -578,6 +642,8 @@ export function JournalSettingsContent({
           />
         </div>
       </SectionCard>
+
+      <JournalAmbienceSetting tx={ts} />
 
       <SectionCard
         title={ts.journalExport || "Export"}

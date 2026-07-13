@@ -29,6 +29,7 @@ const adController = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/adController', () => ({
+  isRewardedAdsSupported: vi.fn(() => false),
   initializeAds: vi.fn(async () => false),
   canShowRewardedAd: vi.fn(() => ({ allowed: false, reason: 'sdk_unavailable' })),
   showRewardedAd: vi.fn(async () => ({ success: false, rewarded: false })),

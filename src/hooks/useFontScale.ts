@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
+import { safeJsonParse, safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 
 /** Valid font scale levels (Telegram-style in-app control) */
@@ -16,7 +16,7 @@ function applyFontScale(scale: number): void {
 
 /**
  * Hook for managing in-app font scale (Telegram-style slider).
- * Uses localStorage + custom event pattern (same as DopamineSettings).
+ * Uses localStorage plus a same-tab custom event.
  * Applies --font-scale CSS custom property on :root for calc() multiplier.
  */
 export function useFontScale() {
@@ -31,26 +31,29 @@ export function useFontScale() {
   });
 
   const setFontScale = useCallback((newScale: FontScaleLevel) => {
+    if (!safeLocalStorageSet(SK.FONT_SCALE, newScale)) return false;
     setScale(newScale);
-    safeLocalStorageSet(SK.FONT_SCALE, newScale);
     applyFontScale(newScale);
     window.dispatchEvent(new CustomEvent(FONT_SCALE_EVENT, { detail: newScale }));
+    return true;
   }, []);
 
   useEffect(() => {
     // Cross-tab sync
     const handleStorage = (e: StorageEvent) => {
       if (e.key === SK.FONT_SCALE && e.newValue) {
-        const parsed = JSON.parse(e.newValue) as number;
-        if (FONT_SCALE_LEVELS.includes(parsed as FontScaleLevel)) {
-          setScale(parsed as FontScaleLevel);
-          applyFontScale(parsed);
+        const parsed = safeJsonParse<number | null>(e.newValue, null);
+        if (typeof parsed === "number" && FONT_SCALE_LEVELS.includes(parsed as FontScaleLevel)) {
+          const validated = parsed as FontScaleLevel;
+          setScale(validated);
+          applyFontScale(validated);
         }
       }
     };
 
     // Same-tab sync
     const handleCustom = (e: CustomEvent<FontScaleLevel>) => {
+      if (!FONT_SCALE_LEVELS.includes(e.detail)) return;
       setScale(e.detail);
       applyFontScale(e.detail);
     };

@@ -4753,7 +4753,7 @@ describe("ValenceOrb motion profile", () => {
       if (trigger === "preference") {
         act(() => {
           reduceMotion = true;
-          window.dispatchEvent(new Event("dopamine-settings-change"));
+          window.dispatchEvent(new Event("zenflow-motion-preference-change"));
         });
       } else {
         view.rerender(

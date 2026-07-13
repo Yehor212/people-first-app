@@ -457,7 +457,7 @@ describe("AuthScreen provider buttons", () => {
 
     fireEvent.click(within(themeGroup).getByRole("radio", { name: "Dark" }));
     expect(themeState.setTheme).toHaveBeenCalledWith("ink");
-    expect(themeState.setThemePreference).toHaveBeenCalledWith("dark");
+    expect(themeState.setThemePreference).not.toHaveBeenCalled();
   });
 
   it("uses centered brand icons for social providers", () => {

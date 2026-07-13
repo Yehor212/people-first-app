@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-07-10 (Settings Variant A split + freshness metrics refreshed — Law 6 Reality Anchor).
+> Last updated: 2026-07-12 (Settings Variant A control-surface split + freshness metrics refreshed — Law 6 Reality Anchor).
 
 ---
 
@@ -13,15 +13,15 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 <!-- BEGIN:counts -->
 | Metric | Value | Source |
 | --- | ---: | --- |
-| Hooks (src/hooks, non-test) | **77** | `ls src/hooks/*.ts` |
+| Hooks (src/hooks, non-test) | **75** | `ls src/hooks/*.ts` |
 | Zustand stores (runtime) | **9** | `ls src/stores/*.ts` excl. hydrate + index |
 | Hydrate bridges | 2 | `useHydrate*.ts` |
 | Index.tsx LOC | **279** | `wc -l src/pages/Index.tsx` |
 | Components top-level dirs | **40** | `ls src/components/ -d` |
 | Features modules | 1 | `ls src/features/ -d` |
 | V2 coexistence files | 45 | `find src -name '*V2*' -o -name '*-v2*'` |
-| `it.todo(` occurrences | 36 | regex walk |
-| `as any` total | 155 (155 in tests, ~0 prod) | regex walk |
+| `it.todo(` occurrences | 14 | regex walk |
+| `as any` total | 153 (153 in tests, ~0 prod) | regex walk |
 | Console.\* in prod (excl. logger/crashReporting) | **3** | regex walk |
 | ADR files (`docs/adr/NNNN-*.md`) | 11 | ls |
 | SECURITY.md | yes | fs |
@@ -40,14 +40,14 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 
 | Metric | Value | Source |
 | --- | ---: | --- |
-| Source files | **910** | `find src -name '*.ts' -o -name '*.tsx' ...` |
-| Test files | **463** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
+| Source files | **888** | `find src -name '*.ts' -o -name '*.tsx' ...` |
+| Test files | **465** | `find src test -name '*.test.*' -o -name '*.spec.*'` |
 | Silent `.catch(() => {})` | **0** | `grep -rn '.catch.*=> {}' src/` |
 | React.memo | **117** | `grep -rl 'memo(' src/ --include='*.tsx'` |
-| index.css LOC | **17,932** | `wc -l < src/index.css` |
+| index.css LOC | **17,914** | `readFileSync(...).split("\\n").length` (constitution guard) |
 | Inline style={{}} | **318** | `grep -rn 'style={{' src/ --include='*.tsx'` |
-| exhaustive-deps suppressions | **20** | `grep -rn 'eslint-disable.*exhaustive-deps' src/` |
-| Hook coverage | **69** | `53/77 hook tests` |
+| exhaustive-deps suppressions | **19** | `grep -rn 'eslint-disable.*exhaustive-deps' src/` |
+| Hook coverage | **65%** | `49/75 hook tests` |
 
 > Historical snapshot (2026-04-04): 687 source files, 147 test files, 3202 tests, 0 lint/TS errors, React.memo 56/80+, lazyWithRetry 31, exhaustive-deps suppressions 21, index.css 4,480 LOC, inline style 304 in 136 files, i18n 2,429 keys × 8 langs, ratchet 9.9/10. Held here for delta comparisons — do not edit in place.
 
@@ -104,7 +104,7 @@ src/
   pages/
     Index.tsx                   # orchestrator: hooks → tabs (history 2,800 → 652 → 407 → 452 → ~607 current. Live count in Codebase Metrics above; v2.0 target ≤450 per tech-debt audit P1-4)
 
-  stores/                       # Zustand stores + bridge hooks (8 runtime + 2 bridges; live count in Codebase Metrics)
+  stores/                       # Zustand stores + bridge hooks (9 runtime + 2 bridges; live count in Codebase Metrics)
     appStore.ts                 # Auth, initialization, active tab
     userDataStore.ts            # Moods, habits, focus sessions, gratitude (with array validation)
     uiStore.ts                  # Modals, confetti, focus minutes, getModalToggle utility
@@ -124,7 +124,6 @@ src/
     useAuthSession.ts           # Supabase session, OAuth, sync (stable listener deps via refs, cached getSession())
     useNotificationSetup.ts     # FCM, local reminders, channels
     useOnboardingEffects.ts     # Progressive onboarding, re-engagement
-    useCloudSyncEffects.ts      # Cloud sync, realtime subscriptions
     useAppUpdateCheck.ts        # Version check (reads onboardingComplete from store)
     useWeeklyReportTrigger.ts   # Auto-show weekly report on Monday (reads from store)
     useSettingsHandlers.ts      # Reset, name change, pull-to-refresh, schedule CRUD
@@ -398,7 +397,7 @@ Supporting: `src/lib/habitScore.ts` (Loop exponential smoothing score + streak +
 |------|---------|
 | `MindMapCanvas.tsx` | Main wrapper (framer-motion drag, zoom, renders all layers) |
 | `RootNode.tsx` | Central "Я" node with radial gradient + mood glow |
-| `OrbLottie.tsx` | CSS/token ambient animation for root node orb |
+| `CanvasRootGlow.tsx` | CSS/token ambient glow for the disabled root node |
 | `GoalNode.tsx` | Goal card node (React.memo, emoji/color/icon rendering, `GOAL_COLORS` export) |
 | `GoalActionSheet.tsx` | Bottom sheet — complete/delete/emoji picker/color swatches |
 | `GoalInput.tsx` | Inline input for creating new goals |
@@ -406,7 +405,6 @@ Supporting: `src/lib/habitScore.ts` (Loop exponential smoothing score + streak +
 | `GrowingEdge.tsx` | Animated SVG edge with spring physics |
 | `EmotionPanel.tsx` | Emotion selection overlay for canvas mood logging |
 | `AuxPills.tsx` | Auxiliary info pills on canvas |
-| `CompletionBurstLottie.tsx` | Lightweight completion celebration effect |
 | `mindMapLayout.ts` | Legacy layout algorithm (identity clusters, radial trigonometric) |
 | `goalTreeLayout.ts` | Goal tree layout algorithm |
 
@@ -828,21 +826,23 @@ All framer-motion animations MUST use standardized presets from `src/lib/animati
 
 | Token                 | Use case                     | Physics                     |
 | --------------------- | ---------------------------- | --------------------------- |
+| `zenMotion.instant`   | Effective reduced motion     | 0ms                         |
 | `zenMotion.snappy`    | Buttons, toggles, checkboxes | stiffness: 400, damping: 30 |
 | `zenMotion.gentle`    | Cards, modals, panels        | stiffness: 260, damping: 25 |
 | `zenMotion.bouncy`    | Celebrations, achievements   | stiffness: 300, damping: 15 |
 | `zenMotion.exit`      | Closing, dismissing          | 150ms ease-in               |
 | `zenMotion.breathing` | Infinite ambient loops       | 3s ease-in-out, reverse     |
 
-### Animation Respect (Visual Fidelity First)
+### Animation Respect (Accessibility And Runtime Safety)
 
-All animations are controlled **solely** by the in-app Dopamine Settings toggle:
+Animation is controlled by the shared effective-motion gate, using AND logic across the user's in-app preference and runtime safety signals:
 
-- `shouldAnimate()` checks **only** `getDopamineSettings().animations` — OS `prefers-reduced-motion` is intentionally ignored
+- `useShouldAnimate()` requires the in-app animation preference to be enabled, OS `prefers-reduced-motion` to be off, battery not to be critically low while unplugged, and (by default) runtime performance mode not to be limited
 - `AnimationGate` in `App.tsx` wraps the entire app in `<MotionConfig reducedMotion={...}>`:
-  - `animations: true` → `reducedMotion="never"` (forces framer-motion to always animate, even on iOS)
-  - `animations: false` → `reducedMotion="always"` + `body.reduce-motion` class kills CSS animations
-- CSS `@media (prefers-reduced-motion: reduce)` block is **removed** — the `body.reduce-motion` class is the sole CSS gate
+  - all effective signals allow motion → `reducedMotion="never"`
+  - any effective signal disables motion → `reducedMotion="always"` + `body.reduce-motion` disables CSS animation and transition effects
+- `body.reduce-motion` is the shared CSS kill-switch; targeted `prefers-reduced-motion` media queries may additionally keep individual surfaces static before React has initialized
+- Non-React consumers use `shouldAnimate()` / the low-battery mirror from `src/lib/animationUtils.ts`; keep their behavior aligned with the effective gate
 - CSS infinite loops (`@keyframes float`, `pulse-soft`, etc.) live in `src/index.css` — never inline
 - CSS `@keyframes` for infinite/ambient loops; framer-motion for interactive/entrance animations
 
@@ -872,35 +872,6 @@ All animations are controlled **solely** by the in-app Dopamine Settings toggle:
 - `body.reduce-motion .zen-loader-ring { animation: none }` override
 - **NOT for button states** — buttons keep `Loader2 animate-spin` (correct inline UX)
 
-### LazyLottiePlayer (legacy animation compatibility wrapper)
-
-`src/components/LazyLottiePlayer.tsx` — keeps the old animation-slot API surface while rendering lightweight CSS/token effects. Runtime Lottie dependencies were removed from the app bundle.
-
-```typescript
-<LazyLottiePlayer
-  loop width={160} height={160}
-  fallback={null}
-/>
-```
-
-- `shouldAnimate()` check — renders `fallback` when disabled
-- One-shot `onComplete` callbacks use a cleared timeout to avoid updates after unmount
-- Wrapper div uses `pointer-events-none` (standard for overlay animations)
-
-**Consumers**: `CompletionBurstLottie`, animation slot components in `src/components/animations/`.
-**Custom CSS/token effects**: `OrbLottie`, `FireAnimation`, `ActiveBreathingView`.
-
-### Animation Slots (EmptyState)
-
-`EmptyState.tsx` accepts optional `animationSlot?: React.ReactNode` rendered above the icon.
-
-Thin wrapper components in `src/components/animations/`:
-
-| Component                | Effect                        | Type                        |
-| ------------------------ | ----------------------------- | --------------------------- |
-| `EmptyDiaryAnimation`    | CSS/token ambient placeholder | Loop (empty diary state)    |
-| `EmptyStatsAnimation`    | CSS/token ambient placeholder | Loop (empty stats state)    |
-| `AllHabitsDoneAnimation` | CSS/token ambient placeholder | Loop (celebration)          |
 | `GoalReachedAnimation`   | CSS/token ambient placeholder | Single-shot (success burst) |
 
 Runtime Lottie JSON assets are intentionally not part of the current bundle contract.
@@ -1020,7 +991,7 @@ On PR to main:
 | TD-24 | LOW                               | Low memoization + lazy loading coverage                            | React.memo improved: **117 files** currently contain `memo(`. Only **3** lazy() imports (was 6). Heavy components not lazy-loaded.                                                                                                                                              | Various                                               |
 | TD-25 | P2                                | index.css monolith                                                 | **17,932 lines** in a single CSS file. Split plan needed (per-feature partials or CSS modules).                                                                                                                                                                                  | src/index.css                                         |
 | TD-26 | P2                                | Feature flags hardcoded                                            | `CANVAS_ENABLED`, `HABIT_HUB_ENABLED` are `const` in Index.tsx (lines 79-80). Extract to central registry with name, default, description per flag.                                                                                                                             | src/pages/Index.tsx                                   |
-| TD-27 | P2                                | Inline style={{}} proliferation                                    | **318 instances** across TSX files by the 2026-07-11 constitution check. On `React.memo` components, inline objects break memoization. Extract to `useMemo` or module-level constants.                                                                                          | Various                                               |
+| TD-27 | P2                                | Inline style={{}} proliferation                                    | **319 instances** across TSX files by the 2026-07-12 constitution check. On `React.memo` components, inline objects break memoization. Extract to `useMemo` or module-level constants.                                                                                          | Various                                               |
 | TD-28 | P3                                | Feature module migration stalled                                   | Only `features/journal/` migrated. Planned domains (mood, habits, focus, challenges, mindfulness, canvas) remain in `components/` + `hooks/`.                                                                                                                                   | src/components/, src/hooks/                           |
 | TD-29 | ~~P3~~ → **PARTIALLY RESOLVED**   | Multi-tab sync coordination                                        | Account-bound DATA/JOURNAL writes now serialize through named Web Locks with a same-origin Dexie transaction fallback and passive account-generation invalidation. Full live multi-device sync convergence remains separately unverified.                                      | src/lib/originExclusiveLock.ts, src/hooks/useIndexedDB.ts |
 | TD-30 | P3                                | Missing aria-labels on SVG emojis                                  | 20+ SVG emoji components (coolEmojis.tsx, warmEmojis.tsx) lack `role="img"` + `aria-label`. Screen readers see empty icons.                                                                                                                                                     | src/components/animated-emotion-emoji/                |
@@ -1048,12 +1019,10 @@ On PR to main:
 | AuthScreen.tsx                 | 749L / 7st / 8eff     | max 271L / 0st | `auth-screen/` — 5 files                                                                                 |
 | TasksPanel.tsx                 | 501L / 9st / 0eff     | max 186L / 0st | `tasks-panel/` — 7 files                                                                                 |
 | Leaderboard.tsx                | 526L / 10st / 2eff    | max 230L / 2st | `leaderboard/` — 5 files                                                                                 |
-| AccountSection.tsx             | 548L / 14st / 5eff    | max 232L / 0st | `account-section/` — 6 files                                                                             |
 | DataSection.tsx                | 419L / 9st / 1eff     | max 260L / 2st | `data-section/` — 4 files                                                                                |
 | V2SettingsProfilePanels.tsx    | 855L                  | max 288L       | Split into profile, language, appearance shell, basics, and advanced Settings modules                   |
 | V2SettingsDataPanels.tsx       | 432L                  | max 282L       | Split privacy into `V2SettingsPrivacyPanel.tsx` (184L); data keeps import/export and owner-gated local reset |
 | SettingsPage.tsx               | 402L                  | 361L           | Extracted URL/deep-link state into `settings/settingsNavigation.ts`                                      |
-| DopamineSettings.tsx           | 407L                  | 317L           | Extracted shared persistence into `lib/dopamineSettings.ts` and the listener hook into `hooks/useDopamineSettings.ts` |
 | AnimatedStatsComponents.tsx    | 694L / 4st / 3eff     | max 349L / 2st | `animated-stats/` — 3 files                                                                              |
 | AnimatedEmotionEmoji.tsx       | 650L / 0st / 0eff     | max 305L / 0st | `animated-emotion-emoji/` — 3 files                                                                      |
 | CompactHabitCard.tsx           | 605L / 2st / 1eff     | max 400L / 2st | `compact-habit-card/` — 4 files                                                                          |
@@ -1098,18 +1067,19 @@ On PR to main:
 | ---------------- | ----- | -------- | --------- | ------------------------------------------------------------------- |
 | Celebrations.tsx | 311   | 4        | 4         | 4 components × 1 useEffect each — no single component exceeds limit |
 
-#### New Violations (15 files >400L — verified 2026-07-11)
+#### New Violations (17 files >400L — verified 2026-07-12)
 
 | File                                      | Lines   | Severity | Notes                                                    |
 | ----------------------------------------- | ------- | -------- | -------------------------------------------------------- |
-| components/state-of-mind/ValenceOrb.tsx   | **2,126** | P2     | Shader/orb shell remains over 400L                       |
+| components/state-of-mind/ValenceOrb.tsx   | **3,554** | P2     | Shader/orb shell remains over 400L                       |
 | components/habit-creation-form/HabitCreationForm.tsx | **1,159** | P2 | Regressed above 400L after feature growth                |
 | components/habit-hub/HabitDetailSheet.tsx | **710** | P2       | Detail sheet remains over 400L                           |
-| main.tsx                                  | **654** | P2       | Bootstrap/root wiring remains over 400L                  |
+| main.tsx                                  | **662** | P2       | Bootstrap/root wiring remains over 400L                  |
 | pages/nav-v2/habits/HabitsPage.tsx        | **595** | P2       | V2 habits page shell remains over 400L                   |
 | components/SplashScreen.tsx               | **573** | P2       | Startup shell remains over 400L                          |
 | components/habit-creation-form/FormSelectors.tsx | **556** | P2 | Form selector shell remains over 400L                    |
 | components/ErrorBoundary.tsx              | **538** | P2       | Error boundary module remains over 400L                  |
+| pages/nav-v2/OrbPage.tsx                  | **523** | P2       | V2 orb page shell remains over 400L                      |
 | components/habit-tracker/HabitTracker.tsx | **519** | P2       | Habit tracker shell remains over 400L                    |
 | pages/nav-v2/habits/hero/HeroWeeklyHabitCard.tsx | **477** | P3 | V2 habit hero card remains over 400L                     |
 | components/reflection/DailyRitualCard.tsx | **472** | P3       | Reflection ritual card remains over 400L                 |
@@ -1117,6 +1087,7 @@ On PR to main:
 | components/state-of-mind/ValenceSlider.tsx | **419** | P3      | Valence slider remains over 400L                         |
 | components/stats/ring-detail-sheet/RingDetailSheet.tsx | **414** | P3 | Stats sheet shell remains over 400L                      |
 | components/challenges-panel/ChallengesPanel.tsx | **413** | P3 | Challenges panel shell remains over 400L                 |
+| pages/nav-v2/settings/components/V2SettingsControlPrimitives.tsx | **403** | P3 | Shared Settings control primitives remain over 400L |
 
 #### Remaining — SKIP (1 file >400L)
 
@@ -1203,7 +1174,7 @@ On PR to main:
 - Problem: 5+ `GET /auth/v1/user` calls/second observed in Supabase dashboard for some users
 - Root cause: 18 `getUser()` call sites (each a network round-trip), 9 concurrent `onAuthStateChange` listeners with unstable dependency arrays causing re-subscription loops, and a 20-iteration polling loop during native OAuth
 - Changes:
-  - **Patch A** — 12 `getUser()` → `getSession()` in sync/storage files (cloudSync, tasksCloudSync ×6, innerWorldCloudSync ×2, reminderSync, friendsSync, useCloudSyncEffects). `getSession()` reads from local cache (0ms vs ~100-300ms network). Kept `getUser()` in 5 sites that need fresh server validation (apiClient ×2, supabaseClient ×1, useAccountSync ×2).
+  - **Patch A** — targeted `getUser()` → `getSession()` changes in sync/storage files. `getSession()` reads from local cache; fresh server validation remains where the operation requires it.
   - **Patch B** — Fixed 3 listener dependency arrays in `useAuthSession.ts` using `useRef` pattern: `googleAuthChecked`/`isLoadingUserData`/`isLoading`/`userName`/`userNameCustom` tracked via refs instead of deps. Eliminates 3 re-subscription cycles during login. Listener 4 (name sync) rewritten to use `getSession()` + callback session data instead of `getUser()`.
   - **Patch C** — Replaced `waitForSession()` 20×400ms polling loop in `useDeepLinkHandler.ts` with event-based approach: 1 cache check + `onAuthStateChange` listener + 15s timeout.
 - Net impact: ~8+ `getUser()` network calls on login → 0 (only apiClient/accountSync remain). 0 listener re-subscriptions during login. Session detected instantly on native OAuth (was up to 8s polling).
@@ -1372,7 +1343,7 @@ Every PASS must include evidence: command output, file path, or test checklist. 
 
 - Created `useModalA11y` composite hook (Escape + focus trap + Android back in one call)
 - Fixed `ConfirmDialog` dead end (Celebrations.tsx): Added Escape key, `useBackHandler`, and backdrop click dismiss
-- Added Escape key listeners to 12 high-priority overlays: FocusBreathingOverlay, HabitsOverlay, BreathingExercise, FeedbackForm, DailyRewards, SpinWheel, ChallengeModal, TasksPanel, QuestsPanel, AccountSection, DataSection, ScheduleTimeline
+- Added Escape key listeners to high-priority overlays including FocusBreathingOverlay, HabitsOverlay, BreathingExercise, FeedbackForm, DailyRewards, SpinWheel, ChallengeModal, TasksPanel, QuestsPanel, DataSection, and ScheduleTimeline.
 
 #### UX Standards (Mandatory)
 

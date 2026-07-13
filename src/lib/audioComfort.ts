@@ -29,7 +29,6 @@ export interface AudioComfortSettings {
   completionCuesEnabled: boolean;
   milestoneCuesEnabled: boolean;
   reminderCuesEnabled: boolean;
-  hapticsEnabled: boolean;
   avoidedTextures: AppAudioComfortTexture[];
 }
 
@@ -74,7 +73,6 @@ const DEFAULT_AUDIO_COMFORT: AudioComfortSettings = {
   completionCuesEnabled: true,
   milestoneCuesEnabled: true,
   reminderCuesEnabled: true,
-  hapticsEnabled: false,
   avoidedTextures: [],
 };
 
@@ -89,7 +87,6 @@ export const AUDIO_COMFORT_PROFILES: readonly AudioComfortProfile[] = [
       completionCuesEnabled: true,
       milestoneCuesEnabled: false,
       reminderCuesEnabled: false,
-      hapticsEnabled: false,
       avoidedTextures: [],
     },
   },
@@ -109,7 +106,6 @@ export const AUDIO_COMFORT_PROFILES: readonly AudioComfortProfile[] = [
       completionCuesEnabled: true,
       milestoneCuesEnabled: true,
       reminderCuesEnabled: true,
-      hapticsEnabled: false,
       avoidedTextures: [],
     },
   },
@@ -180,7 +176,6 @@ function normalizeSettings(value: Partial<AudioComfortSettings> | null | undefin
     completionCuesEnabled: merged.completionCuesEnabled !== false,
     milestoneCuesEnabled: merged.milestoneCuesEnabled !== false,
     reminderCuesEnabled: merged.reminderCuesEnabled !== false,
-    hapticsEnabled: merged.hapticsEnabled === true,
     avoidedTextures,
   };
 }
@@ -194,11 +189,24 @@ export function getAudioComfortSettings(): AudioComfortSettings {
   return normalizeSettings(safeLocalStorageGet<Partial<AudioComfortSettings> | null>(SK.AUDIO_COMFORT, null));
 }
 
-export function setAudioComfortSettings(partial: Partial<AudioComfortSettings>): AudioComfortSettings {
-  const next = normalizeSettings({ ...getAudioComfortSettings(), ...partial });
-  safeLocalStorageSet(SK.AUDIO_COMFORT, next);
+export type AudioComfortWriteResult =
+  | { ok: true; settings: AudioComfortSettings }
+  | { ok: false; settings: AudioComfortSettings };
+
+export function trySetAudioComfortSettings(
+  partial: Partial<AudioComfortSettings>,
+): AudioComfortWriteResult {
+  const current = getAudioComfortSettings();
+  const next = normalizeSettings({ ...current, ...partial });
+  if (!safeLocalStorageSet(SK.AUDIO_COMFORT, next)) {
+    return { ok: false, settings: current };
+  }
   emitAudioComfortChange(next);
-  return next;
+  return { ok: true, settings: next };
+}
+
+export function setAudioComfortSettings(partial: Partial<AudioComfortSettings>): AudioComfortSettings {
+  return trySetAudioComfortSettings(partial).settings;
 }
 
 export function applyAudioComfortProfile(profileId: AudioComfortProfileId): AudioComfortSettings {

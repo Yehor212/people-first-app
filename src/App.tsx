@@ -15,10 +15,9 @@ import { DatabaseRecoveryDialog } from "@/components/DatabaseRecoveryDialog";
 import { UpdateRequiredDialog } from "@/components/UpdateRequiredDialog";
 import Index from "./pages/Index";
 import { preloadShareCardAssets } from "@/lib/shareCards";
-import { useDopamineSettings } from "@/hooks/useDopamineSettings";
 import { useFontScaleInit } from "@/hooks/useFontScale";
+import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useBatteryState } from "@/hooks/useBatteryState";
 import { setLowBatteryMirror } from "@/lib/animationUtils";
 import { useDesignFlagStore } from "@/stores/designFlagStore";
@@ -48,10 +47,12 @@ scheduleIdle(() => void useDesignFlagStore.getState().fetchFlags(), 5000, 3500);
 /**
  * AnimationGate — single point of control for ALL animation layers.
  *
- * Combines three inputs with AND-logic (WCAG 2.3.3 compliant, Law 9):
- *   1. In-app Dopamine toggle (primary user preference).
+ * Uses the shared effective-motion source of truth, which combines four inputs
+ * with AND-logic (WCAG 2.3.3 compliant, Law 9):
+ *   1. In-app Reduce motion preference.
  *   2. OS `prefers-reduced-motion` (system accessibility kill-switch).
  *   3. Low battery (<15% AND not charging) — power-aware downgrade.
+ *   4. Runtime performance guard — temporary downgrade during startup/strain.
  *
  * Effects when "animate=false":
  *   - `body.reduce-motion` class toggled (CSS kill-switch in index.css).
@@ -62,20 +63,18 @@ scheduleIdle(() => void useDesignFlagStore.getState().fetchFlags(), 5000, 3500);
  *   - Static mirror in `animationUtils.setLowBatteryMirror` so non-React
  *     call sites (audioManager, haptics) observe the same gate.
  *
- * Behaviour change vs. prior versions: users with Dopamine=on + OS reduce=on
- * now see animations OFF (previously ON). Intentional per WCAG 2.3.3.
+ * The system preference remains the accessibility kill-switch even when the
+ * in-app preference allows motion.
  */
 function AnimationGate({ children }: { children: ReactNode }) {
-  const dopamine = useDopamineSettings();
-  const osPrefersReduce = useMediaQuery("(prefers-reduced-motion: reduce)");
   const battery = useBatteryState();
+  const animate = useShouldAnimate();
 
   // Apply stored font scale on mount (sets --font-scale CSS custom property)
   useFontScaleInit();
 
   const lowBattery =
     battery !== null && !battery.charging && battery.level < LOW_BATTERY_THRESHOLD;
-  const animate = dopamine.animations && !osPrefersReduce && !lowBattery;
 
   useEffect(() => {
     // Keep the module-level mirror in sync for non-React consumers.

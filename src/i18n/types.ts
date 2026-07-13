@@ -538,6 +538,12 @@ export interface Translations {
   notifications: string;
   notificationsComingSoon: string;
   settingsOverviewDescription: string;
+  settingsOverviewDescriptionWithoutReminders: string;
+  settingsReminderDaysMissing: string;
+  settingsSoundRestoreTitle: string;
+  settingsSoundRestoreDescription: string;
+  settingsSoundRestoreAction: string;
+  settingsSoundMasterDisabledHint: string;
   settingsAccountBackupTitle: string;
   settingsAccountBackupDescription: string;
   settingsAccountSignedIn: string;
@@ -639,6 +645,11 @@ export interface Translations {
   quietHoursStart: string;
   quietHoursEnd: string;
   reminderDays: string;
+  settingsMoodCheckIns: string;
+  settingsMoodCheckInsDescription: string;
+  settingsFocusReminder: string;
+  settingsFocusReminderDescription: string;
+  settingsReminderChooseDay: string;
   selectedHabits: string;
   noHabitsYet: string;
   noHabitsInCategory: string;
@@ -813,7 +824,6 @@ export interface Translations {
   syncPulled: string;
   syncPushed: string;
   syncError: string;
-  weeklyDigestError: string;
   authGateTitle: string;
   authGateBody: string;
   authGateContinue: string;
@@ -878,6 +888,14 @@ export interface Translations {
   themeLight: string;
   themeDark: string;
   themeSystem: string;
+  themeModeTitle: string;
+  themeModeDescription: string;
+  themeBlack: string;
+  themeChangeSaved: string;
+  settingsPreferenceSaveError: string;
+  settingsReduceMotion: string;
+  settingsReduceMotionDescription: string;
+  settingsReduceMotionSystemDescription: string;
   themeStyleTitle: string;
   themeAdvancedAppearanceTitle: string;
   themeStyleDescription: string;
@@ -961,9 +979,6 @@ export interface Translations {
   settingsSectionData: string;
 
   // Weekly Digest (v1.3.0)
-  weeklyDigestTitle: string;
-  weeklyDigestDescription: string;
-  weeklyDigestEnabled: string;
 
   // Google Calendar
   googleCalendar: string;
@@ -1245,6 +1260,8 @@ export interface Translations {
   muteSound: string;
   unmuteSound: string;
   settingsSoundTitle: string;
+  settingsVibration: string;
+  settingsVibrationDescription: string;
   settingsSoundDescription: string;
   settingsSoundSummaryOn: string;
   settingsSoundSummaryOff: string;
@@ -1266,6 +1283,10 @@ export interface Translations {
   settingsSoundProfileBalancedDesc: string;
   settingsSoundAmbientToggle: string;
   settingsSoundAmbientToggleDesc: string;
+  settingsSoundBackgroundTitle: string;
+  settingsSoundBackgroundDescription: string;
+  settingsSoundActivityTitle: string;
+  settingsSoundActivityDescription: string;
   settingsSoundCompletionCues: string;
   settingsSoundCompletionCuesDesc: string;
   settingsSoundReminderCues: string;
@@ -1487,34 +1508,6 @@ export interface Translations {
   completedHabitReason: string;
   comebackChallengeComplete: string;
   questPrefix: string;
-
-  // Dopamine Settings
-  dopamineSettings: string;
-  dopamineSettingsDesc: string;
-  dopamineSettingsDescNoHaptics: string;
-  dopamineIntensity: string;
-  dopamineMinimal: string;
-  dopamineNormal: string;
-  dopamineADHD: string;
-  dopamineMinimalDesc: string;
-  dopamineNormalDesc: string;
-  dopamineADHDDesc: string;
-  dopamineCustomize: string;
-  dopamineAnimations: string;
-  dopamineAnimationsDesc: string;
-  dopamineSounds: string;
-  dopamineSoundsDesc: string;
-  dopamineHaptics: string;
-  dopamineHapticsDesc: string;
-  dopamineConfetti: string;
-  dopamineConfettiDesc: string;
-  dopamineStreakFire: string;
-  dopamineStreakFireDesc: string;
-  dopamineMoodDrivenUI: string;
-  dopamineMoodDrivenUIDesc: string;
-  dopamineTip: string;
-  dopamineTipText: string;
-  dopamineSave: string;
 
   // Font Scale Settings
   fontScaleTitle: string;
@@ -2231,11 +2224,7 @@ export interface Translations {
   updateNow: string;
   updateAvailableFor: string; // Uses {days} placeholder
 
-  // Lock Screen Quick Actions (v1.2.0)
-  quickActions: string;
-  quickActionsDescription: string;
-  quickActionsEnabled: string;
-  quickActionsDisabled: string;
+  // Contextual shortcuts
   quickActionLogMood: string;
   quickActionStartFocus: string;
   quickActionViewHabits: string;
@@ -2244,6 +2233,7 @@ export interface Translations {
   notificationSound: string;
   notificationSoundDescription: string;
   notificationSoundUpdateFailed: string;
+  notificationSoundUpdateUncertain: string;
   reminderReconcileFailed: string;
   soundDefault: string;
   soundDefaultDesc: string;
@@ -3616,8 +3606,6 @@ export interface Translations {
   orbFirstRunGotIt: string;
 
   // Preserved from the concurrent orb translation contract.
-  settingsSoundFeedbackOn: string;
-  settingsSoundFeedbackOff: string;
   settingsSoundFeedbackComfortable: string;
   settingsSoundFeedbackTooLoud: string;
   settingsSoundFeedbackDistracting: string;

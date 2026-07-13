@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useDopamineSettings } from "@/hooks/useDopamineSettings";
+import { useMotionPreference } from "@/hooks/useMotionPreference";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useBatteryState } from "@/hooks/useBatteryState";
 import {
@@ -14,7 +14,7 @@ const LOW_BATTERY_THRESHOLD = 0.15;
  * Reactive source of truth for "should we animate right now?"
  *
  * AND-logic (WCAG 2.3.3 — Animation from Interactions, Law 9):
- *   1. Dopamine.animations must be ON (user in-app preference).
+ *   1. The in-app Reduce motion preference must be OFF.
  *   2. OS `prefers-reduced-motion` must NOT be "reduce" (system accessibility kill-switch).
  *   3. Battery must NOT be critically low (<15%) AND NOT charging.
  *
@@ -28,7 +28,7 @@ const LOW_BATTERY_THRESHOLD = 0.15;
  */
 export function useShouldAnimate(options: ShouldAnimateOptions = {}): boolean {
   const { respectRuntimePerformance = true } = options;
-  const dopamine = useDopamineSettings();
+  const motionPreference = useMotionPreference();
   const osPrefersReduce = useMediaQuery("(prefers-reduced-motion: reduce)");
   const battery = useBatteryState();
   const [runtimePerfLimited, setRuntimePerfLimited] = useState(isRuntimePerformanceLimited);
@@ -46,12 +46,11 @@ export function useShouldAnimate(options: ShouldAnimateOptions = {}): boolean {
     return () => window.removeEventListener(RUNTIME_PERFORMANCE_MODE_EVENT, syncRuntimePerfMode);
   }, []);
 
-  const dopamineEnabled = dopamine.animations;
   const lowBattery =
     battery !== null && !battery.charging && battery.level < LOW_BATTERY_THRESHOLD;
 
   return (
-    dopamineEnabled &&
+    !motionPreference.reduceMotion &&
     !osPrefersReduce &&
     !lowBattery &&
     (!respectRuntimePerformance || !runtimePerfLimited)

@@ -334,7 +334,7 @@ describe("useAccountAuth native OAuth", () => {
     );
     expect(mocks.resetAuthState).toHaveBeenCalledTimes(1);
     expect(mocks.setAuthGateChecked).toHaveBeenCalledWith(false);
-    expect(onNameChange).toHaveBeenCalledWith("Friend");
+    expect(onNameChange).toHaveBeenCalledWith("Friend", false);
     expect(mocks.resetAuthState.mock.invocationCallOrder[0]).toBeGreaterThan(
       mocks.signOut.mock.invocationCallOrder[0]
     );

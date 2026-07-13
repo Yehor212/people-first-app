@@ -31,7 +31,7 @@ import {
   type LocalNotificationSchema,
 } from '@capacitor/local-notifications';
 import { PushNotifications } from '@capacitor/push-notifications';
-import { isNative } from '@/lib/platform';
+import { isNative, platform } from '@/lib/platform';
 import { logger } from './logger';
 import { ReminderSettings, Habit, MoodType } from '@/types';
 import {
@@ -42,6 +42,10 @@ import {
 import { parseTime } from './timeUtils';
 import { QUICK_ACTIONS_NOTIFICATION_ID } from './notificationIds';
 import { getCurrentSessionUserId } from './supabaseClient';
+import { storageGetRaw, storageSetRaw } from './safeJson';
+import { SK } from './storageKeys';
+
+const PRIVATE_CHANNEL_MIGRATION_COMPLETE = 'complete';
 
 let accountNotificationGeneration = 0;
 let accountNotificationsSuspended = false;
@@ -220,6 +224,15 @@ function getSelectedReminderDays(days: number[]): number[] {
   );
 }
 
+function isReminderCategoryEnabled(
+  explicitPreference: boolean | undefined,
+  reminders: ReminderSettings,
+): boolean {
+  // Preserve an already-active legacy schedule until the one-time migration
+  // writes explicit category consent. New defaults always provide `false`.
+  return explicitPreference ?? reminders.enabled;
+}
+
 function toCapacitorWeekday(day: number): number {
   return day === 0 ? 1 : day + 1;
 }
@@ -373,15 +386,7 @@ function buildGlobalReminderNotifications(
   const days = getSelectedReminderDays(reminders.days);
   const activeSpecs = specs.filter((spec) => !isWithinQuietHours(spec.time, reminders.quietHours));
 
-  if (days.length === 0) {
-    return activeSpecs.map((spec) => ({
-      id: spec.id,
-      title: spec.title,
-      body: spec.body,
-      channelId: getActiveChannelId(),
-      schedule: { on: spec.time, allowWhileIdle: true },
-    }));
-  }
+  if (days.length === 0) return [];
 
   return activeSpecs.flatMap((spec) =>
     days.map((day) => ({
@@ -441,9 +446,15 @@ async function scheduleLocalRemindersOperation(
     const focusTime = parseTime(reminders.focusTime, 10, 0);
 
     const notifications = buildGlobalReminderNotifications(reminders, [
-      { id: 2, title: copy.mood.title, body: copy.mood.body, time: moodTimeAfternoon },
-      { id: 3, title: copy.mood.title, body: copy.mood.body, time: moodTimeEvening },
-      { id: 5, title: copy.focus.title, body: copy.focus.body, time: focusTime },
+      ...(isReminderCategoryEnabled(reminders.moodCheckInsEnabled, reminders)
+        ? [
+            { id: 2, title: copy.mood.title, body: copy.mood.body, time: moodTimeAfternoon },
+            { id: 3, title: copy.mood.title, body: copy.mood.body, time: moodTimeEvening },
+          ]
+        : []),
+      ...(isReminderCategoryEnabled(reminders.focusReminderEnabled, reminders)
+        ? [{ id: 5, title: copy.focus.title, body: copy.focus.body, time: focusTime }]
+        : []),
     ]);
 
     if (notifications.length === 0) {
@@ -701,7 +712,8 @@ function buildMoodQuickLogNotifications(
     zenflowAccountOwnerId: ownerUserId,
   };
   const days = policy ? getSelectedReminderDays(policy.days) : [];
-  if (days.length === 0) {
+  if (policy && days.length === 0) return [];
+  if (!policy) {
     return [
       {
         id: QUICK_LOG_NOTIFICATION_ID,
@@ -890,51 +902,94 @@ export async function reconcileReminderNotifications(
       return { status: 'disabled', scheduledCount: 0 };
     }
 
-    // Prepare the native delivery surface before touching the last known-good
-    // schedule. A channel failure must not silently cancel existing reminders.
-    await initializeNotificationChannel(copy.channelCopy);
-    const permission = await LocalNotifications.checkPermissions();
-    if (permission.display !== 'granted') {
-      return { status: 'permission-required', scheduledCount: 0 };
-    }
-
     const ownerUserId = await getCurrentSessionUserId();
+    const moodCheckInsEnabled = isReminderCategoryEnabled(
+      reminders.moodCheckInsEnabled,
+      reminders,
+    );
+    const focusReminderEnabled = isReminderCategoryEnabled(
+      reminders.focusReminderEnabled,
+      reminders,
+    );
     const globalNotifications = buildGlobalReminderNotifications(reminders, [
-      {
-        id: 2,
-        title: copy.mood.title,
-        body: copy.mood.body,
-        time: parseTime(reminders.moodTimeAfternoon, 14, 0),
-      },
-      {
-        id: 3,
-        title: copy.mood.title,
-        body: copy.mood.body,
-        time: parseTime(reminders.moodTimeEvening, 20, 0),
-      },
-      {
-        id: 5,
-        title: copy.focus.title,
-        body: copy.focus.body,
-        time: parseTime(reminders.focusTime, 10, 0),
-      },
+      ...(moodCheckInsEnabled
+        ? [
+            {
+              id: 2,
+              title: copy.mood.title,
+              body: copy.mood.body,
+              time: parseTime(reminders.moodTimeAfternoon, 14, 0),
+            },
+            {
+              id: 3,
+              title: copy.mood.title,
+              body: copy.mood.body,
+              time: parseTime(reminders.moodTimeEvening, 20, 0),
+            },
+          ]
+        : []),
+      ...(focusReminderEnabled
+        ? [
+            {
+              id: 5,
+              title: copy.focus.title,
+              body: copy.focus.body,
+              time: parseTime(reminders.focusTime, 10, 0),
+            },
+          ]
+        : []),
     ]);
     const habitNotifications = buildHabitReminderNotifications(habits, {
       reminderTitle: copy.habit.title,
       reminderBody: copy.habit.body,
     });
-    const quickMoodNotifications = buildMoodQuickLogNotifications(
-      parseTime(reminders.moodTimeMorning, 9, 0),
-      copy.quickMoodBody,
-      { days: reminders.days, quietHours: reminders.quietHours },
-      generation,
-      ownerUserId,
-    );
+    const quickMoodNotifications = moodCheckInsEnabled
+      ? buildMoodQuickLogNotifications(
+          parseTime(reminders.moodTimeMorning, 9, 0),
+          copy.quickMoodBody,
+          { days: reminders.days, quietHours: reminders.quietHours },
+          generation,
+          ownerUserId,
+        )
+      : [];
     const notifications = [
       ...globalNotifications,
       ...habitNotifications,
       ...quickMoodNotifications,
     ];
+
+    const desiredIds = new Set(notifications.map(({ id }) => id));
+    const pendingSnapshot = await LocalNotifications.getPending();
+    const ownedNotifications = pendingSnapshot.notifications.filter((notification) =>
+      isReminderOwnedNotificationId(notification.id),
+    );
+    const privateChannelMigrationPending =
+      platform === 'android' &&
+      storageGetRaw(SK.NOTIFICATION_PRIVATE_CHANNEL_MIGRATION) !==
+        PRIVATE_CHANNEL_MIGRATION_COMPLETE;
+    const obsoleteNotifications = ownedNotifications.filter(
+      ({ id }) => !desiredIds.has(id),
+    );
+    const prePermissionCancellation = privateChannelMigrationPending
+      ? ownedNotifications
+      : obsoleteNotifications;
+    if (prePermissionCancellation.length > 0) {
+      await LocalNotifications.cancel({ notifications: prePermissionCancellation });
+    }
+    if (privateChannelMigrationPending) {
+      storageSetRaw(
+        SK.NOTIFICATION_PRIVATE_CHANNEL_MIGRATION,
+        PRIVATE_CHANNEL_MIGRATION_COMPLETE,
+      );
+    }
+
+    // Android channel properties are immutable. Only current private channels
+    // may receive new schedules; removals above remain possible without permission.
+    await initializeNotificationChannel(copy.channelCopy);
+    const permission = await LocalNotifications.checkPermissions();
+    if (permission.display !== 'granted') {
+      return { status: 'permission-required', scheduledCount: 0 };
+    }
 
     if (
       !isAccountScheduleCurrent(generation) ||
@@ -943,18 +998,21 @@ export async function reconcileReminderNotifications(
       return { status: 'superseded', scheduledCount: 0 };
     }
 
-    const pending = await LocalNotifications.getPending();
-    const ownedNotifications = pending.notifications.filter((notification) =>
-      isReminderOwnedNotificationId(notification.id),
+    const previousDesiredNotifications = ownedNotifications.filter(({ id }) =>
+      desiredIds.has(id),
     );
     const previousNotifications = getRestorableReminderSchedule(
-      ownedNotifications,
+      previousDesiredNotifications,
       generation,
       ownerUserId,
       options.rollbackChannelId,
     );
-    if (ownedNotifications.length > 0) {
-      await LocalNotifications.cancel({ notifications: ownedNotifications });
+    const preCancelledIds = new Set(prePermissionCancellation.map(({ id }) => id));
+    const remainingOwnedNotifications = ownedNotifications.filter(
+      ({ id }) => !preCancelledIds.has(id),
+    );
+    if (remainingOwnedNotifications.length > 0) {
+      await LocalNotifications.cancel({ notifications: remainingOwnedNotifications });
     }
     if (
       !isAccountScheduleCurrent(generation) ||

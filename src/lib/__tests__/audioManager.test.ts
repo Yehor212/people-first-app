@@ -2,10 +2,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ─── In-memory storage mock ────────────────────────────────────
 let mockStorage: Record<string, string> = {};
+let storageWritesSucceed = true;
 
 vi.mock('../safeJson', () => ({
   storageGetRaw: vi.fn((key: string): string | null => mockStorage[key] ?? null),
-  storageSetRaw: vi.fn((key: string, value: string) => { mockStorage[key] = value; }),
+  storageSetRaw: vi.fn((key: string, value: string) => {
+    if (!storageWritesSucceed) return false;
+    mockStorage[key] = value;
+    return true;
+  }),
+  storageReadRaw: vi.fn((key: string) => ({ ok: true, value: mockStorage[key] ?? null })),
+  storageRemove: vi.fn((key: string) => {
+    delete mockStorage[key];
+    return true;
+  }),
   safeLocalStorageGet: vi.fn((key: string, fallback: unknown) => {
     const raw = mockStorage[key];
     if (raw == null) return fallback;
@@ -27,17 +37,11 @@ vi.mock('../storageKeys', () => ({
     AUDIO_VOLUME: 'zenflow_audio_volume',
     AUDIO_COMFORT: 'zenflow_audio_comfort',
     AUDIO_COMFORT_FEEDBACK: 'zenflow_audio_comfort_feedback',
-    DOPAMINE_SETTINGS: 'zenflow_dopamine_settings',
   },
 }));
 
 vi.mock('../logger', () => ({
   logger: { log: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}));
-
-// Mock animationUtils — shouldPlaySounds
-vi.mock('../animationUtils', () => ({
-  shouldPlaySounds: vi.fn(() => true),
 }));
 
 import {
@@ -61,7 +65,6 @@ import {
 import * as audioManager from '../audioManager';
 
 import { storageSetRaw } from '../safeJson';
-import { shouldPlaySounds } from '../animationUtils';
 import { resetAudioComfortRuntimeForTests } from '../audioComfort';
 
 const LOW_SALIENCE_TEST_DELAY_MS = 180;
@@ -153,10 +156,11 @@ function installCapturedAudioContext(options: { initialState?: AudioContextState
 // ─── Setup ──────────────────────────────────────────────────────
 beforeEach(() => {
   mockStorage = {};
+  storageWritesSucceed = true;
   vi.clearAllMocks();
   cleanup(); // Reset module state
+  initAudioManager();
   resetAudioComfortRuntimeForTests();
-  vi.mocked(shouldPlaySounds).mockReturnValue(true);
 });
 
 afterEach(() => {
@@ -189,6 +193,21 @@ describe('Volume control', () => {
   it('setVolume persists to storage', () => {
     setVolume(0.6);
     expect(storageSetRaw).toHaveBeenCalledWith('zenflow_audio_volume', '0.6');
+  });
+
+  it('keeps the previous audible volume when persistence fails', () => {
+    mockStorage.zenflow_audio_volume = '0.3';
+    initAudioManager();
+    const listener = vi.fn();
+    window.addEventListener('zenflow-audio-settings-change', listener);
+    storageWritesSucceed = false;
+
+    const saved = setVolume(0.8);
+
+    expect(saved).toBe(false);
+    expect(getVolume()).toBe(0.3);
+    expect(listener).not.toHaveBeenCalled();
+    window.removeEventListener('zenflow-audio-settings-change', listener);
   });
 
   it('keeps notification feedback below sharp ping range', () => {
@@ -281,7 +300,6 @@ describe('Volume control', () => {
 
 describe('Effective app audio authority', () => {
   it('does not let the retired feedback-style sound flag override app audio', () => {
-    vi.mocked(shouldPlaySounds).mockReturnValue(false);
     initAudioManager();
 
     expect(audioManager.getAudioSettings()).toMatchObject({

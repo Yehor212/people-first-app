@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { haptics } from '@/lib/haptics';
 import { ROOT_SIZE } from './mindMapLayout';
-import { OrbLottie } from './OrbLottie';
+import { CanvasRootGlow } from './CanvasRootGlow';
 import type { MoodType } from '@/types';
 import type { CanvasMode } from '@/stores/uiStore';
 
@@ -67,7 +67,7 @@ export const RootNode = memo(function RootNode({ latestMood, canvasCenter, compl
       }}
     >
       {/* Ambient glow (behind everything) */}
-      <OrbLottie />
+      <CanvasRootGlow />
 
       {/* SVG progress ring */}
       <svg

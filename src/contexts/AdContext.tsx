@@ -23,6 +23,7 @@ import {
   showAdPrivacyOptions,
   refreshAdPrivacyOptionsStatus,
   disableAds,
+  isRewardedAdsSupported,
 } from '@/lib/adController';
 import { AD_REWARDS, type AdSafeZone } from '@/lib/adConfig';
 import { logger } from '@/lib/logger';
@@ -32,6 +33,9 @@ import { logger } from '@/lib/logger';
 // ============================================
 
 interface AdContextValue {
+  /** Whether this native build has a configured rewarded-ad capability */
+  adsSupported: boolean;
+
   /** Whether the AdMob SDK is available (native only) */
   adsAvailable: boolean;
 
@@ -230,6 +234,7 @@ export function AdProvider({
   }, [syncControllerState]);
 
   const value: AdContextValue = {
+    adsSupported: isRewardedAdsSupported(),
     adsAvailable,
     canShowRewarded: canShow,
     remainingToday: remaining,
@@ -254,6 +259,7 @@ export function useAds(): AdContextValue {
   if (!context) {
     // Return a no-op version if AdProvider isn't mounted
     return {
+      adsSupported: false,
       adsAvailable: false,
       canShowRewarded: false,
       remainingToday: 0,

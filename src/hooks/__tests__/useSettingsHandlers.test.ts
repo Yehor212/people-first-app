@@ -186,6 +186,17 @@ describe('useSettingsHandlers', () => {
     expect(mockSetUserNameCustom).toHaveBeenCalledWith(true);
   });
 
+  it('handleNameChange can reset a system-provided fallback without marking it user-chosen', () => {
+    const { result } = renderHook(() => useSettingsHandlers(allScheduleEvents));
+
+    act(() => {
+      result.current.handleNameChange('Friend', false);
+    });
+
+    expect(mockSetUserName).toHaveBeenCalledWith('Friend');
+    expect(mockSetUserNameCustom).toHaveBeenCalledWith(false);
+  });
+
   it('handleAddScheduleEvent adds event with generated id', () => {
     const { result } = renderHook(() => useSettingsHandlers(allScheduleEvents));
 

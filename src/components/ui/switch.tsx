@@ -23,7 +23,6 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
     // Support both controlled and uncontrolled modes
     const [internalChecked, setInternalChecked] = React.useState(defaultChecked);
     const isChecked = checked !== undefined ? checked : internalChecked;
-
     const handleClick = () => {
       if (disabled) return;
       void hapticTap();
@@ -54,7 +53,7 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         onKeyDown={handleKeyDown}
         className={cn(
           // 52px visual width with a 44px accessible touch target
-          "relative flex-shrink-0 rounded-full motion-safe:transition-colors motion-safe:duration-300 active:scale-[0.97]",
+          "relative flex-shrink-0 rounded-full motion-safe:transition-colors motion-safe:duration-300 motion-safe:active:scale-[0.97]",
           "w-[52px] h-[44px] min-w-[52px] min-h-[44px]",
           // Colors - semantic theme colors
           isChecked ? "bg-primary" : "bg-muted-foreground/40",
@@ -71,15 +70,15 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         <div
           className={cn(
             // Thumb stays visually compact while the switch keeps a 44px tap target
-            "absolute top-[11px] w-[22px] h-[22px] rounded-full",
+            "absolute top-[11px] w-[22px] h-[22px] rounded-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out",
             // Background and shadow
             "bg-background shadow-sm",
-            // Base position left-[3px]; checked slides 24px right via translateX (GPU-only)
-            "left-[3px]",
+            isChecked
+              ? "ltr:translate-x-[24px] rtl:-translate-x-[24px]"
+              : "translate-x-0",
           )}
           style={{
-            transform: isChecked ? 'translateX(24px)' : 'translateX(0)',
-            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            insetInlineStart: '3px',
           }}
         />
       </button>

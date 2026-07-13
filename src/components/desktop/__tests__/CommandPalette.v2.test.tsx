@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import CommandPalette from "../CommandPalette";
 import { useAppStore } from "@/stores";
+import { useThemeStore } from "@/stores/themeStore";
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -29,6 +30,7 @@ describe("CommandPalette V2 navigation", () => {
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
     window.localStorage.clear();
     useAppStore.setState({ activeTab: "home" });
+    useThemeStore.setState({ theme: "paper", appliedTheme: "paper" });
   });
 
   it("routes primary navigation through V2 pages instead of legacy app tabs", () => {
@@ -41,6 +43,19 @@ describe("CommandPalette V2 navigation", () => {
 
     expect(onNavigate).toHaveBeenCalledWith("planning");
     expect(useAppStore.getState().activeTab).toBe("home");
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("routes the desktop theme action through the canonical durable store", () => {
+    const onClose = vi.fn();
+    render(<CommandPalette open onClose={onClose} onNavigate={vi.fn()} />);
+
+    fireEvent.click(screen.getByText("Theme"));
+
+    expect(useThemeStore.getState()).toMatchObject({ theme: "ink", appliedTheme: "ink" });
+    expect(document.documentElement.dataset.theme).toBe("ink");
+    expect(document.documentElement).toHaveClass("dark");
+    expect(JSON.parse(localStorage.getItem("zenflow:theme-v0c") || "{}").state.theme).toBe("ink");
     expect(onClose).toHaveBeenCalled();
   });
 });

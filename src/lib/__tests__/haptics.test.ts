@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ─── Hoisted mocks (declared before vi.mock hoisting) ───────────
-const { mockShouldTriggerRef } = vi.hoisted(() => ({
-  mockShouldTriggerRef: { value: true },
+const { mockHapticsPreference } = vi.hoisted(() => ({
+  mockHapticsPreference: { enabled: true },
 }));
 
 // ─── Mocks ──────────────────────────────────────────────────────
@@ -38,8 +38,8 @@ vi.mock('@/lib/platform', () => ({
   isNative: true,
 }));
 
-vi.mock('@/lib/animationUtils', () => ({
-  shouldTriggerHaptics: () => mockShouldTriggerRef.value,
+vi.mock('@/lib/hapticsPreference', () => ({
+  getHapticsPreference: () => ({ ...mockHapticsPreference }),
 }));
 
 import {
@@ -56,7 +56,7 @@ import {
 // ─── Setup ──────────────────────────────────────────────────────
 beforeEach(() => {
   vi.clearAllMocks();
-  mockShouldTriggerRef.value = true;
+  mockHapticsPreference.enabled = true;
 });
 
 // ─── hapticTap ──────────────────────────────────────────────────
@@ -67,8 +67,8 @@ describe('hapticTap', () => {
     expect(mockImpact).toHaveBeenCalledWith({ style: 'LIGHT' });
   });
 
-  it('does nothing when haptics are disabled (shouldTriggerHaptics returns false)', async () => {
-    mockShouldTriggerRef.value = false;
+  it('does nothing when the direct haptics preference is disabled', async () => {
+    mockHapticsPreference.enabled = false;
     await hapticTap();
     expect(mockImpact).not.toHaveBeenCalled();
   });
@@ -122,9 +122,10 @@ describe('hapticError', () => {
 // ─── hapticSelection ────────────────────────────────────────────
 
 describe('hapticSelection', () => {
-  it('calls Haptics.selectionChanged', async () => {
+  it('uses a discrete light impact instead of an unstarted selection session', async () => {
     await hapticSelection();
-    expect(mockSelectionChanged).toHaveBeenCalled();
+    expect(mockImpact).toHaveBeenCalledWith({ style: 'LIGHT' });
+    expect(mockSelectionChanged).not.toHaveBeenCalled();
   });
 });
 

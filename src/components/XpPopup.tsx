@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Sparkles, Flame, Star, Zap, Heart, Wind } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { shouldAnimate, shouldShowConfetti } from '@/lib/animationUtils';
+import { shouldAnimate } from '@/lib/animationUtils';
 
 export interface XpEvent {
   id: string;
@@ -182,7 +182,7 @@ export function ConfettiBurst({ x, y }: { x: number; y: number }) {
 
   useEffect(() => {
     // Skip if confetti is disabled
-    if (!shouldShowConfetti()) return;
+    if (!shouldAnimate()) return;
 
     const colors = ['#fbbf24', '#a855f7', '#22c55e', '#3b82f6', '#ec4899', '#f97316'];
     const newParticles = Array.from({ length: 12 }, (_, i) => ({

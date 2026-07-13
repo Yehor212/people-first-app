@@ -1,11 +1,5 @@
-import {
-  useId,
-  type AriaRole,
-  type KeyboardEventHandler,
-  type ReactNode,
-  type Ref,
-} from "react";
-import { type LucideIcon } from "lucide-react";
+import { useId, type AriaRole, type KeyboardEventHandler, type ReactNode, type Ref } from "react";
+import type { LucideIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 export {
@@ -79,6 +73,8 @@ interface SettingsChoiceButtonProps {
   disabled?: boolean;
   testId?: string;
   className?: string;
+  lang?: string;
+  dir?: "ltr" | "rtl" | "auto";
 }
 
 interface SettingsFieldHeaderProps {
@@ -108,7 +104,7 @@ const SETTINGS_CHOICE_PRESENTATION_CLASS: Record<
   NonNullable<SettingsChoiceButtonProps["presentation"]>,
   string
 > = {
-  compact: "flex min-h-[44px] items-center justify-center gap-2 rounded-full px-3 text-center text-sm",
+  compact: "flex min-h-[44px] min-w-11 items-center justify-center gap-2 rounded-full px-3 text-center text-sm",
   default: "flex min-h-[48px] items-center gap-2 rounded-[8px] px-4 py-3 text-start text-sm",
   stacked:
     "flex min-h-[68px] flex-col items-center justify-center gap-2 rounded-[8px] p-3 text-center text-sm",
@@ -130,9 +126,9 @@ const SETTINGS_CHOICE_SELECTED_CLASS: Record<
   string
 > = {
   solid:
-    "border-[hsl(var(--settings-v2-accent)/0.46)] bg-[hsl(var(--settings-v2-accent)/0.1)] text-[hsl(var(--settings-v2-accent))] shadow-[0_10px_22px_-22px_hsl(var(--settings-v2-accent)/0.28)]",
+    "border-[hsl(var(--settings-v2-accent)/0.46)] bg-[hsl(var(--settings-v2-accent)/0.1)] text-foreground shadow-[0_10px_22px_-22px_hsl(var(--settings-v2-accent)/0.28)]",
   subtle:
-    "border-[hsl(var(--settings-v2-accent)/0.42)] bg-[hsl(var(--settings-v2-accent)/0.08)] text-[hsl(var(--settings-v2-accent))] shadow-[0_10px_22px_-24px_hsl(var(--settings-v2-accent)/0.24)]",
+    "border-[hsl(var(--settings-v2-accent)/0.42)] bg-[hsl(var(--settings-v2-accent)/0.08)] text-foreground shadow-[0_10px_22px_-24px_hsl(var(--settings-v2-accent)/0.24)]",
   danger:
     "border-destructive/45 bg-destructive/10 text-destructive shadow-[0_10px_22px_-22px_hsl(var(--destructive)/0.42)]",
 };
@@ -146,6 +142,9 @@ export function PanelFrame({
   showHeader = true,
   variant = "default",
 }: PanelFrameProps) {
+  const titleId = useId();
+  const descriptionId = useId();
+
   return (
     <section
       className={cn(
@@ -154,6 +153,8 @@ export function PanelFrame({
       )}
       data-testid={testId}
       data-panel-variant={variant}
+      aria-labelledby={showHeader ? titleId : undefined}
+      aria-describedby={showHeader ? descriptionId : undefined}
     >
       <span
         aria-hidden="true"
@@ -170,8 +171,13 @@ export function PanelFrame({
             <Icon className="h-4 w-4" aria-hidden="true" />
           </span>
           <span className="min-w-0">
-            <span className={cn("block text-sm font-semibold text-foreground", variant === "studio" && "text-base sm:text-lg")}>{title}</span>
-            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+            <h3
+              id={titleId}
+              className={cn("block text-sm font-semibold text-foreground", variant === "studio" && "text-base sm:text-lg")}
+            >
+              {title}
+            </h3>
+            <span id={descriptionId} className="mt-1 block text-xs leading-relaxed text-muted-foreground">
               {description}
             </span>
           </span>
@@ -323,6 +329,8 @@ export function SettingsChoiceButton({
   disabled,
   testId,
   className,
+  lang,
+  dir,
 }: SettingsChoiceButtonProps) {
   return (
     <button
@@ -332,6 +340,8 @@ export function SettingsChoiceButton({
       aria-pressed={selected}
       data-interaction-surface="settings-choice"
       data-testid={testId}
+      lang={lang}
+      dir={dir}
       className={cn(
         "border font-semibold shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.38)] motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55",
         SETTINGS_CHOICE_PRESENTATION_CLASS[presentation],

@@ -67,13 +67,20 @@ export const LOCK_TIMEOUT_OPTIONS = [
   { label: "15 minutes", ms: 900_000 },
   { label: "30 minutes", ms: 1_800_000 },
 ] as const;
+export const JOURNAL_AUTO_LOCK_CHANGE_EVENT = "zenflow:journal-auto-lock-change";
+
 function getAutoLockMs(): number {
   const stored = safeLocalStorageGet<number | null>(SK.JOURNAL_LOCK_TIMEOUT, null);
-  return stored !== null ? stored : DEFAULT_AUTO_LOCK_MS;
+  return LOCK_TIMEOUT_OPTIONS.some((option) => option.ms === stored)
+    ? (stored as (typeof LOCK_TIMEOUT_OPTIONS)[number]["ms"])
+    : DEFAULT_AUTO_LOCK_MS;
 }
 
-export function setAutoLockMs(ms: number): void {
-  safeLocalStorageSet(SK.JOURNAL_LOCK_TIMEOUT, ms);
+export function setAutoLockMs(ms: number): boolean {
+  if (!LOCK_TIMEOUT_OPTIONS.some((option) => option.ms === ms)) return false;
+  if (!safeLocalStorageSet(SK.JOURNAL_LOCK_TIMEOUT, ms)) return false;
+  window.dispatchEvent(new CustomEvent<number>(JOURNAL_AUTO_LOCK_CHANGE_EVENT, { detail: ms }));
+  return true;
 }
 const COOLDOWN_STEPS = [
   { after: 3, seconds: 30 },
@@ -456,6 +463,43 @@ export function useJournalSecurity() {
       if (autoLockTimerRef.current) clearTimeout(autoLockTimerRef.current);
     };
   }, [resetAutoLock]);
+
+  useEffect(() => {
+    const handleAutoLockChange = () => resetAutoLock();
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== SK.JOURNAL_LOCK_TIMEOUT && event.key !== null) return;
+      if (event.newValue === null) {
+        resetAutoLock();
+        return;
+      }
+      try {
+        const nextTimeout = JSON.parse(event.newValue) as unknown;
+        if (!LOCK_TIMEOUT_OPTIONS.some((option) => option.ms === nextTimeout)) return;
+        resetAutoLock();
+      } catch {
+        // Ignore malformed cross-tab values; the current validated timeout stays active.
+      }
+    };
+    window.addEventListener(JOURNAL_AUTO_LOCK_CHANGE_EVENT, handleAutoLockChange);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener(JOURNAL_AUTO_LOCK_CHANGE_EVENT, handleAutoLockChange);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [resetAutoLock]);
+
+  useEffect(() => {
+    if (!isUnlocked) return undefined;
+    const handleActivity = () => resetAutoLock();
+    document.addEventListener("pointerdown", handleActivity, { passive: true });
+    document.addEventListener("keydown", handleActivity);
+    document.addEventListener("touchstart", handleActivity, { passive: true });
+    return () => {
+      document.removeEventListener("pointerdown", handleActivity);
+      document.removeEventListener("keydown", handleActivity);
+      document.removeEventListener("touchstart", handleActivity);
+    };
+  }, [isUnlocked, resetAutoLock]);
 
   // Lock on visibility change (app background)
   useEffect(() => {

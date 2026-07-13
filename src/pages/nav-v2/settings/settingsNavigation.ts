@@ -10,7 +10,6 @@ const INITIAL_SECTION_TO_V2_SECTION: Record<string, V2SettingsSectionId> = {
   security: "privacy",
   data: "privacy",
   account: "account",
-  about: "about",
 };
 
 export function resolveInitialSettingsSection(

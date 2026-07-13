@@ -20,6 +20,7 @@ vi.mock('@/hooks/useLocalStorage', () => ({
 
 vi.mock('@/lib/safeJson', () => ({
   storageGetRaw: vi.fn(() => ''),
+  storageSetRaw: vi.fn(() => true),
 }));
 
 vi.mock('@/lib/storageKeys', () => ({
@@ -47,6 +48,7 @@ vi.mock('@/i18n/translations', () => ({
   },
 }));
 
+import { storageSetRaw } from '@/lib/safeJson';
 import { LanguageProvider, useLanguage } from '../LanguageContext';
 
 // --- Helpers ---
@@ -168,6 +170,7 @@ describe('LanguageContext', () => {
     });
 
     expect(mockSetLanguage).toHaveBeenCalledWith('es');
+    expect(storageSetRaw).toHaveBeenCalledWith('zenflow-language-selected', 'true');
   });
 
   // 9. Language validation: invalid stored language falls back to 'en'

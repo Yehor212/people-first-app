@@ -121,6 +121,8 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                   role="radio"
                   aria-checked={selected}
                   aria-label={languageNames[lang]}
+                  lang={lang}
+                  dir={rtlLanguages.has(lang) ? "rtl" : "ltr"}
                   onClick={(event) => handleSelect(lang, event)}
                   className={cn(
                     "entry-action-tile btn-press min-h-14 rounded-2xl border px-3 py-2.5 text-start outline-none transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",

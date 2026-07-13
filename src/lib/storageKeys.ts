@@ -30,6 +30,7 @@ export const SK = {
   THEME: "zenflow-theme",
   OLED_MODE: "zenflow_oled_mode",
   FONT_SCALE: "zenflow_font_scale",
+  REDUCE_MOTION: "zenflow_reduce_motion",
   LANGUAGE: "zenflow-language",
   LANGUAGE_SELECTED: "zenflow-language-selected",
   PRIVACY: "zenflow-privacy",
@@ -49,7 +50,6 @@ export const SK = {
   MYSTERY_BOXES: "zenflow_mystery_boxes",
   TIME_CHALLENGES: "zenflow_time_challenges",
   ACTIVE_POWERUPS: "zenflow_active_powerups",
-  DOPAMINE_SETTINGS: "zenflow_dopamine_settings",
   HOME_LAYOUT: "zenflow_home_layout",
   BADGES: "zenflow_badges",
   SPECIAL_BADGES: "zenflow-special-badges",
@@ -100,6 +100,9 @@ export const SK = {
   AUDIO_COMFORT: "zenflow-audio-comfort",
   AUDIO_COMFORT_FEEDBACK: "zenflow-audio-comfort-feedback",
   NOTIFICATION_SOUND: "zenflow_notification_sound",
+  NOTIFICATION_PRIVATE_CHANNEL_MIGRATION:
+    "zenflow_notification_private_channel_migration_v3",
+  HAPTICS_ENABLED: "zenflow_haptics_enabled",
 
   // ─── Feedback & Errors ───
   PENDING_FEEDBACK: "zenflow_pending_feedback",
@@ -124,6 +127,8 @@ export const SK = {
   APP_METADATA: "zenflow-app-metadata",
   LAST_SEEN_VERSION: "zenflow_last_seen_version",
   LAST_VERSION_CHECK: "zenflow_last_version_check",
+  LEGACY_FEEDBACK_SETTINGS: "zenflow_dopamine_settings",
+  LEGACY_FEEDBACK_MIGRATION: "zenflow_legacy_feedback_migration_v1",
 
   // ─── Social & Friends ───
   FRIENDS: "zenflow_friends",
@@ -163,6 +168,7 @@ export const SK = {
 
   // ─── Misc ───
   QUICK_ACTIONS_ENABLED: "zenflow_quick_actions_enabled",
+  LEGACY_QUICK_ACTIONS_RETIREMENT: "zenflow_legacy_quick_actions_retirement_v1",
   WIDGET_DATA: "zenflow-widget-data",
   DISMISSED_URGENCY: "zenflow-dismissed-urgency",
   RUNTIME_PERF_DEVICE_GUARD: "zenflow-runtime-perf-device-guard",

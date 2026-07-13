@@ -43,6 +43,8 @@ import {
   installRuntimePerformanceGuard,
 } from "./observability/runtimeFlightRecorder";
 import { bindPrefersColorSchemeListener } from "./stores/themeStore";
+import { migrateLegacyFeedbackSettings } from "./lib/legacyFeedbackMigration";
+import { retireLegacyQuickActions } from "./lib/legacyQuickActionsRetirement";
 
 // Sentry is deferred to post-mount via requestIdleCallback (see below initializeApp)
 // to keep it off the critical rendering path. Errors thrown before idle-init
@@ -52,6 +54,12 @@ import { bindPrefersColorSchemeListener } from "./stores/themeStore";
 // Setup chunk error handler EARLY to catch lazy loading failures
 // This must be before React renders to catch initial chunk load errors
 setupChunkErrorHandler();
+
+// Preserve explicit reduced-motion and vibration choices before the first
+// React frame. The migration is bounded to a few synchronous localStorage
+// operations and never reads IndexedDB or the network.
+migrateLegacyFeedbackSettings();
+void retireLegacyQuickActions();
 
 // Initialize accessibility features (aria-live regions for screen readers)
 initA11y();

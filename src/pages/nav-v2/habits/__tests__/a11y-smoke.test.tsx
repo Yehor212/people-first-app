@@ -21,9 +21,6 @@ vi.mock("@/components/compact-habit-card/CompactHabitCard", () => ({
     </li>
   ),
 }));
-vi.mock("@/components/animations/AllHabitsDoneAnimation", () => ({
-  AllHabitsDoneAnimation: () => null,
-}));
 vi.mock("@/components/habit-completion-celebration/HabitCompletionCelebration", () => ({
   HabitCompletionCelebration: () => null,
 }));

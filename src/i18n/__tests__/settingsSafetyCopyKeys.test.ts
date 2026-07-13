@@ -92,6 +92,29 @@ const changedExistingCopyKeys = [
   "openSourceLicenses",
 ] as const;
 const newV2Keys = [
+  "themeModeTitle",
+  "themeModeDescription",
+  "themeBlack",
+  "themeChangeSaved",
+  "settingsPreferenceSaveError",
+  "settingsReduceMotion",
+  "settingsReduceMotionDescription",
+  "settingsReduceMotionSystemDescription",
+  "settingsOverviewDescriptionWithoutReminders",
+  "settingsReminderDaysMissing",
+  "settingsSoundRestoreTitle",
+  "settingsSoundRestoreDescription",
+  "settingsSoundRestoreAction",
+  "settingsSoundMasterDisabledHint",
+  "settingsMoodCheckIns",
+  "settingsMoodCheckInsDescription",
+  "settingsFocusReminder",
+  "settingsFocusReminderDescription",
+  "settingsReminderChooseDay",
+  "settingsSoundBackgroundTitle",
+  "settingsSoundBackgroundDescription",
+  "settingsSoundActivityTitle",
+  "settingsSoundActivityDescription",
   "settingsAccountBackupTitle",
   "settingsAccountBackupDescription",
   "settingsAccountSignedIn",
@@ -113,6 +136,7 @@ const newV2Keys = [
   "settingsReportProgressAction",
   "settingsSoundDiaryRainOff",
   "settingsSoundDiaryReady",
+  "notificationSoundUpdateUncertain",
 ] as const;
 const platformSpecificRecoveryAndStoreKeys = new Set<string>([
   "notificationSystemSettingsAndroidDescription",
@@ -226,6 +250,21 @@ describe("Settings safety copy", () => {
     );
   });
 
+  it("uses familiar, outcome-focused labels for the simplified Settings controls", () => {
+    expect(en.themeModeTitle).toBe("Color mode");
+    expect(en.themeAccentTeal).toBe("Green");
+    expect(en.settingsSoundBackgroundTitle).toBe("Background sounds");
+    expect(en.settingsSoundActivityTitle).toBe("Activity sounds");
+    expect(en.settingsMoodCheckIns).toBe("Mood check-ins");
+    expect(en.settingsReminderChooseDay).toContain("No reminders");
+
+    expect(uk.themeModeTitle).toBe("Режим оформлення");
+    expect(uk.themeAccentClay).toBe("Синій");
+    expect(uk.settingsSoundBackgroundTitle).toBe("Фонові звуки");
+    expect(uk.settingsSoundActivityTitle).toBe("Звуки дій");
+    expect(uk.settingsMoodCheckIns).toBe("Нагадування про настрій");
+  });
+
   it("uses neutral French Sound copy and accented Appearance copy", () => {
     const themePreviewingWords =
       fr.themePreviewing.toLocaleLowerCase("fr").match(/\p{L}+/gu) ?? [];
@@ -286,7 +325,7 @@ describe("Settings safety copy", () => {
           "Your data stays on this device.",
         settingsRemindersMobileApp: "Mobile app",
         settingsPrivacyDataDescription:
-          "You choose which optional services ZenFlow can use. Backup starts only after you sign in.",
+          "Choose which optional services ZenFlow may use.",
         settingsDataBackupReportsDescription:
           "Save a backup you can import later, or create a report.",
         settingsBackupRestoreTitle: "Backup & restore",
@@ -323,7 +362,7 @@ describe("Settings safety copy", () => {
           "Ваші дані залишаються на цьому пристрої.",
         settingsRemindersMobileApp: "Мобільний застосунок",
         settingsPrivacyDataDescription:
-          "Ви вирішуєте, які додаткові сервіси може використовувати ZenFlow. Резервне копіювання починається лише після входу.",
+          "Ви вирішуєте, які додаткові сервіси може використовувати ZenFlow.",
         settingsDataBackupReportsDescription:
           "Збережіть резервну копію для подальшого імпорту або створіть звіт.",
         settingsBackupRestoreTitle: "Резервне копіювання й відновлення",
@@ -360,7 +399,7 @@ describe("Settings safety copy", () => {
           "Tus datos se quedan en este dispositivo.",
         settingsRemindersMobileApp: "App móvil",
         settingsPrivacyDataDescription:
-          "Tú eliges qué servicios opcionales puede usar ZenFlow. La copia de seguridad empieza solo después de iniciar sesión.",
+          "Tú eliges qué servicios opcionales puede usar ZenFlow.",
         settingsDataBackupReportsDescription:
           "Guarda una copia para importarla más adelante o crea un informe.",
         settingsBackupRestoreTitle: "Copia de seguridad y restauración",
@@ -398,7 +437,7 @@ describe("Settings safety copy", () => {
           "Deine Daten bleiben auf diesem Gerät.",
         settingsRemindersMobileApp: "Mobile App",
         settingsPrivacyDataDescription:
-          "Du entscheidest, welche optionalen Dienste ZenFlow verwenden darf. Das Backup beginnt erst nach der Anmeldung.",
+          "Du entscheidest, welche optionalen Dienste ZenFlow verwenden darf.",
         settingsDataBackupReportsDescription:
           "Speichere ein Backup für einen späteren Import oder erstelle einen Bericht.",
         settingsBackupRestoreTitle: "Backup und Wiederherstellung",
@@ -435,7 +474,7 @@ describe("Settings safety copy", () => {
           "Vos données restent sur cet appareil.",
         settingsRemindersMobileApp: "App mobile",
         settingsPrivacyDataDescription:
-          "Vous choisissez les services facultatifs que ZenFlow peut utiliser. La sauvegarde commence uniquement après votre connexion.",
+          "Vous choisissez les services facultatifs que ZenFlow peut utiliser.",
         settingsDataBackupReportsDescription:
           "Enregistrez une sauvegarde à importer plus tard ou créez un rapport.",
         settingsBackupRestoreTitle: "Sauvegarde et restauration",
@@ -472,7 +511,7 @@ describe("Settings safety copy", () => {
           "データはこの端末に保存されます。",
         settingsRemindersMobileApp: "モバイル版",
         settingsPrivacyDataDescription:
-          "ZenFlowで使用する任意のサービスを選べます。バックアップはサインイン後にのみ始まります。",
+          "ZenFlowで使用する任意のサービスを選べます。",
         settingsDataBackupReportsDescription:
           "後でインポートできるバックアップを保存するか、レポートを作成します。",
         settingsBackupRestoreTitle: "バックアップと復元",
@@ -509,7 +548,7 @@ describe("Settings safety copy", () => {
           "تبقى بياناتك على هذا الجهاز.",
         settingsRemindersMobileApp: "تطبيق الهاتف",
         settingsPrivacyDataDescription:
-          "يمكن اختيار الخدمات الاختيارية التي يستخدمها ZenFlow. لا يبدأ النسخ الاحتياطي إلا بعد تسجيل الدخول.",
+          "يمكن اختيار الخدمات الاختيارية التي يستخدمها ZenFlow.",
         settingsDataBackupReportsDescription:
           "يمكن حفظ نسخة احتياطية لاستيرادها لاحقًا أو إنشاء تقرير.",
         settingsBackupRestoreTitle: "النسخ الاحتياطي والاستعادة",
@@ -546,7 +585,7 @@ describe("Settings safety copy", () => {
           "הנתונים נשארים במכשיר הזה.",
         settingsRemindersMobileApp: "אפליקציה לנייד",
         settingsPrivacyDataDescription:
-          "אפשר לבחור באילו שירותים אופציונליים ZenFlow ישתמש. הגיבוי מתחיל רק לאחר הכניסה לחשבון.",
+          "אפשר לבחור באילו שירותים אופציונליים ZenFlow ישתמש.",
         settingsDataBackupReportsDescription:
           "אפשר לשמור גיבוי לייבוא מאוחר יותר או ליצור דוח.",
         settingsBackupRestoreTitle: "גיבוי ושחזור",
@@ -666,7 +705,7 @@ describe("Settings safety copy", () => {
       "Farbe für Schaltflächen, Auswahlen und Hervorhebungen."
     );
     expect.soft(de.themeIntensityTitle).toBe("Intensität");
-    expect.soft(de.themeResetAction).toBe("Zurücksetzen");
+    expect.soft(de.themeResetAction).toBe("Akzentfarbe und Kontrast zurücksetzen");
     expect.soft(de.themeUndoAction).toBe("Rückgängig");
     expect.soft(de.themeReset).toContain("zurückgesetzt");
     expect.soft(words(de.themeReset, "de")).not.toContain("zuruckgesetzt");
@@ -689,7 +728,9 @@ describe("Settings safety copy", () => {
     expect.soft(fr.themeAccentTitle).toBe("Couleur d’accent");
     expect.soft(fr.themeIntensityTitle).toBe("Intensité");
     expect.soft(fr.themePreviewAction).toBe("Aperçu");
-    expect.soft(fr.themeResetAction).toBe("Réinitialiser");
+    expect.soft(fr.themeResetAction).toBe(
+      "Réinitialiser la couleur d’accent et le contraste",
+    );
     expect.soft(fr.themeMoreActions).toBe("Plus d’actions d’apparence");
     expect.soft(fr.themeApplied).toContain("appliqué");
     expect.soft(words(fr.themeApplied, "fr")).not.toContain("applique");

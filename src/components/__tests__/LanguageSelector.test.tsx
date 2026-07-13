@@ -167,6 +167,10 @@ describe("LanguageSelector", () => {
     expect(languageGroup).toBeInTheDocument();
     expect(within(languageGroup).getAllByRole("radio")).toHaveLength(8);
     expect(screen.getByRole("radio", { name: "English" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "English" })).toHaveAttribute("lang", "en");
+    expect(screen.getByRole("radio", { name: "English" })).toHaveAttribute("dir", "ltr");
+    expect(screen.getByRole("radio", { name: "العربية" })).toHaveAttribute("lang", "ar");
+    expect(screen.getByRole("radio", { name: "العربية" })).toHaveAttribute("dir", "rtl");
     expect(screen.getByRole("radio", { name: "Українська" })).toHaveAttribute(
       "aria-checked",
       "false"
@@ -213,6 +217,6 @@ describe("LanguageSelector", () => {
 
     fireEvent.click(within(themeGroup).getByRole("radio", { name: "Light" }));
     expect(themeState.setTheme).toHaveBeenCalledWith("paper");
-    expect(themeState.setThemePreference).toHaveBeenCalledWith("light");
+    expect(themeState.setThemePreference).not.toHaveBeenCalled();
   });
 });

@@ -15,7 +15,7 @@
  * Numbers are in milliseconds. Framer Motion's `transition.delay` is in
  * seconds, so we divide by 1000 at the boundary.
  *
- * Reduced-motion / Dopamine-off / low-battery paths return `{ duration: 0 }`
+ * App/OS reduced-motion and low-battery paths return `{ duration: 0 }`
  * so the element appears instantly with no delay — same shape, zero motion.
  *
  * Consumers that cannot call a React hook (non-component contexts) use the
@@ -44,7 +44,7 @@ export function isStage(name: string): name is Stage {
 /**
  * Return a Framer Motion `transition` object that applies the stage's delay.
  *
- * When animation is suppressed (Dopamine off / OS reduce / low battery),
+ * When animation is suppressed (app/OS reduced motion or low battery),
  * returns `{ duration: 0 }` so the element appears immediately.
  */
 export function staggerDelay(stage: Stage): Transition {

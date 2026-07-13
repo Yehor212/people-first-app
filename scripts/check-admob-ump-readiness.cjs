@@ -10,7 +10,6 @@ const DEFAULT_FILES = {
   packageJson: "package.json",
   adController: "src/lib/adController.ts",
   adContext: "src/contexts/AdContext.tsx",
-  privacySection: "src/components/settings/PrivacySection.tsx",
   v2SettingsPrivacyPanel: "src/pages/nav-v2/settings/V2SettingsPrivacyPanel.tsx",
   androidManifest: "android/app/src/main/AndroidManifest.xml",
   androidBuildGradle: "android/app/build.gradle",
@@ -142,14 +141,6 @@ function evaluateAdMobUmpReadiness(files) {
     "privacyOptionsRequired",
     "missing_privacy_options_state",
     "Ad context must surface whether UMP requires a visible privacy-options entry point",
-  );
-  requireContains(
-    issues,
-    files,
-    "privacySection",
-    "openAdPrivacyOptions",
-    "missing_settings_privacy_options_entry",
-    "Classic settings must expose the Google ad privacy options entry point when required",
   );
   requireContains(
     issues,

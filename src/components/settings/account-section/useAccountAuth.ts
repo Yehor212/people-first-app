@@ -24,7 +24,7 @@ import { logger } from "@/lib/logger";
 import { performOwnerSafeSignOut } from "@/lib/accountSignOutCleanup";
 
 interface UseAccountAuthOptions {
-  onNameChange: (name: string) => void;
+  onNameChange: (name: string, userChosen?: boolean) => void;
   t: Record<string, string>;
 }
 
@@ -284,7 +284,7 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
       setAuthGateChecked(false);
       authStateManager.reset();
       resetAuthGuard();
-      onNameChange("Friend");
+      onNameChange("Friend", false);
       setSignOutBlockReason(null);
       setAuthStatus(t.authSignedOut);
     } catch (error) {

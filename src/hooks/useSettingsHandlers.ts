@@ -68,9 +68,9 @@ export function useSettingsHandlers(allScheduleEvents: ScheduleEvent[]) {
     }
   }, [resetInMemoryState]);
 
-  const handleNameChange = useCallback((name: string) => {
+  const handleNameChange = useCallback((name: string, userChosen = true) => {
     setUserName(name);
-    setUserNameCustom(true);
+    setUserNameCustom(userChosen);
   }, [setUserName, setUserNameCustom]);
 
   const handlePullToRefresh = useCallback(async () => {

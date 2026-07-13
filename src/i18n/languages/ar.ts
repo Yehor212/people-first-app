@@ -520,11 +520,20 @@ const arabicOverrides: Partial<Translations> = {
   saveName: "حفظ الاسم",
   nameSaved: "تم حفظ الاسم",
   nameSavedLocally: "تم الحفظ على هذا الجهاز",
-  invalidNameFormat: "صيغة الاسم غير صالحة",
+  invalidNameFormat: "أدخل اسمًا يتراوح بين حرف واحد و100 حرف.",
   notifications: "الإشعارات",
   notificationsComingSoon: "الإشعارات متاحة في التحديثات القادمة.",
   settingsOverviewDescription:
     "يمكن اختيار مظهر ZenFlow وأصواته وتذكيراته وطريقة تعامله مع البيانات.",
+  settingsOverviewDescriptionWithoutReminders:
+    "يمكن اختيار مظهر ZenFlow وأصواته وطريقة تعامله مع البيانات.",
+  settingsReminderDaysMissing: "اختر أيام التذكير",
+  settingsSoundRestoreTitle: "بعض أصوات الخلفية متوقفة",
+  settingsSoundRestoreDescription:
+    "ستبقى الأصوات التي أوقفتها سابقًا متوقفة إلى أن تعيد تشغيلها.",
+  settingsSoundRestoreAction: "إعادة تشغيل الأصوات",
+  settingsSoundMasterDisabledHint:
+    "شغّل صوت التطبيق لاستخدام هذه الإعدادات.",
   settingsAccountBackupTitle: "الحساب والنسخ الاحتياطي",
   settingsAccountBackupDescription:
     "حسابك متصل. إذا تعذّر على ZenFlow حفظ تغييراتك عبر الإنترنت، فستبقى على هذا الجهاز.",
@@ -543,7 +552,7 @@ const arabicOverrides: Partial<Translations> = {
     "تبقى بياناتك على هذا الجهاز.",
   settingsRemindersMobileApp: "تطبيق الهاتف",
   settingsPrivacyDataDescription:
-    "يمكن اختيار الخدمات الاختيارية التي يستخدمها ZenFlow. لا يبدأ النسخ الاحتياطي إلا بعد تسجيل الدخول.",
+    "يمكن اختيار الخدمات الاختيارية التي يستخدمها ZenFlow.",
   settingsDataBackupReportsDescription:
     "يمكن حفظ نسخة احتياطية لاستيرادها لاحقًا أو إنشاء تقرير.",
   settingsBackupRestoreTitle: "النسخ الاحتياطي والاستعادة",
@@ -568,7 +577,7 @@ const arabicOverrides: Partial<Translations> = {
   data: "البيانات",
   exportData: "تصدير البيانات",
   importData: "استيراد البيانات",
-  importMode: "وضع الاستيراد",
+  importMode: "كيف تريد إضافة هذه النسخة الاحتياطية؟",
   importMerge: "تحديث البيانات الحالية",
   importReplace: "استبدال البيانات الحالية",
   exportSuccess: "تم التصدير.",
@@ -649,16 +658,28 @@ const arabicOverrides: Partial<Translations> = {
   themeLight: "فاتح",
   themeDark: "داكن",
   themeSystem: "النظام",
+  themeModeTitle: "نمط الألوان",
+  themeModeDescription:
+    "اتباع إعداد الجهاز، أو اختيار مظهر فاتح أو داكن أو أسود.",
+  themeBlack: "أسود",
+  themeChangeSaved: "تم حفظ التغيير",
+  settingsPreferenceSaveError:
+    "تعذّر حفظ هذا التغيير. لا يزال الإعداد السابق مفعّلًا.",
+  settingsReduceMotion: "تقليل الحركة",
+  settingsReduceMotionDescription:
+    "يقلل الانتقالات المتحركة والتأثيرات الزخرفية.",
+  settingsReduceMotionSystemDescription:
+    "إعداد تقليل الحركة مفعّل بالفعل على هذا الجهاز.",
   themeStyleTitle: "لوحة المزاج",
   themeAdvancedAppearanceTitle: "مظهر متقدم",
-  themeStyleDescription: "يمكن اختيار النمط الأنسب.",
+  themeStyleDescription: "يمكن اختيار نمط الألوان ولون التمييز وحجم النص.",
   themeAccentTitle: "لون التمييز",
   themeAccentDescription: "لون الأزرار والاختيارات والعناصر البارزة.",
   themeIntensityTitle: "الشدة",
   themeComfortTitle: "الراحة",
   themePreviewAction: "معاينة",
   themeApplyAction: "تطبيق",
-  themeResetAction: "اعادة ضبط",
+  themeResetAction: "إعادة ضبط لون التمييز والتباين",
   themeUndoAction: "تراجع",
   themeMoreActions: "المزيد من إجراءات المظهر",
   themePreviewing: "تتم معاينة النمط",
@@ -671,8 +692,8 @@ const arabicOverrides: Partial<Translations> = {
   themePaletteVelvetLibrary: "مكتبة مخملية",
   themePaletteBotanicalPulse: "نبض نباتي",
   themePaletteQuietOled: "أسود هادئ",
-  themeAccentTeal: "زجاج البحر",
-  themeAccentClay: "طين",
+  themeAccentTeal: "أخضر",
+  themeAccentClay: "أزرق",
   themeAccentPlum: "بنفسجي",
   themeAccentMoss: "طحلبي",
   themeAccentAmber: "كهرماني",
@@ -726,7 +747,7 @@ const arabicOverrides: Partial<Translations> = {
     "عند تسجيل الدخول، يبقي ZenFlow بياناتك متاحة على أجهزتك. تنتظر التغييرات بأمان عندما يكون الاتصال ضعيفًا.",
   settingsCloudSyncEnabled: "النسخة الاحتياطية عبر الإنترنت مفعّلة",
   settingsCloudSyncDisabledByUser: "النسخة الاحتياطية عبر الإنترنت متوقفة مؤقتًا",
-  settingsExportTitle: "تصدير البيانات",
+  settingsExportTitle: "حفظ نسخة احتياطية",
   settingsExportDescription: "تنزيل نسخة احتياطية من بياناتك",
   settingsImportTitle: "استيراد البيانات",
   settingsImportMergeTooltip:
@@ -755,11 +776,6 @@ const arabicOverrides: Partial<Translations> = {
   settingsSectionAccount: "الحساب والأجهزة",
   settingsSectionData: "البيانات",
 
-  // Weekly Digest
-  weeklyDigestTitle: "الملخص الأسبوعي",
-  weeklyDigestDescription: "احصل على تقرير تقدمك كل أسبوع",
-  weeklyDigestEnabled: "الملخص الأسبوعي مفعل",
-
   // Google Calendar
   googleCalendar: "تقويم جوجل",
   googleCalendarDescription: "عرض أحداث تقويم جوجل في الجدول الزمني",
@@ -786,7 +802,7 @@ const arabicOverrides: Partial<Translations> = {
   journalLockTimeout: "القفل التلقائي لليوميات",
   journalLockTimeoutDesc: "قفل اليوميات تلقائياً بعد فترة من عدم النشاط",
   journalLockImmediateWarning: "سيتم قفل اليوميات في كل مرة تغادر فيها شاشة اليوميات",
-  journalLockTimeoutImmediately: "فورًا",
+  journalLockTimeoutImmediately: "عند مغادرة التطبيق",
   journalLockTimeoutOneMinute: "بعد دقيقة واحدة",
   journalLockTimeoutFiveMinutes: "بعد 5 دقائق",
   journalLockTimeoutFifteenMinutes: "بعد 15 دقيقة",
@@ -1038,6 +1054,9 @@ const arabicOverrides: Partial<Translations> = {
   muteSound: "كتم الصوت",
   unmuteSound: "إلغاء كتم الصوت",
   settingsSoundTitle: "الصوت",
+  settingsVibration: "الاهتزاز",
+  settingsVibrationDescription:
+    "اهتزاز قصير عند اللمس والتأكيد، إذا كان الجهاز يدعمه.",
   settingsSoundDescription: "أصوات \u2066ZenFlow\u2069 ومستوى صوتها.",
   settingsSoundSummaryOn: "الصوت مفعل",
   settingsSoundSummaryOff: "مكتوم",
@@ -1046,12 +1065,9 @@ const arabicOverrides: Partial<Translations> = {
   settingsSoundVolume: "مستوى الصوت",
   settingsSoundVolumeDesc: "يضبط مستوى الأصوات داخل \u2066ZenFlow\u2069.",
   settingsSoundPreview: "معاينة صوت التذكير",
-  settingsSoundAmbienceTitle: "صوت خلفية اليوميات",
+  settingsSoundAmbienceTitle: "صوت للكتابة",
   settingsSoundAmbienceNote:
-    "يبدأ صوت الخلفية من شاشة المزاج. ويمكنك معاينة صوت خلفية اليوميات هنا.",
-  settingsSoundFeedbackOn: "تستخدم أصوات التفاعل القصيرة مستوى الصوت هذا.",
-  settingsSoundFeedbackOff:
-    "أصوات التفاعل متوقفة ضمن إعدادات «التغذية الراجعة والحركة».",
+    "يمكن تشغيل مطر هادئ أثناء الكتابة. لن يبدأ قبل الضغط على زر التشغيل.",
   settingsSoundTextureAir: "هواء",
   settingsSoundTextureWater: "ماء",
   settingsSoundTextureRain: "مطر",
@@ -1072,6 +1088,12 @@ const arabicOverrides: Partial<Translations> = {
   settingsSoundAmbientToggle: "صوت الخلفية",
   settingsSoundAmbientToggleDesc:
     "يتحكم في صوت الخلفية على شاشات تسجيل الدخول والمزاج واليوميات، خارج جلسات التركيز.",
+  settingsSoundBackgroundTitle: "أصوات الخلفية",
+  settingsSoundBackgroundDescription:
+    "يسمح بأصوات خلفية هادئة في ⁦ZenFlow⁩. لا يبدأ التشغيل إلا بعد الضغط على زر التشغيل.",
+  settingsSoundActivityTitle: "أصوات الأنشطة",
+  settingsSoundActivityDescription:
+    "يشغّل تأكيدًا هادئًا بعد إكمال الأنشطة والمؤقتات وبعض مراحل التقدم.",
   settingsSoundCompletionCues: "أصوات التأكيد",
   settingsSoundCompletionCuesDesc: "يشغّل صوت تأكيد هادئ بعد الإجراءات المهمة.",
   settingsSoundReminderCues: "أصوات التذكير داخل \u2066ZenFlow\u2069",
@@ -1313,35 +1335,6 @@ const arabicOverrides: Partial<Translations> = {
   completedHabitReason: "تم إكمال العادة",
   comebackChallengeComplete: "تم إكمال تحدي العودة!",
   questPrefix: "مهمة",
-
-  // Dopamine Settings
-  dopamineSettings: "التغذية الراجعة والحركة",
-  dopamineSettingsDesc: "اختر مقدار الحركة والصوت والاهتزاز الذي يستخدمه ZenFlow.",
-  dopamineSettingsDescNoHaptics: "اختر مقدار الحركة والصوت الذي يستخدمه ZenFlow.",
-  dopamineIntensity: "مستوى التغذية الراجعة",
-  dopamineMinimal: "هادئ",
-  dopamineNormal: "متوازن",
-  dopamineADHD: "تغذية راجعة أكثر",
-  dopamineMinimalDesc: "حركة أقل وتأثيرات احتفال أقل.",
-  dopamineNormalDesc: "مزيج هادئ من التغذية الراجعة المفيدة.",
-  dopamineADHDDesc: "كل التأثيرات الاختيارية مفعّلة؛ يمكنك إيقاف أي منها أدناه.",
-  dopamineCustomize: "ضبط التغذية الراجعة",
-  dopamineAnimations: "الرسوم المتحركة",
-  dopamineAnimationsDesc: "حركة لتغييرات الحالة والانتقالات",
-  dopamineSounds: "الأصوات",
-  dopamineSoundsDesc: "أصوات تأكيد وتغذية راجعة صوتية",
-  dopamineHaptics: "الاهتزاز",
-  dopamineHapticsDesc: "اهتزاز لمسي",
-  dopamineConfetti: "القصاصات",
-  dopamineConfettiDesc: "تأثيرات احتفال اختيارية بعد الإكمال",
-  dopamineStreakFire: "نار السلسلة",
-  dopamineStreakFireDesc: "تأكيد متحرك للسلاسل",
-  dopamineMoodDrivenUI: "واجهة حسب المزاج",
-  dopamineMoodDrivenUIDesc: "يمكن أن يتبع اللون والأجواء مزاجك",
-  dopamineTip: "ملاحظة راحة",
-  dopamineTipText:
-    "ابدأ بالوضع الهادئ إذا كانت التأثيرات تشتتك. زد التغذية الراجعة فقط عندما تساعدك على التوجه.",
-  dopamineSave: "تم",
 
   fontScaleTitle: "حجم النص",
   fontScalePreview: "معاينة: كيف سيبدو النص",
@@ -2046,11 +2039,7 @@ const arabicOverrides: Partial<Translations> = {
   updateNow: "حدّث الآن",
   updateAvailableFor: "متاح منذ {days} أيام",
 
-  // Quick Actions
-  quickActions: "إجراءات سريعة",
-  quickActionsDescription: "اختصارات لشاشة القفل",
-  quickActionsEnabled: "الإجراءات السريعة مفعلة",
-  quickActionsDisabled: "الإجراءات السريعة معطلة",
+  // Contextual shortcuts
   quickActionLogMood: "سجل المزاج",
   quickActionStartFocus: "ابدأ التركيز",
   quickActionViewHabits: "عرض العادات",
@@ -2060,6 +2049,8 @@ const arabicOverrides: Partial<Translations> = {
   notificationSoundDescription: "اختر صوت الإشعارات",
   notificationSoundUpdateFailed:
     "تعذّر على ZenFlow تطبيق صوت التذكير هذا. ما زال الصوت السابق محددًا. حاول مرة أخرى.",
+  notificationSoundUpdateUncertain:
+    "تعذّر على ZenFlow إكمال تغيير صوت التذكير. تحقّق من الصوت المحدد وحاول مرة أخرى.",
   reminderReconcileFailed:
     "تعذّر على ZenFlow تحديث التذكيرات. قد يواصل جهازك استخدام الجدول السابق. حاول مرة أخرى.",
   soundDefault: "افتراضي",
@@ -2365,7 +2356,6 @@ const arabicOverrides: Partial<Translations> = {
   syncPulled: "تمت استعادة البيانات عبر الإنترنت.",
   syncPushed: "تم تحديث النسخة الاحتياطية عبر الإنترنت.",
   syncError: "تعذّر تحديث أجهزتك.",
-  weeklyDigestError: "تعذر تحديث الملخص الأسبوعي. حاول مرة أخرى.",
   authGateTitle: "سجل الدخول",
   authGateBody: "سجّل الدخول بالبريد الإلكتروني ليبقى تقدمك على أجهزتك.",
   authGateContinue: "متابعة",
@@ -2444,6 +2434,12 @@ const arabicOverrides: Partial<Translations> = {
   quietHoursStart: "بداية الهدوء",
   quietHoursEnd: "نهاية الهدوء",
   reminderDays: "أيام التذكير",
+  settingsMoodCheckIns: "تذكيرات المزاج",
+  settingsMoodCheckInsDescription: "تذكيرات لطيفة لتسجيل المشاعر الحالية.",
+  settingsFocusReminder: "تذكير التركيز",
+  settingsFocusReminderDescription: "تذكير واحد قرابة الوقت الذي تختاره.",
+  settingsReminderChooseDay:
+    "اختر يومًا واحدًا على الأقل. لن تُرسل أي تذكيرات قبل ذلك.",
   selectedHabits: "العادات المختارة",
   noHabitsYet: "لا عادات بعد",
   noHabitsInCategory: "لا عادات في هذه الفئة",
