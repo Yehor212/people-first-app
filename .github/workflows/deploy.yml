@@ -25,7 +25,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: "pages"
+  # Keep production writers serialized while isolating PR and non-deploy builds.
+  group: ${{ github.event_name == 'pull_request' && format('pages-pr-{0}', github.event.pull_request.number) || github.event_name == 'push' && 'pages' || github.event.inputs.telegram_approval == 'telegram-approved' && github.ref == 'refs/heads/main' && 'pages' || format('pages-nondeploy-{0}', github.ref) }}
   cancel-in-progress: true
 
 env:
