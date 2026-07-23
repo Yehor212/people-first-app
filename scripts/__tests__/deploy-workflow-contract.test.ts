@@ -316,8 +316,14 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(pkg.scripts["test:agent-orchestra"]).toContain(
       "scripts/__tests__/codex-change-governance-gate.test.mjs",
     );
+    expect(pkg.scripts["test:agent-orchestra"]).toContain(
+      "scripts/__tests__/private-receipt-export.test.mjs",
+    );
     expect(pkg.scripts["test:release-contracts"]).toContain(
       "scripts/__tests__/skill-routing-hook-payload.test.ts",
+    );
+    expect(pkg.scripts["test:release-contracts"]).toContain(
+      "scripts/__tests__/private-receipt-export.test.mjs",
     );
   });
 
