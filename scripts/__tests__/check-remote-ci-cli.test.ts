@@ -19,7 +19,8 @@ type FakeScenario =
   | "success"
   | "failed-job"
   | "pending-job"
-  | "pending-then-success";
+  | "pending-then-success"
+  | "queued-empty-conclusion-then-success";
 
 function runRemoteCiWithFakeGh({
   args,
@@ -70,9 +71,10 @@ if (args[0] === "pr" && args[1] === "view") {
 if (args[0] === "run" && args[1] === "list") {
   const count = fs.existsSync(runListCallPath) ? Number(fs.readFileSync(runListCallPath, "utf8")) : 0;
   fs.writeFileSync(runListCallPath, String(count + 1));
+  const queued = scenario === "queued-empty-conclusion-then-success" && count === 0;
   process.stdout.write(JSON.stringify([
-    { databaseId: 1, status: "completed", conclusion: "success", name: "Deploy to GitHub Pages", workflowName: "Deploy to GitHub Pages", event: "pull_request", headSha: targetSha },
-    { databaseId: 2, status: "completed", conclusion: "success", name: "Production Data Integrity", workflowName: "Production Data Integrity", event: "pull_request", headSha: targetSha }
+    { databaseId: 1, status: queued ? "queued" : "completed", conclusion: queued ? "" : "success", name: "Deploy to GitHub Pages", workflowName: "Deploy to GitHub Pages", event: "pull_request", headSha: targetSha },
+    { databaseId: 2, status: queued ? "queued" : "completed", conclusion: queued ? "" : "success", name: "Production Data Integrity", workflowName: "Production Data Integrity", event: "pull_request", headSha: targetSha }
   ]));
   process.exit(0);
 }
@@ -180,6 +182,17 @@ describe("check-remote-ci CLI boundary", () => {
     const { result, trace } = runRemoteCiWithFakeGh({
       args: ["--wait", "--wait-ms", "60000", "--pr", "44", "--sha", TARGET_SHA],
       scenario: "pending-then-success",
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(trace.filter((args) => args[0] === "run" && args[1] === "list")).toHaveLength(2);
+    expect(result.stdout).toContain("RESULT: PASS");
+  });
+
+  it("treats GitHub CLI empty run conclusions as queued evidence that can refresh", () => {
+    const { result, trace } = runRemoteCiWithFakeGh({
+      args: ["--wait", "--wait-ms", "60000", "--pr", "44", "--sha", TARGET_SHA],
+      scenario: "queued-empty-conclusion-then-success",
     });
 
     expect(result.status, result.stderr).toBe(0);

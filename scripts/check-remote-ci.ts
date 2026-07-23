@@ -183,7 +183,10 @@ function requiredString(value: unknown, label: string): string {
 }
 
 function nullableString(value: unknown, label: string): string | null {
-  if (value === null) return null;
+  // gh emits an empty string, not JSON null, while an Actions run is queued.
+  if (value === null || (typeof value === "string" && value.trim() === "")) {
+    return null;
+  }
   return requiredString(value, label);
 }
 
