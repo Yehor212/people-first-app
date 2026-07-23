@@ -83,7 +83,7 @@ permissions:
 
 jobs:
   checks:
-    name: ${{ matrix.check.name }}
+    name: ${{ matrix.check.name == 'production-data-integrity' && 'drift-production-data-integrity' || matrix.check.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     strategy:

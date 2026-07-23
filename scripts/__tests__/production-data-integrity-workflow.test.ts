@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const WORKFLOW = ".github/workflows/production-data-integrity.yml";
+const DRIFT_WORKFLOW = ".github/workflows/drift-checks.yml";
+const DRIFT_CONTEXT_EXPRESSION = "${{ matrix.check.name == 'production-data-integrity' && 'drift-production-data-integrity' || matrix.check.name }}";
 
 function read(path: string): string {
   return readFileSync(path, "utf8").replace(/\r\n/g, "\n");
@@ -24,6 +26,35 @@ function expectSourceBeforeBuildBeforeBundle(body: string, buildCommand: RegExp)
   expect(sourceIndex).toBeGreaterThanOrEqual(0);
   expect(buildMatch?.index ?? -1).toBeGreaterThan(sourceIndex);
   expect(bundleIndex).toBeGreaterThan(buildMatch?.index ?? -1);
+}
+
+type CheckContext = {
+  workflow: string;
+  source: "literal-job-name" | "matrix-check-name";
+  name: string;
+};
+
+function emittedCheckContexts(workflowPath: string): CheckContext[] {
+  const workflow = read(workflowPath);
+  const jobName = workflow.match(/^\s{4}name:\s*([^\r\n]+)\s*$/m)?.[1]?.trim();
+
+  if (jobName?.includes("matrix.check.name")) {
+    const remapsProductionDataIntegrity = jobName === DRIFT_CONTEXT_EXPRESSION;
+    return [...workflow.matchAll(/^\s{10}- name:\s*([^\r\n]+)\s*$/gm)].map((match) => {
+      const matrixName = match[1].trim();
+      return {
+        workflow: workflowPath,
+        source: "matrix-check-name" as const,
+        name: remapsProductionDataIntegrity && matrixName === "production-data-integrity"
+          ? "drift-production-data-integrity"
+          : matrixName,
+      };
+    });
+  }
+
+  return jobName
+    ? [{ workflow: workflowPath, source: "literal-job-name", name: jobName }]
+    : [];
 }
 
 describe("production-data-integrity CI contract", () => {
@@ -105,6 +136,30 @@ describe("production-data-integrity CI contract", () => {
       .filter((name) => /\.ya?ml$/.test(name))
       .flatMap((name) => read(join(".github/workflows", name)).match(/^\s{4}name:\s*production-data-integrity\s*$/gm) ?? []);
     expect(exactJobNames).toHaveLength(1);
+  });
+
+  it("keeps literal and matrix-sourced GitHub check contexts unique", () => {
+    const drift = read(DRIFT_WORKFLOW);
+    const contexts = [
+      ...emittedCheckContexts(WORKFLOW),
+      ...emittedCheckContexts(DRIFT_WORKFLOW),
+    ];
+    const duplicateNames = [...new Set(contexts.map(({ name }) => name))].filter(
+      (name) => contexts.filter((context) => context.name === name).length > 1,
+    );
+
+    expect(duplicateNames).toEqual([]);
+    expect(drift).toContain(`name: ${DRIFT_CONTEXT_EXPRESSION}`);
+    expect(contexts).toContainEqual({
+      workflow: WORKFLOW,
+      source: "literal-job-name",
+      name: "production-data-integrity",
+    });
+    expect(contexts).toContainEqual({
+      workflow: DRIFT_WORKFLOW,
+      source: "matrix-check-name",
+      name: "drift-production-data-integrity",
+    });
   });
 
   it("runs the same gate in every production-capable build lifecycle", () => {
