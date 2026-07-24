@@ -1,5 +1,4 @@
-// Time Blindness Helper for ADHD
-// Visual time indicators and audio pings for better time awareness
+// Optional visual timer with configurable audio cues.
 
 import { useState, useEffect, useRef } from "react";
 import { Clock, Bell, BellOff, Play, Pause, X } from "lucide-react";
@@ -123,35 +122,36 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
         aria-hidden="true"
       />
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] pb-[max(1rem,var(--safe-bottom))] pt-[max(1rem,var(--safe-top))] backdrop-blur-sm md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
         role="dialog"
         aria-modal="true"
+        aria-labelledby="time-helper-title"
       >
         <div
           ref={modalRef}
           onKeyDown={modalKeyDown}
           tabIndex={-1}
           role="document"
-          className="bg-card rounded-2xl shadow-2xl max-w-lg w-full p-6"
+          className="max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-2rem)] w-full max-w-lg overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl bg-card p-6 shadow-2xl"
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 zen-gradient rounded-xl">
+          <div className="mb-6 flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="shrink-0 rounded-xl p-2 zen-gradient">
                 <Clock className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <h2 className="text-xl font-bold">
-                  {t.timeBlindnessHelper || "Time Blindness Helper"}
+              <div className="min-w-0">
+                <h2 id="time-helper-title" className="break-words hyphens-manual text-xl font-bold">
+                  {t.timeBlindnessHelper}
                 </h2>
-                <p className="text-sm text-muted-foreground">
-                  {t.visualTimeAwareness || "Visual time awareness for focus"}
+                <p className="break-words hyphens-manual text-sm text-muted-foreground">
+                  {t.visualTimeAwareness}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-muted rounded-lg motion-safe:transition-colors"
+              className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg p-2 hover:bg-muted motion-safe:transition-colors"
               aria-label={t.close || "Close"}
             >
               <X className="w-5 h-5" />
@@ -160,8 +160,8 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
 
           {/* Circular Timer */}
           <div className="mb-6">
-            <div className="relative w-64 h-64 mx-auto">
-              <svg className="w-full h-full transform -rotate-90">
+            <div className="relative mx-auto aspect-square w-full max-w-64">
+              <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 256 256">
                 <circle
                   cx="128"
                   cy="128"
@@ -193,10 +193,10 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
               {/* Time Display */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <div className={cn("text-5xl font-bold mb-2", progressColor)}>
+                  <div className={cn("mb-2 break-words text-3xl font-bold min-[420px]:text-5xl", progressColor)}>
                     {formatTime(timeLeft)}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="break-words hyphens-manual text-sm text-muted-foreground">
                     {timeLeft > 0 ? getTimeRemaining() : t.timesUp || "Time's up!"}
                   </div>
                 </div>
@@ -206,7 +206,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
             {/* End Time Prediction */}
             {isRunning && timeLeft > 0 && (
               <div className="text-center mt-4 p-3 bg-primary/10 rounded-xl">
-                <p className="text-sm text-muted-foreground mb-1">
+                <p className="mb-1 break-words hyphens-manual text-sm text-muted-foreground">
                   {t.youllFinishAt || "🎯 You'll finish at:"}
                 </p>
                 <p className="text-xl font-bold text-primary">{getEndTime()}</p>
@@ -219,7 +219,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
             <>
               {/* Duration Selector */}
               <div className="mb-4">
-                <label className="text-sm font-medium mb-2 block">
+                <label className="mb-2 block break-words hyphens-manual text-sm font-medium">
                   {t.durationMinutes || "Duration (minutes)"}
                 </label>
                 <div className="grid grid-cols-4 gap-2 mb-3">
@@ -228,7 +228,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                       key={mins}
                       onClick={() => setDuration(mins)}
                       className={cn(
-                        "py-2 rounded-lg font-medium motion-safe:transition-all",
+                        "min-h-[44px] h-auto whitespace-normal rounded-lg py-2 font-medium motion-safe:transition-all",
                         duration === mins
                           ? "zen-gradient text-white zen-shadow"
                           : "bg-muted hover:bg-muted/70"
@@ -255,7 +255,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
 
               {/* Ping Interval */}
               <div className="mb-4">
-                <label className="text-sm font-medium mb-2 block">
+                <label className="mb-2 block break-words hyphens-manual text-sm font-medium">
                   {t.pingEveryMinutes || "Ping Every (minutes)"}
                 </label>
                 <div className="grid grid-cols-4 gap-2">
@@ -264,7 +264,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                       key={mins}
                       onClick={() => setPingInterval(mins)}
                       className={cn(
-                        "py-2 rounded-lg font-medium motion-safe:transition-all text-sm",
+                        "min-h-[44px] h-auto whitespace-normal rounded-lg py-2 text-sm font-medium motion-safe:transition-all",
                         pingInterval === mins
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted hover:bg-muted/70"
@@ -277,12 +277,14 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
               </div>
 
               {/* Sound Toggle */}
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-medium">{t.audioPings || "Audio Pings"}</span>
-                <div className="flex gap-2">
+              <div className="mb-4 flex flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+                <span className="break-words hyphens-manual text-sm font-medium">
+                  {t.audioPings || "Audio Pings"}
+                </span>
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={playNotification}
-                    className="px-3 py-2 rounded-lg bg-muted hover:bg-muted/70 motion-safe:transition-colors text-sm font-medium"
+                    className="min-h-[44px] h-auto min-w-0 flex-1 whitespace-normal break-words hyphens-manual rounded-lg bg-muted px-3 py-2 text-sm font-medium hover:bg-muted/70 motion-safe:transition-colors"
                     title={t.testSound}
                   >
                     {t.testSound || "🔊 Test"}
@@ -290,7 +292,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                   <button
                     onClick={() => setSoundEnabled(!soundEnabled)}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-lg motion-safe:transition-colors",
+                      "flex min-h-[44px] h-auto min-w-0 flex-1 items-center justify-center gap-2 whitespace-normal break-words hyphens-manual rounded-lg px-3 py-2 motion-safe:transition-colors",
                       soundEnabled
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground"
@@ -307,17 +309,17 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
               {/* Start Button */}
               <button
                 onClick={() => setIsRunning(true)}
-                className="w-full py-3 zen-gradient text-white font-bold rounded-xl hover:opacity-90 motion-safe:transition-opacity flex items-center justify-center gap-2"
+                className="flex min-h-[44px] h-auto w-full items-center justify-center gap-2 whitespace-normal break-words hyphens-manual rounded-xl py-3 font-bold text-white zen-gradient hover:opacity-90 motion-safe:transition-opacity"
               >
                 <Play className="w-5 h-5" aria-hidden="true" />
                 {t.startTimer || "Start Timer"}
               </button>
             </>
           ) : (
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 min-[360px]:flex-row">
               <button
                 onClick={() => setIsRunning(false)}
-                className="flex-1 py-3 bg-muted hover:bg-muted/70 font-medium rounded-xl motion-safe:transition-colors flex items-center justify-center gap-2"
+                className="flex min-h-[44px] h-auto min-w-0 flex-1 items-center justify-center gap-2 whitespace-normal break-words hyphens-manual rounded-xl bg-muted py-3 font-medium hover:bg-muted/70 motion-safe:transition-colors"
               >
                 <Pause className="w-5 h-5" aria-hidden="true" />
                 {t.pauseTimer || "Pause"}
@@ -327,7 +329,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                   setIsRunning(false);
                   setTimeLeft(duration * 60);
                 }}
-                className="flex-1 py-3 bg-destructive/10 hover:bg-destructive/20 text-destructive font-medium rounded-xl motion-safe:transition-colors"
+                className="min-h-[44px] h-auto min-w-0 flex-1 whitespace-normal break-words hyphens-manual rounded-xl bg-destructive/10 py-3 font-medium text-destructive hover:bg-destructive/20 motion-safe:transition-colors"
               >
                 {t.resetTimer || "Reset"}
               </button>
@@ -336,17 +338,17 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
 
           {/* Info */}
           <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-xl">
-            <div className="flex gap-3">
-              <div className="text-2xl">💡</div>
-              <div className="text-sm">
-                <div className="font-medium mb-1">
-                  {t.adhdTimeManagement || "Time planning support"}
+            <div className="flex items-start gap-3">
+              <div className="shrink-0 text-2xl">💡</div>
+              <div className="min-w-0 text-sm">
+                <div className="mb-1 break-words hyphens-manual font-medium">
+                  {t.adhdTimeManagement}
                 </div>
-                <ul className="text-muted-foreground space-y-1 list-disc list-inside">
-                  <li>{t.adhdTip1 || "Audio pings help track time passing"}</li>
-                  <li>{t.adhdTip2 || "Visual countdown reduces anxiety"}</li>
-                  <li>{t.adhdTip3 || "End time prediction = better planning"}</li>
-                  <li>{t.adhdTip4 || "Color changes warn when time is low"}</li>
+                <ul className="list-inside list-disc space-y-1 break-words hyphens-manual text-muted-foreground">
+                  <li>{t.adhdTip1}</li>
+                  <li>{t.adhdTip2}</li>
+                  <li>{t.adhdTip3}</li>
+                  <li>{t.adhdTip4}</li>
                 </ul>
               </div>
             </div>

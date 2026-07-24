@@ -14,13 +14,15 @@ export interface AuthScreenProps {
   recoveryAction?: {
     confirmLabel: string;
     cancelLabel: string;
+    pending?: boolean;
+    tone?: "error" | "choice";
     onConfirm: () => void;
     onCancel: () => void;
   };
 }
 
 // Track which provider is currently loading
-export type AuthProvider = SocialAuthProviderId | 'phone' | null;
+export type AuthProvider = SocialAuthProviderId | "phone" | null;
 
 // Phone auth flow steps
-export type PhoneStep = 'idle' | 'input' | 'otp';
+export type PhoneStep = "idle" | "input" | "otp";

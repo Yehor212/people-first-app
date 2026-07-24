@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ar } from "../languages/ar";
 import { de } from "../languages/de";
@@ -35,6 +37,26 @@ const remindersNativeOnly = {
   ja: "リマインダーはモバイル版ZenFlowで設定できます。",
   ar: "يمكن إعداد التذكيرات في تطبيق ZenFlow للهاتف.",
   he: "אפשר להגדיר תזכורות באפליקציית ZenFlow לנייד.",
+} as const;
+const modeNeutralImportQuestions = {
+  en: "How do you want to use this backup?",
+  uk: "Що зробити з цією резервною копією?",
+  es: "¿Cómo quieres usar esta copia de seguridad?",
+  de: "Wie möchtest du diese Sicherung verwenden?",
+  fr: "Comment souhaitez-vous utiliser cette sauvegarde ?",
+  ja: "このバックアップをどのように使いますか？",
+  ar: "كيف تريد استخدام هذه النسخة الاحتياطية؟",
+  he: "איך להשתמש בגיבוי הזה?",
+} as const;
+const unknownDeletionCopy = {
+  en: "We couldn’t confirm whether account deletion finished. Try again to check and finish it.",
+  uk: "Не вдалося підтвердити, чи акаунт уже видалено. Спробуйте ще раз, щоб перевірити й завершити видалення.",
+  es: "No pudimos confirmar si la cuenta ya se eliminó. Inténtalo de nuevo para comprobarlo y completar la eliminación.",
+  de: "Wir konnten nicht bestätigen, ob das Konto bereits gelöscht wurde. Versuche es erneut, um die Löschung zu prüfen und abzuschließen.",
+  fr: "Nous n’avons pas pu confirmer si le compte a déjà été supprimé. Réessayez pour vérifier et terminer la suppression.",
+  ja: "アカウントが削除されたか確認できませんでした。もう一度試して、削除を確認・完了してください。",
+  ar: "تعذّر التأكد مما إذا كان حذف الحساب قد اكتمل. حاول مرة أخرى للتحقق وإكمال الحذف.",
+  he: "לא הצלחנו לוודא אם מחיקת החשבון הושלמה. יש לנסות שוב כדי לבדוק ולהשלים את המחיקה.",
 } as const;
 const groundedSettingsCopyKeys = [
   "profileNamePlaceholder",
@@ -85,6 +107,7 @@ const changedExistingCopyKeys = [
   "importConfirmTitle",
   "importConfirmMessage",
   "settingsImportReplaceTooltip",
+  "settingsImportReplaceAction",
   "settingsAboutSupportLegalTitle",
   "settingsAboutSupportLegalDescription",
   "settingsWebUpdateDescription",
@@ -97,6 +120,8 @@ const newV2Keys = [
   "themeBlack",
   "themeChangeSaved",
   "settingsPreferenceSaveError",
+  "settingsPostCommitDeferred",
+  "settingsPostCommitRefresh",
   "settingsReduceMotion",
   "settingsReduceMotionDescription",
   "settingsReduceMotionSystemDescription",
@@ -115,6 +140,9 @@ const newV2Keys = [
   "settingsSoundBackgroundDescription",
   "settingsSoundActivityTitle",
   "settingsSoundActivityDescription",
+  "settingsSoundActivityRestoreTitle",
+  "settingsSoundActivityRestoreDescription",
+  "settingsSoundActivityRestoreAction",
   "settingsAccountBackupTitle",
   "settingsAccountBackupDescription",
   "settingsAccountSignedIn",
@@ -137,6 +165,7 @@ const newV2Keys = [
   "settingsSoundDiaryRainOff",
   "settingsSoundDiaryReady",
   "notificationSoundUpdateUncertain",
+  "habitReminderAtLeastOneDay",
 ] as const;
 const platformSpecificRecoveryAndStoreKeys = new Set<string>([
   "notificationSystemSettingsAndroidDescription",
@@ -169,6 +198,23 @@ const findGermanFormalAddressViolations = (
   });
 
 describe("Settings safety copy", () => {
+  it("keeps the notification fallback honest about every reminder category it controls", () => {
+    const source = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/pages/nav-v2/settings/V2SettingsNotificationsPanel.tsx"
+      ),
+      "utf8"
+    );
+    const truthfulFallback =
+      "Turns mood, focus, and habit reminders on or off. Set each habit’s time in its own menu.";
+
+    expect(source).not.toContain(
+      "Choose when ZenFlow reminds you about mood and focus."
+    );
+    expect(source.split(truthfulFallback)).toHaveLength(3);
+  });
+
   it("keeps every journal auto-lock option localized in all eight languages", () => {
     for (const [language, translations] of Object.entries(locales)) {
       for (const key of timeoutKeys) {
@@ -209,6 +255,35 @@ describe("Settings safety copy", () => {
         `${language}.remindersNativeOnly`
       ).toBe(remindersNativeOnly[language as keyof typeof remindersNativeOnly]);
     }
+  });
+
+  it("uses a mode-neutral backup question in all eight languages", () => {
+    for (const [language, translations] of Object.entries(locales)) {
+      expect(translations.importMode, `${language}.importMode`).toBe(
+        modeNeutralImportQuestions[
+          language as keyof typeof modeNeutralImportQuestions
+        ],
+      );
+    }
+  });
+
+  it("distinguishes an unknown deletion outcome from a confirmed failure in all eight languages", () => {
+    for (const [language, translations] of Object.entries(locales)) {
+      const record = translations as unknown as Record<string, string>;
+      expect(record.deleteAccountOutcomeUnknown, `${language}.deleteAccountOutcomeUnknown`).toBe(
+        unknownDeletionCopy[language as keyof typeof unknownDeletionCopy],
+      );
+      expect(record.deleteAccountOutcomeUnknown).not.toBe(
+        record.deleteAccountError,
+      );
+    }
+  });
+
+  it("uses short natural German high-contrast copy without the observed orphan-prone compound", () => {
+    expect(de.themeHighContrastHint).toBe(
+      "Macht Text, Rahmen und Fokus besser sichtbar.",
+    );
+    expect(de.themeHighContrastHint).not.toContain("Fokusindikatoren");
   });
 
   it("separates signed-in auth truth from backup success in every language", () => {
@@ -256,7 +331,7 @@ describe("Settings safety copy", () => {
     expect(en.settingsSoundBackgroundTitle).toBe("Background sounds");
     expect(en.settingsSoundActivityTitle).toBe("Activity sounds");
     expect(en.settingsMoodCheckIns).toBe("Mood check-ins");
-    expect(en.settingsReminderChooseDay).toContain("No reminders");
+    expect(en.settingsReminderChooseDay).toBe("Choose days for mood and focus reminders.");
 
     expect(uk.themeModeTitle).toBe("Режим оформлення");
     expect(uk.themeAccentClay).toBe("Синій");
@@ -312,7 +387,7 @@ describe("Settings safety copy", () => {
         settingsAccountSignedIn: "Signed in",
         settingsAccountSignedOut: "You’re not signed in",
         settingsAccountDataOnDevice:
-          "Your data stays on this device. Sign in to back it up and use it on your other devices.",
+          "You can use ZenFlow without an account. Sign in to save new changes online and use them on your other devices.",
         settingsAccountBackupChecking: "Checking your account…",
         settingsAccountBackupCheckingDescription:
           "Your data stays on this device while ZenFlow checks your account.",
@@ -349,7 +424,7 @@ describe("Settings safety copy", () => {
         settingsAccountSignedIn: "Ви ввійшли",
         settingsAccountSignedOut: "Ви не ввійшли",
         settingsAccountDataOnDevice:
-          "Ваші дані залишаються на цьому пристрої. Увійдіть, щоб створити резервну копію та користуватися ними на інших пристроях.",
+          "ZenFlow можна користуватися без акаунта. Увійдіть, щоб зберігати нові зміни онлайн і користуватися ними на інших пристроях.",
         settingsAccountBackupChecking: "Перевіряємо ваш акаунт…",
         settingsAccountBackupCheckingDescription:
           "Поки ZenFlow перевіряє ваш акаунт, дані залишаються на цьому пристрої.",
@@ -386,7 +461,7 @@ describe("Settings safety copy", () => {
         settingsAccountSignedIn: "Has iniciado sesión",
         settingsAccountSignedOut: "No has iniciado sesión",
         settingsAccountDataOnDevice:
-          "Tus datos se quedan en este dispositivo. Inicia sesión para hacer una copia y usarlos en tus otros dispositivos.",
+          "Puedes usar ZenFlow sin una cuenta. Inicia sesión para guardar los nuevos cambios en línea y usarlos en tus otros dispositivos.",
         settingsAccountBackupChecking: "Comprobando tu cuenta…",
         settingsAccountBackupCheckingDescription:
           "Tus datos se quedan en este dispositivo mientras ZenFlow comprueba tu cuenta.",
@@ -424,7 +499,7 @@ describe("Settings safety copy", () => {
         settingsAccountSignedIn: "Du bist angemeldet",
         settingsAccountSignedOut: "Du bist nicht angemeldet",
         settingsAccountDataOnDevice:
-          "Deine Daten bleiben auf diesem Gerät. Melde dich an, um sie zu sichern und auf deinen anderen Geräten zu verwenden.",
+          "Du kannst ZenFlow ohne Konto verwenden. Melde dich an, um neue Änderungen online zu speichern und auf deinen anderen Geräten zu nutzen.",
         settingsAccountBackupChecking: "Konto wird geprüft…",
         settingsAccountBackupCheckingDescription:
           "Während ZenFlow dein Konto prüft, bleiben deine Daten auf diesem Gerät.",
@@ -440,13 +515,15 @@ describe("Settings safety copy", () => {
           "Du entscheidest, welche optionalen Dienste ZenFlow verwenden darf.",
         settingsDataBackupReportsDescription:
           "Speichere ein Backup für einen späteren Import oder erstelle einen Bericht.",
-        settingsBackupRestoreTitle: "Backup und Wiederherstellung",
+        settingsBackupRestoreTitle: "Backup und Wieder\u00ADherstellung",
         settingsReportsTitle: "Berichte",
         settingsReportsDescription:
           "Berichte enthalten Daten zu Stimmung, Gewohnheiten, Fokus und Dankbarkeit. Der PDF-Bericht ist derzeit auf Englisch. Berichte sind keine Backups.",
         settingsExportImportTitle: "Backups und Berichte",
         settingsReportSpreadsheetAction: "Tabellendaten (CSV)",
-        settingsReportProgressAction: "Fortschrittsbericht (PDF)",
+        settingsReportProgressAction: "Fortschritts\u00ADbericht (PDF)",
+        privacyPolicy: "Datenschutz\u00ADerklärung",
+        termsOfService: "Nutzungs\u00ADbedingungen",
         settingsSoundDiaryRainOff:
           "Regen ist bei den Hintergrundklängen ausgeschaltet.",
         settingsSoundDiaryReady: "Bereit zur Wiedergabe.",
@@ -461,7 +538,7 @@ describe("Settings safety copy", () => {
         settingsAccountSignedIn: "Vous êtes connecté",
         settingsAccountSignedOut: "Vous n’êtes pas connecté",
         settingsAccountDataOnDevice:
-          "Vos données restent sur cet appareil. Connectez-vous pour les sauvegarder et les retrouver sur vos autres appareils.",
+          "Vous pouvez utiliser ZenFlow sans compte. Connectez-vous pour enregistrer vos prochaines modifications en ligne et les retrouver sur vos autres appareils.",
         settingsAccountBackupChecking: "Vérification de votre compte…",
         settingsAccountBackupCheckingDescription:
           "Vos données restent sur cet appareil pendant que ZenFlow vérifie votre compte.",
@@ -498,7 +575,7 @@ describe("Settings safety copy", () => {
         settingsAccountSignedIn: "サインイン済み",
         settingsAccountSignedOut: "サインインしていません",
         settingsAccountDataOnDevice:
-          "データはこの端末に保存されています。サインインするとバックアップされ、ほかの端末でも使えます。",
+          "アカウントがなくてもZenFlowを使えます。サインインすると、これからの変更をオンラインに保存し、ほかの端末でも使えます。",
         settingsAccountBackupChecking: "アカウントを確認しています…",
         settingsAccountBackupCheckingDescription:
           "ZenFlowがアカウントを確認している間、データはこの端末に保存されます。",
@@ -535,7 +612,7 @@ describe("Settings safety copy", () => {
         settingsAccountSignedIn: "تم تسجيل الدخول",
         settingsAccountSignedOut: "لم يتم تسجيل الدخول",
         settingsAccountDataOnDevice:
-          "تبقى بياناتك على هذا الجهاز. يتيح تسجيل الدخول نسخها احتياطيًا واستخدامها على أجهزتك الأخرى.",
+          "يمكنك استخدام \u2068ZenFlow\u2069 من دون حساب. سجّل الدخول لحفظ التغييرات الجديدة عبر الإنترنت واستخدامها على أجهزتك الأخرى.",
         settingsAccountBackupChecking: "جارٍ التحقق من الحساب…",
         settingsAccountBackupCheckingDescription:
           "تبقى بياناتك على هذا الجهاز أثناء تحقق ZenFlow من الحساب.",
@@ -554,10 +631,10 @@ describe("Settings safety copy", () => {
         settingsBackupRestoreTitle: "النسخ الاحتياطي والاستعادة",
         settingsReportsTitle: "التقارير",
         settingsReportsDescription:
-          "تتضمن التقارير بيانات المزاج والعادات والتركيز والامتنان. يُنشأ ملف PDF حاليًا باللغة الإنجليزية. التقارير ليست نسخًا احتياطية.",
+          "تتضمن التقارير بيانات المزاج والعادات والتركيز والامتنان. يُنشأ ملف \u2066PDF\u2069 حاليًا باللغة الإنجليزية. التقارير ليست نسخًا احتياطية.",
         settingsExportImportTitle: "النسخ الاحتياطية والتقارير",
-        settingsReportSpreadsheetAction: "بيانات جدول بيانات (CSV)",
-        settingsReportProgressAction: "تقرير التقدّم (PDF)",
+        settingsReportSpreadsheetAction: "بيانات جدول بيانات (\u2066CSV\u2069)",
+        settingsReportProgressAction: "تقرير التقدّم (\u2066PDF\u2069)",
         settingsSoundDiaryRainOff:
           "صوت المطر متوقف ضمن أصوات الخلفية.",
         settingsSoundDiaryReady: "جاهز للتشغيل.",
@@ -572,7 +649,7 @@ describe("Settings safety copy", () => {
         settingsAccountSignedIn: "החשבון מחובר",
         settingsAccountSignedOut: "אין כניסה לחשבון",
         settingsAccountDataOnDevice:
-          "הנתונים נשארים במכשיר הזה. לאחר הכניסה הם יגובו ויהיו זמינים גם במכשירים האחרים.",
+          "אפשר להשתמש ב-\u2068ZenFlow\u2069 בלי חשבון. לאחר הכניסה, שינויים חדשים יישמרו באינטרנט ויהיו זמינים גם במכשירים האחרים.",
         settingsAccountBackupChecking: "בודקים את החשבון…",
         settingsAccountBackupCheckingDescription:
           "הנתונים נשארים במכשיר הזה בזמן ש-ZenFlow בודק את החשבון.",
@@ -591,11 +668,11 @@ describe("Settings safety copy", () => {
         settingsBackupRestoreTitle: "גיבוי ושחזור",
         settingsReportsTitle: "דוחות",
         settingsReportsDescription:
-          "הדוחות כוללים נתוני מצב רוח, הרגלים, מיקוד והכרת תודה. קובץ ה-PDF נוצר כרגע באנגלית. הדוחות אינם גיבויים.",
+          "הדוחות כוללים נתוני מצב רוח, הרגלים, מיקוד והכרת תודה. קובץ ה-\u2066PDF\u2069 נוצר כרגע באנגלית. הדוחות אינם גיבויים.",
         settingsExportImportTitle: "גיבויים ודוחות",
         settingsReportSpreadsheetAction:
-          "נתונים לגיליון אלקטרוני (CSV)",
-        settingsReportProgressAction: "דוח התקדמות (PDF)",
+          "נתונים לגיליון אלקטרוני (\u2066CSV\u2069)",
+        settingsReportProgressAction: "דוח התקדמות (\u2066PDF\u2069)",
         settingsSoundDiaryRainOff:
           "צליל הגשם כבוי תחת צלילי רקע.",
         settingsSoundDiaryReady: "מוכן להפעלה.",
@@ -709,7 +786,7 @@ describe("Settings safety copy", () => {
     expect.soft(de.themeUndoAction).toBe("Rückgängig");
     expect.soft(de.themeReset).toContain("zurückgesetzt");
     expect.soft(words(de.themeReset, "de")).not.toContain("zuruckgesetzt");
-    expect.soft(de.themeHighContrastHint).toContain("Verstärkt");
+    expect.soft(de.themeHighContrastHint).toContain("besser sichtbar");
     expect
       .soft(words(de.themeHighContrastHint, "de"))
       .not.toContain("verstarkt");

@@ -96,6 +96,7 @@ import {
   offlineQueue,
   type OfflineAction,
   type OfflineQueueHandlerContext,
+  type OfflineQueueHandlerResult,
 } from "@/lib/offlineQueue";
 import {
   syncMood,
@@ -240,7 +241,7 @@ describe("offlineQueueHandlers", () => {
     function getHandler(
       actionType: string,
       handlerContext?: OfflineQueueHandlerContext
-    ): (action: OfflineAction) => Promise<void> {
+    ): (action: OfflineAction) => Promise<OfflineQueueHandlerResult | void> {
       vi.mocked(offlineQueue.registerHandler).mockClear();
       initializeOfflineQueueHandlers();
 
@@ -250,6 +251,8 @@ describe("offlineQueueHandlers", () => {
       if (!call) throw new Error(`No handler registered for ${actionType}`);
       const context: OfflineQueueHandlerContext = handlerContext ?? {
         ownerUserId: "account-a",
+        operationId: "11111111-1111-4111-8111-111111111111",
+        signal: new AbortController().signal,
         runIfOwnerCurrent: async (operation) => operation(),
       };
       return (action) => call[1](action, context);
@@ -275,11 +278,13 @@ describe("offlineQueueHandlers", () => {
       expect(syncMood).toHaveBeenCalledWith(mood, "account-a");
     });
 
-    it("CREATE_MOOD handler skips invalid payload", async () => {
+    it("CREATE_MOOD handler rejects invalid payload", async () => {
       vi.mocked(safeValidate).mockReturnValue(null);
 
       const handler = getHandler("CREATE_MOOD");
-      await handler(makeAction("CREATE_MOOD", { invalid: true }, "bad-id"));
+      await expect(
+        handler(makeAction("CREATE_MOOD", { invalid: true }, "bad-id")),
+      ).rejects.toMatchObject({ name: "OfflineQueuePayloadValidationError" });
 
       expect(syncMood).not.toHaveBeenCalled();
     });
@@ -307,11 +312,13 @@ describe("offlineQueueHandlers", () => {
       expect(syncHabit).toHaveBeenCalledWith(habit, "account-a");
     });
 
-    it("CREATE_HABIT handler skips invalid payload", async () => {
+    it("CREATE_HABIT handler rejects invalid payload", async () => {
       vi.mocked(safeValidate).mockReturnValue(null);
 
       const handler = getHandler("CREATE_HABIT");
-      await handler(makeAction("CREATE_HABIT", { broken: true }, "bad-id"));
+      await expect(
+        handler(makeAction("CREATE_HABIT", { broken: true }, "bad-id")),
+      ).rejects.toMatchObject({ name: "OfflineQueuePayloadValidationError" });
 
       expect(syncHabit).not.toHaveBeenCalled();
     });
@@ -356,11 +363,13 @@ describe("offlineQueueHandlers", () => {
       expect(syncFocusSession).toHaveBeenCalledWith(session, "account-a");
     });
 
-    it("CREATE_FOCUS_SESSION handler skips invalid payload", async () => {
+    it("CREATE_FOCUS_SESSION handler rejects invalid payload", async () => {
       vi.mocked(safeValidate).mockReturnValue(null);
 
       const handler = getHandler("CREATE_FOCUS_SESSION");
-      await handler(makeAction("CREATE_FOCUS_SESSION", null, "bad"));
+      await expect(
+        handler(makeAction("CREATE_FOCUS_SESSION", null, "bad")),
+      ).rejects.toMatchObject({ name: "OfflineQueuePayloadValidationError" });
 
       expect(syncFocusSession).not.toHaveBeenCalled();
     });
@@ -385,21 +394,29 @@ describe("offlineQueueHandlers", () => {
       const entry = { id: "journal-1", date: "2026-03-14", content: "Today was good" };
       await handler(makeAction("SYNC_JOURNAL_ENTRY", entry, entry.id));
 
-      expect(syncJournalEntry).toHaveBeenCalledWith(entry, "account-a");
+      expect(syncJournalEntry).toHaveBeenCalledWith(
+        entry,
+        "account-a",
+        expect.any(AbortSignal),
+      );
     });
 
-    it("SYNC_JOURNAL_ENTRY handler skips payload with missing id", async () => {
+    it("SYNC_JOURNAL_ENTRY handler rejects payload with missing id", async () => {
       const handler = getHandler("SYNC_JOURNAL_ENTRY");
       const badEntry = { date: "2026-03-14", content: "no id" };
-      await handler(makeAction("SYNC_JOURNAL_ENTRY", badEntry, "bad"));
+      await expect(
+        handler(makeAction("SYNC_JOURNAL_ENTRY", badEntry, "bad")),
+      ).rejects.toMatchObject({ name: "OfflineQueuePayloadValidationError" });
 
       expect(syncJournalEntry).not.toHaveBeenCalled();
     });
 
-    it("SYNC_JOURNAL_ENTRY handler skips payload with missing date", async () => {
+    it("SYNC_JOURNAL_ENTRY handler rejects payload with missing date", async () => {
       const handler = getHandler("SYNC_JOURNAL_ENTRY");
       const badEntry = { id: "j-1", content: "no date" };
-      await handler(makeAction("SYNC_JOURNAL_ENTRY", badEntry, "j-1"));
+      await expect(
+        handler(makeAction("SYNC_JOURNAL_ENTRY", badEntry, "j-1")),
+      ).rejects.toMatchObject({ name: "OfflineQueuePayloadValidationError" });
 
       expect(syncJournalEntry).not.toHaveBeenCalled();
     });
@@ -408,7 +425,11 @@ describe("offlineQueueHandlers", () => {
       const handler = getHandler("DELETE_JOURNAL_ENTRY");
       await handler(makeAction("DELETE_JOURNAL_ENTRY", null, "journal-del"));
 
-      expect(deleteJournalEntryFromCloud).toHaveBeenCalledWith("journal-del", "account-a");
+      expect(deleteJournalEntryFromCloud).toHaveBeenCalledWith(
+        "journal-del",
+        "account-a",
+        expect.any(AbortSignal),
+      );
     });
 
     it("UPLOAD_JOURNAL_PHOTO_STORAGE handler retries photo upload from an id-only payload", async () => {
@@ -421,7 +442,11 @@ describe("offlineQueueHandlers", () => {
         )
       );
 
-      expect(retryJournalPhotoUpload).toHaveBeenCalledWith({ id: "photo-1" }, "account-a");
+      expect(retryJournalPhotoUpload).toHaveBeenCalledWith(
+        { id: "photo-1" },
+        "account-a",
+        expect.any(AbortSignal),
+      );
     });
 
     it("UPLOAD_JOURNAL_AUDIO_STORAGE handler retries audio upload from an id-only payload", async () => {
@@ -434,7 +459,11 @@ describe("offlineQueueHandlers", () => {
         )
       );
 
-      expect(retryJournalAudioUpload).toHaveBeenCalledWith({ id: "audio-1" }, "account-a");
+      expect(retryJournalAudioUpload).toHaveBeenCalledWith(
+        { id: "audio-1" },
+        "account-a",
+        expect.any(AbortSignal),
+      );
     });
 
     it("DELETE_JOURNAL_PHOTO_STORAGE handler retries photo delete from an id-only payload", async () => {
@@ -447,7 +476,11 @@ describe("offlineQueueHandlers", () => {
         )
       );
 
-      expect(retryJournalPhotoDelete).toHaveBeenCalledWith({ id: "photo-1" }, "account-a");
+      expect(retryJournalPhotoDelete).toHaveBeenCalledWith(
+        { id: "photo-1" },
+        "account-a",
+        expect.any(AbortSignal),
+      );
     });
 
     it("DELETE_JOURNAL_AUDIO_STORAGE handler retries audio delete from an id-only payload", async () => {
@@ -460,7 +493,11 @@ describe("offlineQueueHandlers", () => {
         )
       );
 
-      expect(retryJournalAudioDelete).toHaveBeenCalledWith({ id: "audio-1" }, "account-a");
+      expect(retryJournalAudioDelete).toHaveBeenCalledWith(
+        { id: "audio-1" },
+        "account-a",
+        expect.any(AbortSignal),
+      );
     });
 
     it("MIGRATE_JOURNAL_SECURITY runs the durable migration for the queue owner", async () => {
@@ -490,7 +527,22 @@ describe("offlineQueueHandlers", () => {
 
       await handler(makeAction("WRITE_SYNC_EVENT", intent, "sync-event:habit:habit-1:delete"));
 
-      expect(writeQueuedEventAndBroadcast).toHaveBeenCalledWith(intent, "account-a");
+      expect(writeQueuedEventAndBroadcast).toHaveBeenCalledWith(
+        {
+          ...intent,
+          idempotencyKey: "11111111-1111-4111-8111-111111111111",
+        },
+        "account-a",
+      );
+    });
+
+    it("rejects an invalid critical sync event instead of acknowledging it", async () => {
+      const handler = getHandler("WRITE_SYNC_EVENT");
+
+      await expect(
+        handler(makeAction("WRITE_SYNC_EVENT", { broken: true }, "sync-event-invalid")),
+      ).rejects.toMatchObject({ name: "OfflineQueuePayloadValidationError" });
+      expect(writeQueuedEventAndBroadcast).not.toHaveBeenCalled();
     });
 
     it("UPDATE_SETTINGS handler calls syncSetting with valid payload", async () => {
@@ -515,6 +567,8 @@ describe("offlineQueueHandlers", () => {
       let ownerChecks = 0;
       const context: OfflineQueueHandlerContext = {
         ownerUserId: "account-a",
+        operationId: "22222222-2222-4222-8222-222222222222",
+        signal: new AbortController().signal,
         runIfOwnerCurrent: async (operation) => {
           ownerChecks += 1;
           if (ownerChecks === 2) throw queueBoundary;
@@ -544,6 +598,8 @@ describe("offlineQueueHandlers", () => {
       let ownerChecks = 0;
       const context: OfflineQueueHandlerContext = {
         ownerUserId: "account-a",
+        operationId: "33333333-3333-4333-8333-333333333333",
+        signal: new AbortController().signal,
         runIfOwnerCurrent: async (operation) => {
           ownerChecks += 1;
           if (ownerChecks === 2) throw queueBoundary;
@@ -568,9 +624,11 @@ describe("offlineQueueHandlers", () => {
       expect(ownerChecks).toBe(2);
     });
 
-    it("UPDATE_SETTINGS handler skips invalid payload", async () => {
+    it("UPDATE_SETTINGS handler rejects invalid payload", async () => {
       const handler = getHandler("UPDATE_SETTINGS");
-      await handler(makeAction("UPDATE_SETTINGS", {}, "settings"));
+      await expect(
+        handler(makeAction("UPDATE_SETTINGS", {}, "settings")),
+      ).rejects.toMatchObject({ name: "OfflineQueuePayloadValidationError" });
 
       expect(syncSetting).not.toHaveBeenCalled();
     });

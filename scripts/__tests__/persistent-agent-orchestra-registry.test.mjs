@@ -12,6 +12,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { sha256Canonical } from "../persistent-agent-orchestra/assurance-core.mjs";
+
 import {
   checkWorkspace,
   computeRoleSemanticContractHash,
@@ -22,7 +24,7 @@ import {
 } from "../persistent-agent-orchestra/registry-core.mjs";
 
 const REPO_ROOT = process.cwd();
-const FIXED_NOW = new Date("2026-07-13T05:00:00.000Z");
+const FIXED_NOW = new Date("2026-07-20T23:00:00.000Z");
 const temporaryRoots = [];
 
 afterEach(async () => {
@@ -50,6 +52,28 @@ describe("persistent agent orchestra registry", () => {
     const sources = new Map(
       registry.source_review.sources.map((source) => [source.id, source]),
     );
+    for (const source of sources.values()) {
+      expect(source).toEqual(expect.objectContaining({
+        authority_type: expect.any(String),
+        document_status: expect.any(String),
+        evidence_role: expect.any(String),
+        applicability_strength: expect.any(String),
+        observed_canonical_url: source.url,
+        retrieved_at: expect.any(String),
+        document_version_or_date: expect.any(String),
+        supersedes: expect.any(Array),
+        content_slice_sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+        affected_platforms: expect.any(Array),
+        does_not_prove: expect.any(String),
+        event_driven_review_triggers: expect.any(Array),
+      }));
+    }
+    expect(sources.get("nist-ai-rmf")).toEqual(expect.objectContaining({
+      authority_type: "INFORMATIVE_INSTITUTIONAL_GUIDANCE",
+      document_status: "CURRENT_WITH_REVISION_WATCH",
+      evidence_role: "IMPLEMENTATION_GUIDANCE",
+      applicability_strength: "RECOMMENDED",
+    }));
 
     expect(sources.get("openai-evaluation-best-practices")?.url).toBe(
       "https://developers.openai.com/api/docs/guides/evaluation-best-practices",
@@ -163,7 +187,7 @@ describe("persistent agent orchestra registry", () => {
   });
 
   it.each([
-    ["EMOTIONAL_OR_CLINICAL_LANGUAGE", "psychology-human-factors-emotional-safety"],
+    ["CONCRETE_EMOTIONAL_OR_CLINICAL_PRODUCT_CLAIM", "psychology-human-factors-emotional-safety"],
     ["UI_ACCESSIBILITY_I18N", "interaction-accessibility-readability-localization-culture"],
     ["ARCHITECTURE_PERSISTENCE_SYNC_MIGRATION", "technical-architecture-data-cross-platform"],
     ["SECURITY_PRIVACY_AUTH_EXTERNAL_WRITE", "security-privacy-agent-trust"],
@@ -199,6 +223,91 @@ describe("persistent agent orchestra registry", () => {
     });
 
     expect(validateRoleSelectionRecord(registry, record)).toEqual({ errors: [], warnings: [] });
+  });
+
+  it("rejects governance routing that omits the M2 sentinel", async () => {
+    const registry = await readCanonicalRegistry();
+    const record = selectionRecord(registry, {
+      riskTier: "L2",
+      triggerIds: ["GOVERNANCE_OR_ORCHESTRATION"],
+      selectedRoleIds: [
+        "coordinator-teamlead",
+        "qa-evidence-release-verification",
+        "logic-causality-state-coherence",
+        "security-privacy-agent-trust",
+      ],
+    });
+
+    expect(validateRoleSelectionRecord(registry, record).errors.join("\n")).toContain(
+      "selection record requires role independent-blind-spot-sentinel",
+    );
+  });
+
+  it("rejects a tier that understates the observed assurance class", async () => {
+    const registry = await readCanonicalRegistry();
+    const record = selectionRecord(registry, {
+      riskTier: "L2",
+      triggerIds: ["GOVERNANCE_OR_ORCHESTRATION"],
+      selectedRoleIds: [
+        "coordinator-teamlead",
+        "qa-evidence-release-verification",
+        "logic-causality-state-coherence",
+        "security-privacy-agent-trust",
+        "independent-blind-spot-sentinel",
+      ],
+    });
+
+    expect(validateRoleSelectionRecord(registry, record).errors.join("\n")).toContain(
+      "risk_tier L2 is inconsistent with M2_PROTECTED_HIGH_RISK",
+    );
+  });
+
+  it("requires every role for an explicit deep audit", async () => {
+    const registry = await readCanonicalRegistry();
+    const record = selectionRecord(registry, {
+      riskTier: "L2",
+      triggerIds: ["DEEP_AUDIT"],
+      selectedRoleIds: [
+        "coordinator-teamlead",
+        "qa-evidence-release-verification",
+        "independent-blind-spot-sentinel",
+      ],
+    });
+
+    expect(validateRoleSelectionRecord(registry, record).errors).toContain(
+      "selection record requires role psychology-human-factors-emotional-safety",
+    );
+  });
+
+  it("rejects ritual over-selection without a trigger or rollback mode", async () => {
+    const registry = await readCanonicalRegistry();
+    const record = selectionRecord(registry, {
+      riskTier: "L2",
+      triggerIds: [],
+      selectedRoleIds: registry.roles.map((role) => role.id),
+    });
+
+    expect(validateRoleSelectionRecord(registry, record).errors.join("\n")).toContain(
+      "selection record selected unrelated role",
+    );
+  });
+
+  it("rejects selected or skipped roles without evidence locators", async () => {
+    const registry = await readCanonicalRegistry();
+    const record = selectionRecord(registry, {
+      riskTier: "L2",
+      triggerIds: ["ARCHITECTURE_PERSISTENCE_SYNC_MIGRATION"],
+      selectedRoleIds: [
+        "coordinator-teamlead",
+        "qa-evidence-release-verification",
+        "technical-architecture-data-cross-platform",
+      ],
+    });
+    delete record.skipped_roles[0].evidence_locators;
+
+    expect(validateRoleSelectionRecord(registry, record).errors.join("\n")).toContain(
+      "skipped_roles[0] evidence_locators",
+    );
   });
 
   it("rejects accidental semantic flattening even when list shapes stay valid", async () => {
@@ -370,9 +479,27 @@ describe("persistent agent orchestra registry", () => {
     expect(result.errors.join("\n")).toContain("generated profile byte budget");
   });
 
+  it("pins the reviewed profile compaction baseline and threshold", async () => {
+    const waivers = await readCanonicalWaivers();
+    const inflated = await readCanonicalRegistry();
+    inflated.prompt_budgets.profile_compaction.baseline_total_bytes = 999_999_999;
+    inflated.prompt_budgets.profile_compaction.minimum_structural_reduction_percent = 0;
+    expect(validateRegistry(inflated, { now: FIXED_NOW, waivers }).errors.join("\n")).toMatch(
+      /baseline_total_bytes|minimum_structural_reduction_percent/i,
+    );
+
+    const missing = await readCanonicalRegistry();
+    delete missing.prompt_budgets.profile_compaction.baseline_total_bytes;
+    delete missing.prompt_budgets.profile_compaction.minimum_structural_reduction_percent;
+    expect(validateRegistry(missing, { now: FIXED_NOW, waivers }).errors.join("\n")).toMatch(
+      /baseline_total_bytes|minimum_structural_reduction_percent/i,
+    );
+  });
+
   it("fails a stale operational source without a valid external waiver", async () => {
     const registry = await readCanonicalRegistry();
     registry.source_review.sources[0].reviewed_on = "2020-01-01";
+    refreshSourceRecordHash(registry.source_review.sources[0]);
 
     const result = validateRegistry(registry, {
       now: FIXED_NOW,
@@ -398,6 +525,7 @@ describe("persistent agent orchestra registry", () => {
     const registry = await readCanonicalRegistry();
     const staleSource = registry.source_review.sources[0];
     staleSource.reviewed_on = "2020-01-01";
+    refreshSourceRecordHash(staleSource);
     const waivers = await readCanonicalWaivers();
     waivers.waivers.push({
       source_id: staleSource.id,
@@ -525,20 +653,29 @@ function selectionRecord(registry, { riskTier, triggerIds, selectedRoleIds }) {
   const selected = new Set(selectedRoleIds);
   return {
     risk_tier: riskTier,
+    routing_mode: "EVIDENCE_FIRST_ADAPTIVE",
     observed_trigger_ids: triggerIds,
     selected_roles: registry.roles
       .filter((role) => selected.has(role.id))
       .map((role) => ({
         role_id: role.id,
         reason: `Selected for ${riskTier} tier or an observed domain trigger.`,
+        evidence_locators: ["config/persistent-agent-orchestra.json:activation_policy"],
       })),
     skipped_roles: registry.roles
       .filter((role) => !selected.has(role.id))
       .map((role) => ({
         role_id: role.id,
         reason: "No observed trigger or tier rule requires this role for the bounded task.",
+        evidence_locators: ["config/persistent-agent-orchestra.json:risk_classification_registry"],
       })),
   };
+}
+
+function refreshSourceRecordHash(source) {
+  const record = { ...source };
+  delete record.source_record_hash;
+  source.source_record_hash = sha256Canonical(record);
 }
 
 async function readCanonicalRegistry() {

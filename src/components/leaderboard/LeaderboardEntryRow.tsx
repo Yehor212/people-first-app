@@ -35,7 +35,7 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
       exit={{ opacity: 0, x: 20 }}
       transition={{ delay: index * 0.05 }}
       className={cn(
-        "flex items-center gap-3 p-3.5 rounded-xl motion-safe:transition-all",
+        "grid grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-x-3 gap-y-2 p-3.5 rounded-xl motion-safe:transition-all min-[420px]:grid-cols-[2.25rem_minmax(0,1fr)_auto]",
         entry.isCurrentUser && "ring-1 ring-violet-500/40",
         !rankConfig &&
           (entry.isCurrentUser
@@ -73,11 +73,11 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
       </div>
 
       {/* User info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
+      <div className="min-w-0">
+        <div className="flex min-w-0 flex-wrap items-start gap-1.5">
           <span
             className={cn(
-              "font-medium truncate",
+              "min-w-0 whitespace-normal [overflow-wrap:anywhere] font-medium leading-snug",
               entry.isCurrentUser
                 ? "text-violet-700 dark:text-violet-300"
                 : "text-foreground",
@@ -86,22 +86,22 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
             {entry.displayName}
           </span>
           {entry.isCurrentUser && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-700 dark:text-violet-300">
+            <span className="shrink-0 rounded bg-violet-500/20 px-1.5 py-0.5 text-xs text-violet-700 dark:text-violet-300">
               ({t.you || "you"})
             </span>
           )}
-          {entry.rank === 1 && <Crown className="w-4 h-4 text-amber-400" />}
+          {entry.rank === 1 && <Crown className="h-4 w-4 shrink-0 text-amber-400" />}
         </div>
         {activeTab === "streak" &&
           entry.longestStreak > entry.currentStreak && (
-            <span className="text-xs text-foreground/60">
+            <span className="whitespace-normal break-words text-xs text-foreground/60">
               {t.best || "Best"}: {entry.longestStreak} {t.days || "days"}
             </span>
           )}
       </div>
 
       {/* Score */}
-      <div className="text-end">
+      <div className="col-start-2 row-start-2 min-w-0 justify-self-start text-start min-[420px]:col-start-3 min-[420px]:row-start-1 min-[420px]:justify-self-end min-[420px]:text-end">
         <span
           className={cn(
             "font-bold text-lg",
@@ -113,7 +113,7 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
         >
           {getValue(entry, activeTab).toLocaleString(language)}
         </span>
-        <span className="text-xs text-foreground/60 ms-1">
+        <span className="ms-1 whitespace-normal break-words text-xs text-foreground/60">
           {getUnit(activeTab, t)}
         </span>
       </div>

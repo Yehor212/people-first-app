@@ -1,92 +1,39 @@
 /**
- * Supabase Edge Function: Search Journal
- *
- * Performs semantic search over journal entries using pgvector.
- * Generates an embedding for the search query via Gemini,
- * then uses cosine similarity to find matching entries.
- *
- * Required secrets:
- *   - SUPABASE_URL
- *   - SUPABASE_ANON_KEY
- *
- * Optional secrets:
- *   - GEMINI_API_KEY: enables semantic vector search; lexical search is used when absent
- *
- * Request body:
- *   - query: string — the search text
- *   - limit?: number — max results (default 10)
- *   - threshold?: number — min similarity 0..1 (default 0.3)
+ * Authenticated lexical search over the signed-in user's journal entries.
+ * No journal content or query is sent to an external AI provider.
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
 import { getCorsHeaders, parseJsonBody } from "../_shared/http.ts";
-import { redactUserRef } from "../_shared/redaction.ts";
+import { requireJournalAiConsent } from "../_shared/journal_ai_consent.ts";
 import { searchJournalEntriesLexically } from "../_shared/journal_ai_free.ts";
 
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-const EMBEDDING_MODEL = "text-embedding-004";
-const EMBEDDING_DIMS = 768;
-
-// Rate limit: 20 searches per minute per user
 const RATE_LIMIT = 20;
-const RATE_WINDOW = 60000;
+const RATE_WINDOW = 60_000;
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+interface SearchRequest {
+  query?: unknown;
+  limit?: unknown;
+}
 
 function checkRateLimit(userId: string): boolean {
   const now = Date.now();
-  const userLimit = rateLimitMap.get(userId);
-  if (rateLimitMap.size > 1000) {
-    for (const [key, value] of rateLimitMap.entries()) {
-      if (now > value.resetAt) rateLimitMap.delete(key);
-    }
-  }
-  if (!userLimit || now > userLimit.resetAt) {
+  const current = rateLimitMap.get(userId);
+  if (!current || now > current.resetAt) {
     rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_WINDOW });
     return true;
   }
-  if (userLimit.count >= RATE_LIMIT) return false;
-  userLimit.count++;
+  if (current.count >= RATE_LIMIT) return false;
+  current.count += 1;
   return true;
 }
-
-async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY! },
-      body: JSON.stringify({
-        content: { parts: [{ text }] },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Gemini embedding API error: ${response.status} ${errText}`);
-  }
-
-  const result = await response.json();
-  const values = result?.embedding?.values;
-  if (!Array.isArray(values) || values.length !== EMBEDDING_DIMS) {
-    throw new Error(
-      `Unexpected embedding dimensions: got ${values?.length}, expected ${EMBEDDING_DIMS}`
-    );
-  }
-  return values;
-}
-
-// ============================================
-// HANDLER
-// ============================================
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin");
   const corsHeaders = getCorsHeaders(origin);
-
   const jsonResponse = (status: number, payload: Record<string, unknown>) =>
     new Response(JSON.stringify(payload), {
       status,
@@ -96,92 +43,56 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
-  if (req.method !== "POST") {
-    return jsonResponse(405, { error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return jsonResponse(405, { error: "Method not allowed" });
 
-  // Auth
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return jsonResponse(401, { error: "Unauthorized" });
   }
 
-  const token = authHeader.replace("Bearer ", "");
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${token}` } },
+    global: { headers: { Authorization: authHeader } },
   });
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return jsonResponse(401, { error: "Invalid token" });
+  if (!checkRateLimit(user.id)) return jsonResponse(429, { error: "Too many requests" });
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return jsonResponse(401, { error: "Invalid token" });
-  }
-
-  if (!checkRateLimit(user.id)) {
-    return jsonResponse(429, { error: "Too many requests" });
-  }
+  const consent = await requireJournalAiConsent(supabase, user.id);
+  if (!consent.allowed) return jsonResponse(consent.status, { error: consent.code });
 
   try {
-    const [body, bodyErr] = await parseJsonBody(req, origin);
-    if (bodyErr) return bodyErr;
-    const { query, limit = 10, threshold = 0.3 } = body;
-
-    if (!query || typeof query !== "string") {
+    const [body, bodyError] = await parseJsonBody<SearchRequest>(req, origin);
+    if (bodyError) return bodyError;
+    if (typeof body.query !== "string" || !body.query.trim()) {
       return jsonResponse(400, { error: "Query is required" });
     }
-
-    if (query.length > 2000) {
+    if (body.query.length > 2_000) {
       return jsonResponse(400, { error: "Query too long (max 2000 chars)" });
     }
 
-    const safeLimit = Math.min(50, Math.max(1, typeof limit === "number" ? limit : 10));
-
-    if (!GEMINI_API_KEY) {
-      console.warn("[SearchJournal] GEMINI_API_KEY not configured; using lexical search fallback");
-      const { data: entries, error: entriesError } = await supabase
-        .from("journal_entries")
-        .select("id, title, content, mood, tags, updated_at, created_at")
-        .eq("user_id", user.id)
-        .order("updated_at", { ascending: false })
-        .limit(200);
-
-      if (entriesError) {
-        console.error("[SearchJournal] Lexical fallback fetch error:", entriesError);
-        return jsonResponse(500, { error: "Search failed" });
-      }
-
-      const results = searchJournalEntriesLexically(entries || [], query.trim(), safeLimit);
-      return jsonResponse(200, {
-        results,
-        mode: "journal_search_free_lexical",
-        requiresPaidApi: false,
-      });
-    }
-
-    // 1. Generate embedding for the search query
-    const queryEmbedding = await generateEmbedding(query.trim());
-
-    // 2. Search via pgvector using the match function
-    const { data, error } = await supabase.rpc("match_journal_entries", {
-      query_embedding: `[${queryEmbedding.join(",")}]`,
-      match_user_id: user.id,
-      match_threshold: Math.max(0, Math.min(1, threshold)),
-      match_count: safeLimit,
-    });
+    const requestedLimit = typeof body.limit === "number" ? body.limit : 10;
+    const safeLimit = Math.min(50, Math.max(1, Math.floor(requestedLimit)));
+    const { data: entries, error } = await supabase
+      .from("journal_entries")
+      .select("id, title, content, mood, tags, updated_at, created_at")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(200);
 
     if (error) {
-      console.error("[SearchJournal] RPC error:", error);
+      console.error("[SearchJournal] Lexical search fetch failed", { code: error.code });
       return jsonResponse(500, { error: "Search failed" });
     }
 
-    console.log(`[SearchJournal] Found ${data?.length || 0} results for ${redactUserRef(user.id)}`);
-
-    return jsonResponse(200, { results: data || [] });
+    return jsonResponse(200, {
+      results: searchJournalEntriesLexically(entries || [], body.query.trim(), safeLimit),
+      mode: "journal_search_free_lexical",
+      externalProvider: false,
+      requiresPaidApi: false,
+    });
   } catch (error) {
-    console.error("[SearchJournal] Error:", error);
+    console.error("[SearchJournal] Search failed", error instanceof Error ? error.name : "error");
     return jsonResponse(500, { error: "Internal error" });
   }
 });

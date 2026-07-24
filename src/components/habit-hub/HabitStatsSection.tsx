@@ -79,7 +79,7 @@ export function HabitStatsSection({ currentStreak, allStreaks, completedDates, s
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
       {cells.map((cell) => (
         <div
           key={cell.label}
@@ -93,7 +93,7 @@ export function HabitStatsSection({ currentStreak, allStreaks, completedDates, s
             <div className="text-lg font-bold text-foreground tabular-nums leading-tight">
               {cell.value}{cell.suffix || ''}
             </div>
-            <div className="text-[10px] text-muted-foreground leading-tight truncate">
+            <div className="whitespace-normal break-words text-xs leading-tight text-muted-foreground">
               {cell.label}
             </div>
           </div>

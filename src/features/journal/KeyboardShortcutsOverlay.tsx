@@ -1,10 +1,13 @@
-import { memo, useEffect, useRef } from "react";
+import { memo } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { springs } from "@/config/animations";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useShouldAnimate } from "@/hooks/useShouldAnimate";
+import type { TranslationStrings } from "@/i18n/types";
 
 interface KeyboardShortcutsOverlayProps {
   open: boolean;
@@ -14,35 +17,38 @@ interface KeyboardShortcutsOverlayProps {
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
 const mod = isMac ? "Cmd" : "Ctrl";
 
-const SHORTCUT_GROUPS = [
+function getShortcutGroups(ts: TranslationStrings) {
+  return [
   {
-    category: "Navigation",
+    category: ts.journalShortcutNavigation || "Navigation",
     items: [
-      { keys: [`${mod}+\\`], label: "Toggle sidebar" },
-      { keys: [`${mod}+Shift+\\`], label: "Compact/hidden toggle" },
-      { keys: ["Escape"], label: "Close / go back" },
+      { keys: [`${mod}+\\`], label: ts.journalShortcutToggleSidebar || "Toggle sidebar" },
+      { keys: [`${mod}+Shift+\\`], label: ts.journalShortcutToggleCompact || "Compact or hidden sidebar" },
+      { keys: ["Escape"], label: ts.journalShortcutCloseOrBack || "Close or go back" },
     ],
   },
   {
-    category: "Editor",
+    category: ts.journalShortcutEditor || "Editor",
     items: [
-      { keys: [`${mod}+B`], label: "Bold" },
-      { keys: [`${mod}+I`], label: "Italic" },
-      { keys: [`${mod}+U`], label: "Underline" },
-      { keys: ["/"], label: "Slash commands" },
+      { keys: [`${mod}+B`], label: ts.journalFormatBold || "Bold" },
+      { keys: [`${mod}+I`], label: ts.journalFormatItalic || "Italic" },
+      { keys: [`${mod}+U`], label: ts.journalFormatUnderline || "Underline" },
+      { keys: ["/"], label: ts.journalSlashCommands || "Slash commands" },
     ],
   },
   {
-    category: "View",
+    category: ts.journalShortcutView || "View",
     items: [
-      { keys: [`${mod}+Enter`], label: "Save entry" },
-      { keys: ["?"], label: "Show shortcuts" },
+      { keys: [`${mod}+Enter`], label: ts.journalShortcutSaveEntry || "Save entry" },
+      { keys: [`${mod}+Shift+L`], label: ts.journalPanicLockTitle || "Lock diary" },
+      { keys: ["?"], label: ts.journalShortcutShowHelp || "Show shortcuts" },
     ],
   },
-] as const;
+  ] as const;
+}
 
 const Kbd = ({ children }: { children: string }) => (
-  <kbd className="bg-muted rounded-md px-1.5 py-0.5 text-[11px] font-mono text-foreground/80">
+  <kbd className="whitespace-normal break-words rounded-md bg-muted px-1.5 py-0.5 text-xs font-mono text-foreground/80">
     {children}
   </kbd>
 );
@@ -51,29 +57,10 @@ export const KeyboardShortcutsOverlay = memo(function KeyboardShortcutsOverlay({
   open,
   onClose,
 }: KeyboardShortcutsOverlayProps) {
-  const prefersReduced = useReducedMotion();
-  const { t } = useLanguage();
-  const ts = t as unknown as Record<string, string>;
-  const returnRef = useRef<HTMLElement | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (open) {
-      returnRef.current = document.activeElement as HTMLElement;
-      requestAnimationFrame(() => panelRef.current?.focus());
-    } else {
-      returnRef.current?.focus();
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.stopPropagation(); onClose(); }
-    };
-    document.addEventListener("keydown", handleKey, true);
-    return () => document.removeEventListener("keydown", handleKey, true);
-  }, [open, onClose]);
+  const prefersReduced = !useShouldAnimate();
+  const { t: ts } = useLanguage();
+  const shortcutGroups = getShortcutGroups(ts);
+  const { modalRef, handleKeyDown } = useModalA11y(open, onClose);
 
   const motionProps = prefersReduced
     ? {}
@@ -96,9 +83,10 @@ export const KeyboardShortcutsOverlay = memo(function KeyboardShortcutsOverlay({
             aria-hidden="true"
           />
           <motion.div
-            ref={panelRef}
+            ref={modalRef}
+            onKeyDown={handleKeyDown}
             role="dialog"
-            aria-label="Keyboard shortcuts"
+            aria-label={ts.keyboardShortcuts || "Keyboard shortcuts"}
             aria-modal="true"
             tabIndex={-1}
             className={cn(
@@ -108,21 +96,21 @@ export const KeyboardShortcutsOverlay = memo(function KeyboardShortcutsOverlay({
             )}
             {...motionProps}
           >
-            <div className="flex items-center justify-between border-b border-border/50 px-5 py-4">
-              <h2 className="text-base font-semibold text-foreground">
+            <div className="grid grid-cols-[minmax(0,1fr)_44px] items-center gap-2 border-b border-border/50 px-5 py-4">
+              <h2 className="min-w-0 whitespace-normal break-words text-base font-semibold text-foreground">
                 {ts.keyboardShortcuts || "Keyboard Shortcuts"}
               </h2>
               <button
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground motion-safe:transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Close"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted-foreground motion-safe:transition-colors hover:bg-muted hover:text-foreground"
+                aria-label={ts.close || "Close"}
               >
                 <X size={18} />
               </button>
             </div>
 
             <div className="space-y-5 px-5 py-4">
-              {SHORTCUT_GROUPS.map((group) => (
+              {shortcutGroups.map((group) => (
                 <section key={group.category}>
                   <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     {group.category}
@@ -131,10 +119,10 @@ export const KeyboardShortcutsOverlay = memo(function KeyboardShortcutsOverlay({
                     {group.items.map((item) => (
                       <li
                         key={item.label}
-                        className="flex items-center justify-between rounded-md px-2 py-1.5"
+                        className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-[minmax(0,1fr)_auto] min-[420px]:items-center rounded-md px-2 py-1.5"
                       >
-                        <span className="text-sm text-foreground/90">{item.label}</span>
-                        <span className="flex gap-1">
+                        <span className="min-w-0 whitespace-normal break-words text-sm text-foreground/90">{item.label}</span>
+                        <span className="flex flex-wrap gap-1 min-[420px]:justify-end">
                           {item.keys.map((k) => <Kbd key={k}>{k}</Kbd>)}
                         </span>
                       </li>

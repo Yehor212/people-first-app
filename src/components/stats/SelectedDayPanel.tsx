@@ -70,25 +70,25 @@ export function SelectedDayPanel({
       {selectedDate && selectedDayData ? (
         <div className="relative">
           {/* Premium Header */}
-          <div className="flex items-center justify-between p-4 border-b border-foreground/10">
-            <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center justify-between gap-3 p-4 border-b border-foreground/10">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
               <motion.div
-                className="w-10 h-10 rounded-xl flex items-center justify-center bg-[linear-gradient(135deg,rgba(139,92,246,0.3),rgba(59,130,246,0.2))] shadow-[0_0_15px_rgba(139,92,246,0.4)]"
+                className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-[linear-gradient(135deg,rgba(139,92,246,0.3),rgba(59,130,246,0.2))] shadow-[0_0_15px_rgba(139,92,246,0.4)]"
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               >
                 <Calendar className="w-5 h-5 text-violet-600 dark:text-violet-300" />
               </motion.div>
-              <div>
-                <p className="font-bold text-lg text-foreground">{new Date(selectedDate + 'T00:00:00').toLocaleDateString(getLocale(language as Language), { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                <p className="text-xs text-muted-foreground">
+              <div className="min-w-0 flex-1">
+                <p className="min-w-0 break-words font-bold text-lg text-foreground [hyphens:manual] [overflow-wrap:break-word]">{new Date(selectedDate + 'T00:00:00').toLocaleDateString(getLocale(language as Language), { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                <p className="min-w-0 break-words text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
                   {new Date(selectedDate + 'T00:00:00').toLocaleDateString(getLocale(language as Language), { weekday: 'long' })}
                 </p>
               </div>
             </div>
             {selectedDayData.mood && (
               <motion.div
-                className="drop-shadow-[0_0_12px_rgba(139,92,246,0.6)]"
+                className="shrink-0 drop-shadow-[0_0_12px_rgba(139,92,246,0.6)]"
                 animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               >
@@ -132,18 +132,18 @@ export function SelectedDayPanel({
             ].map((stat, i) => (
               <motion.div
                 key={i}
-                className="p-3 rounded-xl bg-black/5 dark:bg-white/5 backdrop-blur-sm border border-black/10 dark:border-white/10"
+                className="min-w-0 p-3 rounded-xl bg-black/5 dark:bg-white/5 backdrop-blur-sm border border-black/10 dark:border-white/10"
                 style={{ boxShadow: `0 0 10px ${stat.color}20` }}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ scale: 1.02, borderColor: `${stat.color}40` }}
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <stat.icon className="w-4 h-4" style={{ color: stat.color }} />
-                  <span className="text-xs text-muted-foreground">{stat.label}</span>
+                <div className="flex min-w-0 items-start gap-2 mb-1">
+                  <stat.icon className="w-4 h-4 shrink-0" style={{ color: stat.color }} />
+                  <span className="min-w-0 break-words text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">{stat.label}</span>
                 </div>
-                <p className="text-lg font-bold text-foreground">{stat.value}</p>
+                <p className="min-w-0 break-words text-lg font-bold text-foreground [hyphens:manual] [overflow-wrap:break-word]">{stat.value}</p>
               </motion.div>
             ))}
           </div>
@@ -189,27 +189,27 @@ export function SelectedDayPanel({
                       />
                       {/* Entry card */}
                       <div className="ms-4 p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-                        <div className="flex items-center gap-2">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
                           <AnimatedEmotionEmoji
                             emotion={mappedEmotion}
                             size="sm"
                           />
-                          <span className="font-medium text-foreground">
+                          <span className="min-w-0 break-words font-medium text-foreground [hyphens:manual] [overflow-wrap:break-word]">
                             {emotionLabels[mappedEmotion]}
                           </span>
-                          <span className="ms-auto text-xs text-muted-foreground flex items-center gap-1">
+                          <span className="ms-auto flex min-w-0 items-center gap-1 break-words text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
                             {getTimeOfDayEmoji(entry.timestamp)} {getTimeOfDay(entry.timestamp, t)}
                           </span>
                         </div>
                         {entry.note && (
-                          <p className="mt-2 text-sm text-foreground/70 italic ps-6">"{entry.note}"</p>
+                          <p className="mt-2 min-w-0 break-words text-sm text-foreground/70 italic ps-6 [overflow-wrap:anywhere]">"{entry.note}"</p>
                         )}
                         {entry.tags && entry.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2 ps-6">
                             {entry.tags.map((tag) => (
                               <span
                                 key={tag}
-                                className="px-2 py-0.5 text-xs rounded-full bg-violet-500/20 text-violet-700 dark:text-violet-300 shadow-[0_0_6px_rgba(139,92,246,0.3)]"
+                                className="max-w-full min-w-0 whitespace-normal break-words px-2 py-0.5 text-xs rounded-full bg-violet-500/20 text-violet-700 dark:text-violet-300 shadow-[0_0_6px_rgba(139,92,246,0.3)] [overflow-wrap:anywhere]"
                               >
                                 #{tag}
                               </span>
@@ -222,7 +222,7 @@ export function SelectedDayPanel({
                             {entry.emotionTags.map((tag) => (
                               <span
                                 key={tag}
-                                className="px-2 py-0.5 text-xs rounded-full bg-primary/15 text-primary dark:text-primary"
+                                className="max-w-full min-w-0 whitespace-normal break-words px-2 py-0.5 text-xs rounded-full bg-primary/15 text-primary dark:text-primary [hyphens:manual] [overflow-wrap:break-word]"
                               >
                                 {t[`somTag${tag.charAt(0).toUpperCase()}${tag.slice(1)}`] || tag}
                               </span>
@@ -235,7 +235,7 @@ export function SelectedDayPanel({
                             {entry.contexts.map((ctx) => (
                               <span
                                 key={ctx}
-                                className="px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground"
+                                className="max-w-full min-w-0 whitespace-normal break-words px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]"
                               >
                                 {t[`somCtx${ctx.charAt(0).toUpperCase()}${ctx.slice(1)}`] || ctx}
                               </span>
@@ -258,9 +258,9 @@ export function SelectedDayPanel({
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <div className="flex items-center gap-2 mb-3">
-                <Target className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+              <div className="flex min-w-0 items-start gap-2 mb-3">
+                <Target className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span className="min-w-0 break-words text-xs font-medium text-emerald-700 dark:text-emerald-300 [hyphens:manual] [overflow-wrap:break-word]">
                   {t.habitsCompleted} ({selectedDayData.habits.length}/{habits.length})
                 </span>
               </div>
@@ -273,13 +273,13 @@ export function SelectedDayPanel({
                     return (
                       <motion.div
                         key={habitId}
-                        className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/20 rounded-full"
+                        className="flex max-w-full min-w-0 items-center gap-1.5 px-2.5 py-1 bg-emerald-500/20 rounded-full"
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: idx * 0.05 }}
                       >
-                        <span className="text-sm">{habit?.icon || '✓'}</span>
-                        <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{habit?.name || habitId}</span>
+                        <span className="shrink-0 text-sm">{habit?.icon || '✓'}</span>
+                        <span className="min-w-0 break-words text-xs font-medium text-emerald-700 dark:text-emerald-300 [overflow-wrap:anywhere]">{habit?.name || habitId}</span>
                       </motion.div>
                     );
                   })}
@@ -295,13 +295,13 @@ export function SelectedDayPanel({
                     {missedHabits.map((habit, idx) => (
                       <motion.div
                         key={habit.id}
-                        className="flex items-center gap-1.5 px-2.5 py-1 bg-red-500/10 rounded-full"
+                        className="flex max-w-full min-w-0 items-center gap-1.5 px-2.5 py-1 bg-red-500/10 rounded-full"
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: idx * 0.05 }}
                       >
-                        <span className="text-sm opacity-50">{habit.icon}</span>
-                        <span className="text-xs font-medium text-red-700 dark:text-red-300">{habit.name}</span>
+                        <span className="shrink-0 text-sm opacity-50">{habit.icon}</span>
+                        <span className="min-w-0 break-words text-xs font-medium text-red-700 dark:text-red-300 [overflow-wrap:anywhere]">{habit.name}</span>
                       </motion.div>
                     ))}
                   </div>
@@ -339,7 +339,7 @@ export function SelectedDayPanel({
                       ✨
                     </motion.span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">{entry.text}</p>
+                      <p className="min-w-0 break-words text-sm text-foreground [overflow-wrap:anywhere]">{entry.text}</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {new Date(entry.timestamp).toLocaleTimeString(getLocale(language as Language), { hour: '2-digit', minute: '2-digit' })}
                       </p>

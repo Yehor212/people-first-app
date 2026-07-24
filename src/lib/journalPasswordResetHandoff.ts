@@ -5,6 +5,7 @@ export const JOURNAL_PASSWORD_RESET_PARAM = "journalReset";
 
 type JournalPasswordResetProof = {
   nonce: string;
+  userId: string;
   receivedAt: number;
 };
 
@@ -33,25 +34,31 @@ function parseStoredJournalPasswordResetProof(): JournalPasswordResetProof | nul
   try {
     const parsed = JSON.parse(raw) as Partial<JournalPasswordResetProof>;
     const nonce = normalizeJournalResetNonce(parsed.nonce);
+    const userId = typeof parsed.userId === "string" ? parsed.userId.trim() : "";
     const receivedAt = Number(parsed.receivedAt);
-    if (!nonce || !Number.isFinite(receivedAt)) return null;
-    return { nonce, receivedAt };
+    if (!nonce || !userId || !Number.isFinite(receivedAt)) return null;
+    return { nonce, userId, receivedAt };
   } catch {
     return null;
   }
 }
 
-export function persistJournalPasswordResetProofFromUrl(url: string): void {
+export function persistJournalPasswordResetProofFromUrl(url: string, userId: string): void {
   const nonce = getJournalPasswordResetNonceFromUrl(url);
-  if (!nonce) return;
+  const normalizedUserId = userId.trim();
+  if (!nonce || !normalizedUserId) return;
 
   storageSetRaw(
     SK.JOURNAL_PASSWORD_RESET_PROOF,
-    JSON.stringify({ nonce, receivedAt: Date.now() } satisfies JournalPasswordResetProof),
+    JSON.stringify({ nonce, userId: normalizedUserId, receivedAt: Date.now() } satisfies JournalPasswordResetProof),
   );
 }
 
-export function hasStoredJournalPasswordResetProof(expectedNonce: string, maxAgeMs: number): boolean {
+export function hasStoredJournalPasswordResetProof(
+  expectedNonce: string,
+  expectedUserId: string,
+  maxAgeMs: number,
+): boolean {
   const stored = parseStoredJournalPasswordResetProof();
   if (!stored) return false;
 
@@ -60,7 +67,7 @@ export function hasStoredJournalPasswordResetProof(expectedNonce: string, maxAge
     return false;
   }
 
-  if (stored.nonce !== expectedNonce) {
+  if (stored.nonce !== expectedNonce || stored.userId !== expectedUserId) {
     storageRemove(SK.JOURNAL_PASSWORD_RESET_PROOF);
     return false;
   }
@@ -68,8 +75,12 @@ export function hasStoredJournalPasswordResetProof(expectedNonce: string, maxAge
   return true;
 }
 
-export function consumeJournalPasswordResetProof(expectedNonce: string, maxAgeMs: number): boolean {
-  if (!hasStoredJournalPasswordResetProof(expectedNonce, maxAgeMs)) return false;
+export function consumeJournalPasswordResetProof(
+  expectedNonce: string,
+  expectedUserId: string,
+  maxAgeMs: number,
+): boolean {
+  if (!hasStoredJournalPasswordResetProof(expectedNonce, expectedUserId, maxAgeMs)) return false;
   storageRemove(SK.JOURNAL_PASSWORD_RESET_PROOF);
   return true;
 }

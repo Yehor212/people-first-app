@@ -58,20 +58,26 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-[64] bg-black/30 motion-safe:animate-fade-in" onClick={onClose} />
+      <div
+        className="fixed inset-0 z-[64] bg-black/30 motion-safe:animate-fade-in"
+        aria-hidden="true"
+        onClick={showPackManager ? undefined : onClose}
+      />
 
       <div
         ref={modalRef}
         onKeyDown={handleKeyDown}
         role="dialog"
-        aria-modal="true"
+        aria-modal={!showPackManager}
+        aria-hidden={showPackManager || undefined}
         aria-labelledby={stickerPickerTitleId}
         className={cn(
           "fixed bottom-0 inset-x-0 z-[65] pb-safe",
           "bg-card/95 backdrop-blur-xl border-t border-border/40",
           "rounded-t-2xl shadow-lg motion-safe:animate-slide-up",
           "max-h-[55dvh] flex flex-col",
-          "pb-safe"
+          "pb-safe",
+          showPackManager && "pointer-events-none"
         )}
       >
         {/* Handle bar */}
@@ -112,7 +118,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={ts.journalStickerSearch || "Search stickers..."}
               aria-label={t.ariaSearchStickers}
-              className="w-full ps-8 pe-8 py-2 rounded-lg bg-muted/30 border border-border/20 text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30 min-h-[44px]"
+              className="w-full ps-8 pe-8 py-2 rounded-lg bg-muted/30 border border-border/20 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30 min-h-[44px]"
             />
             {searchQuery && (
               <button
@@ -145,8 +151,8 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
                 <span className="text-base">{"\u2728"}</span>
                 <span
                   className={cn(
-                    "text-[10px] truncate max-w-[52px]",
-                    activeCategory === -1 ? "text-primary/80" : "text-muted-foreground/50"
+                    "max-w-32 whitespace-normal break-words text-center text-xs leading-tight",
+                    activeCategory === -1 ? "text-primary" : "text-muted-foreground"
                   )}
                 >
                   {ts.journalStickerSuggested || "Suggested"}
@@ -169,10 +175,10 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
                 <StickerRenderer emoji={cat.icon} size="sm" />
                 <span
                   className={cn(
-                    "text-[10px] truncate max-w-[52px]",
+                    "max-w-32 whitespace-normal break-words text-center text-xs leading-tight",
                     safeActiveCategory === i && activeCategory >= 0
-                      ? "text-primary/80"
-                      : "text-muted-foreground/50"
+                      ? "text-primary"
+                      : "text-muted-foreground"
                   )}
                 >
                   {ts[cat.labelKey] || cat.key}
@@ -195,15 +201,15 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
                 transition={{ duration: 0.15 }}
               >
                 {searchResults.length > 0 ? (
-                  <div className="grid grid-cols-6 gap-1.5">
+                  <div className="grid grid-cols-[repeat(auto-fit,minmax(calc(3rem*var(--font-scale,1)),1fr))] gap-2">
                     {searchResults.map((r, i) => (
-                      <div key={`sr-${i}`} className="relative">
+                      <div key={`sr-${i}`} className="flex min-w-0 flex-col items-center gap-1">
                         <button type="button" onClick={() => handleSelect(r.emoji)} className={stickerButton} aria-label={`${ts.journalStickerSelect || "Add sticker"} ${r.emoji}`}>
                           <StickerRenderer emoji={r.emoji} size="lg" />
                         </button>
                         {/* Show pack hint for disabled packs */}
                         {!prefs.enabled[r.packKey] && (
-                          <span className="absolute -bottom-0.5 inset-x-0 text-center text-[8px] text-muted-foreground/60 truncate">
+                          <span className="max-w-full whitespace-normal break-words text-center text-xs leading-tight text-muted-foreground">
                             {ts[
                               STICKER_CATEGORIES.find((c) => c.key === r.packKey)?.labelKey || ""
                             ] || r.packKey}
@@ -213,7 +219,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
                     ))}
                   </div>
                 ) : (
-                  <p className="text-center text-xs text-muted-foreground/50 py-8">
+                  <p className="text-center text-xs text-muted-foreground py-8">
                     {ts.journalStickerNoResults || "No stickers found"}
                   </p>
                 )}
@@ -250,7 +256,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
                 exit={{ opacity: 0 }}
                 className="text-center py-8"
               >
-                <p className="text-xs text-muted-foreground/50 mb-3">
+                <p className="text-xs text-muted-foreground mb-3">
                   {ts.journalStickerPackEnable || "Enable at least one sticker pack"}
                 </p>
                 <button
@@ -272,7 +278,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
                 {/* Recents — only on first category */}
                 {recents.length > 0 && safeActiveCategory === 0 && (
                   <div className="mb-3">
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                    <span className="whitespace-normal break-words text-xs uppercase tracking-wider text-muted-foreground">
                       {ts.journalStickerRecent || "Recent"}
                     </span>
                     <div className="grid grid-cols-6 gap-1.5 mt-1">

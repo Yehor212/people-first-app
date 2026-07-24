@@ -1,7 +1,9 @@
-import { memo, useMemo } from "react";
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- The year mosaic scroller must receive focus for keyboard operation. */
+import { memo, useId, useMemo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { springs, stagger } from "@/config/animations";
+import { formatLocalizedCount } from "./journalWordCount";
 import type { JournalEntry } from "./types";
 import type { MoodType } from "@/types";
 
@@ -24,14 +26,19 @@ function daysInMonth(year: number, month: number): number {
 interface YearInPixelsProps {
   entries: JournalEntry[];
   year?: number;
+  labelledById?: string;
 }
 
 export const YearInPixels = memo(function YearInPixels({
   entries,
   year = new Date().getFullYear(),
+  labelledById,
 }: YearInPixelsProps) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   const prefersReducedMotion = useReducedMotion();
+  const internalHeadingId = useId();
+  const summaryId = useId();
 
   const locale = LOCALE_MAP[language] ?? language;
 
@@ -57,23 +64,56 @@ export const YearInPixels = memo(function YearInPixels({
         days: daysInMonth(year, m),
         month: m,
       })),
-    [monthLabels, year],
+    [monthLabels, year]
   );
 
   const loggedDays = entryMap.size;
+  const accessibleSummary = useMemo(() => {
+    const countLabel = formatLocalizedCount(
+      loggedDays,
+      language,
+      ts,
+      "journalStatsDayCount",
+      ts.journalStatsDays || "days"
+    );
+    const moodLabels: Record<MoodType, string> = {
+      great: ts.moodGreat || "Great",
+      good: ts.moodGood || "Good",
+      okay: ts.moodOkay || "Okay",
+      bad: ts.moodBad || "Bad",
+      terrible: ts.moodTerrible || "Terrible",
+    };
+    const entryDetails = [...entryMap.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(
+        ([date, mood]) => `${date}: ${mood ? moodLabels[mood] : ts.journalStatsNoMood || "No mood"}`
+      );
+
+    return entryDetails.length > 0 ? `${countLabel}. ${entryDetails.join(", ")}` : countLabel;
+  }, [entryMap, language, loggedDays, ts]);
 
   return (
     <div
-      className="overflow-x-auto"
-      role="img"
-      aria-label={`Year in pixels for ${year}: ${loggedDays} days logged`}
+      className="overflow-x-auto overscroll-x-contain rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      role="region"
+      tabIndex={0}
+      aria-labelledby={labelledById ?? internalHeadingId}
+      aria-describedby={summaryId}
     >
-      <div className="inline-flex flex-col gap-1">
+      {!labelledById && (
+        <span id={internalHeadingId} className="sr-only">
+          {ts.journalStatsYearInPixels || "Year in Pixels"}
+        </span>
+      )}
+      <span id={summaryId} className="sr-only">
+        {accessibleSummary}
+      </span>
+      <div className="inline-flex flex-col gap-1" aria-hidden="true">
         {months.map(({ label, days, month }, rowIdx) => {
           const rowDelay = stagger.delayForIndex(rowIdx);
           return (
             <div key={month} className="flex items-center gap-1.5">
-              <span className="w-10 shrink-0 text-[11px] text-muted-foreground text-end select-none">
+              <span className="w-[calc(2.5rem*var(--font-scale,1))] shrink-0 select-none whitespace-normal break-words text-end text-xs text-muted-foreground">
                 {label}
               </span>
               <div className="flex gap-0.5">
@@ -88,9 +128,13 @@ export const YearInPixels = memo(function YearInPixels({
                     <motion.div
                       key={day}
                       className="w-3 h-3 rounded-full"
-                      style={inlineColor
-                        ? { backgroundColor: inlineColor }
-                        : { backgroundColor: "hsl(var(--muted-foreground) / 0.08)", boxShadow: "inset 0 0 0 1px hsl(var(--border) / 0.1)" }
+                      style={
+                        inlineColor
+                          ? { backgroundColor: inlineColor }
+                          : {
+                              backgroundColor: "hsl(var(--muted-foreground) / 0.08)",
+                              boxShadow: "inset 0 0 0 1px hsl(var(--border) / 0.1)",
+                            }
                       }
                       initial={prefersReducedMotion ? false : { opacity: 0, scale: 0 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -99,7 +143,6 @@ export const YearInPixels = memo(function YearInPixels({
                           ? { duration: 0 }
                           : { ...springs.snappy, delay: dotDelay }
                       }
-                      title={dateKey}
                       aria-hidden="true"
                     />
                   );

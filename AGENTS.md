@@ -52,6 +52,10 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 
 - The canonical council contains exactly ten project custom roles generated from `config/persistent-agent-orchestra.json`. Built-in Codex agents may still coexist; never misstate the invariant as ten total runtime agents.
 - Use the smallest sufficient routed subset. Do not launch all ten by ritual, majority vote, or as a substitute for evidence. Roles 8 and 10 are mandatory only at their registry risk thresholds.
+- For vague requests, run Free RAG and then inspect current local sources with `rg`/exact file reads before routing. Resolve the concrete route, symbols, state, interaction, copy, platforms, data flow, and current failure; a retrieved excerpt or keyword match is not proof by itself.
+- Record an evidence-locator-backed `SELECTED` or `EXCLUDED` disposition for each of the ten roles, and physically invoke exactly the selected set. An unexplained extra role is a routing failure, not harmless redundancy.
+- Select Role 2 only for evidence of a concrete emotional/clinical product claim or an agency, pressure, interruption, or recovery risk. Generic words such as Settings, wellbeing, ADHD, or dopamine initiate discovery but do not select Role 2 by themselves.
+- Routing is deterministic for M0; M1 uses matched owners plus QA; M2 adds Role 10 Pass A/B; explicit `DEEP_AUDIT` uses all ten. `FIXED_FULL_TEN` is an M1/M2 rollback mode; M0 remains deterministic.
 - Treat `.codex/agents/*.toml` sandbox settings as `READ_ONLY_INTENT`, not effective-permission proof. A parent/runtime override or unavailable load probe keeps runtime isolation `UNVERIFIED`.
 - Role 10 Pass A receives the raw request and neutral trusted policy context before the proposed solution; Pass B receives a hash-bound final packet. If isolation or report integrity is not demonstrated, label the pass `UNVERIFIED` or `STOP`.
 - Run `npm run check:agent-orchestra` after registry, prompt, agent-governance, RAG, or CI changes. Structural success never implies semantic quality, runtime loading, human review, or user acceptance.

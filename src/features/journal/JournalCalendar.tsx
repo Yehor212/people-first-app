@@ -1,14 +1,15 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, CalendarRange } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
-import { cn, getToday } from "@/lib/utils";
+import { cn, parseLocalDate } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { getLocale } from "@/lib/timeUtils";
+import { formatLocalizedNumber, getLocale } from "@/lib/timeUtils";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
 import type { MoodType } from "@/types";
 import { computeStreaks } from "./computeStreaks";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
+import { shiftJournalDate } from "./journalDateUtils";
 
 /** Theme-token-based mood background colors with opacity modulation */
 const MOOD_BG_STYLE: Record<MoodType, string> = {
@@ -36,6 +37,7 @@ function getLocalizedDayNames(locale: string): string[] {
 }
 
 interface JournalCalendarProps {
+  today: string;
   entryDates: Map<string, MoodType | undefined>;
   releaseTraceDates?: Map<string, number>;
   selectedDate: string | null;
@@ -45,6 +47,7 @@ interface JournalCalendarProps {
 }
 
 export function JournalCalendar({
+  today,
   entryDates,
   releaseTraceDates,
   selectedDate,
@@ -52,34 +55,43 @@ export function JournalCalendar({
   onToggleMode,
   privateMode = false,
 }: JournalCalendarProps) {
-  const today = getToday();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { t, language, isRTL } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const reducedMotion = useReducedMotion();
   const animate = shouldAnimate() && !reducedMotion;
-  const [startOffset, setStartOffset] = useState(0);
+  const [historicalRangeEnd, setHistoricalRangeEnd] = useState<string | null>(null);
 
   // Detect dark mode via class on document
   const isDark =
     typeof document !== "undefined" && document.documentElement.classList.contains("dark");
 
   const dayNames = useMemo(() => getLocalizedDayNames(language), [language]);
+  const fullDateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(getLocale(language), {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    [language]
+  );
 
   // Memoized streak computation
   const streaks = useMemo(() => computeStreaks(entryDates), [entryDates]);
 
-  // Generate 28 days based on offset
+  // A historical range is anchored to a civil date so midnight cannot shift it.
   const days = useMemo(() => {
     const result: { date: string; day: number; dayOfWeek: number }[] = [];
-    for (let i = 27 + startOffset; i >= startOffset; i--) {
-      if (i < 0) continue;
-      const d = new Date(Date.now() - i * 86400000);
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const rangeEnd = historicalRangeEnd ?? today;
+    for (let i = 27; i >= 0; i--) {
+      const dateStr = shiftJournalDate(rangeEnd, -i);
+      const d = parseLocalDate(dateStr);
       result.push({ date: dateStr, day: d.getDate(), dayOfWeek: d.getDay() });
     }
     return result;
-  }, [startOffset]);
+  }, [historicalRangeEnd, today]);
 
   // Month label
   const monthLabel = useMemo(() => {
@@ -94,44 +106,55 @@ export function JournalCalendar({
     return `${first.toLocaleDateString(locale, { month: "short" })} \u2014 ${last.toLocaleDateString(locale, { month: "short", year: "numeric" })}`;
   }, [days, language]);
 
-  const canGoForward = startOffset > 0;
+  const canGoForward = historicalRangeEnd !== null;
 
   // Scroll to end (today) on mount / offset change — RTL aware
   useEffect(() => {
-    if (!scrollRef.current) return;
-    requestAnimationFrame(() => {
-      if (!scrollRef.current) return;
-      const maxScroll = scrollRef.current.scrollWidth - scrollRef.current.clientWidth;
-      const compactSidebarInset = scrollRef.current.clientWidth <= 340 ? 28 : 0;
-      if (isRTL) {
-        scrollRef.current.scrollLeft = -(maxScroll - compactSidebarInset);
-      } else {
-        scrollRef.current.scrollLeft = maxScroll - compactSidebarInset;
-      }
-    });
-  }, [isRTL, startOffset]);
+    let frame = 0;
+    const scrollToToday = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (!scrollRef.current) return;
+        const maxScroll = scrollRef.current.scrollWidth - scrollRef.current.clientWidth;
+        if (isRTL) {
+          scrollRef.current.scrollLeft = -maxScroll;
+        } else {
+          scrollRef.current.scrollLeft = maxScroll;
+        }
+      });
+    };
+
+    scrollToToday();
+    window.addEventListener("resize", scrollToToday);
+    return () => {
+      window.removeEventListener("resize", scrollToToday);
+      cancelAnimationFrame(frame);
+    };
+  }, [days, isRTL]);
 
   return (
     <div>
       {/* Header: month label + navigation */}
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="mb-1.5 grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-x-2 gap-y-1">
         <button
-          onClick={() => setStartOffset((prev) => prev + 7)}
+          onClick={() =>
+            setHistoricalRangeEnd((current) => shiftJournalDate(current ?? today, -7))
+          }
           className="flex h-12 w-12 touch-manipulation items-center justify-center rounded-xl p-0 hover:bg-muted/50"
           aria-label={ts.previous || "Previous week"}
         >
           <ChevronLeft className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
         </button>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-foreground capitalize">{monthLabel}</span>
-          {startOffset > 0 && (
+        <div className="col-span-3 row-start-2 flex min-w-0 flex-wrap items-center justify-center gap-2 min-[420px]:col-span-1 min-[420px]:col-start-2 min-[420px]:row-start-1">
+          <span className="min-w-0 whitespace-normal break-words text-center text-xs font-medium capitalize text-foreground">{monthLabel}</span>
+          {historicalRangeEnd !== null && (
             <button
               onClick={() => {
-                setStartOffset(0);
+                setHistoricalRangeEnd(null);
                 onSelectDate(null);
               }}
-              className="flex min-h-12 touch-manipulation items-center justify-center rounded-full bg-primary/10 px-3 py-2 text-[10px] font-medium text-primary"
+              className="flex min-h-12 touch-manipulation items-center justify-center whitespace-normal break-words rounded-full bg-primary/10 px-3 py-2 text-xs font-medium text-primary"
             >
               {ts.journalCalendarToday || "Today"}
             </button>
@@ -148,9 +171,15 @@ export function JournalCalendar({
         </div>
 
         <button
-          onClick={() => setStartOffset((prev) => Math.max(0, prev - 7))}
+          onClick={() =>
+            setHistoricalRangeEnd((current) => {
+              if (!current) return null;
+              const candidate = shiftJournalDate(current, 7);
+              return candidate >= today ? null : candidate;
+            })
+          }
           disabled={!canGoForward}
-          className="flex h-12 w-12 touch-manipulation items-center justify-center rounded-xl p-0 hover:bg-muted/50 disabled:opacity-50"
+          className="col-start-3 row-start-1 flex h-12 w-12 touch-manipulation items-center justify-center rounded-xl p-0 hover:bg-muted/50 disabled:opacity-50"
           aria-label={ts.next || "Next week"}
         >
           <ChevronRight className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
@@ -160,7 +189,7 @@ export function JournalCalendar({
       {/* Day strip */}
       <div
         ref={scrollRef}
-        className="flex gap-1 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1 pr-8 snap-x snap-mandatory rtl:pl-8 rtl:pr-1"
+        className="flex gap-0.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1 snap-x snap-mandatory"
       >
         {days.map((d, index) => {
           const isToday = d.date === today;
@@ -170,6 +199,23 @@ export function JournalCalendar({
           const hasEntry = !privateMode && entryDates.has(d.date);
           const hasReleaseTrace = !privateMode && (releaseTraceDates?.get(d.date) ?? 0) > 0;
           const streak = privateMode ? undefined : streaks.get(d.date);
+          const [year, month, day] = d.date.split("-").map(Number);
+          const fullDateLabel = fullDateFormatter.format(new Date(year, month - 1, day));
+          const entryStatusLabel = hasEntry
+            ? (ts.journalEntryCountOne || ts.journalEntries || "").replace(
+                "{count}",
+                formatLocalizedNumber(1, language),
+              )
+            : "";
+          const moodStatusLabel = mood
+            ? {
+                great: ts.moodGreat || "Great",
+                good: ts.moodGood || "Good",
+                okay: ts.moodOkay || "Okay",
+                bad: ts.moodBad || "Bad",
+                terrible: ts.moodTerrible || "Terrible",
+              }[mood]
+            : "";
 
           // T1: Mood intensity background color via theme tokens
           const moodBgColor =
@@ -199,11 +245,14 @@ export function JournalCalendar({
                 void hapticTap();
                 onSelectDate(isSelected ? null : d.date);
               }}
-              // A11Y-OK: day number + day name provide accessible label for calendar day cell
-              aria-label={`${dayNames[d.dayOfWeek]} ${d.day}${hasEntry ? ` (${mood || "entry"})` : ""}`}
-              style={moodBgColor ? { backgroundColor: moodBgColor } : undefined}
+              aria-current={isToday ? "date" : undefined}
+              aria-pressed={isSelected}
+              style={{
+                width: "max(3rem, calc((100% - 0.75rem) / 7))",
+                ...(moodBgColor ? { backgroundColor: moodBgColor } : {}),
+              }}
               className={cn(
-                "snap-start flex h-12 w-12 touch-manipulation flex-none flex-col items-center gap-0.5 rounded-xl py-1 motion-safe:transition-all motion-safe:duration-200 relative overflow-hidden",
+                "snap-start flex h-[calc(3rem*var(--font-scale,1))] min-w-[calc(3rem*var(--font-scale,1))] touch-manipulation flex-none flex-col items-center justify-center gap-0.5 rounded-xl py-1 motion-safe:transition-all motion-safe:duration-200 relative overflow-hidden",
                 isSelected
                   ? "bg-gradient-to-b from-primary/20 to-primary/10 shadow-sm"
                   : !moodBgColor && "hover:bg-muted/50",
@@ -211,13 +260,18 @@ export function JournalCalendar({
                 isToday && !isSelected && "ring-1 ring-primary/40"
               )}
             >
+              <span className="sr-only">
+                {fullDateLabel}
+                {entryStatusLabel ? `. ${entryStatusLabel}` : ""}
+                {moodStatusLabel ? `. ${moodStatusLabel}` : ""}
+              </span>
               {/* T2: Streak background bar — subtle connector between consecutive days */}
               {streak && (
                 <span
                   className="absolute inset-y-[25%] bg-primary/8 pointer-events-none"
                   style={{
-                    left: streak.isStart ? "15%" : "0",
-                    right: streak.isEnd ? "15%" : "0",
+                    insetInlineStart: streak.isStart ? "15%" : "0",
+                    insetInlineEnd: streak.isEnd ? "15%" : "0",
                     borderStartStartRadius: streak.isStart ? "6px" : "0",
                     borderEndStartRadius: streak.isStart ? "6px" : "0",
                     borderStartEndRadius: streak.isEnd ? "6px" : "0",
@@ -226,10 +280,11 @@ export function JournalCalendar({
                   aria-hidden="true"
                 />
               )}
-              <span className="text-[10px] text-muted-foreground leading-none relative z-[1]">
+              <span aria-hidden="true" className="relative z-[1] text-xs leading-none text-muted-foreground">
                 {dayNames[d.dayOfWeek]}
               </span>
               <span
+                aria-hidden="true"
                 className={cn(
                   "text-xs font-semibold leading-none relative z-[1]",
                   isToday ? "text-primary" : "text-foreground"

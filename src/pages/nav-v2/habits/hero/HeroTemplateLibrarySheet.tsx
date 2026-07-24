@@ -11,6 +11,7 @@ import { V2HabitPictogram } from "@/components/habit-pictogram/V2HabitPictogram"
 import { useLanguage } from "@/contexts/LanguageContext";
 import { hapticTap } from "@/lib/haptics";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
+import { useBackHandler } from "@/hooks/useBackHandler";
 import { getRoleTone, getTemplateCategoryVisualRole } from "@/lib/nonOrbVisualRoles";
 import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import {
@@ -67,6 +68,8 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
     [seededIds, onPickTemplate],
   );
 
+  useBackHandler(open, onClose);
+
   return (
     <Drawer.Root
       open={open}
@@ -77,7 +80,7 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[70] bg-[hsl(var(--foreground)/0.34)] backdrop-blur-md [-webkit-backdrop-filter:blur(8px)]" />
         <Drawer.Content
-          className="fixed inset-x-0 bottom-0 z-[71] mt-24 flex max-h-[87vh] flex-col rounded-t-[2rem] border border-[hsl(var(--border)/0.72)] bg-[radial-gradient(circle_at_16%_0%,hsl(var(--zf-role-energy)/0.20),transparent_32%),radial-gradient(circle_at_88%_10%,hsl(var(--zf-role-gratitude)/0.14),transparent_30%),linear-gradient(160deg,hsl(var(--card)/0.96),hsl(var(--surface-elevated)/0.92)_58%,hsl(var(--surface-overlay)/0.96))] text-[hsl(var(--foreground))] shadow-[0_-30px_100px_-58px_hsl(var(--foreground)/0.34)] focus:outline-none"
+          className="fixed inset-x-0 bottom-0 z-[71] mt-24 flex max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] flex-col rounded-t-[2rem] border border-[hsl(var(--border)/0.72)] bg-[radial-gradient(circle_at_16%_0%,hsl(var(--zf-role-energy)/0.20),transparent_32%),radial-gradient(circle_at_88%_10%,hsl(var(--zf-role-gratitude)/0.14),transparent_30%),linear-gradient(160deg,hsl(var(--card)/0.96),hsl(var(--surface-elevated)/0.92)_58%,hsl(var(--surface-overlay)/0.96))] text-[hsl(var(--foreground))] shadow-[0_-30px_100px_-58px_hsl(var(--foreground)/0.34)] focus:outline-none"
           data-testid="habits-library-sheet"
           data-surface="ritual-library-deck"
         >
@@ -85,19 +88,19 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
             className="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-[hsl(var(--zf-role-energy)/0.34)]"
             aria-hidden="true"
           />
-          <div className="flex shrink-0 flex-col gap-1 px-5 pb-3 pt-4">
+          <div className="flex min-w-0 shrink-0 flex-col gap-1 ps-[max(1.25rem,var(--safe-inline-start))] pe-[max(1.25rem,var(--safe-inline-end))] pb-3 pt-4">
             <Drawer.Title
-              className="font-display text-lg font-semibold tracking-tight text-[hsl(var(--foreground))]"
+              className="min-w-0 whitespace-normal break-words font-display text-lg font-semibold tracking-tight text-[hsl(var(--foreground))] [hyphens:manual] [overflow-wrap:break-word]"
             >
               {tx.navV2HabitsLibraryTitle}
             </Drawer.Title>
-            <Drawer.Description className="text-sm leading-snug text-[hsl(var(--muted-foreground))] font-body">
+            <Drawer.Description className="min-w-0 whitespace-normal break-words text-sm leading-snug text-[hsl(var(--muted-foreground))] [hyphens:manual] [overflow-wrap:break-word] font-body">
               {tx.navV2HabitsLibrarySubtitle}
             </Drawer.Description>
           </div>
 
           <nav
-            className="flex shrink-0 gap-2 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="flex shrink-0 gap-2 overflow-x-auto overscroll-x-contain ps-[max(1.25rem,var(--safe-inline-start))] pe-[max(1.25rem,var(--safe-inline-end))] pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             aria-label={tx.navV2HabitsLibraryTitle}
             data-testid="habits-library-tabs"
           >
@@ -114,7 +117,7 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
                     setActiveCategory(cat.key);
                   }}
                   className={
-                    "inline-flex min-h-[44px] shrink-0 items-center rounded-[16px] border px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
+                    "inline-flex h-auto min-h-[44px] shrink-0 items-center whitespace-normal break-words rounded-[16px] border px-4 py-2 text-sm font-semibold [hyphens:manual] [overflow-wrap:break-word] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
                     (active
                       ? tone.activeSurfaceClass + " " + tone.textClass
                       : "border-[hsl(var(--border)/0.68)] bg-[hsl(var(--card)/0.62)] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--card)/0.86)]") +
@@ -135,7 +138,7 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
           </nav>
 
           <ul
-            className="grid flex-1 grid-cols-2 gap-2 overflow-y-auto px-5 pb-[calc(var(--safe-bottom)+1.25rem)] md:grid-cols-3"
+            className="grid min-h-0 flex-1 grid-cols-[repeat(auto-fit,minmax(min(100%,calc(9rem*var(--font-scale,1))),1fr))] gap-2 overflow-y-auto overscroll-contain ps-[max(1.25rem,var(--safe-inline-start))] pe-[max(1.25rem,var(--safe-inline-end))] pb-[calc(var(--safe-bottom)+1.25rem)] scroll-pb-[calc(var(--safe-bottom)+1.25rem)] md:grid-cols-3"
             data-testid="habits-library-list"
           >
             {filtered.map((tpl) => {
@@ -154,13 +157,13 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
                   : tpl.defaultTime ?? "1x";
 
               return (
-                <li key={tpl.id}>
+                <li key={tpl.id} className="min-w-0">
                   <button
                     type="button"
                     onClick={() => handlePick(tpl)}
                     disabled={added}
                     className={
-                      "group relative flex min-h-[118px] w-full flex-col items-start justify-between overflow-hidden rounded-[22px] border p-3 text-start shadow-[inset_0_1px_0_hsl(var(--foreground)/0.10),0_16px_36px_-34px_hsl(var(--zf-role-energy)/0.70)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
+                      "group relative flex h-auto min-h-[118px] w-full min-w-0 flex-col items-start justify-between overflow-hidden rounded-[22px] border p-3 text-start shadow-[inset_0_1px_0_hsl(var(--foreground)/0.10),0_16px_36px_-34px_hsl(var(--zf-role-energy)/0.70)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
                       (added
                         ? "border-[hsl(var(--zf-role-body)/0.22)] bg-[hsl(var(--zf-role-body)/0.07)] text-[hsl(var(--muted-foreground))] opacity-70"
                         : "bg-[radial-gradient(circle_at_18%_0%,hsl(var(--card)/0.80),transparent_34%),linear-gradient(155deg,hsl(var(--card)/0.88),hsl(var(--surface-elevated)/0.78))] text-[hsl(var(--foreground))] " +
@@ -209,12 +212,12 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
                       )}
                     </span>
                     <span className="relative z-[1] flex min-w-0 flex-1 flex-col justify-end pt-2">
-                      <span className="line-clamp-2 text-sm font-semibold leading-tight" data-slot="ritual-library-label">
+                      <span className="min-w-0 whitespace-normal break-words text-sm font-semibold leading-tight [hyphens:manual] [overflow-wrap:break-word]" data-slot="ritual-library-label">
                         {name}
                       </span>
                       <span
                         className={
-                          "mt-1 w-fit rounded-full border px-2 py-1 text-[10px] font-semibold leading-none " +
+                          "mt-1 max-w-full whitespace-normal break-words rounded-full border px-2 py-1 text-xs font-semibold leading-tight [hyphens:manual] [overflow-wrap:break-word] " +
                           (added
                             ? "border-[hsl(var(--zf-role-body)/0.18)] text-[hsl(var(--muted-foreground))]"
                             : tone.borderClass + " " + tone.textClass)

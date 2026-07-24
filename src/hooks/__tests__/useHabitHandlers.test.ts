@@ -122,10 +122,14 @@ vi.mock("@/lib/storageKeys", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/safeJson", () => ({
-  safeLocalStorageGet: vi.fn(() => ({})),
-  safeLocalStorageSet: vi.fn(),
-}));
+vi.mock("@/lib/safeJson", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/safeJson")>();
+  return {
+    ...actual,
+    safeLocalStorageGet: vi.fn(() => ({})),
+    safeLocalStorageSet: vi.fn(() => true),
+  };
+});
 
 // --- import under test after mocks ---
 

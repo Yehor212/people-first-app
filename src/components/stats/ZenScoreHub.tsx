@@ -268,7 +268,7 @@ export function ZenScoreHub({
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
             >
-              <div className="grid grid-cols-4 gap-2 pt-4 border-t border-border/50">
+              <div className="grid grid-cols-1 gap-2 pt-4 border-t border-border/50 min-[420px]:grid-cols-2 min-[640px]:grid-cols-4">
                 {breakdownItems.map((item, index) => (
                   <motion.div
                     key={item.label}
@@ -278,7 +278,7 @@ export function ZenScoreHub({
                     role={item.ringId ? "button" : undefined}
                     tabIndex={item.ringId ? 0 : undefined}
                     className={cn(
-                      "text-center",
+                      "h-auto min-h-11 min-w-0 text-center",
                       item.ringId && "cursor-pointer active:scale-95 motion-safe:transition-transform"
                     )}
                     onClick={(e) => {
@@ -307,7 +307,7 @@ export function ZenScoreHub({
                       {item.value}
                       {item.suffix || "%"}
                     </p>
-                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                    <p className="break-words text-xs text-muted-foreground">{item.label}</p>
                     {/* Mini sparkline showing weekly trend */}
                     {item.sparkData.length >= 2 && (
                       <div className="flex justify-center mt-1">

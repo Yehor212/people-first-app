@@ -32,23 +32,78 @@ const DEVICE_SESSIONS_SURFACE_CLASS: Record<
   settings: "border-[hsl(var(--zf-role-settings)/0.24)] bg-[hsl(var(--card)/0.76)]",
 };
 
-function formatRelativeTime(value: string, locale: string): string {
+function interpolateValue(template: string, value: string): string {
+  return template.replace("{value}", value);
+}
+
+export function formatDeviceLastActivity(
+  value: string,
+  locale: string,
+  template: string,
+  unknownLabel: string,
+  nowMs = Date.now(),
+): string {
   const timestamp = new Date(value).getTime();
-  if (!Number.isFinite(timestamp)) return "unknown";
-  const diffMs = Date.now() - timestamp;
-  const minutes = Math.max(0, Math.round(diffMs / 60_000));
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h`;
+  if (!Number.isFinite(timestamp)) return interpolateValue(template, unknownLabel);
+
+  const diffMs = timestamp - nowMs;
+  const absDiffMs = Math.abs(diffMs);
+
   try {
-    return new Intl.DateTimeFormat(locale, {
+    if (absDiffMs < 7 * 24 * 60 * 60_000) {
+      const relative = new Intl.RelativeTimeFormat(locale, {
+        numeric: "auto",
+        style: "long",
+      });
+
+      if (absDiffMs < 60_000) {
+        return interpolateValue(template, relative.format(0, "second"));
+      }
+      if (absDiffMs < 60 * 60_000) {
+        return interpolateValue(
+          template,
+          relative.format(Math.round(diffMs / 60_000), "minute"),
+        );
+      }
+      if (absDiffMs < 24 * 60 * 60_000) {
+        return interpolateValue(
+          template,
+          relative.format(Math.round(diffMs / (60 * 60_000)), "hour"),
+        );
+      }
+      return interpolateValue(
+        template,
+        relative.format(Math.round(diffMs / (24 * 60 * 60_000)), "day"),
+      );
+    }
+
+    const formattedDate = new Intl.DateTimeFormat(locale, {
+      year: "numeric",
       month: "short",
       day: "numeric",
     }).format(new Date(value));
+    return interpolateValue(template, formattedDate);
   } catch {
-    return `${Math.round(hours / 24)}d`;
+    return interpolateValue(template, unknownLabel);
   }
+}
+
+interface DeviceSessionLabelCopy {
+  browser: string;
+  installedApp: string;
+  unknownSystem: string;
+}
+
+export function formatDeviceSessionLabel(
+  storedLabel: string,
+  copy: DeviceSessionLabelCopy,
+): string {
+  const match = /^(.+?) on (.+)$/u.exec(storedLabel.trim());
+  if (!match) return storedLabel;
+
+  const app = match[1] === "PWA" ? copy.installedApp : match[1] === "Browser" ? copy.browser : match[1];
+  const system = match[2] === "Unknown" ? copy.unknownSystem : match[2];
+  return `${app} · ${system}`;
 }
 
 function iconForPlatform(platform: DeviceSessionPlatform) {
@@ -137,12 +192,12 @@ export function DeviceSessionsCard({
       data-testid="device-sessions-card"
       aria-labelledby="device-sessions-card-title"
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-start min-[420px]:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <TabletSmartphone className="h-5 w-5" aria-hidden="true" />
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h3 id="device-sessions-card-title" className="text-base font-semibold text-foreground">
               {tx.syncDeviceSessionsTitle || "Your devices"}
             </h3>
@@ -155,7 +210,7 @@ export function DeviceSessionsCard({
         <button
           type="button"
           onClick={() => void refresh()}
-          className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-semibold text-muted-foreground hover:bg-accent/50 motion-safe:transition-colors"
+          className="inline-flex min-h-[44px] max-w-full shrink-0 items-center gap-1.5 self-end whitespace-normal rounded-full border border-border px-3 text-xs font-semibold text-muted-foreground hover:bg-accent/50 motion-safe:transition-colors"
           disabled={loading}
         >
           <RefreshCw
@@ -201,26 +256,36 @@ export function DeviceSessionsCard({
           return (
             <article
               key={session.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/20 p-3"
+              className="flex flex-col items-stretch gap-3 rounded-xl border border-border bg-muted/20 p-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between"
               data-testid="device-session-row"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <Icon className="h-4 w-4" aria-hidden="true" />
                 </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold text-foreground">
-                    {session.label}
+                <span className="min-w-0 flex-1">
+                  <span className="block whitespace-normal break-words text-sm font-semibold text-foreground [overflow-wrap:anywhere]">
+                    <bdi dir="auto">
+                      {formatDeviceSessionLabel(session.label, {
+                        browser: tx.syncDeviceBrowser || "Browser",
+                        installedApp: tx.syncDeviceInstalledApp || "ZenFlow app",
+                        unknownSystem: tx.syncDeviceUnknownSystem || "Unknown system",
+                      })}
+                    </bdi>
                   </span>
-                  <span className="block text-xs text-muted-foreground">
+                  <span className="block whitespace-normal break-words text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:normal]">
                     {isCurrent
                       ? tx.syncDeviceCurrent || "Current device"
                       : isRevoked
                         ? tx.syncDeviceRevoked || "Inactive"
-                        : `${tx.syncDeviceLastSeen || "Last seen"} ${formatRelativeTime(
-                            session.last_seen_at,
-                            language,
-                          )}`}
+                        : <bdi dir="auto">
+                            {formatDeviceLastActivity(
+                              session.last_seen_at,
+                              language,
+                              tx.syncDeviceLastSeen || "Last activity: {value}",
+                              tx.syncDeviceLastSeenUnknown || "Unknown",
+                            )}
+                          </bdi>}
                   </span>
                 </span>
               </div>
@@ -230,7 +295,7 @@ export function DeviceSessionsCard({
                   type="button"
                   onClick={() => void handleRevoke(session)}
                   disabled={revokingId === session.id}
-                  className="min-h-[44px] shrink-0 rounded-full border border-border px-3 text-xs font-semibold text-muted-foreground hover:bg-accent/50 motion-safe:transition-colors"
+                  className="min-h-[44px] max-w-full shrink-0 self-end whitespace-normal break-words rounded-full border border-border px-3 text-xs font-semibold text-muted-foreground hover:bg-accent/50 motion-safe:transition-colors [hyphens:manual] [overflow-wrap:normal]"
                 >
                   {revokingId === session.id
                     ? tx.syncRevoking || "Revoking"
@@ -242,7 +307,7 @@ export function DeviceSessionsCard({
         })}
       </div>
 
-      <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+      <p className="mt-3 whitespace-normal break-words text-xs leading-relaxed text-muted-foreground [hyphens:manual] [overflow-wrap:normal]">
         {tx.syncDeviceSessionsFootnote ||
           "Marking a device inactive hides it from this list; it does not sign that device out."}
       </p>

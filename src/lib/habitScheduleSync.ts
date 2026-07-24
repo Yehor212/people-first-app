@@ -10,7 +10,7 @@ import { Habit, HabitReminder, ScheduleEvent } from '@/types';
 import { safeParseInt } from '@/lib/validation';
 import { parseLocalDate } from '@/lib/utils';
 import { resolveHabitColor } from '@/lib/habitColorUtils';
-import { isHabitDueOnDate } from '@/lib/habitScheduling';
+import { isHabitDueOnDate, normalizeHabitReminderDays } from '@/lib/habitScheduling';
 
 /**
  * Format a date to YYYY-MM-DD string
@@ -32,16 +32,13 @@ export function shouldReminderShowOnDate(
 ): boolean {
   if (!reminder.enabled) return false;
 
-  // If no specific days configured, show every day
-  if (!reminder.days || reminder.days.length === 0) return true;
-
   const date = parseLocalDate(dateStr);
   // v1.4.0: Validate date to prevent NaN issues with invalid dateStr
   if (isNaN(date.getTime())) return false;
 
   const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
 
-  return reminder.days.includes(dayOfWeek);
+  return normalizeHabitReminderDays(reminder.days).includes(dayOfWeek);
 }
 
 /**

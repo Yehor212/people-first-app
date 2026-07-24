@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import { AuthGate } from "@/components/AuthGate";
+import { markPendingLocalBackupAccountClaim } from "@/storage/accountBoundaryRuntime";
 
 const { appState, userState, splashScreenMock } = vi.hoisted(() => {
   const appState = {
@@ -82,16 +83,31 @@ vi.mock("@/stores", () => ({
 
 describe("AuthGate desktop runtime loading contract", () => {
   beforeEach(() => {
+    localStorage.clear();
     splashScreenMock.mockClear();
     appState.initializationState = { isInitializing: false, error: null, wasUpdated: false };
     appState.loadingFadeOut = false;
+  });
+
+  it("keeps the desktop shell closed while a durable imported-backup claim is reconstructed", () => {
+    expect(markPendingLocalBackupAccountClaim()).toBe(true);
+
+    render(
+      <AuthGate isLoading splashTheme="ink">
+        <div>Desktop App</div>
+      </AuthGate>
+    );
+
+    expect(screen.getByText("Choose how to recover this backup")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue without account" })).toBeInTheDocument();
+    expect(screen.queryByText("Desktop App")).not.toBeInTheDocument();
   });
 
   it("does not keep the installed desktop shell on the branded splash while local data is still hydrating", () => {
     render(
       <AuthGate isLoading splashTheme="ink">
         <div>Desktop App</div>
-      </AuthGate>,
+      </AuthGate>
     );
 
     expect(screen.getByText("Desktop App")).toBeInTheDocument();
@@ -104,7 +120,7 @@ describe("AuthGate desktop runtime loading contract", () => {
     render(
       <AuthGate isLoading={false} splashTheme="ink">
         <div>Desktop App</div>
-      </AuthGate>,
+      </AuthGate>
     );
 
     expect(screen.getByTestId("mock-splash")).toHaveTextContent("Preparing your zen space...");

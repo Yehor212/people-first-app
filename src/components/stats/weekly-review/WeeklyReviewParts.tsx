@@ -1,15 +1,18 @@
-import { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
-import type { Trophy } from 'lucide-react';
+import { useMemo } from "react";
+import { motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
+import type { Trophy } from "lucide-react";
 
 // Sparkle particle component
 export function SparkleParticle({ delay, color }: { delay: number; color: string }) {
-  const rng = useMemo(() => ({
-    left: 10 + Math.random() * 80,
-    top: 10 + Math.random() * 80,
-    repeatDelay: Math.random() * 3,
-  }), []);
+  const rng = useMemo(
+    () => ({
+      left: 10 + Math.random() * 80,
+      top: 10 + Math.random() * 80,
+      repeatDelay: Math.random() * 3,
+    }),
+    []
+  );
 
   return (
     <motion.div
@@ -71,7 +74,7 @@ export function MiniRing({
         strokeDasharray={circumference}
         initial={{ strokeDashoffset: circumference }}
         animate={{ strokeDashoffset: offset }}
-        transition={{ duration: 1, ease: 'easeOut' }}
+        transition={{ duration: 1, ease: "easeOut" }}
         style={{ filter: `drop-shadow(0 0 6px ${color})` }}
       />
     </svg>
@@ -96,7 +99,7 @@ export function AchievementBadge({
     <motion.div
       initial={{ scale: 0.8, opacity: 0, y: 20 }}
       animate={{ scale: 1, opacity: 1, y: 0 }}
-      transition={{ delay, type: 'spring', stiffness: 200 }}
+      transition={{ delay, type: "spring", stiffness: 200 }}
       className="relative flex flex-col items-center p-3 rounded-2xl bg-gradient-to-br from-foreground/10 to-foreground/5 backdrop-blur-sm border border-foreground/10"
       style={{ boxShadow: `0 0 20px ${color}30` }}
     >
@@ -104,18 +107,14 @@ export function AchievementBadge({
         className="p-2.5 rounded-xl mb-2"
         style={{ background: `linear-gradient(135deg, ${color}40, ${color}20)` }}
         animate={{
-          boxShadow: [
-            `0 0 10px ${color}40`,
-            `0 0 20px ${color}60`,
-            `0 0 10px ${color}40`,
-          ],
+          boxShadow: [`0 0 10px ${color}40`, `0 0 20px ${color}60`, `0 0 10px ${color}40`],
         }}
         transition={{ duration: 2, repeat: Infinity }}
       >
         <Icon className="w-5 h-5" style={{ color }} />
       </motion.div>
       <span className="text-lg font-bold text-foreground">{value}</span>
-      <span className="text-[10px] text-muted-foreground text-center">{title}</span>
+      <span className="min-w-0 break-words text-center text-xs text-muted-foreground">{title}</span>
     </motion.div>
   );
 }

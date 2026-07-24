@@ -14,10 +14,7 @@ import { storageRemove } from "@/lib/safeJson";
 import { isAccountSyncedSettingKey, shouldDeleteSettingFromCloud } from "./settingSyncPolicy";
 import { validateSyncOwner } from "./syncOwner";
 import { SK } from "@/lib/storageKeys";
-import {
-  canDeleteRemoteJournalVault,
-  canUploadAccountSetting,
-} from "./journalVaultSyncPolicy";
+import { canDeleteRemoteJournalVault, canUploadAccountSetting } from "./journalVaultSyncPolicy";
 
 export interface DeleteSettingFromCloudOptions {
   /** Capability carried only by the durable journal-security removal intent. */
@@ -39,7 +36,7 @@ export const syncSetting = async (
   key: string,
   value: unknown,
   expectedOwnerUserId?: string,
-  options: SyncSettingOptions = {},
+  options: SyncSettingOptions = {}
 ): Promise<void> => {
   if (!isAccountSyncedSettingKey(key)) {
     logger.warn("[Sync] Skipping local-only setting sync:", key);
@@ -130,7 +127,7 @@ export const syncSetting = async (
 export const deleteSettingFromCloud = async (
   key: string,
   expectedOwnerUserId?: string,
-  options: DeleteSettingFromCloudOptions = {},
+  options: DeleteSettingFromCloudOptions = {}
 ): Promise<void> => {
   if (!shouldDeleteSettingFromCloud(key)) {
     logger.warn("[Sync] Skipping local-only setting delete sync:", key);
@@ -139,10 +136,7 @@ export const deleteSettingFromCloud = async (
 
   const userId = await validateSyncOwner(expectedOwnerUserId, "Setting delete");
   if (!supabase) {
-    if (
-      key === SK.JOURNAL_VAULT_KEY &&
-      options.journalSecurityRemovalRevision
-    ) {
+    if (key === SK.JOURNAL_VAULT_KEY && options.journalSecurityRemovalRevision) {
       throw new Error("Supabase client is unavailable for diary protection removal");
     }
     return;
@@ -154,17 +148,18 @@ export const deleteSettingFromCloud = async (
 
   if (key === SK.JOURNAL_VAULT_KEY) {
     const removalRevision = options.journalSecurityRemovalRevision;
-    if (
-      !removalRevision ||
-      !(await canDeleteRemoteJournalVault(removalRevision, userId))
-    ) {
+    if (!removalRevision || !(await canDeleteRemoteJournalVault(removalRevision, userId))) {
       logger.warn("[Sync] Skipping journal vault delete without its active removal intent");
       return;
     }
     await validateSyncOwner(userId, "Journal vault delete local-state guard");
   }
 
-  storageRemove(key);
+  // A legacy account copy of device-local privacy choices must be removed
+  // remotely without erasing the current device's durable recovery copy.
+  if (key !== SK.PRIVACY) {
+    storageRemove(key);
+  }
 
   if (!navigator.onLine) {
     if (options.queueOnNetworkError === false) {

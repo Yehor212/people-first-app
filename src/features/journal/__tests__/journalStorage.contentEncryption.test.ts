@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
     Promise.resolve(undefined)
   ),
   transaction: vi.fn((_mode: string, _tables: unknown, fn: () => unknown) => Promise.resolve(fn())),
+  persistCriticalOfflineActionInCurrentTransaction: vi.fn(() => Promise.resolve()),
   syncJournalEntry: vi.fn(() => Promise.resolve()),
   triggerSync: vi.fn(),
   isCloudSyncEnabled: vi.fn(() => true),
@@ -68,9 +69,15 @@ vi.mock("@/storage/cloudSync", () => ({ triggerSync: mocks.triggerSync }));
 vi.mock("@/lib/cloudSyncSettings", () => ({ isCloudSyncEnabled: mocks.isCloudSyncEnabled }));
 vi.mock("@/lib/supabaseClient", () => ({
   getCurrentSessionUserId: vi.fn(() => Promise.resolve("user-1")),
+  getCurrentUserId: vi.fn(() => Promise.resolve("user-1")),
 }));
 vi.mock("@/lib/offlineQueue", () => ({
-  offlineQueue: { enqueue: vi.fn(() => Promise.resolve()) },
+  offlineQueue: {
+    enqueue: vi.fn(() => Promise.resolve()),
+    wakeFromDurableStorage: vi.fn(() => Promise.resolve()),
+  },
+  persistCriticalOfflineActionInCurrentTransaction:
+    mocks.persistCriticalOfflineActionInCurrentTransaction,
 }));
 vi.mock("@/storage/deletionTracker", () => ({
   trackDeletedJournalEntryId: vi.fn(() => Promise.resolve()),
@@ -165,7 +172,9 @@ describe("journalStorage content encryption", () => {
         content: `enc:${sessionKey}:A quiet journal line`,
       })
     );
-    expect(mocks.syncJournalEntry).toHaveBeenCalledWith(
+    expect(mocks.persistCriticalOfflineActionInCurrentTransaction).toHaveBeenCalledWith(
+      "SYNC_JOURNAL_ENTRY",
+      "entry-id",
       expect.objectContaining({
         id: "entry-id",
         content: `enc:${sessionKey}:A quiet journal line`,
@@ -242,7 +251,9 @@ describe("journalStorage content encryption", () => {
         content: `enc:${sessionKey}:Updated line`,
       })
     );
-    expect(mocks.syncJournalEntry).toHaveBeenCalledWith(
+    expect(mocks.persistCriticalOfflineActionInCurrentTransaction).toHaveBeenCalledWith(
+      "SYNC_JOURNAL_ENTRY",
+      "entry-id",
       expect.objectContaining({
         content: `enc:${sessionKey}:Updated line`,
       }),

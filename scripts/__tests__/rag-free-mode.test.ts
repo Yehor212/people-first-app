@@ -141,14 +141,15 @@ describe("free RAG and Coach Lite mode", () => {
     }
   });
 
-  it("wires AI Coach edge fallback to Coach Lite instead of returning a paid-provider config error", () => {
+  it("wires AI Coach exclusively to Coach Lite without an external AI provider", () => {
     const source = readFileSync("supabase/functions/ai-coach/index.ts", "utf8");
 
     expect(source).toContain('import { buildCoachLiteResponse } from "../_shared/coach_lite.ts";');
-    expect(source).toContain("GEMINI_API_KEY not configured; using Coach Lite fallback");
     expect(source).toContain("mode: coachLite.mode");
-    expect(source).not.toContain(
-      'return jsonResponse(500, { error: "AI service not configured" });'
-    );
+    expect(source).toContain("externalProvider: false");
+    expect(source).not.toContain("GEMINI_API_KEY");
+    expect(source).not.toContain("generateGeminiEmbedding");
+    expect(source).not.toContain("buildGeminiGenerateContentUrl");
+    expect(source).not.toContain("generativelanguage.googleapis.com");
   });
 });

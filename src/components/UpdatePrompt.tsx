@@ -35,8 +35,7 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
   if (!updateState.available || !updateState.checked) return null;
 
   // Critical/high priority = can't dismiss (must update)
-  const isCritical =
-    updateState.priority === "critical" || updateState.priority === "high";
+  const isCritical = updateState.priority === "critical" || updateState.priority === "high";
 
   // Using fallback mode (Supabase check instead of Google Play In-App Updates)
   const useFallback = updateState.useFallback ?? false;
@@ -54,9 +53,7 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
         const success = await startAppUpdate(true);
         if (!success) {
           // In-App Update failed — fall back to Play Store directly
-          logger.warn(
-            "[UpdatePrompt] In-app update failed, opening Play Store",
-          );
+          logger.warn("[UpdatePrompt] In-app update failed, opening Play Store");
           await openGooglePlayStore();
         }
       }
@@ -82,17 +79,14 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
   let description: string;
   if (isCritical) {
     description =
-      t.updateDescriptionCritical ||
-      "A critical update is required to continue using the app.";
+      t.updateDescriptionCritical || "A critical update is required to continue using the app.";
   } else if (useFallback && updateState.latestVersion) {
     description = (
-      t.updateDescriptionVersion ||
-      "Version {version} is available with improvements and fixes."
+      t.updateDescriptionVersion || "Version {version} is available with improvements and fixes."
     ).replace("{version}", updateState.latestVersion);
   } else {
     description =
-      t.updateDescription ||
-      "A new version is ready to install with improvements and fixes.";
+      t.updateDescription || "A new version is ready to install with improvements and fixes.";
   }
 
   // Button text depends on mode
@@ -107,29 +101,27 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
       className="fixed inset-x-4 top-4 z-[250] motion-safe:animate-slide-down"
       style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}
     >
-      <div className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-2xl p-4 shadow-lg">
+      <div className="max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_2rem)] overflow-y-auto overscroll-contain rounded-2xl bg-gradient-to-r from-primary to-primary/90 p-4 text-primary-foreground shadow-lg">
         <div className="flex items-start gap-3">
-          <div className="p-2 bg-primary-foreground/20 rounded-xl">
+          <div className="shrink-0 rounded-xl bg-primary-foreground/20 p-2">
             <Download className="w-6 h-6" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-lg">
+            <h3 className="break-words text-lg font-semibold">
               {title}
               {updateState.latestVersion && (
-                <span className="text-sm opacity-80 ms-2">
+                <span className="ms-2 inline-block break-words text-sm opacity-80">
                   v{updateState.latestVersion}
                 </span>
               )}
             </h3>
-            <p className="text-sm opacity-90 mt-0.5">{description}</p>
+            <p className="mt-0.5 break-words text-sm opacity-90">{description}</p>
             {/* Show release notes if available */}
             {updateState.releaseNotes && (
-              <p className="text-xs opacity-70 mt-1 line-clamp-2">
+              <p className="mt-1 break-words text-xs opacity-70">
                 {typeof updateState.releaseNotes === "string"
                   ? updateState.releaseNotes
-                  : updateState.releaseNotes[language] ||
-                    updateState.releaseNotes.en ||
-                    ""}
+                  : updateState.releaseNotes[language] || updateState.releaseNotes.en || ""}
               </p>
             )}
           </div>
@@ -137,7 +129,7 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
           {!isCritical && (
             <button
               onClick={handleDismiss}
-              className="p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-primary-foreground/20 rounded-lg motion-safe:transition-colors"
+              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg p-1.5 motion-safe:transition-colors hover:bg-primary-foreground/20"
               aria-label={t.dismiss}
             >
               <X className="w-5 h-5" />
@@ -148,21 +140,19 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
         <button
           onClick={handleUpdate}
           disabled={isLoading}
-          className="mt-3 w-full py-2.5 bg-primary-foreground/20 hover:bg-primary-foreground/30 disabled:opacity-50 rounded-xl font-medium motion-safe:transition-colors flex items-center justify-center gap-2"
+          className="mt-3 flex h-auto min-h-11 w-full items-center justify-center gap-2 whitespace-normal break-words rounded-xl bg-primary-foreground/20 px-3 py-2.5 text-center font-medium motion-safe:transition-colors hover:bg-primary-foreground/30 disabled:opacity-50"
         >
           <ButtonIcon
-            className={`w-4 h-4 ${isLoading ? "motion-safe:animate-pulse" : ""}`}
+            className={`h-4 w-4 shrink-0 ${isLoading ? "motion-safe:animate-pulse" : ""}`}
           />
           {isLoading ? t.loading || "Loading..." : buttonText}
         </button>
 
         {/* Show staleness info for old updates (only for non-fallback mode) */}
         {!useFallback && updateState.stalenessDays > 0 && (
-          <p className="text-xs text-center opacity-70 mt-2">
-            {t.updateAvailableFor?.replace(
-              "{days}",
-              String(updateState.stalenessDays),
-            ) || `Available for ${updateState.stalenessDays} days`}
+          <p className="mt-2 break-words text-center text-xs opacity-70">
+            {t.updateAvailableFor?.replace("{days}", String(updateState.stalenessDays)) ||
+              `Available for ${updateState.stalenessDays} days`}
           </p>
         )}
       </div>

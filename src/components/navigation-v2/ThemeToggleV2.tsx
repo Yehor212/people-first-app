@@ -193,7 +193,7 @@ export function ThemeToggleV2({
 
         {!collapsed && (
           <span className={presentationClasses.label}>
-            {isDark ? t.themeDark || "Dark" : t.themeLight || "Light"}
+            {t.themeDark || "Dark"}
           </span>
         )}
       </button>

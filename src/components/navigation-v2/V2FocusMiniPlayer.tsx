@@ -65,17 +65,17 @@ export const V2FocusMiniPlayer = memo(function V2FocusMiniPlayer({
           exit={{ opacity: 0, y: 16 }}
           transition={zenMotion.gentle}
           className={cn(
-            "fixed inset-x-4 bottom-[calc(var(--safe-bottom)+1rem)] z-[57] mx-auto flex max-w-md items-center gap-3",
+            "fixed start-[max(1rem,var(--safe-inline-start))] end-[max(1rem,var(--safe-inline-end))] bottom-[calc(var(--safe-bottom)+1rem)] z-[57] mx-auto grid max-w-md grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2",
             "rounded-2xl border border-border/50 bg-card/88 px-3 py-2 text-foreground shadow-[0_18px_48px_hsl(var(--foreground)/0.18)]",
             "backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]",
-            "md:inset-x-auto md:end-5 md:w-[24rem]",
+            "min-[420px]:grid-cols-[minmax(0,1fr)_auto_auto_auto] min-[420px]:gap-3 md:start-auto md:end-[max(1.25rem,var(--safe-inline-end))] md:w-[24rem]",
           )}
           data-testid="v2-focus-mini-player"
         >
           <button
             type="button"
             onClick={onNavigateToPlanning}
-            className="flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-xl px-2 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="col-span-3 flex min-h-[44px] min-w-0 items-start gap-2 rounded-xl px-2 py-1 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary min-[420px]:col-span-1"
             aria-label={t.focus || "Focus"}
           >
             <Timer
@@ -83,14 +83,18 @@ export const V2FocusMiniPlayer = memo(function V2FocusMiniPlayer({
               className={cn("h-4 w-4 shrink-0", isBreak ? "text-indigo-400" : "text-violet-500")}
             />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-xs font-semibold">
+              <span className="block whitespace-normal break-words text-xs font-semibold">
                 {isBreak ? t.breakTime : t.focus}
               </span>
-              {label && <span className="block truncate text-[10px] text-muted-foreground">{label}</span>}
+              {label && (
+                <span className="block whitespace-normal break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                  {label}
+                </span>
+              )}
             </span>
           </button>
 
-          <span className="font-mono text-sm font-bold tabular-nums" aria-live="polite">
+          <span className="justify-self-start font-mono text-sm font-bold tabular-nums" aria-live="polite">
             {isRunning ? formatFocusTime(timeLeft) : "--:--"}
           </span>
 

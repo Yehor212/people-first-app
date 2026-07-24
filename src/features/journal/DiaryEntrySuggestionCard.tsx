@@ -124,7 +124,7 @@ export const DiaryEntrySuggestionCard = memo(function DiaryEntrySuggestionCard({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={springs.smooth}
       className={[
-        "relative overflow-hidden rounded-[30px] border border-border/60 bg-card/82 backdrop-blur-xl",
+        "relative overflow-hidden rounded-3xl border border-border/60 bg-card/80 backdrop-blur-xl",
         compact ? "px-4 py-4" : "px-5 py-5 shadow-sm",
       ].join(" ")}
       data-testid="diary-entry-suggestion"
@@ -142,7 +142,7 @@ export const DiaryEntrySuggestionCard = memo(function DiaryEntrySuggestionCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-2 whitespace-normal break-words text-xs uppercase tracking-[0.14em] text-muted-foreground">
                 {suggestion.contextLabel ? <span>{suggestion.contextLabel}</span> : null}
                 {suggestion.contextLabel ? (
                   <span className="h-1 w-1 rounded-full bg-current/40" aria-hidden="true" />
@@ -152,7 +152,7 @@ export const DiaryEntrySuggestionCard = memo(function DiaryEntrySuggestionCard({
                 <span>{timeLabel}</span>
               </div>
 
-              <h3 className="mt-3 text-lg font-semibold tracking-tight text-foreground md:text-[1.25rem]">
+              <h3 className="mt-3 text-lg font-semibold tracking-tight text-foreground md:text-xl">
                 {title}
               </h3>
 
@@ -196,7 +196,7 @@ export const DiaryEntrySuggestionCard = memo(function DiaryEntrySuggestionCard({
               className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <span>{tx.journalContinueWriting || tx.journalStartToday || "Continue writing"}</span>
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              <ArrowRight className="h-4 w-4 rtl:scale-x-[-1]" aria-hidden="true" />
             </button>
 
             <button

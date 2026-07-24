@@ -8,7 +8,7 @@
  */
 
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
-import { db } from "@/storage/db";
+import { db, getLocalDataOwnerId } from "@/storage/db";
 import { logger } from "@/lib/logger";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { isAbortError } from "@/lib/validation";
@@ -29,10 +29,13 @@ import { SyncOwnerBoundaryError, validateSyncOwner } from "@/storage/sync/syncOw
 import { SK } from "@/lib/storageKeys";
 import {
   MAX_AUDIO_PER_ENTRY,
+  MAX_AUDIO_DURATION_SEC,
   MAX_PHOTOS_PER_ENTRY,
   MAX_STICKERS_PER_ENTRY,
+  type JournalAudio,
   type JournalEntry,
 } from "@/features/journal/types";
+import { normalizeJournalAudioMimeType } from "@/features/journal/journalAudioValidation";
 import { normalizeJournalPhotoLayout } from "@/features/journal/photoLayout";
 import { normalizeJournalStyleFields } from "@/features/journal/journalStyleFields";
 import { isEncryptedJournalContent } from "@/features/journal/journalCrypto";
@@ -210,6 +213,75 @@ function normalizeJournalDeltaPayload(
   };
 }
 
+async function fetchLinkedJournalAudioMetadata(
+  events: SyncEvent[],
+  ownerUserId: string
+): Promise<Map<string, JournalAudio>> {
+  if (!supabase) return new Map();
+
+  const requestedParents = new Map<string, string>();
+  const conflictingIds = new Set<string>();
+  for (const event of events) {
+    if (event.entity_type !== "journal" || event.op !== "upsert" || !event.payload) continue;
+    const entry = normalizeJournalDeltaPayload(event.payload, event.entity_id);
+    if (!entry) continue;
+    for (const audioId of entry.audioIds ?? []) {
+      const existingParent = requestedParents.get(audioId);
+      if (existingParent && existingParent !== entry.id) {
+        conflictingIds.add(audioId);
+        requestedParents.delete(audioId);
+      } else if (!conflictingIds.has(audioId)) {
+        requestedParents.set(audioId, entry.id);
+      }
+    }
+  }
+
+  const requestedIds = [...requestedParents.keys()];
+  if (requestedIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from("journal_audio")
+    .select("id, entry_id, duration, mime_type, storage_path, created_at")
+    .eq("user_id", ownerUserId)
+    .in("id", requestedIds);
+  if (error) throw error;
+
+  const result = new Map<string, JournalAudio>();
+  for (const row of data ?? []) {
+    const expectedParent = requestedParents.get(row.id);
+    const storagePath = row.storage_path;
+    const normalizedMimeType = normalizeJournalAudioMimeType(row.mime_type);
+    if (
+      !expectedParent ||
+      row.entry_id !== expectedParent ||
+      typeof row.duration !== "number" ||
+      !Number.isFinite(row.duration) ||
+      row.duration < 0 ||
+      row.duration > MAX_AUDIO_DURATION_SEC ||
+      !normalizedMimeType ||
+      typeof storagePath !== "string" ||
+      !storagePath.startsWith(`${ownerUserId}/`) ||
+      storagePath.includes("..") ||
+      typeof row.created_at !== "number" ||
+      !Number.isFinite(row.created_at)
+    ) {
+      logger.warn("[EventSync] Ignored invalid journal audio metadata:", row.id);
+      continue;
+    }
+
+    result.set(row.id, {
+      id: row.id,
+      entryId: row.entry_id,
+      data: "",
+      duration: row.duration,
+      mimeType: normalizedMimeType,
+      storagePath,
+      createdAt: row.created_at,
+    });
+  }
+  return result;
+}
+
 export function isSyncEventWriteIntent(value: unknown): value is SyncEventWriteIntent {
   if (!isRecord(value)) return false;
 
@@ -341,8 +413,10 @@ async function writeEventStrict(
   expectedOwnerUserId: string
 ): Promise<SyncEvent> {
   if (!supabase) throw new Error("[EventSync] Supabase not configured");
-  const userId = await getCurrentUserId();
-  if (userId !== expectedOwnerUserId) {
+  let userId: string;
+  try {
+    userId = await validateEventSyncNetworkOwner(expectedOwnerUserId, "Event write");
+  } catch {
     throw new AccountOwnerChangedError();
   }
   const stableIntent = withIdempotencyKey(intent);
@@ -479,6 +553,7 @@ export async function fetchDelta(lastSeq: number, limit = 200): Promise<DeltaRes
   if (!supabase) return { events: [], hasMore: false };
   const userId = await getCurrentUserId();
   if (!userId) return { events: [], hasMore: false };
+  await validateEventSyncNetworkOwner(userId, "Delta fetch");
 
   const { data, error } = await supabase
     .from("sync_events")
@@ -486,6 +561,8 @@ export async function fetchDelta(lastSeq: number, limit = 200): Promise<DeltaRes
     .gt("seq", lastSeq)
     .order("seq", { ascending: true })
     .limit(limit + 1);
+
+  await validateEventSyncNetworkOwner(userId, "Delta fetch");
 
   if (error) {
     throw new Error(`[EventSync] fetchDelta failed: ${error.message}`);
@@ -538,8 +615,19 @@ async function resolveDeltaOwner(
   operation: string
 ): Promise<string> {
   await options?.assertOwnerCurrent?.();
-  const ownerUserId = await validateSyncOwner(options?.expectedOwnerUserId, operation);
+  const ownerUserId = await validateEventSyncNetworkOwner(options?.expectedOwnerUserId, operation);
   if (!ownerUserId) throw new SyncOwnerBoundaryError(operation);
+  return ownerUserId;
+}
+
+async function validateEventSyncNetworkOwner(
+  expectedOwnerUserId: string | undefined,
+  operation: string
+): Promise<string> {
+  const ownerUserId = await validateSyncOwner(expectedOwnerUserId, operation);
+  if (!ownerUserId || (await getLocalDataOwnerId()) !== ownerUserId) {
+    throw new SyncOwnerBoundaryError(operation);
+  }
   return ownerUserId;
 }
 
@@ -613,6 +701,23 @@ function readEntityTimestampMs(entity: unknown): number {
     readTimestampMs(record.createdAt) ||
     readTimestampMs(record.created_at)
   );
+}
+
+function readLinkedMediaIds(entity: unknown, key: "photoIds" | "audioIds"): string[] {
+  if (!entity || typeof entity !== "object") return [];
+  const value = (entity as Record<string, unknown>)[key];
+  return Array.isArray(value)
+    ? value.filter((id): id is string => typeof id === "string" && id.length > 0)
+    : [];
+}
+
+function getRemovedLinkedMediaIds(
+  local: unknown,
+  remote: unknown,
+  key: "photoIds" | "audioIds"
+): string[] {
+  const nextIds = new Set(readLinkedMediaIds(remote, key));
+  return readLinkedMediaIds(local, key).filter((id) => !nextIds.has(id));
 }
 
 function readLoopHabitType(value: unknown, fallback: LoopHabitType): LoopHabitType {
@@ -755,6 +860,8 @@ export async function applyDelta(
     return 0;
   }
 
+  const linkedJournalAudio = await fetchLinkedJournalAudioMetadata(remoteEvents, ownerUserId);
+
   const tableNames = new Set<string>();
   for (const event of remoteEvents) {
     const tableName = ENTITY_TABLE_MAP[event.entity_type];
@@ -765,6 +872,11 @@ export async function applyDelta(
   const tables: TransactionTable[] = [...tableNames].map(
     (name) => db.table(name) as unknown as TransactionTable
   );
+  const includesJournalEvent = remoteEvents.some((event) => event.entity_type === "journal");
+  if (includesJournalEvent) {
+    tables.push(db.journalPhotos as unknown as TransactionTable);
+    tables.push(db.journalAudio as unknown as TransactionTable);
+  }
   if (!tableNames.has("settings")) {
     tables.push(db.settings as unknown as TransactionTable);
   }
@@ -817,8 +929,9 @@ export async function applyDelta(
                   break;
                 }
                 let payload: Record<string, unknown> = event.payload;
+                let normalizedJournalEntry: JournalEntry | null = null;
                 if (event.entity_type === "journal") {
-                  const normalizedJournalEntry = normalizeJournalDeltaPayload(
+                  normalizedJournalEntry = normalizeJournalDeltaPayload(
                     event.payload,
                     event.entity_id
                   );
@@ -848,13 +961,43 @@ export async function applyDelta(
                       readTimestampMs(event.created_at)
                     );
                     if (localTime > remoteTime) break; // local is newer, skip
+                    if (event.entity_type === "journal") {
+                      const removedPhotoIds = getRemovedLinkedMediaIds(local, payload, "photoIds");
+                      const removedAudioIds = getRemovedLinkedMediaIds(local, payload, "audioIds");
+                      if (removedPhotoIds.length > 0) {
+                        await db.journalPhotos.bulkDelete(removedPhotoIds);
+                      }
+                      if (removedAudioIds.length > 0) {
+                        await db.journalAudio.bulkDelete(removedAudioIds);
+                      }
+                    }
                   }
                 }
                 await table.put(payload);
+                if (normalizedJournalEntry?.audioIds?.length) {
+                  const linkedAudio = normalizedJournalEntry.audioIds
+                    .map((audioId) => linkedJournalAudio.get(audioId))
+                    .filter((audio): audio is JournalAudio => Boolean(audio));
+                  if (linkedAudio.length > 0) {
+                    const mergedAudio = await Promise.all(
+                      linkedAudio.map(async (remoteAudio) => {
+                        const localAudio = await db.journalAudio.get(remoteAudio.id);
+                        return localAudio?.data
+                          ? { ...remoteAudio, data: localAudio.data }
+                          : remoteAudio;
+                      })
+                    );
+                    await db.journalAudio.bulkPut(mergedAudio);
+                  }
+                }
                 txApplied++;
               }
               break;
             case "delete":
+              if (event.entity_type === "journal") {
+                await db.journalPhotos.where("entryId").equals(event.entity_id).delete();
+                await db.journalAudio.where("entryId").equals(event.entity_id).delete();
+              }
               await table.delete(event.entity_id);
               await rememberAppliedDelete(event);
               markBatchTombstone(event);
@@ -897,12 +1040,16 @@ export async function applyDelta(
 
 export async function getServerMaxSeq(expectedOwnerUserId?: string): Promise<number> {
   if (!supabase) return 0;
-  const ownerUserId = await validateSyncOwner(expectedOwnerUserId, "Server max sequence");
-  if (!ownerUserId) return 0;
+  const activeOwnerUserId = await getCurrentUserId();
+  if (!activeOwnerUserId) return 0;
+  const ownerUserId = await validateEventSyncNetworkOwner(
+    expectedOwnerUserId ?? activeOwnerUserId,
+    "Server max sequence"
+  );
 
   const { data, error } = await supabase.from("sync_seq_counters").select("last_seq").single();
 
-  await validateSyncOwner(ownerUserId, "Server max sequence");
+  await validateEventSyncNetworkOwner(ownerUserId, "Server max sequence");
   if (error || !data) return 0;
   return data.last_seq;
 }

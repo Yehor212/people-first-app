@@ -334,16 +334,16 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(workflow).toContain("cmd: npm run check:agent-orchestra");
     expect(workflow).toContain("cmd: npm run check:agent-orchestra:eval");
     expect(pkg.scripts["test:agent-orchestra"]).toContain(
-      "scripts/__tests__/persistent-agent-orchestra-evidence.test.mjs",
+      "scripts/__tests__/persistent-agent-orchestra-evidence.test.mjs"
     );
     expect(pkg.scripts["test:agent-orchestra"]).toContain(
-      "scripts/__tests__/codex-change-governance-gate.test.mjs",
+      "scripts/__tests__/codex-change-governance-gate.test.mjs"
     );
     expect(pkg.scripts["test:agent-orchestra"]).toContain(
       "scripts/__tests__/private-receipt-export.test.mjs",
     );
     expect(pkg.scripts["test:release-contracts"]).toContain(
-      "scripts/__tests__/skill-routing-hook-payload.test.ts",
+      "scripts/__tests__/skill-routing-hook-payload.test.ts"
     );
     expect(pkg.scripts["test:release-contracts"]).toContain(
       "scripts/__tests__/private-receipt-export.test.mjs",
@@ -441,10 +441,7 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(workflow).toContain("output/playwright/orb-user-flow-performance-2026-07-01/**");
     expect(workflow).toContain("test-results/orb-user-flow-performance-*/**");
     const stagedPerf = indexOfOrThrow(workflow, "name: Run staged V2 Orb performance tests");
-    const perfDiagnostics = indexOfOrThrow(
-      workflow,
-      "name: Upload V2 Orb performance diagnostics"
-    );
+    const perfDiagnostics = indexOfOrThrow(workflow, "name: Upload V2 Orb performance diagnostics");
     const stagedVisual = indexOfOrThrow(workflow, "name: Run staged V2 visual regression tests");
     expect(stagedPerf).toBeLessThan(perfDiagnostics);
     expect(perfDiagnostics).toBeLessThan(stagedVisual);
@@ -459,7 +456,10 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(perfSpec).not.toContain("await noteInput.click();");
     expect(perfSpec).not.toContain('fill("Quick performance proof")');
     expect(perfSpec).not.toContain('keyboard.type("Quick performance proof"');
-    const directUserEventsStart = indexOfOrThrow(perfSpec, "const directUserEventNames = new Set([");
+    const directUserEventsStart = indexOfOrThrow(
+      perfSpec,
+      "const directUserEventNames = new Set(["
+    );
     const directUserEventsEnd = perfSpec.indexOf("]);", directUserEventsStart);
     expect(directUserEventsEnd).toBeGreaterThan(directUserEventsStart);
     const directUserEventsBlock = perfSpec.slice(directUserEventsStart, directUserEventsEnd);
@@ -538,15 +538,25 @@ describe("GitHub Pages deploy workflow contract", () => {
       scripts: Record<string, string>;
     };
 
+    expect(pkg.scripts["prune:release-artifacts:android"]).toBe(
+      "node scripts/prune-duplicate-artifacts.cjs android/app/src/main/assets/public"
+    );
+    expect(pkg.scripts["prune:release-artifacts:ios"]).toBe(
+      "node scripts/prune-duplicate-artifacts.cjs ios/App/App/public"
+    );
     expect(pkg.scripts["check:release-artifacts:android"]).toBe(
-      "node scripts/prune-duplicate-artifacts.cjs android/app/src/main/assets/public --verify"
+      "node scripts/prune-duplicate-artifacts.cjs android/app/src/main/assets/public --verify && node scripts/prune-duplicate-artifacts.cjs android/app/src/main/res/xml --verify"
     );
     expect(pkg.scripts["check:release-artifacts:ios"]).toBe(
       "node scripts/prune-duplicate-artifacts.cjs ios/App/App/public --verify"
     );
+    expect(pkg.scripts["cap:sync"]).toContain("npm run prune:release-artifacts:android");
+    expect(pkg.scripts["cap:sync"]).toContain("npm run prune:release-artifacts:ios");
     expect(pkg.scripts["cap:sync"]).toContain("npm run check:release-artifacts:android");
     expect(pkg.scripts["cap:sync"]).toContain("npm run check:release-artifacts:ios");
+    expect(pkg.scripts["cap:sync:android"]).toContain("npm run prune:release-artifacts:android");
     expect(pkg.scripts["cap:sync:android"]).toContain("npm run check:release-artifacts:android");
+    expect(pkg.scripts["cap:sync:ios"]).toContain("npm run prune:release-artifacts:ios");
     expect(pkg.scripts["cap:sync:ios"]).toContain("npm run check:release-artifacts:ios");
 
     const androidGate = sliceBetween(workflow, "android-gate:", "ios-gate:");
@@ -652,35 +662,79 @@ describe("GitHub Pages deploy workflow contract", () => {
       expect(readiness, file).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_ALLOW_REAL_EMAIL: false");
       expect(readiness, file).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_VERIFY_CAPTURED_URL: false");
       expect(readiness, file).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: false");
-      expect(readiness, file).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
+      expect(readiness, file).not.toContain(
+        "ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}"
+      );
     }
   });
 
   it("requires the manual journal Magic Link proof to consume a captured URL before SMTP apply", () => {
     const workflow = readFileSync(".github/workflows/journal-magic-link-live-proof.yml", "utf8");
-    const validation = sliceBetween(workflow, "name: Validate production proof request", "name: Checkout");
-    const inventory = sliceBetween(workflow, "name: Check journal Magic Link GitHub names before proof", "name: Apply Supabase Auth custom SMTP");
-    const fullProof = sliceBetween(workflow, "name: Run journal Magic Link full live proof", "name: Clear consumed journal Magic Link captured URL secret");
-    const cleanup = sliceBetween(workflow, "name: Clear consumed journal Magic Link captured URL secret", "name: Write journal Magic Link runtime proof status packet");
-    const runtimePacket = sliceBetween(workflow, "name: Write journal Magic Link runtime proof status packet", "name: Check journal Magic Link proof status packet");
-    const statusPacket = workflow.slice(indexOfOrThrow(workflow, "name: Check journal Magic Link proof status packet"));
+    const validation = sliceBetween(
+      workflow,
+      "name: Validate production proof request",
+      "name: Checkout"
+    );
+    const inventory = sliceBetween(
+      workflow,
+      "name: Check journal Magic Link GitHub names before proof",
+      "name: Apply Supabase Auth custom SMTP"
+    );
+    const fullProof = sliceBetween(
+      workflow,
+      "name: Run journal Magic Link full live proof",
+      "name: Clear consumed journal Magic Link captured URL secret"
+    );
+    const cleanup = sliceBetween(
+      workflow,
+      "name: Clear consumed journal Magic Link captured URL secret",
+      "name: Write journal Magic Link runtime proof status packet"
+    );
+    const runtimePacket = sliceBetween(
+      workflow,
+      "name: Write journal Magic Link runtime proof status packet",
+      "name: Check journal Magic Link proof status packet"
+    );
+    const statusPacket = workflow.slice(
+      indexOfOrThrow(workflow, "name: Check journal Magic Link proof status packet")
+    );
 
-    expect(validation).toContain("CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
-    expect(validation).toContain("Full live proof requires consuming the fresh captured Supabase verify URL.");
+    expect(validation).toContain(
+      "CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}"
+    );
+    expect(validation).toContain(
+      "Full live proof requires consuming the fresh captured Supabase verify URL."
+    );
     expect(inventory).toContain("ZENFLOW_GITHUB_SECRET_ZENFLOW_AUTH_SMTP_PASS_PRESENT");
-    expect(inventory).toContain("ZENFLOW_GITHUB_SECRET_ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN_PRESENT");
+    expect(inventory).toContain(
+      "ZENFLOW_GITHUB_SECRET_ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN_PRESENT"
+    );
     expect(inventory).toContain("npm run check:github-journal-magic-link-secrets:pass");
     expect(fullProof).toContain("id: full_live_proof");
-    expect(fullProof).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_SEND_SMOKE: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
-    expect(fullProof).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_ALLOW_REAL_EMAIL: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
-    expect(fullProof).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
-    expect(cleanup).toContain("if: ${{ always() && inputs.consume_captured_url && steps.full_live_proof.outcome != 'skipped' }}");
+    expect(fullProof).toContain(
+      "ZENFLOW_JOURNAL_MAGIC_LINK_SEND_SMOKE: ${{ inputs.consume_captured_url && 'true' || 'false' }}"
+    );
+    expect(fullProof).toContain(
+      "ZENFLOW_JOURNAL_MAGIC_LINK_ALLOW_REAL_EMAIL: ${{ inputs.consume_captured_url && 'true' || 'false' }}"
+    );
+    expect(fullProof).toContain(
+      "ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}"
+    );
+    expect(cleanup).toContain(
+      "if: ${{ always() && inputs.consume_captured_url && steps.full_live_proof.outcome != 'skipped' }}"
+    );
     expect(cleanup).toContain("GH_TOKEN: ${{ secrets.ZENFLOW_GITHUB_SECRET_CLEANUP_TOKEN }}");
     expect(cleanup).toContain("ZENFLOW_GITHUB_REPO: ${{ github.repository }}");
     expect(cleanup).toContain("npm run clear:journal-magic-link-captured-url:apply");
-    expect(runtimePacket).toContain("npm run write:journal-magic-link-proof-status -- --file output/journal-magic-link-live-proof-status.json");
-    expect(statusPacket).toContain("npm run check:journal-magic-link-proof-status -- --file output/journal-magic-link-live-proof-status.json");
-    expect(statusPacket).toContain("npm run check:journal-magic-link-proof-status:pass -- --file output/journal-magic-link-live-proof-status.json");
+    expect(runtimePacket).toContain(
+      "npm run write:journal-magic-link-proof-status -- --file output/journal-magic-link-live-proof-status.json"
+    );
+    expect(statusPacket).toContain(
+      "npm run check:journal-magic-link-proof-status -- --file output/journal-magic-link-live-proof-status.json"
+    );
+    expect(statusPacket).toContain(
+      "npm run check:journal-magic-link-proof-status:pass -- --file output/journal-magic-link-live-proof-status.json"
+    );
   });
   it("keeps workflow checkout credentials non-persistent on protected CI paths", () => {
     const files = [
@@ -716,7 +770,9 @@ describe("GitHub Pages deploy workflow contract", () => {
 
     expect(workflow).toContain("public-privacy-smoke:");
     expect(workflow).toContain("needs: [deploy]");
-    expect(workflow).toContain("ZENFLOW_PUBLIC_PRIVACY_URL: ${{ needs.deploy.outputs.page_url }}privacy.html?admobPrivacyCheck=${{ github.sha }}");
+    expect(workflow).toContain(
+      "ZENFLOW_PUBLIC_PRIVACY_URL: ${{ needs.deploy.outputs.page_url }}privacy.html?admobPrivacyCheck=${{ github.sha }}"
+    );
     expect(workflow).toContain("npm run google-play:privacy:public-check");
     expect(workflow).toContain("Public privacy policy did not pass after Pages deployment.");
 
@@ -731,15 +787,21 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(privacyJob).not.toContain("secrets.");
 
     expect(previewWorkflow).toContain("public-privacy-smoke:");
-    expect(previewWorkflow).toContain("ZENFLOW_PUBLIC_PRIVACY_URL: ${{ needs.deploy.outputs.page_url }}privacy.html?admobPrivacyCheck=${{ github.sha }}");
+    expect(previewWorkflow).toContain(
+      "ZENFLOW_PUBLIC_PRIVACY_URL: ${{ needs.deploy.outputs.page_url }}privacy.html?admobPrivacyCheck=${{ github.sha }}"
+    );
     expect(previewWorkflow).toContain("npm run google-play:privacy:public-check");
 
     const previewDeploy = sliceBetween(previewWorkflow, "deploy:", "public-privacy-smoke:");
-    const previewPrivacy = previewWorkflow.slice(indexOfOrThrow(previewWorkflow, "public-privacy-smoke:"));
+    const previewPrivacy = previewWorkflow.slice(
+      indexOfOrThrow(previewWorkflow, "public-privacy-smoke:")
+    );
     expect(previewDeploy).toContain("outputs:");
     expect(previewDeploy).toContain("page_url: ${{ steps.deployment.outputs.page_url }}");
     expect(previewPrivacy).toContain("needs: [deploy]");
-    expect(previewPrivacy).toContain("github.event.inputs.publish_target == 'overwrite-github-pages'");
+    expect(previewPrivacy).toContain(
+      "github.event.inputs.publish_target == 'overwrite-github-pages'"
+    );
     expect(previewPrivacy).toContain("for attempt in {1..12}");
     expect(previewPrivacy).toContain("sleep 10");
     expect(previewPrivacy).not.toContain("secrets.");
@@ -787,7 +849,6 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(previewPrivacy).toBeLessThan(previewPagesUpload);
   });
 
-
   it("runs journal Magic Link GitHub name inventory before live proof without exposing values", () => {
     const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
     const previewWorkflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
@@ -802,7 +863,9 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(productionInventory).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_GITHUB_NAMES_REQUIRED:");
     expect(productionInventory).toContain("npm run check:github-journal-magic-link-secrets");
     expect(productionInventory).toContain("secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL != ''");
-    expect(productionInventory).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
+    expect(productionInventory).not.toContain(
+      "ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}"
+    );
 
     const previewInventory = sliceBetween(
       previewWorkflow,
@@ -814,7 +877,9 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(previewInventory).toContain("ZENFLOW_GITHUB_JOURNAL_MAGIC_LINK_SECRETS_REQUIRED:");
     expect(previewInventory).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_GITHUB_NAMES_REQUIRED:");
     expect(previewInventory).toContain("npm run check:github-journal-magic-link-secrets");
-    expect(previewInventory).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
+    expect(previewInventory).not.toContain(
+      "ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}"
+    );
   });
 
   it("does not consume journal Magic Link proof material or mutate Supabase in deploy workflows", () => {
@@ -822,7 +887,9 @@ describe("GitHub Pages deploy workflow contract", () => {
     const previewWorkflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
 
     for (const source of [workflow, previewWorkflow]) {
-      expect(source).not.toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
+      expect(source).not.toContain(
+        "ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}"
+      );
       expect(source).not.toContain("npm run apply:supabase-auth-smtp");
       expect(source).not.toContain("npm run apply:journal-magic-link-github-secrets");
       expect(source).not.toContain("npm run clear:journal-magic-link-captured-url:apply");
@@ -835,7 +902,7 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(workflow).toContain("workflow_dispatch:");
     expect(workflow).toContain("confirm_live_smtp_apply:");
     expect(workflow).toContain("APPLY_JOURNAL_MAGIC_LINK_LIVE_PROOF");
-    expect(workflow).toContain("if [ \"$GITHUB_REF\" != \"refs/heads/main\" ]; then");
+    expect(workflow).toContain('if [ "$GITHUB_REF" != "refs/heads/main" ]; then');
     expect(workflow).toContain("Journal Magic Link live proof must run from main.");
     expect(workflow).toContain("environment: production");
     expect(workflow).toContain("permissions:");
@@ -855,9 +922,15 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(workflow).toContain("npm run check:journal-magic-link-proof-status:pass");
     expect(workflow).toContain("ZENFLOW_AUTH_SMTP_CONFIRM_PRODUCTION: true");
     expect(workflow).toContain("ZENFLOW_AUTH_SMTP_PASS: ${{ secrets.ZENFLOW_AUTH_SMTP_PASS }}");
-    expect(workflow).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}");
-    expect(workflow).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_VERIFY_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
-    expect(workflow).toContain("ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}");
+    expect(workflow).toContain(
+      "ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL: ${{ secrets.ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL }}"
+    );
+    expect(workflow).toContain(
+      "ZENFLOW_JOURNAL_MAGIC_LINK_VERIFY_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}"
+    );
+    expect(workflow).toContain(
+      "ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL: ${{ inputs.consume_captured_url && 'true' || 'false' }}"
+    );
     expect(workflow).not.toContain("echo $ZENFLOW_AUTH_SMTP_PASS");
     expect(workflow).not.toContain("echo $ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL");
   });

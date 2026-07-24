@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useMotionPreference } from "@/hooks/useMotionPreference";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useBatteryState } from "@/hooks/useBatteryState";
@@ -9,6 +9,18 @@ import {
 import type { ShouldAnimateOptions } from "@/lib/animationUtils";
 
 const LOW_BATTERY_THRESHOLD = 0.15;
+
+const subscribeRuntimePerformanceMode = (onStoreChange: () => void) => {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  window.addEventListener(RUNTIME_PERFORMANCE_MODE_EVENT, onStoreChange);
+  return () => window.removeEventListener(RUNTIME_PERFORMANCE_MODE_EVENT, onStoreChange);
+};
+
+const getRuntimePerformanceSnapshot = () => isRuntimePerformanceLimited();
+const getServerRuntimePerformanceSnapshot = () => false;
 
 /**
  * Reactive source of truth for "should we animate right now?"
@@ -31,23 +43,13 @@ export function useShouldAnimate(options: ShouldAnimateOptions = {}): boolean {
   const motionPreference = useMotionPreference();
   const osPrefersReduce = useMediaQuery("(prefers-reduced-motion: reduce)");
   const battery = useBatteryState();
-  const [runtimePerfLimited, setRuntimePerfLimited] = useState(isRuntimePerformanceLimited);
+  const runtimePerfLimited = useSyncExternalStore(
+    subscribeRuntimePerformanceMode,
+    getRuntimePerformanceSnapshot,
+    getServerRuntimePerformanceSnapshot
+  );
 
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const syncRuntimePerfMode = () => {
-      setRuntimePerfLimited(isRuntimePerformanceLimited());
-    };
-
-    window.addEventListener(RUNTIME_PERFORMANCE_MODE_EVENT, syncRuntimePerfMode);
-    return () => window.removeEventListener(RUNTIME_PERFORMANCE_MODE_EVENT, syncRuntimePerfMode);
-  }, []);
-
-  const lowBattery =
-    battery !== null && !battery.charging && battery.level < LOW_BATTERY_THRESHOLD;
+  const lowBattery = battery !== null && !battery.charging && battery.level < LOW_BATTERY_THRESHOLD;
 
   return (
     !motionPreference.reduceMotion &&

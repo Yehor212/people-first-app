@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 
-describe("ai-coach RAG release contract", () => {
+describe("ai-coach no-paid-provider release contract", () => {
   const aiCoach = read("supabase/functions/ai-coach/index.ts");
   const config = read("supabase/config.toml");
 
@@ -13,21 +13,26 @@ describe("ai-coach RAG release contract", () => {
     expect(config).toContain("[functions.ai-coach]");
     expect(config).toContain("verify_jwt = true");
     expect(aiCoach).toContain("SUPABASE_ANON_KEY");
-    expect(aiCoach).toContain("global: { headers: { Authorization: `Bearer ${token}` } }");
+    expect(aiCoach).toContain('const authHeader = req.headers.get("Authorization")');
+    expect(aiCoach).toContain('authHeader?.startsWith("Bearer ")');
+    expect(aiCoach).toContain("global: { headers: { Authorization: authHeader } }");
     expect(aiCoach).toContain("supabase.auth.getUser()");
   });
 
-  it("uses a server-only Supabase client for project-document RAG", () => {
-    expect(aiCoach).toContain("SUPABASE_SERVICE_ROLE_KEY");
-    expect(aiCoach).toContain("createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY");
-    expect(aiCoach).toContain("ragSupabase.rpc(\"match_rag_chunks\"");
+  it("does not send coaching context to a paid or external model provider", () => {
+    expect(aiCoach).toContain("buildCoachLiteResponse");
+    expect(aiCoach).toContain("externalProvider: false");
+    expect(aiCoach).not.toContain("GEMINI_API_KEY");
+    expect(aiCoach).not.toContain("generateContent");
+    expect(aiCoach).not.toContain("match_rag_chunks");
     expect(aiCoach).not.toMatch(/VITE_SUPABASE_SERVICE_ROLE_KEY|NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY/);
   });
 
-  it("keeps RAG supplemental so an empty or temporarily blocked RAG index does not break coaching", () => {
-    expect(aiCoach).toContain("buildAICoachRagResponse");
-    expect(aiCoach).toContain("fallbackContents: contents");
-    expect(aiCoach).toContain("buildCoachLiteResponse");
-    expect(aiCoach).toContain("sources: ragResponse.sources");
+  it("returns an explicit Coach Lite response without claiming paid-model output", () => {
+    expect(aiCoach).toContain("message: coachLite.message");
+    expect(aiCoach).toContain("mode: coachLite.mode");
+    expect(aiCoach).toContain("requiresPaidApi: coachLite.requiresPaidApi");
+    expect(aiCoach).toContain("sources: coachLite.sources");
+    expect(aiCoach).toContain("externalProvider: false");
   });
 });

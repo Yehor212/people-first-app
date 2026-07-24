@@ -102,7 +102,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
         )} />
       )}
 
-      <div className="relative flex items-center gap-3">
+      <div className="relative grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 min-[420px]:grid-cols-[auto_minmax(0,1fr)_auto]">
         {/* Icon / Fire Animation */}
         {streak >= 3 && showStreakFire ? (
           <div className="w-11 h-11 flex items-center justify-center flex-shrink-0 -ms-1">
@@ -132,13 +132,17 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
               {t.daysInRow}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground truncate">
+          <p className="whitespace-normal break-words text-xs text-muted-foreground [overflow-wrap:break-word]">
             {getMessage()}
           </p>
         </div>
 
         {/* Premium Progress Orbs */}
-        <div className="flex flex-col items-end gap-1 flex-shrink-0" role="group" aria-label={t.todayProgress}>
+        <div
+          className="col-span-2 flex flex-col items-start gap-1 min-[420px]:col-span-1 min-[420px]:items-end"
+          role="group"
+          aria-label={t.todayProgress}
+        >
           <div className="flex gap-1.5">
             {[
               {

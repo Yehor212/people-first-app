@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { zenTap } from "@/lib/animationUtils";
+import { normalizeHabitReminderDays } from "@/lib/habitScheduling";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { HabitReminder } from "@/types";
@@ -25,6 +27,8 @@ export function RemindersSection({
   handleRemoveReminder,
   handleReminderChange,
 }: RemindersSectionProps) {
+  const [daySelectionNoticeIndex, setDaySelectionNoticeIndex] = useState<number | null>(null);
+
   return (
     <div
       className={cn(
@@ -34,7 +38,7 @@ export function RemindersSection({
           : "bg-secondary/50"
       )}
     >
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2 flex flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
         <label
           className={cn(
             "text-sm",
@@ -50,7 +54,7 @@ export function RemindersSection({
             handleAddReminder();
           }}
           className={cn(
-            "text-xs px-3 py-1.5 rounded-lg motion-safe:transition-colors",
+            "min-h-[44px] whitespace-normal break-words rounded-lg px-3 py-2 text-xs motion-safe:transition-colors",
             isPrimaryCTA
               ? "bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30"
               : "bg-primary/10 text-primary hover:bg-primary/20"
@@ -73,11 +77,13 @@ export function RemindersSection({
         </p>
       ) : (
         <div className="space-y-2">
-          {reminders.map((reminder, index) => (
-            <div
+          {reminders.map((reminder, index) => {
+            const selectedDays = normalizeHabitReminderDays(reminder.days);
+            return (
+              <div
               key={index}
               className={cn(
-                "flex items-center gap-2 p-2 rounded-lg",
+                "grid grid-cols-[minmax(0,1fr)_44px] items-start gap-2 rounded-lg p-2",
                 isPrimaryCTA ? "bg-foreground/5 border border-foreground/10" : "bg-background"
               )}
             >
@@ -86,14 +92,14 @@ export function RemindersSection({
                 value={reminder.time}
                 onChange={(e) => handleReminderChange(index, "time", e.target.value)}
                 className={cn(
-                  "flex-1 p-1 rounded text-sm focus:outline-none focus:ring-1",
+                  "min-h-[44px] min-w-0 w-full rounded p-2 text-sm focus:outline-none focus:ring-1",
                   isPrimaryCTA
                     ? "bg-foreground/10 border border-foreground/20 text-white focus:ring-violet-500/50"
                     : "bg-secondary text-foreground focus:ring-primary/30"
                 )}
                 aria-label={t.habitReminderTime}
               />
-              <div className="flex gap-1">
+              <div className="col-span-2 row-start-2 grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(3.25rem*var(--font-scale,1))),1fr))] gap-1">
                 {[
                   { day: 1, label: t.mon },
                   { day: 2, label: t.tue },
@@ -106,27 +112,32 @@ export function RemindersSection({
                   <motion.button
                     key={day}
                     type="button"
-                    aria-pressed={reminder.days.includes(day)}
+                    aria-pressed={selectedDays.includes(day)}
                     onClick={(e) => {
                       e.preventDefault();
-                      const newDays = reminder.days.includes(day)
-                        ? reminder.days.filter((d) => d !== day)
-                        : [...reminder.days, day];
+                      if (selectedDays.includes(day) && selectedDays.length === 1) {
+                        setDaySelectionNoticeIndex(index);
+                        return;
+                      }
+                      const newDays = selectedDays.includes(day)
+                        ? selectedDays.filter((d) => d !== day)
+                        : [...selectedDays, day];
+                      setDaySelectionNoticeIndex(null);
                       handleReminderChange(index, "days", newDays);
                     }}
                     className={cn(
-                      "w-11 h-11 min-w-[44px] min-h-[44px] text-[10px] rounded-lg motion-safe:transition-colors font-medium",
+                      "min-h-[44px] min-w-[44px] w-full whitespace-normal break-words rounded-lg px-1.5 py-2 text-xs font-medium motion-safe:transition-colors",
                       "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
                       isPrimaryCTA
-                        ? reminder.days.includes(day)
+                        ? selectedDays.includes(day)
                           ? "bg-gradient-to-br from-violet-500/60 to-purple-600/60 text-white"
                           : "bg-foreground/5 text-foreground/50 hover:bg-foreground/10"
-                        : reminder.days.includes(day)
+                        : selectedDays.includes(day)
                           ? "bg-primary text-primary-foreground"
                           : "bg-secondary text-muted-foreground hover:bg-muted"
                     )}
                     style={
-                      isPrimaryCTA && reminder.days.includes(day)
+                      isPrimaryCTA && selectedDays.includes(day)
                         ? { boxShadow: "0 0 8px hsl(var(--cosmic-nebula-purple) / 0.4)" }
                         : undefined
                     }
@@ -136,6 +147,15 @@ export function RemindersSection({
                   </motion.button>
                 ))}
               </div>
+              {daySelectionNoticeIndex === index ? (
+                <p
+                  role="status"
+                  className="col-span-2 min-w-0 break-words text-xs text-muted-foreground [hyphens:auto] [overflow-wrap:break-word]"
+                >
+                  {t.habitReminderAtLeastOneDay ||
+                    "Keep at least one day selected. To turn this reminder off, remove it."}
+                </p>
+              ) : null}
               <motion.button
                 type="button"
                 onClick={(e) => {
@@ -144,7 +164,7 @@ export function RemindersSection({
                 }}
                 aria-label={t.delete}
                 className={cn(
-                  "p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg motion-safe:transition-colors",
+                  "col-start-2 row-start-1 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 motion-safe:transition-colors",
                   isPrimaryCTA
                     ? "text-red-400 hover:bg-red-500/20"
                     : "text-destructive hover:bg-destructive/10"
@@ -153,8 +173,9 @@ export function RemindersSection({
               >
                 <X className="w-4 h-4" />
               </motion.button>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

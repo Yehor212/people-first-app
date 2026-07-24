@@ -37,4 +37,12 @@ describe("Index V2 runtime bridge contract", () => {
     expect(source).not.toContain('import { analytics } from "@/lib/analytics";');
     expect(source).not.toContain("analytics.init(");
   });
+
+  it("routes Settings reminder changes through the durable-first handler", () => {
+    const source = indexSource();
+
+    expect(source).toContain("handleRemindersChange");
+    expect(source).toContain("onRemindersChange: handleRemindersChange");
+    expect(source).not.toContain("onRemindersChange: setReminders");
+  });
 });

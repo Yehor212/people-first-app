@@ -1,5 +1,6 @@
 import { logger } from "@/lib/logger";
 import { getCurrentUserId } from "@/lib/supabaseClient";
+import { readPendingLocalBackupAccountClaim } from "@/storage/accountBoundaryRuntime";
 
 export class SyncOwnerBoundaryError extends Error {
   constructor(operation: string) {
@@ -30,6 +31,12 @@ export async function validateSyncOwner(
 
   if (!activeUserId || activeUserId !== ownerUserId) {
     logger.warn(`[Sync] ${operation} stopped at an account boundary`);
+    throw new SyncOwnerBoundaryError(operation);
+  }
+
+  const importedBackupClaim = readPendingLocalBackupAccountClaim();
+  if (importedBackupClaim.status !== "none") {
+    logger.warn(`[Sync] ${operation} stopped while an imported backup awaits an account choice`);
     throw new SyncOwnerBoundaryError(operation);
   }
 

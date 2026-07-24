@@ -1,79 +1,1171 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr" data-delete-account-page="true">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#4a9d7c" />
+    <meta name="theme-color" content="#153d32" />
+    <meta
+      name="description"
+      content="How to request deletion of a ZenFlow account, what deletion removes, and what may remain."
+    />
     <meta property="og:image" content="https://yehor212.github.io/people-first-app/og-image.png" />
     <meta name="twitter:image" content="https://yehor212.github.io/people-first-app/og-image.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/people-first-app/favicon-16.png?v=zenflow-browser-leaf-20260627-r7">
-    <link rel="icon" type="image/png" sizes="32x32" href="/people-first-app/favicon-32.png?v=zenflow-browser-leaf-20260627-r7">
-    <link rel="icon" type="image/png" sizes="48x48" href="/people-first-app/favicon-48.png?v=zenflow-browser-leaf-20260627-r7">
-    <link rel="icon" type="image/png" sizes="64x64" href="/people-first-app/favicon-64.png?v=zenflow-browser-leaf-20260627-r7">
-    <link rel="icon" href="/people-first-app/favicon.ico?v=zenflow-browser-leaf-20260627-r7" sizes="any" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/people-first-app/pwa-192.png?v=zenflow-browser-leaf-20260627-r7" />
-    <link rel="apple-touch-icon" href="/people-first-app/apple-touch-icon.png?v=zenflow-browser-leaf-20260627-r7" />
-    <title>Delete Account</title>
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/people-first-app/favicon-16.png?v=zenflow-browser-leaf-20260627-r7"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/people-first-app/favicon-32.png?v=zenflow-browser-leaf-20260627-r7"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="48x48"
+      href="/people-first-app/favicon-48.png?v=zenflow-browser-leaf-20260627-r7"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="64x64"
+      href="/people-first-app/favicon-64.png?v=zenflow-browser-leaf-20260627-r7"
+    />
+    <link
+      rel="icon"
+      href="/people-first-app/favicon.ico?v=zenflow-browser-leaf-20260627-r7"
+      sizes="any"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/people-first-app/pwa-192.png?v=zenflow-browser-leaf-20260627-r7"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="/people-first-app/apple-touch-icon.png?v=zenflow-browser-leaf-20260627-r7"
+    />
+    <title>Delete your ZenFlow account</title>
     <style>
+      :root {
+        color-scheme: light dark;
+        --page: #f4f8f6;
+        --card: #ffffff;
+        --inset: #edf6f2;
+        --warning: #fff5f2;
+        --text: #17251f;
+        --muted: #4b6158;
+        --accent: #176b52;
+        --border: #c9dbd3;
+        --warning-border: #e4bdb3;
+        --shadow: 0 18px 54px rgb(19 57 45 / 12%);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --page: #081510;
+          --card: #10231b;
+          --inset: #142d23;
+          --warning: #321b19;
+          --text: #f0f8f4;
+          --muted: #b6c9c0;
+          --accent: #7ce0ba;
+          --border: #2d4b3f;
+          --warning-border: #784a42;
+          --shadow: 0 18px 54px rgb(0 0 0 / 32%);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
       body {
-        font-family: Arial, sans-serif;
-        background: #f6f4ef;
-        color: #1f2a24;
+        min-height: 100vh;
+        min-height: 100dvh;
         margin: 0;
-        padding: 32px 16px;
+        background: var(--page);
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.65;
+        padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+          max(2rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
       }
-      .container {
-        max-width: 720px;
+
+      .shell {
+        width: min(100%, 48rem);
         margin: 0 auto;
-        background: #ffffff;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
       }
-      h1 {
-        margin-top: 0;
+
+      .language-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .language-nav a {
+        min-height: 2.75rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.55rem 0.85rem;
+        background: var(--card);
+        color: var(--text);
+        font-size: 0.875rem;
+        font-weight: 650;
+        text-decoration: none;
+      }
+
+      .language-nav a[aria-current="page"] {
+        border-color: var(--accent);
+        color: var(--accent);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+      }
+
+      .language-nav a:focus-visible,
+      a.action-link:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      article {
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 1.25rem;
+        background: var(--card);
+        box-shadow: var(--shadow);
+      }
+
+      .hero,
+      .content-section {
+        padding: clamp(1.1rem, 4vw, 2rem);
+      }
+
+      .hero {
+        border-bottom: 1px solid var(--border);
+        background: var(--inset);
+      }
+
+      .brand-row {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 0.8rem;
       }
+
+      .brand-row > div {
+        min-width: 0;
+      }
+
       .title-logo {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
+        width: 3rem;
+        height: 3rem;
         flex: 0 0 auto;
+        border-radius: 0.8rem;
       }
-      .steps {
-        margin: 16px 0 0;
-        padding-left: 18px;
+
+      .eyebrow {
+        margin: 0;
+        color: var(--accent);
+        font-size: 0.76rem;
+        font-weight: 750;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
       }
-      .note {
-        margin-top: 16px;
-        padding: 12px;
-        background: #f1eee7;
-        border-radius: 12px;
+
+      h1 {
+        margin: 0.3rem 0 0;
+        font-size: clamp(1.65rem, 6vw, 2.45rem);
+        line-height: 1.15;
       }
+
+      h1,
+      h2,
+      p,
+      li {
+        overflow-wrap: break-word;
+        word-break: normal;
+        hyphens: manual;
+      }
+
+      .brand-token {
+        display: inline-block;
+        max-width: 100%;
+        overflow-wrap: normal;
+        word-break: keep-all;
+        white-space: nowrap;
+      }
+
+      h2 {
+        margin: 0 0 0.7rem;
+        font-size: 1.15rem;
+        line-height: 1.3;
+      }
+
+      p {
+        margin: 0.65rem 0 0;
+        color: var(--muted);
+      }
+
+      ul,
+      ol {
+        margin: 0.75rem 0 0;
+        padding-inline-start: 1.35rem;
+      }
+
+      li + li {
+        margin-top: 0.75rem;
+      }
+
+      li::marker {
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .content-section + .content-section {
+        border-top: 1px solid var(--border);
+      }
+
+      .request-card {
+        background: var(--inset);
+      }
+
+      .retention-card {
+        background: var(--warning);
+        border-top-color: var(--warning-border);
+      }
+
       a {
-        color: #2f7b5b;
+        color: var(--accent);
+        overflow-wrap: anywhere;
+      }
+
+      a.action-link {
+        min-height: 2.75rem;
+        display: inline-flex;
+        align-items: center;
+        margin-top: 0.6rem;
+        border-radius: 0.65rem;
+        background: var(--accent);
+        color: var(--page);
+        padding: 0.65rem 0.9rem;
+        font-weight: 750;
+        text-decoration: none;
+      }
+
+      .safety-note {
+        font-weight: 650;
+        color: var(--text);
+      }
+
+      [dir="rtl"] .brand-row {
+        flex-direction: row;
+      }
+
+      @media (max-width: 24rem) {
+        body {
+          padding-left: max(clamp(8px, 4vw, 16px), env(safe-area-inset-left));
+          padding-right: max(clamp(8px, 4vw, 16px), env(safe-area-inset-right));
+        }
+
+        .hero,
+        .content-section {
+          padding-inline: clamp(8px, 4vw, 16px);
+        }
+
+        h1 {
+          font-size: 1.35rem;
+        }
+
+        ul,
+        ol {
+          padding-inline-start: clamp(12px, 4vw, 20px);
+        }
+
+        .brand-row,
+        [dir="rtl"] .brand-row {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .eyebrow {
+          overflow-wrap: normal;
+          word-break: normal;
+          hyphens: manual;
+        }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        a {
+          transition:
+            outline-offset 160ms ease,
+            box-shadow 160ms ease;
+        }
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1><img class="title-logo" src="/people-first-app/pwa-72.png?v=zenflow-browser-leaf-20260627-r7" width="40" height="40" alt="" aria-hidden="true" />How to delete your account and data</h1>
-      <p>You can delete your account directly inside the app.</p>
-      <ol class="steps">
-        <li>Open Settings.</li>
-        <li>Go to Account.</li>
-        <li>Tap "Delete account" and confirm.</li>
-      </ol>
-      <div class="note">
-        This will remove your cloud data (backups, reminders, subscriptions, logs) and delete your
-        account from authentication.
-      </div>
-      <p>
-        If you cannot access the app, contact support at
-        <a href="mailto:zenflow.app@gmail.com">zenflow.app@gmail.com</a>.
-      </p>
-    </div>
+    <main class="shell">
+      <nav class="language-nav" aria-label="Language" data-delete-account-language-nav>
+        <a
+          href="?lang=en"
+          lang="en"
+          dir="ltr"
+          data-delete-account-language-link="en"
+          aria-current="page"
+          >English</a
+        >
+        <a href="?lang=uk" lang="uk" dir="ltr" data-delete-account-language-link="uk">Українська</a>
+        <a href="?lang=es" lang="es" dir="ltr" data-delete-account-language-link="es">Español</a>
+        <a href="?lang=de" lang="de" dir="ltr" data-delete-account-language-link="de">Deutsch</a>
+        <a href="?lang=fr" lang="fr" dir="ltr" data-delete-account-language-link="fr">Français</a>
+        <a href="?lang=ja" lang="ja" dir="ltr" data-delete-account-language-link="ja">日本語</a>
+        <a href="?lang=ar" lang="ar" dir="rtl" data-delete-account-language-link="ar">العربية</a>
+        <a href="?lang=he" lang="he" dir="rtl" data-delete-account-language-link="he">עברית</a>
+      </nav>
+
+      <article
+        data-delete-account-locale="en"
+        data-page-title="Delete your ZenFlow account"
+        data-language-nav-label="Language"
+        lang="en"
+        dir="ltr"
+        aria-labelledby="delete-account-title-en"
+      >
+        <header class="hero">
+          <div class="brand-row">
+            <img
+              class="title-logo"
+              src="/people-first-app/pwa-72.png?v=zenflow-browser-leaf-20260627-r7"
+              width="48"
+              height="48"
+              alt=""
+              aria-hidden="true"
+            />
+            <div>
+              <p class="eyebrow">ZenFlow account deletion</p>
+              <h1 id="delete-account-title-en">Delete your ZenFlow account</h1>
+            </div>
+          </div>
+          <p>
+            This page explains how to request deletion, what ZenFlow removes, and what can remain
+            outside the active account.
+          </p>
+        </header>
+        <section class="content-section request-card" aria-labelledby="delete-account-request-en">
+          <h2 id="delete-account-request-en">Request deletion</h2>
+          <ol>
+            <li>
+              <strong>In ZenFlow:</strong> Open Settings, choose Account, select “Delete account,”
+              and confirm. This is the direct authenticated path.
+            </li>
+            <li data-deletion-disclosure="support-request">
+              <strong>Without app access:</strong> Email
+              <a
+                class="action-link"
+                href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                >zenflow.app@gmail.com</a
+              >
+              from the address connected to your ZenFlow account when possible. Support may need to
+              verify that you control the account. Never email a password, sign-in code, recovery
+              link, journal text, or another secret.
+            </li>
+          </ol>
+        </section>
+        <section class="content-section" aria-labelledby="delete-account-removes-en">
+          <h2 id="delete-account-removes-en">What deletion removes</h2>
+          <ul>
+            <li data-deletion-disclosure="removed-sign-in">
+              Your ZenFlow authentication record and ability to sign in with this app account.
+            </li>
+            <li data-deletion-disclosure="removed-account-data">
+              Account-linked ZenFlow data held for the account, including synced moods, habits,
+              focus sessions, journal content and media, gratitude, reminders, and settings. After
+              server deletion is confirmed, ZenFlow clears this account’s isolated data area on the
+              current device. If the app reports that cleanup did not finish, restart it before
+              using another account.
+            </li>
+          </ul>
+        </section>
+        <section class="content-section retention-card" aria-labelledby="delete-account-remains-en">
+          <h2 id="delete-account-remains-en">What can remain</h2>
+          <ul>
+            <li data-deletion-disclosure="other-device-copies">
+              Copies already saved on another phone, browser, or computer are not remotely erased
+              from that device. Clear ZenFlow’s app or browser data on each other device you
+              control.
+            </li>
+            <li data-deletion-disclosure="retained-feedback">
+              Feedback previously sent to ZenFlow is stored separately and is not removed
+              automatically with the app account. Use the email path above if you want support to
+              review a related deletion request.
+            </li>
+            <li data-deletion-disclosure="retained-safety-record">
+              ZenFlow retains a minimal, content-free deletion safety record to prevent a deleted
+              account from being restored through normal sync or replay. It contains no journal
+              text, mood notes, habit names, focus notes, gratitude text, or feedback message.
+            </li>
+            <li data-deletion-disclosure="recovery-copies">
+              Deleted account records may remain temporarily in database recovery copies until those
+              copies are replaced on the provider-managed recovery schedule. They are not available
+              through normal ZenFlow use. For the current maximum recovery window, email
+              <a href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                >zenflow.app@gmail.com</a
+              >.
+            </li>
+            <li data-deletion-disclosure="accepted-notifications">
+              A reminder already accepted by a notification provider or displayed by a device may
+              remain in that device’s notification history. Remove it from the device’s notification
+              center.
+            </li>
+            <li>
+              Your Google, Apple, Facebook, or Telegram identity-provider account is not deleted.
+              Manage that provider account separately if you want to change or remove it.
+            </li>
+          </ul>
+        </section>
+      </article>
+
+      <article
+        data-delete-account-locale="uk"
+        data-page-title="Видалення акаунту ZenFlow"
+        data-language-nav-label="Мова"
+        lang="uk"
+        dir="ltr"
+        aria-labelledby="delete-account-title-uk"
+        hidden
+      >
+        <header class="hero">
+          <div class="brand-row">
+            <img
+              class="title-logo"
+              src="/people-first-app/pwa-72.png?v=zenflow-browser-leaf-20260627-r7"
+              width="48"
+              height="48"
+              alt=""
+              aria-hidden="true"
+            />
+            <div>
+              <p class="eyebrow">Видалення акаунту ZenFlow</p>
+              <h1 id="delete-account-title-uk">Видалити акаунт ZenFlow</h1>
+            </div>
+          </div>
+          <p>
+            Тут описано, як надіслати запит, що видаляє ZenFlow і що може залишитися поза активним
+            акаунтом.
+          </p>
+        </header>
+        <section class="content-section request-card" aria-labelledby="delete-account-request-uk">
+          <h2 id="delete-account-request-uk">Як надіслати запит</h2>
+          <ol>
+            <li>
+              <strong>У ZenFlow:</strong> відкрийте «Налаштування», виберіть «Акаунт», натисніть
+              «Видалити акаунт» і підтвердьте дію. Це прямий шлях із перевіркою входу.
+            </li>
+            <li data-deletion-disclosure="support-request">
+              <strong>Якщо немає доступу до застосунку:</strong> напишіть на
+              <a
+                class="action-link"
+                href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                >zenflow.app@gmail.com</a
+              >, бажано з адреси, підключеної до вашого акаунту ZenFlow. Служба підтримки може
+              попросити підтвердити, що акаунт належить вам. Не надсилайте пароль, код входу,
+              посилання для відновлення, текст щоденника чи інші секретні дані.
+            </li>
+          </ol>
+        </section>
+        <section class="content-section" aria-labelledby="delete-account-removes-uk">
+          <h2 id="delete-account-removes-uk">Що буде видалено</h2>
+          <ul>
+            <li data-deletion-disclosure="removed-sign-in">
+              Запис автентифікації ZenFlow і можливість входити за допомогою цього акаунту
+              застосунку.
+            </li>
+            <li data-deletion-disclosure="removed-account-data">
+              Дані ZenFlow, пов’язані з акаунтом: синхронізовані настрої, звички, фокус-сесії,
+              записи й медіафайли щоденника, вдячність, нагадування та налаштування. Після
+              підтвердження видалення на сервері ZenFlow очищає ізольовану область цього акаунту на
+              поточному пристрої. Якщо застосунок повідомить, що очищення не завершено,
+              перезапустіть його перед входом в інший акаунт.
+            </li>
+          </ul>
+        </section>
+        <section class="content-section retention-card" aria-labelledby="delete-account-remains-uk">
+          <h2 id="delete-account-remains-uk">Що може залишитися</h2>
+          <ul>
+            <li data-deletion-disclosure="other-device-copies">
+              Копії, уже збережені на іншому телефоні, у браузері чи на комп’ютері, не стираються
+              віддалено з того пристрою. Очистьте дані застосунку або браузера ZenFlow на кожному
+              іншому пристрої, який ви контролюєте.
+            </li>
+            <li data-deletion-disclosure="retained-feedback">
+              Відгуки, раніше надіслані до ZenFlow, зберігаються окремо й не видаляються автоматично
+              разом з акаунтом. Скористайтеся електронною адресою вище, якщо хочете, щоб підтримка
+              розглянула пов’язаний запит на видалення.
+            </li>
+            <li data-deletion-disclosure="retained-safety-record">
+              ZenFlow зберігає мінімальний технічний запис без користувацького вмісту, щоб видалений
+              акаунт не повернувся через звичайну синхронізацію або повторне відтворення операції. У
+              ньому немає тексту щоденника, нотаток про настрій, назв звичок, нотаток фокусу, тексту
+              вдячності чи відгуків.
+            </li>
+            <li data-deletion-disclosure="recovery-copies">
+              Записи видаленого акаунту можуть тимчасово залишатися в копіях для відновлення бази
+              даних, доки їх не буде замінено за графіком провайдера. Вони недоступні під час
+              звичайного користування ZenFlow. Щоб дізнатися актуальний максимальний строк
+              зберігання копії для відновлення, напишіть на
+              <a href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                >zenflow.app@gmail.com</a
+              >.
+            </li>
+            <li data-deletion-disclosure="accepted-notifications">
+              Нагадування, яке вже прийняв сервіс сповіщень або показав пристрій, може залишитися в
+              історії сповіщень цього пристрою. Видаліть його в центрі сповіщень.
+            </li>
+            <li>
+              Ваш акаунт Google, Apple, Facebook або Telegram не видаляється. За потреби керуйте ним
+              окремо в сервісі відповідного постачальника.
+            </li>
+          </ul>
+        </section>
+      </article>
+
+      <article
+        data-delete-account-locale="es"
+        data-page-title="Eliminar tu cuenta de ZenFlow"
+        data-language-nav-label="Idioma"
+        lang="es"
+        dir="ltr"
+        aria-labelledby="delete-account-title-es"
+        hidden
+      >
+        <header class="hero">
+          <div class="brand-row">
+            <img
+              class="title-logo"
+              src="/people-first-app/pwa-72.png?v=zenflow-browser-leaf-20260627-r7"
+              width="48"
+              height="48"
+              alt=""
+              aria-hidden="true"
+            />
+            <div>
+              <p class="eyebrow">Eliminación de la cuenta de ZenFlow</p>
+              <h1 id="delete-account-title-es">Eliminar tu cuenta de ZenFlow</h1>
+            </div>
+          </div>
+          <p>
+            Esta página explica cómo solicitar la eliminación, qué borra ZenFlow y qué puede
+            permanecer fuera de la cuenta activa.
+          </p>
+        </header>
+        <section class="content-section request-card" aria-labelledby="delete-account-request-es">
+          <h2 id="delete-account-request-es">Solicitar la eliminación</h2>
+          <ol>
+            <li>
+              <strong>En ZenFlow:</strong> abre Ajustes, elige Cuenta, selecciona «Eliminar cuenta»
+              y confirma. Esta es la vía directa con la sesión verificada.
+            </li>
+            <li data-deletion-disclosure="support-request">
+              <strong>Si no puedes acceder a la aplicación:</strong> escribe a
+              <a
+                class="action-link"
+                href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                >zenflow.app@gmail.com</a
+              >, si es posible desde la dirección vinculada a tu cuenta de ZenFlow. El equipo de
+              soporte puede pedirte que demuestres que controlas la cuenta. No envíes contraseñas,
+              códigos de inicio de sesión, enlaces de recuperación, textos del diario ni otros
+              secretos.
+            </li>
+          </ol>
+        </section>
+        <section class="content-section" aria-labelledby="delete-account-removes-es">
+          <h2 id="delete-account-removes-es">Qué se elimina</h2>
+          <ul>
+            <li data-deletion-disclosure="removed-sign-in">
+              El registro de autenticación de ZenFlow y la posibilidad de iniciar sesión con esta
+              cuenta de la aplicación.
+            </li>
+            <li data-deletion-disclosure="removed-account-data">
+              Los datos de ZenFlow vinculados a la cuenta, incluidos estados de ánimo sincronizados,
+              hábitos, sesiones de concentración, contenido y archivos del diario, gratitud,
+              recordatorios y ajustes. Cuando el servidor confirma la eliminación, ZenFlow borra el
+              espacio aislado de esta cuenta en el dispositivo actual. Si la aplicación indica que
+              la limpieza no terminó, reiníciala antes de usar otra cuenta.
+            </li>
+          </ul>
+        </section>
+        <section class="content-section retention-card" aria-labelledby="delete-account-remains-es">
+          <h2 id="delete-account-remains-es">Qué puede permanecer</h2>
+          <ul>
+            <li data-deletion-disclosure="other-device-copies">
+              Las copias ya guardadas en otro teléfono, navegador u ordenador no se borran a
+              distancia de ese dispositivo. Borra los datos de la aplicación o del navegador de
+              ZenFlow en cada dispositivo que controles.
+            </li>
+            <li data-deletion-disclosure="retained-feedback">
+              Los comentarios enviados anteriormente a ZenFlow se guardan por separado y no se
+              eliminan automáticamente con la cuenta. Usa el correo indicado arriba si quieres que
+              soporte revise una solicitud de eliminación relacionada.
+            </li>
+            <li data-deletion-disclosure="retained-safety-record">
+              ZenFlow conserva un registro mínimo de seguridad, sin contenido creado por la persona,
+              para impedir que una cuenta eliminada vuelva mediante la sincronización normal o la
+              repetición de una operación. No contiene textos del diario, notas de ánimo, nombres de
+              hábitos, notas de concentración, textos de gratitud ni comentarios.
+            </li>
+            <li data-deletion-disclosure="recovery-copies">
+              Los registros de la cuenta eliminada pueden permanecer temporalmente en copias de
+              recuperación hasta que se sustituyan según el calendario gestionado por el proveedor
+              de la base de datos. No están disponibles durante el uso normal de ZenFlow. Para
+              conocer el plazo máximo vigente de recuperación, escribe a
+              <a href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                >zenflow.app@gmail.com</a
+              >.
+            </li>
+            <li data-deletion-disclosure="accepted-notifications">
+              Un recordatorio ya aceptado por un proveedor de notificaciones o mostrado por un
+              dispositivo puede seguir en el historial de notificaciones de ese dispositivo.
+              Elimínalo desde el centro de notificaciones.
+            </li>
+            <li>
+              Tu cuenta de Google, Apple, Facebook o Telegram no se elimina. Gestiona esa cuenta por
+              separado con el proveedor si deseas modificarla o borrarla.
+            </li>
+          </ul>
+        </section>
+      </article>
+
+      <article
+        data-delete-account-locale="de"
+        data-page-title="Dein ZenFlow-Konto löschen"
+        data-language-nav-label="Sprache"
+        lang="de"
+        dir="ltr"
+        aria-labelledby="delete-account-title-de"
+        hidden
+      >
+        <header class="hero">
+          <div class="brand-row">
+            <img
+              class="title-logo"
+              src="/people-first-app/pwa-72.png?v=zenflow-browser-leaf-20260627-r7"
+              width="48"
+              height="48"
+              alt=""
+              aria-hidden="true"
+            />
+            <div>
+              <p class="eyebrow">ZenFlow-Kontolöschung</p>
+              <h1 id="delete-account-title-de">Dein ZenFlow-Konto löschen</h1>
+            </div>
+          </div>
+          <p>
+            Hier erfährst du, wie du die Löschung anforderst, was ZenFlow entfernt und was außerhalb
+            des aktiven Kontos bestehen bleiben kann.
+          </p>
+        </header>
+        <section class="content-section request-card" aria-labelledby="delete-account-request-de">
+          <h2 id="delete-account-request-de">Löschung anfordern</h2>
+          <ol>
+            <li>
+              <strong>In ZenFlow:</strong> Öffne die Einstellungen, wähle „Konto“, tippe auf „Konto
+              löschen“ und bestätige. Das ist der direkte Weg mit geprüftem Login.
+            </li>
+            <li data-deletion-disclosure="support-request">
+              <strong>Ohne Zugriff auf die App:</strong> Schreibe möglichst von der mit deinem
+              ZenFlow-Konto verbundenen Adresse an
+              <a
+                class="action-link"
+                href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                >zenflow.app@gmail.com</a
+              >. Der Support muss möglicherweise prüfen, ob du das Konto kontrollierst. Sende
+              niemals ein Passwort, einen Anmeldecode, einen Wiederherstellungslink, Tagebuchtext
+              oder andere Geheimnisse per E-Mail.
+            </li>
+          </ol>
+        </section>
+        <section class="content-section" aria-labelledby="delete-account-removes-de">
+          <h2 id="delete-account-removes-de">Was gelöscht wird</h2>
+          <ul>
+            <li data-deletion-disclosure="removed-sign-in">
+              Dein ZenFlow-Authentifizierungsdatensatz und die Möglichkeit, dich mit diesem
+              App-Konto anzumelden.
+            </li>
+            <li data-deletion-disclosure="removed-account-data">
+              Die mit dem Konto verknüpften ZenFlow-Daten, darunter synchronisierte Stimmungen,
+              Gewohnheiten, Fokussitzungen, Tagebuchinhalte und -medien, Dankbarkeit, Erinnerungen
+              und Einstellungen. Nach bestätigter Serverlöschung entfernt ZenFlow den isolierten
+              Datenbereich dieses Kontos auf dem aktuellen Gerät. Falls die App meldet, dass die
+              Bereinigung nicht abgeschlossen wurde, starte sie neu, bevor du ein anderes Konto
+              verwendest.
+            </li>
+          </ul>
+        </section>
+        <section class="content-section retention-card" aria-labelledby="delete-account-remains-de">
+          <h2 id="delete-account-remains-de">Was bestehen bleiben kann</h2>
+          <ul>
+            <li data-deletion-disclosure="other-device-copies">
+              Kopien, die bereits auf einem anderen Smartphone, in einem Browser oder auf einem
+              Computer gespeichert sind, werden dort nicht aus der Ferne gelöscht. Lösche die App-
+              oder Browserdaten von ZenFlow auf jedem weiteren Gerät, das du kontrollierst.
+            </li>
+            <li data-deletion-disclosure="retained-feedback">
+              Früher an ZenFlow gesendetes Feedback wird getrennt gespeichert und nicht automatisch
+              mit dem App-Konto gelöscht. Nutze die E-Mail-Adresse oben, wenn der Support einen
+              dazugehörigen Löschantrag prüfen soll.
+            </li>
+            <li data-deletion-disclosure="retained-safety-record">
+              ZenFlow behält einen minimalen, inhaltsfreien Sicherheitsdatensatz zur Löschung, damit
+              ein gelöschtes Konto nicht durch normale Synchronisierung oder die Wiederholung eines
+              Vorgangs zurückkehrt. Er enthält keine Tagebuchtexte, Stimmungsnotizen,
+              Gewohnheitsnamen, Fokusnotizen, Dankbarkeitstexte oder Feedbacknachrichten.
+            </li>
+            <li data-deletion-disclosure="recovery-copies">
+              Gelöschte Kontodatensätze können vorübergehend in Wiederherstellungskopien verbleiben,
+              bis diese nach dem vom Datenbankanbieter verwalteten Zeitplan ersetzt werden. Im
+              normalen ZenFlow-Betrieb sind sie nicht verfügbar. Das aktuell geltende maximale
+              Wiederherstellungsfenster erfährst du unter
+              <a href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                >zenflow.app@gmail.com</a
+              >.
+            </li>
+            <li data-deletion-disclosure="accepted-notifications">
+              Eine Erinnerung, die ein Benachrichtigungsanbieter bereits angenommen oder ein Gerät
+              bereits angezeigt hat, kann im Benachrichtigungsverlauf dieses Geräts verbleiben.
+              Entferne sie in der Mitteilungszentrale des Geräts.
+            </li>
+            <li>
+              Dein Google-, Apple-, Facebook- oder Telegram-Konto wird nicht gelöscht. Verwalte
+              dieses Anbieterkonto separat, wenn du es ändern oder entfernen möchtest.
+            </li>
+          </ul>
+        </section>
+      </article>
+
+      <article
+        data-delete-account-locale="fr"
+        data-page-title="Supprimer votre compte ZenFlow"
+        data-language-nav-label="Langue"
+        lang="fr"
+        dir="ltr"
+        aria-labelledby="delete-account-title-fr"
+        hidden
+      >
+        <header class="hero">
+          <div class="brand-row">
+            <img
+              class="title-logo"
+              src="/people-first-app/pwa-72.png?v=zenflow-browser-leaf-20260627-r7"
+              width="48"
+              height="48"
+              alt=""
+              aria-hidden="true"
+            />
+            <div>
+              <p class="eyebrow">Suppression du compte ZenFlow</p>
+              <h1 id="delete-account-title-fr">Supprimer votre compte ZenFlow</h1>
+            </div>
+          </div>
+          <p>
+            Cette page explique comment demander la suppression, ce que ZenFlow efface et ce qui
+            peut rester en dehors du compte actif.
+          </p>
+        </header>
+        <section class="content-section request-card" aria-labelledby="delete-account-request-fr">
+          <h2 id="delete-account-request-fr">Demander la suppression</h2>
+          <ol>
+            <li>
+              <strong>Dans ZenFlow :</strong> ouvrez Réglages, choisissez Compte, sélectionnez «
+              Supprimer le compte », puis confirmez. Il s’agit du parcours direct avec une session
+              vérifiée.
+            </li>
+            <li data-deletion-disclosure="support-request">
+              <strong>Sans accès à l’application :</strong> écrivez à
+              <a
+                class="action-link"
+                href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                >zenflow.app@gmail.com</a
+              >, si possible depuis l’adresse associée à votre compte ZenFlow. L’assistance peut
+              devoir vérifier que vous contrôlez le compte. N’envoyez jamais de mot de passe, de
+              code de connexion, de lien de récupération, de texte du journal ou d’autre secret par
+              e-mail.
+            </li>
+          </ol>
+        </section>
+        <section class="content-section" aria-labelledby="delete-account-removes-fr">
+          <h2 id="delete-account-removes-fr">Ce qui est supprimé</h2>
+          <ul>
+            <li data-deletion-disclosure="removed-sign-in">
+              Votre enregistrement d’authentification ZenFlow et la possibilité de vous connecter
+              avec ce compte de l’application.
+            </li>
+            <li data-deletion-disclosure="removed-account-data">
+              Les données ZenFlow liées au compte, notamment les humeurs synchronisées, les
+              habitudes, les sessions de concentration, le contenu et les médias du journal, la
+              gratitude, les rappels et les réglages. Une fois la suppression confirmée par le
+              serveur, ZenFlow efface l’espace isolé de ce compte sur l’appareil actuel. Si
+              l’application indique que le nettoyage n’est pas terminé, redémarrez-la avant
+              d’utiliser un autre compte.
+            </li>
+          </ul>
+        </section>
+        <section class="content-section retention-card" aria-labelledby="delete-account-remains-fr">
+          <h2 id="delete-account-remains-fr">Ce qui peut rester</h2>
+          <ul>
+            <li data-deletion-disclosure="other-device-copies">
+              Les copies déjà enregistrées sur un autre téléphone, navigateur ou ordinateur ne sont
+              pas effacées à distance de cet appareil. Effacez les données de l’application ou du
+              navigateur ZenFlow sur chaque autre appareil que vous contrôlez.
+            </li>
+            <li data-deletion-disclosure="retained-feedback">
+              Les retours déjà envoyés à ZenFlow sont conservés séparément et ne sont pas supprimés
+              automatiquement avec le compte. Utilisez l’adresse e-mail ci-dessus si vous souhaitez
+              que l’assistance examine une demande de suppression correspondante.
+            </li>
+            <li data-deletion-disclosure="retained-safety-record">
+              ZenFlow conserve un enregistrement minimal de sécurité, sans contenu créé par la
+              personne, pour empêcher qu’un compte supprimé revienne par la synchronisation normale
+              ou la répétition d’une opération. Il ne contient aucun texte du journal, aucune note
+              d’humeur, aucun nom d’habitude, aucune note de concentration, aucun texte de gratitude
+              et aucun retour.
+            </li>
+            <li data-deletion-disclosure="recovery-copies">
+              Les enregistrements du compte supprimé peuvent rester temporairement dans des copies
+              de récupération, jusqu’à leur remplacement selon le calendrier géré par le fournisseur
+              de la base de données. Ces copies ne sont pas accessibles pendant l’utilisation
+              normale de ZenFlow. Pour connaître la durée maximale de récupération actuellement
+              applicable, écrivez à
+              <a href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                >zenflow.app@gmail.com</a
+              >.
+            </li>
+            <li data-deletion-disclosure="accepted-notifications">
+              Un rappel déjà accepté par un fournisseur de notifications ou affiché par un appareil
+              peut rester dans l’historique des notifications de cet appareil. Supprimez-le depuis
+              le centre de notifications.
+            </li>
+            <li>
+              Votre compte Google, Apple, Facebook ou Telegram n’est pas supprimé. Gérez ce compte
+              séparément auprès du fournisseur si vous souhaitez le modifier ou le supprimer.
+            </li>
+          </ul>
+        </section>
+      </article>
+
+      <article
+        data-delete-account-locale="ja"
+        data-page-title="ZenFlowアカウントを削除する"
+        data-language-nav-label="言語"
+        lang="ja"
+        dir="ltr"
+        aria-labelledby="delete-account-title-ja"
+        hidden
+      >
+        <header class="hero">
+          <div class="brand-row">
+            <img
+              class="title-logo"
+              src="/people-first-app/pwa-72.png?v=zenflow-browser-leaf-20260627-r7"
+              width="48"
+              height="48"
+              alt=""
+              aria-hidden="true"
+            />
+            <div>
+              <p class="eyebrow">ZenFlowアカウントの削除</p>
+              <h1 id="delete-account-title-ja">ZenFlowアカウントを削除する</h1>
+            </div>
+          </div>
+          <p>
+            このページでは、削除の依頼方法、ZenFlowから削除されるもの、アクティブなアカウントの外に残る可能性があるものを説明します。
+          </p>
+        </header>
+        <section class="content-section request-card" aria-labelledby="delete-account-request-ja">
+          <h2 id="delete-account-request-ja">削除を依頼する</h2>
+          <ol>
+            <li>
+              <strong>ZenFlow内で行う場合：</strong
+              >「設定」から「アカウント」を開き、「アカウントを削除」を選んで確認します。これはログイン状態を確認できる直接の手順です。
+            </li>
+            <li data-deletion-disclosure="support-request">
+              <strong>アプリを利用できない場合：</strong
+              >可能であれば、ZenFlowアカウントに登録したメールアドレスから
+              <a
+                class="action-link"
+                href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                >zenflow.app@gmail.com</a
+              >
+              に連絡してください。サポートから、アカウントを管理できる本人であることの確認をお願いする場合があります。パスワード、ログインコード、復旧用リンク、日記本文、その他の秘密情報は送らないでください。
+            </li>
+          </ol>
+        </section>
+        <section class="content-section" aria-labelledby="delete-account-removes-ja">
+          <h2 id="delete-account-removes-ja">削除されるもの</h2>
+          <ul>
+            <li data-deletion-disclosure="removed-sign-in">
+              ZenFlowの認証記録と、このアプリアカウントでログインする機能。
+            </li>
+            <li data-deletion-disclosure="removed-account-data">
+              同期された気分、習慣、集中セッション、日記の本文とメディア、感謝の記録、リマインダー、設定など、アカウントに紐づくZenFlowデータ。サーバーで削除が確認されると、ZenFlowは現在の端末にあるこのアカウント専用のデータ領域を消去します。消去が完了しなかったと表示された場合は、別のアカウントを使う前にアプリを再起動してください。
+            </li>
+          </ul>
+        </section>
+        <section class="content-section retention-card" aria-labelledby="delete-account-remains-ja">
+          <h2 id="delete-account-remains-ja">残る可能性があるもの</h2>
+          <ul>
+            <li data-deletion-disclosure="other-device-copies">
+              別のスマートフォン、ブラウザ、パソコンにすでに保存されたコピーは、この端末から遠隔で消去されません。管理している各端末でZenFlowのアプリデータまたはブラウザデータを消去してください。
+            </li>
+            <li data-deletion-disclosure="retained-feedback">
+              以前ZenFlowへ送信したフィードバックは別に保管され、アカウントと一緒に自動削除されません。関連する削除を依頼する場合は、上記のメール窓口からサポートへ連絡してください。
+            </li>
+            <li data-deletion-disclosure="retained-safety-record">
+              ZenFlowは、削除済みアカウントが通常の同期や処理の再実行で戻らないよう、ユーザー作成内容を含まない最小限の削除安全記録を保持します。日記本文、気分メモ、習慣名、集中メモ、感謝の文章、フィードバック本文は含みません。
+            </li>
+            <li data-deletion-disclosure="recovery-copies">
+              削除済みアカウントの記録は、データベースプロバイダーが管理するスケジュールに沿ってコピーが入れ替わるまで、復旧用コピーに一時的に残る場合があります。通常のZenFlow利用からはアクセスできません。現在適用される最長の復旧期間については、<a
+                href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                >zenflow.app@gmail.com</a
+              >へお問い合わせください。
+            </li>
+            <li data-deletion-disclosure="accepted-notifications">
+              通知サービスがすでに受け付けた、または端末に表示済みのリマインダーは、その端末の通知履歴に残る場合があります。端末の通知センターから削除してください。
+            </li>
+            <li>
+              Google、Apple、Facebook、Telegramのアカウントは削除されません。変更や削除を希望する場合は、各プロバイダーで別に管理してください。
+            </li>
+          </ul>
+        </section>
+      </article>
+
+      <article
+        data-delete-account-locale="ar"
+        data-page-title="حذف حسابك في التطبيق"
+        data-language-nav-label="اللغة"
+        lang="ar"
+        dir="rtl"
+        aria-labelledby="delete-account-title-ar"
+        hidden
+      >
+        <header class="hero">
+          <div class="brand-row">
+            <img
+              class="title-logo"
+              src="/people-first-app/pwa-72.png?v=zenflow-browser-leaf-20260627-r7"
+              width="48"
+              height="48"
+              alt=""
+              aria-hidden="true"
+            />
+            <div>
+              <p class="eyebrow">حذف حساب <bdi dir="ltr">ZenFlow</bdi></p>
+              <h1 id="delete-account-title-ar">حذف حسابك في <bdi dir="ltr">ZenFlow</bdi></h1>
+            </div>
+          </div>
+          <p>
+            توضح هذه الصفحة كيفية طلب الحذف، وما الذي يحذفه <bdi dir="ltr">ZenFlow</bdi>، وما قد
+            يبقى خارج الحساب النشط.
+          </p>
+        </header>
+        <section class="content-section request-card" aria-labelledby="delete-account-request-ar">
+          <h2 id="delete-account-request-ar">طلب الحذف</h2>
+          <ol>
+            <li>
+              <strong>من داخل <bdi dir="ltr">ZenFlow</bdi>:</strong> افتح الإعدادات، واختر الحساب،
+              ثم «حذف الحساب»، وأكّد العملية. هذا هو المسار المباشر بعد التحقق من تسجيل الدخول.
+            </li>
+            <li data-deletion-disclosure="support-request">
+              <strong>إذا تعذر الوصول إلى التطبيق:</strong> أرسل رسالة إلى
+              <a
+                class="action-link"
+                href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                ><bdi dir="ltr">zenflow.app@gmail.com</bdi></a
+              >، ويفضل أن تكون من العنوان المرتبط بحسابك في <bdi dir="ltr">ZenFlow</bdi>. قد يحتاج
+              الدعم إلى التحقق من أنك تتحكم في الحساب. لا ترسل كلمة مرور أو رمز دخول أو رابط استرداد
+              أو نصًا من اليوميات أو أي سر آخر. استخدم موضوع الرسالة
+              <bdi dir="ltr">ZenFlow account deletion</bdi>.
+            </li>
+          </ol>
+        </section>
+        <section class="content-section" aria-labelledby="delete-account-removes-ar">
+          <h2 id="delete-account-removes-ar">ما الذي يُحذف</h2>
+          <ul>
+            <li data-deletion-disclosure="removed-sign-in">
+              سجل المصادقة في <bdi dir="ltr">ZenFlow</bdi> وإمكانية تسجيل الدخول باستخدام حساب
+              التطبيق هذا.
+            </li>
+            <li data-deletion-disclosure="removed-account-data">
+              بيانات <bdi dir="ltr">ZenFlow</bdi> المرتبطة بالحساب، ومنها حالات المزاج والعادات
+              وجلسات التركيز ومحتوى اليوميات ووسائطها والامتنان والتذكيرات والإعدادات التي تمت
+              مزامنتها. بعد تأكيد الحذف على الخادم، يمسح <bdi dir="ltr">ZenFlow</bdi> مساحة البيانات
+              المعزولة لهذا الحساب على الجهاز الحالي. إذا أفاد التطبيق بأن التنظيف لم يكتمل، فأعد
+              تشغيله قبل استخدام حساب آخر.
+            </li>
+          </ul>
+        </section>
+        <section class="content-section retention-card" aria-labelledby="delete-account-remains-ar">
+          <h2 id="delete-account-remains-ar">ما الذي قد يبقى</h2>
+          <ul>
+            <li data-deletion-disclosure="other-device-copies">
+              النسخ المحفوظة سابقًا على هاتف أو متصفح أو حاسوب آخر لا تُمحى عن بُعد من ذلك الجهاز.
+              امسح بيانات تطبيق <bdi dir="ltr">ZenFlow</bdi> أو بياناته في المتصفح على كل جهاز آخر
+              تتحكم فيه.
+            </li>
+            <li data-deletion-disclosure="retained-feedback">
+              الملاحظات التي أرسلتها سابقًا إلى <bdi dir="ltr">ZenFlow</bdi> تُحفظ بشكل منفصل ولا
+              تُحذف تلقائيًا مع حساب التطبيق. استخدم البريد الإلكتروني أعلاه إذا أردت من الدعم
+              مراجعة طلب حذف مرتبط بها.
+            </li>
+            <li data-deletion-disclosure="retained-safety-record">
+              يحتفظ <bdi dir="ltr">ZenFlow</bdi> بسجل أمان محدود وخالٍ من محتوى المستخدم لمنع عودة
+              الحساب المحذوف عبر المزامنة العادية أو إعادة تنفيذ عملية سابقة. لا يتضمن نص اليوميات
+              أو ملاحظات المزاج أو أسماء العادات أو ملاحظات التركيز أو نصوص الامتنان أو محتوى
+              الملاحظات المرسلة.
+            </li>
+            <li data-deletion-disclosure="recovery-copies">
+              قد تبقى سجلات الحساب المحذوف مؤقتًا في نسخ استرداد قاعدة البيانات إلى أن تُستبدل وفق
+              الجدول الذي يديره مزود قاعدة البيانات. لا يمكن الوصول إليها أثناء الاستخدام العادي
+              لـ<bdi dir="ltr">ZenFlow</bdi>. لمعرفة الحد الأقصى الحالي لمدة الاسترداد، راسل
+              <a href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                ><bdi dir="ltr">zenflow.app@gmail.com</bdi></a
+              >.
+            </li>
+            <li data-deletion-disclosure="accepted-notifications">
+              قد يبقى التذكير الذي قبله مزود الإشعارات أو عرضه الجهاز بالفعل في سجل إشعارات ذلك
+              الجهاز. احذفه من مركز الإشعارات على الجهاز.
+            </li>
+            <li>
+              لا يؤدي ذلك إلى حذف حسابك لدى <bdi dir="ltr">Google</bdi> أو
+              <bdi dir="ltr">Apple</bdi> أو <bdi dir="ltr">Facebook</bdi> أو
+              <bdi dir="ltr">Telegram</bdi>. أدِر حساب مزود الهوية بصورة منفصلة إذا أردت تغييره أو
+              حذفه.
+            </li>
+          </ul>
+        </section>
+      </article>
+
+      <article
+        data-delete-account-locale="he"
+        data-page-title="מחיקת החשבון שלך באפליקציה"
+        data-language-nav-label="שפה"
+        lang="he"
+        dir="rtl"
+        aria-labelledby="delete-account-title-he"
+        hidden
+      >
+        <header class="hero">
+          <div class="brand-row">
+            <img
+              class="title-logo"
+              src="/people-first-app/pwa-72.png?v=zenflow-browser-leaf-20260627-r7"
+              width="48"
+              height="48"
+              alt=""
+              aria-hidden="true"
+            />
+            <div>
+              <p class="eyebrow">מחיקת חשבון <bdi dir="ltr">ZenFlow</bdi></p>
+              <h1 id="delete-account-title-he">מחיקת חשבון <bdi dir="ltr">ZenFlow</bdi> שלך</h1>
+            </div>
+          </div>
+          <p>
+            בדף הזה מוסבר איך לבקש מחיקה, מה <bdi dir="ltr">ZenFlow</bdi> מוחק ומה עשוי להישאר מחוץ
+            לחשבון הפעיל.
+          </p>
+        </header>
+        <section class="content-section request-card" aria-labelledby="delete-account-request-he">
+          <h2 id="delete-account-request-he">בקשת מחיקה</h2>
+          <ol>
+            <li>
+              <strong>מתוך <bdi dir="ltr">ZenFlow</bdi>:</strong> יש לפתוח את ההגדרות, לבחור בחשבון,
+              ללחוץ על „מחיקת חשבון” ולאשר. זהו המסלול הישיר לאחר אימות הכניסה.
+            </li>
+            <li data-deletion-disclosure="support-request">
+              <strong>ללא גישה לאפליקציה:</strong> אפשר לכתוב אל
+              <a
+                class="action-link"
+                href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                ><bdi dir="ltr">zenflow.app@gmail.com</bdi></a
+              >, ועדיף מהכתובת המקושרת לחשבון <bdi dir="ltr">ZenFlow</bdi>. ייתכן שהתמיכה תצטרך
+              לוודא שהחשבון בשליטתך. אין לשלוח סיסמה, קוד כניסה, קישור שחזור, טקסט מהיומן או סוד
+              אחר. נושא ההודעה הוא <bdi dir="ltr">ZenFlow account deletion</bdi>.
+            </li>
+          </ol>
+        </section>
+        <section class="content-section" aria-labelledby="delete-account-removes-he">
+          <h2 id="delete-account-removes-he">מה נמחק</h2>
+          <ul>
+            <li data-deletion-disclosure="removed-sign-in">
+              רשומת האימות של <bdi dir="ltr">ZenFlow</bdi> והאפשרות להיכנס באמצעות חשבון האפליקציה
+              הזה.
+            </li>
+            <li data-deletion-disclosure="removed-account-data">
+              נתוני <bdi dir="ltr">ZenFlow</bdi> המקושרים לחשבון, ובהם מצבי רוח, הרגלים, מקטעי
+              מיקוד, תוכן ומדיה של היומן, הכרת תודה, תזכורות והגדרות שסונכרנו. לאחר שהשרת מאשר את
+              המחיקה, <bdi dir="ltr">ZenFlow</bdi> מנקה את מרחב הנתונים המבודד של החשבון הזה במכשיר
+              הנוכחי. אם האפליקציה מדווחת שהניקוי לא הושלם, יש להפעיל אותה מחדש לפני שימוש בחשבון
+              אחר.
+            </li>
+          </ul>
+        </section>
+        <section class="content-section retention-card" aria-labelledby="delete-account-remains-he">
+          <h2 id="delete-account-remains-he">מה עשוי להישאר</h2>
+          <ul>
+            <li data-deletion-disclosure="other-device-copies">
+              עותקים שכבר נשמרו בטלפון, בדפדפן או במחשב אחר אינם נמחקים מרחוק מאותו מכשיר. יש למחוק
+              את נתוני האפליקציה או הדפדפן של <bdi dir="ltr">ZenFlow</bdi> בכל מכשיר נוסף שבשליטתך.
+            </li>
+            <li data-deletion-disclosure="retained-feedback">
+              משוב שנשלח בעבר אל <bdi dir="ltr">ZenFlow</bdi> נשמר בנפרד ואינו נמחק אוטומטית עם
+              חשבון האפליקציה. אפשר להשתמש בכתובת הדוא״ל שלמעלה כדי לבקש מהתמיכה לבדוק בקשת מחיקה
+              קשורה.
+            </li>
+            <li data-deletion-disclosure="retained-safety-record">
+              <bdi dir="ltr">ZenFlow</bdi> שומר רשומת בטיחות מצומצמת וללא תוכן משתמש, כדי למנוע
+              מחשבון שנמחק לחזור באמצעות סנכרון רגיל או הפעלה חוזרת של פעולה. הרשומה אינה כוללת טקסט
+              מהיומן, הערות מצב רוח, שמות הרגלים, הערות מיקוד, טקסט של הכרת תודה או תוכן משוב.
+            </li>
+            <li data-deletion-disclosure="recovery-copies">
+              רשומות של החשבון שנמחק עשויות להישאר זמנית בעותקי שחזור, עד להחלפתם לפי לוח הזמנים
+              שמנהל ספק מסד הנתונים. אין אליהם גישה בשימוש רגיל ב-<bdi dir="ltr">ZenFlow</bdi>. כדי
+              לברר מהו חלון השחזור המרבי שחל כעת, אפשר לכתוב אל
+              <a href="mailto:zenflow.app@gmail.com?subject=ZenFlow%20account%20deletion"
+                ><bdi dir="ltr">zenflow.app@gmail.com</bdi></a
+              >.
+            </li>
+            <li data-deletion-disclosure="accepted-notifications">
+              תזכורת שכבר התקבלה אצל ספק ההתראות או הוצגה במכשיר עשויה להישאר בהיסטוריית ההתראות של
+              אותו מכשיר. יש להסיר אותה ממרכז ההתראות.
+            </li>
+            <li>
+              הפעולה אינה מוחקת את החשבון שלך אצל <bdi dir="ltr">Google</bdi>,‏
+              <bdi dir="ltr">Apple</bdi>,‏ <bdi dir="ltr">Facebook</bdi> או
+              <bdi dir="ltr">Telegram</bdi>. אם ברצונך לשנות או למחוק חשבון של ספק זהות, יש לנהל
+              אותו בנפרד.
+            </li>
+          </ul>
+        </section>
+      </article>
+
+      <noscript>
+        <p class="safety-note" lang="en" dir="ltr">
+          JavaScript is unavailable, so this page is shown in English. The deletion request paths
+          remain usable.
+        </p>
+      </noscript>
+    </main>
+    <script type="module" src="./delete-account-language.mjs"></script>
   </body>
 </html>

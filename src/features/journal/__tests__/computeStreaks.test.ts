@@ -67,4 +67,9 @@ describe('computeStreaks', () => {
     expect(result.get('2025-02-02')).toEqual({ isStart: false, isEnd: false, length: 3 });
     expect(result.get('2025-02-03')).toEqual({ isStart: false, isEnd: true, length: 3 });
   });
+
+  it('treats civil dates around DST as consecutive', () => {
+    const result = computeStreaks(makeMap(['2026-03-07', '2026-03-08', '2026-03-09']));
+    expect(result.get('2026-03-08')).toEqual({ isStart: false, isEnd: false, length: 3 });
+  });
 });

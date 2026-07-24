@@ -33,8 +33,10 @@ export const FeatureToggleItem = memo(function FeatureToggleItem({
   const isDisabled = isCore || isLocked;
 
   return (
-    <div className={`flex items-center justify-between py-3 ${isDisabled ? 'opacity-60' : ''}`}>
-      <div className="flex items-center gap-3 flex-1 min-w-0">
+    <div
+      className={`flex min-w-0 flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-start py-3 ${isDisabled ? 'opacity-60' : ''}`}
+    >
+      <div className="flex min-w-0 flex-1 items-start gap-3">
         <div className="w-9 h-9 rounded-xl bg-secondary/50 flex items-center justify-center shrink-0">
           {isLocked ? (
             <Lock className="w-4 h-4 text-muted-foreground" />
@@ -43,8 +45,10 @@ export const FeatureToggleItem = memo(function FeatureToggleItem({
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">{title}</p>
-          <p className="text-xs text-muted-foreground truncate">
+          <p className="whitespace-normal break-words text-sm font-medium leading-snug text-foreground">
+            {title}
+          </p>
+          <p className="mt-0.5 whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
             {isLocked && lockedMessage ? lockedMessage : description}
           </p>
         </div>
@@ -54,7 +58,7 @@ export const FeatureToggleItem = memo(function FeatureToggleItem({
         onCheckedChange={onToggle}
         disabled={isDisabled}
         aria-label={title}
-        className="shrink-0 ms-3"
+        className="self-end shrink-0 min-[420px]:self-start"
       />
     </div>
   );

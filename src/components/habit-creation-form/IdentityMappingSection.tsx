@@ -119,7 +119,7 @@ export function IdentityMappingSection({
             </p>
             <p
               className={cn(
-                "mt-1 text-[11px] leading-snug",
+                "mt-1 whitespace-normal break-words text-xs leading-snug",
                 isPrimaryCTA ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground",
               )}
             >
@@ -200,14 +200,14 @@ export function IdentityMappingSection({
         <p
           data-testid="identity-icon-inherited"
           className={cn(
-            "rounded-[14px] border px-3 py-2 text-[11px] leading-snug",
+            "rounded-[14px] border px-3 py-2 text-xs leading-snug",
             isPrimaryCTA ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground",
             isPrimaryCTA
               ? "border-[hsl(var(--zf-role-rest)/0.22)] bg-[hsl(var(--zf-role-rest)/0.08)]"
               : "border-border bg-background/55",
           )}
         >
-          <span className="inline-flex items-center gap-1.5">
+          <span className="flex max-w-full items-start gap-1.5">
             {isPrimaryCTA ? (
               <V2HabitPictogram value={displayIcon} className="h-4 w-4" />
             ) : (
@@ -218,7 +218,7 @@ export function IdentityMappingSection({
                 textClassName="text-sm leading-none"
               />
             )}
-            <span>{ts.identityIcon}</span>
+            <span className="min-w-0 whitespace-normal break-words">{ts.identityIcon}</span>
           </span>
         </p>
       </div>

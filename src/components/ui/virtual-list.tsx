@@ -26,7 +26,7 @@ interface VirtualListProps<T> {
 interface VirtualGridProps<T> {
   items: T[];
   renderItem: (item: T, index: number) => ReactNode;
-  itemHeight: number;
+  estimatedItemHeight: number;
   columns: number;
   gap?: number;
   className?: string;
@@ -97,7 +97,7 @@ export function VirtualList<T>({
 export function VirtualGrid<T>({
   items,
   renderItem,
-  itemHeight,
+  estimatedItemHeight,
   columns,
   gap = 12,
   className,
@@ -113,8 +113,14 @@ export function VirtualGrid<T>({
   const virtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => itemHeight + gap,
+    estimateSize: () => estimatedItemHeight + gap,
     overscan,
+    getItemKey: getItemKey
+      ? (rowIndex) => {
+          const firstItemIndex = rowIndex * columns;
+          return getItemKey(items[firstItemIndex], firstItemIndex);
+        }
+      : undefined,
   });
 
   const virtualRows = virtualizer.getVirtualItems();
@@ -135,17 +141,19 @@ export function VirtualGrid<T>({
           return (
             <div
               key={virtualRow.key}
+              data-index={virtualRow.index}
+              ref={virtualizer.measureElement}
               className="absolute top-0 start-0 w-full"
               style={{
-                height: `${virtualRow.size - gap}px`,
                 transform: `translateY(${virtualRow.start}px)`,
+                paddingBottom: gap,
               }}
             >
               <div
-                className="grid h-full"
+                className="grid items-start"
                 style={{
                   gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-                  gap: `${gap}px`,
+                  columnGap: `${gap}px`,
                 }}
               >
                 {rowItems.map((item, colIndex) => {
@@ -153,7 +161,7 @@ export function VirtualGrid<T>({
                   return (
                     <div
                       key={getItemKey ? getItemKey(item, index) : index}
-                      className="h-full"
+                      className="min-w-0"
                     >
                       {renderItem(item, index)}
                     </div>
@@ -162,7 +170,7 @@ export function VirtualGrid<T>({
                 {/* Fill empty columns in last row */}
                 {rowItems.length < columns &&
                   Array.from({ length: columns - rowItems.length }).map(
-                    (_, i) => <div key={`empty-${i}`} className="h-full" />,
+                    (_, i) => <div key={`empty-${i}`} className="min-w-0" />,
                   )}
               </div>
             </div>

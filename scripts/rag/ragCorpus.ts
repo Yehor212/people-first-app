@@ -46,6 +46,7 @@ const PRUNED_DIRECTORIES = new Set([
   "build",
   "coverage",
   "artifacts",
+  "output",
   "assets",
   "generated",
 ]);

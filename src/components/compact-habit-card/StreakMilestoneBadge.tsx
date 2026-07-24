@@ -27,7 +27,7 @@ export const StreakMilestoneBadge = memo(function StreakMilestoneBadge({ streak 
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
       >
         <Crown className="w-3 h-3 text-white" />
-        <span className="text-[10px] font-bold text-white">100+</span>
+        <span className="text-xs font-bold leading-tight text-white">100+</span>
       </motion.div>
     );
   }
@@ -41,7 +41,7 @@ export const StreakMilestoneBadge = memo(function StreakMilestoneBadge({ streak 
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
       >
         <Star className="w-3 h-3 text-white" />
-        <span className="text-[10px] font-bold text-white">30+</span>
+        <span className="text-xs font-bold leading-tight text-white">30+</span>
       </motion.div>
     );
   }
@@ -55,7 +55,7 @@ export const StreakMilestoneBadge = memo(function StreakMilestoneBadge({ streak 
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
       >
         <Zap className="w-3 h-3 text-white" />
-        <span className="text-[10px] font-bold text-white">7+</span>
+        <span className="text-xs font-bold leading-tight text-white">7+</span>
       </motion.div>
     );
   }

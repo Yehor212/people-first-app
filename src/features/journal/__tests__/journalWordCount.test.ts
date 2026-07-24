@@ -43,6 +43,7 @@ const countPrefixes = [
   "journalReadingTimeCount",
   "journalStreakCount",
   "journalPhotoRemainingCount",
+  "journalInactiveBannerCount",
   "journalImportErrorCount",
   "journalStatsDayCount",
   "stickerCount",
@@ -132,6 +133,16 @@ describe("formatLocalizedCount", () => {
     };
 
     expect(formatLocalizedCount(3, "ja", ja, "journalEntryCount")).toBe("3件");
+  });
+
+  it("uses a complete Ukrainian inactivity sentence with the correct day form", () => {
+    const translations = uk as unknown as Record<string, string>;
+    expect(formatLocalizedCount(2, "uk", translations, "journalInactiveBannerCount")).toContain(
+      "2 дні",
+    );
+    expect(formatLocalizedCount(5, "uk", translations, "journalInactiveBannerCount")).toContain(
+      "5 днів",
+    );
   });
 
   it("has count templates with {count} for every supported language", () => {

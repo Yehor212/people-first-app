@@ -97,21 +97,21 @@ export function FriendsPanel({
       >
         <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+            <div className="min-w-0">
               <h2
                 id="friends-panel-title"
-                className="text-2xl font-bold zen-text-gradient flex items-center gap-2"
+                className="zen-text-gradient flex min-w-0 items-start gap-2 text-2xl font-bold"
               >
-                <Users className="w-6 h-6" aria-hidden="true" />
-                {tRecord.friends || "Friends"}
+                <Users className="h-6 w-6 shrink-0" aria-hidden="true" />
+                <span className="min-w-0 break-words">{tRecord.friends || "Friends"}</span>
               </h2>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-end min-[420px]:self-auto">
               <button
                 onClick={() => void actions.handleRefresh()}
                 disabled={actions.isRefreshing}
-                className="p-3 rounded-xl bg-muted hover:bg-muted/80 motion-safe:transition-colors"
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl bg-muted p-3 motion-safe:transition-colors hover:bg-muted/80"
                 aria-label={tRecord.refresh || "Refresh"}
               >
                 <RefreshCw
@@ -121,7 +121,7 @@ export function FriendsPanel({
               </button>
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="p-3 rounded-xl bg-muted hover:bg-muted/80 motion-safe:transition-colors"
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl bg-muted p-3 motion-safe:transition-colors hover:bg-muted/80"
                 aria-label={tRecord.settings || "Settings"}
               >
                 <Settings className="w-4 h-4" aria-hidden="true" />
@@ -129,7 +129,7 @@ export function FriendsPanel({
               <button
                 onClick={onClose}
                 aria-label={tRecord.close || "Close"}
-                className="p-3 rounded-xl bg-muted hover:bg-muted/80 motion-safe:transition-colors"
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl bg-muted p-3 motion-safe:transition-colors hover:bg-muted/80"
               >
                 <X className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -207,7 +207,7 @@ export function FriendsPanel({
                     )}
                     <Button
                       variant="gradient"
-                      className="w-full"
+                      className="h-auto min-h-11 w-full whitespace-normal break-words"
                       onClick={form.throttledAddFriend}
                       disabled={!form.friendCode.trim() || form.isAdding}
                     >
@@ -228,7 +228,7 @@ export function FriendsPanel({
                   >
                     <Button
                       variant="outline"
-                      className="w-full"
+                      className="h-auto min-h-11 w-full whitespace-normal break-words"
                       onClick={() => form.setShowAddFriend(true)}
                     >
                       <UserPlus className="w-4 h-4 me-2" aria-hidden="true" />
@@ -275,7 +275,7 @@ export function FriendsPanel({
                     exit={{ opacity: 0, x: -40 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                    <h3 className="mb-3 break-words text-sm font-medium text-muted-foreground">
                       {tRecord.yourFriends || "Your Friends"} ({data.friends.length})
                     </h3>
 
@@ -320,10 +320,10 @@ export function FriendsPanel({
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground truncate">
+                              <p className="font-medium text-foreground [overflow-wrap:anywhere]">
                                 {friend.displayName}
                               </p>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <Flame className="w-3 h-3 text-orange-500" aria-hidden="true" />
                                   {friend.streakHidden ? "—" : friend.currentStreak}
@@ -363,9 +363,9 @@ export function FriendsPanel({
                       key={activity.id}
                       className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
                     >
-                      <span className="text-lg">{activity.icon}</span>
+                      <span className="shrink-0 text-lg">{activity.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground truncate">
+                        <p className="text-sm text-foreground [overflow-wrap:anywhere]">
                           <span className="font-medium">{activity.friendName}</span>{" "}
                           {activity.description}
                         </p>

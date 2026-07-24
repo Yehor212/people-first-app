@@ -5,6 +5,11 @@ import { fileURLToPath } from "node:url";
 const configDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(configDir, "../../..");
 const artifactRoot = resolve(repoRoot, "output/playwright/android-diary-e2e-20260614");
+const rawPort = process.env.ZENFLOW_ANDROID_DIARY_PORT?.trim() || "4177";
+if (!/^\d+$/.test(rawPort) || Number(rawPort) < 1 || Number(rawPort) > 65535) {
+  throw new Error("ZENFLOW_ANDROID_DIARY_PORT must be a TCP port between 1 and 65535.");
+}
+const baseURL = `https://127.0.0.1:${rawPort}`;
 
 export default defineConfig({
   testDir: repoRoot,
@@ -20,7 +25,7 @@ export default defineConfig({
   },
   outputDir: resolve(artifactRoot, "test-results"),
   use: {
-    baseURL: "https://127.0.0.1:4177",
+    baseURL,
     ignoreHTTPSErrors: true,
     screenshot: "only-on-failure",
     serviceWorkers: "block",
@@ -29,7 +34,7 @@ export default defineConfig({
   },
   webServer: {
     command: `node ${resolve(configDir, "serve-android-spa.mjs")}`,
-    url: "https://127.0.0.1:4177",
+    url: baseURL,
     reuseExistingServer: false,
     timeout: 20_000,
     ignoreHTTPSErrors: true,

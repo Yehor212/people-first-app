@@ -46,7 +46,7 @@ export function TimeInput({
           aria-label={ariaLabel || label}
           className={cn(
             "appearance-none bg-secondary/80 rounded-xl text-foreground font-medium",
-            "h-11 px-4 py-2 text-base md:text-sm",
+            "h-12 min-h-[48px] px-4 py-2 text-base md:text-sm",
             "border-2 border-transparent",
             "focus:outline-none focus:border-primary/30 focus:ring-2 focus:ring-primary/20",
             "hover:bg-secondary motion-safe:transition-all motion-safe:duration-150",
@@ -93,25 +93,28 @@ export function TimeInputInline({
 
   return (
     <div
+      data-time-input-inline="true"
       className={cn(
-        "flex items-center justify-between gap-3 p-3 bg-secondary/50 rounded-xl",
+        "grid min-w-0 grid-cols-1 items-start gap-2 rounded-xl bg-secondary/50 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-3",
         "hover:bg-secondary/70 motion-safe:transition-colors",
         disabled && "opacity-50",
         className
       )}
     >
       {/* Label with optional emoji */}
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex min-w-0 items-start gap-2">
         {icon && (
           <span className="text-lg flex-shrink-0" aria-hidden="true">
             {icon}
           </span>
         )}
-        <span className="text-sm font-medium text-foreground truncate">{label}</span>
+        <span className="min-w-0 break-words text-sm font-medium text-foreground [hyphens:auto] [overflow-wrap:break-word]">
+          {label}
+        </span>
       </div>
 
       {/* Time input */}
-      <div className="relative flex-shrink-0">
+      <div className="relative w-full min-w-0 sm:w-auto">
         <input
           type="time"
           value={value}
@@ -120,7 +123,7 @@ export function TimeInputInline({
           aria-label={ariaLabel || label}
           className={cn(
             "appearance-none bg-background rounded-lg text-foreground font-semibold text-center",
-            "h-11 min-h-[44px] w-24 px-2 text-base md:text-sm",
+            "h-12 min-h-[48px] w-full px-2 text-base sm:w-28 md:text-sm",
             "border border-border",
             "focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20",
             "motion-safe:transition-all motion-safe:duration-150",

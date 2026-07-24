@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { useShouldAnimate } from "../useShouldAnimate";
 import { SSK } from "@/lib/storageKeys";
 
@@ -40,7 +40,11 @@ describe("useShouldAnimate — 8-combination truth table", () => {
   });
 
   it("T1: app motion=on, OS=no, battery=normal → animate", () => {
-    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.9, charging: false } });
+    setInputs({
+      appMotionEnabled: true,
+      osReduce: false,
+      battery: { level: 0.9, charging: false },
+    });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(true);
   });
@@ -52,13 +56,21 @@ describe("useShouldAnimate — 8-combination truth table", () => {
   });
 
   it("T3: app motion=on, OS=no, battery=low+not-charging → NO animate", () => {
-    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.1, charging: false } });
+    setInputs({
+      appMotionEnabled: true,
+      osReduce: false,
+      battery: { level: 0.1, charging: false },
+    });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(false);
   });
 
   it("T4: app motion=on, OS=no, battery=low+charging → animate (charging overrides)", () => {
-    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.05, charging: true } });
+    setInputs({
+      appMotionEnabled: true,
+      osReduce: false,
+      battery: { level: 0.05, charging: true },
+    });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(true);
   });
@@ -70,26 +82,42 @@ describe("useShouldAnimate — 8-combination truth table", () => {
   });
 
   it("T6: app motion=off, OS=no, battery=normal → NO animate", () => {
-    setInputs({ appMotionEnabled: false, osReduce: false, battery: { level: 0.9, charging: false } });
+    setInputs({
+      appMotionEnabled: false,
+      osReduce: false,
+      battery: { level: 0.9, charging: false },
+    });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(false);
   });
 
   it("T7: app motion=off, OS=reduce, battery=low → NO animate (all-off)", () => {
-    setInputs({ appMotionEnabled: false, osReduce: true, battery: { level: 0.05, charging: false } });
+    setInputs({
+      appMotionEnabled: false,
+      osReduce: true,
+      battery: { level: 0.05, charging: false },
+    });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(false);
   });
 
   it("T8: app motion=on, OS=reduce, battery=low → NO animate (two signals)", () => {
-    setInputs({ appMotionEnabled: true, osReduce: true, battery: { level: 0.05, charging: false } });
+    setInputs({
+      appMotionEnabled: true,
+      osReduce: true,
+      battery: { level: 0.05, charging: false },
+    });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(false);
   });
 
   it("T9: runtime performance strained → NO animate even when user/system allow motion", () => {
     document.documentElement.dataset.runtimePerf = "strained";
-    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.9, charging: false } });
+    setInputs({
+      appMotionEnabled: true,
+      osReduce: false,
+      battery: { level: 0.9, charging: false },
+    });
 
     const { result } = renderHook(() => useShouldAnimate());
 
@@ -97,7 +125,11 @@ describe("useShouldAnimate — 8-combination truth table", () => {
   });
 
   it("T10: runtime performance event disables already-mounted animation hooks", () => {
-    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.9, charging: false } });
+    setInputs({
+      appMotionEnabled: true,
+      osReduce: false,
+      battery: { level: 0.9, charging: false },
+    });
     const { result } = renderHook(() => useShouldAnimate());
     expect(result.current).toBe(true);
 
@@ -111,7 +143,11 @@ describe("useShouldAnimate — 8-combination truth table", () => {
 
   it("T11: runtime performance startup warmup -> NO animate before a proven slow device repeats lag", () => {
     document.documentElement.dataset.runtimePerf = "startup";
-    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.9, charging: false } });
+    setInputs({
+      appMotionEnabled: true,
+      osReduce: false,
+      battery: { level: 0.9, charging: false },
+    });
 
     const { result } = renderHook(() => useShouldAnimate());
 
@@ -120,12 +156,38 @@ describe("useShouldAnimate — 8-combination truth table", () => {
 
   it("T12: canonical visual flourishes can opt out of runtime perf guard", () => {
     document.documentElement.dataset.runtimePerf = "startup";
-    setInputs({ appMotionEnabled: true, osReduce: false, battery: { level: 0.9, charging: false } });
+    setInputs({
+      appMotionEnabled: true,
+      osReduce: false,
+      battery: { level: 0.9, charging: false },
+    });
 
-    const { result } = renderHook(() =>
-      useShouldAnimate({ respectRuntimePerformance: false }),
-    );
+    const { result } = renderHook(() => useShouldAnimate({ respectRuntimePerformance: false }));
 
     expect(result.current).toBe(true);
+  });
+
+  it("T13: rechecks runtime performance after subscribing so a mount-boundary limit is not lost", async () => {
+    setInputs({
+      appMotionEnabled: true,
+      osReduce: false,
+      battery: { level: 0.9, charging: false },
+    });
+    const addEventListener = window.addEventListener.bind(window);
+    const addEventListenerSpy = vi
+      .spyOn(window, "addEventListener")
+      .mockImplementation((type, listener, options) => {
+        addEventListener(type, listener, options);
+        if (String(type) === "zenflow:runtime-perf-mode") {
+          document.documentElement.dataset.runtimePerf = "strained";
+        }
+      });
+
+    try {
+      const { result } = renderHook(() => useShouldAnimate());
+      await waitFor(() => expect(result.current).toBe(false));
+    } finally {
+      addEventListenerSpy.mockRestore();
+    }
   });
 });

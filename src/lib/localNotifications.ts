@@ -36,7 +36,9 @@ import { logger } from './logger';
 import { ReminderSettings, Habit, MoodType } from '@/types';
 import {
   getCurrentChannelId,
+  getCurrentSoundOption,
   initializeNotificationChannels,
+  NOTIFICATION_SOUNDS,
   type NotificationChannelCopy,
 } from './notificationSounds';
 import { parseTime } from './timeUtils';
@@ -44,8 +46,30 @@ import { QUICK_ACTIONS_NOTIFICATION_ID } from './notificationIds';
 import { getCurrentSessionUserId } from './supabaseClient';
 import { storageGetRaw, storageSetRaw } from './safeJson';
 import { SK } from './storageKeys';
+import { normalizeHabitReminderDays } from './habitScheduling';
+import {
+  assertVerifiedNotificationRealmCurrent,
+  readVerifiedNotificationRealm,
+} from '@/storage/notificationRealm';
 
 const PRIVATE_CHANNEL_MIGRATION_COMPLETE = 'complete';
+const GENERIC_HABIT_COPY_MIGRATION_COMPLETE = 'complete';
+const IOS_PENDING_CONFIRMATION_RETRY_DELAYS_MS = [0, 25, 75, 150] as const;
+
+class ReminderPendingIdsUnconfirmedError extends Error {
+  constructor(phase: 'replacement' | 'rollback', notifications: LocalNotificationSchema[]) {
+    const expectedIds = notifications.map(({ id }) => id).sort((a, b) => a - b);
+    super(`iOS ${phase} reminder pending IDs were not confirmed: ${expectedIds.join(',')}`);
+    this.name = 'ReminderPendingIdsUnconfirmedError';
+  }
+}
+
+class ReminderReconcileSupersededError extends Error {
+  constructor() {
+    super('Reminder reconciliation was superseded during native confirmation');
+    this.name = 'ReminderReconcileSupersededError';
+  }
+}
 
 let accountNotificationGeneration = 0;
 let accountNotificationsSuspended = false;
@@ -114,6 +138,13 @@ export async function clearAccountNotificationsForBoundary(): Promise<void> {
  */
 function getActiveChannelId(): string {
   return getCurrentChannelId();
+}
+
+function getNotificationSoundPayload(channelId?: string): { sound?: string } {
+  const soundOption = channelId
+    ? NOTIFICATION_SOUNDS.find((option) => option.channelId === channelId)
+    : getCurrentSoundOption();
+  return soundOption?.sound ? { sound: soundOption.sound } : {};
 }
 
 /**
@@ -188,10 +219,18 @@ export interface ReminderReconcileCopy extends ReminderCopy {
 
 export interface ReminderReconcileOptions {
   rollbackChannelId?: string;
+  ownerUserId?: string | null;
+  moodActionsEnabled?: boolean;
+  assertRealmCurrent?: () => Promise<void>;
 }
 
 export type ReminderReconcileResult =
   | { status: 'unsupported' | 'disabled' | 'permission-required' | 'superseded'; scheduledCount: 0 }
+  | {
+      status: 'native-restored' | 'native-uncertain';
+      scheduledCount: 0;
+      error: unknown;
+    }
   | { status: 'scheduled'; scheduledCount: number };
 
 interface GlobalReminderSpec {
@@ -269,6 +308,46 @@ function isReminderOwnedNotificationId(id: number): boolean {
   );
 }
 
+async function removeLegacyPersonalizedHabitNotifications(
+  pendingNotifications: LocalNotificationSchema[],
+  assertRealmCurrent: () => Promise<void>,
+): Promise<Set<number>> {
+  const cancelledPendingIds = new Set<number>();
+  if (
+    storageGetRaw(SK.NOTIFICATION_GENERIC_HABIT_COPY_MIGRATION) ===
+    GENERIC_HABIT_COPY_MIGRATION_COMPLETE
+  ) {
+    return cancelledPendingIds;
+  }
+
+  const pendingHabitNotifications = pendingNotifications.filter(({ id }) =>
+    isHabitReminderNotificationId(id),
+  );
+  if (pendingHabitNotifications.length > 0) {
+    await assertRealmCurrent();
+    await LocalNotifications.cancel({ notifications: pendingHabitNotifications });
+    for (const { id } of pendingHabitNotifications) cancelledPendingIds.add(id);
+  }
+
+  await assertRealmCurrent();
+  const delivered = await LocalNotifications.getDeliveredNotifications();
+  const deliveredHabitNotifications = delivered.notifications.filter(({ id }) =>
+    isHabitReminderNotificationId(id),
+  );
+  if (deliveredHabitNotifications.length > 0) {
+    await assertRealmCurrent();
+    await LocalNotifications.removeDeliveredNotifications({
+      notifications: deliveredHabitNotifications,
+    });
+  }
+
+  storageSetRaw(
+    SK.NOTIFICATION_GENERIC_HABIT_COPY_MIGRATION,
+    GENERIC_HABIT_COPY_MIGRATION_COMPLETE,
+  );
+  return cancelledPendingIds;
+}
+
 function cloneReminderNotifications(
   notifications: LocalNotificationSchema[],
 ): LocalNotificationSchema[] {
@@ -285,10 +364,35 @@ function haveSameNotificationIds(
   return leftIds.every((id, index) => id === rightIds[index]);
 }
 
+async function confirmIosPendingReminderIds(
+  expectedNotifications: LocalNotificationSchema[],
+  assertContextCurrent: () => Promise<void>,
+): Promise<boolean> {
+  if (platform !== 'ios') return true;
+
+  for (const retryDelayMs of IOS_PENDING_CONFIRMATION_RETRY_DELAYS_MS) {
+    if (retryDelayMs > 0) {
+      await new Promise<void>((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+    await assertContextCurrent();
+    const pending = await LocalNotifications.getPending();
+    await assertContextCurrent();
+    const pendingReminderNotifications = pending.notifications.filter(({ id }) =>
+      isReminderOwnedNotificationId(id),
+    );
+    if (haveSameNotificationIds(pendingReminderNotifications, expectedNotifications)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function getRestorableReminderSchedule(
   pendingNotifications: LocalNotificationSchema[],
   generation: number,
   ownerUserId: string | null,
+  moodActionsEnabled: boolean,
   rollbackChannelId?: string,
 ): LocalNotificationSchema[] {
   if (
@@ -307,7 +411,8 @@ function getRestorableReminderSchedule(
   return pendingNotifications.map((notification) => ({
     ...notification,
     channelId: rollbackChannelId ?? getActiveChannelId(),
-    ...(isQuickLogNotificationId(notification.id)
+    ...getNotificationSoundPayload(rollbackChannelId),
+    ...(moodActionsEnabled && isQuickLogNotificationId(notification.id)
       ? { actionTypeId: MOOD_ACTION_TYPE_ID }
       : {}),
   }));
@@ -327,15 +432,11 @@ function rememberReminderSchedule(
 
 async function isReminderReconcileContextCurrent(
   generation: number,
-  ownerUserId: string | null,
+  assertRealmCurrent: () => Promise<void>,
 ): Promise<boolean> {
   if (!isAccountScheduleCurrent(generation)) return false;
-  try {
-    return (await getCurrentSessionUserId()) === ownerUserId;
-  } catch (error) {
-    logger.error('[Notifications] Failed to verify reminder rollback owner:', error);
-    return false;
-  }
+  await assertRealmCurrent();
+  return isAccountScheduleCurrent(generation);
 }
 
 async function restoreReminderScheduleAfterFailure(
@@ -343,33 +444,55 @@ async function restoreReminderScheduleAfterFailure(
   previousNotifications: LocalNotificationSchema[],
   generation: number,
   ownerUserId: string | null,
-): Promise<void> {
-  if (!(await isReminderReconcileContextCurrent(generation, ownerUserId))) return;
+  assertRealmCurrent: () => Promise<void>,
+  confirmPendingIds: (notifications: LocalNotificationSchema[]) => Promise<boolean>,
+): Promise<boolean> {
+  if (!(await isReminderReconcileContextCurrent(generation, assertRealmCurrent))) return false;
+  let restorationCertain = true;
 
   if (attemptedNotifications.length > 0) {
     try {
       // A rejected native batch may have scheduled only some IDs. Remove the
       // whole attempted set before restoring the last known-good snapshot.
+      await assertRealmCurrent();
       await LocalNotifications.cancel({ notifications: attemptedNotifications });
     } catch (error) {
+      restorationCertain = false;
       logger.error('[Notifications] Failed to clear a partial reminder schedule:', error);
     }
   }
 
-  if (!(await isReminderReconcileContextCurrent(generation, ownerUserId))) return;
+  if (!(await isReminderReconcileContextCurrent(generation, assertRealmCurrent))) return false;
 
   if (previousNotifications.length === 0) {
-    rememberReminderSchedule([], generation, ownerUserId);
-    return;
+    const rollbackConfirmed = await confirmPendingIds([]);
+    if (restorationCertain && rollbackConfirmed) {
+      rememberReminderSchedule([], generation, ownerUserId);
+    }
+    return restorationCertain && rollbackConfirmed;
   }
 
   try {
+    await assertRealmCurrent();
     await LocalNotifications.schedule({ notifications: previousNotifications });
-    if (await isReminderReconcileContextCurrent(generation, ownerUserId)) {
-      rememberReminderSchedule(previousNotifications, generation, ownerUserId);
+    const rollbackConfirmed = await confirmPendingIds(previousNotifications);
+    if (!rollbackConfirmed) {
+      logger.error(
+        '[Notifications] Previous reminder pending IDs were not confirmed after rollback',
+      );
+      return false;
     }
+    if (await isReminderReconcileContextCurrent(generation, assertRealmCurrent)) {
+      if (restorationCertain) {
+        rememberReminderSchedule(previousNotifications, generation, ownerUserId);
+      }
+      return restorationCertain;
+    }
+    return false;
   } catch (error) {
+    if (error instanceof ReminderReconcileSupersededError) throw error;
     logger.error('[Notifications] Failed to restore the previous reminder schedule:', error);
+    return false;
   }
 }
 
@@ -381,6 +504,7 @@ function buildGlobalReminderNotifications(
   title: string;
   body: string;
   channelId: string;
+  sound?: string;
   schedule: { on: { hour: number; minute: number; weekday?: number }; allowWhileIdle: boolean };
 }> {
   const days = getSelectedReminderDays(reminders.days);
@@ -394,6 +518,7 @@ function buildGlobalReminderNotifications(
       title: spec.title,
       body: spec.body,
       channelId: getActiveChannelId(),
+      ...getNotificationSoundPayload(),
       schedule: { on: { ...spec.time, weekday: toCapacitorWeekday(day) }, allowWhileIdle: true },
     })),
   );
@@ -509,9 +634,10 @@ function buildHabitReminderNotifications(
 
     notifications.push({
       id: notificationId++,
-      title: `${habit.icon} ${habit.name}`,
-      body: translations.reminderBody.replace('{habit}', habit.name),
+      title: translations.reminderTitle,
+      body: translations.reminderBody,
       channelId: getActiveChannelId(),
+      ...getNotificationSoundPayload(),
       schedule: {
         on: weekday === undefined ? time : { ...time, weekday },
         allowWhileIdle: true,
@@ -521,6 +647,7 @@ function buildHabitReminderNotifications(
 
   for (const habit of habits) {
     if (habitReminderCapacityReached) break;
+    if (habit.isArchived) continue;
     if (!habit.reminders || habit.reminders.length === 0) continue;
 
     for (const reminder of habit.reminders) {
@@ -528,13 +655,10 @@ function buildHabitReminderNotifications(
       if (!reminder.enabled) continue;
 
       const time = parseTime(reminder.time, 9, 0);
-      if (reminder.days && reminder.days.length > 0) {
-        for (const day of getSelectedReminderDays(reminder.days)) {
-          if (habitReminderCapacityReached) break;
-          addHabitNotification(habit, time, toCapacitorWeekday(day));
-        }
-      } else {
-        addHabitNotification(habit, time);
+      const selectedDays = normalizeHabitReminderDays(reminder.days);
+      for (const day of selectedDays) {
+        if (habitReminderCapacityReached) break;
+        addHabitNotification(habit, time, toCapacitorWeekday(day));
       }
     }
   }
@@ -651,7 +775,7 @@ export async function setupNotificationActionListener(): Promise<() => Promise<v
       ) return;
 
       const moodType = moodEntry[0] as MoodType;
-      logger.log('Quick mood logged:', moodType);
+      logger.log('Quick mood action completed');
       registration.callback(moodType);
     }
   );
@@ -702,6 +826,7 @@ function buildMoodQuickLogNotifications(
   policy: ReminderSchedulePolicy | undefined,
   generation: number,
   ownerUserId: string | null,
+  moodActionsEnabled = true,
 ): LocalNotificationSchema[] {
   if (policy && isWithinQuietHours(time, policy.quietHours)) {
     return [];
@@ -720,9 +845,11 @@ function buildMoodQuickLogNotifications(
         title: '💜 ZenFlow',
         body: message,
         channelId: getActiveChannelId(),
+        ...getNotificationSoundPayload(),
         schedule: { on: time, every: 'day', allowWhileIdle: true },
-        actionTypeId: MOOD_ACTION_TYPE_ID,
-        extra: notificationAccountContext,
+        ...(moodActionsEnabled
+          ? { actionTypeId: MOOD_ACTION_TYPE_ID, extra: notificationAccountContext }
+          : {}),
       },
     ];
   }
@@ -732,12 +859,14 @@ function buildMoodQuickLogNotifications(
     title: '💜 ZenFlow',
     body: message,
     channelId: getActiveChannelId(),
+    ...getNotificationSoundPayload(),
     schedule: {
       on: { ...time, weekday: toCapacitorWeekday(day) },
       allowWhileIdle: true,
     },
-    actionTypeId: MOOD_ACTION_TYPE_ID,
-    extra: notificationAccountContext,
+    ...(moodActionsEnabled
+      ? { actionTypeId: MOOD_ACTION_TYPE_ID, extra: notificationAccountContext }
+      : {}),
   }));
 }
 
@@ -752,7 +881,9 @@ async function scheduleJournalReminderOperation(
     await initializeNotificationChannel();
 
     const permission = await LocalNotifications.checkPermissions();
-    if (permission.display !== 'granted') return;
+    if (permission.display !== 'granted') {
+      throw new Error('Notification permission is not granted');
+    }
 
     // Cancel existing journal reminder
     await cancelJournalReminder();
@@ -764,6 +895,7 @@ async function scheduleJournalReminderOperation(
         title: copy.title,
         body: copy.body,
         channelId: getActiveChannelId(),
+        ...getNotificationSoundPayload(),
         schedule: { on: time, every: 'day', allowWhileIdle: true },
       }],
     });
@@ -771,6 +903,7 @@ async function scheduleJournalReminderOperation(
     logger.log('[Notifications] Journal reminder scheduled for', `${time.hour}:${time.minute}`);
   } catch (error) {
     logger.error('[Notifications] Failed to schedule journal reminder:', error);
+    throw error;
   }
 }
 
@@ -793,6 +926,7 @@ export async function cancelJournalReminder(): Promise<void> {
     }
   } catch (error) {
     logger.error('[Notifications] Failed to cancel journal reminder:', error);
+    throw error;
   }
 }
 
@@ -870,6 +1004,44 @@ export async function cancelMoodQuickLogNotification(): Promise<void> {
 }
 
 let reminderReconcileTail: Promise<unknown> = Promise.resolve();
+let latestReminderReconcileRevision = 0;
+
+interface ResolvedReminderRealm {
+  ownerUserId: string | null;
+  moodActionsEnabled: boolean;
+  assertRealmCurrent: () => Promise<void>;
+}
+
+async function resolveReminderRealm(
+  options: ReminderReconcileOptions,
+): Promise<ResolvedReminderRealm> {
+  const hasInjectedRealm =
+    Object.prototype.hasOwnProperty.call(options, 'ownerUserId') ||
+    options.moodActionsEnabled !== undefined ||
+    options.assertRealmCurrent !== undefined;
+
+  if (hasInjectedRealm) {
+    if (
+      !Object.prototype.hasOwnProperty.call(options, 'ownerUserId') ||
+      typeof options.moodActionsEnabled !== 'boolean' ||
+      typeof options.assertRealmCurrent !== 'function'
+    ) {
+      throw new Error('Incomplete notification realm guard');
+    }
+    return {
+      ownerUserId: options.ownerUserId ?? null,
+      moodActionsEnabled: options.moodActionsEnabled,
+      assertRealmCurrent: options.assertRealmCurrent,
+    };
+  }
+
+  const realm = await readVerifiedNotificationRealm();
+  return {
+    ownerUserId: realm.ownerUserId,
+    moodActionsEnabled: realm.kind === 'account',
+    assertRealmCurrent: () => assertVerifiedNotificationRealmCurrent(realm),
+  };
+}
 
 /**
  * The single production owner for the master reminder schedule. Calls are
@@ -884,25 +1056,58 @@ export async function reconcileReminderNotifications(
 ): Promise<ReminderReconcileResult> {
   if (!isNative) return { status: 'unsupported', scheduledCount: 0 };
 
+  const reconcileRevision = ++latestReminderReconcileRevision;
   const previousReconcile = reminderReconcileTail;
   const resultPromise = trackAccountSchedule(async (generation): Promise<ReminderReconcileResult> => {
     await previousReconcile.catch(() => undefined);
-    if (!isAccountScheduleCurrent(generation)) {
+    if (
+      !isAccountScheduleCurrent(generation) ||
+      reconcileRevision !== latestReminderReconcileRevision
+    ) {
       return { status: 'superseded', scheduledCount: 0 };
     }
+    const realm = await resolveReminderRealm(options);
+    if (reconcileRevision !== latestReminderReconcileRevision) {
+      return { status: 'superseded', scheduledCount: 0 };
+    }
+    const assertNativeContextCurrent = async (): Promise<void> => {
+      if (!isAccountScheduleCurrent(generation)) {
+        throw new Error('Notification reconcile was superseded by an account boundary');
+      }
+      await realm.assertRealmCurrent();
+      if (!isAccountScheduleCurrent(generation)) {
+        throw new Error('Notification reconcile was superseded by an account boundary');
+      }
+    };
+
+    await assertNativeContextCurrent();
+    const pendingSnapshot = await LocalNotifications.getPending();
+    if (reminders.enabled) {
+      // Preparing immutable Android channels must succeed before either migration
+      // removes the last known-good native schedule or advances its durable marker.
+      await assertNativeContextCurrent();
+      await initializeNotificationChannel(copy.channelCopy);
+      await assertNativeContextCurrent();
+    }
+    const migratedPendingIds = await removeLegacyPersonalizedHabitNotifications(
+      pendingSnapshot.notifications,
+      assertNativeContextCurrent,
+    );
     if (!reminders.enabled) {
-      const pending = await LocalNotifications.getPending();
-      const ownedNotifications = pending.notifications.filter((notification) =>
-        isReminderOwnedNotificationId(notification.id),
+      const ownedNotifications = pendingSnapshot.notifications.filter(
+        (notification) =>
+          isReminderOwnedNotificationId(notification.id) &&
+          !migratedPendingIds.has(notification.id),
       );
       if (ownedNotifications.length > 0) {
+        await assertNativeContextCurrent();
         await LocalNotifications.cancel({ notifications: ownedNotifications });
       }
       lastSuccessfulReminderSchedule = null;
       return { status: 'disabled', scheduledCount: 0 };
     }
 
-    const ownerUserId = await getCurrentSessionUserId();
+    const ownerUserId = realm.ownerUserId;
     const moodCheckInsEnabled = isReminderCategoryEnabled(
       reminders.moodCheckInsEnabled,
       reminders,
@@ -950,6 +1155,7 @@ export async function reconcileReminderNotifications(
           { days: reminders.days, quietHours: reminders.quietHours },
           generation,
           ownerUserId,
+          realm.moodActionsEnabled,
         )
       : [];
     const notifications = [
@@ -959,7 +1165,6 @@ export async function reconcileReminderNotifications(
     ];
 
     const desiredIds = new Set(notifications.map(({ id }) => id));
-    const pendingSnapshot = await LocalNotifications.getPending();
     const ownedNotifications = pendingSnapshot.notifications.filter((notification) =>
       isReminderOwnedNotificationId(notification.id),
     );
@@ -970,10 +1175,12 @@ export async function reconcileReminderNotifications(
     const obsoleteNotifications = ownedNotifications.filter(
       ({ id }) => !desiredIds.has(id),
     );
-    const prePermissionCancellation = privateChannelMigrationPending
+    const prePermissionCancellation = (privateChannelMigrationPending
       ? ownedNotifications
-      : obsoleteNotifications;
+      : obsoleteNotifications
+    ).filter(({ id }) => !migratedPendingIds.has(id));
     if (prePermissionCancellation.length > 0) {
+      await assertNativeContextCurrent();
       await LocalNotifications.cancel({ notifications: prePermissionCancellation });
     }
     if (privateChannelMigrationPending) {
@@ -983,20 +1190,15 @@ export async function reconcileReminderNotifications(
       );
     }
 
-    // Android channel properties are immutable. Only current private channels
-    // may receive new schedules; removals above remain possible without permission.
-    await initializeNotificationChannel(copy.channelCopy);
     const permission = await LocalNotifications.checkPermissions();
     if (permission.display !== 'granted') {
       return { status: 'permission-required', scheduledCount: 0 };
     }
 
-    if (
-      !isAccountScheduleCurrent(generation) ||
-      (await getCurrentSessionUserId()) !== ownerUserId
-    ) {
+    if (!isAccountScheduleCurrent(generation)) {
       return { status: 'superseded', scheduledCount: 0 };
     }
+    await assertNativeContextCurrent();
 
     const previousDesiredNotifications = ownedNotifications.filter(({ id }) =>
       desiredIds.has(id),
@@ -1005,33 +1207,71 @@ export async function reconcileReminderNotifications(
       previousDesiredNotifications,
       generation,
       ownerUserId,
+      realm.moodActionsEnabled,
       options.rollbackChannelId,
     );
-    const preCancelledIds = new Set(prePermissionCancellation.map(({ id }) => id));
+    const preCancelledIds = new Set([
+      ...migratedPendingIds,
+      ...prePermissionCancellation.map(({ id }) => id),
+    ]);
     const remainingOwnedNotifications = ownedNotifications.filter(
       ({ id }) => !preCancelledIds.has(id),
     );
     if (remainingOwnedNotifications.length > 0) {
+      await assertNativeContextCurrent();
       await LocalNotifications.cancel({ notifications: remainingOwnedNotifications });
     }
-    if (
-      !isAccountScheduleCurrent(generation) ||
-      (await getCurrentSessionUserId()) !== ownerUserId
-    ) {
+    if (!isAccountScheduleCurrent(generation)) {
       return { status: 'superseded', scheduledCount: 0 };
     }
-    if (notifications.length > 0) {
-      try {
+    await assertNativeContextCurrent();
+    const assertPendingConfirmationContextCurrent = async (): Promise<void> => {
+      if (reconcileRevision !== latestReminderReconcileRevision) {
+        throw new ReminderReconcileSupersededError();
+      }
+      await assertNativeContextCurrent();
+      if (reconcileRevision !== latestReminderReconcileRevision) {
+        throw new ReminderReconcileSupersededError();
+      }
+    };
+    const confirmPendingIds = (expectedNotifications: LocalNotificationSchema[]) =>
+      confirmIosPendingReminderIds(
+        expectedNotifications,
+        assertPendingConfirmationContextCurrent,
+      );
+    try {
+      if (notifications.length > 0) {
+        await assertNativeContextCurrent();
         await LocalNotifications.schedule({ notifications });
-      } catch (error) {
-        await restoreReminderScheduleAfterFailure(
+      }
+      if (!(await confirmPendingIds(notifications))) {
+        throw new ReminderPendingIdsUnconfirmedError('replacement', notifications);
+      }
+    } catch (error) {
+      if (error instanceof ReminderReconcileSupersededError) {
+        return { status: 'superseded', scheduledCount: 0 };
+      }
+      let previousScheduleRestored = false;
+      try {
+        previousScheduleRestored = await restoreReminderScheduleAfterFailure(
           notifications,
           previousNotifications,
           generation,
           ownerUserId,
+          assertNativeContextCurrent,
+          confirmPendingIds,
         );
-        throw error;
+      } catch (rollbackError) {
+        if (rollbackError instanceof ReminderReconcileSupersededError) {
+          return { status: 'superseded', scheduledCount: 0 };
+        }
+        logger.error('[Notifications] Reminder rollback context is no longer valid:', rollbackError);
       }
+      return {
+        status: previousScheduleRestored ? 'native-restored' : 'native-uncertain',
+        scheduledCount: 0,
+        error,
+      };
     }
     rememberReminderSchedule(notifications, generation, ownerUserId);
     return { status: 'scheduled', scheduledCount: notifications.length };

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const source = {
   editor: readFileSync("src/features/journal/JournalEntryEditor.tsx", "utf8"),
+  editorState: readFileSync("src/features/journal/useJournalEditorState.ts", "utf8"),
   entryList: readFileSync("src/features/journal/JournalEntryList.tsx", "utf8"),
   hubShell: readFileSync("src/features/journal/JournalHubShell.tsx", "utf8"),
   module: readFileSync("src/features/journal/JournalModule.tsx", "utf8"),
@@ -11,6 +12,9 @@ const source = {
   stickerPicker: readFileSync("src/features/journal/JournalStickerPicker.tsx", "utf8"),
   shortcuts: readFileSync("src/features/journal/KeyboardShortcutsOverlay.tsx", "utf8"),
   saveIndicator: readFileSync("src/features/journal/SaveIndicator.tsx", "utf8"),
+  lockScreen: readFileSync("src/features/journal/JournalLockScreen.tsx", "utf8"),
+  viewer: readFileSync("src/features/journal/JournalEntryViewer.tsx", "utf8"),
+  breathe: readFileSync("src/features/journal/DiaryBreatheWidget.tsx", "utf8"),
   emptyCanvas: readFileSync("src/features/journal/DiaryEmptyCanvas.tsx", "utf8"),
   journalQuotes: readFileSync("src/features/journal/journalQuotes.ts", "utf8"),
   useJournal: readFileSync("src/features/journal/useJournal.ts", "utf8"),
@@ -21,6 +25,11 @@ const localeFiles = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"].map((langua
   language,
   source: readFileSync("src/i18n/languages/" + language + ".ts", "utf8"),
 }));
+
+function expectStringProperty(fileSource: string, key: string, value: string): void {
+  const escapedValue = JSON.stringify(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  expect(fileSource).toMatch(new RegExp(`${key}:\\s*${escapedValue}`));
+}
 
 const requiredJournalKeys = [
   "journalWriteEntry",
@@ -79,6 +88,67 @@ const requiredJournalKeys = [
 ];
 
 describe("Journal accessibility, copy, and wallpaper static contracts", () => {
+  it("describes concealed previews and text deletion truthfully in every locale", () => {
+    const expected = {
+      en: {
+        privateTitle: "Entry preview hidden",
+        privateHint: "Change the diary screen privacy setting to see this entry.",
+        deleted: "The text was deleted.",
+        count: "{count} release records",
+      },
+      uk: {
+        privateTitle: "Попередній перегляд запису приховано",
+        privateHint: "Змініть налаштування приватності екрана щоденника, щоб переглянути цей запис.",
+        deleted: "Текст видалено.",
+        count: "{count} записів про видалення тексту",
+      },
+      es: {
+        privateTitle: "Vista previa de la entrada oculta",
+        privateHint: "Cambia el ajuste de privacidad en pantalla del diario para ver esta entrada.",
+        deleted: "El texto se eliminó.",
+        count: "{count} registros de eliminación",
+      },
+      de: {
+        privateTitle: "Eintragsvorschau ausgeblendet",
+        privateHint: "Ändere die Einstellung zum Sichtschutz des Tagebuchs, um diesen Eintrag zu sehen.",
+        deleted: "Der Text wurde gelöscht.",
+        count: "{count} Löschvorgänge",
+      },
+      fr: {
+        privateTitle: "Aperçu de l’entrée masqué",
+        privateHint: "Modifiez le réglage de confidentialité à l’écran du journal pour voir cette entrée.",
+        deleted: "Le texte a été supprimé.",
+        count: "{count} suppressions de texte",
+      },
+      ja: {
+        privateTitle: "記録のプレビューは非表示です",
+        privateHint: "この記録を表示するには、日記の画面プライバシー設定を変更してください。",
+        deleted: "テキストを削除しました。",
+        count: "{count}件の削除記録",
+      },
+      ar: {
+        privateTitle: "معاينة التدوينة مخفية",
+        privateHint: "غيّر إعداد خصوصية شاشة اليوميات لعرض هذه التدوينة.",
+        deleted: "تم حذف النص.",
+        count: "{count} سجل حذف",
+      },
+      he: {
+        privateTitle: "התצוגה המקדימה של הרשומה מוסתרת",
+        privateHint: "כדי לראות את הרשומה, יש לשנות את הגדרת פרטיות המסך של היומן.",
+        deleted: "הטקסט נמחק.",
+        count: "{count} רשומות מחיקה",
+      },
+    } as const;
+
+    for (const locale of localeFiles) {
+      const copy = expected[locale.language as keyof typeof expected];
+      expectStringProperty(locale.source, "journalPrivateEntry", copy.privateTitle);
+      expectStringProperty(locale.source, "journalPrivateEntryHint", copy.privateHint);
+      expectStringProperty(locale.source, "journalBurnReleasedMessage", copy.deleted);
+      expectStringProperty(locale.source, "journalReleaseTraceCountOther", copy.count);
+    }
+  });
+
   it("registers every journal key used by new diary a11y/copy surfaces", () => {
     for (const key of requiredJournalKeys) {
       expect(source.types, key + " missing from Translations").toContain(key + ": string;");
@@ -103,7 +173,27 @@ describe("Journal accessibility, copy, and wallpaper static contracts", () => {
     expect(source.editor).toContain("<SaveIndicator");
     expect(source.editor).toContain("state={saveState}");
     expect(source.editor).toContain("onRetry={handleRetry}");
+    expect(source.editor).toContain("retryLabel={");
+    expect(source.editor).toContain("ts.journalSaveConflictRetry");
+    expect(source.editor).toContain('saveFailureReason === "conflict" ? ts.journalSaveConflictHint');
     expect(source.editor).toContain('aria-busy={saveState === "saving"}');
+  });
+
+  it("keeps recovery copy truthful about encrypted content and corrective errors persistent", () => {
+    expect(source.lockScreen).not.toContain("Auto-clear error message after 3s");
+    expect(source.lockScreen).not.toContain('setTimeout(() => setError(""), 3000)');
+    for (const locale of localeFiles) {
+      const recoveryLine = locale.source.match(/journalResetDesktopUnavailable:\s*[\s\S]*?\n\s*journalClose:/)?.[0] ?? "";
+      expect(recoveryLine, `${locale.language} recovery copy`).toMatch(/encrypt|decrypt|шифр|cifrad|descif|verschl|entschl|chiffr|déchiffr|暗号|復号|مشف|تشفير|מוצפ|לפענח/i);
+    }
+  });
+
+  it("binds independent paper surfaces to paper-aware text colors", () => {
+    expect(source.viewer).toContain("--journal-paper-text");
+    expect(source.viewer).toContain("--journal-paper-muted");
+    expect(source.editor).toContain("--journal-paper-text");
+    expect(source.breathe).toContain("text-[var(--journal-paper-text");
+    expect(source.editor).toContain("text-[var(--journal-paper-text");
   });
 
   it("adds modal semantics and keyboard/back/focus handling to editor confirmation overlays", () => {
@@ -121,6 +211,26 @@ describe("Journal accessibility, copy, and wallpaper static contracts", () => {
     expect(source.editor).toContain("deleteDialogA11y.handleKeyDown");
     expect(source.editor).toContain("unsavedDialogA11y.handleKeyDown");
     expect(source.editor).toContain("settingsDialogA11y.handleKeyDown");
+  });
+
+  it("treats the portaled mobile editor as a real modal boundary", () => {
+    expect(source.editor).toContain('role={desktop ? undefined : "dialog"}');
+    expect(source.editor).toContain('aria-modal={desktop ? undefined : true}');
+    expect(source.editorState).toContain('document.getElementById("root")');
+    expect(source.editorState).toContain("appRoot.inert = true");
+    expect(source.editorState).toContain('appRoot.setAttribute("aria-hidden", "true")');
+    expect(source.editorState).toContain("appRoot.inert = previousInert");
+    expect(source.editorState).toContain('appRoot.removeAttribute("aria-hidden")');
+    expect(source.editorState).toContain("createFocusTrap(editorOverlayRef.current)");
+  });
+
+  it("places floating-photo semantics after the journal text in editor and viewer", () => {
+    expect(source.editor.indexOf("<FloatingMediaLayer")).toBeGreaterThan(
+      source.editor.indexOf('data-testid="journal-entry-metrics"'),
+    );
+    expect(source.viewer.indexOf("<ReadOnlyFloatingMediaLayer")).toBeGreaterThan(
+      source.viewer.indexOf("renderContent(displayContent)"),
+    );
   });
 
   it("keeps mobile shared wallpaper from nesting a memory backdrop", () => {
@@ -179,8 +289,10 @@ describe("Journal accessibility, copy, and wallpaper static contracts", () => {
     expect(source.journalQuotes).toContain("quoteJournal1");
     expect(source.journalQuotes).toContain("quoteJournal30");
     expect(source.emptyCanvas).toContain("getJournalQuote(ts)");
-    expect(source.entryList).toContain("getJournalQuote(ts)");
-    expect(source.module).toContain("getJournalQuote(ts)");
+    expect(source.entryList).toContain(
+      'getJournalQuote(ts, parseLocalDate(currentDay), { scope: "all" })',
+    );
+    expect(source.module).not.toContain('from "./journalQuotes"');
     expect(source.entryList).not.toContain("ts.journalEmptyQuote");
     expect(source.emptyCanvas).toContain('data-testid="diary-reflection-quote"');
     expect(source.emptyCanvas).toContain("journalReflectionQuoteLabel");
@@ -224,11 +336,16 @@ describe("Journal accessibility, copy, and wallpaper static contracts", () => {
     expect(source.saveIndicator).toContain("journalSaveFailedHint");
     expect(source.saveIndicator).toContain('role={state === "error" ? "alert" : "status"}');
     expect(source.saveIndicator).toContain('aria-live={state === "error" ? "assertive" : "polite"}');
+    expect(source.shortcuts).toContain("useModalA11y(open, onClose)");
+    expect(source.shortcuts).toContain("journalShortcutToggleCompact");
+    expect(source.shortcuts).toContain("min-h-[44px]");
+    expect(source.editor).toContain('ts.diaryPrivacyShield || "Screen shield"');
   });
 
   it("keeps copy neutral while restoring the full legacy quoteJournal contract", () => {
     expect(source.entryList).not.toContain("Your thoughts are worth preserving");
-    expect(source.module).toContain("journalWriteFirstEntry");
+    expect(source.emptyCanvas).toContain("journalNewEntry");
+    expect(source.emptyCanvas).not.toContain("journalInactiveBannerCount");
     expect(source.types).toContain("quoteJournal1: string;");
     expect(source.types).toContain("quoteJournal30: string;");
     for (const locale of localeFiles) {
@@ -244,6 +361,15 @@ describe("Journal accessibility, copy, and wallpaper static contracts", () => {
       "selectedStyleStatusItems.push(backgroundAriaLabel, particleSpeedAriaLabel);"
     );
     expect(source.editor).toContain("selectedStyleStatusItems.join");
+  });
+
+  it("formats selected style announcements from complete localized messages", () => {
+    expect(source.editor).toMatch(/interpolate\(\s*ts\.journalFontSizeSelected/);
+    expect(source.editor).toMatch(/interpolate\(\s*ts\.journalBackgroundSelected/);
+    expect(source.editor).toMatch(/interpolate\(\s*ts\.journalMotionSelected/);
+    expect(source.editor).toMatch(/interpolate\(\s*ts\.journalTextureSelected/);
+    expect(source.editor).toMatch(/interpolate\(\s*ts\.journalSceneSelected/);
+    expect(source.editor).not.toContain("t.ariaFontSize + \": \" + FONT_SIZES[fontSize]");
   });
 
   it("lets shared-wallpaper paper color visibly affect the editor paper", () => {

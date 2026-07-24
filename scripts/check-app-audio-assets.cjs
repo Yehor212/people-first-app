@@ -89,6 +89,32 @@ const STALE_RUNTIME_STRINGS = [
   'sounds/mixkit-underwater-transmitter-hum-2135.mp3',
 ];
 
+const TEXT_OUTPUT_ARTIFACT_EXTENSIONS = new Set([
+  '.cjs',
+  '.css',
+  '.csv',
+  '.d',
+  '.html',
+  '.htm',
+  '.ini',
+  '.js',
+  '.json',
+  '.jsx',
+  '.map',
+  '.md',
+  '.mjs',
+  '.plist',
+  '.properties',
+  '.svg',
+  '.toml',
+  '.ts',
+  '.tsx',
+  '.txt',
+  '.xml',
+  '.yaml',
+  '.yml',
+]);
+
 function fail(message, details = {}) {
   console.error('[app-audio-qc] FAIL - ' + message);
   if (Object.keys(details).length > 0) console.error(JSON.stringify(details, null, 2));
@@ -97,6 +123,19 @@ function fail(message, details = {}) {
 
 function assert(condition, message, details) {
   if (!condition) fail(message, details);
+}
+
+function parseCliOptions(argv) {
+  if (argv.length === 0) return { writeReport: false };
+  if (argv.length === 1 && argv[0] === '--write-report') return { writeReport: true };
+  if (argv[0] === '--write-report' && argv.length > 1) {
+    throw new Error('--write-report writes to output/audio-qc/app-audio-assets-report.json and does not accept a path');
+  }
+  throw new Error('unknown app audio QC option: ' + argv.join(' '));
+}
+
+function validateCommandLine(argv = process.argv.slice(2)) {
+  return parseCliOptions(argv);
 }
 
 function parseAssets(source) {
@@ -477,31 +516,95 @@ function scanDocsAssetsForStaleStrings() {
   return files.map((file) => path.relative(rootDir, file));
 }
 
-function collectOutputArtifactFiles() {
-  const outputDir = path.join(rootDir, 'output');
-  if (!fs.existsSync(outputDir)) return [];
-  return walk(outputDir, []).filter((file) => fs.statSync(file).isFile() && path.resolve(file) !== appAudioAssetsReportPath);
+function isVolatileOutputRace(error) {
+  return error && (error.code === 'ENOENT' || error.code === 'ENOTDIR');
 }
 
-function scanOutputArtifactsForStaleStrings() {
-  const files = collectOutputArtifactFiles();
+function walkVolatileOutputArtifacts(dir, files = []) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch (error) {
+    if (isVolatileOutputRace(error)) return files;
+    throw error;
+  }
+
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walkVolatileOutputArtifacts(full, files);
+    else files.push(full);
+  }
+  return files;
+}
+
+function isExistingOutputFile(file) {
+  try {
+    return fs.statSync(file).isFile();
+  } catch (error) {
+    if (isVolatileOutputRace(error)) return false;
+    throw error;
+  }
+}
+
+function collectOutputArtifactFiles(
+  outputDir = path.join(rootDir, 'output'),
+  reportPath = appAudioAssetsReportPath,
+) {
+  if (!fs.existsSync(outputDir)) return [];
+  return walkVolatileOutputArtifacts(outputDir, []).filter((file) =>
+    isExistingOutputFile(file) && path.resolve(file) !== path.resolve(reportPath));
+}
+
+function isTextOutputArtifact(file) {
+  return TEXT_OUTPUT_ARTIFACT_EXTENSIONS.has(path.extname(file).toLowerCase());
+}
+
+function inspectOutputArtifacts({
+  outputDir = path.join(rootDir, 'output'),
+  reportPath = appAudioAssetsReportPath,
+  forbiddenRootMp3s = FORBIDDEN_ROOT_MP3S,
+  staleRuntimeStrings = STALE_RUNTIME_STRINGS,
+} = {}) {
+  const files = collectOutputArtifactFiles(outputDir, reportPath);
+  const scannedFiles = [];
+  const textFiles = [];
   const matches = [];
   for (const file of files) {
+    scannedFiles.push(file);
     const relative = path.relative(rootDir, file);
     const baseName = path.basename(file);
-    if (FORBIDDEN_ROOT_MP3S.includes(baseName)) {
+    if (forbiddenRootMp3s.includes(baseName)) {
       matches.push({ file: relative, stale: baseName });
       continue;
     }
-    const buffer = fs.readFileSync(file);
-    for (const stale of STALE_RUNTIME_STRINGS) {
+    if (!isTextOutputArtifact(file)) continue;
+
+    let buffer;
+    try {
+      buffer = fs.readFileSync(file);
+    } catch (error) {
+      if (isVolatileOutputRace(error)) continue;
+      throw error;
+    }
+
+    textFiles.push(file);
+    for (const stale of staleRuntimeStrings) {
       if (buffer.includes(Buffer.from(stale))) {
         matches.push({ file: relative, stale });
       }
     }
   }
+  return { matches, scannedFiles, textFiles };
+}
+
+function scanOutputArtifactsForStaleStrings(options) {
+  const inspection = inspectOutputArtifacts(options);
+  const { matches, scannedFiles, textFiles } = inspection;
   assert(matches.length === 0, 'stale audio paths remain in output artifacts', { matches });
-  return files.map((file) => path.relative(rootDir, file));
+  return {
+    files: scannedFiles.map((file) => path.relative(rootDir, file)),
+    textFiles: textFiles.map((file) => path.relative(rootDir, file)),
+  };
 }
 
 function commandExists(name) {
@@ -667,51 +770,69 @@ function checkMetrics(rootMp3s) {
   return metrics;
 }
 
-function writeReportIfRequested(report) {
-  const index = process.argv.indexOf('--write-report');
-  if (index === -1) return;
-  const target = process.argv[index + 1];
-  assert(!target || target.startsWith('--'), '--write-report writes to output/audio-qc/app-audio-assets-report.json and does not accept a path');
+function writeReportIfRequested(report, options, reportPath = appAudioAssetsReportPath) {
+  if (!options.writeReport) return;
   const outputRoot = outputAudioQcDir;
-  const absolute = appAudioAssetsReportPath;
+  const absolute = reportPath;
   const relativeToOutput = path.relative(outputRoot, absolute);
-  assert(Boolean(relativeToOutput) && !relativeToOutput.startsWith('..') && !path.isAbsolute(relativeToOutput),
-    '--write-report target must stay under output/audio-qc');
+  if (reportPath === appAudioAssetsReportPath) {
+    assert(Boolean(relativeToOutput) && !relativeToOutput.startsWith('..') && !path.isAbsolute(relativeToOutput),
+      '--write-report target must stay under output/audio-qc');
+  }
   fs.mkdirSync(path.dirname(absolute), { recursive: true });
   fs.writeFileSync(absolute, JSON.stringify(report, null, 2) + '\n');
 }
 
-checkSourceBackedPolicy();
-checkThirdPartyNotices();
-checkGeneratedProvenance();
-checkPackageScript();
-const assets = checkManifest();
-scanCurrentSourceForStaleStrings();
-const inventoryResult = checkRootInventory();
-const inventories = inventoryResult.checked;
-const generatedRootDuplicatePrunes = inventoryResult.generatedRootDuplicatePrunes;
-const desktopTargets = scanDesktopTargetForStaleStrings();
-const docsAssets = scanDocsAssetsForStaleStrings();
-const outputArtifacts = scanOutputArtifactsForStaleStrings();
-const publicInventory = inventories.find((inventory) => inventory.location === 'public');
-const rootMp3s = publicInventory ? publicInventory.rootMp3s : [];
-const metrics = checkMetrics(rootMp3s);
-const report = {
-  generatedAt: new Date().toISOString(),
-  status: 'PASS',
-  assetCount: assets.length,
-  rootMp3Count: rootMp3s.length,
-  rootMp3s,
-  shippedInventories: inventories,
-  generatedRootDuplicatePrunes,
-  desktopTargetsScanned: desktopTargets,
-  docsAssetsScanned: docsAssets,
-  outputArtifactScanScope: {
-    root: 'output',
-    excluded: ['output/audio-qc/app-audio-assets-report.json'],
-  },
-  outputArtifactsScannedCount: outputArtifacts.length,
-  metrics,
+function main(options = validateCommandLine()) {
+  checkSourceBackedPolicy();
+  checkThirdPartyNotices();
+  checkGeneratedProvenance();
+  checkPackageScript();
+  const assets = checkManifest();
+  scanCurrentSourceForStaleStrings();
+  const inventoryResult = checkRootInventory();
+  const inventories = inventoryResult.checked;
+  const generatedRootDuplicatePrunes = inventoryResult.generatedRootDuplicatePrunes;
+  const desktopTargets = scanDesktopTargetForStaleStrings();
+  const docsAssets = scanDocsAssetsForStaleStrings();
+  const outputArtifacts = scanOutputArtifactsForStaleStrings();
+  const publicInventory = inventories.find((inventory) => inventory.location === 'public');
+  const rootMp3s = publicInventory ? publicInventory.rootMp3s : [];
+  const metrics = checkMetrics(rootMp3s);
+  const report = {
+    generatedAt: new Date().toISOString(),
+    status: 'PASS',
+    assetCount: assets.length,
+    rootMp3Count: rootMp3s.length,
+    rootMp3s,
+    shippedInventories: inventories,
+    generatedRootDuplicatePrunes,
+    desktopTargetsScanned: desktopTargets,
+    docsAssetsScanned: docsAssets,
+    outputArtifactScanScope: {
+      root: 'output',
+      excluded: ['output/audio-qc/app-audio-assets-report.json'],
+      contentExtensions: [...TEXT_OUTPUT_ARTIFACT_EXTENSIONS].sort(),
+    },
+    outputArtifactsScannedCount: outputArtifacts.files.length,
+    outputTextArtifactsScannedCount: outputArtifacts.textFiles.length,
+    metrics,
+  };
+  writeReportIfRequested(report, options);
+  console.log('[app-audio-qc] PASS - ' + assets.length + ' current app assets, ' + rootMp3s.length + ' non-Hyperfocus root MP3s checked across ' + inventories.length + ' inventories; ' + generatedRootDuplicatePrunes.length + ' generated duplicate sound artifacts pruned; ' + desktopTargets.length + ' Desktop/Tauri generated target files scanned; ' + docsAssets.length + ' docs/assets bundles scanned; ' + outputArtifacts.files.length + ' output artifact filenames checked; ' + outputArtifacts.textFiles.length + ' text artifacts content-scanned');
+}
+
+if (require.main === module) {
+  try {
+    main();
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+module.exports = {
+  inspectOutputArtifacts,
+  isTextOutputArtifact,
+  parseCliOptions,
+  writeReportIfRequested,
 };
-writeReportIfRequested(report);
-console.log('[app-audio-qc] PASS - ' + assets.length + ' current app assets, ' + rootMp3s.length + ' non-Hyperfocus root MP3s checked across ' + inventories.length + ' inventories; ' + generatedRootDuplicatePrunes.length + ' generated duplicate sound artifacts pruned; ' + desktopTargets.length + ' Desktop/Tauri generated target files scanned; ' + docsAssets.length + ' docs/assets bundles scanned; ' + outputArtifacts.length + ' output artifact files scanned');

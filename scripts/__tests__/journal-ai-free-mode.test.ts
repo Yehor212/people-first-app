@@ -49,26 +49,26 @@ describe("journal AI free mode", () => {
     expect(results[0]?.similarity).toBeGreaterThan(0.3);
   });
 
-  it("wires generate-embedding to skip gracefully when Gemini is absent", () => {
+  it("keeps journal indexing disabled without any external AI provider path", () => {
     const source = readFileSync("supabase/functions/generate-embedding/index.ts", "utf8");
 
-    expect(source).toContain("GEMINI_API_KEY not configured; skipping paid embedding generation");
-    expect(source).toContain('mode: "no_paid_api"');
-    expect(source).not.toContain(
-      'return jsonResponse(500, { error: "Gemini API not configured" });'
-    );
+    expect(source).toContain('mode: "journal_search_free_lexical"');
+    expect(source).toContain("externalProvider: false");
+    expect(source).not.toContain("GEMINI_API_KEY");
+    expect(source).not.toContain("generativelanguage.googleapis.com");
+    expect(source).not.toContain("journal_embeddings");
   });
 
-  it("wires search-journal to lexical fallback when Gemini is absent", () => {
+  it("always wires journal search to the free lexical implementation", () => {
     const source = readFileSync("supabase/functions/search-journal/index.ts", "utf8");
 
     expect(source).toContain(
       'import { searchJournalEntriesLexically } from "../_shared/journal_ai_free.ts";'
     );
-    expect(source).toContain("GEMINI_API_KEY not configured; using lexical search fallback");
     expect(source).toContain('mode: "journal_search_free_lexical"');
-    expect(source).not.toContain(
-      'return jsonResponse(500, { error: "Gemini API not configured" });'
-    );
+    expect(source).toContain("externalProvider: false");
+    expect(source).not.toContain("GEMINI_API_KEY");
+    expect(source).not.toContain("generativelanguage.googleapis.com");
+    expect(source).not.toContain("match_journal_entries");
   });
 });

@@ -118,14 +118,19 @@ vi.mock("../SidebarV2", () => ({
 vi.mock("../DrawerV2", () => ({
   DrawerV2: ({
     open,
+    onClose,
     onPageChange,
   }: {
     open: boolean;
+    onClose: () => void;
     onPageChange: (page: "habits" | "planning") => void;
   }) =>
     open ? (
       <div id="nav-v2-drawer" data-testid="drawer-v2-open">
         drawer open
+        <button type="button" onClick={onClose} autoFocus>
+          Close menu
+        </button>
         <button type="button" onClick={() => onPageChange("habits")}>
           Habits
         </button>
@@ -267,13 +272,13 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(screen.queryByTestId("mobile-nav-v2")).not.toBeInTheDocument();
   });
 
-  it("drawer trigger has a top-left 44px menu button + accessible label (WCAG 2.5.5 + 2.5.7)", () => {
+  it("drawer trigger has a top-left 48px Android-safe target and accessible label", () => {
     render(<NavV2Orchestrator />);
     const trigger = screen.getByTestId("nav-v2-open-drawer");
 
-    // Tailwind h-11/w-11 = 44px, preserving the minimum phone touch target.
-    expect(trigger.className).toMatch(/h-11/);
-    expect(trigger.className).toMatch(/w-11/);
+    // Fixed CSS-pixel geometry preserves the target when the root text size changes.
+    expect(trigger.className).toContain("h-[var(--v2-phone-drawer-size)]");
+    expect(trigger.className).toContain("w-[var(--v2-phone-drawer-size)]");
     expect(trigger.className).toMatch(/rounded-full/);
 
     // ARIA: drawer control semantics
@@ -286,6 +291,19 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(document.getElementById("nav-v2-drawer")).toBeInTheDocument();
   });
 
+  it("restores keyboard focus to the phone menu trigger after the drawer closes", async () => {
+    render(<NavV2Orchestrator />);
+    const trigger = screen.getByTestId("nav-v2-open-drawer");
+
+    trigger.focus();
+    fireEvent.click(trigger);
+    const close = screen.getByRole("button", { name: "Close menu" });
+    expect(close).toHaveFocus();
+    fireEvent.click(close);
+
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
   it("keeps the menu glyph when Settings is the active phone page", () => {
     window.history.replaceState({}, "", "/settings?nav=v2&navLayout=phone");
 
@@ -296,14 +314,19 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(trigger.querySelector(".lucide-chevron-left")).not.toBeInTheDocument();
   });
 
-  it("drawer trigger is fixed in the safe top-left corner and does not reserve content width", () => {
+  it("drawer trigger is fixed at the safe logical start edge", () => {
     render(<NavV2Orchestrator />);
     const trigger = screen.getByTestId("nav-v2-open-drawer");
 
-    // Fixed edge positioning keeps page headers/content full-width.
+    // The trigger remains fixed while respecting notches in both LTR and RTL.
     expect(trigger.className).toMatch(/fixed/);
-    expect(trigger.className).toContain("start-3");
-    expect(trigger.className).toContain("top-[calc(var(--safe-top)+0.75rem)]");
+    expect(trigger.className).toContain(
+      "start-[calc(var(--safe-inline-start)_+_var(--v2-phone-drawer-inset))]"
+    );
+    expect(trigger.className).not.toContain("start-3");
+    expect(trigger.className).toContain(
+      "top-[calc(var(--safe-top)+var(--v2-phone-drawer-inset))]"
+    );
     expect(trigger.className).not.toContain("top-1/2");
     expect(trigger.className).not.toContain("rounded-e-full");
   });

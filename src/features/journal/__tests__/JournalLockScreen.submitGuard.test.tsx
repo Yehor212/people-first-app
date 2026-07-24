@@ -1,22 +1,25 @@
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { JournalLockScreen } from "../JournalLockScreen";
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
+    language: "en",
     t: {
       journalPasswordEnter: "Enter password",
       journalUnlock: "Unlock",
       journalLocked: "Diary Locked",
       journalPasswordWrong: "Wrong password",
-      journalPasswordCooldown: "Too many attempts. Wait",
+      journalPasswordCooldown: "Too many attempts. Wait {duration}.",
       journalBiometricFailed: "Biometric unlock failed. Try again.",
       journalBiometricUnlock: "Unlock with biometrics",
       journalLockHintLocalOnly:
         "This password encrypts your diary on this device. Keep it somewhere safe; ZenFlow cannot reveal or recover it.",
       journalPasswordForgot: "Can't open the lock?",
+      journalResetDesktopUnavailable:
+        "Email verification can remove the lock in the web or mobile app, but it cannot decrypt protected entries. On desktop, use the diary password.",
     },
   }),
 }));
@@ -35,6 +38,10 @@ vi.mock("framer-motion", async () => {
 });
 
 describe("JournalLockScreen submit guard", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("serializes unlock submits while password verification is pending", async () => {
     let resolveUnlock!: (value: boolean) => void;
     const onUnlock = vi.fn(
@@ -93,6 +100,31 @@ describe("JournalLockScreen submit guard", () => {
     expect(await screen.findByText("Biometric unlock failed. Try again.")).toBeInTheDocument();
   });
 
+  it("keeps corrective feedback visible until the user changes the password", async () => {
+    vi.useFakeTimers();
+    const onUnlock = vi.fn().mockResolvedValue(false);
+
+    render(
+      <JournalLockScreen
+        mode="unlock"
+        cooldownRemaining={0}
+        failedAttempts={0}
+        onUnlock={onUnlock}
+        onSetPassword={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByLabelText("Enter password");
+    fireEvent.change(input, { target: { value: "wrong password" } });
+    fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+    await vi.runAllTimersAsync();
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Wrong password");
+
+    fireEvent.change(input, { target: { value: "another try" } });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("shows local-only recovery guidance without starting email reset when email lock removal is unavailable", () => {
     const onForgotPassword = vi.fn();
 
@@ -109,7 +141,7 @@ describe("JournalLockScreen submit guard", () => {
     );
 
     expect(screen.queryByRole("button", { name: "Can't open the lock?" })).not.toBeInTheDocument();
-    expect(screen.getByText(/email lock removal is available in the web or mobile app/i)).toBeInTheDocument();
+    expect(screen.getByText(/cannot decrypt protected entries/i)).toBeInTheDocument();
     expect(onForgotPassword).not.toHaveBeenCalled();
   });
 
@@ -152,7 +184,7 @@ describe("JournalLockScreen submit guard", () => {
       "aria-describedby",
       expect.stringContaining("lock-password-cooldown"),
     );
-    expect(screen.getByRole("status")).toHaveTextContent("Too many attempts. Wait 7s");
+    expect(screen.getByRole("status")).toHaveTextContent(/Too many attempts\. Wait.*7 seconds.*\./);
   });
 
   it("uses email-aware setup copy when email lock removal is available", () => {
@@ -167,8 +199,7 @@ describe("JournalLockScreen submit guard", () => {
       />,
     );
 
-    expect(screen.getByText(/verified email can remove the lock/i)).toBeInTheDocument();
-    expect(screen.queryByText(/cannot reveal or recover/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/email verification cannot decrypt protected entries/i)).toBeInTheDocument();
   });
   it("uses recovery-safe setup copy when email lock removal is unavailable", () => {
     render(

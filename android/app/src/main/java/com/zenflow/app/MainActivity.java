@@ -35,6 +35,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(BiometricAuthPlugin.class);
         registerPlugin(ScreenSecurityPlugin.class);
         registerPlugin(StatusBarStylePlugin.class);
+        registerPlugin(PushRealmPlugin.class);
 
         super.onCreate(savedInstanceState);
         enableNativeEdgeToEdge();

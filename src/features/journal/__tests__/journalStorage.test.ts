@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { readFileSync } from "node:fs";
+import { SK } from "@/lib/storageKeys";
 
 // ─── Mocks ────────────────────────────────────────────────────
 
@@ -42,6 +43,7 @@ vi.mock("@/storage/db", () => {
       journalPhotos: mockTable(),
       journalAudio: mockTable(),
       settings: mockTable(),
+      offlineQueue: mockTable(),
       transaction: vi.fn((_mode: string, _tables: unknown[], fn: () => unknown) => fn()),
     },
   };
@@ -63,7 +65,11 @@ vi.mock("@/lib/cloudSyncSettings", () => ({
 }));
 
 vi.mock("@/lib/offlineQueue", () => ({
-  offlineQueue: { enqueue: vi.fn(() => Promise.resolve()) },
+  offlineQueue: {
+    enqueue: vi.fn(() => Promise.resolve()),
+    wakeFromDurableStorage: vi.fn(() => Promise.resolve()),
+  },
+  persistCriticalOfflineActionInCurrentTransaction: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("@/lib/supabaseClient", () => ({
@@ -72,15 +78,18 @@ vi.mock("@/lib/supabaseClient", () => ({
 }));
 
 vi.mock("@/storage/deletionTracker", () => ({
+  DELETION_TRACKER_KEYS: { journal: "zenflow-deleted-journal-entry-ids" },
+  mergeDeletionTrackerIdsInCurrentTransaction: vi.fn(() => Promise.resolve(new Set())),
   trackDeletedJournalEntryId: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("@/storage/journalStorageService", () => ({
+  JOURNAL_PHOTO_UPLOAD_MAX_BYTES: 1_048_576,
   uploadPhoto: vi.fn(() => Promise.resolve(null)),
   uploadAudio: vi.fn(() => Promise.resolve(null)),
   deletePhotoFromStorage: vi.fn(() => Promise.resolve()),
   deleteAudioFromStorage: vi.fn(() => Promise.resolve()),
-  deleteEntryMediaFromStorage: vi.fn(),
+  deleteEntryMediaFromStorage: vi.fn(() => Promise.resolve()),
   downloadAsBase64: vi.fn(() => Promise.resolve(null)),
 }));
 
@@ -95,6 +104,7 @@ vi.mock("@/lib/utils", () => ({
 import { db } from "@/storage/db";
 import {
   getAllEntries,
+  getJournalExportSnapshot,
   getEntriesPage,
   getEntriesByDate,
   getEntryById,
@@ -112,6 +122,10 @@ import {
   deleteAudio,
   deleteDraftMedia,
   commitDraftMediaToEntry,
+  compressAndStorePhoto,
+  clearDraftPhotoCancellation,
+  getDraftMediaIds,
+  markDraftPhotoCancellation,
 } from "../journalStorage";
 import {
   syncJournalEntry,
@@ -121,14 +135,21 @@ import {
   deleteJournalAudioFromCloud,
 } from "@/storage/realtimeSync";
 import { triggerSync } from "@/storage/cloudSync";
-import { offlineQueue } from "@/lib/offlineQueue";
+import {
+  offlineQueue,
+  persistCriticalOfflineActionInCurrentTransaction,
+} from "@/lib/offlineQueue";
 import {
   uploadPhoto,
   uploadAudio,
+  deleteAudioFromStorage,
   deleteEntryMediaFromStorage,
   downloadAsBase64,
 } from "@/storage/journalStorageService";
-import { trackDeletedJournalEntryId } from "@/storage/deletionTracker";
+import {
+  DELETION_TRACKER_KEYS,
+  mergeDeletionTrackerIdsInCurrentTransaction,
+} from "@/storage/deletionTracker";
 import { isCloudSyncEnabled } from "@/lib/cloudSyncSettings";
 import { getCurrentSessionUserId } from "@/lib/supabaseClient";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "../types";
@@ -190,6 +211,7 @@ beforeEach(() => {
   vi.mocked(db.journalEntries.get).mockResolvedValue(undefined);
   vi.mocked(db.journalPhotos.get).mockResolvedValue(undefined);
   vi.mocked(db.journalAudio.get).mockResolvedValue(undefined);
+  vi.mocked(db.settings.get).mockResolvedValue(undefined);
   vi.mocked(uploadPhoto).mockResolvedValue(null);
   vi.mocked(uploadAudio).mockResolvedValue(null);
 });
@@ -338,6 +360,59 @@ describe("getAllEntries", () => {
   });
 });
 
+describe("getJournalExportSnapshot", () => {
+  it("reads one atomic snapshot and excludes media not referenced by its parent entry", async () => {
+    const entry = makeEntry({
+      photoIds: ["photo-1"],
+      audioIds: ["audio-1"],
+    });
+    const photos = [
+      makePhoto(),
+      makePhoto({ id: "orphan-photo", entryId: "entry-1" }),
+      makePhoto({ id: "wrong-parent-photo", entryId: "entry-2" }),
+    ];
+    const audio = [
+      makeAudio(),
+      makeAudio({ id: "orphan-audio", entryId: "entry-1" }),
+      makeAudio({ id: "wrong-parent-audio", entryId: "entry-2" }),
+    ];
+    const deletedEntry = makeEntry({
+      id: "deleted-entry",
+      photoIds: ["deleted-photo"],
+      audioIds: ["deleted-audio"],
+    });
+    const deletedPhoto = makePhoto({ id: "deleted-photo", entryId: "deleted-entry" });
+    const deletedAudio = makeAudio({ id: "deleted-audio", entryId: "deleted-entry" });
+    const entryToArray = vi.fn(() => Promise.resolve([entry, deletedEntry]));
+    vi.mocked(db.journalEntries.orderBy).mockReturnValue({
+      reverse: vi.fn(() => ({ toArray: entryToArray })),
+    } as never);
+    vi.mocked(db.journalPhotos.toArray).mockResolvedValue([...photos, deletedPhoto]);
+    vi.mocked(db.journalAudio.toArray).mockResolvedValue([...audio, deletedAudio]);
+    vi.mocked(db.settings.get).mockResolvedValueOnce({
+      key: DELETION_TRACKER_KEYS.journal,
+      value: ["deleted-entry", "deleted-entry", ""],
+    });
+
+    const result = await getJournalExportSnapshot();
+
+    expect(db.transaction).toHaveBeenCalledWith(
+      "r",
+      [db.settings, db.journalEntries, db.journalPhotos, db.journalAudio],
+      expect.any(Function),
+    );
+    expect(entryToArray).toHaveBeenCalledTimes(1);
+    expect(db.journalPhotos.toArray).toHaveBeenCalledTimes(1);
+    expect(db.journalAudio.toArray).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      entries: [entry],
+      photos: [photos[0]],
+      audio: [audio[0]],
+      deletedEntryIds: ["deleted-entry"],
+    });
+  });
+});
+
 // ============================================================
 // getEntriesByDate
 // ============================================================
@@ -404,7 +479,7 @@ describe("saveEntry", () => {
     );
   });
 
-  it("triggers cloud sync after saving", async () => {
+  it("persists and wakes the durable sync outbox after saving", async () => {
     await saveEntry({
       date: "2026-02-17",
       title: "T",
@@ -414,10 +489,13 @@ describe("saveEntry", () => {
       tags: [],
     });
 
-    expect(syncJournalEntry).toHaveBeenCalledWith(
+    expect(persistCriticalOfflineActionInCurrentTransaction).toHaveBeenCalledWith(
+      "SYNC_JOURNAL_ENTRY",
+      "test-id-123",
       expect.objectContaining({ id: "test-id-123" }),
       "user-1"
     );
+    expect(offlineQueue.wakeFromDurableStorage).toHaveBeenCalled();
     expect(triggerSync).toHaveBeenCalled();
   });
 
@@ -484,11 +562,14 @@ describe("saveEntry", () => {
     });
     await flushAsyncTurns();
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith(
+    expect(persistCriticalOfflineActionInCurrentTransaction).toHaveBeenCalledWith(
       "UPLOAD_JOURNAL_PHOTO_STORAGE",
       "journal-photo-upload:photo-draft",
-      { id: "photo-draft" },
-      expect.objectContaining({ expectedOwnerUserId: "user-1", priority: "critical" })
+      expect.objectContaining({
+        id: "photo-draft",
+        metadata: expect.objectContaining({ id: "photo-draft" }),
+      }),
+      "user-1"
     );
   });
 
@@ -506,6 +587,7 @@ describe("saveEntry", () => {
 
     expect(syncJournalEntry).not.toHaveBeenCalled();
     expect(offlineQueue.enqueue).not.toHaveBeenCalled();
+    expect(persistCriticalOfflineActionInCurrentTransaction).not.toHaveBeenCalled();
     expect(triggerSync).not.toHaveBeenCalled();
   });
 });
@@ -514,6 +596,29 @@ describe("saveEntry", () => {
 // commitDraftMediaToEntry
 // ============================================================
 describe("commitDraftMediaToEntry", () => {
+  it("relinks media from an entry-scoped draft owner", async () => {
+    vi.mocked(db.journalPhotos.get).mockResolvedValue(
+      makePhoto({ id: "photo-scoped", entryId: "__draft__:entry-existing" })
+    );
+    vi.mocked(db.journalAudio.get).mockResolvedValue(
+      makeAudio({ id: "audio-scoped", entryId: "__draft__:entry-existing" })
+    );
+
+    await commitDraftMediaToEntry("entry-existing", {
+      photoIds: ["photo-scoped"],
+      audioIds: ["audio-scoped"],
+    });
+
+    expect(db.journalPhotos.update).toHaveBeenCalledWith(
+      "photo-scoped",
+      expect.objectContaining({ entryId: "entry-existing" })
+    );
+    expect(db.journalAudio.update).toHaveBeenCalledWith(
+      "audio-scoped",
+      expect.objectContaining({ entryId: "entry-existing" })
+    );
+  });
+
   it("relinks selected draft media rows to an existing entry id", async () => {
     vi.mocked(db.journalPhotos.get).mockResolvedValue(
       makePhoto({ id: "photo-draft", entryId: "__draft__" })
@@ -525,7 +630,7 @@ describe("commitDraftMediaToEntry", () => {
     await commitDraftMediaToEntry("entry-existing", {
       photoIds: ["photo-draft"],
       audioIds: ["audio-draft"],
-    });
+    }, "__draft__");
 
     expect(db.journalPhotos.update).toHaveBeenCalledWith(
       "photo-draft",
@@ -621,7 +726,7 @@ describe("deleteEntry", () => {
     expect(db.journalEntries.delete).toHaveBeenCalledWith("entry-1");
   });
 
-  it("deletes media from storage and syncs cloud deletion", async () => {
+  it("persists and wakes a durable cloud deletion", async () => {
     const mockEquals = vi.fn(() => ({
       toArray: vi.fn(() => Promise.resolve([])),
       count: vi.fn(() => Promise.resolve(0)),
@@ -631,12 +736,19 @@ describe("deleteEntry", () => {
 
     await deleteEntry("entry-1");
 
-    expect(deleteEntryMediaFromStorage).toHaveBeenCalledWith([], [], "user-1");
-    expect(deleteJournalEntryFromCloud).toHaveBeenCalledWith("entry-1", "user-1");
+    expect(persistCriticalOfflineActionInCurrentTransaction).toHaveBeenCalledWith(
+      "DELETE_JOURNAL_ENTRY",
+      "entry-1",
+      { id: "entry-1" },
+      "user-1"
+    );
+    expect(offlineQueue.wakeFromDurableStorage).toHaveBeenCalled();
+    expect(deleteEntryMediaFromStorage).not.toHaveBeenCalled();
+    expect(deleteJournalEntryFromCloud).not.toHaveBeenCalled();
     expect(triggerSync).toHaveBeenCalled();
   });
 
-  it("creates the local tombstone before deleting IndexedDB rows", async () => {
+  it("merges the tombstone inside the delete transaction before deleting rows", async () => {
     const mockEquals = vi.fn(() => ({
       toArray: vi.fn(() => Promise.resolve([])),
       count: vi.fn(() => Promise.resolve(0)),
@@ -644,23 +756,30 @@ describe("deleteEntry", () => {
     vi.mocked(db.journalPhotos.where).mockReturnValue({ equals: mockEquals } as never);
     vi.mocked(db.journalAudio.where).mockReturnValue({ equals: mockEquals } as never);
 
-    let resolveTombstone!: () => void;
-    vi.mocked(trackDeletedJournalEntryId).mockImplementationOnce(
+    let resolveTombstone!: (value: Set<string>) => void;
+    vi.mocked(mergeDeletionTrackerIdsInCurrentTransaction).mockImplementationOnce(
       () =>
-        new Promise<void>((resolve) => {
+        new Promise<Set<string>>((resolve) => {
           resolveTombstone = resolve;
         })
     );
 
     const deletion = deleteEntry("entry-1");
     await vi.waitFor(() => {
-      expect(trackDeletedJournalEntryId).toHaveBeenCalledWith("entry-1");
+      expect(mergeDeletionTrackerIdsInCurrentTransaction).toHaveBeenCalledWith(
+        DELETION_TRACKER_KEYS.journal,
+        ["entry-1"]
+      );
     });
 
-    expect(db.transaction).not.toHaveBeenCalled();
+    expect(db.transaction).toHaveBeenCalledWith(
+      "rw",
+      expect.arrayContaining([db.settings, db.journalEntries]),
+      expect.any(Function)
+    );
     expect(db.journalEntries.delete).not.toHaveBeenCalled();
 
-    resolveTombstone();
+    resolveTombstone(new Set(["entry-1"]));
     await deletion;
 
     expect(db.transaction).toHaveBeenCalled();
@@ -675,26 +794,35 @@ describe("deleteEntry", () => {
     vi.mocked(db.journalPhotos.where).mockReturnValue({ equals: mockEquals } as never);
     vi.mocked(db.journalAudio.where).mockReturnValue({ equals: mockEquals } as never);
 
-    let resolveTombstone!: () => void;
-    vi.mocked(trackDeletedJournalEntryId).mockImplementationOnce(
+    let resolveTombstone!: (value: Set<string>) => void;
+    vi.mocked(mergeDeletionTrackerIdsInCurrentTransaction).mockImplementationOnce(
       () =>
-        new Promise<void>((resolve) => {
+        new Promise<Set<string>>((resolve) => {
           resolveTombstone = resolve;
         })
     );
 
     const deletion = deleteEntry("entry-1");
     await vi.waitFor(() => {
-      expect(trackDeletedJournalEntryId).toHaveBeenCalledWith("entry-1");
+      expect(mergeDeletionTrackerIdsInCurrentTransaction).toHaveBeenCalledWith(
+        DELETION_TRACKER_KEYS.journal,
+        ["entry-1"]
+      );
     });
 
-    expect(deleteJournalEntryFromCloud).not.toHaveBeenCalled();
+    expect(offlineQueue.wakeFromDurableStorage).not.toHaveBeenCalled();
     expect(triggerSync).not.toHaveBeenCalled();
 
-    resolveTombstone();
+    resolveTombstone(new Set(["entry-1"]));
     await deletion;
 
-    expect(deleteJournalEntryFromCloud).toHaveBeenCalledWith("entry-1", "user-1");
+    expect(persistCriticalOfflineActionInCurrentTransaction).toHaveBeenCalledWith(
+      "DELETE_JOURNAL_ENTRY",
+      "entry-1",
+      { id: "entry-1" },
+      "user-1"
+    );
+    expect(offlineQueue.wakeFromDurableStorage).toHaveBeenCalled();
     expect(triggerSync).toHaveBeenCalled();
   });
 
@@ -728,7 +856,10 @@ describe("deleteEntry", () => {
 
     await deleteEntry("entry-1");
 
-    expect(trackDeletedJournalEntryId).toHaveBeenCalledWith("entry-1");
+    expect(mergeDeletionTrackerIdsInCurrentTransaction).toHaveBeenCalledWith(
+      DELETION_TRACKER_KEYS.journal,
+      ["entry-1"]
+    );
     expect(db.journalEntries.delete).toHaveBeenCalledWith("entry-1");
     expect(offlineQueue.enqueue).not.toHaveBeenCalled();
     expect(deleteEntryMediaFromStorage).not.toHaveBeenCalled();
@@ -814,7 +945,7 @@ describe("getPhotoById", () => {
     const photo = makePhoto();
     vi.mocked(db.journalPhotos.get).mockResolvedValue(photo);
 
-    const result = await getPhotoById("photo-1");
+    const result = await getPhotoById("photo-1", "entry-1");
     expect(db.journalPhotos.get).toHaveBeenCalledWith("photo-1");
     expect(result).toEqual(photo);
   });
@@ -826,7 +957,7 @@ describe("getPhotoById", () => {
     });
     vi.mocked(db.journalPhotos.get).mockResolvedValue(photo);
 
-    const result = await getPhotoPreviewById("photo-1");
+    const result = await getPhotoPreviewById("photo-1", "entry-1");
 
     expect(result).toEqual({
       ...photo,
@@ -835,12 +966,79 @@ describe("getPhotoById", () => {
     });
     expect(downloadAsBase64).not.toHaveBeenCalled();
   });
+
+  it("does not return full or preview bytes through another entry association", async () => {
+    const photo = makePhoto({ entryId: "entry-a" });
+    vi.mocked(db.journalPhotos.get).mockResolvedValue(photo);
+
+    await expect(getPhotoById("photo-1", "entry-b")).resolves.toBeUndefined();
+    await expect(getPhotoPreviewById("photo-1", "entry-b")).resolves.toBeUndefined();
+
+    expect(downloadAsBase64).not.toHaveBeenCalled();
+  });
+
+  it("rejects metadata-only cloud photos when download returns no bytes", async () => {
+    const photo = makePhoto({
+      data: "",
+      thumbnail: "",
+      storagePath: "user-1/photo-1.jpg",
+    });
+    vi.mocked(db.journalPhotos.get).mockResolvedValue(photo);
+    vi.mocked(downloadAsBase64).mockResolvedValue(null);
+
+    await expect(getPhotoById("photo-1", "entry-1")).rejects.toMatchObject({
+      name: "JournalPhotoHydrationError",
+      code: "JOURNAL_PHOTO_DOWNLOAD_UNAVAILABLE",
+    });
+  });
+
+  it("displays downloaded photo bytes when only the local cache write exceeds quota", async () => {
+    const photo = makePhoto({
+      data: "",
+      thumbnail: "",
+      storagePath: "user-1/photo-1.jpg",
+    });
+    vi.mocked(db.journalPhotos.get).mockResolvedValue(photo);
+    vi.mocked(downloadAsBase64).mockResolvedValue("data:image/jpeg;base64,cloud-photo");
+    vi.mocked(db.journalPhotos.update).mockRejectedValueOnce(
+      new DOMException("Storage quota reached", "QuotaExceededError"),
+    );
+
+    await expect(getPhotoById("photo-1", "entry-1")).resolves.toMatchObject({
+      id: "photo-1",
+      data: "data:image/jpeg;base64,cloud-photo",
+      thumbnail: "data:image/jpeg;base64,cloud-photo",
+    });
+    expect(db.journalPhotos.update).toHaveBeenCalled();
+  });
 });
 
 // ============================================================
 // deletePhoto
 // ============================================================
 describe("deletePhoto", () => {
+  beforeEach(() => {
+    vi.mocked(db.journalPhotos.get).mockResolvedValue(makePhoto());
+  });
+
+  it("stops before outbox creation when the photo belongs to another entry", async () => {
+    vi.mocked(db.journalPhotos.get).mockResolvedValue(
+      makePhoto({ id: "photo-owned-by-a", entryId: "entry-a" }),
+    );
+    vi.mocked(db.journalEntries.get).mockResolvedValue(
+      makeEntry({ id: "entry-b", photoIds: ["photo-owned-by-a"] }),
+    );
+
+    await expect(deletePhoto("photo-owned-by-a", "entry-b")).rejects.toThrow(
+      /does not belong to the requested entry/i,
+    );
+
+    expect(persistCriticalOfflineActionInCurrentTransaction).not.toHaveBeenCalled();
+    expect(db.journalPhotos.delete).not.toHaveBeenCalled();
+    expect(db.journalEntries.update).not.toHaveBeenCalled();
+    expect(deleteJournalPhotoFromCloud).not.toHaveBeenCalled();
+  });
+
   it("removes photo from db and updates entry photoIds", async () => {
     const entry = makeEntry({
       photoIds: ["photo-1", "photo-2"],
@@ -883,24 +1081,17 @@ describe("deletePhoto", () => {
     expect(deleteJournalPhotoFromCloud).not.toHaveBeenCalled();
   });
 
-  it("keeps the originating account owner when the session changes during local deletion", async () => {
+  it("stops before local deletion when the captured and active account owners differ", async () => {
     let activeOwner = "user-a";
     vi.mocked(getCurrentSessionUserId).mockImplementation(async () => activeOwner);
-    vi.mocked(db.journalPhotos.delete).mockImplementationOnce((() => {
-      activeOwner = "user-b";
-      return Promise.resolve();
-    }) as never);
+    activeOwner = "user-b";
     vi.mocked(db.journalEntries.get).mockResolvedValue(undefined);
 
-    await deletePhoto("photo-owned-by-a", "entry-owned-by-a");
-    await flushAsyncTurns();
-
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith(
-      "DELETE_JOURNAL_PHOTO_STORAGE",
-      "journal-photo-delete:photo-owned-by-a",
-      { id: "photo-owned-by-a" },
-      expect.objectContaining({ expectedOwnerUserId: "user-a" })
+    await expect(deletePhoto("photo-owned-by-a", "entry-owned-by-a")).rejects.toThrow(
+      /account boundary/i,
     );
+
+    expect(db.journalPhotos.delete).not.toHaveBeenCalled();
   });
 
   it("does not update entry when entry not found", async () => {
@@ -925,11 +1116,16 @@ describe("storeAudio", () => {
     }));
     vi.mocked(db.journalAudio.where).mockReturnValue({ equals: mockEquals } as never);
 
-    const result = await storeAudio("entry-1", "base64data", 30, "audio/webm");
+    const result = await storeAudio(
+      "entry-1",
+      "data:audio/webm;base64,YXVkaW8=",
+      30,
+      "audio/webm",
+    );
 
     expect(result.id).toBe("test-id-123");
     expect(result.entryId).toBe("entry-1");
-    expect(result.data).toBe("base64data");
+    expect(result.data).toBe("data:audio/webm;base64,YXVkaW8=");
     expect(result.duration).toBe(30);
     expect(result.mimeType).toBe("audio/webm");
     expect(result.createdAt).toBeGreaterThan(0);
@@ -944,7 +1140,9 @@ describe("storeAudio", () => {
     }));
     vi.mocked(db.journalAudio.where).mockReturnValue({ equals: mockEquals } as never);
 
-    await expect(storeAudio("entry-1", "data", 10, "audio/webm")).rejects.toThrow(
+    await expect(
+      storeAudio("entry-1", "data:audio/webm;base64,YXVkaW8=", 10, "audio/webm"),
+    ).rejects.toThrow(
       "Maximum 3 audio recordings per entry"
     );
   });
@@ -957,10 +1155,15 @@ describe("storeAudio", () => {
     }));
     vi.mocked(db.journalAudio.where).mockReturnValue({ equals: mockEquals } as never);
     vi.mocked(db.journalAudio.get).mockResolvedValue(
-      makeAudio({ id: "test-id-123", entryId: "entry-1", data: "data" })
+      makeAudio({
+        id: "test-id-123",
+        entryId: "entry-1",
+        data: "data:audio/mp4;base64,YXVkaW8=",
+        mimeType: "audio/mp4",
+      })
     );
 
-    await storeAudio("entry-1", "data", 15, "audio/mp4");
+    await storeAudio("entry-1", "data:audio/mp4;base64,YXVkaW8=", 15, "audio/mp4");
     await vi.waitFor(() => {
       expect(syncJournalAudio).toHaveBeenCalledWith(
         expect.objectContaining({ id: "test-id-123", entryId: "entry-1" }),
@@ -1027,10 +1230,202 @@ describe("storeAudio", () => {
 // Draft media privacy
 // ============================================================
 describe("draft media privacy", () => {
+  const prepareProcessablePhoto = () => {
+    vi.mocked(db.journalPhotos.where).mockReturnValue({
+      equals: vi.fn(() => ({ count: vi.fn(() => Promise.resolve(0)) })),
+    } as never);
+    const pngHeader = new Uint8Array(24);
+    pngHeader.set([0x89, 0x50, 0x4e, 0x47], 0);
+    new DataView(pngHeader.buffer).setUint32(16, 1200);
+    new DataView(pngHeader.buffer).setUint32(20, 630);
+    const file = new File([pngHeader], "memory.png", { type: "image/png" });
+    vi.spyOn(file, "slice").mockReturnValue({
+      arrayBuffer: () => Promise.resolve(pngHeader.buffer),
+    } as Blob);
+    const close = vi.fn();
+    vi.stubGlobal(
+      "createImageBitmap",
+      vi.fn(() => Promise.resolve({ width: 1200, height: 630, close })),
+    );
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL: vi.fn(() => "blob:journal-photo"),
+      revokeObjectURL: vi.fn(),
+    });
+    const context = {
+      imageSmoothingEnabled: false,
+      imageSmoothingQuality: "low",
+      drawImage: vi.fn(),
+    };
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, "getContext")
+      .mockReturnValue(context as never);
+    const toBlob = vi
+      .spyOn(HTMLCanvasElement.prototype, "toBlob")
+      .mockImplementation((callback) => callback(new Blob(["jpeg"], { type: "image/jpeg" })));
+    return {
+      file,
+      restore: () => {
+        getContext.mockRestore();
+        toBlob.mockRestore();
+        vi.unstubAllGlobals();
+      },
+    };
+  };
+
+  it("quarantines a processed draft photo in the same transaction that stores it", async () => {
+    const scopedOwner = "__draft__:entry-one";
+    const { file, restore } = prepareProcessablePhoto();
+
+    try {
+      await compressAndStorePhoto(file, scopedOwner);
+    } finally {
+      restore();
+    }
+
+    expect(db.transaction).toHaveBeenCalledWith(
+      "rw",
+      [db.journalPhotos, db.settings],
+      expect.any(Function),
+    );
+    expect(db.settings.put).toHaveBeenCalledWith({
+      key: SK.JOURNAL_CANCELLED_DRAFT_PHOTOS,
+      value: { [scopedOwner]: ["test-id-123"] },
+    });
+    expect(vi.mocked(db.settings.put).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(db.journalPhotos.add).mock.invocationCallOrder[0],
+    );
+  });
+
+  it("does not store a draft photo when its quarantine marker cannot be committed", async () => {
+    const scopedOwner = "__draft__:entry-one";
+    const { file, restore } = prepareProcessablePhoto();
+    vi.mocked(db.settings.put).mockRejectedValueOnce(new Error("settings write unavailable"));
+
+    try {
+      await expect(compressAndStorePhoto(file, scopedOwner)).rejects.toThrow(
+        "settings write unavailable",
+      );
+    } finally {
+      restore();
+    }
+
+    expect(db.journalPhotos.add).not.toHaveBeenCalled();
+  });
+
+  it("lists only media owned by the requested scoped draft", async () => {
+    const photoToArray = vi.fn(() =>
+      Promise.resolve([makePhoto({ id: "photo-recover", entryId: "__draft__:entry-one" })]),
+    );
+    const audioToArray = vi.fn(() =>
+      Promise.resolve([makeAudio({ id: "audio-recover", entryId: "__draft__:entry-one" })]),
+    );
+    const photoEquals = vi.fn(() => ({ toArray: photoToArray }));
+    const audioEquals = vi.fn(() => ({ toArray: audioToArray }));
+    vi.mocked(db.journalPhotos.where).mockReturnValue({ equals: photoEquals } as never);
+    vi.mocked(db.journalAudio.where).mockReturnValue({ equals: audioEquals } as never);
+
+    const { getDraftMediaIds } = await import("../journalStorage");
+    await expect(getDraftMediaIds("__draft__:entry-one")).resolves.toEqual({
+      photoIds: ["photo-recover"],
+      audioIds: ["audio-recover"],
+    });
+    expect(photoEquals).toHaveBeenCalledWith("__draft__:entry-one");
+    expect(audioEquals).toHaveBeenCalledWith("__draft__:entry-one");
+  });
+
+  it("persists cancelled draft photos until deletion succeeds", async () => {
+    const scopedOwner = "__draft__:entry-one";
+
+    await markDraftPhotoCancellation("photo-cancelled", scopedOwner);
+
+    expect(db.settings.put).toHaveBeenCalledWith({
+      key: SK.JOURNAL_CANCELLED_DRAFT_PHOTOS,
+      value: { [scopedOwner]: ["photo-cancelled"] },
+    });
+
+    vi.mocked(db.settings.get).mockResolvedValue({
+      key: SK.JOURNAL_CANCELLED_DRAFT_PHOTOS,
+      value: { [scopedOwner]: ["photo-cancelled"] },
+    });
+    await clearDraftPhotoCancellation("photo-cancelled", scopedOwner);
+
+    expect(db.settings.delete).toHaveBeenCalledWith(SK.JOURNAL_CANCELLED_DRAFT_PHOTOS);
+  });
+
+  it("never recovers cancelled photos and retries their local deletion", async () => {
+    const scopedOwner = "__draft__:entry-one";
+    const photoToArray = vi.fn(() =>
+      Promise.resolve([
+        makePhoto({ id: "photo-accepted", entryId: scopedOwner, createdAt: 1 }),
+        makePhoto({ id: "photo-cancelled", entryId: scopedOwner, createdAt: 2 }),
+      ]),
+    );
+    const audioToArray = vi.fn(() => Promise.resolve([]));
+    vi.mocked(db.journalPhotos.where).mockReturnValue({
+      equals: vi.fn(() => ({ toArray: photoToArray })),
+    } as never);
+    vi.mocked(db.journalAudio.where).mockReturnValue({
+      equals: vi.fn(() => ({ toArray: audioToArray })),
+    } as never);
+    vi.mocked(db.settings.get).mockResolvedValue({
+      key: SK.JOURNAL_CANCELLED_DRAFT_PHOTOS,
+      value: { [scopedOwner]: ["photo-cancelled"] },
+    });
+
+    await expect(getDraftMediaIds(scopedOwner)).resolves.toEqual({
+      photoIds: ["photo-accepted"],
+      audioIds: [],
+    });
+    expect(db.journalPhotos.bulkDelete).toHaveBeenCalledWith(["photo-cancelled"]);
+    expect(db.settings.delete).toHaveBeenCalledWith(SK.JOURNAL_CANCELLED_DRAFT_PHOTOS);
+  });
+
+  it("does not delete media from another owner when a cancellation marker is corrupted", async () => {
+    const scopedOwner = "__draft__:entry-one";
+    vi.mocked(db.journalPhotos.where).mockReturnValue({
+      equals: vi.fn(() => ({ toArray: vi.fn(() => Promise.resolve([])) })),
+    } as never);
+    vi.mocked(db.journalAudio.where).mockReturnValue({
+      equals: vi.fn(() => ({ toArray: vi.fn(() => Promise.resolve([])) })),
+    } as never);
+    vi.mocked(db.journalPhotos.get).mockResolvedValue(
+      makePhoto({ id: "photo-other-owner", entryId: "entry-other" }),
+    );
+    vi.mocked(db.settings.get).mockResolvedValue({
+      key: SK.JOURNAL_CANCELLED_DRAFT_PHOTOS,
+      value: { [scopedOwner]: ["photo-other-owner"] },
+    });
+
+    await expect(getDraftMediaIds(scopedOwner)).resolves.toEqual({
+      photoIds: [],
+      audioIds: [],
+    });
+    expect(db.journalPhotos.bulkDelete).not.toHaveBeenCalled();
+    expect(db.settings.delete).toHaveBeenCalledWith(SK.JOURNAL_CANCELLED_DRAFT_PHOTOS);
+  });
+
+  it("deletes only the requested scoped draft owner", async () => {
+    const scopedOwner = "__draft__:entry-one";
+    const scopedPhotos = [makePhoto({ id: "photo-one", entryId: scopedOwner })];
+    const scopedAudios = [makeAudio({ id: "audio-one", entryId: scopedOwner })];
+    const photoEquals = vi.fn(() => ({ toArray: vi.fn(() => Promise.resolve(scopedPhotos)) }));
+    const audioEquals = vi.fn(() => ({ toArray: vi.fn(() => Promise.resolve(scopedAudios)) }));
+    vi.mocked(db.journalPhotos.where).mockReturnValue({ equals: photoEquals } as never);
+    vi.mocked(db.journalAudio.where).mockReturnValue({ equals: audioEquals } as never);
+
+    await deleteDraftMedia(scopedOwner);
+
+    expect(photoEquals).toHaveBeenCalledWith(scopedOwner);
+    expect(audioEquals).toHaveBeenCalledWith(scopedOwner);
+    expect(db.journalPhotos.bulkDelete).toHaveBeenCalledWith(["photo-one"]);
+    expect(db.journalAudio.bulkDelete).toHaveBeenCalledWith(["audio-one"]);
+  });
+
   it("keeps draft photos local until the entry is saved", () => {
     const source = readFileSync("src/features/journal/journalStorage.ts", "utf8");
 
-    expect(source).toContain("if (entryId !== JOURNAL_DRAFT_ENTRY_ID)");
+    expect(source).toContain("if (!isJournalDraftMediaOwnerId(entryId))");
     expect(source).toContain("runWithJournalSecurityWriteLock(async () =>");
     expect(source).toContain("const encryptedPhoto = await encryptPhotoForStorage(photo)");
     expect(source).toContain(
@@ -1065,20 +1460,36 @@ describe("draft media privacy", () => {
 
 describe("photo quality contract", () => {
   it("keeps a high-density full image and a distinct lightweight thumbnail", () => {
-    const source = readFileSync("src/features/journal/journalStorage.ts", "utf8");
-    const readNumber = (name: string): number => {
+    const storageSource = readFileSync("src/features/journal/journalStorage.ts", "utf8");
+    const encodingSource = readFileSync(
+      "src/features/journal/journalPhotoEncoding.ts",
+      "utf8",
+    );
+    const readNumber = (source: string, name: string): number => {
       const match = source.match(new RegExp(`const ${name} = ([0-9.]+);`));
       expect(match, `${name} must remain an explicit reviewed constant`).not.toBeNull();
       return Number(match?.[1]);
     };
+    const readNumberList = (name: string): number[] => {
+      const match = encodingSource.match(new RegExp(`const ${name} = \\[([^\\]]+)\\] as const;`));
+      expect(match, `${name} must remain an explicit reviewed policy`).not.toBeNull();
+      return (match?.[1] ?? "").split(",").map((value) => Number(value.trim()));
+    };
 
-    expect(readNumber("MAX_DIMENSION")).toBeGreaterThanOrEqual(1600);
-    expect(readNumber("JPEG_QUALITY")).toBeGreaterThanOrEqual(0.8);
-    expect(readNumber("THUMB_WIDTH")).toBeGreaterThanOrEqual(256);
-    expect(readNumber("THUMB_WIDTH")).toBeLessThanOrEqual(480);
-    expect(readNumber("THUMB_QUALITY")).toBeGreaterThanOrEqual(0.7);
-    expect(source).toContain("createPhotoThumbnail");
-    expect(source).not.toContain("photo.thumbnail || storedData");
+    expect(readNumberList("DEFAULT_DIMENSIONS")[0]).toBeGreaterThanOrEqual(2560);
+    expect(readNumberList("FULL_RESOLUTION_QUALITIES")[0]).toBeGreaterThanOrEqual(0.84);
+    expect(readNumber(storageSource, "THUMB_WIDTH")).toBeGreaterThanOrEqual(384);
+    expect(readNumber(storageSource, "THUMB_WIDTH")).toBeLessThanOrEqual(480);
+    expect(readNumber(storageSource, "THUMB_QUALITY")).toBeGreaterThanOrEqual(0.7);
+    expect(storageSource).toContain("createImageBitmap");
+    expect(storageSource).toContain("resizeWidth");
+    expect(storageSource).toContain("resizeHeight");
+    expect(storageSource).toContain("ctx.imageSmoothingEnabled = true");
+    expect(storageSource).toContain('ctx.imageSmoothingQuality = "high"');
+    expect(storageSource).toContain("canvas.toBlob");
+    expect(storageSource).toContain("image.close()");
+    expect(storageSource).toContain("createPhotoThumbnail");
+    expect(storageSource).not.toContain("photo.thumbnail || storedData");
   });
 });
 
@@ -1124,6 +1535,28 @@ describe("getAudioForEntry", () => {
     });
     expect(result[0]).toEqual(expect.objectContaining({ data: "data:audio/mp4;base64,cloud" }));
   });
+
+  it("rejects unavailable synced audio so a later editor retry re-downloads it", async () => {
+    const remoteAudio = makeAudio({
+      id: "audio-offline",
+      data: "",
+      storagePath: "user-1/audio-offline.m4a",
+    });
+    const mockEquals = vi.fn(() => ({
+      toArray: vi.fn(() => Promise.resolve([remoteAudio])),
+    }));
+    vi.mocked(db.journalAudio.where).mockReturnValue({ equals: mockEquals } as never);
+    vi.mocked(downloadAsBase64).mockResolvedValue(null);
+
+    await expect(getAudioForEntry("entry-1")).rejects.toThrow(
+      "Synced journal audio is unavailable",
+    );
+    expect(downloadAsBase64).toHaveBeenCalledWith(
+      "journal-audio",
+      "user-1/audio-offline.m4a",
+      "user-1",
+    );
+  });
 });
 
 // ============================================================
@@ -1134,7 +1567,7 @@ describe("getAudioById", () => {
     const audio = makeAudio();
     vi.mocked(db.journalAudio.get).mockResolvedValue(audio);
 
-    const result = await getAudioById("audio-1");
+    const result = await getAudioById("audio-1", ["entry-1"]);
     expect(db.journalAudio.get).toHaveBeenCalledWith("audio-1");
     expect(result).toEqual(audio);
   });
@@ -1142,8 +1575,18 @@ describe("getAudioById", () => {
   it("returns undefined when audio not found", async () => {
     vi.mocked(db.journalAudio.get).mockResolvedValue(undefined);
 
-    const result = await getAudioById("nonexistent");
+    const result = await getAudioById("nonexistent", ["entry-1"]);
     expect(result).toBeUndefined();
+  });
+
+  it("does not hydrate audio through another journal entry association", async () => {
+    vi.mocked(db.journalAudio.get).mockResolvedValue(
+      makeAudio({ id: "audio-owned-by-a", entryId: "entry-a", data: "" }),
+    );
+
+    await expect(getAudioById("audio-owned-by-a", ["entry-b"])).resolves.toBeUndefined();
+
+    expect(downloadAsBase64).not.toHaveBeenCalled();
   });
 });
 
@@ -1151,6 +1594,41 @@ describe("getAudioById", () => {
 // deleteAudio
 // ============================================================
 describe("deleteAudio", () => {
+  beforeEach(() => {
+    vi.mocked(db.journalAudio.get).mockResolvedValue(makeAudio());
+  });
+
+  it("stops before outbox creation when the audio belongs to another entry", async () => {
+    vi.mocked(db.journalAudio.get).mockResolvedValue(
+      makeAudio({ id: "audio-owned-by-a", entryId: "entry-a" }),
+    );
+    vi.mocked(db.journalEntries.get).mockResolvedValue(
+      makeEntry({ id: "entry-b", audioIds: ["audio-owned-by-a"] }),
+    );
+
+    await expect(deleteAudio("audio-owned-by-a", "entry-b")).rejects.toThrow(
+      /does not belong to the requested entry/i,
+    );
+
+    expect(persistCriticalOfflineActionInCurrentTransaction).not.toHaveBeenCalled();
+    expect(db.journalAudio.delete).not.toHaveBeenCalled();
+    expect(db.journalEntries.update).not.toHaveBeenCalled();
+    expect(deleteAudioFromStorage).not.toHaveBeenCalled();
+    expect(deleteJournalAudioFromCloud).not.toHaveBeenCalled();
+  });
+
+  it("does not create a delete action when the audio is already absent", async () => {
+    vi.mocked(db.journalAudio.get).mockResolvedValue(undefined);
+
+    await deleteAudio("missing-audio", "entry-1");
+
+    expect(persistCriticalOfflineActionInCurrentTransaction).not.toHaveBeenCalled();
+    expect(db.journalAudio.delete).not.toHaveBeenCalled();
+    expect(db.journalEntries.update).not.toHaveBeenCalled();
+    expect(deleteAudioFromStorage).not.toHaveBeenCalled();
+    expect(deleteJournalAudioFromCloud).not.toHaveBeenCalled();
+  });
+
   it("removes audio from db and updates entry audioIds", async () => {
     const entry = makeEntry({ audioIds: ["audio-1", "audio-2"] });
     vi.mocked(db.journalEntries.get).mockResolvedValue(entry);
@@ -1184,16 +1662,16 @@ describe("deleteAudio", () => {
     expect(deleteJournalAudioFromCloud).not.toHaveBeenCalled();
   });
 
-  it("queues audio delete retry as an id-only durable action", async () => {
+  it("persists audio delete retry as an id-only durable action", async () => {
     vi.mocked(db.journalEntries.get).mockResolvedValue(undefined);
 
     await deleteAudio("audio-1", "entry-1");
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith(
+    expect(persistCriticalOfflineActionInCurrentTransaction).toHaveBeenCalledWith(
       "DELETE_JOURNAL_AUDIO_STORAGE",
       "journal-audio-delete:audio-1",
       { id: "audio-1" },
-      expect.objectContaining({ expectedOwnerUserId: "user-1", priority: "critical" })
+      "user-1",
     );
   });
 

@@ -37,6 +37,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalPrompt6: "How are you feeling right now?",
       journalContinueWriting: "Continue writing",
       journalStartToday: "Start today's entry",
+      orbSaveMoodAndStartEntry: "Save mood and start today's entry",
       navV2Orb: "Orb",
       navV2OrbSubhead: "How are you feeling?",
       orbWhisper1: "How's your heart today?",
@@ -578,6 +579,91 @@ describe("OrbPage progressive flow", () => {
     expect(refineScroller).toHaveClass("overflow-x-hidden");
   });
 
+  it("keeps enlarged slider labels out from under the orb action footer", () => {
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    const selectFooter = screen.getByTestId("orb-page-footer");
+    const selectScroller = screen.getByTestId("orb-page-select").closest(".overflow-y-auto");
+
+    expect(selectFooter).toHaveClass("relative", "shrink-0", "pt-3");
+    expect(selectFooter).not.toHaveClass("absolute");
+    expect(selectScroller).toHaveClass("pb-3");
+
+    fireEvent.click(screen.getByTestId("orb-page-next"));
+
+    const refineFooter = screen.getByTestId("orb-page-footer");
+    const refineScroller = screen.getByTestId("orb-page-refine").closest(".overflow-y-auto");
+
+    expect(refineFooter).toHaveClass("relative", "shrink-0", "pt-3");
+    expect(refineFooter).not.toHaveClass("absolute");
+    expect(refineScroller).toHaveClass("pb-3");
+  });
+
+  it("keeps overflowing orb steps reachable and resets their scroll position", () => {
+    const scrollTopDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "scrollTop",
+    );
+    const setScrollTop = vi.fn();
+
+    Object.defineProperty(HTMLElement.prototype, "scrollTop", {
+      configurable: true,
+      get: () => 120,
+      set: setScrollTop,
+    });
+
+    try {
+      render(<OrbPage onAddMood={onAddMoodMock} />);
+
+      const selectScroller = screen.getByTestId("orb-page-select").closest(".overflow-y-auto");
+      expect(selectScroller).toHaveStyle({ justifyContent: "safe center" });
+      expect(selectScroller).not.toHaveClass("[justify-content:safe_center]");
+      expect(selectScroller).not.toHaveClass("justify-center");
+      expect(setScrollTop).toHaveBeenCalledWith(0);
+
+      setScrollTop.mockClear();
+      fireEvent.click(screen.getByTestId("orb-page-next"));
+
+      const refineScroller = screen.getByTestId("orb-page-refine").closest(".overflow-y-auto");
+      expect(refineScroller).toHaveClass("justify-start");
+      expect(refineScroller).not.toHaveClass("justify-center", "[justify-content:safe_center]");
+      expect(setScrollTop).toHaveBeenCalledWith(0);
+    } finally {
+      if (scrollTopDescriptor) {
+        Object.defineProperty(HTMLElement.prototype, "scrollTop", scrollTopDescriptor);
+      } else {
+        Reflect.deleteProperty(HTMLElement.prototype, "scrollTop");
+      }
+    }
+  });
+
+  it("bounds the refine heading to the mobile scroller without splitting ordinary words", () => {
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+    fireEvent.click(screen.getByTestId("orb-page-next"));
+
+    const heading = screen.getByTestId("orb-page-refine-heading");
+    const copyColumn = heading.parentElement;
+    const noteLabel = screen.getByText("Continue writing");
+
+    expect(screen.getByTestId("orb-page-refine")).toHaveClass("px-0");
+    expect(screen.getByTestId("orb-page-emotion-spectrum")).toHaveClass("px-0");
+    expect(screen.getByTestId("orb-page-note")).toHaveClass("px-0");
+    expect(copyColumn).toHaveClass("w-full", "max-w-full", "min-w-0");
+    expect(heading).toHaveClass("min-w-0", "max-w-full", "break-words");
+    expect(heading).toHaveClass(
+      "text-[1.0625rem]",
+      "min-[360px]:text-2xl",
+      "md:text-3xl",
+    );
+    expect(heading.className).toContain("[hyphens:manual]");
+    expect(heading.className).toContain("[overflow-wrap:normal]");
+    expect(noteLabel).toHaveClass(
+      "[hyphens:auto]",
+      "[overflow-wrap:normal]",
+      "[word-break:normal]",
+    );
+  });
+
   it("constrains scope controls so translated labels cannot create horizontal scrollbars", () => {
     const scopeCss = readFileSync("src/pages/nav-v2/MoodScopeSelector.css", "utf8");
 
@@ -876,7 +962,50 @@ describe("OrbPage progressive flow", () => {
     render(<OrbPage navigateToPage={navigateToPage} onAddMood={onAddMoodMock} />);
 
     fireEvent.click(screen.getByTestId("orb-page-next"));
-    fireEvent.click(screen.getByTestId("orb-page-open-diary"));
+    expect(screen.getByTestId("orb-page-runtime-content")).toHaveClass(
+      "px-3",
+      "md:px-6",
+    );
+    const refineScroller = screen.getByTestId("orb-page-refine-scroll");
+    const backToSelect = screen.getByTestId("orb-page-back");
+    const saveAndOpen = screen.getByTestId("orb-page-open-diary");
+    expect(refineScroller).toHaveClass(
+      "overflow-y-auto",
+      "overflow-x-hidden",
+      "px-2",
+      "md:px-4",
+    );
+    expect(refineScroller).toContainElement(screen.getByTestId("orb-page-footer"));
+    expect(screen.getByTestId("orb-page-refine-actions")).toHaveClass(
+      "flex-col",
+      "items-stretch",
+      "px-0",
+      "sm:flex-row",
+    );
+    expect(saveAndOpen).toHaveAccessibleName("Save mood and start today's entry");
+    expect(saveAndOpen).toHaveClass(
+      "min-w-0",
+      "max-w-full",
+      "w-full",
+      "whitespace-normal",
+      "text-center",
+      "px-3",
+      "sm:px-5",
+      "sm:w-auto",
+    );
+    expect(saveAndOpen).toHaveStyle({ borderRadius: "clamp(24px, 8vw, 44px)" });
+    expect(saveAndOpen).not.toHaveClass("rounded-[clamp(24px,8vw,44px)]");
+    expect(backToSelect).toHaveClass("px-3", "sm:px-5");
+    expect(saveAndOpen.querySelector("span")).toHaveClass(
+      "min-w-0",
+      "flex-1",
+      "[overflow-wrap:normal]",
+      "[word-break:normal]",
+    );
+    expect(saveAndOpen.querySelector("span")).not.toHaveClass("break-words");
+    expect(saveAndOpen.querySelector("svg")).toHaveClass("orb-page-save-arrow");
+    expect(saveAndOpen.querySelector("svg")).not.toHaveClass("max-[359px]:hidden");
+    fireEvent.click(saveAndOpen);
 
     expect(navigateToPage).toHaveBeenCalledWith("diary");
     expect(setActivePageMock).not.toHaveBeenCalled();
@@ -890,6 +1019,29 @@ describe("OrbPage progressive flow", () => {
       emotion: null,
       note: null,
     });
+  });
+
+  it("keeps the Diary arrow decorative and hidden only below 360px through route-local CSS", () => {
+    const stepsCss = readFileSync("src/pages/nav-v2/OrbPageSteps.css", "utf8");
+
+    expect(stepsCss).toMatch(/@media\s*\(max-width:\s*359px\)/);
+    expect(stepsCss).toMatch(
+      /\.orb-page-save-arrow\s*\{[\s\S]*?display:\s*none;?[\s\S]*?\}/
+    );
+  });
+
+  it("releases the nested refine gutter below 360px so long emotion words stay inside their chip", () => {
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+    fireEvent.click(screen.getByTestId("orb-page-next"));
+
+    const stepsCss = readFileSync("src/pages/nav-v2/OrbPageSteps.css", "utf8");
+    const refineScroller = screen.getByTestId("orb-page-refine-scroll");
+
+    expect(refineScroller).toHaveClass("orb-page-refine-scroll", "px-2", "md:px-4");
+    expect(stepsCss).toMatch(/@media\s*\(max-width:\s*359px\)/);
+    expect(stepsCss).toMatch(
+      /\.orb-page-refine-scroll\s*\{[\s\S]*?padding-inline:\s*0;?[\s\S]*?\}/,
+    );
   });
 
   it("includes exact feeling and note in the pending Diary context when provided", () => {

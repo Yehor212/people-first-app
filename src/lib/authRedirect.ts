@@ -6,16 +6,21 @@ import {
   JOURNAL_PASSWORD_RESET_PARAM,
   persistJournalPasswordResetProofFromUrl,
 } from "@/lib/journalPasswordResetHandoff";
+import {
+  runWithPkceCallbackUrl,
+} from "@/lib/authTransitionCoordinator";
+import {
+  PKCE_ATTEMPT_PARAM,
+} from "@/lib/pkceAttemptStorage";
+import {
+  ALLOWED_AUTH_REDIRECT_ORIGINS,
+  isAllowedLocalOAuthOrigin,
+  NATIVE_AUTH_REDIRECT_URL,
+} from "@/lib/authRedirectPolicy";
 
-const NATIVE_REDIRECT_URL = "com.zenflow.app://login-callback";
 const V2_ROUTE_PATHS = new Set(["/orb", "/habits", "/diary", "/planning", "/settings"]);
-const ALLOWED_WEB_ORIGINS = [
-  "https://yehor212.github.io",
-  "capacitor://localhost",
-  "https://zenflow.app",
-] as const;
-const LOOPBACK_OAUTH_PORTS = new Set(["3000", "4173", "4174", "4175", "4176", "5173", "8080"]);
-const LOOPBACK_OAUTH_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+
+export { isAllowedLocalOAuthOrigin } from "@/lib/authRedirectPolicy";
 
 function normalizeBasePath(basePath: string): string {
   const cleanBase = basePath.startsWith("/") ? basePath : `/${basePath}`;
@@ -34,21 +39,6 @@ function stripBasePath(pathname: string, basePath: string): string {
 function normalizeAppRoutePath(pathname: string): string {
   if (!pathname || pathname === "/") return "/";
   return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
-}
-
-export function isAllowedLocalOAuthOrigin(rawOrigin: string): boolean {
-  let parsed: URL;
-  try {
-    parsed = new URL(rawOrigin);
-  } catch {
-    return false;
-  }
-
-  return (
-    parsed.protocol === "http:" &&
-    LOOPBACK_OAUTH_HOSTS.has(parsed.hostname) &&
-    LOOPBACK_OAUTH_PORTS.has(parsed.port)
-  );
 }
 
 function getV2RedirectPath(basePath: string): string | null {
@@ -90,6 +80,7 @@ export function getCleanAuthCallbackUrl(rawUrl: string): string {
     "provider_token",
     "provider_refresh_token",
     JOURNAL_PASSWORD_RESET_PARAM,
+    PKCE_ATTEMPT_PARAM,
   ];
 
   for (const param of oauthParams) {
@@ -140,16 +131,16 @@ export const sanitizeAuthErrorMessage = (message: string): string => {
 
 export const getAuthRedirectUrl = () => {
   if (isNative) {
-    return NATIVE_REDIRECT_URL;
+    return NATIVE_AUTH_REDIRECT_URL;
   }
 
   // Web: construct clean redirect URL with origin allowlist (OWASP L18)
   const rawOrigin = window.location.origin;
   const origin =
-    (ALLOWED_WEB_ORIGINS as readonly string[]).includes(rawOrigin) ||
+    (ALLOWED_AUTH_REDIRECT_ORIGINS as readonly string[]).includes(rawOrigin) ||
     isAllowedLocalOAuthOrigin(rawOrigin)
       ? rawOrigin
-      : ALLOWED_WEB_ORIGINS[0];
+      : ALLOWED_AUTH_REDIRECT_ORIGINS[0];
   const basePath = BASE_URL;
 
   // Ensure proper path format (no double slashes)
@@ -177,10 +168,15 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
   const hashParams = new URLSearchParams(parsed.hash.replace(/^#/, ""));
 
   // Handle errors with sanitized messages
+  const errorCode = searchParams.get("error") || hashParams.get("error");
   const errorDescription =
     searchParams.get("error_description") || hashParams.get("error_description");
-  if (errorDescription) {
-    throw new Error(sanitizeAuthErrorMessage(errorDescription));
+  if (errorCode || errorDescription) {
+    throw new Error(
+      errorDescription
+        ? sanitizeAuthErrorMessage(errorDescription)
+        : "Authentication failed. Please try again.",
+    );
   }
 
   // Try PKCE flow first - exchange code for session (most secure)
@@ -191,7 +187,12 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
       throw new Error("Invalid authorization code");
     }
 
-    const { data, error } = await supabaseClient.auth.exchangeCodeForSession(normalizedCode);
+    const exchange = () => supabaseClient.auth.exchangeCodeForSession(normalizedCode);
+    const { data, error } = await runWithPkceCallbackUrl(
+      supabaseClient.auth,
+      url,
+      exchange,
+    );
 
     if (error) {
       logger.error("[Auth] exchangeCodeForSession error:", error.message);
@@ -207,7 +208,7 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
       "[Auth] PKCE session exchange successful, user:",
       `user:${data.session.user.id.slice(0, 8)}`
     );
-    persistJournalPasswordResetProofFromUrl(url);
+    persistJournalPasswordResetProofFromUrl(url, data.session.user.id);
     return;
   }
 
@@ -237,7 +238,6 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
       "[Auth] Implicit flow session set, user:",
       `user:${data.session.user.id.slice(0, 8)}`
     );
-    persistJournalPasswordResetProofFromUrl(url);
     return;
   }
 

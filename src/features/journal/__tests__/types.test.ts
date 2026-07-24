@@ -21,6 +21,10 @@ describe('countWords', () => {
   it('trims leading and trailing whitespace', () => {
     expect(countWords('  hello world  ')).toBe(2);
   });
+
+  it('counts Japanese words without requiring spaces', () => {
+    expect(countWords('今日は静かな一日でした')).toBeGreaterThan(1);
+  });
 });
 
 describe('countWordsHtml', () => {
@@ -50,5 +54,9 @@ describe('countWordsHtml', () => {
 
   it('returns 0 for only whitespace after stripping', () => {
     expect(countWordsHtml('<p>  </p> <br/> ')).toBe(0);
+  });
+
+  it('counts words in Japanese rich text consistently', () => {
+    expect(countWordsHtml('<p>今日は静かな一日でした</p>')).toBeGreaterThan(1);
   });
 });

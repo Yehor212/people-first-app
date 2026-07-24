@@ -87,7 +87,7 @@ export const CosmicBgAdapter = memo(function CosmicBgAdapter({
 
   // Paper theme → day variant (aurora WOW). Ink/oled → night cosmic (untouched).
   if (resolvedVariant === "day") {
-    return <DayCosmicBackground />;
+    return <DayCosmicBackground motionEnabled={shouldAnimate} />;
   }
 
   if (resolvedVariant === "starry") {

@@ -183,7 +183,7 @@ export function AddEventModal({
 
           {/* Event type presets - 3D cards */}
           <div
-            className="grid grid-cols-3 gap-2 mb-4"
+            className="grid grid-cols-1 gap-2 mb-4 min-[420px]:grid-cols-3"
             role="group"
             aria-label={t.scheduleEventType || "Event type"}
           >
@@ -201,7 +201,7 @@ export function AddEventModal({
                   aria-pressed={isSelected}
                   aria-label={label}
                   className={cn(
-                    "p-3 rounded-xl flex flex-col items-center gap-1 motion-safe:transition-all",
+                    "h-auto min-h-[52px] min-w-0 whitespace-normal p-3 rounded-xl flex flex-col items-center gap-1 motion-safe:transition-all",
                     "backdrop-blur-sm border",
                     isSelected
                       ? `bg-gradient-to-br ${gradient} border-white/30 shadow-lg`
@@ -209,7 +209,7 @@ export function AddEventModal({
                   )}
                 >
                   <motion.span
-                    className="text-2xl"
+                    className="shrink-0 text-2xl"
                     animate={isSelected ? { scale: [1, 1.2, 1] } : {}}
                     transition={{ duration: 0.5 }}
                     style={
@@ -222,7 +222,9 @@ export function AddEventModal({
                   >
                     {preset.emoji}
                   </motion.span>
-                  <span className="text-xs text-slate-600 dark:text-white/80">{label}</span>
+                  <span className="break-words text-center text-xs text-slate-600 dark:text-white/80">
+                    {label}
+                  </span>
                 </motion.button>
               );
             })}

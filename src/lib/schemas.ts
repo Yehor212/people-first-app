@@ -254,6 +254,8 @@ export const runtimeGratitudeEntrySchema = z
 export const reminderSettingsSchema = z
   .object({
     enabled: z.boolean(),
+    moodCheckInsEnabled: z.boolean().optional(),
+    focusReminderEnabled: z.boolean().optional(),
     moodTimeMorning: z.string(),
     moodTimeAfternoon: z.string(),
     moodTimeEvening: z.string(),

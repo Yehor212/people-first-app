@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { EntryGateBackdrop } from "@/components/EntryGateBackdrop";
 import { EntryThemeSwitcher } from "@/components/EntryThemeSwitcher";
@@ -59,6 +59,7 @@ export function AuthScreen({
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const animated = !isAndroid && shouldAnimate();
   const breathAudioRef = useRef<HTMLAudioElement | null>(null);
+  const recoveryChoiceRef = useRef<HTMLDivElement | null>(null);
   const appAudioSettings = useAppAudioSettings();
   const audioComfort = useAudioComfortSettings();
   const canPlayBreathAudio =
@@ -111,6 +112,12 @@ export function AuthScreen({
     resetEntryGateScroll("auth-screen");
   }, []);
 
+  useEffect(() => {
+    if (session.error && recoveryAction?.tone === "choice") {
+      recoveryChoiceRef.current?.focus();
+    }
+  }, [recoveryAction?.tone, session.error]);
+
   return (
     <main
       className="entry-gate-screen relative isolate flex items-start justify-center overflow-x-hidden overflow-y-auto text-foreground md:items-center"
@@ -149,7 +156,7 @@ export function AuthScreen({
           />
           <h1
             id="auth-title"
-            className="entry-gate-title mx-auto max-w-xs text-4xl font-black leading-none text-foreground sm:text-5xl md:max-w-xl md:text-6xl"
+            className="entry-gate-title mx-auto min-w-0 max-w-xs whitespace-normal text-2xl font-black leading-tight text-foreground [hyphens:manual] [overflow-wrap:normal] min-[390px]:text-3xl sm:text-display-5xl md:max-w-xl md:text-display-6xl"
           >
             {t.authWelcomeTitle}
           </h1>
@@ -225,29 +232,51 @@ export function AuthScreen({
           {session.error && (
             <div
               id="auth-error"
-              role="alert"
+              ref={recoveryAction?.tone === "choice" ? recoveryChoiceRef : undefined}
+              role={recoveryAction?.tone === "choice" ? "status" : "alert"}
               aria-live="polite"
-              className="mt-3 flex items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/10 p-3"
+              aria-busy={recoveryAction?.pending || undefined}
+              tabIndex={recoveryAction?.tone === "choice" ? -1 : undefined}
+              data-testid={recoveryAction?.tone === "choice" ? "auth-recovery-choice" : undefined}
+              className={
+                recoveryAction?.tone === "choice"
+                  ? "mt-3 flex min-w-0 max-w-full items-start gap-2 rounded-xl border border-border/70 bg-card/70 p-3 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  : "mt-3 flex min-w-0 max-w-full items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/10 p-3"
+              }
             >
-              <AlertCircle
-                className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0"
-                aria-hidden="true"
-              />
-              <div className="flex-1">
-                <p className="text-sm text-destructive whitespace-pre-wrap">{session.error}</p>
+              {recoveryAction?.tone === "choice" ? (
+                <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" aria-hidden="true" />
+              ) : (
+                <AlertCircle
+                  className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive"
+                  aria-hidden="true"
+                />
+              )}
+              <div className="min-w-0 max-w-full flex-1">
+                <p
+                  className={
+                    recoveryAction?.tone === "choice"
+                      ? "max-w-full whitespace-pre-wrap text-sm text-foreground [overflow-wrap:anywhere]"
+                      : "max-w-full whitespace-pre-wrap text-sm text-destructive [overflow-wrap:anywhere]"
+                  }
+                >
+                  {session.error}
+                </p>
                 {recoveryAction && (
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <div className="mt-3 grid min-w-0 max-w-full gap-2 sm:grid-cols-2">
                     <button
                       type="button"
                       onClick={recoveryAction.onConfirm}
-                      className="min-h-[44px] rounded-xl border border-primary/35 bg-primary/10 px-3 py-2 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      disabled={recoveryAction.pending}
+                      className="min-h-[48px] min-w-0 max-w-full whitespace-normal rounded-xl border border-border/70 bg-card/80 px-3 py-2 text-sm font-semibold text-foreground [overflow-wrap:anywhere] motion-safe:transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {recoveryAction.confirmLabel}
                     </button>
                     <button
                       type="button"
                       onClick={recoveryAction.onCancel}
-                      className="min-h-[44px] rounded-xl border border-border/70 px-3 py-2 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      disabled={recoveryAction.pending}
+                      className="min-h-[48px] min-w-0 max-w-full whitespace-normal rounded-xl border border-border/70 bg-card/80 px-3 py-2 text-sm font-semibold text-foreground [overflow-wrap:anywhere] motion-safe:transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {recoveryAction.cancelLabel}
                     </button>

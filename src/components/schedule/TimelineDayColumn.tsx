@@ -25,12 +25,13 @@ export function TimelineDayColumn({
       style={{ left: `${dayOffset}px`, width: `${DAY_WIDTH_PX}px` }}
     >
       {/* Hour markers */}
-      <div className="absolute inset-x-0 top-0 flex">
+      <div className="absolute inset-x-0 top-0 flex" data-schedule-hour-markers>
         {HOURS.map((hour) => (
           <div key={hour} className="text-center" style={{ width: `${HOUR_WIDTH_PX}px` }}>
             <span
+              data-schedule-hour-label
               className={cn(
-                "text-sm font-medium tabular-nums",
+                "whitespace-nowrap text-sm font-medium tabular-nums",
                 isDayToday && hour === currentHour && "text-purple-700 dark:text-purple-300 font-bold"
               )}
               style={!(isDayToday && hour === currentHour) ? {

@@ -7,7 +7,7 @@ import { logger } from "@/lib/logger";
 import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSync";
 import { isAbortError } from "@/lib/validation";
 import { supabase } from "@/lib/supabaseClient";
-import type { Json } from "@/types/supabase";
+import type { Database } from "@/types/supabase";
 import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
 import { journalStyleFieldsToCloud } from "@/features/journal/journalStyleFields";
 import { offlineQueue } from "@/lib/offlineQueue";
@@ -16,6 +16,7 @@ import { getDeletedJournalEntryIds, trackDeletedJournalEntryId } from "@/storage
 import { isEntityTombstonedOnServer } from "./serverTombstones";
 import { isCloudSyncEnabled } from "@/lib/cloudSyncSettings";
 import { validateSyncOwner } from "./syncOwner";
+import { db } from "@/storage/db";
 
 type JournalPhotoSyncPayload = Pick<
   JournalPhoto,
@@ -31,6 +32,12 @@ async function validateJournalSyncOwner(
   expectedOwnerUserId: string,
 ): Promise<string | null> {
   return validateSyncOwner(expectedOwnerUserId, "Journal sync");
+}
+
+function throwIfJournalSyncAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+  if (signal.reason instanceof Error) throw signal.reason;
+  throw new DOMException("Journal sync was aborted", "AbortError");
 }
 
 function toPhotoSyncPayload(photo: JournalPhotoSyncPayload): JournalPhotoSyncPayload {
@@ -53,6 +60,27 @@ function toAudioSyncPayload(audio: JournalAudioSyncPayload): JournalAudioSyncPay
     createdAt: audio.createdAt,
     storagePath: audio.storagePath,
   };
+}
+
+async function publishJournalAudioParentRefresh(
+  audio: JournalAudioSyncPayload,
+  expectedOwnerUserId: string,
+): Promise<void> {
+  if (!audio.storagePath) return;
+  const entry = await db.journalEntries.get(audio.entryId);
+  if (!entry?.audioIds?.includes(audio.id)) return;
+  const currentOwner = await validateJournalSyncOwner(expectedOwnerUserId);
+  if (currentOwner !== expectedOwnerUserId) return;
+
+  const deviceId = await getPersistentDeviceId();
+  await writeEventAndBroadcast(
+    "journal",
+    entry.id,
+    "upsert",
+    entry as unknown as Record<string, unknown>,
+    deviceId,
+    { expectedOwnerUserId },
+  );
 }
 
 async function queueJournalPhotoUploadRetry(
@@ -114,7 +142,9 @@ async function queueJournalAudioDeleteRetry(
 export const syncJournalEntry = async (
   entry: JournalEntry,
   expectedOwnerUserId: string,
+  signal?: AbortSignal,
 ): Promise<void> => {
+  throwIfJournalSyncAborted(signal);
   if (!isCloudSyncEnabled()) return;
 
   const userId = await validateJournalSyncOwner(expectedOwnerUserId);
@@ -143,31 +173,54 @@ export const syncJournalEntry = async (
     logger.warn("[Sync] Skipping server-tombstoned journal entry upsert:", entry.id);
     return;
   }
+  throwIfJournalSyncAborted(signal);
 
   try {
-    const { error } = await supabase.from("journal_entries").upsert(
-      {
-        id: entry.id,
-        user_id: userId,
-        date: entry.date,
-        title: entry.title,
-        content: entry.content,
-        stickers: entry.stickers,
-        mood: entry.mood || null,
-        tags: entry.tags,
-        template_id: entry.templateId || null,
-        habit_snapshot: (entry.habitSnapshot as unknown as Json) || null,
-        photo_ids: entry.photoIds,
-        audio_ids: entry.audioIds || [],
-        photo_layout: (entry.photoLayout as unknown as Json) || null,
-        ...journalStyleFieldsToCloud(entry),
-        created_at: entry.createdAt,
-        updated_at: entry.updatedAt,
-      },
-      { onConflict: "id" }
-    );
+    const payload: Database["public"]["Tables"]["journal_entries"]["Insert"] = {
+      id: entry.id,
+      user_id: userId,
+      date: entry.date,
+      title: entry.title,
+      content: entry.content,
+      stickers: entry.stickers,
+      mood: entry.mood || null,
+      tags: entry.tags,
+      template_id: entry.templateId || null,
+      habit_snapshot: entry.habitSnapshot || null,
+      photo_ids: entry.photoIds,
+      audio_ids: entry.audioIds || [],
+      photo_layout: entry.photoLayout || null,
+      ...journalStyleFieldsToCloud(entry),
+      created_at: entry.createdAt,
+      updated_at: entry.updatedAt,
+    };
+    const upsertRequest = supabase
+      .from("journal_entries")
+      .upsert(payload, { onConflict: "id" })
+      .select("id");
+    const abortableUpsertRequest = signal
+      ? upsertRequest.abortSignal(signal)
+      : upsertRequest;
+    const { data: acceptedRow, error } = await abortableUpsertRequest.maybeSingle();
 
     if (error) throw error;
+    let accepted = Boolean(acceptedRow);
+    if (!accepted) {
+      const replayRequest = supabase.rpc(
+        "is_journal_entry_payload_current",
+        { p_entry: payload }
+      );
+      throwIfJournalSyncAborted(signal);
+      const { data: exactReplay, error: replayError } = await replayRequest;
+      throwIfJournalSyncAborted(signal);
+      if (replayError) throw replayError;
+      accepted = exactReplay === true;
+    }
+    if (!accepted) {
+      logger.warn("[Sync] Stale journal entry rejected:", entry.id);
+      return;
+    }
+    throwIfJournalSyncAborted(signal);
     logger.log("[Sync] Journal entry synced:", entry.id);
     const deviceId = await getPersistentDeviceId();
     await writeEventAndBroadcast(
@@ -178,10 +231,11 @@ export const syncJournalEntry = async (
       deviceId,
       { expectedOwnerUserId: userId }
     );
+    throwIfJournalSyncAborted(signal);
   } catch (error) {
     if (isAbortError(error)) {
       logger.warn("[Sync] Journal entry sync aborted:", entry.id);
-      return;
+      throw error;
     }
     const isNetworkError = detectNetworkError(error);
     if (isNetworkError) {
@@ -200,7 +254,9 @@ export const syncJournalEntry = async (
 export const deleteJournalEntryFromCloud = async (
   entryId: string,
   expectedOwnerUserId: string,
+  signal?: AbortSignal,
 ): Promise<void> => {
+  throwIfJournalSyncAborted(signal);
   if (!isCloudSyncEnabled()) return;
 
   await trackDeletedJournalEntryId(entryId);
@@ -226,25 +282,49 @@ export const deleteJournalEntryFromCloud = async (
   try {
     // Delete entry + associated photos/audio metadata from cloud tables
     // (Storage files are cleaned up separately by journalStorage.ts)
-    const [entryRes, photosRes, audioRes] = await Promise.all([
-      supabase.from("journal_entries").delete().eq("id", entryId).eq("user_id", userId),
-      supabase.from("journal_photos").delete().eq("entry_id", entryId).eq("user_id", userId),
-      supabase.from("journal_audio").delete().eq("entry_id", entryId).eq("user_id", userId),
+    const entryRequest = supabase
+      .from("journal_entries")
+      .delete()
+      .eq("id", entryId)
+      .eq("user_id", userId);
+    const photosRequest = supabase
+      .from("journal_photos")
+      .delete()
+      .eq("entry_id", entryId)
+      .eq("user_id", userId);
+    const audioRequest = supabase
+      .from("journal_audio")
+      .delete()
+      .eq("entry_id", entryId)
+      .eq("user_id", userId);
+    const embeddingsRequest = supabase
+      .from("journal_embeddings")
+      .delete()
+      .eq("entry_id", entryId)
+      .eq("user_id", userId);
+    const [entryRes, photosRes, audioRes, embeddingsRes] = await Promise.all([
+      signal ? entryRequest.abortSignal(signal) : entryRequest,
+      signal ? photosRequest.abortSignal(signal) : photosRequest,
+      signal ? audioRequest.abortSignal(signal) : audioRequest,
+      signal ? embeddingsRequest.abortSignal(signal) : embeddingsRequest,
     ]);
 
     if (entryRes.error) throw entryRes.error;
-    if (photosRes.error) logger.warn("[Sync] Journal photos delete failed:", photosRes.error);
-    if (audioRes.error) logger.warn("[Sync] Journal audio delete failed:", audioRes.error);
+    if (photosRes.error) throw photosRes.error;
+    if (audioRes.error) throw audioRes.error;
+    if (embeddingsRes.error) throw embeddingsRes.error;
 
+    throwIfJournalSyncAborted(signal);
     logger.log("[Sync] Journal entry deleted from cloud:", entryId);
     const deviceId = await getPersistentDeviceId();
     await writeEventAndBroadcast("journal", entryId, "delete", null, deviceId, {
       expectedOwnerUserId: userId,
     });
+    throwIfJournalSyncAborted(signal);
   } catch (error) {
     if (isAbortError(error)) {
       logger.warn("[Sync] Journal entry delete aborted:", entryId);
-      return;
+      throw error;
     }
     if (detectNetworkError(error)) {
       await offlineQueue.enqueue(
@@ -315,7 +395,7 @@ export const syncJournalPhoto = async (
   } catch (error) {
     if (isAbortError(error)) {
       logger.warn("[Sync] Journal photo sync aborted:", photo.id);
-      return;
+      throw error;
     }
     if (detectNetworkError(error)) {
       await queueJournalPhotoUploadRetry(photo, userId);
@@ -373,10 +453,11 @@ export const syncJournalAudio = async (
 
     if (error) throw error;
     logger.log("[Sync] Journal audio metadata synced:", audio.id);
+    await publishJournalAudioParentRefresh(audio, userId);
   } catch (error) {
     if (isAbortError(error)) {
       logger.warn("[Sync] Journal audio sync aborted:", audio.id);
-      return;
+      throw error;
     }
     if (detectNetworkError(error)) {
       await queueJournalAudioUploadRetry(audio, userId);
@@ -413,7 +494,7 @@ export const deleteJournalPhotoFromCloud = async (
   } catch (error) {
     if (isAbortError(error)) {
       logger.warn("[Sync] Journal photo delete aborted:", photoId);
-      return;
+      throw error;
     }
     if (detectNetworkError(error)) {
       await queueJournalPhotoDeleteRetry(photoId, userId);
@@ -450,7 +531,7 @@ export const deleteJournalAudioFromCloud = async (
   } catch (error) {
     if (isAbortError(error)) {
       logger.warn("[Sync] Journal audio delete aborted:", audioId);
-      return;
+      throw error;
     }
     if (detectNetworkError(error)) {
       await queueJournalAudioDeleteRetry(audioId, userId);

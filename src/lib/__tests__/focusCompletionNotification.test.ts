@@ -7,7 +7,8 @@ const notifications = vi.hoisted(() => ({
 }));
 const channels = vi.hoisted(() => ({
   initializeNotificationChannels: vi.fn(),
-  getCurrentChannelId: vi.fn(() => "zenflow_gentle_v3"),
+  getCurrentChannelId: vi.fn(() => "zenflow_default_v4"),
+  getCurrentSoundOption: vi.fn(() => ({ sound: "default" })),
 }));
 
 vi.mock("@/lib/platform", () => native);
@@ -38,7 +39,8 @@ describe("focus completion notification", () => {
           title: "ZenFlow",
           body: "Focus session complete",
           id: FOCUS_COMPLETION_NOTIFICATION_ID,
-          channelId: "zenflow_gentle_v3",
+          channelId: "zenflow_default_v4",
+          sound: "default",
         },
       ],
     });

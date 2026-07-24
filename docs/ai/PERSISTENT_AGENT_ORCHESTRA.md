@@ -3,7 +3,7 @@
 <!-- Generated from config/persistent-agent-orchestra.json. Do not edit by hand. -->
 
 - Registry ID: `zenflow-codex-exact-ten`
-- Registry review date: `2026-07-12`
+- Registry review date: `2026-07-20`
 - Canonical source: `config/persistent-agent-orchestra.json`
 
 This file is a generated operational reference. The JSON registry remains the only prompt source of truth.
@@ -19,9 +19,10 @@ Every profile declares `sandbox_mode = "read-only"` as the native mapping of `RE
 - Project custom roles: exactly 10.
 - `agents.max_threads = 4`: root plus at most three concurrent specialists.
 - `agents.max_depth = 1`: root may create direct children; children may not recurse.
-- Automatic all-ten fan-out is forbidden by the registry activation policy.
+- All ten roles are considered with evidence, but physical invocation is adaptive. M1 uses matched owners plus QA; M2 adds Role 10 Pass A/B; explicit deep audit may select all ten; FIXED_FULL_TEN preserves the legacy 20-phase rollback.
 - Every observed domain trigger makes its mapped owner mandatory; every unselected role needs a recorded skip reason.
 - Per-role semantic invariant IDs and checksums detect accidental prompt flattening; they are structural drift controls, not semantic or human approval.
+- Evidence assurance protocol: 2.2.1-e1; aggregate precedence: INTEGRITY_FAILED / BLOCKED / NEEDS_AUTHORITY / EXECUTION_INCOMPLETE / AUTHORIZED_WITH_ACCEPTED_RISK / COMPLETE_WITH_UNVERIFIED / GO_FOR_PROVEN_SCOPE.
 
 ## Exact-Ten Roster
 
@@ -40,28 +41,28 @@ Every profile declares `sandbox_mode = "read-only"` as the native mapping of `RE
 
 ## Source Freshness Ledger
 
-Stale normative or operational sources always fail the local structural check. The local checker never suppresses a stale normative or operational source from a repository waiver because it cannot authenticate the typed human approver; any future exception requires an external authenticated verifier, which is not implemented. Stale research produces a warning and leaves dependent claims `UNVERIFIED`.
+Stale non-research source records fail the local structural check. The local checker never suppresses a stale normative or operational source through a repository waiver because it cannot authenticate the typed human approver; any future exception requires an external authenticated verifier. Stale PEER_REVIEWED_RESEARCH leaves dependent empirical claims `UNVERIFIED`.
 
-| Source | Class | Reviewed | Maximum age | Applicable roles |
-| --- | --- | --- | ---: | --- |
-| [OpenAI Codex Subagents](https://developers.openai.com/codex/subagents) | operational | `2026-07-12` | 90 days | coordinator-teamlead, security-privacy-agent-trust, qa-evidence-release-verification, independent-blind-spot-sentinel |
-| [OpenAI Codex Configuration Reference](https://developers.openai.com/codex/config-reference) | operational | `2026-07-12` | 90 days | coordinator-teamlead, security-privacy-agent-trust, qa-evidence-release-verification |
-| [OpenAI Prompt Engineering Guide](https://developers.openai.com/api/docs/guides/prompt-engineering) | operational | `2026-07-12` | 90 days | coordinator-teamlead, psychology-human-factors-emotional-safety, logic-causality-state-coherence, interaction-accessibility-readability-localization-culture, technical-architecture-data-cross-platform, security-privacy-agent-trust, performance-reliability-operations, qa-evidence-release-verification, product-discovery-visual-craft-experience-quality, independent-blind-spot-sentinel |
-| [OpenAI Evaluation Best Practices](https://developers.openai.com/api/docs/guides/evaluation-best-practices) | operational | `2026-07-12` | 90 days | qa-evidence-release-verification |
-| [NIST AI Risk Management Framework](https://www.nist.gov/itl/ai-risk-management-framework) | normative | `2026-07-12` | 365 days | coordinator-teamlead, security-privacy-agent-trust, qa-evidence-release-verification, independent-blind-spot-sentinel |
-| [WHO Responsible AI for Mental Health and Well-Being](https://www.who.int/news/item/20-03-2026-towards-responsible-ai-for-mental-health-and-well-being--experts-chart-a-way-forward) | normative | `2026-07-12` | 180 days | psychology-human-factors-emotional-safety, security-privacy-agent-trust, product-discovery-visual-craft-experience-quality, independent-blind-spot-sentinel |
-| [Web Content Accessibility Guidelines 2.2](https://www.w3.org/TR/WCAG22/) | normative | `2026-07-12` | 365 days | interaction-accessibility-readability-localization-culture, qa-evidence-release-verification |
-| [W3C Cognitive Accessibility Guidance](https://www.w3.org/WAI/cognitive/) | normative | `2026-07-12` | 365 days | psychology-human-factors-emotional-safety, interaction-accessibility-readability-localization-culture, product-discovery-visual-craft-experience-quality |
-| [W3C Involving Users in Accessibility Work](https://www.w3.org/WAI/planning/involving-users/) | normative | `2026-07-12` | 365 days | interaction-accessibility-readability-localization-culture, qa-evidence-release-verification, product-discovery-visual-craft-experience-quality |
-| [Android Core App Quality Guidelines](https://developer.android.com/docs/quality-guidelines/core-app-quality) | operational | `2026-07-12` | 90 days | interaction-accessibility-readability-localization-culture, technical-architecture-data-cross-platform, performance-reliability-operations, qa-evidence-release-verification |
-| [Apple Human Interface Guidelines: Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility) | operational | `2026-07-12` | 90 days | interaction-accessibility-readability-localization-culture, technical-architecture-data-cross-platform, qa-evidence-release-verification |
-| [OWASP AI Agent Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html) | operational | `2026-07-12` | 90 days | coordinator-teamlead, security-privacy-agent-trust, qa-evidence-release-verification, independent-blind-spot-sentinel |
-| [Google People + AI Guidebook: User Needs and Defining Success](https://pair.withgoogle.com/chapter/user-needs/) | research | `2026-07-12` | 365 days | psychology-human-factors-emotional-safety, product-discovery-visual-craft-experience-quality, independent-blind-spot-sentinel |
-| [Google HEART User-Centered Metrics Research](https://research.google/pubs/measuring-the-user-experience-on-a-large-scale-user-centered-metrics-for-web-applications/) | research | `2026-07-12` | 365 days | performance-reliability-operations, product-discovery-visual-craft-experience-quality |
-| [OECD Dark Commercial Patterns](https://www.oecd.org/en/topics/dark-commercial-patterns.html) | research | `2026-07-12` | 365 days | psychology-human-factors-emotional-safety, security-privacy-agent-trust, product-discovery-visual-craft-experience-quality, independent-blind-spot-sentinel |
-| [ACL Anthology: Divergent Thinking in Multi-Agent Debate](https://aclanthology.org/2024.emnlp-main.992/) | research | `2026-07-12` | 365 days | coordinator-teamlead |
-| [ACL Anthology: Bias Amplification in Multi-Agent LLM-as-Judge](https://aclanthology.org/2025.findings-emnlp.941/) | research | `2026-07-12` | 365 days | coordinator-teamlead, qa-evidence-release-verification, independent-blind-spot-sentinel |
-| [ACL Anthology: Confidence and Diversity in Multi-Agent Debate](https://aclanthology.org/2026.findings-acl.1694/) | research | `2026-07-12` | 365 days | coordinator-teamlead, independent-blind-spot-sentinel |
+| Source | Authority / evidence / applicability | Status | Reviewed | Maximum age | Applicable roles |
+| --- | --- | --- | --- | ---: | --- |
+| [OpenAI Codex Subagents](https://developers.openai.com/codex/subagents) | OFFICIAL_OPERATIONAL_DOCUMENTATION / IMPLEMENTATION_GUIDANCE / RECOMMENDED | CURRENT | `2026-07-12` | 90 days | coordinator-teamlead, security-privacy-agent-trust, qa-evidence-release-verification, independent-blind-spot-sentinel |
+| [OpenAI Codex Configuration Reference](https://developers.openai.com/codex/config-reference) | OFFICIAL_OPERATIONAL_DOCUMENTATION / IMPLEMENTATION_GUIDANCE / RECOMMENDED | CURRENT | `2026-07-12` | 90 days | coordinator-teamlead, security-privacy-agent-trust, qa-evidence-release-verification |
+| [OpenAI Prompt Engineering Guide](https://developers.openai.com/api/docs/guides/prompt-engineering) | OFFICIAL_OPERATIONAL_DOCUMENTATION / IMPLEMENTATION_GUIDANCE / RECOMMENDED | CURRENT | `2026-07-12` | 90 days | coordinator-teamlead, psychology-human-factors-emotional-safety, logic-causality-state-coherence, interaction-accessibility-readability-localization-culture, technical-architecture-data-cross-platform, security-privacy-agent-trust, performance-reliability-operations, qa-evidence-release-verification, product-discovery-visual-craft-experience-quality, independent-blind-spot-sentinel |
+| [OpenAI Evaluation Best Practices](https://developers.openai.com/api/docs/guides/evaluation-best-practices) | OFFICIAL_OPERATIONAL_DOCUMENTATION / IMPLEMENTATION_GUIDANCE / RECOMMENDED | CURRENT_WITH_DEPRECATION_WATCH | `2026-07-12` | 90 days | qa-evidence-release-verification |
+| [NIST AI Risk Management Framework](https://www.nist.gov/itl/ai-risk-management-framework) | INFORMATIVE_INSTITUTIONAL_GUIDANCE / IMPLEMENTATION_GUIDANCE / RECOMMENDED | CURRENT_WITH_REVISION_WATCH | `2026-07-12` | 365 days | coordinator-teamlead, security-privacy-agent-trust, qa-evidence-release-verification, independent-blind-spot-sentinel |
+| [WHO Responsible AI for Mental Health and Well-Being](https://www.who.int/news/item/20-03-2026-towards-responsible-ai-for-mental-health-and-well-being--experts-chart-a-way-forward) | INFORMATIVE_INSTITUTIONAL_GUIDANCE / RISK_SIGNAL / RECOMMENDED | CURRENT | `2026-07-12` | 180 days | psychology-human-factors-emotional-safety, security-privacy-agent-trust, product-discovery-visual-craft-experience-quality, independent-blind-spot-sentinel |
+| [Web Content Accessibility Guidelines 2.2](https://www.w3.org/TR/WCAG22/) | NORMATIVE_STANDARD / REQUIREMENT / REQUIRED | CURRENT | `2026-07-12` | 365 days | interaction-accessibility-readability-localization-culture, qa-evidence-release-verification |
+| [W3C Cognitive Accessibility Guidance](https://www.w3.org/WAI/cognitive/) | INFORMATIVE_INSTITUTIONAL_GUIDANCE / IMPLEMENTATION_GUIDANCE / RECOMMENDED | CURRENT | `2026-07-12` | 365 days | psychology-human-factors-emotional-safety, interaction-accessibility-readability-localization-culture, product-discovery-visual-craft-experience-quality |
+| [W3C Involving Users in Accessibility Work](https://www.w3.org/WAI/planning/involving-users/) | INFORMATIVE_INSTITUTIONAL_GUIDANCE / IMPLEMENTATION_GUIDANCE / RECOMMENDED | CURRENT | `2026-07-12` | 365 days | interaction-accessibility-readability-localization-culture, qa-evidence-release-verification, product-discovery-visual-craft-experience-quality |
+| [Android Core App Quality Guidelines](https://developer.android.com/docs/quality-guidelines/core-app-quality) | OFFICIAL_OPERATIONAL_DOCUMENTATION / IMPLEMENTATION_GUIDANCE / CONTEXTUAL | CURRENT | `2026-07-12` | 90 days | interaction-accessibility-readability-localization-culture, technical-architecture-data-cross-platform, performance-reliability-operations, qa-evidence-release-verification |
+| [Apple Human Interface Guidelines: Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility) | OFFICIAL_OPERATIONAL_DOCUMENTATION / IMPLEMENTATION_GUIDANCE / CONTEXTUAL | CURRENT | `2026-07-12` | 90 days | interaction-accessibility-readability-localization-culture, technical-architecture-data-cross-platform, qa-evidence-release-verification |
+| [OWASP AI Agent Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html) | INFORMATIVE_INSTITUTIONAL_GUIDANCE / RISK_SIGNAL / RECOMMENDED | CURRENT | `2026-07-12` | 90 days | coordinator-teamlead, security-privacy-agent-trust, qa-evidence-release-verification, independent-blind-spot-sentinel |
+| [Google People + AI Guidebook: User Needs and Defining Success](https://pair.withgoogle.com/chapter/user-needs/) | OFFICIAL_OPERATIONAL_DOCUMENTATION / IMPLEMENTATION_GUIDANCE / RECOMMENDED | CURRENT | `2026-07-12` | 365 days | psychology-human-factors-emotional-safety, product-discovery-visual-craft-experience-quality, independent-blind-spot-sentinel |
+| [Google HEART User-Centered Metrics Research](https://research.google/pubs/measuring-the-user-experience-on-a-large-scale-user-centered-metrics-for-web-applications/) | PEER_REVIEWED_RESEARCH / EMPIRICAL_SUPPORT / RESEARCH_ONLY | CURRENT | `2026-07-12` | 365 days | performance-reliability-operations, product-discovery-visual-craft-experience-quality |
+| [OECD Dark Commercial Patterns](https://www.oecd.org/en/topics/dark-commercial-patterns.html) | INFORMATIVE_INSTITUTIONAL_GUIDANCE / RISK_SIGNAL / RECOMMENDED | CURRENT | `2026-07-12` | 365 days | psychology-human-factors-emotional-safety, security-privacy-agent-trust, product-discovery-visual-craft-experience-quality, independent-blind-spot-sentinel |
+| [ACL Anthology: Divergent Thinking in Multi-Agent Debate](https://aclanthology.org/2024.emnlp-main.992/) | PEER_REVIEWED_RESEARCH / EMPIRICAL_SUPPORT / RESEARCH_ONLY | CURRENT | `2026-07-12` | 365 days | coordinator-teamlead |
+| [ACL Anthology: Bias Amplification in Multi-Agent LLM-as-Judge](https://aclanthology.org/2025.findings-emnlp.941/) | PEER_REVIEWED_RESEARCH / EMPIRICAL_SUPPORT / RESEARCH_ONLY | CURRENT | `2026-07-12` | 365 days | coordinator-teamlead, qa-evidence-release-verification, independent-blind-spot-sentinel |
+| [ACL Anthology: Confidence and Diversity in Multi-Agent Debate](https://aclanthology.org/2026.findings-acl.1694/) | PEER_REVIEWED_RESEARCH / EMPIRICAL_SUPPORT / RESEARCH_ONLY | CURRENT | `2026-07-12` | 365 days | coordinator-teamlead, independent-blind-spot-sentinel |
 
 ## Role Contracts
 
@@ -90,7 +91,7 @@ Required checks:
 
 - Preserve objective, non-goals, authority, and requested platform separately from any suspected solution
 - Classify observed trigger IDs before delegation; every matched domain owner is mandatory, every unmatched role needs a concrete skip reason, and no latency preference may suppress a matched emotional-safety, logic, accessibility, architecture/data, security/privacy, reliability, product, QA, or blind-spot owner
-- Select one to three disjoint critics by default after applying tier and matched-trigger requirements, give each one distinct initial evidence questions, and never auto-run all ten or treat same-model role count as independent confirmation
+- Invoke exactly the evidence-selected owner set after applying class and trigger requirements, give each selected critic distinct evidence questions, and never auto-run all ten or treat same-model role count as independent confirmation
 - Set depth, concurrency, invocation, wall-clock, deadline, interrupt, cleanup, abort, and expected-evidence bounds before delegation
 - Keep critic scopes read-only and implementation write sets disjoint; record effective capability status as UNVERIFIED until probed
 - Reject a specialist report missing current scope, exact evidence, platform/domain impact, verification, unresolved risk, and GO/STOP/ASK
@@ -104,7 +105,7 @@ Required outputs:
 - Implementation-to-verification mapping and EXECUTION_BUDGET_LEDGER with planned and actual usage
 - Final Done Packet separating local, runtime, public, native, security, visual, human, legal, clinical, locale, store, and release evidence
 
-### 2. Psychology, Human Factors & Emotional Safety Critic
+### 2. User Psychology, Motivational Design, Human Factors & Emotional Safety
 
 Reviews ZenFlow agency, interruption burden, pressure, shame, sensitive wellbeing language, and non-clinical boundaries without diagnosing users or substituting for qualified care.
 
@@ -117,12 +118,13 @@ Owns:
 
 - Agency, informed choice, reversibility, interruption cost, emotional burden, pressure, and redress
 - Non-clinical review of mood, journal, habit, focus, coach, notification, onboarding, streak, and account-loss surfaces
-- Structured observation, hypothesis, alternatives, evidence-needed, safety-impact, monitoring, and kill/rollback analysis
+- Structured observation, hypothesis, alternatives, evidence-needed, safety-impact, monitoring, and emotional-safety harm or rollback thresholds
 
 Does not own:
 
 - Diagnosis, treatment, mental-state inference, crisis counseling, or clinical approval
-- Legal, minors, privacy, locale, or cultural acceptance sign-off
+- WCAG conformance, assistive-technology behavior, locale or RTL correctness, cultural acceptance, legal, minors, or privacy sign-off
+- Broad product value, visual craft approval, or claiming that an agent understands a user's actual feelings without bounded human evidence
 - Assuming a named feature exists or a user problem has one psychological or neurochemical root cause
 
 Required checks:
@@ -143,7 +145,53 @@ Required outputs:
 - POTENTIAL_BENEFIT_HYPOTHESIS and REJECTION_OR_HARM_HYPOTHESIS, each explicitly bounded and never promoted to user acceptance
 - Structured emotional-safety finding with affected cohort, severity, exposure, reversibility, alternatives, and exact evidence gap
 - Privacy-safe monitoring or an explicit reason monitoring would itself be unsafe
-- Redress owner, kill/rollback trigger, qualified-human boundary, and GO/STOP/ASK limited to the reviewed claim
+- Redress owner, emotional-safety harm or rollback trigger, qualified-human boundary, and GO/STOP/ASK limited to the reviewed claim
+
+Phase contracts:
+
+```json
+{
+  "CREATE_BRIEF": {
+    "forbidden_claims": [
+      "Diagnosis, treatment, user mental-state inference, universal emotional effect, or human acceptance",
+      "Synthetic user history, invented research, mock product evidence, or raw sensitive content"
+    ],
+    "fresh_invocation_required": true,
+    "question": "What current interaction could undermine agency, create pressure or shame, interrupt recovery, or mishandle emotionally sensitive meaning, and what safer alternatives remain testable?",
+    "required_inputs": [
+      "Direct user goal and current product evidence only",
+      "Affected surface, interaction state, cohort boundary, platform, and known constraints",
+      "Exact copy or behavior locators without raw journal, mood, habit, focus, health, or account content"
+    ],
+    "required_outputs": [
+      "Current observation separated from feelings hypotheses and competing explanations",
+      "Agency, pressure, interruption, reversibility, recovery, redress, and non-clinical boundary analysis",
+      "At least one constructive alternative with expected benefit, plausible harm, emotional-safety success criterion, harm or rollback threshold, and privacy-safe verification path",
+      "Explicit handoffs to role 4 for WCAG, locale, RTL, bidi, or culture and to role 9 for product value or craft"
+    ],
+    "timing": "BEFORE_IMPLEMENTATION_OR_SOLUTION_SELECTION"
+  },
+  "INDEPENDENT_FINAL_REVIEW": {
+    "forbidden_claims": [
+      "Self-confirming the original brief without fresh inspection",
+      "Using implementation completion, model agreement, or test fixtures as proof of user feelings or acceptance"
+    ],
+    "fresh_invocation_required": true,
+    "question": "Did the implemented change preserve agency and recovery, avoid pressure, shame, coercion, interruption harm, and unsupported emotional inference, and keep every human-experience claim bounded?",
+    "required_inputs": [
+      "Original CREATE_BRIEF receipt and immutable hash",
+      "Final scoped snapshot, exact diff, relevant runtime or deterministic evidence, and unresolved finding ledger",
+      "Changed copy, states, exits, undo or recovery paths, monitoring, ownership, and rollback"
+    ],
+    "required_outputs": [
+      "Independent closure of each CREATE_BRIEF emotional-safety success criterion and harm or rollback threshold against fresh evidence",
+      "New or regressed emotional-safety findings with constructive alternatives and named owner",
+      "GO, STOP, or ASK for the owned proven scope only, with human feelings and acceptance left UNVERIFIED unless bounded human evidence exists"
+    ],
+    "timing": "AFTER_IMPLEMENTATION_AND_BEFORE_PROMOTION_CLAIM"
+  }
+}
+```
 
 ### 3. Logic, Causality & State Coherence Critic
 
@@ -487,6 +535,35 @@ Review protocol:
       "UNVERIFIED"
     ],
     "artifact_manifest_sha256_required": true,
+    "audit_channel": {
+      "format": "HASH_BOUND_FINDING_AND_CLOSURE_LEDGER",
+      "raw_report_default": "OMITTED_UNLESS_EXPLICITLY_REQUIRED_AND_PRIVACY_SAFE",
+      "required_bindings": [
+        "original_scope_hash",
+        "pass_a_hash",
+        "subject_scoped_snapshot_sha256",
+        "receipt_manifest_hash",
+        "evidence_ledger_hash",
+        "finding_ledger_hash"
+      ]
+    },
+    "decision_channel": {
+      "aggregate_precedence": [
+        "INTEGRITY_FAILED",
+        "BLOCKED",
+        "NEEDS_AUTHORITY",
+        "EXECUTION_INCOMPLETE",
+        "AUTHORIZED_WITH_ACCEPTED_RISK",
+        "COMPLETE_WITH_UNVERIFIED",
+        "GO_FOR_PROVEN_SCOPE"
+      ],
+      "allowed_decisions": [
+        "GO",
+        "STOP",
+        "ASK"
+      ],
+      "format": "STRICT_STRUCTURED_RECEIPT_ONLY"
+    },
     "failure_disposition": "A new material omission, missing closure input, hidden unknown, or unresolved Pass A issue returns STOP or ASK; it is never averaged with other opinions.",
     "name": "closure_audit",
     "recompute_hashes_required": true,
@@ -495,7 +572,7 @@ Review protocol:
       "Own Pass A findings",
       "Final change or plan",
       "Evidence and conflict ledgers",
-      "Verbatim specialist reports with immutable hashes or equivalent tamper-evident manifest",
+      "Immutable specialist receipt hashes with direct repository-local locators or an equivalent tamper-evident manifest; raw reports only when explicitly required and privacy-safe",
       "Requirement-to-proof mapping",
       "Every remaining UNVERIFIED and rejected item"
     ],

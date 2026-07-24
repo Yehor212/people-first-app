@@ -12,12 +12,18 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { getVerifiedCurrentSessionUserId, supabase } from '@/lib/supabaseClient';
 import { isNative } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 import { initializePushNotifications } from '@/lib/pushNotifications';
 import { performOwnerSafeSignOut } from '@/lib/accountSignOutCleanup';
 import { useUserDataStore } from '@/stores';
+import { reloadAppSafely } from '@/lib/versionCheck';
+import {
+  assertOriginAccountBoundaryGeneration,
+  captureOriginAccountBoundaryGeneration,
+  type OriginAccountBoundaryGeneration,
+} from '@/storage/accountBoundaryRuntime';
 
 const WEB_IDLE_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
 const BLOCKED_SIGN_OUT_RETRY_DELAY = 5 * 60 * 1000;
@@ -27,9 +33,14 @@ type BlockedIdleSignOutReason =
   | 'cleanup-failed'
   | 'sign-out-failed';
 
+type IdleSignOutBinding = {
+  ownerUserId: string;
+  generation: OriginAccountBoundaryGeneration;
+};
+
 function reportBlockedIdleSignOut(
   reason: BlockedIdleSignOutReason,
-  retry: () => void,
+  retry: () => void | Promise<void>,
 ): void {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(
@@ -49,30 +60,84 @@ export function useSessionTimeout(enabled: boolean = true) {
     // Disabled on native — personal device, no idle logout needed
     if (!enabled || !supabase || isNative) return;
     let retryPending = false;
+    let retryBinding: IdleSignOutBinding | null = null;
 
-    const scheduleTimer = (delay: number) => {
+    const scheduleTimer = (delay: number, binding: IdleSignOutBinding | null = null) => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
 
       timeoutRef.current = setTimeout(() => {
-        void attemptIdleSignOut();
+        void attemptIdleSignOut(binding);
       }, delay);
     };
 
-    const reportAndRetry = (reason: BlockedIdleSignOutReason) => {
-      retryPending = true;
-      reportBlockedIdleSignOut(reason, () => {
-        void attemptIdleSignOut();
-      });
-      scheduleTimer(BLOCKED_SIGN_OUT_RETRY_DELAY);
+    const scheduleFreshIdleWindow = () => {
+      retryPending = false;
+      retryBinding = null;
+      scheduleTimer(WEB_IDLE_TIMEOUT);
     };
 
-    async function attemptIdleSignOut(): Promise<void> {
+    const readBoundOwner = async (): Promise<{
+      ownerUserId: string | null;
+      generation: OriginAccountBoundaryGeneration;
+    }> => {
+      const generation = captureOriginAccountBoundaryGeneration();
+      const ownerUserId = await getVerifiedCurrentSessionUserId();
+      assertOriginAccountBoundaryGeneration(generation);
+      return { ownerUserId, generation };
+    };
+
+    const refreshRetryBinding = async (
+      binding: IdleSignOutBinding,
+      allowSignedOutOwner: boolean,
+    ): Promise<IdleSignOutBinding | null> => {
+      const current = await readBoundOwner();
+      if (current.ownerUserId === binding.ownerUserId) {
+        return current.generation === binding.generation ? binding : null;
+      }
+      if (allowSignedOutOwner && current.ownerUserId === null) {
+        // A completed local sign-out may advance the durable generation before
+        // its marker cleanup finishes. Only the verified signed-out state may
+        // carry the original owner authority into that post-purge generation.
+        return { ownerUserId: binding.ownerUserId, generation: current.generation };
+      }
+      return null;
+    };
+
+    const reportAndRetry = (
+      reason: BlockedIdleSignOutReason,
+      binding: IdleSignOutBinding,
+    ) => {
+      retryPending = true;
+      retryBinding = binding;
+      reportBlockedIdleSignOut(reason, () => attemptIdleSignOut(binding));
+      scheduleTimer(BLOCKED_SIGN_OUT_RETRY_DELAY, binding);
+    };
+
+    async function attemptIdleSignOut(
+      requestedBinding: IdleSignOutBinding | null = retryBinding,
+    ): Promise<void> {
       logger.log('[SessionTimeout] Idle timeout reached, signing out');
 
       try {
+        let binding = requestedBinding;
+        if (!binding) {
+          const current = await readBoundOwner();
+          binding = current.ownerUserId
+            ? { ownerUserId: current.ownerUserId, generation: current.generation }
+            : null;
+        }
+        if (!binding) {
+          retryPending = false;
+          retryBinding = null;
+          await reloadAppSafely();
+          return;
+        }
+
         const result = await performOwnerSafeSignOut({
+          expectedOwnerUserId: binding.ownerUserId,
+          expectedAccountBoundaryGeneration: binding.generation,
           restorePushRegistration: pushNotificationsEnabled
             ? initializePushNotifications
             : undefined,
@@ -80,26 +145,36 @@ export function useSessionTimeout(enabled: boolean = true) {
 
         if (result.status === 'signed-out' || result.status === 'no-session') {
           retryPending = false;
-          window.location.reload();
-          return;
-        }
-        if (result.status === 'pending-changes') {
-          reportAndRetry('pending-changes');
+          retryBinding = null;
+          await reloadAppSafely();
           return;
         }
         if (result.status === 'session-changed') {
-          retryPending = false;
-          scheduleTimer(WEB_IDLE_TIMEOUT);
+          scheduleFreshIdleWindow();
           return;
         }
-        reportAndRetry(
-          result.status === 'sign-out-failed'
-            ? 'sign-out-failed'
-            : 'cleanup-failed',
+        const nextBinding = await refreshRetryBinding(
+          binding,
+          result.status === 'cleanup-failed' && result.sessionEnded,
         );
+        if (!nextBinding) {
+          scheduleFreshIdleWindow();
+          return;
+        }
+        const reason: BlockedIdleSignOutReason =
+          result.status === 'pending-changes'
+            ? 'pending-changes'
+            : result.status === 'sign-out-failed'
+              ? 'sign-out-failed'
+              : 'cleanup-failed';
+        reportAndRetry(reason, nextBinding);
       } catch (error) {
         logger.error('[SessionTimeout] Error signing out:', error);
-        reportAndRetry('cleanup-failed');
+        if (requestedBinding) {
+          reportAndRetry('cleanup-failed', requestedBinding);
+        } else {
+          scheduleFreshIdleWindow();
+        }
       }
     }
 

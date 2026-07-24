@@ -304,20 +304,27 @@ export function JournalHubShell({
       data-density={preferences.density}
       data-motion={preferences.motion}
     >
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[calc(8.5rem+env(safe-area-inset-bottom))] pt-3">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+      <div
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto overscroll-contain pe-[calc(0.75rem+var(--safe-inline-end))] ps-[calc(0.75rem+var(--safe-inline-start))] pt-3",
+          dockCollapsed
+            ? "pb-[calc(8.5rem+var(--safe-bottom))]"
+            : "pb-[calc(20rem+var(--safe-bottom))] min-[420px]:pb-[calc(8.5rem+var(--safe-bottom))]",
+        )}
+      >
+        <div className="mb-3 flex flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-start min-[420px]:justify-between">
+          <div className="min-w-0 flex-1">
+            <p className="whitespace-normal break-words text-xs font-bold uppercase tracking-widest text-primary">
               {label(ts, "journalHubEyebrow", "ZenFlow Hub")}
             </p>
-            <h3 className="truncate text-xl font-bold text-foreground">
+            <h3 className="whitespace-normal break-words text-xl font-bold text-foreground">
               {label(ts, VIEW_META[activeView].labelKey, VIEW_META[activeView].fallback)}
             </h3>
           </div>
           <button
             type="button"
             onClick={() => setCustomizing(true)}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl border border-border/40 bg-card/80 text-muted-foreground shadow-sm backdrop-blur-xl motion-safe:transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="inline-flex min-h-[44px] min-w-[44px] self-end items-center justify-center rounded-2xl border border-border/40 bg-card/80 text-muted-foreground shadow-sm backdrop-blur-xl motion-safe:transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary min-[420px]:self-auto"
             aria-label={label(ts, "journalHubCustomize", "Customize hub")}
             data-testid="journal-hub-customize"
           >
@@ -401,6 +408,7 @@ export function JournalHubShell({
       <CaptureFan
         ts={ts}
         open={captureOpen}
+        dockCollapsed={dockCollapsed}
         actions={preferences.dockActions}
         onToggle={() => setCaptureOpen((value) => !value)}
         onRunAction={runAction}
@@ -492,23 +500,23 @@ function PracticeScene({
       aria-label={sceneMeta[scene].title}
       data-testid={`journal-hub-practice-scene-${scene}`}
     >
-      <header className="shrink-0 border-b border-border/25 px-4 pb-3 pt-[max(0.875rem,env(safe-area-inset-top))]">
-        <div className="flex min-h-[52px] items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
-              <Icon className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <h3 className="truncate text-lg font-bold text-foreground">{sceneMeta[scene].title}</h3>
-              <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                {sceneMeta[scene].subtitle}
-              </p>
-            </div>
+      <header className="shrink-0 border-b border-border/25 pb-3 pe-[calc(1rem+var(--safe-inline-end))] ps-[calc(1rem+var(--safe-inline-start))] pt-[max(0.875rem,var(--safe-top))]">
+        <div className="grid min-h-[52px] grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-x-3 gap-y-2">
+          <span className="col-start-1 row-start-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
+            <Icon className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div className="col-span-3 row-start-2 min-w-0 min-[420px]:col-span-1 min-[420px]:col-start-2 min-[420px]:row-start-1">
+            <h3 className="whitespace-normal break-words text-lg font-bold text-foreground">
+              {sceneMeta[scene].title}
+            </h3>
+            <p className="whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
+              {sceneMeta[scene].subtitle}
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="col-start-3 row-start-1 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label={label(ts, "close", "Close")}
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -516,7 +524,7 @@ function PracticeScene({
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="min-h-0 flex-1 overflow-y-auto pb-[max(1rem,var(--safe-bottom))] pe-[calc(0.75rem+var(--safe-inline-end))] ps-[calc(0.75rem+var(--safe-inline-start))] pt-4">
         {scene === "gratitude" && (
           <GratitudeBloomWidget
             onClose={onClose}
@@ -582,22 +590,24 @@ function FocusPracticeStage({
           <DiaryBreatheWidget animate={animate} />
         </div>
 
-        <div className="flex items-center gap-2 rounded-full border border-border/35 bg-background/70 px-3 py-2 text-xs font-semibold text-muted-foreground">
-          <Wind className="h-4 w-4 text-primary" aria-hidden="true" />
-          {label(ts, "journalHubFocusBreathCue", "Breathe first, then write one clean note.")}
+        <div className="flex w-full items-start gap-2 rounded-2xl border border-border/35 bg-background/70 px-3 py-2 text-start text-xs font-semibold text-muted-foreground">
+          <Wind className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          <span className="min-w-0 whitespace-normal break-words">
+            {label(ts, "journalHubFocusBreathCue", "Breathe first, then write one clean note.")}
+          </span>
         </div>
 
-        <h4 className="mt-5 text-2xl font-bold text-foreground">
+        <h4 className="mt-5 whitespace-normal break-words text-2xl font-bold text-foreground">
           {label(ts, "journalHubFocusStageTitle", "One thing. Three minutes.")}
         </h4>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-2 whitespace-normal break-words text-sm leading-relaxed text-muted-foreground">
           {label(ts, "journalHubFocusStageDesc", "Let the breath animation narrow the field, then open a focused entry with the right prompt already prepared.")}
         </p>
 
         <button
           type="button"
           onClick={start}
-          className="mt-5 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-[0_16px_36px_hsl(var(--primary)/0.26)] motion-safe:transition-transform active:scale-[0.98]"
+          className="mt-5 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-center text-sm font-bold text-primary-foreground shadow-[0_16px_36px_hsl(var(--primary)/0.26)] motion-safe:transition-transform active:scale-[0.98] whitespace-normal break-words"
         >
           <PenLine className="h-4 w-4" aria-hidden="true" />
           {label(ts, "journalHubFocusStartWriting", "Start focus note")}
@@ -642,24 +652,24 @@ function TodayView({
   return (
     <div className="space-y-3" data-testid="journal-hub-today">
       <div className="rounded-[1.25rem] border border-primary/15 bg-card/85 p-4 shadow-sm backdrop-blur-xl">
-        <div className="flex items-start justify-between gap-3">
-          <div>
+        <div className="flex flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-start min-[420px]:justify-between">
+          <div className="min-w-0">
             <p className="text-xs font-semibold text-primary">
               {label(ts, "journalHubTodayCard", "Your day")}
             </p>
-            <h4 className="mt-1 text-2xl font-bold text-foreground">
+            <h4 className="mt-1 whitespace-normal break-words text-2xl font-bold text-foreground">
               {todayStatusLabel}
             </h4>
           </div>
-          <span className="inline-flex h-11 min-w-[44px] items-center justify-center rounded-2xl bg-primary/10 px-3 text-sm font-bold text-primary">
+          <span className="inline-flex min-h-[44px] min-w-[44px] self-end items-center justify-center rounded-2xl bg-primary/10 px-3 py-2 text-center text-sm font-bold text-primary whitespace-normal break-words min-[420px]:self-auto">
             {todayMetricValue}
           </span>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
           <button
             type="button"
             onClick={() => onAction("write")}
-            className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-primary text-primary-foreground px-3 text-sm font-semibold shadow-sm"
+            className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-primary px-3 py-3 text-center text-sm font-semibold text-primary-foreground shadow-sm whitespace-normal break-words"
           >
             <PenLine className="h-4 w-4" aria-hidden="true" />
             {label(ts, "journalHubActionWrite", "Write")}
@@ -667,7 +677,7 @@ function TodayView({
           <button
             type="button"
             onClick={() => onAction("quickNote")}
-            className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-border/40 bg-background/70 px-3 text-sm font-semibold text-foreground"
+            className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-border/40 bg-background/70 px-3 py-3 text-center text-sm font-semibold text-foreground whitespace-normal break-words"
           >
             <Sparkles className="h-4 w-4" aria-hidden="true" />
             {label(ts, "journalHubActionQuickNote", "Quick note")}
@@ -675,13 +685,13 @@ function TodayView({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-3">
         <MetricCard label={label(ts, "journalHubMetricEntries", "Entries")} value={totalMetricValue} />
         <MetricCard label={label(ts, "journalHubMetricToday", "Today")} value={todayMetricValue} />
         <button
           type="button"
           onClick={onOpenStats}
-          className="min-h-[64px] rounded-2xl border border-border/35 bg-card/70 px-2 text-center text-xs font-semibold text-foreground"
+          className="min-h-[64px] rounded-2xl border border-border/35 bg-card/70 px-2 py-3 text-center text-xs font-semibold text-foreground whitespace-normal break-words"
         >
           {label(ts, "journalStatsTitle", "Stats")}
         </button>
@@ -696,15 +706,15 @@ function TodayView({
             onOpenRecent();
           }}
           className={cn(
-            "flex min-h-[72px] w-full items-center justify-between gap-3 rounded-2xl border border-border/35 bg-card/70 px-4 text-start",
+            "flex min-h-[72px] w-full items-center justify-between gap-3 rounded-2xl border border-border/35 bg-card/70 px-4 py-3 text-start",
             privateMode && "cursor-default",
           )}
         >
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            <p className="whitespace-normal break-words text-xs font-bold uppercase tracking-widest text-muted-foreground">
               {label(ts, "journalHubContinue", "Continue")}
             </p>
-            <p className="mt-1 truncate text-sm font-semibold text-foreground">
+            <p className="mt-1 whitespace-normal break-words text-sm font-semibold text-foreground [overflow-wrap:anywhere]" dir="auto">
               {privateMode ? privateEntryLabel : recentEntry.title || label(ts, "journalTemplateBlank", "Blank Entry")}
             </p>
           </div>
@@ -712,7 +722,7 @@ function TodayView({
         </button>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
         {visibleSpaces.map((space) => {
           const SpaceIcon = privateMode ? PanelBottomOpen : getJournalIcon(space.iconKey);
           const spaceName = getSpaceDisplayName(ts, space, privateMode);
@@ -723,10 +733,10 @@ function TodayView({
               className="min-h-[82px] rounded-2xl border border-border/30 bg-card/60 p-3"
             >
               <SpaceIcon className="mb-2 h-4 w-4 text-primary" aria-hidden="true" />
-              <p className="truncate text-sm font-semibold text-foreground">
+              <p className="whitespace-normal break-words text-sm font-semibold text-foreground [overflow-wrap:anywhere]" dir="auto">
                 {spaceName}
               </p>
-              <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
+              <p className="mt-1 whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
                 {spaceDescription}
               </p>
             </div>
@@ -741,7 +751,7 @@ function MetricCard({ label: labelText, value }: { label: string; value: string 
   return (
     <div className="min-h-[64px] rounded-2xl border border-border/35 bg-card/70 px-2 py-3 text-center">
       <p className="text-lg font-bold text-foreground">{value}</p>
-      <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="mt-0.5 whitespace-normal break-words text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {labelText}
       </p>
     </div>
@@ -768,7 +778,7 @@ function SpacesView({
         title={label(ts, "journalHubSpaces", "Spaces")}
         description={label(ts, "journalHubSpacesDesc", "Collect projects, life areas, and private notes without losing the day.")}
       />
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
         {visibleSpaces.map((space) => {
           const SpaceIcon = privateMode ? PanelBottomOpen : getJournalIcon(space.iconKey);
           const spaceName = getSpaceDisplayName(ts, space, privateMode);
@@ -783,10 +793,10 @@ function SpacesView({
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
                 <SpaceIcon className="h-5 w-5" aria-hidden="true" />
               </span>
-              <p className="mt-3 truncate text-sm font-bold text-foreground">
+              <p className="mt-3 whitespace-normal break-words text-sm font-bold text-foreground [overflow-wrap:anywhere]" dir="auto">
                 {spaceName}
               </p>
-              <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
+              <p className="mt-1 whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
                 {spaceDescription}
               </p>
             </button>
@@ -839,24 +849,26 @@ function PracticesView({
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <Sprout className="h-5 w-5" aria-hidden="true" />
             </span>
-            <p className="mt-4 text-[10px] font-bold uppercase tracking-widest text-primary">
+            <p className="mt-4 whitespace-normal break-words text-xs font-bold uppercase tracking-widest text-primary">
               {label(ts, "journalHubPracticeStudio", "Practice studio")}
             </p>
-            <h4 className="mt-1 text-2xl font-bold leading-tight text-foreground">
+            <h4 className="mt-1 whitespace-normal break-words text-2xl font-bold leading-tight text-foreground">
               {label(ts, "journalHubPracticeGratitude", "Gratitude")}
             </h4>
-            <p className="mt-2 max-w-[15rem] text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-2 max-w-[15rem] whitespace-normal break-words text-sm leading-relaxed text-muted-foreground">
               {label(ts, "journalHubPracticeGratitudeDesc", "Save one small thing that was worth noticing.")}
             </p>
           </div>
-          <span className="inline-flex min-h-[44px] w-fit items-center gap-2 rounded-2xl bg-primary px-4 text-sm font-bold text-primary-foreground motion-safe:transition-transform group-active:scale-[0.98]">
-            {label(ts, "journalHubPracticeOpen", "Open scene")}
-            <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" aria-hidden="true" />
+          <span className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2 text-center text-sm font-bold text-primary-foreground motion-safe:transition-transform group-active:scale-[0.98] whitespace-normal break-words min-[420px]:w-fit">
+            <span className="min-w-0 whitespace-normal break-words">
+              {label(ts, "journalHubPracticeOpen", "Open scene")}
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 rtl:scale-x-[-1]" aria-hidden="true" />
           </span>
         </div>
       </button>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
         {secondaryPractices.map((practice) => (
           <button
             key={practice.action}
@@ -869,10 +881,10 @@ function PracticesView({
               <practice.icon className="h-5 w-5" aria-hidden="true" />
             </span>
             <span>
-              <span className="block text-base font-bold leading-tight text-foreground">
+              <span className="block whitespace-normal break-words text-base font-bold leading-tight text-foreground">
                 {label(ts, practice.titleKey, practice.fallback)}
               </span>
-              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+              <span className="mt-1 block whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
                 {label(ts, practice.descKey, practice.desc)}
               </span>
             </span>
@@ -886,10 +898,10 @@ function PracticesView({
             <Wind className="h-5 w-5" aria-hidden="true" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-foreground">
+            <p className="whitespace-normal break-words text-sm font-bold text-foreground">
               {label(ts, "journalHubPractices", "Practices")}
             </p>
-            <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+            <p className="whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
               {label(ts, "journalHubPracticesDesc", "Short, practical resets for attention, emotion, and writing.")}
             </p>
           </div>
@@ -918,14 +930,14 @@ function LibraryView({
       <button
         type="button"
         onClick={() => onAction("template")}
-        className="flex min-h-[76px] w-full items-center gap-3 rounded-2xl border border-border/35 bg-card/75 p-3 text-start"
+        className="flex min-h-[76px] w-full items-start gap-3 rounded-2xl border border-border/35 bg-card/75 p-3 text-start"
       >
-        <ListChecks className="h-5 w-5 text-primary" aria-hidden="true" />
-        <span className="flex-1">
-          <span className="block text-sm font-bold text-foreground">
+        <ListChecks className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+        <span className="min-w-0 flex-1">
+          <span className="block whitespace-normal break-words text-sm font-bold text-foreground">
             {label(ts, "journalTemplates", "Templates")}
           </span>
-          <span className="block text-xs text-muted-foreground">
+          <span className="block whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
             {label(ts, "journalHubTemplatesDesc", "Start with a structure, then make it yours.")}
           </span>
         </span>
@@ -933,14 +945,14 @@ function LibraryView({
       <button
         type="button"
         onClick={onSearchEntries}
-        className="flex min-h-[76px] w-full items-center gap-3 rounded-2xl border border-border/35 bg-card/75 p-3 text-start"
+        className="flex min-h-[76px] w-full items-start gap-3 rounded-2xl border border-border/35 bg-card/75 p-3 text-start"
       >
-        <Search className="h-5 w-5 text-primary" aria-hidden="true" />
-        <span className="flex-1">
-          <span className="block text-sm font-bold text-foreground">
+        <Search className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+        <span className="min-w-0 flex-1">
+          <span className="block whitespace-normal break-words text-sm font-bold text-foreground">
             {label(ts, "journalHubSearchArchive", "Search archive")}
           </span>
-          <span className="block text-xs text-muted-foreground">
+          <span className="block whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
             {label(ts, "journalHubSearchArchiveDesc", "Find older thoughts, tags, and moments.")}
           </span>
         </span>
@@ -961,8 +973,10 @@ function SectionIntro({
   return (
     <div className="rounded-[1.25rem] border border-primary/15 bg-card/80 p-4">
       <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
-      <h4 className="mt-3 text-lg font-bold text-foreground">{title}</h4>
-      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
+      <h4 className="mt-3 whitespace-normal break-words text-lg font-bold text-foreground">{title}</h4>
+      <p className="mt-1 whitespace-normal break-words text-sm leading-relaxed text-muted-foreground">
+        {description}
+      </p>
     </div>
   );
 }
@@ -970,12 +984,14 @@ function SectionIntro({
 function CaptureFan({
   ts,
   open,
+  dockCollapsed,
   actions,
   onToggle,
   onRunAction,
 }: {
   ts: Record<string, string>;
   open: boolean;
+  dockCollapsed: boolean;
   actions: JournalHubAction[];
   onToggle: () => void;
   onRunAction: (action: JournalHubAction) => void;
@@ -999,35 +1015,49 @@ function CaptureFan({
       <AnimatePresence>
         {open && (
           <motion.div
-            className="absolute bottom-[calc(8.75rem+env(safe-area-inset-bottom))] end-4 z-[48] flex flex-col items-end gap-2"
+            className={cn(
+              "pointer-events-none absolute end-[calc(1rem+var(--safe-inline-end))] start-[calc(1rem+var(--safe-inline-start))] top-[max(0.75rem,var(--safe-top))] z-[48] flex flex-col min-[420px]:start-auto",
+              dockCollapsed
+                ? "bottom-[calc(8.75rem+var(--safe-bottom))]"
+                : "bottom-[calc(19.25rem+var(--safe-bottom))] min-[420px]:bottom-[calc(8.75rem+var(--safe-bottom))]",
+            )}
             initial={{ opacity: 0, y: 14, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 14, scale: 0.98 }}
             transition={{ duration: 0.22 }}
           >
-            {actionList.map((action) => {
-              const meta = ACTION_META[action];
-              const Icon = meta.icon;
-              return (
-                <button
-                  key={action}
-                  type="button"
-                  onClick={() => onRunAction(action)}
-                  className="flex min-h-[44px] items-center gap-2 rounded-2xl border border-border/40 bg-card/95 px-3 text-sm font-semibold text-foreground shadow-lg backdrop-blur-xl"
-                  data-testid={`journal-hub-capture-action-${action}`}
-                >
-                  <span>{label(ts, meta.labelKey, meta.fallback)}</span>
-                  <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
-                </button>
-              );
-            })}
+            <div className="pointer-events-auto mt-auto flex max-h-full flex-col items-stretch gap-2 overflow-y-auto overscroll-contain pe-1 min-[420px]:items-end">
+              {actionList.map((action) => {
+                const meta = ACTION_META[action];
+                const Icon = meta.icon;
+                return (
+                  <button
+                    key={action}
+                    type="button"
+                    onClick={() => onRunAction(action)}
+                    className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-2xl border border-border/40 bg-card/95 px-3 py-2 text-start text-sm font-semibold text-foreground shadow-lg backdrop-blur-xl whitespace-normal break-words min-[420px]:w-auto min-[420px]:max-w-[24rem]"
+                    data-testid={`journal-hub-capture-action-${action}`}
+                  >
+                    <span className="min-w-0 whitespace-normal break-words">
+                      {label(ts, meta.labelKey, meta.fallback)}
+                    </span>
+                    <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                  </button>
+                );
+              })}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
       <button
         type="button"
         onClick={onToggle}
-        className="absolute bottom-[calc(5.35rem+env(safe-area-inset-bottom))] end-4 z-[50] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_12px_30px_hsl(var(--primary)/0.28)] motion-safe:transition-transform active:scale-95"
+        className={cn(
+          "absolute end-[calc(1rem+var(--safe-inline-end))] z-[50] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_12px_30px_hsl(var(--primary)/0.28)] motion-safe:transition-transform active:scale-95",
+          dockCollapsed
+            ? "bottom-[calc(5.35rem+var(--safe-bottom))]"
+            : "bottom-[calc(15.5rem+var(--safe-bottom))] min-[420px]:bottom-[calc(5.35rem+var(--safe-bottom))]",
+        )}
         aria-label={open ? label(ts, "close", "Close") : label(ts, "journalHubCapture", "Capture")}
         aria-expanded={open}
         data-testid="journal-hub-capture"
@@ -1060,7 +1090,7 @@ function HubDock({
       <button
         type="button"
         onClick={() => onCollapseChange(false)}
-        className="absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] start-1/2 z-[50] flex min-h-[44px] -translate-x-1/2 items-center gap-2 rounded-full border border-border/40 bg-card/95 px-4 text-xs font-semibold text-foreground shadow-lg backdrop-blur-xl"
+        className="absolute bottom-[max(0.75rem,var(--safe-bottom))] start-1/2 z-[50] flex min-h-[44px] max-w-[calc(100%-var(--safe-inline-start)-var(--safe-inline-end)-1rem)] -translate-x-1/2 rtl:translate-x-1/2 items-center gap-2 rounded-full border border-border/40 bg-card/95 px-4 py-2 text-center text-xs font-semibold text-foreground shadow-lg backdrop-blur-xl whitespace-normal break-words"
         aria-label={label(ts, "journalHubShowDock", "Show navigation")}
         data-testid="journal-hub-dock-collapsed"
       >
@@ -1072,19 +1102,19 @@ function HubDock({
 
   return (
     <nav
-      className="absolute inset-x-2 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-[49] rounded-[1.5rem] border border-border/45 bg-card/95 p-1.5 shadow-xl backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]"
+      className="absolute bottom-[max(0.5rem,var(--safe-bottom))] end-[calc(0.5rem+var(--safe-inline-end))] start-[calc(0.5rem+var(--safe-inline-start))] z-[49] rounded-[1.5rem] border border-border/45 bg-card/95 p-1.5 shadow-xl backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]"
       aria-label={label(ts, "journalHubNav", "Diary hub navigation")}
       data-testid="journal-hub-dock"
     >
       <button
         type="button"
         onClick={() => onCollapseChange(true)}
-        className="absolute -top-5 start-1/2 inline-flex min-h-[44px] min-w-[72px] -translate-x-1/2 items-start justify-center rounded-2xl pt-3 text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="absolute -top-5 start-1/2 inline-flex min-h-[44px] min-w-[72px] -translate-x-1/2 rtl:translate-x-1/2 items-start justify-center rounded-2xl pt-3 text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         aria-label={label(ts, "journalHubHideDock", "Hide navigation")}
       >
         <span className="h-1 w-9 rounded-full bg-muted-foreground/30" aria-hidden="true" />
       </button>
-      <div className="grid grid-cols-5 gap-1">
+      <div className="grid max-h-[42dvh] grid-cols-2 gap-1 overflow-y-auto overscroll-contain min-[420px]:grid-cols-5">
         {visibleViews.slice(0, 5).map((view) => {
           const meta = VIEW_META[view];
           const Icon = meta.icon;
@@ -1095,13 +1125,15 @@ function HubDock({
               type="button"
               onClick={() => onViewChange(view)}
               className={cn(
-                "flex min-h-[50px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[9px] font-semibold leading-none motion-safe:transition-colors",
+                "flex min-h-[64px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-xs font-semibold leading-tight motion-safe:transition-colors",
                 selected ? "bg-primary/12 text-primary" : "text-muted-foreground hover:text-foreground",
               )}
               aria-current={selected ? "page" : undefined}
             >
               <Icon className="h-4 w-4" aria-hidden="true" />
-              <span className="max-w-full truncate">{label(ts, meta.labelKey, meta.fallback)}</span>
+              <span className="max-w-full whitespace-normal break-words text-center">
+                {label(ts, meta.labelKey, meta.fallback)}
+              </span>
             </button>
           );
         })}
@@ -1153,21 +1185,21 @@ function CustomizationSheet({
         role="dialog"
         aria-modal="true"
         aria-label={label(ts, "journalHubCustomize", "Customize hub")}
-        className="fixed inset-x-0 bottom-0 z-[65] max-h-[82dvh] overflow-hidden rounded-t-[1.5rem] border-t border-border/45 bg-card shadow-2xl"
+        className="fixed inset-x-0 bottom-0 z-[65] max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.5rem)] overflow-hidden rounded-t-[1.5rem] border-t border-border/45 bg-card shadow-2xl"
         initial={{ y: 28, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 28, opacity: 0 }}
         transition={{ duration: 0.22 }}
       >
-        <div className="flex justify-center px-4 pb-1 pt-2">
+        <div className="flex justify-center pb-1 pe-[calc(1rem+var(--safe-inline-end))] ps-[calc(1rem+var(--safe-inline-start))] pt-2">
           <div className="h-1 w-10 rounded-full bg-muted-foreground/20" />
         </div>
-        <header className="flex items-center justify-between gap-3 border-b border-border/25 px-4 pb-3">
-          <div>
-            <h3 className="text-base font-bold text-foreground">
+        <header className="flex items-start justify-between gap-3 border-b border-border/25 pb-3 pe-[calc(1rem+var(--safe-inline-end))] ps-[calc(1rem+var(--safe-inline-start))]">
+          <div className="min-w-0 flex-1">
+            <h3 className="whitespace-normal break-words text-base font-bold text-foreground">
               {label(ts, "journalHubCustomize", "Customize hub")}
             </h3>
-            <p className="text-xs text-muted-foreground">
+            <p className="whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
               {label(ts, "journalHubCustomizeHint", "Choose what your diary opens into.")}
             </p>
           </div>
@@ -1180,16 +1212,16 @@ function CustomizationSheet({
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </header>
-        <div className="max-h-[calc(82dvh-5rem)] space-y-4 overflow-y-auto px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="max-h-[calc(var(--app-viewport-height)-var(--safe-top)-5rem)] space-y-4 overflow-y-auto pb-[max(1rem,var(--safe-bottom))] pe-[calc(1rem+var(--safe-inline-end))] ps-[calc(1rem+var(--safe-inline-start))] pt-4">
           <CustomizeGroup title={label(ts, "journalHubHomeView", "Home view")}>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
               {preferences.visibleViews.map((view) => (
                 <button
                   key={view}
                   type="button"
                   onClick={() => void onChange({ homeView: view })}
                   className={cn(
-                    "min-h-[44px] rounded-2xl border px-3 text-sm font-semibold",
+                    "min-h-[44px] rounded-2xl border px-3 py-2 text-sm font-semibold whitespace-normal break-words",
                     preferences.homeView === view
                       ? "border-primary/30 bg-primary/12 text-primary"
                       : "border-border/35 bg-background/60 text-foreground",
@@ -1208,20 +1240,22 @@ function CustomizationSheet({
                 return (
                   <div
                     key={view}
-                    className="flex min-h-[52px] items-center gap-2 rounded-2xl border border-border/35 bg-background/60 px-2"
+                    className="grid min-h-[52px] grid-cols-[minmax(0,1fr)_44px_44px] items-center gap-2 rounded-2xl border border-border/35 bg-background/60 px-2 py-1"
                   >
                     <button
                       type="button"
                       onClick={() => toggleView(view)}
                       className={cn(
-                        "flex min-h-[44px] flex-1 items-center gap-2 rounded-xl px-2 text-sm font-semibold",
+                        "flex min-h-[44px] min-w-0 items-center gap-2 rounded-xl px-2 py-1 text-start text-sm font-semibold whitespace-normal break-words",
                         visible ? "text-foreground" : "text-muted-foreground",
                       )}
                     >
-                      <span className={cn("inline-flex h-5 w-5 items-center justify-center rounded-full border", visible ? "border-primary bg-primary text-primary-foreground" : "border-border")}>
+                      <span className={cn("inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border", visible ? "border-primary bg-primary text-primary-foreground" : "border-border")}>
                         {visible && <Check className="h-3 w-3" aria-hidden="true" />}
                       </span>
-                      {label(ts, VIEW_META[view].labelKey, VIEW_META[view].fallback)}
+                      <span className="min-w-0 whitespace-normal break-words">
+                        {label(ts, VIEW_META[view].labelKey, VIEW_META[view].fallback)}
+                      </span>
                     </button>
                     <button
                       type="button"
@@ -1275,7 +1309,7 @@ function CustomizationSheet({
 function CustomizeGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
-      <h4 className="mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+      <h4 className="mb-2 whitespace-normal break-words text-xs font-bold uppercase tracking-widest text-muted-foreground">
         {title}
       </h4>
       {children}
@@ -1298,14 +1332,14 @@ function OptionGroup<T extends string>({
 }) {
   return (
     <CustomizeGroup title={title}>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-3">
         {values.map((value) => (
           <button
             key={value}
             type="button"
             onClick={() => onSelect(value)}
             className={cn(
-              "min-h-[44px] rounded-2xl border px-2 text-xs font-semibold capitalize",
+              "min-h-[44px] rounded-2xl border px-2 py-2 text-xs font-semibold capitalize whitespace-normal break-words",
               selected === value
                 ? "border-primary/30 bg-primary/12 text-primary"
                 : "border-border/35 bg-background/60 text-foreground",

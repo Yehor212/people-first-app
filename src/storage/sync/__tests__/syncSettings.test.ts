@@ -92,13 +92,11 @@ describe("syncSettings", () => {
   });
 
   it("refuses an owner-bound upsert when the active account changes before the mutation", async () => {
-    mocks.getCurrentUserId
-      .mockResolvedValueOnce("account-a")
-      .mockResolvedValueOnce("account-b");
+    mocks.getCurrentUserId.mockResolvedValueOnce("account-a").mockResolvedValueOnce("account-b");
 
-    await expect(
-      syncSetting("mood-reminder-enabled", true, "account-a")
-    ).rejects.toThrow("account boundary");
+    await expect(syncSetting("mood-reminder-enabled", true, "account-a")).rejects.toThrow(
+      "account boundary"
+    );
 
     expect(mocks.getCurrentUserId).toHaveBeenCalledTimes(2);
     expect(mocks.upsert).not.toHaveBeenCalled();
@@ -158,6 +156,28 @@ describe("syncSettings", () => {
     expect(mocks.from).not.toHaveBeenCalled();
     expect(mocks.enqueue).not.toHaveBeenCalled();
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("keeps ad and push consent on the device and removes a legacy cloud copy", async () => {
+    localStorage.setItem(SK.PRIVACY, JSON.stringify({ adConsent: true, pushNotifications: true }));
+    await syncSetting(SK.PRIVACY, {
+      noTracking: false,
+      analytics: false,
+      consentShown: true,
+      adConsent: true,
+      pushNotifications: true,
+    });
+
+    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+
+    await deleteSettingFromCloud(SK.PRIVACY, "user-1");
+    expect(mocks.delete).toHaveBeenCalled();
+    expect(mocks.match).toHaveBeenCalledWith({ user_id: "user-1", key: SK.PRIVACY });
+    expect(localStorage.getItem(SK.PRIVACY)).toBe(
+      JSON.stringify({ adConsent: true, pushNotifications: true })
+    );
   });
 
   it("syncs the wrapped journal vault key so another device can recover encrypted diary data", async () => {
@@ -300,13 +320,11 @@ describe("syncSettings", () => {
       { key: SK.JOURNAL_VAULT_KEY, value: vaultSetting },
       { key: SK.JOURNAL_VAULT_REVISION, value: 101 },
     ]);
-    mocks.getCurrentUserId
-      .mockResolvedValueOnce("account-a")
-      .mockResolvedValueOnce("account-b");
+    mocks.getCurrentUserId.mockResolvedValueOnce("account-a").mockResolvedValueOnce("account-b");
 
-    await expect(
-      syncSetting(SK.JOURNAL_VAULT_KEY, vaultSetting, "account-a")
-    ).rejects.toThrow("account boundary");
+    await expect(syncSetting(SK.JOURNAL_VAULT_KEY, vaultSetting, "account-a")).rejects.toThrow(
+      "account boundary"
+    );
 
     expect(mocks.upsert).not.toHaveBeenCalled();
     expect(mocks.enqueue).not.toHaveBeenCalled();

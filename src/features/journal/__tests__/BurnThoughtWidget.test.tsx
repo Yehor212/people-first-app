@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BurnThoughtWidget } from "../BurnThoughtWidget";
 
@@ -16,6 +16,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalBurnAction: "Burn it",
       journalReleaseFinalTitle: "Released",
       journalReleaseFinalSubtitle: "Text was not saved.",
+      journalReleaseBeforeAction: "This text will be removed. A release record is saved without the text.",
+      journalReleaseTraceSaveFailed: "The text was deleted, but the release record was not saved.",
     },
   }),
 }));
@@ -170,6 +172,14 @@ describe("BurnThoughtWidget", () => {
     });
   });
 
+  it("discloses before the action that a text-free release record will be saved", () => {
+    render(<BurnThoughtWidget onClose={vi.fn()} />);
+
+    expect(
+      screen.getByText("This text will be removed. A release record is saved without the text."),
+    ).toBeVisible();
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -220,6 +230,24 @@ describe("BurnThoughtWidget", () => {
     expect(onReleased).toHaveBeenCalledTimes(1);
     expect(onReleased).toHaveBeenCalledWith();
     expect(screen.getByText("Text was not saved.")).toBeInTheDocument();
+  });
+
+  it("reports a trace failure without claiming that the release record was saved", async () => {
+    animationState.shouldAnimate = false;
+    const onReleased = vi.fn(() => Promise.reject(new Error("storage unavailable")));
+    render(<BurnThoughtWidget onClose={vi.fn()} onReleased={onReleased} />);
+
+    fireEvent.change(screen.getByLabelText("Write what worries you..."), {
+      target: { value: "This text must not be persisted." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Burn it/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("The text was deleted, but the release record was not saved."),
+      ).toBeInTheDocument();
+    });
+    expect(onReleased).toHaveBeenCalledWith();
   });
 
   it("keeps the ritual card readable during the first half-second pause", () => {

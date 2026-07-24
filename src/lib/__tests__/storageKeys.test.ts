@@ -25,9 +25,9 @@ describe('SK — localStorage keys', () => {
     expect(staticEntries.length).toBeGreaterThanOrEqual(60);
   });
 
-  it('has exactly 2 dynamic builders (journalDraft, whatsNewDismissed)', () => {
+  it('has exactly 3 dynamic builders (journalDraft, journalDraftLease, whatsNewDismissed)', () => {
     const builderNames = dynamicBuilders.map(([key]) => key).sort();
-    expect(builderNames).toEqual(['journalDraft', 'whatsNewDismissed']);
+    expect(builderNames).toEqual(['journalDraft', 'journalDraftLease', 'whatsNewDismissed']);
   });
 
   it('all static values are non-empty strings', () => {
@@ -56,6 +56,13 @@ describe('SK — localStorage keys', () => {
     expect(a).not.toBe(b);
   });
 
+  it('journalDraftLease returns unique keys for different draft owners', () => {
+    const a = SK.journalDraftLease(SK.journalDraft('entry-a'));
+    const b = SK.journalDraftLease(SK.journalDraft('entry-b'));
+    expect(a).not.toBe(b);
+    expect(a).toContain('entry-a');
+  });
+
   it('whatsNewDismissed returns a string containing the version', () => {
     const result = SK.whatsNewDismissed('1.0');
     expect(typeof result).toBe('string');
@@ -71,6 +78,7 @@ describe('SK — localStorage keys', () => {
   it('dynamic builders return values different from any static key', () => {
     const staticValues = new Set(staticEntries.map(([, v]) => v));
     expect(staticValues.has(SK.journalDraft('test'))).toBe(false);
+    expect(staticValues.has(SK.journalDraftLease(SK.journalDraft('test')))).toBe(false);
     expect(staticValues.has(SK.whatsNewDismissed('1.0'))).toBe(false);
   });
 });

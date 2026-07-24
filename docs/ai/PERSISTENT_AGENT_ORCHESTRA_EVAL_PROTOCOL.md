@@ -1,8 +1,8 @@
 # Persistent Agent Orchestra Evaluation Protocol
 
-- Status: active protocol; no semantic baseline exists
-- Protocol version: 1
-- Last reviewed: 2026-07-12
+- Status: active protocol; no semantic baseline exists; Ten-Lens v2.2.1 + E1 candidate implemented
+- Protocol version: 2.2.1-e1
+- Last reviewed: 2026-07-20
 - Owner: ZenFlow repository owner
 
 ## 1. Purpose And Current Decision
@@ -18,6 +18,13 @@ config/persistent-agent-orchestra.eval-baseline.json with status
 NO_SEMANTIC_BASELINE. Its hashes are null and its semantic, runtime, human-review,
 and user-acceptance statuses are UNVERIFIED. Creating the catalog or making a
 structural checker green does not change that decision.
+
+The canonical evaluation artifacts remain portable and repository-local. OpenAI's
+hosted Evals platform is in deprecation transition: the current documentation names
+2026-10-31 for read-only mode and 2026-11-30 for shutdown. ZenFlow does not make the
+hosted platform a canonical dependency. See
+`docs/ai/TEN_LENS_EVIDENCE_ASSURANCE_V2_2_1.md` for the E1 state model, role phases,
+usage boundary, and promotion gates.
 
 The visible catalog contains 40 synthetic scenarios, four for each canonical role.
 It is a regression and review fixture, not a product dataset, a clinical instrument,
@@ -328,22 +335,46 @@ owner-approved comparative run:
    rubric constant. Record any unavoidable difference.
 4. Compare critical misses, forbidden outcomes, verified evidence coverage,
    duplicated findings/answers, unresolved conflicts, permission exposure,
-   invocations, elapsed time, interruption/retry behavior, and reviewer effort.
+   input/cached/cache-write/output/reasoning tokens when exposed, invocations,
+   elapsed time, interruption/retry behavior, and reviewer effort.
+   A promotable efficiency comparison binds both measured usage ledgers, recomputes
+   total-token change as input plus output while keeping cache/reasoning diagnostics
+   separate, matches request/snapshot/profile/tools/model/reasoning, and
+   requires the frozen 5 percent reduction floor. `UNAVAILABLE`, zero reduction, or
+   a caller-supplied unmatched baseline is a rejection.
 5. Report each domain blocker separately. Do not sum GO votes or use a majority.
 6. Adopt a broader route only when it materially improves distinct evidence coverage
    on the bounded claim without introducing a critical miss, authority expansion,
    unbounded cost, or unacceptable delay.
+7. For vague tasks, require local discovery before routing. The result must account
+   for all ten roles with direct locators and must not select Role 2 from a generic
+   feature word or clinical term without a concrete interaction, copy, default,
+   interruption, recovery, consent, or inferred-state risk. Bind the request hash,
+   locator hash, resolved-scope hash, local discovery commands, and every canonical
+   platform/domain row in the run manifest.
+   Every row carries a reason and evidence locators; a separately authenticated
+   verifier must recheck discovery provenance before terminal promotion.
+8. Run the adaptive candidate against `FIXED_FULL_TEN` on the same privacy-scrubbed
+   real ZenFlow task slice. Synthetic structural controls can validate schemas and
+   negative paths, but cannot establish token savings, semantic noninferiority, or
+   user impact.
 
 Rejection criteria:
 
 - reject root-only for a bounded task slice when it misses a material risk caught
   with verified evidence by the targeted or full arm;
 - reject the targeted set when its omitted role owns an unresolved blocker;
+- reject adaptive routing when any selected or excluded role lacks a current evidence
+  locator, or when a protected positive control skips its owner;
+- reject promotion when any required request/token/invocation/elapsed counter is
+  unavailable, even if a caller labels the comparison `VERIFIED`;
 - reject full council as the default when it adds duplicate or evidence-free output
   without material risk coverage, or exceeds the declared budget without justified
   override.
 
-The visible scenario role01-smallest-sufficient-set checks the routing rule itself.
+The visible scenario role01-smallest-sufficient-set checks discovery for a vague
+Settings request, evidence-backed consideration of all ten roles, a mechanical
+negative control for Role 2, targeted protected routing, and explicit full council.
 It does not prove that one routing arm is generally superior. That conclusion
 requires the controlled comparison and owner-controlled holdouts above.
 

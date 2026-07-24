@@ -20,4 +20,18 @@
     <string name="widget_no_mood">لم يتم تسجيل المزاج</string>
     <string name="widget_days">أيام</string>
     <string name="widget_habits_label">العادات</string>
+    <string name="push_realm_mood_title">كيف تشعر الآن؟</string>
+    <string name="push_realm_mood_body">يمكنك تسجيل شعورك إذا رغبت.</string>
+    <string name="push_realm_habit_title">تذكير بعادة</string>
+    <string name="push_realm_habit_body">خطوة صغيرة تكفي. ابدأ عندما يناسبك.</string>
+    <string name="push_realm_focus_title">هل ترغب في التركيز؟</string>
+    <string name="push_realm_focus_body">يمكنك بدء جلسة تركيز مدتها 25 دقيقة عندما يناسبك.</string>
+    <string name="push_realm_test_title">اختبار الإشعار</string>
+    <string name="push_realm_test_body">إشعار تجريبي من ZenFlow</string>
+    <string name="push_realm_channel_default">افتراضي</string>
+    <string name="push_realm_channel_default_description">صوت النظام</string>
+    <string name="push_realm_channel_gentle">لطيف</string>
+    <string name="push_realm_channel_gentle_description">اهتزاز فقط</string>
+    <string name="push_realm_channel_silent">صامت</string>
+    <string name="push_realm_channel_silent_description">بدون صوت أو اهتزاز</string>
 </resources>

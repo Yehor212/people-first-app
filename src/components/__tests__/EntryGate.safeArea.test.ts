@@ -97,4 +97,13 @@ describe("EntryGate cross-platform safe areas", () => {
     expect(authScreenSource).toContain("const animated = !isAndroid && shouldAnimate();");
     expect(languageSelectorSource).toContain("const animated = !isAndroid && shouldAnimate();");
   });
+
+  it("keeps the short-height title override tied to the user text scale", () => {
+    const css = readProjectFile("src/components/EntryGate.css");
+
+    expect(css).toContain("font-size: calc(1.75rem * var(--font-scale, 1)) !important");
+    expect(css).toContain("font-size: calc(1.125rem * var(--font-scale, 1)) !important");
+    expect(css).toContain("font-size: calc(0.6875rem * var(--font-scale, 1)) !important");
+    expect(css).not.toContain("font-size: calc(2.125rem * var(--font-scale, 1)) !important");
+  });
 });

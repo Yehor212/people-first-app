@@ -2,7 +2,7 @@
  * Unit tests for reminders — default settings, time constants, data shape
  */
 import { describe, it, expect } from 'vitest';
-import { defaultReminderSettings } from '../reminders';
+import { defaultReminderSettings, migrateStoredReminderSettings } from '../reminders';
 
 describe('reminders', () => {
   describe('defaultReminderSettings', () => {
@@ -80,6 +80,35 @@ describe('reminders', () => {
 
     it('quiet hours end is before morning mood time', () => {
       expect(defaultReminderSettings.quietHours.end < defaultReminderSettings.moodTimeMorning).toBe(true);
+    });
+  });
+
+  describe('migrateStoredReminderSettings', () => {
+    it('preserves explicit category choices', () => {
+      expect(
+        migrateStoredReminderSettings({
+          enabled: true,
+          moodCheckInsEnabled: false,
+          focusReminderEnabled: true,
+        }),
+      ).toEqual({
+        enabled: true,
+        moodCheckInsEnabled: false,
+        focusReminderEnabled: true,
+      });
+    });
+
+    it('keeps missing categories off for legacy disabled schedules', () => {
+      expect(migrateStoredReminderSettings({ enabled: false })).toEqual({
+        enabled: false,
+        moodCheckInsEnabled: false,
+        focusReminderEnabled: false,
+      });
+    });
+
+    it('does not reinterpret non-object stored values', () => {
+      expect(migrateStoredReminderSettings(null)).toBeNull();
+      expect(migrateStoredReminderSettings('invalid')).toBe('invalid');
     });
   });
 });

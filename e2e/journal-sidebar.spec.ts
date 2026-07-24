@@ -167,7 +167,7 @@ test.describe("Diary desktop shell recovery", () => {
     const detailPane = page.getByTestId("journal-detail-pane");
 
     await expect(detailPane.getByTestId("diary-empty-canvas")).toBeVisible({ timeout: 30_000 });
-    await detailPane.getByRole("button", { name: /^Prompt$/ }).click();
+    await detailPane.getByRole("button", { name: /^Use a prompt$/ }).click();
 
     const editor = page.locator("[contenteditable='true']").first();
     await expect(editor).toBeVisible({ timeout: 20_000 });

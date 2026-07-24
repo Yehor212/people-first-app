@@ -9,19 +9,16 @@
  * Tap opens MoodWeatherCalendar bottom sheet.
  */
 
-import { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useTheme } from '@/components/ThemeToggle';
-import { shouldAnimate } from '@/lib/animationUtils';
-import { MoodType, EmotionData } from '@/types';
-import {
-  deriveWeatherMood,
-  getWeatherMoodConfig,
-} from '@/lib/weatherMoodConfig';
-import { WeatherEffectLayer } from './WeatherEffects';
-import { MoodParticles } from './MoodParticles';
+import { useMemo } from "react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/components/ThemeToggle";
+import { shouldAnimate } from "@/lib/animationUtils";
+import { MoodType, EmotionData } from "@/types";
+import { deriveWeatherMood, getWeatherMoodConfig } from "@/lib/weatherMoodConfig";
+import { WeatherEffectLayer } from "./WeatherEffects";
+import { MoodParticles } from "./MoodParticles";
 
 // ============================================
 // TYPES
@@ -44,20 +41,20 @@ export function MoodWeather({ mood, emotion, className }: MoodWeatherProps) {
 
   const weatherMoodId = useMemo(() => deriveWeatherMood(mood, emotion), [mood, emotion]);
   const config = getWeatherMoodConfig(weatherMoodId);
-  const isDark = effectiveTheme === 'dark';
+  const isDark = effectiveTheme === "dark";
   const palette = isDark ? config.palette.dark : config.palette.light;
 
   const label = (t as unknown as Record<string, string>)[config.labelKey] || config.labelKey;
-  const message = (t as unknown as Record<string, string>)[config.messageKey] || '';
+  const message = (t as unknown as Record<string, string>)[config.messageKey] || "";
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
-        'relative overflow-hidden rounded-2xl p-4 min-h-[140px]',
-        'border border-border/30 backdrop-blur-sm',
-        className,
+        "relative min-h-[calc(8.75rem*var(--font-scale,1))] overflow-hidden rounded-2xl p-4",
+        "border border-border/30 backdrop-blur-sm",
+        className
       )}
       style={{
         background: `linear-gradient(135deg, hsl(${palette.surface}), hsl(${palette.accent} / 0.18))`,
@@ -74,7 +71,7 @@ export function MoodWeather({ mood, emotion, className }: MoodWeatherProps) {
       )}
 
       {/* Layer 3: Particles */}
-      {animate && config.layers.particles.type !== 'none' && (
+      {animate && config.layers.particles.type !== "none" && (
         <MoodParticles
           config={config.layers.particles}
           budget={config.performanceBudget.maxParticles}
@@ -82,24 +79,24 @@ export function MoodWeather({ mood, emotion, className }: MoodWeatherProps) {
       )}
 
       {/* Layer 4: Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center h-full">
+      <div className="relative z-10 flex h-full min-w-0 flex-col items-center justify-center">
         {/* Emoji */}
         <motion.span
           className="text-3xl mb-1 block"
           initial={animate ? { scale: 0, opacity: 0 } : false}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
         >
           {config.emoji}
         </motion.span>
 
         {/* Label */}
-        <h3 className="text-xs font-bold text-foreground text-center uppercase tracking-wider leading-tight">
+        <h3 className="break-words text-center text-xs font-bold uppercase leading-tight tracking-wider text-foreground">
           {label}
         </h3>
 
         {/* Message */}
-        <p className="text-[10px] text-muted-foreground text-center mt-1 leading-tight line-clamp-2 px-1">
+        <p className="mt-1 break-words px-1 text-center text-xs leading-relaxed text-muted-foreground">
           {message}
         </p>
       </div>

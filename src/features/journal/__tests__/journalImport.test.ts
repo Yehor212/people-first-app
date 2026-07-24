@@ -8,7 +8,9 @@ let mockAudio: any[] = [];
 let addedEntries: any[] = [];
 let addedPhotos: any[] = [];
 let addedAudio: any[] = [];
+let updatedEntries: Array<{ id: string; changes: Record<string, unknown> }> = [];
 let mockVaultKey: string | null = null;
+let mockDeletedJournalIds = new Set<string>();
 
 vi.mock("../journalContentSession", () => ({
   getJournalContentVaultKey: vi.fn(() => mockVaultKey),
@@ -47,9 +49,14 @@ vi.mock("@/storage/db", () => ({
     },
     journalEntries: {
       toArray: vi.fn(() => Promise.resolve(mockEntries)),
+      get: vi.fn((id: string) => Promise.resolve(mockEntries.find((entry) => entry.id === id))),
       add: vi.fn((entry: any) => {
         addedEntries.push(entry);
         return Promise.resolve();
+      }),
+      update: vi.fn((id: string, changes: Record<string, unknown>) => {
+        updatedEntries.push({ id, changes });
+        return Promise.resolve(1);
       }),
     },
     journalPhotos: {
@@ -68,6 +75,14 @@ vi.mock("@/storage/db", () => ({
     },
     transaction: vi.fn((_mode: string, _tables: any[], cb: () => Promise<any>) => cb()),
   },
+}));
+
+vi.mock("@/storage/deletionTracker", () => ({
+  DELETION_TRACKER_KEYS: { journal: "zenflow-deleted-journal-entry-ids" },
+  getDeletedJournalEntryIds: vi.fn(() => Promise.resolve(mockDeletedJournalIds)),
+  mergeDeletionTrackerIdsInCurrentTransaction: vi.fn(() =>
+    Promise.resolve(mockDeletedJournalIds),
+  ),
 }));
 
 import { triggerSync } from "@/storage/cloudSync";
@@ -152,7 +167,9 @@ beforeEach(() => {
   addedEntries = [];
   addedPhotos = [];
   addedAudio = [];
+  updatedEntries = [];
   mockVaultKey = null;
+  mockDeletedJournalIds = new Set();
 });
 
 // ─── Tests ────────────────────────────────────────────────────
@@ -184,9 +201,9 @@ describe("importJournalBackup", () => {
   });
 
   it("rejects unsupported backup versions before writing", async () => {
-    const result = await importJournalBackup(makeFile(JSON.stringify(makeBackup({ version: 3 }))));
+    const result = await importJournalBackup(makeFile(JSON.stringify(makeBackup({ version: 4 }))));
 
-    expect(result.errors).toContain("Unsupported backup version: 3");
+    expect(result.errors).toContain("Unsupported backup version: 4");
     expect(addedEntries).toHaveLength(0);
   });
 
@@ -210,6 +227,29 @@ describe("importJournalBackup", () => {
 
     expect(result.errors).toContain("Invalid entry: entry-1");
     expect(addedEntries).toHaveLength(0);
+  });
+
+  it("rejects impossible dates before writing entries or scheduling sync", async () => {
+    const result = await importJournalBackup(makeFile(JSON.stringify(makeBackup({
+      entries: [makeEntry({ date: "2026-02-30" })],
+    }))));
+
+    expect(result.errors).toContain("Invalid entry: entry-1");
+    expect(result.imported).toBe(0);
+    expect(addedEntries).toHaveLength(0);
+    expect(triggerSync).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-positive photo geometry before writing media or scheduling sync", async () => {
+    mockEntries = [makeEntry()];
+    const result = await importJournalBackup(makeFile(JSON.stringify(makeBackup({
+      entries: [makeEntry({ photoIds: ["photo-1"] })],
+      photos: [makePhoto({ width: 0, height: -1 })],
+    }))));
+
+    expect(result.photosImported).toBe(0);
+    expect(addedPhotos).toHaveLength(0);
+    expect(triggerSync).not.toHaveBeenCalled();
   });
 
   it("imports 2 valid entries successfully", async () => {
@@ -351,7 +391,7 @@ describe("importJournalBackup", () => {
   it("skips duplicate photos", async () => {
     mockPhotos = [{ id: "photo-1" }];
     const backup = makeBackup({
-      entries: [makeEntry()],
+      entries: [makeEntry({ photoIds: ["photo-1", "photo-2"] })],
       photos: [makePhoto({ id: "photo-1" }), makePhoto({ id: "photo-2" })],
     });
     const file = makeFile(JSON.stringify(backup));
@@ -375,6 +415,37 @@ describe("importJournalBackup", () => {
 
     expect(result.audioImported).toBe(1);
     expect(addedAudio).toHaveLength(1);
+  });
+
+  it("skips spoofed and overlong audio from an otherwise valid backup", async () => {
+    const backup = makeBackup({
+      entries: [
+        makeEntry({
+          id: "e1",
+          audioIds: ["audio-spoofed", "audio-overlong"],
+        }),
+      ],
+      photos: [],
+      audio: [
+        makeAudioItem({
+          id: "audio-spoofed",
+          entryId: "e1",
+          data: "data:text/html;base64,PHNjcmlwdD4=",
+          mimeType: "audio/webm",
+        }),
+        makeAudioItem({
+          id: "audio-overlong",
+          entryId: "e1",
+          duration: 301,
+        }),
+      ],
+    });
+
+    const result = await importJournalBackup(makeFile(JSON.stringify(backup)));
+
+    expect(result.audioImported).toBe(0);
+    expect(addedAudio).toHaveLength(0);
+    expect(addedEntries[0]?.audioIds).toEqual([]);
   });
 
   it("encrypts imported plaintext content and media when a diary vault key is active", async () => {
@@ -471,7 +542,14 @@ describe("importJournalBackup", () => {
     const file = makeFile(
       JSON.stringify(
         makeBackup({
-          entries: [makeEntry({ id: "race-entry", content: "private import" })],
+          entries: [
+            makeEntry({
+              id: "race-entry",
+              content: "private import",
+              photoIds: ["race-photo"],
+              audioIds: ["race-audio"],
+            }),
+          ],
           photos: [makePhoto({ id: "race-photo", entryId: "race-entry" })],
           audio: [makeAudioItem({ id: "race-audio", entryId: "race-entry" })],
         })
@@ -514,7 +592,41 @@ describe("importJournalBackup", () => {
     expect(result.skipped).toBe(1);
     expect(result.photosImported).toBe(1);
     expect(result.audioImported).toBe(1);
+    expect(updatedEntries).toEqual([
+      expect.objectContaining({
+        id: "entry-1",
+        changes: expect.objectContaining({
+          photoIds: ["photo-1"],
+          audioIds: ["audio-1"],
+        }),
+      }),
+    ]);
     expect(triggerSync).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not resurrect a permanently deleted entry or its media", async () => {
+    mockDeletedJournalIds = new Set(["entry-deleted"]);
+    const backup = makeBackup({
+      entries: [
+        makeEntry({
+          id: "entry-deleted",
+          photoIds: ["photo-deleted"],
+          audioIds: ["audio-deleted"],
+        }),
+      ],
+      photos: [makePhoto({ id: "photo-deleted", entryId: "entry-deleted" })],
+      audio: [makeAudioItem({ id: "audio-deleted", entryId: "entry-deleted" })],
+    });
+
+    const result = await importJournalBackup(makeFile(JSON.stringify(backup)));
+
+    expect(result.imported).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(result.photosImported).toBe(0);
+    expect(result.audioImported).toBe(0);
+    expect(addedEntries).toHaveLength(0);
+    expect(addedPhotos).toHaveLength(0);
+    expect(addedAudio).toHaveLength(0);
   });
 
   it("calls onProgress callback with progress steps", async () => {

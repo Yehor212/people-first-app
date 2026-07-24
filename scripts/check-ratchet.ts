@@ -13,17 +13,36 @@
  *   npx tsx scripts/check-ratchet.ts --update    # Check + auto-tighten improved floors
  *   npx tsx scripts/check-ratchet.ts --override metric=value --reason "justification"
  *
- * Exit: 0 = pass, 1 = violation/regression/staleness failure
+ * Exit: 0 = pass, 1 = violation/regression/staleness failure,
+ *       2 = missing, invalid, or unstable evidence/configuration
  */
 
 import * as fs from "fs";
 import * as path from "path";
 import { execFileSync, execSync } from "child_process";
 import { fileURLToPath } from "url";
+import {
+  runRatchetBundleManifestCli,
+  validateProductionWebBundleManifest,
+} from "./ratchet-bundle-manifest";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.join(__dirname, "..");
+const BUNDLE_MANIFEST_BEGIN_ARGS = [
+  "--bundle-manifest-begin",
+  "--target",
+  "web",
+  "--mode",
+  "production",
+];
+const BUNDLE_MANIFEST_COMPLETE_ARGS = [
+  "--bundle-manifest-complete",
+  "--target",
+  "web",
+  "--mode",
+  "production",
+];
 
 // --- Types ---
 
@@ -362,20 +381,10 @@ function countTodoFixme(): number {
   );
 }
 
-/** Measure total JS bundle size in KB (requires build to have run first) */
+/** Measure the completed production-web JS bundle from hash-bound manifest evidence. */
 function measureBundleSizeKB(): number {
-  try {
-    const assetsDir = path.join(ROOT, "dist/assets");
-    if (!fs.existsSync(assetsDir)) return 0;
-    const bytes = walkFiles("dist/assets", new Set([".js"])).reduce(
-      (sum, filePath) => sum + fs.statSync(filePath).size,
-      0
-    );
-    return Math.ceil(bytes / 1024);
-  } catch {
-    // dist/ may not exist if build didn't run (e.g., standalone ratchet check)
-    return 0;
-  }
+  const evidence = validateProductionWebBundleManifest({ rootDir: ROOT });
+  return Math.ceil(evidence.bundleSizeBytes / 1024);
 }
 
 /** Count theme-blind hardcoded colors (Visual Aesthetic Part 6 — Chameleon Rule)
@@ -730,6 +739,31 @@ function checkCanaries(
 // --- Main ---
 
 function checkRatchet(): void {
+  const args = process.argv.slice(2);
+  try {
+    const serializedArgs = args.join("\0");
+    const beginCommand = BUNDLE_MANIFEST_BEGIN_ARGS.join("\0");
+    const completeCommand = BUNDLE_MANIFEST_COMPLETE_ARGS.join("\0");
+    const manifestArgs =
+      serializedArgs === beginCommand
+        ? BUNDLE_MANIFEST_BEGIN_ARGS
+        : serializedArgs === completeCommand
+          ? BUNDLE_MANIFEST_COMPLETE_ARGS
+          : null;
+    if (manifestArgs && runRatchetBundleManifestCli({ argv: manifestArgs, rootDir: ROOT })) {
+      console.log("Production-web ratchet bundle manifest lifecycle step completed.");
+      return;
+    }
+    if (args.some((arg) => arg.startsWith("--bundle-manifest-"))) {
+      throw new Error(
+        "RATCHET BUNDLE EVIDENCE: bundle lifecycle command must use exact production-web arguments"
+      );
+    }
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(2);
+  }
+
   const ledgerPath = path.join(ROOT, "quality-ledger.json");
   if (!fs.existsSync(ledgerPath)) {
     console.error("quality-ledger.json not found! Run initial setup first.");
@@ -737,7 +771,6 @@ function checkRatchet(): void {
   }
 
   const ledger: QualityLedger = JSON.parse(fs.readFileSync(ledgerPath, "utf-8"));
-  const args = process.argv.slice(2);
   const doUpdate = args.includes("--update");
 
   // Parse --override metric=value --reason "..."
@@ -774,7 +807,13 @@ function checkRatchet(): void {
   console.log("  RATCHET CHECK \u2014 Law 27 Enforcement");
   console.log("=".repeat(50));
 
-  const actual = measureMetrics();
+  let actual: Record<string, number>;
+  try {
+    actual = measureMetrics();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(2);
+  }
   const sourceFiles = getSourceFileCount();
 
   // ═══════════════════════════════════════════

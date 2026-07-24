@@ -109,6 +109,15 @@ jobs:
           npm run check:supabase-auth-redirect-allow-list
           npm run apply:supabase-auth-redirect-allow-list
 
+      - name: Apply scanner-safe Supabase Auth Magic Link template
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          ZENFLOW_AUTH_MAGIC_LINK_TEMPLATE_CONFIRM_PRODUCTION: true
+        run: |
+          npm run check:supabase-auth-magic-link-template
+          npm run apply:supabase-auth-magic-link-template
+
       - name: Run journal Magic Link full live proof
         id: full_live_proof
         env:

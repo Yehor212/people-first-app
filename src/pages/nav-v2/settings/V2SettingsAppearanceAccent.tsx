@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Contrast, Palette } from "lucide-react";
 
 import {
@@ -26,13 +26,14 @@ type AppearanceAccentProps = {
   tx: Record<string, string>;
   appliedTheme: AppliedTheme;
   customization: ThemeCustomization;
+  feedback?: ReactNode;
   onChange: (patch: Partial<ThemeCustomization>) => void;
 };
 
 function accentPreviewStyle(
   appliedTheme: AppliedTheme,
   customization: ThemeCustomization,
-  accent: ThemeAccentFamily,
+  accent: ThemeAccentFamily
 ): CSSProperties {
   const accentToken = getThemeCustomizationRecipe(appliedTheme, {
     ...customization,
@@ -47,6 +48,7 @@ export function AppearanceAccent({
   tx,
   appliedTheme,
   customization,
+  feedback,
   onChange,
 }: AppearanceAccentProps) {
   return (
@@ -63,9 +65,10 @@ export function AppearanceAccent({
           }
         />
         <div
-          className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+          className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(7.5rem*var(--font-scale,1))),1fr))] gap-2"
           role="group"
           aria-label={tx.themeAccentTitle || "Accent color"}
+          data-testid="settings-v2-accent-grid"
         >
           {THEME_ACCENT_FAMILIES.map((option) => {
             const label = tx[option.labelKey] || ACCENT_LABEL_FALLBACK[option.id];
@@ -86,19 +89,21 @@ export function AppearanceAccent({
                   className="h-5 w-5 shrink-0 rounded-full border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-choice-accent))] shadow-[inset_0_1px_0_hsl(var(--settings-v2-rim-light)/0.24)]"
                   style={accentPreviewStyle(appliedTheme, customization, option.id)}
                 />
-                <span>{label}</span>
+                <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:break-word]">
+                  {label}
+                </span>
               </SettingsChoiceButton>
             );
           })}
         </div>
       </section>
 
+      {feedback}
+
       <ToggleRow
         icon={Contrast}
         title={tx.themeHighContrast || "High contrast"}
-        description={
-          tx.themeHighContrastHint || "Strengthens text, borders, and focus indicators."
-        }
+        description={tx.themeHighContrastHint || "Strengthens text, borders, and focus indicators."}
         checked={customization.highContrast}
         onCheckedChange={(checked) => onChange({ highContrast: checked })}
         testId="settings-v2-high-contrast-toggle"

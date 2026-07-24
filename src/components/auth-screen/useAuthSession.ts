@@ -41,8 +41,10 @@ export function useAuthSession({
 
   // Show web OAuth error from Index.tsx if present
   useEffect(() => {
-    if (webOAuthError) {
+    if (webOAuthError !== undefined) {
       setError(webOAuthError);
+    }
+    if (webOAuthError) {
       onClearError?.();
     }
   }, [webOAuthError, onClearError]);

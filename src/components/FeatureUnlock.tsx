@@ -133,7 +133,7 @@ export function FeatureUnlock({
       role="dialog"
       aria-modal="true"
       aria-labelledby="feature-unlock-title"
-      className={`fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm motion-safe:transition-opacity motion-safe:duration-300 ${
+      className={`fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] pb-[max(1rem,var(--safe-bottom))] pt-[max(1rem,var(--safe-top))] backdrop-blur-sm motion-safe:transition-opacity motion-safe:duration-300 ${
         isVisible ? "opacity-100" : "opacity-0"
       }`}
       onClick={handleClose}
@@ -155,7 +155,7 @@ export function FeatureUnlock({
 
       {/* Main card */}
       <div
-        className={`relative m-4 max-w-md w-full bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden transform motion-safe:transition-all motion-safe:duration-300 ${
+        className={`relative max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-2rem)] w-full max-w-md transform overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl border border-border bg-card zen-shadow-card motion-safe:transition-all motion-safe:duration-300 ${
           isVisible ? "scale-100 opacity-100" : "scale-75 opacity-0"
         }`}
         role="button"
@@ -173,13 +173,13 @@ export function FeatureUnlock({
             </div>
             <h2
               id="feature-unlock-title"
-              className="text-2xl font-bold text-foreground mb-2"
+              className="mb-2 break-words hyphens-manual text-2xl font-bold text-foreground"
             >
               {(t as unknown as Record<string, string>)[
                 `onboarding${feature}UnlockTitle`
               ] || "🎉 New Feature Unlocked!"}
             </h2>
-            <p className="text-muted-foreground text-sm">
+            <p className="break-words hyphens-manual text-sm text-muted-foreground">
               {(t as unknown as Record<string, string>)[
                 `onboarding${feature}UnlockSubtitle`
               ] || "You've made great progress!"}
@@ -189,25 +189,25 @@ export function FeatureUnlock({
 
         {/* Description */}
         <div className="p-6">
-          <p className="text-foreground mb-6 leading-relaxed">
+          <p className="mb-6 break-words hyphens-manual leading-relaxed text-foreground">
             {(t as unknown as Record<string, string>)[
               `onboarding${feature}Description`
             ] || "This new feature will help you on your journey."}
           </p>
 
           {/* Action buttons */}
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 min-[360px]:flex-row">
             {onTryNow && (
               <button
                 onClick={handleTryNow}
-                className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 motion-safe:transition-colors zen-shadow-sm"
+                className="min-h-[44px] h-auto min-w-0 flex-1 whitespace-normal break-words hyphens-manual rounded-xl bg-primary px-4 py-3 font-medium text-primary-foreground zen-shadow-sm hover:bg-primary/90 motion-safe:transition-colors"
               >
                 {t.onboardingTryNow || "Try it now"}
               </button>
             )}
             <button
               onClick={handleClose}
-              className="flex-1 py-3 px-4 bg-card border border-border text-foreground rounded-xl font-medium hover:bg-accent motion-safe:transition-colors"
+              className="min-h-[44px] h-auto min-w-0 flex-1 whitespace-normal break-words hyphens-manual rounded-xl border border-border bg-card px-4 py-3 font-medium text-foreground hover:bg-accent motion-safe:transition-colors"
             >
               {t.onboardingGotIt || "Got it!"}
             </button>

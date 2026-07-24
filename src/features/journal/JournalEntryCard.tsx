@@ -4,11 +4,10 @@ import { motion, useMotionValue, useTransform, type PanInfo } from "framer-motio
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/lib/timeUtils";
-import type { Language } from "@/i18n/translations";
 import { hapticTap, hapticMedium, hapticWarning } from "@/lib/haptics";
 import { shouldAnimate } from "@/lib/animationUtils";
 import type { JournalEntry } from "./types";
-import { countWords } from "./types";
+import { countWordsHtml } from "./types";
 import { StickerRenderer } from "./StickerRenderer";
 import { getPhotoById } from "./journalStorage";
 import { logger } from "@/lib/logger";
@@ -16,24 +15,22 @@ import { DiaryMiniOrb } from "./DiaryMiniOrb";
 import { getLocalizedEmotionLabel } from "@/components/state-of-mind/emotionI18n";
 import { getJournalPreviewText } from "./journalDisplay";
 import { getDiaryAura } from "./journalAura";
-import { formatJournalRelativeTime, formatJournalWordCount } from "./journalWordCount";
+import { formatJournalWordCount } from "./journalWordCount";
+import { formatJournalCivilDate } from "./journalDateUtils";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const DEFAULT_BG = "from-primary/3 to-transparent";
 const DEFAULT_ACCENT = "from-primary/20 to-primary/10";
-
-function getRelativeTime(
-  timestamp: number,
-  ts: Record<string, string>,
-  language: Language = "en"
-): string {
-  const relativeTime = formatJournalRelativeTime(timestamp, language, ts);
-  if (relativeTime) return relativeTime;
-
-  return new Date(timestamp).toLocaleDateString(getLocale(language), {
-    month: "short",
-    day: "numeric",
-  });
-}
 
 interface JournalEntryCardProps {
   entry: JournalEntry;
@@ -65,6 +62,9 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 }: JournalEntryCardProps) {
   const { t, isRTL, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const [swipeDeleteConfirmOpen, setSwipeDeleteConfirmOpen] = useState(false);
+  const closeSwipeDeleteConfirm = useCallback(() => setSwipeDeleteConfirmOpen(false), []);
+  useBackHandler(swipeDeleteConfirmOpen, closeSwipeDeleteConfirm);
 
   // ── Framer Motion swipe-to-delete ──
   const x = useMotionValue(0);
@@ -111,12 +111,17 @@ export const JournalEntryCard = memo(function JournalEntryCard({
       if (privateMode) return;
       const deleteDelta = isRTL ? info.offset.x : -info.offset.x;
       if (deleteDelta > 80) {
-        onSwipeDelete?.(entry.id);
+        setSwipeDeleteConfirmOpen(true);
       }
       // If not past threshold, dragConstraints spring handles snap-back
     },
-    [isRTL, onSwipeDelete, entry.id, privateMode]
+    [isRTL, privateMode]
   );
+
+  const confirmSwipeDelete = useCallback(() => {
+    setSwipeDeleteConfirmOpen(false);
+    onSwipeDelete?.(entry.id);
+  }, [entry.id, onSwipeDelete]);
 
   // ── Search highlight ──
   const highlightText = useCallback(
@@ -228,9 +233,10 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     onTap(entry.id);
   }, [onTap, entry.id, privateMode]);
 
-  const privateEntryLabel = ts.journalPrivateEntry || ts.privateMode || "Private entry";
+  const privateEntryLabel = ts.journalPrivateEntry || ts.privateMode || "Entry preview hidden";
   const privateEntryHint =
-    ts.journalPrivateEntryHint || "Unlock private mode to view this memory.";
+    ts.journalPrivateEntryHint ||
+    "Change the diary screen privacy setting to see this entry.";
   const plainContent = getJournalPreviewText(entry.content, ts);
   const rawPreview = plainContent.slice(0, 140);
   const preview = rawPreview + (plainContent.length > 140 ? "..." : "");
@@ -238,16 +244,15 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     hour: "2-digit",
     minute: "2-digit",
   });
-  const relativeTime = useMemo(
-    () => getRelativeTime(entry.createdAt, ts, language),
-    [entry.createdAt, ts, language]
+  const entryDateLabel = useMemo(
+    () => formatJournalCivilDate(entry.date, language, "short"),
+    [entry.date, language]
   );
-  const wordCount = countWords(entry.content);
+  const wordCount = countWordsHtml(entry.content);
   const hasPhoto = entry.photoIds.length > 0;
   const displayTitle = entry.title
     ? getLocalizedEmotionLabel(entry.title, ts)
     : "";
-  const displayTags = entry.tags.map((tag) => getLocalizedEmotionLabel(tag, ts));
   const moodAura = privateMode ? null : getDiaryAura(entry.mood);
   const moodGlow = moodAura ? `0 0 30px ${moodAura.color(0.13)}` : "";
   const moodOverlayStyle = moodAura
@@ -261,12 +266,6 @@ export const JournalEntryCard = memo(function JournalEntryCard({
         boxShadow: `0 0 18px ${moodAura.color(0.18)}`,
       }
     : undefined;
-  const moodTagStyle = moodAura
-    ? {
-        backgroundColor: moodAura.color(0.12),
-        color: moodAura.color(0.92),
-      }
-    : undefined;
 
   // Load first photo thumbnail
   const [thumbnail, setThumbnail] = useState<{ photoId: string; data: string } | null>(null);
@@ -276,7 +275,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     setThumbnail(null);
     if (privateMode || !firstPhotoId) return;
     let cancelled = false;
-    getPhotoById(firstPhotoId)
+    getPhotoById(firstPhotoId, entry.id)
       .then((photo) => {
         if (!cancelled && photo?.thumbnail) setThumbnail({ photoId: firstPhotoId, data: photo.thumbnail });
       })
@@ -284,7 +283,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     return () => {
       cancelled = true;
     };
-  }, [firstPhotoId, privateMode]);
+  }, [entry.id, firstPhotoId, privateMode]);
 
   // Combine base shadow with mood glow
   const cardShadow =
@@ -379,13 +378,13 @@ export const JournalEntryCard = memo(function JournalEntryCard({
             <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/30 to-transparent" />
             {/* Photo count badge */}
             {entry.photoIds.length > 1 && (
-              <span className="absolute top-2 end-2 inline-flex items-center gap-1 text-[10px] text-white/90 bg-black/40 dark:bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
+              <span className="absolute top-2 end-2 inline-flex items-center gap-1 rounded-md bg-black/40 px-1.5 py-0.5 text-xs text-white/90 backdrop-blur-sm dark:bg-black/40">
                 <ImageIcon className="h-3 w-3" aria-hidden="true" />
                 {entry.photoIds.length}
               </span>
             )}
             {/* Time badge on photo */}
-            <span className="absolute top-2 start-2 flex items-center gap-0.5 text-[10px] text-white/80 bg-black/30 dark:bg-black/30 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
+            <span className="absolute top-2 start-2 flex items-center gap-0.5 rounded-md bg-black/30 px-1.5 py-0.5 text-xs text-white/80 backdrop-blur-sm dark:bg-black/30">
               <Clock className="w-2.5 h-2.5" />
               {time}
             </span>
@@ -434,17 +433,17 @@ export const JournalEntryCard = memo(function JournalEntryCard({
               {/* Main content */}
               <div className="flex-1 min-w-0">
                 {/* Title + relative time */}
-                <div className="flex items-center gap-2 mb-0.5">
-                  <h4 className="text-sm font-semibold text-foreground truncate flex-1" dir="auto">
+                <div className="mb-0.5 flex flex-col items-start gap-0.5">
+                  <h4 className="w-full whitespace-normal break-words text-sm font-semibold text-foreground" dir="auto">
                     {privateMode ? privateEntryLabel : displayTitle ? highlightText(displayTitle) : time}
                   </h4>
-                  <span className="text-[10px] text-muted-foreground/50 flex-shrink-0">
-                    {privateMode ? "" : relativeTime}
+                  <span className="text-xs text-muted-foreground/50">
+                    {privateMode ? "" : entryDateLabel}
                   </span>
                 </div>
 
                 {privateMode && (
-                  <p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed" dir="auto">
+                  <p className="whitespace-normal break-words text-xs leading-relaxed text-muted-foreground/70" dir="auto">
                     {privateEntryHint}
                   </p>
                 )}
@@ -465,33 +464,19 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                           <StickerRenderer key={i} emoji={s} size="xs" />
                         ))}
                         {entry.stickers.length > 5 && (
-                          <span className="text-[10px] text-muted-foreground/60 ms-1">
+                          <span className="ms-1 text-xs text-muted-foreground/60">
                             +{entry.stickers.length - 5}
                           </span>
                         )}
                       </div>
                     )}
                     {entry.audioIds && entry.audioIds.length > 0 && (
-                      <span className="text-[10px] text-muted-foreground/70 bg-muted/40 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                      <span className="flex items-center gap-0.5 rounded-md bg-muted/40 px-1.5 py-0.5 text-xs text-muted-foreground/70">
                         <Mic className="w-2.5 h-2.5" /> {entry.audioIds.length}
                       </span>
                     )}
-                    {displayTags.slice(0, 2).map((tag, index) => (
-                      <span
-                        key={`${entry.tags[index]}-${tag}`}
-                        className="text-[10px] text-primary/70 bg-primary/8 px-1.5 py-0.5 rounded-md"
-                        style={moodTagStyle}
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                    {entry.tags.length > 2 && (
-                      <span className="text-[10px] text-muted-foreground/50">
-                        +{entry.tags.length - 2}
-                      </span>
-                    )}
                     {wordCount > 0 && (
-                      <span className="text-[10px] text-muted-foreground/60 ms-auto tabular-nums">
+                      <span className="ms-auto text-xs tabular-nums text-muted-foreground/60">
                         {formatJournalWordCount(wordCount, language, ts)}
                       </span>
                     )}
@@ -502,7 +487,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
               {/* Time (only when no hero photo) + contextual actions */}
               <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                 {!privateMode && !(hasPhoto && thumbnailData && !privateMode) && (
-                  <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/60">
+                  <span className="flex items-center gap-0.5 text-xs text-muted-foreground/60">
                     <Clock className="w-2.5 h-2.5" />
                     {time}
                   </span>
@@ -526,6 +511,25 @@ export const JournalEntryCard = memo(function JournalEntryCard({
           </div>
         </div>
       </motion.div>
+      <AlertDialog open={swipeDeleteConfirmOpen} onOpenChange={setSwipeDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{ts.delete || "Delete"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {ts.journalDeleteConfirm || "Are you sure you want to delete this entry?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{ts.cancel || "Cancel"}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmSwipeDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {ts.delete || "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });

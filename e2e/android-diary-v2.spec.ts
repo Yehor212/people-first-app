@@ -5,6 +5,17 @@ import { primeZenflowV2, v2RoutePath } from "./helpers/zenflowV2State";
 const ANDROID_TOUCH_TARGET_PX = 48;
 const TOUCH_EPSILON_PX = 0.01;
 
+const STARTUP_SCENARIOS: Record<string, { now: string; theme: "ink" | "paper" }> = {
+  "renders the Android night diary wallpaper without losing the static platform contract": {
+    now: "2026-06-17T23:00:00.000Z",
+    theme: "ink",
+  },
+  "renders the Android paper diary wallpaper in natural night hours": {
+    now: "2026-06-18T02:00:00.000Z",
+    theme: "paper",
+  },
+};
+
 test.use({ timezoneId: "UTC" });
 
 async function expectFocusInsideMobileDiarySidebar(page: Page) {
@@ -33,7 +44,11 @@ async function expectFocusInsideMobileDiarySettings(page: Page) {
     .toBe(true);
 }
 
-async function expectAndroidTouchTarget(page: Page, locator: Locator) {
+async function expectAndroidTouchTarget(
+  page: Page,
+  locator: Locator,
+  options: { requireInViewport?: boolean } = {},
+) {
   await expect(locator).toBeVisible({ timeout: 30_000 });
   await expect
     .poll(
@@ -53,10 +68,54 @@ async function expectAndroidTouchTarget(page: Page, locator: Locator) {
 
   expect(box.width + TOUCH_EPSILON_PX).toBeGreaterThanOrEqual(ANDROID_TOUCH_TARGET_PX);
   expect(box.height + TOUCH_EPSILON_PX).toBeGreaterThanOrEqual(ANDROID_TOUCH_TARGET_PX);
-  expect(box.x).toBeGreaterThanOrEqual(0);
-  expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
-  expect(box.y).toBeGreaterThanOrEqual(0);
-  expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
+  if (options.requireInViewport !== false) {
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
+  }
+}
+
+async function expectAllVisibleAndroidTouchTargets(page: Page, container: Locator) {
+  const controls = container.locator(
+    'button, [role="button"], a[href], input:not([type="hidden"]), select, textarea',
+  );
+  const count = await controls.count();
+  expect(count).toBeGreaterThan(0);
+  for (let index = 0; index < count; index += 1) {
+    const control = controls.nth(index);
+    if (!(await control.isVisible())) continue;
+
+    const isFullyWithinViewport = await control.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.left >= 0
+        && rect.top >= 0
+        && rect.right <= window.innerWidth
+        && rect.bottom <= window.innerHeight;
+    });
+    await expectAndroidTouchTarget(page, control, { requireInViewport: isFullyWithinViewport });
+  }
+}
+
+function getAndroidDiaryWriteAction(page: Page): Locator {
+  return page
+    .getByTestId("journal-entry-main-fab")
+    .or(page.getByRole("button", { name: /^New entry$/i }))
+    .or(page.getByTestId("journal-capture-launcher"))
+    .first();
+}
+
+async function openAndroidJournalEntry(page: Page) {
+  const launcher = getAndroidDiaryWriteAction(page);
+  await expect(launcher).toBeVisible({ timeout: 30_000 });
+  const launcherTestId = await launcher.getAttribute("data-testid");
+  await launcher.click();
+  if (launcherTestId === "journal-entry-main-fab") {
+    const newEntryAction = page.getByTestId("journal-fab-action-new-entry");
+    await expect(newEntryAction).toBeVisible();
+    await newEntryAction.click();
+  }
+  await expect(page.locator("[contenteditable='true']")).toBeVisible({ timeout: 20_000 });
 }
 
 async function expectPhoneDiaryWallpaper(page: Page, expectedTone: "day" | "night" = "day") {
@@ -124,11 +183,20 @@ async function openDiaryFromV2Root(page: Page) {
 test.describe("Android V2 Diary", () => {
   test.describe.configure({ timeout: 90_000 });
 
-  test.beforeEach(async ({ page }) => {
-    await page.clock.setFixedTime(new Date("2026-06-17T12:00:00.000Z"));
-    await primeZenflowV2(page, { language: "en", theme: "paper" });
+  test.beforeEach(async ({ page }, testInfo) => {
+    const startup = STARTUP_SCENARIOS[testInfo.title] ?? {
+      now: "2026-06-17T12:00:00.000Z",
+      theme: "paper" as const,
+    };
+
+    await page.clock.setFixedTime(new Date(startup.now));
+    await primeZenflowV2(page, { clearStorage: true, language: "en", theme: startup.theme });
     await page.setViewportSize({ width: 399, height: 869 });
     await openDiaryFromV2Root(page);
+    await page.evaluate(() => {
+      document.documentElement.dataset.platform = "android";
+    });
+    await expect(page.locator("html")).toHaveAttribute("data-platform", "android");
   });
 
   test("keeps the Android diary shell tap-safe and unclipped", async ({ page }) => {
@@ -145,7 +213,7 @@ test.describe("Android V2 Diary", () => {
     ]) {
       await expectAndroidTouchTarget(page, page.getByTestId(id));
     }
-    await expectAndroidTouchTarget(page, page.getByTestId("journal-entry-main-fab"));
+    await expectAndroidTouchTarget(page, getAndroidDiaryWriteAction(page));
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
@@ -169,6 +237,7 @@ test.describe("Android V2 Diary", () => {
     await expect(drawer.getByTestId("journal-mobile-diary-sidebar-calendar")).toBeVisible();
     await expect(page.getByTestId("drawer-v2")).toHaveCount(0);
     await expectAndroidTouchTarget(page, page.getByTestId("journal-mobile-diary-sidebar-close"));
+    await expectAllVisibleAndroidTouchTargets(page, drawer);
     await expect(page.getByTestId("journal-mobile-diary-sidebar-close")).toBeFocused();
     await expectFocusInsideMobileDiarySidebar(page);
     await page.keyboard.press("Shift+Tab");
@@ -186,6 +255,7 @@ test.describe("Android V2 Diary", () => {
     await expect(settingsDialog).toBeVisible({ timeout: 20_000 });
     await expect(reopenedDrawer).toHaveCount(0);
     await expect(page.getByTestId("journal-mobile-settings-close")).toBeFocused();
+    await expectAllVisibleAndroidTouchTargets(page, settingsDialog);
     await expectFocusInsideMobileDiarySettings(page);
     await page.keyboard.press("Shift+Tab");
     await expectFocusInsideMobileDiarySettings(page);
@@ -207,8 +277,14 @@ test.describe("Android V2 Diary", () => {
   });
 
   test("serves the Android diary ambience audio from the native bundle", async ({ page }) => {
+    await page.getByTestId("journal-mobile-settings").click();
+    await expect(page.getByTestId("journal-mobile-settings-panel")).toBeVisible({ timeout: 20_000 });
+    const ambienceControl = page.getByTestId("journal-settings-ambience-control");
+    await ambienceControl.scrollIntoViewIfNeeded();
+    await expect(ambienceControl).toBeVisible();
+
     const audioSrc = await page
-      .getByTestId("diary-page-ambience-audio")
+      .getByTestId("journal-settings-ambience-audio")
       .evaluate((audio: HTMLAudioElement) => audio.currentSrc || audio.src);
     const result = await page.evaluate(async (src) => {
       const response = await fetch(src, { cache: "no-store" });
@@ -227,32 +303,19 @@ test.describe("Android V2 Diary", () => {
   test("renders the Android night diary wallpaper without losing the static platform contract", async ({
     page,
   }) => {
-    await page.clock.setFixedTime(new Date("2026-06-17T23:00:00.000Z"));
-    await primeZenflowV2(page, { clearStorage: true, language: "en", theme: "ink" });
-    await page.setViewportSize({ width: 399, height: 869 });
-    await openDiaryFromV2Root(page);
-
     await expectPhoneDiaryWallpaper(page, "night");
   });
 
   test("renders the Android paper diary wallpaper in natural night hours", async ({
     page,
   }) => {
-    await page.clock.setFixedTime(new Date("2026-06-18T02:00:00.000Z"));
-    await primeZenflowV2(page, { clearStorage: true, language: "en", theme: "paper" });
-    await page.setViewportSize({ width: 399, height: 869 });
-    await openDiaryFromV2Root(page);
-
     await expectPhoneDiaryWallpaper(page, "night");
   });
 
   test("opens and dismisses Android diary action surfaces predictably", async ({ page }) => {
-    await page.getByTestId("journal-entry-main-fab").click();
-    await expectAndroidTouchTarget(page, page.getByTestId("journal-fab-action-new-entry"));
-    await expectAndroidTouchTarget(page, page.getByTestId("journal-fab-action-gratitude"));
-
+    await openAndroidJournalEntry(page);
     await page.keyboard.press("Escape");
-    await expect(page.getByTestId("journal-fab-action-new-entry")).toHaveCount(0);
+    await expect(page.locator("[contenteditable='true']")).toBeHidden({ timeout: 10_000 });
 
     await page.getByTestId("journal-mobile-settings").click();
     const settingsDialog = page.getByRole("dialog", { name: /diary settings/i });
@@ -264,8 +327,7 @@ test.describe("Android V2 Diary", () => {
   });
 
   test("creates a local diary entry without hiding the save path on Android", async ({ page }) => {
-    await page.getByTestId("journal-entry-main-fab").click();
-    await page.getByTestId("journal-fab-action-new-entry").click();
+    await openAndroidJournalEntry(page);
 
     const editor = page.locator("[contenteditable='true']");
     await expect(editor).toBeVisible({ timeout: 20_000 });

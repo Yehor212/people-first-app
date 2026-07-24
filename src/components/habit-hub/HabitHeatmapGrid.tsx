@@ -128,7 +128,6 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
   const [tooltip, setTooltip] = useState<{
     date: string;
     status: string;
-    x: number;
     y: number;
   } | null>(null);
   const habitColor = resolveHabitColor(habit.color);
@@ -171,14 +170,9 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
       if (cell.status === "before" || cell.status === "future") return;
       const rect = (e.target as HTMLElement).getBoundingClientRect();
       const adjustedY = Math.max(40, rect.top - 32);
-      const adjustedX = Math.max(
-        8,
-        Math.min(rect.left, window.innerWidth - 148),
-      );
       setTooltip({
         date: formatShortDate(cell.date, language),
         status: getStatusLabel(cell.status),
-        x: adjustedX,
         y: adjustedY,
       });
       clearTimeout(tooltipTimeoutRef.current);
@@ -192,14 +186,9 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
       if (cell.status === "before" || cell.status === "future") return;
       const rect = (e.target as HTMLElement).getBoundingClientRect();
       const adjustedY = Math.max(40, rect.top - 32);
-      const adjustedX = Math.max(
-        8,
-        Math.min(rect.left, window.innerWidth - 148),
-      );
       setTooltip({
         date: formatShortDate(cell.date, language),
         status: getStatusLabel(cell.status),
-        x: adjustedX,
         y: adjustedY,
       });
     },
@@ -222,13 +211,13 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
         {ts.habitHistory || "History"}
       </h4>
 
-      <div className="flex gap-[3px]">
+      <div className="flex min-w-0 gap-[3px]">
         {/* Day-of-week labels */}
         <div className="flex flex-col gap-[3px] me-1 pt-0">
           {dowLabels.map((label, i) => (
             <div
               key={i}
-              className="w-3 h-3 flex items-center justify-center text-[9px] text-muted-foreground/60 leading-none"
+              className="flex size-[calc(1rem*var(--font-scale,1))] items-center justify-center text-xs leading-none text-muted-foreground/60"
             >
               {i % 2 === 0 ? label : ""}
             </div>
@@ -236,13 +225,13 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
         </div>
 
         {/* Grid columns (weeks) */}
-        <div className="flex gap-[3px] overflow-x-auto scrollbar-hide max-w-full">
+        <div className="flex min-w-0 max-w-full gap-[3px] overflow-x-auto overscroll-x-contain scrollbar-hide">
           {Array.from({ length: weeks }, (_, weekIdx) => (
             <div key={weekIdx} className="flex flex-col gap-[3px]">
               {Array.from({ length: 7 }, (_, dayIdx) => {
                 const cellIdx = weekIdx * 7 + dayIdx;
                 const cell = cells[cellIdx];
-                if (!cell) return <div key={dayIdx} className="w-3 h-3" />;
+                if (!cell) return <div key={dayIdx} className="size-[calc(1rem*var(--font-scale,1))]" />;
 
                 const isActionable =
                   cell.status !== "before" && cell.status !== "future";
@@ -273,7 +262,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
                         : undefined
                     }
                     className={cn(
-                      "w-3 h-3 rounded-[2px] motion-safe:transition-colors",
+                      "size-[calc(1rem*var(--font-scale,1))] rounded-[2px] motion-safe:transition-colors",
                       isActionable
                         ? "cursor-pointer hover:brightness-150"
                         : "cursor-default",
@@ -305,15 +294,15 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="fixed z-[100] px-2 py-1 rounded-lg bg-popover border border-border text-[10px] text-popover-foreground pointer-events-none shadow-lg"
-          style={{ left: tooltip.x, top: tooltip.y }}
+          className="pointer-events-none fixed start-1/2 z-[100] max-w-[calc(100vw-1rem)] -translate-x-1/2 whitespace-normal break-words rounded-lg border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-lg rtl:translate-x-1/2"
+          style={{ top: tooltip.y }}
         >
           {tooltip.date} · {tooltip.status}
         </div>
       )}
 
       {/* Legend */}
-      <div className="flex items-center gap-3 mt-3 text-[10px] text-muted-foreground">
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           <div className="w-2.5 h-2.5 rounded-[2px] bg-foreground/[0.04]" />{" "}
           {ts.legendMiss || "Miss"}

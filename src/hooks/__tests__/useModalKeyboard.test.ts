@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useModalKeyboard } from '../useModalKeyboard';
+import { focusModalRecoveryAction, useModalKeyboard } from '../useModalKeyboard';
 
 describe('useModalKeyboard', () => {
   let container: HTMLDivElement;
@@ -109,6 +109,28 @@ describe('useModalKeyboard', () => {
         'keydown',
         expect.any(Function)
       );
+    });
+
+    it('closes only the topmost modal and restores Escape handling to its parent', () => {
+      const closeParent = vi.fn();
+      const closeChild = vi.fn();
+      const parent = renderHook(() =>
+        useModalKeyboard({ isOpen: true, onClose: closeParent })
+      );
+      const child = renderHook(() =>
+        useModalKeyboard({ isOpen: true, onClose: closeChild })
+      );
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+
+      expect(closeChild).toHaveBeenCalledTimes(1);
+      expect(closeParent).not.toHaveBeenCalled();
+
+      child.unmount();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+
+      expect(closeParent).toHaveBeenCalledTimes(1);
+      parent.unmount();
     });
   });
 
@@ -251,6 +273,105 @@ describe('useModalKeyboard', () => {
     });
   });
 
+  describe('dynamic recovery focus', () => {
+    it('focuses a replacement recovery action only after focus leaves the open dialog', () => {
+      const modal = document.createElement('div');
+      const retry = document.createElement('button');
+      const preserved = document.createElement('button');
+      const outside = document.createElement('button');
+      modal.append(retry, preserved);
+      container.append(modal, outside);
+
+      outside.focus();
+      focusModalRecoveryAction(modal, retry);
+      expect(retry).toHaveFocus();
+
+      preserved.focus();
+      focusModalRecoveryAction(modal, retry);
+      expect(preserved).toHaveFocus();
+    });
+  });
+
+  describe('focus restoration target', () => {
+    it('restores an explicitly supplied opener even when focus moved before effects ran', () => {
+      const opener = document.createElement('button');
+      const mountedInput = document.createElement('input');
+      container.append(opener, mountedInput);
+      opener.focus();
+      const restoreFocusTo = { current: opener };
+      let open = true;
+
+      const { rerender } = renderHook(() =>
+        useModalKeyboard({
+          isOpen: open,
+          onClose: vi.fn(),
+          restoreFocusTo,
+        })
+      );
+
+      mountedInput.focus();
+      open = false;
+      rerender();
+      act(() => {
+        vi.advanceTimersByTime(10);
+      });
+
+      expect(opener).toHaveFocus();
+    });
+
+    it('restores the opener when an open modal unmounts conditionally', () => {
+      const opener = document.createElement('button');
+      const modalInput = document.createElement('input');
+      container.append(opener, modalInput);
+      opener.focus();
+      const restoreFocusTo = { current: opener };
+
+      const { unmount } = renderHook(() =>
+        useModalKeyboard({
+          isOpen: true,
+          onClose: vi.fn(),
+          restoreFocusTo,
+        })
+      );
+
+      modalInput.focus();
+      unmount();
+      act(() => {
+        vi.runAllTimers();
+      });
+
+      expect(opener).toHaveFocus();
+    });
+
+    it('restores focus to a remounted explicit opener when the original node was removed', () => {
+      const originalOpener = document.createElement('button');
+      const replacementOpener = document.createElement('button');
+      const modalInput = document.createElement('input');
+      container.append(originalOpener, modalInput);
+      originalOpener.focus();
+      const restoreFocusTo = { current: originalOpener };
+
+      const { unmount } = renderHook(() =>
+        useModalKeyboard({
+          isOpen: true,
+          onClose: vi.fn(),
+          restoreFocusTo,
+        })
+      );
+
+      modalInput.focus();
+      originalOpener.remove();
+      container.appendChild(replacementOpener);
+      restoreFocusTo.current = replacementOpener;
+      unmount();
+      act(() => {
+        vi.runAllTimers();
+      });
+
+      expect(replacementOpener).toHaveFocus();
+    });
+  });
+
   describe('focus restoration', () => {
     it('restores focus to previous element on close', async () => {
       const onClose = vi.fn();
@@ -369,6 +490,31 @@ describe('useModalKeyboard', () => {
       });
 
       expect(document.activeElement).toBe(firstInput);
+    });
+
+    it('does not override focus that already moved inside the modal', () => {
+      const { result } = renderHook(() =>
+        useModalKeyboard({
+          isOpen: true,
+          onClose: vi.fn(),
+          trapFocus: true,
+        })
+      );
+
+      const modal = document.createElement('div');
+      const closeButton = document.createElement('button');
+      closeButton.setAttribute('aria-label', 'Close modal');
+      const activeControl = document.createElement('button');
+      modal.append(closeButton, activeControl);
+      container.appendChild(modal);
+      (result.current.modalRef as any).current = modal;
+
+      activeControl.focus();
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+
+      expect(document.activeElement).toBe(activeControl);
     });
 
     it('does not auto-focus when trapFocus is false', () => {
@@ -508,6 +654,35 @@ describe('useModalKeyboard', () => {
 
       // Should cycle back to first button, not disabled one
       expect(document.activeElement).toBe(button1);
+    });
+
+    it('skips controls hidden by an ancestor for autofocus and focus trapping', () => {
+      const onClose = vi.fn();
+      const { result } = renderHook(() =>
+        useModalKeyboard({
+          isOpen: true,
+          onClose,
+          trapFocus: true,
+        })
+      );
+
+      const modal = document.createElement('div');
+      const hiddenGroup = document.createElement('div');
+      hiddenGroup.className = 'hidden';
+      hiddenGroup.setAttribute('aria-hidden', 'true');
+      const hiddenButton = document.createElement('button');
+      const visibleButton = document.createElement('button');
+      hiddenGroup.appendChild(hiddenButton);
+      modal.appendChild(hiddenGroup);
+      modal.appendChild(visibleButton);
+      container.appendChild(modal);
+      (result.current.modalRef as any).current = modal;
+
+      act(() => {
+        vi.advanceTimersByTime(50);
+      });
+
+      expect(document.activeElement).toBe(visibleButton);
     });
   });
 });

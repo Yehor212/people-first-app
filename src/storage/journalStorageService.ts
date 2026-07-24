@@ -12,6 +12,11 @@
 import { supabase } from "@/lib/supabaseClient";
 import { logger } from "@/lib/logger";
 import { SyncOwnerBoundaryError, validateSyncOwner } from "@/storage/sync/syncOwner";
+import {
+  JOURNAL_AUDIO_MAX_BYTES,
+  inspectJournalAudioDataUrl,
+  normalizeJournalAudioMimeType,
+} from "@/features/journal/journalAudioValidation";
 
 const PHOTO_BUCKET = "journal-photos";
 const AUDIO_BUCKET = "journal-audio";
@@ -22,19 +27,12 @@ const ENCRYPTED_MEDIA_EXTENSION = "bin";
 const ALLOWED_IMAGE_MIMES: readonly string[] = ["image/jpeg", "image/png", "image/webp"];
 
 /** Allowed audio MIME types for audio uploads */
-const ALLOWED_AUDIO_MIMES: readonly string[] = [
-  "audio/webm",
-  "audio/mp4",
-  "audio/ogg",
-  "audio/mpeg",
-  "audio/wav",
-];
-
 /** Maximum photo file size: 1 MB (matches journal-photos bucket) */
 const MAX_PHOTO_SIZE = 1 * 1024 * 1024;
+export { MAX_PHOTO_SIZE as JOURNAL_PHOTO_UPLOAD_MAX_BYTES };
 
 /** Maximum audio file size: 20 MB (matches journal-audio bucket) */
-const MAX_AUDIO_SIZE = 20 * 1024 * 1024;
+const MAX_AUDIO_SIZE = JOURNAL_AUDIO_MAX_BYTES;
 const ENCRYPTED_MEDIA_OVERHEAD_BYTES = 4096;
 const MAX_ENCRYPTED_PHOTO_SIZE = MAX_PHOTO_SIZE + ENCRYPTED_MEDIA_OVERHEAD_BYTES;
 const MAX_ENCRYPTED_AUDIO_SIZE = MAX_AUDIO_SIZE + ENCRYPTED_MEDIA_OVERHEAD_BYTES;
@@ -84,6 +82,37 @@ function storagePath(userId: string, fileId: string, ext: string): string {
 
 async function assertExpectedOwnerCurrent(expectedOwnerUserId: string): Promise<void> {
   await validateSyncOwner(expectedOwnerUserId, "Journal media storage");
+}
+
+function isAllowedDownloadedBlob(
+  bucket: typeof PHOTO_BUCKET | typeof AUDIO_BUCKET,
+  path: string,
+  blob: Blob,
+): boolean {
+  const isEncrypted = path.endsWith(`.${ENCRYPTED_MEDIA_EXTENSION}`);
+  const maxSize =
+    bucket === PHOTO_BUCKET
+      ? isEncrypted
+        ? MAX_ENCRYPTED_PHOTO_SIZE
+        : MAX_PHOTO_SIZE
+      : isEncrypted
+        ? MAX_ENCRYPTED_AUDIO_SIZE
+        : MAX_AUDIO_SIZE;
+  if (blob.size > maxSize) {
+    logger.warn(`[Storage] Download rejected (${bucket}/${path}): file too large`, blob.size);
+    return false;
+  }
+
+  const hasAllowedMime = isEncrypted
+    ? blob.type === ENCRYPTED_MEDIA_MIME
+    : bucket === PHOTO_BUCKET
+      ? ALLOWED_IMAGE_MIMES.includes(blob.type)
+      : normalizeJournalAudioMimeType(blob.type) !== null;
+  if (!hasAllowedMime) {
+    logger.warn(`[Storage] Download rejected (${bucket}/${path}): disallowed MIME type`, blob.type);
+    return false;
+  }
+  return true;
 }
 
 // ============================================
@@ -206,7 +235,8 @@ export async function uploadAudio(
 
   try {
     // M13: Validate MIME type against allowlist
-    if (!ALLOWED_AUDIO_MIMES.includes(mimeType)) {
+    const inspectedAudio = inspectJournalAudioDataUrl(dataUrl, mimeType);
+    if (!inspectedAudio) {
       logger.warn("[Storage] Audio upload rejected: disallowed MIME type", mimeType);
       throw new Error(`Unsupported audio type "${mimeType}". Allowed: WebM, MP4, OGG, WAV.`);
     }
@@ -219,11 +249,12 @@ export async function uploadAudio(
       throw new Error("Audio recording too large. Maximum size is 20 MB.");
     }
 
-    const ext = extFromMime(mimeType);
+    const normalizedMimeType = inspectedAudio.mimeType;
+    const ext = extFromMime(normalizedMimeType);
     const path = storagePath(expectedOwnerUserId, audioId, ext);
 
     const { error: uploadError } = await supabase.storage.from(AUDIO_BUCKET).upload(path, blob, {
-      contentType: mimeType,
+      contentType: normalizedMimeType,
       upsert: true,
     });
 
@@ -283,6 +314,7 @@ export async function downloadAsBase64(
     }
 
     await assertExpectedOwnerCurrent(expectedOwnerUserId);
+    if (!isAllowedDownloadedBlob(bucket, path, data)) return null;
     const dataUrl = await new Promise<string | null>((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);

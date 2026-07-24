@@ -25,12 +25,13 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion, type Variants } from "framer-motion";
 import { createPortal } from "react-dom";
-import { cn, getToday } from "@/lib/utils";
+import { cn, parseLocalDate } from "@/lib/utils";
 import { getRoleHsl, getRoleTone, getSpaceVisualRole } from "@/lib/nonOrbVisualRoles";
 import { V2_JOURNAL_ICONS, V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import { springs, stagger } from "@/config/animations";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import type {
   JournalEntry,
   JournalEntryPrefill,
@@ -44,6 +45,7 @@ import { JournalEntryCard } from "./JournalEntryCard";
 import { ContextMenu } from "@/components/desktop/ContextMenu";
 import { useInputMethod } from "@/hooks/useInputMethod";
 import { JournalCaptureLauncher } from "./JournalCaptureLauncher";
+import { JournalAiConsentDialog } from "./JournalAiConsentDialog";
 import {
   GRATITUDE_SPACE_ID,
   createJournalSpaceCapture,
@@ -61,12 +63,24 @@ import { SUPABASE_PUBLIC_API_KEY, SUPABASE_URL } from "@/lib/env";
 import { Quote } from "lucide-react";
 import { getJournalListDateFilter } from "./journalListFilters";
 import { getJournalQuote } from "./journalQuotes";
+import { useJournalToday } from "./useJournalToday";
 import { formatLocalizedCount } from "./journalWordCount";
 import { getLocale } from "@/lib/timeUtils";
 import { useThemeStore } from "@/stores/themeStore";
 import { scheduleIdle } from "@/lib/scheduleIdle";
-import { safeLocalStorageSet, storageGetRaw } from "@/lib/safeJson";
-import { SK } from "@/lib/storageKeys";
+import { getJournalDayOfYear, shiftJournalDate } from "./journalDateUtils";
+import { getVisibleJournalTags } from "./journalFavorite";
+import {
+  flushJournalAiConsentRevocation,
+  grantJournalAiConsent,
+  isJournalAiConsentGranted,
+  revokeJournalAiConsent,
+  subscribeJournalAiConsent,
+} from "./journalAiConsent";
+import {
+  isJournalRequestTimeoutError,
+  withJournalRequestTimeout,
+} from "./journalRequestTimeout";
 
 const JOURNAL_AI_AVAILABLE = Boolean(SUPABASE_URL && SUPABASE_PUBLIC_API_KEY);
 const JOURNAL_SPACE_MEMORY_FALLBACK_MS = import.meta.env.MODE === "test" ? 650 : 4500;
@@ -87,11 +101,6 @@ function linksFingerprint(items: JournalEntryLink[]): string {
 async function searchJournalSemanticLazy(query: string): Promise<SemanticSearchResult[]> {
   const { searchJournalSemantic } = await import("@/lib/journalAI");
   return searchJournalSemantic(query);
-}
-
-async function generateAllMissingEmbeddingsLazy(): Promise<void> {
-  const { generateAllMissingEmbeddings } = await import("@/lib/journalAI");
-  await generateAllMissingEmbeddings();
 }
 
 async function canUseJournalAi(): Promise<boolean> {
@@ -133,7 +142,6 @@ const CreateFolderIcon = V2_JOURNAL_ICONS.createFolder;
 const OpenFolderIcon = V2_JOURNAL_ICONS.openFolder;
 const GratitudeFolderIcon = V2_JOURNAL_ICONS.gratitudeFolder;
 const QuietReleaseIcon = V2_JOURNAL_ICONS.quietRelease;
-const JournalNudgeIcon = V2_JOURNAL_ICONS.prompt;
 const AiSearchIcon = V2_SHELL_ICONS.insight;
 
 function getSafeSpaceCoverImageUrl(coverImage: string | undefined): string | null {
@@ -160,10 +168,7 @@ function toCssImageUrl(imageUrl: string): string {
 }
 
 function getDailyReflection(): (typeof DAILY_REFLECTIONS)[0] {
-  const today = new Date();
-  const dayOfYear = Math.floor(
-    (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000
-  );
+  const dayOfYear = getJournalDayOfYear();
   return DAILY_REFLECTIONS[dayOfYear % DAILY_REFLECTIONS.length];
 }
 
@@ -272,7 +277,7 @@ function formatReleaseTraceTitle(
     language,
     ts,
     "journalReleaseTraceCount",
-    ts.journalReleaseTraceCountOther || "thoughts released",
+    ts.journalReleaseTraceCountOther || "release records",
   );
 }
 
@@ -321,6 +326,7 @@ interface JournalEntryListProps {
   totalCount: number;
   loading?: boolean;
   selectedDate?: string | null;
+  today?: string;
   daysSinceLastEntry?: number | null;
   privateMode?: boolean;
   /** Compact single-column mode for desktop left panel */
@@ -352,7 +358,7 @@ export const JournalEntryList = memo(function JournalEntryList({
   totalCount,
   loading = false,
   selectedDate,
-  daysSinceLastEntry,
+  today,
   privateMode = false,
   compact = false,
   activeEntryId = null,
@@ -366,7 +372,9 @@ export const JournalEntryList = memo(function JournalEntryList({
 }: JournalEntryListProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
-  const currentJournalQuote = getJournalQuote(ts);
+  const lifecycleToday = useJournalToday();
+  const currentDay = today ?? lifecycleToday;
+  const currentJournalQuote = getJournalQuote(ts, parseLocalDate(currentDay), { scope: "all" });
   const { isMouse } = useInputMethod();
   const reducedMotion = useReducedMotion();
   const isPaperTheme = useThemeStore((state) => state.appliedTheme === "paper");
@@ -387,7 +395,6 @@ export const JournalEntryList = memo(function JournalEntryList({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   // Defer the debounced value so list filtering doesn't block input responsiveness (INP)
   const deferredSearch = useDeferredValue(debouncedSearch);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const [journalSpaces, setJournalSpaces] = useState<JournalSpace[]>([]);
@@ -407,22 +414,90 @@ export const JournalEntryList = memo(function JournalEntryList({
   const [spaceEntryLinks, setSpaceEntryLinks] = useState<JournalEntryLink[]>([]);
   const [routeEntryId, setRouteEntryId] = useState<string | null>(null);
   const [routeSavingKey, setRouteSavingKey] = useState<string | null>(null);
+  const closeEntryActions = useCallback(() => setRouteEntryId(null), []);
+  const closeSpacesLayer = useCallback(() => {
+    if (activeStudioId) {
+      setActiveStudioId(null);
+      return;
+    }
+    if (folderCreatorOpen) {
+      setFolderCreatorOpen(false);
+      setFolderError(null);
+      return;
+    }
+    setSpacesSheetOpen(false);
+  }, [activeStudioId, folderCreatorOpen]);
+  const entryActionsA11y = useModalA11y(Boolean(routeEntryId), closeEntryActions);
+  const spacesOpenerRef = useRef<HTMLButtonElement>(null);
+  const spacesSheetA11y = useModalA11y(spacesSheetOpen, closeSpacesLayer, spacesOpenerRef);
+  const previousFolderCreatorOpenRef = useRef(folderCreatorOpen);
+
+  useEffect(() => {
+    const wasOpen = previousFolderCreatorOpenRef.current;
+    previousFolderCreatorOpenRef.current = folderCreatorOpen;
+    if (!wasOpen || folderCreatorOpen || !spacesSheetOpen) return;
+    const frame = requestAnimationFrame(() => {
+      spacesSheetA11y.modalRef.current?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [folderCreatorOpen, spacesSheetA11y.modalRef, spacesSheetOpen]);
   const handleEntryActions = useCallback((entry: JournalEntry) => {
     setRouteEntryId(entry.id);
   }, []);
 
-  // AI search state
+  // Account-backed private search state
   const [aiMode, setAiMode] = useState(false);
   const [aiSearching, setAiSearching] = useState(false);
   const [aiSearchError, setAiSearchError] = useState(false);
   const [aiResults, setAiResults] = useState<SemanticSearchResult[]>([]);
-  const [aiIndexing, setAiIndexing] = useState(false);
+  const [aiConsentBusy, setAiConsentBusy] = useState(false);
+  const [aiConsentError, setAiConsentError] = useState(false);
+  const [aiConsentDialogOpen, setAiConsentDialogOpen] = useState(false);
   const [aiSearchConsentGranted, setAiSearchConsentGranted] = useState(
-    () => storageGetRaw(SK.JOURNAL_AI_SEARCH_CONSENT) === "true"
+    isJournalAiConsentGranted,
   );
-  const aiIndexedRef = useRef(false);
+  const aiToggleButtonRef = useRef<HTMLButtonElement>(null);
+  const aiConsentRequestSeqRef = useRef(0);
+  const aiConsentRequestActiveRef = useRef(false);
 
-  // Debounce search input — 300ms for text, 800ms for AI
+  const rollbackCancelledAiConsent = useCallback(() => {
+    void revokeJournalAiConsent().catch((error) => {
+      logger.warn("[Journal] Failed to roll back cancelled AI consent", error);
+    });
+  }, []);
+
+  const cancelAiConsent = useCallback(() => {
+    const shouldRollback = aiConsentRequestActiveRef.current;
+    aiConsentRequestSeqRef.current += 1;
+    aiConsentRequestActiveRef.current = false;
+    setAiConsentBusy(false);
+    setAiConsentDialogOpen(false);
+    setAiConsentError(false);
+    if (shouldRollback) rollbackCancelledAiConsent();
+  }, [rollbackCancelledAiConsent]);
+
+  useEffect(() => () => {
+    aiConsentRequestSeqRef.current += 1;
+    if (!aiConsentRequestActiveRef.current) return;
+    aiConsentRequestActiveRef.current = false;
+    rollbackCancelledAiConsent();
+  }, [rollbackCancelledAiConsent]);
+
+  useEffect(() => {
+    const syncConsent = () => {
+      const granted = isJournalAiConsentGranted();
+      setAiSearchConsentGranted(granted);
+      if (granted) return;
+      setAiMode(false);
+      setAiResults([]);
+      setAiSearching(false);
+    };
+    const unsubscribe = subscribeJournalAiConsent(syncConsent);
+    void flushJournalAiConsentRevocation().finally(syncConsent);
+    return unsubscribe;
+  }, []);
+
+  // Debounce local text search and account-backed private search separately.
   useEffect(() => {
     const delay = aiMode ? 800 : 300;
     const timer = setTimeout(() => setDebouncedSearch(searchInput), delay);
@@ -505,23 +580,6 @@ export const JournalEntryList = memo(function JournalEntryList({
     [onAddGratitude, refreshSpaceMemory]
   );
 
-  useBackHandler(spacesSheetOpen, () => {
-    if (activeStudioId) {
-      setActiveStudioId(null);
-      return;
-    }
-    if (folderCreatorOpen) {
-      setFolderCreatorOpen(false);
-      setFolderError(null);
-      return;
-    }
-    setSpacesSheetOpen(false);
-  });
-
-  useBackHandler(!!routeEntryId, () => {
-    setRouteEntryId(null);
-  });
-
   useBackHandler(!!activeSpaceModeId && !spacesSheetOpen, () => {
     setActiveSpaceModeId(null);
     setActiveStudioMode("compose");
@@ -540,42 +598,13 @@ export const JournalEntryList = memo(function JournalEntryList({
   }, [activeSpaceModeId, spacesSheetOpen]);
 
   useEffect(() => {
-    if (!routeEntryId) return;
-    const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setRouteEntryId(null);
-    };
-    document.addEventListener("keydown", handleEsc);
-    return () => document.removeEventListener("keydown", handleEsc);
-  }, [routeEntryId]);
-
-  useEffect(() => {
-    if (!spacesSheetOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      if (activeStudioId) {
-        setActiveStudioId(null);
-        return;
-      }
-      if (folderCreatorOpen) {
-        setFolderCreatorOpen(false);
-        setFolderError(null);
-        return;
-      }
-      setSpacesSheetOpen(false);
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [activeStudioId, folderCreatorOpen, spacesSheetOpen]);
-
-  useEffect(() => {
     if (!privateMode) return;
     setAiMode(false);
     setAiResults([]);
     setAiSearching(false);
-    setAiIndexing(false);
   }, [privateMode]);
 
-  // AI search effect
+  // Private search effect
   useEffect(() => {
     if (privateMode || !aiMode || !debouncedSearch.trim()) {
       setAiResults([]);
@@ -596,7 +625,7 @@ export const JournalEntryList = memo(function JournalEntryList({
         }
       })
       .catch((error) => {
-        logger.warn("[Journal] AI semantic search failed", error);
+        logger.warn("[Journal] Private search failed", error);
         if (!cancelled) {
           setAiResults([]);
           setAiSearchError(true);
@@ -611,41 +640,72 @@ export const JournalEntryList = memo(function JournalEntryList({
     };
   }, [aiMode, debouncedSearch, privateMode]);
 
-  // Toggle AI mode — backfill embeddings on first activation
+  const activateAiMode = useCallback(() => {
+    setAiMode(true);
+  }, []);
+
+  const confirmAiConsent = useCallback(async () => {
+    if (aiConsentBusy) return;
+    const requestSeq = ++aiConsentRequestSeqRef.current;
+    aiConsentRequestActiveRef.current = true;
+    setAiConsentBusy(true);
+    setAiConsentError(false);
+    try {
+      const consent = await withJournalRequestTimeout(grantJournalAiConsent());
+      if (requestSeq !== aiConsentRequestSeqRef.current) return;
+      if (consent.status !== "granted") {
+        throw new Error(`AI consent could not be granted: ${consent.status}`);
+      }
+      aiConsentRequestActiveRef.current = false;
+      setAiSearchConsentGranted(true);
+      setAiConsentDialogOpen(false);
+      activateAiMode();
+    } catch (error) {
+      if (requestSeq !== aiConsentRequestSeqRef.current) return;
+      aiConsentRequestActiveRef.current = false;
+      logger.warn("[Journal] Failed to grant AI search consent", error);
+      setAiConsentError(true);
+      if (isJournalRequestTimeoutError(error)) rollbackCancelledAiConsent();
+    } finally {
+      if (requestSeq === aiConsentRequestSeqRef.current) setAiConsentBusy(false);
+    }
+  }, [activateAiMode, aiConsentBusy, rollbackCancelledAiConsent]);
+
+  // Toggle private account-backed search. Lexical mode does not upload an index.
   const toggleAiMode = useCallback(() => {
-    if (!JOURNAL_AI_AVAILABLE || privateMode) return;
+    if (!JOURNAL_AI_AVAILABLE || privateMode || aiConsentBusy) return;
+    if (aiMode) {
+      setAiMode(false);
+      setAiResults([]);
+      setAiSearching(false);
+      setAiConsentError(false);
+      return;
+    }
 
+    setAiConsentBusy(true);
+    setAiConsentError(false);
     void canUseJournalAi()
-      .then((available) => {
-        if (!available) return;
+      .then(async (available) => {
+        if (!available) throw new Error("AI search is unavailable");
 
-        setAiMode((prev) => {
-          const next = !prev;
-          if (next && !aiSearchConsentGranted) {
-            const accepted = window.confirm(
-              ts.journalAiPrivacyConfirm ||
-                "AI search sends your diary search text and entry snippets to our AI provider to build private search results. Continue?"
-            );
-            if (!accepted) return prev;
-            safeLocalStorageSet(SK.JOURNAL_AI_SEARCH_CONSENT, true);
-            setAiSearchConsentGranted(true);
-          }
-          if (next && !aiIndexedRef.current) {
-            aiIndexedRef.current = true;
-            setAiIndexing(true);
-            void generateAllMissingEmbeddingsLazy().finally(() => setAiIndexing(false));
-          }
-          if (!next) {
-            setAiResults([]);
-            setAiSearching(false);
-          }
-          return next;
-        });
+        if (!aiSearchConsentGranted) {
+          setAiConsentDialogOpen(true);
+          return;
+        }
+        activateAiMode();
       })
       .catch((error) => {
         logger.warn("[Journal] Failed to initialize AI search", error);
-      });
-  }, [aiSearchConsentGranted, privateMode, ts.journalAiPrivacyConfirm]);
+        setAiConsentError(true);
+      })
+      .finally(() => setAiConsentBusy(false));
+  }, [
+    aiConsentBusy,
+    aiMode,
+    aiSearchConsentGranted,
+    activateAiMode,
+    privateMode,
+  ]);
 
   const allEntriesForSpaces = useMemo(
     () => allEntries ?? groupedEntries.flatMap((group) => group.entries),
@@ -885,7 +945,7 @@ export const JournalEntryList = memo(function JournalEntryList({
     });
   }, []);
 
-  const activeDraftDate = getJournalListDateFilter(true, selectedDate) ?? getToday();
+  const activeDraftDate = getJournalListDateFilter(true, selectedDate) ?? currentDay;
 
   const getSpaceDisplayName = useCallback(
     (space: JournalSpaceOption) => (
@@ -1032,16 +1092,15 @@ export const JournalEntryList = memo(function JournalEntryList({
 
   // Writing stats for mini-bar
   const thisWeekCount = useMemo(() => {
-    const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 86400000);
+    const weekStart = shiftJournalDate(currentDay, -6);
     let count = 0;
     groupedEntries.forEach((g) =>
       g.entries.forEach((e) => {
-        if (e.createdAt >= weekAgo.getTime()) count++;
+        if (e.date >= weekStart && e.date <= currentDay) count++;
       })
     );
     return count;
-  }, [groupedEntries]);
+  }, [groupedEntries, currentDay]);
 
   // Use the same all-time source as spaces so actions work for entries outside the selected day.
   const entriesById = useMemo(() => {
@@ -1108,7 +1167,7 @@ export const JournalEntryList = memo(function JournalEntryList({
     [getEntrySpaceIds]
   );
 
-  // AI search results mapped to local entries
+  // Private search results mapped to local entries.
   const aiMatchedEntries = useMemo(() => {
     if (privateMode || !aiMode || aiResults.length === 0) return [];
     return aiResults
@@ -1136,13 +1195,13 @@ export const JournalEntryList = memo(function JournalEntryList({
               !(
                 e.title.toLowerCase().includes(q) ||
                 e.content.toLowerCase().includes(q) ||
-                e.tags.some((tag) => tag.toLowerCase().includes(q))
+                getVisibleJournalTags(e.tags).some((tag) => tag.toLowerCase().includes(q))
               )
             ) {
               return false;
             }
           }
-          if (selectedTag && !e.tags.includes(selectedTag)) return false;
+          if (selectedTag && !getVisibleJournalTags(e.tags).includes(selectedTag)) return false;
           if (selectedSpaceId) {
             const linkedToSpace = spaceEntryLinks.some(
               (link) => link.entryId === e.id && link.targetType === "space" && link.targetId === selectedSpaceId
@@ -1178,7 +1237,7 @@ export const JournalEntryList = memo(function JournalEntryList({
   const hasActiveFilters = deferredSearch || selectedTag || selectedSpaceId;
   const activeFilterSpaceName = selectedSpace?.name ?? selectedTag;
   const showSpaceSwitcher = showSpaces;
-  const showAiToggle = JOURNAL_AI_AVAILABLE && !privateMode; // Only show external AI search when previews are visible.
+  const showAiToggle = JOURNAL_AI_AVAILABLE && !privateMode;
 
   const renderQuietReleaseTrace = () => {
     if (privateMode || !releaseTrace || releaseTrace.count <= 0) return null;
@@ -1302,6 +1361,8 @@ export const JournalEntryList = memo(function JournalEntryList({
               onClick={() => setRouteEntryId(null)}
             />
             <motion.div
+              ref={entryActionsA11y.modalRef}
+              onKeyDown={entryActionsA11y.handleKeyDown}
               role="dialog"
               aria-modal="true"
               aria-label={ts.more || "More"}
@@ -1310,15 +1371,15 @@ export const JournalEntryList = memo(function JournalEntryList({
               animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
               exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.98 }}
               transition={{ duration: reducedMotion ? 0.12 : 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[9999] mx-auto max-w-[390px] overflow-hidden rounded-[1.6rem] border border-border/25 bg-card/95 p-3 shadow-[0_26px_90px_hsl(var(--background)/0.48)] backdrop-blur-2xl"
+              className="fixed start-[max(0.75rem,var(--safe-inline-start))] end-[max(0.75rem,var(--safe-inline-end))] bottom-[calc(var(--safe-bottom)+0.75rem)] z-[9999] mx-auto max-h-[calc(var(--app-viewport-height)-var(--safe-top)-var(--safe-bottom)-1.5rem)] max-w-[390px] overflow-y-auto overscroll-contain rounded-[1.6rem] border border-border/25 bg-card/95 p-3 shadow-[0_26px_90px_hsl(var(--background)/0.48)] backdrop-blur-2xl"
             >
               <div className="flex items-start gap-3 rounded-2xl border border-border/18 bg-background/38 p-3">
-                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/[0.10] text-primary">
+                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
                   <JournalEntryIcon className="h-5 w-5" aria-hidden="true" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-foreground">{title}</p>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground/70">{assignedLabel}</p>
+                  <p className="whitespace-normal break-words text-sm font-bold text-foreground">{title}</p>
+                  <p className="mt-0.5 whitespace-normal break-words text-xs text-muted-foreground/70">{assignedLabel}</p>
                 </div>
                 <button
                   type="button"
@@ -1347,7 +1408,7 @@ export const JournalEntryList = memo(function JournalEntryList({
 
                 {!privateMode && routeableSpaces.length > 0 ? (
                   <div className="rounded-2xl border border-border/18 bg-background/32 p-2">
-                    <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+                    <p className="px-2 pb-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
                       {ts.journalFolders || ts.journalHubSpaces || "Folders"}
                     </p>
                     <div className="grid gap-1.5" data-testid="journal-entry-actions-space-list">
@@ -1365,11 +1426,11 @@ export const JournalEntryList = memo(function JournalEntryList({
                             className={cn(
                               "flex min-h-[48px] items-center justify-between gap-3 rounded-xl border px-3 text-start text-sm font-semibold motion-safe:transition-[background-color,border-color,transform] active:scale-[0.99]",
                               linked
-                                ? "border-primary/35 bg-primary/[0.14] text-primary"
+                                ? "border-primary/35 bg-primary/15 text-primary"
                                 : "border-border/16 bg-card/42 text-muted-foreground hover:bg-muted/45 hover:text-foreground"
                             )}
                           >
-                            <span className="inline-flex min-w-0 items-center gap-2">
+                            <span className="inline-flex min-w-0 flex-1 items-center gap-2">
                               {saving ? (
                                 <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin" aria-hidden="true" />
                               ) : linked ? (
@@ -1377,9 +1438,9 @@ export const JournalEntryList = memo(function JournalEntryList({
                               ) : (
                                 <Icon className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                               )}
-                              <span className="truncate">{space.name}</span>
+                              <span className="min-w-0 whitespace-normal break-words">{space.name}</span>
                             </span>
-                            <span className="text-[10px] font-medium text-muted-foreground/55">
+                            <span className="flex-shrink-0 text-xs font-medium text-muted-foreground/55">
                               {linked ? ts.done || "done" : ""}
                             </span>
                           </button>
@@ -1396,7 +1457,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                       setRouteEntryId(null);
                       handleDelete(entry.id);
                     }}
-                    className="flex min-h-[48px] items-center gap-3 rounded-2xl border border-destructive/20 bg-destructive/[0.08] px-3 text-start text-sm font-semibold text-destructive motion-safe:transition-[background-color,transform] hover:bg-destructive/[0.12] active:scale-[0.99]"
+                    className="flex min-h-[48px] items-center gap-3 rounded-2xl border border-destructive/20 bg-destructive/10 px-3 text-start text-sm font-semibold text-destructive motion-safe:transition-[background-color,transform] hover:bg-destructive/15 active:scale-[0.99]"
                   >
                     <Trash2 className="h-4 w-4" aria-hidden="true" />
                     <span>{ts.delete || "Delete"}</span>
@@ -1422,7 +1483,7 @@ export const JournalEntryList = memo(function JournalEntryList({
         : spaceEntries.filter((entry) =>
             entry.title.toLowerCase().includes(q) ||
             entry.content.toLowerCase().includes(q) ||
-            entry.tags.some((tag) => tag.toLowerCase().includes(q))
+            getVisibleJournalTags(entry.tags).some((tag) => tag.toLowerCase().includes(q))
           )
       : privateMode
         ? spaceEntries.slice(0, 1)
@@ -1489,13 +1550,13 @@ export const JournalEntryList = memo(function JournalEntryList({
             type="button"
             data-testid="journal-space-mode-exit"
             onClick={handleExit}
-            className={"inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl border border-border/25 bg-card/[0.45] text-muted-foreground backdrop-blur-xl motion-safe:transition-[background-color,border-color] hover:bg-card/[0.64] " + tone.focusRingClass}
+            className={"inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl border border-border/25 bg-card/50 text-muted-foreground backdrop-blur-xl motion-safe:transition-[background-color,border-color] hover:bg-card/60 " + tone.focusRingClass}
             aria-label={ts.back || ts.close || "Back"}
           >
             <ChevronRight className="h-5 w-5 rotate-180 rtl:rotate-0" aria-hidden="true" />
           </button>
           <span
-            className={"relative flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full border bg-card/[0.52] shadow-[0_18px_42px_hsl(var(--foreground)/0.08)] backdrop-blur-xl " + tone.borderClass + " " + tone.textClass}
+            className={"relative flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full border bg-card/50 shadow-[0_18px_42px_hsl(var(--foreground)/0.08)] backdrop-blur-xl " + tone.borderClass + " " + tone.textClass}
             style={getSpaceDisplayCoverStyle(space)}
           >
             <span aria-hidden="true" className={"absolute inset-1 rounded-full border opacity-70 " + tone.borderClass} />
@@ -1503,20 +1564,20 @@ export const JournalEntryList = memo(function JournalEntryList({
             {showExactSpaceCount ? (
               <span
                 data-testid="journal-space-mode-count"
-                className="absolute bottom-0 end-0 flex h-5 min-w-5 items-center justify-center rounded-full border border-background/50 bg-background/[0.80] px-1 text-center text-[9px] font-bold leading-none text-foreground shadow-[0_8px_18px_hsl(var(--background)/0.32)] backdrop-blur-md"
+                className="absolute bottom-0 end-0 flex min-h-[24px] min-w-[24px] items-center justify-center rounded-full border border-background/50 bg-background/80 px-1.5 py-0.5 text-center text-xs font-bold leading-none text-foreground shadow-[0_8px_18px_hsl(var(--background)/0.32)] backdrop-blur-md"
               >
                 {spaceItemCount}
               </span>
             ) : null}
           </span>
           <div className="min-w-0 flex-1">
-            <p className={"text-[10px] font-semibold uppercase tracking-[0.18em] " + tone.textClass}>
+            <p className={"whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.18em] " + tone.textClass}>
               {experience.mode}
             </p>
-            <h2 data-testid="journal-space-mode-title" className="truncate text-2xl font-bold leading-tight text-foreground">
+            <h2 data-testid="journal-space-mode-title" className="whitespace-normal break-words text-2xl font-bold leading-tight text-foreground">
               {spaceDisplayName}
             </h2>
-            <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground/72">
+            <p className="mt-0.5 whitespace-normal break-words text-xs leading-relaxed text-muted-foreground/72">
               {spaceDisplayDescription}
             </p>
           </div>
@@ -1525,7 +1586,7 @@ export const JournalEntryList = memo(function JournalEntryList({
         {renderDailyReflectionPrompt()}
 
         <div className="flex items-center gap-3 px-1">
-          <span className="text-[10px] text-muted-foreground/50">
+          <span className="text-xs text-muted-foreground/50">
             {privateMode
               ? privateMetricLabel
               : formatLocalizedCount(
@@ -1537,7 +1598,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                 )}
           </span>
           <div className="h-3 w-px bg-border/20" />
-          <span className="text-[10px] text-muted-foreground/50">
+          <span className="text-xs text-muted-foreground/50">
             {ts.journalSpaceLatestActivity || "Latest activity"}
           </span>
         </div>
@@ -1587,7 +1648,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                     ...springs.quick,
                     layout: { type: "spring", stiffness: 300, damping: 30 },
                   }}
-                  className={"relative overflow-hidden rounded-[1.35rem] border bg-card/[0.58] p-3 shadow-[0_18px_48px_hsl(var(--foreground)/0.06)] backdrop-blur-xl " + tone.borderClass}
+                  className={"relative overflow-hidden rounded-[1.35rem] border bg-card/60 p-3 shadow-[0_18px_48px_hsl(var(--foreground)/0.06)] backdrop-blur-xl " + tone.borderClass}
                 >
                   <div
                     aria-hidden="true"
@@ -1603,21 +1664,21 @@ export const JournalEntryList = memo(function JournalEntryList({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className={"text-[10px] font-semibold uppercase tracking-[0.16em] " + tone.textClass}>
+                          <p className={"whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.16em] " + tone.textClass}>
                             {privateMode ? ts.privateMode || "Private" : capture.mode || experience.mode}
                           </p>
-                          <h3 className="mt-1 truncate text-sm font-bold text-foreground">
+                          <h3 className="mt-1 whitespace-normal break-words text-sm font-bold text-foreground">
                             {privateMode
                               ? ts.journalPrivateEntry || ts.privateMode || "Private entry"
                               : getCaptureDisplayTitle(capture, ts)}
                           </h3>
                         </div>
-                        <span className="flex-shrink-0 rounded-full border border-border/20 bg-background/[0.50] px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                        <span className="flex-shrink-0 rounded-full border border-border/20 bg-background/50 px-2 py-1 text-xs font-medium text-muted-foreground">
                           {privateMode ? ts.privateMode || "Private" : capture.date}
                         </span>
                       </div>
                       {privateMode ? (
-                        <div className="mt-3 rounded-2xl border border-border/[0.20] bg-background/[0.42] p-3">
+                        <div className="mt-3 rounded-2xl border border-border/20 bg-background/40 p-3">
                           <p className="text-sm font-semibold text-muted-foreground">
                             {ts.journalPrivateEntry || ts.privateMode || "Private entry"}
                           </p>
@@ -1630,9 +1691,9 @@ export const JournalEntryList = memo(function JournalEntryList({
                               .map((field, fieldIndex) => (
                                 <div
                                   key={`${capture.id}-${field.prompt}-${fieldIndex}`}
-                                  className="rounded-2xl border border-border/[0.20] bg-background/[0.42] p-3"
+                                  className="rounded-2xl border border-border/20 bg-background/40 p-3"
                                 >
-                                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/[0.68]">
+                                  <p className="whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
                                     {getCaptureFieldPrompt(capture, field, ts)}
                                   </p>
                                   <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
@@ -1742,7 +1803,7 @@ export const JournalEntryList = memo(function JournalEntryList({
             type="button"
             data-testid="journal-space-floating-add"
             onClick={handleAddEntry}
-            className={"fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] end-5 z-40 inline-flex h-14 w-14 items-center justify-center rounded-full text-[hsl(var(--zf-night-0))] shadow-[0_18px_42px_hsl(var(--background)/0.28)] motion-safe:transition-transform active:scale-[0.96] " + tone.railClass + " " + tone.focusRingClass}
+            className={"fixed bottom-[calc(5.5rem+var(--safe-bottom))] end-[max(1.25rem,var(--safe-inline-end))] z-40 inline-flex h-14 w-14 items-center justify-center rounded-full text-[hsl(var(--zf-night-0))] shadow-[0_18px_42px_hsl(var(--background)/0.28)] motion-safe:transition-transform active:scale-[0.96] " + tone.railClass + " " + tone.focusRingClass}
             aria-label={ts.journalSpaceAddEntry || "Add entry"}
           >
             <Plus className="h-6 w-6" aria-hidden="true" />
@@ -1753,7 +1814,12 @@ export const JournalEntryList = memo(function JournalEntryList({
   };
 
   const renderDailyReflectionPrompt = () => {
-    const reflection = getDailyReflection();
+    const reflection = selectedDateOnly && selectedDate && selectedDate !== currentDay
+      ? {
+          translationId: "journalReflectionPromptPast",
+          fallback: "Write one true sentence you remember about this day.",
+        }
+      : getDailyReflection();
     return (
       <div
         className="relative overflow-hidden rounded-2xl border border-primary/10 bg-card/55 p-3.5 shadow-[0_18px_45px_hsl(var(--foreground)/0.06)] backdrop-blur-xl"
@@ -1795,6 +1861,7 @@ export const JournalEntryList = memo(function JournalEntryList({
     return (
       <div className="flex min-w-0 items-start gap-3 px-1 py-1" data-testid="journal-space-rail">
       <button
+        ref={spacesOpenerRef}
         type="button"
         data-testid="journal-space-switcher"
         onClick={() => {
@@ -1804,12 +1871,12 @@ export const JournalEntryList = memo(function JournalEntryList({
           setFolderDescription("");
           setFolderError(null);
         }}
-        className={"group relative flex w-[70px] flex-none flex-col items-center gap-1.5 text-center motion-safe:transition-transform active:scale-[0.98] " + createTone.textClass}
+        className={"group relative flex w-[calc(4.375rem*var(--font-scale))] max-w-[8rem] flex-none flex-col items-center gap-1.5 text-center motion-safe:transition-transform active:scale-[0.98] " + createTone.textClass}
         aria-label={ts.journalCreateFolder || ts.journalFolders || "Folders"}
         aria-expanded={spacesSheetOpen}
         data-visual-role="space"
       >
-        <span className={"relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border bg-card/[0.52] shadow-[0_18px_42px_hsl(var(--foreground)/0.08)] backdrop-blur-xl motion-safe:transition-[background-color,border-color,box-shadow,transform] group-hover:scale-[1.02] " + createTone.borderClass}>
+        <span className={"relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border bg-card/50 shadow-[0_18px_42px_hsl(var(--foreground)/0.08)] backdrop-blur-xl motion-safe:transition-[background-color,border-color,box-shadow,transform] group-hover:scale-[1.02] " + createTone.borderClass}>
           <span
             aria-hidden="true"
             className="absolute inset-0 opacity-85"
@@ -1825,7 +1892,7 @@ export const JournalEntryList = memo(function JournalEntryList({
           />
           <CreateFolderIcon className="relative h-7 w-7 drop-shadow-[0_0_12px_currentColor]" aria-hidden="true" />
         </span>
-        <span className="block w-full truncate px-0.5 text-[10px] font-semibold leading-tight text-muted-foreground/80">
+        <span className="block w-full whitespace-normal break-words px-0.5 text-xs font-semibold leading-tight text-muted-foreground/80">
           {ts.journalFolderCreate || ts.journalSpaceCreate || "Create"}
         </span>
       </button>
@@ -1844,11 +1911,11 @@ export const JournalEntryList = memo(function JournalEntryList({
                 data-testid={`journal-space-rail-item-${space.id}`}
                 onClick={() => handleOpenStudio(space)}
                 aria-label={privateMode ? spaceDisplayName : `${spaceDisplayName}${space.count > 0 ? `, ${space.count}` : ""}`}
-                className="group relative flex w-[88px] flex-none snap-start flex-col items-center gap-1.5 text-center motion-safe:transition-transform active:scale-[0.98]"
+                className="group relative flex w-[calc(5.5rem*var(--font-scale))] max-w-[9rem] flex-none snap-start flex-col items-center gap-1.5 text-center motion-safe:transition-transform active:scale-[0.98]"
                 data-visual-role={visualRole}
               >
                 <span
-                  className={"relative flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full border bg-card/[0.52] shadow-[0_18px_42px_hsl(var(--foreground)/0.08)] backdrop-blur-xl motion-safe:transition-[border-color,box-shadow,transform] group-hover:scale-[1.02] " + tone.borderClass + " " + tone.textClass}
+                  className={"relative flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full border bg-card/50 shadow-[0_18px_42px_hsl(var(--foreground)/0.08)] backdrop-blur-xl motion-safe:transition-[border-color,box-shadow,transform] group-hover:scale-[1.02] " + tone.borderClass + " " + tone.textClass}
                   style={getSpaceDisplayCoverStyle(space)}
                 >
                   <span
@@ -1863,13 +1930,13 @@ export const JournalEntryList = memo(function JournalEntryList({
                   {!privateMode && space.count > 0 ? (
                     <span
                       data-testid={`journal-space-rail-count-${space.id}`}
-                      className="absolute bottom-0 end-0 flex h-5 min-w-5 items-center justify-center rounded-full border border-background/50 bg-background/[0.80] px-1 text-center text-[9px] font-bold leading-none text-foreground shadow-[0_8px_18px_hsl(var(--background)/0.32)] backdrop-blur-md"
+                      className="absolute bottom-0 end-0 flex min-h-[24px] min-w-[24px] items-center justify-center rounded-full border border-background/50 bg-background/80 px-1.5 py-0.5 text-center text-xs font-bold leading-none text-foreground shadow-[0_8px_18px_hsl(var(--background)/0.32)] backdrop-blur-md"
                     >
                       {space.count}
                     </span>
                   ) : null}
                 </span>
-                <span className="block w-full truncate px-0.5 text-[11px] font-semibold leading-tight text-foreground/90">
+                <span className="block w-full whitespace-normal break-words px-0.5 text-xs font-semibold leading-tight text-foreground/90">
                   {spaceDisplayName}
                 </span>
               </button>
@@ -1931,7 +1998,7 @@ export const JournalEntryList = memo(function JournalEntryList({
       <div className="space-y-3 pb-4" data-testid="journal-compact-empty-list">
         {renderQuietReleaseTrace()}
         <div className="journal-diary-glass-panel rounded-2xl border border-border/30 p-4 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/[0.10] text-primary">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
             <PenLine className="h-5 w-5" aria-hidden="true" />
           </div>
           <h3 className="text-sm font-semibold text-foreground">
@@ -1992,7 +2059,7 @@ export const JournalEntryList = memo(function JournalEntryList({
             <motion.div
               animate={reducedMotion ? undefined : { y: [0, -8, 0] }}
               transition={reducedMotion ? undefined : { duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="flex h-24 w-24 items-center justify-center rounded-[2rem] border border-primary/16 bg-primary/[0.10] shadow-[inset_0_1px_0_hsl(var(--card)/0.62),0_22px_58px_-48px_hsl(var(--foreground)/0.52)]"
+              className="flex h-24 w-24 items-center justify-center rounded-[2rem] border border-primary/16 bg-primary/10 shadow-[inset_0_1px_0_hsl(var(--card)/0.62),0_22px_58px_-48px_hsl(var(--foreground)/0.52)]"
             >
               <PenLine className="h-9 w-9 text-primary" aria-hidden="true" />
             </motion.div>
@@ -2037,29 +2104,6 @@ export const JournalEntryList = memo(function JournalEntryList({
   return (
     <div className="relative isolate space-y-3 pb-24">
       {!useSharedDiaryWallpaper && <JournalMemoryBackdrop />}
-      {/* Inactivity banner */}
-      {daysSinceLastEntry != null && daysSinceLastEntry >= 2 && !bannerDismissed && (
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/15">
-          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <JournalNudgeIcon className="h-4 w-4" aria-hidden="true" />
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-foreground">
-              {(
-                ts.journalInactiveBanner ||
-                "Last entry was {days} days ago. Start a note if it helps right now."
-              ).replace("{days}", String(daysSinceLastEntry))}
-            </p>
-          </div>
-          <button
-            onClick={() => setBannerDismissed(true)}
-            className="flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted/50"
-            aria-label={ts.dismiss || "Dismiss"}
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
 
       {/* Daily first-party reflection prompt */}
       {!activeSpaceMode && renderDailyReflectionPrompt()}
@@ -2067,7 +2111,7 @@ export const JournalEntryList = memo(function JournalEntryList({
       {/* Writing stats mini-bar */}
       {!activeSpaceMode && visibleEntryCount > 0 && (
         <div className="flex items-center gap-3 px-1">
-          <span className="text-[10px] text-muted-foreground/50">
+          <span className="text-xs text-muted-foreground/50">
             {formatLocalizedCount(
               visibleEntryCount,
               language,
@@ -2079,7 +2123,7 @@ export const JournalEntryList = memo(function JournalEntryList({
           {!selectedDateOnly && (
             <>
               <div className="w-px h-3 bg-border/20" />
-              <span className="text-[10px] text-muted-foreground/50">
+              <span className="text-xs text-muted-foreground/50">
                 {formatLocalizedCount(
                   thisWeekCount,
                   language,
@@ -2112,7 +2156,11 @@ export const JournalEntryList = memo(function JournalEntryList({
             "bg-muted/50 border border-border/30",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
             "placeholder:text-muted-foreground/50",
-            showAiToggle ? "pe-20" : "pe-9",
+            showAiToggle && (searchInput || aiSearching)
+              ? "pe-24"
+              : showAiToggle || searchInput || aiSearching
+                ? "pe-14"
+                : "pe-9",
             aiMode && "border-purple-500/30 ring-1 ring-purple-500/20"
           )}
         />
@@ -2135,7 +2183,10 @@ export const JournalEntryList = memo(function JournalEntryList({
           )}
           {showAiToggle && (
             <button
+              ref={aiToggleButtonRef}
               onClick={toggleAiMode}
+              disabled={aiConsentBusy}
+              aria-busy={aiConsentBusy}
               className={cn(
                 "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 aiMode
@@ -2145,28 +2196,29 @@ export const JournalEntryList = memo(function JournalEntryList({
               aria-label={
                 aiMode
                   ? ts.journalAiSwitchToTextSearch || "Switch to text search"
-                  : ts.journalAiSwitchToAiSearch || "Switch to AI search"
+                  : ts.journalAiSwitchToAiSearch || "Switch to private search"
               }
-              title={aiMode ? ts.journalAiSearchOn || "AI search on" : ts.journalAiSwitchToAiSearch || "AI search"}
+              title={aiMode ? ts.journalAiSearchOn || "Private search on" : ts.journalAiSwitchToAiSearch || "Private search"}
             >
-              <AiSearchIcon className="w-4 h-4" />
+              {aiConsentBusy ? (
+                <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden="true" />
+              ) : (
+                <AiSearchIcon className="w-4 h-4" />
+              )}
             </button>
           )}
         </div>
       </div>
       )}
 
-      {!activeSpaceMode && !hasActiveFilters && renderQuietReleaseTrace()}
+      {!activeSpaceMode && aiConsentError ? (
+        <p role="alert" className="mt-2 text-xs leading-5 text-destructive">
+          {ts.journalAiConsentUnavailable ||
+            "Private search could not be enabled. Your diary stays unchanged; try again when you are online."}
+        </p>
+      ) : null}
 
-      {/* AI indexing banner */}
-      {!activeSpaceMode && aiIndexing && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
-          <Loader2 className="w-3.5 h-3.5 text-purple-500 animate-spin flex-shrink-0" />
-          <p className="text-xs text-purple-600 dark:text-purple-400">
-            {ts.journalAiIndexing || "Building AI search index..."}
-          </p>
-        </div>
-      )}
+      {!activeSpaceMode && !hasActiveFilters && renderQuietReleaseTrace()}
 
       {/* Spaces highlight entry */}
       {!activeSpaceMode && (
@@ -2197,8 +2249,11 @@ export const JournalEntryList = memo(function JournalEntryList({
                   }}
                 />
                 <motion.div
+                  ref={spacesSheetA11y.modalRef}
+                  onKeyDown={spacesSheetA11y.handleKeyDown}
                   role="dialog"
                   aria-modal="true"
+                  tabIndex={-1}
                   aria-label={ts.journalFolders || ts.journalHubSpaces || "Folders"}
                   initial={reducedMotion ? { opacity: 0 } : { y: 28, scale: 0.98 }}
                   animate={reducedMotion ? { opacity: 1 } : { y: 0, scale: 1 }}
@@ -2213,7 +2268,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                     setFolderDescription("");
                     setFolderError(null);
                   }}
-                  className="fixed inset-x-0 top-0 z-[9999] flex h-[100dvh] items-center justify-center overflow-y-auto bg-[hsl(var(--background))] px-4 py-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))]"
+                  className="fixed inset-x-0 top-0 z-[9999] flex h-[var(--app-viewport-height)] items-center justify-center overflow-y-auto bg-[hsl(var(--background))] ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] pt-[calc(var(--safe-top)+1rem)] pb-[calc(var(--safe-bottom)+1rem)]"
                   data-testid="journal-spaces-sheet"
                 >
                   <div
@@ -2234,13 +2289,13 @@ export const JournalEntryList = memo(function JournalEntryList({
                       backgroundPosition: "center top",
                     }}
                   />
-                  <div className="relative flex max-h-[calc(100dvh_-_2rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom))] w-full max-w-[390px] flex-col">
+                  <div className="relative flex max-h-[calc(var(--app-viewport-height)-var(--safe-top)-var(--safe-bottom)-2rem)] w-full max-w-[390px] flex-col">
                     <div className="hidden">
                       <div className="min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary/75">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/75">
                           ZenFlow
                         </p>
-                        <h2 className="truncate text-lg font-bold text-foreground">
+                        <h2 className="whitespace-normal break-words text-lg font-bold text-foreground">
                           {ts.journalFolders || ts.journalHubSpaces || "Folders"}
                         </h2>
                       </div>
@@ -2252,7 +2307,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                             setFolderCreatorOpen((current) => !current);
                             setFolderError(null);
                           }}
-                          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-primary/25 bg-primary/[0.12] text-primary motion-safe:transition-[background-color,transform] hover:bg-primary/[0.18] active:scale-[0.98]"
+                          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary motion-safe:transition-[background-color,transform] hover:bg-primary/20 active:scale-[0.98]"
                           aria-expanded={folderCreatorOpen}
                           aria-label={ts.journalCreateFolder || ts.journalCreateSpace || "Create folder"}
                         >
@@ -2298,21 +2353,21 @@ export const JournalEntryList = memo(function JournalEntryList({
                             >
                               <X className="h-5 w-5" aria-hidden="true" />
                             </button>
-                            <div className="flex items-start gap-3 rounded-xl border border-border/20 bg-card/45 p-3">
-                              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/[0.10] text-primary">
+                            <div className="flex items-start gap-3 rounded-xl border border-border/20 bg-card/45 p-3 pe-14">
+                              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                                 <CreateFolderIcon className="h-5 w-5" aria-hidden="true" />
                               </span>
                               <div className="min-w-0">
-                                <p className="text-sm font-bold text-foreground">
+                                <p className="whitespace-normal break-words text-sm font-bold text-foreground">
                                   {ts.journalCreateFolder || ts.journalCreateSpace || "Create folder"}
                                 </p>
-                                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground/70">
+                                <p className="mt-0.5 whitespace-normal break-words text-xs leading-relaxed text-muted-foreground/70">
                                   {ts.journalFolderEmptyHint ||
                                     "Create a first note here and it will stay connected to this folder."}
                                 </p>
                               </div>
                             </div>
-                            <div className="mt-3 flex items-center gap-2">
+                            <div className="mt-3 flex flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center">
                               <input
                                 value={folderName}
                                 data-testid="journal-space-name-input"
@@ -2323,6 +2378,12 @@ export const JournalEntryList = memo(function JournalEntryList({
                                 onKeyDown={(event) => {
                                   if (event.key === "Enter") void handleCreateFolder();
                                   if (event.key === "Escape") {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    const spacesSheet = event.currentTarget.closest<HTMLElement>(
+                                      '[data-testid="journal-spaces-sheet"]',
+                                    );
+                                    spacesSheet?.focus({ preventScroll: true });
                                     setFolderCreatorOpen(false);
                                     setFolderDescription("");
                                     setFolderError(null);
@@ -2330,14 +2391,14 @@ export const JournalEntryList = memo(function JournalEntryList({
                                 }}
                                 autoFocus
                                 placeholder={ts.journalFolderNamePlaceholder || ts.journalSpaceNamePlaceholder || "Folder name"}
-                                className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-border/30 bg-card/70 px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-primary/35"
+                                className="min-h-[44px] w-full min-w-0 flex-1 rounded-xl border border-border/30 bg-card/70 px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-primary/35"
                               />
                               <button
                                 type="button"
                                 data-testid="journal-space-create-submit"
                                 onClick={() => void handleCreateFolder()}
                                 disabled={folderSaving}
-                                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                                className="inline-flex min-h-[44px] min-w-[44px] w-full items-center justify-center rounded-xl bg-primary px-3 text-center text-xs font-semibold text-primary-foreground whitespace-normal break-words disabled:opacity-50 min-[420px]:w-auto"
                               >
                                 {folderSaving ? (
                                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -2355,7 +2416,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                               maxLength={180}
                             />
                             {folderError ? (
-                              <p className="mt-1.5 px-1 text-[10px] font-medium text-destructive">
+                              <p className="mt-1.5 whitespace-normal break-words px-1 text-xs font-medium text-destructive">
                                 {folderError}
                               </p>
                             ) : null}
@@ -2387,10 +2448,10 @@ export const JournalEntryList = memo(function JournalEntryList({
                               if (activeStudioMode === "board") {
                                 return (
                                   <>
-                                    <div className="relative overflow-hidden rounded-[1.35rem] border border-primary/[0.24] bg-background/[0.58] p-3 backdrop-blur-xl">
+                                    <div className="relative overflow-hidden rounded-[1.35rem] border border-primary/25 bg-background/60 p-3 backdrop-blur-xl">
                                       <div
                                         aria-hidden="true"
-                                        className="absolute -inset-x-10 -top-16 h-32 rounded-full bg-primary/[0.08] blur-2xl"
+                                        className="absolute -inset-x-10 -top-16 h-32 rounded-full bg-primary/10 blur-2xl"
                                       />
                                       <div className="relative flex items-start gap-3">
                                         <button
@@ -2405,15 +2466,15 @@ export const JournalEntryList = memo(function JournalEntryList({
                                         >
                                           <ChevronRight className="h-4 w-4 rotate-180 rtl:rotate-0" aria-hidden="true" />
                                         </button>
-                                        <span className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-[1.15rem] border border-primary/[0.24] bg-primary/[0.10] text-primary shadow-[0_0_30px_hsl(var(--primary)/0.12)]">
+                                          <span className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-[1.15rem] border border-primary/25 bg-primary/10 text-primary shadow-[0_0_30px_hsl(var(--primary)/0.12)]">
                                           <span className="absolute inset-1 rounded-[0.9rem] border border-primary/[0.14]" aria-hidden="true" />
                                           <CheckCircle2 className="relative h-5 w-5" aria-hidden="true" />
                                         </span>
                                         <div className="min-w-0 flex-1">
-                                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary/[0.72]">
+                                          <p className="whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.18em] text-primary/[0.72]">
                                             {experience.mode}
                                           </p>
-                                          <h3 className="mt-0.5 truncate text-lg font-bold text-foreground">
+                                          <h3 className="mt-0.5 whitespace-normal break-words text-lg font-bold text-foreground">
                                             {ts.journalCaptureBoardTitle || "Space board"}
                                           </h3>
                                           <p className="mt-1 text-xs leading-relaxed text-muted-foreground/[0.74]">
@@ -2433,25 +2494,25 @@ export const JournalEntryList = memo(function JournalEntryList({
                                     {focusedCapture ? (
                                       <div
                                         data-testid="journal-capture-board-card"
-                                        className="relative overflow-hidden rounded-[1.35rem] border border-primary/[0.22] bg-card/[0.62] p-3 backdrop-blur-xl"
+                                        className="relative overflow-hidden rounded-[1.35rem] border border-primary/20 bg-card/60 p-3 backdrop-blur-xl"
                                       >
                                         <div className="flex items-center justify-between gap-3">
                                           <div className="min-w-0">
-                                            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary/[0.70]">
+                                            <p className="whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.16em] text-primary/[0.70]">
                                               {ts.journalCaptureSavedToSpace || "Saved in space"}
                                             </p>
-                                            <h4 className="mt-1 truncate text-sm font-bold text-foreground">
+                                            <h4 className="mt-1 whitespace-normal break-words text-sm font-bold text-foreground">
                                               {privateMode
                                                 ? ts.journalPrivateEntry || ts.privateMode || "Private entry"
                                                 : getCaptureDisplayTitle(focusedCapture, ts)}
                                             </h4>
                                           </div>
-                                          <span className="rounded-full border border-border/20 bg-background/[0.50] px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                                          <span className="rounded-full border border-border/20 bg-background/50 px-2 py-1 text-xs font-medium text-muted-foreground">
                                             {privateMode ? ts.privateMode || "Private" : focusedCapture.date}
                                           </span>
                                         </div>
                                         {privateMode ? (
-                                          <div className="mt-3 rounded-2xl border border-border/[0.22] bg-background/[0.46] p-3">
+                                          <div className="mt-3 rounded-2xl border border-border/20 bg-background/45 p-3">
                                             <p className="text-sm font-semibold text-muted-foreground">
                                               {ts.journalPrivateEntry || ts.privateMode || "Private entry"}
                                             </p>
@@ -2463,9 +2524,9 @@ export const JournalEntryList = memo(function JournalEntryList({
                                               .map((field) => (
                                                 <div
                                                   key={`${focusedCapture.id}-${field.prompt}`}
-                                                  className="rounded-2xl border border-border/[0.22] bg-background/[0.46] p-3"
+                                                  className="rounded-2xl border border-border/20 bg-background/45 p-3"
                                                 >
-                                                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/[0.68]">
+                                                  <p className="whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
                                                     {getCaptureFieldPrompt(focusedCapture, field, ts)}
                                                   </p>
                                                   <p className="mt-1 text-sm leading-relaxed text-foreground/90">
@@ -2477,18 +2538,18 @@ export const JournalEntryList = memo(function JournalEntryList({
                                         )}
                                       </div>
                                     ) : (
-                                      <div className="rounded-[1.35rem] border border-border/[0.24] bg-card/[0.52] p-4 text-sm leading-relaxed text-muted-foreground">
+                                      <div className="rounded-[1.35rem] border border-border/25 bg-card/50 p-4 text-sm leading-relaxed text-muted-foreground">
                                         {ts.journalCaptureBoardEmpty ||
                                           "Captures saved here stay inside this space until you choose to open one as a diary entry."}
                                       </div>
                                     )}
 
-                                    <div className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-2">
+                                    <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
                                       <button
                                         type="button"
                                         data-testid="journal-capture-new"
                                         onClick={() => setActiveStudioMode("compose")}
-                                        className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-border/25 bg-background/[0.52] px-3 text-xs font-semibold text-muted-foreground motion-safe:transition-[background-color,transform] hover:bg-muted/[0.52] active:scale-[0.98]"
+                                        className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-border/25 bg-background/50 px-3 text-center text-xs font-semibold text-muted-foreground whitespace-normal break-words motion-safe:transition-[background-color,transform] hover:bg-muted/50 active:scale-[0.98]"
                                       >
                                         <Plus className="h-4 w-4" aria-hidden="true" />
                                         {ts.journalCaptureCreateAnother || "New capture"}
@@ -2503,8 +2564,8 @@ export const JournalEntryList = memo(function JournalEntryList({
                                         }}
                                         disabled={!focusedCapture || privateMode}
                                         className={cn(
-                                          "inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/[0.15] px-3 text-xs font-bold text-primary shadow-[0_0_28px_hsl(var(--primary)/0.12)] motion-safe:transition-[background-color,transform,box-shadow] disabled:opacity-50 active:scale-[0.98]",
-                                          privateMode ? "cursor-default" : "hover:bg-primary/[0.20]",
+                                          "inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/15 px-3 text-center text-xs font-bold text-primary whitespace-normal break-words shadow-[0_0_28px_hsl(var(--primary)/0.12)] motion-safe:transition-[background-color,transform,box-shadow] disabled:opacity-50 active:scale-[0.98]",
+                                          privateMode ? "cursor-default" : "hover:bg-primary/20",
                                         )}
                                       >
                                         <PenLine className="h-4 w-4" aria-hidden="true" />
@@ -2516,10 +2577,10 @@ export const JournalEntryList = memo(function JournalEntryList({
                               }
                               return (
                                 <>
-                                  <div className="relative overflow-hidden rounded-[1.35rem] border border-primary/[0.24] bg-background/[0.58] p-3 backdrop-blur-xl">
+                                  <div className="relative overflow-hidden rounded-[1.35rem] border border-primary/25 bg-background/60 p-3 backdrop-blur-xl">
                                     <div
                                       aria-hidden="true"
-                                      className="absolute -inset-x-10 -top-16 h-32 rounded-full bg-primary/[0.08] blur-2xl"
+                                      className="absolute -inset-x-10 -top-16 h-32 rounded-full bg-primary/10 blur-2xl"
                                     />
                                     <div className="relative flex items-start gap-3">
                                       <button
@@ -2531,16 +2592,16 @@ export const JournalEntryList = memo(function JournalEntryList({
                                       >
                                         <ChevronRight className="h-4 w-4 rotate-180 rtl:rotate-0" aria-hidden="true" />
                                       </button>
-                                      <span className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-[1.15rem] border border-primary/[0.24] bg-primary/[0.10] text-primary shadow-[0_0_30px_hsl(var(--primary)/0.12)]">
+                                      <span className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-[1.15rem] border border-primary/25 bg-primary/10 text-primary shadow-[0_0_30px_hsl(var(--primary)/0.12)]">
                                         <span className="absolute inset-1 rounded-[0.9rem] border border-primary/[0.14]" aria-hidden="true" />
-                                        <span className="absolute h-9 w-9 rounded-full bg-primary/[0.12] motion-safe:animate-pulse" aria-hidden="true" />
+                                        <span className="absolute h-9 w-9 rounded-full bg-primary/10 motion-safe:animate-pulse" aria-hidden="true" />
                                         <Icon className="relative h-5 w-5" aria-hidden="true" />
                                       </span>
                                       <div className="min-w-0 flex-1">
-                                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary/[0.72]">
+                                        <p className="whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.18em] text-primary/[0.72]">
                                           {experience.mode}
                                         </p>
-                                        <h3 className="mt-0.5 truncate text-lg font-bold text-foreground">
+                                        <h3 className="mt-0.5 whitespace-normal break-words text-lg font-bold text-foreground">
                                           {getSpaceDisplayName(activeStudio)}
                                         </h3>
                                         <p className="mt-1 text-xs leading-relaxed text-muted-foreground/[0.74]">
@@ -2563,7 +2624,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                                           )}
                                         />
                                       ))}
-                                      <span className="ms-2 text-[10px] font-medium text-muted-foreground/[0.58]">
+                                      <span className="ms-2 text-xs font-medium text-muted-foreground/[0.58]">
                                         {filledCount}/{prompts.length}
                                       </span>
                                     </div>
@@ -2573,13 +2634,13 @@ export const JournalEntryList = memo(function JournalEntryList({
                                     {prompts.map((prompt, index) => (
                                       <label
                                         key={`${activeStudio.id}-${prompt}-${index}`}
-                                        className="relative block overflow-hidden rounded-[1.15rem] border border-border/[0.24] bg-card/[0.52] p-3 ps-5 backdrop-blur-xl"
+                                        className="relative block overflow-hidden rounded-[1.15rem] border border-border/25 bg-card/50 p-3 ps-5 backdrop-blur-xl"
                                       >
                                         <span
                                           aria-hidden="true"
                                           className="absolute bottom-3 start-3 top-3 w-px rounded-full bg-primary/20"
                                         />
-                                        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/[0.72]">
+                                        <span className="mb-2 block whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground/[0.72]">
                                           {prompt}
                                         </span>
                                         <textarea
@@ -2589,18 +2650,18 @@ export const JournalEntryList = memo(function JournalEntryList({
                                             handleStudioFieldChange(activeStudio.id, index, event.target.value)
                                           }
                                           placeholder={ts.journalCapturePlaceholder || "Write here..."}
-                                          className="min-h-[82px] w-full resize-none rounded-xl border border-border/[0.24] bg-background/[0.58] px-3 py-2 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/[0.45] focus-visible:ring-2 focus-visible:ring-primary/30"
+                                          className="min-h-[82px] w-full resize-none rounded-xl border border-border/25 bg-background/60 px-3 py-2 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-primary/30"
                                         />
                                       </label>
                                     ))}
                                   </div>
 
-                                  <div className="grid grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] gap-2">
+                                  <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
                                     <button
                                       type="button"
                                       data-testid="journal-capture-filter"
                                       onClick={() => handleSelectSpace(activeStudio)}
-                                      className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-border/25 bg-background/[0.52] px-3 text-xs font-semibold text-muted-foreground motion-safe:transition-[background-color,transform] hover:bg-muted/[0.52] active:scale-[0.98]"
+                                      className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-border/25 bg-background/50 px-3 text-center text-xs font-semibold text-muted-foreground whitespace-normal break-words motion-safe:transition-[background-color,transform] hover:bg-muted/50 active:scale-[0.98]"
                                     >
                                       {activeStudio.id === "space-all" ? ts.all || "All" : getSpaceDisplayName(activeStudio)}
                                     </button>
@@ -2609,7 +2670,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                                       data-testid="journal-capture-save"
                                       onClick={() => void handleSaveStudioCapture(activeStudio)}
                                       disabled={filledCount === 0 || studioSaving}
-                                      className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/[0.15] px-3 text-xs font-bold text-primary shadow-[0_0_28px_hsl(var(--primary)/0.12)] motion-safe:transition-[background-color,transform,box-shadow] hover:bg-primary/[0.20] disabled:opacity-50 active:scale-[0.98]"
+                                      className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/15 px-3 text-center text-xs font-bold text-primary whitespace-normal break-words shadow-[0_0_28px_hsl(var(--primary)/0.12)] motion-safe:transition-[background-color,transform,box-shadow] hover:bg-primary/20 disabled:opacity-50 active:scale-[0.98]"
                                     >
                                       {studioSaving ? (
                                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -2639,7 +2700,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                             </p>
                             <div className="grid gap-2" data-testid="journal-capture-studio-list">
                               {visibleSpaceOptions.length === 0 ? (
-                                <div className="rounded-[1.25rem] border border-dashed border-border/30 bg-background/[0.42] p-4 text-sm leading-relaxed text-muted-foreground/75">
+                                <div className="rounded-[1.25rem] border border-dashed border-border/30 bg-background/40 p-4 text-sm leading-relaxed text-muted-foreground/75">
                                   {ts.journalFolderEmptyHint ||
                                     "Create your first folder with the plus button. Gratitudes will appear here automatically after your first gratitude."}
                                 </div>
@@ -2657,7 +2718,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                                     type="button"
                                     data-testid={`journal-space-option-${space.id}`}
                                     onClick={() => handleOpenStudio(space)}
-                                    className={"group relative min-h-[76px] overflow-hidden rounded-2xl border bg-background/[0.48] p-3 text-start shadow-[0_10px_28px_hsl(var(--foreground)/0.06)] motion-safe:transition-[background-color,border-color,box-shadow,transform] hover:bg-background/[0.62] active:scale-[0.99] " + tone.borderClass}
+                                    className={"group relative min-h-[76px] overflow-hidden rounded-2xl border bg-background/50 p-3 text-start shadow-[0_10px_28px_hsl(var(--foreground)/0.06)] motion-safe:transition-[background-color,border-color,box-shadow,transform] hover:bg-background/60 active:scale-[0.99] " + tone.borderClass}
                                     data-visual-role={visualRole}
                                   >
                                     <span
@@ -2679,28 +2740,28 @@ export const JournalEntryList = memo(function JournalEntryList({
                                         />
                                         <Icon className="relative h-5 w-5" aria-hidden="true" />
                                         {!privateMode && space.count > 0 ? (
-                                          <span className="absolute bottom-1 end-1 min-w-[20px] rounded-full border border-background/40 bg-background/[0.72] px-1 text-center text-[9px] font-bold text-foreground backdrop-blur-md">
+                                          <span className="absolute bottom-1 end-1 min-h-[24px] min-w-[24px] rounded-full border border-background/40 bg-background/70 px-1.5 py-0.5 text-center text-xs font-bold leading-none text-foreground backdrop-blur-md">
                                             {space.count}
                                           </span>
                                         ) : null}
                                       </span>
                                       <span className="min-w-0 flex-1">
-                                        <span className="flex items-center gap-1.5">
-                                          <span className="truncate text-sm font-bold text-foreground">
+                                        <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+                                          <span className="min-w-0 whitespace-normal break-words text-sm font-bold text-foreground">
                                             {spaceDisplayName}
                                           </span>
                                           {space.private ? (
                                             <LockKeyhole className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/65" aria-hidden="true" />
                                           ) : null}
                                         </span>
-                                        <span className={"mt-0.5 block truncate text-[10px] font-semibold uppercase tracking-[0.14em] " + tone.textClass}>
+                                        <span className={"mt-0.5 block whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.14em] " + tone.textClass}>
                                           {experience.mode}
                                         </span>
-                                        <span className="mt-0.5 block truncate text-xs leading-relaxed text-muted-foreground/70">
+                                        <span className="mt-0.5 block whitespace-normal break-words text-xs leading-relaxed text-muted-foreground/70">
                                           {spaceDisplayDescription}
                                         </span>
                                         <span className="mt-1.5 flex items-center justify-between gap-2">
-                                          <span className="text-[10px] font-medium text-muted-foreground/[0.55]">
+                                          <span className="text-xs font-medium text-muted-foreground/[0.55]">
                                             {privateMode
                                               ? privateMetricLabel
                                               : formatLocalizedCount(
@@ -2711,9 +2772,9 @@ export const JournalEntryList = memo(function JournalEntryList({
                                                   ts.journalEntries || "entries"
                                                 )}
                                           </span>
-                                          <span className={"inline-flex min-h-[32px] max-w-[150px] items-center gap-1.5 rounded-full border px-2.5 text-[10px] font-bold " + tone.iconClass}>
+                                          <span className={"inline-flex min-h-[44px] min-w-0 max-w-full items-center gap-1.5 rounded-full border px-2.5 text-xs font-bold " + tone.iconClass}>
                                             <PenLine className="h-3.5 w-3.5" aria-hidden="true" />
-                                            <span className="truncate">{experience.action}</span>
+                                            <span className="min-w-0 whitespace-normal break-words">{experience.action}</span>
                                           </span>
                                         </span>
                                       </span>
@@ -2744,16 +2805,16 @@ export const JournalEntryList = memo(function JournalEntryList({
         {activeSpaceMode ? renderSpaceWorkspace(activeSpaceMode) : null}
       </AnimatePresence>
 
-      {/* AI search results */}
+      {/* Account-backed private search results */}
       {!activeSpaceMode && aiMode && debouncedSearch.trim() && !aiSearching && (
         <>
           {aiSearchError ? (
             <div className="flex flex-col items-center py-8 text-center" role="status">
               <Search className="mb-2 h-8 w-8 text-muted-foreground/60" aria-hidden="true" />
               <p className="text-sm text-muted-foreground mb-1">
-                {ts.journalAiSearchUnavailable || "AI search is unavailable right now"}
+                {ts.journalAiSearchUnavailable || "Private search is unavailable right now"}
               </p>
-              <p className="text-[10px] text-muted-foreground/50 mb-3 max-w-[240px]">
+              <p className="mb-3 max-w-[240px] whitespace-normal break-words text-xs text-muted-foreground/50">
                 {ts.journalAiSearchUnavailableHint || "Your entries are still here. Try standard search or retry later."}
               </p>
             </div>
@@ -2778,7 +2839,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                     }}
                     className="relative"
                   >
-                    <div className="absolute top-2 end-2 z-10 px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-medium">
+                    <div className="absolute top-2 end-2 z-10 rounded-md bg-purple-500/10 px-1.5 py-0.5 text-xs font-medium text-purple-600 dark:text-purple-400">
                       {Math.round(similarity * 100)}%
                     </div>
                     {/* A11Y-OK: ContextMenu uses Radix with built-in aria; trigger is JournalEntryCard which has its own aria-labels */}
@@ -2813,7 +2874,7 @@ export const JournalEntryList = memo(function JournalEntryList({
               <p className="text-sm text-muted-foreground mb-1">
                 {ts.journalNoAiResults || "No similar entries found"}
               </p>
-              <p className="text-[10px] text-muted-foreground/50 mb-3 max-w-[220px]">
+              <p className="mb-3 max-w-[220px] whitespace-normal break-words text-xs text-muted-foreground/50">
                 {ts.journalNoAiResultsHint || "Try describing your thoughts differently"}
               </p>
             </div>
@@ -2888,7 +2949,7 @@ export const JournalEntryList = memo(function JournalEntryList({
               ? ts.journalSpaceEmpty || "This space is empty"
               : ts.journalNoMatchingEntries || "No entries match your search"}
           </p>
-          <p className="text-[10px] text-muted-foreground/50 mb-3 max-w-[220px]">
+          <p className="mb-3 max-w-[220px] whitespace-normal break-words text-xs text-muted-foreground/50">
             {activeFilterSpaceName && !deferredSearch
               ? ts.journalSpaceEmptyHint || "Create a first note here and it will stay connected to this space."
               : ts.journalNoMatchingHint || "Try a different keyword or clear your filters"}
@@ -2930,6 +2991,15 @@ export const JournalEntryList = memo(function JournalEntryList({
           onReleaseThought={onReleaseThought}
         />
       )}
+      <JournalAiConsentDialog
+        open={aiConsentDialogOpen}
+        busy={aiConsentBusy}
+        error={aiConsentError}
+        ts={ts}
+        restoreFocusTo={aiToggleButtonRef}
+        onCancel={cancelAiConsent}
+        onConfirm={confirmAiConsent}
+      />
     </div>
   );
 });

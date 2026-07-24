@@ -229,12 +229,20 @@ function OverviewMetric({
 }) {
   return (
     <div className="rounded-2xl border border-border bg-secondary/35 p-3">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Icon className="h-4 w-4" aria-hidden="true" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.18em]">{label}</span>
+      <div className="flex items-start gap-2 text-muted-foreground">
+        <Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        <span className="min-w-0 whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.18em]">
+          {label}
+        </span>
       </div>
-      <div className="mt-2 text-xl font-semibold tabular-nums text-foreground">{value}</div>
-      {detail && <div className="mt-1 text-[11px] text-muted-foreground">{detail}</div>}
+      <div className="mt-2 whitespace-normal [overflow-wrap:anywhere] text-xl font-semibold tabular-nums text-foreground">
+        {value}
+      </div>
+      {detail && (
+        <div className="mt-1 whitespace-normal break-words text-xs text-muted-foreground">
+          {detail}
+        </div>
+      )}
     </div>
   );
 }
@@ -359,7 +367,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                 reduceMotion ? undefined : { duration: 4.5, repeat: Infinity, ease: "easeInOut" }
               }
             />
-            <div className="relative flex items-center gap-3">
+            <div className="relative grid grid-cols-[56px_minmax(0,1fr)] items-start gap-3 min-[420px]:grid-cols-[56px_minmax(0,1fr)_auto]">
               <div
                 className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border text-2xl shadow-sm"
                 style={{
@@ -370,10 +378,10 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                 {habit.icon}
               </div>
               <div className="min-w-0 flex-1">
-                <SheetTitle className="truncate text-xl font-semibold text-foreground">
+                <SheetTitle className="whitespace-normal break-words [overflow-wrap:anywhere] text-xl font-semibold text-foreground">
                   {habit.name}
                 </SheetTitle>
-                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                   {habit.category && <span className="capitalize">{habit.category}</span>}
                   {snapshot.identityProof.text && (
                     <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-primary">
@@ -382,7 +390,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                   )}
                 </div>
                 {planState && (
-                  <div className="mt-1 text-[11px] text-muted-foreground">
+                  <div className="mt-1 whitespace-normal break-words text-xs text-muted-foreground">
                     {formatLocalizedCount(
                       planState.durationDays,
                       language,
@@ -403,18 +411,20 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                   </div>
                 )}
               </div>
-              <ProgressRing
-                progress={snapshot.scorePercent}
-                size="lg"
-                showPercentage
-                color={
-                  snapshot.scorePercent >= 60
-                    ? "success"
-                    : snapshot.scorePercent >= 30
-                      ? "warning"
-                      : "primary"
-                }
-              />
+              <div className="col-span-2 justify-self-center min-[420px]:col-span-1 min-[420px]:justify-self-end">
+                <ProgressRing
+                  progress={snapshot.scorePercent}
+                  size="lg"
+                  showPercentage
+                  color={
+                    snapshot.scorePercent >= 60
+                      ? "success"
+                      : snapshot.scorePercent >= 30
+                        ? "warning"
+                        : "primary"
+                  }
+                />
+              </div>
             </div>
           </motion.div>
 
@@ -422,7 +432,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
             variants={sectionEntrance}
             role="tablist"
             aria-label={ts.habitStatsTabsLabel || "Habit statistics sections"}
-            className="grid grid-cols-4 gap-1 rounded-2xl border border-border bg-secondary/30 p-1"
+            className="grid grid-cols-2 gap-1 min-[520px]:grid-cols-4 rounded-2xl border border-border bg-secondary/30 p-1"
           >
             {detailTabs.map((tab) => (
               <button
@@ -432,7 +442,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                 aria-selected={activeTab === tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  "min-h-[44px] rounded-xl px-1 text-[11px] font-semibold motion-safe:transition",
+                  "min-h-[44px] whitespace-normal break-words rounded-xl px-2 py-2 text-xs font-semibold motion-safe:transition",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                   activeTab === tab
                     ? "bg-background text-foreground shadow-sm"
@@ -474,7 +484,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 gap-2 min-[480px]:grid-cols-2 min-[720px]:grid-cols-3">
                   <OverviewMetric
                     icon={TrendingUp}
                     label={ts.habitStatsPace || "Completion"}
@@ -500,7 +510,9 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                     label={ts.habitStatsProof || "Check-ins"}
                     value={`${snapshot.totalCompleted}`}
                     detail={
-                      snapshot.lowData ? ts.habitStatsLowData || "Needs more check-ins" : bestWeekday
+                      snapshot.lowData
+                        ? ts.habitStatsLowData || "Needs more check-ins"
+                        : bestWeekday
                     }
                   />
                 </div>
@@ -529,18 +541,22 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                     <CalendarDays className="h-4 w-4" aria-hidden="true" />
                     {ts.habitStatsRecentProof || "Recent check-ins"}
                   </div>
-                  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                  <div className="grid grid-cols-[repeat(auto-fit,minmax(3rem,1fr))] gap-2">
                     {recentDays.map((day) => (
                       <div
                         key={day.date}
                         className={cn(
-                          "flex h-14 min-w-[48px] flex-col items-center justify-center rounded-2xl border text-xs font-semibold",
+                          "flex min-h-14 min-w-0 flex-col items-center justify-center rounded-2xl border text-xs font-semibold",
                           recentDayClasses(day.status)
                         )}
+                        role="img"
                         aria-label={`${day.date}: ${day.status}`}
                       >
                         <span>{day.day}</span>
-                        <span className="mt-1 text-[10px] opacity-70">•</span>
+                        <span
+                          className="mt-1 h-1 w-1 rounded-full bg-current opacity-70"
+                          aria-hidden="true"
+                        />
                       </div>
                     ))}
                   </div>
@@ -560,7 +576,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                 exit={{ opacity: 0, y: -6 }}
                 className="space-y-5"
               >
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
                   <OverviewMetric
                     icon={Target}
                     label={ts.habitStatsThisMonth || ts.thisMonth || "Month"}

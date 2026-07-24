@@ -1,11 +1,13 @@
 import { defineConfig } from "vitest/config";
 import path from "path";
 import { fileURLToPath } from "url";
+import { changelogPlugin } from "./vite-plugin-changelog";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isCi = process.env.CI === "true";
 
 export default defineConfig({
+  plugins: [changelogPlugin()],
   test: {
     environment: "jsdom",
     setupFiles: ["./test/setup.ts"],
@@ -15,12 +17,16 @@ export default defineConfig({
     exclude: ["node_modules", "e2e/**", ".codex/worktrees/**", "tools/telegram-control/test/**"],
     coverage: {
       provider: "v8",
+      include: ["src/**/*.{ts,tsx}"],
       reporter: isCi ? ["text", "json-summary"] : ["text", "html", "json-summary"],
+      // First honest TS/TSX baseline (2026-07-16). The former branch=70 gate measured
+      // assets only because "*.ts" excluded every source file with Picomatch contains=true.
+      // Floors intentionally round down so future source regressions fail closed.
       thresholds: {
-        lines: 18,
-        functions: 41,
-        branches: 70,
-        statements: 18,
+        lines: 60,
+        functions: 56,
+        branches: 47,
+        statements: 59,
       },
       exclude: [
         "node_modules/",
@@ -40,7 +46,6 @@ export default defineConfig({
         "dev-dist/",
         "scripts/",
         "tools/telegram-control/**",
-        "*.ts",
         // Agent worktrees (isolated branches) — not part of main coverage scope.
         ".codex/worktrees/**",
       ],

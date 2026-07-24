@@ -14,7 +14,7 @@ async function openSettings(
     width?: number;
     height?: number;
     textScale?: number;
-  } = {},
+  } = {}
 ) {
   await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
   await primeZenflowV2(page, {
@@ -46,8 +46,8 @@ async function expectNoHorizontalOverflow(page: Page) {
     Math.max(
       0,
       document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      document.body.scrollWidth - document.documentElement.clientWidth,
-    ),
+      document.body.scrollWidth - document.documentElement.clientWidth
+    )
   );
   expect(overflow).toBe(0);
 }
@@ -55,7 +55,7 @@ async function expectNoHorizontalOverflow(page: Page) {
 async function expectPhoneOverview(page: Page, focusedSection?: string) {
   await expect(page.getByTestId("settings-page-workspace")).toHaveAttribute(
     "data-mobile-view",
-    "overview",
+    "overview"
   );
   await expect(page.getByTestId("settings-selected-panel")).toHaveCount(0);
   await expect(page.locator('[data-testid^="settings-module-card-"]')).toHaveCount(4);
@@ -125,46 +125,60 @@ test.describe("V2 Settings current information architecture", () => {
     const panel = page.getByTestId("settings-module-panel-appearance");
     await expect(panel).toHaveAttribute(
       "aria-labelledby",
-      "settings-module-panel-heading-appearance",
+      "settings-module-panel-heading-appearance"
     );
-    await expect(page.getByRole("heading", { level: 2, name: "Appearance & accessibility" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 2, name: "Appearance & accessibility" })
+    ).toBeVisible();
     await expect(page.getByRole("heading", { level: 3, name: "Appearance" })).toBeVisible();
   });
 
-  test("appearance choices persist immediately and the reset menu restores focus", async ({ page }) => {
+  test("appearance choices persist immediately and the reset disclosure restores focus", async ({
+    page,
+  }) => {
     await openSettings(page, { layout: "desktop" });
 
     await page.getByTestId("settings-v2-theme-choice-ink").click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "ink");
     await expect(page.getByTestId("settings-v2-theme-choice-ink")).toHaveAttribute(
       "aria-pressed",
-      "true",
+      "true"
     );
-    await expect.poll(() =>
-      page.evaluate(() => {
-        const raw = localStorage.getItem("zenflow:theme-v0c");
-        return raw ? JSON.parse(raw).state?.theme : null;
-      }),
-    ).toBe("ink");
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const raw = localStorage.getItem("zenflow:theme-v0c");
+          return raw ? JSON.parse(raw).state?.theme : null;
+        })
+      )
+      .toBe("ink");
+
+    await expect(page.getByTestId("settings-v2-appearance-more")).toHaveCount(0);
+    await page.getByTestId("settings-v2-accent-choice-blue").click();
 
     const more = page.getByTestId("settings-v2-appearance-more");
     await more.focus();
     await page.keyboard.press("Enter");
-    const menu = page.getByTestId("settings-v2-appearance-more-menu");
-    await expect(menu).toHaveAttribute("role", "menu");
-    await expect(page.getByTestId("settings-v2-style-reset")).toBeFocused();
+    const disclosure = page.getByTestId("settings-v2-appearance-more-menu");
+    const reset = page.getByTestId("settings-v2-style-reset");
+    await expect(more).not.toHaveAttribute("aria-haspopup");
+    await expect(disclosure).not.toHaveAttribute("role", "menu");
+    await expect(reset).not.toHaveAttribute("role", "menuitem");
+    await expect(reset).toBeFocused();
     await page.keyboard.press("Escape");
-    await expect(menu).toHaveCount(0);
+    await expect(disclosure).toHaveCount(0);
     await expect(more).toBeFocused();
   });
 
-  test("Web never exposes mobile reminder controls or an active hidden-service summary", async ({ page }) => {
+  test("Web never exposes mobile reminder controls or an active hidden-service summary", async ({
+    page,
+  }) => {
     await openSettings(page);
 
     await expect(page.getByTestId("settings-module-card-notifications")).toHaveCount(0);
-    await expect(page.getByTestId("settings-module-card-privacy")).toContainText(
-      "Optional services off",
-    );
+    const privacyCard = page.getByTestId("settings-module-card-privacy");
+    await expect(privacyCard).not.toContainText("Optional services on");
+    await expect(privacyCard).not.toContainText("Optional services off");
     await page.getByTestId("settings-module-card-privacy").click();
     await expect(page.getByTestId("settings-v2-ad-consent")).toHaveCount(0);
     await expect(page.getByTestId("settings-v2-push-notifications")).toHaveCount(0);
@@ -175,12 +189,8 @@ test.describe("V2 Settings current information architecture", () => {
 
     const backup = page.getByRole("region", { name: "Backup & restore", exact: true });
     const reports = page.getByRole("region", { name: "Reports", exact: true });
-    await expect(backup.getByTestId("settings-v2-export-json")).toHaveAccessibleName(
-      "Save backup",
-    );
-    await expect(backup.getByTestId("settings-v2-import")).toHaveAccessibleName(
-      "Import backup",
-    );
+    await expect(backup.getByTestId("settings-v2-export-json")).toHaveAccessibleName("Save backup");
+    await expect(backup.getByTestId("settings-v2-import")).toHaveAccessibleName("Import backup");
     await expect(reports.getByTestId("settings-v2-export-csv")).toBeVisible();
     await expect(reports.getByTestId("settings-v2-export-pdf")).toBeVisible();
     await expect(reports).toContainText("Reports are not backups.");

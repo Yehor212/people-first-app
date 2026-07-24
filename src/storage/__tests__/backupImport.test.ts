@@ -5,9 +5,7 @@ const backupCryptoMocks = vi.hoisted(() => ({
 }));
 
 const backupOwnerMocks = vi.hoisted(() => ({
-  validateSyncOwner: vi.fn(
-    async (expectedOwnerUserId?: string) => expectedOwnerUserId ?? null,
-  ),
+  validateSyncOwner: vi.fn(async (expectedOwnerUserId?: string) => expectedOwnerUserId ?? null),
 }));
 
 vi.mock("@/lib/journalContentSession", () => ({
@@ -20,7 +18,7 @@ vi.mock("@/features/journal/journalCrypto", () => ({
     Promise.resolve(`encrypted-entry:${key}:${content}`)
   ),
   decryptJournalContentIfNeeded: vi.fn((content: string, key: string) =>
-    Promise.resolve(content.replace(`encrypted-entry:${key}:`, "")),
+    Promise.resolve(content.replace(`encrypted-entry:${key}:`, ""))
   ),
   isEncryptedJournalContent: vi.fn((content: string) => content.startsWith("encrypted-entry:")),
 }));
@@ -30,7 +28,7 @@ vi.mock("@/features/journal/journalMediaCrypto", () => ({
     Promise.resolve(`encrypted-media:${key}:${dataUrl}`)
   ),
   decryptJournalMediaDataUrlIfNeeded: vi.fn((dataUrl: string, key: string | null) =>
-    Promise.resolve(key ? dataUrl.replace(`encrypted-media:${key}:`, "") : ""),
+    Promise.resolve(key ? dataUrl.replace(`encrypted-media:${key}:`, "") : "")
   ),
   encryptedJournalMediaFromStorageDataUrl: vi.fn((dataUrl: string) => dataUrl),
   isEncryptedJournalMediaData: vi.fn((dataUrl: string) => dataUrl.startsWith("encrypted-media:")),
@@ -40,6 +38,7 @@ vi.mock("@/storage/sync/syncOwner", () => ({
   validateSyncOwner: backupOwnerMocks.validateSyncOwner,
 }));
 import { db } from "@/storage/db";
+import { consumeJournalReplaceAuthorization } from "@/lib/journalContentSession";
 import {
   exportBackup,
   exportPortableBackup,
@@ -62,6 +61,7 @@ import {
 } from "@/storage/deletionTracker";
 import { makeTestHabit } from "@/test/habitFixtures";
 import { runWithJournalSecurityWriteLock } from "@/features/journal/journalSecurityWriteLock";
+import { SK } from "@/lib/storageKeys";
 
 const sortByPrimaryKey = <T extends { id: string }>(rows: T[]): T[] =>
   [...rows].sort((left, right) => left.id.localeCompare(right.id));
@@ -77,6 +77,17 @@ const readImportedCollectionsSnapshot = async () => ({
   journalEntries: sortByPrimaryKey(await db.journalEntries.toArray()),
   journalPhotos: sortByPrimaryKey(await db.journalPhotos.toArray()),
   journalAudio: sortByPrimaryKey(await db.journalAudio.toArray()),
+  journalHubPreferences: sortByPrimaryKey(
+    await db.journalHubPreferences.toArray(),
+  ),
+  journalSpaces: sortByPrimaryKey(await db.journalSpaces.toArray()),
+  journalPracticeSessions: sortByPrimaryKey(
+    await db.journalPracticeSessions.toArray(),
+  ),
+  journalEntryLinks: sortByPrimaryKey(await db.journalEntryLinks.toArray()),
+  journalSpaceCaptures: sortByPrimaryKey(
+    await db.journalSpaceCaptures.toArray(),
+  ),
 });
 
 const readDeletionTrackerSnapshot = async () => ({
@@ -89,7 +100,7 @@ const readDeletionTrackerSnapshot = async () => ({
 
 const makeAtomicityCollections = (
   scope: "local" | "remote",
-  reminderEnabled: boolean,
+  reminderEnabled: boolean
 ): BackupPayloadV3["data"] => {
   const journalEntryId = `${scope}-atomic-journal`;
   return {
@@ -106,8 +117,7 @@ const makeAtomicityCollections = (
       makeTestHabit({
         id: `${scope}-atomic-habit`,
         name: `${scope} atomic habit`,
-        updatedAt:
-          scope === "local" ? "2026-07-10T00:00:00.000Z" : "2026-07-11T00:00:00.000Z",
+        updatedAt: scope === "local" ? "2026-07-10T00:00:00.000Z" : "2026-07-11T00:00:00.000Z",
       }),
     ],
     focusSessions: [
@@ -182,9 +192,10 @@ const seedImportedCollections = async (data: BackupPayloadV3["data"]): Promise<v
 describe("importBackup deletion precedence", () => {
   beforeEach(async () => {
     backupCryptoMocks.vaultKey = null;
+    vi.mocked(consumeJournalReplaceAuthorization).mockClear();
     backupOwnerMocks.validateSyncOwner.mockReset();
     backupOwnerMocks.validateSyncOwner.mockImplementation(
-      async (expectedOwnerUserId?: string) => expectedOwnerUserId ?? null,
+      async (expectedOwnerUserId?: string) => expectedOwnerUserId ?? null
     );
     await db.open();
     await db.moods.clear();
@@ -208,6 +219,10 @@ describe("importBackup deletion precedence", () => {
       { key: "journal_vault_key", value: { wrappedKey: "wrapped-key" } },
       { key: "journal_password_cooldown", value: { failedAttempts: 3 } },
       { key: "journal_biometric", value: true },
+      {
+        key: SK.PRIVACY,
+        value: { adConsent: true, pushNotifications: true },
+      },
       { key: "mood-reminder-enabled", value: true },
     ]);
 
@@ -227,6 +242,10 @@ describe("importBackup deletion precedence", () => {
         value: { wrappedKey: "local-wrapped-key", createdAt: 1, updatedAt: 2 },
       },
       { key: "mood-reminder-enabled", value: false },
+      {
+        key: SK.PRIVACY,
+        value: { adConsent: false, pushNotifications: false },
+      },
     ]);
     const payload: BackupPayloadV3 = {
       schemaVersion: 3,
@@ -241,6 +260,10 @@ describe("importBackup deletion precedence", () => {
           { key: "journal_password", value: { hash: "remote-verifier" } },
           { key: "journal_vault_key", value: { wrappedKey: "remote-wrapped-key" } },
           { key: "journal_password_cooldown", value: { failedAttempts: 9 } },
+          {
+            key: SK.PRIVACY,
+            value: { adConsent: true, pushNotifications: true },
+          },
           { key: "mood-reminder-enabled", value: true },
         ],
         journalEntries: [],
@@ -272,7 +295,11 @@ describe("importBackup deletion precedence", () => {
       key: "mood-reminder-enabled",
       value: true,
     });
-    expect(report.settings).toEqual({ added: 1, updated: 0, skipped: 3 });
+    await expect(db.settings.get(SK.PRIVACY)).resolves.toEqual({
+      key: SK.PRIVACY,
+      value: { adConsent: false, pushNotifications: false },
+    });
+    expect(report.settings).toEqual({ added: 1, updated: 0, skipped: 4 });
   });
 
   it("keeps tombstones authoritative in replace mode when backup still contains the habit", async () => {
@@ -344,6 +371,125 @@ describe("importBackup deletion precedence", () => {
     expect(deletedIds.size).toBe(tombstones.length);
     expect(deletedIds.has(deletedHabit.id)).toBe(true);
     expect(deletedIds.has(tombstones[tombstones.length - 1])).toBe(true);
+  });
+
+  it.each([
+    ["deletedMoodIds", "not-an-array"],
+    ["deletedHabitIds", ["valid-id", 7]],
+    ["deletedFocusSessionIds", [""]],
+    ["deletedGratitudeIds", ["x".repeat(101)]],
+    ["deletedJournalEntryIds", null],
+  ] as const)(
+    "rejects a present but invalid %s field before opening a write transaction",
+    async (field, invalidValue) => {
+      const localHabit = makeTestHabit({
+        id: `keep-${field}`,
+        name: `Keep ${field}`,
+      });
+      await db.habits.put(localHabit);
+      await mergeDeletedHabitIds([`local-tombstone-${field}`]);
+      const collectionsBefore = await readImportedCollectionsSnapshot();
+      const tombstonesBefore = await readDeletionTrackerSnapshot();
+      const transactionSpy = vi.spyOn(db, "transaction");
+      const payload = {
+        schemaVersion: 3,
+        createdAt: "2026-07-18T00:00:00.000Z",
+        deviceId: "invalid-tombstone-field",
+        data: {
+          moods: [],
+          habits: [],
+          focusSessions: [],
+          gratitudeEntries: [],
+          settings: [],
+        },
+        [field]: invalidValue,
+      };
+
+      try {
+        await expect(importBackup(payload as never, "replace")).rejects.toMatchObject({
+          code: "BACKUP_DELETION_HISTORY_INVALID",
+        });
+        expect(consumeJournalReplaceAuthorization).not.toHaveBeenCalled();
+        expect(transactionSpy).not.toHaveBeenCalled();
+        await expect(readImportedCollectionsSnapshot()).resolves.toEqual(
+          collectionsBefore,
+        );
+        await expect(readDeletionTrackerSnapshot()).resolves.toEqual(
+          tombstonesBefore,
+        );
+      } finally {
+        transactionSpy.mockRestore();
+      }
+    },
+  );
+
+  it("rejects a deletion history above the 100000-item boundary without mutation", async () => {
+    const localHabit = makeTestHabit({
+      id: "keep-over-limit-tombstones",
+      name: "Keep over-limit tombstones",
+    });
+    await db.habits.put(localHabit);
+    await mergeDeletedHabitIds(["local-over-limit-tombstone"]);
+    const collectionsBefore = await readImportedCollectionsSnapshot();
+    const tombstonesBefore = await readDeletionTrackerSnapshot();
+    const transactionSpy = vi.spyOn(db, "transaction");
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-07-18T00:00:00.000Z",
+      deviceId: "over-limit-tombstones",
+      data: {
+        moods: [],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+      },
+      deletedHabitIds: Array.from(
+        { length: 100001 },
+        (_, index) => `deleted-habit-${index}`,
+      ),
+    };
+
+    try {
+      await expect(importBackup(payload, "replace")).rejects.toMatchObject({
+        code: "BACKUP_DELETION_HISTORY_INVALID",
+      });
+      expect(consumeJournalReplaceAuthorization).not.toHaveBeenCalled();
+      expect(transactionSpy).not.toHaveBeenCalled();
+      await expect(readImportedCollectionsSnapshot()).resolves.toEqual(
+        collectionsBefore,
+      );
+      await expect(readDeletionTrackerSnapshot()).resolves.toEqual(
+        tombstonesBefore,
+      );
+    } finally {
+      transactionSpy.mockRestore();
+    }
+  });
+
+  it("accepts exactly 100000 unique valid deletion IDs", async () => {
+    const tombstones = Array.from(
+      { length: 100000 },
+      (_, index) => `deleted-mood-boundary-${index}`,
+    );
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-07-18T00:00:00.000Z",
+      deviceId: "max-valid-tombstones",
+      data: {
+        moods: [],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+      },
+      deletedMoodIds: tombstones,
+    };
+
+    await expect(importBackup(payload, "merge")).resolves.toMatchObject({
+      mode: "merge",
+    });
+    expect((await getDeletedMoodIds()).size).toBe(100000);
   });
 
   it("requires an unlocked protected journal before replace and preserves every seeded collection", async () => {
@@ -551,9 +697,7 @@ describe("importBackup deletion precedence", () => {
       snapshot.journalPracticeSessions
     );
     await expect(db.journalEntryLinks.toArray()).resolves.toEqual(snapshot.journalEntryLinks);
-    await expect(db.journalSpaceCaptures.toArray()).resolves.toEqual(
-      snapshot.journalSpaceCaptures
-    );
+    await expect(db.journalSpaceCaptures.toArray()).resolves.toEqual(snapshot.journalSpaceCaptures);
     await expect(getDeletedHabitIds()).resolves.toEqual(tombstonesBefore);
     transactionSpy.mockRestore();
   });
@@ -654,6 +798,72 @@ describe("importBackup deletion precedence", () => {
     await expect(db.journalEntries.get(localEntry.id)).resolves.toEqual(localEntry);
     await expect(db.journalEntries.get("locked-merge-plaintext")).resolves.toBeUndefined();
     expect(report.journalEntries).toEqual({ added: 0, updated: 0, skipped: 1 });
+  });
+
+  it("requires unlock before merge can authenticate incoming encrypted diary audio", async () => {
+    const localEntry = {
+      id: "locked-encrypted-local",
+      date: "2026-05-24",
+      title: "Keep local diary",
+      content: "encrypted-entry:local-key:ciphertext",
+      stickers: [],
+      tags: [],
+      photoIds: [],
+      audioIds: [],
+      createdAt: 10,
+      updatedAt: 20,
+    };
+    const incomingHabit = makeTestHabit({
+      id: "locked-encrypted-habit",
+      name: "Do not partially import",
+    });
+    await db.settings.put({ key: "journal_password", value: { hash: "local-verifier" } });
+    await db.journalEntries.put(localEntry);
+
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-05-25T10:00:00.000Z",
+      deviceId: "device-remote",
+      data: {
+        moods: [],
+        habits: [incomingHabit],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [
+          {
+            id: "locked-encrypted-incoming",
+            date: "2026-05-25",
+            title: "Protected import",
+            content: "encrypted-entry:foreign-key:ciphertext",
+            stickers: [],
+            tags: [],
+            photoIds: [],
+            audioIds: ["locked-encrypted-audio"],
+            createdAt: 30,
+            updatedAt: 30,
+          },
+        ],
+        journalPhotos: [],
+        journalAudio: [
+          {
+            id: "locked-encrypted-audio",
+            entryId: "locked-encrypted-incoming",
+            data: "encrypted-media:foreign-key:ciphertext",
+            mimeType: "audio/webm",
+            duration: 1,
+            createdAt: 30,
+          },
+        ],
+      },
+    };
+
+    await expect(importBackup(payload, "merge")).rejects.toMatchObject({
+      code: "JOURNAL_UNLOCK_REQUIRED",
+    });
+    await expect(db.habits.get(incomingHabit.id)).resolves.toBeUndefined();
+    await expect(db.journalEntries.toArray()).resolves.toEqual([localEntry]);
+    await expect(db.journalAudio.count()).resolves.toBe(0);
   });
 
   it("preserves journal collections when a legacy Replace payload never contained them", async () => {
@@ -792,12 +1002,12 @@ describe("importBackup deletion precedence", () => {
       };
 
       await expect(importBackup(malformed as any, "replace")).rejects.toThrow(
-        new RegExp(collection, "i"),
+        new RegExp(collection, "i")
       );
       await expect(db.moods.toArray()).resolves.toEqual([seededMood]);
       await expect(db.settings.get(seededSetting.key)).resolves.toEqual(seededSetting);
       await expect(db.journalEntries.get(seededEntry.id)).resolves.toEqual(seededEntry);
-    },
+    }
   );
 
   it("skips malformed journal rows instead of writing broken backup data", async () => {
@@ -923,7 +1133,7 @@ describe("importBackup deletion precedence", () => {
               photoIds.map((photoId, index) => [
                 photoId,
                 { x: index * 10, y: index * 12, width: 220 },
-              ]),
+              ])
             ),
           },
         ],
@@ -992,6 +1202,72 @@ describe("importBackup deletion precedence", () => {
     await expect(db.journalAudio.get("audio-orphan")).resolves.toBeUndefined();
     expect(report.journalPhotos).toEqual({ added: 0, updated: 0, skipped: 1 });
     expect(report.journalAudio).toEqual({ added: 0, updated: 0, skipped: 1 });
+  });
+
+  it("rejects unsafe audio and imports only referenced rows within the entry limit", async () => {
+    const audioIds = ["audio-one", "audio-two", "audio-three", "audio-four"];
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-05-11T10:01:00.000Z",
+      deviceId: "device-audio-validation",
+      data: {
+        moods: [],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [{
+          id: "journal-audio-validation",
+          date: "2026-05-11",
+          title: "Imported",
+          content: "Imported entry",
+          stickers: [],
+          tags: [],
+          photoIds: [],
+          audioIds: [...audioIds, "audio-unsafe"],
+          createdAt: 1,
+          updatedAt: 1,
+        }],
+        journalPhotos: [],
+        journalAudio: [
+          ...audioIds.map((id, index) => ({
+            id,
+            entryId: "journal-audio-validation",
+            data: "data:audio/webm;base64,YQ==",
+            mimeType: "audio/webm",
+            duration: 1,
+            createdAt: index + 1,
+          })),
+          {
+            id: "audio-unsafe",
+            entryId: "journal-audio-validation",
+            data: "https://example.invalid/private-audio",
+            mimeType: "audio/webm",
+            duration: 1,
+            createdAt: 9,
+          },
+          {
+            id: "audio-unreferenced",
+            entryId: "journal-audio-validation",
+            data: "data:audio/webm;base64,YQ==",
+            mimeType: "audio/webm",
+            duration: 1,
+            createdAt: 10,
+          },
+        ],
+      },
+    };
+
+    const report = await importBackup(payload, "replace");
+
+    await expect(db.journalEntries.get("journal-audio-validation")).resolves.toMatchObject({
+      audioIds: audioIds.slice(0, 3),
+    });
+    await expect(db.journalAudio.toCollection().primaryKeys()).resolves.toEqual(
+      expect.arrayContaining(audioIds.slice(0, 3)),
+    );
+    await expect(db.journalAudio.count()).resolves.toBe(3);
+    expect(report.journalAudio).toEqual({ added: 3, updated: 0, skipped: 3 });
   });
 
   it("encrypts plaintext journal backup rows when a diary vault key is active", async () => {
@@ -1116,7 +1392,9 @@ describe("importBackup deletion precedence", () => {
     await imported;
 
     expect(settledBeforeActivationCompleted).toBe(false);
-    await expect(db.journalEntries.get("journal-during-password-activation")).resolves.toMatchObject({
+    await expect(
+      db.journalEntries.get("journal-during-password-activation")
+    ).resolves.toMatchObject({
       content: "encrypted-entry:activated-vault-key:private plaintext",
     });
   });
@@ -1205,7 +1483,7 @@ describe("importBackup deletion precedence", () => {
 
     try {
       await expect(
-        importBackup(payload, "replace", { expectedOwnerUserId: "owner-a" }),
+        importBackup(payload, "replace", { expectedOwnerUserId: "owner-a" })
       ).rejects.toThrow("owner changed during import");
     } finally {
       db.moods.hook("creating").unsubscribe(markOwnerChanged);
@@ -1214,8 +1492,135 @@ describe("importBackup deletion precedence", () => {
     await expect(db.moods.toArray()).resolves.toEqual([localMood]);
   });
 
+  it("rolls back a local-only import when its verified realm changes during the transaction", async () => {
+    const localMood = {
+      id: "local-before-realm-change",
+      mood: "okay" as const,
+      date: "2026-07-10",
+      timestamp: 1,
+      updatedAt: 2,
+    };
+    const remoteMood = {
+      id: "remote-after-realm-change",
+      mood: "good" as const,
+      date: "2026-07-11",
+      timestamp: 3,
+      updatedAt: 4,
+    };
+    await db.moods.put(localMood);
+
+    let realmCurrent = true;
+    const assertExternalOwnerRealmCurrent = vi.fn(async () => {
+      if (!realmCurrent) throw new Error("local realm changed during import");
+    });
+    const markRealmChanged = () => {
+      realmCurrent = false;
+    };
+    db.moods.hook("creating", markRealmChanged);
+
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-07-11T00:00:00.000Z",
+      deviceId: "device-local-realm-rollback",
+      data: {
+        moods: [remoteMood],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [],
+        journalPhotos: [],
+        journalAudio: [],
+      },
+    };
+
+    try {
+      await expect(
+        importBackup(payload, "replace", { assertExternalOwnerRealmCurrent }),
+      ).rejects.toThrow("local realm changed during import");
+    } finally {
+      db.moods.hook("creating").unsubscribe(markRealmChanged);
+    }
+
+    expect(assertExternalOwnerRealmCurrent).toHaveBeenCalled();
+    await expect(db.moods.toArray()).resolves.toEqual([localMood]);
+  });
+
+  it("aborts a local-only import when its realm is invalidated after the final assertion but before commit", async () => {
+    const localMood = {
+      id: "local-before-commit-invalidation",
+      mood: "okay" as const,
+      date: "2026-07-10",
+      timestamp: 1,
+      updatedAt: 2,
+    };
+    const remoteMood = {
+      id: "remote-before-commit-invalidation",
+      mood: "good" as const,
+      date: "2026-07-11",
+      timestamp: 3,
+      updatedAt: 4,
+    };
+    await db.moods.put(localMood);
+
+    let invalidateRealm: (() => void) | null = null;
+    const unsubscribe = vi.fn();
+    const subscribeOwnerRealmInvalidation = vi.fn((listener: () => void) => {
+      invalidateRealm = listener;
+      return unsubscribe;
+    });
+    let externalAssertionCount = 0;
+    const assertExternalOwnerRealmCurrent = vi.fn(async () => {
+      externalAssertionCount += 1;
+      if (externalAssertionCount === 4) {
+        queueMicrotask(() => invalidateRealm?.());
+      }
+    });
+    const assertDataOwnerRealmCurrent = vi.fn(async () => undefined);
+    const payload: BackupPayloadV3 = {
+      schemaVersion: 3,
+      createdAt: "2026-07-11T00:00:00.000Z",
+      deviceId: "device-commit-invalidation",
+      data: {
+        moods: [remoteMood],
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        settings: [],
+        journalEntries: [],
+        journalPhotos: [],
+        journalAudio: [],
+      },
+    };
+
+    await expect(
+      importBackup(payload, "replace", {
+        assertExternalOwnerRealmCurrent,
+        assertDataOwnerRealmCurrent,
+        subscribeOwnerRealmInvalidation,
+      }),
+    ).rejects.toBeDefined();
+
+    expect(externalAssertionCount).toBe(4);
+    expect(subscribeOwnerRealmInvalidation).toHaveBeenCalledTimes(1);
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    await expect(db.moods.toArray()).resolves.toEqual([localMood]);
+  });
+
   it("exports portable journal media when legacy storage paths do not match encryption state", async () => {
     backupCryptoMocks.vaultKey = "vault-key-1";
+    await db.journalEntries.put({
+      id: "journal-live",
+      date: "2026-06-17",
+      title: "Live",
+      content: "saved",
+      stickers: [],
+      tags: [],
+      photoIds: ["photo-encrypted-old-path", "photo-plain-old-encrypted-path"],
+      audioIds: ["audio-encrypted-old-path", "audio-plain-old-encrypted-path"],
+      createdAt: 1,
+      updatedAt: 2,
+    });
     await db.journalPhotos.bulkAdd([
       {
         id: "photo-encrypted-old-path",
@@ -1344,6 +1749,72 @@ describe("importBackup deletion precedence", () => {
     expect(backup.deletedJournalEntryIds).toContain("journal-stale");
   });
 
+  it("excludes draft, legacy, and unreferenced journal media from backup export", async () => {
+    await db.journalEntries.put({
+      id: "journal-saved",
+      date: "2026-06-17",
+      title: "Saved",
+      content: "saved",
+      stickers: [],
+      tags: [],
+      photoIds: ["photo-saved"],
+      audioIds: ["audio-saved"],
+      createdAt: 1,
+      updatedAt: 2,
+    });
+    await db.journalPhotos.bulkAdd([
+      { id: "photo-saved", entryId: "journal-saved", data: "x", thumbnail: "x", createdAt: 1 },
+      {
+        id: "photo-unreferenced",
+        entryId: "journal-saved",
+        data: "x",
+        thumbnail: "x",
+        createdAt: 1,
+      },
+      { id: "photo-draft", entryId: "__draft__:new", data: "x", thumbnail: "x", createdAt: 1 },
+      { id: "photo-legacy", entryId: "__draft__", data: "x", thumbnail: "x", createdAt: 1 },
+    ] as any[]);
+    await db.journalAudio.bulkAdd([
+      {
+        id: "audio-saved",
+        entryId: "journal-saved",
+        data: "x",
+        mimeType: "audio/webm",
+        duration: 1,
+        createdAt: 1,
+      },
+      {
+        id: "audio-unreferenced",
+        entryId: "journal-saved",
+        data: "x",
+        mimeType: "audio/webm",
+        duration: 1,
+        createdAt: 1,
+      },
+      {
+        id: "audio-draft",
+        entryId: "__draft__:new",
+        data: "x",
+        mimeType: "audio/webm",
+        duration: 1,
+        createdAt: 1,
+      },
+      {
+        id: "audio-legacy",
+        entryId: "__draft__",
+        data: "x",
+        mimeType: "audio/webm",
+        duration: 1,
+        createdAt: 1,
+      },
+    ]);
+
+    const backup = await exportBackup();
+
+    expect(backup.data.journalPhotos?.map((photo) => photo.id)).toEqual(["photo-saved"]);
+    expect(backup.data.journalAudio?.map((audio) => audio.id)).toEqual(["audio-saved"]);
+  });
+
   it("rolls back every merge collection and deletion tracker when ownership changes between the primary write and tombstone purge", async () => {
     await seedImportedCollections(makeAtomicityCollections("local", false));
     await mergeDeletedMoodIds(["local-atomic-mood-tombstone"]);
@@ -1376,7 +1847,7 @@ describe("importBackup deletion precedence", () => {
     };
 
     await expect(
-      importBackup(payload, "merge", { expectedOwnerUserId: "owner-a" }),
+      importBackup(payload, "merge", { expectedOwnerUserId: "owner-a" })
     ).rejects.toThrow("owner changed between backup merge phases");
 
     expect.soft(await readImportedCollectionsSnapshot()).toEqual(collectionsBefore);

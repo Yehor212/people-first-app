@@ -10,7 +10,14 @@
  * T3: Haptic feedback on format actions + button pulse animation
  */
 
-import { useState, useEffect, useCallback, useRef, memo } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  memo,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -38,7 +45,7 @@ const FORMAT_ACTIONS = [
   {
     cmd: "insertHTML:<code>",
     icon: "</>",
-    style: "font-mono text-[11px]",
+    style: "font-mono text-xs",
     labelKey: "journalFormatCode",
   },
   { cmd: "createLink", icon: "\uD83D\uDD17", style: "", labelKey: "journalFormatLink" },
@@ -69,12 +76,13 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
   scrollContainerRef,
   onContentChange,
 }: DiaryFormatToolbarProps) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const ts = t;
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
   const [visible, setVisible] = useState(false);
   const [pulsingBtn, setPulsingBtn] = useState<string | null>(null);
+  const [toolbarTabStopIndex, setToolbarTabStopIndex] = useState(0);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const repositionRafRef = useRef<number | null>(null);
@@ -306,6 +314,33 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
     [editorRef, checkActiveFormats, updateSelectionImmediate, ts, onContentChange]
   );
 
+  const handleToolbarKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLDivElement>) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      const buttons = Array.from(
+        toolbarRef.current?.querySelectorAll<HTMLButtonElement>("[data-format-action]") ?? [],
+      );
+      if (buttons.length === 0) return;
+
+      const focusedIndex = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      const currentIndex = focusedIndex >= 0 ? focusedIndex : toolbarTabStopIndex;
+      let nextIndex = currentIndex;
+      if (event.key === "Home") nextIndex = 0;
+      else if (event.key === "End") nextIndex = buttons.length - 1;
+      else {
+        const visualStep = event.key === "ArrowRight" ? 1 : -1;
+        const domStep = isRTL ? -visualStep : visualStep;
+        nextIndex = (currentIndex + domStep + buttons.length) % buttons.length;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      setToolbarTabStopIndex(nextIndex);
+      buttons[nextIndex].focus();
+    },
+    [isRTL, toolbarTabStopIndex],
+  );
+
   // T1: Render via createPortal to escape transform ancestors
   const toolbar = (
     <AnimatePresence>
@@ -318,8 +353,9 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
           aria-label={ts.journalFormatToolbar || "Formatting tools"}
           className="z-[80] flex items-center gap-1 bg-popover/90 backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)] p-1.5 rounded-2xl border border-border shadow-[0_8px_32px_rgba(0,0,0,0.5)] gpu-layer"
           onPointerDown={(e) => e.preventDefault()}
+          onKeyDown={handleToolbarKeyDown}
         >
-          {FORMAT_ACTIONS.map((action) => {
+          {FORMAT_ACTIONS.map((action, index) => {
             const isActive = activeFormats.has(action.cmd);
             const isPulsing = pulsingBtn === action.cmd;
             return (
@@ -330,8 +366,11 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
                 animate={isPulsing && shouldAnimate() ? { scale: [1, 1.15, 1] } : { scale: 1 }}
                 transition={{ type: "spring", stiffness: 500, damping: 25 }}
                 onClick={() => execFormat(action.cmd)}
+                onFocus={() => setToolbarTabStopIndex(index)}
+                tabIndex={index === toolbarTabStopIndex ? 0 : -1}
+                data-format-action={action.cmd}
                 className={cn(
-                  "min-w-[44px] min-h-[44px] w-11 h-11 rounded-xl flex items-center justify-center text-xs motion-safe:transition-colors",
+                  "min-w-[48px] min-h-[48px] h-12 w-12 rounded-xl flex items-center justify-center text-xs motion-safe:transition-colors",
                   action.style,
                   isActive
                     ? "bg-primary/20 text-primary ring-1 ring-primary/40 shadow-[0_0_8px_rgba(var(--primary-rgb),0.15)]"

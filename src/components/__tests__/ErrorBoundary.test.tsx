@@ -1,8 +1,9 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockForceHardReload = vi.fn().mockResolvedValue(undefined);
+const mockReloadAppSafely = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -11,6 +12,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       errorBoundaryBody: "Спробуйте перезавантажити додаток.",
       errorBoundaryKicker: "Режим відновлення ZenFlow",
       errorBoundaryReload: "Перезавантажити",
+      errorBoundaryReloadFailed: "Не вдалося безпечно перезавантажити. Спробуйте ще раз.",
       failedToLoad: "Не вдалося завантажити",
       failedToLoadBody: "Компонент не вдалося завантажити. Спробуйте оновити сторінку.",
       tryAgain: "Спробувати знову",
@@ -35,6 +37,7 @@ vi.mock("@/lib/errorBuffer", () => ({
 
 vi.mock("@/lib/versionCheck", () => ({
   forceHardReload: (...args: unknown[]) => mockForceHardReload(...args),
+  reloadAppSafely: (...args: unknown[]) => mockReloadAppSafely(...args),
 }));
 
 import { captureOrBuffer } from "@/lib/errorBuffer";
@@ -56,6 +59,8 @@ describe("ErrorBoundary", () => {
   beforeEach(() => {
     document.documentElement.dataset.deviceTier = "phone";
     mockForceHardReload.mockClear();
+    mockReloadAppSafely.mockReset();
+    mockReloadAppSafely.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -78,6 +83,9 @@ describe("ErrorBoundary", () => {
     expect(screen.getByRole("button", { name: "Перезавантажити" })).toHaveClass(
       "min-h-[48px]",
     );
+    expect(screen.getByText("Your data is safe").parentElement?.parentElement).toHaveClass(
+      "text-start",
+    );
 
     await waitFor(() => expect(captureOrBuffer).toHaveBeenCalledTimes(1));
     expect(captureOrBuffer).toHaveBeenCalledWith(
@@ -94,6 +102,25 @@ describe("ErrorBoundary", () => {
     );
 
     await waitFor(() => expect(mockForceHardReload).toHaveBeenCalledTimes(1));
+  });
+
+  it("shows a retryable error when durable recovery reload is blocked", async () => {
+    mockReloadAppSafely.mockRejectedValueOnce(new Error("draft write failed"));
+    render(
+      <ErrorBoundary>
+        <Thrower />
+      </ErrorBoundary>,
+    );
+
+    const reload = await screen.findByRole("button", { name: "Перезавантажити" });
+    fireEvent.click(reload);
+
+    expect(
+      await screen.findByRole("alert", {
+        name: "Не вдалося безпечно перезавантажити. Спробуйте ще раз.",
+      }),
+    ).toBeInTheDocument();
+    expect(reload).toBeEnabled();
   });
 
   afterAll(() => {

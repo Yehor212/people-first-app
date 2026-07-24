@@ -117,10 +117,10 @@ export const OnThisDayCard = memo(function OnThisDayCard({
           }}
         >
           {/* Header row */}
-          <div className="flex items-center justify-between gap-2">
-            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+          <div className="grid grid-cols-[minmax(0,1fr)_44px] items-start gap-2">
+            <div className={cn("flex min-w-0 items-start gap-2", isRTL && "flex-row-reverse")}>
               <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="text-xs font-medium text-muted-foreground">
+              <span className="min-w-0 whitespace-normal break-words text-xs font-medium text-muted-foreground">
                 {titleLabel} &middot; {anniversaryLabel}
               </span>
             </div>
@@ -151,7 +151,7 @@ export const OnThisDayCard = memo(function OnThisDayCard({
               {privateMode ? (
                 <p
                   className={cn(
-                    "text-sm font-medium text-foreground truncate",
+                    "whitespace-normal break-words text-sm font-medium text-foreground",
                     isRTL && "text-right"
                   )}
                 >
@@ -161,11 +161,11 @@ export const OnThisDayCard = memo(function OnThisDayCard({
               {!privateMode && entry.title && (
                 <p
                   className={cn(
-                    "text-sm font-medium text-foreground truncate",
+                    "whitespace-normal break-words [overflow-wrap:anywhere] text-sm font-medium text-foreground",
                     isRTL && "text-right"
                   )}
                 >
-                  {truncate(entry.title, 60)}
+                  {entry.title}
                 </p>
               )}
               {!privateMode && snippet && (
@@ -181,7 +181,7 @@ export const OnThisDayCard = memo(function OnThisDayCard({
             </div>
           </div>
           {!privateMode && moreCount > 0 && (
-            <p className="text-[10px] text-muted-foreground/50 mt-2">
+            <p className="mt-2 whitespace-normal break-words text-xs text-muted-foreground/50">
               {formatLocalizedCount(
                 moreCount,
                 language,

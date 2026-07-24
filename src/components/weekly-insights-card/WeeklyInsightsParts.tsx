@@ -77,6 +77,7 @@ export function RecommendationCard({
 
   return (
     <motion.button
+      type="button"
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.1, type: "spring", stiffness: 100 }}
@@ -84,7 +85,7 @@ export function RecommendationCard({
       onClick={handleClick}
       aria-label={title}
       className={cn(
-        "relative w-full text-start p-3 rounded-xl border motion-safe:transition-all motion-safe:duration-200 overflow-hidden",
+        "relative h-auto min-h-11 w-full overflow-hidden rounded-xl border p-3 text-start motion-safe:transition-all motion-safe:duration-200",
         "active:scale-[0.98]",
         style.base,
         style.hover,
@@ -104,24 +105,24 @@ export function RecommendationCard({
           {recommendation.icon}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-muted-foreground" aria-hidden="true">
+          <div className="mb-1 flex min-w-0 items-start gap-2">
+            <span className="shrink-0 text-muted-foreground" aria-hidden="true">
               {typeIcons[recommendation.type]}
             </span>
-            <p className="font-medium text-sm text-foreground truncate">
+            <p className="min-w-0 flex-1 whitespace-normal break-words text-sm font-medium leading-snug text-foreground">
               {title}
             </p>
           </div>
-          <p className="text-xs text-muted-foreground line-clamp-2">
+          <p className="whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
             {t[recommendation.descriptionKey] || recommendation.description}
           </p>
           {recommendation.action && (
-            <p className="text-xs font-medium text-primary mt-2 flex items-center gap-1">
+            <p className="mt-2 flex min-w-0 items-start gap-1 whitespace-normal break-words text-xs font-medium leading-relaxed text-primary">
               <ChevronRight
-                className="w-3 h-3 rtl:scale-x-[-1]"
+                className="h-3 w-3 shrink-0 rtl:scale-x-[-1]"
                 aria-hidden="true"
               />
-              {actionLabel}
+              <span className="min-w-0">{actionLabel}</span>
             </p>
           )}
         </div>

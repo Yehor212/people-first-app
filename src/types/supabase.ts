@@ -604,6 +604,30 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_ai_consents: {
+        Row: {
+          generation: number
+          granted_at: string | null
+          revoked_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          generation?: number
+          granted_at?: string | null
+          revoked_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          generation?: number
+          granted_at?: string | null
+          revoked_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       journal_audio: {
         Row: {
           created_at: number
@@ -635,7 +659,15 @@ export type Database = {
           storage_url?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "journal_audio_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       journal_embeddings: {
         Row: {
@@ -659,7 +691,15 @@ export type Database = {
           entry_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "journal_embeddings_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: true
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       journal_entries: {
         Row: {
@@ -773,7 +813,15 @@ export type Database = {
           user_id?: string
           width?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "journal_photos_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       leaderboards: {
         Row: {
@@ -1676,6 +1724,10 @@ export type Database = {
         Args: { p_week_start?: string }
         Returns: Json
       }
+      grant_journal_ai_consent: {
+        Args: { p_expected_generation: number }
+        Returns: boolean
+      }
       match_journal_entries: {
         Args: {
           match_count?: number
@@ -1705,8 +1757,13 @@ export type Database = {
           updated_at: string
         }[]
       }
+      is_journal_entry_payload_current: {
+        Args: { p_entry: Json }
+        Returns: boolean
+      }
       reset_monthly_leaderboard: { Args: never; Returns: undefined }
       reset_weekly_leaderboard: { Args: never; Returns: undefined }
+      revoke_journal_ai_consent: { Args: never; Returns: boolean }
       revoke_push_install: {
         Args: { p_device_id: string; p_token?: string | null }
         Returns: number

@@ -1,6 +1,8 @@
 import { APP_VERSION } from "@/lib/appVersion";
 import { platform } from "@/lib/platform";
 import { supabase, getCurrentSessionUserId } from "@/lib/supabaseClient";
+import { readPendingLocalBackupAccountClaim } from "@/storage/accountBoundaryRuntime";
+import { getLocalDataOwnerId } from "@/storage/db";
 import { getPersistentDeviceId } from "@/storage/eventSync";
 
 export type DeviceSessionPlatform =
@@ -81,6 +83,27 @@ function emitDeviceSessionsUpdated(): void {
   window.dispatchEvent(new CustomEvent(DEVICE_SESSIONS_UPDATED_EVENT));
 }
 
+async function resolveDeviceSessionOwner(
+  expectedOwnerUserId?: string
+): Promise<string | null> {
+  if (readPendingLocalBackupAccountClaim().status !== "none") return null;
+
+  const [activeOwnerUserId, localOwnerUserId] = await Promise.all([
+    getCurrentSessionUserId(),
+    getLocalDataOwnerId(),
+  ]);
+  const ownerUserId = expectedOwnerUserId ?? activeOwnerUserId;
+  if (
+    !ownerUserId ||
+    activeOwnerUserId !== ownerUserId ||
+    localOwnerUserId !== ownerUserId ||
+    readPendingLocalBackupAccountClaim().status !== "none"
+  ) {
+    return null;
+  }
+  return ownerUserId;
+}
+
 export async function getCurrentDeviceSessionId(): Promise<string> {
   return getPersistentDeviceId();
 }
@@ -89,10 +112,11 @@ export async function upsertCurrentDeviceSession(
   _reason: UpsertReason = "manual",
 ): Promise<DeviceSession | null> {
   if (!supabase) return null;
-  const userId = await getCurrentSessionUserId();
+  const userId = await resolveDeviceSessionOwner();
   if (!userId) return null;
 
   const deviceId = await getPersistentDeviceId();
+  if ((await resolveDeviceSessionOwner(userId)) !== userId) return null;
   const now = new Date().toISOString();
   const { data, error } = await supabase
     .from("device_sessions")
@@ -123,7 +147,7 @@ export async function upsertCurrentDeviceSession(
 
 export async function listDeviceSessions(limit = 10): Promise<DeviceSession[]> {
   if (!supabase) return [];
-  const userId = await getCurrentSessionUserId();
+  const userId = await resolveDeviceSessionOwner();
   if (!userId) return [];
 
   const { data, error } = await supabase
@@ -144,10 +168,11 @@ export async function listDeviceSessions(limit = 10): Promise<DeviceSession[]> {
 
 export async function revokeDeviceSession(sessionId: string): Promise<DeviceSession | null> {
   if (!supabase) return null;
-  const userId = await getCurrentSessionUserId();
+  const userId = await resolveDeviceSessionOwner();
   if (!userId) return null;
 
   const currentDeviceId = await getPersistentDeviceId();
+  if ((await resolveDeviceSessionOwner(userId)) !== userId) return null;
   const now = new Date().toISOString();
   const { data, error } = await supabase
     .from("device_sessions")

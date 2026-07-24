@@ -163,8 +163,8 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
         style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
       >
         {/* Garden stage badge */}
-        <div className="absolute top-3 end-3 z-10 rounded-full bg-background/80 backdrop-blur-sm px-2.5 py-1 border border-border/40">
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+        <div className="absolute end-3 top-3 z-10 max-w-[calc(100%-1.5rem)] rounded-2xl border border-border/40 bg-background/80 px-2.5 py-1 text-start backdrop-blur-sm">
+          <span className="block whitespace-normal break-words text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {(t as unknown as Record<string, string>)[STAGE_I18N_KEYS[gardenStage]] || gardenStage}
           </span>
         </div>
@@ -184,7 +184,7 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
         </div>
 
         {/* Companion indicator */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1">
+        <div className="absolute bottom-3 start-1/2 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-col items-center gap-1 rtl:translate-x-1/2">
           <div className="motion-safe:animate-garden-breathe rounded-full bg-background/70 backdrop-blur-sm p-2 border border-border/30">
             <Heart
               className={cn(
@@ -198,13 +198,15 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
               fill="currentColor"
             />
           </div>
-          <span className="text-[9px] text-foreground/60 font-medium">{companion.name}</span>
+          <span className="max-w-full whitespace-normal break-words text-center text-xs font-medium text-foreground/60 [overflow-wrap:anywhere]">
+            {companion.name}
+          </span>
         </div>
 
         {/* Empty state */}
         {plants.length === 0 && creatures.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center space-y-2">
+            <div className="max-w-full space-y-2 px-4 text-center">
               <Sprout className="w-8 h-8 text-muted-foreground/60 mx-auto" />
               <p className="text-xs text-muted-foreground/60">
                 {t.gardenGrowsHint || "Your garden grows with every action"}

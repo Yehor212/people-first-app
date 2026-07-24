@@ -51,9 +51,9 @@ export function ChallengesListView({
       <Button
         onClick={onJoinChallenge}
         variant="outline"
-        className="w-full h-12"
+        className="w-full h-auto min-h-12 whitespace-normal break-words py-3"
       >
-        <UserPlus className="w-4 h-4 me-2" />
+        <UserPlus className="w-4 h-4 me-2 shrink-0" />
         {t.joinChallenge || 'Join Challenge'}
       </Button>
 

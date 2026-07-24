@@ -141,24 +141,17 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
   );
 
   const inline = variant === "inline";
-  const fabBottom = "bottom-[calc(6rem+env(safe-area-inset-bottom))]";
+  const fabBottom = "bottom-[calc(6rem+var(--safe-bottom))]";
   const mainButtonClasses = inline
     ? "relative h-14 w-14 rounded-full"
-    : cn("fixed end-5 lg:end-8 z-[45] h-14 w-14 rounded-full", fabBottom);
-
-  const actionButtonPosition = (index: number) =>
-    inline
-      ? undefined
-      : {
-          bottom: `calc(6rem + env(safe-area-inset-bottom) + ${(index + 1) * 56}px)`,
-        };
-
-  const actionButtonClasses = inline
-    ? "relative flex h-14 min-h-14 touch-manipulation items-center gap-3"
     : cn(
-        "fixed end-5 z-[56] flex h-14 min-h-14 touch-manipulation items-center gap-3 rtl:flex-row flex-row-reverse",
+        "fixed end-[max(1.25rem,var(--safe-inline-end))] lg:end-[max(2rem,var(--safe-inline-end))] z-[45] h-14 w-14 rounded-full",
         fabBottom
       );
+
+  const actionButtonClasses = inline
+    ? "relative flex min-h-14 touch-manipulation items-center gap-3"
+    : "relative flex min-h-14 min-w-0 max-w-full touch-manipulation items-center gap-3 rtl:flex-row flex-row-reverse";
 
   const launcherBody = (
     <>
@@ -185,7 +178,7 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
             className={cn(
               inline
                 ? "relative z-[2] mb-4 flex flex-wrap items-center justify-center gap-2"
-                : "contents"
+                : "fixed end-[max(1.25rem,var(--safe-inline-end))] bottom-[calc(10rem+var(--safe-bottom))] z-[56] flex max-h-[calc(100svh-11rem-var(--safe-top)-var(--safe-bottom))] max-w-[calc(100vw-2.5rem-var(--safe-inline-start)-var(--safe-inline-end))] flex-col items-end gap-2 overflow-y-auto overscroll-contain py-1 lg:end-[max(2rem,var(--safe-inline-end))]"
             )}
           >
             {actions.map((item, index) => (
@@ -210,7 +203,6 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
                 aria-label={item.label}
                 data-testid={`journal-fab-action-${item.id}`}
                 className={actionButtonClasses}
-                style={actionButtonPosition(index)}
               >
                 <div
                   className={cn(
@@ -220,7 +212,7 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
                 >
                   <item.icon className="h-5 w-5" aria-hidden="true" />
                 </div>
-                <span className="whitespace-nowrap rounded-lg bg-card/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-md backdrop-blur-sm">
+                <span className="max-w-[min(12rem,calc(100vw-7rem-var(--safe-left)-var(--safe-right)))] whitespace-normal break-words rounded-lg bg-card/90 px-3 py-1.5 text-start text-xs font-medium text-foreground shadow-md backdrop-blur-sm">
                   {item.label}
                 </span>
               </motion.button>

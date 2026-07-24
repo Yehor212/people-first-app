@@ -9,6 +9,7 @@ import {
   setLocalDataOwnerId,
 } from "@/storage/db";
 import {
+  assertOriginAccountBoundaryGeneration,
   captureOriginAccountBoundaryGeneration,
   runWithAccountBoundaryValidatedJournalWrite,
 } from "@/storage/accountBoundaryRuntime";
@@ -508,6 +509,134 @@ describe("useIndexedDB origin-wide account boundary", () => {
     expect(mutation).not.toHaveBeenCalled();
   });
 
+  it("never replays a deferred write outside DATA when lock acquisition fails", async () => {
+    const key = "failed-data-lock-write";
+    const { result } = renderHook(() =>
+      useIndexedDB({
+        table: db.settings,
+        localStorageKey: key,
+        initialValue: { owner: "local" },
+        idField: "key",
+      }),
+    );
+    await waitFor(() => expect(result.current[2]).toBe(false));
+    Object.defineProperty(navigator, "locks", {
+      configurable: true,
+      value: {
+        request: vi.fn(() => Promise.reject(new Error("DATA lock unavailable"))),
+      },
+    });
+
+    const boundary = runWithDataWriteBarrier(async () => undefined);
+    act(() => {
+      result.current[1]({ owner: "must-not-replay-unlocked" });
+    });
+
+    await expect(boundary).rejects.toThrow(/DATA lock unavailable/i);
+    expect(await db.settings.get(key)).toBeUndefined();
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+
+  it("rejects an incomplete discard precondition before joining the mutation queue", async () => {
+    const mutation = vi.fn(() => Promise.resolve());
+
+    await expect(
+      runWithDataWriteBarrier(mutation, {
+        beforeAccountBoundaryAdvance: async () => undefined,
+      }),
+    ).rejects.toThrow(/discard boundary precondition/i);
+
+    expect(mutation).not.toHaveBeenCalled();
+    await expect(runWithDataWriteBarrier(async () => "released")).resolves.toBe("released");
+  });
+
+  it("replays a same-realm write under DATA when the discard owner precondition fails", async () => {
+    const key = "discard-precondition-preserves-write";
+    const preconditionEntered = deferred();
+    const releasePrecondition = deferred();
+    const mutation = vi.fn(() => Promise.resolve());
+    const capturedGeneration = captureOriginAccountBoundaryGeneration();
+    const { result } = renderHook(() =>
+      useIndexedDB({
+        table: db.settings,
+        localStorageKey: key,
+        initialValue: { owner: "local" },
+        idField: "key",
+      }),
+    );
+    await waitFor(() => expect(result.current[2]).toBe(false));
+
+    const boundary = runWithDataWriteBarrier(mutation, {
+      deferredWrites: "discard",
+      expectedAccountBoundaryGeneration: capturedGeneration,
+      beforeAccountBoundaryAdvance: async () => {
+        preconditionEntered.resolve();
+        await releasePrecondition.promise;
+        throw new Error("owner check rejected local reset");
+      },
+    });
+    await waitForStep(preconditionEntered.promise, "discard owner precondition");
+    act(() => {
+      result.current[1]({ owner: "preserved-local-edit" });
+    });
+    releasePrecondition.resolve();
+
+    await expect(boundary).rejects.toThrow(/owner check rejected local reset/i);
+    expect(mutation).not.toHaveBeenCalled();
+    expect(captureOriginAccountBoundaryGeneration()).toBe(capturedGeneration);
+    expect(await db.settings.get(key)).toEqual({
+      key,
+      value: { owner: "preserved-local-edit" },
+    });
+    await expect(runWithDataWriteBarrier(async () => "released")).resolves.toBe("released");
+  });
+
+  it("discards an expired deferred write when generation changes during owner validation", async () => {
+    const key = "discard-precondition-expired-write";
+    const capturedGeneration = captureOriginAccountBoundaryGeneration();
+    const preconditionEntered = deferred();
+    const releasePrecondition = deferred();
+    const mutation = vi.fn(() => Promise.resolve());
+    const { result } = renderHook(() =>
+      useIndexedDB({
+        table: db.settings,
+        localStorageKey: key,
+        initialValue: { owner: "local" },
+        idField: "key",
+      }),
+    );
+    await waitFor(() => expect(result.current[2]).toBe(false));
+
+    const boundary = runWithDataWriteBarrier(mutation, {
+      deferredWrites: "discard",
+      expectedAccountBoundaryGeneration: capturedGeneration,
+      beforeAccountBoundaryAdvance: async () => {
+        preconditionEntered.resolve();
+        await releasePrecondition.promise;
+      },
+    });
+    await waitForStep(preconditionEntered.promise, "awaited discard precondition");
+    act(() => {
+      result.current[1]({ owner: "expired-local-edit" });
+    });
+    localStorage.setItem(
+      SK.ACCOUNT_BOUNDARY_GENERATION,
+      JSON.stringify("replacement-generation"),
+    );
+    releasePrecondition.resolve();
+
+    await expect(boundary).rejects.toMatchObject({
+      name: "AccountBoundaryChangedError",
+    });
+    expect(mutation).not.toHaveBeenCalled();
+    expect(await db.settings.get(key)).toBeUndefined();
+
+    localStorage.setItem(
+      SK.ACCOUNT_BOUNDARY_GENERATION,
+      JSON.stringify(capturedGeneration),
+    );
+  });
+
   it("releases fallback DATA and JOURNAL locks between sequential nested operations", async () => {
     Reflect.deleteProperty(navigator, "locks");
     const nestedMutation = () =>
@@ -522,5 +651,85 @@ describe("useIndexedDB origin-wide account boundary", () => {
 
     await waitForStep(nestedMutation(), "first fallback DATA to JOURNAL operation");
     await waitForStep(nestedMutation(), "second fallback DATA to JOURNAL operation");
+  });
+
+  it("validates a captured owner realm under DATA before a discard boundary advances", async () => {
+    const capturedGeneration = captureOriginAccountBoundaryGeneration();
+    const order: string[] = [];
+
+    await runWithDataWriteBarrier(
+      async () => {
+        order.push("mutation");
+        expect(captureOriginAccountBoundaryGeneration()).not.toBe(capturedGeneration);
+      },
+      {
+        deferredWrites: "discard",
+        expectedAccountBoundaryGeneration: capturedGeneration,
+        beforeAccountBoundaryAdvance: async () => {
+          order.push("validation");
+          assertOriginAccountBoundaryGeneration(capturedGeneration);
+        },
+      },
+    );
+
+    expect(order).toEqual(["validation", "mutation"]);
+  });
+
+  it("rejects a current durable token when the barrier module still owns an older generation", async () => {
+    const acceptedGeneration = captureOriginAccountBoundaryGeneration();
+    const replacementGeneration = "durable-generation-from-another-realm";
+    localStorage.setItem(
+      SK.ACCOUNT_BOUNDARY_GENERATION,
+      JSON.stringify(replacementGeneration),
+    );
+    const mutation = vi.fn(() => Promise.resolve());
+
+    await expect(
+      runWithDataWriteBarrier(mutation, {
+        deferredWrites: "discard",
+        expectedAccountBoundaryGeneration: replacementGeneration,
+        beforeAccountBoundaryAdvance: async () => undefined,
+      }),
+    ).rejects.toMatchObject({ name: "AccountBoundaryChangedError" });
+    expect(mutation).not.toHaveBeenCalled();
+
+    localStorage.setItem(
+      SK.ACCOUNT_BOUNDARY_GENERATION,
+      JSON.stringify(acceptedGeneration),
+    );
+  });
+
+  it("rejects a stale realm's plain discard after a replacement realm advances the boundary", async () => {
+    const staleRealmMutation = vi.fn(async () => {
+      await clearLocalUserData();
+      await setLocalDataOwnerId("account-a-stale");
+    });
+
+    // Keep the top-level runWithDataWriteBarrier reference as tab A, then load
+    // a fresh module realm as tab B and let B adopt the durable account realm.
+    vi.resetModules();
+    const tabB = await import("../useIndexedDB");
+    const tabBStorage = await import("@/storage/db");
+    await tabB.runWithDataWriteBarrier(
+      async () => {
+        await tabBStorage.clearLocalUserData();
+        await tabBStorage.setLocalDataOwnerId("account-b");
+        await tabBStorage.db.settings.put({
+          key: SK.PRIVACY,
+          value: { owner: "account-b" },
+        });
+      },
+      { deferredWrites: "discard" },
+    );
+
+    await expect(
+      runWithDataWriteBarrier(staleRealmMutation, { deferredWrites: "discard" }),
+    ).rejects.toMatchObject({ name: "AccountBoundaryChangedError" });
+    expect(staleRealmMutation).not.toHaveBeenCalled();
+    expect(await tabBStorage.getLocalDataOwnerId()).toBe("account-b");
+    expect(await tabBStorage.db.settings.get(SK.PRIVACY)).toEqual({
+      key: SK.PRIVACY,
+      value: { owner: "account-b" },
+    });
   });
 });

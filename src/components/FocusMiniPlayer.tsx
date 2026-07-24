@@ -78,26 +78,26 @@ export const FocusMiniPlayer = memo(function FocusMiniPlayer({
           exit={{ opacity: 0, y: 20 }}
           transition={zenMotion.gentle}
           className={cn(
-            "fixed left-4 right-4 z-50 max-w-lg mx-auto",
+            "fixed start-[max(1rem,var(--safe-inline-start))] end-[max(1rem,var(--safe-inline-end))] z-50 mx-auto grid max-w-lg grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2",
             "rounded-xl bg-card",
-            "flex items-center gap-3 px-4 py-2.5",
+            "px-4 py-2.5 min-[420px]:grid-cols-[minmax(0,1fr)_auto_auto_auto] min-[420px]:gap-3",
             "bottom-[calc(var(--nav-height)+var(--safe-bottom)+0.5rem)]"
           )}
         >
           {/* Label area — tap to navigate to full timer */}
           <button
             onClick={onNavigateToTimer}
-            className="flex items-center gap-2 flex-1 min-w-0 text-start"
+            className="col-span-3 flex min-h-[44px] min-w-0 items-start gap-2 text-start min-[420px]:col-span-1"
             aria-label={t.focus}
           >
             <Timer
               aria-hidden="true"
               className={cn("w-4 h-4 shrink-0", isBreak ? "text-indigo-400" : "text-violet-500")}
             />
-            <div className="flex flex-col min-w-0">
+            <div className="min-w-0 flex-1">
               <span
                 className={cn(
-                  "text-xs font-semibold",
+                  "block whitespace-normal break-words text-xs font-semibold",
                   isBreak
                     ? "text-indigo-500 dark:text-indigo-400"
                     : "text-violet-600 dark:text-violet-400"
@@ -105,14 +105,18 @@ export const FocusMiniPlayer = memo(function FocusMiniPlayer({
               >
                 {isBreak ? t.breakTime : t.focus}
               </span>
-              {label && <span className="text-[10px] text-muted-foreground truncate">{label}</span>}
+              {label && (
+                <span className="block whitespace-normal break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                  {label}
+                </span>
+              )}
             </div>
           </button>
 
           {/* Countdown */}
           <span
             className={cn(
-              "font-mono text-sm font-bold tabular-nums",
+              "justify-self-start font-mono text-sm font-bold tabular-nums",
               isRunning ? "text-foreground" : "text-muted-foreground"
             )}
           >

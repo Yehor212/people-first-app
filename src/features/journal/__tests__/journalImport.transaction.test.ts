@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const journalImportCryptoMocks = vi.hoisted<{ vaultKey: string | null }>(() => ({
   vaultKey: null,
@@ -40,6 +40,10 @@ vi.mock("@/storage/cloudSync", () => ({
 import { db } from "@/storage/db";
 import { SK } from "@/lib/storageKeys";
 import { runWithDataWriteBarrier } from "@/hooks/useIndexedDB";
+import {
+  resumeAccountBoundaryWriters,
+  suspendAccountBoundaryWriters,
+} from "@/lib/accountBoundaryState";
 import { importJournalBackup } from "../journalImport";
 
 function makeImportFile(): File {
@@ -75,7 +79,7 @@ function makeImportFile(): File {
       {
         id: "delayed-crypto-audio",
         entryId: "delayed-crypto-entry",
-        data: "data:audio/webm;base64,audio",
+        data: "data:audio/webm;base64,YXVkaW8=",
         duration: 1,
         mimeType: "audio/webm",
         createdAt: 1,
@@ -89,6 +93,7 @@ function makeImportFile(): File {
 
 describe("importJournalBackup IndexedDB transaction", () => {
   beforeEach(async () => {
+    resumeAccountBoundaryWriters();
     vi.clearAllMocks();
     journalImportCryptoMocks.vaultKey = "transaction-vault-key";
     journalImportRuntimeMocks.encryptContent.mockImplementation(
@@ -114,6 +119,10 @@ describe("importJournalBackup IndexedDB transaction", () => {
     await db.journalAudio.clear();
   });
 
+  afterEach(() => {
+    resumeAccountBoundaryWriters();
+  });
+
   it("finishes delayed encryption before opening the atomic write transaction", async () => {
     const result = await importJournalBackup(makeImportFile());
 
@@ -127,7 +136,7 @@ describe("importJournalBackup IndexedDB transaction", () => {
       thumbnail: "encrypted-media:transaction-vault-key:data:image/jpeg;base64,thumbnail",
     });
     await expect(db.journalAudio.get("delayed-crypto-audio")).resolves.toMatchObject({
-      data: "encrypted-media:transaction-vault-key:data:audio/webm;base64,audio",
+      data: "encrypted-media:transaction-vault-key:data:audio/webm;base64,YXVkaW8=",
     });
   });
 
@@ -160,6 +169,7 @@ describe("importJournalBackup IndexedDB transaction", () => {
 
     const importPromise = importJournalBackup(makeImportFile());
     await encryptionStarted;
+    suspendAccountBoundaryWriters();
     const boundary = runWithDataWriteBarrier(
       async () => {
         await db.journalEntries.clear();
@@ -171,7 +181,7 @@ describe("importJournalBackup IndexedDB transaction", () => {
     releaseEncryption();
     const [result] = await Promise.all([importPromise, boundary]);
 
-    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors.join(" ")).toMatch(/account boundary/i);
     await expect(db.journalEntries.count()).resolves.toBe(0);
     await expect(db.journalPhotos.count()).resolves.toBe(0);
     await expect(db.journalAudio.count()).resolves.toBe(0);

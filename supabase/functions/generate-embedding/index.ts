@@ -1,144 +1,37 @@
 /**
- * Supabase Edge Function: Generate Embedding
+ * Legacy journal indexing endpoint.
  *
- * Generates vector embeddings for journal entries using Gemini API.
- * Stores embeddings in journal_embeddings table for semantic search.
- *
- * Required secrets:
- *   - SUPABASE_URL
- *   - SUPABASE_ANON_KEY
- *
- * Optional secrets:
- *   - GEMINI_API_KEY: enables paid embedding generation; no-paid mode skips gracefully
- *
- * Request body:
- *   - entryIds?: string[] — specific entries to embed (max 20)
- *   - If omitted, processes all entries missing embeddings
+ * Journal search is lexical and does not require an embedding index. Keeping
+ * this authenticated no-op preserves compatibility with older clients while
+ * ensuring journal text never leaves ZenFlow for external AI processing.
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
-import { getCorsHeaders, parseJsonBody } from "../_shared/http.ts";
+import { getCorsHeaders } from "../_shared/http.ts";
+import { requireJournalAiConsent } from "../_shared/journal_ai_consent.ts";
 import { redactUserRef } from "../_shared/redaction.ts";
 
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-const EMBEDDING_MODEL = "text-embedding-004";
-const EMBEDDING_DIMS = 768;
-const MAX_BATCH_SIZE = 20;
-
-// Rate limit: 30 requests per minute per user
 const RATE_LIMIT = 30;
-const RATE_WINDOW = 60000;
+const RATE_WINDOW = 60_000;
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
 function checkRateLimit(userId: string): boolean {
   const now = Date.now();
-  const userLimit = rateLimitMap.get(userId);
-  if (rateLimitMap.size > 1000) {
-    for (const [key, value] of rateLimitMap.entries()) {
-      if (now > value.resetAt) rateLimitMap.delete(key);
-    }
-  }
-  if (!userLimit || now > userLimit.resetAt) {
+  const current = rateLimitMap.get(userId);
+  if (!current || now > current.resetAt) {
     rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_WINDOW });
     return true;
   }
-  if (userLimit.count >= RATE_LIMIT) return false;
-  userLimit.count++;
+  if (current.count >= RATE_LIMIT) return false;
+  current.count += 1;
   return true;
 }
-
-// ============================================
-// HELPERS
-// ============================================
-
-async function computeContentHash(text: string): Promise<string> {
-  const data = new TextEncoder().encode(text);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hash))
-    .slice(0, 8)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-interface EntryRow {
-  id: string;
-  title: string;
-  content: string;
-  mood: string | null;
-  tags: string[] | null;
-}
-
-function buildEmbeddingText(entry: EntryRow): string {
-  const parts: string[] = [];
-  if (entry.title) parts.push(entry.title);
-  if (entry.content) parts.push(entry.content);
-  if (entry.mood) parts.push(`Mood: ${entry.mood}`);
-  if (entry.tags?.length) parts.push(`Tags: ${entry.tags.join(", ")}`);
-  return parts.join("\n").slice(0, 10000);
-}
-
-async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY! },
-      body: JSON.stringify({
-        content: { parts: [{ text }] },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Gemini embedding API error: ${response.status} ${errText}`);
-  }
-
-  const result = await response.json();
-  const values = result?.embedding?.values;
-  if (!Array.isArray(values) || values.length !== EMBEDDING_DIMS) {
-    throw new Error(
-      `Unexpected embedding dimensions: got ${values?.length}, expected ${EMBEDDING_DIMS}`
-    );
-  }
-  return values;
-}
-
-async function generateBatchEmbeddings(texts: string[]): Promise<number[][]> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:batchEmbedContents`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY! },
-      body: JSON.stringify({
-        requests: texts.map((text) => ({
-          model: `models/${EMBEDDING_MODEL}`,
-          content: { parts: [{ text }] },
-        })),
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Gemini batch embedding API error: ${response.status} ${errText}`);
-  }
-
-  const result = await response.json();
-  return result.embeddings.map((e: { values: number[] }) => e.values);
-}
-
-// ============================================
-// HANDLER
-// ============================================
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin");
   const corsHeaders = getCorsHeaders(origin);
-
   const jsonResponse = (status: number, payload: Record<string, unknown>) =>
     new Response(JSON.stringify(payload), {
       status,
@@ -148,135 +41,30 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
-  if (req.method !== "POST") {
-    return jsonResponse(405, { error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return jsonResponse(405, { error: "Method not allowed" });
 
-  // Auth
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return jsonResponse(401, { error: "Unauthorized" });
   }
 
-  const token = authHeader.replace("Bearer ", "");
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${token}` } },
+    global: { headers: { Authorization: authHeader } },
   });
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return jsonResponse(401, { error: "Invalid token" });
+  if (!checkRateLimit(user.id)) return jsonResponse(429, { error: "Too many requests" });
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return jsonResponse(401, { error: "Invalid token" });
-  }
+  const consent = await requireJournalAiConsent(supabase, user.id);
+  if (!consent.allowed) return jsonResponse(consent.status, { error: consent.code });
 
-  if (!checkRateLimit(user.id)) {
-    return jsonResponse(429, { error: "Too many requests" });
-  }
-
-  if (!GEMINI_API_KEY) {
-    console.warn(
-      "[GenerateEmbedding] GEMINI_API_KEY not configured; skipping paid embedding generation"
-    );
-    return jsonResponse(200, {
-      processed: 0,
-      skipped: true,
-      mode: "no_paid_api",
-      requiresPaidApi: false,
-    });
-  }
-
-  try {
-    const [body, bodyErr] = await parseJsonBody(req, origin);
-    if (bodyErr) return bodyErr;
-    const entryIds: string[] | undefined = body.entryIds;
-
-    // 1. Fetch entries from DB
-    let entriesQuery = supabase
-      .from("journal_entries")
-      .select("id, title, content, mood, tags")
-      .eq("user_id", user.id);
-
-    if (entryIds?.length) {
-      entriesQuery = entriesQuery.in("id", entryIds.slice(0, MAX_BATCH_SIZE));
-    } else {
-      // When no specific IDs, limit to batch size
-      entriesQuery = entriesQuery.limit(100);
-    }
-
-    const { data: entries, error: fetchError } = await entriesQuery;
-    if (fetchError) {
-      console.error("[GenerateEmbedding] Fetch error:", fetchError);
-      return jsonResponse(500, { error: "Failed to fetch entries" });
-    }
-    if (!entries?.length) {
-      return jsonResponse(200, { processed: 0 });
-    }
-
-    // 2. Get existing hashes to skip unchanged content
-    const { data: existing } = await supabase
-      .from("journal_embeddings")
-      .select("entry_id, content_hash")
-      .in(
-        "entry_id",
-        entries.map((e: EntryRow) => e.id)
-      );
-
-    const hashMap = new Map(
-      (existing || []).map((e: { entry_id: string; content_hash: string }) => [
-        e.entry_id,
-        e.content_hash,
-      ])
-    );
-
-    // 3. Filter to entries needing new/updated embeddings
-    const toProcess: { entry: EntryRow; text: string; hash: string }[] = [];
-    for (const entry of entries as EntryRow[]) {
-      const text = buildEmbeddingText(entry);
-      if (!text.trim()) continue; // Skip empty entries
-      const hash = await computeContentHash(text);
-      if (hashMap.get(entry.id) !== hash) {
-        toProcess.push({ entry, text, hash });
-      }
-      if (toProcess.length >= MAX_BATCH_SIZE) break;
-    }
-
-    if (toProcess.length === 0) {
-      return jsonResponse(200, { processed: 0, upToDate: true });
-    }
-
-    // 4. Generate embeddings via Gemini
-    const texts = toProcess.map((p) => p.text);
-    const embeddings =
-      texts.length === 1
-        ? [await generateEmbedding(texts[0])]
-        : await generateBatchEmbeddings(texts);
-
-    // 5. Upsert to journal_embeddings
-    const rows = toProcess.map((p, i) => ({
-      entry_id: p.entry.id,
-      user_id: user.id,
-      embedding: `[${embeddings[i].join(",")}]`,
-      content_hash: p.hash,
-    }));
-
-    const { error: upsertError } = await supabase
-      .from("journal_embeddings")
-      .upsert(rows, { onConflict: "entry_id" });
-
-    if (upsertError) {
-      console.error("[GenerateEmbedding] Upsert error:", upsertError);
-      return jsonResponse(500, { error: "Failed to store embeddings" });
-    }
-
-    console.log(
-      `[GenerateEmbedding] Processed ${toProcess.length} entries for ${redactUserRef(user.id)}`
-    );
-    return jsonResponse(200, { processed: toProcess.length });
-  } catch (error) {
-    console.error("[GenerateEmbedding] Error:", error);
-    return jsonResponse(500, { error: "Internal error" });
-  }
+  console.log(`[GenerateEmbedding] Lexical mode active for ${redactUserRef(user.id)}`);
+  return jsonResponse(200, {
+    processed: 0,
+    skipped: true,
+    mode: "journal_search_free_lexical",
+    externalProvider: false,
+    requiresPaidApi: false,
+  });
 });

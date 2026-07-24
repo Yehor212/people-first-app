@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Mic } from "lucide-react";
 
 interface SlashCommandMenuProps {
   editorRef: React.RefObject<HTMLDivElement>;
@@ -96,7 +97,7 @@ const COMMANDS = [
   },
   {
     id: "audio",
-    icon: "\u{1F3A4}",
+    icon: null,
     labelKey: "journalSlashAudioLabel",
     descriptionKey: "journalSlashAudioDescription",
     fallbackLabel: "Audio",
@@ -362,6 +363,11 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
   const activeId = filtered[selectedIndex] ? `slash-cmd-${filtered[selectedIndex].id}` : undefined;
 
   useEffect(() => {
+    if (!open || !activeId) return;
+    document.getElementById(activeId)?.scrollIntoView({ block: "nearest" });
+  }, [activeId, open]);
+
+  useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
 
@@ -402,7 +408,7 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
           role="listbox"
           aria-label={ts.journalSlashCommands || "Diary commands"}
           aria-activedescendant={activeId}
-          className="fixed bg-popover/95 backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)] rounded-2xl border border-border/30 shadow-2xl p-1.5 min-w-[200px] max-h-[280px] overflow-y-auto z-[90]"
+          className="fixed z-[90] max-h-[280px] w-[min(calc(100vw-1rem),20rem)] min-w-0 overflow-y-auto rounded-2xl border border-border/30 bg-popover/95 p-1.5 shadow-2xl backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)]"
           style={{ top: position.top, left: position.left }}
           variants={menuVariants}
           initial={animate ? "hidden" : false}
@@ -422,10 +428,14 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
                 initial={animate ? "hidden" : false}
                 animate="visible"
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-xl text-sm cursor-pointer min-h-[44px] motion-safe:transition-colors",
+                  "flex min-h-[44px] items-start gap-3 rounded-xl px-3 py-2 text-sm cursor-pointer motion-safe:transition-colors",
                   i === selectedIndex && "bg-primary/10"
                 )}
                 onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
                   executeCommand(cmd.id);
@@ -433,11 +443,17 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
                 onMouseEnter={() => setSelectedIndex(i)}
               >
                 <span className="w-8 h-8 rounded-lg bg-muted/30 flex items-center justify-center text-base shrink-0">
-                  {cmd.icon}
+                  {cmd.id === "audio" ? (
+                    <Mic className="h-4 w-4" aria-hidden="true" />
+                  ) : cmd.icon}
                 </span>
-                <span className="flex flex-col min-w-0">
-                  <span className="font-medium text-foreground">{cmd.label}</span>
-                  <span className="text-xs text-muted-foreground truncate">{cmd.description}</span>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="break-words font-medium text-foreground [overflow-wrap:break-word]">
+                    {cmd.label}
+                  </span>
+                  <span className="break-words text-xs text-muted-foreground [overflow-wrap:break-word]">
+                    {cmd.description}
+                  </span>
                 </span>
               </motion.div>
             ))

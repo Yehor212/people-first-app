@@ -35,4 +35,12 @@ describe("Switch RTL geometry", () => {
     expect(thumb).toHaveClass("motion-safe:transition-transform", "motion-safe:duration-300");
     expect(thumb.style.transition).toBe("");
   });
+
+  it("keeps a real 48px interaction target", () => {
+    const view = render(<Switch checked aria-label="48px switch" />);
+    const control = view.getByRole("switch");
+
+    expect(control).toHaveClass("h-12", "min-h-[48px]", "w-[52px]", "min-w-[52px]");
+    expect(control).not.toHaveClass("h-[44px]", "min-h-[44px]");
+  });
 });

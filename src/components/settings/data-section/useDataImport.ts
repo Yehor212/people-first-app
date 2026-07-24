@@ -7,11 +7,22 @@ import { importBackup, type ImportMode } from "@/storage/backup";
 import { MAX_PORTABLE_BACKUP_FILE_BYTES } from "@/storage/backupCapacity";
 import { getJournalReplaceAuthorization } from "@/lib/journalContentSession";
 import { interpolate } from "@/lib/utils";
-import { getCurrentSessionUserId } from "@/lib/supabaseClient";
 import {
+  assertSettingsDataOwnerCurrentWithinTransaction,
+  assertSettingsExternalOwnerCurrentWithinDataWriteBarrier,
   assertSettingsOwnerCurrent,
+  assertSettingsOwnerCurrentWithinDataWriteBarrier,
+  readVerifiedSettingsOwnerRealm,
   SettingsOwnerBoundaryError,
+  type VerifiedSettingsOwnerRealm,
 } from "@/lib/settingsOwnerBoundary";
+import {
+  clearPendingLocalBackupAccountClaim,
+  markImportedBackupLocalOnlyAccess,
+  markPendingLocalBackupAccountClaim,
+  readPendingLocalBackupAccountClaim,
+  subscribeAccountSessionTransition,
+} from "@/storage/accountBoundaryRuntime";
 
 interface UseDataImportOptions {
   setDataStatus: (status: string | null) => void;
@@ -85,19 +96,25 @@ export function useDataImport({ setDataStatus, t }: UseDataImportOptions) {
     setShowImportConfirm(false);
     setIsImporting(true);
     setDataStatus(null);
-    let expectedOwnerUserId: string | null = null;
-    let ownerCaptured = false;
+    let ownerRealm: VerifiedSettingsOwnerRealm | null = null;
 
     try {
-      expectedOwnerUserId = await getCurrentSessionUserId();
-      ownerCaptured = true;
-      await assertSettingsOwnerCurrent(expectedOwnerUserId, "Backup import");
+      const verifiedOwnerRealm = await readVerifiedSettingsOwnerRealm("Backup import");
+      ownerRealm = verifiedOwnerRealm;
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Backup import");
+      if (verifiedOwnerRealm.kind === "account") {
+        setDataStatus(
+          t.importAccountUnavailable ||
+            "Backup import is available only while you use ZenFlow without a connected account."
+        );
+        return;
+      }
       const text = await pendingImportFile.text();
-      await assertSettingsOwnerCurrent(expectedOwnerUserId, "Backup import");
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Backup import");
       const payload = safeJsonParse(text, null);
 
       if (!payload || typeof payload !== "object") {
-        await assertSettingsOwnerCurrent(expectedOwnerUserId, "Backup import");
+        await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Backup import");
         setDataStatus(
           t.invalidBackupFormat ||
             "Invalid backup format. The file does not contain valid JSON data."
@@ -107,24 +124,59 @@ export function useDataImport({ setDataStatus, t }: UseDataImportOptions) {
       }
 
       const applyImport = async () => {
-        await assertSettingsOwnerCurrent(expectedOwnerUserId, "Backup import");
-        const authorization =
-          importMode === "replace" ? getJournalReplaceAuthorization() : null;
-        const ownerOptions = expectedOwnerUserId
-          ? { expectedOwnerUserId }
-          : undefined;
-        const report = authorization
-          ? await importBackup(payload, importMode, {
-              ...ownerOptions,
-              journalReplaceAuthorization: authorization,
-            })
-          : await importBackup(payload, importMode, ownerOptions);
-        await assertSettingsOwnerCurrent(expectedOwnerUserId, "Backup import");
-        return report;
+        await assertSettingsOwnerCurrentWithinDataWriteBarrier(verifiedOwnerRealm, "Backup import");
+        const existingClaim = readPendingLocalBackupAccountClaim();
+        let createdClaim = false;
+        if (existingClaim.status === "none") {
+          if (!markPendingLocalBackupAccountClaim()) {
+            throw new Error("Backup import account-claim fence could not be persisted");
+          }
+          createdClaim = true;
+        } else if (existingClaim.status !== "pending") {
+          throw new Error("Backup import account-claim fence is unavailable");
+        }
+        if (!markImportedBackupLocalOnlyAccess()) {
+          if (createdClaim && !clearPendingLocalBackupAccountClaim()) {
+            logger.warn("Backup import account-claim fence could not be cleared after access failure");
+          }
+          throw new Error("Backup import local recovery access could not be persisted");
+        }
+        let importCommitted = false;
+        const authorization = importMode === "replace" ? getJournalReplaceAuthorization() : null;
+        const ownerOptions = {
+          expectedOwnerUserId: verifiedOwnerRealm.ownerUserId ?? undefined,
+          assertExternalOwnerRealmCurrent: () =>
+            assertSettingsExternalOwnerCurrentWithinDataWriteBarrier(
+              verifiedOwnerRealm,
+              "Backup import"
+            ),
+          assertDataOwnerRealmCurrent: () =>
+            assertSettingsDataOwnerCurrentWithinTransaction(verifiedOwnerRealm, "Backup import"),
+          subscribeOwnerRealmInvalidation: subscribeAccountSessionTransition,
+        };
+        try {
+          const report = authorization
+            ? await importBackup(payload, importMode, {
+                ...ownerOptions,
+                journalReplaceAuthorization: authorization,
+              })
+            : await importBackup(payload, importMode, ownerOptions);
+          importCommitted = true;
+          await assertSettingsOwnerCurrentWithinDataWriteBarrier(
+            verifiedOwnerRealm,
+            "Backup import"
+          );
+          return report;
+        } catch (error) {
+          if (!importCommitted && createdClaim && !clearPendingLocalBackupAccountClaim()) {
+            logger.warn("Backup import account-claim fence could not be cleared after rollback");
+          }
+          throw error;
+        }
       };
-      await assertSettingsOwnerCurrent(expectedOwnerUserId, "Backup import");
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Backup import");
       const report = await runWithDataWriteBarrier(applyImport);
-      await assertSettingsOwnerCurrent(expectedOwnerUserId, "Backup import");
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Backup import");
       const emptyCollection = { added: 0, updated: 0, skipped: 0 };
       const journalEntries = report.journalEntries ?? emptyCollection;
       const journalPhotos = report.journalPhotos ?? emptyCollection;
@@ -155,7 +207,7 @@ export function useDataImport({ setDataStatus, t }: UseDataImportOptions) {
           updated: sum.updated + entry.updated,
           skipped: sum.skipped + entry.skipped,
         }),
-        { added: 0, updated: 0, skipped: 0 },
+        { added: 0, updated: 0, skipped: 0 }
       );
       if (operationGeneration !== importGenerationRef.current) return;
       setDataStatus(
@@ -167,8 +219,8 @@ export function useDataImport({ setDataStatus, t }: UseDataImportOptions) {
             journalEntries: journalEntries.added + journalEntries.updated,
             journalPhotos: journalPhotos.added + journalPhotos.updated,
             journalAudio: journalAudio.added + journalAudio.updated,
-          },
-        ),
+          }
+        )
       );
       const totalImported =
         report.moods.added +
@@ -186,9 +238,9 @@ export function useDataImport({ setDataStatus, t }: UseDataImportOptions) {
       analytics.dataImported(totalImported);
     } catch (error) {
       if (error instanceof SettingsOwnerBoundaryError) return;
-      if (ownerCaptured) {
+      if (ownerRealm) {
         try {
-          await assertSettingsOwnerCurrent(expectedOwnerUserId, "Backup import error");
+          await assertSettingsOwnerCurrent(ownerRealm, "Backup import error");
         } catch (ownerError) {
           if (ownerError instanceof SettingsOwnerBoundaryError) return;
           throw ownerError;
@@ -216,7 +268,7 @@ export function useDataImport({ setDataStatus, t }: UseDataImportOptions) {
       ) {
         setDataStatus(
           t.importJournalReauthorizationRequired ||
-            "For safety, lock and unlock your diary, then return here and try Replace again.",
+            "For safety, lock and unlock your diary, then return here and try Replace again."
         );
         return;
       }

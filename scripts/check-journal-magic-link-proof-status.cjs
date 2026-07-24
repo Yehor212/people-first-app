@@ -3,12 +3,16 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const {
+  computeJournalMagicLinkProofSourceSha256,
+} = require("./journal-magic-link-proof-source.cjs");
 
 const ROOT = path.join(__dirname, "..");
 const DEFAULT_PACKET = path.join(ROOT, "docs", "JOURNAL_MAGIC_LINK_LIVE_PROOF_STATUS.json");
 const SCHEMA_VERSION = "zenflow-journal-magic-link-live-proof/v1";
 const VALID_STATUSES = new Set(["PASS", "UNVERIFIED", "FAIL"]);
 const DEFAULT_MAX_PASS_AGE_DAYS = 14;
+const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const REQUIRED_ITEM_IDS = [
   "app_side_reset_guard",
   "ci_secret_scope",
@@ -92,6 +96,33 @@ function evaluateJournalMagicLinkProofStatus(input, options = {}) {
   if (parseDate(input.updatedAt) === null) {
     issues.push(issue("invalid_updated_at", "updatedAt must be YYYY-MM-DD"));
   }
+  const proofSourceSha256 =
+    typeof input.proofSourceSha256 === "string" ? input.proofSourceSha256.trim() : "";
+  if (!SHA256_PATTERN.test(proofSourceSha256)) {
+    issues.push(issue(
+      "missing_proof_source_sha256",
+      "Journal Magic Link proof status must include the reviewed source SHA-256",
+    ));
+  }
+  const currentSourceSha256 =
+    typeof options.currentSourceSha256 === "string"
+      ? options.currentSourceSha256.trim()
+      : "";
+  if (currentSourceSha256 && !SHA256_PATTERN.test(currentSourceSha256)) {
+    issues.push(issue(
+      "invalid_current_source_sha256",
+      "Current Journal Magic Link proof source SHA-256 is invalid",
+    ));
+  } else if (
+    SHA256_PATTERN.test(proofSourceSha256) &&
+    SHA256_PATTERN.test(currentSourceSha256) &&
+    proofSourceSha256 !== currentSourceSha256
+  ) {
+    issues.push(issue(
+      "proof_source_mismatch",
+      "Journal Magic Link proof was produced for different auth or recovery source",
+    ));
+  }
 
   const text = stringifyForScan(input);
   for (const pattern of SECRET_PATTERNS) {
@@ -151,13 +182,13 @@ function evaluateJournalMagicLinkProofStatus(input, options = {}) {
   }
 
   const requiredItems = REQUIRED_ITEM_IDS.map((id) => byId.get(id)).filter(Boolean);
-  const passReady =
+  const requiredItemsPass =
     requiredItems.length === REQUIRED_ITEM_IDS.length &&
-    requiredItems.every((item) => item.status === "PASS") &&
-    issues.length === 0;
+    requiredItems.every((item) => item.status === "PASS");
+  const passReady = requiredItemsPass && issues.length === 0;
   const normalizedOverallStatus = String(input.overallStatus || "").toUpperCase();
 
-  if (!passReady && normalizedOverallStatus === "PASS") {
+  if (!requiredItemsPass && normalizedOverallStatus === "PASS") {
     issues.push(issue("premature_overall_pass", "overallStatus cannot be PASS while any required proof item is not PASS"));
   }
   if (passReady && normalizedOverallStatus !== "PASS") {
@@ -193,7 +224,10 @@ function main() {
   const args = parseArgs(process.argv.slice(2));
   let report;
   try {
-    report = evaluateJournalMagicLinkProofStatus(readPacket(args.file), { requirePass: args.requirePass });
+    report = evaluateJournalMagicLinkProofStatus(readPacket(args.file), {
+      requirePass: args.requirePass,
+      currentSourceSha256: computeJournalMagicLinkProofSourceSha256(ROOT),
+    });
   } catch (error) {
     console.log(`[journal-magic-link-proof-status] UNVERIFIED - ${error.message}`);
     process.exit(2);

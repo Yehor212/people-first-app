@@ -10,12 +10,12 @@ export function NavV2RouteFallback({ label }: { label: string }) {
       aria-label={label}
       className="flex min-h-[var(--app-viewport-height)] items-center justify-center px-4 py-10"
     >
-      <div className="inline-flex min-h-[44px] items-center gap-3 rounded-2xl border border-border/50 bg-card/70 px-4 py-3 text-sm font-medium text-muted-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]">
+      <div className="inline-flex min-h-[44px] max-w-full items-start gap-3 rounded-2xl border border-border/50 bg-card/70 px-4 py-3 text-sm font-medium text-muted-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]">
         <span
           aria-hidden="true"
           className="h-2.5 w-2.5 rounded-full bg-primary motion-safe:animate-pulse"
         />
-        <span>{label}</span>
+        <span className="min-w-0 whitespace-normal break-words">{label}</span>
       </div>
     </main>
   );
@@ -35,14 +35,14 @@ export function NavV2RoutePending({ label }: { label: string }) {
       role="status"
       aria-live="polite"
       data-testid="nav-v2-route-pending"
-      className="pointer-events-none fixed start-1/2 top-[calc(var(--safe-top)+0.35rem)] z-[61] max-w-[calc(100vw-6rem)] -translate-x-1/2 rounded-full border border-border/55 bg-card/85 px-3 py-1.5 text-[11px] font-semibold leading-none text-foreground shadow-[0_10px_28px_hsl(var(--foreground)/0.14)] backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] motion-safe:animate-fade-in"
+      className="pointer-events-none fixed start-[max(0.75rem,var(--safe-inline-start))] end-[max(0.75rem,var(--safe-inline-end))] top-[calc(var(--safe-top)+0.35rem)] z-[61] mx-auto w-fit max-w-[calc(100vw-1.5rem-var(--safe-inline-start)-var(--safe-inline-end))] rounded-2xl border border-border/55 bg-card/85 px-3 py-1.5 text-xs font-semibold leading-tight text-foreground shadow-[0_10px_28px_hsl(var(--foreground)/0.14)] backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] motion-safe:animate-fade-in"
     >
-      <span className="inline-flex min-h-[24px] items-center gap-1.5">
+      <span className="inline-flex min-h-[44px] min-w-0 items-start gap-1.5">
         <span
           aria-hidden="true"
           className="h-1.5 w-1.5 rounded-full bg-primary motion-safe:animate-pulse"
         />
-        <span className="truncate">{label}</span>
+        <span className="min-w-0 whitespace-normal break-words">{label}</span>
       </span>
     </div>
   );

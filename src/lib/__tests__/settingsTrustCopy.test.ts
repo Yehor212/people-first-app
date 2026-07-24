@@ -84,7 +84,7 @@ describe("Settings trust copy", () => {
     expect(copySources).not.toMatch(
       /crush it|hero mode|high confidence|personalized(?: reminder)? suggestions|usage patterns|well optimized|great work|optimal habit times/i,
     );
-    expect(en).toContain("A small step is enough. Ready when you are.");
+    expect(en).toContain("If you'd like, note how you're feeling.");
     expect(copySources).toContain("Stronger signal");
     expect(copySources).toContain("Suggestions based on recent app activity");
     expect(copySources).toContain("Suggested habit times");
@@ -200,9 +200,8 @@ describe("Settings trust copy", () => {
   it("keeps native reminder recovery out of web and removes dead quick actions", () => {
     const source = read("src/pages/nav-v2/settings/V2SettingsNotificationsPanel.tsx");
 
-    expect(source).toMatch(
-      /\{isNative\s*&&\s*\(\s*<SettingsInset\s+testId="settings-v2-notification-system-guidance"/s,
-    );
+    expect(source).toContain("if (!isNative) return null;");
+    expect(source).toContain("<NotificationSystemGuidance");
     expect(source).toContain('title={tx.settingsGroupReminders || "Reminders"}');
     for (const forbidden of [
       "useQuickActions",

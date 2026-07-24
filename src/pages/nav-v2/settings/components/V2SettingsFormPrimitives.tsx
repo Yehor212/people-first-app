@@ -2,94 +2,31 @@ import {
   useCallback,
   useEffect,
   useRef,
-  type AriaRole,
   type ChangeEvent,
   type KeyboardEvent,
-  type KeyboardEventHandler,
-  type ReactNode,
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, type LucideIcon } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { cn } from "@/lib/utils";
-
-interface SettingsButtonGridProps {
-  children: ReactNode;
-  columns?: "two" | "three" | "confirm";
-  role?: AriaRole;
-  ariaLabel?: string;
-}
-
-interface SettingsTextInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  id?: string;
-  type?: string;
-  autoComplete?: string;
-  placeholder?: string;
-  autoFocus?: boolean;
-  disabled?: boolean;
-  fill?: boolean;
-  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
-  tone?: "neutral" | "danger";
-  ariaInvalid?: boolean;
-  ariaDescribedBy?: string;
-}
-
-interface SettingsSelectFieldProps {
-  id: string;
-  value: string | number;
-  options: Array<{ value: string | number; label: string }>;
-  onChange: (value: string) => void;
-  ariaDescribedBy?: string;
-}
-
-interface SettingsStatusProps {
-  children?: ReactNode;
-  tone?: "muted" | "danger";
-  center?: boolean;
-  ariaLabel?: string;
-}
-
-interface SettingsExternalLinkProps {
-  href: string;
-  children: ReactNode;
-  size?: "xs" | "sm";
-}
-
-interface SettingsInlineButtonProps {
-  children: ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-  icon?: LucideIcon;
-  isLoading?: boolean;
-  testId?: string;
-  variant?: "primary" | "secondary" | "danger";
-}
-
-interface SettingsDialogProps {
-  titleId: string;
-  title: string;
-  description: string;
-  detail?: string;
-  cancelLabel: string;
-  confirmLabel: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-  confirmVariant?: "primary" | "secondary" | "danger";
-  confirmFocusRef?: RefObject<HTMLElement | null>;
-  returnFocusRef?: RefObject<HTMLElement | null>;
-  children?: ReactNode;
-}
+import type {
+  SettingsButtonGridProps,
+  SettingsDialogProps,
+  SettingsExternalLinkProps,
+  SettingsInlineButtonProps,
+  SettingsSelectFieldProps,
+  SettingsStatusProps,
+  SettingsTextInputProps,
+} from "./V2SettingsPrimitiveTypes";
 
 const SETTINGS_BUTTON_GRID_CLASS: Record<
   NonNullable<SettingsButtonGridProps["columns"]>,
   string
 > = {
-  two: "grid gap-2 min-[520px]:grid-cols-2",
-  three: "grid gap-2 min-[520px]:grid-cols-3",
-  confirm: "grid gap-2 min-[420px]:grid-cols-2",
+  two: "grid w-full min-w-0 max-w-full gap-2 min-[520px]:grid-cols-2",
+  three: "grid w-full min-w-0 max-w-full gap-2 min-[520px]:grid-cols-3",
+  confirm: "grid w-full min-w-0 max-w-full gap-2 min-[420px]:grid-cols-2",
 };
 
 const SETTINGS_INLINE_BUTTON_CLASS = {
@@ -155,7 +92,7 @@ export function SettingsTextInput({
       aria-describedby={ariaDescribedBy}
       dir="auto"
       className={cn(
-        "min-h-[48px] w-full rounded-[8px] px-4 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] disabled:cursor-not-allowed disabled:opacity-60",
+        "min-h-[48px] w-full rounded-[8px] px-4 text-base text-foreground outline-none ltr:placeholder:text-left rtl:placeholder:text-right focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] disabled:cursor-not-allowed disabled:opacity-60",
         fill && "flex-1",
         tone === "danger"
           ? "border border-destructive/20 bg-background"
@@ -194,6 +131,7 @@ export function SettingsSelectField({
 
 export function SettingsInlineButton({
   children,
+  buttonRef,
   icon: Icon,
   isLoading = false,
   onClick,
@@ -205,6 +143,7 @@ export function SettingsInlineButton({
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       onClick={onClick}
       disabled={isDisabled}
@@ -212,7 +151,7 @@ export function SettingsInlineButton({
       data-button-tone={variant}
       data-testid={testId}
       className={cn(
-        "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-[8px] px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-55",
+        "inline-flex min-h-[48px] w-full max-w-full min-w-0 items-center justify-center gap-2 whitespace-normal rounded-[8px] px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-55",
         "motion-safe:transition-[transform,background-color,border-color,box-shadow,color,opacity] motion-safe:duration-200 motion-safe:ease-out",
         "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
         SETTINGS_INLINE_BUTTON_CLASS[variant]
@@ -225,7 +164,9 @@ export function SettingsInlineButton({
           data-testid={testId ? testId + "-icon" : undefined}
         />
       ) : null}
-      <span>{children}</span>
+      <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:break-word]">
+        {children}
+      </span>
     </button>
   );
 }
@@ -244,7 +185,7 @@ export function SettingsStatus({
       aria-live="polite"
       aria-label={ariaLabel}
       className={cn(
-        "text-sm",
+        "min-w-0 break-words text-sm [hyphens:manual] [overflow-wrap:break-word]",
         tone === "danger" ? "text-destructive" : "text-muted-foreground",
         center && "text-center"
       )}
@@ -261,7 +202,7 @@ export function SettingsExternalLink({ href, children, size = "xs" }: SettingsEx
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "inline-flex min-h-11 items-center rounded-[8px] px-1 text-primary underline hover:text-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+        "inline-flex min-h-[48px] min-w-0 items-center whitespace-normal break-words rounded-[8px] px-1 text-primary underline [hyphens:manual] [overflow-wrap:break-word] hover:text-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         size === "sm" ? "text-sm" : "text-xs"
       )}
     >
@@ -375,15 +316,28 @@ export function SettingsDialog({
         tabIndex={-1}
         className="relative max-h-[calc(var(--app-viewport-height)-var(--safe-top)-var(--safe-bottom)-2rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.58)] bg-[hsl(var(--settings-v2-card)/0.96)] p-5 shadow-[var(--zen-shadow-card)]"
       >
-        <h3 id={titleId} className="text-lg font-semibold text-foreground">
+        <h3
+          id={titleId}
+          className="min-w-0 break-words text-lg font-semibold text-foreground [hyphens:manual] [overflow-wrap:break-word]"
+        >
           {title}
         </h3>
-        <p id={descriptionId} className="mt-2 text-sm text-muted-foreground">
+        <p
+          id={descriptionId}
+          className="mt-2 min-w-0 break-words text-sm text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]"
+        >
           {description}
         </p>
-        {detail ? <p className="mt-2 truncate text-xs text-muted-foreground">{detail}</p> : null}
+        {detail ? (
+          <p
+            dir="auto"
+            className="mt-2 break-words text-xs text-muted-foreground [overflow-wrap:anywhere]"
+          >
+            {detail}
+          </p>
+        ) : null}
         {children ? <div className="mt-4 space-y-2.5">{children}</div> : null}
-        <div className="mt-4 grid gap-2 min-[360px]:grid-cols-2">
+        <div className="mt-4 grid gap-2 min-[420px]:grid-cols-2">
           <SettingsInlineButton onClick={handleCancel}>{cancelLabel}</SettingsInlineButton>
           <SettingsInlineButton onClick={handleConfirm} variant={confirmVariant}>
             {confirmLabel}

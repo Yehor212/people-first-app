@@ -286,7 +286,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
         className={
           isCollapsed
             ? "grid min-h-[72px] grid-cols-[48px_minmax(0,1fr)_44px] items-center gap-3 px-3 py-2.5"
-            : "grid grid-cols-[44px_minmax(0,1fr)_auto] items-start gap-3 px-4 pt-4"
+            : "grid grid-cols-[44px_minmax(0,1fr)] min-[420px]:grid-cols-[44px_minmax(0,1fr)_auto] items-start gap-3 px-4 pt-4"
         }
       >
         <button
@@ -305,8 +305,8 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
         <div className="min-w-0 self-center">
           <p
             className={
-              "truncate font-semibold " +
-              (isCollapsed ? "text-[15px] leading-snug" : "text-sm leading-tight md:text-base") +
+              "whitespace-normal break-words font-semibold " +
+              (isCollapsed ? "text-sm leading-snug" : "text-sm leading-tight md:text-base") +
               " " +
               (isCompletedToday ? "text-foreground/70" : "text-foreground")
             }
@@ -315,14 +315,14 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
             {habit.name}
           </p>
           {!isCollapsed && planSubLabel ? (
-            <p className="mt-1 truncate text-[11px] text-muted-foreground">
+            <p className="mt-1 whitespace-normal break-words text-xs text-muted-foreground">
               {planSubLabel}
               {planLabel ? ` · ${planLabel}` : ""}
             </p>
           ) : null}
           {isCollapsed ? (
             <span
-              className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full border bg-background/68 px-2.5 py-1 text-[11px] font-semibold text-foreground/75"
+              className="mt-1 inline-flex max-w-full items-start gap-1.5 whitespace-normal break-words rounded-[1.25rem] border bg-background/68 px-2.5 py-1 text-xs font-semibold text-foreground/75"
               data-testid={`hero-weekly-card-${habit.id}-collapsed-cue`}
               data-slot="weekly-pill"
               aria-live="polite"
@@ -332,12 +332,12 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
                 data-slot="weekly-pill-dot"
                 aria-hidden="true"
               />
-              <span className="truncate">{collapsedCueLabel}</span>
+              <span className="min-w-0 whitespace-normal break-words">{collapsedCueLabel}</span>
             </span>
           ) : null}
           {!isCollapsed && identityVerb ? (
             <p
-              className="mt-1 inline-flex max-w-full items-center gap-1.5 truncate rounded-full border bg-background/55 px-2 py-1 text-[11px] font-medium text-foreground/75"
+              className="mt-1 inline-flex max-w-full items-start gap-1.5 whitespace-normal break-words rounded-[1.25rem] border bg-background/55 px-2 py-1 text-xs font-medium text-foreground/75"
               data-testid={`hero-weekly-card-${habit.id}-identity`}
               data-slot="weekly-pill"
               title={identityVoteLabel}
@@ -348,7 +348,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
                 iconClassName="h-3 w-3 shrink-0"
                 textClassName="text-xs leading-none"
               />
-              <span className="truncate">{identityVoteLabel}</span>
+              <span className="min-w-0 whitespace-normal break-words">{identityVoteLabel}</span>
             </p>
           ) : null}
         </div>
@@ -356,12 +356,12 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
           className={
             isCollapsed
               ? "flex h-12 items-center justify-center"
-              : "flex shrink-0 items-start gap-1"
+              : "col-span-2 flex flex-wrap items-start justify-end gap-1 min-[420px]:col-span-1 min-[420px]:shrink-0"
           }
         >
           {!isCollapsed && numericSummary ? (
             <span
-              className="rounded-full border bg-background/70 px-2.5 py-1 text-[11px] font-medium tabular-nums text-foreground/75"
+              className="whitespace-normal break-words rounded-full border bg-background/70 px-2.5 py-1 text-center text-xs font-medium tabular-nums text-foreground/75"
               data-testid={`hero-weekly-card-${habit.id}-summary`}
               data-slot="weekly-pill"
             >
@@ -370,7 +370,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
           ) : null}
           {!isCollapsed && !numericSummary && planLabel ? (
             <span
-              className="rounded-full border bg-background/70 px-2.5 py-1 text-[11px] font-medium text-foreground/75"
+              className="whitespace-normal break-words rounded-full border bg-background/70 px-2.5 py-1 text-center text-xs font-medium text-foreground/75"
               data-testid={`hero-weekly-card-${habit.id}-plan`}
               data-slot="weekly-pill"
             >
@@ -414,7 +414,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
           </div>
 
           <div
-            className="flex items-center justify-between gap-3 px-4 pt-3 pb-4 text-[11px] text-muted-foreground"
+            className="flex flex-col items-start min-[420px]:flex-row min-[420px]:items-center justify-between gap-3 px-4 pt-3 pb-4 text-xs text-muted-foreground"
             data-slot="weekly-footer"
           >
             <div
@@ -448,7 +448,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
               ) : null}
             </div>
             <span
-              className="truncate text-right tabular-nums"
+              className="whitespace-normal break-words text-start tabular-nums min-[420px]:text-end"
               data-testid={`hero-weekly-card-${habit.id}-meta`}
               data-slot="weekly-meta"
             >
@@ -461,7 +461,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
                   e.stopPropagation();
                   onOpenDetail(habit);
                 }}
-                className="inline-flex min-h-[44px] shrink-0 items-center rounded-full border border-border/60 bg-background/80 px-3 py-2 text-[11px] font-medium text-foreground motion-safe:transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                className="inline-flex min-h-[44px] items-center whitespace-normal break-words rounded-full border border-border/60 bg-background/80 px-3 py-2 text-xs font-medium text-foreground motion-safe:transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 data-testid={`hero-weekly-card-${habit.id}-stats`}
                 data-slot="weekly-stats"
               >

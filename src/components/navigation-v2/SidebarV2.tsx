@@ -111,7 +111,11 @@ export const SidebarV2 = memo(function SidebarV2({
         >
           <item.icon className="h-5 w-5" />
         </span>
-        {!collapsed && <span className="truncate">{item.label}</span>}
+        {!collapsed && (
+          <span className="min-w-0 flex-1 whitespace-normal break-words text-start leading-snug [hyphens:auto] [overflow-wrap:break-word]">
+            {item.label}
+          </span>
+        )}
       </button>
     );
   };

@@ -3,6 +3,9 @@
   position: relative;
   isolation: isolate;
   display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   min-height: 44px;
   align-items: center;
   justify-content: center;
@@ -66,10 +69,15 @@
   position: relative;
   z-index: 1;
   font-family: "Fraunces", Georgia, serif;
-  font-size: 1.08rem;
+  min-width: 0;
+  max-width: 100%;
+  font-size: calc(1.08rem * var(--font-scale, 1));
   font-weight: 720;
   letter-spacing: 0.01em;
-  line-height: 1;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
   text-shadow:
     0 1px 0 hsl(var(--background) / 0.34),
     0 0 18px hsl(var(--background) / 0.30);
@@ -104,7 +112,7 @@
   }
 
   .som-valence-chip__text {
-    font-size: 1rem;
+    font-size: calc(1rem * var(--font-scale, 1));
   }
 }
 

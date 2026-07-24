@@ -4,6 +4,10 @@ import { describe, expect, it } from "vitest";
 const journalModuleSource = readFileSync("src/features/journal/JournalModule.tsx", "utf8");
 const useAuthSessionSource = readFileSync("src/hooks/useAuthSession.ts", "utf8");
 const journalEntryListSource = readFileSync("src/features/journal/JournalEntryList.tsx", "utf8");
+const journalAiConsentDialogSource = readFileSync(
+  "src/features/journal/JournalAiConsentDialog.tsx",
+  "utf8",
+);
 const onThisDaySource = readFileSync("src/features/journal/OnThisDayCard.tsx", "utf8");
 const memoryPortalSource = readFileSync("src/features/journal/MemoryPortalCanvas.tsx", "utf8");
 const exportPickerDialogSource = readFileSync("src/features/journal/ExportPickerDialog.tsx", "utf8");
@@ -22,7 +26,7 @@ function sliceRequiredBlock(source: string, startMarker: string, endMarker: stri
 }
 
 describe("web diary privacy and reset contracts", () => {
-  it("requires password reset sign-in to match the requested account email", () => {
+  it("requires password reset sign-in to match the requested immutable account id and email", () => {
     const resetListenerBlock = sliceRequiredBlock(
       journalModuleSource,
       "// Magic link fallback",
@@ -44,14 +48,15 @@ describe("web diary privacy and reset contracts", () => {
     expect(resetListenerBlock).toContain("hasJournalPasswordResetProof(currentPending)");
     expect(resetListenerBlock).toContain("parseJournalPasswordResetRequest");
     expect(resetListenerBlock).toContain("session?.user?.email");
+    expect(resetListenerBlock).toContain("session?.user?.id");
     expect(resetConsumerBlock).toContain("hasJournalPasswordResetProof(pending)");
     expect(resetConsumerBlock).toContain("signedInEmail !== pending.email");
-    expect(resetConsumerBlock.indexOf("signedInEmail !== pending.email")).toBeLessThan(
-      resetConsumerBlock.indexOf("security.removePassword()"),
-    );
-    expect(resetConsumerBlock.indexOf("hasJournalPasswordResetProof(pending)")).toBeLessThan(
-      resetConsumerBlock.indexOf("security.removePassword()"),
-    );
+    expect(resetConsumerBlock).toContain("sessionUserId !== pending.userId");
+    const removePasswordIndex = resetConsumerBlock.indexOf("security.removePassword({ allowVerifiedEmptyDiary: true })");
+    expect(removePasswordIndex).toBeGreaterThanOrEqual(0);
+    expect(resetConsumerBlock.indexOf("signedInEmail !== pending.email")).toBeLessThan(removePasswordIndex);
+    expect(resetConsumerBlock.indexOf("sessionUserId !== pending.userId")).toBeLessThan(removePasswordIndex);
+    expect(resetConsumerBlock.indexOf("hasJournalPasswordResetProof(pending)")).toBeLessThan(removePasswordIndex);
   });
 
   it("cleans the one-time journal reset nonce from the URL after consuming proof", () => {
@@ -70,7 +75,7 @@ describe("web diary privacy and reset contracts", () => {
     expect(consumeIndex).toBeGreaterThanOrEqual(0);
     expect(successCleanupIndex).toBeGreaterThan(consumeIndex);
     expect(successCleanupIndex).toBeLessThan(
-      resetConsumerBlock.indexOf("security.removePassword()"),
+      resetConsumerBlock.indexOf("security.removePassword({ allowVerifiedEmptyDiary: true })"),
     );
   });
 
@@ -78,9 +83,9 @@ describe("web diary privacy and reset contracts", () => {
     const completeWebOAuthSessionBlock =
       /const completeWebOAuthSession = \([\s\S]*?\n\s{4}};/.exec(useAuthSessionSource)?.[0] ?? "";
 
-    expect(completeWebOAuthSessionBlock).toContain("persistJournalPasswordResetProofFromUrl(window.location.href)");
+    expect(completeWebOAuthSessionBlock).toContain("persistJournalPasswordResetProofFromUrl(window.location.href, session.user.id)");
     expect(completeWebOAuthSessionBlock).toContain("notifyAuthComplete()");
-    expect(completeWebOAuthSessionBlock.indexOf("persistJournalPasswordResetProofFromUrl(window.location.href)")).toBeLessThan(
+    expect(completeWebOAuthSessionBlock.indexOf("persistJournalPasswordResetProofFromUrl(window.location.href, session.user.id)")).toBeLessThan(
       completeWebOAuthSessionBlock.indexOf("notifyAuthComplete()"),
     );
   });
@@ -96,14 +101,18 @@ describe("web diary privacy and reset contracts", () => {
     }
 
     expect(journalModuleSource).toContain(
-      "max-h-[calc(100dvh_-_var(--safe-top)_-_var(--safe-bottom)_-_2rem)]",
+      "max-h-[calc(var(--app-viewport-height)_-_var(--safe-top)_-_var(--safe-bottom)_-_2rem)]",
     );
     expect(exportPickerDialogSource).toContain(
-      "max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_1rem)]",
+      "max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)]",
     );
-    expect(removePasswordDialogSource).toContain(
-      "max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_2rem)]",
-    );
+    expect(removePasswordDialogSource).toContain("zf-safe-area-dialog");
+  });
+
+  it("routes the memory portal through the shared native-safe viewport tokens", () => {
+    expect(memoryPortalSource).toContain('"var(--safe-top)"');
+    expect(memoryPortalSource).toContain('"var(--safe-bottom)"');
+    expect(memoryPortalSource).not.toContain("env(safe-area-inset");
   });
 
   it("passes private mode into the lazy statistics surface", () => {
@@ -112,14 +121,12 @@ describe("web diary privacy and reset contracts", () => {
     expect(statsBlock).toContain("privateMode={privateMode}");
   });
 
-  it("passes private mode into every On This Day surface", () => {
+  it("keeps On This Day behind the explicit memory portal instead of ordinary journal surfaces", () => {
     const moduleBlocks = [...journalModuleSource.matchAll(/<OnThisDayCard[\s\S]*?\/>/g)].map((match) => match[0]);
-    expect(moduleBlocks.length).toBeGreaterThan(0);
-    for (const block of moduleBlocks) {
-      expect(block).toContain("privateMode={privateMode}");
-    }
+    expect(moduleBlocks).toHaveLength(0);
 
     const portalBlock = /<OnThisDayCard[\s\S]*?\/>/.exec(memoryPortalSource)?.[0] ?? "";
+    expect(portalBlock).not.toBe("");
     expect(portalBlock).toContain("privateMode={privateMode}");
   });
 
@@ -135,13 +142,13 @@ describe("web diary privacy and reset contracts", () => {
   it("keeps Memory Portal node aria labels private", () => {
     expect(memoryPortalSource).toContain('data-testid="memory-portal-node"');
     expect(memoryPortalSource).not.toContain('aria-label={`${node.title} ${formatPortalDate(node.date)}`}');
-    expect(memoryPortalSource).toMatch(/aria-label=\{[\s\S]*?privateMode[\s\S]*?journalHubSpacePrivate[\s\S]*?formatPortalDate\(node\.date\)/);
+    expect(memoryPortalSource).toMatch(/aria-label=\{[\s\S]*?privateMode[\s\S]*?journalHubSpacePrivate[\s\S]*?formatPortalDate\(node\.date, locale\)/);
   });
 
   it("hides memory portal day capsule titles and tags while private mode is active", () => {
     expect(memoryPortalSource).toContain("privateMode ?");
     expect(memoryPortalSource).toContain("journalHubSpacePrivate");
-    expect(memoryPortalSource).toContain("!privateMode && entry.tags");
+    expect(memoryPortalSource).toContain("!privateMode && getVisibleJournalTags(entry.tags)");
   });
 
   it("keeps the space capture board private while private mode is active", () => {
@@ -236,24 +243,38 @@ describe("web diary privacy and reset contracts", () => {
     expect(journalEntryListSource).not.toContain("url(${space.coverImage})");
   });
 
-  it("requires an explicit privacy disclosure before AI search can index diary text", () => {
-    expect(journalEntryListSource).toContain("journalAiPrivacyConfirm");
-    expect(journalEntryListSource).toContain("window.confirm");
-    expect(journalEntryListSource).toContain("SK.JOURNAL_AI_SEARCH_CONSENT");
-    expect(journalEntryListSource.indexOf("window.confirm")).toBeLessThan(
-      journalEntryListSource.indexOf("void generateAllMissingEmbeddingsLazy()"),
+  it("requires explicit consent before account-backed private search without indexing", () => {
+    const activationBlock = sliceRequiredBlock(
+      journalEntryListSource,
+      "const activateAiMode = useCallback(",
+      "const confirmAiConsent = useCallback(",
+    );
+    const confirmationBlock = sliceRequiredBlock(
+      journalEntryListSource,
+      "const confirmAiConsent = useCallback(",
+      "// Toggle private account-backed search",
+    );
+    expect(journalEntryListSource).toContain("JournalAiConsentDialog");
+    expect(journalAiConsentDialogSource).toContain("journalAiPrivacyConfirm");
+    expect(journalEntryListSource).not.toContain("window.confirm");
+    expect(activationBlock).not.toContain("generateAllMissingEmbeddings");
+    expect(journalEntryListSource).not.toContain("generateAllMissingEmbeddingsLazy");
+    expect(confirmationBlock).toContain("await withJournalRequestTimeout(grantJournalAiConsent())");
+    expect(confirmationBlock.indexOf("await withJournalRequestTimeout(grantJournalAiConsent())")).toBeLessThan(
+      confirmationBlock.indexOf("activateAiMode()"),
     );
   });
 
-  it("localizes the AI search privacy disclosure in every supported locale", () => {
+  it("localizes the private-search provider boundary in every supported locale", () => {
     for (const { language, source } of localeSources) {
       const disclosure = /journalAiPrivacyConfirm:\s*"([^"]+)"/.exec(source)?.[1] ?? "";
       expect(disclosure, `${language} journalAiPrivacyConfirm`).toMatch(
-        /AI|IA|KI|検索|الذكاء|ספק ה-AI/i,
+        /private|приват|privad|privat|privée|プライベート|الخاص|הפרטי/i,
       );
       expect(disclosure, `${language} journalAiPrivacyConfirm`).toMatch(
         /provider|провайдер|proveedor|Anbieter|fournisseur|プロバイダー|مزود|ספק/i,
       );
+      expect(disclosure, `${language} journalAiPrivacyConfirm`).toContain("Supabase");
     }
   });
 
@@ -275,7 +296,7 @@ describe("web diary privacy and reset contracts", () => {
     for (const { language, source } of localeSources) {
       const hints = ["journalLockHint", "journalLockHintLocalOnly"].map((key) => ({
         key,
-        value: new RegExp(`${key}:\\s*"([^"]+)"`).exec(source)?.[1] ?? "",
+        value: new RegExp(String.raw`${key}:\s*"([^"]+)"`).exec(source)?.[1] ?? "",
       }));
 
       for (const { key, value } of hints) {

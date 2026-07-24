@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { AlertCircle, Bell, BellRing, Focus, HeartPulse, Volume2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bell, BellRing, Focus, HeartPulse } from "lucide-react";
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { TimeInputInline } from "@/components/ui/time-input";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { logger } from "@/lib/logger";
 import { applyPushNotificationsPreference } from "@/lib/privacyConsent";
@@ -15,111 +14,173 @@ import {
   type NotificationSoundType,
 } from "@/lib/notificationSounds";
 import {
-  reconcileReminderNotifications,
-} from "@/lib/localNotifications";
+  assertReminderReconcileApplied,
+  isReminderReconcileOutcomeError,
+  reconcilePersistedMasterReminders,
+} from "@/lib/persistedReminderReconciliation";
+import { buildReminderCopy } from "@/lib/reminderCopy";
 import { isAndroid, isNative } from "@/lib/platform";
-import {
-  PanelFrame,
-  SettingsButtonGrid,
-  SettingsChoiceButton,
-  SettingsFieldHeader,
-  SettingsInset,
-  SettingsStatus,
-  ToggleRow,
-} from "./components/V2SettingsControlPrimitives";
+import { reconcileJournalReminderAtStartup } from "@/features/journal";
+import { PanelFrame, SettingsStatus, ToggleRow } from "./components/V2SettingsControlPrimitives";
 import type { V2SettingsControls } from "./types";
+import {
+  NotificationInlineAlert,
+  NotificationSoundSettings,
+  NotificationSystemGuidance,
+} from "./V2SettingsNotificationFeedback";
+import { V2SettingsReminderSchedule } from "./V2SettingsReminderSchedule";
 
 export function NotificationsPanel({ controls }: { controls: V2SettingsControls }) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
-  const [selectedSound, setSelectedSound] = useState<NotificationSoundType>(() =>
-    getNotificationSound()
-  );
-  const [soundUpdateError, setSoundUpdateError] = useState<string | null>(null);
-  const [isUpdatingSound, setIsUpdatingSound] = useState(false);
+  const [soundState, setSoundState] = useState<{
+    selected: NotificationSoundType;
+    error: string | null;
+    isUpdating: boolean;
+  }>(() => ({ selected: getNotificationSound(), error: null, isUpdating: false }));
+  const {
+    selected: selectedSound,
+    error: soundUpdateError,
+    isUpdating: isUpdatingSound,
+  } = soundState;
   const [permissionWarning, setPermissionWarning] = useState<string | null>(null);
   const [isRequestingReminderPermission, setIsRequestingReminderPermission] = useState(false);
-  const dayOptions = [
-    { value: 1, label: tx.mon || "Mon" },
-    { value: 2, label: tx.tue || "Tue" },
-    { value: 3, label: tx.wed || "Wed" },
-    { value: 4, label: tx.thu || "Thu" },
-    { value: 5, label: tx.fri || "Fri" },
-    { value: 6, label: tx.sat || "Sat" },
-    { value: 0, label: tx.sun || "Sun" },
-  ];
+  const [reminderSaveError, setReminderSaveError] = useState<string | null>(null);
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(
+    controls.privacy.pushNotifications === true
+  );
+  const [isSavingPushPreference, setIsSavingPushPreference] = useState(false);
+  const [pushSaveError, setPushSaveError] = useState<string | null>(null);
+  const [navigationIncident, setNavigationIncident] = useState<
+    "permission-required" | "schedule-uncertain" | null
+  >(() => {
+    if (typeof window === "undefined") return null;
+    const reason = new URLSearchParams(window.location.search).get("reminderIncident");
+    return reason === "permission-required" || reason === "schedule-uncertain" ? reason : null;
+  });
+  useEffect(() => {
+    if (!navigationIncident || typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("reminderIncident");
+    window.history.replaceState(window.history.state, "", url);
+  }, [navigationIncident]);
+  useEffect(() => {
+    if (!isSavingPushPreference) {
+      setPushNotificationsEnabled(controls.privacy.pushNotifications === true);
+    }
+  }, [controls.privacy.pushNotifications, isSavingPushPreference]);
   const notificationSystemSettingsDescription =
     tx[getNotificationSystemSettingsCopyKey()] ||
     (isAndroid
       ? "Your phone’s sound, vibration, and notification settings can silence or hide reminders."
       : "Your iPhone or iPad’s notification settings and Focus modes can silence or hide reminders.");
-  const reminderCopy = {
-    mood: { title: t.reminderMoodTitle, body: t.reminderMoodBody },
-    habit: { title: t.reminderHabitTitle, body: t.reminderHabitBody },
-    focus: { title: t.reminderFocusTitle, body: t.reminderFocusBody },
-  };
+  const reminderCopy = buildReminderCopy(t);
   const moodCheckInsEnabled = controls.reminders.moodCheckInsEnabled ?? controls.reminders.enabled;
   const focusReminderEnabled =
     controls.reminders.focusReminderEnabled ?? controls.reminders.enabled;
   const hasTimedCategory = moodCheckInsEnabled || focusReminderEnabled;
-
-  const setReminder = (
+  const setReminder = async (
     value:
       | V2SettingsControls["reminders"]
       | ((prev: V2SettingsControls["reminders"]) => V2SettingsControls["reminders"])
-  ) => controls.onRemindersChange(value);
-
+  ): Promise<void> => {
+    setReminderSaveError(null);
+    try {
+      await controls.onRemindersChange(value);
+    } catch (error) {
+      logger.error("[Notifications] Failed to save reminder settings:", error);
+      setReminderSaveError(
+        tx.settingsPreferenceSaveError ||
+          "Couldn’t save this change. Your previous setting is still active."
+      );
+    }
+  };
+  const reconcileCurrentReminders = async (previousChannelId?: string): Promise<void> => {
+    const result = await reconcilePersistedMasterReminders(
+      {
+        ...reminderCopy,
+        quickMoodBody: t.howAreYouNow,
+        channelCopy: buildNotificationChannelCopy(tx),
+      },
+      { rollbackChannelId: previousChannelId }
+    );
+    assertReminderReconcileApplied(result);
+    await reconcileJournalReminderAtStartup({
+      reminderTitle: t.journalReminderNotifTitle,
+      reminderBody: t.journalReminderNotifBody,
+    });
+  };
   const updateSound = async (sound: NotificationSoundType) => {
     if (isUpdatingSound || sound === selectedSound) return;
     const previousSound = selectedSound;
     const rollbackChannelId = NOTIFICATION_SOUNDS.find(
-      (option) => option.id === previousSound,
+      (option) => option.id === previousSound
     )?.channelId;
-    setSoundUpdateError(null);
-    setIsUpdatingSound(true);
+    setSoundState((previous) => ({ ...previous, error: null, isUpdating: true }));
     let newSoundSaved = false;
-
+    let masterRemindersReconciled = false;
     try {
       await updateNotificationSound(sound);
       newSoundSaved = true;
-      await reconcileReminderNotifications(
-        controls.reminders,
-        controls.reminders.enabled ? controls.habits : [],
+      const result = await reconcilePersistedMasterReminders(
         {
           ...reminderCopy,
-          quickMoodBody: t.howAreYouNow || "How are you feeling? Tap! 😊",
+          quickMoodBody: t.howAreYouNow,
           channelCopy: buildNotificationChannelCopy(tx),
         },
-        { rollbackChannelId },
+        { rollbackChannelId }
       );
-      setSelectedSound(sound);
+      assertReminderReconcileApplied(result);
+      masterRemindersReconciled = true;
+      await reconcileJournalReminderAtStartup({
+        reminderTitle: t.journalReminderNotifTitle,
+        reminderBody: t.journalReminderNotifBody,
+      });
+      setSoundState((previous) => ({ ...previous, selected: sound }));
+      setNavigationIncident(null);
     } catch (error) {
       logger.error("[Notifications] Failed to reschedule reminders after sound change:", error);
-      let previousSoundRestored = false;
-      try {
-        await updateNotificationSound(previousSound);
-        previousSoundRestored = true;
-      } catch (rollbackError) {
-        logger.error("[Notifications] Failed to restore the previous reminder sound:", rollbackError);
+      let previousPreferenceRestored =
+        !newSoundSaved && getNotificationSound() === previousSound;
+      let previousSchedulesRestored =
+        !newSoundSaved ||
+        (!masterRemindersReconciled &&
+          isReminderReconcileOutcomeError(error) &&
+          error.nativeState === "restored");
+      if (newSoundSaved) {
+        try {
+          await updateNotificationSound(previousSound);
+          previousPreferenceRestored = true;
+          if (masterRemindersReconciled || !previousSchedulesRestored) {
+            await reconcileCurrentReminders();
+            previousSchedulesRestored = true;
+          }
+        } catch (rollbackError) {
+          logger.error(
+            "[Notifications] Failed to restore the previous reminder sound:",
+            rollbackError
+          );
+        }
       }
-      setSelectedSound(previousSoundRestored || !newSoundSaved ? previousSound : sound);
-      setSoundUpdateError(
-        previousSoundRestored || !newSoundSaved
+      const previousStateRestored = previousPreferenceRestored && previousSchedulesRestored;
+      setSoundState((previous) => ({
+        ...previous,
+        selected: previousPreferenceRestored ? previousSound : sound,
+        error: previousStateRestored
           ? tx.notificationSoundUpdateFailed ||
-              "ZenFlow could not apply this reminder sound. Your previous sound is still selected. Try again."
+            "ZenFlow could not apply this reminder sound. Your previous sound is still selected. Try again."
           : tx.notificationSoundUpdateUncertain ||
-              "ZenFlow could not finish changing the reminder sound. Check the selected sound and try again.",
-      );
+            "ZenFlow could not finish changing the reminder sound. Check the selected sound and try again.",
+      }));
     } finally {
-      setIsUpdatingSound(false);
+      setSoundState((previous) => ({ ...previous, isUpdating: false }));
     }
   };
-
   const handleReminderToggle = async (checked: boolean) => {
     setPermissionWarning(null);
 
     if (!checked) {
-      setReminder((prev) => ({ ...prev, enabled: false }));
+      await setReminder((prev) => ({ ...prev, enabled: false }));
       return;
     }
 
@@ -138,7 +199,8 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
         return;
       }
 
-      setReminder((prev) => ({ ...prev, enabled: true }));
+      await setReminder((prev) => ({ ...prev, enabled: true }));
+      setNavigationIncident(null);
     } catch (error) {
       logger.error("[Notifications] Failed to request reminder permissions:", error);
       setPermissionWarning(
@@ -150,6 +212,27 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
       setIsRequestingReminderPermission(false);
     }
   };
+  const handlePushPreferenceChange = async (checked: boolean) => {
+    if (isSavingPushPreference) return;
+    const previous = controls.privacy.pushNotifications === true;
+    setPushNotificationsEnabled(checked);
+    setPushSaveError(null);
+    setIsSavingPushPreference(true);
+    try {
+      await controls.onPrivacyChange((privacy) =>
+        applyPushNotificationsPreference(privacy, checked)
+      );
+    } catch (error) {
+      logger.error("[Notifications] Failed to save account reminder preference:", error);
+      setPushNotificationsEnabled(previous);
+      setPushSaveError(
+        tx.settingsPreferenceSaveError ||
+          "Couldn’t save this change. Your previous setting is still active."
+      );
+    } finally {
+      setIsSavingPushPreference(false);
+    }
+  };
 
   if (!isNative) return null;
 
@@ -158,17 +241,30 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
       icon={Bell}
       title={tx.settingsGroupReminders || "Reminders"}
       description={
-        tx.remindersDescription || "Choose when ZenFlow reminds you about mood and focus."
+        tx.remindersDescription ||
+        "Turns mood, focus, and habit reminders on or off. Set each habit’s time in its own menu."
       }
       testId="settings-v2-panel-notifications"
     >
+      {navigationIncident ? (
+        <NotificationInlineAlert testId={`settings-v2-reminder-incident-${navigationIncident}`}>
+          {navigationIncident === "permission-required"
+            ? tx.pushPermissionDenied ||
+              tx.notificationTestNoPermission ||
+              "Turn on notifications for ZenFlow in your device settings."
+            : tx.reminderReconcileUncertain ||
+              "ZenFlow could not finish updating reminders. Some reminders may be missing or duplicated."}
+        </NotificationInlineAlert>
+      ) : null}
+
       <ToggleRow
         icon={Bell}
         title={tx.enableReminders || "Enable reminders"}
         description={
-          tx.remindersDescription || "Choose when ZenFlow reminds you about mood and focus."
+          tx.remindersDescription ||
+          "Turns mood, focus, and habit reminders on or off. Set each habit’s time in its own menu."
         }
-        checked={isNative && controls.reminders.enabled}
+        checked={controls.reminders.enabled}
         onCheckedChange={(checked) => {
           void handleReminderToggle(checked);
         }}
@@ -177,12 +273,14 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
       />
 
       {permissionWarning && (
-        <SettingsInset tone="danger" testId="settings-v2-reminders-permission-warning">
-          <div className="flex items-start gap-3 text-sm text-destructive" role="alert">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            <span>{permissionWarning}</span>
-          </div>
-        </SettingsInset>
+        <NotificationInlineAlert testId="settings-v2-reminders-permission-warning">
+          {permissionWarning}
+        </NotificationInlineAlert>
+      )}
+      {reminderSaveError && (
+        <NotificationInlineAlert testId="settings-v2-reminders-save-error">
+          {reminderSaveError}
+        </NotificationInlineAlert>
       )}
 
       {controls.reminders.enabled && (
@@ -214,101 +312,20 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
         </>
       )}
 
+      {controls.reminders.enabled && (
+        <SettingsStatus>
+          {tx.habitRemindersManagedInHabits || "Set a reminder from the habit's own menu."}
+        </SettingsStatus>
+      )}
+
       {controls.reminders.enabled && hasTimedCategory && (
-        <SettingsInset testId="settings-v2-reminder-schedule">
-          {moodCheckInsEnabled ? (
-            <>
-              <TimeInputInline
-                label={tx.morning || "Morning"}
-                value={controls.reminders.moodTimeMorning || "09:00"}
-                onChange={(value) => setReminder((prev) => ({ ...prev, moodTimeMorning: value }))}
-              />
-              <TimeInputInline
-                label={tx.afternoon || "Afternoon"}
-                value={controls.reminders.moodTimeAfternoon || "14:00"}
-                onChange={(value) => setReminder((prev) => ({ ...prev, moodTimeAfternoon: value }))}
-              />
-              <TimeInputInline
-                label={tx.evening || "Evening"}
-                value={controls.reminders.moodTimeEvening || "20:00"}
-                onChange={(value) => setReminder((prev) => ({ ...prev, moodTimeEvening: value }))}
-              />
-            </>
-          ) : null}
-          {focusReminderEnabled ? (
-            <TimeInputInline
-              label={tx.focusReminder || "Focus reminder"}
-              value={controls.reminders.focusTime || "10:00"}
-              onChange={(value) => setReminder((prev) => ({ ...prev, focusTime: value }))}
-            />
-          ) : null}
-
-          <SettingsStatus>
-            {tx.habitRemindersManagedInHabits ||
-              "Set a reminder from the habit's own menu."}
-          </SettingsStatus>
-
-          <div>
-            <SettingsFieldHeader title={tx.reminderDays || "Reminder days"} />
-            <div
-              className="flex flex-wrap gap-2"
-              role="group"
-              aria-label={tx.reminderDays || "Reminder days"}
-            >
-              {dayOptions.map(({ value, label }) => (
-                <SettingsChoiceButton
-                  key={value}
-                  onClick={() =>
-                    setReminder((prev) => ({
-                      ...prev,
-                      days: prev.days.includes(value)
-                        ? prev.days.filter((day) => day !== value)
-                        : [...prev.days, value].sort((a, b) => a - b),
-                    }))
-                  }
-                  selected={controls.reminders.days.includes(value)}
-                  presentation="compact"
-                  selectedTone="solid"
-                  surface="secondary"
-                >
-                  {label}
-                </SettingsChoiceButton>
-              ))}
-            </div>
-            {controls.reminders.days.length === 0 ? (
-              <p role="status" className="mt-2 text-sm text-muted-foreground">
-                {tx.settingsReminderChooseDay ||
-                  "Choose at least one day. No reminders will be sent until you do."}
-              </p>
-            ) : null}
-          </div>
-
-          <div>
-            <SettingsFieldHeader title={tx.quietHours || "Quiet hours"} />
-            <div className="grid gap-2 sm:grid-cols-2">
-              <TimeInputInline
-                label={tx.quietHoursStart || "Quiet start"}
-                value={controls.reminders.quietHours.start || "22:00"}
-                onChange={(value) =>
-                  setReminder((prev) => ({
-                    ...prev,
-                    quietHours: { ...prev.quietHours, start: value },
-                  }))
-                }
-              />
-              <TimeInputInline
-                label={tx.quietHoursEnd || "Quiet end"}
-                value={controls.reminders.quietHours.end || "07:00"}
-                onChange={(value) =>
-                  setReminder((prev) => ({
-                    ...prev,
-                    quietHours: { ...prev.quietHours, end: value },
-                  }))
-                }
-              />
-            </div>
-          </div>
-        </SettingsInset>
+        <V2SettingsReminderSchedule
+          copy={tx}
+          reminders={controls.reminders}
+          moodCheckInsEnabled={moodCheckInsEnabled}
+          focusReminderEnabled={focusReminderEnabled}
+          onChange={setReminder}
+        />
       )}
 
       {isPushAvailable() ? (
@@ -319,62 +336,35 @@ export function NotificationsPanel({ controls }: { controls: V2SettingsControls 
             tx.privacyPushNotificationsHint ||
             "Receive reminders from your account on this device. Reminders you set here work separately."
           }
-          checked={controls.privacy.pushNotifications === true}
-          onCheckedChange={(checked) =>
-            controls.onPrivacyChange((prev) => applyPushNotificationsPreference(prev, checked))
-          }
+          checked={pushNotificationsEnabled}
+          disabled={isSavingPushPreference}
+          onCheckedChange={(checked) => {
+            void handlePushPreferenceChange(checked);
+          }}
           surfaceWeight="quiet"
           testId="settings-v2-push-notifications"
         />
       ) : null}
 
+      {pushSaveError ? (
+        <NotificationInlineAlert testId="settings-v2-push-save-error">
+          {pushSaveError}
+        </NotificationInlineAlert>
+      ) : null}
+
       {isAndroid && (
-        <SettingsInset>
-          <SettingsFieldHeader icon={Volume2} title={tx.notificationSound || "Notification sound"} />
-          <SettingsButtonGrid columns="two">
-            {NOTIFICATION_SOUNDS.map((sound) => {
-              const label = tx[sound.labelKey] || sound.id;
-              return (
-                <SettingsChoiceButton
-                  key={sound.id}
-                  onClick={() => {
-                    void updateSound(sound.id);
-                  }}
-                  selected={selectedSound === sound.id}
-                  disabled={isUpdatingSound}
-                  surface="card"
-                >
-                  <span className="block text-sm font-semibold text-foreground">{label}</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    {tx[`${sound.labelKey}Desc`] || sound.description}
-                  </span>
-                </SettingsChoiceButton>
-              );
-            })}
-          </SettingsButtonGrid>
-          {soundUpdateError && (
-            <div
-              role="alert"
-              aria-label={soundUpdateError}
-              className="mt-3 flex items-start gap-2 text-sm text-destructive"
-              data-testid="settings-v2-notification-sound-error"
-            >
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>{soundUpdateError}</span>
-            </div>
-          )}
-        </SettingsInset>
+        <NotificationSoundSettings
+          copy={tx}
+          selectedSound={selectedSound}
+          isUpdating={isUpdatingSound}
+          error={soundUpdateError}
+          onSelect={(sound) => {
+            void updateSound(sound);
+          }}
+        />
       )}
 
-      {isNative && (
-        <SettingsInset testId="settings-v2-notification-system-guidance">
-          <SettingsFieldHeader
-            icon={Bell}
-            title={tx.notificationSystemSettingsTitle || "If reminders are silent"}
-          />
-          <SettingsStatus>{notificationSystemSettingsDescription}</SettingsStatus>
-        </SettingsInset>
-      )}
+      <NotificationSystemGuidance copy={tx} description={notificationSystemSettingsDescription} />
     </PanelFrame>
   );
 }

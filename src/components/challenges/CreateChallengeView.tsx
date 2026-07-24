@@ -42,18 +42,18 @@ export function CreateChallengeView({
     <div className="space-y-6 pb-8">
       {/* Habit preview - Premium */}
       <motion.div
-        className="flex items-center gap-4 p-4 rounded-2xl overflow-hidden relative bg-gradient-to-br from-[rgba(139,92,246,0.15)] to-[rgba(168,85,247,0.1)] shadow-[0_0_20px_rgba(139,92,246,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]"
+        className="flex min-w-0 items-center gap-4 p-4 rounded-2xl overflow-hidden relative bg-gradient-to-br from-[rgba(139,92,246,0.15)] to-[rgba(168,85,247,0.1)] shadow-[0_0_20px_rgba(139,92,246,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <div
-          className="text-5xl p-3 rounded-xl bg-gradient-to-br from-white/10 to-white/5"
+          className="text-5xl shrink-0 p-3 rounded-xl bg-gradient-to-br from-white/10 to-white/5"
         >
           {habit.icon}
         </div>
-        <div>
-          <p className="font-semibold text-slate-800 dark:text-white text-lg">{habit.name}</p>
-          <p className="text-sm text-slate-500 dark:text-white/60">
+        <div className="min-w-0 flex-1">
+          <p className="min-w-0 break-words font-semibold text-slate-800 dark:text-white text-lg [overflow-wrap:anywhere]">{habit.name}</p>
+          <p className="min-w-0 break-words text-sm text-slate-500 dark:text-white/60 [hyphens:manual] [overflow-wrap:break-word]">
             {t.challengeYourFriends || 'Challenge your friends to this habit!'}
           </p>
         </div>
@@ -105,7 +105,7 @@ export function CreateChallengeView({
         onClick={throttledCreate}
         disabled={isCreating}
         className={cn(
-          "relative w-full h-14 rounded-xl font-semibold text-lg text-white overflow-hidden",
+          "relative w-full h-auto min-h-14 min-w-0 overflow-hidden rounded-xl px-4 py-3 font-semibold text-lg text-white",
           isCreating
             ? "bg-white/10 cursor-not-allowed"
             : "bg-gradient-to-r from-violet-500 to-purple-600"
@@ -124,12 +124,12 @@ export function CreateChallengeView({
             transition={{ duration: 1.5, repeat: Infinity }}
           />
         )}
-        <span className="relative z-10 flex items-center justify-center gap-2">
+        <span className="relative z-10 flex min-w-0 flex-wrap items-center justify-center gap-2 whitespace-normal break-words text-center [hyphens:manual] [overflow-wrap:break-word]">
           {isCreating ? (
             <span className="motion-safe:animate-pulse">{t.creating || 'Creating...'}</span>
           ) : (
             <>
-              <Users className="w-5 h-5" />
+              <Users className="w-5 h-5 shrink-0" />
               {t.createChallenge || 'Create Challenge'}
             </>
           )}

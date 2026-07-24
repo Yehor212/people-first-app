@@ -52,7 +52,7 @@ function BadgePedestal({
 
   return (
     <motion.div
-      className="relative flex flex-col items-center"
+      className="relative flex min-w-0 w-full flex-col items-center"
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, type: 'spring', stiffness: 100 }}
@@ -99,7 +99,7 @@ function BadgePedestal({
 
       {/* Badge title */}
       <motion.p
-        className="text-xs text-white/80 mt-2 text-center max-w-24 line-clamp-2"
+        className="mt-2 w-full max-w-28 whitespace-normal break-words text-center text-xs leading-relaxed text-white/80"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: delay + 0.4 }}
@@ -161,20 +161,22 @@ export function AchievementSlide({ slide, language }: AchievementSlideProps) {
       ))}
 
       {/* Content */}
-      <div className="absolute inset-0 flex flex-col items-center pt-12 px-8">
+      <div className="absolute inset-0 flex flex-col items-center overflow-y-auto overscroll-y-contain px-4 py-12">
         {/* Title with trophy icon */}
         <motion.div
-          className="flex items-center gap-3 mb-2"
+          className="mb-2 flex min-w-0 flex-wrap items-center justify-center gap-3"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
           <TrophyIcon size="md" animated />
-          <h2 className="text-2xl font-bold text-white">{slide.title}</h2>
+          <h2 className="min-w-0 whitespace-normal break-words text-center text-2xl font-bold leading-snug text-white">
+            {slide.title}
+          </h2>
         </motion.div>
 
         <motion.p
-          className="text-white/60 text-sm mb-8"
+          className="mb-8 whitespace-normal break-words text-center text-sm text-white/60"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
@@ -183,7 +185,7 @@ export function AchievementSlide({ slide, language }: AchievementSlideProps) {
         </motion.p>
 
         {/* Badges on pedestals */}
-        <div className="flex justify-center gap-6 mt-4">
+        <div className="grid w-full grid-cols-1 gap-x-6 gap-y-8 min-[360px]:grid-cols-2 min-[720px]:grid-cols-4 max-w-3xl mt-4">
           {displayBadges.map((badge, index) => (
             <BadgePedestal
               key={badge.id}
@@ -205,7 +207,9 @@ export function AchievementSlide({ slide, language }: AchievementSlideProps) {
             <div className="w-20 h-20 rounded-2xl bg-white/5 dark:bg-white/5 flex items-center justify-center mb-4">
               <TrophyIcon size="xl" />
             </div>
-            <p className="text-white/60">{t.storyKeepGoingAchievements || 'Keep going to unlock achievements!'}</p>
+            <p className="whitespace-normal break-words text-center text-white/60">
+              {t.storyKeepGoingAchievements || 'Keep going to unlock achievements!'}
+            </p>
           </motion.div>
         )}
       </div>

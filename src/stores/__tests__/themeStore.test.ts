@@ -152,7 +152,7 @@ describe("themeStore Variant A", () => {
     const { mod } = await loadStore(false);
     const result = mod.useThemeStore.getState().setTheme("oled");
 
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, changed: true });
     expect(mod.useThemeStore.getState()).toMatchObject({ theme: "oled", appliedTheme: "oled" });
     expect(document.documentElement.dataset.theme).toBe("oled");
     expect(document.documentElement).toHaveClass("dark", "oled");
@@ -178,14 +178,20 @@ describe("themeStore Variant A", () => {
     const { mod } = await loadStore(false);
     const blue = { schemaVersion: 1 as const, accentFamily: "blue" as const, highContrast: false };
 
-    expect(mod.useThemeStore.getState().setThemeCustomization(blue)).toEqual({ ok: true });
+    expect(mod.useThemeStore.getState().setThemeCustomization(blue)).toEqual({
+      ok: true,
+      changed: true,
+    });
     expect(mod.useThemeStore.getState().themeCustomization).toEqual(blue);
     expect(mod.useThemeStore.getState().previousThemeCustomization).toEqual(
       DEFAULT_THEME_CUSTOMIZATION,
     );
     expect(document.documentElement.dataset.themeAccent).toBe("blue");
 
-    expect(mod.useThemeStore.getState().undoThemeCustomization()).toEqual({ ok: true });
+    expect(mod.useThemeStore.getState().undoThemeCustomization()).toEqual({
+      ok: true,
+      changed: true,
+    });
     expect(mod.useThemeStore.getState().themeCustomization).toEqual(DEFAULT_THEME_CUSTOMIZATION);
     expect(document.documentElement.dataset.themeAccent).toBe("green");
   });
@@ -193,7 +199,10 @@ describe("themeStore Variant A", () => {
   it("keeps the committed accent when the next customization write fails", async () => {
     const { mod } = await loadStore(false);
     const blue = { schemaVersion: 1 as const, accentFamily: "blue" as const, highContrast: false };
-    expect(mod.useThemeStore.getState().setThemeCustomization(blue)).toEqual({ ok: true });
+    expect(mod.useThemeStore.getState().setThemeCustomization(blue)).toEqual({
+      ok: true,
+      changed: true,
+    });
 
     vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
       throw new DOMException("blocked", "QuotaExceededError");
@@ -219,7 +228,10 @@ describe("themeStore Variant A", () => {
     };
     mod.useThemeStore.getState().setThemeCustomization(violet);
 
-    expect(mod.useThemeStore.getState().resetThemeCustomization()).toEqual({ ok: true });
+    expect(mod.useThemeStore.getState().resetThemeCustomization()).toEqual({
+      ok: true,
+      changed: true,
+    });
     expect(mod.useThemeStore.getState().themeCustomization).toEqual(DEFAULT_THEME_CUSTOMIZATION);
     expect(mod.useThemeStore.getState().previousThemeCustomization).toEqual(violet);
   });
@@ -253,6 +265,62 @@ describe("themeStore Variant A", () => {
     });
     expect(document.documentElement.dataset.theme).toBe("oled");
     expect(setItemSpy).not.toHaveBeenCalled();
+    off();
+  });
+
+  it("reports same-value writes as no-ops without inventing an undo predecessor", async () => {
+    const { mod } = await loadStore(false);
+    const current = mod.useThemeStore.getState().themeCustomization;
+
+    expect(mod.useThemeStore.getState().setTheme("auto")).toEqual({
+      ok: true,
+      changed: false,
+    });
+    expect(mod.useThemeStore.getState().setThemeCustomization(current)).toEqual({
+      ok: true,
+      changed: false,
+    });
+    expect(mod.useThemeStore.getState().resetThemeCustomization()).toEqual({
+      ok: true,
+      changed: false,
+    });
+    expect(mod.useThemeStore.getState().previousThemeCustomization).toBeNull();
+    expect(mod.useThemeStore.getState().undoThemeCustomization()).toEqual({
+      ok: true,
+      changed: false,
+    });
+  });
+
+  it("reports a stale undo as a no-op after a newer tab replaces the appearance", async () => {
+    const { mod } = await loadStore(false);
+    const off = mod.bindThemeRuntimeListeners();
+    mod.useThemeStore.getState().setThemeCustomization({
+      schemaVersion: 1,
+      accentFamily: "blue",
+      highContrast: false,
+    });
+
+    const external = {
+      schemaVersion: 1 as const,
+      accentFamily: "amber" as const,
+      highContrast: true,
+    };
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: STORAGE_KEY,
+        newValue: JSON.stringify({
+          state: { theme: "paper", themeCustomization: external },
+          version: 1,
+        }),
+      }),
+    );
+
+    expect(mod.useThemeStore.getState().previousThemeCustomization).toBeNull();
+    expect(mod.useThemeStore.getState().undoThemeCustomization()).toEqual({
+      ok: true,
+      changed: false,
+    });
+    expect(mod.useThemeStore.getState().themeCustomization).toEqual(external);
     off();
   });
 

@@ -14,7 +14,6 @@ describe("runAccountDeletionBarrier", () => {
       purgeMedia,
       purgeRows: async () => events.push("purge-rows"),
       deleteAuthUser: async () => events.push("delete-auth"),
-      releaseStorageBlock: async () => events.push("release"),
     });
 
     expect(events).toEqual([
@@ -27,7 +26,7 @@ describe("runAccountDeletionBarrier", () => {
     expect(purgeMedia).toHaveBeenCalledTimes(2);
   });
 
-  it("releases the storage block when deletion fails before auth is removed", async () => {
+  it("retains the storage block when deletion has started but a destructive step fails", async () => {
     const events: string[] = [];
 
     await expect(
@@ -39,10 +38,9 @@ describe("runAccountDeletionBarrier", () => {
         },
         purgeRows: async () => events.push("purge-rows"),
         deleteAuthUser: async () => events.push("delete-auth"),
-        releaseStorageBlock: async () => events.push("release"),
       }),
     ).rejects.toThrow("storage unavailable");
 
-    expect(events).toEqual(["block", "purge-media", "release"]);
+    expect(events).toEqual(["block", "purge-media"]);
   });
 });

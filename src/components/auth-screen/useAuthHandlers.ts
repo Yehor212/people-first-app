@@ -12,6 +12,8 @@ import {
 } from "@/lib/authProviders";
 import { openOAuthUrl } from "@/lib/nativeOAuthBrowser";
 import { logger } from "@/lib/logger";
+import { cancelPkceAttemptFromUrl } from "@/lib/authTransitionCoordinator";
+import { createPkceAttemptRedirectUrl } from "@/lib/pkceAttemptStorage";
 import { analytics } from "@/lib/analytics";
 import { hapticError } from "@/lib/haptics";
 import { phoneSchema } from "@/lib/schemas";
@@ -76,13 +78,19 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
       }
     }, 60000);
 
+    let redirectUrl: string | null = null;
+    let providerNavigationStarted = false;
+
     try {
-      const redirectUrl = getAuthRedirectUrl();
-      logger.log(`[Auth] Starting ${provider} sign-in with redirect URL:`, redirectUrl);
+      redirectUrl = createPkceAttemptRedirectUrl(
+        getAuthRedirectUrl(),
+        "oauth",
+      ).redirectUrl;
+      logger.log(`[Auth] Starting ${provider} sign-in with an attempt-bound redirect`);
 
       const platform = isNative ? "native" : "web";
       logger.log("[Auth] Platform:", platform);
-      session.setDebugInfo(`Platform: ${platform}, Redirect: ${redirectUrl}`);
+      session.setDebugInfo(`Platform: ${platform}, Redirect: configured`);
 
       const { data, error: signInError } = await supabase.auth.signInWithOAuth({
         ...buildOAuthCredentials(provider, {
@@ -121,23 +129,35 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
           if (!isTrustedOAuthRedirectUrl(data.url, provider)) {
             logger.error("[Auth] Untrusted OAuth redirect URL blocked");
             session.setError("Authentication service unavailable.");
+            await cancelPkceAttemptFromUrl(supabase.auth, redirectUrl);
             if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
             endAuthFlow();
             session.setLoadingProvider(null);
             return;
           }
           await openOAuthUrl(data.url);
+          providerNavigationStarted = true;
           logger.log(`[Auth] ${provider} OAuth URL navigation started`);
         }
-      } else if (isNative) {
-        logger.error(`[Auth] ${provider} OAuth URL missing on native platform`);
+      } else {
+        logger.error(`[Auth] ${provider} OAuth URL missing`);
         session.setError(t.authUnexpectedError || `Failed to sign in with ${provider}.`);
         session.setDebugInfo("OAuth URL was not returned by Supabase");
+        await cancelPkceAttemptFromUrl(supabase.auth, redirectUrl);
         if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
         endAuthFlow();
         session.setLoadingProvider(null);
       }
     } catch (err) {
+      if (redirectUrl && !providerNavigationStarted) {
+        try {
+          await cancelPkceAttemptFromUrl(supabase.auth, redirectUrl);
+        } catch (cancelError) {
+          logger.warn("[Auth] Failed to cancel an unlaunched OAuth attempt", {
+            errorName: cancelError instanceof Error ? cancelError.name : "UnknownError",
+          });
+        }
+      }
       logger.error(`[Auth] Unexpected error during ${provider} sign-in:`, err);
       session.setError(t.authUnexpectedError);
       session.setDebugInfo(`Exception: ${err instanceof Error ? err.message : String(err)}`);

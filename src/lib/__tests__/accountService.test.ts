@@ -40,7 +40,16 @@ vi.mock('../logger', () => ({
 }));
 
 import { logger } from '../logger';
-import { updateProfileName, deleteAccount } from '../accountService';
+import {
+  updateProfileName,
+  deleteAccount,
+  resumeAccountDeletion,
+} from '../accountService';
+
+const DELETION_AUTHORITY = {
+  operationId: '5bbbcf4f-3f44-4f3b-89eb-7f779c2ad85a',
+  recoverySecret: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+};
 
 // Chainable mock builders for query builder pattern
 const mockProfileEq = vi.fn();
@@ -178,7 +187,7 @@ describe('accountService', () => {
     describe('when supabase is null', () => {
       it('returns a not-configured result', async () => {
         mockSupabase = null;
-        const result = await deleteAccount('user-123');
+        const result = await deleteAccount('user-123', DELETION_AUTHORITY);
         expect(result).toEqual({ status: 'not-deleted', code: 'not-configured' });
       });
     });
@@ -189,58 +198,103 @@ describe('accountService', () => {
       });
 
       it('returns deleted only when the edge function confirms deletion', async () => {
-        mockInvoke.mockResolvedValue({ data: { status: 'deleted', userId: 'user-123' }, error: null });
-        const result = await deleteAccount('user-123');
+        mockInvoke.mockResolvedValue({
+          data: { status: 'deleted', operationId: DELETION_AUTHORITY.operationId },
+          error: null,
+        });
+        const result = await deleteAccount('user-123', DELETION_AUTHORITY);
         expect(result).toEqual({ status: 'deleted', userId: 'user-123' });
       });
 
       it('calls functions.invoke with "delete-account"', async () => {
-        mockInvoke.mockResolvedValue({ data: { status: 'deleted', userId: 'user-123' }, error: null });
-        await deleteAccount('user-123');
+        mockInvoke.mockResolvedValue({
+          data: { status: 'deleted', operationId: DELETION_AUTHORITY.operationId },
+          error: null,
+        });
+        await deleteAccount('user-123', DELETION_AUTHORITY);
         expect(mockInvoke).toHaveBeenCalledWith('delete-account', {
-          body: { expectedOwnerUserId: 'user-123' },
+          body: {
+            expectedOwnerUserId: 'user-123',
+            ...DELETION_AUTHORITY,
+          },
+          signal: expect.any(AbortSignal),
         });
       });
 
       it('does not mix local sign-out into the remote deletion service', async () => {
-        mockInvoke.mockResolvedValue({ data: { status: 'deleted', userId: 'user-123' }, error: null });
-        await deleteAccount('user-123');
+        mockInvoke.mockResolvedValue({
+          data: { status: 'deleted', operationId: DELETION_AUTHORITY.operationId },
+          error: null,
+        });
+        await deleteAccount('user-123', DELETION_AUTHORITY);
         expect(mockSignOut).not.toHaveBeenCalled();
       });
 
       it('returns invoke-failed when invoke returns an error', async () => {
         const invokeError = new Error('Delete function failed');
         mockInvoke.mockResolvedValue({ error: invokeError });
-        const result = await deleteAccount('user-123');
+        const result = await deleteAccount('user-123', DELETION_AUTHORITY);
         expect(result).toEqual({ status: 'not-deleted', code: 'invoke-failed' });
       });
 
       it('returns invoke-failed when invoke throws', async () => {
         mockInvoke.mockRejectedValue(new Error('Network failure'));
-        const result = await deleteAccount('user-123');
+        const result = await deleteAccount('user-123', DELETION_AUTHORITY);
         expect(result).toEqual({ status: 'not-deleted', code: 'invoke-failed' });
+      });
+
+      it('bounds a deletion request that never settles and aborts its transport', async () => {
+        vi.useFakeTimers();
+        try {
+          mockInvoke.mockImplementationOnce(
+            () => new Promise(() => undefined),
+          );
+
+          const deletion = deleteAccount('user-123', DELETION_AUTHORITY);
+          await vi.advanceTimersByTimeAsync(30_000);
+          await Promise.resolve();
+
+          const outcome = await Promise.race([
+            deletion,
+            Promise.resolve('still-pending' as const),
+          ]);
+          expect(outcome).toEqual({
+            status: 'not-deleted',
+            code: 'invoke-failed',
+          });
+          const options = mockInvoke.mock.calls[0]?.[1] as
+            | { signal?: AbortSignal }
+            | undefined;
+          expect(options?.signal?.aborted).toBe(true);
+        } finally {
+          vi.useRealTimers();
+        }
       });
 
       it('rejects an unconfirmed success payload', async () => {
         mockInvoke.mockResolvedValue({ data: { ok: true }, error: null });
-        const result = await deleteAccount('user-123');
+        const result = await deleteAccount('user-123', DELETION_AUTHORITY);
         expect(result).toEqual({ status: 'not-deleted', code: 'invalid-response' });
       });
 
-      it('logs error when delete fails', async () => {
-        const error = new Error('Network failure');
+      it('never logs the recovery capability when deletion transport fails', async () => {
+        const error = new Error(
+          `Network failure for ${DELETION_AUTHORITY.recoverySecret}`,
+        );
         mockInvoke.mockRejectedValue(error);
-        await deleteAccount('user-123');
+        await deleteAccount('user-123', DELETION_AUTHORITY);
+        const serializedCalls = JSON.stringify(vi.mocked(logger.error).mock.calls);
+        expect(serializedCalls).not.toContain(DELETION_AUTHORITY.recoverySecret);
         expect(logger.error).toHaveBeenCalledWith(
-          '[AccountService] Delete account failed:',
-          error
+          '[AccountService] Delete account request failed',
+          { code: 'invoke-failed' },
         );
       });
 
       it('does not invoke deletion after the authenticated owner changes', async () => {
         mockGetCurrentSessionUserId.mockResolvedValue('user-456');
 
-        const result = await deleteAccount('user-123');
+        const result = await deleteAccount('user-123', DELETION_AUTHORITY);
 
         expect(result).toEqual({ status: 'not-deleted', code: 'owner-changed' });
         expect(mockInvoke).not.toHaveBeenCalled();
@@ -248,13 +302,46 @@ describe('accountService', () => {
 
       it('rejects a deleted response for any account other than the expected owner', async () => {
         mockInvoke.mockResolvedValue({
-          data: { status: 'deleted', userId: 'user-456' },
+          data: {
+            status: 'deleted',
+            operationId: '8a2aa2b8-182c-4c9c-8ae2-afd70725bd18',
+          },
           error: null,
         });
 
-        const result = await deleteAccount('user-123');
+        const result = await deleteAccount('user-123', DELETION_AUTHORITY);
 
         expect(result).toEqual({ status: 'not-deleted', code: 'invalid-response' });
+      });
+
+      it('recovers a completed deletion by capability without reading the deleted session', async () => {
+        mockGetCurrentSessionUserId.mockRejectedValue(
+          new Error('deleted sessions cannot be refreshed'),
+        );
+        mockInvoke.mockResolvedValue({
+          data: { status: 'deleted', operationId: DELETION_AUTHORITY.operationId },
+          error: null,
+        });
+
+        const result = await resumeAccountDeletion(DELETION_AUTHORITY);
+
+        expect(result).toEqual({ status: 'deleted' });
+        expect(mockGetCurrentSessionUserId).not.toHaveBeenCalled();
+        expect(mockInvoke).toHaveBeenCalledWith('resume-account-deletion', {
+          body: DELETION_AUTHORITY,
+          signal: expect.any(AbortSignal),
+        });
+      });
+
+      it('keeps an active lease pending instead of fabricating completion', async () => {
+        mockInvoke.mockResolvedValue({
+          data: { status: 'pending', operationId: DELETION_AUTHORITY.operationId },
+          error: null,
+        });
+
+        const result = await resumeAccountDeletion(DELETION_AUTHORITY);
+
+        expect(result).toEqual({ status: 'not-deleted', code: 'pending' });
       });
     });
   });

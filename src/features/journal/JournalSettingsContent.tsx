@@ -1,5 +1,5 @@
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ChevronLeft, Clock3, Download, Fingerprint, KeyRound, Lock, Shield } from "lucide-react";
+import { forwardRef, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { ChevronLeft, Clock3, Download, Fingerprint, KeyRound, Loader2, Lock, SearchCheck, Shield, Upload } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,13 @@ import {
   type useJournalSecurity,
 } from "./useJournalSecurity";
 import { JournalAmbienceSetting } from "./JournalAmbienceSetting";
+import {
+  flushJournalAiConsentRevocation,
+  hasPendingJournalAiConsentRevocation,
+  isJournalAiConsentGranted,
+  revokeJournalAiConsent,
+  subscribeJournalAiConsent,
+} from "./journalAiConsent";
 
 export type JournalSettingsSection =
   | "overview"
@@ -32,9 +39,14 @@ interface JournalSettingsContentProps {
   section: JournalSettingsSection;
   onSectionChange: (section: JournalSettingsSection) => void;
   privateMode: boolean;
+  privateModeError?: string | null;
   onPrivateModeChange: (checked: boolean) => void;
   onOpenExport: () => void;
+  onRequestImport?: () => void;
+  importing?: boolean;
+  importFeedback?: { type: "success" | "error"; message: string } | null;
   onRequestRemovePassword: () => void;
+  onBusyChange?: (busy: boolean) => void;
 }
 
 function SectionCard({
@@ -71,20 +83,24 @@ function SectionCard({
   );
 }
 
-function SettingsActionButton({
-  label,
-  tone = "default",
-  disabled = false,
-  onClick,
-}: {
+const SettingsActionButton = forwardRef<HTMLButtonElement, {
   label: string;
   tone?: "default" | "danger";
   disabled?: boolean;
+  testId?: string;
   onClick: () => void;
-}) {
+}>(function SettingsActionButton({
+  label,
+  tone = "default",
+  disabled = false,
+  testId,
+  onClick,
+}, ref) {
   return (
     <button
+      ref={ref}
       type="button"
+      data-testid={testId}
       onClick={onClick}
       disabled={disabled}
       className={cn(
@@ -97,7 +113,7 @@ function SettingsActionButton({
       {label}
     </button>
   );
-}
+});
 
 function SettingsFormShell({
   title,
@@ -157,9 +173,14 @@ export function JournalSettingsContent({
   section,
   onSectionChange,
   privateMode,
+  privateModeError = null,
   onPrivateModeChange,
   onOpenExport,
+  onRequestImport,
+  importing = false,
+  importFeedback = null,
   onRequestRemovePassword,
+  onBusyChange,
 }: JournalSettingsContentProps) {
   const [setupPassword, setSetupPassword] = useState("");
   const [setupConfirm, setSetupConfirm] = useState("");
@@ -175,8 +196,19 @@ export function JournalSettingsContent({
   const [biometricError, setBiometricError] = useState("");
   const [autoLockMs, setAutoLockMsState] = useState(getStoredAutoLockMs);
   const [autoLockError, setAutoLockError] = useState(false);
+  const [aiConsentGranted, setAiConsentGranted] = useState(isJournalAiConsentGranted);
+  const [aiConsentPending, setAiConsentPending] = useState(false);
+  const [aiConsentBusy, setAiConsentBusy] = useState(false);
+  const [aiConsentError, setAiConsentError] = useState(false);
+  const isBusy =
+    setupSubmitting ||
+    changeSubmitting ||
+    biometricSubmitting ||
+    aiConsentBusy ||
+    importing;
   const setupRequestSeqRef = useRef(0);
   const changeRequestSeqRef = useRef(0);
+  const aiConsentRequestSeqRef = useRef(0);
   const setupErrorId = useId();
   const changeErrorId = useId();
   const biometricErrorId = useId();
@@ -188,6 +220,31 @@ export function JournalSettingsContent({
     900_000: ts.journalLockTimeoutFifteenMinutes,
     1_800_000: ts.journalLockTimeoutThirtyMinutes,
   } satisfies Record<(typeof LOCK_TIMEOUT_OPTIONS)[number]["ms"], string>;
+
+  useEffect(() => {
+    onBusyChange?.(isBusy);
+  }, [isBusy, onBusyChange]);
+
+  useEffect(() => () => onBusyChange?.(false), [onBusyChange]);
+
+  useEffect(() => {
+    let mounted = true;
+    const refresh = async (requestSeq = aiConsentRequestSeqRef.current) => {
+      const pending = await hasPendingJournalAiConsentRevocation();
+      if (!mounted || aiConsentRequestSeqRef.current !== requestSeq) return;
+      setAiConsentGranted(isJournalAiConsentGranted());
+      setAiConsentPending(pending);
+    };
+    const unsubscribe = subscribeJournalAiConsent(() => {
+      void refresh();
+    });
+    const startupRequestSeq = aiConsentRequestSeqRef.current;
+    void flushJournalAiConsentRevocation().finally(() => refresh(startupRequestSeq));
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   const clearSetupForm = () => {
     setupRequestSeqRef.current += 1;
@@ -339,6 +396,27 @@ export function JournalSettingsContent({
       );
     } finally {
       setBiometricSubmitting(false);
+    }
+  };
+
+  const handleRevokeAiConsent = async () => {
+    if (aiConsentBusy) return;
+    aiConsentRequestSeqRef.current += 1;
+    setAiConsentBusy(true);
+    setAiConsentError(false);
+    setAiConsentGranted(false);
+    try {
+      const result = await revokeJournalAiConsent();
+      const pending = result.status === "pending" || result.status === "owner-mismatch";
+      setAiConsentPending(pending);
+      setAiConsentError(
+        result.status === "owner-unavailable" || result.status === "storage-error",
+      );
+    } catch {
+      setAiConsentPending(true);
+      setAiConsentError(true);
+    } finally {
+      setAiConsentBusy(false);
     }
   };
 
@@ -524,19 +602,21 @@ export function JournalSettingsContent({
             <>
               <SettingsActionButton
                 label={ts.journalPasswordChange || "Change Password"}
-                disabled={security.cloudProtectionPending}
+                disabled={security.cloudProtectionPending || importing}
                 onClick={() => onSectionChange("password-change")}
               />
               <SettingsActionButton
                 label={ts.journalPasswordRemove || "Remove Password Lock"}
                 tone="danger"
-                disabled={security.cloudProtectionPending}
+                disabled={security.cloudProtectionPending || importing}
                 onClick={onRequestRemovePassword}
               />
             </>
           ) : (
             <SettingsActionButton
               label={ts.journalPasswordSetup || "Set Diary Password"}
+              testId="journal-password-setup-action"
+              disabled={importing}
               onClick={() => onSectionChange("password-setup")}
             />
           )}
@@ -546,8 +626,11 @@ export function JournalSettingsContent({
             role="status"
             className="mt-4 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm leading-6 text-foreground"
           >
-            {ts.journalProtectionCloudPending ||
-              "Protected on this device. ZenFlow is still replacing an older online copy; keep the app open and connect to the internet."}
+            {security.cloudProtectionPendingKind === "removal" || !security.hasPassword
+              ? ts.journalProtectionRemovalCloudPending ||
+                "The diary lock is off on this device. ZenFlow is still finishing this change online; keep the app open and connect to the internet."
+              : ts.journalProtectionCloudPending ||
+                "Protected on this device. ZenFlow is still replacing an older online copy; keep the app open and connect to the internet."}
           </p>
         ) : null}
       </SectionCard>
@@ -572,7 +655,7 @@ export function JournalSettingsContent({
             <Switch
               checked={security.biometricEnabled}
               onCheckedChange={handleBiometricEnabledChange}
-              disabled={biometricSubmitting}
+              disabled={biometricSubmitting || importing}
               aria-label={ts.journalBiometricEnable || "Biometric Unlock"}
               aria-describedby={biometricError ? biometricErrorId : undefined}
             />
@@ -600,6 +683,7 @@ export function JournalSettingsContent({
           <select
             id="journal-auto-lock-timeout"
             value={autoLockMs}
+            disabled={importing}
             onChange={(event) => {
               const next = Number(event.target.value);
               if (!setAutoLockMs(next)) {
@@ -628,9 +712,10 @@ export function JournalSettingsContent({
       ) : null}
 
       <SectionCard
-        title={ts.journalPrivateMode || "Hide previews"}
+        title={ts.journalPrivateMode || "Conceal diary list"}
         description={
-          ts.journalPrivateModeHint || "Show only titles in the diary list."
+          ts.journalPrivateModeHint ||
+          "Hides titles, previews, and list actions on this device until you turn it off. This is screen privacy, not password protection."
         }
         icon={KeyRound}
       >
@@ -638,12 +723,100 @@ export function JournalSettingsContent({
           <Switch
             checked={privateMode}
             onCheckedChange={onPrivateModeChange}
-            aria-label={ts.journalPrivateMode || "Hide previews"}
+            disabled={importing}
+            aria-label={ts.journalPrivateMode || "Conceal diary list"}
           />
         </div>
+        {privateModeError ? (
+          <p role="alert" className="mt-3 text-sm leading-6 text-destructive">
+            {privateModeError}
+          </p>
+        ) : null}
+      </SectionCard>
+
+      <SectionCard
+        title={ts.journalAiSearchPrivacy || "Private search privacy"}
+        description={
+          ts.journalAiPrivacyConfirm ||
+          "Private search runs inside your ZenFlow account and does not send journal text or queries to an external AI provider."
+        }
+        icon={SearchCheck}
+      >
+        {aiConsentGranted || aiConsentPending ? (
+          <SettingsActionButton
+            label={
+              aiConsentBusy
+                ? ts.journalAiRevoking || "Turning off private search..."
+                : ts.journalAiRevoke || "Turn off private search and remove its permission"
+            }
+            tone="danger"
+            disabled={aiConsentBusy || importing}
+            onClick={() => void handleRevokeAiConsent()}
+          />
+        ) : (
+          <p aria-live="polite" className="text-sm leading-6 text-muted-foreground">
+            {ts.journalAiSearchOff ||
+              "Private search is off. Standard text search stays on this device."}
+          </p>
+        )}
+        {aiConsentPending ? (
+          <p role="status" className="mt-3 text-sm leading-6 text-muted-foreground">
+            {ts.journalAiRevokePending ||
+              "Private search is off. Removing its permission will retry when you are online."}
+          </p>
+        ) : null}
+        {aiConsentError ? (
+          <p role="alert" className="mt-3 text-sm leading-6 text-destructive">
+            {ts.journalAiConsentUnavailable ||
+              "ZenFlow could not finish this privacy change. Private search remains off; try again after checking your connection and account."}
+          </p>
+        ) : null}
       </SectionCard>
 
       <JournalAmbienceSetting tx={ts} />
+
+      {onRequestImport ? (
+        <SectionCard
+          title={ts.journalImport || "Import backup"}
+          description={
+            ts.journalImportHint ||
+            "Restore entries from a ZenFlow JSON backup. Existing entries stay in place."
+          }
+          icon={Upload}
+        >
+          <button
+            type="button"
+            onClick={onRequestImport}
+            disabled={importing}
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/80 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {importing ? (
+              <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden="true" />
+            ) : (
+              <Upload className="h-4 w-4" aria-hidden="true" />
+            )}
+            <span>
+              {importing
+                ? ts.journalImporting || "Importing backup..."
+                : ts.journalImport || "Import backup"}
+            </span>
+          </button>
+          {importFeedback ? (
+            <p
+              role={importFeedback.type === "error" ? "alert" : "status"}
+              aria-live={importFeedback.type === "error" ? "assertive" : "polite"}
+              className={cn(
+                "mt-3 rounded-2xl border px-4 py-3 text-sm leading-6",
+                importFeedback.type === "error"
+                  ? "border-destructive/20 bg-destructive/10 text-destructive"
+                  : "border-primary/20 bg-primary/10 text-foreground",
+              )}
+            >
+              {importFeedback.message}
+            </p>
+          ) : null}
+        </SectionCard>
+      ) : null}
 
       <SectionCard
         title={ts.journalExport || "Export"}
@@ -655,6 +828,7 @@ export function JournalSettingsContent({
         <div className="flex flex-wrap gap-2">
           <SettingsActionButton
             label={ts.journalExport || "Export Diary Data"}
+            disabled={importing}
             onClick={onOpenExport}
           />
         </div>

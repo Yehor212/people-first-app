@@ -1,14 +1,26 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
-import { useIndexedDB } from "@/hooks/useIndexedDB";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { getPendingDataWriteBarrierMode, useIndexedDB } from "@/hooks/useIndexedDB";
 import { db } from "@/storage/db";
 import { getDeletedHabitIds } from "@/storage/deletionTracker";
-import { defaultReminderSettings } from "@/lib/reminders";
+import { defaultReminderSettings, migrateStoredReminderSettings } from "@/lib/reminders";
 import {
   defaultPrivacySettings,
   useUserDataStore,
   type RegisteredSetters,
 } from "./userDataStore";
 import { SK } from "@/lib/storageKeys";
+import { logger } from "@/lib/logger";
+import {
+  captureOriginAccountBoundaryGeneration,
+  isAccountBoundaryChangedError,
+  isOriginAccountBoundaryGenerationCurrent,
+} from "@/storage/accountBoundaryRuntime";
+import {
+  commitProfilePreferencePatch,
+  readAuthoritativeProfilePreference,
+  readProfileRecoveryPreference,
+  type ProfilePreference,
+} from "@/storage/settingsPreferencePersistence";
 import type {
   MoodEntry,
   Habit,
@@ -46,6 +58,11 @@ const filterTombstonedHabits = async (items: unknown[]): Promise<unknown[]> => {
   });
 };
 
+const DEFAULT_PROFILE_PREFERENCE: ProfilePreference = {
+  name: "Friend",
+  userChosen: false,
+};
+
 /**
  * Bridge hook: loads all user data from IndexedDB via useIndexedDB hooks,
  * syncs values into the Zustand userDataStore, and registers persistence setters.
@@ -56,6 +73,14 @@ const filterTombstonedHabits = async (items: unknown[]): Promise<unknown[]> => {
 export function useHydrateUserData(): void {
   // ── 14 useIndexedDB calls (moved from Index.tsx) ──
 
+  const profilePreferenceRef = useRef<ProfilePreference>(DEFAULT_PROFILE_PREFERENCE);
+  const [profilePreference, setProfilePreference] = useState<ProfilePreference | null>(null);
+  const profileResolutionSequenceRef = useRef(0);
+  const profileWriteScheduledRef = useRef(false);
+  const profileWriteGenerationRef = useRef<string | null>(null);
+  const profileWritePatchRef = useRef<Partial<ProfilePreference>>({});
+  const profileWriteRevisionRef = useRef(0);
+
   const [hasSelectedLanguage, setHasSelectedLanguage, isLoadingLangSelected] = useIndexedDB({
     table: db.settings,
     localStorageKey: "zenflow-language-selected",
@@ -63,19 +88,128 @@ export function useHydrateUserData(): void {
     idField: "key",
   });
 
-  const [userName, setUserName, isLoadingUserName] = useIndexedDB({
+  const [hydratedUserName, , isLoadingUserName] = useIndexedDB({
     table: db.settings,
     localStorageKey: "zenflow-username",
     initialValue: "Friend",
     idField: "key",
+    readFallbackValue: () => readProfileRecoveryPreference().name,
+    persistFallbackOnRead: false,
   });
 
-  const [userNameCustom, setUserNameCustom, isLoadingUserNameCustom] = useIndexedDB({
+  const [hydratedUserNameCustom, , isLoadingUserNameCustom] = useIndexedDB({
     table: db.settings,
     localStorageKey: "zenflow-username-custom",
     initialValue: false,
     idField: "key",
+    readFallbackValue: () => readProfileRecoveryPreference().userChosen,
+    persistFallbackOnRead: false,
   });
+
+  useEffect(() => {
+    if (isLoadingUserName || isLoadingUserNameCustom) return;
+    const sequence = profileResolutionSequenceRef.current + 1;
+    profileResolutionSequenceRef.current = sequence;
+    let active = true;
+
+    const resolveProfilePreference = async () => {
+      let next: ProfilePreference;
+      try {
+        const snapshot = await readAuthoritativeProfilePreference();
+        next = snapshot.kind === "complete"
+          ? snapshot.profile
+          : snapshot.kind === "absent"
+            ? readProfileRecoveryPreference()
+            : { ...DEFAULT_PROFILE_PREFERENCE };
+      } catch (error) {
+        if (isAccountBoundaryChangedError(error)) {
+          next = { ...DEFAULT_PROFILE_PREFERENCE };
+        } else {
+          logger.warn(
+            "[useHydrateUserData] Authoritative profile pair unavailable; using one recovery envelope",
+            error,
+          );
+          next = readProfileRecoveryPreference();
+        }
+      }
+
+      if (!active || profileResolutionSequenceRef.current !== sequence) return;
+      profilePreferenceRef.current = next;
+      setProfilePreference(next);
+    };
+
+    void resolveProfilePreference();
+    return () => {
+      active = false;
+    };
+  }, [
+    hydratedUserName,
+    hydratedUserNameCustom,
+    isLoadingUserName,
+    isLoadingUserNameCustom,
+  ]);
+
+  const scheduleProfilePairWrite = useCallback((patch: Partial<ProfilePreference>) => {
+    // Ordinary sync/import barriers preserve this action by queuing its atomic
+    // pair commit. Only an account-boundary purge may discard it: replaying an
+    // expired realm's optimistic profile after deletion would resurrect data.
+    if (getPendingDataWriteBarrierMode() === "discard") return;
+    profileWritePatchRef.current = { ...profileWritePatchRef.current, ...patch };
+    profileWriteRevisionRef.current += 1;
+    if (profileWriteScheduledRef.current) return;
+    profileWriteScheduledRef.current = true;
+    profileWriteGenerationRef.current = captureOriginAccountBoundaryGeneration();
+
+    queueMicrotask(() => {
+      profileWriteScheduledRef.current = false;
+      const generation = profileWriteGenerationRef.current;
+      profileWriteGenerationRef.current = null;
+      const requestedPatch = profileWritePatchRef.current;
+      profileWritePatchRef.current = {};
+      const revision = profileWriteRevisionRef.current;
+      if (!generation || !isOriginAccountBoundaryGenerationCurrent(generation)) return;
+
+      void commitProfilePreferencePatch(requestedPatch).then(
+        (committed) => {
+          if (profileWriteRevisionRef.current !== revision) return;
+          profilePreferenceRef.current = committed;
+          setProfilePreference(committed);
+        },
+        (error) => {
+          logger.error("[useHydrateUserData] Atomic profile preference write failed:", error);
+        },
+      );
+    });
+  }, []);
+
+  const setUserName = useCallback(
+    (value: string | ((previous: string) => string)) => {
+      const previous = profilePreferenceRef.current;
+      const name = typeof value === "function" ? value(previous.name) : value;
+      const next = { ...previous, name };
+      profilePreferenceRef.current = next;
+      setProfilePreference(next);
+      scheduleProfilePairWrite({ name });
+    },
+    [scheduleProfilePairWrite],
+  );
+
+  const setUserNameCustom = useCallback(
+    (value: boolean | ((previous: boolean) => boolean)) => {
+      const previous = profilePreferenceRef.current;
+      const userChosen =
+        typeof value === "function" ? value(previous.userChosen) : value;
+      const next = { ...previous, userChosen };
+      profilePreferenceRef.current = next;
+      setProfilePreference(next);
+      scheduleProfilePairWrite({ userChosen });
+    },
+    [scheduleProfilePairWrite],
+  );
+
+  const userName = profilePreference?.name ?? DEFAULT_PROFILE_PREFERENCE.name;
+  const userNameCustom =
+    profilePreference?.userChosen ?? DEFAULT_PROFILE_PREFERENCE.userChosen;
 
   const [moods, setMoods, isLoadingMoods] = useIndexedDB<MoodEntry[]>({
     table: db.moods,
@@ -114,6 +248,7 @@ export function useHydrateUserData(): void {
     initialValue: defaultReminderSettings,
     idField: "key",
     objectSchema: reminderSettingsSchema,
+    migrateStoredValue: migrateStoredReminderSettings,
   });
 
   const [onboardingComplete, setOnboardingComplete, isLoadingOnboarding] = useIndexedDB({
@@ -267,6 +402,7 @@ export function useHydrateUserData(): void {
   // ── Sync values from useIndexedDB → Zustand store ──
 
   const isLoading =
+    profilePreference === null ||
     isLoadingLangSelected ||
     isLoadingUserName ||
     isLoadingUserNameCustom ||

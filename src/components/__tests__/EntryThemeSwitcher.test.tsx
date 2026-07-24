@@ -33,16 +33,25 @@ vi.mock("@/components/ThemeToggle", () => ({
 }));
 
 describe("EntryThemeSwitcher", () => {
-  it("keeps theme options shrink-safe on narrow Android entry screens", () => {
+  it("keeps complete theme labels readable at large text sizes", () => {
     render(<EntryThemeSwitcher />);
 
     const group = screen.getByRole("radiogroup", { name: "Appearance" });
     expect(group).toHaveClass("w-full", "max-w-[32rem]", "mx-auto");
+    expect(group.className).toContain("auto-fit");
+    expect(group.className).toContain("var(--font-scale");
 
     for (const label of ["Light", "Dark", "System"]) {
       const option = within(group).getByRole("radio", { name: label });
-      expect(option).toHaveClass("min-w-0", "px-1.5", "text-xs", "sm:text-sm");
-      expect(within(option).getByText(label)).toHaveClass("min-w-0", "truncate");
+      expect(option).toHaveClass(
+        "h-auto",
+        "min-h-[44px]",
+        "min-w-0",
+        "whitespace-normal",
+        "break-words"
+      );
+      expect(within(option).getByText(label)).toHaveClass("min-w-0", "break-words");
+      expect(within(option).getByText(label)).not.toHaveClass("truncate");
     }
   });
 });

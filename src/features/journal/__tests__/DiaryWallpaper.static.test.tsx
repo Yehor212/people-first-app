@@ -159,6 +159,42 @@ describe("Diary wallpaper contract", () => {
     expect(wallpaper).toHaveAttribute("data-wallpaper-tone", "day");
   });
 
+  it("reconciles the wallpaper tone when a suspended app becomes visible", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-18T18:30:00"));
+    themeState.appliedTheme = "paper";
+
+    render(<DiaryWallpaper />);
+
+    const wallpaper = screen.getByTestId("journal-wallpaper");
+    expect(wallpaper).toHaveAttribute("data-wallpaper-tone", "day");
+
+    act(() => {
+      vi.setSystemTime(new Date("2026-06-18T20:30:00"));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    expect(wallpaper).toHaveAttribute("data-wallpaper-tone", "night");
+  });
+
+  it("reconciles the wallpaper tone after browser page restoration", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-18T05:30:00"));
+    themeState.appliedTheme = "paper";
+
+    render(<DiaryWallpaper />);
+
+    const wallpaper = screen.getByTestId("journal-wallpaper");
+    expect(wallpaper).toHaveAttribute("data-wallpaper-tone", "night");
+
+    act(() => {
+      vi.setSystemTime(new Date("2026-06-18T08:30:00"));
+      window.dispatchEvent(new PageTransitionEvent("pageshow"));
+    });
+
+    expect(wallpaper).toHaveAttribute("data-wallpaper-tone", "day");
+  });
+
   it("keeps the premium wallpaper self-contained and theme-specific for all platforms", () => {
     const wallpaperSource = readSource("src/features/journal/DiaryWallpaper.tsx");
     const wallpaperCss = extractWallpaperCss(readSource("src/index.css"));
@@ -189,7 +225,8 @@ describe("Diary wallpaper contract", () => {
 
   it("defines a universal premium wallpaper scene for Web, PWA, and native wrappers", () => {
     const wallpaperSource = readSource("src/features/journal/DiaryWallpaper.tsx");
-    const wallpaperCss = extractWallpaperCss(readSource("src/index.css"));
+    const cssSource = readSource("src/index.css");
+    const wallpaperCss = extractWallpaperCss(cssSource);
 
     expect(wallpaperSource).toContain('data-wallpaper-platform="universal"');
     expect(wallpaperSource).toContain("journal-wallpaper__daybreak-arc");
@@ -207,8 +244,23 @@ describe("Diary wallpaper contract", () => {
     expect(wallpaperCss).toContain("@media (min-width: 1024px)");
     expect(wallpaperCss).toContain("@media (orientation: landscape) and (max-height: 540px)");
     expect(wallpaperCss).toContain("@media (prefers-reduced-data: reduce)");
-    expect(wallpaperCss).toContain("@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))");
+    expect(cssSource).toContain("@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))");
     expect(wallpaperCss).not.toContain("background-attachment: fixed");
+  });
+
+  it("applies the solid no-blur fallback after translucent diary panel rules", () => {
+    const cssSource = readSource("src/index.css");
+    const baseSidebarIndex = cssSource.indexOf(".journal-light-sidebar-panel,");
+    const fallbackIndex = cssSource.lastIndexOf(
+      "@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))",
+    );
+    const fallbackBlock = cssSource.slice(fallbackIndex, cssSource.indexOf("}", fallbackIndex) + 1);
+
+    expect(baseSidebarIndex).toBeGreaterThanOrEqual(0);
+    expect(fallbackIndex).toBeGreaterThan(baseSidebarIndex);
+    expect(fallbackBlock).toContain(".journal-diary-glass-panel");
+    expect(fallbackBlock).toContain(".journal-light-sidebar-panel");
+    expect(fallbackBlock).toContain(".journal-light-sidebar-rail");
   });
 
   it("scales the night star field organically across narrow, tall, and wide V2 surfaces", () => {

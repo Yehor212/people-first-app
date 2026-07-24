@@ -20,4 +20,18 @@
     <string name="widget_no_mood">Sin estado de ánimo</string>
     <string name="widget_days">días</string>
     <string name="widget_habits_label">Hábitos</string>
+    <string name="push_realm_mood_title">¿Cómo te sientes ahora?</string>
+    <string name="push_realm_mood_body">Si quieres, anota cómo te sientes.</string>
+    <string name="push_realm_habit_title">Recordatorio de hábito</string>
+    <string name="push_realm_habit_body">Un pequeño paso es suficiente. Empieza cuando quieras.</string>
+    <string name="push_realm_focus_title">¿Quieres concentrarte?</string>
+    <string name="push_realm_focus_body">Puedes iniciar una sesión de concentración de 25 minutos cuando te venga bien.</string>
+    <string name="push_realm_test_title">ZenFlow</string>
+    <string name="push_realm_test_body">Notificación de prueba.</string>
+    <string name="push_realm_channel_default">Predeterminado</string>
+    <string name="push_realm_channel_default_description">Sonido de notificación del sistema</string>
+    <string name="push_realm_channel_gentle">Suave</string>
+    <string name="push_realm_channel_gentle_description">Solo vibración</string>
+    <string name="push_realm_channel_silent">Silencioso</string>
+    <string name="push_realm_channel_silent_description">Sin sonido ni vibración</string>
 </resources>

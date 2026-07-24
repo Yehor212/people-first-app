@@ -1,6 +1,7 @@
 import { safeJsonParse, storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import type { MoodEntry, MoodType } from "@/types";
 import type { JournalEntry } from "./types";
+import { countWordsHtml } from "./types";
 
 export type MemoryPortalAction = "write" | "voice" | "photo" | "gratitude" | "burn" | "focus";
 
@@ -241,9 +242,7 @@ export function stripJournalText(content: string): string {
 }
 
 export function countJournalWords(content: string): number {
-  const text = stripJournalText(content);
-  if (!text) return 0;
-  return text.split(/\s+/).length;
+  return countWordsHtml(content);
 }
 
 function clampValence(value: number): number {

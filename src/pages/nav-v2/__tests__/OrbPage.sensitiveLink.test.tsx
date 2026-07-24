@@ -187,7 +187,7 @@ vi.mock("@/lib/motion", () => ({
   Bloom: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-describe("OrbPage — Phase 3-A.4c-ii-c sensitive emotion support link", () => {
+describe("OrbPage — sensitive emotion integrity", () => {
   beforeEach(() => {
     setMoodsSpy.mockClear();
     setActivePageMock.mockClear();
@@ -210,86 +210,19 @@ describe("OrbPage — Phase 3-A.4c-ii-c sensitive emotion support link", () => {
     expect(grid.getAttribute("data-expandable")).toBe("true");
   });
 
-  // --- sensitive-link visibility ---
-  it("hides support link before any emotion is chosen", () => {
+  it("does not expose a support control before any emotion is chosen", () => {
     render(<OrbPage />);
     fireEvent.click(screen.getByTestId("mood-slider"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
     expect(screen.queryByTestId("mood-support-link")).not.toBeInTheDocument();
   });
 
-  it("hides support link when a non-sensitive emotion is chosen", () => {
+  it("does not expose a fake support destination for a sensitive emotion", () => {
     render(<OrbPage />);
     fireEvent.click(screen.getByTestId("mood-slider"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
-    fireEvent.click(screen.getByTestId("emotion-tag-mock-happy"));
-    expect(screen.queryByTestId("mood-support-link")).not.toBeInTheDocument();
-  });
-
-  it("reveals support link when a sensitive emotion (hopeless) is chosen", () => {
-    render(<OrbPage />);
-    fireEvent.click(screen.getByTestId("mood-slider"));
-    fireEvent.click(screen.getByTestId("orb-page-next"));
-    fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
-    expect(screen.getByTestId("mood-support-link")).toBeInTheDocument();
-  });
-
-  it("support link uses the i18n moodSupportLink copy", () => {
-    render(<OrbPage />);
-    fireEvent.click(screen.getByTestId("mood-slider"));
-    fireEvent.click(screen.getByTestId("orb-page-next"));
-    fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
-    expect(screen.getByTestId("mood-support-link")).toHaveTextContent(
-      "Need support?",
-    );
-  });
-
-  // --- scope-aware styling ---
-  it("support link styling uses semantic muted palette on dark theme", () => {
-    render(<OrbPage />);
-    fireEvent.click(screen.getByTestId("mood-slider"));
-    fireEvent.click(screen.getByTestId("orb-page-next"));
-    fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
-    const link = screen.getByTestId("mood-support-link");
-    expect(link.className).toContain("text-foreground/55");
-    expect(link.className).not.toContain("text-white/50");
-  });
-
-  it("support link styling keeps the semantic muted palette on day theme", () => {
-    mockAppliedTheme = "paper";
-    render(<OrbPage />);
-    fireEvent.click(screen.getByTestId("mood-slider"));
-    fireEvent.click(screen.getByTestId("orb-page-next"));
-    fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
-    const link = screen.getByTestId("mood-support-link");
-    expect(link.className).toContain("text-foreground/55");
-    expect(link.className).not.toContain("text-white/50");
-  });
-
-  // --- interaction ---
-  it("support link calls preventDefault (stub route for future /support)", () => {
-    render(<OrbPage />);
-    fireEvent.click(screen.getByTestId("mood-slider"));
-    fireEvent.click(screen.getByTestId("orb-page-next"));
-    fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
-    const link = screen.getByTestId("mood-support-link");
-    const event = new MouseEvent("click", {
-      bubbles: true,
-      cancelable: true,
-    });
-    const propagated = link.dispatchEvent(event);
-    // dispatchEvent returns false when preventDefault was called on a
-    // cancelable event.
-    expect(propagated).toBe(false);
-  });
-
-  it("support link disappears when the sensitive choice is toggled off", () => {
-    render(<OrbPage />);
-    fireEvent.click(screen.getByTestId("mood-slider"));
-    fireEvent.click(screen.getByTestId("orb-page-next"));
-    fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
-    expect(screen.getByTestId("mood-support-link")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeless"));
     expect(screen.queryByTestId("mood-support-link")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Need support?" })).not.toBeInTheDocument();
   });
 });

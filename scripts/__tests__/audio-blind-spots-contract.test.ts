@@ -6,6 +6,15 @@ function read(path: string): string {
 }
 
 describe("audio blind-spot release contracts", () => {
+  it("declares microphone purpose strings for iOS and macOS desktop bundles", () => {
+    const iosInfo = read("ios/App/App/Info.plist");
+    const macosInfo = read("src-tauri/Info.plist");
+
+    expect(iosInfo).toContain("NSMicrophoneUsageDescription");
+    expect(macosInfo).toContain("NSMicrophoneUsageDescription");
+    expect(macosInfo).toContain("journal audio recordings and voice dictation");
+  });
+
   it("allows first-party journal voice recording while keeping other sensitive APIs denied", () => {
     const index = read("index.html");
 
@@ -131,7 +140,19 @@ describe("audio blind-spot release contracts", () => {
   });
 
   it("keeps public privacy copy aligned with microphone, sync, ads, crash, and current app-audio surfaces", () => {
-    const privacy = read("public/privacy.html");
+    const privacyCopies = [
+      read("public/privacy.html"),
+      read("public/privacy-policy.html"),
+      read("docs/privacy-policy.html"),
+    ];
+
+    for (const privacy of privacyCopies) {
+      expect(privacy).toContain("speech recognition");
+      expect(privacy).toContain("browser or operating system");
+      expect(privacy).toContain("processed outside ZenFlow");
+    }
+
+    const privacy = privacyCopies[0];
 
     expect(privacy).toContain("Microphone and journal audio recordings");
     expect(privacy).toContain("Supabase");

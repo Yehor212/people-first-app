@@ -165,15 +165,23 @@ describe("JournalCaptureLauncher", () => {
     vi.clearAllMocks();
   });
 
-  it("keeps iOS action fan tap targets stable while animating", () => {
+  it("keeps the localized action fan in one bounded natural-flow column", () => {
     expect(launcherSource).toContain(
-      '"relative flex h-14 min-h-14 touch-manipulation items-center gap-3"',
+      '"relative flex min-h-14 touch-manipulation items-center gap-3"',
     );
     expect(launcherSource).toContain(
-      '"fixed end-5 z-[56] flex h-14 min-h-14 touch-manipulation items-center gap-3 rtl:flex-row flex-row-reverse"',
+      '"relative flex min-h-14 min-w-0 max-w-full touch-manipulation items-center gap-3 rtl:flex-row flex-row-reverse"',
     );
+    expect(launcherSource).toContain("flex-col items-end gap-2 overflow-y-auto overscroll-contain");
+    expect(launcherSource).toContain("max-h-[calc(100svh-11rem-var(--safe-top)-var(--safe-bottom))]");
+    expect(launcherSource).not.toContain("actionButtonPosition");
+    expect(launcherSource).not.toContain("(index + 1) * 72");
+    expect(launcherSource).toContain("var(--safe-bottom)");
+    expect(launcherSource).not.toContain("env(safe-area-inset");
     expect(launcherSource).toContain("animate={{ opacity: 1, y: 0 }}");
     expect(launcherSource).not.toContain("scale: 0.78");
+    expect(launcherSource).not.toContain("whitespace-nowrap");
+    expect(launcherSource).toContain("whitespace-normal break-words");
   });
 
   it("opens the same action set for the floating diary launcher", () => {

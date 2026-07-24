@@ -37,7 +37,7 @@ export const SidebarCompact = memo(function SidebarCompact({
   const actionClass = (active: boolean) => cn(
     "flex h-[44px] w-[44px] items-center justify-center rounded-xl border p-0 motion-safe:transition-[background-color,border-color,color,box-shadow,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 active:scale-[0.98]",
     active
-      ? "border-primary/25 bg-primary/[0.14] text-primary shadow-[0_10px_26px_hsl(var(--primary)/0.13)]"
+      ? "border-primary/25 bg-primary/15 text-primary shadow-[0_10px_26px_hsl(var(--primary)/0.13)]"
       : "border-transparent text-muted-foreground hover:border-border/35 hover:bg-muted/50 hover:text-foreground"
   );
 
@@ -114,9 +114,9 @@ export const SidebarCompact = memo(function SidebarCompact({
             data-testid="journal-sidebar-disclosure"
           >
             {collapsed ? (
-              <PanelLeftOpen className="w-4 h-4" aria-hidden="true" />
+              <PanelLeftOpen className="w-4 h-4 rtl:scale-x-[-1]" aria-hidden="true" />
             ) : (
-              <PanelLeftClose className="w-4 h-4" aria-hidden="true" />
+              <PanelLeftClose className="w-4 h-4 rtl:scale-x-[-1]" aria-hidden="true" />
             )}
           </button>
         </div>
