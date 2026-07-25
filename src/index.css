@@ -1967,6 +1967,19 @@
   }
 }
 
+/* Vortex: stars drift toward the viewport centre and fade (narrative
+   intro effect; offsets are per-star pixel vars). */
+@keyframes zen-ambient-vortex {
+  from {
+    transform: translate(0, 0) scale(1);
+    opacity: var(--zen-loop-min-opacity, 0.5);
+  }
+  to {
+    transform: translate(var(--zen-vortex-x, 0px), var(--zen-vortex-y, 0px)) scale(0.5);
+    opacity: 0;
+  }
+}
+
 .animate-zen-loop-fade,
 .animate-zen-loop-scale,
 .animate-zen-loop-fade-scale,
@@ -1979,7 +1992,8 @@
 .animate-zen-loop-bounce-dot,
 .animate-zen-loop-wave,
 .animate-zen-loop-drift-x,
-.animate-zen-loop-rain {
+.animate-zen-loop-rain,
+.animate-zen-loop-vortex {
   animation-duration: var(--zen-loop-duration, 3s);
   animation-timing-function: var(--zen-loop-timing, ease-in-out);
   animation-iteration-count: infinite;
@@ -2056,6 +2070,10 @@ body.mood-terrible .animate-zen-loop-glow::after {
 
 .animate-zen-loop-rain {
   animation-name: zen-ambient-rain;
+}
+
+.animate-zen-loop-vortex {
+  animation-name: zen-ambient-vortex;
 }
 
 /* Continuous spin for SVG groups (sun icons etc.) — fill-box keeps the
@@ -3528,8 +3546,32 @@ body.reduce-motion [class*="animate-"] {
   animation: none !important;
 }
 
+/* Pre-React boot: the in-app reduce-motion preference is applied by
+   runtime-perf-bootstrap.js via <html data-reduce-motion> before
+   hydration, so the first paint has no animation flash. The React
+   AnimationGate re-applies the same decision as body.reduce-motion. */
+html[data-reduce-motion="true"] *,
+html[data-reduce-motion="true"] *::before,
+html[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+html[data-reduce-motion="true"] [class*="animate-"] {
+  animation: none !important;
+}
+
 body.reduce-motion .animate-fade-in {
   opacity: 1 !important;
+}
+
+/* Sparkle markers carry information (perfect day) — under reduced motion
+   they must rest statically visible instead of disappearing
+   (WCAG 1.1.1; 10-agent review, Role 4). */
+body.reduce-motion .animate-zen-loop-sparkle {
+  opacity: 0.9 !important;
+  transform: none !important;
 }
 
 body.reduce-motion .animate-scale-in {

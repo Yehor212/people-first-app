@@ -1,10 +1,13 @@
 /**
  * StarField - Animated parallax star background
  * Used in IntroSlide, FocusSlide for cosmic atmosphere
+ *
+ * Ambient loops are CSS-owned (animate-zen-loop-*) — compositor-only
+ * transform/opacity and covered by the reduce-motion kill-switch.
  */
 
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import type { CSSProperties } from 'react';
 
 interface Star {
   id: number;
@@ -67,47 +70,60 @@ export function StarField({
     <div className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}>
       {layers.map((layer, layerIndex) => (
         <div key={layerIndex} className="absolute inset-0">
-          {layer.stars.map((star) => (
-            <motion.div
-              key={star.id}
-              className="absolute rounded-full"
-              style={{
-                left: `${star.x}%`,
-                top: `${star.y}%`,
-                width: star.size,
-                height: star.size,
-                backgroundColor: color,
-                opacity: star.opacity * layer.opacity,
-              }}
-              animate={
-                vortex
-                  ? {
-                      // Vortex: stars move toward center
-                      x: [0, (50 - star.x) * 0.5],
-                      y: [0, (50 - star.y) * 0.5],
-                      scale: [1, 0.5],
-                      opacity: [star.opacity * layer.opacity, 0],
-                    }
-                  : twinkle
-                  ? {
-                      // Twinkle effect
-                      opacity: [
-                        star.opacity * layer.opacity * 0.5,
-                        star.opacity * layer.opacity,
-                        star.opacity * layer.opacity * 0.5,
-                      ],
-                      scale: [1, 1.2, 1],
-                    }
-                  : {}
-              }
-              transition={{
-                duration: star.duration,
-                delay: star.delay,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
-          ))}
+          {layer.stars.map((star) => {
+            const baseOpacity = star.opacity * layer.opacity;
+            const position = {
+              left: `${star.x}%`,
+              top: `${star.y}%`,
+              width: star.size,
+              height: star.size,
+              backgroundColor: color,
+            };
+
+            if (vortex) {
+              return (
+                <div
+                  key={star.id}
+                  className="absolute rounded-full animate-zen-loop-vortex"
+                  style={{
+                    ...position,
+                    opacity: baseOpacity,
+                    '--zen-loop-min-opacity': baseOpacity,
+                    '--zen-vortex-x': `${(50 - star.x) * 0.5}px`,
+                    '--zen-vortex-y': `${(50 - star.y) * 0.5}px`,
+                    '--zen-loop-duration': `${star.duration}s`,
+                    '--zen-loop-delay': `${star.delay}s`,
+                  } as CSSProperties}
+                />
+              );
+            }
+
+            if (twinkle) {
+              return (
+                <div
+                  key={star.id}
+                  className="absolute rounded-full animate-zen-loop-fade-scale"
+                  style={{
+                    ...position,
+                    opacity: baseOpacity * 0.75,
+                    '--zen-loop-min-opacity': baseOpacity * 0.5,
+                    '--zen-loop-max-opacity': baseOpacity,
+                    '--zen-loop-scale': 1.2,
+                    '--zen-loop-duration': `${star.duration}s`,
+                    '--zen-loop-delay': `${star.delay}s`,
+                  } as CSSProperties}
+                />
+              );
+            }
+
+            return (
+              <div
+                key={star.id}
+                className="absolute rounded-full"
+                style={{ ...position, opacity: baseOpacity }}
+              />
+            );
+          })}
         </div>
       ))}
 
