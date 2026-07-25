@@ -553,7 +553,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({
 
   const getTransition = () => {
     if (collapsing) {
-      return { duration: 0.55, ease: easings.emphasizedDecelerate };
+      return { duration: 0.55, ease: easings.emphasizedAccelerate };
     }
     if (released) {
       return { duration: 0.24, ease: 'easeOut' as const };

@@ -8,7 +8,8 @@ import {
   useState,
 } from "react";
 import { ArrowLeft, RefreshCw } from "lucide-react";
-import { Bloom } from "@/lib/motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bloom, easings } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeStore } from "@/stores/themeStore";
@@ -461,18 +462,26 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
             instant
           />
         ) : (
-          <div
-            className={cn(
-              scopeClass,
-              "fixed inset-0 z-40 flex items-center justify-center bg-background"
-            )}
-            data-testid="orb-page-loading"
-          >
-            <PremiumLoader
-              size="lg"
-              label={tx.initializingApp || tx.loading || "Loading"}
-            />
-          </div>
+          <AnimatePresence>
+            <motion.div
+              key="orb-page-loading"
+              className={cn(
+                scopeClass,
+                "fixed inset-0 z-40 flex items-center justify-center bg-background"
+              )}
+              data-testid="orb-page-loading"
+              exit={
+                shouldRunDecorativeMotion
+                  ? { opacity: 0, transition: { duration: 0.3, ease: easings.standardAccelerate } }
+                  : undefined
+              }
+            >
+              <PremiumLoader
+                size="lg"
+                label={tx.initializingApp || tx.loading || "Loading"}
+              />
+            </motion.div>
+          </AnimatePresence>
         )
       ) : null}
 

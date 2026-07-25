@@ -180,7 +180,7 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
   };
 
   const getTransition = () => {
-    if (collapsing) return { duration: 0.55, ease: easings.emphasizedDecelerate };
+    if (collapsing) return { duration: 0.55, ease: easings.emphasizedAccelerate };
     if (planted) return { duration: 0.3, ease: 'easeOut' as const };
     return zenMotion.gentle;
   };

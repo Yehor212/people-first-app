@@ -9,6 +9,7 @@
 
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import { useShouldAnimate } from '@/hooks/useShouldAnimate';
 import { FireIcon, IconProps } from './FireIcon';
 import { StarIcon } from './StarIcon';
 import { DiamondIcon } from './DiamondIcon';
@@ -95,10 +96,14 @@ interface PremiumIconProps extends IconProps {
 export function PremiumIcon({
   name,
   size = 'md',
-  animated = true,
+  animated,
   className,
 }: PremiumIconProps) {
   const IconComponent = iconMap[name];
+  // SMIL icon loops are outside the CSS kill-switch — default them to the
+  // shared effective-motion gate (WCAG 2.2.2).
+  const gateAnimated = useShouldAnimate();
+  const resolvedAnimated = animated ?? gateAnimated;
 
   if (!IconComponent) {
     logger.warn(`PremiumIcon: Unknown icon name "${name}"`);
@@ -108,7 +113,7 @@ export function PremiumIcon({
   return (
     <IconComponent
       size={size}
-      animated={animated}
+      animated={resolvedAnimated}
       className={className}
     />
   );
@@ -122,7 +127,7 @@ export function EmojiOrIcon({
   emoji,
   iconName,
   size = 'md',
-  animated = true,
+  animated,
   className,
 }: {
   emoji: string;

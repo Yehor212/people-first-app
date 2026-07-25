@@ -17,6 +17,7 @@ import { useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useShouldAnimate } from '@/hooks/useShouldAnimate';
 import { SparklesIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
@@ -27,6 +28,7 @@ import { OrbitingEmotion } from './OrbitingEmotion';
 
 export function EmotionGalaxy({ emotions, totalEntries: _totalEntries, className }: EmotionGalaxyProps) {
   const { t } = useLanguage();
+  const animate = useShouldAnimate();
 
   // Sort emotions by count (most frequent first = inner orbit)
   const sortedEmotions = useMemo(
@@ -216,13 +218,16 @@ export function EmotionGalaxy({ emotions, totalEntries: _totalEntries, className
                 strokeDasharray="2.5 2"
                 filter="url(#orbitGlow)"
               >
-                {/* Animated orbit glow pulse */}
-                <animate
-                  attributeName="stroke-opacity"
-                  values="0.1;0.22;0.1"
-                  dur={`${4 + i * 0.8}s`}
-                  repeatCount="indefinite"
-                />
+                {/* Animated orbit glow pulse — SMIL is outside the CSS
+                    kill-switch, so it is gated explicitly (WCAG 2.2.2). */}
+                {animate && (
+                  <animate
+                    attributeName="stroke-opacity"
+                    values="0.1;0.22;0.1"
+                    dur={`${4 + i * 0.8}s`}
+                    repeatCount="indefinite"
+                  />
+                )}
               </ellipse>
             );
           })}
