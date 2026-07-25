@@ -151,7 +151,7 @@ jobs:
             - VITE_DESKTOP_SIGNED_RELEASE_URL=$url
             - VITE_DESKTOP_SIGNED_RELEASE_SHA256=$sha
             - VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE=Valid
-"@
+          "@
           } else {
             $modeLine = "ZenFlow Desktop Windows UNSIGNED dev build (no ZENFLOW_WINDOWS_CERT_PFX_BASE64 secret). Not for public distribution."
             $followup = "Add ZENFLOW_WINDOWS_CERT_PFX_BASE64 + ZENFLOW_WINDOWS_CERT_PASSWORD secrets to produce a signed public release."
