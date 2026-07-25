@@ -1840,13 +1840,17 @@
   }
 }
 
-@keyframes zen-ambient-glow {
+/* Glow pulse — compositor-safe cross-fade: the element keeps the base
+   shadow (--zen-glow-a) statically, while a pseudo peak layer
+   (--zen-glow-b) fades via opacity. No box-shadow animation
+   (10-agent review, Role 7: box-shadow loops repaint every frame). */
+@keyframes zen-ambient-glow-peak {
   0%,
   100% {
-    box-shadow: var(--zen-glow-a, none);
+    opacity: 0;
   }
   50% {
-    box-shadow: var(--zen-glow-b, none);
+    opacity: 1;
   }
 }
 
@@ -1998,8 +2002,24 @@
   animation-name: zen-ambient-wiggle;
 }
 
-.animate-zen-loop-glow {
-  animation-name: zen-ambient-glow;
+.animate-zen-loop-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: var(--zen-glow-b, none);
+  opacity: 0;
+  animation-name: zen-ambient-glow-peak;
+  animation-duration: var(--zen-loop-duration, 3s);
+  animation-timing-function: var(--zen-loop-timing, ease-in-out);
+  animation-iteration-count: infinite;
+  animation-delay: var(--zen-loop-delay, 0s);
+}
+
+body.reduce-motion .animate-zen-loop-glow::after,
+body.mood-terrible .animate-zen-loop-glow::after {
+  animation: none !important;
 }
 
 .animate-zen-loop-sparkle {

@@ -141,3 +141,19 @@ describe("mood-terrible calm contract", () => {
     expect(source).toContain('body.mood-terrible [class*="animate-zen-loop"]');
   });
 });
+
+/**
+ * Compositor budget (10-agent review, Role 7): infinite loops must only
+ * animate compositor-safe properties (transform/opacity). box-shadow,
+ * filter, and background loops repaint every frame on the main thread.
+ */
+describe("zen-loop compositor budget", () => {
+  it("animates no box-shadow/filter/background inside zen-ambient @keyframes", () => {
+    const source = readFileSync(join("src", "index.css"), "utf8");
+    const libraryStart = source.indexOf("Zen ambient loops");
+    const libraryEnd = source.indexOf(".animate-zen-loop-fade,", libraryStart);
+    const keyframesSection = source.slice(libraryStart, libraryEnd);
+    const offenders = keyframesSection.match(/box-shadow:|(?<![-\w])filter:|background:/g) ?? [];
+    expect(offenders).toEqual([]);
+  });
+});
