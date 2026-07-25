@@ -52,10 +52,6 @@ function getAuthenticodeStatus(file) {
 
   const ps = [
     "$ErrorActionPreference='Stop';",
-    // windows-2025-vs2026 runner images ship a half-loaded Microsoft.PowerShell.Security:
-    // autoload fails and a strict Import-Module dies on TypeData duplicates.
-    // Best-effort import is enough — cmdlets are present in the session already.
-    "try { Import-Module Microsoft.PowerShell.Security -ErrorAction SilentlyContinue } catch {}",
     `$sig = Get-AuthenticodeSignature -LiteralPath ${JSON.stringify(file)};`,
     "[pscustomobject]@{",
     "Status = [string]$sig.Status;",
@@ -66,7 +62,10 @@ function getAuthenticodeStatus(file) {
   ].join(" ");
 
   try {
-    const output = execFileSync("powershell.exe", ["-NoProfile", "-Command", ps], {
+    // pwsh (PowerShell 7+): Microsoft.PowerShell.Security is built into the core
+    // and always available; legacy powershell.exe 5.1 autoload is broken on
+    // windows-2025-vs2026 runner images (module could not be loaded).
+    const output = execFileSync("pwsh.exe", ["-NoProfile", "-Command", ps], {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,
