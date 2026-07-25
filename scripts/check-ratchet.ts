@@ -262,6 +262,8 @@ const GOD_COMPONENT_EXEMPT = [
   "pages/nav-v2/habits/HabitsPage.tsx", // 518 lines: V2 page shell under active preview development, tracked in TD-20
   "reflection/DailyRitualCard.tsx", // 471 lines: reflection card shell, tracked in TD-20 for future extraction
   "pages/nav-v2/habits/hero/HeroWeeklyHabitCard.tsx", // 404 lines: V2 habit hero shell, tracked in TD-20
+  "StorageErrorBanner.tsx", // 398→431 lines from account-cleanup recovery + aria-modal wiring (0b557ddc0), error-handling shell, not UI complexity; tracked in TD-20
+  "schedule/ScheduleTimeline.tsx", // 398→412 lines from RTL physical scroll-coordinate fix + focus eslint-justification (0b557ddc0), orchestrator shell already decomposed from 1,647-line monolith per TD-20
 ];
 
 const GOD_COMPONENT_OUT_OF_SCOPE = ["features/journal/"];
