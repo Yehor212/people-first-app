@@ -151,6 +151,19 @@ export function DataMountains({
 
   const maxValue = providedMax || Math.max(...safeData.map(d => d.value), 1);
 
+  // Stable star field — random seeds are generated once so re-renders do
+  // not teleport stars or restart their loop phases (10-agent review).
+  const starSeeds = useMemo(
+    () =>
+      Array.from({ length: 20 }, () => ({
+        left: Math.random() * 100,
+        top: Math.random() * 40,
+        duration: 2 + Math.random() * 2,
+        delay: Math.random() * 2,
+      })),
+    [],
+  );
+
   // Colors based on type - LIGHTER mountains for contrast against dark sky
   const colorConfig = {
     mood: {
@@ -226,18 +239,18 @@ export function DataMountains({
 
       {/* Stars */}
       <div className="absolute inset-0 pointer-events-none">
-        {Array.from({ length: 20 }).map((_, i) => (
-          <motion.div
+        {starSeeds.map((seed, i) => (
+          <div
             key={i}
             className="absolute w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-white animate-zen-loop-fade"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 40}%`,
+              left: `${seed.left}%`,
+              top: `${seed.top}%`,
               opacity: 0.55,
               '--zen-loop-min-opacity': 0.3,
               '--zen-loop-max-opacity': 0.8,
-              '--zen-loop-duration': `${2 + Math.random() * 2}s`,
-              '--zen-loop-delay': `${Math.random() * 2}s`,
+              '--zen-loop-duration': `${seed.duration}s`,
+              '--zen-loop-delay': `${seed.delay}s`,
             } as CSSProperties}
           />
         ))}
