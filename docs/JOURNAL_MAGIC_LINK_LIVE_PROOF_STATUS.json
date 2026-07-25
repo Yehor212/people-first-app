@@ -3,7 +3,7 @@
   "updatedAt": "2026-07-05",
   "feature": "diary-email-lock-removal",
   "overallStatus": "PASS",
-  "proofSourceSha256": "7a798cca40dc8dfe72e86119fdca2f97012656a2e61eff826f14baf0aa29d329",
+  "proofSourceSha256": "79767ba07bae99ed4caaa6f1b3a9dd9e3b483fe51db5549135665037dd04ea15",
   "purpose": "Runtime proof packet generated after the manual Journal Magic Link live proof succeeds. It is intentionally written outside tracked docs to avoid storing one-time auth values.",
   "items": [
     {
