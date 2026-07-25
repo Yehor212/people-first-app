@@ -52,6 +52,9 @@ function getAuthenticodeStatus(file) {
 
   const ps = [
     "$ErrorActionPreference='Stop';",
+    // windows-2025-vs2026 runner images fail to autoload the module that hosts
+    // Get-AuthenticodeSignature; import it explicitly before use.
+    "Import-Module Microsoft.PowerShell.Security -ErrorAction Stop;",
     `$sig = Get-AuthenticodeSignature -LiteralPath ${JSON.stringify(file)};`,
     "[pscustomobject]@{",
     "Status = [string]$sig.Status;",
