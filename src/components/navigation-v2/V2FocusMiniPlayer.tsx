@@ -105,7 +105,7 @@ export const V2FocusMiniPlayer = memo(function V2FocusMiniPlayer({
               "flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
               isRunning
                 ? "bg-secondary text-foreground hover:bg-secondary/80"
-                : "bg-violet-500 text-white hover:bg-violet-600",
+                : "bg-violet-600 text-white hover:bg-violet-700",
             )}
             aria-label={isRunning ? t.pause || "Pause" : t.play || "Play"}
           >

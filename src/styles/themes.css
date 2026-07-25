@@ -88,7 +88,7 @@
   --card-foreground: 176 48% 9%;
   --popover: 158 42% 90%;
   --popover-foreground: 176 48% 9%;
-  --primary: 166 56% 31%;
+  --primary: 166 60% 27%;
   --primary-foreground: 160 42% 96%;
   --secondary: 43 58% 82%;
   --secondary-foreground: 176 42% 13%;
@@ -97,8 +97,8 @@
   --accent: 264 42% 85%;
   --accent-foreground: 262 36% 23%;
   --border: 171 27% 58%;
-  --input: 171 27% 58%;
-  --ring: 166 56% 31%;
+  --input: 171 28% 42%;
+  --ring: 166 60% 27%;
 
   --surface-base: 174 41% 86%;
   --surface-raised: 158 42% 90%;
@@ -111,16 +111,28 @@
   --zen-shadow-card: 0 12px 34px -28px hsl(176 42% 10% / 0.28);
   --zen-shadow-glow: 0 0 34px hsl(var(--primary) / 0.16);
   --zen-shadow-hover: 0 18px 46px -30px hsl(176 42% 10% / 0.38);
-  --zf-text-muted: 176 13% 42%;
+  --zf-text-muted: 176 15% 36%;
+  --zf-warning-foreground: 42 90% 26%;
+  /* Day-mode accent text on tinted chips: same hue family as the role,
+   * darker lightness so 12-18% alpha tints keep WCAG AA text contrast. */
+  --zf-role-focus-foreground: 195 85% 30%;
+  --zf-role-rest-foreground: 232 60% 42%;
+  --zf-role-energy-foreground: 35 90% 28%;
+  --zf-role-body-foreground: 158 60% 26%;
+  --zf-role-gratitude-foreground: 146 60% 26%;
+  --zf-role-space-foreground: 188 80% 26%;
+  --zf-growth-foreground: 144 55% 28%;
+  --zf-trace-foreground: 190 80% 28%;
+  --zf-memory-foreground: 266 55% 38%;
 
   --sidebar-background: 158 42% 90%;
   --sidebar-foreground: 176 48% 9%;
-  --sidebar-primary: 166 56% 31%;
+  --sidebar-primary: 166 60% 27%;
   --sidebar-primary-foreground: 160 42% 96%;
   --sidebar-accent: 43 58% 82%;
   --sidebar-accent-foreground: 176 42% 13%;
   --sidebar-border: 171 27% 58%;
-  --sidebar-ring: 166 56% 31%;
+  --sidebar-ring: 166 60% 27%;
 
   --nav-v2-drawer-start: 190 41% 85%;
   --nav-v2-drawer-mid: 158 38% 84%;
@@ -754,7 +766,19 @@
   --surface-glass-border: hsl(var(--zf-primary) / 0.18);
   --surface-glass-blur: 20px;
   --zen-shadow-soft: 0 4px 20px -4px hsl(var(--zf-primary) / 0.22);
-  --zf-text-muted: 165 8% 52%;
+  --zf-text-muted: 165 8% 56%;
+  --zf-warning-foreground: var(--zf-warning);
+  /* Night accents already pass AA on dark cards; foreground aliases keep
+   * tint-text call sites theme-agnostic. */
+  --zf-role-focus-foreground: var(--zf-role-focus);
+  --zf-role-rest-foreground: var(--zf-role-rest);
+  --zf-role-energy-foreground: var(--zf-role-energy);
+  --zf-role-body-foreground: var(--zf-role-body);
+  --zf-role-gratitude-foreground: var(--zf-role-gratitude);
+  --zf-role-space-foreground: var(--zf-role-space);
+  --zf-growth-foreground: var(--zf-growth);
+  --zf-trace-foreground: var(--zf-trace);
+  --zf-memory-foreground: var(--zf-memory);
   --zf-role-body: 158 72% 64%;
   --zf-role-mind: 268 76% 76%;
   --zf-role-focus: 194 92% 64%;
@@ -791,7 +815,7 @@
   --accent: var(--zf-memory);
   --accent-foreground: var(--zf-night-0);
   --border: 174 16% 22%;
-  --input: 174 16% 22%;
+  --input: 174 20% 42%;
   --ring: var(--zf-primary);
 
   --sidebar-background: var(--zf-surface-1);
@@ -856,6 +880,17 @@
   --surface-glass-blur: 16px;
   --zen-shadow-soft: 0 0 14px hsl(172 26% 56% / 0.12);
   --zf-text-muted: 58 8% 52%;
+  --zf-warning-foreground: var(--zf-warning);
+  /* OLED mirrors ink: bright accents pass AA on true black. */
+  --zf-role-focus-foreground: var(--zf-role-focus);
+  --zf-role-rest-foreground: var(--zf-role-rest);
+  --zf-role-energy-foreground: var(--zf-role-energy);
+  --zf-role-body-foreground: var(--zf-role-body);
+  --zf-role-gratitude-foreground: var(--zf-role-gratitude);
+  --zf-role-space-foreground: var(--zf-role-space);
+  --zf-growth-foreground: var(--zf-growth);
+  --zf-trace-foreground: var(--zf-trace);
+  --zf-memory-foreground: var(--zf-memory);
   --zf-role-body: 158 72% 64%;
   --zf-role-mind: 268 76% 76%;
   --zf-role-focus: 194 92% 64%;
@@ -889,7 +924,7 @@
   --accent: 222 22% 66%;
   --accent-foreground: 0 0% 0%;
   --border: 170 10% 22%;
-  --input: 170 10% 22%;
+  --input: 170 12% 40%;
   --ring: 172 32% 56%;
 
   --sidebar-background: 170 14% 5%;
@@ -2455,4 +2490,26 @@
       display: none;
     }
   }
+}
+
+/* Recovery/splash surfaces keep the branded dark deck in EVERY theme
+ * (Phase 3-A note above: recovery/splash/burn modes intentionally stay dark).
+ * Re-point readability foreground tokens to bright night values so helper
+ * and kicker text keeps WCAG AA on the dark recovery card even in paper. */
+.zf-recovery-shell,
+.zf-recovery-stage,
+.zf-recovery-card {
+  --zf-role-focus-foreground: var(--zf-role-focus);
+  --zf-text-muted: 165 8% 62%;
+}
+
+/* Paper: the recovery primary action reuses bright night accents whose dark
+ * label fell below AA on the light theme; switch it to the deep day accents. */
+:root[data-theme="paper"] .zf-recovery-primary {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--zf-role-body-foreground)),
+    hsl(var(--zf-role-focus-foreground))
+  );
+  color: hsl(var(--primary-foreground));
 }

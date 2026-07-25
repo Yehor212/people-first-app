@@ -249,7 +249,7 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
             data-testid="error-boundary-card"
           >
             <RecoveryGlyph label={kicker} />
-            <p className="whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.16em] text-[hsl(var(--zf-role-focus))]">
+            <p className="whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.16em] text-[hsl(var(--zf-role-focus-foreground))]">
               {kicker}
             </p>
             <h2 className="whitespace-normal break-words font-display text-2xl font-semibold text-[hsl(var(--zf-text-strong))] [overflow-wrap:anywhere]">
@@ -296,7 +296,7 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
             <div className="flex justify-center">
               <RecoveryGlyph label={kicker} />
             </div>
-            <p className="whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.16em] text-[hsl(var(--zf-role-focus))]">
+            <p className="whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.16em] text-[hsl(var(--zf-role-focus-foreground))]">
               {kicker}
             </p>
             <h2 className="whitespace-normal break-words font-display text-2xl font-semibold text-[hsl(var(--zf-text-strong))] [overflow-wrap:anywhere]">

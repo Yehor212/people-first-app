@@ -292,7 +292,7 @@ export function NumericalTargetSection({
           <MousePointerClick
             className={cn(
               "h-4 w-4 shrink-0",
-              isPrimaryCTA ? "text-[hsl(var(--zf-role-focus))]" : "text-primary"
+              isPrimaryCTA ? "text-[hsl(var(--zf-role-focus-foreground))]" : "text-primary"
             )}
             aria-hidden="true"
           />
@@ -339,7 +339,7 @@ export function NumericalTargetSection({
                       className={cn(
                         "mt-2 inline-flex min-h-[24px] max-w-full items-center whitespace-normal break-words rounded-full border px-2 py-1 text-xs font-semibold uppercase leading-snug tracking-[0.08em]",
                         isPrimaryCTA
-                          ? "border-[hsl(var(--zf-role-energy)/0.36)] bg-[hsl(var(--zf-role-energy)/0.12)] text-[hsl(var(--zf-role-energy))]"
+                          ? "border-[hsl(var(--zf-role-energy)/0.36)] bg-[hsl(var(--zf-role-energy)/0.12)] text-[hsl(var(--zf-role-energy-foreground))]"
                           : "border-primary/30 bg-primary/10 text-primary"
                       )}
                     >

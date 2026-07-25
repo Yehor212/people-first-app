@@ -423,7 +423,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
             >
               {identityVerb ? (
                 <span
-                  className="inline-flex items-center gap-1 font-medium text-[hsl(var(--zf-role-rest))]"
+                  className="inline-flex items-center gap-1 font-medium text-[hsl(var(--zf-role-rest-foreground))]"
                   data-testid={`hero-weekly-card-${habit.id}-identity-vote`}
                 >
                   <HabitIconVisual

@@ -153,10 +153,10 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
   const linkedHabit = getLinkedHabit(topInsight, habits);
   const severityClass =
     topInsight.severity === "warning"
-      ? "border-[hsl(var(--zf-warning)/0.28)] bg-[hsl(var(--zf-warning)/0.12)] text-[hsl(var(--zf-warning))]"
+      ? "border-[hsl(var(--zf-warning)/0.28)] bg-[hsl(var(--zf-warning)/0.12)] text-[hsl(var(--zf-warning-foreground))]"
       : topInsight.severity === "celebration"
-        ? "border-[hsl(var(--zf-growth)/0.28)] bg-[hsl(var(--zf-growth)/0.12)] text-[hsl(var(--zf-growth))]"
-        : "border-[hsl(var(--zf-role-focus)/0.36)] bg-[hsl(var(--zf-role-focus)/0.18)] text-[hsl(var(--zf-role-focus))]";
+        ? "border-[hsl(var(--zf-growth)/0.28)] bg-[hsl(var(--zf-growth)/0.12)] text-[hsl(var(--zf-growth-foreground))]"
+        : "border-[hsl(var(--zf-role-focus)/0.36)] bg-[hsl(var(--zf-role-focus)/0.18)] text-[hsl(var(--zf-role-focus-foreground))]";
 
   return (
     <aside

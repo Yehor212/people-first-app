@@ -232,8 +232,8 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
               className={cn(
                 "w-full flex items-center justify-center gap-3 h-14 min-h-[44px] rounded-2xl text-base font-semibold motion-safe:transition-all",
                 isSuccess && lastAction === "share"
-                  ? "bg-emerald-500 text-white"
-                  : "bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700",
+                  ? "bg-emerald-700 text-white"
+                  : "bg-gradient-to-r from-violet-600 to-purple-700 text-white hover:from-violet-700 hover:to-purple-800",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 "shadow-lg"
               )}

@@ -201,8 +201,8 @@ export function EmotionPanel({ isVisible, anchorX, anchorY, onSave, onCancel }: 
                       onClick={handleSave}
                       className={cn(
                         "flex-1 py-2 rounded-xl text-sm font-medium",
-                        "bg-emerald-500/80 text-white",
-                        "hover:bg-emerald-500 motion-safe:transition-colors"
+                        "bg-emerald-700 text-white",
+                        "hover:bg-emerald-800 motion-safe:transition-colors"
                       )}
                     >
                       {t.save || "Save"}

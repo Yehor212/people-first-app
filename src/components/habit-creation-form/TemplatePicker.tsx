@@ -176,7 +176,7 @@ export function TemplatePicker({
           style={getRoleStyleVars("space") as unknown as CSSProperties}
         >
           <span className="flex min-w-0 flex-1 items-start gap-2">
-            <Settings2 className="h-5 w-5 shrink-0 text-[hsl(var(--zf-role-space))]" aria-hidden="true" />
+            <Settings2 className="h-5 w-5 shrink-0 text-[hsl(var(--zf-role-space-foreground))]" aria-hidden="true" />
             <span
               className="min-w-0 break-words text-start [hyphens:manual] [overflow-wrap:break-word]"
               data-slot="template-picker-custom-label"

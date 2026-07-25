@@ -172,7 +172,7 @@ export function GoalInput({
                 className={cn(
                   "flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium",
                   value.trim()
-                    ? "bg-emerald-500/80 text-white hover:bg-emerald-500"
+                    ? "bg-emerald-700 text-white hover:bg-emerald-800"
                     : "bg-white/5 text-white/30 cursor-not-allowed",
                   "motion-safe:transition-colors"
                 )}
