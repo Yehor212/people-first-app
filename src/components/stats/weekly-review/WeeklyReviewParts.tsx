@@ -100,7 +100,7 @@ export function AchievementBadge({
       style={{ boxShadow: `0 0 20px ${color}30` }}
     >
       <div
-        className="p-2.5 rounded-xl mb-2 animate-zen-loop-glow"
+        className="relative p-2.5 rounded-xl mb-2 animate-zen-loop-glow"
         style={{
           background: `linear-gradient(135deg, ${color}40, ${color}20)`,
           boxShadow: `0 0 10px ${color}40`,

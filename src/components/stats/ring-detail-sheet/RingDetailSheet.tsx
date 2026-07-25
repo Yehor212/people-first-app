@@ -191,7 +191,7 @@ export function RingDetailSheet({
               <div
                 className={shouldReduceMotion
                   ? "shrink-0 rounded-2xl bg-foreground/20 p-3.5 backdrop-blur-sm"
-                  : "shrink-0 rounded-2xl bg-foreground/20 p-3.5 backdrop-blur-sm animate-zen-loop-glow"}
+                  : "relative shrink-0 rounded-2xl bg-foreground/20 p-3.5 backdrop-blur-sm animate-zen-loop-glow"}
                 style={
                   shouldReduceMotion
                     ? { boxShadow: `0 0 40px ${theme.glowColor}` }
