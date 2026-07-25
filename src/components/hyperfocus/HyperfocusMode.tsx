@@ -314,7 +314,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   </button>
                   <button
                     onClick={() => void handleOpenDndSettings()}
-                    className="flex-1 py-3 min-h-[44px] rounded-xl bg-violet-500 text-white font-medium motion-safe:transition-opacity hover:opacity-90"
+                    className="flex-1 py-3 min-h-[44px] rounded-xl bg-violet-600 text-white font-medium motion-safe:transition-opacity hover:opacity-90"
                   >
                     {t.focusModeOpenSettings || "Open Settings"}
                   </button>

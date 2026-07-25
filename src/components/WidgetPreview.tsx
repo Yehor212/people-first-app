@@ -10,31 +10,31 @@ interface WidgetPreviewProps {
 
 const WIDGET_ACCENTS = {
   orange: {
-    text: { color: "hsl(var(--zf-role-energy))" },
+    text: { color: "hsl(var(--zf-role-energy-foreground))" },
     card: {
-      color: "hsl(var(--zf-role-energy))",
+      color: "hsl(var(--zf-role-energy-foreground))",
       backgroundColor: "hsl(var(--zf-role-energy) / 0.10)",
       borderColor: "hsl(var(--zf-role-energy) / 0.20)",
     },
   },
   emerald: {
-    text: { color: "hsl(var(--zf-role-gratitude))" },
+    text: { color: "hsl(var(--zf-role-gratitude-foreground))" },
     card: {
-      color: "hsl(var(--zf-role-gratitude))",
+      color: "hsl(var(--zf-role-gratitude-foreground))",
       backgroundColor: "hsl(var(--zf-role-gratitude) / 0.10)",
       borderColor: "hsl(var(--zf-role-gratitude) / 0.20)",
     },
   },
   violet: {
-    text: { color: "hsl(var(--zf-memory))" },
+    text: { color: "hsl(var(--zf-memory-foreground))" },
     card: {
-      color: "hsl(var(--zf-memory))",
+      color: "hsl(var(--zf-memory-foreground))",
       backgroundColor: "hsl(var(--zf-memory) / 0.10)",
       borderColor: "hsl(var(--zf-memory) / 0.20)",
     },
   },
   amber: {
-    text: { color: "hsl(var(--zf-warning))" },
+    text: { color: "hsl(var(--zf-warning-foreground))" },
     card: {
       backgroundColor: "hsl(var(--zf-warning) / 0.10)",
       borderColor: "hsl(var(--zf-warning) / 0.20)",

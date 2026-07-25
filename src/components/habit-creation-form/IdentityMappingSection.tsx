@@ -57,7 +57,7 @@ export function IdentityMappingSection({
         <Fingerprint
           className={cn(
             "w-4 h-4",
-            isPrimaryCTA ? "text-[hsl(var(--zf-role-rest))]" : "text-primary",
+            isPrimaryCTA ? "text-[hsl(var(--zf-role-rest-foreground))]" : "text-primary",
           )}
         />
         <p
@@ -92,7 +92,7 @@ export function IdentityMappingSection({
             className={cn(
               "mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] border",
               isPrimaryCTA
-                ? "border-[hsl(var(--zf-role-rest)/0.32)] bg-[hsl(var(--zf-role-rest)/0.14)] text-[hsl(var(--zf-role-rest))]"
+                ? "border-[hsl(var(--zf-role-rest)/0.32)] bg-[hsl(var(--zf-role-rest)/0.14)] text-[hsl(var(--zf-role-rest-foreground))]"
                 : "border-border bg-card text-primary",
             )}
             aria-hidden="true"
@@ -129,7 +129,7 @@ export function IdentityMappingSection({
           <BadgeCheck
             className={cn(
               "mt-1 h-4 w-4 shrink-0",
-              isPrimaryCTA ? "text-[hsl(var(--zf-role-energy))]" : "text-primary",
+              isPrimaryCTA ? "text-[hsl(var(--zf-role-energy-foreground))]" : "text-primary",
             )}
             aria-hidden="true"
           />
