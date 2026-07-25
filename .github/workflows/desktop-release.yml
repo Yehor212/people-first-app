@@ -72,6 +72,9 @@ jobs:
           }
           Write-Host "No existing git tag ${tag} (expected)."
           Write-Host "Tag $tag is free; validation passed."
+          # git ls-remote exits 2 when no tag matches; without an explicit exit 0
+          # the trailing non-zero native exit code fails the whole pwsh step in GHA.
+          exit 0
 
       - name: Verify desktop toolchain
         run: npm run desktop:check
