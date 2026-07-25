@@ -1,7 +1,6 @@
 import { memo, useState, useCallback, useMemo } from "react";
-import { motion } from "framer-motion";
+import type { CSSProperties } from "react";
 import { Shield } from "lucide-react";
-import { springs } from "@/config/animations";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
@@ -96,14 +95,21 @@ export const StreakFreezeIndicator = memo(function StreakFreezeIndicator({
 
   if (isStreakFrozen) {
     return (
-      <motion.span
+      <span
         aria-label={t.journalStreakFrozenToday || "Streak protected today"}
-        animate={reducedMotion ? undefined : { scale: [1, 1.15, 1] }}
-        transition={{ ...springs.smooth, duration: 3, repeat: Infinity }}
-        className="inline-flex items-center text-sm"
+        className={
+          reducedMotion
+            ? "inline-flex items-center text-sm"
+            : "inline-flex items-center text-sm animate-zen-loop-scale"
+        }
+        style={
+          reducedMotion
+            ? undefined
+            : ({ '--zen-loop-scale': 1.15, '--zen-loop-duration': '3s' } as CSSProperties)
+        }
       >
         <span role="img" aria-hidden="true">&#10052;&#65039;</span>
-      </motion.span>
+      </span>
     );
   }
 

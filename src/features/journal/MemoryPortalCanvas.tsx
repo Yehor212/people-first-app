@@ -16,6 +16,7 @@ import { SplashScreen, type SplashThemePreference } from "@/components/SplashScr
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { hapticMedium, hapticSuccess, hapticTap } from "@/lib/haptics";
 import { shouldAnimate } from "@/lib/animationUtils";
+import { easings } from "@/lib/motion";
 import { SK } from "@/lib/storageKeys";
 import { storageGetRaw } from "@/lib/safeJson";
 import { cn, getToday } from "@/lib/utils";
@@ -643,7 +644,7 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
               initial={animate ? { opacity: 0, y: 18, scale: 0.96 } : false}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={animate ? { opacity: 0, y: 12, scale: 0.98 } : { opacity: 0 }}
-              transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+              transition={{ duration: 0.24, ease: easings.emphasizedDecelerate }}
               data-testid={`memory-portal-scene-${activeScene}`}
             >
               {activeScene === "gratitude" && onAddGratitude ? (
@@ -706,7 +707,7 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
             initial={animate ? { opacity: 0, y: 22, scale: 0.97 } : false}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={animate ? { opacity: 0, y: 16, scale: 0.98 } : { opacity: 0 }}
-            transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+            transition={{ duration: 0.24, ease: easings.emphasizedDecelerate }}
             data-testid="memory-portal-day-capsule"
           >
             <div className="flex items-start justify-between gap-3">

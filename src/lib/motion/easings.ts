@@ -19,6 +19,25 @@ export const easings = {
   breathe: [0.4, 0, 0.6, 1] as const,
   /** Ripple tap — linear, finite, no deceleration curve. */
   ripple: [0, 0, 1, 1] as const,
+
+  /* ------------------------------------------------------------------
+   * Named easing tokens, aligned with the Material Design 3 motion
+   * easing system (m3.material.io/styles/motion/easing-and-duration).
+   * Direction rule: entering elements decelerate (fast start, soft
+   * landing); exiting elements accelerate. Use these instead of
+   * hardcoded cubic-bezier tuples at call sites.
+   * ---------------------------------------------------------------- */
+
+  /** M3 standard — transitions that begin and end on screen. cubic-bezier(0.2, 0, 0, 1). */
+  standard: [0.2, 0, 0, 1] as const,
+  /** M3 standard decelerate — elements entering the screen. cubic-bezier(0, 0, 0, 1). */
+  standardDecelerate: [0, 0, 0, 1] as const,
+  /** M3 standard accelerate — elements leaving the screen. cubic-bezier(0.3, 0, 1, 1). */
+  standardAccelerate: [0.3, 0, 1, 1] as const,
+  /** M3 emphasized decelerate — hero/emphasized entrances, soft landing. cubic-bezier(0.05, 0.7, 0.1, 1). */
+  emphasizedDecelerate: [0.05, 0.7, 0.1, 1] as const,
+  /** M3 emphasized accelerate — emphasized exits. cubic-bezier(0.3, 0, 0.8, 0.15). */
+  emphasizedAccelerate: [0.3, 0, 0.8, 0.15] as const,
 } as const;
 
 export type EasingName = keyof typeof easings;

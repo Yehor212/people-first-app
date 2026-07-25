@@ -4,6 +4,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
+import type { CSSProperties } from "react";
 import { Send, X, Sparkles, Bot, User, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -88,13 +89,12 @@ export function AICoachChat() {
           {/* Subtle glow */}
           <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-primary/5 to-transparent" />
           <div className="flex items-center gap-3 relative z-10">
-            <motion.div
-              className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-primary/50 to-primary/40 shadow-zen-md"
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-primary/50 to-primary/40 shadow-zen-md animate-zen-loop-scale"
+              style={{ '--zen-loop-duration': '2s' } as CSSProperties}
             >
               <Sparkles className="w-6 h-6 text-white" aria-hidden="true" />
-            </motion.div>
+            </div>
             <div>
               <h2 className="font-semibold text-foreground">{t.aiCoachTitle || "AI Coach"}</h2>
               <p className="text-xs text-muted-foreground">
@@ -273,20 +273,17 @@ function TypingIndicator() {
       </div>
       <div className="px-5 py-4 rounded-2xl rounded-ss-sm bg-secondary backdrop-blur-[8px] border border-border">
         <div className="flex gap-1.5">
-          <motion.span
-            className="w-2.5 h-2.5 bg-violet-400 rounded-full"
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+          <span
+            className="w-2.5 h-2.5 bg-violet-400 rounded-full animate-zen-loop-bounce-dot"
+            style={{ '--zen-loop-duration': '0.6s' } as CSSProperties}
           />
-          <motion.span
-            className="w-2.5 h-2.5 bg-violet-400 rounded-full"
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 0.6, repeat: Infinity, delay: 0.15 }}
+          <span
+            className="w-2.5 h-2.5 bg-violet-400 rounded-full animate-zen-loop-bounce-dot"
+            style={{ '--zen-loop-duration': '0.6s', '--zen-loop-delay': '0.15s' } as CSSProperties}
           />
-          <motion.span
-            className="w-2.5 h-2.5 bg-violet-400 rounded-full"
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 0.6, repeat: Infinity, delay: 0.3 }}
+          <span
+            className="w-2.5 h-2.5 bg-violet-400 rounded-full animate-zen-loop-bounce-dot"
+            style={{ '--zen-loop-duration': '0.6s', '--zen-loop-delay': '0.3s' } as CSSProperties}
           />
         </div>
       </div>

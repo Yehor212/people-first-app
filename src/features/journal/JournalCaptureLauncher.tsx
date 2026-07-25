@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Plus, type LucideIcon } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
-import { zenMotion } from "@/lib/animationUtils";
+import { zenMotion, zenTap } from "@/lib/animationUtils";
 import { cn } from "@/lib/utils";
 import { V2_JOURNAL_ICONS } from "@/lib/v2IconSystem";
 import type { GratitudeEntry } from "@/types";
@@ -116,7 +116,7 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
               id: "gratitude" as const,
               label: ts.journalQuickGratitude || "Quick Gratitude",
               icon: V2_JOURNAL_ICONS.gratitude,
-              color: "bg-emerald-500 text-white",
+              color: "bg-emerald-700 text-white",
               action: handleQuickGratitude,
             },
           ]
@@ -223,7 +223,7 @@ export const JournalCaptureLauncher = memo(function JournalCaptureLauncher({
 
       <motion.button
         type="button"
-        whileTap={{ scale: 0.96 }}
+        whileTap={zenTap.button}
         whileHover={{ scale: inline ? 1 : 1.05 }}
         ref={mainButtonRef}
         onClick={() => {

@@ -1,4 +1,4 @@
-﻿# ZenFlow Architecture & Coding Standards
+# ZenFlow Architecture & Coding Standards
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
@@ -824,14 +824,15 @@ All framer-motion animations MUST use standardized presets from `src/lib/animati
 
 **Spring tokens** (pass as `transition` prop):
 
-| Token                 | Use case                     | Physics                     |
-| --------------------- | ---------------------------- | --------------------------- |
-| `zenMotion.instant`   | Effective reduced motion     | 0ms                         |
-| `zenMotion.snappy`    | Buttons, toggles, checkboxes | stiffness: 400, damping: 30 |
-| `zenMotion.gentle`    | Cards, modals, panels        | stiffness: 260, damping: 25 |
-| `zenMotion.bouncy`    | Celebrations, achievements   | stiffness: 300, damping: 15 |
-| `zenMotion.exit`      | Closing, dismissing          | 150ms ease-in               |
-| `zenMotion.breathing` | Infinite ambient loops       | 3s ease-in-out, reverse     |
+| Token                 | Use case                              | Physics                     |
+| --------------------- | ------------------------------------- | --------------------------- |
+| `zenMotion.instant`   | Effective reduced motion              | 0ms                         |
+| `zenMotion.snappy`    | Buttons, toggles, checkboxes          | stiffness: 400, damping: 30 |
+| `zenMotion.gentle`    | Cards, modals, panels                 | stiffness: 260, damping: 25 |
+| `zenMotion.sheet`     | Bottom sheet slide                    | stiffness: 300, damping: 26 |
+| `zenMotion.bouncy`    | Celebrations, critically damped settle | stiffness: 300, damping: 26 |
+| `zenMotion.exit`      | Closing, dismissing                   | 150ms ease-in               |
+| `zenMotion.breathing` | Infinite ambient loops                | 3s ease-in-out, reverse     |
 
 ### Animation Respect (Accessibility And Runtime Safety)
 

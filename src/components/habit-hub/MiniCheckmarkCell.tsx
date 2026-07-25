@@ -17,7 +17,7 @@
 import { memo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { zenMotion } from "@/lib/animationUtils";
+import { zenMotion, zenTap } from "@/lib/animationUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ENTRY } from "@/types";
 
@@ -114,7 +114,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
         )}
       >
         <motion.div
-          whileTap={{ scale: 0.85 }}
+          whileTap={zenTap.cell}
           transition={zenMotion.snappy}
           className={cn(
             "flex min-h-8 min-w-8 items-center justify-center rounded-lg px-1 py-1",
@@ -154,7 +154,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
       )}
     >
       <motion.div
-        whileTap={{ scale: 0.85 }}
+        whileTap={zenTap.cell}
         transition={zenMotion.snappy}
         className={cn(
           "w-9 h-9 rounded-full flex items-center justify-center",

@@ -7,6 +7,8 @@
 
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { motionPresets, zenMotion } from "@/lib/animationUtils";
+import { easings } from "@/lib/motion";
 import { Sparkles, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -129,9 +131,7 @@ export function ZenScoreHub({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      {...motionPresets.slideUp}
       className={cn(
         "relative overflow-hidden rounded-2xl",
         "bg-gradient-to-br from-card via-card to-card/80",
@@ -225,7 +225,7 @@ export function ZenScoreHub({
                 strokeDasharray={circumference}
                 initial={{ strokeDashoffset: circumference }}
                 animate={{ strokeDashoffset }}
-                transition={{ duration: 1.5, ease: "easeOut" }}
+                transition={{ duration: 0.6, ease: easings.emphasizedDecelerate }}
                 style={{
                   filter: `drop-shadow(0 0 8px ${scoreColor.glow})`,
                 }}
@@ -238,7 +238,7 @@ export function ZenScoreHub({
                 className={cn("text-5xl font-bold tabular-nums", scoreColor.class)}
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.5, type: "spring" }}
+                transition={{ delay: 0.3, ...zenMotion.gentle }}
               >
                 {animatedScore}
               </motion.span>

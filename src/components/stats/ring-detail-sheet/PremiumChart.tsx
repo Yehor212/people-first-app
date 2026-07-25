@@ -4,6 +4,7 @@
 
 import { useId } from "react";
 import { motion } from "framer-motion";
+import { easings } from "@/lib/motion";
 import type { DayData } from "./types";
 
 // Premium animated chart with glow effects
@@ -76,7 +77,7 @@ export function PremiumChart({
         fill={`url(#${gradientId})`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
+        transition={{ duration: 0.4, ease: easings.standard }}
       />
 
       {/* Glow line */}
@@ -87,10 +88,10 @@ export function PremiumChart({
         strokeWidth="6"
         strokeLinecap="round"
         strokeLinejoin="round"
-        style={{ filter: "blur(4px)" }}
+        className="blur-sm"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
+        transition={{ duration: 0.6, ease: easings.emphasizedDecelerate }}
       />
 
       {/* Main line */}
@@ -103,7 +104,7 @@ export function PremiumChart({
         strokeLinejoin="round"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
+        transition={{ duration: 0.6, ease: easings.emphasizedDecelerate }}
       />
 
       {/* Data points with animation */}

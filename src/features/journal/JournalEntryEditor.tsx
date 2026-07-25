@@ -39,7 +39,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import { cn, getToday, interpolate } from "@/lib/utils";
-import { shouldAnimate, zenMotion } from "@/lib/animationUtils";
+import { shouldAnimate, zenMotion, zenTap } from "@/lib/animationUtils";
+import { easings } from "@/lib/motion";
 import { hapticTap } from "@/lib/haptics";
 import { getLocale } from "@/lib/timeUtils";
 import { useModalA11y } from "@/hooks/useModalA11y";
@@ -1147,7 +1148,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
           {/* LEFT: Back + Title */}
           <div className={cn("flex w-full min-w-0 items-start", desktop ? "gap-3" : "gap-1.5")}>
             <motion.button
-              whileTap={{ scale: 0.92 }}
+              whileTap={zenTap.icon}
               onClick={handleBack}
               disabled={saveState === "saving"}
               aria-disabled={saveState === "saving"}
@@ -1207,7 +1208,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             {/* Style panel toggle stays in the desktop header; mobile exposes it in the bottom tool tray. */}
             {desktop && (
               <motion.button
-                whileTap={{ scale: 0.92 }}
+                whileTap={zenTap.icon}
                 onClick={() => {
                   setShowPromptsDropdown(false);
                   setShowStyleBar((v) => !v);
@@ -1227,7 +1228,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
 
             {entry && onDelete && (
               <motion.button
-                whileTap={{ scale: 0.92 }}
+                whileTap={zenTap.icon}
                 onClick={() => setShowDeleteConfirm(true)}
                 className="p-2 rounded-lg hover:bg-white/10 dark:hover:bg-white/10 text-muted-foreground hover:text-red-400 motion-safe:transition-all min-w-[48px] min-h-[48px] flex items-center justify-center"
                 aria-label={ts.delete || "Delete"}
@@ -1238,7 +1239,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
 
             {/* Privacy Shield toggle */}
             <motion.button
-              whileTap={{ scale: 0.92 }}
+              whileTap={zenTap.icon}
               onClick={() => setPrivacyShieldActive(!privacyShieldActive)}
               className={cn(
                 "p-2 rounded-lg motion-safe:transition-all min-w-[48px] min-h-[48px] flex items-center justify-center",
@@ -1322,7 +1323,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+              transition={{ duration: 0.25, ease: easings.emphasizedDecelerate }}
               className="overflow-hidden"
             >
               <div className={JOURNAL_STYLE_TOOLBAR_SURFACE_CLASS}>
@@ -1341,7 +1342,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       return (
                         <motion.button
                           key={at.name}
-                          whileTap={{ scale: 0.95 }}
+                          whileTap={zenTap.icon}
                           onClick={() => {
                             themeTransition.triggerTransition();
                             diaryTheme.setTheme(at.name);
@@ -1383,7 +1384,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       return (
                         <motion.button
                           key={name}
-                          whileTap={{ scale: 0.95 }}
+                          whileTap={zenTap.icon}
                           onClick={() => diaryTheme.setFont(name)}
                           className={cn(
                             JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
@@ -1403,7 +1404,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       );
                     })}
                     <motion.button
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={zenTap.icon}
                       onClick={cycleFontSize}
                       className={cn(
                         JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
@@ -1419,7 +1420,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   {!entry && (
                     <div className="relative flex-shrink-0">
                       <motion.button
-                        whileTap={{ scale: 0.95 }}
+                        whileTap={zenTap.icon}
                         onClick={() => setShowPromptsDropdown(!showPromptsDropdown)}
                         className={cn(
                           JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
@@ -1441,7 +1442,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     {MOOD_OPTIONS.map((opt) => (
                       <motion.button
                         key={opt.mood}
-                        whileTap={{ scale: 0.85 }}
+                        whileTap={zenTap.cell}
                         onClick={() => setMood(mood === opt.mood ? undefined : opt.mood)}
                         aria-label={moodLabels[opt.mood]}
                         aria-pressed={mood === opt.mood}
@@ -1464,7 +1465,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       </motion.button>
                     ))}
                     <motion.button
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={zenTap.icon}
                       onClick={() => setShowTags(!showTags)}
                       className={cn(
                         JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
@@ -1482,7 +1483,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     </motion.button>
                     <motion.button
                       type="button"
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={zenTap.icon}
                       onClick={toggleFavorite}
                       className={cn(
                         JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
@@ -1503,7 +1504,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       <span className="sr-only">{favoriteToolLabel}</span>
                     </motion.button>
                     <motion.button
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={zenTap.icon}
                       onClick={() => {
                         collapseMobileToolsForSurface();
                         setShowStickers(true);
@@ -1538,7 +1539,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     {(["dark", "milky", "white"] as PaperColor[]).map((pc) => (
                       <motion.button
                         key={pc}
-                        whileTap={{ scale: 0.85 }}
+                        whileTap={zenTap.cell}
                         onClick={() => setPaperColor(pc)}
                         className={cn(
                           JOURNAL_STYLE_TOOLBAR_SWATCH_BASE_CLASS,
@@ -1561,7 +1562,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     {INK_COLORS.map((c) => (
                       <motion.button
                         key={c.hex}
-                        whileTap={{ scale: 0.85 }}
+                        whileTap={zenTap.cell}
                         onClick={() => setInkColor(c.hex)}
                         className={cn(
                           JOURNAL_STYLE_TOOLBAR_SWATCH_BASE_CLASS,
@@ -1579,7 +1580,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   {/* Media capsule (Record + Voice — Photo moved to bottom toolbar) */}
                   <div className={JOURNAL_STYLE_TOOLBAR_GROUP_CLASS}>
                     <motion.button
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={zenTap.icon}
                       onClick={() => handleStartRecording()}
                       disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
                       className={cn(
@@ -1598,7 +1599,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       {recordToolLabel}
                     </motion.button>
                     <motion.button
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={zenTap.icon}
                       onClick={handleToggleDictation}
                       className={cn(
                         JOURNAL_STYLE_TOOLBAR_BUTTON_BASE_CLASS,
@@ -1618,7 +1619,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   {/* Visual capsule (BG + Speed + Texture) */}
                   <div className={JOURNAL_STYLE_TOOLBAR_GROUP_CLASS}>
                     <motion.button
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={zenTap.icon}
                       onClick={() =>
                         setBgIntensity((prev) =>
                           prev === "full" ? "dim" : prev === "dim" ? "off" : "full"
@@ -1653,7 +1654,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       </span>
                     </motion.button>
                     <motion.button
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={zenTap.icon}
                       onClick={() =>
                         setParticleSpeed((prev) =>
                           prev === "slow" ? "drift" : prev === "drift" ? "off" : "slow"
@@ -1682,7 +1683,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       </span>
                     </motion.button>
                     <motion.button
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={zenTap.icon}
                       onClick={() => {
                         const idx = PAPER_TEXTURE_NAMES.indexOf(paperTexture);
                         setPaperTexture(
@@ -1721,7 +1722,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       return (
                         <motion.button
                           key={pat.name}
-                          whileTap={{ scale: 0.85 }}
+                          whileTap={zenTap.cell}
                           onClick={() => setBgPattern(pat.name)}
                           className={cn(
                             JOURNAL_STYLE_TOOLBAR_PATTERN_BASE_CLASS,
@@ -1782,7 +1783,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                           key={`${promptSeed}-${i}`}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
-                          whileTap={{ scale: 0.97 }}
+                          whileTap={zenTap.cell}
                           transition={{
                             delay: i * 0.04,
                             type: "spring",
@@ -2133,7 +2134,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                       maxLength={30}
                     />
                     <motion.button
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={zenTap.icon}
                       type="submit"
                       className="px-4 py-2.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-sm font-medium min-h-[48px]"
                     >
@@ -2346,7 +2347,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
-            whileTap={{ scale: 0.96 }}
+            whileTap={zenTap.button}
             onClick={handleMobileToolsExpand}
             className="mx-auto flex min-h-[48px] items-center justify-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 text-xs font-semibold text-primary shadow-sm"
             aria-expanded={false}
@@ -2386,7 +2387,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   initial={{ opacity: 0, height: 0, y: 10 }}
                   animate={{ opacity: 1, height: "auto", y: 0 }}
                   exit={{ opacity: 0, height: 0, y: 10 }}
-                  transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+                  transition={{ duration: 0.24, ease: easings.emphasizedDecelerate }}
                   role="group"
                   aria-label={styleToolsLabel}
                   className="mb-2 max-h-[min(56dvh,28rem)] overflow-y-auto overscroll-contain rounded-3xl border border-primary/25 bg-background/95 p-2 shadow-inner"
@@ -2814,7 +2815,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               {!desktop && (
                 <motion.button
                   type="button"
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={zenTap.icon}
                   onClick={handleMobileStyleToggle}
                   className={cn(
                     "rounded-2xl font-medium border motion-safe:transition-all flex items-center min-h-[50px] min-w-0 px-2 py-2 text-xs leading-tight flex-col justify-center gap-1",
@@ -2834,7 +2835,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               )}
               <motion.button
                 type="button"
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.icon}
                 onClick={() => {
                   void hapticTap();
                   requestPhotoSelection();
@@ -2857,7 +2858,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 </span>
               </motion.button>
               <motion.button
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.icon}
                 onClick={() => {
                   void hapticTap();
                   if (!showBurnWidget) collapseMobileToolsForSurface();
@@ -2882,7 +2883,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               </motion.button>
               {onAddGratitude && (
                 <motion.button
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={zenTap.icon}
                   onClick={() => {
                     void hapticTap();
                     if (!showGratitudeWidget) collapseMobileToolsForSurface();
@@ -2907,7 +2908,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 </motion.button>
               )}
               <motion.button
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.icon}
                 onClick={() => {
                   void hapticTap();
                   if (!showBreathe) collapseMobileToolsForSurface();
@@ -2930,7 +2931,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 </span>
               </motion.button>
               <motion.button
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.icon}
                 onClick={() => {
                   void hapticTap();
                   if (!zenFocusActive) collapseMobileToolsForSurface();
@@ -2953,7 +2954,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 </span>
               </motion.button>
               <motion.button
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.icon}
                 onClick={() => {
                   void hapticTap();
                   if (!showHabits) collapseMobileToolsForSurface();

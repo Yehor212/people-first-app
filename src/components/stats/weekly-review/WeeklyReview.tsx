@@ -10,6 +10,7 @@
  */
 
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Trophy,
@@ -65,21 +66,26 @@ export function WeeklyReview({
     >
       {/* Animated cosmic background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <motion.div
-          className="absolute -top-1/2 -end-1/2 w-full h-full rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.15)_0%,transparent_70%)]"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{ duration: 8, repeat: Infinity }}
+        <div
+          className="absolute -top-1/2 -end-1/2 w-full h-full rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.15)_0%,transparent_70%)] animate-zen-loop-fade-scale"
+          style={{
+            opacity: 0.4,
+            '--zen-loop-min-opacity': 0.3,
+            '--zen-loop-max-opacity': 0.5,
+            '--zen-loop-scale': 1.2,
+            '--zen-loop-duration': '8s',
+          } as CSSProperties}
         />
-        <motion.div
-          className="absolute -bottom-1/2 -start-1/2 w-full h-full rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.1)_0%,transparent_60%)]"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{ duration: 10, repeat: Infinity }}
+        <div
+          className="absolute -bottom-1/2 -start-1/2 w-full h-full rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.1)_0%,transparent_60%)] animate-zen-loop-fade-scale"
+          style={{
+            opacity: 0.3,
+            '--zen-loop-min-opacity': 0.2,
+            '--zen-loop-max-opacity': 0.4,
+            '--zen-loop-scale-min': 1.2,
+            '--zen-loop-scale': 1,
+            '--zen-loop-duration': '10s',
+          } as CSSProperties}
         />
 
         {/* Sparkle particles */}
@@ -92,15 +98,16 @@ export function WeeklyReview({
       <div className="relative p-5 pb-4">
         <div className="mb-4 flex flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
           <div className="flex min-w-0 items-center gap-3">
-            <motion.div
-              className="p-2.5 rounded-xl bg-gradient-to-br from-primary/30 to-primary/20 backdrop-blur-sm shadow-zen-md"
-              animate={{
-                opacity: [0.8, 1, 0.8],
-              }}
-              transition={{ duration: 3, repeat: Infinity }}
+            <div
+              className="p-2.5 rounded-xl bg-gradient-to-br from-primary/30 to-primary/20 backdrop-blur-sm shadow-zen-md animate-zen-loop-fade"
+              style={{
+                opacity: 0.9,
+                '--zen-loop-min-opacity': 0.8,
+                '--zen-loop-max-opacity': 1,
+              } as CSSProperties}
             >
               <Crown className="w-5 h-5 text-violet-400" />
-            </motion.div>
+            </div>
             <div className="min-w-0">
               <h3 className="break-words text-base font-bold text-foreground">
                 {t.weeklyReview || "Weekly Review"}

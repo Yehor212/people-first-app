@@ -14,13 +14,13 @@ export interface FoldProps extends HTMLMotionProps<'div'> {
   disabled?: boolean;
 }
 
-export function Fold({ children, className, disabled, ...rest }: FoldProps) {
+export function Fold({ children, className, disabled, transition, ...rest }: FoldProps) {
   const animate = useShouldAnimate();
   if (!animate || disabled) {
     return <div className={className}>{children}</div>;
   }
   return (
-    <motion.div className={className} {...fold} {...rest}>
+    <motion.div className={className} {...fold} {...rest} transition={{ ...fold.transition, ...transition }}>
       {children}
     </motion.div>
   );

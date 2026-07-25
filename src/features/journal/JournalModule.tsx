@@ -101,7 +101,7 @@ import {
 import { useGamificationStore, useUserDataStore } from "@/stores";
 import { useThemeStore } from "@/stores/themeStore";
 import { haptics, hapticSuccess } from "@/lib/haptics";
-import { shouldAnimate } from "@/lib/animationUtils";
+import { shouldAnimate, zenTap } from "@/lib/animationUtils";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useEntryTransition } from "@/hooks/useEntryTransition";
 import { useSidebarState } from "@/hooks/useSidebarState";
@@ -2606,7 +2606,7 @@ type ResetStep =
   if (moduleState === "card" && !disableCardShell && !isPagePresentation) {
     return (
       <motion.button
-        whileTap={{ scale: 0.97 }}
+        whileTap={zenTap.cell}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
         onClick={handleOpen}
         className={cn(
@@ -3970,8 +3970,7 @@ type ResetStep =
                               animate={{ opacity: 1 }}
                               exit={shouldAnimate() ? { opacity: 0 } : undefined}
                               transition={{ duration: 0.18 }}
-                              style={{ zIndex: 120 }}
-                              className="fixed inset-0 bg-background/55 backdrop-blur-sm [-webkit-backdrop-filter:blur(12px)]"
+                              className="fixed inset-0 z-[120] bg-background/55 backdrop-blur-sm [-webkit-backdrop-filter:blur(12px)]"
                               onClick={() => closeMobileDiarySidebar()}
                               data-testid="journal-mobile-diary-sidebar-backdrop"
                             />
@@ -3991,9 +3990,8 @@ type ResetStep =
                                 transition: { type: "tween", duration: 0.16, ease: "easeOut" },
                               } : undefined}
                               transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                              style={{ zIndex: 121 }}
                               className={cn(
-                                "fixed inset-y-0 flex w-[min(360px,88vw)] flex-col overflow-hidden border-border/35 shadow-[0_24px_80px_hsl(var(--foreground)/0.24)] backdrop-blur-2xl [-webkit-backdrop-filter:blur(22px)] pb-safe pt-safe",
+                                "fixed inset-y-0 z-[121] flex w-[min(360px,88vw)] flex-col overflow-hidden border-border/35 shadow-[0_24px_80px_hsl(var(--foreground)/0.24)] backdrop-blur-2xl [-webkit-backdrop-filter:blur(22px)] pb-safe pt-safe",
                                 showJournalSidebarAtmosphere ? "journal-light-sidebar-panel journal-light-sidebar-drawer bg-background/70" : "bg-background",
                                 isRTL ? "right-0 border-s" : "left-0 border-e"
                               )}

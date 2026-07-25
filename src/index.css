@@ -49,7 +49,7 @@
     --zf-surface-3: 170 14% 21%;
     --zf-text-strong: 165 22% 93%;
     --zf-text-soft: 165 10% 68%;
-    --zf-text-muted: 165 8% 52%;
+    --zf-text-muted: 165 8% 56%;
     --zf-primary: 164 55% 42%;
     --zf-memory: 266 58% 58%;
     --zf-trace: 190 76% 46%;
@@ -469,7 +469,7 @@
     --destructive-foreground: 0 0% 100%;
 
     --border: 174 16% 22%;
-    --input: 174 16% 22%;
+    --input: 174 20% 42%;
     --ring: var(--zf-primary);
 
     /* Habit Hub — skip state color for heatmap/charts */
@@ -692,7 +692,7 @@
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 15%;
-    --input: 0 0% 15%;
+    --input: 170 12% 40%;
     --ring: var(--zf-primary);
 
     /* OLED-optimized gradients - subtle glow instead of gradient */
@@ -1625,7 +1625,7 @@
   }
 
   .animate-tab-enter {
-    animation: tab-enter 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+    animation: tab-enter 0.25s cubic-bezier(0.05, 0.7, 0.1, 1) /* easings.emphasizedDecelerate (M3) */;
   }
 
   .animate-scale-in {
@@ -1786,6 +1786,254 @@
   100% {
     opacity: 1;
   }
+}
+
+/* ========================================
+   Zen ambient loops — CSS-owned ambient motion
+   (ARCHITECTURE.md "Performance & Motion": no JS-driven infinite
+   animations). Parameterized via custom properties; fully killed by
+   body.reduce-motion [class*="animate-"] (animation: none).
+   ======================================== */
+
+@keyframes zen-ambient-fade {
+  0%,
+  100% {
+    opacity: var(--zen-loop-min-opacity, 0.3);
+  }
+  50% {
+    opacity: var(--zen-loop-max-opacity, 0.5);
+  }
+}
+
+@keyframes zen-ambient-scale {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(var(--zen-loop-scale, 1.05));
+  }
+}
+
+@keyframes zen-ambient-fade-scale {
+  0%,
+  100% {
+    opacity: var(--zen-loop-min-opacity, 0.5);
+    transform: scale(var(--zen-loop-scale-min, 1));
+  }
+  50% {
+    opacity: var(--zen-loop-max-opacity, 1);
+    transform: scale(var(--zen-loop-scale, 1.1));
+  }
+}
+
+@keyframes zen-ambient-wiggle {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(var(--zen-loop-scale, 1.1)) rotate(var(--zen-loop-rotate, 5deg));
+  }
+  75% {
+    transform: scale(var(--zen-loop-scale, 1.1)) rotate(calc(var(--zen-loop-rotate, 5deg) * -1));
+  }
+}
+
+@keyframes zen-ambient-glow {
+  0%,
+  100% {
+    box-shadow: var(--zen-glow-a, none);
+  }
+  50% {
+    box-shadow: var(--zen-glow-b, none);
+  }
+}
+
+/* Pop-then-rest sparkle: framer equivalent of 1.5s pop + 2s repeatDelay
+   at 3.5s cycle (pop occupies the first 43%). */
+@keyframes zen-ambient-sparkle {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  21.5% {
+    transform: scale(var(--zen-loop-scale, 1.5)) rotate(calc(var(--zen-loop-rotate, 0deg) * 0.5));
+    opacity: 1;
+  }
+  43%,
+  100% {
+    transform: scale(0) rotate(var(--zen-loop-rotate, 0deg));
+    opacity: 0;
+  }
+}
+
+/* Dust/particle drift downward with opacity peak mid-flight. */
+@keyframes zen-ambient-fall {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(calc(var(--zen-loop-drift, 0px) * 0.5), 150px);
+    opacity: var(--zen-loop-max-opacity, 0.8);
+  }
+  100% {
+    transform: translate(var(--zen-loop-drift, 0px), 200px);
+    opacity: 0;
+  }
+}
+
+/* Gentle hover float: rise + scale + fade, symmetric. */
+@keyframes zen-ambient-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(var(--zen-loop-scale-min, 0.8));
+    opacity: var(--zen-loop-min-opacity, 0.3);
+  }
+  50% {
+    transform: translateY(calc(var(--zen-loop-rise, 8px) * -1)) scale(var(--zen-loop-scale, 1.1));
+    opacity: var(--zen-loop-max-opacity, 0.8);
+  }
+}
+
+/* Continuous orbit rotation (linear). Start angle and direction are
+   parameterized; direction -1 counter-rotates. */
+@keyframes zen-ambient-orbit {
+  from {
+    transform: rotate(var(--zen-orbit-start, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--zen-orbit-start, 0deg) + 360deg * var(--zen-orbit-dir, 1)));
+  }
+}
+
+/* Typing-indicator dot bounce (short, functional). */
+@keyframes zen-ambient-bounce-dot {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(calc(var(--zen-loop-rise, 6px) * -1));
+  }
+}
+
+/* Seamless horizontal slide (waves) — one-directional, jumps back on repeat. */
+@keyframes zen-ambient-wave {
+  from {
+    transform: translateX(calc(var(--zen-loop-drift, 50px) * -1));
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Slow horizontal drift, symmetric (clouds). */
+@keyframes zen-ambient-drift-x {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(var(--zen-loop-drift, 15px));
+  }
+}
+
+/* Rain streak: fade + short downward slide. */
+@keyframes zen-ambient-rain {
+  0%,
+  100% {
+    opacity: var(--zen-loop-min-opacity, 0.3);
+    transform: translateY(0);
+  }
+  50% {
+    opacity: var(--zen-loop-max-opacity, 0.8);
+    transform: translateY(var(--zen-loop-rise, 2px));
+  }
+}
+
+.animate-zen-loop-fade,
+.animate-zen-loop-scale,
+.animate-zen-loop-fade-scale,
+.animate-zen-loop-wiggle,
+.animate-zen-loop-glow,
+.animate-zen-loop-sparkle,
+.animate-zen-loop-fall,
+.animate-zen-loop-float,
+.animate-zen-loop-orbit,
+.animate-zen-loop-bounce-dot,
+.animate-zen-loop-wave,
+.animate-zen-loop-drift-x,
+.animate-zen-loop-rain {
+  animation-duration: var(--zen-loop-duration, 3s);
+  animation-timing-function: var(--zen-loop-timing, ease-in-out);
+  animation-iteration-count: infinite;
+  animation-delay: var(--zen-loop-delay, 0s);
+}
+
+.animate-zen-loop-fade {
+  animation-name: zen-ambient-fade;
+}
+
+.animate-zen-loop-scale {
+  animation-name: zen-ambient-scale;
+}
+
+.animate-zen-loop-fade-scale {
+  animation-name: zen-ambient-fade-scale;
+}
+
+.animate-zen-loop-wiggle {
+  animation-name: zen-ambient-wiggle;
+}
+
+.animate-zen-loop-glow {
+  animation-name: zen-ambient-glow;
+}
+
+.animate-zen-loop-sparkle {
+  animation-name: zen-ambient-sparkle;
+}
+
+.animate-zen-loop-fall {
+  animation-name: zen-ambient-fall;
+}
+
+.animate-zen-loop-float {
+  animation-name: zen-ambient-float;
+}
+
+.animate-zen-loop-orbit {
+  animation-name: zen-ambient-orbit;
+}
+
+.animate-zen-loop-bounce-dot {
+  animation-name: zen-ambient-bounce-dot;
+}
+
+.animate-zen-loop-wave {
+  animation-name: zen-ambient-wave;
+}
+
+.animate-zen-loop-drift-x {
+  animation-name: zen-ambient-drift-x;
+}
+
+.animate-zen-loop-rain {
+  animation-name: zen-ambient-rain;
+}
+
+/* Continuous spin for SVG groups (sun icons etc.) — fill-box keeps the
+   rotation centred on the element instead of the SVG origin. */
+.animate-zen-loop-spin {
+  animation-name: zen-ambient-orbit;
+  animation-duration: var(--zen-loop-duration, 3s);
+  animation-timing-function: var(--zen-loop-timing, linear);
+  animation-iteration-count: infinite;
+  animation-delay: var(--zen-loop-delay, 0s);
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .animate-bounce-gentle {
@@ -6881,7 +7129,7 @@ body.reduce-motion .diary-animated {
     inset 0 1px 0 hsl(var(--foreground) / 0.08),
     inset 0 -24px 46px hsl(var(--background) / 0.32),
     0 18px 40px hsl(var(--background) / 0.34);
-  animation: snap-card-enter 420ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  animation: snap-card-enter 420ms cubic-bezier(0.05, 0.7, 0.1, 1) /* easings.emphasizedDecelerate (M3) */ both;
 }
 
 .snap-card-depth,
@@ -6993,7 +7241,7 @@ body.reduce-motion .diary-animated {
 }
 
 .snap-release-core {
-  animation: snap-release-core 0.58s cubic-bezier(0.32, 0.72, 0, 1) both;
+  animation: snap-release-core 0.58s cubic-bezier(0.05, 0.7, 0.1, 1) /* easings.emphasizedDecelerate (M3) */ both;
 }
 
 .snap-release-speck {
