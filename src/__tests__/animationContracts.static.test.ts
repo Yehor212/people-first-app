@@ -129,3 +129,15 @@ describe("zen-loop CSS engine floor", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+/**
+ * Emotional-safety contract (10-agent review, Role 2): on terrible-mood
+ * days the product calms the whole UI — the zen ambient loop family must
+ * be inside the mood-terrible kill-list, not only the legacy classes.
+ */
+describe("mood-terrible calm contract", () => {
+  it("kills the zen ambient loop family on terrible-mood days", () => {
+    const source = readFileSync(join("src", "index.css"), "utf8");
+    expect(source).toContain('body.mood-terrible [class*="animate-zen-loop"]');
+  });
+});

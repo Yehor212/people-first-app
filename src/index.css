@@ -3164,6 +3164,21 @@ body.mood-terrible .animate-pulse {
   animation: none !important;
 }
 
+/* The zen ambient loop family and celebration loops also rest on the
+   user's worst days — the product's emotional-safety contract must cover
+   the whole animation surface, not only the legacy classes
+   (10-agent review, Role 2). */
+body.mood-terrible [class*="animate-zen-loop"],
+body.mood-terrible .animate-zen-float,
+body.mood-terrible .animate-zen-wobble,
+body.mood-terrible .animate-bounce-fire,
+body.mood-terrible .animate-bounce-fire-delayed,
+body.mood-terrible .animate-bounce-fire-delayed-2,
+body.mood-terrible .animate-sparkle,
+body.mood-terrible .animate-confetti {
+  animation: none !important;
+}
+
 /* Reduce saturation for terrible mood */
 body.mood-terrible img,
 body.mood-terrible .emoji,
