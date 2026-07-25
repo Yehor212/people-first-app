@@ -35,6 +35,7 @@ interface TrophyHallProps {
 
 // Dust particle floating in spotlight
 function DustParticle({ delay, x }: { delay: number; x: number }) {
+  const drift = Math.random() * 40 - 20;
   return (
     <div
       className="absolute w-1 h-1 rounded-full bg-amber-200/60 animate-zen-loop-fall"
@@ -42,7 +43,8 @@ function DustParticle({ delay, x }: { delay: number; x: number }) {
         insetInlineStart: `${x}%`,
         top: '10%',
         opacity: 0,
-        '--zen-loop-drift': `${Math.random() * 40 - 20}px`,
+        '--zen-loop-drift': `${drift}px`,
+        '--zen-loop-drift-mid': `${drift / 2}px`,
         '--zen-loop-duration': `${4 + Math.random() * 2}s`,
         '--zen-loop-delay': `${delay}s`,
         '--zen-loop-timing': 'linear',

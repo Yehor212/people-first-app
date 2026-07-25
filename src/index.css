@@ -1836,7 +1836,7 @@
     transform: scale(var(--zen-loop-scale, 1.1)) rotate(var(--zen-loop-rotate, 5deg));
   }
   75% {
-    transform: scale(var(--zen-loop-scale, 1.1)) rotate(calc(var(--zen-loop-rotate, 5deg) * -1));
+    transform: scale(var(--zen-loop-scale, 1.1)) rotate(calc(0deg - var(--zen-loop-rotate, 5deg)));
   }
 }
 
@@ -1858,7 +1858,7 @@
     opacity: 0;
   }
   21.5% {
-    transform: scale(var(--zen-loop-scale, 1.5)) rotate(calc(var(--zen-loop-rotate, 0deg) * 0.5));
+    transform: scale(var(--zen-loop-scale, 1.5)) rotate(var(--zen-loop-rotate, 0deg));
     opacity: 1;
   }
   43%,
@@ -1875,7 +1875,7 @@
     opacity: 0;
   }
   50% {
-    transform: translate(calc(var(--zen-loop-drift, 0px) * 0.5), 150px);
+    transform: translate(var(--zen-loop-drift-mid, var(--zen-loop-drift, 0px)), 150px);
     opacity: var(--zen-loop-max-opacity, 0.8);
   }
   100% {
@@ -1892,19 +1892,29 @@
     opacity: var(--zen-loop-min-opacity, 0.3);
   }
   50% {
-    transform: translateY(calc(var(--zen-loop-rise, 8px) * -1)) scale(var(--zen-loop-scale, 1.1));
+    transform: translateY(calc(0px - var(--zen-loop-rise, 8px))) scale(var(--zen-loop-scale, 1.1));
     opacity: var(--zen-loop-max-opacity, 0.8);
   }
 }
 
-/* Continuous orbit rotation (linear). Start angle and direction are
-   parameterized; direction -1 counter-rotates. */
+/* Continuous orbit rotation (linear). Start angle is parameterized;
+   forward/reverse are separate keyframes so the library stays CSS
+   Values 3 (no calc multiplication) for the iOS 15.0 engine floor. */
 @keyframes zen-ambient-orbit {
   from {
     transform: rotate(var(--zen-orbit-start, 0deg));
   }
   to {
-    transform: rotate(calc(var(--zen-orbit-start, 0deg) + 360deg * var(--zen-orbit-dir, 1)));
+    transform: rotate(calc(var(--zen-orbit-start, 0deg) + 360deg));
+  }
+}
+
+@keyframes zen-ambient-orbit-reverse {
+  from {
+    transform: rotate(var(--zen-orbit-start, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--zen-orbit-start, 0deg) - 360deg));
   }
 }
 
@@ -1915,14 +1925,14 @@
     transform: translateY(0);
   }
   50% {
-    transform: translateY(calc(var(--zen-loop-rise, 6px) * -1));
+    transform: translateY(calc(0px - var(--zen-loop-rise, 6px)));
   }
 }
 
 /* Seamless horizontal slide (waves) — one-directional, jumps back on repeat. */
 @keyframes zen-ambient-wave {
   from {
-    transform: translateX(calc(var(--zen-loop-drift, 50px) * -1));
+    transform: translateX(calc(0px - var(--zen-loop-drift, 50px)));
   }
   to {
     transform: translateX(0);
@@ -2006,6 +2016,10 @@
 
 .animate-zen-loop-orbit {
   animation-name: zen-ambient-orbit;
+}
+
+.animate-zen-loop-orbit-reverse {
+  animation-name: zen-ambient-orbit-reverse;
 }
 
 .animate-zen-loop-bounce-dot {

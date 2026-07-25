@@ -112,3 +112,20 @@ describe("entrance-duration budget", () => {
     },
   );
 });
+
+/**
+ * CSS Values 3 compatibility (10-agent review, Roles 5+10): calc()
+ * multiplication/division is CSS Values 4 (Safari 16.4+, Chrome 111+) and
+ * silently drops on the declared iOS 15.0 floor — the affected loops would
+ * freeze. The zen-loop library must stay Level 3 (subtraction only).
+ */
+describe("zen-loop CSS engine floor", () => {
+  it("uses no calc() multiplication/division in the zen-ambient library", () => {
+    const source = readFileSync(join("src", "index.css"), "utf8");
+    const libraryStart = source.indexOf("Zen ambient loops");
+    const libraryEnd = source.indexOf(".animate-bounce-gentle {", libraryStart);
+    const library = source.slice(libraryStart, libraryEnd);
+    const offenders = library.match(/calc\([\s\S]*?\s[*/]\s[\s\S]*?\)/g) ?? [];
+    expect(offenders).toEqual([]);
+  });
+});
