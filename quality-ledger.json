@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-07-23",
+  "lastUpdated": "2026-07-25",
   "phase": "3-a.4c-ii-c-a-emotion-progressive-disclosure",
   "floors": {
     "moodScopeSelectorActive": {
@@ -334,10 +334,10 @@
       "description": "eslint-disable exhaustive-deps suppressions"
     },
     "inlineStyles": {
-      "value": 313,
+      "value": 356,
       "direction": "down",
       "tolerance": 0.03,
-      "recorded": "2026-05-17",
+      "recorded": "2026-07-25",
       "description": "Inline style={{}} in .tsx files. Tolerance 3% (~10) for prettier reformat. Phase 3-A.4a: baseline 304→315 records the Phase 3-A.3 WOW-factor additions that went unratched (custom CosmicOrbBackground added ~13 styles, Phase 3-A.4a swap + CSS extraction reclaimed 2 back). OrbPage still has 1 legitimate inline style for the --orb-aura-hue CSS var (computed per-render from mood valence)."
     },
     "hardcodedColors": {
@@ -790,6 +790,13 @@
       "newValue": 9.2,
       "reason": "Baseline correction to the score produced by the current ratchet formula for three pre-existing non-exempt large components and the already-recorded inline-style debt. Individual debt floors remain visible and blocking, so future score degradation still fails.",
       "date": "2026-07-13"
+    },
+    {
+      "metric": "inlineStyles",
+      "oldValue": 313,
+      "newValue": 356,
+      "reason": "P1-P4 soft-motion overhaul (73afcda35): 49 JS ambient loops migrated to CSS @keyframes driven by per-element --zen-loop-* custom properties (+~43 style= call sites since floor 313, the sanctioned 60fps pattern, same class as the documented OrbPage --orb-aura-hue precedent); static pool reviewed: several are test-contracted inline styles (ThemeToggleV2 thumb, OrbPageSteps scroller/button per OrbPage.test/ThemeToggleV2.test), safe conversions applied (-6); future growth re-triggers this gate; long-term reduction tracked as TD follow-up (shared zen-loop style helper or data-attributes)",
+      "date": "2026-07-25"
     }
   ]
 }
