@@ -29,13 +29,9 @@
 @layer theme {
   :root[data-theme="paper"] {
     --zen-surface: var(--color-theme-paper-surface);
-    --zen-surface-muted: var(--color-theme-paper-surface-muted);
-    --zen-surface-card: var(--color-theme-paper-surface-card);
     --zen-ink: var(--color-theme-paper-ink);
     --zen-ink-muted: var(--color-theme-paper-ink-muted);
-    --zen-border: var(--color-theme-paper-border);
     --zen-primary: var(--color-theme-paper-primary);
-    --zen-primary-fg: var(--color-theme-paper-primary-fg);
     --surface-glass: hsl(158 42% 88% / 0.74);
     --surface-glass-border: hsl(174 30% 52% / 0.34);
     --surface-glass-blur: 20px;
@@ -56,17 +52,19 @@
   --ring: var(--settings-v2-focus);
 }
 
-:root[data-theme-contrast="high"] :where(button, input, select, textarea, summary, [tabindex]):focus-visible {
+:root[data-theme-contrast="high"]
+  :where(button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 3px solid hsl(var(--settings-v2-focus));
   outline-offset: 3px;
 }
 
-:root[data-theme-contrast="high"] :where(
-  [data-interaction-surface],
-  [data-testid^="settings-module-"],
-  [data-testid^="settings-v2-panel-"],
-  [data-testid="settings-theme-strip"]
-) {
+:root[data-theme-contrast="high"]
+  :where(
+    [data-interaction-surface],
+    [data-testid^="settings-module-"],
+    [data-testid^="settings-v2-panel-"],
+    [data-testid="settings-theme-strip"]
+  ) {
   border-color: hsl(var(--settings-v2-border) / 0.82);
 }
 
@@ -151,11 +149,10 @@
   --settings-v2-glass-blur: 24px;
   --settings-v2-rim-light: 148 31% 90%;
   --settings-v2-rim-alpha: 0.66;
-  --settings-v2-icon-glass-mid: 153 22% 54%;
   --settings-v2-icon-glass: 153 27% 42%;
-  --settings-v2-icon-glass-dark: 152 32% 36%;
-  --settings-v2-icon-glyph: 148 31% 90%;
-  --settings-v2-icon-shadow: 89 12% 20%;
+  --settings-v2-text-strong: 176 48% 9%;
+  --settings-v2-text-muted: 176 40% 12%;
+  --settings-v2-focus: 176 48% 9%;
 }
 
 /* V2 Mist Paper guardrail.
@@ -165,8 +162,12 @@
  * they keep the branded dark treatment.
  */
 :root[data-theme="paper"] [data-surface="ink-paper"] {
-  background:
-    linear-gradient(155deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 48%, hsl(var(--card)) 100%);
+  background: linear-gradient(
+    155deg,
+    hsl(var(--card)) 0%,
+    hsl(var(--surface-elevated)) 48%,
+    hsl(var(--card)) 100%
+  );
   border-color: hsl(var(--border));
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground) / 0.08),
@@ -186,8 +187,7 @@
 :root[data-theme="paper"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"],
 :root[data-theme="paper"] [data-surface="ink-paper"] [data-ritual-card],
 :root[data-theme="paper"] [data-surface="ink-paper"] [data-icon-medallion="true"] {
-  background:
-    linear-gradient(150deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 100%);
+  background: linear-gradient(150deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 100%);
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground) / 0.08),
     0 10px 26px -22px hsl(var(--foreground) / 0.22);
@@ -195,12 +195,11 @@
 
 :root[data-theme="paper"] [data-surface="ink-paper"] [data-testid="hero-ritual-board-scene"],
 :root[data-theme="paper"] [data-surface="ink-paper"] [data-scene-layer="core"] {
-  background:
-    linear-gradient(150deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 100%);
+  background: linear-gradient(150deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 100%);
   border-color: hsl(var(--border));
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground) / 0.08),
-    0 16px 38px -30px hsl(var(--foreground) / 0.30);
+    0 16px 38px -30px hsl(var(--foreground) / 0.3);
 }
 
 :root[data-theme="paper"] [data-surface="ink-paper"] [data-scene-layer="halo"] {
@@ -214,7 +213,7 @@
 }
 
 :root[data-theme="paper"] [data-surface="ink-paper"] [data-scene-layer="shadow"] {
-  background: hsl(var(--zf-role-energy) / 0.10);
+  background: hsl(var(--zf-role-energy) / 0.1);
 }
 
 :root[data-theme="paper"] [data-surface="ink-paper"] [data-scene-layer="rail"] {
@@ -228,8 +227,7 @@
 }
 
 :root[data-theme="paper"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"] {
-  background:
-    linear-gradient(155deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 100%);
+  background: linear-gradient(155deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 100%);
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground) / 0.08),
     0 14px 34px -28px hsl(var(--foreground) / 0.28);
@@ -249,8 +247,7 @@
 }
 
 :root[data-theme="paper"] .habit-growth-group {
-  background:
-    linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 100%);
+  background: linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--surface-elevated)) 100%);
   border-color: hsl(var(--border));
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground) / 0.08),
@@ -283,27 +280,87 @@
 
 :root[data-theme="paper"] .habit-field-backdrop {
   background:
-    linear-gradient(118deg, hsl(var(--zf-role-energy) / 0.20) 0 7%, transparent 7% 100%),
-    linear-gradient(112deg, transparent 0 5%, hsl(var(--zf-role-energy) / 0.18) 5% 12%, transparent 12% 100%),
-    linear-gradient(112deg, transparent 0 31%, hsl(var(--zf-role-body) / 0.18) 31% 39%, transparent 39% 100%),
-    linear-gradient(112deg, transparent 0 68%, hsl(var(--zf-role-focus) / 0.16) 68% 78%, transparent 78% 100%),
-    linear-gradient(112deg, transparent 0 28%, hsl(var(--zf-role-body) / 0.18) 28% 28.8%, transparent 28.8% 100%),
+    linear-gradient(118deg, hsl(var(--zf-role-energy) / 0.2) 0 7%, transparent 7% 100%),
+    linear-gradient(
+      112deg,
+      transparent 0 5%,
+      hsl(var(--zf-role-energy) / 0.18) 5% 12%,
+      transparent 12% 100%
+    ),
+    linear-gradient(
+      112deg,
+      transparent 0 31%,
+      hsl(var(--zf-role-body) / 0.18) 31% 39%,
+      transparent 39% 100%
+    ),
+    linear-gradient(
+      112deg,
+      transparent 0 68%,
+      hsl(var(--zf-role-focus) / 0.16) 68% 78%,
+      transparent 78% 100%
+    ),
+    linear-gradient(
+      112deg,
+      transparent 0 28%,
+      hsl(var(--zf-role-body) / 0.18) 28% 28.8%,
+      transparent 28.8% 100%
+    ),
     radial-gradient(ellipse at 18% 8%, hsl(var(--zf-role-energy) / 0.42), transparent 30%),
     radial-gradient(ellipse at 86% 10%, hsl(var(--zf-role-focus) / 0.38), transparent 30%),
     radial-gradient(ellipse at 18% 58%, hsl(var(--zf-role-gratitude) / 0.36), transparent 36%),
     radial-gradient(ellipse at 82% 56%, hsl(var(--zf-role-space) / 0.24), transparent 34%),
-    linear-gradient(180deg, hsl(var(--background) / 0.92), hsl(var(--surface-overlay) / 0.62) 52%, hsl(var(--card) / 0.50));
+    linear-gradient(
+      180deg,
+      hsl(var(--background) / 0.92),
+      hsl(var(--surface-overlay) / 0.62) 52%,
+      hsl(var(--card) / 0.5)
+    );
 }
 
 :root[data-theme="paper"] .habit-field-backdrop::before {
   background:
-    linear-gradient(116deg, transparent 0 8%, hsl(var(--zf-role-energy) / 0.20) 8% 13%, transparent 13% 100%),
-    linear-gradient(116deg, transparent 0 12%, hsl(var(--zf-role-energy) / 0.30) 12% 12.78%, transparent 12.78% 100%),
-    linear-gradient(116deg, transparent 0 24%, hsl(var(--zf-role-body) / 0.26) 24% 24.72%, transparent 24.72% 100%),
-    linear-gradient(116deg, transparent 0 34%, hsl(var(--zf-role-body) / 0.16) 34% 41%, transparent 41% 100%),
-    linear-gradient(116deg, transparent 0 38%, hsl(var(--zf-role-focus) / 0.22) 38% 38.58%, transparent 38.58% 100%),
-    linear-gradient(116deg, transparent 0 71%, hsl(var(--zf-role-focus) / 0.17) 71% 80%, transparent 80% 100%),
-    linear-gradient(116deg, transparent 0 64%, hsl(var(--zf-role-space) / 0.12) 64% 64.42%, transparent 64.42% 100%),
+    linear-gradient(
+      116deg,
+      transparent 0 8%,
+      hsl(var(--zf-role-energy) / 0.2) 8% 13%,
+      transparent 13% 100%
+    ),
+    linear-gradient(
+      116deg,
+      transparent 0 12%,
+      hsl(var(--zf-role-energy) / 0.3) 12% 12.78%,
+      transparent 12.78% 100%
+    ),
+    linear-gradient(
+      116deg,
+      transparent 0 24%,
+      hsl(var(--zf-role-body) / 0.26) 24% 24.72%,
+      transparent 24.72% 100%
+    ),
+    linear-gradient(
+      116deg,
+      transparent 0 34%,
+      hsl(var(--zf-role-body) / 0.16) 34% 41%,
+      transparent 41% 100%
+    ),
+    linear-gradient(
+      116deg,
+      transparent 0 38%,
+      hsl(var(--zf-role-focus) / 0.22) 38% 38.58%,
+      transparent 38.58% 100%
+    ),
+    linear-gradient(
+      116deg,
+      transparent 0 71%,
+      hsl(var(--zf-role-focus) / 0.17) 71% 80%,
+      transparent 80% 100%
+    ),
+    linear-gradient(
+      116deg,
+      transparent 0 64%,
+      hsl(var(--zf-role-space) / 0.12) 64% 64.42%,
+      transparent 64.42% 100%
+    ),
     repeating-linear-gradient(
       116deg,
       transparent 0 2.15rem,
@@ -316,34 +373,58 @@
 :root[data-theme="paper"] .habit-field-backdrop::after {
   opacity: 0.74;
   background:
-    linear-gradient(102deg, transparent 0 18%, hsl(var(--zf-role-body) / 0.16) 18% 18.48%, transparent 18.48% 100%),
-    linear-gradient(102deg, transparent 0 52%, hsl(var(--zf-role-gratitude) / 0.15) 52% 52.42%, transparent 52.42% 100%),
+    linear-gradient(
+      102deg,
+      transparent 0 18%,
+      hsl(var(--zf-role-body) / 0.16) 18% 18.48%,
+      transparent 18.48% 100%
+    ),
+    linear-gradient(
+      102deg,
+      transparent 0 52%,
+      hsl(var(--zf-role-gratitude) / 0.15) 52% 52.42%,
+      transparent 52.42% 100%
+    ),
     repeating-linear-gradient(
       102deg,
       transparent 0 2rem,
-      hsl(var(--zf-role-focus) / 0.060) 2rem 2.09rem,
+      hsl(var(--zf-role-focus) / 0.06) 2rem 2.09rem,
       transparent 2.09rem 4rem
     );
 }
 
 :root[data-theme="paper"] .habit-field-backdrop__source-beam {
-  background:
-    linear-gradient(
-      90deg,
-      transparent 0%,
-      hsl(var(--card) / 0.16) 16%,
-      hsl(var(--card) / 0.78) 43%,
-      hsl(var(--foreground) / 0.10) 54%,
-      transparent 84%
-    );
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--card) / 0.16) 16%,
+    hsl(var(--card) / 0.78) 43%,
+    hsl(var(--foreground) / 0.1) 54%,
+    transparent 84%
+  );
   opacity: 1;
 }
 
 :root[data-theme="paper"] .habit-field-backdrop__prism {
   background:
-    linear-gradient(132deg, hsl(var(--card) / 0.96), hsl(var(--zf-role-body) / 0.34) 36%, hsl(var(--zf-role-focus) / 0.58)),
-    linear-gradient(38deg, transparent 0 45%, hsl(var(--foreground) / 0.22) 45% 52%, transparent 52% 100%),
-    linear-gradient(126deg, hsl(var(--zf-role-energy) / 0.52), transparent 34%, hsl(var(--zf-role-body) / 0.44));
+    linear-gradient(
+      132deg,
+      hsl(var(--card) / 0.96),
+      hsl(var(--zf-role-body) / 0.34) 36%,
+      hsl(var(--zf-role-focus) / 0.58)
+    ),
+    linear-gradient(
+      38deg,
+      transparent 0 45%,
+      hsl(var(--foreground) / 0.22) 45% 52%,
+      transparent 52% 100%
+    ),
+    linear-gradient(
+      126deg,
+      hsl(var(--zf-role-energy) / 0.52),
+      transparent 34%,
+      hsl(var(--zf-role-body) / 0.44)
+    );
   opacity: 1;
 }
 
@@ -357,7 +438,7 @@
 }
 
 :root[data-theme="paper"] .habit-field-backdrop__spectrum[data-spectrum-role="body"] {
-  --habit-spectrum-color: hsl(var(--zf-role-body) / 0.50);
+  --habit-spectrum-color: hsl(var(--zf-role-body) / 0.5);
 }
 
 :root[data-theme="paper"] .habit-field-backdrop__spectrum[data-spectrum-role="focus"] {
@@ -374,11 +455,26 @@
 
 :root[data-theme="paper"] .habit-field-backdrop__canopy {
   background:
-    linear-gradient(112deg, transparent 0 18%, hsl(var(--zf-role-energy) / 0.26) 18% 31%, transparent 31% 100%),
-    linear-gradient(112deg, transparent 0 26%, hsl(var(--zf-role-energy) / 0.42) 26% 27.2%, transparent 27.2% 100%),
-    linear-gradient(112deg, transparent 0 54%, hsl(var(--zf-role-focus) / 0.28) 54% 65%, transparent 65% 100%),
-    radial-gradient(ellipse at 18% 34%, hsl(var(--zf-role-energy) / 0.60), transparent 31%),
-    radial-gradient(ellipse at 48% 36%, hsl(var(--zf-role-body) / 0.50), transparent 36%),
+    linear-gradient(
+      112deg,
+      transparent 0 18%,
+      hsl(var(--zf-role-energy) / 0.26) 18% 31%,
+      transparent 31% 100%
+    ),
+    linear-gradient(
+      112deg,
+      transparent 0 26%,
+      hsl(var(--zf-role-energy) / 0.42) 26% 27.2%,
+      transparent 27.2% 100%
+    ),
+    linear-gradient(
+      112deg,
+      transparent 0 54%,
+      hsl(var(--zf-role-focus) / 0.28) 54% 65%,
+      transparent 65% 100%
+    ),
+    radial-gradient(ellipse at 18% 34%, hsl(var(--zf-role-energy) / 0.6), transparent 31%),
+    radial-gradient(ellipse at 48% 36%, hsl(var(--zf-role-body) / 0.5), transparent 36%),
     radial-gradient(ellipse at 78% 44%, hsl(var(--zf-role-focus) / 0.44), transparent 36%);
   opacity: 0.98;
 }
@@ -386,9 +482,24 @@
 :root[data-theme="paper"] .habit-field-backdrop__root-map {
   opacity: 0.48;
   background:
-    linear-gradient(90deg, transparent 0 12%, hsl(var(--zf-role-body) / 0.16) 12% 12.46%, transparent 12.46% 100%),
-    linear-gradient(90deg, transparent 0 46%, hsl(var(--zf-role-energy) / 0.14) 46% 46.38%, transparent 46.38% 100%),
-    linear-gradient(90deg, transparent 0 80%, hsl(var(--zf-role-focus) / 0.16) 80% 80.46%, transparent 80.46% 100%),
+    linear-gradient(
+      90deg,
+      transparent 0 12%,
+      hsl(var(--zf-role-body) / 0.16) 12% 12.46%,
+      transparent 12.46% 100%
+    ),
+    linear-gradient(
+      90deg,
+      transparent 0 46%,
+      hsl(var(--zf-role-energy) / 0.14) 46% 46.38%,
+      transparent 46.38% 100%
+    ),
+    linear-gradient(
+      90deg,
+      transparent 0 80%,
+      hsl(var(--zf-role-focus) / 0.16) 80% 80.46%,
+      transparent 80.46% 100%
+    ),
     repeating-linear-gradient(
       96deg,
       transparent 0 1.1rem,
@@ -398,7 +509,7 @@
 }
 
 :root[data-theme="paper"] .habit-field-backdrop__cue-ring {
-  border-color: hsl(var(--zf-role-focus) / 0.40);
+  border-color: hsl(var(--zf-role-focus) / 0.4);
   background:
     radial-gradient(circle, hsl(var(--card) / 0.38), transparent 64%),
     linear-gradient(135deg, hsl(var(--zf-role-energy) / 0.12), transparent 58%);
@@ -408,16 +519,26 @@
 :root[data-theme="paper"] .habit-field-backdrop__progress-lane {
   background: hsl(var(--foreground) / 0.12);
   box-shadow:
-    0 0 18px hsl(var(--zf-role-focus) / 0.20),
+    0 0 18px hsl(var(--zf-role-focus) / 0.2),
     0 8px 28px -20px hsl(var(--foreground) / 0.34);
 }
 
 :root[data-theme="paper"] .habit-identity-cue {
   border-color: hsl(var(--zf-role-gratitude) / 0.34);
   background:
-    linear-gradient(104deg, transparent 0 14%, hsl(var(--zf-role-energy) / 0.13) 14% 14.72%, transparent 14.72% 100%),
+    linear-gradient(
+      104deg,
+      transparent 0 14%,
+      hsl(var(--zf-role-energy) / 0.13) 14% 14.72%,
+      transparent 14.72% 100%
+    ),
     radial-gradient(circle at 92% 50%, hsl(var(--zf-role-body) / 0.14), transparent 30%),
-    linear-gradient(138deg, hsl(var(--card) / 0.92), hsl(var(--surface-elevated) / 0.82) 62%, hsl(var(--zf-role-gratitude) / 0.13));
+    linear-gradient(
+      138deg,
+      hsl(var(--card) / 0.92),
+      hsl(var(--surface-elevated) / 0.82) 62%,
+      hsl(var(--zf-role-gratitude) / 0.13)
+    );
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground) / 0.07),
     0 16px 40px -38px hsl(var(--foreground) / 0.32);
@@ -428,7 +549,11 @@
 :root[data-theme="paper"] .habit-identity-verb {
   border-color: hsl(var(--zf-role-gratitude) / 0.38);
   background:
-    linear-gradient(135deg, hsl(var(--zf-role-energy) / 0.16), hsl(var(--zf-role-gratitude) / 0.18)),
+    linear-gradient(
+      135deg,
+      hsl(var(--zf-role-energy) / 0.16),
+      hsl(var(--zf-role-gratitude) / 0.18)
+    ),
     hsl(var(--card) / 0.66);
   color: hsl(var(--foreground));
 }
@@ -443,10 +568,15 @@
     radial-gradient(circle at 16% -2%, hsl(var(--zf-role-energy) / 0.24), transparent 34%),
     radial-gradient(circle at 88% 6%, hsl(var(--zf-role-gratitude) / 0.16), transparent 34%),
     radial-gradient(circle at 48% 108%, hsl(var(--zf-role-focus) / 0.16), transparent 42%),
-    linear-gradient(160deg, hsl(var(--card) / 0.94), hsl(var(--surface-elevated) / 0.90) 56%, hsl(var(--surface-overlay) / 0.94));
+    linear-gradient(
+      160deg,
+      hsl(var(--card) / 0.94),
+      hsl(var(--surface-elevated) / 0.9) 56%,
+      hsl(var(--surface-overlay) / 0.94)
+    );
   border-color: hsl(var(--border) / 0.72);
   color: hsl(var(--foreground));
-  box-shadow: 0 -26px 88px -58px hsl(var(--foreground) / 0.40);
+  box-shadow: 0 -26px 88px -58px hsl(var(--foreground) / 0.4);
   --zf-text-strong: var(--foreground);
   --zf-text-soft: var(--muted-foreground);
 }
@@ -454,22 +584,31 @@
 :root[data-theme="paper"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"] {
   background:
     radial-gradient(circle at 20% 0%, hsl(var(--zf-role-body) / 0.16), transparent 34%),
-    linear-gradient(155deg, hsl(var(--card) / 0.90), hsl(var(--muted) / 0.72));
+    linear-gradient(155deg, hsl(var(--card) / 0.9), hsl(var(--muted) / 0.72));
   color: hsl(var(--foreground));
-  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.08), 0 14px 34px -30px hsl(var(--foreground) / 0.30);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.08),
+    0 14px 34px -30px hsl(var(--foreground) / 0.3);
 }
 
-:root[data-theme="paper"] [data-surface="ritual-library-deck"] [data-chip="ritual-library-tab"][aria-pressed="false"] {
-  background:
-    linear-gradient(145deg, hsl(var(--card) / 0.72), hsl(var(--surface-elevated) / 0.56));
-  border-color: hsl(var(--border) / 0.70);
+:root[data-theme="paper"]
+  [data-surface="ritual-library-deck"]
+  [data-chip="ritual-library-tab"][aria-pressed="false"] {
+  background: linear-gradient(145deg, hsl(var(--card) / 0.72), hsl(var(--surface-elevated) / 0.56));
+  border-color: hsl(var(--border) / 0.7);
   color: hsl(var(--muted-foreground));
   box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.06);
 }
 
-:root[data-theme="paper"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"] > span:first-child,
-:root[data-theme="paper"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"] [data-template-icon="true"] {
-  background-color: hsl(var(--card) / 0.70);
+:root[data-theme="paper"]
+  [data-surface="ritual-library-deck"]
+  [data-card="ritual-library-card"]
+  > span:first-child,
+:root[data-theme="paper"]
+  [data-surface="ritual-library-deck"]
+  [data-card="ritual-library-card"]
+  [data-template-icon="true"] {
+  background-color: hsl(var(--card) / 0.7);
 }
 
 :root[data-theme="paper"] [data-surface="habit-create-sheet"] input,
@@ -478,10 +617,12 @@
   color: hsl(var(--foreground));
 }
 
-:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-surface="habit-template-picker"],
+:root[data-theme="paper"]
+  [data-surface="habit-create-sheet"]
+  [data-surface="habit-template-picker"],
 :root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-surface="habit-form"] {
   background:
-    radial-gradient(circle at 12% -2%, hsl(var(--zf-role-energy) / 0.20), transparent 32%),
+    radial-gradient(circle at 12% -2%, hsl(var(--zf-role-energy) / 0.2), transparent 32%),
     radial-gradient(circle at 88% 4%, hsl(var(--zf-role-focus) / 0.15), transparent 34%),
     linear-gradient(155deg, hsl(var(--card) / 0.82), hsl(var(--surface-elevated) / 0.72));
   border: 1px solid hsl(var(--border) / 0.72);
@@ -504,8 +645,14 @@
 }
 
 :root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-template-picker-icon="true"],
-:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-card="ritual-template-preview"] [aria-hidden="true"],
-:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-elevated-surface] [aria-hidden="true"] {
+:root[data-theme="paper"]
+  [data-surface="habit-create-sheet"]
+  [data-card="ritual-template-preview"]
+  [aria-hidden="true"],
+:root[data-theme="paper"]
+  [data-surface="habit-create-sheet"]
+  [data-elevated-surface]
+  [aria-hidden="true"] {
   background-color: hsl(var(--card) / 0.62);
   color: hsl(var(--foreground));
 }
@@ -515,8 +662,12 @@
   border-color: hsl(var(--border) / 0.58);
 }
 
-:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-elevated-surface="advanced-rail"],
-:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-elevated-surface="advanced-rail-item"] {
+:root[data-theme="paper"]
+  [data-surface="habit-create-sheet"]
+  [data-elevated-surface="advanced-rail"],
+:root[data-theme="paper"]
+  [data-surface="habit-create-sheet"]
+  [data-elevated-surface="advanced-rail-item"] {
   background: hsl(var(--card) / 0.58);
   color: hsl(var(--foreground));
 }
@@ -547,7 +698,7 @@
 
 :root[data-theme="paper"] [data-surface="v2-not-found"] {
   background:
-    radial-gradient(circle at 18% 16%, hsl(var(--zf-role-focus) / 0.20), transparent 34%),
+    radial-gradient(circle at 18% 16%, hsl(var(--zf-role-focus) / 0.2), transparent 34%),
     radial-gradient(circle at 82% 8%, hsl(var(--zf-role-mind) / 0.18), transparent 30%),
     radial-gradient(circle at 50% 104%, hsl(var(--zf-role-energy) / 0.18), transparent 42%),
     linear-gradient(150deg, hsl(var(--background)), hsl(var(--surface-overlay)));
@@ -561,7 +712,7 @@
   background:
     radial-gradient(circle at 50% 0%, hsl(var(--zf-role-focus) / 0.14), transparent 34%),
     linear-gradient(145deg, hsl(var(--card) / 0.93), hsl(var(--surface-elevated) / 0.88));
-  border-color: hsl(var(--border) / 0.70);
+  border-color: hsl(var(--border) / 0.7);
   box-shadow: 0 30px 88px -60px hsl(var(--foreground) / 0.42);
 }
 
@@ -594,20 +745,16 @@
  * pseudo-elements remain inside @layer theme (visual atmosphere only).
  */
 :root[data-theme="ink"] {
-    color-scheme: dark;
-    --zen-surface: var(--color-theme-ink-surface);
-    --zen-surface-muted: var(--color-theme-ink-surface-muted);
-    --zen-surface-card: var(--color-theme-ink-surface-card);
-    --zen-ink: var(--color-theme-ink-ink);
-    --zen-ink-muted: var(--color-theme-ink-ink-muted);
-    --zen-border: var(--color-theme-ink-border);
-    --zen-primary: var(--color-theme-ink-primary);
-    --zen-primary-fg: var(--color-theme-ink-primary-fg);
-    --surface-glass: hsl(var(--zf-surface-1) / 0.82);
-    --surface-glass-border: hsl(var(--zf-primary) / 0.18);
-    --surface-glass-blur: 20px;
-    --zen-shadow-soft: 0 4px 20px -4px hsl(var(--zf-primary) / 0.22);
-    --zf-text-muted: 165 8% 52%;
+  color-scheme: dark;
+  --zen-surface: var(--color-theme-ink-surface);
+  --zen-ink: var(--color-theme-ink-ink);
+  --zen-ink-muted: var(--color-theme-ink-ink-muted);
+  --zen-primary: var(--color-theme-ink-primary);
+  --surface-glass: hsl(var(--zf-surface-1) / 0.82);
+  --surface-glass-border: hsl(var(--zf-primary) / 0.18);
+  --surface-glass-blur: 20px;
+  --zen-shadow-soft: 0 4px 20px -4px hsl(var(--zf-primary) / 0.22);
+  --zf-text-muted: 165 8% 52%;
   --zf-role-body: 158 72% 64%;
   --zf-role-mind: 268 76% 76%;
   --zf-role-focus: 194 92% 64%;
@@ -619,7 +766,7 @@
   --zf-role-gratitude: 146 62% 62%;
   --zf-role-settings: 215 58% 72%;
 
-    /* Phase 3-A.4c-ii-d-c — Shadcn-family bridge for V2 shell (SidebarV2,
+  /* Phase 3-A.4c-ii-d-c — Shadcn-family bridge for V2 shell (SidebarV2,
      * DrawerV2, MobileNavV2, NavV2Orchestrator). Tailwind maps `bg-card`,
      * `border-border`, `text-muted-foreground` etc. to `hsl(var(--<name>))`.
      * Since the Tailwind color function wraps vars in hsl(), we emit CSS vars
@@ -627,83 +774,88 @@
      * Legacy .dark class (src/index.css) is untouched — this attribute selector
      * has equal specificity and wins by source-order (themes.css loads after).
      */
-    --background: var(--zf-night-0);
-    --foreground: var(--zf-text-strong);
-    --card: var(--zf-surface-1);
-    --card-foreground: var(--zf-text-strong);
-    --popover: var(--zf-surface-2);
-    --popover-foreground: var(--zf-text-strong);
-    --primary: var(--zf-primary);
-    --primary-foreground: var(--zf-night-0);
-    --secondary: 178 16% 16%;
-    --secondary-foreground: var(--zf-text-strong);
-    --surface-overlay: 170 14% 19%;
-    --surface-elevated: var(--zf-surface-2);
-    --muted: 178 14% 18%;
-    --muted-foreground: var(--zf-text-soft);
-    --accent: var(--zf-memory);
-    --accent-foreground: var(--zf-night-0);
-    --border: 174 16% 22%;
-    --input: 174 16% 22%;
-    --ring: var(--zf-primary);
+  --background: var(--zf-night-0);
+  --foreground: var(--zf-text-strong);
+  --card: var(--zf-surface-1);
+  --card-foreground: var(--zf-text-strong);
+  --popover: var(--zf-surface-2);
+  --popover-foreground: var(--zf-text-strong);
+  --primary: var(--zf-primary);
+  --primary-foreground: var(--zf-night-0);
+  --secondary: 178 16% 16%;
+  --secondary-foreground: var(--zf-text-strong);
+  --surface-overlay: 170 14% 19%;
+  --surface-elevated: var(--zf-surface-2);
+  --muted: 178 14% 18%;
+  --muted-foreground: var(--zf-text-soft);
+  --accent: var(--zf-memory);
+  --accent-foreground: var(--zf-night-0);
+  --border: 174 16% 22%;
+  --input: 174 16% 22%;
+  --ring: var(--zf-primary);
 
-    --sidebar-background: var(--zf-surface-1);
-    --sidebar-foreground: var(--zf-text-strong);
-    --sidebar-primary: var(--zf-primary);
-    --sidebar-primary-foreground: var(--zf-night-0);
-    --sidebar-accent: 178 16% 16%;
-    --sidebar-accent-foreground: var(--zf-text-strong);
-    --sidebar-border: 174 16% 22%;
-    --sidebar-ring: var(--zf-primary);
+  --sidebar-background: var(--zf-surface-1);
+  --sidebar-foreground: var(--zf-text-strong);
+  --sidebar-primary: var(--zf-primary);
+  --sidebar-primary-foreground: var(--zf-night-0);
+  --sidebar-accent: 178 16% 16%;
+  --sidebar-accent-foreground: var(--zf-text-strong);
+  --sidebar-border: 174 16% 22%;
+  --sidebar-ring: var(--zf-primary);
 
-    --nav-v2-drawer-start: var(--zf-surface-1);
-    --nav-v2-drawer-mid: var(--zf-night-1);
-    --nav-v2-drawer-end: var(--zf-night-0);
-    --nav-v2-drawer-text: var(--zf-text-strong);
-    --nav-v2-drawer-muted: var(--zf-text-soft);
-    --nav-v2-drawer-border: 174 16% 28%;
-    --nav-v2-drawer-divider: 174 16% 22%;
-    --nav-v2-item-surface: var(--zf-surface-1);
-    --nav-v2-item-hover: var(--zf-surface-2);
-    --nav-v2-icon-surface: var(--zf-night-1);
-    --nav-v2-icon-muted: var(--zf-text-soft);
-    --nav-v2-backdrop: 0 0% 0%;
-    --nav-v2-shadow: 0 0% 0%;
+  --nav-v2-drawer-start: var(--zf-surface-1);
+  --nav-v2-drawer-mid: var(--zf-night-1);
+  --nav-v2-drawer-end: var(--zf-night-0);
+  --nav-v2-drawer-text: var(--zf-text-strong);
+  --nav-v2-drawer-muted: var(--zf-text-soft);
+  --nav-v2-drawer-border: 174 16% 28%;
+  --nav-v2-drawer-divider: 174 16% 22%;
+  --nav-v2-item-surface: var(--zf-surface-1);
+  --nav-v2-item-hover: var(--zf-surface-2);
+  --nav-v2-icon-surface: var(--zf-night-1);
+  --nav-v2-icon-muted: var(--zf-text-soft);
+  --nav-v2-backdrop: 0 0% 0%;
+  --nav-v2-shadow: 0 0% 0%;
 
-  --settings-v2-shell: 64 11% 27%;
-  --settings-v2-card: 89 12% 37%;
-  --settings-v2-panel: 152 32% 36%;
-  --settings-v2-border: 153 22% 54%;
+  --settings-v2-shell: 165 67% 2%;
+  --settings-v2-card: 159 55% 6%;
+  --settings-v2-panel: 159 43% 10%;
+  --settings-v2-border: 158 30% 53%;
   --settings-v2-accent: 155 29% 77%;
-  --settings-v2-shadow: 64 11% 9%;
-  --settings-v2-card-alpha: 0.62;
-  --settings-v2-panel-alpha: 0.5;
-  --settings-v2-shell-alpha: 0.5;
-  --settings-v2-glass-blur: 24px;
-  --settings-v2-rim-light: 148 31% 90%;
-  --settings-v2-rim-alpha: 0.22;
-  --settings-v2-icon-glass-mid: 153 22% 54%;
-  --settings-v2-icon-glass: 153 27% 42%;
-  --settings-v2-icon-glass-dark: 152 32% 36%;
-  --settings-v2-icon-glyph: 148 31% 90%;
-  --settings-v2-icon-shadow: 89 12% 20%;
+  --settings-v2-shadow: 164 84% 1%;
+  --settings-v2-card-alpha: 0.92;
+  --settings-v2-panel-alpha: 0.9;
+  --settings-v2-shell-alpha: 0.88;
+  --settings-v2-glass-blur: 14px;
+  --settings-v2-rim-light: 157 100% 96%;
+  --settings-v2-rim-alpha: 0.12;
+  --settings-v2-icon-glass: 158 45% 22%;
+  --settings-v2-text-strong: 150 40% 98%;
+  --settings-v2-text-muted: 156 24% 77%;
+  --settings-v2-focus: 157 100% 96%;
+  --settings-v2-night-sky-top: 161 67% 5%;
+  --settings-v2-night-sky-mid: 165 67% 2%;
+  --settings-v2-night-sky-bottom: 156 56% 5%;
+  --settings-v2-night-aurora: 158 69% 54%;
+  --settings-v2-night-nebula-a: 159 79% 28%;
+  --settings-v2-night-nebula-b: 159 75% 39%;
+  --settings-v2-night-nebula-c: 158 68% 62%;
+  --settings-v2-night-vignette: 160 100% 1%;
+  --settings-v2-night-star: 157 100% 96%;
+  --settings-v2-night-star-halo: 158 69% 54%;
 }
 
 :root[data-theme="oled"] {
-    color-scheme: dark;
-    --zen-surface: var(--color-theme-oled-surface);
-    --zen-surface-muted: var(--color-theme-oled-surface-muted);
-    --zen-surface-card: var(--color-theme-oled-surface-card);
-    --zen-ink: var(--color-theme-oled-ink);
-    --zen-ink-muted: var(--color-theme-oled-ink-muted);
-    --zen-border: var(--color-theme-oled-border);
-    --zen-primary: var(--color-theme-oled-primary);
-    --zen-primary-fg: var(--color-theme-oled-primary-fg);
-    --surface-glass: hsl(170 14% 5% / 0.86);
-    --surface-glass-border: hsl(172 26% 56% / 0.16);
-    --surface-glass-blur: 16px;
-    --zen-shadow-soft: 0 0 14px hsl(172 26% 56% / 0.12);
-    --zf-text-muted: 58 8% 52%;
+  color-scheme: dark;
+  --zen-surface: var(--color-theme-oled-surface);
+  --zen-ink: var(--color-theme-oled-ink);
+  --zen-ink-muted: var(--color-theme-oled-ink-muted);
+  --zen-primary: var(--color-theme-oled-primary);
+  --surface-glass: hsl(170 14% 5% / 0.86);
+  --surface-glass-border: hsl(172 26% 56% / 0.16);
+  --surface-glass-blur: 16px;
+  --zen-shadow-soft: 0 0 14px hsl(172 26% 56% / 0.12);
+  --zf-text-muted: 58 8% 52%;
   --zf-role-body: 158 72% 64%;
   --zf-role-mind: 268 76% 76%;
   --zf-role-focus: 194 92% 64%;
@@ -715,53 +867,53 @@
   --zf-role-gratitude: 146 62% 62%;
   --zf-role-settings: 172 28% 62%;
 
-    /* Phase 3-A.4c-ii-d-c — OLED shadcn bridge. Pure-black base (AMOLED
+  /* Phase 3-A.4c-ii-d-c — OLED shadcn bridge. Pure-black base (AMOLED
      * power saving) with ink-equivalent surfaces on raised elements so
      * SidebarV2 `bg-card/80` still reads as a visible panel (not invisible
      * on 0 0% 0% bg). Inner palette mirrors ink for visual continuity.
      */
-    --background: 0 0% 0%;
-    --foreground: 54 12% 92%;
-    --card: 170 14% 5%;
-    --card-foreground: 54 12% 92%;
-    --popover: 170 12% 8%;
-    --popover-foreground: 54 12% 92%;
-    --primary: 172 32% 56%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 170 12% 7%;
-    --secondary-foreground: 54 12% 92%;
-    --surface-overlay: 170 12% 6%;
-    --surface-elevated: 170 12% 8%;
-    --muted: 170 10% 9%;
-    --muted-foreground: 58 8% 70%;
-    --accent: 222 22% 66%;
-    --accent-foreground: 0 0% 0%;
-    --border: 170 10% 22%;
-    --input: 170 10% 22%;
-    --ring: 172 32% 56%;
+  --background: 0 0% 0%;
+  --foreground: 54 12% 92%;
+  --card: 170 14% 5%;
+  --card-foreground: 54 12% 92%;
+  --popover: 170 12% 8%;
+  --popover-foreground: 54 12% 92%;
+  --primary: 172 32% 56%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 170 12% 7%;
+  --secondary-foreground: 54 12% 92%;
+  --surface-overlay: 170 12% 6%;
+  --surface-elevated: 170 12% 8%;
+  --muted: 170 10% 9%;
+  --muted-foreground: 58 8% 70%;
+  --accent: 222 22% 66%;
+  --accent-foreground: 0 0% 0%;
+  --border: 170 10% 22%;
+  --input: 170 10% 22%;
+  --ring: 172 32% 56%;
 
-    --sidebar-background: 170 14% 5%;
-    --sidebar-foreground: 54 12% 92%;
-    --sidebar-primary: 172 32% 56%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 170 12% 7%;
-    --sidebar-accent-foreground: 54 12% 92%;
-    --sidebar-border: 170 10% 22%;
-    --sidebar-ring: 172 32% 56%;
+  --sidebar-background: 170 14% 5%;
+  --sidebar-foreground: 54 12% 92%;
+  --sidebar-primary: 172 32% 56%;
+  --sidebar-primary-foreground: 0 0% 0%;
+  --sidebar-accent: 170 12% 7%;
+  --sidebar-accent-foreground: 54 12% 92%;
+  --sidebar-border: 170 10% 22%;
+  --sidebar-ring: 172 32% 56%;
 
-    --nav-v2-drawer-start: 170 14% 5%;
-    --nav-v2-drawer-mid: 170 12% 7%;
-    --nav-v2-drawer-end: 0 0% 0%;
-    --nav-v2-drawer-text: 54 12% 92%;
-    --nav-v2-drawer-muted: 58 8% 70%;
-    --nav-v2-drawer-border: 170 10% 30%;
-    --nav-v2-drawer-divider: 170 10% 18%;
-    --nav-v2-item-surface: 170 14% 9%;
-    --nav-v2-item-hover: 170 12% 10%;
-    --nav-v2-icon-surface: 170 12% 8%;
-    --nav-v2-icon-muted: 58 8% 70%;
-    --nav-v2-backdrop: 0 0% 0%;
-    --nav-v2-shadow: 0 0% 0%;
+  --nav-v2-drawer-start: 170 14% 5%;
+  --nav-v2-drawer-mid: 170 12% 7%;
+  --nav-v2-drawer-end: 0 0% 0%;
+  --nav-v2-drawer-text: 54 12% 92%;
+  --nav-v2-drawer-muted: 58 8% 70%;
+  --nav-v2-drawer-border: 170 10% 30%;
+  --nav-v2-drawer-divider: 170 10% 18%;
+  --nav-v2-item-surface: 170 14% 9%;
+  --nav-v2-item-hover: 170 12% 10%;
+  --nav-v2-icon-surface: 170 12% 8%;
+  --nav-v2-icon-muted: 58 8% 70%;
+  --nav-v2-backdrop: 0 0% 0%;
+  --nav-v2-shadow: 0 0% 0%;
   --zf-night-0: 0 0% 0%;
   --zf-night-1: 170 12% 7%;
   --zf-surface-1: 170 14% 5%;
@@ -786,8 +938,10 @@
   --settings-v2-glass-blur: 22px;
   --settings-v2-rim-light: 148 31% 90%;
   --settings-v2-rim-alpha: 0.22;
+  --settings-v2-text-strong: 54 12% 92%;
+  --settings-v2-text-muted: 156 16% 80%;
+  --settings-v2-focus: 157 100% 96%;
 }
-
 
 /* OLED drawer visibility: keep true-black atmosphere without delayed near-invisible destination rows. */
 :root[data-theme="oled"] [data-theme-region="drawer-v2"] [data-testid^="drawer-v2-destination-"] {
@@ -815,20 +969,43 @@
     hsl(var(--settings-v2-shell) / 0.98);
 }
 
+:root[data-theme="oled"] [data-v2-readable-page="settings"].v2-readable-page {
+  --foreground: var(--settings-v2-text-strong);
+  --muted-foreground: var(--settings-v2-text-muted);
+  --v2-readable-foreground: var(--settings-v2-text-strong);
+  --v2-readable-muted: var(--settings-v2-text-muted);
+}
+
 /* Ink's layered Settings surfaces need the strong text token for normal-size guidance. */
 :root[data-theme="ink"] [data-v2-readable-page="settings"].v2-readable-page {
   --v2-readable-muted: var(--foreground);
   --settings-v2-selected-text: var(--settings-v2-text-strong, 54 20% 98%);
 }
 
-:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],
-:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],
-:root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],
-:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"],
-:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"],
-:root[data-theme="oled"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"] {
-  background:
-    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / var(--settings-v2-rim-alpha, 0.34)), hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.7)) 42%, hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.58)));
+:root[data-theme="paper"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-page-control-card"],
+:root[data-theme="ink"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-page-control-card"],
+:root[data-theme="oled"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-page-control-card"],
+:root[data-theme="paper"]
+  [data-v2-readable-page="settings"]
+  [data-visual-role][data-testid^="settings-module-"],
+:root[data-theme="ink"]
+  [data-v2-readable-page="settings"]
+  [data-visual-role][data-testid^="settings-module-"],
+:root[data-theme="oled"]
+  [data-v2-readable-page="settings"]
+  [data-visual-role][data-testid^="settings-module-"] {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--settings-v2-rim-light) / var(--settings-v2-rim-alpha, 0.34)),
+    hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.7)) 42%,
+    hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.58))
+  );
   border-color: hsl(var(--settings-v2-border) / 0.24);
   box-shadow:
     inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.46),
@@ -846,17 +1023,31 @@
   backdrop-filter: none;
 }
 
-:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"][data-active="true"],
-:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"][data-active="true"],
-:root[data-theme="oled"] [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"][data-active="true"] {
+:root[data-theme="paper"]
+  [data-v2-readable-page="settings"]
+  [data-visual-role][data-testid^="settings-module-"][data-active="true"],
+:root[data-theme="ink"]
+  [data-v2-readable-page="settings"]
+  [data-visual-role][data-testid^="settings-module-"][data-active="true"],
+:root[data-theme="oled"]
+  [data-v2-readable-page="settings"]
+  [data-visual-role][data-testid^="settings-module-"][data-active="true"] {
   border-color: hsl(var(--settings-v2-accent) / 0.44);
 }
 
-:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"],
+:root[data-theme="paper"]
+  [data-v2-readable-page="settings"]
+  [data-testid^="settings-module-panel-"],
 :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"],
-:root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"] {
-  background:
-    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.12), hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.66)) 48%, hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.58)));
+:root[data-theme="oled"]
+  [data-v2-readable-page="settings"]
+  [data-testid^="settings-module-panel-"] {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--settings-v2-rim-light) / 0.12),
+    hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.66)) 48%,
+    hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.58))
+  );
   border-color: hsl(var(--settings-v2-border) / 0.22);
   box-shadow:
     inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.24),
@@ -871,11 +1062,21 @@
 :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
 :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
 :root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
-:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"],
-:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"],
-:root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"] {
-  background:
-    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.1), hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.62)) 50%, hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.54)));
+:root[data-theme="paper"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-v2-style-customization"],
+:root[data-theme="ink"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-v2-style-customization"],
+:root[data-theme="oled"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-v2-style-customization"] {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--settings-v2-rim-light) / 0.1),
+    hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.62)) 50%,
+    hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.54))
+  );
   border-color: hsl(var(--settings-v2-border) / 0.24);
   box-shadow:
     inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.28),
@@ -884,25 +1085,37 @@
   backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.14);
 }
 
-[data-v2-readable-page="settings"] [data-testid="settings-page-control-card"][data-compact="true"] h1 {
+[data-v2-readable-page="settings"]
+  [data-testid="settings-page-control-card"][data-compact="true"]
+  h1 {
   text-shadow: 0 1px 18px hsl(var(--settings-v2-shadow) / 0.42);
 }
 
-[data-v2-readable-page="settings"] [data-testid="settings-page-workspace"][data-selected-section="appearance"] [data-testid="settings-selected-panel"] {
+[data-v2-readable-page="settings"]
+  [data-testid="settings-page-workspace"][data-selected-section="appearance"]
+  [data-testid="settings-selected-panel"] {
   max-width: 48rem;
 }
 
 @media (min-width: 1024px) {
-  [data-v2-readable-page="settings"] [data-testid="settings-page-workspace"][data-selected-section="appearance"] [data-testid="settings-selected-panel"] {
+  [data-v2-readable-page="settings"]
+    [data-testid="settings-page-workspace"][data-selected-section="appearance"]
+    [data-testid="settings-selected-panel"] {
     max-width: none;
   }
 }
 
-[data-v2-readable-page="settings"] [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] {
+[data-v2-readable-page="settings"]
+  [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] {
   background:
     radial-gradient(circle at 8% 0%, hsl(var(--settings-v2-rim-light) / 0.12), transparent 17rem),
     radial-gradient(circle at 88% 6%, hsl(var(--settings-v2-accent) / 0.1), transparent 18rem),
-    linear-gradient(145deg, hsl(var(--settings-v2-rim-light) / 0.08), hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.68)) 42%, hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.52)));
+    linear-gradient(
+      145deg,
+      hsl(var(--settings-v2-rim-light) / 0.08),
+      hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.68)) 42%,
+      hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.52))
+    );
   border-color: hsl(var(--settings-v2-rim-light) / 0.18);
   box-shadow:
     inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.38),
@@ -910,12 +1123,16 @@
     0 22px 62px -50px hsl(var(--settings-v2-shadow) / 0.72);
 }
 
-[data-v2-readable-page="settings"] [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] > div:last-child {
+[data-v2-readable-page="settings"]
+  [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"]
+  > div:last-child {
   display: grid;
   gap: 0.7rem;
 }
 
-[data-v2-readable-page="settings"] [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] [data-testid="settings-v2-style-customization"] {
+[data-v2-readable-page="settings"]
+  [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"]
+  [data-testid="settings-v2-style-customization"] {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
@@ -923,29 +1140,50 @@
   backdrop-filter: none;
 }
 
-[data-v2-readable-page="settings"] [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] [data-testid="settings-v2-theme-segmented-control"] [aria-pressed="true"] {
+[data-v2-readable-page="settings"]
+  [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"]
+  [data-testid="settings-v2-theme-segmented-control"]
+  [aria-pressed="true"] {
   background:
     radial-gradient(circle at 84% 0%, hsl(var(--settings-v2-rim-light) / 0.24), transparent 42%),
     radial-gradient(circle at 50% 100%, hsl(var(--settings-v2-accent) / 0.18), transparent 48%),
-    linear-gradient(145deg, hsl(var(--settings-v2-panel) / 0.72), hsl(var(--settings-v2-accent) / 0.12));
+    linear-gradient(
+      145deg,
+      hsl(var(--settings-v2-panel) / 0.72),
+      hsl(var(--settings-v2-accent) / 0.12)
+    );
   box-shadow:
     inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.24),
     0 10px 24px -22px hsl(var(--settings-v2-accent) / 0.42);
 }
 
-:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] [data-testid="settings-v2-theme-segmented-control"] [data-testid^="settings-v2-theme-choice-"][aria-pressed="true"] {
+:root[data-theme="ink"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"]
+  [data-testid="settings-v2-theme-segmented-control"]
+  [data-testid^="settings-v2-theme-choice-"][aria-pressed="true"] {
   color: hsl(var(--settings-v2-selected-text));
   border-color: hsl(var(--settings-v2-accent));
 }
 
-[data-v2-readable-page="settings"] [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] [data-testid="settings-v2-style-customization"] [data-interaction-surface="settings-choice"][aria-pressed="true"] {
+[data-v2-readable-page="settings"]
+  [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"]
+  [data-testid="settings-v2-style-customization"]
+  [data-interaction-surface="settings-choice"][aria-pressed="true"] {
   background:
     radial-gradient(circle at 84% 0%, hsl(var(--settings-v2-rim-light) / 0.16), transparent 42%),
-    linear-gradient(145deg, hsl(var(--settings-v2-accent) / 0.1), hsl(var(--settings-v2-panel) / 0.34));
+    linear-gradient(
+      145deg,
+      hsl(var(--settings-v2-accent) / 0.1),
+      hsl(var(--settings-v2-panel) / 0.34)
+    );
   border-color: hsl(var(--settings-v2-accent) / 0.34);
 }
 
-.v2-edge-to-edge-surface[data-active-page="settings"]:has([data-testid="settings-page-workspace"][data-selected-section="appearance"]) [data-testid="nav-v2-open-drawer"] {
+.v2-edge-to-edge-surface[data-active-page="settings"]:has(
+    [data-testid="settings-page-workspace"][data-selected-section="appearance"]
+  )
+  [data-testid="nav-v2-open-drawer"] {
   background:
     radial-gradient(circle at 34% 18%, hsl(var(--settings-v2-rim-light) / 0.12), transparent 42%),
     hsl(var(--settings-v2-card) / 0.36);
@@ -958,30 +1196,729 @@
   backdrop-filter: blur(var(--settings-v2-glass-blur, 24px)) saturate(1.2);
 }
 
+.v2-edge-to-edge-surface[data-active-page="settings"]
+  [data-testid="nav-v2-open-drawer"]:focus-visible {
+  outline: 2px solid hsl(var(--settings-v2-focus, var(--settings-v2-accent)));
+  outline-offset: 2px;
+}
+
+/* Approved Paper Settings daylight: the canonical Mood material in a
+ * quieter, motion-gated route presentation. The solid surface is the baseline;
+ * translucency is opt-in and never uses nested backdrop blur. */
+.settings-day-cosmic-backdrop {
+  position: fixed;
+  z-index: 0;
+  display: none;
+  overflow: hidden;
+  min-block-size: var(--app-viewport-height);
+  block-size: var(--app-viewport-height);
+  inset-block: 0;
+  inset-inline: 0;
+  pointer-events: none;
+  contain: paint;
+  isolation: isolate;
+}
+
+:root[data-theme="paper"] .settings-day-cosmic-backdrop {
+  display: block;
+  background: hsl(var(--settings-v2-shell));
+}
+
+:root[data-theme="paper"]
+  [data-nav-layout="web"][data-nav-rail="expanded"]
+  .settings-day-cosmic-backdrop {
+  inset-inline-start: 16rem;
+}
+
+:root[data-theme="paper"]
+  [data-nav-layout="web"][data-nav-rail="compact"]
+  .settings-day-cosmic-backdrop {
+  inset-inline-start: 4.5rem;
+}
+
+.settings-day-cosmic-backdrop .day-cosmic {
+  position: absolute;
+  inset: 0;
+  min-block-size: 100%;
+}
+
+.settings-day-cosmic-backdrop[data-animated="false"],
+.settings-day-cosmic-backdrop[data-animated="false"] .day-cosmic,
+.settings-day-cosmic-backdrop[data-animated="false"] .day-cosmic *,
+.settings-day-cosmic-backdrop[data-animated="false"] .day-cosmic *::before,
+.settings-day-cosmic-backdrop[data-animated="false"] .day-cosmic *::after {
+  animation: none !important;
+  transition: none !important;
+  will-change: auto !important;
+}
+
+:root[data-theme="paper"] [data-v2-readable-page="settings"] {
+  --settings-v2-text-strong: 176 55% 5%;
+  --settings-v2-text-muted: 176 45% 6%;
+  --foreground: var(--settings-v2-text-strong);
+  --muted-foreground: var(--settings-v2-text-muted);
+  --v2-readable-foreground: var(--settings-v2-text-strong);
+  --v2-readable-muted: var(--settings-v2-text-muted);
+  background: transparent;
+}
+
+:root[data-theme="paper"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-page-control-card"],
+:root[data-theme="paper"]
+  [data-v2-readable-page="settings"]
+  [data-visual-role][data-testid^="settings-module-"],
+:root[data-theme="paper"]
+  [data-v2-readable-page="settings"]
+  [data-testid^="settings-module-panel-"],
+:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
+:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
+:root[data-theme="paper"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-v2-style-customization"] {
+  background: hsl(var(--settings-v2-card));
+  border-color: hsl(var(--settings-v2-border) / 0.52);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.72),
+    0 20px 46px -34px hsl(var(--settings-v2-shadow) / 0.42);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-theme="paper"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-page-control-card"][data-compact="true"] {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="paper"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-support-footer"] {
+  border: 1px solid hsl(var(--settings-v2-border) / 0.52);
+  border-radius: calc(var(--radius) * 0.5);
+  background-color: hsl(var(--settings-v2-card));
+  background-image: linear-gradient(
+    145deg,
+    hsl(var(--settings-v2-rim-light)),
+    hsl(var(--settings-v2-card)) 52%,
+    hsl(var(--settings-v2-panel))
+  );
+  box-shadow:
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.72),
+    0 18px 40px -34px hsl(var(--settings-v2-shadow) / 0.38);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-theme="paper"]
+  .v2-edge-to-edge-surface[data-active-page="settings"]
+  [data-testid="nav-v2-open-drawer"] {
+  background: hsl(var(--settings-v2-card));
+  border-color: hsl(var(--settings-v2-border) / 0.52);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (prefers-reduced-transparency: no-preference) {
+  :root[data-theme="paper"]
+    [data-v2-readable-page="settings"]
+    [data-testid="settings-page-control-card"],
+  :root[data-theme="paper"]
+    [data-v2-readable-page="settings"]
+    [data-visual-role][data-testid^="settings-module-"],
+  :root[data-theme="paper"]
+    [data-v2-readable-page="settings"]
+    [data-testid^="settings-module-panel-"],
+  :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
+  :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
+  :root[data-theme="paper"]
+    [data-v2-readable-page="settings"]
+    [data-testid="settings-v2-style-customization"] {
+    background: linear-gradient(
+      145deg,
+      hsl(var(--settings-v2-rim-light) / 0.93),
+      hsl(var(--settings-v2-card) / 0.88) 46%,
+      hsl(var(--settings-v2-panel) / 0.8)
+    );
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  :root[data-theme="paper"]
+    [data-v2-readable-page="settings"]
+    [data-testid="settings-page-control-card"][data-compact="true"] {
+    background: transparent;
+  }
+}
+
+:root[data-theme="paper"][data-theme-contrast="high"] .settings-day-cosmic-backdrop {
+  display: none;
+}
+
+:root[data-theme="paper"][data-theme-contrast="high"] [data-v2-readable-page="settings"] {
+  background: hsl(var(--settings-v2-shell));
+}
+
+@media (prefers-contrast: more) {
+  :root[data-theme="paper"] .settings-day-cosmic-backdrop {
+    display: none;
+  }
+
+  :root[data-theme="paper"] [data-v2-readable-page="settings"] {
+    background: hsl(var(--settings-v2-shell));
+  }
+}
+
 @media (prefers-reduced-transparency: reduce) {
+  :root[data-theme="paper"] .settings-day-cosmic-backdrop {
+    display: none;
+  }
+
+  :root[data-theme="paper"] [data-v2-readable-page="settings"] {
+    background: hsl(var(--settings-v2-shell));
+  }
+}
+
+@media (forced-colors: active) {
+  .settings-day-cosmic-backdrop {
+    display: none !important;
+  }
+}
+
+/* Approved Variant A: a motion-gated Settings-only emerald night atmosphere.
+ * The route keeps a solid first-paint fallback; the fixed scene sits outside
+ * Bloom so transforms never crop it. Paper, OLED, Mood, and Orb stay intact. */
+.settings-emerald-night-backdrop {
+  position: fixed;
+  z-index: 0;
+  display: none;
+  overflow: hidden;
+  min-block-size: var(--app-viewport-height);
+  block-size: var(--app-viewport-height);
+  inset-block: 0;
+  inset-inline: 0;
+  pointer-events: none;
+  contain: paint;
+  isolation: isolate;
+}
+
+:root[data-theme="ink"] .settings-emerald-night-backdrop {
+  display: block;
+  background: hsl(var(--settings-v2-night-sky-mid));
+}
+
+:root[data-theme="ink"]
+  [data-nav-layout="web"][data-nav-rail="expanded"]
+  .settings-emerald-night-backdrop {
+  inset-inline-start: 16rem;
+}
+
+:root[data-theme="ink"]
+  [data-nav-layout="web"][data-nav-rail="compact"]
+  .settings-emerald-night-backdrop {
+  inset-inline-start: 4.5rem;
+}
+
+.settings-emerald-night-backdrop__sky,
+.settings-emerald-night-backdrop__star-field,
+.settings-emerald-night-backdrop__vignette {
+  position: absolute;
+  inset: 0;
+}
+
+.settings-emerald-night-backdrop__sky {
+  background:
+    radial-gradient(
+      ellipse at 50% -8%,
+      hsl(var(--settings-v2-night-aurora) / 0.22) 0%,
+      transparent 34%
+    ),
+    linear-gradient(
+      180deg,
+      hsl(var(--settings-v2-night-sky-top)) 0%,
+      hsl(var(--settings-v2-night-sky-mid)) 48%,
+      hsl(var(--settings-v2-night-sky-bottom)) 100%
+    );
+}
+
+.settings-emerald-night-backdrop__nebula {
+  position: absolute;
+  inset: -12%;
+  background:
+    radial-gradient(
+      ellipse at 15% 52%,
+      hsl(var(--settings-v2-night-nebula-a) / 0.38) 0%,
+      transparent 38%
+    ),
+    radial-gradient(
+      ellipse at 86% 68%,
+      hsl(var(--settings-v2-night-nebula-b) / 0.28) 0%,
+      transparent 40%
+    ),
+    radial-gradient(
+      ellipse at 58% 18%,
+      hsl(var(--settings-v2-night-nebula-c) / 0.13) 0%,
+      transparent 30%
+    );
+}
+
+.settings-emerald-night-backdrop[data-animated="true"]
+  .settings-emerald-night-backdrop__nebula[data-motion-emphasis="primary"][data-motion-active="true"] {
+  animation: settings-emerald-nebula-drift 10s cubic-bezier(0.37, 0, 0.2, 1) -2s infinite alternate;
+  will-change: transform, opacity;
+}
+
+.settings-emerald-night-backdrop__star-field {
+  z-index: 2;
+}
+
+.settings-emerald-night-backdrop__star {
+  position: absolute;
+  inset-block-start: var(--settings-star-block);
+  inset-inline-start: var(--settings-star-inline);
+  inline-size: var(--settings-star-size);
+  block-size: var(--settings-star-size);
+  transform: translate3d(-50%, -50%, 0);
+  animation: none;
+}
+
+.settings-emerald-night-backdrop__star-core {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: 9999px;
+  background: hsl(var(--settings-v2-night-star));
+  box-shadow:
+    0 0 7px hsl(var(--settings-v2-night-star) / 0.72),
+    0 0 18px hsl(var(--settings-v2-night-star-halo) / 0.32);
+  opacity: var(--settings-star-opacity);
+  animation: none;
+}
+
+:root[dir="rtl"] .settings-emerald-night-backdrop__star {
+  transform: translate3d(50%, -50%, 0);
+}
+
+.settings-emerald-night-backdrop__star[data-major="true"]
+  .settings-emerald-night-backdrop__star-core::before,
+.settings-emerald-night-backdrop__star[data-major="true"]
+  .settings-emerald-night-backdrop__star-core::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  border-radius: 9999px;
+  background: hsl(var(--settings-v2-night-star) / 0.76);
+  transform: translate3d(-50%, -50%, 0);
+}
+
+.settings-emerald-night-backdrop__star[data-major="true"]
+  .settings-emerald-night-backdrop__star-core::before {
+  inline-size: 1px;
+  block-size: 11px;
+}
+
+.settings-emerald-night-backdrop__star[data-major="true"]
+  .settings-emerald-night-backdrop__star-core::after {
+  inline-size: 11px;
+  block-size: 1px;
+}
+
+.settings-emerald-night-backdrop[data-animated="true"]
+  .settings-emerald-night-backdrop__star[data-motion-compact="true"]
+  .settings-emerald-night-backdrop__star-core {
+  animation: settings-emerald-star-breathe var(--settings-star-motion-duration)
+    cubic-bezier(0.4, 0, 0.2, 1) var(--settings-star-motion-delay-compact) infinite alternate;
+  will-change: transform, opacity;
+}
+
+@media (min-width: 1024px) {
+  .settings-emerald-night-backdrop__star {
+    inset-inline-start: var(--settings-star-desktop-inline, var(--settings-star-inline));
+    inset-block-start: var(--settings-star-desktop-block, var(--settings-star-block));
+  }
+
+  .settings-emerald-night-backdrop[data-animated="true"]
+    .settings-emerald-night-backdrop__star[data-motion-compact="true"]
+    .settings-emerald-night-backdrop__star-core {
+    animation: none;
+    will-change: auto;
+  }
+
+  .settings-emerald-night-backdrop[data-animated="true"]
+    .settings-emerald-night-backdrop__star[data-motion-desktop="true"]
+    .settings-emerald-night-backdrop__star-core {
+    animation: settings-emerald-star-breathe var(--settings-star-motion-duration)
+      cubic-bezier(0.4, 0, 0.2, 1) var(--settings-star-motion-delay-desktop) infinite alternate;
+    will-change: transform, opacity;
+  }
+}
+
+@keyframes settings-emerald-star-breathe {
+  0% {
+    opacity: calc(var(--settings-star-opacity) * 0.58);
+    transform: scale3d(0.9, 0.9, 1);
+  }
+  100% {
+    opacity: var(--settings-star-opacity);
+    transform: scale3d(1.12, 1.12, 1);
+  }
+}
+
+@keyframes settings-emerald-nebula-drift {
+  0% {
+    opacity: 0.76;
+    transform: translate3d(-1.2%, -0.5%, 0) scale3d(0.985, 0.99, 1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(1.2%, 0.5%, 0) scale3d(1.015, 1.01, 1);
+  }
+}
+
+.settings-emerald-night-backdrop[data-animated="false"] .settings-emerald-night-backdrop__star-core,
+:root[data-runtime-perf]
+  .settings-emerald-night-backdrop
+  .settings-emerald-night-backdrop__star-core {
+  animation: none !important;
+  will-change: auto !important;
+}
+
+.settings-emerald-night-backdrop[data-animated="false"]
+  .settings-emerald-night-backdrop__nebula[data-motion-active="true"],
+:root[data-runtime-perf]
+  .settings-emerald-night-backdrop
+  .settings-emerald-night-backdrop__nebula[data-motion-active="true"] {
+  animation: none !important;
+  will-change: auto !important;
+}
+
+.settings-emerald-night-backdrop__vignette {
+  z-index: 3;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 45%,
+    hsl(var(--settings-v2-night-vignette) / 0.72) 112%
+  );
+}
+
+:root[data-theme="ink"] .v2-edge-to-edge-surface[data-active-page="settings"] {
+  background: hsl(var(--settings-v2-night-sky-mid));
+}
+
+:root[data-theme="ink"] [data-v2-readable-page="settings"] {
+  --foreground: var(--settings-v2-text-strong);
+  --muted-foreground: var(--settings-v2-text-muted);
+  --v2-readable-foreground: var(--settings-v2-text-strong);
+  --v2-readable-muted: var(--settings-v2-text-muted);
+  background: transparent;
+}
+
+:root[data-theme="ink"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-page-control-card"],
+:root[data-theme="ink"]
+  [data-v2-readable-page="settings"]
+  [data-visual-role][data-testid^="settings-module-"],
+:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"],
+:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
+:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"] {
+  background: hsl(var(--settings-v2-card));
+  border-color: hsl(var(--settings-v2-border));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.08),
+    0 20px 46px -34px hsl(var(--settings-v2-shadow) / 0.9);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (prefers-reduced-transparency: no-preference) {
+  :root[data-theme="ink"]
+    [data-v2-readable-page="settings"]
+    [data-testid="settings-page-control-card"],
+  :root[data-theme="ink"]
+    [data-v2-readable-page="settings"]
+    [data-visual-role][data-testid^="settings-module-"],
+  :root[data-theme="ink"]
+    [data-v2-readable-page="settings"]
+    [data-testid^="settings-module-panel-"],
+  :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
+  :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"] {
+    background: hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.92));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+:root[data-theme="ink"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-page-control-card"][data-compact="true"] {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-theme="ink"][data-theme-contrast="high"] .settings-emerald-night-backdrop__nebula {
+  display: none;
+}
+
+:root[data-theme="ink"][data-theme-contrast="high"] .settings-emerald-night-backdrop__star-core {
+  animation: none !important;
+  will-change: auto !important;
+}
+
+:root[data-theme="ink"][data-theme-contrast="high"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-page-control-card"],
+:root[data-theme="ink"][data-theme-contrast="high"]
+  [data-v2-readable-page="settings"]
+  [data-visual-role][data-testid^="settings-module-"],
+:root[data-theme="ink"][data-theme-contrast="high"]
+  [data-v2-readable-page="settings"]
+  [data-testid^="settings-module-panel-"],
+:root[data-theme="ink"][data-theme-contrast="high"]
+  [data-v2-readable-page="settings"]
+  [data-testid^="settings-v2-panel-"],
+:root[data-theme="ink"][data-theme-contrast="high"]
+  [data-v2-readable-page="settings"]
+  [data-testid="settings-theme-strip"] {
+  background: hsl(var(--settings-v2-card));
+  border-color: hsl(var(--settings-v2-border));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-theme="ink"]
+  [data-nav-layout="web"]
+  .settings-emerald-night-backdrop__star[data-side="start"]:not([data-desktop-visible="true"]) {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  :root[data-theme="ink"]
+    .settings-emerald-night-backdrop[data-mobile-detail="true"]
+    .settings-emerald-night-backdrop__star {
+    inset-inline-start: var(--settings-star-detail-inline, var(--settings-star-inline));
+  }
+
+  :root[data-theme="ink"]
+    .settings-emerald-night-backdrop[data-mobile-detail="true"]
+    .settings-emerald-night-backdrop__star[data-detail-hidden="true"] {
+    display: none;
+  }
+}
+
+[data-slot="settings-appearance-feedback"] {
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, calc(8rem * var(--font-scale, 1))), 1fr)
+  );
+}
+
+@media (max-width: 639px) {
+  :root[data-theme="ink"] [data-v2-readable-page="settings"] {
+    padding-inline-start: calc(var(--safe-inline-start) + var(--v2-phone-drawer-rail));
+    padding-inline-end: max(var(--v2-phone-content-inline-end), var(--safe-inline-end));
+  }
+
+  [data-v2-readable-page="settings"][data-mobile-detail="true"]
+    [data-testid="settings-page-control-card"] {
+    display: none;
+  }
+}
+
+/* Text-only zoom can double rem-based chrome while the phone viewport stays
+ * narrow. Preserve the readable column by capping only non-text geometry at
+ * its normal phone size; content, line-height, and touch targets still reflow. */
+@media (max-width: 359px) {
+  :root[data-theme] [data-v2-readable-page="settings"] {
+    padding-inline-start: calc(var(--safe-inline-start) + var(--v2-phone-drawer-rail));
+    padding-inline-end: max(var(--v2-phone-content-inline-end), var(--safe-inline-end));
+  }
+
+  .v2-edge-to-edge-surface[data-active-page="settings"] [data-testid="nav-v2-open-drawer"] {
+    inline-size: var(--v2-phone-drawer-size);
+    block-size: var(--v2-phone-drawer-size);
+  }
+
+  .v2-edge-to-edge-surface[data-active-page="settings"] [data-testid="nav-v2-open-drawer"] svg {
+    inline-size: var(--v2-phone-drawer-icon-size);
+    block-size: var(--v2-phone-drawer-icon-size);
+  }
+
+  [data-v2-readable-page="settings"] [data-testid="settings-mobile-back"] {
+    min-block-size: 44px;
+    gap: 8px;
+    padding-inline: 10px;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-panel-header"] {
+    gap: 12px;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-panel-icon"] {
+    inline-size: 40px;
+    block-size: 40px;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-panel-icon"] svg {
+    inline-size: 16px;
+    block-size: 16px;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-footer-legal-action"] {
+    padding-inline: 4px;
+  }
+
+  [data-slot="settings-appearance-feedback-rail"] {
+    inset-inline-start: max(16px, var(--safe-inline-start));
+    inset-inline-end: max(16px, var(--safe-inline-end));
+  }
+
+  [data-slot="settings-appearance-feedback"] {
+    grid-template-columns: minmax(0, 1fr) 48px;
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  [data-slot="settings-appearance-feedback-message"] {
+    grid-column: 1 / -1;
+  }
+
+  [data-slot="settings-appearance-feedback-undo"] {
+    grid-column: 1;
+    min-block-size: 48px;
+    gap: 6px;
+    padding-block: 8px;
+  }
+
+  [data-slot="settings-appearance-feedback-dismiss"] {
+    grid-column: 2;
+    inline-size: 48px;
+    block-size: 48px;
+    min-inline-size: 48px;
+    min-block-size: 48px;
+  }
+
+  [data-slot="settings-appearance-feedback-undo-icon"],
+  [data-slot="settings-appearance-feedback-dismiss-icon"] {
+    inline-size: 20px;
+    block-size: 20px;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root[data-theme="ink"] .settings-emerald-night-backdrop__nebula {
+    display: none;
+    animation: none !important;
+    will-change: auto !important;
+  }
+
+  :root[data-theme="ink"] .settings-emerald-night-backdrop__star-core {
+    animation: none !important;
+    will-change: auto !important;
+  }
+
+  :root[data-theme="ink"]
+    [data-v2-readable-page="settings"]
+    [data-visual-role][data-testid^="settings-module-"],
+  :root[data-theme="ink"]
+    [data-v2-readable-page="settings"]
+    [data-testid^="settings-module-panel-"],
+  :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"] {
+    background: hsl(var(--settings-v2-card));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .settings-emerald-night-backdrop__star-core {
+    animation: none !important;
+    will-change: auto !important;
+  }
+
+  .settings-emerald-night-backdrop__nebula {
+    animation: none !important;
+    will-change: auto !important;
+  }
+
   [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],
   [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"],
   [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"],
   [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
   [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
   [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"],
-  .v2-edge-to-edge-surface[data-active-page="settings"]:has([data-testid="settings-page-workspace"][data-selected-section="appearance"]) [data-testid="nav-v2-open-drawer"] {
-    background: hsl(var(--settings-v2-card) / 0.98);
+  .v2-edge-to-edge-surface[data-active-page="settings"] [data-testid="nav-v2-open-drawer"] {
+    background: hsl(var(--settings-v2-card)) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  [data-theme-region="drawer-v2"],
+  [data-theme-region="drawer-v2"] [data-testid^="drawer-v2-destination-"] {
+    background: hsl(var(--nav-v2-drawer-mid)) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  [data-testid="drawer-v2-backdrop"] {
+    background: hsl(var(--nav-v2-backdrop)) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  :root[data-theme="ink"]
+    [data-v2-readable-page="settings"]
+    [data-testid="settings-page-control-card"],
+  :root[data-theme="ink"]
+    [data-v2-readable-page="settings"]
+    [data-visual-role][data-testid^="settings-module-"],
+  :root[data-theme="ink"]
+    [data-v2-readable-page="settings"]
+    [data-testid^="settings-module-panel-"],
+  :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
+  :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"] {
+    background: hsl(var(--settings-v2-card));
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .settings-emerald-night-backdrop__star-core,
+  .settings-emerald-night-backdrop__nebula {
+    animation: none !important;
+    will-change: auto !important;
+  }
+}
+
 @media (forced-colors: active) {
+  .settings-emerald-night-backdrop {
+    display: none !important;
+  }
+
+  .v2-edge-to-edge-surface[data-active-page="settings"],
+  [data-v2-readable-page="settings"] {
+    background: Canvas;
+    color: CanvasText;
+  }
+
   [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],
   [data-v2-readable-page="settings"] [data-testid^="settings-module-"],
   [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
+  [data-v2-readable-page="settings"] [data-testid="settings-v2-appearance-feedback"],
   [data-theme-region="drawer-v2"],
   [data-theme-region="drawer-v2"] [data-testid^="drawer-v2-destination-"] {
-    background: Canvas;
-    border-color: ButtonBorder;
-    box-shadow: none;
-    color: CanvasText;
+    background: Canvas !important;
+    border-color: ButtonBorder !important;
+    box-shadow: none !important;
+    color: CanvasText !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 
   [data-v2-readable-page="settings"] button:focus-visible,
@@ -996,17 +1933,12 @@
     box-shadow: none !important;
   }
 
-  [data-v2-readable-page="settings"] [data-swatch-kind="accent"] > span {
-    background: ButtonText !important;
-  }
-
-  [data-v2-readable-page="settings"] [data-swatch-kind="accent"][aria-pressed="true"] {
+  [data-v2-readable-page="settings"]
+    [data-testid^="settings-v2-accent-choice-"][aria-pressed="true"]
+    [data-swatch-kind="accent"] {
+    background: Highlight !important;
     outline: 3px solid Highlight;
     outline-offset: 3px;
-  }
-
-  [data-v2-readable-page="settings"] [data-swatch-kind="accent"][aria-pressed="true"] > span {
-    background: Highlight !important;
   }
 }
 
@@ -1017,7 +1949,12 @@
   background:
     radial-gradient(circle at 18% 16%, hsl(var(--habit-role) / 0.34), transparent 34%),
     radial-gradient(circle at 104% -10%, hsl(var(--zf-role-space) / 0.18), transparent 32%),
-    linear-gradient(155deg, hsl(var(--card) / 0.96) 0%, hsl(var(--secondary) / 0.94) 54%, hsl(var(--background) / 0.74) 100%);
+    linear-gradient(
+      155deg,
+      hsl(var(--card) / 0.96) 0%,
+      hsl(var(--secondary) / 0.94) 54%,
+      hsl(var(--background) / 0.74) 100%
+    );
   border-color: hsl(var(--habit-role) / 0.42);
   color: hsl(var(--foreground));
   box-shadow:
@@ -1028,15 +1965,29 @@
 
 :root[data-theme="ink"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"]::before,
 :root[data-theme="oled"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"]::before,
-:root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"]::before,
-:root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"]::before {
+:root[data-theme="ink"]
+  [data-surface="ritual-library-deck"]
+  [data-card="ritual-library-card"]::before,
+:root[data-theme="oled"]
+  [data-surface="ritual-library-deck"]
+  [data-card="ritual-library-card"]::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(132deg, hsl(var(--foreground) / 0.09), transparent 30% 66%, hsl(var(--habit-role) / 0.10)),
-    repeating-linear-gradient(112deg, transparent 0 1.35rem, hsl(var(--foreground) / 0.035) 1.35rem 1.42rem, transparent 1.42rem 2.8rem);
+    linear-gradient(
+      132deg,
+      hsl(var(--foreground) / 0.09),
+      transparent 30% 66%,
+      hsl(var(--habit-role) / 0.1)
+    ),
+    repeating-linear-gradient(
+      112deg,
+      transparent 0 1.35rem,
+      hsl(var(--foreground) / 0.035) 1.35rem 1.42rem,
+      transparent 1.42rem 2.8rem
+    );
   opacity: 0.62;
 }
 
@@ -1065,8 +2016,7 @@
 :root[data-theme="oled"] [data-surface="ink-paper"] [data-slot="quickpick-meta"],
 :root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-slot="ritual-library-meta"],
 :root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-slot="ritual-library-meta"] {
-  background:
-    linear-gradient(135deg, hsl(var(--habit-role) / 0.22), hsl(var(--background) / 0.72));
+  background: linear-gradient(135deg, hsl(var(--habit-role) / 0.22), hsl(var(--background) / 0.72));
   border-color: hsl(var(--habit-role) / 0.48);
   color: hsl(var(--habit-role));
   box-shadow:
@@ -1085,7 +2035,12 @@
 :root[data-theme="oled"] [data-surface="ink-paper"] [data-testid="hero-empty-open-library"] {
   background:
     radial-gradient(circle at 24% 0%, hsl(var(--zf-role-focus) / 0.34), transparent 38%),
-    linear-gradient(135deg, hsl(var(--background) / 0.88), hsl(var(--card) / 0.94) 54%, hsl(var(--zf-role-focus) / 0.18));
+    linear-gradient(
+      135deg,
+      hsl(var(--background) / 0.88),
+      hsl(var(--card) / 0.94) 54%,
+      hsl(var(--zf-role-focus) / 0.18)
+    );
   border-color: hsl(var(--zf-role-focus) / 0.42);
   color: hsl(var(--foreground));
   box-shadow:
@@ -1097,38 +2052,46 @@
 :root[data-theme="oled"] [data-surface="ritual-library-deck"] {
   background:
     radial-gradient(circle at 14% -4%, hsl(var(--zf-role-body) / 0.28), transparent 34%),
-    radial-gradient(circle at 90% 0%, hsl(var(--zf-role-focus) / 0.20), transparent 36%),
+    radial-gradient(circle at 90% 0%, hsl(var(--zf-role-focus) / 0.2), transparent 36%),
     radial-gradient(circle at 46% 110%, hsl(var(--zf-role-rest) / 0.18), transparent 42%),
-    linear-gradient(160deg, hsl(var(--card) / 0.98), hsl(var(--secondary) / 0.96) 58%, hsl(var(--background) / 0.96));
+    linear-gradient(
+      160deg,
+      hsl(var(--card) / 0.98),
+      hsl(var(--secondary) / 0.96) 58%,
+      hsl(var(--background) / 0.96)
+    );
   border-color: hsl(var(--zf-role-body) / 0.28);
   box-shadow: 0 -28px 96px -58px hsl(var(--background) / 0.88);
 }
 
 :root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-chip="ritual-library-tab"],
 :root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-chip="ritual-library-tab"] {
-  background:
-    linear-gradient(145deg, hsl(var(--card) / 0.76), hsl(var(--habit-role) / 0.13));
+  background: linear-gradient(145deg, hsl(var(--card) / 0.76), hsl(var(--habit-role) / 0.13));
   border-color: hsl(var(--habit-role) / 0.34);
   color: hsl(var(--muted-foreground));
   box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.09);
 }
 
-:root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-chip="ritual-library-tab"][aria-pressed="true"],
-:root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-chip="ritual-library-tab"][aria-pressed="true"] {
+:root[data-theme="ink"]
+  [data-surface="ritual-library-deck"]
+  [data-chip="ritual-library-tab"][aria-pressed="true"],
+:root[data-theme="oled"]
+  [data-surface="ritual-library-deck"]
+  [data-chip="ritual-library-tab"][aria-pressed="true"] {
   background:
-    radial-gradient(circle at 20% 0%, hsl(var(--habit-role) / 0.40), transparent 46%),
-    linear-gradient(145deg, hsl(var(--card) / 0.90), hsl(var(--habit-role) / 0.24));
+    radial-gradient(circle at 20% 0%, hsl(var(--habit-role) / 0.4), transparent 46%),
+    linear-gradient(145deg, hsl(var(--card) / 0.9), hsl(var(--habit-role) / 0.24));
   border-color: hsl(var(--habit-role) / 0.58);
   color: hsl(var(--foreground));
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground) / 0.13),
-    0 14px 30px -24px hsl(var(--habit-role) / 0.70);
+    0 14px 30px -24px hsl(var(--habit-role) / 0.7);
 }
 
 :root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"],
 :root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"] {
   background:
-    radial-gradient(circle at 20% 0%, hsl(var(--habit-role) / 0.30), transparent 34%),
+    radial-gradient(circle at 20% 0%, hsl(var(--habit-role) / 0.3), transparent 34%),
     radial-gradient(circle at 100% 100%, hsl(var(--zf-role-space) / 0.12), transparent 36%),
     linear-gradient(155deg, hsl(var(--card) / 0.94), hsl(var(--secondary) / 0.88));
   border-color: hsl(var(--habit-role) / 0.38);
@@ -1138,8 +2101,12 @@
     0 16px 36px -32px hsl(var(--habit-role) / 0.72);
 }
 
-:root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"]:disabled,
-:root[data-theme="oled"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"]:disabled {
+:root[data-theme="ink"]
+  [data-surface="ritual-library-deck"]
+  [data-card="ritual-library-card"]:disabled,
+:root[data-theme="oled"]
+  [data-surface="ritual-library-deck"]
+  [data-card="ritual-library-card"]:disabled {
   opacity: 0.72;
   filter: saturate(0.82);
 }
@@ -1149,13 +2116,23 @@
 :root[data-theme="ink"] .habit-identity-cue,
 :root[data-theme="oled"] .habit-identity-cue {
   background:
-    linear-gradient(108deg, transparent 0 14%, hsl(var(--zf-role-energy) / 0.13) 14% 14.7%, transparent 14.7% 100%),
+    linear-gradient(
+      108deg,
+      transparent 0 14%,
+      hsl(var(--zf-role-energy) / 0.13) 14% 14.7%,
+      transparent 14.7% 100%
+    ),
     radial-gradient(circle at 92% 14%, hsl(var(--zf-role-focus) / 0.16), transparent 32%),
     radial-gradient(circle at 8% 92%, hsl(var(--zf-role-body) / 0.14), transparent 34%),
-    linear-gradient(142deg, hsl(var(--card) / 0.80), hsl(var(--secondary) / 0.72) 58%, hsl(var(--background) / 0.62));
+    linear-gradient(
+      142deg,
+      hsl(var(--card) / 0.8),
+      hsl(var(--secondary) / 0.72) 58%,
+      hsl(var(--background) / 0.62)
+    );
   border-color: hsl(var(--zf-role-gratitude) / 0.36);
   box-shadow:
-    inset 0 1px 0 hsl(var(--foreground) / 0.10),
+    inset 0 1px 0 hsl(var(--foreground) / 0.1),
     0 18px 48px -40px hsl(var(--zf-role-body) / 0.64);
 }
 
@@ -1174,8 +2151,13 @@
 :root[data-theme="oled"] .habit-growth-group {
   background:
     radial-gradient(circle at 18% 0%, var(--habit-group-role-soft), transparent 34%),
-    radial-gradient(circle at 96% 88%, hsl(var(--zf-role-space) / 0.10), transparent 36%),
-    linear-gradient(160deg, hsl(var(--card) / 0.78), hsl(var(--secondary) / 0.58) 56%, hsl(var(--background) / 0.48));
+    radial-gradient(circle at 96% 88%, hsl(var(--zf-role-space) / 0.1), transparent 36%),
+    linear-gradient(
+      160deg,
+      hsl(var(--card) / 0.78),
+      hsl(var(--secondary) / 0.58) 56%,
+      hsl(var(--background) / 0.48)
+    );
   border-color: var(--habit-group-role-line);
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground) / 0.09),
@@ -1184,8 +2166,7 @@
 
 :root[data-theme="ink"] .habit-growth-group [data-slot="habit-group-count"],
 :root[data-theme="oled"] .habit-growth-group [data-slot="habit-group-count"] {
-  background:
-    linear-gradient(135deg, var(--habit-group-role-soft), hsl(var(--card) / 0.72));
+  background: linear-gradient(135deg, var(--habit-group-role-soft), hsl(var(--card) / 0.72));
   border-color: var(--habit-group-role-line);
   color: hsl(var(--foreground));
   box-shadow:
@@ -1216,7 +2197,7 @@
 
 [data-card="ritual-weekly-card"][data-collapsed="true"] [data-slot="weekly-collapse"] {
   background-color: hsl(var(--habit-role) / 0.18);
-  border-color: hsl(var(--habit-role) / 0.50);
+  border-color: hsl(var(--habit-role) / 0.5);
   color: hsl(var(--habit-role));
 }
 
@@ -1238,7 +2219,12 @@
   background:
     radial-gradient(circle at 14% 0%, hsl(var(--habit-role) / 0.27), transparent 34%),
     radial-gradient(circle at 100% 96%, hsl(var(--zf-role-space) / 0.12), transparent 38%),
-    linear-gradient(155deg, hsl(var(--card) / 0.92) 0%, hsl(var(--secondary) / 0.78) 54%, hsl(var(--background) / 0.70) 100%);
+    linear-gradient(
+      155deg,
+      hsl(var(--card) / 0.92) 0%,
+      hsl(var(--secondary) / 0.78) 54%,
+      hsl(var(--background) / 0.7) 100%
+    );
   border-color: hsl(var(--habit-role) / 0.44);
   color: hsl(var(--foreground));
   box-shadow:
@@ -1263,11 +2249,10 @@
 
 :root[data-theme="ink"] [data-card="ritual-weekly-card"] [data-slot="weekly-pill"],
 :root[data-theme="oled"] [data-card="ritual-weekly-card"] [data-slot="weekly-pill"] {
-  background:
-    linear-gradient(135deg, hsl(var(--habit-role) / 0.18), hsl(var(--background) / 0.58));
+  background: linear-gradient(135deg, hsl(var(--habit-role) / 0.18), hsl(var(--background) / 0.58));
   border-color: hsl(var(--habit-role) / 0.34);
   color: hsl(var(--foreground) / 0.86);
-  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.10);
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.1);
 }
 
 :root[data-theme="ink"] [data-card="ritual-weekly-card"] [data-slot="weekly-footer"],
@@ -1289,7 +2274,7 @@
   color: hsl(var(--foreground));
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground) / 0.12),
-    0 14px 32px -26px hsl(var(--habit-role) / 0.70);
+    0 14px 32px -26px hsl(var(--habit-role) / 0.7);
 }
 
 :root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-surface="habit-template-picker"],
@@ -1299,8 +2284,13 @@
   background:
     radial-gradient(circle at 14% -2%, hsl(var(--zf-role-body) / 0.22), transparent 34%),
     radial-gradient(circle at 90% 4%, hsl(var(--zf-role-focus) / 0.16), transparent 34%),
-    linear-gradient(155deg, hsl(var(--card) / 0.88), hsl(var(--secondary) / 0.76) 58%, hsl(var(--background) / 0.70));
-  border-color: hsl(var(--zf-role-body) / 0.30);
+    linear-gradient(
+      155deg,
+      hsl(var(--card) / 0.88),
+      hsl(var(--secondary) / 0.76) 58%,
+      hsl(var(--background) / 0.7)
+    );
+  border-color: hsl(var(--zf-role-body) / 0.3);
   color: hsl(var(--foreground));
 }
 
@@ -1309,29 +2299,51 @@
   color: hsl(var(--muted-foreground));
 }
 
-:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-template-picker-card"],
-:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-card="ritual-template-picker-card"] {
+:root[data-theme="ink"]
+  [data-surface="habit-create-sheet"]
+  [data-card="ritual-template-picker-card"],
+:root[data-theme="oled"]
+  [data-surface="habit-create-sheet"]
+  [data-card="ritual-template-picker-card"] {
   background:
     radial-gradient(circle at 14% 0%, hsl(var(--habit-role) / 0.28), transparent 36%),
     linear-gradient(150deg, hsl(var(--card) / 0.86), hsl(var(--background) / 0.62));
-  border-color: hsl(var(--habit-role) / 0.40);
+  border-color: hsl(var(--habit-role) / 0.4);
   color: hsl(var(--foreground));
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground) / 0.11),
     0 14px 34px -29px hsl(var(--habit-role) / 0.72);
 }
 
-:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-template-picker-card"]::before,
-:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-card="ritual-template-picker-card"]::before,
-:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"]::before,
-:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"]::before {
+:root[data-theme="ink"]
+  [data-surface="habit-create-sheet"]
+  [data-card="ritual-template-picker-card"]::before,
+:root[data-theme="oled"]
+  [data-surface="habit-create-sheet"]
+  [data-card="ritual-template-picker-card"]::before,
+:root[data-theme="ink"]
+  [data-surface="habit-create-sheet"]
+  [data-card="ritual-custom-habit-action"]::before,
+:root[data-theme="oled"]
+  [data-surface="habit-create-sheet"]
+  [data-card="ritual-custom-habit-action"]::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(132deg, hsl(var(--foreground) / 0.075), transparent 32% 68%, hsl(var(--habit-role, var(--zf-role-space)) / 0.10)),
-    repeating-linear-gradient(112deg, transparent 0 1.25rem, hsl(var(--foreground) / 0.030) 1.25rem 1.31rem, transparent 1.31rem 2.62rem);
+    linear-gradient(
+      132deg,
+      hsl(var(--foreground) / 0.075),
+      transparent 32% 68%,
+      hsl(var(--habit-role, var(--zf-role-space)) / 0.1)
+    ),
+    repeating-linear-gradient(
+      112deg,
+      transparent 0 1.25rem,
+      hsl(var(--foreground) / 0.03) 1.25rem 1.31rem,
+      transparent 1.31rem 2.62rem
+    );
   opacity: 0.62;
 }
 
@@ -1340,7 +2352,7 @@
   position: relative;
   z-index: 1;
   background:
-    radial-gradient(circle at 36% 24%, hsl(var(--habit-role) / 0.30), transparent 54%),
+    radial-gradient(circle at 36% 24%, hsl(var(--habit-role) / 0.3), transparent 54%),
     linear-gradient(145deg, hsl(var(--card) / 0.86), hsl(var(--background) / 0.58));
   border-color: hsl(var(--habit-role) / 0.46);
   color: hsl(var(--habit-role));
@@ -1349,10 +2361,15 @@
     0 10px 24px -18px hsl(var(--habit-role) / 0.74);
 }
 
-
-:root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-template-picker-icon="true"][data-icon-frame="real-icon-duo-native"],
-:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"],
-:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"] {
+:root[data-theme="paper"]
+  [data-surface="habit-create-sheet"]
+  [data-template-picker-icon="true"][data-icon-frame="real-icon-duo-native"],
+:root[data-theme="ink"]
+  [data-surface="habit-create-sheet"]
+  [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"],
+:root[data-theme="oled"]
+  [data-surface="habit-create-sheet"]
+  [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"] {
   background: transparent;
   background-color: transparent;
   border-color: transparent;
@@ -1367,8 +2384,12 @@
   text-shadow: 0 1px 12px hsl(var(--background) / 0.54);
 }
 
-:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"],
-:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"] {
+:root[data-theme="ink"]
+  [data-surface="habit-create-sheet"]
+  [data-card="ritual-custom-habit-action"],
+:root[data-theme="oled"]
+  [data-surface="habit-create-sheet"]
+  [data-card="ritual-custom-habit-action"] {
   position: relative;
   overflow: hidden;
   background:
@@ -1377,12 +2398,18 @@
   border-color: hsl(var(--zf-role-space) / 0.42);
   box-shadow:
     inset 0 1px 0 hsl(var(--foreground) / 0.11),
-    0 14px 34px -28px hsl(var(--zf-role-space) / 0.70);
+    0 14px 34px -28px hsl(var(--zf-role-space) / 0.7);
   --habit-role: var(--zf-role-space);
 }
 
-:root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"] > *,
-:root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"] > * {
+:root[data-theme="ink"]
+  [data-surface="habit-create-sheet"]
+  [data-card="ritual-custom-habit-action"]
+  > *,
+:root[data-theme="oled"]
+  [data-surface="habit-create-sheet"]
+  [data-card="ritual-custom-habit-action"]
+  > * {
   position: relative;
   z-index: 1;
 }
@@ -1415,7 +2442,7 @@
     background: radial-gradient(
       ellipse at center,
       transparent 45%,
-      hsl(var(--zf-trace) / 0.10) 100%
+      hsl(var(--zf-trace) / 0.1) 100%
     );
   }
 

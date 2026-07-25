@@ -103,15 +103,19 @@ export function JoinChallengeView({
 
       {/* Show invite preview if we have full data */}
       {initialInvite && initialInvite.habitName && (
-        <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-2xl">
-          <div className="text-4xl">{initialInvite.habitIcon}</div>
-          <div className="flex-1">
-            <p className="font-semibold text-foreground">
+        <div className="flex min-w-0 items-center gap-4 p-4 bg-muted/50 rounded-2xl">
+          <div className="text-4xl shrink-0">{initialInvite.habitIcon}</div>
+          <div className="min-w-0 flex-1">
+            <p className="min-w-0 break-words font-semibold text-foreground [overflow-wrap:anywhere]">
               {initialInvite.habitName}
             </p>
-            <p className="text-sm text-muted-foreground">
-              {initialInvite.duration} {t.days || "days"} •{" "}
-              {initialInvite.creatorName || t.friend || "Friend"}
+            <p className="flex min-w-0 flex-wrap items-baseline gap-x-1 text-sm text-muted-foreground">
+              <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:break-word]">
+                {initialInvite.duration} {t.days || "days"} •
+              </span>
+              <span className="min-w-0 break-words [overflow-wrap:anywhere]">
+                {initialInvite.creatorName || t.friend || "Friend"}
+              </span>
             </p>
           </div>
         </div>
@@ -165,11 +169,11 @@ export function JoinChallengeView({
       </div>
 
       {/* Actions */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Button
           variant="outline"
           onClick={onCancel}
-          className="h-14"
+          className="h-auto min-h-14 min-w-0 whitespace-normal break-words px-3 [hyphens:manual] [overflow-wrap:break-word]"
           disabled={isJoining}
         >
           {t.cancel || "Cancel"}
@@ -178,13 +182,13 @@ export function JoinChallengeView({
         <Button
           onClick={handleJoin}
           disabled={!isValidCode || isJoining}
-          className="h-14 text-lg font-semibold"
+          className="h-auto min-h-14 min-w-0 whitespace-normal break-words px-3 text-lg font-semibold [hyphens:manual] [overflow-wrap:break-word]"
         >
           {isJoining ? (
             <span className="motion-safe:animate-pulse">{t.joining || "Joining..."}</span>
           ) : (
             <>
-              <UserPlus className="w-5 h-5 me-2" />
+              <UserPlus className="w-5 h-5 me-2 shrink-0" />
               {t.join || "Join"}
             </>
           )}

@@ -258,7 +258,7 @@ describe("JournalEntryList spaces", () => {
     expect(screen.getByTestId("journal-compact-empty-list")).toBeInTheDocument();
     expect(screen.queryByTestId("journal-capture-launcher")).not.toBeInTheDocument();
     expect(screen.getByTestId("journal-compact-empty-list")).toHaveTextContent(
-      "Наповніть сторінку диханням свого серця.",
+      "Your diary is empty",
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Write first entry" }));

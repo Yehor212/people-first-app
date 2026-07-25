@@ -20,4 +20,18 @@
     <string name="widget_no_mood">Настрій не записано</string>
     <string name="widget_days">днів</string>
     <string name="widget_habits_label">Звички</string>
+    <string name="push_realm_mood_title">Як ви зараз?</string>
+    <string name="push_realm_mood_body">За бажанням занотуйте, як ви почуваєтеся.</string>
+    <string name="push_realm_habit_title">Нагадування про звичку</string>
+    <string name="push_realm_habit_body">Достатньо маленького кроку. Починайте, коли будете готові.</string>
+    <string name="push_realm_focus_title">Хочете зосередитися?</string>
+    <string name="push_realm_focus_body">25-хвилинну сесію фокусу можна почати, коли вам зручно.</string>
+    <string name="push_realm_test_title">ZenFlow</string>
+    <string name="push_realm_test_body">Тестове повідомлення.</string>
+    <string name="push_realm_channel_default">За замовчуванням</string>
+    <string name="push_realm_channel_default_description">Системний звук сповіщення</string>
+    <string name="push_realm_channel_gentle">М’який</string>
+    <string name="push_realm_channel_gentle_description">Тільки вібрація</string>
+    <string name="push_realm_channel_silent">Тихий</string>
+    <string name="push_realm_channel_silent_description">Без звуку та вібрації</string>
 </resources>

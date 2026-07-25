@@ -47,7 +47,7 @@ function isColdOrbNavigation(): boolean {
 
 /**
  * OrbPage — Phase 3-A.2 cosmic cinematic mindfulness surface with
- * Phase 3-A.4b complete mood entry flow (scope + emotion + confirm + auto-flow).
+ * Phase 3-A.4b mood-to-journal flow (scope + optional details + diary handoff).
  *
  * Visual: CosmicBgAdapter + ShootingStar + glass chips over the cosmic
  * aesthetic. Paper theme swaps to aurora day variant via orb-day-scope class.
@@ -259,7 +259,7 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
   const auraRef = useRef<HTMLDivElement>(null);
   const handleOrbTap = useCallback(() => {
     // Orb tap plays pulse-aura animation only. Mood entry flow is inline
-    // below (slider -> emotion grid -> confirm CTA), so the CTA advances
+    // below (slider -> optional details -> diary handoff), so the CTA advances
     // the local flow instead of opening a second mood modal.
     void haptics.tabChanged();
     const node = auraRef.current;
@@ -352,12 +352,12 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
         ? "pt-[calc(var(--safe-top)+1rem)]"
         : "pt-[calc(var(--safe-top)+1.25rem)]";
   const selectContentLayoutClass = isUltraDenseSelectStep
-    ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 pt-12 md:pb-28 md:pt-10"
+    ? "flex flex-1 min-h-0 flex-col overflow-y-auto overflow-x-hidden px-1 pb-3 pt-12 md:pb-4 md:pt-10"
     : isDenseSelectStep
-      ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 pt-12 md:pb-28 md:pt-8"
+      ? "flex flex-1 min-h-0 flex-col overflow-y-auto overflow-x-hidden px-1 pb-3 pt-12 md:pb-4 md:pt-8"
       : isShortViewport
-        ? "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 pt-8 md:pb-28"
-        : "flex flex-1 min-h-0 flex-col justify-center overflow-y-auto overflow-x-hidden px-1 pb-24 md:pb-28";
+        ? "flex flex-1 min-h-0 flex-col overflow-y-auto overflow-x-hidden px-1 pb-3 pt-8 md:pb-4"
+        : "flex flex-1 min-h-0 flex-col overflow-y-auto overflow-x-hidden px-1 pb-3 md:pb-4";
 
   return (
     <>
@@ -401,7 +401,7 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
           <div
             data-testid="orb-page-runtime-content"
             className={cn(
-              "relative z-10 mx-auto flex h-[var(--app-viewport-height)] w-full min-w-0 max-w-3xl flex-col overflow-x-hidden px-4 pb-[calc(var(--safe-bottom)+1rem)] md:px-6 md:pb-[calc(var(--safe-bottom)+1.5rem)]",
+              "relative z-10 mx-auto flex h-[var(--app-viewport-height)] w-full min-w-0 max-w-3xl flex-col overflow-x-hidden px-3 pb-[calc(var(--safe-bottom)+1rem)] md:px-6 md:pb-[calc(var(--safe-bottom)+1.5rem)]",
               pageChromePaddingClass,
               visualReady ? "opacity-100" : "pointer-events-none opacity-0"
             )}

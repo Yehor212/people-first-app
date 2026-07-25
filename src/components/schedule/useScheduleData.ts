@@ -7,6 +7,7 @@ import { SK } from '@/lib/storageKeys';
 import { fetchCalendarEventsWithCache, isCalendarEnabled, CalendarEvent } from '@/lib/googleCalendar';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { shouldAnimate } from '@/lib/animationUtils';
 import {
   EVENT_COLORS,
   getEventColor,
@@ -14,6 +15,7 @@ import {
   HOUR_WIDTH_PX,
   DAY_WIDTH_PX,
 } from './constants';
+import { physicalToDomScrollLeft } from './timelineScrollCoordinates';
 
 export interface UseScheduleDataReturn {
   currentTime: Date;
@@ -34,6 +36,7 @@ export interface UseScheduleDataReturn {
   isScrollingProgrammatically: React.MutableRefObject<boolean>;
   t: ReturnType<typeof useLanguage>['t'];
   language: string;
+  isRTL: boolean;
 }
 
 export function useScheduleData(
@@ -42,7 +45,7 @@ export function useScheduleData(
   daySelectorRef: React.RefObject<HTMLDivElement | null>,
   initialSelectedDate = getToday(),
 ): UseScheduleDataReturn {
-  const { t, language } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -210,17 +213,18 @@ export function useScheduleData(
 
   // Scroll helpers
   const scrollDaySelectorToDate = useCallback((date: string) => {
-    if (!daySelectorRef.current) return;
+    const daySelector = daySelectorRef.current;
+    if (!daySelector) return;
     const index = getDateIndex(date);
     if (index === -1) return;
 
-    const buttonWidth = 68;
-    const containerWidth = daySelectorRef.current.clientWidth;
-    const scrollPosition = (index * buttonWidth) - (containerWidth / 2) + (buttonWidth / 2);
+    const target = daySelector.children.item(index);
+    if (!(target instanceof HTMLElement)) return;
 
-    daySelectorRef.current.scrollTo({
-      left: Math.max(0, scrollPosition),
-      behavior: 'smooth'
+    target.scrollIntoView({
+      block: "nearest",
+      inline: "center",
+      behavior: shouldAnimate() ? "smooth" : "auto",
     });
   }, [daySelectorRef, getDateIndex]);
 
@@ -238,17 +242,20 @@ export function useScheduleData(
       scrollPosition += currentHour * HOUR_WIDTH_PX;
     }
 
-    scrollPosition -= timelineRef.current.clientWidth / 2;
+    const timeline = timelineRef.current;
+    scrollPosition -= timeline.clientWidth / 2;
+    const maxScroll = timeline.scrollWidth - timeline.clientWidth;
+    const domScrollLeft = physicalToDomScrollLeft(scrollPosition, maxScroll, isRTL);
 
-    timelineRef.current.scrollTo({
-      left: Math.max(0, scrollPosition),
-      behavior: 'smooth'
+    timeline.scrollTo({
+      left: domScrollLeft,
+      behavior: shouldAnimate() ? 'smooth' : 'auto',
     });
 
     setTimeout(() => {
       isScrollingProgrammatically.current = false;
     }, 500);
-  }, [timelineRef, getDateIndex]);
+  }, [timelineRef, getDateIndex, isRTL]);
 
   // Initial scroll to the requested Planning date. Defaults to today for schedule callers.
   useEffect(() => {
@@ -277,5 +284,6 @@ export function useScheduleData(
     isScrollingProgrammatically,
     t,
     language,
+    isRTL,
   };
 }

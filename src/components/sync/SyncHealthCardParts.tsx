@@ -144,9 +144,13 @@ export function pendingActionText(action: OfflineAction, tx: Record<string, stri
 
 export function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-background/45 px-3 py-2">
-      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
+    <div className="min-w-0 rounded-xl border border-border bg-background/45 px-3 py-2">
+      <p className="whitespace-normal break-words text-xs font-medium text-muted-foreground [hyphens:manual] [overflow-wrap:normal]">
+        {label}
+      </p>
+      <p className="mt-1 whitespace-normal break-words text-sm font-semibold text-foreground [overflow-wrap:anywhere]">
+        {value}
+      </p>
     </div>
   );
 }

@@ -15,6 +15,22 @@ function extractBlock(source: string, startMarker: string, endMarker: string): s
 }
 
 describe("runtime performance guards", () => {
+  it("waits for the Journal route shell before measuring phone and desktop performance", () => {
+    const manifest = JSON.parse(readSource("config/chrome-performance-budgets.json")) as {
+      routeGroups: Array<{
+        routes: Array<{ name: string; readySelector?: string }>;
+      }>;
+    };
+    const journalRoutes = manifest.routeGroups
+      .flatMap((group) => group.routes)
+      .filter((route) => route.name.startsWith("diary-v2-"));
+
+    expect(journalRoutes).toHaveLength(2);
+    for (const route of journalRoutes) {
+      expect(route.readySelector).toBe('[data-testid="diary-page"]');
+    }
+  });
+
   it("keeps every Workbox runtime cache purgeable on browser quota errors", () => {
     const source = readSource("src/sw.ts");
     const cachePolicies = source.match(/new ExpirationPlugin\(\{[\s\S]*?\}\)/g) ?? [];
@@ -32,14 +48,14 @@ describe("runtime performance guards", () => {
     const runtimeAssetsBlock = extractBlock(
       source,
       'new CacheFirst({\n    cacheName: "zenflow-runtime-assets"',
-      "purgeOnQuotaError: true,",
+      "purgeOnQuotaError: true,"
     );
 
     expect(runtimeAssetsBlock).toContain("new CacheFirst");
     expect(runtimeAssetsBlock).toContain("maxEntries");
     expect(runtimeAssetsBlock).toContain("maxAgeSeconds");
     expect(runtimeAssetsBlock).toContain("purgeOnQuotaError: true");
-    expect(source).toContain('url.origin === self.location.origin');
+    expect(source).toContain("url.origin === self.location.origin");
     expect(source).toContain('url.pathname.includes("/assets/")');
   });
 
@@ -62,7 +78,7 @@ describe("runtime performance guards", () => {
     const navigationBlock = extractBlock(
       source,
       "// Handle navigation requests",
-      "return Response.error();",
+      "return Response.error();"
     );
 
     expect(source).toContain('const APP_SHELL_URL = "index.html";');
@@ -80,16 +96,14 @@ describe("runtime performance guards", () => {
     const resumeBlock = extractBlock(
       source,
       "async function handleAppResume(): Promise<void> {",
-      "// Clean up stale share cache files",
+      "// Clean up stale share cache files"
     );
 
     expect(resumeBlock).toContain("const resumeOwnerUserId = await getCurrentSessionUserId();");
     expect(resumeBlock).toContain(
-      "await offlineQueue.hasPendingActionsForOwnerReady(resumeOwnerUserId)",
+      "await offlineQueue.hasPendingActionsForOwnerReady(resumeOwnerUserId)"
     );
-    expect(resumeBlock).toContain(
-      "!offlineQueue.hasPendingActionsForOwner(resumeOwnerUserId)",
-    );
+    expect(resumeBlock).toContain("!offlineQueue.hasPendingActionsForOwner(resumeOwnerUserId)");
     expect(resumeBlock).not.toContain("offlineQueue.hasPendingActions()");
   });
 
@@ -108,7 +122,9 @@ describe("runtime performance guards", () => {
     expect(source).toContain('pruneMacDuplicateArtifacts(ANDROID_PUBLIC, "android-public")');
     expect(source).toContain('pruneMacDuplicateArtifacts(ANDROID_RES, "android-res")');
     expect(source).toContain('pruneMacDuplicateArtifacts(ANDROID_APP_BUILD, "android-app-build")');
-    expect(source).toContain('pruneMacDuplicateArtifacts(ANDROID_CORDOVA_PLUGINS, "android-cordova-plugins")');
+    expect(source).toContain(
+      'pruneMacDuplicateArtifacts(ANDROID_CORDOVA_PLUGINS, "android-cordova-plugins")'
+    );
     expect(source).toContain('pruneMacDuplicateArtifacts(IOS_APP, "ios-app")');
     expect(source).toContain("stripNativeManifestLink");
     expect(source).toContain("rel=[\"']manifest[\"']");
@@ -172,14 +188,14 @@ describe("runtime performance guards", () => {
     const targetBlock = extractBlock(
       project,
       "buildPhases = (\n\t\t\t\t7D20A1B62F92000100AA0001 /* Verify Release AdMob App ID */,",
-      "\n\t\t\t);",
+      "\n\t\t\t);"
     );
 
     expect(project).toContain("Sanitize App Bundle Extended Attributes");
     expect(project).toContain('APP_BUNDLE=\\"$TARGET_BUILD_DIR/$WRAPPER_NAME\\"');
     expect(project).toContain('xattr -cr \\"$APP_BUNDLE\\"');
     expect(targetBlock.indexOf("504EC3021FED79650016851F /* Resources */")).toBeLessThan(
-      targetBlock.indexOf("Sanitize App Bundle Extended Attributes"),
+      targetBlock.indexOf("Sanitize App Bundle Extended Attributes")
     );
   });
 
@@ -190,7 +206,9 @@ describe("runtime performance guards", () => {
     expect(hookSource).toContain("import { isAndroid }");
     expect(hookSource).toContain("const isSupported = isAndroid;");
     expect(hookSource).toContain("if (!isSupported || !enabled || !journalOpen) return;");
-    expect(hookSource).toContain("return { enabled: isSupported ? enabled : false, setEnabled, isSupported };");
+    expect(hookSource).toContain(
+      "return { enabled: isSupported ? enabled : false, setEnabled, isSupported };"
+    );
     expect(moduleSource).toContain("screenSecurity.isSupported &&");
     expect(moduleSource).not.toContain("screenSecurity.isNative &&");
   });
@@ -213,6 +231,14 @@ describe("runtime performance guards", () => {
     expect(source).toContain('"registerSW.js"');
   });
 
+  it("disables the development service worker so strict CSP cannot receive the inline bootstrap", () => {
+    const source = readSource("vite.config.ts");
+
+    expect(source).toContain("enabled: false");
+    expect(source).not.toContain('enabled: mode === "development"');
+    expect(source).not.toContain("VITE_ENABLE_PWA_DEV");
+  });
+
   it("keeps desktop diary rail and stats controls at least 44px", () => {
     const moodDotStrip = readSource("src/features/journal/MoodDotStrip.tsx");
     const journalStats = readSource("src/features/journal/JournalStats.tsx");
@@ -230,7 +256,7 @@ describe("runtime performance guards", () => {
     const listener = extractBlock(
       source,
       'document.addEventListener("visibilitychange", () => {',
-      "\n});",
+      "\n});"
     );
 
     expect(source).toContain("function scheduleLifecycleTask");
@@ -246,17 +272,17 @@ describe("runtime performance guards", () => {
     const resumeBlock = extractBlock(
       source,
       "async function handleAppResume(): Promise<void> {",
-      "\n}",
+      "\n}"
     );
     const yieldCount = (resumeBlock.match(/await yieldToNextTask\(\);/g) ?? []).length;
 
     expect(source).toContain("function yieldToNextTask");
     expect(yieldCount).toBeGreaterThanOrEqual(3);
     expect(resumeBlock.indexOf("await yieldToNextTask();")).toBeLessThan(
-      resumeBlock.indexOf("await resumeAllAudio();"),
+      resumeBlock.indexOf("await resumeAllAudio();")
     );
     expect(resumeBlock.lastIndexOf("await yieldToNextTask();")).toBeLessThan(
-      resumeBlock.indexOf("if (navigator.onLine)"),
+      resumeBlock.indexOf("if (navigator.onLine)")
     );
   });
 

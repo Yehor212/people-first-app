@@ -87,12 +87,12 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
         ref={modalRef}
         onKeyDown={handleKeyDown}
         tabIndex={-1}
-        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in px-3 sm:px-4 md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/60 ps-[max(0.75rem,var(--safe-inline-start))] pe-[max(0.75rem,var(--safe-inline-end))] pb-[max(1rem,var(--safe-bottom))] pt-[max(1rem,var(--safe-top))] backdrop-blur-sm motion-safe:animate-fade-in sm:ps-[max(1rem,var(--safe-inline-start))] sm:pe-[max(1rem,var(--safe-inline-end))] md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="onboarding-welcome-title"
       >
-        <div className="relative max-w-lg w-full bg-card rounded-xl sm:rounded-2xl zen-shadow-card border border-border overflow-hidden motion-safe:animate-scale-in">
+        <div className="relative max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-2rem)] w-full max-w-lg overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-border bg-card zen-shadow-card motion-safe:animate-scale-in sm:rounded-2xl">
           {/* Header - responsive */}
           <div className="p-4 sm:p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -110,11 +110,13 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
             </div>
             <h2
               id="onboarding-welcome-title"
-              className="text-xl sm:text-2xl font-bold text-foreground mb-2"
+              className="mb-2 break-words hyphens-manual text-xl font-bold text-foreground sm:text-2xl"
             >
               {currentStep.title}
             </h2>
-            <p className="text-sm sm:text-base text-muted-foreground">{currentStep.description}</p>
+            <p className="break-words hyphens-manual text-sm text-muted-foreground sm:text-base">
+              {currentStep.description}
+            </p>
           </div>
 
           {/* Progress dots - responsive */}
@@ -137,7 +139,7 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
             {/* Action button - responsive */}
             <button
               onClick={handleNext}
-              className="w-full py-2.5 sm:py-3 px-4 bg-primary text-primary-foreground rounded-lg sm:rounded-xl font-medium hover:bg-primary/90 motion-safe:transition-colors zen-shadow-sm flex items-center justify-center gap-2 text-sm sm:text-base"
+              className="flex min-h-[44px] h-auto w-full items-center justify-center gap-2 whitespace-normal break-words hyphens-manual rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground zen-shadow-sm hover:bg-primary/90 motion-safe:transition-colors sm:rounded-xl sm:py-3 sm:text-base"
             >
               {step < steps.length - 1
                 ? t.onboardingNext || "Next"

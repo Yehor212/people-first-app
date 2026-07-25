@@ -76,6 +76,7 @@ export const SK = {
   JOURNAL_SCREENSHOT_BLOCK: "journal_screenshot_block",
   JOURNAL_PRIVATE_MODE: "journal_private_mode",
   JOURNAL_AI_SEARCH_CONSENT: "journal_ai_search_consent",
+  JOURNAL_AI_REVOCATION_PREFIX: "journal_ai_revocation_pending:",
   JOURNAL_LOCK_TIMEOUT: "zenflow-journal-lock-timeout",
   JOURNAL_PASSWORD_RESET: "journal_password_reset_pending",
   JOURNAL_PASSWORD_RESET_PROOF: "journal_password_reset_proof",
@@ -90,6 +91,8 @@ export const SK = {
   JOURNAL_SIDEBAR_STATE: "journal_sidebar_state",
   JOURNAL_STREAK_FREEZES: "journal-streak-freezes",
   JOURNAL_OTD_DISMISSED: "journal-otd-dismissed",
+  JOURNAL_PENDING_ENTRY_DELETES: "journal_pending_entry_deletes_v1",
+  JOURNAL_CANCELLED_DRAFT_PHOTOS: "journal_cancelled_draft_photos_v1",
 
   // ─── Habit presentation (account-bound because it contains habit IDs) ───
   HABIT_ORDER: "habit-order",
@@ -100,8 +103,8 @@ export const SK = {
   AUDIO_COMFORT: "zenflow-audio-comfort",
   AUDIO_COMFORT_FEEDBACK: "zenflow-audio-comfort-feedback",
   NOTIFICATION_SOUND: "zenflow_notification_sound",
-  NOTIFICATION_PRIVATE_CHANNEL_MIGRATION:
-    "zenflow_notification_private_channel_migration_v3",
+  NOTIFICATION_GENERIC_HABIT_COPY_MIGRATION: "zenflow_notification_generic_habit_copy_migration_v1",
+  NOTIFICATION_PRIVATE_CHANNEL_MIGRATION: "zenflow_notification_private_channel_migration_v3",
   HAPTICS_ENABLED: "zenflow_haptics_enabled",
 
   // ─── Feedback & Errors ───
@@ -140,6 +143,11 @@ export const SK = {
   DEVICE_ID: "zenflow_device_id",
   DATA_OWNER_ID: "zenflow_data_owner_id",
   ACCOUNT_BOUNDARY_GENERATION: "zenflow_account_boundary_generation",
+  // A successful local backup import must be explicitly assigned before its
+  // owner-null rows can enter an authenticated account's cloud sync.
+  PENDING_LOCAL_BACKUP_ACCOUNT_CLAIM: "zenflow_pending_local_backup_account_claim_v1",
+  IMPORTED_BACKUP_LOCAL_ONLY_ACCESS: "zenflow_imported_backup_local_only_access_v1",
+  PROFILE_RECOVERY: "zenflow-profile-recovery",
   // Durable account-boundary intent. This key must stay outside every user-data
   // purge list so an interrupted sign-out can finish after reload.
   PENDING_ACCOUNT_SIGN_OUT_CLEANUP: "zenflow_pending_account_sign_out_cleanup",
@@ -175,6 +183,7 @@ export const SK = {
 
   // ─── Dynamic key builders ───
   journalDraft: (id: string) => `journal_draft_${id}`,
+  journalDraftLease: (draftKey: string) => `zenflow_journal_draft_lease_${draftKey}`,
   whatsNewDismissed: (version: string) => `zenflow_whats_new_v${version}_dismissed`,
 } as const;
 

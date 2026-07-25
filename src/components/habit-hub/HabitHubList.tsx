@@ -178,7 +178,7 @@ export function HabitHubList({
           }}
           aria-expanded={showSortMenu}
           aria-haspopup="listbox"
-          className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-muted-foreground motion-safe:transition-colors min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50"
+          className="flex min-h-[44px] min-w-[44px] max-w-full items-center gap-1.5 whitespace-normal break-words text-start text-xs text-muted-foreground hover:text-muted-foreground motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50"
         >
           <ArrowUpDown className="w-3 h-3" aria-hidden="true" />
           <span>{sortLabels[sortOption]}</span>
@@ -198,7 +198,7 @@ export function HabitHubList({
                 exit={{ opacity: 0, scale: 0.95, y: -2 }}
                 transition={zenMotion.snappy}
                 className={cn(
-                  "absolute end-0 top-full z-[50] min-w-[120px] rounded-xl overflow-hidden",
+                  "absolute end-0 top-full z-[50] max-w-[calc(100vw-2rem)] min-w-[min(12rem,calc(100vw-2rem))] overflow-hidden rounded-xl",
                   "bg-popover border border-border shadow-xl",
                   "ltr:origin-top-right rtl:origin-top-left"
                 )}
@@ -213,7 +213,7 @@ export function HabitHubList({
                     aria-selected={sortOption === opt}
                     onClick={() => handleSortSelect(opt)}
                     className={cn(
-                      "w-full px-3 py-2 text-xs text-start motion-safe:transition-colors min-h-[44px] flex items-center",
+                      "flex min-h-[44px] w-full items-center whitespace-normal break-words px-3 py-2 text-start text-xs motion-safe:transition-colors",
                       sortOption === opt
                         ? "text-violet-300 bg-violet-500/10"
                         : "text-muted-foreground hover:bg-foreground/[0.05]"
@@ -249,8 +249,8 @@ export function HabitHubList({
       {/* ═══ OVERALL SCORE BAR ═══ */}
       {(todayHabits.length > 0 || otherHabits.length > 0) && (
         <div className="px-1">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-muted-foreground">
+          <div className="mb-1 flex items-start justify-between gap-2">
+            <span className="min-w-0 whitespace-normal break-words text-xs text-muted-foreground">
               {ts.overallScore || "Overall Score"}
             </span>
             <span
@@ -284,7 +284,7 @@ export function HabitHubList({
       )}
 
       {/* ═══ FAB — Add Habit ═══ */}
-      <div className="fixed z-[45] end-5 bottom-[calc(7rem+env(safe-area-inset-bottom,0px))]">
+      <div className="fixed end-[max(1.25rem,var(--safe-inline-end))] bottom-[calc(7rem+var(--safe-bottom))] z-[45]">
         <motion.button
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

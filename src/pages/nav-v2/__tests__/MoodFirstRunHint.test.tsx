@@ -9,8 +9,9 @@ vi.mock("@/contexts/LanguageContext", () => ({
     t: {
       orbFirstRunTitle: "Three steps to your first entry",
       orbFirstRunStep1: "Slide the orb",
-      orbFirstRunStep2: "Choose a scope",
-      orbFirstRunStep3: "Pick an emotion and confirm",
+      orbFirstRunStep2: "Choose when you felt this way",
+      orbFirstRunStep3:
+        "Add an emotion or note if you want, then save your mood and start today's entry",
       orbFirstRunGotIt: "Got it",
     },
     language: "en",
@@ -43,8 +44,12 @@ describe("MoodFirstRunHint", () => {
   it("renders all three steps", () => {
     render(<MoodFirstRunHint eligible={true} />);
     expect(screen.getByText("Slide the orb")).toBeInTheDocument();
-    expect(screen.getByText("Choose a scope")).toBeInTheDocument();
-    expect(screen.getByText("Pick an emotion and confirm")).toBeInTheDocument();
+    expect(screen.getByText("Choose when you felt this way")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Add an emotion or note if you want, then save your mood and start today's entry",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("has a11y attributes on dialog", () => {

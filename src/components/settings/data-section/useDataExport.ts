@@ -7,10 +7,11 @@ import { analytics } from "@/lib/analytics";
 import { exportPortableBackupArtifact } from "@/storage/backup";
 import { exportAllToCSV, exportProgressReportPDF } from "@/lib/exportService";
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry } from "@/types";
-import { getCurrentSessionUserId } from "@/lib/supabaseClient";
 import {
   assertSettingsOwnerCurrent,
+  readVerifiedSettingsOwnerRealm,
   SettingsOwnerBoundaryError,
+  type VerifiedSettingsOwnerRealm,
 } from "@/lib/settingsOwnerBoundary";
 
 interface UseDataExportOptions {
@@ -67,14 +68,13 @@ export function useDataExport({
     const operationGeneration = ++exportGenerationRef.current;
     setIsExporting(true);
     setDataStatus(null);
-    let expectedOwnerUserId: string | null = null;
-    let ownerCaptured = false;
+    let ownerRealm: VerifiedSettingsOwnerRealm | null = null;
     try {
-      expectedOwnerUserId = await getCurrentSessionUserId();
-      ownerCaptured = true;
-      await assertSettingsOwnerCurrent(expectedOwnerUserId, "Backup export");
+      const verifiedOwnerRealm = await readVerifiedSettingsOwnerRealm("Backup export");
+      ownerRealm = verifiedOwnerRealm;
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Backup export");
       const { json } = await exportPortableBackupArtifact();
-      await assertSettingsOwnerCurrent(expectedOwnerUserId, "Backup export");
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Backup export");
       const now = new Date();
       const dateStr = now.toISOString().split("T")[0];
       const filename = `ZenFlow_Backup_${dateStr}_${now.getTime()}.json`;
@@ -87,7 +87,7 @@ export function useDataExport({
         let cacheFileCreated = false;
 
         try {
-          await assertSettingsOwnerCurrent(expectedOwnerUserId, "Native backup export");
+          await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Native backup export");
           const file = await Filesystem.writeFile({
             path: filename,
             data: json,
@@ -97,7 +97,7 @@ export function useDataExport({
           cacheFileCreated = true;
 
           try {
-            await assertSettingsOwnerCurrent(expectedOwnerUserId, "Native backup share");
+            await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Native backup share");
             await Share.share({
               title: shareTitle,
               text: filename,
@@ -125,7 +125,7 @@ export function useDataExport({
           }
         }
 
-        await assertSettingsOwnerCurrent(expectedOwnerUserId, "Native backup completion");
+        await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Native backup completion");
         if (operationGeneration !== exportGenerationRef.current) return;
 
         if (shareError) {
@@ -145,7 +145,7 @@ export function useDataExport({
         return;
       }
 
-      await assertSettingsOwnerCurrent(expectedOwnerUserId, "Web backup download");
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Web backup download");
       if (operationGeneration !== exportGenerationRef.current) return;
       const blob = new Blob([json], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -163,9 +163,9 @@ export function useDataExport({
       setDataStatus(t.exportSuccess);
     } catch (error) {
       if (error instanceof SettingsOwnerBoundaryError) return;
-      if (ownerCaptured) {
+      if (ownerRealm) {
         try {
-          await assertSettingsOwnerCurrent(expectedOwnerUserId, "Backup export error");
+          await assertSettingsOwnerCurrent(ownerRealm, "Backup export error");
         } catch (ownerError) {
           if (ownerError instanceof SettingsOwnerBoundaryError) return;
           throw ownerError;
@@ -184,20 +184,19 @@ export function useDataExport({
   const handleExportCSV = async () => {
     const operationGeneration = ++csvGenerationRef.current;
     setIsExportingCSV(true);
-    let expectedOwnerUserId: string | null = null;
-    let ownerCaptured = false;
+    let ownerRealm: VerifiedSettingsOwnerRealm | null = null;
     try {
-      expectedOwnerUserId = await getCurrentSessionUserId();
-      ownerCaptured = true;
-      await assertSettingsOwnerCurrent(expectedOwnerUserId, "CSV export");
+      const verifiedOwnerRealm = await readVerifiedSettingsOwnerRealm("CSV export");
+      ownerRealm = verifiedOwnerRealm;
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "CSV export");
       if (operationGeneration !== csvGenerationRef.current) return;
       exportAllToCSV({ moods, habits, focusSessions, gratitudeEntries });
-      await assertSettingsOwnerCurrent(expectedOwnerUserId, "CSV export completion");
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "CSV export completion");
     } catch (e) {
       if (e instanceof SettingsOwnerBoundaryError) return;
-      if (ownerCaptured) {
+      if (ownerRealm) {
         try {
-          await assertSettingsOwnerCurrent(expectedOwnerUserId, "CSV export error");
+          await assertSettingsOwnerCurrent(ownerRealm, "CSV export error");
         } catch (ownerError) {
           if (ownerError instanceof SettingsOwnerBoundaryError) return;
           throw ownerError;
@@ -216,20 +215,19 @@ export function useDataExport({
   const handleExportPDF = async () => {
     const operationGeneration = ++pdfGenerationRef.current;
     setIsExportingPDF(true);
-    let expectedOwnerUserId: string | null = null;
-    let ownerCaptured = false;
+    let ownerRealm: VerifiedSettingsOwnerRealm | null = null;
     try {
-      expectedOwnerUserId = await getCurrentSessionUserId();
-      ownerCaptured = true;
-      await assertSettingsOwnerCurrent(expectedOwnerUserId, "PDF export");
+      const verifiedOwnerRealm = await readVerifiedSettingsOwnerRealm("PDF export");
+      ownerRealm = verifiedOwnerRealm;
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "PDF export");
       if (operationGeneration !== pdfGenerationRef.current) return;
       await exportProgressReportPDF({ moods, habits, focusSessions, gratitudeEntries, userName });
-      await assertSettingsOwnerCurrent(expectedOwnerUserId, "PDF export completion");
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "PDF export completion");
     } catch (e) {
       if (e instanceof SettingsOwnerBoundaryError) return;
-      if (ownerCaptured) {
+      if (ownerRealm) {
         try {
-          await assertSettingsOwnerCurrent(expectedOwnerUserId, "PDF export error");
+          await assertSettingsOwnerCurrent(ownerRealm, "PDF export error");
         } catch (ownerError) {
           if (ownerError instanceof SettingsOwnerBoundaryError) return;
           throw ownerError;

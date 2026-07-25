@@ -52,9 +52,9 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         className={cn(
-          // 52px visual width with a 44px accessible touch target
+          // 52px visual width with a 48px accessible touch target
           "relative flex-shrink-0 rounded-full motion-safe:transition-colors motion-safe:duration-300 motion-safe:active:scale-[0.97]",
-          "w-[52px] h-[44px] min-w-[52px] min-h-[44px]",
+          "h-12 min-h-[48px] w-[52px] min-w-[52px]",
           // Colors - semantic theme colors
           isChecked ? "bg-primary" : "bg-muted-foreground/40",
           // Focus states
@@ -69,8 +69,8 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         {/* Thumb - absolute positioning like ThemeToggle, spring-like cubic-bezier */}
         <div
           className={cn(
-            // Thumb stays visually compact while the switch keeps a 44px tap target
-            "absolute top-[11px] w-[22px] h-[22px] rounded-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out",
+            // Thumb stays visually compact while the switch keeps a 48px tap target
+            "absolute top-[13px] h-[22px] w-[22px] rounded-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out",
             // Background and shadow
             "bg-background shadow-sm",
             isChecked

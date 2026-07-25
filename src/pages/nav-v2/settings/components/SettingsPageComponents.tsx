@@ -1,7 +1,4 @@
-import {
-  forwardRef,
-  type ReactNode,
-} from "react";
+import { forwardRef, type ReactNode } from "react";
 import { AnimatePresence } from "framer-motion";
 import { ArrowLeft, SlidersHorizontal } from "lucide-react";
 import { ThemeToggleV2 } from "@/components/navigation-v2/ThemeToggleV2";
@@ -9,10 +6,7 @@ import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
 import { cn } from "@/lib/utils";
 import type { V2SettingsSectionId } from "../types";
-import {
-  SettingsModuleCard,
-  type SettingsModuleCardData,
-} from "./SettingsModuleCard";
+import { SettingsModuleCard, type SettingsModuleCardData } from "./SettingsModuleCard";
 import { SettingsMotionSurface } from "./SettingsMotionSurface";
 
 export type { SettingsModuleCardData } from "./SettingsModuleCard";
@@ -21,6 +15,7 @@ interface SettingsPageShellProps {
   children: ReactNode;
   controlsWired: boolean;
   labelledBy: string;
+  mobileDetailOpen: boolean;
 }
 
 interface SettingsHeroCardProps {
@@ -44,13 +39,13 @@ interface SettingsModuleListProps {
   onMobileSurfaceReady: (
     view: "overview" | "detail",
     sectionId: V2SettingsSectionId,
-    element: HTMLElement,
+    element: HTMLElement
   ) => void;
   renderPanel: (item: SettingsModuleCardData) => ReactNode;
 }
 
 export const SettingsPageShell = forwardRef<HTMLElement, SettingsPageShellProps>(
-  function SettingsPageShell({ children, controlsWired, labelledBy }, ref) {
+  function SettingsPageShell({ children, controlsWired, labelledBy, mobileDetailOpen }, ref) {
     return (
       <main
         ref={ref}
@@ -60,14 +55,15 @@ export const SettingsPageShell = forwardRef<HTMLElement, SettingsPageShellProps>
         className={cn(
           "v2-fullscreen-page v2-readable-page v2-readable-page--standard mx-auto grid min-h-[var(--app-viewport-height)] w-full grid-cols-1 content-start outline-none focus-visible:!outline-none",
           controlsWired
-            ? "max-w-[52rem] gap-3 pl-[max(1.25rem,var(--safe-left))] pr-[max(1.25rem,var(--safe-right))] pt-[calc(var(--safe-top)+3.5rem)] pb-[calc(var(--safe-bottom)+1.5rem)] sm:pl-[max(1.5rem,var(--safe-left))] sm:pr-[max(1.5rem,var(--safe-right))] sm:pt-[calc(var(--safe-top)+3.5rem)] md:max-w-6xl md:pt-[calc(var(--safe-top)+1.75rem)] md:pb-[calc(var(--safe-bottom)+2rem)] lg:gap-3"
-            : "max-w-6xl gap-2.5 pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pt-[calc(var(--safe-top)+3.5rem)] pb-[calc(var(--safe-bottom)+1.25rem)] sm:pt-[calc(var(--safe-top)+3.5rem)] md:pl-[max(1.5rem,var(--safe-left))] md:pr-[max(1.5rem,var(--safe-right))] md:pt-[calc(var(--safe-top)+1.5rem)] md:pb-[calc(var(--safe-bottom)+2rem)] lg:gap-3"
+            ? "max-w-[52rem] gap-3 ps-[calc(var(--safe-inline-start)_+_var(--v2-phone-drawer-rail))] pe-[max(var(--v2-phone-content-inline-end),var(--safe-inline-end))] pt-[calc(var(--safe-top)+var(--v2-phone-drawer-top-rail))] pb-[calc(var(--safe-bottom)+var(--v2-phone-content-block-end))] sm:pe-[max(24px,var(--safe-inline-end))] sm:pt-[calc(var(--safe-top)+var(--v2-phone-drawer-top-rail))] md:max-w-6xl md:ps-[max(1.5rem,var(--safe-inline-start))] md:pe-[max(1.5rem,var(--safe-inline-end))] md:pt-[calc(var(--safe-top)+1.75rem)] md:pb-[calc(var(--safe-bottom)+2rem)] lg:gap-3"
+            : "max-w-6xl gap-2.5 ps-[calc(var(--safe-inline-start)_+_var(--v2-phone-drawer-rail))] pe-[max(var(--v2-phone-content-inline-end),var(--safe-inline-end))] pt-[calc(var(--safe-top)+var(--v2-phone-drawer-top-rail))] pb-[calc(var(--safe-bottom)+var(--v2-phone-content-block-end))] sm:pe-[max(24px,var(--safe-inline-end))] sm:pt-[calc(var(--safe-top)+var(--v2-phone-drawer-top-rail))] md:ps-[max(1.5rem,var(--safe-inline-start))] md:pe-[max(1.5rem,var(--safe-inline-end))] md:pt-[calc(var(--safe-top)+1.5rem)] md:pb-[calc(var(--safe-bottom)+2rem)] lg:gap-3"
         )}
         aria-labelledby={labelledBy}
         data-testid="settings-page"
         data-v2-readable-page="settings"
         data-visual-role="settings"
         data-controls-wired={controlsWired ? "true" : "false"}
+        data-mobile-detail={mobileDetailOpen ? "true" : "false"}
       >
         {children}
       </main>
@@ -87,17 +83,17 @@ export function SettingsHeroCard({
   return (
     <section
       className={cn(
-        "relative grid min-w-0 gap-2.5 rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.38)] bg-[hsl(var(--settings-v2-card)/0.68)] p-3 shadow-[var(--zen-shadow-card)] md:items-center md:p-3.5",
+        "relative grid w-full min-w-0 gap-2.5 rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.38)] bg-[hsl(var(--settings-v2-card)/0.68)] shadow-[var(--zen-shadow-card)] md:items-center",
         controlsWired
-          ? "place-items-center border-transparent bg-transparent px-8 py-1.5 text-center shadow-none sm:px-10 md:py-2"
-          : "md:grid-cols-[minmax(0,1fr)_auto]"
+          ? "place-items-center border-transparent bg-transparent px-0 py-1.5 text-center shadow-none min-[360px]:px-8 sm:px-10 md:py-2"
+          : "p-3 md:grid-cols-[minmax(0,1fr)_auto] md:p-3.5"
       )}
       data-compact={controlsWired ? "true" : "false"}
       data-testid="settings-page-control-card"
     >
       <div
         className={cn(
-          "flex min-w-0 items-start gap-3",
+          "flex w-full max-w-full min-w-0 items-start gap-3",
           controlsWired && "flex-col items-center justify-center gap-1 text-center"
         )}
       >
@@ -106,22 +102,26 @@ export function SettingsHeroCard({
             <SettingsIcon className="h-5 w-5" aria-hidden="true" />
           </span>
         ) : null}
-        <div className="min-w-0">
+        <div className="w-full max-w-full min-w-0">
           <p className="sr-only">ZENFLOW</p>
           <h1
             id="settings-page-heading"
             data-testid="settings-page-heading"
             className={cn(
-              "font-display text-[1.55rem] font-semibold leading-tight tracking-normal text-foreground md:text-3xl",
-              controlsWired && "text-[1.85rem] md:text-[2.35rem]"
+              "max-w-full break-words font-display font-semibold leading-tight tracking-normal text-foreground [hyphens:manual] [overflow-wrap:break-word]",
+              controlsWired
+                ? "text-lg min-[420px]:text-xl sm:text-3xl md:text-4xl"
+                : "text-2xl md:text-3xl"
             )}
           >
             {title}
           </h1>
           <p
             className={cn(
-              "mt-1 max-w-2xl font-body text-xs leading-relaxed text-muted-foreground sm:text-sm",
-              controlsWired ? "mx-auto block max-w-[24rem]" : "hidden sm:block"
+              "mt-1 w-full min-w-0 max-w-2xl break-words font-body text-xs leading-relaxed text-muted-foreground [hyphens:manual] [overflow-wrap:break-word] sm:text-sm",
+              controlsWired
+                ? "mx-auto block max-w-[15rem] min-[360px]:max-w-[24rem]"
+                : "hidden sm:block"
             )}
           >
             {lead}
@@ -139,10 +139,12 @@ export function SettingsHeroCard({
               <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-foreground">
+              <span className="block break-words text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:break-word]">
                 {themeTitle}
               </span>
-              <span className="block truncate text-xs text-muted-foreground">{themeLabel}</span>
+              <span className="block break-words text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
+                {themeLabel}
+              </span>
             </span>
           </div>
           <ThemeToggleV2 collapsed presentation="settings-card" testId="settings-v2-theme-toggle" />
@@ -220,11 +222,11 @@ export function SettingsModuleList({
         <button
           type="button"
           onClick={onBack}
-          className="mb-1 inline-flex min-h-11 w-fit items-center gap-2 rounded-[8px] px-2.5 text-sm font-semibold text-foreground outline-none transition-colors hover:bg-[hsl(var(--settings-v2-panel)/0.72)] focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent))] focus-visible:ring-offset-2 lg:hidden"
+          className="mb-2 inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 whitespace-normal break-words rounded-[8px] px-2.5 text-sm font-semibold text-foreground outline-none [hyphens:manual] [overflow-wrap:break-word] transition-colors hover:bg-[hsl(var(--settings-v2-panel)/0.72)] focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent))] focus-visible:ring-offset-2 lg:hidden"
           data-testid="settings-mobile-back"
         >
-          <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
-          <span>{backLabel}</span>
+          <ArrowLeft className="h-4 w-4 shrink-0 rtl:rotate-180" aria-hidden="true" />
+          <span className="min-w-0 break-words">{backLabel}</span>
         </button>
         <div
           ref={(node) => {
@@ -241,7 +243,7 @@ export function SettingsModuleList({
         >
           <h2
             id={`settings-module-panel-heading-${activeItem.id}`}
-            className="px-1 font-display text-xl font-semibold leading-tight text-foreground"
+            className="w-full min-w-0 max-w-full break-words px-1 font-display text-sm font-semibold leading-tight text-foreground [hyphens:manual] [overflow-wrap:break-word] min-[360px]:text-base min-[420px]:text-lg sm:text-xl"
           >
             {activeItem.label}
           </h2>

@@ -1,16 +1,27 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.105.4";
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
-import webpush from "npm:web-push@3.6.7";
 import { extractBearerToken } from "../_shared/auth.ts";
 import { createJsonResponse, createNoContentResponse, parseJsonBody } from "../_shared/http.ts";
+import { withPushDeliveryPermit } from "../_shared/pushDeletionBarrier.ts";
+import {
+  classifyPushProviderAttempts,
+  noPushTargets,
+  providerUnavailable,
+  type PushProviderAttempt,
+} from "../_shared/pushProviderOutcome.ts";
+import {
+  buildRealmBoundAndroidMessage,
+  isAndroidPushTarget,
+  isPushNotificationType,
+  type PushDeviceTarget,
+  type PushNotificationType,
+} from "../_shared/pushRealmMessage.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY");
-const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY");
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT");
 const FCM_PROJECT_ID = Deno.env.get("FCM_PROJECT_ID");
 const FCM_SERVICE_ACCOUNT_B64 = Deno.env.get("FCM_SERVICE_ACCOUNT_B64");
+const FCM_REQUEST_TIMEOUT_MS = 10000;
 // Rate limiting is best-effort in serverless mode.
 const RATE_LIMIT = 10; // Max 10 requests per user
 const RATE_WINDOW = 60000; // Per 60 seconds
@@ -43,17 +54,6 @@ function checkRateLimit(userId: string): { allowed: boolean; retryAfter?: number
   entry.count++;
   return { allowed: true };
 }
-
-const getTitleBody = (type: string, language: string) => {
-  if (language === "ru") {
-    if (type === "mood") return { title: "ZenFlow", body: "Как настроение сегодня?" };
-    if (type === "habit") return { title: "ZenFlow", body: "Время отметить привычки." };
-    return { title: "ZenFlow", body: "Готовы к фокус-сессии?" };
-  }
-  if (type === "mood") return { title: "ZenFlow", body: "How are you feeling today?" };
-  if (type === "habit") return { title: "ZenFlow", body: "Time to check your habits." };
-  return { title: "ZenFlow", body: "Ready for a focus session?" };
-};
 
 const pemToArrayBuffer = (pem: string) => {
   const base64 = pem
@@ -99,6 +99,7 @@ const getFcmAccessToken = async () => {
       grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
       assertion: jwt,
     }),
+    signal: AbortSignal.timeout(FCM_REQUEST_TIMEOUT_MS),
   });
 
   if (!response.ok) return null;
@@ -106,35 +107,46 @@ const getFcmAccessToken = async () => {
   return data.access_token as string | undefined;
 };
 
-const sendFcmNotifications = async (tokens: string[], content: { title: string; body: string }) => {
-  const accessToken = await getFcmAccessToken();
-  if (!accessToken || !FCM_PROJECT_ID) return 0;
+const sendFcmNotifications = async (
+  targets: PushDeviceTarget[],
+  type: PushNotificationType,
+) => {
+  let accessToken: string | null | undefined;
+  try {
+    accessToken = await getFcmAccessToken();
+  } catch {
+    console.warn("[SendPushNow] FCM credentials unavailable");
+    return providerUnavailable(0);
+  }
+  if (!accessToken || !FCM_PROJECT_ID) {
+    console.warn("[SendPushNow] FCM credentials unavailable");
+    return providerUnavailable(0);
+  }
 
   const url = `https://fcm.googleapis.com/v1/projects/${FCM_PROJECT_ID}/messages:send`;
-  const results = await Promise.all(
-    tokens.map((token) =>
+  const attempts = await Promise.all<PushProviderAttempt>(
+    targets.map((target) =>
       fetch(url, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          message: {
-            token,
-            notification: {
-              title: content.title,
-              body: content.body,
-            },
-          },
-        }),
+        body: JSON.stringify(
+          buildRealmBoundAndroidMessage(target, type),
+        ),
+        signal: AbortSignal.timeout(FCM_REQUEST_TIMEOUT_MS),
       })
-        .then((res) => (res.ok ? 1 : 0))
-        .catch(() => 0)
+        .then((res) => (res.ok ? "accepted" as const : "rejected" as const))
+        .catch(() => "network-error" as const)
     )
   );
 
-  return results.reduce((total, value) => total + value, 0);
+  const dispatch = classifyPushProviderAttempts(attempts);
+  if (dispatch.state === "provider-unavailable") {
+    console.warn("[SendPushNow] FCM batch unavailable");
+  }
+  return dispatch;
 };
 
 Deno.serve(async (req) => {
@@ -158,8 +170,10 @@ Deno.serve(async (req) => {
       return createJsonResponse(origin, 401, { error: "Unauthorized" });
     }
 
+    const ownerId = data.user.id;
+
     // P0 Fix: Check rate limit
-    const rateLimitResult = checkRateLimit(data.user.id);
+    const rateLimitResult = checkRateLimit(ownerId);
     if (!rateLimitResult.allowed) {
       return createJsonResponse(origin, 429, {
         error: "Rate limit exceeded",
@@ -167,64 +181,53 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: settings } = await supabase
-      .from("user_reminder_settings")
-      .select("language")
-      .eq("user_id", data.user.id)
-      .maybeSingle();
-
-    const { data: subs, error: subsError } = await supabase
-      .from("push_subscriptions")
-      .select("endpoint, keys")
-      .eq("user_id", data.user.id);
-
-    if (subsError) {
-      return createJsonResponse(origin, 500, { error: "Failed to load subscriptions" });
-    }
-
-    const { data: deviceTokens, error: tokenError } = await supabase
-      .from("push_device_tokens")
-      .select("token")
-      .eq("user_id", data.user.id);
-
-    if (tokenError) {
-      return createJsonResponse(origin, 500, { error: "Failed to load device tokens" });
-    }
-
-    const [payload, bodyErr] = await parseJsonBody<{ type?: string }>(req, origin);
+    const [payload, bodyErr] = await parseJsonBody<{ type?: unknown }>(req, origin);
     if (bodyErr) return bodyErr;
-    const type = payload.type || "mood";
-    const content = getTitleBody(type, settings?.language || "en");
+    const type = isPushNotificationType(payload.type) ? payload.type : "mood";
 
-    let sent = 0;
+    const delivery = await withPushDeliveryPermit(
+      ownerId,
+      {
+        rpc: (functionName, args) => supabase.rpc(functionName, args),
+        randomUUID: () => crypto.randomUUID(),
+      },
+      async () => {
+        const { data: deviceTokens, error: tokenError } = await supabase
+          .from("push_device_tokens")
+          .select("id, token, platform")
+          .eq("user_id", ownerId)
+          .eq("platform", "android");
+        if (tokenError) {
+          console.warn("[SendPushNow] Push targets unavailable");
+          return providerUnavailable(0);
+        }
 
-    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && VAPID_SUBJECT && subs && subs.length > 0) {
-      webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
-      const results = await Promise.all(
-        subs.map((sub) =>
-          webpush
-            .sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, JSON.stringify(content))
-            .then(() => true)
-            .catch(() => false)
-        )
-      );
-      sent += results.filter(Boolean).length;
+        const targets = (deviceTokens || []).filter(isAndroidPushTarget);
+        if (targets.length === 0) return noPushTargets();
+        return await sendFcmNotifications(targets, type);
+      },
+    );
+
+    if (delivery.state === "blocked") {
+      return createJsonResponse(origin, 410, { error: "Account unavailable" });
     }
-
-    if (deviceTokens && deviceTokens.length > 0) {
-      sent += await sendFcmNotifications(
-        deviceTokens.map((item) => item.token),
-        content
-      );
+    if (delivery.state === "unavailable") {
+      return createJsonResponse(origin, 503, { error: "Push temporarily unavailable" });
     }
-
-    if (sent === 0) {
+    if (!delivery.releaseConfirmed) {
+      console.warn("[SendPushNow] Permit release unconfirmed");
+    }
+    const dispatch = delivery.value;
+    if (dispatch.state === "no-targets") {
       return createJsonResponse(origin, 404, { error: "No subscriptions" });
     }
+    if (dispatch.state === "provider-unavailable") {
+      return createJsonResponse(origin, 503, { error: "Push temporarily unavailable" });
+    }
 
-    return createJsonResponse(origin, 200, { sent });
-  } catch (err) {
-    console.error("[SendPushNow] Error:", err);
+    return createJsonResponse(origin, 200, { accepted: dispatch.accepted });
+  } catch {
+    console.error("[SendPushNow] Internal failure");
     return createJsonResponse(origin, 500, { error: "Internal error" });
   }
 });

@@ -17,7 +17,10 @@ export function AnimatedClockRing({
   const offset = circumference - (dayProgress / 100) * circumference;
 
   return (
-    <div className="relative w-20 h-20">
+    <div
+      className="relative h-20 w-20 shrink-0"
+      data-testid="schedule-clock-ring"
+    >
       {/* Outer glow */}
       <motion.div
         className="absolute inset-0 rounded-full"
@@ -94,7 +97,8 @@ export function AnimatedClockRing({
       {/* Center time - theme-aware */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <motion.span
-          className="text-xl font-bold [text-shadow:0_0_10px_rgba(139,92,246,0.5)]"
+          className="min-w-0 max-w-full whitespace-nowrap text-center text-sm font-bold leading-none tracking-tight [font-variant-numeric:tabular-nums] [text-shadow:0_0_10px_rgba(139,92,246,0.5)] md:text-base"
+          data-testid="schedule-clock-time"
           style={{
             color: "hsl(var(--cosmic-text-primary))",
           }}
@@ -130,6 +134,8 @@ export function PremiumDayPill({
   return (
     <motion.button
       onClick={onClick}
+      aria-pressed={isSelected}
+      aria-current={isToday ? "date" : undefined}
       whileHover={{ scale: 1.1, y: -4 }}
       whileTap={zenTap.button}
       className={cn(

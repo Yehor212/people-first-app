@@ -116,7 +116,7 @@ export function ChallengeDetailsView({
     <div className="space-y-6 pb-8">
       {/* Header with icon - Premium */}
       <motion.div
-        className="relative text-center py-8 rounded-2xl overflow-hidden bg-[linear-gradient(180deg,hsl(var(--cosmic-nebula-purple)/0.15)_0%,transparent_100%)]"
+        className="relative min-w-0 text-center py-8 rounded-2xl overflow-hidden bg-[linear-gradient(180deg,hsl(var(--cosmic-nebula-purple)/0.15)_0%,transparent_100%)]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -130,26 +130,26 @@ export function ChallengeDetailsView({
         >
           {challenge.habitIcon}
         </motion.div>
-        <h3 className="text-xl font-bold text-slate-800 dark:text-white relative z-10">
+        <h3 className="relative z-10 min-w-0 break-words px-4 text-xl font-bold text-slate-800 dark:text-white [overflow-wrap:anywhere]">
           {challenge.habitName}
         </h3>
-        <p className="text-sm text-slate-500 dark:text-white/60 relative z-10">
+        <p className="relative z-10 min-w-0 break-words px-4 text-sm text-slate-500 dark:text-white/60 [hyphens:manual] [overflow-wrap:break-word]">
           {challenge.duration} {t.dayChallenge || "day challenge"}
         </p>
       </motion.div>
 
       {/* Progress section - Premium */}
       <motion.div
-        className="rounded-2xl p-5 relative overflow-hidden bg-[linear-gradient(135deg,theme(colors.white/0.05)_0%,theme(colors.white/0.02)_100%)] shadow-[inset_0_1px_0_theme(colors.white/0.05)]"
+        className="relative min-w-0 overflow-hidden rounded-2xl p-5 bg-[linear-gradient(135deg,theme(colors.white/0.05)_0%,theme(colors.white/0.02)_100%)] shadow-[inset_0_1px_0_theme(colors.white/0.05)]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-medium text-slate-800 dark:text-white">
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-2 mb-4">
+          <span className="min-w-0 break-words text-sm font-medium text-slate-800 dark:text-white [hyphens:manual] [overflow-wrap:break-word]">
             {t.yourProgress || "Your Progress"}
           </span>
-          <span className="text-sm text-slate-500 dark:text-white/60">
+          <span className="min-w-0 break-words text-sm text-slate-500 dark:text-white/60 [hyphens:manual] [overflow-wrap:break-word]">
             {challenge.myProgress}/{challenge.duration} {t.days || "days"}
           </span>
         </div>
@@ -163,19 +163,19 @@ export function ChallengeDetailsView({
           />
         </div>
 
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-500 dark:text-white/60">
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-2 text-xs">
+          <span className="min-w-0 break-words text-slate-500 dark:text-white/60 [hyphens:manual] [overflow-wrap:break-word]">
             {progress}% {t.complete || "complete"}
           </span>
           {challenge.status === "active" && (
-            <span className="flex items-center gap-1 text-slate-500 dark:text-white/60">
-              <Clock className="w-3 h-3" aria-hidden="true" />
+            <span className="flex min-w-0 items-center gap-1 break-words text-slate-500 dark:text-white/60 [hyphens:manual] [overflow-wrap:break-word]">
+              <Clock className="w-3 h-3 shrink-0" aria-hidden="true" />
               {daysLeft} {t.daysLeft || "days left"}
             </span>
           )}
           {challenge.status === "completed" && (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-amber-700 dark:text-amber-300 bg-amber-500/20">
-              <Trophy className="w-3 h-3" aria-hidden="true" />
+            <span className="flex max-w-full min-w-0 items-center gap-1 whitespace-normal break-words px-2 py-0.5 rounded-full text-amber-700 dark:text-amber-300 bg-amber-500/20 [hyphens:manual] [overflow-wrap:break-word]">
+              <Trophy className="w-3 h-3 shrink-0" aria-hidden="true" />
               {t.challengeCompleted || "Challenge Complete!"}
             </span>
           )}
@@ -185,7 +185,7 @@ export function ChallengeDetailsView({
       {/* Motivational message */}
       <div
         className={cn(
-          "p-4 rounded-2xl text-center font-medium",
+          "min-w-0 break-words p-4 rounded-2xl text-center font-medium [hyphens:manual] [overflow-wrap:break-word]",
           challenge.status === "completed"
             ? "bg-accent/10 text-accent dark:bg-accent/20"
             : isAheadOfSchedule
@@ -200,26 +200,26 @@ export function ChallengeDetailsView({
 
       {/* Statistics */}
       {challenge.status === "active" && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-card rounded-xl p-3 border border-border/50 text-center">
-            <div className="text-2xl font-bold text-foreground">
+        <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-[repeat(auto-fit,minmax(7rem,1fr))]">
+          <div className="min-w-0 bg-card rounded-xl p-3 border border-border/50 text-center">
+            <div className="min-w-0 break-words text-2xl font-bold text-foreground">
               {daysPassed}
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="min-w-0 break-words text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
               {t.daysPassed || "Days Passed"}
             </div>
           </div>
-          <div className="bg-card rounded-xl p-3 border border-border/50 text-center">
-            <div className="text-2xl font-bold text-[hsl(var(--mood-good))]">
+          <div className="min-w-0 bg-card rounded-xl p-3 border border-border/50 text-center">
+            <div className="min-w-0 break-words text-2xl font-bold text-[hsl(var(--mood-good))]">
               {challenge.myProgress}
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="min-w-0 break-words text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
               {t.daysCompleted || "Completed"}
             </div>
           </div>
-          <div className="bg-card rounded-xl p-3 border border-border/50 text-center">
-            <div className="text-2xl font-bold text-foreground">{daysLeft}</div>
-            <div className="text-xs text-muted-foreground">
+          <div className="min-w-0 bg-card rounded-xl p-3 border border-border/50 text-center">
+            <div className="min-w-0 break-words text-2xl font-bold text-foreground">{daysLeft}</div>
+            <div className="min-w-0 break-words text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
               {t.daysRemaining || "Remaining"}
             </div>
           </div>
@@ -275,14 +275,14 @@ export function ChallengeDetailsView({
       </motion.div>
 
       {/* Actions */}
-      <div className="grid grid-cols-2 gap-3">
-        <Button variant="outline" onClick={handleDelete} className="h-12">
-          <Trash2 className="w-4 h-4 me-2" aria-hidden="true" />
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
+        <Button variant="outline" onClick={handleDelete} className="h-auto min-h-12 min-w-0 whitespace-normal break-words py-3">
+          <Trash2 className="w-4 h-4 me-2 shrink-0" aria-hidden="true" />
           {t.delete || "Delete"}
         </Button>
 
-        <Button onClick={throttledShare} disabled={isSharing} className="h-12">
-          <Share2 className="w-4 h-4 me-2" aria-hidden="true" />
+        <Button onClick={throttledShare} disabled={isSharing} className="h-auto min-h-12 min-w-0 whitespace-normal break-words py-3">
+          <Share2 className="w-4 h-4 me-2 shrink-0" aria-hidden="true" />
           {isSharing ? t.sharing || "Sharing..." : t.shareButton || "Share"}
         </Button>
       </div>

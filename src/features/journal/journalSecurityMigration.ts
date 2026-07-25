@@ -83,6 +83,8 @@ export interface JournalSecurityRemovalIntent {
   createdAt: number;
   status: "pending" | "queued" | "enqueue-failed";
   lastError?: string;
+  photos?: JournalSecurityMediaIntent[];
+  audios?: JournalSecurityMediaIntent[];
 }
 
 export interface ActivateJournalPasswordProtectionInput {
@@ -171,6 +173,8 @@ function isRemovalIntent(value: unknown): value is JournalSecurityRemovalIntent 
     typeof candidate.revision === "string" &&
     typeof candidate.ownerUserId === "string" &&
     typeof candidate.createdAt === "number" &&
+    (candidate.photos === undefined || Array.isArray(candidate.photos)) &&
+    (candidate.audios === undefined || Array.isArray(candidate.audios)) &&
     (candidate.status === "pending" ||
       candidate.status === "queued" ||
       candidate.status === "enqueue-failed")
@@ -196,9 +200,19 @@ export async function getJournalSecurityRemovalIntent(): Promise<JournalSecurity
 export async function hasPendingJournalSecurityMigrationForOwner(
   ownerUserId: string
 ): Promise<boolean> {
-  if (!ownerUserId) return false;
+  return (await getPendingJournalSecurityMigrationRevisionForOwner(ownerUserId)) !== null;
+}
+
+/**
+ * Stable identity for consent/account-boundary checks. A different revision is
+ * a newer migration and must never inherit a prior discard decision.
+ */
+export async function getPendingJournalSecurityMigrationRevisionForOwner(
+  ownerUserId: string,
+): Promise<string | null> {
+  if (!ownerUserId) return null;
   const intent = await getJournalSecurityMigrationIntent();
-  return intent?.ownerUserId === ownerUserId;
+  return intent?.ownerUserId === ownerUserId ? intent.revision : null;
 }
 
 export async function removeDeletedJournalArtifactsFromSecurityMigration(input: {
@@ -539,8 +553,8 @@ export async function removeJournalPasswordProtectionAtomically(
     );
     if (
       vaultRecord?.value &&
-      (!vaultKey ||
-        getJournalContentVaultKey() !== vaultKey ||
+      vaultKey &&
+      (getJournalContentVaultKey() !== vaultKey ||
         getJournalContentVaultRevision() !== persistedVaultRevision)
     ) {
       throw new Error("Unlock your diary before removing password protection.");
@@ -612,6 +626,12 @@ export async function removeJournalPasswordProtectionAtomically(
           ownerUserId,
           createdAt: updatedAt,
           status: "pending",
+          photos: photos
+            .filter((photo) => Boolean(photo.storagePath))
+            .map((photo) => ({ id: photo.id, previousStoragePath: photo.storagePath })),
+          audios: audios
+            .filter((audio) => Boolean(audio.storagePath))
+            .map((audio) => ({ id: audio.id, previousStoragePath: audio.storagePath })),
         }
       : null;
 
@@ -794,6 +814,38 @@ async function runJournalSecurityRemoval(
   const result = await syncWithCloud("merge", ownerUserId);
   if (result.status === "aborted") {
     throw new Error("Diary protection removal backup was interrupted");
+  }
+
+  let mediaIntent = await loadCurrentRemovalIntent(payload, ownerUserId);
+  for (const photo of [...(mediaIntent.photos ?? [])]) {
+    if (photo.previousStoragePath) {
+      await validateSyncOwner(ownerUserId, "Diary protection removal photo cleanup");
+      await deleteJournalMediaStoragePath(
+        "journal-photos",
+        photo.previousStoragePath,
+        ownerUserId,
+      );
+    }
+    mediaIntent = {
+      ...mediaIntent,
+      photos: (mediaIntent.photos ?? []).filter(({ id }) => id !== photo.id),
+    };
+    await persistRemovalIntent(mediaIntent, intent.revision);
+  }
+  for (const audio of [...(mediaIntent.audios ?? [])]) {
+    if (audio.previousStoragePath) {
+      await validateSyncOwner(ownerUserId, "Diary protection removal audio cleanup");
+      await deleteJournalMediaStoragePath(
+        "journal-audio",
+        audio.previousStoragePath,
+        ownerUserId,
+      );
+    }
+    mediaIntent = {
+      ...mediaIntent,
+      audios: (mediaIntent.audios ?? []).filter(({ id }) => id !== audio.id),
+    };
+    await persistRemovalIntent(mediaIntent, intent.revision);
   }
 
   await validateSyncOwner(ownerUserId, "Diary protection removal vault delete");

@@ -196,7 +196,7 @@ export function TypeSelector({
       >
         {ts.habitType}:
       </p>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(10rem*var(--font-scale,1))),1fr))] gap-2">
         {[
           {
             type: "boolean" as LoopHabitType,
@@ -243,7 +243,7 @@ export function TypeSelector({
             </span>
             <span
               className={cn(
-                "text-[10px] block mt-0.5",
+                "mt-0.5 block whitespace-normal break-words text-xs",
                 isPrimaryCTA
                   ? habitType === type
                     ? "text-white/70"
@@ -368,7 +368,7 @@ export function FrequencySelector({
           >
             {ts.habitScheduleRule || `${weeklyTargetCount}x this week`}
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(10rem*var(--font-scale,1))),1fr))] gap-2">
             {[
               {
                 mode: "flexiblePerPeriod" as HabitScheduleMode,
@@ -408,7 +408,9 @@ export function FrequencySelector({
                   whileTap={zenTap.card}
                 >
                   <span className="block text-xs font-semibold">{option.label}</span>
-                  <span className="mt-1 block text-[10px] leading-snug opacity-75">{option.hint}</span>
+                  <span className="mt-1 block whitespace-normal break-words text-xs leading-snug opacity-75">
+                    {option.hint}
+                  </span>
                 </motion.button>
               );
             })}
@@ -442,7 +444,7 @@ export function FrequencySelector({
                         );
                       }}
                       className={cn(
-                        "min-h-[44px] min-w-[44px] rounded-xl px-2 text-[10px] font-semibold motion-safe:transition-all",
+                        "min-h-[44px] min-w-[44px] rounded-xl px-2 text-xs font-semibold motion-safe:transition-all",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                         active
                           ? isPrimaryCTA
@@ -501,7 +503,7 @@ export function CategorySelector({
       >
         {ts.habitCategory}:
       </label>
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(7.5rem*var(--font-scale,1))),1fr))] gap-2">
         {habitCategories.map(({ id, icon, color }) => {
           const categoryIcon = isPrimaryCTA
             ? ({
@@ -524,7 +526,7 @@ export function CategorySelector({
               setSelectedCategory(id);
             }}
             className={cn(
-              "p-2 rounded-xl text-xs font-medium motion-safe:transition-all flex flex-col items-center gap-1",
+              "flex min-h-[44px] min-w-0 flex-col items-center gap-1 rounded-xl p-2 text-xs font-medium motion-safe:transition-all",
               selectedCategory === id
                 ? isPrimaryCTA
                   ? `bg-gradient-to-br ${color} text-white shadow-lg`
@@ -543,7 +545,7 @@ export function CategorySelector({
                 categoryIcon
               )}
             </span>
-            <span className="truncate w-full text-center">
+            <span className="w-full whitespace-normal break-words text-center">
               {categoryLabels[id]}
             </span>
           </motion.button>

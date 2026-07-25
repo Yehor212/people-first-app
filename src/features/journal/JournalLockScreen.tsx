@@ -3,6 +3,7 @@ import { Lock, Eye, EyeOff, AlertTriangle, Fingerprint } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatJournalDuration } from "./journalDateUtils";
 
 /** Constant-time string comparison to prevent timing attacks (CWE-208) */
 function timingSafeEqual(a: string, b: string): boolean {
@@ -40,7 +41,7 @@ export function JournalLockScreen({
   biometricAvailable,
   emailLockRemovalAvailable = true,
 }: JournalLockScreenProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -90,14 +91,6 @@ export function JournalLockScreen({
   useEffect(() => {
     inputRef.current?.focus();
   }, [step]);
-
-  // Auto-clear error message after 3s
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(""), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
 
   const triggerShake = () => {
     setShake(true);
@@ -289,7 +282,7 @@ export function JournalLockScreen({
           <p className="text-xs text-muted-foreground text-center mb-4 px-2">
             {emailLockRemovalAvailable
               ? ts.journalLockHint ||
-                "This password encrypts your diary on this device. ZenFlow cannot reveal it; verified email can remove the lock in supported sign-in flows."
+                "This password encrypts diary writing and attachments on this device. Keep it safe; ZenFlow cannot reveal it, and email verification cannot decrypt protected entries."
               : ts.journalLockHintLocalOnly ||
                 "This password encrypts your diary on this device. Keep it somewhere safe; ZenFlow cannot reveal or recover it."}
           </p>
@@ -317,13 +310,12 @@ export function JournalLockScreen({
               ref={inputRef}
               type={showPassword ? "text" : "password"}
               value={step === "current" ? currentPassword : step === "confirm" ? confirm : password}
-              onChange={(e) =>
-                step === "current"
-                  ? setCurrentPassword(e.target.value)
-                  : step === "confirm"
-                    ? setConfirm(e.target.value)
-                    : setPassword(e.target.value)
-              }
+              onChange={(e) => {
+                setError("");
+                if (step === "current") setCurrentPassword(e.target.value);
+                else if (step === "confirm") setConfirm(e.target.value);
+                else setPassword(e.target.value);
+              }}
               placeholder={passwordInputLabel}
               className={cn(
                 "w-full px-4 py-3 pe-14 rounded-xl text-sm",
@@ -369,7 +361,11 @@ export function JournalLockScreen({
 
           {countdown > 0 && (
             <p id={passwordCooldownId} role="status" aria-live="polite" className="text-xs text-orange-500 text-center">
-              {ts.journalPasswordCooldown || "Too many attempts. Wait"} {countdown}s
+              {formatJournalDuration(
+                ts.journalPasswordCooldown || "Too many attempts. Wait {duration}.",
+                countdown,
+                language,
+              )}
             </p>
           )}
 
@@ -429,7 +425,7 @@ export function JournalLockScreen({
         {mode === "unlock" && onForgotPassword && !emailLockRemovalAvailable && (
           <p className="mt-3 rounded-xl bg-muted/45 px-3 py-2 text-center text-xs leading-relaxed text-muted-foreground">
             {ts.journalResetDesktopUnavailable ||
-              "Email lock removal is available in the web or mobile app. Unlock with your diary password on desktop."}
+              "Email verification can remove the lock in the web or mobile app, but it cannot decrypt protected entries. On desktop, use the diary password."}
           </p>
         )}
 

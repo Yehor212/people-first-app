@@ -24,15 +24,15 @@ export const FriendProfileCard = memo(function FriendProfileCard({
     <>
       {/* My Profile Card */}
       <div className="p-4 border-b bg-card/50">
-        <div className="flex items-center gap-4 mb-3">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl">
+        <div className="mb-3 flex items-start gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-2xl">
             {myProfile.avatarEmoji}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-foreground truncate">
+            <p className="font-semibold text-foreground [overflow-wrap:anywhere]">
               {myProfile.displayName}
             </p>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Flame className="w-4 h-4 text-orange-500" />
                 {myProfile.currentStreak}
@@ -47,14 +47,20 @@ export const FriendProfileCard = memo(function FriendProfileCard({
 
         {/* Friend Code */}
         <div className="flex items-center gap-2">
-          <div className="flex-1 bg-background rounded-xl px-3 py-2 font-mono text-sm text-center">
-            {myProfile.friendCode}
-          </div>
+          <input
+            type="text"
+            readOnly
+            value={myProfile.friendCode}
+            className="min-w-0 flex-1 select-all overflow-x-auto overscroll-x-contain rounded-xl border-0 bg-background px-3 py-2 text-center font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            aria-label={t.friendCode || 'Friend code'}
+            tabIndex={0}
+            onFocus={(event) => event.currentTarget.select()}
+          />
           <Button
             variant="outline"
             size="icon"
             onClick={onCopy}
-            className="h-10 w-10 shrink-0"
+            className="h-11 w-11 shrink-0"
             aria-label={copied ? (t.codeCopied || 'Copied') : (t.copyCode || 'Copy code')}
           >
             {copied ? (
@@ -68,7 +74,7 @@ export const FriendProfileCard = memo(function FriendProfileCard({
             size="icon"
             onClick={onShare}
             disabled={isSharing}
-            className="h-10 w-10 shrink-0"
+            className="h-11 w-11 shrink-0"
             aria-label={t.shareButton || 'Share'}
           >
             {isSharing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Share2 className="w-4 h-4" />}
@@ -90,25 +96,34 @@ export const FriendProfileCard = memo(function FriendProfileCard({
                 {t.privacySettings || 'Privacy Settings'}
               </p>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">{t.shareStreak || 'Share streak'}</span>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="min-w-0 break-words text-sm">
+                    {t.shareStreak || 'Share streak'}
+                  </span>
                   <Switch
                     checked={myProfile.shareStreak}
                     onCheckedChange={(v) => onPrivacyChange('shareStreak', v)}
+                    className="shrink-0"
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">{t.shareLevel || 'Share level'}</span>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="min-w-0 break-words text-sm">
+                    {t.shareLevel || 'Share level'}
+                  </span>
                   <Switch
                     checked={myProfile.shareLevel}
                     onCheckedChange={(v) => onPrivacyChange('shareLevel', v)}
+                    className="shrink-0"
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">{t.shareActivity || 'Share activity'}</span>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="min-w-0 break-words text-sm">
+                    {t.shareActivity || 'Share activity'}
+                  </span>
                   <Switch
                     checked={myProfile.shareActivity}
                     onCheckedChange={(v) => onPrivacyChange('shareActivity', v)}
+                    className="shrink-0"
                   />
                 </div>
               </div>

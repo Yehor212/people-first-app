@@ -60,21 +60,28 @@ export function TrendsTab({
           value={range}
           onChange={onRangeChange}
           aria-label={t.statsRange || 'Statistics range'}
+          fullWidth
           className="mb-4"
         />
 
-        <div className="grid grid-cols-2 xs:grid-cols-3 gap-2 sm:gap-4">
+        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-3 sm:gap-4">
           <div className="text-center p-3 sm:p-4 bg-secondary/60 rounded-xl">
             <p className="text-xl sm:text-2xl font-bold text-primary">{stats.thisMonthMoods}</p>
-            <p className="text-xs text-muted-foreground truncate">{t.moodEntries}</p>
+            <p className="whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
+              {t.moodEntries}
+            </p>
           </div>
           <div className="text-center p-3 sm:p-4 bg-secondary/60 rounded-xl">
             <p className="text-xl sm:text-2xl font-bold text-accent">{stats.thisMonthFocusMinutes}</p>
-            <p className="text-xs text-muted-foreground truncate">{t.focusMinutes}</p>
+            <p className="whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
+              {t.focusMinutes}
+            </p>
           </div>
-          <div className="text-center p-3 sm:p-4 bg-secondary/60 rounded-xl col-span-2 xs:col-span-1">
+          <div className="text-center p-3 sm:p-4 bg-secondary/60 rounded-xl">
             <p className="text-xl sm:text-2xl font-bold text-mood-good">{stats.thisMonthGratitude}</p>
-            <p className="text-xs text-muted-foreground truncate">{t.gratitudes}</p>
+            <p className="whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
+              {t.gratitudes}
+            </p>
           </div>
         </div>
       </Card>
@@ -93,7 +100,7 @@ export function TrendsTab({
       />
 
       {/* Mood Weather + Week Crystal */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 min-[640px]:grid-cols-2">
         <MoodWeather
           mood={currentWeatherInput.mood}
           emotion={currentWeatherInput.emotion}

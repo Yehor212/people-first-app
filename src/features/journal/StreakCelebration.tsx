@@ -2,33 +2,22 @@ import { memo, useEffect, useMemo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { springs } from "@/config/animations";
 import { hapticSuccess } from "@/lib/haptics";
+import { formatLocalizedCount } from "./journalWordCount";
+import { getTranslations } from "@/i18n";
+import type { Language, TranslationStrings } from "@/i18n/types";
 
 interface StreakCelebrationProps {
   streak: number;
   onDone: () => void;
+  language?: Language;
+  translations?: TranslationStrings;
 }
-
-const MILESTONES: Record<number, string> = {
-  7: "Great start!",
-  14: "Two weeks strong!",
-  30: "A whole month!",
-  60: "Incredible!",
-  100: "Legend!",
-};
 
 const PARTICLE_COLORS = [
   "hsl(var(--primary))",
   "hsl(var(--accent))",
   "hsl(var(--warning))",
 ];
-
-function getMessage(streak: number): string {
-  if (streak >= 100) return MILESTONES[100];
-  if (streak >= 60) return MILESTONES[60];
-  if (streak >= 30) return MILESTONES[30];
-  if (streak >= 14) return MILESTONES[14];
-  return MILESTONES[7];
-}
 
 interface ParticleConfig {
   x: number;
@@ -57,11 +46,25 @@ const bounceSpring = { type: "spring" as const, stiffness: 400, damping: 15 };
 export const StreakCelebration = memo(function StreakCelebration({
   streak,
   onDone,
+  language = "en",
+  translations,
 }: StreakCelebrationProps) {
+  const ts = translations ?? getTranslations(language);
   const reducedMotion = useReducedMotion();
   const particles = useMemo(generateParticles, []);
-  const message = getMessage(streak);
-  const label = `${streak} day streak! ${message}`;
+  const message = streak >= 30
+    ? ts.shareAchievement30
+    : streak >= 14
+      ? ts.shareAchievement14
+      : ts.shareAchievement7;
+  const streakLabel = formatLocalizedCount(
+    streak,
+    language,
+    ts,
+    "journalStreakCount",
+    ts.journalDayStreak,
+  );
+  const label = `${streakLabel}. ${message}`;
 
   useEffect(() => {
     void hapticSuccess();
@@ -147,4 +150,3 @@ export const StreakCelebration = memo(function StreakCelebration({
     </div>
   );
 });
-

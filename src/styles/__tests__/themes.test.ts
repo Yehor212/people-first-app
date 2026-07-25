@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const themesCss = readFileSync(resolve(process.cwd(), "src/styles/themes.css"), "utf8");
+const normalizedThemesCss = themesCss.replace(/\s+/g, " ");
 
 function blockFor(selector: string) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -23,32 +24,34 @@ describe("V2 data-theme glass tokens", () => {
   });
 
   it("keeps V2 habits night cards role-colored instead of black-white", () => {
-    expect(themesCss).toContain(
+    expect(normalizedThemesCss).toContain(
       ':root[data-theme="ink"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"]',
     );
-    expect(themesCss).toContain(
+    expect(normalizedThemesCss).toContain(
       ':root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"]',
     );
-    expect(themesCss).toContain(
+    expect(normalizedThemesCss).toContain(
       ':root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-chip="ritual-library-tab"][aria-pressed="true"]',
     );
-    expect(themesCss).toContain(':root[data-theme="ink"] .habit-growth-group');
-    expect(themesCss).toContain(':root[data-theme="ink"] [data-card="ritual-weekly-card"]');
-    expect(themesCss).toContain(
+    expect(normalizedThemesCss).toContain(':root[data-theme="ink"] .habit-growth-group');
+    expect(normalizedThemesCss).toContain(
+      ':root[data-theme="ink"] [data-card="ritual-weekly-card"]',
+    );
+    expect(normalizedThemesCss).toContain(
       ':root[data-theme="ink"] [data-card="ritual-weekly-card"] [data-slot="weekly-stats"]',
     );
-    expect(themesCss).toContain(
+    expect(normalizedThemesCss).toContain(
       ':root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-template-picker-card"]',
     );
-    expect(themesCss).toContain(
+    expect(normalizedThemesCss).toContain(
       ':root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"]',
     );
     expect(themesCss).toContain('[data-card="ritual-weekly-card"] {');
     expect(themesCss).toContain("background: var(--habit-card-background);");
     expect(themesCss).toContain("hsl(var(--habit-role) / 0.34)");
     expect(themesCss).toContain("hsl(var(--zf-role-space) / 0.18)");
-    expect(themesCss).toContain("hsl(var(--habit-role) / 0.30)");
-    expect(themesCss).toContain("hsl(var(--habit-role) / 0.40)");
+    expect(themesCss).toMatch(/hsl\(var\(--habit-role\) \/ 0\.30?\)/);
+    expect(themesCss).toMatch(/hsl\(var\(--habit-role\) \/ 0\.40?\)/);
     expect(themesCss).toContain("hsl(var(--habit-role) / 0.44)");
     expect(themesCss).toContain("hsl(var(--habit-role) / 0.28)");
     expect(themesCss).not.toContain('[data-slot="quickpick-symbol"] {\n  display: none;');
@@ -68,13 +71,13 @@ describe("V2 data-theme glass tokens", () => {
     expect(themesCss.slice(weeklyNightStart, weeklyNightEnd)).not.toContain("!important");
   });
   it("keeps native habit template picker source charm frames transparent across themes", () => {
-    expect(themesCss).toContain(
+    expect(normalizedThemesCss).toContain(
       ':root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-template-picker-icon="true"][data-icon-frame="real-icon-duo-native"]',
     );
-    expect(themesCss).toContain(
+    expect(normalizedThemesCss).toContain(
       ':root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"]',
     );
-    expect(themesCss).toContain(
+    expect(normalizedThemesCss).toContain(
       ':root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"]',
     );
     expect(themesCss).toContain("background-color: transparent;");

@@ -46,6 +46,7 @@ describe('DialogMotion', () => {
   it('renders children when open (reduced-motion path)', () => {
     useShouldAnimateMock.mockReturnValue(false);
     render(<OpenDialog>Body Content</OpenDialog>);
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
     expect(screen.getByText('Test Title')).toBeInTheDocument();
     expect(screen.getByText('Body Content')).toBeInTheDocument();
   });
@@ -68,6 +69,7 @@ describe('DialogMotion', () => {
   it('description and title have proper aria wiring', () => {
     useShouldAnimateMock.mockReturnValue(true);
     render(<OpenDialog />);
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
     expect(screen.getByText('Test Title')).toBeInTheDocument();
     expect(screen.getByText('Description')).toBeInTheDocument();
   });

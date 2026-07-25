@@ -50,6 +50,19 @@ export const DIARY_THEME_NAMES: DiaryThemeName[] = ['light', 'dark', 'sepia', 'f
 export const DIARY_FONT_NAMES: DiaryFontName[] = ['caveat', 'cormorant', 'outfit', 'dancing'];
 
 export const JOURNAL_DRAFT_ENTRY_ID = "__draft__";
+const JOURNAL_DRAFT_MEDIA_OWNER_PREFIX = `${JOURNAL_DRAFT_ENTRY_ID}:`;
+
+export function getJournalDraftMediaOwnerId(entryId: string | null): string {
+  return `${JOURNAL_DRAFT_MEDIA_OWNER_PREFIX}${entryId || "new"}`;
+}
+
+export function isJournalDraftMediaOwnerId(entryId: string): boolean {
+  return (
+    entryId === JOURNAL_DRAFT_ENTRY_ID ||
+    (entryId.startsWith(JOURNAL_DRAFT_MEDIA_OWNER_PREFIX) &&
+      entryId.length > JOURNAL_DRAFT_MEDIA_OWNER_PREFIX.length)
+  );
+}
 
 // ── Atmospheric Background Pattern (CSS mesh gradients over canvas) ──
 
@@ -111,7 +124,16 @@ export interface JournalEntry {
   bgIntensity?: BackgroundIntensity; // canvas background (optional, undefined = full)
   particleSpeed?: ParticleSpeed; // particle movement speed (optional, undefined = slow)
   fontSize?: 'small' | 'medium' | 'large'; // editor font size preference
-  photoLayout?: Record<string, { x: number; y: number; width: number }>; // free-form photo positions
+  photoLayout?: Record<
+    string,
+    {
+      x: number;
+      y: number;
+      width: number;
+      description?: string;
+      inGallery?: boolean;
+    }
+  >; // free-form placement retained while a photo is temporarily shown in the gallery
   createdAt: number;
   updatedAt: number;
 }
@@ -314,10 +336,32 @@ export const MAX_AUDIO_DURATION_SEC = 300; // 5 minutes
 export const JOURNAL_PASSWORD_KEY = SK.JOURNAL_PASSWORD;
 export const JOURNAL_VAULT_KEY_SETTING_KEY = SK.JOURNAL_VAULT_KEY;
 
+type WordSegment = { isWordLike?: boolean };
+type WordSegmenterConstructor = new (
+  locales?: string | string[],
+  options?: { granularity: 'word' },
+) => { segment(input: string): Iterable<WordSegment> };
+
 /** Count words in text. Handles empty/whitespace strings. */
 export function countWords(text: string): number {
   if (!text || !text.trim()) return 0;
-  return text.trim().split(/\s+/).filter(Boolean).length;
+  const normalized = text.trim();
+  const Segmenter = (Intl as typeof Intl & { Segmenter?: WordSegmenterConstructor }).Segmenter;
+  if (Segmenter) {
+    try {
+      const segmenter = new Segmenter(undefined, { granularity: 'word' });
+      return Array.from(segmenter.segment(normalized)).filter((segment) => segment.isWordLike).length;
+    } catch {
+      // Some embedded WebViews expose incomplete Intl implementations; use the Unicode fallback below.
+    }
+  }
+
+  const cjkCharacters = normalized.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu) ?? [];
+  const remainingWords = normalized
+    .replace(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
+  return cjkCharacters.length + remainingWords.length;
 }
 
 /** Count words in HTML content (strips tags first). */
@@ -329,3 +373,7 @@ export function countWordsHtml(html: string): number {
 
 export const FONT_SIZES = { small: 15, medium: 18, large: 22 } as const;
 export type FontSizeName = keyof typeof FONT_SIZES;
+
+export function getScaledJournalFontSize(size: FontSizeName): string {
+  return `calc(${FONT_SIZES[size]}px * var(--font-scale, 1))`;
+}

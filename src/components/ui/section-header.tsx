@@ -54,21 +54,45 @@ export function SectionHeader({
   const config = sizeConfig[size];
 
   return (
-    <div className={cn("flex items-center", config.wrapper, className)}>
+    <div
+      className={cn(
+        "grid grid-cols-[auto_minmax(0,1fr)] items-start min-[420px]:grid-cols-[auto_minmax(0,1fr)_auto]",
+        config.wrapper,
+        className
+      )}
+    >
       {Icon && (
         <Icon className={cn(config.icon, iconColorMap[iconGradient], "flex-shrink-0")} />
       )}
 
-      <div className="flex-1 min-w-0">
-        <h3 className={cn(config.title, "text-foreground truncate")}>{title}</h3>
+      <div
+        className={cn(
+          "min-w-0",
+          Icon
+            ? "col-start-2"
+            : "col-span-2 min-[420px]:col-start-1 min-[420px]:col-end-3"
+        )}
+      >
+        <h3 className={cn(config.title, "whitespace-normal break-words text-foreground")}>
+          {title}
+        </h3>
         {subtitle && (
-          <p className={cn(config.subtitle, "text-muted-foreground truncate mt-0.5")}>
+          <p
+            className={cn(
+              config.subtitle,
+              "mt-0.5 whitespace-normal break-words text-muted-foreground"
+            )}
+          >
             {subtitle}
           </p>
         )}
       </div>
 
-      {action && <div className="flex-shrink-0">{action}</div>}
+      {action && (
+        <div className="col-span-2 min-w-0 min-[420px]:col-span-1 min-[420px]:col-start-3 min-[420px]:justify-self-end">
+          {action}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "orchestra_id": "zenflow-codex-exact-ten",
   "display_name": "ZenFlow Codex Exact-Ten Persistent Agent Orchestra",
-  "last_reviewed": "2026-07-12",
+  "last_reviewed": "2026-07-20",
   "supported_locales": [
     "en",
     "uk",
@@ -13,8 +13,270 @@
     "ar",
     "he"
   ],
+  "assurance_protocol": {
+    "version": "2.2.1-e1",
+    "base_contract_sha256": "de23c3ff413e14535bef3f05a9be0a8b9f5448b2f16c3db524722070fccfcc42",
+    "receipt_schema_version": "zenflow-ten-lens-role-receipt-v2.2.1-e1",
+    "evidence_ledger_schema_version": "zenflow-ten-lens-evidence-ledger-v2.2.1-e1",
+    "local_authority_verification": "NO_LOCAL_AUTHORIZATION_WITHOUT_EXTERNAL_AUTHENTICATION",
+    "local_positive_promotion": "COMPLETE_WITH_UNVERIFIED_UNTIL_CURRENT_EVIDENCE_IS_INDEPENDENTLY_RECHECKED",
+    "accepted_risk_status_aliases": {
+      "COMPLETE_WITH_ACCEPTED_RISK": "AUTHORIZED_WITH_ACCEPTED_RISK"
+    },
+    "aggregate_precedence": [
+      "INTEGRITY_FAILED",
+      "BLOCKED",
+      "NEEDS_AUTHORITY",
+      "EXECUTION_INCOMPLETE",
+      "AUTHORIZED_WITH_ACCEPTED_RISK",
+      "COMPLETE_WITH_UNVERIFIED",
+      "GO_FOR_PROVEN_SCOPE"
+    ],
+    "risk_classification_registry": {
+      "version": "zenflow-risk-registry-v2.2.1-e1",
+      "algorithm_version": "evidence-first-adaptive-v2",
+      "default_task_class": "M1_MATERIAL",
+      "routing_modes": {
+        "default": "EVIDENCE_FIRST_ADAPTIVE",
+        "rollback": "FIXED_FULL_TEN"
+      },
+      "discovery_policy": "For an abstract request, the root coordinator first inspects exact local routes, symbols, state, copy, platforms, and changed files. It records evidence-backed SELECTED or EXCLUDED decisions for all ten roles, then invokes only matched owners. Unresolved protected ambiguity escalates through MATERIAL_AMBIGUITY; absence of evidence never becomes a PASS.",
+      "m0_allowlisted_transformations": ["DOC_TYPO_NO_SEMANTIC_DELTA", "CANONICAL_GENERATED_COUNT", "FORMAT_ONLY_AST_EQUIVALENT"],
+      "protected_paths": ["AGENTS.md", "package.json", ".codex/**", "docs/ai/**", "config/persistent-agent-orchestra*", "scripts/**"],
+      "protected_symbols": ["assurance_protocol", "risk_classification_registry", "aggregateAssuranceRun", "validateRunManifest"],
+      "protected_capabilities": ["AGENT_PERMISSION", "EXTERNAL_WRITE", "PRODUCTION_ACCESS"],
+      "protected_data_effects": ["AUTH", "PRIVACY", "RETENTION", "DELETION", "MIGRATION", "PRODUCTION_DATA"],
+      "protected_external_actions": ["DEPLOY", "PUSH", "RELEASE", "STORE_SUBMISSION"],
+      "protected_schema_changes": ["PERSISTENCE_SCHEMA", "SYNC_SCHEMA", "ASSURANCE_SCHEMA"],
+      "protected_permission_changes": ["SANDBOX", "NETWORK", "FILESYSTEM", "TOOL_CAPABILITY"],
+      "protected_release_surfaces": ["WEB_PWA", "ANDROID", "IOS", "DESKTOP", "STORE_RELEASE"],
+      "platform_activation_rules": {"ANY_NATIVE_OR_RELEASE_SURFACE": "M2_PROTECTED_HIGH_RISK"},
+      "classes": {
+        "M0_MECHANICAL": {
+          "all_ten_required": false,
+          "mandatory_role_ids": [
+            "coordinator-teamlead",
+            "qa-evidence-release-verification"
+          ]
+        },
+        "M1_MATERIAL": {
+          "all_ten_required": false,
+          "mandatory_role_ids": [
+            "coordinator-teamlead",
+            "qa-evidence-release-verification"
+          ]
+        },
+        "M2_PROTECTED_HIGH_RISK": {
+          "all_ten_required": false,
+          "mandatory_role_ids": [
+            "coordinator-teamlead",
+            "qa-evidence-release-verification",
+            "independent-blind-spot-sentinel"
+          ]
+        }
+      },
+      "triggers": [
+        {
+          "id": "MECHANICAL_ONLY",
+          "task_class": "M0_MECHANICAL",
+          "role_ids": [
+            "qa-evidence-release-verification"
+          ]
+        },
+        {
+          "id": "GOVERNANCE_OR_ORCHESTRATION",
+          "task_class": "M2_PROTECTED_HIGH_RISK",
+          "role_ids": [
+            "logic-causality-state-coherence",
+            "security-privacy-agent-trust"
+          ]
+        },
+        {
+          "id": "PROTECTED_SURFACE",
+          "task_class": "M2_PROTECTED_HIGH_RISK",
+          "role_ids": [
+            "technical-architecture-data-cross-platform",
+            "security-privacy-agent-trust"
+          ]
+        },
+        {
+          "id": "BEST_PRACTICES_OR_COMPLETENESS",
+          "task_class": "M2_PROTECTED_HIGH_RISK",
+          "role_ids": [
+            "independent-blind-spot-sentinel"
+          ]
+        },
+        {
+          "id": "DEEP_AUDIT",
+          "task_class": "M2_PROTECTED_HIGH_RISK",
+          "role_ids": [
+            "independent-blind-spot-sentinel"
+          ],
+          "full_council": true
+        },
+        {
+          "id": "MATERIAL_AMBIGUITY",
+          "task_class": "M1_MATERIAL",
+          "role_ids": [
+            "logic-causality-state-coherence",
+            "independent-blind-spot-sentinel"
+          ]
+        },
+        {
+          "id": "CONCRETE_EMOTIONAL_OR_CLINICAL_PRODUCT_CLAIM",
+          "task_class": "M1_MATERIAL",
+          "role_ids": [
+            "psychology-human-factors-emotional-safety"
+          ]
+        },
+        {
+          "id": "AGENCY_PRESSURE_INTERRUPTION_RECOVERY",
+          "task_class": "M1_MATERIAL",
+          "role_ids": [
+            "psychology-human-factors-emotional-safety"
+          ]
+        },
+        {
+          "id": "CAUSAL_STATE_OR_POLICY_COHERENCE",
+          "task_class": "M1_MATERIAL",
+          "role_ids": [
+            "logic-causality-state-coherence"
+          ]
+        },
+        {
+          "id": "UI_ACCESSIBILITY_I18N",
+          "task_class": "M1_MATERIAL",
+          "role_ids": [
+            "interaction-accessibility-readability-localization-culture"
+          ]
+        },
+        {
+          "id": "ARCHITECTURE_PERSISTENCE_SYNC_MIGRATION",
+          "task_class": "M1_MATERIAL",
+          "role_ids": [
+            "technical-architecture-data-cross-platform"
+          ]
+        },
+        {
+          "id": "SECURITY_PRIVACY_AUTH_EXTERNAL_WRITE",
+          "task_class": "M1_MATERIAL",
+          "role_ids": [
+            "security-privacy-agent-trust"
+          ]
+        },
+        {
+          "id": "PERFORMANCE_RELIABILITY_LIFECYCLE",
+          "task_class": "M1_MATERIAL",
+          "role_ids": [
+            "performance-reliability-operations"
+          ]
+        },
+        {
+          "id": "PRODUCT_DISCOVERY_VISUAL_ACCEPTANCE",
+          "task_class": "M1_MATERIAL",
+          "role_ids": [
+            "product-discovery-visual-craft-experience-quality"
+          ]
+        }
+      ]
+    },
+    "compact_receipt_contract": "Return one strict receipt with decision and ask_kind; owned blocking claims with assurance status and evidence IDs; execution mode, state, and result; closure status; proven, unverified, and not-applicable scope IDs. Risk acceptance never changes evidence resolution.",
+    "evaluation": {
+      "canonical_storage": "PORTABLE_REPOSITORY_LOCAL_ARTIFACTS",
+      "legacy_evals_platform": "DEPRECATED_TRANSITION",
+      "promotion_status": "CANDIDATE_CORE_IMPLEMENTED_RUNTIME_AND_SUPERIORITY_UNVERIFIED",
+      "minimum_total_token_reduction_percent": 5,
+      "test_only_controls": "POSITIVE_AND_NEGATIVE_STRUCTURAL_ONLY",
+      "runtime_adapter_status": "OPERATOR_ASSISTED_PREPARE_AND_AGGREGATE_ONLY"
+    },
+    "role_ownership_boundaries": {
+      "psychology": "Owns autonomy, pressure, shame, emotional safety, non-clinical hypotheses, monitoring, redress, emotional-safety success criteria, and harm or rollback thresholds; does not own WCAG, locale, cultural acceptance, broad product value, diagnosis, or treatment.",
+      "accessibility_localization": "Owns WCAG, assistive technology, readability, locale integrity, RTL and bidi, and cultural-risk escalation; does not infer lived acceptance.",
+      "product_experience": "Owns current user failure, value hypothesis, craft, non-goal, success and kill criteria; does not infer user feelings or clinical safety."
+    },
+    "scope_ownership_registry": {
+      "coordinator-teamlead": [
+        "coordination.",
+        "routing.",
+        "integration."
+      ],
+      "psychology-human-factors-emotional-safety": [
+        "psychology.",
+        "human_factors.",
+        "emotional_safety.",
+        "motivation."
+      ],
+      "logic-causality-state-coherence": [
+        "logic.",
+        "causality.",
+        "state."
+      ],
+      "interaction-accessibility-readability-localization-culture": [
+        "accessibility.",
+        "wcag.",
+        "assistive_technology.",
+        "readability.",
+        "locale.",
+        "rtl.",
+        "bidi.",
+        "culture."
+      ],
+      "technical-architecture-data-cross-platform": [
+        "architecture.",
+        "data.",
+        "storage.",
+        "sync.",
+        "platform.",
+        "migration."
+      ],
+      "security-privacy-agent-trust": [
+        "security.",
+        "privacy.",
+        "auth.",
+        "agent_trust."
+      ],
+      "performance-reliability-operations": [
+        "performance.",
+        "reliability.",
+        "operations.",
+        "lifecycle."
+      ],
+      "qa-evidence-release-verification": [
+        "qa.",
+        "evidence.",
+        "release.",
+        "verification."
+      ],
+      "product-discovery-visual-craft-experience-quality": [
+        "product.",
+        "experience.",
+        "visual_craft.",
+        "value."
+      ],
+      "independent-blind-spot-sentinel": [
+        "blind_spot.",
+        "closure_audit.",
+        "integrity_audit."
+      ]
+    },
+    "privacy": {
+      "required_runtime_channels": [
+        "CODEX_HISTORY",
+        "CODEX_LOGS",
+        "CODEX_OTEL",
+        "AGENTS_SDK_TRACES",
+        "SUBAGENT_STATE",
+        "SHELL_LOGS",
+        "CI_ARTIFACTS",
+        "TEMPORARY_ARTIFACTS",
+        "HOSTED_PRODUCT_RETENTION"
+      ],
+      "raw_default": "REDACTED_STRUCTURED_RECEIPTS",
+      "sensitive_run_rule": "Fail closed unless every persistence channel is inventoried and sensitive data is excluded from any unverified channel."
+    }
+  },
   "source_review": {
-    "policy": "Official and primary sources establish bounded applicability only. They never prove local conformance, runtime permission enforcement, human acceptance, clinical safety, legal compliance, native-speaker approval, device behavior, or release readiness. Operational and normative sources must be refreshed before max_age_days expires; research sources that age out make the dependent claim UNVERIFIED until refreshed.",
+    "policy": "Official and primary sources establish bounded applicability only. They never prove local conformance, runtime permission enforcement, human acceptance, clinical safety, legal compliance, native-speaker approval, device behavior, or release readiness. Current non-research source records must be refreshed before max_age_days expires; PEER_REVIEWED_RESEARCH that ages out makes dependent empirical claims UNVERIFIED until refreshed.",
     "sources": [
       {
         "id": "openai-codex-subagents",
@@ -22,7 +284,6 @@
         "url": "https://developers.openai.com/codex/subagents",
         "reviewed_on": "2026-07-12",
         "max_age_days": 90,
-        "classification": "operational",
         "volatility": "high",
         "applicability": "Supports Codex-only project custom-agent identities, bounded parallel delegation, and the cost of specialist fan-out; it does not prove that any generated ZenFlow profile loaded or inherited the intended permissions.",
         "roles": [
@@ -35,7 +296,29 @@
           "Codex subagent or custom-agent behavior changes",
           "execution topology, concurrency, or profile format changes",
           "90-day active-maintenance review"
-        ]
+        ],
+        "authority_type": "OFFICIAL_OPERATIONAL_DOCUMENTATION",
+        "document_status": "CURRENT",
+        "evidence_role": "IMPLEMENTATION_GUIDANCE",
+        "applicability_strength": "RECOMMENDED",
+        "observed_canonical_url": "https://developers.openai.com/codex/subagents",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "b53ecc5e2b5547db6895de8c5c0190b53c2364e915842dd575af582a645e6ab8",
+        "affected_platforms": [
+          "AGENT_GOVERNANCE"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Codex subagent or custom-agent behavior changes",
+          "execution topology, concurrency, or profile format changes",
+          "90-day active-maintenance review"
+        ],
+        "source_record_hash": "a447b8569f191ca0b74197a288bc7150e601081e5faa9b38dd3518c422baa99b"
       },
       {
         "id": "openai-codex-config-reference",
@@ -43,7 +326,6 @@
         "url": "https://developers.openai.com/codex/config-reference",
         "reviewed_on": "2026-07-12",
         "max_age_days": 90,
-        "classification": "operational",
         "volatility": "high",
         "applicability": "Supports the current native profile keys and the declared read-only sandbox setting generated from READ_ONLY_INTENT; effective isolation remains UNVERIFIED until a current runtime probe.",
         "roles": [
@@ -55,7 +337,29 @@
           "Codex configuration keys or sandbox behavior changes",
           "profile generation or runtime-loading changes",
           "90-day active-maintenance review"
-        ]
+        ],
+        "authority_type": "OFFICIAL_OPERATIONAL_DOCUMENTATION",
+        "document_status": "CURRENT",
+        "evidence_role": "IMPLEMENTATION_GUIDANCE",
+        "applicability_strength": "RECOMMENDED",
+        "observed_canonical_url": "https://developers.openai.com/codex/config-reference",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "ef795bcc84033ef84402afe8094dcaab88139d5d4649c3851206dea06400594d",
+        "affected_platforms": [
+          "AGENT_GOVERNANCE"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Codex configuration keys or sandbox behavior changes",
+          "profile generation or runtime-loading changes",
+          "90-day active-maintenance review"
+        ],
+        "source_record_hash": "c200b414018f142ff50bc5c87d685e7d039662b08be7138d19803d44395af88e"
       },
       {
         "id": "openai-prompt-engineering",
@@ -63,7 +367,6 @@
         "url": "https://developers.openai.com/api/docs/guides/prompt-engineering",
         "reviewed_on": "2026-07-12",
         "max_age_days": 90,
-        "classification": "operational",
         "volatility": "high",
         "applicability": "Supports structured instructions, explicit context boundaries, and eval-linked prompt maintenance; it does not grade semantic quality or authorize model output as evidence.",
         "roles": [
@@ -82,7 +385,29 @@
           "Role prompt or output schema changes",
           "evaluation reveals repeated semantic misses",
           "90-day active-maintenance review"
-        ]
+        ],
+        "authority_type": "OFFICIAL_OPERATIONAL_DOCUMENTATION",
+        "document_status": "CURRENT",
+        "evidence_role": "IMPLEMENTATION_GUIDANCE",
+        "applicability_strength": "RECOMMENDED",
+        "observed_canonical_url": "https://developers.openai.com/api/docs/guides/prompt-engineering",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "cae041d43fd5354cd398b406a427e09e658d8ac435b8a3f1ac069212b13c6422",
+        "affected_platforms": [
+          "AGENT_GOVERNANCE"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Role prompt or output schema changes",
+          "evaluation reveals repeated semantic misses",
+          "90-day active-maintenance review"
+        ],
+        "source_record_hash": "155bb609caf7e7ffcc041698a81485de3f288d103cc23f8d2cd3d07e652e97a8"
       },
       {
         "id": "openai-evaluation-best-practices",
@@ -90,8 +415,12 @@
         "url": "https://developers.openai.com/api/docs/guides/evaluation-best-practices",
         "reviewed_on": "2026-07-12",
         "max_age_days": 90,
-        "classification": "operational",
         "volatility": "high",
+        "document_status": "CURRENT_WITH_DEPRECATION_WATCH",
+        "evidence_role": "IMPLEMENTATION_GUIDANCE",
+        "legacy_evals_platform": "DEPRECATED_TRANSITION",
+        "read_only_date": "2026-10-31",
+        "shutdown_date": "2026-11-30",
         "applicability": "Supports task-specific evals, edge-case coverage, continuous evaluation, complete logging, and human calibration of automated scoring; it does not turn visible fixtures, synthetic scenarios, or an LLM judge into proof of real-user acceptance or runtime correctness.",
         "roles": [
           "qa-evidence-release-verification"
@@ -100,7 +429,27 @@
           "Eval catalog, grader, holdout, or baseline policy changes",
           "OpenAI changes evaluation guidance or supported evaluation surfaces",
           "90-day active-maintenance review"
-        ]
+        ],
+        "authority_type": "OFFICIAL_OPERATIONAL_DOCUMENTATION",
+        "applicability_strength": "RECOMMENDED",
+        "observed_canonical_url": "https://developers.openai.com/api/docs/guides/evaluation-best-practices",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "84eb820c88b69bb72093b00428a76781a90d44bf11ca14bb94855f3233d6c1c5",
+        "affected_platforms": [
+          "AGENT_GOVERNANCE"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Eval catalog, grader, holdout, or baseline policy changes",
+          "OpenAI changes evaluation guidance or supported evaluation surfaces",
+          "90-day active-maintenance review"
+        ],
+        "source_record_hash": "6a2c4080da19a1fc1a2a8797a35275979b69b5e5623fa16025401d77fda66ab1"
       },
       {
         "id": "nist-ai-rmf",
@@ -108,7 +457,6 @@
         "url": "https://www.nist.gov/itl/ai-risk-management-framework",
         "reviewed_on": "2026-07-12",
         "max_age_days": 365,
-        "classification": "normative",
         "volatility": "low",
         "applicability": "Supports named governance ownership, mapping, measurement, management, monitoring, and visible residual risk for the agent-governance surface; it is voluntary guidance, not proof of certification.",
         "roles": [
@@ -121,7 +469,29 @@
           "NIST publishes a revision or successor profile",
           "ZenFlow changes agent authority or evidence handling",
           "annual review"
-        ]
+        ],
+        "authority_type": "INFORMATIVE_INSTITUTIONAL_GUIDANCE",
+        "document_status": "CURRENT_WITH_REVISION_WATCH",
+        "evidence_role": "IMPLEMENTATION_GUIDANCE",
+        "applicability_strength": "RECOMMENDED",
+        "observed_canonical_url": "https://www.nist.gov/itl/ai-risk-management-framework",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "7fb1555b628fd54631829e243192a753b6f98d4a2baaff4a30bb889d337aa798",
+        "affected_platforms": [
+          "AGENT_GOVERNANCE"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "NIST publishes a revision or successor profile",
+          "ZenFlow changes agent authority or evidence handling",
+          "annual review"
+        ],
+        "source_record_hash": "99ecdb04ba92ffeeea1950dedfb1a795b1a4088a572b9ada8389155cb97f3226"
       },
       {
         "id": "who-responsible-ai-mental-health",
@@ -129,7 +499,6 @@
         "url": "https://www.who.int/news/item/20-03-2026-towards-responsible-ai-for-mental-health-and-well-being--experts-chart-a-way-forward",
         "reviewed_on": "2026-07-12",
         "max_age_days": 180,
-        "classification": "normative",
         "volatility": "medium",
         "applicability": "Supports a non-clinical, agency-preserving boundary and qualified-human escalation for ZenFlow mood, journal, habit, focus, and coach surfaces; it does not let an agent diagnose, treat, or approve a health claim.",
         "roles": [
@@ -142,7 +511,29 @@
           "Clinical, therapeutic, crisis, age, or wellbeing positioning changes",
           "WHO publishes superseding guidance",
           "180-day active-maintenance review"
-        ]
+        ],
+        "authority_type": "INFORMATIVE_INSTITUTIONAL_GUIDANCE",
+        "document_status": "CURRENT",
+        "evidence_role": "RISK_SIGNAL",
+        "applicability_strength": "RECOMMENDED",
+        "observed_canonical_url": "https://www.who.int/news/item/20-03-2026-towards-responsible-ai-for-mental-health-and-well-being--experts-chart-a-way-forward",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "a78c7565a5cbede12710d06f087a62a3d7e36f9273c3712bf98b94f20d28ec92",
+        "affected_platforms": [
+          "AGENT_GOVERNANCE"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Clinical, therapeutic, crisis, age, or wellbeing positioning changes",
+          "WHO publishes superseding guidance",
+          "180-day active-maintenance review"
+        ],
+        "source_record_hash": "76be190e09c7dfbf324d085a7b01be2e6ac7fa3db499cb65377f70b94c7db2d9"
       },
       {
         "id": "w3c-wcag-22",
@@ -150,7 +541,6 @@
         "url": "https://www.w3.org/TR/WCAG22/",
         "reviewed_on": "2026-07-12",
         "max_age_days": 365,
-        "classification": "normative",
         "volatility": "low",
         "applicability": "Supports exact web success-criterion and conformance-level review; it does not prove native accessibility, cognitive completeness, assistive-technology behavior, or lived usability.",
         "roles": [
@@ -161,7 +551,32 @@
           "W3C publishes a revision or erratum affecting a cited criterion",
           "ZenFlow changes an interaction or accessibility claim",
           "annual review"
-        ]
+        ],
+        "authority_type": "NORMATIVE_STANDARD",
+        "document_status": "CURRENT",
+        "evidence_role": "REQUIREMENT",
+        "applicability_strength": "REQUIRED",
+        "observed_canonical_url": "https://www.w3.org/TR/WCAG22/",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "WCAG 2.2",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "c6a64cbdcc8206c49da7e33236511b654c7df32f30228567b2787a332515018d",
+        "affected_platforms": [
+          "WEB_PWA",
+          "ANDROID",
+          "IOS",
+          "DESKTOP"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "W3C publishes a revision or erratum affecting a cited criterion",
+          "ZenFlow changes an interaction or accessibility claim",
+          "annual review"
+        ],
+        "source_record_hash": "275338198274571d9e1d74ef1dd341e5122963e1e112c270a0b8bf40a483caba"
       },
       {
         "id": "w3c-cognitive-accessibility",
@@ -169,7 +584,6 @@
         "url": "https://www.w3.org/WAI/cognitive/",
         "reviewed_on": "2026-07-12",
         "max_age_days": 365,
-        "classification": "normative",
         "volatility": "medium",
         "applicability": "Supports checking memory burden, comprehension, interruption, recovery, and cognitive accessibility beyond a WCAG marker list; it does not establish acceptance for any disability cohort.",
         "roles": [
@@ -181,7 +595,32 @@
           "W3C cognitive guidance changes",
           "ZenFlow changes focus, coach, onboarding, notification, or recovery flows",
           "annual review"
-        ]
+        ],
+        "authority_type": "INFORMATIVE_INSTITUTIONAL_GUIDANCE",
+        "document_status": "CURRENT",
+        "evidence_role": "IMPLEMENTATION_GUIDANCE",
+        "applicability_strength": "RECOMMENDED",
+        "observed_canonical_url": "https://www.w3.org/WAI/cognitive/",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "619dd507f96e2c50597c617d8e680a74e2b00ec7ae79e4f89b8636bec287ec2c",
+        "affected_platforms": [
+          "WEB_PWA",
+          "ANDROID",
+          "IOS",
+          "DESKTOP"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "W3C cognitive guidance changes",
+          "ZenFlow changes focus, coach, onboarding, notification, or recovery flows",
+          "annual review"
+        ],
+        "source_record_hash": "5021e3747aa9808bbbf91ac3d4ce70cada9336cc4d43ad3dc84f5cf92aad8986"
       },
       {
         "id": "w3c-involving-users",
@@ -189,7 +628,6 @@
         "url": "https://www.w3.org/WAI/planning/involving-users/",
         "reviewed_on": "2026-07-12",
         "max_age_days": 365,
-        "classification": "normative",
         "volatility": "low",
         "applicability": "Supports keeping disabled-user and lived-usability claims cohort-bounded and combining human involvement with standards; it rejects generalizing one participant to every user.",
         "roles": [
@@ -201,7 +639,32 @@
           "Accessibility research or acceptance claims change",
           "W3C updates the guidance",
           "annual review"
-        ]
+        ],
+        "authority_type": "INFORMATIVE_INSTITUTIONAL_GUIDANCE",
+        "document_status": "CURRENT",
+        "evidence_role": "IMPLEMENTATION_GUIDANCE",
+        "applicability_strength": "RECOMMENDED",
+        "observed_canonical_url": "https://www.w3.org/WAI/planning/involving-users/",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "15007fe8ae083fdefdaf1ff60c6a1eb7f2613836dd7e6f448b4d971fab833ff1",
+        "affected_platforms": [
+          "WEB_PWA",
+          "ANDROID",
+          "IOS",
+          "DESKTOP"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Accessibility research or acceptance claims change",
+          "W3C updates the guidance",
+          "annual review"
+        ],
+        "source_record_hash": "49b30b4d8d722c68c7d9596b797cc3e053c6d33a0d52f9004b0ec69c3e807143"
       },
       {
         "id": "android-core-app-quality",
@@ -209,7 +672,6 @@
         "url": "https://developer.android.com/docs/quality-guidelines/core-app-quality",
         "reviewed_on": "2026-07-12",
         "max_age_days": 90,
-        "classification": "operational",
         "volatility": "high",
         "applicability": "Supports Android-specific lifecycle, state preservation, form-factor, interaction, visual-quality, and release checks for the Capacitor target; browser evidence cannot satisfy those checks.",
         "roles": [
@@ -222,7 +684,29 @@
           "Android or Capacitor target changes",
           "Google updates core quality guidance",
           "90-day active-maintenance review"
-        ]
+        ],
+        "authority_type": "OFFICIAL_OPERATIONAL_DOCUMENTATION",
+        "document_status": "CURRENT",
+        "evidence_role": "IMPLEMENTATION_GUIDANCE",
+        "applicability_strength": "CONTEXTUAL",
+        "observed_canonical_url": "https://developer.android.com/docs/quality-guidelines/core-app-quality",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "31c20890153e2033921996254185e705b95f64cada7d869e192c196400fb48c6",
+        "affected_platforms": [
+          "ANDROID"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Android or Capacitor target changes",
+          "Google updates core quality guidance",
+          "90-day active-maintenance review"
+        ],
+        "source_record_hash": "4e46ac311aea0a9b4d7cfee86036437eba27353a7f32d035ecda8da0077fc78e"
       },
       {
         "id": "apple-hig-accessibility",
@@ -230,7 +714,6 @@
         "url": "https://developer.apple.com/design/human-interface-guidelines/accessibility",
         "reviewed_on": "2026-07-12",
         "max_age_days": 90,
-        "classification": "operational",
         "volatility": "high",
         "applicability": "Identifies the primary Apple accessibility source for iOS and WKWebView review. Exact target units and device behavior remain UNVERIFIED until the current rendered guidance and runtime are checked.",
         "roles": [
@@ -242,7 +725,29 @@
           "iOS, WKWebView, safe-area, or native interaction changes",
           "Apple updates the Human Interface Guidelines",
           "90-day active-maintenance review"
-        ]
+        ],
+        "authority_type": "OFFICIAL_OPERATIONAL_DOCUMENTATION",
+        "document_status": "CURRENT",
+        "evidence_role": "IMPLEMENTATION_GUIDANCE",
+        "applicability_strength": "CONTEXTUAL",
+        "observed_canonical_url": "https://developer.apple.com/design/human-interface-guidelines/accessibility",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "f47a5e498321c940908d8705a691f51d09963178cb7b8da6d77a7743451a7ff2",
+        "affected_platforms": [
+          "IOS"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "iOS, WKWebView, safe-area, or native interaction changes",
+          "Apple updates the Human Interface Guidelines",
+          "90-day active-maintenance review"
+        ],
+        "source_record_hash": "ccfea7a1ae9f72ec2e03b000bf032fbedc7c1f5d3a9fa7f79d552f264a752b3c"
       },
       {
         "id": "owasp-ai-agent-security",
@@ -250,7 +755,6 @@
         "url": "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
         "reviewed_on": "2026-07-12",
         "max_age_days": 90,
-        "classification": "operational",
         "volatility": "high",
         "applicability": "Supports least privilege, instruction-versus-evidence separation, tool-output validation, memory isolation, and cascading-error controls for Codex agents; it does not prove the runtime denied a capability.",
         "roles": [
@@ -263,7 +767,29 @@
           "Agent tools, RAG, MCP, connectors, or permission inheritance change",
           "OWASP guidance changes",
           "90-day active-maintenance review"
-        ]
+        ],
+        "authority_type": "INFORMATIVE_INSTITUTIONAL_GUIDANCE",
+        "document_status": "CURRENT",
+        "evidence_role": "RISK_SIGNAL",
+        "applicability_strength": "RECOMMENDED",
+        "observed_canonical_url": "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "596f79ba05500a1c73f69baa74d61263183260ff53e969a2d596b6df6768ea1e",
+        "affected_platforms": [
+          "AGENT_GOVERNANCE"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Agent tools, RAG, MCP, connectors, or permission inheritance change",
+          "OWASP guidance changes",
+          "90-day active-maintenance review"
+        ],
+        "source_record_hash": "76ea812f9ef4bdb95dacc7cec3d7628fe17e14f26ab9c1acc49b581bdc556edd"
       },
       {
         "id": "google-pair-user-needs",
@@ -271,7 +797,6 @@
         "url": "https://pair.withgoogle.com/chapter/user-needs/",
         "reviewed_on": "2026-07-12",
         "max_age_days": 365,
-        "classification": "research",
         "volatility": "low",
         "applicability": "Supports anchoring product proposals in an observed user failure mode and explicit success criteria; it does not establish that a proposed ZenFlow feature is wanted or effective.",
         "roles": [
@@ -283,7 +808,29 @@
           "Product discovery or success-measure protocol changes",
           "The source is revised",
           "annual review"
-        ]
+        ],
+        "authority_type": "OFFICIAL_OPERATIONAL_DOCUMENTATION",
+        "document_status": "CURRENT",
+        "evidence_role": "IMPLEMENTATION_GUIDANCE",
+        "applicability_strength": "RECOMMENDED",
+        "observed_canonical_url": "https://pair.withgoogle.com/chapter/user-needs/",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "feb2287ba7a92b6409c5ee49accfa8921bb50613b56395686cb1c3fa02a389f4",
+        "affected_platforms": [
+          "AGENT_GOVERNANCE"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Product discovery or success-measure protocol changes",
+          "The source is revised",
+          "annual review"
+        ],
+        "source_record_hash": "d152250045bbb92b85fb00423e12d85ffcb768c6b5be5d055f9137173fdbc18e"
       },
       {
         "id": "google-heart-framework",
@@ -291,7 +838,6 @@
         "url": "https://research.google/pubs/measuring-the-user-experience-on-a-large-scale-user-centered-metrics-for-web-applications/",
         "reviewed_on": "2026-07-12",
         "max_age_days": 365,
-        "classification": "research",
         "volatility": "low",
         "applicability": "Supports connecting an experience hypothesis to bounded user-centered signals while preserving ZenFlow privacy limits; it does not justify collecting sensitive journal, mood, habit, or focus content.",
         "roles": [
@@ -302,7 +848,29 @@
           "Experience metrics, analytics, or research design changes",
           "A new cohort or platform is claimed",
           "annual review"
-        ]
+        ],
+        "authority_type": "PEER_REVIEWED_RESEARCH",
+        "document_status": "CURRENT",
+        "evidence_role": "EMPIRICAL_SUPPORT",
+        "applicability_strength": "RESEARCH_ONLY",
+        "observed_canonical_url": "https://research.google/pubs/measuring-the-user-experience-on-a-large-scale-user-centered-metrics-for-web-applications/",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "2eb5ff88b64d9ac7b865ee80f47f043cfafb859d2cbb42763fc17733f7911dd2",
+        "affected_platforms": [
+          "AGENT_GOVERNANCE"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Experience metrics, analytics, or research design changes",
+          "A new cohort or platform is claimed",
+          "annual review"
+        ],
+        "source_record_hash": "07b6d6df41473d4ee91a3624915aa8c4168c308ace6eb9fbd9bb0d9965620c42"
       },
       {
         "id": "oecd-dark-commercial-patterns",
@@ -310,7 +878,6 @@
         "url": "https://www.oecd.org/en/topics/dark-commercial-patterns.html",
         "reviewed_on": "2026-07-12",
         "max_age_days": 365,
-        "classification": "research",
         "volatility": "medium",
         "applicability": "Supports checking whether streaks, urgency, consent, ads, or recovery paths pressure users or obstruct choice; it does not prove harm without local interaction and user evidence.",
         "roles": [
@@ -323,7 +890,29 @@
           "Streak, notification, consent, monetization, or retention mechanics change",
           "OECD updates the evidence base",
           "annual review"
-        ]
+        ],
+        "authority_type": "INFORMATIVE_INSTITUTIONAL_GUIDANCE",
+        "document_status": "CURRENT",
+        "evidence_role": "RISK_SIGNAL",
+        "applicability_strength": "RECOMMENDED",
+        "observed_canonical_url": "https://www.oecd.org/en/topics/dark-commercial-patterns.html",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "a3cf138a5ac090dc3641db69cf885f933c9533a2b5cef2d94a39b610e0e804d3",
+        "affected_platforms": [
+          "AGENT_GOVERNANCE"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Streak, notification, consent, monetization, or retention mechanics change",
+          "OECD updates the evidence base",
+          "annual review"
+        ],
+        "source_record_hash": "3eae6b152a3e3bcea19f4b9f371079f03242e1fb962383a307d09c33a63b04b6"
       },
       {
         "id": "acl-divergent-multi-agent-review",
@@ -331,7 +920,6 @@
         "url": "https://aclanthology.org/2024.emnlp-main.992/",
         "reviewed_on": "2026-07-12",
         "max_age_days": 365,
-        "classification": "research",
         "volatility": "low",
         "applicability": "Supports testing context-separated first views to reduce anchoring; it does not prove independent expertise, exhaustive coverage, or that more agents are always better.",
         "roles": [
@@ -341,7 +929,29 @@
           "Role 10 isolation or council topology changes",
           "A contrary or superseding study materially changes applicability",
           "annual review"
-        ]
+        ],
+        "authority_type": "PEER_REVIEWED_RESEARCH",
+        "document_status": "CURRENT",
+        "evidence_role": "EMPIRICAL_SUPPORT",
+        "applicability_strength": "RESEARCH_ONLY",
+        "observed_canonical_url": "https://aclanthology.org/2024.emnlp-main.992/",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "581e642c9d5e446abf63410a8884b28e24e82a51df1462aa869aeff849b31294",
+        "affected_platforms": [
+          "AGENT_GOVERNANCE"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Role 10 isolation or council topology changes",
+          "A contrary or superseding study materially changes applicability",
+          "annual review"
+        ],
+        "source_record_hash": "e8a11df833ea0f80fdc5e3f043ce920218916883a182efeb94a3f0ee6bd8cef1"
       },
       {
         "id": "acl-multi-agent-judge-bias-amplification",
@@ -349,7 +959,6 @@
         "url": "https://aclanthology.org/2025.findings-emnlp.941/",
         "reviewed_on": "2026-07-12",
         "max_age_days": 365,
-        "classification": "research",
         "volatility": "low",
         "applicability": "Supports checks for position, verbosity, chain-of-thought, and bandwagon bias: debate amplified bias after the first round in two studied judge frameworks. It does not establish the same behavior or effect size for Codex, ZenFlow, other models, or topologies.",
         "roles": [
@@ -361,7 +970,29 @@
           "Judge ordering, debate rounds, aggregation, or semantic adjudication changes",
           "A contrary or superseding study materially changes applicability",
           "annual review"
-        ]
+        ],
+        "authority_type": "PEER_REVIEWED_RESEARCH",
+        "document_status": "CURRENT",
+        "evidence_role": "EMPIRICAL_SUPPORT",
+        "applicability_strength": "RESEARCH_ONLY",
+        "observed_canonical_url": "https://aclanthology.org/2025.findings-emnlp.941/",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "016dee34d212e0977eb5263e635528c1a1a51bdb78bdb5791498c216d5cf33b9",
+        "affected_platforms": [
+          "AGENT_GOVERNANCE"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Judge ordering, debate rounds, aggregation, or semantic adjudication changes",
+          "A contrary or superseding study materially changes applicability",
+          "annual review"
+        ],
+        "source_record_hash": "b56d07d84cc7727689627e748c9d8ffe05791069bd4da6baf7d1869647708318"
       },
       {
         "id": "acl-mad-diversity-confidence",
@@ -369,7 +1000,6 @@
         "url": "https://aclanthology.org/2026.findings-acl.1694/",
         "reviewed_on": "2026-07-12",
         "max_age_days": 365,
-        "classification": "research",
         "volatility": "low",
         "applicability": "Supports diverse initial hypotheses and calibrated confidence: homogeneous agents with uniform updates cannot reliably improve expected correctness in the studied setting. It does not establish that role labels, headcount, debate, confidence prose, or same-model fan-out produce independent evidence or better ZenFlow decisions.",
         "roles": [
@@ -380,7 +1010,29 @@
           "Initial-view separation, role diversity, confidence, or debate topology changes",
           "A contrary or superseding study materially changes applicability",
           "annual review"
-        ]
+        ],
+        "authority_type": "PEER_REVIEWED_RESEARCH",
+        "document_status": "CURRENT",
+        "evidence_role": "EMPIRICAL_SUPPORT",
+        "applicability_strength": "RESEARCH_ONLY",
+        "observed_canonical_url": "https://aclanthology.org/2026.findings-acl.1694/",
+        "retrieved_at": "2026-07-12T00:00:00.000Z",
+        "document_version_or_date": "Current page as retrieved; exact upstream version/date not exposed in the checked local record",
+        "supersedes": [],
+        "etag": null,
+        "last_modified": null,
+        "content_slice_status": "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
+        "content_slice_sha256": "eac6ca2cd2811d8ddadd868bd4be65f53381fad9acb48cf20ed11bad3dafbfb7",
+        "affected_platforms": [
+          "AGENT_GOVERNANCE"
+        ],
+        "does_not_prove": "Does not prove current local ZenFlow behavior, conformance, runtime loading, effective permissions, qualified-human judgment, or real-user acceptance.",
+        "event_driven_review_triggers": [
+          "Initial-view separation, role diversity, confidence, or debate topology changes",
+          "A contrary or superseding study materially changes applicability",
+          "annual review"
+        ],
+        "source_record_hash": "d90357203b6f329c30cc97e50dd92cce15dd106c3fe5c17736ecc57a68e04446"
       }
     ]
   },
@@ -388,10 +1040,17 @@
     "principle": "The root Codex task selects the smallest sufficient set of disjoint review lenses. Exactly ten identities remain registered, but automatic all-ten fan-out is forbidden.",
     "risk_tiers": {
       "L0": "Read-only answer with no repository mutation: coordinator reasoning only unless a named risk requires one critic.",
-      "L1": "One-file text-only change without behavior impact: coordinator plus one relevant critic when risk exists; focused proof remains required.",
-      "L2": "Default for repository edits: one to three disjoint critics, with QA/evidence closure required and role 10 recommended for ambiguity.",
+      "L1": "One-file text-only change without behavior impact: coordinator plus exactly the evidence-selected owners; focused QA proof remains required.",
+      "L2": "Default for repository edits: exactly the evidence-selected owners with QA/evidence closure; unresolved ambiguity selects its canonical owners.",
       "L3": "Protected, cross-platform, stateful, UI, security, privacy, performance, or four-plus-file work: bounded guided team, role 8 mandatory, role 10 pass A and pass B mandatory.",
       "L4": "Governance, orchestration, broad architecture, protected enforcement, or high-impact release work: smallest complete set, role 8 mandatory, role 10 two-pass review mandatory; all ten only with recorded necessity."
+    },
+    "assurance_class_bridge": {
+      "L0": "M0_MECHANICAL",
+      "L1": "M1_MATERIAL",
+      "L2": "M1_MATERIAL",
+      "L3": "M2_PROTECTED_HIGH_RISK",
+      "L4": "M2_PROTECTED_HIGH_RISK"
     },
     "mandatory_role_ids_by_tier": {
       "L0": [
@@ -429,18 +1088,20 @@
     "matched_domain_roles_mandatory": true,
     "unmatched_roles_require_skip_reason": true,
     "trigger_role_ids": {
-      "EMOTIONAL_OR_CLINICAL_LANGUAGE": "psychology-human-factors-emotional-safety",
-      "CAUSAL_STATE_OR_POLICY_COHERENCE": "logic-causality-state-coherence",
-      "UI_ACCESSIBILITY_I18N": "interaction-accessibility-readability-localization-culture",
-      "ARCHITECTURE_PERSISTENCE_SYNC_MIGRATION": "technical-architecture-data-cross-platform",
-      "SECURITY_PRIVACY_AUTH_EXTERNAL_WRITE": "security-privacy-agent-trust",
-      "PERFORMANCE_RELIABILITY_LIFECYCLE": "performance-reliability-operations",
-      "PRODUCT_DISCOVERY_VISUAL_ACCEPTANCE": "product-discovery-visual-craft-experience-quality",
-      "BEST_PRACTICES_OR_COMPLETENESS": "independent-blind-spot-sentinel",
-      "GOVERNANCE_OR_ORCHESTRATION": "independent-blind-spot-sentinel",
-      "PROTECTED_SURFACE": "independent-blind-spot-sentinel",
-      "DEEP_AUDIT": "independent-blind-spot-sentinel",
-      "MATERIAL_AMBIGUITY": "independent-blind-spot-sentinel"
+      "MECHANICAL_ONLY": [],
+      "GOVERNANCE_OR_ORCHESTRATION": ["logic-causality-state-coherence", "security-privacy-agent-trust", "independent-blind-spot-sentinel"],
+      "PROTECTED_SURFACE": ["technical-architecture-data-cross-platform", "security-privacy-agent-trust", "independent-blind-spot-sentinel"],
+      "BEST_PRACTICES_OR_COMPLETENESS": ["independent-blind-spot-sentinel"],
+      "DEEP_AUDIT": "ALL_TEN_CANONICAL_ROLES",
+      "MATERIAL_AMBIGUITY": ["logic-causality-state-coherence", "independent-blind-spot-sentinel"],
+      "CONCRETE_EMOTIONAL_OR_CLINICAL_PRODUCT_CLAIM": ["psychology-human-factors-emotional-safety"],
+      "AGENCY_PRESSURE_INTERRUPTION_RECOVERY": ["psychology-human-factors-emotional-safety"],
+      "CAUSAL_STATE_OR_POLICY_COHERENCE": ["logic-causality-state-coherence"],
+      "UI_ACCESSIBILITY_I18N": ["interaction-accessibility-readability-localization-culture"],
+      "ARCHITECTURE_PERSISTENCE_SYNC_MIGRATION": ["technical-architecture-data-cross-platform"],
+      "SECURITY_PRIVACY_AUTH_EXTERNAL_WRITE": ["security-privacy-agent-trust"],
+      "PERFORMANCE_RELIABILITY_LIFECYCLE": ["performance-reliability-operations"],
+      "PRODUCT_DISCOVERY_VISUAL_ACCEPTANCE": ["product-discovery-visual-craft-experience-quality"]
     },
     "termination": "Stop on a hard blocker, authority ambiguity, duplicated scope, repeated evidence-free output, exhausted verification path, or budget exhaustion; preserve partial evidence as UNVERIFIED."
   },
@@ -454,7 +1115,7 @@
     "recursive_fanout": "FORBIDDEN",
     "all_ten_default": false,
     "role_10_pass_a_context": "fork_turns=none or a runtime-proven sanitized equivalent before a proposed solution",
-    "role_10_pass_b_context": "Original scope, Pass A, final change, evidence and conflict ledgers, tamper-evident raw specialist reports, requirement-to-proof mapping, and every remaining UNVERIFIED item"
+    "role_10_pass_b_context": "Original scope, Pass A, final change, evidence and conflict ledgers, immutable receipt hashes with direct locators, requirement-to-proof mapping, and every remaining UNVERIFIED item"
   },
   "trust_envelope": {
     "ordered_layers": [
@@ -586,6 +1247,9 @@
       "QUESTION_OWNED",
       "SCOPE_CHECKED",
       "INPUT_INTEGRITY",
+      "DECISION_AND_ASK_KIND",
+      "CLAIM_ASSURANCE_SCOPE",
+      "EXECUTION_STATE",
       "FINDINGS",
       "CONFLICTS_AND_DEPENDENCIES",
       "VERIFICATION_RUN",
@@ -603,6 +1267,22 @@
       "recommendation",
       "rejection_criterion",
       "verification"
+    ],
+    "decision_fields": [
+      "decision",
+      "ask_kind"
+    ],
+    "claim_fields": [
+      "scope_id",
+      "owned",
+      "blocking",
+      "assurance_status",
+      "evidence_ids"
+    ],
+    "execution_fields": [
+      "mode",
+      "state",
+      "result"
     ],
     "verdicts": [
       "GO",
@@ -676,13 +1356,22 @@
     "max_generated_profile_bytes": 26624,
     "max_generated_reference_bytes": 49152,
     "default_max_rounds_per_role": 2,
-    "full_ten_hard_invocation_ceiling": 12,
+    "full_ten_hard_invocation_ceiling": 20,
+    "m1_minimum_phase_invocations": 1,
+    "m2_minimum_phase_invocations": 3,
     "default_specialist_deadline_minutes": 15,
     "default_l3_wall_clock_minutes": 30,
     "default_full_ten_l4_wall_clock_minutes": 60,
     "extra_round_rule": "No round solely to seek agreement; add a round only for a distinct unresolved evidence question or closure conflict.",
     "timeout_rule": "Interrupt when the runtime supports it, preserve partial evidence as UNVERIFIED, and reuse or close the existing task instead of spawning an unbounded replacement.",
-    "usage_rule": "Record planned and actual invocations, peak open tasks, elapsed time, interruptions, retries, reused tasks, partial results, and overrides. Unavailable token, cost, interrupt, or context enforcement remains UNVERIFIED rather than estimated."
+    "usage_rule": "Record planned and actual invocations, peak open tasks, elapsed time, interruptions, retries, reused tasks, partial results, and overrides. Unavailable token, cost, interrupt, or context enforcement remains UNVERIFIED rather than estimated.",
+    "budget_exhaustion_disposition": "Return ASK with ask_kind BUDGET_EXHAUSTED and aggregate EXECUTION_INCOMPLETE; never silently omit a mandatory phase.",
+    "profile_compaction": {
+      "baseline_total_bytes": 172099,
+      "minimum_structural_reduction_percent": 8,
+      "metric_scope": "UTF8 bytes across ten generated TOML profiles",
+      "proof_boundary": "A smaller generated profile set is a structural proxy only; actual API tokens, cache hits, quality, cost, and latency require measured paired runs."
+    }
   },
   "roles": [
     {
@@ -719,7 +1408,7 @@
         "R01_SMALLEST_SUFFICIENT_SET",
         "R01_EVIDENCE_CLOSURE"
       ],
-      "semantic_contract_sha256": "a94903a08daa8d9f04e31e98162e32c659e1a50d7fe80de900cf693363d8f9ac",
+      "semantic_contract_sha256": "5810e3f82e9cf76426c811111ccf787814c2408847b34780368ca68bc655fa0d",
       "required_inputs": [
         "Raw direct user request with adopted instructions separated from quoted or attached evidence",
         "Current AGENTS.md, applicable project policies, repository state, and user-authorized write scope",
@@ -728,7 +1417,7 @@
       "checks": [
         "Preserve objective, non-goals, authority, and requested platform separately from any suspected solution",
         "Classify observed trigger IDs before delegation; every matched domain owner is mandatory, every unmatched role needs a concrete skip reason, and no latency preference may suppress a matched emotional-safety, logic, accessibility, architecture/data, security/privacy, reliability, product, QA, or blind-spot owner",
-        "Select one to three disjoint critics by default after applying tier and matched-trigger requirements, give each one distinct initial evidence questions, and never auto-run all ten or treat same-model role count as independent confirmation",
+        "Invoke exactly the evidence-selected owner set after applying class and trigger requirements, give each selected critic distinct evidence questions, and never auto-run all ten or treat same-model role count as independent confirmation",
         "Set depth, concurrency, invocation, wall-clock, deadline, interrupt, cleanup, abort, and expected-evidence bounds before delegation",
         "Keep critic scopes read-only and implementation write sets disjoint; record effective capability status as UNVERIFIED until probed",
         "Reject a specialist report missing current scope, exact evidence, platform/domain impact, verification, unresolved risk, and GO/STOP/ASK",
@@ -791,28 +1480,31 @@
       "id": "psychology-human-factors-emotional-safety",
       "runtime_name": "zenflow-02-psychology-human-factors-emotional-safety",
       "filename": "02-psychology-human-factors-emotional-safety.toml",
-      "name": "Psychology, Human Factors & Emotional Safety Critic",
+      "name": "User Psychology, Motivational Design, Human Factors & Emotional Safety",
       "description": "Reviews ZenFlow agency, interruption burden, pressure, shame, sensitive wellbeing language, and non-clinical boundaries without diagnosing users or substituting for qualified care.",
       "mission": "Identify plausible emotional or behavioral harm in current ZenFlow evidence, distinguish observation from hypothesis, test competing explanations, and route protected claims to the specifically qualified human authority.",
       "owns": [
         "Agency, informed choice, reversibility, interruption cost, emotional burden, pressure, and redress",
         "Non-clinical review of mood, journal, habit, focus, coach, notification, onboarding, streak, and account-loss surfaces",
-        "Structured observation, hypothesis, alternatives, evidence-needed, safety-impact, monitoring, and kill/rollback analysis"
+        "Structured observation, hypothesis, alternatives, evidence-needed, safety-impact, monitoring, and emotional-safety harm or rollback thresholds"
       ],
       "does_not_own": [
         "Diagnosis, treatment, mental-state inference, crisis counseling, or clinical approval",
-        "Legal, minors, privacy, locale, or cultural acceptance sign-off",
+        "WCAG conformance, assistive-technology behavior, locale or RTL correctness, cultural acceptance, legal, minors, or privacy sign-off",
+        "Broad product value, visual craft approval, or claiming that an agent understands a user's actual feelings without bounded human evidence",
         "Assuming a named feature exists or a user problem has one psychological or neurochemical root cause"
       ],
       "activation": {
         "when": [
-          "Mood, journal, habit, focus, streak, coach, notification, onboarding, account loss, ads, consent, or emotionally sensitive copy changes",
-          "A request uses clinical, therapeutic, crisis, ADHD, Dopamine, depression, anxiety, wellbeing, dependency, shame, urgency, or user-state claims"
+          "Local discovery locates an exact mood, journal, habit, focus, streak, coach, notification, onboarding, account-loss, ads, consent, or sensitive-copy interaction whose behavior or wording changes",
+          "Exact copy, defaults, timing, exit, undo, recovery, consent, or inferred-state evidence creates a plausible agency, pressure, shame, urgency, interruption, dependency, or sensitive-wellbeing risk",
+          "A concrete product claim is clinical, therapeutic, crisis-related, diagnostic, or asserts ADHD, Dopamine, depression, anxiety, wellbeing, dependency, or a user's internal state; abstract terminology alone triggers discovery, not Role 2 selection"
         ],
         "risk_floor": "L2",
         "mandatory": false,
         "trigger_ids": [
-          "EMOTIONAL_OR_CLINICAL_LANGUAGE"
+          "CONCRETE_EMOTIONAL_OR_CLINICAL_PRODUCT_CLAIM",
+          "AGENCY_PRESSURE_INTERRUPTION_RECOVERY"
         ],
         "mandatory_on_trigger": true
       },
@@ -822,7 +1514,7 @@
         "R02_APPEAL_REJECTION_HYPOTHESES",
         "R02_HARM_MONITORING_KILL_CRITERIA"
       ],
-      "semantic_contract_sha256": "46c40413ce9a2dd9c86834f3630143a3164bcc624342709bfc62dc6e1d742f0e",
+      "semantic_contract_sha256": "fefff2005897f46e9d115d6497fa9478f90735db330536cdb61d71313c57c1ef",
       "required_inputs": [
         "Exact current copy, route, interaction, state, and affected cohort rather than a generic concept name",
         "Local proof that the named surface or feature exists before assessing its emotional effect",
@@ -844,7 +1536,7 @@
         "POTENTIAL_BENEFIT_HYPOTHESIS and REJECTION_OR_HARM_HYPOTHESIS, each explicitly bounded and never promoted to user acceptance",
         "Structured emotional-safety finding with affected cohort, severity, exposure, reversibility, alternatives, and exact evidence gap",
         "Privacy-safe monitoring or an explicit reason monitoring would itself be unsafe",
-        "Redress owner, kill/rollback trigger, qualified-human boundary, and GO/STOP/ASK limited to the reviewed claim"
+        "Redress owner, emotional-safety harm or rollback trigger, qualified-human boundary, and GO/STOP/ASK limited to the reviewed claim"
       ],
       "counter_hypotheses": [
         "The named feature or behavior may not exist in the current product, making an appeal or harm analysis premature.",
@@ -874,6 +1566,47 @@
         ],
         "inherits_global_denials": true,
         "effective_status": "UNVERIFIED"
+      },
+      "phase_contracts": {
+        "CREATE_BRIEF": {
+          "timing": "BEFORE_IMPLEMENTATION_OR_SOLUTION_SELECTION",
+          "fresh_invocation_required": true,
+          "question": "What current interaction could undermine agency, create pressure or shame, interrupt recovery, or mishandle emotionally sensitive meaning, and what safer alternatives remain testable?",
+          "required_inputs": [
+            "Direct user goal and current product evidence only",
+            "Affected surface, interaction state, cohort boundary, platform, and known constraints",
+            "Exact copy or behavior locators without raw journal, mood, habit, focus, health, or account content"
+          ],
+          "required_outputs": [
+            "Current observation separated from feelings hypotheses and competing explanations",
+            "Agency, pressure, interruption, reversibility, recovery, redress, and non-clinical boundary analysis",
+            "At least one constructive alternative with expected benefit, plausible harm, emotional-safety success criterion, harm or rollback threshold, and privacy-safe verification path",
+            "Explicit handoffs to role 4 for WCAG, locale, RTL, bidi, or culture and to role 9 for product value or craft"
+          ],
+          "forbidden_claims": [
+            "Diagnosis, treatment, user mental-state inference, universal emotional effect, or human acceptance",
+            "Synthetic user history, invented research, mock product evidence, or raw sensitive content"
+          ]
+        },
+        "INDEPENDENT_FINAL_REVIEW": {
+          "timing": "AFTER_IMPLEMENTATION_AND_BEFORE_PROMOTION_CLAIM",
+          "fresh_invocation_required": true,
+          "question": "Did the implemented change preserve agency and recovery, avoid pressure, shame, coercion, interruption harm, and unsupported emotional inference, and keep every human-experience claim bounded?",
+          "required_inputs": [
+            "Original CREATE_BRIEF receipt and immutable hash",
+            "Final scoped snapshot, exact diff, relevant runtime or deterministic evidence, and unresolved finding ledger",
+            "Changed copy, states, exits, undo or recovery paths, monitoring, ownership, and rollback"
+          ],
+          "required_outputs": [
+            "Independent closure of each CREATE_BRIEF emotional-safety success criterion and harm or rollback threshold against fresh evidence",
+            "New or regressed emotional-safety findings with constructive alternatives and named owner",
+            "GO, STOP, or ASK for the owned proven scope only, with human feelings and acceptance left UNVERIFIED unless bounded human evidence exists"
+          ],
+          "forbidden_claims": [
+            "Self-confirming the original brief without fresh inspection",
+            "Using implementation completion, model agreement, or test fixtures as proof of user feelings or acceptance"
+          ]
+        }
       },
       "source_ids": [
         "openai-prompt-engineering",
@@ -1621,10 +2354,10 @@
         "R10_NO_VOTE_NO_SELF_RESOLUTION",
         "R10_ADJACENT_RISK_OWNER_ROUTING"
       ],
-      "semantic_contract_sha256": "8c834fe298f698c503db989f2237962d9262ddff44e17428238ec9ff9ad47304",
+      "semantic_contract_sha256": "e922d10cbb8dc6578f72c0f6c97f7760274c5fd1b19227fffeac6d9a92d09fca",
       "required_inputs": [
         "Pass A: raw direct request, applicable policies classified under the trust envelope with origin/authority/hash, current artifacts needed to understand the existing system, neutral scope/risk envelope, and authority boundaries only",
-        "Pass B: original scope, own Pass A, final change/plan, evidence and conflict ledgers, tamper-evident raw specialist reports, requirement-to-proof mapping, and all UNVERIFIED/rejected items",
+        "Pass B: original scope, own Pass A, final change or plan, evidence and conflict ledgers, immutable receipt hashes with direct locators, requirement-to-proof mapping, and all UNVERIFIED or rejected items",
         "Runtime evidence for context isolation and effective read-only capability status"
       ],
       "checks": [
@@ -1648,7 +2381,7 @@
       ],
       "hard_stops": [
         "Mandatory Pass A received the coordinator solution, prior consensus, specialist verdicts, or unproven context isolation",
-        "Pass B lacks original scope, Pass A, tamper-evident raw reports, ledgers, or remaining UNVERIFIED items",
+        "Pass B lacks original scope, Pass A, tamper-evident receipt/report hashes with direct locators, required ledgers, explicitly policy-required raw reports, or remaining UNVERIFIED items",
         "A new material omission, hidden hard blocker, approval substitution, or false-proof claim remains unresolved"
       ],
       "human_escalations": [
@@ -1709,12 +2442,41 @@
             "Own Pass A findings",
             "Final change or plan",
             "Evidence and conflict ledgers",
-            "Verbatim specialist reports with immutable hashes or equivalent tamper-evident manifest",
+            "Immutable specialist receipt hashes with direct repository-local locators or an equivalent tamper-evident manifest; raw reports only when explicitly required and privacy-safe",
             "Requirement-to-proof mapping",
             "Every remaining UNVERIFIED and rejected item"
           ],
           "artifact_manifest_sha256_required": true,
           "recompute_hashes_required": true,
+          "decision_channel": {
+            "format": "STRICT_STRUCTURED_RECEIPT_ONLY",
+            "allowed_decisions": [
+              "GO",
+              "STOP",
+              "ASK"
+            ],
+            "aggregate_precedence": [
+              "INTEGRITY_FAILED",
+              "BLOCKED",
+              "NEEDS_AUTHORITY",
+              "EXECUTION_INCOMPLETE",
+              "AUTHORIZED_WITH_ACCEPTED_RISK",
+              "COMPLETE_WITH_UNVERIFIED",
+              "GO_FOR_PROVEN_SCOPE"
+            ]
+          },
+          "audit_channel": {
+            "format": "HASH_BOUND_FINDING_AND_CLOSURE_LEDGER",
+            "raw_report_default": "OMITTED_UNLESS_EXPLICITLY_REQUIRED_AND_PRIVACY_SAFE",
+            "required_bindings": [
+              "original_scope_hash",
+              "pass_a_hash",
+              "subject_scoped_snapshot_sha256",
+              "receipt_manifest_hash",
+              "evidence_ledger_hash",
+              "finding_ledger_hash"
+            ]
+          },
           "allowed_closure_statuses": [
             "RESOLVED_WITH_RECHECKED_EVIDENCE",
             "REJECTED_WITH_RECHECKED_EVIDENCE",

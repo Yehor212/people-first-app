@@ -6,11 +6,11 @@
  * Expandable to show day-by-day breakdown
  */
 
-import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { cn, getToday } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { cn, getToday } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface DayScore {
   date: string;
@@ -34,37 +34,37 @@ interface WeekCrystalProps {
 const getCrystalTheme = (score: number) => {
   if (score >= 80) {
     return {
-      gradient: ['#34d399', '#10b981', '#059669'], // Emerald
-      glow: 'hsl(158 60% 50%)',
-      glowIntense: 'hsl(158 70% 60%)',
-      label: 'Excellent Week',
-      sparkleColor: '#fbbf24'
+      gradient: ["#34d399", "#10b981", "#059669"], // Emerald
+      glow: "hsl(158 60% 50%)",
+      glowIntense: "hsl(158 70% 60%)",
+      label: "Excellent Week",
+      sparkleColor: "#fbbf24",
     };
   }
   if (score >= 60) {
     return {
-      gradient: ['#60a5fa', '#3b82f6', '#2563eb'], // Blue
-      glow: 'hsl(217 91% 60%)',
-      glowIntense: 'hsl(217 91% 70%)',
-      label: 'Good Week',
-      sparkleColor: '#93c5fd'
+      gradient: ["#60a5fa", "#3b82f6", "#2563eb"], // Blue
+      glow: "hsl(217 91% 60%)",
+      glowIntense: "hsl(217 91% 70%)",
+      label: "Good Week",
+      sparkleColor: "#93c5fd",
     };
   }
   if (score >= 40) {
     return {
-      gradient: ['#a78bfa', '#8b5cf6', '#7c3aed'], // Purple
-      glow: 'hsl(262 83% 58%)',
-      glowIntense: 'hsl(262 83% 68%)',
-      label: 'Average Week',
-      sparkleColor: '#c4b5fd'
+      gradient: ["#a78bfa", "#8b5cf6", "#7c3aed"], // Purple
+      glow: "hsl(262 83% 58%)",
+      glowIntense: "hsl(262 83% 68%)",
+      label: "Average Week",
+      sparkleColor: "#c4b5fd",
     };
   }
   return {
-    gradient: ['#9ca3af', '#6b7280', '#4b5563'], // Gray
-    glow: 'hsl(220 9% 46%)',
-    glowIntense: 'hsl(220 9% 56%)',
-    label: 'Needs Improvement',
-    sparkleColor: '#d1d5db'
+    gradient: ["#9ca3af", "#6b7280", "#4b5563"], // Gray
+    glow: "hsl(220 9% 46%)",
+    glowIntense: "hsl(220 9% 56%)",
+    label: "Needs Improvement",
+    sparkleColor: "#d1d5db",
   };
 };
 
@@ -87,12 +87,15 @@ export function WeekCrystal({
   const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
 
   // Sparkle positions
-  const sparkles = useMemo(() => [
-    { x: 30, y: 25, delay: 0, scale: 0.8 },
-    { x: 70, y: 20, delay: 0.5, scale: 0.6 },
-    { x: 50, y: 45, delay: 1, scale: 0.7 },
-    { x: 35, y: 60, delay: 1.5, scale: 0.5 },
-  ], []);
+  const sparkles = useMemo(
+    () => [
+      { x: 30, y: 25, delay: 0, scale: 0.8 },
+      { x: 70, y: 20, delay: 0.5, scale: 0.6 },
+      { x: 50, y: 45, delay: 1, scale: 0.7 },
+      { x: 35, y: 60, delay: 1.5, scale: 0.5 },
+    ],
+    []
+  );
 
   return (
     <motion.div
@@ -102,25 +105,25 @@ export function WeekCrystal({
       tabIndex={dailyScores && dailyScores.length > 0 ? 0 : undefined}
       onClick={() => dailyScores && dailyScores.length > 0 && setIsExpanded(!isExpanded)}
       onKeyDown={(e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && dailyScores && dailyScores.length > 0) {
+        if ((e.key === "Enter" || e.key === " ") && dailyScores && dailyScores.length > 0) {
           e.preventDefault();
           setIsExpanded(!isExpanded);
         }
       }}
       className={cn(
-        'relative flex flex-col items-center p-4',
-        'rounded-2xl',
-        'bg-gradient-to-b from-card to-card/80',
-        'border border-border/50',
-        dailyScores && dailyScores.length > 0 && 'cursor-pointer',
+        "relative flex flex-col items-center p-4",
+        "rounded-2xl",
+        "bg-gradient-to-b from-card to-card/80",
+        "border border-border/50",
+        dailyScores && dailyScores.length > 0 && "cursor-pointer",
         className
       )}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 mb-3">
-        <Sparkles className="w-4 h-4 text-primary" />
-        <h3 className="text-sm font-semibold text-foreground">
-          {label || t.weekCrystal || 'Week Crystal'}
+      <div className="mb-3 flex max-w-full min-w-0 items-start gap-2">
+        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <h3 className="min-w-0 break-words text-center text-sm font-semibold text-foreground">
+          {label || t.weekCrystal || "Week Crystal"}
         </h3>
       </div>
 
@@ -129,10 +132,12 @@ export function WeekCrystal({
         {/* Glow effect */}
         <div
           className="absolute inset-0 blur-xl opacity-50 motion-safe:animate-crystal-pulse"
-          style={{
-            background: `radial-gradient(circle at 50% 60%, ${theme.glow}, transparent 70%)`,
-            '--crystal-color': theme.glow
-          } as React.CSSProperties}
+          style={
+            {
+              background: `radial-gradient(circle at 50% 60%, ${theme.glow}, transparent 70%)`,
+              "--crystal-color": theme.glow,
+            } as React.CSSProperties
+          }
         />
 
         {/* Crystal shape */}
@@ -140,7 +145,7 @@ export function WeekCrystal({
           viewBox="0 0 100 120"
           className="relative w-full h-full crystal-hover"
           style={{
-            filter: `drop-shadow(0 0 15px ${theme.glow})`
+            filter: `drop-shadow(0 0 15px ${theme.glow})`,
           }}
         >
           {/* Main crystal body */}
@@ -164,7 +169,7 @@ export function WeekCrystal({
             strokeWidth="1"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, type: 'spring' }}
+            transition={{ duration: 0.5, type: "spring" }}
           />
 
           {/* Inner facets */}
@@ -177,10 +182,7 @@ export function WeekCrystal({
           />
 
           {/* Highlight */}
-          <path
-            d="M50 5 L30 35 L35 80 L50 60 L50 5"
-            fill="url(#crystalHighlight)"
-          />
+          <path d="M50 5 L30 35 L35 80 L50 60 L50 5" fill="url(#crystalHighlight)" />
 
           {/* Inner sparkles */}
           {sparkles.map((sparkle, i) => (
@@ -217,10 +219,7 @@ export function WeekCrystal({
                   delay: i * 0.3,
                 }}
               >
-                <Sparkles
-                  className="w-3 h-3"
-                  style={{ color: theme.sparkleColor }}
-                />
+                <Sparkles className="w-3 h-3" style={{ color: theme.sparkleColor }} />
               </motion.div>
             ))}
           </div>
@@ -234,13 +233,10 @@ export function WeekCrystal({
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
       >
-        <p
-          className="text-2xl font-bold"
-          style={{ color: theme.glow }}
-        >
+        <p className="text-2xl font-bold" style={{ color: theme.glow }}>
           {score}%
         </p>
-        <p className="text-xs text-muted-foreground">
+        <p className="break-words text-xs text-muted-foreground">
           {tx[`crystal${theme.label.replace(/\s/g, "")}`] || theme.label}
         </p>
       </motion.div>
@@ -270,14 +266,14 @@ export function WeekCrystal({
             {isExpanded && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
+                animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
                 className="w-full overflow-hidden"
               >
                 {/* Week comparison */}
                 {lastWeekScore !== undefined && (
-                  <div className="flex items-center justify-center gap-2 mt-2 mb-3">
+                  <div className="mt-2 mb-3 flex min-w-0 items-start justify-center gap-2">
                     {weekChange > 0 ? (
                       <TrendingUp className="w-3 h-3 text-green-500" />
                     ) : weekChange < 0 ? (
@@ -285,19 +281,22 @@ export function WeekCrystal({
                     ) : (
                       <Minus className="w-3 h-3 text-muted-foreground" />
                     )}
-                    <span className={cn(
-                      'text-xs font-medium',
-                      weekChange > 0 && 'text-green-500',
-                      weekChange < 0 && 'text-red-500',
-                      weekChange === 0 && 'text-muted-foreground'
-                    )}>
-                      {weekChange > 0 ? '+' : ''}{weekChange}% {t.weekCrystalVsLastWeek || 'vs last week'}
+                    <span
+                      className={cn(
+                        "min-w-0 break-words text-xs font-medium",
+                        weekChange > 0 && "text-green-500",
+                        weekChange < 0 && "text-red-500",
+                        weekChange === 0 && "text-muted-foreground"
+                      )}
+                    >
+                      {weekChange > 0 ? "+" : ""}
+                      {weekChange}% {t.weekCrystalVsLastWeek || "vs last week"}
                     </span>
                   </div>
                 )}
 
                 {/* Daily crystals */}
-                <div className="grid grid-cols-7 gap-1 pt-2 border-t border-border/30">
+                <div className="grid w-full grid-cols-[repeat(auto-fit,minmax(2.75rem,1fr))] gap-1 border-t border-border/30 pt-2">
                   {dailyScores.slice(-7).map((day, idx) => {
                     const dayOfWeek = new Date(day.date).getDay();
                     const dayTheme = getCrystalTheme(day.score);
@@ -310,11 +309,11 @@ export function WeekCrystal({
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: idx * 0.05 }}
                         className={cn(
-                          'flex flex-col items-center py-1 rounded-lg',
-                          isToday && 'bg-primary/10 ring-1 ring-primary/30'
+                          "flex flex-col items-center py-1 rounded-lg",
+                          isToday && "bg-primary/10 ring-1 ring-primary/30"
                         )}
                       >
-                        <span className="text-[10px] text-muted-foreground mb-0.5">
+                        <span className="mb-0.5 text-xs text-muted-foreground">
                           {dayNames[dayOfWeek]?.slice(0, 1)}
                         </span>
                         {/* Mini crystal */}
@@ -323,14 +322,11 @@ export function WeekCrystal({
                           style={{
                             background: `linear-gradient(135deg, ${dayTheme.gradient[0]}, ${dayTheme.gradient[2]})`,
                             opacity: 0.3 + (day.score / 100) * 0.7,
-                            boxShadow: day.score >= 60 ? `0 0 4px ${dayTheme.glow}` : 'none'
+                            boxShadow: day.score >= 60 ? `0 0 4px ${dayTheme.glow}` : "none",
                           }}
                         />
-                        <span
-                          className="text-[10px] font-bold mt-0.5"
-                          style={{ color: dayTheme.glow }}
-                        >
-                          {day.score > 0 ? day.score : '—'}
+                        <span className="mt-0.5 text-xs font-bold" style={{ color: dayTheme.glow }}>
+                          {day.score > 0 ? day.score : "—"}
                         </span>
                       </motion.div>
                     );

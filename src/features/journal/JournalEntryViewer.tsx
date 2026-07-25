@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, memo } from "react";
-import { ArrowLeft, Pencil, Trash2, Share2 } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { ArrowLeft, Pencil, RotateCcw, Share2, Star, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -7,18 +7,38 @@ import type { TranslationStrings } from "@/i18n/types";
 import { getLocale } from "@/lib/timeUtils";
 import type { JournalEntry, JournalAudio, PaperColor } from "./types";
 import type { MoodType } from "@/types";
-import { countWords, DIARY_THEMES, DIARY_FONTS, FONT_SIZES, PAPER_COLORS } from "./types";
+import {
+  countWordsHtml,
+  DIARY_THEMES,
+  DIARY_FONTS,
+  getScaledJournalFontSize,
+  PAPER_COLORS,
+} from "./types";
 import { getBgPatternStyle, getPaperTextureStyle } from "./diaryBgPatterns";
 import { JournalPhotoGallery } from "./JournalPhotoGallery";
 import { ReadOnlyFloatingMediaLayer } from "./FloatingMediaLayer";
+import { isJournalPhotoPlaced } from "./photoLayout";
 import { JournalAudioPlayer } from "./JournalAudioPlayer";
 import { StickerRenderer } from "./StickerRenderer";
 import { logger } from "@/lib/logger";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
 import { getLocalizedEmotionLabel } from "@/components/state-of-mind/emotionI18n";
-import { getJournalDisplayTag, getJournalDisplayText } from "./journalDisplay";
+import { getJournalDisplayText } from "./journalDisplay";
 import { getDiaryAura } from "./journalAura";
-import { formatJournalRelativeTime, formatJournalWordCount } from "./journalWordCount";
+import { formatJournalWordCount } from "./journalWordCount";
+import { isFavoriteJournalEntry } from "./journalFavorite";
+import { formatJournalCivilDate } from "./journalDateUtils";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const LIGHT_PAPER_READABLE_INK_COLORS: Record<string, string> = {
   "#34d399": "#047857",
@@ -89,13 +109,13 @@ function renderContent(content: string): React.ReactNode[] {
 
     if (trimmed.startsWith("### ")) {
       elements.push(
-        <h3 key={key} className="text-sm font-bold text-foreground mt-3 mb-1">
+        <h3 key={key} className="text-sm font-bold text-[var(--journal-paper-text)] mt-3 mb-1">
           {renderInline(trimmed.slice(4), key)}
         </h3>
       );
     } else if (trimmed.startsWith("## ")) {
       elements.push(
-        <h2 key={key} className="text-base font-bold text-foreground mt-4 mb-1">
+        <h2 key={key} className="text-base font-bold text-[var(--journal-paper-text)] mt-4 mb-1">
           {renderInline(trimmed.slice(3), key)}
         </h2>
       );
@@ -103,7 +123,7 @@ function renderContent(content: string): React.ReactNode[] {
       elements.push(
         <blockquote
           key={key}
-          className="border-s-2 border-primary/40 ps-3 my-2 text-muted-foreground italic"
+          className="border-s-2 border-current/40 ps-3 my-2 text-[var(--journal-paper-muted)] italic"
         >
           {renderInline(trimmed.slice(2), key)}
         </blockquote>
@@ -117,7 +137,7 @@ function renderContent(content: string): React.ReactNode[] {
       const listText = trimmed.slice(2);
       elements.push(
         <div key={key} className="flex gap-2 my-0.5">
-          <span className="text-muted-foreground select-none" aria-hidden="true">
+          <span className="text-[var(--journal-paper-muted)] select-none" aria-hidden="true">
             {"\u2022"}
           </span>
           <span>{renderInline(listText, key)}</span>
@@ -142,6 +162,8 @@ interface JournalEntryViewerProps {
   onEdit: () => void;
   onDelete: () => void;
   onBack: () => void;
+  onToggleFavorite?: () => void;
+  favoritePending?: boolean;
 }
 
 export const JournalEntryViewer = memo(function JournalEntryViewer({
@@ -149,59 +171,72 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
   onEdit,
   onDelete,
   onBack,
+  onToggleFavorite,
+  favoritePending = false,
 }: JournalEntryViewerProps) {
   const { t, language } = useLanguage();
   const ts = t;
+  const isFavorite = isFavoriteJournalEntry(entry);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const closeDeleteConfirm = useCallback(() => setDeleteConfirmOpen(false), []);
+  const confirmDelete = useCallback(() => {
+    setDeleteConfirmOpen(false);
+    onDelete();
+  }, [onDelete]);
+
+  useBackHandler(deleteConfirmOpen, closeDeleteConfirm);
 
   // Load audio recordings
   const [audioRecordings, setAudioRecordings] = useState<JournalAudio[]>([]);
+  const [audioLoadError, setAudioLoadError] = useState(false);
+  const [audioLoadAttempt, setAudioLoadAttempt] = useState(0);
+  const retryAudioLoad = useCallback(() => {
+    setAudioLoadAttempt((attempt) => attempt + 1);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
+    setAudioLoadError(false);
+
     if (entry.audioIds && entry.audioIds.length > 0) {
-      import("./journalStorage")
-        .then(({ getAudioForEntry }) => {
-          getAudioForEntry(entry.id)
-            .then((recordings) => {
-              if (!cancelled) setAudioRecordings(recordings);
-            })
-            .catch((err) => {
-              logger.warn("[Journal]", "Audio load failed:", err);
-              if (!cancelled) setAudioRecordings([]);
-            });
-        })
-        .catch((err) => logger.warn("[Journal]", "Audio module load failed:", err));
+      const loadAudio = async () => {
+        try {
+          const { getAudioForEntry } = await import("./journalStorage");
+          const recordings = await getAudioForEntry(entry.id);
+          if (!cancelled) {
+            setAudioRecordings(recordings);
+            setAudioLoadError(false);
+          }
+        } catch (err) {
+          logger.warn("[Journal]", "Audio load failed:", err);
+          if (!cancelled) {
+            setAudioRecordings([]);
+            setAudioLoadError(true);
+          }
+        }
+      };
+
+      void loadAudio();
     } else {
       setAudioRecordings([]);
     }
     return () => {
       cancelled = true;
     };
-  }, [entry.id, entry.audioIds]);
+  }, [audioLoadAttempt, entry.id, entry.audioIds]);
 
-  const date = new Date(entry.createdAt);
-  const formattedDate = date.toLocaleDateString(getLocale(language), {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-  const formattedTime = date.toLocaleTimeString(getLocale(language), {
+  const createdAt = new Date(entry.createdAt);
+  const formattedDate = formatJournalCivilDate(entry.date, language, "long");
+  const formattedShortDate = formatJournalCivilDate(entry.date, language, "short");
+  const formattedTime = createdAt.toLocaleTimeString(getLocale(language), {
     hour: "2-digit",
     minute: "2-digit",
   });
-  const relativeTime = useMemo(
-    () => formatJournalRelativeTime(entry.createdAt, language, ts),
-    [entry.createdAt, language, ts]
-  );
-
   const displayContent = useMemo(
     () => getJournalDisplayText(entry.content, ts),
     [entry.content, ts]
   );
   const displayTitle = entry.title ? getLocalizedEmotionLabel(entry.title, ts) : "";
-  const displayTags = entry.tags
-    .map((tag) => getLocalizedEmotionLabel(getJournalDisplayTag(tag), ts))
-    .filter(Boolean);
   const displayMood = getLocalizedMoodLabel(entry.mood, ts);
   const moodAura = getDiaryAura(entry.mood);
   const moodHeroStyle = moodAura
@@ -226,21 +261,14 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
         boxShadow: `0 12px 34px ${moodAura.color(0.24)}, inset 0 1px 0 ${moodAura.color(0.18)}`,
       }
     : undefined;
-  const moodTagStyle = moodAura
-    ? {
-        backgroundColor: moodAura.color(0.12),
-        borderColor: moodAura.color(0.24),
-        color: moodAura.color(0.96),
-      }
-    : undefined;
 
-  const wordCount = useMemo(() => countWords(displayContent), [displayContent]);
+  const wordCount = useMemo(() => countWordsHtml(displayContent), [displayContent]);
   const floatingPhotoIds = useMemo(
-    () => entry.photoIds.filter((photoId) => Boolean(entry.photoLayout?.[photoId])),
+    () => entry.photoIds.filter((photoId) => isJournalPhotoPlaced(entry.photoLayout?.[photoId])),
     [entry.photoIds, entry.photoLayout]
   );
   const galleryPhotoIds = useMemo(
-    () => entry.photoIds.filter((photoId) => !entry.photoLayout?.[photoId]),
+    () => entry.photoIds.filter((photoId) => !isJournalPhotoPlaced(entry.photoLayout?.[photoId])),
     [entry.photoIds, entry.photoLayout]
   );
 
@@ -261,7 +289,7 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
   const paperColor = PAPER_COLORS[entry.paperColor ?? "dark"] ? (entry.paperColor ?? "dark") : "dark";
   const paperColors = PAPER_COLORS[paperColor];
   const viewerInkColor = resolveViewerInkColor(entry.inkColor, paperColor);
-  const viewerFontSize = entry.fontSize ? FONT_SIZES[entry.fontSize] : undefined;
+  const viewerFontSize = entry.fontSize ? getScaledJournalFontSize(entry.fontSize) : undefined;
 
   const handleShare = async () => {
     const text = [entry.title, entry.content].filter(Boolean).join("\n\n");
@@ -311,37 +339,68 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
           className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label={ts.back || "Back"}
         >
-          <ArrowLeft className="w-5 h-5 text-foreground rtl:scale-x-[-1]" />
+          <ArrowLeft className="w-5 h-5 text-[var(--diary-text,hsl(var(--foreground)))] rtl:scale-x-[-1]" />
         </button>
 
-        <span className="text-xs text-muted-foreground">{relativeTime || entry.date}</span>
+        <span
+          data-testid="journal-entry-header-date"
+          className="hidden text-xs text-[var(--diary-muted,hsl(var(--muted-foreground)))] min-[520px]:inline"
+        >
+          {formattedShortDate}
+        </span>
 
         <div className="flex items-center gap-1">
+          {onToggleFavorite ? (
+            <button
+              type="button"
+              onClick={onToggleFavorite}
+              disabled={favoritePending}
+              aria-busy={favoritePending || undefined}
+              className={cn(
+                "p-2 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center",
+                "motion-safe:transition-[color,background-color,transform] active:scale-[0.96]",
+                "disabled:cursor-wait disabled:opacity-60 disabled:active:scale-100",
+                isFavorite
+                  ? "bg-primary/15 text-primary"
+                  : "text-[var(--diary-muted,hsl(var(--muted-foreground)))] hover:bg-muted/50"
+              )}
+              aria-label={
+                isFavorite
+                  ? ts.journalRemoveFavorite || "Remove from favorites"
+                  : ts.journalAddFavorite || "Add to favorites"
+              }
+              aria-pressed={isFavorite}
+            >
+              <Star className={cn("w-4 h-4", isFavorite && "fill-current")} aria-hidden="true" />
+            </button>
+          ) : null}
           <button
             onClick={handleShare}
-            className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-2 rounded-lg hover:bg-muted/50 text-[var(--diary-muted,hsl(var(--muted-foreground)))] min-w-[44px] min-h-[44px] flex items-center justify-center"
             aria-label={ts.shareButton || "Share"}
           >
             <Share2 className="w-4 h-4" />
           </button>
           <button
-            onClick={onDelete}
-            className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+            onClick={() => setDeleteConfirmOpen(true)}
+            className="p-2 rounded-lg hover:bg-destructive/10 text-[var(--diary-muted,hsl(var(--muted-foreground)))] min-w-[44px] min-h-[44px] flex items-center justify-center"
             aria-label={ts.delete || "Delete"}
           >
             <Trash2 className="w-4 h-4" />
           </button>
           <button
             onClick={onEdit}
+            aria-label={ts.journalEdit || "Edit"}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium min-h-[44px]",
+              "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium min-h-[44px]",
+              "max-[359px]:w-11 max-[359px]:px-0",
               "bg-primary text-primary-foreground border-primary/20",
               "active:scale-[0.98] motion-safe:transition-transform"
             )}
             style={moodActionStyle}
           >
             <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
-            {ts.journalEdit || "Edit"}
+            <span className="max-[359px]:sr-only">{ts.journalEdit || "Edit"}</span>
           </button>
         </div>
       </div>
@@ -437,15 +496,15 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
                 <DiaryMiniOrb mood={entry.mood} size="hero" className="relative scale-[1.02]" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
                   {ts.mood || "Mood"}
                 </p>
-                <span className="mt-1 block truncate text-2xl font-black leading-tight text-foreground">
+                <span className="mt-1 block whitespace-normal break-words text-2xl font-black leading-tight text-foreground">
                   {displayMood || entry.mood}
                 </span>
                 <p
                   data-testid="journal-entry-mood-hero-meta"
-                  className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs font-medium text-muted-foreground/70"
+                  className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs font-medium text-muted-foreground"
                 >
                   <span>{formattedTime}</span>
                   <span aria-hidden="true">&middot;</span>
@@ -467,16 +526,16 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
             backgroundColor: paperColors.bg,
             borderColor: paperColors.border,
             color: paperColors.text,
-          }}
+            "--journal-paper-text": paperColors.text,
+            "--journal-paper-muted": paperColors.muted,
+          } as React.CSSProperties}
         >
-          {floatingPhotoIds.length > 0 && entry.photoLayout && (
-            <ReadOnlyFloatingMediaLayer photoIds={floatingPhotoIds} layout={entry.photoLayout} />
-          )}
           {/* Title */}
           {entry.title && (
             <h1
-              className="text-xl font-bold leading-snug tracking-tight"
+              className="text-xl font-bold leading-snug tracking-tight [overflow-wrap:anywhere]"
               style={{ color: paperColors.text, fontFamily, fontStyle }}
+              dir="auto"
             >
               {displayTitle}
             </h1>
@@ -515,14 +574,58 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
 
           {/* Photos */}
           {galleryPhotoIds.length > 0 && (
-            <JournalPhotoGallery entryId={entry.id} photoIds={galleryPhotoIds} />
+            <JournalPhotoGallery
+              entryId={entry.id}
+              photoIds={galleryPhotoIds}
+              photoLayout={entry.photoLayout}
+            />
           )}
 
           {/* Audio recordings */}
+          {audioLoadError && (
+            <div
+              role="alert"
+              aria-live="polite"
+              className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+              style={{
+                color: paperColors.text,
+                borderColor: paperColors.border,
+                backgroundColor:
+                  "color-mix(in srgb, var(--journal-paper-text) 5%, transparent)",
+              }}
+            >
+              <p className="text-sm leading-6">
+                {ts.journalAudioLoadError || "This entry's audio could not be loaded."}
+              </p>
+              <button
+                type="button"
+                onClick={retryAudioLoad}
+                className={cn(
+                  "inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold",
+                  "motion-safe:transition-[background-color,transform] active:scale-[0.98]"
+                )}
+                style={{
+                  color: paperColors.text,
+                  borderColor: paperColors.border,
+                  backgroundColor:
+                    "color-mix(in srgb, var(--journal-paper-text) 8%, transparent)",
+                }}
+              >
+                <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                <span>{ts.journalAudioLoadRetry || "Try loading audio again"}</span>
+              </button>
+            </div>
+          )}
+
           {audioRecordings.length > 0 && (
             <div className="space-y-1.5">
-              {audioRecordings.map((audio) => (
-                <JournalAudioPlayer key={audio.id} src={audio.data} duration={audio.duration} />
+              {audioRecordings.map((audio, audioIndex) => (
+                <JournalAudioPlayer
+                  key={audio.id}
+                  src={audio.data}
+                  duration={audio.duration}
+                  index={audioIndex + 1}
+                />
               ))}
             </div>
           )}
@@ -530,33 +633,44 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
           {/* Content */}
           {displayContent && (
             <div
-              className="leading-7"
+              className="leading-7 [unicode-bidi:plaintext] [overflow-wrap:anywhere]"
               style={{ fontFamily, fontStyle, color: viewerInkColor, fontSize: viewerFontSize }}
+              dir="auto"
             >
               {renderContent(displayContent)}
             </div>
           )}
 
-          {/* Tags */}
-          {displayTags.length > 0 && (
-            <div className="flex gap-1.5 flex-wrap pt-2">
-              {displayTags.map((tag, index) => (
-                <span
-                  key={`${entry.id}-tag-${index}-${tag}`}
-                  className={cn(
-                    "text-xs px-3 py-1.5 rounded-full border",
-                    "bg-primary/10 text-primary/80 border-primary/10"
-                  )}
-                  data-testid="journal-entry-tag"
-                  style={moodTagStyle}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
+          {floatingPhotoIds.length > 0 && entry.photoLayout && (
+            <ReadOnlyFloatingMediaLayer
+              entryId={entry.id}
+              photoIds={floatingPhotoIds}
+              layout={entry.photoLayout}
+            />
           )}
+
         </div>
       </motion.div>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{ts.delete || "Delete"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {ts.journalDeleteConfirm || "Are you sure you want to delete this entry?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{ts.cancel || "Cancel"}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {ts.delete || "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });

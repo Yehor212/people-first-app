@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ar } from "@/i18n/languages/ar";
 import { de } from "@/i18n/languages/de";
@@ -14,7 +15,6 @@ import {
   JOURNAL_FIRST_USE_QUOTES,
 } from "../journalQuotes";
 
-const DAY_MS = 86_400_000;
 const supportedLocales = [
   { language: "en", translations: en },
   { language: "uk", translations: uk },
@@ -30,12 +30,14 @@ const firstUseExcludedQuoteIds = new Set([
   "quoteJournal6",
   "quoteJournal11",
   "quoteJournal13",
+  "quoteJournal14",
   "quoteJournal15",
   "quoteJournal16",
   "quoteJournal21",
   "quoteJournal22",
   "quoteJournal23",
   "quoteJournal24",
+  "quoteJournal9",
 ]);
 
 describe("journal quote restoration", () => {
@@ -59,14 +61,19 @@ describe("journal quote restoration", () => {
   });
 
   it("uses deterministic day indexing and falls back safely when a translation is missing", () => {
-    expect(getJournalEmptyQuoteIndex(new Date(0))).toBe(0);
-    expect(getJournalEmptyQuoteIndex(new Date(DAY_MS * 29))).toBe(29);
-    expect(getJournalEmptyQuoteIndex(new Date(DAY_MS * 30))).toBe(0);
+    const morning = new Date(2026, 2, 8, 0, 1);
+    const evening = new Date(2026, 2, 8, 23, 59);
+    const nextDay = new Date(2026, 2, 9, 0, 1);
+    const index = getJournalEmptyQuoteIndex(morning);
 
-    expect(getJournalQuote({ quoteJournal1: "Localized first" }, new Date(0), { scope: "all" })).toBe(
+    expect(getJournalEmptyQuoteIndex(evening)).toBe(index);
+    expect(getJournalEmptyQuoteIndex(nextDay)).toBe((index + 1) % JOURNAL_EMPTY_QUOTES.length);
+
+    const translationId = JOURNAL_EMPTY_QUOTES[index].translationId;
+    expect(getJournalQuote({ [translationId]: "Localized first" }, morning, { scope: "all" })).toBe(
       "Localized first",
     );
-    expect(getJournalQuote({}, new Date(0), { scope: "all" })).toBe(JOURNAL_EMPTY_QUOTES[0].fallback);
+    expect(getJournalQuote({}, morning, { scope: "all" })).toBe(JOURNAL_EMPTY_QUOTES[index].fallback);
   });
 
   it("keeps first-use empty states on the gentle subset without deleting restored legacy quotes", () => {
@@ -86,7 +93,18 @@ describe("journal quote restoration", () => {
       ),
     );
     for (let day = 0; day < JOURNAL_FIRST_USE_QUOTES.length * 3; day += 1) {
-      expect(excludedFallbacks).not.toContain(getJournalQuote({}, new Date(DAY_MS * day)));
+      expect(excludedFallbacks).not.toContain(getJournalQuote({}, new Date(2026, 0, 1 + day, 12)));
     }
+  });
+
+  it("uses the full restored pool for the regular daily journal quote while first use stays gentle", () => {
+    const regularList = readFileSync("src/features/journal/JournalEntryList.tsx", "utf8");
+    const firstUseCanvas = readFileSync("src/features/journal/DiaryEmptyCanvas.tsx", "utf8");
+
+    expect(regularList).toContain(
+      'getJournalQuote(ts, parseLocalDate(currentDay), { scope: "all" })',
+    );
+    expect(firstUseCanvas).toContain("getJournalQuote(ts)");
+    expect(firstUseCanvas).not.toContain('scope: "all"');
   });
 });

@@ -50,14 +50,23 @@ const SETTINGS_V2_COMFORT_VARS = [
   "--settings-v2-glass-blur",
   "--settings-v2-rim-light",
 ];
+const SETTINGS_V2_EMERALD_NIGHT_VARS = [
+  "--settings-v2-night-sky-top",
+  "--settings-v2-night-sky-mid",
+  "--settings-v2-night-sky-bottom",
+  "--settings-v2-night-aurora",
+  "--settings-v2-night-nebula-a",
+  "--settings-v2-night-nebula-b",
+  "--settings-v2-night-nebula-c",
+  "--settings-v2-night-vignette",
+  "--settings-v2-night-star",
+  "--settings-v2-night-star-halo",
+];
 const OLED_DRAWER_VISIBILITY_SELECTOR =
   ':root[data-theme="oled"] [data-theme-region="drawer-v2"] [data-testid^="drawer-v2-destination-"]';
 
 function themeBlock(theme: "paper" | "ink" | "oled"): string {
-  const pattern = new RegExp(
-    String.raw`:root\[data-theme="${theme}"\]\s*\{([\s\S]*?)\n\}`,
-    "g",
-  );
+  const pattern = new RegExp(String.raw`:root\[data-theme="${theme}"\]\s*\{([\s\S]*?)\n\}`, "g");
   return Array.from(css.matchAll(pattern), (match) => match[1]).join("\n");
 }
 
@@ -81,7 +90,7 @@ function cssRuleBlock(selector: string): string {
 
 function settingsReadablePageRuleBlock(): string {
   const match = css.match(
-    /:root\[data-theme="paper"\] \[data-v2-readable-page="settings"\],[\s\S]*?:root\[data-theme="oled"\] \[data-v2-readable-page="settings"\] \{([\s\S]*?)\n\}/,
+    /:root\[data-theme="paper"\] \[data-v2-readable-page="settings"\],[\s\S]*?:root\[data-theme="oled"\] \[data-v2-readable-page="settings"\] \{([\s\S]*?)\n\}/
   );
   if (!match) {
     throw new Error("Missing Settings readable page liquid glass rule");
@@ -144,7 +153,9 @@ describe("theme bridge variables", () => {
       expect(readVar(paper, cssVar)).toBe(value);
     }
 
-    expect(paper).not.toMatch(/--zf-role-(body|mind|focus|rest|energy|release|diary|space|gratitude|settings):/);
+    expect(paper).not.toMatch(
+      /--zf-role-(body|mind|focus|rest|energy|release|diary|space|gratitude|settings):/
+    );
   });
 
   it("settings liquid glass page background includes layered optical light over a shell base", () => {
@@ -182,7 +193,9 @@ describe("theme bridge variables", () => {
     expect(shell).toBe("148 31% 90%");
     expect(card).toBe("148 31% 90%");
     expect(panel).toBe("155 29% 77%");
-    expect(Math.max(...settingsLightness) - Math.min(...settingsLightness)).toBeGreaterThanOrEqual(8);
+    expect(Math.max(...settingsLightness) - Math.min(...settingsLightness)).toBeGreaterThanOrEqual(
+      8
+    );
     expect(hslHue(shell)).toBe(148);
     expect(hslHue(card)).toBe(148);
     expect(hslHue(panel)).toBe(155);
@@ -192,7 +205,7 @@ describe("theme bridge variables", () => {
     expect(readVar(paper, "--settings-v2-rim-light")).toBe("148 31% 90%");
   });
 
-  it("ink theme preserves the night V2 snapshot bridge while keeping settings tokens separate", () => {
+  it("ink theme preserves the V2 bridge while replacing the rejected swamp Settings palette", () => {
     const ink = themeBlock("ink");
     const snapshotCriticalVars = new Map([
       ["--surface-glass", "hsl(var(--zf-surface-1) / 0.82)"],
@@ -217,13 +230,190 @@ describe("theme bridge variables", () => {
       expect(readVar(ink, cssVar)).toBe(value);
     }
 
-    expect(readVar(ink, "--settings-v2-shell")).toBe("64 11% 27%");
-    expect(readVar(ink, "--settings-v2-card")).toBe("89 12% 37%");
-    expect(readVar(ink, "--settings-v2-panel")).toBe("152 32% 36%");
-    expect(readVar(ink, "--settings-v2-border")).toBe("153 22% 54%");
+    expect(readVar(ink, "--settings-v2-shell")).toBe("165 67% 2%");
+    expect(readVar(ink, "--settings-v2-card")).toBe("159 55% 6%");
+    expect(readVar(ink, "--settings-v2-panel")).toBe("159 43% 10%");
+    expect(readVar(ink, "--settings-v2-border")).toBe("158 30% 53%");
     expect(readVar(ink, "--settings-v2-accent")).toBe("155 29% 77%");
-    expect(readVar(ink, "--settings-v2-glass-blur")).toBe("24px");
-    expect(readVar(ink, "--settings-v2-rim-light")).toBe("148 31% 90%");
+    expect(readVar(ink, "--settings-v2-card-alpha")).toBe("0.92");
+    expect(readVar(ink, "--settings-v2-panel-alpha")).toBe("0.9");
+    expect(readVar(ink, "--settings-v2-glass-blur")).toBe("14px");
+    expect(readVar(ink, "--settings-v2-rim-light")).toBe("157 100% 96%");
+
+    for (const cssVar of SETTINGS_V2_EMERALD_NIGHT_VARS) {
+      expect(readVar(ink, cssVar)).toBeTruthy();
+    }
+  });
+
+  it("keeps the OLED Settings snapshot true black and separate from emerald ink", () => {
+    const oled = themeBlock("oled");
+
+    expect(readVar(oled, "--settings-v2-shell")).toBe("0 0% 0%");
+    expect(readVar(oled, "--settings-v2-card")).toBe("64 11% 14%");
+    expect(readVar(oled, "--settings-v2-panel")).toBe("152 32% 18%");
+    expect(readVar(oled, "--settings-v2-border")).toBe("153 22% 42%");
+    for (const cssVar of SETTINGS_V2_EMERALD_NIGHT_VARS) {
+      expect(() => readVar(oled, cssVar)).toThrow(`Missing ${cssVar}`);
+    }
+  });
+
+  it("uses an ink-only logical backdrop with bounded core motion and safe fallbacks", () => {
+    expect(css).toContain(':root[data-theme="ink"] .settings-emerald-night-backdrop');
+    expect(css).toContain('data-nav-layout="web"');
+    expect(css).toContain('data-nav-rail="expanded"');
+    expect(css).toContain('data-nav-rail="compact"');
+    expect(css).toContain("inset-inline-start");
+    expect(css).toContain('data-mobile-detail="true"');
+    expect(css).toContain("animation: none");
+    expect(css).toContain(".settings-emerald-night-backdrop__star-core");
+    expect(css).toContain("@keyframes settings-emerald-star-breathe");
+    expect(css).toContain('[data-motion-compact="true"]');
+    expect(css).toContain('[data-motion-desktop="true"]');
+    expect(css).toMatch(
+      /@media \(forced-colors: active\)[\s\S]*?\.settings-emerald-night-backdrop[\s\S]*?display:\s*none/
+    );
+    expect(css).toMatch(
+      /:root\[data-theme="ink"\] \.v2-edge-to-edge-surface\[data-active-page="settings"\][\s\S]*?hsl\(var\(--settings-v2-night-sky-mid\)\)/
+    );
+    expect(css).toMatch(
+      /:root\[data-theme="ink"\] \[data-v2-readable-page="settings"\][\s\S]*?background:\s*transparent/
+    );
+
+    const start = css.indexOf(".settings-emerald-night-backdrop");
+    const end = css.indexOf("/* V2 habits night polish", start);
+    const backdropCss = css.slice(start, end === -1 ? undefined : end);
+    expect(backdropCss).not.toMatch(/(?:^|[;{]\s*)(?:left|right)\s*:/m);
+    expect(backdropCss).toMatch(
+      /:root\[dir="rtl"\][\s\S]*?\.settings-emerald-night-backdrop__star[\s\S]*?transform:\s*translate3d\(50%,\s*-50%,\s*0\)/
+    );
+    const keyframeStart = backdropCss.indexOf("@keyframes settings-emerald-star-breathe");
+    const keyframeEnd = backdropCss.indexOf("\n}\n\n", keyframeStart);
+    const keyframeBody = backdropCss.slice(keyframeStart, keyframeEnd + 3);
+    expect(keyframeStart).toBeGreaterThanOrEqual(0);
+    expect(keyframeEnd).toBeGreaterThan(keyframeStart);
+    expect(keyframeBody).toContain("transform:");
+    expect(keyframeBody).toContain("opacity:");
+    expect(keyframeBody).toContain("scale3d(0.96, 0.96, 1)");
+    expect(keyframeBody).toContain("scale3d(1.06, 1.06, 1)");
+    expect(keyframeBody).not.toMatch(/\n\s*50%\s*\{/);
+    expect(keyframeBody).not.toMatch(/0%,\s*100%/);
+    expect(keyframeBody).not.toContain("filter:");
+    expect(backdropCss).toMatch(
+      /settings-emerald-star-breathe[\s\S]*?cubic-bezier\(0\.4, 0, 0\.2, 1\)[\s\S]*?infinite alternate/
+    );
+    expect(backdropCss).toContain("@media (prefers-reduced-motion: reduce)");
+  });
+
+  it("uses the shared Paper daylight material as a motion-gated logical Settings backdrop", () => {
+    const start = css.indexOf(".settings-day-cosmic-backdrop");
+    const end = css.indexOf("/* Approved Variant A", start);
+
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+
+    const dayBackdropCss = css.slice(start, end);
+    expect(dayBackdropCss).toContain("position: fixed");
+    expect(dayBackdropCss).toContain("var(--app-viewport-height)");
+    expect(dayBackdropCss).toContain("pointer-events: none");
+    expect(dayBackdropCss).toContain("contain: paint");
+    expect(dayBackdropCss).toContain('data-nav-rail="expanded"');
+    expect(dayBackdropCss).toContain('data-nav-rail="compact"');
+    expect(dayBackdropCss).toContain("inset-inline-start");
+    expect(dayBackdropCss).toContain('data-animated="false"');
+    expect(dayBackdropCss).toContain("will-change: auto");
+    expect(dayBackdropCss).toContain("backdrop-filter: none");
+    expect(dayBackdropCss).not.toContain("backdrop-filter: blur(");
+    expect(dayBackdropCss).not.toMatch(/(?:^|[;{]\s*)(?:left|right)\s*:/m);
+    expect(dayBackdropCss).toMatch(/--settings-v2-text-strong:\s*176 55% 5%/);
+    expect(dayBackdropCss).toMatch(/--foreground:\s*var\(--settings-v2-text-strong\)/);
+    expect(dayBackdropCss).toMatch(/--v2-readable-foreground:\s*var\(--settings-v2-text-strong\)/);
+    expect(css).toMatch(/--settings-v2-text-muted:\s*176 40% 12%/);
+    expect(dayBackdropCss).toMatch(/--settings-v2-text-muted:\s*176 45% 6%/);
+    expect(dayBackdropCss).toMatch(/--muted-foreground:\s*var\(--settings-v2-text-muted\)/);
+    expect(dayBackdropCss).toMatch(/--v2-readable-muted:\s*var\(--settings-v2-text-muted\)/);
+    expect(dayBackdropCss).toMatch(
+      /\[data-testid="settings-support-footer"\][\s\S]*?background-color:\s*hsl\(var\(--settings-v2-card\)\)[\s\S]*?background-image:\s*linear-gradient[\s\S]*?backdrop-filter:\s*none/
+    );
+
+    expect(css).toMatch(
+      /:root\[data-theme="paper"\] \[data-v2-readable-page="settings"\][\s\S]*?background:\s*transparent/
+    );
+    expect(css).toMatch(
+      /@media \(prefers-reduced-transparency: no-preference\)[\s\S]*?:root\[data-theme="paper"\][\s\S]*?background:\s*linear-gradient[\s\S]*?backdrop-filter:\s*none/
+    );
+    expect(css).toMatch(
+      /@media \(prefers-reduced-transparency: reduce\)[\s\S]*?\.settings-day-cosmic-backdrop[\s\S]*?display:\s*none/
+    );
+    expect(css).toMatch(
+      /@media \(forced-colors: active\)[\s\S]*?\.settings-day-cosmic-backdrop[\s\S]*?display:\s*none !important/
+    );
+    expect(css).toMatch(
+      /:root\[data-theme="paper"\]\[data-theme-contrast="high"\] \.settings-day-cosmic-backdrop[\s\S]*?display:\s*none/
+    );
+  });
+
+  it("uses opaque ink cards as the cross-browser baseline and opts into translucency explicitly", () => {
+    const inkCardRule = css.match(
+      /:root\[data-theme="ink"\]\s+\[data-v2-readable-page="settings"\]\s+\[data-testid="settings-page-control-card"\],[^{}]+\[data-testid="settings-theme-strip"\]\s*\{([^}]*)\}/
+    )?.[1];
+
+    expect(inkCardRule).toBeTruthy();
+    expect(inkCardRule).toContain("background: hsl(var(--settings-v2-card));");
+    expect(inkCardRule).toContain("-webkit-backdrop-filter: none;");
+    expect(inkCardRule).toContain("backdrop-filter: none;");
+    expect(css).toMatch(
+      /@media \(prefers-reduced-transparency: no-preference\)[\s\S]*?background:\s*hsl\(var\(--settings-v2-card\)\s*\/\s*var\(--settings-v2-card-alpha, 0\.92\)\)[\s\S]*?-webkit-backdrop-filter:\s*none[\s\S]*?backdrop-filter:\s*none/
+    );
+    const backdropStart = css.indexOf(".settings-emerald-night-backdrop");
+    const backdropEnd = css.indexOf("/* V2 habits night polish", backdropStart);
+    expect(css.slice(backdropStart, backdropEnd === -1 ? undefined : backdropEnd)).not.toContain(
+      "backdrop-filter: blur("
+    );
+  });
+
+  it("keeps a safe logical drawer rail while compacting other chrome below 360px", () => {
+    const feedbackGridStart = css.indexOf('[data-slot="settings-appearance-feedback"]');
+    const feedbackGridRule = css.slice(feedbackGridStart, feedbackGridStart + 300);
+    expect(feedbackGridStart).toBeGreaterThan(-1);
+    expect(feedbackGridRule).toContain("grid-template-columns: repeat(");
+    expect(feedbackGridRule).toContain("calc(8rem * var(--font-scale, 1))");
+    expect(css).toMatch(
+      /@media \(max-width: 359px\)[\s\S]*?\n\s{2}:root\[data-theme\] \[data-v2-readable-page="settings"\]\s*\{[\s\S]*?padding-inline-start:\s*calc\(var\(--safe-inline-start\) \+ var\(--v2-phone-drawer-rail\)\)[\s\S]*?padding-inline-end:\s*max\(var\(--v2-phone-content-inline-end\), var\(--safe-inline-end\)\)/
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 359px\)[\s\S]*?\[data-testid="nav-v2-open-drawer"\][\s\S]*?inline-size:\s*var\(--v2-phone-drawer-size\)[\s\S]*?block-size:\s*var\(--v2-phone-drawer-size\)/
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 359px\)[\s\S]*?\[data-slot="settings-panel-header"\][\s\S]*?gap:\s*12px/
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 359px\)[\s\S]*?\[data-slot="settings-panel-icon"\][\s\S]*?inline-size:\s*40px[\s\S]*?block-size:\s*40px/
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 359px\)[\s\S]*?\[data-slot="settings-footer-legal-action"\][\s\S]*?padding-inline:\s*4px/
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 359px\)[\s\S]*?\[data-slot="settings-appearance-feedback-rail"\][\s\S]*?inset-inline-start:\s*max\(16px, var\(--safe-inline-start\)\)[\s\S]*?inset-inline-end:\s*max\(16px, var\(--safe-inline-end\)\)/
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 359px\)[\s\S]*?\[data-slot="settings-appearance-feedback"\][\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) 48px[\s\S]*?gap:\s*8px[\s\S]*?padding-inline:\s*12px/
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 359px\)[\s\S]*?\[data-slot="settings-appearance-feedback-message"\][\s\S]*?grid-column:\s*1 \/ -1/
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 359px\)[\s\S]*?\[data-slot="settings-appearance-feedback-dismiss"\][\s\S]*?inline-size:\s*48px[\s\S]*?block-size:\s*48px/
+    );
+  });
+
+  it("keeps mobile Settings detail hierarchy identical across visual themes", () => {
+    const inkOnlyDetailHero =
+      /:root\[data-theme="ink"\]\s+\[data-v2-readable-page="settings"\]\[data-mobile-detail="true"\]\s+\[data-testid="settings-page-control-card"\]\s*\{/;
+    const themeNeutralDetailHero =
+      /@media \(max-width: 639px\) \{[\s\S]*?\n\s{2}\[data-v2-readable-page="settings"\]\[data-mobile-detail="true"\]\s+\[data-testid="settings-page-control-card"\]\s*\{\s*display:\s*none;/;
+
+    expect(css).not.toMatch(inkOnlyDetailHero);
+    expect(css).toMatch(themeNeutralDetailHero);
   });
 
   it("dark themes avoid theme-local edge-bleed haze overrides", () => {
@@ -250,28 +440,26 @@ describe("theme bridge variables", () => {
 
   it("applies high-contrast readability and focus tokens across V2 instead of only Settings", () => {
     expect(css).toContain(':root[data-theme-contrast="high"]');
-    expect(css).toContain('--foreground: var(--settings-v2-text-strong)');
-    expect(css).toContain('--muted-foreground: var(--settings-v2-text-muted)');
-    expect(css).toContain('--ring: var(--settings-v2-focus)');
+    expect(css).toContain("--foreground: var(--settings-v2-text-strong)");
+    expect(css).toContain("--muted-foreground: var(--settings-v2-text-muted)");
+    expect(css).toContain("--ring: var(--settings-v2-focus)");
     expect(css).not.toContain(
-      ':root[data-theme-contrast="high"] [data-v2-readable-page="settings"] {',
+      ':root[data-theme-contrast="high"] [data-v2-readable-page="settings"] {'
     );
   });
 
   it("uses a strong readable label color for every selected Settings choice", () => {
     const primitiveSource = readFileSync(
       join(__dirname, "../pages/nav-v2/settings/components/V2SettingsControlPrimitives.tsx"),
-      "utf-8",
+      "utf-8"
     );
-    expect(primitiveSource).toContain(
-      'bg-[hsl(var(--settings-v2-accent)/0.1)] text-foreground',
-    );
+    expect(primitiveSource).toContain("bg-[hsl(var(--settings-v2-accent)/0.1)] text-foreground");
     const selectedChoiceSource = primitiveSource.slice(
       primitiveSource.indexOf("const SETTINGS_CHOICE_SELECTED_CLASS"),
-      primitiveSource.indexOf("export function PanelFrame"),
+      primitiveSource.indexOf("export function PanelFrame")
     );
     expect(selectedChoiceSource).not.toContain(
-      'bg-[hsl(var(--settings-v2-accent)/0.1)] text-[hsl(var(--settings-v2-accent))]',
+      "bg-[hsl(var(--settings-v2-accent)/0.1)] text-[hsl(var(--settings-v2-accent))]"
     );
   });
 });

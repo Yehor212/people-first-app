@@ -21,7 +21,7 @@ describe("JournalSettingsContent visual polish", () => {
       /<SectionCard\s+title=\{ts\.journalPrivateMode[\s\S]*?<\/SectionCard>/.exec(source)?.[0] ??
       "";
 
-    expect(privateModeCard).toContain('aria-label={ts.journalPrivateMode || "Hide previews"}');
+    expect(privateModeCard).toContain('aria-label={ts.journalPrivateMode || "Conceal diary list"}');
     expect(privateModeCard.match(/ts\.journalPrivateMode(?!Hint)/g)?.length).toBe(2);
     expect(privateModeCard.match(/ts\.journalPrivateModeHint/g)?.length).toBe(1);
   });

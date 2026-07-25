@@ -14,12 +14,24 @@ import {
   ActionPerformed,
   PushNotificationSchema,
 } from "@capacitor/push-notifications";
+import type { PluginListenerHandle } from "@capacitor/core";
 import { isNative, isAndroid } from "@/lib/platform";
 import { supabase, getCurrentUserId } from "./supabaseClient";
 import { logger } from "./logger";
 import { SK } from "./storageKeys";
-import { storageGetRaw, storageRemove, storageSetRaw } from "./safeJson";
+import { storageGetRaw, storageReadRaw, storageRemove, storageSetRaw } from "./safeJson";
 import { SUPABASE_URL } from "@/lib/env";
+import { getLocalDataOwnerId } from "@/storage/db";
+import { readPendingLocalBackupAccountClaim } from "@/storage/accountBoundaryRuntime";
+import { getCurrentChannelId } from "./notificationSounds";
+import {
+  activateNativePushRealm,
+  isCanonicalPushRealmId,
+  isPushRealmChannelId,
+  isPushRealmLanguage,
+  suspendNativePushRealm,
+  type PushRealmLanguage,
+} from "./nativePushRealm";
 
 /**
  * Generate a cryptographically secure random hex string.
@@ -38,9 +50,149 @@ let latestPushTokenSaveRequestId = 0;
 let pushTokenSaveTail: Promise<void> = Promise.resolve();
 let pushInitializationTail: Promise<void> = Promise.resolve();
 let pushRevocationTail: Promise<void> = Promise.resolve();
+let pushListenerHandles: PluginListenerHandle[] = [];
+let stalePushListenerHandles: PluginListenerHandle[] = [];
+let activePushListenerEpoch = 0;
+
+interface OwnerBoundPushRevocationRpcClient {
+  rpc(
+    functionName: "revoke_push_install",
+    args: {
+      p_device_id: string;
+      p_expected_owner_user_id: string;
+      p_token: string | null;
+    },
+  ): PromiseLike<{ data: unknown; error: unknown }>;
+}
+
+interface OwnerBoundPushClaimRpcClient {
+  rpc(
+    functionName: "claim_push_install",
+    args: {
+      p_token: string;
+      p_device_id: string;
+      p_expected_owner_user_id: string;
+      p_platform: "android" | "ios";
+    },
+  ): PromiseLike<{ data: unknown; error: unknown }>;
+}
+
+function claimOwnedPushInstall(
+  client: unknown,
+  args: {
+    p_token: string;
+    p_device_id: string;
+    p_expected_owner_user_id: string;
+    p_platform: "android" | "ios";
+  },
+): PromiseLike<{ data: unknown; error: unknown }> {
+  return (client as OwnerBoundPushClaimRpcClient).rpc("claim_push_install", args);
+}
+
+function revokeOwnedPushInstall(
+  client: unknown,
+  args: {
+    p_device_id: string;
+    p_expected_owner_user_id: string;
+    p_token: string | null;
+  },
+): PromiseLike<{ data: unknown; error: unknown }> {
+  // This narrow forward contract is kept beside the call until canonical
+  // Supabase type generation includes the owner-bound migration. Runtime data
+  // is validated below; the generated database file is never hand-edited.
+  return (client as OwnerBoundPushRevocationRpcClient).rpc(
+    "revoke_push_install",
+    args,
+  );
+}
+
+function isValidRevocationCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+
+function getCurrentPushRealmPresentation(): {
+  language: PushRealmLanguage;
+  channelId: "zenflow_default_v4" | "zenflow_gentle_v4" | "zenflow_silent_v4";
+} {
+  const storedLanguage = storageGetRaw(SK.LANGUAGE, "en");
+  const language = isPushRealmLanguage(storedLanguage) ? storedLanguage : "en";
+  const selectedChannelId = getCurrentChannelId();
+  const channelId = isPushRealmChannelId(selectedChannelId)
+    ? selectedChannelId
+    : "zenflow_default_v4";
+  return { language, channelId };
+}
+
+function removePersistedPushTokenIfExact(token: string): void {
+  const stored = storageReadRaw(SK.PUSH_TOKEN);
+  if (stored.ok && stored.value === token) {
+    storageRemove(SK.PUSH_TOKEN);
+  }
+}
+
+async function suspendAndRevokeOwnedPushInstall(
+  client: unknown,
+  args: {
+    p_device_id: string;
+    p_expected_owner_user_id: string;
+    p_token: string;
+  },
+): Promise<boolean> {
+  try {
+    await suspendNativePushRealm();
+  } catch (error) {
+    logger.error("[Push] Native push realm suspension failed:", error);
+    return false;
+  }
+
+  try {
+    const { data, error } = await revokeOwnedPushInstall(client, args);
+    if (error) {
+      logger.error("[Push] Failed to revoke the push installation:", error);
+      return false;
+    }
+    if (data !== 1) {
+      logger.error(
+        isValidRevocationCount(data)
+          ? "[Push] Push rollback did not remove the claimed installation"
+          : "[Push] Push revocation returned an invalid result",
+      );
+      return false;
+    }
+    return true;
+  } catch (error) {
+    logger.error("[Push] Push installation rollback failed:", error);
+    return false;
+  }
+}
 
 function isCurrentPushGeneration(expectedGeneration?: number): boolean {
   return expectedGeneration === undefined || expectedGeneration === pushRegistrationGeneration;
+}
+
+async function resolveAdmittedPushOwner(
+  expectedUserId?: string,
+): Promise<string | null> {
+  if (readPendingLocalBackupAccountClaim().status !== "none") return null;
+
+  try {
+    const [activeUserId, localOwnerUserId] = await Promise.all([
+      getCurrentUserId(),
+      getLocalDataOwnerId(),
+    ]);
+    if (
+      !activeUserId ||
+      localOwnerUserId !== activeUserId ||
+      (expectedUserId !== undefined && activeUserId !== expectedUserId) ||
+      readPendingLocalBackupAccountClaim().status !== "none"
+    ) {
+      return null;
+    }
+    return activeUserId;
+  } catch (error) {
+    logger.warn("[Push] Could not verify the active local owner:", error);
+    return null;
+  }
 }
 
 /**
@@ -100,12 +252,17 @@ export async function requestPushPermission(): Promise<boolean> {
  */
 export async function registerPushNotifications(
   expectedGeneration: number = pushRegistrationGeneration,
+  expectedOwnerUserId?: string,
 ): Promise<string | null> {
   if (!isPushAvailable()) {
     return null;
   }
 
   try {
+    const admittedOwnerUserId =
+      expectedOwnerUserId ?? (await resolveAdmittedPushOwner());
+    if (!admittedOwnerUserId) return null;
+
     // Check/request permission
     const hasPermission = await requestPushPermission();
     if (!hasPermission) {
@@ -114,10 +271,16 @@ export async function registerPushNotifications(
     }
 
     if (!isCurrentPushGeneration(expectedGeneration)) return null;
+    if ((await resolveAdmittedPushOwner(admittedOwnerUserId)) !== admittedOwnerUserId) {
+      return null;
+    }
 
     // Register with FCM
     await PushNotifications.register();
-    if (!isCurrentPushGeneration(expectedGeneration)) {
+    if (
+      !isCurrentPushGeneration(expectedGeneration) ||
+      (await resolveAdmittedPushOwner(admittedOwnerUserId)) !== admittedOwnerUserId
+    ) {
       await PushNotifications.unregister();
       return null;
     }
@@ -148,7 +311,7 @@ async function savePushTokenNow(
   }
   const client = supabase;
 
-  const userId = await getCurrentUserId();
+  const userId = await resolveAdmittedPushOwner();
   if (requestId !== latestPushTokenSaveRequestId) return false;
   if (!userId) {
     logger.warn("[Push] User not authenticated");
@@ -159,23 +322,28 @@ async function savePushTokenNow(
     const deviceIdValue = await getPushInstallId();
     if (requestId !== latestPushTokenSaveRequestId) return false;
     if (!isCurrentPushGeneration(expectedGeneration)) return false;
+    if ((await resolveAdmittedPushOwner(userId)) !== userId) return false;
 
-    const revokeCurrentInstall = async (): Promise<boolean> => {
-      const { error } = await client.rpc("revoke_push_install", {
+    const rollbackCurrentInstall = async (): Promise<boolean> => {
+      const remoteRevocationConfirmed = await suspendAndRevokeOwnedPushInstall(client, {
         p_device_id: deviceIdValue,
+        p_expected_owner_user_id: userId,
         p_token: token,
       });
-      if (error) {
-        logger.error("[Push] Failed to revoke the push installation:", error);
-        return false;
+
+      if (remoteRevocationConfirmed) {
+        removePersistedPushTokenIfExact(token);
+      } else if (!storageSetRaw(SK.PUSH_TOKEN, token)) {
+        logger.error("[Push] Push rollback is unconfirmed and its token could not be retained");
       }
-      return true;
+      return remoteRevocationConfirmed;
     };
 
-    const { error } = await client.rpc("claim_push_install", {
+    const { data: claimedInstallationId, error } = await claimOwnedPushInstall(client, {
       p_token: token,
       p_device_id: deviceIdValue,
       p_platform: "android",
+      p_expected_owner_user_id: userId,
     });
 
     if (error) {
@@ -183,16 +351,57 @@ async function savePushTokenNow(
       return false;
     }
 
+    if (!isCanonicalPushRealmId(claimedInstallationId)) {
+      logger.error("[Push] Push claim returned an invalid installation identifier");
+      await rollbackCurrentInstall();
+      return false;
+    }
+
     if (
       requestId !== latestPushTokenSaveRequestId ||
-      !isCurrentPushGeneration(expectedGeneration)
+      !isCurrentPushGeneration(expectedGeneration) ||
+      (await resolveAdmittedPushOwner(userId)) !== userId
     ) {
-      await revokeCurrentInstall();
+      await rollbackCurrentInstall();
+      return false;
+    }
+
+    if (!storageSetRaw(SK.PUSH_TOKEN, token)) {
+      logger.error("[Push] Token was claimed remotely but could not be persisted locally");
+      await rollbackCurrentInstall();
+      return false;
+    }
+
+    if (
+      requestId !== latestPushTokenSaveRequestId ||
+      !isCurrentPushGeneration(expectedGeneration) ||
+      (await resolveAdmittedPushOwner(userId)) !== userId
+    ) {
+      await rollbackCurrentInstall();
+      return false;
+    }
+
+    try {
+      await activateNativePushRealm({
+        installationId: claimedInstallationId,
+        ...getCurrentPushRealmPresentation(),
+      });
+    } catch (error) {
+      logger.error("[Push] Native push realm activation failed:", error);
+      await rollbackCurrentInstall();
+      return false;
+    }
+
+    if (
+      requestId !== latestPushTokenSaveRequestId ||
+      !isCurrentPushGeneration(expectedGeneration) ||
+      (await resolveAdmittedPushOwner(userId)) !== userId
+    ) {
+      await rollbackCurrentInstall();
       return false;
     }
 
     logger.log("[Push] Token saved successfully");
-    storageSetRaw(SK.PUSH_TOKEN, token);
     return true;
   } catch (error) {
     logger.error("[Push] Token save error:", error);
@@ -222,21 +431,38 @@ export type PushRevocationResult =
   | {
       status: "revoked";
       remote: "deleted" | "not-registered";
-      native: "unregistered" | "not-applicable";
+      native: "unregistered" | "not-applicable" | "owner-changed";
     }
   | {
       status: "partial";
       remote: "deleted" | "not-registered" | "owner-changed" | "failed";
-      native: "unregistered" | "not-applicable" | "failed";
+      native: "unregistered" | "not-applicable" | "owner-changed" | "failed";
     };
 
 async function removePushTokenNow(
   expectedOwnerUserId?: string,
 ): Promise<PushRevocationResult> {
   await pushTokenSaveTail;
-  const currentToken = storageGetRaw(SK.PUSH_TOKEN);
-  const currentInstallId = pushInstallId ?? storageGetRaw(SK.PUSH_INSTALL_ID);
-  let remote: PushRevocationResult["remote"] = "not-registered";
+  try {
+    await suspendNativePushRealm();
+  } catch (error) {
+    logger.error("[Push] Native push realm suspension failed:", error);
+    return {
+      status: "partial",
+      remote: "failed",
+      native: "failed",
+    };
+  }
+
+  const tokenRead = storageReadRaw(SK.PUSH_TOKEN);
+  const installRead = pushInstallId
+    ? ({ ok: true, value: pushInstallId } as const)
+    : storageReadRaw(SK.PUSH_INSTALL_ID);
+  const currentToken = tokenRead.ok ? tokenRead.value ?? "" : "";
+  const currentInstallId = installRead.ok ? installRead.value ?? "" : "";
+  let remote: PushRevocationResult["remote"] = "failed";
+  let revocationOwnerUserId: string | null = null;
+  let remoteRevocationConfirmed = false;
 
   if (currentToken || currentInstallId) {
     if (!supabase) {
@@ -245,58 +471,61 @@ async function removePushTokenNow(
       const userId = await getCurrentUserId();
       if (!userId) {
         remote = "failed";
-      } else if (currentInstallId) {
+      } else {
+        revocationOwnerUserId = expectedOwnerUserId ?? userId;
+      }
+
+      if (revocationOwnerUserId && currentInstallId) {
         try {
-          const { error } = await supabase.rpc("revoke_push_install", {
+          const { data, error } = await revokeOwnedPushInstall(supabase, {
             p_device_id: currentInstallId,
+            p_expected_owner_user_id: revocationOwnerUserId,
             p_token: currentToken || null,
           });
           if (error) {
             remote = "failed";
             logger.error("[Push] Failed to revoke the remote installation:", error);
+          } else if (!isValidRevocationCount(data)) {
+            remote = "failed";
+            logger.error("[Push] Push revocation returned an invalid result");
           } else {
-            remote = "deleted";
-            storageRemove(SK.PUSH_TOKEN);
-            storageRemove(SK.PUSH_INSTALL_ID);
-            pushInstallId = null;
+            remote = data > 0 ? "deleted" : "not-registered";
+            remoteRevocationConfirmed = true;
           }
         } catch (error) {
           remote = "failed";
           logger.error("[Push] Remote installation revocation failed:", error);
         }
-      } else if (expectedOwnerUserId && userId !== expectedOwnerUserId) {
+      } else if (revocationOwnerUserId && expectedOwnerUserId && userId !== expectedOwnerUserId) {
         remote = "owner-changed";
-      } else {
-        try {
-          let deleteQuery = supabase
-            .from("push_device_tokens")
-            .delete()
-            .eq("user_id", userId);
-
-          deleteQuery = currentInstallId
-            ? deleteQuery.eq("device_id", currentInstallId)
-            : deleteQuery.eq("token", currentToken);
-
-          const { error } = await deleteQuery;
-          if (error) {
-            remote = "failed";
-            logger.error("[Push] Failed to revoke the remote registration:", error);
-          } else {
-            remote = "deleted";
-            storageRemove(SK.PUSH_TOKEN);
-            storageRemove(SK.PUSH_INSTALL_ID);
-            pushInstallId = null;
-          }
-        } catch (error) {
-          remote = "failed";
-          logger.error("[Push] Remote registration revocation failed:", error);
-        }
+      } else if (revocationOwnerUserId) {
+        remote = "failed";
+        logger.warn("[Push] The install identifier is absent; remote revocation cannot be proven");
       }
     }
+  } else {
+    revocationOwnerUserId = expectedOwnerUserId ?? (await getCurrentUserId());
+    logger.warn(
+      tokenRead.ok && installRead.ok
+        ? "[Push] Local identifiers are absent; remote revocation cannot be proven"
+        : "[Push] Local identifiers are unavailable; remote revocation cannot be proven"
+    );
   }
 
   let native: PushRevocationResult["native"] = "not-applicable";
-  if (isPushAvailable()) {
+  let activeOwnerAfterRemote: string | null = null;
+  if (revocationOwnerUserId) {
+    activeOwnerAfterRemote = await getCurrentUserId();
+  }
+  const ownerStillMatches =
+    revocationOwnerUserId !== null &&
+    activeOwnerAfterRemote === revocationOwnerUserId;
+
+  const shouldUnregisterNative =
+    isPushAvailable() &&
+    (ownerStillMatches || (expectedOwnerUserId !== undefined && !remoteRevocationConfirmed));
+
+  if (shouldUnregisterNative) {
     try {
       await PushNotifications.unregister();
       native = "unregistered";
@@ -304,6 +533,14 @@ async function removePushTokenNow(
       native = "failed";
       logger.error("[Push] Native registration revocation failed:", error);
     }
+  } else if (revocationOwnerUserId && !ownerStillMatches) {
+    native = "owner-changed";
+  }
+
+  if (remoteRevocationConfirmed && ownerStillMatches) {
+    storageRemove(SK.PUSH_TOKEN);
+    storageRemove(SK.PUSH_INSTALL_ID);
+    pushInstallId = null;
   }
 
   if (remote !== "failed" && remote !== "owner-changed" && native !== "failed") {
@@ -332,9 +569,9 @@ export function removePushToken(): Promise<PushRevocationResult> {
 }
 
 /**
- * Revokes the previous account's native registration after Supabase has already
- * switched sessions. Remote deletion is attempted only while RLS owner identity
- * still matches, avoiding accidental deletion attempts against the new account.
+ * Revokes only the previous account's server row across an account switch. The
+ * RPC carries that expected owner, and native/local state is preserved whenever
+ * the active session has already moved to another account.
  */
 export function revokePushForAccountBoundary(
   expectedOwnerUserId: string,
@@ -345,15 +582,23 @@ export function revokePushForAccountBoundary(
   return enqueuePushRevocation(expectedOwnerUserId);
 }
 
+type PushNotificationKind = "mood" | "habit" | "focus" | "test";
+
+function readPushNotificationKind(
+  notification: PushNotificationSchema,
+): PushNotificationKind | null {
+  const data = notification.data as Record<string, unknown> | undefined;
+  const value = data?.zenflow_notification_type;
+  return value === "mood" || value === "habit" || value === "focus" || value === "test"
+    ? value
+    : null;
+}
+
 /**
  * Handle push notification tap action
  */
 function handlePushAction(notification: PushNotificationSchema): void {
-  logger.log("[Push] Action:", notification);
-
-  // Get notification data
-  const data = notification.data as Record<string, string> | undefined;
-  const type = data?.type;
+  const type = readPushNotificationKind(notification);
 
   // Navigate based on notification type
   switch (type) {
@@ -367,47 +612,89 @@ function handlePushAction(notification: PushNotificationSchema): void {
     case "focus":
       logger.log("[Push] Focus reminder tapped");
       break;
+    case "test":
+      logger.log("[Push] Test notification tapped");
+      break;
     default:
       logger.log("[Push] Generic notification tapped");
   }
+}
+
+async function removePushListenerHandles(
+  handles: readonly PluginListenerHandle[],
+): Promise<PluginListenerHandle[]> {
+  const failedHandles: PluginListenerHandle[] = [];
+  for (const handle of handles) {
+    try {
+      await handle.remove();
+    } catch (error) {
+      failedHandles.push(handle);
+      logger.error("[Push] Listener removal failed:", error);
+    }
+  }
+  return failedHandles;
 }
 
 /**
  * Setup push notification listeners
  * Call this once on app start
  */
-export function setupPushListeners(
+export async function setupPushListeners(
   expectedGeneration: number = pushRegistrationGeneration,
-): void {
+): Promise<void> {
   if (!isPushAvailable()) return;
 
-  // Token received
-  // Don't log token values, even partially
-  void PushNotifications.addListener("registration", async (token: Token) => {
-    logger.log("[Push] Token received (length:", token.value.length, ")");
-    await savePushToken(token.value, expectedGeneration);
-  });
+  const previousHandles = pushListenerHandles;
+  const previousStaleHandles = stalePushListenerHandles;
+  const nextListenerEpoch = activePushListenerEpoch + 1;
+  const nextHandles: PluginListenerHandle[] = [];
+  try {
+    nextHandles.push(
+      await PushNotifications.addListener("registration", async (token: Token) => {
+        if (activePushListenerEpoch !== nextListenerEpoch) return;
+        logger.log("[Push] Token received (length:", token.value.length, ")");
+        await savePushToken(token.value, expectedGeneration);
+      }),
+    );
+    nextHandles.push(
+      await PushNotifications.addListener("registrationError", (error) => {
+        if (activePushListenerEpoch !== nextListenerEpoch) return;
+        logger.error("[Push] Registration error:", error);
+      }),
+    );
+    nextHandles.push(
+      await PushNotifications.addListener("pushNotificationReceived", (notification) => {
+        if (activePushListenerEpoch !== nextListenerEpoch) return;
+        const kind = readPushNotificationKind(notification);
+        logger.log(kind ? `[Push] Foreground ${kind} notification` : "[Push] Foreground notification");
+      }),
+    );
+    nextHandles.push(
+      await PushNotifications.addListener(
+        "pushNotificationActionPerformed",
+        (action: ActionPerformed) => {
+          if (activePushListenerEpoch !== nextListenerEpoch) return;
+          handlePushAction(action.notification);
+        },
+      ),
+    );
+  } catch (error) {
+    stalePushListenerHandles = [
+      ...previousStaleHandles,
+      ...(await removePushListenerHandles(nextHandles)),
+    ];
+    throw error;
+  }
 
-  // Registration error
-  void PushNotifications.addListener("registrationError", (error) => {
-    logger.error("[Push] Registration error:", error);
-  });
-
-  // Notification received while app is in foreground
-  void PushNotifications.addListener("pushNotificationReceived", (notification) => {
-    logger.log("[Push] Foreground notification:", notification.title);
-    // In foreground, we might want to show a toast instead
-    // The system won't show a heads-up notification when app is open
-  });
-
-  // Notification tapped
-  void PushNotifications.addListener(
-    "pushNotificationActionPerformed",
-    (action: ActionPerformed) => {
-      logger.log("[Push] Notification tapped");
-      handlePushAction(action.notification);
-    }
-  );
+  pushListenerHandles = nextHandles;
+  activePushListenerEpoch = nextListenerEpoch;
+  stalePushListenerHandles = await removePushListenerHandles([
+    ...previousStaleHandles,
+    ...previousHandles,
+  ]);
+  if (stalePushListenerHandles.length > 0) {
+    logger.warn("[Push] Inactive listener cleanup will be retried");
+  }
 
   logger.log("[Push] Listeners setup complete");
 }
@@ -426,15 +713,15 @@ export function initializePushNotifications(): Promise<void> {
     await pendingRevocations;
     if (!isCurrentPushGeneration(expectedGeneration)) return;
 
-    const userId = await getCurrentUserId();
+    const userId = await resolveAdmittedPushOwner();
     if (!isCurrentPushGeneration(expectedGeneration)) return;
     if (!userId) {
       logger.log("[Push] Skipping - user not authenticated");
       return;
     }
 
-    setupPushListeners(expectedGeneration);
-    await registerPushNotifications(expectedGeneration);
+    await setupPushListeners(expectedGeneration);
+    await registerPushNotifications(expectedGeneration, userId);
   });
   pushInitializationTail = initialization.then(
     () => undefined,
@@ -461,11 +748,7 @@ export async function sendTestPush(): Promise<boolean> {
         Authorization: `Bearer ${session.access_token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        type: "test",
-        title: "🧪 Test Push",
-        body: "Push notifications work! 🎉",
-      }),
+      body: JSON.stringify({ type: "test" }),
     });
 
     if (!response.ok) {

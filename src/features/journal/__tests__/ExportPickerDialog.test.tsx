@@ -73,7 +73,11 @@ describe("ExportPickerDialog", () => {
     );
     expect(a11yMocks.createFocusTrap).toHaveBeenCalledWith(
       dialog,
-      expect.objectContaining({ initialFocus: expect.any(HTMLButtonElement) }),
+      expect.objectContaining({ initialFocus: expect.any(HTMLHeadingElement) }),
+    );
+    expect(screen.getByRole("heading", { name: "Export Format" })).toHaveAttribute(
+      "tabindex",
+      "-1",
     );
   });
 
@@ -110,6 +114,20 @@ describe("ExportPickerDialog", () => {
 
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog")).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("does not offer PDF until journal Unicode and RTL embedding is supported", () => {
+    render(
+      <ExportPickerDialog
+        ts={ts}
+        language="ja"
+        exporting={false}
+        setExporting={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: /pdf/i })).not.toBeInTheDocument();
   });
 
   it("shows and announces export failures", async () => {
@@ -155,9 +173,8 @@ describe("ExportPickerDialog", () => {
   });
 
   it.each([
-    { button: /csv/i, fn: exportMocks.exportCSV, args: ["en"] },
-    { button: /pdf/i, fn: exportMocks.exportPDF, args: [undefined, "en"] },
-    { button: /markdown/i, fn: exportMocks.exportMarkdown, args: ["en"] },
+    { button: /csv/i, fn: exportMocks.exportCSV, args: ["en", "CSV"] },
+    { button: /markdown/i, fn: exportMocks.exportMarkdown, args: ["en", "Markdown"] },
   ])("exports $button format with the active language", async ({ button, fn, args }) => {
     const onClose = vi.fn();
 

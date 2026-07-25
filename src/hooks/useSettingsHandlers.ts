@@ -5,10 +5,25 @@ import { generateId } from '@/lib/utils';
 import { normalizeHabit } from '@/lib/habits';
 import { runWithDataWriteBarrier } from '@/hooks/useIndexedDB';
 import { clearLocalUserData, db } from '@/storage/db';
-import { quiesceCloudSync, resumeCloudSync, startAutoSync, syncWithCloud } from '@/storage/cloudSync';
+import {
+  getCloudSyncAccountBoundaryEpoch,
+  isCloudSyncSuspendedForAccountBoundary,
+  quiesceCloudSync,
+  resumeCloudSync,
+  syncWithCloud,
+} from '@/storage/cloudSync';
 import { offlineQueue } from '@/lib/offlineQueue';
-import { getCurrentSessionUserId } from '@/lib/supabaseClient';
-import type { ScheduleEvent } from '@/types';
+import {
+  assertSettingsOwnerCurrentWithinDataWriteBarrier,
+  readVerifiedSettingsOwnerRealm,
+} from '@/lib/settingsOwnerBoundary';
+import type { OriginAccountBoundaryGeneration } from '@/storage/accountBoundaryRuntime';
+import { commitReminderSettingsUpdate } from '@/storage/reminderPersistence';
+import {
+  commitPrivacySettingsUpdate,
+  commitProfileNameUpdate,
+} from '@/storage/settingsPreferencePersistence';
+import type { PrivacySettings, ReminderSettings, ScheduleEvent } from '@/types';
 
 /**
  * Settings/data management handlers extracted from Index.tsx.
@@ -40,38 +55,143 @@ export function useSettingsHandlers(allScheduleEvents: ScheduleEvent[]) {
   }, [setMoods, setHabits, setFocusSessions, setGratitudeEntries, setScheduleEvents, setCanvasGoals, setUserName, setUserNameCustom, setOnboardingComplete, setHasSelectedLanguage]);
 
   const handleResetData = useCallback(async () => {
-    if (await getCurrentSessionUserId()) {
+    const ownerRealm = await readVerifiedSettingsOwnerRealm('Local data reset');
+    if (ownerRealm.kind === 'account') {
       throw new Error('Sign out before clearing local-only data');
     }
-    await quiesceCloudSync();
-    let queueSuspended = false;
+    let cloudEpoch: number | null = null;
+    let queueEpoch: number | null = null;
+    const ownsWriterSuspension = (): boolean =>
+      cloudEpoch !== null &&
+      queueEpoch !== null &&
+      getCloudSyncAccountBoundaryEpoch() === cloudEpoch &&
+      isCloudSyncSuspendedForAccountBoundary() &&
+      offlineQueue.getAccountBoundaryEpoch() === queueEpoch &&
+      offlineQueue.isSuspendedForAccountBoundary();
+    const assertOwnedWriterSuspension = (): void => {
+      if (!ownsWriterSuspension()) {
+        throw new Error('Local data reset lost writer-suspension ownership');
+      }
+    };
+
     try {
-      queueSuspended = true;
-      await offlineQueue.suspendAndClearForAccountBoundary();
+      const cloudEpochBefore = getCloudSyncAccountBoundaryEpoch();
+      const cloudSuspension = quiesceCloudSync();
+      const expectedCloudEpoch = cloudEpochBefore + 1;
+      if (getCloudSyncAccountBoundaryEpoch() !== expectedCloudEpoch) {
+        throw new Error('Local data reset could not own cloud writer suspension');
+      }
+      cloudEpoch = expectedCloudEpoch;
+      await cloudSuspension;
+
+      const queueEpochBefore = offlineQueue.getAccountBoundaryEpoch();
+      const queueSuspension = offlineQueue.suspendForAccountBoundary();
+      const expectedQueueEpoch = queueEpochBefore + 1;
+      if (offlineQueue.getAccountBoundaryEpoch() !== expectedQueueEpoch) {
+        throw new Error('Local data reset could not own offline writer suspension');
+      }
+      queueEpoch = expectedQueueEpoch;
+      await queueSuspension;
+      assertOwnedWriterSuspension();
+
       await runWithDataWriteBarrier(
         async () => {
-          if (await getCurrentSessionUserId()) {
-            throw new Error('Account session started before local data could be cleared');
+          assertOwnedWriterSuspension();
+          const queueFinalization =
+            await offlineQueue.discardSuspendedActionsForAccountBoundary();
+          if (queueFinalization.status !== 'discarded') {
+            throw new Error('Local data reset could not clear offline actions');
           }
+          assertOwnedWriterSuspension();
           const { clearDeviceIdCache } = await import('@/storage/eventSync');
           clearDeviceIdCache();
           await clearLocalUserData();
           resetInMemoryState();
         },
-        { deferredWrites: 'discard' },
+        {
+          deferredWrites: 'discard',
+          expectedAccountBoundaryGeneration: ownerRealm.generation,
+          beforeAccountBoundaryAdvance: async () => {
+            assertOwnedWriterSuspension();
+            await assertSettingsOwnerCurrentWithinDataWriteBarrier(
+              ownerRealm,
+              'Local data reset',
+            );
+            assertOwnedWriterSuspension();
+          },
+        },
       );
-    } catch (error) {
-      resumeCloudSync();
-      startAutoSync();
-      if (queueSuspended) offlineQueue.resumeAfterAccountBoundary();
-      throw error;
+    } finally {
+      // Resume only the exact suspension acquired by this reset. A concurrent
+      // auth/account transition owns any newer epoch and must release it itself.
+      if (ownsWriterSuspension()) {
+        offlineQueue.resumeAfterAccountBoundary();
+        resumeCloudSync();
+      }
     }
   }, [resetInMemoryState]);
 
-  const handleNameChange = useCallback((name: string, userChosen = true) => {
-    setUserName(name);
-    setUserNameCustom(userChosen);
-  }, [setUserName, setUserNameCustom]);
+  const handleNameChange = useCallback(async (
+    name: string,
+    userChosen = true,
+    expectedOwnerGeneration?: OriginAccountBoundaryGeneration,
+  ): Promise<void> => {
+    const committed = await commitProfileNameUpdate(
+      name,
+      userChosen,
+      expectedOwnerGeneration,
+    );
+    useUserDataStore.setState({
+      userName: committed.name,
+      userNameCustom: committed.userChosen,
+    });
+  }, []);
+
+  const handlePrivacyChange = useCallback(async (
+    update: PrivacySettings | ((previous: PrivacySettings) => PrivacySettings)
+  ): Promise<void> => {
+    try {
+      const privacy = await commitPrivacySettingsUpdate(update);
+      useUserDataStore.setState({ privacy });
+    } catch (error) {
+      logger.error('[Settings] Failed to save privacy settings:', error);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('zenflow:storage-error', {
+            detail: {
+              type: 'write_failed',
+              message: 'Unable to save privacy settings.',
+              table: 'settings',
+            },
+          })
+        );
+      }
+      throw error;
+    }
+  }, []);
+
+  const handleRemindersChange = useCallback(async (
+    update: ReminderSettings | ((previous: ReminderSettings) => ReminderSettings)
+  ): Promise<void> => {
+    try {
+      const reminders = await commitReminderSettingsUpdate(update);
+      useUserDataStore.setState({ reminders });
+    } catch (error) {
+      logger.error('[Settings] Failed to save reminder settings:', error);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('zenflow:storage-error', {
+            detail: {
+              type: 'write_failed',
+              message: 'Unable to save reminder settings.',
+              table: 'settings',
+            },
+          })
+        );
+      }
+      throw error;
+    }
+  }, []);
 
   const handlePullToRefresh = useCallback(async () => {
     try {
@@ -115,6 +235,8 @@ export function useSettingsHandlers(allScheduleEvents: ScheduleEvent[]) {
   return {
     handleResetData,
     handleNameChange,
+    handlePrivacyChange,
+    handleRemindersChange,
     handlePullToRefresh,
     handleAddScheduleEvent,
     handleDeleteScheduleEvent,

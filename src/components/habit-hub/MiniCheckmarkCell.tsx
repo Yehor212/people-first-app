@@ -117,8 +117,8 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
           whileTap={{ scale: 0.85 }}
           transition={zenMotion.snappy}
           className={cn(
-            "w-8 h-8 rounded-lg flex items-center justify-center",
-            "text-[10px] font-semibold tabular-nums",
+            "flex min-h-8 min-w-8 items-center justify-center rounded-lg px-1 py-1",
+            "whitespace-normal [overflow-wrap:anywhere] text-xs font-semibold tabular-nums",
             "hover:brightness-125",
             isToday && "ring-1 ring-foreground/30",
           )}

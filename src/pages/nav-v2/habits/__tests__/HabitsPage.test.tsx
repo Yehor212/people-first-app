@@ -319,4 +319,22 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     expect(main).toBe(document.activeElement);
     expect(main).toHaveAttribute("aria-labelledby", "habits-page-heading");
   });
+
+  it("keeps the localized page title inside the narrow header at enlarged text sizes", () => {
+    render(<HabitsPage />);
+
+    const heading = screen.getByRole("heading", { level: 1 });
+    const header = heading.closest("header");
+    const headingTokens = heading.className.split(/\s+/);
+
+    expect(header?.className).toContain("ps-[4.5rem]");
+    expect(header?.className).toContain("min-[360px]:ps-20");
+    expect(heading).toHaveClass("text-base");
+    expect(heading.className).toContain("min-[360px]:text-lg");
+    expect(heading.className).toContain("sm:text-3xl");
+    expect(heading.className).toContain("[overflow-wrap:normal]");
+    expect(heading.className).toContain("[hyphens:manual]");
+    expect(headingTokens).not.toContain("text-3xl");
+    expect(heading.className).not.toContain("[overflow-wrap:anywhere]");
+  });
 });

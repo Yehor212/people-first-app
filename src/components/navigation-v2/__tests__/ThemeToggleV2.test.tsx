@@ -158,13 +158,16 @@ describe("ThemeToggleV2", () => {
     );
   });
 
-  it("shows 'Light' label when paper is active", () => {
+  it("keeps the visible setting label aligned with its accessible name in paper mode", () => {
     useThemeStore.setState({ theme: "paper", appliedTheme: "paper" });
     render(<ThemeToggleV2 />);
-    expect(screen.getByText("Light")).toBeInTheDocument();
+    expect(screen.getByText("Dark")).toBeInTheDocument();
+    expect(screen.getByTestId("sidebar-v2-theme-toggle")).toHaveAccessibleName(
+      "Dark",
+    );
   });
 
-  it("shows 'Dark' label when ink is active", () => {
+  it("keeps the same setting label when ink is active", () => {
     useThemeStore.setState({ theme: "ink", appliedTheme: "ink" });
     render(<ThemeToggleV2 />);
     expect(screen.getByText("Dark")).toBeInTheDocument();

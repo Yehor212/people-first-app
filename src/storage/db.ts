@@ -22,6 +22,8 @@ import { isLocalOnlySettingKey } from "@/storage/sync/settingSyncPolicy";
  */
 export interface OfflineQueueItem {
   id: string;
+  /** Stable idempotency identity reused by every retry of this logical write. */
+  operationId?: string;
   type: string;
   entityId: string;
   /** Account that created the action. Missing only on quarantined legacy rows. */
@@ -288,6 +290,7 @@ const USER_BOUNDARY_ACCOUNT_STORAGE_KEYS = [
   SK.JOURNAL_SIDEBAR_STATE,
   SK.JOURNAL_STREAK_FREEZES,
   SK.JOURNAL_OTD_DISMISSED,
+  SK.JOURNAL_PENDING_ENTRY_DELETES,
   SK.HABIT_ORDER,
   SK.PENDING_FEEDBACK,
   SK.FEEDBACK,
@@ -316,6 +319,7 @@ const USER_BOUNDARY_ACCOUNT_STORAGE_KEYS = [
   SK.WIDGET_DATA,
   SK.DISMISSED_URGENCY,
   SK.PRIVACY,
+  SK.PROFILE_RECOVERY,
 ] as const;
 
 const USER_BOUNDARY_LOCAL_ONLY_KEYS = [
@@ -344,6 +348,7 @@ const USER_BOUNDARY_LOCAL_ONLY_KEYS = [
   SK.JOURNAL_SECURITY_MIGRATION,
   SK.JOURNAL_SECURITY_REMOVAL,
   SK.JOURNAL_VAULT_REVISION,
+  SK.JOURNAL_PENDING_ENTRY_DELETES,
 ];
 
 const USER_BOUNDARY_SESSION_STORAGE_KEYS = [
@@ -423,7 +428,9 @@ export const clearLocalUserData = async (
         await db.deadLetterQueue.clear();
         // Delete account-bound settings and local-only sync state, including
         // dynamic unsaved diary draft keys that are intentionally not listed.
-        await db.settings.bulkDelete([...new Set([...settingsKeysToDelete, ...localOnlySettingKeys])]);
+        await db.settings.bulkDelete([
+          ...new Set([...settingsKeysToDelete, ...localOnlySettingKeys]),
+        ]);
       }
     );
   } catch (error) {
@@ -439,7 +446,11 @@ export const clearLocalUserData = async (
   }
 
   const dynamicLocalOnlyStorageKeys = includeUserBoundaryState
-    ? storageKeys().filter(isLocalOnlySettingKey)
+    ? storageKeys().filter(
+        (key) =>
+          isLocalOnlySettingKey(key) &&
+          (!indexedDbCleanupFailed || key !== SK.PENDING_LOCAL_BACKUP_ACCOUNT_CLAIM)
+      )
     : [];
 
   // Clear user-data localStorage keys (must match IndexedDB keys above)
@@ -447,6 +458,9 @@ export const clearLocalUserData = async (
     ...USER_SETTINGS_KEYS,
     ...USER_BOUNDARY_ACCOUNT_STORAGE_KEYS,
     ...(includeUserBoundaryState ? USER_BOUNDARY_LOCAL_ONLY_KEYS : []),
+    ...(includeUserBoundaryState && !indexedDbCleanupFailed
+      ? [SK.PENDING_LOCAL_BACKUP_ACCOUNT_CLAIM]
+      : []),
     ...dynamicLocalOnlyStorageKeys,
   ];
   let browserStorageCleanupFailed = false;
@@ -482,9 +496,7 @@ export const clearLocalUserData = async (
 
 export const getLocalDataOwnerId = async (): Promise<string | null> => {
   const owner = await db.settings.get(SK.DATA_OWNER_ID);
-  return typeof owner?.value === "string" && owner.value.trim().length > 0
-    ? owner.value
-    : null;
+  return typeof owner?.value === "string" && owner.value.trim().length > 0 ? owner.value : null;
 };
 
 export const setLocalDataOwnerId = async (userId: string): Promise<void> => {
@@ -492,6 +504,10 @@ export const setLocalDataOwnerId = async (userId: string): Promise<void> => {
     throw new Error("Cannot bind local data to an empty account id");
   }
   await db.settings.put({ key: SK.DATA_OWNER_ID, value: userId });
+};
+
+export const clearLocalDataOwnerId = async (): Promise<void> => {
+  await db.settings.delete(SK.DATA_OWNER_ID);
 };
 
 // Helper to check database health with timeout
@@ -522,8 +538,10 @@ export const checkDatabaseHealth = async (): Promise<boolean> => {
         await db.moods.count();
         return true;
       } catch (openError) {
-        // If opening fails, try to delete and recreate
-        logger.warn("[DB] Database open failed, attempting recovery:", openError);
+        // A health probe cannot distinguish corruption from transient quota,
+        // version, blocked-tab, or WebView failures. Preserve local data and
+        // let the recovery UI offer a retry instead of deleting the database.
+        logger.warn("[DB] Database health check failed; preserving local data:", openError);
 
         // Emit event to notify UI about database recovery
         if (typeof window !== "undefined") {
@@ -532,31 +550,12 @@ export const checkDatabaseHealth = async (): Promise<boolean> => {
               detail: {
                 error: openError instanceof Error ? openError.message : "Database open failed",
                 timestamp: Date.now(),
+                destructiveActionTaken: false,
               },
             })
           );
         }
-
-        try {
-          await db.delete();
-          await db.open();
-          return true;
-        } catch (recoveryError) {
-          logger.error("[DB] Database recovery failed:", recoveryError);
-          // Emit critical error event
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("zenflow:database-recovery-failed", {
-                detail: {
-                  error: recoveryError instanceof Error ? recoveryError.message : "Recovery failed",
-                  timestamp: Date.now(),
-                },
-              })
-            );
-          }
-          // Still return true to allow app to work with localStorage
-          return true;
-        }
+        return false;
       }
     })();
 

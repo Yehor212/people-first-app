@@ -16,6 +16,8 @@ const {
   mockOnAuthStateChange,
   mockHandleAuthCallback,
   mockCloseOAuthBrowser,
+  mockLocalOwner,
+  mockClaimStatus,
 } = vi.hoisted(() => {
   const appUrlOpenListeners: Array<(event: { url?: string }) => void> = [];
   const appStateChangeListeners: Array<(event: { isActive: boolean }) => void> = [];
@@ -30,6 +32,10 @@ const {
       return { remove: vi.fn() };
     }
   );
+  const mockLocalOwner: { value: string | null } = { value: "telegram-user-1" };
+  const mockClaimStatus: {
+    value: "none" | "pending" | "invalid" | "unavailable";
+  } = { value: "none" };
 
   return {
     appUrlOpenListeners,
@@ -46,6 +52,8 @@ const {
     }),
     mockHandleAuthCallback: vi.fn(async () => undefined),
     mockCloseOAuthBrowser: vi.fn(async () => undefined),
+    mockLocalOwner,
+    mockClaimStatus,
   };
 });
 
@@ -87,6 +95,15 @@ vi.mock("@/lib/nativeOAuthBrowser", () => ({
   closeOAuthBrowser: mockCloseOAuthBrowser,
 }));
 
+vi.mock("@/storage/db", () => ({
+  getLocalDataOwnerId: vi.fn(async () => mockLocalOwner.value),
+}));
+
+vi.mock("@/storage/accountBoundaryRuntime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/storage/accountBoundaryRuntime")>()),
+  readPendingLocalBackupAccountClaim: vi.fn(() => ({ status: mockClaimStatus.value })),
+}));
+
 vi.mock("@/lib/logger", () => ({
   logger: {
     log: vi.fn(),
@@ -96,6 +113,7 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 import { useDeepLinkHandler } from "@/hooks/useDeepLinkHandler";
+import { consumeStagedJournalMagicLinkConfirmation } from "@/lib/journalMagicLinkConfirmation";
 import { useAppStore, useUserDataStore } from "@/stores";
 
 function createSession(displayName = "Telegram Friend") {
@@ -144,6 +162,9 @@ describe("useDeepLinkHandler", () => {
     mockGetLaunchUrl.mockResolvedValue(null);
     mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
     mockHandleAuthCallback.mockResolvedValue(undefined);
+    mockLocalOwner.value = "telegram-user-1";
+    mockClaimStatus.value = "none";
+    consumeStagedJournalMagicLinkConfirmation();
     resetStores();
   });
 
@@ -152,6 +173,62 @@ describe("useDeepLinkHandler", () => {
   });
 
   describe("auth deep links", () => {
+    it.each(["pending", "invalid", "unavailable"] as const)(
+      "keeps native OAuth gated and profile untouched when backup claim is %s",
+      async (status) => {
+        mockClaimStatus.value = status;
+        mockGetSession.mockResolvedValue({
+          data: { session: createSession("Unowned Metadata") },
+          error: null,
+        });
+
+        renderHook(() => useDeepLinkHandler());
+        await act(async () => {
+          await flushDeepLinkWork();
+        });
+
+        act(() => {
+          appUrlOpenListeners[0]({
+            url: "com.zenflow.app://login-callback?code=telegram-code&state=telegram-state",
+          });
+        });
+        await act(async () => {
+          await flushDeepLinkWork();
+        });
+
+        expect(useAppStore.getState().hasValidSession).toBe(false);
+        expect(useAppStore.getState().authBypassFlag).toBe(false);
+        expect(useUserDataStore.getState().userName).toBe("Friend");
+        expect(useUserDataStore.getState().authGateChecked).toBe(false);
+      }
+    );
+
+    it.each([null, "other-user"])(
+      "keeps native OAuth gated when local owner is %s",
+      async (owner) => {
+        mockLocalOwner.value = owner;
+        mockGetSession.mockResolvedValue({ data: { session: createSession() }, error: null });
+
+        renderHook(() => useDeepLinkHandler());
+        await act(async () => {
+          await flushDeepLinkWork();
+        });
+        act(() => {
+          appUrlOpenListeners[0]({
+            url: "com.zenflow.app://login-callback?code=telegram-code&state=telegram-state",
+          });
+        });
+        await act(async () => {
+          await flushDeepLinkWork();
+        });
+
+        expect(useAppStore.getState().hasValidSession).toBe(false);
+        expect(useAppStore.getState().authBypassFlag).toBe(false);
+        expect(useUserDataStore.getState().userName).toBe("Friend");
+        expect(useUserDataStore.getState().authGateChecked).toBe(false);
+      }
+    );
+
     it("uses provider-neutral copy when an OAuth callback returns without a session", async () => {
       renderHook(() => useDeepLinkHandler());
 
@@ -283,6 +360,34 @@ describe("useDeepLinkHandler", () => {
       expect(useAppStore.getState().hasValidSession).toBe(true);
     });
 
+    it("stages each distinct scanner-safe diary link without exchanging it in the background", async () => {
+      renderHook(() => useDeepLinkHandler());
+
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+
+      const firstTokenHash = "a".repeat(64);
+      const freshTokenHash = "b".repeat(64);
+      const buildLink = (tokenHash: string) =>
+        `com.zenflow.app://login-callback?journalReset=nonce-1#zenflowConfirm=1&token_hash=${tokenHash}&type=email`;
+
+      await act(async () => {
+        appUrlOpenListeners[0]({ url: buildLink(firstTokenHash) });
+        await flushDeepLinkWork();
+      });
+      expect(consumeStagedJournalMagicLinkConfirmation()?.tokenHash).toBe(firstTokenHash);
+
+      await act(async () => {
+        appUrlOpenListeners[0]({ url: buildLink(freshTokenHash) });
+        await flushDeepLinkWork();
+      });
+
+      expect(consumeStagedJournalMagicLinkConfirmation()?.tokenHash).toBe(freshTokenHash);
+      expect(mockHandleAuthCallback).not.toHaveBeenCalled();
+      expect(mockCloseOAuthBrowser).toHaveBeenCalledTimes(2);
+    });
+
     it("waits for session after auth callback", async () => {
       renderHook(() => useDeepLinkHandler());
 
@@ -304,6 +409,7 @@ describe("useDeepLinkHandler", () => {
       });
       expect(authStateListeners).toHaveLength(1);
 
+      mockGetSession.mockResolvedValue({ data: { session: createSession() }, error: null });
       act(() => {
         authStateListeners[0]("SIGNED_IN", createSession());
       });
@@ -340,6 +446,7 @@ describe("useDeepLinkHandler", () => {
       });
       expect(authStateListeners).toHaveLength(1);
 
+      mockGetSession.mockResolvedValue({ data: { session: createSession() }, error: null });
       act(() => {
         authStateListeners[0]("INITIAL_SESSION", createSession());
       });

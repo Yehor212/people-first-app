@@ -123,6 +123,7 @@ vi.mock("../journalMediaCrypto", () => ({
 }));
 
 import { commitDraftMediaToEntry } from "../journalStorage";
+import { getJournalDraftMediaOwnerId } from "../types";
 import { runWithJournalSecurityWriteLock } from "../journalSecurityWriteLock";
 
 interface Deferred<T> {
@@ -147,7 +148,7 @@ async function flushAsyncTurns(turns = 30): Promise<void> {
 function seedDraftPhoto(data = "data:image/jpeg;base64,plain"): void {
   mocks.photos.set("photo-draft", {
     id: "photo-draft",
-    entryId: "__draft__",
+    entryId: getJournalDraftMediaOwnerId("entry-1"),
     data,
     thumbnail: data,
     width: 100,
@@ -159,7 +160,7 @@ function seedDraftPhoto(data = "data:image/jpeg;base64,plain"): void {
 function seedDraftAudio(data = "data:audio/webm;base64,plain"): void {
   mocks.audios.set("audio-draft", {
     id: "audio-draft",
-    entryId: "__draft__",
+    entryId: getJournalDraftMediaOwnerId("entry-1"),
     data,
     duration: 10,
     mimeType: "audio/webm",

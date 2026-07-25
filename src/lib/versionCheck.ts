@@ -72,6 +72,37 @@ function isVersionManifest(value: unknown): value is VersionManifest {
 }
 const VERSION_CHECK_INTERVAL = 1 * 60 * 1000; // 1 minute — aggressive for GitHub Pages (no custom cache headers)
 const VERSION_CHECK_TIMEOUT_MS = 5000;
+const APP_RELOAD_PREPARE_TIMEOUT_MS = 5000;
+export const APP_RELOAD_PREPARE_EVENT = "zenflow:before-app-reload";
+
+export type AppReloadPrepareDetail = {
+  waitUntil: (promise: Promise<unknown>) => void;
+};
+
+export async function prepareAppForReload(): Promise<void> {
+  const pendingWrites: Promise<unknown>[] = [];
+  const detail: AppReloadPrepareDetail = {
+    waitUntil: (promise) => pendingWrites.push(Promise.resolve(promise)),
+  };
+  window.dispatchEvent(new CustomEvent<AppReloadPrepareDetail>(APP_RELOAD_PREPARE_EVENT, { detail }));
+  if (pendingWrites.length === 0) return;
+
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      Promise.all(pendingWrites),
+      new Promise<never>((_resolve, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new Error("Timed out while persisting app state before reload")),
+          APP_RELOAD_PREPARE_TIMEOUT_MS
+        );
+      }),
+    ]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 const SAFE_HARD_RELOAD_SEARCH_PARAMS = new Map<string, (value: string) => boolean>([
   ["nav", (value) => value === "v2"],
   ["navLayout", (value) => value === "phone" || value === "desktop"],
@@ -97,6 +128,12 @@ export function buildSafeHardReloadUrl(location: Location, cacheBustValue: numbe
   }
   url.searchParams.set("_v", cacheBustValue.toString());
   return url.href;
+}
+
+/** Reload without discarding durable writes that are still being persisted. */
+export async function reloadAppSafely(): Promise<void> {
+  await prepareAppForReload();
+  window.location.reload();
 }
 
 /**
@@ -195,7 +232,7 @@ export async function checkAppVersion(): Promise<boolean> {
  * lets the online app shell fetch the current deploy while preserving existing
  * emergency recovery behavior for stale chunk failures.
  */
-export function reloadAppForUpdate(): boolean {
+export async function reloadAppForUpdate(): Promise<boolean> {
   const lastReload = sessionStorage.getItem(SSK.HARD_RELOAD_TS);
   const now = Date.now();
 
@@ -204,17 +241,17 @@ export function reloadAppForUpdate(): boolean {
     return false;
   }
 
+  await prepareAppForReload();
   sessionStorage.setItem(SSK.HARD_RELOAD_TS, now.toString());
   window.location.replace(buildSafeHardReloadUrl(window.location, now));
   return true;
 }
 
 /**
- * Perform a hard reload that bypasses all caches.
- * Clears all SW caches, unregisters all SWs, then reloads with cache bust.
- * Must await all operations before reload to prevent stale content.
+ * Perform a cache-busted recovery navigation after durable writers settle.
+ * The active worker and its caches stay intact so offline recovery remains possible.
  */
-export async function forceHardReload(): Promise<void> {
+export async function forceHardReload(): Promise<boolean> {
   logger.log("[VersionCheck] Performing hard reload...");
 
   // Prevent infinite reload loops
@@ -223,32 +260,18 @@ export async function forceHardReload(): Promise<void> {
 
   if (lastReload && now - parseInt(lastReload, 10) < 30000) {
     logger.warn("[VersionCheck] Recent reload detected, preventing loop");
-    return;
+    return false;
   }
 
+  // A recovery reload must not bypass journal and other durable writers.
+  await prepareAppForReload();
   sessionStorage.setItem(SSK.HARD_RELOAD_TS, now.toString());
 
-  try {
-    // 1. Clear ALL caches (await completion)
-    if ("caches" in window) {
-      const names = await caches.keys();
-      await Promise.all(names.map((n) => caches.delete(n)));
-      logger.log(`[VersionCheck] Cleared ${names.length} caches`);
-    }
-
-    // 2. Unregister ALL service workers (await completion)
-    if ("serviceWorker" in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map((r) => r.unregister()));
-      logger.log(`[VersionCheck] Unregistered ${regs.length} service workers`);
-    }
-  } catch (error) {
-    logger.warn("[VersionCheck] Error clearing caches:", error);
-  }
-
-  // 3. Reload with cache-busting query param (origin-locked to prevent open redirect CWE-601).
+  // Cache-busted, origin-locked navigation. The service worker remains available
+  // to serve the current shell offline and to complete its normal update lifecycle.
   // Preserve only safe app navigation params; OAuth codes, token fragments, and hashes are dropped.
   window.location.replace(buildSafeHardReloadUrl(window.location, now));
+  return true;
 }
 
 /**

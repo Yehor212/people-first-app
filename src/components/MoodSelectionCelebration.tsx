@@ -194,7 +194,9 @@ export function MoodSelectionCelebration({
           {note && (
             <div className="flex items-start gap-2 p-3 bg-secondary/30 rounded-xl motion-safe:animate-fade-in">
               <MessageCircle className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-foreground line-clamp-2">{note}</p>
+              <p className="min-w-0 break-words text-sm text-foreground [overflow-wrap:anywhere]">
+                {note}
+              </p>
             </div>
           )}
 

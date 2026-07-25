@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const syncState = vi.hoisted(() => ({
   currentUserId: "account-a",
+  localOwnerUserId: "account-a",
+  pendingImportedBackupClaim: false,
   events: [] as string[],
 }));
 
@@ -60,6 +62,18 @@ vi.mock("@/storage/backup", () => ({
   importBackup: mocks.importBackup,
 }));
 
+vi.mock("@/storage/db", () => ({
+  getLocalDataOwnerId: vi.fn(async () => syncState.localOwnerUserId),
+}));
+
+vi.mock("@/storage/accountBoundaryRuntime", () => ({
+  readPendingLocalBackupAccountClaim: vi.fn(() =>
+    syncState.pendingImportedBackupClaim
+      ? { status: "pending", generation: "claim-generation" }
+      : { status: "none" }
+  ),
+}));
+
 vi.mock("@/storage/sync/serverTombstones", () => ({
   fetchAndMergeServerTombstones: mocks.fetchAndMergeServerTombstones,
 }));
@@ -90,7 +104,7 @@ vi.mock("@/lib/syncOrchestrator", () => ({
 vi.mock("@/lib/validation", () => ({
   generateSecureRandom: vi.fn(() => "test-operation"),
   isAbortError: vi.fn(
-    (error: unknown) => error instanceof DOMException && error.name === "AbortError",
+    (error: unknown) => error instanceof DOMException && error.name === "AbortError"
   ),
 }));
 
@@ -191,12 +205,27 @@ describe("cloud sync account-boundary serialization", () => {
     destroyCloudSync();
     vi.clearAllMocks();
     syncState.currentUserId = "account-a";
+    syncState.localOwnerUserId = "account-a";
+    syncState.pendingImportedBackupClaim = false;
     syncState.events.splice(0);
   });
 
   afterEach(() => {
     destroyCloudSync();
     vi.useRealTimers();
+  });
+
+  it("performs no cloud work while an imported backup awaits an account choice", async () => {
+    syncState.pendingImportedBackupClaim = true;
+
+    await expect(syncWithCloud("merge", "account-a")).rejects.toThrow(
+      "imported backup awaits an account choice"
+    );
+
+    expect(mocks.fetchAndMergeServerTombstones).not.toHaveBeenCalled();
+    expect(mocks.exportBackup).not.toHaveBeenCalled();
+    expect(mocks.importBackup).not.toHaveBeenCalled();
+    expect(mocks.upsert).not.toHaveBeenCalled();
   });
 
   it("aborts user-a after an auth switch, then runs user-b replace", async () => {
@@ -222,6 +251,7 @@ describe("cloud sync account-boundary serialization", () => {
     await importAStarted.promise;
 
     syncState.currentUserId = "account-b";
+    syncState.localOwnerUserId = "account-b";
     let userBSettled = false;
     const userBReplace = syncWithCloud("replace").then((result) => {
       userBSettled = true;
@@ -241,24 +271,52 @@ describe("cloud sync account-boundary serialization", () => {
     expect.soft(userAResult).toBeInstanceOf(Error);
     expect.soft((userAResult as Error).message).toContain("Authenticated account changed");
     expect.soft(userBResult).toEqual({ status: "pulled" });
-    expect.soft(mocks.importBackup).toHaveBeenNthCalledWith(
-      1,
-      REMOTE_BY_USER["account-a"],
-      "merge",
-      { expectedOwnerUserId: "account-a" },
-    );
-    expect.soft(mocks.importBackup).toHaveBeenNthCalledWith(
-      2,
-      REMOTE_BY_USER["account-b"],
-      "replace",
-      { expectedOwnerUserId: "account-b" },
-    );
+    expect
+      .soft(mocks.importBackup)
+      .toHaveBeenNthCalledWith(1, REMOTE_BY_USER["account-a"], "merge", {
+        expectedOwnerUserId: "account-a",
+      });
+    expect
+      .soft(mocks.importBackup)
+      .toHaveBeenNthCalledWith(2, REMOTE_BY_USER["account-b"], "replace", {
+        expectedOwnerUserId: "account-b",
+      });
 
     const userBSessionIndex = syncState.events.indexOf("session:account-b");
     expect.soft(syncState.events).not.toContain("upsert:account-a");
-    expect.soft(userBSessionIndex).toBeGreaterThan(
-      syncState.events.indexOf("import:account-a:merge:finish"),
-    );
+    expect
+      .soft(userBSessionIndex)
+      .toBeGreaterThan(syncState.events.indexOf("import:account-a:merge:finish"));
     expect.soft(syncState.events).toContain("import:account-b:replace");
+  });
+
+  it("refuses to export account A local data under an authenticated account B", async () => {
+    syncState.currentUserId = "account-b";
+    syncState.localOwnerUserId = "account-a";
+
+    await expect(syncWithCloud("merge", "account-b")).rejects.toThrow(
+      "Local data owner changed during cloud sync"
+    );
+
+    expect(mocks.exportBackup).not.toHaveBeenCalled();
+    expect(mocks.upsert).not.toHaveBeenCalled();
+  });
+
+  it("rejects the backup before any upload when local ownership changes during export", async () => {
+    mocks.exportBackup.mockReset();
+    mocks.exportBackup.mockImplementationOnce(async () => {
+      syncState.events.push("export:account-a");
+      syncState.localOwnerUserId = "account-b";
+      return LOCAL_A;
+    });
+
+    await expect(syncWithCloud("merge", "account-a")).rejects.toThrow(
+      "Local data owner changed during cloud sync"
+    );
+
+    expect(mocks.exportBackup).toHaveBeenCalledTimes(1);
+    expect(syncState.events).toContain("export:account-a");
+    expect(mocks.importBackup).not.toHaveBeenCalled();
+    expect(mocks.upsert).not.toHaveBeenCalled();
   });
 });

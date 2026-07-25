@@ -35,6 +35,7 @@ export default {
       // unused class strings do not inflate production CSS. Remove an exclusion
       // together with the import if one of these files becomes active again.
       "!./src/components/animations/**/*.{ts,tsx}",
+      "!./src/components/breathing-exercise/**/*.{ts,tsx}",
       "!./src/components/compact-habit-card/**/*.{ts,tsx}",
       "!./src/components/desktop/**/*.{ts,tsx}",
       "!./src/components/habit-completion-celebration/**/*.{ts,tsx}",
@@ -42,6 +43,7 @@ export default {
       "!./src/components/layout/**/*.{ts,tsx}",
       "!./src/components/mood-tracker/**/*.{ts,tsx}",
       "!./src/components/AICoachChat.tsx",
+      "!./src/components/BreathingExercise.tsx",
       "!./src/components/Celebrations.tsx",
       "!./src/components/CompactHabitCard.tsx",
       "!./src/components/FeedbackButton.tsx",
@@ -180,6 +182,14 @@ export default {
           "calc(clamp(2.5rem, 2.337rem + 0.69vw, 3rem) * var(--font-scale, 1))",
           { lineHeight: "1" },
         ] /* 40→48px × scale */,
+        "display-5xl": [
+          "calc(clamp(2.75rem, 2.5rem + 1vw, 3.25rem) * var(--font-scale, 1))",
+          { lineHeight: "1" },
+        ] /* Scoped real headings only; decorative 5xl remains unchanged */,
+        "display-6xl": [
+          "calc(clamp(3.25rem, 2.875rem + 1.5vw, 4rem) * var(--font-scale, 1))",
+          { lineHeight: "1" },
+        ] /* Scoped real headings only; decorative 6xl remains unchanged */,
       },
       colors: {
         border: "hsl(var(--border))",

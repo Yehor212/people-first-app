@@ -130,6 +130,7 @@ vi.mock("../journalSecurityMigration", () => ({
 }));
 
 import { useJournalSecurity } from "../useJournalSecurity";
+import { JournalRemovePasswordPartialError } from "../journalSecurityErrors";
 
 function bytesToString(bytes: Uint8Array): string {
   return Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
@@ -376,7 +377,9 @@ describe("useJournalSecurity iOS biometric vault key lifecycle", () => {
     migrationMocks.removeAtomic.mockRejectedValueOnce(new Error("atomic removal failed"));
 
     await act(async () => {
-      await expect(hook.result.current.removePassword()).rejects.toThrow("atomic removal failed");
+      await expect(hook.result.current.removePassword()).rejects.toBeInstanceOf(
+        JournalRemovePasswordPartialError,
+      );
     });
 
     expect(biometricMocks.unenroll).toHaveBeenCalledTimes(1);

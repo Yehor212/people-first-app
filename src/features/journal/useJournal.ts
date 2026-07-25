@@ -1,11 +1,18 @@
 import { startTransition, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { JournalEntry, JournalPhoto, JournalAudio } from './types';
-import type { JournalEntryPageCursor } from './journalStorage';
+import type { JournalDraftCommitContext, JournalEntryPageCursor } from './journalStorage';
 import type { MoodType } from '@/types';
 import { getToday } from '@/lib/utils';
+import { shiftJournalDate } from './journalDateUtils';
 import { scheduleIdle, type IdleHandle } from '@/lib/scheduleIdle';
 import * as storage from './journalStorage';
 import { logger } from '@/lib/logger';
+import { subscribeDataRefresh } from '@/hooks/useIndexedDB';
+import {
+  registerAccountBoundaryRuntimeReset,
+  subscribeOriginAccountBoundaryGeneration,
+  waitForAccountBoundaryDataSettlement,
+} from '@/storage/accountBoundaryRuntime';
 
 export type JournalView = 'list' | 'editing' | 'viewing' | 'stats';
 type CreateJournalEntryInput = Omit<JournalEntry, 'id' | 'createdAt' | 'updatedAt' | 'date'> & {
@@ -52,16 +59,27 @@ export function useJournal() {
   const [initialLoadError, setInitialLoadError] = useState(false);
   const [historyLoadError, setHistoryLoadError] = useState(false);
   const [dateLoadError, setDateLoadError] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDateState] = useState<string | null>(null);
   const [activeEntryId, setActiveEntryId] = useState<string | null>(null);
+  const [activeEntrySnapshot, setActiveEntrySnapshot] = useState<JournalEntry | null>(null);
   const [view, setView] = useState<JournalView>('list');
+  const activeEntryIdRef = useRef<string | null>(null);
+  const activeEntrySnapshotRef = useRef<JournalEntry | null>(null);
+  const viewRef = useRef<JournalView>('list');
   const idleLoadRef = useRef<IdleHandle | null>(null);
   const loadGenerationRef = useRef(0);
   const mutationGenerationRef = useRef(0);
   const requestedDateLoadsRef = useRef(new Set<string>());
   const loadedDateLoadsRef = useRef(new Set<string>());
   const softDeletedEntryIdsRef = useRef(new Set<string>());
-  const loadError = initialLoadError || historyLoadError || dateLoadError;
+  // Only the initial page can make the diary unusable. Background/history failures
+  // remain retryable without replacing entries that are already visible.
+  const loadError = initialLoadError;
+
+  const setSelectedDate = useCallback((date: string | null) => {
+    setDateLoadError(false);
+    setSelectedDateState(date);
+  }, []);
 
   const cancelRemainingLoad = useCallback(() => {
     idleLoadRef.current?.cancel();
@@ -75,6 +93,25 @@ export function useJournal() {
     cancelRemainingLoad();
     setHistoryLoading(false);
   }, [cancelRemainingLoad]);
+
+  const resetForAccountBoundary = useCallback(() => {
+    invalidateInFlightLoads();
+    softDeletedEntryIdsRef.current.clear();
+    loadedDateLoadsRef.current.clear();
+    setEntries([]);
+    setTotalCount(0);
+    setInitialLoadError(false);
+    setHistoryLoadError(false);
+    setDateLoadError(false);
+    setSelectedDateState(null);
+    setActiveEntryId(null);
+    activeEntryIdRef.current = null;
+    setActiveEntrySnapshot(null);
+    activeEntrySnapshotRef.current = null;
+    setView('list');
+    viewRef.current = 'list';
+    setLoading(true);
+  }, [invalidateInFlightLoads]);
 
   const scheduleRemainingLoad = useCallback(
     (
@@ -120,7 +157,8 @@ export function useJournal() {
   );
 
   // Load the first journal page quickly, then backfill older encrypted entries in idle slices.
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
+    if (signal?.aborted) return;
     cancelRemainingLoad();
     const generation = loadGenerationRef.current + 1;
     loadGenerationRef.current = generation;
@@ -131,19 +169,81 @@ export function useJournal() {
     setInitialLoadError(false);
     setHistoryLoadError(false);
     setDateLoadError(false);
-    try {
-      const page = await storage.getEntriesPage({ limit: JOURNAL_INITIAL_ENTRY_LIMIT });
+    const activeEntryIdAtStart = activeEntryIdRef.current;
+    const activeViewAtStart = viewRef.current;
+    const abortRefreshOwnership = () => {
       if (loadGenerationRef.current !== generation) return;
+      loadGenerationRef.current += 1;
+      cancelRemainingLoad();
+      setLoading(false);
+      setHistoryLoading(false);
+    };
+    signal?.addEventListener('abort', abortRefreshOwnership, { once: true });
+    try {
+      const [page, pendingDeletes, refreshedActiveEntry] = await Promise.all([
+        storage.getEntriesPage({ limit: JOURNAL_INITIAL_ENTRY_LIMIT }),
+        storage.getPendingJournalEntryDeletes(),
+        activeEntryIdAtStart
+          ? storage.getEntryById(activeEntryIdAtStart)
+          : Promise.resolve(undefined),
+      ]);
+      if (signal?.aborted || loadGenerationRef.current !== generation) return;
+      for (const pendingDelete of pendingDeletes) {
+        softDeletedEntryIdsRef.current.add(pendingDelete.id);
+      }
+      if (signal?.aborted || loadGenerationRef.current !== generation) return;
+      const activeEntryStillVisible =
+        refreshedActiveEntry && !softDeletedEntryIdsRef.current.has(refreshedActiveEntry.id)
+          ? refreshedActiveEntry
+          : undefined;
       startTransition(() => {
-        setEntries(mergeJournalEntries([], page.entries, softDeletedEntryIdsRef.current));
+        const refreshedEntries = mergeJournalEntries([], page.entries, softDeletedEntryIdsRef.current);
+        setEntries(
+          activeEntryStillVisible
+            ? mergeJournalEntries(
+                refreshedEntries,
+                [activeEntryStillVisible],
+                softDeletedEntryIdsRef.current,
+              )
+            : refreshedEntries,
+        );
         setTotalCount(getVisibleJournalCount(page.totalCount, softDeletedEntryIdsRef.current.size));
         setInitialLoadError(false);
         setLoading(false);
+
+        if (
+          activeEntryIdAtStart &&
+          activeEntryIdRef.current === activeEntryIdAtStart &&
+          viewRef.current === activeViewAtStart
+        ) {
+          if (activeViewAtStart === 'viewing') {
+            if (activeEntryStillVisible) {
+              activeEntrySnapshotRef.current = activeEntryStillVisible;
+              setActiveEntrySnapshot(activeEntryStillVisible);
+            } else {
+              activeEntryIdRef.current = null;
+              setActiveEntryId(null);
+              activeEntrySnapshotRef.current = null;
+              setActiveEntrySnapshot(null);
+              viewRef.current = 'list';
+              setView('list');
+            }
+          } else if (
+            activeViewAtStart === 'editing' &&
+            !activeEntrySnapshotRef.current &&
+            activeEntryStillVisible
+          ) {
+            activeEntrySnapshotRef.current = activeEntryStillVisible;
+            setActiveEntrySnapshot(activeEntryStillVisible);
+          }
+        }
       });
       if (page.hasMore && page.nextCursor !== null) {
+        if (signal?.aborted || loadGenerationRef.current !== generation) return;
         scheduleRemainingLoad(page.nextCursor, generation, mutationGenerationRef.current);
       }
     } catch (error) {
+      if (signal?.aborted) return;
       logger.warn('[Journal] Failed to load entries', error);
       if (loadGenerationRef.current !== generation) return;
       startTransition(() => {
@@ -151,10 +251,30 @@ export function useJournal() {
         setLoading(false);
         setHistoryLoading(false);
       });
+    } finally {
+      signal?.removeEventListener('abort', abortRefreshOwnership);
     }
   }, [cancelRemainingLoad, scheduleRemainingLoad]);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  useEffect(() => subscribeDataRefresh(refresh), [refresh]);
+
+  useEffect(() => {
+    const unregisterRuntimeReset = registerAccountBoundaryRuntimeReset(resetForAccountBoundary);
+    const unsubscribeGeneration = subscribeOriginAccountBoundaryGeneration(() => {
+      resetForAccountBoundary();
+      void waitForAccountBoundaryDataSettlement()
+        .then(() => refresh())
+        .catch((error) => {
+          logger.warn('[Journal] Account-boundary refresh remained blocked', error);
+        });
+    });
+    return () => {
+      unsubscribeGeneration();
+      unregisterRuntimeReset();
+    };
+  }, [refresh, resetForAccountBoundary]);
 
   useEffect(() => () => {
     loadGenerationRef.current += 1;
@@ -166,11 +286,6 @@ export function useJournal() {
     const requestedDateLoads = requestedDateLoadsRef.current;
     const loadedDateLoads = loadedDateLoadsRef.current;
     if (loadedDateLoads.has(selectedDate) || requestedDateLoads.has(selectedDate)) return;
-    if (entries.some((entry) => entry.date === selectedDate)) {
-      loadedDateLoads.add(selectedDate);
-      setDateLoadError(false);
-      return;
-    }
 
     requestedDateLoads.add(selectedDate);
     let cancelled = false;
@@ -205,9 +320,8 @@ export function useJournal() {
   // Grouped entries for display
   const groupedEntries = useMemo(() => {
     const today = getToday();
-    const yesterday = new Date(Date.now() - 86400000);
-    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
-    const weekAgo = Date.now() - 7 * 86400000;
+    const yesterdayStr = shiftJournalDate(today, -1);
+    const weekStart = shiftJournalDate(today, -6);
 
     const groups: { label: string; key: string; entries: JournalEntry[] }[] = [
       { label: 'journalToday', key: 'today', entries: [] },
@@ -221,7 +335,7 @@ export function useJournal() {
         groups[0].entries.push(entry);
       } else if (entry.date === yesterdayStr) {
         groups[1].entries.push(entry);
-      } else if (entry.createdAt >= weekAgo) {
+      } else if (entry.date >= weekStart && entry.date <= today) {
         groups[2].entries.push(entry);
       } else {
         groups[3].entries.push(entry);
@@ -241,24 +355,65 @@ export function useJournal() {
   }, [entries]);
 
   // CRUD operations
-  const createEntry = useCallback(async (data: CreateJournalEntryInput) => {
+  const createEntry = useCallback(async (
+    data: CreateJournalEntryInput,
+    draftContext?: JournalDraftCommitContext,
+  ) => {
     const { date, ...entryData } = data;
-    const entry = await storage.saveEntry({
+    const entryPayload = {
       ...entryData,
       date: date || getToday(),
-    });
+    };
+    const entry = draftContext
+      ? await storage.saveEntry(entryPayload, draftContext)
+      : await storage.saveEntry(entryPayload);
     softDeletedEntryIdsRef.current.delete(entry.id);
     setEntries(prev => mergeJournalEntries(prev, [entry], softDeletedEntryIdsRef.current));
     setTotalCount(prev => prev + 1);
     return entry;
   }, []);
 
-  const updateEntry = useCallback(async (id: string, changes: Partial<Omit<JournalEntry, 'id' | 'createdAt'>>) => {
-    await storage.updateEntry(id, changes);
-    setEntries(prev => prev.map(e =>
-      e.id === id ? { ...e, ...changes, updatedAt: Date.now() } : e
-    ));
-  }, []);
+  const updateEntry = useCallback(async (
+    id: string,
+    changes: Partial<Omit<JournalEntry, 'id' | 'createdAt'>>,
+    draftContext?: JournalDraftCommitContext,
+  ) => {
+    const openedEditorEntry =
+      viewRef.current === 'editing' && activeEntryIdRef.current === id
+        ? activeEntrySnapshotRef.current
+        : null;
+    const expectedUpdatedAt =
+      openedEditorEntry?.updatedAt ?? entries.find((entry) => entry.id === id)?.updatedAt;
+    try {
+      const updatedAt = draftContext
+        ? await storage.updateEntry(id, changes, expectedUpdatedAt, draftContext)
+        : await storage.updateEntry(id, changes, expectedUpdatedAt);
+      setEntries(prev => prev.map(e =>
+        e.id === id ? { ...e, ...changes, updatedAt } : e
+      ));
+      if (activeEntryIdRef.current === id && activeEntrySnapshotRef.current) {
+        const nextSnapshot = { ...activeEntrySnapshotRef.current, ...changes, updatedAt };
+        activeEntrySnapshotRef.current = nextSnapshot;
+        setActiveEntrySnapshot(nextSnapshot);
+      }
+    } catch (error) {
+      if (storage.isJournalEntryConflictError(error)) {
+        try {
+          const latest = await storage.getEntryById(id);
+          if (latest) {
+            setEntries((prev) => mergeJournalEntries(prev, [latest], softDeletedEntryIdsRef.current));
+            if (viewRef.current === 'editing' && activeEntryIdRef.current === id) {
+              activeEntrySnapshotRef.current = latest;
+              setActiveEntrySnapshot(latest);
+            }
+          }
+        } catch (refreshError) {
+          logger.warn('[Journal] Failed to refresh entry after save conflict', refreshError);
+        }
+      }
+      throw error;
+    }
+  }, [entries]);
 
   const deleteEntry = useCallback(async (id: string) => {
     softDeletedEntryIdsRef.current.add(id);
@@ -272,7 +427,11 @@ export function useJournal() {
     setTotalCount(prev => Math.max(0, prev - 1));
     if (activeEntryId === id) {
       setActiveEntryId(null);
+      activeEntryIdRef.current = null;
+      setActiveEntrySnapshot(null);
+      activeEntrySnapshotRef.current = null;
       setView('list');
+      viewRef.current = 'list';
     }
   }, [activeEntryId, invalidateInFlightLoads]);
 
@@ -285,7 +444,11 @@ export function useJournal() {
     setTotalCount(prev => Math.max(0, prev - 1));
     if (activeEntryId === id) {
       setActiveEntryId(null);
+      activeEntryIdRef.current = null;
+      setActiveEntrySnapshot(null);
+      activeEntrySnapshotRef.current = null;
       setView('list');
+      viewRef.current = 'list';
     }
     return entry;
   }, [entries, activeEntryId]);
@@ -293,7 +456,20 @@ export function useJournal() {
   // Commit: actually delete from storage (called after undo timeout)
   const commitDeleteEntry = useCallback(async (id: string) => {
     try {
-      await storage.deleteEntry(id);
+      const status = await storage.commitPendingJournalEntryDelete(id);
+      if (status === "not-claimed") {
+        softDeletedEntryIdsRef.current.delete(id);
+        const [retainedEntry, storedCount] = await Promise.all([
+          storage.getEntryById(id),
+          storage.getEntryCount(),
+        ]);
+        if (retainedEntry) {
+          setEntries((prev) => mergeJournalEntries(prev, [retainedEntry], softDeletedEntryIdsRef.current));
+        }
+        setTotalCount(getVisibleJournalCount(storedCount, softDeletedEntryIdsRef.current.size));
+        invalidateInFlightLoads();
+        return;
+      }
     } catch (error) {
       softDeletedEntryIdsRef.current.delete(id);
       throw error;
@@ -310,8 +486,12 @@ export function useJournal() {
   }, []);
 
   // Photo operations
-  const addPhoto = useCallback(async (file: File, entryId: string): Promise<JournalPhoto> => {
-    return storage.compressAndStorePhoto(file, entryId);
+  const addPhoto = useCallback(async (
+    file: File,
+    entryId: string,
+    signal?: AbortSignal,
+  ): Promise<JournalPhoto> => {
+    return storage.compressAndStorePhoto(file, entryId, signal);
   }, []);
 
   const removePhoto = useCallback(async (photoId: string, entryId: string) => {
@@ -337,30 +517,55 @@ export function useJournal() {
 
   // Navigation
   const openEntry = useCallback((id: string) => {
+    const entry = entries.find((candidate) => candidate.id === id) || null;
+    activeEntrySnapshotRef.current = entry;
+    setActiveEntrySnapshot(entry);
+    activeEntryIdRef.current = id;
     setActiveEntryId(id);
+    viewRef.current = 'viewing';
     setView('viewing');
-  }, []);
+  }, [entries]);
 
   const editEntry = useCallback((id: string | null) => {
+    const entry = id
+      ? activeEntryIdRef.current === id && activeEntrySnapshotRef.current
+        ? activeEntrySnapshotRef.current
+        : entries.find((candidate) => candidate.id === id) || null
+      : null;
+    activeEntrySnapshotRef.current = entry;
+    setActiveEntrySnapshot(entry);
+    activeEntryIdRef.current = id;
     setActiveEntryId(id);
+    viewRef.current = 'editing';
     setView('editing');
-  }, []);
+  }, [entries]);
 
   const openStats = useCallback(() => {
+    activeEntryIdRef.current = null;
+    setActiveEntryId(null);
+    activeEntrySnapshotRef.current = null;
+    setActiveEntrySnapshot(null);
+    viewRef.current = 'stats';
     setView('stats');
   }, []);
 
   const goBack = useCallback(() => {
     if (view === 'editing' || view === 'viewing' || view === 'stats') {
+      activeEntryIdRef.current = null;
       setActiveEntryId(null);
+      activeEntrySnapshotRef.current = null;
+      setActiveEntrySnapshot(null);
+      viewRef.current = 'list';
       setView('list');
     }
   }, [view]);
 
   const activeEntry = useMemo(() => {
     if (!activeEntryId) return null;
-    return entries.find(e => e.id === activeEntryId) || null;
-  }, [entries, activeEntryId]);
+    return activeEntrySnapshot?.id === activeEntryId
+      ? activeEntrySnapshot
+      : entries.find(e => e.id === activeEntryId) || null;
+  }, [activeEntryId, activeEntrySnapshot, entries]);
 
   return {
     entries: filteredEntries,

@@ -9,6 +9,9 @@ const mockEq = vi.fn();
 const mockMaybeSingle = vi.fn();
 const mockUpsert = vi.fn();
 const mockFrom = vi.fn();
+const { mockGetLocalDataOwnerId } = vi.hoisted(() => ({
+  mockGetLocalDataOwnerId: vi.fn(),
+}));
 
 let mockSupabase: any = null;
 
@@ -21,6 +24,10 @@ vi.mock("@/lib/supabaseClient", () => ({
 vi.mock("@/storage/backup", () => ({
   exportBackup: vi.fn(),
   importBackup: vi.fn(),
+}));
+
+vi.mock("@/storage/db", () => ({
+  getLocalDataOwnerId: mockGetLocalDataOwnerId,
 }));
 
 vi.mock("@/storage/sync/serverTombstones", () => ({
@@ -165,6 +172,7 @@ beforeEach(() => {
     await mockTriggerDataRefresh();
     return result;
   });
+  mockGetLocalDataOwnerId.mockResolvedValue("user-1");
   // Restore isAbortError to its default factory behavior in case a test overrode it
   vi.mocked(isAbortError).mockImplementation(
     (err: unknown) => err instanceof DOMException && err.name === "AbortError"

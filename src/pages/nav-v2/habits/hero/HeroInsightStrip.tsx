@@ -172,7 +172,7 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
           <Icon className="h-3.5 w-3.5" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-current/70">
+          <p className="whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.14em] text-current/70">
             {tx.insightsTitle || "Insight"}
           </p>
           <p className="mt-1 font-semibold leading-5" data-testid="habits-hero-insight-title">
@@ -183,7 +183,7 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
           )}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span
-              className="rounded-full bg-background/60 px-2 py-1 text-[10px] font-medium tabular-nums"
+              className="rounded-full bg-background/60 px-2 py-1 text-xs font-medium tabular-nums"
               aria-label={`confidence ${topInsight.confidence}%`}
             >
               {topInsight.confidence}%
@@ -192,7 +192,7 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
               <button
                 type="button"
                 onClick={() => onOpenHabitInsight(linkedHabit)}
-                className="inline-flex min-h-[44px] items-center rounded-full border border-border/60 bg-background/70 px-3 py-2 text-[11px] font-medium text-foreground motion-safe:transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                className="inline-flex min-h-[44px] items-center whitespace-normal break-words rounded-full border border-border/60 bg-background/70 px-3 py-2 text-xs font-medium text-foreground motion-safe:transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 data-testid="habits-hero-insight-cta"
               >
                 {tx.statistics || tx.navV2HabitsOpenDetails || "Statistics"}

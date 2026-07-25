@@ -1,4 +1,4 @@
-import type { ComponentProps, ComponentType, ReactNode } from "react";
+import { forwardRef, type ComponentProps, type ComponentType, type ReactNode } from "react";
 import { motion, useIsPresent } from "framer-motion";
 
 import { motionPresets, zenMotion } from "@/lib/animationUtils";
@@ -10,29 +10,31 @@ const InertMotionDiv = motion.div as ComponentType<
   ComponentProps<typeof motion.div> & { inert?: "" }
 >;
 
-export function SettingsMotionSurface({
-  children,
-  view,
-  shouldAnimate,
-}: {
+interface SettingsMotionSurfaceProps {
   children: ReactNode;
   view: "overview" | "detail";
   shouldAnimate: boolean;
-}) {
-  const isPresent = useIsPresent();
-
-  return (
-    <InertMotionDiv
-      inert={!isPresent ? "" : undefined}
-      aria-hidden={!isPresent ? true : undefined}
-      initial={false}
-      animate={motionPresets.fadeIn.animate}
-      exit={shouldAnimate ? motionPresets.fadeIn.initial : motionPresets.fadeIn.animate}
-      transition={shouldAnimate ? zenMotion.exit : zenMotion.instant}
-      className={cn("min-w-0", !isPresent && "pointer-events-none")}
-      data-settings-motion-surface={view}
-    >
-      {children}
-    </InertMotionDiv>
-  );
 }
+
+export const SettingsMotionSurface = forwardRef<HTMLDivElement, SettingsMotionSurfaceProps>(
+  function SettingsMotionSurface({ children, view, shouldAnimate }, ref) {
+    const isPresent = useIsPresent();
+
+    return (
+      <InertMotionDiv
+        ref={ref}
+        inert={!isPresent ? "" : undefined}
+        aria-hidden={!isPresent ? true : undefined}
+        initial={shouldAnimate ? { opacity: 0.92 } : false}
+        animate={motionPresets.fadeIn.animate}
+        exit={shouldAnimate ? { opacity: 0.35 } : motionPresets.fadeIn.animate}
+        transition={shouldAnimate ? zenMotion.exit : zenMotion.instant}
+        className={cn("min-w-0", !isPresent && "pointer-events-none")}
+        data-exiting={!isPresent ? "true" : undefined}
+        data-settings-motion-surface={view}
+      >
+        {children}
+      </InertMotionDiv>
+    );
+  }
+);

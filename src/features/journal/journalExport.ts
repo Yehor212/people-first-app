@@ -5,11 +5,26 @@
  */
 
 import type { JournalEntry, JournalPhoto, JournalAudio } from "./types";
+import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 import * as storage from "./journalStorage";
-import { getToday } from "@/lib/utils";
+import { getToday, parseLocalDate } from "@/lib/utils";
 import { getLocale } from "@/lib/timeUtils";
 import { createSimplePdf } from "@/lib/simplePdf";
+import { isNative } from "@/lib/platform";
+import { serializePortableBackupWithinLimit } from "@/storage/backupCapacity";
 import type { Language } from "@/i18n/translations";
+import { getTranslations } from "@/i18n";
+import type { TranslationStrings } from "@/i18n/types";
+import { getVisibleJournalTags } from "./journalFavorite";
+import { formatLocalizedCount } from "./journalWordCount";
+import { countWordsHtml } from "./types";
+import {
+  assertDataWriteBoundaryGeneration,
+  captureDataWriteBoundaryGeneration,
+} from "@/hooks/useIndexedDB";
+import { getCurrentSessionUserId } from "@/lib/supabaseClient";
+import { getLocalDataOwnerId } from "@/storage/db";
 
 // ── Helpers ──
 
@@ -35,94 +50,195 @@ function downloadBlob(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-function downloadText(content: string, filename: string, mimeType: string): void {
-  const blob = new Blob(["\ufeff" + content], { type: `${mimeType};charset=utf-8;` });
-  downloadBlob(blob, filename);
+export type JournalExportOutcome = "saved" | "started" | "cancelled";
+
+const MAX_JOURNAL_BACKUP_FILE_BYTES = 50 * 1024 * 1024;
+
+interface JournalExportBoundary {
+  generation: number;
+  sessionOwnerUserId: string | null;
+  localOwnerUserId: string | null;
 }
 
-const MOOD_LABEL: Record<string, string> = {
-  great: "Great",
-  good: "Good",
-  okay: "Okay",
-  bad: "Bad",
-  terrible: "Terrible",
-};
+async function captureJournalExportBoundary(): Promise<JournalExportBoundary> {
+  const generation = captureDataWriteBoundaryGeneration();
+  const [sessionOwnerUserId, localOwnerUserId] = await Promise.all([
+    getCurrentSessionUserId(),
+    getLocalDataOwnerId(),
+  ]);
+  assertDataWriteBoundaryGeneration(generation);
+  return { generation, sessionOwnerUserId, localOwnerUserId };
+}
+
+async function assertJournalExportBoundary(boundary: JournalExportBoundary): Promise<void> {
+  assertDataWriteBoundaryGeneration(boundary.generation);
+  const [sessionOwnerUserId, localOwnerUserId] = await Promise.all([
+    getCurrentSessionUserId(),
+    getLocalDataOwnerId(),
+  ]);
+  assertDataWriteBoundaryGeneration(boundary.generation);
+  if (
+    sessionOwnerUserId !== boundary.sessionOwnerUserId ||
+    localOwnerUserId !== boundary.localOwnerUserId
+  ) {
+    throw new Error("Account boundary changed during diary export");
+  }
+}
+
+function isShareCancellation(error: unknown): boolean {
+  return error instanceof Error && /share cancel(?:ed|led)/i.test(error.message);
+}
+
+async function saveJournalFile(
+  content: string,
+  filename: string,
+  shareTitle: string,
+  mimeType: string,
+  boundary: JournalExportBoundary,
+): Promise<JournalExportOutcome> {
+  const safeFilename = sanitizeFilename(filename);
+  if (!isNative) {
+    await assertJournalExportBoundary(boundary);
+    downloadBlob(new Blob([content], { type: `${mimeType};charset=utf-8` }), safeFilename);
+    return "started";
+  }
+
+  let cacheFileCreated = false;
+  let outcome: JournalExportOutcome = "saved";
+  try {
+    await assertJournalExportBoundary(boundary);
+    const file = await Filesystem.writeFile({
+      path: safeFilename,
+      data: content,
+      directory: Directory.Cache,
+      encoding: Encoding.UTF8,
+    });
+    cacheFileCreated = true;
+
+    try {
+      await assertJournalExportBoundary(boundary);
+      await Share.share({
+        title: shareTitle,
+        text: safeFilename,
+        url: file.uri,
+        dialogTitle: shareTitle,
+      });
+    } catch (error) {
+      if (isShareCancellation(error)) outcome = "cancelled";
+      else throw error;
+    }
+  } finally {
+    if (cacheFileCreated) {
+      await Filesystem.deleteFile({
+        path: safeFilename,
+        directory: Directory.Cache,
+      });
+    }
+  }
+
+  return outcome;
+}
+
+function formatExportCopy(template: string, values: Record<string, string>): string {
+  return Object.entries(values).reduce(
+    (result, [key, value]) => result.split(`{${key}}`).join(value),
+    template,
+  );
+}
+
+function getMoodLabel(ts: TranslationStrings, mood: string): string {
+  const labels: Record<string, string> = {
+    great: ts.moodGreat,
+    good: ts.moodGood,
+    okay: ts.moodOkay,
+    bad: ts.moodBad,
+    terrible: ts.moodTerrible,
+  };
+  return labels[mood] || mood;
+}
 
 // ── JSON Export (full backup) ──
 
 interface JournalBackup {
-  version: 2;
+  version: 3;
   exportedAt: number;
   entries: JournalEntry[];
   photos: JournalPhoto[];
   audio: JournalAudio[];
+  deletedEntryIds: string[];
 }
 
-export async function exportJSON(onProgress?: (step: string) => void): Promise<void> {
-  onProgress?.("Loading entries...");
-  const entries = await storage.getAllEntries();
-
-  onProgress?.("Loading photos...");
-  const photos: JournalPhoto[] = [];
-  for (const entry of entries) {
-    if (entry.photoIds.length > 0) {
-      const entryPhotos = await storage.getPhotosForEntry(entry.id);
-      photos.push(...entryPhotos);
-    }
-  }
-
-  onProgress?.("Loading audio...");
-  const audio: JournalAudio[] = [];
-  for (const entry of entries) {
-    if (entry.audioIds && entry.audioIds.length > 0) {
-      const entryAudio = await storage.getAudioForEntry(entry.id);
-      audio.push(...entryAudio);
-    }
-  }
+export async function exportJSON(
+  onProgress?: (step: string) => void,
+  shareTitle = "ZenFlow journal backup",
+  language: Language = "en",
+): Promise<JournalExportOutcome> {
+  const boundary = await captureJournalExportBoundary();
+  const ts = getTranslations(language);
+  onProgress?.(ts.journalExportLoadingEntries);
+  const snapshot = await storage.getJournalExportSnapshot();
+  onProgress?.(ts.journalExportLoadingPhotos);
+  onProgress?.(ts.journalExportLoadingAudio);
 
   const backup: JournalBackup = {
-    version: 2,
+    version: 3,
     exportedAt: Date.now(),
-    entries,
-    photos,
-    audio,
+    entries: snapshot.entries,
+    photos: snapshot.photos,
+    audio: snapshot.audio,
+    deletedEntryIds: snapshot.deletedEntryIds,
   };
 
-  onProgress?.("Generating file...");
-  const json = JSON.stringify(backup, null, 2);
+  onProgress?.(ts.journalExportGeneratingFile);
+  const { json } = serializePortableBackupWithinLimit(
+    backup,
+    MAX_JOURNAL_BACKUP_FILE_BYTES,
+  );
+  await assertJournalExportBoundary(boundary);
   const dateStr = getToday();
-  downloadText(json, `journal-backup-${dateStr}.json`, "application/json");
+  return saveJournalFile(
+    json,
+    `journal-backup-${dateStr}.json`,
+    shareTitle,
+    "application/json",
+    boundary,
+  );
 }
 
 // ── CSV Export ──
 
-export async function exportCSV(language: Language = "en"): Promise<void> {
+export async function exportCSV(
+  language: Language = "en",
+  shareTitle?: string,
+): Promise<JournalExportOutcome> {
+  const boundary = await captureJournalExportBoundary();
   const entries = await storage.getAllEntries();
   const locale = getLocale(language);
+  const ts = getTranslations(language);
 
   const headers = [
-    "Date",
-    "Time",
-    "Title",
-    "Content",
-    "Mood",
-    "Tags",
-    "Stickers",
-    "Word Count",
-    "Photos",
-    "Audio",
+    ts.journalExportDate,
+    ts.journalExportTime,
+    ts.journalExportTitle,
+    ts.journalExportContent,
+    ts.journalExportMood,
+    ts.journalExportTags,
+    ts.journalExportStickers,
+    ts.journalExportWordCount,
+    ts.journalExportPhotos,
+    ts.journalExportAudio,
   ];
   const rows = entries.map((e) => {
     const dt = new Date(e.createdAt);
     const time = dt.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-    const wordCount = e.content.trim() ? e.content.trim().split(/\s+/).filter(Boolean).length : 0;
+    const wordCount = countWordsHtml(e.content);
     return [
       csvEscape(e.date),
       csvEscape(time),
       csvEscape(e.title),
-      csvEscape(e.content.slice(0, 500)),
-      csvEscape(e.mood ? MOOD_LABEL[e.mood] || e.mood : ""),
-      csvEscape(e.tags.join(", ")),
+      csvEscape(e.content),
+      csvEscape(e.mood ? getMoodLabel(ts, e.mood) : ""),
+      csvEscape(getVisibleJournalTags(e.tags).join(", ")),
       csvEscape(e.stickers.join(" ")),
       csvEscape(String(wordCount)),
       csvEscape(String(e.photoIds.length)),
@@ -131,8 +247,15 @@ export async function exportCSV(language: Language = "en"): Promise<void> {
   });
 
   const csv = [headers.map(csvEscape).join(","), ...rows.map((r) => r.join(","))].join("\n");
+  await assertJournalExportBoundary(boundary);
   const dateStr = getToday();
-  downloadText(csv, `journal-${dateStr}.csv`, "text/csv");
+  return saveJournalFile(
+    "\ufeff" + csv,
+    `journal-${dateStr}.csv`,
+    shareTitle || ts.journalExportCSV,
+    "text/csv",
+    boundary,
+  );
 }
 
 function csvEscape(str: string): string {
@@ -146,54 +269,67 @@ function csvEscape(str: string): string {
 
 // ── Markdown Export ──
 
-export async function exportMarkdown(language: Language = "en"): Promise<void> {
+export async function exportMarkdown(
+  language: Language = "en",
+  shareTitle?: string,
+): Promise<JournalExportOutcome> {
+  const boundary = await captureJournalExportBoundary();
   const entries = await storage.getAllEntries();
   const locale = getLocale(language);
+  const ts = getTranslations(language);
 
-  const lines: string[] = ["# Diary\n"];
+  const lines: string[] = [`# ${ts.journalExportDiary}\n`];
 
   for (const entry of entries) {
-    const dt = new Date(entry.createdAt);
+    const visibleTags = getVisibleJournalTags(entry.tags);
+    const dt = parseLocalDate(entry.date);
     const dateStr = dt.toLocaleDateString(locale, {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
     });
-    const title = entry.title || "Untitled";
+    const title = entry.title || ts.journalExportUntitled;
 
     lines.push(`## ${dateStr} — ${title}\n`);
 
     if (entry.mood) {
-      lines.push(`**Mood:** ${MOOD_LABEL[entry.mood] || entry.mood}\n`);
+      lines.push(`**${ts.journalExportMood}:** ${getMoodLabel(ts, entry.mood)}\n`);
     }
 
     if (entry.content) {
       lines.push(entry.content + "\n");
     }
 
-    if (entry.tags.length > 0) {
-      lines.push(`**Tags:** ${entry.tags.map((t) => `#${t}`).join(" ")}\n`);
+    if (visibleTags.length > 0) {
+      lines.push(`**${ts.journalExportTags}:** ${visibleTags.map((t) => `#${t}`).join(" ")}\n`);
     }
 
     if (entry.stickers.length > 0) {
-      lines.push(`**Stickers:** ${entry.stickers.join(" ")}\n`);
+      lines.push(`**${ts.journalExportStickers}:** ${entry.stickers.join(" ")}\n`);
     }
 
     if (entry.photoIds.length > 0) {
-      lines.push(`*${entry.photoIds.length} photo(s) attached*\n`);
+      lines.push(`*${ts.journalExportPhotos}: ${entry.photoIds.length}*\n`);
     }
 
     if (entry.audioIds && entry.audioIds.length > 0) {
-      lines.push(`*${entry.audioIds.length} audio recording(s) attached*\n`);
+      lines.push(`*${ts.journalExportAudio}: ${entry.audioIds.length}*\n`);
     }
 
     lines.push("---\n");
   }
 
   const md = lines.join("\n");
+  await assertJournalExportBoundary(boundary);
   const dateStr = getToday();
-  downloadText(md, `journal-${dateStr}.md`, "text/markdown");
+  return saveJournalFile(
+    "\ufeff" + md,
+    `journal-${dateStr}.md`,
+    shareTitle || ts.journalExportText,
+    "text/markdown",
+    boundary,
+  );
 }
 
 // ── PDF Export ──
@@ -202,8 +338,17 @@ export async function exportPDF(
   onProgress?: (step: string) => void,
   language: Language = "en"
 ): Promise<void> {
-  onProgress?.("Loading entries...");
-  const entries = await storage.getAllEntries();
+  const boundary = await captureJournalExportBoundary();
+  const ts = getTranslations(language);
+  onProgress?.(ts.journalExportLoadingEntries);
+  const snapshot = await storage.getJournalExportSnapshot();
+  const entries = snapshot.entries;
+  const photosByEntry = new Map<string, JournalPhoto[]>();
+  for (const photo of snapshot.photos) {
+    const current = photosByEntry.get(photo.entryId) || [];
+    current.push(photo);
+    photosByEntry.set(photo.entryId, current);
+  }
 
   const doc = createSimplePdf();
 
@@ -223,11 +368,16 @@ export async function exportPDF(
   // Cover page
   doc.setFontSize(24);
   doc.setTextColor(60, 60, 60);
-  doc.text("Diary", pageWidth / 2, 60, { align: "center" });
+  doc.text(ts.journalExportDiary, pageWidth / 2, 60, { align: "center" });
 
   doc.setFontSize(12);
   doc.setTextColor(120, 120, 120);
-  doc.text(`${entries.length} entries`, pageWidth / 2, 72, { align: "center" });
+  doc.text(
+    formatLocalizedCount(entries.length, language, ts, "journalEntryCount", ts.entries),
+    pageWidth / 2,
+    72,
+    { align: "center" },
+  );
 
   const dateRange =
     entries.length > 0 ? `${entries[entries.length - 1].date} — ${entries[0].date}` : "";
@@ -236,19 +386,22 @@ export async function exportPDF(
   }
 
   doc.setFontSize(9);
-  doc.text(`Exported ${new Date().toLocaleString(getLocale(language))}`, pageWidth / 2, 95, {
+  doc.text(formatExportCopy(ts.journalExportExported, {
+    date: new Date().toLocaleString(getLocale(language)),
+  }), pageWidth / 2, 95, {
     align: "center",
   });
 
   // Entries
-  onProgress?.("Generating pages...");
+  onProgress?.(ts.journalExportGeneratingPages);
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
+    const visibleTags = getVisibleJournalTags(entry.tags);
     doc.addPage();
     y = margin;
 
     // Date header
-    const dt = new Date(entry.createdAt);
+    const dt = parseLocalDate(entry.date);
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     doc.text(
@@ -267,7 +420,7 @@ export async function exportPDF(
     if (entry.mood) {
       doc.setFontSize(9);
       doc.setTextColor(120, 120, 120);
-      doc.text(`Mood: ${MOOD_LABEL[entry.mood] || entry.mood}`, margin, y);
+      doc.text(`${ts.journalExportMood}: ${getMoodLabel(ts, entry.mood)}`, margin, y);
       y += 5;
     }
 
@@ -294,18 +447,20 @@ export async function exportPDF(
     }
 
     // Tags
-    if (entry.tags.length > 0) {
+    if (visibleTags.length > 0) {
       checkPage(6);
       doc.setFontSize(8);
       doc.setTextColor(100, 100, 220);
-      doc.text(`Tags: ${entry.tags.map((t) => "#" + t).join(" ")}`, margin, y);
+      doc.text(`${ts.journalExportTags}: ${visibleTags.map((t) => "#" + t).join(" ")}`, margin, y);
       y += 5;
     }
 
     // Photos embedded
     if (entry.photoIds.length > 0) {
-      onProgress?.(`Loading photos for entry ${i + 1}...`);
-      const photos = await storage.getPhotosForEntry(entry.id);
+      onProgress?.(formatExportCopy(ts.journalExportLoadingEntryPhotos, {
+        current: new Intl.NumberFormat(getLocale(language)).format(i + 1),
+      }));
+      const photos = photosByEntry.get(entry.id) || [];
       for (const photo of photos) {
         checkPage(55);
         try {
@@ -318,6 +473,7 @@ export async function exportPDF(
     }
   }
 
+  await assertJournalExportBoundary(boundary);
   const dateStr = getToday();
   doc.save(`journal-${dateStr}.pdf`);
 }

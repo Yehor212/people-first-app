@@ -41,6 +41,22 @@ let lifecycleState: AudioLifecycleState = {
 };
 
 let deferredResumeCleanup: (() => void) | null = null;
+const backgroundPauseHandlers = new Set<() => void>();
+
+export function registerAudioBackgroundPauseHandler(handler: () => void): () => void {
+  backgroundPauseHandlers.add(handler);
+  return () => backgroundPauseHandlers.delete(handler);
+}
+
+function pauseRegisteredAudio(): void {
+  for (const pause of [...backgroundPauseHandlers]) {
+    try {
+      pause();
+    } catch (error) {
+      logger.warn("[AudioLifecycle] Registered audio pause failed:", error);
+    }
+  }
+}
 
 function resetLifecycleState(): void {
   lifecycleState = { wasPlaying: false, soundId: null, pausedAt: null };
@@ -107,6 +123,8 @@ function deferResumeUntilUserGesture(soundId: string, pauseDuration: number): vo
  * Call this from Capacitor 'pause' event or visibilitychange='hidden'.
  */
 export function pauseAllAudio(): void {
+  pauseRegisteredAudio();
+
   try {
     clearDeferredResume();
     const generator = getAmbientSoundGenerator();

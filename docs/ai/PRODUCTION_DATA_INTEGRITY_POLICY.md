@@ -114,6 +114,10 @@ The checker uses layered evidence:
 
 Only high-confidence findings block in version 1. Medium-confidence PDI012 findings are warnings requiring classification; the checker never creates a waiver automatically.
 
+### Bundle filesystem integrity
+
+Bundle verification is fail-closed before content classification. Finder/FileProvider-style ordinal copies, non-NFC path names, symlinked roots or entries, descriptor identity changes, and any before/after inventory drift are internal errors. Artifact bytes are hashed and scanned from a descriptor opened with no-follow semantics; the verifier does not substitute decoded text for byte identity. Code-owned limits bound bundle roots, directory fan-out, aggregate bytes, individual reads, and emitted error detail. `--staged` always reads source, config, and ledgers from a materialized Git-index snapshot—even when the staged path set is empty—while an explicit `--bundle` remains bound to the live repository root so a staged check cannot verify a stale copied artifact.
+
 ## Rule catalog
 
 | Rule | Meaning | Blocking condition |

@@ -53,7 +53,12 @@ const {
 } = require("../check-journal-magic-link-proof-status.cjs") as {
   evaluateJournalMagicLinkProofStatus?: (
     input: unknown,
-    options?: { requirePass?: boolean; maxPassAgeDays?: number; now?: Date },
+    options?: {
+      requirePass?: boolean;
+      maxPassAgeDays?: number;
+      now?: Date;
+      currentSourceSha256?: string;
+    },
   ) => { ok: boolean; passReady: boolean; issues: Array<{ code: string; itemId?: string }>; items: Array<{ id: string; status: string }> };
   REQUIRED_ITEM_IDS?: string[];
 };
@@ -183,6 +188,33 @@ describe("check-journal-magic-link-live", () => {
     })).toMatchObject({ ok: true, passReady: true, issues: [] });
   });
 
+  it("rejects a live PASS packet after the reviewed auth source changes", () => {
+    const basePacket = JSON.parse(readFileSync(proofStatusPath, "utf8"));
+    const provenSourceSha256 = "a".repeat(64);
+    const packet = {
+      ...basePacket,
+      proofSourceSha256: provenSourceSha256,
+    };
+
+    expect(evaluateJournalMagicLinkProofStatus?.(packet, {
+      requirePass: true,
+      now: new Date("2026-07-06T12:00:00.000Z"),
+      currentSourceSha256: provenSourceSha256,
+    })).toMatchObject({ ok: true, passReady: true, issues: [] });
+
+    expect(evaluateJournalMagicLinkProofStatus?.(packet, {
+      requirePass: true,
+      now: new Date("2026-07-06T12:00:00.000Z"),
+      currentSourceSha256: "b".repeat(64),
+    })).toMatchObject({
+      ok: false,
+      passReady: false,
+      issues: expect.arrayContaining([
+        expect.objectContaining({ code: "proof_source_mismatch" }),
+      ]),
+    });
+  });
+
   it("writes a secret-free runtime PASS proof status packet after live workflow proof", () => {
     const root = mkdtempSync(join(tmpdir(), "journal-magic-link-proof-status-"));
     const output = join(root, "runtime-proof.json");
@@ -202,6 +234,7 @@ describe("check-journal-magic-link-live", () => {
     const serializedPacket = JSON.stringify(packet);
 
     expect(packet.overallStatus).toBe("PASS");
+    expect(packet.proofSourceSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(evaluation?.ok).toBe(true);
     expect(evaluation?.passReady).toBe(true);
     expect(serializedPacket).not.toMatch(/token(?:_hash)?=/i);

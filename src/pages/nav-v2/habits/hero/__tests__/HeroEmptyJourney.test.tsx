@@ -47,6 +47,50 @@ describe("HeroEmptyJourney", () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps both empty-state actions fully readable at narrow widths", () => {
+    render(
+      <HeroEmptyJourney onCreateHabit={vi.fn()} onOpenLibrary={vi.fn()} />
+    );
+
+    const create = screen.getByTestId("habits-hero-create-empty");
+    const library = screen.getByTestId("hero-empty-open-library");
+    const actions = screen.getByTestId("habits-empty-actions");
+
+    expect(actions.className).toContain("var(--font-scale");
+    expect(actions.className).not.toContain("min-[360px]:grid-cols");
+    for (const button of [create, library]) {
+      const label = button.querySelector("span");
+      expect(button).toHaveClass("min-w-0", "whitespace-normal");
+      expect(label).not.toHaveClass("truncate");
+      expect(label).toHaveClass("min-w-0", "break-words");
+      expect(label?.className).toContain("[overflow-wrap:normal]");
+      expect(label?.className).toContain("[hyphens:manual]");
+      expect(label?.className).not.toContain("[overflow-wrap:anywhere]");
+    }
+  });
+
+  it("stacks the hero and uses app-scaled typography on narrow screens", () => {
+    render(<HeroEmptyJourney onCreateHabit={vi.fn()} onPickTemplate={vi.fn()} />);
+
+    const intro = screen.getByTestId("habits-empty-intro");
+    const title = screen.getByTestId("habits-empty-title");
+    const quickPickHeading = screen.getByTestId("habits-empty-quickpick-heading");
+    const firstCard = screen.getByTestId("hero-quickpick-drink-water");
+    const meta = firstCard.querySelector("[data-slot='quickpick-meta']");
+    const label = firstCard.querySelector("[data-slot='quickpick-label']");
+
+    expect(intro).toHaveClass("grid-cols-1");
+    expect(intro.className).toContain("sm:grid-cols-[auto_1fr]");
+    expect(title).toHaveClass("text-lg");
+    expect(quickPickHeading).toHaveClass("text-xs");
+    expect(meta).toHaveClass("text-xs");
+    expect(label).toHaveClass("text-sm");
+
+    for (const node of [title, quickPickHeading, meta, label]) {
+      expect(node?.className).not.toMatch(/text-\[\d+px\]/);
+    }
+  });
+
   it("does not render vague habit-method copy", () => {
     render(<HeroEmptyJourney onCreateHabit={vi.fn()} />);
     expect(screen.queryByText("2-minute rule")).not.toBeInTheDocument();
@@ -59,6 +103,7 @@ describe("HeroEmptyJourney", () => {
     );
 
     const quickPicks = screen.getByTestId("hero-empty-quickpick");
+    expect(quickPicks.className).toContain("var(--font-scale");
     const roles = new Set(
       Array.from(quickPicks.querySelectorAll("[data-visual-role]")).map((node) =>
         node.getAttribute("data-visual-role")
@@ -160,6 +205,9 @@ describe("HeroEmptyJourney", () => {
       expect(label).toBeTruthy();
       expect(label?.className).toContain("font-bold");
       expect(label?.className).toContain("max-w-full");
+      expect(label?.className).not.toContain("line-clamp-2");
+      expect(label?.className).toContain("break-words");
+      expect(label?.className).toContain("[hyphens:manual]");
     }
   });
 

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 const source = readFileSync("src/components/TimeHelper.tsx", "utf8");
 
 describe("TimeHelper audio policy", () => {
-  it("keeps ADHD time pings opt-in instead of default-on", () => {
+  it("keeps optional time pings off by default", () => {
     expect(source).toContain("useState(false)");
     expect(source).not.toContain("useState(true)");
   });

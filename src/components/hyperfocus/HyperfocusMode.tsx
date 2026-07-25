@@ -347,7 +347,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           {/* Spotify Section */}
           {SHOW_SPOTIFY && (
             <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto mt-4 bg-secondary backdrop-blur-md rounded-2xl p-4 border border-border">
-              <div className="flex items-center justify-between mb-3">
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Music className="w-4 h-4 text-[hsl(var(--brand-spotify))]" />
                   <p className="text-sm text-slate-600 dark:text-white/70 font-medium">Spotify</p>
@@ -356,7 +356,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   <motion.button
                     onClick={() => spotify.setSpotifyAutoPlay(!spotify.spotifyAutoPlay)}
                     className={cn(
-                      "px-3 py-1.5 rounded-lg text-xs font-medium motion-safe:transition-all",
+                      "min-h-11 min-w-0 whitespace-normal break-words rounded-lg px-3 py-2 text-xs font-medium motion-safe:transition-all",
                       spotify.spotifyAutoPlay
                         ? "bg-[hsl(var(--brand-spotify))]/30 border border-[hsl(var(--brand-spotify))]/50 text-[hsl(var(--brand-spotify))]"
                         : "bg-secondary border border-border text-slate-500 dark:text-white/60"
@@ -368,7 +368,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 )}
               </div>
               {spotify.spotifyTrack ? (
-                <div className="flex items-center gap-3 p-3 bg-secondary border border-border rounded-xl">
+                <div className="flex flex-col items-stretch gap-3 rounded-xl border border-border bg-secondary p-3 min-[420px]:flex-row min-[420px]:items-center">
                   {spotify.spotifyTrack.albumArt && (
                     <img
                       src={spotify.spotifyTrack.albumArt}
@@ -379,11 +379,11 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                       className="w-12 h-12 rounded-lg shadow-lg"
                     />
                   )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-800 dark:text-white font-medium truncate">
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words text-sm font-medium text-slate-800 [overflow-wrap:anywhere] dark:text-white">
                       {spotify.spotifyTrack.name}
                     </p>
-                    <p className="text-xs text-slate-600 dark:text-white/60 truncate">
+                    <p className="break-words text-xs text-slate-600 [overflow-wrap:anywhere] dark:text-white/60">
                       {spotify.spotifyTrack.artist}
                     </p>
                   </div>

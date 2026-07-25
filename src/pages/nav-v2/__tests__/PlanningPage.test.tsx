@@ -240,6 +240,19 @@ describe("PlanningPage", () => {
     useUIStore.setState({ currentFocusMinutes: undefined });
   });
 
+  it("keeps the empty-schedule action fully readable at narrow widths", () => {
+    render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
+
+    const action = screen.getByTestId("planning-empty-schedule");
+    const label = screen.getByText("No events yet");
+
+    expect(action).toHaveClass("min-w-0", "whitespace-normal");
+    expect(label).not.toHaveClass("truncate");
+    expect(label).toHaveClass("min-w-0", "break-words");
+    expect(label.className).toContain("[hyphens:manual]");
+    expect(label.className).toContain("[overflow-wrap:normal]");
+  });
+
   it("renders the V2 page root, Now/Next strip, ScheduleTimeline and FocusTimer", async () => {
     useUserDataStore.setState({
       scheduleEvents: [manualEvent()],
@@ -297,11 +310,49 @@ describe("PlanningPage", () => {
     expect(screen.getByTestId("planning-focus-timer")).toBeInTheDocument();
   });
 
+  it("lets the hero copy reflow under large text and custom spacing", () => {
+    render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
+
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading.className).toContain("min-w-0");
+    expect(heading.className).toContain("break-words");
+    expect(heading.className).toContain("[hyphens:manual]");
+    expect(heading.className).toContain("[overflow-wrap:normal]");
+    expect(heading.className).toContain("text-xl");
+    expect(heading.className).toContain("min-[420px]:text-3xl");
+    expect(heading.nextElementSibling?.className).toContain("[overflow-wrap:normal]");
+  });
+
+  it("preserves whole words across controlled Planning copy", () => {
+    for (const file of [
+      "src/pages/nav-v2/planning/PlanningPage.tsx",
+      "src/pages/nav-v2/planning/PlanningDayPulse.tsx",
+      "src/pages/nav-v2/planning/PlanningModeRail.tsx",
+      "src/pages/nav-v2/planning/PlanningBridgeActions.tsx",
+    ]) {
+      const source = readFileSync(file, "utf8");
+      expect(source).not.toContain("[overflow-wrap:anywhere]");
+    }
+  });
+
   it("renders an accessible internal mode rail", () => {
     render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
 
-    expect(screen.getByTestId("planning-mode-rail")).toBeInTheDocument();
-    expect(screen.getByTestId("planning-mode-today")).toHaveAttribute("aria-pressed", "true");
+    const modeRail = screen.getByTestId("planning-mode-rail");
+    expect(modeRail).toBeInTheDocument();
+    expect(modeRail.className).toContain("grid-cols-1");
+    expect(modeRail.className).toContain("min-[520px]:grid-cols-2");
+    const modeButtons = ["today", "schedule", "focus", "review"].map((mode) =>
+      screen.getByTestId(`planning-mode-${mode}`),
+    );
+    expect(modeButtons[0]).toHaveAttribute("aria-pressed", "true");
+    for (const button of modeButtons) {
+      expect(button.className).toContain("min-w-0");
+      expect(button.className).toContain("sm:shrink-0");
+      expect(button.querySelector("span")?.className).toContain("min-w-0");
+      expect(button.querySelector("span")?.className).toContain("[hyphens:manual]");
+      expect(button.querySelector("span")?.className).toContain("[overflow-wrap:normal]");
+    }
 
     fireEvent.click(screen.getByTestId("planning-mode-focus"));
 
@@ -396,10 +447,27 @@ describe("PlanningPage", () => {
     expect(screen.getByTestId("planning-pulse-habits")).toHaveTextContent("1 left");
     expect(screen.getByTestId("planning-pulse-mood")).toHaveTextContent("Open");
 
+    const pulseGrid = screen.getByTestId("planning-pulse-events").parentElement;
+    const pulseLabel = screen.getByText("Events");
+    const pulseValue = screen.getByTestId("planning-pulse-habits").querySelector("p");
+
+    expect(pulseGrid).toHaveClass("grid-cols-1", "min-[520px]:grid-cols-2");
+    expect(pulseLabel).not.toHaveClass("truncate");
+    expect(pulseLabel).toHaveClass("min-w-0", "break-words");
+    expect(pulseValue).not.toHaveClass("truncate");
+    expect(pulseValue?.className).toContain("[hyphens:manual]");
+    expect(pulseValue?.className).toContain("[overflow-wrap:normal]");
+
     expect(screen.getByTestId("planning-bridge-actions")).toHaveTextContent("Helpful next moves");
     expect(screen.getByTestId("planning-bridge-action-log_mood")).toHaveAttribute("href", expect.stringContaining("/orb"));
     expect(screen.getByTestId("planning-bridge-action-complete_habits")).toHaveAttribute("href", expect.stringContaining("/habits"));
     expect(screen.getByTestId("planning-bridge-action-reflect_in_diary")).toHaveAttribute("href", expect.stringContaining("/diary"));
+
+    const bridgeLabel = screen.getByText("Log mood");
+    expect(bridgeLabel).not.toHaveClass("truncate");
+    expect(bridgeLabel).toHaveClass("break-words");
+    expect(bridgeLabel.className).toContain("[hyphens:manual]");
+    expect(bridgeLabel.className).toContain("[overflow-wrap:normal]");
   });
 
   it("surfaces schedule conflicts in the day pulse", () => {

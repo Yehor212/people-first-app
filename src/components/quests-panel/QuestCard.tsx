@@ -75,7 +75,7 @@ export const QuestCard = memo(function QuestCard({ quest, t, getQuestTypeLabel }
   return (
     <div
       className={cn(
-        'p-6 rounded-xl border-2 motion-safe:transition-all',
+        'h-auto min-w-0 p-4 min-[420px]:p-6 rounded-xl border-2 motion-safe:transition-all',
         quest.completed
           ? 'bg-primary/10 border-primary/50 zen-shadow'
           : isExpired
@@ -86,40 +86,40 @@ export const QuestCard = memo(function QuestCard({ quest, t, getQuestTypeLabel }
       )}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-3 gap-2">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+      <div className="mb-3 flex min-w-0 items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-1 items-start gap-2">
           <span className="text-2xl flex-shrink-0">{getQuestCategoryEmoji(quest.category)}</span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h3 className={cn(
-              'font-bold line-clamp-2',
+              'whitespace-normal break-words font-bold leading-snug',
               getQuestDifficultyColor(quest.type),
               quest.completed && 'line-through opacity-70'
             )}>
               {displayTitle}
             </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="mt-0.5 whitespace-normal break-words text-xs text-muted-foreground">
               {getQuestTypeLabel(quest.type)}
             </p>
           </div>
         </div>
         {quest.completed && (
-          <Trophy className="w-6 h-6 text-primary" />
+          <Trophy className="h-6 w-6 shrink-0 text-primary" />
         )}
       </div>
 
       {/* Description */}
-      <p className="text-sm text-muted-foreground mb-4">
+      <p className="mb-4 whitespace-normal break-words text-sm leading-relaxed text-muted-foreground">
         {displayDesc}
       </p>
 
       {/* Progress Bar */}
       <div className="mb-4">
-        <div className="flex items-center justify-between text-xs mb-1">
-          <span className="font-medium">
+        <div className="mb-1 flex min-w-0 flex-col items-start gap-1 text-xs min-[420px]:flex-row min-[420px]:justify-between">
+          <span className="min-w-0 whitespace-normal break-words font-medium">
             {t.questProgress} {quest.progress}/{quest.total}
           </span>
           <span className={cn(
-            'font-medium',
+            'min-w-0 whitespace-normal break-words font-medium min-[420px]:text-end',
             isExpired ? 'text-destructive' : 'text-primary'
           )}>
             {isExpired ? t.questExpired : getQuestTimeRemaining(quest)}
@@ -141,15 +141,15 @@ export const QuestCard = memo(function QuestCard({ quest, t, getQuestTypeLabel }
       </div>
 
       {/* Reward */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 text-sm">
-          <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md font-medium">
-            <Sparkles className="w-4 h-4" />
+      <div className="flex min-w-0 items-center justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm">
+          <span className="inline-flex min-w-0 items-center gap-1 whitespace-normal break-words rounded-md bg-primary/10 px-2 py-1 font-medium text-primary">
+            <Sparkles className="h-4 w-4 shrink-0" />
             +{quest.reward.xp} XP
           </span>
           {badgeName && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 rounded-md font-medium">
-              <Trophy className="w-4 h-4" />
+            <span className="inline-flex min-w-0 items-center gap-1 whitespace-normal break-words rounded-md bg-yellow-500/10 px-2 py-1 font-medium text-yellow-700 dark:text-yellow-400">
+              <Trophy className="h-4 w-4 shrink-0" />
               {badgeName}
             </span>
           )}
@@ -159,7 +159,7 @@ export const QuestCard = memo(function QuestCard({ quest, t, getQuestTypeLabel }
       {/* Completion Message */}
       {quest.completed && (
         <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-          <p className="text-sm font-medium text-primary">
+          <p className="whitespace-normal break-words text-sm font-medium leading-relaxed text-primary">
             {'\u2728'} {completionMessage}
           </p>
         </div>

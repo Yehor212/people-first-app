@@ -68,6 +68,7 @@ const DialogMotionContent = React.forwardRef<
             className,
           )}
           {...props}
+          aria-modal="true"
         >
           {children}
           <DialogPrimitive.Close
@@ -87,7 +88,7 @@ const DialogMotionContent = React.forwardRef<
   return (
     <DialogMotionPortal>
       <DialogMotionOverlay />
-      <DialogPrimitive.Content ref={ref} asChild {...props}>
+      <DialogPrimitive.Content ref={ref} asChild {...props} aria-modal="true">
         <motion.div
           initial={bloom.initial}
           animate={bloom.animate}

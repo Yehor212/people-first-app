@@ -6,7 +6,7 @@ interface RowCleanupResult {
   error: RowCleanupError | null;
 }
 
-interface RowCleanupClient {
+export interface RowCleanupClient {
   from(table: string): {
     delete(): {
       eq(column: string, value: string): PromiseLike<RowCleanupResult>;

@@ -119,6 +119,32 @@ describe('EmotionTagGrid — progressive disclosure (Phase 3-A.4c-ii-c)', () => 
     expect(chips).toHaveAttribute('id', 'emotion-tag-chips');
   });
 
+  it('keeps long translated emotion chips inside a narrow enlarged-text row', () => {
+    render(<EmotionTagGrid {...baseProps} expandable />);
+    const chips = screen.getByTestId('emotion-tag-chips');
+    const firstChip = screen.getByTestId(
+      `emotion-chip-${getInitialTagsForValence(baseProps.valence)[0].key}`,
+    );
+
+    expect(chips).toHaveClass(
+      'min-w-0',
+      'max-w-full',
+      'px-0',
+    );
+    expect(firstChip).toHaveClass(
+      'min-w-0',
+      'max-w-full',
+      'whitespace-normal',
+      'px-2.5',
+      'max-[359px]:px-0',
+      'sm:px-4',
+      '[hyphens:auto]',
+      '[overflow-wrap:normal]',
+      '[word-break:normal]',
+    );
+    expect(firstChip).not.toHaveClass('break-all');
+  });
+
   it('expandable=true: aria-expanded is false collapsed, true after tap', () => {
     render(<EmotionTagGrid {...baseProps} expandable />);
     const btn = screen.getByTestId('emotion-more-precise');

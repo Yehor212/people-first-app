@@ -85,24 +85,27 @@ export function WelcomeBackModal({
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl">
+      <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/60 ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] pb-[max(1rem,var(--safe-bottom))] pt-[max(1rem,var(--safe-top))] backdrop-blur-sm motion-safe:animate-fade-in md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl">
         <div
           {...modalProps}
           aria-labelledby="welcome-back-title"
-          className="relative m-4 max-w-lg w-full bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden motion-safe:animate-scale-in"
+          className="relative max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-2rem)] w-full max-w-lg overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl border border-border bg-card zen-shadow-card motion-safe:animate-scale-in"
         >
           {/* Header */}
           <div className="p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-primary/20 rounded-full">
-                  <Sparkles className="w-6 h-6 text-primary" />
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="shrink-0 rounded-full bg-primary/20 p-3">
+                  <Sparkles className="h-6 w-6 text-primary" />
                 </div>
-                <div>
-                  <h2 id="welcome-back-title" className="text-2xl font-bold text-foreground">
+                <div className="min-w-0">
+                  <h2
+                    id="welcome-back-title"
+                    className="break-words hyphens-manual text-2xl font-bold text-foreground"
+                  >
                     {t.reengageTitle || "Welcome Back!"} 👋
                   </h2>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="break-words hyphens-manual text-sm text-muted-foreground">
                     {(t.reengageSubtitle || "You've been away for {days} days").replace(
                       "{days}",
                       String(daysAway)
@@ -113,7 +116,7 @@ export function WelcomeBackModal({
               <button
                 onClick={onClose}
                 aria-label={t.close || "Close"}
-                className="p-2 hover:bg-foreground/5 rounded-lg motion-safe:transition-colors"
+                className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg p-2 hover:bg-foreground/5 motion-safe:transition-colors"
               >
                 <X className="w-5 h-5 text-muted-foreground" />
               </button>
@@ -137,13 +140,13 @@ export function WelcomeBackModal({
                       : "text-green-600 dark:text-green-400"
                   }`}
                 />
-                <h3 className="font-semibold text-foreground">
+                <h3 className="break-words hyphens-manual font-semibold text-foreground">
                   {streakBroken
                     ? t.reengageStreakBroken || "Streak Status"
                     : t.reengageStreakProtected || "Streak Protected!"}
                 </h3>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="break-words hyphens-manual text-sm text-muted-foreground">
                 {streakBroken
                   ? (
                       t.reengageStreakBrokenMsg ||
@@ -161,7 +164,7 @@ export function WelcomeBackModal({
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <TrendingUp className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold text-foreground">
+                  <h3 className="break-words hyphens-manual font-semibold text-foreground">
                     {t.reengageBestHabits || "Your Best Habits"}
                   </h3>
                 </div>
@@ -169,13 +172,15 @@ export function WelcomeBackModal({
                   {topHabits.slice(0, 3).map(({ habit, successRate }) => (
                     <div
                       key={habit.id}
-                      className="flex items-center justify-between p-3 bg-accent rounded-lg"
+                      className="flex flex-col items-stretch gap-2 rounded-lg bg-accent p-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between"
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{habit.icon}</span>
-                        <span className="font-medium text-foreground">{habit.name}</span>
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span className="shrink-0 text-2xl">{habit.icon}</span>
+                        <span className="min-w-0 [overflow-wrap:anywhere] font-medium text-foreground">
+                          {habit.name}
+                        </span>
                       </div>
-                      <span className="text-sm font-semibold text-primary">
+                      <span className="break-words hyphens-manual text-sm font-semibold text-primary">
                         {Math.round(successRate)}% {t.reengageSuccessRate || "success"}
                       </span>
                     </div>
@@ -195,20 +200,20 @@ export function WelcomeBackModal({
                 <div className="p-2 bg-violet-500/20 rounded-lg">
                   <Target className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                <div className="min-w-0">
+                  <h3 className="flex flex-wrap items-center gap-2 break-words hyphens-manual font-semibold text-foreground">
                     {t.comebackChallengeTitle || "Comeback Challenge"}
-                    <Zap className="w-4 h-4 text-amber-500" />
+                    <Zap className="h-4 w-4 shrink-0 text-amber-500" />
                   </h3>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="break-words hyphens-manual text-xs text-muted-foreground">
                     {t.comebackChallengeSubtitle || "A gentle step back in"}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-2 mb-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
+                <div className="flex flex-col items-stretch gap-1 text-sm min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+                  <span className="break-words hyphens-manual text-muted-foreground">
                     {t.comebackChallengeGoal || "Complete 3 habits for 3 days"}
                   </span>
                   <span className="font-bold text-amber-600 dark:text-amber-400">+100 XP</span>
@@ -230,7 +235,7 @@ export function WelcomeBackModal({
                 whileHover={zenHover.lift}
                 whileTap={zenTap.button}
                 onClick={handleAcceptChallenge}
-                className="w-full py-2.5 px-4 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-xl font-medium hover:from-violet-600 hover:to-purple-600 motion-safe:transition-all zen-shadow-sm flex items-center justify-center gap-2"
+                className="flex min-h-[44px] h-auto w-full items-center justify-center gap-2 whitespace-normal break-words hyphens-manual rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2.5 font-medium text-white zen-shadow-sm hover:from-violet-600 hover:to-purple-600 motion-safe:transition-all"
               >
                 <Target className="w-4 h-4" />
                 {t.comebackChallengeAccept || "Accept Challenge"}
@@ -246,19 +251,21 @@ export function WelcomeBackModal({
                     {t.reengageQuickMood || "How are you feeling?"}
                   </h3>
                 </div>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(3.5rem,1fr))] gap-2">
                   {moods.map((mood) => (
                     <button
                       key={mood.value}
                       onClick={() => handleMoodSelect(mood.value)}
-                      className={`p-3 rounded-xl motion-safe:transition-all ${
+                      className={`min-h-[44px] h-auto rounded-xl p-3 motion-safe:transition-all ${
                         selectedMood === mood.value
                           ? "bg-primary text-primary-foreground scale-110 zen-shadow-sm"
                           : "bg-accent hover:bg-accent/80"
                       }`}
                     >
                       <div className="text-2xl mb-1">{mood.emoji}</div>
-                      <div className="text-xs font-medium">{mood.label}</div>
+                      <div className="break-words hyphens-manual text-xs font-medium">
+                        {mood.label}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -273,7 +280,7 @@ export function WelcomeBackModal({
             {/* Continue Button */}
             <button
               onClick={handleContinue}
-              className="w-full py-3 px-4 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 motion-safe:transition-colors zen-shadow-sm"
+              className="min-h-[44px] h-auto w-full whitespace-normal break-words hyphens-manual rounded-xl bg-primary px-4 py-3 font-medium text-primary-foreground zen-shadow-sm hover:bg-primary/90 motion-safe:transition-colors"
             >
               {t.reengageContinue || "Let's continue!"}
             </button>

@@ -2,6 +2,10 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { flushSync } from "react-dom";
 import { morph } from "@/lib/motion/morph";
 import { consumePendingNativeDiaryDeepLink } from "@/lib/nativeDiaryDeepLinkSignal";
+import {
+  OPEN_REMINDER_SETTINGS_EVENT,
+  type OpenReminderSettingsEventDetail,
+} from "@/lib/notificationLifecycle";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 
@@ -343,6 +347,29 @@ export function useNavigationV2(): UseNavigationV2Return {
     },
     [drawerOpen, startRouteTransition, unknownPath]
   );
+
+  useEffect(() => {
+    const openReminderSettings = (event: Event) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("settingsSection", "notifications");
+      const reason = (event as CustomEvent<OpenReminderSettingsEventDetail>).detail?.reason;
+      if (reason === "permission-required" || reason === "schedule-uncertain") {
+        url.searchParams.set("reminderIncident", reason);
+      } else {
+        url.searchParams.delete("reminderIncident");
+      }
+      window.history.replaceState(window.history.state, "", url);
+
+      if (activePageRef.current === "settings") {
+        window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+        return;
+      }
+      setActivePage("settings");
+    };
+
+    window.addEventListener(OPEN_REMINDER_SETTINGS_EVENT, openReminderSettings);
+    return () => window.removeEventListener(OPEN_REMINDER_SETTINGS_EVENT, openReminderSettings);
+  }, [setActivePage]);
 
   const toggleSidebar = useCallback(() => setSidebarCollapsed((s) => !s), []);
   const openDrawer = useCallback(() => setDrawerOpen(true), []);

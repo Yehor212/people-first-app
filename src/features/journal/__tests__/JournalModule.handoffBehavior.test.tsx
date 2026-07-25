@@ -1,20 +1,28 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { forwardRef } from "react";
 import type React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SK } from "@/lib/storageKeys";
+import { requestDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
 import type { JournalEntryPrefill, JournalEntrySuggestion } from "../types";
 
 const storageMocks = vi.hoisted(() => ({
   getAllEntries: vi.fn(),
   getEntriesPage: vi.fn(),
   getEntriesByDate: vi.fn(),
+  getEntryById: vi.fn(),
   saveEntry: vi.fn(),
   getEntryCount: vi.fn(),
   hasEncryptedJournalContent: vi.fn(),
   hasEncryptedJournalMedia: vi.fn(),
+  hasEncryptedJournalDrafts: vi.fn(),
   updateEntry: vi.fn(),
   deleteEntry: vi.fn(),
+  commitPendingJournalEntryDelete: vi.fn(),
+  getPendingJournalEntryDeletes: vi.fn(),
+  stagePendingJournalEntryDelete: vi.fn(),
+  cancelPendingJournalEntryDeletes: vi.fn(),
   compressAndStorePhoto: vi.fn(),
   deletePhoto: vi.fn(),
   getPhotosForEntry: vi.fn(),
@@ -27,7 +35,12 @@ const journalHubMocks = vi.hoisted(() => ({
   createGratitudeSpaceCapture: vi.fn(),
   createQuietReleaseSession: vi.fn(),
   getQuietReleaseTraceSummaries: vi.fn(),
+  hasEncryptedJournalHubContent: vi.fn(),
   linkEntryToSpace: vi.fn(),
+}));
+
+const editorExitMocks = vi.hoisted(() => ({
+  requested: vi.fn(),
 }));
 
 const gamificationMocks = vi.hoisted(() => ({
@@ -68,16 +81,24 @@ const loggerMocks = vi.hoisted(() => ({
   warn: vi.fn(),
 }));
 
+const journalImportMocks = vi.hoisted(() => ({
+  inspectJournalBackup: vi.fn(),
+  importJournalBackup: vi.fn(),
+}));
+
 const safeJsonStore = vi.hoisted(() => ({
+  readBlocked: false,
   values: new Map<string, string>(),
+  writeBlocked: false,
 }));
 
 const supabaseMocks = vi.hoisted(() => ({
   authStateCallback: null as
     | null
-    | ((event: string, session?: { user?: { email?: string | null } | null } | null) => Promise<void> | void),
+    | ((event: string, session?: { user?: { id?: string; email?: string | null } | null } | null) => Promise<void> | void),
   getSession: vi.fn(),
   signInWithOtp: vi.fn(),
+  countRemoteJournalRows: vi.fn(),
   unsubscribe: vi.fn(),
 }));
 
@@ -129,7 +150,11 @@ vi.mock("@/hooks/useBackHandler", () => ({
 }));
 
 vi.mock("@/hooks/useModalA11y", () => ({
-  useModalA11y: vi.fn(),
+  useModalA11y: vi.fn(() => ({
+    modalProps: { role: "dialog", "aria-modal": true },
+    handleKeyDown: vi.fn(),
+    modalRef: { current: null },
+  })),
 }));
 
 vi.mock("@/hooks/useSidebarKeyboard", () => ({
@@ -209,10 +234,16 @@ vi.mock("@/lib/safeJson", () => ({
     return true;
   }),
   storageGetRaw: vi.fn((key: string, fallback?: string) => safeJsonStore.values.get(key) ?? fallback ?? null),
+  storageReadRaw: vi.fn((key: string) =>
+    safeJsonStore.readBlocked
+      ? { ok: false as const, value: null }
+      : { ok: true as const, value: safeJsonStore.values.get(key) ?? null },
+  ),
   storageRemove: vi.fn((key: string) => {
     safeJsonStore.values.delete(key);
   }),
   storageSetRaw: vi.fn((key: string, value: string) => {
+    if (safeJsonStore.writeBlocked) return false;
     safeJsonStore.values.set(key, value);
     return true;
   }),
@@ -228,6 +259,9 @@ vi.mock("@/storage/cloudSync", () => ({
 
 vi.mock("@/lib/supabaseClient", () => ({
   supabase: {
+    from: (table: string) => ({
+      select: () => supabaseMocks.countRemoteJournalRows(table),
+    }),
     auth: {
       getSession: supabaseMocks.getSession,
       onAuthStateChange: vi.fn((callback) => {
@@ -251,6 +285,7 @@ vi.mock("@/lib/supabaseClient", () => ({
 }));
 
 vi.mock("@/storage/db", () => ({
+  getLocalDataOwnerId: vi.fn(() => Promise.resolve(null)),
   settingsRepo: {
     get: vi.fn(() => Promise.resolve(undefined)),
   },
@@ -271,10 +306,15 @@ vi.mock("../journalStorage", () => ({
   compressAndStorePhoto: storageMocks.compressAndStorePhoto,
   deleteAudio: storageMocks.deleteAudio,
   deleteEntry: storageMocks.deleteEntry,
+  commitPendingJournalEntryDelete: storageMocks.commitPendingJournalEntryDelete,
+  getPendingJournalEntryDeletes: storageMocks.getPendingJournalEntryDeletes,
+  stagePendingJournalEntryDelete: storageMocks.stagePendingJournalEntryDelete,
+  cancelPendingJournalEntryDeletes: storageMocks.cancelPendingJournalEntryDeletes,
   deletePhoto: storageMocks.deletePhoto,
   getAllEntries: storageMocks.getAllEntries,
   getAudioForEntry: storageMocks.getAudioForEntry,
   getEntriesByDate: storageMocks.getEntriesByDate,
+  getEntryById: storageMocks.getEntryById,
   getEntriesPage: storageMocks.getEntriesPage,
   getEntryCount: storageMocks.getEntryCount,
   getPhotosForEntry: storageMocks.getPhotosForEntry,
@@ -285,10 +325,17 @@ vi.mock("../journalStorage", () => ({
   updateEntry: storageMocks.updateEntry,
 }));
 
+vi.mock("../journalDraftStorage", () => ({
+  hasEncryptedJournalDrafts: storageMocks.hasEncryptedJournalDrafts,
+}));
+
+vi.mock("../journalImport", () => journalImportMocks);
+
 vi.mock("../journalHubStorage", () => ({
   createGratitudeSpaceCapture: journalHubMocks.createGratitudeSpaceCapture,
   createQuietReleaseSession: journalHubMocks.createQuietReleaseSession,
   getQuietReleaseTraceSummaries: journalHubMocks.getQuietReleaseTraceSummaries,
+  hasEncryptedJournalHubContent: journalHubMocks.hasEncryptedJournalHubContent,
   linkEntryToSpace: journalHubMocks.linkEntryToSpace,
 }));
 
@@ -303,21 +350,36 @@ vi.mock("../JournalOnboardingHints", () => ({
 vi.mock("../JournalEntryEditor", () => ({
   JournalEntryEditor: ({
     entryPrefill,
+    onBack,
+    onBindExitRequestHandler,
+    onExitRequestCancelled,
     onRequestSettings,
   }: {
     entryPrefill: JournalEntryPrefill | null;
+    onBack: () => void;
+    onBindExitRequestHandler?: (handler: (() => void) | null) => void;
+    onExitRequestCancelled?: () => void;
     onRequestSettings?: () => void;
-  }) => (
-    <section data-testid="journal-entry-editor">
-      <h2>{entryPrefill?.title}</h2>
-      <p>{entryPrefill?.content}</p>
-      {onRequestSettings ? (
-        <button type="button" onClick={onRequestSettings}>
-          Open diary settings
+  }) => {
+    onBindExitRequestHandler?.(editorExitMocks.requested);
+    return (
+      <section data-testid="journal-entry-editor">
+        <h2>{entryPrefill?.title}</h2>
+        <p>{entryPrefill?.content}</p>
+        {onRequestSettings ? (
+          <button type="button" onClick={onRequestSettings}>
+            Open diary settings
+          </button>
+        ) : null}
+        <button type="button" onClick={onBack}>
+          Confirm editor exit
         </button>
-      ) : null}
-    </section>
-  ),
+        <button type="button" onClick={onExitRequestCancelled}>
+          Keep editing
+        </button>
+      </section>
+    );
+  },
 }));
 
 vi.mock("../JournalEntryList", () => ({
@@ -432,6 +494,7 @@ function omitMotionProps<T extends HTMLElement>({
 vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   LayoutGroup: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useIsPresent: () => true,
   motion: {
     article: (props: MotionMockProps<HTMLElement>) => {
       const { children, ...rest } = omitMotionProps(props);
@@ -445,10 +508,10 @@ vi.mock("framer-motion", () => ({
       const { children, ...rest } = omitMotionProps(props);
       return <button {...rest}>{children}</button>;
     },
-    div: (props: MotionMockProps<HTMLDivElement>) => {
+    div: forwardRef<HTMLDivElement, MotionMockProps<HTMLDivElement>>((props, ref) => {
       const { children, ...rest } = omitMotionProps(props);
-      return <div {...rest}>{children}</div>;
-    },
+      return <div ref={ref} {...rest}>{children}</div>;
+    }),
     figure: (props: MotionMockProps<HTMLElement>) => {
       const { children, ...rest } = omitMotionProps(props);
       return <figure {...rest}>{children}</figure>;
@@ -473,7 +536,12 @@ vi.mock("framer-motion", () => ({
   useReducedMotion: () => false,
 }));
 
-import { JournalLoadErrorPanel, JournalModule } from "../JournalModule";
+import {
+  JournalBackgroundLoadNotice,
+  JournalFavoritesPanel,
+  JournalLoadErrorPanel,
+  JournalModule,
+} from "../JournalModule";
 
 const initialSuggestion: JournalEntrySuggestion = {
   source: "orb",
@@ -511,6 +579,8 @@ describe("JournalModule orb handoff behavior", () => {
     hapticsMocks.light.mockReset();
     loggerMocks.error.mockReset();
     loggerMocks.warn.mockReset();
+    journalImportMocks.inspectJournalBackup.mockReset();
+    journalImportMocks.importJournalBackup.mockReset();
     securityMocks.lock.mockReset();
     securityMocks.removePassword.mockReset();
     securityMocks.setPassword.mockReset();
@@ -519,6 +589,7 @@ describe("JournalModule orb handoff behavior", () => {
     securityMocks.unlockWithBiometric.mockReset();
     supabaseMocks.getSession.mockReset();
     supabaseMocks.signInWithOtp.mockReset();
+    supabaseMocks.countRemoteJournalRows.mockReset();
     supabaseMocks.unsubscribe.mockReset();
     window.history.replaceState({}, "", "/people-first-app/");
     Object.assign(securityMocks.state, {
@@ -531,12 +602,15 @@ describe("JournalModule orb handoff behavior", () => {
       loading: false,
     });
     safeJsonStore.values.clear();
+    safeJsonStore.readBlocked = false;
+    safeJsonStore.writeBlocked = false;
     mediaQueryMocks.matches = false;
     supabaseMocks.authStateCallback = null;
     supabaseMocks.getSession.mockResolvedValue({
-      data: { session: { user: { email: "owner@example.invalid" } } },
+      data: { session: { user: { id: "owner-user-id", email: "owner@example.invalid" } } },
     });
     supabaseMocks.signInWithOtp.mockResolvedValue({ error: null });
+    supabaseMocks.countRemoteJournalRows.mockResolvedValue({ count: 0, error: null });
     storageMocks.getAllEntries.mockResolvedValue([]);
     storageMocks.getEntriesPage.mockResolvedValue({
       entries: [],
@@ -545,10 +619,37 @@ describe("JournalModule orb handoff behavior", () => {
       nextCursor: null,
     });
     storageMocks.getEntriesByDate.mockResolvedValue([]);
+    storageMocks.getEntryById.mockResolvedValue(undefined);
     storageMocks.getEntryCount.mockResolvedValue(0);
     storageMocks.hasEncryptedJournalContent.mockResolvedValue(false);
     storageMocks.hasEncryptedJournalMedia.mockResolvedValue(false);
+    storageMocks.hasEncryptedJournalDrafts.mockResolvedValue(false);
+    journalImportMocks.inspectJournalBackup.mockResolvedValue({
+      canImport: true,
+      entries: 2,
+      photos: 1,
+      audio: 1,
+      issues: 0,
+      errors: [],
+    });
+    journalImportMocks.importJournalBackup.mockResolvedValue({
+      imported: 2,
+      skipped: 1,
+      photosImported: 1,
+      audioImported: 1,
+      syncPending: false,
+      errors: [],
+    });
+    journalHubMocks.hasEncryptedJournalHubContent.mockResolvedValue(false);
     storageMocks.deleteEntry.mockResolvedValue(undefined);
+    storageMocks.commitPendingJournalEntryDelete.mockResolvedValue("committed");
+    storageMocks.getPendingJournalEntryDeletes.mockResolvedValue([]);
+    storageMocks.stagePendingJournalEntryDelete.mockImplementation(
+      (id: string, expiresAt: number) => Promise.resolve([{ id, expiresAt }]),
+    );
+    storageMocks.cancelPendingJournalEntryDeletes.mockImplementation((ids: string[]) =>
+      Promise.resolve([...ids]),
+    );
     storageMocks.saveEntry.mockResolvedValue({
       id: "entry-1",
       date: "2026-06-12",
@@ -594,6 +695,47 @@ describe("JournalModule orb handoff behavior", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
+  it("renders a compact retry notice without replacing already loaded entries", () => {
+    const onRetry = vi.fn();
+    render(
+      <JournalBackgroundLoadNotice
+        ts={{
+          journalHistoryLoadFailed: "Some older entries are not available yet",
+          journalHistoryLoadFailedHint: "The entries shown are safe. Try again to load the rest.",
+          journalRetryHistory: "Try older entries again",
+        }}
+        onRetry={onRetry}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent("The entries shown are safe");
+    fireEvent.click(screen.getByRole("button", { name: "Try older entries again" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not claim favorites are empty while older history is loading", () => {
+    render(
+      <JournalFavoritesPanel
+        entries={[]}
+        onOpenEntry={vi.fn()}
+        onNewEntry={vi.fn()}
+        privateMode={false}
+        language="en"
+        historyLoading
+        historyLoadError={false}
+        onRetryHistory={vi.fn()}
+        ts={{
+          journalFavorites: "Favorites",
+          journalFavoritesEmptyTitle: "No favorites yet",
+          journalHistoryLoadPending: "Loading older diary entries…",
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent("Loading older diary entries");
+    expect(screen.queryByText("No favorites yet")).not.toBeInTheDocument();
+  });
+
   it("renders the orb suggestion without saving, then opens the editor with prefill on user action", async () => {
     mediaQueryMocks.matches = true;
     const onConsumed = vi.fn();
@@ -631,6 +773,66 @@ describe("JournalModule orb handoff behavior", () => {
     });
   });
 
+  it("treats Later as a session deferral and resurfaces the suggestion on the next diary visit", async () => {
+    mediaQueryMocks.matches = true;
+    const onConsumed = vi.fn();
+    const firstVisit = render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+        onInitialEntrySuggestionConsumed={onConsumed}
+      />,
+    );
+
+    expect(await screen.findByTestId("diary-entry-suggestion")).toHaveTextContent(
+      "A steady moment worth keeping.",
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Later" })[0]);
+
+    expect(screen.queryByTestId("diary-entry-suggestion")).not.toBeInTheDocument();
+    expect(onConsumed).not.toHaveBeenCalled();
+    expect(storageMocks.saveEntry).not.toHaveBeenCalled();
+
+    firstVisit.unmount();
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+        onInitialEntrySuggestionConsumed={onConsumed}
+      />,
+    );
+
+    expect(await screen.findByTestId("diary-entry-suggestion")).toHaveTextContent(
+      "A steady moment worth keeping.",
+    );
+    expect(onConsumed).not.toHaveBeenCalled();
+  });
+
+  it("does not reveal orb suggestion text while private mode conceals the diary", async () => {
+    mediaQueryMocks.matches = true;
+    safeJsonStore.values.set(SK.JOURNAL_PRIVATE_MODE, "true");
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+      />,
+    );
+
+    await screen.findByTestId("journal-page-shell");
+    expect(screen.queryByText("A steady moment worth keeping.")).not.toBeInTheDocument();
+    expect(storageMocks.saveEntry).not.toHaveBeenCalled();
+  });
+
   it("does not return to an open editor after private mode is enabled from diary settings", async () => {
     mediaQueryMocks.matches = true;
 
@@ -653,7 +855,7 @@ describe("JournalModule orb handoff behavior", () => {
 
     const settingsPanel = await screen.findByTestId("journal-settings-panel");
     const privateModeSwitch = await within(settingsPanel).findByRole("switch", {
-      name: /hide previews/i,
+      name: /conceal diary list/i,
     });
     fireEvent.click(privateModeSwitch);
     fireEvent.click(within(settingsPanel).getByRole("button", { name: /close/i }));
@@ -662,6 +864,140 @@ describe("JournalModule orb handoff behavior", () => {
       expect(screen.queryByTestId("journal-entry-editor")).not.toBeInTheDocument();
     });
     expect(screen.getByTestId("journal-page-shell")).toBeInTheDocument();
+  });
+
+  it("fails closed without rendering sensitive suggestions when private-mode storage cannot be read", async () => {
+    mediaQueryMocks.matches = true;
+    safeJsonStore.readBlocked = true;
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+      />,
+    );
+
+    await screen.findByTestId("journal-page-shell");
+    expect(screen.queryByText("A steady moment worth keeping.")).not.toBeInTheDocument();
+  });
+
+  it("keeps the current diary concealed and reports when private mode cannot be saved", async () => {
+    mediaQueryMocks.matches = true;
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /continue writing/i }));
+    expect(await screen.findByTestId("journal-entry-editor")).toHaveTextContent(
+      "A steady moment worth keeping.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /open diary settings/i }));
+    safeJsonStore.writeBlocked = true;
+
+    const settingsPanel = await screen.findByTestId("journal-settings-panel");
+    const privateModeSwitch = await within(settingsPanel).findByRole("switch", {
+      name: /conceal diary list/i,
+    });
+    fireEvent.click(privateModeSwitch);
+
+    expect(screen.queryByTestId("journal-entry-editor")).not.toBeInTheDocument();
+    expect(
+      within(settingsPanel).getByText(
+        /could not save this privacy setting.*diary stays concealed/i,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(settingsPanel).getByRole("switch", { name: /conceal diary list/i }),
+    ).toBeChecked();
+  });
+
+  it("does not open statistics until the editor approves leaving a dirty entry", async () => {
+    mediaQueryMocks.matches = true;
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /continue writing/i }));
+    expect(await screen.findByTestId("journal-entry-editor")).toBeInTheDocument();
+
+    fireEvent.click(await screen.findByTestId("journal-sidebar-nav-stats"));
+    expect(editorExitMocks.requested).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("journal-entry-editor")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /confirm editor exit/i }));
+    await waitFor(() => expect(screen.queryByTestId("journal-entry-editor")).not.toBeInTheDocument());
+  });
+
+  it("routes an external new-entry request through the active editor exit guard", async () => {
+    mediaQueryMocks.matches = true;
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /continue writing/i }));
+    expect(await screen.findByTestId("journal-entry-editor")).toHaveTextContent(
+      "A steady moment worth keeping.",
+    );
+
+    act(() => requestDiaryEditorOpen());
+
+    expect(editorExitMocks.requested).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("journal-entry-editor")).toHaveTextContent(
+      "A steady moment worth keeping.",
+    );
+  });
+
+  it("forgets a cancelled statistics intent before a later ordinary editor exit", async () => {
+    mediaQueryMocks.matches = true;
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /continue writing/i }));
+    fireEvent.click(await screen.findByTestId("journal-sidebar-nav-stats"));
+    fireEvent.click(screen.getByRole("button", { name: /keep editing/i }));
+    fireEvent.click(screen.getByRole("button", { name: /confirm editor exit/i }));
+
+    await waitFor(() => expect(screen.queryByTestId("journal-entry-editor")).not.toBeInTheDocument());
+    expect(screen.getByTestId("journal-sidebar-nav-stats")).not.toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByTestId("journal-sidebar-nav-entry")).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
   it("refreshes the diary auto-lock timer on pointer and keyboard interaction", async () => {
@@ -708,6 +1044,32 @@ describe("JournalModule orb handoff behavior", () => {
 
     expect((await screen.findAllByText(/email verification cannot remove this lock/i)).length).toBeGreaterThan(0);
     expect(supabaseMocks.getSession).not.toHaveBeenCalled();
+  });
+
+  it("does not offer email lock removal when the account still has remote diary data", async () => {
+    Object.assign(securityMocks.state, {
+      hasPassword: true,
+      isLocked: true,
+    });
+    supabaseMocks.countRemoteJournalRows.mockImplementation(async (table: string) => ({
+      count: table === "journal_entries" ? 1 : 0,
+      error: null,
+    }));
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /can't open the lock/i }));
+
+    expect((await screen.findAllByText(/email verification cannot remove this lock/i)).length).toBeGreaterThan(0);
+    expect(securityMocks.removePassword).not.toHaveBeenCalled();
+    expect(supabaseMocks.countRemoteJournalRows).toHaveBeenCalledWith("journal_entries");
   });
 
   it("shows a service error instead of blaming sign-in when account lookup fails", async () => {
@@ -834,6 +1196,75 @@ describe("JournalModule orb handoff behavior", () => {
     expect(screen.getByRole("button", { name: /resend link/i })).toBeDisabled();
   });
 
+  it("lets the user dismiss a pending reset-link request and ignores its late result", async () => {
+    Object.assign(securityMocks.state, {
+      hasPassword: true,
+      isLocked: true,
+    });
+    let resolveSend!: (value: { error: null }) => void;
+    supabaseMocks.signInWithOtp.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSend = resolve;
+      }),
+    );
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /can't open the lock/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /send link/i }));
+
+    const dialog = await screen.findByRole("dialog", { name: /remove lock by email/i });
+    const cancel = within(dialog).getByRole("button", { name: /cancel/i });
+    await waitFor(() => expect(supabaseMocks.signInWithOtp).toHaveBeenCalledOnce());
+    expect(cancel).toBeEnabled();
+    fireEvent.click(cancel);
+    expect(screen.queryByRole("dialog", { name: /remove lock by email/i })).not.toBeInTheDocument();
+
+    await act(async () => resolveSend({ error: null }));
+
+    expect(screen.queryByRole("dialog", { name: /remove lock by email/i })).not.toBeInTheDocument();
+    expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET)).toBe(false);
+    expect(securityMocks.removePassword).not.toHaveBeenCalled();
+  });
+
+  it("returns a stalled reset-link request to an actionable state after a bounded timeout", async () => {
+    Object.assign(securityMocks.state, {
+      hasPassword: true,
+      isLocked: true,
+    });
+    supabaseMocks.signInWithOtp.mockReturnValueOnce(new Promise(() => undefined));
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /can't open the lock/i }));
+    const send = await screen.findByRole("button", { name: /send link/i });
+    vi.useFakeTimers();
+    fireEvent.click(send);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+
+    const dialog = screen.getByRole("dialog", { name: /remove lock by email/i });
+    expect(dialog).toHaveAttribute("aria-busy", "false");
+    expect(within(dialog).getByRole("button", { name: /cancel/i })).toBeEnabled();
+    expect(within(dialog).getByRole("alert")).toBeInTheDocument();
+  });
+
   it("logs thrown reset-link failures with sanitized auth debug info", async () => {
     Object.assign(securityMocks.state, {
       hasPassword: true,
@@ -924,24 +1355,35 @@ describe("JournalModule orb handoff behavior", () => {
         email: "owner@example.invalid",
         options: {
           shouldCreateUser: false,
-          emailRedirectTo: expect.stringMatching(
-            /^com\.zenflow\.app:\/\/login-callback\?journalReset=[a-f0-9]{32}$/,
-          ),
+          emailRedirectTo: expect.any(String),
         },
       });
     });
-    await waitFor(() => {
-      expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
-    });
+    const resetRequest = supabaseMocks.signInWithOtp.mock.calls[0]?.[0] as {
+      options?: { emailRedirectTo?: string };
+    };
+    const resetRedirect = new URL(resetRequest.options?.emailRedirectTo || "");
+    expect(resetRedirect.protocol).toBe("com.zenflow.app:");
+    expect(resetRedirect.hostname).toBe("login-callback");
+    expect(resetRedirect.searchParams.get("journalReset")).toMatch(/^[a-f0-9]{32}$/);
+    expect(resetRedirect.searchParams.get("zenflowAuthAttempt")).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+    await waitFor(
+      () => {
+        expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
+      },
+      { timeout: 10_000 },
+    );
     const pendingReset = JSON.parse(safeJsonStore.values.get(SK.JOURNAL_PASSWORD_RESET) || "{}");
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: pendingReset.nonce, receivedAt: Date.now() }),
+      JSON.stringify({ nonce: pendingReset.nonce, userId: pendingReset.userId, receivedAt: Date.now() }),
     );
 
     await act(async () => {
       await supabaseMocks.authStateCallback?.("SIGNED_IN", {
-        user: { email: "other@example.invalid" },
+        user: { id: "other-user-id", email: "other@example.invalid" },
       });
     });
 
@@ -955,7 +1397,7 @@ describe("JournalModule orb handoff behavior", () => {
       isLocked: true,
     });
 
-    let resolveSession!: (value: { data: { session: { user: { email: string } } } }) => void;
+    let resolveSession!: (value: { data: { session: { user: { id: string; email: string } } } }) => void;
     supabaseMocks.getSession.mockReturnValueOnce(
       new Promise((resolve) => {
         resolveSession = resolve;
@@ -979,7 +1421,9 @@ describe("JournalModule orb handoff behavior", () => {
     fireEvent.keyDown(document, { key: "Escape" });
 
     await act(async () => {
-      resolveSession({ data: { session: { user: { email: "owner@example.invalid" } } } });
+      resolveSession({
+        data: { session: { user: { id: "owner-user-id", email: "owner@example.invalid" } } },
+      });
     });
 
     await waitFor(() => {
@@ -1034,6 +1478,7 @@ describe("JournalModule orb handoff behavior", () => {
     await waitFor(() => {
       expect(securityMocks.removePassword).toHaveBeenCalledTimes(1);
     });
+    expect(securityMocks.removePassword).toHaveBeenCalledWith();
     await waitFor(() => {
       expect(screen.queryByRole("dialog", { name: /remove password lock/i })).not.toBeInTheDocument();
     });
@@ -1068,7 +1513,7 @@ describe("JournalModule orb handoff behavior", () => {
     });
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET,
-      JSON.stringify({ email: "owner@example.invalid", nonce: "reset-proof-1", startedAt: Date.now() }),
+      JSON.stringify({ email: "owner@example.invalid", userId: "owner-user-id", nonce: "reset-proof-1", startedAt: Date.now() }),
     );
 
     render(
@@ -1097,7 +1542,7 @@ describe("JournalModule orb handoff behavior", () => {
     window.history.replaceState({}, "", "/people-first-app/?journalReset=reset-proof-2");
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET,
-      JSON.stringify({ email: "owner@example.invalid", nonce: "reset-proof-2", startedAt: Date.now() }),
+      JSON.stringify({ email: "owner@example.invalid", userId: "owner-user-id", nonce: "reset-proof-2", startedAt: Date.now() }),
     );
 
     render(
@@ -1109,9 +1554,12 @@ describe("JournalModule orb handoff behavior", () => {
       />,
     );
 
-    await waitFor(() => {
-      expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
-    });
+    await waitFor(
+      () => {
+        expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
+      },
+      { timeout: 10_000 },
+    );
     expect(securityMocks.removePassword).not.toHaveBeenCalled();
     expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET)).toBe(true);
     expect(screen.queryByRole("dialog", { name: /diary lock removed/i })).not.toBeInTheDocument();
@@ -1125,7 +1573,65 @@ describe("JournalModule orb handoff behavior", () => {
     window.history.replaceState({}, "", "/people-first-app/?code=supabase-code&journalReset=reset-proof-2");
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET,
-      JSON.stringify({ email: "owner@example.invalid", nonce: "reset-proof-2", startedAt: Date.now() }),
+      JSON.stringify({ email: "owner@example.invalid", userId: "owner-user-id", nonce: "reset-proof-2", startedAt: Date.now() }),
+    );
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+      />,
+    );
+
+    await waitFor(
+      () => {
+        expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
+      },
+      { timeout: 10_000 },
+    );
+    expect(securityMocks.removePassword).not.toHaveBeenCalled();
+
+    safeJsonStore.values.set(
+      SK.JOURNAL_PASSWORD_RESET_PROOF,
+      JSON.stringify({ nonce: "reset-proof-2", userId: "owner-user-id", receivedAt: Date.now() }),
+    );
+    window.dispatchEvent(new CustomEvent("zenflow-auth-complete"));
+
+    expect(await screen.findByRole(
+      "dialog",
+      { name: /diary lock removed/i },
+      { timeout: 10_000 },
+    )).toBeInTheDocument();
+    expect(securityMocks.removePassword).toHaveBeenCalledWith({
+      allowVerifiedEmptyDiary: true,
+    });
+    expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET)).toBe(false);
+  });
+
+  it("coalesces simultaneous auth-complete and signed-in reset signals", async () => {
+    Object.assign(securityMocks.state, {
+      hasPassword: true,
+      isLocked: true,
+    });
+    let finishRemoval!: () => void;
+    let releaseAvailabilityChecks!: () => void;
+    const availabilityGate = new Promise<void>((resolve) => {
+      releaseAvailabilityChecks = resolve;
+    });
+    storageMocks.hasEncryptedJournalContent.mockImplementation(async () => {
+      await availabilityGate;
+      return false;
+    });
+    securityMocks.removePassword.mockImplementationOnce(
+      () => new Promise<void>((resolve) => {
+        finishRemoval = resolve;
+      }),
+    );
+    safeJsonStore.values.set(
+      SK.JOURNAL_PASSWORD_RESET,
+      JSON.stringify({ email: "owner@example.invalid", userId: "owner-user-id", nonce: "reset-proof-single-flight", startedAt: Date.now() }),
     );
 
     render(
@@ -1140,19 +1646,44 @@ describe("JournalModule orb handoff behavior", () => {
     await waitFor(() => {
       expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
     });
-    expect(securityMocks.removePassword).not.toHaveBeenCalled();
-
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: "reset-proof-2", receivedAt: Date.now() }),
+      JSON.stringify({ nonce: "reset-proof-single-flight", userId: "owner-user-id", receivedAt: Date.now() }),
     );
-    window.dispatchEvent(new CustomEvent("zenflow-auth-complete"));
 
-    await waitFor(() => {
-      expect(securityMocks.removePassword).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent("zenflow-auth-complete"));
+      void supabaseMocks.authStateCallback?.("SIGNED_IN", {
+        user: { id: "owner-user-id", email: "owner@example.invalid" },
+      });
     });
-    expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET)).toBe(false);
+
+    await waitFor(() => expect(storageMocks.hasEncryptedJournalContent).toHaveBeenCalled());
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      releaseAvailabilityChecks();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(securityMocks.removePassword).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(storageMocks.hasEncryptedJournalContent).toHaveBeenCalledTimes(1);
+    expect(supabaseMocks.countRemoteJournalRows).toHaveBeenCalledTimes(3);
+    expect(loggerMocks.warn).not.toHaveBeenCalledWith(
+      "[Journal] Ignored password reset session after proof could not be consumed",
+    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await act(async () => finishRemoval());
+
+    expect(securityMocks.removePassword).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("dialog", { name: /diary lock removed/i })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("does not remove the diary lock when reset proof changes before it can be consumed", async () => {
@@ -1162,16 +1693,16 @@ describe("JournalModule orb handoff behavior", () => {
     });
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET,
-      JSON.stringify({ email: "owner@example.invalid", nonce: "reset-proof-race", startedAt: Date.now() }),
+      JSON.stringify({ email: "owner@example.invalid", userId: "owner-user-id", nonce: "reset-proof-race", startedAt: Date.now() }),
     );
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: "reset-proof-race", receivedAt: Date.now() }),
+      JSON.stringify({ nonce: "reset-proof-race", userId: "owner-user-id", receivedAt: Date.now() }),
     );
     storageMocks.hasEncryptedJournalContent.mockImplementationOnce(async () => {
       safeJsonStore.values.set(
         SK.JOURNAL_PASSWORD_RESET_PROOF,
-        JSON.stringify({ nonce: "reset-proof-race-stale", receivedAt: Date.now() }),
+        JSON.stringify({ nonce: "reset-proof-race-stale", userId: "owner-user-id", receivedAt: Date.now() }),
       );
       return false;
     });
@@ -1204,11 +1735,7 @@ describe("JournalModule orb handoff behavior", () => {
     window.history.replaceState({}, "", "/people-first-app/?journalReset=encrypted-proof");
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET,
-      JSON.stringify({ email: "owner@example.invalid", nonce: "encrypted-proof", startedAt: Date.now() }),
-    );
-    safeJsonStore.values.set(
-      SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: "encrypted-proof", receivedAt: Date.now() }),
+      JSON.stringify({ email: "owner@example.invalid", userId: "owner-user-id", nonce: "encrypted-proof", startedAt: Date.now() }),
     );
 
     render(
@@ -1220,20 +1747,22 @@ describe("JournalModule orb handoff behavior", () => {
       />,
     );
 
-    await waitFor(() => {
-      expect(
-        screen.queryAllByText(/encrypted with your password/i).length > 0 ||
-          typeof supabaseMocks.authStateCallback === "function",
-      ).toBe(true);
+    await waitFor(
+      () => {
+        expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
+      },
+      { timeout: 10_000 },
+    );
+    safeJsonStore.values.set(
+      SK.JOURNAL_PASSWORD_RESET_PROOF,
+      JSON.stringify({ nonce: "encrypted-proof", userId: "owner-user-id", receivedAt: Date.now() }),
+    );
+    await act(async () => {
+      await supabaseMocks.authStateCallback?.("SIGNED_IN", {
+        user: { id: "owner-user-id", email: "owner@example.invalid" },
+      });
     });
 
-    if (screen.queryAllByText(/encrypted with your password/i).length === 0) {
-      await act(async () => {
-        await supabaseMocks.authStateCallback?.("SIGNED_IN", {
-          user: { email: "owner@example.invalid" },
-        });
-      });
-    }
     expect(await screen.findByRole(
       "dialog",
       { name: /can't open the lock/i },
@@ -1258,11 +1787,11 @@ describe("JournalModule orb handoff behavior", () => {
     );
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET,
-      JSON.stringify({ email: "owner@example.invalid", nonce: "reset-proof-url", startedAt: Date.now() }),
+      JSON.stringify({ email: "owner@example.invalid", userId: "owner-user-id", nonce: "reset-proof-url", startedAt: Date.now() }),
     );
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: "reset-proof-url", receivedAt: Date.now() }),
+      JSON.stringify({ nonce: "reset-proof-url", userId: "owner-user-id", receivedAt: Date.now() }),
     );
 
     render(
@@ -1290,7 +1819,7 @@ describe("JournalModule orb handoff behavior", () => {
     window.history.replaceState({}, "", "/people-first-app/?nav=v2&journalReset=stale-proof");
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: "stale-proof", receivedAt: Date.now() }),
+      JSON.stringify({ nonce: "stale-proof", userId: "owner-user-id", receivedAt: Date.now() }),
     );
 
     render(
@@ -1317,11 +1846,11 @@ describe("JournalModule orb handoff behavior", () => {
     });
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET,
-      JSON.stringify({ email: "owner@example.invalid", nonce: "native-proof-1", startedAt: Date.now() }),
+      JSON.stringify({ email: "owner@example.invalid", userId: "owner-user-id", nonce: "native-proof-1", startedAt: Date.now() }),
     );
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: "native-proof-1", receivedAt: Date.now() }),
+      JSON.stringify({ nonce: "native-proof-1", userId: "owner-user-id", receivedAt: Date.now() }),
     );
 
     render(
@@ -1333,26 +1862,14 @@ describe("JournalModule orb handoff behavior", () => {
       />,
     );
 
-    await waitFor(() => {
-      expect(
-        securityMocks.removePassword.mock.calls.length > 0 ||
-          typeof supabaseMocks.authStateCallback === "function",
-      ).toBe(true);
-    });
-    if (securityMocks.removePassword.mock.calls.length === 0) {
-      await act(async () => {
-        await supabaseMocks.authStateCallback?.("SIGNED_IN", {
-          user: { email: "owner@example.invalid" },
-        });
-      });
-    }
-
-    await waitFor(() => {
-      expect(securityMocks.removePassword).toHaveBeenCalledTimes(1);
-    });
+    expect(await screen.findByRole(
+      "dialog",
+      { name: /diary lock removed/i },
+      { timeout: 10_000 },
+    )).toBeInTheDocument();
+    expect(securityMocks.removePassword).toHaveBeenCalledTimes(1);
     expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET)).toBe(false);
     expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET_PROOF)).toBe(false);
-    expect(screen.getByRole("dialog", { name: /diary lock removed/i })).toBeInTheDocument();
   });
 
   it("ignores native cold-start reset when stored proof nonce does not match", async () => {
@@ -1362,11 +1879,11 @@ describe("JournalModule orb handoff behavior", () => {
     });
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET,
-      JSON.stringify({ email: "owner@example.invalid", nonce: "native-proof-expected", startedAt: Date.now() }),
+      JSON.stringify({ email: "owner@example.invalid", userId: "owner-user-id", nonce: "native-proof-expected", startedAt: Date.now() }),
     );
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: "native-proof-other", receivedAt: Date.now() }),
+      JSON.stringify({ nonce: "native-proof-other", userId: "owner-user-id", receivedAt: Date.now() }),
     );
 
     render(
@@ -1393,7 +1910,7 @@ describe("JournalModule orb handoff behavior", () => {
     });
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET,
-      JSON.stringify({ email: "owner@example.invalid", nonce: "native-proof-2", startedAt: Date.now() }),
+      JSON.stringify({ email: "owner@example.invalid", userId: "owner-user-id", nonce: "native-proof-2", startedAt: Date.now() }),
     );
     safeJsonStore.values.set(SK.JOURNAL_PASSWORD_RESET_PROOF, "not-json");
 
@@ -1423,13 +1940,14 @@ describe("JournalModule orb handoff behavior", () => {
       SK.JOURNAL_PASSWORD_RESET,
       JSON.stringify({
         email: "owner@example.invalid",
+        userId: "owner-user-id",
         nonce: "expired-proof",
         startedAt: Date.now() - 601_000,
       }),
     );
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: "expired-proof", receivedAt: Date.now() }),
+      JSON.stringify({ nonce: "expired-proof", userId: "owner-user-id", receivedAt: Date.now() }),
     );
 
     render(
@@ -1477,7 +1995,7 @@ describe("JournalModule orb handoff behavior", () => {
 
     await act(async () => {
       await supabaseMocks.authStateCallback?.("SIGNED_IN", {
-        user: { email: "Owner@Example.Invalid" },
+        user: { id: "owner-user-id", email: "Owner@Example.Invalid" },
       });
     });
 
@@ -1488,7 +2006,7 @@ describe("JournalModule orb handoff behavior", () => {
     expect(screen.queryByRole("dialog", { name: /diary lock removed/i })).not.toBeInTheDocument();
   });
 
-  it("shows a same-device proof error when reset proof disappears before consumption", async () => {
+  it("shows a same-device proof error when the auth callback has no matching proof", async () => {
     Object.assign(securityMocks.state, {
       hasPassword: true,
       isLocked: true,
@@ -1496,20 +2014,8 @@ describe("JournalModule orb handoff behavior", () => {
     window.history.replaceState({}, "", "/people-first-app/?nav=v2&journalReset=missing-proof-copy");
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET,
-      JSON.stringify({ email: "owner@example.invalid", nonce: "missing-proof-copy", startedAt: Date.now() }),
+      JSON.stringify({ email: "owner@example.invalid", userId: "owner-user-id", nonce: "missing-proof-copy", startedAt: Date.now() }),
     );
-    safeJsonStore.values.set(
-      SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: "missing-proof-copy", receivedAt: Date.now() }),
-    );
-    supabaseMocks.getSession.mockImplementationOnce(async () => {
-      safeJsonStore.values.set(
-        SK.JOURNAL_PASSWORD_RESET_PROOF,
-        JSON.stringify({ nonce: "missing-proof-copy-stale", receivedAt: Date.now() }),
-      );
-      return { data: { session: { user: { email: "owner@example.invalid" } } } };
-    });
-
     render(
       <JournalModule
         startOpen
@@ -1519,11 +2025,30 @@ describe("JournalModule orb handoff behavior", () => {
       />,
     );
 
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "This browser could not confirm the email link. Open the link on the same device or request a new one.",
-      );
+    await waitFor(
+      () => {
+        expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
+      },
+      { timeout: 10_000 },
+    );
+    safeJsonStore.values.set(
+      SK.JOURNAL_PASSWORD_RESET_PROOF,
+      JSON.stringify({ nonce: "missing-proof-copy-stale", userId: "owner-user-id", receivedAt: Date.now() }),
+    );
+    await act(async () => {
+      await supabaseMocks.authStateCallback?.("SIGNED_IN", {
+        user: { id: "owner-user-id", email: "owner@example.invalid" },
+      });
     });
+
+    await waitFor(
+      () => {
+        expect(screen.getByRole("alert")).toHaveTextContent(
+          "This browser could not confirm the email link. Open the link on the same device or request a new one.",
+        );
+      },
+      { timeout: 10_000 },
+    );
     expect(securityMocks.removePassword).not.toHaveBeenCalled();
     expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET)).toBe(true);
     expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET_PROOF)).toBe(false);
@@ -1556,12 +2081,12 @@ describe("JournalModule orb handoff behavior", () => {
     const pendingReset = JSON.parse(safeJsonStore.values.get(SK.JOURNAL_PASSWORD_RESET) || "{}");
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: pendingReset.nonce, receivedAt: Date.now() }),
+      JSON.stringify({ nonce: pendingReset.nonce, userId: pendingReset.userId, receivedAt: Date.now() }),
     );
 
     await act(async () => {
       await supabaseMocks.authStateCallback?.("SIGNED_IN", {
-        user: { email: "Owner@Example.Invalid" },
+        user: { id: "owner-user-id", email: "Owner@Example.Invalid" },
       });
     });
 
@@ -1608,12 +2133,12 @@ describe("JournalModule orb handoff behavior", () => {
     const pendingReset = JSON.parse(safeJsonStore.values.get(SK.JOURNAL_PASSWORD_RESET) || "{}");
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: pendingReset.nonce, receivedAt: Date.now() }),
+      JSON.stringify({ nonce: pendingReset.nonce, userId: pendingReset.userId, receivedAt: Date.now() }),
     );
 
     await act(async () => {
       await supabaseMocks.authStateCallback?.("SIGNED_IN", {
-        user: { email: "owner@example.invalid" },
+        user: { id: "owner-user-id", email: "owner@example.invalid" },
       });
     });
 
@@ -1671,12 +2196,12 @@ describe("JournalModule orb handoff behavior", () => {
     const pendingReset = JSON.parse(safeJsonStore.values.get(SK.JOURNAL_PASSWORD_RESET) || "{}");
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: pendingReset.nonce, receivedAt: Date.now() }),
+      JSON.stringify({ nonce: pendingReset.nonce, userId: pendingReset.userId, receivedAt: Date.now() }),
     );
 
     await act(async () => {
       await supabaseMocks.authStateCallback?.("INITIAL_SESSION", {
-        user: { email: "owner@example.invalid" },
+        user: { id: "owner-user-id", email: "owner@example.invalid" },
       });
     });
 
@@ -1705,7 +2230,9 @@ describe("JournalModule orb handoff behavior", () => {
     expect(await screen.findByText(/waiting for verification/i)).toBeInTheDocument();
     const resendButton = screen.getByRole("button", { name: /resend link/i });
     expect(resendButton).toBeDisabled();
-    expect(screen.getByRole("status", { name: /please wait 60s/i })).toBeInTheDocument();
+    const cooldownCopy = screen.getByText(/please wait.*60 seconds.*before/i);
+    expect(cooldownCopy).not.toHaveAttribute("aria-live");
+    expect(resendButton).toHaveAttribute("aria-describedby", cooldownCopy.id);
   });
 
   it("shows recovery feedback when verified reset cannot remove the diary lock", async () => {
@@ -1733,12 +2260,12 @@ describe("JournalModule orb handoff behavior", () => {
     const pendingReset = JSON.parse(safeJsonStore.values.get(SK.JOURNAL_PASSWORD_RESET) || "{}");
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: pendingReset.nonce, receivedAt: Date.now() }),
+      JSON.stringify({ nonce: pendingReset.nonce, userId: pendingReset.userId, receivedAt: Date.now() }),
     );
 
     await act(async () => {
       await supabaseMocks.authStateCallback?.("SIGNED_IN", {
-        user: { email: "owner@example.invalid" },
+        user: { id: "owner-user-id", email: "owner@example.invalid" },
       });
     });
 
@@ -1777,12 +2304,12 @@ describe("JournalModule orb handoff behavior", () => {
     expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET)).toBe(true);
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: pendingReset.nonce, receivedAt: Date.now() }),
+      JSON.stringify({ nonce: pendingReset.nonce, userId: pendingReset.userId, receivedAt: Date.now() }),
     );
 
     await act(async () => {
       await supabaseMocks.authStateCallback?.("SIGNED_IN", {
-        user: { email: "owner@example.invalid" },
+        user: { id: "owner-user-id", email: "owner@example.invalid" },
       });
     });
 
@@ -1814,7 +2341,7 @@ describe("JournalModule orb handoff behavior", () => {
     const pendingReset = JSON.parse(safeJsonStore.values.get(SK.JOURNAL_PASSWORD_RESET) || "{}");
     safeJsonStore.values.set(
       SK.JOURNAL_PASSWORD_RESET_PROOF,
-      JSON.stringify({ nonce: pendingReset.nonce, receivedAt: Date.now() }),
+      JSON.stringify({ nonce: pendingReset.nonce, userId: pendingReset.userId, receivedAt: Date.now() }),
     );
 
     window.dispatchEvent(new CustomEvent("zenflow-auth-complete"));
@@ -1847,7 +2374,9 @@ describe("JournalModule orb handoff behavior", () => {
       hasMore: false,
       nextCursor: null,
     });
-    storageMocks.deleteEntry.mockRejectedValueOnce(new Error("offline delete failed"));
+    storageMocks.commitPendingJournalEntryDelete.mockRejectedValueOnce(
+      new Error("offline delete failed"),
+    );
 
     render(
       <JournalModule
@@ -1862,11 +2391,16 @@ describe("JournalModule orb handoff behavior", () => {
 
     vi.useFakeTimers();
     try {
-      fireEvent.click(screen.getByRole("button", { name: /delete retained entry/i }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /delete retained entry/i }));
+        await Promise.resolve();
+        await Promise.resolve();
+      });
       expect(screen.queryByText("Retained entry")).not.toBeInTheDocument();
 
       await act(async () => {
         vi.advanceTimersByTime(5000);
+        await Promise.resolve();
         await Promise.resolve();
         await Promise.resolve();
       });
@@ -1875,6 +2409,64 @@ describe("JournalModule orb handoff behavior", () => {
       expect(
         screen.getByText("Couldn't delete this entry. It has been restored."),
       ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not restore stale UI when the durable delete marker can no longer be cancelled", async () => {
+    mediaQueryMocks.matches = true;
+    const deletedEntry = {
+      id: "entry-delete-won",
+      date: "2026-06-12",
+      title: "Delete already won",
+      content: "This row must not be resurrected after the durable marker is gone.",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 1_781_321_000_000,
+      updatedAt: 1_781_321_000_000,
+    };
+    storageMocks.getEntriesPage.mockResolvedValue({
+      entries: [deletedEntry],
+      totalCount: 1,
+      hasMore: false,
+      nextCursor: null,
+    });
+    storageMocks.commitPendingJournalEntryDelete.mockRejectedValueOnce(
+      new Error("commit outcome unknown"),
+    );
+    storageMocks.cancelPendingJournalEntryDeletes.mockResolvedValueOnce([]);
+
+    render(<JournalModule startOpen disableCardShell hideCloseButton presentation="page" />);
+    expect(await screen.findByText("Delete already won")).toBeInTheDocument();
+    storageMocks.getEntriesPage.mockResolvedValue({
+      entries: [],
+      totalCount: 0,
+      hasMore: false,
+      nextCursor: null,
+    });
+    const readsBeforeDelete = storageMocks.getEntriesPage.mock.calls.length;
+
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /delete delete already won/i }));
+        await Promise.resolve();
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(5_000);
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(screen.queryByText("Delete already won")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Couldn't delete this entry. It has been restored."),
+      ).not.toBeInTheDocument();
+      expect(storageMocks.getEntriesPage.mock.calls.length).toBeGreaterThan(readsBeforeDelete);
     } finally {
       vi.useRealTimers();
     }
@@ -1901,7 +2493,9 @@ describe("JournalModule orb handoff behavior", () => {
       hasMore: false,
       nextCursor: null,
     });
-    storageMocks.deleteEntry.mockReturnValueOnce(new Promise(() => undefined));
+    storageMocks.commitPendingJournalEntryDelete.mockReturnValueOnce(
+      new Promise(() => undefined),
+    );
 
     render(
       <JournalModule
@@ -1916,7 +2510,11 @@ describe("JournalModule orb handoff behavior", () => {
 
     vi.useFakeTimers();
     try {
-      fireEvent.click(screen.getByRole("button", { name: /delete commit started/i }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /delete commit started/i }));
+        await Promise.resolve();
+        await Promise.resolve();
+      });
       expect(screen.getByRole("button", { name: /undo/i })).toBeInTheDocument();
 
       await act(async () => {
@@ -1924,8 +2522,52 @@ describe("JournalModule orb handoff behavior", () => {
         await Promise.resolve();
       });
 
-      expect(storageMocks.deleteEntry).toHaveBeenCalledTimes(1);
+      expect(storageMocks.commitPendingJournalEntryDelete).toHaveBeenCalledTimes(1);
       expect(screen.queryByRole("button", { name: /undo/i })).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not shorten the undo window when the diary unmounts", async () => {
+    mediaQueryMocks.matches = true;
+    const retainedEntry = {
+      id: "entry-durable-undo",
+      date: "2026-06-12",
+      title: "Durable undo",
+      content: "Keep the undo promise after navigation.",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 1_781_321_000_000,
+      updatedAt: 1_781_321_000_000,
+    };
+    storageMocks.getEntriesPage.mockResolvedValue({
+      entries: [retainedEntry],
+      totalCount: 1,
+      hasMore: false,
+      nextCursor: null,
+    });
+    const { unmount } = render(
+      <JournalModule startOpen disableCardShell hideCloseButton presentation="page" />,
+    );
+    expect(await screen.findByText("Durable undo")).toBeInTheDocument();
+
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /delete durable undo/i }));
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(storageMocks.stagePendingJournalEntryDelete).toHaveBeenCalledTimes(1);
+      unmount();
+      await act(async () => {
+        vi.advanceTimersByTime(5_000);
+        await Promise.resolve();
+      });
+      expect(storageMocks.commitPendingJournalEntryDelete).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }
@@ -1953,7 +2595,7 @@ describe("JournalModule orb handoff behavior", () => {
       hasMore: false,
       nextCursor: null,
     });
-    storageMocks.deleteEntry.mockReturnValueOnce(
+    storageMocks.commitPendingJournalEntryDelete.mockReturnValueOnce(
       new Promise((_resolve, reject) => {
         rejectDelete = reject;
       }),
@@ -1972,13 +2614,17 @@ describe("JournalModule orb handoff behavior", () => {
 
     vi.useFakeTimers();
     try {
-      fireEvent.click(screen.getByRole("button", { name: /delete unmounted delete/i }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /delete unmounted delete/i }));
+        await Promise.resolve();
+        await Promise.resolve();
+      });
 
       await act(async () => {
         vi.advanceTimersByTime(5000);
         await Promise.resolve();
       });
-      expect(storageMocks.deleteEntry).toHaveBeenCalledTimes(1);
+      expect(storageMocks.commitPendingJournalEntryDelete).toHaveBeenCalledTimes(1);
 
       hapticsMocks.light.mockClear();
       unmount();
@@ -1989,11 +2635,194 @@ describe("JournalModule orb handoff behavior", () => {
         await Promise.resolve();
       });
 
-      expect(storageMocks.deleteEntry).toHaveBeenCalledTimes(1);
+      expect(storageMocks.commitPendingJournalEntryDelete).toHaveBeenCalledTimes(1);
       expect(hapticsMocks.light).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("undoes a rapid batch of pending deletions without committing either entry", async () => {
+    mediaQueryMocks.matches = true;
+    const firstEntry = {
+      id: "entry-batch-first",
+      date: "2026-06-12",
+      title: "First batch entry",
+      content: "First entry kept inside the shared undo window.",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 1_781_321_000_000,
+      updatedAt: 1_781_321_000_000,
+    };
+    const secondEntry = {
+      ...firstEntry,
+      id: "entry-batch-second",
+      title: "Second batch entry",
+      content: "Second entry kept inside the shared undo window.",
+      createdAt: firstEntry.createdAt + 1,
+      updatedAt: firstEntry.updatedAt + 1,
+    };
+    const staged: Array<{ id: string; expiresAt: number }> = [];
+    storageMocks.getEntriesPage.mockResolvedValue({
+      entries: [firstEntry, secondEntry],
+      totalCount: 2,
+      hasMore: false,
+      nextCursor: null,
+    });
+    storageMocks.stagePendingJournalEntryDelete.mockImplementation(
+      async (id: string, expiresAt: number) => {
+        const nextExpiry = Math.max(expiresAt, ...staged.map((item) => item.expiresAt));
+        const existing = staged.find((item) => item.id === id);
+        if (existing) existing.expiresAt = nextExpiry;
+        else staged.push({ id, expiresAt: nextExpiry });
+        for (const marker of staged) marker.expiresAt = nextExpiry;
+        return staged.map((marker) => ({ ...marker }));
+      },
+    );
+
+    render(<JournalModule startOpen disableCardShell hideCloseButton presentation="page" />);
+    expect(await screen.findByText("First batch entry")).toBeInTheDocument();
+    expect(screen.getByText("Second batch entry")).toBeInTheDocument();
+
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /delete first batch entry/i }));
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /delete second batch entry/i }));
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(screen.queryByText("First batch entry")).not.toBeInTheDocument();
+      expect(screen.queryByText("Second batch entry")).not.toBeInTheDocument();
+      expect(screen.getByText("Entries deleted")).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: /undo/i })).toHaveLength(1);
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /undo/i }));
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(storageMocks.cancelPendingJournalEntryDeletes).toHaveBeenCalledWith([
+        "entry-batch-first",
+        "entry-batch-second",
+      ]);
+      expect(screen.getByText("First batch entry")).toBeInTheDocument();
+      expect(screen.getByText("Second batch entry")).toBeInTheDocument();
+      vi.advanceTimersByTime(5_000);
+      expect(storageMocks.commitPendingJournalEntryDelete).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not restore an entry when permanent deletion wins at the undo deadline", async () => {
+    mediaQueryMocks.matches = true;
+    const deadlineEntry = {
+      id: "entry-undo-deadline",
+      date: "2026-06-12",
+      title: "Deadline entry",
+      content: "Only one terminal delete outcome is allowed.",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 1_781_321_000_000,
+      updatedAt: 1_781_321_000_000,
+    };
+    let resolveCancellation: (ids: string[]) => void = () => undefined;
+    storageMocks.getEntriesPage.mockResolvedValue({
+      entries: [deadlineEntry],
+      totalCount: 1,
+      hasMore: false,
+      nextCursor: null,
+    });
+    storageMocks.cancelPendingJournalEntryDeletes.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveCancellation = resolve;
+      }),
+    );
+
+    render(<JournalModule startOpen disableCardShell hideCloseButton presentation="page" />);
+    expect(await screen.findByText("Deadline entry")).toBeInTheDocument();
+
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /delete deadline entry/i }));
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(4_999);
+        fireEvent.click(screen.getByRole("button", { name: /undo/i }));
+        vi.advanceTimersByTime(1);
+        await Promise.resolve();
+      });
+
+      expect(storageMocks.commitPendingJournalEntryDelete).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        resolveCancellation([]);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(screen.queryByText("Deadline entry")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /undo/i })).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("restores the undo action from a durable marker after the diary remounts", async () => {
+    mediaQueryMocks.matches = true;
+    const pendingEntry = {
+      id: "entry-restart-undo",
+      date: "2026-06-12",
+      title: "Restart-safe entry",
+      content: "Private content remains in the journal table, not in the undo marker.",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 1_781_321_000_000,
+      updatedAt: 1_781_321_000_000,
+    };
+    storageMocks.getEntriesPage.mockResolvedValue({
+      entries: [],
+      totalCount: 1,
+      hasMore: false,
+      nextCursor: null,
+    });
+    storageMocks.getPendingJournalEntryDeletes.mockResolvedValue([
+      { id: pendingEntry.id, expiresAt: Date.now() + 5_000 },
+    ]);
+    storageMocks.getEntryById.mockResolvedValue(pendingEntry);
+
+    render(<JournalModule startOpen disableCardShell hideCloseButton presentation="page" />);
+
+    const undo = await screen.findByRole(
+      "button",
+      { name: /undo/i },
+      { timeout: 3_000 },
+    );
+    expect(screen.queryByText("Restart-safe entry")).not.toBeInTheDocument();
+    fireEvent.click(undo);
+
+    expect(
+      await screen.findByText("Restart-safe entry", {}, { timeout: 3_000 }),
+    ).toBeInTheDocument();
+    expect(storageMocks.cancelPendingJournalEntryDeletes).toHaveBeenCalledWith([
+      "entry-restart-undo",
+    ]);
   });
 
   it("clears an unconsumed orb suggestion when the parent clears the handoff", async () => {
@@ -2031,5 +2860,41 @@ describe("JournalModule orb handoff behavior", () => {
     });
     expect(storageMocks.saveEntry).not.toHaveBeenCalled();
     expect(onConsumed).not.toHaveBeenCalled();
+  });
+
+  it("inspects a selected backup and waits for explicit confirmation before importing", async () => {
+    mediaQueryMocks.matches = true;
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("journal-sidebar-nav-settings"));
+    expect((await screen.findAllByText(/diary settings/i)).length).toBeGreaterThan(0);
+
+    const file = new File(["{}"], "journal-backup.json", { type: "application/json" });
+    fireEvent.change(screen.getByTestId("journal-import-input"), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => {
+      expect(journalImportMocks.inspectJournalBackup).toHaveBeenCalledWith(file);
+    });
+    expect(journalImportMocks.importJournalBackup).not.toHaveBeenCalled();
+
+    const dialog = await screen.findByRole("dialog", { name: /import backup/i });
+    expect(dialog).toHaveTextContent("journal-backup.json");
+    expect(dialog).toHaveTextContent("2");
+
+    fireEvent.click(within(dialog).getByRole("button", { name: /import backup/i }));
+
+    await waitFor(() => {
+      expect(journalImportMocks.importJournalBackup).toHaveBeenCalledWith(file);
+    });
+    expect(await screen.findByText(/skipped: 1/i)).toBeInTheDocument();
   });
 });

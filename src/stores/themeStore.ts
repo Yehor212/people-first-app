@@ -21,7 +21,7 @@ export type ThemePreference = "paper" | "ink" | "oled" | "auto";
 export type { AppliedTheme } from "./themeCustomization";
 
 export type ThemeWriteResult =
-  | { ok: true }
+  | { ok: true; changed: boolean }
   | { ok: false; reason: "storage-unavailable" };
 
 export interface ThemeStore {
@@ -139,6 +139,17 @@ function writeFailure(): ThemeWriteResult {
   return { ok: false, reason: "storage-unavailable" };
 }
 
+function sameCustomization(
+  left: ThemeCustomization,
+  right: ThemeCustomization,
+): boolean {
+  return (
+    left.schemaVersion === right.schemaVersion &&
+    left.accentFamily === right.accentFamily &&
+    left.highContrast === right.highContrast
+  );
+}
+
 const initialPayload = readPersistedThemePayload();
 const initialTheme = readInitialThemePreference(initialPayload);
 const initialCustomization = readInitialThemeCustomization(initialPayload);
@@ -152,6 +163,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
   previousThemeCustomization: null,
   setTheme: (theme) => {
     const current = get();
+    if (theme === current.theme) return { ok: true, changed: false };
     if (!persistThemeState(theme, current.themeCustomization)) return writeFailure();
 
     const appliedTheme = resolvePreference(theme);
@@ -159,11 +171,14 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
     storageSetRaw(SK.OLED_MODE, String(theme === "oled"));
     applyToDOM(theme, appliedTheme, current.themeCustomization);
     set({ theme, appliedTheme });
-    return { ok: true };
+    return { ok: true, changed: true };
   },
   setThemeCustomization: (customization) => {
     const next = normalizeThemeCustomization(customization);
     const current = get();
+    if (sameCustomization(next, current.themeCustomization)) {
+      return { ok: true, changed: false };
+    }
     if (!persistThemeState(current.theme, next)) return writeFailure();
 
     applyToDOM(current.theme, current.appliedTheme, next);
@@ -171,11 +186,14 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
       themeCustomization: next,
       previousThemeCustomization: current.themeCustomization,
     });
-    return { ok: true };
+    return { ok: true, changed: true };
   },
   resetThemeCustomization: () => {
     const current = get();
     const next = { ...DEFAULT_THEME_CUSTOMIZATION };
+    if (sameCustomization(next, current.themeCustomization)) {
+      return { ok: true, changed: false };
+    }
     if (!persistThemeState(current.theme, next)) return writeFailure();
 
     applyToDOM(current.theme, current.appliedTheme, next);
@@ -183,12 +201,15 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
       themeCustomization: next,
       previousThemeCustomization: current.themeCustomization,
     });
-    return { ok: true };
+    return { ok: true, changed: true };
   },
   undoThemeCustomization: () => {
     const current = get();
-    if (!current.previousThemeCustomization) return { ok: true };
+    if (!current.previousThemeCustomization) return { ok: true, changed: false };
     const next = current.previousThemeCustomization;
+    if (sameCustomization(next, current.themeCustomization)) {
+      return { ok: true, changed: false };
+    }
     if (!persistThemeState(current.theme, next)) return writeFailure();
 
     applyToDOM(current.theme, current.appliedTheme, next);
@@ -196,7 +217,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
       themeCustomization: next,
       previousThemeCustomization: current.themeCustomization,
     });
-    return { ok: true };
+    return { ok: true, changed: true };
   },
   _resolve: () => {
     const current = get();

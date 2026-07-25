@@ -160,7 +160,7 @@ export function WeeklyInsightsCard({
           <p className="text-xs text-muted-foreground mb-3">
             {t.comparedToLastWeek || 'Compared to last week'}
           </p>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 min-[520px]:grid-cols-3">
             <ComparisonBadge
               value={comparison.moodChange}
               label={t.mood || 'Mood'}
@@ -223,50 +223,50 @@ export function WeeklyInsightsCard({
 
       {/* Premium Quick Stats Footer */}
       <div className="px-4 pb-4">
-        <div className="grid grid-cols-4 gap-2 p-3 bg-muted/30 backdrop-blur-sm rounded-xl border border-border/30">
+        <div className="grid grid-cols-1 gap-2 p-3 bg-muted/30 backdrop-blur-sm rounded-xl border border-border/30 min-[420px]:grid-cols-2 min-[640px]:grid-cols-4">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-center"
+            className="min-w-0 text-center"
           >
             <p className="text-lg font-bold text-primary">
               {currentWeek.moodAverage > 0 ? currentWeek.moodAverage : '-'}
             </p>
-            <p className="text-xs text-muted-foreground">{t.avgMood || 'Avg Mood'}</p>
+            <p className="break-words text-xs text-muted-foreground">{t.avgMood || 'Avg Mood'}</p>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-center"
+            className="min-w-0 text-center"
           >
             <p className="text-lg font-bold text-[hsl(var(--chart-habit))]">
               {currentWeek.habitCompletionRate}%
             </p>
-            <p className="text-xs text-muted-foreground">{t.habits || 'Habits'}</p>
+            <p className="break-words text-xs text-muted-foreground">{t.habits || 'Habits'}</p>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-center"
+            className="min-w-0 text-center"
           >
             <p className="text-lg font-bold text-[hsl(var(--chart-focus))]">
               {currentWeek.focusMinutes}m
             </p>
-            <p className="text-xs text-muted-foreground">{t.focus || 'Focus'}</p>
+            <p className="break-words text-xs text-muted-foreground">{t.focus || 'Focus'}</p>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="text-center"
+            className="min-w-0 text-center"
           >
             <p className="text-lg font-bold text-accent">
               {currentWeek.streakDays}
             </p>
-            <p className="text-xs text-muted-foreground">{t.streak || 'Streak'}</p>
+            <p className="break-words text-xs text-muted-foreground">{t.streak || 'Streak'}</p>
           </motion.div>
         </div>
       </div>

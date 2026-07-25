@@ -12,8 +12,8 @@ function validEnv(extra: Record<string, string> = {}) {
     ZENFLOW_GITHUB_REPO: "Yehor212/people-first-app",
     SUPABASE_PROJECT_REF: "bwgfslmxmueyglpumkbf",
     VITE_SUPABASE_URL: "https://bwgfslmxmueyglpumkbf.supabase.co",
-    VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test_1234567890abcdef",
-    SUPABASE_ACCESS_TOKEN: "sbp_test_1234567890abcdef1234567890abcdef",
+    VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test_1234567890abcdef", // gitleaks:allow - synthetic test key
+    SUPABASE_ACCESS_TOKEN: "sbp_test_1234567890abcdef1234567890abcdef", // gitleaks:allow - synthetic test token
     ZENFLOW_JOURNAL_MAGIC_LINK_SMOKE_EMAIL: "journal-smoke@example.test",
     ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL:
       "https://bwgfslmxmueyglpumkbf.supabase.co/auth/v1/verify?token_hash=abc123&type=magiclink&redirect_to=https%3A%2F%2Fyehor212.github.io%2Fpeople-first-app%2Fdiary%3Fnav%3Dv2%26navLayout%3Dphone%26journalReset%3D00000000000000000000000000000000",

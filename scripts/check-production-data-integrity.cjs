@@ -1,7 +1,18 @@
 #!/usr/bin/env node
 "use strict";
 
+const crypto = require("node:crypto");
 const { runIntegrityCheck, SCHEMA_VERSION } = require("./production-data-integrity/core.cjs");
+
+const MAX_ERROR_MESSAGE_CHARS = 1024;
+
+function boundedErrorMessage(error) {
+  const message = error && error.message ? String(error.message) : String(error);
+  if (message.length <= MAX_ERROR_MESSAGE_CHARS) return message;
+  const digest = crypto.createHash("sha256").update(message).digest("hex");
+  const suffix = `… [sha256:${digest}]`;
+  return `${message.slice(0, MAX_ERROR_MESSAGE_CHARS - suffix.length)}${suffix}`;
+}
 
 function parseArguments(argv) {
   const options = {
@@ -43,7 +54,7 @@ function errorReport(mode, error) {
     base: null,
     findings: [],
     summary: { errors: 0, warnings: 0, baselined: 0, waived: 0, scannedFiles: 0, reachableFiles: 0 },
-    error: error && error.message ? error.message : String(error),
+    error: boundedErrorMessage(error),
   };
 }
 

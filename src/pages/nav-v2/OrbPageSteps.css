@@ -1,0 +1,10 @@
+/* Route-local narrow-width safeguards for the reflowed refine step. */
+@media (max-width: 359px) {
+  .orb-page-refine-scroll {
+    padding-inline: 0;
+  }
+
+  .orb-page-save-arrow {
+    display: none;
+  }
+}

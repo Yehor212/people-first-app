@@ -132,7 +132,7 @@ export const DailyRitualCard = memo(function DailyRitualCard({
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             {selectedType === "opening" ? (
               <Sunrise className="h-5 w-5" aria-hidden="true" />
             ) : (
@@ -249,7 +249,7 @@ export const DailyRitualCard = memo(function DailyRitualCard({
                 <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                   {copy.reflectionMoodLabel || "Mood"}
                 </p>
-                <div className="mt-2 grid grid-cols-5 gap-2">
+                <div className="mt-2 grid grid-cols-1 gap-2 min-[520px]:grid-cols-5">
                   {MOOD_ORDER.map((value) => {
                     const label =
                       copy[
@@ -269,7 +269,7 @@ export const DailyRitualCard = memo(function DailyRitualCard({
                         type="button"
                         onClick={() => setMood(value)}
                         className={cn(
-                          "min-h-[44px] rounded-2xl border px-2 py-2 text-xs font-medium transition-colors",
+                          "h-auto min-h-[44px] min-w-0 whitespace-normal break-words rounded-2xl border px-2 py-2 text-xs font-medium transition-colors",
                           mood === value
                             ? "border-primary bg-primary/12 text-foreground"
                             : "border-border/60 bg-card text-muted-foreground hover:text-foreground",
@@ -286,14 +286,14 @@ export const DailyRitualCard = memo(function DailyRitualCard({
                 <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                   {copy.reflectionEnergyLabel || "Energy"}
                 </p>
-                <div className="mt-2 flex items-center gap-2">
+                <div className="mt-2 grid grid-cols-3 gap-2 min-[420px]:grid-cols-5">
                   {ENERGY_ORDER.map((value) => (
                     <button
                       key={value}
                       type="button"
                       onClick={() => setEnergy(value)}
                       className={cn(
-                        "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl border text-sm font-semibold transition-colors",
+                        "flex h-auto min-h-[44px] min-w-0 items-center justify-center rounded-2xl border text-sm font-semibold transition-colors",
                         energy === value
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-border/60 bg-card text-muted-foreground hover:text-foreground",

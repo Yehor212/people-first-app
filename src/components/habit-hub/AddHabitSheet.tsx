@@ -104,7 +104,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
         )}
       >
         <div
-          className="px-6 pt-6 space-y-5"
+          className="space-y-5 ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] pt-6"
           style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom, 0px) + ${keyboardOffset}px)` }}
         >
           {/* ═══ HEADER ═══ */}
@@ -118,7 +118,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
                 <ChevronLeft className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
               </button>
             )}
-            <SheetTitle className="text-lg font-bold text-foreground tracking-tight">
+            <SheetTitle className="min-w-0 whitespace-normal break-words text-lg font-bold tracking-tight text-foreground">
               {isEditing ? (ts.editHabit || 'Edit Habit') : (ts.addHabit || 'Add Habit')}
             </SheetTitle>
           </div>
@@ -151,7 +151,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
               </div>
 
               {/* Premium template grid — 3 columns, glow cards */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3">
                 {habitTemplates.map((tmpl) => {
                   const color = resolveHabitColor(tmpl.color);
                   return (
@@ -160,7 +160,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
                       onClick={() => { if (isAtLimit || isQuickAddProcessing.current) return; isQuickAddProcessing.current = true; handleQuickAdd(tmpl.id); }}
                       disabled={isAtLimit}
                       className={cn(
-                        'flex flex-col items-center justify-center gap-3 p-4 rounded-2xl motion-safe:transition-all',
+                        'flex flex-col items-center justify-center gap-2 rounded-2xl px-2 py-3 motion-safe:transition-all',
                         'bg-foreground/[0.04] border border-foreground/[0.08]',
                         'hover:bg-foreground/[0.07] hover:scale-[1.03] active:scale-95',
                         'min-h-[104px] relative overflow-hidden group',
@@ -178,7 +178,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
                       </span>
 
                       {/* Localized name */}
-                      <span className="text-[11px] font-medium text-muted-foreground relative z-10 text-center leading-tight line-clamp-2 group-hover:text-muted-foreground motion-safe:transition-colors">
+                      <span className="relative z-10 whitespace-normal break-words text-center text-xs font-medium leading-tight text-muted-foreground group-hover:text-muted-foreground motion-safe:transition-colors">
                         {tmpl.names[language] || tmpl.names.en}
                       </span>
 
@@ -198,7 +198,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
                 <button
                   onClick={() => setShowCustomForm(true)}
                   className={cn(
-                    'flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium motion-safe:transition-all min-h-[44px]',
+                    'flex min-h-[44px] max-w-full items-center gap-1.5 whitespace-normal break-words rounded-xl px-4 py-2 text-xs font-medium motion-safe:transition-all',
                     'text-violet-400 hover:text-violet-300',
                     'border border-violet-500/20 bg-violet-500/[0.06]',
                     'hover:bg-violet-500/[0.10] hover:border-violet-500/30',

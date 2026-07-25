@@ -1,0 +1,127 @@
+diff --git a/node_modules/@capacitor/local-notifications/android/src/main/java/com/capacitorjs/plugins/localnotifications/NotificationChannelManager.java b/node_modules/@capacitor/local-notifications/android/src/main/java/com/capacitorjs/plugins/localnotifications/NotificationChannelManager.java
+index 6d49d99..923e4bd 100644
+--- a/node_modules/@capacitor/local-notifications/android/src/main/java/com/capacitorjs/plugins/localnotifications/NotificationChannelManager.java
++++ b/node_modules/@capacitor/local-notifications/android/src/main/java/com/capacitorjs/plugins/localnotifications/NotificationChannelManager.java
+@@ -8,5 +8,6 @@ import android.graphics.Color;
+ import android.media.AudioAttributes;
+ import android.net.Uri;
++import android.provider.Settings;
+ import androidx.core.app.NotificationCompat;
+ import com.getcapacitor.JSArray;
+ import com.getcapacitor.JSObject;
+@@ -90,14 +91,19 @@ public class NotificationChannelManager {
+             }
+             String sound = channel.getString(CHANNEL_SOUND, null);
+             if (sound != null && !sound.isEmpty()) {
+-                if (sound.contains(".")) {
+-                    sound = sound.substring(0, sound.lastIndexOf('.'));
+-                }
+                 AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                     .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                     .build();
+-                Uri soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.getPackageName() + "/raw/" + sound);
++                Uri soundUri;
++                if ("default".equals(sound)) {
++                    soundUri = Settings.System.DEFAULT_NOTIFICATION_URI;
++                } else {
++                    if (sound.contains(".")) {
++                        sound = sound.substring(0, sound.lastIndexOf('.'));
++                    }
++                    soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.getPackageName() + "/raw/" + sound);
++                }
+                 notificationChannel.setSound(soundUri, audioAttributes);
+             }
+             notificationManager.createNotificationChannel(notificationChannel);
+diff --git a/node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsPlugin.swift b/node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsPlugin.swift
+index b520cb1..4b649a2 100644
+--- a/node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsPlugin.swift
++++ b/node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsPlugin.swift
+@@ -61,7 +61,7 @@ public class LocalNotificationsPlugin: CAPPlugin, CAPBridgedPlugin {
+             call.reject("Must provide notifications array as notifications option")
+             return
+         }
+-        var ids = [String]()
++        var requests = [UNNotificationRequest]()
+ 
+         for notification in notifications {
+             guard let identifier = notification["id"] as? Int else {
+@@ -94,27 +94,53 @@ public class LocalNotificationsPlugin: CAPPlugin, CAPBridgedPlugin {
+             // Schedule the request.
+             let request = UNNotificationRequest(identifier: "\(identifier)", content: content, trigger: trigger)
+ 
+-            self.notificationDelegationHandler.notificationRequestLookup[request.identifier] = notification
+-
+-            let center = UNUserNotificationCenter.current()
+-            center.add(request) { (error: Error?) in
+-                if let theError = error {
+-                    CAPLog.print(theError.localizedDescription)
+-                    call.reject(theError.localizedDescription)
+-                }
+-            }
+-
+-            ids.append(request.identifier)
++            requests.append(request)
+         }
+ 
++        let ids = requests.map(\.identifier)
+         let ret = ids.map({ (id) -> JSObject in
+             return [
+                 "id": Int(id) ?? -1
+             ]
+         })
+-        call.resolve([
+-            "notifications": ret
+-        ])
++        let center = UNUserNotificationCenter.current()
++        let group = DispatchGroup()
++        let errorLock = NSLock()
++        var firstError: Error?
++
++        for (index, request) in requests.enumerated() {
++            self.notificationDelegationHandler.notificationRequestLookup[request.identifier] = notifications[index]
++            group.enter()
++            center.add(request) { (error: Error?) in
++                if let error {
++                    CAPLog.print(error.localizedDescription)
++                    errorLock.lock()
++                    if firstError == nil {
++                        firstError = error
++                    }
++                    errorLock.unlock()
++                }
++                group.leave()
++            }
++        }
++
++        group.notify(queue: .main) {
++            errorLock.lock()
++            let schedulingError = firstError
++            errorLock.unlock()
++
++            if let schedulingError {
++                center.removePendingNotificationRequests(withIdentifiers: ids)
++                for id in ids {
++                    self.notificationDelegationHandler.notificationRequestLookup.removeValue(forKey: id)
++                }
++                call.reject(schedulingError.localizedDescription, nil, schedulingError)
++                return
++            }
++            call.resolve([
++                "notifications": ret
++            ])
++        }
+     }
+ 
+     /**
+@@ -280,7 +306,9 @@ public class LocalNotificationsPlugin: CAPPlugin, CAPBridgedPlugin {
+         }
+ 
+         if let sound = notification["sound"] as? String {
+-            content.sound = UNNotificationSound(named: UNNotificationSoundName(sound))
++            content.sound = sound == "default"
++                ? .default
++                : UNNotificationSound(named: UNNotificationSoundName(sound))
+         }
+ 
+         if let attachments = notification["attachments"] as? [JSObject] {

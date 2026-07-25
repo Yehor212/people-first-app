@@ -1,4 +1,5 @@
 import type { Language, Translations } from "@/i18n/types";
+import { getLocale } from "@/lib/timeUtils";
 
 /**
  * Select plural form using Intl.PluralRules and substitute {count}.
@@ -16,7 +17,7 @@ const rulesCache = new Map<string, Intl.PluralRules>();
 function getRules(language: Language): Intl.PluralRules {
   let rules = rulesCache.get(language);
   if (!rules) {
-    rules = new Intl.PluralRules(language);
+    rules = new Intl.PluralRules(getLocale(language));
     rulesCache.set(language, rules);
   }
   return rules;
@@ -48,6 +49,15 @@ export function plural(
   const baseVal = t[key];
   const resolved = category !== "other" && typeof suffixedVal === "string" ? suffixedVal : baseVal;
   const template = typeof resolved === "string" ? resolved : "";
+  let formattedCount: string;
+  try {
+    formattedCount = new Intl.NumberFormat(getLocale(language)).format(count);
+  } catch {
+    formattedCount = String(count);
+  }
+  const isolatedCount = language === "ar" || language === "he"
+    ? `\u2068${formattedCount}\u2069`
+    : formattedCount;
 
-  return template.replace("{count}", String(count));
+  return template.replace(/\{count\}/g, isolatedCount);
 }

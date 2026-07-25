@@ -6,11 +6,14 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { supabase } from "@/lib/supabaseClient";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { isNative } from "@/lib/platform";
+import { useThemeStore } from "@/stores/themeStore";
+import { DayCosmicBackground } from "./DayCosmicBackground";
 import {
   SettingsHeroCard,
   SettingsModuleList,
   SettingsPageShell,
 } from "./settings/components/SettingsPageComponents";
+import { SettingsEmeraldNightBackdrop } from "./settings/components/SettingsEmeraldNightBackdrop";
 import { V2SettingsControlDeck } from "./settings/V2SettingsControlDeck";
 import type { V2SettingsControls, V2SettingsSectionId } from "./settings/types";
 import {
@@ -20,6 +23,7 @@ import {
 } from "./settings/settingsNavigation";
 import { SettingsSupportFooter } from "./settings/V2SettingsAboutPanel";
 import { useSettingsOverviewModules } from "./settings/useSettingsOverviewModules";
+import { useSettingsBackdropMotion } from "./settings/useSettingsBackdropMotion";
 
 export type { V2SettingsControls };
 
@@ -54,19 +58,25 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   const detailPushedRef = useRef(false);
   const requestedSectionAtMountRef = useRef(readRequestedSettingsSection());
   const [selectedSectionId, setSelectedSectionId] = useState<V2SettingsSectionId>(() => {
-    return (
-      resolveAvailableSettingsSection(
-        requestedSectionAtMountRef.current ||
-          resolveInitialSettingsSection(controls?.initialOpenSection),
-      )
+    return resolveAvailableSettingsSection(
+      requestedSectionAtMountRef.current ||
+        resolveInitialSettingsSection(controls?.initialOpenSection)
     );
   });
-  const [mobileDetailOpen, setMobileDetailOpen] = useState(
-    () => Boolean(requestedSectionAtMountRef.current || controls?.initialOpenSection)
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(() =>
+    Boolean(requestedSectionAtMountRef.current || controls?.initialOpenSection)
   );
   const desktopLayout = useMediaQuery("(min-width: 1024px)");
-  const { hasValidSession, modules, settingsLead, themeLabel } =
+  const appliedTheme = useThemeStore((state) => state.appliedTheme);
+  const backdropMotionEnabled = useSettingsBackdropMotion(appliedTheme !== "oled");
+  const { accountAuth, accountViewState, modules, settingsLead, themeLabel } =
     useSettingsOverviewModules(controls);
+  const activeModuleId =
+    modules.find((module) => module.id === selectedSectionId)?.id ?? modules[0]?.id;
+  const pageHeadingId =
+    !desktopLayout && mobileDetailOpen && activeModuleId
+      ? `settings-page-heading settings-module-panel-heading-${activeModuleId}`
+      : "settings-page-heading";
 
   useEffect(() => {
     const requestedSection = requestedSectionAtMountRef.current;
@@ -91,7 +101,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   useEffect(() => {
     if (!controls?.initialOpenSection) return;
     const sectionId = resolveAvailableSettingsSection(
-      resolveInitialSettingsSection(controls.initialOpenSection),
+      resolveInitialSettingsSection(controls.initialOpenSection)
     );
     setSelectedSectionId(sectionId);
     setMobileDetailOpen(true);
@@ -178,11 +188,7 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
   }, [closeSection, desktopLayout, mobileDetailOpen]);
 
   const handleMobileSurfaceReady = useCallback(
-    (
-      view: "overview" | "detail",
-      sectionId: V2SettingsSectionId,
-      element: HTMLElement,
-    ) => {
+    (view: "overview" | "detail", sectionId: V2SettingsSectionId, element: HTMLElement) => {
       const pending = pendingMobileFocusRef.current;
       if (!pending || pending.view !== view || pending.sectionId !== sectionId) return;
       pendingMobileFocusRef.current = null;
@@ -204,86 +210,118 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
         });
       });
     },
-    [],
+    []
   );
 
   return (
-    <Bloom key="settings-page" transition={staggerDelay("primary")}>
-      <SettingsPageShell
-        ref={mainRef}
-        labelledBy="settings-page-heading"
-        controlsWired={Boolean(controls)}
-      >
-        <SettingsHeroCard
-          title={tx.navV2Settings}
-          lead={settingsLead}
-          themeTitle={tx.navV2Theme}
-          themeLabel={themeLabel}
-          controlsWired={Boolean(controls)}
+    <>
+      {appliedTheme === "paper" ? (
+        <div
+          aria-hidden="true"
+          className="settings-day-cosmic-backdrop"
+          data-animated={backdropMotionEnabled ? "true" : "false"}
+          data-mobile-detail={mobileDetailOpen ? "true" : "false"}
+          data-testid="settings-day-cosmic-backdrop"
+        >
+          <DayCosmicBackground presentation="settings" motionEnabled={backdropMotionEnabled} />
+        </div>
+      ) : null}
+      {appliedTheme === "ink" ? (
+        <SettingsEmeraldNightBackdrop
+          mobileDetailOpen={mobileDetailOpen}
+          motionEnabled={backdropMotionEnabled}
         />
+      ) : null}
+      <Bloom
+        key="settings-page"
+        className="relative z-10"
+        initial={{ opacity: 0, scale: 1, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 1, y: 8 }}
+        transition={staggerDelay("primary")}
+      >
+        <SettingsPageShell
+          ref={mainRef}
+          labelledBy={pageHeadingId}
+          controlsWired={Boolean(controls)}
+          mobileDetailOpen={mobileDetailOpen}
+        >
+          {desktopLayout || !mobileDetailOpen ? (
+            <SettingsHeroCard
+              title={tx.navV2Settings}
+              lead={settingsLead}
+              themeTitle={tx.navV2Theme}
+              themeLabel={themeLabel}
+              controlsWired={Boolean(controls)}
+            />
+          ) : (
+            <h1 id="settings-page-heading" className="sr-only">
+              {tx.navV2Settings}
+            </h1>
+          )}
 
-        {controls ? (
-          <>
+          {controls ? (
+            <>
+              <SettingsModuleList
+                items={modules}
+                expandedId={selectedSectionId}
+                controlsWired={true}
+                onOpen={openSection}
+                onBack={closeSection}
+                backLabel={tx.back}
+                desktopLayout={desktopLayout}
+                mobileDetailOpen={mobileDetailOpen}
+                onMobileSurfaceReady={handleMobileSurfaceReady}
+                renderPanel={(item) => (
+                  <>
+                    <V2SettingsControlDeck
+                      controls={controls}
+                      selectedSectionId={item.id}
+                      accountAuth={accountAuth}
+                      accountViewState={accountViewState}
+                    />
+                    {item.id === "account" && supabase && accountViewState === "signed-in" && (
+                      <Suspense fallback={null}>
+                        <section
+                          aria-label={tx.settingsAccountBackupTitle || "Account & backup"}
+                          className="grid min-w-0 gap-3"
+                          data-testid="settings-status-overview"
+                        >
+                          <SyncHealthCard
+                            compact
+                            dense
+                            showHeader
+                            allowManualRetry={false}
+                            surface="settings-space"
+                            quietWhenIdle
+                          />
+                          <DeviceSessionsCard dense surface="settings" />
+                        </section>
+                      </Suspense>
+                    )}
+                  </>
+                )}
+                label={tx.settings || tx.navV2Settings}
+              />
+            </>
+          ) : (
             <SettingsModuleList
               items={modules}
-              expandedId={selectedSectionId}
-              controlsWired={true}
+              expandedId={null}
+              controlsWired={false}
               onOpen={openSection}
               onBack={closeSection}
               backLabel={tx.back}
               desktopLayout={desktopLayout}
-              mobileDetailOpen={mobileDetailOpen}
+              mobileDetailOpen={false}
               onMobileSurfaceReady={handleMobileSurfaceReady}
-              renderPanel={(item) => (
-                <>
-                  <V2SettingsControlDeck
-                    controls={controls}
-                    selectedSectionId={item.id}
-                    accountSessionState={hasValidSession}
-                  />
-                  {item.id === "account" && supabase && hasValidSession === true && (
-                    <Suspense fallback={null}>
-                      <section
-                        aria-label={
-                          tx.settingsAccountBackupTitle || "Account & backup"
-                        }
-                        className="grid min-w-0 gap-3"
-                        data-testid="settings-status-overview"
-                      >
-                        <SyncHealthCard
-                          compact
-                          dense
-                          showHeader
-                          allowManualRetry={false}
-                          surface="settings-space"
-                          quietWhenIdle
-                        />
-                        <DeviceSessionsCard dense surface="settings" />
-                      </section>
-                    </Suspense>
-                  )}
-                </>
-              )}
               label={tx.settings || tx.navV2Settings}
+              renderPanel={() => null}
             />
-          </>
-        ) : (
-          <SettingsModuleList
-            items={modules}
-            expandedId={null}
-            controlsWired={false}
-            onOpen={openSection}
-            onBack={closeSection}
-            backLabel={tx.back}
-            desktopLayout={desktopLayout}
-            mobileDetailOpen={false}
-            onMobileSurfaceReady={handleMobileSurfaceReady}
-            label={tx.settings || tx.navV2Settings}
-            renderPanel={() => null}
-          />
-        )}
-        <SettingsSupportFooter />
-      </SettingsPageShell>
-    </Bloom>
+          )}
+          <SettingsSupportFooter />
+        </SettingsPageShell>
+      </Bloom>
+    </>
   );
 });

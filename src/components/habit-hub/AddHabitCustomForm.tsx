@@ -88,7 +88,7 @@ export function AddHabitCustomForm({
           aria-label={ts.habitName || 'Habit name'}
           autoFocus
           className={cn(
-            'w-full px-4 py-3 rounded-xl text-sm text-foreground',
+            'min-h-[44px] w-full rounded-xl px-4 py-3 text-sm text-foreground',
             'bg-foreground/[0.05] border border-border motion-safe:transition-colors',
             'placeholder:text-muted-foreground/60',
             'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
@@ -108,13 +108,13 @@ export function AddHabitCustomForm({
           placeholder={ts.questionPromptPlaceholder || 'e.g. Did you exercise today?'}
           aria-label={ts.questionPrompt || 'Question Prompt'}
           className={cn(
-            'w-full px-4 py-2 rounded-xl text-xs text-muted-foreground',
+            'min-h-[44px] w-full rounded-xl px-4 py-2 text-xs text-muted-foreground',
             'bg-foreground/[0.03] border border-border motion-safe:transition-colors',
             'placeholder:text-muted-foreground/60',
             'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
           )}
         />
-        <p className="text-[10px] text-muted-foreground/60 mt-1">
+        <p className="mt-1 whitespace-normal break-words text-xs text-muted-foreground/60">
           {ts.questionPromptHint || 'Optional — phrased as a daily check-in question'}
         </p>
       </div>
@@ -150,7 +150,7 @@ export function AddHabitCustomForm({
         <label className="text-xs font-medium text-muted-foreground mb-2 block">
           {ts.selectColor || 'Color'}
         </label>
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-4 gap-2 min-[420px]:grid-cols-7">
           {LOOP_PALETTE_LIGHT.map((hex, idx) => (
             <button
               key={idx}
@@ -182,7 +182,7 @@ export function AddHabitCustomForm({
         <label className="text-xs font-medium text-muted-foreground mb-2 block">
           {ts.habitType || 'Type'}
         </label>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
           {(['boolean', 'numerical'] as LoopHabitType[]).map((typ) => {
             const label = typ === 'boolean'
               ? (ts.habitTypeBoolean || 'Yes/No')
@@ -193,7 +193,7 @@ export function AddHabitCustomForm({
                 onClick={() => setHabitType(typ)}
                 aria-pressed={habitType === typ}
                 className={cn(
-                  'flex-1 px-3 py-2 rounded-xl text-xs font-medium motion-safe:transition-all min-h-[44px]',
+                  'min-h-[44px] whitespace-normal break-words rounded-xl px-3 py-2 text-xs font-medium motion-safe:transition-all',
                   'border',
                   habitType === typ
                     ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
@@ -209,9 +209,9 @@ export function AddHabitCustomForm({
         {/* Numerical target + unit */}
         {habitType === 'numerical' && (
           <div className="space-y-3 mt-3">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-3">
               <label className="text-xs text-muted-foreground">{ts.dailyTarget || 'Target'}:</label>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between gap-2 min-[420px]:justify-start">
                 <button
                   onClick={() => setTargetValue(Math.max(1, targetValue - 1))}
                   aria-label={ts.decreaseTarget || 'Decrease target'}
@@ -229,7 +229,7 @@ export function AddHabitCustomForm({
                 </button>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-3">
               <label className="text-xs text-muted-foreground">{ts.unit || 'Unit'}:</label>
               <input
                 type="text"
@@ -238,19 +238,19 @@ export function AddHabitCustomForm({
                 placeholder={ts.unitPlaceholder || 'L, km, min...'}
                 maxLength={20}
                 className={cn(
-                  'flex-1 px-3 py-2 rounded-xl text-xs text-muted-foreground',
+                  'min-h-[44px] flex-1 rounded-xl px-3 py-2 text-xs text-muted-foreground',
                   'bg-foreground/[0.03] border border-border',
                   'placeholder:text-muted-foreground/60',
                   'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
                 )}
               />
             </div>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
               <button
                 onClick={() => setTargetType('atLeast')}
                 aria-pressed={targetType === 'atLeast'}
                 className={cn(
-                  'flex-1 px-3 py-2 min-h-[44px] rounded-xl text-xs font-medium motion-safe:transition-all',
+                  'min-h-[44px] whitespace-normal break-words rounded-xl px-3 py-2 text-xs font-medium motion-safe:transition-all',
                   'border',
                   targetType === 'atLeast'
                     ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
@@ -263,7 +263,7 @@ export function AddHabitCustomForm({
                 onClick={() => setTargetType('atMost')}
                 aria-pressed={targetType === 'atMost'}
                 className={cn(
-                  'flex-1 px-3 py-2 min-h-[44px] rounded-xl text-xs font-medium motion-safe:transition-all',
+                  'min-h-[44px] whitespace-normal break-words rounded-xl px-3 py-2 text-xs font-medium motion-safe:transition-all',
                   'border',
                   targetType === 'atMost'
                     ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
@@ -292,8 +292,8 @@ export function AddHabitCustomForm({
               onClick={() => setSelectedCategory(cat.id)}
               aria-pressed={selectedCategory === cat.id}
               className={cn(
-                'px-3 py-2 rounded-xl text-xs font-medium motion-safe:transition-all min-h-[44px]',
-                'border flex items-center gap-1.5',
+                'min-h-[44px] whitespace-normal break-words rounded-xl px-3 py-2 text-xs font-medium motion-safe:transition-all',
+                'flex items-center gap-1.5 border',
                 selectedCategory === cat.id
                   ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg`
                   : 'bg-foreground/[0.03] border-border text-muted-foreground hover:bg-foreground/[0.06]',
@@ -307,11 +307,11 @@ export function AddHabitCustomForm({
       </div>
 
       {/* Action buttons */}
-      <div className="flex gap-3 pt-2">
+      <div className="grid grid-cols-1 gap-2 pt-2 min-[420px]:grid-cols-2">
         <button
           onClick={handleClose}
           className={cn(
-            'flex-1 px-4 py-3 rounded-xl text-sm font-medium motion-safe:transition-colors min-h-[44px]',
+            'min-h-[44px] whitespace-normal break-words rounded-xl px-4 py-3 text-sm font-medium motion-safe:transition-colors',
             'bg-foreground/[0.05] border border-border text-muted-foreground',
             'hover:bg-foreground/[0.08]',
           )}
@@ -322,7 +322,7 @@ export function AddHabitCustomForm({
           onClick={submitHabit}
           disabled={!newHabitName.trim() || isAtLimit}
           className={cn(
-            'flex-1 px-4 py-3 rounded-xl text-sm font-semibold motion-safe:transition-all min-h-[44px]',
+            'min-h-[44px] whitespace-normal break-words rounded-xl px-4 py-3 text-sm font-semibold motion-safe:transition-all',
             'bg-gradient-to-r from-violet-600 to-purple-600 text-white',
             'hover:from-violet-500 hover:to-purple-500 active:scale-[0.98]',
             'shadow-[0_0_20px_hsl(var(--cosmic-nebula-purple)/0.25)]',

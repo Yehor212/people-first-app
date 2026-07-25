@@ -259,7 +259,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   return (
-    <div className="screen-overlay bg-gradient-to-br from-background via-primary/5 to-accent/5 overflow-y-auto">
+    <div className="screen-overlay overflow-y-auto overscroll-contain bg-gradient-to-br from-background via-primary/5 to-accent/5">
       <FloatingParticles />
 
       <div className="flex-1 flex flex-col items-center justify-start pt-6 sm:pt-10 px-3 sm:px-4 pb-4">
@@ -269,17 +269,17 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30 mb-4">
               <Sparkles className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">
+            <h2 className="break-words text-2xl font-bold text-foreground [hyphens:manual] [overflow-wrap:break-word] mb-2">
               {t.modulesOnboardingTitle || "Choose Features"}
             </h2>
-            <p className="text-muted-foreground text-sm">
+            <p className="break-words text-muted-foreground text-sm [hyphens:manual] [overflow-wrap:break-word]">
               {t.modulesOnboardingSubtitle || "Choose the tools that should appear first"}
             </p>
           </div>
 
           {/* Modules Grid */}
           <div className="bg-card/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xl shadow-primary/10 border border-primary/10">
-            <div className="grid grid-cols-2 gap-3 max-h-[45dvh] overflow-y-auto pe-1">
+            <div className="grid max-h-[45dvh] grid-cols-[repeat(auto-fit,minmax(min(100%,calc(10rem*var(--font-scale,1))),1fr))] gap-3 overflow-y-auto overscroll-contain pe-1">
               {modules.map((module, index) => {
                 const isSelected = selectedModules.includes(module.id);
                 const isAnimating = animatingModule === module.id;
@@ -292,7 +292,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                     aria-label={getModuleName(module.id)}
                     onClick={() => toggleModule(module.id)}
                     className={cn(
-                      "relative p-4 rounded-xl flex flex-col items-center gap-2 motion-safe:transition-all motion-safe:duration-200 text-center overflow-hidden",
+                      "relative flex h-auto min-h-12 min-w-0 flex-col items-center gap-2 overflow-hidden rounded-xl p-4 text-center motion-safe:transition-all motion-safe:duration-200",
                       isSelected
                         ? `bg-gradient-to-br ${module.gradient} shadow-lg`
                         : "bg-secondary/50 hover:bg-secondary",
@@ -310,7 +310,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                     {/* Name */}
                     <span
                       className={cn(
-                        "text-sm font-semibold",
+                        "min-w-0 whitespace-normal break-words text-sm font-semibold [hyphens:manual] [overflow-wrap:break-word]",
                         isSelected ? "text-white" : "text-foreground"
                       )}
                     >
@@ -320,7 +320,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                     {/* Description */}
                     <span
                       className={cn(
-                        "text-[10px] leading-tight",
+                        "min-w-0 whitespace-normal break-words text-xs leading-relaxed [hyphens:manual] [overflow-wrap:break-word]",
                         isSelected ? "text-white/80" : "text-muted-foreground"
                       )}
                     >
@@ -340,26 +340,26 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
             {/* Selection count */}
             <div className="mt-4 flex items-center justify-center gap-2 py-2 bg-primary/10 rounded-xl">
-              <span className="text-sm font-medium text-primary">
+              <span className="min-w-0 break-words text-center text-sm font-medium text-primary [hyphens:manual] [overflow-wrap:break-word]">
                 {selectedModules.length} {t.modulesSelected || "features selected"}
               </span>
             </div>
           </div>
 
           {/* Note about core features */}
-          <p className="text-xs text-center text-muted-foreground mt-3">
+          <p className="break-words text-xs text-center text-muted-foreground [hyphens:manual] [overflow-wrap:break-word] mt-3">
             {t.coreModulesNote || "Mood Tracker and Habits are always enabled"}
           </p>
 
           {/* Actions */}
-          <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6 pb-[calc(0.5rem+var(--safe-bottom))]">
+          <div className="mt-4 flex flex-col gap-2 pb-[calc(0.5rem+var(--safe-bottom))] sm:mt-6 sm:flex-row sm:gap-3">
             <button
               type="button"
               onClick={() => {
                 logger.log("[OnboardingFlow] Skip button clicked");
                 handleSkip();
               }}
-              className="flex-1 py-3 sm:py-4 bg-secondary/50 backdrop-blur-sm text-secondary-foreground rounded-xl sm:rounded-2xl font-semibold hover:bg-secondary motion-safe:transition-colors text-sm sm:text-base active:scale-95"
+              className="h-auto min-h-12 w-full min-w-0 flex-1 whitespace-normal break-words rounded-xl bg-secondary/50 py-3 text-sm font-semibold text-secondary-foreground backdrop-blur-sm [hyphens:manual] [overflow-wrap:break-word] hover:bg-secondary active:scale-95 motion-safe:transition-colors sm:rounded-2xl sm:py-4 sm:text-base"
             >
               {t.skip || "Skip"}
             </button>
@@ -369,10 +369,10 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 logger.log("[OnboardingFlow] Start button clicked");
                 handleComplete();
               }}
-              className="flex-1 py-3 sm:py-4 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-xl sm:rounded-2xl font-semibold hover:opacity-90 motion-safe:transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/30 text-sm sm:text-base active:scale-95"
+              className="flex h-auto min-h-12 w-full min-w-0 flex-1 items-center justify-center gap-2 whitespace-normal break-words rounded-xl bg-gradient-to-r from-primary to-accent py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 [hyphens:manual] [overflow-wrap:break-word] hover:opacity-90 active:scale-95 motion-safe:transition-all sm:rounded-2xl sm:py-4 sm:text-base"
             >
               {t.getStarted || "Start"}
-              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:scale-x-[-1]" aria-hidden="true" />
+              <ChevronRight className="h-4 w-4 shrink-0 rtl:scale-x-[-1] sm:h-5 sm:w-5" aria-hidden="true" />
             </button>
           </div>
         </div>

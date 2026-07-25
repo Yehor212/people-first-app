@@ -20,4 +20,18 @@
     <string name="widget_description_mini">Mood emoji and streak at a glance</string>
     <string name="widget_write_button">Write</string>
     <string name="widget_no_mood">No mood logged</string>
+    <string name="push_realm_mood_title">A moment to check in</string>
+    <string name="push_realm_mood_body">If you\'d like, note how you\'re feeling.</string>
+    <string name="push_realm_habit_title">Habit reminder</string>
+    <string name="push_realm_habit_body">A small step is enough. Ready when you are.</string>
+    <string name="push_realm_focus_title">Ready to focus?</string>
+    <string name="push_realm_focus_body">A 25-minute focus session is ready when it suits you.</string>
+    <string name="push_realm_test_title">ZenFlow</string>
+    <string name="push_realm_test_body">Test notification.</string>
+    <string name="push_realm_channel_default">Default</string>
+    <string name="push_realm_channel_default_description">System notification sound</string>
+    <string name="push_realm_channel_gentle">Gentle</string>
+    <string name="push_realm_channel_gentle_description">Vibration only</string>
+    <string name="push_realm_channel_silent">Silent</string>
+    <string name="push_realm_channel_silent_description">No sound or vibration</string>
 </resources>

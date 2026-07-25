@@ -40,10 +40,10 @@ export function FriendDetailView({
       <button
         onClick={onBack}
         aria-label={t.back || "Back"}
-        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground motion-safe:transition-colors mb-4"
+        className="mb-4 flex min-h-11 items-center gap-1.5 px-1 text-start text-sm text-muted-foreground motion-safe:transition-colors hover:text-foreground"
       >
-        <ChevronLeft className="w-4 h-4 rtl:scale-x-[-1]" aria-hidden="true" />
-        {t.yourFriends || "Your Friends"}
+        <ChevronLeft className="h-4 w-4 shrink-0 rtl:scale-x-[-1]" aria-hidden="true" />
+        <span className="min-w-0 break-words">{t.yourFriends || "Your Friends"}</span>
       </button>
 
       {/* Profile card */}
@@ -54,39 +54,51 @@ export function FriendDetailView({
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-card" />
           )}
         </div>
-        <h3 className="text-xl font-bold text-foreground">{friend.displayName}</h3>
-        {friend.status && <p className="text-sm text-muted-foreground mt-1">{friend.status}</p>}
+        <h3 className="max-w-full text-xl font-bold text-foreground [overflow-wrap:anywhere]">
+          {friend.displayName}
+        </h3>
+        {friend.status && (
+          <p className="mt-1 max-w-full text-sm text-muted-foreground [overflow-wrap:anywhere]">
+            {friend.status}
+          </p>
+        )}
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="flex flex-col items-center p-3 rounded-xl bg-orange-500/10">
+      <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(7rem*var(--font-scale,1))),1fr))] gap-3">
+        <div className="flex min-w-0 flex-col items-center rounded-xl bg-orange-500/10 p-3">
           <Flame className="w-5 h-5 text-orange-500 mb-1" />
           <span className="text-lg font-bold text-foreground">
             {friend.streakHidden ? "—" : friend.currentStreak}
           </span>
-          <span className="text-xs text-muted-foreground">{t.streak || "Streak"}</span>
+          <span className="break-words text-center text-xs text-muted-foreground">
+            {t.streak || "Streak"}
+          </span>
         </div>
-        <div className="flex flex-col items-center p-3 rounded-xl bg-yellow-500/10">
+        <div className="flex min-w-0 flex-col items-center rounded-xl bg-yellow-500/10 p-3">
           <Trophy className="w-5 h-5 text-yellow-500 mb-1" />
           <span className="text-lg font-bold text-foreground">
             {friend.levelHidden ? "—" : friend.level}
           </span>
-          <span className="text-xs text-muted-foreground">{t.level || "Level"}</span>
+          <span className="break-words text-center text-xs text-muted-foreground">
+            {t.level || "Level"}
+          </span>
         </div>
-        <div className="flex flex-col items-center p-3 rounded-xl bg-blue-500/10">
+        <div className="flex min-w-0 flex-col items-center rounded-xl bg-blue-500/10 p-3">
           <Clock className="w-5 h-5 text-blue-500 mb-1" />
-          <span className="text-lg font-bold text-foreground">
+          <span className="break-words text-center text-lg font-bold text-foreground">
             {formatLastActive(friend.lastActive)}
           </span>
-          <span className="text-xs text-muted-foreground">{t.active || "Active"}</span>
+          <span className="break-words text-center text-xs text-muted-foreground">
+            {t.active || "Active"}
+          </span>
         </div>
       </div>
 
       {/* Friend since */}
-      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-6">
-        <Users className="w-4 h-4" />
-        <span>
+      <div className="mb-6 flex items-start justify-center gap-2 text-sm text-muted-foreground">
+        <Users className="h-4 w-4 shrink-0" />
+        <span className="min-w-0 break-words">
           {t.friendsSince || "Friends since"}{" "}
           {new Date(friend.friendsSince).toLocaleDateString(getLocale(language), {
             day: "numeric",
@@ -104,10 +116,12 @@ export function FriendDetailView({
           </h4>
           <div className="space-y-2">
             {friendActivities.map((activity) => (
-              <div key={activity.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                <span className="text-lg">{activity.icon}</span>
+              <div key={activity.id} className="flex items-start gap-3 rounded-lg bg-muted/50 p-2">
+                <span className="shrink-0 text-lg">{activity.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground truncate">{activity.description}</p>
+                  <p className="text-sm text-foreground [overflow-wrap:anywhere]">
+                    {activity.description}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {formatLastActive(activity.timestamp)}
                   </p>
@@ -120,19 +134,27 @@ export function FriendDetailView({
 
       {/* Remove friend */}
       {confirmRemoveFriend?.id === friend.id ? (
-        <div className="flex items-center gap-2">
-          <Button variant="destructive" className="flex-1" onClick={onConfirmRemove}>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(9rem*var(--font-scale,1))),1fr))] gap-2">
+          <Button
+            variant="destructive"
+            className="h-auto min-h-11 whitespace-normal break-words"
+            onClick={onConfirmRemove}
+          >
             <Trash2 className="w-4 h-4 me-2" />
             {t.delete}
           </Button>
-          <Button variant="outline" className="flex-1" onClick={onCancelRemove}>
+          <Button
+            variant="outline"
+            className="h-auto min-h-11 whitespace-normal break-words"
+            onClick={onCancelRemove}
+          >
             {t.cancel}
           </Button>
         </div>
       ) : (
         <Button
           variant="outline"
-          className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+          className="h-auto min-h-11 w-full whitespace-normal break-words text-destructive hover:bg-destructive/10 hover:text-destructive"
           onClick={() => onRemove(friend)}
         >
           <Trash2 className="w-4 h-4 me-2" />

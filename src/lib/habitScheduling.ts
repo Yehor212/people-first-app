@@ -13,6 +13,16 @@ export function normalizeDueDays(days?: number[]): number[] {
   return WEEK_DAYS.filter((day) => unique.has(day));
 }
 
+/**
+ * Habit reminders historically stored an empty or missing day list for a
+ * daily reminder. Keep that durable contract explicit while rejecting a
+ * non-empty list that contains no valid weekdays.
+ */
+export function normalizeHabitReminderDays(days?: number[]): number[] {
+  if (!Array.isArray(days) || days.length === 0) return [...WEEK_DAYS];
+  return normalizeDueDays(days);
+}
+
 function safeFrequency(frequency?: HabitFrequencyRatio): HabitFrequencyRatio {
   return {
     numerator: Math.max(1, Math.round(frequency?.numerator ?? 1)),

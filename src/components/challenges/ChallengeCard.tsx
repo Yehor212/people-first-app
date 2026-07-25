@@ -45,7 +45,7 @@ export const ChallengeCard = memo(function ChallengeCard({
       onClick={onClick}
       aria-label={`${challenge.habitName} — ${challenge.status}`}
       className={cn(
-        "relative w-full p-4 rounded-2xl text-start overflow-hidden",
+        "relative w-full min-w-0 p-4 rounded-2xl text-start overflow-hidden",
         "bg-slate-100/60 dark:bg-white/5 backdrop-blur-sm border border-slate-200/60 dark:border-white/10",
         "hover:bg-slate-200/60 dark:hover:bg-white/10 motion-safe:transition-all",
       )}
@@ -55,16 +55,16 @@ export const ChallengeCard = memo(function ChallengeCard({
       {/* Gradient accent on left */}
       <div className="absolute top-0 start-0 w-1 h-full bg-gradient-to-b from-violet-500 to-purple-600 shadow-[0_0_8px_rgba(139,92,246,0.4)]" />
 
-      <div className="flex items-start justify-between gap-3 ps-2">
-        <div className="flex items-center gap-3">
-          <div className="text-3xl p-2 rounded-xl bg-gradient-to-br from-[rgba(139,92,246,0.15)] to-[rgba(168,85,247,0.1)]">
+      <div className="flex min-w-0 items-start justify-between gap-3 ps-2">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="text-3xl shrink-0 p-2 rounded-xl bg-gradient-to-br from-[rgba(139,92,246,0.15)] to-[rgba(168,85,247,0.1)]">
             {challenge.habitIcon}
           </div>
-          <div>
-            <p className="font-medium text-slate-800 dark:text-white">
+          <div className="min-w-0 flex-1">
+            <p className="min-w-0 break-words font-medium text-slate-800 dark:text-white [overflow-wrap:anywhere]">
               {challenge.habitName}
             </p>
-            <p className="text-xs text-slate-500 dark:text-white/60">
+            <p className="min-w-0 break-words text-xs text-slate-500 dark:text-white/60 [overflow-wrap:anywhere]">
               {challenge.isCreator
                 ? t.youCreated || "You created this"
                 : `${t.createdBy || "Created by"} ${challenge.creatorName || t.friend || "a friend"}`}
@@ -76,13 +76,13 @@ export const ChallengeCard = memo(function ChallengeCard({
 
       {/* Progress bar - Premium */}
       <div className="mt-3 ps-2">
-        <div className="flex items-center justify-between text-xs mb-1.5">
-          <span className="text-slate-500 dark:text-white/60">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs mb-1.5">
+          <span className="min-w-0 break-words text-slate-500 dark:text-white/60 [hyphens:manual] [overflow-wrap:break-word]">
             {challenge.myProgress}/{challenge.duration} {t.days || "days"}
           </span>
           <span
             className={cn(
-              "px-2.5 py-1 rounded-full text-white text-xs font-medium",
+              "max-w-full min-w-0 whitespace-normal break-words px-2.5 py-1 rounded-full text-white text-xs font-medium [hyphens:manual] [overflow-wrap:break-word]",
               statusConfig.bg,
             )}
             style={{ boxShadow: `0 0 12px ${statusConfig.glow}` }}

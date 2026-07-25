@@ -74,13 +74,13 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
             <div
               key={`${streak.start}-${streak.end}`}
               className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-xl',
+                'grid grid-cols-[minmax(1.5rem,auto)_1.25rem_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 rounded-xl',
                 'bg-white/[0.02] border border-white/[0.04]',
                 isCurrent && 'bg-orange-500/[0.06] border-orange-500/[0.1]',
               )}
             >
               {/* Rank */}
-              <span className="text-[10px] font-semibold text-muted-foreground/60 w-4 text-center">
+              <span className="min-w-0 text-center text-xs font-semibold text-muted-foreground/60">
                 {i + 1}
               </span>
 
@@ -94,7 +94,7 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
               </div>
 
               {/* Date range */}
-              <span className="flex-1 text-xs text-muted-foreground font-mono">
+              <span className="min-w-0 whitespace-normal break-words text-xs font-mono text-muted-foreground">
                 {formatDateRange(streak.start, streak.end, language)}
               </span>
 

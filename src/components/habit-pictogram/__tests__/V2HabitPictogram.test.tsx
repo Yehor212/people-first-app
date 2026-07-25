@@ -434,15 +434,36 @@ describe("V2HabitPictogram", () => {
     expect(root).toHaveAttribute("aria-label", "Quit smoking");
   });
 
-  it("does not keep rejected B62/B63 contracts in the active render or stylesheet", () => {
+  it("keeps only the live V2 habit motion CSS contracts", () => {
     const { container } = render(<V2HabitPictogram pictogramId="walk-distance" />);
     const root = container.querySelector('[data-habit-pictogram="walk-distance"]');
     const css = readFileSync("src/index.css", "utf8");
 
+    const legacyPrototypeSelectors = css.match(/\.v2hp-b\d+[\w-]*/g) ?? [];
+    const prototypeKeyframes = Array.from(
+      css.matchAll(/@keyframes\s+(v2hp-(?:b\d+|fallback)-[\w-]+)/g),
+      (match) => match[1]
+    ).sort();
+
     expect(root).not.toHaveAttribute("data-visual-upgrade", "option-b-liquid-glass-totem-system");
     expect(root?.querySelector(".v2hp-b62__foreground")).not.toBeInTheDocument();
     expect(root?.querySelector(".v2hp-b63__scene")).not.toBeInTheDocument();
-    expect(css).not.toContain(".v2hp-b63__scene");
-    expect(css).not.toContain("@keyframes v2hp-b63-footstep-left");
+    expect(legacyPrototypeSelectors).toEqual([]);
+    expect(prototypeKeyframes).toEqual([
+      "v2hp-b41-hero-facet",
+      "v2hp-b41-hero-float",
+      "v2hp-b41-hero-plate",
+    ]);
+
+    expect(css).toContain(".v2hp-motion-player__still,");
+    expect(css).toContain('.v2hp-motion-player[data-renderer="still"]');
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\) \{\s*\.v2hp-motion-player\s*\{\s*animation: none;/
+    );
+    expect(css).toContain(".journal-memory-field {");
+    expect(css).toContain("@keyframes journal-memory-field-paper-drift");
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\) \{\s*\*,\s*\*::before,\s*\*::after/
+    );
   });
 });

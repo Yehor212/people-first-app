@@ -20,4 +20,18 @@
     <string name="widget_no_mood">לא נרשם מצב רוח</string>
     <string name="widget_days">ימים</string>
     <string name="widget_habits_label">הרגלים</string>
+    <string name="push_realm_mood_title">מה שלומך עכשיו?</string>
+    <string name="push_realm_mood_body">אפשר לתעד את ההרגשה שלך, אם מתאים לך.</string>
+    <string name="push_realm_habit_title">תזכורת להרגל</string>
+    <string name="push_realm_habit_body">צעד קטן מספיק. אפשר להתחיל כשנוח לך.</string>
+    <string name="push_realm_focus_title">מתאים לך להתמקד?</string>
+    <string name="push_realm_focus_body">אפשר להתחיל מפגש מיקוד של 25 דקות כשנוח לך.</string>
+    <string name="push_realm_test_title">ZenFlow</string>
+    <string name="push_realm_test_body">התראת בדיקה.</string>
+    <string name="push_realm_channel_default">ברירת מחדל</string>
+    <string name="push_realm_channel_default_description">צליל התראת מערכת</string>
+    <string name="push_realm_channel_gentle">עדין</string>
+    <string name="push_realm_channel_gentle_description">רטט בלבד</string>
+    <string name="push_realm_channel_silent">שקט</string>
+    <string name="push_realm_channel_silent_description">ללא צליל או רטט</string>
 </resources>

@@ -198,7 +198,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
 
       {showCueRow && (
         <div
-          className="mt-1.5 flex flex-wrap items-center gap-2 px-1 text-[11px] text-muted-foreground"
+          className="mt-1.5 flex flex-wrap items-center gap-2 whitespace-normal break-words px-1 text-xs text-muted-foreground"
           data-testid={`hero-habit-row-${habit.id}-cue`}
         >
           {reminderTime && (

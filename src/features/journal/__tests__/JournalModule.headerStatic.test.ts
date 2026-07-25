@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 
 const source = readFileSync("src/features/journal/JournalModule.tsx", "utf8");
 const sidebarSource = readFileSync("src/features/journal/SidebarCompact.tsx", "utf8");
+const translationTypesSource = readFileSync("src/i18n/types.ts", "utf8");
+const localeSources = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"].map((locale) => ({
+  locale,
+  source: readFileSync(`src/i18n/languages/${locale}.ts`, "utf8"),
+}));
 
 describe("JournalModule V2 header", () => {
   it("keeps app navigation and the diary-only drawer as separate phone controls", () => {
@@ -63,6 +68,17 @@ describe("JournalModule V2 header", () => {
     expect(settingsButtonBlock).toContain('aria-controls="nav-v2-drawer"');
   });
 
+  it("keeps the localized phone diary title multiline instead of truncating it", () => {
+    const titleBlock =
+      /<h2[^>]*data-testid="journal-mobile-title"[^>]*>[\s\S]*?<\/h2>/.exec(source)?.[0] ?? "";
+
+    expect(titleBlock).toContain("break-words");
+    expect(titleBlock).toContain("whitespace-normal");
+    expect(titleBlock).toContain("[hyphens:manual]");
+    expect(titleBlock).toContain("[overflow-wrap:normal]");
+    expect(titleBlock).not.toContain("truncate");
+  });
+
   it("exposes the phone diary section controls as an accessible toolbar", () => {
     const toolbarBlock = /<div\s+className="grid grid-cols-4 gap-1 px-4 pb-3"[\s\S]*?<\/div>\s*<\/div>/.exec(source)?.[0] ?? "";
     expect(toolbarBlock).toContain('role="toolbar"');
@@ -78,6 +94,15 @@ describe("JournalModule V2 header", () => {
       const buttonBlock = new RegExp(`<button[\\s\\S]*?data-testid="${testId}"[\\s\\S]*?<\\/button>`).exec(source)?.[0] ?? "";
       expect(buttonBlock, `${testId} block`).toContain("aria-pressed=");
     }
+  });
+
+  it("defines and uses a localized singular label for the phone entry section", () => {
+    expect(translationTypesSource).toContain("journalEntry: string;");
+    for (const locale of localeSources) {
+      expect(locale.source, locale.locale).toMatch(/^\s*journalEntry:\s*".+",$/m);
+    }
+    expect(source).toContain('title={ts.journalEntry || ts.journalTitle || "Entry"}');
+    expect(source).toContain('aria-label={ts.journalEntry || ts.journalTitle || "Entry"}');
   });
 
   it("makes the mobile diary settings sheet bounded, scrollable, and focus-owned", () => {
@@ -105,7 +130,7 @@ describe("JournalModule V2 header", () => {
     expect(source).toContain("? portalEntryPrefill");
     expect(source).not.toContain("portalEntryPrefill ?? initialSuggestionRef.current?.prefill");
     expect(source).toMatch(
-      /const hasInitialEntrySuggestion =\s*!!initialEntrySuggestion &&\s*!!initialSuggestionRef\.current &&\s*!initialSuggestionConsumedRef\.current &&\s*journal\.view === "list";/,
+      /const hasInitialEntrySuggestion =\s*!!initialEntrySuggestion &&\s*!!initialSuggestionRef\.current &&\s*!initialSuggestionConsumedRef\.current &&\s*deferredInitialSuggestionKey !== currentInitialSuggestionKey &&\s*journal\.view === "list";/,
     );
     expect(source).toMatch(/const visibleExtraSuggestions = useMemo\([\s\S]*?showEntrySuggestionCards/);
   });
@@ -123,13 +148,18 @@ describe("JournalModule V2 header", () => {
 
   it("opens blank new entries with the selected calendar date", () => {
     expect(source).toContain("const getActiveDraftDate = useCallback");
-    expect(source).toContain("journal.selectedDate ?? getToday()");
+    expect(source).toContain("journal.selectedDate ?? today");
     expect(source).toContain("setPortalEntryPrefill({ date: getActiveDraftDate() });");
   });
 
   it("closes an open viewer or editor when private mode is enabled", () => {
-    expect(source).toContain('if (privateMode && (journal.view === "viewing" || journal.view === "editing"))');
-    expect(source).toContain("handleGoBack();");
+    const privateModeHandler =
+      /const handlePrivateModeChange = useCallback\([\s\S]*?\}, \[handleGoBack, journal\.view\]\);/.exec(source)?.[0] ?? "";
+    expect(privateModeHandler).toContain("const concealCurrentScreen = checked || !persisted;");
+    expect(privateModeHandler).toContain(
+      'if (concealCurrentScreen && (journal.view === "viewing" || journal.view === "editing"))',
+    );
+    expect(privateModeHandler).toContain("handleGoBack();");
   });
 
   it("keeps favorite private placeholders inert", () => {
@@ -193,7 +223,7 @@ describe("JournalModule V2 header", () => {
     expect(source).toContain("pt-[max(0.75rem,var(--safe-top))]");
     expect(source).toContain("pt-[max(1rem,var(--safe-top))]");
     expect(source).toContain("pb-[max(1rem,var(--safe-bottom))]");
-    expect(source).toContain("max-h-[calc(100dvh_-_var(--safe-top)_-_var(--safe-bottom)_-_2rem)]");
+    expect(source).toContain("max-h-[calc(var(--app-viewport-height)_-_var(--safe-top)_-_var(--safe-bottom)_-_2rem)]");
     expect(source).not.toContain("env(safe-area-inset-");
     expect(source).toContain("hasEncryptedJournalContent()");
     expect(source).toContain("hasEncryptedJournalMedia()");

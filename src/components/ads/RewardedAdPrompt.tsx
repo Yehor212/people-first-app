@@ -115,13 +115,13 @@ export function RewardedAdPrompt({
       'bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-2xl p-4 border border-amber-500/20',
       className,
     )}>
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <div className="p-2 bg-amber-500/20 rounded-xl shrink-0">
             {contextIcon}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
+            <p className="whitespace-normal break-words text-sm font-medium text-foreground [hyphens:auto] [overflow-wrap:break-word]">
               {resolvedCtaLabel}
             </p>
             <p className="text-xs text-muted-foreground">
@@ -137,7 +137,7 @@ export function RewardedAdPrompt({
           aria-busy={loading ? 'true' : undefined}
           aria-label={`${resolvedCtaLabel}. ${resolvedRewardLabel}`}
           className={cn(
-            'min-h-[44px] shrink-0 px-4 py-2 rounded-xl font-medium text-sm motion-safe:transition-all',
+            'min-h-[44px] w-full min-w-0 whitespace-normal break-words px-4 py-2 rounded-xl font-medium text-sm motion-safe:transition-all [hyphens:auto] [overflow-wrap:break-word] min-[420px]:w-auto min-[420px]:shrink-0',
             'bg-amber-500 text-white hover:bg-amber-600 active:scale-95',
             loading && 'opacity-50',
           )}

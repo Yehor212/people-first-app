@@ -1,20 +1,37 @@
 import { runWithOriginExclusiveLock } from "@/lib/originExclusiveLock";
-import { safeJsonParse, safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
+import {
+  safeJsonParse,
+  safeLocalStorageGet,
+  safeLocalStorageSet,
+  storageReadRaw,
+  storageRemove,
+} from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 
 type AccountBoundaryReset = () => void;
 type OriginAccountBoundaryGenerationListener = (
   generation: OriginAccountBoundaryGeneration
 ) => void;
+type AccountSessionTransitionListener = () => void;
 
 const accountBoundaryResets = new Set<AccountBoundaryReset>();
-const originAccountBoundaryGenerationListeners =
+const originAccountBoundaryGenerationListeners = new Set<OriginAccountBoundaryGenerationListener>();
+const originAccountBoundaryObservationListeners =
   new Set<OriginAccountBoundaryGenerationListener>();
+const accountSessionTransitionListeners = new Set<AccountSessionTransitionListener>();
 
 export type OriginAccountBoundaryGeneration = string;
 
+export type PendingLocalBackupAccountClaimState =
+  | { status: "none" }
+  | { status: "pending"; generation: OriginAccountBoundaryGeneration }
+  | { status: "invalid" }
+  | { status: "unavailable" };
+
 const INITIAL_ACCOUNT_BOUNDARY_GENERATION = "initial";
 const JOURNAL_SECURITY_WRITE_LOCK = "zenflow:journal-security-write";
+const IMPORTED_BACKUP_ACCOUNT_CLAIM_LOCK = "zenflow:imported-backup-account-claim";
+export const ACCOUNT_BOUNDARY_DATA_WRITE_LOCK = "zenflow:data-write-barrier";
 
 let fallbackGenerationSequence = 0;
 
@@ -26,6 +43,15 @@ function readPersistedAccountBoundaryGeneration(): OriginAccountBoundaryGenerati
 let observedAccountBoundaryGeneration =
   readPersistedAccountBoundaryGeneration() ?? INITIAL_ACCOUNT_BOUNDARY_GENERATION;
 let lastNotifiedAccountBoundaryGeneration = observedAccountBoundaryGeneration;
+let lastObservedAccountBoundaryGeneration = observedAccountBoundaryGeneration;
+
+function notifyOriginAccountBoundaryObservation(generation: OriginAccountBoundaryGeneration): void {
+  if (generation === lastObservedAccountBoundaryGeneration) return;
+  lastObservedAccountBoundaryGeneration = generation;
+  for (const listener of originAccountBoundaryObservationListeners) {
+    listener(generation);
+  }
+}
 
 function createAccountBoundaryGeneration(): OriginAccountBoundaryGeneration {
   if (typeof globalThis.crypto?.randomUUID === "function") {
@@ -33,6 +59,15 @@ function createAccountBoundaryGeneration(): OriginAccountBoundaryGeneration {
   }
   fallbackGenerationSequence += 1;
   return `${Date.now().toString(36)}-${fallbackGenerationSequence.toString(36)}`;
+}
+
+function createImportedBackupDecisionRevision(): string | null {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+  if (typeof globalThis.crypto?.getRandomValues !== "function") return null;
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 if (typeof window !== "undefined") {
@@ -44,6 +79,7 @@ if (typeof window !== "undefined") {
     const currentGeneration = readPersistedAccountBoundaryGeneration() ?? eventGeneration;
     if (typeof currentGeneration === "string" && currentGeneration.length > 0) {
       observedAccountBoundaryGeneration = currentGeneration;
+      notifyOriginAccountBoundaryObservation(currentGeneration);
       // A foreground operation may read durable storage before this queued
       // event arrives. Deduplicate notifications separately from observation so
       // that read cannot consume the passive-reset signal for other hooks.
@@ -95,6 +131,131 @@ export function subscribeOriginAccountBoundaryGeneration(
   return () => originAccountBoundaryGenerationListeners.delete(listener);
 }
 
+/**
+ * Observes both same-realm advances and cross-tab storage events. UI state may
+ * use this to discard drafts and transient success that belong to an expired
+ * account without participating in the DATA barrier's internal generation.
+ */
+export function subscribeOriginAccountBoundaryObservation(
+  listener: OriginAccountBoundaryGenerationListener
+): () => void {
+  originAccountBoundaryObservationListeners.add(listener);
+  return () => originAccountBoundaryObservationListeners.delete(listener);
+}
+
+/**
+ * Invalidates owner-sensitive work synchronously when Supabase publishes a
+ * different session owner. DATA serialization alone cannot cover the short
+ * IndexedDB commit window because auth publication is not an IndexedDB write.
+ */
+export function notifyAccountSessionTransition(): void {
+  for (const listener of accountSessionTransitionListeners) {
+    listener();
+  }
+}
+
+export function subscribeAccountSessionTransition(
+  listener: AccountSessionTransitionListener
+): () => void {
+  accountSessionTransitionListeners.add(listener);
+  return () => accountSessionTransitionListeners.delete(listener);
+}
+
+/**
+ * Persist a privacy fence before owner-null backup rows are written. The
+ * marker intentionally contains no imported content or account identifier.
+ */
+export function markPendingLocalBackupAccountClaim(): boolean {
+  if (!storageRemove(SK.IMPORTED_BACKUP_LOCAL_ONLY_ACCESS)) return false;
+  return safeLocalStorageSet(SK.PENDING_LOCAL_BACKUP_ACCOUNT_CLAIM, {
+    version: 1,
+    generation: captureOriginAccountBoundaryGeneration(),
+  });
+}
+
+/**
+ * Preserve an explicit local-only decision across reloads without weakening the
+ * pending claim fence. A later authenticated session must still present the
+ * account choice before any cloud path can use the imported rows.
+ */
+export function markImportedBackupLocalOnlyAccess(): boolean {
+  const pendingClaim = readPendingLocalBackupAccountClaim();
+  if (pendingClaim.status !== "pending") return false;
+  const decisionRevision = createImportedBackupDecisionRevision();
+  if (!decisionRevision) return false;
+  return safeLocalStorageSet(SK.IMPORTED_BACKUP_LOCAL_ONLY_ACCESS, {
+    version: 2,
+    generation: pendingClaim.generation,
+    decisionRevision,
+  });
+}
+
+export function readImportedBackupLocalOnlyDecisionRevision(): string | null {
+  const pendingClaim = readPendingLocalBackupAccountClaim();
+  if (pendingClaim.status !== "pending") return null;
+  const stored = storageReadRaw(SK.IMPORTED_BACKUP_LOCAL_ONLY_ACCESS);
+  if (!stored.ok || stored.value === null) return null;
+  const parsed = safeJsonParse<unknown>(stored.value, null);
+  if (
+    !parsed ||
+    typeof parsed !== "object" ||
+    ((parsed as { version?: unknown }).version !== 1 &&
+      (parsed as { version?: unknown }).version !== 2) ||
+    (parsed as { generation?: unknown }).generation !== pendingClaim.generation
+  ) {
+    return null;
+  }
+  if ((parsed as { version?: unknown }).version === 1) {
+    return `legacy:${pendingClaim.generation}`;
+  }
+  const decisionRevision = (parsed as { decisionRevision?: unknown }).decisionRevision;
+  return typeof decisionRevision === "string" && decisionRevision.length > 0
+    ? decisionRevision
+    : null;
+}
+
+export function hasImportedBackupLocalOnlyAccess(): boolean {
+  return readImportedBackupLocalOnlyDecisionRevision() !== null;
+}
+
+export function readPendingLocalBackupAccountClaim(): PendingLocalBackupAccountClaimState {
+  const stored = storageReadRaw(SK.PENDING_LOCAL_BACKUP_ACCOUNT_CLAIM);
+  if (!stored.ok) return { status: "unavailable" };
+  if (stored.value === null) return { status: "none" };
+
+  const parsed = safeJsonParse<unknown>(stored.value, null);
+  if (
+    !parsed ||
+    typeof parsed !== "object" ||
+    (parsed as { version?: unknown }).version !== 1 ||
+    typeof (parsed as { generation?: unknown }).generation !== "string" ||
+    (parsed as { generation: string }).generation.length === 0
+  ) {
+    return { status: "invalid" };
+  }
+
+  return {
+    status: "pending",
+    generation: (parsed as { generation: OriginAccountBoundaryGeneration }).generation,
+  };
+}
+
+export function clearPendingLocalBackupAccountClaim(): boolean {
+  // Remove the authoritative fence first. If that removal fails, preserve the
+  // matching local-only marker so a signed-out user keeps an actionable path
+  // instead of being stranded on reconstruction. If the second removal fails,
+  // the stale access marker is inert because it is valid only with a pending
+  // claim carrying the same generation.
+  if (!storageRemove(SK.PENDING_LOCAL_BACKUP_ACCOUNT_CLAIM)) return false;
+  return storageRemove(SK.IMPORTED_BACKUP_LOCAL_ONLY_ACCESS);
+}
+
+export function runWithImportedBackupAccountClaimLock<T>(
+  operation: () => Promise<T>
+): Promise<T> {
+  return runWithOriginExclusiveLock(IMPORTED_BACKUP_ACCOUNT_CLAIM_LOCK, operation);
+}
+
 export function isOriginAccountBoundaryGenerationCurrent(
   expectedGeneration: OriginAccountBoundaryGeneration
 ): boolean {
@@ -120,6 +281,7 @@ export function advanceOriginAccountBoundaryGeneration(): OriginAccountBoundaryG
     throw new Error("Unable to persist the account boundary generation");
   }
   observedAccountBoundaryGeneration = nextGeneration;
+  notifyOriginAccountBoundaryObservation(nextGeneration);
   return nextGeneration;
 }
 
@@ -192,4 +354,9 @@ export function resetAccountBoundaryRuntimeState(): void {
     (error as Error & { cause?: unknown }).cause = failures[0];
     throw error;
   }
+}
+
+/** Waits until the origin-wide account purge and its final refresh release DATA. */
+export function waitForAccountBoundaryDataSettlement(): Promise<void> {
+  return runWithOriginExclusiveLock(ACCOUNT_BOUNDARY_DATA_WRITE_LOCK, async () => undefined);
 }

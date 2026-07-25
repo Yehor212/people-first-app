@@ -70,21 +70,39 @@ export const DiaryWallpaper = memo(function DiaryWallpaper({
   useEffect(() => {
     let timeoutId: number | undefined;
 
-    const scheduleNextToneRefresh = () => {
-      timeoutId = window.setTimeout(() => {
-        setNow(new Date());
-        scheduleNextToneRefresh();
-      }, getNextDiaryWallpaperToneBoundaryDelay());
+    const clearScheduledToneRefresh = () => {
+      if (timeoutId === undefined) return;
+      window.clearTimeout(timeoutId);
+      timeoutId = undefined;
     };
 
-    scheduleNextToneRefresh();
+    const refreshToneAndReschedule = () => {
+      clearScheduledToneRefresh();
+      const refreshedAt = new Date();
+      setNow(refreshedAt);
+      timeoutId = window.setTimeout(
+        refreshToneAndReschedule,
+        getNextDiaryWallpaperToneBoundaryDelay(refreshedAt),
+      );
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") refreshToneAndReschedule();
+    };
+
+    timeoutId = window.setTimeout(
+      refreshToneAndReschedule,
+      getNextDiaryWallpaperToneBoundaryDelay(now),
+    );
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pageshow", refreshToneAndReschedule);
 
     return () => {
-      if (timeoutId !== undefined) {
-        window.clearTimeout(timeoutId);
-      }
+      clearScheduledToneRefresh();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pageshow", refreshToneAndReschedule);
     };
-  }, []);
+  }, [now]);
 
   const naturalTone = getDiaryWallpaperTone(now);
   const tone: DiaryWallpaperTone =

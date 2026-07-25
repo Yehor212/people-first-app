@@ -42,7 +42,7 @@ export function FocusReflectionModal({
         aria-hidden="true"
       />
       <motion.div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 z-[60] md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
+        className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/60 ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] pb-[max(1rem,var(--safe-bottom))] pt-[max(1rem,var(--safe-top))] backdrop-blur-sm md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-label={t.ariaFocusReflection}
@@ -55,7 +55,7 @@ export function FocusReflectionModal({
         }}
       >
       <motion.div
-        className="w-full max-w-xs sm:max-w-sm relative overflow-hidden rounded-2xl"
+        className="relative max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-2rem)] w-full max-w-xs overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl sm:max-w-sm"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={zenMotion.gentle}
@@ -86,11 +86,11 @@ export function FocusReflectionModal({
 
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-            <h4 className="text-lg font-semibold text-slate-800 dark:text-white pe-10">
+            <h4 className="min-w-0 break-words hyphens-manual pe-10 text-lg font-semibold text-slate-800 dark:text-white">
               {t.focusReflectionTitle}
             </h4>
           </div>
-          <p className="text-sm text-slate-600 dark:text-white/60 mt-1">
+          <p className="mt-1 break-words hyphens-manual text-sm text-slate-600 dark:text-white/60">
             {t.focusReflectionQuestion}
           </p>
 
@@ -123,10 +123,10 @@ export function FocusReflectionModal({
             })}
           </div>
 
-          <div className="flex gap-2 mt-6">
+          <div className="mt-6 flex flex-col gap-2 min-[360px]:flex-row">
             <motion.button
               onClick={onDismiss}
-              className="flex-1 py-3 rounded-xl bg-secondary text-muted-foreground font-medium hover:bg-secondary/80 hover:text-foreground motion-safe:transition-colors"
+              className="min-h-[44px] h-auto min-w-0 flex-1 whitespace-normal break-words hyphens-manual rounded-xl bg-secondary py-3 font-medium text-muted-foreground hover:bg-secondary/80 hover:text-foreground motion-safe:transition-colors"
               whileTap={zenTap.card}
             >
               {t.focusReflectionSkip}
@@ -139,7 +139,7 @@ export function FocusReflectionModal({
               }}
               disabled={isSaving}
               className={cn(
-                "flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium",
+                "min-h-[44px] h-auto min-w-0 flex-1 whitespace-normal break-words hyphens-manual rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 py-3 font-medium text-white",
                 "shadow-[0_0_16px_hsl(var(--focus-violet)/0.4)]",
                 isSaving && "opacity-50 cursor-not-allowed"
               )}
@@ -160,7 +160,7 @@ export function FocusReflectionModal({
                 onSave(reflectionValue);
                 onExpandToJournal();
               }}
-              className="w-full mt-3 py-2.5 rounded-xl text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 motion-safe:transition-colors flex items-center justify-center gap-2"
+              className="mt-3 flex min-h-[44px] h-auto w-full items-center justify-center gap-2 whitespace-normal break-words hyphens-manual rounded-xl py-2.5 text-sm font-medium text-violet-600 hover:bg-violet-50 motion-safe:transition-colors dark:text-violet-400 dark:hover:bg-violet-950/30"
             >
               <PenLine className="w-4 h-4" aria-hidden="true" />
               {t.focusExpandToJournal || "Write about it in your journal"}

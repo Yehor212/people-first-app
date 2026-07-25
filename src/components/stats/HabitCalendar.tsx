@@ -8,15 +8,15 @@
  * - Premium glassmorphism design
  */
 
-import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Habit } from '@/types';
-import { isHabitCompletedOnDate } from '@/lib/habits';
-import { getDaysInMonth, formatDate } from '@/lib/utils';
-import { DayDetailPanel } from './DayDetailPanel';
+import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Habit } from "@/types";
+import { isHabitCompletedOnDate } from "@/lib/habits";
+import { getDaysInMonth, formatDate } from "@/lib/utils";
+import { DayDetailPanel } from "./DayDetailPanel";
 
 interface HabitCalendarProps {
   habits: Habit[];
@@ -46,18 +46,18 @@ function getCompletionLevel(rate: number): number {
 // Premium color themes for completion levels
 const levelColors = {
   light: {
-    0: 'bg-slate-100 dark:bg-slate-800/50',
-    1: 'bg-emerald-200 dark:bg-emerald-900/60',
-    2: 'bg-emerald-300 dark:bg-emerald-700/70',
-    3: 'bg-emerald-400 dark:bg-emerald-600/80',
-    4: 'bg-emerald-500 dark:bg-emerald-500',
+    0: "bg-slate-100 dark:bg-slate-800/50",
+    1: "bg-emerald-200 dark:bg-emerald-900/60",
+    2: "bg-emerald-300 dark:bg-emerald-700/70",
+    3: "bg-emerald-400 dark:bg-emerald-600/80",
+    4: "bg-emerald-500 dark:bg-emerald-500",
   },
   glow: {
-    0: 'none',
-    1: '0 0 4px rgba(16, 185, 129, 0.2)',
-    2: '0 0 6px rgba(16, 185, 129, 0.3)',
-    3: '0 0 8px rgba(16, 185, 129, 0.4)',
-    4: '0 0 12px rgba(16, 185, 129, 0.5)',
+    0: "none",
+    1: "0 0 4px rgba(16, 185, 129, 0.2)",
+    2: "0 0 6px rgba(16, 185, 129, 0.3)",
+    3: "0 0 8px rgba(16, 185, 129, 0.4)",
+    4: "0 0 12px rgba(16, 185, 129, 0.5)",
   },
 };
 
@@ -71,8 +71,18 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
 
   const monthNames = [
-    t.january, t.february, t.march, t.april, t.may, t.june,
-    t.july, t.august, t.september, t.october, t.november, t.december
+    t.january,
+    t.february,
+    t.march,
+    t.april,
+    t.may,
+    t.june,
+    t.july,
+    t.august,
+    t.september,
+    t.october,
+    t.november,
+    t.december,
   ];
 
   const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
@@ -81,7 +91,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
   const calendarData = useMemo(() => {
     const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
     const firstDayOfWeek = new Date(selectedYear, selectedMonth, 1).getDay();
-    const monthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`;
+    const monthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
 
     const days: (DayData | null)[] = [];
 
@@ -92,28 +102,27 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
 
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${monthKey}-${String(day).padStart(2, '0')}`;
+      const dateStr = `${monthKey}-${String(day).padStart(2, "0")}`;
       const isToday = dateStr === todayStr;
       const isFuture = dateStr > todayStr;
 
       // Calculate completion for this day (store IDs to avoid duplicate-name issues)
       const completedHabits: string[] = [];
-      habits.forEach(habit => {
+      habits.forEach((habit) => {
         if (isHabitCompletedOnDate(habit, dateStr)) {
           completedHabits.push(habit.id);
         }
       });
 
       // Only count habits that existed on this day (created on or before this date)
-      const activeHabits = habits.filter(h => {
+      const activeHabits = habits.filter((h) => {
         const createdStr = formatDate(new Date(h.createdAt));
         return createdStr <= dateStr;
       });
       const totalHabits = activeHabits.length;
       const expectedCompletions = activeHabits.reduce((sum, h) => {
-        const freq = h.frequency?.denominator > 0
-          ? h.frequency.numerator / h.frequency.denominator
-          : 1;
+        const freq =
+          h.frequency?.denominator > 0 ? h.frequency.numerator / h.frequency.denominator : 1;
         return sum + freq;
       }, 0);
       const completedCount = completedHabits.length;
@@ -138,11 +147,12 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
   const monthStats = useMemo(() => {
     const validDays = calendarData.filter((d): d is DayData => d !== null && !d.isFuture);
     const totalCompletions = validDays.reduce((sum, d) => sum + d.completedCount, 0);
-    const perfectDays = validDays.filter(d => d.completionRate >= 1 && d.totalHabits > 0).length;
-    const daysWithHabits = validDays.filter(d => d.totalHabits > 0);
-    const avgRate = daysWithHabits.length > 0
-      ? daysWithHabits.reduce((sum, d) => sum + d.completionRate, 0) / daysWithHabits.length
-      : 0;
+    const perfectDays = validDays.filter((d) => d.completionRate >= 1 && d.totalHabits > 0).length;
+    const daysWithHabits = validDays.filter((d) => d.totalHabits > 0);
+    const avgRate =
+      daysWithHabits.length > 0
+        ? daysWithHabits.reduce((sum, d) => sum + d.completionRate, 0) / daysWithHabits.length
+        : 0;
 
     return { totalCompletions, perfectDays, avgRate };
   }, [calendarData]);
@@ -151,10 +161,10 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
     setSelectedDay(null);
     const newMonth = selectedMonth + delta;
     if (newMonth < 0) {
-      setSelectedYear(y => y - 1);
+      setSelectedYear((y) => y - 1);
       setSelectedMonth(11);
     } else if (newMonth > 11) {
-      setSelectedYear(y => y + 1);
+      setSelectedYear((y) => y + 1);
       setSelectedMonth(0);
     } else {
       setSelectedMonth(newMonth);
@@ -166,40 +176,40 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'relative overflow-hidden rounded-2xl',
-        'bg-card border border-border/50',
-        'shadow-lg',
+        "relative overflow-hidden rounded-2xl",
+        "bg-card border border-border/50",
+        "shadow-lg",
         className
       )}
     >
       {/* Header */}
       <div className="p-4 border-b border-border/30">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl">
+        <div className="mb-3 flex flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="shrink-0 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 p-2">
               <Calendar className="w-4 h-4 text-white" />
             </div>
-            <h3 className="text-base font-bold text-foreground">
-              {t.habitCalendar || 'Habit Calendar'}
+            <h3 className="min-w-0 break-words text-base font-bold text-foreground">
+              {t.habitCalendar || "Habit Calendar"}
             </h3>
           </div>
 
           {/* Month navigation */}
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2">
             <button
               onClick={() => handleMonthChange(-1)}
-              className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-              aria-label={t.calendarPrevMonth || 'Previous month'}
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-muted/50 p-1.5 motion-safe:transition-colors hover:bg-muted"
+              aria-label={t.calendarPrevMonth || "Previous month"}
             >
               <ChevronLeft className="w-4 h-4 rtl:scale-x-[-1]" />
             </button>
-            <span className="text-sm font-medium min-w-[120px] text-center">
+            <span className="min-w-0 break-words text-center text-sm font-medium">
               {monthNames[selectedMonth]} {selectedYear}
             </span>
             <button
               onClick={() => handleMonthChange(1)}
-              className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-              aria-label={t.calendarNextMonth || 'Next month'}
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-muted/50 p-1.5 motion-safe:transition-colors hover:bg-muted"
+              aria-label={t.calendarNextMonth || "Next month"}
             >
               <ChevronRight className="w-4 h-4 rtl:scale-x-[-1]" />
             </button>
@@ -207,95 +217,112 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
         </div>
 
         {/* Month stats */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-3">
           <div className="text-center p-2 bg-muted/30 rounded-xl">
             <p className="text-lg font-bold text-emerald-500">{monthStats.totalCompletions}</p>
-            <p className="text-[10px] text-muted-foreground">{t.completions || 'Completions'}</p>
+            <p className="break-words text-xs text-muted-foreground">
+              {t.completions || "Completions"}
+            </p>
           </div>
           <div className="text-center p-2 bg-muted/30 rounded-xl">
             <p className="text-lg font-bold text-amber-500">{monthStats.perfectDays}</p>
-            <p className="text-[10px] text-muted-foreground">{t.perfectDays || 'Perfect Days'}</p>
+            <p className="break-words text-xs text-muted-foreground">
+              {t.perfectDays || "Perfect Days"}
+            </p>
           </div>
           <div className="text-center p-2 bg-muted/30 rounded-xl">
-            <p className="text-lg font-bold text-primary">{Math.round(monthStats.avgRate * 100)}%</p>
-            <p className="text-[10px] text-muted-foreground">{t.avgCompletion || 'Avg Rate'}</p>
+            <p className="text-lg font-bold text-primary">
+              {Math.round(monthStats.avgRate * 100)}%
+            </p>
+            <p className="break-words text-xs text-muted-foreground">
+              {t.avgCompletion || "Avg Rate"}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Calendar grid */}
       <div className="p-4">
-        {/* Day names */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {dayNames.map((day) => (
-            <div key={day} className="text-center text-[10px] font-medium text-muted-foreground py-1">
-              {day.slice(0, 2)}
+        <div className="max-w-full overflow-x-auto overscroll-x-contain pb-1">
+          <div className="min-w-[23rem]">
+            {/* Day names */}
+            <div className="mb-2 grid grid-cols-7 gap-1">
+              {dayNames.map((day) => (
+                <div
+                  key={day}
+                  className="py-1 text-center text-xs font-medium text-muted-foreground"
+                >
+                  {day.slice(0, 2)}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Days grid */}
-        <div className="grid grid-cols-7 gap-1">
-          {calendarData.map((dayData, index) => {
-            if (!dayData) {
-              return <div key={`empty-${index}`} className="aspect-square" />;
-            }
+            {/* Days grid */}
+            <div className="grid grid-cols-7 gap-1">
+              {calendarData.map((dayData, index) => {
+                if (!dayData) {
+                  return <div key={`empty-${index}`} className="aspect-square" />;
+                }
 
-            const level = dayData.isFuture ? 0 : getCompletionLevel(dayData.completionRate);
-            const isSelected = selectedDay?.date === dayData.date;
+                const level = dayData.isFuture ? 0 : getCompletionLevel(dayData.completionRate);
+                const isSelected = selectedDay?.date === dayData.date;
 
-            return (
-              <motion.button
-                key={dayData.date}
-                onClick={() => !dayData.isFuture && setSelectedDay(dayData)}
-                disabled={dayData.isFuture}
-                className={cn(
-                  'aspect-square rounded-md flex items-center justify-center relative motion-safe:transition-all',
-                  levelColors.light[level as keyof typeof levelColors.light],
-                  dayData.isToday && 'ring-2 ring-primary ring-offset-1 ring-offset-background',
-                  isSelected && 'ring-2 ring-accent',
-                  dayData.isFuture && 'opacity-30 cursor-not-allowed',
-                  !dayData.isFuture && 'hover:scale-110 cursor-pointer'
-                )}
-                style={{
-                  boxShadow: levelColors.glow[level as keyof typeof levelColors.glow],
-                }}
-                whileHover={!dayData.isFuture ? { scale: 1.1 } : {}}
-                whileTap={!dayData.isFuture ? { scale: 0.95 } : {}}
-              >
-                <span className={cn(
-                  'text-[10px] font-medium',
-                  level >= 3 ? 'text-white' : 'text-foreground'
-                )}>
-                  {dayData.day}
-                </span>
+                return (
+                  <motion.button
+                    key={dayData.date}
+                    onClick={() => !dayData.isFuture && setSelectedDay(dayData)}
+                    disabled={dayData.isFuture}
+                    className={cn(
+                      "relative flex aspect-square min-h-11 min-w-11 items-center justify-center rounded-md motion-safe:transition-all",
+                      levelColors.light[level as keyof typeof levelColors.light],
+                      dayData.isToday && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                      isSelected && "ring-2 ring-accent",
+                      dayData.isFuture && "cursor-not-allowed opacity-30",
+                      !dayData.isFuture && "cursor-pointer hover:scale-110"
+                    )}
+                    style={{
+                      boxShadow: levelColors.glow[level as keyof typeof levelColors.glow],
+                    }}
+                    whileHover={!dayData.isFuture ? { scale: 1.1 } : {}}
+                    whileTap={!dayData.isFuture ? { scale: 0.95 } : {}}
+                  >
+                    <span
+                      className={cn(
+                        "text-xs font-medium",
+                        level >= 3 ? "text-white" : "text-foreground"
+                      )}
+                    >
+                      {dayData.day}
+                    </span>
 
-                {/* Perfect day indicator */}
-                {dayData.completionRate >= 1 && dayData.totalHabits > 0 && (
-                  <motion.div
-                    className="absolute -top-0.5 -end-0.5 w-2 h-2 bg-amber-400 rounded-full shadow-[0_0_4px_rgba(251,191,36,0.6)]"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                  />
-                )}
-              </motion.button>
-            );
-          })}
+                    {/* Perfect day indicator */}
+                    {dayData.completionRate >= 1 && dayData.totalHabits > 0 && (
+                      <motion.div
+                        className="absolute -top-0.5 -end-0.5 w-2 h-2 bg-amber-400 rounded-full shadow-[0_0_4px_rgba(251,191,36,0.6)]"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                      />
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-1 mt-4">
-          <span className="text-[10px] text-muted-foreground me-1">{t.less || 'Less'}</span>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-1">
+          <span className="me-1 text-xs text-muted-foreground">{t.less || "Less"}</span>
           {[0, 1, 2, 3, 4].map((level) => (
             <div
               key={level}
               className={cn(
-                'w-3 h-3 rounded-sm',
+                "w-3 h-3 rounded-sm",
                 levelColors.light[level as keyof typeof levelColors.light]
               )}
             />
           ))}
-          <span className="text-[10px] text-muted-foreground ms-1">{t.more || 'More'}</span>
+          <span className="ms-1 text-xs text-muted-foreground">{t.more || "More"}</span>
         </div>
       </div>
 

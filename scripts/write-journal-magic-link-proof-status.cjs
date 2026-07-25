@@ -4,6 +4,9 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { evaluateJournalMagicLinkProofStatus, REQUIRED_ITEM_IDS } = require("./check-journal-magic-link-proof-status.cjs");
+const {
+  computeJournalMagicLinkProofSourceSha256,
+} = require("./journal-magic-link-proof-source.cjs");
 
 const DEFAULT_OUTPUT = path.join("output", "journal-magic-link-live-proof-status.json");
 const SCHEMA_VERSION = "zenflow-journal-magic-link-live-proof/v1";
@@ -89,11 +92,13 @@ function itemText(id, runUrl) {
 function buildPacket(env = process.env) {
   const runUrl = githubRunUrl(env);
   const updatedAt = todayUtc();
+  const proofSourceSha256 = computeJournalMagicLinkProofSourceSha256(process.cwd());
   return {
     schemaVersion: SCHEMA_VERSION,
     updatedAt,
     feature: "diary-email-lock-removal",
     overallStatus: "PASS",
+    proofSourceSha256,
     purpose: "Runtime proof packet generated after the manual Journal Magic Link live proof succeeds. It is intentionally written outside tracked docs to avoid storing one-time auth values.",
     items: REQUIRED_ITEM_IDS.map((id) => itemText(id, runUrl)),
   };
@@ -102,7 +107,10 @@ function buildPacket(env = process.env) {
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const packet = buildPacket(process.env);
-  const evaluation = evaluateJournalMagicLinkProofStatus(packet, { requirePass: true });
+  const evaluation = evaluateJournalMagicLinkProofStatus(packet, {
+    requirePass: true,
+    currentSourceSha256: packet.proofSourceSha256,
+  });
   if (!evaluation.ok || !evaluation.passReady) {
     console.error("[journal-magic-link-proof-status] FAIL runtime proof packet did not satisfy pass requirements");
     for (const issue of evaluation.issues) {

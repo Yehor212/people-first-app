@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   inQuery: vi.fn(),
   loggerWarn: vi.fn(),
   maybeSingle: vi.fn(),
+  readPendingLocalBackupAccountClaim: vi.fn(),
   safeLocalStorageGet: vi.fn(),
   safeLocalStorageSet: vi.fn(),
   select: vi.fn(),
@@ -34,6 +35,10 @@ vi.mock("@/lib/safeJson", () => ({
 
 vi.mock("@/storage/db", () => ({
   getLocalDataOwnerId: mocks.getLocalDataOwnerId,
+}));
+
+vi.mock("@/storage/accountBoundaryRuntime", () => ({
+  readPendingLocalBackupAccountClaim: mocks.readPendingLocalBackupAccountClaim,
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -97,6 +102,7 @@ describe("friendsSync account ownership", () => {
     mocks.getCurrentUserId.mockResolvedValue("user-a");
     mocks.getCurrentSessionUserId.mockResolvedValue("user-a");
     mocks.getLocalDataOwnerId.mockResolvedValue("user-a");
+    mocks.readPendingLocalBackupAccountClaim.mockReturnValue({ status: "none" });
     mocks.getSession.mockResolvedValue({
       data: { session: { user: { id: "user-a" } } },
       error: null,
@@ -141,6 +147,32 @@ describe("friendsSync account ownership", () => {
       }),
       { onConflict: "user_id" }
     );
+  });
+
+  it.each(["pending", "invalid", "unavailable"] as const)(
+    "does not update or upload a streak while the imported-backup claim is %s",
+    async (status) => {
+      mocks.readPendingLocalBackupAccountClaim.mockReturnValue({ status });
+
+      await updateMyStreak(12, "user-a");
+
+      expect(mocks.safeLocalStorageSet).not.toHaveBeenCalled();
+      expect(mocks.from).not.toHaveBeenCalled();
+      expect(mocks.upsert).not.toHaveBeenCalled();
+    }
+  );
+
+  it("does not upload a profile if a backup claim starts after the local owner check", async () => {
+    mocks.readPendingLocalBackupAccountClaim
+      .mockReturnValueOnce({ status: "none" })
+      .mockReturnValueOnce({ status: "none" })
+      .mockReturnValue({ status: "pending" });
+
+    await updateMyStreak(12, "user-a");
+
+    expect(mocks.safeLocalStorageSet).toHaveBeenCalled();
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.upsert).not.toHaveBeenCalled();
   });
 
   it("does not append account A friend data after a delayed lookup resolves under account B", async () => {

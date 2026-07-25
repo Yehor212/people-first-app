@@ -46,7 +46,11 @@ import { logger } from '@/lib/logger';
 
 import {
   buildSafeHardReloadUrl,
+  APP_RELOAD_PREPARE_EVENT,
+  prepareAppForReload,
   reloadAppForUpdate,
+  reloadAppSafely,
+  forceHardReload,
   checkAppVersionStatus,
   checkAppVersion,
   shouldCheckVersion,
@@ -153,17 +157,54 @@ describe('markVersionChecked', () => {
 // ─── user-triggered update reload ───────────────────────────────
 
 describe('reloadAppForUpdate', () => {
-  it('returns false when the user-triggered update reload loop guard blocks navigation', () => {
+  it('awaits durable state writers before an update reload may continue', async () => {
+    let releaseWrite: (() => void) | undefined;
+    const durableWrite = new Promise<void>((resolve) => {
+      releaseWrite = resolve;
+    });
+    const listener = (event: Event) => {
+      const detail = (event as CustomEvent<{ waitUntil: (promise: Promise<unknown>) => void }>).detail;
+      detail.waitUntil(durableWrite);
+    };
+    window.addEventListener(APP_RELOAD_PREPARE_EVENT, listener);
+
+    const preparation = prepareAppForReload();
+    let completed = false;
+    void preparation.then(() => {
+      completed = true;
+    });
+    await Promise.resolve();
+    expect(completed).toBe(false);
+
+    releaseWrite?.();
+    await preparation;
+    expect(completed).toBe(true);
+    window.removeEventListener(APP_RELOAD_PREPARE_EVENT, listener);
+  });
+
+  it('returns false when the user-triggered update reload loop guard blocks navigation', async () => {
     mockSessionStorage['zenflow_hard_reload_ts'] = Date.now().toString();
 
-    expect(reloadAppForUpdate()).toBe(false);
+    await expect(reloadAppForUpdate()).resolves.toBe(false);
+  });
+
+  it('does not consume the reload loop guard when durable preparation fails', async () => {
+    const listener = (event: Event) => {
+      const detail = (event as CustomEvent<{ waitUntil: (promise: Promise<unknown>) => void }>).detail;
+      detail.waitUntil(Promise.reject(new Error('draft write failed')));
+    };
+    window.addEventListener(APP_RELOAD_PREPARE_EVENT, listener);
+
+    await expect(reloadAppForUpdate()).rejects.toThrow('draft write failed');
+    window.removeEventListener(APP_RELOAD_PREPARE_EVENT, listener);
+    expect(mockSessionStorage['zenflow_hard_reload_ts']).toBeUndefined();
   });
 
   it('keeps user-triggered update reload scoped to cache-busted navigation without clearing all caches', () => {
     const source = readFileSync('src/lib/versionCheck.ts', 'utf8');
-    const start = source.indexOf('export function reloadAppForUpdate');
+    const start = source.indexOf('export async function reloadAppForUpdate');
     expect(start).toBeGreaterThanOrEqual(0);
-    const end = source.indexOf('/**\n * Perform a hard reload', start);
+    const end = source.indexOf('export async function forceHardReload', start);
     expect(end).toBeGreaterThan(start);
     const block = source.slice(start, end);
 
@@ -174,9 +215,64 @@ describe('reloadAppForUpdate', () => {
   });
 });
 
+describe('reloadAppSafely', () => {
+  it('refuses a normal reload when a durable writer cannot finish', async () => {
+    const listener = (event: Event) => {
+      const detail = (event as CustomEvent<{ waitUntil: (promise: Promise<unknown>) => void }>).detail;
+      detail.waitUntil(Promise.reject(new Error('pending journal write')));
+    };
+    window.addEventListener(APP_RELOAD_PREPARE_EVENT, listener);
+
+    await expect(reloadAppSafely()).rejects.toThrow('pending journal write');
+    window.removeEventListener(APP_RELOAD_PREPARE_EVENT, listener);
+  });
+
+  it('routes user-visible recovery reloads through the durable barrier', () => {
+    for (const path of [
+      'src/components/ErrorBoundary.tsx',
+      'src/components/AuthGate.tsx',
+      'src/hooks/useSessionTimeout.ts',
+    ]) {
+      const source = readFileSync(path, 'utf8');
+      expect(source, path).not.toContain('window.location.reload()');
+    }
+  });
+});
+
 // ─── checkAppVersion ────────────────────────────────────────────
 
 describe('forceHardReload', () => {
+  it('returns false without navigating when the reload-loop guard is active', async () => {
+    mockSessionStorage['zenflow_hard_reload_ts'] = Date.now().toString();
+
+    await expect(forceHardReload()).resolves.toBe(false);
+    expect(sessionStorageMock.setItem).not.toHaveBeenCalledWith(
+      'zenflow_hard_reload_ts',
+      expect.any(String),
+    );
+  });
+
+  it('does not delete origin-wide caches or unregister the active service worker', () => {
+    const source = readFileSync('src/lib/versionCheck.ts', 'utf8');
+    const block = source.slice(source.indexOf('export async function forceHardReload'));
+
+    expect(block).not.toContain('caches.keys()');
+    expect(block).not.toContain('getRegistrations()');
+    expect(block).not.toContain('.unregister()');
+  });
+
+  it('does not consume the hard-reload guard when durable preparation fails', async () => {
+    const listener = (event: Event) => {
+      const detail = (event as CustomEvent<{ waitUntil: (promise: Promise<unknown>) => void }>).detail;
+      detail.waitUntil(Promise.reject(new Error('audio write failed')));
+    };
+    window.addEventListener(APP_RELOAD_PREPARE_EVENT, listener);
+
+    await expect(forceHardReload()).rejects.toThrow('audio write failed');
+    window.removeEventListener(APP_RELOAD_PREPARE_EVENT, listener);
+    expect(mockSessionStorage['zenflow_hard_reload_ts']).toBeUndefined();
+  });
+
   it('preserves only safe app navigation params while adding a cache-bust parameter', () => {
     const url = new URL('https://app.example/people-first-app/orb?nav=v2&navLayout=phone&planningDate=2026-07-01&view=week&code=oauth-code&state=oauth-state&access_token=secret#access_token=fragment-secret') as unknown as Location;
 

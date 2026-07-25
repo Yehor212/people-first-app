@@ -3,6 +3,35 @@ import { en } from "./languages/en";
 
 export type { Language, Translations };
 
+export const supportedLanguages: readonly Language[] = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
+const rtlLanguages = new Set<Language>(["ar", "he"]);
+
+export function normalizeLanguage(value: unknown): Language {
+  if (typeof value !== "string") return "en";
+  const language = value.split("-")[0]?.toLowerCase() as Language;
+  return supportedLanguages.includes(language) ? language : "en";
+}
+
+export function isRtlLanguage(language: Language): boolean {
+  return rtlLanguages.has(language);
+}
+
+export function resolveInitialLanguage(
+  storedLanguage: unknown,
+  browserLanguage: unknown,
+  hasSelectedLanguage: unknown,
+): Language {
+  return hasSelectedLanguage === true
+    ? normalizeLanguage(storedLanguage)
+    : normalizeLanguage(browserLanguage);
+}
+
+export function applyDocumentLanguage(language: Language): void {
+  if (typeof document === "undefined") return;
+  document.documentElement.lang = language;
+  document.documentElement.dir = isRtlLanguage(language) ? "rtl" : "ltr";
+}
+
 // Mutable cache — starts with English (always available), populated on demand
 export const translations: Record<string, Translations> = { en };
 
@@ -17,19 +46,16 @@ const languageLoaders: Record<string, () => Promise<Record<string, Translations>
   he: () => import("./languages/he"),
 };
 
-/** Load a language dynamically and cache it. Returns English as fallback. */
+/** Load and cache a language. Fail explicitly so callers cannot pair the target locale with English text. */
 export async function loadLanguage(code: Language): Promise<Translations> {
   if (translations[code]) return translations[code];
   const loader = languageLoaders[code];
-  if (!loader) return en;
-  try {
-    const module = await loader();
-    const loaded = module[code] || Object.values(module)[0];
-    translations[code] = loaded;
-    return loaded;
-  } catch {
-    return en;
-  }
+  if (!loader) throw new Error(`Unsupported language: ${code}`);
+  const module = await loader();
+  const loaded = module[code] || Object.values(module)[0];
+  if (!loaded) throw new Error(`Language dictionary is empty: ${code}`);
+  translations[code] = loaded;
+  return loaded;
 }
 
 /** Synchronous access — returns cached translation or English fallback. */

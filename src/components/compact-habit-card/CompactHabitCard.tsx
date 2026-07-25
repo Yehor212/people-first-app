@@ -199,7 +199,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
           aria-label={t.delete}
         >
           {showDeleteConfirm ? (
-            <span className="text-xs font-bold">
+            <span className="whitespace-normal break-words text-center text-xs font-bold leading-tight">
               {(t as unknown as Record<string, string>).confirmDelete || "Delete?"}
             </span>
           ) : (
@@ -228,7 +228,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
       {/* Main card */}
       <div
         className={cn(
-          "relative flex items-center justify-between p-4",
+          "relative flex flex-col items-stretch gap-3 p-4 sm:flex-row sm:items-center sm:justify-between",
           "bg-card/80 backdrop-blur-sm rounded-2xl",
           "border border-border/50 motion-safe:transition-all motion-safe:duration-300",
           isSwiped &&
@@ -282,10 +282,10 @@ export const CompactHabitCard = memo(function CompactHabitCard({
           </motion.button>
 
           {/* Name + Streak - Premium styling */}
-          <div className="flex flex-col min-w-0">
+          <div className="min-w-0 flex-1">
             <p
               className={cn(
-                "font-semibold text-base truncate motion-safe:transition-colors motion-safe:duration-300",
+                "whitespace-normal break-words text-base font-semibold motion-safe:transition-colors motion-safe:duration-300 [overflow-wrap:anywhere]",
                 completed ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
               )}
               title={habit.name}
@@ -293,7 +293,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
               {habit.name}
             </p>
             {!isDueToday && (
-              <span className="text-[10px] text-muted-foreground/60 italic">
+              <span className="block whitespace-normal break-words text-xs italic text-muted-foreground/60">
                 {(t as unknown as Record<string, string>).habitRestDay || "Rest day"}
               </span>
             )}
@@ -301,9 +301,9 @@ export const CompactHabitCard = memo(function CompactHabitCard({
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-2 mt-0.5"
+                className="mt-0.5 flex flex-wrap items-center gap-2"
               >
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                   <AnimatedFire intensity={fireIntensity} size="sm" />
                   <span
                     className={cn(

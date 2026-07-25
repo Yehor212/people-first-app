@@ -30,7 +30,7 @@ export function EntryThemeSwitcher() {
     <div
       role="radiogroup"
       aria-label={tx.themeLabel || tx.appearance || "Theme"}
-      className="entry-action-tile mx-auto grid w-full max-w-[32rem] grid-cols-3 gap-1 rounded-full border border-border/45 bg-card/45 p-1 shadow-sm"
+      className="entry-action-tile mx-auto grid w-full max-w-[32rem] grid-cols-[repeat(auto-fit,minmax(min(100%,calc(5rem*var(--font-scale,1))),1fr))] gap-1 rounded-2xl border border-border/45 bg-card/45 p-1 shadow-sm"
       data-testid="entry-theme-switcher"
     >
       {options.map(({ preference, labelKey, fallback, Icon }) => {
@@ -46,14 +46,14 @@ export function EntryThemeSwitcher() {
             aria-label={label}
             onClick={() => setTheme(preference)}
             className={cn(
-              "flex min-h-[44px] min-w-0 items-center justify-center gap-1 rounded-full px-1.5 text-xs font-semibold leading-none outline-none transition-all sm:gap-1.5 sm:px-2 sm:text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              "flex h-auto min-h-[44px] min-w-0 items-center justify-center gap-1 whitespace-normal break-words rounded-xl px-1.5 py-2 text-xs font-semibold leading-tight outline-none [hyphens:manual] [overflow-wrap:break-word] transition-all sm:gap-1.5 sm:px-2 sm:text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               selected
                 ? "bg-primary/20 text-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-card/75 hover:text-foreground"
             )}
           >
             <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="min-w-0 truncate">{label}</span>
+            <span className="min-w-0 break-words text-center [hyphens:manual] [overflow-wrap:break-word]">{label}</span>
           </button>
         );
       })}

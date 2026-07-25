@@ -41,21 +41,21 @@ export const HabitTargetCard = memo(function HabitTargetCard({ habit, snapshot, 
       <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
         {ts.targetProgress || "Target Progress"}
       </h4>
-      <div className="flex items-center justify-around py-2">
+      <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-3 py-2">
         {stats.map((stat) => (
-          <div key={stat.key} className="flex flex-col items-center gap-1.5">
+          <div key={stat.key} className="flex min-w-0 items-center gap-3 rounded-xl border border-border/40 p-2 min-[480px]:flex-col min-[480px]:border-0 min-[480px]:p-0">
             <ProgressRing
               progress={stat.percentToDate}
               size="sm"
               showPercentage
               color={stat.percentToDate >= 100 ? "success" : stat.percentToDate >= 50 ? "warning" : "primary"}
             />
-            <div className="text-center">
-              <div className="text-[10px] text-muted-foreground">{intervalLabels[stat.key]}</div>
-              <div className="text-[10px] font-medium text-muted-foreground tabular-nums">
+            <div className="min-w-0 text-start min-[480px]:text-center">
+              <div className="whitespace-normal break-words text-xs text-muted-foreground">{intervalLabels[stat.key]}</div>
+              <div className="whitespace-normal [overflow-wrap:anywhere] text-xs font-medium tabular-nums text-muted-foreground">
                 {formatHabitValue(stat.actual, language)}/{formatHabitValue(stat.expectedToDate, language)}
               </div>
-              <div className="text-[9px] text-muted-foreground/60 tabular-nums">
+              <div className="whitespace-normal [overflow-wrap:anywhere] text-xs tabular-nums text-muted-foreground/60">
                 {ts.habitStatsFullPlan || "Plan"} {formatHabitValue(stat.expectedFull, language)}
               </div>
             </div>

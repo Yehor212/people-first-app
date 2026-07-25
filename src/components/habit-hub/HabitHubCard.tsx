@@ -11,7 +11,7 @@
 
 import { memo, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp } from "lucide-react";
+import { Target, TrendingUp } from "lucide-react";
 import { cn, getToday } from "@/lib/utils";
 import { zenMotion } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
@@ -140,7 +140,7 @@ export const HabitHubCard = memo(function HabitHubCard({
       transition={zenMotion.snappy}
     >
       {/* ═══ ROW 1: HEADER ═══ */}
-      <div className="flex items-center gap-3 px-4 pt-3 pb-1">
+      <div className="grid grid-cols-[16px_32px_minmax(0,1fr)] items-start gap-3 px-4 pt-3 pb-1 min-[420px]:grid-cols-[16px_32px_minmax(0,1fr)_auto] min-[420px]:items-center">
         {/* Score ring */}
         <ScoreRing score={score} color={habitColor} size={16} />
 
@@ -155,7 +155,7 @@ export const HabitHubCard = memo(function HabitHubCard({
         {/* Name (colored by habit) */}
         <span
           className={cn(
-            "flex-1 text-sm font-medium truncate min-w-0",
+            "col-start-3 row-start-1 min-w-0 whitespace-normal break-words text-sm font-medium [overflow-wrap:anywhere]",
             isCompleted && "line-through decoration-white/20 opacity-60"
           )}
           style={{ color: isCompleted ? undefined : habitColor }}
@@ -171,7 +171,7 @@ export const HabitHubCard = memo(function HabitHubCard({
             animate={{ scale: 1, opacity: 1 }}
             transition={zenMotion.bouncy}
             className={cn(
-              "px-2 py-0.5 rounded-lg border text-xs font-semibold tabular-nums flex-shrink-0 flex items-center gap-0.5",
+              "col-start-3 row-start-2 flex items-center gap-0.5 justify-self-start rounded-lg border px-2 py-0.5 text-xs font-semibold tabular-nums min-[420px]:col-start-4 min-[420px]:row-start-1",
               getScoreBg(score),
               getScoreColor(score)
             )}
@@ -186,7 +186,7 @@ export const HabitHubCard = memo(function HabitHubCard({
             animate={{ scale: 1, opacity: 1 }}
             transition={zenMotion.bouncy}
             className={cn(
-              "px-2 py-0.5 rounded-lg border text-xs font-semibold tabular-nums flex-shrink-0",
+              "col-start-3 row-start-2 justify-self-start rounded-lg border px-2 py-0.5 text-xs font-semibold tabular-nums min-[420px]:col-start-4 min-[420px]:row-start-1",
               weeklyProgress.done >= weeklyProgress.target
                 ? "bg-emerald-500/15 border-emerald-500/20 text-emerald-400"
                 : "bg-foreground/[0.04] border-foreground/[0.06] text-muted-foreground"
@@ -211,7 +211,7 @@ export const HabitHubCard = memo(function HabitHubCard({
       <div className="px-4 pb-3">
         {isNumeric ? (
           /* Numerical: progress bar + value label */
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center">
             <div className="flex-1 h-1 rounded-full bg-foreground/[0.06] overflow-hidden">
               <div
                 className="h-full rounded-full motion-safe:transition-all motion-safe:duration-300 motion-reduce:duration-0"
@@ -221,14 +221,14 @@ export const HabitHubCard = memo(function HabitHubCard({
                 }}
               />
             </div>
-            <span className="text-[10px] font-medium tabular-nums text-muted-foreground flex-shrink-0">
+            <span className="whitespace-normal break-words text-xs font-medium tabular-nums text-muted-foreground [overflow-wrap:anywhere] min-[420px]:shrink-0">
               {formatHabitValue(currentValue, language)}/{formatHabitValue(target, language)}
               {habit.unit ? ` ${habit.unit}` : ""}
             </span>
           </div>
         ) : (
           /* Boolean: streak badge + frequency label */
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
             {streak > 0 ? (
               <div className="flex items-center gap-1">
                 <AnimatedFire intensity={Math.min(1 + streak / 7, 3)} size="sm" />
@@ -240,11 +240,11 @@ export const HabitHubCard = memo(function HabitHubCard({
             ) : (
               <div />
             )}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {weeklyProgress && habit.frequency.numerator !== habit.frequency.denominator && (
                 <span
                   className={cn(
-                    "text-[10px] tabular-nums",
+                    "text-xs tabular-nums",
                     weeklyProgress.done >= weeklyProgress.target
                       ? "text-emerald-400"
                       : "text-muted-foreground"
@@ -253,7 +253,10 @@ export const HabitHubCard = memo(function HabitHubCard({
                   {weeklyProgress.done}/{weeklyProgress.target}
                 </span>
               )}
-              <span className="text-[10px] text-muted-foreground tabular-nums">🎯 {freqLabel}</span>
+              <span className="inline-flex min-w-0 items-start gap-1 whitespace-normal break-words text-xs text-muted-foreground tabular-nums">
+                <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span className="min-w-0">{freqLabel}</span>
+              </span>
             </div>
           </div>
         )}

@@ -12,7 +12,7 @@ import "./MoodFirstRunHint.css";
  * Shows three beats:
  *   1. Move the mood slider
  *   2. Choose a scope
- *   3. Confirm
+ *   3. Optionally add details, then start the journal entry
  *
  * Appears only on first visit with zero prior mood entries. Dismissed forever
  * via a localStorage flag (`zenflow-orb-first-run-dismissed`). Survives
@@ -97,13 +97,15 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
           <li className="mood-first-run-step">
             <span className="mood-first-run-step-index">2</span>
             <span className="mood-first-run-step-text">
-              {tx.orbFirstRunStep2 || "Choose a scope (moment, day, or time)"}
+              {tx.orbFirstRunStep2 ||
+                "Choose when you felt this way: now, at a specific time, or all day"}
             </span>
           </li>
           <li className="mood-first-run-step">
             <span className="mood-first-run-step-index">3</span>
             <span className="mood-first-run-step-text">
-              {tx.orbFirstRunStep3 || "Pick an emotion and confirm"}
+              {tx.orbFirstRunStep3 ||
+                "Add an emotion or note if you want, then save your mood and start today's entry"}
             </span>
           </li>
         </ol>

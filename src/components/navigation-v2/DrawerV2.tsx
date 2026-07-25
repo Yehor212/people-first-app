@@ -133,6 +133,10 @@ export const DrawerV2 = memo(function DrawerV2({
   const isSettingsNavigating = navigatingPage === "settings";
   const isSettingsSelected = isSettingsActive || isSettingsNavigating;
   const SettingsIcon = V2_NAV_ICONS.settings;
+  // React 18's HTML attribute types predate the now-baseline inert attribute.
+  // Spreading the native attribute preserves the real browser behavior without
+  // teaching every JSX element a project-wide type extension.
+  const closedInteractionProps = !open ? ({ inert: "" } as const) : {};
 
   const content = (
     <>
@@ -150,10 +154,12 @@ export const DrawerV2 = memo(function DrawerV2({
 
       {/* Drawer body */}
       <aside
+        {...closedInteractionProps}
         id="nav-v2-drawer"
         ref={drawerRef}
         role="dialog"
-        aria-modal="true"
+        aria-modal={open ? "true" : undefined}
+        aria-hidden={!open ? "true" : undefined}
         aria-label={tx.navV2Menu || "Menu"}
         data-theme-region="drawer-v2"
         data-testid="drawer-v2"
@@ -182,19 +188,20 @@ export const DrawerV2 = memo(function DrawerV2({
               chrome="badge"
               containerClassName="shadow-[0_0_22px_hsl(var(--primary)/0.14)]"
             />
-            <span className="truncate font-display text-xl font-semibold">
+            <span className="min-w-0 whitespace-normal break-words font-display text-xl font-semibold leading-snug [hyphens:manual] [overflow-wrap:break-word]">
               {tx.navV2Menu || "Menu"}
             </span>
           </div>
           <button
             type="button"
             ref={firstFocusRef}
+            tabIndex={open ? undefined : -1}
             onClick={() => {
               void haptics.tabChanged();
               onClose();
             }}
             aria-label={tx.navV2CloseMenu || "Close menu"}
-            className="flex h-11 w-11 items-center justify-center rounded-[8px] border border-[hsl(var(--nav-v2-drawer-border)/0.36)] bg-[hsl(var(--nav-v2-item-surface)/0.66)] text-[hsl(var(--nav-v2-drawer-muted))] shadow-[0_8px_18px_-16px_hsl(var(--nav-v2-shadow)/0.42)] motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="flex h-12 w-12 items-center justify-center rounded-[8px] border border-[hsl(var(--nav-v2-drawer-border)/0.36)] bg-[hsl(var(--nav-v2-item-surface)/0.66)] text-[hsl(var(--nav-v2-drawer-muted))] shadow-[0_8px_18px_-16px_hsl(var(--nav-v2-shadow)/0.42)] motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -277,7 +284,9 @@ export const DrawerV2 = memo(function DrawerV2({
                   >
                     <item.icon className="h-5 w-5" aria-hidden="true" />
                   </span>
-                  <span className="relative flex-1 truncate">{item.label}</span>
+                  <span className="relative min-w-0 flex-1 whitespace-normal break-words leading-snug [hyphens:manual] [overflow-wrap:break-word]">
+                    {item.label}
+                  </span>
                   {isNavigating ? (
                     <LoaderCircle
                       className="relative h-4 w-4 shrink-0 motion-safe:animate-spin opacity-75"
@@ -353,7 +362,9 @@ export const DrawerV2 = memo(function DrawerV2({
             >
               <SettingsIcon className="h-5 w-5" aria-hidden="true" />
             </span>
-            <span className="flex-1 truncate">{settingsLabel}</span>
+            <span className="min-w-0 flex-1 whitespace-normal break-words leading-snug [hyphens:manual] [overflow-wrap:break-word]">
+              {settingsLabel}
+            </span>
             {isSettingsNavigating ? (
               <LoaderCircle
                 className="h-4 w-4 shrink-0 motion-safe:animate-spin opacity-75"

@@ -1,21 +1,71 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({
-  currentOwnerUserId: "account-a",
-  dataImported: vi.fn(),
-  getCurrentSessionUserId: vi.fn(),
-  importBackup: vi.fn(),
-  loggerError: vi.fn(),
-  loggerWarn: vi.fn(),
-  runWithDataWriteBarrier: vi.fn<
-    (mutation: () => Promise<unknown>) => Promise<unknown>
-  >(),
-  triggerDataRefresh: vi.fn(),
-}));
+const mocks = vi.hoisted(() => {
+  const ownerId = (value: string | null): string | null => value;
+
+  class BoundaryError extends Error {
+    constructor(operation = "Backup import", cause?: unknown) {
+      super(`${operation} stopped at an account boundary`);
+      this.name = "SettingsOwnerBoundaryError";
+      if (cause !== undefined) {
+        (this as Error & { cause?: unknown }).cause = cause;
+      }
+    }
+  }
+
+  return {
+    BoundaryError,
+    assertSettingsDataOwnerCurrentWithinTransaction: vi.fn(),
+    assertSettingsExternalOwnerCurrentWithinDataWriteBarrier: vi.fn(),
+    assertSettingsOwnerCurrent: vi.fn(),
+    assertSettingsOwnerCurrentWithinDataWriteBarrier: vi.fn(),
+    currentDataOwnerUserId: ownerId("account-a"),
+    currentOwnerUserId: ownerId("account-a"),
+    dataImported: vi.fn(),
+    getCurrentSessionUserId: vi.fn(),
+    importBackup: vi.fn(),
+    loggerError: vi.fn(),
+    loggerWarn: vi.fn(),
+    clearPendingLocalBackupAccountClaim: vi.fn(() => true),
+    markImportedBackupLocalOnlyAccess: vi.fn(() => true),
+    markPendingLocalBackupAccountClaim: vi.fn(() => true),
+    readPendingLocalBackupAccountClaim: vi.fn<
+      () =>
+        | { status: "none" }
+        | { status: "pending"; generation: string }
+        | { status: "invalid" }
+        | { status: "unavailable" }
+    >(() => ({ status: "none" })),
+    readVerifiedSettingsOwnerRealm: vi.fn(),
+    runWithDataWriteBarrier: vi.fn<(mutation: () => Promise<unknown>) => Promise<unknown>>(),
+    subscribeAccountSessionTransition: vi.fn(() => vi.fn()),
+    triggerDataRefresh: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/supabaseClient", () => ({
   getCurrentSessionUserId: mocks.getCurrentSessionUserId,
+}));
+
+vi.mock("@/lib/settingsOwnerBoundary", () => ({
+  SettingsOwnerBoundaryError: mocks.BoundaryError,
+  assertSettingsDataOwnerCurrentWithinTransaction:
+    mocks.assertSettingsDataOwnerCurrentWithinTransaction,
+  assertSettingsExternalOwnerCurrentWithinDataWriteBarrier:
+    mocks.assertSettingsExternalOwnerCurrentWithinDataWriteBarrier,
+  assertSettingsOwnerCurrent: mocks.assertSettingsOwnerCurrent,
+  assertSettingsOwnerCurrentWithinDataWriteBarrier:
+    mocks.assertSettingsOwnerCurrentWithinDataWriteBarrier,
+  readVerifiedSettingsOwnerRealm: mocks.readVerifiedSettingsOwnerRealm,
+}));
+
+vi.mock("@/storage/accountBoundaryRuntime", () => ({
+  clearPendingLocalBackupAccountClaim: mocks.clearPendingLocalBackupAccountClaim,
+  markImportedBackupLocalOnlyAccess: mocks.markImportedBackupLocalOnlyAccess,
+  markPendingLocalBackupAccountClaim: mocks.markPendingLocalBackupAccountClaim,
+  readPendingLocalBackupAccountClaim: mocks.readPendingLocalBackupAccountClaim,
+  subscribeAccountSessionTransition: mocks.subscribeAccountSessionTransition,
 }));
 
 vi.mock("@/storage/backup", () => ({
@@ -43,6 +93,8 @@ const copy = {
   habits: "Habits",
   importAdded: "added",
   importError: "Import failed.",
+  importAccountUnavailable:
+    "Backup import is available only while you use ZenFlow without a connected account.",
   importJournalUnlockRequired: "Unlock your diary before replacing the data on this device.",
   importJournalReauthorizationRequired:
     "For safety, lock and unlock your diary, then return here and try Replace again.",
@@ -93,15 +145,15 @@ function makeDeferredBackupFile(text: Promise<string>): File {
   } as unknown as File;
 }
 
-function renderSubject() {
+function renderSubject(t: Record<string, string> = copy) {
   const setDataStatus = vi.fn();
-  const hook = renderHook(() => useDataImport({ setDataStatus, t: copy }));
+  const hook = renderHook(() => useDataImport({ setDataStatus, t }));
   return { hook, setDataStatus };
 }
 
 function selectBackupFile(
   hook: ReturnType<typeof renderSubject>["hook"],
-  file: File = makeBackupFile(),
+  file: File = makeBackupFile()
 ) {
   const input = { files: [file], value: "selected" };
   act(() => {
@@ -113,8 +165,35 @@ function selectBackupFile(
 describe("useDataImport completion boundary", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.currentOwnerUserId = "account-a";
+    mocks.readPendingLocalBackupAccountClaim.mockReturnValue({ status: "none" });
+    mocks.currentOwnerUserId = null;
+    mocks.currentDataOwnerUserId = null;
     mocks.getCurrentSessionUserId.mockImplementation(async () => mocks.currentOwnerUserId);
+    mocks.readVerifiedSettingsOwnerRealm.mockImplementation(async () => {
+      if (mocks.currentOwnerUserId !== mocks.currentDataOwnerUserId) {
+        throw new mocks.BoundaryError();
+      }
+      return {
+        kind: mocks.currentOwnerUserId === null ? "local" : "account",
+        ownerUserId: mocks.currentOwnerUserId,
+        generation: "settings-generation-a",
+      };
+    });
+    const assertOwnerCurrent = async (realm: { ownerUserId: string | null } | string | null) => {
+      const ownerUserId = typeof realm === "object" && realm !== null ? realm.ownerUserId : realm;
+      if (
+        ownerUserId !== mocks.currentOwnerUserId ||
+        ownerUserId !== mocks.currentDataOwnerUserId
+      ) {
+        throw new mocks.BoundaryError();
+      }
+    };
+    mocks.assertSettingsOwnerCurrent.mockImplementation(assertOwnerCurrent);
+    mocks.assertSettingsOwnerCurrentWithinDataWriteBarrier.mockImplementation(assertOwnerCurrent);
+    mocks.assertSettingsExternalOwnerCurrentWithinDataWriteBarrier.mockImplementation(
+      assertOwnerCurrent
+    );
+    mocks.assertSettingsDataOwnerCurrentWithinTransaction.mockImplementation(assertOwnerCurrent);
     mocks.triggerDataRefresh.mockResolvedValue(undefined);
     mocks.runWithDataWriteBarrier.mockImplementation(async (mutation) => {
       const result = await mutation();
@@ -123,7 +202,7 @@ describe("useDataImport completion boundary", () => {
     });
   });
 
-  it("does not import account A data when File.text finishes after switching to account B", async () => {
+  it("does not import local data when File.text finishes after an account takes ownership", async () => {
     let finishFileRead!: (text: string) => void;
     const text = new Promise<string>((resolve) => {
       finishFileRead = resolve;
@@ -139,6 +218,7 @@ describe("useDataImport completion boundary", () => {
 
     await waitFor(() => expect(file.text).toHaveBeenCalledTimes(1));
     mocks.currentOwnerUserId = "account-b";
+    mocks.currentDataOwnerUserId = "account-b";
 
     await act(async () => {
       finishFileRead('{"schemaVersion":3,"data":{}}');
@@ -151,6 +231,89 @@ describe("useDataImport completion boundary", () => {
     expect(setDataStatus).not.toHaveBeenCalledWith(copy.importError);
     expect(setDataStatus).not.toHaveBeenCalledWith(expect.stringContaining("Import complete"));
     expect(mocks.loggerError).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    "getSession returned an auth error",
+    "getSession threw",
+    "the session was null while durable data remained account-owned",
+  ])("runs no import side effect when %s", async () => {
+    const boundaryFailure = new mocks.BoundaryError();
+    mocks.readVerifiedSettingsOwnerRealm.mockRejectedValueOnce(boundaryFailure);
+    const file = makeBackupFile();
+    const { hook, setDataStatus } = renderSubject();
+    selectBackupFile(hook, file);
+
+    await act(async () => {
+      await hook.result.current.handleImportConfirm();
+    });
+
+    expect(file.text).not.toHaveBeenCalled();
+    expect(mocks.runWithDataWriteBarrier).not.toHaveBeenCalled();
+    expect(mocks.importBackup).not.toHaveBeenCalled();
+    expect(mocks.dataImported).not.toHaveBeenCalled();
+    expect(setDataStatus).not.toHaveBeenCalledWith(copy.importError);
+  });
+
+  it("passes an explicit owner option for a verified local import realm", async () => {
+    mocks.currentOwnerUserId = null;
+    mocks.currentDataOwnerUserId = null;
+    mocks.importBackup.mockResolvedValueOnce(emptyReport);
+    const { hook } = renderSubject();
+    selectBackupFile(hook);
+
+    await act(async () => {
+      await hook.result.current.handleImportConfirm();
+    });
+
+    expect(mocks.importBackup).toHaveBeenCalledTimes(1);
+    expect(mocks.importBackup.mock.calls[0]?.[2]).toHaveProperty("expectedOwnerUserId", undefined);
+    expect(mocks.importBackup.mock.calls[0]?.[2]).toEqual(
+      expect.objectContaining({
+        assertExternalOwnerRealmCurrent: expect.any(Function),
+        assertDataOwnerRealmCurrent: expect.any(Function),
+        subscribeOwnerRealmInvalidation: mocks.subscribeAccountSessionTransition,
+      })
+    );
+  });
+
+  it.each(["merge", "replace"] as const)(
+    "refuses %s in an account realm before reading or mutating backup data",
+    async (mode) => {
+      mocks.currentOwnerUserId = "account-a";
+      mocks.currentDataOwnerUserId = "account-a";
+      const file = makeBackupFile();
+      const { hook, setDataStatus } = renderSubject();
+      selectBackupFile(hook, file);
+      act(() => hook.result.current.setImportMode(mode));
+
+      await act(async () => {
+        await hook.result.current.handleImportConfirm();
+      });
+
+      expect(file.text).not.toHaveBeenCalled();
+      expect(mocks.runWithDataWriteBarrier).not.toHaveBeenCalled();
+      expect(mocks.importBackup).not.toHaveBeenCalled();
+      expect(setDataStatus).toHaveBeenLastCalledWith(copy.importAccountUnavailable);
+    }
+  );
+
+  it("uses the account-neutral English fallback when localized copy is unavailable", async () => {
+    mocks.currentOwnerUserId = "account-a";
+    mocks.currentDataOwnerUserId = "account-a";
+    const { importAccountUnavailable: _omitted, ...copyWithoutAccountMessage } = copy;
+    const file = makeBackupFile();
+    const { hook, setDataStatus } = renderSubject(copyWithoutAccountMessage);
+    selectBackupFile(hook, file);
+
+    await act(async () => {
+      await hook.result.current.handleImportConfirm();
+    });
+
+    expect(file.text).not.toHaveBeenCalled();
+    expect(setDataStatus).toHaveBeenLastCalledWith(
+      "Backup import is available only while you use ZenFlow without a connected account."
+    );
   });
 
   it("accepts a backup large enough to contain one allowed 20 MB audio recording", () => {
@@ -222,7 +385,7 @@ describe("useDataImport completion boundary", () => {
     mocks.importBackup.mockRejectedValueOnce(
       Object.assign(new Error("Unreadable protected diary backup"), {
         code: "JOURNAL_BACKUP_UNREADABLE",
-      }),
+      })
     );
     const { hook, setDataStatus } = renderSubject();
     selectBackupFile(hook);
@@ -234,6 +397,7 @@ describe("useDataImport completion boundary", () => {
     expect(setDataStatus).toHaveBeenLastCalledWith(copy.importJournalUnreadable);
     expect(setDataStatus).not.toHaveBeenCalledWith(copy.importError);
     expect(mocks.dataImported).not.toHaveBeenCalled();
+    expect(mocks.clearPendingLocalBackupAccountClaim).toHaveBeenCalledTimes(1);
   });
 
   it("waits for every data consumer to refresh before reporting import success", async () => {
@@ -252,6 +416,14 @@ describe("useDataImport completion boundary", () => {
     });
 
     await waitFor(() => expect(mocks.importBackup).toHaveBeenCalled());
+    expect(mocks.markPendingLocalBackupAccountClaim).toHaveBeenCalledTimes(1);
+    expect(mocks.markPendingLocalBackupAccountClaim.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.importBackup.mock.invocationCallOrder[0]
+    );
+    expect(mocks.markImportedBackupLocalOnlyAccess).toHaveBeenCalledTimes(1);
+    expect(mocks.markImportedBackupLocalOnlyAccess.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.importBackup.mock.invocationCallOrder[0]
+    );
     expect(mocks.triggerDataRefresh).toHaveBeenCalledTimes(1);
     expect(setDataStatus).not.toHaveBeenCalledWith(expect.stringContaining(copy.importSuccess));
     expect(mocks.dataImported).not.toHaveBeenCalled();
@@ -263,6 +435,39 @@ describe("useDataImport completion boundary", () => {
 
     expect(setDataStatus).toHaveBeenLastCalledWith(expect.stringContaining("Import complete"));
     expect(mocks.dataImported).toHaveBeenCalledWith(1);
+    expect(mocks.clearPendingLocalBackupAccountClaim).not.toHaveBeenCalled();
+  });
+
+  it("does not commit an import when durable local-only recovery access cannot be persisted", async () => {
+    mocks.markImportedBackupLocalOnlyAccess.mockReturnValueOnce(false);
+    const { hook, setDataStatus } = renderSubject();
+    selectBackupFile(hook);
+
+    await act(async () => {
+      await hook.result.current.handleImportConfirm();
+    });
+
+    expect(mocks.importBackup).not.toHaveBeenCalled();
+    expect(mocks.clearPendingLocalBackupAccountClaim).toHaveBeenCalledTimes(1);
+    expect(setDataStatus).toHaveBeenLastCalledWith(copy.importError);
+  });
+
+  it("preserves an existing imported-backup fence when a re-import fails", async () => {
+    mocks.readPendingLocalBackupAccountClaim.mockReturnValue({
+      status: "pending",
+      generation: "existing-import-generation",
+    });
+    mocks.importBackup.mockRejectedValueOnce(new Error("invalid backup contents"));
+    const { hook } = renderSubject();
+    selectBackupFile(hook);
+
+    await act(async () => {
+      await hook.result.current.handleImportConfirm();
+    });
+
+    expect(mocks.markPendingLocalBackupAccountClaim).not.toHaveBeenCalled();
+    expect(mocks.markImportedBackupLocalOnlyAccess).toHaveBeenCalledTimes(1);
+    expect(mocks.clearPendingLocalBackupAccountClaim).not.toHaveBeenCalled();
   });
 
   it("reports accepted diary entries, photos, and recordings instead of hiding them", async () => {
@@ -280,7 +485,7 @@ describe("useDataImport completion boundary", () => {
     });
 
     expect(setDataStatus).toHaveBeenLastCalledWith(
-      "Import complete — added: 7, updated: 2, skipped: 1. Diary — entries: 3, photos: 3, recordings: 2.",
+      "Import complete — added: 7, updated: 2, skipped: 1. Diary — entries: 3, photos: 3, recordings: 2."
     );
     expect(mocks.dataImported).toHaveBeenCalledWith(7);
   });
@@ -302,7 +507,7 @@ describe("useDataImport completion boundary", () => {
     });
 
     expect(setDataStatus).toHaveBeenLastCalledWith(
-      expect.stringContaining("added: 6, updated: 0, skipped: 0"),
+      expect.stringContaining("added: 6, updated: 0, skipped: 0")
     );
     expect(mocks.dataImported).toHaveBeenCalledWith(6);
   });

@@ -19,20 +19,28 @@ import {
   ActionButton,
   PanelFrame,
   SettingsButtonGrid,
-  SettingsChoiceButton,
-  SettingsDialog,
   SettingsFieldHeader,
   SettingsInlineButton,
   SettingsInset,
   SettingsStatus,
   SettingsTextInput,
 } from "./components/V2SettingsControlPrimitives";
+import { V2SettingsImportDialog } from "./V2SettingsImportDialog";
+import type { AccountViewState } from "./useSettingsOverviewModules";
 import type { V2SettingsControls } from "./types";
 
-export function DataPanel({ controls }: { controls: V2SettingsControls }) {
+export function DataPanel({
+  controls,
+  accountViewState,
+}: {
+  controls: V2SettingsControls;
+  accountViewState: AccountViewState;
+}) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
-  const hasValidSession = useAppStore((state) => state.hasValidSession);
+  const isAccountBoundaryInProgress = useAppStore(
+    (state) => state.isAccountBoundaryInProgress
+  );
   const [dataStatus, setDataStatus] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetConfirmInput, setResetConfirmInput] = useState("");
@@ -40,6 +48,7 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
   const resetTriggerRef = useRef<HTMLButtonElement>(null);
   const importTriggerRef = useRef<HTMLButtonElement>(null);
   const importStatusFocusRef = useRef<HTMLElement>(null);
+  const importWasAvailableRef = useRef(false);
   const resetConfirmationRef = useRef<HTMLDivElement>(null);
   const shouldRestoreResetFocusRef = useRef(false);
   const exp = useDataExport({
@@ -54,12 +63,24 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
   const imp = useDataImport({ setDataStatus, t: tx });
   const { handleImportCancel, showImportConfirm } = imp;
   const resetConfirmWord = (tx.resetDataConfirmWord || "RESET").trim();
-  const resetTypeLabel = (tx.resetDataTypeConfirm || "Type RESET to confirm").replace(
-    "{word}",
-    resetConfirmWord,
-  );
+  const resetTypeTemplate = tx.resetDataTypeConfirm || "Type {word} to confirm";
+  const resetTypeMarker = resetTypeTemplate.includes("{word}") ? "{word}" : resetConfirmWord;
+  const resetTypeMarkerIndex = resetTypeTemplate.indexOf(resetTypeMarker);
+  const resetTypePrefix =
+    resetTypeMarkerIndex >= 0
+      ? resetTypeTemplate.slice(0, resetTypeMarkerIndex)
+      : `${resetTypeTemplate} `;
+  const resetTypeSuffix =
+    resetTypeMarkerIndex >= 0
+      ? resetTypeTemplate.slice(resetTypeMarkerIndex + resetTypeMarker.length)
+      : "";
   const resetConfirmMatches = resetConfirmInput.trim() === resetConfirmWord;
-  const canResetLocalData = hasValidSession === false;
+  const canResetLocalData = accountViewState === "signed-out";
+  const canImportLocalBackup =
+    accountViewState === "signed-out" && !isAccountBoundaryInProgress;
+  const backupSectionTitle = canImportLocalBackup
+    ? tx.settingsBackupRestoreTitle || "Backup & restore"
+    : tx.settingsExportTitle || "Save backup";
 
   const clearResetConfirm = useCallback((restoreFocus = true) => {
     shouldRestoreResetFocusRef.current = restoreFocus;
@@ -76,11 +97,21 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
   useBackHandler(showResetConfirm && (canResetLocalData || isResettingData), () => {
     closeResetConfirm();
   });
-  useScrollLock(showImportConfirm);
+  useScrollLock(showImportConfirm && canImportLocalBackup);
 
   useEffect(() => {
     if (!canResetLocalData && showResetConfirm && !isResettingData) clearResetConfirm(false);
   }, [canResetLocalData, clearResetConfirm, isResettingData, showResetConfirm]);
+
+  useEffect(() => {
+    const importWasAvailable = importWasAvailableRef.current;
+    importWasAvailableRef.current = canImportLocalBackup;
+    if (canImportLocalBackup || !showImportConfirm) return;
+    handleImportCancel();
+    if (importWasAvailable) {
+      importStatusFocusRef.current?.focus({ preventScroll: true });
+    }
+  }, [canImportLocalBackup, handleImportCancel, showImportConfirm]);
 
   useEffect(() => {
     if (showResetConfirm || !shouldRestoreResetFocusRef.current) return;
@@ -148,8 +179,15 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
         }
         testId="settings-v2-panel-data"
       >
+        <p
+          className="min-w-0 break-words rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.42)] bg-[hsl(var(--settings-v2-shell)/0.46)] p-3 text-xs leading-relaxed text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]"
+          data-testid="settings-v2-export-privacy-warning"
+        >
+          {tx.journalExportPrivacyWarning}
+        </p>
+
         <section
-          aria-label={tx.settingsBackupRestoreTitle || "Backup & restore"}
+          aria-label={backupSectionTitle}
           data-testid="settings-v2-backup-restore-group"
           ref={importStatusFocusRef}
           tabIndex={-1}
@@ -157,7 +195,7 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
           <SettingsInset>
             <SettingsFieldHeader
               icon={FileJson}
-              title={tx.settingsBackupRestoreTitle || "Backup & restore"}
+              title={backupSectionTitle}
             />
             <ActionButton
               icon={exp.isExporting ? Loader2 : FileJson}
@@ -174,31 +212,33 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
                 : tx.settingsExportTitle || "Save backup"}
             </ActionButton>
 
-            <div
-              className="space-y-2.5 border-t border-[hsl(var(--settings-v2-border)/0.24)] pt-3"
-              data-testid="settings-v2-import-options"
-            >
-              <input
-                ref={imp.fileInputRef}
-                type="file"
-                accept="application/json"
-                className="hidden"
-                onChange={imp.handleImportFile}
-              />
-              <ActionButton
-                buttonRef={importTriggerRef}
-                icon={imp.isImporting ? Loader2 : Upload}
-                onClick={imp.handleImportClick}
-                disabled={imp.isImporting}
-                isLoading={imp.isImporting}
-                variant={imp.importMode === "replace" ? "danger" : "secondary"}
-                testId="settings-v2-import"
+            {canImportLocalBackup ? (
+              <div
+                className="space-y-2.5 border-t border-[hsl(var(--settings-v2-border)/0.24)] pt-3"
+                data-testid="settings-v2-import-options"
               >
-                {imp.isImporting
-                  ? tx.importing || "Importing..."
-                  : tx.settingsImportTitle || "Import backup"}
-              </ActionButton>
-            </div>
+                <input
+                  ref={imp.fileInputRef}
+                  type="file"
+                  accept="application/json"
+                  className="hidden"
+                  onChange={imp.handleImportFile}
+                />
+                <ActionButton
+                  buttonRef={importTriggerRef}
+                  icon={imp.isImporting ? Loader2 : Upload}
+                  onClick={imp.handleImportClick}
+                  disabled={imp.isImporting}
+                  isLoading={imp.isImporting}
+                  variant={imp.importMode === "replace" ? "danger" : "secondary"}
+                  testId="settings-v2-import"
+                >
+                  {imp.isImporting
+                    ? tx.importing || "Importing..."
+                    : tx.settingsImportTitle || "Import backup"}
+                </ActionButton>
+              </div>
+            ) : null}
           </SettingsInset>
         </section>
 
@@ -240,9 +280,7 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
           </SettingsInset>
         </section>
 
-        <div role="status" aria-live="polite">
-          <SettingsStatus>{dataStatus}</SettingsStatus>
-        </div>
+        <SettingsStatus>{dataStatus}</SettingsStatus>
 
         {(canResetLocalData || (showResetConfirm && isResettingData)) &&
           (!showResetConfirm ? (
@@ -280,11 +318,13 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
                   "This removes local moods, habits, focus, gratitude, journal data, queues, and settings."
                 }
               />
-              <SettingsFieldHeader
-                htmlFor="settings-v2-reset-confirm"
-                tone="danger"
-                title={resetTypeLabel}
-              />
+              <label htmlFor="settings-v2-reset-confirm" className="mb-2.5 block">
+                <span className="min-w-0 break-words text-sm font-semibold text-destructive [hyphens:manual] [overflow-wrap:break-word]">
+                  {resetTypePrefix}
+                  <bdi dir="ltr">{resetConfirmWord}</bdi>
+                  {resetTypeSuffix}
+                </span>
+              </label>
               <SettingsTextInput
                 id="settings-v2-reset-confirm"
                 value={resetConfirmInput}
@@ -320,55 +360,14 @@ export function DataPanel({ controls }: { controls: V2SettingsControls }) {
           ))}
       </PanelFrame>
 
-      {imp.showImportConfirm && imp.pendingImportFile && (
-        <SettingsDialog
-          titleId="settings-v2-import-title"
-          title={tx.importConfirmTitle || "Import backup"}
-          description={
-            imp.importMode === "replace"
-              ? tx.settingsImportReplaceTooltip ||
-                "This replaces current moods, habits, focus sessions, gratitude, and settings included in backups. Diary areas are replaced only when they are present in the backup. Protection settings for this device stay unchanged."
-              : tx.importConfirmMessage || "Import data from this backup?"
-          }
-          detail={imp.pendingImportFile.name}
-          cancelLabel={tx.cancel}
-          confirmLabel={
-            imp.importMode === "replace"
-              ? tx.importReplace || "Replace current data"
-              : tx.settingsImportTitle || "Import backup"
-          }
-          confirmVariant={imp.importMode === "replace" ? "danger" : "primary"}
-          onCancel={imp.handleImportCancel}
+      {canImportLocalBackup ? (
+        <V2SettingsImportDialog
+          copy={tx}
+          dataImport={imp}
           confirmFocusRef={importStatusFocusRef}
           returnFocusRef={importTriggerRef}
-          onConfirm={() => {
-            void imp.handleImportConfirm();
-          }}
-        >
-          <SettingsFieldHeader title={tx.importMode || "How to import"} />
-          <SettingsButtonGrid
-            columns="confirm"
-            role="group"
-            ariaLabel={tx.importMode || "How to import"}
-          >
-            {(["merge", "replace"] as const).map((mode) => (
-              <SettingsChoiceButton
-                key={mode}
-                onClick={() => imp.setImportMode(mode)}
-                selected={imp.importMode === mode}
-                presentation="compact"
-                selectedTone={mode === "replace" ? "danger" : "subtle"}
-                surface="card"
-                testId={`settings-v2-import-mode-${mode}`}
-              >
-                {mode === "merge"
-                  ? tx.importMerge || "Add to current data"
-                  : tx.importReplace || "Replace current data"}
-              </SettingsChoiceButton>
-            ))}
-          </SettingsButtonGrid>
-        </SettingsDialog>
-      )}
+        />
+      ) : null}
     </>
   );
 }

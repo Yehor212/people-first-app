@@ -3,10 +3,11 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { pruneDuplicateArtifactsUntilSettled } = require("./prune-duplicate-artifacts.cjs");
 const {
-  pruneDuplicateArtifactsUntilSettled,
-} = require("./prune-duplicate-artifacts.cjs");
-const { verifyReleaseArtifactIntegrity } = require("./check-release-artifact-integrity.cjs");
+  INTERNAL_BUILD_MANIFEST_PATH,
+  verifyReleaseArtifactIntegrity,
+} = require("./check-release-artifact-integrity.cjs");
 
 const ALLOWED_CLI_STAGE_PAIR = {
   source: "dist",
@@ -39,17 +40,24 @@ function assertInsideRoot(root, candidate, label, options = {}) {
 
 function assertDistinctRoots(source, target) {
   const relativeTarget = path.relative(source, target);
-  if (relativeTarget === "" || (!relativeTarget.startsWith("..") && !path.isAbsolute(relativeTarget))) {
+  if (
+    relativeTarget === "" ||
+    (!relativeTarget.startsWith("..") && !path.isAbsolute(relativeTarget))
+  ) {
     throw new Error(`Refusing to stage release artifact inside its source: ${target}`);
   }
   const relativeSource = path.relative(target, source);
-  if (relativeSource === "" || (!relativeSource.startsWith("..") && !path.isAbsolute(relativeSource))) {
+  if (
+    relativeSource === "" ||
+    (!relativeSource.startsWith("..") && !path.isAbsolute(relativeSource))
+  ) {
     throw new Error(`Refusing to stage release artifact from inside its target: ${source}`);
   }
 }
 
 function stageReleaseArtifact(source, target, options = {}) {
   const allowedRoot = path.resolve(options.allowedRoot || process.cwd());
+  const pruneOptions = { ...options, repositoryRoot: allowedRoot };
   const resolvedSource = path.resolve(source);
   const resolvedTarget = path.resolve(target);
   if (!fs.existsSync(resolvedSource)) {
@@ -59,13 +67,21 @@ function stageReleaseArtifact(source, target, options = {}) {
   assertInsideRoot(allowedRoot, resolvedTarget, "target");
   assertDistinctRoots(resolvedSource, resolvedTarget);
 
-  pruneDuplicateArtifactsUntilSettled(resolvedSource, options);
-  verifyReleaseArtifactIntegrity(resolvedSource, { allowedRoot });
+  pruneDuplicateArtifactsUntilSettled(resolvedSource, pruneOptions);
+  verifyReleaseArtifactIntegrity(resolvedSource, {
+    allowedRoot,
+    allowInternalBuildManifest: true,
+  });
 
   fs.rmSync(resolvedTarget, { force: true, recursive: true });
   fs.mkdirSync(path.dirname(resolvedTarget), { recursive: true });
-  fs.cpSync(resolvedSource, resolvedTarget, { recursive: true, dereference: false });
-  pruneDuplicateArtifactsUntilSettled(resolvedTarget, options);
+  const internalBuildManifest = path.resolve(resolvedSource, INTERNAL_BUILD_MANIFEST_PATH);
+  fs.cpSync(resolvedSource, resolvedTarget, {
+    recursive: true,
+    dereference: false,
+    filter: (candidate) => path.resolve(candidate) !== internalBuildManifest,
+  });
+  pruneDuplicateArtifactsUntilSettled(resolvedTarget, pruneOptions);
   verifyReleaseArtifactIntegrity(resolvedTarget, { allowedRoot });
 
   return {
@@ -77,13 +93,15 @@ function stageReleaseArtifact(source, target, options = {}) {
 
 function runCli(argv = process.argv.slice(2)) {
   if (argv.length > 0) {
-    throw new Error("stage-release-artifact does not accept path arguments; use the canonical dist -> staged artifact pair.");
+    throw new Error(
+      "stage-release-artifact does not accept path arguments; use the canonical dist -> staged artifact pair."
+    );
   }
   const source = path.resolve(process.cwd(), ALLOWED_CLI_STAGE_PAIR.source);
   const target = path.resolve(process.cwd(), ALLOWED_CLI_STAGE_PAIR.target);
   const result = stageReleaseArtifact(source, target);
   console.log(
-    `[stage-release] ${path.relative(process.cwd(), source)} -> ${path.relative(process.cwd(), target)}; artifact staged`,
+    `[stage-release] ${path.relative(process.cwd(), source)} -> ${path.relative(process.cwd(), target)}; artifact staged`
   );
   return result;
 }

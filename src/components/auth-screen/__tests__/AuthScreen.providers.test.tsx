@@ -270,6 +270,15 @@ describe("AuthScreen provider buttons", () => {
     expect(screen.getByTestId("auth-legal-copy")).toHaveClass("entry-gate-muted-copy");
   });
 
+  it("lets the localized welcome heading reflow without clipping glyphs", () => {
+    render(<AuthScreen onComplete={vi.fn()} />);
+
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading).toHaveClass("min-w-0", "whitespace-normal", "leading-tight", "text-2xl");
+    expect(heading.className).toContain("overflow-wrap:normal");
+    expect(heading).not.toHaveClass("break-words");
+  });
+
   it("disables provider changes and exposes explicit legacy recovery actions", () => {
     session.error = "Older changes need an owner.";
     const onConfirm = vi.fn();
@@ -285,7 +294,7 @@ describe("AuthScreen provider buttons", () => {
           onConfirm,
           onCancel,
         }}
-      />,
+      />
     );
 
     expect(screen.getByRole("button", { name: "Continue with Google" })).toBeDisabled();
@@ -293,6 +302,94 @@ describe("AuthScreen provider buttons", () => {
     fireEvent.click(screen.getByRole("button", { name: "Use a different account" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("presents an imported-backup choice neutrally, focuses it, and serializes its actions", () => {
+    session.error = "Choose where this backup belongs.";
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+
+    const { rerender } = render(
+      <AuthScreen
+        onComplete={vi.fn()}
+        suspendSessionCompletion
+        recoveryAction={{
+          confirmLabel: "Combine and save to @zen_friend",
+          cancelLabel: "Keep backup only on this device",
+          pending: false,
+          tone: "choice",
+          onConfirm,
+          onCancel,
+        }}
+      />
+    );
+
+    const choice = screen.getByTestId("auth-recovery-choice");
+    expect(choice).toHaveFocus();
+    expect(choice).toHaveAttribute("role", "status");
+    expect(choice).not.toHaveClass("bg-destructive/10");
+    for (const button of screen.getAllByRole("button", { name: /backup|combine/i })) {
+      expect(button).toHaveClass("min-h-[48px]");
+    }
+
+    rerender(
+      <AuthScreen
+        onComplete={vi.fn()}
+        suspendSessionCompletion
+        recoveryAction={{
+          confirmLabel: "Combine and save to @zen_friend",
+          cancelLabel: "Keep backup only on this device",
+          pending: true,
+          tone: "choice",
+          onConfirm,
+          onCancel,
+        }}
+      />
+    );
+
+    expect(choice).toHaveAttribute("aria-busy", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Combine and save to @zen_friend" }));
+    fireEvent.click(screen.getByRole("button", { name: "Keep backup only on this device" }));
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it("allows mandatory recovery copy and account labels to wrap at narrow widths", () => {
+    const longAccount = `${"account-segment-".repeat(18)}@example.com`;
+    session.error = `Choose where the backup for ${longAccount} belongs.`;
+
+    render(
+      <AuthScreen
+        onComplete={vi.fn()}
+        suspendSessionCompletion
+        recoveryAction={{
+          confirmLabel: `Combine and save to ${longAccount}`,
+          cancelLabel: `Keep ${longAccount} only on this device`,
+          tone: "choice",
+          onConfirm: vi.fn(),
+          onCancel: vi.fn(),
+        }}
+      />
+    );
+
+    const choice = screen.getByTestId("auth-recovery-choice");
+    const message = screen.getByText(session.error);
+    const actions = [
+      screen.getByRole("button", { name: `Combine and save to ${longAccount}` }),
+      screen.getByRole("button", { name: `Keep ${longAccount} only on this device` }),
+    ];
+
+    expect(choice).toHaveClass("max-w-full");
+    expect(message.parentElement).toHaveClass("min-w-0", "max-w-full");
+    expect(message).toHaveClass("max-w-full", "whitespace-pre-wrap", "[overflow-wrap:anywhere]");
+    for (const action of actions) {
+      expect(action).toHaveClass(
+        "min-w-0",
+        "max-w-full",
+        "whitespace-normal",
+        "[overflow-wrap:anywhere]"
+      );
+    }
   });
 
   it("keeps provider buttons as safe button actions and delegates provider selection", () => {
@@ -479,27 +576,13 @@ describe("AuthScreen provider buttons", () => {
     ).toBeTruthy();
     expect(telegramIcon.querySelector('stop[stop-color="#2AABEE"]')).toBeTruthy();
     expect(telegramIcon.querySelector('stop[stop-color="#229ED9"]')).toBeTruthy();
-    expect(screen.getByTestId("auth-provider-content-google")).toHaveClass(
-      "grid",
-      "max-w-[22rem]",
-      "grid-cols-[2rem_minmax(0,1fr)_2rem]"
-    );
-    expect(screen.getByTestId("auth-provider-content-facebook")).toHaveClass(
-      "grid",
-      "max-w-[22rem]",
-      "grid-cols-[2rem_minmax(0,1fr)_2rem]"
-    );
-    expect(screen.getByTestId("auth-provider-content-telegram")).toHaveClass(
-      "grid",
-      "max-w-[22rem]",
-      "grid-cols-[2rem_minmax(0,1fr)_2rem]"
-    );
-    expect(screen.getByTestId("auth-provider-content-apple")).toHaveClass(
-      "grid",
-      "max-w-[22rem]",
-      "grid-cols-[2rem_minmax(0,1fr)_2rem]"
-    );
     for (const provider of ["google", "facebook", "telegram", "apple"]) {
+      expect(screen.getByTestId(`auth-provider-content-${provider}`)).toHaveClass(
+        "grid",
+        "max-w-[22rem]",
+        "grid-cols-1",
+        "min-[420px]:grid-cols-[2rem_minmax(0,1fr)_2rem]"
+      );
       expect(screen.getByTestId(`auth-provider-icon-rail-${provider}`)).toHaveClass(
         "h-8",
         "w-8",

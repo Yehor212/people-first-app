@@ -15,7 +15,9 @@ import { hapticSuccess } from "./lib/haptics";
 import { flushSync as flushCloudSync } from "./storage/cloudSync";
 import { runWithSyncLeaderLock } from "@/lib/syncLeader";
 import { pullAndApplyDeltasFromLastSeq } from "@/storage/eventSync";
-// Sentry is dynamically imported below to keep it off the critical path
+// Runtime crash diagnostics stay off until ZenFlow exposes an explicit,
+// durable user choice. Global failures are kept only in the bounded in-memory
+// buffer below and are not sent to an external service.
 import { cleanupShareCache } from "./lib/shareActions";
 import { initA11y } from "./lib/a11y";
 import { App as CapacitorApp } from "@capacitor/app";
@@ -35,7 +37,7 @@ import { isTrustedServiceWorkerMessage } from "./lib/serviceWorkerMessages";
 import { SK } from "./lib/storageKeys";
 import { safeLocalStorageGet, safeLocalStorageSet } from "./lib/safeJson";
 import { scheduleIdle } from "./lib/scheduleIdle";
-import { captureOrBuffer, setCaptureSink } from "./lib/errorBuffer";
+import { captureOrBuffer } from "./lib/errorBuffer";
 import { initWebVitalsDev } from "./observability/reportWebVitals";
 import { initLongTaskObserverDev } from "./observability/initLongTaskObserverDev";
 import {
@@ -45,11 +47,11 @@ import {
 import { bindPrefersColorSchemeListener } from "./stores/themeStore";
 import { migrateLegacyFeedbackSettings } from "./lib/legacyFeedbackMigration";
 import { retireLegacyQuickActions } from "./lib/legacyQuickActionsRetirement";
+import { applyDocumentLanguage, loadLanguage, resolveInitialLanguage } from "./i18n";
+import { dispatchNativeReminderReconcile } from "./lib/notificationLifecycle";
 
-// Sentry is deferred to post-mount via requestIdleCallback (see below initializeApp)
-// to keep it off the critical rendering path. Errors thrown before idle-init
-// completes are buffered in `./lib/errorBuffer` and flushed once the Sentry sink
-// is wired via `setCaptureSink(captureError)`.
+// The bounded error buffer supports local recovery diagnostics without enabling
+// optional external crash reporting before the user has a corresponding choice.
 
 // Setup chunk error handler EARLY to catch lazy loading failures
 // This must be before React renders to catch initial chunk load errors
@@ -73,9 +75,13 @@ void initWebVitalsDev();
 // prod; Sentry captures longtask spans server-side.
 initLongTaskObserverDev();
 installRuntimePerformanceGuard();
-scheduleIdle(() => {
-  installRuntimeFlightRecorder();
-}, 2000, 250);
+scheduleIdle(
+  () => {
+    installRuntimeFlightRecorder();
+  },
+  2000,
+  250
+);
 bindPrefersColorSchemeListener();
 
 function isStateOfMindRoute(): boolean {
@@ -94,11 +100,15 @@ function scheduleCanonicalOrbPrewarmAfterStartup(): void {
     // Keep startup resilient; prewarm is an optimization, not a dependency.
   }
 
-  scheduleIdle(() => {
-    void import("./components/state-of-mind/canonicalOrbPrewarm")
-      .then(({ prewarmCanonicalOrbWebGL }) => prewarmCanonicalOrbWebGL("post-startup-idle"))
-      .catch((err) => logger.warn("[Main] Canonical orb prewarm failed:", err));
-  }, 8000, 2500);
+  scheduleIdle(
+    () => {
+      void import("./components/state-of-mind/canonicalOrbPrewarm")
+        .then(({ prewarmCanonicalOrbWebGL }) => prewarmCanonicalOrbWebGL("post-startup-idle"))
+        .catch((err) => logger.warn("[Main] Canonical orb prewarm failed:", err));
+    },
+    8000,
+    2500
+  );
 }
 
 scheduleCanonicalOrbPrewarmAfterStartup();
@@ -146,7 +156,8 @@ function shouldWarmRuntimeAudioCacheAfterStartup(): boolean {
 
   const connection = getRuntimeAudioConnection();
   if (connection?.saveData) return false;
-  if (connection?.effectiveType && SLOW_RUNTIME_AUDIO_EFFECTIVE_TYPES.has(connection.effectiveType)) return false;
+  if (connection?.effectiveType && SLOW_RUNTIME_AUDIO_EFFECTIVE_TYPES.has(connection.effectiveType))
+    return false;
 
   return isStandaloneRuntimeContext();
 }
@@ -154,26 +165,41 @@ function scheduleRuntimeAudioCacheWarmAfterStartup(): void {
   if (isNative || !("serviceWorker" in navigator)) return;
   if (!shouldWarmRuntimeAudioCacheAfterStartup()) return;
 
-  scheduleIdle(() => {
-    void navigator.serviceWorker.ready
-      .then((registration) => {
-        const worker = registration.active ?? navigator.serviceWorker.controller;
-        worker?.postMessage({ type: "WARM_RUNTIME_AUDIO_CACHE" });
-      })
-      .catch((err) => logger.warn("[Main] Runtime audio cache warm request failed:", err));
-  }, 10000, 3000);
+  scheduleIdle(
+    () => {
+      void navigator.serviceWorker.ready
+        .then((registration) => {
+          const worker = registration.active ?? navigator.serviceWorker.controller;
+          worker?.postMessage({ type: "WARM_RUNTIME_AUDIO_CACHE" });
+        })
+        .catch((err) => logger.warn("[Main] Runtime audio cache warm request failed:", err));
+    },
+    10000,
+    3000
+  );
 }
 
-// Set html lang attribute early (before React hydrates) for non-EN users (WCAG 3.1.1)
-// CSP blocks inline scripts in index.html, so we do it here in the module entry point.
-// useLocalStorage stores values as JSON strings, so we parse accordingly.
-try {
-  const storedLang = safeLocalStorageGet<string>(SK.LANGUAGE, "");
-  if (storedLang.length >= 2) {
-    document.documentElement.lang = storedLang;
+// Resolve both language and direction before the first React frame. The active
+// dictionary is startup-critical because rendering a target locale with English
+// text is semantically incorrect, especially for RTL assistive technology.
+const initialLanguage = resolveInitialLanguage(
+  safeLocalStorageGet<string>(SK.LANGUAGE, ""),
+  navigator.language || navigator.userLanguage,
+  safeLocalStorageGet<boolean>(SK.LANGUAGE_SELECTED, false)
+);
+applyDocumentLanguage(initialLanguage);
+
+async function prepareInitialLanguageBeforeRender(): Promise<void> {
+  try {
+    await loadLanguage(initialLanguage);
+  } catch (error) {
+    // Keep the document internally consistent while LanguageProvider exposes a retry.
+    applyDocumentLanguage("en");
+    logger.warn("[Main] Initial language dictionary unavailable", {
+      language: initialLanguage,
+      error,
+    });
   }
-} catch {
-  // Ignore — React LanguageContext will set it once mounted
 }
 
 // Listen for SW activation — new SW means new deploy, check version immediately
@@ -254,7 +280,7 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 
   logger.error("[Global] Unhandled promise rejection:", reason);
-  // Send to Sentry (buffered if Sentry not yet loaded)
+  // Keep a bounded in-memory record for the current runtime only.
   if (reason instanceof Error) {
     captureOrBuffer(reason, { type: "unhandledrejection" });
   }
@@ -321,10 +347,12 @@ let isHandlingPause = false;
 let isHandlingResume = false;
 let pendingLifecycleTaskId: number | null = null;
 
-function savePendingQueueSnapshot(options: {
-  hidden?: boolean;
-  includeQueueSnapshot?: boolean;
-} = {}): number {
+function savePendingQueueSnapshot(
+  options: {
+    hidden?: boolean;
+    includeQueueSnapshot?: boolean;
+  } = {}
+): number {
   try {
     const queueState = offlineQueue.getState();
     if (queueState.actions.length === 0) return 0;
@@ -333,9 +361,7 @@ function savePendingQueueSnapshot(options: {
       timestamp: Date.now(),
       pendingActions: queueState.actions.length,
       ...(options.hidden ? { hidden: true } : {}),
-      ...(options.includeQueueSnapshot
-        ? { queueSnapshot: queueState.actions.slice(0, 10) }
-        : {}),
+      ...(options.includeQueueSnapshot ? { queueSnapshot: queueState.actions.slice(0, 10) } : {}),
     });
     return queueState.actions.length;
   } catch (_error) {
@@ -391,84 +417,91 @@ async function handleAppResume(): Promise<void> {
   if (isHandlingResume) return;
   isHandlingResume = true;
 
-  await yieldToNextTask();
-  await resumeAllAudio();
-  await yieldToNextTask();
-
-  // Proactive version check on EVERY tab resume — prevents stale chunk errors.
-  // When user returns to a tab left open across deploys, old JS in memory
-  // tries to lazy-load chunks with old hashes (404). Check BEFORE that happens.
-  // No throttle — the fetch is ~100ms, and stale-tab errors are the #1 cause
-  // of chunk-load failures. Skip on native (assets are bundled locally).
-  if (!isNative && navigator.onLine) {
-    const isUpToDate = await checkAppVersion();
-    markVersionChecked();
-    if (!isUpToDate) {
-      logger.log("[Main] Stale version on resume, reloading...");
-      await forceHardReload();
-      return; // Page will reload
-    }
-  }
-
-  // Trigger sync if online — drain offline queue + delta pull + haptic feedback
-  await yieldToNextTask();
-
-  if (navigator.onLine) {
-    const resumeOwnerUserId = await getCurrentSessionUserId();
-    let queueReadyForDelta = Boolean(resumeOwnerUserId);
-    if (
-      resumeOwnerUserId &&
-      (await offlineQueue.hasPendingActionsForOwnerReady(resumeOwnerUserId))
-    ) {
-      logger.log("[Main] Processing pending offline queue on resume");
+  try {
+    if (isNative) {
       try {
-        await offlineQueue.processQueue();
-        queueReadyForDelta =
-          (await getCurrentSessionUserId()) === resumeOwnerUserId &&
-          !offlineQueue.hasPendingActionsForOwner(resumeOwnerUserId);
-        if (queueReadyForDelta) {
-          void hapticSuccess(); // Subtle feedback: queued changes synced
-        }
-      } catch (err) {
-        queueReadyForDelta = false;
-        logger.warn("[Main] Offline queue processing on resume failed:", err);
+        dispatchNativeReminderReconcile("app-resume");
+      } catch (error) {
+        logger.warn("[Main] Reminder recovery wake failed:", error);
       }
     }
-    if (
-      queueReadyForDelta &&
-      (await getCurrentSessionUserId()) !== resumeOwnerUserId
-    ) {
-      queueReadyForDelta = false;
-    }
-    // Delta pull on resume — fetch and apply new events from the eventSync cursor.
-    if (queueReadyForDelta) {
-      void runWithSyncLeaderLock("resume-delta-sync", () => pullAndApplyDeltasFromLastSeq())
-        .then((locked) => {
-          if (!locked.acquired) {
-            logger.log("[Main] Delta pull on resume skipped; another tab owns sync");
-            return;
-          }
 
-          const result = locked.value;
-          if (!result) return;
-          if (result.fetched > 0) {
-            logger.log(
-              `[Main] Delta applied on resume: fetched=${result.fetched}, applied=${result.applied}, seq=${result.lastSeq}`
-            );
-          }
-        })
-        .catch((err) => logger.warn("[Main] Delta pull on resume failed:", err));
-    } else {
-      logger.warn("[Main] Delta pull on resume skipped; saved actions still need retry");
+    await yieldToNextTask();
+    await resumeAllAudio();
+    await yieldToNextTask();
+
+    // Proactive version check on EVERY tab resume — prevents stale chunk errors.
+    // When user returns to a tab left open across deploys, old JS in memory
+    // tries to lazy-load chunks with old hashes (404). Check BEFORE that happens.
+    // No throttle — the fetch is ~100ms, and stale-tab errors are the #1 cause
+    // of chunk-load failures. Skip on native (assets are bundled locally).
+    if (!isNative && navigator.onLine) {
+      const isUpToDate = await checkAppVersion();
+      markVersionChecked();
+      if (!isUpToDate) {
+        logger.log("[Main] Stale version on resume, reloading...");
+        const navigated = await forceHardReload();
+        if (navigated) return;
+      }
     }
+
+    // Trigger sync if online — drain offline queue + delta pull + haptic feedback
+    await yieldToNextTask();
+
+    if (navigator.onLine) {
+      const resumeOwnerUserId = await getCurrentSessionUserId();
+      let queueReadyForDelta = Boolean(resumeOwnerUserId);
+      if (
+        resumeOwnerUserId &&
+        (await offlineQueue.hasPendingActionsForOwnerReady(resumeOwnerUserId))
+      ) {
+        logger.log("[Main] Processing pending offline queue on resume");
+        try {
+          await offlineQueue.processQueue();
+          queueReadyForDelta =
+            (await getCurrentSessionUserId()) === resumeOwnerUserId &&
+            !offlineQueue.hasPendingActionsForOwner(resumeOwnerUserId);
+          if (queueReadyForDelta) {
+            void hapticSuccess(); // Subtle feedback: queued changes synced
+          }
+        } catch (err) {
+          queueReadyForDelta = false;
+          logger.warn("[Main] Offline queue processing on resume failed:", err);
+        }
+      }
+      if (queueReadyForDelta && (await getCurrentSessionUserId()) !== resumeOwnerUserId) {
+        queueReadyForDelta = false;
+      }
+      // Delta pull on resume — fetch and apply new events from the eventSync cursor.
+      if (queueReadyForDelta) {
+        void runWithSyncLeaderLock("resume-delta-sync", () => pullAndApplyDeltasFromLastSeq())
+          .then((locked) => {
+            if (!locked.acquired) {
+              logger.log("[Main] Delta pull on resume skipped; another tab owns sync");
+              return;
+            }
+
+            const result = locked.value;
+            if (!result) return;
+            if (result.fetched > 0) {
+              logger.log(
+                `[Main] Delta applied on resume: fetched=${result.fetched}, applied=${result.applied}, seq=${result.lastSeq}`
+              );
+            }
+          })
+          .catch((err) => logger.warn("[Main] Delta pull on resume failed:", err));
+      } else {
+        logger.warn("[Main] Delta pull on resume skipped; saved actions still need retry");
+      }
+    }
+    // Clean up stale share cache files (24+ hours old)
+    void cleanupShareCache();
+  } finally {
+    // A blocked reload or failed resume task must not permanently disable resume handling.
+    setTimeout(() => {
+      isHandlingResume = false;
+    }, 100);
   }
-  // Clean up stale share cache files (24+ hours old)
-  void cleanupShareCache();
-
-  // Reset flag after short delay to allow next resume event
-  setTimeout(() => {
-    isHandlingResume = false;
-  }, 100);
 }
 
 // Handle visibility change (app going to background on mobile)
@@ -599,22 +632,26 @@ function scheduleVersionCheckAfterStartup(): void {
     return;
   }
 
-  scheduleIdle(() => {
-    checkAppVersion()
-      .then((isUpToDate) => {
-        markVersionChecked();
-        if (!isUpToDate) {
-          logger.log("[Main] Outdated version detected after startup, reloading...");
-          void forceHardReload();
-        }
-      })
-      .catch((err) => logger.warn("[Main] Startup version check failed:", err));
-  }, 5000, 3000);
+  scheduleIdle(
+    () => {
+      checkAppVersion()
+        .then((isUpToDate) => {
+          markVersionChecked();
+          if (!isUpToDate) {
+            logger.log("[Main] Outdated version detected after startup, reloading...");
+            void forceHardReload();
+          }
+        })
+        .catch((err) => logger.warn("[Main] Startup version check failed:", err));
+    },
+    5000,
+    3000
+  );
 }
 
 // React 18 `onRecoverableError` forwards recoverable hydration/concurrent errors
-// to Sentry (via buffer pre-load, direct post-load). React 19 adds onCaughtError/
-// onUncaughtError — not yet available here.
+// to the bounded in-memory buffer. React 19 adds onCaughtError/onUncaughtError —
+// not yet available here.
 // Source: react.dev/reference/react-dom/client/createRoot#parameters, 2025.
 const rootOptions = {
   onRecoverableError: (error: unknown) => {
@@ -624,9 +661,9 @@ const rootOptions = {
   },
 };
 
-// Render first; only recovery-critical version checks may delay the root.
-ensureFreshVersionBeforeRender()
-  .then((shouldRender) => {
+// Language is part of the first useful frame; version checks block only recovery paths.
+Promise.all([ensureFreshVersionBeforeRender(), prepareInitialLanguageBeforeRender()])
+  .then(([shouldRender]) => {
     if (shouldRender) {
       createRoot(document.getElementById("root")!, rootOptions).render(<App />);
       scheduleVersionCheckAfterStartup();
@@ -639,23 +676,3 @@ ensureFreshVersionBeforeRender()
     scheduleVersionCheckAfterStartup();
     scheduleRuntimeAudioCacheWarmAfterStartup();
   });
-
-// Defer Sentry initialization to after render — keeps @sentry/* off the critical path
-// ROOT-CAUSE: Sentry is ~30KB gzipped; deferring to idle time improves TTI without losing error coverage
-const idleInit = () => {
-  import("./lib/sentry")
-    .then(({ initSentry, captureError: ce }) => {
-      try {
-        initSentry();
-      } catch (e) {
-        logger.warn("[Main] Sentry init failed:", e);
-      }
-      // Wires the sink and auto-flushes the pre-Sentry buffer. Buffered errors
-      // carry a `buffered: true` context tag (see errorBuffer.ts).
-      setCaptureSink(ce);
-    })
-    .catch((err) => logger.warn("[Main] Sentry lazy load failed:", err));
-};
-// Keep observability off the first interaction window. Errors are buffered above,
-// so Sentry can start after route paint, diary imports, and orb WebGL settle.
-scheduleIdle(idleInit, 15000, 12000);

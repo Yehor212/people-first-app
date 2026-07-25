@@ -443,6 +443,12 @@ verify_jwt = true
 [functions.telegram-oidc]
 verify_jwt = false
 
+[functions.delete-account]
+verify_jwt = true
+
+[functions.resume-account-deletion]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

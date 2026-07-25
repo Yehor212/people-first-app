@@ -26,9 +26,9 @@ export function PremiumChart({
 
   const values = data.map((d) => (Number.isFinite(d.value) ? d.value : 0));
   const max = Math.max(...values, 100);
-  const height = 100;
-  const width = 300;
-  const padding = { top: 15, bottom: 25, left: 15, right: 15 };
+  const height = 148;
+  const width = 360;
+  const padding = { top: 44, bottom: 34, left: 18, right: 18 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
@@ -52,7 +52,10 @@ export function PremiumChart({
   });
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="h-auto min-w-[24rem] w-full max-w-none overflow-visible"
+    >
       <defs>
         <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor={color} stopOpacity="0.4" />
@@ -135,10 +138,10 @@ export function PremiumChart({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.2 }}
             >
-              <rect x={point.x - 18} y={point.y - 28} width="36" height="20" rx="10" fill={color} />
+              <rect x={point.x - 28} y={point.y - 38} width="56" height="28" rx="14" fill={color} />
               <text
                 x={point.x}
-                y={point.y - 14}
+                y={point.y - 19}
                 textAnchor="middle"
                 className="text-xs font-bold fill-white"
               >
@@ -154,9 +157,9 @@ export function PremiumChart({
         <text
           key={i}
           x={points[i]?.x || 0}
-          y={height - 6}
+          y={height - 9}
           textAnchor="middle"
-          className="text-[10px] font-medium fill-muted-foreground"
+          className="text-xs font-medium fill-muted-foreground"
         >
           {label}
         </text>

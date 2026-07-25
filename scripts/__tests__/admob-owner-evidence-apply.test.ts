@@ -375,7 +375,7 @@ describe("AdMob owner evidence apply workflow", () => {
       ) => { ok: boolean; issues: Array<{ code: string }> };
     };
     const report = external.evaluateExternalReadiness(finalLedger, {
-      now: new Date("2026-07-04T00:00:00.000Z"),
+      now: new Date("2026-07-04T12:00:00.000Z"),
     });
 
     expect(result.status).toBe(0);

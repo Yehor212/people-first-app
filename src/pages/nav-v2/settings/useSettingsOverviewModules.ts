@@ -3,17 +3,57 @@ import { Clock3, LockKeyhole, Palette, UserRound, Volume2, VolumeX } from "lucid
 
 import { useAds } from "@/contexts/AdContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAccountAuth } from "@/components/settings/account-section/useAccountAuth";
 import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
 import { languageNames } from "@/i18n/translations";
+import { normalizeHabitReminderDays } from "@/lib/habitScheduling";
 import { isNative } from "@/lib/platform";
-import { isPushAvailable } from "@/lib/pushNotifications";
 import { supabase } from "@/lib/supabaseClient";
-import { interpolate } from "@/lib/utils";
 import { useAppStore } from "@/stores";
 import { useThemeStore } from "@/stores/themeStore";
 
 import type { SettingsModuleCardData } from "./components/SettingsPageComponents";
 import type { V2SettingsControls } from "./types";
+
+const isolateBidiText = (value: string): string => `\u2068${value}\u2069`;
+const ignoreNameChange = () => undefined;
+
+export type AccountAuthController = ReturnType<typeof useAccountAuth>;
+export type AccountViewState =
+  | "unavailable"
+  | "checking"
+  | "error"
+  | "signed-out"
+  | "signed-in";
+
+export function resolveAccountViewState({
+  backendAvailable,
+  hasValidSession,
+  auth,
+}: {
+  backendAvailable: boolean;
+  hasValidSession: boolean | null;
+  auth: Pick<AccountAuthController, "hasSession" | "sessionCheckState">;
+}): AccountViewState {
+  if (!backendAvailable) return "unavailable";
+  if (auth.sessionCheckState === "error") return "error";
+  if (hasValidSession === null || auth.sessionCheckState === "checking") return "checking";
+  if (
+    hasValidSession === true &&
+    auth.hasSession &&
+    auth.sessionCheckState === "signed-in"
+  ) {
+    return "signed-in";
+  }
+  if (
+    hasValidSession === false &&
+    !auth.hasSession &&
+    auth.sessionCheckState === "signed-out"
+  ) {
+    return "signed-out";
+  }
+  return "error";
+}
 
 export function useSettingsOverviewModules(controls?: V2SettingsControls) {
   const { t, language } = useLanguage();
@@ -23,6 +63,15 @@ export function useSettingsOverviewModules(controls?: V2SettingsControls) {
   const audioSettings = useAppAudioSettings();
   const { adsSupported } = useAds();
   const hasValidSession = useAppStore((state) => state.hasValidSession);
+  const accountAuth = useAccountAuth({
+    onNameChange: controls?.onNameChange ?? ignoreNameChange,
+    t: tx,
+  });
+  const accountViewState = resolveAccountViewState({
+    backendAvailable: Boolean(supabase),
+    hasValidSession,
+    auth: accountAuth,
+  });
 
   const settingsLead = isNative
     ? tx.settingsOverviewDescription ||
@@ -43,53 +92,69 @@ export function useSettingsOverviewModules(controls?: V2SettingsControls) {
   const reminderSummary = (() => {
     if (!isNative) return tx.settingsRemindersMobileApp || "Mobile app";
     if (!controls?.reminders.enabled) return tx.settingsRemindersOff || tx.soundOff || "Off";
-    if (controls.reminders.days.length === 0) {
-      return tx.settingsReminderDaysMissing || "Choose reminder days";
-    }
+
+    const hasActiveHabitReminder = controls.habits.some(
+      (habit) =>
+        !habit.isArchived &&
+        habit.reminders?.some(
+          (reminder) => reminder.enabled && normalizeHabitReminderDays(reminder.days).length > 0
+        )
+    );
+    const hasGlobalReminderDays = controls.reminders.days.length > 0;
 
     const summaries = [
-      controls.reminders.moodCheckInsEnabled
+      hasGlobalReminderDays && controls.reminders.moodCheckInsEnabled
         ? tx.settingsMoodCheckIns || "Mood check-ins"
         : null,
-      controls.reminders.focusReminderEnabled
+      hasGlobalReminderDays && controls.reminders.focusReminderEnabled
         ? tx.settingsFocusReminder || "Focus reminder"
         : null,
+      hasActiveHabitReminder ? tx.reminderHabitTitle || "Habit reminder" : null,
     ].filter((summary): summary is string => Boolean(summary));
-    return summaries.length > 0
-      ? summaries.join(" · ")
-      : tx.settingsRemindersOff || tx.soundOff || "Off";
+    if (summaries.length > 0) return summaries.join(" · ");
+    if (
+      !hasGlobalReminderDays &&
+      (controls.reminders.moodCheckInsEnabled || controls.reminders.focusReminderEnabled)
+    ) {
+      return tx.settingsReminderDaysMissing || "Choose reminder days";
+    }
+    return tx.settingsRemindersOff || tx.soundOff || "Off";
   })();
-  const dataSummary = controls
-    ? interpolate(t.settingsDataSummary, {
-        moods: controls.moods?.length ?? 0,
-        habits: controls.habits.length,
-        focus: controls.focusSessions?.length ?? 0,
-      })
-    : tx.settingsExportDescription;
-  const accountStatus = !supabase
-    ? tx.settingsAccountBackupUnavailable || "Backup isn’t available in this version"
-    : hasValidSession === false
-      ? tx.settingsAccountSignedOut || "You’re not signed in"
-      : hasValidSession === null
-        ? tx.settingsAccountBackupChecking || "Checking your account…"
-        : tx.settingsAccountSignedIn || "Signed in";
-  const accountDescription = !supabase
-    ? tx.settingsAccountBackupUnavailableDescription || "Your data stays on this device."
-    : hasValidSession === false
-      ? tx.settingsAccountDataOnDevice ||
-        "Your data stays on this device. Sign in to back it up and use it on your other devices."
-      : hasValidSession === null
-        ? tx.settingsAccountBackupCheckingDescription ||
-          "Your data stays on this device while ZenFlow checks your account."
-        : tx.settingsAccountBackupDescription ||
-          "Your account is connected. If ZenFlow can’t save an update online, your changes stay on this device.";
-  const hasOptionalPrivacyService = Boolean(
-    (adsSupported && controls?.privacy.adConsent) ||
-      (isPushAvailable() && controls?.privacy.pushNotifications),
-  );
-  const privacySummary = hasOptionalPrivacyService
-    ? tx.privacyOptionalServicesOn || "Optional services on"
-    : tx.privacyOptionalServicesOff || "Optional services off";
+  const dataSummary =
+    tx.settingsDataBackupReportsDescription ||
+    tx.settingsExportDescription ||
+    "Save a backup you can import later, or create a report.";
+  const accountStatus = accountAuth.signOutBlockReason
+    ? tx.authSignOutRecoveryTitle || "Finish signing out"
+    : accountViewState === "unavailable"
+      ? tx.settingsAccountBackupUnavailable || "Backup isn’t available in this version"
+      : accountViewState === "signed-out"
+        ? tx.settingsAccountSignedOut || "You’re not signed in"
+        : accountViewState === "checking"
+          ? tx.settingsAccountBackupChecking || "Checking your account…"
+          : accountViewState === "error"
+            ? tx.settingsAccountCheckFailed || "We couldn’t check your account"
+            : tx.settingsAccountSignedIn || "Signed in";
+  const accountDescription = accountAuth.signOutBlockReason
+    ? accountAuth.authStatus || tx.authSignOutFailed || "Sign-out did not complete."
+    : accountViewState === "unavailable"
+      ? tx.settingsAccountBackupUnavailableDescription || "Your data stays on this device."
+      : accountViewState === "signed-out"
+        ? tx.settingsAccountDataOnDevice ||
+          "You can use ZenFlow without an account. Sign in to save new changes online and use them on your other devices."
+        : accountViewState === "checking"
+          ? tx.settingsAccountBackupCheckingDescription ||
+            "Your data stays on this device while ZenFlow checks your account."
+          : accountViewState === "error"
+            ? tx.settingsAccountCheckFailedDescription ||
+              "Your data stays on this device. Check your connection and try again."
+            : tx.settingsAccountBackupDescription ||
+              "Your account is connected. If ZenFlow can’t save an update online, your changes stay on this device.";
+  const privacySummary = adsSupported
+    ? controls?.privacy.adConsent
+      ? tx.privacyOptionalServicesOn || "Optional services on"
+      : tx.privacyOptionalServicesOff || "Optional services off"
+    : undefined;
 
   const modules = useMemo<SettingsModuleCardData[]>(
     () => [
@@ -105,7 +170,7 @@ export function useSettingsOverviewModules(controls?: V2SettingsControls) {
         id: "appearance",
         icon: Palette,
         label: tx.settingsGroupAppearanceAccessibility || "Appearance & accessibility",
-        description: `${tx.language}: ${languageNames[language]}`,
+        description: `${tx.language}: ${isolateBidiText(languageNames[language])}`,
         value: themeLabel,
         role: "mind",
       },
@@ -157,8 +222,15 @@ export function useSettingsOverviewModules(controls?: V2SettingsControls) {
       tx.settingsGroupReminders,
       tx.settingsSoundDescription,
       tx.settingsSoundTitle,
-    ],
+    ]
   );
 
-  return { hasValidSession, modules, settingsLead, themeLabel };
+  return {
+    accountAuth,
+    accountViewState,
+    hasValidSession,
+    modules,
+    settingsLead,
+    themeLabel,
+  };
 }

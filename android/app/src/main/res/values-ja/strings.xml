@@ -20,4 +20,18 @@
     <string name="widget_no_mood">気分未記録</string>
     <string name="widget_days">日</string>
     <string name="widget_habits_label">習慣</string>
+    <string name="push_realm_mood_title">今の気分を確認</string>
+    <string name="push_realm_mood_body">気が向いたら、今の気分を記録できます。</string>
+    <string name="push_realm_habit_title">習慣のリマインダー</string>
+    <string name="push_realm_habit_body">小さな一歩で十分です。準備ができたときに始められます。</string>
+    <string name="push_realm_focus_title">集中しますか？</string>
+    <string name="push_realm_focus_body">都合のよいときに、25分の集中セッションを始められます。</string>
+    <string name="push_realm_test_title">ZenFlow</string>
+    <string name="push_realm_test_body">テスト通知。</string>
+    <string name="push_realm_channel_default">デフォルト</string>
+    <string name="push_realm_channel_default_description">システム通知音</string>
+    <string name="push_realm_channel_gentle">優しい</string>
+    <string name="push_realm_channel_gentle_description">振動のみ</string>
+    <string name="push_realm_channel_silent">サイレント</string>
+    <string name="push_realm_channel_silent_description">音も振動もなし</string>
 </resources>

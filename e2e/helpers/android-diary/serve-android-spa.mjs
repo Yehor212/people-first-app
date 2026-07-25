@@ -6,7 +6,7 @@ import { basename, dirname, extname, join, normalize, resolve, sep } from "node:
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 
-const port = Number(process.env.PORT || 4177);
+const port = Number(process.env.ZENFLOW_ANDROID_DIARY_PORT || process.env.PORT || 4177);
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, "../../..");
 const root = resolve(repoRoot, "android/app/src/main/assets/public");

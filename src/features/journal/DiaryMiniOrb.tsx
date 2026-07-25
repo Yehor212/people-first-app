@@ -26,6 +26,7 @@ export const DiaryMiniOrb = memo(function DiaryMiniOrb({
       hasEntry={true}
       size={orbSize}
       chrome="badge"
+      renderer="auto"
       containerClassName={className}
     />
   );

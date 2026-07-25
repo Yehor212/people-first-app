@@ -139,10 +139,10 @@ describe("V2 diary loading surface", () => {
   });
 
   it("measures public-user routes instead of diagnostics-only dev routes", () => {
-    expect(chromePerformanceBudgetSource).toContain('"path": "orb/?nav=v2&navLayout=phone"');
-    expect(chromePerformanceBudgetSource).toContain('"path": "diary/?nav=v2"');
+    expect(chromePerformanceBudgetSource).toContain('"path": "orb?nav=v2&navLayout=phone"');
+    expect(chromePerformanceBudgetSource).toContain('"path": "diary?nav=v2"');
     expect(chromePerformanceBudgetSource).toContain(
-      '"readySelector": "[data-testid=\\"journal-compact-empty-list\\"], [data-testid=\\"journal-empty-list\\"]"',
+      '"readySelector": "[data-testid=\\"diary-page\\"]"',
     );
     expect(chromePerformanceBudgetSource).not.toContain("dev=true");
     expect(chromePerformanceSmokeSource).toContain("for (const route of routeGroup.routes)");

@@ -51,14 +51,14 @@ export const MobileNavV2 = memo(function MobileNavV2({
       aria-label={tx.navV2PrimaryNav || tx.mainNavigation || "Primary navigation"}
       data-testid="mobile-nav-v2"
       className={cn(
-        "md:hidden fixed inset-x-3 z-50",
+        "md:hidden fixed start-[max(0.75rem,var(--safe-inline-start))] end-[max(0.75rem,var(--safe-inline-end))] z-50",
         "bottom-[calc(var(--safe-bottom)+0.5rem)]",
         "rounded-2xl border border-border/60 bg-card/80",
         "backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]",
         "shadow-lg gpu-layer"
       )}
     >
-      <div className="flex items-stretch justify-between px-1 py-1">
+      <div className="grid grid-cols-5 items-stretch px-1 py-1">
         {tabs.map((tab) => {
           const isActive = activePage === tab.id;
           return (
@@ -72,8 +72,8 @@ export const MobileNavV2 = memo(function MobileNavV2({
                 onPageChange(tab.id);
               }}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-0.5 min-w-0",
-                "rounded-[8px] px-2 py-2 min-h-[48px]",
+                "flex min-w-0 flex-col items-center justify-center gap-1",
+                "min-h-[48px] rounded-[8px] px-1 py-2",
                 "motion-safe:transition-[transform,background-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out",
                 "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
@@ -87,7 +87,7 @@ export const MobileNavV2 = memo(function MobileNavV2({
               <tab.icon className="h-5 w-5" aria-hidden="true" />
               <span
                 className={cn(
-                  "font-display text-[10px] leading-none truncate max-w-full",
+                  "max-w-full whitespace-normal break-words text-center font-display text-xs leading-tight",
                   isActive ? "font-semibold" : "font-normal"
                 )}
               >

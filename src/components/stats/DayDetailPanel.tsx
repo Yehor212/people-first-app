@@ -1,8 +1,8 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { Target, X } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Habit } from '@/types';
-import { formatDate } from '@/lib/utils';
+import { motion, AnimatePresence } from "framer-motion";
+import { Target, X } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Habit } from "@/types";
+import { formatDate } from "@/lib/utils";
 
 interface DayData {
   date: string;
@@ -29,22 +29,20 @@ export function DayDetailPanel({ selectedDay, habits, onClose }: DayDetailPanelP
       {selectedDay && (
         <motion.div
           initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
+          animate={{ height: "auto", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
           className="border-t border-border/30 overflow-hidden"
         >
           <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Target className="w-4 h-4 text-emerald-500" />
-                <span className="text-sm font-medium">
-                  {selectedDay.date}
-                </span>
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2 py-2.5">
+                <Target className="w-4 h-4 shrink-0 text-emerald-500" />
+                <span className="min-w-0 break-words text-sm font-medium">{selectedDay.date}</span>
               </div>
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-muted/50 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-                aria-label={t.close || 'Close'}
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg p-1 motion-safe:transition-colors hover:bg-muted/50"
+                aria-label={t.close || "Close"}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -66,17 +64,17 @@ export function DayDetailPanel({ selectedDay, habits, onClose }: DayDetailPanelP
             {selectedDay.completedHabits.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {selectedDay.completedHabits.map((habitId) => {
-                  const habit = habits.find(h => h.id === habitId);
+                  const habit = habits.find((h) => h.id === habitId);
                   if (!habit) return null;
                   return (
                     <motion.div
                       key={habitId}
                       initial={{ scale: 0.8, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="flex items-center gap-1 px-2 py-1 bg-emerald-500/10 rounded-full"
+                      className="flex max-w-full items-start gap-1 rounded-2xl bg-emerald-500/10 px-2 py-1"
                     >
-                      <span className="text-xs">{habit.icon || '✓'}</span>
-                      <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                      <span className="shrink-0 text-xs">{habit.icon || "✓"}</span>
+                      <span className="min-w-0 text-xs font-medium text-emerald-700 [overflow-wrap:anywhere] dark:text-emerald-300">
                         {habit.name}
                       </span>
                     </motion.div>
@@ -85,30 +83,33 @@ export function DayDetailPanel({ selectedDay, habits, onClose }: DayDetailPanelP
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-2">
-                {t.noHabitsCompleted || 'No habits completed'}
+                {t.noHabitsCompleted || "No habits completed"}
               </p>
             )}
 
             {/* Missed habits */}
             {selectedDay.totalHabits > selectedDay.completedCount && (
               <div className="mt-3 pt-3 border-t border-border/30">
-                <p className="text-[10px] text-muted-foreground mb-2">
-                  {t.missedHabits || 'Missed'}:
+                <p className="mb-2 break-words text-xs text-muted-foreground">
+                  {t.missedHabits || "Missed"}:
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {habits
-                    .filter(h => {
+                    .filter((h) => {
                       // Only show habits that existed on the selected day
                       const createdStr = formatDate(new Date(h.createdAt));
-                      return createdStr <= selectedDay.date && !selectedDay.completedHabits.includes(h.id);
+                      return (
+                        createdStr <= selectedDay.date &&
+                        !selectedDay.completedHabits.includes(h.id)
+                      );
                     })
                     .map((habit) => (
                       <div
                         key={habit.id}
-                        className="flex items-center gap-1 px-2 py-1 bg-red-500/10 rounded-full"
+                        className="flex max-w-full items-start gap-1 rounded-2xl bg-red-500/10 px-2 py-1"
                       >
-                        <span className="text-xs opacity-50">{habit.icon}</span>
-                        <span className="text-xs text-red-600 dark:text-red-400">
+                        <span className="shrink-0 text-xs opacity-50">{habit.icon}</span>
+                        <span className="min-w-0 text-xs text-red-600 [overflow-wrap:anywhere] dark:text-red-400">
                           {habit.name}
                         </span>
                       </div>

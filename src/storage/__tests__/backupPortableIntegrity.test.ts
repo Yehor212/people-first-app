@@ -555,6 +555,76 @@ describe("portable backup integrity", () => {
     expect(report.moods).toEqual({ added: 0, updated: 0, skipped: 1 });
   });
 
+  it("keeps a newer local journal entry and rejects media from the losing backup version", async () => {
+    const localEntry = {
+      ...journalEntry,
+      id: "journal-newer-local",
+      title: "Newer local title",
+      content: "Newer local private content",
+      updatedAt: 300,
+    };
+    await db.journalEntries.put(localEntry);
+
+    const payload = makePayload({
+      ...emptyData(),
+      journalEntries: [{
+        ...localEntry,
+        title: "Older backup title",
+        content: "Older backup private content",
+        photoIds: ["photo-from-older-backup"],
+        audioIds: ["audio-from-older-backup"],
+        updatedAt: 200,
+      }],
+      journalPhotos: [{
+        id: "photo-from-older-backup",
+        entryId: localEntry.id,
+        data: "data:image/jpeg;base64,YQ==",
+        thumbnail: "data:image/jpeg;base64,YQ==",
+        width: 100,
+        height: 100,
+        createdAt: 200,
+      }],
+      journalAudio: [{
+        id: "audio-from-older-backup",
+        entryId: localEntry.id,
+        data: "data:audio/webm;base64,YQ==",
+        mimeType: "audio/webm",
+        duration: 1,
+        createdAt: 200,
+      }],
+    });
+
+    const report = await importBackup(payload, "merge");
+
+    await expect(db.journalEntries.get(localEntry.id)).resolves.toEqual(localEntry);
+    await expect(db.journalPhotos.get("photo-from-older-backup")).resolves.toBeUndefined();
+    await expect(db.journalAudio.get("audio-from-older-backup")).resolves.toBeUndefined();
+    expect(report.journalEntries).toEqual({ added: 0, updated: 0, skipped: 1 });
+    expect(report.journalPhotos).toEqual({ added: 0, updated: 0, skipped: 1 });
+    expect(report.journalAudio).toEqual({ added: 0, updated: 0, skipped: 1 });
+  });
+
+  it("keeps local journal text when equal timestamps carry different content", async () => {
+    const localEntry = {
+      ...journalEntry,
+      id: "journal-equal-version",
+      content: "Local content wins an equal-version conflict",
+      updatedAt: 400,
+    };
+    await db.journalEntries.put(localEntry);
+
+    const report = await importBackup(makePayload({
+      ...emptyData(),
+      journalEntries: [{
+        ...localEntry,
+        content: "Different remote content at the same version",
+      }],
+    }), "merge");
+
+    await expect(db.journalEntries.get(localEntry.id)).resolves.toEqual(localEntry);
+    expect(report.journalEntries).toEqual({ added: 0, updated: 0, skipped: 1 });
+  });
+
   it("snapshots deletion trackers in the same transaction as exported rows", async () => {
     const habit = makeTestHabit({ id: "habit-snapshot-race", name: "Snapshot race" });
     await db.habits.put(habit);

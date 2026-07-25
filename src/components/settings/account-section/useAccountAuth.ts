@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabaseClient";
+import { getVerifiedCurrentSessionUserId, supabase } from "@/lib/supabaseClient";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
 import { isNative } from "@/lib/platform";
 import { authenticateWithGoogleNative } from "@/lib/nativeGoogleAuth";
@@ -22,16 +29,33 @@ import {
 import { openOAuthUrl } from "@/lib/nativeOAuthBrowser";
 import { logger } from "@/lib/logger";
 import { performOwnerSafeSignOut } from "@/lib/accountSignOutCleanup";
+import {
+  assertSettingsOwnerCurrent,
+  readVerifiedSettingsOwnerRealm,
+  SettingsOwnerBoundaryError,
+} from "@/lib/settingsOwnerBoundary";
+import { cancelPkceAttemptFromUrl } from "@/lib/authTransitionCoordinator";
+import { createPkceAttemptRedirectUrl } from "@/lib/pkceAttemptStorage";
+import {
+  assertOriginAccountBoundaryGeneration,
+  captureOriginAccountBoundaryGeneration,
+} from "@/storage/accountBoundaryRuntime";
+import {
+  clearAccountCleanupRecovery,
+  getAccountCleanupRecovery,
+  publishAccountCleanupRecovery,
+  subscribeAccountCleanupRecovery,
+} from "@/lib/accountCleanupRecoveryState";
 
 interface UseAccountAuthOptions {
-  onNameChange: (name: string, userChosen?: boolean) => void;
+  onNameChange: (name: string, userChosen?: boolean) => void | Promise<void>;
   t: Record<string, string>;
 }
 
 type SignOutBlockReason = "pending-changes" | "cleanup-failed" | "sign-out-failed";
 type SessionCheckState = "checking" | "signed-in" | "signed-out" | "error";
 
-export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
+export function useAccountAuth({ t }: UseAccountAuthOptions) {
   const [authStatus, setAuthStatus] = useState<string | null>(null);
   const [sessionUser, setSessionUser] = useState<User | null>(null);
   const [sessionCheckState, setSessionCheckState] = useState<SessionCheckState>(
@@ -49,6 +73,17 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
   const sessionCheckRequestRef = useRef(0);
   const isMountedRef = useRef(true);
   const enabledProviders = useMemo(() => getEnabledAccountAuthProviders(), []);
+  const accountCleanupRecovery = useSyncExternalStore(
+    subscribeAccountCleanupRecovery,
+    getAccountCleanupRecovery,
+    getAccountCleanupRecovery,
+  );
+
+  useEffect(() => {
+    if (!accountCleanupRecovery) return;
+    setSignOutBlockReason("cleanup-failed");
+    setAuthStatus(t.authSignOutCleanupFailed || t.authUnexpectedError);
+  }, [accountCleanupRecovery, t.authSignOutCleanupFailed, t.authUnexpectedError]);
 
   const refreshSession = useCallback(async () => {
     if (!supabase) {
@@ -108,6 +143,10 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
       setSessionUser(nextUser);
       setSessionCheckState(nextUser ? "signed-in" : "signed-out");
       if (nextUser) {
+        if (!getAccountCleanupRecovery()) {
+          setAuthStatus(null);
+          setSignOutBlockReason(null);
+        }
         if (nativeOAuthTimeoutRef.current !== null) {
           window.clearTimeout(nativeOAuthTimeoutRef.current);
           nativeOAuthTimeoutRef.current = null;
@@ -134,16 +173,20 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
 
     startAuthFlow();
     let waitingForNativeOAuthCallback = false;
+    let redirectUrl: string | null = null;
     setSigningInProvider(provider);
     setAuthStatus(null);
 
     try {
-      const redirectUrl = getAuthRedirectUrl();
+      redirectUrl = createPkceAttemptRedirectUrl(
+        getAuthRedirectUrl(),
+        "oauth",
+      ).redirectUrl;
       const credentials = buildOAuthCredentials(provider, {
         redirectTo: redirectUrl,
         skipBrowserRedirect: isNative,
       });
-      logger.log(`[AccountSection] Starting ${provider} sign-in with redirect:`, redirectUrl);
+      logger.log(`[AccountSection] Starting ${provider} sign-in with an attempt-bound redirect`);
 
       const { data, error } = await supabase.auth.signInWithOAuth(credentials);
 
@@ -157,6 +200,7 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
         if (!isTrustedOAuthRedirectUrl(data.url, provider)) {
           logger.error("[AccountSection] Untrusted OAuth redirect URL blocked");
           setAuthStatus(t.authUnexpectedError || "Authentication service unavailable.");
+          await cancelPkceAttemptFromUrl(supabase.auth, redirectUrl);
           return;
         }
         await openOAuthUrl(data.url);
@@ -177,8 +221,22 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
           endAuthFlow();
           setSigningInProvider(null);
         }, 60_000);
+      } else if (!data?.url) {
+        logger.error(`[AccountSection] ${provider} OAuth URL missing`);
+        await cancelPkceAttemptFromUrl(supabase.auth, redirectUrl);
+        setAuthStatus(t.authUnexpectedError || "Authentication service unavailable.");
+        return;
       }
     } catch (err) {
+      if (redirectUrl && !waitingForNativeOAuthCallback) {
+        try {
+          await cancelPkceAttemptFromUrl(supabase.auth, redirectUrl);
+        } catch (cancelError) {
+          logger.warn("[AccountSection] Failed to cancel an unlaunched OAuth attempt", {
+            errorName: cancelError instanceof Error ? cancelError.name : "UnknownError",
+          });
+        }
+      }
       logger.error(`[AccountSection] ${provider} sign-in exception:`, err);
       setAuthStatus(t.authUnexpectedError);
     } finally {
@@ -224,26 +282,55 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
     await runOAuth(provider);
   };
 
-  const handleSignOut = async (options: { discardPendingChanges?: boolean } = {}) => {
+  const handleSignOut = async (
+    options: { discardPendingChanges?: boolean } = {},
+    expectedOwnerUserId: string | undefined = sessionUser?.id,
+    expectedAccountBoundaryGeneration = captureOriginAccountBoundaryGeneration(),
+  ) => {
     if (!supabase) return;
+    const activeAttemptStillCurrent = async (
+      boundOwnerUserId: string | undefined,
+    ): Promise<boolean> => {
+      try {
+        assertOriginAccountBoundaryGeneration(
+          expectedAccountBoundaryGeneration,
+        );
+        const currentOwnerUserId = await getVerifiedCurrentSessionUserId();
+        assertOriginAccountBoundaryGeneration(
+          expectedAccountBoundaryGeneration,
+        );
+        return currentOwnerUserId === boundOwnerUserId;
+      } catch {
+        return false;
+      }
+    };
     setIsSigningOut(true);
-    setAuthStatus(null);
-    setSignOutBlockReason(null);
+    if (!signOutBlockReason) {
+      setAuthStatus(null);
+    }
     try {
+      const boundOwnerUserId =
+        expectedOwnerUserId ??
+        (await getVerifiedCurrentSessionUserId()) ??
+        undefined;
       const result = await performOwnerSafeSignOut({
         discardPendingChanges: options.discardPendingChanges,
+        expectedOwnerUserId: boundOwnerUserId,
+        expectedAccountBoundaryGeneration,
         restorePushRegistration: pushNotificationsEnabled
           ? initializePushNotifications
           : undefined,
       });
 
       if (result.status === "pending-changes") {
+        if (!(await activeAttemptStillCurrent(boundOwnerUserId))) return;
         setSignOutBlockReason("pending-changes");
         setAuthStatus(t.authSignOutPendingChanges || t.authUnexpectedError);
         return;
       }
 
       if (result.status === "sign-out-failed") {
+        if (!(await activeAttemptStillCurrent(boundOwnerUserId))) return;
         setSignOutBlockReason("sign-out-failed");
         setAuthStatus(t.authSignOutFailed || t.authUnexpectedError);
         return;
@@ -251,40 +338,96 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
 
       if (result.status === "session-changed") {
         setSignOutBlockReason(null);
-        setAuthStatus(t.authSignOutFailed || t.authUnexpectedError);
         return;
       }
 
       if (result.status === "cleanup-failed") {
-        if (result.sessionEnded) {
-          resetAuthState();
-          setAuthGateChecked(false);
-          authStateManager.reset();
-          resetAuthGuard();
+        let currentOwnerUserId: string | null;
+        try {
+          currentOwnerUserId = await getVerifiedCurrentSessionUserId();
+        } catch (error) {
+          logger.error(
+            "[AccountSection] Could not verify the owner of an interrupted sign-out:",
+            error,
+          );
+          if (!result.sessionEnded) {
+            try {
+              assertOriginAccountBoundaryGeneration(
+                expectedAccountBoundaryGeneration,
+              );
+            } catch {
+              return;
+            }
+          }
+          const retryAccountBoundaryGeneration = result.sessionEnded
+            ? captureOriginAccountBoundaryGeneration()
+            : expectedAccountBoundaryGeneration;
+          setSignOutBlockReason("cleanup-failed");
+          setAuthStatus(t.authSignOutCleanupFailed || t.authUnexpectedError);
+          publishAccountCleanupRecovery(() =>
+            handleSignOut(
+              options,
+              boundOwnerUserId,
+              retryAccountBoundaryGeneration,
+            ),
+          );
+          return;
         }
+        const resultStillBelongsToThisAttempt = result.sessionEnded
+          ? currentOwnerUserId === null
+          : currentOwnerUserId === boundOwnerUserId;
+        if (!resultStillBelongsToThisAttempt) {
+          return;
+        }
+        if (!result.sessionEnded) {
+          try {
+            assertOriginAccountBoundaryGeneration(
+              expectedAccountBoundaryGeneration,
+            );
+          } catch {
+            // The same UUID can represent a later auth lifecycle. Never attach
+            // the failed attempt's status or retry authority to that lifecycle.
+            return;
+          }
+        }
+        const retryAccountBoundaryGeneration = result.sessionEnded
+          ? captureOriginAccountBoundaryGeneration()
+          : expectedAccountBoundaryGeneration;
         setSignOutBlockReason("cleanup-failed");
         setAuthStatus(t.authSignOutCleanupFailed || t.authUnexpectedError);
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent("zenflow:account-cleanup-blocked", {
-              detail: {
-                retry: () => {
-                  void handleSignOut(options);
-                },
-              },
-            }),
-          );
-        }
+        publishAccountCleanupRecovery(() =>
+          handleSignOut(
+            options,
+            boundOwnerUserId,
+            retryAccountBoundaryGeneration,
+          ),
+        );
         return;
       }
 
       // `no-session` is an idempotent success for a retry after another tab or
       // the auth listener already finished the durable cleanup.
+      try {
+        const signedOutRealm = await readVerifiedSettingsOwnerRealm(
+          "Finalize signed-out Settings state"
+        );
+        if (signedOutRealm.kind !== "local") return;
+        await assertSettingsOwnerCurrent(
+          signedOutRealm,
+          "Finalize signed-out Settings state"
+        );
+      } catch (error) {
+        if (error instanceof SettingsOwnerBoundaryError) return;
+        logger.error("[AccountSection] Signed-out state verification failed:", error);
+        setSignOutBlockReason("cleanup-failed");
+        setAuthStatus(t.authSignOutCleanupFailed || t.authUnexpectedError);
+        return;
+      }
       resetAuthState();
       setAuthGateChecked(false);
       authStateManager.reset();
       resetAuthGuard();
-      onNameChange("Friend", false);
+      clearAccountCleanupRecovery();
       setSignOutBlockReason(null);
       setAuthStatus(t.authSignedOut);
     } catch (error) {
@@ -298,6 +441,32 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
 
   const handleDiscardPendingAndSignOut = () =>
     handleSignOut({ discardPendingChanges: true });
+
+  const handleAccountCleanupRetry = async (): Promise<void> => {
+    const recovery = getAccountCleanupRecovery();
+    if (!recovery) {
+      await handleSignOut();
+      return;
+    }
+
+    setIsSigningOut(true);
+    setSignOutBlockReason("cleanup-failed");
+    setAuthStatus(t.authSignOutCleanupFailed || t.authUnexpectedError);
+    try {
+      await recovery.retry();
+      if (clearAccountCleanupRecovery(recovery.version)) {
+        setSignOutBlockReason(null);
+        setAuthStatus(null);
+        await refreshSession();
+      }
+    } catch (error) {
+      logger.error("[AccountSection] Account cleanup retry remains blocked:", error);
+      setSignOutBlockReason("cleanup-failed");
+      setAuthStatus(t.authSignOutCleanupFailed || t.authUnexpectedError);
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
 
   return {
     authStatus,
@@ -317,6 +486,7 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
     signOutBlockReason,
     handleProvider,
     handleSignOut,
+    handleAccountCleanupRetry,
     handleDiscardPendingAndSignOut,
   };
 }

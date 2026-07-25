@@ -13,6 +13,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  buildRagSearchTask,
   buildRagPreflightContext,
   selectRagGroupsForTask,
   writeRagPreflightFiles,
@@ -29,7 +30,55 @@ describe("Free RAG agent preflight", () => {
       "agent_rules",
       "telegram_control",
     ]);
+
+    expect(
+      selectRagGroupsForTask("implement ten-lens assurance v2.2.1 governance orchestration")
+    ).not.toContain("ui_v2");
+
+    expect(selectRagGroupsForTask("audit v2 interaction flow")).toContain("ui_v2");
+    expect(selectRagGroupsForTask("inspect nav=v2 fullscreen")).toContain("ui_v2");
+    expect(selectRagGroupsForTask("исправить таб настроек")).toContain("ui_v2");
+    for (const localizedSettingsTask of [
+      "виправити вкладку налаштувань",
+      "arreglar configuración",
+      "Einstellungen reparieren",
+      "corriger les paramètres",
+      "設定を修正",
+      "إصلاح الإعدادات",
+      "לתקן הגדרות",
+    ]) {
+      expect(selectRagGroupsForTask(localizedSettingsTask)).toContain("ui_v2");
+    }
+    expect(selectRagGroupsForTask("arreglar configuración")).not.toContain("telegram_control");
   });
+
+  it("adds a stable Settings anchor for localized vague requests", () => {
+    const localizedSettingsTasks = [
+      "fix Settings tab",
+      "исправить таб настроек",
+      "виправити вкладку налаштувань",
+      "arreglar configuración",
+      "Einstellungen reparieren",
+      "corriger les paramètres",
+      "設定を修正",
+      "إصلاح الإعدادات",
+      "לתקן הגדרות",
+    ];
+
+    for (const task of localizedSettingsTasks) {
+      expect(buildRagSearchTask(task, selectRagGroupsForTask(task))).toBe(
+        `${task} settings SettingsPage`
+      );
+    }
+
+    const preflight = buildRagPreflightContext({
+      task: "виправити вкладку налаштувань",
+      rootDir: process.cwd(),
+    });
+    expect(preflight.groups).toContain("ui_v2");
+    expect(preflight.resultCount).toBeGreaterThan(0);
+    expect(preflight.markdown).toMatch(/SettingsPage|settings/i);
+  }, 30_000);
 
   it("builds a cited redacted preflight pack and writes auto-context files", () => {
     const rootDir = mkdtempSync(join(tmpdir(), "zenflow-rag-preflight-"));

@@ -4,6 +4,11 @@ import { Database } from "@/types/supabase";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { SUPABASE_URL, SUPABASE_PUBLIC_API_KEY, IS_DEV } from "@/lib/env";
+import {
+  configureAuthTransitionClient,
+  createOriginWideAuthLock,
+} from "@/lib/authTransitionCoordinator";
+import { createAttemptScopedAuthStorage } from "@/lib/pkceAttemptStorage";
 
 /**
  * Zod schema for validating Supabase user object
@@ -98,6 +103,18 @@ const getAuthStorage = () => {
 };
 
 /**
+ * Keep this derivation aligned with the pinned @supabase/supabase-js client.
+ * Supplying the key explicitly lets the owner-bound transition coordinator
+ * address the exact same persisted realm without inspecting private fields.
+ */
+export function getSupabaseAuthStorageKey(supabaseUrl: string): string {
+  const hostname = new URL(supabaseUrl).hostname;
+  const projectRef = hostname.split(".")[0];
+  if (!projectRef) throw new Error("Unable to derive the Supabase auth storage key");
+  return `sb-${projectRef}-auth-token`;
+}
+
+/**
  * Determine if we should detect session from URL
  * - Web: true (handles OAuth callback in URL)
  * - Native: false (handled via deep links separately)
@@ -106,19 +123,43 @@ const shouldDetectSessionInUrl = (): boolean => {
   return !isNative;
 };
 
-// Export null if not configured - app works in local-only mode
-export const supabase: SupabaseClient<Database> | null =
-  SUPABASE_URL && SUPABASE_PUBLIC_API_KEY
-    ? createClient<Database>(SUPABASE_URL, SUPABASE_PUBLIC_API_KEY, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: shouldDetectSessionInUrl(),
-          storage: getAuthStorage(),
-          flowType: "pkce",
-        },
+function createConfiguredSupabaseClient(): SupabaseClient<Database> | null {
+  if (!SUPABASE_URL || !SUPABASE_PUBLIC_API_KEY) return null;
+
+  const storage = getAuthStorage();
+  const storageKey = getSupabaseAuthStorageKey(SUPABASE_URL);
+  const attemptScopedStorage = storage
+    ? createAttemptScopedAuthStorage(storage, storageKey, {
+        initialCallbackUrl:
+          typeof window !== "undefined" ? window.location.href : undefined,
       })
     : null;
+  const client = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLIC_API_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: shouldDetectSessionInUrl(),
+      storage: attemptScopedStorage?.storage,
+      storageKey,
+      flowType: "pkce",
+      // The custom adapter does not steal an in-flight owner transition when
+      // the SDK timeout elapses; it waits for the origin-wide lock to finish.
+      lock: createOriginWideAuthLock({ pkceControl: attemptScopedStorage }),
+      lockAcquireTimeout: -1,
+    },
+  });
+
+  if (attemptScopedStorage) {
+    configureAuthTransitionClient(client.auth, {
+      storage: attemptScopedStorage.storage,
+      storageKey,
+    });
+  }
+  return client;
+}
+
+// Export null if not configured - app works in local-only mode.
+export const supabase: SupabaseClient<Database> | null = createConfiguredSupabaseClient();
 
 // Helper to check if user is authenticated
 // Validates user object shape before returning
@@ -164,6 +205,66 @@ export const getCurrentSessionUserId = async (): Promise<string | null> => {
   }
 
   return validateSupabaseUser(session?.user)?.id ?? null;
+};
+
+function createSessionVerificationError(message: string, cause?: unknown): Error {
+  const error = new Error(message);
+  if (cause !== undefined) {
+    (error as Error & { cause?: unknown }).cause = cause;
+  }
+  return error;
+}
+
+/**
+ * Fail-closed session-owner read for account-bound device mutations.
+ *
+ * Unlike getCurrentSessionUserId(), this must not collapse an auth adapter
+ * failure or malformed session into the signed-out realm. Callers use null
+ * only after Supabase explicitly returns `session: null` (or when cloud auth
+ * is not configured and the app is deliberately local-only).
+ */
+export const getVerifiedCurrentSessionUserId = async (): Promise<string | null> => {
+  if (!supabase) return null;
+
+  let response: unknown;
+  try {
+    response = await supabase.auth.getSession();
+  } catch (error) {
+    throw createSessionVerificationError("Unable to verify the active session", error);
+  }
+
+  if (!response || typeof response !== "object") {
+    throw createSessionVerificationError("Unable to verify the active session");
+  }
+
+  const candidate = response as { data?: unknown; error?: unknown };
+  if (candidate.error) {
+    throw createSessionVerificationError(
+      "Unable to verify the active session",
+      candidate.error,
+    );
+  }
+  if (!candidate.data || typeof candidate.data !== "object") {
+    throw createSessionVerificationError("Unable to verify the active session");
+  }
+
+  const data = candidate.data as Record<string, unknown>;
+  if (!Object.prototype.hasOwnProperty.call(data, "session")) {
+    throw createSessionVerificationError("Unable to verify the active session");
+  }
+  if (data.session === null) return null;
+  if (!data.session || typeof data.session !== "object") {
+    throw createSessionVerificationError("Unable to verify the active session");
+  }
+
+  const session = data.session as Record<string, unknown>;
+  const user = validateSupabaseUser(session.user);
+  if (!user) {
+    throw createSessionVerificationError(
+      "The active session has no valid account owner",
+    );
+  }
+  return user.id;
 };
 
 // Helper to get user ID

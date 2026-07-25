@@ -97,6 +97,7 @@ import {
   syncFocusSession,
   syncGratitude,
   syncSetting,
+  deleteSettingFromCloud,
   syncJournalEntry,
   syncJournalPhoto,
   syncJournalAudio,
@@ -215,6 +216,7 @@ export const pullFromCloud = async (expectedOwnerUserId?: string): Promise<boole
     const focusData = focusRes.data || [];
     const gratitudeData = gratitudeRes.data || [];
     const settingsData = settingsRes.data || [];
+    const hasLegacyCloudPrivacy = settingsData.some((setting) => setting.key === SK.PRIVACY);
     const journalEntriesData = journalEntriesRes.data || [];
     const journalPhotosData = journalPhotosRes.data || [];
     const journalAudioData = journalAudioRes.data || [];
@@ -526,16 +528,41 @@ export const pullFromCloud = async (expectedOwnerUserId?: string): Promise<boole
                 });
               if (merged.length) await db.journalEntries.bulkPut(merged);
 
+              // The winning parent entry is authoritative for media membership.
+              // Purge local media removed by a newer parent and ignore orphaned
+              // remote metadata so an older client cannot resurrect it.
+              const authoritativeEntries = new Map(merged.map((entry) => [entry.id, entry]));
+              const localPhotos = await db.journalPhotos.toArray();
+              const stalePhotoIds = localPhotos
+                .filter((photo) => {
+                  const parent = authoritativeEntries.get(photo.entryId);
+                  return parent ? !parent.photoIds.includes(photo.id) : false;
+                })
+                .map((photo) => photo.id);
+              if (stalePhotoIds.length > 0) await db.journalPhotos.bulkDelete(stalePhotoIds);
+
+              const localAudio = await db.journalAudio.toArray();
+              const staleAudioIds = localAudio
+                .filter((audio) => {
+                  const parent = authoritativeEntries.get(audio.entryId);
+                  return parent ? !(parent.audioIds ?? []).includes(audio.id) : false;
+                })
+                .map((audio) => audio.id);
+              if (staleAudioIds.length > 0) await db.journalAudio.bulkDelete(staleAudioIds);
+
               // Journal photos: merge — filter out deleted entries + preserve local binary data
               if (journalPhotos.length) {
                 const filteredPhotos =
                   deletedIds.journal.size > 0
                     ? journalPhotos.filter((p) => !deletedIds.journal.has(p.entryId))
                     : journalPhotos;
-                if (filteredPhotos.length) {
-                  const localPhotos = await db.journalPhotos.toArray();
+                const referencedPhotos = filteredPhotos.filter((photo) => {
+                  const parent = authoritativeEntries.get(photo.entryId);
+                  return parent ? parent.photoIds.includes(photo.id) : false;
+                });
+                if (referencedPhotos.length) {
                   const localPhotoMap = new Map(localPhotos.map((p) => [p.id, p]));
-                  const mergedPhotos = filteredPhotos.map((remote) => {
+                  const mergedPhotos = referencedPhotos.map((remote) => {
                     const local = localPhotoMap.get(remote.id);
                     if (local && local.data)
                       return {
@@ -555,48 +582,19 @@ export const pullFromCloud = async (expectedOwnerUserId?: string): Promise<boole
                   deletedIds.journal.size > 0
                     ? journalAudioItems.filter((a) => !deletedIds.journal.has(a.entryId))
                     : journalAudioItems;
-                if (filteredAudio.length) {
-                  const localAudio = await db.journalAudio.toArray();
+                const referencedAudio = filteredAudio.filter((audio) => {
+                  const parent = authoritativeEntries.get(audio.entryId);
+                  return parent ? (parent.audioIds ?? []).includes(audio.id) : false;
+                });
+                if (referencedAudio.length) {
                   const localAudioMap = new Map(localAudio.map((a) => [a.id, a]));
-                  const mergedAudio = filteredAudio.map((remote) => {
+                  const mergedAudio = referencedAudio.map((remote) => {
                     const local = localAudioMap.get(remote.id);
                     if (local && local.data) return { ...remote, data: local.data };
                     return remote;
                   });
                   await db.journalAudio.bulkPut(mergedAudio);
                 }
-              }
-            } else {
-              // No journal entries to merge, but still handle photos/audio
-              if (journalPhotos.length) {
-                const localPhotos = await db.journalPhotos.toArray();
-                const localPhotoMap = new Map(localPhotos.map((p) => [p.id, p]));
-                const mergedPhotos = journalPhotos
-                  .filter((remote) => !deletedIds.journal.has(remote.entryId))
-                  .map((remote) => {
-                    const local = localPhotoMap.get(remote.id);
-                    if (local && local.data)
-                      return {
-                        ...remote,
-                        data: local.data,
-                        thumbnail: local.thumbnail,
-                      };
-                    return remote;
-                  });
-                await db.journalPhotos.bulkPut(mergedPhotos);
-              }
-
-              if (journalAudioItems.length) {
-                const localAudio = await db.journalAudio.toArray();
-                const localAudioMap = new Map(localAudio.map((a) => [a.id, a]));
-                const mergedAudio = journalAudioItems
-                  .filter((remote) => !deletedIds.journal.has(remote.entryId))
-                  .map((remote) => {
-                    const local = localAudioMap.get(remote.id);
-                    if (local && local.data) return { ...remote, data: local.data };
-                    return remote;
-                  });
-                await db.journalAudio.bulkPut(mergedAudio);
               }
             }
 
@@ -630,6 +628,14 @@ export const pullFromCloud = async (expectedOwnerUserId?: string): Promise<boole
         );
       }
       throw transactionError; // Re-throw to be caught by outer catch
+    }
+
+    // Privacy choices now authorize optional services on this device only.
+    // Remove a historical account-scoped row after the local snapshot has
+    // safely ignored it; the delete path queues a retry on network failure.
+    if (hasLegacyCloudPrivacy) {
+      await validateSyncOwner(userId, "Legacy privacy cleanup");
+      await deleteSettingFromCloud(SK.PRIVACY, userId);
     }
 
     lazyCategorizedBreadcrumb("sync", "pullFromCloud completed", {

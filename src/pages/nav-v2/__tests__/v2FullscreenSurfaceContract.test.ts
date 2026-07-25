@@ -55,6 +55,11 @@ describe("V2 fullscreen surface contract", () => {
     expect(css).toContain("--app-viewport-height: 100dvh");
     expect(css).toContain("max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px))");
     expect(css).toContain("max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px))");
+    expect(css).toContain("--safe-inline-start: var(--safe-left)");
+    expect(css).toContain("--safe-inline-end: var(--safe-right)");
+    expect(css).toMatch(
+      /:root\[dir="rtl"\][\s\S]*?--safe-inline-start:\s*var\(--safe-right\)[\s\S]*?--safe-inline-end:\s*var\(--safe-left\)/,
+    );
     expect(capacitorConfig).toContain("SystemBars");
     expect(capacitorConfig).toContain('insetsHandling: "disable"');
     expect(capacitorConfig).toContain("SafeArea");
@@ -125,8 +130,8 @@ describe("V2 fullscreen surface contract", () => {
       "src/pages/nav-v2/settings/components/V2SettingsFormPrimitives.tsx",
     );
 
-    expect(settings).toContain("var(--safe-left)");
-    expect(settings).toContain("var(--safe-right)");
+    expect(settings).toContain("var(--safe-inline-start)");
+    expect(settings).toContain("var(--safe-inline-end)");
     expect(forms).toContain("var(--safe-left)");
     expect(forms).toContain("var(--safe-right)");
   });

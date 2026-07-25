@@ -116,6 +116,15 @@ describe('sanitizeLogData (via logger.sync)', () => {
     });
   });
 
+  it('redacts account-deletion recovery secrets', () => {
+    logger.sync('test', {
+      recoverySecret: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    });
+    expect(consoleSpy.log).toHaveBeenCalledWith('[Sync] test', {
+      recoverySecret: '[REDACTED]',
+    });
+  });
+
   it('redacts nested objects containing sensitive keys', () => {
     logger.sync('test', {
       user: { userId: 'u-1', name: 'Alice' },

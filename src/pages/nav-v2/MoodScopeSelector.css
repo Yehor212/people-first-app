@@ -110,30 +110,39 @@
 }
 
 .mood-scope-time-label {
-  font-size: 0.875rem;
+  min-width: 0;
+  max-width: 100%;
+  font-size: calc(0.875rem * var(--font-scale, 1));
+  line-height: 1.4;
   color: hsl(var(--muted-foreground));
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .mood-scope-wrapper[data-density="compact"] .mood-scope-time-label {
-  font-size: 0.8125rem;
+  font-size: calc(0.8125rem * var(--font-scale, 1));
 }
 
 .mood-scope-time-input {
+  box-sizing: border-box;
   background: transparent;
   border: none;
   color: hsl(var(--foreground));
-  font-size: 0.95rem;
+  /* Outrank the global 16px mobile-input zoom guard while preserving scale. */
+  font-size: calc(0.95rem * var(--font-scale, 1)) !important;
+  line-height: 1.25;
   font-variant-numeric: tabular-nums;
-  padding: 0.25rem 0.25rem;
-  min-width: 5rem;
-  min-height: 32px;
+  padding: 0.5rem 0.75rem;
+  min-width: min(8.5rem, 100%);
+  max-width: 100%;
+  min-height: 44px;
 }
 
 .mood-scope-wrapper[data-density="compact"] .mood-scope-time-input {
-  min-width: 4.5rem;
-  min-height: 30px;
-  font-size: 0.875rem;
+  min-width: min(7.5rem, 100%);
+  min-height: 44px;
+  font-size: calc(0.875rem * var(--font-scale, 1)) !important;
 }
 
 .mood-scope-time-input::-webkit-calendar-picker-indicator {

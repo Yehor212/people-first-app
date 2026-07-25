@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- The bounded timeline region must receive focus for keyboard scrolling. */
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Task } from '@/lib/taskMomentum';
@@ -68,8 +69,6 @@ export function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Translations })
   const formatTime = (date: Date) =>
     `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
-  const totalMinutes = blocks.reduce((sum, b) => sum + b.duration, 0);
-
   const getBlockProgress = (block: typeof blocks[0], index: number): number => {
     if (index > 0) return 0;
     const elapsed = now - block.startTime.getTime();
@@ -83,67 +82,91 @@ export function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Translations })
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg">📋</span>
-        <span className="text-sm font-medium text-slate-700 dark:text-white/90">
+      <div className="mb-3 flex items-start gap-2">
+        <span className="shrink-0 text-lg">📋</span>
+        <span className="min-w-0 break-words text-sm font-medium text-slate-700 dark:text-white/90">
           {t.yourTasksNow || 'Your tasks now'}
         </span>
       </div>
 
-      {/* Progress bar showing all blocks */}
-      <div className="flex gap-1 h-12 rounded-xl overflow-hidden mb-2">
-        {blocks.map((block, index) => {
-          const progress = getBlockProgress(block, index);
-          const isActive = index === 0;
-          const remainingMinutes = Math.ceil(block.duration - (progress / 100 * block.duration));
+      <div
+        className="max-w-full overflow-x-auto overscroll-x-contain touch-pan-x pb-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        role="region"
+        aria-label={t.yourTasksNow || 'Your tasks now'}
+        tabIndex={0}
+      >
+        <div className="w-max min-w-full">
+          {/* Progress bar showing all blocks */}
+          <div className="mb-2 flex min-h-12 gap-1 rounded-xl">
+            {blocks.map((block, index) => {
+              const progress = getBlockProgress(block, index);
+              const isActive = index === 0;
+              const remainingMinutes = Math.ceil(
+                block.duration - (progress / 100) * block.duration,
+              );
 
-          return (
-            <motion.div
-              key={block.id}
-              className="relative flex items-center justify-center gap-1 text-white text-xs font-medium overflow-hidden rounded-lg"
-              style={{
-                backgroundColor: block.color,
-                width: `${(block.duration / totalMinutes) * 100}%`,
-                minWidth: '70px',
-              }}
-              whileHover={{ scale: 1.02 }}
-            >
-              {/* Progress overlay */}
-              {isActive && progress > 0 && (
+              return (
                 <motion.div
-                  className="absolute inset-y-0 left-0 right-0 bg-black/30 dark:bg-black/30 origin-left"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: progress / 100 }}
-                  transition={{ duration: 1 }}
-                />
-              )}
+                  key={block.id}
+                  className="relative flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-center text-xs font-medium text-white"
+                  style={{
+                    backgroundColor: block.color,
+                    flexBasis: 0,
+                    flexGrow: block.duration,
+                    minWidth: 'calc(7rem * var(--font-scale, 1))',
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                >
+                  {/* Progress overlay */}
+                  {isActive && progress > 0 && (
+                    <motion.div
+                      className="absolute inset-y-0 left-0 right-0 origin-left rounded-lg bg-black/30 dark:bg-black/30"
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: progress / 100 }}
+                      transition={{ duration: 1 }}
+                    />
+                  )}
 
-              <span className="relative z-10">{block.emoji}</span>
-              <span className="relative z-10 truncate">{block.title}</span>
+                  <div className="relative z-10 flex min-w-0 items-start justify-center gap-1">
+                    <span className="shrink-0">{block.emoji}</span>
+                    <span
+                      className={`min-w-0 leading-tight ${
+                        block.type === 'work' ? '[overflow-wrap:anywhere]' : 'break-words'
+                      }`}
+                    >
+                      {block.title}
+                    </span>
+                  </div>
 
-              {isActive && progress > 0 && (
-                <span className="absolute bottom-1 end-1 text-xs bg-black/40 dark:bg-black/40 px-1.5 py-0.5 rounded z-10">
-                  {remainingMinutes} {t.min || 'min'}
-                </span>
-              )}
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Time labels */}
-      <div className="flex gap-1">
-        {blocks.map(block => (
-          <div
-            key={`time-${block.id}`}
-            className="text-xs text-slate-500 dark:text-white/50 text-center"
-            style={{ width: `${(block.duration / totalMinutes) * 100}%`, minWidth: '70px' }}
-          >
-            {formatTime(block.startTime)} — {formatTime(block.endTime)}
-            <br />
-            ({block.duration} {t.min || 'min'})
+                  {isActive && progress > 0 && (
+                    <span className="relative z-10 rounded bg-black/40 px-1.5 py-0.5 text-xs dark:bg-black/40">
+                      {remainingMinutes} {t.min || 'min'}
+                    </span>
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
-        ))}
+
+          {/* Time labels */}
+          <div className="flex gap-1">
+            {blocks.map(block => (
+              <div
+                key={`time-${block.id}`}
+                className="min-h-11 break-words px-1 py-1 text-center text-xs leading-relaxed text-slate-500 dark:text-white/50"
+                style={{
+                  flexBasis: 0,
+                  flexGrow: block.duration,
+                  minWidth: 'calc(7rem * var(--font-scale, 1))',
+                }}
+              >
+                {formatTime(block.startTime)} — {formatTime(block.endTime)}
+                <br />
+                ({block.duration} {t.min || 'min'})
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </motion.div>
   );

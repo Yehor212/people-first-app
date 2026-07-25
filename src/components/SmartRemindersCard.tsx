@@ -66,14 +66,14 @@ function SuggestionItem({
       <div className="flex items-start gap-3">
         <div className="text-2xl flex-shrink-0">{suggestion.icon}</div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-medium text-foreground capitalize">
+          <div className="mb-1 flex flex-wrap items-start gap-2">
+            <span className="min-w-0 break-words text-sm font-medium capitalize text-foreground">
               {suggestion.type === 'mood' ? t.mood || 'Mood' :
                suggestion.type === 'habit' ? t.habits || 'Habits' :
                t.focus || 'Focus'}
             </span>
             <span className={cn(
-              'text-xs px-2 py-0.5 rounded-full border',
+              'max-w-full break-words rounded-full border px-2 py-0.5 text-xs',
               confidenceColors[suggestion.confidence]
             )}>
               {suggestion.confidence === 'high' ? t.highConfidence || 'Stronger signal' :
@@ -82,11 +82,11 @@ function SuggestionItem({
             </span>
           </div>
 
-          <p className="text-xs text-muted-foreground mb-2">
+          <p className="mb-2 break-words text-xs text-muted-foreground">
             {suggestion.reason}
           </p>
 
-          <div className="flex items-center gap-3 text-sm">
+          <div className="flex flex-wrap items-center gap-3 text-sm">
             <div className="flex items-center gap-1 text-muted-foreground">
               <Clock className="w-3 h-3" />
               <span className="line-through">{suggestion.currentTime}</span>
@@ -99,21 +99,21 @@ function SuggestionItem({
           </div>
 
           {suggestion.improvement && (
-            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <Lightbulb className="w-3 h-3" />
-              {suggestion.improvement}
+            <p className="mt-2 flex items-start gap-1 text-xs text-muted-foreground">
+              <Lightbulb className="h-3 w-3 shrink-0" />
+              <span className="min-w-0 break-words">{suggestion.improvement}</span>
             </p>
           )}
         </div>
       </div>
 
-      <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+      <div className="mt-3 flex flex-col items-stretch gap-2 border-t border-border pt-3 min-[420px]:flex-row">
         <button
           onClick={() => {
             void hapticSuccess();
             onApply();
           }}
-          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-primary/10 text-primary text-xs font-medium rounded-lg hover:bg-primary/20 motion-safe:transition-colors"
+          className="flex h-auto min-h-11 flex-1 items-center justify-center gap-1 whitespace-normal break-words rounded-lg bg-primary/10 px-3 py-2 text-center text-xs font-medium text-primary motion-safe:transition-colors hover:bg-primary/20"
         >
           <Check className="w-3 h-3" aria-hidden="true" />
           {t.apply || 'Apply'}
@@ -123,7 +123,7 @@ function SuggestionItem({
             void hapticTap();
             onDismiss();
           }}
-          className="flex items-center justify-center px-3 py-2 bg-muted text-muted-foreground text-xs rounded-lg hover:bg-muted/80 motion-safe:transition-colors"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground motion-safe:transition-colors hover:bg-muted/80"
           aria-label={t.dismiss || 'Dismiss'}
         >
           <X className="w-3 h-3" />
@@ -153,19 +153,19 @@ function HabitSuggestionItem({
   };
 
   return (
-    <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg hover:bg-muted motion-safe:transition-colors">
-      <div className="flex items-center gap-2 min-w-0">
+    <div className="flex flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between p-2 bg-muted/50 rounded-lg hover:bg-muted motion-safe:transition-colors">
+      <div className="flex min-w-0 items-start gap-2">
         <span className="text-lg flex-shrink-0">{suggestion.habitIcon}</span>
         <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">
+          <p className="text-sm font-medium text-foreground [overflow-wrap:anywhere]">
             {suggestion.habitName}
           </p>
-          <p className="text-xs text-muted-foreground truncate">
+          <p className="break-words text-xs text-muted-foreground">
             {suggestion.reason}
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex flex-wrap items-center gap-2 min-[420px]:justify-end">
         <span className={cn('text-xs font-medium', confidenceColors[suggestion.confidence])}>
           {suggestion.suggestedTime}
         </span>
@@ -233,7 +233,7 @@ export const SmartRemindersCard = memo(function SmartRemindersCard({
       <div className={cn('bg-card rounded-2xl p-4 border border-border', className)}>
         <div className="flex items-start gap-3">
           <Sparkles className="w-5 h-5 text-violet-500 flex-shrink-0 mt-0.5" />
-          <div>
+          <div className="min-w-0">
             <h3 className="font-semibold text-foreground text-sm mb-1">
               {t.smartReminders || 'Smart Reminders'}
             </h3>
@@ -254,7 +254,7 @@ export const SmartRemindersCard = memo(function SmartRemindersCard({
           <div className="p-2 bg-emerald-500/10 rounded-xl">
             <Check className="w-4 h-4 text-emerald-500" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h3 className="font-semibold text-foreground text-sm mb-1">
               {t.smartReminders || 'Smart Reminders'}
             </h3>
@@ -271,18 +271,18 @@ export const SmartRemindersCard = memo(function SmartRemindersCard({
     <div className={cn('bg-card rounded-2xl border border-border overflow-hidden', className)}>
       {/* Header */}
       <div className="p-4 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-violet-500" />
-          <h3 className="font-semibold text-foreground">
+        <div className="flex flex-wrap items-center gap-2">
+          <Sparkles className="h-5 w-5 shrink-0 text-violet-500" />
+          <h3 className="min-w-0 break-words font-semibold text-foreground">
             {t.smartReminders || 'Smart Reminders'}
           </h3>
           {activeSuggestions.length > 0 && (
-            <span className="text-xs bg-violet-500/20 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full font-medium">
+            <span className="max-w-full break-words rounded-full bg-violet-500/20 px-2 py-0.5 text-xs font-medium text-violet-600 dark:text-violet-400">
               {activeSuggestions.length} {t.suggestions || 'suggestions'}
             </span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="mt-1 break-words text-xs text-muted-foreground">
           {t.smartRemindersDescription || 'Suggestions based on recent app activity'}
         </p>
       </div>
@@ -310,11 +310,11 @@ export const SmartRemindersCard = memo(function SmartRemindersCard({
               void hapticTap();
               setShowHabitSuggestions(!showHabitSuggestions);
             }}
-            className="w-full flex items-center justify-between p-4 hover:bg-muted/50 motion-safe:transition-colors"
+            className="flex min-h-11 w-full items-start justify-between gap-3 p-4 text-start motion-safe:transition-colors hover:bg-muted/50"
           >
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-              <span className="text-sm font-medium text-foreground">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              <Clock className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span className="min-w-0 break-words text-sm font-medium text-foreground">
                 {t.habitRemindersOptimal || 'Suggested habit times'}
               </span>
               <span className="text-xs text-muted-foreground">
@@ -322,9 +322,9 @@ export const SmartRemindersCard = memo(function SmartRemindersCard({
               </span>
             </div>
             {showHabitSuggestions ? (
-              <ChevronUp className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             )}
           </button>
 

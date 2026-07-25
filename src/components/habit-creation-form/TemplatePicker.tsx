@@ -58,7 +58,7 @@ export function TemplatePicker({
     >
       <p
         className={cn(
-          "text-sm font-medium mb-3",
+          "mb-3 break-words text-sm font-medium [hyphens:manual] [overflow-wrap:break-word]",
           useRitualPicker
             ? "text-[hsl(var(--zf-text-soft))]"
             : isPrimaryCTA
@@ -69,7 +69,10 @@ export function TemplatePicker({
       >
         {t.quickAdd}
       </p>
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      <div
+        className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(8rem*var(--font-scale,1))),1fr))] gap-2"
+        data-slot="template-picker-grid"
+      >
         {visibleTemplates
           .filter(
             (template) =>
@@ -90,7 +93,7 @@ export function TemplatePicker({
                 data-card={useRitualPicker ? "ritual-template-picker-card" : undefined}
                 data-visual-role={useRitualPicker ? role : undefined}
                 className={cn(
-                  "flex items-center rounded-[18px] border text-start motion-safe:transition-all",
+                  "flex h-auto min-w-0 items-center rounded-[18px] border text-start motion-safe:transition-all",
                   useRitualPicker ? "min-h-[84px] gap-2 px-2.5 py-2.5" : "min-h-[58px] gap-3 px-3 py-3",
                   useRitualPicker
                     ? "relative isolate overflow-hidden text-[hsl(var(--foreground))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
@@ -129,12 +132,7 @@ export function TemplatePicker({
                   </span>
                 </span>
                 <span
-                  className={cn(
-                    "text-sm font-semibold leading-tight",
-                    useRitualPicker
-                      ? "min-w-0 whitespace-normal break-words [hyphens:none] [overflow-wrap:normal]"
-                      : "truncate",
-                  )}
+                  className="min-w-0 whitespace-normal break-words text-sm font-semibold leading-tight [hyphens:manual] [overflow-wrap:break-word]"
                   data-slot="template-picker-label"
                 >
                   {template.names[language] || template.names.en}
@@ -146,7 +144,7 @@ export function TemplatePicker({
                 variant="outline"
                 size="default"
                 onClick={() => handleQuickAdd(template.id)}
-                className="justify-start gap-2 min-h-[48px]"
+                className="h-auto min-h-[48px] min-w-0 justify-start gap-2 whitespace-normal break-words py-2 [hyphens:manual] [overflow-wrap:break-word]"
               >
                 {isV2Presentation ? (
                   <span
@@ -158,7 +156,10 @@ export function TemplatePicker({
                 ) : (
                   <span className="text-xl">{template.icon}</span>
                 )}
-                <span className="truncate">
+                <span
+                  className="min-w-0 whitespace-normal break-words text-start [hyphens:manual] [overflow-wrap:break-word]"
+                  data-slot="template-picker-label"
+                >
                   {template.names[language] || template.names.en}
                 </span>
               </Button>
@@ -169,14 +170,19 @@ export function TemplatePicker({
         <button
           type="button"
           onClick={() => setShowCustomForm(true)}
-          className="flex min-h-[48px] w-full items-center justify-between rounded-[18px] border border-[hsl(var(--zf-role-space)/0.34)] bg-[radial-gradient(circle_at_12%_0%,hsl(var(--zf-role-space)/0.20),transparent_34%),linear-gradient(135deg,hsl(var(--card)/0.76),hsl(var(--background)/0.58))] px-3 py-3 text-sm font-semibold text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.10),0_14px_34px_-30px_hsl(var(--zf-role-space)/0.70)] motion-safe:transition-colors hover:border-[hsl(var(--zf-role-space)/0.48)] hover:bg-[hsl(var(--zf-role-space)/0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-space)/0.62)] focus-visible:ring-offset-2"
+          className="flex h-auto min-h-[48px] w-full min-w-0 items-center justify-between gap-2 whitespace-normal break-words rounded-[18px] border border-[hsl(var(--zf-role-space)/0.34)] bg-[radial-gradient(circle_at_12%_0%,hsl(var(--zf-role-space)/0.20),transparent_34%),linear-gradient(135deg,hsl(var(--card)/0.76),hsl(var(--background)/0.58))] px-3 py-3 text-sm font-semibold text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.10),0_14px_34px_-30px_hsl(var(--zf-role-space)/0.70)] [hyphens:manual] [overflow-wrap:break-word] motion-safe:transition-colors hover:border-[hsl(var(--zf-role-space)/0.48)] hover:bg-[hsl(var(--zf-role-space)/0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-space)/0.62)] focus-visible:ring-offset-2"
           data-card="ritual-custom-habit-action"
           data-visual-role="space"
           style={getRoleStyleVars("space") as unknown as CSSProperties}
         >
-          <span className="flex min-w-0 items-center gap-2">
+          <span className="flex min-w-0 flex-1 items-start gap-2">
             <Settings2 className="h-5 w-5 shrink-0 text-[hsl(var(--zf-role-space))]" aria-hidden="true" />
-            <span className="truncate">{t.createCustomHabit}</span>
+            <span
+              className="min-w-0 break-words text-start [hyphens:manual] [overflow-wrap:break-word]"
+              data-slot="template-picker-custom-label"
+            >
+              {t.createCustomHabit}
+            </span>
           </span>
           <ChevronRight className="h-5 w-5 shrink-0 text-[hsl(var(--zf-text-soft))] rtl:scale-x-[-1]" aria-hidden="true" />
         </button>
@@ -184,11 +190,16 @@ export function TemplatePicker({
         <Button
           variant="outline"
           onClick={() => setShowCustomForm(true)}
-          className="w-full justify-between min-h-[48px]"
+          className="h-auto min-h-[48px] w-full min-w-0 justify-between gap-2 whitespace-normal break-words py-2 [hyphens:manual] [overflow-wrap:break-word]"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-start gap-2">
             <Settings2 className="w-5 h-5 text-primary" aria-hidden="true" />
-            <span>{t.createCustomHabit}</span>
+            <span
+              className="min-w-0 break-words text-start [hyphens:manual] [overflow-wrap:break-word]"
+              data-slot="template-picker-custom-label"
+            >
+              {t.createCustomHabit}
+            </span>
           </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" aria-hidden="true" />
         </Button>

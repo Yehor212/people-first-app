@@ -158,16 +158,16 @@ export const ChallengeModal = memo(function ChallengeModal({
         <DialogTitle className="sr-only">{getTitle()}</DialogTitle>
 
         {/* Premium Header - like AICoachChat */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-200/60 dark:border-white/10 relative">
+        <div className="flex min-w-0 items-center justify-between p-4 border-b border-slate-200/60 dark:border-white/10 relative">
           {/* Subtle gradient glow */}
           <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[rgba(139,92,246,0.05)] to-transparent" />
 
-          <div className="flex items-center gap-3 relative z-10">
+          <div className="flex min-w-0 flex-1 items-center gap-3 relative z-10">
             {(mode === "details" || mode === "join") && (
               <motion.button
                 onClick={handleBack}
                 aria-label={t.back || "Go back"}
-                className="p-2 rounded-xl bg-slate-100/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200/60 dark:hover:bg-white/10 motion-safe:transition-colors"
+                className="min-h-11 min-w-11 shrink-0 p-2 rounded-xl bg-slate-100/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200/60 dark:hover:bg-white/10 motion-safe:transition-colors"
                 whileHover={zenHover.glow}
                 whileTap={zenTap.icon}
               >
@@ -176,7 +176,7 @@ export const ChallengeModal = memo(function ChallengeModal({
             )}
 
             <motion.div
-              className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-[rgba(139,92,246,0.5)] to-[rgba(168,85,247,0.4)] shadow-[0_0_15px_rgba(139,92,246,0.3)]"
+              className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-gradient-to-br from-[rgba(139,92,246,0.5)] to-[rgba(168,85,247,0.4)] shadow-[0_0_15px_rgba(139,92,246,0.3)]"
               animate={shouldAnimate() ? { scale: [1, 1.05, 1] } : undefined}
               transition={
                 shouldAnimate()
@@ -187,11 +187,11 @@ export const ChallengeModal = memo(function ChallengeModal({
               <Users className="w-5 h-5 text-white" />
             </motion.div>
 
-            <div>
-              <h2 className="font-semibold text-slate-800 dark:text-white">
+            <div className="min-w-0 flex-1">
+              <h2 className="min-w-0 break-words font-semibold text-slate-800 dark:text-white [hyphens:manual] [overflow-wrap:break-word]">
                 {getTitle()}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-white/60">
+              <p className="min-w-0 break-words text-xs text-slate-500 dark:text-white/60 [hyphens:manual] [overflow-wrap:break-word]">
                 {mode === "create"
                   ? t.challengeDescription || "Challenge friends"
                   : mode === "join"
