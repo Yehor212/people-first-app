@@ -1,6 +1,6 @@
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
-import { join } from "path";
+import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 

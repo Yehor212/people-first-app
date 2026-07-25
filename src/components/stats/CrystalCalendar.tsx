@@ -35,12 +35,17 @@ interface CrystalCalendarProps {
 
 // Sparkle effect for perfect days
 function PerfectSparkle({ delay }: { delay: number }) {
+  // Stable per-mount position (10-agent review, Role 10).
+  const [position] = useState(() => ({
+    left: 20 + Math.random() * 60,
+    top: 20 + Math.random() * 60,
+  }));
   return (
     <div
       className="absolute w-1 h-1 rounded-full bg-amber-200 animate-zen-loop-sparkle"
       style={{
-        left: `${20 + Math.random() * 60}%`,
-        top: `${20 + Math.random() * 60}%`,
+        left: `${position.left}%`,
+        top: `${position.top}%`,
         opacity: 0,
         "--zen-loop-duration": "3.5s",
         "--zen-loop-delay": `${delay}s`,

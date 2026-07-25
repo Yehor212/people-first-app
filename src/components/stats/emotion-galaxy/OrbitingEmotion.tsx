@@ -79,7 +79,7 @@ export function OrbitingEmotion({
       >
         {/* Emoji container positioned at orbit radius using calc() */}
         <div
-          className="absolute animate-zen-loop-orbit"
+          className="absolute animate-zen-loop-orbit-reverse"
           style={{
             left: rx,      // Position directly at rx pixels from rotation center
             top: 0,
@@ -90,7 +90,6 @@ export function OrbitingEmotion({
             // Counter-rotate to keep emoji upright
             transform: `rotate(${-angle}deg)`,
             '--zen-orbit-start': `${-angle}deg`,
-            '--zen-orbit-dir': -1,
             '--zen-loop-duration': `${keplerDuration}s`,
             '--zen-loop-timing': 'linear',
           } as CSSProperties}
