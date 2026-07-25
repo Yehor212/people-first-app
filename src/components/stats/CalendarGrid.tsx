@@ -4,6 +4,7 @@
  */
 
 import { motion } from "framer-motion";
+import type { CSSProperties } from "react";
 import { Sparkles } from "lucide-react";
 import { zenTap } from "@/lib/animationUtils";
 import { cn } from "@/lib/utils";
@@ -125,40 +126,36 @@ export function CalendarGrid({
                 style={{ perspective: 200 }}
               >
                 {/* Crystal shape (rotated square) with animated glow */}
-                <motion.div
+                <div
                   className={cn(
                     "absolute inset-1 rotate-45 rounded-sm border motion-safe:transition-all motion-safe:duration-200",
                     "bg-gradient-to-br",
                     crystalStyles.bg,
                     crystalStyles.border,
-                    isSelected && "scale-110 ring-2 ring-accent"
+                    isSelected && "scale-110 ring-2 ring-accent",
+                    activityLevel >= 2 && "animate-zen-loop-glow"
                   )}
-                  style={{ boxShadow: crystalStyles.glow }}
-                  animate={
-                    activityLevel >= 2
-                      ? {
-                          boxShadow: [
-                            crystalStyles.glow,
-                            crystalStyles.glow.replace(/[\d.]+(?=\))/g, (m: string) =>
-                              String(parseFloat(m) * 1.4)
-                            ),
-                            crystalStyles.glow,
-                          ],
-                        }
-                      : {}
-                  }
-                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{
+                    boxShadow: crystalStyles.glow,
+                    "--zen-glow-a": crystalStyles.glow,
+                    "--zen-glow-b": crystalStyles.glow.replace(/[\d.]+(?=\))/g, (m: string) =>
+                      String(parseFloat(m) * 1.4)
+                    ),
+                    "--zen-loop-duration": "2s",
+                  } as CSSProperties}
                 />
 
                 {/* Today pulse ring */}
                 {isToday && (
-                  <motion.div
-                    className="absolute inset-0 rotate-45 rounded-sm border-2 border-primary/60"
-                    animate={{
-                      scale: [1, 1.05, 1],
-                      opacity: [0.6, 1, 0.6],
-                    }}
-                    transition={{ duration: 2, repeat: Infinity }}
+                  <div
+                    className="absolute inset-0 rotate-45 rounded-sm border-2 border-primary/60 animate-zen-loop-fade-scale"
+                    style={{
+                      opacity: 0.8,
+                      "--zen-loop-min-opacity": 0.6,
+                      "--zen-loop-max-opacity": 1,
+                      "--zen-loop-scale": 1.05,
+                      "--zen-loop-duration": "2s",
+                    } as CSSProperties}
                   />
                 )}
 
@@ -179,37 +176,30 @@ export function CalendarGrid({
                 {/* Perfect day sparkles - animated dots */}
                 {isPerfect && (
                   <>
-                    <motion.div
-                      className="absolute top-0 end-1 w-1 h-1 rounded-full bg-primary/80"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: [0, 1.5, 0], opacity: [0, 1, 0] }}
-                      transition={{ duration: 1.5, delay: 0, repeat: Infinity, repeatDelay: 2 }}
+                    <div
+                      className="absolute top-0 end-1 w-1 h-1 rounded-full bg-primary/80 animate-zen-loop-sparkle"
+                      style={{ opacity: 0, "--zen-loop-duration": "3.5s" } as CSSProperties}
                     />
-                    <motion.div
-                      className="absolute bottom-0 start-1 w-1 h-1 rounded-full bg-primary/80"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: [0, 1.5, 0], opacity: [0, 1, 0] }}
-                      transition={{ duration: 1.5, delay: 0.5, repeat: Infinity, repeatDelay: 2 }}
+                    <div
+                      className="absolute bottom-0 start-1 w-1 h-1 rounded-full bg-primary/80 animate-zen-loop-sparkle"
+                      style={{ opacity: 0, "--zen-loop-duration": "3.5s", "--zen-loop-delay": "0.5s" } as CSSProperties}
                     />
-                    <motion.div
-                      className="absolute top-1 start-0 w-1 h-1 rounded-full bg-primary/80"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: [0, 1.5, 0], opacity: [0, 1, 0] }}
-                      transition={{ duration: 1.5, delay: 1, repeat: Infinity, repeatDelay: 2 }}
+                    <div
+                      className="absolute top-1 start-0 w-1 h-1 rounded-full bg-primary/80 animate-zen-loop-sparkle"
+                      style={{ opacity: 0, "--zen-loop-duration": "3.5s", "--zen-loop-delay": "1s" } as CSSProperties}
                     />
                   </>
                 )}
 
                 {/* Gratitude indicator */}
                 {hasGratitude && !isPerfect && (
-                  <motion.span
-                    className="absolute -top-0.5 -end-0.5 flex size-4 items-center justify-center"
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
+                  <span
+                    className="absolute -top-0.5 -end-0.5 flex size-4 items-center justify-center animate-zen-loop-scale"
+                    style={{ "--zen-loop-scale": 1.2, "--zen-loop-duration": "2s" } as CSSProperties}
                     aria-hidden="true"
                   >
                     <Sparkles className="size-3 text-primary" />
-                  </motion.span>
+                  </span>
                 )}
               </motion.button>
             );

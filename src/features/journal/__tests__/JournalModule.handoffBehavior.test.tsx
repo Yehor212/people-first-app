@@ -200,6 +200,9 @@ vi.mock("@/lib/animationUtils", () => ({
     gentle: { duration: 0 },
     snappy: { duration: 0 },
   },
+  zenTap: {
+    cell: { scale: 0.97 },
+  },
 }));
 
 vi.mock("@/lib/haptics", () => ({

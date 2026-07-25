@@ -2,6 +2,7 @@ import { memo, useCallback, useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { zenTap } from "@/lib/animationUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { JournalEntry } from "./types";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
@@ -153,7 +154,7 @@ export const MoodDotStrip = memo(function MoodDotStrip({
                 onMouseEnter={() => handleMouseEnter(entry.id)}
                 onMouseLeave={handleMouseLeave}
                 whileHover={{ scale: 1.15 }}
-                whileTap={{ scale: 0.9 }}
+                whileTap={zenTap.cell}
                 className={cn(
                   "flex h-[44px] w-[44px] flex-shrink-0 items-center justify-center rounded-full motion-safe:transition-all relative",
                   isActive && mood && `ring-2 ${MOOD_RING_COLOR[mood]}`,

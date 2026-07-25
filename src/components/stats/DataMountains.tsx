@@ -9,6 +9,7 @@
  */
 
 import { useMemo } from 'react';
+import type { CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -30,15 +31,15 @@ interface DataMountainsProps {
 // Animated water wave
 function WaterWave({ delay, opacity }: { delay: number; opacity: number }) {
   return (
-    <motion.path
+    <path
       d="M0 8 Q25 4 50 8 T100 8 T150 8 T200 8 T250 8 T300 8 T350 8 T400 8 V20 H0 Z"
       fill={`rgba(59, 130, 246, ${opacity})`}
-      animate={{ x: [-50, 0] }}
-      transition={{
-        duration: 3 + delay,
-        repeat: Infinity,
-        ease: 'linear',
-      }}
+      className="animate-zen-loop-wave"
+      style={{
+        '--zen-loop-drift': '50px',
+        '--zen-loop-duration': `${3 + delay}s`,
+        '--zen-loop-timing': 'linear',
+      } as CSSProperties}
     />
   );
 }
@@ -46,19 +47,19 @@ function WaterWave({ delay, opacity }: { delay: number; opacity: number }) {
 // Cloud component
 function Cloud({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
   return (
-    <motion.g
-      transform={`translate(${x}, ${y}) scale(${size})`}
-      animate={{ x: [0, 15, 0] }}
-      transition={{
-        duration: 20 + delay * 5,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      }}
-    >
-      <ellipse cx="0" cy="0" rx="12" ry="6" fill="rgba(255, 255, 255, 0.15)" />
-      <ellipse cx="10" cy="-2" rx="8" ry="5" fill="rgba(255, 255, 255, 0.12)" />
-      <ellipse cx="-8" cy="2" rx="6" ry="4" fill="rgba(255, 255, 255, 0.1)" />
-    </motion.g>
+    <g transform={`translate(${x}, ${y}) scale(${size})`}>
+      <g
+        className="animate-zen-loop-drift-x"
+        style={{
+          '--zen-loop-drift': '15px',
+          '--zen-loop-duration': `${20 + delay * 5}s`,
+        } as CSSProperties}
+      >
+        <ellipse cx="0" cy="0" rx="12" ry="6" fill="rgba(255, 255, 255, 0.15)" />
+        <ellipse cx="10" cy="-2" rx="8" ry="5" fill="rgba(255, 255, 255, 0.12)" />
+        <ellipse cx="-8" cy="2" rx="6" ry="4" fill="rgba(255, 255, 255, 0.1)" />
+      </g>
+    </g>
   );
 }
 
@@ -69,9 +70,9 @@ function WeatherIcon({ value, maxValue }: { value: number; maxValue: number }) {
   if (ratio >= 0.8) {
     // Sunny
     return (
-      <motion.g
-        animate={{ rotate: 360 }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+      <g
+        className="animate-zen-loop-spin"
+        style={{ '--zen-loop-duration': '20s', '--zen-loop-timing': 'linear' } as CSSProperties}
       >
         <circle r="6" fill="#fbbf24" />
         {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
@@ -85,7 +86,7 @@ function WeatherIcon({ value, maxValue }: { value: number; maxValue: number }) {
             transform={`rotate(${angle})`}
           />
         ))}
-      </motion.g>
+      </g>
     );
   } else if (ratio >= 0.6) {
     // Partly cloudy
@@ -110,19 +111,21 @@ function WeatherIcon({ value, maxValue }: { value: number; maxValue: number }) {
       <g>
         <ellipse cx="0" cy="-2" rx="10" ry="5" fill="rgba(107, 114, 128, 0.6)" />
         {[-4, 0, 4].map((x, i) => (
-          <motion.line
+          <line
             key={i}
             x1={x} y1="4"
             x2={x - 1} y2="10"
             stroke="rgba(59, 130, 246, 0.6)"
             strokeWidth="1.5"
             strokeLinecap="round"
-            animate={{ opacity: [0.3, 0.8, 0.3], y: [0, 2, 0] }}
-            transition={{
-              duration: 0.6,
-              delay: i * 0.2,
-              repeat: Infinity,
-            }}
+            className="animate-zen-loop-rain"
+            style={{
+              '--zen-loop-min-opacity': 0.3,
+              '--zen-loop-max-opacity': 0.8,
+              '--zen-loop-rise': '2px',
+              '--zen-loop-duration': '0.6s',
+              '--zen-loop-delay': `${i * 0.2}s`,
+            } as CSSProperties}
           />
         ))}
       </g>
@@ -226,17 +229,16 @@ export function DataMountains({
         {Array.from({ length: 20 }).map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-white"
+            className="absolute w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-white animate-zen-loop-fade"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 40}%`,
-            }}
-            animate={{ opacity: [0.3, 0.8, 0.3] }}
-            transition={{
-              duration: 2 + Math.random() * 2,
-              delay: Math.random() * 2,
-              repeat: Infinity,
-            }}
+              opacity: 0.55,
+              '--zen-loop-min-opacity': 0.3,
+              '--zen-loop-max-opacity': 0.8,
+              '--zen-loop-duration': `${2 + Math.random() * 2}s`,
+              '--zen-loop-delay': `${Math.random() * 2}s`,
+            } as CSSProperties}
           />
         ))}
       </div>

@@ -1,5 +1,8 @@
 import { useMemo } from "react";
+import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
+import { easings } from "@/lib/motion";
+import { springs } from "@/config/animations";
 import { Sparkles } from "lucide-react";
 import type { Trophy } from "lucide-react";
 
@@ -15,27 +18,20 @@ export function SparkleParticle({ delay, color }: { delay: number; color: string
   );
 
   return (
-    <motion.div
-      className="absolute"
+    <div
+      className="absolute animate-zen-loop-sparkle"
       style={{
         left: `${rng.left}%`,
         top: `${rng.top}%`,
-      }}
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{
-        scale: [0, 1, 0],
-        opacity: [0, 1, 0],
-        rotate: [0, 180],
-      }}
-      transition={{
-        duration: 2,
-        delay,
-        repeat: Infinity,
-        repeatDelay: rng.repeatDelay,
-      }}
+        opacity: 0,
+        "--zen-loop-scale": 1,
+        "--zen-loop-rotate": "180deg",
+        "--zen-loop-duration": `${2 + rng.repeatDelay}s`,
+        "--zen-loop-delay": `${delay}s`,
+      } as CSSProperties}
     >
       <Sparkles className="w-3 h-3" style={{ color }} />
-    </motion.div>
+    </div>
   );
 }
 
@@ -74,7 +70,7 @@ export function MiniRing({
         strokeDasharray={circumference}
         initial={{ strokeDashoffset: circumference }}
         animate={{ strokeDashoffset: offset }}
-        transition={{ duration: 1, ease: "easeOut" }}
+        transition={{ duration: 0.6, ease: easings.emphasizedDecelerate }}
         style={{ filter: `drop-shadow(0 0 6px ${color})` }}
       />
     </svg>
@@ -99,20 +95,22 @@ export function AchievementBadge({
     <motion.div
       initial={{ scale: 0.8, opacity: 0, y: 20 }}
       animate={{ scale: 1, opacity: 1, y: 0 }}
-      transition={{ delay, type: "spring", stiffness: 200 }}
+      transition={{ delay, ...springs.smooth }}
       className="relative flex flex-col items-center p-3 rounded-2xl bg-gradient-to-br from-foreground/10 to-foreground/5 backdrop-blur-sm border border-foreground/10"
       style={{ boxShadow: `0 0 20px ${color}30` }}
     >
-      <motion.div
-        className="p-2.5 rounded-xl mb-2"
-        style={{ background: `linear-gradient(135deg, ${color}40, ${color}20)` }}
-        animate={{
-          boxShadow: [`0 0 10px ${color}40`, `0 0 20px ${color}60`, `0 0 10px ${color}40`],
-        }}
-        transition={{ duration: 2, repeat: Infinity }}
+      <div
+        className="p-2.5 rounded-xl mb-2 animate-zen-loop-glow"
+        style={{
+          background: `linear-gradient(135deg, ${color}40, ${color}20)`,
+          boxShadow: `0 0 10px ${color}40`,
+          "--zen-glow-a": `0 0 10px ${color}40`,
+          "--zen-glow-b": `0 0 20px ${color}60`,
+          "--zen-loop-duration": "2s",
+        } as CSSProperties}
       >
         <Icon className="w-5 h-5" style={{ color }} />
-      </motion.div>
+      </div>
       <span className="text-lg font-bold text-foreground">{value}</span>
       <span className="min-w-0 break-words text-center text-xs text-muted-foreground">{title}</span>
     </motion.div>

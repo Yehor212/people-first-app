@@ -11,6 +11,7 @@
  */
 
 import { useId, useMemo } from "react";
+import type { CSSProperties } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { zenTap } from "@/lib/animationUtils";
 import { TrendingUp, TrendingDown, Minus, Sparkles, Zap, ChevronRight, X } from "lucide-react";
@@ -153,20 +154,23 @@ export function RingDetailSheet({
           <SparkleParticles color={theme.particleColor} />
 
           {/* Animated gradient orb */}
-          <motion.div
+          <div
             className={cn(
               "absolute -top-24 -end-24 w-72 h-72 rounded-full blur-3xl",
-              `bg-gradient-to-br ${theme.gradient}`
+              `bg-gradient-to-br ${theme.gradient}`,
+              !shouldReduceMotion && "animate-zen-loop-fade-scale"
             )}
-            animate={
+            style={
               shouldReduceMotion
-                ? {}
-                : {
-                    scale: [1, 1.15, 1],
-                    opacity: [0.25, 0.4, 0.25],
-                  }
+                ? undefined
+                : ({
+                    opacity: 0.33,
+                    '--zen-loop-min-opacity': 0.25,
+                    '--zen-loop-max-opacity': 0.4,
+                    '--zen-loop-scale': 1.15,
+                    '--zen-loop-duration': '5s',
+                  } as CSSProperties)
             }
-            transition={shouldReduceMotion ? {} : { duration: 5, repeat: Infinity }}
           />
 
           {/* Handle bar */}
@@ -184,24 +188,23 @@ export function RingDetailSheet({
           {/* Header content */}
           <div className="absolute inset-x-4 bottom-4 flex flex-col items-stretch gap-2 min-[420px]:inset-x-6 min-[420px]:flex-row min-[420px]:items-end min-[420px]:justify-between">
             <div className="flex min-w-0 items-center gap-3 min-[420px]:gap-4">
-              <motion.div
-                className="shrink-0 rounded-2xl bg-foreground/20 p-3.5 backdrop-blur-sm"
-                style={{ boxShadow: `0 0 40px ${theme.glowColor}` }}
-                animate={
+              <div
+                className={shouldReduceMotion
+                  ? "shrink-0 rounded-2xl bg-foreground/20 p-3.5 backdrop-blur-sm"
+                  : "shrink-0 rounded-2xl bg-foreground/20 p-3.5 backdrop-blur-sm animate-zen-loop-glow"}
+                style={
                   shouldReduceMotion
-                    ? {}
-                    : {
-                        boxShadow: [
-                          `0 0 25px ${theme.glowColor}`,
-                          `0 0 50px ${theme.glowColor}`,
-                          `0 0 25px ${theme.glowColor}`,
-                        ],
-                      }
+                    ? { boxShadow: `0 0 40px ${theme.glowColor}` }
+                    : ({
+                        boxShadow: `0 0 25px ${theme.glowColor}`,
+                        '--zen-glow-a': `0 0 25px ${theme.glowColor}`,
+                        '--zen-glow-b': `0 0 50px ${theme.glowColor}`,
+                        '--zen-loop-duration': '2.5s',
+                      } as CSSProperties)
                 }
-                transition={shouldReduceMotion ? {} : { duration: 2.5, repeat: Infinity }}
               >
                 <Icon className="w-7 h-7 text-white" aria-hidden="true" />
-              </motion.div>
+              </div>
               <div className="min-w-0">
                 <h2 className="break-words text-2xl font-bold tracking-tight text-white">
                   {t[ringType] || theme.label}

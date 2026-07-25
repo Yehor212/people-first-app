@@ -20,7 +20,9 @@
 import { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { Sprout, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { zenMotion, shouldAnimate } from '@/lib/animationUtils';
+import { zenMotion, zenTap, shouldAnimate } from '@/lib/animationUtils';
+import { springs } from '@/config/animations';
+import { easings } from '@/lib/motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticTap, hapticMedium, hapticSuccess } from '@/lib/haptics';
 import { announceSuccess } from '@/lib/a11y';
@@ -178,7 +180,7 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
   };
 
   const getTransition = () => {
-    if (collapsing) return { duration: 0.55, ease: [0.32, 0.72, 0, 1] as const };
+    if (collapsing) return { duration: 0.55, ease: easings.emphasizedDecelerate };
     if (planted) return { duration: 0.3, ease: 'easeOut' as const };
     return zenMotion.gentle;
   };
@@ -205,7 +207,7 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
         </div>
         {!planted && !growing && (
           <motion.button
-            whileTap={{ scale: 0.92 }}
+            whileTap={zenTap.button}
             onClick={onClose}
             className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full"
             aria-label={ts.close || 'Close'}
@@ -247,7 +249,7 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
                 className="absolute rounded-full w-2.5 h-2.5 bottom-0 left-1/2 -ml-[5px] bg-[radial-gradient(circle_at_35%_35%,#d97706,#78350f)] shadow-[0_0_10px_3px_rgba(217,119,6,0.35)]"
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.25, type: 'spring', stiffness: 500, damping: 18 }}
+                transition={springs.quick}
               />
 
               {/* Stem — grows UPWARD from seed (scaleY + origin-bottom) */}
@@ -264,7 +266,7 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
                 style={{ rotate: 25 }}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ delay: 0.5, type: 'spring', stiffness: 280, damping: 14 }}
+                transition={{ delay: 0.5, ...springs.playful }}
               />
 
               {/* Left leaf — slightly higher, staggered */}
@@ -365,7 +367,7 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
             </AnimatePresence>
 
             <motion.button
-              whileTap={{ scale: 0.95 }}
+              whileTap={zenTap.icon}
               onClick={handlePlant}
               disabled={!text.trim()}
               className={`mt-3 w-full py-3 rounded-full text-sm font-medium motion-safe:transition-all flex items-center justify-center gap-2 min-h-[44px] ${

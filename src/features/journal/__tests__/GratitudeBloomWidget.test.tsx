@@ -22,6 +22,10 @@ vi.mock("@/contexts/LanguageContext", () => ({
 vi.mock("@/lib/animationUtils", () => ({
   shouldAnimate: () => animationState.shouldAnimate,
   zenMotion: { gentle: { duration: 0.2 } },
+  zenTap: {
+    button: { scale: 0.96 },
+    icon: { scale: 0.95 },
+  },
 }));
 
 vi.mock("@/lib/haptics", () => ({
