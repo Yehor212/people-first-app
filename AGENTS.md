@@ -13,6 +13,15 @@ Zustand, Dexie/IndexedDB, Supabase, Firebase, Sentry, AdMob, and custom i18n.
 Supported languages: en, uk, es, de, fr, ja, ar, he. Treat ar/he as RTL risk.
 Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Tauri.
 
+## Cross-Platform Mandate
+
+- Every task and PR MUST declare its platform impact for all five targets — Web/Vite, installed PWA, Android/Capacitor, iOS/WKWebView, Desktop/Tauri — even when the answer is "no impact".
+- A user-facing change is not complete when it works on one platform. It is complete when every platform's status is explicit: shipped, intentionally N/A with a reason, or a linked follow-up issue.
+- Data model, sync, deletion, and migration changes MUST be checked against the cross-platform sync contracts (IndexedDB local truth, tombstones, offline queue) before merge.
+- UI changes MUST pass RTL (ar/he), safe-area (iOS/Android), and desktop-width review.
+- Native-only capabilities (push, AdMob, widgets) require a graceful web/PWA fallback; web-only assumptions (service worker, IndexedDB behavior) require a Capacitor/Tauri check.
+- Release parity: a user-facing fix merged to `main` MUST be tracked until it reaches every shipped platform. Runbook: `docs/CROSS_PLATFORM_RELEASE.md`.
+
 ## Architecture
 
 - Read `ARCHITECTURE.md` before code changes; it is the single source of truth for app structure and live counts.
