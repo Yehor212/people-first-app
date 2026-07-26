@@ -203,7 +203,10 @@
     "write:journal-magic-link-proof-status": "node scripts/write-journal-magic-link-proof-status.cjs",
     "check:supabase-auth-redirect-allow-list": "node scripts/apply-supabase-auth-redirect-allow-list.cjs --dry-run",
     "apply:supabase-auth-redirect-allow-list": "node scripts/apply-supabase-auth-redirect-allow-list.cjs --apply",
-    "check:translation-quality": "node scripts/check-translation-quality.cjs"
+    "check:translation-quality": "node scripts/check-translation-quality.cjs",
+    "audit:product-coherence:inventory": "node scripts/product-coherence/cli.mjs inventory",
+    "audit:product-coherence:validate": "node scripts/product-coherence/cli.mjs validate",
+    "audit:product-coherence:report": "node scripts/product-coherence/cli.mjs report"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",
