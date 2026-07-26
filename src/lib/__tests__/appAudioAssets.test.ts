@@ -10,6 +10,8 @@ import {
   APP_AUDIO_PLATFORMS,
   getAppAudioAsset,
   getAppAudioAssetSrc,
+  getAppAudioFeedbackEvent,
+  getAppAudioFeedbackEventSrc,
   resolveAppAudioAssetSrc,
 } from "../appAudioAssets";
 
@@ -96,7 +98,7 @@ describe("app audio asset manifest", () => {
     expect(focusAssets.some((asset) => asset.publicPath.includes("cafe"))).toBe(false);
   });
 
-  it("documents generated feedback sounds separately from shipped MP3 assets", () => {
+  it("registers first-party feedback cues as local, scoped, offline-ready assets", () => {
     expect(APP_AUDIO_FEEDBACK_EVENTS.map((event) => event.id)).toEqual([
       "success",
       "complete",
@@ -107,7 +109,23 @@ describe("app audio asset manifest", () => {
     for (const event of APP_AUDIO_FEEDBACK_EVENTS) {
       expect(event.platforms).toEqual(APP_AUDIO_PLATFORMS);
       expect(event.respectsMasterVolume).toBe(true);
+      expect(event.startsOnUserGesture).toBe(true);
+      expect(event.offlineStrategy).toBe("runtime-cache");
+      expect(event.publicPath).toBe(`sounds/feedback/feedback-${event.id}.mp3`);
+      expect(existsSync(join(process.cwd(), "public", event.publicPath)), event.id).toBe(true);
+      expect(existsSync(join(process.cwd(), "docs", event.publicPath)), event.id).toBe(true);
+      expect(event.src).toBe(resolveAppAudioAssetSrc(event.publicPath));
     }
+
+    expect(getAppAudioFeedbackEvent("success")?.publicPath).toBe(
+      "sounds/feedback/feedback-success.mp3",
+    );
+    expect(getAppAudioFeedbackEventSrc("milestone", "./")).toBe(
+      "/sounds/feedback/feedback-milestone.mp3",
+    );
+    expect(getAppAudioFeedbackEventSrc("notification", "/people-first-app/")).toBe(
+      "/people-first-app/sounds/feedback/feedback-notification.mp3",
+    );
   });
 
   it("documents the governed action sound map without adding tap noise", () => {

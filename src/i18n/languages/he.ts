@@ -497,6 +497,14 @@ const hebrewOverrides: Partial<Translations> = {
   settingsSoundActivityRestoreTitle: "חלק מצלילי הפעילות כבויים",
   settingsSoundActivityRestoreDescription: "צלילים שכיבית בעבר יישארו כבויים עד שתפעיל אותם שוב.",
   settingsSoundActivityRestoreAction: "הפעלת כל צלילי הפעילות",
+  settingsSoundPreviewTitle: "השמעת צלילים",
+  settingsSoundPreviewDescription:
+    "אפשר לשמוע עכשיו כל צליל פעיל, בלי לחכות לפעולה אמיתית.",
+  settingsSoundPreviewSuccess: "נשמר",
+  settingsSoundPreviewComplete: "הושלם",
+  settingsSoundPreviewStreak: "רצף",
+  settingsSoundPreviewMilestone: "ציון דרך",
+  settingsSoundPreviewNotification: "תזכורת",
   settingsSoundMasterDisabledHint: "יש להפעיל את צליל האפליקציה כדי להשתמש בהגדרות האלה.",
   settingsAccountBackupTitle: "חשבון וגיבוי",
   settingsAccountBackupDescription:

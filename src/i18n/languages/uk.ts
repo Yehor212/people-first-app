@@ -552,6 +552,14 @@ export const uk: Translations = {
   settingsSoundActivityRestoreDescription:
     "Звуки, які ви вимкнули раніше, залишаються вимкненими, доки ви не ввімкнете їх знову.",
   settingsSoundActivityRestoreAction: "Увімкнути всі звуки дій",
+  settingsSoundPreviewTitle: "Прослухати звуки",
+  settingsSoundPreviewDescription:
+    "Послухайте кожен увімкнений сигнал одразу, не чекаючи реальної події.",
+  settingsSoundPreviewSuccess: "Збережено",
+  settingsSoundPreviewComplete: "Завершено",
+  settingsSoundPreviewStreak: "Серія",
+  settingsSoundPreviewMilestone: "Віха",
+  settingsSoundPreviewNotification: "Нагадування",
   settingsSoundMasterDisabledHint: "Увімкніть звук застосунку, щоб змінювати ці налаштування.",
   settingsAccountBackupTitle: "Акаунт і резервна копія",
   settingsAccountBackupDescription:

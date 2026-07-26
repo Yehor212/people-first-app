@@ -385,6 +385,7 @@ const audioManagerMock = vi.hoisted(() => {
     }),
     playNotification: vi.fn(),
     playNotificationPreview: vi.fn(),
+    playFeedbackPreview: vi.fn(),
     getAudioSettings,
     subscribeAudioSettings: vi.fn(
       (listener: (settings: ReturnType<typeof getAudioSettings>) => void) => {
@@ -795,6 +796,14 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settingsSoundMilestoneCues: "Milestone sounds",
       settingsSoundMilestoneCuesDesc:
         "Play a sound for occasional streak and achievement milestones.",
+      settingsSoundPreviewTitle: "Preview sounds",
+      settingsSoundPreviewDescription:
+        "Hear each enabled cue right away, without waiting for a real event.",
+      settingsSoundPreviewSuccess: "Saved",
+      settingsSoundPreviewComplete: "Completed",
+      settingsSoundPreviewStreak: "Streak",
+      settingsSoundPreviewMilestone: "Milestone",
+      settingsSoundPreviewNotification: "Reminder",
       settingsSoundTextureTitle: "Background sounds",
       settingsSoundTextureDescription: "Choose which background sounds ZenFlow may play.",
       settingsSoundTextureAir: "Air",
@@ -3606,6 +3615,12 @@ describe("SettingsPage", () => {
       })
     ).toHaveAttribute("aria-checked", "false");
     expect(screen.queryByTestId("settings-v2-audio-activity-recovery")).toBeNull();
+    const preview = screen.getByTestId("settings-v2-audio-feedback-preview");
+    expect(within(preview).getByRole("button", { name: "Saved" })).toBeDisabled();
+    expect(within(preview).getByRole("button", { name: "Completed" })).toBeDisabled();
+    expect(within(preview).getByRole("button", { name: "Streak" })).toBeDisabled();
+    expect(within(preview).getByRole("button", { name: "Milestone" })).toBeDisabled();
+    expect(within(preview).getByRole("button", { name: "Reminder" })).toBeEnabled();
   });
 
   it("enables Activity sounds without silently enabling reminder cues", async () => {
@@ -3689,6 +3704,26 @@ describe("SettingsPage", () => {
     expect(screen.queryByTestId("settings-v2-action-sound-map-card")).not.toBeInTheDocument();
     expect(screen.queryByTestId("settings-v2-sound-platform-card")).not.toBeInTheDocument();
     expect(soundPanel).not.toHaveTextContent(/\b(PWA|Android|iOS|Desktop|Web)\b/);
+  });
+
+  it("previews each activity cue from the Sound panel without waiting for a real event", () => {
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "sound" }} />
+    );
+
+    const preview = screen.getByTestId("settings-v2-audio-feedback-preview");
+    for (const [label, soundType] of [
+      ["Saved", "success"],
+      ["Completed", "complete"],
+      ["Streak", "streak"],
+      ["Milestone", "milestone"],
+      ["Reminder", "notification"],
+    ] as const) {
+      const button = within(preview).getByRole("button", { name: label });
+      expect(button).toHaveClass("min-h-[48px]");
+      fireEvent.click(button);
+      expect(audioManagerMock.playFeedbackPreview).toHaveBeenLastCalledWith(soundType);
+    }
   });
 
   it("keeps settings range controls at a finger-size target without a thicker visible track", () => {

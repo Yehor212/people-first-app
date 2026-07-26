@@ -12,6 +12,8 @@ const channels = 2;
 const encoderKbps = 128;
 const publicSoundsDir = path.join(rootDir, 'public', 'sounds');
 const docsSoundsDir = path.join(rootDir, 'docs', 'sounds');
+const publicFeedbackDir = path.join(publicSoundsDir, 'feedback');
+const docsFeedbackDir = path.join(docsSoundsDir, 'feedback');
 const provenancePath = path.join(rootDir, 'docs', 'audio', 'non-hyperfocus-generated-audio-provenance.json');
 
 const forbiddenRootFiles = [
@@ -61,6 +63,87 @@ const assets = [
     runtimeGain: 0.32,
     generator: 'cyclic soft rain sheet without thunder or impact spikes',
     exclusions: ['voice', 'birds', 'thunder', 'fire crackle', 'hard rain hits', 'melody'],
+  },
+];
+
+const feedbackAssets = [
+  {
+    id: 'feedback-success',
+    fileName: 'feedback-success.mp3',
+    role: 'Quiet saved-action confirmation',
+    durationSeconds: 0.48,
+    targetRms: 0.038,
+    targetPeak: 0.16,
+    runtimeGain: 0.35,
+    notes: [
+      { frequency: 392, start: 0.02, length: 0.20, level: 0.72 },
+      { frequency: 493.88, start: 0.13, length: 0.28, level: 0.88 },
+    ],
+    generator: 'deterministic two-note soft confirmation with cosine envelopes',
+    exclusions: ['voice', 'sampled audio', 'harsh click', 'alarm', 'siren', 'bass hit', 'long tail'],
+  },
+  {
+    id: 'feedback-complete',
+    fileName: 'feedback-complete.mp3',
+    role: 'Completed-activity confirmation',
+    durationSeconds: 0.62,
+    targetRms: 0.040,
+    targetPeak: 0.17,
+    runtimeGain: 0.40,
+    notes: [
+      { frequency: 329.63, start: 0.02, length: 0.22, level: 0.64 },
+      { frequency: 392, start: 0.13, length: 0.25, level: 0.76 },
+      { frequency: 493.88, start: 0.27, length: 0.28, level: 0.90 },
+    ],
+    generator: 'deterministic three-note completion cue with cosine envelopes',
+    exclusions: ['voice', 'sampled audio', 'harsh click', 'alarm', 'siren', 'bass hit', 'long tail'],
+  },
+  {
+    id: 'feedback-streak',
+    fileName: 'feedback-streak.mp3',
+    role: 'Occasional streak milestone cue',
+    durationSeconds: 0.78,
+    targetRms: 0.042,
+    targetPeak: 0.18,
+    runtimeGain: 0.45,
+    notes: [
+      { frequency: 349.23, start: 0.02, length: 0.23, level: 0.60 },
+      { frequency: 440, start: 0.14, length: 0.25, level: 0.70 },
+      { frequency: 523.25, start: 0.28, length: 0.27, level: 0.80 },
+      { frequency: 587.33, start: 0.43, length: 0.28, level: 0.88 },
+    ],
+    generator: 'deterministic four-note low-salience streak cue with cosine envelopes',
+    exclusions: ['voice', 'sampled audio', 'fanfare', 'alarm', 'siren', 'bass hit', 'long tail'],
+  },
+  {
+    id: 'feedback-milestone',
+    fileName: 'feedback-milestone.mp3',
+    role: 'Rare milestone cue',
+    durationSeconds: 0.70,
+    targetRms: 0.042,
+    targetPeak: 0.18,
+    runtimeGain: 0.45,
+    notes: [
+      { frequency: 392, start: 0.02, length: 0.25, level: 0.66 },
+      { frequency: 493.88, start: 0.17, length: 0.27, level: 0.78 },
+      { frequency: 587.33, start: 0.34, length: 0.29, level: 0.90 },
+    ],
+    generator: 'deterministic three-note rare milestone cue with cosine envelopes',
+    exclusions: ['voice', 'sampled audio', 'fanfare', 'alarm', 'siren', 'bass hit', 'long tail'],
+  },
+  {
+    id: 'feedback-notification',
+    fileName: 'feedback-notification.mp3',
+    role: 'Opt-in in-app reminder preview',
+    durationSeconds: 0.34,
+    targetRms: 0.030,
+    targetPeak: 0.12,
+    runtimeGain: 0.20,
+    notes: [
+      { frequency: 587.33, start: 0.02, length: 0.25, level: 0.82 },
+    ],
+    generator: 'deterministic single-note gentle reminder cue with cosine envelope',
+    exclusions: ['voice', 'sampled audio', 'sharp ping', 'alarm', 'siren', 'bass hit', 'long tail'],
   },
 ];
 
@@ -187,6 +270,65 @@ function renderPcm(asset) {
   };
 }
 
+function renderFeedbackPcm(asset) {
+  const frameCount = Math.round(asset.durationSeconds * sampleRate);
+  const left = new Float64Array(frameCount);
+  const right = new Float64Array(frameCount);
+
+  for (const note of asset.notes) {
+    const attackSeconds = 0.018;
+    const releaseSeconds = Math.min(0.16, note.length * 0.48);
+    for (let frame = 0; frame < frameCount; frame += 1) {
+      const localTime = frame / sampleRate - note.start;
+      if (localTime < 0 || localTime > note.length) continue;
+      const attack = Math.min(1, localTime / attackSeconds);
+      const release = Math.min(1, Math.max(0, (note.length - localTime) / releaseSeconds));
+      const envelope = Math.sin(Math.PI * 0.5 * attack) ** 2 * Math.sin(Math.PI * 0.5 * release) ** 2;
+      const phase = Math.PI * 2 * note.frequency * localTime;
+      const tone = Math.sin(phase) + 0.12 * Math.sin(phase * 2);
+      const sample = tone * note.level * envelope;
+      left[frame] += sample * 0.98;
+      right[frame] += sample;
+    }
+  }
+
+  let sumSquares = 0;
+  let peak = 0;
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    sumSquares += left[frame] ** 2 + right[frame] ** 2;
+    peak = Math.max(peak, Math.abs(left[frame]), Math.abs(right[frame]));
+  }
+  const rms = Math.sqrt(sumSquares / (frameCount * channels));
+  const scale = Math.min(asset.targetRms / Math.max(rms, 1e-9), asset.targetPeak / Math.max(peak, 1e-9));
+  const left16 = new Int16Array(frameCount);
+  const right16 = new Int16Array(frameCount);
+  let scaledSquares = 0;
+  let scaledPeak = 0;
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    const l = Math.max(-0.98, Math.min(0.98, left[frame] * scale));
+    const r = Math.max(-0.98, Math.min(0.98, right[frame] * scale));
+    left16[frame] = Math.round(l * 32767);
+    right16[frame] = Math.round(r * 32767);
+    scaledSquares += l * l + r * r;
+    scaledPeak = Math.max(scaledPeak, Math.abs(l), Math.abs(r));
+  }
+
+  return {
+    left16,
+    right16,
+    metrics: {
+      sampleRate,
+      channels,
+      durationSeconds: asset.durationSeconds,
+      sourcePeak: Number(scaledPeak.toFixed(6)),
+      sourceRms: Number(Math.sqrt(scaledSquares / (frameCount * channels)).toFixed(6)),
+      targetRms: asset.targetRms,
+      targetPeak: asset.targetPeak,
+      notes: asset.notes,
+    },
+  };
+}
+
 function loadLamejs() {
   const bundlePath = require.resolve('lamejs/lame.all.js');
   const bundle = fs.readFileSync(bundlePath, 'utf8');
@@ -229,14 +371,17 @@ function readPackageVersion(name) {
 function main() {
   ensureCleanRoot(publicSoundsDir);
   ensureCleanRoot(docsSoundsDir);
+  fs.mkdirSync(publicFeedbackDir, { recursive: true });
+  fs.mkdirSync(docsFeedbackDir, { recursive: true });
 
   const lameVersion = readPackageVersion('lamejs');
   const provenanceAssets = [];
-  for (const asset of assets) {
-    const rendered = renderPcm(asset);
+  for (const asset of [...assets, ...feedbackAssets]) {
+    const isFeedback = asset.id.startsWith('feedback-');
+    const rendered = isFeedback ? renderFeedbackPcm(asset) : renderPcm(asset);
     const mp3 = encodeMp3(rendered.left16, rendered.right16);
-    const publicPath = path.join(publicSoundsDir, asset.fileName);
-    const docsPath = path.join(docsSoundsDir, asset.fileName);
+    const publicPath = path.join(isFeedback ? publicFeedbackDir : publicSoundsDir, asset.fileName);
+    const docsPath = path.join(isFeedback ? docsFeedbackDir : docsSoundsDir, asset.fileName);
     fs.writeFileSync(publicPath, mp3);
     fs.writeFileSync(docsPath, mp3);
     const hash = sha256(mp3);
@@ -248,9 +393,12 @@ function main() {
       deployDocsPath: path.relative(rootDir, docsPath),
       sha256: hash,
       bytes: mp3.length,
-      seed: '0x' + Number(asset.seed).toString(16),
+      ...(Number.isFinite(asset.seed)
+        ? { seed: '0x' + Number(asset.seed).toString(16) }
+        : { deterministicSpec: 'fixed-note-sequence-with-cosine-envelopes' }),
       generator: asset.generator,
       parameters: {
+        family: isFeedback ? 'feedback' : 'ambience',
         sampleRate,
         channels,
         durationSeconds: asset.durationSeconds,
@@ -269,7 +417,7 @@ function main() {
 
   const provenance = {
     schemaVersion: 1,
-    purpose: 'ZenFlow non-Hyperfocus local ambience replacement for entry/auth, orb, and diary/settings surfaces.',
+    purpose: 'ZenFlow non-Hyperfocus local ambience and feedback cues for entry/auth, orb, diary/settings, completed activities, milestones, and opt-in reminder previews.',
     generationPolicy: 'First-party deterministic procedural synthesis. No third-party samples, recordings, stock loops, voices, or AI-generated audio inputs are used.',
     generatorScript: 'scripts/generate-non-hyperfocus-audio.cjs',
     encoder: {

@@ -28,6 +28,11 @@ type ClientMessageType = (typeof CLIENT_MESSAGE_TYPES)[number];
 const APP_SHELL_URL = "index.html";
 const RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio";
 const APP_AUDIO_SW_CACHE_PATHS = [
+  "sounds/feedback/feedback-complete.mp3",
+  "sounds/feedback/feedback-milestone.mp3",
+  "sounds/feedback/feedback-notification.mp3",
+  "sounds/feedback/feedback-streak.mp3",
+  "sounds/feedback/feedback-success.mp3",
   "sounds/gentle-water-bed.mp3",
   "sounds/hyperfocus/hyperfocus-fireplace-deep.mp3",
   "sounds/hyperfocus/hyperfocus-fireplace-intense.mp3",

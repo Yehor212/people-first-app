@@ -557,6 +557,14 @@ export const es: Translations = {
   settingsSoundActivityRestoreDescription:
     "Los sonidos que desactivaste antes seguirán así hasta que vuelvas a activarlos.",
   settingsSoundActivityRestoreAction: "Activar todos los sonidos de actividad",
+  settingsSoundPreviewTitle: "Escuchar sonidos",
+  settingsSoundPreviewDescription:
+    "Escucha cada señal activada ahora, sin esperar un evento real.",
+  settingsSoundPreviewSuccess: "Guardado",
+  settingsSoundPreviewComplete: "Completado",
+  settingsSoundPreviewStreak: "Racha",
+  settingsSoundPreviewMilestone: "Hito",
+  settingsSoundPreviewNotification: "Recordatorio",
   settingsSoundMasterDisabledHint: "Activa el sonido de la app para usar estos ajustes.",
   settingsAccountBackupTitle: "Cuenta y copia de seguridad",
   settingsAccountBackupDescription:
