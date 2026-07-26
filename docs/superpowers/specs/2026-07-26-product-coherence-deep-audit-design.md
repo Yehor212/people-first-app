@@ -5,22 +5,31 @@
 ProductCoherenceAudit is a deterministic, read-only comparison between
 `production-baseline` and `candidate`. It reads repository files and bounded
 audit ledgers; it never reads or writes ZenFlow runtime stores, IndexedDB,
-Supabase, user history, or production state. The candidate provenance stores
-only status, diff, sanitized-untracked-manifest, privacy-scan-receipt, and
-snapshot SHA-256 digests. Denied file contents are not copied.
+Supabase, user history, or production state. Candidate provenance stores
+status/diff digests plus artifact-root-relative locators and SHA-256 digests
+for a sanitized untracked manifest, privacy scan receipt, and candidate
+snapshot. Denied file contents are not copied into ledgers.
 
-This contract proves local audit-ledger structure. It does not prove product
-acceptance, deployed behavior, native parity, or `AUDIT_COMPLETE`.
+This contract proves local audit-ledger structure. It does not by itself prove
+product acceptance, deployed behavior, native parity, inventory reconciliation,
+or truthful terminal closure. Task 1 accepts only `IN_PROGRESS` or `BLOCKED`;
+it rejects `AUDIT_COMPLETE` even when all 17 canonical phase receipts and the
+separate coordinator integration receipt are present. Task 6 owns any terminal
+closure contract and the evidence needed to set that state.
 
 ## Audit manifest and provenance
 
 `manifest.jsonl` contains exactly one strict `AuditManifest`:
 
-- `runId`, schema version, request/policy/tool/source SHA-256 digests,
-  redaction rules, and twelve phase-bound role receipts. The required set is
-  the coordinator initial/integration pair, Roles 2–9 initial receipts, and
-  independent-sentinel Pass A/Pass B. Every receipt covers both subjects;
-  duplicates and substitutions fail validation;
+- `runId`, schema version, request/policy/tool/source SHA-256 digests, a bounded
+  observation window, redaction rules, and a registry-version/digest binding;
+- canonical role receipts are a subset of the exact 17-phase adaptive
+  `DEEP_AUDIT` topology emitted by
+  `node scripts/run-ten-lens-assurance.mjs --classify --trigger DEEP_AUDIT`.
+  Role 1's coordinator integration is modeled separately rather than renamed
+  as a specialist phase. Every receipt covers both subjects and has a unique
+  artifact path/digest. Validate/report rehash the privacy-safe receipt JSON
+  and reconcile its role, phase, subjects, and verdict with the manifest row;
 - exactly one `production-baseline` and one `candidate` subject;
 - repository provenance with an explicit Git OID algorithm. SHA-1 repositories
   use 40-hex commit/tree OIDs; SHA-256 repositories use 64-hex OIDs. Git OIDs
@@ -28,7 +37,7 @@ acceptance, deployed behavior, native parity, or `AUDIT_COMPLETE`.
 - discriminated build/deploy stages using only `PASS`, `FAIL`, `N/A`, or
   `UNVERIFIED`. `N/A` and `UNVERIFIED` carry a reason and reject fabricated
   artifact hashes. `PASS` build/deploy stages require same-subject direct
-  evidence references;
+  evidence references whose artifact digest exactly matches the stage digest;
 - successful public deployment provenance includes the public URL, artifact
   SHA-256, and deployed Git revision. The deployed revision may legitimately
   differ from the fetched production commit.
@@ -38,28 +47,47 @@ acceptance, deployed behavior, native parity, or `AUDIT_COMPLETE`.
 - `evidence.jsonl` contains `EvidenceRecord` rows with `subjectId`, exact
   evidence class/type, a discriminated locator, observation time, tool/version,
   scope, `PASS|FAIL|N/A|UNVERIFIED` result, artifact digest, privacy class, and
-  invalidation triggers. Local artifact locators are relative to the ledger
-  root and their SHA-256 is recomputed during validate/report. Repository
+  invalidation triggers. Local artifact locators are relative to an explicit
+  real artifact root and their SHA-256 is recomputed during validate/report.
+  The artifact root defaults to the ledger root for compatibility, but the
+  canonical audit layout supplies `--artifact-root artifacts/product-coherence/...`
+  so privacy-safe screenshots and traces do not need to be copied under
+  `docs/audits/...`. Absolute roots are process arguments, never ledger data.
+  Repository
   source locators use a normalized repository-relative path plus the exact
-  subject revision; validate/report require a matching `--subject-root`,
-  verify the Git top-level/commit/tree, and rehash the file through a no-follow
-  descriptor. For `candidate`, the validator also recomputes the canonical
+  subject revision. Validate/report always require both `--subject-root`
+  arguments and verify each Git top-level, commit, and tree even if the current
+  ledger happens to cite only local artifacts. The production baseline must be
+  clean, and production source evidence is read from the named commit's Git
+  blob rather than mutable worktree bytes. For `candidate`, the validator also
+  recomputes the canonical
   newline-delimited `git status --porcelain=v1 --untracked-files=all` hash and
   `git diff --binary HEAD --` hash before accepting repository-source
-  evidence. External or unverifiable evidence uses an explicit non-local
+  evidence. It regenerates the sanitized untracked manifest from NUL-delimited
+  Git paths and current file bytes. The manifest exposes only each path's
+  SHA-256 and content SHA-256, so a same-path content change invalidates the
+  snapshot without publishing the path. Its clean privacy receipt and canonical
+  composite snapshot JSON are independently rehashed and reconciled with one
+  another and the manifest. External or unverifiable evidence uses an explicit non-local
   locator kind. Evidence class, type and locator combinations are closed enums;
-  one `PASS` row cannot claim more than one platform.
+  every row covers exactly one platform and its observation time must fall
+  inside the declared run window. Both subjects require direct evidence and
+  evidence/capability/decision/finding-history coverage.
 - `capabilities.jsonl` contains `CapabilityRecord` rows with exact reachability,
   capability-role and product-disposition enums; user job/role; surfaces,
   platforms, locales and cohorts; full trace nodes; permissions, data actions,
-  dependencies, promises, and same-subject evidence IDs.
+  dependencies, promises, and same-subject evidence IDs. Platforms use the
+  audit platform matrix and locales use ZenFlow's exact eight-locale set,
+  including the `ar`/`he` RTL surfaces.
 - `decisions.jsonl` separates observation from hypothesis and records options,
   the selected option, rejected alternatives, `P0`–`P3`, confidence, hard
   gates, owner, affected cohorts, acceptance/kill/rollback criteria, metrics,
   trade-offs, and evidence. Its selected disposition must match its capability.
-  Every non-selected option is rejected exactly once. `HIGH` confidence
-  requires direct local, runtime, or human evidence; external/inferred/unknown
-  evidence alone is insufficient.
+  Every option ID is unique and every non-selected option is rejected exactly
+  once. `HIGH` confidence requires at least one `PASS` result from direct local
+  or direct runtime evidence. Failed, `N/A`,
+  `UNVERIFIED`, authoritative-external, inferred, unknown, or agent-opinion
+  evidence is insufficient; human-research receipts remain capped below `HIGH`.
 - `findingHistory.jsonl` is append-only. Sequence starts at zero, timestamps
   never move backward, and the exact state path is
   `DISCOVERED → TRIAGED → DECIDED → IMPLEMENTING → VERIFIED|REJECTED|BLOCKED|ROLLED_BACK`.
@@ -70,7 +98,8 @@ acceptance, deployed behavior, native parity, or `AUDIT_COMPLETE`.
 `BLOCKED_UNVERIFIED` is the approved unresolved disposition. It requires a
 named blocker and owner on both the capability and selected decision; no
 replacement unresolved enum is introduced.
-Its history must end in `BLOCKED`, never `VERIFIED`.
+Its history must end in `BLOCKED`, never `VERIFIED`; a non-blocked decision
+cannot hide a terminal `BLOCKED` history.
 
 ## Privacy and filesystem integrity
 
@@ -81,17 +110,22 @@ JWT-like strings under otherwise harmless keys. `deviceScope` and
 `accountCohort` are bounded enums rather than identifier-bearing free text.
 
 Ledger files must be strict UTF-8 regular files inside the resolved input
-directory. Symlinks and realpath escapes fail closed. Each JSONL file is bounded
-to 4 MiB, 256 KiB per line, 10,000 lines, and 5,000 records. Local artifacts
-are likewise regular in-root files and are hashed with before/after identity
-checks.
+directory. Symlinks, replacement races, and realpath escapes fail closed.
+Each JSONL file is opened no-follow and checked against descriptor identity,
+current path identity, and resolved-root confinement before its bounded bytes
+are parsed. Each file is bounded to 4 MiB, 256 KiB per line, 10,000 lines, and
+5,000 records. Local artifacts and repository sources are likewise regular
+in-root files and are hashed through a no-follow descriptor with before/after
+descriptor identity, current path identity, and realpath confinement checks.
+Inventory uses the same identity discipline, rejects replacement during
+hashing, and orders names by UTF-8 bytes for host-independent output.
 
 ## Commands
 
 ```text
 npm run audit:product-coherence:inventory -- --root <repository> --subject production-baseline|candidate
-npm run audit:product-coherence:validate -- --input <ledger-directory> --subject-root production-baseline=<git-root> --subject-root candidate=<git-root>
-npm run audit:product-coherence:report -- --input <ledger-directory> --subject-root production-baseline=<git-root> --subject-root candidate=<git-root>
+npm run audit:product-coherence:validate -- --input <ledger-directory> --artifact-root <artifact-directory> --subject-root production-baseline=<git-root> --subject-root candidate=<git-root>
+npm run audit:product-coherence:report -- --input <ledger-directory> --artifact-root <artifact-directory> --subject-root production-baseline=<git-root> --subject-root candidate=<git-root>
 ```
 
 `inventory` walks reviewable source/config/docs/public-surface files in stable
@@ -100,8 +134,11 @@ names, and emits only path/type/content-hash candidates. It emits no
 reachability, product disposition, or decision. Task 2 may extend the candidate
 families without weakening that neutral boundary.
 
-`validate` emits stable JSON and recomputes local artifact and repository-source
-hashes. A subject-root flag is required only when at least one evidence row
-references repository source for that subject. `report` requires the same
-validation and derives escaped Markdown from ledgers. Markdown is never source
-of truth.
+`validate` emits stable JSON and recomputes local artifact, manifest-owned
+provenance/receipt, and repository-source hashes. `--artifact-root` defaults to
+the ledger input directory. Both subject-root flags are always required.
+`report` requires the same validation and derives Markdown with separate
+production/candidate sections, status, build/deploy provenance, role verdicts,
+evidence result/platform, capabilities, decisions, confidence, trade-offs,
+acceptance/kill/rollback criteria, and complete finding histories. Markdown is
+never source of truth.

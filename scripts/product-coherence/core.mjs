@@ -5,10 +5,13 @@ import { lstat, open, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import { AuditBundleSchema, SUBJECT_IDS } from "./schemas.mjs";
+import { AuditBundleSchema, DEEP_AUDIT_ROLE_PHASES, SUBJECT_IDS } from "./schemas.mjs";
 import { readJsonl } from "./jsonl.mjs";
 
 const MAX_LOCAL_ARTIFACT_BYTES = 16 * 1024 * 1024;
+const MAX_UNTRACKED_FILE_BYTES = 64 * 1024 * 1024;
+const MAX_UNTRACKED_TOTAL_BYTES = 512 * 1024 * 1024;
+const MAX_UNTRACKED_FILES = 10_000;
 const execFileAsync = promisify(execFile);
 const FORBIDDEN_KEYS = new Set([
   "journal",
@@ -47,20 +50,9 @@ const FORBIDDEN_VALUE_PATTERNS = [
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i,
   /\b[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/,
 ];
-const REQUIRED_ROLE_PHASES = Object.freeze([
-  "coordinator-teamlead:INITIAL",
-  "coordinator-teamlead:INTEGRATION",
-  "psychology-human-factors-emotional-safety:INITIAL",
-  "logic-causality-state-coherence:INITIAL",
-  "interaction-accessibility-readability-localization-culture:INITIAL",
-  "technical-architecture-data-cross-platform:INITIAL",
-  "security-privacy-agent-trust:INITIAL",
-  "performance-reliability-operations:INITIAL",
-  "qa-evidence-release-verification:INITIAL",
-  "product-discovery-visual-craft-experience-quality:INITIAL",
-  "independent-blind-spot-sentinel:PASS_A",
-  "independent-blind-spot-sentinel:PASS_B",
-]);
+const REQUIRED_ROLE_PHASES = Object.freeze(
+  DEEP_AUDIT_ROLE_PHASES.map(([roleId, phase]) => `${roleId}:${phase}`),
+);
 const ALLOWED_HISTORY_TRANSITIONS = new Map([
   ["DISCOVERED", new Set(["TRIAGED"])],
   ["TRIAGED", new Set(["DECIDED"])],
@@ -86,11 +78,26 @@ export function validateAuditBundle(bundle) {
   }
 
   const evidence = uniqueBy(parsed.data.evidence, "evidenceId", "evidence", errors);
-  const capabilities = uniqueBy(parsed.data.capabilities, "capabilityId", "capability", errors);
+  const capabilities = uniqueBySubjectAndId(
+    parsed.data.capabilities,
+    "capabilityId",
+    "capability",
+    errors,
+  );
   const decisions = uniqueBy(parsed.data.decisions, "decisionId", "decision", errors);
   const histories = uniqueBy(parsed.data.findingHistory, "findingId", "finding history", errors);
 
-  validateRoleReceipts(parsed.data.manifest.roleReceipts, subjects, errors);
+  validateRoleReceipts(parsed.data.manifest, subjects, errors);
+  validateAuditStatus(parsed.data.manifest, errors);
+  validateRunWindow(parsed.data.manifest.runWindow, parsed.data.evidence, errors);
+  validateSubjectCoverage(
+    parsed.data.manifest.subjects,
+    parsed.data.evidence,
+    parsed.data.capabilities,
+    errors,
+  );
+  validateCandidateSnapshotProvenance(parsed.data.manifest, errors);
+  validateSubjectLedgerCoverage(parsed.data, errors);
   for (const row of parsed.data.evidence) {
     if (!subjects.has(row.subjectId)) errors.push(`evidence ${row.evidenceId} references missing subject ${row.subjectId}`);
     else validateEvidenceSemantics(row, subjects.get(row.subjectId), errors);
@@ -111,12 +118,20 @@ export function validateAuditBundle(bundle) {
   return { ok: errors.length === 0, errors };
 }
 
-export async function validateAuditBundleWithLocalArtifacts(bundle, inputDirectory, subjectRoots = {}) {
+export async function validateAuditBundleWithLocalArtifacts(
+  bundle,
+  inputDirectory,
+  subjectRoots = {},
+  artifactDirectory = inputDirectory,
+) {
   const result = validateAuditBundle(bundle);
   if (!result.ok) return result;
+  const { errors: subjectRootErrors, roots } = await validateSubjectRoots(bundle, subjectRoots);
   const artifactErrors = [
-    ...(await validateLocalArtifacts(bundle.evidence, inputDirectory)),
-    ...(await validateRepositorySources(bundle, subjectRoots)),
+    ...subjectRootErrors,
+    ...(await validateLocalArtifacts(bundle.evidence, artifactDirectory)),
+    ...(await validateManifestArtifacts(bundle.manifest, artifactDirectory)),
+    ...(await validateRepositorySources(bundle, roots)),
   ];
   return { ok: artifactErrors.length === 0, errors: artifactErrors };
 }
@@ -125,25 +140,170 @@ export function renderAuditMarkdown(bundle) {
   const validation = validateAuditBundle(bundle);
   if (!validation.ok) throw new Error(`cannot render invalid audit ledger: ${validation.errors.join("; ")}`);
 
-  const lines = ["# Product Coherence Audit", "", "## Subjects", ""];
-  for (const subject of [...bundle.manifest.subjects].sort(by("subjectId"))) {
+  const lines = [
+    "# Product Coherence Audit",
+    "",
+    `Audit status: ${markdownText(bundle.manifest.auditStatus)}`,
+    "",
+    "## Role receipts",
+    "",
+  ];
+  for (const receipt of [...bundle.manifest.roleReceipts].sort(bySubjectPhase)) {
     lines.push(
-      `- ${markdownText(subject.subjectId)}: git-${markdownText(subject.repository.oidAlgorithm)}:${markdownText(subject.repository.commitOid)}`,
+      `- ${markdownText(receipt.roleId)} / ${markdownText(receipt.phase)}: ${markdownText(receipt.verdict)}`,
+      `  - Subjects: ${receipt.subjectIds.map(markdownText).join(", ")}`,
+      `  - Artifact: ${markdownText(receipt.artifactPath)}`,
+      `  - Receipt SHA-256: ${markdownText(receipt.receiptSha256)}`,
     );
   }
-  lines.push("", "## Decisions", "");
-  for (const decision of [...bundle.decisions].sort(by("decisionId"))) {
+  const integration = bundle.manifest.coordinatorIntegrationReceipt;
+  if (integration) {
     lines.push(
-      `- ${markdownText(decision.subjectId)} / ${markdownText(decision.decisionId)}: ${markdownText(decision.selectedDecision.disposition)}`,
+      `- coordinator-teamlead / INTEGRATION: ${markdownText(integration.verdict)}`,
+      `  - Subjects: ${integration.subjectIds.map(markdownText).join(", ")}`,
+      `  - Artifact: ${markdownText(integration.artifactPath)}`,
+      `  - Receipt SHA-256: ${markdownText(integration.receiptSha256)}`,
     );
+  } else {
+    lines.push("- coordinator-teamlead / INTEGRATION: MISSING");
   }
-  lines.push("", "## Finding history", "");
-  for (const history of [...bundle.findingHistory].sort(by("findingId"))) {
-    lines.push(`### ${markdownText(history.findingId)} → ${markdownText(history.decisionId)}`, "");
-    for (const event of history.events) {
-      lines.push(`- ${event.sequence}. ${markdownText(event.observedAt)} — ${markdownText(event.state)}`);
+
+  const orderedSubjects = SUBJECT_IDS.map((subjectId) =>
+    bundle.manifest.subjects.find((subject) => subject.subjectId === subjectId),
+  ).filter(Boolean);
+  for (const subject of orderedSubjects) {
+    const title = subject.subjectId === "production-baseline" ? "Production truth" : "Candidate truth";
+    lines.push(
+      "",
+      `## ${title}`,
+      "",
+      `- Subject: ${markdownText(subject.subjectId)}`,
+      `- Repository: git-${markdownText(subject.repository.oidAlgorithm)}:${markdownText(subject.repository.commitOid)}`,
+      `- Tree: ${markdownText(subject.repository.treeOid)}`,
+      ...renderStageLines("Build", subject.build),
+      ...renderStageLines("Deploy", subject.deploy),
+      ...(subject.subjectId === "candidate"
+        ? [
+            `- Status SHA-256: ${markdownText(subject.repository.gitStatusSha256)}`,
+            `- Tracked diff SHA-256: ${markdownText(subject.repository.trackedDiffSha256)}`,
+            `- Sanitized untracked manifest SHA-256: ${markdownText(subject.repository.sanitizedUntrackedManifestSha256)}`,
+            `- Privacy scan receipt SHA-256: ${markdownText(subject.repository.privacyScanReceiptSha256)}`,
+            `- Candidate snapshot SHA-256: ${markdownText(subject.repository.candidateSnapshotSha256)}`,
+          ]
+        : []),
+      "",
+      "### Evidence",
+      "",
+    );
+    const subjectEvidence = bundle.evidence
+      .filter((row) => row.subjectId === subject.subjectId)
+      .sort(by("evidenceId"));
+    for (const evidence of subjectEvidence) {
+      lines.push(
+        `#### ${markdownText(evidence.evidenceId)}`,
+        "",
+        `- Classification: ${markdownText(evidence.evidenceClass)} / ${markdownText(evidence.evidenceType)}`,
+        `- Result / platform: ${markdownText(evidence.result)} / ${markdownText(evidence.scope.platforms[0])}`,
+        `- Observed: ${markdownText(evidence.observedAt)}`,
+        `- Tool: ${markdownText(evidence.tool.name)} ${markdownText(evidence.tool.version)}`,
+        `- Device / account scope: ${markdownText(evidence.scope.deviceScope)} / ${markdownText(evidence.scope.accountCohort)}`,
+        `- Locator: ${markdownText(evidenceLocatorText(evidence.locator))}`,
+        `- Artifact SHA-256: ${markdownText(evidence.artifactSha256)}`,
+        `- Privacy class: ${markdownText(evidence.privacyClass)}`,
+        `- Invalidation triggers: ${evidence.invalidationTriggers.map(markdownText).join("; ")}`,
+        "",
+      );
     }
-    lines.push("");
+
+    lines.push("", "### Capabilities", "");
+    const subjectCapabilities = bundle.capabilities
+      .filter((row) => row.subjectId === subject.subjectId)
+      .sort(by("capabilityId"));
+    for (const capability of subjectCapabilities) {
+      lines.push(
+        `#### ${markdownText(capability.capabilityId)}`,
+        "",
+        `- User job: ${markdownText(capability.userJob)}`,
+        `- User role: ${markdownText(capability.userRole)}`,
+        `- Role: ${markdownText(capability.capabilityRole)}`,
+        `- Reachability: ${markdownText(capability.reachability)}`,
+        `- Disposition: ${markdownText(capability.productDisposition)}`,
+        ...(capability.blocker
+          ? [
+              `- Blocker: ${markdownText(capability.blocker.summary)}`,
+              `- Blocker owner: ${markdownText(capability.blocker.owner)}`,
+            ]
+          : []),
+        `- Surfaces: ${capability.surfaces.map(markdownText).join("; ")}`,
+        `- Platforms: ${capability.platforms.map(markdownText).join(", ")}`,
+        `- Locales: ${capability.locales.map(markdownText).join(", ")}`,
+        `- Cohorts: ${capability.cohorts.map(markdownText).join("; ")}`,
+        `- Permissions: ${capability.permissions.map(markdownText).join("; ")}`,
+        `- Data actions: ${capability.dataActions.map(markdownText).join("; ")}`,
+        `- Dependencies: ${capability.dependencies.map(markdownText).join("; ")}`,
+        `- Promises: ${capability.promises.map(markdownText).join("; ")}`,
+        `- Evidence IDs: ${capability.evidenceIds.map(markdownText).join(", ")}`,
+        `- Trace: ${capability.trace
+          .map(
+            (node) =>
+              `${markdownText(node.kind)}:${markdownText(node.locator)} [${markdownText(node.evidenceId)}]`,
+          )
+          .join(" → ")}`,
+        "",
+      );
+    }
+
+    lines.push("### Decisions", "");
+    const subjectDecisions = bundle.decisions
+      .filter((row) => row.subjectId === subject.subjectId)
+      .sort(by("decisionId"));
+    for (const decision of subjectDecisions) {
+      lines.push(
+        `#### ${markdownText(decision.decisionId)}`,
+        "",
+        `- Capability: ${markdownText(decision.capabilityId)}`,
+        `- Observation: ${markdownText(decision.observation)}`,
+        `- Hypothesis: ${markdownText(decision.hypothesis)}`,
+        `- Selected: ${markdownText(decision.selectedDecision.optionId)} / ${markdownText(decision.selectedDecision.disposition)}`,
+        `- Rationale: ${markdownText(decision.selectedDecision.rationale)}`,
+        `- Priority / confidence: ${markdownText(decision.priority)} / ${markdownText(decision.confidence)}`,
+        `- Owner: ${markdownText(decision.owner)}`,
+        `- Affected cohorts: ${decision.affectedCohorts.map(markdownText).join("; ")}`,
+        `- Hard gates: ${decision.hardGates.map(markdownText).join("; ")}`,
+        ...(decision.blocker
+          ? [
+              `- Blocker: ${markdownText(decision.blocker.summary)}`,
+              `- Blocker owner: ${markdownText(decision.blocker.owner)}`,
+            ]
+          : []),
+        `- Trade-offs: ${decision.tradeOffs.map(markdownText).join("; ")}`,
+        `- Acceptance criteria: ${decision.acceptanceCriteria.map(markdownText).join("; ")}`,
+        `- Kill criteria: ${decision.killCriteria.map(markdownText).join("; ")}`,
+        `- Rollback criteria: ${decision.rollbackCriteria.map(markdownText).join("; ")}`,
+        `- Metrics: ${decision.metrics
+          .map((metric) => `${markdownText(metric.metricId)} — ${markdownText(metric.target)}`)
+          .join("; ")}`,
+        `- Evidence IDs: ${decision.evidenceIds.map(markdownText).join(", ")}`,
+        `- Rejected alternatives: ${decision.rejectedAlternatives
+          .map((item) => `${markdownText(item.optionId)} — ${markdownText(item.reason)}`)
+          .join("; ")}`,
+        "",
+      );
+    }
+
+    lines.push("### Finding history", "");
+    const subjectHistories = bundle.findingHistory
+      .filter((row) => row.subjectId === subject.subjectId)
+      .sort(by("findingId"));
+    for (const history of subjectHistories) {
+      lines.push(`#### ${markdownText(history.findingId)} → ${markdownText(history.decisionId)}`, "");
+      for (const event of history.events) {
+        lines.push(
+          `- ${event.sequence}. ${markdownText(event.observedAt)} — ${markdownText(event.state)} — evidence: ${event.evidenceIds.map(markdownText).join(", ")}`,
+        );
+      }
+      lines.push("");
+    }
   }
   return `${lines.join("\n").trimEnd()}\n`;
 }
@@ -163,18 +323,102 @@ export async function loadAuditBundle(inputDirectory) {
   const ledgerPaths = expected.map((name) => path.join(root, `${name}.jsonl`));
   await Promise.all(ledgerPaths.map((filePath) => assertRegularFileInsideRoot(root, filePath, "ledger")));
   const [manifestRows, evidence, capabilities, decisions, findingHistory] = await Promise.all(
-    ledgerPaths.map((filePath) => readJsonl(filePath)),
+    ledgerPaths.map((filePath) => readJsonl(filePath, { expectedRoot: root })),
   );
   if (manifestRows.length !== 1) throw new Error("manifest.jsonl must contain exactly one AuditManifest");
   return { manifest: manifestRows[0], evidence, capabilities, decisions, findingHistory };
 }
 
-function validateRoleReceipts(receipts, subjects, errors) {
+export function computeCandidateSnapshotSha256(repository) {
+  return createHash("sha256").update(candidateSnapshotBody(repository)).digest("hex");
+}
+
+function validateCandidateSnapshotProvenance(manifest, errors) {
+  const candidate = manifest.subjects.find((subject) => subject.subjectId === "candidate");
+  if (!candidate) return;
+  const expected = computeCandidateSnapshotSha256(candidate.repository);
+  if (candidate.repository.candidateSnapshotSha256 !== expected) {
+    errors.push("candidate snapshot digest does not match canonical candidate provenance");
+  }
+}
+
+function validateSubjectLedgerCoverage(bundle, errors) {
+  for (const [ledgerName, rows] of [
+    ["evidence", bundle.evidence],
+    ["capabilities", bundle.capabilities],
+    ["decisions", bundle.decisions],
+    ["findingHistory", bundle.findingHistory],
+  ]) {
+    for (const subjectId of SUBJECT_IDS) {
+      if (!rows.some((row) => row.subjectId === subjectId)) {
+        errors.push(`${ledgerName} has no records for ${subjectId}`);
+      }
+    }
+  }
+}
+
+function validateAuditStatus(manifest, errors) {
+  const reconciliation = manifest.inventoryReconciliation ?? [];
+  const reconciliationBySubject = new Map();
+  for (const row of reconciliation) {
+    if (reconciliationBySubject.has(row.subjectId)) {
+      errors.push(`duplicate inventory reconciliation for ${row.subjectId}`);
+    }
+    reconciliationBySubject.set(row.subjectId, row);
+    if (
+      row.candidateCount !==
+      row.capabilityMappedCount + row.excludedCandidateCount + row.unclassifiedCandidateCount
+    ) {
+      errors.push(`inventory reconciliation candidate count is inconsistent for ${row.subjectId}`);
+    }
+  }
+  if (manifest.auditStatus !== "AUDIT_COMPLETE") return;
+
+  for (const subjectId of SUBJECT_IDS) {
+    const row = reconciliationBySubject.get(subjectId);
+    if (!row) {
+      errors.push(`AUDIT_COMPLETE requires inventory reconciliation for ${subjectId}`);
+    } else if (row.unclassifiedCandidateCount !== 0) {
+      errors.push(
+        `AUDIT_COMPLETE requires ${subjectId} unclassified candidate count to be zero`,
+      );
+    }
+  }
+
+  const receipts = new Map(
+    manifest.roleReceipts.map((receipt) => [`${receipt.roleId}:${receipt.phase}`, receipt]),
+  );
+  for (const required of REQUIRED_ROLE_PHASES) {
+    const receipt = receipts.get(required);
+    if (!receipt) errors.push(`AUDIT_COMPLETE requires canonical role receipt ${required}`);
+    else if (receipt.verdict !== "GO") {
+      errors.push(`AUDIT_COMPLETE requires GO verdict for ${required}`);
+    }
+  }
+  if (!manifest.coordinatorIntegrationReceipt) {
+    errors.push("AUDIT_COMPLETE requires coordinator integration receipt");
+  } else if (manifest.coordinatorIntegrationReceipt.verdict !== "GO") {
+    errors.push("AUDIT_COMPLETE requires coordinator integration GO");
+  }
+}
+
+function validateRoleReceipts(manifest, subjects, errors) {
+  const { coordinatorIntegrationReceipt, roleReceipts: receipts } = manifest;
   const seen = new Set();
+  const seenHashes = new Set();
+  const seenArtifactPaths = new Set();
   for (const receipt of receipts) {
     const key = `${receipt.roleId}:${receipt.phase}`;
     if (seen.has(key)) errors.push(`duplicate role receipt ${key}`);
     seen.add(key);
+    if (seenHashes.has(receipt.receiptSha256)) {
+      errors.push(`duplicate role receipt hash ${receipt.receiptSha256}`);
+    }
+    seenHashes.add(receipt.receiptSha256);
+    if (seenArtifactPaths.has(receipt.artifactPath)) {
+      errors.push(`duplicate role receipt artifact path ${receipt.artifactPath}`);
+    }
+    seenArtifactPaths.add(receipt.artifactPath);
     const receiptSubjects = new Set(receipt.subjectIds);
     if (receiptSubjects.size !== receipt.subjectIds.length) {
       errors.push(`role receipt ${key} repeats a subject`);
@@ -190,11 +434,54 @@ function validateRoleReceipts(receipts, subjects, errors) {
       }
     }
   }
-  for (const required of REQUIRED_ROLE_PHASES) {
-    if (!seen.has(required)) errors.push(`missing required role receipt ${required}`);
-  }
   for (const actual of seen) {
     if (!REQUIRED_ROLE_PHASES.includes(actual)) errors.push(`unexpected role receipt ${actual}`);
+  }
+
+  if (coordinatorIntegrationReceipt) {
+    if (seenHashes.has(coordinatorIntegrationReceipt.receiptSha256)) {
+      errors.push(`duplicate role receipt hash ${coordinatorIntegrationReceipt.receiptSha256}`);
+    }
+    if (seenArtifactPaths.has(coordinatorIntegrationReceipt.artifactPath)) {
+      errors.push(`duplicate role receipt artifact path ${coordinatorIntegrationReceipt.artifactPath}`);
+    }
+    const coordinatorSubjects = new Set(coordinatorIntegrationReceipt.subjectIds);
+    if (coordinatorSubjects.size !== coordinatorIntegrationReceipt.subjectIds.length) {
+      errors.push("coordinator integration receipt repeats a subject");
+    }
+    for (const subjectId of SUBJECT_IDS) {
+      if (!coordinatorSubjects.has(subjectId)) {
+        errors.push(`coordinator integration receipt does not cover ${subjectId}`);
+      }
+    }
+  }
+}
+
+function validateRunWindow(runWindow, evidenceRows, errors) {
+  const startedAt = Date.parse(runWindow.startedAt);
+  const observedThrough = Date.parse(runWindow.observedThrough);
+  if (startedAt > observedThrough) errors.push("audit run window starts after observedThrough");
+  for (const evidence of evidenceRows) {
+    const observedAt = Date.parse(evidence.observedAt);
+    if (observedAt < startedAt || observedAt > observedThrough) {
+      errors.push(`evidence ${evidence.evidenceId} observedAt falls outside the declared audit run window`);
+    }
+  }
+}
+
+function validateSubjectCoverage(subjectRows, evidenceRows, capabilityRows, errors) {
+  for (const subject of subjectRows) {
+    const hasDirectEvidence = evidenceRows.some(
+      (evidence) =>
+        evidence.subjectId === subject.subjectId &&
+        ["DIRECT_LOCAL", "DIRECT_RUNTIME"].includes(evidence.evidenceClass),
+    );
+    if (!hasDirectEvidence) {
+      errors.push(`subject ${subject.subjectId} requires direct evidence coverage`);
+    }
+    if (!capabilityRows.some((capability) => capability.subjectId === subject.subjectId)) {
+      errors.push(`subject ${subject.subjectId} requires capability coverage`);
+    }
   }
 }
 
@@ -215,6 +502,12 @@ function validateStageEvidence(subject, evidence, errors) {
     ) {
       errors.push(`build provenance ${subject.subjectId} requires DIRECT_LOCAL test or command evidence`);
     }
+    if (source && source.result !== "PASS") {
+      errors.push(`build provenance ${subject.subjectId} requires cited evidence with PASS result`);
+    }
+    if (source && subject.build.artifactSha256 !== source.artifactSha256) {
+      errors.push(`build provenance ${subject.subjectId} artifact hash does not match cited evidence`);
+    }
   }
   if (subject.deploy.status === "PASS") {
     const source = validateSubjectEvidence(
@@ -231,6 +524,12 @@ function validateStageEvidence(subject, evidence, errors) {
         !["RUNTIME_TRACE", "COMMAND_OUTPUT"].includes(source.evidenceType))
     ) {
       errors.push(`deploy provenance ${subject.subjectId} requires DIRECT_RUNTIME trace or command evidence`);
+    }
+    if (source && source.result !== "PASS") {
+      errors.push(`deploy provenance ${subject.subjectId} requires cited evidence with PASS result`);
+    }
+    if (source && subject.deploy.artifactSha256 !== source.artifactSha256) {
+      errors.push(`deploy provenance ${subject.subjectId} artifact hash does not match cited evidence`);
     }
   }
 }
@@ -260,8 +559,8 @@ function validateEvidenceSemantics(evidence, subject, errors) {
       `evidence ${evidence.evidenceId} has invalid evidenceClass/evidenceType/locator combination`,
     );
   }
-  if (evidence.result === "PASS" && evidence.scope.platforms.length !== 1) {
-    errors.push(`evidence ${evidence.evidenceId} PASS must address exactly one platform scope`);
+  if (evidence.scope.platforms.length !== 1) {
+    errors.push(`evidence ${evidence.evidenceId} must address exactly one platform scope`);
   }
   if (locator.kind === "REPOSITORY_SOURCE") {
     if (
@@ -292,7 +591,7 @@ function validateCapabilityEvidence(capability, evidence, errors) {
 }
 
 function validateDecision(decision, capabilities, evidence, errors) {
-  const capability = capabilities.get(decision.capabilityId);
+  const capability = capabilities.get(subjectRecordKey(decision.subjectId, decision.capabilityId));
   if (!capability) errors.push(`decision ${decision.decisionId} references missing capability ${decision.capabilityId}`);
   else if (capability.subjectId !== decision.subjectId) {
     errors.push(`decision ${decision.decisionId} has subject mismatch with capability ${decision.capabilityId}`);
@@ -303,12 +602,25 @@ function validateDecision(decision, capabilities, evidence, errors) {
     validateSubjectEvidence("decision", decision.decisionId, decision.subjectId, evidenceId, evidence, errors);
   }
   if (decision.confidence === "HIGH") {
-    const classes = decision.evidenceIds
-      .map((evidenceId) => evidence.get(evidenceId)?.evidenceClass)
-      .filter(Boolean);
-    if (!classes.some((evidenceClass) => ["DIRECT_LOCAL", "DIRECT_RUNTIME"].includes(evidenceClass))) {
-      errors.push(`decision ${decision.decisionId} HIGH confidence requires direct local or runtime evidence`);
+    const qualifyingEvidence = decision.evidenceIds
+      .map((evidenceId) => evidence.get(evidenceId))
+      .filter(
+        (row) =>
+          row?.result === "PASS" &&
+          ["DIRECT_LOCAL", "DIRECT_RUNTIME", "HUMAN_RESEARCH"].includes(row.evidenceClass),
+      );
+    if (qualifyingEvidence.length === 0) {
+      errors.push(
+        `decision ${decision.decisionId} HIGH confidence requires PASS direct local, runtime, or artifact-bound human research evidence`,
+      );
     }
+  }
+  const optionIds = new Set();
+  for (const option of decision.options) {
+    if (optionIds.has(option.optionId)) {
+      errors.push(`decision ${decision.decisionId} has duplicate option id ${option.optionId}`);
+    }
+    optionIds.add(option.optionId);
   }
   const options = new Map(decision.options.map((option) => [option.optionId, option]));
   const selected = options.get(decision.selectedDecision.optionId);
@@ -337,7 +649,7 @@ function validateDecision(decision, capabilities, evidence, errors) {
 }
 
 function validateFindingHistory(history, capabilities, decisions, evidence, errors) {
-  const capability = capabilities.get(history.capabilityId);
+  const capability = capabilities.get(subjectRecordKey(history.subjectId, history.capabilityId));
   if (!capability) errors.push(`finding history ${history.findingId} references missing capability ${history.capabilityId}`);
   else if (capability.subjectId !== history.subjectId) {
     errors.push(`finding history ${history.findingId} has subject mismatch with capability ${history.capabilityId}`);
@@ -408,16 +720,202 @@ function validateCapabilityClosure(capabilities, decisions, histories, errors) {
   }
 }
 
+async function validateManifestArtifacts(manifest, inputDirectory) {
+  const requestedRoot = path.resolve(inputDirectory);
+  const rootStat = await lstat(requestedRoot);
+  if (rootStat.isSymbolicLink() || !rootStat.isDirectory()) {
+    throw new Error("artifact root must be a real directory, not a symlink");
+  }
+  const root = await realpath(requestedRoot);
+  const errors = [];
+  const candidate = manifest.subjects.find((subject) => subject.subjectId === "candidate");
+  if (candidate) {
+    const { repository } = candidate;
+    let untrackedArtifact;
+    try {
+      untrackedArtifact = await readAndHashArtifact(
+        root,
+        repository.sanitizedUntrackedManifestPath,
+        "candidate sanitized untracked manifest",
+      );
+      if (untrackedArtifact.sha256 !== repository.sanitizedUntrackedManifestSha256) {
+        errors.push("candidate sanitized untracked manifest artifact hash mismatch");
+      }
+      validateSanitizedUntrackedManifest(untrackedArtifact.bytes);
+    } catch (error) {
+      errors.push(`candidate sanitized untracked manifest validation failed: ${error.message}`);
+    }
+
+    try {
+      const privacyArtifact = await readAndHashArtifact(
+        root,
+        repository.privacyScanReceiptPath,
+        "candidate privacy scan receipt",
+      );
+      if (privacyArtifact.sha256 !== repository.privacyScanReceiptSha256) {
+        errors.push("candidate privacy scan receipt artifact hash mismatch");
+      }
+      const receipt = parseCanonicalJson(privacyArtifact.bytes, "candidate privacy scan receipt");
+      if (
+        !hasExactKeys(receipt, [
+          "schemaVersion",
+          "subjectId",
+          "scanStatus",
+          "scannedArtifactSha256",
+          "findingCount",
+        ]) ||
+        receipt.schemaVersion !== "1.0.0" ||
+        receipt.subjectId !== "candidate" ||
+        receipt.scanStatus !== "PASS" ||
+        receipt.scannedArtifactSha256 !== repository.sanitizedUntrackedManifestSha256 ||
+        receipt.findingCount !== 0
+      ) {
+        throw new Error("candidate privacy scan receipt content does not prove a clean sanitized manifest");
+      }
+    } catch (error) {
+      errors.push(`candidate privacy scan receipt validation failed: ${error.message}`);
+    }
+
+    try {
+      const snapshotArtifact = await readAndHashArtifact(
+        root,
+        repository.candidateSnapshotPath,
+        "candidate snapshot",
+      );
+      if (snapshotArtifact.sha256 !== repository.candidateSnapshotSha256) {
+        errors.push("candidate snapshot artifact hash mismatch");
+      }
+      const expectedBody = candidateSnapshotBody(repository);
+      if (!snapshotArtifact.bytes.equals(Buffer.from(expectedBody, "utf8"))) {
+        errors.push("candidate snapshot artifact content does not match manifest provenance");
+      }
+    } catch (error) {
+      errors.push(`candidate snapshot validation failed: ${error.message}`);
+    }
+  }
+
+  const receipts = [
+    ...manifest.roleReceipts,
+    ...(manifest.coordinatorIntegrationReceipt ? [manifest.coordinatorIntegrationReceipt] : []),
+  ];
+  for (const receipt of receipts) {
+    const label = `role receipt ${receipt.roleId}:${receipt.phase}`;
+    try {
+      const artifact = await readAndHashArtifact(root, receipt.artifactPath, label);
+      if (artifact.sha256 !== receipt.receiptSha256) {
+        errors.push(`${label} artifact hash mismatch`);
+      }
+      const expectedBody = roleReceiptBody(receipt);
+      if (!artifact.bytes.equals(Buffer.from(expectedBody, "utf8"))) {
+        errors.push(`${label} artifact identity does not match manifest receipt`);
+      }
+    } catch (error) {
+      errors.push(`${label} validation failed: ${error.message}`);
+    }
+  }
+  return errors;
+}
+
+async function readAndHashArtifact(root, relativePath, label) {
+  const bytes = await readStableFileInsideRoot(root, relativePath, label, MAX_LOCAL_ARTIFACT_BYTES);
+  return { bytes, sha256: createHash("sha256").update(bytes).digest("hex") };
+}
+
+function validateSanitizedUntrackedManifest(bytes) {
+  const value = parseCanonicalJson(bytes, "candidate sanitized untracked manifest");
+  if (
+    !hasExactKeys(value, ["schemaVersion", "subjectId", "entries"]) ||
+    value.schemaVersion !== "1.0.0" ||
+    value.subjectId !== "candidate" ||
+    !Array.isArray(value.entries) ||
+    value.entries.length > MAX_UNTRACKED_FILES
+  ) {
+    throw new Error("candidate sanitized untracked manifest has invalid structure");
+  }
+  for (const entry of value.entries) {
+    if (
+      !hasExactKeys(entry, ["pathSha256", "contentSha256"]) ||
+      !/^[a-f0-9]{64}$/.test(entry.pathSha256) ||
+      !/^[a-f0-9]{64}$/.test(entry.contentSha256)
+    ) {
+      throw new Error("candidate sanitized untracked manifest exposes or malforms an entry");
+    }
+  }
+}
+
+function parseCanonicalJson(bytes, label) {
+  let text;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    throw new Error(`${label} is not strict UTF-8`);
+  }
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    throw new Error(`${label} is not valid JSON`);
+  }
+  if (`${JSON.stringify(value)}\n` !== text) {
+    throw new Error(`${label} is not canonical single-record JSON`);
+  }
+  return value;
+}
+
+function hasExactKeys(value, expectedKeys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort();
+  const expected = [...expectedKeys].sort();
+  return actual.length === expected.length && actual.every((key, index) => key === expected[index]);
+}
+
+function candidateSnapshotBody(repository) {
+  return `${JSON.stringify({
+    schemaVersion: "1.0.0",
+    subjectId: "candidate",
+    repository: {
+      oidAlgorithm: repository.oidAlgorithm,
+      commitOid: repository.commitOid,
+      treeOid: repository.treeOid,
+      gitStatusSha256: repository.gitStatusSha256,
+      trackedDiffSha256: repository.trackedDiffSha256,
+      sanitizedUntrackedManifestSha256: repository.sanitizedUntrackedManifestSha256,
+      privacyScanReceiptSha256: repository.privacyScanReceiptSha256,
+    },
+  })}\n`;
+}
+
+function roleReceiptBody(receipt) {
+  return `${JSON.stringify({
+    schemaVersion: "1.0.0",
+    roleId: receipt.roleId,
+    phase: receipt.phase,
+    subjectIds: receipt.subjectIds,
+    verdict: receipt.verdict,
+  })}\n`;
+}
+
 async function validateLocalArtifacts(evidenceRows, inputDirectory) {
-  const root = await realpath(path.resolve(inputDirectory));
+  const requestedRoot = path.resolve(inputDirectory);
+  const rootStat = await lstat(requestedRoot);
+  if (rootStat.isSymbolicLink() || !rootStat.isDirectory()) {
+    throw new Error("artifact root must be a real directory, not a symlink");
+  }
+  const root = await realpath(requestedRoot);
   const errors = [];
   for (const evidence of evidenceRows) {
-    if (evidence.locator.kind !== "LOCAL_ARTIFACT") continue;
+    const relativePath =
+      evidence.locator.kind === "LOCAL_ARTIFACT"
+        ? evidence.locator.path
+        : evidence.locator.kind === "HUMAN_RECEIPT"
+          ? evidence.locator.artifactPath
+          : undefined;
+    if (!relativePath) continue;
     try {
       const bytes = await readStableFileInsideRoot(
         root,
-        evidence.locator.path,
-        "local artifact",
+        relativePath,
+        evidence.locator.kind === "HUMAN_RECEIPT" ? "human research receipt" : "local artifact",
         MAX_LOCAL_ARTIFACT_BYTES,
       );
       const actual = createHash("sha256").update(bytes).digest("hex");
@@ -431,29 +929,45 @@ async function validateLocalArtifacts(evidenceRows, inputDirectory) {
   return errors;
 }
 
-async function validateRepositorySources(bundle, subjectRoots) {
+async function validateSubjectRoots(bundle, subjectRoots) {
   const errors = [];
-  const subjects = new Map(bundle.manifest.subjects.map((subject) => [subject.subjectId, subject]));
-  const verifiedRoots = new Map();
-  for (const evidence of bundle.evidence) {
-    if (evidence.locator.kind !== "REPOSITORY_SOURCE") continue;
-    const configuredRoot = subjectRoots[evidence.subjectId];
+  const roots = new Map();
+  for (const subject of bundle.manifest.subjects) {
+    const configuredRoot = subjectRoots[subject.subjectId];
     if (!configuredRoot) {
-      errors.push(`evidence ${evidence.evidenceId} requires --subject-root for ${evidence.subjectId}`);
+      errors.push(`subject ${subject.subjectId} requires --subject-root`);
       continue;
     }
     try {
-      let root = verifiedRoots.get(evidence.subjectId);
-      if (!root) {
-        root = await verifySubjectRoot(configuredRoot, subjects.get(evidence.subjectId));
-        verifiedRoots.set(evidence.subjectId, root);
-      }
-      const bytes = await readStableFileInsideRoot(
-        root,
-        evidence.locator.path,
-        "repository source",
-        MAX_LOCAL_ARTIFACT_BYTES,
-      );
+      roots.set(subject.subjectId, await verifySubjectRoot(configuredRoot, subject));
+    } catch (error) {
+      errors.push(`subject ${subject.subjectId} root validation failed: ${error.message}`);
+    }
+  }
+  return { errors, roots };
+}
+
+async function validateRepositorySources(bundle, verifiedRoots) {
+  const errors = [];
+  const subjects = new Map(bundle.manifest.subjects.map((subject) => [subject.subjectId, subject]));
+  for (const evidence of bundle.evidence) {
+    if (evidence.locator.kind !== "REPOSITORY_SOURCE") continue;
+    const root = verifiedRoots.get(evidence.subjectId);
+    if (!root) {
+      errors.push(`evidence ${evidence.evidenceId} repository source has no verified subject root`);
+      continue;
+    }
+    try {
+      const subject = subjects.get(evidence.subjectId);
+      const bytes =
+        subject.subjectId === "production-baseline"
+          ? await readGitBlob(root, subject.repository.commitOid, evidence.locator.path)
+          : await readStableFileInsideRoot(
+              root,
+              evidence.locator.path,
+              "repository source",
+              MAX_LOCAL_ARTIFACT_BYTES,
+            );
       const actual = createHash("sha256").update(bytes).digest("hex");
       if (actual !== evidence.artifactSha256) {
         errors.push(`evidence ${evidence.evidenceId} repository source hash mismatch`);
@@ -490,17 +1004,26 @@ async function verifySubjectRoot(rootDirectory, subject) {
   if (treeStdout.trim() !== subject.repository.treeOid) {
     throw new Error("subject root tree does not match manifest tree");
   }
-  if (subject.subjectId === "candidate") {
-    const maxBuffer = 256 * 1024 * 1024;
-    const [{ stdout: statusBytes }, { stdout: diffBytes }] = await Promise.all([
-      execFileAsync("git", ["-C", root, "status", "--porcelain=v1", "--untracked-files=all"], {
-        encoding: "buffer",
-        maxBuffer,
-      }),
+  const maxBuffer = 256 * 1024 * 1024;
+  const { stdout: statusBytes } = await execFileAsync(
+    "git",
+    ["-C", root, "status", "--porcelain=v1", "--untracked-files=all"],
+    {
+      encoding: "buffer",
+      maxBuffer,
+    },
+  );
+  if (subject.subjectId === "production-baseline") {
+    if (statusBytes.length !== 0) {
+      throw new Error("production baseline subject root must be clean");
+    }
+  } else {
+    const [{ stdout: diffBytes }, untrackedManifest] = await Promise.all([
       execFileAsync("git", ["-C", root, "diff", "--binary", "HEAD", "--"], {
         encoding: "buffer",
         maxBuffer,
       }),
+      computeSanitizedUntrackedManifest(root),
     ]);
     const statusSha256 = createHash("sha256").update(statusBytes).digest("hex");
     const diffSha256 = createHash("sha256").update(diffBytes).digest("hex");
@@ -510,8 +1033,98 @@ async function verifySubjectRoot(rootDirectory, subject) {
     if (diffSha256 !== subject.repository.trackedDiffSha256) {
       throw new Error("candidate subject root tracked diff does not match manifest");
     }
+    if (untrackedManifest.sha256 !== subject.repository.sanitizedUntrackedManifestSha256) {
+      throw new Error("candidate subject root sanitized untracked manifest does not match manifest");
+    }
+    if (
+      computeCandidateSnapshotSha256(subject.repository) !==
+      subject.repository.candidateSnapshotSha256
+    ) {
+      throw new Error("candidate subject root snapshot digest does not match manifest provenance");
+    }
   }
   return root;
+}
+
+export async function computeSanitizedUntrackedManifest(rootDirectory) {
+  const root = await realpath(path.resolve(rootDirectory));
+  const { stdout } = await execFileAsync(
+    "git",
+    ["-C", root, "ls-files", "--others", "--exclude-standard", "-z"],
+    { encoding: "buffer", maxBuffer: 256 * 1024 * 1024 },
+  );
+  const rawPaths = splitNulBuffer(stdout);
+  if (rawPaths.length > MAX_UNTRACKED_FILES) {
+    throw new Error("candidate untracked file count limit exceeded");
+  }
+  rawPaths.sort(Buffer.compare);
+
+  const entries = [];
+  let totalBytes = 0;
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  for (const rawPath of rawPaths) {
+    let relativePath;
+    try {
+      relativePath = decoder.decode(rawPath);
+    } catch {
+      throw new Error("candidate untracked path is not strict UTF-8");
+    }
+    const bytes = await readStableFileInsideRoot(
+      root,
+      relativePath,
+      "candidate untracked file",
+      MAX_UNTRACKED_FILE_BYTES,
+    );
+    totalBytes += bytes.length;
+    if (totalBytes > MAX_UNTRACKED_TOTAL_BYTES) {
+      throw new Error("candidate untracked aggregate byte limit exceeded");
+    }
+    entries.push({
+      pathSha256: createHash("sha256").update(rawPath).digest("hex"),
+      contentSha256: createHash("sha256").update(bytes).digest("hex"),
+    });
+  }
+  const body = Buffer.from(
+    `${JSON.stringify({
+      schemaVersion: "1.0.0",
+      subjectId: "candidate",
+      entries,
+    })}\n`,
+    "utf8",
+  );
+  return {
+    body,
+    sha256: createHash("sha256").update(body).digest("hex"),
+    fileCount: entries.length,
+    totalBytes,
+  };
+}
+
+async function readGitBlob(root, commitOid, relativePath) {
+  const maxBuffer = MAX_LOCAL_ARTIFACT_BYTES + 1;
+  const { stdout } = await execFileAsync(
+    "git",
+    ["-C", root, "show", `${commitOid}:${relativePath}`],
+    { encoding: "buffer", maxBuffer },
+  );
+  if (stdout.length > MAX_LOCAL_ARTIFACT_BYTES) {
+    throw new Error("repository source byte limit exceeded");
+  }
+  return stdout;
+}
+
+function splitNulBuffer(value) {
+  const entries = [];
+  let start = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    if (value[index] !== 0) continue;
+    if (index > start) entries.push(value.subarray(start, index));
+    start = index + 1;
+  }
+  if (start !== value.length) {
+    throw new Error("git untracked path list is not NUL terminated");
+  }
+  return entries;
 }
 
 async function readStableFileInsideRoot(root, relativePath, label, maxBytes) {
@@ -600,6 +1213,22 @@ function uniqueBy(rows, key, label, errors) {
   return records;
 }
 
+function uniqueBySubjectAndId(rows, key, label, errors) {
+  const records = new Map();
+  for (const row of rows) {
+    const compositeKey = subjectRecordKey(row.subjectId, row[key]);
+    if (records.has(compositeKey)) {
+      errors.push(`duplicate ${label} id ${row[key]} for ${row.subjectId}`);
+    }
+    records.set(compositeKey, row);
+  }
+  return records;
+}
+
+function subjectRecordKey(subjectId, recordId) {
+  return `${subjectId}:${recordId}`;
+}
+
 function formatZodErrors(issues) {
   return issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`);
 }
@@ -607,6 +1236,44 @@ function formatZodErrors(issues) {
 function by(key) {
   return (left, right) =>
     Buffer.compare(Buffer.from(String(left[key]), "utf8"), Buffer.from(String(right[key]), "utf8"));
+}
+
+function bySubjectPhase(left, right) {
+  return Buffer.compare(
+    Buffer.from(`${left.roleId}:${left.phase}`, "utf8"),
+    Buffer.from(`${right.roleId}:${right.phase}`, "utf8"),
+  );
+}
+
+function renderStageLines(label, stage) {
+  const lines = [`- ${label}: ${markdownText(stage.status)}`];
+  if (stage.reason) lines.push(`  - Reason: ${markdownText(stage.reason)}`);
+  if (stage.artifactSha256) {
+    lines.push(`  - Artifact SHA-256: ${markdownText(stage.artifactSha256)}`);
+  }
+  if (stage.evidenceId) lines.push(`  - Evidence ID: ${markdownText(stage.evidenceId)}`);
+  if (stage.publicUrl) lines.push(`  - Public URL: ${markdownText(stage.publicUrl)}`);
+  if (stage.deployedRevision) {
+    lines.push(
+      `  - Deployed revision: git-${markdownText(stage.deployedRevision.oidAlgorithm)}:${markdownText(stage.deployedRevision.commitOid)}`,
+    );
+  }
+  return lines;
+}
+
+function evidenceLocatorText(locator) {
+  if (locator.kind === "REPOSITORY_SOURCE") {
+    const snapshot = locator.candidateSnapshotSha256
+      ? `; candidate snapshot ${locator.candidateSnapshotSha256}`
+      : "";
+    return `${locator.path} @ git-${locator.revision.oidAlgorithm}:${locator.revision.commitOid}${snapshot}`;
+  }
+  if (locator.kind === "LOCAL_ARTIFACT") return locator.path;
+  if (locator.kind === "AUTHORITATIVE_URL") return locator.url;
+  if (locator.kind === "HUMAN_RECEIPT") {
+    return `human receipt ${locator.receiptId} at ${locator.artifactPath}`;
+  }
+  return `${locator.value}; reason: ${locator.reason}`;
 }
 
 function markdownText(value) {

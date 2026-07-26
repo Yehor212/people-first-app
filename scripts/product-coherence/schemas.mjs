@@ -2,6 +2,10 @@ import { z } from "zod";
 
 export const SUBJECT_IDS = Object.freeze(["production-baseline", "candidate"]);
 export const PLATFORM_RESULTS = Object.freeze(["PASS", "FAIL", "N/A", "UNVERIFIED"]);
+export const DEEP_AUDIT_CLASSIFICATION = Object.freeze({
+  version: "zenflow-risk-registry-v2.2.1-e1",
+  sha256: "061aac41532f1c928cbcaca38f5b7c2e33f61a4e303e5382c6c04d0c05f9e88a",
+});
 export const AUDIT_PLATFORMS = Object.freeze([
   "WEB",
   "PWA",
@@ -45,6 +49,25 @@ export const ROLE_IDS = Object.freeze([
   "qa-evidence-release-verification",
   "product-discovery-visual-craft-experience-quality",
   "independent-blind-spot-sentinel",
+]);
+export const DEEP_AUDIT_ROLE_PHASES = Object.freeze([
+  ["independent-blind-spot-sentinel", "PASS_A"],
+  ["psychology-human-factors-emotional-safety", "CREATE_BRIEF"],
+  ["logic-causality-state-coherence", "INITIAL_REVIEW"],
+  ["interaction-accessibility-readability-localization-culture", "INITIAL_REVIEW"],
+  ["technical-architecture-data-cross-platform", "INITIAL_REVIEW"],
+  ["security-privacy-agent-trust", "INITIAL_REVIEW"],
+  ["performance-reliability-operations", "INITIAL_REVIEW"],
+  ["product-discovery-visual-craft-experience-quality", "INITIAL_REVIEW"],
+  ["psychology-human-factors-emotional-safety", "INDEPENDENT_FINAL_REVIEW"],
+  ["logic-causality-state-coherence", "FINAL_REVIEW"],
+  ["interaction-accessibility-readability-localization-culture", "FINAL_REVIEW"],
+  ["technical-architecture-data-cross-platform", "FINAL_REVIEW"],
+  ["security-privacy-agent-trust", "FINAL_REVIEW"],
+  ["performance-reliability-operations", "FINAL_REVIEW"],
+  ["product-discovery-visual-craft-experience-quality", "FINAL_REVIEW"],
+  ["qa-evidence-release-verification", "QA_CLOSURE"],
+  ["independent-blind-spot-sentinel", "PASS_B"],
 ]);
 export const EVIDENCE_CLASSES = Object.freeze([
   "DIRECT_LOCAL",
@@ -148,8 +171,11 @@ const repositoryProvenance = z
         gitStatusSha256: sha256.optional(),
         trackedDiffSha256: sha256.optional(),
         sanitizedUntrackedManifestSha256: sha256.optional(),
+        sanitizedUntrackedManifestPath: repositoryRelativePath.optional(),
         privacyScanReceiptSha256: sha256.optional(),
+        privacyScanReceiptPath: repositoryRelativePath.optional(),
         candidateSnapshotSha256: sha256.optional(),
+        candidateSnapshotPath: repositoryRelativePath.optional(),
       })
       .strict(),
     z
@@ -160,8 +186,11 @@ const repositoryProvenance = z
         gitStatusSha256: sha256.optional(),
         trackedDiffSha256: sha256.optional(),
         sanitizedUntrackedManifestSha256: sha256.optional(),
+        sanitizedUntrackedManifestPath: repositoryRelativePath.optional(),
         privacyScanReceiptSha256: sha256.optional(),
+        privacyScanReceiptPath: repositoryRelativePath.optional(),
         candidateSnapshotSha256: sha256.optional(),
+        candidateSnapshotPath: repositoryRelativePath.optional(),
       })
       .strict(),
   ])
@@ -170,8 +199,11 @@ const repositoryProvenance = z
       "gitStatusSha256",
       "trackedDiffSha256",
       "sanitizedUntrackedManifestSha256",
+      "sanitizedUntrackedManifestPath",
       "privacyScanReceiptSha256",
+      "privacyScanReceiptPath",
       "candidateSnapshotSha256",
+      "candidateSnapshotPath",
     ];
     const present = candidateFields.filter((field) => value[field] !== undefined);
     if (present.length !== 0 && present.length !== candidateFields.length) {
@@ -220,6 +252,48 @@ const subjectProvenance = z
     }
   });
 
+const canonicalRoleReceipt = z
+  .object({
+    roleId,
+    phase: z.enum([
+      "PASS_A",
+      "CREATE_BRIEF",
+      "INITIAL_REVIEW",
+      "INDEPENDENT_FINAL_REVIEW",
+      "FINAL_REVIEW",
+      "QA_CLOSURE",
+      "PASS_B",
+    ]),
+    subjectIds: z.array(subjectId).min(1),
+    verdict: z.enum(["GO", "STOP", "ASK"]),
+    artifactPath: repositoryRelativePath,
+    receiptSha256: sha256,
+  })
+  .strict();
+
+const coordinatorIntegrationReceipt = z
+  .object({
+    roleId: z.literal("coordinator-teamlead"),
+    phase: z.literal("INTEGRATION"),
+    subjectIds: z.array(subjectId).min(1),
+    verdict: z.enum(["GO", "STOP", "ASK"]),
+    artifactPath: repositoryRelativePath,
+    receiptSha256: sha256,
+  })
+  .strict();
+
+const inventoryReconciliationRecord = z
+  .object({
+    subjectId,
+    candidateCount: z.number().int().nonnegative(),
+    capabilityMappedCount: z.number().int().nonnegative(),
+    excludedCandidateCount: z.number().int().nonnegative(),
+    unclassifiedCandidateCount: z.number().int().nonnegative(),
+    artifactPath: repositoryRelativePath,
+    artifactSha256: sha256,
+  })
+  .strict();
+
 export const AuditManifestSchema = z
   .object({
     runId: recordId,
@@ -228,23 +302,22 @@ export const AuditManifestSchema = z
     policySha256: sha256,
     toolInventorySha256: sha256,
     sourceLedgerSha256: sha256,
+    auditStatus: z.enum(["IN_PROGRESS", "BLOCKED", "AUDIT_COMPLETE"]),
+    classificationRegistryVersion: z.literal(DEEP_AUDIT_CLASSIFICATION.version),
+    classificationRegistrySha256: z.literal(DEEP_AUDIT_CLASSIFICATION.sha256),
+    runWindow: z
+      .object({
+        startedAt: z.string().datetime(),
+        observedThrough: z.string().datetime(),
+      })
+      .strict(),
     redactionRules: z
       .array(z.enum(["NO_RAW_SENSITIVE_PAYLOADS", "HASH_IDENTIFIERS"]))
       .min(1),
     subjects: z.array(subjectProvenance).length(2),
-    roleReceipts: z
-      .array(
-        z
-          .object({
-            roleId,
-            phase: z.enum(["INITIAL", "PASS_A", "PASS_B", "INTEGRATION"]),
-            subjectIds: z.array(subjectId).min(1),
-            verdict: z.enum(["GO", "STOP", "ASK"]),
-            receiptSha256: sha256,
-          })
-          .strict(),
-      )
-      .length(12),
+    roleReceipts: z.array(canonicalRoleReceipt).min(1).max(DEEP_AUDIT_ROLE_PHASES.length),
+    coordinatorIntegrationReceipt: coordinatorIntegrationReceipt.optional(),
+    inventoryReconciliation: z.array(inventoryReconciliationRecord).length(2).optional(),
   })
   .strict();
 
@@ -259,7 +332,13 @@ const evidenceLocator = z.discriminatedUnion("kind", [
     .strict(),
   z.object({ kind: z.literal("LOCAL_ARTIFACT"), path: repositoryRelativePath }).strict(),
   z.object({ kind: z.literal("AUTHORITATIVE_URL"), url: z.string().url() }).strict(),
-  z.object({ kind: z.literal("HUMAN_RECEIPT"), receiptId: recordId }).strict(),
+  z
+    .object({
+      kind: z.literal("HUMAN_RECEIPT"),
+      receiptId: recordId,
+      artifactPath: repositoryRelativePath,
+    })
+    .strict(),
   z
     .object({
       kind: z.literal("UNVERIFIABLE_REFERENCE"),

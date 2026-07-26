@@ -16,9 +16,14 @@ try {
     const inventory = await enumerateRepositoryCandidates(root, subjectId);
     process.stdout.write(`${JSON.stringify(inventory)}\n`);
   } else if (command === "validate" || command === "report") {
-    const { inputDirectory, subjectRoots } = parseLedgerArguments(args, command);
+    const { artifactDirectory, inputDirectory, subjectRoots } = parseLedgerArguments(args, command);
     const bundle = await loadAuditBundle(inputDirectory);
-    const result = await validateAuditBundleWithLocalArtifacts(bundle, inputDirectory, subjectRoots);
+    const result = await validateAuditBundleWithLocalArtifacts(
+      bundle,
+      inputDirectory,
+      subjectRoots,
+      artifactDirectory ?? inputDirectory,
+    );
     if (command === "validate") {
       process.stdout.write(`${JSON.stringify(result)}\n`);
     } else if (result.ok) {
@@ -29,7 +34,7 @@ try {
     process.exitCode = result.ok ? 0 : 1;
   } else {
     throw new Error(
-      "usage: cli.mjs inventory --root <repo> --subject <id> | <validate|report> --input <ledger-directory> [--subject-root <subject-id>=<git-root>]",
+      "usage: cli.mjs inventory --root <repo> --subject <id> | <validate|report> --input <ledger-directory> [--artifact-root <real-directory>] [--subject-root <subject-id>=<git-root>]",
     );
   }
 } catch (error) {
@@ -45,6 +50,7 @@ function exactOption(args, name) {
 }
 
 function parseLedgerArguments(args, command) {
+  let artifactDirectory;
   let inputDirectory;
   const subjectRoots = {};
   for (let index = 0; index < args.length; index += 2) {
@@ -54,6 +60,11 @@ function parseLedgerArguments(args, command) {
     if (name === "--input") {
       if (inputDirectory) throw new Error("--input may only be provided once");
       inputDirectory = value;
+      continue;
+    }
+    if (name === "--artifact-root") {
+      if (artifactDirectory) throw new Error("--artifact-root may only be provided once");
+      artifactDirectory = value;
       continue;
     }
     if (name === "--subject-root") {
@@ -69,5 +80,5 @@ function parseLedgerArguments(args, command) {
     throw new Error(`unexpected option ${name}`);
   }
   if (!inputDirectory) throw new Error(`${command} requires --input <ledger-directory>`);
-  return { inputDirectory, subjectRoots };
+  return { artifactDirectory, inputDirectory, subjectRoots };
 }
