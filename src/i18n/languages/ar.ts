@@ -539,6 +539,14 @@ const arabicOverrides: Partial<Translations> = {
   settingsSoundActivityRestoreDescription:
     "تظل الأصوات التي أوقفتها سابقًا متوقفة حتى تعيد تشغيلها.",
   settingsSoundActivityRestoreAction: "تشغيل جميع أصوات الأنشطة",
+  settingsSoundPreviewTitle: "معاينة الأصوات",
+  settingsSoundPreviewDescription:
+    "استمع الآن إلى كل إشارة مفعّلة، من دون انتظار حدوثها داخل التطبيق.",
+  settingsSoundPreviewSuccess: "تم الحفظ",
+  settingsSoundPreviewComplete: "اكتمل",
+  settingsSoundPreviewStreak: "سلسلة",
+  settingsSoundPreviewMilestone: "محطة مهمة",
+  settingsSoundPreviewNotification: "تذكير",
   settingsSoundMasterDisabledHint: "شغّل صوت التطبيق لاستخدام هذه الإعدادات.",
   settingsAccountBackupTitle: "الحساب والنسخ الاحتياطي",
   settingsAccountBackupDescription:

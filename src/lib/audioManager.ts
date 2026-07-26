@@ -1,4 +1,4 @@
-// Procedural feedback audio manager.
+// Local mastered feedback audio with a procedural fallback.
 // Long ambient tracks are managed separately in ambientSounds because iOS unlock
 // and blessed HTMLAudioElement handling have different lifecycle requirements.
 
@@ -13,6 +13,11 @@ declare global {
 import { safeParseFloat } from '@/lib/validation';
 import { storageGetRaw, storageReadRaw, storageRemove, storageSetRaw } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
+import {
+  APP_AUDIO_FEEDBACK_EVENTS,
+  getAppAudioFeedbackEventSrc,
+  type AppAudioFeedbackSoundType,
+} from '@/lib/appAudioAssets';
 import { canPlayFeedbackSound, consumeAudioFeedbackBudget } from './audioComfort';
 
 export type SoundType = 'success' | 'complete' | 'streak' | 'milestone' | 'levelUp' | 'notification';
@@ -41,6 +46,18 @@ const state: AudioManagerState = {
 };
 
 const DEFAULT_AUDIO_VOLUME = 0.3;
+const FEEDBACK_CUE_FETCH_TIMEOUT_MS = 8000;
+const FEEDBACK_CUE_GAIN: Record<AppAudioFeedbackSoundType, number> = {
+  success: 0.35,
+  complete: 0.4,
+  streak: 0.45,
+  milestone: 0.45,
+  notification: 0.2,
+};
+const feedbackCueBuffers = new Map<AppAudioFeedbackSoundType, AudioBuffer>();
+const feedbackCueLoads = new Map<AppAudioFeedbackSoundType, Promise<AudioBuffer | null>>();
+const feedbackCueAbortControllers = new Set<AbortController>();
+let feedbackCueGeneration = 0;
 
 const HIGH_SALIENCE_SOUND_TYPES = new Set<SoundType>(['streak', 'milestone', 'levelUp']);
 const DEFERRED_ACTION_SOUND_TYPES = new Set<SoundType>(['success', 'complete', 'notification']);
@@ -161,6 +178,83 @@ async function ensureContextResumed(): Promise<boolean> {
 
 function needsAudioContextResume(ctx: AudioContext): boolean {
   return ctx.state === 'suspended' || (ctx.state as string) === 'interrupted';
+}
+
+function feedbackCueType(type: SoundType): AppAudioFeedbackSoundType {
+  return type === 'levelUp' ? 'milestone' : type;
+}
+
+async function loadFeedbackCue(type: AppAudioFeedbackSoundType): Promise<AudioBuffer | null> {
+  const cached = feedbackCueBuffers.get(type);
+  if (cached) return cached;
+
+  const inFlight = feedbackCueLoads.get(type);
+  if (inFlight) return inFlight;
+
+  const ctx = getAudioContext();
+  if (!ctx || typeof ctx.decodeAudioData !== 'function' || typeof fetch !== 'function') {
+    return null;
+  }
+
+  const controller = new AbortController();
+  const generation = feedbackCueGeneration;
+  feedbackCueAbortControllers.add(controller);
+  const timeoutId = window.setTimeout(() => controller.abort(), FEEDBACK_CUE_FETCH_TIMEOUT_MS);
+  const load = fetch(getAppAudioFeedbackEventSrc(type), {
+    cache: 'force-cache',
+    credentials: 'same-origin',
+    signal: controller.signal,
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`feedback cue ${type} returned HTTP ${response.status}`);
+      }
+      return response.arrayBuffer();
+    })
+    .then((bytes) => ctx.decodeAudioData(bytes))
+    .then((buffer) => {
+      if (controller.signal.aborted || generation !== feedbackCueGeneration) return null;
+      feedbackCueBuffers.set(type, buffer);
+      return buffer;
+    })
+    .catch((error: unknown) => {
+      logger.warn(`[AudioManager] Feedback cue unavailable; procedural fallback used (${type}):`, error);
+      return null;
+    })
+    .finally(() => {
+      window.clearTimeout(timeoutId);
+      feedbackCueAbortControllers.delete(controller);
+      feedbackCueLoads.delete(type);
+    });
+
+  feedbackCueLoads.set(type, load);
+  return load;
+}
+
+function playDecodedFeedbackCue(type: AppAudioFeedbackSoundType, buffer: AudioBuffer): boolean {
+  if (state.isMuted || state.volume <= 0 || !canPlayFeedbackSound(type)) return false;
+  const ctx = getAudioContext();
+  if (!ctx || needsAudioContextResume(ctx)) return false;
+
+  try {
+    const effectiveGain = state.volume * FEEDBACK_CUE_GAIN[type];
+    if (effectiveGain <= 0) return false;
+    const source = ctx.createBufferSource();
+    const gainNode = ctx.createGain();
+    source.buffer = buffer;
+    gainNode.gain.value = effectiveGain;
+    source.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    source.start(ctx.currentTime);
+    return true;
+  } catch (error) {
+    logger.warn(`[AudioManager] Feedback cue playback failed (${type}):`, error);
+    return false;
+  }
+}
+
+export async function preloadFeedbackCues(): Promise<void> {
+  await Promise.all(APP_AUDIO_FEEDBACK_EVENTS.map((event) => loadFeedbackCue(event.id)));
 }
 
 function emitToneWithContext(
@@ -332,7 +426,7 @@ export function playNotification(): void {
   if (state.isMuted || state.volume <= 0) return;
   if (!canPlayFeedbackSound('notification')) return;
   if (!consumeAudioFeedbackBudget('notification')) return;
-  playNotificationTone();
+  playSoundNow('notification');
 }
 
 export function playNotificationPreview(): void {
@@ -341,7 +435,7 @@ export function playNotificationPreview(): void {
   playNotificationTone();
 }
 
-function playSoundNow(type: SoundType): void {
+function playProceduralSoundNow(type: SoundType): void {
   switch (type) {
     case 'success':
       emitSuccessTone();
@@ -362,6 +456,28 @@ function playSoundNow(type: SoundType): void {
       playNotificationTone();
       break;
   }
+}
+
+function playSoundNow(type: SoundType): void {
+  const cueType = feedbackCueType(type);
+  const cached = feedbackCueBuffers.get(cueType);
+  if (cached && playDecodedFeedbackCue(cueType, cached)) return;
+
+  void loadFeedbackCue(cueType);
+  playProceduralSoundNow(type);
+}
+
+export async function playFeedbackPreview(type: SoundType): Promise<boolean> {
+  if (state.isMuted || state.volume <= 0) return false;
+  if (!canPlayFeedbackSound(type)) return false;
+
+  const cueType = feedbackCueType(type);
+  const buffer = await loadFeedbackCue(cueType);
+  if (state.isMuted || state.volume <= 0 || !canPlayFeedbackSound(type)) return false;
+  if (buffer && playDecodedFeedbackCue(cueType, buffer)) return true;
+
+  playProceduralSoundNow(type);
+  return false;
 }
 
 // Play by sound type. Low-salience action cues are briefly deferred so a
@@ -460,6 +576,7 @@ export function initAudioManager(): void {
 // Resume context on user interaction (required for mobile)
 export async function resumeOnInteraction(): Promise<void> {
   await ensureContextResumed();
+  void preloadFeedbackCues();
 }
 
 /**
@@ -507,6 +624,11 @@ export function cleanup(): void {
   state.activeTimeouts.length = 0;
   pendingActionSound = null;
   lastHighSalienceSoundAt = 0;
+  feedbackCueGeneration += 1;
+  feedbackCueAbortControllers.forEach((controller) => controller.abort());
+  feedbackCueAbortControllers.clear();
+  feedbackCueLoads.clear();
+  feedbackCueBuffers.clear();
 
   if (state.context) {
     void state.context.close();

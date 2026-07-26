@@ -61,6 +61,8 @@ import {
   playLevelUp,
   playNotification,
   playNotificationPreview,
+  playFeedbackPreview,
+  preloadFeedbackCues,
 } from '../audioManager';
 import * as audioManager from '../audioManager';
 
@@ -165,6 +167,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
 });
 
 // ─── Tests ──────────────────────────────────────────────────────
@@ -323,6 +326,177 @@ describe('Effective app audio authority', () => {
     expect(isMuted()).toBe(false);
     expect(getVolume()).toBe(0.3);
     expect(audioManager.getAudioSettings().canPlayFeedback).toBe(true);
+  });
+});
+
+describe('Mastered feedback cues', () => {
+  function installMasteredCueContext(
+    fetchImpl: typeof fetch,
+    options: { decodeError?: Error } = {},
+  ) {
+    const starts: AudioBuffer[] = [];
+    const oscillatorStarts: number[] = [];
+    const decodedBuffer = { duration: 0.5 } as AudioBuffer;
+
+    class MockMasteredAudioContext {
+      currentTime = 10;
+      destination = {};
+      state: AudioContextState = 'running';
+
+      createBufferSource() {
+        const source = {
+          buffer: null as AudioBuffer | null,
+          connect: vi.fn(),
+          start: vi.fn(() => {
+            if (source.buffer) starts.push(source.buffer);
+          }),
+        };
+        return source as unknown as AudioBufferSourceNode;
+      }
+
+      createGain() {
+        return {
+          connect: vi.fn(),
+          gain: { value: 0, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+        } as unknown as GainNode;
+      }
+
+      createOscillator() {
+        return {
+          frequency: { value: 0 },
+          type: 'sine',
+          connect: vi.fn(),
+          start: vi.fn(() => oscillatorStarts.push(1)),
+          stop: vi.fn(),
+        } as unknown as OscillatorNode;
+      }
+
+      decodeAudioData() {
+        if (options.decodeError) return Promise.reject(options.decodeError);
+        return Promise.resolve(decodedBuffer);
+      }
+
+      close() {
+        return Promise.resolve();
+      }
+
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    Object.defineProperty(window, 'AudioContext', {
+      configurable: true,
+      writable: true,
+      value: MockMasteredAudioContext,
+    });
+    Object.defineProperty(globalThis, 'AudioContext', {
+      configurable: true,
+      writable: true,
+      value: MockMasteredAudioContext,
+    });
+    vi.stubGlobal('fetch', vi.fn(fetchImpl));
+
+    cleanup();
+    initAudioManager();
+    return { starts, oscillatorStarts, decodedBuffer };
+  }
+
+  it('loads the scoped first-party MP3 before the first explicit preview', async () => {
+    const { starts, decodedBuffer } = installMasteredCueContext(
+      vi.fn(async () => new Response(new Uint8Array([1, 2, 3]), { status: 200 })),
+    );
+
+    const played = await playFeedbackPreview('success');
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/sounds/feedback/feedback-success.mp3',
+      expect.objectContaining({ cache: 'force-cache', credentials: 'same-origin' }),
+    );
+    expect(played).toBe(true);
+    expect(starts).toEqual([decodedBuffer]);
+  });
+
+  it('retries a transient cue fetch failure instead of caching failure forever', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockRejectedValueOnce(new TypeError('temporary network failure'))
+      .mockResolvedValueOnce(new Response(new Uint8Array([4, 5, 6]), { status: 200 }));
+    const { starts } = installMasteredCueContext(fetchMock);
+
+    expect(await playFeedbackPreview('complete')).toBe(false);
+    expect(await playFeedbackPreview('complete')).toBe(true);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(starts).toHaveLength(1);
+  });
+
+  it('deduplicates concurrent loads for the same feedback cue', async () => {
+    let resolveFetch!: (response: Response) => void;
+    const fetchMock = vi.fn<typeof fetch>(
+      () => new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      }),
+    );
+    const { starts } = installMasteredCueContext(fetchMock);
+
+    const first = playFeedbackPreview('milestone');
+    const second = playFeedbackPreview('milestone');
+    resolveFetch(new Response(new Uint8Array([7, 8, 9]), { status: 200 }));
+
+    await expect(Promise.all([first, second])).resolves.toEqual([true, true]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(starts).toHaveLength(2);
+  });
+
+  it('uses a preloaded mastered cue for regular feedback without procedural overlap', async () => {
+    vi.useFakeTimers();
+    try {
+      const { starts, oscillatorStarts, decodedBuffer } = installMasteredCueContext(
+        vi.fn(async () => new Response(new Uint8Array([10, 11, 12]), { status: 200 })),
+      );
+
+      await preloadFeedbackCues();
+      playSuccess();
+      vi.advanceTimersByTime(LOW_SALIENCE_TEST_DELAY_MS);
+
+      expect(starts).toEqual([decodedBuffer]);
+      expect(oscillatorStarts).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('uses the procedural cue when a mastered cue cannot be decoded', async () => {
+    const { starts, oscillatorStarts } = installMasteredCueContext(
+      vi.fn(async () => new Response(new Uint8Array([13, 14, 15]), { status: 200 })),
+      { decodeError: new DOMException('invalid MP3', 'EncodingError') },
+    );
+
+    await expect(playFeedbackPreview('notification')).resolves.toBe(false);
+
+    expect(starts).toEqual([]);
+    expect(oscillatorStarts).toHaveLength(1);
+  });
+
+  it('does not emit a loaded preview after the user mutes during the fetch', async () => {
+    let resolveFetch!: (response: Response) => void;
+    const { starts, oscillatorStarts } = installMasteredCueContext(
+      vi.fn(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveFetch = resolve;
+          }),
+      ),
+    );
+
+    const preview = playFeedbackPreview('success');
+    setMuted(true);
+    resolveFetch(new Response(new Uint8Array([16, 17, 18]), { status: 200 }));
+
+    await expect(preview).resolves.toBe(false);
+    expect(starts).toEqual([]);
+    expect(oscillatorStarts).toEqual([]);
   });
 });
 

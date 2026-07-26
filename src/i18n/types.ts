@@ -550,6 +550,13 @@ export interface Translations {
   settingsSoundActivityRestoreTitle: string;
   settingsSoundActivityRestoreDescription: string;
   settingsSoundActivityRestoreAction: string;
+  settingsSoundPreviewTitle: string;
+  settingsSoundPreviewDescription: string;
+  settingsSoundPreviewSuccess: string;
+  settingsSoundPreviewComplete: string;
+  settingsSoundPreviewStreak: string;
+  settingsSoundPreviewMilestone: string;
+  settingsSoundPreviewNotification: string;
   settingsSoundMasterDisabledHint: string;
   settingsAccountBackupTitle: string;
   settingsAccountBackupDescription: string;

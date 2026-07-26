@@ -51,6 +51,11 @@ describe("audio blind-spot release contracts", () => {
     expect(serviceWorker).toContain('sounds/soft-rain-veil.mp3');
     expect(serviceWorker).toContain('sounds/hyperfocus/hyperfocus-forest-soft.mp3');
     expect(serviceWorker).toContain('sounds/hyperfocus/hyperfocus-wind-intense.mp3');
+    expect(serviceWorker).toContain('sounds/feedback/feedback-success.mp3');
+    expect(serviceWorker).toContain('sounds/feedback/feedback-complete.mp3');
+    expect(serviceWorker).toContain('sounds/feedback/feedback-streak.mp3');
+    expect(serviceWorker).toContain('sounds/feedback/feedback-milestone.mp3');
+    expect(serviceWorker).toContain('sounds/feedback/feedback-notification.mp3');
   });
 
   it("keeps shipped audio cache warming out of the blocking service-worker install path", () => {

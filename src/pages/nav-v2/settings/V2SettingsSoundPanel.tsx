@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { AlertCircle, ListChecks, RotateCcw, Vibrate, Volume2, VolumeX, Waves } from "lucide-react";
+import { AlertCircle, ListChecks, Play, RotateCcw, Vibrate, Volume2, VolumeX, Waves } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
 import { useAudioComfortSettings } from "@/hooks/useAudioComfortSettings";
 import { useHapticsPreference } from "@/hooks/useHapticsPreference";
-import { setAudioEnabled, setVolume } from "@/lib/audioManager";
+import {
+  playFeedbackPreview,
+  setAudioEnabled,
+  setVolume,
+  type SoundType,
+} from "@/lib/audioManager";
 import { trySetHapticsEnabled } from "@/lib/hapticsPreference";
 import { isNative } from "@/lib/platform";
 import {
@@ -30,6 +35,15 @@ export function SoundPanel() {
   ];
   const activitySoundsEnabled = activitySoundChoices.some(Boolean);
   const activitySoundsMixed = activitySoundsEnabled && !activitySoundChoices.every(Boolean);
+  const feedbackSoundsEnabled =
+    activitySoundsEnabled || comfort.settings.reminderCuesEnabled;
+  const feedbackPreviewChoices: readonly [string, SoundType, boolean][] = [
+    [t.settingsSoundPreviewSuccess, "success", comfort.settings.completionCuesEnabled],
+    [t.settingsSoundPreviewComplete, "complete", comfort.settings.completionCuesEnabled],
+    [t.settingsSoundPreviewStreak, "streak", comfort.settings.milestoneCuesEnabled],
+    [t.settingsSoundPreviewMilestone, "milestone", comfort.settings.milestoneCuesEnabled],
+    [t.settingsSoundPreviewNotification, "notification", comfort.settings.reminderCuesEnabled],
+  ];
   const errorCopy =
     tx.settingsPreferenceSaveError ||
     "Could not save this change. Your previous setting is still active.";
@@ -172,6 +186,28 @@ export function SoundPanel() {
           >
             {tx.settingsSoundActivityRestoreAction || "Turn all activity sounds on"}
           </SettingsInlineButton>
+        </SettingsInset>
+      ) : null}
+
+      {audio.canPlayFeedback && feedbackSoundsEnabled ? (
+        <SettingsInset testId="settings-v2-audio-feedback-preview">
+          <SettingsFieldHeader
+            icon={Play}
+            title={t.settingsSoundPreviewTitle}
+            description={t.settingsSoundPreviewDescription}
+          />
+          <div className="grid min-w-0 gap-2 min-[520px]:grid-cols-2">
+            {feedbackPreviewChoices.map(([label, soundType, enabled]) => (
+              <SettingsInlineButton
+                key={soundType}
+                icon={Play}
+                disabled={!enabled}
+                onClick={() => void playFeedbackPreview(soundType)}
+              >
+                {label}
+              </SettingsInlineButton>
+            ))}
+          </div>
         </SettingsInset>
       ) : null}
 

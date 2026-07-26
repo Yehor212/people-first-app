@@ -23,6 +23,59 @@ const APPROVED_ROOT_MP3S = new Map([
   ['soft-rain-veil.mp3', { gain: 0.32, peakMax: 0.22, rmsMax: 0.055, effectivePeakMax: 0.2, effectiveRmsMax: 0.018, loopDeltaMax: 0.035, startEndRmsDeltaMax: 0.014, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
 ]);
 
+const APPROVED_FEEDBACK_MP3S = new Map([
+  ['feedback-complete.mp3', { id: 'feedback-complete', gain: 0.4, durationMin: 0.5, durationMax: 0.85 }],
+  ['feedback-milestone.mp3', { id: 'feedback-milestone', gain: 0.45, durationMin: 0.6, durationMax: 0.95 }],
+  ['feedback-notification.mp3', { id: 'feedback-notification', gain: 0.2, durationMin: 0.25, durationMax: 0.55 }],
+  ['feedback-streak.mp3', { id: 'feedback-streak', gain: 0.45, durationMin: 0.7, durationMax: 1.05 }],
+  ['feedback-success.mp3', { id: 'feedback-success', gain: 0.35, durationMin: 0.4, durationMax: 0.7 }],
+]);
+const EXPECTED_FEEDBACK_MP3_FILES = [...APPROVED_FEEDBACK_MP3S.keys()].sort();
+const FEEDBACK_METRIC_LIMITS = Object.freeze({
+  sampleRates: [44100],
+  channels: [2],
+  peakMin: 0.02,
+  peakMax: 0.22,
+  rmsMin: 0.01,
+  rmsMax: 0.065,
+  transientDeltaMax: 0.08,
+});
+
+const EXPECTED_GENERATED_AUDIO_PROVENANCE = new Map([
+  ['soft-air-veil.mp3', {
+    id: 'soft-air-veil',
+    family: 'ambience',
+    publicPath: 'public/sounds/soft-air-veil.mp3',
+    deployDocsPath: 'docs/sounds/soft-air-veil.mp3',
+    runtimeGain: 0.18,
+  }],
+  ['gentle-water-bed.mp3', {
+    id: 'gentle-water-bed',
+    family: 'ambience',
+    publicPath: 'public/sounds/gentle-water-bed.mp3',
+    deployDocsPath: 'docs/sounds/gentle-water-bed.mp3',
+    runtimeGain: 0.36,
+  }],
+  ['soft-rain-veil.mp3', {
+    id: 'soft-rain-veil',
+    family: 'ambience',
+    publicPath: 'public/sounds/soft-rain-veil.mp3',
+    deployDocsPath: 'docs/sounds/soft-rain-veil.mp3',
+    runtimeGain: 0.32,
+  }],
+  ...[...APPROVED_FEEDBACK_MP3S].map(([fileName, thresholds]) => [
+    fileName,
+    {
+      id: thresholds.id,
+      family: 'feedback',
+      publicPath: 'public/sounds/feedback/' + fileName,
+      deployDocsPath: 'docs/sounds/feedback/' + fileName,
+      runtimeGain: thresholds.gain,
+      deterministicSpec: 'fixed-note-sequence-with-cosine-envelopes',
+    },
+  ]),
+]);
+
 const FORBIDDEN_ROOT_MP3S = [
   'measured-breath.mp3',
   'mixkit-small-waves-harbor-rocks-1208.mp3',
@@ -179,65 +232,26 @@ function sha256File(filePath) {
   return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
 }
 
-function canonicalGeneratedDuplicateMp3Name(fileName) {
-  const match = /^(.*) \d+(\.mp3)$/i.exec(fileName);
-  return match ? match[1] + match[2] : null;
-}
-
-function canonicalGeneratedDuplicateDirectoryName(directoryName) {
-  const match = /^(.*) \d+$/.exec(directoryName);
-  return match ? match[1] : null;
-}
-
-function isDirectoryEmpty(directoryPath) {
-  return fs.readdirSync(directoryPath).length === 0;
-}
-
-function pruneGeneratedRootSoundDuplicates(soundsDir, label) {
-  const pruned = [];
-  if (!fs.existsSync(soundsDir)) return pruned;
-
-  for (const entry of fs.readdirSync(soundsDir, { withFileTypes: true })) {
-    const duplicatePath = path.join(soundsDir, entry.name);
-
-    if (entry.isFile()) {
-      const canonicalName = canonicalGeneratedDuplicateMp3Name(entry.name);
-      if (!canonicalName) continue;
-      const canonicalPath = path.join(soundsDir, canonicalName);
-      if (!fs.existsSync(canonicalPath) || !fs.statSync(canonicalPath).isFile()) continue;
-
-      const duplicateHash = sha256File(duplicatePath);
-      const canonicalHash = sha256File(canonicalPath);
-      assert(duplicateHash === canonicalHash, 'generated root MP3 duplicate differs from canonical file', {
-        location: label,
-        duplicate: entry.name,
-        canonical: canonicalName,
-        duplicateHash,
-        canonicalHash,
-      });
-      fs.rmSync(duplicatePath, { force: true });
-      pruned.push({ location: label, type: 'root-mp3', duplicate: entry.name, canonical: canonicalName, sha256: canonicalHash });
-      continue;
-    }
-
-    if (entry.isDirectory()) {
-      const canonicalName = canonicalGeneratedDuplicateDirectoryName(entry.name);
-      if (!canonicalName) continue;
-      const canonicalPath = path.join(soundsDir, canonicalName);
-      if (!fs.existsSync(canonicalPath) || !fs.statSync(canonicalPath).isDirectory()) continue;
-
-      assert(isDirectoryEmpty(duplicatePath), 'generated duplicate sound directory is not empty', {
-        location: label,
-        duplicate: entry.name,
-        canonical: canonicalName,
-        duplicateFiles: fs.readdirSync(duplicatePath),
-      });
-      fs.rmSync(duplicatePath, { recursive: true, force: true });
-      pruned.push({ location: label, type: 'empty-directory', duplicate: entry.name, canonical: canonicalName });
-    }
+function findGeneratedDuplicateSoundArtifacts(soundsDir, label) {
+  if (!fs.existsSync(soundsDir)) return [];
+  const entries = fs.readdirSync(soundsDir, { withFileTypes: true });
+  const entryTypes = new Map(entries.map((entry) => [entry.name, entry.isDirectory() ? 'directory' : 'file']));
+  const duplicates = [];
+  for (const entry of entries) {
+    const canonicalName = entry.isFile()
+      ? /^(.*) \d+(\.mp3)$/i.exec(entry.name)?.slice(1).join('') ?? null
+      : entry.isDirectory()
+        ? /^(.*) \d+$/.exec(entry.name)?.[1] ?? null
+        : null;
+    if (!canonicalName || entryTypes.get(canonicalName) !== entryTypes.get(entry.name)) continue;
+    duplicates.push({
+      location: label,
+      type: entryTypes.get(entry.name),
+      duplicate: entry.name,
+      canonical: canonicalName,
+    });
   }
-
-  return pruned;
+  return duplicates;
 }
 
 function checkThirdPartyNotices() {
@@ -274,6 +288,54 @@ function checkThirdPartyNotices() {
   }
 }
 
+function inspectGeneratedAudioProvenance(assets) {
+  const expectedFiles = [...EXPECTED_GENERATED_AUDIO_PROVENANCE.keys()].sort();
+  const actualFiles = assets.map((asset) => asset.fileName).sort();
+  const expectedSet = new Set(expectedFiles);
+  const actualSet = new Set(actualFiles);
+  const missing = expectedFiles.filter((fileName) => !actualSet.has(fileName));
+  const unexpected = actualFiles.filter((fileName, index) =>
+    !expectedSet.has(fileName) || actualFiles.indexOf(fileName) !== index);
+  const mismatched = [];
+
+  for (const [fileName, expected] of EXPECTED_GENERATED_AUDIO_PROVENANCE) {
+    const asset = assets.find((item) => item.fileName === fileName);
+    if (!asset) continue;
+    const fields = [];
+    if (asset.id !== expected.id) fields.push('id');
+    if (asset.publicPath !== expected.publicPath) fields.push('publicPath');
+    if (asset.deployDocsPath !== expected.deployDocsPath) fields.push('deployDocsPath');
+    if (!/^[a-f0-9]{64}$/.test(asset.sha256 || '')) fields.push('sha256');
+    if (!Number.isInteger(asset.bytes) || asset.bytes <= 0) fields.push('bytes');
+    if (!asset.parameters || asset.parameters.family !== expected.family) fields.push('parameters.family');
+    if (!asset.parameters || asset.parameters.sampleRate !== 44100) fields.push('parameters.sampleRate');
+    if (!asset.parameters || asset.parameters.channels !== 2) fields.push('parameters.channels');
+    if (!asset.parameters || asset.parameters.runtimeGain !== expected.runtimeGain) fields.push('parameters.runtimeGain');
+
+    if (expected.family === 'feedback') {
+      if (asset.deterministicSpec !== expected.deterministicSpec) fields.push('deterministicSpec');
+      const thresholds = APPROVED_FEEDBACK_MP3S.get(fileName);
+      const duration = asset.parameters && asset.parameters.durationSeconds;
+      if (!thresholds || !Number.isFinite(duration) ||
+          duration < thresholds.durationMin || duration > thresholds.durationMax) {
+        fields.push('parameters.durationSeconds');
+      }
+    }
+
+    if (fields.length > 0) mismatched.push({ fileName, fields });
+  }
+
+  return {
+    exact: missing.length === 0 &&
+      unexpected.length === 0 &&
+      mismatched.length === 0 &&
+      actualFiles.length === expectedFiles.length,
+    missing,
+    unexpected,
+    mismatched,
+  };
+}
+
 function checkGeneratedProvenance() {
   assert(fs.existsSync(generatedProvenancePath), 'generated non-Hyperfocus audio provenance is missing', {
     path: path.relative(rootDir, generatedProvenancePath),
@@ -286,11 +348,11 @@ function checkGeneratedProvenance() {
   assert(provenance.encoder && provenance.encoder.name === 'lamejs' && provenance.encoder.version === '1.2.1',
     'generated provenance must pin the MP3 encoder', { encoder: provenance.encoder });
 
-  const expectedFiles = [...APPROVED_ROOT_MP3S.keys()].sort();
-  const actualFiles = (provenance.assets || []).map((asset) => asset.fileName).sort();
-  assert(JSON.stringify(actualFiles) === JSON.stringify(expectedFiles), 'generated provenance asset list does not match approved root MP3s', {
-    expectedFiles,
-    actualFiles,
+  const provenanceInspection = inspectGeneratedAudioProvenance(provenance.assets || []);
+  assert(provenanceInspection.exact,
+    'generated provenance asset list must contain exactly three root ambience and five feedback assets', {
+      expectedFiles: [...EXPECTED_GENERATED_AUDIO_PROVENANCE.keys()].sort(),
+      ...provenanceInspection,
   });
 
   for (const asset of provenance.assets || []) {
@@ -300,6 +362,11 @@ function checkGeneratedProvenance() {
     for (const relativePath of [asset.publicPath, asset.deployDocsPath]) {
       const fullPath = path.join(rootDir, relativePath);
       assert(fs.existsSync(fullPath), 'provenance references a missing generated asset', { relativePath });
+      assert(fs.statSync(fullPath).size === asset.bytes, 'generated asset byte count does not match provenance', {
+        relativePath,
+        expected: asset.bytes,
+        actual: fs.statSync(fullPath).size,
+      });
       assert(sha256File(fullPath) === asset.sha256, 'generated asset SHA-256 does not match provenance', {
         relativePath,
         expected: asset.sha256,
@@ -417,10 +484,31 @@ function readRootMp3Inventory(soundsDir) {
   return files.filter((name) => name.endsWith('.mp3')).sort();
 }
 
+function inspectExactDirectoryInventory(directory, expectedFiles) {
+  const expected = [...expectedFiles].sort();
+  const actualFiles = fs.existsSync(directory)
+    ? fs.readdirSync(directory, { withFileTypes: true }).map((entry) => entry.name).sort()
+    : [];
+  const expectedSet = new Set(expected);
+  const actualSet = new Set(actualFiles);
+  return {
+    actualFiles,
+    missing: expected.filter((fileName) => !actualSet.has(fileName)),
+    unexpected: actualFiles.filter((fileName) => !expectedSet.has(fileName)),
+  };
+}
+
+function validateExactDirectoryInventory(directory, expectedFiles, label) {
+  const inspection = inspectExactDirectoryInventory(directory, expectedFiles);
+  if (inspection.missing.length > 0 || inspection.unexpected.length > 0) {
+    throw new Error('unexpected feedback inventory at ' + label + ': ' + JSON.stringify(inspection));
+  }
+  return inspection;
+}
+
 function checkRootInventory() {
   const expected = [...APPROVED_ROOT_MP3S.keys()].sort();
   const checked = [];
-  const generatedRootDuplicatePrunes = [];
   const locations = [
     { label: 'public', dir: publicSoundsDir, required: true, generated: false },
     { label: 'docs', dir: path.join(rootDir, 'docs', 'sounds'), required: true, generated: false },
@@ -431,7 +519,11 @@ function checkRootInventory() {
 
   for (const location of locations) {
     if (location.generated) {
-      generatedRootDuplicatePrunes.push(...pruneGeneratedRootSoundDuplicates(location.dir, location.label));
+      const duplicates = findGeneratedDuplicateSoundArtifacts(location.dir, location.label);
+      assert(duplicates.length === 0, 'generated duplicate sound artifacts are not allowed', {
+        location: location.label,
+        duplicates,
+      });
     }
 
     const allRootFiles = readRootFileInventory(location.dir);
@@ -454,7 +546,34 @@ function checkRootInventory() {
     checked.push({ location: location.label, rootMp3s });
   }
 
-  return { checked, generatedRootDuplicatePrunes };
+  return checked;
+}
+
+function checkFeedbackInventory() {
+  const checked = [];
+  const locations = [
+    { label: 'public', soundsDir: publicSoundsDir, required: true },
+    { label: 'docs', soundsDir: path.join(rootDir, 'docs', 'sounds'), required: true },
+    { label: 'dist', soundsDir: path.join(rootDir, 'dist', 'sounds'), required: false },
+    { label: 'android', soundsDir: path.join(rootDir, 'android', 'app', 'src', 'main', 'assets', 'public', 'sounds'), required: false },
+    { label: 'ios', soundsDir: path.join(rootDir, 'ios', 'App', 'App', 'public', 'sounds'), required: false },
+  ];
+
+  for (const location of locations) {
+    if (!fs.existsSync(location.soundsDir)) {
+      assert(!location.required, 'required sound inventory is missing', location);
+      continue;
+    }
+    const directory = path.join(location.soundsDir, 'feedback');
+    const inventory = validateExactDirectoryInventory(
+      directory,
+      EXPECTED_FEEDBACK_MP3_FILES,
+      location.label + ' feedback',
+    );
+    checked.push({ location: location.label, feedbackMp3s: inventory.actualFiles });
+  }
+
+  return checked;
 }
 
 function collectDesktopTargetFiles() {
@@ -714,8 +833,8 @@ function decodeMp3ToWav(decoder, source, wavPath, fileName) {
   assert(result.status === 0, decoder + ' failed to decode MP3', { fileName, stderr: result.stderr, stdout: result.stdout });
 }
 
-function convertAndMeasure(fileName) {
-  const source = path.join(publicSoundsDir, fileName);
+function convertAndMeasure(relativePath, fileName = path.basename(relativePath)) {
+  const source = path.join(publicSoundsDir, relativePath);
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'app-audio-qc-'));
   const wavPath = path.join(tempDir, fileName.replace(/\.mp3$/, '.wav'));
   const decoder = selectAudioDecoder();
@@ -770,6 +889,64 @@ function checkMetrics(rootMp3s) {
   return metrics;
 }
 
+function inspectFeedbackMetrics(fileName, measured) {
+  const thresholds = APPROVED_FEEDBACK_MP3S.get(fileName);
+  if (!thresholds) return ['fileName'];
+
+  const violations = [];
+  if (!FEEDBACK_METRIC_LIMITS.channels.includes(measured.channels)) violations.push('channels');
+  if (!FEEDBACK_METRIC_LIMITS.sampleRates.includes(measured.sampleRate)) violations.push('sampleRate');
+  if (!Number.isFinite(measured.durationSeconds) ||
+      measured.durationSeconds < thresholds.durationMin ||
+      measured.durationSeconds > thresholds.durationMax) {
+    violations.push('durationSeconds');
+  }
+  if (!Number.isFinite(measured.peak) ||
+      measured.peak < FEEDBACK_METRIC_LIMITS.peakMin ||
+      measured.peak > FEEDBACK_METRIC_LIMITS.peakMax) {
+    violations.push('peak');
+  }
+  if (!Number.isFinite(measured.rms) ||
+      measured.rms < FEEDBACK_METRIC_LIMITS.rmsMin ||
+      measured.rms > FEEDBACK_METRIC_LIMITS.rmsMax) {
+    violations.push('rms');
+  }
+  if (!Number.isFinite(measured.transientDelta) ||
+      measured.transientDelta > FEEDBACK_METRIC_LIMITS.transientDeltaMax) {
+    violations.push('transientDelta');
+  }
+  return violations;
+}
+
+function checkFeedbackMetrics(feedbackMp3s) {
+  const metrics = [];
+  for (const fileName of feedbackMp3s) {
+    const thresholds = APPROVED_FEEDBACK_MP3S.get(fileName);
+    const measured = convertAndMeasure(path.join('feedback', fileName), fileName);
+    const violations = inspectFeedbackMetrics(fileName, measured);
+    const effectivePeak = measured.peak * thresholds.gain;
+    const effectiveRms = measured.rms * thresholds.gain;
+    metrics.push({
+      fileName,
+      gain: thresholds.gain,
+      effectivePeak,
+      effectiveRms,
+      ...measured,
+    });
+    assert(violations.length === 0, 'feedback cue format or decoded metrics are outside the approved short UI-cue contract', {
+      fileName,
+      measured,
+      thresholds: {
+        ...FEEDBACK_METRIC_LIMITS,
+        durationMin: thresholds.durationMin,
+        durationMax: thresholds.durationMax,
+      },
+      violations,
+    });
+  }
+  return metrics;
+}
+
 function writeReportIfRequested(report, options, reportPath = appAudioAssetsReportPath) {
   if (!options.writeReport) return;
   const outputRoot = outputAudioQcDir;
@@ -790,15 +967,17 @@ function main(options = validateCommandLine()) {
   checkPackageScript();
   const assets = checkManifest();
   scanCurrentSourceForStaleStrings();
-  const inventoryResult = checkRootInventory();
-  const inventories = inventoryResult.checked;
-  const generatedRootDuplicatePrunes = inventoryResult.generatedRootDuplicatePrunes;
+  const inventories = checkRootInventory();
+  const feedbackInventories = checkFeedbackInventory();
   const desktopTargets = scanDesktopTargetForStaleStrings();
   const docsAssets = scanDocsAssetsForStaleStrings();
   const outputArtifacts = scanOutputArtifactsForStaleStrings();
   const publicInventory = inventories.find((inventory) => inventory.location === 'public');
   const rootMp3s = publicInventory ? publicInventory.rootMp3s : [];
+  const publicFeedbackInventory = feedbackInventories.find((inventory) => inventory.location === 'public');
+  const feedbackMp3s = publicFeedbackInventory ? publicFeedbackInventory.feedbackMp3s : [];
   const metrics = checkMetrics(rootMp3s);
+  const feedbackMetrics = checkFeedbackMetrics(feedbackMp3s);
   const report = {
     generatedAt: new Date().toISOString(),
     status: 'PASS',
@@ -806,7 +985,9 @@ function main(options = validateCommandLine()) {
     rootMp3Count: rootMp3s.length,
     rootMp3s,
     shippedInventories: inventories,
-    generatedRootDuplicatePrunes,
+    feedbackMp3Count: feedbackMp3s.length,
+    feedbackMp3s,
+    shippedFeedbackInventories: feedbackInventories,
     desktopTargetsScanned: desktopTargets,
     docsAssetsScanned: docsAssets,
     outputArtifactScanScope: {
@@ -817,9 +998,10 @@ function main(options = validateCommandLine()) {
     outputArtifactsScannedCount: outputArtifacts.files.length,
     outputTextArtifactsScannedCount: outputArtifacts.textFiles.length,
     metrics,
+    feedbackMetrics,
   };
   writeReportIfRequested(report, options);
-  console.log('[app-audio-qc] PASS - ' + assets.length + ' current app assets, ' + rootMp3s.length + ' non-Hyperfocus root MP3s checked across ' + inventories.length + ' inventories; ' + generatedRootDuplicatePrunes.length + ' generated duplicate sound artifacts pruned; ' + desktopTargets.length + ' Desktop/Tauri generated target files scanned; ' + docsAssets.length + ' docs/assets bundles scanned; ' + outputArtifacts.files.length + ' output artifact filenames checked; ' + outputArtifacts.textFiles.length + ' text artifacts content-scanned');
+  console.log('[app-audio-qc] PASS - ' + assets.length + ' current app assets, ' + rootMp3s.length + ' non-Hyperfocus root MP3s checked across ' + inventories.length + ' inventories; ' + feedbackMp3s.length + ' feedback MP3s checked across ' + feedbackInventories.length + ' inventories; generated duplicate sound artifacts are not allowed; ' + desktopTargets.length + ' Desktop/Tauri generated target files scanned; ' + docsAssets.length + ' docs/assets bundles scanned; ' + outputArtifacts.files.length + ' output artifact filenames checked; ' + outputArtifacts.textFiles.length + ' text artifacts content-scanned');
 }
 
 if (require.main === module) {
@@ -831,8 +1013,12 @@ if (require.main === module) {
 }
 
 module.exports = {
+  EXPECTED_FEEDBACK_MP3_FILES,
+  inspectFeedbackMetrics,
+  inspectGeneratedAudioProvenance,
   inspectOutputArtifacts,
   isTextOutputArtifact,
   parseCliOptions,
+  validateExactDirectoryInventory,
   writeReportIfRequested,
 };
