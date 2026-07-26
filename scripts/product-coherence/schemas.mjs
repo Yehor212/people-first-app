@@ -2,6 +2,50 @@ import { z } from "zod";
 
 export const SUBJECT_IDS = Object.freeze(["production-baseline", "candidate"]);
 export const PLATFORM_RESULTS = Object.freeze(["PASS", "FAIL", "N/A", "UNVERIFIED"]);
+export const AUDIT_PLATFORMS = Object.freeze([
+  "WEB",
+  "PWA",
+  "ANDROID",
+  "IOS",
+  "DESKTOP",
+  "STORE_RELEASE",
+  "ACCESSIBILITY",
+  "PERFORMANCE",
+  "SECURITY_PRIVACY",
+  "TESTING",
+  "OPERATIONS",
+]);
+export const AUDIT_LOCALES = Object.freeze(["en", "uk", "es", "de", "fr", "ja", "ar", "he"]);
+export const DEVICE_SCOPES = Object.freeze([
+  "REPOSITORY_ONLY",
+  "NOT_APPLICABLE",
+  "DESKTOP_BROWSER",
+  "MOBILE_BROWSER",
+  "ANDROID_EMULATOR",
+  "ANDROID_DEVICE",
+  "IOS_SIMULATOR",
+  "IOS_DEVICE",
+  "DESKTOP_TAURI",
+]);
+export const ACCOUNT_COHORTS = Object.freeze([
+  "ANONYMOUS",
+  "GUEST",
+  "AUTHENTICATED_SYNTHETIC",
+  "DEDICATED_SYNC_SMOKE",
+  "NOT_APPLICABLE",
+]);
+export const ROLE_IDS = Object.freeze([
+  "coordinator-teamlead",
+  "psychology-human-factors-emotional-safety",
+  "logic-causality-state-coherence",
+  "interaction-accessibility-readability-localization-culture",
+  "technical-architecture-data-cross-platform",
+  "security-privacy-agent-trust",
+  "performance-reliability-operations",
+  "qa-evidence-release-verification",
+  "product-discovery-visual-craft-experience-quality",
+  "independent-blind-spot-sentinel",
+]);
 export const EVIDENCE_CLASSES = Object.freeze([
   "DIRECT_LOCAL",
   "DIRECT_RUNTIME",
@@ -66,7 +110,28 @@ const sha1Oid = z.string().regex(/^[a-f0-9]{40}$/, "must be a 40-hex Git SHA-1 o
 const sha256Oid = z.string().regex(/^[a-f0-9]{64}$/, "must be a 64-hex Git SHA-256 object ID");
 const subjectId = z.enum(SUBJECT_IDS);
 const platformResult = z.enum(PLATFORM_RESULTS);
-const nonEmptyList = z.array(z.string().min(1)).min(1);
+const nonBlank = z
+  .string()
+  .min(1)
+  .refine((value) => value === value.trim() && value.length > 0, "must be nonblank and trimmed");
+const recordId = z
+  .string()
+  .regex(/^[a-z0-9](?:[a-z0-9._:-]{0,127})$/i, "must be a safe single-line identifier");
+const roleId = recordId.refine((value) => ROLE_IDS.includes(value), "must be a canonical role identifier");
+const nonEmptyList = z.array(nonBlank).min(1);
+const repositoryRelativePath = z
+  .string()
+  .min(1)
+  .refine(
+    (value) =>
+      !value.startsWith("/") &&
+      !value.startsWith("\\") &&
+      !/^[a-z]:/i.test(value) &&
+      !value.includes("\\") &&
+      !value.includes("\u0000") &&
+      value.split("/").every((segment) => segment.length > 0 && segment !== "." && segment !== ".."),
+    "must be a normalized repository-relative path",
+  );
 
 const gitRevision = z.discriminatedUnion("oidAlgorithm", [
   z.object({ oidAlgorithm: z.literal("sha1"), commitOid: sha1Oid }).strict(),
@@ -118,7 +183,7 @@ const repositoryProvenance = z
   });
 
 const buildStage = z.discriminatedUnion("status", [
-  z.object({ status: z.literal("PASS"), artifactSha256: sha256 }).strict(),
+  z.object({ status: z.literal("PASS"), artifactSha256: sha256, evidenceId: recordId }).strict(),
   z.object({ status: z.literal("FAIL"), reason: z.string().min(1), artifactSha256: sha256.optional() }).strict(),
   z.object({ status: z.literal("N/A"), reason: z.string().min(1) }).strict(),
   z.object({ status: z.literal("UNVERIFIED"), reason: z.string().min(1) }).strict(),
@@ -131,6 +196,7 @@ const deployStage = z.discriminatedUnion("status", [
       artifactSha256: sha256,
       publicUrl: z.string().url(),
       deployedRevision: gitRevision,
+      evidenceId: recordId,
     })
     .strict(),
   z.object({ status: z.literal("FAIL"), reason: z.string().min(1), artifactSha256: sha256.optional() }).strict(),
@@ -156,7 +222,7 @@ const subjectProvenance = z
 
 export const AuditManifestSchema = z
   .object({
-    runId: z.string().min(1),
+    runId: recordId,
     schemaVersion: z.literal("1.0.0"),
     requestSha256: sha256,
     policySha256: sha256,
@@ -169,18 +235,31 @@ export const AuditManifestSchema = z
     roleReceipts: z
       .array(
         z
-          .object({ roleId: z.string().min(1), subjectId, receiptSha256: sha256 })
+          .object({
+            roleId,
+            phase: z.enum(["INITIAL", "PASS_A", "PASS_B", "INTEGRATION"]),
+            subjectIds: z.array(subjectId).min(1),
+            verdict: z.enum(["GO", "STOP", "ASK"]),
+            receiptSha256: sha256,
+          })
           .strict(),
       )
-      .min(1),
+      .length(12),
   })
   .strict();
 
 const evidenceLocator = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("REPOSITORY_SOURCE"), value: z.string().min(1) }).strict(),
-  z.object({ kind: z.literal("LOCAL_ARTIFACT"), path: z.string().min(1) }).strict(),
+  z
+    .object({
+      kind: z.literal("REPOSITORY_SOURCE"),
+      path: repositoryRelativePath,
+      revision: gitRevision,
+      candidateSnapshotSha256: sha256.optional(),
+    })
+    .strict(),
+  z.object({ kind: z.literal("LOCAL_ARTIFACT"), path: repositoryRelativePath }).strict(),
   z.object({ kind: z.literal("AUTHORITATIVE_URL"), url: z.string().url() }).strict(),
-  z.object({ kind: z.literal("HUMAN_RECEIPT"), receiptId: z.string().min(1) }).strict(),
+  z.object({ kind: z.literal("HUMAN_RECEIPT"), receiptId: recordId }).strict(),
   z
     .object({
       kind: z.literal("UNVERIFIABLE_REFERENCE"),
@@ -192,7 +271,7 @@ const evidenceLocator = z.discriminatedUnion("kind", [
 
 export const EvidenceSchema = z
   .object({
-    evidenceId: z.string().min(1),
+    evidenceId: recordId,
     subjectId,
     evidenceClass: z.enum(EVIDENCE_CLASSES),
     evidenceType: z.enum(EVIDENCE_TYPES),
@@ -201,25 +280,9 @@ export const EvidenceSchema = z
     tool: z.object({ name: z.string().min(1), version: z.string().min(1) }).strict(),
     scope: z
       .object({
-        platforms: z
-          .array(
-            z.enum([
-              "WEB",
-              "PWA",
-              "ANDROID",
-              "IOS",
-              "DESKTOP",
-              "STORE_RELEASE",
-              "ACCESSIBILITY",
-              "PERFORMANCE",
-              "SECURITY_PRIVACY",
-              "TESTING",
-              "OPERATIONS",
-            ]),
-          )
-          .min(1),
-        deviceScope: z.string().min(1),
-        accountCohort: z.string().min(1),
+        platforms: z.array(z.enum(AUDIT_PLATFORMS)).min(1),
+        deviceScope: z.enum(DEVICE_SCOPES),
+        accountCohort: z.enum(ACCOUNT_COHORTS),
       })
       .strict(),
     result: platformResult,
@@ -232,16 +295,16 @@ export const EvidenceSchema = z
 const traceNode = z
   .object({
     kind: z.enum(["ENTRYPOINT", "ROUTE", "SOURCE", "COMPONENT", "PROVIDER", "STORAGE", "EXTERNAL"]),
-    locator: z.string().min(1),
-    evidenceId: z.string().min(1),
+    locator: nonBlank,
+    evidenceId: recordId,
   })
   .strict();
 
-const blocker = z.object({ summary: z.string().min(1), owner: z.string().min(1) }).strict();
+const blocker = z.object({ summary: nonBlank, owner: nonBlank }).strict();
 
 export const CapabilitySchema = z
   .object({
-    capabilityId: z.string().min(1),
+    capabilityId: recordId,
     subjectId,
     reachability: z.enum(REACHABILITY),
     capabilityRole: z.enum(CAPABILITY_ROLES),
@@ -250,8 +313,8 @@ export const CapabilitySchema = z
     userJob: z.string().min(1),
     userRole: z.string().min(1),
     surfaces: nonEmptyList,
-    platforms: nonEmptyList,
-    locales: nonEmptyList,
+    platforms: z.array(z.enum(AUDIT_PLATFORMS)).min(1),
+    locales: z.array(z.enum(AUDIT_LOCALES)).min(1),
     cohorts: nonEmptyList,
     trace: z.array(traceNode).min(1),
     permissions: nonEmptyList,
@@ -285,7 +348,7 @@ export const CapabilitySchema = z
 
 const decisionOption = z
   .object({
-    optionId: z.string().min(1),
+    optionId: recordId,
     disposition: z.enum(PRODUCT_DISPOSITIONS),
     description: z.string().min(1),
   })
@@ -293,33 +356,33 @@ const decisionOption = z
 
 export const DecisionSchema = z
   .object({
-    decisionId: z.string().min(1),
+    decisionId: recordId,
     subjectId,
-    capabilityId: z.string().min(1),
+    capabilityId: recordId,
     observation: z.string().min(1),
     hypothesis: z.string().min(1),
     options: z.array(decisionOption).min(2),
     selectedDecision: z
       .object({
-        optionId: z.string().min(1),
+        optionId: recordId,
         disposition: z.enum(PRODUCT_DISPOSITIONS),
         rationale: z.string().min(1),
       })
       .strict(),
     blocker: blocker.optional(),
     rejectedAlternatives: z
-      .array(z.object({ optionId: z.string().min(1), reason: z.string().min(1) }).strict())
+      .array(z.object({ optionId: recordId, reason: nonBlank }).strict())
       .min(1),
     priority: z.enum(["P0", "P1", "P2", "P3"]),
     confidence: z.enum(["LOW", "MEDIUM", "HIGH"]),
     hardGates: nonEmptyList,
-    owner: z.string().min(1),
+    owner: nonBlank,
     affectedCohorts: nonEmptyList,
     acceptanceCriteria: nonEmptyList,
     killCriteria: nonEmptyList,
     rollbackCriteria: nonEmptyList,
     metrics: z
-      .array(z.object({ metricId: z.string().min(1), target: z.string().min(1) }).strict())
+      .array(z.object({ metricId: recordId, target: nonBlank }).strict())
       .min(1),
     tradeOffs: nonEmptyList,
     evidenceIds: nonEmptyList,
@@ -347,10 +410,10 @@ const historyState = z.enum([
 
 export const FindingHistorySchema = z
   .object({
-    findingId: z.string().min(1),
+    findingId: recordId,
     subjectId,
-    capabilityId: z.string().min(1),
-    decisionId: z.string().min(1),
+    capabilityId: recordId,
+    decisionId: recordId,
     events: z
       .array(
         z
@@ -369,9 +432,9 @@ export const FindingHistorySchema = z
 export const AuditBundleSchema = z
   .object({
     manifest: AuditManifestSchema,
-    evidence: z.array(EvidenceSchema),
-    capabilities: z.array(CapabilitySchema),
-    decisions: z.array(DecisionSchema),
-    findingHistory: z.array(FindingHistorySchema),
+    evidence: z.array(EvidenceSchema).min(1),
+    capabilities: z.array(CapabilitySchema).min(1),
+    decisions: z.array(DecisionSchema).min(1),
+    findingHistory: z.array(FindingHistorySchema).min(1),
   })
   .strict();

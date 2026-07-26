@@ -1,11 +1,12 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rename, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { renderAuditMarkdown, validateAuditBundle } from "../product-coherence/core.mjs";
+import { enumerateRepositoryCandidates } from "../product-coherence/inventory.mjs";
 import { JSONL_LIMITS, readJsonl } from "../product-coherence/jsonl.mjs";
 
 const CLI = path.resolve("scripts/product-coherence/cli.mjs");
@@ -16,9 +17,31 @@ const BASELINE_TREE = "2".repeat(40);
 const DEPLOYED_COMMIT = "3".repeat(40);
 const CANDIDATE_COMMIT = "4".repeat(40);
 const CANDIDATE_TREE = "5".repeat(40);
+const BUILD_EVIDENCE_BODY = "build verification evidence\n";
+const DEPLOY_EVIDENCE_BODY = "deployment verification evidence\n";
+const BUILD_EVIDENCE_SHA = createHash("sha256").update(BUILD_EVIDENCE_BODY).digest("hex");
+const DEPLOY_EVIDENCE_SHA = createHash("sha256").update(DEPLOY_EVIDENCE_BODY).digest("hex");
 
 function validBundle() {
-  const evidence = [evidenceRecord("baseline-evidence", "production-baseline")];
+  const evidence = [
+    evidenceRecord("baseline-evidence", "production-baseline"),
+    artifactEvidenceRecord(
+      "baseline-build-evidence",
+      "DIRECT_LOCAL",
+      "TEST_RESULT",
+      "artifacts/build.txt",
+      BUILD_EVIDENCE_SHA,
+      "TESTING",
+    ),
+    artifactEvidenceRecord(
+      "baseline-deploy-evidence",
+      "DIRECT_RUNTIME",
+      "RUNTIME_TRACE",
+      "artifacts/deploy.txt",
+      DEPLOY_EVIDENCE_SHA,
+      "WEB",
+    ),
+  ];
   return {
     manifest: {
       runId: "product-coherence-contract",
@@ -36,12 +59,13 @@ function validBundle() {
             commitOid: BASELINE_COMMIT,
             treeOid: BASELINE_TREE,
           },
-          build: { status: "PASS", artifactSha256: SHA },
+          build: { status: "PASS", artifactSha256: SHA, evidenceId: "baseline-build-evidence" },
           deploy: {
             status: "PASS",
             artifactSha256: OTHER_SHA,
             publicUrl: "https://yehor212.github.io/people-first-app/",
             deployedRevision: { oidAlgorithm: "sha1", commitOid: DEPLOYED_COMMIT },
+            evidenceId: "baseline-deploy-evidence",
           },
         },
         {
@@ -60,9 +84,7 @@ function validBundle() {
           deploy: { status: "N/A", reason: "Candidate deployment is outside Task 1." },
         },
       ],
-      roleReceipts: [
-        { roleId: "qa-evidence-release-verification", subjectId: "production-baseline", receiptSha256: SHA },
-      ],
+      roleReceipts: roleReceipts(),
     },
     evidence,
     capabilities: [
@@ -87,24 +109,120 @@ function validBundle() {
   };
 }
 
+function roleReceipts() {
+  const subjectIds = ["production-baseline", "candidate"];
+  return [
+    { roleId: "coordinator-teamlead", phase: "INITIAL", subjectIds, verdict: "GO", receiptSha256: SHA },
+    { roleId: "coordinator-teamlead", phase: "INTEGRATION", subjectIds, verdict: "GO", receiptSha256: SHA },
+    {
+      roleId: "psychology-human-factors-emotional-safety",
+      phase: "INITIAL",
+      subjectIds,
+      verdict: "GO",
+      receiptSha256: SHA,
+    },
+    { roleId: "logic-causality-state-coherence", phase: "INITIAL", subjectIds, verdict: "GO", receiptSha256: SHA },
+    {
+      roleId: "interaction-accessibility-readability-localization-culture",
+      phase: "INITIAL",
+      subjectIds,
+      verdict: "GO",
+      receiptSha256: SHA,
+    },
+    {
+      roleId: "technical-architecture-data-cross-platform",
+      phase: "INITIAL",
+      subjectIds,
+      verdict: "GO",
+      receiptSha256: SHA,
+    },
+    { roleId: "security-privacy-agent-trust", phase: "INITIAL", subjectIds, verdict: "GO", receiptSha256: SHA },
+    {
+      roleId: "performance-reliability-operations",
+      phase: "INITIAL",
+      subjectIds,
+      verdict: "GO",
+      receiptSha256: SHA,
+    },
+    {
+      roleId: "qa-evidence-release-verification",
+      phase: "INITIAL",
+      subjectIds,
+      verdict: "GO",
+      receiptSha256: SHA,
+    },
+    {
+      roleId: "product-discovery-visual-craft-experience-quality",
+      phase: "INITIAL",
+      subjectIds,
+      verdict: "GO",
+      receiptSha256: SHA,
+    },
+    {
+      roleId: "independent-blind-spot-sentinel",
+      phase: "PASS_A",
+      subjectIds,
+      verdict: "GO",
+      receiptSha256: SHA,
+    },
+    {
+      roleId: "independent-blind-spot-sentinel",
+      phase: "PASS_B",
+      subjectIds,
+      verdict: "GO",
+      receiptSha256: SHA,
+    },
+  ];
+}
+
 function evidenceRecord(evidenceId, subjectId) {
+  const isCandidate = subjectId === "candidate";
   return {
     evidenceId,
     subjectId,
     evidenceClass: "DIRECT_LOCAL",
     evidenceType: "SOURCE_INSPECTION",
-    locator: { kind: "REPOSITORY_SOURCE", value: "scripts/product-coherence/core.mjs" },
+    locator: {
+      kind: "REPOSITORY_SOURCE",
+      path: "scripts/product-coherence/core.mjs",
+      revision: {
+        oidAlgorithm: "sha1",
+        commitOid: isCandidate ? CANDIDATE_COMMIT : BASELINE_COMMIT,
+      },
+      ...(isCandidate ? { candidateSnapshotSha256: SHA } : {}),
+    },
     observedAt: "2026-07-26T16:00:00.000Z",
     tool: { name: "git", version: "2.50.1" },
     scope: {
       platforms: ["WEB"],
-      deviceScope: "repository metadata",
-      accountCohort: "anonymous",
+      deviceScope: "REPOSITORY_ONLY",
+      accountCohort: "ANONYMOUS",
     },
     result: "PASS",
     artifactSha256: SHA,
     privacyClass: "SENSITIVE_NOT_CAPTURED",
     invalidationTriggers: ["source-change"],
+  };
+}
+
+function artifactEvidenceRecord(evidenceId, evidenceClass, evidenceType, artifactPath, artifactSha256, platform) {
+  return {
+    evidenceId,
+    subjectId: "production-baseline",
+    evidenceClass,
+    evidenceType,
+    locator: { kind: "LOCAL_ARTIFACT", path: artifactPath },
+    observedAt: "2026-07-26T16:00:00.000Z",
+    tool: { name: "audit-fixture", version: "1.0.0" },
+    scope: {
+      platforms: [platform],
+      deviceScope: evidenceClass === "DIRECT_RUNTIME" ? "DESKTOP_BROWSER" : "REPOSITORY_ONLY",
+      accountCohort: "ANONYMOUS",
+    },
+    result: "PASS",
+    artifactSha256,
+    privacyClass: "SENSITIVE_NOT_CAPTURED",
+    invalidationTriggers: ["artifact-change"],
   };
 }
 
@@ -172,11 +290,14 @@ async function writeBundle(directory, bundle) {
     decisions: bundle.decisions,
     findingHistory: bundle.findingHistory,
   };
-  await Promise.all(
-    Object.entries(ledgers).map(([name, rows]) =>
+  await mkdir(path.join(directory, "artifacts"), { recursive: true });
+  await Promise.all([
+    writeFile(path.join(directory, "artifacts", "build.txt"), BUILD_EVIDENCE_BODY),
+    writeFile(path.join(directory, "artifacts", "deploy.txt"), DEPLOY_EVIDENCE_BODY),
+    ...Object.entries(ledgers).map(([name, rows]) =>
       writeFile(path.join(directory, `${name}.jsonl`), rows.map((row) => JSON.stringify(row)).join("\n")),
     ),
-  );
+  ]);
 }
 
 describe("ProductCoherenceAudit v1 approved ledger contract", () => {
@@ -223,6 +344,36 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
     }
   });
 
+  it("rejects raw identifiers hidden inside otherwise allowed free text", () => {
+    for (const value of [
+      "IMEI 490154203237518",
+      "2045550199",
+      "550e8400-e29b-41d4-a716-446655440000",
+      "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature123",
+    ]) {
+      const invalid = validBundle();
+      invalid.decisions[0].observation = `Observed ${value}`;
+      expect(validateAuditBundle(invalid)).toMatchObject({
+        ok: false,
+        errors: expect.arrayContaining([expect.stringContaining("sensitive value")]),
+      });
+    }
+  });
+
+  it("uses bounded device and account scopes rather than identifier-bearing free text", () => {
+    const invalid = validBundle();
+    invalid.evidence[0].scope.deviceScope = "IMEI 490154203237518";
+    invalid.evidence[0].scope.accountCohort = "account 550e8400-e29b-41d4-a716-446655440000";
+
+    expect(validateAuditBundle(invalid)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([
+        expect.stringContaining("deviceScope"),
+        expect.stringContaining("accountCohort"),
+      ]),
+    });
+  });
+
   it("enforces approved evidence, reachability, role, disposition, and platform-result enums", () => {
     const invalid = validBundle();
     invalid.evidence[0].evidenceClass = "SOURCE";
@@ -234,6 +385,46 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
     const result = validateAuditBundle(invalid);
     expect(result.ok).toBe(false);
     expect(result.errors.join("\n")).toMatch(/evidenceClass|result|reachability|capabilityRole|productDisposition/);
+  });
+
+  it("requires the exact twelve phase-bound receipts for all ten audit roles", () => {
+    const invalid = validBundle();
+    invalid.manifest.roleReceipts = Array.from({ length: 12 }, () => ({
+      roleId: "qa-evidence-release-verification",
+      phase: "INITIAL",
+      subjectIds: ["production-baseline", "candidate"],
+      verdict: "GO",
+      receiptSha256: SHA,
+    }));
+
+    expect(validateAuditBundle(invalid)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringMatching(/role receipt|duplicate|required/)]),
+    });
+  });
+
+  it("rejects arbitrary capability platform and locale claims", () => {
+    const invalid = validBundle();
+    invalid.capabilities[0].platforms = ["SMART_FRIDGE"];
+    invalid.capabilities[0].locales = ["xx"];
+
+    expect(validateAuditBundle(invalid)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([
+        expect.stringContaining("platforms"),
+        expect.stringContaining("locales"),
+      ]),
+    });
+  });
+
+  it("does not let one PASS evidence row claim multiple platform scopes", () => {
+    const invalid = validBundle();
+    invalid.evidence[0].scope.platforms = ["WEB", "ANDROID"];
+
+    expect(validateAuditBundle(invalid)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringContaining("exactly one platform")]),
+    });
   });
 
   it("rejects mixed-subject capability evidence", () => {
@@ -264,7 +455,80 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
       errors: expect.arrayContaining([expect.stringContaining("decision blocker")]),
     });
     blocked.decisions[0].blocker = { summary: "Runtime proof is unavailable.", owner: "audit owner" };
+    blocked.findingHistory[0].events[4].state = "BLOCKED";
     expect(validateAuditBundle(blocked)).toEqual({ ok: true, errors: [] });
+  });
+
+  it("rejects whitespace blockers, missing blocked decisions, and contradictory closure", () => {
+    const whitespace = validBundle();
+    whitespace.capabilities[0].productDisposition = "BLOCKED_UNVERIFIED";
+    whitespace.capabilities[0].blocker = { summary: "   ", owner: "\t" };
+    expect(validateAuditBundle(whitespace)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringMatching(/blocker|summary|owner/)]),
+    });
+
+    const whitespaceDecisionOwner = validBundle();
+    whitespaceDecisionOwner.decisions[0].owner = " \t ";
+    expect(validateAuditBundle(whitespaceDecisionOwner)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringMatching(/owner|nonblank/)]),
+    });
+
+    const untrimmedDecisionOwner = validBundle();
+    untrimmedDecisionOwner.decisions[0].owner = " audit owner ";
+    expect(validateAuditBundle(untrimmedDecisionOwner)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringMatching(/owner|trimmed/)]),
+    });
+
+    const missingDecision = validBundle();
+    missingDecision.capabilities[0].productDisposition = "BLOCKED_UNVERIFIED";
+    missingDecision.capabilities[0].blocker = { summary: "Runtime unavailable.", owner: "audit owner" };
+    missingDecision.decisions = [];
+    expect(validateAuditBundle(missingDecision)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringMatching(/decision|decisions/)]),
+    });
+
+    const contradictory = validBundle();
+    contradictory.capabilities[0].productDisposition = "BLOCKED_UNVERIFIED";
+    contradictory.capabilities[0].blocker = { summary: "Runtime unavailable.", owner: "audit owner" };
+    contradictory.decisions[0].options[0].disposition = "BLOCKED_UNVERIFIED";
+    contradictory.decisions[0].selectedDecision.disposition = "BLOCKED_UNVERIFIED";
+    contradictory.decisions[0].blocker = { summary: "Runtime unavailable.", owner: "audit owner" };
+    expect(validateAuditBundle(contradictory)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringMatching(/BLOCKED_UNVERIFIED|VERIFIED/)]),
+    });
+
+    const hiddenBlocker = validBundle();
+    hiddenBlocker.findingHistory[0].events[4].state = "BLOCKED";
+    expect(validateAuditBundle(hiddenBlocker)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringMatching(/BLOCKED|BLOCKED_UNVERIFIED/)]),
+    });
+  });
+
+  it("requires exactly one decision for each capability", () => {
+    const missing = validBundle();
+    missing.capabilities.push(
+      capabilityRecord("second-capability", "production-baseline", "baseline-evidence"),
+    );
+    expect(validateAuditBundle(missing)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringMatching(/exactly one .*decision/)]),
+    });
+
+    const duplicate = validBundle();
+    duplicate.decisions.push({
+      ...decisionRecord(),
+      decisionId: "decision-2",
+    });
+    expect(validateAuditBundle(duplicate)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringMatching(/exactly one .*decision/)]),
+    });
   });
 
   it("requires structured decisions and valid finding-history references", () => {
@@ -307,6 +571,36 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
     });
   });
 
+  it("requires every non-selected decision option to be rejected exactly once", () => {
+    const invalid = validBundle();
+    invalid.decisions[0].options.push({
+      optionId: "instrument",
+      disposition: "INSTRUMENT_OR_TEST",
+      description: "Collect bounded evidence.",
+    });
+
+    expect(validateAuditBundle(invalid)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringContaining("rejected option instrument")]),
+    });
+  });
+
+  it("requires direct evidence references for PASS build and deploy provenance", () => {
+    const missingBuild = validBundle();
+    delete missingBuild.manifest.subjects[0].build.evidenceId;
+    expect(validateAuditBundle(missingBuild)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringContaining("evidenceId")]),
+    });
+
+    const missingDeploy = validBundle();
+    delete missingDeploy.manifest.subjects[0].deploy.evidenceId;
+    expect(validateAuditBundle(missingDeploy)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringContaining("evidenceId")]),
+    });
+  });
+
   it("rejects lifecycle shortcuts before IMPLEMENTING", () => {
     const invalid = validBundle();
     invalid.findingHistory[0].events = [
@@ -329,6 +623,47 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
       expect(markdown).toContain(state);
     }
     expect(markdown).toContain("decision-1");
+  });
+
+  it("rejects newline-bearing stable IDs before Markdown rendering", () => {
+    const cases = [
+      ["runId", (bundle, id) => { bundle.manifest.runId = id; }],
+      ["roleId", (bundle, id) => { bundle.manifest.roleReceipts[0].roleId = id; }],
+      ["evidenceId", (bundle, id) => {
+        bundle.evidence[0].evidenceId = id;
+        bundle.capabilities[0].evidenceIds = [id];
+        for (const trace of bundle.capabilities[0].trace) trace.evidenceId = id;
+        bundle.decisions[0].evidenceIds = [id];
+        for (const event of bundle.findingHistory[0].events) event.evidenceIds = [id];
+      }],
+      ["capabilityId", (bundle, id) => {
+        bundle.capabilities[0].capabilityId = id;
+        bundle.decisions[0].capabilityId = id;
+        bundle.findingHistory[0].capabilityId = id;
+      }],
+      ["decisionId", (bundle, id) => {
+        bundle.decisions[0].decisionId = id;
+        bundle.findingHistory[0].decisionId = id;
+      }],
+      ["findingId", (bundle, id) => { bundle.findingHistory[0].findingId = id; }],
+      ["optionId", (bundle, id) => {
+        bundle.decisions[0].options[0].optionId = id;
+        bundle.decisions[0].selectedDecision.optionId = id;
+      }],
+      ["metricId", (bundle, id) => { bundle.decisions[0].metrics[0].metricId = id; }],
+    ];
+
+    for (const [label, mutate] of cases) {
+      const invalid = validBundle();
+      mutate(invalid, `${label}\n## injected`);
+      const result = validateAuditBundle(invalid);
+      expect(result.ok, label).toBe(false);
+      expect(result.errors.join("\n"), label).toContain(label);
+      if (label !== "roleId") {
+        expect(result.errors.join("\n"), label).toContain("safe single-line identifier");
+      }
+      expect(() => renderAuditMarkdown(invalid), label).toThrow("cannot render invalid audit ledger");
+    }
   });
 
   it("rejects sensitive free text under otherwise innocuous keys", () => {
@@ -366,6 +701,336 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
     }
   });
 
+  it("confines repository sources, binds them to the subject revision, and rehashes content", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "product-coherence-repository-"));
+    const ledgerRoot = await mkdtemp(path.join(os.tmpdir(), "product-coherence-repository-ledger-"));
+    try {
+      expect(runGit(root, ["init", "--object-format=sha1"]).status).toBe(0);
+      expect(runGit(root, ["config", "user.email", "audit@example.invalid"]).status).toBe(0);
+      expect(runGit(root, ["config", "user.name", "Audit Test"]).status).toBe(0);
+      await mkdir(path.join(root, "scripts", "product-coherence"), { recursive: true });
+      const sourcePath = path.join(root, "scripts", "product-coherence", "core.mjs");
+      await writeFile(sourcePath, "export const contract = true;\n");
+      expect(runGit(root, ["add", "."]).status).toBe(0);
+      expect(runGit(root, ["commit", "-m", "test fixture"]).status).toBe(0);
+      const commitOid = runGit(root, ["rev-parse", "HEAD"]).stdout.trim();
+      const treeOid = runGit(root, ["rev-parse", "HEAD^{tree}"]).stdout.trim();
+      const bundle = validBundle();
+      bundle.manifest.subjects[0].repository.commitOid = commitOid;
+      bundle.manifest.subjects[0].repository.treeOid = treeOid;
+      bundle.evidence[0].locator.revision.commitOid = commitOid;
+      bundle.evidence[0].artifactSha256 = createHash("sha256")
+        .update("export const contract = true;\n")
+        .digest("hex");
+      await writeBundle(ledgerRoot, bundle);
+
+      const pass = spawnSync(
+        process.execPath,
+        [
+          CLI,
+          "validate",
+          "--input",
+          ledgerRoot,
+          "--subject-root",
+          `production-baseline=${root}`,
+        ],
+        { encoding: "utf8" },
+      );
+      expect(pass.status, pass.stderr || pass.stdout).toBe(0);
+
+      await writeFile(sourcePath, "export const contract = false;\n");
+      const changed = spawnSync(
+        process.execPath,
+        [
+          CLI,
+          "validate",
+          "--input",
+          ledgerRoot,
+          "--subject-root",
+          `production-baseline=${root}`,
+        ],
+        { encoding: "utf8" },
+      );
+      expect(changed.status).toBe(1);
+      expect(changed.stdout).toContain("repository source hash mismatch");
+
+      const escaped = validBundle();
+      escaped.evidence[0].locator.path = "../../outside/private.ts";
+      expect(validateAuditBundle(escaped)).toMatchObject({
+        ok: false,
+        errors: expect.arrayContaining([expect.stringContaining("repository-relative")]),
+      });
+
+      const wrongRevision = validBundle();
+      wrongRevision.evidence[0].locator.revision.commitOid = "9".repeat(40);
+      expect(validateAuditBundle(wrongRevision)).toMatchObject({
+        ok: false,
+        errors: expect.arrayContaining([expect.stringContaining("subject revision")]),
+      });
+
+      const rootLink = path.join(ledgerRoot, "subject-root-link");
+      await symlink(root, rootLink);
+      const symlinkedRoot = spawnSync(
+        process.execPath,
+        [
+          CLI,
+          "validate",
+          "--input",
+          ledgerRoot,
+          "--subject-root",
+          `production-baseline=${rootLink}`,
+        ],
+        { encoding: "utf8" },
+      );
+      expect(symlinkedRoot.status).toBe(1);
+      expect(symlinkedRoot.stdout).toMatch(/subject root.*symlink|real directory/i);
+
+      const outside = await mkdtemp(path.join(os.tmpdir(), "product-coherence-repository-outside-"));
+      try {
+        await writeFile(path.join(outside, "private.ts"), "private fixture\n");
+        await symlink(outside, path.join(root, "linked"));
+        const escapedThroughIntermediateLink = validBundle();
+        escapedThroughIntermediateLink.manifest.subjects[0].repository.commitOid = commitOid;
+        escapedThroughIntermediateLink.manifest.subjects[0].repository.treeOid = treeOid;
+        escapedThroughIntermediateLink.evidence[0].locator.path = "linked/private.ts";
+        escapedThroughIntermediateLink.evidence[0].locator.revision.commitOid = commitOid;
+        escapedThroughIntermediateLink.evidence[0].artifactSha256 = createHash("sha256")
+          .update("private fixture\n")
+          .digest("hex");
+        await writeBundle(ledgerRoot, escapedThroughIntermediateLink);
+        const intermediateLink = spawnSync(
+          process.execPath,
+          [
+            CLI,
+            "validate",
+            "--input",
+            ledgerRoot,
+            "--subject-root",
+            `production-baseline=${root}`,
+          ],
+          { encoding: "utf8" },
+        );
+        expect(intermediateLink.status).toBe(1);
+        expect(intermediateLink.stdout).toMatch(/escape|symlink|realpath/i);
+      } finally {
+        await rm(outside, { recursive: true, force: true });
+      }
+    } finally {
+      await Promise.all([
+        rm(root, { recursive: true, force: true }),
+        rm(ledgerRoot, { recursive: true, force: true }),
+      ]);
+    }
+  });
+
+  it("binds candidate repository sources to the dirty snapshot and reads worktree bytes", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "product-coherence-candidate-repository-"));
+    const ledgerRoot = await mkdtemp(path.join(os.tmpdir(), "product-coherence-candidate-ledger-"));
+    try {
+      expect(runGit(root, ["init", "--object-format=sha1"]).status).toBe(0);
+      expect(runGit(root, ["config", "user.email", "audit@example.invalid"]).status).toBe(0);
+      expect(runGit(root, ["config", "user.name", "Audit Test"]).status).toBe(0);
+      await mkdir(path.join(root, "scripts", "product-coherence"), { recursive: true });
+      const sourcePath = path.join(root, "scripts", "product-coherence", "core.mjs");
+      await writeFile(sourcePath, "export const dirtyCandidate = false;\n");
+      expect(runGit(root, ["add", "."]).status).toBe(0);
+      expect(runGit(root, ["commit", "-m", "candidate fixture"]).status).toBe(0);
+      const commitOid = runGit(root, ["rev-parse", "HEAD"]).stdout.trim();
+      const treeOid = runGit(root, ["rev-parse", "HEAD^{tree}"]).stdout.trim();
+      await writeFile(sourcePath, "export const dirtyCandidate = true;\n");
+
+      const bundle = validBundle();
+      bundle.manifest.subjects[1].repository.commitOid = commitOid;
+      bundle.manifest.subjects[1].repository.treeOid = treeOid;
+      bundle.manifest.subjects[1].repository.gitStatusSha256 = createHash("sha256")
+        .update(runGit(root, ["status", "--porcelain=v1", "--untracked-files=all"]).stdout)
+        .digest("hex");
+      bundle.manifest.subjects[1].repository.trackedDiffSha256 = createHash("sha256")
+        .update(runGit(root, ["diff", "--binary", "HEAD", "--"]).stdout)
+        .digest("hex");
+      bundle.evidence = [
+        evidenceRecord("candidate-evidence", "candidate"),
+        artifactEvidenceRecord(
+          "baseline-build-evidence",
+          "DIRECT_LOCAL",
+          "TEST_RESULT",
+          "artifacts/build.txt",
+          BUILD_EVIDENCE_SHA,
+          "TESTING",
+        ),
+        artifactEvidenceRecord(
+          "baseline-deploy-evidence",
+          "DIRECT_RUNTIME",
+          "RUNTIME_TRACE",
+          "artifacts/deploy.txt",
+          DEPLOY_EVIDENCE_SHA,
+          "WEB",
+        ),
+      ];
+      bundle.evidence[0].locator.revision.commitOid = commitOid;
+      bundle.evidence[0].artifactSha256 = createHash("sha256")
+        .update("export const dirtyCandidate = true;\n")
+        .digest("hex");
+      bundle.capabilities[0] = capabilityRecord("candidate-capability", "candidate", "candidate-evidence");
+      bundle.decisions[0] = {
+        ...decisionRecord(),
+        capabilityId: "candidate-capability",
+        subjectId: "candidate",
+        evidenceIds: ["candidate-evidence"],
+      };
+      bundle.findingHistory[0] = {
+        ...bundle.findingHistory[0],
+        subjectId: "candidate",
+        capabilityId: "candidate-capability",
+        events: bundle.findingHistory[0].events.map((event) => ({
+          ...event,
+          evidenceIds: ["candidate-evidence"],
+        })),
+      };
+      await writeBundle(ledgerRoot, bundle);
+
+      const pass = spawnSync(
+        process.execPath,
+        [
+          CLI,
+          "validate",
+          "--input",
+          ledgerRoot,
+          "--subject-root",
+          `candidate=${root}`,
+        ],
+        { encoding: "utf8" },
+      );
+      expect(pass.status, pass.stderr || pass.stdout).toBe(0);
+
+      bundle.evidence[0].locator.candidateSnapshotSha256 = OTHER_SHA;
+      expect(validateAuditBundle(bundle)).toMatchObject({
+        ok: false,
+        errors: expect.arrayContaining([expect.stringContaining("candidate snapshot")]),
+      });
+    } finally {
+      await Promise.all([
+        rm(root, { recursive: true, force: true }),
+        rm(ledgerRoot, { recursive: true, force: true }),
+      ]);
+    }
+  });
+
+  it("rejects evidence class, type, and locator combinations that cannot prove each other", () => {
+    const invalid = validBundle();
+    invalid.evidence[0].evidenceClass = "DIRECT_RUNTIME";
+    invalid.evidence[0].locator = {
+      kind: "AUTHORITATIVE_URL",
+      url: "https://www.w3.org/TR/WCAG22/",
+    };
+
+    expect(validateAuditBundle(invalid)).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringMatching(/evidenceClass|evidenceType|locator/)]),
+    });
+  });
+
+  it("accepts only the supported evidence class, type, and locator tuples", () => {
+    const supported = [
+      ["DIRECT_LOCAL", "SOURCE_INSPECTION", {
+        kind: "REPOSITORY_SOURCE",
+        path: "scripts/product-coherence/core.mjs",
+        revision: { oidAlgorithm: "sha1", commitOid: BASELINE_COMMIT },
+      }, "HIGH"],
+      ["DIRECT_RUNTIME", "RUNTIME_TRACE", {
+        kind: "LOCAL_ARTIFACT",
+        path: "artifacts/runtime-trace.json",
+      }, "HIGH"],
+      ["AUTHORITATIVE_EXTERNAL", "AUTHORITATIVE_DOCUMENT", {
+        kind: "AUTHORITATIVE_URL",
+        url: "https://www.w3.org/TR/WCAG22/",
+      }, "MEDIUM"],
+      ["HUMAN_RESEARCH", "HUMAN_RESEARCH_RECEIPT", {
+        kind: "HUMAN_RECEIPT",
+        receiptId: "research-receipt-1",
+      }, "MEDIUM"],
+      ["INFERENCE", "SOURCE_INSPECTION", {
+        kind: "UNVERIFIABLE_REFERENCE",
+        value: "bounded audit hypothesis",
+        reason: "Direct proof is unavailable.",
+      }, "MEDIUM"],
+      ["UNKNOWN", "SOURCE_INSPECTION", {
+        kind: "UNVERIFIABLE_REFERENCE",
+        value: "unknown audit state",
+        reason: "No direct proof was collected.",
+      }, "LOW"],
+    ];
+
+    for (const [evidenceClass, evidenceType, locator, confidence] of supported) {
+      const bundle = validBundle();
+      bundle.evidence[0].evidenceClass = evidenceClass;
+      bundle.evidence[0].evidenceType = evidenceType;
+      bundle.evidence[0].locator = locator;
+      bundle.decisions[0].confidence = confidence;
+      expect(validateAuditBundle(bundle), `${evidenceClass}/${evidenceType}/${locator.kind}`).toEqual({
+        ok: true,
+        errors: [],
+      });
+    }
+  });
+
+  it("requires direct local or runtime evidence for HIGH confidence", () => {
+    for (const evidenceClass of ["AUTHORITATIVE_EXTERNAL", "HUMAN_RESEARCH", "INFERENCE", "UNKNOWN"]) {
+      const invalid = validBundle();
+      invalid.evidence[0].evidenceClass = evidenceClass;
+      if (evidenceClass === "AUTHORITATIVE_EXTERNAL") {
+        invalid.evidence[0].evidenceType = "AUTHORITATIVE_DOCUMENT";
+        invalid.evidence[0].locator = {
+          kind: "AUTHORITATIVE_URL",
+          url: "https://www.w3.org/TR/WCAG22/",
+        };
+      } else if (evidenceClass === "HUMAN_RESEARCH") {
+        invalid.evidence[0].evidenceType = "HUMAN_RESEARCH_RECEIPT";
+        invalid.evidence[0].locator = {
+          kind: "HUMAN_RECEIPT",
+          receiptId: "research-receipt-1",
+        };
+      } else {
+        invalid.evidence[0].locator = {
+          kind: "UNVERIFIABLE_REFERENCE",
+          value: "bounded audit hypothesis",
+          reason: "Direct proof is unavailable.",
+        };
+      }
+      expect(validateAuditBundle(invalid)).toMatchObject({
+        ok: false,
+        errors: expect.arrayContaining([expect.stringContaining("HIGH confidence")]),
+      });
+    }
+  });
+
+  it("rejects repository source paths that are not canonical repository-relative paths", () => {
+    for (const unsafePath of [
+      "scripts/./private.ts",
+      "scripts//private.ts",
+      "C:private.ts",
+      "scripts/private.ts\u0000suffix",
+    ]) {
+      const invalid = validBundle();
+      invalid.evidence[0].locator.path = unsafePath;
+      expect(validateAuditBundle(invalid), unsafePath).toMatchObject({
+        ok: false,
+        errors: expect.arrayContaining([expect.stringContaining("normalized repository-relative path")]),
+      });
+    }
+  });
+
+  it("rejects structurally empty ledgers instead of presenting an empty audit as complete", () => {
+    for (const ledger of ["evidence", "capabilities", "decisions", "findingHistory"]) {
+      const invalid = validBundle();
+      invalid[ledger] = [];
+      expect(validateAuditBundle(invalid)).toMatchObject({
+        ok: false,
+        errors: expect.arrayContaining([expect.stringMatching(new RegExp(ledger, "i"))]),
+      });
+    }
+  });
+
   it("rejects local artifact locators that traverse outside the input directory", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "product-coherence-artifact-root-"));
     const outside = await mkdtemp(path.join(os.tmpdir(), "product-coherence-artifact-outside-"));
@@ -378,7 +1043,7 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
 
       const result = spawnSync(process.execPath, [CLI, "validate", "--input", root], { encoding: "utf8" });
       expect(result.status).toBe(1);
-      expect(result.stdout).toContain("escapes input directory");
+      expect(result.stdout).toContain("normalized repository-relative path");
     } finally {
       await Promise.all([
         rm(root, { recursive: true, force: true }),
@@ -415,6 +1080,8 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
       await mkdir(path.join(root, "node_modules", "ignored"), { recursive: true });
       await writeFile(path.join(root, "src", "B.ts"), "export const b = 2;\n");
       await writeFile(path.join(root, "src", "A.tsx"), "export const A = () => null;\n");
+      await writeFile(path.join(root, "src", "Z.ts"), "export const z = 3;\n");
+      await writeFile(path.join(root, "src", "a.ts"), "export const a = 4;\n");
       await writeFile(path.join(root, "node_modules", "ignored", "fake.ts"), "ignored\n");
 
       const run = () =>
@@ -427,10 +1094,42 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
       expect(second.status, second.stderr).toBe(0);
       expect(first.stdout).toBe(second.stdout);
       const inventory = JSON.parse(first.stdout);
-      expect(inventory.candidates.map((candidate) => candidate.path)).toEqual(["src/A.tsx", "src/B.ts"]);
+      expect(inventory.candidates.map((candidate) => candidate.path)).toEqual([
+        "src/A.tsx",
+        "src/B.ts",
+        "src/Z.ts",
+        "src/a.ts",
+      ]);
       expect(first.stdout).not.toMatch(/reachability|disposition|decision/i);
     } finally {
       await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("fails closed when an inventory file is replaced by a symlink after it is opened", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "product-coherence-inventory-race-"));
+    const outside = await mkdtemp(path.join(os.tmpdir(), "product-coherence-inventory-race-outside-"));
+    try {
+      const target = path.join(root, "source.ts");
+      const moved = path.join(root, "source.original.ts");
+      const outsideTarget = path.join(outside, "private.ts");
+      await writeFile(target, "export const safe = true;\n");
+      await writeFile(outsideTarget, "private fixture\n");
+
+      await expect(
+        enumerateRepositoryCandidates(root, "candidate", {
+          afterFileOpen: async (openedPath) => {
+            if (path.basename(openedPath) !== "source.ts") return;
+            await rename(target, moved);
+            await symlink(outsideTarget, target);
+          },
+        }),
+      ).rejects.toThrow(/changed|symlink|identity/i);
+    } finally {
+      await Promise.all([
+        rm(root, { recursive: true, force: true }),
+        rm(outside, { recursive: true, force: true }),
+      ]);
     }
   });
 
@@ -452,3 +1151,7 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
     }
   });
 });
+
+function runGit(cwd, args) {
+  return spawnSync("git", args, { cwd, encoding: "utf8" });
+}
