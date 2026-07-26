@@ -726,6 +726,48 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
     expect(validateAuditBundle(blocked)).toEqual({ ok: true, errors: [] });
   });
 
+  it("rehashes inventory reconciliation artifacts before accepting AUDIT_COMPLETE", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "product-coherence-inventory-reconciliation-"));
+    let subjects;
+    try {
+      const bundle = validBundle();
+      bundle.manifest.auditStatus = "AUDIT_COMPLETE";
+      bundle.manifest.inventoryReconciliation = inventoryReconciliation();
+      subjects = await prepareSubjectRepositories(bundle);
+      await writeBundle(root, bundle, subjects.artifactBodies);
+
+      const pass = spawnSync(
+        process.execPath,
+        [CLI, "validate", "--input", root, ...subjects.cliArgs],
+        { encoding: "utf8" },
+      );
+      expect(pass.status, pass.stderr || pass.stdout).toBe(0);
+
+      const candidateRow = bundle.manifest.inventoryReconciliation.find(
+        ({ subjectId }) => subjectId === "candidate",
+      );
+      await writeFile(
+        path.join(root, candidateRow.artifactPath),
+        inventoryReconciliationBody({
+          ...candidateRow,
+          unclassifiedCandidateCount: 1,
+        }),
+      );
+      const tampered = spawnSync(
+        process.execPath,
+        [CLI, "validate", "--input", root, ...subjects.cliArgs],
+        { encoding: "utf8" },
+      );
+      expect(tampered.status).toBe(1);
+      expect(tampered.stdout).toMatch(/inventory reconciliation.*(?:hash|content|identity)/i);
+    } finally {
+      await Promise.all([
+        rm(root, { recursive: true, force: true }),
+        subjects ? rm(subjects.parent, { recursive: true, force: true }) : Promise.resolve(),
+      ]);
+    }
+  });
+
   it("rejects stale DEEP_AUDIT registry version or digest bindings", () => {
     const staleVersion = validBundle();
     staleVersion.manifest.classificationRegistryVersion = "zenflow-risk-registry-stale";
@@ -1178,7 +1220,9 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
   });
 
   it("derives a full-history Markdown report from validated ledgers", () => {
-    const markdown = renderAuditMarkdown(validBundle());
+    const bundle = validBundle();
+    bundle.manifest.inventoryReconciliation = inventoryReconciliation();
+    const markdown = renderAuditMarkdown(bundle);
 
     for (const state of ["DISCOVERED", "TRIAGED", "DECIDED", "IMPLEMENTING", "VERIFIED"]) {
       expect(markdown).toContain(state);
@@ -1215,6 +1259,8 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
     ]) {
       expect(markdown).toContain(closureFact);
     }
+    expect(markdown).toContain("Unclassified candidates: 0");
+    expect(markdown.match(/- Acceptance criteria:/g)).toHaveLength(2);
   });
 
   it("rejects newline-bearing stable IDs before Markdown rendering", () => {
@@ -1727,6 +1773,73 @@ describe("ProductCoherenceAudit v1 approved ledger contract", () => {
         ok: false,
         errors: expect.arrayContaining([expect.stringContaining("HIGH confidence")]),
       });
+    }
+  });
+
+  it("rehashes human-research receipts before accepting them as HIGH-confidence evidence", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "product-coherence-human-receipt-"));
+    let subjects;
+    try {
+      const receiptPath = "artifacts/research/research-receipt-1.json";
+      const humanReceiptBody = `${JSON.stringify({
+        schemaVersion: "1.0.0",
+        receiptId: "research-receipt-1",
+        studyStatus: "COMPLETE",
+      })}\n`;
+      const bundle = validBundle();
+      bundle.evidence[0].evidenceClass = "HUMAN_RESEARCH";
+      bundle.evidence[0].evidenceType = "HUMAN_RESEARCH_RECEIPT";
+      bundle.evidence[0].locator = {
+        kind: "HUMAN_RECEIPT",
+        receiptId: "research-receipt-1",
+        artifactPath: receiptPath,
+      };
+      bundle.evidence[0].artifactSha256 = createHash("sha256")
+        .update(humanReceiptBody)
+        .digest("hex");
+      subjects = await prepareSubjectRepositories(bundle);
+      await writeBundle(root, bundle, subjects.artifactBodies);
+      await mkdir(path.dirname(path.join(root, receiptPath)), { recursive: true });
+      await writeFile(path.join(root, receiptPath), humanReceiptBody);
+
+      const pass = spawnSync(
+        process.execPath,
+        [CLI, "validate", "--input", root, ...subjects.cliArgs],
+        { encoding: "utf8" },
+      );
+      expect(pass.status, pass.stderr || pass.stdout).toBe(0);
+
+      await writeFile(path.join(root, receiptPath), `${humanReceiptBody}tampered\n`);
+      const tampered = spawnSync(
+        process.execPath,
+        [CLI, "validate", "--input", root, ...subjects.cliArgs],
+        { encoding: "utf8" },
+      );
+      expect(tampered.status).toBe(1);
+      expect(tampered.stdout).toMatch(/human research receipt.*hash mismatch/i);
+
+      const wrongReceiptBody = `${JSON.stringify({
+        schemaVersion: "1.0.0",
+        receiptId: "different-research-receipt",
+        studyStatus: "COMPLETE",
+      })}\n`;
+      bundle.evidence[0].artifactSha256 = createHash("sha256")
+        .update(wrongReceiptBody)
+        .digest("hex");
+      await writeBundle(root, bundle, subjects.artifactBodies);
+      await writeFile(path.join(root, receiptPath), wrongReceiptBody);
+      const wrongIdentity = spawnSync(
+        process.execPath,
+        [CLI, "validate", "--input", root, ...subjects.cliArgs],
+        { encoding: "utf8" },
+      );
+      expect(wrongIdentity.status).toBe(1);
+      expect(wrongIdentity.stdout).toMatch(/human research receipt.*(?:identity|content)/i);
+    } finally {
+      await Promise.all([
+        rm(root, { recursive: true, force: true }),
+        subjects ? rm(subjects.parent, { recursive: true, force: true }) : Promise.resolve(),
+      ]);
     }
   });
 

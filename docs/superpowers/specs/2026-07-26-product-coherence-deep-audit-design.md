@@ -10,12 +10,16 @@ status/diff digests plus artifact-root-relative locators and SHA-256 digests
 for a sanitized untracked manifest, privacy scan receipt, and candidate
 snapshot. Denied file contents are not copied into ledgers.
 
-This contract proves local audit-ledger structure. It does not by itself prove
-product acceptance, deployed behavior, native parity, inventory reconciliation,
-or truthful terminal closure. Task 1 accepts only `IN_PROGRESS` or `BLOCKED`;
-it rejects `AUDIT_COMPLETE` even when all 17 canonical phase receipts and the
-separate coordinator integration receipt are present. Task 6 owns any terminal
-closure contract and the evidence needed to set that state.
+This contract proves local audit-ledger structure and artifact identity. It does
+not by itself prove product acceptance, deployed behavior, native parity, or
+the truth of an inventory mapping. `AUDIT_COMPLETE` is accepted only when both
+subject reconciliation artifacts are present and rehashed, their count
+identities balance, both have zero unclassified candidates, all 17 canonical
+phase receipts are `GO`, and the separate coordinator integration receipt is
+`GO`. Task 2 supplies the candidate-to-capability/exclusion reconciliation
+ledger behind those counts; Task 6 owns the terminal run and may set
+`AUDIT_COMPLETE` only after the whole bundle has fresh evidence. The
+remediation-release state remains a separate closure outcome.
 
 ## Audit manifest and provenance
 
@@ -30,6 +34,11 @@ closure contract and the evidence needed to set that state.
   as a specialist phase. Every receipt covers both subjects and has a unique
   artifact path/digest. Validate/report rehash the privacy-safe receipt JSON
   and reconcile its role, phase, subjects, and verdict with the manifest row;
+- optional per-subject inventory reconciliation rows carry candidate,
+  capability-mapped, evidence-backed exclusion, and unclassified counts plus a
+  canonical artifact locator/digest. The total must equal the three outcome
+  counts. Terminal audit closure requires exactly one row for each subject and
+  zero unclassified candidates;
 - exactly one `production-baseline` and one `candidate` subject;
 - repository provenance with an explicit Git OID algorithm. SHA-1 repositories
   use 40-hex commit/tree OIDs; SHA-256 repositories use 64-hex OIDs. Git OIDs
@@ -87,7 +96,11 @@ closure contract and the evidence needed to set that state.
   once. `HIGH` confidence requires at least one `PASS` result from direct local
   or direct runtime evidence. Failed, `N/A`,
   `UNVERIFIED`, authoritative-external, inferred, unknown, or agent-opinion
-  evidence is insufficient; human-research receipts remain capped below `HIGH`.
+  evidence is insufficient. A human-research result can support `HIGH` only
+  when it is `PASS`, uses the closed `HUMAN_RECEIPT` locator, and its bounded
+  canonical `schemaVersion`/`receiptId`/`studyStatus: COMPLETE` artifact is
+  present, rehashed, and identity-matched during local validation; the receipt
+  still cannot generalize beyond its declared study scope.
 - `findingHistory.jsonl` is append-only. Sequence starts at zero, timestamps
   never move backward, and the exact state path is
   `DISCOVERED → TRIAGED → DECIDED → IMPLEMENTING → VERIFIED|REJECTED|BLOCKED|ROLLED_BACK`.
@@ -134,11 +147,12 @@ names, and emits only path/type/content-hash candidates. It emits no
 reachability, product disposition, or decision. Task 2 may extend the candidate
 families without weakening that neutral boundary.
 
-`validate` emits stable JSON and recomputes local artifact, manifest-owned
-provenance/receipt, and repository-source hashes. `--artifact-root` defaults to
-the ledger input directory. Both subject-root flags are always required.
+`validate` emits stable JSON and recomputes local artifact, human-research
+receipt, manifest-owned provenance/role/inventory-reconciliation, and
+repository-source hashes. `--artifact-root` defaults to the ledger input
+directory. Both subject-root flags are always required.
 `report` requires the same validation and derives Markdown with separate
 production/candidate sections, status, build/deploy provenance, role verdicts,
-evidence result/platform, capabilities, decisions, confidence, trade-offs,
-acceptance/kill/rollback criteria, and complete finding histories. Markdown is
-never source of truth.
+inventory counts, evidence result/platform, capabilities, decisions,
+confidence, trade-offs, acceptance/kill/rollback criteria, and complete finding
+histories. Markdown is never source of truth.

@@ -192,6 +192,14 @@ export function renderAuditMarkdown(bundle) {
           ]
         : []),
       "",
+      "### Inventory reconciliation",
+      "",
+      ...renderInventoryReconciliation(
+        bundle.manifest.inventoryReconciliation?.find(
+          (row) => row.subjectId === subject.subjectId,
+        ),
+      ),
+      "",
       "### Evidence",
       "",
     );
@@ -813,6 +821,21 @@ async function validateManifestArtifacts(manifest, inputDirectory) {
       errors.push(`${label} validation failed: ${error.message}`);
     }
   }
+  for (const row of manifest.inventoryReconciliation ?? []) {
+    const label = `inventory reconciliation ${row.subjectId}`;
+    try {
+      const artifact = await readAndHashArtifact(root, row.artifactPath, label);
+      if (artifact.sha256 !== row.artifactSha256) {
+        errors.push(`${label} artifact hash mismatch`);
+      }
+      const expectedBody = inventoryReconciliationBody(row);
+      if (!artifact.bytes.equals(Buffer.from(expectedBody, "utf8"))) {
+        errors.push(`${label} artifact content does not match manifest reconciliation`);
+      }
+    } catch (error) {
+      errors.push(`${label} validation failed: ${error.message}`);
+    }
+  }
   return errors;
 }
 
@@ -895,6 +918,17 @@ function roleReceiptBody(receipt) {
   })}\n`;
 }
 
+function inventoryReconciliationBody(row) {
+  return `${JSON.stringify({
+    schemaVersion: "1.0.0",
+    subjectId: row.subjectId,
+    candidateCount: row.candidateCount,
+    capabilityMappedCount: row.capabilityMappedCount,
+    excludedCandidateCount: row.excludedCandidateCount,
+    unclassifiedCandidateCount: row.unclassifiedCandidateCount,
+  })}\n`;
+}
+
 async function validateLocalArtifacts(evidenceRows, inputDirectory) {
   const requestedRoot = path.resolve(inputDirectory);
   const rootStat = await lstat(requestedRoot);
@@ -911,19 +945,34 @@ async function validateLocalArtifacts(evidenceRows, inputDirectory) {
           ? evidence.locator.artifactPath
           : undefined;
     if (!relativePath) continue;
+    const artifactLabel =
+      evidence.locator.kind === "HUMAN_RECEIPT" ? "human research receipt" : "local artifact";
     try {
       const bytes = await readStableFileInsideRoot(
         root,
         relativePath,
-        evidence.locator.kind === "HUMAN_RECEIPT" ? "human research receipt" : "local artifact",
+        artifactLabel,
         MAX_LOCAL_ARTIFACT_BYTES,
       );
       const actual = createHash("sha256").update(bytes).digest("hex");
       if (actual !== evidence.artifactSha256) {
-        errors.push(`evidence ${evidence.evidenceId} local artifact hash mismatch`);
+        errors.push(`evidence ${evidence.evidenceId} ${artifactLabel} hash mismatch`);
+      }
+      if (evidence.locator.kind === "HUMAN_RECEIPT") {
+        const receipt = parseCanonicalJson(bytes, artifactLabel);
+        if (
+          !hasExactKeys(receipt, ["schemaVersion", "receiptId", "studyStatus"]) ||
+          receipt.schemaVersion !== "1.0.0" ||
+          receipt.receiptId !== evidence.locator.receiptId ||
+          receipt.studyStatus !== "COMPLETE"
+        ) {
+          throw new Error("human research receipt content does not match locator identity");
+        }
       }
     } catch (error) {
-      errors.push(`evidence ${evidence.evidenceId} local artifact validation failed: ${error.message}`);
+      errors.push(
+        `evidence ${evidence.evidenceId} ${artifactLabel} validation failed: ${error.message}`,
+      );
     }
   }
   return errors;
@@ -1259,6 +1308,18 @@ function renderStageLines(label, stage) {
     );
   }
   return lines;
+}
+
+function renderInventoryReconciliation(row) {
+  if (!row) return ["- Status: NOT_DECLARED"];
+  return [
+    `- Candidates: ${row.candidateCount}`,
+    `- Capability-mapped candidates: ${row.capabilityMappedCount}`,
+    `- Evidence-backed exclusions: ${row.excludedCandidateCount}`,
+    `- Unclassified candidates: ${row.unclassifiedCandidateCount}`,
+    `- Artifact: ${markdownText(row.artifactPath)}`,
+    `- Artifact SHA-256: ${markdownText(row.artifactSha256)}`,
+  ];
 }
 
 function evidenceLocatorText(locator) {
