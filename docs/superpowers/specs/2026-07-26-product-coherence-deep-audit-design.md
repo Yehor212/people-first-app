@@ -2,38 +2,49 @@
 
 ## Purpose and boundary
 
-ProductCoherenceAudit compares two repository subjects without reading, copying,
-or writing application/runtime data. `baseline` is the fetched production
-subject; `candidate` is the separately recorded dirty checkout. The audit
-stores only source locators and SHA-256 values. It never accepts raw journal,
-mood, habit, account, credential, token, device, contact, or ignored-env data.
+ProductCoherenceAudit is a read-only, two-subject repository audit. `baseline`
+is the fetched production subject and `candidate` is the separately recorded
+dirty checkout. It records hashes, source locators, and metadata only; it does
+not read, copy, or write application/runtime data. It is not a product decision,
+runtime proof, platform acceptance, or `AUDIT_COMPLETE` closure claim.
 
-## Source ledgers
+## Approved records and ledgers
 
-The input directory contains exactly these JSONL ledgers:
+The input directory contains these required JSONL ledgers. Every durable row
+that describes a subject carries `subjectId`.
 
-- `manifests.jsonl`: one `baseline` and one `candidate` manifest. Each has a
-  `subjectId` and snapshot hash. The candidate additionally requires status and
-  tracked-diff hashes; it carries no denied file content.
-- `evidence.jsonl`: source locator records. Every row has `evidenceId` and
-  `subjectId`.
-- `capabilities.jsonl`: inventory classification records. Every row has
-  `capabilityId`, `subjectId`, `evidenceId`, and an explicit disposition.
-- `findings.jsonl`: findings tied to the same subject and capability. Every
-  row has `findingId`, `subjectId`, `capabilityId`, and an append-only state
-  transition list.
+- `manifest.jsonl`: exactly one `AuditManifest`, with `runId`, schema version,
+  request/policy/tool/source hashes, redaction rules, role receipts, and both
+  subject records. Each subject has repository, build, and deploy provenance.
+  Candidate repository provenance additionally requires status and tracked-diff
+  hashes, never copied denied content.
+- `evidence.jsonl`: `EvidenceRecord` rows with class, type, time, tool and
+  version, scope, result, artifact hash, privacy class, and invalidation rules.
+- `capabilities.jsonl`: `CapabilityRecord` rows with reachability,
+  disposition, user job and role, surfaces, platforms, locales, cohorts, trace,
+  permissions, data actions, dependencies, promises, and source evidence.
+- `decisions.jsonl`: `DecisionRecord` rows linked to a subject, capability, and
+  evidence. A decision is explicit; no command supplies a missing disposition.
+- `findingHistory.jsonl`: `FindingHistory` rows linked to a subject and
+  capability. The only lifecycle is
+  `START → DISCOVERED → TRIAGED → DECIDED → IMPLEMENTING → VERIFIED`, with
+  explicit rejected, blocked, and rolled-back branches.
 
-All rows are validated with strict Zod schemas. Duplicate identifiers,
-cross-subject references, missing references, a candidate `UNRESOLVED`
-capability, a missing candidate provenance record, forbidden sensitive field
-names, and invalid finding transitions fail validation. Allowed transitions are
-`OPEN → VERIFIED|BLOCKED_UNVERIFIED`, `VERIFIED → RESOLVED|REJECTED|BLOCKED_UNVERIFIED`,
-and `BLOCKED_UNVERIFIED → VERIFIED`.
+The capability reachability enum is `REACHABLE`, `UNREACHABLE`, or `UNKNOWN`.
+Its disposition enum is `IN_SCOPE`, `EXCLUDED_WITH_EVIDENCE`, or
+`UNRESOLVED_CANDIDATE`. A candidate row in the unresolved state is a validation
+failure, never an inferred classification.
+
+Strict Zod schemas reject duplicate IDs, missing subject provenance,
+cross-subject references, missing referenced records, invalid lifecycle edges,
+and invalid candidate provenance. The privacy guard rejects raw sensitive
+payload field names and credential/email-like values while allowing legitimate
+metadata such as `deviceScope` and cohort labels.
 
 ## Deterministic commands
 
-All commands require `--input <ledger-directory>` and write their result only
-to standard output or standard error. They do not create or modify files.
+All commands require `--input <ledger-directory>` and only write standard
+output or standard error; they do not create or modify files.
 
 ```text
 npm run audit:product-coherence:inventory -- --input <ledger-directory>
@@ -41,13 +52,7 @@ npm run audit:product-coherence:validate -- --input <ledger-directory>
 npm run audit:product-coherence:report -- --input <ledger-directory>
 ```
 
-`inventory` outputs the sorted manifests, `validate` outputs a stable JSON
-result, and `report` derives sorted Markdown from the validated ledgers. The
-Markdown contains no authoritative disposition absent from the ledger, and an
-invalid ledger cannot be rendered.
-
-## Closure limit
-
-This contract validates audit provenance and ledger coherence only. It does not
-establish a product decision, user acceptance, runtime/platform proof, or an
-`AUDIT_COMPLETE` closure state.
+`inventory` gathers the already-ledgered candidate records in sorted order and
+does not enumerate the repository or invent a disposition. Repository
+enumeration is Task 2 work. `validate` emits stable JSON. `report` derives
+sorted Markdown from valid ledgers only; Markdown is never source of truth.

@@ -16,10 +16,10 @@ try {
   if (!result.ok && command !== "validate") {
     process.stderr.write(`${result.errors.join("\n")}\n`);
   } else if (command === "inventory") {
-    const manifests = bundle.manifests
-      .map(normalizeManifest)
-      .sort((left, right) => left.subjectId.localeCompare(right.subjectId));
-    process.stdout.write(`${JSON.stringify(manifests)}\n`);
+    const candidates = bundle.capabilities
+      .map(normalizeCandidate)
+      .sort((left, right) => left.capabilityId.localeCompare(right.capabilityId));
+    process.stdout.write(`${JSON.stringify({ runId: bundle.manifest.runId, candidates })}\n`);
   } else if (command === "validate") {
     process.stdout.write(`${JSON.stringify(result)}\n`);
   } else {
@@ -31,15 +31,11 @@ try {
   process.exitCode = 2;
 }
 
-function normalizeManifest(manifest) {
-  return manifest.subjectId === "candidate"
-    ? {
-        subjectId: manifest.subjectId,
-        subjectSnapshotSha256: manifest.subjectSnapshotSha256,
-        candidateProvenance: {
-          gitStatusSha256: manifest.candidateProvenance.gitStatusSha256,
-          trackedDiffSha256: manifest.candidateProvenance.trackedDiffSha256,
-        },
-      }
-    : { subjectId: manifest.subjectId, subjectSnapshotSha256: manifest.subjectSnapshotSha256 };
+function normalizeCandidate(capability) {
+  return {
+    capabilityId: capability.capabilityId,
+    subjectId: capability.subjectId,
+    reachability: capability.reachability,
+    disposition: capability.disposition,
+  };
 }
