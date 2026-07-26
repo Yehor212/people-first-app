@@ -1,0 +1,540 @@
+{
+  "schemaVersion": "1.0.0",
+  "registryId": "zenflow-product-coherence-authoritative-sources",
+  "registryVersion": "2026-07-26.1",
+  "checkedAt": "2026-07-26",
+  "sources": [
+    {
+      "id": "iso-iec-25010-2023",
+      "authority": "International Organization for Standardization",
+      "publisher": "ISO",
+      "title": "ISO/IEC 25010:2023 Systems and software engineering — Systems and software Quality Requirements and Evaluation (SQuaRE) — Product quality model",
+      "version": "2023",
+      "edition": "2",
+      "status": "Published",
+      "url": "https://www.iso.org/standard/78176.html",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "PUBLISHED",
+        "asOf": "2026-07-26",
+        "basis": "The official ISO catalogue page identifies edition 2 and publication in November 2023."
+      },
+      "classification": "metadata-only",
+      "contentAccess": "METADATA_ONLY",
+      "applicability": [
+        "Use the catalogue-described product-quality model as a high-level prompt when checking whether the ZenFlow audit inventory spans material product-quality concerns."
+      ],
+      "tradeoffsAndLimits": [
+        "Only official ISO catalogue web metadata was reviewed; the copyrighted full text and numbered clauses were not accessed or reproduced.",
+        "The catalogue abstract does not supply enough detail for a clause-level requirement or conformance mapping."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "7ac385c86e5fa73092012dfa1a82a7fcf9a08c74a5295670431cf9ef7bccf187"
+    },
+    {
+      "id": "iso-iec-25019-2023",
+      "authority": "International Organization for Standardization",
+      "publisher": "ISO",
+      "title": "ISO/IEC 25019:2023 Systems and software engineering — Systems and software Quality Requirements and Evaluation (SQuaRE) — Quality-in-use model",
+      "version": "2023",
+      "edition": "1",
+      "status": "Published",
+      "url": "https://www.iso.org/standard/78177.html",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "PUBLISHED",
+        "asOf": "2026-07-26",
+        "basis": "The official ISO catalogue page identifies edition 1 and publication in November 2023."
+      },
+      "classification": "metadata-only",
+      "contentAccess": "METADATA_ONLY",
+      "applicability": [
+        "Use the catalogue-described quality-in-use model as a high-level prompt for outcome-focused ZenFlow audit questions across actual contexts of use."
+      ],
+      "tradeoffsAndLimits": [
+        "Only official ISO catalogue web metadata was reviewed; the copyrighted full text and numbered clauses were not accessed or reproduced.",
+        "Local usability studies and representative user evidence are still required for any quality-in-use conclusion."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "6356887108515d61136013d8441a8918f5f106cd3d6582838338c83a3a8761c2"
+    },
+    {
+      "id": "iso-9241-11-2018",
+      "authority": "International Organization for Standardization",
+      "publisher": "ISO",
+      "title": "ISO 9241-11:2018 Ergonomics of human-system interaction — Part 11: Usability: Definitions and concepts",
+      "version": "2018",
+      "edition": "2",
+      "status": "Published and confirmed",
+      "url": "https://www.iso.org/standard/63500.html",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "PUBLISHED_AND_CONFIRMED",
+        "asOf": "2026-07-26",
+        "basis": "The official ISO catalogue page identifies edition 2, publication in March 2018, and a confirmed status."
+      },
+      "classification": "metadata-only",
+      "contentAccess": "METADATA_ONLY",
+      "applicability": [
+        "Use the catalogue description to keep ZenFlow usability evidence tied to specified users, goals, tasks, resources, and contexts rather than interface preference alone."
+      ],
+      "tradeoffsAndLimits": [
+        "Only official ISO catalogue web metadata was reviewed; the copyrighted full text and numbered clauses were not accessed or reproduced.",
+        "Effectiveness, efficiency, and satisfaction require task and user evidence; they cannot be inferred from static source inspection."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "79279434b4f5e82e825edc7e6e31c09ef9d24f5ee1f6f7e93c96fe29ea72a999"
+    },
+    {
+      "id": "iso-9241-110-2020",
+      "authority": "International Organization for Standardization",
+      "publisher": "ISO",
+      "title": "ISO 9241-110:2020 Ergonomics of human-system interaction — Part 110: Interaction principles",
+      "version": "2020",
+      "edition": "2",
+      "status": "Published and confirmed",
+      "url": "https://www.iso.org/standard/75258.html",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "PUBLISHED_AND_CONFIRMED",
+        "asOf": "2026-07-26",
+        "basis": "The official ISO catalogue page identifies edition 2, publication in May 2020, and a confirmed status."
+      },
+      "classification": "metadata-only",
+      "contentAccess": "METADATA_ONLY",
+      "applicability": [
+        "Use the catalogue-described interaction-principles scope as a prompt when reviewing ZenFlow task suitability, predictability, controllability, error tolerance, and learnability."
+      ],
+      "tradeoffsAndLimits": [
+        "Only official ISO catalogue web metadata was reviewed; the copyrighted full text and numbered clauses were not accessed or reproduced.",
+        "The high-level catalogue scope must not be converted into invented clause requirements or a scored certification checklist."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "cf26357c995b902176b34033e13b43417ffaa36f107e787a19ad766974f7c6d8"
+    },
+    {
+      "id": "iso-9241-210-2019",
+      "authority": "International Organization for Standardization",
+      "publisher": "ISO",
+      "title": "ISO 9241-210:2019 Ergonomics of human-system interaction — Part 210: Human-centred design for interactive systems",
+      "version": "2019",
+      "edition": "2",
+      "status": "Published and confirmed",
+      "url": "https://www.iso.org/standard/77520.html",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "PUBLISHED_AND_CONFIRMED",
+        "asOf": "2026-07-26",
+        "basis": "The official ISO catalogue page identifies edition 2, publication in July 2019, and a confirmed status."
+      },
+      "classification": "metadata-only",
+      "contentAccess": "METADATA_ONLY",
+      "applicability": [
+        "Use the catalogue-described human-centred design scope to ask whether ZenFlow decisions are grounded in explicit user, task, context, iteration, and evaluation evidence."
+      ],
+      "tradeoffsAndLimits": [
+        "Only official ISO catalogue web metadata was reviewed; the copyrighted full text and numbered clauses were not accessed or reproduced.",
+        "A documented design process cannot substitute for direct evidence from affected users and supported platforms."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "95cf96ee23fff888399a4cb85ca11e75ed15df6b5895a91b9303c04a6fa2ede7"
+    },
+    {
+      "id": "w3c-wcag-22",
+      "authority": "World Wide Web Consortium",
+      "publisher": "W3C",
+      "title": "Web Content Accessibility Guidelines (WCAG) 2.2",
+      "version": "2.2",
+      "edition": "W3C Recommendation 12 December 2024",
+      "status": "W3C Recommendation",
+      "url": "https://www.w3.org/TR/WCAG22/",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "W3C_RECOMMENDATION",
+        "asOf": "2026-07-26",
+        "basis": "The official W3C specification identifies WCAG 2.2 as a W3C Recommendation dated 12 December 2024."
+      },
+      "classification": "normative",
+      "contentAccess": "FULL_PUBLIC",
+      "applicability": [
+        "Map testable WCAG 2.2 success criteria to ZenFlow web and webview surfaces, including keyboard, focus, naming, contrast, reflow, target size, and authentication interactions where applicable."
+      ],
+      "tradeoffsAndLimits": [
+        "Criterion applicability and conformance level must be recorded explicitly; automated scans alone do not cover the complete standard.",
+        "Native platform behavior and assistive-technology combinations require separate runtime evidence."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "801c93c2e1219ad32126d651b7cefce480e879387cdf565e7ec18ee81b858d50"
+    },
+    {
+      "id": "w3c-coga-usable-2021",
+      "authority": "World Wide Web Consortium",
+      "publisher": "W3C",
+      "title": "Making Content Usable for People with Cognitive and Learning Disabilities",
+      "version": "2021",
+      "edition": "W3C Working Group Note 29 April 2021",
+      "status": "W3C Working Group Note",
+      "url": "https://www.w3.org/TR/coga-usable/",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "W3C_WORKING_GROUP_NOTE",
+        "asOf": "2026-07-26",
+        "basis": "The official W3C document identifies itself as a Working Group Note dated 29 April 2021."
+      },
+      "classification": "informative",
+      "contentAccess": "FULL_PUBLIC",
+      "applicability": [
+        "Use the objectives and design patterns as hypotheses for reviewing ZenFlow cognitive load, clear language, error recovery, memory burden, interruption, and help."
+      ],
+      "tradeoffsAndLimits": [
+        "This informative note is supplemental and is not required for WCAG conformance.",
+        "Its patterns need applicability review and user research; they are not a universal cognitive-accessibility checklist."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "bc61abeab2977d5a07facaef0eafda4690480ecd1a40c059693b0616bd80f27c"
+    },
+    {
+      "id": "w3c-involving-users",
+      "authority": "World Wide Web Consortium Web Accessibility Initiative",
+      "publisher": "W3C",
+      "title": "Involving Users in Evaluating Web Accessibility",
+      "version": "Living WAI guidance",
+      "edition": "Official page checked 2026-07-26",
+      "status": "Current official guidance",
+      "url": "https://www.w3.org/WAI/planning/involving-users/",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "CURRENT_OFFICIAL_GUIDANCE",
+        "asOf": "2026-07-26",
+        "basis": "The current official WAI planning page was checked at the pinned W3C URL."
+      },
+      "classification": "informative",
+      "contentAccess": "PUBLIC_GUIDANCE",
+      "applicability": [
+        "Use the guidance to plan early and repeated ZenFlow evaluation with people with disabilities across relevant tasks, assistive technologies, and supported surfaces."
+      ],
+      "tradeoffsAndLimits": [
+        "Individual participants do not represent every disability experience; recruit diverse users and pair findings with standards-based evaluation.",
+        "Participation requires informed, privacy-conscious handling and cannot be simulated by agent review."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "b689167b3c5aecd6075dbee6235e6d79f52b9a12a8f1132d724e3de748664a7b"
+    },
+    {
+      "id": "apple-hig-settings",
+      "authority": "Apple",
+      "publisher": "Apple Developer",
+      "title": "Human Interface Guidelines: Settings",
+      "version": "Living HIG guidance",
+      "edition": "Official page checked 2026-07-26",
+      "status": "Current official guidance",
+      "url": "https://developer.apple.com/design/human-interface-guidelines/settings",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "CURRENT_OFFICIAL_GUIDANCE",
+        "asOf": "2026-07-26",
+        "basis": "The current Apple Human Interface Guidelines page was checked at the pinned Apple Developer URL."
+      },
+      "classification": "informative",
+      "contentAccess": "PUBLIC_GUIDANCE",
+      "applicability": [
+        "Review whether ZenFlow exposes essential choices in context, reserves settings for infrequent configuration, uses clear labels, and preserves predictable platform behavior."
+      ],
+      "tradeoffsAndLimits": [
+        "Apple guidance is platform-specific and living; Android, web, PWA, and desktop surfaces need their own evidence.",
+        "A source comparison cannot establish that the shipped iOS interface behaves as documented."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "c44de2bd6d161b95e3c34ed104d71ac33cef20ca65c7e3168f992f6c5db6da3f"
+    },
+    {
+      "id": "apple-hig-notifications",
+      "authority": "Apple",
+      "publisher": "Apple Developer",
+      "title": "Human Interface Guidelines: Notifications",
+      "version": "Living HIG guidance",
+      "edition": "Official page checked 2026-07-26",
+      "status": "Current official guidance",
+      "url": "https://developer.apple.com/design/human-interface-guidelines/notifications/",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "CURRENT_OFFICIAL_GUIDANCE",
+        "asOf": "2026-07-26",
+        "basis": "The current Apple Human Interface Guidelines page was checked at the pinned Apple Developer URL."
+      },
+      "classification": "informative",
+      "contentAccess": "PUBLIC_GUIDANCE",
+      "applicability": [
+        "Review ZenFlow notification timing, value, consent, frequency, foreground behavior, action design, and avoidance of sensitive lock-screen content."
+      ],
+      "tradeoffsAndLimits": [
+        "Notification value and interruption cost depend on user context and require user-controlled settings plus representative testing.",
+        "Permission prompts, delivery, focus modes, and device behavior require current iOS runtime evidence."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "540418900c5db4219d65a85cde6f0ffcd3f9e4095212b8b5959f371ab3b02114"
+    },
+    {
+      "id": "android-notification-channels",
+      "authority": "Android Open Source Project",
+      "publisher": "Android Developers",
+      "title": "Create and manage notification channels",
+      "version": "Android 8.0 (API level 26) and higher",
+      "edition": "Official page checked 2026-07-26",
+      "status": "Current official guidance",
+      "url": "https://developer.android.com/develop/ui/compose/notifications/channels",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "CURRENT_OFFICIAL_GUIDANCE",
+        "asOf": "2026-07-26",
+        "basis": "The current Android Developers page was checked at the pinned official URL."
+      },
+      "classification": "informative",
+      "contentAccess": "PUBLIC_GUIDANCE",
+      "applicability": [
+        "Inspect ZenFlow Android channel creation, stable channel identifiers, names and descriptions, importance choices, and links to system channel settings."
+      ],
+      "tradeoffsAndLimits": [
+        "Users control channel behavior after creation, and channel semantics must be verified on supported Android versions and device configurations.",
+        "Source-level configuration does not demonstrate notification delivery or interruption quality."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "3cdc67bbda26cfffc6b047535a1ae783ea55470704cf89c6a94bd9d4a273f1cb"
+    },
+    {
+      "id": "android-post-notifications-permission",
+      "authority": "Android Open Source Project",
+      "publisher": "Android Developers",
+      "title": "Notification runtime permission",
+      "version": "Android 13 (API level 33) and higher",
+      "edition": "Official page checked 2026-07-26",
+      "status": "Current official guidance",
+      "url": "https://developer.android.com/develop/ui/compose/notifications/notification-permission",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "CURRENT_OFFICIAL_GUIDANCE",
+        "asOf": "2026-07-26",
+        "basis": "The current Android Developers page was checked at the pinned official URL."
+      },
+      "classification": "informative",
+      "contentAccess": "PUBLIC_GUIDANCE",
+      "applicability": [
+        "Inspect ZenFlow's Android 13+ POST_NOTIFICATIONS declaration, prompt timing, denial and retry behavior, target-SDK behavior, and non-notification fallback paths."
+      ],
+      "tradeoffsAndLimits": [
+        "Permission state and exemptions vary by OS, install and upgrade path, and app behavior; they require device-level scenarios.",
+        "A manifest or code path alone cannot show that the user saw or understood the permission request."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "f62e0844f91a0801c213a95c5cefe1e7da21455a4445b0bbd4a371037a33e97a"
+    },
+    {
+      "id": "nist-ai-rmf-1-0",
+      "authority": "National Institute of Standards and Technology",
+      "publisher": "NIST",
+      "title": "Artificial Intelligence Risk Management Framework (AI RMF 1.0)",
+      "version": "1.0",
+      "edition": "NIST AI 100-1, January 2023",
+      "status": "Published",
+      "url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "PUBLISHED",
+        "asOf": "2026-07-26",
+        "basis": "The official NIST publication is identified as NIST AI 100-1, released in January 2023."
+      },
+      "classification": "informative",
+      "contentAccess": "FULL_PUBLIC",
+      "applicability": [
+        "Use the voluntary AI RMF functions as a risk-question structure for ZenFlow coach governance, evidence, monitoring, transparency, incident handling, and owner accountability."
+      ],
+      "tradeoffsAndLimits": [
+        "The framework is voluntary and context-dependent, so the audit must select applicable outcomes rather than convert every subcategory into a product requirement.",
+        "Applying the framework does not establish clinical suitability, legal compliance, or trustworthy runtime behavior."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "e6e28fe58f2474f4192649cf9b8299a9592fd9358b42fdf9b7be90f4a83afbae"
+    },
+    {
+      "id": "nist-ai-rmf-revision-status",
+      "authority": "National Institute of Standards and Technology",
+      "publisher": "NIST",
+      "title": "AI Risk Management Framework program and revision status",
+      "version": "AI RMF 1.0 revision",
+      "edition": "Official program page checked 2026-07-26",
+      "status": "Revision in progress",
+      "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "REVISION_IN_PROGRESS",
+        "asOf": "2026-07-26",
+        "basis": "The official NIST program page states that AI RMF 1.0 is being revised."
+      },
+      "classification": "informative",
+      "contentAccess": "PUBLIC_GUIDANCE",
+      "applicability": [
+        "Record that ZenFlow's voluntary AI RMF mapping is time-bounded and needs refresh when NIST publishes a revised framework."
+      ],
+      "tradeoffsAndLimits": [
+        "Revision status is metadata about a developing voluntary framework, not a new requirement set.",
+        "The audit must not predict revision content or treat the current status page as proof of local implementation."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "1d3fb6c9e86667df7511948667045cd458bce265a67be82d95f8058a51ed8187"
+    },
+    {
+      "id": "nist-ai-rmf-genai-profile",
+      "authority": "National Institute of Standards and Technology",
+      "publisher": "NIST",
+      "title": "Artificial Intelligence Risk Management Framework: Generative Artificial Intelligence Profile",
+      "version": "NIST AI 600-1",
+      "edition": "July 2024",
+      "status": "Published",
+      "url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "PUBLISHED",
+        "asOf": "2026-07-26",
+        "basis": "The official NIST publication is identified as NIST AI 600-1, released in July 2024."
+      },
+      "classification": "informative",
+      "contentAccess": "FULL_PUBLIC",
+      "applicability": [
+        "Use this voluntary companion profile only for ZenFlow surfaces that actually generate or transform user-facing content with generative AI, including coach boundaries and incident evidence."
+      ],
+      "tradeoffsAndLimits": [
+        "Applicability depends on the verified feature and model data flow; non-generative features should not inherit unrelated profile risks.",
+        "The voluntary profile does not replace privacy, security, clinical-boundary, platform, or user-research evidence."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "68b1b77781692e8f504a6bfb49cfabe9c82097b30090bd7148c6adab042efd3a"
+    },
+    {
+      "id": "owasp-llm-top-10-2025",
+      "authority": "OWASP Foundation",
+      "publisher": "OWASP GenAI Security Project",
+      "title": "OWASP Top 10 for LLM Applications 2025",
+      "version": "2025",
+      "edition": "Version 2.0",
+      "status": "Current 2025 project",
+      "url": "https://genai.owasp.org/llm-top-10/",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "CURRENT_PROJECT",
+        "asOf": "2026-07-26",
+        "basis": "The official OWASP GenAI Security Project page identifies the current 2025 LLM Top 10 project."
+      },
+      "classification": "informative",
+      "contentAccess": "FULL_PUBLIC",
+      "applicability": [
+        "Threat-model ZenFlow generative-AI and agent surfaces against applicable 2025 risks such as prompt injection, sensitive disclosure, supply-chain compromise, excessive agency, and unbounded consumption."
+      ],
+      "tradeoffsAndLimits": [
+        "The Top 10 is a risk-awareness taxonomy rather than a complete control standard; each risk needs a verified local attack path and control test.",
+        "A checklist comparison cannot certify that ZenFlow, its models, connectors, or deployment are secure."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "31e1963ec1abad8bbb0f0e149a0890f01339d7a905fa62f7aba371c4b7ba17ad"
+    },
+    {
+      "id": "apple-app-review-guidelines",
+      "authority": "Apple",
+      "publisher": "Apple Developer",
+      "title": "App Review Guidelines",
+      "version": "Living policy",
+      "edition": "Official page checked 2026-07-26",
+      "status": "Current official store policy",
+      "url": "https://developer.apple.com/app-store/review/guidelines/",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "CURRENT_STORE_POLICY",
+        "asOf": "2026-07-26",
+        "basis": "The current App Review Guidelines page was checked at the pinned Apple Developer URL."
+      },
+      "classification": "normative",
+      "contentAccess": "FULL_PUBLIC",
+      "applicability": [
+        "Map applicable App Review rules to ZenFlow iOS behavior and submission materials, especially safety, privacy, account deletion, subscriptions, user content, health claims, and required disclosures."
+      ],
+      "tradeoffsAndLimits": [
+        "Applicability depends on the shipped binary, metadata, business model, territories, and reviewer context; the living policy can change.",
+        "Only App Store Connect and Apple review evidence can establish submission or review status."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "af710ae8bd9a4b3a83c2d7157a43395e999de067c9b9cb52f8181a3b1c395041"
+    },
+    {
+      "id": "google-play-health-declaration",
+      "authority": "Google Play",
+      "publisher": "Google Play Console Help",
+      "title": "Health apps declaration form guidance",
+      "version": "Living policy guidance",
+      "edition": "Official page checked 2026-07-26",
+      "status": "Current official store policy",
+      "url": "https://support.google.com/googleplay/android-developer/answer/14738291?hl=en",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "CURRENT_STORE_POLICY",
+        "asOf": "2026-07-26",
+        "basis": "The current Google Play Console Help page was checked at the pinned Google Support URL."
+      },
+      "classification": "normative",
+      "contentAccess": "FULL_PUBLIC",
+      "applicability": [
+        "Inventory ZenFlow wellness, stress, mindfulness, habit, journal, and coach representations so the owner can determine and accurately complete the Google Play health apps declaration."
+      ],
+      "tradeoffsAndLimits": [
+        "The audit can identify candidate features and claims but cannot make a legal or clinical classification for the owner.",
+        "A local source review cannot show the current Play Console declaration, uploaded artifact, or review decision."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "aa3f989762916d81f0b6d8dc6f2315affb2b4d8075efa2b8913575e7436edfb0"
+    },
+    {
+      "id": "google-play-ai-generated-content-policy",
+      "authority": "Google Play",
+      "publisher": "Google Play Console Help",
+      "title": "AI-Generated Content policy",
+      "version": "Living Developer Program Policy",
+      "edition": "Official page checked 2026-07-26",
+      "status": "Current official store policy",
+      "url": "https://support.google.com/googleplay/android-developer/answer/13985936?hl=en",
+      "retrievedAt": "2026-07-26",
+      "checkedAt": "2026-07-26",
+      "confirmation": {
+        "state": "CURRENT_STORE_POLICY",
+        "asOf": "2026-07-26",
+        "basis": "The current Google Play Console Help page was checked at the pinned Google Support URL."
+      },
+      "classification": "normative",
+      "contentAccess": "FULL_PUBLIC",
+      "applicability": [
+        "If ZenFlow coach or other shipped functionality qualifies as a generative-AI app, inspect prohibited-content controls and an in-app reporting or flagging path against the current policy."
+      ],
+      "tradeoffsAndLimits": [
+        "Applicability requires a verified feature and distribution-scope decision; the source must not be applied to unrelated deterministic features.",
+        "Repository evidence cannot establish the current Play Console declaration, uploaded artifact behavior, policy review, or enforcement status."
+      ],
+      "doesNotProve": "This source record cannot prove ZenFlow local behavior, conformance, human acceptance, legal compliance, or Apple/Google store status.",
+      "sourceMetadataSha256": "b8b4af80051ad4cc07e7164900511bc87d22975fa809a08b4a149c1cdad759f2"
+    }
+  ]
+}
