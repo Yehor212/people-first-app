@@ -71,5 +71,11 @@
     "**/output/**": true
   },
   "explorer.excludeGitIgnore": true,
-  "git.showIgnoredFiles": false
+  "git.showIgnoredFiles": false,
+  "git.autoRepositoryDetection": false,
+  "git.openRepositoryInParentFolders": "never",
+  "git.detectWorktrees": false,
+  "git.scanRepositories": [],
+  "git.repositoryScanMaxDepth": 1,
+  "window.title": "${rootName} — ${activeEditorShort}"
 }

@@ -131,7 +131,9 @@ function assertLocalMcpBoundary() {
 function assertNoSecrets(relativePath, text) {
   const match = text.match(SECRET_PATTERN);
   if (match) {
-    fail(`${relativePath} appears to contain a raw secret-like token near "${match[0].slice(0, 24)}"`);
+    fail(
+      `${relativePath} appears to contain a raw secret-like token near "${match[0].slice(0, 24)}"`
+    );
   }
 }
 
@@ -159,6 +161,22 @@ function assertAgentOrchestra() {
   } catch (error) {
     const output = [error?.stdout, error?.stderr].filter(Boolean).join("\n").trim();
     fail(`check:agent-orchestra failed closed${output ? `: ${output}` : ""}`);
+  }
+}
+
+function assertAgentWorkspaceProtocol() {
+  assertGovernanceFile("docs/ai/CODEX_KIMI_WORKSPACE_PROTOCOL.md");
+  assertGovernanceFile("scripts/check-agent-workspace-protocol.cjs");
+  try {
+    execFileSync(process.execPath, ["scripts/check-agent-workspace-protocol.cjs"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 15_000,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  } catch (error) {
+    const output = [error?.stdout, error?.stderr].filter(Boolean).join("\n").trim();
+    fail(`check:agent-workspace failed closed${output ? `: ${output}` : ""}`);
   }
 }
 
@@ -202,14 +220,22 @@ function assertAgentChangeGovernance(agents) {
       "Verification Contract",
     ]) {
       if (!hasHeading(subagentAudit, required)) {
-        fail(`docs/ai/SUBAGENT_TEAMLEAD_RESEARCH_AUDIT.md is missing required heading "${required}"`);
+        fail(
+          `docs/ai/SUBAGENT_TEAMLEAD_RESEARCH_AUDIT.md is missing required heading "${required}"`
+        );
       }
     }
   }
 
   const codexHooks = assertGovernanceFile(".codex/hooks.json");
   if (codexHooks) {
-    for (const marker of ["UserPromptSubmit", "Stop", "SubagentStart", "SubagentStop", "no-ai-template-gate.cjs"]) {
+    for (const marker of [
+      "UserPromptSubmit",
+      "Stop",
+      "SubagentStart",
+      "SubagentStop",
+      "no-ai-template-gate.cjs",
+    ]) {
       if (!codexHooks.includes(marker)) {
         fail(`.codex/hooks.json must register no-AI-template hook marker ${marker}`);
       }
@@ -274,7 +300,13 @@ function assertAgentChangeGovernance(agents) {
     fail("Codex change governance hook must fail closed on malformed input");
   }
   if (changeGuardCore) {
-    for (const marker of ["AGENTS.md", ".Codex-md-unlock", ".preflight-token", "test_first", "skill_routing"]) {
+    for (const marker of [
+      "AGENTS.md",
+      ".Codex-md-unlock",
+      ".preflight-token",
+      "test_first",
+      "skill_routing",
+    ]) {
       if (!changeGuardCore.includes(marker)) {
         fail(`Codex change governance core must protect or recognize ${marker}`);
       }
@@ -368,10 +400,16 @@ function assertFreeRagPreflightContract(agents) {
   }
 
   const packageJson = assertGovernanceFile("package.json");
-  if (packageJson && !/"rag:preflight"\s*:\s*"npx tsx scripts\/rag\/preflight\.ts"/.test(packageJson)) {
+  if (
+    packageJson &&
+    !/"rag:preflight"\s*:\s*"npx tsx scripts\/rag\/preflight\.ts"/.test(packageJson)
+  ) {
     fail('package.json must define "rag:preflight" for agent RAG preflight');
   }
-  if (packageJson && !/"check:rag"\s*:\s*"npm run rag:smoke:free && npm run rag:audit:free"/.test(packageJson)) {
+  if (
+    packageJson &&
+    !/"check:rag"\s*:\s*"npm run rag:smoke:free && npm run rag:audit:free"/.test(packageJson)
+  ) {
     fail('package.json must define "check:rag" for RAG smoke and audit checks');
   }
   if (packageJson && !/"ci:preflight"[\s\S]*npm run check:rag/.test(packageJson)) {
@@ -423,7 +461,10 @@ function assertBestPracticesGateContract(agents) {
   }
 
   const packageJson = assertGovernanceFile("package.json");
-  if (packageJson && !/"check:best-practices"\s*:\s*"node scripts\/check-best-practices-gate\.cjs"/.test(packageJson)) {
+  if (
+    packageJson &&
+    !/"check:best-practices"\s*:\s*"node scripts\/check-best-practices-gate\.cjs"/.test(packageJson)
+  ) {
     fail('package.json must define "check:best-practices" for the implied-requirements gate');
   }
 }
@@ -504,7 +545,10 @@ function assertNoAiTemplatesGateContract(agents) {
   }
 
   const packageJson = assertGovernanceFile("package.json");
-  if (packageJson && !/"check:no-ai-templates"\s*:\s*"node scripts\/check-no-ai-templates\.cjs"/.test(packageJson)) {
+  if (
+    packageJson &&
+    !/"check:no-ai-templates"\s*:\s*"node scripts\/check-no-ai-templates\.cjs"/.test(packageJson)
+  ) {
     fail('package.json must define "check:no-ai-templates" for the no-AI-templates gate');
   }
   if (packageJson && !/"ci:preflight"[\s\S]*npm run check:no-ai-templates/.test(packageJson)) {
@@ -513,7 +557,11 @@ function assertNoAiTemplatesGateContract(agents) {
 
   const checker = assertGovernanceFile("scripts/check-no-ai-templates.cjs");
   if (checker) {
-    for (const marker of ["validateNoAiTemplatesPolicy", "scanForTemplateMarkers", "AI-template marker"]) {
+    for (const marker of [
+      "validateNoAiTemplatesPolicy",
+      "scanForTemplateMarkers",
+      "AI-template marker",
+    ]) {
       if (!checker.includes(marker)) {
         fail(`scripts/check-no-ai-templates.cjs must enforce ${marker}`);
       }
@@ -522,7 +570,11 @@ function assertNoAiTemplatesGateContract(agents) {
 
   const tests = assertGovernanceFile("scripts/__tests__/no-ai-templates-policy.test.ts");
   if (tests) {
-    for (const marker of ["Source Evidence", "No AI-template output", "rejects obvious AI-template markers"]) {
+    for (const marker of [
+      "Source Evidence",
+      "No AI-template output",
+      "rejects obvious AI-template markers",
+    ]) {
       if (!tests.includes(marker)) {
         fail(`scripts/__tests__/no-ai-templates-policy.test.ts must cover ${marker}`);
       }
@@ -531,7 +583,16 @@ function assertNoAiTemplatesGateContract(agents) {
 
   const hookTests = assertGovernanceFile("scripts/__tests__/no-ai-template-hook.test.ts");
   if (hookTests) {
-    for (const marker of ["no-ai-template-gate.cjs", "UserPromptSubmit", "Stop", "SubagentStart", "SubagentStop", "SUBAGENT EVIDENCE CONTRACT", "subagent proof laundering", "best-practices laundering"]) {
+    for (const marker of [
+      "no-ai-template-gate.cjs",
+      "UserPromptSubmit",
+      "Stop",
+      "SubagentStart",
+      "SubagentStop",
+      "SUBAGENT EVIDENCE CONTRACT",
+      "subagent proof laundering",
+      "best-practices laundering",
+    ]) {
       if (!hookTests.includes(marker)) {
         fail(`scripts/__tests__/no-ai-template-hook.test.ts must cover ${marker}`);
       }
@@ -553,7 +614,8 @@ function assertProductionDataIntegrityContract(agents) {
       "zenflow_sync_smoke",
       "Internal/config checker errors are exit 2",
     ]) {
-      if (!agents.includes(marker)) fail(`AGENTS.md must include production-data integrity marker "${marker}"`);
+      if (!agents.includes(marker))
+        fail(`AGENTS.md must include production-data integrity marker "${marker}"`);
     }
   }
 
@@ -579,10 +641,18 @@ function assertProductionDataIntegrityContract(agents) {
       "Review checklist",
       "Known limitations",
     ]) {
-      if (!hasHeading(policy, heading)) fail(`PRODUCTION_DATA_INTEGRITY_POLICY.md is missing heading "${heading}"`);
+      if (!hasHeading(policy, heading))
+        fail(`PRODUCTION_DATA_INTEGRITY_POLICY.md is missing heading "${heading}"`);
     }
-    for (const marker of ["PDI001", "PDI012", "production-data-integrity", "UNVERIFIED", "ZENFLOW_TEST_FIXTURE_SENTINEL_7F4C9A2E"]) {
-      if (!policy.includes(marker)) fail(`PRODUCTION_DATA_INTEGRITY_POLICY.md must include ${marker}`);
+    for (const marker of [
+      "PDI001",
+      "PDI012",
+      "production-data-integrity",
+      "UNVERIFIED",
+      "ZENFLOW_TEST_FIXTURE_SENTINEL_7F4C9A2E",
+    ]) {
+      if (!policy.includes(marker))
+        fail(`PRODUCTION_DATA_INTEGRITY_POLICY.md must include ${marker}`);
     }
   }
 
@@ -596,14 +666,35 @@ function assertProductionDataIntegrityContract(agents) {
     ]) {
       if (!packageJson.includes(`"${script}"`)) fail(`package.json must define ${script}`);
     }
-    if (!/"ci:preflight"[\s\S]*npm run check:production-data-integrity[\s\S]*npm run build[\s\S]*npm run check:production-data-integrity:bundle/.test(packageJson)) {
-      fail("package.json ci:preflight must run source and bundle production-data checks around the build");
+    if (
+      !/"ci:preflight"[\s\S]*npm run check:production-data-integrity[\s\S]*npm run build[\s\S]*npm run check:production-data-integrity:bundle/.test(
+        packageJson
+      )
+    ) {
+      fail(
+        "package.json ci:preflight must run source and bundle production-data checks around the build"
+      );
     }
   }
 
   const config = assertGovernanceFile("config/production-data-integrity.json");
   if (config) {
-    for (const marker of ["PDI001", "PDI012", "entrypoints", "repositoryContracts", "bundleSentinels", "android/app/src/main/java", "ios/App/App", "ios/App/CapApp-SPM/Sources", "src-tauri/build.rs", "public/**", "vite.config.ts", "output/*/*readiness*.json", "releaseEvidenceRoots", "maxEvidenceAgeHours"]) {
+    for (const marker of [
+      "PDI001",
+      "PDI012",
+      "entrypoints",
+      "repositoryContracts",
+      "bundleSentinels",
+      "android/app/src/main/java",
+      "ios/App/App",
+      "ios/App/CapApp-SPM/Sources",
+      "src-tauri/build.rs",
+      "public/**",
+      "vite.config.ts",
+      "output/*/*readiness*.json",
+      "releaseEvidenceRoots",
+      "maxEvidenceAgeHours",
+    ]) {
       if (!config.includes(marker)) fail(`production-data-integrity config must include ${marker}`);
     }
   }
@@ -622,7 +713,8 @@ function assertProductionDataIntegrityContract(agents) {
       "explicit bundle directory is missing",
       'entry.ruleId === "PDI010"',
     ]) {
-      if (!core.includes(marker)) fail(`production-data-integrity core must include hardening marker ${marker}`);
+      if (!core.includes(marker))
+        fail(`production-data-integrity core must include hardening marker ${marker}`);
     }
   }
 
@@ -645,14 +737,27 @@ function assertProductionDataIntegrityContract(agents) {
 
   const hooks = assertGovernanceFile(".codex/hooks.json");
   if (hooks) {
-    for (const marker of ["production-data-integrity-gate.cjs", "PostToolUse", "Stop", "SubagentStart", "SubagentStop"]) {
-      if (!hooks.includes(marker)) fail(`.codex/hooks.json must register production-data hook marker ${marker}`);
+    for (const marker of [
+      "production-data-integrity-gate.cjs",
+      "PostToolUse",
+      "Stop",
+      "SubagentStart",
+      "SubagentStop",
+    ]) {
+      if (!hooks.includes(marker))
+        fail(`.codex/hooks.json must register production-data hook marker ${marker}`);
     }
   }
 
   const hook = assertGovernanceFile(".codex/hooks/production-data-integrity-gate.cjs");
   if (hook) {
-    for (const marker of ["PRODUCTION DATA INTEGRITY GATE", "resolveRepositoryRoot", "stop_hook_active", "process.exit(2)", "SubagentStop"]) {
+    for (const marker of [
+      "PRODUCTION DATA INTEGRITY GATE",
+      "resolveRepositoryRoot",
+      "stop_hook_active",
+      "process.exit(2)",
+      "SubagentStop",
+    ]) {
       if (!hook.includes(marker)) fail(`production-data-integrity-gate.cjs must include ${marker}`);
     }
   }
@@ -668,10 +773,12 @@ function assertProductionDataIntegrityContract(agents) {
       "dist/assets/pdi-ci-bundle-canary.txt",
       "result.status !== 1",
     ]) {
-      if (!workflow.includes(marker)) fail(`production-data-integrity workflow must include ${marker}`);
+      if (!workflow.includes(marker))
+        fail(`production-data-integrity workflow must include ${marker}`);
     }
     for (const forbidden of ["continue-on-error:", "|| true", "pull_request_target:", "paths:"]) {
-      if (workflow.includes(forbidden)) fail(`production-data-integrity workflow must not include ${forbidden}`);
+      if (workflow.includes(forbidden))
+        fail(`production-data-integrity workflow must not include ${forbidden}`);
     }
   }
 
@@ -700,7 +807,8 @@ function assertProductionDataIntegrityContract(agents) {
       "allows type-only re-exports",
       "mixed runtime/type re-export",
     ]) {
-      if (!checkerTests.includes(marker)) fail(`production-data-integrity tests must cover ${marker}`);
+      if (!checkerTests.includes(marker))
+        fail(`production-data-integrity tests must cover ${marker}`);
     }
   }
 
@@ -742,7 +850,9 @@ async function assertContextManifest() {
       assertNoSecrets(section.file, source);
       for (const heading of section.headings) {
         if (!hasHeading(source, heading)) {
-          fail(`Context profile ${profile.id} references missing heading "${heading}" in ${section.file}`);
+          fail(
+            `Context profile ${profile.id} references missing heading "${heading}" in ${section.file}`
+          );
         }
       }
     }
@@ -767,6 +877,7 @@ async function main() {
       "Snyk Security At Inception",
       "Architecture",
       "Agent Entry Points",
+      "Codex And Kimi Workspace Isolation",
       "Persistent Codex Agent Orchestra",
       "Agent Change Governance",
       "Snyk And Security Fallback",
@@ -791,11 +902,10 @@ async function main() {
   assertNoRepoIgnoreForCanonicalFiles();
   assertLocalMcpBoundary();
   assertAgentChangeGovernance(agents);
+  assertAgentWorkspaceProtocol();
   assertAgentOrchestra();
 
-  for (const example of [
-    "tools/zenflow-context/mcp-server.example.json",
-  ]) {
+  for (const example of ["tools/zenflow-context/mcp-server.example.json"]) {
     if (existsSync(path.join(repoRoot, example))) {
       assertNoSecrets(example, read(example));
     }

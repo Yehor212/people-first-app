@@ -58,6 +58,17 @@ describe("Codex change governance gate", () => {
     expect(result.status, result.stderr).toBe(0);
   });
 
+  it("does not split a quoted search expression at its pipe", async () => {
+    const rootDir = await workspace();
+    const result = runHook(rootDir, {
+      hook_event_name: "PreToolUse",
+      tool_name: "Bash",
+      tool_input: { command: "rg 'safe|rm AGENTS.md'" },
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
   it("accepts the official apply_patch command field for an unguarded documentation target", async () => {
     const rootDir = await workspace();
     const result = runHook(rootDir, {
@@ -101,6 +112,20 @@ describe("Codex change governance gate", () => {
     expect(result).toMatchObject({ allowed: true, reasons: [] });
   });
 
+  it("treats repository root as an in-repository guarded target", async () => {
+    const rootDir = await workspace();
+    await writeFile(path.join(rootDir, ".preflight-token"), JSON.stringify(validToken()), "utf8");
+
+    const result = await evaluateGuard({
+      rootDir,
+      targetPath: ".",
+      now: NOW,
+    });
+
+    expect(result).toMatchObject({ allowed: true, reasons: [] });
+    expect(result.reasons.join("\n")).not.toContain("outside repository");
+  });
+
   it("blocks stale self-reported evidence", async () => {
     const rootDir = await workspace();
     const token = validToken();
@@ -131,7 +156,11 @@ describe("Codex change governance gate", () => {
     expect(blocked.allowed).toBe(false);
     expect(blocked.reasons.join("\n")).toContain(".Codex-md-unlock");
 
-    await writeFile(path.join(rootDir, ".Codex-md-unlock"), "authorized for exact-ten migration\n", "utf8");
+    await writeFile(
+      path.join(rootDir, ".Codex-md-unlock"),
+      "authorized for exact-ten migration\n",
+      "utf8"
+    );
     const allowed = await evaluateGuard({
       rootDir,
       targetPath: path.join(rootDir, "AGENTS.md"),
@@ -152,6 +181,27 @@ describe("Codex change governance gate", () => {
 
     expect(result.allowed).toBe(false);
     expect(result.reasons.join("\n")).toContain("outside repository");
+  });
+
+  it("guards a repository-root Git mutation instead of misclassifying it as outside", async () => {
+    const rootDir = await workspace();
+
+    const blocked = await evaluateGuard({
+      rootDir,
+      targetPath: ".",
+      now: NOW,
+    });
+    expect(blocked.allowed).toBe(false);
+    expect(blocked.reasons.join("\n")).toContain("preflight token");
+    expect(blocked.reasons.join("\n")).not.toContain("outside repository");
+
+    await writeFile(path.join(rootDir, ".preflight-token"), JSON.stringify(validToken()), "utf8");
+    const allowed = await evaluateGuard({
+      rootDir,
+      targetPath: ".",
+      now: NOW,
+    });
+    expect(allowed).toMatchObject({ allowed: true, reasons: [] });
   });
 });
 

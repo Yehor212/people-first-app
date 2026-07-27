@@ -5,11 +5,7 @@ const path = require("node:path");
 
 const MAX_TOKEN_AGE_MS = 4 * 60 * 60 * 1000;
 
-const UNGUARDED_PREFIXES = [
-  "docs/superpowers/plans/",
-  "output/",
-  "scripts/__tests__/",
-];
+const UNGUARDED_PREFIXES = ["docs/superpowers/plans/", "output/", "scripts/__tests__/"];
 
 const UNGUARDED_EXACT = new Set([
   ".Codex-md-unlock",
@@ -27,24 +23,23 @@ const L4_PREFIXES = [
   "scripts/persistent-agent-orchestra/",
 ];
 
-const L4_EXACT = new Set([
-  "AGENTS.md",
-  "ARCHITECTURE.md",
-  "CLAUDE.md",
-  "package.json",
-]);
+const L4_EXACT = new Set(["AGENTS.md", "ARCHITECTURE.md", "CLAUDE.md", "package.json"]);
 
 function evaluateGuard({ rootDir, targetPath, now = new Date() }) {
   const reasons = [];
   const evidence = [];
   const absoluteRoot = path.resolve(rootDir);
   const absoluteTarget = path.resolve(absoluteRoot, targetPath);
-  const relative = normalizeRelative(path.relative(absoluteRoot, absoluteTarget));
+  const relativeValue = normalizeRelative(path.relative(absoluteRoot, absoluteTarget));
+  const relative = relativeValue === "" ? "." : relativeValue;
 
-  if (relative === "" || relative === ".." || relative.startsWith("../") || path.isAbsolute(relative)) {
+  if (relative === ".." || relative.startsWith("../") || path.isAbsolute(relative)) {
     return { allowed: false, reasons: ["target path is outside repository"], evidence };
   }
-  if (UNGUARDED_EXACT.has(relative) || UNGUARDED_PREFIXES.some((prefix) => relative.startsWith(prefix))) {
+  if (
+    UNGUARDED_EXACT.has(relative) ||
+    UNGUARDED_PREFIXES.some((prefix) => relative.startsWith(prefix))
+  ) {
     return { allowed: true, reasons, evidence: ["pre-code evidence or plan path"] };
   }
   if (!requiresGuard(relative)) {
@@ -54,17 +49,13 @@ function evaluateGuard({ rootDir, targetPath, now = new Date() }) {
   const tokenPath = path.join(absoluteRoot, ".preflight-token");
   const token = readJson(tokenPath, reasons, "preflight token");
   if (token) {
-    validateTimestamp(token.timestamp, now, reasons, "preflight token");
-    if (token.verdict !== "GO") reasons.push("preflight token verdict must be GO");
-    if (requiresL4(relative) && token.depth !== "L4") reasons.push(`preflight token depth L4 required for ${relative}`);
-    if (typeof token.goal !== "string" || token.goal.trim().length < 12) reasons.push("preflight token goal is missing or too short");
-    validateTestFirst(token.test_first, token.timestamp, now, reasons);
-    validateSkillRouting(token.skill_routing, token.timestamp, now, reasons);
+    validatePreflightToken(token, now, reasons, requiresL4(relative));
   }
 
   if (relative === "AGENTS.md") {
     const unlockPath = path.join(absoluteRoot, ".Codex-md-unlock");
-    if (!isNonEmptyFile(unlockPath)) reasons.push("AGENTS.md requires a non-empty .Codex-md-unlock authorization file");
+    if (!isNonEmptyFile(unlockPath))
+      reasons.push("AGENTS.md requires a non-empty .Codex-md-unlock authorization file");
     else evidence.push("AGENTS.md unlock present");
   }
 
@@ -76,13 +67,30 @@ function evaluateGuard({ rootDir, targetPath, now = new Date() }) {
   return { allowed: reasons.length === 0, reasons, evidence };
 }
 
+function validatePreflightToken(token, now, reasons, l4Required) {
+  validateTimestamp(token.timestamp, now, reasons, "preflight token");
+  if (token.verdict !== "GO") reasons.push("preflight token verdict must be GO");
+  if (l4Required && token.depth !== "L4") {
+    reasons.push("preflight token depth L4 required");
+  }
+  if (typeof token.goal !== "string" || token.goal.trim().length < 12) {
+    reasons.push("preflight token goal is missing or too short");
+  }
+  validateTestFirst(token.test_first, token.timestamp, now, reasons);
+  validateSkillRouting(token.skill_routing, token.timestamp, now, reasons);
+}
+
 function requiresGuard(relative) {
+  if (relative === ".") return true;
   if (requiresL4(relative)) return true;
   if (/\.(?:cjs|js|json|mjs|ts|tsx|toml|ya?ml)$/i.test(relative)) return true;
-  return relative.startsWith("scripts/") || relative.startsWith("config/") || relative.startsWith("src/");
+  return (
+    relative.startsWith("scripts/") || relative.startsWith("config/") || relative.startsWith("src/")
+  );
 }
 
 function requiresL4(relative) {
+  if (relative === ".") return true;
   return L4_EXACT.has(relative) || L4_PREFIXES.some((prefix) => relative.startsWith(prefix));
 }
 
@@ -98,9 +106,12 @@ function validateTestFirst(value, parentTimestamp, now, reasons) {
   requireText(value.command, 6, "test_first command", reasons);
   requireText(value.verification_plan, 12, "test_first verification_plan", reasons);
   const hasBaseline = typeof value.baseline === "string" && value.baseline.trim().length >= 8;
-  const hasExpectedRed = typeof value.expected_red === "string" && value.expected_red.trim().length >= 8;
-  if (!hasBaseline && !hasExpectedRed) reasons.push("test_first requires baseline or expected_red evidence");
-  if (value.verdict !== undefined && value.verdict !== "GO") reasons.push("test_first verdict must be GO");
+  const hasExpectedRed =
+    typeof value.expected_red === "string" && value.expected_red.trim().length >= 8;
+  if (!hasBaseline && !hasExpectedRed)
+    reasons.push("test_first requires baseline or expected_red evidence");
+  if (value.verdict !== undefined && value.verdict !== "GO")
+    reasons.push("test_first verdict must be GO");
 }
 
 function validateSkillRouting(value, parentTimestamp, now, reasons) {
@@ -157,7 +168,8 @@ function isNonEmptyFile(filePath) {
 }
 
 function requireText(value, minimum, label, reasons) {
-  if (typeof value !== "string" || value.trim().length < minimum) reasons.push(`${label} must be ${minimum}+ characters`);
+  if (typeof value !== "string" || value.trim().length < minimum)
+    reasons.push(`${label} must be ${minimum}+ characters`);
 }
 
 function isPlainObject(value) {
