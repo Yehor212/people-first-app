@@ -40,12 +40,12 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 
 | Metric                       |     Value | Source                                                       |
 | ---------------------------- | --------: | ------------------------------------------------------------ |
-| Source files                 |   **931** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
-| Test files                   |   **588** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
+| Source files                 |   **935** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
+| Test files                   |   **592** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
 | Silent `.catch(() => {})`    |     **0** | `grep -rn '.catch.*=> {}' src/`                              |
 | React.memo                   |   **120** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
-| index.css LOC                | **7,263** | `readFileSync(...).split("\\n").length` (constitution guard) |
-| Inline style={{}}            |   **327** | `grep -rn 'style={{' src/ --include='*.tsx'`                 |
+| index.css LOC                | **7,602** | `readFileSync(...).split("\\n").length` (constitution guard) |
+| Inline style={{}}            |   **358** | `grep -rn 'style={{' src/ --include='*.tsx'`                 |
 | exhaustive-deps suppressions |    **17** | `grep -rn 'eslint-disable.*exhaustive-deps' src/`            |
 | Hook coverage                |   **66%** | `50/76 hook tests`                                           |
 
@@ -824,14 +824,14 @@ All framer-motion animations MUST use standardized presets from `src/lib/animati
 
 **Spring tokens** (pass as `transition` prop):
 
-| Token                 | Use case                              | Physics                     |
-| --------------------- | ------------------------------------- | --------------------------- |
-| `zenMotion.instant`   | Effective reduced motion              | 0ms                         |
-| `zenMotion.snappy`    | Buttons, toggles, checkboxes          | stiffness: 400, damping: 30 |
-| `zenMotion.gentle`    | Cards, modals, panels                 | stiffness: 260, damping: 25 |
-| `zenMotion.sheet`     | Bottom sheet slide                    | stiffness: 300, damping: 26 |
-| `zenMotion.bouncy`    | Celebrations, soft settle (~3% overshoot) | stiffness: 300, damping: 26 |
-| `zenMotion.exit`      | Closing, dismissing                   | 150ms standardAccelerate    |
+| Token               | Use case                                  | Physics                     |
+| ------------------- | ----------------------------------------- | --------------------------- |
+| `zenMotion.instant` | Effective reduced motion                  | 0ms                         |
+| `zenMotion.snappy`  | Buttons, toggles, checkboxes              | stiffness: 400, damping: 30 |
+| `zenMotion.gentle`  | Cards, modals, panels                     | stiffness: 260, damping: 25 |
+| `zenMotion.sheet`   | Bottom sheet slide                        | stiffness: 300, damping: 26 |
+| `zenMotion.bouncy`  | Celebrations, soft settle (~3% overshoot) | stiffness: 300, damping: 26 |
+| `zenMotion.exit`    | Closing, dismissing                       | 150ms standardAccelerate    |
 
 ### Animation Respect (Accessibility And Runtime Safety)
 
@@ -984,14 +984,14 @@ On PR to main:
 | TD-17 | ~~HIGH~~ → DONE                   | ~~Silent `.catch(() => {})` swallowing errors~~                    | **Fixed 2026-02-16**: All 34 instances replaced with `logger.warn`/`logger.error` across 20 files. Categorized by risk: fire-and-forget (warn), data ops (error), with-fallback (warn + fallback).                                                                              | Various                                                   |
 | TD-18 | ~~HIGH~~ → DONE                   | ~~Memory leaks: uncleaned setTimeout in contexts~~                 | **Fixed 2026-02-16**: MoodThemeContext — added useRef + clearTimeout cleanup (EmotionThemeContext already correct).                                                                                                                                                             | src/contexts/MoodThemeContext.tsx                         |
 | TD-19 | ~~HIGH~~ → DONE                   | ~~Raw console.\* calls bypassing logger.ts~~                       | **Fixed 2026-02-16**: 16 calls replaced with logger.\* in 4 files (main.tsx, sw.ts, sentry.ts, gamificationStore.ts). Remaining: logger.ts (6, implementation) + crashReporting.ts (7, implementation).                                                                         | Various                                                   |
-| TD-20 | ~~HIGH~~ → **PARTIALLY RESOLVED** | God components violating 400-line / 5-useState / 3-useEffect rules | **37 components + 3 hooks + 3 hook-only resolved**, DayClock deleted, 1 SKIP (sidebar). **19 current violations** remain by fresh `npm run constitution:check` evidence.                                                                                                        | See God Components table below                            |
+| TD-20 | ~~HIGH~~ → **PARTIALLY RESOLVED** | God components violating 400-line / 5-useState / 3-useEffect rules | **37 components + 3 hooks + 3 hook-only resolved**, DayClock deleted, 1 SKIP (sidebar). **18 current violations** remain by fresh `npm run constitution:check` evidence.                                                                                                        | See God Components table below                            |
 | TD-21 | ~~MEDIUM~~ → DONE                 | ~~Scattered Capacitor platform checks~~                            | **Fixed 2026-02-16**: Created `src/lib/platform.ts` — single source of truth for isNative, platform, isAndroid, isIos, isWeb. ~58 scattered calls → 0 outside platform.ts. 44 files updated, 3 test files migrated to mock `@/lib/platform`.                                    | src/lib/platform.ts                                       |
 | TD-22 | ~~MEDIUM~~ → DONE                 | ~~Scattered import.meta.env access~~                               | **Fixed 2026-02-16**: Created `src/lib/env.ts` — single source of truth for 11 env vars. 26 scattered calls → 0 outside env.ts. 15 files updated.                                                                                                                               | src/lib/env.ts                                            |
 | TD-23 | ~~MEDIUM~~ → DONE                 | ~~Direct Supabase calls in UI components~~                         | **Fixed 2026-02-17**: Created `feedbackService.ts` + `accountService.ts`. Extracted 10 data/function operations from 5 UI files. 14 auth-only calls remain in place (by design). Original "71 calls" was inflated by grep matching imports/comments; actual was 21.             | src/lib/feedbackService.ts, src/lib/accountService.ts     |
 | TD-24 | LOW                               | Low memoization + lazy loading coverage                            | React.memo improved: **120 files** currently contain `memo(`. Only **3** lazy() imports (was 6). Heavy components not lazy-loaded.                                                                                                                                              | Various                                                   |
-| TD-25 | P2                                | index.css monolith                                                 | **7,263 lines** remain in a single CSS file. Further split work needs feature ownership and regression proof.                                                                                                                    | src/index.css                                             |
+| TD-25 | P2                                | index.css monolith                                                 | **7,602 lines** remain in a single CSS file. Further split work needs feature ownership and regression proof.                                                                                                                                                                   | src/index.css                                             |
 | TD-26 | P2                                | Feature flags hardcoded                                            | `CANVAS_ENABLED`, `HABIT_HUB_ENABLED` are `const` in Index.tsx (lines 79-80). Extract to central registry with name, default, description per flag.                                                                                                                             | src/pages/Index.tsx                                       |
-| TD-27 | P2                                | Inline style={{}} proliferation                                    | **327 instances** across TSX files by the 2026-07-22 constitution check. On `React.memo` components, inline objects break memoization. Extract to `useMemo` or module-level constants.                                                                                          | Various                                                   |
+| TD-27 | P2                                | Inline style={{}} proliferation                                    | **358 instances** across TSX files by the 2026-07-26 constitution check. On `React.memo` components, inline objects break memoization. Extract to `useMemo` or module-level constants.                                                                                          | Various                                                   |
 | TD-28 | P3                                | Feature module migration stalled                                   | Only `features/journal/` migrated. Planned domains (mood, habits, focus, challenges, mindfulness, canvas) remain in `components/` + `hooks/`.                                                                                                                                   | src/components/, src/hooks/                               |
 | TD-29 | ~~P3~~ → **PARTIALLY RESOLVED**   | Multi-tab sync coordination                                        | Account-bound DATA/JOURNAL writes now serialize through named Web Locks with a same-origin Dexie transaction fallback and passive account-generation invalidation. Full live multi-device sync convergence remains separately unverified.                                       | src/lib/originExclusiveLock.ts, src/hooks/useIndexedDB.ts |
 | TD-30 | P3                                | Missing aria-labels on SVG emojis                                  | 20+ SVG emoji components (coolEmojis.tsx, warmEmojis.tsx) lack `role="img"` + `aria-label`. Screen readers see empty icons.                                                                                                                                                     | src/components/animated-emotion-emoji/                    |
@@ -1001,9 +1001,9 @@ On PR to main:
 
 ### God Components (TD-20 Detail)
 
-> Last audit: 2026-07-16 via `npm run constitution:check`. Limit: 400 lines, 5 useState, 3 useEffect.
+> Last audit: 2026-07-26 via `npm run constitution:check`. Limit: 400 lines, 5 useState, 3 useEffect.
 > Every PASS must include evidence: command output, file path, or test checklist. No evidence = FAIL.
-> **TD-20 PARTIALLY RESOLVED**: 37 tracked component violations resolved; the three July Settings regressions were removed. **19 current violations** remain.
+> **TD-20 PARTIALLY RESOLVED**: 37 tracked component violations resolved; the three July Settings regressions were removed. **18 current violations** remain.
 
 #### Resolved (37 components)
 
@@ -1067,29 +1067,28 @@ On PR to main:
 | ---------------- | ----- | -------- | --------- | ------------------------------------------------------------------- |
 | Celebrations.tsx | 311   | 4        | 4         | 4 components × 1 useEffect each — no single component exceeds limit |
 
-#### New Violations (19 files >400L — verified 2026-07-22)
+#### New Violations (18 files >400L — verified 2026-07-26)
 
-| File                                                             | Lines     | Severity | Notes                                               |
-| ---------------------------------------------------------------- | --------- | -------- | --------------------------------------------------- |
-| components/state-of-mind/ValenceOrb.tsx                          | **3,554** | P2       | Shader/orb shell remains over 400L                  |
-| components/habit-creation-form/HabitCreationForm.tsx             | **1,159** | P2       | Regressed above 400L after feature growth           |
-| components/habit-hub/HabitDetailSheet.tsx                        | **726**   | P2       | Detail sheet remains over 400L                      |
-| main.tsx                                                         | **679**   | P2       | Bootstrap/root wiring remains over 400L             |
-| components/ErrorBoundary.tsx                                     | **622**   | P2       | Error boundary module remains over 400L             |
-| pages/nav-v2/habits/HabitsPage.tsx                               | **595**   | P2       | V2 habits page shell remains over 400L              |
-| components/SplashScreen.tsx                                      | **573**   | P2       | Startup shell remains over 400L                     |
-| components/habit-creation-form/FormSelectors.tsx                 | **558**   | P2       | Form selector shell remains over 400L               |
-| components/habit-tracker/HabitTracker.tsx                        | **526**   | P2       | Habit tracker shell remains over 400L               |
-| pages/nav-v2/OrbPage.tsx                                         | **523**   | P2       | V2 orb page shell remains over 400L                 |
-| pages/nav-v2/habits/hero/HeroWeeklyHabitCard.tsx                 | **477**   | P3       | V2 habit hero card remains over 400L                |
-| components/reflection/DailyRitualCard.tsx                        | **472**   | P3       | Reflection ritual card remains over 400L            |
-| components/hyperfocus/HyperfocusMode.tsx                         | **442**   | P3       | Hyperfocus shell remains over 400L                  |
-| components/stats/ring-detail-sheet/RingDetailSheet.tsx           | **442**   | P3       | Stats sheet shell remains over 400L                 |
-| components/StorageErrorBanner.tsx                                | **432**   | P3       | Storage incident surface remains over 400L          |
-| components/challenges-panel/ChallengesPanel.tsx                  | **421**   | P3       | Challenges panel shell remains over 400L            |
-| components/state-of-mind/ValenceSlider.tsx                       | **419**   | P3       | Valence slider remains over 400L                    |
-| components/schedule/ScheduleTimeline.tsx                         | **413**   | P3       | Schedule timeline shell remains over 400L           |
-| components/AuthGate.tsx                                         | **409**   | P3       | Authentication gate shell remains over 400L         |
+| File                                                   | Lines     | Severity | Notes                                      |
+| ------------------------------------------------------ | --------- | -------- | ------------------------------------------ |
+| components/state-of-mind/ValenceOrb.tsx                | **3,554** | P2       | Shader/orb shell remains over 400L         |
+| components/habit-creation-form/HabitCreationForm.tsx   | **1,159** | P2       | Regressed above 400L after feature growth  |
+| components/habit-hub/HabitDetailSheet.tsx              | **726**   | P2       | Detail sheet remains over 400L             |
+| main.tsx                                               | **679**   | P2       | Bootstrap/root wiring remains over 400L    |
+| components/ErrorBoundary.tsx                           | **622**   | P2       | Error boundary module remains over 400L    |
+| pages/nav-v2/habits/HabitsPage.tsx                     | **595**   | P2       | V2 habits page shell remains over 400L     |
+| components/SplashScreen.tsx                            | **573**   | P2       | Startup shell remains over 400L            |
+| components/habit-creation-form/FormSelectors.tsx       | **558**   | P2       | Form selector shell remains over 400L      |
+| components/habit-tracker/HabitTracker.tsx              | **526**   | P2       | Habit tracker shell remains over 400L      |
+| pages/nav-v2/OrbPage.tsx                               | **532**   | P2       | V2 orb page shell remains over 400L        |
+| pages/nav-v2/habits/hero/HeroWeeklyHabitCard.tsx       | **477**   | P3       | V2 habit hero card remains over 400L       |
+| components/reflection/DailyRitualCard.tsx              | **472**   | P3       | Reflection ritual card remains over 400L   |
+| components/stats/ring-detail-sheet/RingDetailSheet.tsx | **445**   | P3       | Stats sheet shell remains over 400L        |
+| components/hyperfocus/HyperfocusMode.tsx               | **442**   | P3       | Hyperfocus shell remains over 400L         |
+| components/StorageErrorBanner.tsx                      | **432**   | P3       | Storage incident surface remains over 400L |
+| components/challenges-panel/ChallengesPanel.tsx        | **421**   | P3       | Challenges panel shell remains over 400L   |
+| components/state-of-mind/ValenceSlider.tsx             | **419**   | P3       | Valence slider remains over 400L           |
+| components/schedule/ScheduleTimeline.tsx               | **413**   | P3       | Schedule timeline shell remains over 400L  |
 
 #### Remaining — SKIP (1 file >400L)
 
@@ -1141,8 +1140,8 @@ On PR to main:
 6. `grep -rn '\.catch.*=> {}' src/ | wc -l` — track silent catches (target: 0, current: 0)
 7. `find src -name "*.tsx" -exec wc -l {} + | sort -rn | head -20` — god component progress
 8. `grep -rl 'memo(' src/ --include="*.tsx" | wc -l` — memo adoption (current: 120)
-9. `wc -l src/index.css` — CSS monolith tracking (current: 7,263 — TD-25)
-10. `grep -rn 'style={{' src/ --include="*.tsx" | wc -l` — inline style objects (current: 327 — TD-27)
+9. `wc -l src/index.css` — CSS monolith tracking (current: 7,602 — TD-25)
+10. `grep -rn 'style={{' src/ --include="*.tsx" | wc -l` — inline style objects (current: 358 — TD-27)
 11. Hook test coverage: `ls src/hooks/__tests__/ | wc -l` vs `ls src/hooks/*.ts | wc -l` — target ≥ 70%
 12. `grep -rn 'eslint-disable.*exhaustive-deps' src/ | wc -l` — track suppressions (current: 17)
 

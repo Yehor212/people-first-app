@@ -29,8 +29,15 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash|apply_patch|functions.apply_patch|Edit|Write|MultiEdit",
+        "matcher": "Bash|Shell|PowerShell|pwsh|exec_command|unified_exec|apply_patch|functions.apply_patch|Edit|Write|WriteFile|CreateFile|DeleteFile|MultiEdit|StrReplaceFile|NotebookEdit",
         "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/agent-workspace-guard.cjs\" --expected-agent codex",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/agent-workspace-guard.cjs') --expected-agent codex\"",
+            "timeout": 5,
+            "statusMessage": "Checking isolated agent workspace"
+          },
           {
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/change-governance-gate.cjs\"",
