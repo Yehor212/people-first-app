@@ -741,7 +741,7 @@ describe("OrbPage progressive flow", () => {
     expect(toggle).toHaveAccessibleName("Pause orb ambience");
   });
 
-  it("reveals the hidden orb ambience control on focus instead of trapping users invisibly", () => {
+  it("keeps the orb ambience control visible for pointer and touch users without requiring focus", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
     const toggle = screen.getByTestId("orb-page-ambience-toggle");
@@ -750,9 +750,12 @@ describe("OrbPage progressive flow", () => {
     const css = readFileSync("src/pages/nav-v2/OrbAmbienceControl.css", "utf8");
 
     expect(chrome?.className).toContain("orb-ambience-focus-control");
-    expect(css).toContain(".orb-ambience-focus-control:focus-within");
-    expect(css).toContain("clip-path: inset(50%)");
-    expect(css).toContain("clip-path: none");
+    expect(css).not.toContain(".orb-ambience-focus-control:focus-within");
+    expect(css).not.toContain("clip-path:");
+    expect(css).not.toContain("width: 1px");
+    expect(css).not.toContain("height: 1px");
+    expect(css).toContain("display: flex");
+    expect(toggle).toHaveClass("min-h-[44px]");
     expect(toggle).not.toHaveAttribute("tabindex", "-1");
   });
 

@@ -1,32 +1,15 @@
-/* Keep Orb ambience out of normal visual baselines while making keyboard focus visible. */
+/* Keep Orb ambience discoverable for touch, pointer, and keyboard users. */
 .orb-ambience-focus-control {
   position: fixed;
   inset-inline-end: max(1rem, var(--safe-right));
   top: calc(var(--safe-top) + 0.75rem);
   z-index: 30;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
 }
 
 .orb-ambience-focus-control:dir(rtl) {
   inset-inline-end: max(1rem, var(--safe-left));
-}
-
-.orb-ambience-focus-control:focus-within {
-  display: flex;
-  align-items: center;
-  width: auto;
-  height: auto;
-  margin: 0;
-  overflow: visible;
-  clip: auto;
-  clip-path: none;
-  white-space: normal;
 }
 
 @media (min-width: 768px) {
