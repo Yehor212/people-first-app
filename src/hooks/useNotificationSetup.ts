@@ -11,7 +11,11 @@ import {
   resumeAccountNotifications,
 } from '@/lib/localNotifications';
 import { reconcilePersistedMasterReminders } from '@/lib/persistedReminderReconciliation';
-import { initializePushNotifications, removePushToken } from '@/lib/pushNotifications';
+import {
+  initializePushNotifications,
+  readPushRegistrationEvidence,
+  removePushToken,
+} from '@/lib/pushNotifications';
 import { buildNotificationChannelCopy } from '@/lib/notificationSounds';
 import { buildReminderCopy } from '@/lib/reminderCopy';
 import type { MoodEntry } from '@/types';
@@ -274,7 +278,7 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
 
   // FCM uses a remote device token, so it stays behind explicit privacy consent.
   useEffect(() => {
-    if (!isNative) return;
+    if (!isNative || isUserDataLoading || hasValidSession === null) return;
     if (pushNotificationsEnabled) {
       previousPushConsentRef.current = true;
       if (hasValidSession === true && !isAccountBoundaryInProgress) {
@@ -285,9 +289,13 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
       return;
     }
 
-    const shouldRemoveRemoteToken = previousPushConsentRef.current !== false;
+    const previousPushConsent = previousPushConsentRef.current;
     previousPushConsentRef.current = false;
-    if (!shouldRemoveRemoteToken) return;
+    if (previousPushConsent === false) return;
+    if (
+      previousPushConsent === null &&
+      readPushRegistrationEvidence() === 'absent'
+    ) return;
 
     const revokePushRegistration = async (): Promise<void> => {
       if (useUserDataStore.getState().privacy.pushNotifications === true) return;
@@ -346,7 +354,12 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
     };
 
     void revokePushRegistration();
-  }, [hasValidSession, isAccountBoundaryInProgress, pushNotificationsEnabled]);
+  }, [
+    hasValidSession,
+    isAccountBoundaryInProgress,
+    isUserDataLoading,
+    pushNotificationsEnabled,
+  ]);
 
   // Set up one-tap mood notification actions
   useEffect(() => {

@@ -219,6 +219,22 @@ export function isPushAvailable(): boolean {
   return isNative && isAndroid;
 }
 
+export type PushRegistrationEvidence = "absent" | "present" | "unknown";
+
+/**
+ * Reports whether this install has local evidence of a push registration.
+ * An unreadable storage boundary stays unknown so privacy cleanup can fail closed.
+ */
+export function readPushRegistrationEvidence(): PushRegistrationEvidence {
+  const tokenRead = storageReadRaw(SK.PUSH_TOKEN);
+  const installRead = pushInstallId
+    ? ({ ok: true, value: pushInstallId } as const)
+    : storageReadRaw(SK.PUSH_INSTALL_ID);
+
+  if (!tokenRead.ok || !installRead.ok) return "unknown";
+  return tokenRead.value || installRead.value ? "present" : "absent";
+}
+
 /**
  * Request push notification permissions
  */

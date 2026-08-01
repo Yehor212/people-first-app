@@ -48,6 +48,9 @@ const localNotificationMocks = vi.hoisted(() => ({
 }));
 const pushNotificationMocks = vi.hoisted(() => ({
   initializePushNotifications: vi.fn(() => Promise.resolve()),
+  readPushRegistrationEvidence: vi.fn<() => "absent" | "present" | "unknown">(
+    () => "absent",
+  ),
   removePushToken: vi.fn<() => Promise<PushRevocationResult>>(() => Promise.resolve({
     status: "revoked" as const,
     remote: "not-registered" as const,
@@ -149,6 +152,7 @@ describe("useNotificationSetup push consent", () => {
       remote: "not-registered",
       native: "unregistered",
     });
+    pushNotificationMocks.readPushRegistrationEvidence.mockReturnValue("absent");
     useUserDataStore.setState({
       reminders: { ...defaultReminderSettings, enabled: true },
       habits: [],
@@ -211,6 +215,17 @@ describe("useNotificationSetup push consent", () => {
       expect(localNotificationMocks.reconcileReminderNotifications).toHaveBeenCalledTimes(1),
     );
     expect(pushNotificationMocks.initializePushNotifications).not.toHaveBeenCalled();
+    expect(pushNotificationMocks.removePushToken).not.toHaveBeenCalled();
+  });
+
+  it("retries cleanup for a known registration when hydrated consent starts disabled", async () => {
+    pushNotificationMocks.readPushRegistrationEvidence.mockReturnValue("present");
+
+    renderHook(() => useNotificationSetup({ handleQuickMood: vi.fn() }));
+
+    await waitFor(() =>
+      expect(pushNotificationMocks.removePushToken).toHaveBeenCalledTimes(1),
+    );
   });
 
   it("waits for hydrated user data before reconciling native reminder state", async () => {

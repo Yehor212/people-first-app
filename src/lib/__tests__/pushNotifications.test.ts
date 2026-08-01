@@ -99,6 +99,7 @@ vi.mock("@/storage/accountBoundaryRuntime", () => ({
 
 import {
   initializePushNotifications,
+  readPushRegistrationEvidence,
   removePushToken,
   revokePushForAccountBoundary,
   savePushToken,
@@ -146,6 +147,25 @@ describe("push notification token lifecycle", () => {
       upsert: mocks.upsert,
       delete: mocks.deleteFn,
     });
+  });
+
+  it("distinguishes a clean install from known or unreadable registration evidence", () => {
+    expect(readPushRegistrationEvidence()).toBe("absent");
+
+    localStorage.setItem(PUSH_INSTALL_ID_KEY, "install-a");
+    expect(readPushRegistrationEvidence()).toBe("present");
+    localStorage.clear();
+
+    const getItem = vi
+      .spyOn(Storage.prototype, "getItem")
+      .mockImplementation(() => {
+        throw new DOMException("storage unavailable", "SecurityError");
+      });
+    try {
+      expect(readPushRegistrationEvidence()).toBe("unknown");
+    } finally {
+      getItem.mockRestore();
+    }
   });
 
   it("saves the current push token with a per-install id rather than the native app build id", async () => {
