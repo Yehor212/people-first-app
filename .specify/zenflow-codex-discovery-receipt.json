@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-08-01T10:46:51Z",
+  "capture_kind": "privacy-safe projection of a directly observed Codex App Server JSON-RPC response",
+  "repository": "Yehor212/people-first-app",
+  "worktree": "/Users/yehor/Projects/ZenFlow/worktrees/codex-spec-kit-v0-15-1",
+  "baseline_head": "e5016f156497a9d3e55578b773294bf56adce58e",
+  "codex": {
+    "version": "0.146.0-alpha.9.2",
+    "platform": "macos",
+    "architecture": "arm64"
+  },
+  "request": {
+    "method": "skills/list",
+    "params": {
+      "cwds": [
+        "/Users/yehor/Projects/ZenFlow/worktrees/codex-spec-kit-v0-15-1"
+      ],
+      "forceReload": true
+    }
+  },
+  "response_projection": {
+    "cwd": "/Users/yehor/Projects/ZenFlow/worktrees/codex-spec-kit-v0-15-1",
+    "repository_skill_count": 13,
+    "skills": [
+      {
+        "name": "speckit-analyze",
+        "path": ".agents/skills/speckit-analyze/SKILL.md",
+        "scope": "repo",
+        "enabled": true
+      },
+      {
+        "name": "speckit-bug-assess",
+        "path": ".agents/skills/speckit-bug-assess/SKILL.md",
+        "scope": "repo",
+        "enabled": true
+      },
+      {
+        "name": "speckit-bug-fix",
+        "path": ".agents/skills/speckit-bug-fix/SKILL.md",
+        "scope": "repo",
+        "enabled": true
+      },
+      {
+        "name": "speckit-bug-test",
+        "path": ".agents/skills/speckit-bug-test/SKILL.md",
+        "scope": "repo",
+        "enabled": true
+      },
+      {
+        "name": "speckit-checklist",
+        "path": ".agents/skills/speckit-checklist/SKILL.md",
+        "scope": "repo",
+        "enabled": true
+      },
+      {
+        "name": "speckit-clarify",
+        "path": ".agents/skills/speckit-clarify/SKILL.md",
+        "scope": "repo",
+        "enabled": true
+      },
+      {
+        "name": "speckit-constitution",
+        "path": ".agents/skills/speckit-constitution/SKILL.md",
+        "scope": "repo",
+        "enabled": true
+      },
+      {
+        "name": "speckit-converge",
+        "path": ".agents/skills/speckit-converge/SKILL.md",
+        "scope": "repo",
+        "enabled": true
+      },
+      {
+        "name": "speckit-implement",
+        "path": ".agents/skills/speckit-implement/SKILL.md",
+        "scope": "repo",
+        "enabled": true
+      },
+      {
+        "name": "speckit-plan",
+        "path": ".agents/skills/speckit-plan/SKILL.md",
+        "scope": "repo",
+        "enabled": true
+      },
+      {
+        "name": "speckit-specify",
+        "path": ".agents/skills/speckit-specify/SKILL.md",
+        "scope": "repo",
+        "enabled": true
+      },
+      {
+        "name": "speckit-tasks",
+        "path": ".agents/skills/speckit-tasks/SKILL.md",
+        "scope": "repo",
+        "enabled": true
+      },
+      {
+        "name": "speckit-taskstoissues",
+        "path": ".agents/skills/speckit-taskstoissues/SKILL.md",
+        "scope": "repo",
+        "enabled": true
+      }
+    ],
+    "errors": []
+  },
+  "representative_activation": {
+    "successful_capture_at": "2026-08-01T08:24:37Z",
+    "session_id": "019fbc6c-d81c-74a2-9b19-dc0cc611bfdf",
+    "command": "codex exec --ephemeral --ignore-user-config -s read-only -C <worktree> 'Use $speckit-analyze. Do not modify files. Report only whether the repository-local skill loaded and the prerequisite result.'",
+    "sandbox": "read-only",
+    "exit_code": 0,
+    "skill_loaded": true,
+    "prerequisite": {
+      "command": ".specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks",
+      "exit_code": 1,
+      "result": "expected no-feature failure: feature directory not found"
+    },
+    "status_digest": {
+      "algorithm": "git status --porcelain=v1 -z --untracked-files=all piped to shasum -a 256",
+      "before": "6de654867ac4c27044262cc21efba38ff2bc1dcc9e5d1df5dd1a5525620ed026",
+      "after": "6de654867ac4c27044262cc21efba38ff2bc1dcc9e5d1df5dd1a5525620ed026"
+    }
+  },
+  "latest_activation_retry": {
+    "captured_at": "2026-08-01T23:08:25Z",
+    "session_id": "019fbf95-c33c-7431-93fe-9bdc835fd908",
+    "result": "PASS: repository-local speckit-analyze loaded in an ephemeral read-only Codex session",
+    "prerequisite_result": "Expected no-feature failure: feature directory not found; run speckit-specify first",
+    "status_digest_before": "e337170619dd7d3591777fc1f84a487df6be2974765159905a148e91dd043866",
+    "status_digest_after": "e337170619dd7d3591777fc1f84a487df6be2974765159905a148e91dd043866"
+  },
+  "limitations": [
+    "This retained file is a filtered local receipt, not a signed Codex attestation.",
+    "Discovery proof is scoped to the recorded Codex version, worktree, and session.",
+    "Unrelated user-level plugin warnings were excluded from the projection."
+  ]
+}

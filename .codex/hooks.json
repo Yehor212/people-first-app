@@ -29,7 +29,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash|Shell|PowerShell|pwsh|exec_command|unified_exec|apply_patch|functions.apply_patch|Edit|Write|WriteFile|CreateFile|DeleteFile|MultiEdit|StrReplaceFile|NotebookEdit",
+        "matcher": "Bash|Shell|PowerShell|pwsh|exec_command|unified_exec|apply_patch|functions.apply_patch|Edit|Write|WriteFile|CreateFile|DeleteFile|MultiEdit|StrReplaceFile|NotebookEdit|mcp__codex_apps__github_create_issue|github/github-mcp-server/issue_write|.*github.*issue.*",
         "hooks": [
           {
             "type": "command",
@@ -58,6 +58,13 @@
             "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
             "timeout": 5,
             "statusMessage": "Guarding production data integrity"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/spec-kit-safety-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/spec-kit-safety-gate.cjs')\"",
+            "timeout": 5,
+            "statusMessage": "Guarding Spec Kit side effects"
           }
         ]
       }

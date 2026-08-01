@@ -1,0 +1,465 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-01T23:10:58Z",
+  "purpose": "Privacy-safe, repository-grounded verification ledger for the local Spec Kit integration. This file records evidence and limitations; it is not a release, merge, human-approval, or production attestation.",
+  "original_scope": {
+    "requested_outcome": "Install and fully integrate the latest stable official GitHub Spec Kit for Codex CLI into the existing repository without changing product code.",
+    "requirements": [
+      "Inspect repository structure, applicable AGENTS.md files, instructions, skills, hooks, and Git state before mutation.",
+      "Use an isolated branch or control commit and preserve the original dirty checkout.",
+      "Verify the latest stable official github/spec-kit release, install Specify CLI through uv, and initialize in the existing repository root with Codex integration and the OS-appropriate script type.",
+      "Avoid blind overwrite, repository vendoring, and destructive reinitialization; use supported integration maintenance commands when a partial installation exists.",
+      "Verify .specify/ and .agents/skills/speckit-* and prove that Codex discovers the repository skills.",
+      "Confirm Codex is the active Spec Kit integration.",
+      "Create a project-grounded constitution that preserves production-data integrity and covers full feature lifecycle, UI/UX, states, errors, recovery, accessibility, cross-platform behavior, security, performance, testing, and factual verification.",
+      "Add AGENTS.md routing for compact local work, the full Spec Kit lifecycle for nontrivial work, and stronger review for high-risk work.",
+      "Review the final Git diff, conflicts, preservation of existing instructions, commands actually run, automatic behavior, and explicit commands."
+    ],
+    "non_goals": [
+      "No product-code changes.",
+      "No production, deployment, store, customer-data, GitHub issue, commit, push, merge, or release side effects.",
+      "No claim of Windows, native-device, public-runtime, human-acceptance, or release verification."
+    ]
+  },
+  "subject_snapshot": {
+    "repository": "Yehor212/people-first-app",
+    "worktree": "/Users/yehor/Projects/ZenFlow/worktrees/codex-spec-kit-v0-15-1",
+    "branch": "codex/spec-kit-v0-15-1",
+    "baseline_head": "e5016f156497a9d3e55578b773294bf56adce58e",
+    "spec_kit": {
+      "official_repository": "https://github.com/github/spec-kit",
+      "stable_tag": "v0.15.1",
+      "tag_object": "6f600b996905cc37b02662f128e84a7c0b7656a0",
+      "commit": "489a3d51d152fa160d88d86781a924e99c4af832",
+      "cli_version": "0.15.1",
+      "integration": "codex",
+      "script_type": "sh",
+      "bundled_extension": "bug@1.0.0",
+      "tag_signature": "NO_SIGNATURE_FOUND"
+    },
+    "codex": {
+      "version": "0.146.0-alpha.9.2",
+      "platform": "macos",
+      "architecture": "arm64"
+    },
+    "product_code_changed": false,
+    "commit_created": false,
+    "original_checkout_observation": {
+      "path": "/Users/yehor/Documents/Codex/2026-06-10/new-chat/people-first-app",
+      "initial": {
+        "branch": "main",
+        "head": "00fdb2ea0e5205f4bee76bbec3109bf98865627f",
+        "status_entries": 898,
+        "dist_exists": false,
+        "status_digest": "NOT_RETAINED"
+      },
+      "final": {
+        "branch": "main",
+        "head": "00fdb2ea0e5205f4bee76bbec3109bf98865627f",
+        "status_entries": 898,
+        "status_digest": "c27da64f8305c01fe29c2081dbc33c8486f784abfdb269db54f8f76cb46cb56a",
+        "dist_exists": false
+      },
+      "assessment": "Branch, HEAD, status-entry count, and dist absence match the initial inspection. Exact byte-for-byte preservation remains UNVERIFIED because the initial dirty-status digest was not retained."
+    },
+    "evidence_locators": [
+      ".specify/zenflow-install-manifest.json",
+      ".specify/zenflow-codex-discovery-receipt.json",
+      ".specify/memory/constitution.md",
+      "AGENTS.md",
+      ".codex/hooks.json",
+      ".codex/hooks/spec-kit-safety-gate.cjs",
+      "scripts/__tests__/spec-kit-safety-hook.test.ts"
+    ]
+  },
+  "rollback_plan": {
+    "status": "DOCUMENTED_NOT_EXECUTED",
+    "target_worktree": "/Users/yehor/Projects/ZenFlow/worktrees/codex-spec-kit-v0-15-1",
+    "target_branch": "codex/spec-kit-v0-15-1",
+    "expected_status_digest": "e337170619dd7d3591777fc1f84a487df6be2974765159905a148e91dd043866",
+    "guardrails": [
+      "Require explicit owner authorization to discard the manifest-listed work.",
+      "Recompute the status digest and validate .specify/zenflow-install-manifest.json before removal.",
+      "Preserve any desired patch or commit first; never operate on the original dirty checkout."
+    ],
+    "authorized_only_commands": [
+      "git -C /Users/yehor/Projects/ZenFlow/people-first-app-main worktree remove --force /Users/yehor/Projects/ZenFlow/worktrees/codex-spec-kit-v0-15-1",
+      "git -C /Users/yehor/Projects/ZenFlow/people-first-app-main branch -D codex/spec-kit-v0-15-1"
+    ],
+    "execution": "NOT_RUN"
+  },
+  "role_10_integrity": {
+    "pass_a": {
+      "status": "UNVERIFIED",
+      "reason": "The context-isolated pre-solution Role 10 pass was interrupted and cannot be honestly reconstructed after implementation.",
+      "impact": "Local installation evidence can be evaluated, but the mandatory M2 Pass A independence claim is not available."
+    },
+    "pass_b": {
+      "status": "STOP",
+      "verdict": "STOP_MISSING_CONTEXT_ISOLATED_PASS_A",
+      "reason": "The bounded QA, security, and blind-spot rechecks confirm the reproduced hook defects are fixed, but a post-implementation review cannot reconstruct the mandatory context-isolated pre-solution Pass A.",
+      "impact": "The artifact is reviewable and its bounded local checks may be cited, but formal M2 governance closure and automatic main-merge approval are unavailable."
+    }
+  },
+  "evidence_ledger": [
+    {
+      "id": "E-RELEASE",
+      "claim": "v0.15.1 was the latest stable official release at installation time.",
+      "evidence": "GitHub latest-release API returned tag_name v0.15.1 with draft=false and prerelease=false; release published 2026-07-31.",
+      "strength": "PRIMARY_EXTERNAL",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-INSTALL",
+      "claim": "Specify CLI 0.15.1 was installed from the official tagged repository through uv.",
+      "command": "uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v0.15.1",
+      "result": "exit 0; installed source resolved to commit 489a3d51d152fa160d88d86781a924e99c4af832",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-VERSION",
+      "claim": "The installed CLI reports the requested version and is current.",
+      "commands": [
+        "specify version",
+        "specify self check",
+        "uv tool list --show-paths"
+      ],
+      "result": "Specify CLI 0.15.1, Python 3.12.13, Darwin arm64; self check reported up to date; executable /Users/yehor/.local/bin/specify.",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-INIT",
+      "claim": "The existing repository root was initialized for Codex using macOS-compatible shell scripts after pre-install inventory.",
+      "command": "specify init --here --force --integration codex --script sh",
+      "result": "exit 0 in the isolated non-empty worktree; no pre-existing partial Spec Kit installation was found.",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-EXTENSION",
+      "claim": "The official bundled bug extension is installed without automatic hooks.",
+      "commands": [
+        "specify extension add bug",
+        "specify extension list"
+      ],
+      "result": "Bug Triage 1.0.0 enabled; 3 commands; 0 hooks; .specify/extensions.yml sets auto_execute_hooks=false.",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-INTEGRATION",
+      "claim": "Codex is the active and default Spec Kit integration.",
+      "commands": [
+        "specify integration list",
+        "specify integration status --json"
+      ],
+      "result": "Codex is installed and default; 20 managed files checked with 0 missing, modified, invalid, or unchecked files and no findings.",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-DISCOVERY",
+      "claim": "Codex discovers all installed repository-local Spec Kit skills.",
+      "command": "Codex App Server initialize followed by skills/list with forceReload=true for the isolated worktree",
+      "result": "13 repository skills returned with scope=repo, enabled=true, and errors=[] on the final forceReload at 2026-08-01T10:46:51Z.",
+      "locator": ".specify/zenflow-codex-discovery-receipt.json",
+      "strength": "LOCAL_RUNTIME",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-ACTIVATION",
+      "claim": "A representative Spec Kit skill loaded in an ephemeral read-only Codex session.",
+      "command": "codex exec --ephemeral --ignore-user-config -s read-only -C <worktree> 'Use $speckit-analyze. Do not modify files. Report only whether the repository-local skill loaded and the prerequisite result.'",
+      "result": "Session 019fbc6c-d81c-74a2-9b19-dc0cc611bfdf exited 0; the skill loaded and its prerequisite returned the expected no-feature failure without changing Git status.",
+      "locator": ".specify/zenflow-codex-discovery-receipt.json",
+      "strength": "LOCAL_RUNTIME",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-ACTIVATION-RETRY",
+      "claim": "The latest repeated activation attempt loaded a repository-local Spec Kit skill without changing repository status.",
+      "result": "Session 019fbf95-c33c-7431-93fe-9bdc835fd908 exited 0; speckit-analyze loaded, returned the expected no-feature prerequisite failure, and the before/after status digest remained e337170619dd7d3591777fc1f84a487df6be2974765159905a148e91dd043866.",
+      "locator": ".specify/zenflow-codex-discovery-receipt.json",
+      "strength": "LOCAL_RUNTIME",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-HOOK-TDD",
+      "claim": "The Spec Kit safety hook has focused red-green regression coverage.",
+      "result": "Initial expected RED: 3 failed and 15 passed; GREEN: 18 passed. Target-override hardening expected RED: 2 failed and 18 passed, then compact -R expected RED: 1 failed and 20 passed; GREEN: 21 passed. A quoted-argv counterexample triggered the MCP-only policy cycle: expected RED 11 failed and 17 passed; GREEN: 28 passed. Cross-shell executable counterexamples produced expected RED 5 failed and 28 passed; GREEN: 33 passed. Phrase false-denial controls produced expected RED 10 failed and 33 passed; GREEN: 43 passed. Static-wrapper and API-method counterexamples produced expected RED 17 failed and 51 passed; GREEN: 68 passed. Case-sensitive sudo short-option counterexamples produced expected RED 2 failed and 68 passed; GREEN: 70 passed. Final-review quoted-path, repository-flag, and read-only-action controls produced expected RED 10 failed and 84 passed; final GREEN after added wrapper and unrelated-executable controls: 99 passed and 0 failed.",
+      "locator": "scripts/__tests__/spec-kit-safety-hook.test.ts",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-ISSUE-GUARD",
+      "claim": "The local hook rejects an unauthorized generic GitHub issue-write tool while allowing a read-only issue-list tool.",
+      "result": "Direct negative controls for generic issue_write, repository mismatch, all locally documented mutating gh issue actions, GitHub API writes, repository-flag variants, and reproduced direct, quoted-path, or statically wrapped shell variants exited 2. Structured MCP with the exact authorized origin exited 0 at the hook boundary. Twenty-nine benign documentation, search, test-name, local-output, unrelated-executable, wrapper, sudo-inspection, read-only gh issue, and explicit or implicit read-only GitHub API controls exited 0.",
+      "locator": ".codex/hooks/spec-kit-safety-gate.cjs",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-STATIC",
+      "claim": "The governance-only changes pass applicable static checks.",
+      "commands": [
+        "npm run typecheck",
+        "npm run lint"
+      ],
+      "result": "Both commands exited 0.",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-WORKSPACE-TESTS",
+      "claim": "The agent-workspace test scope passes.",
+      "command": "npm run test:agent-workspace",
+      "result": "7 test files and 298 tests passed.",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-AGENT-GOVERNANCE",
+      "claim": "The changed agent-governance surfaces pass their repository checks.",
+      "commands": [
+        "npm run check:agent-context",
+        "npm run check:agent-orchestra",
+        "npm run check:agent-orchestra:eval",
+        "npm run enforcement:check",
+        "npm run check:no-ai-templates",
+        "npm run check:best-practices",
+        "npm run constitution:check",
+        "npm run doc-counts"
+      ],
+      "result": "Agent context passed after preserving the 220-line contract; orchestra structure passed for exactly 10 project roles; evaluation passed 40 cases; enforcement passed 50 cases with 2 explicitly UNVERIFIED runtime-loading/effective-permission probes; no-AI-template, best-practices, constitution freshness, and doc-count checks passed.",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED_WITH_LIMITATIONS"
+    },
+    {
+      "id": "E-PRODUCTION-DATA",
+      "claim": "The changed scope does not introduce prohibited production-data behavior.",
+      "commands": [
+        "npm run check:production-data-integrity:diff",
+        "npm run build",
+        "npm run check:production-data-integrity:bundle"
+      ],
+      "result": "Diff PASS: errors=0, warnings=0, scanned=1849, reachable=764. Production build exited 0. Sequential bundle PASS: errors=0, warnings=0, scanned=2308, reachable=764; dist contained exactly one .nojekyll.",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-SECURITY-SCANNERS",
+      "claim": "Available source and secret scanners found no issue in the changed scope.",
+      "commands": [
+        "snyk code test .codex/hooks --json",
+        "gitleaks detect --no-git --source .specify --redact --no-banner",
+        "gitleaks detect --no-git --source .agents --redact --no-banner",
+        "gitleaks detect --no-git --source .codex/hooks --redact --no-banner",
+        "gitleaks detect --no-git --source scripts/__tests__/spec-kit-safety-hook.test.ts --redact --no-banner"
+      ],
+      "result": "Fresh direct Snyk Code reported 0 issues for .codex/hooks; all four changed-scope Gitleaks scans reported no leaks. The AI-profile security-suite wrapper reported Snyk Agent/Code UNVERIFIED because SNYK_TOKEN was unavailable, so the direct cached-auth Snyk Code result is the applicable source scan.",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED_WITH_LIMITATIONS"
+    },
+    {
+      "id": "E-FULL-TEST",
+      "claim": "The complete repository Vitest suite is green for the integration candidate.",
+      "command": "npm test",
+      "result": "FAIL: 3 test files failed and 703 passed; 1 test failed, 8802 passed, and 14 are todo. The same three failures reproduced in a detached clean origin/main worktree: two journal private-mode suites omit the zenMotion mock export, and the runtime performance bootstrap byte-alignment test fails.",
+      "baseline_comparison": "VERIFIED_NOT_INTRODUCED_BY_SPEC_KIT_DIFF",
+      "strength": "LOCAL_DIRECT",
+      "status": "FAIL"
+    },
+    {
+      "id": "E-FOCUSED-TESTS",
+      "claim": "The integration-specific hook and agent-workspace scopes are green.",
+      "commands": [
+        "npx vitest run scripts/__tests__/spec-kit-safety-hook.test.ts",
+        "npm run test:agent-workspace"
+      ],
+      "result": "Spec Kit safety hook: 1 file and 99 tests passed. Agent workspace: 7 files and 298 tests passed.",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "E-DEPENDENCY-AUDIT",
+      "claim": "The repository has no high-severity npm advisory at the integration baseline.",
+      "command": "npm run audit:check",
+      "result": "FAIL: existing high-severity GHSA-vj5c-m527-mpff affects style-dictionary 4.3.0-5.4.3. The lockfile is unchanged by this integration; the available automatic fix is a breaking dependency upgrade and is outside the authorized Spec Kit-only write set.",
+      "baseline_comparison": "VERIFIED_EXISTING_ON_ORIGIN_MAIN",
+      "strength": "LOCAL_DIRECT",
+      "status": "FAIL"
+    },
+    {
+      "id": "E-REMOTE-DELIVERY",
+      "claim": "The authorized change can be delivered directly to main without review.",
+      "result": "FAIL: the repository pre-push guard forbids direct main pushes, and active GitHub ruleset 19628292 requires a pull request, one approving review including last-push approval, resolved review threads, and fresh build, android-gate, ios-gate, and production-data-integrity checks.",
+      "strength": "LOCAL_AND_PRIMARY_EXTERNAL",
+      "status": "FAIL"
+    },
+    {
+      "id": "E-INTEGRITY",
+      "claim": "Generated JSON, YAML, shell scripts, hook syntax, ignore controls, symlink policy, conflict markers, and manifest identities were checked.",
+      "result": "Parsers and shell syntax exited 0; no unexpected symlinks or conflict markers; constitution placeholders absent; reviewed ignore controls passed; manifest hashes, byte sizes, modes, and Git-status identities matched at capture time.",
+      "strength": "LOCAL_DIRECT",
+      "status": "VERIFIED"
+    }
+  ],
+  "finding_ledger": [
+    {
+      "id": "F-MEMORY-IGNORE",
+      "finding": "The existing broad memory/ ignore rule could hide the constitution.",
+      "resolution": "Added narrow .specify/memory exceptions; negative controls confirm future unrelated memory remains ignored.",
+      "locator": ".gitignore",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "F-CACHE",
+      "finding": "Spec Kit extension cache and bug working records are runtime artifacts.",
+      "resolution": "Ignored .specify/extensions/.cache/ and .specify/bugs/ while retaining official extension sources.",
+      "locator": ".gitignore",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "F-PATH-ESCAPE",
+      "finding": "Spec Kit path overrides, traversal, or symlinks could redirect writes outside the repository.",
+      "resolution": "Added local path-boundary checks and focused negative controls.",
+      "locator": ".codex/hooks/spec-kit-safety-gate.cjs",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "F-SHELL-ISSUE-WRITE",
+      "finding": "Shell GitHub issue creation is an external side effect.",
+      "resolution": "The supported issue-write path is structured GitHub MCP with an explicit repository target and inherited target authorization. Quote-aware tokenization plus bounded static unwrapping for env, command, sudo, eval, bash/sh/zsh/dash/ksh, PowerShell, and cmd rejects reproduced direct, repository-flag, quoted executable-path, gh/gh.exe issue, and GitHub API write forms. Read-only gh issue list, view, status, help, explicit GET queries, documentation, search, test names, unrelated quoted executables, and local output remain allowed.",
+      "locator": ".codex/hooks/spec-kit-safety-gate.cjs",
+      "status": "VERIFIED_FOR_REPRODUCED_FORMS_ARBITRARY_SHELL_UNVERIFIED"
+    },
+    {
+      "id": "F-SHELL-FALSE-DENIAL",
+      "finding": "The first normalized phrase matcher blocked benign shell text containing issue create/new, workflow, or GitHub API examples.",
+      "resolution": "Replaced global phrase matching with quote-aware shell-segment, token, executable-position, namespace, and action recognition. Retained 29 benign/read-only controls and all prior malicious-form controls in the focused suite.",
+      "locator": "scripts/__tests__/spec-kit-safety-hook.test.ts",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "F-STATIC-WRAPPER-BYPASS",
+      "finding": "The earlier command-position matcher did not inspect static env, command, sudo, interpreter, eval, PowerShell, or cmd wrapper payloads and treated field-bearing explicit GET API calls as writes.",
+      "resolution": "Added bounded recursive static-wrapper extraction to depth 4 and made an explicit GitHub API method take precedence over field-induced POST inference; focused RED/GREEN coverage now includes malicious and benign wrapper controls.",
+      "locator": "scripts/__tests__/spec-kit-safety-hook.test.ts",
+      "status": "RESOLVED_FOR_REPRODUCED_STATIC_FORMS"
+    },
+    {
+      "id": "F-WINDOWS-QUOTED-PATH",
+      "finding": "Removing quotes before space-based tokenization allowed a quoted Windows or POSIX GitHub CLI executable path containing spaces to evade the issue-write guard.",
+      "resolution": "Added quote-aware tokenization that preserves a quoted executable as one token, plus direct, PowerShell call-operator, env, command, and shell-wrapper controls and unrelated-executable negative controls.",
+      "locator": "scripts/__tests__/spec-kit-safety-hook.test.ts",
+      "status": "RESOLVED_AT_HOOK_BOUNDARY_WINDOWS_RUNTIME_UNVERIFIED"
+    },
+    {
+      "id": "F-READONLY-ISSUE-DENIAL",
+      "finding": "The earlier predicate denied all direct gh issue actions, including read-only list, view, status, and help.",
+      "resolution": "Classified the locally documented mutating actions explicitly, handled repository flags before namespace or action, and retained read-only action controls.",
+      "locator": "scripts/__tests__/spec-kit-safety-hook.test.ts",
+      "status": "RESOLVED_FOR_RETAINED_ACTIONS"
+    },
+    {
+      "id": "F-MCP-ISSUE-WRITE",
+      "finding": "Generic or Codex Apps GitHub issue-write tools could bypass a shell-only guard.",
+      "resolution": "Extended matching to actual mcp__codex_apps__github_create_issue and generic GitHub issue-write names; added unauthorized and repository-mismatch tests.",
+      "locator": "scripts/__tests__/spec-kit-safety-hook.test.ts",
+      "status": "RESOLVED_FOR_LOCAL_CONTROL"
+    },
+    {
+      "id": "F-CONSTITUTION-RATIFICATION",
+      "finding": "An agent-authored constitution must not self-ratify.",
+      "resolution": "Marked it PROPOSED, version 1.0.0, Ratified UNRATIFIED, with exact-text human ratification required.",
+      "locator": ".specify/memory/constitution.md",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "F-AUDIT-ROUTING",
+      "finding": "Read-only audits should not manufacture feature artifacts, and existing complex-review routing must be preserved.",
+      "resolution": "AGENTS.md explicitly preserves audit behavior and coordinator plus smallest-specialist routing.",
+      "locator": "AGENTS.md",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "F-CODEX-DISCOVERY",
+      "finding": "Filesystem presence alone does not prove Codex can discover Spec Kit skills.",
+      "resolution": "Retained a filtered App Server forceReload receipt for all 13 skills and a representative read-only activation receipt.",
+      "locator": ".specify/zenflow-codex-discovery-receipt.json",
+      "status": "RESOLVED_FOR_CAPTURED_CODEX_SESSION"
+    },
+    {
+      "id": "F-TAG-SIGNATURE",
+      "finding": "The official stable tag has no verifiable Git tag signature.",
+      "resolution": "Retained exact tag object and commit provenance; did not claim a signature.",
+      "status": "UNVERIFIED_RESIDUAL"
+    },
+    {
+      "id": "F-ROLE10-PASS-A",
+      "finding": "A valid context-isolated Role 10 pre-solution pass is unavailable.",
+      "resolution": "Disclosed as UNVERIFIED; it cannot be reconstructed after implementation.",
+      "status": "UNVERIFIED_RESIDUAL"
+    },
+    {
+      "id": "F-RUNTIME-HOOK-ENFORCEMENT",
+      "finding": "Repository configuration and local unit probes do not prove effective hook loading or authenticated human authorization provenance in every Codex runtime.",
+      "resolution": "Treat the hook as defense in depth and keep external issue creation explicitly authorized only.",
+      "status": "UNVERIFIED_RESIDUAL"
+    },
+    {
+      "id": "F-WINDOWS",
+      "finding": "This implementation was executed on macOS arm64 and uses official bash scripts.",
+      "resolution": "No Windows runtime claim; PowerShell is not the appropriate script type for the current OS.",
+      "status": "NOT_APPLICABLE_CURRENT_HOST"
+    },
+    {
+      "id": "F-ACTIVATION-RETRY",
+      "finding": "A later redundant Codex activation retry was interrupted by network transport failure.",
+      "resolution": "A fresh ephemeral read-only retry loaded speckit-analyze, returned the expected no-feature prerequisite failure, and preserved the Git status digest.",
+      "locator": ".specify/zenflow-codex-discovery-receipt.json",
+      "status": "RESOLVED_FOR_CAPTURED_CODEX_SESSION"
+    }
+  ],
+  "conflict_ledger": [
+    {
+      "id": "C-BRANCH-OR-COMMIT",
+      "requirement": "Create a safe branch or control commit.",
+      "decision": "Used the isolated branch codex/spec-kit-v0-15-1; no commit was created.",
+      "reason": "The branch satisfies the explicit alternative and preserves reviewability. The repository's mandatory pre-commit knowledge file was absent, so no commit was inferred or attempted.",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "C-NONEMPTY-INIT",
+      "requirement": "Initialize in the existing repository root without blind overwrite.",
+      "decision": "Used --force only because Specify requires it for a non-empty directory, after inventory and inside the isolated worktree.",
+      "reason": "No partial Spec Kit installation existed, so supported upgrade/switch was not applicable.",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "C-PRODUCT-CODE",
+      "requirement": "Do not change product code for installation.",
+      "decision": "Changed only agent, Spec Kit, ignore, hook, governance, and focused test surfaces.",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "C-EXISTING-INSTRUCTIONS",
+      "requirement": "Preserve existing instructions while adding Spec Kit routing.",
+      "decision": "Integrated routing into the existing AGENTS.md contract and restored its required 220-line shape.",
+      "status": "RESOLVED"
+    }
+  ],
+  "limitations": [
+    "The retained receipts are filtered local summaries with hashes and file identities, not signed raw command transcripts.",
+    "No external write was used to test authorization; issue guards were verified only with local negative controls.",
+    "The Spec Kit constitution remains PROPOSED and UNRATIFIED until the user approves the exact text.",
+    "The original dirty checkout retained the same branch, HEAD, status-entry count, and dist absence, but exact byte-for-byte preservation is UNVERIFIED because no initial status digest was retained.",
+    "No Windows, native-device, deployed-app, store, human UX, accessibility-user, performance-runtime, or release verification was performed because product behavior was not changed.",
+    "An existing SubagentStop hook produced false-positive packet rejection during specialist handoff; that unrelated hook defect was not modified in this scope.",
+    "The shell issue deny is defense in depth, not a complete interpreter or network capability sandbox. Wrapper recognition is deliberately bounded to the retained static forms and recursion depth 4; xargs/find execution, Python or custom launchers, fully dynamic construction, and alternative network clients remain UNVERIFIED. Only the structured MCP route is supported for Spec Kit issue creation.",
+    "At this ledger refresh no commit, push, merge, PR, deployment, or production mutation had been performed. Direct main delivery is prohibited by local and remote controls; any later feature-branch handoff must retain the FAIL and UNVERIFIED entries and use human-reviewed PR delivery."
+  ]
+}

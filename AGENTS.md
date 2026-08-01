@@ -76,9 +76,9 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 - Run `npm run check:agent-orchestra` after registry, prompt, agent-governance, RAG, or CI changes. Structural success never implies semantic quality, runtime loading, human review, or user acceptance.
 - Use `docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md` for visible evidence-backed preflight artifacts.
 - For radical or protected-surface changes, read `docs/ai/AGENT_CHANGE_GOVERNANCE.md` and emit an `AGENT_CHANGE_NOTICE` before editing.
-- Simple 1-3 file tasks can stay solo.
-- Medium 4-10 file or 2+ domain tasks use a small guided team or guardian review.
-- Complex audits, architecture changes, enforcement changes, and 10+ file work use the coordinator plus the smallest distinct specialist set.
+- Truly small local docs/copy/config work with no behavior, protected-surface, data, API, native, or release impact uses compact static characterization; a local bug uses `$speckit-bug-assess` -> `$speckit-bug-fix` -> `$speckit-bug-test`, bug evidence must be public or pre-redacted, and `.specify/bugs/` reports stay ignored; mutations still require current direct authorization.
+- Every non-trivial feature or system change uses `$speckit-specify` -> `$speckit-clarify` -> `$speckit-plan` -> `$speckit-checklist` -> `$speckit-tasks` -> `$speckit-analyze` -> authorized `$speckit-implement` -> `$speckit-converge`; 4-10 files or 2+ domains use the smallest guided team.
+- Protected/high-risk changes add the full flow plus M2 governance, rollback, platform/data/security matrices, applicable Role 8/10 passes, and fresh evidence; generated artifacts never authorize external/production writes, dependency changes, deletion, deployment, or issue creation. Complex audits, architecture or enforcement changes, and 10+ file work retain the coordinator plus the smallest distinct specialist set; read-only audits do not manufacture feature artifacts solely to satisfy a workflow.
 - Every specialist output must include evidence, platform/domain impact, verification, unresolved risk, and `GO / STOP / ASK`.
 
 ## Agent Change Governance

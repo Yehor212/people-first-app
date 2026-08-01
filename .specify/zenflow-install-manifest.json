@@ -1,0 +1,436 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-01T23:10:58Z",
+  "repository": "Yehor212/people-first-app",
+  "baseline_head": "e5016f156497a9d3e55578b773294bf56adce58e",
+  "branch": "codex/spec-kit-v0-15-1",
+  "checksum_algorithm": "sha256",
+  "file_count": 45,
+  "spec_kit": {
+    "official_repository": "https://github.com/github/spec-kit",
+    "stable_tag": "v0.15.1",
+    "tag_object": "6f600b996905cc37b02662f128e84a7c0b7656a0",
+    "commit": "489a3d51d152fa160d88d86781a924e99c4af832",
+    "cli_version": "0.15.1",
+    "integration": "codex",
+    "script_type": "sh",
+    "bundled_extension": "bug@1.0.0",
+    "tag_signature": "NO_SIGNATURE_FOUND"
+  },
+  "scope": {
+    "product_code_changed": false,
+    "commit_created": false,
+    "self_exclusion": ".specify/zenflow-install-manifest.json is excluded because a file cannot contain a stable hash of itself.",
+    "ignored_runtime_paths": [
+      ".specify/extensions/.cache/**",
+      ".specify/bugs/**"
+    ]
+  },
+  "files": [
+    {
+      "path": ".agents/skills/speckit-analyze/SKILL.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 11650,
+      "sha256": "a84a54c4701706a711bf23c59817bc659bd6e484488fd7402a908496992af217"
+    },
+    {
+      "path": ".agents/skills/speckit-bug-assess/SKILL.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 9832,
+      "sha256": "8c56278246e6e1990249912e8b699b252f6a6fce34914377da97a133b1a2bcdb"
+    },
+    {
+      "path": ".agents/skills/speckit-bug-fix/SKILL.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 5408,
+      "sha256": "fdd01bb91f61f5e959686815b5ba386c14f265f55dba491a47874085c671f824"
+    },
+    {
+      "path": ".agents/skills/speckit-bug-test/SKILL.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 5618,
+      "sha256": "45c302bbf17526168694c1af384c784a70b3f7ad83141b7dc27f59f7fa9010bf"
+    },
+    {
+      "path": ".agents/skills/speckit-checklist/SKILL.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 21200,
+      "sha256": "2a10245ed6772e5e5c52bd723aab1e3eb975617fa9121610e72f4329b1dd1635"
+    },
+    {
+      "path": ".agents/skills/speckit-clarify/SKILL.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 19218,
+      "sha256": "d3aa120d6b5d7718c4c6d792dd41bee66254bd4bb82f88f3067f1d1c4e9d2dc2"
+    },
+    {
+      "path": ".agents/skills/speckit-constitution/SKILL.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 9459,
+      "sha256": "505d20a209c3f2027ffd2464786b8ef6ee7e3c4ab485397ad3fa794f1ce7d3c3"
+    },
+    {
+      "path": ".agents/skills/speckit-converge/SKILL.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 12647,
+      "sha256": "466e51121a590e3abd409fda063db6361c9a7e2b2cef927a75f5afb130c1eb88"
+    },
+    {
+      "path": ".agents/skills/speckit-implement/SKILL.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 12154,
+      "sha256": "1fc2cfc294a05b6a18d2dbbf7d37a63f2992f7f65e2bea8f022e169aab317fa4"
+    },
+    {
+      "path": ".agents/skills/speckit-plan/SKILL.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 7861,
+      "sha256": "b3dca1c679a2452e8e3aa84c96b42fc5cee42e8b0cb3c30fa77a60ff83db6d4d"
+    },
+    {
+      "path": ".agents/skills/speckit-specify/SKILL.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 18268,
+      "sha256": "88d7fab201de66297f16b6c271a418a0f2c198d714456dfd707e623348ec47c1"
+    },
+    {
+      "path": ".agents/skills/speckit-tasks/SKILL.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 10957,
+      "sha256": "e89dd51b27d0deeab99bad94233bbec57e2fcb053e21857eeb92cbef2d9b5be9"
+    },
+    {
+      "path": ".agents/skills/speckit-taskstoissues/SKILL.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 7204,
+      "sha256": "82a8defb6bfbdcd8adc5d3a442398a7acc3f975ad39624e0e0f84d6ffeada550"
+    },
+    {
+      "path": ".codex/hooks.json",
+      "git_status": "modified",
+      "type": "file",
+      "ownership": "zenflow-governance",
+      "mode": "0644",
+      "bytes": 7620,
+      "sha256": "2c5450e8cc64d5579581f4ec82f5305fd49324f779fe5b7f06e7bc8a81d1825f"
+    },
+    {
+      "path": ".codex/hooks/spec-kit-safety-gate.cjs",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "zenflow-spec-kit-hardening",
+      "mode": "0644",
+      "bytes": 20956,
+      "sha256": "9e4c12a8e0613dd6d83a2044d8d75be43829bdc724eb931a837771498c2d8360"
+    },
+    {
+      "path": ".gitignore",
+      "git_status": "modified",
+      "type": "file",
+      "ownership": "zenflow-governance",
+      "mode": "0644",
+      "bytes": 4573,
+      "sha256": "3dd2893c0216b456b40ca263ce1757674b06dc9c8ae5ad754185a0d46e5065ae"
+    },
+    {
+      "path": ".specify/extensions.yml",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-with-zenflow-hardening",
+      "mode": "0644",
+      "bytes": 65,
+      "sha256": "142d48a7c832f993108441102ebc12bb28074e8126d824cd393028df0bc6f6f0"
+    },
+    {
+      "path": ".specify/extensions/.registry",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 512,
+      "sha256": "2cebdc6b42430cfb63969d316ebbb734558087f390ea5ceb110517bd14a674d5"
+    },
+    {
+      "path": ".specify/extensions/bug/commands/speckit.bug.assess.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 9695,
+      "sha256": "6786963d1f89d129e63ac60e570ad28702d59813455fc95284d2facc1eb6b52f"
+    },
+    {
+      "path": ".specify/extensions/bug/commands/speckit.bug.fix.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 5290,
+      "sha256": "df8b28b3687617fa883998d060e5402a2baabd34023bef3d1fbcde9e014c5bf6"
+    },
+    {
+      "path": ".specify/extensions/bug/commands/speckit.bug.test.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 5518,
+      "sha256": "ac2ab5542b0a9b098af75baad0b23b49e3763b8893eda8497bf234fb5a0df2ff"
+    },
+    {
+      "path": ".specify/extensions/bug/extension.yml",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 975,
+      "sha256": "1d0da5458f3c18ff08cf1602d88cecc33fad07068208951fb7128090cfa90c90"
+    },
+    {
+      "path": ".specify/extensions/bug/README.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 3759,
+      "sha256": "5e5f966ddd45714ce547b526e94c45a69ee2946f3d873916ba0148418de106ba"
+    },
+    {
+      "path": ".specify/init-options.json",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 169,
+      "sha256": "f8fda06b7a32181bcb72bb0d6b7eb3263b39f712fd26db5b4b107d8f92829b00"
+    },
+    {
+      "path": ".specify/integration.json",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 272,
+      "sha256": "c0babe440700e0759aafe3a0280ded284c8809b74563f07e5c684e881867109e"
+    },
+    {
+      "path": ".specify/integrations/codex.manifest.json",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 1284,
+      "sha256": "14a142bb08b5d5a7fbcd440b770a73a4fbd12b9c4aae2deed88587eac553cd0b"
+    },
+    {
+      "path": ".specify/integrations/speckit.manifest.json",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 1263,
+      "sha256": "6938675f1d7949fa018ab7c3eec8d1ca8b8a484109871fa66a5219f9d9f94d40"
+    },
+    {
+      "path": ".specify/memory/.constitution-template.json",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 103,
+      "sha256": "8fc4b39294bae0c10d59547ad7d415b6f0e890d656cbf7171dd567f4e9054711"
+    },
+    {
+      "path": ".specify/memory/constitution.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "zenflow-governance",
+      "mode": "0644",
+      "bytes": 10301,
+      "sha256": "4d24a2566fcc2b57c7c3da60bba13f6391db637f7dc44f0b6de44d0f24d6d7c8"
+    },
+    {
+      "path": ".specify/scripts/bash/check-prerequisites.sh",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0755",
+      "bytes": 6333,
+      "sha256": "50fc0aff7ed4c02ca92fe87520130d6c928bff3b7dd3e6cdd86c3d514407e752"
+    },
+    {
+      "path": ".specify/scripts/bash/common.sh",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0755",
+      "bytes": 29810,
+      "sha256": "d70a6191ec6f6a95987026d79368fde30a10f1c18908a6bc60e134a188456a4f"
+    },
+    {
+      "path": ".specify/scripts/bash/create-new-feature.sh",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0755",
+      "bytes": 15208,
+      "sha256": "ad09a94a2c1107e25e5386a834da1d7a31f9abb06ab8bfd323a7b84038221e39"
+    },
+    {
+      "path": ".specify/scripts/bash/setup-plan.sh",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0755",
+      "bytes": 2493,
+      "sha256": "4469b22960f43c07c33dca00de6dedb252145e9a9ce8fbb0e63be82e02b082ab"
+    },
+    {
+      "path": ".specify/scripts/bash/setup-tasks.sh",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0755",
+      "bytes": 3241,
+      "sha256": "49e336e94d25ed07da1c3c39c97292c4f217f404a81d1229195a8ce249cbc7f1"
+    },
+    {
+      "path": ".specify/templates/checklist-template.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 1307,
+      "sha256": "0b9c45061bfb174e1a19e599abac71d7145295ef9e13f2635103fc10cfe963a8"
+    },
+    {
+      "path": ".specify/templates/constitution-template.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 2346,
+      "sha256": "ce7549540fa45543cca797a150201d868e64495fdff39dc38246fb17bd4024b3"
+    },
+    {
+      "path": ".specify/templates/plan-template.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 3682,
+      "sha256": "a828ad6206526574ab3fc99be6d0154588cb1c9774c5919d71b81ab5b2dbffa0"
+    },
+    {
+      "path": ".specify/templates/spec-template.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 4556,
+      "sha256": "3945437fc35cd30a5b2bf7beea680337c3516826d3efa5a6b92c4a7eca1ba28e"
+    },
+    {
+      "path": ".specify/templates/tasks-template.md",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 9171,
+      "sha256": "b0f527d41e546af0c31903e04f9b20965b6b497b573792198f663a64ce128863"
+    },
+    {
+      "path": ".specify/workflows/speckit/workflow.yml",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 2216,
+      "sha256": "b9a2a3c3d1e5f022d0369be7c83802a656c64e2d95306a7870a1f59b90c0e307"
+    },
+    {
+      "path": ".specify/workflows/workflow-registry.json",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "official-spec-kit-v0.15.1",
+      "mode": "0644",
+      "bytes": 369,
+      "sha256": "f2a2c96dd26abd57d47547034a811175e6fcf47dc4a73f03c3a9ac73a882b00e"
+    },
+    {
+      "path": ".specify/zenflow-codex-discovery-receipt.json",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "zenflow-verification",
+      "mode": "0644",
+      "bytes": 4733,
+      "sha256": "730d72f4fb8a9000c1b9adeef48e4d3106d873baf4297b8471ec2a2ed2b53e45"
+    },
+    {
+      "path": ".specify/zenflow-verification-ledger.json",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "zenflow-verification",
+      "mode": "0644",
+      "bytes": 28122,
+      "sha256": "194464d4072d2098bba4fe747a75528122de24b0306169c3c7ff46820c26ab03"
+    },
+    {
+      "path": "AGENTS.md",
+      "git_status": "modified",
+      "type": "file",
+      "ownership": "zenflow-governance",
+      "mode": "0644",
+      "bytes": 25536,
+      "sha256": "07b892595d9a8e704a5a0732d325b347b410a154591670bacf0245d9dd424ef3"
+    },
+    {
+      "path": "scripts/__tests__/spec-kit-safety-hook.test.ts",
+      "git_status": "untracked",
+      "type": "file",
+      "ownership": "zenflow-spec-kit-hardening",
+      "mode": "0644",
+      "bytes": 37220,
+      "sha256": "c6f6bd2df3ee65133d1eafa00affc576ce997c0bcadf028ad358a7ba4a64d382"
+    }
+  ]
+}
