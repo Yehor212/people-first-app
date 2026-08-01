@@ -197,6 +197,7 @@ export function NumericalTargetSection({
           <motion.button
             type="button"
             onClick={decrement}
+            aria-label={copy("decreaseTarget", "Decrease target")}
             className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-lg bg-muted/50 flex items-center justify-center"
             whileTap={zenTap.button}
           >
@@ -223,6 +224,7 @@ export function NumericalTargetSection({
           <motion.button
             type="button"
             onClick={increment}
+            aria-label={copy("increaseTarget", "Increase target")}
             className={cn(
               "w-10 h-10 min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center",
               "bg-gradient-to-br from-primary/20 to-primary/10 text-primary"
@@ -236,6 +238,7 @@ export function NumericalTargetSection({
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
             placeholder={ts.habitUnit}
+            aria-label={copy("habitUnit", "Unit")}
             maxLength={20}
             className={cn(
               "flex-1 p-2 rounded-lg text-sm",
@@ -254,6 +257,7 @@ export function NumericalTargetSection({
           <motion.button
             key={tt}
             type="button"
+            aria-pressed={targetType === tt}
             onClick={(e) => {
               e.preventDefault();
               setTargetType(tt);
