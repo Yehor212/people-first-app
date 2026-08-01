@@ -193,13 +193,6 @@ const APPROVED_OCCURRENCES: readonly ApprovedOccurrence[] = [
     fullValuePath: "The heading container may wrap between complete words; no characters are removed.",
   },
   {
-    path: "src/pages/nav-v2/OrbAmbienceControl.css",
-    token: "css-nowrap",
-    anchor: "white-space: nowrap;",
-    reason: "Standard visually-hidden control state before keyboard focus reveals it.",
-    fullValuePath: "The focus-within state explicitly restores normal wrapping and full control text.",
-  },
-  {
     path: "src/pages/nav-v2/OrbAmbienceControl.tsx",
     token: "truncate",
     anchor: '<span className="hidden max-w-[9rem] truncate sm:inline">',
