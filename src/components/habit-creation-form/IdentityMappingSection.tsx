@@ -2,6 +2,7 @@
  * IdentityMappingSection — optional habit-purpose fields.
  */
 
+import { useId } from "react";
 import { BadgeCheck, Fingerprint } from "lucide-react";
 import { V2HabitPictogram } from "@/components/habit-pictogram/V2HabitPictogram";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,9 @@ export function IdentityMappingSection({
   habitIcon,
   existingClusters,
 }: IdentityMappingSectionProps) {
+  const identityVerbId = useId();
+  const identityClusterId = useId();
+  const identityClustersListId = useId();
   const clusterText = identityCluster.trim();
   const identityText = identityVerb.trim() || clusterText || ts.identityDefaultVerb;
   const displayIcon = identityIcon.trim() || habitIcon.trim() || "Sparkles";
@@ -139,6 +143,7 @@ export function IdentityMappingSection({
       <div className="space-y-3">
         <div>
           <label
+            htmlFor={identityVerbId}
             className={cn(
               "text-xs mb-1 block",
               isPrimaryCTA ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground",
@@ -147,6 +152,7 @@ export function IdentityMappingSection({
             {ts.identityVerb}
           </label>
           <input
+            id={identityVerbId}
             type="text"
             value={identityVerb}
             onChange={(e) => setIdentityVerb(e.target.value)}
@@ -165,6 +171,7 @@ export function IdentityMappingSection({
 
         <div>
           <label
+            htmlFor={identityClusterId}
             className={cn(
               "text-xs mb-1 block",
               isPrimaryCTA ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground",
@@ -173,8 +180,9 @@ export function IdentityMappingSection({
             {ts.identityCluster}
           </label>
           <input
+            id={identityClusterId}
             type="text"
-            list="identity-clusters-list"
+            list={identityClustersListId}
             value={identityCluster}
             onChange={(e) => setIdentityCluster(e.target.value)}
             placeholder={ts.identityClusterPlaceholder}
@@ -189,7 +197,7 @@ export function IdentityMappingSection({
             )}
           />
           {existingClusters.length > 0 && (
-            <datalist id="identity-clusters-list">
+            <datalist id={identityClustersListId}>
               {existingClusters.map((c) => (
                 <option key={c} value={c} aria-label={c} />
               ))}
