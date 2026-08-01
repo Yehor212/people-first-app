@@ -75,9 +75,12 @@ export function DataPanel({
       ? resetTypeTemplate.slice(resetTypeMarkerIndex + resetTypeMarker.length)
       : "";
   const resetConfirmMatches = resetConfirmInput.trim() === resetConfirmWord;
-  const canResetLocalData = accountViewState === "signed-out";
+  const hasLocalOnlyDataRealm =
+    accountViewState === "signed-out" || accountViewState === "unavailable";
+  const canResetLocalData =
+    hasLocalOnlyDataRealm && !isAccountBoundaryInProgress;
   const canImportLocalBackup =
-    accountViewState === "signed-out" && !isAccountBoundaryInProgress;
+    hasLocalOnlyDataRealm && !isAccountBoundaryInProgress;
   const backupSectionTitle = canImportLocalBackup
     ? tx.settingsBackupRestoreTitle || "Backup & restore"
     : tx.settingsExportTitle || "Save backup";

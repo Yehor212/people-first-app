@@ -2618,6 +2618,29 @@ describe("SettingsPage", () => {
     );
   });
 
+  it("keeps local backup import available when the backend is unavailable", () => {
+    supabaseClientMock.client = null;
+    appStoreMock.hasValidSession = true;
+    accountAuthMock.hasSession = true;
+    accountAuthMock.sessionCheckState = "signed-in";
+
+    render(
+      <SettingsPage
+        controls={{ ...createSettingsControls(), initialOpenSection: "privacy" }}
+      />
+    );
+
+    const backupRegion = screen.getByRole("region", { name: "Backup & restore" });
+    const importButton = within(backupRegion).getByTestId("settings-v2-import");
+    expect(importButton).toHaveAccessibleName("Import backup");
+    expect(screen.getByTestId("settings-v2-reset-data")).toHaveAccessibleName(
+      "Reset all data",
+    );
+
+    fireEvent.click(importButton);
+    expect(dataImportMock.handleImportClick).toHaveBeenCalledTimes(1);
+  });
+
   it("uses quiet tokenized surfaces for real privacy controls and import options", () => {
     adContextMock.adsSupported = true;
     appStoreMock.hasValidSession = false;
@@ -4687,6 +4710,32 @@ describe("SettingsPage", () => {
     fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
     expect(screen.queryByTestId("settings-v2-reset-data")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Type RESET to confirm")).not.toBeInTheDocument();
+    expect(controls.onResetData).not.toHaveBeenCalled();
+  });
+
+  it("offers typed local-data reset when the backend is unavailable and closes it at an account boundary", () => {
+    supabaseClientMock.client = null;
+    const controls = createSettingsControls();
+    const view = render(
+      <SettingsPage controls={{ ...controls, initialOpenSection: "privacy" }} />
+    );
+
+    fireEvent.click(screen.getByTestId("settings-v2-reset-data"));
+
+    const confirmation = screen.getByLabelText("Type RESET to confirm");
+    const clearButton = screen.getByRole("button", { name: "Clear local data" });
+    expect(clearButton).toBeDisabled();
+    fireEvent.change(confirmation, { target: { value: "RESET" } });
+    expect(clearButton).toBeEnabled();
+    expect(controls.onResetData).not.toHaveBeenCalled();
+
+    appStoreMock.isAccountBoundaryInProgress = true;
+    view.rerender(
+      <SettingsPage controls={{ ...controls, initialOpenSection: "privacy" }} />
+    );
+
+    expect(screen.queryByTestId("settings-v2-reset-confirmation")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-v2-reset-data")).not.toBeInTheDocument();
     expect(controls.onResetData).not.toHaveBeenCalled();
   });
 
