@@ -10,6 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { type Language, languageFlags, languageNames } from "@/i18n/translations";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { isAndroid } from "@/lib/platform";
+import { handleRadioGroupKeyDown } from "@/lib/radioGroupKeyboard";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/themeStore";
 
@@ -120,7 +121,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
             initial={animated ? "hidden" : false}
             animate="visible"
           >
-            {languages.map((lang) => {
+            {languages.map((lang, index) => {
               const selected = (pendingLanguage ?? language) === lang;
 
               return (
@@ -132,9 +133,16 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                   aria-label={languageNames[lang]}
                   lang={lang}
                   dir={rtlLanguages.has(lang) ? "rtl" : "ltr"}
+                  tabIndex={selected ? 0 : -1}
                   onClick={(event) => handleSelect(lang, event)}
+                  onKeyDown={(event) =>
+                    handleRadioGroupKeyDown(event, index, languages.length, (nextIndex) => {
+                      const nextLanguage = languages[nextIndex];
+                      if (nextLanguage) setLanguage(nextLanguage);
+                    })
+                  }
                   className={cn(
-                    "entry-action-tile btn-press h-auto min-h-14 min-w-0 whitespace-normal break-words rounded-2xl border px-3 py-2.5 text-start [hyphens:manual] [overflow-wrap:break-word] outline-none transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                    "entry-action-tile btn-press h-auto min-h-14 min-w-0 whitespace-normal break-normal rounded-2xl border px-3 py-2.5 text-start [hyphens:none] outline-none transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     selected
                       ? "border-primary/70 bg-primary/20 text-foreground shadow-lg"
                       : "border-border/45 bg-card/55 text-muted-foreground hover:border-primary/40 hover:bg-card/75 hover:text-foreground"
@@ -148,7 +156,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                       {languageFlags[lang]}
                     </span>
                     <span
-                      className="min-w-0 flex-1 break-words text-sm font-semibold leading-tight [hyphens:manual] [overflow-wrap:break-word]"
+                      className="min-w-0 flex-1 break-normal text-sm font-semibold leading-tight [hyphens:none]"
                       dir={rtlLanguages.has(lang) ? "rtl" : "ltr"}
                     >
                       {languageNames[lang]}
