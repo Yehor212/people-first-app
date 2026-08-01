@@ -343,7 +343,7 @@ export const exportProgressReportPDF = async (data: {
   addText('Your Habits', 16, true);
   y += 5;
 
-  data.habits
+  [...data.habits]
     .sort((a, b) => getHabitCompletionTotal(b) - getHabitCompletionTotal(a))
     .slice(0, 10)
     .forEach(habit => {
@@ -357,7 +357,7 @@ export const exportProgressReportPDF = async (data: {
     addText('Recent Gratitude Entries', 16, true);
     y += 5;
 
-    data.gratitudeEntries
+    [...data.gratitudeEntries]
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, 5)
       .forEach(entry => {
