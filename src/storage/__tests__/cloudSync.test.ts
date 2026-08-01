@@ -595,17 +595,26 @@ describe("silentSync", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
-  it("callback swallows non-abort errors to prevent unhandled rejections", async () => {
+  it("surfaces non-abort executor failures to the orchestrator while silentSync remains safe", async () => {
     mockSupabase = createMockSupabase();
     const syncError = new Error("Network failure");
     mockExportBackup.mockRejectedValue(syncError);
+    let executorFailure: unknown;
 
     mockOrchestratorSync.mockImplementation(async (_type, callback) => {
-      await callback(createOrchestratorContext());
+      try {
+        await callback(createOrchestratorContext());
+      } catch (error) {
+        executorFailure = error;
+        throw error;
+      }
     });
 
-    // silentSync must NOT throw — prevents unhandled rejections from setInterval/visibilitychange
-    await expect(silentSync()).resolves.not.toThrow();
+    // The executor must reject so SyncOrchestrator can apply maxRetries,
+    // while silentSync catches the final orchestration failure for lifecycle callers.
+    await expect(silentSync()).resolves.toBeUndefined();
+    expect(executorFailure).toBe(syncError);
+    expect(mockExportBackup).toHaveBeenCalledTimes(1);
   });
 
   it("callback does not throw on abort errors", async () => {
