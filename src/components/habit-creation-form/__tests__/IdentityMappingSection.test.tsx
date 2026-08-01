@@ -59,10 +59,13 @@ describe("IdentityMappingSection", () => {
       />,
     );
 
-    fireEvent.change(screen.getByTestId("identity-verb-input"), {
+    const identityVerbInput = screen.getByRole("textbox", { name: "Who I am becoming" });
+    const identityClusterInput = screen.getByRole("combobox", { name: "Life area" });
+
+    fireEvent.change(identityVerbInput, {
       target: { value: "someone who moves daily" },
     });
-    fireEvent.change(screen.getByTestId("identity-cluster-input"), {
+    fireEvent.change(identityClusterInput, {
       target: { value: "Health" },
     });
 
