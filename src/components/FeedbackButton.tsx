@@ -5,7 +5,7 @@
  * Submits feedback to the configured service and keeps the draft visible on failure.
  */
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { MessageSquarePlus, Send, X, Bug, Lightbulb, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -27,6 +27,8 @@ interface FeedbackButtonProps {
 
 export function FeedbackButton({ position = "bottom-right", className }: FeedbackButtonProps) {
   const { t } = useLanguage();
+  const feedbackMessageId = useId();
+  const feedbackMessageLabel = t.feedbackPlaceholder || "Describe your feedback...";
   const [type, setType] = useState<FeedbackType>("bug");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -164,13 +166,17 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
               </div>
 
               {/* Message Input */}
+              <label htmlFor={feedbackMessageId} className="sr-only">
+                {feedbackMessageLabel}
+              </label>
               <textarea
+                id={feedbackMessageId}
                 value={message}
                 onChange={(e) => {
                   setMessage(e.target.value);
                   setDeliveryFailed(false);
                 }}
-                placeholder={t.feedbackPlaceholder || "Describe your feedback..."}
+                placeholder={feedbackMessageLabel}
                 className="w-full h-32 p-3 rounded-xl border bg-background resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 maxLength={1000}
               />
