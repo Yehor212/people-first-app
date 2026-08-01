@@ -45,6 +45,7 @@ export function HabitDurationSection({
               key={String(option.value)}
               type="button"
               onClick={() => setHasDurationLimit(option.value)}
+              aria-pressed={hasDurationLimit === option.value}
               className={cn(
                 "min-h-[44px] rounded-xl px-3 py-2 text-xs font-medium motion-safe:transition-all",
                 hasDurationLimit === option.value
@@ -76,10 +77,11 @@ export function HabitDurationSection({
             <motion.button
               type="button"
               onClick={() => setDurationDays(Math.max(1, safeDays - 1))}
+              aria-label={ts.decrease}
               className="flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-background/80"
               whileTap={zenTap.button}
             >
-              <Minus className="h-4 w-4" />
+              <Minus aria-hidden="true" className="h-4 w-4" />
             </motion.button>
             <input
               type="number"
@@ -99,10 +101,11 @@ export function HabitDurationSection({
             <motion.button
               type="button"
               onClick={() => setDurationDays(safeDays + 1)}
+              aria-label={ts.increase}
               className="flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-background/80"
               whileTap={zenTap.button}
             >
-              <Plus className="h-4 w-4" />
+              <Plus aria-hidden="true" className="h-4 w-4" />
             </motion.button>
             <span className="text-sm text-muted-foreground">
               {dayLabel}
