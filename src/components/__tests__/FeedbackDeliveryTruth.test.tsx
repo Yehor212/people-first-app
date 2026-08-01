@@ -88,7 +88,7 @@ describe("feedback delivery truth", () => {
     render(<FeedbackButton />);
 
     fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
-    const message = screen.getByPlaceholderText("Describe your feedback...");
+    const message = screen.getByRole("textbox", { name: "Describe your feedback..." });
     fireEvent.change(message, { target: { value: "The contrast control is hard to find." } });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
 
