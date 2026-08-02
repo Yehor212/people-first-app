@@ -136,6 +136,72 @@ function readUtf8(filePath, label) {
   }
 }
 
+function assertManagedJsonStat(stat, label) {
+  if (stat.isSymbolicLink()) throw new Error(`${label} must not be symlinked`);
+  if (!stat.isFile()) throw new Error(`${label} must be a regular file`);
+  if (stat.nlink !== 1n) throw new Error(`${label} must not be hard-linked`);
+}
+
+function sameManagedJsonSnapshot(left, right) {
+  return (
+    left.dev === right.dev &&
+    left.ino === right.ino &&
+    left.mode === right.mode &&
+    left.nlink === right.nlink &&
+    left.size === right.size &&
+    left.mtimeNs === right.mtimeNs &&
+    left.ctimeNs === right.ctimeNs
+  );
+}
+
+function readBoundedJsonFile(filePath, label) {
+  let descriptor;
+  try {
+    const pathBefore = fs.lstatSync(filePath, { bigint: true });
+    assertManagedJsonStat(pathBefore, label);
+    const noFollow = typeof fs.constants.O_NOFOLLOW === "number" ? fs.constants.O_NOFOLLOW : 0;
+    descriptor = fs.openSync(filePath, fs.constants.O_RDONLY | noFollow);
+    const before = fs.fstatSync(descriptor, { bigint: true });
+    assertManagedJsonStat(before, label);
+    if (!sameManagedJsonSnapshot(pathBefore, before)) {
+      throw new Error(`${label} changed identity before its bounded read`);
+    }
+    if (before.size > BigInt(MAX_JSON_INPUT_BYTES)) {
+      throw new Error(`${label} JSON input exceeds ${MAX_JSON_INPUT_BYTES} bytes`);
+    }
+
+    const rawByteLength = Number(before.size);
+    const bytes = Buffer.alloc(rawByteLength);
+    let offset = 0;
+    while (offset < rawByteLength) {
+      const bytesRead = fs.readSync(descriptor, bytes, offset, rawByteLength - offset, offset);
+      if (bytesRead === 0) throw new Error(`${label} changed size during its bounded read`);
+      offset += bytesRead;
+    }
+    const extra = Buffer.alloc(1);
+    const extraBytes = fs.readSync(descriptor, extra, 0, 1, rawByteLength);
+    const after = fs.fstatSync(descriptor, { bigint: true });
+    const pathAfter = fs.lstatSync(filePath, { bigint: true });
+    assertManagedJsonStat(pathAfter, label);
+    if (
+      extraBytes !== 0 ||
+      !sameManagedJsonSnapshot(before, after) ||
+      !sameManagedJsonSnapshot(after, pathAfter)
+    ) {
+      throw new Error(`${label} changed during its bounded read`);
+    }
+    try {
+      return { raw: decoder.decode(bytes), rawByteLength };
+    } catch (error) {
+      throw new Error(`${label} must be readable strict UTF-8: ${error.message || error}`);
+    }
+  } catch (error) {
+    throw new Error(error.message || String(error));
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+}
+
 function assertNoDuplicateJsonKeys(raw, label) {
   let index = 0;
 
@@ -280,9 +346,11 @@ function assertNoDuplicateJsonKeys(raw, label) {
   if (index !== raw.length) malformed("unexpected trailing content");
 }
 
-function parseJsonWithoutDuplicateKeys(raw, label) {
-  const byteLength = Buffer.byteLength(raw, "utf8");
-  if (byteLength > MAX_JSON_INPUT_BYTES) {
+function parseJsonWithoutDuplicateKeys(raw, label, rawByteLength) {
+  if (!Number.isSafeInteger(rawByteLength) || rawByteLength < 0) {
+    throw new Error(`${label} JSON input has an invalid raw byte length`);
+  }
+  if (rawByteLength > MAX_JSON_INPUT_BYTES) {
     throw new Error(`${label} JSON input exceeds ${MAX_JSON_INPUT_BYTES} bytes`);
   }
   assertNoDuplicateJsonKeys(raw, label);
@@ -313,7 +381,7 @@ async function readStdin() {
       if (settled) return;
       settled = true;
       try {
-        resolve(decoder.decode(Buffer.concat(chunks, total)));
+        resolve({ raw: decoder.decode(Buffer.concat(chunks, total)), rawByteLength: total });
       } catch (error) {
         reject(new Error(`hook input must be readable strict UTF-8: ${error.message || error}`));
       }
@@ -381,12 +449,13 @@ function validateCoreSkills(root) {
 
 function validateConstitutionStatus(root) {
   const statusPath = path.join(root, ".specify", "memory", "constitution-status.json");
-  requireRegularFile(statusPath, ".specify/memory/constitution-status.json", true);
   let status;
   try {
+    const input = readBoundedJsonFile(statusPath, ".specify/memory/constitution-status.json");
     status = parseJsonWithoutDuplicateKeys(
-      readUtf8(statusPath, ".specify/memory/constitution-status.json"),
-      ".specify/memory/constitution-status.json"
+      input.raw,
+      ".specify/memory/constitution-status.json",
+      input.rawByteLength
     );
   } catch (error) {
     throw new Error(`constitution status is malformed: ${error.message || error}`);
@@ -442,12 +511,13 @@ function validateDirectoryState(root) {
     if (error && error.code === "ENOENT") return;
     throw new Error(`.specify/feature.json is unreadable: ${error.message || error}`);
   }
-  requireRegularFile(featurePath, ".specify/feature.json", true);
   let feature;
   try {
+    const input = readBoundedJsonFile(featurePath, ".specify/feature.json");
     feature = parseJsonWithoutDuplicateKeys(
-      readUtf8(featurePath, ".specify/feature.json"),
-      ".specify/feature.json"
+      input.raw,
+      ".specify/feature.json",
+      input.rawByteLength
     );
   } catch (error) {
     throw new Error(`.specify/feature.json is malformed: ${error.message || error}`);
@@ -641,6 +711,18 @@ function restrictedAssignmentName(segment, dialect) {
     if (tokens[0] === "&") tokens.shift();
     const match = /^\$env:(SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR))(?:=.*)?$/i.exec(tokens[0] || "");
     if (match && (tokens[0].includes("=") || tokens[1] === "=")) return match[1].toUpperCase();
+    const executable = stripExecutableSuffix(tokens[0] || "");
+    if (!["set-item", "set-content"].includes(executable)) return "";
+    let providerPath = "";
+    for (let index = 1; index < tokens.length; index += 1) {
+      if (/^-(?:path|literalpath)$/i.test(tokens[index]) && tokens[index + 1]) {
+        providerPath = tokens[index + 1];
+        break;
+      }
+    }
+    if (!providerPath && tokens[1] && !tokens[1].startsWith("-")) providerPath = tokens[1];
+    const providerMatch = /^env:(SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR))$/i.exec(providerPath);
+    if (providerMatch) return providerMatch[1].toUpperCase();
     return "";
   }
 
@@ -659,6 +741,7 @@ function restrictedAssignmentName(segment, dialect) {
     }
   } else if (executable === "export") {
     index += 1;
+    while (segment[index] && /^-(?:[np]+|-)$/.test(segment[index])) index += 1;
   } else {
     return "";
   }
@@ -836,8 +919,8 @@ function validateStructuredWrite(data, root) {
 }
 
 async function parseInput() {
-  const raw = await readStdin();
-  const data = parseJsonWithoutDuplicateKeys(raw, "hook input");
+  const input = await readStdin();
+  const data = parseJsonWithoutDuplicateKeys(input.raw, "hook input", input.rawByteLength);
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     throw new Error("hook input must be one JSON object");
   }

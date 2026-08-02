@@ -4,9 +4,12 @@ import {
   lstatSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -153,6 +156,50 @@ function nestedHookInput(depth: number): string {
   return `{"hook_event_name":"UserPromptSubmit","metadata":${"[".repeat(
     nestedArrays
   )}null${"]".repeat(nestedArrays)}}`;
+}
+
+function managedStatusBytes(
+  rawByteLength: number,
+  { bom = false, multibyte = false }: { bom?: boolean; multibyte?: boolean } = {}
+): Buffer {
+  const json = Buffer.from(
+    JSON.stringify({
+      schema_version: 1,
+      constitution_version: "1.0.1",
+      status: "PROPOSED",
+      ratified: false,
+      activation: "PROPOSAL_CRITERIA_ONLY",
+      binding: false,
+      blocking_authority: false,
+      critical_remediation_authority: false,
+      ratification_evidence: null,
+      source: ".specify/memory/constitution.md",
+      padding_marker: multibyte ? "é" : "ascii",
+    }),
+    "utf8"
+  );
+  const prefix = bom ? Buffer.from([0xef, 0xbb, 0xbf]) : Buffer.alloc(0);
+  const paddingLength = rawByteLength - prefix.length - json.length;
+  if (paddingLength < 0) throw new Error("requested managed JSON size is too small");
+  return Buffer.concat([prefix, json, Buffer.alloc(paddingLength, 0x20)]);
+}
+
+function writeManagedStatus(root: string, bytes: Buffer): void {
+  writeFileSync(join(root, ".specify/memory/constitution-status.json"), bytes);
+}
+
+function jsonFilesUnder(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const candidate = join(directory, entry.name);
+    if (entry.isDirectory()) return jsonFilesUnder(candidate);
+    return entry.isFile() && entry.name.endsWith(".json") ? [candidate] : [];
+  });
+}
+
+function jsonNestingDepth(value: unknown): number {
+  if (!value || typeof value !== "object") return 0;
+  const children = Array.isArray(value) ? value : Object.values(value);
+  return 1 + Math.max(0, ...children.map(jsonNestingDepth));
 }
 
 function expectAllowed(result: ReturnType<typeof runHook>): void {
@@ -307,6 +354,80 @@ describe("Spec Kit safety hook lifecycle", () => {
         '{"hook_event_name":"UserPromptSubmit","metadata":{"ratified":false,"r\\u0061tified":false}}'
       ),
       /duplicate JSON key: ratified/i
+    );
+  });
+
+  it("R3-C accepts an exact-bound managed JSON file and rejects one raw byte over", () => {
+    const root = makeRepository();
+
+    writeManagedStatus(root, managedStatusBytes(MAX_JSON_INPUT_BYTES));
+    expectAllowed(runHook(root, { hook_event_name: "UserPromptSubmit", prompt: "inspect" }));
+
+    writeManagedStatus(root, managedStatusBytes(MAX_JSON_INPUT_BYTES + 1));
+    expectBlocked(
+      runHook(root, { hook_event_name: "UserPromptSubmit", prompt: "inspect" }),
+      /constitution status.*JSON input exceeds.*1048576 bytes/i
+    );
+  });
+
+  it("R3-C counts a UTF-8 BOM and multibyte content against the raw managed-file bound", () => {
+    const root = makeRepository();
+
+    writeManagedStatus(
+      root,
+      managedStatusBytes(MAX_JSON_INPUT_BYTES, { bom: true, multibyte: true })
+    );
+    expectAllowed(runHook(root, { hook_event_name: "UserPromptSubmit", prompt: "inspect" }));
+
+    writeManagedStatus(
+      root,
+      managedStatusBytes(MAX_JSON_INPUT_BYTES + 1, { bom: true, multibyte: true })
+    );
+    expectBlocked(
+      runHook(root, { hook_event_name: "UserPromptSubmit", prompt: "inspect" }),
+      /constitution status.*JSON input exceeds.*1048576 bytes/i
+    );
+  });
+
+  it("R3-C measures the canonical Spec Kit JSON corpus and representative hook payloads", () => {
+    const specifyRoot = realpathSync(join(PROJECT_ROOT, ".specify"));
+    const corpus = jsonFilesUnder(specifyRoot).map((filePath) => {
+      const bytes = statSync(filePath).size;
+      const value = JSON.parse(readFileSync(filePath, "utf8")) as unknown;
+      return { bytes, depth: jsonNestingDepth(value) };
+    });
+    const representativePayloads = [
+      { hook_event_name: "UserPromptSubmit", prompt: "inspect" },
+      {
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command: "git status --short" },
+      },
+      {
+        hook_event_name: "PreToolUse",
+        tool_name: "WriteFile",
+        tool_input: { path: "/tmp/example/neutral.txt", content: "neutral" },
+      },
+    ].map((payload) => ({
+      bytes: Buffer.byteLength(JSON.stringify(payload), "utf8"),
+      depth: jsonNestingDepth(payload),
+    }));
+
+    expect(corpus).toHaveLength(8);
+    expect(Math.max(...corpus.map(({ bytes }) => bytes))).toBe(6_769);
+    expect(Math.max(...corpus.map(({ depth }) => depth))).toBe(3);
+    expect(representativePayloads).toEqual([
+      { bytes: 57, depth: 1 },
+      { bytes: 97, depth: 2 },
+      { bytes: 125, depth: 2 },
+    ]);
+    expect(Math.max(...corpus.map(({ bytes }) => bytes))).toBeLessThan(MAX_JSON_INPUT_BYTES);
+    expect(Math.max(...corpus.map(({ depth }) => depth))).toBeLessThan(MAX_JSON_NESTING_DEPTH);
+    expect(Math.max(...representativePayloads.map(({ bytes }) => bytes))).toBeLessThan(
+      MAX_JSON_INPUT_BYTES
+    );
+    expect(Math.max(...representativePayloads.map(({ depth }) => depth))).toBeLessThan(
+      MAX_JSON_NESTING_DEPTH
     );
   });
 
@@ -623,6 +744,29 @@ describe("Spec Kit command and lane boundaries", () => {
   });
 
   it.each([
+    ["Bash", "export -- SPECIFY_INIT_DIR=/tmp/outside; specify plan"],
+    ["Bash", "export -n SPECIFY_FEATURE_DIRECTORY=/tmp/outside; specify plan"],
+    ["Bash", "export -p SPECIFY_INIT_DIR=/tmp/outside; specify plan"],
+    ["Bash", "export -np -- SPECIFY_FEATURE_DIRECTORY=/tmp/outside; specify plan"],
+    ["PowerShell", String.raw`Set-Item Env:SPECIFY_FEATURE_DIRECTORY C:\outside`],
+    ["PowerShell", String.raw`Set-Content Env:SPECIFY_INIT_DIR C:\outside`],
+    ["PowerShell", String.raw`Set-Item -Path 'Env:SPECIFY_FEATURE_DIRECTORY' -Value 'C:\outside'`],
+    [
+      "PowerShell",
+      String.raw`& 'Set-Content' -LiteralPath "Env:SPECIFY_INIT_DIR" -Value "C:\outside"`,
+    ],
+  ])("R3-A rejects a supported restricted environment setter for %s: %s", (toolName, command) => {
+    expectBlocked(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: toolName,
+        tool_input: { command },
+      }),
+      /inline SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR)/i
+    );
+  });
+
+  it.each([
     ["workflow", String.raw`& "C:\tools\specify.exe" workflow run demo`, /workflow run/i],
     [
       "extension mutation",
@@ -647,6 +791,8 @@ describe("Spec Kit command and lane boundaries", () => {
     ["PowerShell", "Write-Output 'specify workflow run demo'"],
     ["PowerShell", "Write-Output 'specify extension add spec-kit-bugs'"],
     ["PowerShell", "Write-Output '$env:SPECIFY_FEATURE_DIRECTORY=/tmp/example'"],
+    ["Bash", "printf '%s\\n' 'export -- SPECIFY_INIT_DIR=/tmp/outside'"],
+    ["PowerShell", String.raw`Write-Output 'Set-Item Env:SPECIFY_FEATURE_DIRECTORY C:\outside'`],
   ])("A allows prohibited-looking text used only as %s data: %s", (toolName, command) => {
     expectAllowed(
       runHook(makeRepository(), {
