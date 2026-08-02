@@ -176,7 +176,7 @@ function repositoryLocationsAreCanonical(locationEvidence, executorCwd) {
     for (const evidence of Array.isArray(locationEvidence) ? locationEvidence : []) {
       if (!evidence?.supplied) continue;
       if (typeof evidence.value !== "string") return false;
-      if (!evidence.value.trim()) continue;
+      if (!evidence.value.trim()) return false;
       hasNonEmptyLocation = true;
       const resolvedLocation = path.resolve(resolvedExecutorCwd, evidence.value);
       if (

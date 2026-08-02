@@ -512,7 +512,6 @@ describe("Codex and Kimi workspace command guard", () => {
   it.each([
     ["relative event cwd", { eventCwd: ".", inputCwd: "./", inputWorkdir: "." }],
     ["relative input cwd", { eventCwd: "./", inputCwd: ".", inputWorkdir: "./" }],
-    ["empty fields ignored", { eventCwd: "", inputCwd: ".", inputWorkdir: "   " }],
   ] as const)(
     "allows canonically equivalent Spec Kit location evidence: %s",
     async (_label, locations) => {
@@ -524,6 +523,56 @@ describe("Codex and Kimi workspace command guard", () => {
       expect(result.status, result.stderr).toBe(0);
     }
   );
+
+  it.each([
+    ["event.cwd only", (root: string) => ({ eventCwd: root })],
+    ["input.cwd only", () => ({ inputCwd: "." })],
+    ["input.workdir only", () => ({ inputWorkdir: "./" })],
+  ] as const)("allows omitted Spec Kit location fields: %s", async (_label, locationsForRoot) => {
+    const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+    const payload = bashWithLocations(setupPlan, locationsForRoot(root));
+
+    const result = runHook(root, payload, "codex", hook);
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it.each([
+    ["empty event.cwd", (root: string) => ({ eventCwd: "", inputCwd: root })],
+    ["whitespace event.cwd", (root: string) => ({ eventCwd: "\t", inputCwd: root })],
+    ["empty input.cwd", (root: string) => ({ eventCwd: root, inputCwd: "" })],
+    ["whitespace input.cwd", (root: string) => ({ eventCwd: root, inputCwd: "  " })],
+    ["empty input.workdir", (root: string) => ({ eventCwd: root, inputWorkdir: "" })],
+  ] as const)(
+    "rejects supplied empty or whitespace Spec Kit location evidence: %s",
+    async (_label, locationsForRoot) => {
+      const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+      const payload = bashWithLocations(setupPlan, locationsForRoot(root));
+
+      const result = runHook(root, payload, "codex", hook);
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain("unknown shell execution");
+    }
+  );
+
+  it("rejects a whitespace input.workdir that names a nested Spec Kit lookalike", async () => {
+    const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+    const whitespaceWorkdir = "   ";
+    const lookalike = path.join(root, whitespaceWorkdir, ".specify/scripts/bash/setup-plan.sh");
+    await mkdir(path.dirname(lookalike), { recursive: true });
+    await copyFile(path.join(root, ".specify/scripts/bash/setup-plan.sh"), lookalike);
+    await chmod(lookalike, 0o755);
+    const payload = bashWithLocations(setupPlan, {
+      eventCwd: root,
+      inputWorkdir: whitespaceWorkdir,
+    });
+
+    const result = runHook(root, payload, "codex", hook);
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain("unknown shell execution");
+  });
 
   it.each([
     ["object event.cwd", (root: string) => ({ eventCwd: { path: root }, inputCwd: root })],
