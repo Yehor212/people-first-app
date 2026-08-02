@@ -48,6 +48,9 @@ const STRUCTURED_PATH_KEYS = new Set([
   "destination",
   "destination_path",
 ]);
+const MAX_JSON_INPUT_BYTES = 1_048_576;
+const MAX_JSON_NESTING_DEPTH = 64;
+const STDIN_CHUNK_BYTES = 64 * 1024;
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
 function fail(reason) {
@@ -177,11 +180,34 @@ function assertNoDuplicateJsonKeys(raw, label) {
     malformed("unterminated string");
   }
 
-  function parseValue() {
+  function parseNumber() {
+    const start = index;
+    if (raw[index] === "-") index += 1;
+    if (raw[index] === "0") {
+      index += 1;
+    } else {
+      if (!/[1-9]/.test(raw[index] || "")) malformed("invalid number");
+      while (/\d/.test(raw[index] || "")) index += 1;
+    }
+    if (raw[index] === ".") {
+      index += 1;
+      if (!/\d/.test(raw[index] || "")) malformed("invalid number fraction");
+      while (/\d/.test(raw[index] || "")) index += 1;
+    }
+    if (raw[index] === "e" || raw[index] === "E") {
+      index += 1;
+      if (raw[index] === "+" || raw[index] === "-") index += 1;
+      if (!/\d/.test(raw[index] || "")) malformed("invalid number exponent");
+      while (/\d/.test(raw[index] || "")) index += 1;
+    }
+    if (index === start) malformed("expected a JSON value");
+  }
+
+  function parseValue(depth) {
     skipWhitespace();
     const character = raw[index];
-    if (character === "{") return parseObject();
-    if (character === "[") return parseArray();
+    if (character === "{") return parseObject(depth + 1);
+    if (character === "[") return parseArray(depth + 1);
     if (character === '"') {
       parseString();
       return;
@@ -192,15 +218,13 @@ function assertNoDuplicateJsonKeys(raw, label) {
         return;
       }
     }
-    const number = raw.slice(index).match(/^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/);
-    if (number) {
-      index += number[0].length;
-      return;
-    }
-    malformed("expected a JSON value");
+    parseNumber();
   }
 
-  function parseObject() {
+  function parseObject(depth) {
+    if (depth > MAX_JSON_NESTING_DEPTH) {
+      throw new Error(`${label} JSON nesting depth exceeds ${MAX_JSON_NESTING_DEPTH}`);
+    }
     index += 1;
     const keys = new Set();
     skipWhitespace();
@@ -216,7 +240,7 @@ function assertNoDuplicateJsonKeys(raw, label) {
       skipWhitespace();
       if (raw[index] !== ":") malformed("expected ':' after object key");
       index += 1;
-      parseValue();
+      parseValue(depth);
       skipWhitespace();
       if (raw[index] === "}") {
         index += 1;
@@ -228,7 +252,10 @@ function assertNoDuplicateJsonKeys(raw, label) {
     malformed("unterminated object");
   }
 
-  function parseArray() {
+  function parseArray(depth) {
+    if (depth > MAX_JSON_NESTING_DEPTH) {
+      throw new Error(`${label} JSON nesting depth exceeds ${MAX_JSON_NESTING_DEPTH}`);
+    }
     index += 1;
     skipWhitespace();
     if (raw[index] === "]") {
@@ -236,7 +263,7 @@ function assertNoDuplicateJsonKeys(raw, label) {
       return;
     }
     while (index < raw.length) {
-      parseValue();
+      parseValue(depth);
       skipWhitespace();
       if (raw[index] === "]") {
         index += 1;
@@ -248,14 +275,55 @@ function assertNoDuplicateJsonKeys(raw, label) {
     malformed("unterminated array");
   }
 
-  parseValue();
+  parseValue(0);
   skipWhitespace();
   if (index !== raw.length) malformed("unexpected trailing content");
 }
 
 function parseJsonWithoutDuplicateKeys(raw, label) {
+  const byteLength = Buffer.byteLength(raw, "utf8");
+  if (byteLength > MAX_JSON_INPUT_BYTES) {
+    throw new Error(`${label} JSON input exceeds ${MAX_JSON_INPUT_BYTES} bytes`);
+  }
   assertNoDuplicateJsonKeys(raw, label);
   return JSON.parse(raw);
+}
+
+async function readStdin() {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let total = 0;
+    let settled = false;
+
+    process.stdin.on("data", (chunk) => {
+      if (settled) return;
+      const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      total += bytes.length;
+      if (total > MAX_JSON_INPUT_BYTES) {
+        settled = true;
+        process.stdin.pause();
+        reject(new Error(`hook input JSON input exceeds ${MAX_JSON_INPUT_BYTES} bytes`));
+        return;
+      }
+      for (let offset = 0; offset < bytes.length; offset += STDIN_CHUNK_BYTES) {
+        chunks.push(Buffer.from(bytes.subarray(offset, offset + STDIN_CHUNK_BYTES)));
+      }
+    });
+    process.stdin.on("end", () => {
+      if (settled) return;
+      settled = true;
+      try {
+        resolve(decoder.decode(Buffer.concat(chunks, total)));
+      } catch (error) {
+        reject(new Error(`hook input must be readable strict UTF-8: ${error.message || error}`));
+      }
+    });
+    process.stdin.on("error", (error) => {
+      if (settled) return;
+      settled = true;
+      reject(new Error(`hook input could not be read: ${error.message || error}`));
+    });
+  });
 }
 
 function validateExtensionsPolicy(root) {
@@ -418,7 +486,7 @@ function shellCommand(data) {
   return "";
 }
 
-function tokenizeStaticShell(command) {
+function tokenizeStaticShell(command, dialect) {
   const tokens = [];
   let token = "";
   let tokenStarted = false;
@@ -439,11 +507,21 @@ function tokenizeStaticShell(command) {
         tokenStarted = true;
         continue;
       }
-      if (character === "\\" && quote === '"' && index + 1 < command.length) {
+      if (dialect === "powershell" && character === "`" && quote === '"') {
+        if (index + 1 >= command.length) return null;
         token += command[index + 1];
         tokenStarted = true;
         index += 1;
         continue;
+      }
+      if (dialect === "posix" && character === "\\" && quote === '"') {
+        const escaped = command[index + 1];
+        if (escaped && /["\\$`\n]/.test(escaped)) {
+          token += escaped;
+          tokenStarted = true;
+          index += 1;
+          continue;
+        }
       }
       token += character;
       tokenStarted = true;
@@ -454,7 +532,14 @@ function tokenizeStaticShell(command) {
       tokenStarted = true;
       continue;
     }
-    if (character === "\\" && index + 1 < command.length) {
+    if (dialect === "powershell" && character === "`") {
+      if (index + 1 >= command.length) return null;
+      token += command[index + 1];
+      tokenStarted = true;
+      index += 1;
+      continue;
+    }
+    if (dialect === "posix" && character === "\\" && index + 1 < command.length) {
       token += command[index + 1];
       tokenStarted = true;
       index += 1;
@@ -466,6 +551,10 @@ function tokenizeStaticShell(command) {
     }
     if (character === "\n" || character === ";" || character === "|" || character === "&") {
       pushToken();
+      if (dialect === "powershell" && character === "&" && command[index + 1] !== "&") {
+        tokens.push({ value: "&", operator: false });
+        continue;
+      }
       let operator = character;
       if ((character === "|" || character === "&") && command[index + 1] === character) {
         operator += character;
@@ -482,8 +571,8 @@ function tokenizeStaticShell(command) {
   return tokens;
 }
 
-function splitStaticShellSegments(command) {
-  const tokens = tokenizeStaticShell(command);
+function splitStaticShellSegments(command, dialect) {
+  const tokens = tokenizeStaticShell(command, dialect);
   if (!tokens) return [];
   const segments = [];
   let segment = [];
@@ -500,50 +589,100 @@ function splitStaticShellSegments(command) {
 }
 
 function stripExecutableSuffix(value) {
-  return path
-    .basename(value)
+  return path.posix
+    .basename(String(value || "").replace(/\\/g, "/"))
     .toLowerCase()
     .replace(/\.exe$/, "");
 }
 
-function resolveStaticExecutable(segment, depth = 0) {
+function resolveStaticExecutable(segment, dialect, depth = 0) {
   if (depth > 3) return [];
   let tokens = [...segment];
-  while (tokens.length > 0 && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0])) tokens.shift();
+  if (dialect === "powershell" && tokens[0] === "&") tokens.shift();
+  if (dialect === "posix") {
+    while (tokens.length > 0 && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0])) tokens.shift();
+  }
   if (tokens.length === 0) return [];
 
   let executable = stripExecutableSuffix(tokens[0]);
   if (executable === "command") {
     tokens = tokens.slice(1);
     while (tokens[0] && tokens[0].startsWith("-")) tokens.shift();
-    return resolveStaticExecutable(tokens, depth + 1);
+    return resolveStaticExecutable(tokens, dialect, depth + 1);
   }
   if (executable === "env") {
     tokens = tokens.slice(1);
     while (tokens[0] && (tokens[0].startsWith("-") || /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0]))) {
       tokens.shift();
     }
-    return resolveStaticExecutable(tokens, depth + 1);
+    return resolveStaticExecutable(tokens, dialect, depth + 1);
   }
   if (["sh", "bash", "zsh", "pwsh", "powershell"].includes(executable)) {
     const commandFlag = tokens.findIndex((token) => /^(?:-c|-command)$/i.test(token));
     if (commandFlag >= 0 && tokens[commandFlag + 1]) {
-      return staticExecutableCommands(tokens[commandFlag + 1], depth + 1);
+      const childDialect = ["pwsh", "powershell"].includes(executable) ? "powershell" : "posix";
+      return staticExecutableCommands(tokens[commandFlag + 1], childDialect, depth + 1);
     }
   }
   return [tokens];
 }
 
-function staticExecutableCommands(command, depth = 0) {
+function staticExecutableCommands(command, dialect, depth = 0) {
   if (depth > 3) return [];
-  return splitStaticShellSegments(command).flatMap((segment) =>
-    resolveStaticExecutable(segment, depth)
+  return splitStaticShellSegments(command, dialect).flatMap((segment) =>
+    resolveStaticExecutable(segment, dialect, depth)
   );
+}
+
+function restrictedAssignmentName(segment, dialect) {
+  const restricted = /^(?:SPECIFY_FEATURE_DIRECTORY|SPECIFY_INIT_DIR)$/i;
+  if (dialect === "powershell") {
+    let tokens = [...segment];
+    if (tokens[0] === "&") tokens.shift();
+    const match = /^\$env:(SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR))(?:=.*)?$/i.exec(tokens[0] || "");
+    if (match && (tokens[0].includes("=") || tokens[1] === "=")) return match[1].toUpperCase();
+    return "";
+  }
+
+  let index = 0;
+  while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(segment[index] || "")) {
+    const name = segment[index].slice(0, segment[index].indexOf("="));
+    if (restricted.test(name)) return name.toUpperCase();
+    index += 1;
+  }
+  const executable = stripExecutableSuffix(segment[index] || "");
+  if (executable === "env") {
+    index += 1;
+    while ((segment[index] || "").startsWith("-")) {
+      if (["-u", "--unset"].includes(segment[index])) index += 1;
+      index += 1;
+    }
+  } else if (executable === "export") {
+    index += 1;
+  } else {
+    return "";
+  }
+  while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(segment[index] || "")) {
+    const name = segment[index].slice(0, segment[index].indexOf("="));
+    if (restricted.test(name)) return name.toUpperCase();
+    index += 1;
+  }
+  return "";
 }
 
 function validateShellCommand(data) {
   const command = shellCommand(data);
   if (!command) return;
+  const dialect = /^(?:PowerShell|pwsh)$/i.test(String(data.tool_name || ""))
+    ? "powershell"
+    : "posix";
+  const segments = splitStaticShellSegments(command, dialect);
+  for (const segment of segments) {
+    const assignmentName = restrictedAssignmentName(segment, dialect);
+    if (assignmentName) {
+      throw new Error(`inline ${assignmentName} shell assignments are blocked`);
+    }
+  }
   const mutationActions = new Set([
     "add",
     "remove",
@@ -553,7 +692,7 @@ function validateShellCommand(data) {
     "install",
     "uninstall",
   ]);
-  for (const argv of staticExecutableCommands(command)) {
+  for (const argv of staticExecutableCommands(command, dialect)) {
     if (stripExecutableSuffix(argv[0] || "") !== "specify") continue;
     const args = argv.slice(1).map((value) => value.toLowerCase());
     if (args[0] === "workflow" && args[1] === "run") {
@@ -569,10 +708,6 @@ function validateShellCommand(data) {
         "Spec Kit extension mutation is blocked; only read-only extension inventory is allowed"
       );
     }
-  }
-  const assignment = command.match(/(?:\$env:\s*)?(SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR))\s*=/i);
-  if (assignment) {
-    throw new Error(`inline ${assignment[1].toUpperCase()} shell assignments are blocked`);
   }
 }
 
@@ -681,8 +816,17 @@ function validateStructuredWrite(data, root) {
     const rawIsSpecKit = isSpecKitArtifact(value);
     const canonicalIsSpecKit = isSpecKitArtifact(canonical.replace(/\\/g, "/"));
     if (!isInside(root, canonical)) {
-      const label = rawIsSpecKit || canonicalIsSpecKit ? "Spec Kit write target" : "write target";
-      throw new Error(`${label} must stay inside the current repository lane: ${value}`);
+      if (
+        rawIsSpecKit ||
+        canonicalIsSpecKit ||
+        isPrivateBugTarget(value) ||
+        isPrivateBugTarget(canonical)
+      ) {
+        throw new Error(
+          `Spec Kit write target must stay inside the current repository lane: ${value}`
+        );
+      }
+      continue;
     }
     const relative = path.relative(root, canonical).replace(/\\/g, "/");
     if (isPrivateBugTarget(value) || isPrivateBugTarget(relative)) {
@@ -691,8 +835,8 @@ function validateStructuredWrite(data, root) {
   }
 }
 
-function parseInput() {
-  const raw = fs.readFileSync(0, "utf8");
+async function parseInput() {
+  const raw = await readStdin();
   const data = parseJsonWithoutDuplicateKeys(raw, "hook input");
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     throw new Error("hook input must be one JSON object");
@@ -700,8 +844,8 @@ function parseInput() {
   return data;
 }
 
-try {
-  const data = parseInput();
+async function main() {
+  const data = await parseInput();
   const root = canonicalRepositoryRoot();
   const eventName = String(data.hook_event_name || data.event || "");
   try {
@@ -719,6 +863,6 @@ try {
     validateStructuredWrite(data, root);
   }
   process.stdout.write("{}\n");
-} catch (error) {
-  fail(error.message || String(error));
 }
+
+main().catch((error) => fail(error.message || String(error)));

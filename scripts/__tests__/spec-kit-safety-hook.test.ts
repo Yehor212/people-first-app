@@ -16,6 +16,11 @@ import { dirname, join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 const HOOK = resolve(".codex/hooks/spec-kit-safety-gate.cjs");
+const WORKSPACE_GUARD = resolve(".codex/hooks/agent-workspace-guard.cjs");
+const PROJECT_ROOT = resolve(".");
+const CANONICAL_REMOTE = "https://github.com/Yehor212/people-first-app.git";
+const MAX_JSON_INPUT_BYTES = 1_048_576;
+const MAX_JSON_NESTING_DEPTH = 64;
 const EXTENSIONS_POLICY = [
   "installed: []",
   "settings:",
@@ -135,6 +140,21 @@ function runHook(
   });
 }
 
+function sizedHookInput(size: number): string {
+  const prefix = '{"hook_event_name":"UserPromptSubmit","prompt":"';
+  const suffix = '"}';
+  const contentBytes = size - Buffer.byteLength(prefix) - Buffer.byteLength(suffix);
+  if (contentBytes < 0) throw new Error("requested hook input size is too small");
+  return `${prefix}${"x".repeat(contentBytes)}${suffix}`;
+}
+
+function nestedHookInput(depth: number): string {
+  const nestedArrays = depth - 1;
+  return `{"hook_event_name":"UserPromptSubmit","metadata":${"[".repeat(
+    nestedArrays
+  )}null${"]".repeat(nestedArrays)}}`;
+}
+
 function expectAllowed(result: ReturnType<typeof runHook>): void {
   expect(result.status, result.stderr).toBe(0);
   expect(result.stderr).toBe("");
@@ -237,6 +257,57 @@ describe("Spec Kit safety hook lifecycle", () => {
 
   it("fails closed on malformed hook JSON", () => {
     expectBlocked(runHook(makeRepository(), "NOT JSON"), /Unexpected token|JSON/i);
+  });
+
+  it("C accepts the exact JSON size bound and rejects one byte over within the hook timeout", () => {
+    const root = makeRepository();
+    const startedAt = Date.now();
+
+    expectAllowed(runHook(root, sizedHookInput(MAX_JSON_INPUT_BYTES)));
+    expectBlocked(
+      runHook(root, sizedHookInput(MAX_JSON_INPUT_BYTES + 1)),
+      /JSON input exceeds.*1048576 bytes/i
+    );
+    expect(Date.now() - startedAt).toBeLessThan(10_000);
+  });
+
+  it("C accepts the exact JSON depth bound and rejects one level over within the hook timeout", () => {
+    const root = makeRepository();
+    const startedAt = Date.now();
+
+    expectAllowed(runHook(root, nestedHookInput(MAX_JSON_NESTING_DEPTH)));
+    expectBlocked(
+      runHook(root, nestedHookInput(MAX_JSON_NESTING_DEPTH + 1)),
+      /JSON nesting depth exceeds.*64/i
+    );
+    expect(Date.now() - startedAt).toBeLessThan(10_000);
+  });
+
+  it.each([
+    [
+      "key-like text inside a string",
+      '{"hook_event_name":"UserPromptSubmit","prompt":"\\\"ratified\\\": true"}',
+    ],
+    [
+      "the same key in separate objects",
+      '{"hook_event_name":"UserPromptSubmit","metadata":{"left":{"state":1},"right":{"state":2}}}',
+    ],
+    [
+      "valid JSON escapes",
+      '{"hook_event_name":"UserPromptSubmit","prompt":"line\\nquote\\\"slash\\\\unicode\\u0061"}',
+    ],
+  ])("C accepts %s", (_label, input) => {
+    expectAllowed(runHook(makeRepository(), input));
+  });
+
+  it("C rejects escaped-equivalent duplicate keys", () => {
+    expectBlocked(
+      runHook(
+        makeRepository(),
+        '{"hook_event_name":"UserPromptSubmit","metadata":{"ratified":false,"r\\u0061tified":false}}'
+      ),
+      /duplicate JSON key: ratified/i
+    );
   });
 
   it("fails closed when git cannot resolve a canonical repository root", () => {
@@ -538,16 +609,52 @@ describe("Spec Kit command and lane boundaries", () => {
   });
 
   it.each([
-    "SPECIFY_FEATURE_DIRECTORY=../other specify plan",
-    "env SPECIFY_INIT_DIR=/tmp/other specify extension list",
-    "$env:SPECIFY_FEATURE_DIRECTORY='../other'; specify plan",
-  ])("rejects inline directory override: %s", (command) => {
+    ["Bash", "SPECIFY_FEATURE_DIRECTORY=../other specify plan"],
+    ["Bash", "env SPECIFY_INIT_DIR=/tmp/other specify extension list"],
+    ["Bash", "export SPECIFY_INIT_DIR=/tmp/other"],
+    ["PowerShell", "$env:SPECIFY_FEATURE_DIRECTORY='../other'; specify plan"],
+  ])("rejects inline directory override for %s: %s", (toolName, command) => {
     const result = runHook(makeRepository(), {
       hook_event_name: "PreToolUse",
-      tool_name: "Bash",
+      tool_name: toolName,
       tool_input: { command },
     });
     expectBlocked(result, /inline SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR)/i);
+  });
+
+  it.each([
+    ["workflow", String.raw`& "C:\tools\specify.exe" workflow run demo`, /workflow run/i],
+    [
+      "extension mutation",
+      String.raw`& 'C:\tools\specify.exe' extension add spec-kit-bugs`,
+      /extension mutation/i,
+    ],
+  ])("A blocks a PowerShell Windows-path %s executable", (_label, command, reason) => {
+    expectBlocked(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: { command },
+      }),
+      reason
+    );
+  });
+
+  it.each([
+    ["Bash", "printf '%s\\n' 'specify workflow run demo'"],
+    ["Bash", "printf '%s\\n' 'specify extension add spec-kit-bugs'"],
+    ["Bash", "printf '%s\\n' 'SPECIFY_FEATURE_DIRECTORY=/tmp/example'"],
+    ["PowerShell", "Write-Output 'specify workflow run demo'"],
+    ["PowerShell", "Write-Output 'specify extension add spec-kit-bugs'"],
+    ["PowerShell", "Write-Output '$env:SPECIFY_FEATURE_DIRECTORY=/tmp/example'"],
+  ])("A allows prohibited-looking text used only as %s data: %s", (toolName, command) => {
+    expectAllowed(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: toolName,
+        tool_input: { command },
+      })
+    );
   });
 
   it("accepts inherited feature and init directories only when they resolve inside the lane", () => {
@@ -721,6 +828,47 @@ describe("Spec Kit command and lane boundaries", () => {
         },
       }),
       /Spec Kit write target.*current repository lane/i
+    );
+  });
+
+  it("B allows a neutral outside target while the existing workspace guard denies cross-lane mutation", () => {
+    const safetyRoot = makeRepository();
+    const outsideRepository = makeRepository();
+    const remote = spawnSync("git", ["remote", "add", "origin", CANONICAL_REMOTE], {
+      cwd: outsideRepository,
+      encoding: "utf8",
+    });
+    expect(remote.status, remote.stderr).toBe(0);
+    const target = join(outsideRepository, "neutral.txt");
+    const toolEvent = {
+      hook_event_name: "PreToolUse",
+      tool_name: "WriteFile",
+      tool_input: { path: target, content: "neutral" },
+    };
+
+    expectAllowed(runHook(safetyRoot, toolEvent));
+
+    const workspaceResult = spawnSync(
+      process.execPath,
+      [WORKSPACE_GUARD, "--expected-agent", "codex"],
+      {
+        cwd: PROJECT_ROOT,
+        encoding: "utf8",
+        input: JSON.stringify({ ...toolEvent, cwd: PROJECT_ROOT }),
+      }
+    );
+    expect(workspaceResult.status).toBe(2);
+    expect(workspaceResult.stderr).toContain("ZENFLOW AGENT WORKSPACE GUARD BLOCKED");
+    expect(workspaceResult.stderr).toContain("cross-worktree mutation");
+  });
+
+  it("B allows a safe missing neutral target inside the current lane", () => {
+    expectAllowed(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "WriteFile",
+        tool_input: { path: "notes/neutral-new.txt", content: "neutral" },
+      })
     );
   });
 
