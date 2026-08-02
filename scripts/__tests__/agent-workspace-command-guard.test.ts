@@ -1,16 +1,88 @@
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import {
+  appendFile,
+  chmod,
+  copyFile,
+  link,
+  mkdir,
+  mkdtemp,
+  realpath,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 const HOOK = path.resolve(".codex/hooks/agent-workspace-guard.cjs");
+const PROJECT_ROOT = path.resolve(".");
 const CANONICAL_REMOTE = "https://github.com/Yehor212/people-first-app.git";
 const REVIEWED_SPEC_KIT_COMMANDS = [
   ".specify/scripts/bash/check-prerequisites.sh --json --paths-only",
   ".specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks",
   ".specify/scripts/bash/setup-plan.sh --json",
   ".specify/scripts/bash/setup-tasks.sh --json",
+] as const;
+const REVIEWED_SPEC_KIT_SCRIPTS = [
+  ".specify/scripts/bash/check-prerequisites.sh",
+  ".specify/scripts/bash/setup-plan.sh",
+  ".specify/scripts/bash/setup-tasks.sh",
+] as const;
+const SPEC_KIT_COMMAND_BY_SCRIPT = new Map([
+  [REVIEWED_SPEC_KIT_SCRIPTS[0], REVIEWED_SPEC_KIT_COMMANDS[0]],
+  [REVIEWED_SPEC_KIT_SCRIPTS[1], REVIEWED_SPEC_KIT_COMMANDS[2]],
+  [REVIEWED_SPEC_KIT_SCRIPTS[2], REVIEWED_SPEC_KIT_COMMANDS[3]],
+]);
+const setupPlan = REVIEWED_SPEC_KIT_COMMANDS[2];
+const prerequisites = REVIEWED_SPEC_KIT_COMMANDS[0];
+const SPEC_KIT_NON_EXACT_COMMANDS = [
+  [
+    "arbitrary script",
+    () => ".specify/scripts/bash/arbitrary.sh --json",
+    /unknown shell execution/,
+  ],
+  ["bash wrapper", () => `bash ${setupPlan}`, /opaque child-process execution/],
+  ["sh wrapper", () => `sh ${setupPlan}`, /opaque child-process execution/],
+  ["nested bash wrapper", () => `bash -c '${setupPlan}'`, /unknown shell execution/],
+  ["nested sh wrapper", () => `sh -c '${setupPlan}'`, /unknown shell execution/],
+  ["nested env execution", () => `env -- ${setupPlan}`, /unknown shell execution/],
+  [
+    "absolute path",
+    (root: string) => `${path.join(root, ".specify/scripts/bash/setup-plan.sh")} --json`,
+    /unknown shell execution/,
+  ],
+  ["control operator", () => `${setupPlan} && git status --short`, /unknown shell execution/],
+  ["redirection", () => `${setupPlan} > /tmp/spec-kit.json`, /unknown shell execution/],
+  ["substitution", () => `${setupPlan} $(pwd)`, /executable shell expansion/],
+  [
+    "missing argument",
+    () => ".specify/scripts/bash/check-prerequisites.sh --json",
+    /unknown shell execution/,
+  ],
+  [
+    "reordered arguments",
+    () => ".specify/scripts/bash/check-prerequisites.sh --paths-only --json",
+    /unknown shell execution/,
+  ],
+  ["duplicated argument", () => `${setupPlan} --json`, /unknown shell execution/],
+  ["unexpected argument", () => `${setupPlan} --verbose`, /unknown shell execution/],
+  ["appended command", () => `${prerequisites}; git status --short`, /unknown shell execution/],
+  ["environment prefix", () => `LC_ALL=C ${setupPlan}`, /shell environment override/],
+  ["leading space", () => ` ${setupPlan}`, /unknown shell execution/],
+  ["trailing space", () => `${setupPlan} `, /unknown shell execution/],
+  ["leading tab", () => `\t${setupPlan}`, /unknown shell execution/],
+  ["trailing tab", () => `${setupPlan}\t`, /unknown shell execution/],
+  ["leading newline", () => `\n${setupPlan}`, /unknown shell execution/],
+  ["trailing newline", () => `${setupPlan}\n`, /unknown shell execution/],
+] satisfies ReadonlyArray<readonly [string, (root: string) => string, RegExp]>;
+const HOOK_HARNESS_FILES = [
+  ".codex/hooks/agent-workspace-guard.cjs",
+  "scripts/agent-workspace-command-guard.cjs",
+  "scripts/agent-workspace-core.cjs",
+  "scripts/codex-governance/tool-targets.cjs",
+  ".specify/zenflow-install-manifest.json",
+  ...REVIEWED_SPEC_KIT_SCRIPTS,
 ] as const;
 const roots: string[] = [];
 
@@ -396,56 +468,103 @@ describe("Codex and Kimi workspace command guard", () => {
   it.each(REVIEWED_SPEC_KIT_COMMANDS)(
     "allows the exact reviewed Spec Kit command: %s",
     async (command) => {
-      const root = await gitWorkspace(CANONICAL_REMOTE);
+      const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
 
-      const result = runHook(root, { ...bash(command), cwd: root });
+      const result = runHook(root, { ...bash(command), cwd: root }, "codex", hook);
 
       expect(result.status, result.stderr).toBe(0);
     }
   );
 
-  it("rejects every non-exact Spec Kit command variant", async () => {
-    const root = await gitWorkspace(CANONICAL_REMOTE);
-    git(root, ["switch", "-c", "codex/spec-kit"]);
-    const prerequisites = REVIEWED_SPEC_KIT_COMMANDS[0];
-    const setupPlan = REVIEWED_SPEC_KIT_COMMANDS[2];
-    const cases: Array<[label: string, command: string, reason: RegExp]> = [
-      ["arbitrary script", ".specify/scripts/bash/arbitrary.sh --json", /unknown shell execution/],
-      ["bash wrapper", `bash ${setupPlan}`, /opaque child-process execution/],
-      ["sh wrapper", `sh ${setupPlan}`, /opaque child-process execution/],
-      ["nested bash wrapper", `bash -c '${setupPlan}'`, /unknown shell execution/],
-      ["nested sh wrapper", `sh -c '${setupPlan}'`, /unknown shell execution/],
-      ["nested env execution", `env -- ${setupPlan}`, /unknown shell execution/],
-      [
-        "absolute path",
-        `${path.join(root, ".specify/scripts/bash/setup-plan.sh")} --json`,
-        /unknown shell execution/,
-      ],
-      ["control operator", `${setupPlan} && git status --short`, /unknown shell execution/],
-      ["redirection", `${setupPlan} > /tmp/spec-kit.json`, /unknown shell execution/],
-      ["substitution", `${setupPlan} $(pwd)`, /executable shell expansion/],
-      [
-        "missing argument",
-        ".specify/scripts/bash/check-prerequisites.sh --json",
-        /unknown shell execution/,
-      ],
-      [
-        "reordered arguments",
-        ".specify/scripts/bash/check-prerequisites.sh --paths-only --json",
-        /unknown shell execution/,
-      ],
-      ["duplicated argument", `${setupPlan} --json`, /unknown shell execution/],
-      ["unexpected argument", `${setupPlan} --verbose`, /unknown shell execution/],
-      ["appended command", `${prerequisites}; git status --short`, /unknown shell execution/],
-      ["environment prefix", `LC_ALL=C ${setupPlan}`, /shell environment override/],
-    ];
+  it.each(SPEC_KIT_NON_EXACT_COMMANDS)(
+    "rejects the non-exact Spec Kit command variant: %s",
+    async (label, commandForRoot, reason) => {
+      const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/spec-kit"]);
+      const command = commandForRoot(root);
 
-    for (const [label, command, reason] of cases) {
-      const result = runHook(root, { ...bash(command), cwd: root });
+      const result = runHook(root, { ...bash(command), cwd: root }, "codex", hook);
+
       expect(result.status, `${label}: ${command}\n${result.stderr}`).toBe(2);
       expect(result.stderr, `${label}: ${command}`).toMatch(reason);
     }
-  });
+  );
+
+  it.each(REVIEWED_SPEC_KIT_COMMANDS)(
+    "rejects a nested-cwd Spec Kit lookalike: %s",
+    async (command) => {
+      const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/spec-kit"]);
+      const script = command.split(" ", 1)[0];
+      const nestedRoot = path.join(root, "nested");
+      const nestedScript = path.join(nestedRoot, script);
+      await mkdir(path.dirname(nestedScript), { recursive: true });
+      await copyFile(path.join(root, script), nestedScript);
+      await chmod(nestedScript, 0o755);
+
+      const result = runHook(nestedRoot, { ...bash(command), cwd: nestedRoot }, "codex", hook);
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain("unknown shell execution");
+    }
+  );
+
+  it.each(REVIEWED_SPEC_KIT_SCRIPTS)(
+    "rejects modified reviewed Spec Kit target bytes: %s",
+    async (script) => {
+      const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/spec-kit"]);
+      await appendFile(path.join(root, script), "\n# modified after review\n", "utf8");
+      const command = SPEC_KIT_COMMAND_BY_SCRIPT.get(script);
+      expect(command).toBeTruthy();
+
+      const result = runHook(root, { ...bash(command!), cwd: root }, "codex", hook);
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain("unknown shell execution");
+    }
+  );
+
+  it.each(REVIEWED_SPEC_KIT_SCRIPTS)(
+    "rejects a symlinked reviewed Spec Kit target: %s",
+    async (script) => {
+      const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/spec-kit"]);
+      const target = path.join(root, script);
+      const lookalike = path.join(root, "lookalikes", path.basename(script));
+      await mkdir(path.dirname(lookalike), { recursive: true });
+      await copyFile(target, lookalike);
+      await chmod(lookalike, 0o755);
+      await rm(target);
+      await symlink(lookalike, target);
+      const command = SPEC_KIT_COMMAND_BY_SCRIPT.get(script);
+      expect(command).toBeTruthy();
+
+      const result = runHook(root, { ...bash(command!), cwd: root }, "codex", hook);
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain("unknown shell execution");
+    }
+  );
+
+  it.each(REVIEWED_SPEC_KIT_SCRIPTS)(
+    "rejects a hard-linked reviewed Spec Kit target: %s",
+    async (script) => {
+      const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/spec-kit"]);
+      const target = path.join(root, script);
+      const lookalike = path.join(root, "lookalikes", path.basename(script));
+      await mkdir(path.dirname(lookalike), { recursive: true });
+      await link(target, lookalike);
+      const command = SPEC_KIT_COMMAND_BY_SCRIPT.get(script);
+      expect(command).toBeTruthy();
+
+      const result = runHook(root, { ...bash(command!), cwd: root }, "codex", hook);
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain("unknown shell execution");
+    }
+  );
 
   it("does not apply ZenFlow policy to an unrelated repository", async () => {
     const root = await gitWorkspace("https://github.com/example/other.git");
@@ -925,8 +1044,19 @@ async function gitWorkspace(remote: string): Promise<string> {
   return root;
 }
 
-function runHook(cwd: string, payload: object, expectedAgent = "codex") {
-  return spawnSync(process.execPath, [HOOK, "--expected-agent", expectedAgent], {
+async function guardedGitWorkspace(remote: string): Promise<{ hook: string; root: string }> {
+  const root = await realpath(await gitWorkspace(remote));
+  for (const relativePath of HOOK_HARNESS_FILES) {
+    const destination = path.join(root, relativePath);
+    await mkdir(path.dirname(destination), { recursive: true });
+    await copyFile(path.join(PROJECT_ROOT, relativePath), destination);
+    if (relativePath.endsWith(".sh")) await chmod(destination, 0o755);
+  }
+  return { hook: path.join(root, ".codex/hooks/agent-workspace-guard.cjs"), root };
+}
+
+function runHook(cwd: string, payload: object, expectedAgent = "codex", hook = HOOK) {
+  return spawnSync(process.execPath, [hook, "--expected-agent", expectedAgent], {
     cwd,
     encoding: "utf8",
     input: JSON.stringify(payload),

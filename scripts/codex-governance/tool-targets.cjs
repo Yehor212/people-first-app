@@ -1,6 +1,19 @@
 "use strict";
 
+const { createHash } = require("node:crypto");
+const {
+  closeSync,
+  constants: fsConstants,
+  fstatSync,
+  lstatSync,
+  openSync,
+  readFileSync,
+  realpathSync,
+} = require("node:fs");
 const path = require("node:path");
+
+const REPOSITORY_ROOT = path.resolve(__dirname, "../..");
+const REALPATH = realpathSync.native || realpathSync;
 
 const WRITE_TOOL_PATTERN =
   /(?:^|\.)(?:apply_patch|edit|write|multiedit|writefile|createfile|deletefile|strreplacefile|notebookedit)$/i;
@@ -77,12 +90,155 @@ const REVIEWED_PACKAGE_SCRIPTS = new Set([
   "typecheck",
   "verify:tailwind",
 ]);
-const REVIEWED_DIRECT_READ_ONLY_COMMANDS = new Set([
-  ".specify/scripts/bash/check-prerequisites.sh --json --paths-only",
-  ".specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks",
-  ".specify/scripts/bash/setup-plan.sh --json",
-  ".specify/scripts/bash/setup-tasks.sh --json",
+const SPEC_KIT_PROVENANCE = {
+  relativePath: ".specify/zenflow-install-manifest.json",
+  sha256: "f171991f9ce48e3caadfa8d6db67c1ce3fe509ad0411e796ce2c58c2ac9ccdb2",
+  size: 6769,
+  mode: 0o644,
+};
+const REVIEWED_DIRECT_READ_ONLY_COMMANDS = new Map([
+  [
+    ".specify/scripts/bash/check-prerequisites.sh --json --paths-only",
+    {
+      relativePath: ".specify/scripts/bash/check-prerequisites.sh",
+      sha256: "50fc0aff7ed4c02ca92fe87520130d6c928bff3b7dd3e6cdd86c3d514407e752",
+      size: 6333,
+      mode: 0o755,
+    },
+  ],
+  [
+    ".specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks",
+    {
+      relativePath: ".specify/scripts/bash/check-prerequisites.sh",
+      sha256: "50fc0aff7ed4c02ca92fe87520130d6c928bff3b7dd3e6cdd86c3d514407e752",
+      size: 6333,
+      mode: 0o755,
+    },
+  ],
+  [
+    ".specify/scripts/bash/setup-plan.sh --json",
+    {
+      relativePath: ".specify/scripts/bash/setup-plan.sh",
+      sha256: "4469b22960f43c07c33dca00de6dedb252145e9a9ce8fbb0e63be82e02b082ab",
+      size: 2493,
+      mode: 0o755,
+    },
+  ],
+  [
+    ".specify/scripts/bash/setup-tasks.sh --json",
+    {
+      relativePath: ".specify/scripts/bash/setup-tasks.sh",
+      sha256: "49e336e94d25ed07da1c3c39c97292c4f217f404a81d1229195a8ce249cbc7f1",
+      size: 3241,
+      mode: 0o755,
+    },
+  ],
 ]);
+
+function reviewedDirectCommandIsTrusted(command, cwd) {
+  const reviewedTarget = REVIEWED_DIRECT_READ_ONLY_COMMANDS.get(command);
+  if (!reviewedTarget || !repositoryCwdIsCanonical(cwd)) return false;
+
+  const provenanceBytes = readReviewedRegularFile(SPEC_KIT_PROVENANCE);
+  if (!provenanceBytes) return false;
+
+  let provenance;
+  try {
+    provenance = JSON.parse(provenanceBytes.toString("utf8"));
+  } catch {
+    return false;
+  }
+  if (
+    provenance?.source?.latest_release !== "v0.15.1" ||
+    provenance?.generator?.specify_cli !== "0.15.1" ||
+    !Array.isArray(provenance?.inventory?.tracked_paths) ||
+    !provenance.inventory.tracked_paths.includes(reviewedTarget.relativePath)
+  ) {
+    return false;
+  }
+
+  return readReviewedRegularFile(reviewedTarget) !== null;
+}
+
+function repositoryCwdIsCanonical(cwd) {
+  if (!isNonEmptyString(cwd) || !path.isAbsolute(cwd)) return false;
+  const resolvedCwd = path.resolve(cwd);
+  if (resolvedCwd !== REPOSITORY_ROOT) return false;
+  try {
+    const rootStat = lstatSync(REPOSITORY_ROOT, { bigint: true });
+    return (
+      rootStat.isDirectory() &&
+      !rootStat.isSymbolicLink() &&
+      REALPATH(REPOSITORY_ROOT) === REPOSITORY_ROOT
+    );
+  } catch {
+    return false;
+  }
+}
+
+function readReviewedRegularFile(reviewedFile) {
+  const target = path.resolve(REPOSITORY_ROOT, reviewedFile.relativePath);
+  if (path.dirname(target) === target || !pathInsideRepository(target)) return null;
+
+  let descriptor;
+  try {
+    const pathStat = lstatSync(target, { bigint: true });
+    if (!reviewedFileStatMatches(pathStat, reviewedFile)) return null;
+    if (REALPATH(target) !== target) return null;
+
+    descriptor = openSync(
+      target,
+      fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW || 0)
+    );
+    const before = fstatSync(descriptor, { bigint: true });
+    if (!sameFileIdentity(pathStat, before) || !reviewedFileStatMatches(before, reviewedFile)) {
+      return null;
+    }
+
+    const bytes = readFileSync(descriptor);
+    const after = fstatSync(descriptor, { bigint: true });
+    if (!sameFileSnapshot(before, after)) return null;
+    return sha256(bytes) === reviewedFile.sha256 ? bytes : null;
+  } catch {
+    return null;
+  } finally {
+    if (descriptor !== undefined) closeSync(descriptor);
+  }
+}
+
+function pathInsideRepository(candidate) {
+  const relative = path.relative(REPOSITORY_ROOT, candidate);
+  return relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative);
+}
+
+function reviewedFileStatMatches(stat, reviewedFile) {
+  return (
+    stat.isFile() &&
+    !stat.isSymbolicLink() &&
+    stat.nlink === 1n &&
+    stat.size === BigInt(reviewedFile.size) &&
+    (stat.mode & 0o777n) === BigInt(reviewedFile.mode)
+  );
+}
+
+function sameFileIdentity(left, right) {
+  return left.dev === right.dev && left.ino === right.ino;
+}
+
+function sameFileSnapshot(left, right) {
+  return (
+    sameFileIdentity(left, right) &&
+    left.mode === right.mode &&
+    left.nlink === right.nlink &&
+    left.size === right.size &&
+    left.mtimeNs === right.mtimeNs &&
+    left.ctimeNs === right.ctimeNs
+  );
+}
+
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
 
 function analyzeToolEvent(event) {
   const input =
@@ -98,8 +254,9 @@ function analyzeToolEvent(event) {
   if (writeLikeTool && isNonEmptyString(input.command)) patchTexts.push(input.command);
   const patchTargets = patchTexts.flatMap(extractPatchPaths);
   const command = [input.command, input.cmd].filter(isNonEmptyString).join("\n");
+  const cwd = [event?.cwd, input.cwd, input.workdir].find(isNonEmptyString) || "";
   const shell = shellTool
-    ? analyzeShellCommand(command)
+    ? analyzeShellCommand(command, { allowReviewedDirect: true, cwd })
     : {
         mutationIntent: false,
         destructiveFilesystem: false,
@@ -173,7 +330,7 @@ function visitStructuredPaths(value, depth, state) {
   }
 }
 
-function analyzeShellCommand(command, allowReviewedDirect = true) {
+function analyzeShellCommand(command, options = {}) {
   const text = String(command || "");
   if (!text.trim()) {
     return {
@@ -187,7 +344,10 @@ function analyzeShellCommand(command, allowReviewedDirect = true) {
       workingDirectories: [],
     };
   }
-  if (allowReviewedDirect && REVIEWED_DIRECT_READ_ONLY_COMMANDS.has(text.trim())) {
+  if (
+    options.allowReviewedDirect === true &&
+    reviewedDirectCommandIsTrusted(text, options.cwd)
+  ) {
     return {
       mutationIntent: false,
       destructiveFilesystem: false,
@@ -247,7 +407,9 @@ function analyzeStatement(tokens) {
   if (["bash", "sh", "zsh"].includes(command)) {
     const commandFlag = args.findIndex((arg) => arg === "-c" || arg === "-lc");
     if (commandFlag >= 0 && args[commandFlag + 1]) {
-      const nested = analyzeShellCommand(args[commandFlag + 1], false);
+      const nested = analyzeShellCommand(args[commandFlag + 1], {
+        allowReviewedDirect: false,
+      });
       return nested.mutationIntent
         ? {
             command: `${command} -c`,
@@ -455,7 +617,9 @@ function isReadOnlyStatement(tokens) {
       ["-c", "-lc", "-command"].includes(arg.toLowerCase())
     );
     if (commandFlag < 0 || !args[commandFlag + 1]) return false;
-    const nested = analyzeShellCommand(args[commandFlag + 1], false);
+    const nested = analyzeShellCommand(args[commandFlag + 1], {
+      allowReviewedDirect: false,
+    });
     return !nested.mutationIntent && !nested.opaqueExecution && !nested.unknownExecution;
   }
   if (command === "git") return isReadOnlyGit(args);
