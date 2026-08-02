@@ -23,6 +23,13 @@
             "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
             "timeout": 5,
             "statusMessage": "Routing production data integrity"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/spec-kit-safety-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/spec-kit-safety-gate.cjs')\"",
+            "timeout": 10,
+            "statusMessage": "Checking Spec Kit trust state"
           }
         ]
       }
@@ -58,6 +65,13 @@
             "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
             "timeout": 5,
             "statusMessage": "Guarding production data integrity"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/spec-kit-safety-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/spec-kit-safety-gate.cjs')\"",
+            "timeout": 10,
+            "statusMessage": "Guarding Spec Kit trust state"
           }
         ]
       }
@@ -72,6 +86,13 @@
             "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
             "timeout": 20,
             "statusMessage": "Checking production data diff"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/spec-kit-safety-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/spec-kit-safety-gate.cjs')\"",
+            "timeout": 10,
+            "statusMessage": "Reporting Spec Kit trust drift"
           }
         ]
       }
