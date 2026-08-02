@@ -704,6 +704,37 @@ function staticExecutableCommands(command, dialect, depth = 0) {
   );
 }
 
+function restrictedPowerShellProviderName(providerPath) {
+  const match = /^env:(?:\\)?(SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR))$/i.exec(providerPath || "");
+  return match ? match[1].toUpperCase() : "";
+}
+
+function powerShellProviderPath(tokens) {
+  const noValueSwitch = /^(?:force|whatif|confirm|passthru|verbose|debug)$/i;
+  const valueOption =
+    /^(?:value|filter|include|exclude|credential|erroraction|errorvariable|informationaction|informationvariable|outbuffer|outvariable|pipelinevariable|progressaction|warningaction|warningvariable)$/i;
+
+  for (let index = 1; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (/^-(?:path|literalpath)$/i.test(token)) return tokens[index + 1] || "";
+
+    const attachedSwitch = /^-([^:]+):\$(?:true|false)$/i.exec(token);
+    if (attachedSwitch && noValueSwitch.test(attachedSwitch[1])) continue;
+    const option = /^-([^:]+)$/.exec(token);
+    if (option && noValueSwitch.test(option[1])) continue;
+
+    if (option && valueOption.test(option[1])) {
+      if (!tokens[index + 1]) return "";
+      index += 1;
+      continue;
+    }
+
+    if (token.startsWith("-")) return "";
+    return token;
+  }
+  return "";
+}
+
 function restrictedAssignmentName(segment, dialect) {
   const restricted = /^(?:SPECIFY_FEATURE_DIRECTORY|SPECIFY_INIT_DIR)$/i;
   if (dialect === "powershell") {
@@ -713,17 +744,7 @@ function restrictedAssignmentName(segment, dialect) {
     if (match && (tokens[0].includes("=") || tokens[1] === "=")) return match[1].toUpperCase();
     const executable = stripExecutableSuffix(tokens[0] || "");
     if (!["set-item", "set-content"].includes(executable)) return "";
-    let providerPath = "";
-    for (let index = 1; index < tokens.length; index += 1) {
-      if (/^-(?:path|literalpath)$/i.test(tokens[index]) && tokens[index + 1]) {
-        providerPath = tokens[index + 1];
-        break;
-      }
-    }
-    if (!providerPath && tokens[1] && !tokens[1].startsWith("-")) providerPath = tokens[1];
-    const providerMatch = /^env:(SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR))$/i.exec(providerPath);
-    if (providerMatch) return providerMatch[1].toUpperCase();
-    return "";
+    return restrictedPowerShellProviderName(powerShellProviderPath(tokens));
   }
 
   let index = 0;

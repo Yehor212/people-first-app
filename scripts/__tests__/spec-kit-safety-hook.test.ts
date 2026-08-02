@@ -767,6 +767,41 @@ describe("Spec Kit command and lane boundaries", () => {
   });
 
   it.each([
+    String.raw`Set-Item -Path 'Env:\SPECIFY_FEATURE_DIRECTORY' -Value 'C:\outside'; specify plan`,
+    String.raw`Set-Item -Force Env:SPECIFY_FEATURE_DIRECTORY 'C:\outside'; specify plan`,
+    String.raw`Set-Content -Force 'Env:\SPECIFY_INIT_DIR' 'C:\outside'; specify plan`,
+    String.raw`Set-Content -Value 'C:\outside' -Confirm:$false -LiteralPath 'Env:\SPECIFY_INIT_DIR'; specify plan`,
+    String.raw`Set-Item -WhatIf:$false -Confirm:$false -Force Env:\SPECIFY_FEATURE_DIRECTORY 'C:\outside'; specify plan`,
+    String.raw`Set-Content -Value 'C:\outside' -ErrorAction Stop Env:SPECIFY_INIT_DIR; specify plan`,
+  ])("R4-A rejects a documented provider path after bounded arguments: %s", (command) => {
+    expectBlocked(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: { command },
+      }),
+      /inline SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR)/i
+    );
+  });
+
+  it.each([
+    String.raw`Write-Output "Set-Item -Force Env:\SPECIFY_FEATURE_DIRECTORY C:\outside"`,
+    String.raw`Set-Item -Force Variable:SPECIFY_FEATURE_DIRECTORY 'C:\outside'`,
+    String.raw`Set-Content -Value 'Env:\SPECIFY_INIT_DIR' -Path 'Variable:ordinary'`,
+  ])(
+    "R4-A allows inert data or a non-Env provider without arbitrary token scanning: %s",
+    (command) => {
+      expectAllowed(
+        runHook(makeRepository(), {
+          hook_event_name: "PreToolUse",
+          tool_name: "PowerShell",
+          tool_input: { command },
+        })
+      );
+    }
+  );
+
+  it.each([
     ["workflow", String.raw`& "C:\tools\specify.exe" workflow run demo`, /workflow run/i],
     [
       "extension mutation",
