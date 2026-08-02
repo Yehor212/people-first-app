@@ -1,5 +1,5 @@
 /**
- * Style Dictionary v4 configuration — ZenFlow Phase 0-A → Phase 0-B
+ * Style Dictionary v5 configuration — ZenFlow Phase 0-A → Phase 0-B
  *
  * Builds `src/design-tokens/tokens.json` (W3C DTCG format) into:
  *   - `src/generated/tokens.css`  — CSS custom properties under :root
@@ -21,7 +21,7 @@
  * Phase 0-B adds typography tokens (family, scale, weight, leading, tracking).
  * Colors in src/index.css remain the source of truth until Phase 2-B.
  *
- * Docs: https://styledictionary.com/ (v4), DTCG spec 2025-10-28
+ * Docs: https://styledictionary.com/ (v5), DTCG spec 2025-10-28
  */
 
 import StyleDictionary from "style-dictionary";
@@ -177,7 +177,7 @@ StyleDictionary.registerFormat({
 // ---------- Config ----------
 
 export default {
-  // DTCG $value/$type/$description support (Style Dictionary v4 built-in)
+  // DTCG $value/$type/$description support (Style Dictionary v5 built-in)
   preprocessors: ["tokens-studio"],
   source: ["src/design-tokens/tokens.json"],
   log: {
