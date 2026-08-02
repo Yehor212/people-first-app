@@ -90,54 +90,51 @@ const REVIEWED_PACKAGE_SCRIPTS = new Set([
   "typecheck",
   "verify:tailwind",
 ]);
-const SPEC_KIT_PROVENANCE = {
+const SPEC_KIT_PROVENANCE = Object.freeze({
   relativePath: ".specify/zenflow-install-manifest.json",
   sha256: "f171991f9ce48e3caadfa8d6db67c1ce3fe509ad0411e796ce2c58c2ac9ccdb2",
   size: 6769,
   mode: 0o644,
-};
+});
+const CHECK_PREREQUISITES_SCRIPT = Object.freeze({
+  relativePath: ".specify/scripts/bash/check-prerequisites.sh",
+  sha256: "50fc0aff7ed4c02ca92fe87520130d6c928bff3b7dd3e6cdd86c3d514407e752",
+  size: 6333,
+  mode: 0o755,
+});
+const SETUP_PLAN_SCRIPT = Object.freeze({
+  relativePath: ".specify/scripts/bash/setup-plan.sh",
+  sha256: "4469b22960f43c07c33dca00de6dedb252145e9a9ce8fbb0e63be82e02b082ab",
+  size: 2493,
+  mode: 0o755,
+});
+const SETUP_TASKS_SCRIPT = Object.freeze({
+  relativePath: ".specify/scripts/bash/setup-tasks.sh",
+  sha256: "49e336e94d25ed07da1c3c39c97292c4f217f404a81d1229195a8ce249cbc7f1",
+  size: 3241,
+  mode: 0o755,
+});
 const REVIEWED_DIRECT_READ_ONLY_COMMANDS = new Map([
   [
     ".specify/scripts/bash/check-prerequisites.sh --json --paths-only",
-    {
-      relativePath: ".specify/scripts/bash/check-prerequisites.sh",
-      sha256: "50fc0aff7ed4c02ca92fe87520130d6c928bff3b7dd3e6cdd86c3d514407e752",
-      size: 6333,
-      mode: 0o755,
-    },
+    CHECK_PREREQUISITES_SCRIPT,
   ],
   [
     ".specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks",
-    {
-      relativePath: ".specify/scripts/bash/check-prerequisites.sh",
-      sha256: "50fc0aff7ed4c02ca92fe87520130d6c928bff3b7dd3e6cdd86c3d514407e752",
-      size: 6333,
-      mode: 0o755,
-    },
+    CHECK_PREREQUISITES_SCRIPT,
   ],
-  [
-    ".specify/scripts/bash/setup-plan.sh --json",
-    {
-      relativePath: ".specify/scripts/bash/setup-plan.sh",
-      sha256: "4469b22960f43c07c33dca00de6dedb252145e9a9ce8fbb0e63be82e02b082ab",
-      size: 2493,
-      mode: 0o755,
-    },
-  ],
-  [
-    ".specify/scripts/bash/setup-tasks.sh --json",
-    {
-      relativePath: ".specify/scripts/bash/setup-tasks.sh",
-      sha256: "49e336e94d25ed07da1c3c39c97292c4f217f404a81d1229195a8ce249cbc7f1",
-      size: 3241,
-      mode: 0o755,
-    },
-  ],
+  [".specify/scripts/bash/setup-plan.sh --json", SETUP_PLAN_SCRIPT],
+  [".specify/scripts/bash/setup-tasks.sh --json", SETUP_TASKS_SCRIPT],
 ]);
 
-function reviewedDirectCommandIsTrusted(command, cwd) {
+function reviewedDirectCommandIsTrusted(command, locationEvidence, executorCwd) {
   const reviewedTarget = REVIEWED_DIRECT_READ_ONLY_COMMANDS.get(command);
-  if (!reviewedTarget || !repositoryCwdIsCanonical(cwd)) return false;
+  if (
+    !reviewedTarget ||
+    !repositoryLocationsAreCanonical(locationEvidence, executorCwd)
+  ) {
+    return false;
+  }
 
   const provenanceBytes = readReviewedRegularFile(SPEC_KIT_PROVENANCE);
   if (!provenanceBytes) return false;
@@ -160,17 +157,36 @@ function reviewedDirectCommandIsTrusted(command, cwd) {
   return readReviewedRegularFile(reviewedTarget) !== null;
 }
 
-function repositoryCwdIsCanonical(cwd) {
-  if (!isNonEmptyString(cwd) || !path.isAbsolute(cwd)) return false;
-  const resolvedCwd = path.resolve(cwd);
-  if (resolvedCwd !== REPOSITORY_ROOT) return false;
+function repositoryLocationsAreCanonical(locationEvidence, executorCwd) {
+  if (!isNonEmptyString(executorCwd) || !path.isAbsolute(executorCwd)) return false;
+  const resolvedExecutorCwd = path.resolve(executorCwd);
+  if (resolvedExecutorCwd !== REPOSITORY_ROOT) return false;
   try {
     const rootStat = lstatSync(REPOSITORY_ROOT, { bigint: true });
-    return (
-      rootStat.isDirectory() &&
-      !rootStat.isSymbolicLink() &&
-      REALPATH(REPOSITORY_ROOT) === REPOSITORY_ROOT
-    );
+    if (
+      !rootStat.isDirectory() ||
+      rootStat.isSymbolicLink() ||
+      REALPATH(REPOSITORY_ROOT) !== REPOSITORY_ROOT ||
+      REALPATH(resolvedExecutorCwd) !== REPOSITORY_ROOT
+    ) {
+      return false;
+    }
+
+    let hasNonEmptyLocation = false;
+    for (const evidence of Array.isArray(locationEvidence) ? locationEvidence : []) {
+      if (!evidence?.supplied) continue;
+      if (typeof evidence.value !== "string") return false;
+      if (!evidence.value.trim()) continue;
+      hasNonEmptyLocation = true;
+      const resolvedLocation = path.resolve(resolvedExecutorCwd, evidence.value);
+      if (
+        resolvedLocation !== REPOSITORY_ROOT ||
+        REALPATH(resolvedLocation) !== REPOSITORY_ROOT
+      ) {
+        return false;
+      }
+    }
+    return hasNonEmptyLocation;
   } catch {
     return false;
   }
@@ -254,9 +270,17 @@ function analyzeToolEvent(event) {
   if (writeLikeTool && isNonEmptyString(input.command)) patchTexts.push(input.command);
   const patchTargets = patchTexts.flatMap(extractPatchPaths);
   const command = [input.command, input.cmd].filter(isNonEmptyString).join("\n");
-  const cwd = [event?.cwd, input.cwd, input.workdir].find(isNonEmptyString) || "";
+  const locationEvidence = [
+    { supplied: hasOwn(event, "cwd"), value: event?.cwd },
+    { supplied: hasOwn(input, "cwd"), value: input.cwd },
+    { supplied: hasOwn(input, "workdir"), value: input.workdir },
+  ];
   const shell = shellTool
-    ? analyzeShellCommand(command, { allowReviewedDirect: true, cwd })
+    ? analyzeShellCommand(command, {
+        allowReviewedDirect: true,
+        executorCwd: process.cwd(),
+        locationEvidence,
+      })
     : {
         mutationIntent: false,
         destructiveFilesystem: false,
@@ -346,7 +370,7 @@ function analyzeShellCommand(command, options = {}) {
   }
   if (
     options.allowReviewedDirect === true &&
-    reviewedDirectCommandIsTrusted(text, options.cwd)
+    reviewedDirectCommandIsTrusted(text, options.locationEvidence, options.executorCwd)
   ) {
     return {
       mutationIntent: false,
@@ -1562,6 +1586,10 @@ function normalizeShellTarget(value) {
 
 function baseCommand(value) {
   return path.posix.basename(String(value || "").replace(/\\/g, "/")).toLowerCase();
+}
+
+function hasOwn(value, key) {
+  return value !== null && typeof value === "object" && Object.hasOwn(value, key);
 }
 
 function isNonEmptyString(value) {

@@ -476,6 +476,100 @@ describe("Codex and Kimi workspace command guard", () => {
     }
   );
 
+  it.each([
+    [
+      "root event.cwd with nested input.workdir",
+      (root: string, nested: string) => ({ eventCwd: root, inputWorkdir: nested }),
+    ],
+    [
+      "nested event.cwd with root input.workdir",
+      (root: string, nested: string) => ({ eventCwd: nested, inputWorkdir: root }),
+    ],
+    [
+      "root input.cwd with nested input.workdir",
+      (root: string, nested: string) => ({ inputCwd: root, inputWorkdir: nested }),
+    ],
+    [
+      "nested input.cwd with root input.workdir",
+      (root: string, nested: string) => ({ inputCwd: nested, inputWorkdir: root }),
+    ],
+    [
+      "root event.cwd with relative nested input.workdir",
+      (root: string) => ({ eventCwd: root, inputWorkdir: "nested" }),
+    ],
+  ] as const)("rejects conflicting Spec Kit location evidence: %s", async (_label, locations) => {
+    const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+    const nested = path.join(root, "nested");
+    await mkdir(nested, { recursive: true });
+    const payload = bashWithLocations(setupPlan, locations(root, nested));
+
+    const result = runHook(root, payload, "codex", hook);
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain("unknown shell execution");
+  });
+
+  it.each([
+    ["relative event cwd", { eventCwd: ".", inputCwd: "./", inputWorkdir: "." }],
+    ["relative input cwd", { eventCwd: "./", inputCwd: ".", inputWorkdir: "./" }],
+    ["empty fields ignored", { eventCwd: "", inputCwd: ".", inputWorkdir: "   " }],
+  ] as const)(
+    "allows canonically equivalent Spec Kit location evidence: %s",
+    async (_label, locations) => {
+      const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+      const payload = bashWithLocations(setupPlan, locations);
+
+      const result = runHook(root, payload, "codex", hook);
+
+      expect(result.status, result.stderr).toBe(0);
+    }
+  );
+
+  it.each([
+    ["object event.cwd", (root: string) => ({ eventCwd: { path: root }, inputCwd: root })],
+    ["numeric input.cwd", (root: string) => ({ eventCwd: root, inputCwd: 0 })],
+    ["null input.workdir", (root: string) => ({ eventCwd: root, inputWorkdir: null })],
+  ] as const)(
+    "rejects malformed Spec Kit location evidence: %s",
+    async (_label, locationsForRoot) => {
+      const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+      const payload = bashWithLocations(setupPlan, locationsForRoot(root));
+
+      const result = runHook(root, payload, "codex", hook);
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain("unknown shell execution");
+    }
+  );
+
+  it("rejects a reviewed Spec Kit command without payload location evidence", async () => {
+    const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+
+    const result = runHook(root, bash(setupPlan), "codex", hook);
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain("unknown shell execution");
+  });
+
+  it("rejects root payload fields when the hook executor cwd is nested", async () => {
+    const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+    const nested = path.join(root, "nested");
+    const nestedScript = path.join(nested, ".specify/scripts/bash/setup-plan.sh");
+    await mkdir(path.dirname(nestedScript), { recursive: true });
+    await copyFile(path.join(root, ".specify/scripts/bash/setup-plan.sh"), nestedScript);
+    await chmod(nestedScript, 0o755);
+    const payload = bashWithLocations(setupPlan, {
+      eventCwd: root,
+      inputCwd: root,
+      inputWorkdir: root,
+    });
+
+    const result = runHook(nested, payload, "codex", hook);
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain("unknown shell execution");
+  });
+
   it.each(SPEC_KIT_NON_EXACT_COMMANDS)(
     "rejects the non-exact Spec Kit command variant: %s",
     async (label, commandForRoot, reason) => {
@@ -1032,6 +1126,27 @@ function bash(command: string) {
     tool_name: "Bash",
     tool_input: { command },
   };
+}
+
+function bashWithLocations(
+  command: string,
+  locations: {
+    eventCwd?: unknown;
+    inputCwd?: unknown;
+    inputWorkdir?: unknown;
+  }
+) {
+  const payload: {
+    cwd?: unknown;
+    tool_name: string;
+    tool_input: { command: string; cwd?: unknown; workdir?: unknown };
+  } = bash(command);
+  if (Object.hasOwn(locations, "eventCwd")) payload.cwd = locations.eventCwd;
+  if (Object.hasOwn(locations, "inputCwd")) payload.tool_input.cwd = locations.inputCwd;
+  if (Object.hasOwn(locations, "inputWorkdir")) {
+    payload.tool_input.workdir = locations.inputWorkdir;
+  }
+  return payload;
 }
 
 async function gitWorkspace(remote: string): Promise<string> {
