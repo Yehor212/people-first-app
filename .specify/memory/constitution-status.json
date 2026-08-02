@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "constitution_version": "1.0.1",
+  "status": "PROPOSED",
+  "ratified": false,
+  "activation": "PROPOSAL_CRITERIA_ONLY",
+  "binding": false,
+  "blocking_authority": false,
+  "critical_remediation_authority": false,
+  "ratification_evidence": null,
+  "source": ".specify/memory/constitution.md",
+  "proposed_on": "2026-08-02"
+}
