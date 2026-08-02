@@ -799,6 +799,63 @@ describe("Spec Kit command and lane boundaries", () => {
   });
 
   it.each([
+    String.raw`'$env:SPECIFY_INIT_DIR=C:\outside'`,
+    "`$env:SPECIFY_FEATURE_DIRECTORY='C:\\outside'",
+  ])("T4-A allows an inert quoted or escaped environment assignment: %s", (command) => {
+    expectAllowed(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: { command },
+      })
+    );
+  });
+
+  it.each([
+    String.raw`"Set-Content" -Path 'Env:\SPECIFY_INIT_DIR' -Value 'C:\outside'`,
+    String.raw`"&" 'Set-Content' -Path 'Env:\SPECIFY_INIT_DIR' -Value 'C:\outside'`,
+    "`& 'Set-Content' -Path 'Env:\\SPECIFY_INIT_DIR' -Value 'C:\\outside'",
+    String.raw`"&" 'C:\tools\specify.exe' workflow run demo`,
+    "`& 'C:\\tools\\specify.exe' extension add spec-kit-bugs",
+  ])("T4-A allows a quoted or escaped command/operator token used as data: %s", (command) => {
+    expectAllowed(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: { command },
+      })
+    );
+  });
+
+  it.each([
+    String.raw`& 'Set-Content' -Path 'Env:\SPECIFY_INIT_DIR' -Value 'C:\outside'`,
+    String.raw`& "Set-Item" -LiteralPath 'Env:\SPECIFY_FEATURE_DIRECTORY' -Value 'C:\outside'`,
+  ])("T4-A blocks a bare call operator invoking a quoted restricted setter: %s", (command) => {
+    expectBlocked(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: { command },
+      }),
+      /inline SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR)/i
+    );
+  });
+
+  it.each([
+    "Set-Content `-Force 'Env:\\SPECIFY_INIT_DIR'",
+    "Set-Content `-Path 'Env:\\SPECIFY_INIT_DIR'",
+    "Set-Content `-LiteralPath 'Env:\\SPECIFY_INIT_DIR'",
+  ])("T4-A allows an escaped leading-hyphen positional provider argument: %s", (command) => {
+    expectAllowed(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: { command },
+      })
+    );
+  });
+
+  it.each([
     String.raw`Write-Output "Set-Item -Force Env:\SPECIFY_FEATURE_DIRECTORY C:\outside"`,
     String.raw`Set-Item -Force Variable:SPECIFY_FEATURE_DIRECTORY 'C:\outside'`,
     String.raw`Set-Content -Value 'Env:\SPECIFY_INIT_DIR' -Path 'Variable:ordinary'`,

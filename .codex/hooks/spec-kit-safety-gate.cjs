@@ -560,15 +560,22 @@ function tokenizeStaticShell(command, dialect) {
   const tokens = [];
   let token = "";
   let tokenStarted = false;
-  let tokenQuoted = false;
+  let tokenLeadingQuoted = false;
+  let tokenLeadingEscaped = false;
   let quote = null;
 
   function pushToken() {
     if (!tokenStarted) return;
-    tokens.push({ value: token, operator: false, quoted: tokenQuoted });
+    tokens.push({
+      value: token,
+      operator: false,
+      leadingQuoted: tokenLeadingQuoted,
+      leadingEscaped: tokenLeadingEscaped,
+    });
     token = "";
     tokenStarted = false;
-    tokenQuoted = false;
+    tokenLeadingQuoted = false;
+    tokenLeadingEscaped = false;
   }
 
   for (let index = 0; index < command.length; index += 1) {
@@ -600,13 +607,14 @@ function tokenizeStaticShell(command, dialect) {
       continue;
     }
     if (character === "'" || character === '"') {
+      if (!tokenStarted) tokenLeadingQuoted = true;
       quote = character;
       tokenStarted = true;
-      tokenQuoted = true;
       continue;
     }
     if (dialect === "powershell" && character === "`") {
       if (index + 1 >= command.length) return null;
+      if (!tokenStarted) tokenLeadingEscaped = true;
       token += command[index + 1];
       tokenStarted = true;
       index += 1;
@@ -625,7 +633,12 @@ function tokenizeStaticShell(command, dialect) {
     if (character === "\n" || character === ";" || character === "|" || character === "&") {
       pushToken();
       if (dialect === "powershell" && character === "&" && command[index + 1] !== "&") {
-        tokens.push({ value: "&", operator: false, quoted: false });
+        tokens.push({
+          value: "&",
+          operator: false,
+          leadingQuoted: false,
+          leadingEscaped: false,
+        });
         continue;
       }
       let operator = character;
@@ -674,10 +687,25 @@ function stripExecutableSuffix(value) {
     .replace(/\.exe$/, "");
 }
 
+function barePowerShellSyntaxToken(token) {
+  return Boolean(token && !token.leadingQuoted && !token.leadingEscaped);
+}
+
+function eligiblePowerShellExecutableTokens(segment) {
+  if (segment[0]?.value === "&" && barePowerShellSyntaxToken(segment[0])) {
+    return segment.slice(1);
+  }
+  return barePowerShellSyntaxToken(segment[0]) ? segment : [];
+}
+
 function resolveStaticExecutable(segment, dialect, depth = 0) {
   if (depth > 3) return [];
-  let tokens = [...segment];
-  if (dialect === "powershell" && tokens[0] === "&") tokens.shift();
+  let tokens =
+    dialect === "powershell"
+      ? typeof segment[0] === "string"
+        ? [...segment]
+        : eligiblePowerShellExecutableTokens(segment).map((token) => token.value)
+      : [...segment];
   if (dialect === "posix") {
     while (tokens.length > 0 && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0])) tokens.shift();
   }
@@ -708,9 +736,11 @@ function resolveStaticExecutable(segment, dialect, depth = 0) {
 
 function staticExecutableCommands(command, dialect, depth = 0) {
   if (depth > 3) return [];
-  return splitStaticShellSegments(command, dialect).flatMap((segment) =>
-    resolveStaticExecutable(segment, dialect, depth)
-  );
+  const segments =
+    dialect === "powershell"
+      ? splitStaticShellTokenSegments(command, dialect)
+      : splitStaticShellSegments(command, dialect);
+  return segments.flatMap((segment) => resolveStaticExecutable(segment, dialect, depth));
 }
 
 function restrictedPowerShellProviderName(providerPath) {
@@ -725,13 +755,16 @@ function powerShellProviderPath(tokens) {
 
   for (let index = 1; index < tokens.length; index += 1) {
     const token = tokens[index];
-    if (!token.quoted && /^-(?:path|literalpath)$/i.test(token.value)) {
+    const parameterEligible = barePowerShellSyntaxToken(token);
+    if (parameterEligible && /^-(?:path|literalpath)$/i.test(token.value)) {
       return tokens[index + 1]?.value || "";
     }
 
-    const attachedSwitch = token.quoted ? null : /^-([^:]+):\$(?:true|false)$/i.exec(token.value);
+    const attachedSwitch = parameterEligible
+      ? /^-([^:]+):\$(?:true|false)$/i.exec(token.value)
+      : null;
     if (attachedSwitch && noValueSwitch.test(attachedSwitch[1])) continue;
-    const option = token.quoted ? null : /^-([^:]+)$/.exec(token.value);
+    const option = parameterEligible ? /^-([^:]+)$/.exec(token.value) : null;
     if (option && noValueSwitch.test(option[1])) continue;
 
     if (option && valueOption.test(option[1])) {
@@ -740,7 +773,7 @@ function powerShellProviderPath(tokens) {
       continue;
     }
 
-    if (!token.quoted && token.value.startsWith("-")) return "";
+    if (parameterEligible && token.value.startsWith("-")) return "";
     return token.value;
   }
   return "";
@@ -749,14 +782,14 @@ function powerShellProviderPath(tokens) {
 function restrictedAssignmentName(segment, dialect) {
   const restricted = /^(?:SPECIFY_FEATURE_DIRECTORY|SPECIFY_INIT_DIR)$/i;
   if (dialect === "powershell") {
-    let tokens = [...segment];
-    if (tokens[0]?.value === "&") tokens.shift();
+    const directAssignmentToken = barePowerShellSyntaxToken(segment[0]) ? segment[0] : null;
     const match = /^\$env:(SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR))(?:=.*)?$/i.exec(
-      tokens[0]?.value || ""
+      directAssignmentToken?.value || ""
     );
-    if (match && (tokens[0].value.includes("=") || tokens[1]?.value === "=")) {
+    if (match && (directAssignmentToken.value.includes("=") || segment[1]?.value === "=")) {
       return match[1].toUpperCase();
     }
+    const tokens = eligiblePowerShellExecutableTokens(segment);
     const executable = stripExecutableSuffix(tokens[0]?.value || "");
     if (!["set-item", "set-content"].includes(executable)) return "";
     return restrictedPowerShellProviderName(powerShellProviderPath(tokens));
