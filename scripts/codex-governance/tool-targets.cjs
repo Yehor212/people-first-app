@@ -77,6 +77,12 @@ const REVIEWED_PACKAGE_SCRIPTS = new Set([
   "typecheck",
   "verify:tailwind",
 ]);
+const REVIEWED_DIRECT_READ_ONLY_COMMANDS = new Set([
+  ".specify/scripts/bash/check-prerequisites.sh --json --paths-only",
+  ".specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks",
+  ".specify/scripts/bash/setup-plan.sh --json",
+  ".specify/scripts/bash/setup-tasks.sh --json",
+]);
 
 function analyzeToolEvent(event) {
   const input =
@@ -167,9 +173,21 @@ function visitStructuredPaths(value, depth, state) {
   }
 }
 
-function analyzeShellCommand(command) {
+function analyzeShellCommand(command, allowReviewedDirect = true) {
   const text = String(command || "");
   if (!text.trim()) {
+    return {
+      mutationIntent: false,
+      destructiveFilesystem: false,
+      dynamicTarget: false,
+      opaqueExecution: false,
+      recognizedCommands: [],
+      targets: [],
+      unknownExecution: false,
+      workingDirectories: [],
+    };
+  }
+  if (allowReviewedDirect && REVIEWED_DIRECT_READ_ONLY_COMMANDS.has(text.trim())) {
     return {
       mutationIntent: false,
       destructiveFilesystem: false,
@@ -229,7 +247,7 @@ function analyzeStatement(tokens) {
   if (["bash", "sh", "zsh"].includes(command)) {
     const commandFlag = args.findIndex((arg) => arg === "-c" || arg === "-lc");
     if (commandFlag >= 0 && args[commandFlag + 1]) {
-      const nested = analyzeShellCommand(args[commandFlag + 1]);
+      const nested = analyzeShellCommand(args[commandFlag + 1], false);
       return nested.mutationIntent
         ? {
             command: `${command} -c`,
@@ -437,7 +455,7 @@ function isReadOnlyStatement(tokens) {
       ["-c", "-lc", "-command"].includes(arg.toLowerCase())
     );
     if (commandFlag < 0 || !args[commandFlag + 1]) return false;
-    const nested = analyzeShellCommand(args[commandFlag + 1]);
+    const nested = analyzeShellCommand(args[commandFlag + 1], false);
     return !nested.mutationIntent && !nested.opaqueExecution && !nested.unknownExecution;
   }
   if (command === "git") return isReadOnlyGit(args);
