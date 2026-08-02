@@ -5,6 +5,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -35,6 +36,39 @@ const CORE_SKILLS = [
   "speckit-taskstoissues",
 ] as const;
 const roots: string[] = [];
+const SUPPORTED_MUTATION_TOOLS = [
+  "Bash",
+  "Shell",
+  "PowerShell",
+  "pwsh",
+  "exec_command",
+  "unified_exec",
+  "apply_patch",
+  "functions.apply_patch",
+  "Edit",
+  "Write",
+  "WriteFile",
+  "CreateFile",
+  "DeleteFile",
+  "MultiEdit",
+  "StrReplaceFile",
+  "NotebookEdit",
+] as const;
+
+type HookHandler = {
+  command: string;
+  commandWindows?: string;
+  timeout?: number;
+};
+
+type HookGroup = {
+  matcher?: string;
+  hooks: HookHandler[];
+};
+
+type HooksConfig = {
+  hooks: Record<string, HookGroup[]>;
+};
 
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { force: true, recursive: true });
@@ -113,22 +147,27 @@ function expectBlocked(result: ReturnType<typeof runHook>, reason: RegExp): void
   expect(result.stderr).toMatch(reason);
 }
 
+function readHooksConfig(): HooksConfig {
+  return JSON.parse(readFileSync(".codex/hooks.json", "utf8")) as HooksConfig;
+}
+
+function matcherIncludesTool(matcher: string | undefined, toolName: string): boolean {
+  if (!matcher || matcher === "*") return true;
+  return new RegExp(`^(?:${matcher})$`).test(toolName);
+}
+
+function configuredSpecKitHandlers(config: HooksConfig, event: string): HookHandler[] {
+  return (config.hooks[event] ?? [])
+    .flatMap((entry) => entry.hooks)
+    .filter((handler) => handler.command.includes("spec-kit-safety-gate.cjs"));
+}
+
 describe("Spec Kit safety hook lifecycle", () => {
   it("is registered exactly once for the three bounded lifecycle events", () => {
-    const config = JSON.parse(readFileSync(".codex/hooks.json", "utf8")) as {
-      hooks: Record<
-        string,
-        Array<{
-          matcher?: string;
-          hooks: Array<{ command: string; commandWindows?: string; timeout?: number }>;
-        }>
-      >;
-    };
+    const config = readHooksConfig();
 
     for (const event of ["UserPromptSubmit", "PreToolUse", "PostToolUse"]) {
-      const handlers = (config.hooks[event] ?? [])
-        .flatMap((entry) => entry.hooks)
-        .filter((handler) => handler.command.includes("spec-kit-safety-gate.cjs"));
+      const handlers = configuredSpecKitHandlers(config, event);
       expect(handlers, event).toHaveLength(1);
       expect(handlers[0].command).toContain("git rev-parse --show-toplevel");
       expect(handlers[0].commandWindows).toContain("git rev-parse --show-toplevel");
@@ -138,6 +177,46 @@ describe("Spec Kit safety hook lifecycle", () => {
 
     expect(config.hooks.PreToolUse[0].matcher).toContain("apply_patch");
     expect(config.hooks.PostToolUse[0].matcher).toContain("apply_patch");
+  });
+
+  it.each(SUPPORTED_MUTATION_TOOLS)(
+    "F1 invokes exactly one Spec Kit PostTool handler for supported mutation tool %s",
+    (toolName) => {
+      const config = readHooksConfig();
+      const matchingHandlers = (config.hooks.PostToolUse ?? [])
+        .filter((group) => matcherIncludesTool(group.matcher, toolName))
+        .flatMap((group) => group.hooks)
+        .filter((handler) => handler.command.includes("spec-kit-safety-gate.cjs"));
+
+      expect(matchingHandlers, toolName).toHaveLength(1);
+      expect(configuredSpecKitHandlers(config, "PostToolUse")).toHaveLength(1);
+    }
+  );
+
+  it("F5 returns controlled hook failure when the configured POSIX wrapper starts outside Git", () => {
+    const config = readHooksConfig();
+    const [handler] = configuredSpecKitHandlers(config, "UserPromptSubmit");
+    const root = mkdtempSync(join(tmpdir(), "zenflow-spec-kit-wrapper-no-git-"));
+    roots.push(root);
+
+    const result = spawnSync("sh", ["-c", handler.command], {
+      cwd: root,
+      encoding: "utf8",
+      input: JSON.stringify({ hook_event_name: "UserPromptSubmit", prompt: "hello" }),
+    });
+
+    expectBlocked(result, /unable to resolve repository root/i);
+  });
+
+  it("F5 configures an equivalent fail-closed PowerShell bootstrap without swallowing hook status", () => {
+    const config = readHooksConfig();
+    for (const event of ["UserPromptSubmit", "PreToolUse", "PostToolUse"]) {
+      const [handler] = configuredSpecKitHandlers(config, event);
+      expect(handler.commandWindows, event).toMatch(/\$LASTEXITCODE\s*-ne\s*0/i);
+      expect(handler.commandWindows, event).toContain("HOOK ERROR [spec-kit-safety-gate]");
+      expect(handler.commandWindows, event).toMatch(/exit\s+2/i);
+      expect(handler.commandWindows, event).toMatch(/exit\s+\$LASTEXITCODE/i);
+    }
   });
 
   it.each(["UserPromptSubmit", "PreToolUse", "PostToolUse"])(
@@ -285,6 +364,12 @@ describe("Spec Kit exact local trust state", () => {
     );
   });
 
+  it("F3 preserves the existing allowance for an absent optional extension catalog", () => {
+    const root = makeRepository();
+    rmSync(join(root, ".specify/extensions"), { recursive: true });
+    expectAllowed(runHook(root, { hook_event_name: "UserPromptSubmit", prompt: "hello" }));
+  });
+
   it.each([
     ["ratified", { ratified: true }],
     ["binding", { binding: true }],
@@ -317,6 +402,49 @@ describe("Spec Kit exact local trust state", () => {
       /constitution/i
     );
   });
+
+  it.each([
+    ["ratified", '"ratified": true,\n  "ratified": false'],
+    ["blocking authority", '"blocking_authority": true,\n  "blocking_authority": false'],
+  ])("F6 rejects duplicate constitution %s keys before typed validation", (_label, duplicate) => {
+    const root = makeRepository();
+    const statusPath = join(root, ".specify/memory/constitution-status.json");
+    const raw = readFileSync(statusPath, "utf8");
+    const key = duplicate.startsWith('"ratified"') ? "ratified" : "blocking_authority";
+    writeFileSync(statusPath, raw.replace(new RegExp(`"${key}": false`), duplicate));
+    expectBlocked(
+      runHook(root, { hook_event_name: "UserPromptSubmit", prompt: "hello" }),
+      /duplicate JSON key/i
+    );
+  });
+
+  it.each([".specify", ".agents", ".agents/skills"])(
+    "F3 rejects symlinked managed parent %s before following its controlled fixture",
+    (managedParent) => {
+      const root = makeRepository();
+      const original = join(root, managedParent);
+      const externalParent = mkdtempSync(join(tmpdir(), "zenflow-spec-kit-managed-parent-"));
+      roots.push(externalParent);
+      const external = join(externalParent, "controlled-fixture");
+      renameSync(original, external);
+      mkdirSync(dirname(original), { recursive: true });
+      symlinkSync(external, original, "dir");
+
+      expectBlocked(
+        runHook(root, { hook_event_name: "UserPromptSubmit", prompt: "hello" }),
+        /managed path.*symlink/i
+      );
+    }
+  );
+
+  it("F3 rejects a dangling .specify/feature.json symlink instead of treating it as absent", () => {
+    const root = makeRepository();
+    symlinkSync("missing-feature.json", join(root, ".specify/feature.json"));
+    expectBlocked(
+      runHook(root, { hook_event_name: "UserPromptSubmit", prompt: "hello" }),
+      /feature\.json.*symlink|dangling/i
+    );
+  });
 });
 
 describe("Spec Kit command and lane boundaries", () => {
@@ -334,6 +462,30 @@ describe("Spec Kit command and lane boundaries", () => {
     expectBlocked(result, /workflow run/i);
   });
 
+  it.each(["'specify' workflow run demo", '"specify" workflow run demo'])(
+    "F4 blocks a quoted executable token for workflow execution: %s",
+    (command) => {
+      expectBlocked(
+        runHook(makeRepository(), {
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command },
+        }),
+        /workflow run/i
+      );
+    }
+  );
+
+  it("F4 allows workflow text passed only as printf data", () => {
+    expectAllowed(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command: "printf '%s\\n' 'specify workflow run demo'" },
+      })
+    );
+  });
+
   it.each([
     "specify extension add spec-kit-bugs",
     "specify extension remove spec-kit-bugs",
@@ -349,6 +501,30 @@ describe("Spec Kit command and lane boundaries", () => {
       tool_input: { command },
     });
     expectBlocked(result, /extension mutation/i);
+  });
+
+  it.each(["'specify' extension add spec-kit-bugs", '"specify" extension remove spec-kit-bugs'])(
+    "F4 blocks a quoted executable token for extension mutation: %s",
+    (command) => {
+      expectBlocked(
+        runHook(makeRepository(), {
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command },
+        }),
+        /extension mutation/i
+      );
+    }
+  );
+
+  it("F4 allows extension-mutation text passed only as printf data", () => {
+    expectAllowed(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command: "printf '%s\\n' 'specify extension add spec-kit-bugs'" },
+      })
+    );
   });
 
   it("allows the read-only extension inventory command", () => {
@@ -453,6 +629,22 @@ describe("Spec Kit command and lane boundaries", () => {
     );
   });
 
+  it("F6 rejects duplicate feature_directory keys before accepting the last safe value", () => {
+    const root = makeRepository();
+    const outside = mkdtempSync(join(tmpdir(), "zenflow-spec-kit-duplicate-feature-"));
+    roots.push(outside);
+    mkdirSync(join(root, "specs/001-safe-feature"), { recursive: true });
+    write(
+      root,
+      ".specify/feature.json",
+      `{\n  "feature_directory": ${JSON.stringify(outside)},\n  "feature_directory": "specs/001-safe-feature"\n}\n`
+    );
+    expectBlocked(
+      runHook(root, { hook_event_name: "UserPromptSubmit", prompt: "hello" }),
+      /duplicate JSON key/i
+    );
+  });
+
   it("blocks supported private-bug and cross-lane specification write targets", () => {
     const bugResult = runHook(makeRepository(), {
       hook_event_name: "PreToolUse",
@@ -487,6 +679,48 @@ describe("Spec Kit command and lane boundaries", () => {
         tool_name: "Write",
         tool_input: { file_path: join(safeFeature, "plan.md"), content: "# Plan\n" },
       })
+    );
+  });
+
+  it("F2 blocks a non-Spec-looking symlink alias that resolves into .specify/bugs", () => {
+    const root = makeRepository();
+    mkdirSync(join(root, ".specify/bugs"), { recursive: true });
+    symlinkSync(join(root, ".specify"), join(root, "review-output"), "dir");
+
+    expectBlocked(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "WriteFile",
+        tool_input: { path: "review-output/bugs/private-runtime.md", content: "private" },
+      }),
+      /\.specify\/bugs/i
+    );
+  });
+
+  it("F2 blocks an apply_patch Move to destination in another repository lane", () => {
+    const root = makeRepository();
+    const outside = mkdtempSync(join(tmpdir(), "zenflow-spec-kit-move-outside-"));
+    roots.push(outside);
+    write(root, "specs/001-safe/plan.md", "# Plan\n");
+    const destination = join(outside, "specs/002-other/plan.md");
+
+    expectBlocked(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "apply_patch",
+        tool_input: {
+          patch: [
+            "*** Begin Patch",
+            "*** Update File: specs/001-safe/plan.md",
+            `*** Move to: ${destination}`,
+            "@@",
+            "-# Plan",
+            "+# Moved plan",
+            "*** End Patch",
+          ].join("\n"),
+        },
+      }),
+      /Spec Kit write target.*current repository lane/i
     );
   });
 

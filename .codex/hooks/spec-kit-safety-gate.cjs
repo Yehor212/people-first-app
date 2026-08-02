@@ -98,6 +98,31 @@ function requireRegularFile(filePath, label, requireSingleLink = false) {
   return stat;
 }
 
+function validateManagedDirectoryChain(root, relativePath, required = true) {
+  const segments = relativePath.split("/").filter(Boolean);
+  let current = root;
+  for (let index = 0; index < segments.length; index += 1) {
+    current = path.join(current, segments[index]);
+    let stat;
+    try {
+      stat = fs.lstatSync(current);
+    } catch (error) {
+      if (!required && error && error.code === "ENOENT") return;
+      throw new Error(`managed path ${path.relative(root, current)} is missing or unreadable`);
+    }
+    const label = path.relative(root, current).replace(/\\/g, "/");
+    if (stat.isSymbolicLink()) throw new Error(`managed path ${label} must not be symlinked`);
+    if (!stat.isDirectory()) throw new Error(`managed path ${label} must be a directory`);
+    let canonical;
+    try {
+      canonical = fs.realpathSync.native(current);
+    } catch (error) {
+      throw new Error(`managed path ${label} is noncanonical: ${error.message || error}`);
+    }
+    if (canonical !== current) throw new Error(`managed path ${label} is noncanonical`);
+  }
+}
+
 function readUtf8(filePath, label) {
   let bytes;
   try {
@@ -106,6 +131,131 @@ function readUtf8(filePath, label) {
   } catch (error) {
     throw new Error(`${label} must be readable strict UTF-8: ${error.message || error}`);
   }
+}
+
+function assertNoDuplicateJsonKeys(raw, label) {
+  let index = 0;
+
+  function malformed(reason) {
+    throw new Error(`${label} is malformed JSON at offset ${index}: ${reason}`);
+  }
+
+  function skipWhitespace() {
+    while (index < raw.length && /[\t\n\r ]/.test(raw[index])) index += 1;
+  }
+
+  function parseString() {
+    const start = index;
+    if (raw[index] !== '"') malformed("expected a string");
+    index += 1;
+    while (index < raw.length) {
+      const character = raw[index];
+      if (character === '"') {
+        index += 1;
+        try {
+          return JSON.parse(raw.slice(start, index));
+        } catch (error) {
+          malformed(error.message || String(error));
+        }
+      }
+      if (character === "\\") {
+        index += 1;
+        if (index >= raw.length) malformed("unterminated escape sequence");
+        if (raw[index] === "u") {
+          const codePoint = raw.slice(index + 1, index + 5);
+          if (!/^[0-9a-fA-F]{4}$/.test(codePoint)) malformed("invalid Unicode escape");
+          index += 5;
+          continue;
+        }
+        if (!/["\\/bfnrt]/.test(raw[index])) malformed("invalid escape sequence");
+        index += 1;
+        continue;
+      }
+      if (character.charCodeAt(0) < 0x20) malformed("unescaped control character");
+      index += 1;
+    }
+    malformed("unterminated string");
+  }
+
+  function parseValue() {
+    skipWhitespace();
+    const character = raw[index];
+    if (character === "{") return parseObject();
+    if (character === "[") return parseArray();
+    if (character === '"') {
+      parseString();
+      return;
+    }
+    for (const literal of ["true", "false", "null"]) {
+      if (raw.startsWith(literal, index)) {
+        index += literal.length;
+        return;
+      }
+    }
+    const number = raw.slice(index).match(/^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/);
+    if (number) {
+      index += number[0].length;
+      return;
+    }
+    malformed("expected a JSON value");
+  }
+
+  function parseObject() {
+    index += 1;
+    const keys = new Set();
+    skipWhitespace();
+    if (raw[index] === "}") {
+      index += 1;
+      return;
+    }
+    while (index < raw.length) {
+      skipWhitespace();
+      const key = parseString();
+      if (keys.has(key)) throw new Error(`${label} contains duplicate JSON key: ${key}`);
+      keys.add(key);
+      skipWhitespace();
+      if (raw[index] !== ":") malformed("expected ':' after object key");
+      index += 1;
+      parseValue();
+      skipWhitespace();
+      if (raw[index] === "}") {
+        index += 1;
+        return;
+      }
+      if (raw[index] !== ",") malformed("expected ',' or '}' in object");
+      index += 1;
+    }
+    malformed("unterminated object");
+  }
+
+  function parseArray() {
+    index += 1;
+    skipWhitespace();
+    if (raw[index] === "]") {
+      index += 1;
+      return;
+    }
+    while (index < raw.length) {
+      parseValue();
+      skipWhitespace();
+      if (raw[index] === "]") {
+        index += 1;
+        return;
+      }
+      if (raw[index] !== ",") malformed("expected ',' or ']' in array");
+      index += 1;
+    }
+    malformed("unterminated array");
+  }
+
+  parseValue();
+  skipWhitespace();
+  if (index !== raw.length) malformed("unexpected trailing content");
+}
+
+function parseJsonWithoutDuplicateKeys(raw, label) {
+  assertNoDuplicateJsonKeys(raw, label);
+  return JSON.parse(raw);
 }
 
 function validateExtensionsPolicy(root) {
@@ -166,7 +316,10 @@ function validateConstitutionStatus(root) {
   requireRegularFile(statusPath, ".specify/memory/constitution-status.json", true);
   let status;
   try {
-    status = JSON.parse(readUtf8(statusPath, ".specify/memory/constitution-status.json"));
+    status = parseJsonWithoutDuplicateKeys(
+      readUtf8(statusPath, ".specify/memory/constitution-status.json"),
+      ".specify/memory/constitution-status.json"
+    );
   } catch (error) {
     throw new Error(`constitution status is malformed: ${error.message || error}`);
   }
@@ -215,11 +368,19 @@ function validateDirectoryState(root) {
   }
 
   const featurePath = path.join(root, ".specify", "feature.json");
-  if (!fs.existsSync(featurePath)) return;
+  try {
+    fs.lstatSync(featurePath);
+  } catch (error) {
+    if (error && error.code === "ENOENT") return;
+    throw new Error(`.specify/feature.json is unreadable: ${error.message || error}`);
+  }
   requireRegularFile(featurePath, ".specify/feature.json", true);
   let feature;
   try {
-    feature = JSON.parse(readUtf8(featurePath, ".specify/feature.json"));
+    feature = parseJsonWithoutDuplicateKeys(
+      readUtf8(featurePath, ".specify/feature.json"),
+      ".specify/feature.json"
+    );
   } catch (error) {
     throw new Error(`.specify/feature.json is malformed: ${error.message || error}`);
   }
@@ -238,6 +399,10 @@ function validateDirectoryState(root) {
 }
 
 function validateTrustState(root) {
+  validateManagedDirectoryChain(root, ".specify/memory");
+  validateManagedDirectoryChain(root, ".specify/extensions", false);
+  validateManagedDirectoryChain(root, ".specify/extensions/.cache", false);
+  validateManagedDirectoryChain(root, ".agents/skills");
   validateExtensionsPolicy(root);
   validateCoreSkills(root);
   validateConstitutionStatus(root);
@@ -253,23 +418,157 @@ function shellCommand(data) {
   return "";
 }
 
+function tokenizeStaticShell(command) {
+  const tokens = [];
+  let token = "";
+  let tokenStarted = false;
+  let quote = null;
+
+  function pushToken() {
+    if (!tokenStarted) return;
+    tokens.push({ value: token, operator: false });
+    token = "";
+    tokenStarted = false;
+  }
+
+  for (let index = 0; index < command.length; index += 1) {
+    const character = command[index];
+    if (quote) {
+      if (character === quote) {
+        quote = null;
+        tokenStarted = true;
+        continue;
+      }
+      if (character === "\\" && quote === '"' && index + 1 < command.length) {
+        token += command[index + 1];
+        tokenStarted = true;
+        index += 1;
+        continue;
+      }
+      token += character;
+      tokenStarted = true;
+      continue;
+    }
+    if (character === "'" || character === '"') {
+      quote = character;
+      tokenStarted = true;
+      continue;
+    }
+    if (character === "\\" && index + 1 < command.length) {
+      token += command[index + 1];
+      tokenStarted = true;
+      index += 1;
+      continue;
+    }
+    if (/[\t ]/.test(character)) {
+      pushToken();
+      continue;
+    }
+    if (character === "\n" || character === ";" || character === "|" || character === "&") {
+      pushToken();
+      let operator = character;
+      if ((character === "|" || character === "&") && command[index + 1] === character) {
+        operator += character;
+        index += 1;
+      }
+      tokens.push({ value: operator, operator: true });
+      continue;
+    }
+    token += character;
+    tokenStarted = true;
+  }
+  if (quote) return null;
+  pushToken();
+  return tokens;
+}
+
+function splitStaticShellSegments(command) {
+  const tokens = tokenizeStaticShell(command);
+  if (!tokens) return [];
+  const segments = [];
+  let segment = [];
+  for (const token of tokens) {
+    if (token.operator) {
+      if (segment.length > 0) segments.push(segment);
+      segment = [];
+    } else {
+      segment.push(token.value);
+    }
+  }
+  if (segment.length > 0) segments.push(segment);
+  return segments;
+}
+
+function stripExecutableSuffix(value) {
+  return path
+    .basename(value)
+    .toLowerCase()
+    .replace(/\.exe$/, "");
+}
+
+function resolveStaticExecutable(segment, depth = 0) {
+  if (depth > 3) return [];
+  let tokens = [...segment];
+  while (tokens.length > 0 && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0])) tokens.shift();
+  if (tokens.length === 0) return [];
+
+  let executable = stripExecutableSuffix(tokens[0]);
+  if (executable === "command") {
+    tokens = tokens.slice(1);
+    while (tokens[0] && tokens[0].startsWith("-")) tokens.shift();
+    return resolveStaticExecutable(tokens, depth + 1);
+  }
+  if (executable === "env") {
+    tokens = tokens.slice(1);
+    while (tokens[0] && (tokens[0].startsWith("-") || /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0]))) {
+      tokens.shift();
+    }
+    return resolveStaticExecutable(tokens, depth + 1);
+  }
+  if (["sh", "bash", "zsh", "pwsh", "powershell"].includes(executable)) {
+    const commandFlag = tokens.findIndex((token) => /^(?:-c|-command)$/i.test(token));
+    if (commandFlag >= 0 && tokens[commandFlag + 1]) {
+      return staticExecutableCommands(tokens[commandFlag + 1], depth + 1);
+    }
+  }
+  return [tokens];
+}
+
+function staticExecutableCommands(command, depth = 0) {
+  if (depth > 3) return [];
+  return splitStaticShellSegments(command).flatMap((segment) =>
+    resolveStaticExecutable(segment, depth)
+  );
+}
+
 function validateShellCommand(data) {
   const command = shellCommand(data);
   if (!command) return;
-  if (/\bspecify(?:\.exe)?\s+workflow\s+run\b/i.test(command)) {
-    throw new Error("specify workflow run is blocked; invoke the reviewed core skills explicitly");
-  }
-  if (
-    /\bspecify(?:\.exe)?\s+extensions?\s+(?:add|remove|update|enable|disable|install|uninstall)\b/i.test(
-      command
-    ) ||
-    /\bspecify(?:\.exe)?\s+(?:add|remove|update|enable|disable|install|uninstall)\s+extensions?\b/i.test(
-      command
-    )
-  ) {
-    throw new Error(
-      "Spec Kit extension mutation is blocked; only read-only extension inventory is allowed"
-    );
+  const mutationActions = new Set([
+    "add",
+    "remove",
+    "update",
+    "enable",
+    "disable",
+    "install",
+    "uninstall",
+  ]);
+  for (const argv of staticExecutableCommands(command)) {
+    if (stripExecutableSuffix(argv[0] || "") !== "specify") continue;
+    const args = argv.slice(1).map((value) => value.toLowerCase());
+    if (args[0] === "workflow" && args[1] === "run") {
+      throw new Error(
+        "specify workflow run is blocked; invoke the reviewed core skills explicitly"
+      );
+    }
+    if (
+      ((args[0] === "extension" || args[0] === "extensions") && mutationActions.has(args[1])) ||
+      (mutationActions.has(args[0]) && (args[1] === "extension" || args[1] === "extensions"))
+    ) {
+      throw new Error(
+        "Spec Kit extension mutation is blocked; only read-only extension inventory is allowed"
+      );
+    }
   }
   const assignment = command.match(/(?:\$env:\s*)?(SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR))\s*=/i);
   if (assignment) {
@@ -304,7 +603,9 @@ function collectPatchPaths(data) {
   }
   const targets = [];
   for (const value of values) {
-    for (const match of value.matchAll(/^\*\*\* (?:Add|Update|Delete) File:\s*(.+?)\s*$/gm)) {
+    for (const match of value.matchAll(
+      /^\*\*\* (?:(?:Add|Update|Delete) File|Move to):\s*(.+?)\s*$/gm
+    )) {
       targets.push(match[1]);
     }
   }
@@ -346,11 +647,18 @@ function canonicalWriteTarget(root, rawTarget) {
     : path.resolve(root, rawTarget);
   let cursor = lexical;
   const suffix = [];
-  while (!fs.existsSync(cursor)) {
-    const parent = path.dirname(cursor);
-    if (parent === cursor) throw new Error(`write target has no resolvable ancestor: ${rawTarget}`);
-    suffix.unshift(path.basename(cursor));
-    cursor = parent;
+  while (true) {
+    try {
+      fs.lstatSync(cursor);
+      break;
+    } catch (error) {
+      if (!error || error.code !== "ENOENT") throw error;
+      const parent = path.dirname(cursor);
+      if (parent === cursor)
+        throw new Error(`write target has no resolvable ancestor: ${rawTarget}`);
+      suffix.unshift(path.basename(cursor));
+      cursor = parent;
+    }
   }
   const canonicalParent = fs.realpathSync.native(cursor);
   return path.resolve(canonicalParent, ...suffix);
@@ -364,31 +672,28 @@ function validateStructuredWrite(data, root) {
     ...(toolName.toLowerCase().includes("apply_patch") ? collectPatchPaths(data) : []),
   ];
   for (const value of new Set(targets.map(normalizeTarget).filter(Boolean))) {
-    if (isPrivateBugTarget(value)) {
-      throw new Error(`writes into .specify/bugs are blocked: ${value}`);
-    }
-    if (!isSpecKitArtifact(value)) continue;
     let canonical;
     try {
       canonical = canonicalWriteTarget(root, value);
     } catch (error) {
-      throw new Error(`Spec Kit write target is unresolved: ${error.message || error}`);
+      throw new Error(`write target is unresolved: ${error.message || error}`);
     }
+    const rawIsSpecKit = isSpecKitArtifact(value);
+    const canonicalIsSpecKit = isSpecKitArtifact(canonical.replace(/\\/g, "/"));
     if (!isInside(root, canonical)) {
-      throw new Error(
-        `Spec Kit write target must stay inside the current repository lane: ${value}`
-      );
+      const label = rawIsSpecKit || canonicalIsSpecKit ? "Spec Kit write target" : "write target";
+      throw new Error(`${label} must stay inside the current repository lane: ${value}`);
     }
     const relative = path.relative(root, canonical).replace(/\\/g, "/");
-    if (isPrivateBugTarget(relative)) {
-      throw new Error(`writes into .specify/bugs are blocked: ${relative}`);
+    if (isPrivateBugTarget(value) || isPrivateBugTarget(relative)) {
+      throw new Error(`writes into .specify/bugs are blocked: ${value} -> ${relative}`);
     }
   }
 }
 
 function parseInput() {
   const raw = fs.readFileSync(0, "utf8");
-  const data = JSON.parse(raw);
+  const data = parseJsonWithoutDuplicateKeys(raw, "hook input");
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     throw new Error("hook input must be one JSON object");
   }
