@@ -856,6 +856,37 @@ describe("Spec Kit command and lane boundaries", () => {
   });
 
   it.each([
+    String.raw`Write-Output safe & Set-Content Env:\SPECIFY_INIT_DIR C:\outside`,
+    String.raw`Write-Output safe & & 'Set-Item' Env:\SPECIFY_FEATURE_DIRECTORY C:\outside`,
+    String.raw`Set-Content -- Env:\SPECIFY_INIT_DIR C:\outside`,
+    String.raw`Set-Item -- Env:\SPECIFY_FEATURE_DIRECTORY C:\outside`,
+  ])("T4-R1 blocks a restricted provider mutation through a bare boundary: %s", (command) => {
+    expectBlocked(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: { command },
+      }),
+      /inline SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR)/i
+    );
+  });
+
+  it.each([
+    String.raw`Write-Output safe "&" Set-Content Env:\SPECIFY_INIT_DIR C:\outside`,
+    "Write-Output safe `& Set-Content Env:\\SPECIFY_INIT_DIR C:\\outside",
+    String.raw`Set-Content '--' 'Env:\SPECIFY_INIT_DIR'`,
+    "Set-Item `-- 'Env:\\SPECIFY_FEATURE_DIRECTORY'",
+  ])("T4-R1 allows a quoted or escaped boundary marker used as data: %s", (command) => {
+    expectAllowed(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: { command },
+      })
+    );
+  });
+
+  it.each([
     String.raw`Write-Output "Set-Item -Force Env:\SPECIFY_FEATURE_DIRECTORY C:\outside"`,
     String.raw`Set-Item -Force Variable:SPECIFY_FEATURE_DIRECTORY 'C:\outside'`,
     String.raw`Set-Content -Value 'Env:\SPECIFY_INIT_DIR' -Path 'Variable:ordinary'`,

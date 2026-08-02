@@ -663,6 +663,16 @@ function splitStaticShellTokenSegments(command, dialect) {
   const segments = [];
   let segment = [];
   for (const token of tokens) {
+    if (
+      dialect === "powershell" &&
+      segment.length > 0 &&
+      token.value === "&" &&
+      barePowerShellSyntaxToken(token)
+    ) {
+      segments.push(segment);
+      segment = [];
+      continue;
+    }
     if (token.operator) {
       if (segment.length > 0) segments.push(segment);
       segment = [];
@@ -756,6 +766,9 @@ function powerShellProviderPath(tokens) {
   for (let index = 1; index < tokens.length; index += 1) {
     const token = tokens[index];
     const parameterEligible = barePowerShellSyntaxToken(token);
+    if (parameterEligible && token.value === "--") {
+      return tokens[index + 1]?.value || "";
+    }
     if (parameterEligible && /^-(?:path|literalpath)$/i.test(token.value)) {
       return tokens[index + 1]?.value || "";
     }
