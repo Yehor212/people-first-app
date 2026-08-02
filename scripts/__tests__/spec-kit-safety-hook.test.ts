@@ -785,6 +785,20 @@ describe("Spec Kit command and lane boundaries", () => {
   });
 
   it.each([
+    String.raw`Set-Content '-Force' 'Env:\SPECIFY_INIT_DIR'`,
+    String.raw`Set-Content '-Path' 'Env:\SPECIFY_INIT_DIR'`,
+    String.raw`Set-Content '-LiteralPath' 'Env:\SPECIFY_INIT_DIR'`,
+  ])("R5-A allows a quoted option-like positional provider argument: %s", (command) => {
+    expectAllowed(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: { command },
+      })
+    );
+  });
+
+  it.each([
     String.raw`Write-Output "Set-Item -Force Env:\SPECIFY_FEATURE_DIRECTORY C:\outside"`,
     String.raw`Set-Item -Force Variable:SPECIFY_FEATURE_DIRECTORY 'C:\outside'`,
     String.raw`Set-Content -Value 'Env:\SPECIFY_INIT_DIR' -Path 'Variable:ordinary'`,

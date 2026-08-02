@@ -560,13 +560,15 @@ function tokenizeStaticShell(command, dialect) {
   const tokens = [];
   let token = "";
   let tokenStarted = false;
+  let tokenQuoted = false;
   let quote = null;
 
   function pushToken() {
     if (!tokenStarted) return;
-    tokens.push({ value: token, operator: false });
+    tokens.push({ value: token, operator: false, quoted: tokenQuoted });
     token = "";
     tokenStarted = false;
+    tokenQuoted = false;
   }
 
   for (let index = 0; index < command.length; index += 1) {
@@ -600,6 +602,7 @@ function tokenizeStaticShell(command, dialect) {
     if (character === "'" || character === '"') {
       quote = character;
       tokenStarted = true;
+      tokenQuoted = true;
       continue;
     }
     if (dialect === "powershell" && character === "`") {
@@ -622,7 +625,7 @@ function tokenizeStaticShell(command, dialect) {
     if (character === "\n" || character === ";" || character === "|" || character === "&") {
       pushToken();
       if (dialect === "powershell" && character === "&" && command[index + 1] !== "&") {
-        tokens.push({ value: "&", operator: false });
+        tokens.push({ value: "&", operator: false, quoted: false });
         continue;
       }
       let operator = character;
@@ -641,7 +644,7 @@ function tokenizeStaticShell(command, dialect) {
   return tokens;
 }
 
-function splitStaticShellSegments(command, dialect) {
+function splitStaticShellTokenSegments(command, dialect) {
   const tokens = tokenizeStaticShell(command, dialect);
   if (!tokens) return [];
   const segments = [];
@@ -651,11 +654,17 @@ function splitStaticShellSegments(command, dialect) {
       if (segment.length > 0) segments.push(segment);
       segment = [];
     } else {
-      segment.push(token.value);
+      segment.push(token);
     }
   }
   if (segment.length > 0) segments.push(segment);
   return segments;
+}
+
+function splitStaticShellSegments(command, dialect) {
+  return splitStaticShellTokenSegments(command, dialect).map((segment) =>
+    segment.map((token) => token.value)
+  );
 }
 
 function stripExecutableSuffix(value) {
@@ -716,11 +725,13 @@ function powerShellProviderPath(tokens) {
 
   for (let index = 1; index < tokens.length; index += 1) {
     const token = tokens[index];
-    if (/^-(?:path|literalpath)$/i.test(token)) return tokens[index + 1] || "";
+    if (!token.quoted && /^-(?:path|literalpath)$/i.test(token.value)) {
+      return tokens[index + 1]?.value || "";
+    }
 
-    const attachedSwitch = /^-([^:]+):\$(?:true|false)$/i.exec(token);
+    const attachedSwitch = token.quoted ? null : /^-([^:]+):\$(?:true|false)$/i.exec(token.value);
     if (attachedSwitch && noValueSwitch.test(attachedSwitch[1])) continue;
-    const option = /^-([^:]+)$/.exec(token);
+    const option = token.quoted ? null : /^-([^:]+)$/.exec(token.value);
     if (option && noValueSwitch.test(option[1])) continue;
 
     if (option && valueOption.test(option[1])) {
@@ -729,8 +740,8 @@ function powerShellProviderPath(tokens) {
       continue;
     }
 
-    if (token.startsWith("-")) return "";
-    return token;
+    if (!token.quoted && token.value.startsWith("-")) return "";
+    return token.value;
   }
   return "";
 }
@@ -739,10 +750,14 @@ function restrictedAssignmentName(segment, dialect) {
   const restricted = /^(?:SPECIFY_FEATURE_DIRECTORY|SPECIFY_INIT_DIR)$/i;
   if (dialect === "powershell") {
     let tokens = [...segment];
-    if (tokens[0] === "&") tokens.shift();
-    const match = /^\$env:(SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR))(?:=.*)?$/i.exec(tokens[0] || "");
-    if (match && (tokens[0].includes("=") || tokens[1] === "=")) return match[1].toUpperCase();
-    const executable = stripExecutableSuffix(tokens[0] || "");
+    if (tokens[0]?.value === "&") tokens.shift();
+    const match = /^\$env:(SPECIFY_(?:FEATURE_DIRECTORY|INIT_DIR))(?:=.*)?$/i.exec(
+      tokens[0]?.value || ""
+    );
+    if (match && (tokens[0].value.includes("=") || tokens[1]?.value === "=")) {
+      return match[1].toUpperCase();
+    }
+    const executable = stripExecutableSuffix(tokens[0]?.value || "");
     if (!["set-item", "set-content"].includes(executable)) return "";
     return restrictedPowerShellProviderName(powerShellProviderPath(tokens));
   }
@@ -780,7 +795,10 @@ function validateShellCommand(data) {
   const dialect = /^(?:PowerShell|pwsh)$/i.test(String(data.tool_name || ""))
     ? "powershell"
     : "posix";
-  const segments = splitStaticShellSegments(command, dialect);
+  const segments =
+    dialect === "powershell"
+      ? splitStaticShellTokenSegments(command, dialect)
+      : splitStaticShellSegments(command, dialect);
   for (const segment of segments) {
     const assignmentName = restrictedAssignmentName(segment, dialect);
     if (assignmentName) {
