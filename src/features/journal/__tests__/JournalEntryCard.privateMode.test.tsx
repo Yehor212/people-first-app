@@ -14,8 +14,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
     isRTL: false,
     language: "en",
     t: {
-      journalPrivateEntry: "Private entry",
-      journalPrivateEntryHint: "Unlock private mode to view this memory.",
+      journalPrivateEntry: "Entry preview hidden",
+      journalPrivateEntryHint: "Change the diary screen privacy setting to see this entry.",
       more: "More",
     },
   }),
@@ -86,12 +86,20 @@ describe("JournalEntryCard private mode", () => {
       />
     );
 
-    expect(screen.getByText("Private entry")).toBeInTheDocument();
-    expect(screen.getByText("Unlock private mode to view this memory.")).toBeInTheDocument();
+    expect(screen.getByText("Entry preview hidden")).toBeInTheDocument();
+    expect(
+      screen.getByText("Change the diary screen privacy setting to see this entry."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Therapy plan")).not.toBeInTheDocument();
     expect(screen.queryByText(/Sensitive appointment/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/secret/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId("diary-private-test-mood-orb")).not.toBeInTheDocument();
+    const privateHint = screen.getByText(
+      "Change the diary screen privacy setting to see this entry.",
+    );
+    expect(privateHint.className).not.toContain("line-clamp");
+    expect(privateHint.className).toContain("whitespace-normal");
+    expect(privateHint.className).toContain("break-words");
 
     await waitFor(() => expect(mocks.getPhotoById).not.toHaveBeenCalled());
   });
@@ -120,8 +128,22 @@ describe("JournalEntryCard private mode", () => {
     const motionCardBlock = /aria-disabled=\{privateMode \|\| undefined\}[\s\S]*?onDragEnd=\{handleDragEnd\}/.exec(cardSource)?.[0] ?? "";
 
     expect(dragEndBlock).toContain("privateMode");
-    expect(dragEndBlock.indexOf("privateMode")).toBeLessThan(dragEndBlock.indexOf("onSwipeDelete"));
+    expect(dragEndBlock.indexOf("privateMode")).toBeLessThan(
+      dragEndBlock.indexOf("setSwipeDeleteConfirmOpen"),
+    );
+    expect(dragEndBlock).not.toContain("onSwipeDelete");
     expect(motionCardBlock).toContain('drag={privateMode ? false : "x"}');
+  });
+
+  it("requires confirmation before a swipe can request permanent deletion", () => {
+    const dragEndBlock = /const handleDragEnd = useCallback\([\s\S]*?\n\s{2}\);/.exec(cardSource)?.[0] ?? "";
+
+    expect(cardSource).toContain("const [swipeDeleteConfirmOpen, setSwipeDeleteConfirmOpen]");
+    expect(dragEndBlock).toContain("setSwipeDeleteConfirmOpen(true)");
+    expect(dragEndBlock).not.toContain("onSwipeDelete?.(entry.id)");
+    expect(cardSource).toContain("useBackHandler(swipeDeleteConfirmOpen");
+    expect(cardSource).toContain("<AlertDialog open={swipeDeleteConfirmOpen}");
+    expect(cardSource).toContain("onSwipeDelete?.(entry.id)");
   });
 
   it("does not expose contextual actions from the private placeholder", () => {

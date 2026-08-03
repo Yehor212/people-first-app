@@ -31,6 +31,19 @@ const DEFAULT_LIMIT = 8;
 const OUTPUT_DIR = path.join(".codex", "auto-context");
 const RAG_MARKDOWN_PATH = path.join(OUTPUT_DIR, "rag-current.md");
 const RAG_METADATA_PATH = path.join(OUTPUT_DIR, "rag-current.json");
+const SETTINGS_DISCOVERY_TERMS = [
+  "settings",
+  "настро",
+  "налаштуван",
+  "configuraci",
+  "einstellung",
+  "paramètr",
+  "parametr",
+  "réglage",
+  "設定",
+  "إعداد",
+  "הגדר",
+];
 
 const GROUP_RULES: Array<{ id: string; terms: string[] }> = [
   {
@@ -43,7 +56,17 @@ const GROUP_RULES: Array<{ id: string; terms: string[] }> = [
   },
   {
     id: "ui_v2",
-    terms: ["ui", "v2", "orb", "fullscreen", "mobile", "visual", "nav", "safe-area", "telegram-grade"],
+    terms: [
+      "ui",
+      "orb",
+      "fullscreen",
+      "mobile",
+      "visual",
+      "nav",
+      "safe-area",
+      "telegram-grade",
+      ...SETTINGS_DISCOVERY_TERMS,
+    ],
   },
   {
     id: "coach_journal",
@@ -56,16 +79,40 @@ export function selectRagGroupsForTask(task: string): string[] {
   const groups = new Set<string>(["agent_rules"]);
 
   for (const rule of GROUP_RULES) {
-    if (rule.terms.some((term) => normalized.includes(term))) {
+    const exactV2UiRequest = rule.id === "ui_v2" && hasStandaloneV2Token(normalized);
+    if (exactV2UiRequest || rule.terms.some((term) => normalized.includes(term))) {
       groups.add(rule.id);
     }
   }
 
-  if (groups.size === 1 && /verify|test|ci|audit|security|agent|context|architecture/.test(normalized)) {
+  const taskTokens = new Set(normalized.match(/[\p{L}\p{N}_-]+/gu) ?? []);
+  if (groups.size === 1 && [
+    "verify",
+    "test",
+    "ci",
+    "audit",
+    "security",
+    "agent",
+    "context",
+    "architecture",
+  ].some((term) => taskTokens.has(term))) {
     groups.add("telegram_control");
   }
 
   return [...groups];
+}
+
+export function buildRagSearchTask(task: string, groups: string[]): string {
+  const normalizedTask = task.toLowerCase();
+  return groups.includes("ui_v2") &&
+    SETTINGS_DISCOVERY_TERMS.some((term) => normalizedTask.includes(term))
+    ? `${task} settings SettingsPage`
+    : task;
+}
+
+function hasStandaloneV2Token(normalized: string): boolean {
+  const withoutSemanticVersions = normalized.replace(/v2[.][0-9]+([.][0-9]+)*/g, "");
+  return withoutSemanticVersions.split(/[^a-z0-9]+/).includes("v2");
 }
 
 export function buildRagPreflightContext(options: RagPreflightOptions): RagPreflightContext {
@@ -74,7 +121,8 @@ export function buildRagPreflightContext(options: RagPreflightOptions): RagPrefl
 
   const maxChars = clampMaxChars(options.maxChars ?? DEFAULT_MAX_CHARS);
   const groups = selectRagGroupsForTask(task);
-  const search = searchProjectDocs(task, {
+  const searchTask = buildRagSearchTask(task, groups);
+  const search = searchProjectDocs(searchTask, {
     rootDir: options.rootDir,
     groups,
     limit: options.limit ?? DEFAULT_LIMIT,

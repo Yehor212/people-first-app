@@ -1,7 +1,16 @@
-import { useId, type AriaRole, type KeyboardEventHandler, type ReactNode, type Ref } from "react";
-import type { LucideIcon } from "lucide-react";
+import { useId } from "react";
+import { Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import type {
+  ActionButtonProps,
+  PanelFrameProps,
+  SettingsChoiceButtonProps,
+  SettingsFieldHeaderProps,
+  SettingsInsetButtonProps,
+  SettingsInsetProps,
+  ToggleRowProps,
+} from "./V2SettingsPrimitiveTypes";
 export {
   SettingsButtonGrid,
   SettingsDialog,
@@ -11,79 +20,6 @@ export {
   SettingsStatus,
   SettingsTextInput,
 } from "./V2SettingsFormPrimitives";
-
-interface PanelFrameProps {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  children: ReactNode;
-  testId: string;
-  showHeader?: boolean;
-  variant?: "default" | "studio";
-}
-
-interface ToggleRowProps {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-  disabled?: boolean;
-  testId?: string;
-  surfaceWeight?: "default" | "quiet";
-}
-
-interface ActionButtonProps {
-  icon: LucideIcon;
-  children: ReactNode;
-  onClick: () => void;
-  buttonRef?: Ref<HTMLButtonElement>;
-  disabled?: boolean;
-  isLoading?: boolean;
-  variant?: "primary" | "secondary" | "danger";
-  testId?: string;
-}
-
-interface SettingsInsetProps {
-  children: ReactNode;
-  containerRef?: Ref<HTMLDivElement>;
-  tone?: "neutral" | "danger" | "success";
-  testId?: string;
-  className?: string;
-  tabIndex?: number;
-  role?: AriaRole;
-  ariaLabel?: string;
-}
-
-interface SettingsInsetButtonProps {
-  children: ReactNode;
-  onClick: () => void;
-  onKeyDown?: KeyboardEventHandler<HTMLButtonElement>;
-  testId?: string;
-}
-
-interface SettingsChoiceButtonProps {
-  children: ReactNode;
-  selected: boolean;
-  onClick: () => void;
-  icon?: LucideIcon;
-  presentation?: "compact" | "default" | "stacked";
-  selectedTone?: "solid" | "subtle" | "danger";
-  surface?: "background" | "card" | "secondary";
-  disabled?: boolean;
-  testId?: string;
-  className?: string;
-  lang?: string;
-  dir?: "ltr" | "rtl" | "auto";
-}
-
-interface SettingsFieldHeaderProps {
-  title: string;
-  description?: string;
-  htmlFor?: string;
-  icon?: LucideIcon;
-  tone?: "neutral" | "danger";
-}
 
 const ACTION_BUTTON_VARIANT_CLASS: Record<NonNullable<ActionButtonProps["variant"]>, string> = {
   primary:
@@ -104,7 +40,8 @@ const SETTINGS_CHOICE_PRESENTATION_CLASS: Record<
   NonNullable<SettingsChoiceButtonProps["presentation"]>,
   string
 > = {
-  compact: "flex min-h-[44px] min-w-11 items-center justify-center gap-2 rounded-full px-3 text-center text-sm",
+  compact:
+    "flex min-h-[48px] min-w-[48px] items-center justify-center gap-2 rounded-full px-3 text-center text-sm",
   default: "flex min-h-[48px] items-center gap-2 rounded-[8px] px-4 py-3 text-start text-sm",
   stacked:
     "flex min-h-[68px] flex-col items-center justify-center gap-2 rounded-[8px] p-3 text-center text-sm",
@@ -148,8 +85,10 @@ export function PanelFrame({
   return (
     <section
       className={cn(
-        "relative overflow-hidden rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.42)] bg-[hsl(var(--settings-v2-card)/0.62)] p-3 shadow-[var(--zen-shadow-card)] md:p-3.5",
-        variant === "studio" && "p-3.5 sm:p-4 md:p-5"
+        "relative w-full min-w-0 max-w-full overflow-hidden rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.42)] bg-[hsl(var(--settings-v2-card)/0.62)] shadow-[var(--zen-shadow-card)]",
+        variant === "studio"
+          ? "p-2 min-[360px]:p-3.5 sm:p-4 md:p-5"
+          : "p-2.5 min-[360px]:p-3 md:p-3.5"
       )}
       data-testid={testId}
       data-panel-variant={variant}
@@ -161,29 +100,46 @@ export function PanelFrame({
         className="absolute inset-x-4 top-0 h-px rounded-b-full bg-[hsl(var(--settings-v2-rim-light)/0.22)]"
       />
       {showHeader && (
-        <div className={cn("mb-2.5 flex items-start gap-3", variant === "studio" && "mb-3.5")}>
+        <div
+          className={cn(
+            "mb-2.5 flex flex-col items-start gap-2.5 min-[360px]:flex-row min-[360px]:gap-3",
+            variant === "studio" && "mb-3.5"
+          )}
+          data-slot="settings-panel-header"
+        >
           <span
             className={cn(
               "flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.42)] bg-[hsl(var(--settings-v2-accent)/0.1)] text-[hsl(var(--settings-v2-accent))]",
-              variant === "studio" && "h-10 w-10 bg-[hsl(var(--settings-v2-accent)/0.12)] shadow-[inset_0_1px_0_hsl(var(--settings-v2-rim-light)/0.24)]"
+              variant === "studio" &&
+                "h-10 w-10 bg-[hsl(var(--settings-v2-accent)/0.12)] shadow-[inset_0_1px_0_hsl(var(--settings-v2-rim-light)/0.24)]"
             )}
+            data-slot="settings-panel-icon"
           >
             <Icon className="h-4 w-4" aria-hidden="true" />
           </span>
-          <span className="min-w-0">
+          <span
+            className="w-full min-w-0 [hyphens:manual] [overflow-wrap:break-word] min-[360px]:w-auto"
+            data-slot="settings-panel-copy"
+          >
             <h3
               id={titleId}
-              className={cn("block text-sm font-semibold text-foreground", variant === "studio" && "text-base sm:text-lg")}
+              className={cn(
+                "block break-words text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:break-word]",
+                variant === "studio" && "text-base sm:text-lg"
+              )}
             >
               {title}
             </h3>
-            <span id={descriptionId} className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+            <span
+              id={descriptionId}
+              className="mt-1 block break-words text-xs leading-relaxed text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]"
+            >
               {description}
             </span>
           </span>
         </div>
       )}
-      <div className="space-y-2.5">{children}</div>
+      <div className="min-w-0 space-y-2.5">{children}</div>
     </section>
   );
 }
@@ -203,18 +159,18 @@ export function ToggleRow({
   return (
     <div
       className={cn(
-        "grid min-h-[58px] grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-x-3 gap-y-1 rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.36)] bg-[hsl(var(--settings-v2-shell)/0.38)] p-3 min-[420px]:grid-cols-[2.25rem_minmax(0,1fr)_auto] md:p-3.5",
+        "grid min-h-[58px] grid-cols-[2.25rem_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 rounded-none border-x-0 border-t-0 border-b border-[hsl(var(--settings-v2-border)/0.36)] bg-transparent px-1 py-3 last:border-b-0",
         surfaceWeight === "quiet" &&
-          "border-transparent bg-[hsl(var(--settings-v2-shell)/0.28)] focus-within:border-[hsl(var(--settings-v2-accent)/0.34)]",
+          "border-transparent focus-within:border-[hsl(var(--settings-v2-accent)/0.34)]",
         disabled && "opacity-60"
       )}
       data-surface-weight={surfaceWeight}
       data-testid={testId}
     >
-      <span className="col-start-1 row-start-1 mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[hsl(var(--settings-v2-accent)/0.1)] text-[hsl(var(--settings-v2-accent))]">
+      <span className="col-start-1 row-start-1 mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center text-[hsl(var(--settings-v2-accent))]">
         <Icon className="h-4 w-4" aria-hidden="true" />
       </span>
-      <span className="col-start-2 row-start-1 min-w-0 self-center break-words hyphens-auto text-sm font-semibold text-foreground">
+      <span className="col-start-2 col-end-3 row-start-1 min-w-0 self-center break-words text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:break-word]">
         {title}
       </span>
       <Switch
@@ -223,11 +179,11 @@ export function ToggleRow({
         disabled={disabled}
         aria-label={title}
         aria-describedby={descriptionId}
-        className="col-start-2 row-start-3 mt-1 shrink-0 justify-self-end min-[420px]:col-start-3 min-[420px]:row-start-1 min-[420px]:mt-0.5 min-[420px]:justify-self-auto"
+        className="col-start-3 row-start-1 mt-0.5 shrink-0 justify-self-end"
       />
       <span
         id={descriptionId}
-        className="col-start-2 col-end-3 row-start-2 min-w-0 text-xs leading-relaxed text-muted-foreground min-[420px]:col-end-4"
+        className="col-start-2 col-end-4 row-start-2 min-w-0 break-words text-xs leading-relaxed text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]"
       >
         {description}
       </span>
@@ -266,7 +222,9 @@ export function ActionButton({
         className={cn("h-4 w-4 shrink-0", isLoading && "motion-safe:animate-spin")}
         aria-hidden="true"
       />
-      <span className="min-w-0 break-words hyphens-auto [overflow-wrap:anywhere]">{children}</span>
+      <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:break-word]">
+        {children}
+      </span>
     </button>
   );
 }
@@ -275,24 +233,33 @@ export function SettingsInset({
   children,
   containerRef,
   tone = "neutral",
+  presentation = "contained",
   testId,
   className,
   tabIndex,
   role,
   ariaLabel,
+  ariaLabelledBy,
+  ariaDescribedBy,
 }: SettingsInsetProps) {
   return (
     <div
       ref={containerRef}
       className={cn(
-        "space-y-2.5 rounded-[8px] border p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] focus-visible:ring-offset-2 md:p-3.5",
-        SETTINGS_INSET_TONE_CLASS[tone],
-        className,
+        "w-full min-w-0 max-w-full space-y-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)]",
+        presentation === "flat-row"
+          ? "rounded-none border-x-0 border-t-0 border-b border-[hsl(var(--settings-v2-border)/0.42)] bg-transparent px-1 py-3 focus-visible:ring-inset focus-visible:ring-offset-0 md:py-3.5"
+          : "rounded-[8px] border p-2 min-[360px]:p-3 focus-visible:ring-offset-2 md:p-3.5",
+        presentation === "contained" && SETTINGS_INSET_TONE_CLASS[tone],
+        className
       )}
+      data-inset-presentation={presentation}
       data-testid={testId}
       tabIndex={tabIndex}
       role={role}
       aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
     >
       {children}
     </div>
@@ -311,7 +278,7 @@ export function SettingsInsetButton({
       onClick={onClick}
       onKeyDown={onKeyDown}
       data-testid={testId}
-      className="w-full rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.58)] bg-[hsl(var(--settings-v2-shell)/0.56)] p-4 text-center shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.42)] motion-safe:transition-[transform,background-color,border-color,box-shadow] motion-safe:duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      className="min-h-[48px] w-full min-w-0 whitespace-normal break-words rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.58)] bg-[hsl(var(--settings-v2-shell)/0.56)] p-4 text-center [hyphens:manual] [overflow-wrap:break-word] shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.42)] motion-safe:transition-[transform,background-color,border-color,box-shadow] motion-safe:duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       {children}
     </button>
@@ -343,7 +310,7 @@ export function SettingsChoiceButton({
       lang={lang}
       dir={dir}
       className={cn(
-        "border font-semibold shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.38)] motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55",
+        "relative min-w-0 whitespace-normal break-words border font-semibold [hyphens:manual] [overflow-wrap:break-word] shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.38)] motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55",
         SETTINGS_CHOICE_PRESENTATION_CLASS[presentation],
         selected
           ? SETTINGS_CHOICE_SELECTED_CLASS[selectedTone]
@@ -352,7 +319,24 @@ export function SettingsChoiceButton({
       )}
     >
       {Icon ? <Icon className="h-5 w-5" aria-hidden="true" /> : null}
-      {children}
+      <span
+        className="min-w-0 max-w-full break-words [hyphens:manual] [overflow-wrap:break-word]"
+        data-slot="settings-choice-label"
+      >
+        {children}
+      </span>
+      {selected ? (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "flex h-4 w-4 shrink-0 items-center justify-center",
+            presentation === "stacked" && "absolute end-2 top-2"
+          )}
+          data-slot="settings-choice-selection"
+        >
+          <Check className="h-4 w-4" />
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -366,16 +350,19 @@ export function SettingsFieldHeader({
 }: SettingsFieldHeaderProps) {
   const content = (
     <>
-      <span className="flex items-center gap-2">
+      <span className="flex min-w-0 items-start gap-2">
         {Icon ? (
           <Icon
-            className={cn("h-4 w-4", tone === "danger" ? "text-destructive" : "text-primary")}
+            className={cn(
+              "h-4 w-4 shrink-0",
+              tone === "danger" ? "text-destructive" : "text-primary"
+            )}
             aria-hidden="true"
           />
         ) : null}
         <span
           className={cn(
-            "text-sm font-semibold",
+            "min-w-0 break-words text-sm font-semibold [hyphens:manual] [overflow-wrap:break-word]",
             tone === "danger" ? "text-destructive" : "text-foreground"
           )}
         >
@@ -383,7 +370,7 @@ export function SettingsFieldHeader({
         </span>
       </span>
       {description ? (
-        <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+        <span className="mt-1 block break-words text-xs leading-relaxed text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
           {description}
         </span>
       ) : null}

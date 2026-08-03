@@ -12,8 +12,8 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
-      className,
+      "inline-flex h-auto min-h-11 max-w-full items-stretch justify-center rounded-md bg-muted p-1 text-muted-foreground",
+      className
     )}
     {...props}
   />
@@ -27,8 +27,8 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background motion-safe:transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-      className,
+      "inline-flex h-auto min-h-11 max-w-full min-w-0 items-center justify-center gap-2 whitespace-normal break-words rounded-sm px-3 py-2 text-center text-sm font-medium [hyphens:manual] [overflow-wrap:break-word] ring-offset-background motion-safe:transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&>span]:min-w-0 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+      className
     )}
     {...props}
   />
@@ -43,7 +43,7 @@ const TabsContent = React.forwardRef<
     ref={ref}
     className={cn(
       "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-      className,
+      className
     )}
     {...props}
   />

@@ -2,6 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 
 const notificationPlugin = vi.hoisted(() => ({ createChannel: vi.fn() }));
+const nativePushRealm = vi.hoisted(() => ({
+  isPushRealmChannelId: vi.fn((value: unknown) =>
+    value === "zenflow_default_v4" ||
+    value === "zenflow_gentle_v4" ||
+    value === "zenflow_silent_v4"
+  ),
+  updateNativePushPresentation: vi.fn(),
+}));
 
 vi.mock("@/lib/platform", () => ({
   isDesktopViewport: false,
@@ -12,6 +20,8 @@ vi.mock("@/lib/platform", () => ({
 vi.mock("@capacitor/local-notifications", () => ({
   LocalNotifications: notificationPlugin,
 }));
+
+vi.mock("../nativePushRealm", () => nativePushRealm);
 
 import {
   buildNotificationChannelCopy,
@@ -31,6 +41,7 @@ describe("notification sound channels", () => {
   beforeEach(() => {
     localStorage.clear();
     notificationPlugin.createChannel.mockClear().mockResolvedValue(undefined);
+    nativePushRealm.updateNativePushPresentation.mockReset().mockResolvedValue(undefined);
   });
 
   it("builds Android channel names and descriptions from the active language", () => {
@@ -51,11 +62,11 @@ describe("notification sound channels", () => {
   });
 
   it("uses versioned Android channels so immutable old channel behavior is not reused", () => {
-    expect(NOTIFICATION_SOUND_CHANNEL_VERSION).toBe("v3");
+    expect(NOTIFICATION_SOUND_CHANNEL_VERSION).toBe("v4");
     expect(NOTIFICATION_SOUNDS.map((sound) => sound.channelId)).toEqual([
-      "zenflow_default_v3",
-      "zenflow_gentle_v3",
-      "zenflow_silent_v3",
+      "zenflow_default_v4",
+      "zenflow_gentle_v4",
+      "zenflow_silent_v4",
     ]);
     expect(NOTIFICATION_SOUNDS.some((sound) => sound.channelId === "zenflow_reminders")).toBe(false);
   });
@@ -76,17 +87,58 @@ describe("notification sound channels", () => {
   });
 
   it("routes new reminder schedules through the selected versioned channel", () => {
-    expect(getCurrentSoundOption().channelId).toBe("zenflow_default_v3");
-    expect(getCurrentChannelId()).toBe("zenflow_default_v3");
+    expect(getCurrentSoundOption().channelId).toBe("zenflow_default_v4");
+    expect(getCurrentChannelId()).toBe("zenflow_default_v4");
   });
 
-  it("creates only private Android channels so reminder content is concealed on lock screens", async () => {
+  it("updates the active native push realm after saving a sound profile", async () => {
+    await expect(updateNotificationSound("gentle")).resolves.toBe("zenflow_gentle_v4");
+
+    expect(nativePushRealm.updateNativePushPresentation).toHaveBeenCalledWith({
+      channelId: "zenflow_gentle_v4",
+    });
+  });
+
+  it("reports an active native presentation failure so settings can roll back", async () => {
+    nativePushRealm.updateNativePushPresentation.mockRejectedValueOnce(
+      new Error("native realm unavailable"),
+    );
+
+    await expect(updateNotificationSound("silent")).rejects.toThrow("native realm unavailable");
+    expect(getNotificationSound()).toBe("default");
+  });
+
+  it("keeps an unrestored durable choice observable when rollback storage fails", async () => {
+    const originalSetItem = Storage.prototype.setItem;
+    let writeCount = 0;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (
+      this: Storage,
+      key: string,
+      value: string,
+    ) {
+      writeCount += 1;
+      if (writeCount === 2) {
+        throw new DOMException("blocked", "QuotaExceededError");
+      }
+      return originalSetItem.call(this, key, value);
+    });
+    nativePushRealm.updateNativePushPresentation.mockRejectedValueOnce(
+      new Error("native realm unavailable"),
+    );
+
+    await expect(updateNotificationSound("gentle")).rejects.toThrow(
+      "native realm unavailable",
+    );
+    expect(getNotificationSound()).toBe("gentle");
+  });
+
+  it("creates only secret Android channels so reminder content is hidden on lock screens", async () => {
     await initializeNotificationChannels();
 
     expect(notificationPlugin.createChannel).toHaveBeenCalledTimes(3);
     for (const [channel] of notificationPlugin.createChannel.mock.calls) {
-      expect(channel).toMatchObject({ visibility: 0 });
-      expect(channel.id).toMatch(/_v3$/);
+      expect(channel).toMatchObject({ visibility: -1 });
+      expect(channel.id).toMatch(/_v4$/);
     }
   });
 

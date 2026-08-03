@@ -369,9 +369,14 @@ describe("AdMob owner evidence apply workflow", () => {
       "2026-07-04",
     );
     const external = require(externalCheckerPath) as {
-      evaluateExternalReadiness: (input: unknown) => { ok: boolean; issues: Array<{ code: string }> };
+      evaluateExternalReadiness: (
+        input: unknown,
+        options?: { now?: Date },
+      ) => { ok: boolean; issues: Array<{ code: string }> };
     };
-    const report = external.evaluateExternalReadiness(finalLedger);
+    const report = external.evaluateExternalReadiness(finalLedger, {
+      now: new Date("2026-07-04T12:00:00.000Z"),
+    });
 
     expect(result.status).toBe(0);
     expect(report.ok).toBe(true);

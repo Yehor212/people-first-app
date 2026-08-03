@@ -149,12 +149,12 @@ export function ParticipantsLeaderboard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <div className="px-5 py-3 border-b border-foreground/10 flex items-center gap-2">
-        <Users className="w-4 h-4 text-violet-400" />
-        <span className="text-sm font-medium text-slate-800 dark:text-white">
+      <div className="flex min-w-0 items-start gap-2 border-b border-foreground/10 px-5 py-3">
+        <Users className="h-4 w-4 shrink-0 text-violet-400" />
+        <span className="min-w-0 flex-1 whitespace-normal break-words text-sm font-medium text-slate-800 dark:text-white">
           {t.participants || 'Participants'} ({leaderboard.members.length})
         </span>
-        <Cloud className="w-3 h-3 text-emerald-400 ms-auto" />
+        <Cloud className="ms-auto h-3 w-3 shrink-0 text-emerald-400" />
       </div>
 
       <div className="p-2 space-y-1 max-h-[200px] overflow-y-auto">
@@ -170,7 +170,7 @@ export function ParticipantsLeaderboard({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.05 }}
             className={cn(
-              "flex items-center gap-3 p-3 rounded-xl",
+              "grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-x-3 gap-y-2 p-3 rounded-xl min-[420px]:grid-cols-[2rem_minmax(0,1fr)_auto_auto]",
               member.isCurrentUser
                 ? "bg-violet-500/20 border border-violet-500/30"
                 : "bg-foreground/5"
@@ -182,18 +182,24 @@ export function ParticipantsLeaderboard({
             </div>
 
             {/* Name */}
-            <div className="flex-1 min-w-0">
-              <span className={cn(
-                "font-medium truncate block",
-                member.isCurrentUser ? "text-violet-700 dark:text-violet-300" : "text-slate-800 dark:text-white"
-              )}>
-                {member.displayName}
-                {member.isCurrentUser && ` (${t.you || 'You'})`}
-              </span>
+            <div className="min-w-0">
+              <div className="flex min-w-0 flex-wrap items-start gap-1.5">
+                <span className={cn(
+                  "block min-w-0 whitespace-normal [overflow-wrap:anywhere] font-medium leading-snug",
+                  member.isCurrentUser ? "text-violet-700 dark:text-violet-300" : "text-slate-800 dark:text-white"
+                )}>
+                  {member.displayName}
+                </span>
+                {member.isCurrentUser && (
+                  <span className="shrink-0 text-xs text-violet-700 dark:text-violet-300">
+                    ({t.you || 'You'})
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Progress */}
-            <div className="text-end">
+            <div className="col-start-2 row-start-2 justify-self-start text-start min-[420px]:col-start-3 min-[420px]:row-start-1 min-[420px]:justify-self-end min-[420px]:text-end">
               <div className="font-semibold text-slate-800 dark:text-white">
                 {member.daysCompleted}/{leaderboard.challenge.duration}
               </div>
@@ -206,7 +212,7 @@ export function ParticipantsLeaderboard({
 
             {/* Completion badge */}
             {member.completed && (
-              <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+              <CheckCircle2 className="col-start-1 row-start-2 h-5 w-5 justify-self-center text-emerald-500 min-[420px]:col-start-4 min-[420px]:row-start-1" />
             )}
           </motion.div>
         ))}

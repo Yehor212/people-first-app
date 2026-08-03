@@ -48,11 +48,11 @@
 - **File to test:** `src/lib/deepLinks.ts` → `parseDeepLink`
 - **Risk:** HIGH — wrong parsing = user lands on wrong screen or nowhere
 - **Scenarios:**
-  1. `zenflow://challenge/ABC123` → `{ type: "challenge", id: "ABC123" }`
+  1. Unsupported short-ID forms such as `zenflow://challenge/ABC123` and web `/challenge/ABC123` → `{ type: "unknown" }`
   2. `zenflow://diary/mood` → `{ type: "diary", route: "mood" }`
   3. `zenflow://diary/editor` → `{ type: "diary", route: "editor" }`
-  4. `https://zenflow.app/challenge/XYZ` → challenge type
-  5. Invalid challenge ID (too short / special chars) → rejected
+  4. `zenflow://challenge?id=XYZ` → `{ type: "unknown" }`; no short-ID lookup contract exists
+  5. Encoded challenge invites (`zenflow://challenge?data=...`) are verified through `useDeepLinkHandler`, not this generic parser
   6. OAuth callback URL (`login-callback`) → null (skipped by handleDeepLink)
   7. Malformed URL → null (try/catch)
   8. Unknown scheme → `{ type: "unknown" }`

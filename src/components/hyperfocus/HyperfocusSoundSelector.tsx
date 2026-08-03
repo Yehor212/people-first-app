@@ -142,13 +142,13 @@ export function HyperfocusSoundSelector({
       </div>
 
       {/* Sound selector grid */}
-      <div className="grid grid-cols-3 gap-2 lg:grid-cols-7">
+      <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-7">
         {/* None button */}
         <motion.button
           onClick={() => onSoundSelect(null)}
           aria-pressed={!selectedSoundId}
           className={cn(
-            'px-2 py-3 min-h-[52px] rounded-xl text-xs font-medium motion-safe:transition-all flex flex-col items-center justify-center gap-1',
+            'h-auto min-h-[52px] min-w-0 whitespace-normal px-2 py-3 rounded-xl text-xs font-medium motion-safe:transition-all flex flex-col items-center justify-center gap-1',
             !selectedSoundId
               ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-violet-700 dark:text-white'
               : 'bg-secondary border border-border text-slate-600 dark:text-white/70 hover:bg-secondary/80'
@@ -159,8 +159,8 @@ export function HyperfocusSoundSelector({
           whileHover={motionAllowed ? { scale: 1.03 } : undefined}
           whileTap={motionAllowed ? zenTap.card : undefined}
         >
-          <VolumeX className="h-5 w-5" aria-hidden="true" />
-          <span>{t.hyperfocusSoundNone}</span>
+          <VolumeX className="h-5 w-5 shrink-0" aria-hidden="true" />
+          <span className="break-words text-center">{t.hyperfocusSoundNone}</span>
         </motion.button>
 
         {/* All available sounds */}
@@ -176,7 +176,7 @@ export function HyperfocusSoundSelector({
               onClick={() => onSoundSelect(getHyperfocusVariantId(family.id, 'deep'))}
               aria-pressed={isSelected}
               className={cn(
-                'px-2 py-3 min-h-[52px] rounded-xl text-xs font-medium motion-safe:transition-all flex flex-col items-center justify-center gap-1',
+                'h-auto min-h-[52px] min-w-0 whitespace-normal px-2 py-3 rounded-xl text-xs font-medium motion-safe:transition-all flex flex-col items-center justify-center gap-1',
                 isSelected
                   ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-violet-700 dark:text-white'
                   : 'bg-secondary border border-border text-slate-600 dark:text-white/70 hover:bg-secondary/80'
@@ -187,15 +187,15 @@ export function HyperfocusSoundSelector({
               whileHover={motionAllowed ? { scale: 1.03 } : undefined}
               whileTap={motionAllowed ? zenTap.card : undefined}
             >
-              <Icon className="h-5 w-5" aria-hidden="true" />
-              <span>{localizedName}</span>
+              <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+              <span className="break-words text-center">{localizedName}</span>
             </motion.button>
           );
         })}
       </div>
 
       {activeFamily && (
-        <div className="mt-3 grid grid-cols-3 gap-2" role="group" aria-label={t.hyperfocusSoundIntensity || 'Sound intensity'}>
+        <div className="mt-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-3" role="group" aria-label={t.hyperfocusSoundIntensity || 'Sound intensity'}>
           {activeFamily.levels.map((level) => {
             const isSelected = activeLevelId === level.id;
             const localizedLevelName = t[level.labelKey] || level.label;
@@ -207,7 +207,7 @@ export function HyperfocusSoundSelector({
                 onClick={() => onSoundSelect(level.variantId)}
                 aria-pressed={isSelected}
                 className={cn(
-                  'px-2 py-2 min-h-[44px] rounded-xl text-xs font-medium motion-safe:transition-all flex items-center justify-center text-center',
+                  'h-auto min-h-[44px] min-w-0 whitespace-normal break-words px-2 py-2 rounded-xl text-xs font-medium motion-safe:transition-all flex items-center justify-center text-center',
                   isSelected
                     ? 'bg-violet-500/30 border border-violet-500/50 text-violet-700 dark:text-violet-100'
                     : 'bg-secondary border border-border text-slate-600 dark:text-white/70 hover:bg-secondary/80'

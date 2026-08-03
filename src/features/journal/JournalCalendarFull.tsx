@@ -1,12 +1,16 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { cn, getToday } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { getLocale } from "@/lib/timeUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
 import type { MoodType } from "@/types";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
+import { computeStreaks } from "./computeStreaks";
+import { getJournalWeekStart } from "./journalDateUtils";
+import { formatLocalizedCount } from "./journalWordCount";
 
 /** Theme-token-based mood background colors with opacity modulation */
 const MOOD_BG_STYLE: Record<MoodType, string> = {
@@ -26,51 +30,16 @@ const MOOD_BG_STYLE_DARK: Record<MoodType, string> = {
   terrible: "hsl(var(--mood-terrible) / 0.18)",
 };
 
-/** Detect consecutive diary day streaks from a set of date strings */
-function computeStreaks(
-  entryDates: Map<string, MoodType | undefined>
-): Map<string, { isStart: boolean; isEnd: boolean; length: number }> {
-  const result = new Map<string, { isStart: boolean; isEnd: boolean; length: number }>();
-  const dates = Array.from(entryDates.keys()).sort();
-  if (dates.length === 0) return result;
-
-  let streakStart = 0;
-  for (let i = 1; i <= dates.length; i++) {
-    const prevDate = new Date(dates[i - 1] + "T00:00:00");
-    const currDate = i < dates.length ? new Date(dates[i] + "T00:00:00") : null;
-    const isConsecutive = currDate && currDate.getTime() - prevDate.getTime() === 86400000;
-
-    if (!isConsecutive) {
-      const streakLen = i - streakStart;
-      if (streakLen >= 2) {
-        for (let j = streakStart; j < i; j++) {
-          result.set(dates[j], {
-            isStart: j === streakStart,
-            isEnd: j === i - 1,
-            length: streakLen,
-          });
-        }
-      }
-      streakStart = i;
-    }
-  }
-  return result;
-}
-
-/** RTL locales where week starts on Saturday */
-const RTL_WEEK_START_SATURDAY = new Set(["ar", "he"]);
-
 /** Get localized single-letter day names, starting from correct day of week */
-function getLocalizedDayNames(locale: string, startSaturday: boolean): string[] {
+function getLocalizedDayNames(locale: string, weekStart: number): string[] {
   const formatter = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
-  // Jan 5 2025 = Sunday (0), so we shift for startSaturday (6)
-  const offset = startSaturday ? 6 : 0;
   return Array.from({ length: 7 }, (_, i) =>
-    formatter.format(new Date(2025, 0, 5 + ((i + offset) % 7)))
+    formatter.format(new Date(2025, 0, 5 + ((i + weekStart) % 7)))
   );
 }
 
 interface JournalCalendarFullProps {
+  today: string;
   entryDates: Map<string, MoodType | undefined>;
   releaseTraceDates?: Map<string, number>;
   selectedDate: string | null;
@@ -80,6 +49,7 @@ interface JournalCalendarFullProps {
 }
 
 export function JournalCalendarFull({
+  today,
   entryDates,
   releaseTraceDates,
   selectedDate,
@@ -87,8 +57,7 @@ export function JournalCalendarFull({
   onToggleMode,
   privateMode = false,
 }: JournalCalendarFullProps) {
-  const today = getToday();
-  const { t, language } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const reducedMotion = useReducedMotion();
   const animate = shouldAnimate() && !reducedMotion;
@@ -97,11 +66,37 @@ export function JournalCalendarFull({
   const [viewYear, setViewYear] = useState(() => parseInt(today.split("-")[0]));
   const [viewMonth, setViewMonth] = useState(() => parseInt(today.split("-")[1]) - 1); // 0-indexed
   const [direction, setDirection] = useState(0); // -1 = prev, 1 = next
+  const previousTodayRef = useRef(today);
+  const motionDirection = isRTL ? -direction : direction;
 
-  const startSaturday = RTL_WEEK_START_SATURDAY.has(language);
+  useEffect(() => {
+    const previousToday = previousTodayRef.current;
+    previousTodayRef.current = today;
+    if (previousToday === today) return;
+
+    const [previousYear, previousMonth] = previousToday.split("-").map(Number);
+    if (viewYear !== previousYear || viewMonth !== previousMonth - 1) return;
+
+    const [nextYear, nextMonth] = today.split("-").map(Number);
+    setViewYear(nextYear);
+    setViewMonth(nextMonth - 1);
+  }, [today, viewMonth, viewYear]);
+
+  const locale = getLocale(language);
+  const weekStart = getJournalWeekStart(language);
   const dayNames = useMemo(
-    () => getLocalizedDayNames(language, startSaturday),
-    [language, startSaturday]
+    () => getLocalizedDayNames(locale, weekStart),
+    [locale, weekStart]
+  );
+  const fullDateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    [locale],
   );
 
   // Detect dark mode via class on document
@@ -127,10 +122,7 @@ export function JournalCalendarFull({
     const daysInMonth = lastDay.getDate();
 
     // Compute day-of-week offset for first day
-    let firstDayOfWeek = firstDay.getDay(); // 0 = Sunday
-    if (startSaturday) {
-      firstDayOfWeek = (firstDayOfWeek + 1) % 7; // Shift so Saturday = 0
-    }
+    const firstDayOfWeek = (firstDay.getDay() - weekStart + 7) % 7;
 
     const days: { date: string | null; day: number; isToday: boolean }[] = [];
 
@@ -146,9 +138,9 @@ export function JournalCalendarFull({
     }
 
     return days;
-  }, [viewYear, viewMonth, today, startSaturday]);
+  }, [viewYear, viewMonth, today, weekStart]);
 
-  const monthLabel = new Date(viewYear, viewMonth).toLocaleDateString(language, {
+  const monthLabel = new Date(viewYear, viewMonth).toLocaleDateString(locale, {
     month: "long",
     year: "numeric",
   });
@@ -188,7 +180,7 @@ export function JournalCalendarFull({
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2 grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-x-2 gap-y-1">
         <button
           onClick={() => navigateMonth(-1)}
           className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
@@ -197,12 +189,12 @@ export function JournalCalendarFull({
           <ChevronLeft className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
         </button>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-foreground capitalize">{monthLabel}</span>
+        <div className="col-span-3 row-start-2 flex min-w-0 flex-wrap items-center justify-center gap-2 min-[420px]:col-span-1 min-[420px]:col-start-2 min-[420px]:row-start-1">
+          <span className="min-w-0 whitespace-normal break-words text-center text-xs font-semibold capitalize text-foreground">{monthLabel}</span>
           {!isCurrentMonth && (
             <button
               onClick={goToToday}
-              className="flex h-[44px] items-center justify-center rounded-full bg-primary/10 px-3 text-[10px] font-medium text-primary"
+              className="flex min-h-[44px] items-center justify-center whitespace-normal break-words rounded-full bg-primary/10 px-3 py-2 text-xs font-medium text-primary"
             >
               {ts.journalCalendarToday || "Today"}
             </button>
@@ -219,38 +211,40 @@ export function JournalCalendarFull({
         <button
           onClick={() => navigateMonth(1)}
           disabled={!canGoForward}
-          className="p-1.5 rounded-lg hover:bg-muted/50 disabled:opacity-50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="col-start-3 row-start-1 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1.5 hover:bg-muted/50 disabled:opacity-50"
           aria-label={ts.next || "Next month"}
         >
           <ChevronRight className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
         </button>
       </div>
 
-      {/* Day name headers */}
-      <div className="grid grid-cols-7 mb-1">
-        {dayNames.map((name, i) => (
-          <div
-            key={i}
-            className="text-center text-[10px] font-medium text-muted-foreground/60 py-0.5"
-          >
-            {name}
+      <div className="-mx-1 overflow-x-auto overscroll-x-contain px-1 pb-1">
+        <div className="min-w-[calc(308px*var(--font-scale,1))]">
+          {/* Day name headers */}
+          <div className="mb-1 grid grid-cols-[repeat(7,minmax(calc(44px*var(--font-scale,1)),1fr))]">
+            {dayNames.map((name, i) => (
+              <div
+                key={i}
+                className="whitespace-normal break-words py-0.5 text-center text-xs font-medium text-muted-foreground/60"
+              >
+                {name}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
       {/* Calendar grid — animated month transitions gated by shouldAnimate */}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={`${viewYear}-${viewMonth}`}
-          initial={animate ? { opacity: 0, x: direction > 0 ? 50 : -50 } : false}
+          initial={animate ? { opacity: 0, x: motionDirection > 0 ? 50 : -50 } : false}
           animate={{ opacity: 1, x: 0 }}
-          exit={animate ? { opacity: 0, x: direction > 0 ? -50 : 50 } : undefined}
+          exit={animate ? { opacity: 0, x: motionDirection > 0 ? -50 : 50 } : undefined}
           transition={
             animate
               ? { duration: 0.3, type: "spring", stiffness: 260, damping: 25 }
               : { duration: 0 }
           }
-          className="grid grid-cols-[repeat(7,minmax(44px,1fr))] gap-0.5"
+          className="grid grid-cols-[repeat(7,minmax(calc(44px*var(--font-scale,1)),1fr))] gap-0.5"
         >
           {calendarDays.map((cell, idx) => {
             if (!cell.date) {
@@ -265,6 +259,28 @@ export function JournalCalendarFull({
             const isSelected = cell.date === selectedDate;
             const isFuture = cell.date > today;
             const streak = privateMode ? undefined : streaks.get(cell.date);
+            const [cellYear, cellMonth, cellDay] = cell.date.split("-").map(Number);
+            const fullDateLabel = fullDateFormatter.format(
+              new Date(cellYear, cellMonth - 1, cellDay),
+            );
+            const entryStatusLabel = hasEntry
+              ? formatLocalizedCount(
+                  count,
+                  language,
+                  ts,
+                  "journalEntryCount",
+                  ts.journalEntries || ts.journalEntry || "entries",
+                )
+              : "";
+            const moodStatusLabel = mood
+              ? {
+                  great: ts.moodGreat || "Great",
+                  good: ts.moodGood || "Good",
+                  okay: ts.moodOkay || "Okay",
+                  bad: ts.moodBad || "Bad",
+                  terrible: ts.moodTerrible || "Terrible",
+                }[mood]
+              : "";
 
             // T1: Mood intensity background color via theme tokens
             const moodBgColor =
@@ -284,6 +300,8 @@ export function JournalCalendarFull({
                   onSelectDate(isSelected ? null : cell.date);
                 }}
                 disabled={isFuture}
+                aria-current={cell.isToday ? "date" : undefined}
+                aria-pressed={isSelected}
                 style={moodBgColor ? { backgroundColor: moodBgColor } : undefined}
                 className={cn(
                   "aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5",
@@ -297,13 +315,18 @@ export function JournalCalendarFull({
                   cell.isToday && !isSelected && "ring-1 ring-primary/40"
                 )}
               >
+                <span className="sr-only">
+                  {fullDateLabel}
+                  {entryStatusLabel ? `. ${entryStatusLabel}` : ""}
+                  {moodStatusLabel ? `. ${moodStatusLabel}` : ""}
+                </span>
                 {/* T2: Streak background bar — subtle connector between consecutive days */}
                 {streak && (
                   <span
                     className="absolute inset-y-[30%] bg-primary/8 pointer-events-none"
                     style={{
-                      left: streak.isStart ? "20%" : "0",
-                      right: streak.isEnd ? "20%" : "0",
+                      insetInlineStart: streak.isStart ? "20%" : "0",
+                      insetInlineEnd: streak.isEnd ? "20%" : "0",
                       borderStartStartRadius: streak.isStart ? "6px" : "0",
                       borderEndStartRadius: streak.isStart ? "6px" : "0",
                       borderStartEndRadius: streak.isEnd ? "6px" : "0",
@@ -313,6 +336,7 @@ export function JournalCalendarFull({
                   />
                 )}
                 <span
+                  aria-hidden="true"
                   className={cn(
                     "text-xs font-medium leading-none relative z-[1]",
                     cell.isToday ? "text-primary font-bold" : "text-foreground",
@@ -334,7 +358,7 @@ export function JournalCalendarFull({
                       <DiaryMiniOrb mood={mood} size="micro" className="scale-[0.58]" />
                     </div>
                     {!privateMode && count > 1 && (
-                      <span className="text-[7px] text-muted-foreground/60 font-medium leading-none">
+                      <span aria-hidden="true" className="text-xs font-medium leading-none text-muted-foreground/60">
                         {count}
                       </span>
                     )}
@@ -352,6 +376,8 @@ export function JournalCalendarFull({
           })}
         </motion.div>
       </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 }

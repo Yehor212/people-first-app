@@ -220,21 +220,96 @@ export default defineConfig(({ mode }) => {
               categories: ["health", "lifestyle", "productivity"],
 
               icons: [
-                { src: pwaIconSrc("pwa-72.png"), sizes: "72x72", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-96.png"), sizes: "96x96", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-128.png"), sizes: "128x128", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-144.png"), sizes: "144x144", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-152.png"), sizes: "152x152", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-192.png"), sizes: "192x192", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-384.png"), sizes: "384x384", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-512.png"), sizes: "512x512", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-windows-44.png"), sizes: "44x44", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-windows-50.png"), sizes: "50x50", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-windows-71.png"), sizes: "71x71", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-windows-150.png"), sizes: "150x150", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-windows-310.png"), sizes: "310x310", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-windows-wide-310x150.png"), sizes: "310x150", type: "image/png", purpose: "any" },
-                { src: pwaIconSrc("pwa-windows-splash-620x300.png"), sizes: "620x300", type: "image/png", purpose: "any" },
+                {
+                  src: pwaIconSrc("pwa-72.png"),
+                  sizes: "72x72",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-96.png"),
+                  sizes: "96x96",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-128.png"),
+                  sizes: "128x128",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-144.png"),
+                  sizes: "144x144",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-152.png"),
+                  sizes: "152x152",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-192.png"),
+                  sizes: "192x192",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-384.png"),
+                  sizes: "384x384",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-512.png"),
+                  sizes: "512x512",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-windows-44.png"),
+                  sizes: "44x44",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-windows-50.png"),
+                  sizes: "50x50",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-windows-71.png"),
+                  sizes: "71x71",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-windows-150.png"),
+                  sizes: "150x150",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-windows-310.png"),
+                  sizes: "310x310",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-windows-wide-310x150.png"),
+                  sizes: "310x150",
+                  type: "image/png",
+                  purpose: "any",
+                },
+                {
+                  src: pwaIconSrc("pwa-windows-splash-620x300.png"),
+                  sizes: "620x300",
+                  type: "image/png",
+                  purpose: "any",
+                },
                 {
                   src: pwaIconSrc("pwa-maskable-512.png"),
                   sizes: "512x512",
@@ -282,6 +357,8 @@ export default defineConfig(({ mode }) => {
                 "assets/OrbPage-*.js",
                 "assets/OrbPage-*.css",
                 "assets/orbWorker-*.js",
+                "assets/atelier-v12-3-*.tgs",
+                "assets/atelier-v12-3-*-reduced*.svg",
                 "assets/*.woff2",
               ],
               // version-check.js and version.json MUST always be fetched from network.
@@ -306,7 +383,7 @@ export default defineConfig(({ mode }) => {
             },
 
             devOptions: {
-              enabled: mode === "development",
+              enabled: false,
               type: "module",
             },
           })
@@ -458,11 +535,15 @@ export default defineConfig(({ mode }) => {
           entryFileNames: "assets/[name]-[hash].js",
           chunkFileNames: "assets/[name]-[hash].js",
           assetFileNames: "assets/[name]-[hash].[ext]",
-
         },
       },
 
-      sourcemap: mode === "production" ? (sentrySourceMapUploadEnabled ? "hidden" : false) : mode === "development",
+      sourcemap:
+        mode === "production"
+          ? sentrySourceMapUploadEnabled
+            ? "hidden"
+            : false
+          : mode === "development",
       chunkSizeWarningLimit: 600, // KB
     },
 
@@ -473,6 +554,5 @@ export default defineConfig(({ mode }) => {
       // HTML that points at bundled JS, which must never become dev-server input.
       entries: ["index.html"],
     },
-
   };
 });

@@ -106,7 +106,7 @@ export function MoodCompactView({
       </div>
 
       {/* Latest mood summary */}
-      <div className="flex items-center gap-4 mt-4">
+      <div className="mt-4 flex flex-wrap items-start gap-4">
         <div
           className={cn(
             "w-14 h-14 rounded-full flex items-center justify-center",
@@ -116,13 +116,17 @@ export function MoodCompactView({
         >
           {latestMood && <AnimatedMoodEmoji mood={latestMood.type} size="lg" />}
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+        <div className="min-w-0 basis-[min(100%,12rem)] grow">
+          <div className="flex items-start gap-2">
             <LatestTimeIcon className="w-4 h-4 text-muted-foreground" />
-            <p className="font-medium text-foreground truncate">{latestMood?.label}</p>
+            <p className="min-w-0 whitespace-normal break-words font-medium text-foreground [overflow-wrap:break-word]">
+              {latestMood?.label}
+            </p>
           </div>
           {latestEntry.note && (
-            <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{latestEntry.note}</p>
+            <p className="mt-1 break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
+              {latestEntry.note}
+            </p>
           )}
         </div>
 
@@ -132,7 +136,7 @@ export function MoodCompactView({
               e.stopPropagation();
               onShowAddNew();
             }}
-            className="flex items-center gap-1.5 px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl motion-safe:transition-colors"
+            className="flex min-h-11 min-w-0 items-center justify-center gap-1.5 whitespace-normal break-words rounded-xl bg-primary/10 px-3 py-2 text-primary motion-safe:transition-colors hover:bg-primary/20"
           >
             <Plus className="w-4 h-4" aria-hidden="true" />
             <span className="text-sm font-medium">{t.updateMood || "Update"}</span>
@@ -184,7 +188,9 @@ export function MoodCompactView({
                         <span className="text-xs text-muted-foreground">{time}</span>
                       </div>
                       {entry.note && (
-                        <p className="text-xs text-muted-foreground truncate">{entry.note}</p>
+                        <p className="break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                          {entry.note}
+                        </p>
                       )}
                     </div>
                     {onUpdateEntry && (
@@ -193,7 +199,7 @@ export function MoodCompactView({
                           e.stopPropagation();
                           handleStartEdit(entry);
                         }}
-                        className="p-2 hover:bg-primary/10 rounded-lg motion-safe:transition-colors group"
+                        className="group flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 motion-safe:transition-colors hover:bg-primary/10"
                         title={t.editMood || "Edit mood"}
                         aria-label={t.editMood || "Edit mood"}
                       >

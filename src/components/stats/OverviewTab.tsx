@@ -92,16 +92,16 @@ export function OverviewTab({
       <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-4 lg:space-y-0">
         <div className="space-y-4">
           {/* Quick Actions */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 min-[420px]:grid-cols-3 gap-2">
             <button
               onClick={() => {
                 void hapticTap();
                 onQuickAction?.("logMood");
               }}
-              className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl motion-safe:transition-colors"
+              className="flex min-h-11 min-w-0 flex-col items-center gap-1.5 rounded-xl bg-secondary/80 p-3 motion-safe:transition-colors hover:bg-secondary"
             >
               <Heart className="w-5 h-5 text-pink-500" aria-hidden="true" />
-              <span className="text-xs font-medium text-foreground truncate w-full text-center">
+              <span className="w-full min-w-0 break-words text-center text-xs font-medium text-foreground">
                 {t.quickActionLogMood}
               </span>
             </button>
@@ -110,10 +110,10 @@ export function OverviewTab({
                 void hapticTap();
                 onQuickAction?.("startFocus");
               }}
-              className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl motion-safe:transition-colors"
+              className="flex min-h-11 min-w-0 flex-col items-center gap-1.5 rounded-xl bg-secondary/80 p-3 motion-safe:transition-colors hover:bg-secondary"
             >
               <Target className="w-5 h-5 text-blue-500" aria-hidden="true" />
-              <span className="text-xs font-medium text-foreground truncate w-full text-center">
+              <span className="w-full min-w-0 break-words text-center text-xs font-medium text-foreground">
                 {t.quickActionStartFocus}
               </span>
             </button>
@@ -123,10 +123,10 @@ export function OverviewTab({
                   void hapticTap();
                   onShowStory();
                 }}
-                className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl motion-safe:transition-colors"
+                className="flex min-h-11 min-w-0 flex-col items-center gap-1.5 rounded-xl bg-secondary/80 p-3 motion-safe:transition-colors hover:bg-secondary"
               >
                 <PlayCircle className="w-5 h-5 text-primary" aria-hidden="true" />
-                <span className="text-xs font-medium text-foreground truncate w-full text-center">
+                <span className="w-full min-w-0 break-words text-center text-xs font-medium text-foreground">
                   {t.weeklyStory || "Weekly Story"}
                 </span>
               </button>
@@ -148,12 +148,12 @@ export function OverviewTab({
                       iconClassName="w-5 h-5 text-primary shrink-0"
                       textClassName="text-base leading-none"
                     />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-foreground truncate">
+                    <div className="min-w-0 flex-1">
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                        <span className="min-w-0 text-sm font-medium text-foreground [overflow-wrap:anywhere]">
                           {cluster.name}
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground tabular-nums">
                           {cluster.alignmentPercent}%
                         </span>
                       </div>
@@ -180,13 +180,13 @@ export function OverviewTab({
               </h3>
               <div className="space-y-2">
                 {moodInsights.habitDiffs.map(({ id, name, diff }) => (
-                  <div key={id} className="flex items-center justify-between">
-                    <span className="text-xs text-foreground truncate flex-1 min-w-0 me-2">
+                  <div key={id} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                    <span className="min-w-0 text-xs text-foreground [overflow-wrap:anywhere]">
                       {name}
                     </span>
                     <span
                       className={cn(
-                        "text-xs font-semibold tabular-nums flex-shrink-0",
+                        "shrink-0 text-xs font-semibold tabular-nums",
                         diff > 0 ? "text-emerald-400" : "text-rose-400"
                       )}
                     >
@@ -196,7 +196,7 @@ export function OverviewTab({
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="break-words text-xs text-muted-foreground">
                 {t.habitImpactDesc || "How habits affect your mood"}
               </p>
             </motion.div>

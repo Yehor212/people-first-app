@@ -12,8 +12,11 @@ import { checkAppVersionStatus, reloadAppForUpdate } from "@/lib/versionCheck";
 type LegalTab = "privacy" | "terms" | "licenses";
 type UpdateCheckStatus = "idle" | "checking" | "available" | "latest" | "error";
 
-const footerButtonClass =
-  "inline-flex min-h-11 items-center justify-center rounded-[6px] px-3 text-sm font-semibold text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent))] focus-visible:ring-offset-2 motion-safe:transition-[transform,background-color,color] motion-safe:duration-150 motion-safe:hover:-translate-y-0.5 motion-safe:hover:bg-[hsl(var(--settings-v2-panel)/0.58)] motion-safe:active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-55";
+const footerButtonBaseClass =
+  "inline-flex min-h-11 min-w-0 max-w-full items-center justify-center whitespace-normal break-words rounded-[6px] px-3 text-sm font-semibold text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent))] focus-visible:ring-offset-2 motion-safe:transition-[transform,background-color,color] motion-safe:duration-150 motion-safe:hover:-translate-y-0.5 motion-safe:hover:bg-[hsl(var(--settings-v2-panel)/0.58)] motion-safe:active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-55";
+const footerButtonClass = `${footerButtonBaseClass} [hyphens:manual] [overflow-wrap:break-word]`;
+const footerLegalLabelClass =
+  "min-w-0 max-w-full whitespace-normal text-center [hyphens:manual] [overflow-wrap:break-word]";
 
 export function SettingsSupportFooter() {
   const { t } = useLanguage();
@@ -47,7 +50,7 @@ export function SettingsSupportFooter() {
       if (updateCapability.kind !== "web-reload") return;
       const result = await checkAppVersionStatus();
       setUpdateCheckStatus(
-        result.status === "stale" ? "available" : result.status === "current" ? "latest" : "error",
+        result.status === "stale" ? "available" : result.status === "current" ? "latest" : "error"
       );
     } catch (error) {
       logger.error("[V2Settings] Update check failed:", error);
@@ -66,10 +69,10 @@ export function SettingsSupportFooter() {
     }
   };
 
-  const handleRestartZenflow = () => {
+  const handleRestartZenflow = async () => {
     setIsRestartingUpdate(true);
     try {
-      if (!reloadAppForUpdate()) setIsRestartingUpdate(false);
+      if (!(await reloadAppForUpdate())) setIsRestartingUpdate(false);
     } catch (error) {
       logger.error("[V2Settings] Restart after update failed:", error);
       setIsRestartingUpdate(false);
@@ -77,10 +80,9 @@ export function SettingsSupportFooter() {
     }
   };
 
-  const updateStatus =
-    googlePlayOpenFailed
-      ? tx.openGooglePlayFailed || "Could not open Google Play. Try again."
-      : updateCheckStatus === "checking"
+  const updateStatus = googlePlayOpenFailed
+    ? tx.openGooglePlayFailed || "Could not open Google Play. Try again."
+    : updateCheckStatus === "checking"
       ? tx.checkingForUpdates || "Checking for updates…"
       : updateCheckStatus === "latest"
         ? tx.appUpToDate || "You have the latest version"
@@ -99,9 +101,7 @@ export function SettingsSupportFooter() {
         className="border-t border-[hsl(var(--settings-v2-border)/0.3)] px-1 pt-3 text-center text-sm text-muted-foreground"
         data-testid="settings-support-footer"
       >
-        <p className="text-xs font-medium text-muted-foreground">
-          ZenFlow v{APP_VERSION}
-        </p>
+        <p className="text-xs font-medium text-muted-foreground">ZenFlow v{APP_VERSION}</p>
         <nav
           aria-label={tx.settingsAboutSupportLegalTitle || "Help and legal"}
           className="mt-1 flex flex-wrap items-center justify-center gap-1"
@@ -109,11 +109,25 @@ export function SettingsSupportFooter() {
           <button type="button" className={footerButtonClass} onClick={() => setShowFeedback(true)}>
             {tx.sendFeedback || "Send feedback"}
           </button>
-          <button type="button" className={footerButtonClass} onClick={() => openLegal("privacy")}>
-            {tx.privacyPolicy || "Privacy"}
+          <button
+            type="button"
+            className={footerButtonBaseClass}
+            data-slot="settings-footer-legal-action"
+            onClick={() => openLegal("privacy")}
+          >
+            <span data-slot="settings-footer-legal-label" className={footerLegalLabelClass}>
+              {tx.privacyPolicy || "Privacy"}
+            </span>
           </button>
-          <button type="button" className={footerButtonClass} onClick={() => openLegal("terms")}>
-            {tx.termsOfService || "Terms"}
+          <button
+            type="button"
+            className={footerButtonBaseClass}
+            data-slot="settings-footer-legal-action"
+            onClick={() => openLegal("terms")}
+          >
+            <span data-slot="settings-footer-legal-label" className={footerLegalLabelClass}>
+              {tx.termsOfService || "Terms"}
+            </span>
           </button>
           <button type="button" className={footerButtonClass} onClick={() => openLegal("licenses")}>
             {tx.openSourceLicenses || "Licenses"}
@@ -145,8 +159,8 @@ export function SettingsSupportFooter() {
             role={updateCheckStatus === "error" || googlePlayOpenFailed ? "alert" : "status"}
             className={
               updateCheckStatus === "error" || googlePlayOpenFailed
-                ? "pb-1 text-xs text-destructive"
-                : "pb-1 text-xs text-muted-foreground"
+                ? "min-w-0 break-words pb-1 text-xs text-destructive [hyphens:manual] [overflow-wrap:break-word]"
+                : "min-w-0 break-words pb-1 text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]"
             }
           >
             {updateStatus}
@@ -158,7 +172,7 @@ export function SettingsSupportFooter() {
             type="button"
             className={footerButtonClass}
             disabled={isRestartingUpdate}
-            onClick={handleRestartZenflow}
+            onClick={() => void handleRestartZenflow()}
             data-testid="settings-v2-restart-update"
           >
             {isRestartingUpdate

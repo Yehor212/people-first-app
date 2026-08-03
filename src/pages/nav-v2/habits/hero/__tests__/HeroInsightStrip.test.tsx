@@ -13,16 +13,18 @@ vi.mock("@/contexts/LanguageContext", () => ({
       insightMorning: "mornings-win",
       insightAfternoon: "afternoons-win",
       insightEvening: "evenings-win",
-      insightHabitImprovesMood: "{habit} lifts mood",
-      insightHabitImprovesMoodDesc: 'Doing "{habit}" improves mood by {percent}%',
+      insightHabitImprovesMood: "{habit} appears with higher recorded mood",
+      insightHabitImprovesMoodDesc:
+        'Across {sampleDays} recorded days with "{habit}", mood was {avgMoodWith}/5 versus {avgMoodWithout}/5 across {comparisonDays} other recorded days; this is an association, not proof of causation.',
       insightFocusBestLabel: 'Best focus: "{label}"',
       insightFocusBestLabelDesc: 'Focus {minutes} min on "{label}"',
       insightPeakFocusTime: "Peak focus at {timeOfDay}",
       insightPeakFocusTimeDesc: "Best focus around {time}",
       insightBestTimeForHabit: "Best time for {habit}: {time}",
       insightBestTimeForHabitDesc: '"{habit}" is best {time} at {percent}%',
-      insightTagBoostsMood: 'Tag "{tag}" helps',
-      insightTagBoostsMoodDesc: '"{tag}" improves mood by {percent}%',
+      insightTagBoostsMood: 'Tag "{tag}" appears with higher recorded mood',
+      insightTagBoostsMoodDesc:
+        'Across {occurrences} tagged entries, mood was {avgMoodWith}/5 versus {avgMoodWithout}/5 across {untaggedEntries} untagged entries; this is an association, not proof of causation.',
     },
     language: "en",
   }),
@@ -92,25 +94,27 @@ describe("HeroInsightStrip", () => {
       morning: "mornings-win",
       afternoon: "afternoons-win",
       evening: "evenings-win",
-      habitImprovesMood: "{habit} lifts mood",
-      habitImprovesMoodDesc: 'Doing "{habit}" improves mood by {percent}%',
+      habitImprovesMood: "{habit} appears with higher recorded mood",
+      habitImprovesMoodDesc:
+        'Across {sampleDays} recorded days with "{habit}", mood was {avgMoodWith}/5 versus {avgMoodWithout}/5 across {comparisonDays} other recorded days; this is an association, not proof of causation.',
       focusBestLabel: 'Best focus: "{label}"',
       focusBestLabelDesc: 'Focus {minutes} min on "{label}"',
       peakFocusTime: "Peak focus at {timeOfDay}",
       peakFocusTimeDesc: "Best focus around {time}",
       bestTimeForHabit: "Best time for {habit}: {time}",
       bestTimeForHabitDesc: '"{habit}" is best {time} at {percent}%',
-      tagBoostsMood: 'Tag "{tag}" helps',
-      tagBoostsMoodDesc: '"{tag}" improves mood by {percent}%',
+      tagBoostsMood: 'Tag "{tag}" appears with higher recorded mood',
+      tagBoostsMoodDesc:
+        'Across {occurrences} tagged entries, mood was {avgMoodWith}/5 versus {avgMoodWithout}/5 across {untaggedEntries} untagged entries; this is an association, not proof of causation.',
     });
   });
 
-  it("renders the top insight with title + confidence", async () => {
+  it("renders the top insight without exposing the internal ranking score", async () => {
     mockInsights = [
       {
         id: "i1",
         title: "On days you meditate, mood +28%",
-        description: "Based on 42 days of data",
+        description: "Across 42 recorded days, the entries show an association.",
         severity: "celebration",
         confidence: 87,
         type: "mood-habit",
@@ -123,7 +127,9 @@ describe("HeroInsightStrip", () => {
     expect(screen.getByTestId("habits-hero-insight-title")).toHaveTextContent(
       "On days you meditate, mood +28%",
     );
-    expect(strip).toHaveTextContent("87%");
+    expect(strip).toHaveTextContent("42 recorded days");
+    expect(strip).not.toHaveTextContent("87%");
+    expect(screen.queryByLabelText(/confidence/i)).not.toBeInTheDocument();
   });
 
   it("renders a statistics CTA for habit-linked insights and opens the linked habit", async () => {

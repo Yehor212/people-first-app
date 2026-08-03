@@ -240,7 +240,7 @@ export function CalendarTab({
           {/* Month Selector Grid */}
           {showMonthSelector && (
             <div
-              className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-5 motion-safe:animate-fade-in"
+              className="grid grid-cols-1 gap-2 mb-5 motion-safe:animate-fade-in min-[420px]:grid-cols-2 min-[640px]:grid-cols-4"
               role="listbox"
               aria-label={t.calendarSelectMonth || "Select month"}
             >
@@ -255,7 +255,7 @@ export function CalendarTab({
                   aria-selected={selectedMonth === index}
                   role="option"
                   className={cn(
-                    "px-2 py-2.5 rounded-xl text-xs font-medium motion-safe:transition-all",
+                    "h-auto min-h-11 min-w-0 whitespace-normal break-words px-2 py-2.5 rounded-xl text-xs font-medium motion-safe:transition-all",
                     selectedMonth === index
                       ? "bg-gradient-to-r from-primary to-accent text-white shadow-lg"
                       : "bg-secondary text-muted-foreground hover:bg-primary/10",
@@ -268,36 +268,36 @@ export function CalendarTab({
           )}
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
-            <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary motion-safe:transition-colors">
+          <div className="grid grid-cols-1 gap-2 sm:gap-3 mb-5 min-[420px]:grid-cols-2 sm:grid-cols-4">
+            <div className="min-w-0 text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary motion-safe:transition-colors">
               <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-mood))] to-[hsl(var(--chart-mood)/0.7)]">
                 {yearStats.moodCount}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="break-words text-xs text-muted-foreground mt-1">
                 {t.moodEntries}
               </p>
             </div>
-            <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary motion-safe:transition-colors">
+            <div className="min-w-0 text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary motion-safe:transition-colors">
               <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-focus))] to-[hsl(var(--chart-focus)/0.7)]">
                 {yearStats.focusMinutes}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="break-words text-xs text-muted-foreground mt-1">
                 {t.focusMinutes}
               </p>
             </div>
-            <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary motion-safe:transition-colors">
+            <div className="min-w-0 text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary motion-safe:transition-colors">
               <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-habit))] to-[hsl(var(--chart-habit)/0.7)]">
                 {yearStats.habitCompletions}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="break-words text-xs text-muted-foreground mt-1">
                 {t.habitsCompleted}
               </p>
             </div>
-            <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary motion-safe:transition-colors">
+            <div className="min-w-0 text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary motion-safe:transition-colors">
               <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-accent to-accent/70">
                 {yearStats.gratitudeCount}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="break-words text-xs text-muted-foreground mt-1">
                 {t.gratitudes}
               </p>
             </div>

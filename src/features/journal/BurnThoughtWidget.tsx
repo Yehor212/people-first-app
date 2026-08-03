@@ -294,6 +294,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({
   const [released, setReleased] = useState(false);
   const [releasing, setReleasing] = useState(false);
   const [collapsing, setCollapsing] = useState(false);
+  const [traceSaveFailed, setTraceSaveFailed] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const contentWrapRef = useRef<HTMLDivElement>(null);
@@ -314,13 +315,16 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({
     textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
   }, [text]);
 
-  const notifyReleased = useCallback(() => {
+  const notifyReleased = useCallback(async () => {
     if (releaseCallbackCalledRef.current) return;
     releaseCallbackCalledRef.current = true;
     if (!onReleased) return;
-    void Promise.resolve(onReleased()).catch((error) => {
+    try {
+      await onReleased();
+    } catch (error) {
       logger.warn("[Journal] Quiet release trace callback failed", error);
-    });
+      setTraceSaveFailed(true);
+    }
   }, [onReleased]);
 
   const finishRelease = useCallback(() => {
@@ -337,9 +341,9 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({
 
     setReleasing(false);
     setReleased(true);
-    notifyReleased();
+    void notifyReleased();
     void hapticSuccess();
-    announceSuccess(ts.journalReleaseFinalTitle || ts.journalBurnReleasedMessage || 'Your thought has been released.');
+    announceSuccess(ts.journalReleaseFinalTitle || ts.journalBurnReleasedMessage || 'The text was deleted.');
   }, [notifyReleased, ts.journalBurnReleasedMessage, ts.journalReleaseFinalTitle]);
 
   const startSnapRelease = useCallback(() => {
@@ -355,8 +359,8 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({
 
     if (!shouldAnimate()) {
       setReleased(true);
-      notifyReleased();
-      announceSuccess(ts.journalReleaseFinalTitle || ts.journalBurnReleasedMessage || 'Your thought has been released.');
+      void notifyReleased();
+      announceSuccess(ts.journalReleaseFinalTitle || ts.journalBurnReleasedMessage || 'The text was deleted.');
       return;
     }
 
@@ -677,7 +681,11 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({
                 {ts.journalReleaseFinalTitle || ts.journalBurnReleased || 'Released'}
               </h4>
               <p className="snap-release-copy mt-1 text-sm text-muted-foreground/60">
-                {ts.journalReleaseFinalSubtitle || 'Text was not saved.'}
+                {traceSaveFailed
+                  ? ts.journalReleaseTraceSaveFailed ||
+                    'The text was deleted, but ZenFlow could not save the release record. Nothing from the text was saved.'
+                  : ts.journalReleaseFinalSubtitle ||
+                    'Your text was deleted. ZenFlow saved a text-free release record on this device and in backups you create.'}
               </p>
             </div>
           </motion.div>
@@ -726,13 +734,18 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({
                     aria-label={ts.journalBurnPlaceholder || 'Write what worries you...'}
                   />
 
-                  {text.length > 0 && (
-                    <div className={`text-end text-xs mt-1 motion-safe:transition-opacity motion-safe:duration-200 ${text.length > 450 ? 'text-red-400/70' : 'text-muted-foreground/60'}`}>
-                      {text.length}/500
-                    </div>
-                  )}
+                   {text.length > 0 && (
+                     <div className={`text-end text-xs mt-1 motion-safe:transition-opacity motion-safe:duration-200 ${text.length > 450 ? 'text-red-400/70' : 'text-muted-foreground/60'}`}>
+                       {text.length}/500
+                     </div>
+                   )}
 
-                  <motion.button
+                   <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                     {ts.journalReleaseBeforeAction ||
+                       "This text will be deleted. ZenFlow saves a text-free release record on this device and in backups you create."}
+                   </p>
+
+                   <motion.button
                     whileTap={zenTap.button}
                     onClick={startSnapRelease}
                     disabled={!hasText}

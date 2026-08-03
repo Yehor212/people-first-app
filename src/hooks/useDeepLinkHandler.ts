@@ -17,6 +17,12 @@ import { subscribeToDeepLinks } from "@/lib/deepLinks";
 import { requestDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
 import { getAuthUserDisplayName } from "@/lib/authUser";
 import { closeOAuthBrowser } from "@/lib/nativeOAuthBrowser";
+import {
+  parseJournalMagicLinkConfirmation,
+  stageJournalMagicLinkConfirmation,
+} from "@/lib/journalMagicLinkConfirmation";
+import { getLocalDataOwnerId } from "@/storage/db";
+import { readPendingLocalBackupAccountClaim } from "@/storage/accountBoundaryRuntime";
 
 const setShowChallengeModal = getModalToggle("showChallengeModal");
 
@@ -35,6 +41,19 @@ function getDeepLinkLogPath(url: string): string {
   } catch {
     return "(invalid-url)";
   }
+}
+
+function fingerprintForAuthDedupe(value: string): string {
+  if (!value) return "0";
+
+  // This is only a short-lived dedupe key, not a security primitive. Keeping a
+  // fingerprint avoids retaining one-time auth material in the hook's Set.
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `${value.length}:${(hash >>> 0).toString(16)}`;
 }
 
 function isTrustedAuthCallbackUrl(url: string): boolean {
@@ -150,11 +169,42 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
         const hash = new URLSearchParams(parsed.hash.replace(/^#/, ""));
         const code = parsed.searchParams.get("code") || hash.get("code") || "";
         const state = parsed.searchParams.get("state") || hash.get("state") || "";
-        const hasToken = hash.get("access_token") && hash.get("refresh_token") ? "1" : "0";
+        const tokenHash =
+          parsed.searchParams.get("token_hash") || hash.get("token_hash") || "";
+        const accessToken = hash.get("access_token") || "";
+        const refreshToken = hash.get("refresh_token") || "";
+        const tokenFingerprint = fingerprintForAuthDedupe(
+          tokenHash || (accessToken && refreshToken ? `${accessToken}\u0000${refreshToken}` : ""),
+        );
         const error = parsed.searchParams.get("error") || hash.get("error") || "";
-        return `${parsed.protocol}//${parsed.host}${parsed.pathname}|code=${code}|state=${state}|token=${hasToken}|error=${error}`;
+        return `${parsed.protocol}//${parsed.host}${parsed.pathname}|code=${code}|state=${state}|token=${tokenFingerprint}|error=${error}`;
       } catch {
         return url;
+      }
+    };
+
+    const isExactlyAdmittedSession = async (expectedUserId: string): Promise<boolean> => {
+      if (!supabase) return false;
+      if (readPendingLocalBackupAccountClaim().status !== "none") return false;
+
+      try {
+        const localOwnerUserId = await getLocalDataOwnerId();
+        if (
+          localOwnerUserId !== expectedUserId ||
+          readPendingLocalBackupAccountClaim().status !== "none"
+        ) {
+          return false;
+        }
+
+        const { data, error } = await supabase.auth.getSession();
+        return (
+          !error &&
+          data.session?.user?.id === expectedUserId &&
+          readPendingLocalBackupAccountClaim().status === "none"
+        );
+      } catch (error) {
+        logger.warn("[Auth] Could not verify the local owner after OAuth callback:", error);
+        return false;
       }
     };
 
@@ -178,6 +228,12 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
 
       logger.log("[Index] Auth URL received from", source, getDeepLinkLogPath(url));
 
+      if (parseJournalMagicLinkConfirmation(url)) {
+        stageJournalMagicLinkConfirmation(url);
+        await closeOAuthBrowser();
+        return true;
+      }
+
       // If supabase not ready, store for later
       if (!supabase) {
         logger.log("[Index] Supabase not ready, storing pending URL");
@@ -196,18 +252,19 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
       const session = await waitForSession();
       await closeOAuthBrowser();
       if (session?.user) {
-        const name = getAuthUserDisplayName(session.user);
+        const admitted = await isExactlyAdmittedSession(session.user.id);
 
         logger.log("[Auth] OAuth callback session established");
-        setAuthBypassFlag(true);
-        setHasValidSession(true);
+        setAuthBypassFlag(admitted);
+        setHasValidSession(admitted);
         setWebOAuthError(null);
         notifyAuthComplete();
-        if (!userNameCustomRef.current) {
+        if (admitted && !userNameCustomRef.current) {
+          const name = getAuthUserDisplayName(session.user);
           setUserName(name);
           setUserNameCustom(false);
         }
-        setAuthGateChecked(true);
+        setAuthGateChecked(admitted);
         endAuthFlow();
         return true;
       }

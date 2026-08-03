@@ -61,7 +61,9 @@ export function PlanningBridgeActions({ actions, labels }: PlanningBridgeActions
       aria-label={labels.planningBridgeTitle}
       className="rounded-2xl border border-border/45 bg-card/72 p-4 shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]"
     >
-      <p className="text-sm font-semibold text-foreground">{labels.planningBridgeTitle}</p>
+      <p className="break-words text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:normal]">
+        {labels.planningBridgeTitle}
+      </p>
       <div className="mt-3 grid gap-2 md:grid-cols-3">
         {actions.map((action) => {
           const meta = ACTION_META[action.kind];
@@ -71,14 +73,16 @@ export function PlanningBridgeActions({ actions, labels }: PlanningBridgeActions
               key={action.kind}
               href={buildPlanningBridgeHref(action)}
               data-testid={`planning-bridge-action-${action.kind}`}
-              className="group flex min-h-[64px] items-center gap-3 rounded-xl border border-border/45 bg-secondary/50 px-3 py-2 text-start text-foreground touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="group flex min-h-[64px] min-w-0 items-start gap-3 whitespace-normal rounded-xl border border-border/45 bg-secondary/50 px-3 py-2 text-start text-foreground touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
                 <Icon className="h-5 w-5" aria-hidden="true" />
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-bold">{labels[meta.labelKey]}</span>
-                <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
+              <span className="min-w-0 flex-1 [hyphens:manual] [overflow-wrap:normal]">
+                <span className="block break-words text-sm font-bold [hyphens:manual] [overflow-wrap:normal]">
+                  {labels[meta.labelKey]}
+                </span>
+                <span className="mt-0.5 block break-words text-xs leading-5 text-muted-foreground [hyphens:manual] [overflow-wrap:normal]">
                   {labels[meta.descriptionKey]}
                 </span>
               </span>

@@ -6,7 +6,7 @@ import { basename, dirname, extname, join, normalize, resolve, sep } from "node:
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 
-const port = Number(process.env.PORT || 4188);
+const port = Number(process.env.ZENFLOW_IOS_DIARY_PORT || process.env.PORT || 4188);
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, "../../..");
 const root = resolve(repoRoot, "ios/App/App/public");

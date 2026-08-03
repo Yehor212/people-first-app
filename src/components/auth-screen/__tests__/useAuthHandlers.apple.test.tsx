@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   endAuthFlow: vi.fn(),
   openOAuthUrl: vi.fn(),
   authenticateWithGoogleNative: vi.fn(),
+  cancelPkceAttemptFromUrl: vi.fn(),
   logger: {
     log: vi.fn(),
     warn: vi.fn(),
@@ -17,6 +18,10 @@ const mocks = vi.hoisted(() => ({
   },
   analyticsSignIn: vi.fn(),
   hapticError: vi.fn(),
+  platform: {
+    isNative: false,
+    isAndroid: false,
+  },
 }));
 
 vi.mock("@/lib/appleAuthAvailability", () => ({
@@ -40,11 +45,19 @@ vi.mock("@/lib/authGuard", () => ({
 }));
 
 vi.mock("@/lib/authRedirect", () => ({
-  getAuthRedirectUrl: () => "https://yehor212.github.io/people-first-app/",
+  getAuthRedirectUrl: () =>
+    mocks.platform.isNative
+      ? "com.zenflow.app://login-callback"
+      : "https://yehor212.github.io/people-first-app/",
 }));
 
 vi.mock("@/lib/platform", () => ({
-  isNative: false,
+  get isNative() {
+    return mocks.platform.isNative;
+  },
+  get isAndroid() {
+    return mocks.platform.isAndroid;
+  },
 }));
 
 vi.mock("@/lib/nativeOAuthBrowser", () => ({
@@ -53,6 +66,10 @@ vi.mock("@/lib/nativeOAuthBrowser", () => ({
 
 vi.mock("@/lib/nativeGoogleAuth", () => ({
   authenticateWithGoogleNative: mocks.authenticateWithGoogleNative,
+}));
+
+vi.mock("@/lib/authTransitionCoordinator", () => ({
+  cancelPkceAttemptFromUrl: mocks.cancelPkceAttemptFromUrl,
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -99,15 +116,71 @@ function createSession() {
 describe("useAuthHandlers Apple availability preflight", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.platform.isNative = false;
+    mocks.platform.isAndroid = false;
     mocks.canStartAuthFlow.mockReturnValue(true);
     mocks.signInWithOAuth.mockResolvedValue({
       data: { url: "https://appleid.apple.com/auth/authorize" },
       error: null,
     });
+    mocks.cancelPkceAttemptFromUrl.mockResolvedValue(true);
   });
 
   afterEach(() => {
     vi.clearAllTimers();
+  });
+
+  it("uses the owner-bound OAuth callback for Google on iOS instead of the Android native picker", async () => {
+    mocks.platform.isNative = true;
+    mocks.platform.isAndroid = false;
+    mocks.signInWithOAuth.mockResolvedValueOnce({
+      data: { url: "https://accounts.google.com/o/oauth2/v2/auth" },
+      error: null,
+    });
+    const session = createSession();
+    const { result } = renderHook(() => useAuthHandlers(session, t));
+
+    result.current.handleProviderSignIn("google");
+
+    await waitFor(() => {
+      expect(mocks.signInWithOAuth).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: "google" }),
+      );
+    });
+    expect(mocks.authenticateWithGoogleNative).not.toHaveBeenCalled();
+    const credentials = mocks.signInWithOAuth.mock.calls[0]?.[0] as {
+      options?: { redirectTo?: string; skipBrowserRedirect?: boolean };
+    };
+    const redirect = new URL(credentials.options?.redirectTo || "");
+    expect(redirect.protocol).toBe("com.zenflow.app:");
+    expect(redirect.hostname).toBe("login-callback");
+    expect(credentials.options?.skipBrowserRedirect).toBe(true);
+    expect(mocks.openOAuthUrl).toHaveBeenCalledWith(
+      "https://accounts.google.com/o/oauth2/v2/auth",
+    );
+    if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
+  });
+
+  it("preserves the native Google picker on Android", async () => {
+    mocks.platform.isNative = true;
+    mocks.platform.isAndroid = true;
+    mocks.authenticateWithGoogleNative.mockResolvedValueOnce({
+      success: true,
+      user: { name: "Android User", email: "android@example.test" },
+    });
+    const session = createSession();
+    const { result } = renderHook(() => useAuthHandlers(session, t));
+
+    result.current.handleProviderSignIn("google");
+
+    await waitFor(() => {
+      expect(mocks.authenticateWithGoogleNative).toHaveBeenCalledTimes(1);
+    });
+    expect(mocks.signInWithOAuth).not.toHaveBeenCalled();
+    expect(session.tryComplete).toHaveBeenCalledWith(
+      { name: "Android User", email: "android@example.test" },
+      "nativeGoogleAuth",
+    );
   });
 
   it("blocks Apple OAuth before redirect when hosted Supabase reports Apple disabled", async () => {
@@ -147,6 +220,15 @@ describe("useAuthHandlers Apple availability preflight", () => {
     });
     expect(mocks.canStartAuthFlow).toHaveBeenCalledTimes(1);
     expect(mocks.startAuthFlow).toHaveBeenCalledTimes(1);
+    const credentials = mocks.signInWithOAuth.mock.calls[0]?.[0] as {
+      options?: { redirectTo?: string };
+    };
+    const redirect = new URL(credentials.options?.redirectTo || "");
+    expect(redirect.origin).toBe("https://yehor212.github.io");
+    expect(redirect.pathname).toBe("/people-first-app/");
+    expect(redirect.searchParams.get("zenflowAuthAttempt")).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
     if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
   });
 
@@ -175,8 +257,26 @@ describe("useAuthHandlers Apple availability preflight", () => {
       expect(session.setError).toHaveBeenCalledWith(t.authSignInTooLong);
       expect(mocks.endAuthFlow).toHaveBeenCalledTimes(1);
       expect(session.oauthTimeoutRef.current).toBe(null);
+      expect(mocks.cancelPkceAttemptFromUrl).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("cancels only the exact attempt when Supabase returns no launch URL", async () => {
+    mocks.signInWithOAuth.mockResolvedValueOnce({ data: {}, error: null });
+    const session = createSession();
+    const { result } = renderHook(() => useAuthHandlers(session, t));
+
+    act(() => {
+      result.current.handleProviderSignIn("telegram");
+    });
+
+    await waitFor(() => expect(mocks.cancelPkceAttemptFromUrl).toHaveBeenCalledTimes(1));
+    const attemptUrl = mocks.cancelPkceAttemptFromUrl.mock.calls[0]?.[1] as string;
+    expect(new URL(attemptUrl).searchParams.get("zenflowAuthAttempt")).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+    expect(session.setError).toHaveBeenCalledWith(t.authUnexpectedError);
   });
 });

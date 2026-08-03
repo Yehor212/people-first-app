@@ -127,10 +127,19 @@ export function EmptyState({
           variant="gradient"
           size={size === 'compact' ? 'default' : 'lg'}
           onClick={action.onClick}
-          className="gap-2"
+          className={cn(
+            "h-auto min-w-0 max-w-full gap-2 whitespace-normal break-words py-2.5",
+            size === 'compact' ? 'min-h-11 px-4' : 'min-h-12 px-5'
+          )}
         >
-          {action.icon}
-          {action.label}
+          {action.icon ? (
+            <span className="flex shrink-0 items-center justify-center">
+              {action.icon}
+            </span>
+          ) : null}
+          <span className="min-w-0 text-center [hyphens:manual] [overflow-wrap:normal]">
+            {action.label}
+          </span>
         </Button>
       )}
 

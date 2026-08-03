@@ -24,14 +24,14 @@ describe("JournalEntryEditor iOS touch targets", () => {
     expect(editorSource).not.toContain("Save this draft before opening settings so you can continue exactly where you left");
   });
 
-  it("keeps mobile editor chrome controls at least 44px", () => {
+  it("keeps mobile editor chrome controls at least 48px", () => {
     expect(editorSource).toContain(
-      "flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5",
+      "flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5",
     );
     expect(editorSource).toContain(
-      "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full",
+      "flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full",
     );
-    expect(editorSource).toContain("flex min-h-[44px] items-center gap-1 rounded-full");
+    expect(editorSource).toContain("flex min-h-[48px] items-center gap-1 rounded-full");
   });
 
   it("keeps the iOS save button readable with theme tokens", () => {
@@ -52,11 +52,11 @@ describe("JournalEntryEditor iOS touch targets", () => {
     expect(editorSource).toContain('createPortal(editorShell, document.body)');
   });
 
-  it("keeps iPad and dense editor controls at least 44px", () => {
-    expect(editorSource).toContain("h-11 w-11 rounded-full");
-    expect(editorSource).toContain("h-11 w-11 rounded-lg");
-    expect(editorSource).toContain("min-h-[44px] rounded-xl border px-3");
-    expect(editorSource).toContain("block min-h-[44px] w-full rounded-xl");
+  it("keeps iPad and dense editor controls at least 48px", () => {
+    expect(editorSource).toContain("h-12 w-12 rounded-full");
+    expect(editorSource).toContain("h-12 w-12 rounded-lg");
+    expect(editorSource).toContain("min-h-[48px] rounded-xl border px-3");
+    expect(editorSource).toContain("block min-h-[48px] w-full rounded-xl");
     expect(editorButtonSource).not.toContain("w-9 h-9");
     expect(editorButtonSource).not.toContain("h-9 w-9");
     expect(editorButtonSource).not.toContain("w-8 h-8");
@@ -71,7 +71,7 @@ describe("JournalEntryEditor iOS touch targets", () => {
     const styleToolbarSource =
       /ROW 2: Collapsible style panel[\s\S]*?Visual capsule/.exec(editorSource)?.[0] ?? "";
 
-    expect(styleToolbarSource).toContain("min-h-[44px] min-w-[44px]");
+    expect(styleToolbarSource).toContain("min-h-[48px] min-w-[48px]");
     expect(styleToolbarSource).not.toContain('"px-3 py-1.5 rounded-lg text-xs font-medium border motion-safe:transition-all"');
     expect(styleToolbarSource).not.toContain('"px-4 py-2 rounded-lg text-sm font-medium border motion-safe:transition-all flex items-center gap-1.5"');
     expect(styleToolbarSource).not.toContain('"px-3 py-2 rounded-lg text-sm font-medium border border-transparent');
@@ -97,13 +97,13 @@ describe("JournalEntryEditor iOS touch targets", () => {
     expect(editorSource).toContain('bottom: desktop ? undefined : `${keyboardInset}px`');
     expect(editorSource).toContain("pb-[calc(2rem+var(--diary-keyboard-inset,0px))]");
   });
-  it("uses a real 44px native date input hit target on iOS", () => {
+  it("uses a real 48px native date input hit target on iOS", () => {
     expect(editorSource).not.toContain("const handleDatePickerOpen = useCallback(() =>");
     expect(editorSource).not.toContain("input.showPicker();");
     expect(editorSource).not.toContain('className="pointer-events-none absolute h-px w-px opacity-0"');
-    expect(editorSource).toContain("relative inline-flex min-h-[44px] items-center");
-    expect(editorSource).toContain("pointer-events-none flex min-h-[44px] items-center gap-1 rounded-lg px-2");
+    expect(editorSource).toContain("relative inline-flex min-h-[48px] items-center");
+    expect(editorSource).toContain("pointer-events-none flex min-h-[48px] items-center gap-1 rounded-lg px-2");
     expect(editorSource).toContain('aria-label={ts.journalEntryDate || "Entry date"}');
-    expect(editorSource).toContain('className="absolute inset-0 min-h-[44px] w-full cursor-pointer opacity-0"');
+    expect(editorSource).toContain('className="absolute inset-0 min-h-[48px] w-full cursor-pointer opacity-0"');
   });
 });

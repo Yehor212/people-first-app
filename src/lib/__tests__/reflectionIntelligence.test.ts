@@ -165,6 +165,65 @@ describe("reflectionIntelligence", () => {
     expect(insights.some((insight) => insight.id === "ritual-opening-focus-anchor")).toBe(true);
   });
 
+  it("does not convert mood associations into reflection confidence cards", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-30T12:00:00Z"));
+
+    try {
+      const dates = [
+        "2026-04-20",
+        "2026-04-21",
+        "2026-04-22",
+        "2026-04-23",
+        "2026-04-24",
+        "2026-04-25",
+        "2026-04-26",
+        "2026-04-27",
+      ];
+      const moods = dates.map((date, index) =>
+        makeMood({
+          id: `mood-${index}`,
+          date,
+          timestamp: Date.parse(`${date}T09:00:00Z`),
+          mood: index < 5 ? "great" : "okay",
+          valence: index < 5 ? 1 : 0,
+        }),
+      );
+      const habit = makeTestHabit({
+        id: "h1",
+        name: "Walk",
+        entries: Object.fromEntries(
+          dates.slice(0, 5).map((date) => [date, { value: 1 }]),
+        ),
+      });
+
+      const habitCards = buildReflectionInsights({
+        moods,
+        habits: [habit],
+        focusSessions: [],
+        gratitudeEntries: [],
+        rituals: [],
+        tx,
+      });
+      expect(habitCards.some((card) => card.id === "generated-habit-h1")).toBe(false);
+
+      const tagCards = buildReflectionInsights({
+        moods: moods.map((mood, index) => ({
+          ...mood,
+          tags: index < 5 ? ["outside"] : [],
+        })),
+        habits: [],
+        focusSessions: [],
+        gratitudeEntries: [],
+        rituals: [],
+        tx,
+      });
+      expect(tagCards.some((card) => card.id === "generated-tag-outside")).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("creates normalized day ritual drafts", () => {
     const ritual = createDayRitualDraft("opening", {
       priorities: [" Deep work ", "", "Walk", "Overflow"],

@@ -1,15 +1,16 @@
 /**
- * Cloud Preference Sync — stores UI preferences in Supabase Auth user_metadata.
- * No schema migration needed — uses auth.updateUser({ data: {...} }).
+ * Cloud Preference Restore — reads UI preferences from Supabase Auth user_metadata.
  *
  * Synced preferences: sidebar collapsed, theme, default tab.
- * Pull on login, push on change (debounced).
+ * Preferences are restored only after the authenticated and durable local owners match.
  */
 
-import { supabase } from "@/lib/supabaseClient";
-import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
+import { getCurrentUserId, supabase } from "@/lib/supabaseClient";
+import { storageSetRaw } from "@/lib/safeJson";
 import { logger } from "@/lib/logger";
 import { useThemeStore, type ThemePreference } from "@/stores/themeStore";
+import { getLocalDataOwnerId } from "@/storage/db";
+import { readPendingLocalBackupAccountClaim } from "@/storage/accountBoundaryRuntime";
 
 interface UIPreferences {
   sidebarCollapsed?: boolean;
@@ -27,11 +28,31 @@ const PREF_KEYS = {
  * Pull preferences from Supabase user_metadata and apply to localStorage.
  * Call on login / session restore.
  */
-export async function pullPreferences(): Promise<void> {
+async function isExactPreferenceOwner(expectedOwnerUserId: string): Promise<boolean> {
+  if (readPendingLocalBackupAccountClaim().status !== "none") return false;
+  const [activeUserId, localOwnerUserId] = await Promise.all([
+    getCurrentUserId(),
+    getLocalDataOwnerId(),
+  ]);
+  return (
+    activeUserId === expectedOwnerUserId &&
+    localOwnerUserId === expectedOwnerUserId &&
+    readPendingLocalBackupAccountClaim().status === "none"
+  );
+}
+
+export async function pullPreferences(expectedOwnerUserId: string): Promise<void> {
   if (!supabase) return;
 
   try {
+    if (!(await isExactPreferenceOwner(expectedOwnerUserId))) return;
     const { data } = await supabase.auth.getUser();
+    if (
+      data.user?.id !== expectedOwnerUserId ||
+      !(await isExactPreferenceOwner(expectedOwnerUserId))
+    ) {
+      return;
+    }
     const prefs = data.user?.user_metadata?.ui_preferences as UIPreferences | undefined;
     if (!prefs) return;
 
@@ -52,42 +73,4 @@ export async function pullPreferences(): Promise<void> {
   } catch (err) {
     logger.warn("[PreferenceSync] Pull failed:", err);
   }
-}
-
-/**
- * Push current localStorage preferences to Supabase user_metadata.
- * Call on preference change (debounced).
- */
-export async function pushPreferences(): Promise<void> {
-  if (!supabase) return;
-
-  try {
-    const prefs: UIPreferences = {
-      sidebarCollapsed: storageGetRaw(PREF_KEYS.sidebarCollapsed) === "true",
-      theme: (storageGetRaw(PREF_KEYS.theme) as UIPreferences["theme"]) || "system",
-      defaultTab: storageGetRaw(PREF_KEYS.defaultTab) || "home",
-    };
-
-    await supabase.auth.updateUser({
-      data: { ui_preferences: prefs },
-    });
-
-    logger.log("[PreferenceSync] Pushed preferences to cloud");
-  } catch (err) {
-    logger.warn("[PreferenceSync] Push failed:", err);
-  }
-}
-
-let pushTimer: ReturnType<typeof setTimeout> | null = null;
-
-/**
- * Debounced push — call after any preference change.
- * Waits 2s to batch rapid changes (e.g. toggling sidebar multiple times).
- */
-export function debouncedPushPreferences(): void {
-  if (pushTimer) clearTimeout(pushTimer);
-  pushTimer = setTimeout(() => {
-    void pushPreferences();
-    pushTimer = null;
-  }, 2000);
 }

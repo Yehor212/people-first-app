@@ -1,14 +1,16 @@
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- The intrinsic chart scroller must receive focus for keyboard operation. */
 /**
  * HabitScoreChart — SVG line chart for habit score history.
  * Renders computeScoreHistory() data. Time range selector: 3mo, 6mo, 1yr, All.
  * Pure SVG, no external chart library. Deep Space aesthetic.
  */
 
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { computeScoreHistory } from "@/lib/habitScore";
 import { resolveHabitColor } from "@/lib/habitColorUtils";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useChartFontSizes } from "@/lib/chartTokens";
 import type { Habit } from "@/types";
 
 interface HabitScoreChartProps {
@@ -29,6 +31,9 @@ const CHART_PAD = { top: 8, right: 8, bottom: 20, left: 32 };
 export function HabitScoreChart({ habit }: HabitScoreChartProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const chartFonts = useChartFontSizes();
+  const scoreHistoryHeadingId = useId();
+  const scoreHistorySummaryId = useId();
   const [range, setRange] = useState<TimeRange>("3mo");
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -77,17 +82,20 @@ export function HabitScoreChart({ habit }: HabitScoreChartProps) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <label className="text-xs font-medium text-muted-foreground">
+      <div className="mb-2 flex flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+        <h4
+          id={scoreHistoryHeadingId}
+          className="whitespace-normal break-words text-xs font-medium text-muted-foreground"
+        >
           {ts.scoreHistory || "Score History"}
-        </label>
-        <div className="flex gap-1">
+        </h4>
+        <div className="grid grid-cols-2 gap-1 min-[420px]:grid-cols-4">
           {ranges.map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}
               className={cn(
-                "px-3 py-1.5 rounded-md text-[10px] font-medium motion-safe:transition-colors min-h-[44px]",
+                "min-h-[44px] whitespace-normal break-words rounded-md px-3 py-1.5 text-xs font-medium motion-safe:transition-colors",
                 range === r
                   ? "bg-foreground/[0.10] text-foreground"
                   : "text-muted-foreground hover:text-muted-foreground"
@@ -99,9 +107,20 @@ export function HabitScoreChart({ habit }: HabitScoreChartProps) {
         </div>
       </div>
 
-      <div className="w-full rounded-xl bg-foreground/[0.03] border border-foreground/[0.06] overflow-x-auto scrollbar-hide">
+      <div
+        className="w-full overflow-x-auto rounded-xl border border-foreground/[0.06] bg-foreground/[0.03] scrollbar-hide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        role="region"
+        tabIndex={0}
+        aria-labelledby={scoreHistoryHeadingId}
+        aria-describedby={scoreHistorySummaryId}
+      >
+        <p id={scoreHistorySummaryId} className="sr-only">
+          {data.map((item) => `${item.date}: ${Math.round(item.score * 100)}%`).join(", ")}
+        </p>
         {/* VISUAL-VERIFIED: overflow-x-auto + min-w prevents score chart clipping on narrow mobile */}
         <svg
+          aria-hidden="true"
+          focusable="false"
           ref={svgRef}
           viewBox={`0 0 ${svgWidth} ${CHART_H}`}
           preserveAspectRatio="xMidYMid meet"
@@ -135,7 +154,7 @@ export function HabitScoreChart({ habit }: HabitScoreChartProps) {
                   y={y + 3}
                   textAnchor="end"
                   className="fill-slate-600"
-                  fontSize={8}
+                  fontSize={chartFonts.axis}
                 >
                   {pct}%
                 </text>

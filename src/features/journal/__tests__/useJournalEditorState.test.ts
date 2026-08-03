@@ -21,6 +21,8 @@ import { PAPER_COLORS } from "../types";
 import { createEditorSnapshot, sanitizeJournalTag } from "../useJournalEditorState";
 
 const hookSource = readFileSync("src/features/journal/useJournalEditorState.ts", "utf8");
+const editorSource = readFileSync("src/features/journal/JournalEntryEditor.tsx", "utf8");
+const moduleSource = readFileSync("src/features/journal/JournalModule.tsx", "utf8");
 
 // ══════════════════════════════════════════════════════════════
 // Extracted logic: Save state machine (mirrors useJournalEditorState)
@@ -355,6 +357,16 @@ describe("T02: Word count milestones", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("keeps milestone haptics and confetti disabled when the V2 reward surface is disabled", () => {
+    expect(moduleSource).toContain("milestonesEnabled={rewardsEnabled}");
+    expect(editorSource).toContain("milestonesEnabled?: boolean;");
+    expect(editorSource).toContain("milestonesEnabled,");
+    expect(hookSource).toContain("milestonesEnabled?: boolean;");
+    expect(hookSource).toContain("milestonesEnabled = true,");
+    expect(hookSource).toContain("if (!milestonesEnabled)");
+    expect(hookSource).toContain("[wordCount, MILESTONES, milestonesEnabled]");
   });
 
   it("no milestone fires on initial load (prevWordCountRef initialized to current count)", () => {
@@ -997,21 +1009,28 @@ describe("T07: iOS editor safety contracts", () => {
     expect(hookSource).toMatch(/\[\s*title,\s*content,\s*date,/);
   });
 
-  it("awaits local draft media deletion before a new diary entry is discarded or its draft is dismissed", () => {
-    expect(hookSource).toContain('deleteDraftMedia } from "./journalStorage";');
-    expect(hookSource).toContain("const deleteNewEntryDraftMedia = useCallback(async () =>");
-    expect(hookSource).toContain("await deleteDraftMedia();");
-    expect(hookSource).not.toContain("void deleteDraftMedia();");
+  it("uses the atomic draft discard boundary for a new entry and recovered-draft dismissal", () => {
+    expect(hookSource).toMatch(/discardJournalDraft,[\s\S]*?from "\.\/journalStorage";/);
+    expect(hookSource).toContain("const discardCurrentJournalDraft = useCallback(async () =>");
+    expect(hookSource).toContain("await discardCurrentJournalDraft();");
+    expect(hookSource).not.toContain("void discardJournalDraft(");
   });
 
   it("stops unfinished recordings when recording overlays are closed so Android back does not silently discard audio", () => {
-    expect(hookSource).toContain("void recorder.stop();\n          setShowRecordingOverlay(false);");
-    expect(hookSource).not.toContain("void recorder.discard();\n        setShowRecordingOverlay(false);");
+    const closeRecordingBlock =
+      /const closeRecordingOverlay = useCallback\([\s\S]*?\n {2}\}, \[[^\]]*\]\);/.exec(editorSource)?.[0] ?? "";
+
+    expect(closeRecordingBlock).toContain("handleStopRecording");
+    expect(closeRecordingBlock).toContain("requestDiscardRecording");
+    expect(closeRecordingBlock).not.toContain("handleDiscardRecording");
+    expect(editorSource).toContain(
+      "useModalA11y(showRecordingOverlay, closeRecordingOverlay, mobileToolsButtonRef)",
+    );
   });
 
   it("restores draft audio rows so saved draft recordings remain reviewable", () => {
     expect(hookSource).toContain("const restoredAudioIds = draftAvailable.audioIds || [];");
-    expect(hookSource).toContain("getAudioById(audioId)");
+    expect(hookSource).toContain("getAudioById(audioId, [entryId, draftMediaOwnerId])");
     expect(hookSource).toMatch(/setAudioRecordings\(\s*recordings\.filter/);
   });
 

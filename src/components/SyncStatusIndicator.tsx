@@ -137,26 +137,30 @@ export function SyncStatusIndicator() {
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border zen-shadow-sm">
+    <div className="flex items-start gap-2 rounded-lg border border-border bg-card px-3 py-1.5 zen-shadow-sm">
       {/* Icon */}
       <div className={`p-1 rounded-md ${bgColor}`}>
         <Icon className={`w-4 h-4 ${color} ${animate ? "motion-safe:animate-spin" : ""}`} />
       </div>
 
       {/* Status text */}
-      <div className="flex flex-col">
-        <span className="text-xs font-medium text-foreground">{getStatusText()}</span>
+      <div className="min-w-0 flex-1">
+        <span className="block whitespace-normal break-words text-xs font-medium text-foreground">
+          {getStatusText()}
+        </span>
 
         {/* Queue info */}
         {state.queueLength > 0 && (
-          <span className="text-xs text-muted-foreground">
+          <span className="block whitespace-normal break-words text-xs text-muted-foreground">
             {state.queueLength} {t.syncPending || "pending"}
           </span>
         )}
 
         {/* Error message */}
         {state.status === "error" && (
-          <span className="text-xs text-red-500 line-clamp-1">{t.syncError}</span>
+          <span className="block whitespace-normal break-words text-xs text-red-500">
+            {t.syncError}
+          </span>
         )}
       </div>
     </div>
@@ -179,7 +183,7 @@ export function SyncStatusIndicatorCompact() {
       <div className="relative" aria-label={t.sessionExpired || "Account update paused"}>
         <CloudOff className="w-5 h-5 text-amber-500" />
         <span
-          className="absolute -top-1 -end-1 bg-amber-500 text-white text-[10px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold"
+          className="absolute -end-2 -top-2 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 py-0.5 text-xs font-bold leading-none text-white"
           aria-hidden="true"
         >
           !
@@ -204,7 +208,7 @@ export function SyncStatusIndicatorCompact() {
       <div className="relative" aria-label={`${t.syncOffline || "Offline"} - ${pendingCount}`}>
         <WifiOff className="w-5 h-5 text-amber-500" />
         <span
-          className="absolute -top-1 -end-1 bg-amber-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold"
+          className="absolute -end-2 -top-2 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 py-0.5 text-xs font-bold leading-none text-white"
           aria-hidden="true"
         >
           {pendingCount > 9 ? "9+" : pendingCount}
@@ -227,7 +231,7 @@ export function SyncStatusIndicatorCompact() {
         <Loader className="w-5 h-5 text-blue-500 motion-safe:animate-spin" />
         {pendingCount > 0 && (
           <span
-            className="absolute -top-1 -end-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold"
+            className="absolute -end-2 -top-2 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 px-1 py-0.5 text-xs font-bold leading-none text-white"
             aria-hidden="true"
           >
             {pendingCount > 9 ? "9+" : pendingCount}

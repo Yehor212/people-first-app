@@ -177,4 +177,75 @@ describe("Sentry privacy scrubbing", () => {
     expect(serialized).toContain("[REDACTED]");
     expect(event.tags?.area).toBe("auth");
   });
+
+  it("redacts structured journal and wellbeing content while preserving operational metadata", async () => {
+    const beforeSend = await loadBeforeSend();
+    const privateCanaries = {
+      journal: "PRIVATE_JOURNAL_CANARY",
+      moodNote: "PRIVATE_MOOD_NOTE_CANARY",
+      coachPrompt: "PRIVATE_COACH_PROMPT_CANARY",
+      transcript: "PRIVATE_AUDIO_TRANSCRIPT_CANARY",
+    };
+    const event = {
+      message: "journal save failed",
+      extra: {
+        operation: "journal-save",
+        retryCount: 2,
+        journalEntry: privateCanaries.journal,
+        mood_note: privateCanaries.moodNote,
+      },
+      contexts: {
+        coach: {
+          prompt: privateCanaries.coachPrompt,
+          errorCode: "coach-timeout",
+        },
+      },
+      request: {
+        data: {
+          audioTranscript: privateCanaries.transcript,
+          status: "failed",
+          contentType: "application/json",
+          responseStatus: 503,
+        },
+      },
+      breadcrumbs: [
+        {
+          category: "storage",
+          message: "write rejected",
+          data: {
+            reflection_text: privateCanaries.journal,
+            recordCount: 1,
+          },
+        },
+      ],
+    } satisfies Event;
+
+    beforeSend(event, { originalException: new Error("journal save failed") });
+
+    const serialized = JSON.stringify(event);
+    for (const canary of Object.values(privateCanaries)) {
+      expect(serialized).not.toContain(canary);
+    }
+    expect(serialized).toContain("[REDACTED]");
+    expect(event.extra).toMatchObject({
+      operation: "journal-save",
+      retryCount: 2,
+      journalEntry: "[REDACTED]",
+      mood_note: "[REDACTED]",
+    });
+    expect(event.contexts?.coach).toMatchObject({
+      prompt: "[REDACTED]",
+      errorCode: "coach-timeout",
+    });
+    expect(event.request?.data).toMatchObject({
+      audioTranscript: "[REDACTED]",
+      status: "failed",
+      contentType: "application/json",
+      responseStatus: 503,
+    });
+    expect(event.breadcrumbs?.[0]?.data).toMatchObject({
+      reflection_text: "[REDACTED]",
+      recordCount: 1,
+    });
+  });
 });

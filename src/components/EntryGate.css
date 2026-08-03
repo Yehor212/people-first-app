@@ -309,8 +309,8 @@ body.reduce-motion .entry-gate-horizon {
   }
 
   .entry-gate-title {
-    font-size: 2.125rem !important;
-    line-height: 0.94 !important;
+    font-size: calc(1.75rem * var(--font-scale, 1)) !important;
+    line-height: 1.15 !important;
   }
 
   .entry-auth-panel {
@@ -318,7 +318,7 @@ body.reduce-motion .entry-gate-horizon {
   }
 
   .entry-auth-panel h2 {
-    font-size: 1.125rem !important;
+    font-size: calc(1.125rem * var(--font-scale, 1)) !important;
   }
 
   .entry-auth-panel .entry-action-tile {
@@ -328,7 +328,7 @@ body.reduce-motion .entry-gate-horizon {
   }
 
   .entry-auth-footer {
-    font-size: 0.6875rem !important;
+    font-size: calc(0.6875rem * var(--font-scale, 1)) !important;
     line-height: 1.35 !important;
   }
 }

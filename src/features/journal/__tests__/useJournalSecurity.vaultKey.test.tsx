@@ -21,6 +21,10 @@ const hubStorageMocks = vi.hoisted(() => ({
   encryptPlaintextJournalHubContent: vi.fn(() => Promise.resolve(0)),
   hasEncryptedJournalHubContent: vi.fn(() => Promise.resolve(false)),
 }));
+const accountBoundaryRuntimeMocks = vi.hoisted(() => ({
+  runtimeResets: new Set<() => void>(),
+  generationListeners: new Set<(generation: string) => void>(),
+}));
 const syncMocks = vi.hoisted(() => ({
   isCloudSyncEnabled: vi.fn(() => true),
   syncSetting: vi.fn(
@@ -87,6 +91,23 @@ vi.mock("@/lib/cloudSyncSettings", () => ({
   isCloudSyncEnabled: syncMocks.isCloudSyncEnabled,
 }));
 
+vi.mock("@/storage/accountBoundaryRuntime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/storage/accountBoundaryRuntime")>();
+  return {
+    ...actual,
+    registerAccountBoundaryRuntimeReset: vi.fn((reset: () => void) => {
+      accountBoundaryRuntimeMocks.runtimeResets.add(reset);
+      return () => accountBoundaryRuntimeMocks.runtimeResets.delete(reset);
+    }),
+    subscribeOriginAccountBoundaryGeneration: vi.fn(
+      (listener: (generation: string) => void) => {
+        accountBoundaryRuntimeMocks.generationListeners.add(listener);
+        return () => accountBoundaryRuntimeMocks.generationListeners.delete(listener);
+      },
+    ),
+  };
+});
+
 vi.mock("@/storage/sync/syncSettings", () => ({
   syncSetting: syncMocks.syncSetting,
   deleteSettingFromCloud: syncMocks.deleteSettingFromCloud,
@@ -127,6 +148,7 @@ vi.mock("../journalSecurityMigration", () => ({
 
 import { useJournalSecurity } from "../useJournalSecurity";
 import { runWithJournalSecurityWriteLock } from "../journalSecurityWriteLock";
+import { clearJournalContentSession } from "@/lib/journalContentSession";
 
 function bytesToString(bytes: Uint8Array): string {
   return Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
@@ -136,6 +158,12 @@ describe("useJournalSecurity vault key lifecycle", () => {
   beforeEach(() => {
     settingsStore.clear();
     vi.clearAllMocks();
+    journalStorageMocks.hasEncryptedJournalContent.mockReset().mockResolvedValue(false);
+    journalStorageMocks.hasEncryptedJournalMedia.mockReset().mockResolvedValue(false);
+    draftStorageMocks.hasEncryptedJournalDrafts.mockReset().mockResolvedValue(false);
+    hubStorageMocks.hasEncryptedJournalHubContent.mockReset().mockResolvedValue(false);
+    accountBoundaryRuntimeMocks.runtimeResets.clear();
+    accountBoundaryRuntimeMocks.generationListeners.clear();
     ownerState.current = "account-a";
     migrationMocks.ensureQueued.mockResolvedValue(false);
     migrationMocks.ensureRemovalQueued.mockResolvedValue(false);
@@ -257,7 +285,32 @@ describe("useJournalSecurity vault key lifecycle", () => {
     });
   });
 
+  it("drops the unlocked vault key and reloads protection for the new account", async () => {
+    const hook = renderHook(() => useJournalSecurity());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+    expect(hook.result.current.isUnlocked).toBe(true);
+    expect(hook.result.current.vaultKey).toBe("vault-key-1");
+
+    settingsStore.clear();
+
+    act(() => {
+      for (const listener of accountBoundaryRuntimeMocks.generationListeners) {
+        listener("account-b-generation");
+      }
+    });
+
+    expect(hook.result.current.isUnlocked).toBe(false);
+    expect(hook.result.current.vaultKey).toBeNull();
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    expect(hook.result.current.hasPassword).toBe(false);
+  });
+
   afterEach(() => {
+    clearJournalContentSession("sign-out");
     vi.restoreAllMocks();
   });
 
@@ -743,6 +796,32 @@ describe("useJournalSecurity vault key lifecycle", () => {
     expect(settingsStore.has("journal_password")).toBe(true);
     expect(settingsStore.has("journal_vault_key")).toBe(true);
     expect(syncMocks.deleteSettingFromCloud).not.toHaveBeenCalled();
+  });
+
+  it("removes only a verified empty locked diary without requiring the lost vault key", async () => {
+    settingsStore.set("journal_password", {
+      key: "journal_password",
+      value: { hash: "hash", salt: "salt", iterations: 600_000, createdAt: 1 },
+    });
+    settingsStore.set("journal_vault_key", {
+      key: "journal_vault_key",
+      value: { wrappedKey: "wrapped", createdAt: 1, updatedAt: 1 },
+    });
+    const hook = renderHook(() => useJournalSecurity());
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+
+    await act(async () => {
+      await expect(
+        hook.result.current.removePassword({ allowVerifiedEmptyDiary: true })
+      ).resolves.toBeUndefined();
+    });
+
+    expect(migrationMocks.removeAtomic).toHaveBeenCalledWith(
+      null,
+      expect.objectContaining({ sessionOwnerUserId: "account-a" }),
+    );
+    expect(settingsStore.has("journal_password")).toBe(false);
+    expect(settingsStore.has("journal_vault_key")).toBe(false);
   });
 
   it("blocks password removal when encrypted Space content exists in a locked tab", async () => {

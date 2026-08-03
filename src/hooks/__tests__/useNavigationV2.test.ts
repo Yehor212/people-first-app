@@ -209,6 +209,28 @@ describe("useNavigationV2", () => {
       expect(params.has("settingsSection")).toBe(false);
     });
 
+    it("opens the real reminder settings detail from a notification recovery action", async () => {
+      setPath("/orb?nav=v2&navLayout=phone");
+      const { result } = renderHook(() => useNavigationV2());
+
+      await act(async () => {
+        window.dispatchEvent(
+          new CustomEvent("zenflow:open-reminder-settings", {
+            detail: { reason: "schedule-uncertain" },
+          }),
+        );
+      });
+
+      expect(result.current.activePage).toBe<NavV2Page>("settings");
+      expect(window.location.pathname).toBe("/settings");
+      expect(new URLSearchParams(window.location.search).get("settingsSection")).toBe(
+        "notifications",
+      );
+      expect(new URLSearchParams(window.location.search).get("reminderIncident")).toBe(
+        "schedule-uncertain",
+      );
+    });
+
     it("closes drawer when navigating", async () => {
       const { result } = renderHook(() => useNavigationV2());
       act(() => result.current.openDrawer());

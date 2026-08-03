@@ -25,7 +25,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
     onComplete();
   }, [onComplete]);
 
-  useModalClose(showPrompt, handleDeny);
+  const { modalProps } = useModalClose(showPrompt, handleDeny);
   useBackHandler(showPrompt, handleDeny);
 
   useEffect(() => {
@@ -94,16 +94,18 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
         aria-hidden="true"
       />
       <div
-        className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 motion-safe:animate-fade-in md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
-        role="dialog"
-        aria-modal="true"
-        aria-label={t.ariaNotificationPermission}
+        className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto overscroll-contain bg-background/95 ps-[max(0.5rem,var(--safe-inline-start))] pe-[max(0.5rem,var(--safe-inline-end))] pb-[calc(var(--safe-bottom)+0.5rem)] pt-[calc(var(--safe-top)+0.5rem)] backdrop-blur-sm motion-safe:animate-fade-in sm:ps-[max(1rem,var(--safe-inline-start))] sm:pe-[max(1rem,var(--safe-inline-end))] sm:pb-[calc(var(--safe-bottom)+1rem)] sm:pt-[calc(var(--safe-top)+1rem)] md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
       >
-        <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 zen-shadow-card motion-safe:animate-scale-in">
+        <div
+          {...modalProps}
+          aria-labelledby="notification-permission-title"
+          aria-label={t.ariaNotificationPermission}
+          className="relative my-auto w-full max-w-md rounded-2xl bg-card p-4 zen-shadow-card motion-safe:animate-scale-in sm:p-6"
+        >
           {/* Close button */}
           <button
             onClick={handleDeny}
-            className="absolute top-4 end-4 p-2 text-muted-foreground hover:text-foreground motion-safe:transition-colors"
+            className="absolute end-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl p-2 text-muted-foreground hover:text-foreground motion-safe:transition-colors sm:end-4 sm:top-4"
             aria-label={t.close || "Close"}
           >
             <X className="w-5 h-5" />
@@ -117,12 +119,12 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl font-bold text-foreground text-center mb-2">
+          <h2 id="notification-permission-title" className="break-words text-2xl font-bold text-foreground text-center [hyphens:manual] [overflow-wrap:break-word] mb-2">
             {t.notificationPermissionTitle || "Stay on Track"}
           </h2>
 
           {/* Description */}
-          <p className="text-muted-foreground text-center mb-6">
+          <p className="break-words text-muted-foreground text-center [hyphens:manual] [overflow-wrap:break-word] mb-6">
             {t.notificationPermissionDescription ||
               "Get gentle reminders to track your mood, complete habits, and take focus breaks. Notifications help you build healthy routines."}
           </p>
@@ -130,34 +132,34 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
           {/* Features */}
           <div className="space-y-3 mb-6">
             <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-              <div>
-                <p className="font-medium text-foreground">
+              <div className="w-2 h-2 shrink-0 rounded-full bg-primary mt-2" />
+              <div className="min-w-0">
+                <p className="break-words font-medium text-foreground [hyphens:manual] [overflow-wrap:break-word]">
                   {t.notificationFeature1Title || "Daily Mood Reminders"}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="break-words text-sm text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
                   {t.notificationFeature1Desc || "Check in with yourself every day"}
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-              <div>
-                <p className="font-medium text-foreground">
+              <div className="w-2 h-2 shrink-0 rounded-full bg-primary mt-2" />
+              <div className="min-w-0">
+                <p className="break-words font-medium text-foreground [hyphens:manual] [overflow-wrap:break-word]">
                   {t.notificationFeature2Title || "Habit Tracking"}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="break-words text-sm text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
                   {t.notificationFeature2Desc || "Stay consistent with your goals"}
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-              <div>
-                <p className="font-medium text-foreground">
+              <div className="w-2 h-2 shrink-0 rounded-full bg-primary mt-2" />
+              <div className="min-w-0">
+                <p className="break-words font-medium text-foreground [hyphens:manual] [overflow-wrap:break-word]">
                   {t.notificationFeature3Title || "Focus Sessions"}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="break-words text-sm text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
                   {t.notificationFeature3Desc || "Get reminded to take productive breaks"}
                 </p>
               </div>
@@ -168,20 +170,20 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
           <div className="space-y-3">
             <button
               onClick={handleAllow}
-              className="btn-press w-full py-3 zen-gradient text-primary-foreground font-semibold rounded-xl zen-shadow-soft hover:opacity-90 motion-safe:transition-opacity"
+              className="btn-press h-auto min-h-12 w-full min-w-0 whitespace-normal break-words rounded-xl py-3 font-semibold text-primary-foreground zen-gradient zen-shadow-soft [hyphens:manual] [overflow-wrap:break-word] hover:opacity-90 motion-safe:transition-opacity"
             >
               {t.notificationAllow || "Enable Notifications"}
             </button>
             <button
               onClick={handleDeny}
-              className="btn-press w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-muted motion-safe:transition-colors"
+              className="btn-press h-auto min-h-12 w-full min-w-0 whitespace-normal break-words rounded-xl bg-secondary py-3 font-medium text-secondary-foreground [hyphens:manual] [overflow-wrap:break-word] hover:bg-muted motion-safe:transition-colors"
             >
               {t.notificationDeny || "Maybe Later"}
             </button>
           </div>
 
           {/* Privacy note */}
-          <p className="text-xs text-muted-foreground text-center mt-4">
+          <p className="break-words text-xs text-muted-foreground text-center [hyphens:manual] [overflow-wrap:break-word] mt-4">
             {t.notificationPrivacyNote ||
               "You can change this anytime in Settings. Notifications are local and private."}
           </p>

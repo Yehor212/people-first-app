@@ -128,7 +128,7 @@ export function AuthProviderButton({
       aria-label={isLoading ? loadingLabel : label}
       aria-disabled={disabled}
       className={cn(
-        "flex w-full items-center justify-center rounded-2xl border border-border/60 font-semibold text-foreground motion-safe:transition-all disabled:cursor-not-allowed disabled:opacity-80",
+        "flex w-full min-w-0 items-center justify-center whitespace-normal rounded-2xl border border-border/60 font-semibold text-foreground motion-safe:transition-all disabled:cursor-not-allowed disabled:opacity-80",
         AUTH_PROVIDER_BUTTON_SIZE_CLASS[size],
         AUTH_PROVIDER_BUTTON_SURFACE_CLASS[surface]
       )}
@@ -137,17 +137,22 @@ export function AuthProviderButton({
         <Loader2 className="w-5 h-5 motion-safe:animate-spin" aria-hidden="true" />
       ) : (
         <span
-          className="grid w-full max-w-[22rem] grid-cols-[2rem_minmax(0,1fr)_2rem] items-center gap-2.5 sm:gap-3"
+          className="grid w-full min-w-0 max-w-[22rem] grid-cols-1 items-center gap-2.5 min-[420px]:grid-cols-[2rem_minmax(0,1fr)_2rem] sm:gap-3"
           data-testid={`auth-provider-content-${provider.id}`}
         >
           <span
-            className="flex h-8 w-8 items-center justify-center justify-self-center"
+            className="col-start-1 row-start-1 flex h-8 w-8 items-center justify-center justify-self-center"
             data-testid={`auth-provider-icon-rail-${provider.id}`}
           >
             <AuthProviderIcon provider={provider} />
           </span>
-          <span className="min-w-0 whitespace-nowrap text-center leading-tight">{label}</span>
-          <span className="h-8 w-8 justify-self-center" aria-hidden="true" />
+          <span className="col-start-1 row-start-2 min-w-0 whitespace-normal break-words text-center leading-tight [hyphens:manual] [overflow-wrap:break-word] min-[420px]:col-start-2 min-[420px]:row-start-1">
+            {label}
+          </span>
+          <span
+            className="hidden h-8 w-8 justify-self-center min-[420px]:col-start-3 min-[420px]:row-start-1 min-[420px]:block"
+            aria-hidden="true"
+          />
         </span>
       )}
     </button>

@@ -89,6 +89,7 @@ describe("curated Free RAG corpus", () => {
     writeFile(rootDir, "dist/app.js", "console.log('build output');");
     writeFile(rootDir, "src/assets/icon.svg", "<svg />");
     writeFile(rootDir, "docs/ai/generated/report.md", "# Generated report");
+    writeFile(rootDir, "output/volatile.ts", "export const shouldNeverBeIndexed = true;");
     writeFile(rootDir, ".env.local", "OPENAI_API_KEY=should-not-index");
 
     const manifest: RagCorpusManifest = {

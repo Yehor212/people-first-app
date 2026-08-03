@@ -4,6 +4,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 let mockIsNative = false;
 let mockBaseUrl = '/';
+const authTransitionMocks = vi.hoisted(() => ({
+  runWithPkceCallbackUrl: vi.fn(
+    (_auth: unknown, _url: string, operation: () => Promise<unknown>) => operation(),
+  ),
+}));
 
 vi.mock('@/lib/platform', () => ({
   get isNative() { return mockIsNative; },
@@ -16,6 +21,10 @@ vi.mock('../logger', () => ({
 vi.mock('@/lib/env', () => ({
   get BASE_URL() { return mockBaseUrl; },
   IS_DEV: false,
+}));
+
+vi.mock('@/lib/authTransitionCoordinator', () => ({
+  runWithPkceCallbackUrl: authTransitionMocks.runWithPkceCallbackUrl,
 }));
 
 // ─── Imports ───────────────────────────────────────────────────────────────
@@ -33,6 +42,11 @@ import {
   hasPendingAuthUrl,
 } from '@/lib/authRedirect';
 import { SK } from '@/lib/storageKeys';
+import {
+  createPkceAttemptRedirectUrl,
+  getPkceAttemptIdFromUrl,
+  PKCE_ATTEMPT_PARAM,
+} from '@/lib/pkceAttemptStorage';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -56,6 +70,9 @@ beforeEach(() => {
   mockIsNative = false;
   mockBaseUrl = '/';
   vi.clearAllMocks();
+  authTransitionMocks.runWithPkceCallbackUrl.mockImplementation(
+    (_auth: unknown, _url: string, operation: () => Promise<unknown>) => operation(),
+  );
   window.history.pushState({}, '', '/');
   localStorage.removeItem(SK.JOURNAL_PASSWORD_RESET_PROOF);
   // Clear any pending auth URL from previous tests
@@ -137,6 +154,83 @@ describe('getAuthRedirectUrl', () => {
     expect(isAllowedLocalOAuthOrigin('http://evil.localhost.example:4175')).toBe(false);
     expect(isAllowedLocalOAuthOrigin('http://127.0.0.1:9999')).toBe(false);
   });
+
+  it('keeps V2 routing while adding one opaque bounded PKCE attempt owner', () => {
+    window.history.pushState({}, '', '/settings?nav=v2&navLayout=phone');
+
+    const owned = createPkceAttemptRedirectUrl(getAuthRedirectUrl(), 'oauth');
+    const parsed = new URL(owned.redirectUrl);
+
+    expect(parsed.pathname).toBe('/settings');
+    expect(parsed.searchParams.get('nav')).toBe('v2');
+    expect(parsed.searchParams.get('navLayout')).toBe('phone');
+    expect(parsed.searchParams.get(PKCE_ATTEMPT_PARAM)).toBe(owned.attemptId);
+    expect(getPkceAttemptIdFromUrl(owned.redirectUrl)).toBe(owned.attemptId);
+    expect(owned.attemptId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+  });
+
+  it('rejects malformed and overlong PKCE attempt selectors', () => {
+    const attemptId = '11111111-1111-4111-8111-111111111111';
+    expect(getPkceAttemptIdFromUrl('https://zenflow.app/?zenflowAuthAttempt=not-a-uuid')).toBeNull();
+    expect(
+      getPkceAttemptIdFromUrl(
+        `https://zenflow.app/?zenflowAuthAttempt=${'a'.repeat(4_096)}`,
+      ),
+    ).toBeNull();
+    expect(
+      getPkceAttemptIdFromUrl(
+        `https://zenflow.app/?zenflowAuthAttempt=${attemptId}&zenflowAuthAttempt=${attemptId}`,
+      ),
+    ).toBeNull();
+    expect(
+      getPkceAttemptIdFromUrl(
+        `https://zenflow.app/?zenflowAuthAttempt=${attemptId}#zenflowAuthAttempt=${attemptId}`,
+      ),
+    ).toBeNull();
+    expect(
+      getPkceAttemptIdFromUrl(
+        `https://zenflow.app/?padding=${'x'.repeat(9_000)}&zenflowAuthAttempt=${attemptId}`,
+      ),
+    ).toBeNull();
+  });
+
+  it('rejects credentialed, executable, and off-origin PKCE redirects', () => {
+    expect(() =>
+      createPkceAttemptRedirectUrl('https://user:password@zenflow.app/', 'oauth'),
+    ).toThrow('not allowed');
+    expect(() => createPkceAttemptRedirectUrl('javascript:alert(1)', 'oauth')).toThrow(
+      'not allowed',
+    );
+    expect(() => createPkceAttemptRedirectUrl('https://evil.example/', 'oauth')).toThrow(
+      'not allowed',
+    );
+    expect(() => createPkceAttemptRedirectUrl('http://localhost:9999/', 'oauth')).toThrow(
+      'not allowed',
+    );
+    expect(() =>
+      createPkceAttemptRedirectUrl(
+        `https://zenflow.app/?padding=${'x'.repeat(9_000)}`,
+        'oauth',
+      ),
+    ).toThrow('not allowed');
+  });
+
+  it('accepts only the configured hosted, loopback, Capacitor, and native redirect families', () => {
+    expect(
+      createPkceAttemptRedirectUrl('https://zenflow.app/settings?nav=v2', 'oauth').redirectUrl,
+    ).toContain(PKCE_ATTEMPT_PARAM);
+    expect(
+      createPkceAttemptRedirectUrl('http://127.0.0.1:4175/settings', 'oauth').redirectUrl,
+    ).toContain(PKCE_ATTEMPT_PARAM);
+    expect(
+      createPkceAttemptRedirectUrl('capacitor://localhost/settings', 'oauth').redirectUrl,
+    ).toContain(PKCE_ATTEMPT_PARAM);
+    expect(
+      createPkceAttemptRedirectUrl('com.zenflow.app://login-callback', 'oauth').redirectUrl,
+    ).toContain(PKCE_ATTEMPT_PARAM);
+  });
 });
 
 describe('getCleanAuthCallbackUrl', () => {
@@ -154,6 +248,14 @@ describe('getCleanAuthCallbackUrl', () => {
     );
 
     expect(cleanUrl).toBe('/people-first-app/orb?nav=v2#section=mood');
+  });
+
+  it('removes the attempt selector with callback credentials but preserves app routing', () => {
+    const raw = `/settings?nav=v2&navLayout=phone&code=secret&${PKCE_ATTEMPT_PARAM}=123e4567-e89b-42d3-a456-426614174001`;
+
+    expect(getCleanAuthCallbackUrl(`${window.location.origin}${raw}`)).toBe(
+      '/settings?nav=v2&navLayout=phone',
+    );
   });
 });
 
@@ -233,6 +335,7 @@ describe('handleAuthCallback', () => {
 
     expect(JSON.parse(localStorage.getItem(SK.JOURNAL_PASSWORD_RESET_PROOF) || '{}')).toMatchObject({
       nonce: 'native-proof-1',
+      userId: 'user-123',
     });
   });
 
@@ -289,7 +392,7 @@ describe('handleAuthCallback', () => {
     });
   });
 
-  it('stores journal reset proof after a successful implicit journal callback', async () => {
+  it('does not accept implicit tokens as journal reset proof', async () => {
     const mockSupabase = createMockSupabase();
 
     await handleAuthCallback(
@@ -297,9 +400,7 @@ describe('handleAuthCallback', () => {
       'https://example.com#access_token=abc123&refresh_token=def456&journalReset=hash-proof-1'
     );
 
-    expect(JSON.parse(localStorage.getItem(SK.JOURNAL_PASSWORD_RESET_PROOF) || '{}')).toMatchObject({
-      nonce: 'hash-proof-1',
-    });
+    expect(localStorage.getItem(SK.JOURNAL_PASSWORD_RESET_PROOF)).toBeNull();
   });
 
   it('throws when setSession returns an error', async () => {

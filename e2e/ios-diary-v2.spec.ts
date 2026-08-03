@@ -131,6 +131,24 @@ async function expectIosTouchTarget(page: Page, locator: Locator) {
   expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
 }
 
+async function ensureIosMobileToolsExpanded(page: Page) {
+  const expandedTools = page.getByTestId("journal-mobile-tools");
+  if (await expandedTools.isVisible()) return;
+
+  const toolsButton = page.getByRole("button", { name: /^tools$/i });
+  await expectIosTouchTarget(page, toolsButton);
+  await toolsButton.click();
+  await expect(expandedTools).toBeVisible();
+}
+
+function getIosDiaryWriteAction(page: Page): Locator {
+  return page
+    .getByTestId("journal-entry-main-fab")
+    .or(page.getByRole("button", { name: /^New entry$/i }))
+    .or(page.getByTestId("journal-capture-launcher"))
+    .first();
+}
+
 async function expectPhoneDiaryWallpaper(page: Page, expectedTone: "day" | "night" = "day") {
   const wallpaper = page.getByTestId("journal-wallpaper");
   await expect(wallpaper).toHaveCount(1);
@@ -206,10 +224,15 @@ async function openPaperNightDiaryRoute(page: Page) {
 }
 
 async function openNewJournalEntry(page: Page) {
-  await expect(page.getByTestId("journal-entry-main-fab")).toBeVisible({ timeout: 30_000 });
-  await page.getByTestId("journal-entry-main-fab").click();
-  await expect(page.getByTestId("journal-fab-action-new-entry")).toBeVisible();
-  await page.getByTestId("journal-fab-action-new-entry").click();
+  const launcher = getIosDiaryWriteAction(page);
+  await expect(launcher).toBeVisible({ timeout: 30_000 });
+  const launcherTestId = await launcher.getAttribute("data-testid");
+  await launcher.click();
+  if (launcherTestId === "journal-entry-main-fab") {
+    const newEntryAction = page.getByTestId("journal-fab-action-new-entry");
+    await expect(newEntryAction).toBeVisible();
+    await newEntryAction.click();
+  }
   await expect(page.locator("[contenteditable='true']")).toBeVisible({ timeout: 20_000 });
 }
 
@@ -236,7 +259,7 @@ test.describe("iOS V2 Diary", () => {
     ]) {
       await expectIosTouchTarget(page, page.getByTestId(id));
     }
-    await expectIosTouchTarget(page, page.getByTestId("journal-entry-main-fab"));
+    await expectIosTouchTarget(page, getIosDiaryWriteAction(page));
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
@@ -303,9 +326,14 @@ test.describe("iOS V2 Diary", () => {
 
   test("serves the iOS diary ambience audio from the native bundle", async ({ page }) => {
     await openDayDiaryRoute(page);
+    await page.getByTestId("journal-mobile-settings").click();
+    await expect(page.getByTestId("journal-mobile-settings-panel")).toBeVisible({ timeout: 20_000 });
+    const ambienceControl = page.getByTestId("journal-settings-ambience-control");
+    await ambienceControl.scrollIntoViewIfNeeded();
+    await expect(ambienceControl).toBeVisible();
 
     const audioSrc = await page
-      .getByTestId("diary-page-ambience-audio")
+      .getByTestId("journal-settings-ambience-audio")
       .evaluate((audio: HTMLAudioElement) => audio.currentSrc || audio.src);
     const result = await page.evaluate(async (src) => {
       const response = await fetch(src, { cache: "no-store" });
@@ -363,6 +391,7 @@ test.describe("iOS V2 Diary", () => {
     const editor = page.locator("[contenteditable='true']");
     await editor.fill("iOS media surface should close and save cleanly.");
 
+    await ensureIosMobileToolsExpanded(page);
     const photoButton = page.getByRole("button", { name: /^photo$/i }).first();
     await expectIosTouchTarget(page, photoButton);
     await photoButton.click();

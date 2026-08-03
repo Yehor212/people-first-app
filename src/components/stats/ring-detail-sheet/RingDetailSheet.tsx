@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- The intrinsic chart scroller must receive focus for keyboard operation. */
 /**
  * RingDetailSheet - Ultra-Premium Detail Sheet for RadialDashboard
  *
@@ -9,7 +10,7 @@
  * - Smooth spring animations
  */
 
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { zenTap } from "@/lib/animationUtils";
 import { TrendingUp, TrendingDown, Minus, Sparkles, Zap, ChevronRight, X } from "lucide-react";
@@ -32,6 +33,8 @@ export function RingDetailSheet({
   onAction,
 }: RingDetailSheetProps) {
   const { t } = useLanguage();
+  const weeklyTrendHeadingId = useId();
+  const weeklyTrendSummaryId = useId();
 
   const { modalRef, handleKeyDown } = useModalA11y(open, () => onOpenChange(false));
   const shouldReduceMotion = useReducedMotion();
@@ -101,6 +104,13 @@ export function RingDetailSheet({
   };
 
   const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
+  const weeklyTrendSummary = weeklyData
+    .slice(-7)
+    .map((day) => {
+      const dayOfWeek = new Date(day.date).getDay();
+      return `${dayNames[dayOfWeek] || day.date}: ${Math.round(day.value)}%`;
+    })
+    .join(", ");
 
   if (!theme || !ringType) return null;
 
@@ -128,13 +138,16 @@ export function RingDetailSheet({
         onKeyDown={handleKeyDown}
         role="dialog"
         aria-modal="true"
-        className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden motion-safe:animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
+        className="fixed bottom-0 inset-x-0 z-[60] flex max-h-[90dvh] flex-col overflow-hidden rounded-t-[2rem] bg-background pb-safe motion-safe:animate-slide-up lg:mx-auto lg:max-w-4xl"
       >
         <h2 className="sr-only">{t[ringType] || theme.label}</h2>
 
         {/* Premium Header with Gradient */}
         <div
-          className={cn("relative h-36 overflow-hidden", `bg-gradient-to-br ${theme.bgGradient}`)}
+          className={cn(
+            "relative min-h-[calc(9rem*var(--font-scale,1))] shrink-0 overflow-hidden",
+            `bg-gradient-to-br ${theme.bgGradient}`
+          )}
         >
           {/* Sparkle particles */}
           <SparkleParticles color={theme.particleColor} />
@@ -169,10 +182,10 @@ export function RingDetailSheet({
           </button>
 
           {/* Header content */}
-          <div className="absolute bottom-5 inset-x-6 flex items-end justify-between">
-            <div className="flex items-center gap-4">
+          <div className="absolute inset-x-4 bottom-4 flex flex-col items-stretch gap-2 min-[420px]:inset-x-6 min-[420px]:flex-row min-[420px]:items-end min-[420px]:justify-between">
+            <div className="flex min-w-0 items-center gap-3 min-[420px]:gap-4">
               <motion.div
-                className="p-3.5 rounded-2xl bg-foreground/20 backdrop-blur-sm"
+                className="shrink-0 rounded-2xl bg-foreground/20 p-3.5 backdrop-blur-sm"
                 style={{ boxShadow: `0 0 40px ${theme.glowColor}` }}
                 animate={
                   shouldReduceMotion
@@ -189,14 +202,15 @@ export function RingDetailSheet({
               >
                 <Icon className="w-7 h-7 text-white" aria-hidden="true" />
               </motion.div>
-              <div>
-                <h2 className="text-2xl font-bold text-white tracking-tight">
+              <div className="min-w-0">
+                <h2 className="break-words text-2xl font-bold tracking-tight text-white">
                   {t[ringType] || theme.label}
                 </h2>
-                <p className="text-sm text-white/70">{t.last7Days || "Last 7 days"}</p>
+                <p className="break-words text-sm text-white/70">{t.last7Days || "Last 7 days"}</p>
               </div>
             </div>
             <motion.div
+              className="self-end"
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, type: "spring" }}
@@ -212,7 +226,7 @@ export function RingDetailSheet({
         </div>
 
         {/* Content */}
-        <div className="px-6 py-5 space-y-6 max-h-[55dvh] overflow-y-auto bg-card pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))]">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-card px-6 py-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] space-y-6">
           {/* Premium Chart Card */}
           <motion.div
             className="bg-muted/40 rounded-2xl p-5 backdrop-blur-sm"
@@ -220,13 +234,16 @@ export function RingDetailSheet({
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.1 }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-foreground">
+            <div className="mb-4 flex flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+              <h3
+                id={weeklyTrendHeadingId}
+                className="break-words text-sm font-semibold text-foreground"
+              >
                 {t.weeklyTrend || "Weekly Trend"}
               </h3>
               <div
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold",
+                  "flex self-start items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold",
                   stats.trend > 0
                     ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                     : stats.trend < 0
@@ -247,19 +264,30 @@ export function RingDetailSheet({
                 </span>
               </div>
             </div>
-            <div className="flex justify-center">
-              <PremiumChart
-                data={weeklyData.slice(-7)}
-                color={theme.chartColor}
-                glowColor={theme.glowColor}
-                dayNames={dayNames}
-              />
+            <div
+              className="max-w-full overflow-x-auto overscroll-x-contain rounded-lg pb-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              role="region"
+              tabIndex={0}
+              aria-labelledby={weeklyTrendHeadingId}
+              aria-describedby={weeklyTrendSummaryId}
+            >
+              <span id={weeklyTrendSummaryId} className="sr-only">
+                {weeklyTrendSummary}
+              </span>
+              <div aria-hidden="true">
+                <PremiumChart
+                  data={weeklyData.slice(-7)}
+                  color={theme.chartColor}
+                  glowColor={theme.glowColor}
+                  dayNames={dayNames}
+                />
+              </div>
             </div>
           </motion.div>
 
           {/* Stats Grid */}
           <motion.div
-            className="grid grid-cols-3 gap-3"
+            className="grid grid-cols-1 min-[420px]:grid-cols-3 gap-3"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
@@ -290,7 +318,9 @@ export function RingDetailSheet({
               >
                 <span className="text-xl">{stat.emoji}</span>
                 <p className="text-lg font-bold text-foreground mt-1">{stat.value}</p>
-                <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
+                <p className="break-words text-xs font-medium text-muted-foreground">
+                  {stat.label}
+                </p>
               </motion.div>
             ))}
           </motion.div>
@@ -304,7 +334,7 @@ export function RingDetailSheet({
             <p className="text-sm font-semibold text-foreground mb-3">
               {t.dailyBreakdown || "Daily Breakdown"}
             </p>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(2.75rem,1fr))] gap-2">
               {weeklyData.slice(-7).map((day, idx) => {
                 const dayOfWeek = new Date(day.date).getDay();
                 const isToday = day.date === getToday();
@@ -328,7 +358,7 @@ export function RingDetailSheet({
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.35 + idx * 0.05 }}
                   >
-                    <span className="text-[10px] text-muted-foreground font-medium mb-1">
+                    <span className="mb-1 text-xs font-medium text-muted-foreground">
                       {dayNames[dayOfWeek]?.slice(0, 2)}
                     </span>
                     <div
@@ -339,9 +369,7 @@ export function RingDetailSheet({
                         boxShadow: intensity > 0.6 ? `0 0 8px ${theme.glowColor}` : "none",
                       }}
                     >
-                      <span className="text-[10px] font-bold text-white">
-                        {Math.round(day.value)}
-                      </span>
+                      <span className="text-xs font-bold text-white">{Math.round(day.value)}</span>
                     </div>
                   </motion.div>
                 );
@@ -364,11 +392,11 @@ export function RingDetailSheet({
               <div className={cn("p-2 rounded-xl", `bg-gradient-to-br ${theme.gradient}`)}>
                 <Zap className="w-4 h-4 text-white" aria-hidden="true" />
               </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-semibold text-foreground mb-1">
+              <div className="min-w-0 flex-1">
+                <h4 className="mb-1 break-words text-sm font-semibold text-foreground">
                   {t.recommendation || "For You"}
                 </h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="break-words text-sm leading-relaxed text-muted-foreground">
                   {getRecommendation()}
                 </p>
               </div>
@@ -378,7 +406,7 @@ export function RingDetailSheet({
           {/* CTA Button */}
           <motion.button
             className={cn(
-              "w-full py-4 px-5 rounded-2xl font-semibold",
+              "min-h-11 w-full rounded-2xl px-5 py-4 font-semibold",
               "flex items-center justify-center gap-2",
               `bg-gradient-to-r ${theme.gradient}`,
               "text-white shadow-xl motion-safe:transition-all active:scale-[0.98]"
@@ -394,15 +422,15 @@ export function RingDetailSheet({
             whileTap={zenTap.card}
             onClick={() => (onAction ? onAction() : onOpenChange(false))}
           >
-            <Sparkles className="w-5 h-5" aria-hidden="true" />
-            <span>
+            <Sparkles className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 break-words text-center">
               {ringType === "mood"
                 ? t.logMood || "Log Mood"
                 : ringType === "habits"
                   ? t.viewHabits || "View Habits"
                   : t.startFocus || "Start Focus"}
             </span>
-            <ChevronRight className="w-5 h-5 rtl:scale-x-[-1]" aria-hidden="true" />
+            <ChevronRight className="h-5 w-5 shrink-0 rtl:scale-x-[-1]" aria-hidden="true" />
           </motion.button>
         </div>
       </div>

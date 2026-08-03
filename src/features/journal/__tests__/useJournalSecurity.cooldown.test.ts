@@ -229,4 +229,28 @@ describe("useJournalSecurity cooldown persistence", () => {
     });
     expect(hook.result.current.isUnlocked).toBe(false);
   });
+
+  it("fails closed and supports retry when persisted security state cannot be read", async () => {
+    vi.mocked(db.settings.get).mockRejectedValue(new DOMException("Database unavailable", "UnknownError"));
+
+    const hook = renderHook(() => useJournalSecurity());
+
+    await waitFor(() => expect(hook.result.current.loadError).toBe(true));
+    expect(hook.result.current.loading).toBe(false);
+    expect(hook.result.current.hasPassword).toBeNull();
+    expect(hook.result.current.isLocked).toBe(true);
+    expect(hook.result.current.isUnlocked).toBe(false);
+
+    vi.mocked(db.settings.get).mockImplementation(
+      ((key: string) => Promise.resolve(settingsStore.get(key))) as never,
+    );
+    await act(async () => {
+      await hook.result.current.retryLoad();
+    });
+
+    await waitFor(() => expect(hook.result.current.loadError).toBe(false));
+    expect(hook.result.current.loading).toBe(false);
+    expect(hook.result.current.hasPassword).toBe(false);
+    expect(hook.result.current.isLocked).toBe(false);
+  });
 });

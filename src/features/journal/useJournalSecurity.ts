@@ -48,6 +48,14 @@ import {
   getJournalVaultKeyForWrite,
   JournalWriteLockedError,
 } from "./journalWriteSecurity";
+import {
+  registerAccountBoundaryRuntimeReset,
+  subscribeOriginAccountBoundaryGeneration,
+} from "@/storage/accountBoundaryRuntime";
+import {
+  JournalRemovePasswordLockedError,
+  JournalRemovePasswordPartialError,
+} from "./journalSecurityErrors";
 
 const BIOMETRIC_SETTINGS_KEY = SK.JOURNAL_BIOMETRIC;
 const SECURITY_COOLDOWN_KEY = SK.JOURNAL_PASSWORD_COOLDOWN;
@@ -60,6 +68,11 @@ type JournalUnlockCooldown = {
 const PBKDF2_ITERATIONS = 600_000;
 const _LEGACY_PBKDF2_ITERATIONS = 100_000; // For future transparent migration
 const DEFAULT_AUTO_LOCK_MS = 5 * 60 * 1000; // 5 minutes
+interface RemoveJournalPasswordOptions {
+  allowVerifiedEmptyDiary?: boolean;
+}
+
+export type JournalCloudProtectionPendingKind = "activation" | "removal" | "unknown" | null;
 export const LOCK_TIMEOUT_OPTIONS = [
   { label: "Immediately", ms: 0 },
   { label: "1 minute", ms: 60_000 },
@@ -332,12 +345,16 @@ export function useJournalSecurity() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [cooldownLoaded, setCooldownLoaded] = useState(false);
+  const [securityLoadFailed, setSecurityLoadFailed] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const [cloudProtectionPending, setCloudProtectionPending] = useState(false);
+  const [cloudProtectionPendingKind, setCloudProtectionPendingKind] =
+    useState<JournalCloudProtectionPendingKind>(null);
   const unlockedAtRef = useRef(0);
   const unlockInFlightRef = useRef(false);
   const autoLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const securityLoadGenerationRef = useRef(0);
 
   const lockNow = useCallback(() => {
     if (!isUnlocked) {
@@ -355,58 +372,119 @@ export function useJournalSecurity() {
     unlockedAtRef.current = 0;
   }, [isUnlocked]);
 
-  // Load password state + biometric
-  useEffect(() => {
-    Promise.all([
+  const resetForAccountBoundary = useCallback(() => {
+    securityLoadGenerationRef.current += 1;
+    if (autoLockTimerRef.current) {
+      clearTimeout(autoLockTimerRef.current);
+      autoLockTimerRef.current = null;
+    }
+    unlockInFlightRef.current = false;
+    unlockedAtRef.current = 0;
+    clearJournalVaultSession("sign-out");
+    setHasPassword(null);
+    setIsUnlocked(false);
+    setVaultKey(null);
+    setFailedAttempts(0);
+    setCooldownUntil(0);
+    setCooldownLoaded(false);
+    setSecurityLoadFailed(false);
+    setBiometricAvailable(false);
+    setBiometricEnabledState(false);
+    setCloudProtectionPending(false);
+    setCloudProtectionPendingKind(null);
+  }, []);
+
+  const loadSecurityState = useCallback(async () => {
+    const loadGeneration = securityLoadGenerationRef.current + 1;
+    securityLoadGenerationRef.current = loadGeneration;
+    const isCurrentLoad = () => securityLoadGenerationRef.current === loadGeneration;
+
+    setHasPassword(null);
+    setCooldownLoaded(false);
+    setSecurityLoadFailed(false);
+
+    const loadPassword = Promise.all([
       db.settings.get(JOURNAL_PASSWORD_KEY),
       db.settings.get(JOURNAL_VAULT_KEY_SETTING_KEY),
     ])
       .then(([passwordEntry, vaultEntry]) => {
+        if (!isCurrentLoad()) return;
         setHasPassword(Boolean(passwordEntry?.value || normalizeVaultKeySetting(vaultEntry?.value)));
       })
       .catch((err) => {
-        logger.warn("[Journal]", "Password check failed:", err);
-        setHasPassword(false);
+        logger.warn("[Journal]", "Password check failed", {
+          name: err instanceof Error ? err.name : "UnknownError",
+        });
+        if (isCurrentLoad()) setSecurityLoadFailed(true);
       });
 
-    db.settings
+    const loadCooldown = db.settings
       .get(SECURITY_COOLDOWN_KEY)
       .then((entry) => {
+        if (!isCurrentLoad()) return;
+        setCooldownLoaded(true);
         const cooldown = normalizeCooldownState(entry?.value);
-        if (!cooldown) return;
+        if (!cooldown) {
+          setFailedAttempts(0);
+          setCooldownUntil(0);
+          return;
+        }
         setFailedAttempts(cooldown.failedAttempts);
         setCooldownUntil(cooldown.cooldownUntil > Date.now() ? cooldown.cooldownUntil : 0);
       })
-      .catch((err) => logger.warn("[Journal]", "Password cooldown load failed:", err))
-      .finally(() => setCooldownLoaded(true));
-
-    // Check biometric availability
-    if (isNative) {
-      import("@/plugins/BiometricPlugin")
-        .then(({ default: BiometricAuth }) => {
-          BiometricAuth.isAvailable()
-            .then((result) => {
-              setBiometricAvailable(result.available);
-            })
-            .catch((err) => {
-              logger.warn("[Journal]", "Biometric check failed:", err);
-              setBiometricAvailable(false);
-            });
-        })
-        .catch((err) => {
-          logger.warn("[Journal]", "Biometric plugin load failed:", err);
-          setBiometricAvailable(false);
+      .catch((err) => {
+        logger.warn("[Journal]", "Password cooldown load failed", {
+          name: err instanceof Error ? err.name : "UnknownError",
         });
-    }
+        if (isCurrentLoad()) setSecurityLoadFailed(true);
+      });
 
-    // Load biometric setting
-    db.settings
+    const loadBiometricSetting = db.settings
       .get(BIOMETRIC_SETTINGS_KEY)
       .then((entry) => {
-        if (entry?.value) setBiometricEnabledState(true);
+        if (isCurrentLoad()) setBiometricEnabledState(Boolean(entry?.value));
       })
       .catch((err) => logger.warn("[Journal]", "Biometric setting load failed:", err));
+
+    const loadBiometricAvailability = isNative
+      ? import("@/plugins/BiometricPlugin")
+          .then(({ default: BiometricAuth }) => BiometricAuth.isAvailable())
+          .then((result) => {
+            if (isCurrentLoad()) setBiometricAvailable(result.available);
+          })
+          .catch((err) => {
+            logger.warn("[Journal]", "Biometric check failed:", err);
+            if (isCurrentLoad()) setBiometricAvailable(false);
+          })
+      : Promise.resolve();
+
+    await Promise.all([
+      loadPassword,
+      loadCooldown,
+      loadBiometricSetting,
+      loadBiometricAvailability,
+    ]);
   }, []);
+
+  useEffect(() => {
+    const unregisterRuntimeReset = registerAccountBoundaryRuntimeReset(resetForAccountBoundary);
+    const unsubscribeGeneration = subscribeOriginAccountBoundaryGeneration(() => {
+      resetForAccountBoundary();
+      void loadSecurityState();
+    });
+    return () => {
+      unsubscribeGeneration();
+      unregisterRuntimeReset();
+    };
+  }, [loadSecurityState, resetForAccountBoundary]);
+
+  // Load password state + biometric
+  useEffect(() => {
+    void loadSecurityState();
+    return () => {
+      securityLoadGenerationRef.current += 1;
+    };
+  }, [loadSecurityState]);
 
   useEffect(() => {
     let active = true;
@@ -416,7 +494,12 @@ export function useJournalSecurity() {
           getJournalSecurityMigrationIntent(),
           getJournalSecurityRemovalIntent(),
         ]);
-        if (active) setCloudProtectionPending(Boolean(intent || removalIntent));
+        if (active) {
+          setCloudProtectionPending(Boolean(intent || removalIntent));
+          setCloudProtectionPendingKind(
+            removalIntent ? "removal" : intent ? "activation" : null,
+          );
+        }
         if (intent && (intent.status === "pending" || intent.status === "enqueue-failed")) {
           await ensureJournalSecurityMigrationQueued(intent);
         }
@@ -428,7 +511,10 @@ export function useJournalSecurity() {
         }
       } catch (error) {
         logger.warn("[Journal]", "Diary protection migration remains pending:", error);
-        if (active) setCloudProtectionPending(true);
+        if (active) {
+          setCloudProtectionPending(true);
+          setCloudProtectionPendingKind("unknown");
+        }
       }
     };
     const handleMigrationUpdate = () => {
@@ -556,6 +642,7 @@ export function useJournalSecurity() {
       setJournalContentVaultKey(nextVaultKey, vaultRevision);
       issueJournalReplaceAuthorization(vaultRevision);
       setCloudProtectionPending(activation.cloudMigrationPending);
+      setCloudProtectionPendingKind(activation.cloudMigrationPending ? "activation" : null);
       setHasPassword(true);
       setIsUnlocked(true);
       setVaultKey(nextVaultKey);
@@ -641,13 +728,13 @@ export function useJournalSecurity() {
         const salt = base64ToArrayBuffer(storedPassword.salt);
 
         // Use stored iteration count (supports legacy 100K + current 600K)
-        const storedIterations = storedPassword.iterations || _LEGACY_PBKDF2_ITERATIONS;
-        const hash = await deriveKey(password, salt, storedIterations);
+        const iterationCount = storedPassword.iterations || _LEGACY_PBKDF2_ITERATIONS; // gitleaks:allow - numeric PBKDF2 metadata
+        const hash = await deriveKey(password, salt, iterationCount);
 
         if (hash === storedPassword.hash) {
           // Transparent migration: re-hash with current iterations if needed
           let migratedPassword: JournalPassword | null = null;
-          if (storedIterations < PBKDF2_ITERATIONS) {
+          if (iterationCount < PBKDF2_ITERATIONS) {
             const newSalt = crypto.getRandomValues(new Uint8Array(16));
             const newHash = await deriveKey(password, newSalt.buffer, PBKDF2_ITERATIONS);
             migratedPassword = {
@@ -730,8 +817,8 @@ export function useJournalSecurity() {
         if (!entry?.value) return false;
         const stored = entry.value as JournalPassword;
         const oldSalt = base64ToArrayBuffer(stored.salt);
-        const storedIterations = stored.iterations || _LEGACY_PBKDF2_ITERATIONS;
-        const oldHash = await deriveKey(oldPw, oldSalt, storedIterations);
+        const iterationCount = stored.iterations || _LEGACY_PBKDF2_ITERATIONS;
+        const oldHash = await deriveKey(oldPw, oldSalt, iterationCount);
         if (oldHash !== stored.hash) return false;
 
         const [vaultEntry, revisionEntry] = await Promise.all([
@@ -789,7 +876,7 @@ export function useJournalSecurity() {
 
   // Remove password (entries stay, lock removed)
   const removePassword = useCallback(
-    async () => {
+    async (options: RemoveJournalPasswordOptions = {}) => {
       const boundary = await captureJournalSecurityBoundary();
       let nativeBiometricsRemoved = false;
       try {
@@ -800,9 +887,13 @@ export function useJournalSecurity() {
           );
         } catch (error) {
           if (error instanceof JournalWriteLockedError) {
-            throw new Error("Unlock your diary before removing password protection.");
+            if (!options.allowVerifiedEmptyDiary) {
+              throw new JournalRemovePasswordLockedError();
+            }
+            activeVaultKey = null;
+          } else {
+            throw error;
           }
-          throw error;
         }
         nativeBiometricsRemoved =
           (await clearNativeJournalBiometricCredential()) === "removed";
@@ -820,6 +911,7 @@ export function useJournalSecurity() {
         setFailedAttempts(0);
         setCooldownUntil(0);
         setCloudProtectionPending(removal.cloudMigrationPending);
+        setCloudProtectionPendingKind(removal.cloudMigrationPending ? "removal" : null);
         if (removal.cloudMigrationPending) {
           try {
             await ensureJournalSecurityRemovalQueued();
@@ -840,7 +932,7 @@ export function useJournalSecurity() {
           }
           setBiometricEnabledState(false);
         }
-        throw err;
+        throw nativeBiometricsRemoved ? new JournalRemovePasswordPartialError(err) : err;
       }
     },
     [vaultKey]
@@ -954,14 +1046,16 @@ export function useJournalSecurity() {
   return {
     hasPassword,
     isUnlocked,
-    isLocked: hasPassword === true && !isUnlocked,
-    loading: hasPassword === null || !cooldownLoaded,
+    isLocked: securityLoadFailed || (hasPassword === true && !isUnlocked),
+    loading: !securityLoadFailed && (hasPassword === null || !cooldownLoaded),
+    loadError: securityLoadFailed,
     vaultKey,
     failedAttempts,
     cooldownRemaining,
     biometricAvailable,
     biometricEnabled,
     cloudProtectionPending,
+    cloudProtectionPendingKind,
     setPassword,
     changePassword,
     unlock,
@@ -970,5 +1064,6 @@ export function useJournalSecurity() {
     removePassword,
     lock,
     touch,
+    retryLoad: loadSecurityState,
   };
 }

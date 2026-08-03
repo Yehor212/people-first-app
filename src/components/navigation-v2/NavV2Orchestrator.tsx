@@ -1,4 +1,4 @@
-import { Suspense, lazy, memo, useCallback, useEffect } from "react";
+import { Suspense, lazy, memo, useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
 import { logger } from "@/lib/logger";
@@ -15,11 +15,8 @@ import { SidebarV2 } from "./SidebarV2";
 import { DrawerV2 } from "./DrawerV2";
 import { V2FocusMiniPlayer } from "./V2FocusMiniPlayer";
 import { V2MindfulMomentLayer } from "./V2MindfulMomentLayer";
-import {
-  getNavV2RouteLabel,
-  NavV2RouteFallback,
-  NavV2RoutePending,
-} from "./NavV2RouteStatus";
+import { V2ProgressionModalLayer } from "./V2ProgressionModalLayer";
+import { getNavV2RouteLabel, NavV2RouteFallback, NavV2RoutePending } from "./NavV2RouteStatus";
 import type { FocusSession, GratitudeEntry, MoodEntry } from "@/types";
 import type { V2SettingsControls } from "@/pages/nav-v2/SettingsPage";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
@@ -73,7 +70,7 @@ function scheduleNavV2RoutePreload(activePage: NavV2Page) {
   let idleId: number | null = null;
   let timerId: number | null = null;
   const pendingPages = Array.from(new Set<NavV2Page>(["settings", ...NAV_V2_PAGES])).filter(
-    (page) => page !== activePage,
+    (page) => page !== activePage
   );
 
   const requestIdle = window.requestIdleCallback;
@@ -181,6 +178,8 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   } = useNavigationV2();
   const effectiveSidebarCollapsed = sidebarCollapsed || forceCompactWebRail;
   const shouldShowDrawerTrigger = !isWebNavigation && !unknownPath && activePage !== "diary";
+  const drawerTriggerRef = useRef<HTMLButtonElement>(null);
+  const drawerWasOpenRef = useRef(drawerOpen);
   const MenuIcon = V2_SHELL_ICONS.menu;
   const pendingRouteLabel = routePendingPage ? getNavV2RouteLabel(routePendingPage, tx) : null;
 
@@ -223,6 +222,21 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
       closeDrawer();
     }
   }, [closeDrawer, drawerOpen, isWebNavigation]);
+
+  useEffect(() => {
+    const wasOpen = drawerWasOpenRef.current;
+    drawerWasOpenRef.current = drawerOpen;
+    if (!wasOpen || drawerOpen || !shouldShowDrawerTrigger) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const trigger = drawerTriggerRef.current;
+      if (!trigger || trigger.disabled) return;
+      const style = window.getComputedStyle(trigger);
+      if (style.display === "none" || style.visibility === "hidden") return;
+      trigger.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [drawerOpen, shouldShowDrawerTrigger]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -318,6 +332,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         The full drawer opens on demand and fully disappears when closed.
       */}
       <button
+        ref={drawerTriggerRef}
         type="button"
         onClick={handleOpenDrawer}
         aria-label={tx.navV2OpenMenu || "Open menu"}
@@ -326,8 +341,8 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         data-testid="nav-v2-open-drawer"
         className={cn(
           shouldShowDrawerTrigger ? "md:hidden flex" : "hidden",
-          "fixed start-3 top-[calc(var(--safe-top)+0.75rem)] z-[58]",
-          "h-11 w-11 items-center justify-center rounded-full",
+          "fixed start-[calc(var(--safe-inline-start)_+_var(--v2-phone-drawer-inset))] top-[calc(var(--safe-top)+var(--v2-phone-drawer-inset))] z-[58]",
+          "h-[var(--v2-phone-drawer-size)] w-[var(--v2-phone-drawer-size)] items-center justify-center rounded-full",
           "bg-card/62 backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]",
           "border border-border/42 shadow-[0_12px_28px_hsl(var(--foreground)/0.12)]",
           "text-foreground/90",
@@ -335,7 +350,10 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
           "motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 motion-safe:active:translate-y-[1px] active:bg-muted/60"
         )}
       >
-        <MenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />
+        <MenuIcon
+          className="pointer-events-none h-[var(--v2-phone-drawer-icon-size)] w-[var(--v2-phone-drawer-icon-size)]"
+          aria-hidden="true"
+        />
       </button>
 
       {pendingRouteLabel && <NavV2RoutePending label={pendingRouteLabel} />}
@@ -367,6 +385,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         onNavigateToPlanning={() => handlePrimaryPageChange("planning")}
       />
       <V2MindfulMomentLayer onComplete={onMindfulMomentComplete} />
+      <V2ProgressionModalLayer />
     </div>
   );
 });

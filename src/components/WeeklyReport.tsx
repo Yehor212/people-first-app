@@ -206,8 +206,9 @@ export const WeeklyReport = memo(function WeeklyReport({
         >
           {/* Close button */}
           <button
+            type="button"
             onClick={onClose}
-            className="absolute top-4 end-4 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="absolute top-4 end-4 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-full bg-background/80 p-2 backdrop-blur-sm hover:bg-muted motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label={t.close || "Close"}
           >
             <X className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
@@ -233,11 +234,11 @@ export const WeeklyReport = memo(function WeeklyReport({
                 </motion.div>
                 <h2
                   id="weekly-report-title"
-                  className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"
+                  className="mb-2 whitespace-normal break-words bg-gradient-to-r from-primary to-accent bg-clip-text text-2xl font-bold text-transparent sm:text-3xl"
                 >
                   {t.weeklyReport}
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="whitespace-normal break-words text-sm text-muted-foreground">
                   {parseLocalDate(weekStats.reportWeekStart).toLocaleDateString(language, {
                     month: "long",
                     day: "numeric",
@@ -261,15 +262,19 @@ export const WeeklyReport = memo(function WeeklyReport({
             >
               <div className="flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" aria-hidden="true" />
-                <div>
-                  <h3 className="text-lg font-bold mb-1">{motivation.title}</h3>
-                  <p className="text-sm text-muted-foreground">{motivation.message}</p>
+                <div className="min-w-0">
+                  <h3 className="mb-1 whitespace-normal break-words text-lg font-bold">
+                    {motivation.title}
+                  </h3>
+                  <p className="whitespace-normal break-words text-sm text-muted-foreground">
+                    {motivation.message}
+                  </p>
                 </div>
               </div>
             </motion.div>
 
             {/* Stats Grid - Premium cards */}
-            <div className="grid grid-cols-2 gap-3 px-6 mb-6">
+            <div className="grid grid-cols-1 gap-3 px-6 mb-6 min-[420px]:grid-cols-2">
               {/* Habits */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -284,7 +289,9 @@ export const WeeklyReport = memo(function WeeklyReport({
                 <p className="text-2xl font-bold tabular-nums">
                   {weekStats.habitsCompleted}/{weekStats.totalHabitsGoal}
                 </p>
-                <p className="text-xs text-muted-foreground">{t.habits}</p>
+                <p className="whitespace-normal break-words text-xs text-muted-foreground">
+                  {t.habits}
+                </p>
                 {weekStats.improvement !== 0 && (
                   <div
                     className={cn(
@@ -316,7 +323,9 @@ export const WeeklyReport = memo(function WeeklyReport({
                   <Brain className="w-5 h-5 text-blue-500" aria-hidden="true" />
                 </div>
                 <p className="text-2xl font-bold tabular-nums">{weekStats.focusMinutes}</p>
-                <p className="text-xs text-muted-foreground">{t.focusMinutes || t.min}</p>
+                <p className="whitespace-normal break-words text-xs text-muted-foreground">
+                  {t.focusMinutes || t.min}
+                </p>
               </motion.div>
 
               {/* Gratitude */}
@@ -331,7 +340,9 @@ export const WeeklyReport = memo(function WeeklyReport({
                   <Heart className="w-5 h-5 text-pink-500" aria-hidden="true" />
                 </div>
                 <p className="text-2xl font-bold tabular-nums">{weekStats.gratitudeCount}</p>
-                <p className="text-xs text-muted-foreground">{t.gratitude}</p>
+                <p className="whitespace-normal break-words text-xs text-muted-foreground">
+                  {t.gratitude}
+                </p>
               </motion.div>
 
               {/* Best Day */}
@@ -345,8 +356,12 @@ export const WeeklyReport = memo(function WeeklyReport({
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center mb-3">
                   <Award className="w-5 h-5 text-amber-500" aria-hidden="true" />
                 </div>
-                <p className="text-lg font-bold capitalize truncate">{weekStats.bestDay}</p>
-                <p className="text-xs text-muted-foreground">{t.bestDay}</p>
+                <p className="whitespace-normal break-words text-lg font-bold capitalize leading-snug">
+                  {weekStats.bestDay}
+                </p>
+                <p className="whitespace-normal break-words text-xs text-muted-foreground">
+                  {t.bestDay}
+                </p>
               </motion.div>
             </div>
 

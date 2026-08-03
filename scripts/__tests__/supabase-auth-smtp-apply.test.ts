@@ -136,8 +136,8 @@ describe("apply-supabase-auth-smtp", () => {
       sanitizeSupabaseErrorText: (text: string, env: Record<string, string>) => string;
     };
     const env = validEnv({
-      SUPABASE_ACCESS_TOKEN: "sbp_live_1234567890abcdef1234567890abcdef",
-      ZENFLOW_AUTH_SMTP_PASS: "re_secret_1234567890abcdef",
+      SUPABASE_ACCESS_TOKEN: "sbp_live_1234567890abcdef1234567890abcdef", // gitleaks:allow - synthetic sanitizer fixture
+      ZENFLOW_AUTH_SMTP_PASS: "re_secret_1234567890abcdef", // gitleaks:allow - synthetic sanitizer fixture
     });
     const rawBody = JSON.stringify({
       message:
@@ -201,7 +201,7 @@ describe("apply-supabase-auth-smtp", () => {
 
 function validEnv(extra: Record<string, string> = {}) {
   return {
-    SUPABASE_ACCESS_TOKEN: "sbp_test_1234567890abcdef1234567890abcdef",
+    SUPABASE_ACCESS_TOKEN: "sbp_test_1234567890abcdef1234567890abcdef", // gitleaks:allow - synthetic test token
     SUPABASE_PROJECT_REF: "bwgfslmxmueyglpumkbf",
     ZENFLOW_AUTH_SMTP_CONFIRM_PRODUCTION: "true",
     ZENFLOW_AUTH_SMTP_ADMIN_EMAIL: "no-reply@auth.zenflowapp.online",

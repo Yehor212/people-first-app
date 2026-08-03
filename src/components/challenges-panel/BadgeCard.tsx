@@ -11,19 +11,18 @@ interface BadgeCardProps {
   language: string;
   t: Record<string, string>;
   onShare: (badge: Badge) => void;
-  /** When true, applies line-clamp to description/requirement for virtualized grids */
-  virtual?: boolean;
 }
 
-export const BadgeCard = memo(function BadgeCard({ badge, language, t, onShare, virtual = false }: BadgeCardProps) {
+export const BadgeCard = memo(function BadgeCard({ badge, language, t, onShare }: BadgeCardProps) {
   return (
     <div
-      className={`relative bg-secondary rounded-2xl p-4 zen-shadow-card motion-safe:transition-all ${virtual ? 'h-full ' : ''}${
+      className={`relative h-auto min-w-0 bg-secondary rounded-2xl p-4 zen-shadow-card motion-safe:transition-all ${
         badge.unlocked ? 'hover:zen-shadow-hover' : 'opacity-50'
       }`}
     >
       {badge.unlocked && (
         <button
+          type="button"
           onClick={() => onShare(badge)}
           className="absolute top-2 end-2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-primary/10 hover:bg-primary/20 text-primary motion-safe:transition-colors"
           aria-label={t.shareButton || 'Share'}
@@ -31,7 +30,7 @@ export const BadgeCard = memo(function BadgeCard({ badge, language, t, onShare, 
           <Share2 className="w-3.5 h-3.5" />
         </button>
       )}
-      <div className="text-center">
+      <div className="min-w-0 text-center">
         <div className={`flex items-center justify-center mb-3 ${!badge.unlocked && 'grayscale'}`}>
           {badge.unlocked ? (
             <EmojiOrIcon emoji={badge.icon} iconName={badge.iconName} size="xl" />
@@ -39,10 +38,10 @@ export const BadgeCard = memo(function BadgeCard({ badge, language, t, onShare, 
             <Lock className="w-12 h-12 text-muted-foreground" />
           )}
         </div>
-        <h3 className={`font-semibold mb-1 ${badge.unlocked ? getRarityColor(badge.rarity) : 'text-muted-foreground'}`}>
+        <h3 className={`mb-1 whitespace-normal break-words font-semibold leading-snug ${badge.unlocked ? getRarityColor(badge.rarity) : 'text-muted-foreground'}`}>
           {badge.title[language]}
         </h3>
-        <p className={`text-xs text-muted-foreground mb-2${virtual ? ' line-clamp-2' : ''}`}>
+        <p className="mb-2 whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
           {badge.description[language]}
         </p>
         {badge.unlocked && badge.unlockedDate && (
@@ -51,7 +50,7 @@ export const BadgeCard = memo(function BadgeCard({ badge, language, t, onShare, 
           </p>
         )}
         {!badge.unlocked && (
-          <p className={`text-xs text-muted-foreground${virtual ? ' line-clamp-1' : ''}`}>
+          <p className="whitespace-normal break-words text-xs leading-relaxed text-muted-foreground">
             {t.requirement || 'Requirement'}: {badge.requirement}
           </p>
         )}

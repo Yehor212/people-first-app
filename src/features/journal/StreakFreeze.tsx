@@ -1,9 +1,13 @@
 import { memo, useState, useCallback, useMemo } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Shield } from "lucide-react";
 import { springs } from "@/config/animations";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
+import { getToday } from "@/lib/utils";
+import { shiftJournalDate } from "./journalDateUtils";
 
 // --- Types ---
 
@@ -18,16 +22,6 @@ const DAYS_PER_FREEZE = 7;
 const RETENTION_DAYS = 30;
 
 // --- Helpers ---
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function yesterday(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
 
 function loadFreezeData(): FreezeData {
   const raw = storageGetRaw(STORAGE_KEY, "");
@@ -45,40 +39,41 @@ function saveFreezeData(data: FreezeData): void {
   storageSetRaw(STORAGE_KEY, JSON.stringify(data));
 }
 
-function recentUsed(used: string[]): string[] {
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - RETENTION_DAYS);
-  const cutoffStr = cutoff.toISOString().slice(0, 10);
+function recentUsed(used: string[], currentDay = getToday()): string[] {
+  const cutoffStr = shiftJournalDate(currentDay, -RETENTION_DAYS);
   return used.filter((d) => d >= cutoffStr);
 }
 
 // --- Hook ---
 
-export function useStreakFreeze(streak: number, lastEntryDate: string | null) {
+export function useStreakFreeze(
+  streak: number,
+  lastEntryDate: string | null,
+  currentDay = getToday(),
+) {
   const [data, setData] = useState<FreezeData>(loadFreezeData);
 
   const earned = Math.min(Math.floor(streak / DAYS_PER_FREEZE), MAX_FREEZES);
-  const recent = useMemo(() => recentUsed(data.used), [data.used]);
+  const recent = useMemo(() => recentUsed(data.used, currentDay), [currentDay, data.used]);
   const availableFreezes = Math.max(earned - recent.length, 0);
-  const isStreakFrozen = recent.includes(today());
+  const isStreakFrozen = recent.includes(currentDay);
 
   const activateFreeze = useCallback(() => {
-    const t = today();
-    if (recent.includes(t) || availableFreezes <= 0) return;
-    const next: FreezeData = { used: [...recent, t], earned };
+    if (recent.includes(currentDay) || availableFreezes <= 0) return;
+    const next: FreezeData = { used: [...recent, currentDay], earned };
     saveFreezeData(next);
     setData(next);
-  }, [recent, availableFreezes, earned]);
+  }, [availableFreezes, currentDay, earned, recent]);
 
   const autoCheckFreeze = useCallback((): boolean => {
-    const y = yesterday();
+    const y = shiftJournalDate(currentDay, -1);
     if (lastEntryDate === y || availableFreezes <= 0) return false;
     if (recent.includes(y)) return true;
     const next: FreezeData = { used: [...recent, y], earned };
     saveFreezeData(next);
     setData(next);
     return true;
-  }, [lastEntryDate, availableFreezes, recent, earned]);
+  }, [availableFreezes, currentDay, earned, lastEntryDate, recent]);
 
   return { availableFreezes, usedFreezes: recent.length, isStreakFrozen, activateFreeze, autoCheckFreeze };
 }
@@ -94,14 +89,15 @@ export const StreakFreezeIndicator = memo(function StreakFreezeIndicator({
   availableFreezes,
   isStreakFrozen,
 }: StreakFreezeIndicatorProps) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = !useShouldAnimate();
+  const { t } = useLanguage();
 
   if (!isStreakFrozen && availableFreezes <= 0) return null;
 
   if (isStreakFrozen) {
     return (
       <motion.span
-        aria-label="Streak frozen today"
+        aria-label={t.journalStreakFrozenToday || "Streak protected today"}
         animate={reducedMotion ? undefined : { scale: [1, 1.15, 1] }}
         transition={{ ...springs.smooth, duration: 3, repeat: Infinity }}
         className="inline-flex items-center text-sm"
@@ -113,7 +109,10 @@ export const StreakFreezeIndicator = memo(function StreakFreezeIndicator({
 
   return (
     <span
-      aria-label={`Streak freeze: ${availableFreezes} available`}
+      aria-label={(t.journalStreakFreezesAvailable || "{count} protections available").replace(
+        "{count}",
+        String(availableFreezes),
+      )}
       className="inline-flex items-center gap-0.5 text-xs text-muted-foreground"
     >
       <Shield className="h-3.5 w-3.5" aria-hidden="true" />

@@ -40,6 +40,7 @@ export function createJsonResponse(
     headers: {
       ...getCorsHeaders(origin),
       "Content-Type": "application/json",
+      "Cache-Control": "no-store",
     },
   });
 }
@@ -63,7 +64,36 @@ export async function parseJsonBody<T = unknown>(
     ];
   }
   try {
-    const body = (await req.json()) as T;
+    if (!req.body) throw new Error("Missing request body");
+    const reader = req.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let totalBytes = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxSize) {
+        try {
+          await reader.cancel();
+        } catch {
+          // The 413 response remains authoritative even if stream cancellation
+          // races with the underlying request transport.
+        }
+        return [
+          null,
+          createJsonResponse(origin, 413, { error: "Request body too large" }),
+        ];
+      }
+      chunks.push(value);
+    }
+
+    const bytes = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    const body = JSON.parse(new TextDecoder().decode(bytes)) as T;
     return [body, null];
   } catch {
     return [

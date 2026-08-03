@@ -12,6 +12,8 @@ import {
 } from "@/lib/safeJson";
 import { runWithOriginExclusiveLock } from "@/lib/originExclusiveLock";
 import {
+  ACCOUNT_BOUNDARY_DATA_WRITE_LOCK,
+  AccountBoundaryChangedError,
   advanceOriginAccountBoundaryGeneration,
   assertOriginAccountBoundaryGeneration,
   captureOriginAccountBoundaryGeneration,
@@ -19,13 +21,15 @@ import {
   isOriginAccountBoundaryGenerationCurrent,
   runWithAccountBoundaryJournalWriteBarrier,
   subscribeOriginAccountBoundaryGeneration,
+  type OriginAccountBoundaryGeneration,
 } from "@/storage/accountBoundaryRuntime";
 
 // Event emitter for cross-hook data refresh
-type RefreshListener = () => Promise<void>;
+type RefreshListener = (signal: AbortSignal) => Promise<void>;
 const refreshListeners = new Set<RefreshListener>();
 const pendingDataWrites = new Set<Promise<unknown>>();
 interface DeferredDataWrite {
+  originGeneration: OriginAccountBoundaryGeneration;
   run: () => Promise<void>;
   discard: () => void;
 }
@@ -34,16 +38,98 @@ const staleAccountStateResets = new Set<() => void>();
 let authoritativeMutationQueue: Promise<void> = Promise.resolve();
 let pendingAuthoritativeMutations = 0;
 let discardDeferredWritesOnQueueDrain = false;
+let rejectRefreshFailureOnQueueDrain = false;
 // Invalidates reads that started before an account-boundary purge. A Dexie
 // read cannot be aborted once dispatched, so stale results must be rejected
 // before they can repopulate React state or the localStorage fallback.
 let authoritativeReadGeneration = 0;
 let acceptedOriginAccountBoundaryGeneration = captureOriginAccountBoundaryGeneration();
 
-const DATA_WRITE_BARRIER_LOCK = "zenflow:data-write-barrier";
+const DATA_WRITE_BARRIER_LOCK = ACCOUNT_BOUNDARY_DATA_WRITE_LOCK;
+const MAX_DATA_REFRESH_QUIESCENCE_PASSES = 8;
+/**
+ * A mounted single-table refresh gets 25s, then yields the origin-wide DATA
+ * lock before the hook's broader 30s fallback. Slow refreshes surface the
+ * existing generation-guarded Refresh recovery instead of blocking all writes.
+ */
+export const DATA_REFRESH_LISTENER_TIMEOUT_MS = 25_000;
+
+export type DataWriteBarrierPostCommitIssueKind =
+  | "deferred-write-replay"
+  | "mounted-refresh";
+
+const dataWriteBarrierPostCommitErrors = new WeakSet<object>();
+const DATA_WRITE_BARRIER_POST_COMMIT_ISSUE_KINDS = new Set<
+  DataWriteBarrierPostCommitIssueKind
+>(["deferred-write-replay", "mounted-refresh"]);
+
+/**
+ * The authoritative mutation returned successfully, but one or more bounded
+ * finalization steps did not. `committedValue` is the exact value returned by
+ * the mutation, never a reconstructed readback from a potentially newer owner.
+ */
+export class DataWriteBarrierPostCommitError<T> extends Error {
+  readonly code = "DATA_WRITE_BARRIER_POST_COMMIT";
+  readonly committedValue: T;
+  readonly capturedOriginGeneration: OriginAccountBoundaryGeneration;
+  readonly issueKinds: readonly DataWriteBarrierPostCommitIssueKind[];
+
+  constructor(
+    committedValue: T,
+    capturedOriginGeneration: OriginAccountBoundaryGeneration,
+    issueKinds: readonly DataWriteBarrierPostCommitIssueKind[],
+  ) {
+    super("The data mutation committed, but post-commit finalization was incomplete");
+    this.name = "DataWriteBarrierPostCommitError";
+    this.committedValue = committedValue;
+    this.capturedOriginGeneration = capturedOriginGeneration;
+    this.issueKinds = Object.freeze([...issueKinds]);
+    dataWriteBarrierPostCommitErrors.add(this);
+  }
+}
+
+export function isDataWriteBarrierPostCommitError<T = unknown>(
+  error: unknown,
+): error is DataWriteBarrierPostCommitError<T> {
+  if (
+    !(error instanceof Error) ||
+    !dataWriteBarrierPostCommitErrors.has(error)
+  ) {
+    return false;
+  }
+
+  const candidate = error as DataWriteBarrierPostCommitError<T>;
+  return (
+    candidate.code === "DATA_WRITE_BARRIER_POST_COMMIT" &&
+    Object.prototype.hasOwnProperty.call(candidate, "committedValue") &&
+    typeof candidate.capturedOriginGeneration === "string" &&
+    candidate.capturedOriginGeneration.length > 0 &&
+    Array.isArray(candidate.issueKinds) &&
+    candidate.issueKinds.length > 0 &&
+    candidate.issueKinds.every((kind) =>
+      DATA_WRITE_BARRIER_POST_COMMIT_ISSUE_KINDS.has(kind)
+    )
+  );
+}
 
 export function captureDataWriteBoundaryGeneration(): number {
   return authoritativeReadGeneration;
+}
+
+export function isDataWriteBarrierPending(): boolean {
+  return pendingAuthoritativeMutations > 0;
+}
+
+export type PendingDataWriteBarrierMode = "none" | "replay" | "discard";
+
+/**
+ * Distinguishes a normal authoritative mutation, behind which user actions
+ * must serialize, from an account-boundary purge that must discard actions
+ * accepted by the expiring account realm.
+ */
+export function getPendingDataWriteBarrierMode(): PendingDataWriteBarrierMode {
+  if (pendingAuthoritativeMutations === 0) return "none";
+  return discardDeferredWritesOnQueueDrain ? "discard" : "replay";
 }
 
 export function assertDataWriteBoundaryGeneration(expectedGeneration: number): void {
@@ -91,13 +177,34 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-async function flushDeferredDataWrites(): Promise<void> {
+async function drainDeferredDataWrites(): Promise<DataWriteBarrierPostCommitIssueKind[]> {
+  const issues: DataWriteBarrierPostCommitIssueKind[] = [];
   while (deferredDataWrites.length > 0) {
     const batch = deferredDataWrites.splice(0);
     for (const write of batch) {
-      await write.run();
+      if (!isOriginAccountBoundaryGenerationCurrent(write.originGeneration)) {
+        write.discard();
+        logger.warn(
+          "[useIndexedDB] Discarded a deferred write from an expired account generation",
+        );
+        continue;
+      }
+      try {
+        assertOriginAccountBoundaryGeneration(write.originGeneration);
+        await write.run();
+        assertOriginAccountBoundaryGeneration(write.originGeneration);
+      } catch (error) {
+        // A stale deferred patch cannot be replayed safely later: a newer user
+        // action or account generation may already exist. Record the incident,
+        // clear its optimistic shadow, and continue so later patches are still
+        // attempted exactly once.
+        issues.push("deferred-write-replay");
+        write.discard();
+        logger.error("[useIndexedDB] Deferred data-write replay failed:", error);
+      }
     }
   }
+  return issues;
 }
 
 function discardDeferredDataWrites(): void {
@@ -120,6 +227,16 @@ subscribeOriginAccountBoundaryGeneration((generation) => {
 interface DataWriteBarrierOptions {
   /** Account/device purges drop writes attempted while old data is being removed. */
   deferredWrites?: "replay" | "discard";
+  /**
+   * Runs under the origin-wide DATA lock, immediately before a discard purge
+   * advances the account generation. Use this for fail-closed owner checks
+   * that must inspect the expiring realm without nesting another DATA lock.
+   */
+  beforeAccountBoundaryAdvance?: () => void | Promise<void>;
+  /** Exact expiring realm required when a pre-advance owner check is supplied. */
+  expectedAccountBoundaryGeneration?: OriginAccountBoundaryGeneration;
+  /** Durable callers may log a post-commit mounted-refresh failure without lying about the commit. */
+  refreshFailure?: "reject" | "log";
 }
 
 /**
@@ -134,6 +251,26 @@ export async function runWithDataWriteBarrier<T>(
   mutation: () => Promise<T>,
   options: DataWriteBarrierOptions = {}
 ): Promise<T> {
+  const requestedOriginGeneration = acceptedOriginAccountBoundaryGeneration;
+  const hasBoundaryPrecondition =
+    options.beforeAccountBoundaryAdvance !== undefined ||
+    options.expectedAccountBoundaryGeneration !== undefined;
+  if (
+    hasBoundaryPrecondition &&
+    (options.deferredWrites !== "discard" ||
+      options.beforeAccountBoundaryAdvance === undefined ||
+      options.expectedAccountBoundaryGeneration === undefined)
+  ) {
+    throw new Error(
+      "A discard boundary precondition requires deferredWrites=discard, an expected generation, and a validator",
+    );
+  }
+  if (
+    hasBoundaryPrecondition &&
+    options.expectedAccountBoundaryGeneration !== requestedOriginGeneration
+  ) {
+    throw new AccountBoundaryChangedError();
+  }
   let releaseTurn!: () => void;
   const turnDone = new Promise<void>((resolve) => {
     releaseTurn = resolve;
@@ -141,39 +278,132 @@ export async function runWithDataWriteBarrier<T>(
   const previousTurn = authoritativeMutationQueue;
   authoritativeMutationQueue = previousTurn.catch(() => undefined).then(() => turnDone);
   pendingAuthoritativeMutations += 1;
-  if (options.deferredWrites === "discard") {
-    authoritativeReadGeneration += 1;
-    discardDeferredWritesOnQueueDrain = true;
+  if (options.refreshFailure !== "log") {
+    rejectRefreshFailureOnQueueDrain = true;
   }
-
   await previousTurn.catch(() => undefined);
 
-  let finalized = false;
-  const finalizeBarrier = async () => {
-    if (finalized) return;
-    finalized = true;
-    const isLastQueuedMutation = pendingAuthoritativeMutations === 1;
-    try {
-      if (isLastQueuedMutation) {
+  let committedOriginGeneration = requestedOriginGeneration;
+  let finalizationPromise:
+    | Promise<readonly DataWriteBarrierPostCommitIssueKind[]>
+    | undefined;
+  const finalizeBarrier = (): Promise<readonly DataWriteBarrierPostCommitIssueKind[]> => {
+    if (finalizationPromise) return finalizationPromise;
+
+    finalizationPromise = (async () => {
+      const issueKinds: DataWriteBarrierPostCommitIssueKind[] = [];
+      const isLastQueuedMutation = pendingAuthoritativeMutations === 1;
+      const shouldRejectRefreshFailure = rejectRefreshFailureOnQueueDrain;
+
+      const settleDeferredWrites = async (): Promise<void> => {
         if (discardDeferredWritesOnQueueDrain) {
           discardDeferredDataWrites();
-        } else {
-          await flushDeferredDataWrites();
+          return;
         }
-      }
-    } finally {
-      pendingAuthoritativeMutations -= 1;
-      if (pendingAuthoritativeMutations === 0) {
-        discardDeferredWritesOnQueueDrain = false;
-      }
+        issueKinds.push(...(await drainDeferredDataWrites()));
+      };
+
+      const recordMountedRefreshIssue = (): void => {
+        if (!issueKinds.includes("mounted-refresh")) {
+          issueKinds.push("mounted-refresh");
+        }
+      };
+
       try {
         if (isLastQueuedMutation) {
-          await triggerDataRefresh();
+          let refreshPass = 0;
+          while (pendingAuthoritativeMutations === 1) {
+            await settleDeferredWrites();
+            refreshPass += 1;
+
+            let refreshFailed = false;
+            try {
+              await triggerDataRefresh();
+            } catch (error) {
+              refreshFailed = true;
+              if (shouldRejectRefreshFailure) {
+                recordMountedRefreshIssue();
+              }
+              logger.error(
+                "[useIndexedDB] Mounted data refresh failed after a durable commit:",
+                error,
+              );
+            }
+
+            // A mutation queued during this refresh owns the eventual final
+            // drain and refresh. Keep its deferred patches ordered behind it.
+            if (pendingAuthoritativeMutations !== 1) break;
+            if (deferredDataWrites.length === 0) break;
+
+            if (refreshFailed || refreshPass >= MAX_DATA_REFRESH_QUIESCENCE_PASSES) {
+              // Never leave an orphan that can hang settled reads or leak an
+              // expired account action into the next barrier. Replay/discard
+              // the final batch, then report that mounted state may be stale.
+              await settleDeferredWrites();
+              if (!refreshFailed) recordMountedRefreshIssue();
+              if (refreshPass >= MAX_DATA_REFRESH_QUIESCENCE_PASSES) {
+                logger.error(
+                  "[useIndexedDB] Mounted refresh did not reach write quiescence; " +
+                    "finalized durable writes without another automatic refresh",
+                );
+              }
+              break;
+            }
+          }
         }
       } finally {
+        pendingAuthoritativeMutations -= 1;
+        if (pendingAuthoritativeMutations === 0) {
+          discardDeferredWritesOnQueueDrain = false;
+          rejectRefreshFailureOnQueueDrain = false;
+        }
         releaseTurn();
       }
+
+      return issueKinds;
+    })();
+
+    return finalizationPromise;
+  };
+
+  const runMutationAndFinalize = async (): Promise<T> => {
+    let committedValue: T;
+    try {
+      committedValue = await mutation();
+    } catch (mutationError) {
+      // Finalization still drains every accepted patch, but it must never
+      // replace the primary mutation failure or manufacture a committed value.
+      await finalizeBarrier();
+      throw mutationError;
     }
+
+    const issueKinds = await finalizeBarrier();
+    if (issueKinds.length > 0) {
+      throw new DataWriteBarrierPostCommitError(
+        committedValue,
+        committedOriginGeneration,
+        issueKinds,
+      );
+    }
+    return committedValue;
+  };
+
+  const abortBeforeDataLock = (): void => {
+    if (finalizationPromise) return;
+    const isLastQueuedMutation = pendingAuthoritativeMutations === 1;
+    if (isLastQueuedMutation) {
+      // DATA was never acquired, so replaying a write here would be unlocked.
+      // Its optimistic shadow is cleared and the barrier error remains visible
+      // to the initiating operation.
+      discardDeferredDataWrites();
+    }
+    pendingAuthoritativeMutations -= 1;
+    if (pendingAuthoritativeMutations === 0) {
+      discardDeferredWritesOnQueueDrain = false;
+      rejectRefreshFailureOnQueueDrain = false;
+    }
+    releaseTurn();
+    finalizationPromise = Promise.resolve([]);
   };
 
   try {
@@ -181,45 +411,154 @@ export async function runWithDataWriteBarrier<T>(
     // requesting DATA or the barrier would wait on a write waiting on this lock.
     await flushPendingDataWrites();
     return await runWithOriginExclusiveLock(DATA_WRITE_BARRIER_LOCK, async () => {
-      if (options.deferredWrites === "discard") {
-        acceptedOriginAccountBoundaryGeneration = advanceOriginAccountBoundaryGeneration();
-        try {
-          return await runWithAccountBoundaryJournalWriteBarrier(async () => {
-            try {
-              return await mutation();
-            } finally {
-              // Account cleanup keeps DATA and JOURNAL until mounted state has
-              // adopted the cleared/bound owner snapshot.
-              await finalizeBarrier();
-            }
-          });
-        } catch (error) {
-          await finalizeBarrier();
-          throw error;
-        }
-      }
-
-      assertOriginAccountBoundaryGeneration(acceptedOriginAccountBoundaryGeneration);
       try {
-        return await mutation();
-      } finally {
-        // Keep the origin-wide lock until deferred writes and the mounted-state
-        // refresh are complete. Otherwise another tab could purge data and a
-        // deferred old-account write could replay after that purge.
+        if (options.deferredWrites === "discard") {
+          // Every discard is an account-boundary mutation, including callers
+          // that do not need an additional owner/session precondition. A stale
+          // module realm must fail before it can advance the durable boundary
+          // or purge data adopted by a replacement tab/account lifecycle.
+          assertOriginAccountBoundaryGeneration(requestedOriginGeneration);
+          if (hasBoundaryPrecondition) {
+            const expectedGeneration = options.expectedAccountBoundaryGeneration!;
+            await options.beforeAccountBoundaryAdvance!();
+            // The validator may await session or IndexedDB reads. A second realm
+            // must not be able to expire the captured owner during that gap.
+            assertOriginAccountBoundaryGeneration(expectedGeneration);
+          }
+
+          const nextGeneration = advanceOriginAccountBoundaryGeneration();
+          acceptedOriginAccountBoundaryGeneration = nextGeneration;
+          committedOriginGeneration = nextGeneration;
+          authoritativeReadGeneration += 1;
+          discardDeferredWritesOnQueueDrain = true;
+          return await runWithAccountBoundaryJournalWriteBarrier(runMutationAndFinalize);
+        }
+
+        assertOriginAccountBoundaryGeneration(requestedOriginGeneration);
+        // Keep DATA until deferred writes and mounted state have settled. A
+        // second realm therefore cannot purge data between commit and adoption.
+        return await runMutationAndFinalize();
+      } catch (error) {
+        // Every callback-entered failure settles under DATA. In particular, a
+        // rejected owner precondition must never replay writes after unlocking.
         await finalizeBarrier();
+        throw error;
       }
     });
+  } catch (error) {
+    // A Web Locks/fallback implementation can reject before invoking its
+    // callback. Release the in-process turn without unlocked replay/refresh.
+    abortBeforeDataLock();
+    throw error;
+  }
+}
+
+/**
+ * Runs a read only after every already accepted hook write and every queued
+ * authoritative mutation has settled. The queue is rechecked after awaiting it
+ * so a mutation added while an earlier one is finishing cannot be skipped.
+ */
+export async function runWithSettledDataRead<T>(operation: () => Promise<T>): Promise<T> {
+  const requestedReadGeneration = authoritativeReadGeneration;
+  const requestedOriginGeneration = acceptedOriginAccountBoundaryGeneration;
+  const assertRequestedRealm = () => {
+    // Check the durable same-origin boundary first so callers receive the
+    // typed account-boundary error whenever both generations changed.
+    assertOriginAccountBoundaryGeneration(requestedOriginGeneration);
+    if (authoritativeReadGeneration !== requestedReadGeneration) {
+      throw new AccountBoundaryChangedError();
+    }
+  };
+
+  while (true) {
+    const observedMutationQueue = authoritativeMutationQueue;
+    await observedMutationQueue.catch(() => undefined);
+    await flushPendingDataWrites();
+    assertRequestedRealm();
+
+    if (
+      observedMutationQueue !== authoritativeMutationQueue ||
+      pendingAuthoritativeMutations > 0 ||
+      pendingDataWrites.size > 0 ||
+      deferredDataWrites.length > 0
+    ) {
+      continue;
+    }
+
+    const result = await runWithOriginExclusiveLock(DATA_WRITE_BARRIER_LOCK, async () => {
+      if (
+        observedMutationQueue !== authoritativeMutationQueue ||
+        pendingAuthoritativeMutations > 0 ||
+        pendingDataWrites.size > 0 ||
+        deferredDataWrites.length > 0
+      ) {
+        return { retry: true as const };
+      }
+
+      assertRequestedRealm();
+      const value = await operation();
+      assertRequestedRealm();
+      return { retry: false as const, value };
+    });
+
+    if (!result.retry) return result.value;
+  }
+}
+
+class DataRefreshListenerTimeoutError extends Error {
+  readonly code = "DATA_REFRESH_LISTENER_TIMEOUT";
+
+  constructor() {
+    super(
+      `A mounted data refresh exceeded ${DATA_REFRESH_LISTENER_TIMEOUT_MS}ms and was aborted`,
+    );
+    this.name = "DataRefreshListenerTimeoutError";
+  }
+}
+
+/**
+ * Grants one listener time-bounded refresh ownership. Aborting the signal is
+ * part of the contract: listeners must fence every state or migration commit
+ * after an await so late storage resolution cannot outlive this ownership.
+ */
+async function runBoundedRefreshListener(listener: RefreshListener): Promise<void> {
+  const controller = new AbortController();
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const listenerResult = Promise.resolve().then(() => listener(controller.signal));
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timeoutId = setTimeout(() => {
+      try {
+        controller.abort();
+      } finally {
+        reject(new DataRefreshListenerTimeoutError());
+      }
+    }, DATA_REFRESH_LISTENER_TIMEOUT_MS);
+  });
+
+  try {
+    await Promise.race([listenerResult, deadline]);
   } finally {
-    // A Web Locks implementation can reject before invoking its callback.
-    // Always release the in-process queue and generation state in that case.
-    await finalizeBarrier();
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
   }
 }
 
 export const triggerDataRefresh = async (): Promise<void> => {
   logger.log("[useIndexedDB] Triggering data refresh for all hooks");
-  await Promise.all([...refreshListeners].map((listener) => listener()));
+  const results = await Promise.allSettled(
+    [...refreshListeners].map((listener) => runBoundedRefreshListener(listener)),
+  );
+  const failure = results.find(
+    (result): result is PromiseRejectedResult => result.status === "rejected",
+  );
+  if (failure) throw failure.reason;
 };
+
+export function subscribeDataRefresh(listener: RefreshListener): () => void {
+  refreshListeners.add(listener);
+  return () => {
+    refreshListeners.delete(listener);
+  };
+}
 
 // Timeout for IndexedDB operations (30s — exportBackup reads 7 tables in one
 // Dexie transaction which can take 10-20s on Android, blocking other hooks)
@@ -387,6 +726,14 @@ interface UseIndexedDBOptions<T> {
   objectSchema?: z.ZodType<any>;
   /** Filters migrated localStorage fallback rows, e.g. to remove tombstoned entities. */
   fallbackArrayFilter?: (items: unknown[]) => Promise<unknown[]> | unknown[];
+  /** Normalizes raw stored bytes before defaults are merged and schema validation runs. */
+  migrateStoredValue?: (value: unknown) => unknown;
+  /** Supplies a coherent recovery value when the primary record is unavailable. */
+  readFallbackValue?: () => unknown;
+  /** Persists an explicit write to a domain-specific recovery envelope. */
+  writeFallbackValue?: (value: T) => boolean;
+  /** Domain mirrors can persist once after validating a multi-record snapshot. */
+  persistFallbackOnRead?: boolean;
 }
 
 export function useIndexedDB<T>({
@@ -397,6 +744,10 @@ export function useIndexedDB<T>({
   itemSchema,
   objectSchema,
   fallbackArrayFilter,
+  migrateStoredValue,
+  readFallbackValue,
+  writeFallbackValue,
+  persistFallbackOnRead = true,
 }: UseIndexedDBOptions<T>): [T, (value: T | ((prev: T) => T)) => void, boolean] {
   const [data, setData] = useState<T>(initialValue);
   const [isLoading, setIsLoading] = useState(true);
@@ -420,6 +771,26 @@ export function useIndexedDB<T>({
   const itemSchemaRef = useRef(itemSchema);
   const objectSchemaRef = useRef(objectSchema);
   const fallbackArrayFilterRef = useRef(fallbackArrayFilter);
+  const migrateStoredValueRef = useRef(migrateStoredValue);
+  const readFallbackValueRef = useRef(readFallbackValue);
+  const writeFallbackValueRef = useRef(writeFallbackValue);
+  const persistFallbackOnReadRef = useRef(persistFallbackOnRead);
+
+  readFallbackValueRef.current = readFallbackValue;
+  writeFallbackValueRef.current = writeFallbackValue;
+  persistFallbackOnReadRef.current = persistFallbackOnRead;
+
+  const persistFallbackValue = useCallback(
+    (value: T): boolean =>
+      writeFallbackValueRef.current
+        ? writeFallbackValueRef.current(value)
+        : safeLocalStorageSet(localStorageKey, value),
+    [localStorageKey],
+  );
+
+  const prepareStoredValue = useCallback((raw: unknown): unknown => {
+    return migrateStoredValueRef.current ? migrateStoredValueRef.current(raw) : raw;
+  }, []);
 
   // Apply schema validation if provided (otherwise passthrough)
   const applyValidation = useCallback(
@@ -437,12 +808,14 @@ export function useIndexedDB<T>({
 
   // Load data function (used both on init and refresh)
   const loadData = useCallback(
-    async (isInitialLoad = false) => {
+    async (isInitialLoad = false, refreshSignal?: AbortSignal) => {
+      if (refreshSignal?.aborted) return;
       const defaults = initialValueRef.current;
       const loadSequence = loadSequenceRef.current + 1;
       loadSequenceRef.current = loadSequence;
       const readGeneration = authoritativeReadGeneration;
       const canCommitRead = () =>
+        !refreshSignal?.aborted &&
         isMountedRef.current &&
         loadSequenceRef.current === loadSequence &&
         authoritativeReadGeneration === readGeneration &&
@@ -450,8 +823,13 @@ export function useIndexedDB<T>({
       const commitRead = (nextValue: T, persistFallback = true): boolean => {
         if (!canCommitRead()) return false;
         setData(nextValue);
-        const serializedFallback = persistFallback ? safeJsonStringify(nextValue) : null;
-        if (persistFallback && !safeLocalStorageSet(localStorageKey, nextValue)) {
+        const shouldPersistFallback =
+          persistFallback && persistFallbackOnReadRef.current;
+        const serializedFallback =
+          shouldPersistFallback && !writeFallbackValueRef.current
+            ? safeJsonStringify(nextValue)
+            : null;
+        if (shouldPersistFallback && !persistFallbackValue(nextValue)) {
           logger.warn("localStorage backup failed while refreshing data");
         }
         if (!canCommitRead()) {
@@ -483,29 +861,54 @@ export function useIndexedDB<T>({
             undefined
           );
           if (record?.value !== undefined) {
+            const storedValue = prepareStoredValue(record.value);
             // Only merge objects, not primitives (strings, booleans, numbers) or arrays
             // Spreading primitives or arrays creates objects with numeric keys which breaks React rendering
-            const isPrimitive = typeof record.value !== "object" || record.value === null;
-            const isArray = Array.isArray(record.value);
+            const isPrimitive = typeof storedValue !== "object" || storedValue === null;
+            const isArray = Array.isArray(storedValue);
             if (isPrimitive || isArray) {
               // Don't merge primitives or arrays - just use the value directly
-              const validated = applyValidation(record.value);
+              const validated = applyValidation(storedValue);
               const nextValue = validated !== null ? validated : defaults;
               commitRead(nextValue);
             } else {
               // Merge with initialValue to ensure all required fields exist (handles schema migrations)
-              const merged = { ...defaults, ...record.value };
+              const merged = { ...defaults, ...storedValue };
               const validated = applyValidation(merged);
               const nextValue = validated !== null ? validated : defaults;
-              commitRead(nextValue);
+              const committed = commitRead(nextValue);
+              if (
+                committed &&
+                migrateStoredValueRef.current &&
+                !structurallyEqual(record.value, merged)
+              ) {
+                void trackPendingDataWrite(
+                  runWithAcceptedOriginDataWrite(() =>
+                    table.put({ key: localStorageKey, value: merged })
+                  ).catch((error) => {
+                    logger.warn("[useIndexedDB] Stored-value migration put failed:", error);
+                  })
+                );
+              }
             }
           } else if (isInitialLoad) {
             // Try localStorage fallback only on initial load
             try {
+              if (readFallbackValueRef.current) {
+                const parsed = prepareStoredValue(readFallbackValueRef.current());
+                const isPrimitive = typeof parsed !== "object" || parsed === null;
+                const isArray = Array.isArray(parsed);
+                const candidate = isPrimitive || isArray
+                  ? parsed
+                  : { ...defaults, ...parsed };
+                const validated = applyValidation(candidate);
+                commitRead(validated !== null ? validated : defaults, false);
+                return;
+              }
               const stored = storageGetRaw(localStorageKey, "");
               if (stored) {
                 try {
-                  const parsed = sanitizeStoredValue(JSON.parse(stored));
+                  const parsed = prepareStoredValue(sanitizeStoredValue(JSON.parse(stored)));
                   // Only merge objects, not primitives or arrays
                   const isPrimitive = typeof parsed !== "object" || parsed === null;
                   const isArray = Array.isArray(parsed);
@@ -564,7 +967,7 @@ export function useIndexedDB<T>({
               const stored = storageGetRaw(localStorageKey, "");
               if (stored) {
                 try {
-                  const parsed = sanitizeStoredValue(JSON.parse(stored));
+                  const parsed = prepareStoredValue(sanitizeStoredValue(JSON.parse(stored)));
                   if (Array.isArray(parsed) && parsed.length > 0) {
                     const filtered = fallbackArrayFilterRef.current
                       ? await fallbackArrayFilterRef.current(parsed)
@@ -575,10 +978,12 @@ export function useIndexedDB<T>({
                     // Migrate to IndexedDB (don't wait, fire and forget)
                     if (Array.isArray(filtered) && filtered.length > 0) {
                       void trackPendingDataWrite(
-                        runWithAcceptedOriginDataWrite(() => table.bulkPut(filtered)).catch((err) => {
-                          // Log migration errors
-                          logger.warn("[useIndexedDB] Migration bulkPut failed:", err);
-                        })
+                        runWithAcceptedOriginDataWrite(() => table.bulkPut(filtered)).catch(
+                          (err) => {
+                            // Log migration errors
+                            logger.warn("[useIndexedDB] Migration bulkPut failed:", err);
+                          }
+                        )
                       );
                     }
                     if (canCommitRead()) {
@@ -608,13 +1013,25 @@ export function useIndexedDB<T>({
           }
         }
       } catch (error) {
+        if (refreshSignal?.aborted) return;
         logger.error("Error loading from IndexedDB:", error);
         // Fallback to localStorage
         try {
+          if (readFallbackValueRef.current) {
+            const parsed = prepareStoredValue(readFallbackValueRef.current());
+            const isPrimitive = typeof parsed !== "object" || parsed === null;
+            const isArray = Array.isArray(parsed);
+            const candidate = isPrimitive || isArray
+              ? parsed
+              : { ...defaults, ...parsed };
+            const validated = applyValidation(candidate);
+            commitRead(validated !== null ? validated : defaults, false);
+            return;
+          }
           const stored = storageGetRaw(localStorageKey, "");
           if (stored) {
             try {
-              const parsed = sanitizeStoredValue(JSON.parse(stored));
+              const parsed = prepareStoredValue(sanitizeStoredValue(JSON.parse(stored)));
               // Only merge objects, not primitives or arrays
               const isPrimitive = typeof parsed !== "object" || parsed === null;
               const isArray = Array.isArray(parsed);
@@ -643,7 +1060,14 @@ export function useIndexedDB<T>({
         }
       }
     },
-    [table, localStorageKey, idField, applyValidation]
+    [
+      table,
+      localStorageKey,
+      idField,
+      applyValidation,
+      prepareStoredValue,
+      persistFallbackValue,
+    ]
   );
 
   // Initial load
@@ -663,23 +1087,22 @@ export function useIndexedDB<T>({
 
   // Subscribe to refresh events
   useEffect(() => {
-    const handleRefresh = async () => {
-      if (!isMountedRef.current) return;
+    const handleRefresh = async (signal: AbortSignal) => {
+      if (signal.aborted || !isMountedRef.current) return;
 
       let observedWrite: Promise<void>;
       do {
+        if (signal.aborted) return;
         observedWrite = pendingWriteRef.current;
         await observedWrite;
+        if (signal.aborted) return;
       } while (observedWrite !== pendingWriteRef.current);
 
-      if (isMountedRef.current) {
-        await loadData(false);
+      if (!signal.aborted && isMountedRef.current) {
+        await loadData(false, signal);
       }
     };
-    refreshListeners.add(handleRefresh);
-    return () => {
-      refreshListeners.delete(handleRefresh);
-    };
+    return subscribeDataRefresh(handleRefresh);
   }, [loadData]);
 
   const resetStaleAccountState = useCallback(() => {
@@ -731,6 +1154,7 @@ export function useIndexedDB<T>({
               : [];
 
             deferredDataWrites.push({
+              originGeneration: acceptedOriginAccountBoundaryGeneration,
               run: async () => {
                 try {
                   let replayValue: unknown = newValue;
@@ -748,7 +1172,7 @@ export function useIndexedDB<T>({
                   }
 
                   await table.put({ key: localStorageKey, value: replayValue });
-                  if (!safeLocalStorageSet(localStorageKey, replayValue)) {
+                  if (!persistFallbackValue(replayValue as T)) {
                     logger.warn("localStorage backup failed");
                   }
                 } catch (error) {
@@ -782,6 +1206,7 @@ export function useIndexedDB<T>({
               .map(([, item]) => item);
 
             deferredDataWrites.push({
+              originGeneration: acceptedOriginAccountBoundaryGeneration,
               run: async () => {
                 try {
                   await table.db.transaction("rw", table, async () => {
@@ -789,7 +1214,7 @@ export function useIndexedDB<T>({
                     if (changedItems.length > 0) await table.bulkPut(changedItems);
                   });
                   const authoritativeValue = await table.toArray();
-                  if (!safeLocalStorageSet(localStorageKey, authoritativeValue)) {
+                  if (!persistFallbackValue(authoritativeValue as T)) {
                     logger.warn("localStorage backup failed");
                   }
                 } catch (error) {
@@ -812,25 +1237,22 @@ export function useIndexedDB<T>({
         const writeOperation = async () => {
           const writeGeneration = acceptedOriginAccountBoundaryGeneration;
           try {
-            await runWithAcceptedOriginDataWrite(
-              async () => {
-                if (idField === "key") {
-                  await table.put({ key: localStorageKey, value: newValue });
-                } else if (Array.isArray(newValue)) {
-                  await table.db.transaction("rw", table, async () => {
-                    await table.clear();
-                    if (newValue.length > 0) {
-                      await table.bulkPut(newValue);
-                    }
-                  });
-                }
-                // Also save to localStorage as backup while DATA is still held.
-                if (!safeLocalStorageSet(localStorageKey, newValue)) {
-                  logger.warn("localStorage backup failed");
-                }
-              },
-              writeGeneration
-            );
+            await runWithAcceptedOriginDataWrite(async () => {
+              if (idField === "key") {
+                await table.put({ key: localStorageKey, value: newValue });
+              } else if (Array.isArray(newValue)) {
+                await table.db.transaction("rw", table, async () => {
+                  await table.clear();
+                  if (newValue.length > 0) {
+                    await table.bulkPut(newValue);
+                  }
+                });
+              }
+              // Also save to localStorage as backup while DATA is still held.
+              if (!persistFallbackValue(newValue)) {
+                logger.warn("localStorage backup failed");
+              }
+            }, writeGeneration);
           } catch (error) {
             if (isAccountBoundaryChangedError(error)) {
               logger.warn("[useIndexedDB] Discarded a stale write after an account change");
@@ -842,23 +1264,20 @@ export function useIndexedDB<T>({
               // The IndexedDB lock has been released. Reacquire DATA and assert
               // the exact generation accepted by this write before fallback;
               // a suspended old tab must not repopulate localStorage after purge.
-              await runWithAcceptedOriginDataWrite(
-                async () => {
-                  if (safeLocalStorageSet(localStorageKey, newValue)) return;
-                  logger.warn("localStorage fallback also failed");
-                  window.dispatchEvent(
-                    new CustomEvent("zenflow:storage-error", {
-                      detail: {
-                        type: "write_failed",
-                        message:
-                          "Unable to save data. You may be in Private Mode or storage is full.",
-                        table,
-                      },
-                    })
-                  );
-                },
-                writeGeneration
-              );
+              await runWithAcceptedOriginDataWrite(async () => {
+                if (persistFallbackValue(newValue)) return;
+                logger.warn("localStorage fallback also failed");
+                window.dispatchEvent(
+                  new CustomEvent("zenflow:storage-error", {
+                    detail: {
+                      type: "write_failed",
+                      message:
+                        "Unable to save data. You may be in Private Mode or storage is full.",
+                      table,
+                    },
+                  })
+                );
+              }, writeGeneration);
             } catch (fallbackError) {
               if (isAccountBoundaryChangedError(fallbackError)) {
                 logger.warn(
@@ -890,7 +1309,7 @@ export function useIndexedDB<T>({
         return newValue;
       });
     },
-    [table, localStorageKey, idField, resetStaleAccountState]
+    [table, localStorageKey, idField, persistFallbackValue, resetStaleAccountState]
   );
 
   return [data, setValue, isLoading];

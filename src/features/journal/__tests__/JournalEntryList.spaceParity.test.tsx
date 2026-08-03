@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type React from "react";
+import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { JournalEntry, JournalSpace, JournalSpaceCapture } from "../types";
 
@@ -123,7 +123,7 @@ vi.mock("framer-motion", () => ({
       void layout;
       return <article {...rest}>{children}</article>;
     },
-    div: ({ children, initial, animate, exit, transition, variants, custom, layout, ...rest }: any) => {
+    div: React.forwardRef<HTMLDivElement, any>(({ children, initial, animate, exit, transition, variants, custom, layout, ...rest }, ref) => {
       void initial;
       void animate;
       void exit;
@@ -131,8 +131,8 @@ vi.mock("framer-motion", () => ({
       void variants;
       void custom;
       void layout;
-      return <div {...rest}>{children}</div>;
-    },
+      return <div ref={ref} {...rest}>{children}</div>;
+    }),
     button: ({ children, initial, animate, exit, transition, variants, custom, layout, ...rest }: any) => {
       void initial;
       void animate;
@@ -276,6 +276,11 @@ describe("JournalEntryList space parity", () => {
       "data-visual-role",
       "focus",
     );
+    const railName = within(
+      screen.getByTestId("journal-space-rail-item-space-projects"),
+    ).getByText("Projects");
+    expect(railName).not.toHaveClass("truncate");
+    expect(railName).toHaveClass("whitespace-normal", "break-words");
 
     fireEvent.click(screen.getByTestId("journal-space-rail-item-space-projects"));
 
@@ -286,6 +291,12 @@ describe("JournalEntryList space parity", () => {
     expect(screen.getByTestId("journal-space-capture-card-capture-project-a")).toBeInTheDocument();
     expect(screen.getByTestId("journal-space-capture-card-capture-project-b")).toBeInTheDocument();
     expect(screen.getByTestId("journal-entry-card-entry-current")).toBeInTheDocument();
+    expect(screen.getByTestId("journal-space-mode-title")).not.toHaveClass("truncate");
+    expect(screen.getByTestId("journal-space-mode-title")).toHaveClass(
+      "whitespace-normal",
+      "break-words",
+    );
+    expect(screen.getByText("Long-running project space")).not.toHaveClass("line-clamp-2");
   });
 
   it("opens entry actions for a space entry that is outside the selected day", async () => {
@@ -724,6 +735,92 @@ describe("JournalEntryList space parity", () => {
     expect(sheet).not.toHaveTextContent("Private details should stay out of routing metadata.");
     expect(within(sheet).queryByRole("button", { name: "Open" })).toBeNull();
     expect(within(sheet).queryByTestId("journal-entry-actions-space-list")).toBeNull();
+  });
+
+  it("moves focus into entry actions and restores the invoking control on Escape", async () => {
+    render(
+      <JournalEntryList
+        groupedEntries={[{ label: "today", key: "2026-05-01", entries: [currentDayEntry] }]}
+        allEntries={[currentDayEntry]}
+        onOpenEntry={vi.fn()}
+        onDeleteEntry={vi.fn()}
+        onNewEntry={vi.fn()}
+        totalCount={1}
+        selectedDate="2026-05-01"
+        selectedDateOnly
+      />,
+    );
+
+    const trigger = await screen.findByTestId(`journal-entry-actions-${currentDayEntry.id}`);
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const sheet = await screen.findByTestId("journal-entry-actions-sheet");
+    expect(sheet).toHaveClass("overflow-y-auto");
+    expect(sheet).toHaveClass(
+      "start-[max(0.75rem,var(--safe-inline-start))]",
+      "end-[max(0.75rem,var(--safe-inline-end))]",
+      "bottom-[calc(var(--safe-bottom)+0.75rem)]",
+      "max-h-[calc(var(--app-viewport-height)-var(--safe-top)-var(--safe-bottom)-1.5rem)]",
+    );
+    expect(sheet.className).not.toContain("100dvh");
+    expect(sheet.className).not.toContain("env(safe-area-inset");
+    const actionTitle = within(sheet).getByText("Current day project note");
+    expect(actionTitle).not.toHaveClass("truncate");
+    expect(actionTitle).toHaveClass("whitespace-normal", "break-words");
+    const closeButton = within(sheet).getByRole("button", { name: "Close" });
+    await waitFor(() => expect(closeButton).toHaveFocus());
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByTestId("journal-entry-actions-sheet")).toBeNull());
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it("keeps focus inside Spaces when Escape closes the auto-focused folder creator", async () => {
+    render(
+      <JournalEntryList
+        groupedEntries={[]}
+        allEntries={[]}
+        onOpenEntry={vi.fn()}
+        onDeleteEntry={vi.fn()}
+        onNewEntry={vi.fn()}
+        totalCount={0}
+        selectedDate="2026-05-01"
+        selectedDateOnly
+      />,
+    );
+
+    const trigger = await screen.findByTestId("journal-space-switcher");
+    trigger.focus();
+    fireEvent.click(trigger);
+    const sheet = await screen.findByTestId("journal-spaces-sheet");
+    expect(sheet).toHaveClass(
+      "h-[var(--app-viewport-height)]",
+      "ps-[max(1rem,var(--safe-inline-start))]",
+      "pe-[max(1rem,var(--safe-inline-end))]",
+      "pt-[calc(var(--safe-top)+1rem)]",
+      "pb-[calc(var(--safe-bottom)+1rem)]",
+    );
+    expect(sheet.className).not.toContain("100dvh");
+    expect(sheet.className).not.toContain("env(safe-area-inset");
+    const nameInput = await screen.findByTestId("journal-space-name-input");
+    expect(nameInput.parentElement).toHaveClass("flex-col", "min-[420px]:flex-row");
+    expect(screen.getByTestId("journal-space-create-submit")).toHaveClass(
+      "w-full",
+      "whitespace-normal",
+      "break-words",
+      "min-[420px]:w-auto",
+    );
+    await waitFor(() => expect(nameInput).toHaveFocus());
+
+    fireEvent.keyDown(nameInput, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByTestId("journal-space-name-input")).toBeNull());
+    expect(sheet).toContainElement(document.activeElement as HTMLElement);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByTestId("journal-spaces-sheet")).toBeNull());
+    await waitFor(() => expect(screen.getByTestId("journal-space-switcher")).toHaveFocus());
   });
 
   it("hides private entry titles inside the actions sheet", async () => {

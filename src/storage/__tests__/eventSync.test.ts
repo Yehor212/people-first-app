@@ -18,10 +18,23 @@ const mocks = vi.hoisted(() => ({
   journalTableGet: vi.fn(),
   journalTablePut: vi.fn(),
   journalTableDelete: vi.fn(),
+  journalPhotosWhere: vi.fn(),
+  journalPhotosEquals: vi.fn(),
+  journalPhotosDelete: vi.fn(),
+  journalPhotosBulkDelete: vi.fn(),
+  journalAudioWhere: vi.fn(),
+  journalAudioEquals: vi.fn(),
+  journalAudioDelete: vi.fn(),
+  journalAudioGet: vi.fn(),
+  journalAudioBulkPut: vi.fn(),
+  journalAudioBulkDelete: vi.fn(),
+  journalAudioMetadataIn: vi.fn(),
   runJournalSecurityWriteLock: vi.fn(),
+  triggerDataRefresh: vi.fn(),
   broadcastChange: vi.fn(),
   enqueue: vi.fn(),
   storageRemove: vi.fn(),
+  localOwnerUserId: "user-1",
   supabase: null as { from: ReturnType<typeof vi.fn> } | null,
 }));
 
@@ -41,7 +54,7 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 vi.mock("@/hooks/useIndexedDB", () => ({
-  triggerDataRefresh: vi.fn(),
+  triggerDataRefresh: mocks.triggerDataRefresh,
 }));
 
 vi.mock("@/lib/syncBroadcast", () => ({
@@ -54,7 +67,8 @@ vi.mock("@/lib/offlineQueue", () => ({
   },
 }));
 
-vi.mock("@/lib/safeJson", () => ({
+vi.mock("@/lib/safeJson", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/safeJson")>()),
   storageRemove: mocks.storageRemove,
 }));
 
@@ -63,6 +77,7 @@ vi.mock("@/features/journal/journalSecurityWriteLock", () => ({
 }));
 
 vi.mock("@/storage/db", () => ({
+  getLocalDataOwnerId: vi.fn(async () => mocks.localOwnerUserId),
   db: {
     settings: {
       get: mocks.settingsGet,
@@ -73,6 +88,16 @@ vi.mock("@/storage/db", () => ({
       get: mocks.habitTableGet,
       put: mocks.habitTablePut,
       delete: mocks.habitTableDelete,
+    },
+    journalPhotos: {
+      where: mocks.journalPhotosWhere,
+      bulkDelete: mocks.journalPhotosBulkDelete,
+    },
+    journalAudio: {
+      where: mocks.journalAudioWhere,
+      get: mocks.journalAudioGet,
+      bulkPut: mocks.journalAudioBulkPut,
+      bulkDelete: mocks.journalAudioBulkDelete,
     },
     table: mocks.table,
     transaction: mocks.transaction,
@@ -88,6 +113,7 @@ import {
   pullAndApplyDeltasFromLastSeq,
   writeEventAndBroadcast,
 } from "@/storage/eventSync";
+import { markPendingLocalBackupAccountClaim } from "@/storage/accountBoundaryRuntime";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -114,7 +140,10 @@ function createCountersQuery() {
 
 describe("eventSync auth guards", () => {
   beforeEach(() => {
+    localStorage.clear();
     vi.clearAllMocks();
+    mocks.storageRemove.mockReturnValue(true);
+    mocks.localOwnerUserId = "user-1";
     mocks.getCurrentUserId.mockResolvedValue("user-1");
     mocks.limit.mockResolvedValue({ data: [], error: null });
     mocks.single.mockResolvedValue({ data: { last_seq: 42 }, error: null });
@@ -149,6 +178,17 @@ describe("eventSync auth guards", () => {
     mocks.journalTableGet.mockResolvedValue(undefined);
     mocks.journalTablePut.mockResolvedValue(undefined);
     mocks.journalTableDelete.mockResolvedValue(undefined);
+    mocks.journalPhotosWhere.mockReturnValue({ equals: mocks.journalPhotosEquals });
+    mocks.journalPhotosEquals.mockReturnValue({ delete: mocks.journalPhotosDelete });
+    mocks.journalPhotosDelete.mockResolvedValue(0);
+    mocks.journalPhotosBulkDelete.mockResolvedValue(undefined);
+    mocks.journalAudioWhere.mockReturnValue({ equals: mocks.journalAudioEquals });
+    mocks.journalAudioEquals.mockReturnValue({ delete: mocks.journalAudioDelete });
+    mocks.journalAudioDelete.mockResolvedValue(0);
+    mocks.journalAudioGet.mockResolvedValue(undefined);
+    mocks.journalAudioBulkPut.mockResolvedValue(undefined);
+    mocks.journalAudioBulkDelete.mockResolvedValue(undefined);
+    mocks.journalAudioMetadataIn.mockResolvedValue({ data: [], error: null });
     mocks.runJournalSecurityWriteLock.mockImplementation(
       async (operation: () => Promise<unknown>) => operation()
     );
@@ -187,6 +227,15 @@ describe("eventSync auth guards", () => {
       if (table === "sync_seq_counters") {
         return createCountersQuery();
       }
+      if (table === "journal_audio") {
+        return {
+          select: () => ({
+            eq: () => ({
+              in: mocks.journalAudioMetadataIn,
+            }),
+          }),
+        };
+      }
       throw new Error(`Unexpected table: ${table}`);
     });
     mocks.supabase = { from: mocks.from };
@@ -200,6 +249,14 @@ describe("eventSync auth guards", () => {
     expect(mocks.from).not.toHaveBeenCalled();
   });
 
+  it("does not query the event log while an imported backup awaits an account choice", async () => {
+    expect(markPendingLocalBackupAccountClaim()).toBe(true);
+
+    await expect(fetchDelta(10)).rejects.toThrow(/account boundary/i);
+
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
   it("returns zero max seq without querying supabase when the user is signed out", async () => {
     mocks.getCurrentUserId.mockResolvedValue(null);
     const result = await getServerMaxSeq();
@@ -208,10 +265,16 @@ describe("eventSync auth guards", () => {
     expect(mocks.from).not.toHaveBeenCalled();
   });
 
+  it("does not read server sequence data when the local realm belongs to another account", async () => {
+    mocks.localOwnerUserId = "user-2";
+
+    await expect(getServerMaxSeq("user-1")).rejects.toThrow(/account boundary/i);
+
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
   it("discards a max-seq response when the authenticated owner changes", async () => {
-    mocks.getCurrentUserId
-      .mockResolvedValueOnce("account-a")
-      .mockResolvedValue("account-b");
+    mocks.getCurrentUserId.mockResolvedValueOnce("account-a").mockResolvedValue("account-b");
 
     await expect(getServerMaxSeq("account-a")).rejects.toThrow(/account boundary/i);
   });
@@ -245,9 +308,7 @@ describe("eventSync auth guards", () => {
   });
 
   it("revalidates the expected owner inside the apply transaction before writing", async () => {
-    mocks.getCurrentUserId
-      .mockResolvedValueOnce("account-a")
-      .mockResolvedValue("account-b");
+    mocks.getCurrentUserId.mockResolvedValueOnce("account-a").mockResolvedValue("account-b");
     const remoteHabit = { id: "habit-owner-race", title: "Account A habit" };
 
     await expect(
@@ -265,8 +326,8 @@ describe("eventSync auth guards", () => {
           },
         ],
         "current-device",
-        { expectedOwnerUserId: "account-a" },
-      ),
+        { expectedOwnerUserId: "account-a" }
+      )
     ).rejects.toThrow(/account boundary/i);
 
     expect(mocks.habitTablePut).not.toHaveBeenCalled();
@@ -303,8 +364,8 @@ describe("eventSync auth guards", () => {
         {
           expectedOwnerUserId: "user-1",
           assertOwnerCurrent,
-        },
-      ),
+        }
+      )
     ).rejects.toThrow("Delta generation changed");
 
     expect(assertOwnerCurrent).toHaveBeenCalledTimes(2);
@@ -568,16 +629,18 @@ describe("eventSync auth guards", () => {
     };
 
     const applied = await applyDelta(
-      [{
-        id: "event-journal-visual-1",
-        seq: 19,
-        entity_type: "journal",
-        entity_id: payload.id,
-        op: "upsert",
-        payload,
-        device_id: "remote-device",
-        created_at: "2026-07-13T10:00:00.000Z",
-      }],
+      [
+        {
+          id: "event-journal-visual-1",
+          seq: 19,
+          entity_type: "journal",
+          entity_id: payload.id,
+          op: "upsert",
+          payload,
+          device_id: "remote-device",
+          created_at: "2026-07-13T10:00:00.000Z",
+        },
+      ],
       "current-device"
     );
 
@@ -594,6 +657,140 @@ describe("eventSync auth guards", () => {
     });
   });
 
+  it("cascades remote journal deletion through local photo and audio rows before refresh", async () => {
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-journal-delete",
+          seq: 20,
+          entity_type: "journal",
+          entity_id: "journal-delete",
+          op: "delete",
+          payload: null,
+          device_id: "remote-device",
+          created_at: "2026-07-13T11:00:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.journalTableDelete).toHaveBeenCalledWith("journal-delete");
+    expect(mocks.journalPhotosWhere).toHaveBeenCalledWith("entryId");
+    expect(mocks.journalPhotosEquals).toHaveBeenCalledWith("journal-delete");
+    expect(mocks.journalPhotosDelete).toHaveBeenCalledTimes(1);
+    expect(mocks.journalAudioWhere).toHaveBeenCalledWith("entryId");
+    expect(mocks.journalAudioEquals).toHaveBeenCalledWith("journal-delete");
+    expect(mocks.journalAudioDelete).toHaveBeenCalledTimes(1);
+    expect(mocks.triggerDataRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("removes local media omitted by a newer remote journal parent before refresh", async () => {
+    mocks.journalTableGet.mockResolvedValue({
+      id: "journal-media-parent",
+      date: "2026-07-13",
+      title: "Before",
+      content: "old",
+      stickers: [],
+      tags: [],
+      photoIds: ["photo-kept", "photo-removed"],
+      audioIds: ["audio-removed"],
+      createdAt: 1,
+      updatedAt: 10,
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-journal-media-parent",
+          seq: 21,
+          entity_type: "journal",
+          entity_id: "journal-media-parent",
+          op: "upsert",
+          payload: {
+            id: "journal-media-parent",
+            date: "2026-07-13",
+            title: "After",
+            content: "new",
+            stickers: [],
+            tags: [],
+            photoIds: ["photo-kept"],
+            audioIds: [],
+            createdAt: 1,
+            updatedAt: 20,
+          },
+          device_id: "remote-device",
+          created_at: "2026-07-13T12:00:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.journalPhotosBulkDelete).toHaveBeenCalledWith(["photo-removed"]);
+    expect(mocks.journalAudioBulkDelete).toHaveBeenCalledWith(["audio-removed"]);
+    expect(mocks.triggerDataRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("hydrates newly linked audio metadata during a remote journal delta", async () => {
+    mocks.journalAudioMetadataIn.mockResolvedValue({
+      data: [
+        {
+          id: "audio-cross-device",
+          entry_id: "journal-cross-device",
+          duration: 18,
+          mime_type: "audio/webm",
+          storage_path: "user-1/journal-cross-device/audio-cross-device.webm",
+          created_at: 12,
+        },
+      ],
+      error: null,
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-journal-cross-device",
+          seq: 22,
+          entity_type: "journal",
+          entity_id: "journal-cross-device",
+          op: "upsert",
+          payload: {
+            id: "journal-cross-device",
+            date: "2026-07-18",
+            title: "Voice note",
+            content: "encrypted:v1:private",
+            stickers: [],
+            tags: [],
+            photoIds: [],
+            audioIds: ["audio-cross-device"],
+            createdAt: 10,
+            updatedAt: 20,
+          },
+          device_id: "remote-device",
+          created_at: "2026-07-18T12:00:00.000Z",
+        },
+      ],
+      "current-device",
+      { expectedOwnerUserId: "user-1" }
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.journalAudioMetadataIn).toHaveBeenCalledWith("id", ["audio-cross-device"]);
+    expect(mocks.journalAudioBulkPut).toHaveBeenCalledWith([
+      {
+        id: "audio-cross-device",
+        entryId: "journal-cross-device",
+        data: "",
+        duration: 18,
+        mimeType: "audio/webm",
+        storagePath: "user-1/journal-cross-device/audio-cross-device.webm",
+        createdAt: 12,
+      },
+    ]);
+    expect(JSON.stringify(mocks.journalAudioBulkPut.mock.calls)).not.toContain("private");
+  });
+
   it("rejects a plaintext journal delta when diary protection is enabled", async () => {
     mocks.settingsGet.mockImplementation(async (key: string) => {
       if (key === "journal_password") return { key, value: "protected" };
@@ -603,27 +800,29 @@ describe("eventSync auth guards", () => {
     });
 
     const applied = await applyDelta(
-      [{
-        id: "event-journal-plaintext",
-        seq: 20,
-        entity_type: "journal",
-        entity_id: "journal-plaintext",
-        op: "upsert",
-        payload: {
-          id: "journal-plaintext",
-          date: "2026-07-13",
-          title: "Private",
-          content: "must not cross the protected boundary",
-          stickers: [],
-          photoIds: [],
-          audioIds: [],
-          tags: [],
-          createdAt: 10,
-          updatedAt: 20,
+      [
+        {
+          id: "event-journal-plaintext",
+          seq: 20,
+          entity_type: "journal",
+          entity_id: "journal-plaintext",
+          op: "upsert",
+          payload: {
+            id: "journal-plaintext",
+            date: "2026-07-13",
+            title: "Private",
+            content: "must not cross the protected boundary",
+            stickers: [],
+            photoIds: [],
+            audioIds: [],
+            tags: [],
+            createdAt: 10,
+            updatedAt: 20,
+          },
+          device_id: "remote-device",
+          created_at: "2026-07-13T10:00:00.000Z",
         },
-        device_id: "remote-device",
-        created_at: "2026-07-13T10:00:00.000Z",
-      }],
+      ],
       "current-device"
     );
 
@@ -867,6 +1066,24 @@ describe("eventSync auth guards", () => {
     expect(event?.seq).toBe(21);
   });
 
+  it("does not write or queue an event while an imported backup awaits an account choice", async () => {
+    expect(markPendingLocalBackupAccountClaim()).toBe(true);
+
+    const event = await writeEventAndBroadcast(
+      "habit",
+      "habit-imported",
+      "upsert",
+      { id: "habit-imported" },
+      "device-1",
+      { expectedOwnerUserId: "user-1" }
+    );
+
+    expect(event).toBeNull();
+    expect(mocks.insert).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.broadcastChange).not.toHaveBeenCalled();
+  });
+
   it("does not write or queue an account-A event after the active account changes to B", async () => {
     mocks.getCurrentUserId.mockResolvedValue("user-b");
 
@@ -883,6 +1100,23 @@ describe("eventSync auth guards", () => {
     expect(mocks.insert).not.toHaveBeenCalled();
     expect(mocks.enqueue).not.toHaveBeenCalled();
     expect(mocks.broadcastChange).not.toHaveBeenCalled();
+  });
+
+  it("does not write or queue an event when the local realm belongs to another account", async () => {
+    mocks.localOwnerUserId = "user-2";
+
+    const event = await writeEventAndBroadcast(
+      "journal",
+      "entry-owned-by-user-1",
+      "upsert",
+      { id: "entry-owned-by-user-1" },
+      "device-1",
+      { expectedOwnerUserId: "user-1" }
+    );
+
+    expect(event).toBeNull();
+    expect(mocks.insert).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
   });
 
   it("queues a durable event retry and avoids stale wake-up when the event write is unavailable", async () => {

@@ -3,6 +3,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { announceError, announceSuccess, createFocusTrap } from "@/lib/a11y";
 import { cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import type { JournalExportOutcome } from "./journalExport";
 interface ExportPickerDialogProps {
   ts: Record<string, string>;
   language: import("@/i18n/types").Language;
@@ -22,13 +24,13 @@ export function ExportPickerDialog({
   const warningId = useId();
   const errorId = useId();
   const dialogRef = useRef<HTMLDivElement | null>(null);
-  const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
+  const titleRef = useRef<HTMLHeadingElement | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!dialogRef.current) return undefined;
     return createFocusTrap(dialogRef.current, {
-      initialFocus: cancelButtonRef.current,
+      initialFocus: titleRef.current,
     });
   }, []);
 
@@ -36,6 +38,8 @@ export function ExportPickerDialog({
     if (exporting) return;
     onClose();
   };
+
+  useBackHandler(true, handleClose);
 
   return (
     <>
@@ -52,26 +56,26 @@ export function ExportPickerDialog({
         aria-labelledby={titleId}
         aria-describedby={error ? `${warningId} ${errorId}` : warningId}
         aria-busy={exporting}
-        className="fixed bottom-0 inset-x-0 z-[60] max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom)_-_1rem)] overflow-y-auto motion-safe:animate-slide-up pb-safe lg:max-w-4xl lg:mx-auto"
+        className="fixed bottom-0 inset-x-0 z-[60] max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] overflow-y-auto overscroll-contain motion-safe:animate-slide-up lg:max-w-4xl lg:mx-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center pt-2 pb-1 bg-card rounded-t-2xl">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
         </div>
-        <div className="bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-          <h3 id={titleId} className="text-base font-semibold text-foreground mb-3">
+        <div className="bg-card pb-[max(1.25rem,var(--safe-bottom))] ps-[max(1.25rem,var(--safe-inline-start))] pe-[max(1.25rem,var(--safe-inline-end))] pt-5">
+          <h3 ref={titleRef} id={titleId} tabIndex={-1} className="mb-3 min-w-0 whitespace-normal break-words text-base font-semibold text-foreground [hyphens:manual] [overflow-wrap:break-word]">
             {ts.journalExportFormat || "Export Format"}
           </h3>
-          <p id={warningId} className="mb-3 rounded-lg border border-border/20 bg-muted/30 px-3 py-2 text-xs leading-snug text-muted-foreground">
+          <p id={warningId} className="mb-3 min-w-0 whitespace-normal break-words rounded-lg border border-border/20 bg-muted/30 px-3 py-2 text-xs leading-snug text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
             {ts.journalExportPrivacyWarning ||
               "Exports are private files and are not encrypted by ZenFlow. Keep them somewhere you trust."}
           </p>
           {error ? (
-            <p id={errorId} role="alert" className="mb-3 text-sm text-destructive">
+            <p id={errorId} role="alert" className="mb-3 min-w-0 whitespace-normal break-words text-sm text-destructive [hyphens:manual] [overflow-wrap:break-word]">
               {error}
             </p>
           ) : null}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="zf-auto-fit-grid-10 grid gap-2">
             {(
               [
                 {
@@ -83,11 +87,6 @@ export function ExportPickerDialog({
                   key: "csv",
                   label: ts.journalExportCSV || "CSV",
                   desc: ts.journalExportCSVDesc || "Spreadsheet format",
-                },
-                {
-                  key: "pdf",
-                  label: ts.journalExportPDF || "PDF",
-                  desc: ts.journalExportPDFDesc || "Printable document",
                 },
                 {
                   key: "md",
@@ -104,11 +103,24 @@ export function ExportPickerDialog({
                   setError("");
                   try {
                     const exp = await import("./journalExport");
-                    if (fmt.key === "json") await exp.exportJSON();
-                    else if (fmt.key === "csv") await exp.exportCSV(language);
-                    else if (fmt.key === "pdf") await exp.exportPDF(undefined, language);
-                    else if (fmt.key === "md") await exp.exportMarkdown(language);
-                    announceSuccess(ts.journalExportSuccess || "Export complete");
+                    let outcome: JournalExportOutcome | undefined;
+                    if (fmt.key === "json") {
+                      outcome = await exp.exportJSON(
+                        undefined,
+                        ts.journalExportJSON || "ZenFlow journal backup",
+                        language,
+                      );
+                    } else if (fmt.key === "csv") {
+                      outcome = await exp.exportCSV(language, fmt.label);
+                    } else if (fmt.key === "md") {
+                      outcome = await exp.exportMarkdown(language, fmt.label);
+                    }
+                    if (outcome === "cancelled") return;
+                    announceSuccess(
+                      outcome === "started"
+                        ? ts.journalExportStarted || "Download started"
+                        : ts.journalExportSuccess || "Export complete"
+                    );
                     onClose();
                   } catch (err) {
                     logger.warn("[Journal] Export failed:", err);
@@ -120,23 +132,22 @@ export function ExportPickerDialog({
                   }
                 }}
                 className={cn(
-                  "p-3 rounded-xl text-start motion-safe:transition-all min-h-[44px]",
+                  "h-auto min-h-[44px] min-w-0 whitespace-normal break-words rounded-xl p-3 text-start [hyphens:manual] [overflow-wrap:break-word] motion-safe:transition-all",
                   "bg-muted/30 border border-border/15",
                   "hover:bg-muted/50 active:scale-[0.98]",
                   "disabled:opacity-50"
                 )}
               >
-                <p className="text-sm font-medium text-foreground">{fmt.label}</p>
-                <p className="mt-1 text-xs leading-snug text-muted-foreground">{fmt.desc}</p>
+                <p className="min-w-0 whitespace-normal break-words text-sm font-medium text-foreground [hyphens:manual] [overflow-wrap:break-word]">{fmt.label}</p>
+                <p className="mt-1 min-w-0 whitespace-normal break-words text-xs leading-snug text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">{fmt.desc}</p>
               </button>
             ))}
           </div>
           <button
-            ref={cancelButtonRef}
             type="button"
             onClick={handleClose}
             disabled={exporting}
-            className="w-full mt-3 py-2.5 text-sm text-muted-foreground min-h-[44px] disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-3 h-auto min-h-[44px] w-full min-w-0 whitespace-normal break-words px-3 py-2.5 text-sm text-muted-foreground [hyphens:manual] [overflow-wrap:break-word] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {ts.cancel || "Cancel"}
           </button>

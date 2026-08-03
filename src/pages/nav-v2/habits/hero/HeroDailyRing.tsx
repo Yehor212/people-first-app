@@ -108,7 +108,7 @@ export const HeroDailyRing = memo(function HeroDailyRing({
           aria-hidden="true"
         >
           <span className="text-lg font-bold leading-none tabular-nums">{completed}</span>
-          <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          <span className="mt-0.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             / {total}
           </span>
         </span>

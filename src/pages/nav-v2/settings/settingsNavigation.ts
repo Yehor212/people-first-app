@@ -12,9 +12,7 @@ const INITIAL_SECTION_TO_V2_SECTION: Record<string, V2SettingsSectionId> = {
   account: "account",
 };
 
-export function resolveInitialSettingsSection(
-  initialOpenSection?: string,
-): V2SettingsSectionId {
+export function resolveInitialSettingsSection(initialOpenSection?: string): V2SettingsSectionId {
   if (!initialOpenSection) return "appearance";
   return INITIAL_SECTION_TO_V2_SECTION[initialOpenSection] || "account";
 }
@@ -34,7 +32,7 @@ export function readRequestedSettingsSection(): V2SettingsSectionId | null {
 
 export function updateSettingsSectionUrl(
   sectionId: V2SettingsSectionId | null,
-  method: "pushState" | "replaceState",
+  method: "pushState" | "replaceState"
 ): void {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
@@ -43,6 +41,6 @@ export function updateSettingsSectionUrl(
   window.history[method](
     { ...window.history.state, zenflowSettingsDetail: Boolean(sectionId) },
     "",
-    `${url.pathname}${url.search}${url.hash}`,
+    `${url.pathname}${url.search}${url.hash}`
   );
 }

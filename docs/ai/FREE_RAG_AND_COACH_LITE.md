@@ -79,9 +79,7 @@ For Codex-backed remote modes (`plan`, `fix`, `review`, and `security`), `OPENAI
 
 ## AI Coach Without Paid APIs
 
-The Supabase `ai-coach` edge function keeps auth, rate limiting, request size validation, and normal Gemini behavior when `GEMINI_API_KEY` is configured.
-
-When `GEMINI_API_KEY` is absent, the function returns a successful Coach Lite response:
+The Supabase `ai-coach` edge function keeps auth, rate limiting, and request-size validation, and always returns a Coach Lite response without an external AI provider:
 
 ```json
 {
@@ -94,15 +92,15 @@ When `GEMINI_API_KEY` is absent, the function returns a successful Coach Lite re
 
 Coach Lite is intentionally simple: it uses local request context, trigger type, and language templates. It is not a replacement for generative coaching, but it prevents the app from failing just because a paid API key is missing.
 
-## Journal AI Without Paid APIs
+## Private Journal Search Without Paid APIs
 
-The journal AI endpoints also avoid hard failure when `GEMINI_API_KEY` is absent:
+The journal search endpoints do not use an external AI provider:
 
-- `generate-embedding` returns a successful `no_paid_api` skip response instead of failing the request.
-- `search-journal` falls back to lexical search over the signed-in user's journal entries.
-- The lexical fallback ignores encrypted journal content bodies and only ranks readable title, tags, mood, and plaintext content.
+- `generate-embedding` is an authenticated compatibility no-op and returns `journal_search_free_lexical`.
+- `search-journal` performs lexical search over the signed-in user's journal entries after the existing explicit-consent check.
+- Lexical search ignores encrypted journal content bodies and only ranks readable title, tags, mood, and plaintext content.
 
-This keeps journal search usable in free/local environments while preserving the existing Gemini embedding path whenever the key is configured.
+This keeps account-backed search usable without paid APIs and prevents journal text or queries from reaching an external AI provider.
 
 ## Verification
 

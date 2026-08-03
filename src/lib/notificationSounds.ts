@@ -10,6 +10,10 @@ import { isDesktopViewport, isNative, platform } from '@/lib/platform';
 import { logger } from './logger';
 import { storageGetRaw, storageSetRaw } from './safeJson';
 import { SK } from '@/lib/storageKeys';
+import {
+  isPushRealmChannelId,
+  updateNativePushPresentation,
+} from './nativePushRealm';
 
 // ============================================
 // TYPES
@@ -44,7 +48,7 @@ export type NotificationChannelCopy = Record<
 // CONSTANTS
 // ============================================
 
-export const NOTIFICATION_SOUND_CHANNEL_VERSION = 'v3';
+export const NOTIFICATION_SOUND_CHANNEL_VERSION = 'v4';
 
 export const NOTIFICATION_SYSTEM_SETTINGS_DESCRIPTION_KEYS: Record<
   NotificationSystemSurface,
@@ -61,7 +65,7 @@ export const NOTIFICATION_SOUNDS: NotificationSoundOption[] = [
     id: 'default',
     labelKey: 'soundDefault',
     description: 'System default notification sound',
-    channelId: 'zenflow_default_v3',
+    channelId: 'zenflow_default_v4',
     sound: 'default',
     vibrate: true,
     importance: 3,
@@ -70,7 +74,7 @@ export const NOTIFICATION_SOUNDS: NotificationSoundOption[] = [
     id: 'gentle',
     labelKey: 'soundGentle',
     description: 'Soft vibration only',
-    channelId: 'zenflow_gentle_v3',
+    channelId: 'zenflow_gentle_v4',
     sound: undefined,
     vibrate: true,
     importance: 2,
@@ -79,7 +83,7 @@ export const NOTIFICATION_SOUNDS: NotificationSoundOption[] = [
     id: 'silent',
     labelKey: 'soundSilent',
     description: 'No sound or vibration',
-    channelId: 'zenflow_silent_v3',
+    channelId: 'zenflow_silent_v4',
     sound: undefined,
     vibrate: false,
     importance: 1,
@@ -181,7 +185,7 @@ export function setNotificationSound(sound: NotificationSoundType): boolean {
 export function getCurrentChannelId(): string {
   const soundType = getNotificationSound();
   const sound = NOTIFICATION_SOUNDS.find(s => s.id === soundType);
-  return sound?.channelId || 'zenflow_default_v3';
+  return sound?.channelId || 'zenflow_default_v4';
 }
 
 export function isCurrentNotificationSoundChannelId(channelId: string | undefined): boolean {
@@ -213,7 +217,7 @@ export async function initializeNotificationChannels(
         name: effectiveCopy[soundOption.id].name,
         description: effectiveCopy[soundOption.id].description,
         importance: soundOption.importance,
-        visibility: 0, // PRIVATE: conceal wellness reminder content on secure lock screens.
+        visibility: -1, // SECRET: do not expose reminder categories on secure lock screens.
         vibration: soundOption.vibrate,
         sound: soundOption.sound,
         lights: soundOption.importance >= 3,
@@ -241,9 +245,22 @@ export function getCurrentSoundOption(): NotificationSoundOption {
  * Update notification sound and return new channel ID
  */
 export async function updateNotificationSound(sound: NotificationSoundType): Promise<string> {
+  const previousSound = getNotificationSound();
   if (!setNotificationSound(sound)) {
     throw new Error('Reminder sound could not be saved');
   }
+  const selectedChannelId = getCurrentChannelId();
+  const channelId = isPushRealmChannelId(selectedChannelId)
+    ? selectedChannelId
+    : 'zenflow_default_v4';
+  try {
+    await updateNativePushPresentation({ channelId });
+  } catch (error) {
+    if (!setNotificationSound(previousSound)) {
+      logger.error('[NotificationSounds] Failed to restore the previous sound preference');
+    }
+    throw error;
+  }
   logger.log('[NotificationSounds] Sound preference updated:', sound);
-  return getCurrentChannelId();
+  return channelId;
 }

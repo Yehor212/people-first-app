@@ -24,6 +24,8 @@ export interface FocusTrapOptions {
   initialFocus?: HTMLElement | null;
   /** Element to return focus to when trap is deactivated */
   returnFocus?: HTMLElement | null;
+  /** Resolve a connected fallback when the original opener no longer exists */
+  returnFocusFallback?: () => HTMLElement | null;
   /** Whether to auto-focus first focusable element */
   autoFocus?: boolean;
 }
@@ -171,27 +173,33 @@ export function createFocusTrap(
   container: HTMLElement,
   options: FocusTrapOptions = {}
 ): () => void {
-  const { initialFocus, returnFocus, autoFocus = true } = options;
+  const { initialFocus, returnFocus, returnFocusFallback, autoFocus = true } = options;
 
   // Store the currently focused element to restore later
   const previouslyFocused = returnFocus || (document.activeElement as HTMLElement);
 
-  // Get focusable elements
   const focusableElements = getFocusableElements(container);
+  const hadTabIndex = container.hasAttribute("tabindex");
+  const originalTabIndex = container.getAttribute("tabindex");
+  if (focusableElements.length === 0 && !hadTabIndex) {
+    container.setAttribute("tabindex", "-1");
+  }
+
+  if (focusableElements.length === 0 && IS_DEV) {
+    logger.warn("[A11y] Focus trap: No focusable elements found in container");
+  }
 
   if (focusableElements.length === 0) {
     if (IS_DEV) {
-      logger.warn("[A11y] Focus trap: No focusable elements found in container");
+      logger.log("[A11y] Focus trap: Using the dialog surface during its busy state");
     }
-    return () => {};
   }
 
-  const firstFocusable = focusableElements[0];
-  const _lastFocusable = focusableElements[focusableElements.length - 1];
+  const firstFocusable = focusableElements[0] ?? container;
 
   // Focus initial element
   if (autoFocus) {
-    const elementToFocus = initialFocus || firstFocusable;
+    const elementToFocus = initialFocus?.isConnected ? initialFocus : firstFocusable;
     elementToFocus?.focus();
   }
 
@@ -201,7 +209,11 @@ export function createFocusTrap(
 
     // Refresh focusable elements in case DOM changed
     const currentFocusable = getFocusableElements(container);
-    if (currentFocusable.length === 0) return;
+    if (currentFocusable.length === 0) {
+      event.preventDefault();
+      container.focus();
+      return;
+    }
 
     const first = currentFocusable[0];
     const last = currentFocusable[currentFocusable.length - 1];
@@ -226,7 +238,18 @@ export function createFocusTrap(
   // Return cleanup function
   return () => {
     container.removeEventListener("keydown", handleKeyDown);
-    previouslyFocused?.focus();
+    if (!hadTabIndex) {
+      container.removeAttribute("tabindex");
+    } else if (originalTabIndex !== null) {
+      container.setAttribute("tabindex", originalTabIndex);
+    }
+    const fallback = returnFocusFallback?.();
+    const target = previouslyFocused?.isConnected
+      ? previouslyFocused
+      : fallback?.isConnected
+        ? fallback
+        : null;
+    target?.focus();
   };
 }
 

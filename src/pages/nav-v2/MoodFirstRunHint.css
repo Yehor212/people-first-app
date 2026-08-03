@@ -11,8 +11,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
-  padding-bottom: calc(1.5rem + var(--safe-bottom));
+  padding:
+    calc(1rem + var(--safe-top))
+    max(1rem, var(--safe-right))
+    calc(1rem + var(--safe-bottom))
+    max(1rem, var(--safe-left));
   background: transparent;
   pointer-events: none;
   z-index: 57;
@@ -23,7 +26,11 @@
   position: relative;
   pointer-events: auto;
   width: 100%;
-  max-width: 22rem;
+  max-width: min(22rem, 100%);
+  max-height: calc(100dvh - 2rem - var(--safe-top) - var(--safe-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
   padding: 1.5rem 1.5rem 1.25rem;
   border-radius: 1.25rem;
   background: color-mix(in oklab, hsl(var(--card)) 92%, transparent);
@@ -39,7 +46,7 @@
 .mood-first-run-title {
   margin: 0 0 1.125rem;
   font-family: var(--font-display, "Fraunces", serif);
-  font-size: 1.125rem;
+  font-size: calc(1.125rem * var(--font-scale, 1));
   font-weight: 600;
   line-height: 1.35;
   color: hsl(var(--foreground));
@@ -57,7 +64,8 @@
 
 .mood-first-run-step {
   display: flex;
-  align-items: center;
+  min-width: 0;
+  align-items: flex-start;
   gap: 0.75rem;
   padding: 0.5rem 0.75rem;
   border-radius: 0.75rem;
@@ -74,15 +82,18 @@
   border-radius: 9999px;
   background: color-mix(in oklab, hsl(var(--primary)) 30%, transparent);
   color: hsl(var(--primary-foreground));
-  font-size: 0.875rem;
+  font-size: calc(0.875rem * var(--font-scale, 1));
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .mood-first-run-step-text {
+  min-width: 0;
+  flex: 1;
   color: hsl(var(--foreground));
-  font-size: 0.9rem;
+  font-size: calc(0.9rem * var(--font-scale, 1));
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .mood-first-run-dismiss {
@@ -92,11 +103,13 @@
   background: color-mix(in oklab, hsl(var(--primary)) 45%, transparent);
   color: hsl(var(--primary-foreground));
   border: 1px solid color-mix(in oklab, hsl(var(--primary)) 35%, transparent);
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--font-scale, 1));
   font-weight: 600;
   letter-spacing: 0.02em;
   cursor: pointer;
   min-height: 44px;
+  white-space: normal;
+  overflow-wrap: anywhere;
   transition: all 200ms ease;
 }
 
@@ -126,6 +139,15 @@
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+/* A short viewport forces the card to scroll over the underlying Orb controls.
+   Use an opaque token blend there so background actions cannot read as part of
+   the hint while preserving the translucent card at normal heights. */
+@media (max-height: 420px) {
+  .mood-first-run-card {
+    background: color-mix(in oklab, hsl(var(--card)) 98%, hsl(var(--background)));
   }
 }
 

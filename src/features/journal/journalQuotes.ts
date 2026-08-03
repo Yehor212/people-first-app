@@ -50,10 +50,8 @@ const FIRST_USE_QUOTE_IDS = new Set([
   "quoteJournal5",
   "quoteJournal7",
   "quoteJournal8",
-  "quoteJournal9",
   "quoteJournal10",
   "quoteJournal12",
-  "quoteJournal14",
   "quoteJournal18",
   "quoteJournal19",
   "quoteJournal20",
@@ -70,7 +68,7 @@ export const JOURNAL_FIRST_USE_QUOTES = JOURNAL_EMPTY_QUOTES.filter((quote) =>
 );
 
 export function getJournalEmptyQuoteIndex(date = new Date(), quoteCount = JOURNAL_EMPTY_QUOTES.length): number {
-  return Math.abs(Math.floor(date.getTime() / 86_400_000)) % quoteCount;
+  return getJournalDayIndex(date, quoteCount);
 }
 
 export function getJournalQuote(
@@ -82,3 +80,4 @@ export function getJournalQuote(
   const quoteDefinition = quoteDefinitions[getJournalEmptyQuoteIndex(date, quoteDefinitions.length)];
   return translations[quoteDefinition.translationId] || quoteDefinition.fallback;
 }
+import { getJournalDayIndex } from "./journalDateUtils";

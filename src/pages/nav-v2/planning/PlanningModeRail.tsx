@@ -19,7 +19,7 @@ export function PlanningModeRail({ activeMode, onModeChange, labels }: PlanningM
   return (
     <div
       data-testid="planning-mode-rail"
-      className="flex gap-2 overflow-x-auto rounded-2xl border border-border/45 bg-card/70 p-1 shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]"
+      className="grid grid-cols-1 gap-2 rounded-2xl border border-border/45 bg-card/70 p-1 shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] min-[520px]:grid-cols-2 sm:flex sm:overflow-x-auto"
       role="group"
     >
       {MODE_ITEMS.map((item) => {
@@ -33,14 +33,16 @@ export function PlanningModeRail({ activeMode, onModeChange, labels }: PlanningM
             aria-pressed={active}
             onClick={() => onModeChange(item.id)}
             className={cn(
-              "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+              "inline-flex min-h-[44px] min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2 text-center text-sm font-semibold whitespace-normal motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-w-[44px] sm:shrink-0",
               active
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground",
             )}
           >
             <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span>{labels[item.id]}</span>
+            <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:normal]">
+              {labels[item.id]}
+            </span>
           </button>
         );
       })}

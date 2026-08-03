@@ -331,13 +331,13 @@ export function NumericalTargetSection({
                 <Icon className="mt-0.5 h-4 w-4" aria-hidden="true" />
                 <span className="min-w-0">
                   <span className="block text-xs font-semibold">{option.label}</span>
-                  <span className="mt-0.5 block text-[11px] leading-snug opacity-80">
+                  <span className="mt-0.5 block whitespace-normal break-words text-xs leading-snug opacity-80">
                     {option.description}
                   </span>
                   {recommended && (
                     <span
                       className={cn(
-                        "mt-2 inline-flex min-h-[24px] items-center rounded-full border px-2 text-[10px] font-semibold uppercase tracking-[0.08em]",
+                        "mt-2 inline-flex min-h-[24px] max-w-full items-center whitespace-normal break-words rounded-full border px-2 py-1 text-xs font-semibold uppercase leading-snug tracking-[0.08em]",
                         isPrimaryCTA
                           ? "border-[hsl(var(--zf-role-energy)/0.36)] bg-[hsl(var(--zf-role-energy)/0.12)] text-[hsl(var(--zf-role-energy))]"
                           : "border-primary/30 bg-primary/10 text-primary"
@@ -353,7 +353,7 @@ export function NumericalTargetSection({
         </div>
         <p
           className={cn(
-            "mt-2 rounded-[12px] border px-3 py-2 text-[11px] leading-snug",
+            "mt-2 whitespace-normal break-words rounded-[12px] border px-3 py-2 text-xs leading-snug",
             isPrimaryCTA
               ? "border-[hsl(var(--zf-role-body)/0.24)] bg-[hsl(var(--zf-night-0)/0.32)] text-[hsl(var(--zf-text-soft))]"
               : "border-border bg-background text-muted-foreground"

@@ -1,17 +1,10 @@
 /**
- * Pre-Sentry error buffer.
+ * Bounded runtime error buffer.
  *
- * Sentry is lazy-loaded via requestIdleCallback (~2s after first paint) to keep
- * @sentry/* off the critical rendering path. Errors thrown before idle-init
- * completes have no destination — the global handlers would silently drop them.
- *
- * This module holds a small FIFO buffer. `captureOrBuffer` routes to the
- * registered sink if Sentry is ready, otherwise enqueues. `setCaptureSink` is
- * called exactly once by the Sentry bootstrap and automatically flushes the
- * buffer.
- *
- * Pattern mirrors Sentry JS Loader's `onLoad` queue.
- * Source: docs.sentry.io/platforms/javascript/install/lazy-load-sentry/ (2025).
+ * Global failures are retained in memory so the current runtime can recover
+ * without starting optional external diagnostics. `setCaptureSink` remains an
+ * explicit integration boundary: a future caller must first establish the
+ * product's durable diagnostics-consent contract.
  */
 
 export type CaptureSink = (error: Error, context?: Record<string, unknown>) => void;
@@ -42,9 +35,9 @@ export function captureOrBuffer(error: Error, context: Record<string, unknown> =
 }
 
 /**
- * Register the Sentry sink. Flushes all buffered errors synchronously, tagging
- * each with `buffered: true` for telemetry differentiation. Idempotent: calling
- * twice replaces the sink but does not re-flush.
+ * Register an authorized diagnostics sink. Flushes buffered errors
+ * synchronously, tagging each with `buffered: true`. Idempotent: calling twice
+ * replaces the sink but does not re-flush.
  */
 export function setCaptureSink(nextSink: CaptureSink): void {
   sink = nextSink;

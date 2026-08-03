@@ -215,7 +215,9 @@ export function SyncHealthCard({
         <div
           className={cn(
             "mt-4 grid gap-2",
-            compact ? "grid-cols-[repeat(auto-fit,minmax(5.75rem,1fr))]" : "grid-cols-3"
+            compact
+              ? "grid-cols-[repeat(auto-fit,minmax(5.75rem,1fr))]"
+              : "grid-cols-1 min-[420px]:grid-cols-3"
           )}
           data-testid="sync-health-metrics"
         >
@@ -258,11 +260,11 @@ export function SyncHealthCard({
           className="mt-4 rounded-xl border border-border bg-background/35 p-3"
           data-testid="sync-inbox"
         >
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="flex flex-col items-start gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+            <p className="min-w-0 whitespace-normal break-words text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground [hyphens:manual] [overflow-wrap:normal]">
               {tx.syncInboxTitle || "Updates from your devices"}
             </p>
-            <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">
+            <span className="self-end rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground min-[420px]:self-auto">
               {waitingCount}
             </span>
           </div>
@@ -280,20 +282,20 @@ export function SyncHealthCard({
               {pendingRows.map((action) => (
                 <li
                   key={action.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2"
+                  className="flex flex-col items-stretch gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between"
                 >
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-foreground">
+                  <span className="min-w-0 flex-1">
+                    <span className="block whitespace-normal break-words text-sm font-medium text-foreground [hyphens:manual] [overflow-wrap:normal]">
                       {pendingActionText(action, tx)}
                     </span>
-                    <span className="block text-xs text-muted-foreground">
+                    <span className="block whitespace-normal break-words text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:normal]">
                       {action.priority === "critical"
                         ? tx.syncPriorityCritical || "Important"
                         : tx.syncOutboxWaiting || "Waiting to save online"}
                     </span>
                   </span>
                   {action.retries > 0 && (
-                    <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">
+                    <span className="inline-flex max-w-full self-end whitespace-normal break-words rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:normal] min-[420px]:self-auto">
                       {renderTemplate(tx.syncRetryCount || "{count} try", {
                         count: action.retries,
                       })}

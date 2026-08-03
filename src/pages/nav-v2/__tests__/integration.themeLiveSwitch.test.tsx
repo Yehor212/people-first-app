@@ -48,6 +48,7 @@ describe("Integration #4 — Theme live switch on OrbPage (CosmicBgAdapter)", ()
     // Reset to paper so every test has a known starting point
     act(() => {
       useThemeStore.getState().setTheme("paper");
+      useThemeStore.getState()._resolve();
     });
   });
 

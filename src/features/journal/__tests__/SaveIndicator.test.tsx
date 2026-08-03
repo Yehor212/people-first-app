@@ -61,6 +61,24 @@ describe("SaveIndicator", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it("labels an explicit conflict retry as replacing the newer version", () => {
+    const onRetry = vi.fn();
+    render(
+      <SaveIndicator
+        state="error"
+        errorTitle="Newer version kept"
+        errorHint="Your edits are still here."
+        onRetry={onRetry}
+        retryLabel="Replace newer version"
+      />,
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Newer version kept");
+    const retryButton = screen.getByRole("button", { name: "Replace newer version" });
+    retryButton.click();
+    expect(onRetry).toHaveBeenCalledOnce();
+  });
+
   it("synced state shows 'Synced' text", () => {
     render(<SaveIndicator state="synced" />);
     expect(screen.getByText("Synced")).toBeInTheDocument();

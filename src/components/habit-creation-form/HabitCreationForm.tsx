@@ -145,7 +145,7 @@ function HabitLabPanel({
           <span className="min-w-0 flex-1">
             <span
               className={cn(
-                "block text-[11px] font-semibold uppercase tracking-[0.14em]",
+                "block whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.14em]",
                 isElevatedForm ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground"
               )}
             >
@@ -153,7 +153,7 @@ function HabitLabPanel({
             </span>
             <span
               className={cn(
-                "mt-1 block truncate text-xs font-semibold",
+                "mt-1 block whitespace-normal break-words text-xs font-semibold",
                 isElevatedForm ? "text-[hsl(var(--zf-text-strong))]" : "text-foreground"
               )}
             >
@@ -226,7 +226,7 @@ function HabitLabSpecChip({
       data-advanced-spec={label}
       data-advanced-jump={section}
     >
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-start gap-1.5">
         <Icon
           className={cn(
             "h-3.5 w-3.5 shrink-0",
@@ -236,7 +236,7 @@ function HabitLabSpecChip({
         />
         <span
           className={cn(
-            "truncate text-[9px] font-semibold uppercase tracking-[0.12em]",
+            "min-w-0 whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.12em]",
             isElevatedForm ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground"
           )}
         >
@@ -245,7 +245,7 @@ function HabitLabSpecChip({
       </div>
       <p
         className={cn(
-          "mt-1 truncate text-xs font-semibold",
+          "mt-1 whitespace-normal break-words text-xs font-semibold [overflow-wrap:anywhere]",
           isElevatedForm ? "text-[hsl(var(--zf-text-strong))]" : "text-foreground"
         )}
       >
@@ -590,16 +590,16 @@ export function HabitCreationForm({
                 )}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <p className="whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                   {ts.habitTemplateBadge}
                 </p>
-                <p className="mt-1 line-clamp-2 text-sm font-semibold leading-tight">
+                <p className="mt-1 whitespace-normal break-words text-sm font-semibold leading-tight">
                   {templateName}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <span
                     className={cn(
-                      "rounded-full border px-2 py-1 text-[10px] font-semibold leading-none",
+                      "max-w-full whitespace-normal break-words rounded-full border px-2 py-1 text-xs font-semibold leading-snug",
                       isElevatedForm
                         ? templateTone.borderClass + " " + templateTone.textClass
                         : "border-border text-muted-foreground"
@@ -609,7 +609,7 @@ export function HabitCreationForm({
                   </span>
                   <span
                     className={cn(
-                      "rounded-full border px-2 py-1 text-[10px] font-semibold leading-none",
+                      "max-w-full whitespace-normal break-words rounded-full border px-2 py-1 text-xs font-semibold leading-snug",
                       isElevatedForm
                         ? "border-[hsl(var(--foreground)/0.12)] text-[hsl(var(--zf-text-soft))]"
                         : "border-border text-muted-foreground"
@@ -709,7 +709,7 @@ export function HabitCreationForm({
           >
             {t.preview}
           </p>
-          <div className="relative z-[1] flex items-center gap-3">
+          <div className="relative z-[1] flex items-start gap-3">
             <div
               className="flex h-12 w-12 items-center justify-center rounded-xl text-xl motion-safe:transition-all motion-safe:duration-300"
               style={{ backgroundColor: `${resolveHabitColor(selectedColorIndex)}33` }}
@@ -723,7 +723,7 @@ export function HabitCreationForm({
             <div className="min-w-0 flex-1">
               <p
                 className={cn(
-                  "truncate text-base font-semibold",
+                  "whitespace-normal break-words text-base font-semibold [overflow-wrap:anywhere]",
                   isElevatedForm ? "text-[hsl(var(--zf-text-strong))]" : "text-foreground"
                 )}
               >
@@ -745,7 +745,7 @@ export function HabitCreationForm({
           </div>
           {settingsMode === "advanced" && (
             <div
-              className="relative z-[1] mt-3 grid grid-cols-3 gap-2"
+              className="relative z-[1] mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(9rem*var(--font-scale,1))),1fr))] gap-2"
               data-advanced-preview="habit-spec"
             >
               <HabitLabSpecChip
@@ -821,7 +821,7 @@ export function HabitCreationForm({
           <div
             data-elevated-surface="advanced-rail"
             className={cn(
-              "grid grid-cols-4 gap-1.5 rounded-[20px] border p-1.5",
+              "grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(7.5rem*var(--font-scale,1))),1fr))] gap-1.5 rounded-[20px] border p-1.5",
               isElevatedForm
                 ? "border-[hsl(var(--foreground)/0.10)] bg-[hsl(var(--zf-night-0)/0.38)]"
                 : "border-border bg-muted/30"
@@ -862,7 +862,7 @@ export function HabitCreationForm({
                   />
                   <span
                     className={cn(
-                      "mt-1 block truncate text-[9px] font-semibold uppercase tracking-[0.08em]",
+                      "mt-1 block whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.08em]",
                       isElevatedForm ? "text-[hsl(var(--zf-text-soft))]" : "text-muted-foreground"
                     )}
                   >

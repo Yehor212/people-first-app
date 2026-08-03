@@ -12,6 +12,7 @@ import { hapticTap } from "@/lib/haptics";
 import { VirtualGrid, shouldVirtualize } from "@/components/ui/virtual-list";
 import { EmojiOrIcon } from "@/components/icons";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { UnifiedShareModal } from "@/components/share";
@@ -36,6 +37,8 @@ export function ChallengesPanel({
   >("active");
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
+  const virtualizeBadges = shouldVirtualize(badges.length);
+  const hasWideBadgeGrid = useMediaQuery("(min-width: 520px)");
 
   useBackHandler(!showShareModal, onClose);
   useModalA11y(!showShareModal, onClose);
@@ -90,22 +93,22 @@ export function ChallengesPanel({
     >
       <div className="w-full max-w-2xl max-h-[90dvh] flex flex-col bg-card rounded-3xl zen-shadow-card overflow-hidden">
         {/* Header */}
-        <div className="zen-gradient p-6 flex items-center justify-between">
-          <div>
+        <div className="zen-gradient grid min-w-0 grid-cols-1 gap-3 p-6 min-[520px]:grid-cols-[minmax(0,1fr)_auto] min-[520px]:items-start">
+          <div className="min-w-0">
             <h2
               id="challenges-title"
-              className="text-2xl font-bold text-primary-foreground mb-1"
+              className="min-w-0 break-words text-2xl font-bold text-primary-foreground mb-1"
             >
               {t.challengesTitle || "Challenges & Badges"}
             </h2>
-            <p className="text-sm text-primary-foreground/80">
+            <p className="break-words text-sm text-primary-foreground/80">
               {t.challengesSubtitle || "Take on challenges and earn badges"}
             </p>
           </div>
           <button
             onClick={onClose}
             aria-label={t.close || "Close"}
-            className="p-2 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/20 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-2 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/20 motion-safe:transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center justify-self-end"
           >
             <X className="w-6 h-6 text-primary-foreground" />
           </button>
@@ -165,7 +168,13 @@ export function ChallengesPanel({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div
+          className={`flex-1 min-h-0 p-4 space-y-3 ${
+            selectedTab === "badges" && virtualizeBadges
+              ? "overflow-hidden"
+              : "overflow-y-auto"
+          }`}
+        >
           {/* Active Challenges Tab */}
           {selectedTab === "active" && (
             <>
@@ -362,11 +371,11 @@ export function ChallengesPanel({
           {/* Badges Tab */}
           {selectedTab === "badges" && (
             <>
-              {shouldVirtualize(badges.length) ? (
+              {virtualizeBadges ? (
                 <VirtualGrid
                   items={badges}
-                  columns={2}
-                  itemHeight={180}
+                  columns={hasWideBadgeGrid ? 2 : 1}
+                  estimatedItemHeight={240}
                   gap={12}
                   containerClassName="h-full"
                   getItemKey={(badge) => badge.id}
@@ -376,12 +385,11 @@ export function ChallengesPanel({
                       language={language}
                       t={t as unknown as Record<string, string>}
                       onShare={handleShareBadge}
-                      virtual
                     />
                   )}
                 />
               ) : (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 min-[520px]:grid-cols-2">
                   {badges.map((badge) => (
                     <BadgeCard
                       key={badge.id}

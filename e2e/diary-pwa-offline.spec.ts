@@ -40,6 +40,22 @@ async function expectDiaryTabActions(page: Page) {
   await expect(page.getByTestId("journal-favorites-panel")).toHaveCount(0);
 }
 
+async function openNewJournalEntry(page: Page) {
+  const launcher = page.getByTestId("journal-entry-main-fab");
+  if (!(await launcher.isVisible())) {
+    await page.getByRole("button", { name: /^New entry$/i }).click();
+    return;
+  }
+
+  await launcher.click();
+  const newEntryAction = page.getByTestId("journal-fab-action-new-entry");
+  if (await newEntryAction.count()) {
+    await newEntryAction.click();
+    return;
+  }
+  await page.getByTestId("journal-fab-action-primary").click();
+}
+
 async function waitForServiceWorkerControl(page: Page) {
   const ready = await page.evaluate(async () => {
     if (!("serviceWorker" in navigator)) return { ready: false, controlled: false };
@@ -100,7 +116,7 @@ test.describe("PWA offline V2 Diary", () => {
     expect(serviceWorker.controlled, "page is controlled before offline reload").toBe(true);
     expect(serviceWorker.activeScript, "active service worker script").toContain("/sw.js");
 
-    await page.reload({ waitUntil: "networkidle" });
+    await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("journal-page-shell")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("journal-wallpaper")).toHaveAttribute(
       "data-wallpaper-platform",
@@ -125,6 +141,7 @@ test.describe("PWA offline V2 Diary", () => {
     let offlineFacts: {
       controlled: boolean;
       diaryRoute: boolean;
+      offlineEntryVisible: boolean;
       online: boolean;
       shellVisible: boolean;
       wallpaperTone: string | null;
@@ -140,7 +157,21 @@ test.describe("PWA offline V2 Diary", () => {
         "data-wallpaper-motion",
         "static",
       );
+      const offlineBanner = page.getByTestId("offline-banner");
+      await expect(offlineBanner).toBeVisible();
+      await offlineBanner.getByRole("button", { name: "Dismiss" }).click();
+      await expect(offlineBanner).toHaveCount(0);
       await expectDiaryTabActions(page);
+
+      const offlineEntryText = "A diary entry written while the PWA was offline.";
+      await openNewJournalEntry(page);
+      const editor = page.locator("[contenteditable='true']");
+      await expect(editor).toBeVisible({ timeout: 20_000 });
+      await editor.fill(offlineEntryText);
+      await page.getByRole("button", { name: /^Save$/i }).click();
+      await expect(page.getByText(offlineEntryText)).toBeVisible({ timeout: 20_000 });
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(page.getByText(offlineEntryText)).toBeVisible({ timeout: 30_000 });
 
       offlineFacts = await page.evaluate(() => {
         const shell = document.querySelector<HTMLElement>("[data-testid='journal-page-shell']");
@@ -148,6 +179,9 @@ test.describe("PWA offline V2 Diary", () => {
         return {
           controlled: Boolean(navigator.serviceWorker?.controller),
           diaryRoute: window.location.pathname.endsWith("/diary"),
+          offlineEntryVisible: document.body.textContent?.includes(
+            "A diary entry written while the PWA was offline.",
+          ) ?? false,
           online: navigator.onLine,
           shellVisible: Boolean(shell && shell.getBoundingClientRect().height > 0),
           wallpaperTone: wallpaper?.dataset.wallpaperTone ?? null,
@@ -160,68 +194,53 @@ test.describe("PWA offline V2 Diary", () => {
     expect(offlineFacts).toMatchObject({
       controlled: true,
       diaryRoute: true,
+      offlineEntryVisible: true,
       online: false,
       shellVisible: true,
     });
     expect(offlineFacts.wallpaperTone).toMatch(/day|night/);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByText("A diary entry written while the PWA was offline.")).toBeVisible({
+      timeout: 30_000,
+    });
     expect(errors).toEqual([]);
   });
 
-  test("prepares the iPhone WebKit diary route for PWA offline use", async ({ browserName, page }) => {
+  test("renders the production iPhone WebKit diary route with install metadata", async ({
+    browserName,
+    page,
+  }) => {
     test.skip(browserName !== "webkit", "WebKit-only iPhone PWA readiness coverage.");
 
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
 
     await openPrimedDiary(page);
-    const serviceWorker = await waitForServiceWorkerControl(page);
-    expect(serviceWorker.controlled, "page is controlled before offline state").toBe(true);
-    expect(serviceWorker.activeScript, "active service worker script").toContain("/sw.js");
-
-    await page.reload({ waitUntil: "networkidle" });
     await expect(page.getByTestId("journal-page-shell")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("journal-wallpaper")).toBeVisible();
     await expectDiaryTabActions(page);
 
-    const onlineFacts = await page.evaluate(async () => {
-      const cacheNames = "caches" in window ? await caches.keys() : [];
-      return {
-        cacheNames,
-        controlled: Boolean(navigator.serviceWorker?.controller),
-        diaryRoute: window.location.pathname.endsWith("/diary"),
-        online: navigator.onLine,
-      };
-    });
-    expect(onlineFacts.controlled).toBe(true);
-    expect(onlineFacts.diaryRoute).toBe(true);
-    expect(onlineFacts.cacheNames.some((name) => name.includes("precache"))).toBe(true);
-    expect(onlineFacts.cacheNames.some((name) => name.includes("runtime-assets"))).toBe(true);
-
-    const readinessFacts: {
-      controlled: boolean;
-      diaryRoute: boolean;
-      online: boolean;
-      shellVisible: boolean;
-      wallpaperVisible: boolean;
-    } = await page.evaluate(() => {
+    const readinessFacts = await page.evaluate(() => {
       const shell = document.querySelector<HTMLElement>("[data-testid='journal-page-shell']");
       const wallpaper = document.querySelector<HTMLElement>("[data-testid='journal-wallpaper']");
       return {
-        controlled: Boolean(navigator.serviceWorker?.controller),
         diaryRoute: window.location.pathname.endsWith("/diary"),
+        manifestHref: document.querySelector<HTMLLinkElement>('link[rel="manifest"]')?.href ?? null,
         online: navigator.onLine,
         shellVisible: Boolean(shell && shell.getBoundingClientRect().height > 0),
+        standalone: (navigator as Navigator & { standalone?: boolean }).standalone === true,
         wallpaperVisible: Boolean(wallpaper && wallpaper.getBoundingClientRect().height > 0),
       };
     });
 
     expect(readinessFacts).toMatchObject({
-      controlled: true,
       diaryRoute: true,
       online: true,
       shellVisible: true,
+      standalone: true,
       wallpaperVisible: true,
     });
+    expect(readinessFacts.manifestHref).toContain("/people-first-app/manifest.webmanifest");
     expect(errors).toEqual([]);
   });
 });

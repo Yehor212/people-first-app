@@ -56,10 +56,10 @@ const QUICK_PICK_ICON_CLASS =
   "flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center overflow-visible rounded-none border-0 bg-transparent text-[hsl(var(--foreground))] shadow-none";
 
 const QUICK_PICK_META_CLASS =
-  "rounded-full border bg-[hsl(var(--card)/0.86)] px-2.5 py-1 text-[11px] font-bold leading-none text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.12),0_8px_18px_-15px_hsl(var(--foreground)/0.42)] tabular-nums";
+  "rounded-full border bg-[hsl(var(--card)/0.86)] px-2.5 py-1 text-xs font-bold leading-none text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.12),0_8px_18px_-15px_hsl(var(--foreground)/0.42)] tabular-nums";
 
 const QUICK_PICK_LABEL_CLASS =
-  "relative z-[1] line-clamp-2 max-w-full pr-1 text-[15px] font-bold leading-tight text-[hsl(var(--foreground))]";
+  "relative z-[1] max-w-full min-w-0 break-words pr-1 text-sm font-bold leading-tight whitespace-normal text-[hsl(var(--foreground))] [hyphens:manual] [overflow-wrap:normal]";
 
 function RitualDeckScene({ animate }: { animate: boolean }) {
   return (
@@ -156,19 +156,25 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
       data-tone="ritual-deck"
       data-surface="ink-paper"
     >
-      <div className="relative z-[1] grid grid-cols-[auto_1fr] items-center gap-3">
+      <div
+        className="relative z-[1] grid grid-cols-1 items-center gap-3 sm:grid-cols-[auto_1fr]"
+        data-testid="habits-empty-intro"
+      >
         <div
-          className="flex h-24 w-28 items-center justify-center overflow-visible rounded-[24px] border border-[hsl(var(--zf-role-energy)/0.28)] bg-[linear-gradient(145deg,hsl(var(--zf-role-energy)/0.14),hsl(var(--card)/0.84)_46%,hsl(var(--zf-role-gratitude)/0.12)),hsl(var(--surface-elevated)/0.76)] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.10),0_20px_54px_-40px_hsl(var(--foreground)/0.34)]"
+          className="flex h-24 w-28 items-center justify-center justify-self-center overflow-visible rounded-[24px] border border-[hsl(var(--zf-role-energy)/0.28)] bg-[linear-gradient(145deg,hsl(var(--zf-role-energy)/0.14),hsl(var(--card)/0.84)_46%,hsl(var(--zf-role-gratitude)/0.12)),hsl(var(--surface-elevated)/0.76)] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.10),0_20px_54px_-40px_hsl(var(--foreground)/0.34)] sm:justify-self-auto"
           data-testid="hero-ritual-board-scene"
           data-scene="option-b-liquid-glass-totem"
         >
           <RitualDeckScene animate={animate} />
         </div>
-        <div className="min-w-0">
-          <p className="font-display text-[21px] font-semibold leading-tight tracking-tight text-[hsl(var(--foreground))] md:text-[28px]">
+        <div className="min-w-0 text-center sm:text-start">
+          <p
+            className="whitespace-normal font-display text-lg font-semibold leading-tight tracking-tight text-[hsl(var(--foreground))] [hyphens:manual] [overflow-wrap:normal] sm:text-xl md:text-2xl"
+            data-testid="habits-empty-title"
+          >
             {title}
           </p>
-          <p className="mt-1 max-w-md text-sm leading-snug text-[hsl(var(--muted-foreground))] font-body">
+          <p className="mx-auto mt-1 max-w-md whitespace-normal text-sm leading-snug text-[hsl(var(--muted-foreground))] [hyphens:manual] [overflow-wrap:normal] font-body sm:mx-0">
             {subtitle}
           </p>
         </div>
@@ -176,10 +182,16 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
 
       {onPickTemplate && !isRestDay && (
         <div className="relative z-[1] mt-4">
-          <p className="mb-2 text-center text-[11px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+          <p
+            className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]"
+            data-testid="habits-empty-quickpick-heading"
+          >
             {tx.navV2HabitsQuickPick}
           </p>
-          <ul className="grid grid-cols-2 gap-2 md:grid-cols-3" data-testid="hero-empty-quickpick">
+          <ul
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(7rem*var(--font-scale,1))),1fr))] gap-2 md:grid-cols-3"
+            data-testid="hero-empty-quickpick"
+          >
             {QUICK_PICKS.map((tpl) => {
               const name = tpl.names[language] || tpl.names.en;
               const playTone = getHabitStarterPlayTone(tpl.id);
@@ -253,12 +265,15 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
         </div>
       )}
 
-      <div className="relative z-[1] mt-4 grid grid-cols-[minmax(0,1.25fr)_minmax(112px,0.75fr)] gap-2">
+      <div
+        className="relative z-[1] mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(9rem*var(--font-scale,1))),1fr))] gap-2"
+        data-testid="habits-empty-actions"
+      >
         <button
           type="button"
           onClick={handleCreate}
           className={
-            "inline-flex min-h-[48px] min-w-[44px] items-center justify-center gap-2 rounded-[22px] bg-[linear-gradient(135deg,hsl(var(--zf-role-energy)/0.94),hsl(var(--zf-role-body)/0.86))] px-4 py-3 text-sm font-semibold text-[hsl(var(--zf-night-0))] shadow-[0_20px_48px_-30px_hsl(var(--zf-role-energy)/0.90)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
+            "inline-flex min-h-[48px] min-w-0 items-center justify-center gap-2 whitespace-normal rounded-[22px] bg-[linear-gradient(135deg,hsl(var(--zf-role-energy)/0.94),hsl(var(--zf-role-body)/0.86))] px-4 py-3 text-center text-sm font-semibold text-[hsl(var(--zf-night-0))] shadow-[0_20px_48px_-30px_hsl(var(--zf-role-energy)/0.90)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
             bodyTone.focusRingClass +
             " " +
             (animate ? "motion-safe:transition-transform active:scale-[0.97]" : "")
@@ -266,15 +281,17 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
           aria-label={tx.navV2HabitsCreate}
           data-testid="habits-hero-create-empty"
         >
-          <CreateHabitIcon className="h-4 w-4" aria-hidden="true" />
-          <span className="truncate">{tx.navV2HabitsCreate}</span>
+          <CreateHabitIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:normal]">
+            {tx.navV2HabitsCreate}
+          </span>
         </button>
         {onOpenLibrary && (
           <button
             type="button"
             onClick={handleOpenLibrary}
             className={
-              "inline-flex min-h-[48px] min-w-[112px] items-center justify-center gap-2 rounded-[22px] border bg-[hsl(var(--card)/0.72)] px-3 py-3 text-xs font-semibold text-[hsl(var(--foreground))] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
+              "inline-flex min-h-[48px] min-w-0 items-center justify-center gap-2 whitespace-normal rounded-[22px] border bg-[hsl(var(--card)/0.72)] px-3 py-3 text-center text-xs font-semibold text-[hsl(var(--foreground))] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
               focusTone.borderClass +
               " " +
               focusTone.focusRingClass +
@@ -285,7 +302,9 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
             data-visual-role="focus"
           >
             <LibraryIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">{tx.navV2HabitsBrowseLibrary}</span>
+            <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:normal]">
+              {tx.navV2HabitsBrowseLibrary}
+            </span>
           </button>
         )}
       </div>

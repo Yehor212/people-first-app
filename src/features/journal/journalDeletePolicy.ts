@@ -1,0 +1,1 @@
+export const JOURNAL_DELETE_UNDO_WINDOW_MS = 5_000;

@@ -7,7 +7,7 @@
  * - Focus restoration on close
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, type RefObject } from 'react';
 
 interface UseModalKeyboardOptions {
   isOpen: boolean;
@@ -15,6 +15,7 @@ interface UseModalKeyboardOptions {
   closeOnEscape?: boolean;
   trapFocus?: boolean;
   restoreFocus?: boolean;
+  restoreFocusTo?: RefObject<HTMLElement | null>;
 }
 
 const FOCUSABLE_ELEMENTS = [
@@ -26,50 +27,91 @@ const FOCUSABLE_ELEMENTS = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(', ');
 
+const activeModalKeyboardStack: symbol[] = [];
+
+function getVisibleFocusableElements(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS)).filter(
+    (element) => {
+      if (element.closest('[hidden], [aria-hidden="true"], [inert], .hidden')) return false;
+      const style = window.getComputedStyle(element);
+      return style.display !== 'none' && style.visibility !== 'hidden';
+    }
+  );
+}
+
+function getConnectedFocusTarget(ref?: RefObject<HTMLElement | null>): HTMLElement | null {
+  const target = ref?.current;
+  return target?.isConnected ? target : null;
+}
+
+export function focusModalRecoveryAction(
+  modal: HTMLElement | null,
+  recoveryAction: HTMLElement | null,
+): void {
+  if (!modal || !recoveryAction || !modal.isConnected || !recoveryAction.isConnected) return;
+  const activeElement = document.activeElement;
+  if (activeElement instanceof HTMLElement && modal.contains(activeElement)) return;
+  recoveryAction.focus({ preventScroll: true });
+}
+
 export function useModalKeyboard({
   isOpen,
   onClose,
   closeOnEscape = true,
   trapFocus = true,
   restoreFocus = true,
+  restoreFocusTo,
 }: UseModalKeyboardOptions) {
   const modalRef = useRef<HTMLDivElement>(null);
-  const previousActiveElement = useRef<HTMLElement | null>(null);
+  const modalKeyboardId = useRef(Symbol('modal-keyboard-layer'));
+  const onCloseRef = useRef(onClose);
 
-  // Store the previously focused element when modal opens
   useEffect(() => {
-    if (isOpen && restoreFocus) {
-      previousActiveElement.current = document.activeElement as HTMLElement;
-    }
-  }, [isOpen, restoreFocus]);
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
-  // Restore focus when modal closes
+  // Capture the opener and restore it both on close and conditional unmount.
   useEffect(() => {
-    if (!isOpen && restoreFocus && previousActiveElement.current) {
-      // Small delay to ensure modal is fully closed
-      const timer = setTimeout(() => {
-        previousActiveElement.current?.focus();
-        previousActiveElement.current = null;
+    if (!isOpen || !restoreFocus) return;
+
+    const target = restoreFocusTo?.current ?? (document.activeElement as HTMLElement);
+
+    return () => {
+      setTimeout(() => {
+        const currentTarget = getConnectedFocusTarget(restoreFocusTo);
+        const focusTarget = target?.isConnected
+          ? target
+          : currentTarget
+            ? currentTarget
+            : null;
+        focusTarget?.focus();
       }, 10);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, restoreFocus]);
+    };
+  }, [isOpen, restoreFocus, restoreFocusTo]);
 
-  // Handle escape key
+  // Keep nested dialogs ordered so Escape never closes a layer underneath the
+  // active one. All open layers participate, including non-dismissible ones.
   useEffect(() => {
-    if (!isOpen || !closeOnEscape) return;
+    if (!isOpen) return;
+
+    const id = modalKeyboardId.current;
+    activeModalKeyboardStack.push(id);
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        onClose();
-      }
+      if (event.key !== 'Escape') return;
+      if (activeModalKeyboardStack.at(-1) !== id || !closeOnEscape) return;
+      event.preventDefault();
+      event.stopPropagation();
+      onCloseRef.current();
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, closeOnEscape, onClose]);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      const index = activeModalKeyboardStack.lastIndexOf(id);
+      if (index >= 0) activeModalKeyboardStack.splice(index, 1);
+    };
+  }, [isOpen, closeOnEscape]);
 
   // Focus trap handler
   const handleKeyDown = useCallback(
@@ -79,8 +121,13 @@ export function useModalKeyboard({
       const modal = modalRef.current;
       if (!modal) return;
 
-      const focusableElements = modal.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS);
-      if (focusableElements.length === 0) return;
+      const focusableElements = getVisibleFocusableElements(modal);
+      if (focusableElements.length === 0) {
+        // Busy states can temporarily disable every interactive control while
+        // keeping a programmatically focused status inside the dialog.
+        event.preventDefault();
+        return;
+      }
 
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
@@ -111,8 +158,18 @@ export function useModalKeyboard({
       const modal = modalRef.current;
       if (!modal) return;
 
-      const focusableElements = modal.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS);
-      const closeButton = modal.querySelector<HTMLElement>('[aria-label*="Close"], [aria-label*="close"]');
+      // A pointer, keyboard action, or busy-state transition may have already
+      // moved focus to the right control before this deferred opener runs.
+      // Preserve that more recent intent instead of stealing focus back to the
+      // close button.
+      if (document.activeElement instanceof HTMLElement && modal.contains(document.activeElement)) {
+        return;
+      }
+
+      const focusableElements = getVisibleFocusableElements(modal);
+      const closeButton = focusableElements.find((element) =>
+        /close/i.test(element.getAttribute('aria-label') || '')
+      );
 
       // Prefer close button, otherwise first focusable element
       if (closeButton) {

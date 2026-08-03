@@ -74,6 +74,7 @@ export const FocusTimer = memo(function FocusTimer({
 
         <div className="mb-4 space-y-3 relative">
           <label
+            htmlFor="focus-session-label"
             className={cn(
               "text-sm",
               isPrimaryCTA ? "text-slate-600 dark:text-white/60" : "text-muted-foreground"
@@ -82,6 +83,8 @@ export const FocusTimer = memo(function FocusTimer({
             {t.focusLabelPrompt}
           </label>
           <input
+            id="focus-session-label"
+            name="focus-session-label"
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
@@ -183,10 +186,10 @@ export const FocusTimer = memo(function FocusTimer({
             </div>
           )}
         </div>
-        <div className="flex items-center justify-between mb-6 relative">
+        <div className="mb-6 relative flex min-w-0 flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
           <h3
             className={cn(
-              "text-lg font-semibold",
+              "min-w-0 break-words text-lg font-semibold [hyphens:manual] [overflow-wrap:normal]",
               isPrimaryCTA ? "text-slate-800 dark:text-white" : "text-foreground"
             )}
           >
@@ -194,14 +197,14 @@ export const FocusTimer = memo(function FocusTimer({
           </h3>
           <div
             className={cn(
-              "flex items-center gap-2 text-sm",
+              "min-w-0 max-w-full flex flex-wrap items-center gap-2 whitespace-normal text-sm",
               isPrimaryCTA
-                ? "px-3 py-1.5 bg-secondary backdrop-blur-sm rounded-full text-slate-600 dark:text-white/70"
+                ? "self-start px-3 py-1.5 bg-secondary backdrop-blur-sm rounded-full text-slate-600 dark:text-white/70 min-[420px]:self-auto"
                 : "text-muted-foreground"
             )}
           >
-            <Coffee className="w-4 h-4" />
-            <span>
+            <Coffee className="h-4 w-4 shrink-0" />
+            <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:normal]">
               {totalMinutesToday} {t.todayMinutes}
             </span>
           </div>

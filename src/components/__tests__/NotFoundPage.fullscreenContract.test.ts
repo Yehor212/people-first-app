@@ -12,4 +12,13 @@ describe("NotFoundPage fullscreen recovery contract", () => {
     expect(source).not.toContain("min-h-[100svh]");
     expect(source).not.toContain("env(safe-area-inset-top)");
   });
+
+  it("stacks recovery actions until there is enough room and preserves readable labels", () => {
+    const source = readNotFoundPage();
+
+    expect(source).toContain('"grid-cols-1 sm:grid-cols-2"');
+    expect(source).not.toContain('"grid-cols-2" : "grid-cols-1"');
+    expect(source).toMatch(/min-w-0[^"]*whitespace-normal[^"]*break-words/);
+    expect(source).toContain("[overflow-wrap:break-word]");
+  });
 });

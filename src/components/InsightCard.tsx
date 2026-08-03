@@ -1,11 +1,11 @@
 /**
  * InsightCard - Individual insight display component
  *
- * Shows personalized insights with confidence indicators
- * and expandable details
+ * Shows personalized insights with their recorded observation count
+ * and expandable details.
  */
 
-import { memo, useState } from "react";
+import { memo, useId, useState } from "react";
 import type { Insight } from "@/types";
 import {
   ChevronDown,
@@ -24,8 +24,10 @@ interface InsightCardProps {
 export const InsightCard = memo(function InsightCard({
   insight,
 }: InsightCardProps) {
-  const { t } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
+  const titleId = useId();
+  const detailsId = useId();
 
   // Icon based on insight type
   const getIcon = () => {
@@ -78,14 +80,15 @@ export const InsightCard = memo(function InsightCard({
   };
 
   const colors = getColors();
-
-  // Confidence bar color
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 80) return "bg-green-500";
-    if (confidence >= 60) return "bg-blue-500";
-    if (confidence >= 40) return "bg-amber-500";
-    return "bg-muted-foreground";
-  };
+  const observationUnit =
+    insight.metadata.type === "mood-habit-correlation"
+      ? t.days || "recorded days"
+      : insight.metadata.type === "focus-pattern"
+        ? t.insightSessions || "sessions"
+        : insight.metadata.type === "habit-timing"
+          ? t.times || "times"
+          : t.insightDataPoints || "recorded entries";
+  const observationSummary = `${new Intl.NumberFormat(language).format(insight.dataPoints)} ${observationUnit}`;
 
   return (
     <div
@@ -95,14 +98,21 @@ export const InsightCard = memo(function InsightCard({
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full p-4 flex items-start gap-3 hover:opacity-80 motion-safe:transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-expanded={isExpanded}
+        aria-controls={detailsId}
       >
         <div className={`flex-shrink-0 ${colors.icon}`}>{getIcon()}</div>
 
-        <div className="flex-1 text-start">
-          <h3 className={`font-semibold ${colors.text} mb-1`}>
+        <div className="min-w-0 flex-1 text-start">
+          <h3
+            id={titleId}
+            className={`mb-1 break-words font-semibold [overflow-wrap:anywhere] ${colors.text}`}
+          >
             {insight.title}
           </h3>
-          <p className="text-sm text-muted-foreground">{insight.description}</p>
+          <p className="break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
+            {insight.description}
+          </p>
         </div>
 
         <div className="flex-shrink-0">
@@ -114,28 +124,24 @@ export const InsightCard = memo(function InsightCard({
         </div>
       </button>
 
-      {/* Confidence Indicator */}
+      {/* The ranking score is internal; only the real observation count is shown. */}
       <div className="px-4 pb-3">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-          <span>
-            {t.insightConfidence || "Confidence"}: {insight.confidence}%
-          </span>
-          <span className="text-gray-500 dark:text-gray-400">•</span>
-          <span>
-            {insight.dataPoints} {t.insightDataPoints || "data points"}
-          </span>
-        </div>
-        <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div
-            className={`h-full ${getConfidenceColor(insight.confidence)} motion-safe:transition-all motion-safe:duration-500`}
-            style={{ width: `${insight.confidence}%` }}
-          />
-        </div>
+        <span
+          className="text-xs text-muted-foreground"
+          dir={isRTL ? "rtl" : "ltr"}
+        >
+          {observationSummary}
+        </span>
       </div>
 
       {/* Expanded Details */}
       {isExpanded && (
-        <div className="px-4 pb-4 pt-2 border-t border-gray-200 dark:border-gray-700">
+        <div
+          id={detailsId}
+          role="region"
+          aria-labelledby={titleId}
+          className="px-4 pb-4 pt-2 border-t border-gray-200 dark:border-gray-700"
+        >
           <div className="space-y-2 text-sm">
             {insight.metadata.type === "mood-habit-correlation" && (
               <>

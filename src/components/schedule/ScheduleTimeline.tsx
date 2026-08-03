@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- The bounded timeline region must receive focus so keyboard users can scroll it even when no events are present. */
 /**
  * Schedule Timeline - "My World" orchestrator
  * Decomposed from the original 1,647-line monolith (TD-20).
@@ -27,6 +28,7 @@ import { AddEventModal } from "./AddEventModal";
 import { EventDetailsModal } from "./EventDetailsModal";
 import { TaskFocusPanel } from "./TaskFocusPanel";
 import { getTimelineRenderWindow } from "./timelineWindowing";
+import { domToPhysicalScrollLeft } from "./timelineScrollCoordinates";
 
 export function ScheduleTimeline({
   events,
@@ -79,6 +81,7 @@ export function ScheduleTimeline({
     isScrollingProgrammatically,
     t,
     language,
+    isRTL,
   } = useScheduleData(events, timelineRef, daySelectorRef, initialSelectedDate);
 
   // --- Local derived state ---
@@ -86,8 +89,14 @@ export function ScheduleTimeline({
   const handleTimelineScroll = useCallback(() => {
     if (!timelineRef.current || isScrollingProgrammatically.current) return;
 
-    const scrollLeft = timelineRef.current.scrollLeft;
-    const viewportCenter = scrollLeft + timelineRef.current.clientWidth / 2;
+    const timeline = timelineRef.current;
+    const maxScroll = timeline.scrollWidth - timeline.clientWidth;
+    const physicalScrollLeft = domToPhysicalScrollLeft(
+      timeline.scrollLeft,
+      maxScroll,
+      isRTL,
+    );
+    const viewportCenter = physicalScrollLeft + timeline.clientWidth / 2;
     const dayIndex = Math.floor(viewportCenter / DAY_WIDTH_PX);
     const clampedIndex = Math.max(0, Math.min(dayIndex, allDates.length - 1));
     const newSelectedDate = allDates[clampedIndex];
@@ -102,6 +111,7 @@ export function ScheduleTimeline({
     setSelectedDate,
     scrollDaySelectorToDate,
     isScrollingProgrammatically,
+    isRTL,
   ]);
 
   const handleDayClick = useCallback(
@@ -154,7 +164,7 @@ export function ScheduleTimeline({
   // --- JSX ---
 
   return (
-    <div className="relative overflow-hidden rounded-3xl motion-safe:animate-fade-in">
+    <div className="relative w-full min-w-0 max-w-full overflow-hidden rounded-3xl motion-safe:animate-fade-in">
       {/* Cosmic background - Theme-aware */}
       <div className="absolute inset-0 bg-gradient-to-br from-amber-50/80 via-sky-50/60 to-indigo-50/40 dark:bg-none" />
       <div
@@ -186,41 +196,42 @@ export function ScheduleTimeline({
       />
 
       {/* Content container */}
-      <div className="relative z-10 p-4">
+      <div className="relative z-10 min-w-0 p-4">
         {/* Premium Header */}
         <motion.div
-          className="flex items-center justify-between mb-4"
+          className="mb-4 flex min-w-0 flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex items-center gap-4">
+          <div className="flex min-w-0 items-center gap-3">
             {/* Animated Clock Ring */}
             <AnimatedClockRing
               currentHour={currentHour}
               currentMinute={currentMinute}
             />
 
-            <div>
+            <div className="min-w-0 flex-1">
               {/* Title with sparkle */}
-              <motion.h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 [text-shadow:0_0_10px_rgba(139,92,246,0.3)]">
+              <motion.h3 className="flex min-w-0 flex-wrap items-center gap-2 text-lg font-bold text-slate-800 [text-shadow:0_0_10px_rgba(139,92,246,0.3)] dark:text-white">
                 <motion.span
+                  className="shrink-0"
                   animate={{ rotate: [0, 15, -15, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
                   <Sparkles className="w-5 h-5 text-purple-400" />
                 </motion.span>
-                {t.myWorld}
+                <span className="min-w-0 break-words [overflow-wrap:normal]">{t.myWorld}</span>
               </motion.h3>
 
               {/* Current event badge */}
               {currentEvent && (
                 <motion.div
-                  className="mt-1 px-3 py-1 bg-secondary backdrop-blur-sm rounded-full inline-flex items-center gap-2"
+                  className="mt-1 inline-flex max-w-full min-w-0 flex-wrap items-center gap-2 rounded-full bg-secondary px-3 py-1 backdrop-blur-sm"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                 >
-                  <span>{currentEvent.emoji}</span>
-                  <span className="text-sm text-slate-600 dark:text-white/80">
+                  <span className="shrink-0">{currentEvent.emoji}</span>
+                  <span className="min-w-0 break-words text-sm text-slate-600 [overflow-wrap:anywhere] dark:text-white/80">
                     {currentEvent.title}
                   </span>
                 </motion.div>
@@ -229,16 +240,16 @@ export function ScheduleTimeline({
               {/* Google Calendar sync indicator */}
               {isLoadingGoogle && (
                 <motion.div
-                  className="mt-1 px-2 py-0.5 bg-blue-500/10 backdrop-blur-sm rounded-full inline-flex items-center gap-1.5"
+                  className="mt-1 inline-flex max-w-full min-w-0 flex-wrap items-center gap-1.5 rounded-full bg-blue-500/10 px-2 py-0.5 backdrop-blur-sm"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                 >
                   <motion.div
-                    className="w-2 h-2 rounded-full bg-blue-500"
+                    className="h-2 w-2 shrink-0 rounded-full bg-blue-500"
                     animate={{ scale: [1, 1.3, 1] }}
                     transition={{ duration: 1, repeat: Infinity }}
                   />
-                  <span className="text-[10px] text-blue-600 dark:text-blue-400">
+                  <span className="min-w-0 whitespace-normal break-words text-xs text-blue-600 [hyphens:manual] [overflow-wrap:normal] dark:text-blue-400">
                     {t.googleCalendar || "Google Calendar"}...
                   </span>
                 </motion.div>
@@ -246,14 +257,14 @@ export function ScheduleTimeline({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 self-end">
             {/* Go to Today button */}
             {selectedDate !== getToday() && (
               <motion.button
                 onClick={goToToday}
                 whileHover={{ scale: 1.1 }}
                 whileTap={zenTap.button}
-                className="p-2.5 bg-secondary hover:bg-secondary/80 backdrop-blur-sm rounded-xl border border-border motion-safe:transition-colors"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center p-2.5 bg-secondary hover:bg-secondary/80 backdrop-blur-sm rounded-xl border border-border motion-safe:transition-colors"
                 aria-label={t.today || "Today"}
               >
                 <Home className="w-5 h-5 text-slate-600 dark:text-white/80" />
@@ -266,7 +277,7 @@ export function ScheduleTimeline({
                 onClick={() => setShowAddModal(true)}
                 whileHover={{ scale: 1.1 }}
                 whileTap={zenTap.button}
-                className="p-2.5 bg-gradient-to-br from-primary/40 to-accent/40 hover:from-primary/60 hover:to-accent/60 backdrop-blur-sm rounded-xl border border-primary/30 motion-safe:transition-all shadow-lg shadow-primary/20"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center p-2.5 bg-gradient-to-br from-primary/40 to-accent/40 hover:from-primary/60 hover:to-accent/60 backdrop-blur-sm rounded-xl border border-primary/30 motion-safe:transition-all shadow-lg shadow-primary/20"
                 aria-label={t.scheduleAddEvent || "Add event"}
               >
                 <Plus className="w-5 h-5 text-white" />
@@ -278,7 +289,7 @@ export function ScheduleTimeline({
         {/* Premium Day Selector */}
         <div
           ref={daySelectorRef}
-          className="flex gap-2 mb-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide snap-x snap-mandatory"
+          className="-mx-1 mb-4 flex min-w-0 max-w-full snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2 scrollbar-hide"
         >
           {allDates.map((date) => (
             <PremiumDayPill
@@ -294,11 +305,14 @@ export function ScheduleTimeline({
         </div>
 
         {/* Cosmic Timeline */}
-        <div className="relative">
+        <div className="relative min-w-0 max-w-full">
           <div
             ref={timelineRef}
             onScroll={handleTimelineScroll}
-            className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-primary/30"
+            role="region"
+            aria-label={t.scheduleTitle || "Your Schedule"}
+            tabIndex={0}
+            className="max-w-full overflow-x-auto overscroll-x-contain rounded-lg pb-2 scrollbar-thin scrollbar-thumb-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
           >
             <div
               className="relative h-28"

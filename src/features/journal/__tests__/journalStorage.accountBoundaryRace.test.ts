@@ -24,7 +24,11 @@ vi.mock("@/storage/realtimeSync", () => ({
 }));
 vi.mock("@/storage/cloudSync", () => ({ triggerSync: vi.fn() }));
 vi.mock("@/lib/offlineQueue", () => ({
-  offlineQueue: { enqueue: vi.fn(() => Promise.resolve()) },
+  offlineQueue: {
+    enqueue: vi.fn(() => Promise.resolve()),
+    wakeFromDurableStorage: vi.fn(() => Promise.resolve()),
+  },
+  persistCriticalOfflineActionInCurrentTransaction: vi.fn(() => Promise.resolve()),
 }));
 vi.mock("@/storage/deletionTracker", () => ({
   DELETION_TRACKER_KEYS: {
@@ -35,8 +39,10 @@ vi.mock("@/storage/deletionTracker", () => ({
     gratitude: "zenflow-deleted-gratitude-ids",
   },
   trackDeletedJournalEntryId: vi.fn(() => Promise.resolve()),
+  mergeDeletionTrackerIdsInCurrentTransaction: vi.fn(() => Promise.resolve(new Set())),
 }));
 vi.mock("@/storage/journalStorageService", () => ({
+  JOURNAL_PHOTO_UPLOAD_MAX_BYTES: 1 * 1024 * 1024,
   uploadPhoto: vi.fn(() => Promise.resolve(null)),
   uploadEncryptedPhoto: vi.fn(() => Promise.resolve(null)),
   uploadAudio: vi.fn(() => Promise.resolve(null)),
@@ -60,7 +66,7 @@ import {
   getLocalDataOwnerId,
   setLocalDataOwnerId,
 } from "@/storage/db";
-import { saveEntry } from "../journalStorage";
+import { compressAndStorePhoto, saveEntry } from "../journalStorage";
 
 const DATA_WRITE_BARRIER_LOCK = "zenflow:data-write-barrier";
 const JOURNAL_SECURITY_WRITE_LOCK = "zenflow:journal-security-write";
@@ -161,6 +167,9 @@ function accountAEntry(content: string) {
 
 describe("journal writes at an origin-wide account boundary", () => {
   let originalLocks: PropertyDescriptor | undefined;
+  let originalImage: PropertyDescriptor | undefined;
+  let originalCreateObjectUrl: typeof URL.createObjectURL | undefined;
+  let originalRevokeObjectUrl: typeof URL.revokeObjectURL | undefined;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -169,6 +178,9 @@ describe("journal writes at an origin-wide account boundary", () => {
       .mockReturnValueOnce("account-a-delayed-entry")
       .mockReturnValue("account-a-post-purge-entry");
     originalLocks = Object.getOwnPropertyDescriptor(navigator, "locks");
+    originalImage = Object.getOwnPropertyDescriptor(globalThis, "Image");
+    originalCreateObjectUrl = URL.createObjectURL;
+    originalRevokeObjectUrl = URL.revokeObjectURL;
     localStorage.clear();
     db.close();
     await db.delete();
@@ -181,6 +193,11 @@ describe("journal writes at an origin-wide account boundary", () => {
     } else {
       Reflect.deleteProperty(navigator, "locks");
     }
+    if (originalImage) {
+      Object.defineProperty(globalThis, "Image", originalImage);
+    }
+    if (originalCreateObjectUrl) URL.createObjectURL = originalCreateObjectUrl;
+    if (originalRevokeObjectUrl) URL.revokeObjectURL = originalRevokeObjectUrl;
     localStorage.clear();
     db.close();
     await db.delete();
@@ -241,5 +258,138 @@ describe("journal writes at an origin-wide account boundary", () => {
     expect(purgeFinishedBeforeJournalSave).toBe(false);
     expect(await getLocalDataOwnerId()).toBe("account-b");
     expect(await db.journalEntries.toArray()).toEqual([]);
+  });
+
+  it("rejects a photo whose decode finishes after the account boundary changes", async () => {
+    const locks = new FifoWebLockManager();
+    Object.defineProperty(navigator, "locks", {
+      configurable: true,
+      value: locks,
+    });
+    await setLocalDataOwnerId("account-a");
+
+    const imageStarted = deferred();
+    const releaseImage = deferred();
+    class DelayedImage {
+      width = 1200;
+      height = 800;
+      onload: (() => void) | null = null;
+      onerror: ((error?: unknown) => void) | null = null;
+
+      set src(_value: string) {
+        imageStarted.resolve();
+        void releaseImage.promise.then(() => this.onload?.());
+      }
+    }
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      value: DelayedImage,
+    });
+    URL.createObjectURL = vi.fn(() => "blob:account-a-photo");
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "toDataURL").mockReturnValue(
+      "data:image/jpeg;base64,compressed"
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((callback) => {
+      callback(new Blob(["compressed"], { type: "image/jpeg" }));
+    });
+
+    const jpegWithSofDimensions = new Uint8Array([
+      0xff, 0xd8,
+      0xff, 0xc0, 0x00, 0x11, 0x08,
+      0x03, 0x20, 0x04, 0xb0,
+      0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x00, 0x03, 0x11, 0x00,
+      0xff, 0xd9,
+    ]);
+    const privateJpeg = new File([jpegWithSofDimensions], "private.jpg", { type: "image/jpeg" });
+    Object.defineProperty(privateJpeg, "slice", {
+      configurable: true,
+      value: () => ({
+        arrayBuffer: () => Promise.resolve(jpegWithSofDimensions.buffer),
+      }),
+    });
+    const stalePhoto = compressAndStorePhoto(
+      privateJpeg,
+      "account-a-entry"
+    );
+    await imageStarted.promise;
+
+    const { runWithDataWriteBarrier } = await import("@/hooks/useIndexedDB");
+    await runWithDataWriteBarrier(
+      async () => {
+        await clearLocalUserData();
+        await setLocalDataOwnerId("account-b");
+      },
+      { deferredWrites: "discard" }
+    );
+
+    releaseImage.resolve();
+    await expect(stalePhoto).rejects.toThrow(/account boundary/i);
+
+    expect(await getLocalDataOwnerId()).toBe("account-b");
+    expect(await db.journalPhotos.toArray()).toEqual([]);
+  });
+
+  it("does not persist a photo when processing is aborted during decode", async () => {
+    await setLocalDataOwnerId("account-a");
+    const { runWithAccountBoundaryJournalWriteBarrier } = await import(
+      "@/storage/accountBoundaryRuntime"
+    );
+    await runWithAccountBoundaryJournalWriteBarrier(async () => undefined);
+    const imageStarted = deferred();
+    const releaseImage = deferred();
+    class DelayedImage {
+      width = 1200;
+      height = 800;
+      onload: (() => void) | null = null;
+      onerror: ((error?: unknown) => void) | null = null;
+
+      set src(_value: string) {
+        imageStarted.resolve();
+        void releaseImage.promise.then(() => this.onload?.());
+      }
+    }
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      value: DelayedImage,
+    });
+    URL.createObjectURL = vi.fn(() => "blob:aborted-photo");
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "toDataURL").mockReturnValue(
+      "data:image/jpeg;base64,compressed",
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((callback) => {
+      callback(new Blob(["compressed"], { type: "image/jpeg" }));
+    });
+
+    const jpegWithSofDimensions = new Uint8Array([
+      0xff, 0xd8,
+      0xff, 0xc0, 0x00, 0x11, 0x08,
+      0x03, 0x20, 0x04, 0xb0,
+      0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x00, 0x03, 0x11, 0x00,
+      0xff, 0xd9,
+    ]);
+    const privateJpeg = new File([jpegWithSofDimensions], "private.jpg", { type: "image/jpeg" });
+    Object.defineProperty(privateJpeg, "slice", {
+      configurable: true,
+      value: () => ({
+        arrayBuffer: () => Promise.resolve(jpegWithSofDimensions.buffer),
+      }),
+    });
+    const controller = new AbortController();
+    const pendingPhoto = compressAndStorePhoto(privateJpeg, "draft-entry", controller.signal);
+    await imageStarted.promise;
+
+    controller.abort();
+    releaseImage.resolve();
+
+    await expect(pendingPhoto).rejects.toMatchObject({ name: "AbortError" });
+    expect(await db.journalPhotos.toArray()).toEqual([]);
   });
 });

@@ -83,6 +83,8 @@ export interface JournalSecurityRemovalIntent {
   createdAt: number;
   status: "pending" | "queued" | "enqueue-failed";
   lastError?: string;
+  photos?: JournalSecurityMediaIntent[];
+  audios?: JournalSecurityMediaIntent[];
 }
 
 export interface ActivateJournalPasswordProtectionInput {
@@ -171,6 +173,8 @@ function isRemovalIntent(value: unknown): value is JournalSecurityRemovalIntent 
     typeof candidate.revision === "string" &&
     typeof candidate.ownerUserId === "string" &&
     typeof candidate.createdAt === "number" &&
+    (candidate.photos === undefined || Array.isArray(candidate.photos)) &&
+    (candidate.audios === undefined || Array.isArray(candidate.audios)) &&
     (candidate.status === "pending" ||
       candidate.status === "queued" ||
       candidate.status === "enqueue-failed")
@@ -196,9 +200,59 @@ export async function getJournalSecurityRemovalIntent(): Promise<JournalSecurity
 export async function hasPendingJournalSecurityMigrationForOwner(
   ownerUserId: string
 ): Promise<boolean> {
-  if (!ownerUserId) return false;
+  return (await getPendingJournalSecurityMigrationRevisionForOwner(ownerUserId)) !== null;
+}
+
+/**
+ * Stable identity for consent/account-boundary checks. A different revision is
+ * a newer migration and must never inherit a prior discard decision.
+ */
+export async function getPendingJournalSecurityMigrationRevisionForOwner(
+  ownerUserId: string,
+): Promise<string | null> {
+  if (!ownerUserId) return null;
   const intent = await getJournalSecurityMigrationIntent();
-  return intent?.ownerUserId === ownerUserId;
+  return intent?.ownerUserId === ownerUserId ? intent.revision : null;
+}
+
+function isJournalSecurityMigrationComplete(
+  intent: JournalSecurityMigrationIntent,
+): boolean {
+  return (
+    !intent.vaultSettingPending &&
+    !intent.backupPending &&
+    intent.entryIds.length === 0 &&
+    intent.photos.length === 0 &&
+    intent.audios.length === 0
+  );
+}
+
+async function pruneDeletedJournalArtifactsInCurrentTransaction(input: {
+  entryIds?: string[];
+  photoIds?: string[];
+  audioIds?: string[];
+}): Promise<boolean> {
+  const record = await db.settings.get(SK.JOURNAL_SECURITY_MIGRATION);
+  if (!isMigrationIntent(record?.value)) return false;
+  const intent = record.value;
+  const entryIds = new Set(input.entryIds ?? []);
+  const photoIds = new Set(input.photoIds ?? []);
+  const audioIds = new Set(input.audioIds ?? []);
+  const nextIntent: JournalSecurityMigrationIntent = {
+    ...intent,
+    entryIds: intent.entryIds.filter((id) => !entryIds.has(id)),
+    photos: intent.photos.filter(({ id }) => !photoIds.has(id)),
+    audios: intent.audios.filter(({ id }) => !audioIds.has(id)),
+  };
+  if (isJournalSecurityMigrationComplete(nextIntent)) {
+    await db.settings.delete(SK.JOURNAL_SECURITY_MIGRATION);
+  } else {
+    await db.settings.put({
+      key: SK.JOURNAL_SECURITY_MIGRATION,
+      value: nextIntent,
+    });
+  }
+  return true;
 }
 
 export async function removeDeletedJournalArtifactsFromSecurityMigration(input: {
@@ -206,17 +260,24 @@ export async function removeDeletedJournalArtifactsFromSecurityMigration(input: 
   photoIds?: string[];
   audioIds?: string[];
 }): Promise<void> {
-  const intent = await getJournalSecurityMigrationIntent();
-  if (!intent) return;
-  const entryIds = new Set(input.entryIds ?? []);
-  const photoIds = new Set(input.photoIds ?? []);
-  const audioIds = new Set(input.audioIds ?? []);
-  await saveProgress({
-    ...intent,
-    entryIds: intent.entryIds.filter((id) => !entryIds.has(id)),
-    photos: intent.photos.filter(({ id }) => !photoIds.has(id)),
-    audios: intent.audios.filter(({ id }) => !audioIds.has(id)),
+  const currentTransaction = Dexie.currentTransaction;
+  if (
+    currentTransaction?.active &&
+    currentTransaction.db === db &&
+    currentTransaction.storeNames.includes(db.settings.name)
+  ) {
+    const changed = await pruneDeletedJournalArtifactsInCurrentTransaction(input);
+    if (changed) {
+      currentTransaction.on("complete", emitMigrationUpdate);
+    }
+    return;
+  }
+
+  let changed = false;
+  await db.transaction("rw", db.settings, async () => {
+    changed = await pruneDeletedJournalArtifactsInCurrentTransaction(input);
   });
+  if (changed) emitMigrationUpdate();
 }
 
 async function persistIntent(
@@ -539,8 +600,8 @@ export async function removeJournalPasswordProtectionAtomically(
     );
     if (
       vaultRecord?.value &&
-      (!vaultKey ||
-        getJournalContentVaultKey() !== vaultKey ||
+      vaultKey &&
+      (getJournalContentVaultKey() !== vaultKey ||
         getJournalContentVaultRevision() !== persistedVaultRevision)
     ) {
       throw new Error("Unlock your diary before removing password protection.");
@@ -612,6 +673,12 @@ export async function removeJournalPasswordProtectionAtomically(
           ownerUserId,
           createdAt: updatedAt,
           status: "pending",
+          photos: photos
+            .filter((photo) => Boolean(photo.storagePath))
+            .map((photo) => ({ id: photo.id, previousStoragePath: photo.storagePath })),
+          audios: audios
+            .filter((audio) => Boolean(audio.storagePath))
+            .map((audio) => ({ id: audio.id, previousStoragePath: audio.storagePath })),
         }
       : null;
 
@@ -796,6 +863,38 @@ async function runJournalSecurityRemoval(
     throw new Error("Diary protection removal backup was interrupted");
   }
 
+  let mediaIntent = await loadCurrentRemovalIntent(payload, ownerUserId);
+  for (const photo of [...(mediaIntent.photos ?? [])]) {
+    if (photo.previousStoragePath) {
+      await validateSyncOwner(ownerUserId, "Diary protection removal photo cleanup");
+      await deleteJournalMediaStoragePath(
+        "journal-photos",
+        photo.previousStoragePath,
+        ownerUserId,
+      );
+    }
+    mediaIntent = {
+      ...mediaIntent,
+      photos: (mediaIntent.photos ?? []).filter(({ id }) => id !== photo.id),
+    };
+    await persistRemovalIntent(mediaIntent, intent.revision);
+  }
+  for (const audio of [...(mediaIntent.audios ?? [])]) {
+    if (audio.previousStoragePath) {
+      await validateSyncOwner(ownerUserId, "Diary protection removal audio cleanup");
+      await deleteJournalMediaStoragePath(
+        "journal-audio",
+        audio.previousStoragePath,
+        ownerUserId,
+      );
+    }
+    mediaIntent = {
+      ...mediaIntent,
+      audios: (mediaIntent.audios ?? []).filter(({ id }) => id !== audio.id),
+    };
+    await persistRemovalIntent(mediaIntent, intent.revision);
+  }
+
   await validateSyncOwner(ownerUserId, "Diary protection removal vault delete");
   await runWithJournalSecurityWriteLock(async () => {
     await validateSyncOwner(ownerUserId, "Diary protection removal delete preflight");
@@ -833,12 +932,7 @@ async function loadCurrentIntent(
 }
 
 async function saveProgress(intent: JournalSecurityMigrationIntent): Promise<void> {
-  const complete =
-    !intent.vaultSettingPending &&
-    !intent.backupPending &&
-    intent.entryIds.length === 0 &&
-    intent.photos.length === 0 &&
-    intent.audios.length === 0;
+  const complete = isJournalSecurityMigrationComplete(intent);
   await persistIntent(complete ? null : intent, intent.revision);
 }
 

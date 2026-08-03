@@ -8,10 +8,18 @@ type TestLanguage = "en" | "uk" | "es" | "de" | "fr" | "ja" | "ar" | "he";
 const languageState = vi.hoisted(
   (): {
     current: TestLanguage;
+    pending: TestLanguage | null;
+    error: TestLanguage | null;
+    saveError: TestLanguage | null;
     setLanguage: ReturnType<typeof vi.fn>;
+    retryLanguage: ReturnType<typeof vi.fn>;
   } => ({
     current: "en",
+    pending: null,
+    error: null,
+    saveError: null,
     setLanguage: vi.fn(),
+    retryLanguage: vi.fn(),
   })
 );
 
@@ -40,16 +48,24 @@ vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     language: languageState.current,
     setLanguage: languageState.setLanguage,
+    pendingLanguage: languageState.pending,
+    languageLoadError: languageState.error,
+    languageSaveError: languageState.saveError,
+    retryLanguage: languageState.retryLanguage,
     t: {
       autoDetectedLanguage: "Auto-detected",
       appName: "ZenFlow",
       continue: "Continue",
       language: "Language",
+      languageApplying: "Applying language...",
+      languageLoadFailed: "This language could not load. Check your connection and try again.",
+      languageSaveFailed: "This language is active for now, but ZenFlow couldn't save your choice on this device. You can continue or try again.",
       appearance: "Appearance",
       selectLanguage: "Select language",
       themeDark: "Dark",
       themeLight: "Light",
       themeSystem: "System",
+      tryAgain: "Try Again",
       welcomeSubtitle: "Your journey to mindful living starts here",
       welcomeTitle: "Welcome to ZenFlow",
     },
@@ -136,7 +152,11 @@ vi.mock("framer-motion", async () => {
 describe("LanguageSelector", () => {
   beforeEach(() => {
     languageState.current = "en";
+    languageState.pending = null;
+    languageState.error = null;
+    languageState.saveError = null;
     languageState.setLanguage.mockClear();
+    languageState.retryLanguage.mockClear();
     themeState.state.theme = "ink";
     themeState.state.appliedTheme = "ink";
     themeState.setTheme.mockClear();
@@ -165,7 +185,14 @@ describe("LanguageSelector", () => {
     );
     const languageGroup = screen.getByRole("radiogroup", { name: "Select language" });
     expect(languageGroup).toBeInTheDocument();
+    expect(languageGroup.className).toContain("auto-fit");
+    expect(languageGroup.className).toContain("calc(9rem*var(--font-scale");
+    expect(languageGroup.className).not.toContain("calc(7rem*var(--font-scale");
     expect(within(languageGroup).getAllByRole("radio")).toHaveLength(8);
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading).toHaveClass("min-w-0", "whitespace-normal", "leading-tight", "text-2xl");
+    expect(heading.className).toContain("overflow-wrap:normal");
+    expect(heading).not.toHaveClass("break-words");
     expect(screen.getByRole("radio", { name: "English" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("radio", { name: "English" })).toHaveAttribute("lang", "en");
     expect(screen.getByRole("radio", { name: "English" })).toHaveAttribute("dir", "ltr");
@@ -182,6 +209,10 @@ describe("LanguageSelector", () => {
     expect(screen.getAllByTestId("entry-gate-backdrop-orb")).toHaveLength(7);
     expect(screen.getAllByTestId("entry-gate-backdrop-ripple")).toHaveLength(3);
     expect(screen.getAllByTestId("entry-gate-backdrop-ribbon")).toHaveLength(3);
+
+    for (const option of within(languageGroup).getAllByRole("radio")) {
+      expect(option).toHaveClass("h-auto", "min-w-0", "whitespace-normal", "break-words");
+    }
   });
 
   it("selects a language and completes without form submission side effects", () => {
@@ -196,6 +227,42 @@ describe("LanguageSelector", () => {
 
     fireEvent.click(continueButton);
     expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks continuation while applying a dictionary and offers retry after failure", () => {
+    languageState.pending = "uk";
+    const { rerender } = render(<LanguageSelector onComplete={vi.fn()} />);
+
+    expect(screen.getByRole("radiogroup", { name: "Select language" })).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("status")).toHaveTextContent("Applying language...");
+    expect(screen.getByTestId("language-continue")).toBeDisabled();
+
+    languageState.pending = null;
+    languageState.error = "uk";
+    rerender(<LanguageSelector onComplete={vi.fn()} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "This language could not load. Check your connection and try again.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Try Again" }));
+    expect(languageState.retryLanguage).toHaveBeenCalledOnce();
+    expect(screen.getByTestId("language-continue")).toBeDisabled();
+  });
+
+  it("allows session-only continuation when the selected language cannot be saved", () => {
+    languageState.current = "ar";
+    languageState.saveError = "ar";
+    const onComplete = vi.fn();
+    render(<LanguageSelector onComplete={onComplete} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "This language is active for now, but ZenFlow couldn't save your choice on this device. You can continue or try again.",
+    );
+    expect(screen.getByTestId("language-continue")).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Try Again" }));
+    expect(languageState.retryLanguage).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByTestId("language-continue"));
+    expect(onComplete).toHaveBeenCalledOnce();
   });
 
   it("lets users choose light, dark, or system theme from the entry step", () => {

@@ -144,49 +144,55 @@ export const MiniWeekRow = memo(function MiniWeekRow({
     [habit, interactionScope, isNumerical, onToggle, onAdjust, onNumericalAction, today]
   );
 
+  const weekGridStyle = {
+    gridTemplateColumns: "repeat(7, minmax(calc(44px * var(--font-scale, 1)), 1fr))",
+  };
+
   return (
-    <div className="flex flex-col gap-0.5">
-      {/* Weekday labels */}
-      <div className="flex justify-between">
-        {days.map((date) => {
-          const dow = getDowIndex(date);
-          const isToday = date === today;
-          return (
-            <div
-              key={`label-${date}`}
-              className={cn(
-                "min-w-[44px] text-center text-[10px] leading-none",
-                tone === "hero"
-                  ? isToday
-                    ? "font-medium text-foreground/80"
-                    : "text-muted-foreground"
-                  : isToday
-                    ? "text-white/60 font-medium"
-                    : "text-white/40"
-              )}
-            >
-              {DOW_LABELS[dow]}
-            </div>
-          );
-        })}
-      </div>
-      {/* Cells */}
-      <div className="flex justify-between">
-        {days.map((date) => (
-          <MiniCheckmarkCell
-            key={date}
-            date={date}
-            value={getEntryVal(date)}
-            habitColor={habitColor}
-            roleAccent={roleAccent}
-            isToday={date === today}
-            isFuture={date > today}
-            isLocked={(interactionScope === "today" && date !== today) || !isHabitDueOnDate(habit, date)}
-            isNumerical={isNumerical}
-            numericDisplay={isNumerical ? getNumericDisplay(date) : undefined}
-            onTap={() => handleTap(date)}
-          />
-        ))}
+    <div className="overflow-x-auto overscroll-x-contain pb-1">
+      <div className="min-w-max">
+        {/* Weekday labels */}
+        <div className="grid gap-1" style={weekGridStyle}>
+          {days.map((date) => {
+            const dow = getDowIndex(date);
+            const isToday = date === today;
+            return (
+              <div
+                key={`label-${date}`}
+                className={cn(
+                  "min-w-0 whitespace-normal break-words text-center text-xs leading-tight",
+                  tone === "hero"
+                    ? isToday
+                      ? "font-medium text-foreground/80"
+                      : "text-muted-foreground"
+                    : isToday
+                      ? "text-white/60 font-medium"
+                      : "text-white/40"
+                )}
+              >
+                {DOW_LABELS[dow]}
+              </div>
+            );
+          })}
+        </div>
+        {/* Cells */}
+        <div className="mt-0.5 grid gap-1" style={weekGridStyle}>
+          {days.map((date) => (
+            <MiniCheckmarkCell
+              key={date}
+              date={date}
+              value={getEntryVal(date)}
+              habitColor={habitColor}
+              roleAccent={roleAccent}
+              isToday={date === today}
+              isFuture={date > today}
+              isLocked={(interactionScope === "today" && date !== today) || !isHabitDueOnDate(habit, date)}
+              isNumerical={isNumerical}
+              numericDisplay={isNumerical ? getNumericDisplay(date) : undefined}
+              onTap={() => handleTap(date)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,9 @@
 # ZenFlow Settings Simplification And Live Apply Design
 
 Date: 2026-07-12
-Status: Approved direction A; written specification awaiting user review
+Status: Approved direction A; partially implemented. The bounded 2026-07-28
+grouped-list remediation is source- and test-verified; complete native,
+packaged-runtime, public-deployment, and human acceptance remain `UNVERIFIED`.
 Scope: V2 Settings information architecture, Appearance, Sound, Reminders, Privacy/Data, About, shared Settings primitives, local preference persistence, Settings motion, and all eight supported locales.
 
 ## 1. Goal
@@ -286,8 +288,9 @@ All Settings transitions use that source.
 
 Normal-motion behavior:
 
-- overview → detail: 180ms opacity plus 8px logical-axis movement;
-- detail → overview: matching exit before focus restoration;
+- overview → detail: a short opacity-only transition, without transforming the
+  large glass surface;
+- detail → overview: matching opacity-only exit before focus restoration;
 - disclosure open/close: 180ms height plus opacity;
 - overflow menu: 140ms opacity plus 4px movement;
 - transient change status: short opacity transition;
@@ -301,6 +304,15 @@ Reduced-motion behavior:
 - essential progress feedback remains visible without decorative motion.
 
 Leaving content becomes inert during exit, is removed once, and cannot retain focus. Android Back is deduplicated during an active exit.
+
+The 2026-07-28 implementation record intentionally supersedes the earlier 8px
+logical-axis draft for overview/detail changes. The current shared surface uses
+opacity only because transforming a large blurred surface expands compositor
+and clipping risk without being necessary to explain this two-state
+relationship. This decision does not change menu/disclosure motion. Reject the
+opacity-only choice if fresh normal-motion runtime evidence shows continuity is
+lost; reject any spatial replacement if it causes clipping, focus loss,
+duplicate Back handling, delayed interaction, or movement under Reduce Motion.
 
 ## 10. Visual And Iconography Contract
 
@@ -498,3 +510,76 @@ Stop or roll back if:
 - VoiceOver, TalkBack, physical Android/iOS, and packaged Tauri behavior.
 - Public GitHub Pages deployment and cache state.
 - Final ten-role approval.
+
+## 21. Bounded Implementation Record — 2026-07-28
+
+This record applies only to the grouped-list and ordinary Account-row
+presentation in the current shared checkout at
+`00fdb2ea0e5205f4bee76bbec3109bf98865627f`. The checkout contained extensive
+pre-existing work and was 18 commits behind `origin/main`; it is not a clean or
+release-attributable candidate.
+
+Implemented:
+
+- `SettingsModuleList` now owns one shared group surface.
+- `SettingsModuleCard` rows are borderless and radiusless, use logical inset
+  dividers, keep a full-row target, expose the selected destination, use an
+  inset focus ring, and retain leading-icon → text-column → trailing-chevron
+  anatomy at every compact width.
+- `ToggleRow` ordinary preferences are flat grouped rows with one aligned
+  divider; they no longer introduce another bordered, shadowed card or icon
+  chip inside `PanelFrame`.
+- `SettingsChoiceButton` retains `aria-pressed` and adds a visible,
+  `aria-hidden` Lucide check so selected mode, accent, language, import, and
+  reminder choices do not depend on color alone. Stacked placement uses
+  logical `end`.
+- Accent choices own a caller-specific flex row so all four token-backed
+  previews remain circular 20×20 swatches without changing multi-line choice
+  content elsewhere.
+- `SettingsInset` has an explicit `contained | flat-row` presentation contract.
+- Signed-in identity, connected-provider information, and signed-out
+  explanation use flat rows inside the Account panel.
+- Checking, unavailable, error, sign-out recovery, and destructive account
+  states remain contained because they are separate dependent or recovery
+  entities.
+- No auth, sync, storage, owner-boundary, deletion, import/export, or production
+  data handler was changed by this presentation wave.
+
+Fresh local automated evidence:
+
+- `SettingsTextReflow.test.tsx`: 12/12.
+- `SettingsPage.test.tsx`: 162/162.
+- Final integrated remediation run: 31 files, 475 passed, 7 explicit todo,
+  482 total.
+- Settings browser E2E: 13/13.
+- TypeScript, scoped lint, color guard, V2 Paper guard,
+  no-AI-template guard, production-data-integrity diff scan, and scoped Snyk
+  Code completed successfully in the bounded implementation review. The final
+  production build and production-data-integrity bundle scan also passed.
+- Final browser captures prove the bounded selected-state/swatch result for
+  390×844 English/Paper and Arabic/OLED. Both had zero horizontal overflow;
+  all four accent swatches measured 20×20.
+
+Evidence limits:
+
+- A source change shared by Web/PWA/Capacitor/WKWebView/Tauri is not proof of
+  native or packaged parity.
+- Browser after-screens now exist for the bounded Settings states above.
+  Manual screen-reader checks, physical Android/iOS Settings traversal,
+  installed PWA lifecycle, packaged Tauri Settings, and all-eight-locale final
+  marker captures still require separate runtime evidence.
+- This record does not claim completion of every acceptance criterion in
+  section 17 and does not authorize deployment.
+
+### 21.1 Final rejection criteria for the late visual fixes
+
+- Reopen the choice-state finding if any selected choice lacks both semantic
+  state and a persistent non-color marker.
+- Reopen the accent-preview finding if a swatch is not circular and measurable
+  at 20×20 in the canonical compact state, or if marker/swatch/label order
+  clips in LTR or RTL.
+- Do not convert the generic choice-content wrapper into a forced horizontal
+  row: notification-sound choices intentionally contain stacked title and
+  supporting text. Accent preview layout remains caller-owned.
+- Shared React/CSS source proves a common implementation, not native/package
+  runtime parity. Unrun platforms stay `UNVERIFIED`.

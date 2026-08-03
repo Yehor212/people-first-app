@@ -2,8 +2,12 @@ import { memo, useMemo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { springs } from "@/config/animations";
+import { getLocale } from "@/lib/timeUtils";
+import { parseLocalDate } from "@/lib/utils";
 import type { JournalEntry } from "./types";
 import type { MoodType } from "@/types";
+import type { TranslationStrings } from "@/i18n/types";
+import { shiftJournalDate } from "./journalDateUtils";
 
 interface MoodCorrelationsProps {
   entries: JournalEntry[];
@@ -33,9 +37,17 @@ function getTimeOfDay(hour: number): "morning" | "afternoon" | "evening" {
   return "evening";
 }
 
+function formatInsight(template: string, values: Record<string, string>): string {
+  return Object.entries(values).reduce(
+    (result, [key, value]) => result.split(`{${key}}`).join(value),
+    template,
+  );
+}
+
 function computeInsights(
   entries: JournalEntry[],
   locale: string,
+  ts: TranslationStrings,
 ): Insight[] {
   const scored = entries
     .filter((e) => e.mood && MOOD_SCORE[e.mood] !== undefined)
@@ -45,11 +57,16 @@ function computeInsights(
 
   const insights: Insight[] = [];
   const dayFmt = new Intl.DateTimeFormat(locale, { weekday: "long" });
+  const numberFmt = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+  const formatScore = (value: number) => numberFmt.format(value);
 
   // 1 - Day of week
   const byDay = new Map<number, number[]>();
   for (const e of scored) {
-    const day = new Date(e.date).getDay();
+    const day = parseLocalDate(e.date).getDay();
     if (!byDay.has(day)) byDay.set(day, []);
     byDay.get(day)!.push(e.score);
   }
@@ -59,11 +76,13 @@ function computeInsights(
     const worst = validDays.reduce((a, b) => (avgMood(a[1]) < avgMood(b[1]) ? a : b));
     const diff = avgMood(best[1]) - avgMood(worst[1]);
     if (diff > 0.3) {
-      const bestName = dayFmt.format(new Date(2024, 0, best[0])); // Jan 2024 starts Sun
+      const bestName = dayFmt.format(new Date(2024, 0, 7 + best[0]));
       insights.push({
         key: "day", emoji: "\uD83D\uDCC5",
-        text: `Your mood is highest on ${bestName}s`,
-        stat: `avg ${avgMood(best[1]).toFixed(1)} / 5`,
+        text: formatInsight(ts.journalMoodInsightBestDay, { day: bestName }),
+        stat: formatInsight(ts.journalMoodInsightAverage, {
+          value: formatScore(avgMood(best[1])),
+        }),
         significance: diff,
       });
     }
@@ -81,9 +100,11 @@ function computeInsights(
       insights.push({
         key: "length", emoji: "\u270D\uFE0F",
         text: diff > 0
-          ? "You tend to feel better when you write longer entries"
-          : "Shorter entries correlate with higher mood",
-        stat: `${Math.abs(diff).toFixed(1)} point difference`,
+          ? ts.journalMoodInsightLonger
+          : ts.journalMoodInsightShorter,
+        stat: formatInsight(ts.journalMoodInsightPointDifference, {
+          value: formatScore(Math.abs(diff)),
+        }),
         significance: Math.abs(diff),
       });
     }
@@ -106,8 +127,16 @@ function computeInsights(
     if (diff > 0.2) {
       insights.push({
         key: "time", emoji: "\u23F0",
-        text: `Your mood is highest when writing in the ${best[0]}`,
-        stat: `avg ${avgMood(best[1]).toFixed(1)} / 5`,
+        text: formatInsight(ts.journalMoodInsightBestTime, {
+          period: {
+            morning: ts.journalMoodInsightMorning,
+            afternoon: ts.journalMoodInsightAfternoon,
+            evening: ts.journalMoodInsightEvening,
+          }[best[0]] ?? best[0],
+        }),
+        stat: formatInsight(ts.journalMoodInsightAverage, {
+          value: formatScore(avgMood(best[1])),
+        }),
         significance: diff,
       });
     }
@@ -118,9 +147,7 @@ function computeInsights(
   const streakScores: number[] = [];
   const noStreakScores: number[] = [];
   for (const e of scored) {
-    const prev = new Date(e.date);
-    prev.setDate(prev.getDate() - 1);
-    const prevStr = prev.toISOString().slice(0, 10);
+    const prevStr = shiftJournalDate(e.date, -1);
     (dateSet.has(prevStr) ? streakScores : noStreakScores).push(e.score);
   }
   if (streakScores.length >= MIN_SAMPLE && noStreakScores.length >= MIN_SAMPLE) {
@@ -128,8 +155,10 @@ function computeInsights(
     if (diff > 0.2) {
       insights.push({
         key: "streak", emoji: "\uD83D\uDD25",
-        text: "Your mood improves during writing streaks",
-        stat: `+${diff.toFixed(1)} points on streak days`,
+        text: ts.journalMoodInsightStreak,
+        stat: formatInsight(ts.journalMoodInsightStreakDifference, {
+          value: formatScore(diff),
+        }),
         significance: diff,
       });
     }
@@ -144,9 +173,11 @@ function computeInsights(
       insights.push({
         key: "media", emoji: "\uD83D\uDCF7",
         text: diff > 0
-          ? "Entries with photos or audio tend to have better mood"
-          : "Text-only entries correlate with higher mood",
-        stat: `${Math.abs(diff).toFixed(1)} point difference`,
+          ? ts.journalMoodInsightMedia
+          : ts.journalMoodInsightTextOnly,
+        stat: formatInsight(ts.journalMoodInsightPointDifference, {
+          value: formatScore(Math.abs(diff)),
+        }),
         significance: Math.abs(diff),
       });
     }
@@ -158,28 +189,28 @@ function computeInsights(
 export const MoodCorrelations = memo(function MoodCorrelations({
   entries,
 }: MoodCorrelationsProps) {
-  const { language } = useLanguage();
+  const { language, t: ts } = useLanguage();
   const prefersReducedMotion = useReducedMotion();
 
   const insights = useMemo(
-    () => computeInsights(entries, language),
-    [entries, language],
+    () => computeInsights(entries, getLocale(language), ts),
+    [entries, language, ts],
   );
 
   if (insights.length === 0) {
     return (
       <div
         role="region"
-        aria-label="Mood insights"
+        aria-label={ts.journalMoodInsights}
         className="py-6 text-center text-sm text-muted-foreground"
       >
-        Keep writing to unlock mood insights
+        {ts.journalMoodInsightsMoreData}
       </div>
     );
   }
 
   return (
-    <div role="region" aria-label="Mood insights" className="flex flex-col gap-2">
+    <div role="region" aria-label={ts.journalMoodInsights} className="flex flex-col gap-2">
       {insights.map((insight, i) => (
         <motion.div
           key={insight.key}

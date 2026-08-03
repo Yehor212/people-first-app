@@ -18,6 +18,7 @@ import { generateSecureId } from "@/lib/validation";
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 import { isAbortError } from "@/lib/validation";
+import { readPendingLocalBackupAccountClaim } from "@/storage/accountBoundaryRuntime";
 import { getLocalDataOwnerId } from "@/storage/db";
 import type { SeverityLevel } from "@sentry/core";
 
@@ -128,6 +129,11 @@ async function runWithFriendsLocalOwner<T>(
   localOperation: () => T
 ): Promise<FriendsOwnerBoundResult<T> | null> {
   try {
+    if (readPendingLocalBackupAccountClaim().status !== "none") {
+      logger.warn(`[FriendsSync] ${operation} stopped while a backup awaits an account choice`);
+      return null;
+    }
+
     const activeUserId = await getCurrentUserId();
     const ownerUserId = expectedOwnerUserId ?? activeUserId;
     if (!ownerUserId || activeUserId !== ownerUserId) {
@@ -137,7 +143,11 @@ async function runWithFriendsLocalOwner<T>(
 
     const localOwnerUserId = await getLocalDataOwnerId();
     const sessionUserId = await getCurrentSessionUserId();
-    if (localOwnerUserId !== ownerUserId || sessionUserId !== ownerUserId) {
+    if (
+      localOwnerUserId !== ownerUserId ||
+      sessionUserId !== ownerUserId ||
+      readPendingLocalBackupAccountClaim().status !== "none"
+    ) {
       logger.warn(`[FriendsSync] ${operation} stopped at an account boundary`);
       return null;
     }
@@ -460,11 +470,12 @@ async function syncMyProfileToCloud(
   if (!supabase || !expectedOwnerUserId.trim()) return;
 
   try {
-    const activeUserId = await getCurrentUserId();
-    if (activeUserId !== expectedOwnerUserId) {
-      logger.warn("[FriendsSync] Skipping profile sync because the account owner changed");
-      return;
-    }
+    const ownerCheck = await runWithFriendsLocalOwner(
+      expectedOwnerUserId,
+      "Sync friend profile",
+      () => true
+    );
+    if (!ownerCheck) return;
 
     const query = supabase.from("user_profiles").upsert(
       {

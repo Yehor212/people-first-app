@@ -7,7 +7,11 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { offlineQueue, type OfflineAction } from '@/lib/offlineQueue';
+import {
+  offlineQueue,
+  type OfflineAction,
+  type OfflineQueueProcessOptions,
+} from '@/lib/offlineQueue';
 
 interface OfflineQueueState {
   actions: OfflineAction[];
@@ -39,8 +43,8 @@ export function useOfflineQueue() {
   }, [handleOnline, handleOffline]);
 
   // Returns Promise for callers who need to await completion
-  const processQueue = useCallback((): Promise<void> => {
-    return offlineQueue.processQueue();
+  const processQueue = useCallback((options?: OfflineQueueProcessOptions): Promise<void> => {
+    return offlineQueue.processQueue(options);
   }, []);
 
   // P0-1 Fix: Return the Promise so callers can await if needed

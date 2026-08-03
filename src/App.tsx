@@ -13,11 +13,11 @@ import { ErrorBoundary, RootErrorBoundary } from "@/components/ErrorBoundary";
 
 import { DatabaseRecoveryDialog } from "@/components/DatabaseRecoveryDialog";
 import { UpdateRequiredDialog } from "@/components/UpdateRequiredDialog";
+import { JournalMagicLinkConfirmGate } from "@/components/auth/JournalMagicLinkConfirmGate";
 import Index from "./pages/Index";
 import { preloadShareCardAssets } from "@/lib/shareCards";
 import { useFontScaleInit } from "@/hooks/useFontScale";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useBatteryState } from "@/hooks/useBatteryState";
 import { setLowBatteryMirror } from "@/lib/animationUtils";
 import { useDesignFlagStore } from "@/stores/designFlagStore";
@@ -58,8 +58,9 @@ scheduleIdle(() => void useDesignFlagStore.getState().fetchFlags(), 5000, 3500);
  *   - `body.reduce-motion` class toggled (CSS kill-switch in index.css).
  *   - `documentElement[data-reduced-motion="true"]` attribute for downstream
  *     selectors.
- *   - `MotionConfig reducedMotion="always"` — Framer Motion collapses all
- *     transitions to instant.
+ *   - `MotionConfig reducedMotion="always"` — Framer Motion disables transform
+ *     and layout motion; components still avoid independent opacity fades when
+ *     an opaque surface is required from the first rendered frame.
  *   - Static mirror in `animationUtils.setLowBatteryMirror` so non-React
  *     call sites (audioManager, haptics) observe the same gate.
  *
@@ -101,42 +102,30 @@ function AnimationGate({ children }: { children: ReactNode }) {
   );
 }
 
-/** RTL dir attribute — sets dir="rtl" for Arabic/Hebrew, dir="ltr" for others */
-function RtlDirectionManager({ children }: { children: ReactNode }) {
-  const { language } = useLanguage();
-
-  useEffect(() => {
-    const rtlLocales = ["ar", "he"];
-    document.documentElement.dir = rtlLocales.includes(language) ? "rtl" : "ltr";
-  }, [language]);
-
-  return <>{children}</>;
-}
-
 const App = () => (
   <RootErrorBoundary>
     <AnimationGate>
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
-          <RtlDirectionManager>
-            <FeatureFlagsProvider>
-              <EmotionThemeProvider>
-                <AICoachProvider>
-                  <XpPopupProvider>
-                    <FlyingEmojiProvider>
-                      <ErrorBoundary>
-                        <TooltipProvider>
-                          <DatabaseRecoveryDialog />
-                          <UpdateRequiredDialog />
+          <FeatureFlagsProvider>
+            <EmotionThemeProvider>
+              <AICoachProvider>
+                <XpPopupProvider>
+                  <FlyingEmojiProvider>
+                    <ErrorBoundary>
+                      <TooltipProvider>
+                        <DatabaseRecoveryDialog />
+                        <UpdateRequiredDialog />
+                        <JournalMagicLinkConfirmGate>
                           <Index />
-                        </TooltipProvider>
-                      </ErrorBoundary>
-                    </FlyingEmojiProvider>
-                  </XpPopupProvider>
-                </AICoachProvider>
-              </EmotionThemeProvider>
-            </FeatureFlagsProvider>
-          </RtlDirectionManager>
+                        </JournalMagicLinkConfirmGate>
+                      </TooltipProvider>
+                    </ErrorBoundary>
+                  </FlyingEmojiProvider>
+                </XpPopupProvider>
+              </AICoachProvider>
+            </EmotionThemeProvider>
+          </FeatureFlagsProvider>
         </LanguageProvider>
       </QueryClientProvider>
     </AnimationGate>

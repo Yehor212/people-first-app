@@ -80,6 +80,7 @@ const sanitizeLogData = (data: Record<string, unknown>): Record<string, unknown>
     "refresh_token",
     "password",
     "email",
+    "secret",
   ];
   const safe: Record<string, unknown> = {};
 

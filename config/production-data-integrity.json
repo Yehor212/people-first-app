@@ -313,7 +313,23 @@
         "EVIDENCE_PROOF_KEYS",
         "maxEvidenceAgeHours",
         "explicit bundle directory is missing",
+        "MAX_BUNDLE_AGGREGATE_BYTES",
+        "PDI_TEST_HOOKS",
+        "O_NOFOLLOW",
+        "sha256Bytes",
+        "assertBundleRootUsesNfc",
+        "assertSameBundleInventory",
+        "const useIndexSnapshot = mode === \"staged\"",
+        "bundle artifact name must use NFC normalization",
         "entry.ruleId === \"PDI010\""
+      ],
+      "forbiddenStrings": []
+    },
+    {
+      "path": "scripts/duplicate-artifact-policy.cjs",
+      "requiredStrings": [
+        "DUPLICATE_ARTIFACT_ORDINAL_PATTERN",
+        "hasDuplicateArtifactOrdinal"
       ],
       "forbiddenStrings": []
     },
@@ -322,6 +338,7 @@
       "requiredStrings": [
         "runIntegrityCheck",
         "function parseArguments",
+        "MAX_ERROR_MESSAGE_CHARS",
         "report.status === \"FAIL\" ? 1 : 0",
         "if (require.main === module) process.exitCode = main()"
       ],
@@ -386,7 +403,7 @@
     },
     {
       "path": "scripts/__tests__/production-data-integrity.test.ts",
-      "requiredStrings": ["PDI001", "PDI012", "ZENFLOW_TEST_FIXTURE_SENTINEL_7F4C9A2E", "reads staged content from the Git index", "symlinked or oversized control JSON", "current exact HEAD", "pins code-owned semantic config field", "ancestor directory symlink", "verified zero-count failure fallback", "empty explicit bundles", "binds release proof to its positive claim", "CapApp Swift package history", "allows type-only re-exports", "mixed runtime/type re-export"],
+      "requiredStrings": ["PDI001", "PDI012", "ZENFLOW_TEST_FIXTURE_SENTINEL_7F4C9A2E", "reads staged content from the Git index", "uses the index snapshot for an empty staged set", "symlinked or oversized control JSON", "current exact HEAD", "pins code-owned semantic config field", "ancestor directory symlink", "verified zero-count failure fallback", "empty explicit bundles", "fails closed on Finder/FileProvider duplicate bundle paths", "detects a bundle inventory change after scanning", "detects a mutation injected after bundle analysis", "descriptor-bound reads", "bounds explicit bundle roots", "rejects non-NFC bundle names", "hashes raw bundle bytes", "bounds CLI error output", "binds release proof to its positive claim", "CapApp Swift package history", "allows type-only re-exports", "mixed runtime/type re-export"],
       "forbiddenStrings": []
     },
     {
@@ -401,7 +418,7 @@
     },
     {
       "path": "docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md",
-      "requiredStrings": ["Allowed test doubles", "Demo mode contract", "Known limitations", "Separation of duties"],
+      "requiredStrings": ["Allowed test doubles", "Demo mode contract", "Bundle filesystem integrity", "Known limitations", "Separation of duties"],
       "forbiddenStrings": []
     },
     {

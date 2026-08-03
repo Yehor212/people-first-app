@@ -112,7 +112,7 @@ describe("apply-supabase-auth-redirect-allow-list", () => {
 
 function validEnv(extra: Record<string, string> = {}) {
   return {
-    SUPABASE_ACCESS_TOKEN: "sbp_test_1234567890abcdef1234567890abcdef",
+    SUPABASE_ACCESS_TOKEN: "sbp_test_1234567890abcdef1234567890abcdef", // gitleaks:allow - synthetic test token
     SUPABASE_PROJECT_REF: "bwgfslmxmueyglpumkbf",
     ZENFLOW_AUTH_REDIRECT_ALLOW_LIST_CONFIRM_PRODUCTION: "true",
     ...extra,

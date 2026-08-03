@@ -20,4 +20,18 @@
     <string name="widget_no_mood">Keine Stimmung erfasst</string>
     <string name="widget_days">Tage</string>
     <string name="widget_habits_label">Gewohnheiten</string>
+    <string name="push_realm_mood_title">Wie geht es dir gerade?</string>
+    <string name="push_realm_mood_body">Wenn du möchtest, halte fest, wie du dich fühlst.</string>
+    <string name="push_realm_habit_title">Gewohnheitserinnerung</string>
+    <string name="push_realm_habit_body">Ein kleiner Schritt reicht. Fang an, wenn du bereit bist.</string>
+    <string name="push_realm_focus_title">Möchtest du dich konzentrieren?</string>
+    <string name="push_realm_focus_body">Du kannst eine 25-minütige Fokusphase starten, wenn es für dich passt.</string>
+    <string name="push_realm_test_title">ZenFlow</string>
+    <string name="push_realm_test_body">Test-Benachrichtigung.</string>
+    <string name="push_realm_channel_default">Standard</string>
+    <string name="push_realm_channel_default_description">System-Benachrichtigungston</string>
+    <string name="push_realm_channel_gentle">Sanft</string>
+    <string name="push_realm_channel_gentle_description">Nur Vibration</string>
+    <string name="push_realm_channel_silent">Lautlos</string>
+    <string name="push_realm_channel_silent_description">Kein Ton oder Vibration</string>
 </resources>

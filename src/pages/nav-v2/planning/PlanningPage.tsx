@@ -251,16 +251,18 @@ export const PlanningPage = memo(function PlanningPage({
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_start,hsl(var(--primary)/0.13),transparent_34%),radial-gradient(circle_at_80%_16%,hsl(var(--accent)/0.10),transparent_30%)]" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-5 md:gap-6">
-        <header className="flex flex-col gap-3">
-          <div className="inline-flex min-h-[44px] w-fit items-center gap-2 rounded-full border border-border/55 bg-card/72 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]">
+        <header className="flex min-w-0 flex-col gap-3">
+          <div className="inline-flex min-h-[44px] w-fit max-w-full min-w-0 items-center gap-2 whitespace-normal rounded-full border border-border/55 bg-card/72 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]">
             <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
-            <span>{t.navV2Planning}</span>
+            <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:normal]">
+              {t.navV2Planning}
+            </span>
           </div>
-          <div className="max-w-3xl space-y-2">
-            <h1 id="planning-page-heading" className="font-display text-4xl font-semibold leading-[1.02] text-foreground md:text-5xl">
+          <div className="min-w-0 max-w-3xl space-y-2">
+            <h1 id="planning-page-heading" className="min-w-0 break-words font-display text-xl font-semibold leading-[1.02] text-foreground [hyphens:manual] [overflow-wrap:normal] min-[420px]:text-3xl md:text-display-5xl">
               {t.navV2PlanningHeading}
             </h1>
-            <p className="max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
+            <p className="min-w-0 max-w-2xl break-words text-base leading-7 text-muted-foreground [hyphens:manual] [overflow-wrap:normal] md:text-lg">
               {t.navV2PlanningSubcopy}
             </p>
           </div>
@@ -274,10 +276,12 @@ export const PlanningPage = memo(function PlanningPage({
               type="button"
               onClick={scrollToTimeline}
               data-testid="planning-empty-schedule"
-              className="flex min-h-[64px] w-full items-center gap-3 rounded-2xl border border-border/50 bg-card/72 px-4 py-3 text-start text-muted-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="flex min-h-[64px] w-full min-w-0 items-center gap-3 whitespace-normal rounded-2xl border border-border/50 bg-card/72 px-4 py-3 text-start text-muted-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <Clock3 className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-              <span className="flex-1 truncate">{t.navV2PlanningEmpty}</span>
+              <span className="min-w-0 flex-1 break-words [hyphens:manual] [overflow-wrap:normal]">
+                {t.navV2PlanningEmpty}
+              </span>
             </button>
           )}
         </section>

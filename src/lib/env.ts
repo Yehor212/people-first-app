@@ -15,6 +15,8 @@ function normalizeBaseUrl(value: string): string {
 
 export const BASE_URL = normalizeBaseUrl(import.meta.env.BASE_URL || "/");
 export const IS_DESKTOP_RUNTIME = import.meta.env.VITE_DESKTOP_RUNTIME === "true";
+export const ENABLE_JOURNAL_SAVE_CEREMONY =
+  import.meta.env.VITE_ENABLE_JOURNAL_SAVE_CEREMONY === "true";
 // Supabase
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 export const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as

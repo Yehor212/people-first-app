@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { DrawerV2 } from "../DrawerV2";
@@ -88,11 +89,44 @@ describe("DrawerV2", () => {
     expect(backdrop.className).toContain("pointer-events-none");
   });
 
+  it("removes the retained closing drawer from keyboard and assistive technology immediately", () => {
+    const { rerender } = render(<DrawerV2 {...baseProps} open={true} />);
+
+    rerender(<DrawerV2 {...baseProps} open={false} />);
+
+    const drawer = screen.getByTestId("drawer-v2");
+    expect(drawer).toHaveAttribute("aria-hidden", "true");
+    expect(drawer).toHaveAttribute("inert", "");
+    expect(drawer).not.toHaveAttribute("aria-modal");
+    expect(screen.getByLabelText("Close menu")).toHaveAttribute("tabindex", "-1");
+  });
+
   it("calls onClose when close button is clicked", () => {
     const onClose = vi.fn();
     render(<DrawerV2 {...baseProps} onClose={onClose} />);
     fireEvent.click(screen.getByLabelText("Close menu"));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the Android drawer close target at least 48px", () => {
+    render(<DrawerV2 {...baseProps} />);
+
+    const close = screen.getByLabelText("Close menu");
+    expect(close.className).toContain("h-12");
+    expect(close.className).toContain("w-12");
+  });
+
+  it("uses solid drawer surfaces when reduced transparency is requested", () => {
+    const styles = readFileSync("src/styles/themes.css", "utf8");
+    const start = styles.lastIndexOf("@media (prefers-reduced-transparency: reduce)");
+    const end = styles.indexOf("@media", start + 1);
+    const reducedTransparencyBlock = styles.slice(start, end < 0 ? undefined : end);
+
+    expect(start).toBeGreaterThan(-1);
+    expect(reducedTransparencyBlock).toContain('[data-theme-region="drawer-v2"]');
+    expect(reducedTransparencyBlock).toContain('[data-testid="drawer-v2-backdrop"]');
+    expect(reducedTransparencyBlock).toContain("backdrop-filter: none !important");
+    expect(reducedTransparencyBlock).toContain("-webkit-backdrop-filter: none !important");
   });
 
   it("renders primary V2 destinations and marks the active page", () => {

@@ -440,6 +440,50 @@ describe("journal password protection migration", () => {
     });
   });
 
+  it("allows a verified empty diary lock to be removed without an in-memory vault key", async () => {
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_PASSWORD, value: passwordData },
+      { key: SK.JOURNAL_VAULT_KEY, value: vaultSetting },
+      { key: SK.JOURNAL_VAULT_REVISION, value: vaultSetting.updatedAt },
+    ]);
+
+    const boundary = await captureJournalSecurityBoundary();
+    await expect(
+      removeJournalPasswordProtectionAtomically(null, boundary)
+    ).resolves.toEqual({ cloudMigrationPending: true });
+
+    await expect(db.settings.get(SK.JOURNAL_PASSWORD)).resolves.toBeUndefined();
+    await expect(db.settings.get(SK.JOURNAL_VAULT_KEY)).resolves.toBeUndefined();
+  });
+
+  it("keeps a locked encrypted draft protected when no vault key is available", async () => {
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_PASSWORD, value: passwordData },
+      { key: SK.JOURNAL_VAULT_KEY, value: vaultSetting },
+      { key: SK.JOURNAL_VAULT_REVISION, value: vaultSetting.updatedAt },
+      {
+        key: SK.journalDraft("new"),
+        value: {
+          title: "",
+          date: "2026-07-11",
+          content: "entry-enc:vault-key:private draft",
+          stickers: [],
+          photoIds: [],
+          tags: [],
+          savedAt: 1,
+        },
+      },
+    ]);
+
+    const boundary = await captureJournalSecurityBoundary();
+    await expect(
+      removeJournalPasswordProtectionAtomically(null, boundary)
+    ).rejects.toThrow(/unlock your diary/i);
+
+    await expect(db.settings.get(SK.JOURNAL_PASSWORD)).resolves.toBeDefined();
+    await expect(db.settings.get(SK.JOURNAL_VAULT_KEY)).resolves.toBeDefined();
+  });
+
   it("leaves every protected row and unlock record untouched when removal preparation fails", async () => {
     await seedPlaintextDiary();
     await seedPlaintextDraftAndSpaces();
@@ -818,6 +862,51 @@ describe("journal password protection migration", () => {
         journalSecurityRemovalRevision: removalIntent!.revision,
         queueOnNetworkError: false,
       }
+    );
+    expect(await getJournalSecurityRemovalIntent()).toBeNull();
+  });
+
+  it("keeps old encrypted media paths until plaintext backup and deletion both complete", async () => {
+    await seedPlaintextDiary();
+    await activateJournalPasswordProtection({ passwordData, vaultSetting, vaultKey: "vault-key" });
+    await db.settings.delete(SK.JOURNAL_SECURITY_MIGRATION);
+    const encryptedPhotoPath = (await db.journalPhotos.get("photo-1"))?.storagePath;
+    const encryptedAudioPath = (await db.journalAudio.get("audio-1"))?.storagePath;
+    const boundary = await captureJournalSecurityBoundary();
+    await removeJournalPasswordProtectionAtomically("vault-key", boundary);
+    const removalIntent = await getJournalSecurityRemovalIntent();
+
+    expect(removalIntent).toMatchObject({
+      photos: [{ id: "photo-1", previousStoragePath: encryptedPhotoPath }],
+      audios: [{ id: "audio-1", previousStoragePath: encryptedAudioPath }],
+    });
+
+    mocks.deleteStoragePath.mockRejectedValueOnce(new Error("encrypted media delete unavailable"));
+    await expect(
+      runJournalSecurityMigration(
+        { mode: "remove", revision: removalIntent!.revision },
+        "account-a",
+      ),
+    ).rejects.toThrow("encrypted media delete unavailable");
+    expect(await getJournalSecurityRemovalIntent()).toMatchObject({
+      revision: removalIntent!.revision,
+      photos: [{ id: "photo-1", previousStoragePath: encryptedPhotoPath }],
+    });
+    expect(mocks.deleteSetting).not.toHaveBeenCalled();
+
+    await runJournalSecurityMigration(
+      { mode: "remove", revision: removalIntent!.revision },
+      "account-a",
+    );
+    expect(mocks.deleteStoragePath).toHaveBeenCalledWith(
+      "journal-photos",
+      encryptedPhotoPath,
+      "account-a",
+    );
+    expect(mocks.deleteStoragePath).toHaveBeenCalledWith(
+      "journal-audio",
+      encryptedAudioPath,
+      "account-a",
     );
     expect(await getJournalSecurityRemovalIntent()).toBeNull();
   });

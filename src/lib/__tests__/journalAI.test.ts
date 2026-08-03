@@ -30,12 +30,14 @@ describe("journalAI no-paid mode", () => {
     mocks.invoke.mockReset();
   });
 
-  it("returns empty results instead of throwing when Gemini search is not configured", async () => {
+  it("surfaces an account-backed private-search failure without provider-specific handling", async () => {
     mocks.invoke.mockResolvedValue({
       data: null,
-      error: { message: "Gemini API not configured" },
+      error: { message: "Search temporarily unavailable" },
     });
 
-    await expect(searchJournalSemantic("walk outside")).resolves.toEqual([]);
+    await expect(searchJournalSemantic("walk outside")).rejects.toEqual({
+      message: "Search temporarily unavailable",
+    });
   });
 });

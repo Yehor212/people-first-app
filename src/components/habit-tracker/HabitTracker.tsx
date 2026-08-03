@@ -248,13 +248,13 @@ export const HabitTracker = memo(function HabitTracker({
       {/* Primary CTA Header */}
       {isPrimaryCTA && (
         <motion.div
-          className="relative flex items-center justify-center gap-2 mb-4"
+          className="relative mb-4 flex min-w-0 items-center justify-center gap-2"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/25 backdrop-blur-sm rounded-full border border-emerald-500/30">
-            <Leaf className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />
-            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-200">
+          <div className="flex max-w-full min-w-0 items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/25 px-4 py-2 backdrop-blur-sm">
+            <Leaf className="h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-300" />
+            <span className="min-w-0 break-words text-center text-sm font-bold text-emerald-700 dark:text-emerald-200">
               {t.startHere}
             </span>
           </div>
@@ -262,16 +262,16 @@ export const HabitTracker = memo(function HabitTracker({
       )}
 
       {/* Header Row */}
-      <div className="flex items-center justify-between mb-4 relative">
+      <div className="relative mb-4 flex items-start justify-between gap-2">
         <h3
           className={cn(
-            "font-semibold",
+            "min-w-0 break-words font-semibold",
             isPrimaryCTA ? "text-xl text-slate-800 dark:text-white" : "text-lg text-foreground"
           )}
         >
           {t.habits}
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {onOpenChallenge &&
             (isPrimaryCTA ? (
               <motion.button
@@ -327,7 +327,12 @@ export const HabitTracker = memo(function HabitTracker({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Plus className={cn("w-5 h-5 motion-safe:transition-transform", form.isAdding && "rotate-45")} />
+              <Plus
+                className={cn(
+                  "w-5 h-5 motion-safe:transition-transform",
+                  form.isAdding && "rotate-45"
+                )}
+              />
             </motion.button>
           ) : (
             <Button
@@ -417,8 +422,10 @@ export const HabitTracker = memo(function HabitTracker({
                     <HoverPreview
                       enabled={canHover}
                       content={
-                        <div className="text-xs space-y-1 min-w-[120px]">
-                          <p className="font-medium text-foreground">{habit.name}</p>
+                        <div className="min-w-[120px] max-w-xs space-y-1 text-xs">
+                          <p className="font-medium text-foreground [overflow-wrap:anywhere]">
+                            {habit.name}
+                          </p>
                           {(habitStreaks.get(habit.id) || 0) > 0 && (
                             <p className="text-muted-foreground">
                               {t.streak || "Streak"}: {habitStreaks.get(habit.id)}{" "}
@@ -484,7 +491,7 @@ export const HabitTracker = memo(function HabitTracker({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1 }}
-              className="text-center text-[10px] text-muted-foreground/60 py-2"
+              className="break-words py-2 text-center text-xs text-muted-foreground/60"
               ref={(el) => {
                 if (el && !swipeHintTimerRef.current) {
                   swipeHintTimerRef.current = setTimeout(() => {

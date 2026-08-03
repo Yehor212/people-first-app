@@ -13,6 +13,8 @@ import {
 } from '../insightsEngine';
 import type { MoodEntry, Habit, FocusSession, MoodType, MoodHabitCorrelationMetadata, FocusPatternMetadata, HabitTimingMetadata, MoodTagMetadata } from '@/types';
 import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
+import { ar } from '@/i18n/languages/ar';
+import { he } from '@/i18n/languages/he';
 
 // Helper to create test data
 let moodIdCounter = 0;
@@ -51,6 +53,15 @@ describe('insightsEngine', () => {
   });
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('isolates user-provided habit and tag names in RTL insight templates', () => {
+    for (const locale of [ar, he]) {
+      expect(locale.insightHabitImprovesMood).toContain('\u2068{habit}\u2069');
+      expect(locale.insightHabitImprovesMoodDesc).toContain('\u2068{habit}\u2069');
+      expect(locale.insightTagBoostsMood).toContain('\u2068{tag}\u2069');
+      expect(locale.insightTagBoostsMoodDesc).toContain('\u2068{tag}\u2069');
+    }
   });
 
   describe('generateInsights', () => {
@@ -172,6 +183,15 @@ describe('insightsEngine', () => {
         expect(meta.type).toBe('mood-habit-correlation');
         expect(meta.habitName).toBe('Exercise');
         expect(exerciseInsight.confidence).toBeGreaterThan(0);
+        expect(exerciseInsight.severity).toBe('info');
+        expect(exerciseInsight.title.toLowerCase()).not.toMatch(/\b(improves|boosts|causes)\b/);
+        expect(exerciseInsight.description).toContain('5 recorded days');
+        expect(exerciseInsight.description).toContain('4 other recorded days');
+        expect(exerciseInsight.description).toContain('5/5');
+        expect(exerciseInsight.description).toContain('3/5');
+        expect(exerciseInsight.description).not.toContain('%');
+        expect(exerciseInsight.description.toLowerCase()).toContain('association');
+        expect(exerciseInsight.description.toLowerCase()).toContain('not proof');
       }
     });
 
@@ -328,6 +348,15 @@ describe('insightsEngine', () => {
         expect(meta.type).toBe('mood-tag');
         expect(meta.tag).toBe('exercise');
         expect(meta.avgMoodWith).toBeGreaterThan(meta.avgMoodWithout);
+        expect(tagInsight.severity).toBe('info');
+        expect(tagInsight.title.toLowerCase()).not.toMatch(/\b(improves|boosts|causes)\b/);
+        expect(tagInsight.description).toContain('4 recorded entries');
+        expect(tagInsight.description).toContain('4 untagged entries');
+        expect(tagInsight.description).toContain('5/5');
+        expect(tagInsight.description).toContain('3/5');
+        expect(tagInsight.description).not.toContain('%');
+        expect(tagInsight.description.toLowerCase()).toContain('association');
+        expect(tagInsight.description.toLowerCase()).toContain('not proof');
       }
     });
 

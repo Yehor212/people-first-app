@@ -158,11 +158,9 @@ function IndexV2Impl() {
   const userName = useUserDataStore((s) => s.userName);
   const userNameCustom = useUserDataStore((s) => s.userNameCustom);
   const reminders = useUserDataStore((s) => s.reminders);
-  const setReminders = useUserDataStore((s) => s.setReminders);
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const isLoadingUserData = useUserDataStore((s) => s.isLoading);
   const privacy = useUserDataStore((s) => s.privacy);
-  const setPrivacy = useUserDataStore((s) => s.setPrivacy);
   const currentMoodForAds = useMemo(() => {
     const latestMood = moods.reduce<(typeof moods)[number] | null>((latest, entry) => {
       if (!latest) return entry;
@@ -172,7 +170,8 @@ function IndexV2Impl() {
     return latestMood?.mood ?? null;
   }, [moods]);
   const emptyScheduleEvents = useMemo(() => [], []);
-  const { handleNameChange, handleResetData } = useSettingsHandlers(emptyScheduleEvents);
+  const { handleNameChange, handlePrivacyChange, handleRemindersChange, handleResetData } =
+    useSettingsHandlers(emptyScheduleEvents);
   const {
     world: innerWorld,
     isLoading: isLoadingInnerWorld,
@@ -225,13 +224,13 @@ function IndexV2Impl() {
       onNameChange: handleNameChange,
       onResetData: handleResetData,
       reminders,
-      onRemindersChange: setReminders,
+       onRemindersChange: handleRemindersChange,
       habits,
       moods,
       focusSessions,
       gratitudeEntries,
       privacy,
-      onPrivacyChange: setPrivacy,
+      onPrivacyChange: handlePrivacyChange,
       onOpenWidgetSettings: () => setShowWidgetSettings(true),
     }),
     [
@@ -239,12 +238,12 @@ function IndexV2Impl() {
       gratitudeEntries,
       habits,
       handleNameChange,
+      handlePrivacyChange,
       handleResetData,
       moods,
       privacy,
       reminders,
-      setPrivacy,
-      setReminders,
+       handleRemindersChange,
       userName,
       userNameCustom,
     ]

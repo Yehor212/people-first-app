@@ -50,18 +50,35 @@ describe("TemplatePicker V2 ritual presentation", () => {
     expect(pictogram?.className).toContain("w-[3.85rem]");
     expect(cards[0]?.textContent).not.toContain("💧");
 
+    const grid = container.querySelector('[data-slot="template-picker-grid"]');
+    expect(grid).not.toBeNull();
+    if (!grid) throw new Error("Expected the template picker grid");
+    expect(grid.className).toContain("auto-fit");
+    expect(grid.className).toContain("var(--font-scale");
+    cards.forEach((card) => {
+      expect(card.className).toContain("h-auto");
+      expect(card.className).toContain("min-w-0");
+    });
+
     const labels = container.querySelectorAll('[data-slot="template-picker-label"]');
     expect(labels.length).toBeGreaterThan(0);
     labels.forEach((label) => {
       expect(label.className).not.toContain("truncate");
       expect(label.className).toContain("whitespace-normal");
+      expect(label.className).toContain("break-words");
+      expect(label.className).toContain("overflow-wrap:break-word");
       expect(label.className).not.toContain("anywhere");
     });
 
-    expect(screen.getByRole("button", { name: /create custom habit/i })).toHaveAttribute(
+    const customButton = screen.getByRole("button", { name: /create custom habit/i });
+    expect(customButton).toHaveAttribute(
       "data-card",
       "ritual-custom-habit-action",
     );
+    expect(customButton).toHaveClass("h-auto", "min-w-0", "whitespace-normal", "break-words");
+    expect(
+      customButton.querySelector('[data-slot="template-picker-custom-label"]')?.className,
+    ).not.toContain("truncate");
   });
 
   it("marks decorative real-source habit icons as aria-hidden in the custom action", () => {
@@ -123,5 +140,9 @@ describe("TemplatePicker V2 ritual presentation", () => {
     );
     expect(container.querySelectorAll("img[data-pictogram-layer='asset']")).toHaveLength(0);
     expect(container.textContent).not.toContain("💧");
+    container.querySelectorAll('[data-slot="template-picker-label"]').forEach((label) => {
+      expect(label.className).not.toContain("truncate");
+      expect(label.className).toContain("break-words");
+    });
   });
 });

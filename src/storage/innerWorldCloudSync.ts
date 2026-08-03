@@ -4,6 +4,8 @@ import { logger } from "@/lib/logger";
 import { safeLocalStorageSet } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 import { getCurrentUserId, supabase } from "@/lib/supabaseClient";
+import { readPendingLocalBackupAccountClaim } from "@/storage/accountBoundaryRuntime";
+import { getLocalDataOwnerId } from "@/storage/db";
 import { InnerWorld } from "@/types";
 import { Json } from "@/types/supabase";
 import { z } from "zod";
@@ -63,10 +65,28 @@ function validateInnerWorldData(data: unknown): InnerWorld | null {
 let syncInnerWorldPromise: Promise<InnerWorld> | null = null;
 
 async function isExpectedOwnerCurrent(expectedOwnerUserId: string): Promise<boolean> {
-  const activeUserId = await getCurrentUserId();
-  if (activeUserId === expectedOwnerUserId) return true;
+  const claimBeforeOwnerRead = readPendingLocalBackupAccountClaim();
+  if (claimBeforeOwnerRead.status !== "none") {
+    logger.warn("[InnerWorld] Skipping cloud operation while a backup awaits an account choice");
+    return false;
+  }
 
-  logger.warn("[InnerWorld] Skipping cloud operation because the account owner changed");
+  const [activeUserId, localOwnerUserId] = await Promise.all([
+    getCurrentUserId(),
+    getLocalDataOwnerId(),
+  ]);
+  const claimAfterOwnerRead = readPendingLocalBackupAccountClaim();
+  if (
+    activeUserId === expectedOwnerUserId &&
+    localOwnerUserId === expectedOwnerUserId &&
+    claimAfterOwnerRead.status === "none"
+  ) {
+    return true;
+  }
+
+  logger.warn(
+    "[InnerWorld] Skipping cloud operation because account ownership is unresolved or changed"
+  );
   return false;
 }
 

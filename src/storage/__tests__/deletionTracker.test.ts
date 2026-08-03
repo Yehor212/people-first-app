@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/storage/db";
 import {
   getDeletedHabitIds,
@@ -49,5 +49,17 @@ describe("deletionTracker", () => {
     expect(deletedIds.size).toBe(ids.length);
     expect(deletedIds.has(ids[0])).toBe(true);
     expect(deletedIds.has(ids[ids.length - 1])).toBe(true);
+  });
+
+  it("fails closed when persisted tombstones cannot be read", async () => {
+    const readSpy = vi
+      .spyOn(db.settings, "get")
+      .mockRejectedValueOnce(new Error("tombstone storage unavailable"));
+
+    try {
+      await expect(getDeletedHabitIds()).rejects.toThrow("tombstone storage unavailable");
+    } finally {
+      readSpy.mockRestore();
+    }
   });
 });

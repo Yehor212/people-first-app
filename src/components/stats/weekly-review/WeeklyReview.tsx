@@ -90,8 +90,8 @@ export function WeeklyReview({
 
       {/* Header */}
       <div className="relative p-5 pb-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <div className="mb-4 flex flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
             <motion.div
               className="p-2.5 rounded-xl bg-gradient-to-br from-primary/30 to-primary/20 backdrop-blur-sm shadow-zen-md"
               animate={{
@@ -101,11 +101,11 @@ export function WeeklyReview({
             >
               <Crown className="w-5 h-5 text-violet-400" />
             </motion.div>
-            <div>
-              <h3 className="text-base font-bold text-foreground">
+            <div className="min-w-0">
+              <h3 className="break-words text-base font-bold text-foreground">
                 {t.weeklyReview || "Weekly Review"}
               </h3>
-              <p className="text-xs text-muted-foreground">
+              <p className="break-words text-xs text-muted-foreground">
                 {t.thisWeekSummary || "Your week at a glance"}
               </p>
             </div>
@@ -113,7 +113,7 @@ export function WeeklyReview({
 
           {/* Week score */}
           <motion.div
-            className="relative"
+            className="relative self-end min-[420px]:self-auto"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring" }}
@@ -126,14 +126,14 @@ export function WeeklyReview({
         </div>
 
         {/* Achievement badges */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="mb-4 grid grid-cols-1 min-[420px]:grid-cols-3 gap-2">
           {achievements.map((achievement, i) => (
             <AchievementBadge key={achievement.title} {...achievement} delay={0.3 + i * 0.1} />
           ))}
         </div>
 
         {/* Week comparison stats */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 min-[420px]:grid-cols-3 gap-3">
           {[
             {
               label: t.habits || "Habits",
@@ -164,15 +164,17 @@ export function WeeklyReview({
               transition={{ delay: 0.5 + i * 0.1 }}
               className="p-3 rounded-xl bg-muted/30 backdrop-blur-sm"
             >
-              <div className="flex items-center gap-1.5 mb-1">
-                <stat.icon className="w-3.5 h-3.5" style={{ color: stat.color }} />
-                <span className="text-[10px] text-muted-foreground">{stat.label}</span>
+              <div className="mb-1 flex min-w-0 items-start gap-1.5">
+                <stat.icon className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: stat.color }} />
+                <span className="min-w-0 break-words text-xs text-muted-foreground">
+                  {stat.label}
+                </span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-1">
                 <span className="text-sm font-bold text-foreground">{stat.value}</span>
                 <div
                   className={cn(
-                    "flex items-center gap-0.5 text-[10px] font-medium",
+                    "flex items-center gap-0.5 text-xs font-medium",
                     stat.change > 0
                       ? "text-emerald-500"
                       : stat.change < 0
@@ -200,11 +202,17 @@ export function WeeklyReview({
         {/* Expand button */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full flex items-center justify-center gap-1 mt-4 py-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors"
+          className="mt-4 flex min-h-11 w-full items-center justify-center gap-1 px-2 py-2 text-center text-xs text-muted-foreground motion-safe:transition-colors hover:text-foreground"
           aria-expanded={isExpanded}
         >
-          <span>{isExpanded ? t.showLess || "Show less" : t.viewDetails || "View details"}</span>
-          {isExpanded ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
+          <span className="min-w-0 break-words">
+            {isExpanded ? t.showLess || "Show less" : t.viewDetails || "View details"}
+          </span>
+          {isExpanded ? (
+            <ChevronUp className="h-4 w-4 shrink-0" aria-hidden="true" />
+          ) : (
+            <ChevronDown className="h-4 w-4 shrink-0" aria-hidden="true" />
+          )}
         </button>
       </div>
 
@@ -229,12 +237,12 @@ export function WeeklyReview({
                   <div className="p-2 rounded-lg bg-amber-500/20">
                     <Star className="w-4 h-4 text-amber-500" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words text-sm font-medium text-foreground">
                       {t.bestDayWas || "Best day was"}{" "}
                       <span className="text-amber-500">{bestDayName}</span>
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="break-words text-xs text-muted-foreground">
                       {t.bestDayDesc || "You achieved the most on this day"}
                     </p>
                   </div>
@@ -252,12 +260,12 @@ export function WeeklyReview({
                   <div className="p-2 rounded-lg bg-emerald-500/20">
                     <Trophy className="w-4 h-4 text-emerald-500" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words text-sm font-medium text-foreground">
                       <span className="text-emerald-500">{thisWeekStats.perfectDays}</span>{" "}
                       {t.perfectDays || "perfect days"}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="break-words text-xs text-muted-foreground">
                       {t.perfectDaysDesc || "All habits + 30min focus"}
                     </p>
                   </div>
@@ -275,11 +283,11 @@ export function WeeklyReview({
                   <div className="p-2 rounded-lg bg-violet-500/20">
                     <Zap className="w-4 h-4 text-violet-400" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-1">
+                  <div className="min-w-0 flex-1">
+                    <p className="mb-1 break-words text-sm font-medium text-foreground">
                       {t.forNextWeek || "For next week"}
                     </p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
+                    <p className="break-words text-xs leading-relaxed text-muted-foreground">
                       {getRecommendation()}
                     </p>
                   </div>

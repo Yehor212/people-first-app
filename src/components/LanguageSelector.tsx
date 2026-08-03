@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, RefreshCw } from "lucide-react";
 import { type MouseEvent, useEffect } from "react";
 
 import { EntryGateBackdrop } from "@/components/EntryGateBackdrop";
@@ -43,7 +43,15 @@ const languageItemVariants = {
 };
 
 export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
-  const { language, setLanguage, t } = useLanguage();
+  const {
+    language,
+    setLanguage,
+    t,
+    pendingLanguage,
+    languageLoadError,
+    languageSaveError,
+    retryLanguage,
+  } = useLanguage();
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const animated = !isAndroid && shouldAnimate();
 
@@ -91,7 +99,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           />
           <h1
             id="language-selector-title"
-            className="entry-gate-title mx-auto max-w-xs text-4xl font-black leading-none text-foreground sm:text-5xl md:max-w-xl md:text-6xl"
+            className="entry-gate-title mx-auto min-w-0 max-w-xs whitespace-normal text-2xl font-black leading-tight text-foreground [hyphens:manual] [overflow-wrap:normal] min-[390px]:text-3xl sm:text-display-5xl md:max-w-xl md:text-display-6xl"
           >
             {t.welcomeTitle}
           </h1>
@@ -104,15 +112,16 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           aria-label={t.selectLanguage}
         >
           <motion.div
-            className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4"
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(9rem*var(--font-scale,1))),1fr))] gap-2 sm:gap-3"
             role="radiogroup"
             aria-label={t.selectLanguage}
+            aria-busy={Boolean(pendingLanguage)}
             variants={languageListVariants}
             initial={animated ? "hidden" : false}
             animate="visible"
           >
             {languages.map((lang) => {
-              const selected = language === lang;
+              const selected = (pendingLanguage ?? language) === lang;
 
               return (
                 <motion.button
@@ -125,7 +134,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                   dir={rtlLanguages.has(lang) ? "rtl" : "ltr"}
                   onClick={(event) => handleSelect(lang, event)}
                   className={cn(
-                    "entry-action-tile btn-press min-h-14 rounded-2xl border px-3 py-2.5 text-start outline-none transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                    "entry-action-tile btn-press h-auto min-h-14 min-w-0 whitespace-normal break-words rounded-2xl border px-3 py-2.5 text-start [hyphens:manual] [overflow-wrap:break-word] outline-none transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     selected
                       ? "border-primary/70 bg-primary/20 text-foreground shadow-lg"
                       : "border-border/45 bg-card/55 text-muted-foreground hover:border-primary/40 hover:bg-card/75 hover:text-foreground"
@@ -134,12 +143,12 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                   transition={{ duration: 0.24, ease: [0.25, 0.1, 0.25, 1] }}
                   data-testid={`language-option-${lang}`}
                 >
-                  <span className="flex min-w-0 items-center gap-2.5">
-                    <span className="text-xl leading-none" aria-hidden="true">
+                  <span className="flex min-w-0 items-start gap-2.5">
+                    <span className="shrink-0 text-xl leading-none" aria-hidden="true">
                       {languageFlags[lang]}
                     </span>
                     <span
-                      className="min-w-0 flex-1 text-sm font-semibold leading-tight"
+                      className="min-w-0 flex-1 break-words text-sm font-semibold leading-tight [hyphens:manual] [overflow-wrap:break-word]"
                       dir={rtlLanguages.has(lang) ? "rtl" : "ltr"}
                     >
                       {languageNames[lang]}
@@ -154,14 +163,55 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           </motion.div>
         </section>
 
+        {pendingLanguage ? (
+          <p role="status" aria-live="polite" className="break-words text-center text-sm text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
+            {t.languageApplying}
+          </p>
+        ) : null}
+
+        {languageLoadError ? (
+          <div
+            role="alert"
+            className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-center text-sm text-destructive"
+          >
+            <p className="break-words [hyphens:manual] [overflow-wrap:break-word]">{t.languageLoadFailed}</p>
+            <button
+              type="button"
+              onClick={retryLanguage}
+              className="mx-auto mt-2 inline-flex h-auto min-h-[44px] min-w-0 items-center justify-center gap-2 whitespace-normal break-words rounded-full border border-destructive/30 px-4 py-2 font-semibold [hyphens:manual] [overflow-wrap:break-word] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              <span>{t.tryAgain}</span>
+            </button>
+          </div>
+        ) : null}
+
+        {languageSaveError ? (
+          <div
+            role="alert"
+            className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-center text-sm text-destructive"
+          >
+            <p className="break-words [hyphens:manual] [overflow-wrap:break-word]">{t.languageSaveFailed}</p>
+            <button
+              type="button"
+              onClick={retryLanguage}
+              className="mx-auto mt-2 inline-flex h-auto min-h-[44px] min-w-0 items-center justify-center gap-2 whitespace-normal break-words rounded-full border border-destructive/30 px-4 py-2 font-semibold [hyphens:manual] [overflow-wrap:break-word] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              <span>{t.tryAgain}</span>
+            </button>
+          </div>
+        ) : null}
+
         <button
           type="button"
           onClick={handleContinue}
-          className="btn-press flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow-lg transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          disabled={Boolean(pendingLanguage || languageLoadError)}
+          className="btn-press flex h-auto min-h-12 w-full min-w-0 items-center justify-center gap-2 whitespace-normal break-words rounded-full bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow-lg [hyphens:manual] [overflow-wrap:break-word] transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-55"
           data-testid="language-continue"
         >
           <span>{t.continue}</span>
-          <ArrowRight className="h-4 w-4 rtl:scale-x-[-1]" aria-hidden="true" />
+          <ArrowRight className="h-4 w-4 shrink-0 rtl:scale-x-[-1]" aria-hidden="true" />
         </button>
 
       </motion.section>

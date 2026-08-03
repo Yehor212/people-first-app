@@ -40,10 +40,10 @@
 </head>
 <body>
   <h1><img class="title-logo" src="/people-first-app/pwa-72.png?v=zenflow-browser-leaf-20260627-r7" width="40" height="40" alt="" aria-hidden="true">ZenFlow Privacy Policy</h1>
-  <p class="updated">Last updated: July 3, 2026</p>
+  <p class="updated">Last updated: July 23, 2026</p>
 
   <div class="highlight">
-    <p><strong>Summary:</strong> ZenFlow is local-first. Optional account sync, crash diagnostics, ads after consent, and journal audio recording require clear user action or consent. We do not sell your personal data.</p>
+    <p><strong>Summary:</strong> ZenFlow is local-first. Optional account sync, private journal search, AI Coach, feedback, crash diagnostics, ads after consent, journal audio recording, and journal dictation require clear user action or consent. We do not sell your personal data.</p>
   </div>
 
   <h2>1. Introduction</h2>
@@ -71,6 +71,10 @@
     <li>Health Connect data for advertising</li>
   </ul>
   <p>Optional sync, diagnostics, notifications, and ads can involve external services only when the relevant feature, platform build, and consent setting allow it.</p>
+
+  <h3>2.3 Microphone, journal recordings, and dictation</h3>
+  <p>Journal voice recording uses your microphone only after you start recording. Recordings become journal audio attachments and may be included in optional account sync. ZenFlow does not listen in the background.</p>
+  <p>Optional journal dictation starts only when you choose the dictation control. It uses the speech recognition service provided by your browser or operating system; depending on that service and its settings, spoken audio may be processed outside ZenFlow. The resulting text is handled as journal text. ZenFlow does not save the recognition audio as a journal attachment unless you separately start voice recording.</p>
 
   <h2>3. How Your Data is Stored</h2>
   <p>ZenFlow is local-first. Core wellness data starts on your device, and optional services process only the data needed for the feature you enable.</p>
@@ -115,6 +119,16 @@
   <h3>5.4 Ads and Google Mobile Ads (Optional)</h3>
   <p>Supported app builds may offer optional rewarded ads after ZenFlow consent and Google consent. Ads are not shown inside active journaling, mood check-ins, or focus moments. The Google Mobile Ads SDK may collect and share IP address, user product interactions such as ad views, taps, or video views, diagnostic information, and device/account identifiers such as Android Advertising ID or app set ID for advertising, analytics, and fraud prevention.</p>
   <p>Where Google User Messaging Platform (UMP) requires it, ZenFlow shows a Google ad privacy choices entry point in Settings so you can change or withdraw ad consent.</p>
+
+  <h3>5.5 Journal AI Search (Optional)</h3>
+  <p>Journal AI Search is off until you choose to enable it and accept its in-app privacy notice. While it is on, ZenFlow sends your search query to a Supabase Edge Function. The function matches it against the title, content, mood, and tags of entries in your ZenFlow account.</p>
+  <p>The current lexical search path does not send journal text or search queries to an external AI provider and does not create a separate search index.</p>
+
+  <h3>5.6 AI Coach (Optional)</h3>
+  <p>AI Coach is used only when you choose to send it a message. ZenFlow sends your message, recent conversation history, and selected wellness context to a Supabase Edge Function to generate a Coach Lite response. The current Coach Lite mode does not use an external AI provider. Do not use AI Coach for emergencies or medical advice.</p>
+
+  <h3>5.7 Feedback (Optional)</h3>
+  <p>When you submit Feedback, ZenFlow sends your category, message, optional email address, app version, and device information to Supabase. Where the feedback email service is configured, ZenFlow also attempts to send a notification email containing that information through Resend. Do not include journal text, urgent safety information, or medical information in Feedback.</p>
 
   <h2>6. Children's Privacy</h2>
   <p>ZenFlow is designed for users aged 13 and older. We do not knowingly collect personal information from children under 13. If you are under 13, please do not use this app without parental consent. The app confirms user age during onboarding.</p>

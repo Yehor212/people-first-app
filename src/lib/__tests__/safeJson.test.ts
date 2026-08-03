@@ -275,14 +275,21 @@ describe('safeLocalStorageSet', () => {
     expect(safeLocalStorageSet('key', 'value')).toBe(false);
   });
 
-  it('returns false on QuotaExceededError and logs error', () => {
+  it('reports every rejected quota write so a dismissed warning can return', () => {
+    const listener = vi.fn();
+    window.addEventListener('zenflow:offline-data-dropped', listener);
     const quotaError = new DOMException('Quota exceeded', 'QuotaExceededError');
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw quotaError;
     });
-    const result = safeLocalStorageSet('key', 'value');
-    expect(result).toBe(false);
+    expect(safeLocalStorageSet('key', 'value')).toBe(false);
+    expect(safeLocalStorageSet('second-key', 'second-value')).toBe(false);
     expect(mockedLogger.error).toHaveBeenCalled();
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener).toHaveBeenLastCalledWith(
+      expect.objectContaining({ detail: { reason: 'storage-limit' } }),
+    );
+    window.removeEventListener('zenflow:offline-data-dropped', listener);
   });
 
   it('stores null value as "null"', () => {

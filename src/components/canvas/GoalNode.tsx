@@ -82,7 +82,7 @@ export const GoalNode = memo(
           left: x - PILL_W / 2,
           top: y - PILL_H / 2,
           width: PILL_W,
-          height: PILL_H,
+          minHeight: PILL_H,
         }}
         initial={{ opacity: 0, scale: 0.3 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -91,12 +91,13 @@ export const GoalNode = memo(
         {/* SVG progress ring */}
         <svg
           viewBox={`0 0 ${RING_W} ${RING_H}`}
+          preserveAspectRatio="none"
           className="absolute pointer-events-none"
           style={{
             left: -8,
             top: -8,
-            width: RING_W,
-            height: RING_H,
+            width: "calc(100% + 16px)",
+            height: "calc(100% + 16px)",
           }}
         >
           {/* Track */}
@@ -108,6 +109,7 @@ export const GoalNode = memo(
             fill="none"
             stroke="rgba(255,255,255,0.08)"
             strokeWidth={2}
+            vectorEffect="non-scaling-stroke"
           />
           {/* Progress arc */}
           {progressPercent > 0 && (
@@ -120,6 +122,7 @@ export const GoalNode = memo(
               stroke={rColor}
               strokeWidth={2}
               strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
               strokeDasharray={`${filled} ${RING_PERIMETER}`}
               className="motion-safe:transition-all motion-safe:duration-700 ease-out -rotate-90 opacity-80"
               style={{
@@ -135,8 +138,8 @@ export const GoalNode = memo(
           onPointerUp={handleTap}
           onClick={handleTap}
           className={cn(
-            "w-full h-full rounded-full",
-            "flex items-center justify-center gap-1.5 px-3",
+            "w-full h-auto min-h-12 rounded-full",
+            "flex items-center justify-center gap-1.5 px-3 py-2",
             "border",
             isComplete ? "border-emerald-400/50 opacity-70" : !goal.color ? "border-border" : "",
             "cursor-pointer",
@@ -156,7 +159,7 @@ export const GoalNode = memo(
         >
           <motion.span
             style={{ opacity: textOpacity }}
-            className="flex items-center gap-1.5 truncate"
+            className="flex min-w-0 w-full items-center gap-1.5"
           >
             {isComplete ? (
               <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" aria-hidden="true" />
@@ -173,7 +176,7 @@ export const GoalNode = memo(
             ) : null}
             <span
               className={cn(
-                "text-xs font-medium truncate",
+                "min-w-0 whitespace-normal [overflow-wrap:anywhere] text-start text-xs font-medium leading-tight",
                 isComplete
                   ? "text-emerald-500 dark:text-emerald-300 line-through"
                   : "text-foreground"

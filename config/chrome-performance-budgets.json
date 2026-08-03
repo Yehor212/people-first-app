@@ -29,28 +29,28 @@
         },
         {
           "name": "orb-v2-phone",
-          "path": "orb/?nav=v2&navLayout=phone",
+          "path": "orb?nav=v2&navLayout=phone",
           "readySelector": "[data-testid=\"orb-page-hero\"] [data-orb-renderer-policy=\"webgpu\"][data-orb-visual-ready=\"true\"]",
           "readyTimeoutMs": 45000
         },
         {
           "name": "habits-v2-phone",
-          "path": "habits/?nav=v2&navLayout=phone",
+          "path": "habits?nav=v2&navLayout=phone",
           "readySelector": "[data-testid=\"habits-hero-empty\"], [data-testid^=\"hero-group-\"]"
         },
         {
           "name": "diary-v2-phone",
-          "path": "diary/?nav=v2&navLayout=phone",
-          "readySelector": "[data-testid=\"journal-compact-empty-list\"], [data-testid=\"journal-empty-list\"]"
+          "path": "diary?nav=v2&navLayout=phone",
+          "readySelector": "[data-testid=\"diary-page\"]"
         },
         {
           "name": "planning-v2-phone",
-          "path": "planning/?nav=v2&navLayout=phone",
+          "path": "planning?nav=v2&navLayout=phone",
           "readySelector": "[data-testid=\"planning-page\"]"
         },
         {
           "name": "settings-v2-phone",
-          "path": "settings/?nav=v2&navLayout=phone",
+          "path": "settings?nav=v2&navLayout=phone",
           "readySelector": "[data-testid=\"settings-page-control-card\"], [data-testid=\"settings-page-sections\"]"
         },
         {
@@ -83,28 +83,28 @@
         },
         {
           "name": "orb-v2-desktop",
-          "path": "orb/?nav=v2",
+          "path": "orb?nav=v2",
           "readySelector": "[data-testid=\"orb-page-hero\"] [data-orb-renderer-policy=\"webgpu\"][data-orb-visual-ready=\"true\"]",
           "readyTimeoutMs": 45000
         },
         {
           "name": "habits-v2-desktop",
-          "path": "habits/?nav=v2",
+          "path": "habits?nav=v2",
           "readySelector": "[data-testid=\"habits-hero-empty\"], [data-testid^=\"hero-group-\"]"
         },
         {
           "name": "diary-v2-desktop",
-          "path": "diary/?nav=v2",
-          "readySelector": "[data-testid=\"journal-compact-empty-list\"], [data-testid=\"journal-empty-list\"]"
+          "path": "diary?nav=v2",
+          "readySelector": "[data-testid=\"diary-page\"]"
         },
         {
           "name": "planning-v2-desktop",
-          "path": "planning/?nav=v2",
+          "path": "planning?nav=v2",
           "readySelector": "[data-testid=\"planning-page\"]"
         },
         {
           "name": "settings-v2-desktop",
-          "path": "settings/?nav=v2",
+          "path": "settings?nav=v2",
           "readySelector": "[data-testid=\"settings-page-control-card\"], [data-testid=\"settings-page-sections\"]"
         },
         {

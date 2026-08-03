@@ -1,22 +1,29 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.105.4";
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
-import webpush from "npm:web-push@3.6.7";
-import { isAuthorizedRequest, secureCompare } from "../_shared/auth.ts";
+import { isAuthorizedRequest } from "../_shared/auth.ts";
+import { createJsonResponse, createNoContentResponse } from "../_shared/http.ts";
+import { withPushDeliveryPermit } from "../_shared/pushDeletionBarrier.ts";
 import {
-  createJsonResponse,
-  createNoContentResponse,
-} from "../_shared/http.ts";
-import { redactError, redactUserRef } from "../_shared/redaction.ts";
+  classifyPushProviderAttempts,
+  noPushTargets,
+  providerUnavailable,
+  shouldReleasePushReservation,
+  type PushProviderAttempt,
+} from "../_shared/pushProviderOutcome.ts";
+import {
+  buildRealmBoundAndroidMessage,
+  isAndroidPushTarget,
+  type PushDeviceTarget,
+  type PushNotificationType,
+} from "../_shared/pushRealmMessage.ts";
 
-type ReminderType = "mood" | "habit" | "focus";
+type ReminderType = Exclude<PushNotificationType, "test">;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY");
-const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY");
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT");
 const FCM_PROJECT_ID = Deno.env.get("FCM_PROJECT_ID");
 const FCM_SERVICE_ACCOUNT_B64 = Deno.env.get("FCM_SERVICE_ACCOUNT_B64");
+const FCM_REQUEST_TIMEOUT_MS = 10000;
 const CRON_SECRET = Deno.env.get("CRON_SECRET"); // Secret for cron job authentication
 
 const toMinutes = (time: string) => {
@@ -67,59 +74,6 @@ const getLocalParts = (timezone: string) => {
   return { dateKey, minutes: hour * 60 + minute, day: dayMap[weekday] ?? 0 };
 };
 
-const NOTIFICATION_STRINGS: Record<string, Record<ReminderType, string>> = {
-  en: {
-    mood: "How are you feeling today?",
-    habit: "Time to check your habits.",
-    focus: "Ready for a focus session?",
-  },
-  ru: {
-    mood: "Как настроение сегодня?",
-    habit: "Время отметить привычки.",
-    focus: "Готовы к фокус-сессии?",
-  },
-  uk: {
-    mood: "Як настрій сьогодні?",
-    habit: "Час перевірити звички.",
-    focus: "Готові до фокус-сесії?",
-  },
-  es: {
-    mood: "¿Cómo te sientes hoy?",
-    habit: "Hora de revisar tus hábitos.",
-    focus: "¿Listo para una sesión de enfoque?",
-  },
-  de: {
-    mood: "Wie fühlst du dich heute?",
-    habit: "Zeit, deine Gewohnheiten zu prüfen.",
-    focus: "Bereit für eine Fokus-Sitzung?",
-  },
-  fr: {
-    mood: "Comment vous sentez-vous aujourd'hui ?",
-    habit: "C'est l'heure de vérifier vos habitudes.",
-    focus: "Prêt pour une session de concentration ?",
-  },
-  ja: {
-    mood: "今日の気分はいかがですか？",
-    habit: "習慣をチェックする時間です。",
-    focus: "集中セッションの準備はできましたか？",
-  },
-  ar: {
-    mood: "كيف حالك اليوم؟",
-    habit: "حان وقت مراجعة عاداتك.",
-    focus: "هل أنت مستعد لجلسة تركيز؟",
-  },
-  he: {
-    mood: "איך אתה מרגיש היום?",
-    habit: "הגיע הזמן לבדוק את ההרגלים.",
-    focus: "מוכן לסשן מיקוד?",
-  },
-};
-
-const getTitleBody = (type: ReminderType, language: string) => {
-  const strings = NOTIFICATION_STRINGS[language] || NOTIFICATION_STRINGS.en;
-  return { title: "ZenFlow", body: strings[type] };
-};
-
 const pemToArrayBuffer = (pem: string) => {
   const base64 = pem
     .replace(/-----BEGIN PRIVATE KEY-----/g, "")
@@ -142,7 +96,7 @@ const getFcmAccessToken = async () => {
     keyData,
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
     false,
-    ["sign"],
+    ["sign"]
   );
 
   const jwt = await create(
@@ -154,7 +108,7 @@ const getFcmAccessToken = async () => {
       iat: getNumericDate(0),
       exp: getNumericDate(60 * 60),
     },
-    key,
+    key
   );
 
   const response = await fetch("https://oauth2.googleapis.com/token", {
@@ -164,6 +118,7 @@ const getFcmAccessToken = async () => {
       grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
       assertion: jwt,
     }),
+    signal: AbortSignal.timeout(FCM_REQUEST_TIMEOUT_MS),
   });
 
   if (!response.ok) return null;
@@ -172,36 +127,33 @@ const getFcmAccessToken = async () => {
 };
 
 const sendFcmNotifications = async (
+  targets: PushDeviceTarget[],
+  type: ReminderType,
   accessToken: string,
-  tokens: string[],
-  content: { title: string; body: string },
 ) => {
-  if (!FCM_PROJECT_ID) return 0;
+  if (!FCM_PROJECT_ID) return providerUnavailable(0);
   const url = `https://fcm.googleapis.com/v1/projects/${FCM_PROJECT_ID}/messages:send`;
-  const results = await Promise.all(
-    tokens.map((token) =>
+  const attempts = await Promise.all<PushProviderAttempt>(
+    targets.map((target) =>
       fetch(url, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          message: {
-            token,
-            notification: {
-              title: content.title,
-              body: content.body,
-            },
-          },
-        }),
+        body: JSON.stringify(buildRealmBoundAndroidMessage(target, type)),
+        signal: AbortSignal.timeout(FCM_REQUEST_TIMEOUT_MS),
       })
-        .then((res) => (res.ok ? 1 : 0))
-        .catch(() => 0),
-    ),
+        .then((res) => (res.ok ? "accepted" as const : "rejected" as const))
+        .catch(() => "network-error" as const)
+    )
   );
 
-  return results.reduce((total, value) => total + value, 0);
+  const dispatch = classifyPushProviderAttempts(attempts);
+  if (dispatch.state === "provider-unavailable") {
+    console.warn("[ScheduledPush] FCM batch unavailable");
+  }
+  return dispatch;
 };
 
 Deno.serve(async (req) => {
@@ -221,17 +173,6 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     const cronSecretHeader = req.headers.get("X-Cron-Secret");
 
-    // P1 Diagnostics: Log request details (NO secrets!)
-    console.log("[ScheduledPush] Request received", {
-      hasAuthHeader: !!authHeader,
-      hasBearerPrefix: authHeader?.startsWith("Bearer ") ?? false,
-      hasCronSecret: !!cronSecretHeader,
-      hasCronSecretEnv: !!CRON_SECRET,
-      userAgent: req.headers.get("User-Agent"),
-      origin: req.headers.get("Origin"),
-      timestamp: new Date().toISOString(),
-    });
-
     // P0 Fix: Use secure comparison to prevent timing attacks
     const isAuthorized = isAuthorizedRequest({
       authHeader,
@@ -241,20 +182,12 @@ Deno.serve(async (req) => {
     });
 
     if (!isAuthorized) {
-      console.warn("[ScheduledPush] Unauthorized request - details:", {
-        cronSecretMatch: CRON_SECRET
-          ? secureCompare(cronSecretHeader, CRON_SECRET)
-          : "no_env",
-        authHeaderMatch: authHeader?.startsWith("Bearer ")
-          ? "has_bearer"
-          : "no_bearer",
-      });
+      console.warn("[ScheduledPush] Unauthorized request");
       return createJsonResponse(origin, 401, { error: "Unauthorized" });
     }
 
-    console.log("[ScheduledPush] Authorized successfully");
-
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    let hadRetryableFailure = false;
 
     const { data: settings, error } = await supabase
       .from("user_reminder_settings")
@@ -265,15 +198,6 @@ Deno.serve(async (req) => {
       return createJsonResponse(origin, 500, {
         error: "Failed to load settings",
       });
-    }
-
-    const fcmAccessToken = await getFcmAccessToken();
-    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && VAPID_SUBJECT) {
-      webpush.setVapidDetails(
-        VAPID_SUBJECT,
-        VAPID_PUBLIC_KEY,
-        VAPID_PRIVATE_KEY,
-      );
     }
 
     for (const item of settings || []) {
@@ -295,97 +219,162 @@ Deno.serve(async (req) => {
       for (const check of checks) {
         const target = toMinutes(check.time || "00:00");
         if (!isInWindow(minutes, target, 15)) continue;
-        if (
-          check.type === "habit" &&
-          (!item.habit_ids || item.habit_ids.length === 0)
-        )
-          continue;
+        if (check.type === "habit" && (!item.habit_ids || item.habit_ids.length === 0)) continue;
 
-        // Atomic dedup: upsert with ignoreDuplicates avoids 409 errors in API analytics
-        // Root cause: plain INSERT → PostgREST 409 on PK (user_id, type, date_key) conflict
-        // Fix: upsert + ignoreDuplicates → 200 + empty data when row already exists
-        const { data: logData, error: logError } = await supabase
-          .from("push_logs")
-          .upsert(
-            {
-              user_id: item.user_id,
-              type: check.type,
-              date_key: dateKey,
-              sent_at: new Date().toISOString(),
-            },
-            { onConflict: "user_id,type,date_key", ignoreDuplicates: true },
-          )
-          .select("sent_at");
+        const delivery = await withPushDeliveryPermit(
+          item.user_id,
+          {
+            rpc: (functionName, args) => supabase.rpc(functionName, args),
+            randomUUID: () => crypto.randomUUID(),
+          },
+          async () => {
+            const { data: deviceTokens, error: tokenError } = await supabase
+              .from("push_device_tokens")
+              .select("id, token, platform")
+              .eq("user_id", item.user_id)
+              .eq("platform", "android");
+            if (tokenError) {
+              console.warn("[ScheduledPush] Push targets unavailable");
+              return providerUnavailable(0);
+            }
 
-        if (logError) {
-          console.error(
-            `[ScheduledPush] Failed to log push for ${redactUserRef(item.user_id)}:`,
-            logError,
-          );
+            const targets = (deviceTokens || []).filter(isAndroidPushTarget);
+            if (targets.length === 0) return noPushTargets();
+
+            let accessToken: string | null | undefined;
+            try {
+              accessToken = await getFcmAccessToken();
+            } catch {
+              console.warn("[ScheduledPush] FCM credentials unavailable");
+              return providerUnavailable(0);
+            }
+            if (!accessToken || !FCM_PROJECT_ID) {
+              console.warn("[ScheduledPush] FCM credentials unavailable");
+              return providerUnavailable(0);
+            }
+
+            const releasePushReservation = async (
+              ownerId: string,
+              type: ReminderType,
+              dateKey: string,
+              sentAt: string,
+            ) => {
+              try {
+                const { data: releasedRows, error: releaseError } = await supabase
+                  .from("push_logs")
+                  .delete()
+                  .eq("user_id", ownerId)
+                  .eq("type", type)
+                  .eq("date_key", dateKey)
+                  .eq("sent_at", sentAt)
+                  .select("sent_at");
+                if (
+                  releaseError ||
+                  !releasedRows ||
+                  releasedRows.length !== 1
+                ) {
+                  console.error("[ScheduledPush] Failed to release delivery reservation");
+                  return false;
+                }
+                return true;
+              } catch {
+                console.error("[ScheduledPush] Failed to release delivery reservation");
+                return false;
+              }
+            };
+
+            // Dedup belongs inside the permit: a deletion block must not leave
+            // behind a false "sent" row after refusing provider admission.
+            const reservationSentAt = new Date().toISOString();
+            const { data: logData, error: logError } = await supabase
+              .from("push_logs")
+              .upsert(
+                {
+                  user_id: item.user_id,
+                  type: check.type,
+                  date_key: dateKey,
+                  sent_at: reservationSentAt,
+                },
+                { onConflict: "user_id,type,date_key", ignoreDuplicates: true }
+              )
+              .select("sent_at");
+
+            if (logError) {
+              console.error("[ScheduledPush] Failed to record delivery attempt");
+              return providerUnavailable(0);
+            }
+
+            // ignoreDuplicates returns no row when this reminder was already handled.
+            if (!logData || logData.length === 0) {
+              return { state: "skipped" } as const;
+            }
+
+            const reservedSentAt = logData[0]?.sent_at;
+            if (
+              typeof reservedSentAt !== "string" ||
+              !Number.isFinite(Date.parse(reservedSentAt))
+            ) {
+              console.error("[ScheduledPush] Invalid delivery reservation");
+              await releasePushReservation(
+                item.user_id,
+                check.type,
+                dateKey,
+                reservationSentAt,
+              );
+              return providerUnavailable(0);
+            }
+
+            const dispatch = await sendFcmNotifications(
+              targets,
+              check.type,
+              accessToken,
+            );
+
+            if (shouldReleasePushReservation(dispatch)) {
+              const released = await releasePushReservation(
+                item.user_id,
+                check.type,
+                dateKey,
+                reservedSentAt,
+              );
+              if (!released) {
+                return providerUnavailable(
+                  dispatch.state === "no-targets" ? 0 : dispatch.attempted,
+                );
+              }
+            }
+            return dispatch;
+          },
+        );
+
+        if (delivery.state === "blocked") continue;
+        if (delivery.state === "unavailable") {
+          hadRetryableFailure = true;
           continue;
         }
-
-        // ignoreDuplicates: true → returns empty array if row already existed
-        if (!logData || logData.length === 0) {
-          continue; // Already sent today — skip silently (no 409)
+        if (!delivery.releaseConfirmed) {
+          console.warn("[ScheduledPush] Permit release unconfirmed");
         }
-
-        const { data: subs } = await supabase
-          .from("push_subscriptions")
-          .select("endpoint, keys")
-          .eq("user_id", item.user_id);
-
-        const { data: deviceTokens } = await supabase
-          .from("push_device_tokens")
-          .select("token")
-          .eq("user_id", item.user_id);
-
+        const dispatch = delivery.value;
         if (
-          (!subs || subs.length === 0) &&
-          (!deviceTokens || deviceTokens.length === 0)
+          dispatch.state === "no-targets" ||
+          dispatch.state === "provider-unavailable"
         ) {
-          continue;
+          hadRetryableFailure = true;
         }
-
-        const content = getTitleBody(check.type, item.language || "en");
-
-        if (
-          VAPID_PUBLIC_KEY &&
-          VAPID_PRIVATE_KEY &&
-          VAPID_SUBJECT &&
-          subs &&
-          subs.length > 0
-        ) {
-          await Promise.all(
-            subs.map((sub) =>
-              webpush
-                .sendNotification(
-                  { endpoint: sub.endpoint, keys: sub.keys },
-                  JSON.stringify(content),
-                )
-                .catch(() => null),
-            ),
-          );
-        }
-
-        if (fcmAccessToken && deviceTokens && deviceTokens.length > 0) {
-          await sendFcmNotifications(
-            fcmAccessToken,
-            deviceTokens.map((row) => row.token),
-            content,
-          );
-        }
-
-        // P0 Fix: Log was already inserted atomically above, no need to upsert here
       }
     }
 
+    if (hadRetryableFailure) {
+      return createJsonResponse(origin, 503, {
+        error: "Push temporarily unavailable",
+      });
+    }
     return createJsonResponse(origin, 200, { ok: true });
-  } catch (err) {
-    console.error("[ScheduledPush] Error", err);
+  } catch {
+    console.error("[ScheduledPush] Internal failure");
     return createJsonResponse(origin, 500, {
       error: "Internal error",
-      requestId: redactError(err),
     });
   }
 });

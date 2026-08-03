@@ -5,7 +5,7 @@
  * Collapsible design to avoid overwhelming the user
  */
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useId } from "react";
 import type { MoodEntry, Habit, FocusSession } from "@/types";
 import { useInsights } from "@/hooks/useInsights";
 import type { InsightTranslations } from "@/lib/insightsEngine";
@@ -33,6 +33,7 @@ export function InsightsPanel({
   const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const helpId = useId();
 
   // Collapsible state with localStorage persistence
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -57,10 +58,10 @@ export function InsightsPanel({
       afternoon: t.insightAfternoon || "in the afternoon",
       evening: t.insightEvening || "in the evening",
       habitImprovesMood:
-        t.insightHabitImprovesMood || "{habit} improves your mood",
+        t.insightHabitImprovesMood || "{habit} appears with higher recorded mood",
       habitImprovesMoodDesc:
         t.insightHabitImprovesMoodDesc ||
-        'On days when you complete "{habit}", your mood is {percent}% better on average.',
+        'Across {sampleDays} recorded days with "{habit}", average mood was {avgMoodWith}/5, compared with {avgMoodWithout}/5 across {comparisonDays} other recorded days. This is an association, not proof that the habit caused the change.',
       focusBestLabel:
         t.insightFocusBestLabel || 'You focus best on "{label}" tasks',
       focusBestLabelDesc:
@@ -76,10 +77,11 @@ export function InsightsPanel({
       bestTimeForHabitDesc:
         t.insightBestTimeForHabitDesc ||
         'You\'re {percent}% more likely to complete "{habit}" {time} compared to {worstTime} ({worstPercent}%).',
-      tagBoostsMood: t.insightTagBoostsMood || '"{tag}" boosts your mood',
+      tagBoostsMood:
+        t.insightTagBoostsMood || '"{tag}" appears with higher recorded mood',
       tagBoostsMoodDesc:
         t.insightTagBoostsMoodDesc ||
-        'Days tagged with "{tag}" show {percent}% better mood on average.',
+        'Across {occurrences} recorded entries tagged "{tag}", average mood was {avgMoodWith}/5, compared with {avgMoodWithout}/5 across {untaggedEntries} untagged entries. This is an association, not proof that the tag caused the change.',
     }),
     [t],
   );
@@ -242,10 +244,11 @@ export function InsightsPanel({
             <button
               onClick={() => setShowHelp(!showHelp)}
               aria-expanded={showHelp}
+              aria-controls={helpId}
               aria-label={t.insightsHelpTitle || "About Insights"}
-              className="text-muted-foreground hover:text-foreground motion-safe:transition-colors p-2 -m-2"
+              className="-m-2 inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-muted-foreground hover:text-foreground motion-safe:transition-colors"
             >
-              <Info className="w-5 h-5" />
+              <Info className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -260,13 +263,17 @@ export function InsightsPanel({
               <button
                 onClick={() => setShowHelp(!showHelp)}
                 aria-expanded={showHelp}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors"
+                aria-controls={helpId}
+                className="-mx-2 flex min-h-[44px] min-w-[44px] items-center gap-1 px-2 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors"
               >
                 <Info className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>{t.insightsHelpTitle || "About Insights"}</span>
               </button>
               {showHelp && (
-                <div className="mt-2 p-3 bg-muted/50 rounded-xl text-xs text-muted-foreground space-y-1">
+                <div
+                  id={helpId}
+                  className="mt-2 p-3 bg-muted/50 rounded-xl text-xs text-muted-foreground space-y-1"
+                >
                   <p>
                     {t.insightsHelp1 ||
                       "Insights are generated from your personal data using statistical analysis."}
@@ -277,7 +284,7 @@ export function InsightsPanel({
                   </p>
                   <p>
                     {t.insightsHelp3 ||
-                      "Patterns with higher confidence are shown first."}
+                      "Patterns are ordered using the amount of recorded data and the size of the observed difference."}
                   </p>
                 </div>
               )}
@@ -287,7 +294,10 @@ export function InsightsPanel({
           {/* Non-collapsible mode help text (shown when help button in header clicked) */}
           {!collapsible && showHelp && (
             <div className="px-4 pt-4">
-              <div className="p-3 bg-muted/50 rounded-xl text-xs text-muted-foreground space-y-1">
+              <div
+                id={helpId}
+                className="p-3 bg-muted/50 rounded-xl text-xs text-muted-foreground space-y-1"
+              >
                 <p className="font-medium text-foreground mb-1">
                   {t.insightsHelpTitle || "About Insights"}
                 </p>
@@ -301,7 +311,7 @@ export function InsightsPanel({
                 </p>
                 <p>
                   {t.insightsHelp3 ||
-                    "Patterns with higher confidence are shown first."}
+                    "Patterns are ordered using the amount of recorded data and the size of the observed difference."}
                 </p>
               </div>
             </div>

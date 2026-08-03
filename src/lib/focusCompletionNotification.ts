@@ -1,6 +1,10 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 
-import { getCurrentChannelId, initializeNotificationChannels } from "@/lib/notificationSounds";
+import {
+  getCurrentChannelId,
+  getCurrentSoundOption,
+  initializeNotificationChannels,
+} from "@/lib/notificationSounds";
 import { isNative } from "@/lib/platform";
 
 // Reserved outside the repeating reminder ranges and within Android's signed
@@ -14,6 +18,8 @@ export async function scheduleFocusCompletionNotification(body: string): Promise
   const permission = await LocalNotifications.checkPermissions();
   if (permission.display !== "granted") return false;
 
+  const sound = getCurrentSoundOption().sound;
+
   await LocalNotifications.schedule({
     notifications: [
       {
@@ -21,6 +27,7 @@ export async function scheduleFocusCompletionNotification(body: string): Promise
         body,
         id: FOCUS_COMPLETION_NOTIFICATION_ID,
         channelId: getCurrentChannelId(),
+        ...(sound ? { sound } : {}),
       },
     ],
   });

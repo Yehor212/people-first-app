@@ -10,6 +10,8 @@ import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
 
+import { isAllowedPlaceholderDifference } from "./i18n-placeholder-exceptions";
+
 type Language = "en" | "uk" | "es" | "de" | "fr" | "ja" | "ar" | "he";
 
 interface TranslationValue {
@@ -234,6 +236,8 @@ const ALLOWED_IDENTICAL_KEYS: Partial<Record<Language, ReadonlySet<string>>> = {
     "navV2Menu",
     "navV2HabitsCategoryFocus",
     "settingsVibration",
+    // "Date" is the correct French noun for the journal export column.
+    "journalExportDate",
   ]),
   ja: new Set([
     ...AUTH_PROVIDER_BRAND_KEYS,
@@ -389,7 +393,10 @@ for (const language of LANGUAGES.filter((item) => item !== REFERENCE_LANGUAGE)) 
 
     const englishPlaceholders = extractPlaceholders(englishValue.value);
     const localizedPlaceholders = extractPlaceholders(localized.value);
-    if (!sameList(englishPlaceholders, localizedPlaceholders)) {
+    if (
+      !sameList(englishPlaceholders, localizedPlaceholders) &&
+      !isAllowedPlaceholderDifference(language, key, englishPlaceholders, localizedPlaceholders)
+    ) {
       errors.push(
         `${language}:${localized.line} ${key}: placeholder mismatch ${JSON.stringify(
           localizedPlaceholders,

@@ -17,3 +17,25 @@ export const defaultReminderSettings: ReminderSettings = {
   },
   habitIds: []
 };
+
+/**
+ * Preserve the intent of records written before mood/focus category controls
+ * existed. This must run on raw storage bytes before new-user defaults merge.
+ */
+export function migrateStoredReminderSettings(value: unknown): unknown {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return value;
+
+  const stored = value as Record<string, unknown>;
+  const legacyScheduleWasActive = stored.enabled === true;
+  return {
+    ...stored,
+    moodCheckInsEnabled:
+      typeof stored.moodCheckInsEnabled === 'boolean'
+        ? stored.moodCheckInsEnabled
+        : legacyScheduleWasActive,
+    focusReminderEnabled:
+      typeof stored.focusReminderEnabled === 'boolean'
+        ? stored.focusReminderEnabled
+        : legacyScheduleWasActive,
+  };
+}

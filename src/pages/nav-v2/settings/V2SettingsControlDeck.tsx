@@ -5,18 +5,21 @@ import { PrivacyPanel } from "./V2SettingsPrivacyPanel";
 import { NotificationsPanel } from "./V2SettingsNotificationsPanel";
 import { SoundPanel } from "./V2SettingsSoundPanel";
 import { AppearancePanel, LanguagePanel, ProfilePanel } from "./V2SettingsProfilePanels";
+import type { AccountAuthController, AccountViewState } from "./useSettingsOverviewModules";
 import type { V2SettingsControls, V2SettingsSectionId } from "./types";
 
 interface V2SettingsControlDeckProps {
   controls: V2SettingsControls;
   selectedSectionId: V2SettingsSectionId;
-  accountSessionState: boolean | null;
+  accountAuth: AccountAuthController;
+  accountViewState: AccountViewState;
 }
 
 export const V2SettingsControlDeck = memo(function V2SettingsControlDeck({
   controls,
   selectedSectionId,
-  accountSessionState,
+  accountAuth,
+  accountViewState,
 }: V2SettingsControlDeckProps) {
   switch (selectedSectionId) {
     case "appearance":
@@ -34,17 +37,17 @@ export const V2SettingsControlDeck = memo(function V2SettingsControlDeck({
       return (
         <>
           <PrivacyPanel controls={controls} />
-          <DataPanel controls={controls} />
+          <DataPanel controls={controls} accountViewState={accountViewState} />
         </>
       );
     case "account":
       return (
         <>
           <ProfilePanel controls={controls} />
-          <AccountPanel controls={controls} accountSessionState={accountSessionState} />
+          <AccountPanel controls={controls} auth={accountAuth} accountViewState={accountViewState} />
         </>
       );
     default:
-      return <AccountPanel controls={controls} accountSessionState={accountSessionState} />;
+      return <AccountPanel controls={controls} auth={accountAuth} accountViewState={accountViewState} />;
   }
 });

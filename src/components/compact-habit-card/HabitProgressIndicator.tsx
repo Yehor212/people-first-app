@@ -40,7 +40,7 @@ export function HabitProgressIndicator({
     Number.isFinite(adjustStep) && adjustStep > 0 ? adjustStep : 1;
 
   return (
-    <div className="flex items-center gap-2 shrink-0">
+    <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
       {habitType === 'numerical' ? (
         // Numerical type: progress ring with +/- buttons
         <div className="flex items-center gap-1.5">
@@ -53,13 +53,13 @@ export function HabitProgressIndicator({
           >
             <Minus className="w-5 h-5" />
           </motion.button>
-          <div className="flex flex-col items-center w-12 justify-center">
+          <div className="flex min-w-12 flex-col items-center justify-center px-1">
             <ProgressRing
               progress={progressPercent}
               size="sm"
               color={completed ? 'success' : 'primary'}
             />
-            <span className="text-[10px] font-medium text-muted-foreground mt-0.5">
+            <span className="mt-0.5 whitespace-normal break-words text-center text-xs font-medium text-muted-foreground [overflow-wrap:anywhere]">
               {progress}/{target}
             </span>
           </div>

@@ -81,8 +81,8 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <label className="text-xs font-medium text-muted-foreground">
+      <div className="mb-2 flex flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+        <label className="whitespace-normal break-words text-xs font-medium text-muted-foreground">
           {ts.habitNotes || "Notes"}
         </label>
         {!isEditing && (
@@ -91,7 +91,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
               setNoteText(getEntryNote(habit, today) ?? "");
               setIsEditing(true);
             }}
-            className="flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300 motion-safe:transition-colors min-h-[44px] min-w-[44px] justify-center"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 whitespace-normal break-words text-xs text-violet-400 motion-safe:transition-colors hover:text-violet-300"
           >
             <MessageSquarePlus className="w-3 h-3" aria-hidden="true" />
             {todayHasNote ? ts.editNote || "Edit" : ts.addNote || "Add note"}
@@ -118,7 +118,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
             )}
           />
           {noteText.length > 800 && (
-            <p className="text-[10px] text-muted-foreground/60 text-end">{noteText.length}/1000</p>
+            <p className="text-end text-xs text-muted-foreground/60">{noteText.length}/1000</p>
           )}
           <div className="flex gap-2">
             <button
@@ -156,7 +156,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
           {sortedNotes.length > MAX_VISIBLE && !showAll && (
             <button
               onClick={() => setShowAll(true)}
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-muted-foreground mx-auto min-h-[44px]"
+              className="mx-auto flex min-h-[44px] items-center gap-1 whitespace-normal break-words text-xs text-muted-foreground hover:text-muted-foreground"
               aria-label={`${ts.showAll || "Show all"} ${sortedNotes.length} notes`}
             >
               <ChevronDown className="w-3 h-3" aria-hidden="true" />
@@ -165,7 +165,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
           )}
         </div>
       ) : !isEditing ? (
-        <p className="text-[10px] text-muted-foreground/60 text-center py-2">
+        <p className="py-2 text-center text-xs text-muted-foreground/60">
           {ts.noNotes || "No notes yet"}
         </p>
       ) : null}

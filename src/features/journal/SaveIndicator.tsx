@@ -16,11 +16,17 @@ export type SaveState = "idle" | "saving" | "saved" | "error" | "synced";
 interface SaveIndicatorProps {
   state: SaveState;
   onRetry?: () => void;
+  errorTitle?: string;
+  errorHint?: string;
+  retryLabel?: string;
 }
 
 export const SaveIndicator = memo(function SaveIndicator({
   state,
   onRetry,
+  errorTitle,
+  errorHint,
+  retryLabel,
 }: SaveIndicatorProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
@@ -37,7 +43,7 @@ export const SaveIndicator = memo(function SaveIndicator({
             initial={animate ? { opacity: 0 } : false}
             animate={{ opacity: 1 }}
             exit={animate ? { opacity: 0 } : undefined}
-            className="flex max-w-full min-w-0 items-center gap-1 text-[10px] text-muted-foreground"
+            className="flex max-w-full min-w-0 flex-wrap items-center gap-1 whitespace-normal break-words text-xs text-muted-foreground"
           >
             <Loader2
               className={`w-2.5 h-2.5 ${animate ? "animate-spin" : ""}`}
@@ -56,7 +62,7 @@ export const SaveIndicator = memo(function SaveIndicator({
             animate={{ opacity: 1 }}
             exit={animate ? { opacity: 0 } : undefined}
             transition={{ duration: 0.2 }}
-            className="flex max-w-full min-w-0 items-center gap-0.5 text-[10px] text-primary/70"
+            className="flex max-w-full min-w-0 flex-wrap items-center gap-0.5 whitespace-normal break-words text-xs text-primary/70"
           >
             <Check className="w-2.5 h-2.5" />
             {ts.journalSaved || "Saved"}
@@ -70,12 +76,16 @@ export const SaveIndicator = memo(function SaveIndicator({
             initial={animate ? { opacity: 0 } : false}
             animate={{ opacity: 1 }}
             exit={animate ? { opacity: 0 } : undefined}
-            className="flex max-w-full min-w-0 flex-wrap items-center gap-1.5 text-[10px] text-destructive"
+            className="flex max-w-full min-w-0 flex-wrap items-center gap-1.5 whitespace-normal break-words text-xs text-destructive"
           >
             <AlertCircle className="w-3 h-3" aria-hidden="true" />
-            <span className="shrink-0 font-medium">{ts.journalSaveFailed || "Save failed"}</span>
+            <span className="shrink-0 font-medium">
+              {errorTitle || ts.journalSaveFailed || "Save failed"}
+            </span>
             <span className="min-w-[8rem] flex-1 break-words text-destructive/80">
-              {ts.journalSaveFailedHint || "Your text is still on screen. Retry when you are ready."}
+              {errorHint ||
+                ts.journalSaveFailedHint ||
+                "Your text is still on screen. Retry when you are ready."}
             </span>
             {onRetry && (
               <button
@@ -83,7 +93,7 @@ export const SaveIndicator = memo(function SaveIndicator({
                 onClick={onRetry}
                 className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg px-2 font-semibold underline underline-offset-2 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
               >
-                {ts.journalRetry || "Retry"}
+                {retryLabel || ts.journalRetry || "Retry"}
               </button>
             )}
           </motion.span>
@@ -97,7 +107,7 @@ export const SaveIndicator = memo(function SaveIndicator({
             animate={{ opacity: 1 }}
             exit={animate ? { opacity: 0 } : undefined}
             transition={{ duration: 0.2 }}
-            className="flex max-w-full min-w-0 items-center gap-0.5 text-[10px] text-primary/50"
+            className="flex max-w-full min-w-0 flex-wrap items-center gap-0.5 whitespace-normal break-words text-xs text-primary/50"
           >
             <Cloud className="w-2.5 h-2.5" />
             {ts.journalSynced || "Synced"}

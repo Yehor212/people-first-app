@@ -40,7 +40,7 @@ export function EventDetailsModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="event-details-title"
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto overscroll-contain ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] pb-[max(1rem,var(--safe-bottom))] pt-[max(1rem,var(--safe-top))]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -56,7 +56,7 @@ export function EventDetailsModal({
 
       {/* Modal content */}
       <motion.div
-        className="relative w-full max-w-xs rounded-3xl overflow-hidden"
+        className="relative max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-2rem)] w-full max-w-xs overflow-x-hidden overflow-y-auto overscroll-contain rounded-3xl"
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -107,7 +107,7 @@ export function EventDetailsModal({
 
             <h3
               id="event-details-title"
-              className="text-lg font-bold text-slate-800 dark:text-white"
+              className="whitespace-normal [overflow-wrap:anywhere] text-lg font-bold text-slate-800 dark:text-white"
             >
               {event.title}
             </h3>
@@ -137,7 +137,7 @@ export function EventDetailsModal({
 
           {event.note && (
             <div className="mb-4 p-3 bg-secondary backdrop-blur-sm rounded-xl border border-border">
-              <p className="text-sm text-slate-600 dark:text-white/80">
+              <p className="whitespace-pre-wrap [overflow-wrap:anywhere] text-sm text-slate-600 dark:text-white/80">
                 {event.note}
               </p>
             </div>
@@ -145,7 +145,7 @@ export function EventDetailsModal({
 
           {isHabitEvent && (
             <div className="mb-4 p-3 bg-green-500/10 rounded-xl border border-green-500/20">
-              <p className="text-xs text-green-400">
+              <p className="break-words hyphens-manual text-xs text-green-400">
                 {t.habitEventExplanation ||
                   "This event is from your habit. Edit the habit to change it."}
               </p>
@@ -154,19 +154,19 @@ export function EventDetailsModal({
 
           {isTaskEvent && (
             <div className="mb-4 p-3 bg-primary/10 rounded-xl border border-primary/20">
-              <p className="text-xs text-primary">
+              <p className="break-words hyphens-manual text-xs text-primary">
                 {t.taskEventExplanation ||
                   "This block is auto-generated from your tasks. Complete the task to remove it."}
               </p>
             </div>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 min-[360px]:flex-row">
             <motion.button
               onClick={onClose}
               whileHover={{ scale: 1.02 }}
               whileTap={zenTap.card}
-              className="flex-1 py-3 bg-secondary backdrop-blur-sm rounded-xl font-medium text-slate-800 dark:text-white border border-border"
+              className="min-h-[44px] h-auto min-w-0 flex-1 whitespace-normal break-words hyphens-manual rounded-xl border border-border bg-secondary py-3 font-medium text-slate-800 backdrop-blur-sm dark:text-white"
             >
               {t.close || "Close"}
             </motion.button>
@@ -185,7 +185,7 @@ export function EventDetailsModal({
                   whileHover={{ scale: 1.02 }}
                   whileTap={zenTap.card}
                   className={cn(
-                    "flex-1 py-3 bg-red-500/30 text-red-300 rounded-xl font-medium border border-red-500/40",
+                    "min-h-[44px] h-auto min-w-0 flex-1 whitespace-normal break-words hyphens-manual rounded-xl border border-red-500/40 bg-red-500/30 py-3 font-medium text-red-300",
                     isDeleting && "opacity-50",
                   )}
                 >
@@ -196,7 +196,7 @@ export function EventDetailsModal({
                   onClick={() => setShowDeleteConfirm(true)}
                   whileHover={{ scale: 1.02 }}
                   whileTap={zenTap.card}
-                  className="flex-1 py-3 bg-red-500/20 text-red-400 rounded-xl font-medium border border-red-500/30"
+                  className="min-h-[44px] h-auto min-w-0 flex-1 whitespace-normal break-words hyphens-manual rounded-xl border border-red-500/30 bg-red-500/20 py-3 font-medium text-red-400"
                 >
                   {t.delete || "Delete"}
                 </motion.button>

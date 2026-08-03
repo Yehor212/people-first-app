@@ -1,11 +1,11 @@
 /**
  * DatabaseRecoveryDialog
  *
- * Shows when IndexedDB needs recovery (e.g., after user cleared browser data).
- * Offers options to restore from cloud or start fresh.
+ * Shows when IndexedDB cannot be read reliably.
+ * Retries the local health check without deleting or replacing saved data.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,19 +18,19 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
-import { Database, CloudDownload, RefreshCw } from 'lucide-react';
-import { pullFromCloud } from '@/storage/realtimeSync';
-import { getCurrentUserId } from '@/lib/supabaseClient';
+import { Database, RefreshCw } from 'lucide-react';
+import { checkDatabaseHealth } from '@/storage/db';
+import { triggerDataRefresh } from '@/hooks/useIndexedDB';
 
 import { logger } from '@/lib/logger';
 
 export function DatabaseRecoveryDialog() {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const isRetryingRef = useRef(false);
 
-  // Android back button: dismiss dialog (start fresh)
-  useBackHandler(isOpen && !isRestoring, () => setIsOpen(false));
+  useBackHandler(isOpen && !isRetrying, () => setIsOpen(false));
 
   useEffect(() => {
     const handleRecoveryNeeded = (e: Event) => {
@@ -53,68 +53,70 @@ export function DatabaseRecoveryDialog() {
     };
   }, [t]);
 
-  const handleRestoreFromCloud = async () => {
-    setIsRestoring(true);
+  const handleRetry = async () => {
+    isRetryingRef.current = true;
+    setIsRetrying(true);
     try {
-      const userId = await getCurrentUserId();
-      if (!userId) {
-        setIsOpen(false);
-        return;
-      }
-
-      await pullFromCloud();
-    } catch (error) {
-      logger.error('[DatabaseRecovery] Restore failed:', error);
-    } finally {
-      setIsRestoring(false);
+      const healthy = await checkDatabaseHealth();
+      if (!healthy) return;
+      await triggerDataRefresh();
       setIsOpen(false);
+    } catch (error) {
+      logger.error('[DatabaseRecovery] Health retry failed:', error);
+    } finally {
+      isRetryingRef.current = false;
+      setIsRetrying(false);
     }
   };
 
-  const handleStartFresh = () => {
-    // Just close the dialog - app will continue with empty local DB
+  const handleNotNow = () => {
     setIsOpen(false);
   };
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && isRetryingRef.current) return;
+    setIsOpen(nextOpen);
+  };
+
   return (
-    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+    <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-full bg-amber-500/10">
+          <div className="mb-2 grid min-w-0 grid-cols-1 items-center gap-3 min-[420px]:grid-cols-[auto_minmax(0,1fr)]">
+            <div className="justify-self-center rounded-full bg-amber-500/10 p-2 min-[420px]:justify-self-auto">
               <Database className="h-6 w-6 text-amber-500" />
             </div>
-            <AlertDialogTitle>
-              {t.databaseRecoveryTitle || 'Saved data on this device was reset'}
+            <AlertDialogTitle className="text-center min-[420px]:text-start">
+              {t.databaseRecoveryTitle || 'Your saved data is temporarily unavailable'}
             </AlertDialogTitle>
           </div>
           <AlertDialogDescription className="text-start">
             {t.databaseRecoveryDesc ||
-              'Saved app data on this device was cleared, possibly from browser settings. If you have an account, we can try to restore your backup.'}
+              'ZenFlow did not delete anything. Keep the app open and try again.'}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+        <AlertDialogFooter className="gap-2">
           <AlertDialogCancel
-            onClick={handleStartFresh}
-            disabled={isRestoring}
-            className="flex items-center gap-2"
+            onClick={handleNotNow}
+            disabled={isRetrying}
+            className="flex w-full items-center gap-2 md:w-auto"
           >
             <RefreshCw className="h-4 w-4" />
-            {t.databaseRecoveryStartFresh || 'Start fresh'}
+            {t.databaseRecoveryStartFresh || 'Not now'}
           </AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleRestoreFromCloud}
-            disabled={isRestoring}
-            className="flex items-center gap-2"
+            onClick={handleRetry}
+            disabled={isRetrying}
+            className="flex w-full items-center gap-2 md:w-auto"
           >
-            {isRestoring ? (
+            {isRetrying ? (
               <RefreshCw className="h-4 w-4 animate-spin" />
             ) : (
-              <CloudDownload className="h-4 w-4" />
+              <Database className="h-4 w-4" />
             )}
-            {isRestoring
-              ? (t.syncSyncing || 'Restoring...')
-              : (t.databaseRecoveryRestore || 'Restore from online backup')}
+            {isRetrying
+              ? (t.databaseRecoveryChecking || 'Checking...')
+              : (t.databaseRecoveryRestore || 'Try again')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

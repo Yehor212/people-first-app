@@ -117,7 +117,7 @@ export function EmotionTagGrid({
         variants={chipContainer}
         initial="hidden"
         animate="visible"
-        className="flex flex-wrap gap-2.5 px-1"
+        className="flex min-w-0 max-w-full flex-wrap gap-2.5 px-0"
         id="emotion-tag-chips"
         role="group"
         data-testid="emotion-tag-chips"
@@ -146,7 +146,7 @@ export function EmotionTagGrid({
               data-testid={`emotion-chip-${tag.key}`}
               onKeyDown={(e) => handleChipKeyDown(e, index)}
               className={[
-                'px-4 py-2.5 rounded-xl text-sm font-medium min-h-[44px]',
+                'min-w-0 max-w-full whitespace-normal px-2.5 py-2.5 rounded-xl text-center text-sm font-medium min-h-[44px] [hyphens:auto] [overflow-wrap:normal] [word-break:normal] max-[359px]:px-0 sm:px-4',
                 'ring-1 motion-safe:transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
                 isSelected
                   ? 'bg-primary/10 text-primary ring-primary/30'

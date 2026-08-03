@@ -1,25 +1,49 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({
-  createObjectURL: vi.fn(() => "blob:zenflow-backup"),
-  currentOwnerUserId: "account-a",
-  dataExported: vi.fn(),
-  deleteFile: vi.fn(),
-  exportBackup: vi.fn(),
-  exportProgressReportPDF: vi.fn(),
-  exportAllToCSV: vi.fn(),
-  loggerError: vi.fn(),
-  loggerWarn: vi.fn(),
-  isNative: true,
-  getCurrentSessionUserId: vi.fn(),
-  revokeObjectURL: vi.fn(),
-  share: vi.fn(),
-  writeFile: vi.fn(),
-}));
+const mocks = vi.hoisted(() => {
+  const ownerId = (value: string | null): string | null => value;
+
+  class BoundaryError extends Error {
+    constructor(operation = "Backup export", cause?: unknown) {
+      super(`${operation} stopped at an account boundary`);
+      this.name = "SettingsOwnerBoundaryError";
+      if (cause !== undefined) {
+        (this as Error & { cause?: unknown }).cause = cause;
+      }
+    }
+  }
+
+  return {
+    BoundaryError,
+    assertSettingsOwnerCurrent: vi.fn(),
+    createObjectURL: vi.fn(() => "blob:zenflow-backup"),
+    currentDataOwnerUserId: ownerId("account-a"),
+    currentOwnerUserId: ownerId("account-a"),
+    dataExported: vi.fn(),
+    deleteFile: vi.fn(),
+    exportBackup: vi.fn(),
+    exportProgressReportPDF: vi.fn(),
+    exportAllToCSV: vi.fn(),
+    loggerError: vi.fn(),
+    loggerWarn: vi.fn(),
+    isNative: true,
+    getCurrentSessionUserId: vi.fn(),
+    readVerifiedSettingsOwnerRealm: vi.fn(),
+    revokeObjectURL: vi.fn(),
+    share: vi.fn(),
+    writeFile: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/supabaseClient", () => ({
   getCurrentSessionUserId: mocks.getCurrentSessionUserId,
+}));
+
+vi.mock("@/lib/settingsOwnerBoundary", () => ({
+  SettingsOwnerBoundaryError: mocks.BoundaryError,
+  assertSettingsOwnerCurrent: mocks.assertSettingsOwnerCurrent,
+  readVerifiedSettingsOwnerRealm: mocks.readVerifiedSettingsOwnerRealm,
 }));
 
 vi.mock("@capacitor/filesystem", () => ({
@@ -102,7 +126,30 @@ describe("useDataExport native backup cache lifecycle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.currentOwnerUserId = "account-a";
+    mocks.currentDataOwnerUserId = "account-a";
     mocks.getCurrentSessionUserId.mockImplementation(async () => mocks.currentOwnerUserId);
+    mocks.readVerifiedSettingsOwnerRealm.mockImplementation(async () => {
+      if (mocks.currentOwnerUserId !== mocks.currentDataOwnerUserId) {
+        throw new mocks.BoundaryError();
+      }
+      return {
+        kind: mocks.currentOwnerUserId === null ? "local" : "account",
+        ownerUserId: mocks.currentOwnerUserId,
+        generation: "settings-generation-a",
+      };
+    });
+    mocks.assertSettingsOwnerCurrent.mockImplementation(
+      async (realm: { ownerUserId: string | null } | string | null) => {
+        const ownerUserId =
+          typeof realm === "object" && realm !== null ? realm.ownerUserId : realm;
+        if (
+          ownerUserId !== mocks.currentOwnerUserId ||
+          ownerUserId !== mocks.currentDataOwnerUserId
+        ) {
+          throw new mocks.BoundaryError();
+        }
+      },
+    );
     mocks.isNative = true;
     Object.defineProperty(URL, "createObjectURL", {
       configurable: true,
@@ -156,6 +203,30 @@ describe("useDataExport native backup cache lifecycle", () => {
       setDataStatus.mock.invocationCallOrder[successCallIndex]
     );
     expect(mocks.dataExported).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    "getSession returned an auth error",
+    "getSession threw",
+    "the session was null while durable data remained account-owned",
+  ])("runs no JSON, CSV, or PDF export side effect when %s", async () => {
+    mocks.readVerifiedSettingsOwnerRealm.mockRejectedValue(new mocks.BoundaryError());
+    const { hook, setDataStatus } = renderSubject();
+
+    await act(async () => {
+      await hook.result.current.handleExport();
+      await hook.result.current.handleExportCSV();
+      await hook.result.current.handleExportPDF();
+    });
+
+    expect(mocks.exportBackup).not.toHaveBeenCalled();
+    expect(mocks.writeFile).not.toHaveBeenCalled();
+    expect(mocks.share).not.toHaveBeenCalled();
+    expect(mocks.createObjectURL).not.toHaveBeenCalled();
+    expect(mocks.exportAllToCSV).not.toHaveBeenCalled();
+    expect(mocks.exportProgressReportPDF).not.toHaveBeenCalled();
+    expect(mocks.dataExported).not.toHaveBeenCalled();
+    expect(setDataStatus).not.toHaveBeenCalledWith(copy.exportError);
   });
 
   it("deletes the native cache file after the share sheet is cancelled", async () => {
@@ -307,9 +378,7 @@ describe("useDataExport native backup cache lifecycle", () => {
   });
 
   it("checks the owner again immediately before the CSV download side effect", async () => {
-    mocks.getCurrentSessionUserId
-      .mockResolvedValueOnce("account-a")
-      .mockResolvedValueOnce("account-b");
+    mocks.assertSettingsOwnerCurrent.mockRejectedValueOnce(new mocks.BoundaryError());
     const { hook, setDataStatus } = renderSubject();
 
     await act(async () => {
@@ -322,9 +391,7 @@ describe("useDataExport native backup cache lifecycle", () => {
   });
 
   it("checks the owner again immediately before the PDF save side effect", async () => {
-    mocks.getCurrentSessionUserId
-      .mockResolvedValueOnce("account-a")
-      .mockResolvedValueOnce("account-b");
+    mocks.assertSettingsOwnerCurrent.mockRejectedValueOnce(new mocks.BoundaryError());
     const { hook, setDataStatus } = renderSubject();
 
     await act(async () => {

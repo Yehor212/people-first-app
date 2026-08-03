@@ -88,5 +88,8 @@ export const EVENT_PRESETS = [
 // Timeline constants
 export const HOURS_PER_DAY = 24;
 export const HOURS = Array.from({ length: HOURS_PER_DAY }, (_, i) => i);
-export const HOUR_WIDTH_PX = 60;
+// The timeline is intentionally a one-axis scroller. A 96px cell keeps the
+// complete `HH:00` label readable at ZenFlow's 150% text scale plus WCAG text
+// spacing without shrinking or clipping the user's chosen typography.
+export const HOUR_WIDTH_PX = 96;
 export const DAY_WIDTH_PX = HOURS_PER_DAY * HOUR_WIDTH_PX;

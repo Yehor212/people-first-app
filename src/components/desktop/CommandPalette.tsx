@@ -161,7 +161,7 @@ export default function CommandPalette({ open, onClose, onNavigate }: CommandPal
       role="dialog"
       aria-modal="true"
       aria-label={ts.navV2Search || ts.search}
-      className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm flex items-start justify-center pt-[min(20vh,120px)]"
+      className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto overscroll-contain bg-black/50 ps-[max(0.75rem,var(--safe-inline-start))] pe-[max(0.75rem,var(--safe-inline-end))] pb-[max(0.75rem,var(--safe-bottom))] pt-[max(0.75rem,var(--safe-top))] backdrop-blur-sm sm:pt-[min(20vh,120px)]"
       onClick={onClose}
     >
       <Command
@@ -183,9 +183,9 @@ export default function CommandPalette({ open, onClose, onNavigate }: CommandPal
             value={search}
             onValueChange={setSearch}
             placeholder={ts.navV2Search || ts.search}
-            className="flex-1 py-3 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+            className="min-w-0 flex-1 bg-transparent py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground"
           />
-          <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
+          <kbd className="hidden min-h-5 items-center gap-1 rounded border bg-muted px-1.5 py-0.5 text-xs font-medium leading-tight text-muted-foreground sm:inline-flex">
             Esc
           </kbd>
         </div>
@@ -205,7 +205,7 @@ export default function CommandPalette({ open, onClose, onNavigate }: CommandPal
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer data-[selected]:bg-muted motion-safe:transition-colors min-h-[44px]"
                 >
                   <item.icon className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span>{item.label}</span>
+                  <span className="min-w-0 whitespace-normal break-words">{item.label}</span>
                 </Command.Item>
               ))}
             </Command.Group>
@@ -220,7 +220,7 @@ export default function CommandPalette({ open, onClose, onNavigate }: CommandPal
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer data-[selected]:bg-muted motion-safe:transition-colors min-h-[44px]"
               >
                 <item.icon className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span>{item.label}</span>
+                <span className="min-w-0 whitespace-normal break-words">{item.label}</span>
               </Command.Item>
             ))}
           </Command.Group>
@@ -234,7 +234,7 @@ export default function CommandPalette({ open, onClose, onNavigate }: CommandPal
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer data-[selected]:bg-muted motion-safe:transition-colors min-h-[44px]"
               >
                 <item.icon className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span>{item.label}</span>
+                <span className="min-w-0 whitespace-normal break-words">{item.label}</span>
               </Command.Item>
             ))}
           </Command.Group>

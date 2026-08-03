@@ -509,7 +509,7 @@ export interface CanvasGoal {
 // ============ Insights Engine Types ============
 
 export type InsightType =
-  | 'mood-habit-correlation'  // Habit improves mood
+  | 'mood-habit-correlation'  // Recorded habit-mood association
   | 'focus-pattern'            // Best time/label for focus
   | 'habit-timing'             // Best time of day for habit
   | 'mood-tag'                 // Mood correlation with tags
@@ -521,9 +521,9 @@ export interface Insight {
   id: string;
   type: InsightType;
   severity: InsightSeverity;
-  title: string;                // "Meditation improves your mood"
+  title: string;                // Observational pattern summary
   description: string;          // Detailed explanation
-  confidence: number;           // 0-100: statistical confidence
+  confidence: number;           // 0-100 internal relevance rank; not statistical confidence
   dataPoints: number;           // How many data points used
   createdAt: number;            // Timestamp when insight was generated
 
@@ -539,7 +539,7 @@ export type InsightMetadata =
   | MoodTagMetadata
   | EnergyPatternMetadata;
 
-// Mood-Habit Correlation: "Meditation improves mood +15%"
+// Mood-Habit Correlation: recorded mood differs on days with the habit
 export interface MoodHabitCorrelationMetadata {
   type: 'mood-habit-correlation';
   habitId: string;

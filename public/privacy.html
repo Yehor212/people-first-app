@@ -29,10 +29,10 @@
 </head>
 <body>
   <h1><img class="title-logo" src="/people-first-app/pwa-72.png?v=zenflow-browser-leaf-20260627-r7" width="40" height="40" alt="" aria-hidden="true">ZenFlow Privacy Policy</h1>
-  <p class="updated">Last updated: July 11, 2026</p>
+  <p class="updated">Last updated: July 23, 2026</p>
 
   <div class="notice">
-    <p><strong>Summary:</strong> ZenFlow is local-first. Optional account sync, crash diagnostics, ads after consent, and journal audio recording require clear user action or consent. We do not sell your personal data.</p>
+    <p><strong>Summary:</strong> ZenFlow is local-first. Optional account sync, Journal AI Search, AI Coach, feedback, crash diagnostics, ads after consent, journal audio recording, and journal dictation require clear user action or consent. We do not sell your personal data.</p>
   </div>
 
   <h2>1. Data You Create</h2>
@@ -40,6 +40,7 @@
 
   <h2>2. Microphone and journal audio recordings</h2>
   <p>Journal voice recording uses your microphone only after you start recording. Recordings are used to create a journal audio attachment. ZenFlow does not listen in the background. If sync is enabled, journal audio attachments may be uploaded to the configured Supabase storage bucket as part of your synced journal data.</p>
+  <p>Optional journal dictation starts only when you choose the dictation control. It uses the speech recognition service provided by your browser or operating system; depending on that service and its settings, spoken audio may be processed outside ZenFlow. The resulting text is handled as journal text. ZenFlow does not save the recognition audio as a journal attachment unless you separately start voice recording.</p>
 
   <h2>3. App Audio</h2>
   <p>App ambience and sound effects are local app assets. Your sound choices are stored with your other app settings.</p>
@@ -50,13 +51,24 @@
     <li><strong>Sentry:</strong> crash and error diagnostics. Error reports must not include journal text, raw audio payloads, or unnecessary personal content.</li>
     <li><strong>AdMob / Google Mobile Ads:</strong> optional rewarded ads after ZenFlow consent and Google consent on supported app builds. The Google Mobile Ads SDK may collect and share IP address, user product interactions such as ad views, taps, or video views, diagnostic information, and device/account identifiers such as Android Advertising ID or app set ID for advertising, analytics, and fraud prevention. Ads are not shown inside active journaling, mood check-in, or focus moments.</li>
     <li><strong>Firebase/Google services:</strong> Android builds may use Firebase Crashlytics for crash diagnostics and Google services for notifications or ads. Automatic Firebase Analytics collection is disabled.</li>
+    <li><strong>Resend:</strong> sends a feedback notification email when the feedback email service is configured.</li>
   </ul>
+
+  <h2>4.1 Journal AI Search (Optional)</h2>
+  <p>Journal AI Search stays off until you turn it on and accept its in-app privacy notice. When you use it, ZenFlow sends your search text to a Supabase Edge Function. The function matches it against the title, content, mood, and tags of entries in your ZenFlow account.</p>
+  <p>The current lexical search path does not send your journal text or search query to an external AI provider and does not create a separate search index. You can leave it off and use standard text search on this device instead.</p>
+
+  <h2>4.2 AI Coach (Optional)</h2>
+  <p>AI Coach is used only when you choose to send it a message. ZenFlow sends your message, recent conversation history, and selected wellness context (such as recent moods, habits, goals, or activity) to a Supabase Edge Function to generate a Coach Lite response. The current Coach Lite mode does not use an external AI provider. Do not use AI Coach for emergencies or medical advice.</p>
+
+  <h2>4.3 Feedback (Optional)</h2>
+  <p>When you submit Feedback, ZenFlow sends your category, message, optional email address, app version, and device information such as platform, browser, screen size, and language to Supabase. Where the feedback email service is configured, ZenFlow also attempts to send a notification email containing that information through Resend. Do not include journal text, urgent safety information, or medical information in Feedback.</p>
 
   <h2>5. Ads and Consent</h2>
   <p>ZenFlow does not initialize its optional in-app behavioral analytics runtime. Automatic Firebase Analytics collection is disabled in the Android app manifest. Optional rewarded ads are controlled separately through the Optional ads setting and Google consent on supported builds. Advertising ID and ad-services declarations are tied to ads-enabled Android builds. Where Google User Messaging Platform (UMP) requires it, ZenFlow shows a Google ad privacy choices entry point in Settings so you can change or withdraw ad consent.</p>
 
   <h2>6. Data Safety Notes for Store Review</h2>
-  <p>Store forms must match the actual artifact submitted for review. If the artifact includes microphone recording, Supabase sync, AdMob, Sentry, Firebase, or journal audio storage, those surfaces must be reflected in Data safety and privacy declarations.</p>
+  <p>Store forms must match the actual artifact submitted for review. If the artifact includes microphone recording, Supabase sync, Journal AI Search, AI Coach, Feedback, AdMob, Sentry, Firebase, or journal audio storage, those surfaces must be reflected in Data safety and privacy declarations.</p>
 
   <h2>7. Your Choices</h2>
   <ul>

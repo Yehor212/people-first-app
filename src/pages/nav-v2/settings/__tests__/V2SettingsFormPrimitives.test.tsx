@@ -14,7 +14,13 @@ vi.mock("@/lib/androidBackHandler", () => ({
   }),
 }));
 
-import { SettingsDialog, SettingsTextInput } from "../components/V2SettingsFormPrimitives";
+import {
+  SettingsDialog,
+  SettingsExternalLink,
+  SettingsInlineButton,
+  SettingsStatus,
+  SettingsTextInput,
+} from "../components/V2SettingsFormPrimitives";
 
 function DialogHarness() {
   const [open, setOpen] = useState(false);
@@ -124,5 +130,87 @@ describe("SettingsTextInput", () => {
     render(<SettingsTextInput value="" onChange={() => undefined} />);
 
     expect(screen.getByRole("textbox")).toHaveAttribute("dir", "auto");
+  });
+
+  it("aligns an empty placeholder with the surrounding writing direction", () => {
+    render(<SettingsTextInput value="" onChange={() => undefined} placeholder="أدخل اسمك" />);
+
+    expect(screen.getByRole("textbox")).toHaveClass(
+      "ltr:placeholder:text-left",
+      "rtl:placeholder:text-right"
+    );
+  });
+});
+
+describe("Settings form text reflow", () => {
+  it("keeps a long mixed-direction import filename fully available", () => {
+    render(
+      <SettingsDialog
+        titleId="import-title"
+        title="Import backup"
+        description="Review this backup before importing it."
+        detail="نسخة-ZenFlow-дуже-довге-ім’я-2026-07-15.json"
+        cancelLabel="Cancel"
+        confirmLabel="Import"
+        onCancel={() => undefined}
+        onConfirm={() => undefined}
+      />
+    );
+
+    const detail = screen.getByText("نسخة-ZenFlow-дуже-довге-ім’я-2026-07-15.json");
+    expect(detail).toHaveAttribute("dir", "auto");
+    expect(detail).not.toHaveClass("truncate");
+    expect(detail.className).toContain("[overflow-wrap:anywhere]");
+  });
+
+  it("allows long action labels to wrap", () => {
+    render(
+      <SettingsInlineButton onClick={() => undefined}>
+        Benachrichtigungsberechtigung
+      </SettingsInlineButton>
+    );
+
+    const button = screen.getByRole("button", {
+      name: "Benachrichtigungsberechtigung",
+    });
+    const label = screen.getByText("Benachrichtigungsberechtigung");
+
+    expect(button).toHaveClass(
+      "min-h-[48px]",
+      "w-full",
+      "max-w-full",
+      "min-w-0",
+      "whitespace-normal"
+    );
+    expect(button).not.toHaveClass("min-h-[44px]");
+    expect(label).toHaveClass("min-w-0", "break-words");
+    expect(label.className).toContain("[overflow-wrap:break-word]");
+    expect(label.className).toContain("[hyphens:manual]");
+    expect(label.className).not.toContain("[overflow-wrap:anywhere]");
+  });
+
+  it("keeps ordinary status and link copy intact while retaining emergency wrapping", () => {
+    render(
+      <>
+        <SettingsStatus>Benachrichtigungsberechtigung</SettingsStatus>
+        <SettingsExternalLink href="https://example.com">
+          Benachrichtigungseinstellungen
+        </SettingsExternalLink>
+      </>
+    );
+
+    for (const text of [
+      screen.getByText("Benachrichtigungsberechtigung"),
+      screen.getByRole("link", { name: "Benachrichtigungseinstellungen" }),
+    ]) {
+      expect(text).toHaveClass("min-w-0", "break-words");
+      expect(text.className).toContain("[hyphens:manual]");
+      expect(text.className).toContain("[overflow-wrap:break-word]");
+      expect(text.className).not.toContain("[overflow-wrap:anywhere]");
+    }
+
+    expect(screen.getByRole("link", { name: "Benachrichtigungseinstellungen" })).toHaveClass(
+      "min-h-[48px]"
+    );
   });
 });

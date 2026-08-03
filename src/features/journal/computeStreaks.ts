@@ -1,4 +1,5 @@
 import type { MoodType } from "@/types";
+import { isNextJournalDate } from "./journalDateUtils";
 
 /** Detect consecutive diary day streaks from a set of date strings */
 export function computeStreaks(
@@ -10,9 +11,7 @@ export function computeStreaks(
 
   let streakStart = 0;
   for (let i = 1; i <= dates.length; i++) {
-    const prevDate = new Date(dates[i - 1] + "T00:00:00");
-    const currDate = i < dates.length ? new Date(dates[i] + "T00:00:00") : null;
-    const isConsecutive = currDate && currDate.getTime() - prevDate.getTime() === 86400000;
+    const isConsecutive = i < dates.length && isNextJournalDate(dates[i - 1], dates[i]);
 
     if (!isConsecutive) {
       const streakLen = i - streakStart;

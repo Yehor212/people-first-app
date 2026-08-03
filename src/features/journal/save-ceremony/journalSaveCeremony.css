@@ -1,0 +1,97 @@
+@keyframes journal-save-ceremony-veil-lottie {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes journal-save-ceremony-veil-static {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.journal-save-ceremony-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+}
+
+.journal-save-ceremony-veil[data-tone="night"] {
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      hsl(var(--nav-v2-backdrop) / 0) 0%,
+      hsl(var(--nav-v2-backdrop) / 0.035) 38%,
+      hsl(var(--nav-v2-backdrop) / 0.18) 100%
+    );
+}
+
+.journal-save-ceremony-veil[data-tone="day"] {
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      hsl(var(--nav-v2-backdrop) / 0) 0%,
+      hsl(var(--nav-v2-backdrop) / 0.06) 36%,
+      hsl(var(--nav-v2-backdrop) / 0.24) 100%
+    );
+}
+
+.journal-save-ceremony[data-playback="pending"]
+  .journal-save-ceremony-veil[data-motion="animated"],
+.journal-save-ceremony[data-playback="lottie"]
+  .journal-save-ceremony-veil[data-motion="animated"] {
+  animation: journal-save-ceremony-veil-lottie 3.1s
+    cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.journal-save-ceremony[data-playback="static"]
+  .journal-save-ceremony-veil[data-motion="animated"] {
+  animation: journal-save-ceremony-veil-static 800ms ease-out both;
+}
+
+.journal-save-ceremony-veil[data-motion="static"] {
+  opacity: 1;
+}
+
+:root[data-theme-contrast="high"] .journal-save-ceremony-veil {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journal-save-ceremony-veil {
+    animation: none !important;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .journal-save-ceremony-veil {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .journal-save-ceremony-veil {
+    display: none;
+  }
+}

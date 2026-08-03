@@ -532,7 +532,7 @@
     ]
   },
   "staleness": {
-    "lastFullAudit": "2026-05-17",
+    "lastFullAudit": "2026-07-16",
     "maxLedgerAgeDays": 30,
     "maxAuditAgeDays": 60
   },

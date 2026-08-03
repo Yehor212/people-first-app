@@ -76,12 +76,12 @@ export const JournalHabitSection = memo(function JournalHabitSection({ date, sna
         onClick={() => setCollapsed(!collapsed)}
         className="w-full flex items-center justify-between px-3.5 py-2.5 min-h-[44px]"
       >
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-foreground">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="min-w-0 whitespace-normal break-words text-xs font-semibold text-foreground">
             {ts.journalHabitsSection || 'Habits'}
           </span>
           {completedCount > 0 && (
-            <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
+            <span className="whitespace-normal [overflow-wrap:anywhere] rounded-full bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
               {completedCount}/{snapshot.length}
             </span>
           )}

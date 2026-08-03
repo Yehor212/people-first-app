@@ -603,8 +603,8 @@ Role-specific fields defined in section 5 are added after the universal fields.
 | Risk | Default council use | Role 10 | Role 8 |
 | --- | --- | --- | --- |
 | L0: no-repository read-only answer | Coordinator reasoning only | Not required | Not required |
-| L1: one-file typo/text-only change with no behavior impact | Coordinator plus one relevant critic only when a named risk exists | Optional with recorded reason | Proportional local proof required |
-| L2: default for any repository edit, including narrow 1-3 file behavior work | One to three disjoint critics selected by domain | Recommended for ambiguity or protected-adjacent risk | Required before completion |
+| L1: one-file typo/text-only change with no behavior impact | Coordinator plus exactly the evidence-selected owners, executed in bounded waves | Optional with recorded reason | Proportional local proof required |
+| L2: default for any repository edit, including narrow 1-3 file behavior work | Exactly the evidence-selected owners; concurrency is capped, owner count is not | Selected when ambiguity or a canonical trigger requires it | Required before completion |
 | L3: protected, cross-platform, stateful, UI, security, privacy, performance, or 4+ file change | Guided team in bounded waves | Pass A and pass B mandatory | Mandatory |
 | L4: governance, orchestration, broad architecture, protected enforcement, or high-impact release change | Coordinator plus the smallest complete set; full ten only when justified | Pass A and pass B mandatory | Mandatory |
 
@@ -617,8 +617,9 @@ remain governed by the risk table rather than by keyword matching.
 - maximum specialist depth: `1`;
 - maximum concurrently active specialists: `3` in addition to the coordinator;
 - default maximum rounds per role: `2`;
-- maximum invocations equals the selected role passes plus at most two targeted
-  conflict/closure passes, with a hard ceiling of `12` for a full-ten audit;
+- maximum invocations equals the selected role passes plus declared closure phases,
+  with a hard ceiling of `20`; adaptive deep audit uses 17 and the M1/M2
+  `FIXED_FULL_TEN` rollback uses exactly 20;
 - default total wall-clock ceiling is `30 minutes` for L3 and `60 minutes` for a
   full-ten L4 audit; a longer ceiling requires a preflight reason;
 - default specialist deadline: `15 minutes`, adjusted in preflight for a known slow

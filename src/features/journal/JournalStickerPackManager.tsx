@@ -1,6 +1,7 @@
+import { useId } from "react";
 import { X } from "lucide-react";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { motion, useReducedMotion } from "framer-motion";
+import { cn, interpolate } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -27,6 +28,8 @@ export function JournalStickerPackManager({
 }: JournalStickerPackManagerProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const titleId = useId();
+  const reducedMotion = useReducedMotion();
   const { modalRef, handleKeyDown } = useModalA11y(true, onClose);
   useScrollLock(true);
 
@@ -44,6 +47,7 @@ export function JournalStickerPackManager({
         onKeyDown={handleKeyDown}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
         className={cn(
           "fixed bottom-0 inset-x-0 z-[67] pb-safe",
           "bg-card/95 backdrop-blur-xl border-t border-border/40",
@@ -59,12 +63,12 @@ export function JournalStickerPackManager({
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-border/20">
-          <span className="text-sm font-semibold text-foreground">
+          <h3 id={titleId} className="text-sm font-semibold text-foreground">
             {ts.journalStickerPacks || "Sticker Packs"}
-          </span>
+          </h3>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-2 rounded-lg hover:bg-muted/50 min-w-[48px] min-h-[48px] flex items-center justify-center"
             aria-label={ts.close || "Close"}
           >
             <X className="w-4 h-4 text-muted-foreground" />
@@ -77,17 +81,18 @@ export function JournalStickerPackManager({
             const enabled = prefs.enabled[cat.key];
             const isNewPack = isNew(cat.key);
             const isLastEnabled = enabled && enabledCount <= 1;
+            const packName = ts[cat.labelKey] || cat.key;
 
             return (
               <motion.div
                 key={cat.key}
-                layout
+                layout={!reducedMotion}
                 className={cn(
                   "rounded-xl border p-3 motion-safe:transition-all motion-safe:duration-200",
                   enabled ? "bg-primary/5 border-primary/20" : "bg-muted/10 border-border/10"
                 )}
               >
-                <div className="flex items-center gap-3">
+                <div className="grid grid-cols-[40px_minmax(0,1fr)_48px] items-center gap-3">
                   {/* Pack icon */}
                   <div
                     className={cn(
@@ -100,22 +105,22 @@ export function JournalStickerPackManager({
 
                   {/* Name + badge */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span
                         className={cn(
-                          "text-sm font-medium truncate",
+                          "min-w-0 whitespace-normal break-words text-sm font-medium",
                           enabled ? "text-foreground" : "text-muted-foreground"
                         )}
                       >
-                        {ts[cat.labelKey] || cat.key}
+                        {packName}
                       </span>
                       {isNewPack && (
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/15 px-1.5 py-0.5 rounded-full">
+                        <span className="whitespace-normal break-words rounded-full bg-primary/15 px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider text-primary">
                           {ts.journalStickerPackNew || "NEW"}
                         </span>
                       )}
                     </div>
-                    <span className="text-[10px] text-muted-foreground/50">
+                    <span className="whitespace-normal break-words text-xs text-muted-foreground">
                       {formatLocalizedCount(
                         cat.stickers.length,
                         language,
@@ -128,32 +133,41 @@ export function JournalStickerPackManager({
 
                   {/* Toggle */}
                   <motion.button
-                    whileTap={{ scale: 0.9 }}
+                    whileTap={reducedMotion ? undefined : { scale: 0.9 }}
                     onClick={() => {
                       if (isLastEnabled) return;
                       void hapticTap();
                       onToggle(cat.key);
                     }}
                     disabled={isLastEnabled}
+                    aria-pressed={enabled}
                     className={cn(
                       "relative w-12 h-7 rounded-full motion-safe:transition-colors motion-safe:duration-200 flex-shrink-0",
-                      "min-w-[48px] min-h-[44px] flex items-center",
+                      "min-w-[48px] min-h-[48px] flex items-center",
                       enabled ? "bg-primary" : "bg-muted/40",
                       isLastEnabled && "opacity-50 cursor-not-allowed"
                     )}
                     aria-label={
                       enabled
-                        ? ts.journalStickerPackEnabled || "Enabled"
-                        : ts.journalStickerPackEnable || "Tap to enable"
+                        ? interpolate(ts.journalStickerPackDisableLabel || "Disable {pack}", {
+                            pack: packName,
+                          })
+                        : interpolate(ts.journalStickerPackEnableLabel || "Enable {pack}", {
+                            pack: packName,
+                          })
                     }
                   >
                     <motion.div
-                      layout
-                      transition={{
-                        type: "spring",
-                        stiffness: 500,
-                        damping: 30,
-                      }}
+                      layout={!reducedMotion}
+                      transition={
+                        reducedMotion
+                          ? { duration: 0 }
+                          : {
+                              type: "spring",
+                              stiffness: 500,
+                              damping: 30,
+                            }
+                      }
                       className={cn(
                         "w-5 h-5 rounded-full bg-white shadow-sm",
                         enabled ? "ms-auto me-1" : "ms-1"
@@ -166,7 +180,7 @@ export function JournalStickerPackManager({
                 <motion.div
                   initial={false}
                   animate={{ opacity: enabled ? 1 : 0.4 }}
-                  className="flex gap-1 mt-2 overflow-x-auto scrollbar-hide"
+                  className="mt-2 flex flex-wrap gap-1"
                 >
                   {cat.stickers.slice(0, 8).map((s, i) => (
                     <div key={i} className="flex-shrink-0">
@@ -174,7 +188,7 @@ export function JournalStickerPackManager({
                     </div>
                   ))}
                   {cat.stickers.length > 8 && (
-                    <span className="text-[10px] text-muted-foreground/60 self-center ms-1 flex-shrink-0">
+                    <span className="ms-1 flex-shrink-0 self-center text-xs text-muted-foreground">
                       +{cat.stickers.length - 8}
                     </span>
                   )}

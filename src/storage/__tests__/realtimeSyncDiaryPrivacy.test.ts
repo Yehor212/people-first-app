@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   getCurrentUserId: vi.fn(),
   from: vi.fn(),
+  delete: vi.fn(),
+  match: vi.fn(),
+  getPersistentDeviceId: vi.fn(),
+  writeEventAndBroadcast: vi.fn(),
   settingsGet: vi.fn(),
   settingsPut: vi.fn(),
   transaction: vi.fn(),
@@ -10,8 +14,10 @@ const mocks = vi.hoisted(() => ({
   journalEntriesBulkPut: vi.fn(),
   journalPhotosToArray: vi.fn(),
   journalPhotosBulkPut: vi.fn(),
+  journalPhotosBulkDelete: vi.fn(),
   journalAudioToArray: vi.fn(),
   journalAudioBulkPut: vi.fn(),
+  journalAudioBulkDelete: vi.fn(),
   mergeSyncTombstones: vi.fn(),
 }));
 
@@ -28,6 +34,11 @@ vi.mock("@/lib/logger", () => ({
     warn: vi.fn(),
     error: vi.fn(),
   },
+}));
+
+vi.mock("@/storage/eventSync", () => ({
+  getPersistentDeviceId: mocks.getPersistentDeviceId,
+  writeEventAndBroadcast: mocks.writeEventAndBroadcast,
 }));
 
 vi.mock("@/features/journal/journalContentSession", () => ({
@@ -75,10 +86,12 @@ vi.mock("@/storage/db", () => {
       journalPhotos: {
         toArray: mocks.journalPhotosToArray,
         bulkPut: mocks.journalPhotosBulkPut,
+        bulkDelete: mocks.journalPhotosBulkDelete,
       },
       journalAudio: {
         toArray: mocks.journalAudioToArray,
         bulkPut: mocks.journalAudioBulkPut,
+        bulkDelete: mocks.journalAudioBulkDelete,
       },
       transaction: mocks.transaction,
     },
@@ -96,6 +109,7 @@ function queryResult(data: unknown[]) {
     eq: vi.fn(() => chain),
     order: vi.fn(() => chain),
     limit: vi.fn(() => chain),
+    delete: mocks.delete,
     then: promise.then.bind(promise),
   };
   return chain;
@@ -112,6 +126,10 @@ describe("pullFromCloud diary privacy", () => {
     vi.clearAllMocks();
     protectedDiary = true;
     mocks.getCurrentUserId.mockResolvedValue("user-1");
+    mocks.match.mockResolvedValue({ error: null });
+    mocks.delete.mockReturnValue({ match: mocks.match });
+    mocks.getPersistentDeviceId.mockResolvedValue("device-1");
+    mocks.writeEventAndBroadcast.mockResolvedValue(undefined);
     mocks.settingsGet.mockImplementation((key: string) =>
       Promise.resolve(
         key === "journal_password" && protectedDiary
@@ -127,8 +145,10 @@ describe("pullFromCloud diary privacy", () => {
     mocks.journalEntriesBulkPut.mockResolvedValue(undefined);
     mocks.journalPhotosToArray.mockResolvedValue([]);
     mocks.journalPhotosBulkPut.mockResolvedValue(undefined);
+    mocks.journalPhotosBulkDelete.mockResolvedValue(undefined);
     mocks.journalAudioToArray.mockResolvedValue([]);
     mocks.journalAudioBulkPut.mockResolvedValue(undefined);
+    mocks.journalAudioBulkDelete.mockResolvedValue(undefined);
     mocks.mergeSyncTombstones.mockResolvedValue({
       mood: new Set(),
       habit: new Set(),
@@ -136,6 +156,80 @@ describe("pullFromCloud diary privacy", () => {
       gratitude: new Set(),
       journal: new Set(),
     });
+  });
+
+  it("purges local media that a newer cloud parent no longer references", async () => {
+    protectedDiary = false;
+    mocks.journalEntriesToArray.mockResolvedValue([
+      {
+        id: "entry-parent",
+        date: "2026-07-10",
+        title: "Before",
+        content: "old",
+        stickers: [],
+        tags: [],
+        photoIds: ["photo-stale"],
+        audioIds: ["audio-stale"],
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    ]);
+    mocks.journalPhotosToArray.mockResolvedValue([
+      {
+        id: "photo-stale",
+        entryId: "entry-parent",
+        data: "local-binary",
+        thumbnail: "local-preview",
+        width: 100,
+        height: 80,
+        createdAt: 1,
+      },
+    ]);
+    mocks.journalAudioToArray.mockResolvedValue([
+      {
+        id: "audio-stale",
+        entryId: "entry-parent",
+        data: "local-audio",
+        duration: 1,
+        mimeType: "audio/webm",
+        createdAt: 1,
+      },
+    ]);
+    const dataByTable: Record<string, unknown[]> = {
+      moods: [],
+      habits: [],
+      habit_completions: [],
+      habit_reminders: [],
+      focus_sessions: [],
+      gratitude_entries: [],
+      user_settings: [],
+      journal_entries: [
+        {
+          id: "entry-parent",
+          date: "2026-07-10",
+          title: "After",
+          content: "new",
+          stickers: [],
+          mood: null,
+          tags: [],
+          template_id: null,
+          habit_snapshot: null,
+          photo_ids: [],
+          audio_ids: [],
+          created_at: 1,
+          updated_at: 2,
+        },
+      ],
+      journal_photos: [],
+      journal_audio: [],
+      sync_tombstones: [],
+    };
+    mocks.from.mockImplementation((table: string) => queryResult(dataByTable[table] ?? []));
+
+    await expect(pullFromCloud("user-1")).resolves.toBe(true);
+
+    expect(mocks.journalPhotosBulkDelete).toHaveBeenCalledWith(["photo-stale"]);
+    expect(mocks.journalAudioBulkDelete).toHaveBeenCalledWith(["audio-stale"]);
   });
 
   it("skips plaintext journal entries and media while a protected diary is locked", async () => {
@@ -295,6 +389,43 @@ describe("pullFromCloud diary privacy", () => {
       key: "journal_vault_revision_v1",
       value: expect.anything(),
     });
+  });
+
+  it("purges a legacy cloud privacy row without applying it to this device", async () => {
+    protectedDiary = false;
+    const localPrivacy = JSON.stringify({ adConsent: false, pushNotifications: false });
+    localStorage.setItem("zenflow-privacy", localPrivacy);
+    const dataByTable: Record<string, unknown[]> = {
+      moods: [],
+      habits: [],
+      habit_completions: [],
+      habit_reminders: [],
+      focus_sessions: [],
+      gratitude_entries: [],
+      user_settings: [
+        {
+          key: "zenflow-privacy",
+          value: { adConsent: true, pushNotifications: true },
+        },
+      ],
+      journal_entries: [],
+      journal_photos: [],
+      journal_audio: [],
+      sync_tombstones: [],
+    };
+    mocks.from.mockImplementation((table: string) => queryResult(dataByTable[table] ?? []));
+
+    await expect(pullFromCloud("user-1")).resolves.toBe(true);
+
+    expect(mocks.settingsPut).not.toHaveBeenCalledWith({
+      key: "zenflow-privacy",
+      value: expect.anything(),
+    });
+    expect(mocks.match).toHaveBeenCalledWith({
+      user_id: "user-1",
+      key: "zenflow-privacy",
+    });
+    expect(localStorage.getItem("zenflow-privacy")).toBe(localPrivacy);
   });
 
   it("rechecks diary protection after waiting for activation before committing a pulled snapshot", async () => {

@@ -11,6 +11,14 @@ export type ZenflowV2Route = "orb" | "habits" | "diary" | "planning" | "settings
 
 export interface PrimeZenflowV2Options {
   analytics?: boolean;
+  audioComfort?: {
+    ambientEnabled: boolean;
+    avoidedTextures: Array<"air" | "water" | "rain">;
+    completionCuesEnabled: boolean;
+    milestoneCuesEnabled: boolean;
+    profile: "quiet" | "balanced" | "rich";
+    reminderCuesEnabled: boolean;
+  };
   clearStorage?: boolean;
   language?: ZenflowV2Language;
   privacyNoTracking?: boolean;
@@ -65,6 +73,10 @@ export async function primeZenflowV2(page: Page, options: PrimeZenflowV2Options 
       localStorage.setItem("zenflow-theme", theme === "paper" ? "light" : "dark");
       localStorage.setItem("zenflow_oled_mode", theme === "oled" ? "true" : "false");
       localStorage.setItem("zenflow:theme-v0c", JSON.stringify({ state: { theme }, version: 0 }));
+
+      if (options.audioComfort) {
+        localStorage.setItem("zenflow-audio-comfort", JSON.stringify(options.audioComfort));
+      }
 
       if (options.user) {
         localStorage.setItem(

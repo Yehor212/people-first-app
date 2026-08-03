@@ -45,6 +45,41 @@ describe('a11y utilities', () => {
       const cleanup = createFocusTrap(emptyContainer);
       expect(() => cleanup()).not.toThrow();
     });
+
+    it('keeps Tab inside a busy dialog when every control is temporarily disabled', () => {
+      const dialog = document.createElement('div');
+      dialog.tabIndex = -1;
+      dialog.innerHTML = '<button disabled>Cancel</button><button disabled>Removing</button>';
+      document.body.appendChild(dialog);
+
+      const cleanup = createFocusTrap(dialog);
+      const tabEvent = new KeyboardEvent('keydown', {
+        key: 'Tab',
+        bubbles: true,
+        cancelable: true,
+      });
+
+      expect(dialog.dispatchEvent(tabEvent)).toBe(false);
+      expect(document.activeElement).toBe(dialog);
+      cleanup();
+    });
+
+    it('uses a connected fallback when the original dialog opener was removed', () => {
+      const opener = document.createElement('button');
+      const fallback = document.createElement('button');
+      const dialog = document.createElement('div');
+      dialog.innerHTML = '<button>Confirm</button>';
+      document.body.append(opener, fallback, dialog);
+      opener.focus();
+
+      const cleanup = createFocusTrap(dialog, {
+        returnFocusFallback: () => fallback,
+      });
+      opener.remove();
+      cleanup();
+
+      expect(document.activeElement).toBe(fallback);
+    });
   });
 
   describe('handleArrowNavigation', () => {

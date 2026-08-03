@@ -134,7 +134,7 @@ describe("journalStorage media encryption", () => {
           {
             id: "audio-encrypted",
             entryId: "entry-1",
-            data: "media-enc:" + vaultKey + ":data:audio/webm;base64,voice",
+            data: "media-enc:" + vaultKey + ":data:audio/webm;base64,dm9pY2U=",
             duration: 12,
             mimeType: "audio/webm",
             createdAt: 1,
@@ -150,14 +150,14 @@ describe("journalStorage media encryption", () => {
       value: { wrappedKey: "persisted", createdAt: 1, updatedAt: 2 },
     });
 
-    const result = await storeAudio("entry-1", "data:audio/webm;base64,voice", 12, "audio/webm");
+    const result = await storeAudio("entry-1", "data:audio/webm;base64,dm9pY2U=", 12, "audio/webm");
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(result.data).toBe("data:audio/webm;base64,voice");
+    expect(result.data).toBe("data:audio/webm;base64,dm9pY2U=");
     expect(mocks.audioAdd).toHaveBeenCalledWith(expect.objectContaining({
       id: "audio-1",
-      data: "media-enc:" + vaultKey + ":data:audio/webm;base64,voice",
+      data: "media-enc:" + vaultKey + ":data:audio/webm;base64,dm9pY2U=",
     }));
     expect(mocks.uploadAudio).not.toHaveBeenCalled();
     expect(mocks.uploadEncryptedAudio).toHaveBeenCalledWith(
@@ -172,7 +172,7 @@ describe("journalStorage media encryption", () => {
       {
         id: "audio-1",
         entryId: "entry-1",
-        data: "media-enc:" + vaultKey + ":data:audio/webm;base64,voice",
+        data: "media-enc:" + vaultKey + ":data:audio/webm;base64,dm9pY2U=",
         duration: 12,
         mimeType: "audio/webm",
         createdAt: 1,
@@ -181,7 +181,7 @@ describe("journalStorage media encryption", () => {
     setJournalContentVaultKey(vaultKey);
 
     await expect(getAudioForEntry("entry-1")).resolves.toEqual([
-      expect.objectContaining({ data: "data:audio/webm;base64,voice" }),
+      expect.objectContaining({ data: "data:audio/webm;base64,dm9pY2U=" }),
     ]);
 
     setJournalContentVaultKey(null);
@@ -207,7 +207,7 @@ describe("journalStorage media encryption", () => {
       {
         id: "audio-1",
         entryId: "entry-1",
-        data: "data:audio/webm;base64,voice",
+        data: "data:audio/webm;base64,dm9pY2U=",
         duration: 12,
         mimeType: "audio/webm",
         createdAt: 1,
@@ -223,7 +223,7 @@ describe("journalStorage media encryption", () => {
       storagePath: undefined,
     }));
     expect(mocks.audioUpdate).toHaveBeenCalledWith("audio-1", expect.objectContaining({
-      data: "media-enc:" + vaultKey + ":data:audio/webm;base64,voice",
+      data: "media-enc:" + vaultKey + ":data:audio/webm;base64,dm9pY2U=",
       storagePath: undefined,
     }));
   });
@@ -245,7 +245,7 @@ describe("journalStorage media encryption", () => {
       {
         id: "audio-1",
         entryId: "entry-1",
-        data: "media-enc:" + vaultKey + ":data:audio/webm;base64,voice",
+        data: "media-enc:" + vaultKey + ":data:audio/webm;base64,dm9pY2U=",
         duration: 12,
         mimeType: "audio/webm",
         createdAt: 1,
@@ -261,7 +261,7 @@ describe("journalStorage media encryption", () => {
       storagePath: undefined,
     }));
     expect(mocks.audioUpdate).toHaveBeenCalledWith("audio-1", expect.objectContaining({
-      data: "data:audio/webm;base64,voice",
+      data: "data:audio/webm;base64,dm9pY2U=",
       storagePath: undefined,
     }));
   });
@@ -291,7 +291,7 @@ describe("journalStorage media encryption", () => {
       {
         id: "audio-1",
         entryId: "entry-1",
-        data: "data:audio/webm;base64,voice",
+        data: "data:audio/webm;base64,dm9pY2U=",
         duration: 12,
         mimeType: "audio/webm",
         createdAt: 1,
@@ -306,7 +306,7 @@ describe("journalStorage media encryption", () => {
       thumbnail: "media-enc:" + vaultKey + ":data:image/jpeg;base64,thumb",
     }));
     expect(mocks.audioUpdate).toHaveBeenCalledWith("audio-1", expect.objectContaining({
-      data: "media-enc:" + vaultKey + ":data:audio/webm;base64,voice",
+      data: "media-enc:" + vaultKey + ":data:audio/webm;base64,dm9pY2U=",
     }));
   });
 });

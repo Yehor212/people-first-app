@@ -19,7 +19,9 @@ function expectAscendingOrder(markers: Array<[string, number]>): void {
   for (let index = 1; index < markers.length; index += 1) {
     const [previousName, previousIndex] = markers[index - 1];
     const [currentName, currentIndex] = markers[index];
-    expect(previousIndex, `${previousName} should run before ${currentName}`).toBeLessThan(currentIndex);
+    expect(previousIndex, `${previousName} should run before ${currentName}`).toBeLessThan(
+      currentIndex
+    );
   }
 }
 
@@ -28,7 +30,10 @@ describe("Sentry source-map build contract", () => {
     const pkg = JSON.parse(read("package.json")) as { devDependencies?: Record<string, string> };
     const viteConfig = read("vite.config.ts");
 
-    expect(pkg.devDependencies?.["@sentry/vite-plugin"], "Sentry Vite plugin must be installed for source-map upload").toBeTruthy();
+    expect(
+      pkg.devDependencies?.["@sentry/vite-plugin"],
+      "Sentry Vite plugin must be installed for source-map upload"
+    ).toBeTruthy();
     expect(viteConfig).toContain('import { sentryVitePlugin } from "@sentry/vite-plugin"');
     expect(viteConfig).toContain("const sentrySourceMapUploadEnabled =");
     expect(viteConfig).toContain("process.env.SENTRY_AUTH_TOKEN");
@@ -39,13 +44,17 @@ describe("Sentry source-map build contract", () => {
     expect(viteConfig).toContain("name: `zenflow@${appVersion}`");
     expect(viteConfig).toContain("sourcemaps: {");
     expect(viteConfig).toContain('filesToDeleteAfterUpload: ["./dist/**/*.map"]');
-    expect(viteConfig).toContain('sourcemap: mode === "production" ? (sentrySourceMapUploadEnabled ? "hidden" : false) : mode === "development"');
+    expect(viteConfig).toMatch(
+      /sourcemap:\s*mode === "production"\s*\?\s*sentrySourceMapUploadEnabled\s*\?\s*"hidden"\s*:\s*false\s*:\s*mode === "development"/s
+    );
 
     const pluginOrder = viteConfig.indexOf("sentryVitePlugin({");
     const normalizerOrder = viteConfig.indexOf("normalizeIndexBasePathPlugin(base)");
     expect(pluginOrder, "Sentry Vite plugin must be present").toBeGreaterThan(-1);
     expect(normalizerOrder, "normalizer plugin must be present").toBeGreaterThan(-1);
-    expect(pluginOrder, "Sentry Vite plugin should run after other plugins").toBeGreaterThan(normalizerOrder);
+    expect(pluginOrder, "Sentry Vite plugin should run after other plugins").toBeGreaterThan(
+      normalizerOrder
+    );
   });
 
   it("does not enable Sentry source-map upload for placeholder upload env values", () => {
@@ -62,7 +71,7 @@ describe("Sentry source-map build contract", () => {
     expect(viteConfig).toContain("process.env.SENTRY_PROJECT");
     expect(viteConfig).toContain("const sentrySourceMapUploadEnabled =");
     expect(viteConfig).not.toContain(
-      "Boolean(process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT)",
+      "Boolean(process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT)"
     );
   });
 
@@ -84,8 +93,12 @@ describe("Sentry source-map build contract", () => {
       "secrets.SENTRY_AUTH_TOKEN != '' && vars.SENTRY_ORG != '' && vars.SENTRY_PROJECT != ''";
 
     for (const workflow of [deploy, preview]) {
-      expect(workflow).toContain("ZENFLOW_SENTRY_READINESS_REQUIRED: ${{ " + uploadEnvRequiredExpression + " }}");
-      expect(workflow).toContain("ZENFLOW_SENTRY_API_REQUIRED: ${{ " + uploadEnvRequiredExpression + " }}");
+      expect(workflow).toContain(
+        "ZENFLOW_SENTRY_READINESS_REQUIRED: ${{ " + uploadEnvRequiredExpression + " }}"
+      );
+      expect(workflow).toContain(
+        "ZENFLOW_SENTRY_API_REQUIRED: ${{ " + uploadEnvRequiredExpression + " }}"
+      );
       expect(workflow).toContain("npm run check:sentry-readiness");
       expect(workflow).toContain("npm run smoke:sentry-api");
     }
@@ -98,16 +111,16 @@ describe("Sentry source-map build contract", () => {
     expect(previewSmokeCount).toBe(previewReadinessCount);
 
     expect(deploy.indexOf("npm run check:sentry-readiness")).toBeLessThan(
-      deploy.indexOf("npm run smoke:sentry-api"),
+      deploy.indexOf("npm run smoke:sentry-api")
     );
     expect(deploy.indexOf("npm run smoke:sentry-api")).toBeLessThan(
-      deploy.indexOf("run: npm run build"),
+      deploy.indexOf("run: npm run build")
     );
     expect(preview.indexOf("npm run check:sentry-readiness")).toBeLessThan(
-      preview.indexOf("npm run smoke:sentry-api"),
+      preview.indexOf("npm run smoke:sentry-api")
     );
     expect(preview.indexOf("npm run smoke:sentry-api")).toBeLessThan(
-      preview.indexOf("run: npm run build"),
+      preview.indexOf("run: npm run build")
     );
   });
 
@@ -131,7 +144,10 @@ describe("Sentry source-map build contract", () => {
 
     const previewV2Build = indexOfOrThrow(preview, "name: Build V2 public root");
     const previewPrepare = indexOfOrThrow(preview, "name: Prepare V2 GitHub Pages artifact");
-    const previewV2Guard = indexOfOrThrow(preview, "name: Check Sentry public artifacts for V2 preview");
+    const previewV2Guard = indexOfOrThrow(
+      preview,
+      "name: Check Sentry public artifacts for V2 preview"
+    );
     const previewUpload = indexOfOrThrow(preview, "name: Upload V2 Pages artifact");
     expect(previewV2Build).toBeLessThan(previewPrepare);
     expect(previewPrepare).toBeLessThan(previewV2Guard);
@@ -142,15 +158,26 @@ describe("Sentry source-map build contract", () => {
     expect(preview).not.toContain("v1-src");
   });
 
-
   it("keeps Sentry gates around Android and iOS native web-asset builds", () => {
     const deploy = read(".github/workflows/deploy.yml");
 
-    const androidReadiness = indexOfOrThrow(deploy, "name: Check Sentry readiness for Android web assets");
+    const androidReadiness = indexOfOrThrow(
+      deploy,
+      "name: Check Sentry readiness for Android web assets"
+    );
     const androidSmoke = indexOfOrThrow(deploy, "name: Smoke Sentry API for Android web assets");
-    const androidBuild = indexOfOrThrow(deploy, "name: Build Android web assets (required before cap sync)");
-    const androidArtifactGuard = indexOfOrThrow(deploy, "name: Check Sentry public artifacts for Android web assets");
-    const androidCapSync = indexOfOrThrow(deploy, "name: Capacitor sync (generates cordova.variables.gradle)");
+    const androidBuild = indexOfOrThrow(
+      deploy,
+      "name: Build Android web assets (required before cap sync)"
+    );
+    const androidArtifactGuard = indexOfOrThrow(
+      deploy,
+      "name: Check Sentry public artifacts for Android web assets"
+    );
+    const androidCapSync = indexOfOrThrow(
+      deploy,
+      "name: Capacitor sync (generates cordova.variables.gradle)"
+    );
 
     expectAscendingOrder([
       ["android readiness", androidReadiness],
@@ -163,7 +190,10 @@ describe("Sentry source-map build contract", () => {
     const iosReadiness = indexOfOrThrow(deploy, "name: Check Sentry readiness for iOS web assets");
     const iosSmoke = indexOfOrThrow(deploy, "name: Smoke Sentry API for iOS web assets");
     const iosBuild = indexOfOrThrow(deploy, "name: Build iOS web assets");
-    const iosArtifactGuard = indexOfOrThrow(deploy, "name: Check Sentry public artifacts for iOS web assets");
+    const iosArtifactGuard = indexOfOrThrow(
+      deploy,
+      "name: Check Sentry public artifacts for iOS web assets"
+    );
     const iosCapSync = indexOfOrThrow(deploy, "name: Capacitor sync iOS");
 
     expectAscendingOrder([
@@ -192,5 +222,4 @@ describe("Sentry source-map build contract", () => {
       expect(workflow).not.toMatch(adjacentStepNames);
     }
   });
-
 });

@@ -52,7 +52,7 @@ async function getDeletedIds(key: string): Promise<Set<string>> {
     return new Set([...(inFlight ?? []), ...persisted]);
   } catch (error) {
     logger.error(`[DeletionTracker] Failed to read ${key}:`, error);
-    return new Set(inFlight ?? []);
+    throw error;
   }
 }
 

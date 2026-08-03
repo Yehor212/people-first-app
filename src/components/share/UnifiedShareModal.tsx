@@ -215,8 +215,10 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
               >
-                <Check className="w-4 h-4" />
-                {getSuccessMessage(lastAction, tRecord)}
+                <Check className="w-4 h-4 shrink-0" />
+                {lastAction === "download"
+                  ? t.imageSaved || getSuccessMessage(lastAction, tRecord)
+                  : getSuccessMessage(lastAction, tRecord)}
               </motion.div>
             </div>
           )}
@@ -257,14 +259,14 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
           </div>
 
           {/* Secondary actions: Download + Copy */}
-          <div className="grid grid-cols-2 gap-3 pb-4">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(8rem*var(--font-scale,1))),1fr))] gap-3 pb-4">
             {/* Download */}
             <motion.button
               onClick={handleDownload}
               disabled={!hasImage || !imageBlob}
               aria-label={t.shareDownload || "Download"}
               className={cn(
-                "flex items-center justify-center gap-2 h-12 min-h-[44px] rounded-xl text-sm font-medium motion-safe:transition-all",
+                "flex h-auto min-h-12 min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium motion-safe:transition-all",
                 "bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10",
                 "hover:bg-slate-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
               )}
@@ -273,14 +275,12 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
                 : {})}
             >
               {isSuccess && lastAction === "download" ? (
-                <Check className="w-4 h-4 text-emerald-500" />
+                <Check className="w-4 h-4 shrink-0 text-emerald-500" />
               ) : (
-                <Download className="w-4 h-4 text-muted-foreground" />
+                <Download className="w-4 h-4 shrink-0 text-muted-foreground" />
               )}
-              <span className="text-foreground/80">
-                {isSuccess && lastAction === "download"
-                  ? t.imageSaved || "Saved!"
-                  : t.shareDownload || "Download"}
+              <span className="min-w-0 whitespace-normal break-words text-center text-foreground/80 [hyphens:manual] [overflow-wrap:break-word]">
+                {t.shareDownload || "Download"}
               </span>
             </motion.button>
 
@@ -294,7 +294,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
                   : t.shareCopyLink || "Copy"
               }
               className={cn(
-                "flex items-center justify-center gap-2 h-12 min-h-[44px] rounded-xl text-sm font-medium motion-safe:transition-all",
+                "flex h-auto min-h-12 min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium motion-safe:transition-all",
                 isSuccess && lastAction === "copy"
                   ? "bg-emerald-500/15 border border-emerald-500/30"
                   : "bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10",
@@ -305,12 +305,13 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
                 : {})}
             >
               {isSuccess && lastAction === "copy" ? (
-                <Check className="w-4 h-4 text-emerald-500" />
+                <Check className="w-4 h-4 shrink-0 text-emerald-500" />
               ) : (
-                <Copy className="w-4 h-4 text-muted-foreground" />
+                <Copy className="w-4 h-4 shrink-0 text-muted-foreground" />
               )}
               <span
                 className={cn(
+                  "min-w-0 whitespace-normal break-words text-center [hyphens:manual] [overflow-wrap:break-word]",
                   isSuccess && lastAction === "copy"
                     ? "text-emerald-600 dark:text-emerald-400"
                     : "text-foreground/80"

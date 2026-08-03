@@ -14,6 +14,10 @@ const mockEarnTreats = vi.fn(() => ({ earned: 5, bonus: 0, multiplier: 1, newBal
 const mockAttractCreature = vi.fn();
 const mockFeedCreatures = vi.fn();
 const mockUpdateChallengeProgress = vi.fn();
+const { mockTriggerSync, mockSyncGratitude } = vi.hoisted(() => ({
+  mockTriggerSync: vi.fn(),
+  mockSyncGratitude: vi.fn(() => Promise.resolve()),
+}));
 
 vi.mock("@/stores", () => ({
   useUserDataStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) =>
@@ -39,6 +43,14 @@ vi.mock("@/lib/randomQuests", () => ({
 
 vi.mock("@/lib/audioManager", () => ({
   playSound: vi.fn(),
+}));
+
+vi.mock("@/storage/cloudSync", () => ({
+  triggerSync: mockTriggerSync,
+}));
+
+vi.mock("@/storage/realtimeSync", () => ({
+  syncGratitude: mockSyncGratitude,
 }));
 
 // --- import under test after mocks ---
@@ -82,6 +94,10 @@ describe("useGratitudeHandlers", () => {
     expect(mockSetGratitudeEntries).toHaveBeenCalledTimes(1);
     const updater = mockSetGratitudeEntries.mock.calls[0][0];
     expect(updater([])).toEqual([expect.objectContaining(entry)]);
+    expect(mockTriggerSync).toHaveBeenCalledOnce();
+    expect(mockSyncGratitude).toHaveBeenCalledWith(
+      expect.objectContaining(entry),
+    );
   });
 
   it("handleAddGratitude rewards user with treats", () => {

@@ -6,7 +6,10 @@ import {
   useRef,
   useMemo,
   Suspense,
+  Fragment,
   memo,
+  type ChangeEvent,
+  type ComponentProps,
   type ComponentType,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
@@ -23,50 +26,67 @@ import {
   Mail,
   PenLine,
   Plus,
-  Upload,
   BarChart3,
   Flame,
   PanelLeftOpen,
   Star,
 } from "lucide-react";
-import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup, useIsPresent, useReducedMotion } from "framer-motion";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { cn, formatDate, getToday } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { consumePendingDiaryEditorOpen, subscribeToDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { createFocusTrap, getFocusableElements, announceSuccess, announceError } from "@/lib/a11y";
 import { AUTH_COMPLETE_EVENT, getAuthRedirectUrl } from "@/lib/authRedirect";
-import { IS_DESKTOP_RUNTIME } from "@/lib/env";
+import { createPkceAttemptRedirectUrl } from "@/lib/pkceAttemptStorage";
+import {
+  ENABLE_JOURNAL_SAVE_CEREMONY,
+  IS_DESKTOP_RUNTIME,
+} from "@/lib/env";
 import { Switch } from "@/components/ui/switch";
 import { SplashScreen, type SplashThemePreference } from "@/components/SplashScreen";
 import { triggerSync } from "@/storage/cloudSync";
 import { settingsRepo } from "@/storage/db";
 import type { Database } from "@/types/supabase";
 import { useJournal } from "./useJournal";
+import { useJournalToday } from "./useJournalToday";
 import { useJournalSecurity } from "./useJournalSecurity";
 import { JournalLockScreen } from "./JournalLockScreen";
 import { SidebarCompact, type DiarySidebarSection } from "./SidebarCompact";
 import { DiaryEntrySuggestionCard } from "./DiaryEntrySuggestionCard";
-import { OnThisDayCard } from "./OnThisDayCard";
 import { JournalOnboardingHints, useJournalOnboarding } from "./JournalOnboardingHints";
 import { JournalCalendar } from "./JournalCalendar";
 import { formatLocalizedCount } from "./journalWordCount";
-import { getEntryCount, hasEncryptedJournalContent, hasEncryptedJournalMedia } from "./journalStorage";
+import { formatJournalCivilDate, formatJournalDuration, isNextJournalDate, shiftJournalDate } from "./journalDateUtils";
+import {
+  cancelPendingJournalEntryDeletes,
+  getEntryById,
+  getEntryCount,
+  getPendingJournalEntryDeletes,
+  hasEncryptedJournalContent,
+  hasEncryptedJournalMedia,
+  stagePendingJournalEntryDelete,
+  type PendingJournalEntryDelete,
+} from "./journalStorage";
+import { JOURNAL_DELETE_UNDO_WINDOW_MS } from "./journalDeletePolicy";
+import { hasEncryptedJournalDrafts } from "./journalDraftStorage";
 import {
   createGratitudeSpaceCapture,
   createQuietReleaseSession,
   getQuietReleaseTraceSummaries,
+  hasEncryptedJournalHubContent,
   linkEntryToSpace,
 } from "./journalHubStorage";
 import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
-import { storageGetRaw, storageSetRaw, storageRemove } from "@/lib/safeJson";
+import { storageGetRaw, storageReadRaw, storageSetRaw, storageRemove } from "@/lib/safeJson";
 import {
   JOURNAL_PASSWORD_RESET_PARAM,
   clearJournalPasswordResetParamFromCurrentUrl,
@@ -78,6 +98,10 @@ import {
 import { scheduleIdle } from "@/lib/scheduleIdle";
 import { useJournalReminder, getDaysSinceLastEntry } from "./useJournalReminder";
 import { useScreenSecurity } from "./useScreenSecurity";
+import {
+  isJournalRequestTimeoutError,
+  withJournalRequestTimeout,
+} from "./journalRequestTimeout";
 import { useGamificationStore, useUserDataStore } from "@/stores";
 import { useThemeStore } from "@/stores/themeStore";
 import { haptics, hapticSuccess } from "@/lib/haptics";
@@ -89,16 +113,38 @@ import { useSidebarKeyboard } from "@/hooks/useSidebarKeyboard";
 import { springs } from "@/config/animations";
 import { useStreakFreeze, StreakFreezeIndicator } from "./StreakFreeze";
 import type { JournalSettingsSection } from "./JournalSettingsContent";
+import type { JournalImportInspection } from "./journalImport";
 import type {
   JournalEntry,
   JournalEntryPrefill,
   JournalEntrySuggestion,
   JournalReleaseTraceSummary,
 } from "./types";
+import { JournalSaveCeremonyHost } from "./save-ceremony/JournalSaveCeremonyHost";
+import {
+  commitJournalSaveAndCaptureTheme,
+  createJournalSaveCommitReceipt,
+  type JournalSaveCommitReceipt,
+  type JournalSaveCompletion,
+} from "./save-ceremony/journalSaveCeremonyContract";
+import { preloadJournalSaveCeremonyRuntime } from "./save-ceremony/journalSaveCeremonyRuntime";
+import {
+  captureJournalSaveCeremonyLifecycle,
+  invalidateJournalSaveCeremonyLifecycle,
+  markJournalSaveCeremonyLifecycleActive,
+  mayPresentJournalSaveCeremony,
+  type JournalSaveCeremonyLifecycleToken,
+} from "./save-ceremony/journalSaveCeremonyLifecycle";
+import { isNative, platform } from "@/lib/platform";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
 import { DiaryWallpaper } from "./DiaryWallpaper";
 import { getJournalPreviewText } from "./journalDisplay";
-import { getJournalQuote } from "./journalQuotes";
+import { isFavoriteJournalEntry, setJournalEntryFavorite } from "./journalFavorite";
+
+interface JournalSaveCeremonyPresentation {
+  receipt: JournalSaveCommitReceipt;
+  lifecycle: JournalSaveCeremonyLifecycleToken;
+}
 
 function getPrefillSpaceIds(prefill: JournalEntryPrefill | null | undefined): string[] {
   if (!prefill) return [];
@@ -114,6 +160,33 @@ function getSuggestionDismissKey(suggestion: JournalEntrySuggestion, index = 0):
   );
 }
 
+function waitForJournalDeleteDeadline(delay: number, signal: AbortSignal): Promise<boolean> {
+  const boundedDelay = Number.isFinite(delay)
+    ? Math.min(JOURNAL_DELETE_UNDO_WINDOW_MS, Math.max(0, Math.trunc(delay)))
+    : 0;
+
+  return new Promise((resolve) => {
+    if (signal.aborted) {
+      resolve(false);
+      return;
+    }
+
+    let settled = false;
+    const finish = (elapsed: boolean) => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener("abort", handleAbort);
+      resolve(elapsed);
+    };
+    const timerId = window.setTimeout(() => finish(true), boundedDelay);
+    function handleAbort() {
+      window.clearTimeout(timerId);
+      finish(false);
+    }
+    signal.addEventListener("abort", handleAbort, { once: true });
+  });
+}
+
 // Lazy-load JournalStats because it is a dense stats surface.
 const LazyJournalStats = lazyWithRetry(
   () => import("./JournalStats").then((m) => ({ default: m.JournalStats })),
@@ -124,6 +197,8 @@ type DeferredJournalModule = Record<string, ComponentType<any>>;
 type JournalSettingsContentComponent =
   typeof import("./JournalSettingsContent").JournalSettingsContent;
 type ExportPickerDialogComponent = typeof import("./ExportPickerDialog").ExportPickerDialog;
+type JournalImportConfirmDialogComponent =
+  typeof import("./JournalImportConfirmDialog").JournalImportConfirmDialog;
 type RemovePasswordConfirmDialogComponent =
   typeof import("./RemovePasswordConfirmDialog").RemovePasswordConfirmDialog;
 type KeyboardShortcutsOverlayComponent =
@@ -132,7 +207,7 @@ type StreakCelebrationComponent = typeof import("./StreakCelebration").StreakCel
 type JournalCalendarFullComponent = typeof import("./JournalCalendarFull").JournalCalendarFull;
 
 const deferredJournalModules = import.meta.glob<DeferredJournalModule>(
-  "./{ExportPickerDialog,JournalCalendarFull,JournalSettingsContent,KeyboardShortcutsOverlay,RemovePasswordConfirmDialog,StreakCelebration}.tsx",
+  "./{ExportPickerDialog,JournalCalendarFull,JournalImportConfirmDialog,JournalSettingsContent,KeyboardShortcutsOverlay,RemovePasswordConfirmDialog,StreakCelebration}.tsx",
 );
 
 function lazyDeferredJournalComponent<T extends ComponentType<any>>(
@@ -164,6 +239,12 @@ const LazyExportPickerDialog = lazyDeferredJournalComponent<ExportPickerDialogCo
   "./ExportPickerDialog.tsx",
   "ExportPickerDialog",
 );
+
+const LazyJournalImportConfirmDialog =
+  lazyDeferredJournalComponent<JournalImportConfirmDialogComponent>(
+    "./JournalImportConfirmDialog.tsx",
+    "JournalImportConfirmDialog",
+  );
 
 const LazyRemovePasswordConfirmDialog =
   lazyDeferredJournalComponent<RemovePasswordConfirmDialogComponent>(
@@ -217,8 +298,28 @@ async function loadJournalSupabase(): Promise<SupabaseClient<Database> | null> {
   return supabase;
 }
 
+async function accountHasRemoteJournalData(
+  client: SupabaseClient<Database>,
+): Promise<boolean> {
+  const results = await Promise.all([
+    client.from("journal_entries").select("id", { count: "exact", head: true }),
+    client.from("journal_photos").select("id", { count: "exact", head: true }),
+    client.from("journal_audio").select("id", { count: "exact", head: true }),
+  ]);
+
+  for (const result of results) {
+    if (result.error) throw result.error;
+    if (!Number.isSafeInteger(result.count)) {
+      throw new Error("Diary cloud preflight did not return a verified row count");
+    }
+  }
+
+  return results.some((result) => (result.count ?? 0) > 0);
+}
+
 type JournalPasswordResetRequest = {
   email: string;
+  userId: string;
   nonce: string;
   startedAt: number;
 };
@@ -308,12 +409,17 @@ function dispatchNavigationPopState(): void {
 
 
 function hasJournalPasswordResetProof(pending: JournalPasswordResetRequest): boolean {
-  return hasStoredJournalPasswordResetProof(pending.nonce, JOURNAL_PASSWORD_RESET_WINDOW_MS);
+  return hasStoredJournalPasswordResetProof(
+    pending.nonce,
+    pending.userId,
+    JOURNAL_PASSWORD_RESET_WINDOW_MS,
+  );
 }
 
-function serializeJournalPasswordResetRequest(email: string, nonce: string): string {
+function serializeJournalPasswordResetRequest(email: string, userId: string, nonce: string): string {
   return JSON.stringify({
     email: normalizeJournalResetEmail(email),
+    userId: userId.trim(),
     nonce,
     startedAt: Date.now(),
   } satisfies JournalPasswordResetRequest);
@@ -325,10 +431,11 @@ function parseJournalPasswordResetRequest(raw: string | null): JournalPasswordRe
   try {
     const parsed = JSON.parse(raw) as Partial<JournalPasswordResetRequest>;
     const email = normalizeJournalResetEmail(parsed.email);
+    const userId = typeof parsed.userId === "string" ? parsed.userId.trim() : "";
     const nonce = typeof parsed.nonce === "string" ? parsed.nonce.trim() : "";
     const startedAt = Number(parsed.startedAt);
-    if (!email || !nonce || !Number.isFinite(startedAt)) return null;
-    return { email, nonce, startedAt };
+    if (!email || !userId || !nonce || !Number.isFinite(startedAt)) return null;
+    return { email, userId, nonce, startedAt };
   } catch {
     return null;
   }
@@ -343,6 +450,39 @@ function JournalDeferredPanelFallback({
     <div className="flex min-h-[320px] flex-1 items-center justify-center">
       <Loader2 className="h-6 w-6 animate-spin text-primary" aria-label={label} />
     </div>
+  );
+}
+
+const InertJournalMotionDiv = motion.div as ComponentType<
+  ComponentProps<typeof motion.div> & { inert?: "" }
+>;
+
+function JournalMobileViewSurface({
+  children,
+  className,
+  shouldAnimate,
+  view,
+}: {
+  children: ReactNode;
+  className: string;
+  shouldAnimate: boolean;
+  view: "stats" | "viewing" | "list";
+}) {
+  const isPresent = useIsPresent();
+
+  return (
+    <InertJournalMotionDiv
+      inert={!isPresent ? "" : undefined}
+      aria-hidden={!isPresent ? true : undefined}
+      initial={shouldAnimate ? { opacity: 0 } : undefined}
+      animate={{ opacity: 1 }}
+      exit={shouldAnimate ? { opacity: 0 } : undefined}
+      transition={{ duration: 0.2 }}
+      className={cn(className, !isPresent && "pointer-events-none")}
+      data-journal-mobile-view={view}
+    >
+      {children}
+    </InertJournalMotionDiv>
   );
 }
 
@@ -440,83 +580,77 @@ export function JournalLoadErrorPanel({
   );
 }
 
-function JournalCompactEmptyListShell({
+export function JournalBackgroundLoadNotice({
   ts,
-  onNewEntry,
+  onRetry,
 }: {
   ts: Record<string, string>;
-  onNewEntry: () => void;
+  onRetry: () => void;
 }) {
-  const currentJournalQuote = getJournalQuote(ts);
-
   return (
-    <div className="space-y-3 pb-4" data-testid="journal-compact-empty-list">
-      <div className="rounded-2xl border border-border/25 bg-card/45 p-4 text-center backdrop-blur-xl">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/[0.10] text-primary">
-          <PenLine className="h-5 w-5" aria-hidden="true" />
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      data-testid="journal-background-load-notice"
+      className="mb-3 rounded-2xl border border-border/50 bg-card/80 p-3 text-start text-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]"
+    >
+      <div className="flex items-start gap-3">
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary/80" aria-hidden="true" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-foreground">
+            {ts.journalHistoryLoadFailed || "Some older entries are not available yet"}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {ts.journalHistoryLoadFailedHint || "The entries shown are safe. Try again to load the rest."}
+          </p>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-2 inline-flex min-h-[44px] touch-manipulation items-center justify-center rounded-xl border border-border/55 bg-background/80 px-3 text-xs font-bold text-foreground motion-safe:transition-colors hover:bg-muted/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45"
+          >
+            {ts.journalRetryHistory || "Try older entries again"}
+          </button>
         </div>
-        <h3 className="text-sm font-semibold text-foreground">
-          {ts.journalEmpty || "Your diary is empty"}
-        </h3>
-        <p className="mx-auto mt-1 max-w-[240px] text-xs leading-relaxed text-muted-foreground">
-          {ts.journalEmptyHint || "Start writing to capture your thoughts, feelings, and memories."}
-        </p>
-        <figure
-          className="mx-auto mt-3 max-w-[240px] text-xs italic leading-relaxed text-muted-foreground"
-          aria-label={ts.journalReflectionQuoteLabel || "A quiet quote"}
-          dir="auto"
-        >
-          <blockquote>{currentJournalQuote}</blockquote>
-        </figure>
-        <button
-          type="button"
-          onClick={onNewEntry}
-          className="mt-4 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.20)] motion-safe:transition-transform active:scale-[0.98]"
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          {ts.journalWriteFirstEntry || ts.journalNewEntry || "Write first entry"}
-        </button>
       </div>
     </div>
   );
 }
 
-const FAVORITE_ENTRY_TAGS = new Set([
-  "favorite",
-  "favorites",
-  "favourite",
-  "favourites",
-  "starred",
-  "fav",
-  "обране",
-  "избранное",
-  "favorito",
-  "favoritos",
-  "favori",
-  "favoris",
-  "favorit",
-  "favoriten",
-  "お気に入り",
-  "المفضلة",
-  "מועדף",
-  "מועדפים",
-]);
-
-function isFavoriteJournalEntry(entry: Pick<JournalEntry, "tags">): boolean {
-  return entry.tags.some((tag) => FAVORITE_ENTRY_TAGS.has(tag.trim().toLowerCase()));
+function JournalCompactEmptyListShell({
+  ts,
+}: {
+  ts: Record<string, string>;
+}) {
+  return (
+    <div className="pb-4" data-testid="journal-compact-empty-list">
+      <div className="flex min-h-[44px] items-center gap-2 px-2 text-sm text-muted-foreground">
+        <PenLine className="h-4 w-4 shrink-0 text-primary/75" aria-hidden="true" />
+        <p>{ts.journalEmpty || "No diary entries yet"}</p>
+      </div>
+    </div>
+  );
 }
 
-function JournalFavoritesPanel({
+export function JournalFavoritesPanel({
   entries,
   onOpenEntry,
   onNewEntry,
   privateMode,
+  language,
+  historyLoading,
+  historyLoadError,
+  onRetryHistory,
   ts,
 }: {
   entries: JournalEntry[];
   onOpenEntry: (entryId: string) => void;
   onNewEntry: () => void;
   privateMode: boolean;
+  language: Parameters<typeof formatJournalCivilDate>[1];
+  historyLoading: boolean;
+  historyLoadError: boolean;
+  onRetryHistory: () => void;
   ts: Record<string, string>;
 }) {
   const favorites = entries.filter(isFavoriteJournalEntry);
@@ -530,7 +664,7 @@ function JournalFavoritesPanel({
     >
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4">
         <div className="flex items-center gap-3 rounded-[28px] border border-border/35 bg-card/65 p-4 shadow-[0_18px_55px_hsl(var(--foreground)/0.07)] backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/[0.12] text-primary">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
             <Star className="h-5 w-5" aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -538,21 +672,36 @@ function JournalFavoritesPanel({
               {ts.journalFavorites || "Favorites"}
             </h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              {ts.journalFavoritesEmptyHint || "Add a favorite tag to an entry to keep it here."}
+              {ts.journalFavoritesEmptyHint || "Use the star on an entry to keep it here."}
             </p>
           </div>
         </div>
 
-        {favorites.length === 0 ? (
+        {favorites.length === 0 && historyLoading ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex min-h-[240px] flex-1 flex-col items-center justify-center rounded-[28px] border border-border/35 bg-background/55 p-6 text-center"
+          >
+            <Loader2 className="mb-3 h-5 w-5 animate-spin text-primary" aria-hidden="true" />
+            <p className="text-sm font-medium text-muted-foreground">
+              {ts.journalHistoryLoadPending || "Loading older diary entries…"}
+            </p>
+          </div>
+        ) : favorites.length === 0 && historyLoadError ? (
+          <div className="flex min-h-[240px] flex-1 items-center justify-center">
+            <JournalBackgroundLoadNotice ts={ts} onRetry={onRetryHistory} />
+          </div>
+        ) : favorites.length === 0 ? (
           <div className="flex min-h-[320px] flex-1 flex-col items-center justify-center rounded-[28px] border border-dashed border-border/45 bg-background/55 p-6 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-3xl border border-primary/20 bg-primary/[0.10] text-primary">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-3xl border border-primary/20 bg-primary/10 text-primary">
               <Star className="h-6 w-6" aria-hidden="true" />
             </div>
             <h3 className="text-base font-bold text-foreground">
               {ts.journalFavoritesEmptyTitle || "No favorites yet"}
             </h3>
             <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              {ts.journalFavoritesEmptyHint || "Add a favorite tag to an entry to keep it here."}
+              {ts.journalFavoritesEmptyHint || "Use the star on an entry to keep it here."}
             </p>
             <button
               type="button"
@@ -564,8 +713,16 @@ function JournalFavoritesPanel({
             </button>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {visibleFavorites.map((entry) => (
+          <>
+            {historyLoadError ? (
+              <JournalBackgroundLoadNotice ts={ts} onRetry={onRetryHistory} />
+            ) : historyLoading ? (
+              <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
+                {ts.journalHistoryLoadPending || "Loading older diary entries…"}
+              </p>
+            ) : null}
+            <div className="grid gap-3 sm:grid-cols-2">
+              {visibleFavorites.map((entry) => (
               <button
                 key={entry.id}
                 type="button"
@@ -582,29 +739,30 @@ function JournalFavoritesPanel({
               >
                 {privateMode ? (
                   <>
-                    <span className="block truncate text-base font-bold text-foreground">
+                    <span className="block whitespace-normal break-words text-base font-bold text-foreground">
                       {ts.journalPrivateEntry || ts.privateMode || "Private entry"}
                     </span>
-                    <span className="mt-2 block max-h-12 overflow-hidden text-sm leading-relaxed text-muted-foreground">
+                    <span className="mt-2 block whitespace-normal break-words text-sm leading-relaxed text-muted-foreground">
                       {ts.journalPrivateEntryHint || "Unlock private mode to view this memory."}
                     </span>
                   </>
                 ) : (
                   <>
                     <span className="text-xs font-bold uppercase tracking-[0.16em] text-primary/75">
-                      {entry.date}
+                      {formatJournalCivilDate(entry.date, language, "short")}
                     </span>
-                    <span className="mt-2 block truncate text-base font-bold text-foreground">
+                    <span className="mt-2 block whitespace-normal break-words text-base font-bold text-foreground">
                       {entry.title || ts.journalEntryTitle || "Entry"}
                     </span>
-                    <span className="mt-2 block max-h-12 overflow-hidden text-sm leading-relaxed text-muted-foreground">
+                    <span className="mt-2 block line-clamp-3 text-sm leading-relaxed text-muted-foreground">
                       {getJournalPreviewText(entry.content, ts) || ts.journalEmptyHint || "A quiet saved moment."}
                     </span>
                   </>
                 )}
               </button>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </section>
@@ -635,6 +793,21 @@ interface JournalModuleProps {
 const JOURNAL_SIDEBAR_PANEL_ID = "journal-sidebar-panel";
 const JournalMenuIcon = V2_SHELL_ICONS.menu;
 
+interface JournalPrivateModeState {
+  enabled: boolean;
+  persistenceError: boolean;
+}
+
+function readJournalPrivateModeState(): JournalPrivateModeState {
+  const stored = storageReadRaw(SK.JOURNAL_PRIVATE_MODE);
+  if (!stored.ok) return { enabled: true, persistenceError: true };
+  if (stored.value === null || stored.value === "false") {
+    return { enabled: false, persistenceError: false };
+  }
+  if (stored.value === "true") return { enabled: true, persistenceError: false };
+  return { enabled: true, persistenceError: true };
+}
+
 export const JournalModule = memo(function JournalModule({
   onToggleHabit,
   onAddGratitude,
@@ -654,6 +827,7 @@ export const JournalModule = memo(function JournalModule({
   rewardsEnabled = true,
 }: JournalModuleProps = {}) {
   const { t, isRTL, language } = useLanguage();
+  const today = useJournalToday();
   const ts = t as unknown as Record<string, string>;
   const isPagePresentation = presentation === "page";
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
@@ -676,16 +850,19 @@ export const JournalModule = memo(function JournalModule({
   const [showMobileDiarySidebar, setShowMobileDiarySidebar] = useState(false);
   const [diaryTabSection, setDiaryTabSection] = useState<DiarySidebarSection>("entry");
   const [settingsSection, setSettingsSection] = useState<JournalSettingsSection>("overview");
+  const [settingsBusy, setSettingsBusy] = useState(false);
   const [calendarMode, setCalendarMode] = useState<"strip" | "full">(() => {
     return storageGetRaw(SK.JOURNAL_CALENDAR_MODE, "strip") as "strip" | "full";
   });
-  const [privateMode, setPrivateMode] = useState(() => {
-    return storageGetRaw(SK.JOURNAL_PRIVATE_MODE) === "true";
-  });
+  const [privateModeState, setPrivateModeState] = useState(readJournalPrivateModeState);
+  const privateMode = privateModeState.enabled;
+  const saveCeremonyMotionAllowed = useShouldAnimate();
+  const saveCeremonyMotionAllowedRef = useRef(saveCeremonyMotionAllowed);
+  saveCeremonyMotionAllowedRef.current = saveCeremonyMotionAllowed;
 
   const [showExportPicker, setShowExportPicker] = useState(false);
   const [exporting, setExporting] = useState(false);
-  type ResetStep =
+type ResetStep =
     | "idle"
     | "checking"
     | "no-account"
@@ -697,15 +874,20 @@ export const JournalModule = memo(function JournalModule({
     | "success";
   const [resetStep, setResetStep] = useState<ResetStep>("idle");
   const [resetEmail, setResetEmail] = useState("");
+  const [resetOwnerUserId, setResetOwnerUserId] = useState("");
   const [resetError, setResetError] = useState("");
   const [resetResendRemaining, setResetResendRemaining] = useState(0);
   const lastResetOtpRef = useRef(0);
   const resetRequestSeqRef = useRef(0);
+  const resetSendInFlightRef = useRef(false);
+  const resetConsumeFlightRef = useRef<{ nonce: string; promise: Promise<boolean> } | null>(null);
   const resetDialogRef = useRef<HTMLDivElement | null>(null);
   const resetCancelRef = useRef<HTMLButtonElement | null>(null);
   const resetTitleId = useId();
   const resetDescriptionId = useId();
   const resetErrorId = useId();
+  const desktopSettingsBusyStatusId = useId();
+  const mobileSettingsBusyStatusId = useId();
   const resetEncryptedUnavailableMessage = withJournalResetProtectedDetail(
     ts.journalResetEncryptedUnavailable ||
       "This diary is encrypted with your password. Email verification cannot remove this lock while encrypted content is locked. Nothing changed; your entries remain protected. Unlock with your password to remove it.",
@@ -715,12 +897,24 @@ export const JournalModule = memo(function JournalModule({
     type: "success" | "error";
     message: string;
   } | null>(null);
+  const [pendingJournalImport, setPendingJournalImport] = useState<{
+    file: File;
+    inspection: JournalImportInspection;
+  } | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
   const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
   const [removePasswordSubmitting, setRemovePasswordSubmitting] = useState(false);
   const [celebratingStreak, setCelebratingStreak] = useState<number | null>(null);
+  const [saveCeremonyPresentation, setSaveCeremonyPresentation] =
+    useState<JournalSaveCeremonyPresentation | null>(null);
+  const saveCeremonyPreloadRequestedRef = useRef(false);
+  const saveCeremonyPreloadHandleRef =
+    useRef<ReturnType<typeof scheduleIdle> | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [favoriteMutationPending, setFavoriteMutationPending] = useState(false);
+  const favoriteMutationPendingRef = useRef(false);
   const [dismissedSuggestionIds, setDismissedSuggestionIds] = useState<string[]>([]);
+  const [deferredInitialSuggestionKey, setDeferredInitialSuggestionKey] = useState<string | null>(null);
   const {
     sidebarState,
     setSidebarState,
@@ -730,14 +924,133 @@ export const JournalModule = memo(function JournalModule({
   } = useSidebarState();
   const initialSuggestionConsumedRef = useRef(false);
   const initialSuggestionRef = useRef<JournalEntrySuggestion | null>(initialEntrySuggestion);
+  const currentInitialSuggestionKey = initialEntrySuggestion
+    ? getSuggestionDismissKey(initialEntrySuggestion)
+    : null;
   const settingsReturnFocusRef = useRef<HTMLElement | null>(null);
+  const getPasswordRemovalFocusFallback = useCallback(
+    () => document.querySelector<HTMLElement>('[data-testid="journal-password-setup-action"]'),
+    [],
+  );
   const settingsReturnTabRef = useRef<DiarySidebarSection>("entry");
   const editorSettingsRequestRef = useRef<(() => void) | null>(null);
+  const editorExitRequestRef = useRef<(() => void) | null>(null);
+  const pendingEditorExitActionRef = useRef<(() => void) | null>(null);
 
   if (initialEntrySuggestion && !initialSuggestionConsumedRef.current) {
     initialSuggestionRef.current = initialEntrySuggestion;
   }
   useSidebarKeyboard(sidebarState, toggleSidebar, setSidebarState);
+
+  const handleEditorDirtyStateChange = useCallback((dirty: boolean) => {
+    if (
+      !ENABLE_JOURNAL_SAVE_CEREMONY ||
+      !dirty ||
+      !saveCeremonyMotionAllowed ||
+      saveCeremonyPreloadRequestedRef.current
+    ) {
+      return;
+    }
+    saveCeremonyPreloadRequestedRef.current = true;
+    saveCeremonyPreloadHandleRef.current = scheduleIdle(() => {
+      saveCeremonyPreloadHandleRef.current = null;
+      if (!saveCeremonyMotionAllowedRef.current) {
+        saveCeremonyPreloadRequestedRef.current = false;
+        return;
+      }
+      void preloadJournalSaveCeremonyRuntime().catch(() => {
+        logger.warn("[JournalSaveCeremony] idle preload unavailable", {
+          code: "journal_save_ceremony_preload_error",
+        });
+      });
+    });
+  }, [saveCeremonyMotionAllowed]);
+
+  useEffect(() => {
+    if (saveCeremonyMotionAllowed) return;
+    saveCeremonyPreloadHandleRef.current?.cancel();
+    saveCeremonyPreloadHandleRef.current = null;
+    saveCeremonyPreloadRequestedRef.current = false;
+  }, [saveCeremonyMotionAllowed]);
+
+  useEffect(
+    () => () => {
+      saveCeremonyPreloadHandleRef.current?.cancel();
+      saveCeremonyPreloadHandleRef.current = null;
+    },
+    [],
+  );
+  useEffect(() => {
+    if (!ENABLE_JOURNAL_SAVE_CEREMONY) return;
+
+    const markActive = () => markJournalSaveCeremonyLifecycleActive();
+    const invalidate = () => invalidateJournalSaveCeremonyLifecycle();
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") invalidate();
+      else markActive();
+    };
+    const handlePageShow = () => {
+      if (document.visibilityState !== "hidden") markActive();
+    };
+
+    handleVisibility();
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("pagehide", invalidate);
+    window.addEventListener("pageshow", handlePageShow);
+    if (IS_DESKTOP_RUNTIME) {
+      window.addEventListener("blur", invalidate);
+      window.addEventListener("focus", markActive);
+    }
+
+    let disposed = false;
+    let nativeHandle: { remove: () => Promise<void> } | null = null;
+    if (isNative) {
+      void import("@capacitor/app")
+        .then(async ({ App }) => {
+          const state = await App.getState();
+          if (disposed) return;
+          if (state.isActive) markActive();
+          else invalidate();
+          nativeHandle = await App.addListener(
+            "appStateChange",
+            ({ isActive }) => {
+              if (isActive) markActive();
+              else invalidate();
+            },
+          );
+          if (disposed) {
+            await nativeHandle.remove();
+            nativeHandle = null;
+          }
+        })
+        .catch(() => {
+          if (disposed) return;
+          logger.warn("[JournalSaveCeremony] native lifecycle unavailable", {
+            code: "journal_save_ceremony_native_lifecycle_error",
+            platform,
+          });
+          invalidate();
+        });
+    }
+
+    return () => {
+      disposed = true;
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pagehide", invalidate);
+      window.removeEventListener("pageshow", handlePageShow);
+      if (IS_DESKTOP_RUNTIME) {
+        window.removeEventListener("blur", invalidate);
+        window.removeEventListener("focus", markActive);
+      }
+      void nativeHandle?.remove().catch(() => {
+        logger.warn("[JournalSaveCeremony] native lifecycle cleanup unavailable", {
+          code: "journal_save_ceremony_native_lifecycle_cleanup_error",
+          platform,
+        });
+      });
+      invalidate();
+    };
+  }, []);
   // ? key → show keyboard shortcuts overlay
   useEffect(() => {
     if (moduleState !== "open") return;
@@ -783,39 +1096,68 @@ export const JournalModule = memo(function JournalModule({
   });
   useBackHandler(showMobileDiarySidebar, closeMobileDiarySidebar);
 
-  const closeSettings = useCallback((restoreFocus = true) => {
+  const settingsDismissBlocked = settingsBusy || importing || removePasswordSubmitting;
+
+  const closeSettings = useCallback((restoreFocus = true): boolean => {
+    if (settingsDismissBlocked) return false;
+    if (settingsSection !== "overview") {
+      if (restoreFocus) {
+        setSettingsSection("overview");
+        return false;
+      }
+    }
+
     setShowPasswordSettings(false);
     setDiaryTabSection(settingsReturnTabRef.current === "settings" ? "entry" : settingsReturnTabRef.current);
     setSettingsSection("overview");
 
-    if (!restoreFocus) return;
+    if (!restoreFocus) return true;
     settingsReturnFocusRef.current?.focus({ preventScroll: true });
     requestAnimationFrame(() => settingsReturnFocusRef.current?.focus({ preventScroll: true }));
-  }, []);
+    return true;
+  }, [settingsDismissBlocked, settingsSection]);
 
-  const checkEmailLockRemovalAvailable = useCallback(async () => {
+  const checkLocalEmailLockRemovalAvailable = useCallback(async () => {
     if (!isEmailLockRemovalAvailable) return false;
     if (security.vaultKey) return true;
 
     try {
-      const [hasEncryptedContent, hasEncryptedMedia] = await Promise.all([
+      const encryptedState = await Promise.all([
         hasEncryptedJournalContent(),
         hasEncryptedJournalMedia(),
+        hasEncryptedJournalDrafts(),
+        hasEncryptedJournalHubContent(),
       ]);
-      return !hasEncryptedContent && !hasEncryptedMedia;
+      return encryptedState.every((isEncrypted) => !isEncrypted);
     } catch (error) {
       logger.warn("[Journal] Email lock removal availability check failed:", error);
       return false;
     }
   }, [isEmailLockRemovalAvailable, security.vaultKey]);
 
+  const checkEmailLockRemovalAvailable = useCallback(async (
+    suppliedClient?: SupabaseClient<Database>,
+  ) => {
+    if (!(await checkLocalEmailLockRemovalAvailable())) return false;
+    if (security.vaultKey) return true;
+
+    const client = suppliedClient ?? await loadJournalSupabase();
+    if (!client) return false;
+    return !(await accountHasRemoteJournalData(client));
+  }, [checkLocalEmailLockRemovalAvailable, security.vaultKey]);
+
   const closeResetDialog = useCallback(() => {
-    if (resetStep === "sending") return;
     resetRequestSeqRef.current += 1;
+    if (resetSendInFlightRef.current) {
+      resetSendInFlightRef.current = false;
+      storageRemove(SK.JOURNAL_PASSWORD_RESET);
+      clearJournalPasswordResetProof();
+    }
     setResetStep("idle");
     setResetEmail("");
+    setResetOwnerUserId("");
     setResetError("");
-  }, [resetStep]);
+  }, []);
 
   const handleOpenAccountSettings = useCallback(() => {
     closeResetDialog();
@@ -894,6 +1236,8 @@ export const JournalModule = memo(function JournalModule({
     closeResetDialog,
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importFeedbackTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const importRequestSeqRef = useRef(0);
 
   useEffect(() => {
     if (!showMobileDiarySidebar) return;
@@ -978,6 +1322,20 @@ export const JournalModule = memo(function JournalModule({
   }, [isDiaryDesktopLayout, showPasswordSettings, showRemovePasswordConfirm]);
 
   const journal = useJournal();
+  const [mobileEditorSurfacePresent, setMobileEditorSurfacePresent] =
+    useState(false);
+  useEffect(() => {
+    if (isDiaryDesktopLayout) {
+      setMobileEditorSurfacePresent(false);
+    } else if (journal.view === "editing") {
+      setMobileEditorSurfacePresent(true);
+    }
+  }, [isDiaryDesktopLayout, journal.view]);
+  const handleMobileEditorExitComplete = useCallback(() => {
+    if (journal.view !== "editing") {
+      setMobileEditorSurfacePresent(false);
+    }
+  }, [journal.view]);
   const [releaseTraceSummaries, setReleaseTraceSummaries] = useState<Map<string, JournalReleaseTraceSummary>>(
     () => new Map(),
   );
@@ -1051,6 +1409,7 @@ export const JournalModule = memo(function JournalModule({
       });
     } catch (error) {
       logger.error("[Journal] Failed to store quiet release trace", error);
+      throw error;
     }
   }, []);
 
@@ -1066,81 +1425,225 @@ export const JournalModule = memo(function JournalModule({
     [onAddGratitude],
   );
 
-  // Undo delete state (soft-delete → 5s timer → commit)
-  type PendingDelete = {
+  // Durable undo state: storage keeps only id + expiry; private content remains in journalEntries.
+  type PendingDelete = PendingJournalEntryDelete & {
     id: string;
     entry: (typeof journal.entries)[0];
   };
-  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
+  const [pendingDeletes, setPendingDeletes] = useState<PendingDelete[]>([]);
+  const pendingDelete = pendingDeletes[0] ?? null;
   const [deleteCommitMessage, setDeleteCommitMessage] = useState<string | null>(null);
-  const deleteTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const deleteTimerAbortRef = useRef<AbortController>();
   const deleteFeedbackTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const isMountedRef = useRef(true);
-  const pendingDeleteRef = useRef(pendingDelete);
+  const pendingDeleteRef = useRef<PendingDelete[]>(pendingDeletes);
+  const pendingDeleteHydratedRef = useRef(false);
+  const pendingDeleteStageIdsRef = useRef(new Set<string>());
   useEffect(() => {
-    pendingDeleteRef.current = pendingDelete;
-  }, [pendingDelete]);
+    pendingDeleteRef.current = pendingDeletes;
+  }, [pendingDeletes]);
   useEffect(
     () => {
       isMountedRef.current = true;
       return () => {
         isMountedRef.current = false;
-        clearTimeout(deleteTimerRef.current);
+        deleteTimerAbortRef.current?.abort();
         clearTimeout(deleteFeedbackTimerRef.current);
-        if (pendingDeleteRef.current) {
-          journal
-            .commitDeleteEntry(pendingDeleteRef.current.id)
-            .catch((err) => logger.warn("[Journal]", "Cleanup commitDelete failed:", err));
-        }
+        clearTimeout(importFeedbackTimerRef.current);
+        importRequestSeqRef.current += 1;
       };
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount-only: journal ref is stable, intentionally excluded to avoid re-running cleanup
     []
   );
+
+  useEffect(() => {
+    if (journal.loading) {
+      pendingDeleteHydratedRef.current = false;
+      return;
+    }
+    if (pendingDeleteHydratedRef.current) return;
+    pendingDeleteHydratedRef.current = true;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const markers = await getPendingJournalEntryDeletes();
+        const hydrated = await Promise.all(
+          markers.map(async (marker) => {
+            const entry = await getEntryById(marker.id);
+            return entry ? { ...marker, entry } : null;
+          }),
+        );
+        if (cancelled || !isMountedRef.current) return;
+        const pending = hydrated.filter((item): item is PendingDelete => item !== null);
+        const missingIds = markers
+          .filter((marker) => !pending.some((item) => item.id === marker.id))
+          .map((marker) => marker.id);
+        if (missingIds.length > 0) {
+          await cancelPendingJournalEntryDeletes(missingIds);
+        }
+        if (cancelled || !isMountedRef.current) return;
+        if (pending.length === 0 && pendingDeleteRef.current.length === 0) return;
+        pendingDeleteRef.current = pending;
+        setPendingDeletes(pending);
+      } catch (error) {
+        logger.warn("[Journal] Failed to restore pending delete window", error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [journal.loading]);
+
+  const showImportFeedback = useCallback(
+    (feedback: { type: "success" | "error"; message: string }) => {
+      if (!isMountedRef.current) return;
+      clearTimeout(importFeedbackTimerRef.current);
+      setImportFeedback(feedback);
+      importFeedbackTimerRef.current = setTimeout(() => {
+        if (isMountedRef.current) setImportFeedback(null);
+      }, 5000);
+    },
+    [],
+  );
+
+  const handleJournalImportFile = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file || importing) return;
+
+      const requestSeq = ++importRequestSeqRef.current;
+      clearTimeout(importFeedbackTimerRef.current);
+      setImportFeedback(null);
+      setImporting(true);
+
+      try {
+        const { inspectJournalBackup } = await import("./journalImport");
+        const inspection = await inspectJournalBackup(file);
+        if (requestSeq !== importRequestSeqRef.current || !isMountedRef.current) return;
+        if (!inspection.canImport) {
+          const message = ts.journalImportFailed || "Import failed";
+          showImportFeedback({ type: "error", message });
+          announceError(message);
+          return;
+        }
+        setPendingJournalImport({ file, inspection });
+      } catch (error) {
+        logger.warn("[Journal] Backup inspection failed", {
+          name: error instanceof Error ? error.name : "UnknownError",
+        });
+        if (requestSeq !== importRequestSeqRef.current || !isMountedRef.current) return;
+        const message = ts.journalImportFailed || "Import failed";
+        showImportFeedback({ type: "error", message });
+        announceError(message);
+      } finally {
+        if (requestSeq === importRequestSeqRef.current && isMountedRef.current) {
+          setImporting(false);
+        }
+      }
+    },
+    [importing, showImportFeedback, ts],
+  );
+
+  const handleConfirmJournalImport = useCallback(async () => {
+    if (!pendingJournalImport || importing) return;
+
+    const requestSeq = ++importRequestSeqRef.current;
+    const { file } = pendingJournalImport;
+    setImportFeedback(null);
+    setImporting(true);
+
+    try {
+      const { importJournalBackup } = await import("./journalImport");
+      const result = await importJournalBackup(file);
+      if (requestSeq !== importRequestSeqRef.current || !isMountedRef.current) return;
+
+      await journal.refresh();
+      const importedLabel = formatLocalizedCount(
+        result.imported,
+        language,
+        ts,
+        "journalEntryCount",
+        ts.journalImportEntries || "entries",
+      );
+      const skippedLabel =
+        result.skipped > 0
+          ? `, ${ts.importSkipped || "skipped"}: ${new Intl.NumberFormat(language).format(result.skipped)}`
+          : "";
+      const deletedLabel =
+        result.deleted > 0
+          ? `, ${ts.journalImportRemoved || "removed"}: ${new Intl.NumberFormat(language).format(result.deleted)}`
+          : "";
+      const syncPendingLabel = result.syncPending
+        ? `. ${ts.journalImportSyncPending || "Saved on this device; sync will retry automatically."}`
+        : "";
+
+      if (result.errors.length > 0) {
+        const errorLabel = formatLocalizedCount(
+          result.errors.length,
+          language,
+          ts,
+          "journalImportErrorCount",
+          ts.journalImportErrors || "errors",
+        );
+        const message = `${ts.journalImportPartial || "Imported with errors"}: ${importedLabel}${skippedLabel}${deletedLabel}, ${errorLabel}${syncPendingLabel}`;
+        showImportFeedback({ type: "error", message });
+        announceError(message);
+      } else {
+        const message = `${ts.journalImportSuccess || "Import complete"}: ${importedLabel}${skippedLabel}${deletedLabel}${syncPendingLabel}`;
+        showImportFeedback({ type: "success", message });
+        announceSuccess(message);
+      }
+      setPendingJournalImport(null);
+    } catch (error) {
+      logger.warn("[Journal] Backup import failed", {
+        name: error instanceof Error ? error.name : "UnknownError",
+      });
+      if (requestSeq !== importRequestSeqRef.current || !isMountedRef.current) return;
+      const message = ts.journalImportFailed || "Import failed";
+      showImportFeedback({ type: "error", message });
+      announceError(message);
+    } finally {
+      if (requestSeq === importRequestSeqRef.current && isMountedRef.current) {
+        setImporting(false);
+      }
+    }
+  }, [importing, journal, language, pendingJournalImport, showImportFeedback, ts]);
 
   // Streak calculation from all entry dates
   const streak = useMemo(() => {
     const allDates = [...journal.entryDates.keys()].sort().reverse();
     if (allDates.length === 0) return 0;
-    const todayStr = getToday();
-    const yesterday = new Date(Date.now() - 86400000);
-    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
-    if (allDates[0] !== todayStr && allDates[0] !== yesterdayStr) return 0;
+    const yesterdayStr = shiftJournalDate(today, -1);
+    if (allDates[0] !== today && allDates[0] !== yesterdayStr) return 0;
     let count = 1;
     for (let i = 1; i < allDates.length; i++) {
-      const prev = new Date(allDates[i - 1] + "T00:00:00");
-      const curr = new Date(allDates[i] + "T00:00:00");
-      const diffDays = Math.round((prev.getTime() - curr.getTime()) / 86400000);
-      if (diffDays === 1) {
+      if (isNextJournalDate(allDates[i], allDates[i - 1])) {
         count++;
       } else {
         break;
       }
     }
     return count;
-  }, [journal.entryDates]);
+  }, [journal.entryDates, today]);
 
 
   const lastEntryDate = useMemo(() => {
     const dates = [...journal.entryDates.keys()].sort().reverse();
     return dates[0] ?? null;
   }, [journal.entryDates]);
-  const streakFreeze = useStreakFreeze(streak, lastEntryDate);
+  const streakFreeze = useStreakFreeze(streak, lastEntryDate, today);
 
   const daysSinceLastEntry = useMemo(
-    () => getDaysSinceLastEntry(journal.entryDates),
-    [journal.entryDates]
+    () => getDaysSinceLastEntry(journal.entryDates, today),
+    [journal.entryDates, today]
   );
 
-  const todayMood = useMemo(() => {
-    const today = getToday();
-    return journal.entryDates.get(today);
-  }, [journal.entryDates]);
+  const todayMood = useMemo(() => journal.entryDates.get(today), [journal.entryDates, today]);
 
-  const hasTodayEntry = useMemo(() => {
-    const today = getToday();
-    return journal.entryDates.has(today);
-  }, [journal.entryDates]);
+  const hasTodayEntry = useMemo(() => journal.entryDates.has(today), [journal.entryDates, today]);
 
   // --- CALLBACKS (declare BEFORE hooks that reference them — prevents TDZ in production builds) ---
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -1157,6 +1660,7 @@ export const JournalModule = memo(function JournalModule({
   );
 
   const handleOpen = () => {
+    setDeferredInitialSuggestionKey(null);
     setModuleState("open");
   };
 
@@ -1170,7 +1674,26 @@ export const JournalModule = memo(function JournalModule({
     }
   };
 
-  const getActiveDraftDate = useCallback(() => journal.selectedDate ?? getToday(), [journal.selectedDate]);
+  const getActiveDraftDate = useCallback(() => journal.selectedDate ?? today, [journal.selectedDate, today]);
+
+  const requestEditorExit = useCallback(
+    (action: () => void) => {
+      if (journal.view !== "editing") {
+        action();
+        return;
+      }
+
+      const requestExit = editorExitRequestRef.current;
+      if (!requestExit) {
+        logger.warn("[Journal] Editor exit request was unavailable while editing");
+        return;
+      }
+
+      pendingEditorExitActionRef.current = action;
+      requestExit();
+    },
+    [journal.view]
+  );
 
   const handleNewEntry = useCallback(() => {
     entryModeRef.current = "fab";
@@ -1180,15 +1703,15 @@ export const JournalModule = memo(function JournalModule({
 
   useEffect(() => {
     const openEditor = () => {
-      handleNewEntry();
+      requestEditorExit(handleNewEntry);
     };
 
     if (consumePendingDiaryEditorOpen()) {
-      handleNewEntry();
+      requestEditorExit(handleNewEntry);
     }
 
     return subscribeToDiaryEditorOpen(openEditor);
-  }, [handleNewEntry]);
+  }, [handleNewEntry, requestEditorExit]);
 
   const handleNewEntryWithPrefill = useCallback(
     (prefill: JournalEntryPrefill) => {
@@ -1205,16 +1728,17 @@ export const JournalModule = memo(function JournalModule({
   const handleUseInitialEntrySuggestion = useCallback(() => {
     const suggestion = initialSuggestionRef.current;
     if (!suggestion) return;
+    setDeferredInitialSuggestionKey(null);
     initialSuggestionConsumedRef.current = true;
     handleNewEntryWithPrefill(suggestion.prefill);
     onInitialEntrySuggestionConsumed?.();
   }, [handleNewEntryWithPrefill, onInitialEntrySuggestionConsumed]);
 
   const handleDismissInitialEntrySuggestion = useCallback(() => {
-    initialSuggestionConsumedRef.current = true;
-    initialSuggestionRef.current = null;
-    onInitialEntrySuggestionConsumed?.();
-  }, [onInitialEntrySuggestionConsumed]);
+    const suggestion = initialSuggestionRef.current;
+    if (!suggestion) return;
+    setDeferredInitialSuggestionKey(getSuggestionDismissKey(suggestion));
+  }, []);
 
   useEffect(() => {
     if (!autoCreateInitialEntry) return;
@@ -1258,6 +1782,7 @@ export const JournalModule = memo(function JournalModule({
     if (journal.view === "list" && !initialEntrySuggestion) {
       initialSuggestionRef.current = null;
       initialSuggestionConsumedRef.current = false;
+      setDeferredInitialSuggestionKey(null);
     }
   }, [journal.view, initialEntrySuggestion]);
 
@@ -1272,6 +1797,7 @@ export const JournalModule = memo(function JournalModule({
     !!initialEntrySuggestion &&
     !!initialSuggestionRef.current &&
     !initialSuggestionConsumedRef.current &&
+    deferredInitialSuggestionKey !== currentInitialSuggestionKey &&
     journal.view === "list";
 
   const visibleExtraSuggestions = useMemo(
@@ -1330,11 +1856,38 @@ export const JournalModule = memo(function JournalModule({
     }
   }, [journal, entryTransition]);
 
-  useEffect(() => {
-    if (privateMode && (journal.view === "viewing" || journal.view === "editing")) {
+  const handleEditorBack = useCallback(() => {
+    const pendingAction = pendingEditorExitActionRef.current;
+    pendingEditorExitActionRef.current = null;
+    if (pendingAction) {
+      pendingAction();
+      return;
+    }
+    handleGoBack();
+  }, [handleGoBack]);
+
+  const handleEditorExitRequestCancelled = useCallback(() => {
+    pendingEditorExitActionRef.current = null;
+  }, []);
+
+  const handlePrivateModeChange = useCallback((checked: boolean) => {
+    const persisted = storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
+    const concealCurrentScreen = checked || !persisted;
+    setPrivateModeState({
+      enabled: concealCurrentScreen,
+      persistenceError: !persisted,
+    });
+    if (concealCurrentScreen && (journal.view === "viewing" || journal.view === "editing")) {
       handleGoBack();
     }
-  }, [handleGoBack, journal.view, privateMode]);
+  }, [handleGoBack, journal.view]);
+
+  const handlePanicExitFromEditor = useCallback(() => {
+    const persisted = storageSetRaw(SK.JOURNAL_PRIVATE_MODE, "true");
+    setPrivateModeState({ enabled: true, persistenceError: !persisted });
+    security.lock();
+    handleGoBack();
+  }, [handleGoBack, security]);
 
   const handleStatsBack = useCallback(() => {
     setDiaryTabSection("entry");
@@ -1352,41 +1905,77 @@ export const JournalModule = memo(function JournalModule({
   }, [journal.view, openSettings]);
 
   const handleOpenStats = useCallback(() => {
-    if (showPasswordSettings) {
-      closeSettings(false);
-    }
-    setDiaryTabSection("stats");
-    journal.openStats();
-  }, [closeSettings, journal, showPasswordSettings]);
+    requestEditorExit(() => {
+      if (showPasswordSettings) {
+        if (!closeSettings(false)) return;
+      }
+      setDiaryTabSection("stats");
+      journal.openStats();
+    });
+  }, [closeSettings, journal, requestEditorExit, showPasswordSettings]);
 
   const handleNewEntryFromShell = useCallback(() => {
-    if (showPasswordSettings) {
-      closeSettings(false);
-    }
-    handleNewEntry();
-  }, [closeSettings, handleNewEntry, showPasswordSettings]);
+    requestEditorExit(() => {
+      if (showPasswordSettings) {
+        if (!closeSettings(false)) return;
+      }
+      handleNewEntry();
+    });
+  }, [closeSettings, handleNewEntry, requestEditorExit, showPasswordSettings]);
 
   const handleOpenEntryFromShell = useCallback(
     (id: string) => {
-      if (showPasswordSettings) {
-        closeSettings(false);
-      }
-      setDiaryTabSection("entry");
-      handleOpenEntry(id);
+      requestEditorExit(() => {
+        if (showPasswordSettings) {
+          if (!closeSettings(false)) return;
+        }
+        setDiaryTabSection("entry");
+        handleOpenEntry(id);
+      });
     },
-    [closeSettings, handleOpenEntry, showPasswordSettings]
+    [closeSettings, handleOpenEntry, requestEditorExit, showPasswordSettings]
   );
 
   const handleOpenFavoriteEntry = useCallback(
     (id: string) => {
-      if (showPasswordSettings) {
-        closeSettings(false);
-      }
-      setDiaryTabSection("favorites");
-      handleOpenEntry(id);
+      requestEditorExit(() => {
+        if (showPasswordSettings) {
+          if (!closeSettings(false)) return;
+        }
+        setDiaryTabSection("favorites");
+        handleOpenEntry(id);
+      });
     },
-    [closeSettings, handleOpenEntry, showPasswordSettings]
+    [closeSettings, handleOpenEntry, requestEditorExit, showPasswordSettings]
   );
+
+  const handleToggleActiveEntryFavorite = useCallback(() => {
+    const entry = journal.activeEntry;
+    if (!entry || favoriteMutationPendingRef.current) return;
+
+    favoriteMutationPendingRef.current = true;
+    setFavoriteMutationPending(true);
+    const nextFavorite = !isFavoriteJournalEntry(entry);
+    void journal
+      .updateEntry(entry.id, {
+        tags: setJournalEntryFavorite(entry.tags, nextFavorite),
+      })
+      .then(() => {
+        try {
+          triggerSync();
+        } catch (error) {
+          logger.warn("[Journal]", "Favorite sync scheduling failed:", error);
+        }
+      })
+      .catch((error) => {
+        logger.error("[Journal]", "Favorite update failed:", error);
+        announceError(ts.journalSaveFailed || "Could not save this change.");
+      })
+      .finally(() => {
+        favoriteMutationPendingRef.current = false;
+        setFavoriteMutationPending(false);
+      });
+  }, [journal, ts.journalSaveFailed]);
 
   const handleToggleDiaryPanel = useCallback(() => {
     const nextState = isCollapsed ? "expanded" : "collapsed";
@@ -1399,85 +1988,106 @@ export const JournalModule = memo(function JournalModule({
 
   const handleOpenMobileDiarySidebar = useCallback(() => {
     if (showPasswordSettings) {
-      closeSettings(false);
+      if (!closeSettings(false)) return;
     }
     setShowMobileDiarySidebar(true);
     void haptics.light();
   }, [closeSettings, showPasswordSettings]);
 
   const handleOpenFavorites = useCallback(() => {
-    if (showPasswordSettings) {
-      closeSettings(false);
-    }
+    requestEditorExit(() => {
+      if (showPasswordSettings) {
+        if (!closeSettings(false)) return;
+      }
 
-    if (journal.view === "viewing" || journal.view === "stats") {
-      handleGoBack();
-    }
+      if (journal.view === "viewing" || journal.view === "stats") {
+        handleGoBack();
+      }
 
-    if (journal.view !== "editing") {
       setDiaryTabSection("favorites");
-    }
 
-    if (sidebarState === "collapsed") {
-      setSidebarState("expanded");
-      requestAnimationFrame(() => sidebarContentRef.current?.focus());
-    }
+      if (sidebarState === "collapsed") {
+        setSidebarState("expanded");
+        requestAnimationFrame(() => sidebarContentRef.current?.focus());
+      }
 
-    void haptics.light();
-  }, [closeSettings, handleGoBack, journal.view, setSidebarState, showPasswordSettings, sidebarState]);
+      void haptics.light();
+    });
+  }, [closeSettings, handleGoBack, journal.view, requestEditorExit, setSidebarState, showPasswordSettings, sidebarState]);
 
   const handleShowDiaryPanel = useCallback(() => {
-    if (showPasswordSettings) {
-      closeSettings(false);
-    }
+    requestEditorExit(() => {
+      if (showPasswordSettings) {
+        if (!closeSettings(false)) return;
+      }
 
-    setDiaryTabSection("entry");
+      setDiaryTabSection("entry");
 
-    if (journal.view === "viewing" || journal.view === "stats") {
-      handleGoBack();
-    }
+      if (journal.view === "viewing" || journal.view === "stats") {
+        handleGoBack();
+      }
 
-    if (sidebarState === "collapsed") {
-      setSidebarState("expanded");
-      requestAnimationFrame(() => sidebarContentRef.current?.focus());
-    }
+      if (sidebarState === "collapsed") {
+        setSidebarState("expanded");
+        requestAnimationFrame(() => sidebarContentRef.current?.focus());
+      }
 
-    void haptics.light();
-  }, [closeSettings, handleGoBack, journal.view, setSidebarState, showPasswordSettings, sidebarState]);
+      void haptics.light();
+    });
+  }, [closeSettings, handleGoBack, journal.view, requestEditorExit, setSidebarState, showPasswordSettings, sidebarState]);
 
   const handleSaveEntry = useCallback(
-    async (data: Parameters<typeof journal.createEntry>[0]) => {
+    async (
+      data: Parameters<typeof journal.createEntry>[0],
+      draftContext: NonNullable<Parameters<typeof journal.createEntry>[1]>,
+    ): Promise<JournalSaveCompletion> => {
+      const saveLifecycle = captureJournalSaveCeremonyLifecycle();
       const isNew = !journal.activeEntryId;
+      const operation = isNew ? "create" : "update";
       const spaceIds = getPrefillSpaceIds(activeEntryPrefill);
-      if (journal.activeEntryId) {
-        await journal.updateEntry(journal.activeEntryId, data);
-      } else {
-        const entry = await journal.createEntry(data);
-        if (spaceIds.length > 0) {
-          await Promise.all(spaceIds.map((spaceId) => linkEntryToSpace(entry.id, spaceId)));
-        }
-      }
+      const { appliedTheme: committedTheme } =
+        await commitJournalSaveAndCaptureTheme(
+          async () => {
+            if (journal.activeEntryId) {
+              await journal.updateEntry(
+                journal.activeEntryId,
+                data,
+                draftContext,
+              );
+            } else {
+              await journal.createEntry(data, draftContext, spaceIds);
+            }
+          },
+          () => useThemeStore.getState().appliedTheme,
+        );
       setPortalEntryPrefill(null);
-      // Trigger cloud sync after save to reduce data loss risk
+      // Secondary effects must never turn a durable local save into a failed save.
       try {
         triggerSync();
       } catch {
         /* graceful: cloud sync is secondary; data already saved to IndexedDB */
       }
+
+      let isStreakMilestone = false;
       // Streak milestone celebration (only for new entries on today's date)
       if (isNew && rewardsEnabled) {
-        const entryDate = data.date || getToday();
-        const newStreak = entryDate === getToday() && !hasTodayEntry ? streak + 1 : 0;
+        const entryDate = data.date || today;
+        const newStreak = entryDate === today && !hasTodayEntry ? streak + 1 : 0;
         const milestones = [7, 14, 30, 60, 100];
-        const isStreakMilestone = milestones.includes(newStreak);
+        isStreakMilestone = milestones.includes(newStreak);
 
-        // Award XP, treats, plant story flower (IA Blueprint Wave A)
-        rewardUser("journal", {
-          treats: 10,
-          treatReason: "Journal entry",
-          haptic: haptics.journalSaved,
-          sound: isStreakMilestone ? null : undefined,
-        });
+        try {
+          rewardUser("journal", {
+            treats: 10,
+            treatReason: "Journal entry",
+            skipPopup: true,
+            sound: null,
+          });
+        } catch {
+          logger.warn("[Journal] Post-commit reward was deferred", {
+            code: "journal_reward_post_commit_error",
+          });
+        }
 
         if (isStreakMilestone) {
           setCelebratingStreak(newStreak);
@@ -1489,16 +2099,67 @@ export const JournalModule = memo(function JournalModule({
           }
         }
       }
+
+      if (isStreakMilestone) {
+        return { feedbackHandled: true, ceremonyReceipt: null };
+      }
+
+      const ceremonyReceipt =
+        ENABLE_JOURNAL_SAVE_CEREMONY &&
+        mayPresentJournalSaveCeremony(saveLifecycle)
+        ? createJournalSaveCommitReceipt({
+            operation,
+            appliedTheme: committedTheme,
+          })
+        : null;
+      if (ceremonyReceipt) {
+        setSaveCeremonyPresentation({
+          receipt: ceremonyReceipt,
+          lifecycle: saveLifecycle,
+        });
+      }
+      return { feedbackHandled: false, ceremonyReceipt };
     },
-    [activeEntryPrefill, journal, rewardsEnabled, streak, hasTodayEntry, rewardUser]
+    [
+      activeEntryPrefill,
+      hasTodayEntry,
+      journal,
+      rewardsEnabled,
+      rewardUser,
+      streak,
+      today,
+    ]
   );
 
+  const handleSaveCeremonyConsume = useCallback((nonce: string) => {
+    setSaveCeremonyPresentation((current) =>
+      current?.receipt.nonce === nonce ? null : current,
+    );
+  }, []);
+
   const recoverFailedDelete = useCallback(
-    (failedDelete: PendingDelete, err: unknown) => {
+    async (failedDelete: PendingDelete, err: unknown) => {
       logger.warn("[Journal]", "commitDelete failed:", err);
       if (!isMountedRef.current) return;
+      let cancelledIds: string[];
+      try {
+        cancelledIds = await cancelPendingJournalEntryDeletes([failedDelete.id]);
+      } catch (cancelError) {
+        logger.warn("[Journal] Failed to cancel durable delete marker", cancelError);
+        return;
+      }
+      if (!isMountedRef.current) return;
+      if (!cancelledIds.includes(failedDelete.id)) {
+        setPendingDeletes((current) => current.filter((item) => item.id !== failedDelete.id));
+        try {
+          await journal.refresh();
+        } catch (refreshError) {
+          logger.warn("[Journal] Failed to refresh after an uncertain delete outcome", refreshError);
+        }
+        return;
+      }
       journal.restoreEntry(failedDelete.entry);
-      setPendingDelete((current) => (current?.id === failedDelete.id ? null : current));
+      setPendingDeletes((current) => current.filter((item) => item.id !== failedDelete.id));
       setDeleteCommitMessage(
         ts.entryDeleteFailedRestored || "Couldn't delete this entry. It has been restored."
       );
@@ -1510,55 +2171,105 @@ export const JournalModule = memo(function JournalModule({
   );
 
   const handleDeleteEntry = useCallback(
-    (id: string) => {
-      // Commit any previous pending delete first
-      if (pendingDelete) {
-        const previousPendingDelete = pendingDelete;
-        clearTimeout(deleteTimerRef.current);
-        pendingDeleteRef.current = null;
-        journal
-          .commitDeleteEntry(previousPendingDelete.id)
-          .then(() => {
-            if (!isMountedRef.current) return;
-            setPendingDelete((current) =>
-              current?.id === previousPendingDelete.id ? null : current
-            );
-          })
-          .catch((err) => recoverFailedDelete(previousPendingDelete, err));
+    async (id: string): Promise<boolean> => {
+      if (
+        pendingDeleteStageIdsRef.current.has(id) ||
+        pendingDeleteRef.current.some((item) => item.id === id)
+      ) {
+        return false;
       }
-      // Soft-delete: remove from UI, keep in storage for 5s
-      const entry = journal.softDeleteEntry(id);
-      if (!entry) return;
-      clearTimeout(deleteFeedbackTimerRef.current);
-      setDeleteCommitMessage(null);
-      setPendingDelete({ id, entry });
-      // Haptic confirmation when slide-out starts (shouldTriggerHaptics check is inside hapticSuccess)
-      void hapticSuccess();
-      const deleteToCommit = { id, entry };
-      deleteTimerRef.current = setTimeout(() => {
-        pendingDeleteRef.current = null;
-        setPendingDelete((current) => (current?.id === id ? null : current));
-        journal
-          .commitDeleteEntry(id)
-          .then(() => {
-            if (!isMountedRef.current) return;
-            setPendingDelete((current) => (current?.id === id ? null : current));
-          })
-          .catch((err) => recoverFailedDelete(deleteToCommit, err));
-      }, 5000);
+      pendingDeleteStageIdsRef.current.add(id);
+      try {
+        const expiresAt = Date.now() + JOURNAL_DELETE_UNDO_WINDOW_MS;
+        const markers = await stagePendingJournalEntryDelete(id, expiresAt);
+        if (!isMountedRef.current) return false;
+        const entry = journal.softDeleteEntry(id);
+        if (!entry) {
+          await cancelPendingJournalEntryDeletes([id]);
+          return false;
+        }
+        clearTimeout(deleteFeedbackTimerRef.current);
+        setDeleteCommitMessage(null);
+        setPendingDeletes((current) => {
+          const entriesById = new Map(current.map((item) => [item.id, item.entry]));
+          entriesById.set(id, entry);
+          const next = markers.flatMap((marker) => {
+            const markerEntry = entriesById.get(marker.id);
+            return markerEntry ? [{ ...marker, entry: markerEntry }] : [];
+          });
+          pendingDeleteRef.current = next;
+          return next;
+        });
+        void hapticSuccess();
+        return true;
+      } catch (error) {
+        logger.warn("[Journal] Failed to stage diary deletion", error);
+        if (!isMountedRef.current) return false;
+        setDeleteCommitMessage(
+          ts.entryDeleteFailedRestored || "Couldn't delete this entry. It has been restored."
+        );
+        return false;
+      } finally {
+        pendingDeleteStageIdsRef.current.delete(id);
+      }
     },
-    [journal, pendingDelete, recoverFailedDelete]
+    [journal, ts.entryDeleteFailedRestored]
   );
 
-  const handleUndoDelete = useCallback(() => {
-    if (!pendingDelete) return;
-    clearTimeout(deleteTimerRef.current);
+  const handleUndoDelete = useCallback(async () => {
+    const pending = pendingDeleteRef.current;
+    if (pending.length === 0) return;
+    let cancelledIds: string[];
+    try {
+      cancelledIds = await cancelPendingJournalEntryDeletes(
+        pending.map((item) => item.id),
+      );
+    } catch (error) {
+      logger.warn("[Journal] Failed to cancel pending diary deletion", error);
+      return;
+    }
+    if (!isMountedRef.current || cancelledIds.length === 0) return;
+    const cancelledIdSet = new Set(cancelledIds);
+    deleteTimerAbortRef.current?.abort();
     clearTimeout(deleteFeedbackTimerRef.current);
-    journal.restoreEntry(pendingDelete.entry);
-    setPendingDelete(null);
+    const remaining = pendingDeleteRef.current.filter(
+      (item) => !cancelledIdSet.has(item.id),
+    );
+    pendingDeleteRef.current = remaining;
+    setPendingDeletes(remaining);
+    for (const item of pending) {
+      if (cancelledIdSet.has(item.id)) journal.restoreEntry(item.entry);
+    }
     setDeleteCommitMessage(null);
     void haptics.light();
-  }, [pendingDelete, journal]);
+  }, [journal]);
+
+  const commitExpiredPendingDeletes = useCallback(() => {
+    const now = Date.now();
+    const expired = pendingDeleteRef.current.filter((item) => item.expiresAt <= now);
+    if (expired.length === 0) return;
+    const remaining = pendingDeleteRef.current.filter((item) => item.expiresAt > now);
+    pendingDeleteRef.current = remaining;
+    setPendingDeletes(remaining);
+    for (const item of expired) {
+      void journal.commitDeleteEntry(item.id).catch((error) =>
+        recoverFailedDelete(item, error),
+      );
+    }
+  }, [journal, recoverFailedDelete]);
+
+  useEffect(() => {
+    deleteTimerAbortRef.current?.abort();
+    if (pendingDeletes.length === 0) return;
+    const earliestExpiry = Math.min(...pendingDeletes.map((item) => item.expiresAt));
+    const delay = Math.max(0, earliestExpiry - Date.now());
+    const abortController = new AbortController();
+    deleteTimerAbortRef.current = abortController;
+    void waitForJournalDeleteDeadline(delay, abortController.signal).then((elapsed) => {
+      if (elapsed && isMountedRef.current) commitExpiredPendingDeletes();
+    });
+    return () => abortController.abort();
+  }, [commitExpiredPendingDeletes, pendingDeletes]);
 
   const maskEmail = (email: string) => {
     const [local, domain] = email.split("@");
@@ -1573,7 +2284,7 @@ export const JournalModule = memo(function JournalModule({
     setResetStep("checking");
     setResetError("");
     try {
-      if (!(await checkEmailLockRemovalAvailable())) {
+      if (!(await checkLocalEmailLockRemovalAvailable())) {
         if (!isCurrentResetRequest()) return;
         setResetStep("unavailable");
         return;
@@ -1594,7 +2305,13 @@ export const JournalModule = memo(function JournalModule({
         setResetStep("no-account");
         return;
       }
+      if (!(await checkEmailLockRemovalAvailable(supabase))) {
+        if (!isCurrentResetRequest()) return;
+        setResetStep("unavailable");
+        return;
+      }
       setResetEmail(session.user.email);
+      setResetOwnerUserId(session.user.id);
       setResetStep("confirm");
     } catch (error) {
       if (!isCurrentResetRequest()) return;
@@ -1609,9 +2326,10 @@ export const JournalModule = memo(function JournalModule({
 
   const handleSendResetLink = async () => {
     if (resetStep === "sending") return;
-    if (!resetEmail) return;
+    if (!resetEmail || !resetOwnerUserId) return;
     const requestSeq = ++resetRequestSeqRef.current;
     const requestedEmail = resetEmail;
+    const requestedUserId = resetOwnerUserId;
 
     const isCurrentResetRequest = () => requestSeq === resetRequestSeqRef.current;
 
@@ -1620,9 +2338,10 @@ export const JournalModule = memo(function JournalModule({
     const remaining = updateResetResendRemaining(now);
     if (remaining > 0) {
       setResetError(
-        (ts.journalResetCooldown || "Please wait {seconds}s before requesting another link.").replace(
-          "{seconds}",
-          String(remaining),
+        formatJournalDuration(
+          ts.journalResetCooldown || "Please wait {duration} before requesting another link.",
+          remaining,
+          language,
         )
       );
       return;
@@ -1638,38 +2357,94 @@ export const JournalModule = memo(function JournalModule({
 
     setResetStep("sending");
     setResetError("");
+    resetSendInFlightRef.current = true;
+    storageSetRaw(
+      SK.JOURNAL_PASSWORD_RESET,
+      serializeJournalPasswordResetRequest(requestedEmail, requestedUserId, resetNonce),
+    );
+    clearJournalPasswordResetProof();
     try {
       const supabase = await loadJournalSupabase();
       if (!isCurrentResetRequest()) return;
       if (!supabase) {
+        storageRemove(SK.JOURNAL_PASSWORD_RESET);
+        lastResetOtpRef.current = 0;
+        setResetResendRemaining(0);
         setResetStep("no-account");
         return;
       }
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email: requestedEmail,
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: withJournalPasswordResetNonce(getAuthRedirectUrl(), resetNonce),
-        },
-      });
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!isCurrentResetRequest()) return;
+      if (
+        session?.user?.id !== requestedUserId ||
+        normalizeJournalResetEmail(session?.user?.email) !== normalizeJournalResetEmail(requestedEmail)
+      ) {
+        storageRemove(SK.JOURNAL_PASSWORD_RESET);
+        clearJournalPasswordResetProof();
+        setResetError(
+          ts.journalResetWrongAccount ||
+            "Open this link while signed in to the same account that requested it.",
+        );
+        setResetStep("confirm");
+        return;
+      }
+
+      const resetRedirectUrl = createPkceAttemptRedirectUrl(
+        withJournalPasswordResetNonce(getAuthRedirectUrl(), resetNonce),
+        "email-otp",
+      ).redirectUrl;
+      const { error } = await withJournalRequestTimeout(
+        supabase.auth.signInWithOtp({
+          email: requestedEmail,
+          options: {
+            shouldCreateUser: false,
+            emailRedirectTo: resetRedirectUrl,
+          },
+        }),
+      );
       if (!isCurrentResetRequest()) return;
       if (error) {
         logger.warn("[Journal] Password reset link failed", getJournalAuthErrorDebugInfo(error));
+        storageRemove(SK.JOURNAL_PASSWORD_RESET);
+        clearJournalPasswordResetProof();
+        lastResetOtpRef.current = 0;
+        setResetResendRemaining(0);
         setResetError(ts.journalResetSendFailed || "Failed to send link. Check your connection.");
         setResetStep("confirm");
         return;
       }
       lastResetOtpRef.current = now;
       updateResetResendRemaining(now);
-      storageSetRaw(SK.JOURNAL_PASSWORD_RESET, serializeJournalPasswordResetRequest(requestedEmail, resetNonce));
+      storageSetRaw(
+        SK.JOURNAL_PASSWORD_RESET,
+        serializeJournalPasswordResetRequest(requestedEmail, requestedUserId, resetNonce),
+      );
       clearJournalPasswordResetProof();
       setResetStep("sent");
     } catch (error) {
       if (!isCurrentResetRequest()) return;
       logger.warn("[Journal] Password reset link failed", getJournalAuthErrorDebugInfo(error));
+      if (isJournalRequestTimeoutError(error)) {
+        lastResetOtpRef.current = now;
+        updateResetResendRemaining(now);
+        setResetError(
+          ts.journalResetSendTimedOut ||
+            "This is taking longer than expected. Check your email before trying again.",
+        );
+        setResetStep("confirm");
+        return;
+      }
+      storageRemove(SK.JOURNAL_PASSWORD_RESET);
+      clearJournalPasswordResetProof();
+      lastResetOtpRef.current = 0;
+      setResetResendRemaining(0);
       setResetError(ts.journalResetSendFailed || "Failed to send link. Check your connection.");
       setResetStep("confirm");
+    } finally {
+      if (isCurrentResetRequest()) resetSendInFlightRef.current = false;
     }
   };
 
@@ -1682,11 +2457,19 @@ export const JournalModule = memo(function JournalModule({
   }, [ts.journalResetCodeWrong]);
 
   const consumeVerifiedPasswordReset = useCallback(
-    async (sessionEmail: string | null | undefined) => {
+    async (
+      sessionEmail: string | null | undefined,
+      sessionUserId: string | null | undefined,
+    ) => {
       const pending = parseJournalPasswordResetRequest(storageGetRaw(SK.JOURNAL_PASSWORD_RESET));
       if (!pending) return false;
 
-      if (Date.now() - pending.startedAt >= JOURNAL_PASSWORD_RESET_WINDOW_MS) {
+      const existingFlight = resetConsumeFlightRef.current;
+      if (existingFlight?.nonce === pending.nonce) return existingFlight.promise;
+
+      const flight = Promise.resolve().then(async (): Promise<boolean> => {
+
+        if (Date.now() - pending.startedAt >= JOURNAL_PASSWORD_RESET_WINDOW_MS) {
         storageRemove(SK.JOURNAL_PASSWORD_RESET);
         clearJournalPasswordResetProof();
         clearJournalPasswordResetParamFromCurrentUrl();
@@ -1695,10 +2478,15 @@ export const JournalModule = memo(function JournalModule({
           ts.journalResetExpired || "This verification link expired. Send a new link.",
         );
         return false;
-      }
+        }
 
-      const signedInEmail = normalizeJournalResetEmail(sessionEmail);
-      if (!signedInEmail || signedInEmail !== pending.email) {
+        const signedInEmail = normalizeJournalResetEmail(sessionEmail);
+        if (
+          !signedInEmail ||
+          signedInEmail !== pending.email ||
+          !sessionUserId ||
+          sessionUserId !== pending.userId
+        ) {
         logger.warn("[Journal] Ignored password reset sign-in for a different account");
         clearJournalPasswordResetProof();
         clearJournalPasswordResetParamFromCurrentUrl();
@@ -1707,9 +2495,9 @@ export const JournalModule = memo(function JournalModule({
           ts.journalResetWrongAccount || "Open this link while signed in to the same account that requested it.",
         );
         return false;
-      }
+        }
 
-      if (!hasJournalPasswordResetProof(pending)) {
+        if (!hasJournalPasswordResetProof(pending)) {
         logger.warn("[Journal] Ignored password reset session without redirect proof");
         clearJournalPasswordResetProof();
         clearJournalPasswordResetParamFromCurrentUrl();
@@ -1718,9 +2506,9 @@ export const JournalModule = memo(function JournalModule({
           ts.journalResetMissingProof || "This browser could not confirm the email link. Open the link on the same device or request a new one.",
         );
         return false;
-      }
+        }
 
-      if (!(await checkEmailLockRemovalAvailable())) {
+        if (!(await checkEmailLockRemovalAvailable())) {
         storageRemove(SK.JOURNAL_PASSWORD_RESET);
         clearJournalPasswordResetProof();
         clearJournalPasswordResetParamFromCurrentUrl();
@@ -1728,9 +2516,13 @@ export const JournalModule = memo(function JournalModule({
         setResetError("");
         setResetStep("unavailable");
         return false;
-      }
+        }
 
-      if (!consumeJournalPasswordResetProof(pending.nonce, JOURNAL_PASSWORD_RESET_WINDOW_MS)) {
+        if (!consumeJournalPasswordResetProof(
+          pending.nonce,
+          pending.userId,
+          JOURNAL_PASSWORD_RESET_WINDOW_MS,
+        )) {
         logger.warn("[Journal] Ignored password reset session after proof could not be consumed");
         clearJournalPasswordResetParamFromCurrentUrl();
         showResetLinkConfirmationError(
@@ -1738,13 +2530,13 @@ export const JournalModule = memo(function JournalModule({
           ts.journalResetMissingProof || "This browser could not confirm the email link. Open the link on the same device or request a new one.",
         );
         return false;
-      }
-      clearJournalPasswordResetParamFromCurrentUrl();
+        }
+        clearJournalPasswordResetParamFromCurrentUrl();
 
-      setResetEmail(pending.email);
+        setResetEmail(pending.email);
 
-      try {
-        await security.removePassword();
+        try {
+        await security.removePassword({ allowVerifiedEmptyDiary: true });
         storageRemove(SK.JOURNAL_PASSWORD_RESET);
         clearJournalPasswordResetProof();
         setResetError("");
@@ -1753,7 +2545,7 @@ export const JournalModule = memo(function JournalModule({
           ts.journalPasswordRemoveSuccess || ts.journalResetSuccess || "Diary lock removed",
         );
         return true;
-      } catch (error) {
+        } catch (error) {
         logger.warn("[Journal] Verified reset could not remove the diary lock:", error);
         storageRemove(SK.JOURNAL_PASSWORD_RESET);
         clearJournalPasswordResetProof();
@@ -1767,6 +2559,16 @@ export const JournalModule = memo(function JournalModule({
         );
         setResetStep("unavailable");
         return false;
+        }
+      });
+
+      resetConsumeFlightRef.current = { nonce: pending.nonce, promise: flight };
+      try {
+        return await flight;
+      } finally {
+        if (resetConsumeFlightRef.current?.promise === flight) {
+          resetConsumeFlightRef.current = null;
+        }
       }
     },
     [checkEmailLockRemovalAvailable, security, showResetLinkConfirmationError, ts.journalLockRemoveFailed, ts.journalPasswordRemoveSuccess, ts.journalResetExpired, ts.journalResetMissingProof, ts.journalResetSuccess, ts.journalResetWrongAccount],
@@ -1776,6 +2578,7 @@ export const JournalModule = memo(function JournalModule({
     resetRequestSeqRef.current += 1;
     setResetStep("idle");
     setResetEmail("");
+    setResetOwnerUserId("");
     setResetError("");
     openSettings("password-setup");
   }, [openSettings]);
@@ -1866,6 +2669,12 @@ export const JournalModule = memo(function JournalModule({
         return true;
       });
     }
+    if (journal.view === "editing") {
+      return registerModalCloseCallback(() => {
+        requestEditorExit(handleGoBack);
+        return true;
+      });
+    }
     if (journal.view !== "list") {
       return registerModalCloseCallback(() => {
         handleGoBack();
@@ -1894,6 +2703,7 @@ export const JournalModule = memo(function JournalModule({
     security,
     handleStatsBack,
     handleGoBack,
+    requestEditorExit,
     isPagePresentation,
   ]);
 
@@ -1955,7 +2765,7 @@ export const JournalModule = memo(function JournalModule({
               data: { session },
             } = await supabase.auth.getSession();
             if (!disposed) {
-              await consumeVerifiedPasswordReset(session?.user?.email);
+              await consumeVerifiedPasswordReset(session?.user?.email, session?.user?.id);
             }
           } catch (error) {
             logger.warn(
@@ -1979,7 +2789,7 @@ export const JournalModule = memo(function JournalModule({
           if (!JOURNAL_PASSWORD_RESET_AUTH_EVENTS.has(event)) return;
           const currentPending = parseJournalPasswordResetRequest(storageGetRaw(SK.JOURNAL_PASSWORD_RESET));
           if (!currentPending) return;
-          void consumeVerifiedPasswordReset(session?.user?.email);
+          void consumeVerifiedPasswordReset(session?.user?.email, session?.user?.id);
         });
         subscription = data.subscription;
       })
@@ -1995,7 +2805,7 @@ export const JournalModule = memo(function JournalModule({
   const mobileDiarySectionButtonClass = useCallback((active: boolean) => cn(
     "flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 text-center motion-safe:transition-[background-color,color,box-shadow,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]",
     active
-      ? "bg-primary/[0.14] text-primary shadow-[inset_0_1px_0_hsl(var(--card)/0.52),0_12px_30px_-24px_hsl(var(--primary)/0.82)]"
+      ? "bg-primary/15 text-primary shadow-[inset_0_1px_0_hsl(var(--card)/0.52),0_12px_30px_-24px_hsl(var(--primary)/0.82)]"
       : "text-muted-foreground hover:bg-muted/55 hover:text-foreground"
   ), []);
 
@@ -2016,8 +2826,8 @@ export const JournalModule = memo(function JournalModule({
         )}
       >
         {/* Row 1: Title + status badge */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2.5">
+        <div className="mb-3 flex flex-col items-start justify-between gap-3 min-[420px]:flex-row min-[420px]:items-center">
+          <div className="flex min-w-0 items-center gap-2.5">
             <div
               className={cn(
                 "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
@@ -2030,12 +2840,12 @@ export const JournalModule = memo(function JournalModule({
                 <PenLine className="w-5 h-5 text-purple-500" />
               )}
             </div>
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
+            <div className="min-w-0">
+              <h3 className="whitespace-normal break-words text-sm font-semibold text-foreground">
                 {ts.journalTitle || "Diary"}
               </h3>
               {security.hasPassword && (
-                <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                <span className="flex items-center gap-1 whitespace-normal break-words text-xs text-muted-foreground/60">
                   <Lock className="w-2.5 h-2.5" />
                   {ts.journalProtected || "Protected"}
                 </span>
@@ -2044,20 +2854,20 @@ export const JournalModule = memo(function JournalModule({
           </div>
 
           {/* Today status badge + draft badge */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex w-full flex-wrap items-center gap-1.5 min-[420px]:w-auto">
             {hasDraft && (
-              <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/15 px-2 py-1 rounded-full">
+              <span className="flex items-center gap-1 whitespace-normal break-words rounded-full border border-amber-500/15 bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
                 <PenLine className="w-3 h-3" />
                 {ts.journalDraftBadge || "Draft"}
               </span>
             )}
             {hasTodayEntry ? (
-              <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-2 py-1 rounded-full">
+              <span className="flex items-center gap-1 whitespace-normal break-words rounded-full border border-emerald-500/15 bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="w-3 h-3" />
                 {ts.journalTodayComplete || "Done today"}
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 border border-purple-500/15 px-2 py-1 rounded-full">
+              <span className="flex items-center gap-1 whitespace-normal break-words rounded-full border border-purple-500/15 bg-purple-500/10 px-2 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400">
                 <PenLine className="w-3 h-3" />
                 {ts.journalWriteToday || "Write today"}
               </span>
@@ -2069,7 +2879,6 @@ export const JournalModule = memo(function JournalModule({
         <div className="flex items-center gap-3">
           {entryCount > 0 && (
             <span className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">{entryCount}</span>{" "}
               {formatLocalizedCount(
                 entryCount,
                 language,
@@ -2079,7 +2888,7 @@ export const JournalModule = memo(function JournalModule({
               )}
             </span>
           )}
-          {streak > 0 && (
+          {rewardsEnabled && streak > 0 && (
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-orange-500">
               <Flame className="h-3.5 w-3.5" aria-hidden="true" />
               {formatLocalizedCount(
@@ -2092,7 +2901,7 @@ export const JournalModule = memo(function JournalModule({
             </span>
           )}
           <span className="flex-1" />
-          <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0 rtl:scale-x-[-1]" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0 rotate-0 rtl:rotate-180" />
         </div>
       </motion.button>
     );
@@ -2104,7 +2913,7 @@ export const JournalModule = memo(function JournalModule({
       onKeyDown={handleModuleKeyDown}
       onPointerDown={security.touch}
       className={cn(
-        "w-full h-full flex flex-col",
+        "relative w-full h-full flex flex-col",
         isPagePresentation
           ? "v2-fullscreen-page relative z-[1] min-h-[var(--app-viewport-height)] bg-transparent overflow-hidden"
           : "md:my-4 md:mx-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden",
@@ -2112,8 +2921,52 @@ export const JournalModule = memo(function JournalModule({
           "lg:max-w-none lg:mx-0 lg:my-0 lg:h-full lg:rounded-none lg:shadow-none lg:border-0 lg:overflow-hidden"
       )}
     >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={handleJournalImportFile}
+        data-testid="journal-import-input"
+      />
+      {security.loadError && (
+        <div
+          role="alert"
+          data-testid="journal-security-load-error"
+          className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 py-8 text-center"
+        >
+          <AlertCircle className="h-6 w-6 text-primary" aria-hidden="true" />
+          <h2 className="text-lg font-semibold text-foreground">
+            {ts.journalLoadFailed || "Diary needs another moment to load"}
+          </h2>
+          <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+            {ts.journalLoadFailedHint ||
+              "This load attempt did not change your entries. Try loading again."}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                void security.retryLoad();
+              }}
+              className="min-h-[44px] rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+            >
+              {ts.journalRetryLoad || "Retry loading"}
+            </button>
+            {!hideCloseButton && (
+              <button
+                type="button"
+                onClick={handleClose}
+                className="min-h-[44px] rounded-xl bg-muted px-4 py-2.5 text-sm font-medium text-foreground"
+              >
+                {ts.journalClose || ts.close || "Close"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {/* Security gate */}
-      {security.isLocked && !security.loading && (
+      {security.isLocked && !security.loading && !security.loadError && (
         <>
           {/* Header with close */}
           <div className="flex items-center justify-between gap-3 border-b border-border/30 px-4 pb-3 pt-[max(0.75rem,var(--safe-top))]">
@@ -2132,7 +2985,9 @@ export const JournalModule = memo(function JournalModule({
                   <JournalMenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />
                 </button>
               ) : null}
-              <h2 className="truncate text-base font-bold text-foreground">{ts.journalTitle || "Diary"}</h2>
+              <h2 className="min-w-0 break-words whitespace-normal text-base font-bold leading-tight text-foreground [hyphens:manual] [overflow-wrap:normal]">
+                {ts.journalTitle || "Diary"}
+              </h2>
             </div>
             {!hideCloseButton && (
               <button
@@ -2172,9 +3027,10 @@ export const JournalModule = memo(function JournalModule({
                 aria-describedby={resetError ? `${resetDescriptionId} ${resetErrorId}` : resetDescriptionId}
                 aria-busy={resetStep === "checking" || resetStep === "sending"}
                 tabIndex={-1}
-                initial={{ scale: 0.98 }}
+                initial={reducedMotion ? false : { scale: 0.98 }}
                 animate={{ scale: 1 }}
-                className="isolate max-h-[calc(100dvh_-_var(--safe-top)_-_var(--safe-bottom)_-_2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-border/40 bg-popover p-5 text-popover-foreground shadow-2xl lg:max-w-md"
+                transition={reducedMotion ? { duration: 0 } : springs.quick}
+                className="isolate max-h-[calc(var(--app-viewport-height)_-_var(--safe-top)_-_var(--safe-bottom)_-_2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-border/40 bg-popover p-5 text-popover-foreground shadow-2xl lg:max-w-md"
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 id={resetTitleId} className="sr-only">
@@ -2206,7 +3062,7 @@ export const JournalModule = memo(function JournalModule({
                 {/* Checking session */}
                 {resetStep === "checking" && (
                   <div className="flex flex-col items-center justify-center gap-4 py-6">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
+                    <Loader2 className="w-6 h-6 motion-safe:animate-spin text-primary" aria-hidden="true" />
                     <div className="space-y-1 text-center">
                       <p className="text-sm font-medium text-foreground">
                         {ts.journalResetChecking || "Checking your account..."}
@@ -2343,7 +3199,10 @@ export const JournalModule = memo(function JournalModule({
                     <p className="text-sm text-muted-foreground text-center mb-1">
                       {ts.journalResetConfirm || "We'll send a verification link to"}
                     </p>
-                    <p className="mb-4 break-all text-center text-sm font-medium text-foreground" dir="ltr">
+                    <p
+                      className="mb-4 min-w-0 max-w-full whitespace-normal break-words text-center text-sm font-medium text-foreground [overflow-wrap:anywhere]"
+                      dir="ltr"
+                    >
                       <bdi>{maskEmail(resetEmail)}</bdi>
                     </p>
                     {resetError && (
@@ -2354,8 +3213,7 @@ export const JournalModule = memo(function JournalModule({
                         ref={resetCancelRef}
                         type="button"
                         onClick={closeResetDialog}
-                        disabled={resetStep === "sending"}
-                        className="flex-1 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex-1 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
                       >
                         {ts.cancel || "Cancel"}
                       </button>
@@ -2370,7 +3228,7 @@ export const JournalModule = memo(function JournalModule({
                         )}
                       >
                         {resetStep === "sending" && (
-                          <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                          <Loader2 className="w-4 h-4 motion-safe:animate-spin" aria-hidden="true" />
                         )}
                         {ts.journalResetSendLink || "Send Link"}
                       </button>
@@ -2392,14 +3250,17 @@ export const JournalModule = memo(function JournalModule({
                     <p className="text-xs text-muted-foreground text-center mb-2">
                       {ts.journalResetLinkHint || "We sent a verification link to"}
                     </p>
-                    <p className="mb-4 break-all text-center text-sm font-medium text-foreground" dir="ltr">
+                    <p
+                      className="mb-4 min-w-0 max-w-full whitespace-normal break-words text-center text-sm font-medium text-foreground [overflow-wrap:anywhere]"
+                      dir="ltr"
+                    >
                       <bdi>{maskEmail(resetEmail)}</bdi>
                     </p>
                     <p className="text-xs text-muted-foreground text-center mb-4">
                       {ts.journalResetCheckEmail ||
                         "Open the link on this device or browser, then return to the diary. It verifies your account and removes the lock without revealing the old password."}
                     </p>
-                    <p className="text-[11px] leading-relaxed text-muted-foreground text-center mb-4">
+                    <p className="mb-4 text-center text-xs leading-relaxed text-muted-foreground">
                       {ts.journalResetTroubleshooting ||
                         "If it does not arrive, check spam or junk, keep this device signed in, and resend after the timer."}
                     </p>
@@ -2407,7 +3268,7 @@ export const JournalModule = memo(function JournalModule({
                       <p id={resetErrorId} role="alert" className="mb-3 text-center text-xs text-destructive">{resetError}</p>
                     )}
                     <div role="status" aria-live="polite" className="flex items-center justify-center gap-2 mb-3">
-                      <Loader2 className="w-4 h-4 animate-spin text-primary" aria-hidden="true" />
+                      <Loader2 className="w-4 h-4 motion-safe:animate-spin text-primary" aria-hidden="true" />
                       <span className="text-xs text-muted-foreground">
                         {ts.journalResetWaiting || "Waiting for verification..."}
                       </span>
@@ -2424,20 +3285,29 @@ export const JournalModule = memo(function JournalModule({
                     {resetResendRemaining > 0 && (
                       <p
                         id="journal-reset-resend-cooldown"
-                        role="status"
-                        aria-live="polite"
-                        aria-label={(ts.journalResetCooldown || "Please wait {seconds}s before requesting another link.").replace(
-                          "{seconds}",
-                          String(resetResendRemaining),
+                        aria-label={formatJournalDuration(
+                          ts.journalResetCooldown || "Please wait {duration} before requesting another link.",
+                          resetResendRemaining,
+                          language,
                         )}
-                        className="text-center text-[11px] text-muted-foreground"
+                        className="text-center text-xs text-muted-foreground"
                       >
-                        {(ts.journalResetCooldown || "Please wait {seconds}s before requesting another link.").replace(
-                          "{seconds}",
-                          String(resetResendRemaining),
+                        {formatJournalDuration(
+                          ts.journalResetCooldown || "Please wait {duration} before requesting another link.",
+                          resetResendRemaining,
+                          language,
                         )}
                       </p>
                     )}
+                    {resetResendRemaining === 0 && (
+                      <p role="status" aria-live="polite" className="sr-only">
+                        {ts.journalResetResendReady || "You can request another link now."}
+                      </p>
+                    )}
+                    <p className="mb-1 text-center text-xs leading-relaxed text-muted-foreground">
+                      {ts.journalResetCloseHint ||
+                        "You can close this window. The link stays valid until it expires or is used."}
+                    </p>
                     <button
                       ref={resetCancelRef}
                       onClick={closeResetDialog}
@@ -2453,16 +3323,16 @@ export const JournalModule = memo(function JournalModule({
                   <div className="py-4">
                     <div className="flex justify-center mb-3">
                       <motion.div
-                        initial={{ scale: 0 }}
+                        initial={reducedMotion ? false : { scale: 0 }}
                         animate={{ scale: 1 }}
-                        transition={{
+                        transition={reducedMotion ? { duration: 0 } : {
                           type: "spring",
                           stiffness: 300,
                           damping: 20,
                         }}
-                        className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center"
+                        className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center"
                       >
-                        <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
+                        <CheckCircle2 className="w-6 h-6 text-primary" />
                       </motion.div>
                     </div>
                     <h3 className="mb-2 text-center text-base font-semibold text-foreground">
@@ -2548,16 +3418,20 @@ export const JournalModule = memo(function JournalModule({
                         <h2 className="text-base font-bold text-foreground">
                           {ts.journalTitle || "Diary"}
                         </h2>
-                        {streak > 0 && (
-                          <span className="flex flex-shrink-0 items-center gap-1 rounded-full border border-orange-500/10 bg-gradient-to-r from-orange-500/15 to-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-orange-500 motion-safe:animate-streak-fire-glow">
-                            <Flame className="h-3 w-3" aria-hidden="true" />
-                            {streak}
-                          </span>
+                        {rewardsEnabled && (
+                          <>
+                            {streak > 0 && (
+                              <span className="flex flex-shrink-0 items-center gap-1 rounded-full border border-orange-500/10 bg-gradient-to-r from-orange-500/15 to-amber-500/10 px-1.5 py-0.5 text-xs font-bold text-orange-500 motion-safe:animate-streak-fire-glow">
+                                <Flame className="h-3 w-3" aria-hidden="true" />
+                                {streak}
+                              </span>
+                            )}
+                            <StreakFreezeIndicator
+                              availableFreezes={streakFreeze.availableFreezes}
+                              isStreakFrozen={streakFreeze.isStreakFrozen}
+                            />
+                          </>
                         )}
-                        <StreakFreezeIndicator
-                          availableFreezes={streakFreeze.availableFreezes}
-                          isStreakFrozen={streakFreeze.isStreakFrozen}
-                        />
                       </div>
                       <div className="flex items-center gap-1">
                         <button
@@ -2602,6 +3476,7 @@ export const JournalModule = memo(function JournalModule({
                       {calendarMode === "full" ? (
                         <Suspense fallback={null}>
                           <LazyJournalCalendarFull
+                            today={today}
                             entryDates={journal.entryDates}
                             releaseTraceDates={releaseTraceDates}
                             privateMode={privateMode}
@@ -2615,6 +3490,7 @@ export const JournalModule = memo(function JournalModule({
                         </Suspense>
                       ) : (
                         <JournalCalendar
+                          today={today}
                           entryDates={journal.entryDates}
                           releaseTraceDates={releaseTraceDates}
                           privateMode={privateMode}
@@ -2644,26 +3520,19 @@ export const JournalModule = memo(function JournalModule({
                             onDismiss={onboarding.dismissHint}
                           />
                         )}
-                        {journal.allEntries.length > 0 ? (
-                          <OnThisDayCard
-                            entries={journal.allEntries}
-                            onOpenEntry={handleOpenEntryFromShell}
-                            onDismiss={() => {
-                              /* handled internally */
-                            }}
-                            privateMode={privateMode}
-                          />
+                        {journal.historyLoadError || journal.dateLoadError ? (
+                          <JournalBackgroundLoadNotice ts={ts} onRetry={journal.refresh} />
                         ) : null}
                         {journal.loadError ? (
                           <JournalLoadErrorPanel ts={ts} onRetry={journal.refresh} compact />
                         ) : journal.totalCount === 0 && !journal.loading ? (
                           <JournalCompactEmptyListShell
                             ts={ts}
-                            onNewEntry={handleNewEntryFromShell}
                           />
                         ) : (
                           <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
                             <LazyJournalEntryList
+                              today={today}
                               groupedEntries={journal.groupedEntries}
                               allEntries={journal.allEntries}
                               onOpenEntry={handleOpenEntryFromShell}
@@ -2704,6 +3573,8 @@ export const JournalModule = memo(function JournalModule({
                     <div
                       className="flex min-h-0 flex-1 flex-col"
                       data-testid="journal-settings-panel"
+                      aria-busy={settingsDismissBlocked}
+                      aria-describedby={settingsDismissBlocked ? desktopSettingsBusyStatusId : undefined}
                     >
                       <div className="flex items-center justify-between gap-3 border-b border-border/20 px-5 py-4">
                         <div className="min-w-0">
@@ -2713,11 +3584,25 @@ export const JournalModule = memo(function JournalModule({
                           <p className="mt-1 text-sm text-muted-foreground">
                             {ts.journalLockHint || "Protect your diary and choose how it behaves."}
                           </p>
+                          {settingsDismissBlocked ? (
+                            <p
+                              id={desktopSettingsBusyStatusId}
+                              role="status"
+                              aria-live="polite"
+                              className="mt-2 text-sm font-medium text-foreground"
+                            >
+                              {importing
+                                ? ts.journalImporting || "Importing backup..."
+                                : ts.journalSettingsBusy || "Finishing this change..."}
+                            </p>
+                          ) : null}
                         </div>
                         <button
                           type="button"
                           onClick={() => closeSettings()}
-                          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          disabled={settingsDismissBlocked}
+                          aria-describedby={settingsDismissBlocked ? desktopSettingsBusyStatusId : undefined}
+                          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           aria-label={ts.close || "Close"}
                         >
                           <X className="h-5 w-5" />
@@ -2736,26 +3621,36 @@ export const JournalModule = memo(function JournalModule({
                             section={settingsSection}
                             onSectionChange={setSettingsSection}
                             privateMode={privateMode}
-                            onPrivateModeChange={(checked) => {
-                              setPrivateMode(checked);
-                              storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
-                            }}
+                            privateModeError={
+                              privateModeState.persistenceError
+                                ? ts.journalPrivateModeSaveError ||
+                                  "ZenFlow could not save this privacy setting. Your diary stays concealed on this screen; keep the app open and try again."
+                                : null
+                            }
+                            onPrivateModeChange={handlePrivateModeChange}
                             onOpenExport={() => {
+                              if (settingsBusy) return;
                               if (!isDiaryDesktopLayout) {
-                                closeSettings(false);
+                                if (!closeSettings(false)) return;
                               }
                               setShowExportPicker(true);
                             }}
+                            onRequestImport={() => fileInputRef.current?.click()}
+                            importing={importing}
+                            importFeedback={importFeedback}
                             onRequestRemovePassword={() => setShowRemovePasswordConfirm(true)}
+                            onBusyChange={setSettingsBusy}
                           />
                         </Suspense>
                       </div>
                     </div>
-                  ) : journal.view === "editing" ? (
+                  ) : !privateMode && journal.view === "editing" ? (
                     <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
                       <LazyJournalEntryEditor
+                        key={`desktop-editor-${journal.activeEntryId ?? "new"}`}
                         entry={journal.activeEntry}
                         entryPrefill={activeEntryPrefill}
+                        milestonesEnabled={rewardsEnabled}
                         onSave={handleSaveEntry}
                         onAddPhoto={journal.addPhoto}
                         onRemovePhoto={journal.removePhoto}
@@ -2766,24 +3661,33 @@ export const JournalModule = memo(function JournalModule({
                             ? () => handleDeleteEntry(journal.activeEntryId!)
                             : undefined
                         }
-                        onBack={handleGoBack}
+                        onBack={handleEditorBack}
+                        onPanicExit={handlePanicExitFromEditor}
                         onToggleHabit={onToggleHabit}
                         onAddGratitude={handleAddGratitudeWithSpace}
+                        onReleaseThought={handleReleaseThought}
                         onRequestSettings={openSettings}
                         onBindSettingsRequestHandler={(handler) => {
                           editorSettingsRequestRef.current = handler;
                         }}
+                        onBindExitRequestHandler={(handler) => {
+                          editorExitRequestRef.current = handler;
+                        }}
+                        onExitRequestCancelled={handleEditorExitRequestCancelled}
+                        onDirtyStateChange={handleEditorDirtyStateChange}
                         useSharedDiaryWallpaper={showJournalSidebarAtmosphere}
                         desktop
                       />
                     </Suspense>
-                  ) : journal.view === "viewing" && journal.activeEntry ? (
+                  ) : !privateMode && journal.view === "viewing" && journal.activeEntry ? (
                     <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
                       <LazyJournalEntryViewer
                         entry={journal.activeEntry}
                         onEdit={() => journal.editEntry(journal.activeEntryId)}
                         onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
                         onBack={handleGoBack}
+                        onToggleFavorite={handleToggleActiveEntryFavorite}
+                        favoritePending={favoriteMutationPending}
                       />
                     </Suspense>
                   ) : journal.view === "stats" ? (
@@ -2797,7 +3701,12 @@ export const JournalModule = memo(function JournalModule({
                         </div>
                       }
                     >
-                      <LazyJournalStats entries={journal.allEntries} onBack={handleStatsBack} privateMode={privateMode} />
+                      <LazyJournalStats
+                        today={today}
+                        entries={journal.allEntries}
+                        onBack={handleStatsBack}
+                        privateMode={privateMode}
+                      />
                     </Suspense>
                   ) : diaryTabSection === "favorites" ? (
                     <JournalFavoritesPanel
@@ -2805,6 +3714,10 @@ export const JournalModule = memo(function JournalModule({
                       onOpenEntry={handleOpenFavoriteEntry}
                       onNewEntry={handleNewEntryFromShell}
                       privateMode={privateMode}
+                      language={language}
+                      historyLoading={journal.historyLoading}
+                      historyLoadError={journal.historyLoadError}
+                      onRetryHistory={journal.refresh}
                       ts={ts}
                     />
                   ) : (
@@ -2812,7 +3725,7 @@ export const JournalModule = memo(function JournalModule({
                       <div className="flex min-h-full flex-col gap-4">
                         {listHeaderContent}
 
-                        {hasInitialEntrySuggestion && !autoCreateInitialEntry ? (
+                        {!privateMode && hasInitialEntrySuggestion && !autoCreateInitialEntry ? (
                           <DiaryEntrySuggestionCard
                             suggestion={initialSuggestionRef.current!}
                             onStart={handleUseInitialEntrySuggestion}
@@ -2820,7 +3733,7 @@ export const JournalModule = memo(function JournalModule({
                           />
                         ) : null}
 
-                        {!autoCreateInitialEntry && visibleExtraSuggestions.map((suggestion, index) => (
+                        {!privateMode && !autoCreateInitialEntry && visibleExtraSuggestions.map((suggestion, index) => (
                           <DiaryEntrySuggestionCard
                             key={getSuggestionDismissKey(suggestion, index)}
                             suggestion={suggestion}
@@ -2834,24 +3747,23 @@ export const JournalModule = memo(function JournalModule({
                         ) : journal.loadError ? (
                           <JournalLoadErrorPanel ts={ts} onRetry={journal.refresh} />
                         ) : (
-                          <div className="relative flex min-h-[420px] flex-1 overflow-hidden rounded-[28px] border border-border/40 bg-card/30">
-                            <Suspense fallback={null}>
-                              <LazyDiaryEmptyCanvas
-                                onNewEntry={handleNewEntry}
-                                onNewEntryWithPrompt={(prompt) => {
-                                  handleNewEntryWithPrefill({ content: prompt });
-                                }}
-                                streak={streak}
-                                entriesThisWeek={
-                                  journal.entries.filter((e) => {
-                                    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-                                    return e.createdAt > weekAgo;
-                                  }).length
-                                }
-                                showWallpaper={!isPagePresentation}
-                              />
-                            </Suspense>
-                          </div>
+                          <>
+                            {journal.historyLoadError || journal.dateLoadError ? (
+                              <JournalBackgroundLoadNotice ts={ts} onRetry={journal.refresh} />
+                            ) : null}
+                            <div className="relative flex min-h-[420px] flex-1 overflow-hidden rounded-[28px] border border-border/40 bg-card/30">
+                              <Suspense fallback={null}>
+                                <LazyDiaryEmptyCanvas
+                                  onNewEntry={handleNewEntry}
+                                  onNewEntryWithPrompt={(prompt) => {
+                                    handleNewEntryWithPrefill({ content: prompt });
+                                  }}
+                                  selectedDate={journal.selectedDate}
+                                  showWallpaper={!isPagePresentation}
+                                />
+                              </Suspense>
+                            </div>
+                          </>
                         )}
                       </div>
                     </div>
@@ -2864,8 +3776,10 @@ export const JournalModule = memo(function JournalModule({
             <LayoutGroup>
               <>
                 {/* Editor overlays on top with its own fixed positioning */}
-                <AnimatePresence>
-                  {journal.view === "editing" && (
+                <AnimatePresence
+                  onExitComplete={handleMobileEditorExitComplete}
+                >
+                  {!privateMode && journal.view === "editing" && (
                     <motion.div
                       key="editor-transition"
                       {...(shouldAnimate()
@@ -2890,8 +3804,10 @@ export const JournalModule = memo(function JournalModule({
                     >
                       <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
                         <LazyJournalEntryEditor
+                          key={`mobile-editor-${journal.activeEntryId ?? "new"}`}
                           entry={journal.activeEntry}
                           entryPrefill={activeEntryPrefill}
+                          milestonesEnabled={rewardsEnabled}
                           onSave={handleSaveEntry}
                           onAddPhoto={journal.addPhoto}
                           onRemovePhoto={journal.removePhoto}
@@ -2902,9 +3818,16 @@ export const JournalModule = memo(function JournalModule({
                               ? () => handleDeleteEntry(journal.activeEntryId!)
                               : undefined
                           }
-                          onBack={handleGoBack}
+                          onBack={handleEditorBack}
+                          onPanicExit={handlePanicExitFromEditor}
+                          onBindExitRequestHandler={(handler) => {
+                            editorExitRequestRef.current = handler;
+                          }}
+                          onExitRequestCancelled={handleEditorExitRequestCancelled}
+                          onDirtyStateChange={handleEditorDirtyStateChange}
                           onToggleHabit={onToggleHabit}
                           onAddGratitude={handleAddGratitudeWithSpace}
+                          onReleaseThought={handleReleaseThought}
                         />
                       </Suspense>
                     </motion.div>
@@ -2914,41 +3837,40 @@ export const JournalModule = memo(function JournalModule({
                 {/* List / Viewer / Stats crossfade */}
                 <AnimatePresence mode="wait">
                   {journal.view === "stats" && (
-                    <motion.div
+                    <JournalMobileViewSurface
                       key="stats"
-                      initial={shouldAnimate() ? { opacity: 0 } : undefined}
-                      animate={{ opacity: 1 }}
-                      exit={shouldAnimate() ? { opacity: 0 } : undefined}
-                      transition={{ duration: 0.2 }}
+                      view="stats"
+                      shouldAnimate={shouldAnimate()}
                       className={cn(
                         "flex flex-col flex-1 min-h-0 bg-background",
                         showJournalLightAtmosphere && "journal-light-panel"
                       )}
                     >
-                      <div className="flex items-center justify-between border-b border-border/30 bg-gradient-to-r from-primary/[0.03] via-background/80 to-primary/[0.02] px-4 py-3 backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]">
+                      <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-x-2 gap-y-1 border-b border-border/30 bg-gradient-to-r from-primary/[0.03] via-background/80 to-primary/[0.02] px-4 py-3 backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]">
                         <button
                           type="button"
                           onClick={handleStatsBack}
                           className={mobileHeaderActionClass}
                           aria-label={ts.back || "Back"}
                         >
-                          <ChevronRight className="h-4 w-4 rotate-180" aria-hidden="true" />
+                          <ChevronRight className="h-4 w-4 rotate-180 rtl:rotate-0" aria-hidden="true" />
                         </button>
-                        <div className="min-w-0 text-center">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/70">
+                        <div className="col-span-3 row-start-2 min-w-0 text-center min-[420px]:col-span-1 min-[420px]:col-start-2 min-[420px]:row-start-1">
+                          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary/70">
                             {ts.journalStatsTitle || "Statistics"}
                           </p>
-                          <h2 className="truncate text-base font-black text-foreground">
+                          <h2 className="min-w-0 whitespace-normal break-words text-base font-black leading-tight text-foreground [hyphens:manual]">
                             {ts.journalMemoryPortalTitle || "Memory portal"}
                           </h2>
                         </div>
-                        <span className="min-h-[44px] min-w-[44px]" aria-hidden="true" />
+                        <span className="col-start-3 row-start-1 min-h-[44px] min-w-[44px]" aria-hidden="true" />
                       </div>
 
                       <div className="relative flex-1 min-h-0">
                         <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
                           <LazyMemoryPortalCanvas
                             ts={ts}
+                            language={language}
                             entries={journal.allEntries}
                             moods={moodEntries}
                             groupedEntries={journal.groupedEntries}
@@ -2971,16 +3893,14 @@ export const JournalModule = memo(function JournalModule({
                           />
                         </Suspense>
                       </div>
-                    </motion.div>
+                    </JournalMobileViewSurface>
                   )}
 
-                  {journal.view === "viewing" && journal.activeEntry && (
-                    <motion.div
+                  {!privateMode && journal.view === "viewing" && journal.activeEntry && (
+                    <JournalMobileViewSurface
                       key="viewing"
-                      initial={shouldAnimate() ? { opacity: 0 } : undefined}
-                      animate={{ opacity: 1 }}
-                      exit={shouldAnimate() ? { opacity: 0 } : undefined}
-                      transition={{ duration: 0.2 }}
+                      view="viewing"
+                      shouldAnimate={shouldAnimate()}
                       className="flex flex-col flex-1 min-h-0"
                     >
                       <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
@@ -2989,18 +3909,18 @@ export const JournalModule = memo(function JournalModule({
                           onEdit={() => journal.editEntry(journal.activeEntryId)}
                           onDelete={() => handleDeleteEntry(journal.activeEntry?.id || "")}
                           onBack={handleGoBack}
+                          onToggleFavorite={handleToggleActiveEntryFavorite}
+                          favoritePending={favoriteMutationPending}
                         />
                       </Suspense>
-                    </motion.div>
+                    </JournalMobileViewSurface>
                   )}
 
                   {journal.view === "list" && (
-                    <motion.div
+                    <JournalMobileViewSurface
                       key="list"
-                      initial={shouldAnimate() ? { opacity: 0 } : undefined}
-                      animate={{ opacity: 1 }}
-                      exit={shouldAnimate() ? { opacity: 0 } : undefined}
-                      transition={{ duration: 0.2 }}
+                      view="list"
+                      shouldAnimate={shouldAnimate()}
                       className="flex flex-col flex-1 min-h-0"
                     >
                       {/* Header */}
@@ -3022,11 +3942,14 @@ export const JournalModule = memo(function JournalModule({
                               </button>
                             ) : null}
                             <div className="flex min-w-0 items-center gap-2">
-                              <h2 className="truncate text-base font-bold leading-none text-foreground">
+                              <h2
+                                className="min-w-0 break-words whitespace-normal text-base font-bold leading-tight text-foreground [hyphens:manual] [overflow-wrap:normal]"
+                                data-testid="journal-mobile-title"
+                              >
                                 {ts.journalTitle || "Diary"}
                               </h2>
-                              {streak > 0 && (
-                                <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-orange-500/10 bg-gradient-to-r from-orange-500/15 to-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-orange-500 motion-safe:animate-streak-fire-glow">
+                              {rewardsEnabled && streak > 0 && (
+                                <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-orange-500/10 bg-gradient-to-r from-orange-500/15 to-amber-500/10 px-1.5 py-0.5 text-xs font-bold text-orange-500 motion-safe:animate-streak-fire-glow">
                                   <Flame className="h-3 w-3" aria-hidden="true" />
                                   {streak}
                                 </span>
@@ -3045,7 +3968,7 @@ export const JournalModule = memo(function JournalModule({
                               aria-controls="journal-mobile-diary-sidebar"
                               data-testid="journal-mobile-diary-sidebar-trigger"
                             >
-                              <PanelLeftOpen className="pointer-events-none h-5 w-5" aria-hidden="true" />
+                              <PanelLeftOpen className="pointer-events-none h-5 w-5 rtl:scale-x-[-1]" aria-hidden="true" />
                             </button>
                             {!hideCloseButton && (
                               <button
@@ -3068,8 +3991,8 @@ export const JournalModule = memo(function JournalModule({
                             type="button"
                             onClick={handleShowDiaryPanel}
                             className={mobileHeaderTabClass}
-                            title={ts.journalEntry || "Entry"}
-                            aria-label={ts.journalEntry || "Entry"}
+                            title={ts.journalEntry || ts.journalTitle || "Entry"}
+                            aria-label={ts.journalEntry || ts.journalTitle || "Entry"}
                             aria-pressed={diaryTabSection === "entry"}
                             aria-current={diaryTabSection === "entry" ? "page" : undefined}
                             data-testid="journal-mobile-entry"
@@ -3121,6 +4044,10 @@ export const JournalModule = memo(function JournalModule({
                             onOpenEntry={handleOpenFavoriteEntry}
                             onNewEntry={handleNewEntryFromShell}
                             privateMode={privateMode}
+                            language={language}
+                            historyLoading={journal.historyLoading}
+                            historyLoadError={journal.historyLoadError}
+                            onRetryHistory={journal.refresh}
                             ts={ts}
                           />
                         </div>
@@ -3131,6 +4058,7 @@ export const JournalModule = memo(function JournalModule({
                             {calendarMode === "full" ? (
                               <Suspense fallback={null}>
                                 <LazyJournalCalendarFull
+                                  today={today}
                                   entryDates={journal.entryDates}
                                   releaseTraceDates={releaseTraceDates}
                                   privateMode={privateMode}
@@ -3144,6 +4072,7 @@ export const JournalModule = memo(function JournalModule({
                               </Suspense>
                             ) : (
                               <JournalCalendar
+                                today={today}
                                 entryDates={journal.entryDates}
                                 releaseTraceDates={releaseTraceDates}
                                 privateMode={privateMode}
@@ -3174,7 +4103,7 @@ export const JournalModule = memo(function JournalModule({
                               <div className="relative flex h-full min-h-0 flex-col overflow-y-auto px-4 pb-[calc(1rem+var(--safe-bottom))] pt-4">
                                 {listHeaderContent ? <div className="mb-3">{listHeaderContent}</div> : null}
 
-                                {hasInitialEntrySuggestion && !autoCreateInitialEntry ? (
+                                {!privateMode && hasInitialEntrySuggestion && !autoCreateInitialEntry ? (
                                   <div className="mb-3">
                                     <DiaryEntrySuggestionCard
                                       suggestion={initialSuggestionRef.current!}
@@ -3185,7 +4114,7 @@ export const JournalModule = memo(function JournalModule({
                                   </div>
                                 ) : null}
 
-                                {!autoCreateInitialEntry && visibleExtraSuggestions.map((suggestion, index) => (
+                                {!privateMode && !autoCreateInitialEntry && visibleExtraSuggestions.map((suggestion, index) => (
                                   <div
                                     key={getSuggestionDismissKey(suggestion, index)}
                                     className="mb-3"
@@ -3199,37 +4128,42 @@ export const JournalModule = memo(function JournalModule({
                                   </div>
                                 ))}
 
-                                {journal.allEntries.length > 0 ? (
-                                  <OnThisDayCard
-                                    entries={journal.allEntries}
-                                    onOpenEntry={handleOpenEntry}
-                                    onDismiss={() => {
-                                      /* handled internally */
-                                    }}
-                                    privateMode={privateMode}
-                                  />
+                                {journal.historyLoadError || journal.dateLoadError ? (
+                                  <JournalBackgroundLoadNotice ts={ts} onRetry={journal.refresh} />
                                 ) : null}
 
                                 <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
-                                  <LazyJournalEntryList
-                                    groupedEntries={journal.groupedEntries}
-                                    allEntries={journal.allEntries}
-                                    onOpenEntry={handleOpenEntry}
-                                    onDeleteEntry={handleDeleteEntry}
-                                    onSwipeDelete={handleDeleteEntry}
-                                    onNewEntry={handleNewEntry}
-                                    onNewEntryWithPrefill={handleNewEntryWithPrefill}
-                                    totalCount={journal.entries.length}
-                                    loading={journal.loading}
-                                    selectedDate={journal.selectedDate}
-                                    daysSinceLastEntry={daysSinceLastEntry}
-                                    privateMode={privateMode}
-                                    onAddGratitude={handleAddGratitudeWithSpace}
-                                    releaseTraceSummaries={releaseTraceSummaries}
-                                    onReleaseThought={handleReleaseThought}
-                                    useSharedDiaryWallpaper={showJournalSidebarAtmosphere}
-                                    selectedDateOnly
-                                  />
+                                  {journal.entries.length === 0 ? (
+                                    <LazyDiaryEmptyCanvas
+                                      onNewEntry={handleNewEntry}
+                                      onNewEntryWithPrompt={(prompt) => {
+                                        handleNewEntryWithPrefill({ content: prompt });
+                                      }}
+                                      selectedDate={journal.selectedDate}
+                                      showWallpaper={false}
+                                    />
+                                  ) : (
+                                    <LazyJournalEntryList
+                                      today={today}
+                                      groupedEntries={journal.groupedEntries}
+                                      allEntries={journal.allEntries}
+                                      onOpenEntry={handleOpenEntry}
+                                      onDeleteEntry={handleDeleteEntry}
+                                      onSwipeDelete={handleDeleteEntry}
+                                      onNewEntry={handleNewEntry}
+                                      onNewEntryWithPrefill={handleNewEntryWithPrefill}
+                                      totalCount={journal.entries.length}
+                                      loading={journal.loading}
+                                      selectedDate={journal.selectedDate}
+                                      daysSinceLastEntry={daysSinceLastEntry}
+                                      privateMode={privateMode}
+                                      onAddGratitude={handleAddGratitudeWithSpace}
+                                      releaseTraceSummaries={releaseTraceSummaries}
+                                      onReleaseThought={handleReleaseThought}
+                                      useSharedDiaryWallpaper={showJournalSidebarAtmosphere}
+                                      selectedDateOnly
+                                    />
+                                  )}
                                 </Suspense>
                               </div>
                             )}
@@ -3240,7 +4174,7 @@ export const JournalModule = memo(function JournalModule({
                       {typeof document !== "undefined" ? createPortal(
                         <AnimatePresence>
                           {!isDiaryDesktopLayout && showMobileDiarySidebar ? (
-                          <>
+                          <Fragment key="mobile-diary-sidebar-layer">
                             <motion.div
                               key="mobile-diary-sidebar-backdrop"
                               initial={shouldAnimate() ? { opacity: 0 } : undefined}
@@ -3262,7 +4196,11 @@ export const JournalModule = memo(function JournalModule({
                               data-testid="journal-mobile-diary-sidebar"
                               initial={shouldAnimate() ? { x: isRTL ? 32 : -32 } : undefined}
                               animate={{ x: 0 }}
-                              exit={shouldAnimate() ? { x: isRTL ? 32 : -32 } : undefined}
+                              exit={shouldAnimate() ? {
+                                x: isRTL ? 32 : -32,
+                                opacity: 0,
+                                transition: { type: "tween", duration: 0.16, ease: "easeOut" },
+                              } : undefined}
                               transition={{ type: "spring", stiffness: 420, damping: 34 }}
                               style={{ zIndex: 121 }}
                               className={cn(
@@ -3274,10 +4212,10 @@ export const JournalModule = memo(function JournalModule({
                             >
                               <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/20 px-4 py-3">
                                 <div className="min-w-0">
-                                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary/70">
+                                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary/70">
                                     {ts.journalEntry || "Entry"}
                                   </p>
-                                  <h2 className="truncate text-lg font-black text-foreground">
+                                  <h2 className="min-w-0 break-words whitespace-normal text-lg font-black leading-tight text-foreground [hyphens:manual] [overflow-wrap:normal]">
                                     {ts.journalTitle || "Diary"}
                                   </h2>
                                 </div>
@@ -3293,7 +4231,7 @@ export const JournalModule = memo(function JournalModule({
                                 </button>
                               </div>
 
-                              <div className="grid shrink-0 grid-cols-4 gap-2 border-b border-border/20 px-3 py-3">
+                              <div className="grid shrink-0 grid-cols-2 min-[420px]:grid-cols-4 gap-2 border-b border-border/20 px-3 py-3">
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -3305,7 +4243,7 @@ export const JournalModule = memo(function JournalModule({
                                   aria-current={diaryTabSection === "entry" ? "page" : undefined}
                                 >
                                   <PenLine className="h-4 w-4" aria-hidden="true" />
-                                  <span className="text-[10px] font-bold">{ts.journalEntry || "Entry"}</span>
+                                  <span className="whitespace-normal break-words text-xs font-bold">{ts.journalEntry || "Entry"}</span>
                                 </button>
                                 <button
                                   type="button"
@@ -3318,7 +4256,7 @@ export const JournalModule = memo(function JournalModule({
                                   aria-current={diaryTabSection === "stats" ? "page" : undefined}
                                 >
                                   <BarChart3 className="h-4 w-4" aria-hidden="true" />
-                                  <span className="text-[10px] font-bold">{ts.statistics || "Stats"}</span>
+                                  <span className="whitespace-normal break-words text-xs font-bold">{ts.statistics || "Stats"}</span>
                                 </button>
                                 <button
                                   type="button"
@@ -3331,7 +4269,7 @@ export const JournalModule = memo(function JournalModule({
                                   aria-current={diaryTabSection === "favorites" ? "page" : undefined}
                                 >
                                   <Star className="h-4 w-4" aria-hidden="true" />
-                                  <span className="text-[10px] font-bold">{ts.journalFavorites || "Favorites"}</span>
+                                  <span className="whitespace-normal break-words text-xs font-bold">{ts.journalFavorites || "Favorites"}</span>
                                 </button>
                                 <button
                                   type="button"
@@ -3344,7 +4282,7 @@ export const JournalModule = memo(function JournalModule({
                                   aria-current={showPasswordSettings || diaryTabSection === "settings" ? "page" : undefined}
                                 >
                                   <Settings className="h-4 w-4" aria-hidden="true" />
-                                  <span className="text-[10px] font-bold">{ts.settings || "Settings"}</span>
+                                  <span className="whitespace-normal break-words text-xs font-bold">{ts.settings || "Settings"}</span>
                                 </button>
                               </div>
 
@@ -3354,8 +4292,9 @@ export const JournalModule = memo(function JournalModule({
                               >
                                 {calendarMode === "full" ? (
                                   <Suspense fallback={null}>
-                                    <LazyJournalCalendarFull
-                                      entryDates={journal.entryDates}
+                                      <LazyJournalCalendarFull
+                                        today={today}
+                                        entryDates={journal.entryDates}
                                       releaseTraceDates={releaseTraceDates}
                                       privateMode={privateMode}
                                       selectedDate={journal.selectedDate}
@@ -3367,8 +4306,9 @@ export const JournalModule = memo(function JournalModule({
                                     />
                                   </Suspense>
                                 ) : (
-                                  <JournalCalendar
-                                    entryDates={journal.entryDates}
+                                    <JournalCalendar
+                                      today={today}
+                                      entryDates={journal.entryDates}
                                     releaseTraceDates={releaseTraceDates}
                                     privateMode={privateMode}
                                     selectedDate={journal.selectedDate}
@@ -3382,19 +4322,19 @@ export const JournalModule = memo(function JournalModule({
                               </div>
 
                               <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+                                {journal.historyLoadError || journal.dateLoadError ? (
+                                  <JournalBackgroundLoadNotice ts={ts} onRetry={journal.refresh} />
+                                ) : null}
                                 {journal.loadError ? (
                                   <JournalLoadErrorPanel ts={ts} onRetry={journal.refresh} compact />
                                 ) : journal.totalCount === 0 && !journal.loading ? (
                                   <JournalCompactEmptyListShell
                                     ts={ts}
-                                    onNewEntry={() => {
-                                      closeMobileDiarySidebar(false);
-                                      handleNewEntryFromShell();
-                                    }}
                                   />
                                 ) : (
                                   <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
                                     <LazyJournalEntryList
+                                      today={today}
                                       groupedEntries={journal.groupedEntries}
                                       allEntries={journal.allEntries}
                                       onOpenEntry={(entryId) => {
@@ -3445,7 +4385,7 @@ export const JournalModule = memo(function JournalModule({
                                 </button>
                               </div>
                             </motion.aside>
-                          </>
+                          </Fragment>
                           ) : null}
                         </AnimatePresence>,
                         document.body
@@ -3462,6 +4402,8 @@ export const JournalModule = memo(function JournalModule({
                             role="dialog"
                             aria-modal="true"
                             aria-label={ts.journalSettings || "Diary Settings"}
+                            aria-busy={settingsDismissBlocked}
+                            aria-describedby={settingsDismissBlocked ? mobileSettingsBusyStatusId : undefined}
                             ref={mobileSettingsPanelRef}
                             data-testid="journal-mobile-settings-panel"
                             className={cn(
@@ -3493,10 +4435,11 @@ export const JournalModule = memo(function JournalModule({
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        closeSettings(false);
+                                        if (!closeSettings(false)) return;
                                         onOpenNavMenu();
                                       }}
-                                      className={mobileHeaderMenuClass}
+                                      disabled={settingsDismissBlocked}
+                                      className={cn(mobileHeaderMenuClass, "disabled:cursor-not-allowed disabled:opacity-50")}
                                       title={ts.navV2OpenMenu || "Open menu"}
                                       aria-label={ts.navV2OpenMenu || "Open menu"}
                                       aria-expanded={navMenuOpen}
@@ -3506,15 +4449,29 @@ export const JournalModule = memo(function JournalModule({
                                       <JournalMenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />
                                     </button>
                                   ) : null}
-                                  <h3 className="truncate text-base font-semibold text-foreground">
+                                  <h3 className="min-w-0 break-words whitespace-normal text-base font-semibold leading-tight text-foreground [hyphens:manual] [overflow-wrap:normal]">
                                     {ts.journalSettings || "Diary Settings"}
                                   </h3>
+                                  {settingsDismissBlocked ? (
+                                    <p
+                                      id={mobileSettingsBusyStatusId}
+                                      role="status"
+                                      aria-live="polite"
+                                      className="sr-only"
+                                    >
+                                      {importing
+                                        ? ts.journalImporting || "Importing backup..."
+                                        : ts.journalSettingsBusy || "Finishing this change..."}
+                                    </p>
+                                  ) : null}
                                 </div>
                                 <button
                                   type="button"
                                   ref={mobileSettingsCloseRef}
                                   onClick={() => closeSettings()}
-                                  className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                                  disabled={settingsDismissBlocked}
+                                  aria-describedby={settingsDismissBlocked ? mobileSettingsBusyStatusId : undefined}
+                                  className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
                                   aria-label={ts.close || "Close"}
                                   data-testid="journal-mobile-settings-close"
                                 >
@@ -3533,15 +4490,22 @@ export const JournalModule = memo(function JournalModule({
                                   section={settingsSection}
                                   onSectionChange={setSettingsSection}
                                   privateMode={privateMode}
-                                  onPrivateModeChange={(checked) => {
-                                    setPrivateMode(checked);
-                                    storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
-                                  }}
+                                  privateModeError={
+                                    privateModeState.persistenceError
+                                      ? ts.journalPrivateModeSaveError ||
+                                        "ZenFlow could not save this privacy setting. Your diary stays concealed on this screen; keep the app open and try again."
+                                      : null
+                                  }
+                                  onPrivateModeChange={handlePrivateModeChange}
                                   onOpenExport={() => {
-                                    closeSettings(false);
+                                    if (!closeSettings(false)) return;
                                     setShowExportPicker(true);
                                   }}
+                                  onRequestImport={() => fileInputRef.current?.click()}
+                                  importing={importing}
+                                  importFeedback={importFeedback}
                                   onRequestRemovePassword={() => setShowRemovePasswordConfirm(true)}
+                                  onBusyChange={setSettingsBusy}
                                 />
                               </Suspense>
 
@@ -3568,7 +4532,8 @@ export const JournalModule = memo(function JournalModule({
                                 </div>
                               )}
 
-                              {/* Reminder toggle */}
+                              {/* Native reminder toggle. Web/PWA/Desktop do not have a reliable local scheduler. */}
+                              {reminder.supported && (
                               <div className="mt-4 pt-4 border-t border-border/20">
                                 <div className="flex items-center justify-between min-h-[44px]">
                                   <div>
@@ -3581,7 +4546,9 @@ export const JournalModule = memo(function JournalModule({
                                   </div>
                                   <Switch
                                     checked={reminder.enabled}
-                                    onCheckedChange={reminder.setEnabled}
+                                    onCheckedChange={(enabled) => {
+                                      void reminder.setEnabled(enabled).catch(() => undefined);
+                                    }}
                                     aria-label={ts.journalReminderEnabled || "Daily reminder"}
                                     className="mt-0.5 shrink-0"
                                   />
@@ -3596,108 +4563,26 @@ export const JournalModule = memo(function JournalModule({
                                       value={`${String(reminder.hour).padStart(2, "0")}:${String(reminder.minute).padStart(2, "0")}`}
                                       onChange={(e) => {
                                         const [h, m] = e.target.value.split(":").map(Number);
-                                        if (!isNaN(h) && !isNaN(m)) void reminder.setTime(h, m);
+                                        if (!isNaN(h) && !isNaN(m)) {
+                                          void reminder.setTime(h, m).catch(() => undefined);
+                                        }
                                       }}
-                                      className="px-2 py-1 rounded-lg bg-muted/50 border border-border/30 text-sm text-foreground min-h-[44px]"
+                                      className="min-h-[48px] rounded-lg border border-border/30 bg-muted/50 px-2 py-1 text-sm text-foreground"
                                     />
                                   </div>
                                 )}
-                              </div>
-
-                              {/* Import */}
-                              <div className="mt-4 pt-4 border-t border-border/20">
-                                <p className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-2">
-                                  {ts.journalDataSection || "Data"}
-                                </p>
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={importing}
-                                    className="flex-1 py-2.5 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] flex items-center justify-center gap-1.5 disabled:opacity-50"
-                                  >
-                                    {importing ? (
-                                      <Loader2
-                                        className="w-3.5 h-3.5 animate-spin"
-                                        aria-hidden="true"
-                                      />
-                                    ) : (
-                                      <Upload className="w-3.5 h-3.5" aria-hidden="true" />
-                                    )}
-                                    {ts.journalImport || "Import"}
-                                  </button>
-                                </div>
-                                <input
-                                  ref={fileInputRef}
-                                  type="file"
-                                  accept=".json"
-                                  className="hidden"
-                                  onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    e.target.value = "";
-                                    setImporting(true);
-                                    setImportFeedback(null);
-                                    try {
-                                      const { importJournalBackup } =
-                                        await import("./journalImport");
-                                      const result = await importJournalBackup(file);
-                                      void journal.refresh();
-                                      const importedLabel = formatLocalizedCount(
-                                        result.imported,
-                                        language,
-                                        ts,
-                                        "journalEntryCount",
-                                        ts.journalImportEntries || "entries"
-                                      );
-                                      if (result.errors.length > 0) {
-                                        const errorLabel = formatLocalizedCount(
-                                          result.errors.length,
-                                          language,
-                                          ts,
-                                          "journalImportErrorCount",
-                                          ts.journalImportErrors || "errors"
-                                        );
-                                        const msg = `${ts.journalImportPartial || "Imported with errors"}: ${importedLabel}, ${errorLabel}`;
-                                        setImportFeedback({
-                                          type: "error",
-                                          message: msg,
-                                        });
-                                        announceError(msg);
-                                      } else {
-                                        const msg = `${ts.journalImportSuccess || "Import complete"}: ${importedLabel}`;
-                                        setImportFeedback({
-                                          type: "success",
-                                          message: msg,
-                                        });
-                                        announceSuccess(msg);
-                                      }
-                                      setTimeout(() => setImportFeedback(null), 5000);
-                                    } catch {
-                                      const msg = ts.journalImportFailed || "Import failed";
-                                      setImportFeedback({
-                                        type: "error",
-                                        message: msg,
-                                      });
-                                      announceError(msg);
-                                      setTimeout(() => setImportFeedback(null), 5000);
-                                    } finally {
-                                      setImporting(false);
-                                    }
-                                  }}
-                                />
-                                {importFeedback && (
-                                  <p
-                                    className={cn(
-                                      "text-xs mt-2 px-3 py-2 rounded-lg text-center",
-                                      importFeedback.type === "success"
-                                        ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                                        : "bg-destructive/10 text-destructive"
-                                    )}
-                                  >
-                                    {importFeedback.message}
+                                {reminder.saveError ? (
+                                  <p role="status" className="mt-2 text-xs text-destructive">
+                                    {reminder.saveOutcome === "unknown"
+                                      ? ts.journalReminderStateUnknown ||
+                                        "ZenFlow could not confirm the reminder state. Open this setting again and try once more."
+                                      : ts.journalReminderSaveError ||
+                                        "The reminder was not changed. Please try again."}
                                   </p>
-                                )}
+                                ) : null}
                               </div>
+                              )}
+
                             </div>
                           </div>
                         </>
@@ -3715,7 +4600,7 @@ export const JournalModule = memo(function JournalModule({
                           />
                         </Suspense>
                       )}
-                    </motion.div>
+                    </JournalMobileViewSurface>
                   )}
                 </AnimatePresence>
               </>
@@ -3739,7 +4624,11 @@ export const JournalModule = memo(function JournalModule({
               className="bg-foreground text-background rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg max-w-sm w-full pointer-events-auto"
             >
               <span className="text-sm flex-1">
-                {pendingDelete ? ts.entryDeleted || "Entry deleted" : deleteCommitMessage}
+                {pendingDelete
+                  ? pendingDeletes.length > 1
+                    ? ts.entriesDeleted || "Entries deleted"
+                    : ts.entryDeleted || "Entry deleted"
+                  : deleteCommitMessage}
               </span>
               {pendingDelete && (
                 <button
@@ -3754,12 +4643,26 @@ export const JournalModule = memo(function JournalModule({
         )}
       </AnimatePresence>
 
+      {pendingJournalImport && (
+        <Suspense fallback={<JournalModalDeferredFallback label={t.loading || "Loading..."} />}>
+          <LazyJournalImportConfirmDialog
+            ts={ts}
+            filename={pendingJournalImport.file.name}
+            inspection={pendingJournalImport.inspection}
+            busy={importing}
+            onCancel={() => setPendingJournalImport(null)}
+            onConfirm={() => void handleConfirmJournalImport()}
+          />
+        </Suspense>
+      )}
+
       {/* Remove password confirmation dialog */}
       {showRemovePasswordConfirm && (
         <Suspense fallback={<JournalModalDeferredFallback label={t.loading || "Loading..."} />}>
           <LazyRemovePasswordConfirmDialog
             ts={ts}
             onClose={() => setShowRemovePasswordConfirm(false)}
+            getReturnFocusFallback={getPasswordRemovalFocusFallback}
             onConfirm={async () => {
               setRemovePasswordSubmitting(true);
               try {
@@ -3782,11 +4685,31 @@ export const JournalModule = memo(function JournalModule({
         </Suspense>
       )}
 
+      {ENABLE_JOURNAL_SAVE_CEREMONY ? (
+        <JournalSaveCeremonyHost
+          receipt={saveCeremonyPresentation?.receipt ?? null}
+          lifecycleToken={saveCeremonyPresentation?.lifecycle ?? null}
+          eligible={
+            journal.view === "list" &&
+            !privateMode &&
+            !showPasswordSettings &&
+            celebratingStreak === null &&
+            (isDiaryDesktopLayout || !mobileEditorSurfacePresent)
+          }
+          onConsume={handleSaveCeremonyConsume}
+        />
+      ) : null}
+
       {/* Streak milestone celebration overlay */}
       <AnimatePresence>
         {celebratingStreak !== null && (
           <Suspense fallback={null}>
-            <LazyStreakCelebration streak={celebratingStreak} onDone={() => setCelebratingStreak(null)} />
+            <LazyStreakCelebration
+              streak={celebratingStreak}
+              onDone={() => setCelebratingStreak(null)}
+              language={language}
+              translations={t}
+            />
           </Suspense>
         )}
       </AnimatePresence>

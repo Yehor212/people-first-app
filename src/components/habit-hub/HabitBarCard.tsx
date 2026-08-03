@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- The intrinsic chart scroller must receive focus for keyboard operation. */
 /**
  * HabitBarCard — Grouped bar chart showing completions by week or month.
  * Pure SVG (no external chart library). Deep Space aesthetic.
@@ -6,10 +7,11 @@
  * Month view: last 12 months, each bar = completion count
  */
 
-import { memo, useState, useMemo } from "react";
+import { memo, useId, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { resolveHabitColor } from "@/lib/habitColorUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useChartFontSizes } from "@/lib/chartTokens";
 import { ENTRY } from "@/types";
 import type { Habit } from "@/types";
 
@@ -100,6 +102,9 @@ const BAR_PAD = { top: 8, right: 8, bottom: 20, left: 8 };
 export const HabitBarCard = memo(function HabitBarCard({ habit, className }: HabitBarCardProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const chartFonts = useChartFontSizes();
+  const completionsHeadingId = useId();
+  const completionsSummaryId = useId();
   const [barInterval, setBarInterval] = useState<BarInterval>("week");
   const color = resolveHabitColor(habit.color);
   const nowLabel = ts.now || "Now";
@@ -120,17 +125,20 @@ export const HabitBarCard = memo(function HabitBarCard({ habit, className }: Hab
 
   return (
     <div className={className}>
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="mb-2 flex flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+        <h4
+          id={completionsHeadingId}
+          className="whitespace-normal break-words text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+        >
           {ts.completions || "Completions"}
         </h4>
-        <div className="flex gap-1">
+        <div className="grid grid-cols-2 gap-1">
           {(["week", "month"] as const).map((iv) => (
             <button
               key={iv}
               onClick={() => setBarInterval(iv)}
               className={cn(
-                "px-3 py-1.5 rounded-md text-[10px] font-medium motion-safe:transition-colors min-h-[44px]",
+                "min-h-[44px] whitespace-normal break-words rounded-md px-3 py-1.5 text-xs font-medium motion-safe:transition-colors",
                 barInterval === iv
                   ? "bg-foreground/[0.10] text-foreground"
                   : "text-muted-foreground hover:text-muted-foreground"
@@ -142,9 +150,20 @@ export const HabitBarCard = memo(function HabitBarCard({ habit, className }: Hab
         </div>
       </div>
 
-      <div className="w-full rounded-xl bg-foreground/[0.03] border border-foreground/[0.06] overflow-x-auto scrollbar-hide">
+      <div
+        className="w-full overflow-x-auto rounded-xl border border-foreground/[0.06] bg-foreground/[0.03] scrollbar-hide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        role="region"
+        tabIndex={0}
+        aria-labelledby={completionsHeadingId}
+        aria-describedby={completionsSummaryId}
+      >
+        <p id={completionsSummaryId} className="sr-only">
+          {data.map((item) => `${item.label}: ${item.count}`).join(", ")}
+        </p>
         {/* VISUAL-VERIFIED: overflow-x-auto + min-w prevents chart clipping on narrow mobile viewports */}
         <svg
+          aria-hidden="true"
+          focusable="false"
           viewBox={`0 0 ${svgWidth} ${CHART_H}`}
           preserveAspectRatio="xMidYMid meet"
           className="min-w-[320px] w-full"
@@ -188,7 +207,7 @@ export const HabitBarCard = memo(function HabitBarCard({ habit, className }: Hab
                   y={CHART_H - 4}
                   textAnchor="middle"
                   className="fill-slate-600"
-                  fontSize={7}
+                  fontSize={chartFonts.axis}
                 >
                   {d.label}
                 </text>
@@ -199,7 +218,7 @@ export const HabitBarCard = memo(function HabitBarCard({ habit, className }: Hab
                     y={y - 3}
                     textAnchor="middle"
                     className="fill-slate-500"
-                    fontSize={7}
+                    fontSize={chartFonts.axis}
                   >
                     {d.count}
                   </text>

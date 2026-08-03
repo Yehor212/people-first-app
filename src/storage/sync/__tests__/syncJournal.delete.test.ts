@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   getCurrentUserId: vi.fn(),
   from: vi.fn(),
+  rpc: vi.fn(),
   enqueue: vi.fn(),
   isCloudSyncEnabled: vi.fn(),
   getDeletedJournalEntryIds: vi.fn(),
@@ -11,10 +12,12 @@ const mocks = vi.hoisted(() => ({
   writeEventAndBroadcast: vi.fn(),
   generateEmbeddings: vi.fn(),
   isEntityTombstonedOnServer: vi.fn(),
+  isAbortError: vi.fn(),
+  journalEntryGet: vi.fn(),
 }));
 
 vi.mock("@/lib/supabaseClient", () => ({
-  supabase: { from: mocks.from },
+  supabase: { from: mocks.from, rpc: mocks.rpc },
   getCurrentUserId: mocks.getCurrentUserId,
 }));
 
@@ -34,6 +37,14 @@ vi.mock("@/storage/deletionTracker", () => ({
 vi.mock("@/storage/eventSync", () => ({
   getPersistentDeviceId: mocks.getPersistentDeviceId,
   writeEventAndBroadcast: mocks.writeEventAndBroadcast,
+}));
+
+vi.mock("@/storage/db", () => ({
+  db: {
+    journalEntries: {
+      get: mocks.journalEntryGet,
+    },
+  },
 }));
 
 vi.mock("@/lib/journalAI", () => ({
@@ -56,7 +67,7 @@ vi.mock("@/lib/validation", async () => {
   const actual = await vi.importActual<typeof import("@/lib/validation")>("@/lib/validation");
   return {
     ...actual,
-    isAbortError: vi.fn(() => false),
+    isAbortError: mocks.isAbortError,
   };
 });
 
@@ -82,10 +93,55 @@ describe("journal sync tombstones", () => {
     mocks.getPersistentDeviceId.mockResolvedValue("device-1");
     mocks.generateEmbeddings.mockResolvedValue(undefined);
     mocks.isEntityTombstonedOnServer.mockResolvedValue(false);
+    mocks.isAbortError.mockReturnValue(false);
+    mocks.rpc.mockResolvedValue({ data: true, error: null });
+    mocks.journalEntryGet.mockResolvedValue(undefined);
+  });
+
+  it("does not publish a sync event when the server rejects a stale journal write", async () => {
+    mocks.rpc.mockResolvedValue({ data: false, error: null });
+    const maybeSingle = vi.fn(() => Promise.resolve({ data: null, error: null }));
+    const select = vi.fn(() => ({ maybeSingle }));
+    const upsert = vi.fn(() => ({ select }));
+    mocks.from.mockReturnValue({ upsert });
+
+    await syncJournalEntry({
+      id: "entry-stale",
+      date: "2026-07-14",
+      title: "Older title",
+      content: "Older private diary content",
+      stickers: [],
+      tags: [],
+      photoIds: [],
+      createdAt: 1,
+      updatedAt: 2,
+    }, "user-1");
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "entry-stale",
+        user_id: "user-1",
+        updated_at: 2,
+      }),
+      { onConflict: "id" }
+    );
+    expect(mocks.rpc).toHaveBeenCalledWith(
+      "is_journal_entry_payload_current",
+      {
+        p_entry: expect.objectContaining({
+          id: "entry-stale",
+          user_id: "user-1",
+          updated_at: 2,
+        }),
+      }
+    );
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
   it("does not generate external AI embeddings during a normal journal sync", async () => {
-    const upsert = vi.fn(() => Promise.resolve({ error: null }));
+    const maybeSingle = vi.fn(() => Promise.resolve({ data: { id: "entry-1" }, error: null }));
+    const select = vi.fn(() => ({ maybeSingle }));
+    const upsert = vi.fn(() => ({ select }));
     mocks.from.mockReturnValue({ upsert });
 
     await syncJournalEntry({
@@ -100,7 +156,11 @@ describe("journal sync tombstones", () => {
       updatedAt: 2,
     }, "user-1");
 
-    expect(upsert).toHaveBeenCalled();
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "entry-1", user_id: "user-1" }),
+      { onConflict: "id" }
+    );
+    expect(mocks.rpc).not.toHaveBeenCalled();
     expect(mocks.writeEventAndBroadcast).toHaveBeenCalledWith(
       "journal",
       "entry-1",
@@ -113,7 +173,9 @@ describe("journal sync tombstones", () => {
   });
 
   it("syncs style fields so customized entries restore on another device", async () => {
-    const upsert = vi.fn(() => Promise.resolve({ error: null }));
+    const maybeSingle = vi.fn(() => Promise.resolve({ data: { id: "entry-styled" }, error: null }));
+    const select = vi.fn(() => ({ maybeSingle }));
+    const upsert = vi.fn(() => ({ select }));
     mocks.from.mockReturnValue({ upsert });
 
     await syncJournalEntry(
@@ -143,18 +205,44 @@ describe("journal sync tombstones", () => {
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        theme: "ocean",
-        font: "cormorant",
-        ink_color: "#34d399",
-        paper_texture: "linen",
-        bg_pattern: "aurora",
-        paper_color: "milky",
-        bg_intensity: "dim",
-        particle_speed: "drift",
-        font_size: "large",
+          theme: "ocean",
+          font: "cormorant",
+          ink_color: "#34d399",
+          paper_texture: "linen",
+          bg_pattern: "aurora",
+          paper_color: "milky",
+          bg_intensity: "dim",
+          particle_speed: "drift",
+          font_size: "large",
       }),
-      expect.objectContaining({ onConflict: "id" })
+      { onConflict: "id" }
     );
+  });
+
+  it("publishes the durable event for an exact replay after a lost response", async () => {
+    const maybeSingle = vi.fn(() => Promise.resolve({ data: null, error: null }));
+    const select = vi.fn(() => ({ maybeSingle }));
+    const upsert = vi.fn(() => ({ select }));
+    mocks.from.mockReturnValue({ upsert });
+    mocks.rpc.mockResolvedValue({ data: true, error: null });
+
+    await syncJournalEntry({
+      id: "entry-replay",
+      date: "2026-07-14",
+      title: "Current title",
+      content: "Current private diary content",
+      stickers: [],
+      tags: [],
+      photoIds: [],
+      createdAt: 1,
+      updatedAt: 4,
+    }, "user-1");
+
+    expect(mocks.rpc).toHaveBeenCalledWith(
+      "is_journal_entry_payload_current",
+      { p_entry: expect.objectContaining({ id: "entry-replay", updated_at: 4 }) }
+    );
+    expect(mocks.writeEventAndBroadcast).toHaveBeenCalled();
   });
 
   it("does not write or queue private journal data when cloud sync is disabled", async () => {
@@ -349,6 +437,48 @@ describe("journal sync tombstones", () => {
     );
   });
 
+  it("publishes a parent refresh after uploaded audio metadata becomes durable", async () => {
+    const upsert = vi.fn(() => Promise.resolve({ error: null }));
+    mocks.from.mockReturnValue({ upsert });
+    mocks.journalEntryGet.mockResolvedValue({
+      id: "entry-1",
+      date: "2026-07-18",
+      title: "Voice note",
+      content: "encrypted:v1:private",
+      stickers: [],
+      tags: [],
+      photoIds: [],
+      audioIds: ["audio-1"],
+      createdAt: 1,
+      updatedAt: 2,
+    });
+
+    await syncJournalAudio({
+      id: "audio-1",
+      entryId: "entry-1",
+      duration: 15,
+      mimeType: "audio/webm",
+      createdAt: 1,
+      storagePath: "user-1/entry-1/audio-1.webm",
+    }, "user-1");
+
+    expect(mocks.journalEntryGet).toHaveBeenCalledWith("entry-1");
+    expect(mocks.writeEventAndBroadcast).toHaveBeenCalledWith(
+      "journal",
+      "entry-1",
+      "upsert",
+      expect.objectContaining({
+        id: "entry-1",
+        audioIds: ["audio-1"],
+      }),
+      "device-1",
+      { expectedOwnerUserId: "user-1" },
+    );
+    expect(JSON.stringify(mocks.writeEventAndBroadcast.mock.calls)).not.toContain(
+      "data:audio",
+    );
+  });
+
   it("queues audio delete through an id-only durable media action while offline", async () => {
     Object.defineProperty(navigator, "onLine", {
       configurable: true,
@@ -408,5 +538,169 @@ describe("journal sync tombstones", () => {
       }
     );
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("deletes semantic embeddings with the journal entry", async () => {
+    const deletedTables: string[] = [];
+    mocks.from.mockImplementation((table: string) => ({
+      delete: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          eq: vi.fn(() => {
+            deletedTables.push(table);
+            return Promise.resolve({ error: null });
+          }),
+        })),
+      })),
+    }));
+
+    await deleteJournalEntryFromCloud("entry-private", "user-1");
+
+    expect(deletedTables).toEqual(expect.arrayContaining([
+      "journal_entries",
+      "journal_photos",
+      "journal_audio",
+      "journal_embeddings",
+    ]));
+    expect(mocks.writeEventAndBroadcast).toHaveBeenCalledWith(
+      "journal",
+      "entry-private",
+      "delete",
+      null,
+      "device-1",
+      { expectedOwnerUserId: "user-1" }
+    );
+  });
+
+  it("rejects the entry delete when photo metadata cleanup fails", async () => {
+    const photoDeleteError = new Error("journal photo metadata delete failed");
+    mocks.from.mockImplementation((table: string) => ({
+      delete: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          eq: vi.fn(() =>
+            Promise.resolve({
+              error: table === "journal_photos" ? photoDeleteError : null,
+            }),
+          ),
+        })),
+      })),
+    }));
+
+    await expect(deleteJournalEntryFromCloud("entry-photo-failure", "user-1")).rejects.toBe(
+      photoDeleteError,
+    );
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("rejects the entry delete when audio metadata cleanup fails", async () => {
+    const audioDeleteError = new Error("journal audio metadata delete failed");
+    mocks.from.mockImplementation((table: string) => ({
+      delete: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          eq: vi.fn(() =>
+            Promise.resolve({
+              error: table === "journal_audio" ? audioDeleteError : null,
+            }),
+          ),
+        })),
+      })),
+    }));
+
+    await expect(deleteJournalEntryFromCloud("entry-audio-failure", "user-1")).rejects.toBe(
+      audioDeleteError,
+    );
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("rejects an aborted journal mutation so a durable queue action is not acknowledged", async () => {
+    const abortError = new DOMException("The operation was aborted", "AbortError");
+    mocks.isAbortError.mockImplementation((error) => error === abortError);
+    const maybeSingle = vi.fn(() => Promise.reject(abortError));
+    const select = vi.fn(() => ({ maybeSingle }));
+    mocks.from.mockReturnValue({ upsert: vi.fn(() => ({ select })) });
+
+    await expect(
+      syncJournalEntry(
+        {
+          id: "entry-aborted",
+          date: "2026-07-13",
+          title: "Durable",
+          content: "Must remain queued",
+          stickers: [],
+          tags: [],
+          photoIds: [],
+          createdAt: 1,
+          updatedAt: 2,
+        },
+        "user-1"
+      )
+    ).rejects.toBe(abortError);
+
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("forwards the queue AbortSignal to the journal PostgREST request", async () => {
+    const controller = new AbortController();
+    const maybeSingle = vi.fn(() => Promise.resolve({ data: { id: "entry-signal" }, error: null }));
+    const abortSignal = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ abortSignal, maybeSingle }));
+    mocks.from.mockReturnValue({ upsert: vi.fn(() => ({ select })) });
+
+    await syncJournalEntry(
+      {
+        id: "entry-signal",
+        date: "2026-07-14",
+        title: "Signal",
+        content: "Abortable queue request",
+        stickers: [],
+        tags: [],
+        photoIds: [],
+        createdAt: 1,
+        updatedAt: 2,
+      },
+      "user-1",
+      controller.signal,
+    );
+
+    expect(abortSignal).toHaveBeenCalledWith(controller.signal);
+  });
+
+  it("rejects aborted photo and audio metadata mutations", async () => {
+    const abortError = new DOMException("The operation was aborted", "AbortError");
+    mocks.isAbortError.mockImplementation((error) => error === abortError);
+    mocks.from.mockReturnValue({ upsert: vi.fn(() => Promise.reject(abortError)) });
+
+    await expect(
+      syncJournalPhoto({
+        id: "photo-aborted",
+        entryId: "entry-1",
+        width: 640,
+        height: 480,
+        createdAt: 1,
+      }, "user-1")
+    ).rejects.toBe(abortError);
+    await expect(
+      syncJournalAudio({
+        id: "audio-aborted",
+        entryId: "entry-1",
+        duration: 10,
+        mimeType: "audio/webm",
+        createdAt: 1,
+      }, "user-1")
+    ).rejects.toBe(abortError);
+  });
+
+  it("rejects aborted entry and media deletes", async () => {
+    const abortError = new DOMException("The operation was aborted", "AbortError");
+    mocks.isAbortError.mockImplementation((error) => error === abortError);
+    const rejectDelete = () => ({
+      delete: vi.fn(() => ({
+        eq: vi.fn(() => ({ eq: vi.fn(() => Promise.reject(abortError)) })),
+      })),
+    });
+    mocks.from.mockImplementation(rejectDelete);
+
+    await expect(deleteJournalEntryFromCloud("entry-aborted", "user-1")).rejects.toBe(abortError);
+    await expect(deleteJournalPhotoFromCloud("photo-aborted", "user-1")).rejects.toBe(abortError);
+    await expect(deleteJournalAudioFromCloud("audio-aborted", "user-1")).rejects.toBe(abortError);
   });
 });

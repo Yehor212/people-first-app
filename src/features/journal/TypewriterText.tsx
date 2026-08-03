@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { useReducedMotion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getJournalDayOfYear } from "./journalDateUtils";
 
 const WRITING_PROMPTS_KEYS = [
   "diaryPrompt1", "diaryPrompt2", "diaryPrompt3", "diaryPrompt4", "diaryPrompt5",
@@ -42,10 +43,7 @@ export const TypewriterText = memo(function TypewriterText({ className, onPrompt
   const prompts = WRITING_PROMPTS_KEYS.map((key, i) => ts[key] || FALLBACK_PROMPTS[i]);
 
   // Deterministic prompt order per day
-  const today = new Date();
-  const dayOfYear = Math.floor(
-    (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000
-  );
+  const dayOfYear = getJournalDayOfYear();
   const startIndex = dayOfYear % prompts.length;
 
   const [promptIndex, setPromptIndex] = useState(startIndex);

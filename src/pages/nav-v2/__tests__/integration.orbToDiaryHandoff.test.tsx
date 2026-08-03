@@ -96,7 +96,7 @@ describe("Integration - Orb -> Diary handoff via pendingMoodContext", () => {
     expect(journalModuleSource).toContain("handleNewEntryWithPrefill(suggestion.prefill)");
     expect(journalModuleSource).not.toContain("portalEntryPrefill ?? initialSuggestionRef.current?.prefill");
     expect(journalModuleSource).toMatch(
-      /const hasInitialEntrySuggestion =\s*!!initialEntrySuggestion &&\s*!!initialSuggestionRef\.current &&\s*!initialSuggestionConsumedRef\.current &&\s*journal\.view === "list";/,
+      /const hasInitialEntrySuggestion =\s*!!initialEntrySuggestion &&\s*!!initialSuggestionRef\.current &&\s*!initialSuggestionConsumedRef\.current &&\s*deferredInitialSuggestionKey !== currentInitialSuggestionKey &&\s*journal\.view === "list";/,
     );
     expect(journalModuleSource).toMatch(/const visibleExtraSuggestions = useMemo\([\s\S]*?showEntrySuggestionCards/);
   });

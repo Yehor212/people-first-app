@@ -1,4 +1,10 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { Loader2, Save, UserRound } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -7,9 +13,14 @@ import { logger } from "@/lib/logger";
 import { sanitizeUserName } from "@/lib/sanitize";
 import {
   assertSettingsOwnerCurrent,
+  readVerifiedSettingsOwnerRealm,
   SettingsOwnerBoundaryError,
+  type VerifiedSettingsOwnerRealm,
 } from "@/lib/settingsOwnerBoundary";
-import { getCurrentSessionUserId } from "@/lib/supabaseClient";
+import {
+  captureOriginAccountBoundaryGeneration,
+  subscribeOriginAccountBoundaryObservation,
+} from "@/storage/accountBoundaryRuntime";
 import { userNameSchema } from "@/lib/validation";
 
 import {
@@ -28,33 +39,55 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
     controls.userName === "Friend" && controls.userNameCustom === false ? "" : controls.userName;
   const [name, setName] = useState(visibleName);
   const [nameStatus, setNameStatus] = useState<string | null>(null);
+  const [nameSaveError, setNameSaveError] = useState<string | null>(null);
   const [lastSavedName, setLastSavedName] = useState(visibleName);
   const [isSavingName, setIsSavingName] = useState(false);
   const [nameTouched, setNameTouched] = useState(false);
+  const [ownerGeneration, setOwnerGeneration] = useState(() =>
+    captureOriginAccountBoundaryGeneration()
+  );
   const nameSaveGenerationRef = useRef(0);
+  const visibleNameRef = useRef(visibleName);
   const nameErrorId = useId();
+  visibleNameRef.current = visibleName;
+
+  useEffect(
+    () => subscribeOriginAccountBoundaryObservation(setOwnerGeneration),
+    []
+  );
+
+  useEffect(() => {
+    nameSaveGenerationRef.current += 1;
+    const currentVisibleName = visibleNameRef.current;
+    setName(currentVisibleName);
+    setLastSavedName(currentVisibleName);
+    setNameStatus(null);
+    setNameSaveError(null);
+    setNameTouched(false);
+    setIsSavingName(false);
+  }, [ownerGeneration]);
 
   useEffect(() => {
     setName(visibleName);
     setLastSavedName(visibleName);
     setNameStatus(null);
+    setNameSaveError(null);
     setNameTouched(false);
   }, [visibleName]);
-
-  useEffect(() => {
-    if (!nameStatus) return;
-    const timer = window.setTimeout(() => setNameStatus(null), 2400);
-    return () => window.clearTimeout(timer);
-  }, [nameStatus]);
 
   const trimmedName = name.trim();
   const sanitizedName = sanitizeUserName(trimmedName);
   const sanitizedCurrentName = sanitizeUserName(lastSavedName);
-  const isNameValid =
+  const isNameLengthValid = trimmedName.length >= 1 && trimmedName.length <= 100;
+  const isNameContentValid =
     userNameSchema.safeParse(trimmedName).success && sanitizedName === trimmedName;
+  const isNameValid = isNameLengthValid && isNameContentValid;
   const nameValidationMessage =
     nameTouched && !isNameValid
-      ? tx.invalidNameFormat || "Enter a name between 1 and 100 characters."
+      ? isNameLengthValid
+        ? tx.invalidNameCharacters ||
+          "This name includes text ZenFlow can’t use. Try letters, numbers, spaces, or ordinary punctuation."
+        : tx.invalidNameFormat || "Enter a name between 1 and 100 characters."
       : null;
 
   const isNameSaveDisabled = isSavingName || !isNameValid || sanitizedName === sanitizedCurrentName;
@@ -74,35 +107,39 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
 
     const operationGeneration = ++nameSaveGenerationRef.current;
     setIsSavingName(true);
-    let expectedOwnerUserId: string | null = null;
-    let ownerCaptured = false;
+    setNameSaveError(null);
+    let ownerRealm: VerifiedSettingsOwnerRealm | null = null;
+    let localSaveCommitted = false;
 
     try {
-      expectedOwnerUserId = await getCurrentSessionUserId();
-      ownerCaptured = true;
-      await assertSettingsOwnerCurrent(expectedOwnerUserId, "Profile name save");
+      const verifiedOwnerRealm = await readVerifiedSettingsOwnerRealm("Profile name save");
+      ownerRealm = verifiedOwnerRealm;
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Profile name save");
       if (operationGeneration !== nameSaveGenerationRef.current) return;
 
+      await controls.onNameChange(sanitized, true, verifiedOwnerRealm.generation);
+      localSaveCommitted = true;
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Profile name save");
+      if (operationGeneration !== nameSaveGenerationRef.current) return;
       setName(sanitized);
       setLastSavedName(sanitized);
-      controls.onNameChange(sanitized);
       setNameStatus(tx.nameSaved || "Saved");
-      if (!expectedOwnerUserId) {
+      if (verifiedOwnerRealm.kind === "local") {
         setNameStatus(tx.nameSavedLocally || "Saved on this device");
         return;
       }
 
-      const success = await updateProfileName(expectedOwnerUserId, sanitized);
-      await assertSettingsOwnerCurrent(expectedOwnerUserId, "Profile name save");
+      const success = await updateProfileName(verifiedOwnerRealm.ownerUserId, sanitized);
+      await assertSettingsOwnerCurrent(verifiedOwnerRealm, "Profile name save");
       if (operationGeneration !== nameSaveGenerationRef.current) return;
       if (!success) {
         setNameStatus(tx.nameSavedLocally || "Saved on this device");
       }
     } catch (error) {
       if (error instanceof SettingsOwnerBoundaryError) return;
-      if (ownerCaptured) {
+      if (ownerRealm) {
         try {
-          await assertSettingsOwnerCurrent(expectedOwnerUserId, "Profile name save error");
+          await assertSettingsOwnerCurrent(ownerRealm, "Profile name save error");
         } catch (ownerError) {
           if (ownerError instanceof SettingsOwnerBoundaryError) return;
           throw ownerError;
@@ -110,7 +147,15 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
       }
       if (operationGeneration !== nameSaveGenerationRef.current) return;
       logger.error("[V2Settings] Failed to update profile name:", error);
-      setNameStatus(tx.nameSavedLocally || "Saved on this device");
+      if (localSaveCommitted) {
+        setNameStatus(tx.nameSavedLocally || "Saved on this device");
+      } else {
+        setNameStatus(null);
+        setNameSaveError(
+          tx.settingsPreferenceSaveError ||
+            "Couldn’t save this change. Your previous setting is still active."
+        );
+      }
     } finally {
       if (operationGeneration === nameSaveGenerationRef.current) {
         setIsSavingName(false);
@@ -140,6 +185,7 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
             setName(value);
             setNameTouched(true);
             setNameStatus(null);
+            setNameSaveError(null);
           }}
           autoComplete="name"
           placeholder={tx.profileNamePlaceholder || "Enter your name"}
@@ -165,6 +211,11 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
       {nameValidationMessage ? (
         <p id={nameErrorId} role="alert" className="text-sm text-destructive">
           {nameValidationMessage}
+        </p>
+      ) : null}
+      {nameSaveError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {nameSaveError}
         </p>
       ) : null}
       <div>

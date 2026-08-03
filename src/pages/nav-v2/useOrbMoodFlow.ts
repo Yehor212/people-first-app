@@ -43,8 +43,8 @@ export interface UseOrbMoodFlowReturn {
   handleNoteChange: (note: string) => void;
   handleNextStep: () => void;
   handleBackStep: () => void;
+  handleSaveMood: () => void;
   handleOpenDiary: () => void;
-  handleSkip: () => void;
 }
 
 interface UseOrbMoodFlowOptions {
@@ -143,7 +143,7 @@ export function useOrbMoodFlow(
     setStep("orb-select");
   }, []);
 
-  const handleOpenDiary = useCallback(() => {
+  const commitDraftMood = useCallback(() => {
     if (!canOpenDiary) return;
 
     const now = Date.now();
@@ -169,35 +169,57 @@ export function useOrbMoodFlow(
         updateChallengeProgress: () => undefined,
       });
     }
-    setPendingMoodContext({
-      valence: draftValence ?? 0,
-      mood,
-      scope: draftScope,
-      specificTime: draftSpecificTime,
-      emotion: draftEmotion,
-      note: note || null,
-      committedAt: now,
-    });
 
-    useMoodEntryDraftStore.getState().reset();
-    setStep("orb-select");
-    navigateToPage?.("diary");
+    return {
+      mood,
+      note,
+      committedAt: now,
+    };
   }, [
     canOpenDiary,
     draftEmotion,
     draftNote,
     draftScope,
-    draftSpecificTime,
     draftValence,
-    navigateToPage,
     onAddMood,
-    setPendingMoodContext,
   ]);
 
-  const handleSkip = useCallback(() => {
+  const resetFlow = useCallback(() => {
     useMoodEntryDraftStore.getState().reset();
     setStep("orb-select");
   }, []);
+
+  const handleSaveMood = useCallback(() => {
+    if (!commitDraftMood()) return;
+    resetFlow();
+  }, [commitDraftMood, resetFlow]);
+
+  const handleOpenDiary = useCallback(() => {
+    const committedMood = commitDraftMood();
+    if (!committedMood) return;
+
+    setPendingMoodContext({
+      valence: draftValence ?? 0,
+      mood: committedMood.mood,
+      scope: draftScope,
+      specificTime: draftSpecificTime,
+      emotion: draftEmotion,
+      note: committedMood.note || null,
+      committedAt: committedMood.committedAt,
+    });
+
+    resetFlow();
+    navigateToPage?.("diary");
+  }, [
+    commitDraftMood,
+    draftEmotion,
+    draftScope,
+    draftSpecificTime,
+    draftValence,
+    navigateToPage,
+    resetFlow,
+    setPendingMoodContext,
+  ]);
 
   return {
     userName: userName || "Friend",
@@ -220,7 +242,7 @@ export function useOrbMoodFlow(
     handleNoteChange,
     handleNextStep,
     handleBackStep,
+    handleSaveMood,
     handleOpenDiary,
-    handleSkip,
   };
 }

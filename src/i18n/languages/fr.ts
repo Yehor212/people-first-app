@@ -172,9 +172,9 @@ export const fr: Translations = {
   insightMorning: "le matin",
   insightAfternoon: "l'après-midi",
   insightEvening: "le soir",
-  insightHabitImprovesMood: "{habit} améliore votre humeur",
+  insightHabitImprovesMood: "Vos relevés associent « {habit} » à une humeur plus élevée",
   insightHabitImprovesMoodDesc:
-    'Les jours où vous complétez "{habit}", votre humeur est {percent}% meilleure en moyenne.',
+    "Sur {sampleDays} jours enregistrés avec « {habit} », l’humeur moyenne était de {avgMoodWith}/5, contre {avgMoodWithout}/5 sur {comparisonDays} autres jours enregistrés. Il s’agit d’une association dans vos relevés, et non d’une preuve que l’habitude a causé ce changement.",
   insightFocusBestLabel: 'Vous vous concentrez mieux sur "{label}"',
   insightFocusBestLabelDesc:
     'Votre temps de concentration moyen pour "{label}" est de {minutes} minutes, plus élevé que pour d\'autres activités.',
@@ -184,9 +184,9 @@ export const fr: Translations = {
   insightBestTimeForHabit: "Meilleur moment pour {habit}: {time}",
   insightBestTimeForHabitDesc:
     'Vous avez {percent}% plus de chances de compléter "{habit}" {time} par rapport à {worstTime} ({worstPercent}%).',
-  insightTagBoostsMood: '"{tag}" améliore votre humeur',
+  insightTagBoostsMood: "Vos relevés associent le tag « {tag} » à une humeur plus élevée",
   insightTagBoostsMoodDesc:
-    'Les jours avec le tag "{tag}" montrent {percent}% d\'humeur meilleure en moyenne.',
+    "Dans {occurrences} entrées portant le tag « {tag} », l’humeur moyenne était de {avgMoodWith}/5, contre {avgMoodWithout}/5 dans {untaggedEntries} entrées sans tag. Il s’agit d’une association dans vos relevés, et non d’une preuve que le tag a causé ce changement.",
 
   // Module names (v1.6.1 - OnboardingFlow)
   moduleFocus: "Minuteur Focus",
@@ -350,6 +350,7 @@ export const fr: Translations = {
   breathingSleepDesc: "Expiration lente",
   breatheIn: "Inspire",
   breatheOut: "Expire",
+  breatheGently: "Respirez doucement",
   hold: "Retiens",
   cycles: "cycles",
   cycle: "Cycle",
@@ -489,8 +490,8 @@ export const fr: Translations = {
   userLevel: "Niveau",
   focusSession: "Session de concentration",
   // TimeHelper
-  timeBlindnessHelper: "Aide à la cécité temporelle",
-  visualTimeAwareness: "Conscience visuelle du temps",
+  timeBlindnessHelper: "Minuteur visuel",
+  visualTimeAwareness: "Un minuteur visuel pour la durée de votre choix",
   hoursMinutesLeft: "{hours}h {mins}m restantes",
   minutesLeft: "{mins}m restantes",
   timesUp: "C'est l'heure !",
@@ -504,11 +505,11 @@ export const fr: Translations = {
   startTimer: "Démarrer le minuteur",
   pauseTimer: "Mettre en pause",
   resetTimer: "Réinitialiser",
-  adhdTimeManagement: "Planification flexible du temps",
-  adhdTip1: "Les signaux audio aident à suivre le temps",
-  adhdTip2: "Le compte à rebours visuel réduit l'anxiété",
-  adhdTip3: "Prédiction de fin = meilleure planification",
-  adhdTip4: "Les changements de couleur avertissent du temps restant",
+  adhdTimeManagement: "Fonctions du minuteur",
+  adhdTip1: "Des signaux sonores facultatifs marquent le passage du temps",
+  adhdTip2: "Le compte à rebours indique le temps restant",
+  adhdTip3: "L’heure de fin prévue s’affiche pendant le fonctionnement du minuteur",
+  adhdTip4: "Les couleurs changent à l’approche de la fin du minuteur",
   currentStreak: "Série actuelle",
   daysInRow: "Jours consécutifs",
   totalFocus: "Focus total",
@@ -535,9 +536,12 @@ export const fr: Translations = {
   yourName: "Votre nom",
   profileNamePlaceholder: "Saisissez votre nom",
   saveName: "Enregistrer le nom",
+  saving: "Enregistrement…",
   nameSaved: "Nom enregistré",
   nameSavedLocally: "Enregistré sur cet appareil",
   invalidNameFormat: "Saisissez un nom de 1 à 100 caractères.",
+  invalidNameCharacters:
+    "Ce nom contient du texte que ZenFlow ne peut pas utiliser. Essayez avec des lettres, des chiffres, des espaces ou des signes de ponctuation courants.",
   notifications: "Notifications",
   notificationsComingSoon: "Les notifications seront disponibles dans les prochaines mises à jour.",
   settingsOverviewDescription:
@@ -549,6 +553,10 @@ export const fr: Translations = {
   settingsSoundRestoreDescription:
     "Les sons désactivés auparavant le restent jusqu’à ce que vous les réactiviez.",
   settingsSoundRestoreAction: "Réactiver les sons",
+  settingsSoundActivityRestoreTitle: "Certains sons d’activité sont désactivés",
+  settingsSoundActivityRestoreDescription:
+    "Les sons désactivés auparavant restent coupés jusqu’à ce que vous les réactiviez.",
+  settingsSoundActivityRestoreAction: "Activer tous les sons d’activité",
   settingsSoundMasterDisabledHint: "Activez le son de l’app pour utiliser ces réglages.",
   settingsAccountBackupTitle: "Compte et sauvegarde",
   settingsAccountBackupDescription:
@@ -556,7 +564,7 @@ export const fr: Translations = {
   settingsAccountSignedIn: "Vous êtes connecté",
   settingsAccountSignedOut: "Vous n’êtes pas connecté",
   settingsAccountDataOnDevice:
-    "Vos données restent sur cet appareil. Connectez-vous pour les sauvegarder et les retrouver sur vos autres appareils.",
+    "Vous pouvez utiliser ZenFlow sans compte. Connectez-vous pour enregistrer vos prochaines modifications en ligne et les retrouver sur vos autres appareils.",
   settingsAccountBackupChecking: "Vérification de votre compte…",
   settingsAccountBackupCheckingDescription:
     "Vos données restent sur cet appareil pendant que ZenFlow vérifie votre compte.",
@@ -591,7 +599,7 @@ export const fr: Translations = {
   data: "Données",
   exportData: "Exporter les données",
   importData: "Importer les données",
-  importMode: "Comment ajouter cette sauvegarde ?",
+  importMode: "Comment souhaitez-vous utiliser cette sauvegarde ?",
   importMerge: "Mettre à jour les données",
   importReplace: "Remplacer les données",
   exportSuccess: "Export prêt.",
@@ -607,11 +615,11 @@ export const fr: Translations = {
     "La sauvegarde a été partagée, mais ZenFlow n’a pas pu supprimer la copie temporaire de cet appareil.",
   pushRevocationIncomplete:
     "ZenFlow n’a pas pu déconnecter complètement les notifications distantes de cet appareil.",
-  sessionTimeoutDelayedTitle: "Déconnexion différée",
+  sessionTimeoutDelayedTitle: "Déconnexion automatique reportée",
   sessionTimeoutPendingChanges:
-    "ZenFlow vous a laissé connecté, car certaines modifications attendent encore d’être enregistrées. Une nouvelle tentative aura lieu bientôt.",
+    "La déconnexion automatique a été reportée, car certaines modifications attendent encore d’être enregistrées. ZenFlow réessaiera bientôt.",
   sessionTimeoutCleanupFailed:
-    "ZenFlow vous a laissé connecté, car cet appareil n’a pas pu être nettoyé en toute sécurité. Une nouvelle tentative aura lieu bientôt.",
+    "ZenFlow vous a laissé connecté, car la déconnexion automatique n’a pas pu se terminer en toute sécurité. Une nouvelle tentative aura lieu bientôt.",
   syncCriticalBlocked:
     "Un enregistrement important en ligne n’a pas pu aboutir. La modification reste sur cet appareil. Réessayez une fois connecté.",
   exportCSV: "Fichier tableur (CSV)",
@@ -641,6 +649,9 @@ export const fr: Translations = {
   invalidInput: "Veuillez vérifier votre saisie",
   comingSoon: "bientôt",
   resetAllData: "Effacer les données sur cet appareil",
+  resetDataError: "Impossible de réinitialiser les données. Réessayez.",
+  resetDataSuccess: "Les données de cet appareil ont été réinitialisées.",
+  resetting: "Réinitialisation…",
   privacyTitle: "Confidentialité",
   privacyDescription:
     "Pas de suivi caché. La synchronisation des appareils démarre seulement après connexion et activation de la sauvegarde en ligne.",
@@ -677,6 +688,10 @@ export const fr: Translations = {
   themeChangeSaved: "Modification enregistrée",
   settingsPreferenceSaveError:
     "Cette modification n’a pas pu être enregistrée. Le réglage précédent reste actif.",
+  settingsPostCommitDeferred:
+    "Ce réglage a été enregistré, mais une autre modification n’a pas pu être entièrement enregistrée sur cet appareil.",
+  settingsPostCommitRefresh:
+    "Ce réglage a été enregistré, mais l’écran n’affiche peut-être pas encore la version la plus récente.",
   settingsReduceMotion: "Réduire les animations",
   settingsReduceMotionDescription: "Réduit les transitions animées et les effets décoratifs.",
   settingsReduceMotionSystemDescription: "L’appareil est déjà réglé pour réduire les animations.",
@@ -767,8 +782,11 @@ export const fr: Translations = {
   settingsImportTitle: "Importer une sauvegarde",
   settingsImportMergeTooltip:
     "Les nouveaux éléments seront ajoutés, ceux qui correspondent pourront être mis à jour et ceux marqués comme supprimés dans la sauvegarde seront supprimés de cet appareil.",
+  importAccountUnavailable:
+    "Vous pouvez importer une sauvegarde uniquement lorsque vous utilisez ZenFlow sans compte connecté.",
   settingsImportReplaceTooltip:
     "Les données que ZenFlow inclut dans ses sauvegardes seront d’abord supprimées de cet appareil. Seuls les éléments de la sauvegarde choisie seront ensuite restaurés ; ceux qui n’y figurent pas seront supprimés. Les réglages enregistrés uniquement sur cet appareil resteront inchangés.",
+  settingsImportReplaceAction: "Remplacer par la sauvegarde",
   settingsImportReplaceConfirm:
     "Saisissez « REPLACE » pour remplacer les données de cet appareil par la sauvegarde choisie",
   // Import validation (v1.4.1)
@@ -888,19 +906,20 @@ export const fr: Translations = {
     "ZenFlow a besoin d’une vérification réseau pour confirmer la dernière version. Rien n’a changé sur cet appareil.",
   remindersTitle: "Rappels",
   remindersDescription:
-    "Choisissez quand ZenFlow vous rappelle de noter votre humeur et de vous concentrer.",
+    "Active ou désactive les rappels d’humeur, de concentration et d’habitudes. L’heure de chaque habitude se règle dans son menu.",
   moodReminder: "Heure du check-in humeur",
   habitReminder: "Rappel d'habitude",
   focusReminder: "Rappel de focus",
-  quietHours: "Heures calmes",
+  quietHours: "Heures calmes pour l’humeur et la concentration",
   quietHoursStart: "Début du calme",
   quietHoursEnd: "Fin du calme",
   reminderDays: "Jours de la semaine",
   settingsMoodCheckIns: "Points d’humeur",
-  settingsMoodCheckInsDescription: "Des rappels discrets pour noter son ressenti.",
+  settingsMoodCheckInsDescription:
+    "Trois rappels chaque jour sélectionné : le matin, l’après-midi et le soir.",
   settingsFocusReminder: "Rappel de concentration",
   settingsFocusReminderDescription: "Un rappel vers l’heure choisie.",
-  settingsReminderChooseDay: "Choisir au moins un jour. Aucun rappel ne sera envoyé avant.",
+  settingsReminderChooseDay: "Choisissez les jours des rappels d’humeur et de concentration.",
   selectedHabits: "Habitudes à rappeler",
   noHabitsYet: "Pas encore d'habitudes.",
   noHabitsInCategory: "Aucune habitude dans cette catégorie",
@@ -925,12 +944,13 @@ export const fr: Translations = {
   legendDone: "Fait",
   legendAuto: "Auto",
   legendSkip: "Ignoré",
-  reminderMoodTitle: "Hey, ça va? 💭",
-  reminderMoodBody: "30 secondes pour remercier ton cerveau. Comment tu te sens?",
-  reminderHabitTitle: "L'heure de la mini-habitude! ✨",
-  reminderHabitBody: "Petit pas = grande victoire. On y va?",
-  reminderFocusTitle: "Power focus! 🎯",
-  reminderFocusBody: "Juste 25 min pour le mode héros. C'est parti?",
+  reminderMoodTitle: "Un moment pour faire le point",
+  reminderMoodBody: "Si vous le souhaitez, notez comment vous vous sentez.",
+  reminderHabitTitle: "Rappel d’habitude",
+  reminderHabitBody: "Un petit pas suffit. Commencez quand vous le souhaitez.",
+  reminderFocusTitle: "Envie de vous concentrer ?",
+  reminderFocusBody:
+    "Une séance de concentration de 25 minutes est disponible quand cela vous convient.",
   reminderDismiss: "Pas maintenant",
   notificationPermissionTitle: "Reste sur la bonne voie",
   notificationPermissionDescription:
@@ -1017,7 +1037,11 @@ export const fr: Translations = {
     "Marquer un appareil inactif le masque de cette liste ; cela ne le déconnecte pas.",
   syncDeviceCurrent: "Appareil actuel",
   syncDeviceRevoked: "Inactif",
-  syncDeviceLastSeen: "Vu pour la dernière fois",
+  syncDeviceLastSeen: "Dernière activité : {value}",
+  syncDeviceLastSeenUnknown: "Inconnue",
+  syncDeviceBrowser: "Navigateur",
+  syncDeviceInstalledApp: "Application ZenFlow",
+  syncDeviceUnknownSystem: "Système inconnu",
   syncRevokeDevice: "Marquer inactif",
   syncRevoking: "Marquage inactif",
   syncPriority: "Prioritaire",
@@ -1057,12 +1081,15 @@ export const fr: Translations = {
   deleteAccount: "Supprimer le compte",
   deleteAccountConfirm: "Supprimer votre compte ?",
   deleteAccountTypeConfirm: "Tapez « SUPPRIMER » pour confirmer :",
-  deleteAccountWarning: "Cela supprimera les données en ligne et l'accès au compte.",
+  deleteAccountWarning:
+    "Si vous supprimez votre compte, vous ne pourrez plus vous connecter à ZenFlow avec ce compte. Les données enregistrées dans ce compte et les données de ce compte sur cet appareil seront supprimées. Cette action est irréversible. Les retours que vous avez envoyés sont conservés séparément et ne sont pas supprimés automatiquement.",
   deleteAccountSuccess: "Compte supprimé.",
   deleteAccountError: "Impossible de supprimer le compte.",
+  deleteAccountOutcomeUnknown:
+    "Nous n’avons pas pu confirmer si le compte a déjà été supprimé. Réessayez pour vérifier et terminer la suppression.",
   deleteAccountDeletedCleanupFailed:
     "Votre compte a été supprimé, mais des données peuvent rester sur cet appareil. Redémarrez ZenFlow avant d’utiliser un autre compte.",
-  deleteAccountLink: "Supprimer le compte/données",
+  deleteAccountLink: "Ce qui est supprimé ou conservé",
   deleteConfirmWord: "SUPPRIMER",
   authEmailSent: "Lien de connexion envoyé à votre e-mail.",
   authSignedOut: "Déconnecté.",
@@ -1077,6 +1104,19 @@ export const fr: Translations = {
     "Reconnectez-vous à votre compte précédent, connectez-vous à Internet et attendez que ZenFlow termine l’enregistrement. Vous pourrez ensuite changer de compte à nouveau.",
   authRecoverLegacyChanges: "Récupérer les changements avec ce compte",
   authUseDifferentAccount: "Utiliser un autre compte",
+  authImportedBackupAccountChoice:
+    "ZenFlow va essayer de fusionner cette sauvegarde avec les données de {account} et d’y enregistrer le résultat. Si la première tentative échoue, cette sauvegarde restera sur cet appareil. Vous pourrez réessayer ou continuer pour laisser ZenFlow réessayer automatiquement. Une fois les données fusionnées, ZenFlow ne pourra pas les séparer automatiquement.",
+  authImportedBackupActionFailed:
+    "ZenFlow n’a pas pu terminer ce choix. Ni l’enregistrement en ligne ni la déconnexion n’ont été confirmés. La sauvegarde reste sur cet appareil. Vérifiez la connexion et choisissez à nouveau.",
+  authImportedBackupDecisionSettled:
+    "Une autre fenêtre ZenFlow a déjà traité cette sauvegarde. Le premier choix a été conservé. Continuez pour voir le résultat.",
+  authImportedBackupRecoveryRequired:
+    "ZenFlow ne peut pas confirmer l’état de récupération locale de cette sauvegarde. Elle restera séparée de votre compte. Continuez sans compte pour rétablir l’accès local.",
+  authImportedBackupRecoveryTitle: "Choisissez comment récupérer cette sauvegarde",
+  authImportedBackupSaveFailed:
+    "ZenFlow a lié cette sauvegarde à {account}, mais n’a pas pu terminer la fusion ni l’enregistrement en ligne. Cette sauvegarde reste sur cet appareil. Réessayez maintenant, ou continuez pour laisser ZenFlow réessayer automatiquement.",
+  authAddImportedBackupToAccount: "Fusionner et enregistrer dans {account}",
+  authKeepImportedBackupOnDevice: "Garder uniquement ici et se déconnecter",
   authSignOutCleanupFailed:
     "ZenFlow n’a pas pu terminer la déconnexion en toute sécurité. Réessayez.",
   authSignOutFailed: "La déconnexion n’a pas abouti. Réessayez.",
@@ -1092,11 +1132,13 @@ export const fr: Translations = {
   errorBoundaryTitle: "Quelque chose s'est mal passé",
   errorBoundaryBody: "Essayez de recharger l'application.",
   errorBoundaryKicker: "Mode de récupération ZenFlow",
-  errorBoundarySafeTitle: "Vos données sont en sécurité",
+  errorBoundarySafeTitle: "La récupération a interrompu cet écran",
   errorBoundarySafeBody:
-    "Le mode de récupération a seulement mis cet écran en pause. La dernière erreur a été enregistrée sur cet appareil.",
+    "Le rechargement peut restaurer l'écran. Les modifications dont l'enregistrement n'était pas terminé devront peut-être être saisies à nouveau.",
   errorBoundaryActionHint: "Recharger reconnecte généralement l'application en quelques secondes.",
   errorBoundaryReload: "Recharger l'application",
+  errorBoundaryReloadFailed:
+    "L'application n'a pas pu être rechargée en toute sécurité. Réessayez.",
   modalErrorTitle: "Quelque chose s'est mal passé",
   modalErrorBody: "Cette fonctionnalité a rencontré une erreur. Essayez de fermer et de rouvrir.",
   tryAgain: "Réessayer",
@@ -1123,6 +1165,8 @@ export const fr: Translations = {
   pushPermissionDenied: "Activez les notifications de ZenFlow dans les réglages de votre appareil.",
   remindersNativeOnly: "Pour régler les rappels, ouvrez l’app mobile ZenFlow.",
   habitRemindersManagedInHabits: "Réglez le rappel dans le menu de chaque habitude.",
+  habitReminderAtLeastOneDay:
+    "Gardez au moins un jour sélectionné. Pour désactiver ce rappel, supprimez-le.",
   areYouSure: "Êtes-vous sûr?",
   cannotBeUndone: "Cette action ne peut pas être annulée.",
   delete: "Supprimer",
@@ -1371,6 +1415,13 @@ export const fr: Translations = {
   settingsSoundActivityTitle: "Sons d’activité",
   settingsSoundActivityDescription:
     "Diffuser un son discret après une activité terminée, un minuteur ou certains paliers.",
+  settingsSoundPreviewTitle: "Écouter les sons d’activité",
+  settingsSoundPreviewDescription: "Écoutez chaque signal tout de suite, sans attendre un événement réel.",
+  settingsSoundPreviewSuccess: "Enregistré",
+  settingsSoundPreviewComplete: "Terminé",
+  settingsSoundPreviewStreak: "Série",
+  settingsSoundPreviewMilestone: "Jalon",
+  settingsSoundPreviewNotification: "Rappel",
   settingsSoundCompletionCues: "Sons de confirmation",
   settingsSoundCompletionCuesDesc: "Diffuser un son discret après une activité terminée.",
   settingsSoundReminderCues: "Sons de rappel dans ZenFlow",
@@ -1470,7 +1521,12 @@ export const fr: Translations = {
   journalSaving: "Enregistrement...",
   journalSaved: "Enregistré",
   journalSaveFailed: "Échec de sauvegarde",
+  journalDeleteFailed: "Impossible de supprimer l’entrée. Réessayez.",
   journalSaveFailedHint: "Votre texte est toujours à l’écran. Réessayez quand vous êtes prêt.",
+  journalSaveConflictTitle: "Version la plus récente conservée",
+  journalSaveConflictHint:
+    "Cette note a été modifiée dans un autre onglet ou sur un autre appareil. Vos modifications sont toujours ici. Réessayez uniquement si vous voulez remplacer la version la plus récente.",
+  journalSaveConflictRetry: "Remplacer la version la plus récente",
   journalRetry: "Réessayer",
   journalSynced: "À jour",
   journalMilestone: "mots !",
@@ -1732,6 +1788,12 @@ export const fr: Translations = {
   weatherFactors: "Facteurs d'influence",
   language: "Langue",
   selectLanguage: "Sélectionner la langue",
+  languageApplying: "Application de la langue...",
+  languageLoadFailed: "Impossible de charger cette langue. Vérifiez votre connexion et réessayez.",
+  languageSaveFailed:
+    "Cette langue est active pour le moment, mais ZenFlow n’a pas pu enregistrer votre choix sur cet appareil. Vous pouvez continuer ou réessayer.",
+  languageReminderUpdateFailed:
+    "La langue de l’application a changé, mais les rappels peuvent encore s’afficher dans l’ancienne langue. Réessayez.",
   welcomeTitle: "Bienvenue sur ZenFlow",
   welcomeSubtitle: "Votre voyage vers une vie consciente commence ici",
   continue: "Continuer",
@@ -2089,7 +2151,8 @@ export const fr: Translations = {
   insightsHelp1:
     "Les aperçus sont générés à partir de tes données personnelles à l'aide d'analyses statistiques.",
   insightsHelp2: "Toute l’analyse se fait sur votre appareil - vos données ne partent jamais.",
-  insightsHelp3: "Les schémas avec une confiance plus élevée sont affichés en premier.",
+  insightsHelp3:
+    "Les tendances sont classées selon la quantité de données enregistrées et l’ampleur de la différence observée.",
   insightsDismiss: "Ignorer",
   insightsShowMore: "Afficher plus",
   insightsShowLess: "Afficher moins",
@@ -2330,6 +2393,10 @@ export const fr: Translations = {
     "ZenFlow n’a pas pu terminer le changement du son de rappel. Vérifiez le son sélectionné et réessayez.",
   reminderReconcileFailed:
     "ZenFlow n’a pas pu mettre à jour les rappels. Votre appareil utilise peut-être encore l’ancien programme. Réessayez.",
+  reminderReconcileRestored:
+    "ZenFlow n’a pas pu appliquer la dernière modification des rappels. Seuls les rappels encore activés conservent leur ancien horaire.",
+  reminderReconcileUncertain:
+    "ZenFlow n’a pas pu terminer la mise à jour des rappels. Certains peuvent manquer ou apparaître en double.",
   soundDefault: "Par défaut",
   soundDefaultDesc: "Son de notification système",
   soundGentle: "Doux",
@@ -2359,7 +2426,7 @@ export const fr: Translations = {
 
   // Insight Card Details
   insightConfidence: "Confiance",
-  insightDataPoints: "Points de données",
+  insightDataPoints: "entrées enregistrées",
   insightAvgMoodWith: "Humeur moyenne avec habitude",
   insightAvgMoodWithout: "Humeur moyenne sans habitude",
   insightSampleDays: "Jours échantillonnés",
@@ -2457,16 +2524,18 @@ export const fr: Translations = {
   indexedDBTimeout: "Le stockage est lent",
   indexedDBTimeoutDesc: "L’enregistrement prend plus de temps que prévu.",
   // Database recovery
-  databaseRecoveryTitle: "Les données sur cet appareil ont été réinitialisées",
-  databaseRecoveryDesc:
-    "Le stockage de cet appareil a été effacé. Nous allons essayer de restaurer vos données depuis la sauvegarde en ligne.",
-  databaseRecoveryRestore: "Restaurer depuis la sauvegarde en ligne",
-  databaseRecoveryStartFresh: "Recommencer à zéro",
+  databaseRecoveryTitle: "Vos données enregistrées sont temporairement indisponibles",
+  databaseRecoveryDesc: "ZenFlow n’a rien supprimé. Gardez l’application ouverte et réessayez.",
+  databaseRecoveryRestore: "Réessayer",
+  databaseRecoveryStartFresh: "Pas maintenant",
+  databaseRecoveryChecking: "Vérification…",
   // Update required
   updateRequiredTitle: "Mise à jour disponible",
   updateRequiredDesc:
     "Une nouvelle version de l'application est disponible. Actualisez pour obtenir les dernières fonctionnalités et corrections.",
   updateRequiredRefresh: "Actualiser l'app",
+  updateRequiredRefreshFailed:
+    "L'app est restée ouverte, car l'enregistrement de vos dernières modifications n'a pas pu être confirmé. Réessayez.",
   imageGenerateFailed: "Échec de la génération d'image. Réessayez.",
   imageSavedDownloads: "Image enregistrée dans les téléchargements !",
   shareFailedDownload: "Impossible de partager. Essayez de télécharger.",
@@ -2595,9 +2664,16 @@ export const fr: Translations = {
   moodUpdated: "Humeur mise à jour",
   noParticipantsYet: "Partagez votre code de défi pour inviter des amis !",
   offlineBannerDismiss: "Fermer",
-  offlineBannerPending: "modifications en attente d’enregistrement en ligne",
+  offlineBannerPending: "{count} modifications en attente d’enregistrement en ligne",
+  offlineBannerPending_zero: "{count} modifications en attente d’enregistrement en ligne",
+  offlineBannerPending_one: "{count} modification en attente d’enregistrement en ligne",
+  offlineBannerPending_two: "{count} modifications en attente d’enregistrement en ligne",
+  offlineBannerPending_few: "{count} modifications en attente d’enregistrement en ligne",
+  offlineBannerPending_many: "{count} modifications en attente d’enregistrement en ligne",
   offlineBannerRetry: "Réessayer la connexion",
   offlineBannerTitle: "Vous êtes hors ligne",
+  offlineBannerStorageLimit:
+    "Cette modification n’a pas été enregistrée. ZenFlow a atteint la limite de stockage disponible pour l’application.",
   optional: "facultatif",
   participants: "Participants",
   participantsLocalOnly: "Connectez-vous pour voir les autres participants",
@@ -2718,10 +2794,13 @@ export const fr: Translations = {
   journalWriteEntry: "Écrire une entrée",
   journalWriteFirstEntry: "Écrire la première entrée",
   journalEntryBody: "Corps de l’entrée du journal",
+  journalEntry: "Entrée",
   journalEntries: "entrées",
   journalFavorites: "Favoris",
   journalFavoritesEmptyTitle: "Aucun favori pour le moment",
-  journalFavoritesEmptyHint: "Ajoute le tag favori à une entrée pour la garder ici.",
+  journalFavoritesEmptyHint: "Marque une entrée avec l’étoile pour la garder ici.",
+  journalAddFavorite: "Ajouter aux favoris",
+  journalRemoveFavorite: "Retirer des favoris",
   journalToday: "Aujourd'hui",
   journalYesterday: "Hier",
   journalThisWeek: "Cette semaine",
@@ -2739,6 +2818,7 @@ export const fr: Translations = {
   journalDeleteEntry: "Supprimer l'entrée ?",
   journalDeleteConfirm: "Voulez-vous vraiment supprimer cette entrée ?",
   entryDeleted: "Entrée supprimée",
+  entriesDeleted: "Entrées supprimées",
   entryDeleteFailedRestored: "Impossible de supprimer cette entrée. Elle a été restaurée.",
   goalAddSubtask: "Ajouter une sous-tâche",
   goalMarkComplete: "Marquer comme terminé",
@@ -2762,7 +2842,7 @@ export const fr: Translations = {
   journalLockTooShort: "Minimum 6 caractères",
   journalPasswordMismatch: "Les mots de passe ne correspondent pas",
   journalPasswordWrong: "Mot de passe incorrect",
-  journalPasswordCooldown: "Trop de tentatives. Attendez",
+  journalPasswordCooldown: "Trop de tentatives. Attendez {duration}.",
   journalPasswordHide: "Masquer le mot de passe",
   journalPasswordShow: "Afficher le mot de passe",
   journalPasswordForgot: "Impossible d'ouvrir le verrou ?",
@@ -2795,35 +2875,65 @@ export const fr: Translations = {
   journalResetMissingProof:
     "Ce lien e-mail n'a pas été confirmé dans l'app. Rien n'a changé; le verrou du journal reste actif et tes entrées restent protégées.",
   journalResetSendFailed: "Échec d'envoi du lien. Vérifiez votre connexion.",
+  journalResetSendTimedOut:
+    "La demande prend plus de temps que prévu. Vérifiez vos e-mails avant de réessayer.",
   journalResetResend: "Renvoyer le lien",
-  journalResetCooldown: "Attendez {seconds} s avant de demander un autre lien.",
+  journalResetCooldown: "Attendez {duration} avant de demander un autre lien.",
+  journalResetResendReady: "Vous pouvez maintenant demander un autre lien.",
+  journalResetCloseHint:
+    "Vous pouvez fermer cette fenêtre. Le lien reste valide jusqu’à son expiration ou son utilisation.",
+  journalMagicConfirmTitle: "Confirmer le lien reçu par e-mail",
+  journalMagicConfirmDescription:
+    "Continuez uniquement si vous avez demandé cet e-mail pour votre journal.",
+  journalMagicConfirmAction: "Confirmer dans ZenFlow",
+  journalMagicConfirmPending: "Confirmation...",
+  journalMagicConfirmError:
+    "Impossible de confirmer ce lien. Demandez-en un nouveau depuis votre journal.",
   journalResetTroubleshooting:
     "Si l’e-mail n’arrive pas, vérifiez les spams ou courriers indésirables, gardez cet appareil connecté, puis renvoyez le lien après le minuteur.",
   journalResetTryAgain: "Réessayer",
   journalResetDesktopUnavailable:
-    "Le retrait du verrou par email est disponible sur le web ou dans l'app mobile. Sur desktop, déverrouillez le journal avec votre mot de passe.",
+    "La vérification par e-mail peut retirer le verrou sur le web ou dans l’app mobile, mais elle ne peut pas déchiffrer les notes protégées. Sur ordinateur, utilisez le mot de passe du journal.",
   journalClose: "Fermer",
   journalSearch: "Rechercher des entrées...",
   journalAiSearchPlaceholder: "Décrivez ce que vous cherchez...",
   journalAiSwitchToTextSearch: "Passer à la recherche texte",
-  journalAiSwitchToAiSearch: "Passer à la recherche IA",
-  journalAiSearchOn: "Recherche IA activée",
-  journalAiIndexing: "Création de l'index de recherche IA...",
+  journalAiSwitchToAiSearch: "Passer à la recherche privée",
+  journalAiSearchOn: "Recherche privée activée",
+  journalAiIndexing: "Préparation de la recherche privée...",
   journalAiPrivacyConfirm:
-    "La recherche IA envoie le texte de recherche du journal et des extraits d'entrées à notre fournisseur IA pour créer des résultats privés. Continuer ?",
+    "La recherche privée fonctionne uniquement avec les entrées de votre compte ZenFlow. La fonction ZenFlow dans Supabase traite la requête et les entrées ; aucun texte du journal ni aucune requête n’est envoyé à un fournisseur d’IA externe et aucun index séparé n’est créé. Continuer ?",
+  journalAiSearchPrivacy: "Confidentialité de la recherche privée",
+  journalAiSearchOff:
+    "La recherche privée est désactivée. La recherche textuelle standard reste sur cet appareil.",
+  journalAiRevoke: "Désactiver la recherche privée et retirer son autorisation",
+  journalAiRevoking: "Désactivation de la recherche privée...",
+  journalAiRevokePending:
+    "La recherche privée est désactivée. L’autorisation sera retirée dès que vous serez en ligne.",
+  journalAiConsentUnavailable:
+    "ZenFlow n'a pas pu terminer ce changement de confidentialité. La recherche privée reste désactivée ; vérifiez votre connexion et votre compte, puis réessayez.",
+  journalAiConsentAccept: "Activer la recherche privée",
   journalNoResults: "Aucune entrée trouvée",
   journalEdit: "Modifier",
   journalUndo: "Annuler",
   journalEntryDeleted: "Entrée supprimée",
-  journalCompressing: "Compression...",
-  journalPhotoError: "Échec de l'ajout de la photo",
-  journalPhotoTooLarge: "Image trop volumineuse (max 10 Mo)",
-  journalPhotoInvalidType: "Type de fichier non pris en charge. Utilisez JPEG, PNG, WebP ou HEIC.",
+  journalCompressing: "Préparation de la photo...",
+  journalPhotoError: "Impossible d’ajouter cette photo. Réessayez.",
+  journalPhotoProcessingTimeout:
+    "Le traitement prend trop de temps. Essayez une photo plus petite.",
+  journalPhotoLoadError:
+    "Certaines photos n’ont pas pu être affichées. L’entrée n’a pas été modifiée.",
+  journalPhotoLoadRetry: "Réessayer de charger les photos",
+  journalPhotoStorageFull:
+    "L’espace disponible sur cet appareil est insuffisant. Libérez de l’espace, puis réessayez.",
+  journalPhotoTooLarge: "Cette photo dépasse 10 Mo. Choisissez une photo plus petite et réessayez.",
+  journalPhotoInvalidType: "Type de fichier non pris en charge. Utilisez JPEG, PNG ou WebP.",
   journalDraftFound: "Brouillon non enregistré trouvé",
   journalRestore: "Restaurer",
   journalDiscardTitle: "Modifications non enregistrées",
   journalDiscardMessage: "Vous avez des modifications non enregistrées.",
-  journalDiscard: "Abandonner",
+  journalDiscard: "Abandonner les modifications",
+  journalDiscardFailed: "Impossible d'abandonner ces modifications. Réessayez.",
   journalKeepWriting: "Continuer à écrire",
   journalSaveDraftOpenSettings: "Enregistrer le brouillon et ouvrir les paramètres",
   journalSaveDraftOpenSettingsDescription:
@@ -2912,6 +3022,14 @@ export const fr: Translations = {
   journalWritingPrompts: "Suggestions d'écriture",
   journalPromptsShort: "Idées",
   journalPrompt: "Suggestion",
+  journalUsePrompt: "Choisir une suggestion",
+  journalStickerPackEnableLabel: "Activer {pack}",
+  journalStickerPackDisableLabel: "Désactiver {pack}",
+  journalHistoryLoadPending: "Chargement des entrées précédentes…",
+  journalHistoryLoadFailed: "Certaines entrées précédentes ne sont pas encore disponibles",
+  journalHistoryLoadFailedHint:
+    "Les entrées affichées sont en sécurité. Réessayez de charger le reste.",
+  journalRetryHistory: "Recharger les entrées précédentes",
   journalPrompt1: "Qu'est-ce qui vous a fait sourire aujourd'hui ?",
   journalPrompt2: "Quel a été votre défi aujourd'hui ?",
   journalPrompt3: "De quoi êtes-vous reconnaissant ?",
@@ -2952,8 +3070,25 @@ export const fr: Translations = {
   journalReminderTime: "Heure",
   journalReminderNotifTitle: "C'est l'heure d'écrire ✍️",
   journalReminderNotifBody: "Prenez un moment pour capturer vos pensées et sentiments.",
+  journalReminderSaveError: "Le rappel n’a pas été modifié. Réessayez.",
+  journalReminderStateUnknown:
+    "ZenFlow n’a pas pu confirmer l’état du rappel. Rouvrez ce réglage et réessayez.",
+  journalStreakFrozenToday: "Votre série d’écriture est protégée aujourd’hui",
+  journalStreakFreezesAvailable: "{count} protections de série disponibles",
   journalInactiveBanner:
     "La dernière entrée date de {days} jours. Commencez une note si cela vous aide maintenant.",
+  journalInactiveBannerCountZero:
+    "La dernière entrée date de {count} jour. Commencez une note si cela vous aide maintenant.",
+  journalInactiveBannerCountOne:
+    "La dernière entrée date de {count} jour. Commencez une note si cela vous aide maintenant.",
+  journalInactiveBannerCountTwo:
+    "La dernière entrée date de {count} jours. Commencez une note si cela vous aide maintenant.",
+  journalInactiveBannerCountFew:
+    "La dernière entrée date de {count} jours. Commencez une note si cela vous aide maintenant.",
+  journalInactiveBannerCountMany:
+    "La dernière entrée date de {count} jours. Commencez une note si cela vous aide maintenant.",
+  journalInactiveBannerCountOther:
+    "La dernière entrée date de {count} jour. Commencez une note si cela vous aide maintenant.",
   journalToolbarSticker: "Autocollant",
   journalToolbarPhoto: "Image",
   journalToolbarMood: "Humeur",
@@ -2963,21 +3098,57 @@ export const fr: Translations = {
   journalDraftSaved: "Enregistré",
   journalDraftBadge: "Brouillon",
   journalSavedStreak: "jours consécutifs !",
-  journalPrivateMode: "Masquer les aperçus",
-  journalPrivateModeHint: "Afficher uniquement les titres dans la liste",
+  journalPrivateMode: "Masquer la liste du journal",
+  journalPrivateModeHint:
+    "Masque les titres, les aperçus et les actions de la liste sur cet appareil jusqu’à désactivation. Il s’agit d’une protection visuelle, pas d’un mot de passe.",
+  journalPrivateModeSaveError:
+    "ZenFlow n’a pas pu enregistrer ce réglage de confidentialité. Votre journal reste masqué sur cet écran ; gardez l’application ouverte et réessayez.",
   journalTemplateButton: "Modèle",
   journalStatsEntries: "Journal",
   journalAudioSaved: "Audio enregistré",
   journalAudioError: "Échec de l'enregistrement audio",
-  journalAudioPermissionDenied: "L'autorisation du micro est nécessaire pour enregistrer l'audio.",
+  journalAudioRecordingLabel: "Enregistrement audio {number}, {duration}",
+  journalAudioPlay: "Lire : {label}",
+  journalAudioPause: "Mettre en pause : {label}",
+  journalAudioProgress: "Progression de la lecture : {label}",
+  journalAudioPlaybackError: "Impossible de lire cet enregistrement. Réessayez.",
+  journalAudioRetry: "Réessayer : {label}",
+  journalAudioLoading: "Chargement : {label}",
+  journalAudioPreparing: "Préparation du microphone...",
+  journalAudioPreparingDescription:
+    "Sélectionnez Autoriser dans la demande du système. L’enregistrement ne commencera qu’après votre autorisation.",
+  journalAudioLoadError: "Impossible de charger l’audio de cette entrée.",
+  journalAudioLoadRetry: "Recharger l’audio",
+  journalAudioRemoveError: "Impossible de supprimer cet enregistrement.",
+  journalAudioPermissionDenied:
+    "L'accès au microphone est désactivé. Vous pouvez continuer à écrire sans audio ou l'autoriser dans les réglages du navigateur ou de l'appareil.",
+  journalAudioInputMissing:
+    "Aucun microphone n'a été trouvé. Vous pouvez continuer à écrire sans audio.",
+  journalAudioInputUnavailable:
+    "Le microphone est occupé ou indisponible. Vous pouvez continuer à écrire et réessayer plus tard.",
+  journalAudioStartError:
+    "Le microphone n'a pas pu démarrer. Vous pouvez continuer à écrire sans audio.",
   journalAudioUnsupported: "L'enregistrement audio n'est pas pris en charge sur cet appareil.",
   journalVoiceNotSupported: "La reconnaissance vocale n'est pas prise en charge dans ce navigateur",
+  journalVoiceError:
+    "La saisie vocale s’est arrêtée. Les mots reconnus sont toujours là. Réessayez quand vous le souhaitez.",
+  journalAudioSaveRetryTitle: "Enregistrement pas encore ajouté",
+  journalAudioSaveRetryDescription:
+    "Votre enregistrement est toujours là. Réessayez de l’ajouter ou supprimez-le.",
+  journalAudioSaveRetry: "Réessayer",
+  journalAudioRemoveTitle: "Retirer cet enregistrement ?",
+  journalAudioRemoveDescription:
+    "Cet enregistrement sera retiré de l’entrée. Cette action est irréversible.",
+  journalAudioRemoveDescriptionStaged:
+    "Cet enregistrement sera retiré lorsque vous enregistrerez vos modifications. Si vous les annulez, il restera dans l’entrée.",
+  journalAudioRemoveConfirm: "Retirer l’enregistrement",
   journalAudioMaxReached: "Maximum 3 enregistrements",
   journalDictating: "Écoute en cours...",
   journalDictateStop: "Arrêter",
   journalToolbarVoice: "Voix",
   journalToolbarRecord: "Enregistrer",
   journalRecording: "Enregistrement",
+  journalRecordingPaused: "Enregistrement en pause",
   journalAudioMaxDuration: "Max. 5 minutes",
   journalRecordingStop: "Arrêter l'enregistrement",
   journalActionSheetTitle: "Ajouter à l'entrée",
@@ -2989,19 +3160,53 @@ export const fr: Translations = {
   journalBurnShort: "Brûler",
   journalBurnTitle: "Brûler une pensée",
   journalBurnReleased: "Libéré",
-  journalBurnReleasedMessage: "Votre pensée a été libérée.",
+  journalBurnReleasedMessage: "Le texte a été supprimé.",
   journalBurnPlaceholder: "Écrivez ce qui vous préoccupe...",
   journalBurnAction: "Brûler",
   journalReleaseFinalTitle: "Libéré",
-  journalReleaseFinalSubtitle: "Le texte n'a pas été enregistré.",
+  journalReleaseFinalSubtitle:
+    "Votre texte a été supprimé. ZenFlow a enregistré sur cet appareil et dans vos sauvegardes une trace sans texte avec un identifiant interne, le type de libération, la durée ainsi que les dates et heures de début et de fin.",
+  journalReleaseBeforeAction:
+    "Ce texte sera supprimé. ZenFlow enregistrera sur cet appareil et dans vos sauvegardes une trace sans texte avec un identifiant interne, le type de libération, la durée ainsi que les dates et heures de début et de fin.",
+  journalReleaseTraceSaveFailed:
+    "Le texte a été supprimé, mais ZenFlow n’a pas pu enregistrer la trace de libération. Aucun élément du texte n’a été enregistré.",
+  keyboardShortcuts: "Raccourcis clavier",
+  journalShortcutNavigation: "Déplacement",
+  journalShortcutToggleSidebar: "Afficher ou masquer la barre latérale",
+  journalShortcutToggleCompact: "Utiliser la barre latérale compacte",
+  journalShortcutCloseOrBack: "Fermer ou revenir",
+  journalShortcutEditor: "Éditeur",
+  journalShortcutView: "Journal",
+  journalShortcutSaveEntry: "Enregistrer l’entrée",
+  journalShortcutShowHelp: "Afficher les raccourcis",
+  journalMoodInsights: "Tendances d’humeur",
+  journalMoodInsightsMoreData: "Continuez à écrire pour faire apparaître des tendances d’humeur.",
+  journalMoodInsightBestDay: "Votre humeur enregistrée est la plus élevée le {day}",
+  journalMoodInsightAverage: "Moyenne {value} / 5",
+  journalMoodInsightLonger:
+    "Les entrées plus longues sont associées à une humeur enregistrée plus élevée",
+  journalMoodInsightShorter:
+    "Les entrées plus courtes sont associées à une humeur enregistrée plus élevée",
+  journalMoodInsightPointDifference: "Écart de {value} point",
+  journalMoodInsightBestTime:
+    "Votre humeur enregistrée est la plus élevée lorsque vous écrivez {period}",
+  journalMoodInsightMorning: "le matin",
+  journalMoodInsightAfternoon: "l’après-midi",
+  journalMoodInsightEvening: "le soir",
+  journalMoodInsightStreak: "L’humeur enregistrée est plus élevée les jours d’écriture consécutifs",
+  journalMoodInsightStreakDifference: "+{value} point les jours consécutifs",
+  journalMoodInsightMedia:
+    "Les entrées avec photo ou audio sont associées à une humeur enregistrée plus élevée",
+  journalMoodInsightTextOnly:
+    "Les entrées uniquement textuelles sont associées à une humeur enregistrée plus élevée",
   journalReleaseTraceSingle: "Pensée libérée",
   journalReleaseTraceLatest: "dernière {time}",
-  journalReleaseTraceCountZero: "{count} pensées libérées",
-  journalReleaseTraceCountOne: "{count} pensée libérée",
-  journalReleaseTraceCountTwo: "{count} pensées libérées",
-  journalReleaseTraceCountFew: "{count} pensées libérées",
-  journalReleaseTraceCountMany: "{count} pensées libérées",
-  journalReleaseTraceCountOther: "{count} pensées libérées",
+  journalReleaseTraceCountZero: "{count} suppressions de texte",
+  journalReleaseTraceCountOne: "{count} suppression de texte",
+  journalReleaseTraceCountTwo: "{count} suppressions de texte",
+  journalReleaseTraceCountFew: "{count} suppressions de texte",
+  journalReleaseTraceCountMany: "{count} suppressions de texte",
+  journalReleaseTraceCountOther: "{count} suppressions de texte",
   journalGratitudeTitle: "Planter la gratitude",
   journalGratitudeShort: "Reconnaissance",
   journalGratitudePlaceholder: "De quoi êtes-vous reconnaissant ?",
@@ -3077,11 +3282,17 @@ export const fr: Translations = {
   journalPasswordActiveHint: "Le verrouillage du journal est actif. Modifiez-le ou retirez-le ici.",
   journalProtectionCloudPending:
     "Le journal est déjà protégé sur cet appareil. ZenFlow remplace encore une ancienne copie en ligne ; gardez l’application ouverte et connectée à Internet.",
+  journalProtectionRemovalCloudPending:
+    "Le verrouillage du journal est désactivé sur cet appareil. ZenFlow termine encore cette modification en ligne ; gardez l’application ouverte et connectée à Internet.",
   journalPasswordRemoveConfirm: "Êtes-vous sûr ? Votre journal sera accessible sans mot de passe.",
   journalLockRemoveDetail:
     "Vos entrées resteront enregistrées, mais le verrouillage du journal et le déverrouillage biométrique du journal seront désactivés. Vous pourrez configurer un nouveau verrouillage plus tard.",
   journalLockRemoveFailed:
     "Déverrouillez d'abord votre journal, puis réessayez de retirer le verrouillage.",
+  journalLockRemoveUnexpected:
+    "Le verrouillage du journal n’a pas pu être retiré. Rien n’a changé. Réessayez.",
+  journalLockRemovePartial:
+    "Le verrou du journal est toujours actif, mais le déverrouillage biométrique a été désactivé. Déverrouillez le journal avec votre mot de passe, puis réessayez.",
   journalPasswordRemovePending: "Suppression du verrouillage...",
   journalPasswordRemoveSuccess: "Verrouillage du journal supprimé.",
   journalPasswordSetupFailed: "Impossible d’activer le verrouillage du journal. Réessaie.",
@@ -3100,7 +3311,19 @@ export const fr: Translations = {
   journalDataSection: "Données",
   journalExport: "Exporter",
   journalImport: "Importer",
+  journalImportHint:
+    "Vérifiez ce que cette sauvegarde ZenFlow ajoutera ou supprimera avant l’importation.",
+  journalImporting: "Importation de la sauvegarde...",
+  journalSettingsBusy: "Finalisation de cette modification...",
   journalImportSuccess: "Importé",
+  journalImportSyncPending:
+    "Enregistré sur cet appareil ; la synchronisation sera relancée automatiquement.",
+  journalImportDeletedHistory: "Historique des suppressions",
+  journalImportDeletionWarning:
+    "Cette sauvegarde contient {count} entrées supprimées. Les entrées correspondantes sur cet appareil seront définitivement supprimées.",
+  journalImportLegacyWarning:
+    "Cette ancienne sauvegarde ne contient aucun historique des suppressions. Des entrées supprimées auparavant pourraient donc être restaurées.",
+  journalImportRemoved: "supprimées",
   journalImportDuplicate: "doublons ignorés",
   journalImportFailed: "Échec de l'importation",
   journalImportPartial: "Importé avec des erreurs",
@@ -3118,7 +3341,27 @@ export const fr: Translations = {
   journalExportPrivacyWarning:
     "Les exports sont des fichiers privés et ne sont pas chiffrés par ZenFlow. Gardez-les dans un endroit de confiance.",
   journalExportSuccess: "Exportation terminée",
+  journalExportStarted: "Téléchargement lancé",
   journalExportFailed: "Échec de l'exportation. Réessaie.",
+  journalExportDate: "Date",
+  journalExportTime: "Heure",
+  journalExportTitle: "Titre",
+  journalExportContent: "Contenu",
+  journalExportMood: "Humeur",
+  journalExportTags: "Étiquettes",
+  journalExportStickers: "Autocollants",
+  journalExportWordCount: "Nombre de mots",
+  journalExportPhotos: "Images",
+  journalExportAudio: "Enregistrements audio",
+  journalExportUntitled: "Sans titre",
+  journalExportDiary: "Journal",
+  journalExportExported: "Exporté le {date}",
+  journalExportLoadingEntries: "Chargement des entrées...",
+  journalExportLoadingPhotos: "Chargement des photos...",
+  journalExportLoadingAudio: "Chargement de l’audio...",
+  journalExportGeneratingFile: "Création du fichier...",
+  journalExportGeneratingPages: "Création des pages...",
+  journalExportLoadingEntryPhotos: "Chargement des photos de l’entrée {current}...",
   journalNoMatchingEntries: "Aucune entrée ne correspond",
   journalNoMatchingHint: "Essayez un autre mot-clé ou effacez les filtres",
   journalClearAllFilters: "Effacer tous les filtres",
@@ -3130,7 +3373,7 @@ export const fr: Translations = {
   journalNoAiResultsHint: "Essayez de décrire le souvenir autrement.",
   journalAiSearchUnavailableHint:
     "Vos entrées sont toujours là. Utilisez la recherche classique ou réessayez plus tard.",
-  journalAiSearchUnavailable: "La recherche IA est indisponible pour le moment",
+  journalAiSearchUnavailable: "La recherche privée est indisponible pour le moment",
   journalSlashCommands: "Commandes du journal",
   journalSlashNoResults: "Aucune commande du journal trouvée",
   journalFormatBold: "Gras",
@@ -3142,6 +3385,8 @@ export const fr: Translations = {
   journalFormatLink: "Lien",
   journalReflectionPrompt1: "Nommez le moment qui demande votre attention.",
   journalReflectionPrompt2: "Écrivez une phrase vraie sur aujourd’hui.",
+  journalReflectionPromptPast:
+    "Écrivez une phrase sincère sur ce dont vous vous souvenez de cette journée.",
   journalReflectionPrompt3:
     "Remarquez ce qui a changé dans votre corps, votre humeur ou votre attention.",
   journalReflectionPrompt4: "Gardez seulement le détail que votre futur vous voudra retrouver.",
@@ -3274,8 +3519,9 @@ export const fr: Translations = {
   journalHubSpaceIdeasDesc: "Étincelles rapides avant qu'elles disparaissent.",
   journalHubSpacePrivate: "Privé",
   journalHubSpacePrivateDesc: "Pensées protégées et notes sensibles.",
-  journalPrivateEntry: "Entrée privée",
-  journalPrivateEntryHint: "Déverrouille le mode privé pour voir ce souvenir.",
+  journalPrivateEntry: "Aperçu de l’entrée masqué",
+  journalPrivateEntryHint:
+    "Modifiez le réglage de confidentialité à l’écran du journal pour voir cette entrée.",
   journalHubSpaceGratitude: "Mes gratitudes",
   journalHubSpaceGratitudeDesc: "Une collection douce de ce pour quoi vous êtes reconnaissant.",
   journalFolders: "Dossiers",
@@ -3365,7 +3611,7 @@ export const fr: Translations = {
   journalHubBackgrounddepth: "Profondeur",
   diaryBurnThought: "Brûler une pensée",
   diaryBurnButton: "Brûler",
-  diaryBurnReleased: "Votre pensée a été libérée.",
+  diaryBurnReleased: "Le texte a été supprimé.",
   diaryBurnPlaceholder: "Écrivez ce qui vous préoccupe...",
   diaryFocusMode: "Mode focus",
   diaryThemeLight: "Clair",
@@ -3406,10 +3652,14 @@ export const fr: Translations = {
   diaryFocusShort: "Concentration",
   diaryBreathe: "Respirer",
   diaryBreatheShort: "Respirer",
+  journalBreathePause: "Mettre l’exercice de respiration en pause",
+  journalBreatheResume: "Reprendre l’exercice de respiration",
   journalFocusSceneTitle: "Se recentrer avant d’écrire",
   journalFocusSceneDescription: "Prenez une respiration, puis ouvrez une note ciblée.",
   journalFocusStartEntry: "Ouvrir une note focus",
-  diaryPrivacyShield: "Confidentialité",
+  diaryPrivacyShield: "Écran de confidentialité",
+  diaryPrivacyShieldHint:
+    "Masque temporairement l’éditeur sur cet écran. Le journal n’est pas verrouillé.",
   journalUnlockBiometric: "Déverrouiller",
   diaryTimeCapsule: "Capsule temporelle",
   diaryVoice: "Voix",
@@ -3418,8 +3668,8 @@ export const fr: Translations = {
   diaryGameChangers: "Outils",
   diaryFormatHint: "Sélectionnez du texte pour le formater (gras, italique, etc.)",
   diaryFormatLinkPrompt: "Entrez l'URL :",
-  diarySidebarShow: "Afficher les entrées",
-  diarySidebarHide: "Masquer les entrées",
+  diarySidebarShow: "Ouvrir le panneau du journal",
+  diarySidebarHide: "Masquer le panneau du journal",
   diaryPhotoSizeSmall: "Petit",
   diaryPhotoSizeMedium: "Moyen",
   diaryPhotoSizeLarge: "Grand",
@@ -3435,10 +3685,21 @@ export const fr: Translations = {
   diaryParticleSpeedDrift: "Flottant",
   diaryParticleSpeedOff: "Désactivé",
   diaryParticleSpeedSlow: "Lent",
-  diaryPhotoGestureHint: "Glissez, touchez taille, maintenez pour remettre",
+  diaryPhotoGestureHint:
+    "Faites glisser pour déplacer. Pincez pour redimensionner. Touchez pour les options.",
+  diaryPhotoDescribe: "Décrire la photo",
+  diaryPhotoDescriptionLabel: "Description de la photo",
+  diaryPhotoDescriptionHelp:
+    "Décrivez ce qui compte dans cette photo pour les lecteurs d’écran. Laissez vide si elle n’ajoute aucun sens.",
   diaryPhotoGestureInstructions:
-    "Faites glisser pour déplacer. Touchez pour changer la taille. Le pincement redimensionne aussi. Appuyez sur Origine pour centrer. Utilisez les flèches pour déplacer, plus ou moins pour redimensionner, et Suppr pour remettre la photo dans la galerie. Sur écran tactile, appuyez longuement pour remettre la photo dans la galerie.",
+    "Faites glisser pour déplacer et pincez pour redimensionner. Activez la photo pour les options. Clavier : les flèches déplacent, plus ou moins redimensionne, Origine centre et Suppr remet la photo dans la galerie.",
+  diaryPhotoInteractionLabel:
+    "Photo {current} sur {total}. Déplacez-la et redimensionnez-la. Activez-la pour les options.",
+  diaryPhotoInteractionLabelWithDescription:
+    "Photo {current} sur {total} : {description}. Déplacez-la et redimensionnez-la. Activez-la pour les options.",
+  diaryPhotoLayoutStatus: "Photo {current} sur {total}. Position {x}, {y}. Largeur {width}.",
   diaryPhotoMove: "Déplacer la photo",
+  diaryPhotoTapDestination: "Photo sélectionnée. Touchez l’endroit où vous souhaitez la placer.",
   diaryScene: "Scène",
   diaryTexture: "Grain",
   diaryTextureClean: "Net",
@@ -3448,6 +3709,13 @@ export const fr: Translations = {
   diaryTextureLinen: "Lin",
   diaryTextureLines: "Lignes",
   journalDraftSaveFailed: "Impossible d’enregistrer le brouillon",
+  journalBackgroundSelected: "Arrière-plan : {value}",
+  journalFontSizeSelected: "Taille de police : {value}",
+  journalMotionSelected: "Mouvement : {value}",
+  journalSceneSelected: "Scène : {value}",
+  journalTextureSelected: "Grain : {value}",
+  journalDraftInUse:
+    "Cette entrée est ouverte dans une autre fenêtre. Fermez-la dans cette fenêtre, puis réessayez.",
   journalFormatToolbar: "Outils de mise en forme",
   journalInkEmerald: "Encre émeraude",
   journalInkGold: "Encre dorée",
@@ -3456,12 +3724,20 @@ export const fr: Translations = {
   journalPanicLockDescription: "Déverrouille pour revenir à ton journal privé.",
   journalPanicLockTitle: "Journal verrouillé",
   journalPanicLockUnlockRequired: "Utilise Déverrouiller pour revenir à ton journal.",
+  journalPanicLeave: "Quitter le journal",
+  journalPanicLeaveHint: "Enregistre le brouillon, puis reviens à une liste de journal masquée.",
+  journalPanicLeaveWithoutSaving: "Quitter sans enregistrer",
+  journalPanicExitSaveError:
+    "Tes dernières modifications n’ont pas pu être enregistrées. Le journal reste masqué. Quitte sans enregistrer uniquement si tu acceptes de perdre ces modifications.",
   journalPaperDark: "Sombre",
   journalPaperMilky: "Papier",
   journalPaperSoftWhite: "Blanc doux",
   journalPhotoNext: "Photo suivante",
   journalPhotoPrevious: "Photo précédente",
   journalRecordingDiscard: "Ignorer",
+  journalRecordingDiscardTitle: "Ignorer cet enregistrement ?",
+  journalRecordingDiscardDescription:
+    "Cet audio n’a pas encore été ajouté à l’entrée. Vous ne pourrez pas le récupérer après l’avoir ignoré.",
   journalRecordingStopKeep: "Arrêter et garder",
   journalRemoveAudio: "Retirer l’audio {duration}",
   journalRemoveTag: "Retirer l’étiquette {tag}",
@@ -3474,6 +3750,7 @@ export const fr: Translations = {
     "Le navigateur peut traiter la reconnaissance vocale hors de ZenFlow. Lancez la voix seulement si cela vous convient pour cette entrée.",
   journalVoicePrivacyTitle: "Vérification de confidentialité vocale",
   openPhoto: "Ouvrir la photo",
+  journalPhotoPosition: "Photo {current} sur {total}",
   previous: "Précédent",
   // State of Mind
   somLogFeeling: "Notez comment vous vous sentez",
@@ -3487,7 +3764,7 @@ export const fr: Translations = {
   somSlightlyPleasant: "Légèrement agréable",
   somPleasant: "Agréable",
   somVeryPleasant: "Très agréable",
-  somSlider: "Valence de l'humeur",
+  somSlider: "Comment tu te sens",
   somWhatDescribes: "Qu'est-ce qui décrit le mieux ce sentiment ?",
   somWhatInfluencing: "Qu'est-ce qui a le plus d'impact ?",
   somAddNote: "Ajouter une note",
@@ -3658,7 +3935,7 @@ export const fr: Translations = {
   ariaFontSize: "Taille de police",
   ariaShufflePrompts: "Mélanger les suggestions",
   ariaRecording: "Enregistrement",
-  ariaFloatPhoto: "Photo flottante",
+  ariaFloatPhoto: "Placer sur la page",
   ariaPhotoLightbox: "Visionneuse de photos",
   ariaPhotoPicker: "Sélecteur de photos",
   ariaTemplatePicker: "Sélecteur de modèles",
@@ -3799,12 +4076,15 @@ export const fr: Translations = {
   orbScopeSpecificTimeLabel: "Choisis une heure",
   orbCapturedAt: "Noté à {time}",
   orbConfirm: "Enregistrer",
+  orbSaveMoodAndStartEntry: "Enregistrer l’humeur et commencer l’entrée du jour",
   orbSkip: "Plus tard",
   orbUndo: "Annuler",
   orbMoodSaved: "Humeur enregistrée",
   orbFirstRunTitle: "Trois étapes pour ta première entrée",
   orbFirstRunStep1: "Déplace le curseur selon ton ressenti",
-  orbFirstRunStep2: "Choisis un cadre (instant, jour ou heure)",
-  orbFirstRunStep3: "Choisis une émotion et confirme",
+  orbFirstRunStep2:
+    "Choisis le moment concerné : maintenant, une heure précise ou toute la journée",
+  orbFirstRunStep3:
+    "Si tu veux, ajoute une émotion ou une note, puis enregistre ton humeur et commence l’entrée du jour",
   orbFirstRunGotIt: "Compris",
 };

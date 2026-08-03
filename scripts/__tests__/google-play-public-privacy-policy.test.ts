@@ -71,6 +71,25 @@ describe("Google Play public privacy policy guard", () => {
     }
   });
 
+  it("discloses the optional account-backed Journal AI, Coach Lite, and feedback processor paths in both public policy URLs", () => {
+    for (const file of ["public/privacy.html", "public/privacy-policy.html"]) {
+      const html = readFileSync(file, "utf8");
+
+      expect(html, file).toContain("Journal AI Search");
+      expect(html, file).toContain("Supabase Edge Function");
+      expect(html, file).toContain("title, content, mood, and tags");
+      expect(html, file).toContain("current lexical search path");
+      expect(html, file).toContain("does not send your journal text or search query to an external AI provider");
+      expect(html, file).toContain("AI Coach");
+      expect(html, file).toContain("Coach Lite");
+      expect(html, file).toContain("current Coach Lite mode");
+      expect(html, file).toContain("conversation history");
+      expect(html, file).toContain("Feedback");
+      expect(html, file).toContain("Resend");
+      expect(html, file).not.toContain("Google Gemini");
+    }
+  });
+
   it("exposes a repeatable public privacy policy check command and includes this guard in release contracts", () => {
     const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
     const releaseContracts = packageJson.scripts["test:release-contracts"];

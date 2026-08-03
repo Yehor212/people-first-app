@@ -3,11 +3,10 @@
  *
  * Law 1 / feedback_v2_reuse_v1: we do NOT rebuild insight math. We import
  * {@link generateInsights} from `src/lib/insightsEngine.ts` and render
- * the highest-confidence result as a single literary strip.
+ * the highest-ranked result as a single literary strip.
  *
  * Why here: the Habits page is where users decide "what am I doing today?",
- * and that's exactly the moment an "on days you meditate, mood is +28%"
- * signal is most actionable (BJ Fogg - cue-to-motivation alignment).
+ * and that's the moment a recorded habit-and-mood association can be reviewed.
  *
  * Renders nothing when:
  *   - there are no insights yet (insufficient data)
@@ -172,7 +171,7 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
           <Icon className="h-3.5 w-3.5" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-current/70">
+          <p className="whitespace-normal break-words text-xs font-semibold uppercase tracking-[0.14em] text-current/70">
             {tx.insightsTitle || "Insight"}
           </p>
           <p className="mt-1 font-semibold leading-5" data-testid="habits-hero-insight-title">
@@ -181,24 +180,18 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
           {topInsight.description && topInsight.description !== topInsight.title && (
             <p className="mt-1 text-muted-foreground">{topInsight.description}</p>
           )}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span
-              className="rounded-full bg-background/60 px-2 py-1 text-[10px] font-medium tabular-nums"
-              aria-label={`confidence ${topInsight.confidence}%`}
-            >
-              {topInsight.confidence}%
-            </span>
-            {linkedHabit && onOpenHabitInsight && (
+          {linkedHabit && onOpenHabitInsight && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => onOpenHabitInsight(linkedHabit)}
-                className="inline-flex min-h-[44px] items-center rounded-full border border-border/60 bg-background/70 px-3 py-2 text-[11px] font-medium text-foreground motion-safe:transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                className="inline-flex min-h-[44px] items-center whitespace-normal break-words rounded-full border border-border/60 bg-background/70 px-3 py-2 text-xs font-medium text-foreground motion-safe:transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 data-testid="habits-hero-insight-cta"
               >
                 {tx.statistics || tx.navV2HabitsOpenDetails || "Statistics"}
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </aside>

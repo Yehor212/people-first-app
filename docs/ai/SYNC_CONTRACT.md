@@ -84,6 +84,10 @@ cache-busted GitHub Pages URL when validating a deployed artifact.
 5. **Deletes are first-class actions.**
    - A delete must be durable before any merge can resurrect the entity.
    - New delete flows must write ordered delete events with stable operation ids.
+   - Journal entry deletion must not acknowledge or broadcast success while
+     photo, audio, or embedding metadata cleanup reports an error. Server-side
+     media metadata foreign keys must cascade from the owning entry, with a
+     fail-closed orphan preflight before the constraint is validated.
    - Durable server tombstones in `sync_tombstones` are derived from delete events
      and back long-term anti-resurrection. The local `deletionTracker` remains an
      offline/immediate guard, not the only durable source.
@@ -109,6 +113,10 @@ cache-busted GitHub Pages URL when validating a deployed artifact.
    - Critical offline/outbox enqueue must wait for persistent storage. Updating
      queue state in memory is not enough for Android/iOS pause, browser tab close,
      or desktop process exit.
+   - Every offline handler attempt must have a finite deadline. Account-boundary
+     abort must settle even when a handler ignores its signal, and any late
+     completion must be quarantined by the persisted operation id rather than
+     acknowledging or deleting a newer durable action.
    - Fire-and-forget writes are acceptable only for legacy compatibility or
      low-risk telemetry-like updates that do not affect user state.
    - Device-local sync internals must never be account settings. Keys such as
@@ -211,9 +219,12 @@ Behavioral gates for user-visible sync work:
   delayed remote pull must not bring the deleted entity back.
 - For settings and preferences, prove the active UI reads the same setting after
   hydration, reload, and route/shell switch.
-- Journal drafts use the `journal_draft_*` setting namespace. Draft save,
-  migration, dismiss, and save-clear paths must use ordered `setting` events so
-  phone-to-desktop draft state is account sync, not only device-local storage.
+- Journal drafts use the `journal_draft_*` setting namespace and are deliberately
+  device-local because they may contain unsaved private writing and media. Draft
+  save, migration, dismiss, and save-clear paths must not upload draft payloads
+  or create ordered `setting` events. Clear may delete legacy remote draft keys
+  left by older builds. Cross-device continuity starts only after an entry is
+  explicitly saved and enters the journal entity sync path.
 - Habit archive/unarchive state is account state. `isArchived` must be written
   to cloud as `is_archived`, pulled back into Dexie, and protected by the same
   event-log/tombstone rules as active habits.

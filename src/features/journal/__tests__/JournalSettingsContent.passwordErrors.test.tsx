@@ -27,6 +27,11 @@ const ts = {
   journalLockHint: "Protect your diary with a password so only you can open it.",
   journalLockTooShort: "Minimum 6 characters",
   journalSettings: "Diary Settings",
+  journalProtectionRemovalCloudPending:
+    "The diary lock is off on this device. ZenFlow is still finishing this change online; keep the app open and connect to the internet.",
+  journalImport: "Import backup",
+  journalImportHint: "Restore entries from a ZenFlow JSON backup. Existing entries stay in place.",
+  journalImporting: "Importing backup...",
 };
 
 function makeSecurity(overrides: Partial<JournalSecurityState> = {}): JournalSecurityState {
@@ -34,6 +39,7 @@ function makeSecurity(overrides: Partial<JournalSecurityState> = {}): JournalSec
     biometricAvailable: false,
     biometricEnabled: false,
     cloudProtectionPending: false,
+    cloudProtectionPendingKind: null,
     changePassword: vi.fn().mockResolvedValue(true),
     cooldownRemaining: 0,
     failedAttempts: 0,
@@ -41,11 +47,13 @@ function makeSecurity(overrides: Partial<JournalSecurityState> = {}): JournalSec
     isLocked: false,
     isUnlocked: true,
     loading: false,
+    loadError: false,
     lock: vi.fn(),
     removePassword: vi.fn(),
     setBiometricEnabled: vi.fn(),
     setPassword: vi.fn().mockResolvedValue(undefined),
     touch: vi.fn(),
+    retryLoad: vi.fn().mockResolvedValue(undefined),
     unlock: vi.fn(),
     unlockWithBiometric: vi.fn(),
     vaultKey: null,
@@ -54,6 +62,46 @@ function makeSecurity(overrides: Partial<JournalSecurityState> = {}): JournalSec
 }
 
 describe("JournalSettingsContent password error handling", () => {
+  it("offers the same accessible import action and progress feedback on every settings surface", () => {
+    const onRequestImport = vi.fn();
+    const { rerender } = render(
+      <JournalSettingsContent
+        ts={ts}
+        security={makeSecurity()}
+        section="overview"
+        onSectionChange={vi.fn()}
+        privateMode={false}
+        onPrivateModeChange={vi.fn()}
+        onOpenExport={vi.fn()}
+        onRequestImport={onRequestImport}
+        onRequestRemovePassword={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Import backup" }));
+    expect(onRequestImport).toHaveBeenCalledOnce();
+    expect(screen.getByText("Restore entries from a ZenFlow JSON backup. Existing entries stay in place.")).toBeInTheDocument();
+
+    rerender(
+      <JournalSettingsContent
+        ts={ts}
+        security={makeSecurity()}
+        section="overview"
+        onSectionChange={vi.fn()}
+        privateMode={false}
+        onPrivateModeChange={vi.fn()}
+        onOpenExport={vi.fn()}
+        onRequestImport={onRequestImport}
+        importing
+        importFeedback={{ type: "success", message: "Imported: 2 entries" }}
+        onRequestRemovePassword={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Importing backup..." })).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Imported: 2 entries");
+  });
+
   it("adds a stable password-manager username to setup and change forms without account data", () => {
     const setup = render(
       <JournalSettingsContent
@@ -211,6 +259,30 @@ describe("JournalSettingsContent password error handling", () => {
 
     expect(screen.getByText("Diary lock is active. Change or remove it here.")).toBeInTheDocument();
     expect(screen.queryByText("Use fingerprint or face to unlock")).not.toBeInTheDocument();
+  });
+
+  it("does not claim local protection after removal while online completion is pending", () => {
+    render(
+      <JournalSettingsContent
+        ts={ts}
+        security={makeSecurity({
+          hasPassword: false,
+          cloudProtectionPending: true,
+          cloudProtectionPendingKind: "removal",
+        })}
+        section="overview"
+        onSectionChange={vi.fn()}
+        privateMode={false}
+        onPrivateModeChange={vi.fn()}
+        onOpenExport={vi.fn()}
+        onRequestRemovePassword={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "The diary lock is off on this device. ZenFlow is still finishing this change online",
+    );
+    expect(screen.getByRole("button", { name: "Set Diary Password" })).toBeEnabled();
   });
 
   it("clears password setup secrets when leaving the setup form", () => {

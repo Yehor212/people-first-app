@@ -75,9 +75,9 @@ describe("V2 page coverage contract", () => {
 
     for (const page of v2Pages) {
       expect(perfBudgets).toContain(`"${page.id}-v2-phone"`);
-      expect(perfBudgets).toContain(`"path": "${page.id}/?nav=v2&navLayout=phone"`);
+      expect(perfBudgets).toContain(`"path": "${page.id}?nav=v2&navLayout=phone"`);
       expect(perfBudgets).toContain(`"${page.id}-v2-desktop"`);
-      expect(perfBudgets).toContain(`"path": "${page.id}/?nav=v2"`);
+      expect(perfBudgets).toContain(`"path": "${page.id}?nav=v2"`);
     }
   });
 
