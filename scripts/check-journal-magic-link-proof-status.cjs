@@ -204,13 +204,23 @@ function evaluateJournalMagicLinkProofStatus(input, options = {}) {
 }
 
 function parseArgs(argv) {
-  const args = { file: DEFAULT_PACKET, requirePass: false };
+  const args = { allowStaleSource: false, file: DEFAULT_PACKET, requirePass: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--file") args.file = path.resolve(ROOT, argv[++i]);
+    else if (arg === "--allow-stale-source") args.allowStaleSource = true;
     else if (arg === "--require-pass") args.requirePass = true;
   }
   return args;
+}
+
+function isAllowedStaleSourceReport(packet, report) {
+  if (String(packet?.overallStatus || "").toUpperCase() !== "UNVERIFIED") return false;
+  if (report.passReady || report.issues.length !== 1) return false;
+  if (report.issues[0]?.code !== "proof_source_mismatch") return false;
+
+  const requiredItems = new Map(report.items.map((item) => [item.id, item]));
+  return REQUIRED_ITEM_IDS.every((id) => requiredItems.get(id)?.status === "UNVERIFIED");
 }
 
 function readPacket(file) {
@@ -222,9 +232,11 @@ function readPacket(file) {
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
+  let packet;
   let report;
   try {
-    report = evaluateJournalMagicLinkProofStatus(readPacket(args.file), {
+    packet = readPacket(args.file);
+    report = evaluateJournalMagicLinkProofStatus(packet, {
       requirePass: args.requirePass,
       currentSourceSha256: computeJournalMagicLinkProofSourceSha256(ROOT),
     });
@@ -248,12 +260,23 @@ function main() {
     );
   }
 
-  process.exit(report.ok && (!args.requirePass || report.passReady) ? 0 : 2);
+  const staleSourceAllowed =
+    args.allowStaleSource && !args.requirePass && isAllowedStaleSourceReport(packet, report);
+  if (staleSourceAllowed) {
+    console.log(
+      "[journal-magic-link-proof-status] informational-mode=allow-stale-source",
+    );
+  }
+
+  process.exit(
+    (report.ok || staleSourceAllowed) && (!args.requirePass || report.passReady) ? 0 : 2,
+  );
 }
 
 if (require.main === module) main();
 
 module.exports = {
   evaluateJournalMagicLinkProofStatus,
+  isAllowedStaleSourceReport,
   REQUIRED_ITEM_IDS,
 };
