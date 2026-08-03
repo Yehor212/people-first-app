@@ -146,4 +146,25 @@ describe("auth-screen useAuthSession", () => {
     );
     expect(mockEndAuthFlow).toHaveBeenCalledTimes(1);
   });
+
+  it("keeps a copied web OAuth error visible after the parent one-shot channel clears", async () => {
+    const onComplete = vi.fn();
+    const onClearError = vi.fn();
+    const initialProps: { webOAuthError: string | null } = {
+      webOAuthError: "access_denied",
+    };
+    const { result, rerender } = renderHook(
+      ({ webOAuthError }: { webOAuthError: string | null }) =>
+        useAuthSession({ onComplete, webOAuthError, onClearError }),
+      { initialProps }
+    );
+
+    await waitFor(() => expect(result.current.error).toBe("access_denied"));
+    expect(onClearError).toHaveBeenCalledTimes(1);
+
+    rerender({ webOAuthError: null });
+
+    await waitFor(() => expect(result.current.error).toBe("access_denied"));
+    expect(onClearError).toHaveBeenCalledTimes(1);
+  });
 });
