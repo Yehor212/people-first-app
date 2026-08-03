@@ -206,7 +206,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
               className={
                 "inline-flex items-center gap-1 rounded-full px-2 py-0.5 " +
                 (isOverdue
-                  ? "bg-[hsl(var(--zf-warning)/0.12)] text-[hsl(var(--zf-warning))]"
+                  ? "bg-[hsl(var(--zf-warning)/0.12)] text-[hsl(var(--zf-warning-foreground))]"
                   : "bg-muted/50")
               }
               data-testid={`hero-habit-row-${habit.id}-reminder`}

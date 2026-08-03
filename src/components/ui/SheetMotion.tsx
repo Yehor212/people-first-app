@@ -71,18 +71,23 @@ type SheetSide = 'top' | 'bottom' | 'left' | 'right';
  * left/right) so a sheet feels like it slides in from its edge rather
  * than scaling from centre.
  */
-function motionForSide(side: SheetSide) {
+function motionForSide(side: SheetSide, isRTL: boolean) {
   const offsetMap: Record<SheetSide, { x?: number; y?: number }> = {
     top: { y: -16 },
     bottom: { y: 16 },
     left: { x: -16 },
     right: { x: 16 },
   };
-  const offset = offsetMap[side];
+  let offset = offsetMap[side];
+  // RTL: left/right sheets physically flip, so entry direction flips too.
+  if (isRTL && (side === 'left' || side === 'right')) {
+    offset = side === 'left' ? { x: 16 } : { x: -16 };
+  }
   return {
     initial: { ...bloom.initial, ...offset },
     animate: { ...bloom.animate, x: 0, y: 0 },
-    exit: { ...fold.exit, ...offset },
+    // Exits accelerate (M3 direction rule) with the Fold verb's own timing.
+    exit: { ...fold.exit, ...offset, transition: fold.transition },
     transition: { duration: 0.32, ease: easings.bloomOut },
   };
 }
@@ -95,7 +100,7 @@ const SheetMotionContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetMotionContentProps
 >(({ side = 'right', className, children, ...props }, ref) => {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const animate = useShouldAnimate();
   const sideKey: SheetSide = (side ?? 'right');
 
@@ -124,7 +129,7 @@ const SheetMotionContent = React.forwardRef<
           <SheetPrimitive.Close
             aria-label={t.close}
             className={cn(
-              'absolute right-4 top-4 rounded-xl p-2 z-50 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-all',
+              'absolute end-4 top-4 rounded-xl p-2 z-50 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-all',
               'bg-slate-200/80 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/10',
               'opacity-70 hover:opacity-100 hover:bg-slate-300/80 dark:hover:bg-white/20',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -140,7 +145,7 @@ const SheetMotionContent = React.forwardRef<
     );
   }
 
-  const variant = motionForSide(sideKey);
+  const variant = motionForSide(sideKey, isRTL);
 
   return (
     <SheetMotionPortal>
@@ -157,7 +162,7 @@ const SheetMotionContent = React.forwardRef<
           <SheetPrimitive.Close
             aria-label={t.close}
             className={cn(
-              'absolute right-4 top-4 rounded-xl p-2 z-50 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-all',
+              'absolute end-4 top-4 rounded-xl p-2 z-50 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-all',
               'bg-slate-200/80 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/10',
               'opacity-70 hover:opacity-100 hover:bg-slate-300/80 dark:hover:bg-white/20',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',

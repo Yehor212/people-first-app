@@ -1,21 +1,29 @@
 /**
  * Centralized Animation Configuration — Epic 6 (Telegram-Level Polish)
  *
- * All animation presets for the diary feature set.
- * Complements existing `zenMotion` in src/lib/animationUtils.ts.
+ * Diary-scoped presets. The canonical spring/easing source of truth is
+ * `zenMotion` (src/lib/animationUtils.ts) + `easings` (src/lib/motion/easings.ts);
+ * identical values below are aliases, not copies — tune them there.
+ * Diary-specific tokens (quick/playful/explosive) stay local to this file.
+ *
+ * Units note: `durations` and `stagger.perItem` are MILLISECONDS, while
+ * framer-motion `duration`/`delay` props and `stagger.delayForIndex()`
+ * return SECONDS. Convert at the call site (`/ 1000`).
  */
+
+import { zenMotion } from "@/lib/animationUtils";
 
 /** Spring physics presets for framer-motion transitions */
 export const springs = {
-  /** Quick response — buttons, toggles (150-200ms feel) */
-  snappy: { type: "spring" as const, stiffness: 400, damping: 30 },
-  /** Fast entrance — cards appearing (200ms feel) */
+  /** Quick response — buttons, toggles. Alias of `zenMotion.snappy`. */
+  snappy: zenMotion.snappy,
+  /** Fast entrance — cards appearing (200ms feel). Diary-specific. */
   quick: { type: "spring" as const, stiffness: 300, damping: 25 },
-  /** Smooth entrance — modals, panels (250-300ms feel) */
-  smooth: { type: "spring" as const, stiffness: 260, damping: 25 },
-  /** Bouncy — mood selection, celebratory (underdamped) */
+  /** Smooth entrance — modals, panels. Alias of `zenMotion.gentle`. */
+  smooth: zenMotion.gentle,
+  /** Bouncy — mood selection, celebratory (underdamped). Diary-specific. */
   playful: { type: "spring" as const, stiffness: 200, damping: 15 },
-  /** High energy — confetti trigger, milestone pulse */
+  /** High energy — confetti trigger, milestone pulse. Diary-specific. */
   explosive: { type: "spring" as const, stiffness: 600, damping: 15 },
 } as const;
 
@@ -33,7 +41,10 @@ export const durations = {
   celebration: 800,
 } as const;
 
-/** Easing presets as cubic-bezier arrays for framer-motion */
+/** Easing presets as cubic-bezier arrays for framer-motion.
+ * Legacy diary set — prefer the M3-aligned `easings` from `@/lib/motion`
+ * for new code (enter≈standardDecelerate, exit≈standardAccelerate,
+ * smooth≈standard; overshoot has no M3 equivalent). */
 export const easings = {
   /** Enter — decelerate into view */
   enter: [0.0, 0.0, 0.2, 1.0] as const,

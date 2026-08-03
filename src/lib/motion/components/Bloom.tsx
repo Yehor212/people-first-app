@@ -23,10 +23,13 @@ function keepNonMotionProps(props: HTMLMotionProps<'div'>): HTMLMotionProps<'div
   );
 }
 
-export function Bloom({ children, className, disabled, ...rest }: BloomProps) {
+export function Bloom({ children, className, disabled, transition, ...rest }: BloomProps) {
   const animate = useShouldAnimate() && !disabled;
+  // Merge caller transition keys over the verb timing instead of replacing
+  // it — a bare `staggerDelay()` object must not silently downgrade the
+  // bloomOut glide to framer-motion library defaults.
   const resolvedProps = animate
-    ? { ...bloom, ...rest }
+    ? { ...bloom, ...rest, transition: { ...bloom.transition, ...transition } }
     : { ...keepNonMotionProps(rest), ...bloomStatic };
 
   return (

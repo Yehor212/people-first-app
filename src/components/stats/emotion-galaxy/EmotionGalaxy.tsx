@@ -14,8 +14,10 @@
  */
 
 import { useMemo } from 'react';
+import type { CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useShouldAnimate } from '@/hooks/useShouldAnimate';
 import { SparklesIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +28,7 @@ import { OrbitingEmotion } from './OrbitingEmotion';
 
 export function EmotionGalaxy({ emotions, totalEntries: _totalEntries, className }: EmotionGalaxyProps) {
   const { t } = useLanguage();
+  const animate = useShouldAnimate();
 
   // Sort emotions by count (most frequent first = inner orbit)
   const sortedEmotions = useMemo(
@@ -117,42 +120,42 @@ export function EmotionGalaxy({ emotions, totalEntries: _totalEntries, className
       ))}
 
       {/* Animated Nebula Layer 1 - Purple drift */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        animate={{
-          background: [
-            'radial-gradient(ellipse at 25% 35%, hsl(var(--cosmic-nebula-purple) / 0.15) 0%, transparent 50%)',
-            'radial-gradient(ellipse at 35% 25%, hsl(var(--cosmic-nebula-purple) / 0.22) 0%, transparent 55%)',
-            'radial-gradient(ellipse at 25% 35%, hsl(var(--cosmic-nebula-purple) / 0.15) 0%, transparent 50%)',
-          ],
-        }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+      <div
+        className="absolute inset-0 pointer-events-none animate-zen-loop-fade-scale"
+        style={{
+          background: 'radial-gradient(ellipse at 30% 30%, hsl(var(--cosmic-nebula-purple) / 0.18) 0%, transparent 52%)',
+          opacity: 0.9,
+          '--zen-loop-min-opacity': 0.8,
+          '--zen-loop-max-opacity': 1,
+          '--zen-loop-scale': 1.03,
+          '--zen-loop-duration': '8s',
+        } as CSSProperties}
       />
 
       {/* Animated Nebula Layer 2 - Pink drift (opposite direction) */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        animate={{
-          background: [
-            'radial-gradient(ellipse at 75% 65%, hsl(var(--cosmic-nebula-pink) / 0.1) 0%, transparent 45%)',
-            'radial-gradient(ellipse at 65% 75%, hsl(var(--cosmic-nebula-pink) / 0.16) 0%, transparent 50%)',
-            'radial-gradient(ellipse at 75% 65%, hsl(var(--cosmic-nebula-pink) / 0.1) 0%, transparent 45%)',
-          ],
-        }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+      <div
+        className="absolute inset-0 pointer-events-none animate-zen-loop-fade-scale"
+        style={{
+          background: 'radial-gradient(ellipse at 70% 70%, hsl(var(--cosmic-nebula-pink) / 0.13) 0%, transparent 47%)',
+          opacity: 0.9,
+          '--zen-loop-min-opacity': 0.75,
+          '--zen-loop-max-opacity': 1,
+          '--zen-loop-scale': 1.03,
+          '--zen-loop-duration': '10s',
+        } as CSSProperties}
       />
 
       {/* Animated Nebula Layer 3 - Cyan accent */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        animate={{
-          background: [
-            'radial-gradient(ellipse at 50% 80%, hsl(var(--cosmic-nebula-cyan) / 0.06) 0%, transparent 40%)',
-            'radial-gradient(ellipse at 55% 75%, hsl(var(--cosmic-nebula-cyan) / 0.1) 0%, transparent 45%)',
-            'radial-gradient(ellipse at 50% 80%, hsl(var(--cosmic-nebula-cyan) / 0.06) 0%, transparent 40%)',
-          ],
-        }}
-        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+      <div
+        className="absolute inset-0 pointer-events-none animate-zen-loop-fade-scale"
+        style={{
+          background: 'radial-gradient(ellipse at 52% 77%, hsl(var(--cosmic-nebula-cyan) / 0.08) 0%, transparent 42%)',
+          opacity: 0.9,
+          '--zen-loop-min-opacity': 0.75,
+          '--zen-loop-max-opacity': 1,
+          '--zen-loop-scale': 1.03,
+          '--zen-loop-duration': '12s',
+        } as CSSProperties}
       />
 
       {/* Shooting Star */}
@@ -215,13 +218,16 @@ export function EmotionGalaxy({ emotions, totalEntries: _totalEntries, className
                 strokeDasharray="2.5 2"
                 filter="url(#orbitGlow)"
               >
-                {/* Animated orbit glow pulse */}
-                <animate
-                  attributeName="stroke-opacity"
-                  values="0.1;0.22;0.1"
-                  dur={`${4 + i * 0.8}s`}
-                  repeatCount="indefinite"
-                />
+                {/* Animated orbit glow pulse — SMIL is outside the CSS
+                    kill-switch, so it is gated explicitly (WCAG 2.2.2). */}
+                {animate && (
+                  <animate
+                    attributeName="stroke-opacity"
+                    values="0.1;0.22;0.1"
+                    dur={`${4 + i * 0.8}s`}
+                    repeatCount="indefinite"
+                  />
+                )}
               </ellipse>
             );
           })}
@@ -262,13 +268,12 @@ export function EmotionGalaxy({ emotions, totalEntries: _totalEntries, className
               boxShadow: `0 0 14px ${emotion.color}50`,
             }}
           >
-            <motion.span
-              className="text-sm"
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
+            <span
+              className="text-sm animate-zen-loop-scale"
+              style={{ '--zen-loop-scale': 1.1, '--zen-loop-duration': '2s', '--zen-loop-delay': `${index * 0.3}s` } as CSSProperties}
             >
               {emotion.emoji}
-            </motion.span>
+            </span>
             <span className="text-xs text-slate-700 dark:text-white/80 font-medium">{emotion.count}</span>
           </motion.div>
         ))}

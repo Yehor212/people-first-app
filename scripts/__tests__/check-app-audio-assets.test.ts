@@ -14,16 +14,65 @@ import { describe, expect, it } from "vitest";
 const scriptPath = "scripts/check-app-audio-assets.cjs";
 const require = createRequire(import.meta.url);
 const {
+  EXPECTED_FEEDBACK_MP3_FILES,
+  inspectFeedbackMetrics,
+  inspectGeneratedAudioProvenance,
   inspectOutputArtifacts,
+  validateExactDirectoryInventory,
   parseCliOptions,
   writeReportIfRequested,
 } = require("../check-app-audio-assets.cjs") as {
+  EXPECTED_FEEDBACK_MP3_FILES: string[];
+  inspectFeedbackMetrics: (
+    fileName: string,
+    measured: {
+      channels: number;
+      sampleRate: number;
+      durationSeconds: number;
+      peak: number;
+      rms: number;
+      transientDelta: number;
+    },
+  ) => string[];
+  inspectGeneratedAudioProvenance: (assets: Array<{
+    id: string;
+    fileName: string;
+    publicPath: string;
+    deployDocsPath: string;
+    sha256: string;
+    bytes: number;
+    deterministicSpec?: string;
+    parameters: {
+      family: string;
+      sampleRate: number;
+      channels: number;
+      durationSeconds: number;
+      runtimeGain: number;
+      noThirdPartySamples: boolean;
+      noModelOrAiGeneratedAudioInput: boolean;
+      exclusions: string[];
+    };
+  }>) => {
+    exact: boolean;
+    missing: string[];
+    unexpected: string[];
+    mismatched: Array<{ fileName: string; fields: string[] }>;
+  };
   inspectOutputArtifacts: (options: {
     outputDir: string;
     reportPath: string;
     forbiddenRootMp3s?: string[];
     staleRuntimeStrings?: string[];
   }) => { matches: Array<{ file: string; stale: string }>; scannedFiles: string[]; textFiles: string[] };
+  validateExactDirectoryInventory: (
+    directory: string,
+    expectedFiles: string[],
+    label: string,
+  ) => {
+    actualFiles: string[];
+    missing: string[];
+    unexpected: string[];
+  };
   parseCliOptions: (argv: string[]) => { writeReport: boolean };
   writeReportIfRequested: (
     report: Record<string, unknown>,
@@ -97,18 +146,144 @@ describe("non-Hyperfocus app audio guard", () => {
     expect(packageJson.scripts["check:app-audio"]).toBe("node scripts/check-app-audio-assets.cjs");
   });
 
-  it("prunes only verified duplicate generated sound artifacts before inventory assertions", () => {
+  it("rejects generated duplicate artifacts instead of pruning project files", () => {
     const script = readFileSync(scriptPath, "utf8");
 
-    expect(script).toContain("pruneGeneratedRootSoundDuplicates");
-    expect(script).toContain("canonicalGeneratedDuplicateMp3Name");
-    expect(script).toContain("generatedRootDuplicatePrunes");
-    expect(script).toContain("sha256File(duplicatePath)");
-    expect(script).toContain("sha256File(canonicalPath)");
-    expect(script).toContain("generated root MP3 duplicate differs from canonical file");
-    expect(script).toContain("generated duplicate sound directory is not empty");
-    expect(script).toContain("location.generated");
-    expect(script).toContain("required: true, generated: false");
+    expect(script).not.toContain("pruneGeneratedRootSoundDuplicates");
+    expect(script).not.toContain("fs.rmSync(duplicatePath");
+    expect(script).not.toContain("generated duplicate sound artifacts pruned");
+    expect(script).toContain("generated duplicate sound artifacts are not allowed");
+  });
+
+  it("enforces the exact five-file feedback inventory without deleting unexpected files", () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), "zenflow-feedback-inventory-"));
+    try {
+      for (const fileName of EXPECTED_FEEDBACK_MP3_FILES) {
+        writeFileSync(join(fixtureRoot, fileName), fileName);
+      }
+
+      expect(
+        validateExactDirectoryInventory(
+          fixtureRoot,
+          EXPECTED_FEEDBACK_MP3_FILES,
+          "fixture feedback",
+        ),
+      ).toEqual({
+        actualFiles: EXPECTED_FEEDBACK_MP3_FILES,
+        missing: [],
+        unexpected: [],
+      });
+
+      const unexpectedPath = join(fixtureRoot, "feedback-extra.mp3");
+      writeFileSync(unexpectedPath, "unexpected");
+      expect(() =>
+        validateExactDirectoryInventory(
+          fixtureRoot,
+          EXPECTED_FEEDBACK_MP3_FILES,
+          "fixture feedback",
+        ),
+      ).toThrow(/unexpected feedback inventory/i);
+      expect(existsSync(unexpectedPath)).toBe(true);
+
+      rmSync(unexpectedPath);
+      rmSync(join(fixtureRoot, EXPECTED_FEEDBACK_MP3_FILES[0]));
+      expect(() =>
+        validateExactDirectoryInventory(
+          fixtureRoot,
+          EXPECTED_FEEDBACK_MP3_FILES,
+          "fixture feedback",
+        ),
+      ).toThrow(/unexpected feedback inventory/i);
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("requires provenance for exactly three root ambience and five feedback assets", () => {
+    const provenance = JSON.parse(
+      readFileSync("docs/audio/non-hyperfocus-generated-audio-provenance.json", "utf8"),
+    ) as { assets: Parameters<typeof inspectGeneratedAudioProvenance>[0] };
+
+    expect(inspectGeneratedAudioProvenance(provenance.assets)).toEqual({
+      exact: true,
+      missing: [],
+      unexpected: [],
+      mismatched: [],
+    });
+
+    const missingFeedback = provenance.assets.filter(
+      (asset) => asset.fileName !== "feedback-notification.mp3",
+    );
+    expect(inspectGeneratedAudioProvenance(missingFeedback)).toEqual(
+      expect.objectContaining({
+        exact: false,
+        missing: ["feedback-notification.mp3"],
+      }),
+    );
+
+    const unexpectedFeedback = [
+      ...provenance.assets,
+      {
+        ...provenance.assets.find((asset) => asset.fileName === "feedback-success.mp3")!,
+        id: "feedback-extra",
+        fileName: "feedback-extra.mp3",
+        publicPath: "public/sounds/feedback/feedback-extra.mp3",
+        deployDocsPath: "docs/sounds/feedback/feedback-extra.mp3",
+      },
+    ];
+    expect(inspectGeneratedAudioProvenance(unexpectedFeedback)).toEqual(
+      expect.objectContaining({
+        exact: false,
+        unexpected: ["feedback-extra.mp3"],
+      }),
+    );
+
+    const mismatchedFeedback = provenance.assets.map((asset) =>
+      asset.fileName === "feedback-success.mp3"
+        ? { ...asset, deterministicSpec: "different-generator-contract" }
+        : asset,
+    );
+    expect(inspectGeneratedAudioProvenance(mismatchedFeedback)).toEqual(
+      expect.objectContaining({
+        exact: false,
+        mismatched: [
+          {
+            fileName: "feedback-success.mp3",
+            fields: ["deterministicSpec"],
+          },
+        ],
+      }),
+    );
+  });
+
+  it("rejects feedback cue format and decoded metrics outside the bounded UI-cue contract", () => {
+    expect(
+      inspectFeedbackMetrics("feedback-success.mp3", {
+        channels: 2,
+        sampleRate: 44_100,
+        durationSeconds: 0.52,
+        peak: 0.12,
+        rms: 0.038,
+        transientDelta: 0.02,
+      }),
+    ).toEqual([]);
+
+    const violations = inspectFeedbackMetrics("feedback-success.mp3", {
+      channels: 1,
+      sampleRate: 48_000,
+      durationSeconds: 1.5,
+      peak: 0.3,
+      rms: 0.1,
+      transientDelta: 0.2,
+    });
+    expect(violations).toEqual([
+      "channels",
+      "sampleRate",
+      "durationSeconds",
+      "peak",
+      "rms",
+      "transientDelta",
+    ]);
   });
 
   it("checks every output filename while reading only text-like artifact bodies", () => {

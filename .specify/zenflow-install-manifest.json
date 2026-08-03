@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-02T19:06:28Z",
+  "repository": "Yehor212/people-first-app",
+  "branch": "codex/spec-kit-v0-15-1-r2",
+  "baseline_head": "6764e44109959a2894ede12c616d04aed227857f",
+  "checksum_algorithm": "sha256",
+  "source": {
+    "official_repository": "https://github.com/github/spec-kit",
+    "release_url": "https://github.com/github/spec-kit/releases/tag/v0.15.1",
+    "latest_release": "v0.15.1",
+    "release_name": "Spec Kit - 0.15.1",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-07-31T13:38:30Z",
+    "tag_object": "6f600b996905cc37b02662f128e84a7c0b7656a0",
+    "tag_commit": "489a3d51d152fa160d88d86781a924e99c4af832",
+    "tag_signature": "UNVERIFIED"
+  },
+  "generator": {
+    "command": "specify init --here --integration codex --script sh --force",
+    "specify_cli": "0.15.1",
+    "uv": "0.11.21",
+    "platform": "Darwin",
+    "architecture": "arm64",
+    "integration": "codex",
+    "script": "sh",
+    "force_boundary": "Authorized only for the clean locked isolated lane after collision inventory"
+  },
+  "pre_install_inventory": {
+    ".specify": "ABSENT",
+    ".agents": "ABSENT",
+    ".codex/spec-kit-integration.json": "ABSENT",
+    ".gitignore_sha256": "ee28746cbe57caf0ff4f0810da309596f69434a7bc9caebbd93dd5be4fea17bf",
+    "AGENTS.md_sha256": "70b3c238bbf3a666c6fd7ca95fa2dd60fcb783f1852e407237fb5f94fe1c0d99",
+    "ARCHITECTURE.md_sha256": "e7e18ce2da8756bc6f643363237b9388987dc3c89b49d94fae08602e6ad83c0d"
+  },
+  "installed_core": {
+    "codex_skill_count": 10,
+    "codex_manifest": {
+      "path": ".specify/integrations/codex.manifest.json",
+      "sha256": "724c790d589dbb328e53070b6d2587796fedf5c5acd3a226369bb372c4fd2a7b",
+      "timestamp_normalized_sha256": "697d438b196bedf7d979f096ca692062bafc9293355f8dc9d198420e8c7a8ae3"
+    },
+    "speckit_manifest": {
+      "path": ".specify/integrations/speckit.manifest.json",
+      "sha256": "a9e945d0460d0a1bf4c18e17c8c13c11e0dd8fac9620028e7a0c218355bb7f8d",
+      "timestamp_normalized_sha256": "6611dbc5085955b63adc81834442ce896a067c5f5dad1ac2acff8a8f241b14dd"
+    },
+    "workflow": {
+      "path": ".specify/workflows/speckit/workflow.yml",
+      "sha256": "b9a2a3c3d1e5f022d0369be7c83802a656c64e2d95306a7870a1f59b90c0e307"
+    },
+    "workflow_registry": {
+      "path": ".specify/workflows/workflow-registry.json",
+      "sha256": "0dafe49fd2a90f14064e3f41476b56ce7d82b85f53c9d16d8ffe480c8aab261b",
+      "timestamp_normalized_sha256": "0cad63449ad88e88015d64d32a002609edd6a7a93bfef42cb3dcaaeae6965913"
+    },
+    "installed_extensions": [],
+    "optional_bug_extension": "NOT_INSTALLED"
+  },
+  "project_grounding": {
+    "constitution_path": ".specify/memory/constitution.md",
+    "constitution_sha256": "f2cad9b7f9198c82fbb667e795e4dd26c23bbfe14d09d61ab6edd14b2f361f66",
+    "constitution_status": "PROPOSED_UNRATIFIED",
+    "constitution_version": "1.0.1",
+    "constitution_status_record": {
+      "path": ".specify/memory/constitution-status.json",
+      "sha256": "be6a6534b78035204b01a351a764bcc037f586d6dfdd01f5cbc7a00645124d84",
+      "activation": "PROPOSAL_CRITERIA_ONLY",
+      "binding": false,
+      "blocking_authority": false,
+      "critical_remediation_authority": false
+    },
+    "constitution_status_gate": {
+      "path": ".specify/scripts/bash/check-zenflow-constitution-status.sh",
+      "sha256": "d92175295084d8cb64ef10632e6778a6cfa8a70bd2f56ce9a16fd24081a6215f"
+    },
+    "gitignore_sha256": "1f7cb51bdec641da9c5c4d8e2e381e609f4c9789010aa82a137ccf38d3fd61f6",
+    "gitignore_change": "Narrowly unignore .specify/memory constitution metadata and ignore future extension cache and bug runtime records"
+  },
+  "comparison": {
+    "reviewed_commit": "cd87127ef7791a9845ef1d4f6ed51138cac37686",
+    "result": "Official core skill, script, template, init, integration, constitution-template, and workflow payloads matched; timestamp-normalized integration and workflow registry state matched",
+    "excluded_from_r2": [
+      "optional bug extension and its three skills",
+      "prior branch hook and script changes outside this task's ownership",
+      "prior runtime discovery receipt and verification ledger"
+    ]
+  },
+  "inventory": {
+    "self_exclusion": ".specify/zenflow-install-manifest.json is excluded because a file cannot contain a stable hash of itself",
+    "ownership_boundary": "Only the explicit tracked_paths allowlist is owned by this installation record. Runtime and ignored paths, including .specify/extensions/.cache/** and .specify/bugs/**, are excluded even when present.",
+    "tracked_paths": [
+      ".agents/skills/speckit-analyze/SKILL.md",
+      ".agents/skills/speckit-checklist/SKILL.md",
+      ".agents/skills/speckit-clarify/SKILL.md",
+      ".agents/skills/speckit-constitution/SKILL.md",
+      ".agents/skills/speckit-converge/SKILL.md",
+      ".agents/skills/speckit-implement/SKILL.md",
+      ".agents/skills/speckit-plan/SKILL.md",
+      ".agents/skills/speckit-specify/SKILL.md",
+      ".agents/skills/speckit-tasks/SKILL.md",
+      ".agents/skills/speckit-taskstoissues/SKILL.md",
+      ".gitignore",
+      ".specify/init-options.json",
+      ".specify/integration.json",
+      ".specify/integrations/codex.manifest.json",
+      ".specify/integrations/speckit.manifest.json",
+      ".specify/memory/.constitution-template.json",
+      ".specify/memory/constitution-status.json",
+      ".specify/memory/constitution.md",
+      ".specify/scripts/bash/check-prerequisites.sh",
+      ".specify/scripts/bash/check-zenflow-constitution-status.sh",
+      ".specify/scripts/bash/common.sh",
+      ".specify/scripts/bash/create-new-feature.sh",
+      ".specify/scripts/bash/setup-plan.sh",
+      ".specify/scripts/bash/setup-tasks.sh",
+      ".specify/templates/checklist-template.md",
+      ".specify/templates/constitution-template.md",
+      ".specify/templates/plan-template.md",
+      ".specify/templates/spec-template.md",
+      ".specify/templates/tasks-template.md",
+      ".specify/workflows/speckit/workflow.yml",
+      ".specify/workflows/workflow-registry.json"
+    ],
+    "file_count_excluding_self": 31,
+    "content_inventory_algorithm": "For each path in tracked_paths, emit normalized repository mode (100755 when executable, otherwise 100644), byte count, SHA-256, and path as a tab-separated UTF-8 line; sort by path; hash the resulting stream with SHA-256",
+    "content_inventory_sha256": "54d17c45cdc8e10c3453296ac0b084425f5ab79e6f7633b6f84b25667b1ee935"
+  },
+  "scope": {
+    "product_source_changed": false,
+    "native_runtime_changed": false,
+    "production_data_read_or_written": false,
+    "external_write_performed": false,
+    "runtime_codex_skill_discovery": "UNVERIFIED",
+    "public_native_human_acceptance": "UNVERIFIED"
+  }
+}

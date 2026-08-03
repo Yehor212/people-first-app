@@ -1,4 +1,5 @@
 const key = "zenflow-runtime-perf-device-guard";
+const motionKey = "zenflow_reduce_motion";
 const version = 2;
 const startup = "startup";
 const offValues = new Set(["0", "false", "no", "off"]);
@@ -24,10 +25,25 @@ const shouldApply = (rawGuard) => {
   }
 };
 
+// In-app reduce-motion preference, applied pre-React so the first paint
+// has no animation flash (10-agent review, Role 10). The React
+// AnimationGate re-applies the same decision via body.reduce-motion.
+const reduceMotionEnabled = (rawPref) => {
+  if (!rawPref) return false;
+  try {
+    return JSON.parse(rawPref)?.reduceMotion === true;
+  } catch {
+    return false;
+  }
+};
+
 try {
   if (typeof window !== "undefined" && typeof document !== "undefined") {
     if (!disabledByQuery() && shouldApply(window.localStorage.getItem(key))) {
       document.documentElement.dataset.runtimePerf = startup;
+    }
+    if (reduceMotionEnabled(window.localStorage.getItem(motionKey))) {
+      document.documentElement.dataset.reduceMotion = "true";
     }
   }
 } catch {

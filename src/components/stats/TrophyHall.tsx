@@ -8,6 +8,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import type { CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import { Share2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -15,7 +16,7 @@ import { FireIcon, StarIcon, TrophyIcon, TargetIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { UnifiedShareModal } from '@/components/share';
 import { hapticTap } from '@/lib/haptics';
-import { zenTap } from '@/lib/animationUtils';
+import { zenMotion, zenTap } from '@/lib/animationUtils';
 
 interface Achievement {
   id: string;
@@ -34,22 +35,25 @@ interface TrophyHallProps {
 
 // Dust particle floating in spotlight
 function DustParticle({ delay, x }: { delay: number; x: number }) {
+  // Stable per-mount drift so parent re-renders do not restart the loop
+  // (10-agent review, Role 10).
+  const [seed] = useState(() => ({
+    drift: Math.random() * 40 - 20,
+    duration: 4 + Math.random() * 2,
+  }));
   return (
-    <motion.div
-      className="absolute w-1 h-1 rounded-full bg-amber-200/60"
-      style={{ insetInlineStart: `${x}%`, top: '10%' }}
-      initial={{ y: 0, opacity: 0 }}
-      animate={{
-        y: [0, 150, 200],
-        opacity: [0, 0.8, 0],
-        x: [0, Math.random() * 30 - 15, Math.random() * 40 - 20],
-      }}
-      transition={{
-        duration: 4 + Math.random() * 2,
-        delay,
-        repeat: Infinity,
-        ease: 'linear',
-      }}
+    <div
+      className="absolute w-1 h-1 rounded-full bg-amber-200/60 animate-zen-loop-fall"
+      style={{
+        insetInlineStart: `${x}%`,
+        top: '10%',
+        opacity: 0,
+        '--zen-loop-drift': `${seed.drift}px`,
+        '--zen-loop-drift-mid': `${seed.drift / 2}px`,
+        '--zen-loop-duration': `${seed.duration}s`,
+        '--zen-loop-delay': `${delay}s`,
+        '--zen-loop-timing': 'linear',
+      } as CSSProperties}
     />
   );
 }
@@ -59,23 +63,19 @@ function Spotlight({ side }: { side: 'left' | 'right' }) {
   const angle = side === 'left' ? 15 : -15;
 
   return (
-    <motion.div
-      className="absolute top-0 w-24 h-full pointer-events-none"
+    <div
+      className="absolute top-0 w-24 h-full pointer-events-none animate-zen-loop-fade"
       style={{
         [side === 'left' ? 'insetInlineStart' : 'insetInlineEnd']: '5%',
         background: `linear-gradient(${angle}deg,
           hsl(var(--temple-spotlight) / 0.15) 0%,
           hsl(var(--temple-spotlight) / 0.05) 50%,
           transparent 100%)`,
-      }}
-      animate={{
-        opacity: [0.3, 0.6, 0.3],
-      }}
-      transition={{
-        duration: 4,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      }}
+        opacity: 0.45,
+        '--zen-loop-min-opacity': 0.3,
+        '--zen-loop-max-opacity': 0.6,
+        '--zen-loop-duration': '4s',
+      } as CSSProperties}
     />
   );
 }
@@ -113,7 +113,7 @@ function AchievementCard({
       )}
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3 + index * 0.15, type: 'spring', stiffness: 100 }}
+      transition={{ delay: 0.3 + index * 0.15, ...zenMotion.gentle }}
       onClick={() => setIsFlipped(!isFlipped)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsFlipped(!isFlipped); } }}
       role="button"
@@ -124,7 +124,7 @@ function AchievementCard({
       <motion.div
         className="relative w-full h-full [transform-style:preserve-3d]"
         animate={{ rotateY: isFlipped ? 180 : 0 }}
-        transition={{ duration: 0.6, type: 'spring', stiffness: 100 }}
+        transition={zenMotion.gentle}
       >
         {/* Front side */}
         <div
@@ -138,12 +138,12 @@ function AchievementCard({
             boxShadow: `0 0 20px ${colors.glow}, inset 0 1px 0 rgba(255,255,255,0.1)`,
           }}
         >
-          <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
+          <div
+            className="animate-zen-loop-scale"
+            style={{ '--zen-loop-scale': 1.1, '--zen-loop-duration': '2s' } as CSSProperties}
           >
             <IconComponent size={isMain ? "lg" : "md"} animated />
-          </motion.div>
+          </div>
           <span className={cn("text-2xl font-bold", colors.text)}>
             {achievement.value}
           </span>

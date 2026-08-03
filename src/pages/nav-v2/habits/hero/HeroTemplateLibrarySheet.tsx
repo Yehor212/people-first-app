@@ -204,7 +204,7 @@ export const HeroTemplateLibrarySheet = memo(function HeroTemplateLibrarySheet({
                       </span>
                       {added && (
                         <span
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[hsl(var(--zf-role-body)/0.24)] bg-[hsl(var(--zf-role-body)/0.10)] text-[hsl(var(--zf-role-body))]"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[hsl(var(--zf-role-body)/0.24)] bg-[hsl(var(--zf-role-body)/0.10)] text-[hsl(var(--zf-role-body-foreground))]"
                           aria-label={tx.navV2HabitsAlreadyAdded}
                         >
                           <AddedIcon className="h-3.5 w-3.5" aria-hidden="true" />

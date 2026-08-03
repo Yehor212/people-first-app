@@ -1,5 +1,4 @@
 import { memo, type CSSProperties } from "react";
-import { motion } from "framer-motion";
 import { CosmicStar, cosmicStars } from "@/components/cosmic/CosmicStarField";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { useThemeStore } from "@/stores/themeStore";
@@ -142,10 +141,14 @@ export const CosmicBgAdapter = memo(function CosmicBgAdapter({
 
       {/* Nebula glow — dual radial pools, pulsed when shouldAnimate */}
       {shouldAnimate ? (
-        <motion.div
-          className="absolute inset-0 pointer-events-none cosmic-bg-adapter__nebula"
-          animate={{ opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        <div
+          className="absolute inset-0 pointer-events-none cosmic-bg-adapter__nebula animate-zen-loop-fade"
+          style={{
+            opacity: 0.4,
+            '--zen-loop-min-opacity': 0.3,
+            '--zen-loop-max-opacity': 0.5,
+            '--zen-loop-duration': '5s',
+          } as CSSProperties}
           data-testid="cosmic-orb-nebula"
           data-animated="true"
         />

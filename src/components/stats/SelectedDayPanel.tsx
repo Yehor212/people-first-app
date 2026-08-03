@@ -4,6 +4,7 @@
  */
 
 import { motion } from 'framer-motion';
+import type { CSSProperties } from 'react';
 import { Calendar, Heart, Brain, Target, Sparkles } from 'lucide-react';
 import { MoodEntry, Habit, GratitudeEntry } from '@/types';
 import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
@@ -56,15 +57,24 @@ export function SelectedDayPanel({
       transition={{ duration: 0.4 }}
     >
       {/* Animated nebula background */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_70%_30%,rgba(139,92,246,0.15)_0%,transparent_50%)]"
-        animate={{ opacity: [0.3, 0.5, 0.3] }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+      <div
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_70%_30%,rgba(139,92,246,0.15)_0%,transparent_50%)] animate-zen-loop-fade"
+        style={{
+          opacity: 0.4,
+          '--zen-loop-min-opacity': 0.3,
+          '--zen-loop-max-opacity': 0.5,
+          '--zen-loop-duration': '4s',
+        } as CSSProperties}
       />
-      <motion.div
-        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_20%_80%,rgba(6,182,212,0.1)_0%,transparent_40%)]"
-        animate={{ opacity: [0.2, 0.4, 0.2] }}
-        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+      <div
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_20%_80%,rgba(6,182,212,0.1)_0%,transparent_40%)] animate-zen-loop-fade"
+        style={{
+          opacity: 0.3,
+          '--zen-loop-min-opacity': 0.2,
+          '--zen-loop-max-opacity': 0.4,
+          '--zen-loop-duration': '5s',
+          '--zen-loop-delay': '1.5s',
+        } as CSSProperties}
       />
 
       {selectedDate && selectedDayData ? (
@@ -72,13 +82,12 @@ export function SelectedDayPanel({
           {/* Premium Header */}
           <div className="flex min-w-0 items-center justify-between gap-3 p-4 border-b border-foreground/10">
             <div className="flex min-w-0 flex-1 items-center gap-3">
-              <motion.div
-                className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-[linear-gradient(135deg,rgba(139,92,246,0.3),rgba(59,130,246,0.2))] shadow-[0_0_15px_rgba(139,92,246,0.4)]"
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              <div
+                className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-[linear-gradient(135deg,rgba(139,92,246,0.3),rgba(59,130,246,0.2))] shadow-[0_0_15px_rgba(139,92,246,0.4)] animate-zen-loop-scale"
+                style={{ '--zen-loop-duration': '3s' } as CSSProperties}
               >
                 <Calendar className="w-5 h-5 text-violet-600 dark:text-violet-300" />
-              </motion.div>
+              </div>
               <div className="min-w-0 flex-1">
                 <p className="min-w-0 break-words font-bold text-lg text-foreground [hyphens:manual] [overflow-wrap:break-word]">{new Date(selectedDate + 'T00:00:00').toLocaleDateString(getLocale(language as Language), { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 <p className="min-w-0 break-words text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
@@ -87,16 +96,15 @@ export function SelectedDayPanel({
               </div>
             </div>
             {selectedDayData.mood && (
-              <motion.div
-                className="shrink-0 drop-shadow-[0_0_12px_rgba(139,92,246,0.6)]"
-                animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              <div
+                className="shrink-0 drop-shadow-[0_0_12px_rgba(139,92,246,0.6)] animate-zen-loop-wiggle"
+                style={{ '--zen-loop-duration': '3s' } as CSSProperties}
               >
                 <AnimatedEmotionEmoji
                   emotion={selectedDayData.mood.emotion?.primary || MOOD_TO_EMOTION_MAP[selectedDayData.mood.mood]}
                   size="lg"
                 />
-              </motion.div>
+              </div>
             )}
           </div>
 
@@ -177,15 +185,16 @@ export function SelectedDayPanel({
                         <div className="absolute start-[9px] top-6 bottom-0 w-px bg-gradient-to-b from-violet-500/50 to-cyan-500/30" />
                       )}
                       {/* Timeline dot */}
-                      <motion.div
-                        className="absolute start-0 top-3 w-5 h-5 rounded-full border-2"
+                      <div
+                        className="absolute start-0 top-3 w-5 h-5 rounded-full border-2 animate-zen-loop-scale"
                         style={{
                           borderColor: emotionColor,
                           background: `radial-gradient(circle, ${emotionColor}40, transparent)`,
                           boxShadow: `0 0 10px ${emotionColor}60`,
-                        }}
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 2, repeat: Infinity, delay: idx * 0.2 }}
+                          '--zen-loop-scale': 1.2,
+                          '--zen-loop-duration': '2s',
+                          '--zen-loop-delay': `${idx * 0.2}s`,
+                        } as CSSProperties}
                       />
                       {/* Entry card */}
                       <div className="ms-4 p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
@@ -314,12 +323,12 @@ export function SelectedDayPanel({
           {selectedDayData.gratitude.length > 0 && (
             <div className="px-4 pb-4 space-y-2">
               <div className="flex items-center gap-2 mb-2">
-                <motion.div
-                  animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+                <div
+                  className="animate-zen-loop-wiggle"
+                  style={{ '--zen-loop-rotate': '15deg', '--zen-loop-scale': 1.2, '--zen-loop-duration': '2s' } as CSSProperties}
                 >
                   <Sparkles className="w-4 h-4 text-amber-400" />
-                </motion.div>
+                </div>
                 <span className="text-sm font-medium text-amber-700/80 dark:text-amber-300/80">{t.gratitude || 'Gratitude'}</span>
               </div>
               {selectedDayData.gratitude.map((entry, idx) => (
@@ -331,13 +340,12 @@ export function SelectedDayPanel({
                   transition={{ delay: idx * 0.1 }}
                 >
                   <div className="flex items-start gap-2">
-                    <motion.span
-                      className="text-base flex-shrink-0"
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: idx * 0.3 }}
+                    <span
+                      className="text-base flex-shrink-0 animate-zen-loop-scale"
+                      style={{ '--zen-loop-scale': 1.2, '--zen-loop-duration': '2s', '--zen-loop-delay': `${idx * 0.3}s` } as CSSProperties}
                     >
                       ✨
-                    </motion.span>
+                    </span>
                     <div className="flex-1 min-w-0">
                       <p className="min-w-0 break-words text-sm text-foreground [overflow-wrap:anywhere]">{entry.text}</p>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -352,13 +360,12 @@ export function SelectedDayPanel({
         </div>
       ) : (
         <div className="p-8 text-center">
-          <motion.div
-            className="inline-block mb-3"
-            animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity }}
+          <div
+            className="inline-block mb-3 animate-zen-loop-fade-scale"
+            style={{ opacity: 0.75, '--zen-loop-min-opacity': 0.5, '--zen-loop-max-opacity': 1, '--zen-loop-duration': '2s' } as CSSProperties}
           >
             <Calendar className="w-8 h-8 text-violet-400/50" />
-          </motion.div>
+          </div>
           <p className="text-sm text-muted-foreground">{t.calendarSelectDay}</p>
         </div>
       )}

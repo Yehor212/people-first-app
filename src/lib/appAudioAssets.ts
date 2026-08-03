@@ -28,7 +28,11 @@ export interface AppAudioAsset {
 export interface AppAudioFeedbackEvent {
   id: AppAudioFeedbackSoundType;
   fallbackLabel: string;
+  publicPath: string;
+  src: string;
+  startsOnUserGesture: boolean;
   respectsMasterVolume: boolean;
+  offlineStrategy: AppAudioOfflineStrategy;
   platforms: readonly AppAudioPlatform[];
 }
 
@@ -115,6 +119,23 @@ function makeActionEvent(
   };
 }
 
+function makeFeedbackEvent(
+  id: AppAudioFeedbackSoundType,
+  fallbackLabel: string,
+): AppAudioFeedbackEvent {
+  const publicPath = `sounds/feedback/feedback-${id}.mp3`;
+  return {
+    id,
+    fallbackLabel,
+    publicPath,
+    src: resolveAppAudioAssetSrc(publicPath),
+    startsOnUserGesture: true,
+    respectsMasterVolume: true,
+    offlineStrategy: "runtime-cache",
+    platforms: allPlatforms,
+  };
+}
+
 export const APP_AUDIO_ASSETS = [
   makeAsset("soft-air-veil", "entry", "sounds/soft-air-veil.mp3", "Soft air", "air", "authMeasuredBreathLabel"),
   makeAsset("orb-ambience", "orb", "sounds/gentle-water-bed.mp3", "Gentle water", "water", "orbAmbienceLabel"),
@@ -136,11 +157,11 @@ export const APP_AUDIO_NON_HYPERFOCUS_ASSET_IDS = [
 ] as const satisfies readonly AppAudioAssetId[];
 
 export const APP_AUDIO_FEEDBACK_EVENTS: readonly AppAudioFeedbackEvent[] = [
-  { id: "success", fallbackLabel: "Soft confirmation", respectsMasterVolume: true, platforms: allPlatforms },
-  { id: "complete", fallbackLabel: "Soft completion", respectsMasterVolume: true, platforms: allPlatforms },
-  { id: "streak", fallbackLabel: "Soft streak cue", respectsMasterVolume: true, platforms: allPlatforms },
-  { id: "milestone", fallbackLabel: "Soft milestone cue", respectsMasterVolume: true, platforms: allPlatforms },
-  { id: "notification", fallbackLabel: "Soft reminder cue", respectsMasterVolume: true, platforms: allPlatforms },
+  makeFeedbackEvent("success", "Soft confirmation"),
+  makeFeedbackEvent("complete", "Soft completion"),
+  makeFeedbackEvent("streak", "Soft streak cue"),
+  makeFeedbackEvent("milestone", "Soft milestone cue"),
+  makeFeedbackEvent("notification", "Soft reminder cue"),
 ];
 
 export const APP_AUDIO_ACTION_EVENTS: readonly AppAudioActionEvent[] = [
@@ -217,6 +238,21 @@ export function getAppAudioAssetSrc(id: AppAudioAssetId): string {
   const asset = getAppAudioAsset(id);
   if (!asset) throw new Error("Unknown app audio asset: " + id);
   return asset.src;
+}
+
+export function getAppAudioFeedbackEvent(
+  id: AppAudioFeedbackSoundType,
+): AppAudioFeedbackEvent | undefined {
+  return APP_AUDIO_FEEDBACK_EVENTS.find((event) => event.id === id);
+}
+
+export function getAppAudioFeedbackEventSrc(
+  id: AppAudioFeedbackSoundType,
+  baseUrl = BASE_URL,
+): string {
+  const event = getAppAudioFeedbackEvent(id);
+  if (!event) throw new Error("Unknown app audio feedback event: " + id);
+  return resolveAppAudioAssetSrc(event.publicPath, baseUrl);
 }
 
 export function getAppAudioAssetsByFamily(family: AppAudioFamily): AppAudioAsset[] {

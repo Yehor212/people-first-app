@@ -536,6 +536,14 @@ export const ja: Translations = {
   settingsSoundActivityRestoreDescription:
     "以前オフにした音は、もう一度オンにするまで再生されません。",
   settingsSoundActivityRestoreAction: "すべての操作音をオンにする",
+  settingsSoundPreviewTitle: "サウンドをプレビュー",
+  settingsSoundPreviewDescription:
+    "実際のイベントを待たずに、オンになっている各音を今すぐ聴けます。",
+  settingsSoundPreviewSuccess: "保存",
+  settingsSoundPreviewComplete: "完了",
+  settingsSoundPreviewStreak: "ストリーク",
+  settingsSoundPreviewMilestone: "マイルストーン",
+  settingsSoundPreviewNotification: "リマインダー",
   settingsSoundMasterDisabledHint: "これらの設定を使うには、アプリのサウンドをオンにしてください。",
   settingsAccountBackupTitle: "アカウントとバックアップ",
   settingsAccountBackupDescription:
@@ -1372,13 +1380,6 @@ export const ja: Translations = {
     "ZenFlowの画面で穏やかな背景音を使えます。再生ボタンを押したときだけ始まります。",
   settingsSoundActivityTitle: "操作音",
   settingsSoundActivityDescription: "活動の完了、タイマー、一部の節目を静かな音で知らせます。",
-  settingsSoundPreviewTitle: "操作音をプレビュー",
-  settingsSoundPreviewDescription: "実際のイベントを待たずに、各音を今すぐ聴けます。",
-  settingsSoundPreviewSuccess: "保存",
-  settingsSoundPreviewComplete: "完了",
-  settingsSoundPreviewStreak: "ストリーク",
-  settingsSoundPreviewMilestone: "マイルストーン",
-  settingsSoundPreviewNotification: "リマインダー",
   settingsSoundCompletionCues: "完了音",
   settingsSoundCompletionCuesDesc: "大切な操作の後に、静かな確認音を鳴らします。",
   settingsSoundReminderCues: "ZenFlow内のリマインダー音",

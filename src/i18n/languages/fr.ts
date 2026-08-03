@@ -557,6 +557,14 @@ export const fr: Translations = {
   settingsSoundActivityRestoreDescription:
     "Les sons désactivés auparavant restent coupés jusqu’à ce que vous les réactiviez.",
   settingsSoundActivityRestoreAction: "Activer tous les sons d’activité",
+  settingsSoundPreviewTitle: "Écouter les sons",
+  settingsSoundPreviewDescription:
+    "Écoutez tout de suite chaque signal activé, sans attendre un événement réel.",
+  settingsSoundPreviewSuccess: "Enregistré",
+  settingsSoundPreviewComplete: "Terminé",
+  settingsSoundPreviewStreak: "Série",
+  settingsSoundPreviewMilestone: "Jalon",
+  settingsSoundPreviewNotification: "Rappel",
   settingsSoundMasterDisabledHint: "Activez le son de l’app pour utiliser ces réglages.",
   settingsAccountBackupTitle: "Compte et sauvegarde",
   settingsAccountBackupDescription:
@@ -1415,13 +1423,6 @@ export const fr: Translations = {
   settingsSoundActivityTitle: "Sons d’activité",
   settingsSoundActivityDescription:
     "Diffuser un son discret après une activité terminée, un minuteur ou certains paliers.",
-  settingsSoundPreviewTitle: "Écouter les sons d’activité",
-  settingsSoundPreviewDescription: "Écoutez chaque signal tout de suite, sans attendre un événement réel.",
-  settingsSoundPreviewSuccess: "Enregistré",
-  settingsSoundPreviewComplete: "Terminé",
-  settingsSoundPreviewStreak: "Série",
-  settingsSoundPreviewMilestone: "Jalon",
-  settingsSoundPreviewNotification: "Rappel",
   settingsSoundCompletionCues: "Sons de confirmation",
   settingsSoundCompletionCuesDesc: "Diffuser un son discret après une activité terminée.",
   settingsSoundReminderCues: "Sons de rappel dans ZenFlow",

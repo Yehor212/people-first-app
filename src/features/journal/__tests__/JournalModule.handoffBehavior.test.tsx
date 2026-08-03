@@ -204,6 +204,9 @@ vi.mock("@/lib/animationUtils", () => ({
     gentle: { duration: 0 },
     snappy: { duration: 0 },
   },
+  zenTap: {
+    cell: { scale: 0.97 },
+  },
 }));
 
 vi.mock("@/lib/haptics", () => ({
@@ -859,10 +862,9 @@ describe("JournalModule orb handoff behavior", () => {
     fireEvent.click(screen.getByRole("button", { name: /open diary settings/i }));
 
     const settingsPanel = await screen.findByTestId("journal-settings-panel");
-    const privateModeSwitch = await within(settingsPanel).findByRole(
-      "switch",
-      { name: /conceal diary list/i },
-    );
+    const privateModeSwitch = await within(settingsPanel).findByRole("switch", {
+      name: /conceal diary list/i,
+    });
     fireEvent.click(privateModeSwitch);
     fireEvent.click(within(settingsPanel).getByRole("button", { name: /close/i }));
 
@@ -911,10 +913,9 @@ describe("JournalModule orb handoff behavior", () => {
     safeJsonStore.writeBlocked = true;
 
     const settingsPanel = await screen.findByTestId("journal-settings-panel");
-    const privateModeSwitch = await within(settingsPanel).findByRole(
-      "switch",
-      { name: /conceal diary list/i },
-    );
+    const privateModeSwitch = await within(settingsPanel).findByRole("switch", {
+      name: /conceal diary list/i,
+    });
     fireEvent.click(privateModeSwitch);
 
     expect(screen.queryByTestId("journal-entry-editor")).not.toBeInTheDocument();

@@ -550,6 +550,14 @@ export const en: Translations = {
   settingsSoundActivityRestoreDescription:
     "Sounds you turned off earlier stay off until you turn them back on.",
   settingsSoundActivityRestoreAction: "Turn all activity sounds on",
+  settingsSoundPreviewTitle: "Preview sounds",
+  settingsSoundPreviewDescription:
+    "Hear each enabled cue right away, without waiting for a real event.",
+  settingsSoundPreviewSuccess: "Saved",
+  settingsSoundPreviewComplete: "Completed",
+  settingsSoundPreviewStreak: "Streak",
+  settingsSoundPreviewMilestone: "Milestone",
+  settingsSoundPreviewNotification: "Reminder",
   settingsSoundMasterDisabledHint: "Turn on App sound to use these settings.",
   settingsAccountBackupTitle: "Account & backup",
   settingsAccountBackupDescription:
@@ -1385,13 +1393,6 @@ export const en: Translations = {
   settingsSoundActivityTitle: "Activity sounds",
   settingsSoundActivityDescription:
     "Play quiet feedback after completed activities, timers, and occasional milestones.",
-  settingsSoundPreviewTitle: "Preview activity sounds",
-  settingsSoundPreviewDescription: "Hear each cue right away, without waiting for a real event.",
-  settingsSoundPreviewSuccess: "Saved",
-  settingsSoundPreviewComplete: "Completed",
-  settingsSoundPreviewStreak: "Streak",
-  settingsSoundPreviewMilestone: "Milestone",
-  settingsSoundPreviewNotification: "Reminder",
   settingsSoundCompletionCues: "Completion sounds",
   settingsSoundCompletionCuesDesc: "Plays a quiet confirmation sound after important actions.",
   settingsSoundReminderCues: "Reminder sounds in ZenFlow",

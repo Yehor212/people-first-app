@@ -30,6 +30,9 @@ vi.mock("@/lib/animationUtils", () => ({
     gentle: { duration: 0.2 },
     snappy: { duration: 0.12 },
   },
+  zenTap: {
+    button: { scale: 0.96 },
+  },
 }));
 
 type MotionMockProps<T extends HTMLElement> = React.HTMLAttributes<T> & {

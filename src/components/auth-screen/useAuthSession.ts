@@ -39,7 +39,10 @@ export function useAuthSession({
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-  // Show web OAuth error from Index.tsx if present
+  // Show web OAuth error from Index.tsx if present.
+  // Only sync truthy values: the parent store is a one-shot channel that clears
+  // itself via onClearError; syncing null back would erase the local copy on
+  // the next render and the alert would never appear.
   useEffect(() => {
     if (webOAuthError !== undefined) {
       setError(webOAuthError);

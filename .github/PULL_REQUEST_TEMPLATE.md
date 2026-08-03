@@ -30,3 +30,11 @@ AGENT_CHANGE_NOTICE:
 - [ ] Any production sync smoke write verifies the dedicated `zenflow_sync_smoke` account marker before writing
 - [ ] CHANGELOG.md updated (or N/A — no user-facing changes)
 - [ ] No secrets committed (.env, keystore, google-services.json)
+
+## Cross-Platform Impact (required)
+
+- [ ] Platform status declared for ALL targets — Web/Vite, installed PWA, Android, iOS, Desktop: shipped, N/A + reason, or follow-up issue linked
+- [ ] Cross-platform data/sync/deletion impact reviewed (or N/A)
+- [ ] UI: RTL (ar/he), safe-area, and desktop-width checked (or N/A — no UI changes)
+- [ ] Native-only capability has a web/PWA fallback plan; web-only assumption verified on Capacitor/Tauri (or N/A)
+- [ ] Release parity: user-facing change is tracked until it reaches every shipped platform (`docs/CROSS_PLATFORM_RELEASE.md`)

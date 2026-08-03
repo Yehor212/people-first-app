@@ -62,7 +62,10 @@ function getAuthenticodeStatus(file) {
   ].join(" ");
 
   try {
-    const output = execFileSync("powershell.exe", ["-NoProfile", "-Command", ps], {
+    // pwsh (PowerShell 7+): Microsoft.PowerShell.Security is built into the core
+    // and always available; legacy powershell.exe 5.1 autoload is broken on
+    // windows-2025-vs2026 runner images (module could not be loaded).
+    const output = execFileSync("pwsh.exe", ["-NoProfile", "-Command", ps], {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,

@@ -2,7 +2,7 @@
  * SparkleParticles - Floating sparkle particle animations
  */
 
-import { motion } from 'framer-motion';
+import type { CSSProperties } from 'react';
 import { Sparkles } from 'lucide-react';
 
 // Floating sparkle particles
@@ -10,27 +10,24 @@ export function SparkleParticles({ color }: { color: string }) {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {[...Array(12)].map((_, i) => (
-        <motion.div
+        <div
           key={i}
-          className="absolute"
+          className="absolute animate-zen-loop-float"
           style={{
             left: `${5 + (i * 8)}%`,
             top: `${10 + (i % 4) * 20}%`,
-          }}
-          animate={{
-            y: [0, -15, 0],
-            opacity: [0, 1, 0],
-            scale: [0.5, 1, 0.5],
-          }}
-          transition={{
-            duration: 2 + (i % 3) * 0.5,
-            delay: i * 0.15,
-            repeat: Infinity,
-            repeatDelay: 0.5,
-          }}
+            opacity: 0,
+            '--zen-loop-rise': '15px',
+            '--zen-loop-scale-min': 0.5,
+            '--zen-loop-scale': 1,
+            '--zen-loop-min-opacity': 0,
+            '--zen-loop-max-opacity': 1,
+            '--zen-loop-duration': `${2 + (i % 3) * 0.5 + 0.5}s`,
+            '--zen-loop-delay': `${i * 0.15}s`,
+          } as CSSProperties}
         >
           <Sparkles className="w-3 h-3" style={{ color }} />
-        </motion.div>
+        </div>
       ))}
     </div>
   );

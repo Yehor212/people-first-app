@@ -796,6 +796,14 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settingsSoundMilestoneCues: "Milestone sounds",
       settingsSoundMilestoneCuesDesc:
         "Play a sound for occasional streak and achievement milestones.",
+      settingsSoundPreviewTitle: "Preview sounds",
+      settingsSoundPreviewDescription:
+        "Hear each enabled cue right away, without waiting for a real event.",
+      settingsSoundPreviewSuccess: "Saved",
+      settingsSoundPreviewComplete: "Completed",
+      settingsSoundPreviewStreak: "Streak",
+      settingsSoundPreviewMilestone: "Milestone",
+      settingsSoundPreviewNotification: "Reminder",
       settingsSoundTextureTitle: "Background sounds",
       settingsSoundTextureDescription: "Choose which background sounds ZenFlow may play.",
       settingsSoundTextureAir: "Air",
@@ -2010,6 +2018,31 @@ describe("SettingsPage", () => {
     expect(nameInput).toHaveValue(mixedName);
   });
 
+  it("isolates mixed RTL prose, dates, URLs, handles, punctuation, emoji, and LTR IDs", () => {
+    const accountLabel =
+      "حساب سارة — @Avery_2026, 12/07/2026; https://example.test/a?b=1 — ABC-123 🙂 — avery.very.long.identifier@example.invalid";
+    accountAuthMock.sessionAccountLabel = accountLabel;
+    languageContextMock.language = "ar";
+
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "account" }} />
+    );
+
+    const identity = screen.getByTestId("settings-v2-session-account-label");
+    expect(identity.tagName).toBe("BDI");
+    expect(identity).toHaveAttribute("dir", "auto");
+    expect(identity).toHaveTextContent(accountLabel);
+    expect(identity).toHaveClass("min-w-0", "max-w-full", "break-words");
+    expect(identity.className).toContain("[overflow-wrap:anywhere]");
+    expect(identity).not.toHaveClass("truncate");
+
+    const nameInput = screen.getByLabelText("Your name");
+    const mixedName = "سارة @Avery_2026 — ABC-123 🙂";
+    fireEvent.change(nameInput, { target: { value: mixedName } });
+    expect(nameInput).toHaveAttribute("dir", "auto");
+    expect(nameInput).toHaveValue(mixedName);
+  });
+
   it("does not expose sign-in actions while signed-in account details are still loading", () => {
     appStoreMock.hasValidSession = true;
     accountAuthMock.hasSession = false;
@@ -2220,6 +2253,17 @@ describe("SettingsPage", () => {
     expect(accountPanel).toHaveTextContent("You’re not signed in");
     expect(accountPanel).toHaveTextContent(
       "You can use ZenFlow without an account. Sign in to save new changes online and use them on your other devices."
+    );
+    expect(
+      within(accountPanel).getByText(
+        "You can use ZenFlow without an account. Sign in to save new changes online and use them on your other devices."
+      )
+    ).toHaveClass(
+      "min-w-0",
+      "whitespace-normal",
+      "break-words",
+      "[hyphens:manual]",
+      "[overflow-wrap:break-word]"
     );
     expect(
       within(accountPanel).getByText(
@@ -3640,6 +3684,12 @@ describe("SettingsPage", () => {
       })
     ).toHaveAttribute("aria-checked", "false");
     expect(screen.queryByTestId("settings-v2-audio-activity-recovery")).toBeNull();
+    const preview = screen.getByTestId("settings-v2-audio-feedback-preview");
+    expect(within(preview).getByRole("button", { name: "Saved" })).toBeDisabled();
+    expect(within(preview).getByRole("button", { name: "Completed" })).toBeDisabled();
+    expect(within(preview).getByRole("button", { name: "Streak" })).toBeDisabled();
+    expect(within(preview).getByRole("button", { name: "Milestone" })).toBeDisabled();
+    expect(within(preview).getByRole("button", { name: "Reminder" })).toBeEnabled();
   });
 
   it("enables Activity sounds without silently enabling reminder cues", async () => {
@@ -3723,6 +3773,26 @@ describe("SettingsPage", () => {
     expect(screen.queryByTestId("settings-v2-action-sound-map-card")).not.toBeInTheDocument();
     expect(screen.queryByTestId("settings-v2-sound-platform-card")).not.toBeInTheDocument();
     expect(soundPanel).not.toHaveTextContent(/\b(PWA|Android|iOS|Desktop|Web)\b/);
+  });
+
+  it("previews each activity cue from the Sound panel without waiting for a real event", () => {
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "sound" }} />
+    );
+
+    const preview = screen.getByTestId("settings-v2-audio-feedback-preview");
+    for (const [label, soundType] of [
+      ["Saved", "success"],
+      ["Completed", "complete"],
+      ["Streak", "streak"],
+      ["Milestone", "milestone"],
+      ["Reminder", "notification"],
+    ] as const) {
+      const button = within(preview).getByRole("button", { name: label });
+      expect(button).toHaveClass("min-h-[48px]");
+      fireEvent.click(button);
+      expect(audioManagerMock.playFeedbackPreview).toHaveBeenLastCalledWith(soundType);
+    }
   });
 
   it("keeps settings range controls at a finger-size target without a thicker visible track", () => {

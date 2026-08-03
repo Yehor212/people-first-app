@@ -37,7 +37,7 @@ export function NotFoundPage({
           <RecoveryOrbit label={tx.pageNotFound ?? tx.notFoundKicker ?? "Page not found"} />
         </div>
 
-        <p className="mt-1 break-words text-xs font-bold uppercase tracking-[0.18em] text-[hsl(var(--zf-role-focus))] [hyphens:manual] [overflow-wrap:break-word] sm:tracking-[0.22em]">
+        <p className="mt-1 break-words text-xs font-bold uppercase tracking-[0.18em] text-[hsl(var(--zf-role-focus-foreground))] [hyphens:manual] [overflow-wrap:break-word] sm:tracking-[0.22em]">
           {tx.notFoundKicker ?? "Route not found"}
         </p>
         <h1 className="mt-4 break-words font-display text-3xl font-bold leading-tight text-[hsl(var(--zf-text-strong))] [hyphens:manual] [overflow-wrap:break-word]">
@@ -50,7 +50,7 @@ export function NotFoundPage({
 
         {cleanPath && (
           <div className="mx-auto mt-5 flex max-w-sm items-center gap-3 rounded-3xl border border-[hsl(var(--foreground)/0.10)] bg-[linear-gradient(135deg,hsl(var(--zf-surface-2)/0.76),hsl(var(--zf-night-1)/0.56))] p-3 text-left shadow-[inset_0_1px_0_hsl(var(--foreground)/0.08)]">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[hsl(var(--zf-role-focus)/0.28)] bg-[hsl(var(--zf-role-focus)/0.12)] text-[hsl(var(--zf-role-focus))]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[hsl(var(--zf-role-focus)/0.28)] bg-[hsl(var(--zf-role-focus)/0.12)] text-[hsl(var(--zf-role-focus-foreground))]">
               <Compass className="h-5 w-5" aria-hidden="true" />
             </span>
             <span className="min-w-0">

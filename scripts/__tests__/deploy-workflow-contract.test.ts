@@ -15,7 +15,7 @@ function sliceBetween(source: string, startMarker: string, endMarker: string): s
 }
 
 function extractConcurrencyGroup(source: string): string {
-  const match = source.match(/concurrency:\n\s+group:\s+([^\n]+)/);
+  const match = source.match(/concurrency:\n(?:\s*#[^\n]*\n)*\s+group:\s+([^\n]+)/);
   expect(match?.[1], "workflow must declare a top-level concurrency group").toBeTruthy();
   return match![1].trim().replace(/^['"]|['"]$/g, "");
 }
@@ -98,6 +98,16 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(workflow).toContain("run: npm run typecheck");
     expect(workflow).not.toContain("run: npx tsc --noEmit");
   });
+
+  it("runs exact-SHA remote CI contracts in the deploy-blocking release contract command", () => {
+    const pkg = JSON.parse(readFileSync("package.json", "utf8")) as {
+      scripts: Record<string, string>;
+    };
+    const releaseContracts = pkg.scripts["test:release-contracts"];
+
+    expect(releaseContracts).toContain("scripts/__tests__/remote-ci-core.test.ts");
+    expect(releaseContracts).toContain("scripts/__tests__/check-remote-ci-cli.test.ts");
+  });
   it("does not auto-deploy preview branches to the production GitHub Pages environment", () => {
     const previewWorkflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
 
@@ -113,17 +123,30 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(previewWorkflow).not.toContain("VITE_DISABLE_PWA");
   });
 
-  it("keeps artifact-only V2 previews isolated but serializes overwrites with production Pages", () => {
+  it("isolates pull-request Pages checks while serializing main and explicit V2 production overwrites", () => {
     const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
     const previewWorkflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
 
-    expect(extractConcurrencyGroup(workflow)).toBe("pages");
+    expect(extractConcurrencyGroup(workflow)).toBe(
+      "${{ github.event_name == 'pull_request' && format('pages-pr-{0}', github.event.pull_request.number) || github.event_name == 'push' && 'pages' || github.event.inputs.telegram_approval == 'telegram-approved' && github.ref == 'refs/heads/main' && 'pages' || format('pages-nondeploy-{0}', github.ref) }}"
+    );
+    expect(workflow).toContain("cancel-in-progress: true");
     expect(previewWorkflow).toContain(
       "group: ${{ github.event.inputs.publish_target == 'overwrite-github-pages' && 'pages' || 'pages-v2-preview' }}"
     );
     expect(previewWorkflow).toContain(
       "cancel-in-progress: ${{ github.event.inputs.publish_target != 'overwrite-github-pages' }}"
     );
+    const protectedJobs = [
+      sliceBetween(workflow, "  deploy:", "  public-privacy-smoke:"),
+      sliceBetween(workflow, "  public-privacy-smoke:", "  public-auth-smoke:"),
+      workflow.slice(indexOfOrThrow(workflow, "  public-auth-smoke:")),
+    ];
+    for (const job of protectedJobs) {
+      expect(job).toContain(
+        "if: github.event_name == 'push' || github.event.inputs.telegram_approval == 'telegram-approved'"
+      );
+    }
   });
 
   it("guards explicit V2 production overwrites to main before Pages upload", () => {
@@ -316,8 +339,14 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(pkg.scripts["test:agent-orchestra"]).toContain(
       "scripts/__tests__/codex-change-governance-gate.test.mjs"
     );
+    expect(pkg.scripts["test:agent-orchestra"]).toContain(
+      "scripts/__tests__/private-receipt-export.test.mjs",
+    );
     expect(pkg.scripts["test:release-contracts"]).toContain(
       "scripts/__tests__/skill-routing-hook-payload.test.ts"
+    );
+    expect(pkg.scripts["test:release-contracts"]).toContain(
+      "scripts/__tests__/private-receipt-export.test.mjs",
     );
   });
 

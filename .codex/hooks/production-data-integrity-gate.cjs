@@ -30,19 +30,37 @@ const ROOT = resolveRepositoryRoot();
 const CHECKER = path.join(ROOT, "scripts", "check-production-data-integrity.cjs");
 const CHECK_TIMEOUT_MS = 15000;
 const MAX_OUTPUT_BYTES = 2 * 1024 * 1024;
-const RELEVANT_PROMPT = /\b(?:synthetic|fixture|mock|fake|sample data|demo mode|seed data|fallback|stubbed|production data|data integrity|persistence|indexeddb|dexie|supabase|sync|analytics|export|backup|share|readiness|release evidence)\b/i;
-const RELEVANT_PATH = /^(?:src\/|supabase\/|scripts\/|config\/|\.codex\/|\.github\/workflows\/|docs\/release\/|docs\/ai\/PRODUCTION_DATA_INTEGRITY_POLICY\.md|docs\/adr\/0010-|AGENTS\.md|package\.json)/;
-const PROTECTED_PATH = /^(?:scripts\/check-production-data-integrity\.cjs|scripts\/production-data-integrity\/|scripts\/__tests__\/(?:production-data-integrity|smoke-sync-account-boundary)|scripts\/(?:check-agent-context\.mjs|check-enforcement-health\.ts|check-task-completion-protocol\.cjs|smoke-sync-account\.cjs)|config\/production-data-integrity|\.codex\/hooks\/production-data-integrity-gate\.cjs|\.codex\/hooks\.json|\.github\/workflows\/(?:production-data-integrity|deploy|deploy-v2-preview|desktop-release|drift-checks)\.yml|docs\/ai\/(?:PRODUCTION_DATA_INTEGRITY_POLICY|TASK_COMPLETION_PROTOCOL)\.md|docs\/(?:DEFINITION_OF_DONE|RELEASE_CHECKLIST)\.md|docs\/adr\/0010-production-data-integrity|src\/lib\/(?:syncIntegrity\.ts|__tests__\/syncIntegrity\.test\.ts)|AGENTS\.md|package\.json|\.github\/CODEOWNERS|\.github\/PULL_REQUEST_TEMPLATE\.md)/;
+const REVIEWED_ADDITIVE_PACKAGE_SCRIPTS = new Map([
+  ["check:agent-workspace", "node scripts/check-agent-workspace-protocol.cjs"],
+]);
+const RELEVANT_PROMPT =
+  /\b(?:synthetic|fixture|mock|fake|sample data|demo mode|seed data|fallback|stubbed|production data|data integrity|persistence|indexeddb|dexie|supabase|sync|analytics|export|backup|share|readiness|release evidence)\b/i;
+const RELEVANT_PATH =
+  /^(?:src\/|supabase\/|scripts\/|config\/|\.codex\/|\.github\/workflows\/|docs\/release\/|docs\/ai\/PRODUCTION_DATA_INTEGRITY_POLICY\.md|docs\/adr\/0010-|AGENTS\.md|package\.json)/;
+const PROTECTED_PATH =
+  /^(?:scripts\/check-production-data-integrity\.cjs|scripts\/production-data-integrity\/|scripts\/__tests__\/(?:production-data-integrity|smoke-sync-account-boundary)|scripts\/(?:check-agent-context\.mjs|check-enforcement-health\.ts|check-task-completion-protocol\.cjs|smoke-sync-account\.cjs)|config\/production-data-integrity|\.codex\/hooks\/production-data-integrity-gate\.cjs|\.codex\/hooks\.json|\.github\/workflows\/(?:production-data-integrity|deploy|deploy-v2-preview|desktop-release|drift-checks)\.yml|docs\/ai\/(?:PRODUCTION_DATA_INTEGRITY_POLICY|TASK_COMPLETION_PROTOCOL)\.md|docs\/(?:DEFINITION_OF_DONE|RELEASE_CHECKLIST)\.md|docs\/adr\/0010-production-data-integrity|src\/lib\/(?:syncIntegrity\.ts|__tests__\/syncIntegrity\.test\.ts)|AGENTS\.md|package\.json|\.github\/CODEOWNERS|\.github\/PULL_REQUEST_TEMPLATE\.md)/;
 
 function normalizePath(value) {
-  return String(value || "").normalize("NFC").replace(/\\/g, "/").replace(ROOT.replace(/\\/g, "/"), "").replace(/^\/+/, "");
+  return String(value || "")
+    .normalize("NFC")
+    .replace(/\\/g, "/")
+    .replace(ROOT.replace(/\\/g, "/"), "")
+    .replace(/^\/+/, "");
 }
 
 function toolText(data) {
   const input = data && data.tool_input;
   if (typeof input === "string") return input;
   if (!input || typeof input !== "object") return "";
-  return [input.command, input.cmd, input.patch, input.input, input.content, input.new_string, input.old_string]
+  return [
+    input.command,
+    input.cmd,
+    input.patch,
+    input.input,
+    input.content,
+    input.new_string,
+    input.old_string,
+  ]
     .filter((value) => typeof value === "string")
     .join("\n");
 }
@@ -72,7 +90,12 @@ function block(reason) {
 function relevantToolChange(data) {
   const paths = targetPaths(data);
   const toolName = String(data.tool_name || "");
-  if (toolName === "Bash" && !/(?:apply_patch|\bsed\s+-i\b|\brm\s|\bmv\s|\bcp\s|\btee\s|(?:^|\s)>\s*|\bnpm\s+run\s+(?:build|stage:release-artifacts))/m.test(toolText(data))) {
+  if (
+    toolName === "Bash" &&
+    !/(?:apply_patch|\bsed\s+-i\b|\brm\s|\bmv\s|\bcp\s|\btee\s|(?:^|\s)>\s*|\bnpm\s+run\s+(?:build|stage:release-artifacts))/m.test(
+      toolText(data)
+    )
+  ) {
     return false;
   }
   if (paths.some((candidate) => RELEVANT_PATH.test(candidate))) return true;
@@ -80,30 +103,176 @@ function relevantToolChange(data) {
   return /production-data-integrity|src\/|supabase\/|docs\/release\//i.test(text);
 }
 
+function maskPreservedContractRemovals(text) {
+  const marker =
+    /production-data-integrity(?::[a-z0-9-]+)?|production data integrity|PDI0(?:0[1-9]|1[0-2])|process\.exit\(2\)|stop_hook_active/gi;
+  if (!/\*\*\* Update File: package\.json(?:\r?\n|$)/.test(text)) return text;
+  const lines = String(text).split(/\r?\n/);
+  const removedLines = lines.filter((line) => /^-(?!-)/.test(line));
+  const addedText = lines.filter((line) => /^\+(?!\+)/.test(line)).join("\n");
+  const removedCounts = countMarkers(removedLines.join("\n"), marker);
+  const addedCounts = countMarkers(addedText, marker);
+  const contractRemovals = removedLines.filter((line) => markerPresent(line, marker));
+  if (
+    removedCounts.size === 0 ||
+    [...removedCounts].some(([token, count]) => (addedCounts.get(token) || 0) < count) ||
+    contractRemovals.some((line) => !isAdditivePackageScriptReplacement(line, lines))
+  ) {
+    return text;
+  }
+  return lines
+    .map((line) =>
+      /^-(?!-)/.test(line) && markerPresent(line, marker) ? ` ${line.slice(1)}` : line
+    )
+    .join("\n");
+}
+
+function countMarkers(text, pattern) {
+  const counts = new Map();
+  for (const match of String(text).matchAll(pattern)) {
+    const token = match[0].toLowerCase();
+    counts.set(token, (counts.get(token) || 0) + 1);
+  }
+  return counts;
+}
+
+function markerPresent(text, pattern) {
+  pattern.lastIndex = 0;
+  return pattern.test(text);
+}
+
+function isAdditivePackageScriptReplacement(removedLine, lines) {
+  const removed = parsePackageScriptLine(removedLine, "-");
+  if (!removed) return false;
+  const additions = lines
+    .map((line) => parsePackageScriptLine(line, "+"))
+    .filter((candidate) => candidate?.key === removed.key);
+  if (additions.length !== 1) return false;
+
+  const previous = commandSequence(removed.value);
+  const next = commandSequence(additions[0].value);
+  if (
+    previous.length === 0 ||
+    next.length < previous.length ||
+    next.some(
+      (command) =>
+        !/^(?:npm\s+run|npx)\s+\S/.test(command) ||
+        /[|;&<>$`\r\n]/.test(command) ||
+        /\b(?:exec|exit|return|trap)\b/.test(command)
+    )
+  ) {
+    return false;
+  }
+  let previousIndex = 0;
+  const insertedCommands = [];
+  for (const command of next) {
+    if (command === previous[previousIndex]) {
+      previousIndex += 1;
+    } else {
+      insertedCommands.push(command);
+    }
+  }
+  return (
+    previousIndex === previous.length &&
+    new Set(insertedCommands).size === insertedCommands.length &&
+    insertedCommands.every((command) => isReviewedPackageScriptCommand(command, lines))
+  );
+}
+
+function isReviewedPackageScriptCommand(command, patchLines) {
+  const match = /^npm\s+run\s+([a-z0-9:_-]+)$/i.exec(command);
+  if (!match) return false;
+  const scriptName = match[1];
+  const expected = REVIEWED_ADDITIVE_PACKAGE_SCRIPTS.get(scriptName);
+  if (!expected) return false;
+
+  const patchDefinitions = patchLines
+    .map((line) => parsePackageScriptLine(line, "+"))
+    .filter((candidate) => candidate?.key === scriptName);
+  if (patchDefinitions.length > 0) {
+    return patchDefinitions.length === 1 && patchDefinitions[0].value === expected;
+  }
+
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
+    return packageJson?.scripts?.[scriptName] === expected;
+  } catch {
+    return false;
+  }
+}
+
+function parsePackageScriptLine(line, prefix) {
+  const escapedPrefix = prefix === "+" ? "\\+" : "-";
+  const match = new RegExp(
+    `^${escapedPrefix}(?!${escapedPrefix})\\s*"([^"]+)"\\s*:\\s*"((?:\\\\.|[^"])*)"\\s*,?\\s*$`
+  ).exec(line);
+  if (!match) return null;
+  try {
+    return { key: match[1], value: JSON.parse(`"${match[2]}"`) };
+  } catch {
+    return null;
+  }
+}
+
+function commandSequence(value) {
+  return String(value)
+    .split(/\s*&&\s*/)
+    .map((command) => command.trim())
+    .filter(Boolean);
+}
+
 function obviousTampering(data) {
-  const text = toolText(data);
+  let text = toolText(data);
+  text = maskPreservedContractRemovals(text);
   const analysis = analyzeToolEvent(data);
-  const protectedTarget = analysis.targets.map(normalizePath).some((candidate) => PROTECTED_PATH.test(candidate))
-    || /(?:scripts\/(?:check-production-data-integrity|production-data-integrity|check-agent-context|check-enforcement-health|check-task-completion-protocol|smoke-sync-account)|config\/production-data-integrity|\.codex\/hooks(?:\.json|\/production-data-integrity)|\.github\/workflows\/(?:production-data-integrity|deploy|deploy-v2-preview|desktop-release|drift-checks)|docs\/(?:ai\/(?:PRODUCTION_DATA_INTEGRITY_POLICY|TASK_COMPLETION_PROTOCOL)|DEFINITION_OF_DONE|RELEASE_CHECKLIST))/.test(text);
+  const protectedTarget =
+    analysis.targets.map(normalizePath).some((candidate) => PROTECTED_PATH.test(candidate)) ||
+    /(?:scripts\/(?:check-production-data-integrity|production-data-integrity|check-agent-context|check-enforcement-health|check-task-completion-protocol|smoke-sync-account)|config\/production-data-integrity|\.codex\/hooks(?:\.json|\/production-data-integrity)|\.github\/workflows\/(?:production-data-integrity|deploy|deploy-v2-preview|desktop-release|drift-checks)|docs\/(?:ai\/(?:PRODUCTION_DATA_INTEGRITY_POLICY|TASK_COMPLETION_PROTOCOL)|DEFINITION_OF_DONE|RELEASE_CHECKLIST))/.test(
+      text
+    );
   if (!protectedTarget) return null;
   if (analysis.shellMutation) {
     return "Direct shell mutation of production-data-integrity enforcement is blocked; use a reviewable patch with fresh test-first and governance evidence.";
   }
-  if (/\brm(?:\s+-[^\s;&|]+)*\s+(?:docs\/ai\/PRODUCTION_DATA_INTEGRITY_POLICY\.md|scripts\/check-production-data-integrity\.cjs|\.codex\/hooks\/production-data-integrity-gate\.cjs)\b/.test(text)) {
+  if (
+    /\brm(?:\s+-[^\s;&|]+)*\s+(?:docs\/ai\/PRODUCTION_DATA_INTEGRITY_POLICY\.md|scripts\/check-production-data-integrity\.cjs|\.codex\/hooks\/production-data-integrity-gate\.cjs)\b/.test(
+      text
+    )
+  ) {
     return "production-data-integrity enforcement cannot be removed or weakened in the same command.";
   }
-  const removedContract = text.split(/\r?\n/).some((line) => /^-(?!-)/.test(line) && /production(?:-| )data(?:-| )integrity|PDI0(?:0[1-9]|1[0-2])|process\.exit\(2\)|stop_hook_active/i.test(line));
-  if (removedContract) return "production-data-integrity enforcement cannot be removed or weakened in the same patch. Preserve the contract and update independent behavior tests first.";
-  if (/^\+(?!\+).*\bcontinue-on-error\s*:\s*true/m.test(text) || /^\+(?!\+).*\|\|\s*true/m.test(text)) {
+  const removedContract = text
+    .split(/\r?\n/)
+    .some(
+      (line) =>
+        /^-(?!-)/.test(line) &&
+        /production(?:-| )data(?:-| )integrity|PDI0(?:0[1-9]|1[0-2])|process\.exit\(2\)|stop_hook_active/i.test(
+          line
+        )
+    );
+  if (removedContract)
+    return "production-data-integrity enforcement cannot be removed or weakened in the same patch. Preserve the contract and update independent behavior tests first.";
+  if (
+    /^\+(?!\+).*\bcontinue-on-error\s*:\s*true/m.test(text) ||
+    /^\+(?!\+).*\|\|\s*true/m.test(text)
+  ) {
     return "Production data integrity checks may not be made non-blocking with continue-on-error or || true.";
   }
   if (/production-data-integrity\.yml[\s\S]*^\+(?!\+).*\bpaths(?:-ignore)?\s*:/m.test(text)) {
     return "The required production-data-integrity workflow may not use a path filter that can skip the check.";
   }
-  if (/production-data-integrity-waivers[\s\S]*(?:approvedBy["']?\s*:\s*["']?(?:agent|codex|claude)|path["']?\s*:\s*["'][^"']*[*?])/i.test(text)) {
+  if (
+    /production-data-integrity-waivers[\s\S]*(?:approvedBy["']?\s*:\s*["']?(?:agent|codex|claude)|path["']?\s*:\s*["'][^"']*[*?])/i.test(
+      text
+    )
+  ) {
     return "Waivers require an exact path/fingerprint, expiry, tracking issue, and real human approval; agent-approved or wildcard waivers are forbidden.";
   }
-  if (/production-data-integrity-baseline[\s\S]*(?:allowedViolations|"count"\s*:|"max"\s*:)/i.test(text)) {
+  if (
+    /production-data-integrity-baseline[\s\S]*(?:allowedViolations|"count"\s*:|"max"\s*:)/i.test(
+      text
+    )
+  ) {
     return "The production data integrity baseline accepts only exact fingerprints, never a broad count.";
   }
   return null;
@@ -111,13 +280,17 @@ function obviousTampering(data) {
 
 function runChecker(mode) {
   if (!fs.existsSync(CHECKER)) return { kind: "error", reason: "checker is missing" };
-  const result = spawnSync(process.execPath, [CHECKER, mode === "staged" ? "--staged" : "--diff", "--json"], {
-    cwd: ROOT,
-    encoding: "utf8",
-    timeout: CHECK_TIMEOUT_MS,
-    maxBuffer: MAX_OUTPUT_BYTES,
-    windowsHide: true,
-  });
+  const result = spawnSync(
+    process.execPath,
+    [CHECKER, mode === "staged" ? "--staged" : "--diff", "--json"],
+    {
+      cwd: ROOT,
+      encoding: "utf8",
+      timeout: CHECK_TIMEOUT_MS,
+      maxBuffer: MAX_OUTPUT_BYTES,
+      windowsHide: true,
+    }
+  );
   if (result.error) return { kind: "error", reason: result.error.message };
   let report;
   try {
@@ -125,15 +298,30 @@ function runChecker(mode) {
   } catch {
     return { kind: "error", reason: "checker returned malformed JSON" };
   }
-  if (result.status === 2 || report.status === "ERROR") return { kind: "error", reason: report.error || "checker internal/config error" };
+  if (result.status === 2 || report.status === "ERROR")
+    return { kind: "error", reason: report.error || "checker internal/config error" };
   if (result.status === 1 || report.status === "FAIL") {
     const active = Array.isArray(report.findings)
-      ? report.findings.filter((finding) => (!finding.severity || finding.severity === "error") && !finding.baselined && !finding.waived).slice(0, 5)
+      ? report.findings
+          .filter(
+            (finding) =>
+              (!finding.severity || finding.severity === "error") &&
+              !finding.baselined &&
+              !finding.waived
+          )
+          .slice(0, 5)
       : [];
-    const summary = active.map((finding) => `${finding.ruleId} ${finding.path}:${finding.line || 1}`).join(", ") || "integrity findings";
+    const summary =
+      active
+        .map((finding) => `${finding.ruleId} ${finding.path}:${finding.line || 1}`)
+        .join(", ") || "integrity findings";
     return { kind: "finding", reason: summary };
   }
-  if (result.status !== 0 || report.status !== "PASS") return { kind: "error", reason: `unexpected checker state: exit=${result.status} status=${report.status}` };
+  if (result.status !== 0 || report.status !== "PASS")
+    return {
+      kind: "error",
+      reason: `unexpected checker state: exit=${result.status} status=${report.status}`,
+    };
   return { kind: "clean", report };
 }
 
@@ -157,7 +345,8 @@ function handle(data) {
     return emit({
       hookSpecificOutput: {
         hookEventName: "UserPromptSubmit",
-        additionalContext: "PRODUCTION DATA INTEGRITY: read docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md. Isolated test doubles are allowed; synthetic production facts, deceptive fallbacks, real-namespace demo data, fake evidence, and error masking are forbidden. Run the focused checker and cite fresh evidence.",
+        additionalContext:
+          "PRODUCTION DATA INTEGRITY: read docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md. Isolated test doubles are allowed; synthetic production facts, deceptive fallbacks, real-namespace demo data, fake evidence, and error masking are forbidden. Run the focused checker and cite fresh evidence.",
       },
     });
   }
@@ -169,22 +358,31 @@ function handle(data) {
   if (eventName === "PostToolUse") {
     if (!relevantToolChange(data)) return emit({});
     const check = runChecker("diff");
-    if (check.kind === "finding") return block(`Production data integrity diff check failed: ${check.reason}. Run npm run check:production-data-integrity:diff and remediate the reported rules.`);
-    if (check.kind === "error") return block(`Production data integrity checker internal error; completion is not clean: ${check.reason}.`);
+    if (check.kind === "finding")
+      return block(
+        `Production data integrity diff check failed: ${check.reason}. Run npm run check:production-data-integrity:diff and remediate the reported rules.`
+      );
+    if (check.kind === "error")
+      return block(
+        `Production data integrity checker internal error; completion is not clean: ${check.reason}.`
+      );
     return emit({});
   }
   if (eventName === "Stop") {
     if (data.stop_hook_active === true) return emit({ continue: true });
     const check = runChecker("diff");
-    if (check.kind === "finding") return block(`Production data integrity Stop check failed: ${check.reason}.`);
-    if (check.kind === "error") return block(`Production data integrity checker internal error at Stop: ${check.reason}.`);
+    if (check.kind === "finding")
+      return block(`Production data integrity Stop check failed: ${check.reason}.`);
+    if (check.kind === "error")
+      return block(`Production data integrity checker internal error at Stop: ${check.reason}.`);
     return emit({ continue: true });
   }
   if (eventName === "SubagentStart") {
     return emit({
       hookSpecificOutput: {
         hookEventName: "SubagentStart",
-        additionalContext: "Production-data integrity review is read-only unless explicitly authorized. Report: Findings; File/source evidence; Platform/domain impact; Verification run or skipped checks; Remaining risk; Verdict: GO / STOP / ASK. A summary is not proof.",
+        additionalContext:
+          "Production-data integrity review is read-only unless explicitly authorized. Report: Findings; File/source evidence; Platform/domain impact; Verification run or skipped checks; Remaining risk; Verdict: GO / STOP / ASK. A summary is not proof.",
       },
     });
   }
@@ -192,7 +390,9 @@ function handle(data) {
     const message = String(data.last_assistant_message || data.message || "");
     const claimsSuccess = /\b(?:PASS|GO|READY|ALL CLEAR|NO FINDINGS)\b/i.test(message);
     if (claimsSuccess && !evidencePacketComplete(message)) {
-      return block("Subagent success claim lacks the required Findings, file/source evidence, platform/domain impact, verification/skips, remaining risk, and GO/STOP/ASK verdict packet.");
+      return block(
+        "Subagent success claim lacks the required Findings, file/source evidence, platform/domain impact, verification/skips, remaining risk, and GO/STOP/ASK verdict packet."
+      );
     }
     return emit({});
   }

@@ -99,8 +99,8 @@ export const HeroIdentityPrompt = memo(function HeroIdentityPrompt({
         <HabitIconVisual
           value={icon}
           fallback={DEFAULT_IDENTITY_ICON}
-          iconClassName="h-3.5 w-3.5 text-[hsl(var(--zf-role-body))]"
-          textClassName="text-sm leading-none text-[hsl(var(--zf-role-body))]"
+          iconClassName="h-3.5 w-3.5 text-[hsl(var(--zf-role-body-foreground))]"
+          textClassName="text-sm leading-none text-[hsl(var(--zf-role-body-foreground))]"
         />
         <span className="font-hand text-lg italic leading-none tracking-normal text-foreground md:text-xl">
           {verb}

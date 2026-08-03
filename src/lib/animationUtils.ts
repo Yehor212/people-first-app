@@ -2,6 +2,7 @@
 
 import { getMotionPreference } from "@/lib/motionPreference";
 import { isRuntimePerformanceLimited } from "@/observability/runtimePerformanceMode";
+import { easings } from "@/lib/motion/easings";
 
 /**
  * Standard Framer Motion animation presets
@@ -55,19 +56,11 @@ export const zenMotion = {
   /** Bottom sheet slide — critically damped, one smooth motion */
   sheet: { type: "spring" as const, stiffness: 300, damping: 26 },
 
-  /** Celebration — critically damped settle, no bounce (Apple Health: one smooth motion) */
+  /** Celebration — soft settle with barely-perceptible overshoot (ζ≈0.75, ~3%) */
   bouncy: { type: "spring" as const, stiffness: 300, damping: 26 },
 
-  /** Exit — always fast, linear (modals closing, toasts dismissing) */
-  exit: { duration: 0.15, ease: "easeIn" as const },
-
-  /** Ambient — breathing, floating loops (slow, infinite) */
-  breathing: {
-    duration: 3,
-    ease: "easeInOut" as const,
-    repeat: Infinity,
-    repeatType: "reverse" as const,
-  },
+  /** Exit — always fast, accelerating (M3 direction rule: elements leaving screen accelerate) */
+  exit: { duration: 0.15, ease: easings.standardAccelerate },
 } as const;
 
 /**

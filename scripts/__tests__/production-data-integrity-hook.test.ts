@@ -1,11 +1,18 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 const HOOK = resolve(".codex/hooks/production-data-integrity-gate.cjs");
+const temporaryRoots: string[] = [];
+
+afterEach(() => {
+  for (const root of temporaryRoots.splice(0)) {
+    rmSync(root, { force: true, recursive: true });
+  }
+});
 
 type Stub = "clean" | "finding" | "error";
 
@@ -17,25 +24,48 @@ function write(root: string, relativePath: string, content: string): void {
 
 function makeRoot(stub: Stub = "clean"): string {
   const root = mkdtempSync(join(tmpdir(), "zenflow-pdi-hook-"));
-  const report = stub === "finding"
-    ? {
-        schemaVersion: "1.0.0",
-        status: "FAIL",
-        mode: "diff",
-        findings: [{ ruleId: "PDI002", path: "src/main.ts", line: 1, message: "synthetic history", fingerprint: "abc" }],
-        summary: { errors: 1, warnings: 0, baselined: 0, waived: 0 },
-      }
-    : {
-        schemaVersion: "1.0.0",
-        status: stub === "error" ? "ERROR" : "PASS",
-        mode: "diff",
-        findings: [],
-        summary: { errors: 0, warnings: 0, baselined: 0, waived: 0 },
-      };
+  temporaryRoots.push(root);
+  const report =
+    stub === "finding"
+      ? {
+          schemaVersion: "1.0.0",
+          status: "FAIL",
+          mode: "diff",
+          findings: [
+            {
+              ruleId: "PDI002",
+              path: "src/main.ts",
+              line: 1,
+              message: "synthetic history",
+              fingerprint: "abc",
+            },
+          ],
+          summary: { errors: 1, warnings: 0, baselined: 0, waived: 0 },
+        }
+      : {
+          schemaVersion: "1.0.0",
+          status: stub === "error" ? "ERROR" : "PASS",
+          mode: "diff",
+          findings: [],
+          summary: { errors: 0, warnings: 0, baselined: 0, waived: 0 },
+        };
   write(
     root,
     "scripts/check-production-data-integrity.cjs",
-    `process.stdout.write(${JSON.stringify(JSON.stringify(report))}); process.exit(${stub === "clean" ? 0 : stub === "finding" ? 1 : 2});\n`,
+    `process.stdout.write(${JSON.stringify(JSON.stringify(report))}); process.exit(${stub === "clean" ? 0 : stub === "finding" ? 1 : 2});\n`
+  );
+  write(
+    root,
+    "package.json",
+    `${JSON.stringify(
+      {
+        scripts: {
+          "check:agent-workspace": "node scripts/check-agent-workspace-protocol.cjs",
+        },
+      },
+      null,
+      2
+    )}\n`
   );
   const initialized = spawnSync("git", ["init"], { cwd: root, encoding: "utf8" });
   if (initialized.status !== 0) throw new Error(initialized.stderr);
@@ -44,7 +74,7 @@ function makeRoot(stub: Stub = "clean"): string {
 
 function invoke(
   input: unknown,
-  stub: Stub = "clean",
+  stub: Stub = "clean"
 ): { status: number | null; stdout: string; stderr: string; json?: Record<string, unknown> } {
   const result = spawnSync(process.execPath, [HOOK], {
     cwd: makeRoot(stub),
@@ -59,10 +89,24 @@ function invoke(
 describe("production data integrity Codex hook", () => {
   it("is registered for every supported lifecycle event with bounded cross-platform commands", () => {
     const config = JSON.parse(readFileSync(".codex/hooks.json", "utf8")) as {
-      hooks: Record<string, Array<{ matcher?: string; hooks: Array<{ command: string; commandWindows?: string; timeout?: number }> }>>;
+      hooks: Record<
+        string,
+        Array<{
+          matcher?: string;
+          hooks: Array<{ command: string; commandWindows?: string; timeout?: number }>;
+        }>
+      >;
     };
-    for (const event of ["UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "SubagentStart", "SubagentStop"]) {
-      const handlers = (config.hooks[event] ?? []).flatMap((entry) => entry.hooks)
+    for (const event of [
+      "UserPromptSubmit",
+      "PreToolUse",
+      "PostToolUse",
+      "Stop",
+      "SubagentStart",
+      "SubagentStop",
+    ]) {
+      const handlers = (config.hooks[event] ?? [])
+        .flatMap((entry) => entry.hooks)
         .filter((handler) => handler.command.includes("production-data-integrity-gate.cjs"));
       expect(handlers, event).toHaveLength(1);
       expect(handlers[0].command).toContain("git rev-parse --show-toplevel");
@@ -83,7 +127,10 @@ describe("production data integrity Codex hook", () => {
     expect(JSON.stringify(relevant.json)).toContain("PRODUCTION_DATA_INTEGRITY_POLICY.md");
     expect(JSON.stringify(relevant.json)).toContain("test doubles");
 
-    const neutral = invoke({ hook_event_name: "UserPromptSubmit", prompt: "Fix a typo in the README heading" });
+    const neutral = invoke({
+      hook_event_name: "UserPromptSubmit",
+      prompt: "Fix a typo in the README heading",
+    });
     expect(neutral.status, neutral.stderr).toBe(0);
     expect(neutral.json).toEqual({});
   });
@@ -96,7 +143,7 @@ describe("production data integrity Codex hook", () => {
         command: [
           "*** Begin Patch",
           "*** Update File: package.json",
-          "-    \"check:production-data-integrity\": \"node scripts/check-production-data-integrity.cjs --all\",",
+          '-    "check:production-data-integrity": "node scripts/check-production-data-integrity.cjs --all",',
           "*** End Patch",
         ].join("\n"),
       },
@@ -104,6 +151,115 @@ describe("production data integrity Codex hook", () => {
     expect(result.status, result.stderr).toBe(0);
     expect(JSON.stringify(result.json)).toContain("deny");
     expect(JSON.stringify(result.json)).toContain("production-data-integrity");
+  });
+
+  it("allows an additive package-script replacement that preserves every integrity command", () => {
+    const result = invoke({
+      hook_event_name: "PreToolUse",
+      tool_name: "apply_patch",
+      tool_input: {
+        command: [
+          "*** Begin Patch",
+          "*** Update File: package.json",
+          '-    "ci:preflight": "npm run check:production-data-integrity && npm run check:production-data-integrity:bundle",',
+          '+    "ci:preflight": "npm run check:production-data-integrity && npm run check:agent-workspace && npm run check:production-data-integrity:bundle",',
+          "*** End Patch",
+        ].join("\n"),
+      },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.json).toEqual({});
+  });
+
+  it.each([
+    [
+      "marker-only echo substitution",
+      [
+        "*** Begin Patch",
+        "*** Update File: package.json",
+        '-    "ci:preflight": "npm run check:production-data-integrity && npm run check:production-data-integrity:bundle",',
+        '+    "ci:preflight": "echo production-data-integrity && echo production-data-integrity:bundle",',
+        "*** End Patch",
+      ].join("\n"),
+    ],
+    [
+      "early shell exit",
+      [
+        "*** Begin Patch",
+        "*** Update File: package.json",
+        '-    "ci:preflight": "npm run check:production-data-integrity && npm run check:production-data-integrity:bundle",',
+        '+    "ci:preflight": "exit 0 && npm run check:production-data-integrity && npm run check:production-data-integrity:bundle",',
+        "*** End Patch",
+      ].join("\n"),
+    ],
+    [
+      "command substitution in an added npm command",
+      [
+        "*** Begin Patch",
+        "*** Update File: package.json",
+        '-    "ci:preflight": "npm run check:production-data-integrity && npm run check:production-data-integrity:bundle",',
+        '+    "ci:preflight": "npm run check:production-data-integrity && npm run $(touch /tmp/zenflow-pdi-bypass) && npm run check:production-data-integrity:bundle",',
+        "*** End Patch",
+      ].join("\n"),
+    ],
+    [
+      "backtick substitution in an added npm command",
+      [
+        "*** Begin Patch",
+        "*** Update File: package.json",
+        '-    "ci:preflight": "npm run check:production-data-integrity && npm run check:production-data-integrity:bundle",',
+        '+    "ci:preflight": "npm run check:production-data-integrity && npm run `touch /tmp/zenflow-pdi-bypass` && npm run check:production-data-integrity:bundle",',
+        "*** End Patch",
+      ].join("\n"),
+    ],
+    [
+      "unreviewed npx package insertion",
+      [
+        "*** Begin Patch",
+        "*** Update File: package.json",
+        '-    "ci:preflight": "npm run check:production-data-integrity && npm run check:production-data-integrity:bundle",',
+        '+    "ci:preflight": "npm run check:production-data-integrity && npx unreviewed-package && npm run check:production-data-integrity:bundle",',
+        "*** End Patch",
+      ].join("\n"),
+    ],
+    [
+      "arbitrary local npm script before the preserved checks",
+      [
+        "*** Begin Patch",
+        "*** Update File: package.json",
+        '-    "ci:preflight": "npm run check:production-data-integrity && npm run check:production-data-integrity:bundle",',
+        '+    "ci:preflight": "npm run disable:pdi && npm run check:production-data-integrity && npm run check:production-data-integrity:bundle",',
+        "*** End Patch",
+      ].join("\n"),
+    ],
+    [
+      "arbitrary local npm script after the preserved checks",
+      [
+        "*** Begin Patch",
+        "*** Update File: package.json",
+        '-    "ci:preflight": "npm run check:production-data-integrity && npm run check:production-data-integrity:bundle",',
+        '+    "ci:preflight": "npm run check:production-data-integrity && npm run check:production-data-integrity:bundle && npm run mutate:pdi",',
+        "*** End Patch",
+      ].join("\n"),
+    ],
+    [
+      "contract marker moved into a comment",
+      [
+        "*** Begin Patch",
+        "*** Update File: docs/RELEASE_CHECKLIST.md",
+        "-## Production Data Integrity Gate",
+        "+<!-- Production Data Integrity -->",
+        "*** End Patch",
+      ].join("\n"),
+    ],
+  ])("denies preserved-marker bypass via %s", (_label, command) => {
+    const result = invoke({
+      hook_event_name: "PreToolUse",
+      tool_name: "apply_patch",
+      tool_input: { command },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.stringify(result.json)).toContain("deny");
   });
 
   it("protects release-lifecycle wiring, not only the checker implementation", () => {
@@ -134,10 +290,7 @@ describe("production data integrity Codex hook", () => {
       "inline Python filesystem write",
       `python3 -c "open('docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md','w').write('x')"`,
     ],
-    [
-      "find exec mutation",
-      "find . -exec rm docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md \\;",
-    ],
+    ["find exec mutation", "find . -exec rm docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md \\;"],
     ["target-directory copy", "cp -t docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md source.txt"],
   ])("denies protected shell mutation through %s", (_label, command) => {
     const result = invoke({
@@ -167,7 +320,7 @@ describe("production data integrity Codex hook", () => {
         tool_name: "apply_patch",
         tool_input: { command: "*** Begin Patch\n*** Update File: src/main.ts\n*** End Patch" },
       },
-      "finding",
+      "finding"
     );
     expect(result.status, result.stderr).toBe(0);
     expect(JSON.stringify(result.json)).toContain("PDI002");
@@ -183,6 +336,7 @@ describe("production data integrity Codex hook", () => {
 
   it("honors the Stop recursion guard without invoking a missing checker", () => {
     const root = mkdtempSync(join(tmpdir(), "zenflow-pdi-stop-guard-"));
+    temporaryRoots.push(root);
     const result = spawnSync(process.execPath, [HOOK], {
       cwd: root,
       encoding: "utf8",
@@ -210,7 +364,10 @@ describe("production data integrity Codex hook", () => {
     expect(JSON.stringify(start.json)).toContain("Findings");
     expect(JSON.stringify(start.json)).toContain("Remaining risk");
 
-    const badStop = invoke({ hook_event_name: "SubagentStop", last_assistant_message: "PASS. All clear." });
+    const badStop = invoke({
+      hook_event_name: "SubagentStop",
+      last_assistant_message: "PASS. All clear.",
+    });
     expect(badStop.status, badStop.stderr).toBe(0);
     expect(JSON.stringify(badStop.json)).toContain("block");
 

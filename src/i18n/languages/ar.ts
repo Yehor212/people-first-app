@@ -542,6 +542,14 @@ const arabicOverrides: Partial<Translations> = {
   settingsSoundActivityRestoreDescription:
     "تظل الأصوات التي أوقفتها سابقًا متوقفة حتى تعيد تشغيلها.",
   settingsSoundActivityRestoreAction: "تشغيل جميع أصوات الأنشطة",
+  settingsSoundPreviewTitle: "معاينة الأصوات",
+  settingsSoundPreviewDescription:
+    "استمع الآن إلى كل إشارة مفعّلة، من دون انتظار حدوثها داخل التطبيق.",
+  settingsSoundPreviewSuccess: "تم الحفظ",
+  settingsSoundPreviewComplete: "اكتمل",
+  settingsSoundPreviewStreak: "سلسلة",
+  settingsSoundPreviewMilestone: "محطة مهمة",
+  settingsSoundPreviewNotification: "تذكير",
   settingsSoundMasterDisabledHint: "شغّل صوت التطبيق لاستخدام هذه الإعدادات.",
   settingsAccountBackupTitle: "الحساب والنسخ الاحتياطي",
   settingsAccountBackupDescription:
@@ -1099,13 +1107,6 @@ const arabicOverrides: Partial<Translations> = {
   settingsSoundActivityTitle: "أصوات الأنشطة",
   settingsSoundActivityDescription:
     "يشغّل تأكيدًا هادئًا بعد إكمال الأنشطة والمؤقتات وبعض مراحل التقدم.",
-  settingsSoundPreviewTitle: "معاينة أصوات الأنشطة",
-  settingsSoundPreviewDescription: "يمكن سماع كل إشارة الآن، من دون انتظار حدث فعلي.",
-  settingsSoundPreviewSuccess: "تم الحفظ",
-  settingsSoundPreviewComplete: "مكتمل",
-  settingsSoundPreviewStreak: "سلسلة",
-  settingsSoundPreviewMilestone: "مرحلة مهمة",
-  settingsSoundPreviewNotification: "تذكير",
   settingsSoundCompletionCues: "أصوات التأكيد",
   settingsSoundCompletionCuesDesc: "يشغّل صوت تأكيد هادئ بعد الإجراءات المهمة.",
   settingsSoundReminderCues: "أصوات التذكير داخل \u2066ZenFlow\u2069",

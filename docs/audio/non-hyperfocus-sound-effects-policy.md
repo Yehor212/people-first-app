@@ -27,13 +27,15 @@ These are tracked in `APP_AUDIO_NON_HYPERFOCUS_ASSET_IDS`. Hyperfocus files rema
 
 ## Generated Non-Hyperfocus Asset Provenance
 
-Generated assets are first-party deterministic procedural synthesis from `scripts/generate-non-hyperfocus-audio.cjs`. The provenance packet at `docs/audio/non-hyperfocus-generated-audio-provenance.json` records the seeds, synthesis parameters, encoder version, SHA-256 hashes, root paths, audible exclusions, rollback path, and the statement that no third-party samples, stock recordings, voices, or AI-generated audio inputs were used.
+Generated ambience and the five short feedback cues are first-party deterministic procedural synthesis from `scripts/generate-non-hyperfocus-audio.cjs`. The provenance packet at `docs/audio/non-hyperfocus-generated-audio-provenance.json` records the seeds or fixed note sequences, synthesis parameters, encoder version, SHA-256 hashes, public/docs paths, audible exclusions, rollback path, and the statement that no third-party samples, stock recordings, voices, or AI-generated audio inputs were used.
 
 The generator uses `lamejs@1.2.1` as a dev-time MP3 encoder. Encoder code is not shipped in the runtime bundle. Formal legal review of dev-time LGPL encoder use remains `UNVERIFIED` until reviewed by project/legal ownership.
 
 ## Approved Action Sound Map
 
 Allowed short feedback sounds are limited to completion, milestone, and preview triggers. Every action sound must include visual or haptic fallback metadata through `nonAudioFeedback`, must respect mute and volume, and must start from a user-initiated flow.
+
+The release-candidate mastered cue inventory is exactly `feedback-success.mp3`, `feedback-complete.mp3`, `feedback-streak.mp3`, `feedback-milestone.mp3`, and `feedback-notification.mp3` under `sounds/feedback/`. The runtime loads these local files on demand, retries transient failures, and deduplicates concurrent loads. A regular app event uses the existing procedural cue on its first uncached trigger while the mastered cue loads for later events; the Settings preview waits for the mastered cue and uses the procedural cue only when loading or decoding fails. Mute, zero volume, and per-category comfort settings are rechecked immediately before playback so a cue cannot start after the user disables it.
 
 - Completion: mood saved, habit completed, journal saved, focus completed, gratitude saved, breathing completed.
 - Milestone: achievement unlocked, streak milestone, major progress milestone.
@@ -53,7 +55,7 @@ Use visual state, haptics where appropriate, focus management, and accessible te
 
 ## Cross-Platform Rules
 
-- Web/PWA: no autoplay, no startup prefetch for long ambience, `preload="none"` for previews unless the user asks to play, and no claim of offline PWA audio readiness unless runtime caching or precache proof exists.
+- Web/PWA: no autoplay, no startup prefetch for long ambience, and no claim of offline PWA audio readiness unless runtime caching or precache proof exists. Short feedback MP3s may load after user intent and are included in the bounded runtime-audio cache warming inventory.
 - Android: do not introduce custom notification sounds without new channel IDs and active-reminder rescheduling; generated ambience assets must be copied by Capacitor sync before native readiness is claimed.
 - iOS/WKWebView: resume events must re-arm audio unlock listeners only; playback waits for the next user gesture.
 - Desktop/Tauri: use the same `dist` assets and keep generated bundles free of stale root sound files before claiming desktop readiness.

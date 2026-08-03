@@ -17,7 +17,7 @@ export interface BreatheProps extends HTMLMotionProps<'div'> {
   disabled?: boolean;
 }
 
-export function Breathe({ children, className, disabled, ...rest }: BreatheProps) {
+export function Breathe({ children, className, disabled, transition, ...rest }: BreatheProps) {
   const animate = useShouldAnimate();
   if (!animate || disabled) {
     return <div className={className}>{children}</div>;
@@ -30,7 +30,7 @@ export function Breathe({ children, className, disabled, ...rest }: BreatheProps
     },
   };
   return (
-    <motion.div className={className} {...motionProps} {...rest}>
+    <motion.div className={className} {...motionProps} {...rest} transition={{ ...breathe.transition, ...transition }}>
       {children}
     </motion.div>
   );

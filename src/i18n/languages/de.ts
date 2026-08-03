@@ -555,6 +555,14 @@ export const de: Translations = {
   settingsSoundActivityRestoreDescription:
     "Töne, die du zuvor ausgeschaltet hast, bleiben aus, bis du sie wieder einschaltest.",
   settingsSoundActivityRestoreAction: "Alle Aktivitätstöne einschalten",
+  settingsSoundPreviewTitle: "Töne anhören",
+  settingsSoundPreviewDescription:
+    "Höre jeden eingeschalteten Hinweiston sofort, ohne auf ein echtes Ereignis zu warten.",
+  settingsSoundPreviewSuccess: "Gespeichert",
+  settingsSoundPreviewComplete: "Abgeschlossen",
+  settingsSoundPreviewStreak: "Serie",
+  settingsSoundPreviewMilestone: "Meilenstein",
+  settingsSoundPreviewNotification: "Erinnerung",
   settingsSoundMasterDisabledHint: "Schalte den App-Ton ein, um diese Einstellungen zu verwenden.",
   settingsAccountBackupTitle: "Konto & Backup",
   settingsAccountBackupDescription:
@@ -1410,13 +1418,6 @@ export const de: Translations = {
   settingsSoundActivityTitle: "Aktivitätstöne",
   settingsSoundActivityDescription:
     "Gibt leises Feedback nach abgeschlossenen Aktivitäten, Timern und einzelnen Meilensteinen.",
-  settingsSoundPreviewTitle: "Aktivitätstöne anhören",
-  settingsSoundPreviewDescription: "Höre jeden Hinweiston sofort, ohne auf ein echtes Ereignis zu warten.",
-  settingsSoundPreviewSuccess: "Gespeichert",
-  settingsSoundPreviewComplete: "Abgeschlossen",
-  settingsSoundPreviewStreak: "Serie",
-  settingsSoundPreviewMilestone: "Meilenstein",
-  settingsSoundPreviewNotification: "Erinnerung",
   settingsSoundCompletionCues: "Bestätigungstöne",
   settingsSoundCompletionCuesDesc:
     "Spielt einen leisen Bestätigungston, wenn du etwas Wichtiges abschließt.",

@@ -155,12 +155,13 @@ describe("AdMob external monetization readiness guard", () => {
     );
   });
 
-  it("validates the honest ledger at its recorded update time without calling it production PASS", () => {
+  it("validates an honest ledger at its recorded update time without calling it production PASS", () => {
     const checker = loadChecker();
     const ledger = JSON.parse(readFileSync(ledgerPath, "utf8"));
-    const report = checker.evaluateExternalReadiness(ledger, {
-      now: new Date(`${ledger.updatedAt}T12:00:00.000Z`),
-    });
+    expect(ledger.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const recordedAt = new Date(`${ledger.updatedAt}T12:00:00.000Z`);
+    expect(Number.isNaN(recordedAt.getTime())).toBe(false);
+    const report = checker.evaluateExternalReadiness(ledger, { now: recordedAt });
 
     expect(report.ok).toBe(true);
     expect(report.passReady).toBe(false);

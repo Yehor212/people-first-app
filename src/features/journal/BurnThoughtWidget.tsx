@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState, memo } from 'react';
 import { X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { zenMotion, zenTap, shouldAnimate } from '@/lib/animationUtils';
+import { easings } from '@/lib/motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticWarning, hapticMedium, hapticSuccess, hapticTap } from '@/lib/haptics';
 import { announceSuccess } from '@/lib/a11y';
@@ -552,7 +553,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({
 
   const getTransition = () => {
     if (collapsing) {
-      return { duration: 0.55, ease: [0.32, 0.72, 0, 1] as const };
+      return { duration: 0.55, ease: easings.emphasizedAccelerate };
     }
     if (released) {
       return { duration: 0.24, ease: 'easeOut' as const };

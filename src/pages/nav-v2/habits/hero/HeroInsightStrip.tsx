@@ -152,10 +152,10 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
   const linkedHabit = getLinkedHabit(topInsight, habits);
   const severityClass =
     topInsight.severity === "warning"
-      ? "border-[hsl(var(--zf-warning)/0.28)] bg-[hsl(var(--zf-warning)/0.12)] text-[hsl(var(--zf-warning))]"
+      ? "border-[hsl(var(--zf-warning)/0.28)] bg-[hsl(var(--zf-warning)/0.12)] text-[hsl(var(--zf-warning-foreground))]"
       : topInsight.severity === "celebration"
-        ? "border-[hsl(var(--zf-growth)/0.28)] bg-[hsl(var(--zf-growth)/0.12)] text-[hsl(var(--zf-growth))]"
-        : "border-[hsl(var(--zf-role-focus)/0.36)] bg-[hsl(var(--zf-role-focus)/0.18)] text-[hsl(var(--zf-role-focus))]";
+        ? "border-[hsl(var(--zf-growth)/0.28)] bg-[hsl(var(--zf-growth)/0.12)] text-[hsl(var(--zf-growth-foreground))]"
+        : "border-[hsl(var(--zf-role-focus)/0.36)] bg-[hsl(var(--zf-role-focus)/0.18)] text-[hsl(var(--zf-role-focus-foreground))]";
 
   return (
     <aside
@@ -180,8 +180,14 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
           {topInsight.description && topInsight.description !== topInsight.title && (
             <p className="mt-1 text-muted-foreground">{topInsight.description}</p>
           )}
-          {linkedHabit && onOpenHabitInsight && (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span
+              className="rounded-full bg-background/60 px-2 py-1 text-xs font-medium tabular-nums"
+              aria-label={`confidence ${topInsight.confidence}%`}
+            >
+              {topInsight.confidence}%
+            </span>
+            {linkedHabit && onOpenHabitInsight && (
               <button
                 type="button"
                 onClick={() => onOpenHabitInsight(linkedHabit)}
@@ -190,8 +196,8 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
               >
                 {tx.statistics || tx.navV2HabitsOpenDetails || "Statistics"}
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </aside>

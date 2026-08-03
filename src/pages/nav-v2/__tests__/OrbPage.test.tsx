@@ -311,6 +311,9 @@ vi.mock("@/hooks/useShouldAnimate", () => ({
 
 vi.mock("@/lib/motion", () => ({
   Bloom: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  easings: {
+    standardAccelerate: [0.3, 0, 1, 1] as const,
+  },
 }));
 
 describe("OrbPage progressive flow", () => {

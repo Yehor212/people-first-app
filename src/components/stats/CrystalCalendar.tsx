@@ -10,6 +10,7 @@
  */
 
 import { useState, useMemo } from "react";
+import type { CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { zenTap } from "@/lib/animationUtils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -34,24 +35,21 @@ interface CrystalCalendarProps {
 
 // Sparkle effect for perfect days
 function PerfectSparkle({ delay }: { delay: number }) {
+  // Stable per-mount position (10-agent review, Role 10).
+  const [position] = useState(() => ({
+    left: 20 + Math.random() * 60,
+    top: 20 + Math.random() * 60,
+  }));
   return (
-    <motion.div
-      className="absolute w-1 h-1 rounded-full bg-amber-200"
+    <div
+      className="absolute w-1 h-1 rounded-full bg-amber-200 animate-zen-loop-sparkle"
       style={{
-        left: `${20 + Math.random() * 60}%`,
-        top: `${20 + Math.random() * 60}%`,
-      }}
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{
-        scale: [0, 1.5, 0],
-        opacity: [0, 1, 0],
-      }}
-      transition={{
-        duration: 1.5,
-        delay,
-        repeat: Infinity,
-        repeatDelay: 2,
-      }}
+        left: `${position.left}%`,
+        top: `${position.top}%`,
+        opacity: 0,
+        "--zen-loop-duration": "3.5s",
+        "--zen-loop-delay": `${delay}s`,
+      } as CSSProperties}
     />
   );
 }
@@ -128,37 +126,33 @@ function CrystalDay({
       aria-label={`${dayNum}`}
     >
       {/* Crystal shape (rotated square) */}
-      <motion.div
+      <div
         className={cn(
           "absolute inset-1 rotate-45 rounded-sm border",
           "bg-gradient-to-br",
           crystalStyles.bg,
-          crystalStyles.border
+          crystalStyles.border,
+          activityLevel >= 2 && "animate-zen-loop-glow"
         )}
-        style={{ boxShadow: crystalStyles.glow }}
-        animate={
-          activityLevel >= 2
-            ? {
-                boxShadow: [
-                  crystalStyles.glow,
-                  crystalStyles.glow.replace(/[\d.]+(?=\))/g, (m) => String(parseFloat(m) * 1.3)),
-                  crystalStyles.glow,
-                ],
-              }
-            : {}
-        }
-        transition={{ duration: 2, repeat: Infinity }}
+        style={{
+          boxShadow: crystalStyles.glow,
+          "--zen-glow-a": crystalStyles.glow,
+          "--zen-glow-b": crystalStyles.glow.replace(/[\d.]+(?=\))/g, (m) => String(parseFloat(m) * 1.3)),
+          "--zen-loop-duration": "2s",
+        } as CSSProperties}
       />
 
       {/* Today indicator - pulse ring */}
       {isToday && (
-        <motion.div
-          className="absolute inset-0 rotate-45 rounded-sm border-2 border-emerald-400/80"
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.8, 0.4, 0.8],
-          }}
-          transition={{ duration: 1.5, repeat: Infinity }}
+        <div
+          className="absolute inset-0 rotate-45 rounded-sm border-2 border-emerald-400/80 animate-zen-loop-fade-scale"
+          style={{
+            opacity: 0.6,
+            "--zen-loop-min-opacity": 0.4,
+            "--zen-loop-max-opacity": 0.8,
+            "--zen-loop-scale": 1.1,
+            "--zen-loop-duration": "1.5s",
+          } as CSSProperties}
         />
       )}
 

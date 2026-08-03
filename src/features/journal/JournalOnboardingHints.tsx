@@ -1,4 +1,5 @@
 import { memo, useState, useCallback } from "react";
+import type { CSSProperties } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { springs } from "@/config/animations";
 import { shouldAnimate } from "@/lib/animationUtils";
@@ -21,14 +22,6 @@ const HINT_KEYS: Record<HintId, { i18n: string; fallback: string }> = {
   mood: { i18n: "diaryHintMood", fallback: "Tap an emoji to set your mood" },
   sidebar: { i18n: "diaryHintSidebar", fallback: "Swipe from edge to toggle sidebar" },
   search: { i18n: "diaryHintSearch", fallback: "Search your entries by keyword" },
-};
-
-const pulseKeyframes = {
-  boxShadow: [
-    "0 0 0 0 hsl(var(--primary) / 0)",
-    "0 0 8px 4px hsl(var(--primary) / 0.15)",
-    "0 0 0 0 hsl(var(--primary) / 0)",
-  ],
 };
 
 export const JournalOnboardingHints = memo(function JournalOnboardingHints({
@@ -88,10 +81,14 @@ export const JournalOnboardingHints = memo(function JournalOnboardingHints({
 
         {/* Subtle pulse glow */}
         {animate && (
-          <motion.div
-            className="absolute inset-0 rounded-xl pointer-events-none"
-            animate={pulseKeyframes}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          <div
+            className="absolute inset-0 rounded-xl pointer-events-none animate-zen-loop-glow"
+            style={{
+              boxShadow: '0 0 0 0 hsl(var(--primary) / 0)',
+              '--zen-glow-a': '0 0 0 0 hsl(var(--primary) / 0)',
+              '--zen-glow-b': '0 0 8px 4px hsl(var(--primary) / 0.15)',
+              '--zen-loop-duration': '3s',
+            } as CSSProperties}
           />
         )}
       </motion.div>

@@ -138,7 +138,7 @@ export function RewardedAdPrompt({
           aria-label={`${resolvedCtaLabel}. ${resolvedRewardLabel}`}
           className={cn(
             'min-h-[44px] w-full min-w-0 whitespace-normal break-words px-4 py-2 rounded-xl font-medium text-sm motion-safe:transition-all [hyphens:auto] [overflow-wrap:break-word] min-[420px]:w-auto min-[420px]:shrink-0',
-            'bg-amber-500 text-white hover:bg-amber-600 active:scale-95',
+            'bg-amber-700 text-white hover:bg-amber-800 active:scale-95',
             loading && 'opacity-50',
           )}
         >

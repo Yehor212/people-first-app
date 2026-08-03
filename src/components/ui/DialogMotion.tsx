@@ -92,7 +92,7 @@ const DialogMotionContent = React.forwardRef<
         <motion.div
           initial={bloom.initial}
           animate={bloom.animate}
-          exit={fold.exit}
+          exit={{ ...fold.exit, transition: fold.transition }}
           transition={bloom.transition}
           className={cn(
             'fixed left-[50%] top-[50%] z-[70] grid w-[calc(100%-2rem)] max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl max-h-[calc(100dvh-4rem)] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg rounded-2xl md:rounded-2xl md:shadow-2xl',

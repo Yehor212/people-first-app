@@ -325,7 +325,7 @@ export const HabitTracker = memo(function HabitTracker({
               )}
               style={!form.isAdding ? { boxShadow: "0 0 12px hsl(var(--chart-habit) / 0.3)" } : {}}
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={zenTap.icon}
             >
               <Plus
                 className={cn(
@@ -380,7 +380,7 @@ export const HabitTracker = memo(function HabitTracker({
                     : "bg-secondary text-muted-foreground hover:bg-muted"
                 )}
                 whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileTap={zenTap.card}
               >
                 {t.all || "All"} ({habits.length})
               </motion.button>

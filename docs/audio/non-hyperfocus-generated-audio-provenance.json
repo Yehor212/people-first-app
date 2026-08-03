@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "purpose": "ZenFlow non-Hyperfocus local ambience replacement for entry/auth, orb, and diary/settings surfaces.",
+  "purpose": "ZenFlow non-Hyperfocus local ambience and feedback cues for entry/auth, orb, diary/settings, completed activities, milestones, and opt-in reminder previews.",
   "generationPolicy": "First-party deterministic procedural synthesis. No third-party samples, recordings, stock loops, voices, or AI-generated audio inputs are used.",
   "generatorScript": "scripts/generate-non-hyperfocus-audio.cjs",
   "encoder": {
@@ -22,6 +22,7 @@
       "seed": "0x5a17a11",
       "generator": "cyclic low-density value-noise air bed",
       "parameters": {
+        "family": "ambience",
         "sampleRate": 44100,
         "channels": 2,
         "durationSeconds": 96,
@@ -67,6 +68,7 @@
       "seed": "0x6e71e5a7",
       "generator": "cyclic soft-flow water bed without discrete impacts",
       "parameters": {
+        "family": "ambience",
         "sampleRate": 44100,
         "channels": 2,
         "durationSeconds": 96,
@@ -113,6 +115,7 @@
       "seed": "0x5017a1",
       "generator": "cyclic soft rain sheet without thunder or impact spikes",
       "parameters": {
+        "family": "ambience",
         "sampleRate": 44100,
         "channels": 2,
         "durationSeconds": 96,
@@ -144,6 +147,299 @@
           ],
           "targetRms": 0.038,
           "targetPeak": 0.16
+        }
+      }
+    },
+    {
+      "id": "feedback-success",
+      "fileName": "feedback-success.mp3",
+      "role": "Quiet saved-action confirmation",
+      "publicPath": "public/sounds/feedback/feedback-success.mp3",
+      "deployDocsPath": "docs/sounds/feedback/feedback-success.mp3",
+      "sha256": "f6e00c1ca0b501f0668ece85dae60441b4d91799c3b1a930c9b9d6d5041c89ea",
+      "bytes": 8359,
+      "deterministicSpec": "fixed-note-sequence-with-cosine-envelopes",
+      "generator": "deterministic two-note soft confirmation with cosine envelopes",
+      "parameters": {
+        "family": "feedback",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 0.48,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.35,
+        "exclusions": [
+          "voice",
+          "sampled audio",
+          "harsh click",
+          "alarm",
+          "siren",
+          "bass hit",
+          "long tail"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 0.48,
+          "sourcePeak": 0.123055,
+          "sourceRms": 0.038,
+          "targetRms": 0.038,
+          "targetPeak": 0.16,
+          "notes": [
+            {
+              "frequency": 392,
+              "start": 0.02,
+              "length": 0.2,
+              "level": 0.72
+            },
+            {
+              "frequency": 493.88,
+              "start": 0.13,
+              "length": 0.28,
+              "level": 0.88
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "feedback-complete",
+      "fileName": "feedback-complete.mp3",
+      "role": "Completed-activity confirmation",
+      "publicPath": "public/sounds/feedback/feedback-complete.mp3",
+      "deployDocsPath": "docs/sounds/feedback/feedback-complete.mp3",
+      "sha256": "f96f5909fc2a70365a9a6b143bf241f9f2057fd39968872783ddeb3416cfaa26",
+      "bytes": 10449,
+      "deterministicSpec": "fixed-note-sequence-with-cosine-envelopes",
+      "generator": "deterministic three-note completion cue with cosine envelopes",
+      "parameters": {
+        "family": "feedback",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 0.62,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.4,
+        "exclusions": [
+          "voice",
+          "sampled audio",
+          "harsh click",
+          "alarm",
+          "siren",
+          "bass hit",
+          "long tail"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 0.62,
+          "sourcePeak": 0.129579,
+          "sourceRms": 0.04,
+          "targetRms": 0.04,
+          "targetPeak": 0.17,
+          "notes": [
+            {
+              "frequency": 329.63,
+              "start": 0.02,
+              "length": 0.22,
+              "level": 0.64
+            },
+            {
+              "frequency": 392,
+              "start": 0.13,
+              "length": 0.25,
+              "level": 0.76
+            },
+            {
+              "frequency": 493.88,
+              "start": 0.27,
+              "length": 0.28,
+              "level": 0.9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "feedback-streak",
+      "fileName": "feedback-streak.mp3",
+      "role": "Occasional streak milestone cue",
+      "publicPath": "public/sounds/feedback/feedback-streak.mp3",
+      "deployDocsPath": "docs/sounds/feedback/feedback-streak.mp3",
+      "sha256": "2db16522c9816933420c53db25f4c57e24a68c949530349f47bad4f204c3d183",
+      "bytes": 12956,
+      "deterministicSpec": "fixed-note-sequence-with-cosine-envelopes",
+      "generator": "deterministic four-note low-salience streak cue with cosine envelopes",
+      "parameters": {
+        "family": "feedback",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 0.78,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.45,
+        "exclusions": [
+          "voice",
+          "sampled audio",
+          "fanfare",
+          "alarm",
+          "siren",
+          "bass hit",
+          "long tail"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 0.78,
+          "sourcePeak": 0.134369,
+          "sourceRms": 0.042,
+          "targetRms": 0.042,
+          "targetPeak": 0.18,
+          "notes": [
+            {
+              "frequency": 349.23,
+              "start": 0.02,
+              "length": 0.23,
+              "level": 0.6
+            },
+            {
+              "frequency": 440,
+              "start": 0.14,
+              "length": 0.25,
+              "level": 0.7
+            },
+            {
+              "frequency": 523.25,
+              "start": 0.28,
+              "length": 0.27,
+              "level": 0.8
+            },
+            {
+              "frequency": 587.33,
+              "start": 0.43,
+              "length": 0.28,
+              "level": 0.88
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "feedback-milestone",
+      "fileName": "feedback-milestone.mp3",
+      "role": "Rare milestone cue",
+      "publicPath": "public/sounds/feedback/feedback-milestone.mp3",
+      "deployDocsPath": "docs/sounds/feedback/feedback-milestone.mp3",
+      "sha256": "bd323380d1a24fd391a33403fee5bedab3e48ab21b0ae4f4a2f550798153d6fb",
+      "bytes": 11702,
+      "deterministicSpec": "fixed-note-sequence-with-cosine-envelopes",
+      "generator": "deterministic three-note rare milestone cue with cosine envelopes",
+      "parameters": {
+        "family": "feedback",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 0.7,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.45,
+        "exclusions": [
+          "voice",
+          "sampled audio",
+          "fanfare",
+          "alarm",
+          "siren",
+          "bass hit",
+          "long tail"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 0.7,
+          "sourcePeak": 0.125702,
+          "sourceRms": 0.042,
+          "targetRms": 0.042,
+          "targetPeak": 0.18,
+          "notes": [
+            {
+              "frequency": 392,
+              "start": 0.02,
+              "length": 0.25,
+              "level": 0.66
+            },
+            {
+              "frequency": 493.88,
+              "start": 0.17,
+              "length": 0.27,
+              "level": 0.78
+            },
+            {
+              "frequency": 587.33,
+              "start": 0.34,
+              "length": 0.29,
+              "level": 0.9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "feedback-notification",
+      "fileName": "feedback-notification.mp3",
+      "role": "Opt-in in-app reminder preview",
+      "publicPath": "public/sounds/feedback/feedback-notification.mp3",
+      "deployDocsPath": "docs/sounds/feedback/feedback-notification.mp3",
+      "sha256": "0bcde76f7476acaaaac9eafd34a6ac755a8fba1a45aed39827d824a0ffe5ddc0",
+      "bytes": 6269,
+      "deterministicSpec": "fixed-note-sequence-with-cosine-envelopes",
+      "generator": "deterministic single-note gentle reminder cue with cosine envelope",
+      "parameters": {
+        "family": "feedback",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 0.34,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.2,
+        "exclusions": [
+          "voice",
+          "sampled audio",
+          "sharp ping",
+          "alarm",
+          "siren",
+          "bass hit",
+          "long tail"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 0.34,
+          "sourcePeak": 0.062965,
+          "sourceRms": 0.03,
+          "targetRms": 0.03,
+          "targetPeak": 0.12,
+          "notes": [
+            {
+              "frequency": 587.33,
+              "start": 0.02,
+              "length": 0.25,
+              "level": 0.82
+            }
+          ]
         }
       }
     }

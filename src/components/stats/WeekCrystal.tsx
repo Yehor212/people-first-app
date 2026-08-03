@@ -7,7 +7,10 @@
  */
 
 import { useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { zenMotion } from "@/lib/animationUtils";
+import { easings } from "@/lib/motion";
 import { Sparkles, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn, getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -169,7 +172,7 @@ export function WeekCrystal({
             strokeWidth="1"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, type: "spring" }}
+            transition={zenMotion.gentle}
           />
 
           {/* Inner facets */}
@@ -201,26 +204,21 @@ export function WeekCrystal({
         {score >= 60 && (
           <div className="absolute inset-0 pointer-events-none">
             {[...Array(3)].map((_, i) => (
-              <motion.div
+              <div
                 key={i}
-                className="absolute"
+                className="absolute animate-zen-loop-float"
                 style={{
                   left: `${20 + i * 30}%`,
                   top: `${15 + i * 10}%`,
-                }}
-                animate={{
-                  y: [0, -8, 0],
-                  opacity: [0.3, 0.8, 0.3],
-                  scale: [0.8, 1.1, 0.8],
-                }}
-                transition={{
-                  duration: 2 + i * 0.5,
-                  repeat: Infinity,
-                  delay: i * 0.3,
-                }}
+                  opacity: 0.55,
+                  "--zen-loop-min-opacity": 0.3,
+                  "--zen-loop-max-opacity": 0.8,
+                  "--zen-loop-duration": `${2 + i * 0.5}s`,
+                  "--zen-loop-delay": `${i * 0.3}s`,
+                } as CSSProperties}
               >
                 <Sparkles className="w-3 h-3" style={{ color: theme.sparkleColor }} />
-              </motion.div>
+              </div>
             ))}
           </div>
         )}
@@ -249,7 +247,7 @@ export function WeekCrystal({
             style={{ backgroundColor: theme.glow }}
             initial={{ scaleX: 0 }}
             animate={{ scaleX: score / 100 }}
-            transition={{ duration: 1, delay: 0.5 }}
+            transition={{ duration: 0.6, delay: 0.3, ease: easings.emphasizedDecelerate }}
           />
         </div>
       </div>

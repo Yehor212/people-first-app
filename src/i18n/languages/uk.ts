@@ -552,6 +552,14 @@ export const uk: Translations = {
   settingsSoundActivityRestoreDescription:
     "Звуки, які ви вимкнули раніше, залишаються вимкненими, доки ви не ввімкнете їх знову.",
   settingsSoundActivityRestoreAction: "Увімкнути всі звуки дій",
+  settingsSoundPreviewTitle: "Прослухати звуки",
+  settingsSoundPreviewDescription:
+    "Послухайте кожен увімкнений сигнал одразу, не чекаючи реальної події.",
+  settingsSoundPreviewSuccess: "Збережено",
+  settingsSoundPreviewComplete: "Завершено",
+  settingsSoundPreviewStreak: "Серія",
+  settingsSoundPreviewMilestone: "Віха",
+  settingsSoundPreviewNotification: "Нагадування",
   settingsSoundMasterDisabledHint: "Увімкніть звук застосунку, щоб змінювати ці налаштування.",
   settingsAccountBackupTitle: "Акаунт і резервна копія",
   settingsAccountBackupDescription:
@@ -1399,13 +1407,6 @@ export const uk: Translations = {
   settingsSoundActivityTitle: "Звуки дій",
   settingsSoundActivityDescription:
     "Тихо підтверджує завершені дії, сигнали таймера та окремі важливі етапи.",
-  settingsSoundPreviewTitle: "Прослухати звуки дій",
-  settingsSoundPreviewDescription: "Послухайте кожен сигнал одразу, не чекаючи реальної події.",
-  settingsSoundPreviewSuccess: "Збережено",
-  settingsSoundPreviewComplete: "Завершено",
-  settingsSoundPreviewStreak: "Серія",
-  settingsSoundPreviewMilestone: "Віха",
-  settingsSoundPreviewNotification: "Нагадування",
   settingsSoundCompletionCues: "Сигнали завершення",
   settingsSoundCompletionCuesDesc: "Відтворює тихий сигнал підтвердження після важливих дій.",
   settingsSoundReminderCues: "Звуки нагадувань у ZenFlow",

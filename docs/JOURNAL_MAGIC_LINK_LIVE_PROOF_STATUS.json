@@ -1,72 +1,64 @@
 {
   "schemaVersion": "zenflow-journal-magic-link-live-proof/v1",
-  "updatedAt": "2026-07-05",
+  "updatedAt": "2026-08-02",
   "feature": "diary-email-lock-removal",
-  "overallStatus": "PASS",
-  "proofSourceSha256": "7a798cca40dc8dfe72e86119fdca2f97012656a2e61eff826f14baf0aa29d329",
-  "purpose": "Runtime proof packet generated after the manual Journal Magic Link live proof succeeds. It is intentionally written outside tracked docs to avoid storing one-time auth values.",
+  "overallStatus": "UNVERIFIED",
+  "proofSourceSha256": "62e87cd29ea54fd9a7e3b5d9341063f43d2201de9dc4102e19f905049b7617c2",
+  "purpose": "Historical live-proof provenance is retained, but the integrated auth and recovery source has changed. Current readiness remains UNVERIFIED until the dedicated live workflow is rerun without exposing one-time auth values.",
   "items": [
     {
       "id": "app_side_reset_guard",
-      "status": "PASS",
-      "checkedAt": "2026-07-05",
-      "evidence": "Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 followed the committed journal reset guard and release-contract test gate before live verification.",
+      "status": "UNVERIFIED",
+      "evidence": "Historical evidence only; it does not verify the integrated source hash. Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 followed the committed journal reset guard and release-contract test gate before live verification.",
       "verification": "npm run test:release-contracts; npm run check:journal-magic-link-live",
       "ownerAction": "Keep this item fresh after any auth callback, SMTP, journal reset, or live-proof workflow change."
     },
     {
       "id": "ci_secret_scope",
-      "status": "PASS",
-      "checkedAt": "2026-07-05",
-      "evidence": "Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 used the dedicated manual workflow; normal deploy workflows do not receive or consume captured Magic Link URLs.",
+      "status": "UNVERIFIED",
+      "evidence": "Historical evidence only; it does not verify the integrated source hash. Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 used the dedicated manual workflow; normal deploy workflows do not receive or consume captured Magic Link URLs.",
       "verification": ".github/workflows/journal-magic-link-live-proof.yml",
       "ownerAction": "Keep one-time Magic Link consumption isolated to the manual proof workflow."
     },
     {
       "id": "github_secret_and_var_names",
-      "status": "PASS",
-      "checkedAt": "2026-07-05",
-      "evidence": "Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 passed the GitHub name inventory before applying SMTP or consuming the captured URL.",
+      "status": "UNVERIFIED",
+      "evidence": "Historical evidence only; it does not verify the integrated source hash. Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 passed the GitHub name inventory before applying SMTP or consuming the captured URL.",
       "verification": "npm run check:github-journal-magic-link-secrets:pass",
       "ownerAction": "Clear or rotate the captured URL secret immediately after the proof run."
     },
     {
       "id": "operator_runbook",
-      "status": "PASS",
-      "checkedAt": "2026-07-05",
-      "evidence": "Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 followed the committed operator runbook and avoided printing tokens, private inboxes, or Magic Link URLs.",
+      "status": "UNVERIFIED",
+      "evidence": "Historical evidence only; it does not verify the integrated source hash. Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 followed the committed operator runbook and avoided printing tokens, private inboxes, or Magic Link URLs.",
       "verification": "docs/JOURNAL_MAGIC_LINK_LIVE_PROOF.md; npm run check:journal-magic-link-proof-status:pass -- --file <runtime-file>",
       "ownerAction": "Update the runbook whenever proof workflow order or secret handling changes."
     },
     {
       "id": "hosted_supabase_config",
-      "status": "PASS",
-      "checkedAt": "2026-07-05",
-      "evidence": "Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 checked hosted Supabase Auth config and applied custom SMTP before the required live gate passed.",
+      "status": "UNVERIFIED",
+      "evidence": "Historical evidence only; it does not verify the integrated source hash. Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 checked hosted Supabase Auth config and applied custom SMTP before the required live gate passed.",
       "verification": "npm run check:supabase-auth-smtp; npm run apply:supabase-auth-smtp; npm run check:journal-magic-link-live",
       "ownerAction": "Re-run hosted SMTP verification after any Supabase Auth or email-provider change."
     },
     {
       "id": "smoke_email_delivery",
-      "status": "PASS",
-      "checkedAt": "2026-07-05",
-      "evidence": "Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 requested a real journal Magic Link smoke email through the configured hosted Supabase Auth path.",
+      "status": "UNVERIFIED",
+      "evidence": "Historical evidence only; it does not verify the integrated source hash. Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 requested a real journal Magic Link smoke email through the configured hosted Supabase Auth path.",
       "verification": "ZENFLOW_JOURNAL_MAGIC_LINK_SEND_SMOKE=true ZENFLOW_JOURNAL_MAGIC_LINK_ALLOW_REAL_EMAIL=true npm run check:journal-magic-link-live",
       "ownerAction": "Use only a controlled smoke inbox and avoid exposing its address in artifacts."
     },
     {
       "id": "captured_verify_url_consumed",
-      "status": "PASS",
-      "checkedAt": "2026-07-05",
-      "evidence": "Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 consumed the fresh captured Supabase verify URL once during the required live gate.",
+      "status": "UNVERIFIED",
+      "evidence": "Historical evidence only; it does not verify the integrated source hash. Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 consumed the fresh captured Supabase verify URL once during the required live gate.",
       "verification": "ZENFLOW_JOURNAL_MAGIC_LINK_VERIFY_CAPTURED_URL=true ZENFLOW_JOURNAL_MAGIC_LINK_CONSUME_CAPTURED_URL=true npm run check:journal-magic-link-live",
       "ownerAction": "Clear or rotate ZENFLOW_JOURNAL_MAGIC_LINK_CAPTURED_URL after every proof run."
     },
     {
       "id": "subagent_reapproval",
-      "status": "PASS",
-      "checkedAt": "2026-07-05",
-      "evidence": "Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 preserves the prior specialist STOP condition: no PASS is written until live workflow evidence exists.",
+      "status": "UNVERIFIED",
+      "evidence": "Historical evidence only; it does not verify the integrated source hash. Runtime proof https://github.com/Yehor212/people-first-app/actions/runs/28747016267 preserves the prior specialist STOP condition: no PASS is written until live workflow evidence exists.",
       "verification": "Subagent audits plus runtime workflow checks; coordinator verifies outputs before using them as proof.",
       "ownerAction": "Refresh specialist review after future auth, journal, workflow, SMTP, or secret-scope changes."
     }

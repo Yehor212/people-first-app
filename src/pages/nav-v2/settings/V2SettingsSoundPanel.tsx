@@ -4,7 +4,12 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
 import { useAudioComfortSettings } from "@/hooks/useAudioComfortSettings";
 import { useHapticsPreference } from "@/hooks/useHapticsPreference";
-import { playFeedbackPreview, setAudioEnabled, setVolume, type SoundType } from "@/lib/audioManager";
+import {
+  playFeedbackPreview,
+  setAudioEnabled,
+  setVolume,
+  type SoundType,
+} from "@/lib/audioManager";
 import { trySetHapticsEnabled } from "@/lib/hapticsPreference";
 import { isNative } from "@/lib/platform";
 import {
@@ -30,6 +35,15 @@ export function SoundPanel() {
   ];
   const activitySoundsEnabled = activitySoundChoices.some(Boolean);
   const activitySoundsMixed = activitySoundsEnabled && !activitySoundChoices.every(Boolean);
+  const feedbackSoundsEnabled =
+    activitySoundsEnabled || comfort.settings.reminderCuesEnabled;
+  const feedbackPreviewChoices: readonly [string, SoundType, boolean][] = [
+    [t.settingsSoundPreviewSuccess, "success", comfort.settings.completionCuesEnabled],
+    [t.settingsSoundPreviewComplete, "complete", comfort.settings.completionCuesEnabled],
+    [t.settingsSoundPreviewStreak, "streak", comfort.settings.milestoneCuesEnabled],
+    [t.settingsSoundPreviewMilestone, "milestone", comfort.settings.milestoneCuesEnabled],
+    [t.settingsSoundPreviewNotification, "notification", comfort.settings.reminderCuesEnabled],
+  ];
   const errorCopy =
     tx.settingsPreferenceSaveError ||
     "Could not save this change. Your previous setting is still active.";
@@ -175,30 +189,20 @@ export function SoundPanel() {
         </SettingsInset>
       ) : null}
 
-      {audio.canPlayFeedback && activitySoundsEnabled ? (
+      {audio.canPlayFeedback && feedbackSoundsEnabled ? (
         <SettingsInset testId="settings-v2-audio-feedback-preview">
           <SettingsFieldHeader
             icon={Play}
-            title={tx.settingsSoundPreviewTitle || "Preview activity sounds"}
-            description={
-              tx.settingsSoundPreviewDescription ||
-              "Hear each cue right away, without waiting for a real event."
-            }
+            title={t.settingsSoundPreviewTitle}
+            description={t.settingsSoundPreviewDescription}
           />
-          <div className="flex min-w-0 flex-wrap gap-2">
-            {(
-              [
-                ["success", tx.settingsSoundPreviewSuccess || "Saved"],
-                ["complete", tx.settingsSoundPreviewComplete || "Completed"],
-                ["streak", tx.settingsSoundPreviewStreak || "Streak"],
-                ["milestone", tx.settingsSoundPreviewMilestone || "Milestone"],
-                ["notification", tx.settingsSoundPreviewNotification || "Reminder"],
-              ] as Array<[SoundType, string]>
-            ).map(([type, label]) => (
+          <div className="grid min-w-0 gap-2 min-[520px]:grid-cols-2">
+            {feedbackPreviewChoices.map(([label, soundType, enabled]) => (
               <SettingsInlineButton
-                key={type}
+                key={soundType}
                 icon={Play}
-                onClick={() => playFeedbackPreview(type)}
+                disabled={!enabled}
+                onClick={() => void playFeedbackPreview(soundType)}
               >
                 {label}
               </SettingsInlineButton>
