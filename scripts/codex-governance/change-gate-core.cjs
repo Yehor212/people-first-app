@@ -39,9 +39,10 @@ function evaluateGuard({ rootDir, targetPath, now = new Date() }) {
   const evidence = [];
   const absoluteRoot = path.resolve(rootDir);
   const absoluteTarget = path.resolve(absoluteRoot, targetPath);
-  const relative = normalizeRelative(path.relative(absoluteRoot, absoluteTarget));
+  const relativeValue = normalizeRelative(path.relative(absoluteRoot, absoluteTarget));
+  const relative = relativeValue === "" ? "." : relativeValue;
 
-  if (relative === "" || relative === ".." || relative.startsWith("../") || path.isAbsolute(relative)) {
+  if (relative === ".." || relative.startsWith("../") || path.isAbsolute(relative)) {
     return { allowed: false, reasons: ["target path is outside repository"], evidence };
   }
   if (UNGUARDED_EXACT.has(relative) || UNGUARDED_PREFIXES.some((prefix) => relative.startsWith(prefix))) {
@@ -77,12 +78,14 @@ function evaluateGuard({ rootDir, targetPath, now = new Date() }) {
 }
 
 function requiresGuard(relative) {
+  if (relative === ".") return true;
   if (requiresL4(relative)) return true;
   if (/\.(?:cjs|js|json|mjs|ts|tsx|toml|ya?ml)$/i.test(relative)) return true;
   return relative.startsWith("scripts/") || relative.startsWith("config/") || relative.startsWith("src/");
 }
 
 function requiresL4(relative) {
+  if (relative === ".") return true;
   return L4_EXACT.has(relative) || L4_PREFIXES.some((prefix) => relative.startsWith(prefix));
 }
 
