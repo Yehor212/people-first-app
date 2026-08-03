@@ -97,8 +97,22 @@ describe("journal save ceremony integration contract", () => {
 
   it("ships behind an explicit build flag and precaches TGS assets", () => {
     const env = source("src/lib/env.ts");
+    const module = source("src/features/journal/JournalModule.tsx");
     const vite = source("vite.config.ts");
     expect(env).toContain("VITE_ENABLE_JOURNAL_SAVE_CEREMONY");
+    expect(env).toContain("__JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__");
+    expect(vite).toContain("__JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__");
+    expect(module).toContain("__JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__");
+    expect(module).not.toContain(
+      'import { JournalSaveCeremonyHost } from "./save-ceremony/JournalSaveCeremonyHost"',
+    );
+    expect(module).not.toContain(
+      'import { preloadJournalSaveCeremonyRuntime } from "./save-ceremony/journalSaveCeremonyRuntime"',
+    );
+    expect(module).toContain(
+      'import("./save-ceremony/JournalSaveCeremonyHost")',
+    );
+    expect(module).toContain("<LazyJournalSaveCeremonyHost");
     expect(vite).toContain("assets/atelier-v12-3-*.tgs");
     expect(vite).toContain("assets/atelier-v12-3-*-reduced*.svg");
   });

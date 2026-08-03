@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "feature_id": "001-pending-batch-delivery",
-  "generated_at": "2026-08-03T06:24:59Z",
+  "generated_at": "2026-08-03T07:21:28Z",
   "owner_baseline": {
     "head": "00fdb2ea0e5205f4bee76bbec3109bf98865627f",
     "branch": "main",
@@ -88,7 +88,7 @@
         "tests_todo": 7,
         "tests_failed": 0,
         "typescript_source_files": 937,
-        "covered_lines_total": 50979
+        "covered_lines_total": 50984
       },
       "limitations": []
     },
@@ -132,7 +132,7 @@
       "exit_code": 0,
       "status": "VERIFIED",
       "counts": {
-        "files_scanned": 1866,
+        "files_scanned": 2330,
         "production_reachable": 783,
         "errors": 0,
         "warnings": 0,
@@ -143,16 +143,16 @@
     },
     {
       "id": "production-build-and-bundle",
-      "scope": "Default-disabled production web build, manifest/hash validation, duplicate pruning, and production-data bundle scan",
+      "scope": "Default-disabled production web build with the disabled ceremony import graph pruned, manifest/hash validation, duplicate pruning, and production-data bundle scan",
       "exit_code": 0,
       "status": "VERIFIED",
       "counts": {
-        "bundle_files_scanned": 2348,
+        "bundle_files_scanned": 2330,
         "production_reachable": 783,
         "errors": 0,
         "warnings": 0,
         "duplicate_artifacts": 0,
-        "service_worker_precache_entries": 59
+        "service_worker_precache_entries": 55
       },
       "limitations": []
     },
@@ -162,7 +162,7 @@
       "scope": "GitHub Pages staging directory and service-worker references",
       "exit_code": 0,
       "status": "VERIFIED",
-      "counts": { "service_worker_precache_urls": 59, "nojekyll_files": 1 },
+      "counts": { "service_worker_precache_urls": 55, "nojekyll_files": 1 },
       "limitations": []
     },
     {
@@ -172,8 +172,11 @@
       "exit_code": 0,
       "status": "VERIFIED",
       "counts": {
-        "javascript_gzip_kb": 1530,
-        "javascript_raw_kb": 5280,
+        "javascript_gzip_kb": 1470,
+        "javascript_raw_kb": 5085,
+        "javascript_raw_bytes": 5085325,
+        "javascript_raw_limit_bytes": 5300000,
+        "javascript_raw_headroom_bytes": 214675,
         "css_brotli_kb": 75
       },
       "limitations": ["Rounded display values are retained from size-limit output."]
@@ -250,14 +253,15 @@
       "exit_code": 1,
       "status": "FAIL",
       "counts": {
-        "violations": 2,
+        "violations": 1,
         "inline_styles": 358,
         "inline_styles_max": 323,
-        "bundle_size_kb": 5161,
-        "bundle_size_max_kb": 5103
+        "bundle_size_kb": 4967,
+        "bundle_size_max_kb": 5062
       },
       "limitations": [
         "Clean origin/main independently reproduces the inline-style violation at 358; the threshold was not raised.",
+        "The bundle-size ratchet passes at 4,967 KB against its 5,062 KB floor; the compile-time ceremony boundary removed the prior branch-only bundle regression.",
         "GitHub deploy marks this ratchet step continue-on-error, but exact pull-request checks still require live verification."
       ]
     },
@@ -272,21 +276,42 @@
         "tests_passed": 9077,
         "tests_todo": 7,
         "tests_failed": 0,
-        "ratchet_violations": 2,
+        "ratchet_violations": 1,
         "inline_styles": 358,
-        "bundle_size_kb": 5161
+        "bundle_size_kb": 4967,
+        "covered_lines_total": 50984
       },
       "limitations": [
-        "Every preceding preflight stage passed; the terminal nonzero status is exclusively the two recorded ratchet violations.",
+        "Every preceding preflight stage passed; the terminal nonzero status is exclusively the single inherited inline-style ratchet violation.",
         "Clean origin/main independently reproduces the inline-style violation at 358; the repository's GitHub deploy workflow currently marks ratchet:check continue-on-error.",
+        "The bundle-size ratchet passes at 4,967 KB against its 5,062 KB floor.",
         "No ratchet threshold, test, assertion, or workflow enforcement was weakened."
       ]
     },
     {
+      "id": "github-pull-request-ci-initial",
+      "command": "gh pr checks 64 --repo Yehor212/people-first-app",
+      "scope": "Ready pull request #64 at 4ec4ed308eedaf988f62edfa66d0c625792be9d5",
+      "exit_code": 1,
+      "status": "FAIL",
+      "counts": {
+        "required_checks": 4,
+        "required_checks_passed": 3,
+        "required_checks_failed": 1,
+        "javascript_raw_bytes": 5302175,
+        "javascript_raw_limit_bytes": 5300000,
+        "javascript_raw_overage_bytes": 2175
+      },
+      "limitations": [
+        "The sole required failure was Linux production build size-limit; Android, iOS, production-data-integrity, Playwright, governance, and every other completed check passed.",
+        "The local repair binds the default-disabled ceremony import graph to its existing compile-time flag instead of raising the limit; the repaired SHA still requires fresh GitHub CI."
+      ]
+    },
+    {
       "id": "github-pull-request-ci",
-      "scope": "GitHub pull-request SHA",
+      "scope": "Pull request #64 repaired head SHA",
       "status": "UNVERIFIED",
-      "limitations": ["Branch has not been pushed and no pull request exists yet."]
+      "limitations": ["The size repair has not yet been committed or pushed; exact-head GitHub checks remain required."]
     },
     {
       "id": "github-main-ci",
@@ -297,7 +322,10 @@
   ],
   "github_delivery": {
     "branch": "codex/pending-898-speckit-batch",
-    "status": "local"
+    "status": "pull_request_open",
+    "pull_request": 64,
+    "url": "https://github.com/Yehor212/people-first-app/pull/64",
+    "current_remote_head": "4ec4ed308eedaf988f62edfa66d0c625792be9d5"
   },
   "verdict": "STOP"
 }

@@ -120,14 +120,12 @@ import type {
   JournalEntrySuggestion,
   JournalReleaseTraceSummary,
 } from "./types";
-import { JournalSaveCeremonyHost } from "./save-ceremony/JournalSaveCeremonyHost";
 import {
   commitJournalSaveAndCaptureTheme,
   createJournalSaveCommitReceipt,
   type JournalSaveCommitReceipt,
   type JournalSaveCompletion,
 } from "./save-ceremony/journalSaveCeremonyContract";
-import { preloadJournalSaveCeremonyRuntime } from "./save-ceremony/journalSaveCeremonyRuntime";
 import {
   captureJournalSaveCeremonyLifecycle,
   invalidateJournalSaveCeremonyLifecycle,
@@ -192,6 +190,23 @@ const LazyJournalStats = lazyWithRetry(
   () => import("./JournalStats").then((m) => ({ default: m.JournalStats })),
   "JournalStats"
 );
+
+type JournalSaveCeremonyHostComponent =
+  typeof import("./save-ceremony/JournalSaveCeremonyHost").JournalSaveCeremonyHost;
+const loadJournalSaveCeremonyHostModule =
+  typeof __JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__ === "boolean" &&
+  __JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__
+    ? () => import("./save-ceremony/JournalSaveCeremonyHost")
+    : null;
+const LazyJournalSaveCeremonyHost = loadJournalSaveCeremonyHostModule
+  ? lazyWithRetry<JournalSaveCeremonyHostComponent>(
+      () =>
+        loadJournalSaveCeremonyHostModule().then((module) => ({
+          default: module.JournalSaveCeremonyHost,
+        })),
+      "JournalSaveCeremonyHost",
+    )
+  : null;
 
 type DeferredJournalModule = Record<string, ComponentType<any>>;
 type JournalSettingsContentComponent =
@@ -958,11 +973,16 @@ type ResetStep =
         saveCeremonyPreloadRequestedRef.current = false;
         return;
       }
-      void preloadJournalSaveCeremonyRuntime().catch(() => {
-        logger.warn("[JournalSaveCeremony] idle preload unavailable", {
-          code: "journal_save_ceremony_preload_error",
+      void loadJournalSaveCeremonyHostModule
+        ?.()
+        .then(({ preloadJournalSaveCeremonyRuntime }) =>
+          preloadJournalSaveCeremonyRuntime(),
+        )
+        .catch(() => {
+          logger.warn("[JournalSaveCeremony] idle preload unavailable", {
+            code: "journal_save_ceremony_preload_error",
+          });
         });
-      });
     });
   }, [saveCeremonyMotionAllowed]);
 
@@ -4683,19 +4703,21 @@ type ResetStep =
         </Suspense>
       )}
 
-      {ENABLE_JOURNAL_SAVE_CEREMONY ? (
-        <JournalSaveCeremonyHost
-          receipt={saveCeremonyPresentation?.receipt ?? null}
-          lifecycleToken={saveCeremonyPresentation?.lifecycle ?? null}
-          eligible={
-            journal.view === "list" &&
-            !privateMode &&
-            !showPasswordSettings &&
-            celebratingStreak === null &&
-            (isDiaryDesktopLayout || !mobileEditorSurfacePresent)
-          }
-          onConsume={handleSaveCeremonyConsume}
-        />
+      {ENABLE_JOURNAL_SAVE_CEREMONY && LazyJournalSaveCeremonyHost ? (
+        <Suspense fallback={null}>
+          <LazyJournalSaveCeremonyHost
+            receipt={saveCeremonyPresentation?.receipt ?? null}
+            lifecycleToken={saveCeremonyPresentation?.lifecycle ?? null}
+            eligible={
+              journal.view === "list" &&
+              !privateMode &&
+              !showPasswordSettings &&
+              celebratingStreak === null &&
+              (isDiaryDesktopLayout || !mobileEditorSurfacePresent)
+            }
+            onConsume={handleSaveCeremonyConsume}
+          />
+        </Suspense>
       ) : null}
 
       {/* Streak milestone celebration overlay */}

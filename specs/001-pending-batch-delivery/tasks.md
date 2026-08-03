@@ -36,7 +36,7 @@
 - [x] T018 [US4] Run cross-artifact consistency analysis and retain unresolved execution gates in `analysis.md`.
 - [x] T019 [US4] Run a fresh isolated Codex runtime discovery probe and record every discoverable repository-local `speckit-*` skill in `evidence/verification.json`.
 
-**Checkpoint**: The official Spec Kit lifecycle is internally traceable; actual runtime discovery is still required.
+**Checkpoint**: The official Spec Kit lifecycle is internally traceable and fresh Codex runtime discovery is recorded separately from file presence.
 
 ## Phase 4 - Focused remediation and regression proof
 
@@ -61,16 +61,16 @@
 - [x] T035 [US2] Inspect the retained desktop and phone recovery screenshots and, where feasible, targeted rendered runtime behavior; keep device and human artistic evidence separate.
 - [x] T036 [US2] Review `git diff origin/main...HEAD`, `git diff --check`, Git status, prohibited paths, conflict markers, executable modes, and generated artifacts.
 
-**Checkpoint**: Required local checks are green and all unavailable evidence is explicitly bounded.
+**Checkpoint**: Required local checks have fresh results; the independently reproduced inherited inline-style ratchet failure and unavailable human/native evidence are explicitly bounded.
 
 ## Phase 6 - Publish, monitor, and merge
 
 - [x] T037 [US3] Update `evidence/verification.json`, `analysis.md`, `convergence.md`, and this task list from final local evidence; validate the evidence JSON against its schema.
-- [ ] T038 [US3] Create a final single-quoted Git commit whose message includes `batch`, after normal staged production-data and commit guards pass.
-- [ ] T039 [US3] Execute the repository pre-push guard without bypass and push `codex/pending-898-speckit-batch` to `origin`.
-- [ ] T040 [US3] Open a ready pull request with exact scope, reconciliation, verification, rollback, and `UNVERIFIED` ledger.
-- [ ] T041 [US3] Watch every required pull-request check; inspect and fix failures, reproducing suspected inherited failures on clean `origin/main` first.
-- [ ] T042 [US3] Merge using a merge commit only after all required checks are green; do not squash or bypass protection.
+- [x] T038 [US3] Create final commit `4ec4ed308eedaf988f62edfa66d0c625792be9d5` with `batch` in its single-quoted message after normal staged production-data and commit guards pass.
+- [x] T039 [US3] Execute the repository pre-push guard without bypass and push `codex/pending-898-speckit-batch` to `origin`.
+- [x] T040 [US3] Open ready pull request #64 with exact scope, reconciliation, verification, rollback, and `UNVERIFIED` ledger.
+- [ ] T041 [US3] Watch every required pull-request check; repair the verified Linux raw-JS size failure without raising the 5,300,000-byte limit, push the repair, and require a fresh all-green exact head.
+- [ ] T042 [US3] Merge using a merge commit only after all required checks are green; do not squash or bypass failed/pending CI. If the sole remaining block is impossible self-approval, use only the user's explicit repository-admin authorization and record that exception.
 - [ ] T043 [US3] Watch post-merge `main` workflows and verify the merged SHA plus snapshot-commit ancestry.
 - [ ] T044 [US1] Restore owner ignored guard files byte-for-byte and mode-for-mode, then reconfirm owner HEAD, 898 records, and status digest.
 - [ ] T045 [US3] Mark convergence `GO` and close the goal only when all independently binding completion gates are satisfied.

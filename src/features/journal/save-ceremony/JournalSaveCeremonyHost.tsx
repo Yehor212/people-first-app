@@ -19,6 +19,7 @@ import {
 import {
   isJournalSaveCeremonyCircuitOpen,
   isJournalSaveCeremonyRuntimePreloaded,
+  preloadJournalSaveCeremonyRuntime,
   startJournalSaveCeremony,
   type JournalSaveCeremonyPlayback,
 } from "./journalSaveCeremonyRuntime";
@@ -28,6 +29,8 @@ import {
   type JournalSaveCeremonyLifecycleToken,
 } from "./journalSaveCeremonyLifecycle";
 import "./journalSaveCeremony.css";
+
+export { preloadJournalSaveCeremonyRuntime };
 
 const STATIC_FALLBACK_DURATION_MS = 800;
 const PLAYER_READY_DEADLINE_MS = 750;

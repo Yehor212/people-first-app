@@ -46,11 +46,28 @@ npx eslint . --max-warnings=0
 npm run check:all
 npm run check:production-data-integrity
 npm run build
+npm run check:size
 npm run check:production-data-integrity:bundle
 npm run ci:preflight
 ```
 
 Do not run a second build concurrently with either bundle-integrity check. Record exact outputs and counts in `evidence/verification.json`.
+
+The save ceremony is intentionally default-disabled. Its Lottie runtime must be absent from the default build graph, while the explicitly enabled build must retain the complete animation and fallback paths:
+
+```bash
+VITE_ENABLE_JOURNAL_SAVE_CEREMONY=true npm run build
+npx playwright test e2e/journal-save-ceremony.spec.ts \
+  --config=e2e/helpers/save-ceremony/playwright.config.ts --workers=1
+ZENFLOW_SAVE_CEREMONY_SCHEME=http npx playwright test \
+  e2e/journal-save-ceremony-pwa.spec.ts \
+  --config=e2e/helpers/save-ceremony/playwright.config.ts \
+  --project=chromium --workers=1
+npm run build
+npm run check:size
+```
+
+The final unflagged build restores the exact artifact mode exercised by default GitHub CI.
 
 ## 4. Inspect and publish
 
@@ -61,7 +78,7 @@ git push -u origin codex/pending-898-speckit-batch
 gh pr checks --watch
 ```
 
-Create and merge the pull request only after final local evidence is committed. Use a merge commit; do not squash, force push, bypass hooks, or bypass branch protection.
+Create and merge the pull request only after final local evidence is committed. Use a merge commit; do not squash, force push, bypass hooks, or bypass failed/pending CI. If all required checks are green and the only remaining protection is impossible self-approval, a repository-admin merge is allowed only with the user's explicit authorization and must be recorded as such.
 
 ## 5. Converge
 
