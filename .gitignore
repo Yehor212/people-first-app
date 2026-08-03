@@ -43,6 +43,7 @@ android/build/
 # Local agent temp files
 # ============================================
 **/.dccache
+supabase/migrations/*.code-workspace
 CLAUDE.local.md
 AGENTS.local.md
 .mcp.json

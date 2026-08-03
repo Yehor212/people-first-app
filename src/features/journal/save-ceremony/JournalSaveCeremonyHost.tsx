@@ -379,12 +379,6 @@ export function JournalSaveCeremonyHost({
       aria-hidden="true"
       className="journal-save-ceremony pointer-events-none absolute z-40 flex items-center justify-center overflow-hidden"
       dir="ltr"
-      style={{
-        top: "var(--safe-top, 0px)",
-        bottom: "var(--safe-bottom, 0px)",
-        insetInlineStart: "var(--safe-inline-start, 0px)",
-        insetInlineEnd: "var(--safe-inline-end, 0px)",
-      }}
     >
       <div
         data-testid="journal-save-ceremony-veil"

@@ -216,7 +216,9 @@ describe("JournalModule V2 header", () => {
   });
 
   it("keeps desktop-only journal security affordances honest", () => {
-    expect(source).toContain('import { IS_DESKTOP_RUNTIME } from "@/lib/env"');
+    expect(source).toMatch(
+      /import \{[\s\S]*?\bIS_DESKTOP_RUNTIME\b[\s\S]*?\} from "@\/lib\/env";/,
+    );
     expect(source).toContain("const isEmailLockRemovalAvailable = !IS_DESKTOP_RUNTIME");
     expect(source).toContain("onForgotPassword={handleForgotPassword}");
     expect(source).toContain("emailLockRemovalAvailable={isEmailLockRemovalAvailable}");

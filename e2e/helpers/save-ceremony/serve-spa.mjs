@@ -2,13 +2,16 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
-  statSync,
 } from "node:fs";
 import { createServer as createHttpServer } from "node:http";
 import { createServer as createHttpsServer } from "node:https";
 import { spawnSync } from "node:child_process";
-import { dirname, extname, resolve, sep } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  buildStaticAssetCatalog,
+  selectStaticAsset,
+} from "./static-assets.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, "../../..");
@@ -28,41 +31,7 @@ if (scheme !== "http" && scheme !== "https") {
   );
 }
 const origin = `${scheme}://127.0.0.1:${port}`;
-
-const contentTypes = new Map([
-  [".br", "application/octet-stream"],
-  [".css", "text/css; charset=utf-8"],
-  [".gz", "application/gzip"],
-  [".html", "text/html; charset=utf-8"],
-  [".ico", "image/x-icon"],
-  [".js", "text/javascript; charset=utf-8"],
-  [".json", "application/json; charset=utf-8"],
-  [".mjs", "text/javascript; charset=utf-8"],
-  [".mp3", "audio/mpeg"],
-  [".png", "image/png"],
-  [".svg", "image/svg+xml"],
-  [".tgs", "application/gzip"],
-  [".webmanifest", "application/manifest+json; charset=utf-8"],
-  [".webp", "image/webp"],
-  [".woff", "font/woff"],
-  [".woff2", "font/woff2"],
-]);
-
-function resolveAsset(requestUrl) {
-  const url = new URL(requestUrl || "/", origin);
-  let pathname = decodeURIComponent(url.pathname);
-  if (pathname === "/people-first-app") pathname = "/";
-  if (pathname.startsWith("/people-first-app/")) {
-    pathname = pathname.slice("/people-first-app".length);
-  }
-
-  const requested = resolve(root, `.${sep}${pathname}`);
-  if (requested !== root && !requested.startsWith(`${root}${sep}`)) {
-    return null;
-  }
-  if (existsSync(requested) && statSync(requested).isFile()) return requested;
-  return resolve(root, "index.html");
-}
+const assetCatalog = buildStaticAssetCatalog(root);
 
 const handleRequest = (request, response) => {
     if (request.method !== "GET" && request.method !== "HEAD") {
@@ -72,18 +41,17 @@ const handleRequest = (request, response) => {
     }
 
     try {
-      const assetPath = resolveAsset(request.url);
-      if (!assetPath || !existsSync(assetPath)) {
+      const asset = selectStaticAsset(request.url, assetCatalog);
+      if (!asset) {
         response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
         response.end("Not found");
         return;
       }
-      const body = readFileSync(assetPath);
+      const { body } = asset;
       response.writeHead(200, {
         "Cache-Control": "no-store",
         "Content-Length": String(body.length),
-        "Content-Type":
-          contentTypes.get(extname(assetPath)) || "application/octet-stream",
+        "Content-Type": asset.contentType,
         "Referrer-Policy": "no-referrer",
         "X-Content-Type-Options": "nosniff",
       });

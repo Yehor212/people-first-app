@@ -28,6 +28,11 @@
   }
 }
 
+.journal-save-ceremony {
+  inset-block: var(--safe-top, 0px) var(--safe-bottom, 0px);
+  inset-inline: var(--safe-inline-start, 0px) var(--safe-inline-end, 0px);
+}
+
 .journal-save-ceremony-veil {
   position: absolute;
   inset: 0;

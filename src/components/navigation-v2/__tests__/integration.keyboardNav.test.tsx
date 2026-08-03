@@ -48,6 +48,10 @@ vi.mock("@/lib/androidBackHandler", () => ({
   registerModalCloseCallback: () => () => undefined,
 }));
 
+vi.mock("@/contexts/FeatureFlagsContext", () => ({
+  useFeatureFlags: () => ({ isFeatureVisible: () => false }),
+}));
+
 // morph() uses View Transitions API which jsdom doesn't support. Stub it to
 // run the callback synchronously so setActivePage's state update lands.
 vi.mock("@/lib/motion/morph", () => ({

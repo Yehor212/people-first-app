@@ -180,14 +180,8 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
           {topInsight.description && topInsight.description !== topInsight.title && (
             <p className="mt-1 text-muted-foreground">{topInsight.description}</p>
           )}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span
-              className="rounded-full bg-background/60 px-2 py-1 text-xs font-medium tabular-nums"
-              aria-label={`confidence ${topInsight.confidence}%`}
-            >
-              {topInsight.confidence}%
-            </span>
-            {linkedHabit && onOpenHabitInsight && (
+          {linkedHabit && onOpenHabitInsight && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => onOpenHabitInsight(linkedHabit)}
@@ -196,8 +190,8 @@ export const HeroInsightStrip = memo(function HeroInsightStrip({
               >
                 {tx.statistics || tx.navV2HabitsOpenDetails || "Statistics"}
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </aside>

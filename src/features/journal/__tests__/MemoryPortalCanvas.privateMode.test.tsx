@@ -29,9 +29,13 @@ vi.mock("@/lib/haptics", () => ({
   hapticTap: vi.fn(),
 }));
 
-vi.mock("@/lib/animationUtils", () => ({
-  shouldAnimate: () => false,
-}));
+vi.mock("@/lib/animationUtils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/animationUtils")>();
+  return {
+    ...actual,
+    shouldAnimate: () => false,
+  };
+});
 
 vi.mock("@/lib/safeJson", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/safeJson")>();

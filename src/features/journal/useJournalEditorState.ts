@@ -1327,7 +1327,6 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
       // The storage-layer save transaction owns draft + lease deletion. Repeating that
       // cleanup here can falsely turn an already durable entry into a failed save.
       draftPersistenceSuppressedRef.current = true;
-      announceSuccess(ts.journalEntrySaved || "Entry saved");
       setSaveState("saved");
       setSaveSuccess(true);
       // Auto-transition saved -> idle after 2s

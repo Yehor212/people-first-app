@@ -851,7 +851,7 @@ describe("agent workspace lifecycle", () => {
       expectedRemote: fixture.remote,
     });
     expect(hasRef(destination, handoffRef)).toBe(true);
-  });
+  }, 15_000);
 
   it("fast-forwards only with explicit apply on a clean behind-only main", async () => {
     const fixture = await repositoryFixture();

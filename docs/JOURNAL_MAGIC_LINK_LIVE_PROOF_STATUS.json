@@ -3,7 +3,7 @@
   "updatedAt": "2026-08-02",
   "feature": "diary-email-lock-removal",
   "overallStatus": "UNVERIFIED",
-  "proofSourceSha256": "62e87cd29ea54fd9a7e3b5d9341063f43d2201de9dc4102e19f905049b7617c2",
+  "proofSourceSha256": "992cec3dfc92a6b0f74c77cc79d81cd4a858bf0752a298247f513f7b69d68e77",
   "purpose": "Historical live-proof provenance is retained, but the integrated auth and recovery source has changed. Current readiness remains UNVERIFIED until the dedicated live workflow is rerun without exposing one-time auth values.",
   "items": [
     {

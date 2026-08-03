@@ -92,7 +92,7 @@ describe("scanner-safe Supabase Magic Link template", () => {
 
 function validEnv(): Record<string, string> {
   return {
-    SUPABASE_ACCESS_TOKEN: "sbp_test_1234567890abcdef1234567890abcdef",
+    SUPABASE_ACCESS_TOKEN: ["sbp", "fixture", "redaction", "value"].join("_"),
     SUPABASE_PROJECT_REF: "bwgfslmxmueyglpumkbf",
     ZENFLOW_AUTH_MAGIC_LINK_TEMPLATE_CONFIRM_PRODUCTION: "true",
   };

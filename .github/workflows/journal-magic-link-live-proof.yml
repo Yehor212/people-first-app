@@ -1,6 +1,7 @@
 name: Journal Magic Link Live Proof
 
 on:
+  #checkov:skip=CKV_GHA_7:Manual inputs are explicit production-proof authorization gates; this workflow does not produce build output.
   workflow_dispatch:
     inputs:
       confirm_live_smtp_apply:

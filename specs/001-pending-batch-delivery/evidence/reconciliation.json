@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "feature_id": "001-pending-batch-delivery",
+  "captured_at": "2026-08-03T04:36:04Z",
+  "status": "VERIFIED",
+  "algorithm": "Compare repository mode, object type, and object id for every sorted path changed between snapshot.parent and snapshot.commit across snapshot.commit, reconciliation.checkpoint_commit, and reconciliation.main_commit; absent paths use the ABSENT sentinel.",
+  "owner_baseline": {
+    "head": "00fdb2ea0e5205f4bee76bbec3109bf98865627f",
+    "branch": "main",
+    "status_record_count": 898,
+    "status_sha256": "c27da64f8305c01fe29c2081dbc33c8486f784abfdb269db54f8f76cb46cb56a"
+  },
+  "snapshot": {
+    "commit": "c902b612050dd891e5aa86958ebf8bb7f2e9f5ba",
+    "parent": "00fdb2ea0e5205f4bee76bbec3109bf98865627f",
+    "path_count": 893,
+    "path_sha256": "7ce230f3b7ced01573bd20be1e1e2f88a618e5658fc2020f19b50ec4ee7a6efe"
+  },
+  "reconciliation": {
+    "checkpoint_commit": "d0fa0cc3acf267c4374d392c98642daa25ddc1ec",
+    "main_commit": "4aff30811d370981e1c8192cea753159e883c4d2",
+    "counts": {
+      "already_in_main": 703,
+      "preserved_net_change": 115,
+      "superseded_by_main": 53,
+      "integrated_resolution": 22
+    },
+    "total": 893,
+    "net_path_count_before_feature_packet": 143,
+    "net_path_sha256_before_feature_packet": "8eabac11766c31f20404a2f8131e087c31694d139933572488902520ea2fb2a7"
+  },
+  "excluded_artifacts": [
+    "android/app/src/main/java/com/zenflow/app/.dccache",
+    "src/.dccache",
+    "src/components/ui/.dccache",
+    "src/lib/.dccache",
+    "supabase/functions/.dccache"
+  ],
+  "limitations": [
+    "This receipt proves Git tree reconciliation at the named checkpoint; it does not prove runtime behavior.",
+    "Later Spec Kit evidence and verification files intentionally change the final net path count without changing the immutable snapshot partition."
+  ]
+}
