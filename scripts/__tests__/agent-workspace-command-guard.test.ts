@@ -24,6 +24,8 @@ const REVIEWED_SPEC_KIT_COMMANDS = [
   ".specify/scripts/bash/setup-plan.sh --json",
   ".specify/scripts/bash/setup-tasks.sh --json",
 ] as const;
+const READ_ONLY_SPEC_KIT_COMMAND = REVIEWED_SPEC_KIT_COMMANDS[0];
+const STATEFUL_SPEC_KIT_COMMANDS = REVIEWED_SPEC_KIT_COMMANDS.slice(1);
 const REVIEWED_SPEC_KIT_SCRIPTS = [
   ".specify/scripts/bash/check-prerequisites.sh",
   ".specify/scripts/bash/setup-plan.sh",
@@ -35,7 +37,7 @@ const SPEC_KIT_COMMAND_BY_SCRIPT = new Map([
   [REVIEWED_SPEC_KIT_SCRIPTS[2], REVIEWED_SPEC_KIT_COMMANDS[3]],
 ]);
 const setupPlan = REVIEWED_SPEC_KIT_COMMANDS[2];
-const prerequisites = REVIEWED_SPEC_KIT_COMMANDS[0];
+const prerequisites = READ_ONLY_SPEC_KIT_COMMAND;
 const SPEC_KIT_NON_EXACT_COMMANDS = [
   [
     "arbitrary script",
@@ -465,16 +467,165 @@ describe("Codex and Kimi workspace command guard", () => {
     expect(runHook(root, { ...bash("pwd && git diff --stat"), cwd: root }).status).toBe(0);
   });
 
-  it.each(REVIEWED_SPEC_KIT_COMMANDS)(
-    "allows the exact reviewed Spec Kit command: %s",
+  it("allows the exact reviewed read-only Spec Kit command on integration main", async () => {
+    const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+
+    const result = runHook(
+      root,
+      { ...bash(READ_ONLY_SPEC_KIT_COMMAND), cwd: root },
+      "codex",
+      hook
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it.each(STATEFUL_SPEC_KIT_COMMANDS)(
+    "blocks the exact stateful Spec Kit command on integration main: %s",
     async (command) => {
       const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+      await pinFeature(root);
+
+      const result = runHook(root, { ...bash(command), cwd: root }, "codex", hook);
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain("main is integration-only");
+    }
+  );
+
+  it.each(STATEFUL_SPEC_KIT_COMMANDS)(
+    "allows the exact stateful Spec Kit command in its canonical codex lane: %s",
+    async (command) => {
+      const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/spec-kit"]);
+      await pinFeature(root);
 
       const result = runHook(root, { ...bash(command), cwd: root }, "codex", hook);
 
       expect(result.status, result.stderr).toBe(0);
     }
   );
+
+  it.each(STATEFUL_SPEC_KIT_COMMANDS)(
+    "rejects an out-of-lane feature target for the stateful Spec Kit command: %s",
+    async (command) => {
+      const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/spec-kit"]);
+      await pinFeature(root, "../outside-feature", false);
+
+      const result = runHook(root, { ...bash(command), cwd: root }, "codex", hook);
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain("unknown shell execution");
+    }
+  );
+
+  it("rejects a symlinked feature target for a stateful Spec Kit command", async () => {
+    const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/spec-kit"]);
+    const realFeature = path.join(root, "specs/001-real");
+    const linkedFeature = path.join(root, "specs/001-linked");
+    await mkdir(realFeature, { recursive: true });
+    await symlink(realFeature, linkedFeature, "dir");
+    await pinFeature(root, "specs/001-linked", false);
+
+    const result = runHook(root, { ...bash(setupPlan), cwd: root }, "codex", hook);
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain("unknown shell execution");
+  });
+
+  it("rejects a symlinked setup-plan output target", async () => {
+    const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/spec-kit"]);
+    const featureDirectory = "specs/001-linked-plan";
+    await pinFeature(root, featureDirectory);
+    const outsidePlan = path.join(root, "outside-plan.md");
+    await writeFile(outsidePlan, "outside\n", "utf8");
+    await symlink(outsidePlan, path.join(root, featureDirectory, "plan.md"));
+
+    const result = runHook(root, { ...bash(setupPlan), cwd: root }, "codex", hook);
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain("unknown shell execution");
+  });
+
+  it.each(["symlink", "hard link"] as const)(
+    "rejects a %s feature-state target when the environment would persist it",
+    async (linkKind) => {
+      const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/spec-kit"]);
+      const featureDirectory = "specs/001-env-state";
+      const featureState = path.join(root, ".specify/feature.json");
+      const linkedState = path.join(root, "linked-feature-state.json");
+      await pinFeature(root, featureDirectory);
+      await writeFile(linkedState, `${JSON.stringify({ feature_directory: featureDirectory })}\n`);
+      await rm(featureState);
+      if (linkKind === "symlink") await symlink(linkedState, featureState);
+      else await link(linkedState, featureState);
+
+      const result = runHook(
+        root,
+        { ...bash(setupPlan), cwd: root },
+        "codex",
+        hook,
+        { SPECIFY_FEATURE_DIRECTORY: featureDirectory }
+      );
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain("unknown shell execution");
+    }
+  );
+
+  it("allows a canonical environment-selected feature target in its codex lane", async () => {
+    const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/spec-kit"]);
+    const featureDirectory = "specs/001-env-canonical";
+    await mkdir(path.join(root, featureDirectory), { recursive: true });
+
+    const result = runHook(
+      root,
+      { ...bash(setupPlan), cwd: root },
+      "codex",
+      hook,
+      { SPECIFY_FEATURE_DIRECTORY: featureDirectory }
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it("rejects an environment-selected out-of-lane feature target", async () => {
+    const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/spec-kit"]);
+
+    const result = runHook(
+      root,
+      { ...bash(setupPlan), cwd: root },
+      "codex",
+      hook,
+      { SPECIFY_FEATURE_DIRECTORY: path.resolve(root, "../outside-feature") }
+    );
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain("unknown shell execution");
+  });
+
+  it("rejects an environment-selected Spec Kit project outside the current lane", async () => {
+    const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/spec-kit"]);
+    await pinFeature(root);
+
+    const result = runHook(
+      root,
+      { ...bash(setupPlan), cwd: root },
+      "codex",
+      hook,
+      { SPECIFY_INIT_DIR: path.resolve(root, "..") }
+    );
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain("unknown shell execution");
+  });
 
   it.each([
     [
@@ -501,7 +652,7 @@ describe("Codex and Kimi workspace command guard", () => {
     const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
     const nested = path.join(root, "nested");
     await mkdir(nested, { recursive: true });
-    const payload = bashWithLocations(setupPlan, locations(root, nested));
+    const payload = bashWithLocations(prerequisites, locations(root, nested));
 
     const result = runHook(root, payload, "codex", hook);
 
@@ -516,7 +667,7 @@ describe("Codex and Kimi workspace command guard", () => {
     "allows canonically equivalent Spec Kit location evidence: %s",
     async (_label, locations) => {
       const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
-      const payload = bashWithLocations(setupPlan, locations);
+      const payload = bashWithLocations(prerequisites, locations);
 
       const result = runHook(root, payload, "codex", hook);
 
@@ -530,7 +681,7 @@ describe("Codex and Kimi workspace command guard", () => {
     ["input.workdir only", () => ({ inputWorkdir: "./" })],
   ] as const)("allows omitted Spec Kit location fields: %s", async (_label, locationsForRoot) => {
     const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
-    const payload = bashWithLocations(setupPlan, locationsForRoot(root));
+    const payload = bashWithLocations(prerequisites, locationsForRoot(root));
 
     const result = runHook(root, payload, "codex", hook);
 
@@ -547,7 +698,7 @@ describe("Codex and Kimi workspace command guard", () => {
     "rejects supplied empty or whitespace Spec Kit location evidence: %s",
     async (_label, locationsForRoot) => {
       const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
-      const payload = bashWithLocations(setupPlan, locationsForRoot(root));
+      const payload = bashWithLocations(prerequisites, locationsForRoot(root));
 
       const result = runHook(root, payload, "codex", hook);
 
@@ -559,11 +710,15 @@ describe("Codex and Kimi workspace command guard", () => {
   it("rejects a whitespace input.workdir that names a nested Spec Kit lookalike", async () => {
     const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
     const whitespaceWorkdir = "   ";
-    const lookalike = path.join(root, whitespaceWorkdir, ".specify/scripts/bash/setup-plan.sh");
+    const lookalike = path.join(
+      root,
+      whitespaceWorkdir,
+      ".specify/scripts/bash/check-prerequisites.sh"
+    );
     await mkdir(path.dirname(lookalike), { recursive: true });
-    await copyFile(path.join(root, ".specify/scripts/bash/setup-plan.sh"), lookalike);
+    await copyFile(path.join(root, ".specify/scripts/bash/check-prerequisites.sh"), lookalike);
     await chmod(lookalike, 0o755);
-    const payload = bashWithLocations(setupPlan, {
+    const payload = bashWithLocations(prerequisites, {
       eventCwd: root,
       inputWorkdir: whitespaceWorkdir,
     });
@@ -582,7 +737,7 @@ describe("Codex and Kimi workspace command guard", () => {
     "rejects malformed Spec Kit location evidence: %s",
     async (_label, locationsForRoot) => {
       const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
-      const payload = bashWithLocations(setupPlan, locationsForRoot(root));
+      const payload = bashWithLocations(prerequisites, locationsForRoot(root));
 
       const result = runHook(root, payload, "codex", hook);
 
@@ -594,7 +749,7 @@ describe("Codex and Kimi workspace command guard", () => {
   it("rejects a reviewed Spec Kit command without payload location evidence", async () => {
     const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
 
-    const result = runHook(root, bash(setupPlan), "codex", hook);
+    const result = runHook(root, bash(prerequisites), "codex", hook);
 
     expect(result.status, result.stderr).toBe(2);
     expect(result.stderr).toContain("unknown shell execution");
@@ -603,11 +758,11 @@ describe("Codex and Kimi workspace command guard", () => {
   it("rejects root payload fields when the hook executor cwd is nested", async () => {
     const { hook, root } = await guardedGitWorkspace(CANONICAL_REMOTE);
     const nested = path.join(root, "nested");
-    const nestedScript = path.join(nested, ".specify/scripts/bash/setup-plan.sh");
+    const nestedScript = path.join(nested, ".specify/scripts/bash/check-prerequisites.sh");
     await mkdir(path.dirname(nestedScript), { recursive: true });
-    await copyFile(path.join(root, ".specify/scripts/bash/setup-plan.sh"), nestedScript);
+    await copyFile(path.join(root, ".specify/scripts/bash/check-prerequisites.sh"), nestedScript);
     await chmod(nestedScript, 0o755);
-    const payload = bashWithLocations(setupPlan, {
+    const payload = bashWithLocations(prerequisites, {
       eventCwd: root,
       inputCwd: root,
       inputWorkdir: root,
@@ -1219,12 +1374,39 @@ async function guardedGitWorkspace(remote: string): Promise<{ hook: string; root
   return { hook: path.join(root, ".codex/hooks/agent-workspace-guard.cjs"), root };
 }
 
-function runHook(cwd: string, payload: object, expectedAgent = "codex", hook = HOOK) {
+function runHook(
+  cwd: string,
+  payload: object,
+  expectedAgent = "codex",
+  hook = HOOK,
+  environment: NodeJS.ProcessEnv = {}
+) {
+  const childEnvironment = { ...process.env };
+  delete childEnvironment.SPECIFY_FEATURE_DIRECTORY;
+  delete childEnvironment.SPECIFY_INIT_DIR;
+  Object.assign(childEnvironment, environment);
   return spawnSync(process.execPath, [hook, "--expected-agent", expectedAgent], {
     cwd,
     encoding: "utf8",
+    env: childEnvironment,
     input: JSON.stringify(payload),
   });
+}
+
+async function pinFeature(
+  root: string,
+  featureDirectory = "specs/001-workspace-guard",
+  createDirectory = true
+) {
+  await mkdir(path.join(root, ".specify"), { recursive: true });
+  await writeFile(
+    path.join(root, ".specify/feature.json"),
+    `${JSON.stringify({ feature_directory: featureDirectory })}\n`,
+    "utf8"
+  );
+  if (createDirectory) {
+    await mkdir(path.resolve(root, featureDirectory), { recursive: true });
+  }
 }
 
 function git(cwd: string, args: string[]): string {

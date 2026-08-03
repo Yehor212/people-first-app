@@ -114,27 +114,69 @@ const SETUP_TASKS_SCRIPT = Object.freeze({
   size: 3241,
   mode: 0o755,
 });
-const REVIEWED_DIRECT_READ_ONLY_COMMANDS = new Map([
+// Only --paths-only opts out of get_feature_paths persistence. The other exact
+// commands can write feature.json, and setup-plan can also create plan.md.
+const REVIEWED_DIRECT_COMMANDS = new Map([
   [
     ".specify/scripts/bash/check-prerequisites.sh --json --paths-only",
-    CHECK_PREREQUISITES_SCRIPT,
+    Object.freeze({
+      access: "read-only",
+      reviewedFile: CHECK_PREREQUISITES_SCRIPT,
+      targetFiles: [],
+    }),
   ],
   [
     ".specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks",
-    CHECK_PREREQUISITES_SCRIPT,
+    Object.freeze({
+      access: "feature-mutation",
+      reviewedFile: CHECK_PREREQUISITES_SCRIPT,
+      targetFiles: [],
+    }),
   ],
-  [".specify/scripts/bash/setup-plan.sh --json", SETUP_PLAN_SCRIPT],
-  [".specify/scripts/bash/setup-tasks.sh --json", SETUP_TASKS_SCRIPT],
+  [
+    ".specify/scripts/bash/setup-plan.sh --json",
+    Object.freeze({
+      access: "feature-mutation",
+      reviewedFile: SETUP_PLAN_SCRIPT,
+      targetFiles: ["plan.md"],
+    }),
+  ],
+  [
+    ".specify/scripts/bash/setup-tasks.sh --json",
+    Object.freeze({
+      access: "feature-mutation",
+      reviewedFile: SETUP_TASKS_SCRIPT,
+      targetFiles: [],
+    }),
+  ],
 ]);
 
-function reviewedDirectCommandIsTrusted(command, locationEvidence, executorCwd) {
-  const reviewedTarget = REVIEWED_DIRECT_READ_ONLY_COMMANDS.get(command);
+function reviewedDirectCommandAnalysis(
+  command,
+  locationEvidence,
+  executorCwd,
+  environment
+) {
+  const reviewedCommand = REVIEWED_DIRECT_COMMANDS.get(command);
+  if (!reviewedCommand) return null;
+
   if (
-    !reviewedTarget ||
-    !repositoryLocationsAreCanonical(locationEvidence, executorCwd)
+    !reviewedDirectCommandIsTrusted(reviewedCommand, locationEvidence, executorCwd)
   ) {
-    return false;
+    return failClosedReviewedCommandAnalysis();
   }
+
+  if (reviewedCommand.access === "read-only") {
+    return reviewedCommandAnalysis({ mutationIntent: false, targets: [] });
+  }
+
+  const targets = reviewedSpecKitFeatureTargets(reviewedCommand, environment);
+  if (!targets) return failClosedReviewedCommandAnalysis();
+  return reviewedCommandAnalysis({ mutationIntent: true, targets });
+}
+
+function reviewedDirectCommandIsTrusted(reviewedCommand, locationEvidence, executorCwd) {
+  if (!repositoryLocationsAreCanonical(locationEvidence, executorCwd)) return false;
 
   const provenanceBytes = readReviewedRegularFile(SPEC_KIT_PROVENANCE);
   if (!provenanceBytes) return false;
@@ -149,12 +191,151 @@ function reviewedDirectCommandIsTrusted(command, locationEvidence, executorCwd) 
     provenance?.source?.latest_release !== "v0.15.1" ||
     provenance?.generator?.specify_cli !== "0.15.1" ||
     !Array.isArray(provenance?.inventory?.tracked_paths) ||
-    !provenance.inventory.tracked_paths.includes(reviewedTarget.relativePath)
+    !provenance.inventory.tracked_paths.includes(reviewedCommand.reviewedFile.relativePath)
   ) {
     return false;
   }
 
-  return readReviewedRegularFile(reviewedTarget) !== null;
+  return readReviewedRegularFile(reviewedCommand.reviewedFile) !== null;
+}
+
+function reviewedCommandAnalysis({ mutationIntent, targets }) {
+  return {
+    mutationIntent,
+    destructiveFilesystem: false,
+    dynamicTarget: false,
+    opaqueExecution: false,
+    recognizedCommands: ["spec-kit reviewed direct command"],
+    targets,
+    unknownExecution: false,
+    workingDirectories: [],
+  };
+}
+
+function failClosedReviewedCommandAnalysis() {
+  return {
+    mutationIntent: true,
+    destructiveFilesystem: false,
+    dynamicTarget: false,
+    opaqueExecution: false,
+    recognizedCommands: [],
+    targets: [],
+    unknownExecution: true,
+    workingDirectories: [],
+  };
+}
+
+function reviewedSpecKitFeatureTargets(reviewedCommand, environment) {
+  const source = environment && typeof environment === "object" ? environment : {};
+  if (!specifyInitDirectoryIsCanonical(source.SPECIFY_INIT_DIR)) return null;
+
+  const environmentFeature = source.SPECIFY_FEATURE_DIRECTORY;
+  const rawFeatureDirectory = isNonEmptyString(environmentFeature)
+    ? environmentFeature
+    : readPinnedFeatureDirectory();
+  const featureDirectory = canonicalInRepositoryFeatureDirectory(rawFeatureDirectory);
+  if (!featureDirectory) return null;
+
+  const featureState = canonicalInRepositoryFileTarget(".specify/feature.json");
+  if (!featureState) return null;
+  const fileTargets = [];
+  for (const file of reviewedCommand.targetFiles) {
+    const target = canonicalInRepositoryFileTarget(`${featureDirectory}/${file}`);
+    if (!target) return null;
+    fileTargets.push(target);
+  }
+
+  return unique([
+    featureState,
+    featureDirectory,
+    ...fileTargets,
+  ]);
+}
+
+function specifyInitDirectoryIsCanonical(value) {
+  if (value === undefined || value === null || value === "") return true;
+  if (!isNonEmptyString(value) || value.includes("\0")) return false;
+  const candidate = path.resolve(REPOSITORY_ROOT, value);
+  if (candidate !== REPOSITORY_ROOT) return false;
+  try {
+    const stat = lstatSync(candidate, { bigint: true });
+    return (
+      stat.isDirectory() &&
+      !stat.isSymbolicLink() &&
+      REALPATH(candidate) === REPOSITORY_ROOT
+    );
+  } catch {
+    return false;
+  }
+}
+
+function readPinnedFeatureDirectory() {
+  const target = path.join(REPOSITORY_ROOT, ".specify/feature.json");
+  let descriptor;
+  try {
+    const pathStat = lstatSync(target, { bigint: true });
+    if (
+      !pathStat.isFile() ||
+      pathStat.isSymbolicLink() ||
+      pathStat.nlink !== 1n ||
+      pathStat.size > 65536n ||
+      REALPATH(target) !== target
+    ) {
+      return null;
+    }
+
+    descriptor = openSync(
+      target,
+      fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW || 0)
+    );
+    const before = fstatSync(descriptor, { bigint: true });
+    if (!sameFileIdentity(pathStat, before) || before.nlink !== 1n) return null;
+    const bytes = readFileSync(descriptor);
+    const after = fstatSync(descriptor, { bigint: true });
+    if (!sameFileSnapshot(before, after)) return null;
+
+    const parsed = JSON.parse(bytes.toString("utf8"));
+    return isNonEmptyString(parsed?.feature_directory) ? parsed.feature_directory : null;
+  } catch {
+    return null;
+  } finally {
+    if (descriptor !== undefined) closeSync(descriptor);
+  }
+}
+
+function canonicalInRepositoryFeatureDirectory(value) {
+  return canonicalInRepositoryTarget(value, "directory");
+}
+
+function canonicalInRepositoryFileTarget(value) {
+  return canonicalInRepositoryTarget(value, "file");
+}
+
+function canonicalInRepositoryTarget(value, expectedType) {
+  if (!isNonEmptyString(value) || value.includes("\0")) return null;
+  const candidate = path.resolve(REPOSITORY_ROOT, value);
+  if (!pathInsideRepository(candidate)) return null;
+
+  const relative = path.relative(REPOSITORY_ROOT, candidate);
+  const segments = relative.split(path.sep).filter(Boolean);
+  let cursor = REPOSITORY_ROOT;
+  for (let index = 0; index < segments.length; index += 1) {
+    cursor = path.join(cursor, segments[index]);
+    try {
+      const stat = lstatSync(cursor, { bigint: true });
+      if (stat.isSymbolicLink() || REALPATH(cursor) !== cursor) return null;
+      if (index < segments.length - 1 && !stat.isDirectory()) return null;
+      if (index === segments.length - 1) {
+        if (expectedType === "directory" && !stat.isDirectory()) return null;
+        if (expectedType === "file" && (!stat.isFile() || stat.nlink !== 1n)) return null;
+      }
+    } catch (error) {
+      if (error?.code === "ENOENT") break;
+      return null;
+    }
+  }
+
+  return segments.join("/");
 }
 
 function repositoryLocationsAreCanonical(locationEvidence, executorCwd) {
@@ -368,20 +549,14 @@ function analyzeShellCommand(command, options = {}) {
       workingDirectories: [],
     };
   }
-  if (
-    options.allowReviewedDirect === true &&
-    reviewedDirectCommandIsTrusted(text, options.locationEvidence, options.executorCwd)
-  ) {
-    return {
-      mutationIntent: false,
-      destructiveFilesystem: false,
-      dynamicTarget: false,
-      opaqueExecution: false,
-      recognizedCommands: [],
-      targets: [],
-      unknownExecution: false,
-      workingDirectories: [],
-    };
+  if (options.allowReviewedDirect === true) {
+    const reviewed = reviewedDirectCommandAnalysis(
+      text,
+      options.locationEvidence,
+      options.executorCwd,
+      options.environment || process.env
+    );
+    if (reviewed) return reviewed;
   }
   const targets = extractOutputRedirections(text);
   const workingDirectories = [];
