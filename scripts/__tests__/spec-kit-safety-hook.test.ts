@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   linkSync,
   lstatSync,
@@ -24,6 +25,7 @@ const PROJECT_ROOT = resolve(".");
 const CANONICAL_REMOTE = "https://github.com/Yehor212/people-first-app.git";
 const MAX_JSON_INPUT_BYTES = 1_048_576;
 const MAX_JSON_NESTING_DEPTH = 64;
+const MAX_MANAGED_SKILL_BYTES = 262_144;
 const EXTENSIONS_POLICY = [
   "installed: []",
   "settings:",
@@ -117,9 +119,18 @@ function makeRepository(): string {
     )}\n`
   );
   mkdirSync(join(root, ".specify/extensions/.cache"), { recursive: true });
+  const skillFiles: Record<string, string> = {};
   for (const skill of CORE_SKILLS) {
-    write(root, `.agents/skills/${skill}/SKILL.md`, `# ${skill}\n`);
+    const relativePath = `.agents/skills/${skill}/SKILL.md`;
+    const content = `# ${skill}\n`;
+    write(root, relativePath, content);
+    skillFiles[relativePath] = createHash("sha256").update(content).digest("hex");
   }
+  write(
+    root,
+    ".specify/integrations/codex.manifest.json",
+    `${JSON.stringify({ integration: "codex", version: "0.15.1", files: skillFiles }, null, 2)}\n`
+  );
   return root;
 }
 
@@ -205,7 +216,14 @@ function jsonNestingDepth(value: unknown): number {
 function expectAllowed(result: ReturnType<typeof runHook>): void {
   expect(result.status, result.stderr).toBe(0);
   expect(result.stderr).toBe("");
-  expect(JSON.parse(result.stdout)).toEqual({});
+  const output = JSON.parse(result.stdout);
+  if (Object.keys(output).length === 0) return;
+  expect(output).toEqual({
+    hookSpecificOutput: {
+      hookEventName: "UserPromptSubmit",
+      additionalContext: expect.any(String),
+    },
+  });
 }
 
 function expectBlocked(result: ReturnType<typeof runHook>, reason: RegExp): void {
@@ -1171,6 +1189,345 @@ describe("Spec Kit command and lane boundaries", () => {
   });
 });
 
+describe("Spec Kit trust-anchor preflight", () => {
+  it.each([
+    ".specify/extensions.yml",
+    ".specify/integrations/codex.manifest.json",
+    ".specify/memory/constitution-status.json",
+    ".agents/skills/speckit-plan/SKILL.md",
+  ])("denies a direct structured write before touching %s", (target) => {
+    expectBlocked(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "WriteFile",
+        tool_input: { path: target, content: "replacement" },
+      }),
+      /protected Spec Kit trust anchor/i
+    );
+  });
+
+  it.each([
+    ".specify",
+    ".specify/memory",
+    ".specify/integrations",
+    ".agents/skills",
+    ".agents/skills/speckit-plan",
+  ])("denies a structured parent deletion before touching %s", (target) => {
+    expectBlocked(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "DeleteFile",
+        tool_input: { path: target },
+      }),
+      /protected Spec Kit trust anchor/i
+    );
+  });
+
+  it.each([
+    [".specify", "trust-alias", "trust-alias/extensions.yml"],
+    [".agents/skills", "skill-alias", "skill-alias/speckit-plan/SKILL.md"],
+  ])("denies a symlink-aliased structured write into %s", (source, alias, target) => {
+    const root = makeRepository();
+    symlinkSync(join(root, source), join(root, alias), "dir");
+    expectBlocked(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "WriteFile",
+        tool_input: { path: target, content: "replacement" },
+      }),
+      /protected Spec Kit trust anchor/i
+    );
+  });
+
+  it.each([
+    ["Bash", "printf '%s\\n' unsafe > .specify/extensions.yml"],
+    ["Bash", "printf unsafe>.specify/extensions.yml"],
+    ["Bash", "printf unsafe &>.specify/extensions.yml"],
+    ["Bash", "rm -- .specify/memory/constitution-status.json"],
+    ["Bash", "rm -rf .specify"],
+    ["Bash", "rm -rf .specify/memory"],
+    ["Bash", "rm -rf .agents/skills"],
+    ["Bash", "find .agents/skills/speckit-plan -delete"],
+    ["Bash", "rm .specify//extensions.yml"],
+    ["Bash", "rm .specify/./extensions.yml"],
+    ["Bash", "ln .specify/extensions.yml trust-copy && printf unsafe>trust-copy"],
+    ["Bash", "ln -s .specify trust-alias && printf unsafe>trust-alias/extensions.yml"],
+    ["Bash", "cd .specify && rm extensions.yml"],
+    ["Bash", 'bash -c "printf unsafe>.specify/extensions.yml"'],
+    ["Bash", 'bash -lc "printf unsafe>.specify/extensions.yml"'],
+    ["Bash", "printf unsafe>|.specify/extensions.yml"],
+    ["PowerShell", "Set-Content .specify\\memory\\constitution-status.json '{}'"],
+    ["PowerShell", "Clear-Item .specify\\extensions.yml"],
+    ["PowerShell", "Clear-Item -Filter -WhatIf .specify\\extensions.yml"],
+    ["PowerShell", "Remove-Item .agents\\skills\\speckit-plan\\SKILL.md"],
+    ["PowerShell", "ri .agents\\skills\\speckit-plan\\SKILL.md"],
+    ["PowerShell", "sc .specify\\memory\\constitution-status.json '{}'"],
+    ["PowerShell", "ni -ItemType File .specify\\extensions.yml"],
+    ["Bash", "specify init --here --integration codex --script sh --force"],
+    ["Bash", "specify integration switch codex"],
+    ["Bash", "cp neutral .specify/extensions.yml"],
+    ["Bash", "cp /tmp/extensions.yml .specify/"],
+    ["Bash", "mv /tmp/extensions.yml .specify/"],
+    ["Bash", "uv tool run specify init --here --integration codex --script sh --force"],
+    ["Bash", "uvx specify init --here --integration codex --script sh --force"],
+    [
+      "Bash",
+      "uv tool run --from specify-cli specify init --here --integration codex --script sh --force",
+    ],
+    ["Bash", "uvx --from specify-cli specify init --here --integration codex --script sh --force"],
+    [
+      "Bash",
+      "uv run --with specify-cli specify init --here --integration codex --script sh --force",
+    ],
+  ])("denies a statically recognizable trust mutation for %s: %s", (toolName, command) => {
+    expectBlocked(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: toolName,
+        tool_input: { command },
+      }),
+      /trust anchor|managed integration mutation/i
+    );
+  });
+
+  it.each([
+    ["exec_command", "cmd", "workdir", ".specify", "rm extensions.yml"],
+    ["unified_exec", "command", "workdir", ".specify/memory", "rm constitution-status.json"],
+    ["Bash", "command", "cwd", ".specify", "rm extensions.yml"],
+  ])(
+    "denies a relative trust mutation from requested %s working directory",
+    (toolName, commandKey, directoryKey, directory, command) => {
+      const root = makeRepository();
+      const input: Record<string, unknown> = {
+        hook_event_name: "PreToolUse",
+        tool_name: toolName,
+        tool_input: { [commandKey]: command },
+      };
+      if (directoryKey === "cwd") input.cwd = join(root, directory);
+      else (input.tool_input as Record<string, unknown>)[directoryKey] = join(root, directory);
+      expectBlocked(runHook(root, input), /protected Spec Kit trust anchor/i);
+    }
+  );
+
+  it("denies a relative mutation from a symlinked requested working directory", () => {
+    const root = makeRepository();
+    const alias = join(root, "shell-workdir-alias");
+    symlinkSync(join(root, ".specify"), alias, "dir");
+    expectBlocked(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "exec_command",
+        tool_input: { cmd: "rm extensions.yml", workdir: alias },
+      }),
+      /protected Spec Kit trust anchor/i
+    );
+  });
+
+  it("fails closed on conflicting requested working-directory evidence", () => {
+    const root = makeRepository();
+    expectBlocked(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "exec_command",
+        cwd: join(root, ".specify"),
+        tool_input: { cmd: "rm extensions.yml", workdir: root },
+      }),
+      /conflicting shell working directory evidence/i
+    );
+  });
+
+  it("accepts equivalent working-directory evidence and ignores empty optional aliases", () => {
+    const root = makeRepository();
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "exec_command",
+        cwd: root,
+        tool_input: { cmd: "git status --short", workdir: "", cwd: root },
+      })
+    );
+  });
+
+  it("keeps read-only inventory and ordinary feature writes available", () => {
+    const root = makeRepository();
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command: "sha256sum .specify/extensions.yml" },
+      })
+    );
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command: "find .agents/skills/speckit-plan -type f -print" },
+      })
+    );
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "exec_command",
+        tool_input: {
+          cmd: "sha256sum extensions.yml",
+          workdir: join(root, ".specify"),
+        },
+      })
+    );
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command: "cp .specify/extensions.yml /tmp/spec-kit-backup.yml" },
+      })
+    );
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command: "cp -R .specify /tmp/spec-kit-backup" },
+      })
+    );
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command: "git clean -n -- .specify/extensions.yml" },
+      })
+    );
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: {
+          command: "Remove-Item -WhatIf .agents\\skills\\speckit-plan\\SKILL.md",
+        },
+      })
+    );
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: { command: "Clear-Item .specify\\extensions.yml -WhatIf" },
+      })
+    );
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: {
+          command: "Copy-Item neutral.txt .specify\\extensions.yml -WhatIf",
+        },
+      })
+    );
+    expectBlocked(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: {
+          command: "Remove-Item -WhatIf:$false .agents\\skills\\speckit-plan\\SKILL.md",
+        },
+      }),
+      /protected Spec Kit trust anchor/i
+    );
+    expectBlocked(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: {
+          command: "Remove-Item '-WhatIf' .agents\\skills\\speckit-plan\\SKILL.md",
+        },
+      }),
+      /protected Spec Kit trust anchor/i
+    );
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: {
+          command: "printf '%s\\n' 'rm .specify/extensions.yml'",
+        },
+      })
+    );
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "PowerShell",
+        tool_input: {
+          command: "Write-Output 'Remove-Item .agents\\skills\\speckit-plan\\SKILL.md'",
+        },
+      })
+    );
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command: "specify integration status" },
+      })
+    );
+    expectAllowed(
+      runHook(root, {
+        hook_event_name: "PreToolUse",
+        tool_name: "WriteFile",
+        tool_input: { path: "specs/001-safe/spec.md", content: "# Safe feature\n" },
+      })
+    );
+  });
+
+  it("denies an apply_patch update to a trust anchor before the patch runs", () => {
+    expectBlocked(
+      runHook(makeRepository(), {
+        hook_event_name: "PreToolUse",
+        tool_name: "apply_patch",
+        tool_input: {
+          patch: [
+            "*** Begin Patch",
+            "*** Update File: .specify/extensions.yml",
+            "@@",
+            "-installed: []",
+            "+installed: [unsafe]",
+            "*** End Patch",
+          ].join("\n"),
+        },
+      }),
+      /protected Spec Kit trust anchor/i
+    );
+  });
+
+  it("rejects managed skill content drift against the official Codex manifest", () => {
+    const root = makeRepository();
+    write(root, ".agents/skills/speckit-plan/SKILL.md", "# altered\n");
+    expectBlocked(
+      runHook(root, { hook_event_name: "UserPromptSubmit", prompt: "inspect" }),
+      /managed skill hash mismatch/i
+    );
+  });
+
+  it("rejects an oversized managed skill before hashing it", () => {
+    const root = makeRepository();
+    write(root, ".agents/skills/speckit-plan/SKILL.md", "x".repeat(MAX_MANAGED_SKILL_BYTES + 1));
+    expectBlocked(
+      runHook(root, { hook_event_name: "UserPromptSubmit", prompt: "inspect" }),
+      /managed skill exceeds/i
+    );
+  });
+
+  it("injects the ZenFlow priority contract on every prompt", () => {
+    const result = runHook(makeRepository(), {
+      hook_event_name: "UserPromptSubmit",
+      prompt: "add an animation",
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stderr).toBe("");
+    const output = JSON.parse(result.stdout);
+    const context = output.hookSpecificOutput?.additionalContext || "";
+    expect(context).toContain("PROPOSED_CONSTITUTION_CONSIDERATION");
+    expect(context).toContain("check-zenflow-constitution-status.sh --json");
+    expect(context).toMatch(/tests are mandatory/i);
+    expect(context).toMatch(/UNVERIFIED/i);
+  });
+});
+
 describe("Spec Kit durable ZenFlow routing", () => {
   it("documents full, compact, and intensified routes without granting side-effect authority", () => {
     const agents = readFileSync("AGENTS.md", "utf8");
@@ -1193,5 +1550,198 @@ describe("Spec Kit durable ZenFlow routing", () => {
     expect(agents).toMatch(/Spec Kit artifacts are plans\/evidence, never authorization/i);
     expect(agents).toMatch(/\$speckit-taskstoissues[\s\S]*explicit user-invoked/i);
     expect(agents).toMatch(/smallest sufficient specialist set/i);
+    expect(agents).toContain("docs/ai/SPEC_KIT_AGENT_POLICY.md");
+
+    const policy = readFileSync("docs/ai/SPEC_KIT_AGENT_POLICY.md", "utf8");
+    expect(policy).toContain("PROPOSED_CONSTITUTION_CONSIDERATION");
+    expect(policy).toMatch(/tests are mandatory/i);
+    expect(policy).toMatch(/industry standards[\s\S]*must not fill/i);
+    expect(policy).toMatch(/dimming[\s\S]*conditional/i);
+  });
+
+  it("protects every grouped ZenFlow animation obligation with removal controls", () => {
+    const policy = readFileSync("docs/ai/SPEC_KIT_AGENT_POLICY.md", "utf8");
+    const requirements = [
+      {
+        label: "placement",
+        scope: /^- Placement:.*$/im,
+        atoms: [
+          /Placement:/i,
+          /initiating control/i,
+          /attention target/i,
+          /overlay owner/i,
+          /safe areas/i,
+          /keyboard/i,
+          /mobile\/desktop geometry/i,
+          /ModalLayer/,
+          /OverlayLayer/,
+        ],
+      },
+      {
+        label: "user value",
+        scope: /^- User value:.*$/im,
+        atoms: [
+          /User value:/i,
+          /uncertainty/i,
+          /delay/i,
+          /transition/i,
+          /completion signal/i,
+          /Decoration alone is not a success criterion/i,
+        ],
+      },
+      {
+        label: "visibility and frequency",
+        scope: /^- Visibility and frequency:.*$/im,
+        atoms: [
+          /entry\/exit/i,
+          /first\/repeat behavior/i,
+          /interruption cost/i,
+          /cancellation/i,
+          /rapid re-trigger/i,
+          /background\/foreground/i,
+          /app-resume behavior/i,
+        ],
+      },
+      {
+        label: "modal recovery",
+        scope: /^- Background dimming.*$/im,
+        atoms: [
+          /conditional, not a default/i,
+          /background interaction must pause/i,
+          /focus ownership/i,
+          /pointer blocking/i,
+          /Escape/,
+          /Android back/i,
+          /dismissal/i,
+          /recovery/i,
+          /ambient or inline feedback/i,
+          /steal attention/i,
+          /hide needed context/i,
+        ],
+      },
+      {
+        label: "accessibility",
+        scope: /^- Accessibility:.*$/im,
+        atoms: [
+          /semantic outcome/i,
+          /reduced motion/i,
+          /keyboard\/screen-reader focus order/i,
+          /44 px targets/i,
+          /contrast/i,
+          /non-color cues/i,
+          /seizure\/flash risk/i,
+          /human comfort/i,
+        ],
+      },
+      {
+        label: "localization",
+        scope: /^- Localization:.*$/im,
+        atoms: [
+          /all eight locales/i,
+          /bidi\/RTL/i,
+          /`ar`/,
+          /`he`/,
+          /do not concatenate translated fragments/i,
+        ],
+      },
+      {
+        label: "platforms",
+        scope: /^- Platforms:.*$/im,
+        atoms: [
+          /Web\/Vite/,
+          /installed PWA/,
+          /Android\/Capacitor/,
+          /iOS\/WKWebView/,
+          /Desktop\/Tauri/,
+          /safe areas/i,
+          /native back/i,
+          /lifecycle suspension/i,
+          /input modality/i,
+          /graceful fallback/i,
+        ],
+      },
+      {
+        label: "performance",
+        scope: /^- Performance:.*$/im,
+        atoms: [
+          /measurable budget/i,
+          /current baseline/i,
+          /startup\/frame\/long-task\/bundle behavior/i,
+          /`ValenceOrb`/,
+          /`MiniValenceOrb`/,
+          /cheaper approximation/i,
+        ],
+      },
+      {
+        label: "human and artistic evidence",
+        scope: /^- Quality gates:.*$/im,
+        atoms: [
+          /Technical/,
+          /Visual Runtime/,
+          /Artistic\/Craft/,
+          /Motion/,
+          /Model/,
+          /Plan/,
+          /ARTISTIC_PASS/,
+          /user acceptance/i,
+        ],
+      },
+      {
+        label: "lifecycle",
+        scope: /^Specifications and plans cover.*$/im,
+        atoms: [
+          /creation/i,
+          /loading/i,
+          /success/i,
+          /empty\/unavailable/i,
+          /partial\/degraded/i,
+          /offline/i,
+          /retry/i,
+          /cancellation/i,
+          /duplicate\/re-entry/i,
+          /background\/resume/i,
+          /sync/i,
+          /deletion/i,
+          /recovery/i,
+          /rollback/i,
+          /observability/i,
+        ],
+      },
+      {
+        label: "privacy",
+        scope: /^Security\/privacy analysis names.*$/im,
+        atoms: [
+          /data provenance/i,
+          /retention/i,
+          /least privilege/i,
+          /secrets\/PII boundaries/i,
+          /auth\/sync effects/i,
+          /external destinations/i,
+          /failure behavior/i,
+        ],
+      },
+    ] as const;
+
+    const missing = (source: string) =>
+      requirements
+        .filter(({ scope, atoms }) => {
+          const section = source.match(scope)?.[0] || "";
+          return !section || atoms.some((atom) => !atom.test(section));
+        })
+        .map(({ label }) => label);
+
+    expect(missing(policy)).toEqual([]);
+    for (const { label, scope, atoms } of requirements) {
+      const sectionMatch = policy.match(scope);
+      expect(sectionMatch, `${label} scope`).not.toBeNull();
+      const section = sectionMatch?.[0] || "";
+      for (const atom of atoms) {
+        const atomMatch = section.match(atom);
+        expect(atomMatch, `${label}: ${atom}`).not.toBeNull();
+        const start = (sectionMatch?.index || 0) + (atomMatch?.index || 0);
+        const redacted = `${policy.slice(0, start)}${policy.slice(start + (atomMatch?.[0].length || 0))}`;
+        expect(missing(redacted), `${label}: ${atom}`).toContain(label);
+      }
+    }
   });
 });

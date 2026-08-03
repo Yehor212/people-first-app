@@ -13,6 +13,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
+const { createHash } = require("node:crypto");
 const { TextDecoder } = require("node:util");
 
 const HOOK_NAME = "spec-kit-safety-gate";
@@ -35,6 +36,15 @@ const CORE_SKILLS = [
   "speckit-tasks",
   "speckit-taskstoissues",
 ];
+const CODEX_MANIFEST_PATH = ".specify/integrations/codex.manifest.json";
+const SPEC_KIT_PRIORITY_CONTEXT = [
+  "ZENFLOW SPEC KIT PRIORITY:",
+  "- Read docs/ai/SPEC_KIT_AGENT_POLICY.md. Repository rules outrank conflicting managed skill text.",
+  "- Before any constitution-consuming skill, run .specify/scripts/bash/check-zenflow-constitution-status.sh --json.",
+  "- While the constitution is PROPOSED/unratified, label proposal-only items PROPOSED_CONSTITUTION_CONSIDERATION; they cannot be CRITICAL, block work, authorize implementation, or mutate tasks/remediation.",
+  "- Ground sparse intent in current ZenFlow files, routes, state, and a concrete user failure mode. Industry/common defaults must not fill missing product decisions; ask only when blocking or mark them UNVERIFIED.",
+  "- For first-party behavior changes, tests are mandatory and require test-first evidence/tasks even when managed skill text calls them optional.",
+].join("\n");
 const SHELL_TOOL = /^(?:Bash|Shell|PowerShell|pwsh|exec_command|unified_exec)$/i;
 const STRUCTURED_WRITE_TOOL =
   /^(?:apply_patch|functions\.apply_patch|Edit|Write|WriteFile|CreateFile|DeleteFile|MultiEdit|StrReplaceFile|NotebookEdit)$/i;
@@ -50,7 +60,9 @@ const STRUCTURED_PATH_KEYS = new Set([
 ]);
 const MAX_JSON_INPUT_BYTES = 1_048_576;
 const MAX_JSON_NESTING_DEPTH = 64;
+const MAX_MANAGED_SKILL_BYTES = 262_144;
 const STDIN_CHUNK_BYTES = 64 * 1024;
+const POWERSHELL_BARE_SYNTAX = Symbol("powershell-bare-syntax");
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
 function fail(reason) {
@@ -445,6 +457,48 @@ function validateCoreSkills(root) {
       throw new Error(`official core skill ${entry.name} must be a non-symlinked directory`);
     }
   }
+
+  const manifestPath = path.join(root, CODEX_MANIFEST_PATH);
+  let manifest;
+  try {
+    const input = readBoundedJsonFile(manifestPath, CODEX_MANIFEST_PATH);
+    manifest = parseJsonWithoutDuplicateKeys(input.raw, CODEX_MANIFEST_PATH, input.rawByteLength);
+  } catch (error) {
+    throw new Error(`official Codex integration manifest is invalid: ${error.message || error}`);
+  }
+  const expectedPaths = CORE_SKILLS.map((skill) => `.agents/skills/${skill}/SKILL.md`).sort();
+  const files =
+    manifest && typeof manifest === "object" && !Array.isArray(manifest) ? manifest.files : null;
+  if (
+    manifest?.integration !== "codex" ||
+    manifest?.version !== "0.15.1" ||
+    !files ||
+    typeof files !== "object" ||
+    Array.isArray(files)
+  ) {
+    throw new Error("official Codex integration manifest has an unexpected identity or shape");
+  }
+  const actualPaths = Object.keys(files).sort();
+  if (JSON.stringify(actualPaths) !== JSON.stringify(expectedPaths)) {
+    throw new Error(
+      "official Codex integration manifest must enumerate exactly the ten managed skills"
+    );
+  }
+  for (const relativePath of expectedPaths) {
+    const declared = files[relativePath];
+    if (typeof declared !== "string" || !/^[a-f0-9]{64}$/.test(declared)) {
+      throw new Error(`managed skill manifest hash is invalid: ${relativePath}`);
+    }
+    const skillPath = path.join(root, relativePath);
+    const stat = requireRegularFile(skillPath, `managed skill ${relativePath}`, true);
+    if (stat.size > MAX_MANAGED_SKILL_BYTES) {
+      throw new Error(`managed skill exceeds ${MAX_MANAGED_SKILL_BYTES} bytes: ${relativePath}`);
+    }
+    const actual = createHash("sha256").update(fs.readFileSync(skillPath)).digest("hex");
+    if (actual !== declared) {
+      throw new Error(`managed skill hash mismatch: ${relativePath}`);
+    }
+  }
 }
 
 function validateConstitutionStatus(root) {
@@ -538,6 +592,7 @@ function validateDirectoryState(root) {
 
 function validateTrustState(root) {
   validateManagedDirectoryChain(root, ".specify/memory");
+  validateManagedDirectoryChain(root, ".specify/integrations");
   validateManagedDirectoryChain(root, ".specify/extensions", false);
   validateManagedDirectoryChain(root, ".specify/extensions/.cache", false);
   validateManagedDirectoryChain(root, ".agents/skills");
@@ -554,6 +609,49 @@ function shellCommand(data) {
   if (typeof input.command === "string") return input.command;
   if (typeof input.cmd === "string") return input.cmd;
   return "";
+}
+
+function requestedShellWorkingDirectory(data, root) {
+  const input = data && data.tool_input;
+  const candidates = [];
+  if (input && typeof input === "object" && !Array.isArray(input)) {
+    for (const key of ["workdir", "cwd", "working_directory"]) {
+      if (Object.prototype.hasOwnProperty.call(input, key)) {
+        candidates.push([`tool_input.${key}`, input[key]]);
+      }
+    }
+  }
+  for (const key of ["workdir", "cwd", "working_directory"]) {
+    if (data && Object.prototype.hasOwnProperty.call(data, key)) {
+      candidates.push([key, data[key]]);
+    }
+  }
+  if (candidates.length === 0) return ".";
+  const canonicalCandidates = [];
+  for (const [label, rawValue] of candidates) {
+    if (typeof rawValue === "string" && rawValue.trim() === "") continue;
+    if (typeof rawValue !== "string" || rawValue.includes("\0")) {
+      throw new Error(`${label} must be a concrete directory path`);
+    }
+    const lexical = path.isAbsolute(rawValue)
+      ? path.resolve(rawValue)
+      : path.resolve(root, rawValue);
+    let canonical;
+    let stat;
+    try {
+      canonical = fs.realpathSync.native(lexical);
+      stat = fs.statSync(canonical);
+    } catch (error) {
+      throw new Error(`${label} cannot be resolved canonically: ${error.message || error}`);
+    }
+    if (!stat.isDirectory()) throw new Error(`${label} must resolve to a directory`);
+    canonicalCandidates.push(canonical);
+  }
+  if (canonicalCandidates.length === 0) return ".";
+  if (new Set(canonicalCandidates).size !== 1) {
+    throw new Error("conflicting shell working directory evidence");
+  }
+  return path.relative(root, canonicalCandidates[0]).replace(/\\/g, "/") || ".";
 }
 
 function tokenizeStaticShell(command, dialect) {
@@ -628,6 +726,24 @@ function tokenizeStaticShell(command, dialect) {
     }
     if (/[\t ]/.test(character)) {
       pushToken();
+      continue;
+    }
+    if (character === ">") {
+      pushToken();
+      let redirection = ">";
+      if (command[index + 1] === ">") {
+        redirection = ">>";
+        index += 1;
+      } else if (command[index + 1] === "|") {
+        redirection = ">|";
+        index += 1;
+      }
+      tokens.push({
+        value: redirection,
+        operator: false,
+        leadingQuoted: false,
+        leadingEscaped: false,
+      });
       continue;
     }
     if (character === "\n" || character === ";" || character === "|" || character === "&") {
@@ -708,14 +824,40 @@ function eligiblePowerShellExecutableTokens(segment) {
   return barePowerShellSyntaxToken(segment[0]) ? segment : [];
 }
 
+function annotatePowerShellSyntax(tokens, flags) {
+  Object.defineProperty(tokens, POWERSHELL_BARE_SYNTAX, {
+    value: flags,
+    enumerable: false,
+  });
+  return tokens;
+}
+
+function powerShellSyntaxSlice(tokens, start) {
+  const sliced = tokens.slice(start);
+  const flags = tokens[POWERSHELL_BARE_SYNTAX];
+  return flags ? annotatePowerShellSyntax(sliced, flags.slice(start)) : sliced;
+}
+
 function resolveStaticExecutable(segment, dialect, depth = 0) {
   if (depth > 3) return [];
-  let tokens =
-    dialect === "powershell"
-      ? typeof segment[0] === "string"
-        ? [...segment]
-        : eligiblePowerShellExecutableTokens(segment).map((token) => token.value)
-      : [...segment];
+  let tokens;
+  if (dialect === "powershell") {
+    if (typeof segment[0] === "string") {
+      const inheritedFlags = segment[POWERSHELL_BARE_SYNTAX];
+      tokens = annotatePowerShellSyntax(
+        [...segment],
+        inheritedFlags ? [...inheritedFlags] : segment.map(() => true)
+      );
+    } else {
+      const eligible = eligiblePowerShellExecutableTokens(segment);
+      tokens = annotatePowerShellSyntax(
+        eligible.map((token) => token.value),
+        eligible.map(barePowerShellSyntaxToken)
+      );
+    }
+  } else {
+    tokens = [...segment];
+  }
   if (dialect === "posix") {
     while (tokens.length > 0 && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0])) tokens.shift();
   }
@@ -723,21 +865,25 @@ function resolveStaticExecutable(segment, dialect, depth = 0) {
 
   let executable = stripExecutableSuffix(tokens[0]);
   if (executable === "command") {
-    tokens = tokens.slice(1);
-    while (tokens[0] && tokens[0].startsWith("-")) tokens.shift();
+    tokens = powerShellSyntaxSlice(tokens, 1);
+    while (tokens[0] && tokens[0].startsWith("-")) tokens = powerShellSyntaxSlice(tokens, 1);
     return resolveStaticExecutable(tokens, dialect, depth + 1);
   }
   if (executable === "env") {
-    tokens = tokens.slice(1);
+    tokens = powerShellSyntaxSlice(tokens, 1);
     while (tokens[0] && (tokens[0].startsWith("-") || /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0]))) {
-      tokens.shift();
+      tokens = powerShellSyntaxSlice(tokens, 1);
     }
     return resolveStaticExecutable(tokens, dialect, depth + 1);
   }
   if (["sh", "bash", "zsh", "pwsh", "powershell"].includes(executable)) {
-    const commandFlag = tokens.findIndex((token) => /^(?:-c|-command)$/i.test(token));
+    const childDialect = ["pwsh", "powershell"].includes(executable) ? "powershell" : "posix";
+    const commandFlag = tokens.findIndex((token) =>
+      childDialect === "posix"
+        ? /^-[A-Za-z]*c[A-Za-z]*$/.test(token)
+        : /^(?:-c|-command)$/i.test(token)
+    );
     if (commandFlag >= 0 && tokens[commandFlag + 1]) {
-      const childDialect = ["pwsh", "powershell"].includes(executable) ? "powershell" : "posix";
       return staticExecutableCommands(tokens[commandFlag + 1], childDialect, depth + 1);
     }
   }
@@ -835,7 +981,280 @@ function restrictedAssignmentName(segment, dialect) {
   return "";
 }
 
-function validateShellCommand(data) {
+function normalizedStaticPath(value, workingDirectory = ".") {
+  const unquoted = String(value || "")
+    .replace(/\\/g, "/")
+    .replace(/^['"]|['"]$/g, "");
+  const normalized = path.posix.normalize(unquoted);
+  const withoutTrailingSlash =
+    normalized.length > 1 && normalized.endsWith("/") ? normalized.replace(/\/+$/, "") : normalized;
+  if (
+    workingDirectory &&
+    workingDirectory !== "." &&
+    !path.posix.isAbsolute(withoutTrailingSlash) &&
+    !/^[A-Za-z]:\//.test(withoutTrailingSlash)
+  ) {
+    return path.posix.normalize(path.posix.join(workingDirectory, withoutTrailingSlash));
+  }
+  return withoutTrailingSlash;
+}
+
+function protectedTrustAnchorReference(value, workingDirectory = ".") {
+  const normalized = normalizedStaticPath(value, workingDirectory);
+  return (
+    /(?:^|\/)\.specify\/extensions\.yml$/.test(normalized) ||
+    /(?:^|\/)\.specify\/integrations\/codex\.manifest\.json$/.test(normalized) ||
+    /(?:^|\/)\.specify\/memory\/constitution-status\.json$/.test(normalized) ||
+    /(?:^|\/)\.agents\/skills\/speckit-[^/]+(?:\/|$)/.test(normalized)
+  );
+}
+
+function protectedTrustContainerReference(value, workingDirectory = ".") {
+  const normalized = normalizedStaticPath(value, workingDirectory);
+  return (
+    /(?:^|\/)\.specify(?:\/(?:integrations|memory))?$/.test(normalized) ||
+    /(?:^|\/)\.agents(?:\/skills)?$/.test(normalized)
+  );
+}
+
+function protectedTrustStateReference(value, workingDirectory = ".") {
+  return (
+    protectedTrustAnchorReference(value, workingDirectory) ||
+    protectedTrustContainerReference(value, workingDirectory)
+  );
+}
+
+function staticDirectoryAfter(argv, workingDirectory, dialect) {
+  const executable = stripExecutableSuffix(argv[0] || "");
+  const directoryCommands =
+    dialect === "powershell"
+      ? new Set(["cd", "chdir", "set-location", "sl"])
+      : new Set(["cd", "chdir"]);
+  if (!directoryCommands.has(executable)) return workingDirectory;
+  const args = argv.slice(1);
+  let target = "";
+  for (let index = 0; index < args.length; index += 1) {
+    const value = String(args[index] || "");
+    if (value === "--") {
+      target = String(args[index + 1] || "");
+      break;
+    }
+    if (/^-(?:path|literalpath)$/i.test(value)) {
+      target = String(args[index + 1] || "");
+      break;
+    }
+    if (!value.startsWith("-")) {
+      target = value;
+      break;
+    }
+  }
+  if (!target || /[$`*?{}\[\]]/.test(target)) return "";
+  return normalizedStaticPath(target, workingDirectory || ".");
+}
+
+function protectedCopyDestination(executable, args, workingDirectory) {
+  const copyExecutables = new Set(["cp", "cpi", "copy", "copy-item", "install"]);
+  if (!copyExecutables.has(executable)) return false;
+  for (let index = 0; index < args.length; index += 1) {
+    const value = String(args[index] || "");
+    const attached = /^(?:--target-directory|--destination)=([^=].*)$/i.exec(value);
+    if (attached && protectedTrustStateReference(attached[1], workingDirectory)) return true;
+    if (/^(?:-t|--target-directory|-destination)$/i.test(value)) {
+      if (protectedTrustStateReference(args[index + 1], workingDirectory)) return true;
+    }
+  }
+  const operands = args.filter((value) => value === "-" || !String(value).startsWith("-"));
+  const destination = operands.at(-1);
+  if (protectedTrustStateReference(destination, workingDirectory)) return true;
+  const linkMode =
+    executable === "cp" &&
+    args.some((value) => value === "--link" || /^-[^-]*l/.test(String(value)));
+  return linkMode && args.some((value) => protectedTrustStateReference(value, workingDirectory));
+}
+
+function staticTrustAnchorMutation(argv, dialect, workingDirectory = ".") {
+  const executable = stripExecutableSuffix(argv[0] || "");
+  const args = argv.slice(1);
+  const protectedArgument = args.some((value) =>
+    protectedTrustStateReference(value, workingDirectory)
+  );
+  const redirectionTarget = argv.some(
+    (value, index) =>
+      /^(?:\d*)?(?:>|>>|>\|)$/.test(value) &&
+      protectedTrustStateReference(argv[index + 1], workingDirectory)
+  );
+  if (redirectionTarget) return true;
+
+  const directMutators = new Set([
+    "rm",
+    "del",
+    "erase",
+    "ri",
+    "unlink",
+    "mv",
+    "mi",
+    "move",
+    "ln",
+    "touch",
+    "truncate",
+    "tee",
+    "chmod",
+    "chown",
+    "set-content",
+    "sc",
+    "add-content",
+    "ac",
+    "clear-content",
+    "clc",
+    "clear-item",
+    "cli",
+    "out-file",
+    "remove-item",
+    "move-item",
+    "rename-item",
+    "rni",
+    "ren",
+    "new-item",
+    "ni",
+  ]);
+  const powerShellSyntax = argv[POWERSHELL_BARE_SYNTAX] || [];
+  const powerShellValueParameter =
+    /^-(?:credential|destination|encoding|erroraction|exclude|filter|include|itemtype|literalpath|name|newname|path|stream|value)$/i;
+  const powerShellWhatIf =
+    dialect === "powershell" &&
+    args.some(
+      (value, index) =>
+        powerShellSyntax[index + 1] === true &&
+        /^-whatif(?::\$true)?$/i.test(value) &&
+        !(
+          index > 0 &&
+          powerShellSyntax[index] === true &&
+          powerShellValueParameter.test(args[index - 1])
+        )
+    );
+  const powerShellMutators = new Set([
+    "rm",
+    "del",
+    "erase",
+    "ri",
+    "remove-item",
+    "set-content",
+    "add-content",
+    "clear-content",
+    "clear-item",
+    "cli",
+    "out-file",
+    "move-item",
+    "mi",
+    "mv",
+    "move",
+    "copy-item",
+    "cpi",
+    "cp",
+    "copy",
+    "rename-item",
+    "rni",
+    "ren",
+    "new-item",
+    "ni",
+  ]);
+  if (protectedCopyDestination(executable, args, workingDirectory)) {
+    return !(powerShellWhatIf && powerShellMutators.has(executable));
+  }
+  if (
+    executable === "ln" &&
+    args.some((value) => protectedTrustContainerReference(value, workingDirectory))
+  ) {
+    return true;
+  }
+  if (directMutators.has(executable) && protectedArgument) {
+    return !(powerShellWhatIf && powerShellMutators.has(executable));
+  }
+  if (["sed", "perl"].includes(executable) && args.some((value) => /^-.*i/.test(value))) {
+    return protectedArgument;
+  }
+  if (executable === "find" && args.includes("-delete")) return protectedArgument;
+  if (executable === "dd") {
+    return args.some(
+      (value) =>
+        /^of=/.test(value) && protectedTrustStateReference(value.slice(3), workingDirectory)
+    );
+  }
+  if (executable === "git" && ["checkout", "restore", "clean"].includes(args[0]?.toLowerCase())) {
+    if (
+      args[0]?.toLowerCase() === "clean" &&
+      args.slice(1).some((value) => value === "--dry-run" || /^-[^-]*n/.test(String(value)))
+    ) {
+      return false;
+    }
+    return protectedArgument;
+  }
+  return false;
+}
+
+function staticSpecifyArguments(argv) {
+  const executable = stripExecutableSuffix(argv[0] || "");
+  if (executable === "specify") return argv.slice(1);
+  const uvValueOptions = new Set([
+    "--build-constraint",
+    "--color",
+    "--config-file",
+    "--constraint",
+    "--default-index",
+    "--directory",
+    "--exclude-newer",
+    "--extra-index-url",
+    "--find-links",
+    "--fork-strategy",
+    "--from",
+    "--index",
+    "--index-url",
+    "--keyring-provider",
+    "--link-mode",
+    "--override",
+    "--prerelease",
+    "--project",
+    "--python",
+    "--python-platform",
+    "--refresh-package",
+    "--resolution",
+    "--with",
+    "--with-editable",
+    "--with-requirements",
+  ]);
+  function wrappedArguments(start) {
+    let index = start;
+    while (index < argv.length) {
+      const value = String(argv[index] || "");
+      const lower = value.toLowerCase();
+      if (value === "--") {
+        index += 1;
+        break;
+      }
+      if (!value.startsWith("-")) break;
+      if (lower.includes("=")) {
+        index += 1;
+        continue;
+      }
+      index += uvValueOptions.has(lower) ? 2 : 1;
+    }
+    return stripExecutableSuffix(argv[index] || "") === "specify" ? argv.slice(index + 1) : null;
+  }
+  if (executable === "uvx") return wrappedArguments(1);
+  if (
+    executable === "uv" &&
+    String(argv[1] || "").toLowerCase() === "tool" &&
+    String(argv[2] || "").toLowerCase() === "run"
+  ) {
+    return wrappedArguments(3);
+  }
+  if (executable === "uv" && String(argv[1] || "").toLowerCase() === "run") {
+    return wrappedArguments(2);
+  }
+  return null;
+}
+
+function validateShellCommand(data, root) {
   const command = shellCommand(data);
   if (!command) return;
   const dialect = /^(?:PowerShell|pwsh)$/i.test(String(data.tool_name || ""))
@@ -860,9 +1279,36 @@ function validateShellCommand(data) {
     "install",
     "uninstall",
   ]);
+  let staticWorkingDirectory = requestedShellWorkingDirectory(data, root);
   for (const argv of staticExecutableCommands(command, dialect)) {
-    if (stripExecutableSuffix(argv[0] || "") !== "specify") continue;
-    const args = argv.slice(1).map((value) => value.toLowerCase());
+    if (staticTrustAnchorMutation(argv, dialect, staticWorkingDirectory)) {
+      throw new Error(
+        "statically recognizable mutation of a protected Spec Kit trust anchor is blocked"
+      );
+    }
+    staticWorkingDirectory = staticDirectoryAfter(argv, staticWorkingDirectory, dialect);
+    const staticArgs = staticSpecifyArguments(argv);
+    if (!staticArgs) continue;
+    const args = staticArgs.map((value) => value.toLowerCase());
+    const integrationMutations = new Set([
+      "add",
+      "install",
+      "remove",
+      "switch",
+      "uninstall",
+      "update",
+      "upgrade",
+    ]);
+    if (
+      args[0] === "init" ||
+      args[0] === "upgrade" ||
+      (args[0] === "integration" && integrationMutations.has(args[1])) ||
+      (integrationMutations.has(args[0]) && args[1] === "integration")
+    ) {
+      throw new Error(
+        "Spec Kit managed integration mutation is blocked; use an explicitly reviewed maintenance change"
+      );
+    }
     if (args[0] === "workflow" && args[1] === "run") {
       throw new Error(
         "specify workflow run is blocked; invoke the reviewed core skills explicitly"
@@ -943,6 +1389,10 @@ function isPrivateBugTarget(rawTarget) {
   return /(?:^|\/)\.specify\/bugs(?:\/|$)/.test(rawTarget.replace(/\\/g, "/"));
 }
 
+function isProtectedTrustAnchor(rawTarget) {
+  return protectedTrustStateReference(String(rawTarget || "").replace(/\\/g, "/"));
+}
+
 function canonicalWriteTarget(root, rawTarget) {
   if (!rawTarget || rawTarget.includes("\0")) throw new Error("write target is empty or malformed");
   const lexical = path.isAbsolute(rawTarget)
@@ -997,6 +1447,11 @@ function validateStructuredWrite(data, root) {
       continue;
     }
     const relative = path.relative(root, canonical).replace(/\\/g, "/");
+    if (isProtectedTrustAnchor(value) || isProtectedTrustAnchor(relative)) {
+      throw new Error(
+        `writes to a protected Spec Kit trust anchor are blocked: ${value} -> ${relative}`
+      );
+    }
     if (isPrivateBugTarget(value) || isPrivateBugTarget(relative)) {
       throw new Error(`writes into .specify/bugs are blocked: ${value} -> ${relative}`);
     }
@@ -1027,8 +1482,19 @@ async function main() {
     throw error;
   }
   if (eventName === "PreToolUse") {
-    if (SHELL_TOOL.test(String(data.tool_name || ""))) validateShellCommand(data);
+    if (SHELL_TOOL.test(String(data.tool_name || ""))) validateShellCommand(data, root);
     validateStructuredWrite(data, root);
+  }
+  if (eventName === "UserPromptSubmit") {
+    process.stdout.write(
+      `${JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: "UserPromptSubmit",
+          additionalContext: SPEC_KIT_PRIORITY_CONTEXT,
+        },
+      })}\n`
+    );
+    return;
   }
   process.stdout.write("{}\n");
 }
