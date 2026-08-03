@@ -232,6 +232,53 @@ describe("check-journal-magic-link-live", () => {
     });
   });
 
+  it("allows only a stale proof-source mismatch in informational CLI mode", () => {
+    const strict = spawnSync(
+      process.execPath,
+      ["scripts/check-journal-magic-link-proof-status.cjs"],
+      { cwd: process.cwd(), encoding: "utf8" },
+    );
+    const informational = spawnSync(
+      process.execPath,
+      ["scripts/check-journal-magic-link-proof-status.cjs", "--allow-stale-source"],
+      { cwd: process.cwd(), encoding: "utf8" },
+    );
+    const required = spawnSync(
+      process.execPath,
+      [
+        "scripts/check-journal-magic-link-proof-status.cjs",
+        "--allow-stale-source",
+        "--require-pass",
+      ],
+      { cwd: process.cwd(), encoding: "utf8" },
+    );
+
+    expect(strict.status).toBe(2);
+    expect(strict.stdout).toContain("issue=proof_source_mismatch");
+    expect(informational.status).toBe(0);
+    expect(informational.stdout).toContain(
+      "UNVERIFIED - journal Magic Link proof still has unresolved checks",
+    );
+    expect(required.status).toBe(2);
+
+    const root = mkdtempSync(join(tmpdir(), "journal-magic-link-invalid-proof-"));
+    const invalidPacket = join(root, "invalid-proof.json");
+    writeFileSync(invalidPacket, JSON.stringify({ schemaVersion: "invalid" }));
+    const invalid = spawnSync(
+      process.execPath,
+      [
+        "scripts/check-journal-magic-link-proof-status.cjs",
+        "--file",
+        invalidPacket,
+        "--allow-stale-source",
+      ],
+      { cwd: process.cwd(), encoding: "utf8" },
+    );
+
+    expect(invalid.status).toBe(2);
+    expect(invalid.stdout).toContain("issue=invalid_schema_version");
+  });
+
   it("writes a secret-free runtime PASS proof status packet after live workflow proof", () => {
     const root = mkdtempSync(join(tmpdir(), "journal-magic-link-proof-status-"));
     const output = join(root, "runtime-proof.json");

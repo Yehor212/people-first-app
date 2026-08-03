@@ -668,6 +668,37 @@ describe("GitHub Pages deploy workflow contract", () => {
     }
   });
 
+  it("keeps an optional UNVERIFIED journal Magic Link proof informational without weakening the live-ready gate", () => {
+    const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+    const previewWorkflow = readFileSync(".github/workflows/deploy-v2-preview.yml", "utf8");
+
+    for (const [file, source, statusName, nextName] of [
+      [
+        ".github/workflows/deploy.yml",
+        workflow,
+        "name: Check journal Magic Link proof status",
+        "name: Check Supabase publishable key readiness",
+      ],
+      [
+        ".github/workflows/deploy-v2-preview.yml",
+        previewWorkflow,
+        "name: Check journal Magic Link proof status for V2 preview",
+        "name: Check Sentry readiness for V2 preview",
+      ],
+    ] as const) {
+      const proofStatus = sliceBetween(source, statusName, nextName);
+      expect(proofStatus, file).toContain(
+        'if [ "$ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_STATUS_REQUIRED" = "true" ]; then',
+      );
+      expect(proofStatus, file).toContain("npm run check:journal-magic-link-proof-status:pass");
+      expect(proofStatus, file).toContain("else");
+      expect(proofStatus, file).toContain(
+        "npm run check:journal-magic-link-proof-status -- --allow-stale-source",
+      );
+      expect(proofStatus, file).not.toContain("|| true");
+    }
+  });
+
   it("requires the manual journal Magic Link proof to consume a captured URL before SMTP apply", () => {
     const workflow = readFileSync(".github/workflows/journal-magic-link-live-proof.yml", "utf8");
     const validation = sliceBetween(

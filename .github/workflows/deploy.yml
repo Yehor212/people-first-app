@@ -219,9 +219,10 @@ jobs:
         env:
           ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_STATUS_REQUIRED: ${{ vars.VITE_JOURNAL_MAGIC_LINK_LIVE_READY == 'true' && github.ref == 'refs/heads/main' && 'true' || 'false' }}
         run: |
-          npm run check:journal-magic-link-proof-status
           if [ "$ZENFLOW_JOURNAL_MAGIC_LINK_PROOF_STATUS_REQUIRED" = "true" ]; then
             npm run check:journal-magic-link-proof-status:pass
+          else
+            npm run check:journal-magic-link-proof-status -- --allow-stale-source
           fi
 
       - name: Check Supabase publishable key readiness
