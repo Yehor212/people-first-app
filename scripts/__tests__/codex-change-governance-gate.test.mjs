@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdtemp, mkdir, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -8,6 +8,23 @@ import { evaluateGuard } from "../codex-governance/change-gate-core.cjs";
 
 const NOW = new Date("2026-07-13T05:00:00.000Z");
 const HOOK = path.resolve(".codex/hooks/change-governance-gate.cjs");
+const PROJECT_ROOT = path.resolve(".");
+const READ_ONLY_SPEC_KIT_COMMAND =
+  ".specify/scripts/bash/check-prerequisites.sh --json --paths-only";
+const STATEFUL_SPEC_KIT_COMMANDS = [
+  ".specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks",
+  ".specify/scripts/bash/setup-plan.sh --json",
+  ".specify/scripts/bash/setup-tasks.sh --json",
+];
+const GOVERNANCE_HARNESS_FILES = [
+  ".codex/hooks/change-governance-gate.cjs",
+  "scripts/codex-governance/change-gate-core.cjs",
+  "scripts/codex-governance/tool-targets.cjs",
+  ".specify/zenflow-install-manifest.json",
+  ".specify/scripts/bash/check-prerequisites.sh",
+  ".specify/scripts/bash/setup-plan.sh",
+  ".specify/scripts/bash/setup-tasks.sh",
+];
 const roots = [];
 
 afterEach(async () => {
@@ -56,6 +73,84 @@ describe("Codex change governance gate", () => {
     });
 
     expect(result.status, result.stderr).toBe(0);
+  });
+
+  it("allows the exact provenance-checked read-only Spec Kit command", async () => {
+    const { hook, rootDir } = await governedSpecKitWorkspace();
+    const result = runHook(
+      rootDir,
+      {
+        cwd: rootDir,
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command: READ_ONLY_SPEC_KIT_COMMAND },
+      },
+      hook
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it.each(STATEFUL_SPEC_KIT_COMMANDS)(
+    "requires change-governance evidence for the bounded stateful Spec Kit command: %s",
+    async (command) => {
+      const { hook, rootDir } = await governedSpecKitWorkspace();
+      const result = runHook(
+        rootDir,
+        {
+          cwd: rootDir,
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command },
+        },
+        hook
+      );
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain("preflight token");
+    }
+  );
+
+  it.each(STATEFUL_SPEC_KIT_COMMANDS)(
+    "allows the bounded stateful Spec Kit command with fresh change evidence: %s",
+    async (command) => {
+      const { hook, rootDir } = await governedSpecKitWorkspace();
+      await writeFile(
+        path.join(rootDir, ".preflight-token"),
+        JSON.stringify(freshToken()),
+        "utf8"
+      );
+      const result = runHook(
+        rootDir,
+        {
+          cwd: rootDir,
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command },
+        },
+        hook
+      );
+
+      expect(result.status, result.stderr).toBe(0);
+    }
+  );
+
+  it("fails closed when a stateful Spec Kit command selects an out-of-lane target", async () => {
+    const { hook, rootDir } = await governedSpecKitWorkspace();
+    const result = runHook(
+      rootDir,
+      {
+        cwd: rootDir,
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command: STATEFUL_SPEC_KIT_COMMANDS[1] },
+      },
+      hook,
+      { SPECIFY_FEATURE_DIRECTORY: path.resolve(rootDir, "../outside-feature") }
+    );
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain("bounded target path");
   });
 
   it("does not split a quoted search expression at its pipe", async () => {
@@ -205,12 +300,38 @@ describe("Codex change governance gate", () => {
   });
 });
 
-function runHook(cwd, payload) {
-  return spawnSync(process.execPath, [HOOK], {
+function runHook(cwd, payload, hook = HOOK, environment = {}) {
+  const childEnvironment = { ...process.env };
+  delete childEnvironment.SPECIFY_FEATURE_DIRECTORY;
+  delete childEnvironment.SPECIFY_INIT_DIR;
+  Object.assign(childEnvironment, environment);
+  return spawnSync(process.execPath, [hook], {
     cwd,
     encoding: "utf8",
+    env: childEnvironment,
     input: JSON.stringify(payload),
   });
+}
+
+async function governedSpecKitWorkspace() {
+  const rootDir = await realpath(await workspace());
+  for (const relativePath of GOVERNANCE_HARNESS_FILES) {
+    const destination = path.join(rootDir, relativePath);
+    await mkdir(path.dirname(destination), { recursive: true });
+    await copyFile(path.join(PROJECT_ROOT, relativePath), destination);
+    if (relativePath.endsWith(".sh")) await chmod(destination, 0o755);
+  }
+  const featureDirectory = "specs/001-change-governance";
+  await mkdir(path.join(rootDir, featureDirectory), { recursive: true });
+  await writeFile(
+    path.join(rootDir, ".specify/feature.json"),
+    `${JSON.stringify({ feature_directory: featureDirectory })}\n`,
+    "utf8"
+  );
+  return {
+    hook: path.join(rootDir, ".codex/hooks/change-governance-gate.cjs"),
+    rootDir,
+  };
 }
 
 async function workspace() {
@@ -247,4 +368,13 @@ function validToken() {
       verdict: "GO",
     },
   };
+}
+
+function freshToken() {
+  const token = validToken();
+  const timestamp = new Date().toISOString();
+  token.timestamp = timestamp;
+  token.test_first.timestamp = timestamp;
+  token.skill_routing.timestamp = timestamp;
+  return token;
 }

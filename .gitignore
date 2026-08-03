@@ -47,6 +47,11 @@ AGENTS.local.md
 .mcp.json
 .mcp.local.json
 memory/
+!.specify/memory/
+!.specify/memory/constitution.md
+!.specify/memory/.constitution-template.json
+.specify/extensions/.cache/
+.specify/bugs/
 .superpowers/
 
 # ============================================
