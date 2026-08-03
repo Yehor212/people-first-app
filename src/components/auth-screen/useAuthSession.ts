@@ -44,10 +44,8 @@ export function useAuthSession({
   // itself via onClearError; syncing null back would erase the local copy on
   // the next render and the alert would never appear.
   useEffect(() => {
-    if (webOAuthError !== undefined) {
-      setError(webOAuthError);
-    }
     if (webOAuthError) {
+      setError(webOAuthError);
       onClearError?.();
     }
   }, [webOAuthError, onClearError]);
