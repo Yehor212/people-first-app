@@ -309,8 +309,9 @@ describe("journal final review contracts", () => {
   it("keeps editor identity and interaction state aligned during entry switches and saves", () => {
     expect(moduleSource).toContain('key={`desktop-editor-${journal.activeEntryId ?? "new"}`}');
     expect(moduleSource).toContain('key={`mobile-editor-${journal.activeEntryId ?? "new"}`}');
-    expect(entryEditorSource).toContain('contentEditable={draftReady && saveState !== "saving"}');
-    expect(entryEditorSource).toContain('disabled={saveState === "saving"}');
-    expect(entryEditorSource).toContain('aria-disabled={saveState === "saving"}');
+    expect(entryEditorSource).toContain("const saveInteractionLocked =");
+    expect(entryEditorSource).toContain("contentEditable={draftReady && !saveInteractionLocked}");
+    expect(entryEditorSource).toContain("disabled={saveInteractionLocked}");
+    expect(entryEditorSource).toContain("aria-disabled={saveInteractionLocked}");
   });
 });

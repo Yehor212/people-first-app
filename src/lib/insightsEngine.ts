@@ -33,6 +33,8 @@ export interface InsightTranslations {
   morning: string;
   afternoon: string;
   evening: string;
+  // Legacy key names are retained for locale compatibility; rendered values
+  // must describe observed associations rather than causal effects.
   habitImprovesMood: string;
   habitImprovesMoodDesc: string;
   focusBestLabel: string;
@@ -52,16 +54,16 @@ const defaultTranslations: InsightTranslations = {
   morning: 'in the morning',
   afternoon: 'in the afternoon',
   evening: 'in the evening',
-  habitImprovesMood: '{habit} improves your mood',
-  habitImprovesMoodDesc: 'On days when you complete "{habit}", your mood is {percent}% better on average.',
+  habitImprovesMood: '{habit} appears with higher recorded mood',
+  habitImprovesMoodDesc: 'Across {sampleDays} recorded days with "{habit}", average mood was {avgMoodWith}/5, compared with {avgMoodWithout}/5 across {comparisonDays} other recorded days. This is an association, not proof that the habit caused the change.',
   focusBestLabel: 'You focus best on "{label}" tasks',
   focusBestLabelDesc: 'Your average focus time for "{label}" is {minutes} minutes, higher than other activities.',
   peakFocusTime: 'Your peak focus time is {timeOfDay}',
   peakFocusTimeDesc: 'You achieve your best focus around {time}, with an average of {minutes} minutes.',
   bestTimeForHabit: 'Best time for {habit}: {time}',
   bestTimeForHabitDesc: 'You\'re {percent}% more likely to complete "{habit}" {time} compared to {worstTime} ({worstPercent}%).',
-  tagBoostsMood: '"{tag}" boosts your mood',
-  tagBoostsMoodDesc: 'Days tagged with "{tag}" show {percent}% better mood on average.',
+  tagBoostsMood: '"{tag}" appears with higher recorded mood',
+  tagBoostsMoodDesc: 'Across {occurrences} recorded entries tagged "{tag}", average mood was {avgMoodWith}/5, compared with {avgMoodWithout}/5 across {untaggedEntries} untagged entries. This is an association, not proof that the tag caused the change.',
 };
 
 /**
@@ -115,19 +117,19 @@ function _calculateCorrelation(x: number[], y: number[]): number {
 }
 
 /**
- * Calculate statistical confidence based on sample size and correlation
+ * Calculate an internal relevance score from observation count and effect size.
+ *
+ * This heuristic is used only to order insights. It is not a calibrated
+ * probability, statistical confidence level, or proof of causation.
  */
-function calculateConfidence(dataPoints: number, correlation: number): number {
-  // More data points = higher confidence
-  const sizeConfidence = Math.min(dataPoints / 30, 1) * 50;
-  // Stronger correlation = higher confidence
-  const correlationConfidence = Math.abs(correlation) * 50;
-  return Math.min(Math.round(sizeConfidence + correlationConfidence), 100);
+function calculateRelevanceScore(dataPoints: number, effectSize: number): number {
+  const observationScore = Math.min(dataPoints / 30, 1) * 50;
+  const effectScore = Math.abs(effectSize) * 50;
+  return Math.min(Math.round(observationScore + effectScore), 100);
 }
 
 /**
- * Analyze correlation between habits and mood
- * Returns insights about which habits improve mood
+ * Analyze recorded associations between habits and mood.
  */
 export function analyzeMoodHabitCorrelation(
   moods: MoodEntry[],
@@ -183,7 +185,7 @@ export function analyzeMoodHabitCorrelation(
 
     // Only generate insight if improvement is significant (>10%)
     if (improvement > 10) {
-      const confidence = calculateConfidence(
+      const confidence = calculateRelevanceScore(
         daysWithHabit.length,
         improvement / 100
       );
@@ -201,11 +203,14 @@ export function analyzeMoodHabitCorrelation(
       insights.push({
         id: nanoid(),
         type: 'mood-habit-correlation',
-        severity: improvement > 25 ? 'celebration' : 'tip',
+        severity: 'info',
         title: interpolate(translations.habitImprovesMood, { habit: habit.name }),
         description: interpolate(translations.habitImprovesMoodDesc, {
           habit: habit.name,
-          percent: Math.round(improvement)
+          avgMoodWith: metadata.avgMoodWith,
+          avgMoodWithout: metadata.avgMoodWithout,
+          sampleDays: daysWithHabit.length,
+          comparisonDays: daysWithoutHabit.length,
         }),
         confidence,
         dataPoints: daysWithHabit.length + daysWithoutHabit.length,
@@ -276,7 +281,7 @@ export function analyzeFocusPatterns(
 
   if (bestLabel && bestLabelStats) {
     const successRate = (bestLabelStats.completed / bestLabelStats.total) * 100;
-    const confidence = calculateConfidence(bestLabelStats.completed, successRate / 100);
+    const confidence = calculateRelevanceScore(bestLabelStats.completed, successRate / 100);
 
     const metadata: FocusPatternMetadata = {
       type: 'focus-pattern',
@@ -324,7 +329,7 @@ export function analyzeFocusPatterns(
     if (hour >= 12 && hour < 17) timeOfDay = translations.afternoon;
     else if (hour >= 17) timeOfDay = translations.evening;
 
-    const confidence = calculateConfidence(bestTimeCount, 0.7);
+    const confidence = calculateRelevanceScore(bestTimeCount, 0.7);
 
     const metadata: FocusPatternMetadata = {
       type: 'focus-pattern',
@@ -409,7 +414,7 @@ export function analyzeHabitTiming(
 
     // Only create insight if there's a significant difference (>20%)
     if (best.rate - worst.rate > 20) {
-      const confidence = calculateConfidence(total, (best.rate - worst.rate) / 100);
+      const confidence = calculateRelevanceScore(total, (best.rate - worst.rate) / 100);
 
       const metadata: HabitTimingMetadata = {
         type: 'habit-timing',
@@ -447,8 +452,7 @@ export function analyzeHabitTiming(
 }
 
 /**
- * Analyze mood tags for patterns
- * Returns insights about which tags correlate with better mood
+ * Analyze recorded associations between mood tags and mood.
  */
 export function analyzeMoodTags(
   moods: MoodEntry[],
@@ -489,7 +493,7 @@ export function analyzeMoodTags(
 
     // Only create insight if improvement is significant (>15%)
     if (improvement > 15) {
-      const confidence = calculateConfidence(values.length, improvement / 100);
+      const confidence = calculateRelevanceScore(values.length, improvement / 100);
 
       const metadata: MoodTagMetadata = {
         type: 'mood-tag',
@@ -503,11 +507,14 @@ export function analyzeMoodTags(
       insights.push({
         id: nanoid(),
         type: 'mood-tag',
-        severity: improvement > 30 ? 'celebration' : 'tip',
+        severity: 'info',
         title: interpolate(translations.tagBoostsMood, { tag }),
         description: interpolate(translations.tagBoostsMoodDesc, {
           tag,
-          percent: Math.round(improvement)
+          avgMoodWith: metadata.avgMoodWith,
+          avgMoodWithout: metadata.avgMoodWithout,
+          occurrences: values.length,
+          untaggedEntries: moodsWithoutTags.length,
         }),
         confidence,
         dataPoints: values.length + moodsWithoutTags.length,
@@ -554,7 +561,7 @@ export function generateInsights(
   allInsights.push(...analyzeHabitTiming(recentHabits, recentMoods, translations));
   allInsights.push(...analyzeMoodTags(recentMoods, translations));
 
-  // Sort by confidence (highest first)
+  // Sort by the internal relevance score (highest first).
   allInsights.sort((a, b) => b.confidence - a.confidence);
 
   // Return top 5 insights

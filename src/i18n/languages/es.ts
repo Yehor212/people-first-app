@@ -171,9 +171,9 @@ export const es: Translations = {
   insightMorning: "por la mañana",
   insightAfternoon: "por la tarde",
   insightEvening: "por la noche",
-  insightHabitImprovesMood: "{habit} mejora tu ánimo",
+  insightHabitImprovesMood: 'Tus registros relacionan "{habit}" con un ánimo más alto',
   insightHabitImprovesMoodDesc:
-    'Los días que completas "{habit}", tu ánimo es {percent}% mejor en promedio.',
+    'En {sampleDays} días registrados con "{habit}", el ánimo promedio fue de {avgMoodWith}/5, frente a {avgMoodWithout}/5 en otros {comparisonDays} días registrados. Es una asociación en tus registros, no una prueba de que el hábito causara el cambio.',
   insightFocusBestLabel: 'Te enfocas mejor en tareas de "{label}"',
   insightFocusBestLabelDesc:
     'Tu tiempo promedio de enfoque para "{label}" es {minutes} minutos, más alto que otras actividades.',
@@ -183,9 +183,9 @@ export const es: Translations = {
   insightBestTimeForHabit: "Mejor momento para {habit}: {time}",
   insightBestTimeForHabitDesc:
     'Tienes {percent}% más probabilidad de completar "{habit}" {time} comparado con {worstTime} ({worstPercent}%).',
-  insightTagBoostsMood: '"{tag}" mejora tu ánimo',
+  insightTagBoostsMood: 'Tus registros relacionan la etiqueta "{tag}" con un ánimo más alto',
   insightTagBoostsMoodDesc:
-    'Los días con etiqueta "{tag}" muestran {percent}% mejor ánimo en promedio.',
+    'En {occurrences} registros con la etiqueta "{tag}", el ánimo promedio fue de {avgMoodWith}/5, frente a {avgMoodWithout}/5 en {untaggedEntries} registros sin etiquetas. Es una asociación en tus registros, no una prueba de que la etiqueta causara el cambio.',
 
   // Module names (v1.6.1 - OnboardingFlow)
   moduleFocus: "Temporizador de Enfoque",
@@ -2144,7 +2144,8 @@ export const es: Translations = {
   insightsHelp1:
     "Las perspectivas se generan a partir de tus datos personales usando análisis estadístico.",
   insightsHelp2: "Todo el análisis ocurre en tu dispositivo - tus datos nunca salen.",
-  insightsHelp3: "Los patrones con mayor confianza se muestran primero.",
+  insightsHelp3:
+    "Los patrones se ordenan según la cantidad de datos registrados y el tamaño de la diferencia observada.",
   insightsDismiss: "Descartar",
   insightsShowMore: "Mostrar más",
   insightsShowLess: "Mostrar menos",
@@ -2414,7 +2415,7 @@ export const es: Translations = {
 
   // Insight Card Details
   insightConfidence: "Confianza",
-  insightDataPoints: "Puntos de datos",
+  insightDataPoints: "registros",
   insightAvgMoodWith: "Ánimo promedio con hábito",
   insightAvgMoodWithout: "Ánimo promedio sin hábito",
   insightSampleDays: "Días de muestra",

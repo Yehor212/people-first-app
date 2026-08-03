@@ -49,4 +49,13 @@ describe("V2 settings Appearance hierarchy", () => {
     expect(source).toContain('className="settings-v2-range-control h-12 w-full');
     expect(source).not.toMatch(/\b(?:h|min-h)-11\b/);
   });
+
+  it("keeps the customization wrapper structural inside the containing Appearance surface", () => {
+    const source = readAppearance();
+
+    expect(source).toContain('data-slot="settings-appearance-customization"');
+    expect(source).not.toContain(
+      '<SettingsInset testId="settings-v2-style-customization"'
+    );
+  });
 });

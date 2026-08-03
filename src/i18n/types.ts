@@ -550,13 +550,6 @@ export interface Translations {
   settingsSoundActivityRestoreTitle: string;
   settingsSoundActivityRestoreDescription: string;
   settingsSoundActivityRestoreAction: string;
-  settingsSoundPreviewTitle: string;
-  settingsSoundPreviewDescription: string;
-  settingsSoundPreviewSuccess: string;
-  settingsSoundPreviewComplete: string;
-  settingsSoundPreviewStreak: string;
-  settingsSoundPreviewMilestone: string;
-  settingsSoundPreviewNotification: string;
   settingsSoundMasterDisabledHint: string;
   settingsAccountBackupTitle: string;
   settingsAccountBackupDescription: string;
@@ -1323,6 +1316,13 @@ export interface Translations {
   settingsSoundBackgroundDescription: string;
   settingsSoundActivityTitle: string;
   settingsSoundActivityDescription: string;
+  settingsSoundPreviewTitle: string;
+  settingsSoundPreviewDescription: string;
+  settingsSoundPreviewSuccess: string;
+  settingsSoundPreviewComplete: string;
+  settingsSoundPreviewStreak: string;
+  settingsSoundPreviewMilestone: string;
+  settingsSoundPreviewNotification: string;
   settingsSoundCompletionCues: string;
   settingsSoundCompletionCuesDesc: string;
   settingsSoundReminderCues: string;

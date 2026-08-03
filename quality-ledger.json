@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-07-23",
+  "lastUpdated": "2026-07-13",
   "phase": "3-a.4c-ii-c-a-emotion-progressive-disclosure",
   "floors": {
     "moodScopeSelectorActive": {
@@ -532,7 +532,7 @@
     ]
   },
   "staleness": {
-    "lastFullAudit": "2026-07-23",
+    "lastFullAudit": "2026-07-16",
     "maxLedgerAgeDays": 30,
     "maxAuditAgeDays": 60
   },

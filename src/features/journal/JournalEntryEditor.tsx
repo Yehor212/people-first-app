@@ -106,6 +106,7 @@ import { formatRecordingTime } from "./useJournalEditorHelpers";
 import type { TranslationStrings } from "@/i18n/types";
 import { isJournalPhotoPlaced } from "./photoLayout";
 import { isNative } from "@/lib/platform";
+import type { JournalSaveCompletion } from "./save-ceremony/journalSaveCeremonyContract";
 
 // Local aliases to avoid name collision with the hook's `theme` state
 const DIARY_FONTS_LOCAL = DIARY_FONTS;
@@ -331,7 +332,7 @@ interface JournalEntryEditorProps {
       photoLayout?: JournalEntry["photoLayout"];
     },
     draftContext: JournalDraftCommitContext
-  ) => Promise<void>;
+  ) => Promise<JournalSaveCompletion | void>;
   onAddPhoto: (file: File, entryId: string, signal?: AbortSignal) => Promise<JournalPhoto>;
   onRemovePhoto: (photoId: string, entryId: string) => Promise<void>;
   onAddAudio: (
@@ -355,6 +356,7 @@ interface JournalEntryEditorProps {
   onBindSettingsRequestHandler?: (handler: (() => void) | null) => void;
   onBindExitRequestHandler?: (handler: (() => void) | null) => void;
   onExitRequestCancelled?: () => void;
+  onDirtyStateChange?: (dirty: boolean) => void;
 }
 
 export const JournalEntryEditor = memo(function JournalEntryEditor({
@@ -378,6 +380,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   onBindSettingsRequestHandler,
   onBindExitRequestHandler,
   onExitRequestCancelled,
+  onDirtyStateChange,
 }: JournalEntryEditorProps) {
   const themeTransition = useThemeTransition();
   const paperRef = useRef<HTMLDivElement>(null);
@@ -400,6 +403,10 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     onAddGratitude,
     desktop,
   });
+
+  useEffect(() => {
+    onDirtyStateChange?.(state.isDirty);
+  }, [onDirtyStateChange, state.isDirty]);
 
   const {
     t,
@@ -579,6 +586,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     handleTemplateSelect,
     handleTemplateClose,
   } = state;
+  const saveInteractionLocked = saveState === "saving" || saveState === "saved";
 
   const handleFloatPhotoWithFocus = useCallback(
     (photoId: string) => {
@@ -1150,8 +1158,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             <motion.button
               whileTap={zenTap.icon}
               onClick={handleBack}
-              disabled={saveState === "saving"}
-              aria-disabled={saveState === "saving"}
+              disabled={saveInteractionLocked}
+              aria-disabled={saveInteractionLocked}
               className={cn(
                 "flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 rounded-lg py-2 text-muted-foreground hover:bg-white/10 dark:hover:bg-white/10 hover:text-foreground motion-safe:transition-all",
                 desktop ? "px-3" : "px-2"
@@ -1261,7 +1269,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               whileTap={saveSuccess ? {} : { scale: 0.92 }}
               whileHover={saveSuccess ? {} : { scale: 1.03 }}
               onClick={handleSave}
-              disabled={saveState === "saving" || !hasContent || !draftReady}
+              disabled={saveInteractionLocked || !hasContent || !draftReady}
               aria-label={ts.journalSave || "Save"}
               aria-busy={saveState === "saving"}
               className={cn(
@@ -1905,7 +1913,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             {/* Title */}
             <input
               type="text"
-              disabled={!draftReady || saveState === "saving"}
+              disabled={!draftReady || saveInteractionLocked}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={ts.journalEntryTitle || "Title (optional)"}
@@ -2202,8 +2210,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             {/* Content editor (contenteditable WYSIWYG) */}
             <div
               ref={editorRef}
-              contentEditable={draftReady && saveState !== "saving"}
-              aria-disabled={!draftReady || saveState === "saving"}
+              contentEditable={draftReady && !saveInteractionLocked}
+              aria-disabled={!draftReady || saveInteractionLocked}
               role="textbox"
               aria-multiline="true"
               aria-label={ts.journalEntryBody || "Diary entry body"}
@@ -3437,7 +3445,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             <div className="flex flex-col gap-2">
               <button
                 onClick={handleSaveAndClose}
-                disabled={saveState === "saving" || !hasContent}
+                disabled={saveInteractionLocked || !hasContent}
                 aria-describedby={!hasContent ? "journal-save-close-disabled-hint" : undefined}
                 className={cn(
                   "w-full py-2.5 rounded-xl text-sm font-medium min-h-[48px]",

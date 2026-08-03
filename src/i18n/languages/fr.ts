@@ -172,9 +172,9 @@ export const fr: Translations = {
   insightMorning: "le matin",
   insightAfternoon: "l'après-midi",
   insightEvening: "le soir",
-  insightHabitImprovesMood: "{habit} améliore votre humeur",
+  insightHabitImprovesMood: "Vos relevés associent « {habit} » à une humeur plus élevée",
   insightHabitImprovesMoodDesc:
-    'Les jours où vous complétez "{habit}", votre humeur est {percent}% meilleure en moyenne.',
+    "Sur {sampleDays} jours enregistrés avec « {habit} », l’humeur moyenne était de {avgMoodWith}/5, contre {avgMoodWithout}/5 sur {comparisonDays} autres jours enregistrés. Il s’agit d’une association dans vos relevés, et non d’une preuve que l’habitude a causé ce changement.",
   insightFocusBestLabel: 'Vous vous concentrez mieux sur "{label}"',
   insightFocusBestLabelDesc:
     'Votre temps de concentration moyen pour "{label}" est de {minutes} minutes, plus élevé que pour d\'autres activités.',
@@ -184,9 +184,9 @@ export const fr: Translations = {
   insightBestTimeForHabit: "Meilleur moment pour {habit}: {time}",
   insightBestTimeForHabitDesc:
     'Vous avez {percent}% plus de chances de compléter "{habit}" {time} par rapport à {worstTime} ({worstPercent}%).',
-  insightTagBoostsMood: '"{tag}" améliore votre humeur',
+  insightTagBoostsMood: "Vos relevés associent le tag « {tag} » à une humeur plus élevée",
   insightTagBoostsMoodDesc:
-    'Les jours avec le tag "{tag}" montrent {percent}% d\'humeur meilleure en moyenne.',
+    "Dans {occurrences} entrées portant le tag « {tag} », l’humeur moyenne était de {avgMoodWith}/5, contre {avgMoodWithout}/5 dans {untaggedEntries} entrées sans tag. Il s’agit d’une association dans vos relevés, et non d’une preuve que le tag a causé ce changement.",
 
   // Module names (v1.6.1 - OnboardingFlow)
   moduleFocus: "Minuteur Focus",
@@ -2152,7 +2152,8 @@ export const fr: Translations = {
   insightsHelp1:
     "Les aperçus sont générés à partir de tes données personnelles à l'aide d'analyses statistiques.",
   insightsHelp2: "Toute l’analyse se fait sur votre appareil - vos données ne partent jamais.",
-  insightsHelp3: "Les schémas avec une confiance plus élevée sont affichés en premier.",
+  insightsHelp3:
+    "Les tendances sont classées selon la quantité de données enregistrées et l’ampleur de la différence observée.",
   insightsDismiss: "Ignorer",
   insightsShowMore: "Afficher plus",
   insightsShowLess: "Afficher moins",
@@ -2426,7 +2427,7 @@ export const fr: Translations = {
 
   // Insight Card Details
   insightConfidence: "Confiance",
-  insightDataPoints: "Points de données",
+  insightDataPoints: "entrées enregistrées",
   insightAvgMoodWith: "Humeur moyenne avec habitude",
   insightAvgMoodWithout: "Humeur moyenne sans habitude",
   insightSampleDays: "Jours échantillonnés",

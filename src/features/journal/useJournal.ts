@@ -358,15 +358,17 @@ export function useJournal() {
   const createEntry = useCallback(async (
     data: CreateJournalEntryInput,
     draftContext?: JournalDraftCommitContext,
+    requiredSpaceIds: readonly string[] = [],
   ) => {
     const { date, ...entryData } = data;
     const entryPayload = {
       ...entryData,
       date: date || getToday(),
     };
-    const entry = draftContext
-      ? await storage.saveEntry(entryPayload, draftContext)
-      : await storage.saveEntry(entryPayload);
+    const entry =
+      draftContext || requiredSpaceIds.length > 0
+        ? await storage.saveEntry(entryPayload, draftContext, requiredSpaceIds)
+        : await storage.saveEntry(entryPayload);
     softDeletedEntryIdsRef.current.delete(entry.id);
     setEntries(prev => mergeJournalEntries(prev, [entry], softDeletedEntryIdsRef.current));
     setTotalCount(prev => prev + 1);

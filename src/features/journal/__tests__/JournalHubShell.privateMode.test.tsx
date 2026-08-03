@@ -54,9 +54,13 @@ vi.mock("../journalHubStorage", () => ({
   }),
 }));
 
-vi.mock("@/lib/animationUtils", () => ({
-  shouldAnimate: () => false,
-}));
+vi.mock("@/lib/animationUtils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/animationUtils")>();
+  return {
+    ...actual,
+    shouldAnimate: () => false,
+  };
+});
 
 vi.mock("@/lib/haptics", () => ({
   haptics: { light: vi.fn() },

@@ -43,6 +43,7 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
   const habits = useUserDataStore(s => s.habits);
   const isUserDataLoading = useUserDataStore(s => s.isLoading);
   const pushNotificationsEnabled = useUserDataStore(s => s.privacy.pushNotifications === true);
+  const pushConsentWasShown = useUserDataStore(s => s.privacy.consentShown === true);
   const hasValidSession = useAppStore(s => s.hasValidSession);
   const isAccountBoundaryInProgress = useAppStore(s => s.isAccountBoundaryInProgress);
   const previousPushConsentRef = useRef<boolean | null>(null);
@@ -285,6 +286,11 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
       return;
     }
 
+    if (previousPushConsentRef.current !== true && !pushConsentWasShown) {
+      previousPushConsentRef.current = false;
+      return;
+    }
+
     const shouldRemoveRemoteToken = previousPushConsentRef.current !== false;
     previousPushConsentRef.current = false;
     if (!shouldRemoveRemoteToken) return;
@@ -346,7 +352,12 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
     };
 
     void revokePushRegistration();
-  }, [hasValidSession, isAccountBoundaryInProgress, pushNotificationsEnabled]);
+  }, [
+    hasValidSession,
+    isAccountBoundaryInProgress,
+    pushConsentWasShown,
+    pushNotificationsEnabled,
+  ]);
 
   // Set up one-tap mood notification actions
   useEffect(() => {

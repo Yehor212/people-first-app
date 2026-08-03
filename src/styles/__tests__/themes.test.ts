@@ -84,4 +84,16 @@ describe("V2 data-theme glass tokens", () => {
     expect(themesCss).toContain("box-shadow: none;");
   });
 
+  it("keeps the structural Settings detail region presentationless", () => {
+    const detailRegionBlock = blockFor(
+      '[data-v2-readable-page="settings"] [data-visual-role="settings-detail-region"]',
+    );
+
+    expect(detailRegionBlock).toContain("background: transparent !important;");
+    expect(detailRegionBlock).toContain("border-color: transparent !important;");
+    expect(detailRegionBlock).toContain("box-shadow: none !important;");
+    expect(detailRegionBlock).toContain("-webkit-backdrop-filter: none !important;");
+    expect(detailRegionBlock).toContain("backdrop-filter: none !important;");
+  });
+
 });

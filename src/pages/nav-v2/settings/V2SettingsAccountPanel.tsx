@@ -184,7 +184,7 @@ export function AccountPanel({
         </SettingsInset>
       ) : accountViewState === "signed-in" ? (
         <>
-          <SettingsInset>
+          <SettingsInset presentation="flat-row">
             <p className="min-w-0 text-sm text-muted-foreground">
               {tx.signedInAs || "Signed in as"}{" "}
               <bdi
@@ -198,7 +198,7 @@ export function AccountPanel({
           </SettingsInset>
 
           {linkedProviderLabels.length > 0 && (
-            <SettingsInset>
+            <SettingsInset presentation="flat-row">
               <SettingsFieldHeader title={tx.authLinkedProviders || "Connected sign-in methods"} />
               <div className="mb-3 flex flex-wrap gap-2">
                 {linkedProviderLabels.map((label) => (
@@ -235,7 +235,7 @@ export function AccountPanel({
         </>
       ) : (
         <div className="space-y-3">
-          <SettingsInset>
+          <SettingsInset presentation="flat-row">
             <p className="min-w-0 whitespace-normal break-words text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:break-word]">
               {tx.settingsAccountSignedOut || "You’re not signed in"}
             </p>

@@ -12,7 +12,7 @@ import { DEFAULT_THEME_CUSTOMIZATION } from "@/stores/themeCustomization";
 
 import { AppearanceAccent } from "./V2SettingsAppearanceAccent";
 import { AppearanceBasics } from "./V2SettingsAppearanceBasics";
-import { PanelFrame, SettingsInset, ToggleRow } from "./components/V2SettingsControlPrimitives";
+import { PanelFrame, ToggleRow } from "./components/V2SettingsControlPrimitives";
 
 type AppearanceFeedback = {
   kind: "success" | "error";
@@ -163,7 +163,11 @@ export function AppearancePanel() {
       testId="settings-v2-panel-appearance"
       variant="studio"
     >
-      <SettingsInset testId="settings-v2-style-customization" className="space-y-4">
+      <div
+        className="w-full min-w-0 max-w-full space-y-4"
+        data-slot="settings-appearance-customization"
+        data-testid="settings-v2-style-customization"
+      >
         <AppearanceBasics
           tx={tx}
           theme={theme}
@@ -255,7 +259,7 @@ export function AppearancePanel() {
           disabled={osPrefersReducedMotion}
           testId="settings-v2-motion-toggle"
         />
-      </SettingsInset>
+      </div>
     </PanelFrame>
   );
 }

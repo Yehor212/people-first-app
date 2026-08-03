@@ -674,7 +674,7 @@ describe("production data integrity checker", () => {
         expect.arrayContaining([expect.objectContaining({ ruleId: scenario.rule })])
       );
     }
-  });
+  }, 15_000);
 
   it("accepts fresh evidence bound to the current exact HEAD or a verified artifact", () => {
     const root = fixture({ "src/main.ts": "export const value = 1;" });

@@ -183,11 +183,12 @@ export function SettingsModuleList({
         }
       }}
       className={cn(
-        "order-2 grid min-w-0 gap-2 lg:order-1 lg:sticky lg:top-[calc(var(--safe-top)+1rem)]",
+        "order-2 grid min-w-0 overflow-hidden rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.52)] bg-[hsl(var(--settings-v2-card)/0.76)] lg:order-1 lg:sticky lg:top-[calc(var(--safe-top)+1rem)]",
         controlsWired && mobileDetailOpen && "lg:grid"
       )}
       id="settings-module-list"
       data-testid="settings-module-list"
+      data-visual-role="settings-group"
     >
       {items.map((item) => {
         const expanded = detailVisible && activeItem?.id === item.id;
@@ -229,21 +230,22 @@ export function SettingsModuleList({
           <span className="min-w-0 break-words">{backLabel}</span>
         </button>
         <div
-          ref={(node) => {
-            if (node && !desktopLayout) {
-              onMobileSurfaceReady("detail", activeItem.id, node);
-            }
-          }}
           id={activePanelId}
           role="region"
           aria-labelledby={`settings-module-panel-heading-${activeItem.id}`}
-          tabIndex={-1}
           className="grid min-w-0 scroll-mt-[calc(var(--safe-top)+4rem)] gap-2.5 outline-none sm:scroll-mt-[calc(var(--safe-top)+4rem)] lg:scroll-mt-[calc(var(--safe-top)+1rem)]"
           data-testid={activePanelId}
+          data-visual-role="settings-detail-region"
         >
           <h2
+            ref={(node) => {
+              if (node && !desktopLayout) {
+                onMobileSurfaceReady("detail", activeItem.id, node);
+              }
+            }}
             id={`settings-module-panel-heading-${activeItem.id}`}
-            className="w-full min-w-0 max-w-full break-words px-1 font-display text-sm font-semibold leading-tight text-foreground [hyphens:manual] [overflow-wrap:break-word] min-[360px]:text-base min-[420px]:text-lg sm:text-xl"
+            tabIndex={-1}
+            className="w-full min-w-0 max-w-full break-words rounded-[6px] px-1 font-display text-sm font-semibold leading-tight text-foreground outline-none [hyphens:manual] [overflow-wrap:break-word] focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent))] focus-visible:ring-offset-2 min-[360px]:text-base min-[420px]:text-lg sm:text-xl"
           >
             {activeItem.label}
           </h2>

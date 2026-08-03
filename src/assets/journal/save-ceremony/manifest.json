@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "model": "Atelier V12.3",
+  "sourcePolicy": "hash-bound-local-build-assets",
+  "assets": {
+    "night": {
+      "tgs": {
+        "file": "atelier-v12-3-night.tgs",
+        "sourceArtifact": "atelier-v12-3-r2/atelier-v12-3-night.tgs",
+        "sha256": "7047a29d245c165315d49f3de5102c37406b78a9b5a95437ca20fa5db1d2bc28",
+        "bytes": 37872
+      },
+      "reduced": {
+        "file": "atelier-v12-3-night-reduced.svg",
+        "sourceArtifact": "source-bundle-r2/vector-masters/night/redock.plain.svg",
+        "sha256": "35d097507bcbcd4198fb1717ddce63253a69fec3ff01eaf598fe24648aab6c61",
+        "bytes": 112948
+      }
+    },
+    "day": {
+      "tgs": {
+        "file": "atelier-v12-3-day.tgs",
+        "sourceArtifact": "atelier-v12-3-r2/atelier-v12-3-day.tgs",
+        "sha256": "a55c998596f8210664d51f8eb51eb40a090dbc4dc76d8ea7109cdd30098d1170",
+        "bytes": 37779
+      },
+      "reduced": {
+        "file": "atelier-v12-3-day-reduced.svg",
+        "sourceArtifact": "source-bundle-r2/vector-masters/day/redock.plain.svg",
+        "sha256": "7aaac329edc6efcf4a7898b6aa8a7abec6c23311c62c046444d0a8694d95a9e6",
+        "bytes": 118821
+      }
+    }
+  }
+}

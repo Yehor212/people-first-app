@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { readFileSync } from "fs";
@@ -92,12 +92,16 @@ function hasUsableSentryUploadEnv(values: Array<string | undefined>): boolean {
 }
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
+  const fileEnvironment = loadEnv(mode, __dirname, "VITE_");
   // Use relative paths for Capacitor/Android builds
   // Automatically determined by npm script (build vs build:android)
   const isCapacitor = process.env.CAPACITOR_BUILD === "true";
   const webBase = normalizeBasePath(process.env.VITE_APP_BASE || "/people-first-app/");
   const base = isCapacitor ? "./" : webBase;
   const pwaEnabled = !isCapacitor && process.env.VITE_DISABLE_PWA !== "true";
+  const journalSaveCeremonyBuildEnabled =
+    (process.env.VITE_ENABLE_JOURNAL_SAVE_CEREMONY ??
+      fileEnvironment.VITE_ENABLE_JOURNAL_SAVE_CEREMONY) === "true";
 
   // Read version from package.json
   const packageJson = JSON.parse(readFileSync("./package.json", "utf-8"));
@@ -138,6 +142,11 @@ export default defineConfig(({ mode }) => {
     define: {
       __APP_VERSION__: JSON.stringify(appVersion),
       __APP_BUILD_TIME__: JSON.stringify(appBuildTime),
+      // Keep the default-disabled ceremony runtime out of production bundles.
+      // A literal build constant lets Rolldown prune its dynamic import graph.
+      __JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__: JSON.stringify(
+        journalSaveCeremonyBuildEnabled,
+      ),
       // Sentry tree-shaking (docs: getsentry/sentry-javascript CONTRIBUTING.md)
       // Replaces __DEBUG_BUILD__ → false in Sentry's bundles, strips all logger.* calls.
       __SENTRY_DEBUG__: false,
@@ -357,6 +366,12 @@ export default defineConfig(({ mode }) => {
                 "assets/OrbPage-*.js",
                 "assets/OrbPage-*.css",
                 "assets/orbWorker-*.js",
+                ...(journalSaveCeremonyBuildEnabled
+                  ? [
+                      "assets/atelier-v12-3-*.tgs",
+                      "assets/atelier-v12-3-*-reduced*.svg",
+                    ]
+                  : []),
                 "assets/*.woff2",
               ],
               // version-check.js and version.json MUST always be fetched from network.

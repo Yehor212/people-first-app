@@ -33,6 +33,8 @@ vi.mock("@/storage/sync/syncOwner", () => ({
 }));
 
 import { offlineQueue } from "@/lib/offlineQueue";
+import { triggerSync } from "@/storage/cloudSync";
+import { SK } from "@/lib/storageKeys";
 import { db } from "@/storage/db";
 import {
   deleteDraftMedia,
@@ -43,7 +45,31 @@ import {
   storeAudio,
   updateEntry,
 } from "../journalStorage";
+import { commitJournalSaveAndCaptureTheme } from "../save-ceremony/journalSaveCeremonyContract";
+import * as journalSecurityMigration from "../journalSecurityMigration";
 import { getJournalDraftMediaOwnerId } from "../types";
+
+async function seedJournalSecurityMigration(input: {
+  entryIds?: string[];
+  photoIds?: string[];
+  audioIds?: string[];
+}): Promise<void> {
+  await db.settings.put({
+    key: SK.JOURNAL_SECURITY_MIGRATION,
+    value: {
+      version: 1,
+      revision: "migration-delete-boundary",
+      ownerUserId: "owner-1",
+      createdAt: 1,
+      status: "pending",
+      vaultSettingPending: false,
+      backupPending: false,
+      entryIds: input.entryIds ?? [],
+      photos: (input.photoIds ?? []).map((id) => ({ id })),
+      audios: (input.audioIds ?? []).map((id) => ({ id })),
+    },
+  });
+}
 
 describe("journal core writes use a durable outbox", () => {
   let originalOnline: PropertyDescriptor | undefined;
@@ -57,6 +83,7 @@ describe("journal core writes use a durable outbox", () => {
     await offlineQueue.waitForInit();
     await offlineQueue.clearQueue();
     await db.journalEntries.clear();
+    await db.journalEntryLinks.clear();
     await db.journalPhotos.clear();
     await db.journalAudio.clear();
     await db.settings.clear();
@@ -108,7 +135,6 @@ describe("journal core writes use a durable outbox", () => {
       createdAt: 1,
       updatedAt: 1,
     });
-
     await updateEntry("entry-update", { content: "after" });
 
     expect(await db.offlineQueue.where("entityId").equals("entry-update").toArray()).toEqual([
@@ -410,6 +436,74 @@ describe("journal core writes use a durable outbox", () => {
     expect(await db.offlineQueue.where("entityId").equals(entry.id).count()).toBe(1);
   });
 
+  it("resolves a committed create before a durable queue wake finishes", async () => {
+    let resolveWake!: () => void;
+    const wake = new Promise<void>((resolve) => {
+      resolveWake = resolve;
+    });
+    const wakeSpy = vi
+      .spyOn(offlineQueue, "wakeFromDurableStorage")
+      .mockReturnValueOnce(wake);
+
+    const savePromise = saveEntry({
+      date: "2026-07-16",
+      title: "Commit boundary",
+      content: "The saved result must not wait for a background queue wake.",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+    });
+
+    await vi.waitFor(() => expect(wakeSpy).toHaveBeenCalledTimes(1));
+    let settled = false;
+    void savePromise.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    try {
+      expect(settled).toBe(true);
+    } finally {
+      resolveWake();
+    }
+    await savePromise;
+  });
+
+  it("captures the theme at local commit even when the durable queue wake is still pending", async () => {
+    let resolveWake!: () => void;
+    const wake = new Promise<void>((resolve) => {
+      resolveWake = resolve;
+    });
+    const wakeSpy = vi
+      .spyOn(offlineQueue, "wakeFromDurableStorage")
+      .mockReturnValueOnce(wake);
+    let appliedTheme: "paper" | "ink" = "paper";
+
+    const capturePromise = commitJournalSaveAndCaptureTheme(
+      () =>
+        saveEntry({
+          date: "2026-07-16",
+          title: "Theme boundary",
+          content: "The ceremony theme follows the durable local commit.",
+          stickers: [],
+          photoIds: [],
+          audioIds: [],
+          tags: [],
+        }),
+      () => appliedTheme,
+    );
+
+    try {
+      await vi.waitFor(() => expect(wakeSpy).toHaveBeenCalledTimes(1));
+      appliedTheme = "ink";
+      resolveWake();
+      expect((await capturePromise).appliedTheme).toBe("paper");
+    } finally {
+      resolveWake();
+      await capturePromise.catch(() => undefined);
+    }
+  });
+
   it("keeps a committed update successful when the queue wake is deferred", async () => {
     await db.journalEntries.add({
       id: "entry-wake-update",
@@ -433,7 +527,270 @@ describe("journal core writes use a durable outbox", () => {
     expect(await db.offlineQueue.where("entityId").equals("entry-wake-update").count()).toBe(1);
   });
 
-  it("keeps a committed entry delete successful when the queue wake is deferred", async () => {
+  it("rolls back a media-removal update when security-migration pruning fails", async () => {
+    await db.journalEntries.add({
+      id: "entry-security-prune-boundary",
+      date: "2026-07-16",
+      title: "Before",
+      content: "before",
+      stickers: [],
+      photoIds: ["photo-security-prune"],
+      audioIds: [],
+      tags: [],
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    await db.settings.put({
+      key: SK.JOURNAL_SECURITY_MIGRATION,
+      value: { pending: true },
+    });
+    vi.spyOn(
+      journalSecurityMigration,
+      "removeDeletedJournalArtifactsFromSecurityMigration",
+    ).mockRejectedValueOnce(new Error("security migration prune unavailable"));
+
+    await expect(
+      updateEntry(
+        "entry-security-prune-boundary",
+        {
+          content: "after",
+          photoIds: [],
+        },
+        1,
+      ),
+    ).rejects.toThrow("security migration prune unavailable");
+
+    expect(await db.journalEntries.get("entry-security-prune-boundary")).toEqual(
+      expect.objectContaining({
+        content: "before",
+        photoIds: ["photo-security-prune"],
+        updatedAt: 1,
+      }),
+    );
+    expect(
+      await db.offlineQueue.where("entityId").equals("entry-security-prune-boundary").count(),
+    ).toBe(0);
+  });
+
+  it("rolls back an entry delete when security-migration pruning fails", async () => {
+    await db.journalEntries.add({
+      id: "entry-security-delete-boundary",
+      date: "2026-07-16",
+      title: "Delete boundary",
+      content: "must survive",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    await db.journalEntryLinks.add({
+      id: "entry-security-delete-boundary:space:space-security-boundary",
+      entryId: "entry-security-delete-boundary",
+      targetType: "space",
+      targetId: "space-security-boundary",
+      createdAt: 1,
+    });
+    await seedJournalSecurityMigration({
+      entryIds: ["entry-security-delete-boundary"],
+    });
+    vi.spyOn(
+      journalSecurityMigration,
+      "removeDeletedJournalArtifactsFromSecurityMigration",
+    ).mockRejectedValueOnce(new Error("security migration prune unavailable"));
+
+    await expect(
+      deleteEntry("entry-security-delete-boundary"),
+    ).rejects.toThrow("security migration prune unavailable");
+
+    expect(await db.journalEntries.get("entry-security-delete-boundary")).toBeDefined();
+    expect(
+      await db.journalEntryLinks
+        .where("entryId")
+        .equals("entry-security-delete-boundary")
+        .count(),
+    ).toBe(1);
+    expect(
+      await db.offlineQueue.where("entityId").equals("entry-security-delete-boundary").count(),
+    ).toBe(0);
+  });
+
+  it("rolls back draft media deletion when security-migration pruning fails", async () => {
+    await db.journalPhotos.add({
+      id: "draft-photo-security-boundary",
+      entryId: "__draft__",
+      data: "data:image/jpeg;base64,cGhvdG8=",
+      thumbnail: "data:image/jpeg;base64,dGh1bWI=",
+      width: 800,
+      height: 600,
+      createdAt: 1,
+    });
+    await db.journalAudio.add({
+      id: "draft-audio-security-boundary",
+      entryId: "__draft__",
+      data: "data:audio/webm;base64,YXVkaW8=",
+      duration: 1,
+      mimeType: "audio/webm",
+      createdAt: 1,
+    });
+    await seedJournalSecurityMigration({
+      photoIds: ["draft-photo-security-boundary"],
+      audioIds: ["draft-audio-security-boundary"],
+    });
+    vi.spyOn(
+      journalSecurityMigration,
+      "removeDeletedJournalArtifactsFromSecurityMigration",
+    ).mockRejectedValueOnce(new Error("security migration prune unavailable"));
+
+    await expect(deleteDraftMedia()).rejects.toThrow(
+      "security migration prune unavailable",
+    );
+
+    expect(await db.journalPhotos.get("draft-photo-security-boundary")).toBeDefined();
+    expect(await db.journalAudio.get("draft-audio-security-boundary")).toBeDefined();
+    expect(await db.offlineQueue.count()).toBe(0);
+  });
+
+  it("rolls back an individual photo delete when security-migration pruning fails", async () => {
+    await db.journalEntries.add({
+      id: "entry-photo-security-boundary",
+      date: "2026-07-16",
+      title: "Photo boundary",
+      content: "content",
+      stickers: [],
+      photoIds: ["photo-security-delete-boundary"],
+      audioIds: [],
+      tags: [],
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    await db.journalPhotos.add({
+      id: "photo-security-delete-boundary",
+      entryId: "entry-photo-security-boundary",
+      data: "data:image/jpeg;base64,cGhvdG8=",
+      thumbnail: "data:image/jpeg;base64,dGh1bWI=",
+      width: 800,
+      height: 600,
+      createdAt: 1,
+    });
+    await seedJournalSecurityMigration({
+      photoIds: ["photo-security-delete-boundary"],
+    });
+    vi.spyOn(
+      journalSecurityMigration,
+      "removeDeletedJournalArtifactsFromSecurityMigration",
+    ).mockRejectedValueOnce(new Error("security migration prune unavailable"));
+
+    await expect(
+      deletePhoto(
+        "photo-security-delete-boundary",
+        "entry-photo-security-boundary",
+      ),
+    ).rejects.toThrow("security migration prune unavailable");
+
+    expect(await db.journalPhotos.get("photo-security-delete-boundary")).toBeDefined();
+    expect(
+      (await db.journalEntries.get("entry-photo-security-boundary"))?.photoIds,
+    ).toEqual(["photo-security-delete-boundary"]);
+    expect(
+      await db.offlineQueue
+        .where("entityId")
+        .equals("journal-photo-delete:photo-security-delete-boundary")
+        .count(),
+    ).toBe(0);
+  });
+
+  it("rolls back an individual audio delete when security-migration pruning fails", async () => {
+    await db.journalEntries.add({
+      id: "entry-audio-security-boundary",
+      date: "2026-07-16",
+      title: "Audio boundary",
+      content: "content",
+      stickers: [],
+      photoIds: [],
+      audioIds: ["audio-security-delete-boundary"],
+      tags: [],
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    await db.journalAudio.add({
+      id: "audio-security-delete-boundary",
+      entryId: "entry-audio-security-boundary",
+      data: "data:audio/webm;base64,YXVkaW8=",
+      duration: 1,
+      mimeType: "audio/webm",
+      createdAt: 1,
+    });
+    await seedJournalSecurityMigration({
+      audioIds: ["audio-security-delete-boundary"],
+    });
+    vi.spyOn(
+      journalSecurityMigration,
+      "removeDeletedJournalArtifactsFromSecurityMigration",
+    ).mockRejectedValueOnce(new Error("security migration prune unavailable"));
+
+    await expect(
+      deleteAudio(
+        "audio-security-delete-boundary",
+        "entry-audio-security-boundary",
+      ),
+    ).rejects.toThrow("security migration prune unavailable");
+
+    expect(await db.journalAudio.get("audio-security-delete-boundary")).toBeDefined();
+    expect(
+      (await db.journalEntries.get("entry-audio-security-boundary"))?.audioIds,
+    ).toEqual(["audio-security-delete-boundary"]);
+    expect(
+      await db.offlineQueue
+        .where("entityId")
+        .equals("journal-audio-delete:audio-security-delete-boundary")
+        .count(),
+    ).toBe(0);
+  });
+
+  it("resolves a committed update before a durable queue wake finishes", async () => {
+    await db.journalEntries.add({
+      id: "entry-wake-boundary-update",
+      date: "2026-07-16",
+      title: "Before",
+      content: "before",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    let resolveWake!: () => void;
+    const wake = new Promise<void>((resolve) => {
+      resolveWake = resolve;
+    });
+    const wakeSpy = vi
+      .spyOn(offlineQueue, "wakeFromDurableStorage")
+      .mockReturnValueOnce(wake);
+
+    const updatePromise = updateEntry(
+      "entry-wake-boundary-update",
+      { content: "after" },
+      1,
+    );
+
+    await vi.waitFor(() => expect(wakeSpy).toHaveBeenCalledTimes(1));
+    let settled = false;
+    void updatePromise.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    try {
+      expect(settled).toBe(true);
+    } finally {
+      resolveWake();
+    }
+    await updatePromise;
+  });
+
+  it("settles a committed entry delete without waiting for a held queue wake", async () => {
     await db.journalEntries.add({
       id: "entry-wake-delete",
       date: "2026-07-16",
@@ -446,17 +803,35 @@ describe("journal core writes use a durable outbox", () => {
       createdAt: 1,
       updatedAt: 1,
     });
-    vi.spyOn(offlineQueue, "wakeFromDurableStorage").mockRejectedValueOnce(
-      new Error("queue wake unavailable"),
-    );
+    let resolveWake!: () => void;
+    const wake = new Promise<void>((resolve) => {
+      resolveWake = resolve;
+    });
+    const wakeSpy = vi
+      .spyOn(offlineQueue, "wakeFromDurableStorage")
+      .mockReturnValueOnce(wake);
+    vi.mocked(triggerSync).mockClear();
 
-    await deleteEntry("entry-wake-delete");
+    const deletePromise = deleteEntry("entry-wake-delete");
+    await vi.waitFor(() => expect(wakeSpy).toHaveBeenCalledTimes(1));
+    expect(triggerSync).toHaveBeenCalledTimes(1);
+    let settled = false;
+    void deletePromise.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    try {
+      expect(settled).toBe(true);
+    } finally {
+      resolveWake();
+    }
+    await deletePromise;
 
     expect(await db.journalEntries.get("entry-wake-delete")).toBeUndefined();
     expect(await db.offlineQueue.where("entityId").equals("entry-wake-delete").count()).toBe(1);
   });
 
-  it("keeps committed photo and audio deletes successful when queue wakes are deferred", async () => {
+  it("settles a committed photo delete without waiting for a held queue wake", async () => {
     await db.journalEntries.add({
       id: "entry-wake-media-delete",
       date: "2026-07-16",
@@ -464,7 +839,7 @@ describe("journal core writes use a durable outbox", () => {
       content: "content",
       stickers: [],
       photoIds: ["photo-wake-delete"],
-      audioIds: ["audio-wake-delete"],
+      audioIds: [],
       tags: [],
       createdAt: 1,
       updatedAt: 1,
@@ -478,32 +853,84 @@ describe("journal core writes use a durable outbox", () => {
       height: 600,
       createdAt: 1,
     });
+    let resolveWake!: () => void;
+    const wake = new Promise<void>((resolve) => {
+      resolveWake = resolve;
+    });
+    const wakeSpy = vi
+      .spyOn(offlineQueue, "wakeFromDurableStorage")
+      .mockReturnValueOnce(wake);
+
+    const deletePromise = deletePhoto("photo-wake-delete", "entry-wake-media-delete");
+    await vi.waitFor(() => expect(wakeSpy).toHaveBeenCalledTimes(1));
+    let settled = false;
+    void deletePromise.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    try {
+      expect(settled).toBe(true);
+    } finally {
+      resolveWake();
+    }
+    await deletePromise;
+
+    expect(await db.journalPhotos.get("photo-wake-delete")).toBeUndefined();
+    expect(
+      await db.offlineQueue.where("entityId").equals("journal-photo-delete:photo-wake-delete").count(),
+    ).toBe(1);
+  });
+
+  it("settles a committed audio delete without waiting for a held queue wake", async () => {
+    await db.journalEntries.add({
+      id: "entry-wake-audio-delete",
+      date: "2026-07-16",
+      title: "Audio delete",
+      content: "content",
+      stickers: [],
+      photoIds: [],
+      audioIds: ["audio-wake-delete"],
+      tags: [],
+      createdAt: 1,
+      updatedAt: 1,
+    });
     await db.journalAudio.add({
       id: "audio-wake-delete",
-      entryId: "entry-wake-media-delete",
+      entryId: "entry-wake-audio-delete",
       data: "data:audio/webm;base64,YXVkaW8=",
       duration: 1,
       mimeType: "audio/webm",
       createdAt: 1,
     });
-    vi.spyOn(offlineQueue, "wakeFromDurableStorage")
-      .mockRejectedValueOnce(new Error("photo queue wake unavailable"))
-      .mockRejectedValueOnce(new Error("audio queue wake unavailable"));
+    let resolveWake!: () => void;
+    const wake = new Promise<void>((resolve) => {
+      resolveWake = resolve;
+    });
+    const wakeSpy = vi
+      .spyOn(offlineQueue, "wakeFromDurableStorage")
+      .mockReturnValueOnce(wake);
 
-    await deletePhoto("photo-wake-delete", "entry-wake-media-delete");
-    await deleteAudio("audio-wake-delete", "entry-wake-media-delete");
+    const deletePromise = deleteAudio("audio-wake-delete", "entry-wake-audio-delete");
+    await vi.waitFor(() => expect(wakeSpy).toHaveBeenCalledTimes(1));
+    let settled = false;
+    void deletePromise.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    try {
+      expect(settled).toBe(true);
+    } finally {
+      resolveWake();
+    }
+    await deletePromise;
 
-    expect(await db.journalPhotos.get("photo-wake-delete")).toBeUndefined();
     expect(await db.journalAudio.get("audio-wake-delete")).toBeUndefined();
-    expect(
-      await db.offlineQueue.where("entityId").equals("journal-photo-delete:photo-wake-delete").count(),
-    ).toBe(1);
     expect(
       await db.offlineQueue.where("entityId").equals("journal-audio-delete:audio-wake-delete").count(),
     ).toBe(1);
   });
 
-  it("keeps committed draft media deletion successful when the queue wake is deferred", async () => {
+  it("settles committed draft media deletion without waiting for a held queue wake", async () => {
     await db.journalPhotos.add({
       id: "draft-photo-wake-delete",
       entryId: "__draft__",
@@ -521,11 +948,27 @@ describe("journal core writes use a durable outbox", () => {
       mimeType: "audio/webm",
       createdAt: 1,
     });
-    vi.spyOn(offlineQueue, "wakeFromDurableStorage").mockRejectedValueOnce(
-      new Error("queue wake unavailable"),
-    );
+    let resolveWake!: () => void;
+    const wake = new Promise<void>((resolve) => {
+      resolveWake = resolve;
+    });
+    const wakeSpy = vi
+      .spyOn(offlineQueue, "wakeFromDurableStorage")
+      .mockReturnValueOnce(wake);
 
-    await deleteDraftMedia();
+    const deletePromise = deleteDraftMedia();
+    await vi.waitFor(() => expect(wakeSpy).toHaveBeenCalledTimes(1));
+    let settled = false;
+    void deletePromise.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    try {
+      expect(settled).toBe(true);
+    } finally {
+      resolveWake();
+    }
+    await deletePromise;
 
     expect(await db.journalPhotos.get("draft-photo-wake-delete")).toBeUndefined();
     expect(await db.journalAudio.get("draft-audio-wake-delete")).toBeUndefined();

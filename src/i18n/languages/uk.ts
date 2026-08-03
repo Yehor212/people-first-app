@@ -169,9 +169,9 @@ export const uk: Translations = {
   insightMorning: "вранці",
   insightAfternoon: "вдень",
   insightEvening: "ввечері",
-  insightHabitImprovesMood: "{habit} покращує настрій",
+  insightHabitImprovesMood: "Записи пов’язують «{habit}» із вищою оцінкою настрою",
   insightHabitImprovesMoodDesc:
-    "У дні, коли ви виконуєте «{habit}», ваш настрій на {percent}% кращий.",
+    "У {sampleDays} записаних днях із «{habit}» середня оцінка настрою становила {avgMoodWith}/5, а в {comparisonDays} інших записаних днях — {avgMoodWithout}/5. Це зв’язок у ваших записах, а не доказ того, що звичка спричинила зміну.",
   insightFocusBestLabel: "Найкраща фокусировка на «{label}»",
   insightFocusBestLabelDesc:
     "Середній час фокусування для «{label}» становить {minutes} хвилин — вище, ніж для інших занять.",
@@ -180,9 +180,9 @@ export const uk: Translations = {
   insightBestTimeForHabit: "Найкращий час для {habit}: {time}",
   insightBestTimeForHabitDesc:
     "Ви на {percent}% частіше виконуєте «{habit}» {time} порівняно з {worstTime} ({worstPercent}%).",
-  insightTagBoostsMood: "«{tag}» покращує настрій",
+  insightTagBoostsMood: "Записи з міткою «{tag}» пов’язані з вищою оцінкою настрою",
   insightTagBoostsMoodDesc:
-    "Дні з міткою «{tag}» показують на {percent}% кращий настрій в середньому.",
+    "У {occurrences} записах із міткою «{tag}» середня оцінка настрою становила {avgMoodWith}/5, а в {untaggedEntries} записах без міток — {avgMoodWithout}/5. Це зв’язок у ваших записах, а не доказ того, що мітка спричинила зміну.",
 
   // Module names (v1.6.1 - OnboardingFlow)
   moduleFocus: "Таймер Фокусування",
@@ -2132,7 +2132,8 @@ export const uk: Translations = {
   insightsHelpTitle: "Про Аналітика",
   insightsHelp1: "Аналітика генеруються з ваших даних за допомогою статистичного аналізу.",
   insightsHelp2: "Увесь аналіз відбувається на вашому пристрої - ваші дані нікуди не передаються.",
-  insightsHelp3: "Патерни з вищою впевненістю показуються першими.",
+  insightsHelp3:
+    "Патерни впорядковано за обсягом записаних даних і величиною спостережуваної різниці.",
   insightsDismiss: "Приховати",
   insightsShowMore: "Показати більше",
   insightsShowLess: "Показати менше",
@@ -2396,7 +2397,7 @@ export const uk: Translations = {
 
   // Insight Card Details
   insightConfidence: "Впевненість",
-  insightDataPoints: "Точок даних",
+  insightDataPoints: "записів",
   insightAvgMoodWith: "Середній настрій зі звичкою",
   insightAvgMoodWithout: "Середній настрій без звички",
   insightSampleDays: "Днів у вибірці",

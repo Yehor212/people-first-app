@@ -184,6 +184,7 @@ describe("account deletion disclosure", () => {
     const warning = document.getElementById("settings-v2-delete-warning");
     const details = document.getElementById("settings-v2-delete-details");
 
+    expect(confirmation).toHaveAttribute("data-inset-presentation", "contained");
     expect.soft(title, "the focused confirmation group needs a stable title id").not.toBeNull();
     expect.soft(warning, "the destructive warning needs a stable description id").not.toBeNull();
     expect.soft(details, "the full disclosure link needs a stable description id").not.toBeNull();

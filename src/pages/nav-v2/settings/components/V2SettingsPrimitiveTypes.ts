@@ -37,6 +37,7 @@ export interface SettingsInsetProps {
   children: ReactNode;
   containerRef?: Ref<HTMLDivElement>;
   tone?: "neutral" | "danger" | "success";
+  presentation?: "contained" | "flat-row";
   testId?: string;
   className?: string;
   tabIndex?: number;

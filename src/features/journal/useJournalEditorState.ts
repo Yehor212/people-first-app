@@ -79,6 +79,7 @@ import {
   ACCOUNT_BOUNDARY_WRITERS_SUSPENDED_EVENT,
   areAccountBoundaryWritersSuspended,
 } from "@/lib/accountBoundaryState";
+import type { JournalSaveCompletion } from "./save-ceremony/journalSaveCeremonyContract";
 
 interface EditorSnapshot {
   title: string;
@@ -300,7 +301,7 @@ export interface JournalEditorStateProps {
       string,
       { x: number; y: number; width: number; description?: string }
     >;
-  }, draftContext: JournalDraftCommitContext) => Promise<void>;
+  }, draftContext: JournalDraftCommitContext) => Promise<JournalSaveCompletion | void>;
   onAddPhoto: (file: File, entryId: string, signal?: AbortSignal) => Promise<JournalPhoto>;
   onRemovePhoto: (photoId: string, entryId: string) => Promise<void>;
   onAddAudio: (
@@ -415,6 +416,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const saveStartRef = useRef(0);
   const saveInFlightRef = useRef<Promise<void> | null>(null);
+  const saveCommittedRef = useRef(false);
   const MIN_SAVE_DISPLAY_MS = 400;
 
   // === Word Count Milestones ===
@@ -1219,7 +1221,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   // === Handlers ===
 
   const handleBack = useCallback(() => {
-    if (saveInFlightRef.current) return;
+    if (saveInFlightRef.current || saveCommittedRef.current) return;
     if (
       isDirty ||
       contentRef.current !== initialSnapshotRef.current.content ||
@@ -1264,6 +1266,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
 
   const handleSave = useCallback((): Promise<void> => {
     if (!hasContent || draftLoadState !== "ready") return Promise.resolve();
+    if (saveCommittedRef.current) return Promise.resolve();
     if (saveInFlightRef.current) return saveInFlightRef.current;
 
     const savePromise = (async () => {
@@ -1278,7 +1281,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
         ? await flushActiveRecordingForSave(shouldFlushRecording)
         : audioIdsRef.current;
 
-      await onSave(
+      const saveCompletion = await onSave(
         {
           title: title.trim(),
           content: contentRef.current.trim(),
@@ -1305,6 +1308,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
         },
         { draftKey, mediaOwnerId: draftMediaOwnerId, writerId: draftWriterIdRef.current },
       );
+      saveCommittedRef.current = true;
       if (isExistingEntry) {
         stagedAddedPhotoIdsRef.current.clear();
         stagedAddedAudioIdsRef.current.clear();
@@ -1323,19 +1327,19 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
       // The storage-layer save transaction owns draft + lease deletion. Repeating that
       // cleanup here can falsely turn an already durable entry into a failed save.
       draftPersistenceSuppressedRef.current = true;
-      announceSuccess(ts.journalEntrySaved || "Entry saved");
       setSaveState("saved");
       setSaveSuccess(true);
       // Auto-transition saved -> idle after 2s
       setTimeout(() => setSaveState("idle"), 2000);
-      // Celebration: sound + haptic
-      try {
-        const { playSuccess } = await import("@/lib/audioManager");
-        playSuccess();
-      } catch {
-        /* graceful: celebration audio is decorative */
+      if (!saveCompletion?.feedbackHandled) {
+        try {
+          const { playSuccess } = await import("@/lib/audioManager");
+          playSuccess();
+        } catch {
+          /* graceful: celebration audio is decorative */
+        }
+        void hapticSuccess();
       }
-      void hapticSuccess();
       // Navigate after brief celebration
       navigationTimeoutRef.current = setTimeout(() => onBack(), 600);
     } catch (err) {
@@ -1684,7 +1688,13 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
         }
         handleBack();
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && hasContent && saveState !== "saving") {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.key === "Enter" &&
+        hasContent &&
+        saveState !== "saving" &&
+        !saveCommittedRef.current
+      ) {
         e.preventDefault();
         void handleSave();
       }

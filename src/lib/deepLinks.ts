@@ -1,9 +1,12 @@
 /**
  * Deep Linking Handler
  *
- * Handles app URLs for:
- * - zenflow://challenge/{id} - Open challenge invites
+ * Handles generic app URLs for:
+ * - zenflow://diary/{route} - Open a supported diary destination
  * - com.zenflow.app://login-callback - OAuth callback (handled separately)
+ *
+ * Challenge invitations use the encoded `?data=` contract in
+ * `useDeepLinkHandler`; ZenFlow has no short-ID challenge lookup contract.
  *
  * Usage: Call setupDeepLinks() once at app startup.
  */
@@ -26,8 +29,7 @@ const pendingDeepLinks: DeepLinkData[] = [];
 let subscriberCount = 0;
 
 export interface DeepLinkData {
-  type: "challenge" | "diary" | "unknown";
-  id?: string;
+  type: "diary" | "unknown";
   /** Sub-route for diary deep links: "mood" | "editor" */
   route?: string;
   params?: Record<string, string>;
@@ -35,7 +37,7 @@ export interface DeepLinkData {
 
 function deepLinkKey(data: DeepLinkData): string {
   const params = data.params ? JSON.stringify(Object.entries(data.params).sort()) : "";
-  return [data.type, data.id ?? "", data.route ?? "", params].join(":");
+  return [data.type, data.route ?? "", params].join(":");
 }
 
 function describeDeepLinkUrl(url: string): Record<string, string> {
@@ -64,34 +66,12 @@ export function parseDeepLink(url: string): DeepLinkData | null {
       const path = parsed.pathname.replace(/^\/+/, ""); // Remove leading slashes
       const host = parsed.host;
 
-      // zenflow://challenge/{id}
-      if (host === "challenge" || path.startsWith("challenge")) {
-        const id =
-          path.replace("challenge/", "").replace("challenge", "") || parsed.searchParams.get("id");
-        if (id && /^[A-Za-z0-9]{4,12}$/.test(id)) {
-          return { type: "challenge", id };
-        }
-      }
-
       // zenflow://diary/mood, zenflow://diary/editor, or zenflow:///diary/editor
       if (host === "diary" || path === "diary" || path.startsWith("diary/")) {
         const route = host === "diary" ? path : path.replace(/^diary\/?/, "");
         const validRoutes = ["mood", "editor"];
         const resolvedRoute = validRoutes.includes(route) ? route : "mood";
         return { type: "diary", route: resolvedRoute };
-      }
-    }
-
-    // Handle https://zenflow.app/ links (future web deep links)
-    if (parsed.host === "zenflow.app" || parsed.host === "www.zenflow.app") {
-      const pathParts = parsed.pathname.split("/").filter(Boolean);
-
-      if (
-        pathParts[0] === "challenge" &&
-        pathParts[1] &&
-        /^[A-Za-z0-9]{4,12}$/.test(pathParts[1])
-      ) {
-        return { type: "challenge", id: pathParts[1] };
       }
     }
 

@@ -1981,8 +1981,41 @@ describe("SettingsPage", () => {
     );
 
     const accountPanel = screen.getByTestId("settings-v2-panel-account");
-    expect(within(accountPanel).getByText("Connected sign-in methods")).toBeInTheDocument();
-    expect(within(accountPanel).getByText("Google")).toBeInTheDocument();
+    const linkedMethodsHeading = within(accountPanel).getByText("Connected sign-in methods");
+    const linkedProvider = within(accountPanel).getByText("Google");
+    const linkedMethodsRow = linkedMethodsHeading.closest("[data-inset-presentation]");
+    expect(linkedMethodsHeading).toBeInTheDocument();
+    expect(linkedProvider).toBeInTheDocument();
+    expect(linkedMethodsRow).toHaveAttribute("data-inset-presentation", "flat-row");
+    expect(linkedMethodsRow).toHaveClass("rounded-none", "border-b", "bg-transparent");
+  });
+
+  it("isolates mixed RTL prose, dates, URLs, handles, punctuation, emoji, and LTR IDs", () => {
+    const accountLabel =
+      "حساب سارة — @Avery_2026, 12/07/2026; https://example.test/a?b=1 — ABC-123 🙂 — avery.very.long.identifier@example.invalid";
+    accountAuthMock.sessionAccountLabel = accountLabel;
+    languageContextMock.language = "ar";
+
+    render(
+      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "account" }} />
+    );
+
+    const identity = screen.getByTestId("settings-v2-session-account-label");
+    const identityRow = identity.closest("[data-inset-presentation]");
+    expect(identity.tagName).toBe("BDI");
+    expect(identity).toHaveAttribute("dir", "auto");
+    expect(identity).toHaveTextContent(accountLabel);
+    expect(identity).toHaveClass("min-w-0", "max-w-full", "break-words");
+    expect(identity.className).toContain("[overflow-wrap:anywhere]");
+    expect(identity).not.toHaveClass("truncate");
+    expect(identityRow).toHaveAttribute("data-inset-presentation", "flat-row");
+    expect(identityRow).toHaveClass("rounded-none", "border-b", "bg-transparent");
+
+    const nameInput = screen.getByLabelText("Your name");
+    const mixedName = "سارة @Avery_2026 — ABC-123 🙂";
+    fireEvent.change(nameInput, { target: { value: mixedName } });
+    expect(nameInput).toHaveAttribute("dir", "auto");
+    expect(nameInput).toHaveValue(mixedName);
   });
 
   it("isolates mixed RTL prose, dates, URLs, handles, punctuation, emoji, and LTR IDs", () => {
@@ -2029,6 +2062,10 @@ describe("SettingsPage", () => {
     );
 
     const accountPanel = screen.getByTestId("settings-v2-panel-account");
+    expect(screen.getByTestId("settings-v2-account-checking")).toHaveAttribute(
+      "data-inset-presentation",
+      "contained"
+    );
     expect(accountPanel).toHaveTextContent("Checking your account…");
     expect(accountPanel).toHaveTextContent(
       "Your data stays on this device while ZenFlow checks your account."
@@ -2055,6 +2092,10 @@ describe("SettingsPage", () => {
     );
 
     const accountPanel = screen.getByTestId("settings-v2-panel-account");
+    expect(screen.getByTestId("settings-v2-account-check-error")).toHaveAttribute(
+      "data-inset-presentation",
+      "contained"
+    );
     expect(accountPanel).toHaveTextContent("We couldn’t check your account");
     expect(accountPanel).toHaveTextContent(
       "Your data stays on this device. Check your connection and try again."
@@ -2150,6 +2191,10 @@ describe("SettingsPage", () => {
     expect(screen.getByTestId("settings-v2-sign-out-recovery")).toHaveTextContent(
       "Your account is signed out, but this device still needs cleanup."
     );
+    expect(screen.getByTestId("settings-v2-sign-out-recovery")).toHaveAttribute(
+      "data-inset-presentation",
+      "contained"
+    );
     expect(screen.queryByRole("button", { name: "Continue with Google" })).not.toBeInTheDocument();
   });
 
@@ -2220,6 +2265,24 @@ describe("SettingsPage", () => {
       "[hyphens:manual]",
       "[overflow-wrap:break-word]"
     );
+    expect(
+      within(accountPanel).getByText(
+        "You can use ZenFlow without an account. Sign in to save new changes online and use them on your other devices."
+      )
+    ).toHaveClass(
+      "min-w-0",
+      "whitespace-normal",
+      "break-words",
+      "[hyphens:manual]",
+      "[overflow-wrap:break-word]"
+    );
+    expect(
+      within(accountPanel)
+        .getByText(
+          "You can use ZenFlow without an account. Sign in to save new changes online and use them on your other devices."
+        )
+        .closest("[data-inset-presentation]")
+    ).toHaveAttribute("data-inset-presentation", "flat-row");
     expect(accountPanel).not.toHaveTextContent(/expired|again/i);
     expect(screen.getByTestId("auth-provider-button")).toBeInTheDocument();
     expect(screen.queryByTestId("settings-status-overview")).not.toBeInTheDocument();
@@ -2914,7 +2977,7 @@ describe("SettingsPage", () => {
     }
   });
 
-  it("moves keyboard focus to the selected module panel on mobile module changes", async () => {
+  it("moves keyboard focus to the selected module heading without turning the region into a visual container", async () => {
     const scroll = installScrollIntoViewSpy();
     const media = installSettingsMotionMediaQuery({
       isMobileWorkspace: true,
@@ -2927,8 +2990,13 @@ describe("SettingsPage", () => {
       fireEvent.click(screen.getByTestId("settings-module-card-sound"));
 
       const selectedPanel = await screen.findByTestId("settings-module-panel-sound");
-      expect(selectedPanel).toHaveAttribute("tabindex", "-1");
-      expect(selectedPanel).toHaveFocus();
+      const selectedHeading = document.getElementById("settings-module-panel-heading-sound");
+
+      expect(selectedPanel).not.toHaveAttribute("tabindex");
+      expect(selectedPanel).toHaveAttribute("data-visual-role", "settings-detail-region");
+      expect(selectedHeading).toHaveAttribute("tabindex", "-1");
+      expect(selectedHeading).toHaveClass("focus-visible:ring-2");
+      expect(selectedHeading).toHaveFocus();
     } finally {
       media.restore();
       scroll.restore();
@@ -3242,7 +3310,8 @@ describe("SettingsPage", () => {
 
     expect(appearanceArticle).toHaveAttribute("data-active", "true");
     expect(appearanceModule).toHaveAttribute("data-interaction-surface", "settings-module");
-    expect(appearanceModule.className).toContain("active:translate-y-[1px]");
+    expect(appearanceModule.className).toContain("focus-visible:ring-inset");
+    expect(appearanceModule.className).not.toContain("active:translate-y-[1px]");
     expect(blueChoice).toHaveAttribute("data-interaction-surface", "settings-choice");
     expect(blueChoice.className).toContain("active:translate-y-[1px]");
     expect(screen.queryByTestId("settings-v2-style-reset")).toBeNull();

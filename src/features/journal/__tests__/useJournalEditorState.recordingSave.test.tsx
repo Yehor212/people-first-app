@@ -1422,14 +1422,20 @@ describe("useJournalEditorState recording save", () => {
     );
 
     await waitFor(() => expect(result.current.draftAvailable).not.toBeNull());
-    const firstDismiss = await result.current.handleDismissDraft();
+    let firstDismiss = true;
+    await act(async () => {
+      firstDismiss = await result.current.handleDismissDraft();
+    });
     expect(firstDismiss).toBe(false);
-    await waitFor(() => expect(result.current.draftDismissSubmitting).toBe(false));
+    await waitFor(() => expect(result.current.draftDismissError).toBeTruthy());
+    expect(result.current.draftDismissSubmitting).toBe(false);
     expect(result.current.draftAvailable).not.toBeNull();
-    expect(result.current.draftDismissError).toBeTruthy();
     expect(storageMocks.discardJournalDraft).toHaveBeenCalledTimes(1);
 
-    const secondDismiss = await result.current.handleDismissDraft();
+    let secondDismiss = false;
+    await act(async () => {
+      secondDismiss = await result.current.handleDismissDraft();
+    });
     expect(secondDismiss).toBe(true);
     expect(storageMocks.discardJournalDraft).toHaveBeenLastCalledWith({
       draftKey: "journal_draft_entry-existing",
@@ -1776,6 +1782,9 @@ describe("useJournalEditorState recording save", () => {
     act(() => finishSave());
     await act(async () => {
       await Promise.all([firstSave, secondSave]);
+    });
+    await act(async () => {
+      await result.current.handleSave();
     });
     expect(onSave).toHaveBeenCalledTimes(1);
   });

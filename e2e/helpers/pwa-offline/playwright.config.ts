@@ -10,6 +10,7 @@ const buildPrefix = skipBuild ? "" : "npm run build && ";
 
 export default defineConfig({
   testDir: repoRoot,
+  testIgnore: ["**/.codex-artifacts/**", "**/output/**"],
   fullyParallel: false,
   forbidOnly: true,
   retries: 0,

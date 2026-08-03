@@ -38,6 +38,7 @@ import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { consumePendingDiaryEditorOpen, subscribeToDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
 import { useBackHandler } from "@/hooks/useBackHandler";
@@ -45,7 +46,10 @@ import { useModalA11y } from "@/hooks/useModalA11y";
 import { createFocusTrap, getFocusableElements, announceSuccess, announceError } from "@/lib/a11y";
 import { AUTH_COMPLETE_EVENT, getAuthRedirectUrl } from "@/lib/authRedirect";
 import { createPkceAttemptRedirectUrl } from "@/lib/pkceAttemptStorage";
-import { IS_DESKTOP_RUNTIME } from "@/lib/env";
+import {
+  ENABLE_JOURNAL_SAVE_CEREMONY,
+  IS_DESKTOP_RUNTIME,
+} from "@/lib/env";
 import { Switch } from "@/components/ui/switch";
 import { SplashScreen, type SplashThemePreference } from "@/components/SplashScreen";
 import { triggerSync } from "@/storage/cloudSync";
@@ -116,10 +120,29 @@ import type {
   JournalEntrySuggestion,
   JournalReleaseTraceSummary,
 } from "./types";
+import {
+  commitJournalSaveAndCaptureTheme,
+  createJournalSaveCommitReceipt,
+  type JournalSaveCommitReceipt,
+  type JournalSaveCompletion,
+} from "./save-ceremony/journalSaveCeremonyContract";
+import {
+  captureJournalSaveCeremonyLifecycle,
+  invalidateJournalSaveCeremonyLifecycle,
+  markJournalSaveCeremonyLifecycleActive,
+  mayPresentJournalSaveCeremony,
+  type JournalSaveCeremonyLifecycleToken,
+} from "./save-ceremony/journalSaveCeremonyLifecycle";
+import { isNative, platform } from "@/lib/platform";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
 import { DiaryWallpaper } from "./DiaryWallpaper";
 import { getJournalPreviewText } from "./journalDisplay";
 import { isFavoriteJournalEntry, setJournalEntryFavorite } from "./journalFavorite";
+
+interface JournalSaveCeremonyPresentation {
+  receipt: JournalSaveCommitReceipt;
+  lifecycle: JournalSaveCeremonyLifecycleToken;
+}
 
 function getPrefillSpaceIds(prefill: JournalEntryPrefill | null | undefined): string[] {
   if (!prefill) return [];
@@ -167,6 +190,23 @@ const LazyJournalStats = lazyWithRetry(
   () => import("./JournalStats").then((m) => ({ default: m.JournalStats })),
   "JournalStats"
 );
+
+type JournalSaveCeremonyHostComponent =
+  typeof import("./save-ceremony/JournalSaveCeremonyHost").JournalSaveCeremonyHost;
+const loadJournalSaveCeremonyHostModule =
+  typeof __JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__ === "boolean" &&
+  __JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__
+    ? () => import("./save-ceremony/JournalSaveCeremonyHost")
+    : null;
+const LazyJournalSaveCeremonyHost = loadJournalSaveCeremonyHostModule
+  ? lazyWithRetry<JournalSaveCeremonyHostComponent>(
+      () =>
+        loadJournalSaveCeremonyHostModule().then((module) => ({
+          default: module.JournalSaveCeremonyHost,
+        })),
+      "JournalSaveCeremonyHost",
+    )
+  : null;
 
 type DeferredJournalModule = Record<string, ComponentType<any>>;
 type JournalSettingsContentComponent =
@@ -831,6 +871,9 @@ export const JournalModule = memo(function JournalModule({
   });
   const [privateModeState, setPrivateModeState] = useState(readJournalPrivateModeState);
   const privateMode = privateModeState.enabled;
+  const saveCeremonyMotionAllowed = useShouldAnimate();
+  const saveCeremonyMotionAllowedRef = useRef(saveCeremonyMotionAllowed);
+  saveCeremonyMotionAllowedRef.current = saveCeremonyMotionAllowed;
 
   const [showExportPicker, setShowExportPicker] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -877,6 +920,11 @@ type ResetStep =
   const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
   const [removePasswordSubmitting, setRemovePasswordSubmitting] = useState(false);
   const [celebratingStreak, setCelebratingStreak] = useState<number | null>(null);
+  const [saveCeremonyPresentation, setSaveCeremonyPresentation] =
+    useState<JournalSaveCeremonyPresentation | null>(null);
+  const saveCeremonyPreloadRequestedRef = useRef(false);
+  const saveCeremonyPreloadHandleRef =
+    useRef<ReturnType<typeof scheduleIdle> | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [favoriteMutationPending, setFavoriteMutationPending] = useState(false);
   const favoriteMutationPendingRef = useRef(false);
@@ -908,6 +956,121 @@ type ResetStep =
     initialSuggestionRef.current = initialEntrySuggestion;
   }
   useSidebarKeyboard(sidebarState, toggleSidebar, setSidebarState);
+
+  const handleEditorDirtyStateChange = useCallback((dirty: boolean) => {
+    if (
+      !ENABLE_JOURNAL_SAVE_CEREMONY ||
+      !dirty ||
+      !saveCeremonyMotionAllowed ||
+      saveCeremonyPreloadRequestedRef.current
+    ) {
+      return;
+    }
+    saveCeremonyPreloadRequestedRef.current = true;
+    saveCeremonyPreloadHandleRef.current = scheduleIdle(() => {
+      saveCeremonyPreloadHandleRef.current = null;
+      if (!saveCeremonyMotionAllowedRef.current) {
+        saveCeremonyPreloadRequestedRef.current = false;
+        return;
+      }
+      void loadJournalSaveCeremonyHostModule
+        ?.()
+        .then(({ preloadJournalSaveCeremonyRuntime }) =>
+          preloadJournalSaveCeremonyRuntime(),
+        )
+        .catch(() => {
+          logger.warn("[JournalSaveCeremony] idle preload unavailable", {
+            code: "journal_save_ceremony_preload_error",
+          });
+        });
+    });
+  }, [saveCeremonyMotionAllowed]);
+
+  useEffect(() => {
+    if (saveCeremonyMotionAllowed) return;
+    saveCeremonyPreloadHandleRef.current?.cancel();
+    saveCeremonyPreloadHandleRef.current = null;
+    saveCeremonyPreloadRequestedRef.current = false;
+  }, [saveCeremonyMotionAllowed]);
+
+  useEffect(
+    () => () => {
+      saveCeremonyPreloadHandleRef.current?.cancel();
+      saveCeremonyPreloadHandleRef.current = null;
+    },
+    [],
+  );
+  useEffect(() => {
+    if (!ENABLE_JOURNAL_SAVE_CEREMONY) return;
+
+    const markActive = () => markJournalSaveCeremonyLifecycleActive();
+    const invalidate = () => invalidateJournalSaveCeremonyLifecycle();
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") invalidate();
+      else markActive();
+    };
+    const handlePageShow = () => {
+      if (document.visibilityState !== "hidden") markActive();
+    };
+
+    handleVisibility();
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("pagehide", invalidate);
+    window.addEventListener("pageshow", handlePageShow);
+    if (IS_DESKTOP_RUNTIME) {
+      window.addEventListener("blur", invalidate);
+      window.addEventListener("focus", markActive);
+    }
+
+    let disposed = false;
+    let nativeHandle: { remove: () => Promise<void> } | null = null;
+    if (isNative) {
+      void import("@capacitor/app")
+        .then(async ({ App }) => {
+          const state = await App.getState();
+          if (disposed) return;
+          if (state.isActive) markActive();
+          else invalidate();
+          nativeHandle = await App.addListener(
+            "appStateChange",
+            ({ isActive }) => {
+              if (isActive) markActive();
+              else invalidate();
+            },
+          );
+          if (disposed) {
+            await nativeHandle.remove();
+            nativeHandle = null;
+          }
+        })
+        .catch(() => {
+          if (disposed) return;
+          logger.warn("[JournalSaveCeremony] native lifecycle unavailable", {
+            code: "journal_save_ceremony_native_lifecycle_error",
+            platform,
+          });
+          invalidate();
+        });
+    }
+
+    return () => {
+      disposed = true;
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pagehide", invalidate);
+      window.removeEventListener("pageshow", handlePageShow);
+      if (IS_DESKTOP_RUNTIME) {
+        window.removeEventListener("blur", invalidate);
+        window.removeEventListener("focus", markActive);
+      }
+      void nativeHandle?.remove().catch(() => {
+        logger.warn("[JournalSaveCeremony] native lifecycle cleanup unavailable", {
+          code: "journal_save_ceremony_native_lifecycle_cleanup_error",
+          platform,
+        });
+      });
+      invalidate();
+    };
+  }, []);
   // ? key → show keyboard shortcuts overlay
   useEffect(() => {
     if (moduleState !== "open") return;
@@ -1179,6 +1342,20 @@ type ResetStep =
   }, [isDiaryDesktopLayout, showPasswordSettings, showRemovePasswordConfirm]);
 
   const journal = useJournal();
+  const [mobileEditorSurfacePresent, setMobileEditorSurfacePresent] =
+    useState(false);
+  useEffect(() => {
+    if (isDiaryDesktopLayout) {
+      setMobileEditorSurfacePresent(false);
+    } else if (journal.view === "editing") {
+      setMobileEditorSurfacePresent(true);
+    }
+  }, [isDiaryDesktopLayout, journal.view]);
+  const handleMobileEditorExitComplete = useCallback(() => {
+    if (journal.view !== "editing") {
+      setMobileEditorSurfacePresent(false);
+    }
+  }, [journal.view]);
   const [releaseTraceSummaries, setReleaseTraceSummaries] = useState<Map<string, JournalReleaseTraceSummary>>(
     () => new Map(),
   );
@@ -1883,38 +2060,54 @@ type ResetStep =
     async (
       data: Parameters<typeof journal.createEntry>[0],
       draftContext: NonNullable<Parameters<typeof journal.createEntry>[1]>,
-    ) => {
+    ): Promise<JournalSaveCompletion> => {
+      const saveLifecycle = captureJournalSaveCeremonyLifecycle();
       const isNew = !journal.activeEntryId;
+      const operation = isNew ? "create" : "update";
       const spaceIds = getPrefillSpaceIds(activeEntryPrefill);
-      if (journal.activeEntryId) {
-        await journal.updateEntry(journal.activeEntryId, data, draftContext);
-      } else {
-        const entry = await journal.createEntry(data, draftContext);
-        if (spaceIds.length > 0) {
-          await Promise.all(spaceIds.map((spaceId) => linkEntryToSpace(entry.id, spaceId)));
-        }
-      }
+      const { appliedTheme: committedTheme } =
+        await commitJournalSaveAndCaptureTheme(
+          async () => {
+            if (journal.activeEntryId) {
+              await journal.updateEntry(
+                journal.activeEntryId,
+                data,
+                draftContext,
+              );
+            } else {
+              await journal.createEntry(data, draftContext, spaceIds);
+            }
+          },
+          () => useThemeStore.getState().appliedTheme,
+        );
       setPortalEntryPrefill(null);
-      // Trigger cloud sync after save to reduce data loss risk
+      // Secondary effects must never turn a durable local save into a failed save.
       try {
         triggerSync();
       } catch {
         /* graceful: cloud sync is secondary; data already saved to IndexedDB */
       }
+
+      let isStreakMilestone = false;
       // Streak milestone celebration (only for new entries on today's date)
       if (isNew && rewardsEnabled) {
         const entryDate = data.date || today;
         const newStreak = entryDate === today && !hasTodayEntry ? streak + 1 : 0;
         const milestones = [7, 14, 30, 60, 100];
-        const isStreakMilestone = milestones.includes(newStreak);
+        isStreakMilestone = milestones.includes(newStreak);
 
-        // Award XP, treats, plant story flower (IA Blueprint Wave A)
-        rewardUser("journal", {
-          treats: 10,
-          treatReason: "Journal entry",
-          haptic: haptics.journalSaved,
-          sound: isStreakMilestone ? null : undefined,
-        });
+        try {
+          rewardUser("journal", {
+            treats: 10,
+            treatReason: "Journal entry",
+            skipPopup: true,
+            sound: null,
+          });
+        } catch {
+          logger.warn("[Journal] Post-commit reward was deferred", {
+            code: "journal_reward_post_commit_error",
+          });
+        }
 
         if (isStreakMilestone) {
           setCelebratingStreak(newStreak);
@@ -1926,9 +2119,43 @@ type ResetStep =
           }
         }
       }
+
+      if (isStreakMilestone) {
+        return { feedbackHandled: true, ceremonyReceipt: null };
+      }
+
+      const ceremonyReceipt =
+        ENABLE_JOURNAL_SAVE_CEREMONY &&
+        mayPresentJournalSaveCeremony(saveLifecycle)
+        ? createJournalSaveCommitReceipt({
+            operation,
+            appliedTheme: committedTheme,
+          })
+        : null;
+      if (ceremonyReceipt) {
+        setSaveCeremonyPresentation({
+          receipt: ceremonyReceipt,
+          lifecycle: saveLifecycle,
+        });
+      }
+      return { feedbackHandled: false, ceremonyReceipt };
     },
-    [activeEntryPrefill, journal, rewardsEnabled, streak, hasTodayEntry, rewardUser, today]
+    [
+      activeEntryPrefill,
+      hasTodayEntry,
+      journal,
+      rewardsEnabled,
+      rewardUser,
+      streak,
+      today,
+    ]
   );
+
+  const handleSaveCeremonyConsume = useCallback((nonce: string) => {
+    setSaveCeremonyPresentation((current) =>
+      current?.receipt.nonce === nonce ? null : current,
+    );
+  }, []);
 
   const recoverFailedDelete = useCallback(
     async (failedDelete: PendingDelete, err: unknown) => {
@@ -2706,7 +2933,7 @@ type ResetStep =
       onKeyDown={handleModuleKeyDown}
       onPointerDown={security.touch}
       className={cn(
-        "w-full h-full flex flex-col",
+        "relative w-full h-full flex flex-col",
         isPagePresentation
           ? "v2-fullscreen-page relative z-[1] min-h-[var(--app-viewport-height)] bg-transparent overflow-hidden"
           : "md:my-4 md:mx-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden",
@@ -3467,6 +3694,7 @@ type ResetStep =
                           editorExitRequestRef.current = handler;
                         }}
                         onExitRequestCancelled={handleEditorExitRequestCancelled}
+                        onDirtyStateChange={handleEditorDirtyStateChange}
                         useSharedDiaryWallpaper={showJournalSidebarAtmosphere}
                         desktop
                       />
@@ -3568,7 +3796,9 @@ type ResetStep =
             <LayoutGroup>
               <>
                 {/* Editor overlays on top with its own fixed positioning */}
-                <AnimatePresence>
+                <AnimatePresence
+                  onExitComplete={handleMobileEditorExitComplete}
+                >
                   {!privateMode && journal.view === "editing" && (
                     <motion.div
                       key="editor-transition"
@@ -3614,6 +3844,7 @@ type ResetStep =
                             editorExitRequestRef.current = handler;
                           }}
                           onExitRequestCancelled={handleEditorExitRequestCancelled}
+                          onDirtyStateChange={handleEditorDirtyStateChange}
                           onToggleHabit={onToggleHabit}
                           onAddGratitude={handleAddGratitudeWithSpace}
                           onReleaseThought={handleReleaseThought}
@@ -4471,6 +4702,23 @@ type ResetStep =
           <LazyKeyboardShortcutsOverlay open={showShortcuts} onClose={() => setShowShortcuts(false)} />
         </Suspense>
       )}
+
+      {ENABLE_JOURNAL_SAVE_CEREMONY && LazyJournalSaveCeremonyHost ? (
+        <Suspense fallback={null}>
+          <LazyJournalSaveCeremonyHost
+            receipt={saveCeremonyPresentation?.receipt ?? null}
+            lifecycleToken={saveCeremonyPresentation?.lifecycle ?? null}
+            eligible={
+              journal.view === "list" &&
+              !privateMode &&
+              !showPasswordSettings &&
+              celebratingStreak === null &&
+              (isDiaryDesktopLayout || !mobileEditorSurfacePresent)
+            }
+            onConsume={handleSaveCeremonyConsume}
+          />
+        </Suspense>
+      ) : null}
 
       {/* Streak milestone celebration overlay */}
       <AnimatePresence>

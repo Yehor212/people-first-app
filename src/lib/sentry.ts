@@ -46,12 +46,23 @@ const SENSITIVE_PATTERNS = [
 const SENSITIVE_FIELD_NAME_PATTERN =
   /(^|[_-])(authorization|access[_-]?token|refresh[_-]?token|id[_-]?token|session[_-]?token|token|jwt|secret|password|cookie)s?($|[_-])/i;
 
+// Structured telemetry must never carry ZenFlow's private writing or wellbeing
+// payloads. Exact generic names cover producer-neutral objects, while semantic
+// prefixes cover the camelCase/snake_case names used by journal, mood, coach,
+// reflection, and audio features. The boundary deliberately does not redact
+// operational names such as `contentType`, `responseStatus`, or `errorMessage`.
+const SENSITIVE_CONTENT_FIELD_NAME_PATTERN =
+  /(^|[_-])((?:journal|diary)[_-]?(?:entry|text|content|note|notes)?|mood[_-]?(?:note|notes|text|content)|(?:reflection|gratitude)[_-]?(?:text|content|note|notes)?|coach[_-]?(?:prompt|response|message|content)|audio[_-]?(?:transcript|note|notes|content)|entry[_-]?(?:title|text|content|note|notes)|content|body|text|title|note|notes|prompt|response|transcript)s?($|[_-])/i;
+
 function scrubString(str: string): string {
   return SENSITIVE_PATTERNS.reduce((result, pattern) => result.replace(pattern, "[REDACTED]"), str);
 }
 
 function shouldRedactField(fieldName: string): boolean {
-  return SENSITIVE_FIELD_NAME_PATTERN.test(fieldName);
+  return (
+    SENSITIVE_FIELD_NAME_PATTERN.test(fieldName) ||
+    SENSITIVE_CONTENT_FIELD_NAME_PATTERN.test(fieldName)
+  );
 }
 
 function scrubSentryPayload(value: unknown, seen = new WeakSet<object>()): unknown {

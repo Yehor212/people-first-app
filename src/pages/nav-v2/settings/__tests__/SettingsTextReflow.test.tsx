@@ -2,7 +2,13 @@ import { render, screen } from "@testing-library/react";
 import { Settings } from "lucide-react";
 import { describe, expect, it, vi } from "vitest";
 
-import { SettingsHeroCard, SettingsPageShell } from "../components/SettingsPageComponents";
+import {
+  SettingsHeroCard,
+  SettingsModuleList,
+  SettingsPageShell,
+} from "../components/SettingsPageComponents";
+import { DEFAULT_THEME_CUSTOMIZATION } from "@/stores/themeCustomization";
+import { AppearanceAccent } from "../V2SettingsAppearanceAccent";
 import { SettingsModuleCard } from "../components/SettingsModuleCard";
 import {
   PanelFrame,
@@ -106,6 +112,14 @@ describe("Settings text reflow contracts", () => {
         <SettingsChoiceButton selected={false} onClick={() => undefined} presentation="compact">
           Benachrichtigungston
         </SettingsChoiceButton>
+        <SettingsChoiceButton
+          selected
+          onClick={() => undefined}
+          presentation="compact"
+          testId="selected-settings-choice"
+        >
+          System
+        </SettingsChoiceButton>
         <SettingsFieldHeader
           icon={Settings}
           title="Benachrichtigungsberechtigung"
@@ -117,6 +131,10 @@ describe("Settings text reflow contracts", () => {
     const choice = screen.getByRole("button", { name: "Benachrichtigungston" });
     const choiceLabel = choice.querySelector<HTMLElement>(
       '[data-slot="settings-choice-label"]'
+    );
+    const selectedChoice = screen.getByTestId("selected-settings-choice");
+    const selectionMarker = selectedChoice.querySelector<HTMLElement>(
+      '[data-slot="settings-choice-selection"]'
     );
     const title = screen.getByText("Benachrichtigungsberechtigung");
     const description = screen.getByText("Benachrichtigungsberechtigung erforderlich.");
@@ -132,12 +150,35 @@ describe("Settings text reflow contracts", () => {
     expect(choiceLabel?.className).toContain("[overflow-wrap:break-word]");
     expect(choiceLabel?.className).toContain("[hyphens:manual]");
     expect(choiceLabel?.className).not.toContain("[overflow-wrap:anywhere]");
+    expect(selectedChoice).toHaveAttribute("aria-pressed", "true");
+    expect(selectionMarker).not.toBeNull();
+    expect(selectionMarker).toHaveAttribute("aria-hidden", "true");
+    expect(selectionMarker?.querySelector("svg")).not.toBeNull();
     expect(title).toHaveClass("min-w-0", "break-words");
     expect(title.className).toContain("[overflow-wrap:break-word]");
     expect(title.className).toContain("[hyphens:manual]");
     expect(description).toHaveClass("break-words");
     expect(description.className).toContain("[overflow-wrap:break-word]");
     expect(description.className).toContain("[hyphens:manual]");
+  });
+
+  it("keeps accent swatches as visible circular flex items beside their labels", () => {
+    render(
+      <AppearanceAccent
+        tx={{}}
+        appliedTheme="paper"
+        customization={{ ...DEFAULT_THEME_CUSTOMIZATION }}
+        onChange={() => undefined}
+      />
+    );
+
+    const swatches = document.querySelectorAll<HTMLElement>('[data-swatch-kind="accent"]');
+
+    expect(swatches).toHaveLength(4);
+    for (const swatch of swatches) {
+      expect(swatch).toHaveClass("h-5", "w-5", "shrink-0", "rounded-full");
+      expect(swatch.parentElement).toHaveClass("flex", "items-center", "gap-2");
+    }
   });
 
   it("gives long toggle descriptions the full narrow row without splitting words", () => {
@@ -148,24 +189,26 @@ describe("Settings text reflow contracts", () => {
         description="Benachrichtigungsberechtigung erforderlich."
         checked={false}
         onCheckedChange={() => undefined}
+        testId="canonical-toggle-row"
       />
     );
 
+    const row = screen.getByTestId("canonical-toggle-row");
     const title = screen.getByText("Benachrichtigungen");
     const description = screen.getByText("Benachrichtigungsberechtigung erforderlich.");
+    const icon = row.querySelector<HTMLElement>("svg")?.parentElement;
 
     expect(title.className).toContain("[overflow-wrap:break-word]");
     expect(title.className).toContain("[hyphens:manual]");
-    expect(title).toHaveClass("col-start-1", "col-end-3", "row-start-2");
-    expect(title.className).toContain("min-[520px]:col-start-2");
-    expect(title.className).toContain("min-[520px]:row-start-1");
-    expect(description).toHaveClass("col-start-1", "col-end-3");
-    expect(description).toHaveClass("row-start-3");
-    expect(description.className).toContain("min-[520px]:col-start-2");
-    expect(description.className).toContain("min-[520px]:col-end-4");
-    expect(description.className).toContain("min-[520px]:row-start-2");
+    expect(title).toHaveClass("col-start-2", "col-end-3", "row-start-1");
+    expect(description).toHaveClass("col-start-2", "col-end-4", "row-start-2");
     expect(description.className).toContain("[overflow-wrap:break-word]");
     expect(description.className).toContain("[hyphens:manual]");
+    expect(row).toHaveClass("rounded-none", "border-x-0", "border-t-0", "bg-transparent");
+    expect(row.className).not.toContain("shadow-");
+    expect(icon).not.toBeNull();
+    expect(icon?.className).not.toContain("rounded-[8px]");
+    expect(icon?.className).not.toContain("bg-[hsl(var(--settings-v2-accent)/0.1)]");
   });
 
   it("allows nested Settings panels to shrink to the viewport instead of expanding it", () => {
@@ -182,6 +225,20 @@ describe("Settings text reflow contracts", () => {
 
     expect(screen.getByTestId("bounded-panel")).toHaveClass("w-full", "min-w-0", "max-w-full");
     expect(screen.getByTestId("bounded-inset")).toHaveClass("w-full", "min-w-0", "max-w-full");
+  });
+
+  it("offers a flat divider row without creating another contained surface", () => {
+    render(
+      <SettingsInset presentation="flat-row" testId="flat-settings-row">
+        Account status
+      </SettingsInset>
+    );
+
+    const row = screen.getByTestId("flat-settings-row");
+    expect(row).toHaveAttribute("data-inset-presentation", "flat-row");
+    expect(row).toHaveClass("rounded-none", "border-b", "bg-transparent");
+    expect(row).not.toHaveClass("rounded-[8px]", "border", "p-2");
+    expect(row.className).not.toContain("bg-[hsl(var(--settings-v2-shell)");
   });
 
   it("keeps the full-width inset action at least 48px tall", () => {
@@ -243,12 +300,75 @@ describe("Settings text reflow contracts", () => {
     const description = screen.getByText("Benachrichtigungsberechtigung erforderlich.");
 
     expect(moduleButton).toBeInTheDocument();
-    expect(moduleButton.className).toContain("grid-cols-[minmax(0,1fr)_auto]");
-    expect(moduleButton.className).toContain("min-[420px]:grid-cols-[auto_minmax(0,1fr)_auto]");
-    expect(moduleButton.className).not.toContain("min-[360px]:grid-cols-[auto_minmax(0,1fr)_auto]");
-    expect(description).toHaveClass("col-span-2");
-    expect(description.className).toContain("min-[420px]:col-start-2");
+    expect(moduleButton.className).toContain("grid-cols-[auto_minmax(0,1fr)_auto]");
+    expect(moduleButton.className).not.toContain("min-[420px]:grid-cols");
+    expect(description).toHaveClass("col-start-2", "col-end-3", "row-start-2");
+    expect(moduleButton.parentElement?.className).toContain("before:start-16");
+    expect(moduleButton.parentElement?.className).not.toContain("min-[420px]:before:start-16");
     expect(description.style.hyphens).toBe("manual");
     expect(description.style.overflowWrap).toBe("break-word");
+  });
+
+  it("uses one grouped surface with flat divider-separated module rows", () => {
+    render(
+      <SettingsModuleList
+        items={[
+          {
+            id: "account",
+            icon: Settings,
+            label: "Account",
+            description: "Profile and account access.",
+            role: "settings",
+          },
+          {
+            id: "appearance",
+            icon: Settings,
+            label: "Appearance",
+            description: "Theme and text preferences.",
+            role: "settings",
+          },
+        ]}
+        expandedId="account"
+        onOpen={() => undefined}
+        controlsWired
+        label="Settings sections"
+        backLabel="Back"
+        desktopLayout
+        mobileDetailOpen={false}
+        onBack={() => undefined}
+        onMobileSurfaceReady={() => undefined}
+        renderPanel={() => <div>Selected panel</div>}
+      />
+    );
+
+    const group = screen.getByTestId("settings-module-list");
+    const accountRow = screen.getByTestId("settings-module-account");
+    const appearanceRow = screen.getByTestId("settings-module-appearance");
+    const accountButton = screen.getByTestId("settings-module-card-account");
+    const accountIcon = accountRow.querySelector<HTMLElement>(
+      '[data-slot="settings-module-icon"]'
+    );
+
+    expect(group).toHaveAttribute("data-visual-role", "settings-group");
+    expect(group).toHaveClass("overflow-hidden", "rounded-[8px]", "border");
+    expect(group).not.toHaveClass("divide-y");
+    expect(accountRow).not.toHaveClass("rounded-[8px]", "border");
+    expect(appearanceRow).not.toHaveClass("rounded-[8px]", "border");
+    expect(accountRow.className).not.toContain("shadow-");
+    expect(appearanceRow.className).not.toContain("shadow-");
+    expect(accountRow).toHaveClass(
+      "before:start-16",
+      "before:end-3",
+      "first:before:hidden"
+    );
+    expect(accountRow.className).not.toContain("min-[420px]:before:start-16");
+    expect(accountButton).not.toHaveClass("rounded-[8px]");
+    expect(accountButton.className).not.toContain("hover:-translate-y");
+    expect(accountButton.className).not.toContain("shadow-");
+    expect(accountButton).toHaveClass("focus-visible:ring-inset");
+    expect(accountIcon).not.toBeNull();
+    expect(accountIcon).not.toHaveClass("border");
+    expect(accountButton).toHaveClass("min-h-[72px]");
+    expect(accountButton).toHaveAttribute("aria-current", "page");
   });
 });

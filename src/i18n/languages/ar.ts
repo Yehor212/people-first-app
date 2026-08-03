@@ -172,9 +172,10 @@ const arabicOverrides: Partial<Translations> = {
   insightMorning: "في الصباح",
   insightAfternoon: "بعد الظهر",
   insightEvening: "في المساء",
-  insightHabitImprovesMood: "{habit} يحسن مزاجك",
+  insightHabitImprovesMood:
+    'تُظهر سجلاتك ارتباطاً بين "\u2068{habit}\u2069" ومزاج مسجل أعلى',
   insightHabitImprovesMoodDesc:
-    'في الأيام التي تكمل فيها "{habit}"، يكون مزاجك أفضل بنسبة {percent}%.',
+    'في {sampleDays} يوماً مسجلاً مع "\u2068{habit}\u2069"، كان متوسط المزاج {avgMoodWith}/5، مقابل {avgMoodWithout}/5 خلال {comparisonDays} يوماً مسجلاً آخر. هذا ارتباط في سجلاتك، وليس دليلاً على أن العادة سببت التغيّر.',
   insightFocusBestLabel: 'أنت تركز أفضل على مهام "{label}"',
   insightFocusBestLabelDesc:
     'متوسط وقت تركيزك لـ "{label}" هو {minutes} دقيقة، أعلى من الأنشطة الأخرى.',
@@ -183,8 +184,10 @@ const arabicOverrides: Partial<Translations> = {
   insightBestTimeForHabit: "أفضل وقت لـ {habit}: {time}",
   insightBestTimeForHabitDesc:
     'احتمال إكمالك لـ "{habit}" {time} أعلى بنسبة {percent}% مقارنة بـ {worstTime} ({worstPercent}%).',
-  insightTagBoostsMood: '"{tag}" يحسن مزاجك',
-  insightTagBoostsMoodDesc: 'الأيام التي تحمل علامة "{tag}" تظهر مزاجاً أفضل بنسبة {percent}%.',
+  insightTagBoostsMood:
+    'تُظهر سجلاتك ارتباطاً بين علامة "\u2068{tag}\u2069" ومزاج مسجل أعلى',
+  insightTagBoostsMoodDesc:
+    'في {occurrences} إدخالات مسجلة تحمل علامة "\u2068{tag}\u2069"، كان متوسط المزاج {avgMoodWith}/5، مقابل {avgMoodWithout}/5 في {untaggedEntries} إدخالات بلا علامات. هذا ارتباط في سجلاتك، وليس دليلاً على أن العلامة سببت التغيّر.',
 
   // Module names (v1.6.1 - OnboardingFlow)
   moduleFocus: "مؤقت التركيز",
@@ -1850,7 +1853,8 @@ const arabicOverrides: Partial<Translations> = {
   insightsHelpTitle: "كيف تعمل الرؤى",
   insightsHelp1: "سجل مزاجك يومياً",
   insightsHelp2: "كل التحليل يتم على جهازك - بياناتك لا تغادره.",
-  insightsHelp3: "استخدم مؤقت التركيز",
+  insightsHelp3:
+    "تُرتّب الأنماط وفق كمية البيانات المسجلة وحجم الفرق الملحوظ.",
   insightsDismiss: "إخفاء",
   insightsShowMore: "عرض المزيد",
   insightsShowLess: "عرض أقل",
@@ -2104,7 +2108,7 @@ const arabicOverrides: Partial<Translations> = {
 
   // Insight Details
   insightConfidence: "الثقة",
-  insightDataPoints: "نقاط البيانات",
+  insightDataPoints: "إدخالات مسجلة",
   insightAvgMoodWith: "متوسط المزاج مع",
   insightAvgMoodWithout: "متوسط المزاج بدون",
   insightSampleDays: "أيام العينة",

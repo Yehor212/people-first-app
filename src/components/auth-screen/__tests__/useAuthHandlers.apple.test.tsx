@@ -18,6 +18,10 @@ const mocks = vi.hoisted(() => ({
   },
   analyticsSignIn: vi.fn(),
   hapticError: vi.fn(),
+  platform: {
+    isNative: false,
+    isAndroid: false,
+  },
 }));
 
 vi.mock("@/lib/appleAuthAvailability", () => ({
@@ -41,11 +45,19 @@ vi.mock("@/lib/authGuard", () => ({
 }));
 
 vi.mock("@/lib/authRedirect", () => ({
-  getAuthRedirectUrl: () => "https://yehor212.github.io/people-first-app/",
+  getAuthRedirectUrl: () =>
+    mocks.platform.isNative
+      ? "com.zenflow.app://login-callback"
+      : "https://yehor212.github.io/people-first-app/",
 }));
 
 vi.mock("@/lib/platform", () => ({
-  isNative: false,
+  get isNative() {
+    return mocks.platform.isNative;
+  },
+  get isAndroid() {
+    return mocks.platform.isAndroid;
+  },
 }));
 
 vi.mock("@/lib/nativeOAuthBrowser", () => ({
@@ -104,6 +116,8 @@ function createSession() {
 describe("useAuthHandlers Apple availability preflight", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.platform.isNative = false;
+    mocks.platform.isAndroid = false;
     mocks.canStartAuthFlow.mockReturnValue(true);
     mocks.signInWithOAuth.mockResolvedValue({
       data: { url: "https://appleid.apple.com/auth/authorize" },
@@ -114,6 +128,59 @@ describe("useAuthHandlers Apple availability preflight", () => {
 
   afterEach(() => {
     vi.clearAllTimers();
+  });
+
+  it("uses the owner-bound OAuth callback for Google on iOS instead of the Android native picker", async () => {
+    mocks.platform.isNative = true;
+    mocks.platform.isAndroid = false;
+    mocks.signInWithOAuth.mockResolvedValueOnce({
+      data: { url: "https://accounts.google.com/o/oauth2/v2/auth" },
+      error: null,
+    });
+    const session = createSession();
+    const { result } = renderHook(() => useAuthHandlers(session, t));
+
+    result.current.handleProviderSignIn("google");
+
+    await waitFor(() => {
+      expect(mocks.signInWithOAuth).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: "google" }),
+      );
+    });
+    expect(mocks.authenticateWithGoogleNative).not.toHaveBeenCalled();
+    const credentials = mocks.signInWithOAuth.mock.calls[0]?.[0] as {
+      options?: { redirectTo?: string; skipBrowserRedirect?: boolean };
+    };
+    const redirect = new URL(credentials.options?.redirectTo || "");
+    expect(redirect.protocol).toBe("com.zenflow.app:");
+    expect(redirect.hostname).toBe("login-callback");
+    expect(credentials.options?.skipBrowserRedirect).toBe(true);
+    expect(mocks.openOAuthUrl).toHaveBeenCalledWith(
+      "https://accounts.google.com/o/oauth2/v2/auth",
+    );
+    if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
+  });
+
+  it("preserves the native Google picker on Android", async () => {
+    mocks.platform.isNative = true;
+    mocks.platform.isAndroid = true;
+    mocks.authenticateWithGoogleNative.mockResolvedValueOnce({
+      success: true,
+      user: { name: "Android User", email: "android@example.test" },
+    });
+    const session = createSession();
+    const { result } = renderHook(() => useAuthHandlers(session, t));
+
+    result.current.handleProviderSignIn("google");
+
+    await waitFor(() => {
+      expect(mocks.authenticateWithGoogleNative).toHaveBeenCalledTimes(1);
+    });
+    expect(mocks.signInWithOAuth).not.toHaveBeenCalled();
+    expect(session.tryComplete).toHaveBeenCalledWith(
+      { name: "Android User", email: "android@example.test" },
+      "nativeGoogleAuth",
+    );
   });
 
   it("blocks Apple OAuth before redirect when hosted Supabase reports Apple disabled", async () => {

@@ -1,6 +1,6 @@
 import { db } from "@/storage/db";
 import { generateId } from "@/lib/utils";
-import type { JournalEntry, JournalPhoto, JournalAudio } from "./types";
+import type { JournalEntry, JournalPhoto, JournalAudio, JournalEntryLink } from "./types";
 import {
   JOURNAL_DRAFT_ENTRY_ID,
   MAX_PHOTOS_PER_ENTRY,
@@ -84,9 +84,15 @@ function captureJournalSyncOwner(): Promise<string | null> {
   return isCloudSyncEnabled() ? getCurrentSessionUserId() : Promise.resolve(null);
 }
 
-async function notifyJournalSyncAfterLocalCommit(label: string): Promise<void> {
+function notifyJournalSyncAfterLocalCommit(label: string): void {
   try {
-    await offlineQueue.wakeFromDurableStorage();
+    void offlineQueue.wakeFromDurableStorage().catch((error) => {
+      logger.warn(
+        "[JournalSync]",
+        `${label} committed locally; durable queue wake was deferred:`,
+        error,
+      );
+    });
   } catch (error) {
     logger.warn(
       "[JournalSync]",
@@ -106,17 +112,14 @@ async function notifyJournalSyncAfterLocalCommit(label: string): Promise<void> {
   }
 }
 
-async function prunePendingJournalSecurityMigration(input: {
-  entryIds?: string[];
-  photoIds?: string[];
-  audioIds?: string[];
-}): Promise<void> {
-  if (!db.settings?.get) return;
+type JournalSecurityMigrationTools =
+  typeof import("./journalSecurityMigration");
+
+async function loadPendingJournalSecurityMigrationTools(): Promise<JournalSecurityMigrationTools | null> {
+  if (!db.settings?.get) return null;
   const pending = await db.settings.get(SK.JOURNAL_SECURITY_MIGRATION);
-  if (!pending?.value) return;
-  const { removeDeletedJournalArtifactsFromSecurityMigration } =
-    await import("./journalSecurityMigration");
-  await removeDeletedJournalArtifactsFromSecurityMigration(input);
+  if (!pending?.value) return null;
+  return import("./journalSecurityMigration");
 }
 
 type JournalMediaQueueAction =
@@ -1288,6 +1291,7 @@ async function assertJournalDraftWriterOwnedInCurrentTransaction(
 export async function saveEntry(
   entry: Omit<JournalEntry, "id" | "createdAt" | "updatedAt">,
   draftContext?: JournalDraftCommitContext,
+  requiredSpaceIds: readonly string[] = [],
 ): Promise<JournalEntry> {
   const validatedDraftContext = draftContext
     ? assertJournalDraftCommitContext(draftContext)
@@ -1305,18 +1309,36 @@ export async function saveEntry(
       updatedAt: now,
     };
     const storedFull = await encryptEntryContentForStorage(full);
+    const uniqueRequiredSpaceIds = [...new Set(requiredSpaceIds.filter(Boolean))];
+    const requiredSpaceLinks: JournalEntryLink[] = uniqueRequiredSpaceIds.map((spaceId) => ({
+      id: `journal-entry-link:${full.id}:space:${spaceId}`,
+      entryId: full.id,
+      targetType: "space",
+      targetId: spaceId,
+      createdAt: now,
+    }));
     let relinkedMedia: { photos: JournalPhoto[]; audios: JournalAudio[] } = {
       photos: [],
       audios: [],
     };
     await db.transaction(
       "rw",
-      [db.journalEntries, db.journalPhotos, db.journalAudio, db.offlineQueue, db.settings],
+      [
+        db.journalEntries,
+        db.journalPhotos,
+        db.journalAudio,
+        db.journalEntryLinks,
+        db.offlineQueue,
+        db.settings,
+      ],
       async () => {
         if (validatedDraftContext) {
           await assertJournalDraftWriterOwnedInCurrentTransaction(validatedDraftContext);
         }
         await db.journalEntries.add(storedFull);
+        if (requiredSpaceLinks.length > 0) {
+          await db.journalEntryLinks.bulkAdd(requiredSpaceLinks);
+        }
         relinkedMedia = await relinkDraftMediaToEntry(
           full.id,
           validatedDraftContext?.mediaOwnerId ?? JOURNAL_DRAFT_ENTRY_ID,
@@ -1359,7 +1381,7 @@ export async function saveEntry(
   void requestPersistentStorageForCriticalData();
 
   if (!expectedOwnerUserId) return full;
-  await notifyJournalSyncAfterLocalCommit("Diary entry save");
+  void notifyJournalSyncAfterLocalCommit("Diary entry save");
 
   return full;
 }
@@ -1411,6 +1433,10 @@ export async function updateEntry(
       ...changes,
       updatedAt: nextUpdatedAt,
     });
+    const securityMigrationTools =
+      changes.photoIds !== undefined || changes.audioIds !== undefined
+        ? await loadPendingJournalSecurityMigrationTools()
+        : null;
     const removedPhotoIds: string[] = [];
     const removedAudioIds: string[] = [];
     await db.transaction(
@@ -1523,19 +1549,22 @@ export async function updateEntry(
           await db.settings.delete(validatedDraftContext.draftKey);
           await db.settings.delete(SK.journalDraftLease(validatedDraftContext.draftKey));
         }
+        if (
+          securityMigrationTools &&
+          (removedPhotoIds.length > 0 || removedAudioIds.length > 0)
+        ) {
+          await securityMigrationTools.removeDeletedJournalArtifactsFromSecurityMigration({
+            photoIds: removedPhotoIds,
+            audioIds: removedAudioIds,
+          });
+        }
       },
     );
-    if (removedPhotoIds.length > 0 || removedAudioIds.length > 0) {
-      await prunePendingJournalSecurityMigration({
-        photoIds: removedPhotoIds,
-        audioIds: removedAudioIds,
-      });
-    }
     return nextUpdatedAt;
   });
 
   if (!expectedOwnerUserId) return updatedAt;
-  await notifyJournalSyncAfterLocalCommit("Diary entry update");
+  void notifyJournalSyncAfterLocalCommit("Diary entry update");
   return updatedAt;
 }
 
@@ -1564,10 +1593,21 @@ async function deleteEntryWithClaim(
     const audios = [
       ...new Map([...entryAudios, ...draftAudios].map((audio) => [audio.id, audio])).values(),
     ];
+    const photoIds = photos.map((photo) => photo.id);
+    const audioIds = audios.map((audio) => audio.id);
+    const securityMigrationTools =
+      await loadPendingJournalSecurityMigrationTools();
     let committed = false;
     await db.transaction(
       "rw",
-      [db.settings, db.journalEntries, db.journalPhotos, db.journalAudio, db.offlineQueue],
+      [
+        db.settings,
+        db.journalEntries,
+        db.journalEntryLinks,
+        db.journalPhotos,
+        db.journalAudio,
+        db.offlineQueue,
+      ],
       async () => {
         if (claimAt !== null) {
           const pendingRecord = await db.settings.get(SK.JOURNAL_PENDING_ENTRY_DELETES);
@@ -1603,24 +1643,27 @@ async function deleteEntryWithClaim(
         }
         if (photos.length) await db.journalPhotos.bulkDelete(photos.map((photo) => photo.id));
         if (audios.length) await db.journalAudio.bulkDelete(audios.map((audio) => audio.id));
+        await db.journalEntryLinks.where("entryId").equals(id).delete();
         await db.journalEntries.delete(id);
         await db.settings.delete(draftKey);
         await db.settings.delete(SK.journalDraftLease(draftKey));
         await removePendingJournalEntryDeletesInCurrentTransaction(new Set([id]));
+        if (securityMigrationTools) {
+          await securityMigrationTools.removeDeletedJournalArtifactsFromSecurityMigration({
+            entryIds: [id],
+            photoIds,
+            audioIds,
+          });
+        }
         committed = true;
       }
     );
     if (!committed) return "not-claimed" as const;
-    const photoIds = photos.map((photo) => photo.id);
-    const audioIds = audios.map((audio) => audio.id);
-    await prunePendingJournalSecurityMigration({ entryIds: [id], photoIds, audioIds }).catch(
-      (error) => logger.warn("[Journal]", "Deleted migration cleanup failed:", error)
-    );
     return "committed" as const;
   });
 
   if (status === "committed" && expectedOwnerUserId) {
-    await notifyJournalSyncAfterLocalCommit("Diary entry delete");
+    void notifyJournalSyncAfterLocalCommit("Diary entry delete");
   }
   return status;
 }
@@ -1780,6 +1823,8 @@ async function deleteDraftMediaWithOptionalDraft(
     const audios = await db.journalAudio.where("entryId").equals(draftMediaOwnerId).toArray();
     const photoIds = photos.map((photo) => photo.id);
     const audioIds = audios.map((audio) => audio.id);
+    const securityMigrationTools =
+      await loadPendingJournalSecurityMigrationTools();
     await db.transaction(
       "rw",
       [db.journalPhotos, db.journalAudio, db.offlineQueue, db.settings],
@@ -1811,14 +1856,22 @@ async function deleteDraftMediaWithOptionalDraft(
           await db.settings.delete(draftContext.draftKey);
           await db.settings.delete(SK.journalDraftLease(draftContext.draftKey));
         }
+        if (
+          securityMigrationTools &&
+          (photoIds.length > 0 || audioIds.length > 0)
+        ) {
+          await securityMigrationTools.removeDeletedJournalArtifactsFromSecurityMigration({
+            photoIds,
+            audioIds,
+          });
+        }
       },
     );
-    await prunePendingJournalSecurityMigration({ photoIds, audioIds });
     return { photoIds, audioIds };
   });
 
   if (expectedOwnerUserId && (photoIds.length || audioIds.length)) {
-    await notifyJournalSyncAfterLocalCommit("Diary draft media delete");
+    void notifyJournalSyncAfterLocalCommit("Diary draft media delete");
     void deleteEntryMediaFromStorage(photoIds, audioIds, expectedOwnerUserId).catch((err) =>
       logger.warn("[JournalSync]", "Draft media storage delete failed:", err)
     );
@@ -2460,44 +2513,53 @@ export async function deletePhoto(id: string, entryId: string): Promise<void> {
     if (expectedOwnerUserId) {
       await validateSyncOwner(expectedOwnerUserId, "Diary photo delete outbox");
     }
-    await db.transaction("rw", [db.journalEntries, db.journalPhotos, db.offlineQueue], async () => {
-      const photo = await db.journalPhotos.get(id);
-      if (!photo) return;
-      if (photo.entryId !== entryId) {
-        throw new Error("Journal photo does not belong to the requested entry");
-      }
-      if (expectedOwnerUserId) {
-        await persistCriticalOfflineActionInCurrentTransaction(
-          "DELETE_JOURNAL_PHOTO_STORAGE",
-          `journal-photo-delete:${id}`,
-          { id },
-          expectedOwnerUserId,
-        );
-      }
-      await db.journalPhotos.delete(id);
-      deleted = true;
-      const entry = await db.journalEntries.get(entryId);
-      if (entry) {
-        const nextPhotoLayout = entry.photoLayout ? { ...entry.photoLayout } : undefined;
-        if (nextPhotoLayout) delete nextPhotoLayout[id];
-        await db.journalEntries.update(entryId, {
-          photoIds: entry.photoIds.filter((pid) => pid !== id),
-          photoLayout:
-            nextPhotoLayout && Object.keys(nextPhotoLayout).length > 0
-              ? nextPhotoLayout
-              : undefined,
-          updatedAt: Date.now(),
-        });
-      }
-    });
-    if (!deleted) return;
-    await prunePendingJournalSecurityMigration({ photoIds: [id] });
+    const securityMigrationTools =
+      await loadPendingJournalSecurityMigrationTools();
+    await db.transaction(
+      "rw",
+      [db.journalEntries, db.journalPhotos, db.offlineQueue, db.settings],
+      async () => {
+        const photo = await db.journalPhotos.get(id);
+        if (!photo) return;
+        if (photo.entryId !== entryId) {
+          throw new Error("Journal photo does not belong to the requested entry");
+        }
+        if (expectedOwnerUserId) {
+          await persistCriticalOfflineActionInCurrentTransaction(
+            "DELETE_JOURNAL_PHOTO_STORAGE",
+            `journal-photo-delete:${id}`,
+            { id },
+            expectedOwnerUserId,
+          );
+        }
+        await db.journalPhotos.delete(id);
+        deleted = true;
+        const entry = await db.journalEntries.get(entryId);
+        if (entry) {
+          const nextPhotoLayout = entry.photoLayout ? { ...entry.photoLayout } : undefined;
+          if (nextPhotoLayout) delete nextPhotoLayout[id];
+          await db.journalEntries.update(entryId, {
+            photoIds: entry.photoIds.filter((pid) => pid !== id),
+            photoLayout:
+              nextPhotoLayout && Object.keys(nextPhotoLayout).length > 0
+                ? nextPhotoLayout
+                : undefined,
+            updatedAt: Date.now(),
+          });
+        }
+        if (securityMigrationTools) {
+          await securityMigrationTools.removeDeletedJournalArtifactsFromSecurityMigration({
+            photoIds: [id],
+          });
+        }
+      },
+    );
   });
 
   if (!deleted) return;
   if (!expectedOwnerUserId) return;
 
-  await notifyJournalSyncAfterLocalCommit("Diary photo delete");
+  void notifyJournalSyncAfterLocalCommit("Diary photo delete");
   void deletePhotoFromStorage(id, expectedOwnerUserId).catch((err) =>
     logger.warn("[JournalSync]", "Photo storage delete failed:", err)
   );
@@ -2579,38 +2641,47 @@ export async function deleteAudio(id: string, entryId: string): Promise<void> {
     if (expectedOwnerUserId) {
       await validateSyncOwner(expectedOwnerUserId, "Diary audio delete outbox");
     }
-    await db.transaction("rw", [db.journalEntries, db.journalAudio, db.offlineQueue], async () => {
-      const audio = await db.journalAudio.get(id);
-      if (!audio) return;
-      if (audio.entryId !== entryId) {
-        throw new Error("Journal audio does not belong to the requested entry");
-      }
-      if (expectedOwnerUserId) {
-        await persistCriticalOfflineActionInCurrentTransaction(
-          "DELETE_JOURNAL_AUDIO_STORAGE",
-          `journal-audio-delete:${id}`,
-          { id },
-          expectedOwnerUserId,
-        );
-      }
-      await db.journalAudio.delete(id);
-      deleted = true;
-      const entry = await db.journalEntries.get(entryId);
-      if (entry && entry.audioIds) {
-        await db.journalEntries.update(entryId, {
-          audioIds: entry.audioIds.filter((aid) => aid !== id),
-          updatedAt: Date.now(),
-        });
-      }
-    });
-    if (!deleted) return;
-    await prunePendingJournalSecurityMigration({ audioIds: [id] });
+    const securityMigrationTools =
+      await loadPendingJournalSecurityMigrationTools();
+    await db.transaction(
+      "rw",
+      [db.journalEntries, db.journalAudio, db.offlineQueue, db.settings],
+      async () => {
+        const audio = await db.journalAudio.get(id);
+        if (!audio) return;
+        if (audio.entryId !== entryId) {
+          throw new Error("Journal audio does not belong to the requested entry");
+        }
+        if (expectedOwnerUserId) {
+          await persistCriticalOfflineActionInCurrentTransaction(
+            "DELETE_JOURNAL_AUDIO_STORAGE",
+            `journal-audio-delete:${id}`,
+            { id },
+            expectedOwnerUserId,
+          );
+        }
+        await db.journalAudio.delete(id);
+        deleted = true;
+        const entry = await db.journalEntries.get(entryId);
+        if (entry && entry.audioIds) {
+          await db.journalEntries.update(entryId, {
+            audioIds: entry.audioIds.filter((aid) => aid !== id),
+            updatedAt: Date.now(),
+          });
+        }
+        if (securityMigrationTools) {
+          await securityMigrationTools.removeDeletedJournalArtifactsFromSecurityMigration({
+            audioIds: [id],
+          });
+        }
+      },
+    );
   });
 
   if (!deleted) return;
   if (!expectedOwnerUserId) return;
 
-  await notifyJournalSyncAfterLocalCommit("Diary audio delete");
+  void notifyJournalSyncAfterLocalCommit("Diary audio delete");
   void deleteAudioFromStorage(id, expectedOwnerUserId).catch((err) =>
     logger.warn("[JournalSync]", "Audio storage delete failed:", err)
   );

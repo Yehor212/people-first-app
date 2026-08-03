@@ -16,6 +16,7 @@ const {
   mockOnAuthStateChange,
   mockHandleAuthCallback,
   mockCloseOAuthBrowser,
+  mockIsFeatureVisible,
   mockLocalOwner,
   mockClaimStatus,
 } = vi.hoisted(() => {
@@ -52,6 +53,7 @@ const {
     }),
     mockHandleAuthCallback: vi.fn(async () => undefined),
     mockCloseOAuthBrowser: vi.fn(async () => undefined),
+    mockIsFeatureVisible: vi.fn(() => true),
     mockLocalOwner,
     mockClaimStatus,
   };
@@ -78,7 +80,7 @@ vi.mock("@/lib/supabaseClient", () => ({
 }));
 
 vi.mock("@/contexts/FeatureFlagsContext", () => ({
-  useFeatureFlags: () => ({ isFeatureVisible: () => true }),
+  useFeatureFlags: () => ({ isFeatureVisible: mockIsFeatureVisible }),
 }));
 
 vi.mock("@/lib/authRedirect", async () => {
@@ -113,8 +115,43 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 import { useDeepLinkHandler } from "@/hooks/useDeepLinkHandler";
+import {
+  encodeInviteData,
+  generateShareLink,
+  type Challenge,
+  type ChallengeInvite,
+} from "@/lib/friendChallenge";
 import { consumeStagedJournalMagicLinkConfirmation } from "@/lib/journalMagicLinkConfirmation";
-import { useAppStore, useUserDataStore } from "@/stores";
+import { useAppStore, useUIStore, useUserDataStore } from "@/stores";
+
+const CHALLENGE_FIXTURE: Challenge = {
+  id: "challenge-deep-link-test",
+  code: "ZEN-TEST24",
+  habitName: "Evening walk",
+  habitIcon: "🚶",
+  duration: 21,
+  startDate: "2026-07-28",
+  endDate: "2026-08-18",
+  creatorName: "Test Friend",
+  myProgress: 0,
+  isCreator: true,
+  status: "active",
+};
+
+const EXPECTED_CHALLENGE_INVITE: ChallengeInvite = {
+  code: CHALLENGE_FIXTURE.code,
+  habitName: CHALLENGE_FIXTURE.habitName,
+  habitIcon: CHALLENGE_FIXTURE.habitIcon,
+  duration: CHALLENGE_FIXTURE.duration,
+  creatorName: CHALLENGE_FIXTURE.creatorName,
+  startDate: CHALLENGE_FIXTURE.startDate,
+};
+
+function createTrustedWebChallengeUrl(): string {
+  const url = new URL("https://zenflow.app/challenge");
+  url.searchParams.set("data", encodeInviteData(CHALLENGE_FIXTURE));
+  return url.toString();
+}
 
 function createSession(displayName = "Telegram Friend") {
   return {
@@ -143,6 +180,10 @@ function resetStores() {
     userName: "Friend",
     userNameCustom: false,
   });
+  useUIStore.setState({
+    challengeInvite: undefined,
+    showChallengeModal: false,
+  });
 }
 
 async function flushDeepLinkWork() {
@@ -162,6 +203,7 @@ describe("useDeepLinkHandler", () => {
     mockGetLaunchUrl.mockResolvedValue(null);
     mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
     mockHandleAuthCallback.mockResolvedValue(undefined);
+    mockIsFeatureVisible.mockReturnValue(true);
     mockLocalOwner.value = "telegram-user-1";
     mockClaimStatus.value = "none";
     consumeStagedJournalMagicLinkConfirmation();
@@ -500,12 +542,109 @@ describe("useDeepLinkHandler", () => {
   });
 
   describe("challenge deep links", () => {
-    it.todo("handles zenflow://challenge?data= custom scheme");
-    it.todo("handles https://zenflow.app/challenge?data= URL");
-    it.todo("decodes invite data and sets challenge invite");
-    it.todo("opens challenge modal when feature is enabled");
-    it.todo("ignores challenge link when feature is disabled");
-    it.todo("handles malformed challenge URL gracefully");
+    it("handles the canonical zenflow://challenge?data= custom scheme", async () => {
+      renderHook(() => useDeepLinkHandler());
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+
+      await act(async () => {
+        appUrlOpenListeners[0]({ url: generateShareLink(CHALLENGE_FIXTURE) });
+        await flushDeepLinkWork();
+      });
+
+      expect(useUIStore.getState().challengeInvite).toEqual(EXPECTED_CHALLENGE_INVITE);
+      expect(mockHandleAuthCallback).not.toHaveBeenCalled();
+    });
+
+    it("handles a trusted https://zenflow.app/challenge?data= URL", async () => {
+      renderHook(() => useDeepLinkHandler());
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+
+      await act(async () => {
+        appUrlOpenListeners[0]({ url: createTrustedWebChallengeUrl() });
+        await flushDeepLinkWork();
+      });
+
+      expect(useUIStore.getState().challengeInvite).toEqual(EXPECTED_CHALLENGE_INVITE);
+      expect(mockHandleAuthCallback).not.toHaveBeenCalled();
+    });
+
+    it("decodes the invite payload into the current UI store shape", async () => {
+      renderHook(() => useDeepLinkHandler());
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+
+      await act(async () => {
+        appUrlOpenListeners[0]({ url: generateShareLink(CHALLENGE_FIXTURE) });
+        await flushDeepLinkWork();
+      });
+
+      expect(useUIStore.getState().challengeInvite).toMatchObject({
+        code: "ZEN-TEST24",
+        habitName: "Evening walk",
+        habitIcon: "🚶",
+        duration: 21,
+        creatorName: "Test Friend",
+        startDate: "2026-07-28",
+      });
+    });
+
+    it("opens the challenge modal when the challenges feature is enabled", async () => {
+      mockIsFeatureVisible.mockReturnValue(true);
+      renderHook(() => useDeepLinkHandler());
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+
+      await act(async () => {
+        appUrlOpenListeners[0]({ url: generateShareLink(CHALLENGE_FIXTURE) });
+        await flushDeepLinkWork();
+      });
+
+      expect(mockIsFeatureVisible).toHaveBeenCalledWith("challenges");
+      expect(useUIStore.getState().showChallengeModal).toBe(true);
+    });
+
+    it("keeps invite and modal state empty when the challenges feature is disabled", async () => {
+      mockIsFeatureVisible.mockReturnValue(false);
+      renderHook(() => useDeepLinkHandler());
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+
+      await act(async () => {
+        appUrlOpenListeners[0]({ url: generateShareLink(CHALLENGE_FIXTURE) });
+        await flushDeepLinkWork();
+      });
+
+      expect(mockIsFeatureVisible).toHaveBeenCalledWith("challenges");
+      expect(useUIStore.getState().challengeInvite).toBeUndefined();
+      expect(useUIStore.getState().showChallengeModal).toBe(false);
+      expect(mockHandleAuthCallback).not.toHaveBeenCalled();
+    });
+
+    it("ignores malformed challenge data without throwing or mutating UI state", async () => {
+      renderHook(() => useDeepLinkHandler());
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+
+      expect(() => {
+        appUrlOpenListeners[0]({
+          url: "zenflow://challenge?data=not-valid-base64-or-json",
+        });
+      }).not.toThrow();
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+
+      expect(useUIStore.getState().challengeInvite).toBeUndefined();
+      expect(useUIStore.getState().showChallengeModal).toBe(false);
+    });
   });
 
   describe("launch URL (cold start)", () => {
@@ -529,7 +668,21 @@ describe("useDeepLinkHandler", () => {
       expect(appUrlOpenListeners).toHaveLength(1);
     });
 
-    it.todo("tries challenge URL before auth URL");
+    it("processes a challenge launch URL before the auth fallback", async () => {
+      const launchUrl = generateShareLink(CHALLENGE_FIXTURE);
+      mockGetLaunchUrl.mockResolvedValue({ url: launchUrl });
+
+      renderHook(() => useDeepLinkHandler());
+
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+
+      expect(useUIStore.getState().challengeInvite).toEqual(EXPECTED_CHALLENGE_INVITE);
+      expect(useUIStore.getState().showChallengeModal).toBe(true);
+      expect(mockHandleAuthCallback).not.toHaveBeenCalled();
+      expect(appUrlOpenListeners).toHaveLength(1);
+    });
   });
 
   describe("appUrlOpen listener", () => {

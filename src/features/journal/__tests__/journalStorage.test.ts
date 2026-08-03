@@ -18,6 +18,7 @@ vi.mock("@/storage/db", () => {
       equals: vi.fn(() => ({
         toArray: vi.fn(() => Promise.resolve([])),
         count: vi.fn(() => Promise.resolve(0)),
+        delete: vi.fn(() => Promise.resolve()),
         reverse: vi.fn(() => ({
           sortBy: vi.fn(() => Promise.resolve([])),
         })),
@@ -40,6 +41,7 @@ vi.mock("@/storage/db", () => {
   return {
     db: {
       journalEntries: mockTable(),
+      journalEntryLinks: mockTable(),
       journalPhotos: mockTable(),
       journalAudio: mockTable(),
       settings: mockTable(),
@@ -723,6 +725,7 @@ describe("deleteEntry", () => {
     expect(db.transaction).toHaveBeenCalled();
     expect(db.journalPhotos.bulkDelete).toHaveBeenCalledWith(["p1", "p2"]);
     expect(db.journalAudio.bulkDelete).toHaveBeenCalledWith(["a1"]);
+    expect(db.journalEntryLinks.where).toHaveBeenCalledWith("entryId");
     expect(db.journalEntries.delete).toHaveBeenCalledWith("entry-1");
   });
 

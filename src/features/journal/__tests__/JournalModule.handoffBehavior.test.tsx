@@ -141,6 +141,10 @@ vi.mock("@/hooks/useMediaQuery", () => ({
   useMediaQuery: () => mediaQueryMocks.matches,
 }));
 
+vi.mock("@/hooks/useShouldAnimate", () => ({
+  useShouldAnimate: () => false,
+}));
+
 vi.mock("@/hooks/useScrollLock", () => ({
   useScrollLock: vi.fn(),
 }));
@@ -545,6 +549,7 @@ import {
   JournalLoadErrorPanel,
   JournalModule,
 } from "../JournalModule";
+import "../JournalSettingsContent";
 
 const initialSuggestion: JournalEntrySuggestion = {
   source: "orb",
@@ -943,9 +948,20 @@ describe("JournalModule orb handoff behavior", () => {
     fireEvent.click(await screen.findByTestId("journal-sidebar-nav-stats"));
     expect(editorExitMocks.requested).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId("journal-entry-editor")).toBeInTheDocument();
+    expect(screen.getByTestId("journal-sidebar-nav-stats")).not.toHaveAttribute(
+      "aria-current",
+      "page",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /confirm editor exit/i }));
-    await waitFor(() => expect(screen.queryByTestId("journal-entry-editor")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId("journal-sidebar-nav-stats")).toHaveAttribute(
+        "aria-current",
+        "page",
+      ),
+    );
+    const hiddenEditor = screen.queryByTestId("journal-entry-editor");
+    if (hiddenEditor) expect(hiddenEditor).not.toBeVisible();
   });
 
   it("routes an external new-entry request through the active editor exit guard", async () => {
@@ -992,7 +1008,14 @@ describe("JournalModule orb handoff behavior", () => {
     fireEvent.click(screen.getByRole("button", { name: /keep editing/i }));
     fireEvent.click(screen.getByRole("button", { name: /confirm editor exit/i }));
 
-    await waitFor(() => expect(screen.queryByTestId("journal-entry-editor")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId("journal-sidebar-nav-entry")).toHaveAttribute(
+        "aria-current",
+        "page",
+      ),
+    );
+    const hiddenEditor = screen.queryByTestId("journal-entry-editor");
+    if (hiddenEditor) expect(hiddenEditor).not.toBeVisible();
     expect(screen.getByTestId("journal-sidebar-nav-stats")).not.toHaveAttribute(
       "aria-current",
       "page",

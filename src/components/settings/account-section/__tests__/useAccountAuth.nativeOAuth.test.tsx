@@ -10,6 +10,11 @@ const { mocks } = vi.hoisted(() => ({
     onAuthStateChange: vi.fn(),
     linkIdentity: vi.fn(),
     signInWithOAuth: vi.fn(),
+    authenticateWithGoogleNative: vi.fn(),
+    platform: {
+      isNative: true,
+      isAndroid: false,
+    },
     signOutExpectedOwnerLocally: vi.fn(),
     openOAuthUrl: vi.fn(),
     cancelPkceAttemptFromUrl: vi.fn(),
@@ -64,7 +69,10 @@ const { mocks } = vi.hoisted(() => ({
 
 vi.mock("@/lib/platform", () => ({
   get isNative() {
-    return true;
+    return mocks.platform.isNative;
+  },
+  get isAndroid() {
+    return mocks.platform.isAndroid;
   },
 }));
 
@@ -109,7 +117,7 @@ vi.mock("@/lib/authTransitionCoordinator", async () => {
 });
 
 vi.mock("@/lib/nativeGoogleAuth", () => ({
-  authenticateWithGoogleNative: vi.fn(),
+  authenticateWithGoogleNative: mocks.authenticateWithGoogleNative,
 }));
 
 vi.mock("@/lib/pushNotifications", () => ({
@@ -276,6 +284,8 @@ function renderAccountAuth(onNameChange = vi.fn()) {
 describe("useAccountAuth native OAuth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.platform.isNative = true;
+    mocks.platform.isAndroid = false;
     clearAccountCleanupRecovery();
     authStateCallbacks.length = 0;
     resetAuthGuard();
@@ -424,6 +434,56 @@ describe("useAccountAuth native OAuth", () => {
       vi.clearAllTimers();
       vi.useRealTimers();
     }
+  });
+
+  it("uses the owner-bound OAuth callback for Google on iOS instead of the Android native picker", async () => {
+    vi.useFakeTimers();
+    try {
+      mocks.signInWithOAuth.mockResolvedValueOnce({
+        data: { url: "https://accounts.google.com/o/oauth2/v2/auth" },
+        error: null,
+      });
+      const { result } = renderAccountAuth();
+
+      await act(async () => {
+        await result.current.handleProvider("google");
+      });
+
+      expect(mocks.authenticateWithGoogleNative).not.toHaveBeenCalled();
+      expect(mocks.signInWithOAuth).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: "google" }),
+      );
+      const credentials = mocks.signInWithOAuth.mock.calls[0]?.[0] as {
+        options?: { redirectTo?: string; skipBrowserRedirect?: boolean };
+      };
+      const redirect = new URL(credentials.options?.redirectTo || "");
+      expect(redirect.protocol).toBe("com.zenflow.app:");
+      expect(redirect.hostname).toBe("login-callback");
+      expect(credentials.options?.skipBrowserRedirect).toBe(true);
+      expect(mocks.openOAuthUrl).toHaveBeenCalledWith(
+        "https://accounts.google.com/o/oauth2/v2/auth",
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it("preserves the native Google picker in Settings on Android", async () => {
+    mocks.platform.isAndroid = true;
+    mocks.authenticateWithGoogleNative.mockResolvedValueOnce({ success: true });
+    const { result } = renderAccountAuth();
+
+    await act(async () => {
+      await result.current.handleProvider("google");
+    });
+
+    expect(mocks.authenticateWithGoogleNative).toHaveBeenCalledTimes(1);
+    expect(mocks.signInWithOAuth).not.toHaveBeenCalled();
+    expect(mocks.openOAuthUrl).not.toHaveBeenCalled();
   });
 
   it("cancels the exact settings attempt when no provider navigation can start", async () => {

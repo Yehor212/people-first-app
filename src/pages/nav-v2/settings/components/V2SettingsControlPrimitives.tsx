@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type {
@@ -158,18 +159,18 @@ export function ToggleRow({
   return (
     <div
       className={cn(
-        "grid min-h-[58px] grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-x-3 gap-y-1 rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.36)] bg-[hsl(var(--settings-v2-shell)/0.38)] p-2 min-[360px]:p-3 min-[520px]:grid-cols-[2.25rem_minmax(0,1fr)_auto] md:p-3.5",
+        "grid min-h-[58px] grid-cols-[2.25rem_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 rounded-none border-x-0 border-t-0 border-b border-[hsl(var(--settings-v2-border)/0.36)] bg-transparent px-1 py-3 last:border-b-0",
         surfaceWeight === "quiet" &&
-          "border-transparent bg-[hsl(var(--settings-v2-shell)/0.28)] focus-within:border-[hsl(var(--settings-v2-accent)/0.34)]",
+          "border-transparent focus-within:border-[hsl(var(--settings-v2-accent)/0.34)]",
         disabled && "opacity-60"
       )}
       data-surface-weight={surfaceWeight}
       data-testid={testId}
     >
-      <span className="col-start-1 row-start-1 mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[hsl(var(--settings-v2-accent)/0.1)] text-[hsl(var(--settings-v2-accent))]">
+      <span className="col-start-1 row-start-1 mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center text-[hsl(var(--settings-v2-accent))]">
         <Icon className="h-4 w-4" aria-hidden="true" />
       </span>
-      <span className="col-start-1 col-end-3 row-start-2 min-w-0 self-center break-words text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:break-word] min-[520px]:col-start-2 min-[520px]:col-end-3 min-[520px]:row-start-1">
+      <span className="col-start-2 col-end-3 row-start-1 min-w-0 self-center break-words text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:break-word]">
         {title}
       </span>
       <Switch
@@ -178,11 +179,11 @@ export function ToggleRow({
         disabled={disabled}
         aria-label={title}
         aria-describedby={descriptionId}
-        className="col-start-2 row-start-1 mt-1 shrink-0 justify-self-end min-[520px]:col-start-3 min-[520px]:mt-0.5 min-[520px]:justify-self-auto"
+        className="col-start-3 row-start-1 mt-0.5 shrink-0 justify-self-end"
       />
       <span
         id={descriptionId}
-        className="col-start-1 col-end-3 row-start-3 min-w-0 break-words text-xs leading-relaxed text-muted-foreground [hyphens:manual] [overflow-wrap:break-word] min-[520px]:col-start-2 min-[520px]:col-end-4 min-[520px]:row-start-2"
+        className="col-start-2 col-end-4 row-start-2 min-w-0 break-words text-xs leading-relaxed text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]"
       >
         {description}
       </span>
@@ -232,6 +233,7 @@ export function SettingsInset({
   children,
   containerRef,
   tone = "neutral",
+  presentation = "contained",
   testId,
   className,
   tabIndex,
@@ -244,10 +246,14 @@ export function SettingsInset({
     <div
       ref={containerRef}
       className={cn(
-        "w-full min-w-0 max-w-full space-y-2.5 rounded-[8px] border p-2 min-[360px]:p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] focus-visible:ring-offset-2 md:p-3.5",
-        SETTINGS_INSET_TONE_CLASS[tone],
+        "w-full min-w-0 max-w-full space-y-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)]",
+        presentation === "flat-row"
+          ? "rounded-none border-x-0 border-t-0 border-b border-[hsl(var(--settings-v2-border)/0.42)] bg-transparent px-1 py-3 focus-visible:ring-inset focus-visible:ring-offset-0 md:py-3.5"
+          : "rounded-[8px] border p-2 min-[360px]:p-3 focus-visible:ring-offset-2 md:p-3.5",
+        presentation === "contained" && SETTINGS_INSET_TONE_CLASS[tone],
         className
       )}
+      data-inset-presentation={presentation}
       data-testid={testId}
       tabIndex={tabIndex}
       role={role}
@@ -304,7 +310,7 @@ export function SettingsChoiceButton({
       lang={lang}
       dir={dir}
       className={cn(
-        "min-w-0 whitespace-normal break-words border font-semibold [hyphens:manual] [overflow-wrap:break-word] shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.38)] motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55",
+        "relative min-w-0 whitespace-normal break-words border font-semibold [hyphens:manual] [overflow-wrap:break-word] shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.38)] motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55",
         SETTINGS_CHOICE_PRESENTATION_CLASS[presentation],
         selected
           ? SETTINGS_CHOICE_SELECTED_CLASS[selectedTone]
@@ -319,6 +325,18 @@ export function SettingsChoiceButton({
       >
         {children}
       </span>
+      {selected ? (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "flex h-4 w-4 shrink-0 items-center justify-center",
+            presentation === "stacked" && "absolute end-2 top-2"
+          )}
+          data-slot="settings-choice-selection"
+        >
+          <Check className="h-4 w-4" />
+        </span>
+      ) : null}
     </button>
   );
 }

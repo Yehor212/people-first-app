@@ -213,6 +213,22 @@ describe("useNotificationSetup push consent", () => {
     expect(pushNotificationMocks.initializePushNotifications).not.toHaveBeenCalled();
   });
 
+  it("does not revoke remote push on first launch before consent was ever shown", async () => {
+    useUserDataStore.setState({
+      privacy: {
+        noTracking: false,
+        analytics: false,
+        consentShown: false,
+        pushNotifications: false,
+      },
+    });
+
+    renderHook(() => useNotificationSetup({ handleQuickMood: vi.fn() }));
+    await act(async () => Promise.resolve());
+
+    expect(pushNotificationMocks.removePushToken).not.toHaveBeenCalled();
+  });
+
   it("waits for hydrated user data before reconciling native reminder state", async () => {
     useUserDataStore.setState({ isLoading: true });
     renderHook(() => useNotificationSetup({ handleQuickMood: vi.fn() }));

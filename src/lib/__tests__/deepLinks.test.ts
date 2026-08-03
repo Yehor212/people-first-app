@@ -30,24 +30,24 @@ describe('DEEP_LINK_EVENT', () => {
 // ─── parseDeepLink ──────────────────────────────────────────────
 
 describe('parseDeepLink', () => {
-  it('parses zenflow://challenge/ABC123 as challenge', () => {
+  it('does not advertise unsupported zenflow short-id challenge paths', () => {
     const result = parseDeepLink('zenflow://challenge/ABC123');
-    expect(result).toEqual({ type: 'challenge', id: 'ABC123' });
+    expect(result).toEqual({ type: 'unknown', params: expect.any(Object) });
   });
 
-  it('parses zenflow://challenge?id=TEST1234 as challenge', () => {
+  it('does not treat an id query as the canonical encoded challenge invite', () => {
     const result = parseDeepLink('zenflow://challenge?id=TEST1234');
-    expect(result).toEqual({ type: 'challenge', id: 'TEST1234' });
+    expect(result).toEqual({ type: 'unknown', params: expect.any(Object) });
   });
 
-  it('parses https://zenflow.app/challenge/ABC123 as challenge', () => {
+  it('does not advertise unsupported web short-id challenge paths', () => {
     const result = parseDeepLink('https://zenflow.app/challenge/ABC123');
-    expect(result).toEqual({ type: 'challenge', id: 'ABC123' });
+    expect(result).toEqual({ type: 'unknown', params: expect.any(Object) });
   });
 
-  it('parses https://www.zenflow.app/challenge/ABC123 as challenge', () => {
+  it('does not advertise unsupported www short-id challenge paths', () => {
     const result = parseDeepLink('https://www.zenflow.app/challenge/ABC123');
-    expect(result).toEqual({ type: 'challenge', id: 'ABC123' });
+    expect(result).toEqual({ type: 'unknown', params: expect.any(Object) });
   });
 
   it('returns unknown for invalid id (too short)', () => {
@@ -104,8 +104,7 @@ describe('parseDeepLink', () => {
     // login-callback just becomes an unknown deep link
     const result = parseDeepLink('com.zenflow.app://login-callback');
     // URL constructor may or may not parse custom schemes —
-    // the important point is it does NOT return type='challenge'
-    expect(result?.type).not.toBe('challenge');
+    expect(result?.type).toBe('unknown');
   });
 });
 
@@ -133,7 +132,7 @@ describe('subscribeToDeepLinks', () => {
     const cb = vi.fn();
     const cleanup = subscribeToDeepLinks(cb);
 
-    const detail: DeepLinkData = { type: 'challenge', id: 'XYZ789' };
+    const detail: DeepLinkData = { type: 'diary', route: 'editor' };
     window.dispatchEvent(new CustomEvent(DEEP_LINK_EVENT, { detail }));
 
     expect(cb).toHaveBeenCalledWith(detail);

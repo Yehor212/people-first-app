@@ -113,6 +113,7 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
     handleNoteChange,
     handleNextStep,
     handleBackStep,
+    handleSaveMood,
     handleOpenDiary,
   } = useOrbMoodFlow({ navigateToPage, onAddMood });
   const shouldRunAmbientMotion = useShouldAnimate({ respectRuntimePerformance: false });
@@ -447,6 +448,7 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
                 handleEmotionToggle={handleEmotionToggle}
                 handleNoteChange={handleNoteChange}
                 handleBackStep={handleBackToSelect}
+                handleSaveMood={handleSaveMood}
                 handleOpenDiary={handleOpenDiary}
               />
             )}

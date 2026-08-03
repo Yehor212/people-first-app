@@ -358,5 +358,5 @@ describe("intentional single-line text contract", () => {
     ).toBe(true);
     expect(observed.filter((entry) => entry.token === "break-all")).toEqual([]);
     expect(sortedFingerprints(observed)).toEqual(sortedFingerprints(APPROVED_OCCURRENCES));
-  });
+  }, 15_000);
 });

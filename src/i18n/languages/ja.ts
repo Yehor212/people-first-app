@@ -163,8 +163,9 @@ export const ja: Translations = {
   insightMorning: "午前中に",
   insightAfternoon: "午後に",
   insightEvening: "夕方に",
-  insightHabitImprovesMood: "{habit}は気分を改善します",
-  insightHabitImprovesMoodDesc: "「{habit}」を完了した日は、平均で{percent}%気分が良くなります。",
+  insightHabitImprovesMood: "記録上、「{habit}」と高めの気分に関連が見られます",
+  insightHabitImprovesMoodDesc:
+    "「{habit}」を行った{sampleDays}日分の記録では平均気分が{avgMoodWith}/5、その他{comparisonDays}日分の記録では{avgMoodWithout}/5でした。これは記録上の関連であり、この習慣が変化の原因だと示すものではありません。",
   insightFocusBestLabel: "「{label}」タスクに最も集中できます",
   insightFocusBestLabelDesc: "「{label}」の平均集中時間は{minutes}分で、他の活動より長いです。",
   insightPeakFocusTime: "集中力のピークは{timeOfDay}",
@@ -172,8 +173,9 @@ export const ja: Translations = {
   insightBestTimeForHabit: "{habit}に最適な時間: {time}",
   insightBestTimeForHabitDesc:
     "「{habit}」を{time}に完了する確率は{worstTime}（{worstPercent}%）より{percent}%高いです。",
-  insightTagBoostsMood: "「{tag}」は気分を改善します",
-  insightTagBoostsMoodDesc: "「{tag}」タグの日は、平均で{percent}%気分が良いです。",
+  insightTagBoostsMood: "記録上、「{tag}」タグと高めの気分に関連が見られます",
+  insightTagBoostsMoodDesc:
+    "「{tag}」タグが付いた{occurrences}件の記録では平均気分が{avgMoodWith}/5、タグのない{untaggedEntries}件の記録では{avgMoodWithout}/5でした。これは記録上の関連であり、このタグが変化の原因だと示すものではありません。",
 
   // Module names (v1.6.1 - OnboardingFlow)
   moduleFocus: "フォーカスタイマー",
@@ -2093,7 +2095,7 @@ export const ja: Translations = {
   insightsHelpTitle: "インサイトについて",
   insightsHelp1: "インサイトは統計分析を使用して個人データから生成されます。",
   insightsHelp2: "すべての分析はこのデバイス上で行われます - データは外部に送信されません。",
-  insightsHelp3: "信頼度の高いパターンが最初に表示されます。",
+  insightsHelp3: "パターンは、記録データの量と観察された差の大きさを基に並べられます。",
   insightsDismiss: "閉じる",
   insightsShowMore: "もっと見る",
   insightsShowLess: "少なく表示",
@@ -2354,7 +2356,7 @@ export const ja: Translations = {
 
   // Insight Card Details
   insightConfidence: "信頼度",
-  insightDataPoints: "データポイント",
+  insightDataPoints: "件の記録",
   insightAvgMoodWith: "習慣ありの平均気分",
   insightAvgMoodWithout: "習慣なしの平均気分",
   insightSampleDays: "サンプル日数",

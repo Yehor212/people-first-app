@@ -83,14 +83,16 @@ export function AppearanceAccent({
                 testId={`settings-v2-accent-choice-${option.id}`}
                 className="min-h-[48px] justify-start rounded-[8px] px-3"
               >
-                <span
-                  aria-hidden="true"
-                  data-swatch-kind="accent"
-                  className="h-5 w-5 shrink-0 rounded-full border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-choice-accent))] shadow-[inset_0_1px_0_hsl(var(--settings-v2-rim-light)/0.24)]"
-                  style={accentPreviewStyle(appliedTheme, customization, option.id)}
-                />
-                <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:break-word]">
-                  {label}
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    data-swatch-kind="accent"
+                    className="h-5 w-5 shrink-0 rounded-full border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-choice-accent))] shadow-[inset_0_1px_0_hsl(var(--settings-v2-rim-light)/0.24)]"
+                    style={accentPreviewStyle(appliedTheme, customization, option.id)}
+                  />
+                  <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:break-word]">
+                    {label}
+                  </span>
                 </span>
               </SettingsChoiceButton>
             );

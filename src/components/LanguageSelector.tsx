@@ -112,7 +112,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           aria-label={t.selectLanguage}
         >
           <motion.div
-            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(7rem*var(--font-scale,1))),1fr))] gap-2 sm:gap-3"
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(9rem*var(--font-scale,1))),1fr))] gap-2 sm:gap-3"
             role="radiogroup"
             aria-label={t.selectLanguage}
             aria-busy={Boolean(pendingLanguage)}

@@ -186,7 +186,8 @@ describe("LanguageSelector", () => {
     const languageGroup = screen.getByRole("radiogroup", { name: "Select language" });
     expect(languageGroup).toBeInTheDocument();
     expect(languageGroup.className).toContain("auto-fit");
-    expect(languageGroup.className).toContain("var(--font-scale");
+    expect(languageGroup.className).toContain("calc(9rem*var(--font-scale");
+    expect(languageGroup.className).not.toContain("calc(7rem*var(--font-scale");
     expect(within(languageGroup).getAllByRole("radio")).toHaveLength(8);
     const heading = screen.getByRole("heading", { level: 1 });
     expect(heading).toHaveClass("min-w-0", "whitespace-normal", "leading-tight", "text-2xl");

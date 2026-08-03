@@ -219,6 +219,7 @@ interface OrbRefineStepProps {
   handleEmotionToggle: (tag: string) => void;
   handleNoteChange: (value: string) => void;
   handleBackStep: () => void;
+  handleSaveMood: () => void;
   handleOpenDiary: () => void;
 }
 
@@ -234,6 +235,7 @@ export function OrbRefineStep({
   handleEmotionToggle,
   handleNoteChange,
   handleBackStep,
+  handleSaveMood,
   handleOpenDiary,
 }: OrbRefineStepProps) {
   const scrollRef = useStepScrollerReset();
@@ -331,6 +333,16 @@ export function OrbRefineStep({
             >
               <ArrowLeft className="h-4 w-4 rtl:scale-x-[-1]" aria-hidden="true" />
               <span>{tx.back || "Back"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSaveMood}
+              disabled={!canOpenDiary}
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-border/60 bg-background/70 px-3 py-2.5 text-sm font-medium text-foreground backdrop-blur-md transition-colors hover:bg-[hsl(var(--zf-memory)/0.14)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-5"
+              data-testid="orb-page-save-mood"
+            >
+              {tx.saveMood || "Save mood"}
             </button>
 
             <button

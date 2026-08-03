@@ -89,14 +89,17 @@ test.describe("V2 Settings current information architecture", () => {
 
     await expect(page.getByTestId("settings-module-panel-appearance")).toBeVisible();
     await expect(page).toHaveURL(/settingsSection=appearance/);
-    await expect(page.getByTestId("settings-module-panel-appearance")).toBeFocused();
+    await expect(page.getByTestId("settings-module-panel-appearance")).not.toHaveAttribute(
+      "tabindex"
+    );
+    await expect(page.locator("#settings-module-panel-heading-appearance")).toBeFocused();
     await page.goBack();
     await expectPhoneOverview(page, "appearance");
     await expect(page).not.toHaveURL(/settingsSection=/);
 
     await page.goForward();
     await expect(page.getByTestId("settings-module-panel-appearance")).toBeVisible();
-    await expect(page.getByTestId("settings-module-panel-appearance")).toBeFocused();
+    await expect(page.locator("#settings-module-panel-heading-appearance")).toBeFocused();
   });
 
   test("direct phone detail closes in place without leaking its query", async ({ page }) => {
@@ -131,6 +134,23 @@ test.describe("V2 Settings current information architecture", () => {
       page.getByRole("heading", { level: 2, name: "Appearance & accessibility" })
     ).toBeVisible();
     await expect(page.getByRole("heading", { level: 3, name: "Appearance" })).toBeVisible();
+    await expect(panel).toHaveAttribute("data-visual-role", "settings-detail-region");
+    await expect
+      .poll(() =>
+        panel.evaluate((element) => {
+          const style = getComputedStyle(element);
+          return {
+            backdropFilter: style.backdropFilter,
+            backgroundColor: style.backgroundColor,
+            boxShadow: style.boxShadow,
+          };
+        })
+      )
+      .toEqual({
+        backdropFilter: "none",
+        backgroundColor: "rgba(0, 0, 0, 0)",
+        boxShadow: "none",
+      });
   });
 
   test("appearance choices persist immediately and the reset disclosure restores focus", async ({

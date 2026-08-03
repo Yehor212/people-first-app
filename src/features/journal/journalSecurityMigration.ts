@@ -215,22 +215,69 @@ export async function getPendingJournalSecurityMigrationRevisionForOwner(
   return intent?.ownerUserId === ownerUserId ? intent.revision : null;
 }
 
+function isJournalSecurityMigrationComplete(
+  intent: JournalSecurityMigrationIntent,
+): boolean {
+  return (
+    !intent.vaultSettingPending &&
+    !intent.backupPending &&
+    intent.entryIds.length === 0 &&
+    intent.photos.length === 0 &&
+    intent.audios.length === 0
+  );
+}
+
+async function pruneDeletedJournalArtifactsInCurrentTransaction(input: {
+  entryIds?: string[];
+  photoIds?: string[];
+  audioIds?: string[];
+}): Promise<boolean> {
+  const record = await db.settings.get(SK.JOURNAL_SECURITY_MIGRATION);
+  if (!isMigrationIntent(record?.value)) return false;
+  const intent = record.value;
+  const entryIds = new Set(input.entryIds ?? []);
+  const photoIds = new Set(input.photoIds ?? []);
+  const audioIds = new Set(input.audioIds ?? []);
+  const nextIntent: JournalSecurityMigrationIntent = {
+    ...intent,
+    entryIds: intent.entryIds.filter((id) => !entryIds.has(id)),
+    photos: intent.photos.filter(({ id }) => !photoIds.has(id)),
+    audios: intent.audios.filter(({ id }) => !audioIds.has(id)),
+  };
+  if (isJournalSecurityMigrationComplete(nextIntent)) {
+    await db.settings.delete(SK.JOURNAL_SECURITY_MIGRATION);
+  } else {
+    await db.settings.put({
+      key: SK.JOURNAL_SECURITY_MIGRATION,
+      value: nextIntent,
+    });
+  }
+  return true;
+}
+
 export async function removeDeletedJournalArtifactsFromSecurityMigration(input: {
   entryIds?: string[];
   photoIds?: string[];
   audioIds?: string[];
 }): Promise<void> {
-  const intent = await getJournalSecurityMigrationIntent();
-  if (!intent) return;
-  const entryIds = new Set(input.entryIds ?? []);
-  const photoIds = new Set(input.photoIds ?? []);
-  const audioIds = new Set(input.audioIds ?? []);
-  await saveProgress({
-    ...intent,
-    entryIds: intent.entryIds.filter((id) => !entryIds.has(id)),
-    photos: intent.photos.filter(({ id }) => !photoIds.has(id)),
-    audios: intent.audios.filter(({ id }) => !audioIds.has(id)),
+  const currentTransaction = Dexie.currentTransaction;
+  if (
+    currentTransaction?.active &&
+    currentTransaction.db === db &&
+    currentTransaction.storeNames.includes(db.settings.name)
+  ) {
+    const changed = await pruneDeletedJournalArtifactsInCurrentTransaction(input);
+    if (changed) {
+      currentTransaction.on("complete", emitMigrationUpdate);
+    }
+    return;
+  }
+
+  let changed = false;
+  await db.transaction("rw", db.settings, async () => {
+    changed = await pruneDeletedJournalArtifactsInCurrentTransaction(input);
   });
+  if (changed) emitMigrationUpdate();
 }
 
 async function persistIntent(
@@ -885,12 +932,7 @@ async function loadCurrentIntent(
 }
 
 async function saveProgress(intent: JournalSecurityMigrationIntent): Promise<void> {
-  const complete =
-    !intent.vaultSettingPending &&
-    !intent.backupPending &&
-    intent.entryIds.length === 0 &&
-    intent.photos.length === 0 &&
-    intent.audios.length === 0;
+  const complete = isJournalSecurityMigrationComplete(intent);
   await persistIntent(complete ? null : intent, intent.revision);
 }
 

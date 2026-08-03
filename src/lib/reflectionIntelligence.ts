@@ -105,10 +105,10 @@ function createInsightTranslations(tx: Record<string, string>): InsightTranslati
     afternoon: tx.insightAfternoon || "in the afternoon",
     evening: tx.insightEvening || "in the evening",
     habitImprovesMood:
-      tx.insightHabitImprovesMood || "{habit} improves your mood",
+      tx.insightHabitImprovesMood || "{habit} appears with higher recorded mood",
     habitImprovesMoodDesc:
       tx.insightHabitImprovesMoodDesc ||
-      'On days when you complete "{habit}", your mood is {percent}% better on average.',
+      'Across {sampleDays} recorded days with "{habit}", average mood was {avgMoodWith}/5, compared with {avgMoodWithout}/5 across {comparisonDays} other recorded days. This is an association, not proof that the habit caused the change.',
     focusBestLabel:
       tx.insightFocusBestLabel || 'You focus best on "{label}" tasks',
     focusBestLabelDesc:
@@ -124,10 +124,11 @@ function createInsightTranslations(tx: Record<string, string>): InsightTranslati
     bestTimeForHabitDesc:
       tx.insightBestTimeForHabitDesc ||
       'You\'re {percent}% more likely to complete "{habit}" {time} compared to {worstTime} ({worstPercent}%).',
-    tagBoostsMood: tx.insightTagBoostsMood || '"{tag}" boosts your mood',
+    tagBoostsMood:
+      tx.insightTagBoostsMood || '"{tag}" appears with higher recorded mood',
     tagBoostsMoodDesc:
       tx.insightTagBoostsMoodDesc ||
-      'Days tagged with "{tag}" show {percent}% better mood on average.',
+      'Across {occurrences} recorded entries tagged "{tag}", average mood was {avgMoodWith}/5, compared with {avgMoodWithout}/5 across {untaggedEntries} untagged entries. This is an association, not proof that the tag caused the change.',
   };
 }
 
@@ -717,6 +718,11 @@ export function buildReflectionInsights(args: {
     focusSessions,
     createInsightTranslations(tx),
   )
+    .filter(
+      (insight) =>
+        insight.type !== "mood-habit-correlation" &&
+        insight.type !== "mood-tag",
+    )
     .slice(0, 2)
     .map((insight) => convertInsightToReflectionCard(insight, tx));
 

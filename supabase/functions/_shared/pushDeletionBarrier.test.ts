@@ -210,7 +210,7 @@ describe("withPushDeliveryPermit", () => {
     let providerStarted = false;
     const mismatches = [
       admittedRow({ owner_id: OTHER_OWNER_ID }),
-      admittedRow({ permit_token: "5bbbcf4f-3f44-4f3b-89eb-7f779c2ad85a" }),
+      admittedRow({ permit_token: PERMIT_TOKEN.replace(/.$/, "0") }),
       admittedRow({ lease_epoch: 0 }),
     ];
 

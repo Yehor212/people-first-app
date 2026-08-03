@@ -9,7 +9,7 @@ import {
 import type { User } from "@supabase/supabase-js";
 import { getVerifiedCurrentSessionUserId, supabase } from "@/lib/supabaseClient";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
-import { isNative } from "@/lib/platform";
+import { isAndroid, isNative } from "@/lib/platform";
 import { authenticateWithGoogleNative } from "@/lib/nativeGoogleAuth";
 import { authStateManager } from "@/lib/authStateManager";
 import { resetAuthGuard, canStartAuthFlow, startAuthFlow, endAuthFlow } from "@/lib/authGuard";
@@ -253,7 +253,7 @@ export function useAccountAuth({ t }: UseAccountAuthOptions) {
       return;
     }
 
-    if (provider === "google" && isNative) {
+    if (provider === "google" && isAndroid) {
       if (!canStartAuthFlow()) {
         setAuthStatus(t.authTooManyAttempts || "Too many attempts. Please wait.");
         return;

@@ -166,7 +166,7 @@ export function UpdateRequiredDialog() {
         <AlertDialogHeader>
           <div className="mb-2 grid min-w-0 grid-cols-1 items-center gap-3 min-[420px]:grid-cols-[auto_minmax(0,1fr)]">
             <div className="justify-self-center rounded-full bg-primary/10 p-2 min-[420px]:justify-self-auto">
-              <Download className="h-6 w-6 text-primary" />
+              <Download aria-hidden="true" className="h-6 w-6 text-primary" />
             </div>
             <AlertDialogTitle
               ref={titleRef}
@@ -203,7 +203,7 @@ export function UpdateRequiredDialog() {
             disabled={isRefreshing}
             className="inline-flex h-auto min-h-11 w-full min-w-0 max-w-full flex-col items-center justify-center gap-2 whitespace-normal rounded-md bg-primary px-1 py-2 text-sm font-medium text-primary-foreground motion-safe:transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50 min-[420px]:px-3 md:w-auto md:flex-row"
           >
-            <RefreshCw className="h-4 w-4 shrink-0" />
+            <RefreshCw aria-hidden="true" className="h-4 w-4 shrink-0" />
             <span className="min-w-0 break-words text-center [hyphens:manual] [overflow-wrap:break-word]">
               {t.updateRequiredRefresh || "Refresh App"}
             </span>

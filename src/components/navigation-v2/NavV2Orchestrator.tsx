@@ -15,6 +15,7 @@ import { SidebarV2 } from "./SidebarV2";
 import { DrawerV2 } from "./DrawerV2";
 import { V2FocusMiniPlayer } from "./V2FocusMiniPlayer";
 import { V2MindfulMomentLayer } from "./V2MindfulMomentLayer";
+import { V2ProgressionModalLayer } from "./V2ProgressionModalLayer";
 import { getNavV2RouteLabel, NavV2RouteFallback, NavV2RoutePending } from "./NavV2RouteStatus";
 import type { FocusSession, GratitudeEntry, MoodEntry } from "@/types";
 import type { V2SettingsControls } from "@/pages/nav-v2/SettingsPage";
@@ -384,6 +385,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         onNavigateToPlanning={() => handlePrimaryPageChange("planning")}
       />
       <V2MindfulMomentLayer onComplete={onMindfulMomentComplete} />
+      <V2ProgressionModalLayer />
     </div>
   );
 });

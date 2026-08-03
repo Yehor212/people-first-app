@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NavV2Orchestrator } from "../NavV2Orchestrator";
 import { readFileSync } from "node:fs";
+import { useUIStore, useUserDataStore } from "@/stores";
+
+const { mockIsFeatureVisible } = vi.hoisted(() => ({
+  mockIsFeatureVisible: vi.fn<(feature: string) => boolean>(),
+}));
 
 // --- Mocks ---
 
@@ -39,6 +44,47 @@ vi.mock("@/contexts/LanguageContext", () => ({
     isRTL: false,
     language: "en",
   }),
+}));
+
+vi.mock("@/contexts/FeatureFlagsContext", () => ({
+  useFeatureFlags: () => ({ isFeatureVisible: mockIsFeatureVisible }),
+}));
+
+vi.mock("@/components/FeatureUnlock", () => ({
+  FeatureUnlock: ({ feature, onClose }: { feature: string; onClose: () => void }) => (
+    <section aria-label="Feature unlocked" role="dialog">
+      <span>{feature}</span>
+      <button type="button" onClick={onClose}>
+        Dismiss unlock
+      </button>
+    </section>
+  ),
+}));
+
+vi.mock("@/components/ChallengeModal", () => ({
+  ChallengeModal: ({
+    open,
+    onOpenChange,
+    habit,
+    initialInvite,
+    username,
+  }: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    habit?: { id: string };
+    initialInvite?: { code: string };
+    username?: string;
+  }) =>
+    open ? (
+      <section aria-label="Friend challenges" role="dialog">
+        <span>{username}</span>
+        <span>{habit?.id}</span>
+        <span>{initialInvite?.code}</span>
+        <button type="button" onClick={() => onOpenChange(false)}>
+          Close challenge
+        </button>
+      </section>
+    ) : null,
 }));
 
 vi.mock("@/lib/haptics", () => ({
@@ -162,6 +208,64 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     window.localStorage.clear();
     window.history.replaceState({}, "", "/");
     vi.mocked(morph).mockClear();
+    mockIsFeatureVisible.mockReturnValue(true);
+    useUIStore.setState({
+      featureToUnlock: null,
+      showChallengeModal: false,
+      challengeInvite: undefined,
+      challengeHabit: undefined,
+    });
+    useUserDataStore.setState({ userName: "Friend" });
+  });
+
+  it("shows one V2 progression dialog at a time and clears a closed challenge invitation", async () => {
+    useUserDataStore.setState({ userName: "Avery" });
+    useUIStore.setState({
+      featureToUnlock: "challenges",
+      showChallengeModal: true,
+      challengeInvite: {
+        code: "ZEN-FOCUS",
+        habitName: "Focus",
+        habitIcon: "target",
+        duration: 7,
+      },
+      challengeHabit: { id: "habit-focus" } as never,
+    });
+
+    render(<NavV2Orchestrator />);
+
+    expect(screen.getByRole("dialog", { name: "Feature unlocked" })).toHaveTextContent(
+      "challenges"
+    );
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(screen.queryByRole("dialog", { name: "Friend challenges" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss unlock" }));
+
+    expect(useUIStore.getState().featureToUnlock).toBeNull();
+    const challenge = await screen.findByRole("dialog", { name: "Friend challenges" });
+    expect(screen.queryByRole("dialog", { name: "Feature unlocked" })).not.toBeInTheDocument();
+    expect(challenge).toHaveTextContent("Avery");
+    expect(challenge).toHaveTextContent("habit-focus");
+    expect(challenge).toHaveTextContent("ZEN-FOCUS");
+
+    fireEvent.click(screen.getByRole("button", { name: "Close challenge" }));
+
+    expect(screen.queryByRole("dialog", { name: "Friend challenges" })).not.toBeInTheDocument();
+    expect(useUIStore.getState().challengeInvite).toBeUndefined();
+    expect(useUIStore.getState().challengeHabit).toBeUndefined();
+  });
+
+  it("keeps V2 challenge progression hidden when challenges are disabled", () => {
+    mockIsFeatureVisible.mockImplementation((feature) => feature !== "challenges");
+    useUIStore.setState({ showChallengeModal: true });
+
+    render(<NavV2Orchestrator />);
+
+    expect(screen.queryByRole("dialog", { name: "Friend challenges" })).not.toBeInTheDocument();
   });
 
   it("does not mount the desktop sidebar on phone layout", () => {

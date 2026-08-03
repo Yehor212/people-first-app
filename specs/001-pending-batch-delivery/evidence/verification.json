@@ -1,0 +1,331 @@
+{
+  "schema_version": 1,
+  "feature_id": "001-pending-batch-delivery",
+  "generated_at": "2026-08-03T07:21:28Z",
+  "owner_baseline": {
+    "head": "00fdb2ea0e5205f4bee76bbec3109bf98865627f",
+    "branch": "main",
+    "status_record_count": 898,
+    "status_sha256": "c27da64f8305c01fe29c2081dbc33c8486f784abfdb269db54f8f76cb46cb56a"
+  },
+  "snapshot": {
+    "commit": "c902b612050dd891e5aa86958ebf8bb7f2e9f5ba",
+    "parent": "00fdb2ea0e5205f4bee76bbec3109bf98865627f",
+    "path_count": 893,
+    "path_sha256": "7ce230f3b7ced01573bd20be1e1e2f88a618e5658fc2020f19b50ec4ee7a6efe"
+  },
+  "reconciliation": {
+    "checkpoint_commit": "d0fa0cc3acf267c4374d392c98642daa25ddc1ec",
+    "main_commit": "4aff30811d370981e1c8192cea753159e883c4d2",
+    "counts": {
+      "already_in_main": 703,
+      "preserved_net_change": 115,
+      "superseded_by_main": 53,
+      "integrated_resolution": 22
+    },
+    "total": 893
+  },
+  "excluded_artifacts": [
+    "android/app/src/main/java/com/zenflow/app/.dccache",
+    "src/.dccache",
+    "src/components/ui/.dccache",
+    "src/lib/.dccache",
+    "supabase/functions/.dccache"
+  ],
+  "verification": [
+    {
+      "id": "specify-version",
+      "command": "specify version",
+      "scope": "Installed official Specify CLI version and host platform",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": { "cli_major": 0, "cli_minor": 15, "cli_patch": 1 },
+      "limitations": []
+    },
+    {
+      "id": "specify-integration",
+      "command": "specify integration list",
+      "scope": "Specify integration registry",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": { "installed_integrations": 1, "default_codex": 1 },
+      "limitations": ["This registry result is separate from runtime skill discovery."]
+    },
+    {
+      "id": "constitution-status",
+      "command": ".specify/scripts/bash/check-zenflow-constitution-status.sh --json",
+      "scope": "Constitution activation boundary",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": { "binding": 0, "blocking_authority": 0 },
+      "limitations": ["The constitution remains proposed and unratified."]
+    },
+    {
+      "id": "codex-runtime-discovery",
+      "command": "node specs/001-pending-batch-delivery/tools/codex-skill-discovery-probe.cjs",
+      "scope": "Fresh Codex app-server discovery of repository-local Spec Kit skills",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": {
+        "discovered": 10,
+        "enabled": 10,
+        "repo_scoped": 10,
+        "missing": 0,
+        "unexpected": 0,
+        "load_errors": 0
+      },
+      "limitations": []
+    },
+    {
+      "id": "full-coverage-suite",
+      "command": "npm run test:coverage",
+      "scope": "Complete Vitest suite with V8 coverage and retained coverage-evidence validation",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": {
+        "test_files_passed": 717,
+        "tests_passed": 9077,
+        "tests_todo": 7,
+        "tests_failed": 0,
+        "typescript_source_files": 937,
+        "covered_lines_total": 50984
+      },
+      "limitations": []
+    },
+    {
+      "id": "type-lint-static",
+      "scope": "TypeScript, ESLint, Oxlint, circular imports, localization, translation, and generated-document checks",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": {
+        "typescript_projects": 2,
+        "eslint_errors": 0,
+        "eslint_warnings": 0,
+        "oxlint_errors": 0,
+        "locales": 8,
+        "keys_per_locale": 3577,
+        "circular_dependencies": 0
+      },
+      "limitations": ["Oxlint reported 36 nonblocking warnings under the repository's current configuration."]
+    },
+    {
+      "id": "agent-governance",
+      "scope": "Agent context, ten-role registry, workspace isolation, skill routing, no-AI-template, best-practices, RAG, and task-completion validators",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": {
+        "registered_project_roles": 10,
+        "orchestra_test_files": 7,
+        "orchestra_tests_passed": 414,
+        "workspace_tests_passed": 379,
+        "rag_files": 293,
+        "rag_chunks": 3199,
+        "best_practice_invariants": 66,
+        "task_completion_invariants": 133
+      },
+      "limitations": ["Structural checks do not prove effective runtime sandbox permissions or human semantic acceptance."]
+    },
+    {
+      "id": "production-data-integrity-source",
+      "command": "npm run check:production-data-integrity",
+      "scope": "Final source and enforcement scan",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": {
+        "files_scanned": 2330,
+        "production_reachable": 783,
+        "errors": 0,
+        "warnings": 0,
+        "baselined": 0,
+        "waived": 0
+      },
+      "limitations": []
+    },
+    {
+      "id": "production-build-and-bundle",
+      "scope": "Default-disabled production web build with the disabled ceremony import graph pruned, manifest/hash validation, duplicate pruning, and production-data bundle scan",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": {
+        "bundle_files_scanned": 2330,
+        "production_reachable": 783,
+        "errors": 0,
+        "warnings": 0,
+        "duplicate_artifacts": 0,
+        "service_worker_precache_entries": 55
+      },
+      "limitations": []
+    },
+    {
+      "id": "pages-artifact",
+      "command": "npm run stage:release-artifacts && npm run check:staged-release-artifacts",
+      "scope": "GitHub Pages staging directory and service-worker references",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": { "service_worker_precache_urls": 55, "nojekyll_files": 1 },
+      "limitations": []
+    },
+    {
+      "id": "size-limit",
+      "command": "npm run check:size",
+      "scope": "Production JavaScript and CSS size-limit budgets",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": {
+        "javascript_gzip_kb": 1470,
+        "javascript_raw_kb": 5085,
+        "javascript_raw_bytes": 5085325,
+        "javascript_raw_limit_bytes": 5300000,
+        "javascript_raw_headroom_bytes": 214675,
+        "css_brotli_kb": 75
+      },
+      "limitations": ["Rounded display values are retained from size-limit output."]
+    },
+    {
+      "id": "security-static",
+      "scope": "Snyk Code high-severity scan, Checkov GitHub Actions scan, npm audit, and local security-suite scanners",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": {
+        "snyk_high_issues": 0,
+        "checkov_passed": 733,
+        "checkov_failed": 0,
+        "checkov_documented_skips": 3,
+        "npm_audit_vulnerabilities": 0,
+        "verified_secrets": 0
+      },
+      "limitations": [
+        "Terrascan's broad repository mode misclassified dependency and Playwright YAML as CloudFormation; no supported deployable IaC finding was established."
+      ]
+    },
+    {
+      "id": "final-tracked-diff-secrets",
+      "command": "git diff --unified=0 origin/main <staged-tree> | additions-only; Gitleaks stdin; TruffleHog filesystem",
+      "scope": "Added content in the final staged tree relative to origin/main",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": {
+        "gitleaks_findings": 0,
+        "trufflehog_verified_secrets": 0,
+        "trufflehog_unverified_secrets": 0
+      },
+      "limitations": [
+        "A full-history Gitleaks scan reports 23 pre-existing generic candidates, including two scanner-shaped test literals retained in the immutable snapshot commit and removed by the final tree; no candidate is present in added final content."
+      ]
+    },
+    {
+      "id": "journal-motion-cross-engine",
+      "command": "VITE_ENABLE_JOURNAL_SAVE_CEREMONY=true npm run build; npx playwright test e2e/journal-save-ceremony.spec.ts --config=e2e/helpers/save-ceremony/playwright.config.ts --workers=1",
+      "scope": "Feature-enabled Chromium, Firefox, and WebKit animation and fallback behavior",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": { "browser_engines": 3, "tests_passed": 21, "tests_failed": 0 },
+      "limitations": ["Physical Android, iOS, and Desktop shells were not exercised."]
+    },
+    {
+      "id": "journal-motion-pwa-offline",
+      "command": "ZENFLOW_SAVE_CEREMONY_SCHEME=http npx playwright test e2e/journal-save-ceremony-pwa.spec.ts --config=e2e/helpers/save-ceremony/playwright.config.ts --project=chromium --workers=1",
+      "scope": "Chromium PWA service-worker precache and offline restart for four approved Atelier assets",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": { "tests_passed": 1, "approved_assets": 4 },
+      "limitations": ["This is a local Chromium PWA proof, not a public deployment or native-device proof."]
+    },
+    {
+      "id": "public-performance-smoke",
+      "command": "npm run smoke:chrome-performance",
+      "scope": "Current public GitHub Pages target across phone and desktop route profiles",
+      "exit_code": 0,
+      "status": "VERIFIED",
+      "counts": {
+        "route_profiles": 14,
+        "console_errors": 0,
+        "failed_requests": 0,
+        "failed_responses": 0,
+        "steady_long_tasks": 0
+      },
+      "limitations": ["The public target still reflects deployed main, not this unpushed branch."]
+    },
+    {
+      "id": "ratchet",
+      "command": "npm run ratchet:check",
+      "scope": "Law 27 debt ratchet against the repository ledger",
+      "exit_code": 1,
+      "status": "FAIL",
+      "counts": {
+        "violations": 1,
+        "inline_styles": 358,
+        "inline_styles_max": 323,
+        "bundle_size_kb": 4967,
+        "bundle_size_max_kb": 5062
+      },
+      "limitations": [
+        "Clean origin/main independently reproduces the inline-style violation at 358; the threshold was not raised.",
+        "The bundle-size ratchet passes at 4,967 KB against its 5,062 KB floor; the compile-time ceremony boundary removed the prior branch-only bundle regression.",
+        "GitHub deploy marks this ratchet step continue-on-error, but exact pull-request checks still require live verification."
+      ]
+    },
+    {
+      "id": "full-local-preflight",
+      "command": "npm run ci:preflight",
+      "scope": "Final integrated repository",
+      "exit_code": 1,
+      "status": "FAIL",
+      "counts": {
+        "test_files_passed": 717,
+        "tests_passed": 9077,
+        "tests_todo": 7,
+        "tests_failed": 0,
+        "ratchet_violations": 1,
+        "inline_styles": 358,
+        "bundle_size_kb": 4967,
+        "covered_lines_total": 50984
+      },
+      "limitations": [
+        "Every preceding preflight stage passed; the terminal nonzero status is exclusively the single inherited inline-style ratchet violation.",
+        "Clean origin/main independently reproduces the inline-style violation at 358; the repository's GitHub deploy workflow currently marks ratchet:check continue-on-error.",
+        "The bundle-size ratchet passes at 4,967 KB against its 5,062 KB floor.",
+        "No ratchet threshold, test, assertion, or workflow enforcement was weakened."
+      ]
+    },
+    {
+      "id": "github-pull-request-ci-initial",
+      "command": "gh pr checks 64 --repo Yehor212/people-first-app",
+      "scope": "Ready pull request #64 at 4ec4ed308eedaf988f62edfa66d0c625792be9d5",
+      "exit_code": 1,
+      "status": "FAIL",
+      "counts": {
+        "required_checks": 4,
+        "required_checks_passed": 3,
+        "required_checks_failed": 1,
+        "javascript_raw_bytes": 5302175,
+        "javascript_raw_limit_bytes": 5300000,
+        "javascript_raw_overage_bytes": 2175
+      },
+      "limitations": [
+        "The sole required failure was Linux production build size-limit; Android, iOS, production-data-integrity, Playwright, governance, and every other completed check passed.",
+        "The local repair binds the default-disabled ceremony import graph to its existing compile-time flag instead of raising the limit; the repaired SHA still requires fresh GitHub CI."
+      ]
+    },
+    {
+      "id": "github-pull-request-ci",
+      "scope": "Pull request #64 repaired head SHA",
+      "status": "UNVERIFIED",
+      "limitations": ["The size repair has not yet been committed or pushed; exact-head GitHub checks remain required."]
+    },
+    {
+      "id": "github-main-ci",
+      "scope": "Merged main SHA",
+      "status": "UNVERIFIED",
+      "limitations": ["Pull request has not been merged."]
+    }
+  ],
+  "github_delivery": {
+    "branch": "codex/pending-898-speckit-batch",
+    "status": "pull_request_open",
+    "pull_request": 64,
+    "url": "https://github.com/Yehor212/people-first-app/pull/64",
+    "current_remote_head": "4ec4ed308eedaf988f62edfa66d0c625792be9d5"
+  },
+  "verdict": "STOP"
+}

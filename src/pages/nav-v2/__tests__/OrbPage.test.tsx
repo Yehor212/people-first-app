@@ -37,6 +37,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalPrompt6: "How are you feeling right now?",
       journalContinueWriting: "Continue writing",
       journalStartToday: "Start today's entry",
+      saveMood: "Save mood",
       orbSaveMoodAndStartEntry: "Save mood and start today's entry",
       navV2Orb: "Orb",
       navV2OrbSubhead: "How are you feeling?",
@@ -1021,6 +1022,41 @@ describe("OrbPage progressive flow", () => {
       specificTime: null,
       emotion: null,
       note: null,
+    });
+  });
+
+  it("saves the mood without creating a Diary handoff or navigating", () => {
+    const navigateToPage = vi.fn();
+    render(<OrbPage navigateToPage={navigateToPage} onAddMood={onAddMoodMock} />);
+
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
+    fireEvent.click(screen.getByTestId("orb-page-next"));
+    fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeful"));
+    fireEvent.change(screen.getByTestId("orb-page-note-input"), {
+      target: { value: "This note stays out of the Diary handoff." },
+    });
+
+    const saveMood = screen.getByTestId("orb-page-save-mood");
+    expect(saveMood).toHaveAccessibleName("Save mood");
+    expect(saveMood).toHaveClass("min-h-[44px]");
+    fireEvent.click(saveMood);
+
+    expect(onAddMoodMock).toHaveBeenCalledTimes(1);
+    expect(onAddMoodMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        valence: 0.5,
+        mood: "good",
+        emotionTags: ["hopeful"],
+      }),
+    );
+    expect(onAddMoodMock.mock.calls[0]?.[0]).not.toHaveProperty("note");
+    expect(useDiaryDraftStore.getState().pendingMoodContext).toBeNull();
+    expect(navigateToPage).not.toHaveBeenCalled();
+    expect(screen.getByTestId("orb-page-select")).toBeInTheDocument();
+    expect(useMoodEntryDraftStore.getState()).toMatchObject({
+      valence: null,
+      emotion: null,
+      note: "",
     });
   });
 

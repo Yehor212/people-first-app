@@ -171,9 +171,9 @@ export const en: Translations = {
   insightMorning: "in the morning",
   insightAfternoon: "in the afternoon",
   insightEvening: "in the evening",
-  insightHabitImprovesMood: "{habit} improves your mood",
+  insightHabitImprovesMood: "{habit} appears with higher recorded mood",
   insightHabitImprovesMoodDesc:
-    'On days when you complete "{habit}", your mood is {percent}% better on average.',
+    'Across {sampleDays} recorded days with "{habit}", average mood was {avgMoodWith}/5, compared with {avgMoodWithout}/5 across {comparisonDays} other recorded days. This is an association, not proof that the habit caused the change.',
   insightFocusBestLabel: 'You focus best on "{label}" tasks',
   insightFocusBestLabelDesc:
     'Your average focus time for "{label}" is {minutes} minutes, higher than other activities.',
@@ -183,8 +183,9 @@ export const en: Translations = {
   insightBestTimeForHabit: "Best time for {habit}: {time}",
   insightBestTimeForHabitDesc:
     'You\'re {percent}% more likely to complete "{habit}" {time} compared to {worstTime} ({worstPercent}%).',
-  insightTagBoostsMood: '"{tag}" boosts your mood',
-  insightTagBoostsMoodDesc: 'Days tagged with "{tag}" show {percent}% better mood on average.',
+  insightTagBoostsMood: '"{tag}" appears with higher recorded mood',
+  insightTagBoostsMoodDesc:
+    'Across {occurrences} recorded entries tagged "{tag}", average mood was {avgMoodWith}/5, compared with {avgMoodWithout}/5 across {untaggedEntries} untagged entries. This is an association, not proof that the tag caused the change.',
 
   // Module names (v1.6.1 - OnboardingFlow)
   moduleFocus: "Focus Timer",
@@ -2122,7 +2123,8 @@ export const en: Translations = {
   insightsHelpTitle: "About Insights",
   insightsHelp1: "Insights are generated from your personal data using statistical analysis.",
   insightsHelp2: "All analysis happens on your device - your data never leaves.",
-  insightsHelp3: "Patterns with higher confidence are shown first.",
+  insightsHelp3:
+    "Patterns are ordered using the amount of recorded data and the size of the observed difference.",
   insightsDismiss: "Dismiss",
   insightsShowMore: "Show more",
   insightsShowLess: "Show less",
@@ -2390,7 +2392,7 @@ export const en: Translations = {
 
   // Insight Card Details
   insightConfidence: "Confidence",
-  insightDataPoints: "Data points",
+  insightDataPoints: "recorded entries",
   insightAvgMoodWith: "Avg mood with habit",
   insightAvgMoodWithout: "Avg mood without habit",
   insightSampleDays: "Sample days",

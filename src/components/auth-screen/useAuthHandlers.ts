@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
-import { isNative } from "@/lib/platform";
+import { isAndroid, isNative } from "@/lib/platform";
 import { canStartAuthFlow, startAuthFlow, endAuthFlow } from "@/lib/authGuard";
 import { checkAppleAuthAvailability } from "@/lib/appleAuthAvailability";
 import { authenticateWithGoogleNative } from "@/lib/nativeGoogleAuth";
@@ -177,7 +177,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
 
   const handleGoogleSignIn = async () => {
     // Native Android: use native account picker (no browser redirect)
-    if (isNative) {
+    if (isAndroid) {
       if (!canStartAuthFlow()) {
         session.setError(t.authTooManyAttempts);
         logger.warn("[Auth] Native Google auth blocked by guard");
@@ -214,7 +214,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
       return;
     }
 
-    // Web: keep existing OAuth redirect flow
+    // Web and iOS: use the owner-bound OAuth callback flow.
     void handleOAuthSignIn("google");
   };
   const handleAppleSignIn = () => void handleOAuthSignIn("apple");

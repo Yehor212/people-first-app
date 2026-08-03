@@ -172,9 +172,9 @@ export const de: Translations = {
   insightMorning: "am Morgen",
   insightAfternoon: "am Nachmittag",
   insightEvening: "am Abend",
-  insightHabitImprovesMood: "{habit} verbessert deine Stimmung",
+  insightHabitImprovesMood: 'Deine Aufzeichnungen verbinden „{habit}“ mit höherer Stimmung',
   insightHabitImprovesMoodDesc:
-    'An Tagen, an denen du "{habit}" erledigst, ist deine Stimmung im Durchschnitt {percent}% besser.',
+    'An {sampleDays} erfassten Tagen mit „{habit}“ lag die durchschnittliche Stimmung bei {avgMoodWith}/5, gegenüber {avgMoodWithout}/5 an {comparisonDays} anderen erfassten Tagen. Das ist ein Zusammenhang in deinen Aufzeichnungen, kein Beleg dafür, dass die Gewohnheit die Veränderung verursacht hat.',
   insightFocusBestLabel: 'Du fokussierst dich am besten auf "{label}"',
   insightFocusBestLabelDesc:
     'Deine durchschnittliche Fokuszeit für "{label}" beträgt {minutes} Minuten, höher als bei anderen Aktivitäten.',
@@ -184,9 +184,9 @@ export const de: Translations = {
   insightBestTimeForHabit: "Beste Zeit für {habit}: {time}",
   insightBestTimeForHabitDesc:
     'Du erledigst "{habit}" {time} mit {percent}% höherer Wahrscheinlichkeit als {worstTime} ({worstPercent}%).',
-  insightTagBoostsMood: '"{tag}" verbessert deine Stimmung',
+  insightTagBoostsMood: 'Deine Aufzeichnungen verbinden den Tag „{tag}“ mit höherer Stimmung',
   insightTagBoostsMoodDesc:
-    'Tage mit dem Tag "{tag}" zeigen im Durchschnitt {percent}% bessere Stimmung.',
+    'In {occurrences} Einträgen mit dem Tag „{tag}“ lag die durchschnittliche Stimmung bei {avgMoodWith}/5, gegenüber {avgMoodWithout}/5 in {untaggedEntries} Einträgen ohne Tags. Das ist ein Zusammenhang in deinen Aufzeichnungen, kein Beleg dafür, dass der Tag die Veränderung verursacht hat.',
 
   // Module names (v1.6.1 - OnboardingFlow)
   moduleFocus: "Fokus-Timer",
@@ -2149,7 +2149,8 @@ export const de: Translations = {
   insightsHelp1:
     "Einblicke werden aus deinen persönlichen Daten mithilfe statistischer Analysen generiert.",
   insightsHelp2: "Die gesamte Analyse erfolgt auf deinem Gerät - deine Daten verlassen es nie.",
-  insightsHelp3: "Muster mit höherer Zuverlässigkeit werden zuerst angezeigt.",
+  insightsHelp3:
+    "Muster werden nach der Menge der erfassten Daten und der Größe des beobachteten Unterschieds sortiert.",
   insightsDismiss: "Ausblenden",
   insightsShowMore: "Mehr anzeigen",
   insightsShowLess: "Weniger anzeigen",
@@ -2421,7 +2422,7 @@ export const de: Translations = {
 
   // Insight Card Details
   insightConfidence: "Vertrauen",
-  insightDataPoints: "Datenpunkte",
+  insightDataPoints: "erfasste Einträge",
   insightAvgMoodWith: "Durchschn. Stimmung mit Gewohnheit",
   insightAvgMoodWithout: "Durchschn. Stimmung ohne Gewohnheit",
   insightSampleDays: "Stichprobentage",

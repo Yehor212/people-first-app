@@ -93,6 +93,24 @@ describe("UpdateRequiredDialog", () => {
     }
   });
 
+  it("keeps the download and refresh icons decorative in the accessibility tree", async () => {
+    render(<UpdateRequiredDialog />);
+
+    window.dispatchEvent(
+      new CustomEvent(CHUNK_LOAD_ERROR_EVENT, {
+        detail: { chunk: "Settings-old.js", message: "ChunkLoadError" },
+      }),
+    );
+
+    const dialog = await screen.findByRole("alertdialog");
+    const icons = dialog.querySelectorAll("svg");
+
+    expect(icons).toHaveLength(2);
+    for (const icon of icons) {
+      expect(icon).toHaveAttribute("aria-hidden", "true");
+    }
+  });
+
   it("gives long localized copy a shrinkable wrapping layout", async () => {
     render(<UpdateRequiredDialog />);
 

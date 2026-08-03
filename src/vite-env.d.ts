@@ -3,6 +3,7 @@
 // Global app version injected by Vite
 declare const __APP_VERSION__: string;
 declare const __APP_BUILD_TIME__: number;
+declare const __JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__: boolean;
 
 // GLSL shader files imported as raw strings via Vite ?raw
 declare module '*.frag?raw' {

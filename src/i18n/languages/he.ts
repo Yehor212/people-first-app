@@ -186,8 +186,10 @@ const hebrewOverrides: Partial<Translations> = {
   insightMorning: "בבוקר",
   insightAfternoon: "אחר הצהריים",
   insightEvening: "בערב",
-  insightHabitImprovesMood: "{habit} משפר את מצב הרוח שלך",
-  insightHabitImprovesMoodDesc: 'בימים שאתה משלים "{habit}", מצב הרוח שלך טוב יותר ב-{percent}%.',
+  insightHabitImprovesMood:
+    'ברשומות שלך נמצא קשר בין "\u2068{habit}\u2069" לבין מצב רוח גבוה יותר',
+  insightHabitImprovesMoodDesc:
+    'ב-{sampleDays} ימים מתועדים עם "\u2068{habit}\u2069", מצב הרוח הממוצע היה {avgMoodWith}/5, לעומת {avgMoodWithout}/5 ב-{comparisonDays} ימים מתועדים אחרים. זהו קשר ברשומות שלך, לא הוכחה שההרגל גרם לשינוי.',
   insightFocusBestLabel: 'אתה מתמקד הכי טוב במשימות "{label}"',
   insightFocusBestLabelDesc:
     'זמן הריכוז הממוצע שלך ל-"{label}" הוא {minutes} דקות, גבוה יותר מפעילויות אחרות.',
@@ -197,8 +199,10 @@ const hebrewOverrides: Partial<Translations> = {
   insightBestTimeForHabit: "הזמן הטוב ביותר ל-{habit}: {time}",
   insightBestTimeForHabitDesc:
     'הסיכוי שלך להשלים "{habit}" {time} גבוה ב-{percent}% לעומת {worstTime} ({worstPercent}%).',
-  insightTagBoostsMood: '"{tag}" משפר את מצב הרוח שלך',
-  insightTagBoostsMoodDesc: 'ימים עם התגית "{tag}" מראים מצב רוח טוב יותר ב-{percent}%.',
+  insightTagBoostsMood:
+    'ברשומות שלך נמצא קשר בין התגית "\u2068{tag}\u2069" לבין מצב רוח גבוה יותר',
+  insightTagBoostsMoodDesc:
+    'ב-{occurrences} רשומות עם התגית "\u2068{tag}\u2069", מצב הרוח הממוצע היה {avgMoodWith}/5, לעומת {avgMoodWithout}/5 ב-{untaggedEntries} רשומות ללא תגיות. זהו קשר ברשומות שלך, לא הוכחה שהתגית גרמה לשינוי.',
 
   // Module names (v1.6.1 - OnboardingFlow)
   moduleFocus: "טיימר ריכוז",
@@ -2139,7 +2143,8 @@ const hebrewOverrides: Partial<Translations> = {
   insightsHelpTitle: "על התובנות",
   insightsHelp1: "התובנות מיוצרות מהנתונים שלך בניתוח סטטיסטי.",
   insightsHelp2: "כל הניתוח מתבצע במכשיר שלך - הנתונים לא יוצאים ממנו.",
-  insightsHelp3: "דפוסים עם ביטחון גבוה יותר מוצגים ראשונים.",
+  insightsHelp3:
+    "הדפוסים מסודרים לפי כמות הנתונים המתועדים וגודל ההבדל שנצפה.",
   insightsDismiss: "סגור",
   insightsShowMore: "הצג עוד",
   insightsShowLess: "הצג פחות",
@@ -2378,7 +2383,7 @@ const hebrewOverrides: Partial<Translations> = {
 
   // Insight Details
   insightConfidence: "ביטחון",
-  insightDataPoints: "נקודות נתונים",
+  insightDataPoints: "רשומות מתועדות",
   insightAvgMoodWith: "ממוצע מצב רוח עם הרגל",
   insightAvgMoodWithout: "ממוצע מצב רוח ללא הרגל",
   insightSampleDays: "ימי דגימה",

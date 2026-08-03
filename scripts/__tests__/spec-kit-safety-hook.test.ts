@@ -431,7 +431,7 @@ describe("Spec Kit safety hook lifecycle", () => {
       depth: jsonNestingDepth(payload),
     }));
 
-    expect(corpus).toHaveLength(8);
+    expect(corpus).toHaveLength(9);
     expect(Math.max(...corpus.map(({ bytes }) => bytes))).toBe(6_769);
     expect(Math.max(...corpus.map(({ depth }) => depth))).toBe(3);
     expect(representativePayloads).toEqual([

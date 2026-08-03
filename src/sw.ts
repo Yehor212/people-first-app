@@ -54,6 +54,11 @@ const APP_AUDIO_SW_CACHE_PATHS = [
   "sounds/hyperfocus/hyperfocus-wind-soft.mp3",
   "sounds/soft-air-veil.mp3",
   "sounds/soft-rain-veil.mp3",
+  "sounds/feedback/feedback-complete.mp3",
+  "sounds/feedback/feedback-milestone.mp3",
+  "sounds/feedback/feedback-notification.mp3",
+  "sounds/feedback/feedback-streak.mp3",
+  "sounds/feedback/feedback-success.mp3",
 ] as const;
 const SAME_ORIGIN_RUNTIME_ASSET_DESTINATIONS = new Set<RequestDestination>([
   "font",
