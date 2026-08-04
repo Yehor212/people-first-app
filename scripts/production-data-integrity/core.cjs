@@ -2023,22 +2023,134 @@ function analyzeProductionTextFile(root, relativePath, config, findings, reportP
   }
 }
 
+function maskSqlRangePreservingLines(value, start, end) {
+  return (
+    value.slice(0, start) +
+    value.slice(start, end).replace(/[^\n]/g, " ") +
+    value.slice(end)
+  );
+}
+
+function escapeSqlRoutinePattern(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function findDollarQuotedSqlRoutines(sql) {
+  const routinePattern =
+    /\bcreate\s+(?:or\s+replace\s+)?(?:function|procedure)\s+((?:"?[a-zA-Z_][a-zA-Z0-9_$]*"?\s*\.\s*)?"?[a-zA-Z_][a-zA-Z0-9_$]*"?)\s*\(/gi;
+  const routines = [];
+  let match;
+  while ((match = routinePattern.exec(sql)) !== null) {
+    const headerEnd = routinePattern.lastIndex;
+    const bodyMarkerPattern = /\bas\s+(\$[a-zA-Z_][a-zA-Z0-9_]*\$|\$\$)/gi;
+    bodyMarkerPattern.lastIndex = headerEnd;
+    const bodyMarker = bodyMarkerPattern.exec(sql);
+    if (!bodyMarker) break;
+    const statementEnd = sql.indexOf(";", headerEnd);
+    if (statementEnd !== -1 && statementEnd < bodyMarker.index) {
+      routinePattern.lastIndex = statementEnd + 1;
+      continue;
+    }
+    const delimiter = bodyMarker[1];
+    const bodyStart = bodyMarkerPattern.lastIndex;
+    const bodyEnd = sql.indexOf(delimiter, bodyStart);
+    if (bodyEnd === -1) break;
+    const normalizedName = match[1].replace(/["\s]/g, "").toLowerCase();
+    routines.push({
+      normalizedName,
+      bodyStart,
+      bodyEnd,
+      body: sql.slice(bodyStart, bodyEnd),
+    });
+    routinePattern.lastIndex = bodyEnd + delimiter.length;
+  }
+  return routines;
+}
+
+function sqlCallsRoutine(sql, normalizedName) {
+  const parts = normalizedName.split(".");
+  const qualified = parts.map(escapeSqlRoutinePattern).join("\\s*\\.\\s*");
+  const unqualified = escapeSqlRoutinePattern(parts[parts.length - 1]);
+  const routineNamePattern =
+    qualified === unqualified ? unqualified : `(?:${qualified}|${unqualified})`;
+  return new RegExp(
+    `\\b(?:call\\s+|perform\\s+|select\\s+(?:\\*\\s+from\\s+)?)(?:${routineNamePattern})\\s*\\(`,
+    "i"
+  ).test(sql);
+}
+
+/**
+ * CREATE FUNCTION/PROCEDURE stores a body but does not execute it while the
+ * migration is applied. PDI008 therefore scans immediate SQL plus routines
+ * reached by a top-level SELECT/CALL/PERFORM (including a DO block), while
+ * masking only inert dollar-quoted routine bodies. This is not a path/table
+ * allowlist: any top-level, DO-block, directly invoked, or transitively invoked
+ * user-data write remains visible to the existing detector.
+ */
+function maskInertSqlRoutineBodies(sql) {
+  const routines = findDollarQuotedSqlRoutines(sql);
+  if (routines.length === 0) return sql;
+
+  let outsideRoutineBodies = sql;
+  for (const routine of [...routines].sort((left, right) => right.bodyStart - left.bodyStart)) {
+    outsideRoutineBodies = maskSqlRangePreservingLines(
+      outsideRoutineBodies,
+      routine.bodyStart,
+      routine.bodyEnd
+    );
+  }
+
+  const invoked = new Set(
+    routines
+      .filter((routine) => sqlCallsRoutine(outsideRoutineBodies, routine.normalizedName))
+      .map((routine) => routine.normalizedName)
+  );
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const caller of routines) {
+      if (!invoked.has(caller.normalizedName)) continue;
+      for (const callee of routines) {
+        if (
+          !invoked.has(callee.normalizedName) &&
+          sqlCallsRoutine(caller.body, callee.normalizedName)
+        ) {
+          invoked.add(callee.normalizedName);
+          changed = true;
+        }
+      }
+    }
+  }
+
+  let immediateSql = sql;
+  for (const routine of [...routines].sort((left, right) => right.bodyStart - left.bodyStart)) {
+    if (invoked.has(routine.normalizedName)) continue;
+    immediateSql = maskSqlRangePreservingLines(
+      immediateSql,
+      routine.bodyStart,
+      routine.bodyEnd
+    );
+  }
+  return immediateSql;
+}
+
 function analyzeSqlFile(root, relativePath, config, findings, reportPath) {
   if (!reportPath(relativePath) || classifyPath(relativePath, config) === "test") return;
   const text = readText(root, relativePath, config.limits.maxSourceFileBytes);
   if (text === null) return;
   const withoutComments = text.replace(/--[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
+  const immediateSql = maskInertSqlRoutineBodies(withoutComments);
   const userDataTables = new Set(
     config.userDataTables.map((table) => table.split(".").pop().toLowerCase())
   );
   const pattern =
     /\b(?:insert\s+into\s+(?:only\s+)?|merge\s+into\s+|copy\s+)((?:"?[a-zA-Z_][a-zA-Z0-9_$]*"?\s*\.\s*)?"?[a-zA-Z_][a-zA-Z0-9_$]*"?)(?=\s|\(|;|$)/gi;
   let match;
-  while ((match = pattern.exec(withoutComments)) !== null) {
+  while ((match = pattern.exec(immediateSql)) !== null) {
     const normalizedTarget = match[1].replace(/["\s]/g, "").toLowerCase();
     const table = normalizedTarget.split(".").pop();
     if (!userDataTables.has(table)) continue;
-    const before = withoutComments.slice(0, match.index);
+    const before = immediateSql.slice(0, match.index);
     const line = before.split("\n").length;
     findings.push(
       makeFinding(config, {

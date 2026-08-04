@@ -638,6 +638,7 @@ export type Database = {
           storage_path: string | null
           storage_url: string | null
           user_id: string
+          vault_revision: number | null
         }
         Insert: {
           created_at: number
@@ -648,6 +649,7 @@ export type Database = {
           storage_path?: string | null
           storage_url?: string | null
           user_id: string
+          vault_revision?: number | null
         }
         Update: {
           created_at?: number
@@ -658,6 +660,7 @@ export type Database = {
           storage_path?: string | null
           storage_url?: string | null
           user_id?: string
+          vault_revision?: number | null
         }
         Relationships: [
           {
@@ -727,6 +730,7 @@ export type Database = {
           title: string
           updated_at: number
           user_id: string
+          vault_revision: number | null
         }
         Insert: {
           audio_ids?: string[]
@@ -753,6 +757,7 @@ export type Database = {
           title?: string
           updated_at: number
           user_id: string
+          vault_revision?: number | null
         }
         Update: {
           audio_ids?: string[]
@@ -779,6 +784,7 @@ export type Database = {
           title?: string
           updated_at?: number
           user_id?: string
+          vault_revision?: number | null
         }
         Relationships: []
       }
@@ -792,6 +798,7 @@ export type Database = {
           storage_url: string | null
           user_id: string
           width: number
+          vault_revision: number | null
         }
         Insert: {
           created_at: number
@@ -802,6 +809,7 @@ export type Database = {
           storage_url?: string | null
           user_id: string
           width?: number
+          vault_revision?: number | null
         }
         Update: {
           created_at?: number
@@ -812,6 +820,7 @@ export type Database = {
           storage_url?: string | null
           user_id?: string
           width?: number
+          vault_revision?: number | null
         }
         Relationships: [
           {
@@ -822,6 +831,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      journal_security_states: {
+        Row: {
+          journal_write_mode: string
+          protection_state: string
+          removal_operation_revision: string | null
+          updated_at: string
+          user_id: string
+          vault_revision: number
+        }
+        Insert: {
+          journal_write_mode?: string
+          protection_state: string
+          removal_operation_revision?: string | null
+          updated_at?: string
+          user_id: string
+          vault_revision: number
+        }
+        Update: {
+          journal_write_mode?: string
+          protection_state?: string
+          removal_operation_revision?: string | null
+          updated_at?: string
+          user_id?: string
+          vault_revision?: number
+        }
+        Relationships: []
       }
       leaderboards: {
         Row: {
@@ -1265,16 +1301,19 @@ export type Database = {
           payload: Json
           updated_at: string
           user_id: string
+          vault_revision: number | null
         }
         Insert: {
           payload: Json
           updated_at?: string
           user_id: string
+          vault_revision?: number | null
         }
         Update: {
           payload?: Json
           updated_at?: string
           user_id?: string
+          vault_revision?: number | null
         }
         Relationships: []
       }
@@ -1699,11 +1738,39 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      begin_journal_password_removal: {
+        Args: {
+          p_expected_vault_revision: number
+          p_inventory: Json
+          p_operation_revision: string
+        }
+        Returns: string
+      }
+      compare_and_swap_journal_vault_wrapper: {
+        Args: { p_expected_value: Json; p_next_value: Json }
+        Returns: string
+      }
+      delete_journal_entry_permanently: {
+        Args: { p_device_id: string; p_entry_id: string }
+        Returns: string
+      }
+      enable_journal_strict_write_fence: {
+        Args: { p_expected_vault_revision: number }
+        Returns: string
+      }
       claim_push_install: {
         Args: { p_device_id: string; p_platform?: string; p_token: string }
         Returns: string
       }
       calculate_streak: { Args: { p_user_id: string }; Returns: number }
+      finalize_journal_password_removal: {
+        Args: {
+          p_expected_vault_revision: number
+          p_operation_revision: string
+        }
+        Returns: string
+      }
+      recover_journal_password_removal: { Args: never; Returns: Json }
       get_challenge_leaderboard: {
         Args: { p_challenge_id: string }
         Returns: {

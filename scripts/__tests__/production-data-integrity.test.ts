@@ -1326,6 +1326,71 @@ describe("production data integrity checker", () => {
     expectRule(run(root), "PDI008");
   });
 
+  it("distinguishes inert stored-routine DDL from migration-time user-data writes", () => {
+    const inertRoutineRoot = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000011_runtime_event_writer.sql": [
+        "CREATE OR REPLACE FUNCTION private.record_real_sync_event(p_user_id uuid, p_entity_id text)",
+        "RETURNS void LANGUAGE plpgsql AS $$",
+        "BEGIN",
+        "  INSERT INTO public.sync_events (user_id, entity_type, entity_id, op, payload, device_id)",
+        "  VALUES (p_user_id, 'journal', p_entity_id, 'delete', NULL, 'server');",
+        "END;",
+        "$$;",
+      ].join("\n"),
+    });
+    const inertRoutine = run(inertRoutineRoot);
+    expect(
+      inertRoutine.status,
+      JSON.stringify(inertRoutine.report, null, 2),
+    ).toBe(0);
+    expect(inertRoutine.report.status).toBe("PASS");
+
+    const immediateCases = [
+      [
+        "DO $$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('seed-1', 'user-1', 'good');",
+        "END;",
+        "$$;",
+      ].join("\n"),
+      [
+        "CREATE OR REPLACE FUNCTION public.seed_moods()",
+        "RETURNS void LANGUAGE plpgsql AS $$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('seed-1', 'user-1', 'good');",
+        "END;",
+        "$$;",
+        "SELECT public.seed_moods();",
+      ].join("\n"),
+      [
+        "CREATE OR REPLACE FUNCTION public.seed_moods_nested()",
+        "RETURNS void LANGUAGE plpgsql AS $$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('seed-2', 'user-2', 'good');",
+        "END;",
+        "$$;",
+        "CREATE OR REPLACE FUNCTION public.invoke_seed_moods_nested()",
+        "RETURNS void LANGUAGE plpgsql AS $$",
+        "BEGIN",
+        "  PERFORM public.seed_moods_nested();",
+        "END;",
+        "$$;",
+        "SELECT public.invoke_seed_moods_nested();",
+      ].join("\n"),
+    ];
+    for (const sql of immediateCases) {
+      const root = fixture({
+        "src/main.ts": "export {};",
+        "supabase/migrations/20260709000012_immediate_seed.sql": sql,
+      });
+      expectRule(run(root), "PDI008");
+    }
+  });
+
   it("rejects semantic config weakening and broad exclusions", () => {
     const mutations: Array<(config: Record<string, unknown>) => void> = [
       (config) => {

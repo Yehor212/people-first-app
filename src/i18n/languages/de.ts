@@ -2758,6 +2758,23 @@ export const de: Translations = {
   journalSubtitle: "Dein persönlicher Raum",
   journalEmpty: "Noch keine Tagebucheinträge",
   journalEmptyHint: "Wenn du möchtest, beginne mit einem Detail von heute.",
+  journalEntriesUnavailableCount:
+    "Vorübergehend nicht verfügbare Tagebucheinträge: {count}. Deine anderen Einträge werden weiterhin angezeigt.",
+  journalEntriesUnavailableCountZero: "{count} Tagebucheinträge sind vorübergehend nicht verfügbar. Deine anderen Einträge werden weiterhin angezeigt.",
+  journalEntriesUnavailableCountOne: "{count} Tagebucheintrag ist vorübergehend nicht verfügbar. Deine anderen Einträge werden weiterhin angezeigt.",
+  journalEntriesUnavailableCountTwo: "{count} Tagebucheinträge sind vorübergehend nicht verfügbar. Deine anderen Einträge werden weiterhin angezeigt.",
+  journalEntriesUnavailableCountFew: "{count} Tagebucheinträge sind vorübergehend nicht verfügbar. Deine anderen Einträge werden weiterhin angezeigt.",
+  journalEntriesUnavailableCountMany: "{count} Tagebucheinträge sind vorübergehend nicht verfügbar. Deine anderen Einträge werden weiterhin angezeigt.",
+  journalEntriesUnavailableCountOther: "{count} Tagebucheinträge sind vorübergehend nicht verfügbar. Deine anderen Einträge werden weiterhin angezeigt.",
+  journalEntriesUnavailableAll:
+    "Derzeit können keine Tagebucheinträge angezeigt werden. Deine gespeicherten Daten wurden nicht gelöscht.",
+  journalEntriesUnavailableAllCountZero: "{count} Tagebucheinträge können derzeit nicht angezeigt werden. Deine gespeicherten Daten wurden nicht gelöscht.",
+  journalEntriesUnavailableAllCountOne: "{count} Tagebucheintrag kann derzeit nicht angezeigt werden. Deine gespeicherten Daten wurden nicht gelöscht.",
+  journalEntriesUnavailableAllCountTwo: "{count} Tagebucheinträge können derzeit nicht angezeigt werden. Deine gespeicherten Daten wurden nicht gelöscht.",
+  journalEntriesUnavailableAllCountFew: "{count} Tagebucheinträge können derzeit nicht angezeigt werden. Deine gespeicherten Daten wurden nicht gelöscht.",
+  journalEntriesUnavailableAllCountMany: "{count} Tagebucheinträge können derzeit nicht angezeigt werden. Deine gespeicherten Daten wurden nicht gelöscht.",
+  journalEntriesUnavailableAllCountOther: "{count} Tagebucheinträge können derzeit nicht angezeigt werden. Deine gespeicherten Daten wurden nicht gelöscht.",
+  journalEntriesUnavailableRetry: "Erneut laden",
   journalEmptyQuote: "Beginne mit einem Detail aus diesem Moment.",
   diaryStartFirstEntry: "Beginne mit einem kleinen Detail.",
   diaryPrompt1: "Was hat dich heute zum Lächeln gebracht?",
@@ -3283,17 +3300,42 @@ export const de: Translations = {
     "Die Tagebuch-Sperre ist aktiv. Du kannst sie hier ändern oder entfernen.",
   journalProtectionCloudPending:
     "Auf diesem Gerät ist dein Tagebuch bereits geschützt. ZenFlow ersetzt noch eine ältere Online-Kopie; lass die App geöffnet und stelle eine Internetverbindung her.",
+  journalProtectionPasswordSyncPending:
+    "Das neue Tagebuch-Passwort funktioniert bereits auf diesem Gerät. ZenFlow aktualisiert den verschlüsselten Schlüssel noch online; lass die App geöffnet und mit dem Internet verbunden.",
   journalProtectionRemovalCloudPending:
     "Auf diesem Gerät ist die Tagebuch-Sperre ausgeschaltet. ZenFlow schließt diese Änderung noch online ab; lass die App geöffnet und stelle eine Internetverbindung her.",
+  journalProtectionRemovalPreflightPending:
+    "Der Tagebuchschutz ist noch aktiv. ZenFlow hat angehalten, bevor Einträge geändert wurden. Entsperre das Tagebuch, bleibe online und setze das Entfernen fort.",
+  journalPasswordRemovalResume: "Tagebuch-Sperre weiter entfernen",
+  journalProtectionRemovalRetry: "Online-Bereinigung erneut versuchen",
+  journalProtectionRemovalRetryPending: "Erneuter Versuch...",
   journalPasswordRemoveConfirm: "Bist du sicher? Dein Tagebuch wird ohne Passwort zugänglich sein.",
   journalLockRemoveDetail:
     "Deine Einträge bleiben gespeichert, aber die Tagebuch-Sperre und die biometrische Tagebuch-Entsperrung werden deaktiviert. Du kannst später eine neue Sperre einrichten.",
   journalLockRemoveFailed:
-    "Entsperre zuerst dein Tagebuch und versuche dann erneut, die Sperre zu entfernen.",
+    "Entsperre dein Tagebuch und versuche dann erneut, den Schutz zu entfernen. Es wurde nichts geändert.",
   journalLockRemoveUnexpected:
     "Die Tagebuch-Sperre konnte nicht entfernt werden. Es wurde nichts geändert. Versuche es noch einmal.",
   journalLockRemovePartial:
-    "Die Tagebuch-Sperre ist noch aktiv, aber die biometrische Entsperrung wurde deaktiviert. Entsperre das Tagebuch mit deinem Passwort und versuche es erneut.",
+    "Der Tagebuchschutz ist auf diesem Gerät ausgeschaltet, aber zusätzliche Bereinigungen stehen noch aus. Lass die App geöffnet, bleib angemeldet und versuche es mit Internetverbindung erneut.",
+  journalLockRemoveActivationPending:
+    "Schließe zuerst die Einrichtung des Tagebuchschutzes ab und versuche es dann erneut. Es wurde nichts geändert.",
+  journalLockRemoveRemovalPending:
+    "Eine frühere Entfernung wird noch abgeschlossen. Bleib mit diesem Konto angemeldet und versuche es gleich noch einmal.",
+  journalLockRemoveRevisionMismatch:
+    "Dein Tagebuch wurde während der Prüfung geändert. Lade es neu, entsperre es und versuche es erneut. Es wurde nichts geändert.",
+  journalLockRemoveContentUnavailable:
+    "Ein Teil der geschützten Tagebuchinhalte konnte nicht geöffnet werden. Stelle eine Internetverbindung her, entsperre das Tagebuch und versuche es erneut. Es wurde nichts gelöscht.",
+  journalLockRemoveOwnerChanged:
+    "Das angemeldete Konto hat sich geändert. Kehre zum Konto dieses Tagebuchs zurück und versuche es erneut. Es wurde nichts geändert.",
+  journalLockRemoveStorageFailed:
+    "Dieses Gerät konnte das Tagebuch nicht vollständig lesen. Lass die App geöffnet, lade sie neu und versuche es erneut. Es wurde nichts geändert.",
+  journalLockRemovePartialBiometric:
+    "Der Tagebuchschutz ist auf diesem Gerät ausgeschaltet. Die Bereinigung der biometrischen Entsperrung steht noch aus. Lass die App geöffnet und versuche es erneut.",
+  journalLockRemovePartialCloud:
+    "Der Tagebuchschutz ist auf diesem Gerät ausgeschaltet. Die Änderung für deine anderen Geräte steht noch aus. Bleib angemeldet und versuche es mit Internetverbindung erneut.",
+  journalLockRemovePartialBoth:
+    "Der Tagebuchschutz ist auf diesem Gerät ausgeschaltet. Die Bereinigung der biometrischen Entsperrung und die Änderung für deine anderen Geräte stehen noch aus. Lass die App geöffnet, bleib angemeldet und versuche es mit Internetverbindung erneut.",
   journalPasswordRemovePending: "Sperre wird entfernt...",
   journalPasswordRemoveSuccess: "Tagebuch-Sperre entfernt.",
   journalPasswordSetupFailed:

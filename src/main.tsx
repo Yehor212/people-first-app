@@ -49,6 +49,7 @@ import { migrateLegacyFeedbackSettings } from "./lib/legacyFeedbackMigration";
 import { retireLegacyQuickActions } from "./lib/legacyQuickActionsRetirement";
 import { applyDocumentLanguage, loadLanguage, resolveInitialLanguage } from "./i18n";
 import { dispatchNativeReminderReconcile } from "./lib/notificationLifecycle";
+import { resumePendingJournalPasswordRemoval } from "./features/journal/journalSecurityRemovalLifecycle";
 
 // The bounded error buffer supports local recovery diagnostics without enabling
 // optional external crash reporting before the user has a corresponding choice.
@@ -418,6 +419,12 @@ async function handleAppResume(): Promise<void> {
   isHandlingResume = true;
 
   try {
+    try {
+      await resumePendingJournalPasswordRemoval();
+    } catch {
+      logger.warn("[Main] Diary protection cleanup remains pending after resume");
+    }
+
     if (isNative) {
       try {
         dispatchNativeReminderReconcile("app-resume");
@@ -666,6 +673,9 @@ Promise.all([ensureFreshVersionBeforeRender(), prepareInitialLanguageBeforeRende
   .then(([shouldRender]) => {
     if (shouldRender) {
       createRoot(document.getElementById("root")!, rootOptions).render(<App />);
+      void resumePendingJournalPasswordRemoval().catch(() => {
+        logger.warn("[Main] Diary protection cleanup remains pending after startup");
+      });
       scheduleVersionCheckAfterStartup();
       scheduleRuntimeAudioCacheWarmAfterStartup();
     }
@@ -673,6 +683,9 @@ Promise.all([ensureFreshVersionBeforeRender(), prepareInitialLanguageBeforeRende
   .catch((err) => {
     logger.error("[Init] Fatal:", err);
     createRoot(document.getElementById("root")!, rootOptions).render(<App />);
+    void resumePendingJournalPasswordRemoval().catch(() => {
+      logger.warn("[Main] Diary protection cleanup remains pending after startup fallback");
+    });
     scheduleVersionCheckAfterStartup();
     scheduleRuntimeAudioCacheWarmAfterStartup();
   });

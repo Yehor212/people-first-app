@@ -136,6 +136,8 @@ export interface JournalEntry {
   >; // free-form placement retained while a photo is temporarily shown in the gallery
   createdAt: number;
   updatedAt: number;
+  /** Exact journal vault epoch for protected storage/sync; absent for plaintext. */
+  vaultRevision?: number;
 }
 
 /**
@@ -244,6 +246,8 @@ export interface JournalSpace {
   sortOrder: number;
   createdAt: number;
   updatedAt: number;
+  /** Exact journal vault epoch for protected storage/backup; absent for plaintext. */
+  vaultRevision?: number;
 }
 
 export interface JournalPracticeSession {
@@ -287,6 +291,8 @@ export interface JournalSpaceCapture {
   entryId?: string;
   sourceType?: "gratitude";
   sourceId?: string;
+  /** Exact journal vault epoch for protected storage/backup; absent for plaintext. */
+  vaultRevision?: number;
 }
 
 /** Compressed photo attached to a journal entry */
@@ -300,6 +306,8 @@ export interface JournalPhoto {
   createdAt: number;
   storagePath?: string;   // Supabase Storage path (e.g. "{userId}/{photoId}.jpg")
   storageUrl?: string;    // Legacy signed URL; new sync uses storagePath and short-lived URLs on demand
+  /** Exact journal vault epoch for protected storage/sync; absent for plaintext. */
+  vaultRevision?: number;
 }
 
 /** PBKDF2-hashed password stored in settings table */
@@ -314,6 +322,9 @@ export interface JournalPassword {
 export interface JournalVaultKeySetting {
   wrappedKey: string;
   createdAt: number;
+  /** Password-wrapper CAS generation; absent legacy values are generation 0. */
+  wrapperRevision?: number;
+  /** Content-encryption epoch. Rewrapping the same vault key must not change it. */
   updatedAt: number;
 }
 
@@ -327,6 +338,8 @@ export interface JournalAudio {
   createdAt: number;
   storagePath?: string;   // Supabase Storage path
   storageUrl?: string;    // Legacy signed URL; new sync uses storagePath and short-lived URLs on demand
+  /** Exact journal vault epoch for protected storage/sync; absent for plaintext. */
+  vaultRevision?: number;
 }
 
 export const MAX_PHOTOS_PER_ENTRY = 5;

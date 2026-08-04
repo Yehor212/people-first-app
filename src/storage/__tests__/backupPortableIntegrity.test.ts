@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const cryptoState = vi.hoisted(() => ({
   vaultKey: null as string | null,
+  vaultRevision: 2,
   blockFirstMediaEncryption: false,
   mediaEncryptionCalls: 0,
   activeMediaEncryptions: 0,
@@ -15,6 +16,9 @@ const mediaPrefix = (key: string) => `encrypted-media:${key}:`;
 
 vi.mock("@/lib/journalContentSession", () => ({
   getJournalContentVaultKey: vi.fn(() => cryptoState.vaultKey),
+  getJournalContentVaultRevision: vi.fn(() =>
+    cryptoState.vaultKey ? cryptoState.vaultRevision : null
+  ),
   consumeJournalReplaceAuthorization: vi.fn(() => true),
 }));
 

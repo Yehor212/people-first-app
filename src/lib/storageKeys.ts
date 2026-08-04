@@ -83,6 +83,7 @@ export const SK = {
   JOURNAL_SECURITY_MIGRATION: "journal_security_migration_v1",
   JOURNAL_SECURITY_REMOVAL: "journal_security_removal_v1",
   JOURNAL_VAULT_REVISION: "journal_vault_revision_v1",
+  JOURNAL_VAULT_SYNC_PENDING: "journal_vault_sync_pending_v1",
   JOURNAL_CALENDAR_MODE: "journal-calendar-mode",
   JOURNAL_LEGEND_SEEN: "journal-legend-seen",
   JOURNAL_RECENT_STICKERS: "journal-recent-stickers",

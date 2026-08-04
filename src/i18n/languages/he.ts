@@ -2669,6 +2669,23 @@ const hebrewOverrides: Partial<Translations> = {
   journalSubtitle: "המרחב האישי שלך",
   journalEmpty: "אין עדיין רשומות ביומן",
   journalEmptyHint: "כשתרצה, התחל מפרט אחד מהיום.",
+  journalEntriesUnavailableCount:
+    "רשומות יומן שאינן זמינות זמנית: {count}. שאר הרשומות עדיין מוצגות.",
+  journalEntriesUnavailableCountZero: "לא ניתן להציג זמנית \u2068{count}\u2069 רשומות יומן. שאר הרשומות עדיין מוצגות.",
+  journalEntriesUnavailableCountOne: "לא ניתן להציג זמנית \u2068{count}\u2069 רשומת יומן. שאר הרשומות עדיין מוצגות.",
+  journalEntriesUnavailableCountTwo: "לא ניתן להציג זמנית \u2068{count}\u2069 רשומות יומן. שאר הרשומות עדיין מוצגות.",
+  journalEntriesUnavailableCountFew: "לא ניתן להציג זמנית \u2068{count}\u2069 רשומות יומן. שאר הרשומות עדיין מוצגות.",
+  journalEntriesUnavailableCountMany: "לא ניתן להציג זמנית \u2068{count}\u2069 רשומות יומן. שאר הרשומות עדיין מוצגות.",
+  journalEntriesUnavailableCountOther: "לא ניתן להציג זמנית \u2068{count}\u2069 רשומות יומן. שאר הרשומות עדיין מוצגות.",
+  journalEntriesUnavailableAll:
+    "כרגע אי אפשר להציג רשומות מהיומן. הנתונים השמורים שלך לא נמחקו.",
+  journalEntriesUnavailableAllCountZero: "כרגע אי אפשר להציג \u2068{count}\u2069 רשומות יומן. הנתונים השמורים שלך לא נמחקו.",
+  journalEntriesUnavailableAllCountOne: "כרגע אי אפשר להציג \u2068{count}\u2069 רשומת יומן. הנתונים השמורים שלך לא נמחקו.",
+  journalEntriesUnavailableAllCountTwo: "כרגע אי אפשר להציג \u2068{count}\u2069 רשומות יומן. הנתונים השמורים שלך לא נמחקו.",
+  journalEntriesUnavailableAllCountFew: "כרגע אי אפשר להציג \u2068{count}\u2069 רשומות יומן. הנתונים השמורים שלך לא נמחקו.",
+  journalEntriesUnavailableAllCountMany: "כרגע אי אפשר להציג \u2068{count}\u2069 רשומות יומן. הנתונים השמורים שלך לא נמחקו.",
+  journalEntriesUnavailableAllCountOther: "כרגע אי אפשר להציג \u2068{count}\u2069 רשומות יומן. הנתונים השמורים שלך לא נמחקו.",
+  journalEntriesUnavailableRetry: "לנסות לטעון שוב",
   journalEmptyQuote: "התחל מפרט אחד של הרגע הזה.",
   diaryStartFirstEntry: "התחילו בפרט קטן אחד.",
   diaryPrompt1: "מה גרם לך לחייך היום?",
@@ -3165,15 +3182,41 @@ const hebrewOverrides: Partial<Translations> = {
   journalPasswordActiveHint: "נעילת היומן פעילה. כאן אפשר לשנות או להסיר אותה.",
   journalProtectionCloudPending:
     "היומן כבר מוגן במכשיר הזה. ZenFlow עדיין מחליף עותק ישן יותר שמאוחסן אונליין; השאירו את האפליקציה פתוחה והתחברו לאינטרנט.",
+  journalProtectionPasswordSyncPending:
+    "הסיסמה החדשה ליומן כבר פועלת במכשיר הזה. ZenFlow עדיין מעדכן את מפתח ההצפנה באופן מקוון; השאירו את האפליקציה פתוחה ומחוברת לאינטרנט.",
   journalProtectionRemovalCloudPending:
     "נעילת היומן כבויה במכשיר הזה. ZenFlow עדיין משלימה את השינוי אונליין; השאירו את האפליקציה פתוחה והתחברו לאינטרנט.",
+  journalProtectionRemovalPreflightPending:
+    "ההגנה על היומן עדיין פעילה. ZenFlow עצר לפני ששינה את הרשומות שלך. יש לבטל את נעילת היומן, להישאר מחוברים לאינטרנט ולהמשיך בהסרת ההגנה.",
+  journalPasswordRemovalResume: "להמשיך בהסרת נעילת היומן",
+  journalProtectionRemovalRetry: "לנסות שוב את הניקוי המקוון",
+  journalProtectionRemovalRetryPending: "מנסים שוב...",
   journalPasswordRemoveConfirm: "האם אתה בטוח? היומן שלך יהיה נגיש ללא סיסמה.",
   journalLockRemoveDetail:
     "הרשומות שלך יישארו שמורות, אך נעילת היומן והפתיחה הביומטרית של היומן יכובו. אפשר להגדיר נעילה חדשה אחר כך.",
-  journalLockRemoveFailed: "פתח תחילה את היומן, ואז נסה להסיר את הנעילה שוב.",
+  journalLockRemoveFailed:
+    "פתח את היומן, ואז נסה להסיר שוב את ההגנה. לא בוצע שום שינוי.",
   journalLockRemoveUnexpected: "לא הצלחנו להסיר את נעילת היומן. דבר לא השתנה. נסו שוב.",
   journalLockRemovePartial:
-    "נעילת היומן עדיין פעילה, אך פתיחה ביומטרית הושבתה. פתחו את היומן באמצעות הסיסמה ונסו שוב.",
+    "הגנת היומן כבויה במכשיר הזה, אך עדיין נותר ניקוי נוסף. השאר את האפליקציה פתוחה, הישאר מחובר ונסה שוב כשיש חיבור לאינטרנט.",
+  journalLockRemoveActivationPending:
+    "השלם תחילה את הגדרת ההגנה על היומן, ואז נסה שוב. לא בוצע שום שינוי.",
+  journalLockRemoveRemovalPending:
+    "הסרה קודמת עדיין מסתיימת. הישאר מחובר לחשבון הזה ונסה שוב בעוד זמן קצר.",
+  journalLockRemoveRevisionMismatch:
+    "היומן השתנה בזמן הבדיקה. טען אותו מחדש, פתח אותו ונסה שוב. לא בוצע שום שינוי.",
+  journalLockRemoveContentUnavailable:
+    "לא ניתן היה לפתוח חלק מהתוכן המוגן ביומן. התחבר לאינטרנט, פתח את היומן ונסה שוב. שום דבר לא נמחק.",
+  journalLockRemoveOwnerChanged:
+    "החשבון המחובר השתנה. חזור לחשבון שהיומן שייך לו ונסה שוב. לא בוצע שום שינוי.",
+  journalLockRemoveStorageFailed:
+    "המכשיר הזה לא הצליח לקרוא את היומן במלואו. השאר את האפליקציה פתוחה, טען אותה מחדש ונסה שוב. לא בוצע שום שינוי.",
+  journalLockRemovePartialBiometric:
+    "הגנת היומן כבויה במכשיר הזה. ניקוי הפתיחה הביומטרית עדיין ממתין. השאר את האפליקציה פתוחה ונסה שוב.",
+  journalLockRemovePartialCloud:
+    "הגנת היומן כבויה במכשיר הזה. השינוי במכשירים האחרים שלך עדיין ממתין. הישאר מחובר ונסה שוב כשיש חיבור לאינטרנט.",
+  journalLockRemovePartialBoth:
+    "הגנת היומן כבויה במכשיר הזה. ניקוי הפתיחה הביומטרית והשינוי במכשירים האחרים שלך עדיין ממתינים. השאר את האפליקציה פתוחה, הישאר מחובר ונסה שוב כשיש חיבור לאינטרנט.",
   journalPasswordRemovePending: "מסיר את הנעילה...",
   journalPasswordRemoveSuccess: "נעילת היומן הוסרה.",
   journalPasswordSetupFailed: "לא הצלחנו להפעיל את נעילת היומן. נסה שוב.",

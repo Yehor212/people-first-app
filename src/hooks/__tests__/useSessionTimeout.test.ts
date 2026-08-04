@@ -178,12 +178,17 @@ vi.mock('@/lib/localNotifications', () => ({
 const mockHasPendingJournalSecurityMigrationForOwner = vi.fn(
   (_ownerUserId: string) => Promise.resolve(false),
 );
+const mockHasPendingJournalSecurityRemovalForOwner = vi.fn(
+  (_ownerUserId: string) => Promise.resolve(false),
+);
 const mockGetPendingJournalSecurityMigrationRevisionForOwner = vi.fn(
   (_ownerUserId: string) => Promise.resolve<string | null>(null),
 );
 vi.mock('@/features/journal', () => ({
   hasPendingJournalSecurityMigrationForOwner: (ownerUserId: string) =>
     mockHasPendingJournalSecurityMigrationForOwner(ownerUserId),
+  hasPendingJournalSecurityRemovalForOwner: (ownerUserId: string) =>
+    mockHasPendingJournalSecurityRemovalForOwner(ownerUserId),
   getPendingJournalSecurityMigrationRevisionForOwner: (ownerUserId: string) =>
     mockGetPendingJournalSecurityMigrationRevisionForOwner(ownerUserId),
 }));
@@ -275,6 +280,7 @@ describe('useSessionTimeout', () => {
     mockClearAccountDeviceSurfaces.mockResolvedValue(undefined);
     mockClearAccountNotificationsForBoundary.mockResolvedValue(undefined);
     mockHasPendingJournalSecurityMigrationForOwner.mockResolvedValue(false);
+    mockHasPendingJournalSecurityRemovalForOwner.mockResolvedValue(false);
     mockGetPendingJournalSecurityMigrationRevisionForOwner.mockResolvedValue(null);
     localStorage.removeItem('zenflow_pending_account_sign_out_cleanup');
   });

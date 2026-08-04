@@ -19,6 +19,7 @@ import Dexie, { type IndexableType, type Table } from "dexie";
 import type { LoopHabitType } from "@/types";
 import { decodeHabitCompletionFromCloud } from "@/storage/sync/habitCompletionCodec";
 import { storageRemove } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
 import {
   getDeletionTrackerKeyForSyncEntity,
   normalizeDeletedIdsForStorage,
@@ -26,7 +27,6 @@ import {
 import { isAccountSyncedSettingKey } from "@/storage/sync/settingSyncPolicy";
 import { applyIncomingAccountSetting } from "@/storage/sync/journalVaultSyncPolicy";
 import { SyncOwnerBoundaryError, validateSyncOwner } from "@/storage/sync/syncOwner";
-import { SK } from "@/lib/storageKeys";
 import {
   MAX_AUDIO_PER_ENTRY,
   MAX_AUDIO_DURATION_SEC,
@@ -38,8 +38,14 @@ import {
 import { normalizeJournalAudioMimeType } from "@/features/journal/journalAudioValidation";
 import { normalizeJournalPhotoLayout } from "@/features/journal/photoLayout";
 import { normalizeJournalStyleFields } from "@/features/journal/journalStyleFields";
-import { isEncryptedJournalContent } from "@/features/journal/journalCrypto";
 import { runWithJournalSecurityWriteLock } from "@/features/journal/journalSecurityWriteLock";
+import {
+  canApplyJournalEntryForVaultEpoch,
+  canApplyJournalMediaForVaultEpoch,
+  normalizeJournalVaultRevision,
+  readDurableJournalVaultEpochForIngress,
+} from "@/features/journal/journalVaultEpoch";
+import { recoverRemoteJournalPasswordRemoval } from "@/storage/sync/journalRemovalRemote";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -190,6 +196,13 @@ function normalizeJournalDeltaPayload(
   if (payload.habitSnapshot !== undefined && payload.habitSnapshot !== null && !habitSnapshot) {
     return null;
   }
+  const vaultRevision =
+    payload.vaultRevision === undefined || payload.vaultRevision === null
+      ? undefined
+      : normalizeJournalVaultRevision(payload.vaultRevision);
+  if (payload.vaultRevision !== undefined && payload.vaultRevision !== null && vaultRevision === null) {
+    return null;
+  }
 
   return {
     id: entityId,
@@ -210,6 +223,7 @@ function normalizeJournalDeltaPayload(
     ...normalizeJournalStyleFields(payload),
     createdAt: payload.createdAt,
     updatedAt: payload.updatedAt,
+    vaultRevision: vaultRevision ?? undefined,
   };
 }
 
@@ -241,7 +255,7 @@ async function fetchLinkedJournalAudioMetadata(
 
   const { data, error } = await supabase
     .from("journal_audio")
-    .select("id, entry_id, duration, mime_type, storage_path, created_at")
+    .select("id, entry_id, duration, mime_type, storage_path, vault_revision, created_at")
     .eq("user_id", ownerUserId)
     .in("id", requestedIds);
   if (error) throw error;
@@ -277,6 +291,7 @@ async function fetchLinkedJournalAudioMetadata(
       mimeType: normalizedMimeType,
       storagePath,
       createdAt: row.created_at,
+      vaultRevision: row.vault_revision ?? undefined,
     });
   }
   return result;
@@ -784,13 +799,82 @@ async function applyHabitCompletionEvent(
   return true;
 }
 
-async function applySettingEvent(event: SyncEvent): Promise<boolean> {
+const JOURNAL_VAULT_REMOVAL_EVENT_DEVICE = "server:journal-password-removal";
+const JOURNAL_REMOVAL_OPERATION_REVISION_RE = /^[0-9]+:[a-z0-9]+$/;
+
+function isJournalVaultDeleteEvent(event: SyncEvent): boolean {
+  const key = typeof event.payload?.key === "string" ? event.payload.key : event.entity_id;
+  return (
+    event.entity_type === "setting" &&
+    event.op === "delete" &&
+    event.entity_id === SK.JOURNAL_VAULT_KEY &&
+    key === SK.JOURNAL_VAULT_KEY
+  );
+}
+
+function isValidJournalVaultRemovalWake(event: SyncEvent): boolean {
+  if (!isJournalVaultDeleteEvent(event)) return false;
+  const operationRevision = event.payload?.operationRevision;
+  const vaultRevision = Number(event.payload?.vaultRevision);
+  return (
+    event.device_id === JOURNAL_VAULT_REMOVAL_EVENT_DEVICE &&
+    typeof operationRevision === "string" &&
+    JOURNAL_REMOVAL_OPERATION_REVISION_RE.test(operationRevision) &&
+    Number.isSafeInteger(vaultRevision) &&
+    vaultRevision >= 0
+  );
+}
+
+/**
+ * A vault-delete event is only a wake signal. The owner-bound recovery RPC is
+ * the authority for the current removal operation; the event payload itself
+ * must never delete a local wrapper or advance the cursor before a durable
+ * remote-recovery intent exists.
+ */
+async function prepareJournalVaultRemovalEvents(
+  events: SyncEvent[],
+  ownerUserId: string,
+): Promise<Set<SyncEvent>> {
+  const handled = new Set<SyncEvent>();
+  for (const event of events) {
+    if (!isValidJournalVaultRemovalWake(event)) continue;
+
+    const recovery = await recoverRemoteJournalPasswordRemoval({
+      expectedOwnerUserId: ownerUserId,
+    });
+    if (recovery.status === "not-pending") continue;
+
+    const {
+      captureJournalSecurityBoundary,
+      recordOrphanedRemoteJournalPasswordRemoval,
+    } = await import("@/features/journal/journalSecurityMigration");
+    const boundary = await captureJournalSecurityBoundary();
+    const disposition = await recordOrphanedRemoteJournalPasswordRemoval(
+      {
+        operationRevision: recovery.operationRevision,
+        vaultRevision: recovery.vaultRevision,
+        remoteStatus: recovery.status,
+      },
+      boundary,
+    );
+    if (disposition !== "stale") handled.add(event);
+  }
+  return handled;
+}
+
+async function applySettingEvent(
+  event: SyncEvent,
+  handledJournalVaultDeletes: ReadonlySet<SyncEvent>,
+): Promise<boolean> {
   const payload = event.payload || {};
   const key = typeof payload.key === "string" ? payload.key : event.entity_id;
   if (!key) return false;
   if (!isAccountSyncedSettingKey(key)) return false;
 
   if (event.op === "delete") {
+    if (key === SK.JOURNAL_VAULT_KEY) {
+      return handledJournalVaultDeletes.has(event);
+    }
     await db.settings.delete(key);
     storageRemove(key);
     return true;
@@ -860,6 +944,11 @@ export async function applyDelta(
     return 0;
   }
 
+  const handledJournalVaultDeletes = await prepareJournalVaultRemovalEvents(
+    remoteEvents,
+    ownerUserId,
+  );
+
   const linkedJournalAudio = await fetchLinkedJournalAudioMetadata(remoteEvents, ownerUserId);
 
   const tableNames = new Set<string>();
@@ -916,7 +1005,7 @@ export async function applyDelta(
             continue;
           }
           if (event.entity_type === "setting") {
-            if (await applySettingEvent(event)) txApplied++;
+            if (await applySettingEvent(event, handledJournalVaultDeletes)) txApplied++;
             continue;
           }
 
@@ -930,6 +1019,9 @@ export async function applyDelta(
                 }
                 let payload: Record<string, unknown> = event.payload;
                 let normalizedJournalEntry: JournalEntry | null = null;
+                let durableJournalVaultAtCommit: Awaited<
+                  ReturnType<typeof readDurableJournalVaultEpochForIngress>
+                > | null = null;
                 if (event.entity_type === "journal") {
                   normalizedJournalEntry = normalizeJournalDeltaPayload(
                     event.payload,
@@ -937,13 +1029,12 @@ export async function applyDelta(
                   );
                   if (!normalizedJournalEntry) break;
 
-                  const protectedJournalAtCommit = Boolean(
-                    await db.settings.get(SK.JOURNAL_PASSWORD)
-                  );
+                  durableJournalVaultAtCommit = await readDurableJournalVaultEpochForIngress();
                   if (
-                    protectedJournalAtCommit &&
-                    normalizedJournalEntry.content &&
-                    !isEncryptedJournalContent(normalizedJournalEntry.content)
+                    !canApplyJournalEntryForVaultEpoch(
+                      normalizedJournalEntry,
+                      durableJournalVaultAtCommit
+                    )
                   ) {
                     break;
                   }
@@ -977,7 +1068,17 @@ export async function applyDelta(
                 if (normalizedJournalEntry?.audioIds?.length) {
                   const linkedAudio = normalizedJournalEntry.audioIds
                     .map((audioId) => linkedJournalAudio.get(audioId))
-                    .filter((audio): audio is JournalAudio => Boolean(audio));
+                    .filter((audio): audio is JournalAudio =>
+                      Boolean(
+                        audio &&
+                          durableJournalVaultAtCommit &&
+                          canApplyJournalMediaForVaultEpoch(
+                            audio,
+                            durableJournalVaultAtCommit,
+                            ownerUserId
+                          )
+                      )
+                    );
                   if (linkedAudio.length > 0) {
                     const mergedAudio = await Promise.all(
                       linkedAudio.map(async (remoteAudio) => {
@@ -1010,7 +1111,11 @@ export async function applyDelta(
         await db.settings.put({ key: SYNC_SEQ_KEY, value: maxSeq });
       });
     };
-    if (remoteEvents.some((event) => event.entity_type === "journal")) {
+    if (
+      remoteEvents.some(
+        (event) => event.entity_type === "journal" || isJournalVaultDeleteEvent(event),
+      )
+    ) {
       await runWithJournalSecurityWriteLock(applyTransaction);
     } else {
       await applyTransaction();

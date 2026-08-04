@@ -1,6 +1,10 @@
 import { startTransition, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { JournalEntry, JournalPhoto, JournalAudio } from './types';
-import type { JournalDraftCommitContext, JournalEntryPageCursor } from './journalStorage';
+import type {
+  JournalDraftCommitContext,
+  JournalEntryPageCursor,
+  JournalEntryPageState,
+} from './journalStorage';
 import type { MoodType } from '@/types';
 import { getToday } from '@/lib/utils';
 import { shiftJournalDate } from './journalDateUtils';
@@ -54,6 +58,8 @@ function getVisibleJournalCount(storedCount: number, hiddenCount: number): numbe
 export function useJournal() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [unavailableCount, setUnavailableCount] = useState(0);
+  const [selectedDateUnavailableCount, setSelectedDateUnavailableCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [initialLoadError, setInitialLoadError] = useState(false);
@@ -71,6 +77,7 @@ export function useJournal() {
   const mutationGenerationRef = useRef(0);
   const requestedDateLoadsRef = useRef(new Set<string>());
   const loadedDateLoadsRef = useRef(new Set<string>());
+  const dateUnavailableCountsRef = useRef(new Map<string, number>());
   const softDeletedEntryIdsRef = useRef(new Set<string>());
   // Only the initial page can make the diary unusable. Background/history failures
   // remain retryable without replacing entries that are already visible.
@@ -78,6 +85,9 @@ export function useJournal() {
 
   const setSelectedDate = useCallback((date: string | null) => {
     setDateLoadError(false);
+    setSelectedDateUnavailableCount(
+      date ? (dateUnavailableCountsRef.current.get(date) ?? 0) : 0,
+    );
     setSelectedDateState(date);
   }, []);
 
@@ -90,6 +100,9 @@ export function useJournal() {
     loadGenerationRef.current += 1;
     mutationGenerationRef.current += 1;
     requestedDateLoadsRef.current.clear();
+    loadedDateLoadsRef.current.clear();
+    dateUnavailableCountsRef.current.clear();
+    setSelectedDateUnavailableCount(0);
     cancelRemainingLoad();
     setHistoryLoading(false);
   }, [cancelRemainingLoad]);
@@ -98,8 +111,11 @@ export function useJournal() {
     invalidateInFlightLoads();
     softDeletedEntryIdsRef.current.clear();
     loadedDateLoadsRef.current.clear();
+    dateUnavailableCountsRef.current.clear();
     setEntries([]);
     setTotalCount(0);
+    setUnavailableCount(0);
+    setSelectedDateUnavailableCount(0);
     setInitialLoadError(false);
     setHistoryLoadError(false);
     setDateLoadError(false);
@@ -137,6 +153,7 @@ export function useJournal() {
                 prev,
                 getVisibleJournalCount(page.totalCount, softDeletedEntryIdsRef.current.size),
               ));
+              setUnavailableCount((prev) => prev + page.unavailableCount);
               setHistoryLoadError(false);
             });
             if (page.hasMore && page.nextCursor !== null) {
@@ -164,6 +181,8 @@ export function useJournal() {
     loadGenerationRef.current = generation;
     requestedDateLoadsRef.current.clear();
     loadedDateLoadsRef.current.clear();
+    dateUnavailableCountsRef.current.clear();
+    setSelectedDateUnavailableCount(0);
     setLoading(true);
     setHistoryLoading(false);
     setInitialLoadError(false);
@@ -208,6 +227,7 @@ export function useJournal() {
             : refreshedEntries,
         );
         setTotalCount(getVisibleJournalCount(page.totalCount, softDeletedEntryIdsRef.current.size));
+        setUnavailableCount(page.unavailableCount);
         setInitialLoadError(false);
         setLoading(false);
 
@@ -290,12 +310,16 @@ export function useJournal() {
     requestedDateLoads.add(selectedDate);
     let cancelled = false;
     const mutationGeneration = mutationGenerationRef.current;
-    void storage.getEntriesByDate(selectedDate).then((dateEntries) => {
+    void storage.getEntriesByDate(selectedDate).then((datePage) => {
       requestedDateLoads.delete(selectedDate);
       if (cancelled || mutationGenerationRef.current !== mutationGeneration) return;
       loadedDateLoads.add(selectedDate);
+      dateUnavailableCountsRef.current.set(selectedDate, datePage.unavailableCount);
       startTransition(() => {
-        setEntries((prev) => mergeJournalEntries(prev, dateEntries, softDeletedEntryIdsRef.current));
+        setEntries((prev) =>
+          mergeJournalEntries(prev, datePage.entries, softDeletedEntryIdsRef.current)
+        );
+        setSelectedDateUnavailableCount(datePage.unavailableCount);
         setDateLoadError(false);
       });
     }).catch((error) => {
@@ -569,6 +593,19 @@ export function useJournal() {
       : entries.find(e => e.id === activeEntryId) || null;
   }, [activeEntryId, activeEntrySnapshot, entries]);
 
+  const displayedUnavailableCount = selectedDate
+    ? selectedDateUnavailableCount
+    : unavailableCount;
+  const displayedTotalCount = selectedDate
+    ? filteredEntries.length + selectedDateUnavailableCount
+    : totalCount;
+
+  const entryPageState = useMemo<JournalEntryPageState>(() => {
+    if (displayedTotalCount === 0) return 'empty';
+    if (displayedUnavailableCount === 0) return 'ready';
+    return filteredEntries.length === 0 ? 'unavailable' : 'degraded';
+  }, [displayedTotalCount, displayedUnavailableCount, filteredEntries.length]);
+
   return {
     entries: filteredEntries,
     allEntries: entries,
@@ -601,6 +638,8 @@ export function useJournal() {
     openStats,
     goBack,
     refresh,
-    totalCount,
+    totalCount: displayedTotalCount,
+    unavailableCount: displayedUnavailableCount,
+    entryPageState,
   };
 }

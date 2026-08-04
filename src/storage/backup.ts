@@ -21,6 +21,7 @@ import {
 import {
   consumeJournalReplaceAuthorization,
   getJournalContentVaultKey,
+  getJournalContentVaultRevision,
   type JournalReplaceAuthorization,
 } from "@/lib/journalContentSession";
 import {
@@ -58,6 +59,7 @@ import {
 } from "@/storage/deletionTracker";
 import { isAccountSyncedSettingKey } from "@/storage/sync/settingSyncPolicy";
 import { validateSyncOwner } from "@/storage/sync/syncOwner";
+import { requireSafeJournalVaultRevision } from "@/features/journal/journalVaultEpoch";
 import { runWithJournalSecurityWriteLock } from "@/features/journal/journalSecurityWriteLock";
 import {
   serializePortableBackupWithinLimit,
@@ -521,20 +523,25 @@ async function mapSequentially<T, R>(
 
 async function encryptImportedJournalEntryForStorage(
   entry: JournalEntry,
-  vaultKey: string | null
+  vaultKey: string | null,
+  vaultRevision?: number,
 ): Promise<JournalEntry> {
-  if (!entry.content) return entry;
+  if (!vaultKey) return { ...entry, vaultRevision: undefined };
+  const revision = requireSafeJournalVaultRevision(vaultRevision, "backup entry");
+  if (!entry.content) return { ...entry, vaultRevision: revision };
   if (isEncryptedJournalContent(entry.content)) {
-    if (!vaultKey) throw new BackupImportBlockedError("JOURNAL_BACKUP_UNREADABLE");
     try {
       await decryptJournalContentIfNeeded(entry.content, vaultKey);
-      return entry;
+      return { ...entry, vaultRevision: revision };
     } catch {
       throw new BackupImportBlockedError("JOURNAL_BACKUP_UNREADABLE");
     }
   }
-  if (!vaultKey) return entry;
-  return { ...entry, content: await encryptJournalContent(entry.content, vaultKey) };
+  return {
+    ...entry,
+    content: await encryptJournalContent(entry.content, vaultKey),
+    vaultRevision: revision,
+  };
 }
 
 async function encryptImportedJournalMediaData(
@@ -563,24 +570,28 @@ async function encryptImportedJournalMediaData(
 
 async function encryptImportedJournalPhotoForStorage(
   photo: JournalPhoto,
-  vaultKey: string | null
+  vaultKey: string | null,
+  vaultRevision?: number,
 ): Promise<JournalPhoto> {
-  if (!vaultKey) return photo;
+  if (!vaultKey) return { ...photo, vaultRevision: undefined };
   return {
     ...photo,
     data: await encryptImportedJournalMediaData(photo.data, vaultKey),
     thumbnail: await encryptImportedJournalMediaData(photo.thumbnail, vaultKey),
+    vaultRevision: requireSafeJournalVaultRevision(vaultRevision, "backup photo"),
   };
 }
 
 async function encryptImportedJournalAudioForStorage(
   audio: JournalAudio,
-  vaultKey: string | null
+  vaultKey: string | null,
+  vaultRevision?: number,
 ): Promise<JournalAudio> {
-  if (!vaultKey) return audio;
+  if (!vaultKey) return { ...audio, vaultRevision: undefined };
   return {
     ...audio,
     data: await encryptImportedJournalMediaData(audio.data, vaultKey),
+    vaultRevision: requireSafeJournalVaultRevision(vaultRevision, "backup audio"),
   };
 }
 
@@ -611,18 +622,23 @@ async function protectImportedJournalString(
 
 async function protectImportedJournalSpace(
   space: JournalSpace,
-  vaultKey: string | null
+  vaultKey: string | null,
+  vaultRevision?: number,
 ): Promise<JournalSpace> {
   return {
     ...space,
     name: await protectImportedJournalString(space.name, vaultKey),
     description: await protectImportedJournalString(space.description, vaultKey),
+    vaultRevision: vaultKey
+      ? requireSafeJournalVaultRevision(vaultRevision, "backup space")
+      : undefined,
   };
 }
 
 async function protectImportedJournalSpaceCapture(
   capture: JournalSpaceCapture,
-  vaultKey: string | null
+  vaultKey: string | null,
+  vaultRevision?: number,
 ): Promise<JournalSpaceCapture> {
   return {
     ...capture,
@@ -634,6 +650,9 @@ async function protectImportedJournalSpaceCapture(
         value: (await protectImportedJournalString(field.value, vaultKey)) || "",
       }))
     ),
+    vaultRevision: vaultKey
+      ? requireSafeJournalVaultRevision(vaultRevision, "backup capture")
+      : undefined,
   };
 }
 
@@ -760,7 +779,12 @@ async function makePortableJournalPhoto(
   if (!data) {
     throw new BackupExportBlockedError("JOURNAL_MEDIA_UNAVAILABLE");
   }
-  const { storagePath: _storagePath, storageUrl: _storageUrl, ...portable } = photo;
+  const {
+    storagePath: _storagePath,
+    storageUrl: _storageUrl,
+    vaultRevision: _vaultRevision,
+    ...portable
+  } = photo;
   return { ...portable, data, thumbnail };
 }
 
@@ -772,7 +796,12 @@ async function makePortableJournalAudio(
   if (!data) {
     throw new BackupExportBlockedError("JOURNAL_MEDIA_UNAVAILABLE");
   }
-  const { storagePath: _storagePath, storageUrl: _storageUrl, ...portable } = audio;
+  const {
+    storagePath: _storagePath,
+    storageUrl: _storageUrl,
+    vaultRevision: _vaultRevision,
+    ...portable
+  } = audio;
   return { ...portable, data };
 }
 
@@ -784,6 +813,7 @@ async function makePortableJournalSpace(
     ...space,
     name: await decryptPortableJournalString(space.name, vaultKey),
     description: await decryptPortableJournalString(space.description, vaultKey),
+    vaultRevision: undefined,
   };
 }
 
@@ -801,6 +831,7 @@ async function makePortableJournalSpaceCapture(
         value: (await decryptPortableJournalString(field.value, vaultKey)) || "",
       }))
     ),
+    vaultRevision: undefined,
   };
 }
 
@@ -940,6 +971,7 @@ const exportBackupWithinJournalSecurityLock = async (
           snapshot.data.journalEntries.map(async (entry) => ({
             ...entry,
             content: (await decryptPortableJournalString(entry.content, vaultKey)) || "",
+            vaultRevision: undefined,
           }))
         ),
         Promise.all(
@@ -1349,6 +1381,12 @@ const importBackupWithinJournalSecurityLock = async (
   );
 
   const journalVaultKey = getJournalContentVaultKey();
+  const journalVaultRevision = journalVaultKey
+    ? requireSafeJournalVaultRevision(
+        getJournalContentVaultRevision(),
+        "backup import",
+      )
+    : undefined;
   const [journalPasswordSetting, journalVaultSetting] = await Promise.all([
     db.settings.get(SK.JOURNAL_PASSWORD),
     db.settings.get(SK.JOURNAL_VAULT_KEY),
@@ -1428,19 +1466,19 @@ const importBackupWithinJournalSecurityLock = async (
     // Encrypt sequentially so WebCrypto does not retain several large input
     // and output buffers at once on memory-constrained mobile WebViews.
     validJournalEntries = await mapSequentially(validJournalEntries, (entry) =>
-      encryptImportedJournalEntryForStorage(entry, journalVaultKey)
+      encryptImportedJournalEntryForStorage(entry, journalVaultKey, journalVaultRevision)
     );
     validJournalPhotos = await mapSequentially(validJournalPhotos, (photo) =>
-      encryptImportedJournalPhotoForStorage(photo, journalVaultKey)
+      encryptImportedJournalPhotoForStorage(photo, journalVaultKey, journalVaultRevision)
     );
     validJournalAudio = await mapSequentially(validJournalAudio, (audio) =>
-      encryptImportedJournalAudioForStorage(audio, journalVaultKey)
+      encryptImportedJournalAudioForStorage(audio, journalVaultKey, journalVaultRevision)
     );
     validJournalSpaces = await mapSequentially(validJournalSpaces, (space) =>
-      protectImportedJournalSpace(space, journalVaultKey)
+      protectImportedJournalSpace(space, journalVaultKey, journalVaultRevision)
     );
     validJournalSpaceCaptures = await mapSequentially(validJournalSpaceCaptures, (capture) =>
-      protectImportedJournalSpaceCapture(capture, journalVaultKey)
+      protectImportedJournalSpaceCapture(capture, journalVaultKey, journalVaultRevision)
     );
   }
 

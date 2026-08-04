@@ -2750,6 +2750,23 @@ export const es: Translations = {
   journalSubtitle: "Tu espacio personal",
   journalEmpty: "Aún no hay entradas en el diario",
   journalEmptyHint: "Cuando quieras, empieza con un detalle de hoy.",
+  journalEntriesUnavailableCount:
+    "Entradas del diario no disponibles temporalmente: {count}. Las demás entradas siguen visibles.",
+  journalEntriesUnavailableCountZero: "Hay {count} entradas del diario no disponibles temporalmente. Las demás entradas siguen visibles.",
+  journalEntriesUnavailableCountOne: "Hay {count} entrada del diario no disponible temporalmente. Las demás entradas siguen visibles.",
+  journalEntriesUnavailableCountTwo: "Hay {count} entradas del diario no disponibles temporalmente. Las demás entradas siguen visibles.",
+  journalEntriesUnavailableCountFew: "Hay {count} entradas del diario no disponibles temporalmente. Las demás entradas siguen visibles.",
+  journalEntriesUnavailableCountMany: "Hay {count} entradas del diario no disponibles temporalmente. Las demás entradas siguen visibles.",
+  journalEntriesUnavailableCountOther: "Hay {count} entradas del diario no disponibles temporalmente. Las demás entradas siguen visibles.",
+  journalEntriesUnavailableAll:
+    "Ahora mismo no se puede mostrar ninguna entrada del diario. Tus datos guardados no se eliminaron.",
+  journalEntriesUnavailableAllCountZero: "Ahora mismo no se pueden mostrar {count} entradas del diario. Tus datos guardados no se eliminaron.",
+  journalEntriesUnavailableAllCountOne: "Ahora mismo no se puede mostrar {count} entrada del diario. Tus datos guardados no se eliminaron.",
+  journalEntriesUnavailableAllCountTwo: "Ahora mismo no se pueden mostrar {count} entradas del diario. Tus datos guardados no se eliminaron.",
+  journalEntriesUnavailableAllCountFew: "Ahora mismo no se pueden mostrar {count} entradas del diario. Tus datos guardados no se eliminaron.",
+  journalEntriesUnavailableAllCountMany: "Ahora mismo no se pueden mostrar {count} entradas del diario. Tus datos guardados no se eliminaron.",
+  journalEntriesUnavailableAllCountOther: "Ahora mismo no se pueden mostrar {count} entradas del diario. Tus datos guardados no se eliminaron.",
+  journalEntriesUnavailableRetry: "Volver a intentar la carga",
   journalEmptyQuote: "Empieza con un detalle de este momento.",
   diaryStartFirstEntry: "Empieza con un detalle pequeño.",
   diaryPrompt1: "¿Qué te hizo sonreír hoy?",
@@ -3260,16 +3277,42 @@ export const es: Translations = {
   journalPasswordActiveHint: "El bloqueo del diario está activo. Cámbialo o quítalo aquí.",
   journalProtectionCloudPending:
     "El diario ya está protegido en este dispositivo. ZenFlow aún está reemplazando una copia anterior en línea; mantén la app abierta y con conexión.",
+  journalProtectionPasswordSyncPending:
+    "La nueva contraseña del diario ya funciona en este dispositivo. ZenFlow aún está actualizando la clave cifrada en línea; mantén la app abierta y con conexión a internet.",
   journalProtectionRemovalCloudPending:
     "El bloqueo del diario está desactivado en este dispositivo. ZenFlow aún está completando este cambio en línea; mantén la app abierta y con conexión.",
+  journalProtectionRemovalPreflightPending:
+    "El diario sigue protegido. ZenFlow se detuvo antes de cambiar tus entradas. Desbloquéalo, mantén la conexión y continúa quitando la protección.",
+  journalPasswordRemovalResume: "Continuar quitando el bloqueo del diario",
+  journalProtectionRemovalRetry: "Reintentar la limpieza en línea",
+  journalProtectionRemovalRetryPending: "Reintentando...",
   journalPasswordRemoveConfirm: "¿Estás seguro? Tu diario será accesible sin contraseña.",
   journalLockRemoveDetail:
     "Tus entradas seguirán guardadas, pero se desactivarán el bloqueo del diario y el desbloqueo biométrico del diario. Puedes configurar un nuevo bloqueo después.",
-  journalLockRemoveFailed: "Desbloquea tu diario primero y vuelve a intentar quitar el bloqueo.",
+  journalLockRemoveFailed:
+    "Desbloquea tu diario y vuelve a intentar quitar la protección. No se cambió nada.",
   journalLockRemoveUnexpected:
     "No se pudo quitar el bloqueo del diario. Nada cambió. Inténtalo de nuevo.",
   journalLockRemovePartial:
-    "El bloqueo del diario sigue activo, pero el desbloqueo biométrico se desactivó. Desbloquea el diario con tu contraseña y vuelve a intentarlo.",
+    "La protección del diario está desactivada en este dispositivo, pero aún queda una limpieza adicional. Mantén la aplicación abierta, no cierres sesión e inténtalo de nuevo cuando tengas conexión.",
+  journalLockRemoveActivationPending:
+    "Termina de configurar la protección del diario y vuelve a intentarlo. No se cambió nada.",
+  journalLockRemoveRemovalPending:
+    "Todavía se está completando una retirada anterior. Mantén abierta la sesión de esta cuenta e inténtalo de nuevo en unos momentos.",
+  journalLockRemoveRevisionMismatch:
+    "Tu diario cambió durante la comprobación. Vuelve a cargarlo, desbloquéalo e inténtalo de nuevo. No se cambió nada.",
+  journalLockRemoveContentUnavailable:
+    "No se pudo abrir parte del contenido protegido del diario. Conéctate a internet, desbloquea el diario e inténtalo de nuevo. No se eliminó nada.",
+  journalLockRemoveOwnerChanged:
+    "La cuenta abierta cambió. Vuelve a la cuenta propietaria de este diario e inténtalo de nuevo. No se cambió nada.",
+  journalLockRemoveStorageFailed:
+    "Este dispositivo no pudo leer el diario completo. Mantén la aplicación abierta, vuelve a cargarla e inténtalo de nuevo. No se cambió nada.",
+  journalLockRemovePartialBiometric:
+    "La protección del diario está desactivada en este dispositivo. La limpieza del desbloqueo biométrico sigue pendiente. Mantén la aplicación abierta e inténtalo de nuevo.",
+  journalLockRemovePartialCloud:
+    "La protección del diario está desactivada en este dispositivo. El cambio para tus otros dispositivos todavía está pendiente. No cierres sesión e inténtalo de nuevo cuando tengas conexión.",
+  journalLockRemovePartialBoth:
+    "La protección del diario está desactivada en este dispositivo. La limpieza del desbloqueo biométrico y el cambio para tus otros dispositivos siguen pendientes. Mantén la aplicación abierta, no cierres sesión e inténtalo de nuevo cuando tengas conexión.",
   journalPasswordRemovePending: "Quitando bloqueo...",
   journalPasswordRemoveSuccess: "Bloqueo del diario quitado.",
   journalPasswordSetupFailed: "No pudimos activar el bloqueo del diario. Inténtalo de nuevo.",

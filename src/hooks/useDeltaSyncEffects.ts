@@ -18,6 +18,7 @@ import {
   getServerMaxSeq,
   getPersistentDeviceId,
   getLastSeq,
+  saveLastSeq,
 } from "@/storage/eventSync";
 import { bootstrapSnapshotThenDelta } from "@/storage/initialDeltaSync";
 import { syncReducer, INITIAL_STATE, getRetryDelay } from "@/lib/syncStateMachine";
@@ -310,21 +311,47 @@ export function useDeltaSyncEffects(): void {
 
     try {
       await assertOwnerOperationCurrent(operation);
+      const baselineSeq = await getServerMaxSeq(operation.ownerUserId);
+      await assertOwnerOperationCurrent(operation);
       const snapshotApplied = await pullFromCloud(operation.ownerUserId);
       await assertOwnerOperationCurrent(operation);
       if (!snapshotApplied) {
         throw new Error("[DeltaSync] Snapshot pull failed");
       }
-      const serverMax = await getServerMaxSeq(operation.ownerUserId);
+      const tailEvents = await fetchAllDeltas(baselineSeq, controller.signal);
       await assertOwnerOperationCurrent(operation);
-      dispatchAndSync({ type: "SNAPSHOT_SUCCESS", lastSeq: serverMax });
-      recordSyncHealthReceipt({ kind: "snapshot-applied", source: "delta", seq: serverMax });
+      let lastSeq = baselineSeq;
+      let applied = 0;
+      if (tailEvents.length > 0) {
+        const deviceId = await getPersistentDeviceId();
+        await assertOwnerOperationCurrent(operation);
+        applied = await applyDelta(tailEvents, deviceId, {
+          expectedOwnerUserId: operation.ownerUserId,
+          assertOwnerCurrent: () => assertOwnerOperationCurrent(operation),
+        });
+        await assertOwnerOperationCurrent(operation);
+        lastSeq = tailEvents[tailEvents.length - 1].seq;
+      } else {
+        await saveLastSeq(baselineSeq, {
+          expectedOwnerUserId: operation.ownerUserId,
+          assertOwnerCurrent: () => assertOwnerOperationCurrent(operation),
+        });
+        await assertOwnerOperationCurrent(operation);
+      }
+      dispatchAndSync({ type: "SNAPSHOT_SUCCESS", lastSeq });
+      recordSyncHealthReceipt({
+        kind: "snapshot-applied",
+        source: "delta",
+        seq: lastSeq,
+        fetched: tailEvents.length,
+        applied,
+      });
 
       if (gapDetectorRef.current) {
-        gapDetectorRef.current.resetTo(serverMax);
+        gapDetectorRef.current.resetTo(lastSeq);
       }
 
-      logger.sync("[DeltaSync] Snapshot complete, seq=" + serverMax);
+      logger.sync("[DeltaSync] Snapshot complete, seq=" + lastSeq);
     } catch (err) {
       if (isAbortError(err)) return;
       if (isOwnerBoundaryError(err)) {

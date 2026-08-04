@@ -75,7 +75,9 @@ describe("journal final review contracts", () => {
     expect(compactShell).not.toContain("<button");
     expect(compactShell).not.toContain("getJournalQuote");
     expect(compactShell).not.toContain("currentJournalQuote");
-    expect(moduleSource).toContain("journal.entries.length === 0 ? (");
+    expect(moduleSource).toMatch(
+      /journal\.entries\.length === 0\s*&&\s*journal\.entryPageState !== "unavailable"\s*\? \(/,
+    );
     expect(moduleSource).toContain("<LazyDiaryEmptyCanvas");
   });
 

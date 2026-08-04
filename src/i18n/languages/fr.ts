@@ -2764,6 +2764,23 @@ export const fr: Translations = {
   journalSubtitle: "Ton espace personnel",
   journalEmpty: "Aucune entrée pour le moment",
   journalEmptyHint: "Quand tu veux, commence par un détail d'aujourd'hui.",
+  journalEntriesUnavailableCount:
+    "Entrées du journal temporairement indisponibles : {count}. Vos autres entrées restent affichées.",
+  journalEntriesUnavailableCountZero: "{count} entrées du journal sont temporairement indisponibles. Vos autres entrées restent affichées.",
+  journalEntriesUnavailableCountOne: "{count} entrée du journal est temporairement indisponible. Vos autres entrées restent affichées.",
+  journalEntriesUnavailableCountTwo: "{count} entrées du journal sont temporairement indisponibles. Vos autres entrées restent affichées.",
+  journalEntriesUnavailableCountFew: "{count} entrées du journal sont temporairement indisponibles. Vos autres entrées restent affichées.",
+  journalEntriesUnavailableCountMany: "{count} entrées du journal sont temporairement indisponibles. Vos autres entrées restent affichées.",
+  journalEntriesUnavailableCountOther: "{count} entrées du journal sont temporairement indisponibles. Vos autres entrées restent affichées.",
+  journalEntriesUnavailableAll:
+    "Aucune entrée du journal ne peut être affichée pour le moment. Vos données enregistrées n’ont pas été supprimées.",
+  journalEntriesUnavailableAllCountZero: "{count} entrées du journal ne peuvent pas être affichées pour le moment. Vos données enregistrées n’ont pas été supprimées.",
+  journalEntriesUnavailableAllCountOne: "{count} entrée du journal ne peut pas être affichée pour le moment. Vos données enregistrées n’a pas été supprimée.",
+  journalEntriesUnavailableAllCountTwo: "{count} entrées du journal ne peuvent pas être affichées pour le moment. Vos données enregistrées n’ont pas été supprimées.",
+  journalEntriesUnavailableAllCountFew: "{count} entrées du journal ne peuvent pas être affichées pour le moment. Vos données enregistrées n’ont pas été supprimées.",
+  journalEntriesUnavailableAllCountMany: "{count} entrées du journal ne peuvent pas être affichées pour le moment. Vos données enregistrées n’ont pas été supprimées.",
+  journalEntriesUnavailableAllCountOther: "{count} entrées du journal ne peuvent pas être affichées pour le moment. Vos données enregistrées n’ont pas été supprimées.",
+  journalEntriesUnavailableRetry: "Réessayer le chargement",
   journalEmptyQuote: "Commencez par un détail de ce moment.",
   diaryStartFirstEntry: "Commencez par un petit détail.",
   diaryPrompt1: "Qu’est-ce qui t’a fait sourire aujourd’hui ?",
@@ -3283,17 +3300,42 @@ export const fr: Translations = {
   journalPasswordActiveHint: "Le verrouillage du journal est actif. Modifiez-le ou retirez-le ici.",
   journalProtectionCloudPending:
     "Le journal est déjà protégé sur cet appareil. ZenFlow remplace encore une ancienne copie en ligne ; gardez l’application ouverte et connectée à Internet.",
+  journalProtectionPasswordSyncPending:
+    "Le nouveau mot de passe du journal fonctionne déjà sur cet appareil. ZenFlow met encore à jour la clé chiffrée en ligne ; gardez l’application ouverte et connectée à Internet.",
   journalProtectionRemovalCloudPending:
     "Le verrouillage du journal est désactivé sur cet appareil. ZenFlow termine encore cette modification en ligne ; gardez l’application ouverte et connectée à Internet.",
+  journalProtectionRemovalPreflightPending:
+    "Le journal est toujours protégé. ZenFlow s’est arrêté avant de modifier vos entrées. Déverrouillez le journal, restez en ligne et reprenez la suppression de la protection.",
+  journalPasswordRemovalResume: "Continuer à retirer le verrouillage du journal",
+  journalProtectionRemovalRetry: "Réessayer le nettoyage en ligne",
+  journalProtectionRemovalRetryPending: "Nouvelle tentative...",
   journalPasswordRemoveConfirm: "Êtes-vous sûr ? Votre journal sera accessible sans mot de passe.",
   journalLockRemoveDetail:
     "Vos entrées resteront enregistrées, mais le verrouillage du journal et le déverrouillage biométrique du journal seront désactivés. Vous pourrez configurer un nouveau verrouillage plus tard.",
   journalLockRemoveFailed:
-    "Déverrouillez d'abord votre journal, puis réessayez de retirer le verrouillage.",
+    "Déverrouillez votre journal, puis réessayez de retirer la protection. Rien n’a été modifié.",
   journalLockRemoveUnexpected:
     "Le verrouillage du journal n’a pas pu être retiré. Rien n’a changé. Réessayez.",
   journalLockRemovePartial:
-    "Le verrou du journal est toujours actif, mais le déverrouillage biométrique a été désactivé. Déverrouillez le journal avec votre mot de passe, puis réessayez.",
+    "La protection du journal est désactivée sur cet appareil, mais un nettoyage supplémentaire reste à terminer. Gardez l’application ouverte, restez connecté et réessayez avec une connexion internet.",
+  journalLockRemoveActivationPending:
+    "Terminez d’abord la configuration de la protection du journal, puis réessayez. Rien n’a été modifié.",
+  journalLockRemoveRemovalPending:
+    "Une suppression précédente est encore en cours. Restez connecté à ce compte et réessayez dans quelques instants.",
+  journalLockRemoveRevisionMismatch:
+    "Votre journal a changé pendant la vérification. Rechargez-le, déverrouillez-le et réessayez. Rien n’a été modifié.",
+  journalLockRemoveContentUnavailable:
+    "Une partie du contenu protégé du journal n’a pas pu être ouverte. Connectez-vous à internet, déverrouillez le journal et réessayez. Rien n’a été supprimé.",
+  journalLockRemoveOwnerChanged:
+    "Le compte connecté a changé. Revenez au compte auquel appartient ce journal et réessayez. Rien n’a été modifié.",
+  journalLockRemoveStorageFailed:
+    "Cet appareil n’a pas pu lire tout le journal. Gardez l’application ouverte, rechargez-la et réessayez. Rien n’a été modifié.",
+  journalLockRemovePartialBiometric:
+    "La protection du journal est désactivée sur cet appareil. Le nettoyage du déverrouillage biométrique reste à terminer. Gardez l’application ouverte et réessayez.",
+  journalLockRemovePartialCloud:
+    "La protection du journal est désactivée sur cet appareil. La modification pour vos autres appareils reste à terminer. Restez connecté et réessayez avec une connexion internet.",
+  journalLockRemovePartialBoth:
+    "La protection du journal est désactivée sur cet appareil. Le nettoyage du déverrouillage biométrique et la modification pour vos autres appareils restent à terminer. Gardez l’application ouverte, restez connecté et réessayez avec une connexion internet.",
   journalPasswordRemovePending: "Suppression du verrouillage...",
   journalPasswordRemoveSuccess: "Verrouillage du journal supprimé.",
   journalPasswordSetupFailed: "Impossible d’activer le verrouillage du journal. Réessaie.",

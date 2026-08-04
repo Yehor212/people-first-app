@@ -1,22 +1,20 @@
 diff --git a/node_modules/brace-expansion/dist/commonjs/index.js b/node_modules/brace-expansion/dist/commonjs/index.js
-index be9df86..6792a32 100644
+index 869a6be..985fc86 100644
 --- a/node_modules/brace-expansion/dist/commonjs/index.js
 +++ b/node_modules/brace-expansion/dist/commonjs/index.js
-@@ -260,4 +260,5 @@ function expand_(str, max, maxLength, isTop) {
+@@ -286,4 +286,5 @@ function expand_(str, max, maxLength, isTop) {
      }
      return acc;
  }
 +module.exports = Object.assign(expand, exports, { default: expand });
  //# sourceMappingURL=index.js.map
-\ No newline at end of file
 diff --git a/node_modules/brace-expansion/dist/esm/index.js b/node_modules/brace-expansion/dist/esm/index.js
-index 6dc0392..c9fa7e7 100644
+index fd68f57..50a8371 100644
 --- a/node_modules/brace-expansion/dist/esm/index.js
 +++ b/node_modules/brace-expansion/dist/esm/index.js
-@@ -256,4 +256,5 @@ function expand_(str, max, maxLength, isTop) {
+@@ -282,4 +282,5 @@ function expand_(str, max, maxLength, isTop) {
      }
      return acc;
  }
 +export default expand;
  //# sourceMappingURL=index.js.map
-\ No newline at end of file

@@ -48,6 +48,7 @@ import { clearDeviceIdCache } from "@/storage/eventSync";
 import {
   getPendingJournalSecurityMigrationRevisionForOwner,
   hasPendingJournalSecurityMigrationForOwner,
+  hasPendingJournalSecurityRemovalForOwner,
 } from "@/features/journal";
 import {
   areAccountBoundaryWritersSuspended,
@@ -539,11 +540,21 @@ async function restorePushRegistrationSafely(
   }
 }
 
-async function hasDurableOwnerWrites(ownerUserId: string): Promise<boolean> {
-  return (
-    (await offlineQueue.hasPendingActionsForOwnerReady(ownerUserId)) ||
-    (await hasPendingJournalSecurityMigrationForOwner(ownerUserId))
-  );
+interface DurableOwnerWriteState {
+  hasDiscardableWrites: boolean;
+  hasJournalRemoval: boolean;
+}
+
+async function readDurableOwnerWriteState(
+  ownerUserId: string,
+): Promise<DurableOwnerWriteState> {
+  const hasQueuedWrites = await offlineQueue.hasPendingActionsForOwnerReady(ownerUserId);
+  const hasJournalMigration = await hasPendingJournalSecurityMigrationForOwner(ownerUserId);
+  const hasJournalRemoval = await hasPendingJournalSecurityRemovalForOwner(ownerUserId);
+  return {
+    hasDiscardableWrites: hasQueuedWrites || hasJournalMigration,
+    hasJournalRemoval,
+  };
 }
 
 async function purgeOwnedLocalRealm(
@@ -590,6 +601,15 @@ async function purgeOwnedLocalRealm(
         throw new Error("Owner-bound offline writes appeared before local purge");
       }
       if (isSignOut) {
+        if (
+          await hasPendingJournalSecurityRemovalForOwner(
+            durableMarker.ownerUserId,
+          )
+        ) {
+          throw new Error(
+            "Diary protection removal must finish before local account data can be purged",
+          );
+        }
         const currentJournalRevision =
           await getPendingJournalSecurityMigrationRevisionForOwner(
             durableMarker.ownerUserId,
@@ -1040,9 +1060,10 @@ async function performOwnerSafeSignOutUnlocked(
   }
   await suspendAccountBoundary();
 
+  const durableOwnerWrites = await readDurableOwnerWriteState(ownerUserId);
   if (
-    (await hasDurableOwnerWrites(ownerUserId)) &&
-    !options.discardPendingChanges
+    durableOwnerWrites.hasJournalRemoval ||
+    (durableOwnerWrites.hasDiscardableWrites && !options.discardPendingChanges)
   ) {
     resumeAccountBoundary(true);
     return { status: "pending-changes" };
@@ -1210,6 +1231,9 @@ async function performOwnerSafeSignOutUnlocked(
 
         const currentJournalRevision =
           await getPendingJournalSecurityMigrationRevisionForOwner(ownerUserId);
+        if (await hasPendingJournalSecurityRemovalForOwner(ownerUserId)) {
+          return { status: "pending-changes" };
+        }
         if (
           currentJournalRevision !== null &&
           currentJournalRevision !==

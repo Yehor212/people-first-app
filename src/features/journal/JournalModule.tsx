@@ -58,6 +58,10 @@ import type { Database } from "@/types/supabase";
 import { useJournal } from "./useJournal";
 import { useJournalToday } from "./useJournalToday";
 import { useJournalSecurity } from "./useJournalSecurity";
+import {
+  getJournalPasswordRemovalBlockerMessage,
+  getJournalPasswordRemovalCleanupMessage,
+} from "./journalPasswordRemovalPresentation";
 import { JournalLockScreen } from "./JournalLockScreen";
 import { SidebarCompact, type DiarySidebarSection } from "./SidebarCompact";
 import { DiaryEntrySuggestionCard } from "./DiaryEntrySuggestionCard";
@@ -1211,10 +1215,12 @@ type ResetStep =
 
   // Consolidated Escape key handler for inline sub-dialogs (password, export, remove-confirm)
   useEffect(() => {
+    // The removal dialog owns Escape through the shared modal stack. Keeping
+    // this capture handler active underneath it would close the destructive
+    // layer before a newer global modal can consume the same key press.
+    if (showRemovePasswordConfirm) return;
     const activeDialog = resetStep !== "idle"
       ? "reset"
-      : showRemovePasswordConfirm
-      ? "remove"
       : showExportPicker
         ? "export"
         : showPasswordSettings
@@ -1234,9 +1240,6 @@ type ResetStep =
       } else if (activeDialog === "export") {
         if (exporting) return;
         setShowExportPicker(false);
-      } else if (activeDialog === "remove") {
-        if (removePasswordSubmitting) return;
-        setShowRemovePasswordConfirm(false);
       } else if (activeDialog === "mobile-sidebar") {
         closeMobileDiarySidebar();
       }
@@ -1252,7 +1255,6 @@ type ResetStep =
     showRemovePasswordConfirm,
     showMobileDiarySidebar,
     exporting,
-    removePasswordSubmitting,
     closeResetDialog,
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2556,13 +2558,31 @@ type ResetStep =
         setResetEmail(pending.email);
 
         try {
-        await security.removePassword({ allowVerifiedEmptyDiary: true });
+        const removalResult = await security.removePassword({
+          allowVerifiedEmptyDiary: true,
+        });
         storageRemove(SK.JOURNAL_PASSWORD_RESET);
         clearJournalPasswordResetProof();
-        setResetError("");
+
+        if (removalResult.status === "blocked") {
+        setResetError(
+          getJournalPasswordRemovalBlockerMessage(ts, removalResult.blocker),
+        );
+        setResetStep("unavailable");
+        return false;
+        }
+
+        const cleanupNotice =
+          removalResult.status === "removed-cleanup-pending"
+            ? getJournalPasswordRemovalCleanupMessage(ts, removalResult.pending)
+            : "";
+        setResetError(cleanupNotice);
         setResetStep("success");
         announceSuccess(
-          ts.journalPasswordRemoveSuccess || ts.journalResetSuccess || "Diary lock removed",
+          cleanupNotice ||
+            ts.journalPasswordRemoveSuccess ||
+            ts.journalResetSuccess ||
+            "Diary lock removed",
         );
         return true;
         } catch (error) {
@@ -2591,7 +2611,7 @@ type ResetStep =
         }
       }
     },
-    [checkEmailLockRemovalAvailable, security, showResetLinkConfirmationError, ts.journalLockRemoveFailed, ts.journalPasswordRemoveSuccess, ts.journalResetExpired, ts.journalResetMissingProof, ts.journalResetSuccess, ts.journalResetWrongAccount],
+    [checkEmailLockRemovalAvailable, security, showResetLinkConfirmationError, ts],
   );
 
   const handleSetNewPasswordAfterReset = useCallback(() => {
@@ -2656,6 +2676,9 @@ type ResetStep =
   // Android back button handling
   useEffect(() => {
     if (moduleState !== "open") return;
+    // RemovePasswordConfirmDialog registers the topmost callback itself.
+    // Do not add a second parent callback that can outlive or undercut it.
+    if (showRemovePasswordConfirm) return;
     if (showExportPicker)
       return registerModalCloseCallback(() => {
         if (exporting) return true;
@@ -2665,12 +2688,6 @@ type ResetStep =
     if (resetStep !== "idle")
       return registerModalCloseCallback(() => {
         closeResetDialog();
-        return true;
-      });
-    if (showRemovePasswordConfirm)
-      return registerModalCloseCallback(() => {
-        if (removePasswordSubmitting) return true;
-        setShowRemovePasswordConfirm(false);
         return true;
       });
     if (showMobileDiarySidebar)
@@ -2715,7 +2732,6 @@ type ResetStep =
     exporting,
     resetStep,
     showRemovePasswordConfirm,
-    removePasswordSubmitting,
     showPasswordSettings,
     showMobileDiarySidebar,
     closeMobileDiarySidebar,
@@ -3362,6 +3378,16 @@ type ResetStep =
                       {ts.journalResetSuccessDetail ||
                         "Your diary is now open without a diary password on this device. Set a new password if you want to keep it protected."}
                     </p>
+                    {resetError ? (
+                      <p
+                        id={resetErrorId}
+                        role="status"
+                        aria-live="polite"
+                        className="mb-4 text-center text-sm leading-relaxed text-foreground"
+                      >
+                        {resetError}
+                      </p>
+                    ) : null}
                     <button
                       type="button"
                       onClick={handleSetNewPasswordAfterReset}
@@ -3561,6 +3587,9 @@ type ResetStep =
                               onNewEntry={handleNewEntryFromShell}
                               onNewEntryWithPrefill={handleNewEntryWithPrefill}
                               totalCount={journal.totalCount}
+                              unavailableCount={journal.unavailableCount}
+                              entryPageState={journal.entryPageState}
+                              onRetryUnavailable={journal.refresh}
                               loading={journal.loading}
                               selectedDate={journal.selectedDate}
                               daysSinceLastEntry={daysSinceLastEntry}
@@ -4153,7 +4182,8 @@ type ResetStep =
                                 ) : null}
 
                                 <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
-                                  {journal.entries.length === 0 ? (
+                                  {journal.entries.length === 0 &&
+                                  journal.entryPageState !== "unavailable" ? (
                                     <LazyDiaryEmptyCanvas
                                       onNewEntry={handleNewEntry}
                                       onNewEntryWithPrompt={(prompt) => {
@@ -4172,7 +4202,10 @@ type ResetStep =
                                       onSwipeDelete={handleDeleteEntry}
                                       onNewEntry={handleNewEntry}
                                       onNewEntryWithPrefill={handleNewEntryWithPrefill}
-                                      totalCount={journal.entries.length}
+                                      totalCount={journal.totalCount}
+                                      unavailableCount={journal.unavailableCount}
+                                      entryPageState={journal.entryPageState}
+                                      onRetryUnavailable={journal.refresh}
                                       loading={journal.loading}
                                       selectedDate={journal.selectedDate}
                                       daysSinceLastEntry={daysSinceLastEntry}
@@ -4370,6 +4403,9 @@ type ResetStep =
                                         handleNewEntryWithPrefill(prefill);
                                       }}
                                       totalCount={journal.totalCount}
+                                      unavailableCount={journal.unavailableCount}
+                                      entryPageState={journal.entryPageState}
+                                      onRetryUnavailable={journal.refresh}
                                       loading={journal.loading}
                                       selectedDate={journal.selectedDate}
                                       daysSinceLastEntry={daysSinceLastEntry}
@@ -4684,13 +4720,19 @@ type ResetStep =
             onConfirm={async () => {
               setRemovePasswordSubmitting(true);
               try {
-                await security.removePassword();
-                announceSuccess(ts.journalPasswordRemoveSuccess || "Password lock removed.");
-                setShowRemovePasswordConfirm(false);
-                setSettingsSection("overview");
+                return await security.removePassword();
               } finally {
                 setRemovePasswordSubmitting(false);
               }
+            }}
+            onResult={(result) => {
+              if (result.status === "blocked") return;
+              setSettingsSection("overview");
+              // Partial success remains visible in the still-open dialog's
+              // polite status region. A second global live-region message
+              // would announce the same state twice to screen-reader users.
+              if (result.status === "removed-cleanup-pending") return;
+              announceSuccess(ts.journalPasswordRemoveSuccess || "Password lock removed.");
             }}
           />
         </Suspense>

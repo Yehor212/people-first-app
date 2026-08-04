@@ -194,6 +194,7 @@ export function JournalSettingsContent({
   const [changeSubmitting, setChangeSubmitting] = useState(false);
   const [biometricSubmitting, setBiometricSubmitting] = useState(false);
   const [biometricError, setBiometricError] = useState("");
+  const [removalRetrySubmitting, setRemovalRetrySubmitting] = useState(false);
   const [autoLockMs, setAutoLockMsState] = useState(getStoredAutoLockMs);
   const [autoLockError, setAutoLockError] = useState(false);
   const [aiConsentGranted, setAiConsentGranted] = useState(isJournalAiConsentGranted);
@@ -204,6 +205,7 @@ export function JournalSettingsContent({
     setupSubmitting ||
     changeSubmitting ||
     biometricSubmitting ||
+    removalRetrySubmitting ||
     aiConsentBusy ||
     importing;
   const setupRequestSeqRef = useRef(0);
@@ -396,6 +398,16 @@ export function JournalSettingsContent({
       );
     } finally {
       setBiometricSubmitting(false);
+    }
+  };
+
+  const handleRemovalCleanupRetry = async () => {
+    if (removalRetrySubmitting) return;
+    setRemovalRetrySubmitting(true);
+    try {
+      await security.retryPasswordRemovalCleanup();
+    } finally {
+      setRemovalRetrySubmitting(false);
     }
   };
 
@@ -606,13 +618,31 @@ export function JournalSettingsContent({
                 onClick={() => onSectionChange("password-change")}
               />
               <SettingsActionButton
-                label={ts.journalPasswordRemove || "Remove Password Lock"}
+                label={
+                  security.cloudProtectionPendingKind === "removal"
+                    ? ts.journalPasswordRemovalResume || "Continue removing diary lock"
+                    : ts.journalPasswordRemove || "Remove Password Lock"
+                }
                 tone="danger"
-                disabled={security.cloudProtectionPending || importing}
+                disabled={
+                  importing ||
+                  (security.cloudProtectionPending &&
+                    security.cloudProtectionPendingKind !== "removal")
+                }
                 onClick={onRequestRemovePassword}
               />
             </>
-          ) : (
+          ) : security.cloudProtectionPendingKind === "removal" ? (
+            <SettingsActionButton
+              label={
+                removalRetrySubmitting
+                  ? ts.journalProtectionRemovalRetryPending || "Trying again..."
+                  : ts.journalProtectionRemovalRetry || "Retry online cleanup"
+              }
+              disabled={removalRetrySubmitting || importing}
+              onClick={() => void handleRemovalCleanupRetry()}
+            />
+          ) : security.cloudProtectionPending ? null : (
             <SettingsActionButton
               label={ts.journalPasswordSetup || "Set Diary Password"}
               testId="journal-password-setup-action"
@@ -626,9 +656,15 @@ export function JournalSettingsContent({
             role="status"
             className="mt-4 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm leading-6 text-foreground"
           >
-            {security.cloudProtectionPendingKind === "removal" || !security.hasPassword
-              ? ts.journalProtectionRemovalCloudPending ||
-                "The diary lock is off on this device. ZenFlow is still finishing this change online; keep the app open and connect to the internet."
+            {security.cloudProtectionPendingKind === "removal" && security.hasPassword
+              ? ts.journalProtectionRemovalPreflightPending ||
+                "The diary lock is still on. ZenFlow paused before changing your entries. Unlock the diary, stay online, and continue removal."
+              : security.cloudProtectionPendingKind === "removal" || !security.hasPassword
+                ? ts.journalProtectionRemovalCloudPending ||
+                  "The diary lock is off on this device. ZenFlow is still finishing this change online; keep the app open and connect to the internet."
+                : security.cloudProtectionPendingKind === "vault-sync"
+                  ? ts.journalProtectionPasswordSyncPending ||
+                    "Your new diary password works on this device. ZenFlow is still updating the encrypted key online; keep the app open and connect to the internet."
               : ts.journalProtectionCloudPending ||
                 "Protected on this device. ZenFlow is still replacing an older online copy; keep the app open and connect to the internet."}
           </p>

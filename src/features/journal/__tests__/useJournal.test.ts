@@ -88,6 +88,44 @@ function makeEntry(overrides: Partial<JournalEntry> = {}): JournalEntry {
   };
 }
 
+const readablePageMeta = {
+  requestedCount: 1,
+  unavailableCount: 0,
+  state: "ready" as const,
+};
+
+const emptyPageMeta = {
+  requestedCount: 0,
+  unavailableCount: 0,
+  state: "empty" as const,
+};
+
+const exhaustedPageMeta = {
+  requestedCount: 0,
+  unavailableCount: 0,
+  state: "ready" as const,
+};
+
+function datePage(entries: JournalEntry[], unavailableCount = 0) {
+  const requestedCount = entries.length + unavailableCount;
+  return {
+    entries,
+    totalCount: requestedCount,
+    requestedCount,
+    unavailableCount,
+    state:
+      requestedCount === 0
+        ? ("empty" as const)
+        : unavailableCount === 0
+          ? ("ready" as const)
+          : entries.length === 0
+            ? ("unavailable" as const)
+            : ("degraded" as const),
+    hasMore: false,
+    nextCursor: null,
+  };
+}
+
 function runMountedDataRefresh(signal = new AbortController().signal): Promise<void[]> {
   return Promise.all([...dataRefreshMock.listeners].map((listener) => listener(signal)));
 }
@@ -108,11 +146,14 @@ describe("useJournal", () => {
     vi.mocked(storage.getEntriesPage).mockResolvedValue({
       entries: [],
       totalCount: 0,
+      requestedCount: 0,
+      unavailableCount: 0,
+      state: "empty",
       hasMore: false,
       nextCursor: null,
     });
     vi.mocked(storage.getAllEntries).mockResolvedValue([]);
-    vi.mocked(storage.getEntriesByDate).mockResolvedValue([]);
+    vi.mocked(storage.getEntriesByDate).mockResolvedValue(datePage([]));
     vi.mocked(storage.getEntryById).mockResolvedValue(undefined);
     vi.mocked(storage.getEntryCount).mockResolvedValue(0);
     vi.mocked(storage.getPendingJournalEntryDeletes).mockResolvedValue([]);
@@ -127,6 +168,7 @@ describe("useJournal", () => {
     vi.mocked(storage.getEntriesPage).mockResolvedValue({
       entries: [pendingEntry],
       totalCount: 1,
+      ...readablePageMeta,
       hasMore: false,
       nextCursor: null,
     });
@@ -144,6 +186,7 @@ describe("useJournal", () => {
     vi.mocked(storage.getEntriesPage).mockResolvedValueOnce({
       entries: [original],
       totalCount: 1,
+      ...readablePageMeta,
       hasMore: false,
       nextCursor: null,
     });
@@ -184,12 +227,14 @@ describe("useJournal", () => {
       .mockResolvedValueOnce({
         entries: [privateEntry],
         totalCount: 1,
+        ...readablePageMeta,
         hasMore: false,
         nextCursor: null,
       })
       .mockResolvedValueOnce({
         entries: [nextAccountEntry],
         totalCount: 1,
+        ...readablePageMeta,
         hasMore: false,
         nextCursor: null,
       });
@@ -232,12 +277,14 @@ describe("useJournal", () => {
       .mockResolvedValueOnce({
         entries: [privateEntry],
         totalCount: 1,
+        ...readablePageMeta,
         hasMore: false,
         nextCursor: null,
       })
       .mockResolvedValueOnce({
         entries: [nextAccountEntry],
         totalCount: 1,
+        ...readablePageMeta,
         hasMore: false,
         nextCursor: null,
       });
@@ -265,8 +312,8 @@ describe("useJournal", () => {
   it("removes a remotely deleted open entry from the mounted viewer without a remount", async () => {
     const remoteEntry = makeEntry({ id: "remote-delete-viewer" });
     vi.mocked(storage.getEntriesPage)
-      .mockResolvedValueOnce({ entries: [remoteEntry], totalCount: 1, hasMore: false, nextCursor: null })
-      .mockResolvedValueOnce({ entries: [], totalCount: 0, hasMore: false, nextCursor: null });
+      .mockResolvedValueOnce({ entries: [remoteEntry], totalCount: 1, ...readablePageMeta, hasMore: false, nextCursor: null })
+      .mockResolvedValueOnce({ entries: [], totalCount: 0, ...emptyPageMeta, hasMore: false, nextCursor: null });
     vi.mocked(storage.getEntryById).mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useJournal());
@@ -288,8 +335,8 @@ describe("useJournal", () => {
     const opened = makeEntry({ id: "remote-update-editor", content: "Opened locally", updatedAt: 100 });
     const remote = makeEntry({ id: opened.id, content: "Changed remotely", updatedAt: 200 });
     vi.mocked(storage.getEntriesPage)
-      .mockResolvedValueOnce({ entries: [opened], totalCount: 1, hasMore: false, nextCursor: null })
-      .mockResolvedValueOnce({ entries: [remote], totalCount: 1, hasMore: false, nextCursor: null });
+      .mockResolvedValueOnce({ entries: [opened], totalCount: 1, ...readablePageMeta, hasMore: false, nextCursor: null })
+      .mockResolvedValueOnce({ entries: [remote], totalCount: 1, ...readablePageMeta, hasMore: false, nextCursor: null });
     vi.mocked(storage.getEntryById).mockResolvedValue(remote);
     vi.mocked(storage.updateEntry).mockRejectedValueOnce(
       Object.assign(new Error("conflict"), {
@@ -322,8 +369,8 @@ describe("useJournal", () => {
   it("keeps a deleted entry editor recoverable while removing the remote entry from the list", async () => {
     const opened = makeEntry({ id: "remote-delete-editor", content: "Local draft base", updatedAt: 100 });
     vi.mocked(storage.getEntriesPage)
-      .mockResolvedValueOnce({ entries: [opened], totalCount: 1, hasMore: false, nextCursor: null })
-      .mockResolvedValueOnce({ entries: [], totalCount: 0, hasMore: false, nextCursor: null });
+      .mockResolvedValueOnce({ entries: [opened], totalCount: 1, ...readablePageMeta, hasMore: false, nextCursor: null })
+      .mockResolvedValueOnce({ entries: [], totalCount: 0, ...emptyPageMeta, hasMore: false, nextCursor: null });
     vi.mocked(storage.getEntryById).mockResolvedValue(undefined);
     vi.mocked(storage.updateEntry).mockRejectedValueOnce(
       Object.assign(new Error("deleted remotely"), {
@@ -369,6 +416,7 @@ describe("useJournal", () => {
       .mockResolvedValueOnce({
         entries: [visibleEntry],
         totalCount: 1,
+        ...readablePageMeta,
         hasMore: false,
         nextCursor: null,
       })
@@ -392,6 +440,7 @@ describe("useJournal", () => {
       resolveLatePage({
         entries: [lateEntry],
         totalCount: 1,
+        ...readablePageMeta,
         hasMore: false,
         nextCursor: null,
       });
@@ -409,6 +458,7 @@ describe("useJournal", () => {
     vi.mocked(storage.getEntriesPage).mockResolvedValueOnce({
       entries: [firstPageEntry],
       totalCount: 75,
+      ...readablePageMeta,
       hasMore: true,
       nextCursor: { createdAt: firstPageEntry.createdAt, id: firstPageEntry.id },
     });
@@ -421,6 +471,102 @@ describe("useJournal", () => {
     expect(storage.getAllEntries).not.toHaveBeenCalled();
     expect(result.current.allEntries).toEqual([firstPageEntry]);
     expect(result.current.totalCount).toBe(75);
+  });
+
+  it("accumulates unavailable rows across raw background pages without a global load error", async () => {
+    const firstPageEntry = makeEntry({ id: "entry-readable", createdAt: 2_000 });
+    vi.mocked(storage.getEntriesPage)
+      .mockResolvedValueOnce({
+        entries: [firstPageEntry],
+        totalCount: 3,
+        requestedCount: 2,
+        unavailableCount: 1,
+        state: "degraded",
+        hasMore: true,
+        nextCursor: { createdAt: 1_900, id: "entry-unavailable-boundary" },
+      })
+      .mockResolvedValueOnce({
+        entries: [],
+        totalCount: 3,
+        requestedCount: 1,
+        unavailableCount: 1,
+        state: "unavailable",
+        hasMore: false,
+        nextCursor: null,
+      });
+
+    const { result } = renderHook(() => useJournal());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.unavailableCount).toBe(1);
+    expect(result.current.entryPageState).toBe("degraded");
+    expect(result.current.loadError).toBe(false);
+
+    await act(async () => {
+      scheduleIdleMock.callbacks.shift()?.();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(result.current.unavailableCount).toBe(2));
+    expect(result.current.entryPageState).toBe("degraded");
+    expect(result.current.allEntries).toEqual([firstPageEntry]);
+    expect(result.current.loadError).toBe(false);
+  });
+
+  it("keeps an all-unavailable first page distinct from empty without raising loadError", async () => {
+    vi.mocked(storage.getEntriesPage).mockResolvedValueOnce({
+      entries: [],
+      totalCount: 2,
+      requestedCount: 2,
+      unavailableCount: 2,
+      state: "unavailable",
+      hasMore: false,
+      nextCursor: null,
+    });
+
+    const { result } = renderHook(() => useJournal());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.allEntries).toEqual([]);
+    expect(result.current.totalCount).toBe(2);
+    expect(result.current.unavailableCount).toBe(2);
+    expect(result.current.entryPageState).toBe("unavailable");
+    expect(result.current.loadError).toBe(false);
+  });
+
+  it("replaces unavailableCount and page state on refresh instead of accumulating stale failures", async () => {
+    const recoveredEntry = makeEntry({ id: "entry-recovered" });
+    vi.mocked(storage.getEntriesPage)
+      .mockResolvedValueOnce({
+        entries: [],
+        totalCount: 2,
+        requestedCount: 2,
+        unavailableCount: 2,
+        state: "unavailable",
+        hasMore: false,
+        nextCursor: null,
+      })
+      .mockResolvedValueOnce({
+        entries: [recoveredEntry],
+        totalCount: 1,
+        requestedCount: 1,
+        unavailableCount: 0,
+        state: "ready",
+        hasMore: false,
+        nextCursor: null,
+      });
+
+    const { result } = renderHook(() => useJournal());
+    await waitFor(() => expect(result.current.entryPageState).toBe("unavailable"));
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    await waitFor(() => expect(result.current.entryPageState).toBe("ready"));
+    expect(result.current.unavailableCount).toBe(0);
+    expect(result.current.allEntries).toEqual([recoveredEntry]);
+    expect(result.current.loadError).toBe(false);
   });
 
   it("forwards audioIds when creating a new entry and reflects the saved entry", async () => {
@@ -497,6 +643,7 @@ describe("useJournal", () => {
     vi.mocked(storage.getEntriesPage).mockResolvedValueOnce({
       entries: [openedEntry],
       totalCount: 1,
+      ...readablePageMeta,
       hasMore: false,
       nextCursor: null,
     });
@@ -532,6 +679,7 @@ describe("useJournal", () => {
     vi.mocked(storage.getEntriesPage).mockResolvedValueOnce({
       entries: [makeEntry({ id: "entry-recovered" })],
       totalCount: 1,
+      ...readablePageMeta,
       hasMore: false,
       nextCursor: null,
     });
@@ -549,6 +697,7 @@ describe("useJournal", () => {
       .mockResolvedValueOnce({
         entries: [firstPageEntry],
         totalCount: 2,
+        ...readablePageMeta,
         hasMore: true,
         nextCursor: { createdAt: firstPageEntry.createdAt, id: firstPageEntry.id },
       })
@@ -556,6 +705,7 @@ describe("useJournal", () => {
       .mockResolvedValueOnce({
         entries: [firstPageEntry],
         totalCount: 2,
+        ...readablePageMeta,
         hasMore: false,
         nextCursor: null,
       });
@@ -582,18 +732,25 @@ describe("useJournal", () => {
   });
 
   it("allows selected-date loads to retry after cancellation or rejection", async () => {
-    let resolveFirstDateLoad: (entries: JournalEntry[]) => void = () => undefined;
+    let resolveFirstDateLoad: (
+      page: Awaited<ReturnType<typeof storage.getEntriesByDate>>,
+    ) => void = () => undefined;
     vi.mocked(storage.getEntriesPage).mockResolvedValue({
       entries: [],
       totalCount: 1,
+      ...exhaustedPageMeta,
       hasMore: false,
       nextCursor: null,
     });
     vi.mocked(storage.getEntriesByDate)
       .mockReturnValueOnce(new Promise((resolve) => { resolveFirstDateLoad = resolve; }))
       .mockRejectedValueOnce(new Error("date unavailable"))
-      .mockResolvedValueOnce([makeEntry({ id: "selected-date-other", date: "2026-06-12" })])
-      .mockResolvedValueOnce([makeEntry({ id: "selected-date-entry", date: "2026-06-11" })]);
+      .mockResolvedValueOnce(
+        datePage([makeEntry({ id: "selected-date-other", date: "2026-06-12" })]),
+      )
+      .mockResolvedValueOnce(
+        datePage([makeEntry({ id: "selected-date-entry", date: "2026-06-11" })]),
+      );
 
     const { result } = renderHook(() => useJournal());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -607,7 +764,9 @@ describe("useJournal", () => {
       result.current.setSelectedDate("2026-06-11");
     });
     await act(async () => {
-      resolveFirstDateLoad([makeEntry({ id: "cancelled-date-entry", date: "2026-06-10" })]);
+      resolveFirstDateLoad(
+        datePage([makeEntry({ id: "cancelled-date-entry", date: "2026-06-10" })]),
+      );
       await Promise.resolve();
     });
     await waitFor(() => expect(storage.getEntriesByDate).toHaveBeenCalledWith("2026-06-11"));
@@ -640,7 +799,7 @@ describe("useJournal", () => {
 
   it("clears a failed-date error when returning to an already loaded date", async () => {
     vi.mocked(storage.getEntriesByDate)
-      .mockResolvedValueOnce([makeEntry({ date: "2026-06-10" })])
+      .mockResolvedValueOnce(datePage([makeEntry({ date: "2026-06-10" })]))
       .mockRejectedValueOnce(new Error("date unavailable"));
 
     const { result } = renderHook(() => useJournal());
@@ -668,10 +827,13 @@ describe("useJournal", () => {
     vi.mocked(storage.getEntriesPage).mockResolvedValueOnce({
       entries: [firstVisible],
       totalCount: 2,
+      ...readablePageMeta,
       hasMore: true,
       nextCursor: { createdAt: firstVisible.createdAt, id: firstVisible.id },
     });
-    vi.mocked(storage.getEntriesByDate).mockResolvedValueOnce([firstVisible, olderSameDay]);
+    vi.mocked(storage.getEntriesByDate).mockResolvedValueOnce(
+      datePage([firstVisible, olderSameDay]),
+    );
 
     const { result } = renderHook(() => useJournal());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -687,22 +849,43 @@ describe("useJournal", () => {
     });
   });
 
+  it("surfaces the unavailable count from a selected-date read", async () => {
+    const readable = makeEntry({ id: "selected-date-readable", date: "2026-06-13" });
+    vi.mocked(storage.getEntriesByDate).mockResolvedValueOnce(
+      datePage([readable], 1),
+    );
+
+    const { result } = renderHook(() => useJournal());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.setSelectedDate("2026-06-13"));
+
+    await waitFor(() => expect(result.current.unavailableCount).toBe(1));
+    expect(result.current.totalCount).toBe(2);
+    expect(result.current.entryPageState).toBe("degraded");
+    expect(result.current.entries.map((entry) => entry.id)).toEqual([
+      "selected-date-readable",
+    ]);
+  });
+
   it("keeps pending soft-deleted entries hidden from background and date backfills", async () => {
     const pendingEntry = makeEntry({ id: "pending-delete", date: "2026-06-12", createdAt: 2000 });
     vi.mocked(storage.getEntriesPage)
       .mockResolvedValueOnce({
         entries: [pendingEntry],
         totalCount: 1,
+        ...readablePageMeta,
         hasMore: true,
         nextCursor: { createdAt: pendingEntry.createdAt, id: pendingEntry.id },
       })
       .mockResolvedValueOnce({
         entries: [pendingEntry],
         totalCount: 1,
+        ...readablePageMeta,
         hasMore: false,
         nextCursor: null,
       });
-    vi.mocked(storage.getEntriesByDate).mockResolvedValue([pendingEntry]);
+    vi.mocked(storage.getEntriesByDate).mockResolvedValue(datePage([pendingEntry]));
 
     const { result } = renderHook(() => useJournal());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -738,6 +921,7 @@ describe("useJournal", () => {
       .mockResolvedValueOnce({
         entries: [deletedEntry],
         totalCount: 1,
+        ...readablePageMeta,
         hasMore: true,
         nextCursor: { createdAt: deletedEntry.createdAt, id: deletedEntry.id },
       })
@@ -763,6 +947,7 @@ describe("useJournal", () => {
       resolveBackgroundPage({
         entries: [deletedEntry],
         totalCount: 1,
+        ...readablePageMeta,
         hasMore: false,
         nextCursor: null,
       });
@@ -779,6 +964,7 @@ describe("useJournal", () => {
     vi.mocked(storage.getEntriesPage).mockResolvedValueOnce({
       entries: [retainedEntry],
       totalCount: 1,
+      ...readablePageMeta,
       hasMore: false,
       nextCursor: null,
     });
@@ -809,12 +995,14 @@ describe("useJournal", () => {
       .mockResolvedValueOnce({
         entries: [retainedEntry],
         totalCount: 1,
+        ...readablePageMeta,
         hasMore: false,
         nextCursor: null,
       })
       .mockResolvedValueOnce({
         entries: [retainedEntry],
         totalCount: 1,
+        ...readablePageMeta,
         hasMore: false,
         nextCursor: null,
       });

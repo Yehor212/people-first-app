@@ -16,6 +16,19 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalEntries: "entries",
       journalEntryCountOther: "{count} entries",
       journalEntryCountOne: "{count} entry",
+      journalEntriesUnavailableCount:
+        "Temporarily unavailable diary entries: {count}. Your other entries are still shown.",
+      journalEntriesUnavailableCountOne:
+        "{count} diary entry is temporarily unavailable. Your other entries are still shown.",
+      journalEntriesUnavailableCountOther:
+        "{count} diary entries are temporarily unavailable. Your other entries are still shown.",
+      journalEntriesUnavailableAll:
+        "No diary entries can be shown right now. Your saved data was not deleted.",
+      journalEntriesUnavailableAllCountOne:
+        "{count} diary entry cannot be shown right now. Your saved data was not deleted.",
+      journalEntriesUnavailableAllCountOther:
+        "{count} diary entries cannot be shown right now. Your saved data was not deleted.",
+      journalEntriesUnavailableRetry: "Try loading again",
       journalPrivateEntry: "Private entry",
       journalFolderCreate: "Create",
       journalFolders: "Folders",
@@ -239,6 +252,62 @@ describe("JournalEntryList space parity", () => {
     storageMocks.getJournalSpaces.mockResolvedValue([projectSpace]);
     storageMocks.getJournalSpaceCaptures.mockResolvedValue([]);
     storageMocks.getSpaceEntryLinks.mockResolvedValue([]);
+  });
+
+  it("keeps readable cards visible beside a privacy-safe unavailable count", () => {
+    render(
+      <JournalEntryList
+        groupedEntries={[{ label: "today", key: "2026-05-01", entries: [currentDayEntry] }]}
+        allEntries={[currentDayEntry]}
+        onOpenEntry={vi.fn()}
+        onDeleteEntry={vi.fn()}
+        onNewEntry={vi.fn()}
+        totalCount={2}
+        unavailableCount={1}
+        entryPageState="degraded"
+        selectedDate="2026-05-01"
+        selectedDateOnly
+        showSpaces={false}
+      />,
+    );
+
+    expect(screen.getByTestId("journal-entry-card-entry-current")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "1 diary entry is temporarily unavailable. Your other entries are still shown.",
+    );
+    expect(screen.getByRole("status")).not.toHaveTextContent(
+      /cipher|entry-current|indexeddb/i,
+    );
+  });
+
+  it("does not present an all-unavailable page as an empty diary", () => {
+    const onRetryUnavailable = vi.fn();
+
+    render(
+      <JournalEntryList
+        groupedEntries={[]}
+        allEntries={[]}
+        onOpenEntry={vi.fn()}
+        onDeleteEntry={vi.fn()}
+        onNewEntry={vi.fn()}
+        totalCount={2}
+        unavailableCount={2}
+        entryPageState="unavailable"
+        onRetryUnavailable={onRetryUnavailable}
+        selectedDate="2026-05-01"
+        selectedDateOnly
+        showSpaces={false}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "2 diary entries cannot be shown right now. Your saved data was not deleted.",
+    );
+    expect(screen.queryByText("Your diary is empty")).not.toBeInTheDocument();
+    const retryButton = screen.getByRole("button", { name: "Try loading again" });
+    expect(retryButton).toHaveClass("min-h-[44px]");
+    fireEvent.click(retryButton);
+    expect(onRetryUnavailable).toHaveBeenCalledTimes(1);
   });
 
   it("keeps folder rail count and opened workspace count in parity", async () => {

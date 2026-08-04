@@ -2684,6 +2684,23 @@ export const ja: Translations = {
   journalSubtitle: "あなたのプライベートスペース",
   journalEmpty: "日記の記録はまだありません",
   journalEmptyHint: "書きたいときに、今日の小さな一場面から始めてください。",
+  journalEntriesUnavailableCount:
+    "一時的に表示できない日記の記録：{count}件。ほかの記録は引き続き表示されています。",
+  journalEntriesUnavailableCountZero: "日記の記録{count}件を一時的に表示できません。ほかの記録は引き続き表示されています。",
+  journalEntriesUnavailableCountOne: "日記の記録{count}件を一時的に表示できません。ほかの記録は引き続き表示されています。",
+  journalEntriesUnavailableCountTwo: "日記の記録{count}件を一時的に表示できません。ほかの記録は引き続き表示されています。",
+  journalEntriesUnavailableCountFew: "日記の記録{count}件を一時的に表示できません。ほかの記録は引き続き表示されています。",
+  journalEntriesUnavailableCountMany: "日記の記録{count}件を一時的に表示できません。ほかの記録は引き続き表示されています。",
+  journalEntriesUnavailableCountOther: "日記の記録{count}件を一時的に表示できません。ほかの記録は引き続き表示されています。",
+  journalEntriesUnavailableAll:
+    "現在、日記の記録を表示できません。保存済みのデータは削除されていません。",
+  journalEntriesUnavailableAllCountZero: "現在、日記の記録{count}件を表示できません。保存済みのデータは削除されていません。",
+  journalEntriesUnavailableAllCountOne: "現在、日記の記録{count}件を表示できません。保存済みのデータは削除されていません。",
+  journalEntriesUnavailableAllCountTwo: "現在、日記の記録{count}件を表示できません。保存済みのデータは削除されていません。",
+  journalEntriesUnavailableAllCountFew: "現在、日記の記録{count}件を表示できません。保存済みのデータは削除されていません。",
+  journalEntriesUnavailableAllCountMany: "現在、日記の記録{count}件を表示できません。保存済みのデータは削除されていません。",
+  journalEntriesUnavailableAllCountOther: "現在、日記の記録{count}件を表示できません。保存済みのデータは削除されていません。",
+  journalEntriesUnavailableRetry: "もう一度読み込む",
   journalEmptyQuote: "この瞬間の一つの細部から始める。",
   diaryStartFirstEntry: "小さな細部から始めましょう。",
   diaryPrompt1: "今日、思わず笑顔になったことは？",
@@ -3196,17 +3213,43 @@ export const ja: Translations = {
   journalPasswordActiveHint: "日記のロックは有効です。ここで変更または解除できます。",
   journalProtectionCloudPending:
     "この端末の日記は保護されています。ZenFlow は古いオンラインコピーを更新中です。アプリを開いたままインターネットに接続してください。",
+  journalProtectionPasswordSyncPending:
+    "新しい日記パスワードはこの端末ですでに使えます。ZenFlow は暗号化キーをオンラインで更新中です。アプリを開いたままインターネットに接続してください。",
   journalProtectionRemovalCloudPending:
     "この端末の日記ロックは解除されています。ZenFlow はオンラインでこの変更を完了中です。アプリを開いたままインターネットに接続してください。",
+  journalProtectionRemovalPreflightPending:
+    "日記の保護はまだ有効です。ZenFlow は記録を変更する前に処理を停止しました。日記のロックを解除し、オンラインのまま保護の解除を続けてください。",
+  journalPasswordRemovalResume: "日記ロックの解除を続ける",
+  journalProtectionRemovalRetry: "オンラインのクリーンアップを再試行",
+  journalProtectionRemovalRetryPending: "再試行中...",
   journalPasswordRemoveConfirm:
     "よろしいですか？日記はパスワードなしでアクセスできるようになります。",
   journalLockRemoveDetail:
     "記録は保存されたままですが、日記のロックと生体認証による日記のロック解除はオフになります。あとで新しいロックを設定できます。",
-  journalLockRemoveFailed: "まず日記のロックを解除してから、もう一度ロックの解除をお試しください。",
+  journalLockRemoveFailed:
+    "日記のロックを解除してから、もう一度保護の解除をお試しください。変更は行われていません。",
   journalLockRemoveUnexpected:
     "日記のロックを解除できませんでした。変更は行われていません。もう一度お試しください。",
   journalLockRemovePartial:
-    "日記のロックは残っていますが、生体認証でのロック解除はオフになりました。パスワードで日記を開いてから、もう一度お試しください。",
+    "この端末では日記の保護が解除されていますが、追加の処理が残っています。アプリを開いたままログイン状態を保ち、インターネット接続後にもう一度お試しください。",
+  journalLockRemoveActivationPending:
+    "先に日記の保護設定を完了してから、もう一度お試しください。変更は行われていません。",
+  journalLockRemoveRemovalPending:
+    "以前の保護解除をまだ完了しています。このアカウントにログインしたまま、しばらくしてからもう一度お試しください。",
+  journalLockRemoveRevisionMismatch:
+    "確認中に日記が更新されました。再読み込みしてロックを解除し、もう一度お試しください。変更は行われていません。",
+  journalLockRemoveContentUnavailable:
+    "保護された日記の一部を開けませんでした。インターネットに接続し、日記のロックを解除してから、もう一度お試しください。削除された内容はありません。",
+  journalLockRemoveOwnerChanged:
+    "ログイン中のアカウントが変わりました。この日記のアカウントに戻って、もう一度お試しください。変更は行われていません。",
+  journalLockRemoveStorageFailed:
+    "この端末では日記全体を読み取れませんでした。アプリを開いたまま再読み込みし、もう一度お試しください。変更は行われていません。",
+  journalLockRemovePartialBiometric:
+    "この端末では日記の保護が解除されています。生体認証の後処理が残っています。アプリを開いたまま、もう一度お試しください。",
+  journalLockRemovePartialCloud:
+    "この端末では日記の保護が解除されています。他のログイン済み端末への反映が残っています。ログイン状態を保ち、インターネット接続後にもう一度お試しください。",
+  journalLockRemovePartialBoth:
+    "この端末では日記の保護が解除されています。生体認証の後処理と他のログイン済み端末への反映が残っています。アプリを開いたままログイン状態を保ち、インターネット接続後にもう一度お試しください。",
   journalPasswordRemovePending: "ロックを解除しています...",
   journalPasswordRemoveSuccess: "日記のロックを解除しました。",
   journalPasswordSetupFailed: "日記のロックを有効にできませんでした。もう一度お試しください。",
