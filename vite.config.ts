@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { readFileSync } from "fs";
@@ -92,7 +92,6 @@ function hasUsableSentryUploadEnv(values: Array<string | undefined>): boolean {
 }
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const fileEnvironment = loadEnv(mode, __dirname, "VITE_");
   // Use relative paths for Capacitor/Android builds
   // Automatically determined by npm script (build vs build:android)
   const isCapacitor = process.env.CAPACITOR_BUILD === "true";
@@ -100,8 +99,7 @@ export default defineConfig(({ mode }) => {
   const base = isCapacitor ? "./" : webBase;
   const pwaEnabled = !isCapacitor && process.env.VITE_DISABLE_PWA !== "true";
   const journalSaveCeremonyBuildEnabled =
-    (process.env.VITE_ENABLE_JOURNAL_SAVE_CEREMONY ??
-      fileEnvironment.VITE_ENABLE_JOURNAL_SAVE_CEREMONY) === "true";
+    process.env.ZENFLOW_JOURNAL_SAVE_CEREMONY_BUILD_ENABLED === "true";
 
   // Read version from package.json
   const packageJson = JSON.parse(readFileSync("./package.json", "utf-8"));

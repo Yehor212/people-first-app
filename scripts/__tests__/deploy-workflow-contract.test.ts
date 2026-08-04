@@ -550,10 +550,9 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(pkg.scripts["check:release-artifacts:ios"]).toBe(
       "node scripts/prune-duplicate-artifacts.cjs ios/App/App/public --verify"
     );
-    expect(pkg.scripts["cap:sync"]).toContain("npm run prune:release-artifacts:android");
-    expect(pkg.scripts["cap:sync"]).toContain("npm run prune:release-artifacts:ios");
-    expect(pkg.scripts["cap:sync"]).toContain("npm run check:release-artifacts:android");
-    expect(pkg.scripts["cap:sync"]).toContain("npm run check:release-artifacts:ios");
+    expect(pkg.scripts["cap:sync"]).toBe(
+      "npm run cap:sync:android && npm run cap:sync:ios"
+    );
     expect(pkg.scripts["cap:sync:android"]).toContain("npm run prune:release-artifacts:android");
     expect(pkg.scripts["cap:sync:android"]).toContain("npm run check:release-artifacts:android");
     expect(pkg.scripts["cap:sync:ios"]).toContain("npm run prune:release-artifacts:ios");

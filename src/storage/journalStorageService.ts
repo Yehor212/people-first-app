@@ -40,6 +40,15 @@ const MAX_ENCRYPTED_AUDIO_SIZE = MAX_AUDIO_SIZE + ENCRYPTED_MEDIA_OVERHEAD_BYTES
 /** Characters forbidden in storage path segments (null byte checked separately) */
 const UNSAFE_PATH_CHARS = /[/\\:*?"<>|]/;
 
+export interface JournalMediaStorageIdentity {
+  bucket: "journal-photos" | "journal-audio";
+  path: string;
+  objectId: string;
+  version: string;
+  etag: string | null;
+  size: number | null;
+}
+
 // ============================================
 // HELPERS
 // ============================================
@@ -80,8 +89,85 @@ function storagePath(userId: string, fileId: string, ext: string): string {
   return `${userId}/${fileId}.${ext}`;
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function resolveJournalMediaDeletePaths(
+  bucket: typeof PHOTO_BUCKET | typeof AUDIO_BUCKET,
+  fileId: string,
+  expectedOwnerUserId: string,
+  legacyExtensions: readonly string[],
+): Promise<string[]> {
+  const client = supabase?.storage.from(bucket);
+  if (!client) return [];
+  const legacyPaths = legacyExtensions.map((ext) =>
+    storagePath(expectedOwnerUserId, fileId, ext)
+  );
+  const { data, error } = await client.list(expectedOwnerUserId, {
+    limit: 100,
+    search: fileId,
+  });
+  if (error) throw error;
+
+  const escapedId = escapeRegExp(fileId);
+  const exactVersionedName = new RegExp(`^${escapedId}\\.v[0-9]+\\.bin$`, "i");
+  const versionedPaths = (data ?? [])
+    .map((item) => item.name)
+    .filter((name): name is string =>
+      typeof name === "string" && exactVersionedName.test(name)
+    )
+    .map((name) => `${expectedOwnerUserId}/${name}`);
+  return [...new Set([...legacyPaths, ...versionedPaths])];
+}
+
 async function assertExpectedOwnerCurrent(expectedOwnerUserId: string): Promise<void> {
   await validateSyncOwner(expectedOwnerUserId, "Journal media storage");
+}
+
+/**
+ * Reads the immutable identity used by the password-removal fence. Supabase's
+ * object version changes when the same path is overwritten, so callers can
+ * compare a before/after identity around a decryptability download and then
+ * bind that exact version in the server-side inventory transaction.
+ */
+export async function readJournalMediaStorageIdentity(
+  bucket: "journal-photos" | "journal-audio",
+  path: string,
+  expectedOwnerUserId: string,
+): Promise<JournalMediaStorageIdentity | null> {
+  if (!supabase) return null;
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
+  if (!path.startsWith(`${expectedOwnerUserId}/`) || path.includes("..") || path.includes("\0")) {
+    throw new Error("Journal media path does not belong to the expected account");
+  }
+
+  const { data, error } = await supabase.storage.from(bucket).info(path);
+  if (error || !data) {
+    logger.warn(`[Storage] Identity read failed (${bucket}/${path}):`, error?.message);
+    return null;
+  }
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
+  if (
+    typeof data.id !== "string" ||
+    data.id.length === 0 ||
+    typeof data.version !== "string" ||
+    data.version.length === 0 ||
+    data.name !== path ||
+    data.bucketId !== bucket
+  ) {
+    logger.warn(`[Storage] Identity read rejected (${bucket}/${path}): malformed response`);
+    return null;
+  }
+
+  return {
+    bucket,
+    path,
+    objectId: data.id,
+    version: data.version,
+    etag: typeof data.etag === "string" && data.etag.length > 0 ? data.etag : null,
+    size: Number.isSafeInteger(data.size) && Number(data.size) >= 0 ? Number(data.size) : null,
+  };
 }
 
 function isAllowedDownloadedBlob(
@@ -212,10 +298,14 @@ export async function uploadEncryptedPhoto(
   photoId: string,
   encryptedPayload: Blob,
   expectedOwnerUserId: string,
+  vaultRevision: number,
 ): Promise<UploadResult | null> {
+  if (!Number.isSafeInteger(vaultRevision) || vaultRevision < 0) {
+    throw new Error("Encrypted diary photo requires an exact vault revision");
+  }
   return uploadRawStorageBlob(PHOTO_BUCKET, photoId, encryptedPayload, expectedOwnerUserId, {
     contentType: ENCRYPTED_MEDIA_MIME,
-    ext: ENCRYPTED_MEDIA_EXTENSION,
+    ext: `v${vaultRevision}.${ENCRYPTED_MEDIA_EXTENSION}`,
     maxSize: MAX_ENCRYPTED_PHOTO_SIZE,
     label: "Encrypted photo",
   });
@@ -277,10 +367,14 @@ export async function uploadEncryptedAudio(
   audioId: string,
   encryptedPayload: Blob,
   expectedOwnerUserId: string,
+  vaultRevision: number,
 ): Promise<UploadResult | null> {
+  if (!Number.isSafeInteger(vaultRevision) || vaultRevision < 0) {
+    throw new Error("Encrypted diary audio requires an exact vault revision");
+  }
   return uploadRawStorageBlob(AUDIO_BUCKET, audioId, encryptedPayload, expectedOwnerUserId, {
     contentType: ENCRYPTED_MEDIA_MIME,
-    ext: ENCRYPTED_MEDIA_EXTENSION,
+    ext: `v${vaultRevision}.${ENCRYPTED_MEDIA_EXTENSION}`,
     maxSize: MAX_ENCRYPTED_AUDIO_SIZE,
     label: "Encrypted audio",
   });
@@ -400,9 +494,13 @@ export async function deletePhotoFromStorage(
   await assertExpectedOwnerCurrent(expectedOwnerUserId);
 
   try {
-    // Try common extensions since we may not know the exact one
     const exts = ["jpg", "png", "webp", "bin"];
-    const paths = exts.map((ext) => storagePath(expectedOwnerUserId, photoId, ext));
+    const paths = await resolveJournalMediaDeletePaths(
+      PHOTO_BUCKET,
+      photoId,
+      expectedOwnerUserId,
+      exts,
+    );
     const { error } = await supabase.storage.from(PHOTO_BUCKET).remove(paths);
     if (error) throw error;
   } catch (err) {
@@ -423,7 +521,12 @@ export async function deleteAudioFromStorage(
 
   try {
     const exts = ["webm", "mp4", "mp3", "ogg", "wav", "bin"];
-    const paths = exts.map((ext) => storagePath(expectedOwnerUserId, audioId, ext));
+    const paths = await resolveJournalMediaDeletePaths(
+      AUDIO_BUCKET,
+      audioId,
+      expectedOwnerUserId,
+      exts,
+    );
     const { error } = await supabase.storage.from(AUDIO_BUCKET).remove(paths);
     if (error) throw error;
   } catch (err) {

@@ -53,7 +53,7 @@ const {
     }),
     mockHandleAuthCallback: vi.fn(async () => undefined),
     mockCloseOAuthBrowser: vi.fn(async () => undefined),
-    mockIsFeatureVisible: vi.fn(() => true),
+    mockIsFeatureVisible: vi.fn<(feature: string) => boolean>(() => true),
     mockLocalOwner,
     mockClaimStatus,
   };
@@ -80,7 +80,20 @@ vi.mock("@/lib/supabaseClient", () => ({
 }));
 
 vi.mock("@/contexts/FeatureFlagsContext", () => ({
-  useFeatureFlags: () => ({ isFeatureVisible: mockIsFeatureVisible }),
+  useFeatureFlags: () => ({
+    getFeatureAvailability: (feature: string) => {
+      const visible = mockIsFeatureVisible(feature);
+      return {
+        manifestVersion: 1,
+        key: feature,
+        visible,
+        state: visible ? "available" : "temporarily-unavailable",
+        reason: visible ? "available" : "disabled-by-user",
+        source: "user-setting",
+        disclosure: visible ? "silent" : "user-safe-reason",
+      };
+    },
+  }),
 }));
 
 vi.mock("@/lib/authRedirect", async () => {
@@ -609,7 +622,7 @@ describe("useDeepLinkHandler", () => {
       expect(useUIStore.getState().showChallengeModal).toBe(true);
     });
 
-    it("keeps invite and modal state empty when the challenges feature is disabled", async () => {
+    it("keeps a valid invite and opens the truthful unavailable state when challenges are disabled", async () => {
       mockIsFeatureVisible.mockReturnValue(false);
       renderHook(() => useDeepLinkHandler());
       await act(async () => {
@@ -622,8 +635,8 @@ describe("useDeepLinkHandler", () => {
       });
 
       expect(mockIsFeatureVisible).toHaveBeenCalledWith("challenges");
-      expect(useUIStore.getState().challengeInvite).toBeUndefined();
-      expect(useUIStore.getState().showChallengeModal).toBe(false);
+      expect(useUIStore.getState().challengeInvite).toEqual(EXPECTED_CHALLENGE_INVITE);
+      expect(useUIStore.getState().showChallengeModal).toBe(true);
       expect(mockHandleAuthCallback).not.toHaveBeenCalled();
     });
 

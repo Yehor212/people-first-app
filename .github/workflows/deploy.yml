@@ -236,6 +236,8 @@ jobs:
 
       - name: Build
         env:
+          ZENFLOW_RELEASE_SOURCE_COMMIT: ${{ github.sha }}
+          ZENFLOW_REQUIRE_CAPABILITY_RECEIPT: "true"
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
@@ -487,6 +489,8 @@ jobs:
 
       - name: Build Android web assets (required before cap sync)
         env:
+          ZENFLOW_RELEASE_SOURCE_COMMIT: ${{ github.sha }}
+          ZENFLOW_REQUIRE_CAPABILITY_RECEIPT: "true"
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
@@ -584,6 +588,8 @@ jobs:
 
       - name: Build iOS web assets
         env:
+          ZENFLOW_RELEASE_SOURCE_COMMIT: ${{ github.sha }}
+          ZENFLOW_REQUIRE_CAPABILITY_RECEIPT: "true"
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}

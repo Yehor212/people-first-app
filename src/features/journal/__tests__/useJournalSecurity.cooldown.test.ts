@@ -22,6 +22,7 @@ const migrationMocks = vi.hoisted(() => ({
   getIntent: vi.fn(() => Promise.resolve(null)),
   getRemovalIntent: vi.fn(() => Promise.resolve(null)),
   removeAtomic: vi.fn(() => Promise.resolve({ cloudMigrationPending: false })),
+  recordNativeCleanup: vi.fn(() => Promise.resolve()),
 }));
 const vaultCryptoMocks = vi.hoisted(() => ({
   generateJournalVaultKey: vi.fn(() => "vault-key-test"),
@@ -87,7 +88,15 @@ vi.mock("../journalSecurityMigration", () => ({
   ensureJournalSecurityRemovalQueued: migrationMocks.ensureRemovalQueued,
   getJournalSecurityMigrationIntent: migrationMocks.getIntent,
   getJournalSecurityRemovalIntent: migrationMocks.getRemovalIntent,
+  normalizeJournalDataForActiveVault: vi.fn(() =>
+    Promise.resolve({
+      changedCount: 0,
+      unboundMediaCount: 0,
+      cloudMigrationPending: false,
+    }),
+  ),
   removeJournalPasswordProtectionAtomically: migrationMocks.removeAtomic,
+  recordJournalSecurityRemovalNativeCleanup: migrationMocks.recordNativeCleanup,
   runWithJournalSecurityBoundary: migrationMocks.runBoundary,
   JOURNAL_SECURITY_MIGRATION_EVENT: "zenflow:journal-security-migration-updated",
 }));

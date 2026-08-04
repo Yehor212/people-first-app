@@ -9,7 +9,10 @@ import {
   isJournalDraftMediaOwnerId,
 } from "./types";
 import { assertValidJournalAudio } from "./journalAudioValidation";
-import { getJournalContentVaultKey } from "./journalContentSession";
+import {
+  getJournalContentVaultKey,
+  getJournalContentVaultRevision,
+} from "./journalContentSession";
 import {
   decryptJournalContentIfNeeded,
   encryptJournalContent,
@@ -65,6 +68,7 @@ import {
 import { encodeJournalPhotoWithinLimit } from "./journalPhotoEncoding";
 import { JOURNAL_DELETE_UNDO_WINDOW_MS } from "./journalDeletePolicy";
 import { JournalDraftInUseError } from "./journalDraftStorage";
+import { requireSafeJournalVaultRevision } from "./journalVaultEpoch";
 import {
   getJournalAudioParentSyncDecision,
   getJournalPhotoParentSyncDecision,
@@ -72,12 +76,12 @@ import {
 
 type JournalPhotoSyncMetadata = Pick<
   JournalPhoto,
-  "id" | "entryId" | "width" | "height" | "createdAt" | "storagePath"
+  "id" | "entryId" | "width" | "height" | "createdAt" | "storagePath" | "vaultRevision"
 >;
 
 type JournalAudioSyncMetadata = Pick<
   JournalAudio,
-  "id" | "entryId" | "duration" | "mimeType" | "createdAt" | "storagePath"
+  "id" | "entryId" | "duration" | "mimeType" | "createdAt" | "storagePath" | "vaultRevision"
 >;
 
 function captureJournalSyncOwner(): Promise<string | null> {
@@ -138,8 +142,9 @@ interface QueuedJournalAudioUploadPayload {
   metadata?: JournalAudioSyncMetadata;
 }
 
-interface QueuedJournalMediaIdPayload {
+interface QueuedJournalMediaDeletePayload {
   id: string;
+  storagePath?: string;
 }
 
 function toPhotoSyncMetadata(photo: JournalPhoto): JournalPhotoSyncMetadata {
@@ -150,6 +155,7 @@ function toPhotoSyncMetadata(photo: JournalPhoto): JournalPhotoSyncMetadata {
     height: photo.height,
     createdAt: photo.createdAt,
     storagePath: photo.storagePath,
+    vaultRevision: photo.vaultRevision,
   };
 }
 
@@ -161,33 +167,61 @@ function toAudioSyncMetadata(audio: JournalAudio): JournalAudioSyncMetadata {
     mimeType: audio.mimeType,
     createdAt: audio.createdAt,
     storagePath: audio.storagePath,
+    vaultRevision: audio.vaultRevision,
   };
 }
 
-async function encryptEntryContentForStorage(entry: JournalEntry): Promise<JournalEntry> {
-  if (!entry.content || isEncryptedJournalContent(entry.content)) return entry;
+function toJournalMediaDeletePayload(media: {
+  id: string;
+  storagePath?: string;
+}): QueuedJournalMediaDeletePayload {
+  return media.storagePath
+    ? { id: media.id, storagePath: media.storagePath }
+    : { id: media.id };
+}
 
+async function encryptEntryContentForStorage(entry: JournalEntry): Promise<JournalEntry> {
   const vaultKey = await getJournalVaultKeyForWrite();
-  if (!vaultKey) return entry;
+  if (!vaultKey) return { ...entry, vaultRevision: undefined };
+  const vaultRevision = requireSafeJournalVaultRevision(
+    getJournalContentVaultRevision(),
+    "entry",
+  );
+  const isAlreadyEncrypted = isEncryptedJournalContent(entry.content);
+  if (isAlreadyEncrypted) {
+    await decryptJournalContentIfNeeded(entry.content, vaultKey);
+  }
 
   return {
     ...entry,
-    content: await encryptJournalContent(entry.content, vaultKey),
+    content: isAlreadyEncrypted
+      ? entry.content
+      : await encryptJournalContent(entry.content, vaultKey),
+    vaultRevision,
   };
 }
 
 async function encryptEntryChangesForStorage<T extends Partial<Pick<JournalEntry, "content">>>(
   changes: T
-): Promise<T> {
-  if (typeof changes.content !== "string" || changes.content.length === 0) return changes;
-  if (isEncryptedJournalContent(changes.content)) return changes;
-
+): Promise<T & Partial<Pick<JournalEntry, "vaultRevision">>> {
   const vaultKey = await getJournalVaultKeyForWrite();
-  if (!vaultKey) return changes;
+  if (!vaultKey) return { ...changes, vaultRevision: undefined };
+  const vaultRevision = requireSafeJournalVaultRevision(
+    getJournalContentVaultRevision(),
+    "entry",
+  );
+  if (typeof changes.content === "string" && isEncryptedJournalContent(changes.content)) {
+    await decryptJournalContentIfNeeded(changes.content, vaultKey);
+  }
 
   return {
     ...changes,
-    content: await encryptJournalContent(changes.content, vaultKey),
+    content:
+      typeof changes.content === "string" &&
+      !isEncryptedJournalContent(changes.content)
+        ? await encryptJournalContent(changes.content, vaultKey)
+        : changes.content,
+    vaultRevision,
   };
 }
 
@@ -196,17 +230,49 @@ async function decryptEntryContentForDisplay(entry: JournalEntry): Promise<Journ
 
   const vaultKey = getJournalContentVaultKey();
   if (!vaultKey) {
-    return { ...entry, content: "" };
+    throw new JournalEntryUnavailableError();
   }
 
-  return {
-    ...entry,
-    content: await decryptJournalContentIfNeeded(entry.content, vaultKey),
-  };
+  try {
+    return {
+      ...entry,
+      content: await decryptJournalContentIfNeeded(entry.content, vaultKey),
+    };
+  } catch {
+    throw new JournalEntryUnavailableError();
+  }
 }
 
 async function decryptEntriesForDisplay(entries: JournalEntry[]): Promise<JournalEntry[]> {
   return Promise.all(entries.map((entry) => decryptEntryContentForDisplay(entry)));
+}
+
+class JournalEntryUnavailableError extends Error {
+  constructor() {
+    super("Diary entry content is unavailable");
+    this.name = "JournalEntryUnavailableError";
+  }
+}
+
+interface JournalEntryDisplaySettlement {
+  entries: JournalEntry[];
+  unavailableCount: number;
+}
+
+async function settleEntriesForDisplay(
+  rawEntries: JournalEntry[],
+): Promise<JournalEntryDisplaySettlement> {
+  const settled = await Promise.allSettled(
+    rawEntries.map((entry) => decryptEntryContentForDisplay(entry)),
+  );
+  const entries: JournalEntry[] = [];
+  for (const result of settled) {
+    if (result.status === "fulfilled") entries.push(result.value);
+  }
+  return {
+    entries,
+    unavailableCount: rawEntries.length - entries.length,
+  };
 }
 
 export interface JournalEntryPageCursor {
@@ -223,8 +289,24 @@ export interface JournalEntryPageOptions {
 export interface JournalEntryPageResult {
   entries: JournalEntry[];
   totalCount: number;
+  requestedCount: number;
+  unavailableCount: number;
+  state: JournalEntryPageState;
   hasMore: boolean;
   nextCursor: JournalEntryPageCursor | null;
+}
+
+export type JournalEntryPageState = "ready" | "empty" | "degraded" | "unavailable";
+
+function getJournalEntryPageState(
+  totalCount: number,
+  requestedCount: number,
+  readableCount: number,
+): JournalEntryPageState {
+  if (totalCount === 0 && requestedCount === 0) return "empty";
+  if (readableCount === requestedCount) return "ready";
+  if (readableCount === 0 && requestedCount > 0) return "unavailable";
+  return "degraded";
 }
 
 function normalizeJournalPageLimit(limit: number | undefined): number {
@@ -309,10 +391,17 @@ async function decryptMediaDataForDisplay(value: string): Promise<string> {
 }
 
 async function encryptPhotoForStorage(photo: JournalPhoto): Promise<JournalPhoto> {
+  const vaultKey = await getJournalVaultKeyForWrite();
+  if (!vaultKey) return { ...photo, vaultRevision: undefined };
+  const vaultRevision = requireSafeJournalVaultRevision(
+    getJournalContentVaultRevision(),
+    "photo",
+  );
   return {
     ...photo,
-    data: await encryptMediaDataForStorage(photo.data),
-    thumbnail: await encryptMediaDataForStorage(photo.thumbnail),
+    data: await encryptMediaDataWithVaultKey(photo.data, vaultKey),
+    thumbnail: await encryptMediaDataWithVaultKey(photo.thumbnail, vaultKey),
+    vaultRevision,
   };
 }
 
@@ -325,9 +414,16 @@ async function decryptPhotoForDisplay(photo: JournalPhoto): Promise<JournalPhoto
 }
 
 async function encryptAudioForStorage(audio: JournalAudio): Promise<JournalAudio> {
+  const vaultKey = await getJournalVaultKeyForWrite();
+  if (!vaultKey) return { ...audio, vaultRevision: undefined };
+  const vaultRevision = requireSafeJournalVaultRevision(
+    getJournalContentVaultRevision(),
+    "audio",
+  );
   return {
     ...audio,
-    data: await encryptMediaDataForStorage(audio.data),
+    data: await encryptMediaDataWithVaultKey(audio.data, vaultKey),
+    vaultRevision,
   };
 }
 
@@ -343,6 +439,12 @@ function getQueuedMediaId(payload: unknown): string | null {
   if (!payload || typeof payload !== "object") return null;
   const id = (payload as { id?: unknown }).id;
   return typeof id === "string" && id.length > 0 ? id : null;
+}
+
+function getQueuedMediaStoragePath(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  const storagePath = (payload as { storagePath?: unknown }).storagePath;
+  return typeof storagePath === "string" && storagePath.length > 0 ? storagePath : null;
 }
 
 function getQueuedPhotoMetadata(payload: unknown): JournalPhotoSyncMetadata | undefined {
@@ -367,7 +469,7 @@ function queueJournalMediaAction(
   payload:
     | QueuedJournalPhotoUploadPayload
     | QueuedJournalAudioUploadPayload
-    | QueuedJournalMediaIdPayload,
+    | QueuedJournalMediaDeletePayload,
   label: string,
   expectedOwnerUserId: string
 ): void {
@@ -575,7 +677,16 @@ export async function retryJournalPhotoDelete(
     logger.warn("[JournalSync]", "Queued photo delete missing id");
     return;
   }
-  await deletePhotoFromStorage(photoId, expectedOwnerUserId);
+  const exactStoragePath = getQueuedMediaStoragePath(payload);
+  if (exactStoragePath) {
+    await deleteJournalMediaStoragePath(
+      "journal-photos",
+      exactStoragePath,
+      expectedOwnerUserId,
+    );
+  } else {
+    await deletePhotoFromStorage(photoId, expectedOwnerUserId);
+  }
   throwIfJournalPhotoProcessingAborted(signal);
   await deleteJournalPhotoFromCloud(photoId, expectedOwnerUserId);
   throwIfJournalPhotoProcessingAborted(signal);
@@ -594,7 +705,16 @@ export async function retryJournalAudioDelete(
     logger.warn("[JournalSync]", "Queued audio delete missing id");
     return;
   }
-  await deleteAudioFromStorage(audioId, expectedOwnerUserId);
+  const exactStoragePath = getQueuedMediaStoragePath(payload);
+  if (exactStoragePath) {
+    await deleteJournalMediaStoragePath(
+      "journal-audio",
+      exactStoragePath,
+      expectedOwnerUserId,
+    );
+  } else {
+    await deleteAudioFromStorage(audioId, expectedOwnerUserId);
+  }
   throwIfJournalPhotoProcessingAborted(signal);
   await deleteJournalAudioFromCloud(audioId, expectedOwnerUserId);
   throwIfJournalPhotoProcessingAborted(signal);
@@ -701,7 +821,8 @@ async function uploadPhotoPayload(
     ? await uploadEncryptedPhoto(
         photo.id,
         encryptedJournalMediaToStorageBlob(dataUrl),
-        expectedOwnerUserId
+        expectedOwnerUserId,
+        requireSafeJournalVaultRevision(photo.vaultRevision, "photo"),
       )
     : await uploadPhoto(photo.id, dataUrl, expectedOwnerUserId);
 
@@ -726,7 +847,8 @@ async function uploadAudioPayload(
     ? await uploadEncryptedAudio(
         audio.id,
         encryptedJournalMediaToStorageBlob(dataUrl),
-        expectedOwnerUserId
+        expectedOwnerUserId,
+        requireSafeJournalVaultRevision(audio.vaultRevision, "audio"),
       )
     : await uploadAudioToStorage(audio.id, dataUrl, mimeType, expectedOwnerUserId);
 
@@ -1043,12 +1165,16 @@ export async function getEntriesPage(
 
   const pageEntries = pageWithSentinel.slice(0, limit);
   const hasMore = pageWithSentinel.length > limit;
-  const entries = await decryptEntriesForDisplay(pageEntries);
+  const { entries, unavailableCount } = await settleEntriesForDisplay(pageEntries);
   const totalCount = await totalCountPromise;
+  const requestedCount = pageEntries.length;
 
   return {
     entries,
     totalCount,
+    requestedCount,
+    unavailableCount,
+    state: getJournalEntryPageState(totalCount, requestedCount, entries.length),
     hasMore,
     nextCursor:
       hasMore && pageEntries.length > 0
@@ -1238,9 +1364,22 @@ export async function getJournalExportSnapshot(): Promise<JournalExportSnapshot>
   return { entries, photos, audio, deletedEntryIds: raw.deletedEntryIds };
 }
 
-export async function getEntriesByDate(date: string): Promise<JournalEntry[]> {
-  const entries = await db.journalEntries.where("date").equals(date).reverse().sortBy("createdAt");
-  return decryptEntriesForDisplay(entries);
+export async function getEntriesByDate(date: string): Promise<JournalEntryPageResult> {
+  const rawEntries = await db.journalEntries
+    .where("date")
+    .equals(date)
+    .reverse()
+    .sortBy("createdAt");
+  const { entries, unavailableCount } = await settleEntriesForDisplay(rawEntries);
+  return {
+    entries,
+    totalCount: rawEntries.length,
+    requestedCount: rawEntries.length,
+    unavailableCount,
+    state: getJournalEntryPageState(rawEntries.length, rawEntries.length, entries.length),
+    hasMore: false,
+    nextCursor: null,
+  };
 }
 
 export async function getEntryById(id: string): Promise<JournalEntry | undefined> {
@@ -1499,7 +1638,7 @@ export async function updateEntry(
             await persistCriticalOfflineActionInCurrentTransaction(
               "DELETE_JOURNAL_PHOTO_STORAGE",
               `journal-photo-delete:${photoId}`,
-              { id: photoId },
+              toJournalMediaDeletePayload(photo),
               expectedOwnerUserId,
             );
           }
@@ -1512,7 +1651,7 @@ export async function updateEntry(
             await persistCriticalOfflineActionInCurrentTransaction(
               "DELETE_JOURNAL_AUDIO_STORAGE",
               `journal-audio-delete:${audioId}`,
-              { id: audioId },
+              toJournalMediaDeletePayload(audio),
               expectedOwnerUserId,
             );
           }
@@ -1628,7 +1767,7 @@ async function deleteEntryWithClaim(
             await persistCriticalOfflineActionInCurrentTransaction(
               "DELETE_JOURNAL_PHOTO_STORAGE",
               `journal-photo-delete:${photo.id}`,
-              { id: photo.id },
+              toJournalMediaDeletePayload(photo),
               expectedOwnerUserId
             );
           }
@@ -1636,7 +1775,7 @@ async function deleteEntryWithClaim(
             await persistCriticalOfflineActionInCurrentTransaction(
               "DELETE_JOURNAL_AUDIO_STORAGE",
               `journal-audio-delete:${audio.id}`,
-              { id: audio.id },
+              toJournalMediaDeletePayload(audio),
               expectedOwnerUserId
             );
           }
@@ -1833,19 +1972,19 @@ async function deleteDraftMediaWithOptionalDraft(
           await assertJournalDraftWriterOwnedInCurrentTransaction(draftContext);
         }
         if (expectedOwnerUserId) {
-          for (const photoId of photoIds) {
+          for (const photo of photos) {
             await persistCriticalOfflineActionInCurrentTransaction(
               "DELETE_JOURNAL_PHOTO_STORAGE",
-              `journal-photo-delete:${photoId}`,
-              { id: photoId },
+              `journal-photo-delete:${photo.id}`,
+              toJournalMediaDeletePayload(photo),
               expectedOwnerUserId,
             );
           }
-          for (const audioId of audioIds) {
+          for (const audio of audios) {
             await persistCriticalOfflineActionInCurrentTransaction(
               "DELETE_JOURNAL_AUDIO_STORAGE",
-              `journal-audio-delete:${audioId}`,
-              { id: audioId },
+              `journal-audio-delete:${audio.id}`,
+              toJournalMediaDeletePayload(audio),
               expectedOwnerUserId,
             );
           }
@@ -1912,7 +2051,7 @@ export async function encryptPlaintextJournalEntries(vaultKey: string): Promise<
   const syncOwnerPromise = captureJournalSyncOwner();
   const entries = await db.journalEntries.toArray();
   const plaintextEntries = entries.filter(
-    (entry) => entry.content && !isEncryptedJournalContent(entry.content)
+    (entry) => !isEncryptedJournalContent(entry.content)
   );
   if (plaintextEntries.length === 0) return 0;
 
@@ -2509,6 +2648,7 @@ export async function getPhotoPreviewById(
 export async function deletePhoto(id: string, entryId: string): Promise<void> {
   const expectedOwnerUserId = await captureJournalSyncOwner();
   let deleted = false;
+  let deletedStoragePath: string | undefined;
   await runWithJournalSecurityWriteLock(async () => {
     if (expectedOwnerUserId) {
       await validateSyncOwner(expectedOwnerUserId, "Diary photo delete outbox");
@@ -2528,12 +2668,13 @@ export async function deletePhoto(id: string, entryId: string): Promise<void> {
           await persistCriticalOfflineActionInCurrentTransaction(
             "DELETE_JOURNAL_PHOTO_STORAGE",
             `journal-photo-delete:${id}`,
-            { id },
+            toJournalMediaDeletePayload(photo),
             expectedOwnerUserId,
           );
         }
         await db.journalPhotos.delete(id);
         deleted = true;
+        deletedStoragePath = photo.storagePath;
         const entry = await db.journalEntries.get(entryId);
         if (entry) {
           const nextPhotoLayout = entry.photoLayout ? { ...entry.photoLayout } : undefined;
@@ -2560,12 +2701,16 @@ export async function deletePhoto(id: string, entryId: string): Promise<void> {
   if (!expectedOwnerUserId) return;
 
   void notifyJournalSyncAfterLocalCommit("Diary photo delete");
-  void deletePhotoFromStorage(id, expectedOwnerUserId).catch((err) =>
+  const storageDelete = deletedStoragePath
+    ? deleteJournalMediaStoragePath("journal-photos", deletedStoragePath, expectedOwnerUserId)
+    : deletePhotoFromStorage(id, expectedOwnerUserId);
+  void storageDelete.catch((err) =>
     logger.warn("[JournalSync]", "Photo storage delete failed:", err)
   );
-  deleteJournalPhotoFromCloud(id, expectedOwnerUserId).catch((err) =>
-    logger.warn("[JournalSync]", "Photo delete sync failed:", err)
-  );
+  const cloudDelete = deletedStoragePath
+    ? deleteJournalPhotoFromCloud(id, expectedOwnerUserId, deletedStoragePath)
+    : deleteJournalPhotoFromCloud(id, expectedOwnerUserId);
+  cloudDelete.catch((err) => logger.warn("[JournalSync]", "Photo delete sync failed:", err));
 }
 
 // ============================================
@@ -2637,6 +2782,7 @@ export async function getAudioById(
 export async function deleteAudio(id: string, entryId: string): Promise<void> {
   const expectedOwnerUserId = await captureJournalSyncOwner();
   let deleted = false;
+  let deletedStoragePath: string | undefined;
   await runWithJournalSecurityWriteLock(async () => {
     if (expectedOwnerUserId) {
       await validateSyncOwner(expectedOwnerUserId, "Diary audio delete outbox");
@@ -2656,12 +2802,13 @@ export async function deleteAudio(id: string, entryId: string): Promise<void> {
           await persistCriticalOfflineActionInCurrentTransaction(
             "DELETE_JOURNAL_AUDIO_STORAGE",
             `journal-audio-delete:${id}`,
-            { id },
+            toJournalMediaDeletePayload(audio),
             expectedOwnerUserId,
           );
         }
         await db.journalAudio.delete(id);
         deleted = true;
+        deletedStoragePath = audio.storagePath;
         const entry = await db.journalEntries.get(entryId);
         if (entry && entry.audioIds) {
           await db.journalEntries.update(entryId, {
@@ -2682,10 +2829,14 @@ export async function deleteAudio(id: string, entryId: string): Promise<void> {
   if (!expectedOwnerUserId) return;
 
   void notifyJournalSyncAfterLocalCommit("Diary audio delete");
-  void deleteAudioFromStorage(id, expectedOwnerUserId).catch((err) =>
+  const storageDelete = deletedStoragePath
+    ? deleteJournalMediaStoragePath("journal-audio", deletedStoragePath, expectedOwnerUserId)
+    : deleteAudioFromStorage(id, expectedOwnerUserId);
+  void storageDelete.catch((err) =>
     logger.warn("[JournalSync]", "Audio storage delete failed:", err)
   );
-  deleteJournalAudioFromCloud(id, expectedOwnerUserId).catch((err) =>
-    logger.warn("[JournalSync]", "Audio delete sync failed:", err)
-  );
+  const cloudDelete = deletedStoragePath
+    ? deleteJournalAudioFromCloud(id, expectedOwnerUserId, deletedStoragePath)
+    : deleteJournalAudioFromCloud(id, expectedOwnerUserId);
+  cloudDelete.catch((err) => logger.warn("[JournalSync]", "Audio delete sync failed:", err));
 }

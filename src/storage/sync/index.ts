@@ -19,7 +19,16 @@ export { syncFocusSession, pullFocusFromCloud } from "./syncFocus";
 export { syncGratitude, deleteGratitudeFromCloud, pullGratitudeFromCloud } from "./syncGratitude";
 
 // Settings sync
-export { syncSetting, deleteSettingFromCloud } from "./syncSettings";
+export { syncSetting, deleteSettingFromCloud, deleteRemoteJournalVault } from "./syncSettings";
+export type { RemoteVaultDeleteInput } from "./syncSettings";
+
+// Required remote-commit contract used by journal-security cleanup.
+export { RequiredRemoteCommitError } from "./remoteCommit";
+export type {
+  RequiredRemoteCommitFailureOutcome,
+  RequiredRemoteCommitOptions,
+  RequiredRemoteCommitResult,
+} from "./remoteCommit";
 
 // Journal sync
 export {

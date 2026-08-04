@@ -48,6 +48,11 @@ const {
   mockClearAccountDeviceSurfaces,
   mockClearAccountNotificationsForBoundary,
   mockHasPendingJournalSecurityMigrationForOwner,
+  mockHasPendingInstallationJournalSecurityRemoval,
+  mockHasPendingJournalSecurityRemovalForOwner,
+  mockEnsureOwnerBoundJournalSecurityMigration,
+  mockRunJournalSecurityMigration,
+  mockResumePendingJournalPasswordRemoval,
   mockCommitPendingAccountSwitchCleanup,
   mockReconcilePendingAccountSignOutCleanup,
   mockNotifyAccountSessionTransition,
@@ -140,6 +145,17 @@ const {
     mockClearAccountDeviceSurfaces: vi.fn(() => Promise.resolve()),
     mockClearAccountNotificationsForBoundary: vi.fn(() => Promise.resolve()),
     mockHasPendingJournalSecurityMigrationForOwner: vi.fn(() => Promise.resolve(false)),
+    mockHasPendingInstallationJournalSecurityRemoval: vi.fn(() => Promise.resolve(false)),
+    mockHasPendingJournalSecurityRemovalForOwner: vi.fn<
+      (ownerUserId: string) => Promise<boolean>
+    >(() => Promise.resolve(false)),
+    mockEnsureOwnerBoundJournalSecurityMigration: vi.fn<
+      () => Promise<{ revision: string } | null>
+    >(() => Promise.resolve(null)),
+    mockRunJournalSecurityMigration: vi.fn(() => Promise.resolve()),
+    mockResumePendingJournalPasswordRemoval: vi.fn<
+      () => Promise<"none" | "pending" | "completed">
+    >(() => Promise.resolve("none")),
     mockCommitPendingAccountSwitchCleanup: vi.fn(
       async (
         _sourceOwnerUserId: string,
@@ -268,7 +284,18 @@ vi.mock("@/lib/localNotifications", () => ({
 }));
 
 vi.mock("@/features/journal", () => ({
+  ensureOwnerBoundJournalSecurityMigration:
+    mockEnsureOwnerBoundJournalSecurityMigration,
   hasPendingJournalSecurityMigrationForOwner: mockHasPendingJournalSecurityMigrationForOwner,
+  hasPendingInstallationJournalSecurityRemoval:
+    mockHasPendingInstallationJournalSecurityRemoval,
+  hasPendingJournalSecurityRemovalForOwner: mockHasPendingJournalSecurityRemovalForOwner,
+  resumePendingJournalPasswordRemoval: mockResumePendingJournalPasswordRemoval,
+  runJournalSecurityMigration: mockRunJournalSecurityMigration,
+}));
+
+vi.mock("@/features/journal/journalSecurityRemovalLifecycle", () => ({
+  resumePendingJournalPasswordRemoval: mockResumePendingJournalPasswordRemoval,
 }));
 
 vi.mock("@/lib/accountSignOutCleanup", () => ({
@@ -460,6 +487,11 @@ describe("useAuthSession", () => {
     mockClearAccountDeviceSurfaces.mockResolvedValue(undefined);
     mockClearAccountNotificationsForBoundary.mockResolvedValue(undefined);
     mockHasPendingJournalSecurityMigrationForOwner.mockResolvedValue(false);
+    mockHasPendingInstallationJournalSecurityRemoval.mockResolvedValue(false);
+    mockHasPendingJournalSecurityRemovalForOwner.mockResolvedValue(false);
+    mockEnsureOwnerBoundJournalSecurityMigration.mockResolvedValue(null);
+    mockRunJournalSecurityMigration.mockResolvedValue(undefined);
+    mockResumePendingJournalPasswordRemoval.mockResolvedValue("none");
     mockCommitPendingAccountSwitchCleanup.mockImplementation(
       async (
         _sourceOwnerUserId: string,
@@ -1146,6 +1178,77 @@ describe("useAuthSession", () => {
       );
       expect(mockClearLocalUserData).not.toHaveBeenCalled();
       expect(mockSetLocalDataOwnerId).toHaveBeenLastCalledWith(telegramSession.user.id);
+    });
+
+    it("does not adopt an owner-null realm while installation cleanup is durable", async () => {
+      usePlainAuthRoute();
+      mockHasPendingInstallationJournalSecurityRemoval.mockResolvedValue(true);
+
+      renderHook(() => useAuthSession(false));
+      emitAuthEvent("SIGNED_IN", telegramSession);
+
+      await waitFor(() =>
+        expect(mockHasPendingInstallationJournalSecurityRemoval).toHaveBeenCalled(),
+      );
+      expect(mockSetLocalDataOwnerId).not.toHaveBeenCalledWith(telegramSession.user.id);
+      expect(mockSyncWithCloud).not.toHaveBeenCalled();
+      expect(useAppStore.getState().hasValidSession).toBe(false);
+    });
+
+    it("reconciles a server removal fence before the first owner-bound sync", async () => {
+      usePlainAuthRoute();
+      mockResumePendingJournalPasswordRemoval.mockResolvedValue("pending");
+
+      renderHook(() => useAuthSession(false));
+      emitAuthEvent("SIGNED_IN", telegramSession);
+
+      await waitFor(() =>
+        expect(mockSetLocalDataOwnerId).toHaveBeenCalledWith(telegramSession.user.id),
+      );
+      await waitFor(() =>
+        expect(mockResumePendingJournalPasswordRemoval).toHaveBeenCalled(),
+      );
+      expect(mockSyncWithCloud).not.toHaveBeenCalled();
+      expect(useAppStore.getState().hasValidSession).toBe(false);
+    });
+
+    it("commits an adopted protected realm vault-first before general cloud sync", async () => {
+      usePlainAuthRoute();
+      mockEnsureOwnerBoundJournalSecurityMigration.mockResolvedValue({
+        revision: "101:adopted",
+      });
+
+      renderHook(() => useAuthSession(false));
+      emitAuthEvent("SIGNED_IN", telegramSession);
+
+      await waitFor(() =>
+        expect(mockRunJournalSecurityMigration).toHaveBeenCalledWith(
+          { revision: "101:adopted" },
+          telegramSession.user.id,
+        ),
+      );
+      expect(mockEnsureOwnerBoundJournalSecurityMigration).toHaveBeenCalledWith(
+        telegramSession.user.id,
+      );
+      expect(mockSyncWithCloud).not.toHaveBeenCalled();
+      expect(useAppStore.getState().hasValidSession).toBe(true);
+    });
+
+    it("keeps general sync paused when adopted diary protection cannot finish", async () => {
+      usePlainAuthRoute();
+      mockEnsureOwnerBoundJournalSecurityMigration.mockResolvedValue({
+        revision: "101:adopted",
+      });
+      mockRunJournalSecurityMigration.mockRejectedValue(new Error("unlock required"));
+
+      renderHook(() => useAuthSession(false));
+      emitAuthEvent("SIGNED_IN", telegramSession);
+
+      await waitFor(() =>
+        expect(mockRunJournalSecurityMigration).toHaveBeenCalled(),
+      );
+      expect(mockSyncWithCloud).not.toHaveBeenCalled();
+      expect(useAppStore.getState().hasValidSession).toBe(false);
     });
 
     it("requires an explicit same-account decision before an imported local backup can sync", async () => {
@@ -2625,6 +2728,27 @@ describe("useAuthSession", () => {
       } finally {
         pendingActions.mockRestore();
       }
+    });
+
+    it("preserves account A data when password removal is durable outside the queue", async () => {
+      usePlainAuthRoute();
+      mockHasPendingJournalSecurityRemovalForOwner.mockImplementation(
+        async (ownerUserId: string) => ownerUserId === telegramSession.user.id,
+      );
+
+      renderHook(() => useAuthSession(false));
+      emitAuthEvent("SIGNED_IN", telegramSession);
+      await waitFor(() => expect(mockSyncWithCloud).toHaveBeenCalledTimes(1));
+
+      emitAuthEvent("SIGNED_IN", secondTelegramSession);
+
+      await waitFor(() => expect(mockAuthSignOut).toHaveBeenCalledWith({ scope: "local" }));
+      expect(mockHasPendingJournalSecurityRemovalForOwner).toHaveBeenCalledWith(
+        telegramSession.user.id,
+      );
+      expect(mockClearLocalUserData).not.toHaveBeenCalled();
+      expect(mockSetLocalDataOwnerId).not.toHaveBeenCalledWith(secondTelegramSession.user.id);
+      expect(mockSyncWithCloud).toHaveBeenCalledTimes(1);
     });
 
     it("keeps exact writers blocked when B cannot close after the final A-write check", async () => {

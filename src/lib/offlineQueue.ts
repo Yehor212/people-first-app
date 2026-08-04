@@ -157,9 +157,15 @@ function generateOperationId(): string {
     .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
 }
 
+type OfflineQueueDeferredReason = "password-removal-paused" | "connectivity";
+
 export type OfflineQueueHandlerResult =
   | { status: "committed" }
-  | { status: "obsolete"; reason: string };
+  | { status: "obsolete"; reason: string }
+  | {
+      status: "deferred";
+      reason: OfflineQueueDeferredReason;
+    };
 
 export interface OfflineQueueHandlerContext {
   /** Owner persisted on the queue row and re-verified by the queue. */
@@ -361,13 +367,15 @@ interface QueueState {
   isProcessing: boolean;
 }
 
-type QueueProcessingOutcome = "completed" | "paused";
+type QueueProcessingOutcome =
+  | "completed"
+  | { status: "paused"; reason: OfflineQueueDeferredReason };
 type OfflineQueueLifecycleTrigger =
   | "visibility"
   | "service-worker"
   | "handler-registration"
   | "enqueue"
-  | "abort-retry"
+  | "non-failure-retry"
   | "account-boundary-resume"
   | "manual-retry"
   | "online"
@@ -378,7 +386,8 @@ const MAX_QUEUE_SIZE = 1000; // Prevent unbounded growth
 const DEFAULT_MAX_RETRIES = 5;
 const RETRY_BASE_DELAY = 1000; // 1 second
 const RETRY_MAX_DELAY = 60000; // 1 minute
-const ABORT_RETRY_DELAY = 1000;
+const CONNECTIVITY_NON_FAILURE_RETRY_DELAY = 1_000;
+const PASSWORD_REMOVAL_RETRY_DELAYS_MS = [15_000, 60_000, 300_000, 900_000] as const;
 const LIFECYCLE_PROCESS_RETRY_DELAYS_MS = [1_000, 5_000, 15_000] as const;
 const HANDLER_ATTEMPT_TIMEOUT_MS = 30_000;
 const DATA_WRITE_BARRIER_LOCK = "zenflow:data-write-barrier";
@@ -407,7 +416,9 @@ class OfflineQueue {
   private requeuedDuringProcessing = new Set<string>();
   private observedAuthOwnerUserId: string | null | undefined;
   private authOwnerGeneration = 0;
-  private abortRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  private nonFailureRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  private nonFailureRetryReason: OfflineQueueDeferredReason | null = null;
+  private passwordRemovalDeferredRetryCount = 0;
   private lifecycleProcessRetryTimer: ReturnType<typeof setTimeout> | null = null;
   private lifecycleProcessFailureCount = 0;
   private destroyed = false;
@@ -477,10 +488,12 @@ class OfflineQueue {
         navigator.serviceWorker.removeEventListener("message", this.boundHandleSWMessage);
       }
     }
-    if (this.abortRetryTimer !== null) {
-      clearTimeout(this.abortRetryTimer);
-      this.abortRetryTimer = null;
+    if (this.nonFailureRetryTimer !== null) {
+      clearTimeout(this.nonFailureRetryTimer);
+      this.nonFailureRetryTimer = null;
     }
+    this.nonFailureRetryReason = null;
+    this.passwordRemovalDeferredRetryCount = 0;
     if (this.lifecycleProcessRetryTimer !== null) {
       clearTimeout(this.lifecycleProcessRetryTimer);
       this.lifecycleProcessRetryTimer = null;
@@ -960,10 +973,13 @@ class OfflineQueue {
       this.processingPromise = null;
     }
 
-    if (outcome === "paused") {
-      this.scheduleAbortRetry();
+    if (outcome !== "completed") {
+      this.scheduleNonFailureRetry(outcome.reason);
       return;
     }
+
+    this.clearNonFailureRetry();
+    this.passwordRemovalDeferredRetryCount = 0;
 
     const currentOwnerUserId = await getCurrentSessionUserId();
     this.observeAuthStateOwner(currentOwnerUserId);
@@ -978,17 +994,48 @@ class OfflineQueue {
     }
   }
 
-  private scheduleAbortRetry(): void {
-    if (this.abortRetryTimer !== null || this.accountBoundarySuspended) return;
+  private clearNonFailureRetry(): void {
+    if (this.nonFailureRetryTimer !== null) {
+      clearTimeout(this.nonFailureRetryTimer);
+      this.nonFailureRetryTimer = null;
+    }
+    this.nonFailureRetryReason = null;
+  }
+
+  private scheduleNonFailureRetry(reason: OfflineQueueDeferredReason): void {
+    if (this.accountBoundarySuspended) return;
     if (!navigator.onLine) return;
     if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
 
-    this.abortRetryTimer = setTimeout(() => {
-      this.abortRetryTimer = null;
+    if (this.nonFailureRetryTimer !== null) {
+      if (this.nonFailureRetryReason === reason) return;
+      clearTimeout(this.nonFailureRetryTimer);
+      this.nonFailureRetryTimer = null;
+    }
+
+    const delay =
+      reason === "password-removal-paused"
+        ? PASSWORD_REMOVAL_RETRY_DELAYS_MS[
+            Math.min(
+              this.passwordRemovalDeferredRetryCount,
+              PASSWORD_REMOVAL_RETRY_DELAYS_MS.length - 1,
+            )
+          ]
+        : CONNECTIVITY_NON_FAILURE_RETRY_DELAY;
+    if (reason === "password-removal-paused") {
+      this.passwordRemovalDeferredRetryCount = Math.min(
+        this.passwordRemovalDeferredRetryCount + 1,
+        PASSWORD_REMOVAL_RETRY_DELAYS_MS.length - 1,
+      );
+    }
+    this.nonFailureRetryReason = reason;
+    this.nonFailureRetryTimer = setTimeout(() => {
+      this.nonFailureRetryTimer = null;
+      this.nonFailureRetryReason = null;
       if (!this.accountBoundarySuspended && navigator.onLine) {
-        this.launchLifecycleProcessing("abort-retry");
+        this.launchLifecycleProcessing("non-failure-retry");
       }
-    }, ABORT_RETRY_DELAY);
+    }, delay);
   }
 
   private launchLifecycleProcessing(trigger: OfflineQueueLifecycleTrigger): void {
@@ -1049,7 +1096,9 @@ class OfflineQueue {
     ownerGeneration: number,
     options?: OfflineQueueProcessOptions
   ): Promise<QueueProcessingOutcome> {
-    if (this.state.isProcessing) return "paused";
+    if (this.state.isProcessing) {
+      return { status: "paused", reason: "connectivity" };
+    }
 
     this.state.isProcessing = true;
     this.notifyListeners();
@@ -1058,7 +1107,7 @@ class OfflineQueue {
 
     // Process actions in order (FIFO)
     const actionsToProcess = [...this.state.actions];
-    let pausedByAbort = false;
+    let pausedReason: OfflineQueueDeferredReason | null = null;
 
     for (const action of actionsToProcess) {
       if (this.accountBoundarySuspended) {
@@ -1067,7 +1116,7 @@ class OfflineQueue {
       }
       if (!this.canAttemptNetwork(options)) {
         logger.log("[OfflineQueue] Went offline during processing, pausing");
-        pausedByAbort = true;
+        pausedReason = "connectivity";
         break;
       }
 
@@ -1129,6 +1178,18 @@ class OfflineQueue {
           Promise.resolve().then(() => handler(attemptAction, handlerContext)),
           attemptController
         );
+        if (result?.status === "deferred") {
+          // A known server or connectivity fence is neither a successful
+          // acknowledgement nor a failed mutation. Keep the durable row and
+          // retry it later without spending its finite failure budget.
+          logger.log(
+            "[OfflineQueue] Action deferred without consuming retry budget:",
+            action.type,
+            result.reason,
+          );
+          pausedReason = result.reason;
+          break;
+        }
         if (result?.status !== "committed" && result?.status !== "obsolete") {
           throw new Error("Offline queue handler returned without an explicit acknowledgement");
         }
@@ -1185,7 +1246,7 @@ class OfflineQueue {
             action.type,
             action.entityId
           );
-          pausedByAbort = true;
+          pausedReason = "connectivity";
           break;
         }
 
@@ -1258,11 +1319,13 @@ class OfflineQueue {
     }
 
     this.state.isProcessing = false;
-    if (!pausedByAbort) this.state.lastProcessedAt = Date.now();
+    if (pausedReason === null) this.state.lastProcessedAt = Date.now();
     this.notifyListeners();
 
     logger.log("[OfflineQueue] Queue processing complete, remaining:", this.state.actions.length);
-    return pausedByAbort ? "paused" : "completed";
+    return pausedReason === null
+      ? "completed"
+      : { status: "paused", reason: pausedReason };
   }
 
   private hasProcessableActionsForOwner(ownerUserId: string | null): boolean {

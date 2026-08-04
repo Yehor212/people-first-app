@@ -112,6 +112,8 @@ The OpenAI manual helper was attempted first but returned no required content ha
 | Production-default or real-namespace demo flag | Block PDI006 | control/default/storage context | High | demo test + repository remediation |
 | Synthetic analytics/export/share | Block PDI007 | external-output sink | High | analytics test |
 | Production user-table SQL seed | Block PDI008 | table-aware SQL write | High | migration test |
+| User-table SQL hidden in `DO` or a routine invoked by the migration | Block PDI008 | immediate SQL plus direct/transitive routine reachability | High | routine-reachability negative controls |
+| Uninvoked dollar-quoted stored-routine definition | Allow as inert DDL for PDI008; retain production/security review | line-preserving routine-body boundary with no path/table allowlist | High | inert-definition and invocation-promotion tests |
 | Direct public source canary | Require exit 1, FAIL, exact PDI002/path, cleanup, then clean scan | runtime detector proof | High | workflow contract + CI |
 | Raw sentinel in any bounded `dist` artifact | Block PDI009 | raw-byte artifact search | High | bundle and CI-canary tests |
 | Semantic config/package/CLI/workflow weakening | Exit 2 or block PDI010 according to malformed-state versus finding semantics | code-owned digests, exact commands, pinned contracts, direct probes | High | semantic/bootstrap/workflow tests |
@@ -127,6 +129,7 @@ The OpenAI manual helper was attempted first but returned no required content ha
 - Model product definitions separately from completed history.
 - Keep uncertain PDI012 cases nonblocking until reviewed and covered by a regression test.
 - Use exact operational SQL table treatment instead of excluding all migrations.
+- Distinguish inert stored-routine DDL from SQL reached while the migration runs; top-level, `DO`, direct-call, and transitive-call negative controls must remain blocking.
 - Do not create automatic fixes, baselines, or waivers.
 
 ## False-negative strategy

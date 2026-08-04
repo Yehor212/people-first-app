@@ -47,7 +47,20 @@ vi.mock("@/contexts/LanguageContext", () => ({
 }));
 
 vi.mock("@/contexts/FeatureFlagsContext", () => ({
-  useFeatureFlags: () => ({ isFeatureVisible: mockIsFeatureVisible }),
+  useFeatureFlags: () => ({
+    getFeatureAvailability: (feature: string) => {
+      const visible = mockIsFeatureVisible(feature);
+      return {
+        manifestVersion: 1,
+        key: feature,
+        visible,
+        state: visible ? "available" : "temporarily-unavailable",
+        reason: visible ? "available" : "disabled-by-user",
+        source: "user-setting",
+        disclosure: visible ? "silent" : "user-safe-reason",
+      };
+    },
+  }),
 }));
 
 vi.mock("@/components/FeatureUnlock", () => ({

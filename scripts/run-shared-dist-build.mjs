@@ -2,6 +2,7 @@
 
 import { createHash, randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 import {
   lstatSync,
   mkdirSync,
@@ -18,6 +19,8 @@ import { fileURLToPath } from "node:url";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(SCRIPT_PATH), "..");
+const require = createRequire(import.meta.url);
+const { resolveFeatureCapabilityBuildEnvironment } = require("./feature-capability-build.cjs");
 const LOCK_NAMESPACE_VERSION = "zenflow-shared-build-v2";
 const REPOSITORY_LOCK_HASH_DOMAIN = "zenflow-shared-dist-repository-v2\0";
 const USER_NAMESPACE_HASH_DOMAIN = "zenflow-shared-dist-user-v2\0";
@@ -30,9 +33,21 @@ const SUPPORTED_TARGET_MODES = new Set([
   "web:development",
   "android:production",
   "ios:production",
+  "tauri:production",
 ]);
-const SAFE_TARGETS = new Set(["web", "android", "ios"]);
+const SAFE_TARGETS = new Set(["web", "android", "ios", "tauri"]);
 const SAFE_MODES = new Set(["production", "development"]);
+const FEATURE_CAPABILITY_PLATFORM_BY_TARGET = Object.freeze({
+  web: "web-pages",
+  android: "android",
+  ios: "ios",
+  tauri: "tauri",
+});
+const FEATURE_CAPABILITY_ENV_KEYS = Object.freeze([
+  "ZENFLOW_RELEASE_SOURCE_COMMIT",
+  "ZENFLOW_REQUIRE_CAPABILITY_RECEIPT",
+  "ZENFLOW_JOURNAL_SAVE_CEREMONY_BUILD_ENABLED",
+]);
 const ACTIVE_LEASES = new WeakSet();
 
 export class SharedDistBuildError extends Error {
@@ -510,6 +525,14 @@ function pruneCommand(rootDir, nodeExecutable, verify = false) {
   );
 }
 
+function featureCapabilityReceiptCommand(rootDir, nodeExecutable, action) {
+  return nodeCommand(
+    nodeExecutable,
+    `feature capability receipt ${action === "--write" ? "write" : "validate"}`,
+    [path.join(rootDir, "scripts", "feature-capability-build.cjs"), action]
+  );
+}
+
 export function createSharedDistBuildPlan({
   rootDir,
   target,
@@ -532,6 +555,7 @@ export function createSharedDistBuildPlan({
         "--bundle-manifest-begin"
       ),
       viteCommand(canonicalRoot, nodeExecutable, "Vite production web build", "production"),
+      featureCapabilityReceiptCommand(canonicalRoot, nodeExecutable, "--write"),
       pruneCommand(canonicalRoot, nodeExecutable),
       manifestCommand(
         canonicalRoot,
@@ -549,6 +573,16 @@ export function createSharedDistBuildPlan({
     ]);
   }
 
+  if (target === "tauri") {
+    return Object.freeze([
+      tokenCommand(canonicalRoot, nodeExecutable),
+      viteCommand(canonicalRoot, nodeExecutable, "Vite production tauri build", "production"),
+      featureCapabilityReceiptCommand(canonicalRoot, nodeExecutable, "--write"),
+      pruneCommand(canonicalRoot, nodeExecutable),
+      pruneCommand(canonicalRoot, nodeExecutable, true),
+    ]);
+  }
+
   const capacitorEnv = { CAPACITOR_BUILD: "true" };
   return Object.freeze([
     tokenCommand(canonicalRoot, nodeExecutable, capacitorEnv),
@@ -559,6 +593,7 @@ export function createSharedDistBuildPlan({
       "production",
       capacitorEnv
     ),
+    featureCapabilityReceiptCommand(canonicalRoot, nodeExecutable, "--write"),
     nodeCommand(
       nodeExecutable,
       "Capacitor asset prune",
@@ -573,6 +608,7 @@ export function createSharedDistBuildPlan({
 export function createProductionWebValidationPlan({ rootDir, nodeExecutable = process.execPath }) {
   const canonicalRoot = resolveRoot(rootDir);
   return Object.freeze([
+    featureCapabilityReceiptCommand(canonicalRoot, nodeExecutable, "--validate"),
     nodeCommand(nodeExecutable, "production-web manifest validate", [
       path.join(canonicalRoot, "node_modules", "tsx", "dist", "cli.mjs"),
       path.join(canonicalRoot, "scripts", "validate-production-web-build.ts"),
@@ -627,6 +663,21 @@ export function runSharedDistBuild({
   if (!isPlainObject(env)) fail("CONTEXT", "build environment must be an object");
   if (target === "web") assertProductionWebEnvironment(env);
   const canonicalRoot = resolveRoot(rootDir);
+  const capabilityEnv = resolveFeatureCapabilityBuildEnvironment({
+    rootDir: canonicalRoot,
+    platform: FEATURE_CAPABILITY_PLATFORM_BY_TARGET[target],
+    mode,
+    env,
+  });
+  const requiredCapabilityKeys = FEATURE_CAPABILITY_ENV_KEYS.slice(1);
+  if (
+    requiredCapabilityKeys.some((key) => typeof capabilityEnv[key] !== "string") ||
+    typeof capabilityEnv.ZENFLOW_FEATURE_CAPABILITY_PLATFORM !== "string" ||
+    (capabilityEnv.ZENFLOW_REQUIRE_CAPABILITY_RECEIPT === "true" &&
+      typeof capabilityEnv.ZENFLOW_RELEASE_SOURCE_COMMIT !== "string")
+  ) {
+    fail("CAPABILITY_CONTEXT", "feature capability environment is incomplete");
+  }
   const plan = createSharedDistBuildPlan({
     rootDir: canonicalRoot,
     target,
@@ -634,7 +685,7 @@ export function runSharedDistBuild({
     nodeExecutable,
   });
   return withSharedDistBuildLock({ rootDir: canonicalRoot, lockBaseDir, target, mode }, () => {
-    runPlan(plan, { rootDir: canonicalRoot, env, runCommand });
+    runPlan(plan, { rootDir: canonicalRoot, env: capabilityEnv, runCommand });
   });
 }
 
@@ -648,13 +699,19 @@ export function validateProductionWebBuild({
   if (!isPlainObject(env)) fail("CONTEXT", "build environment must be an object");
   assertProductionWebEnvironment(env);
   const canonicalRoot = resolveRoot(rootDir);
+  const capabilityEnv = resolveFeatureCapabilityBuildEnvironment({
+    rootDir: canonicalRoot,
+    platform: "web-pages",
+    mode: "production",
+    env,
+  });
   const plan = createProductionWebValidationPlan({ rootDir: canonicalRoot, nodeExecutable });
   return withSharedDistBuildLock(
     { rootDir: canonicalRoot, lockBaseDir, target: "web", mode: "production" },
     () => {
       runPlan(plan, {
         rootDir: canonicalRoot,
-        env,
+        env: capabilityEnv,
         runCommand,
       });
     }

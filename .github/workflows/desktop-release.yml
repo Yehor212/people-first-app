@@ -80,6 +80,9 @@ jobs:
         run: npm run desktop:check
 
       - name: Build desktop app
+        env:
+          ZENFLOW_RELEASE_SOURCE_COMMIT: ${{ github.sha }}
+          ZENFLOW_REQUIRE_CAPABILITY_RECEIPT: "true"
         run: npm run desktop:build
 
       - name: Check desktop web bundle data integrity

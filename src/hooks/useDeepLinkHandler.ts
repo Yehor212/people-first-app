@@ -97,7 +97,7 @@ interface UseDeepLinkHandlerOptions {
  */
 export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): void {
   const { handleDiaryDeepLinks = true } = options;
-  const { isFeatureVisible } = useFeatureFlags();
+  const { getFeatureAvailability } = useFeatureFlags();
   const setAuthBypassFlag = useAppStore((s) => s.setAuthBypassFlag);
   const setHasValidSession = useAppStore((s) => s.setHasValidSession);
   const setWebOAuthError = useAppStore((s) => s.setWebOAuthError);
@@ -296,14 +296,16 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
             const invite = decodeInviteData(data);
             if (invite) {
               logger.log("[Index] Challenge invite received:", invite.code);
-              // Only open challenge modal if challenges feature is enabled
-              if (isFeatureVisible("challenges")) {
-                setChallengeInvite(invite);
-                setShowChallengeModal(true);
-                return true;
-              } else {
-                logger.log("[Index] Challenges feature disabled, ignoring invite");
+              const availability = getFeatureAvailability("challenges");
+              if (!availability.visible) {
+                logger.log(
+                  "[Index] Challenge invite deferred by feature availability:",
+                  availability.reason,
+                );
               }
+              setChallengeInvite(invite);
+              setShowChallengeModal(true);
+              return true;
             }
           }
         }

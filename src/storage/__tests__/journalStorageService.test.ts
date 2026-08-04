@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   download: vi.fn(),
   from: vi.fn(),
   getCurrentUserId: vi.fn(),
+  list: vi.fn(),
   remove: vi.fn(),
   upload: vi.fn(),
 }));
@@ -45,9 +46,11 @@ describe("journalStorageService", () => {
     mocks.createSignedUrl.mockResolvedValue({ data: { signedUrl: "signed-url" }, error: null });
     mocks.download.mockResolvedValue({ data: null, error: null });
     mocks.remove.mockResolvedValue({ error: null });
+    mocks.list.mockResolvedValue({ data: [], error: null });
     mocks.from.mockReturnValue({
       createSignedUrl: mocks.createSignedUrl,
       download: mocks.download,
+      list: mocks.list,
       remove: mocks.remove,
       upload: mocks.upload,
     });
@@ -115,24 +118,24 @@ describe("journalStorageService", () => {
     const photoBlob = new Blob(["encrypted-photo"], { type: "application/octet-stream" });
     const audioBlob = new Blob(["encrypted-audio"], { type: "application/octet-stream" });
 
-    const photoResult = await uploadEncryptedPhoto("photo-1", photoBlob, "user-1");
-    const audioResult = await uploadEncryptedAudio("audio-1", audioBlob, "user-1");
+    const photoResult = await uploadEncryptedPhoto("photo-1", photoBlob, "user-1", 9);
+    const audioResult = await uploadEncryptedAudio("audio-1", audioBlob, "user-1", 9);
 
     expect(mocks.upload).toHaveBeenNthCalledWith(
       1,
-      "user-1/photo-1.bin",
+      "user-1/photo-1.v9.bin",
       photoBlob,
       expect.objectContaining({ contentType: "application/octet-stream", upsert: true }),
     );
     expect(mocks.upload).toHaveBeenNthCalledWith(
       2,
-      "user-1/audio-1.bin",
+      "user-1/audio-1.v9.bin",
       audioBlob,
       expect.objectContaining({ contentType: "application/octet-stream", upsert: true }),
     );
     expect(mocks.createSignedUrl).not.toHaveBeenCalled();
-    expect(photoResult).toStrictEqual({ path: "user-1/photo-1.bin", signedUrl: "" });
-    expect(audioResult).toStrictEqual({ path: "user-1/audio-1.bin", signedUrl: "" });
+    expect(photoResult).toStrictEqual({ path: "user-1/photo-1.v9.bin", signedUrl: "" });
+    expect(audioResult).toStrictEqual({ path: "user-1/audio-1.v9.bin", signedUrl: "" });
   });
 
   it("deletes wav diary audio and legacy bin residue", async () => {
@@ -141,6 +144,28 @@ describe("journalStorageService", () => {
     expect(mocks.remove).toHaveBeenCalledWith(
       expect.arrayContaining(["user-1/audio-1.wav", "user-1/audio-1.bin"]),
     );
+  });
+
+  it("discovers and deletes versioned encrypted residue for a legacy id-only action", async () => {
+    mocks.list.mockResolvedValueOnce({
+      data: [
+        { name: "audio-1.v41.bin" },
+        { name: "audio-10.v41.bin" },
+        { name: "unrelated.bin" },
+      ],
+      error: null,
+    });
+
+    await deleteAudioFromStorage("audio-1", "user-1");
+
+    expect(mocks.list).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({ search: "audio-1" }),
+    );
+    expect(mocks.remove).toHaveBeenCalledWith(
+      expect.arrayContaining(["user-1/audio-1.v41.bin"]),
+    );
+    expect(JSON.stringify(mocks.remove.mock.calls)).not.toContain("audio-10.v41.bin");
   });
 
   it("rejects oversized encrypted cloud audio before allocating a FileReader", async () => {

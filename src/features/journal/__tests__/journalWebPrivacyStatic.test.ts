@@ -52,7 +52,7 @@ describe("web diary privacy and reset contracts", () => {
     expect(resetConsumerBlock).toContain("hasJournalPasswordResetProof(pending)");
     expect(resetConsumerBlock).toContain("signedInEmail !== pending.email");
     expect(resetConsumerBlock).toContain("sessionUserId !== pending.userId");
-    const removePasswordIndex = resetConsumerBlock.indexOf("security.removePassword({ allowVerifiedEmptyDiary: true })");
+    const removePasswordIndex = resetConsumerBlock.indexOf("security.removePassword(");
     expect(removePasswordIndex).toBeGreaterThanOrEqual(0);
     expect(resetConsumerBlock.indexOf("signedInEmail !== pending.email")).toBeLessThan(removePasswordIndex);
     expect(resetConsumerBlock.indexOf("sessionUserId !== pending.userId")).toBeLessThan(removePasswordIndex);
@@ -75,7 +75,7 @@ describe("web diary privacy and reset contracts", () => {
     expect(consumeIndex).toBeGreaterThanOrEqual(0);
     expect(successCleanupIndex).toBeGreaterThan(consumeIndex);
     expect(successCleanupIndex).toBeLessThan(
-      resetConsumerBlock.indexOf("security.removePassword({ allowVerifiedEmptyDiary: true })"),
+      resetConsumerBlock.indexOf("security.removePassword("),
     );
   });
 
