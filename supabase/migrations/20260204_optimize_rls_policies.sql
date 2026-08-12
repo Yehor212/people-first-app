@@ -7,6 +7,17 @@
 --   3. Remove duplicate indexes
 -- =============================================
 
+-- user_inner_world was historically provisioned outside migration history.
+-- Establish the later reconciliation shape before this migration manages its
+-- policies so a clean replay has the same relation boundary.
+CREATE TABLE IF NOT EXISTS public.user_inner_world (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  world_data JSONB NOT NULL DEFAULT '{}',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.user_inner_world ENABLE ROW LEVEL SECURITY;
+
 -- =============================================
 -- SECTION 1: Drop ALL existing policies on affected tables
 -- We'll recreate them with optimized syntax
@@ -74,13 +85,19 @@ DROP POLICY IF EXISTS "Users can insert their own subscriptions" ON public.push_
 DROP POLICY IF EXISTS "Users can update their own subscriptions" ON public.push_subscriptions;
 DROP POLICY IF EXISTS "Users can delete their own subscriptions" ON public.push_subscriptions;
 
--- push_logs (has duplicates)
-DROP POLICY IF EXISTS "Users can read own push logs" ON public.push_logs;
-DROP POLICY IF EXISTS "Users read own push logs" ON public.push_logs;
-DROP POLICY IF EXISTS "Users insert own push logs" ON public.push_logs;
+-- Push notification tables are admitted later in 20260307_push_tables.sql.
+DO $$
+BEGIN
+  IF to_regclass('public.push_logs') IS NOT NULL THEN
+    DROP POLICY IF EXISTS "Users can read own push logs" ON public.push_logs;
+    DROP POLICY IF EXISTS "Users read own push logs" ON public.push_logs;
+    DROP POLICY IF EXISTS "Users insert own push logs" ON public.push_logs;
+  END IF;
 
--- push_device_tokens
-DROP POLICY IF EXISTS "Users manage own device tokens" ON public.push_device_tokens;
+  IF to_regclass('public.push_device_tokens') IS NOT NULL THEN
+    DROP POLICY IF EXISTS "Users manage own device tokens" ON public.push_device_tokens;
+  END IF;
+END $$;
 
 -- user_challenges (has duplicates)
 DROP POLICY IF EXISTS "Users can view their own challenges" ON public.user_challenges;
@@ -110,10 +127,15 @@ DROP POLICY IF EXISTS "Users can update their own quests" ON public.user_quests;
 DROP POLICY IF EXISTS "Users can delete their own quests" ON public.user_quests;
 DROP POLICY IF EXISTS "Users can manage own quests" ON public.user_quests;
 
--- user_stats
-DROP POLICY IF EXISTS "Users can view own stats" ON public.user_stats;
-DROP POLICY IF EXISTS "Users can update own stats" ON public.user_stats;
-DROP POLICY IF EXISTS "Users can insert own stats" ON public.user_stats;
+-- user_stats is an optional legacy relation, matching the earlier guarded fix.
+DO $$
+BEGIN
+  IF to_regclass('public.user_stats') IS NOT NULL THEN
+    DROP POLICY IF EXISTS "Users can view own stats" ON public.user_stats;
+    DROP POLICY IF EXISTS "Users can update own stats" ON public.user_stats;
+    DROP POLICY IF EXISTS "Users can insert own stats" ON public.user_stats;
+  END IF;
+END $$;
 
 -- user_inner_world
 DROP POLICY IF EXISTS "Users can manage own inner world" ON public.user_inner_world;
@@ -150,8 +172,13 @@ DROP POLICY IF EXISTS "Anyone can read app_config" ON public.app_config;
 DROP POLICY IF EXISTS "Service role can update app_config" ON public.app_config;
 DROP POLICY IF EXISTS "Service role can insert app_config" ON public.app_config;
 
--- analytics_events
-DROP POLICY IF EXISTS "Users insert own analytics events" ON public.analytics_events;
+-- analytics_events is documented as a Dashboard-created optional relation.
+DO $$
+BEGIN
+  IF to_regclass('public.analytics_events') IS NOT NULL THEN
+    DROP POLICY IF EXISTS "Users insert own analytics events" ON public.analytics_events;
+  END IF;
+END $$;
 
 -- =============================================
 -- SECTION 2: Recreate policies with (select auth.uid())
@@ -241,16 +268,23 @@ CREATE POLICY "push_subscriptions_all" ON public.push_subscriptions FOR ALL
   USING (user_id = (select auth.uid()))
   WITH CHECK (user_id = (select auth.uid()));
 
--- push_logs
-CREATE POLICY "push_logs_select" ON public.push_logs FOR SELECT
-  USING (user_id = (select auth.uid()));
-CREATE POLICY "push_logs_insert" ON public.push_logs FOR INSERT
-  WITH CHECK (user_id = (select auth.uid()));
+DO $$
+BEGIN
+  IF to_regclass('public.push_logs') IS NOT NULL THEN
+    ALTER TABLE public.push_logs ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY "push_logs_select" ON public.push_logs FOR SELECT
+      USING (user_id = (select auth.uid()));
+    CREATE POLICY "push_logs_insert" ON public.push_logs FOR INSERT
+      WITH CHECK (user_id = (select auth.uid()));
+  END IF;
 
--- push_device_tokens
-CREATE POLICY "push_device_tokens_all" ON public.push_device_tokens FOR ALL
-  USING (user_id = (select auth.uid()))
-  WITH CHECK (user_id = (select auth.uid()));
+  IF to_regclass('public.push_device_tokens') IS NOT NULL THEN
+    ALTER TABLE public.push_device_tokens ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY "push_device_tokens_all" ON public.push_device_tokens FOR ALL
+      USING (user_id = (select auth.uid()))
+      WITH CHECK (user_id = (select auth.uid()));
+  END IF;
+END $$;
 
 -- user_challenges (single policy replaces duplicates)
 CREATE POLICY "user_challenges_all" ON public.user_challenges FOR ALL
@@ -272,10 +306,15 @@ CREATE POLICY "user_quests_all" ON public.user_quests FOR ALL
   USING (user_id = (select auth.uid()))
   WITH CHECK (user_id = (select auth.uid()));
 
--- user_stats
-CREATE POLICY "user_stats_all" ON public.user_stats FOR ALL
-  USING (user_id = (select auth.uid()))
-  WITH CHECK (user_id = (select auth.uid()));
+DO $$
+BEGIN
+  IF to_regclass('public.user_stats') IS NOT NULL THEN
+    ALTER TABLE public.user_stats ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY "user_stats_all" ON public.user_stats FOR ALL
+      USING (user_id = (select auth.uid()))
+      WITH CHECK (user_id = (select auth.uid()));
+  END IF;
+END $$;
 
 -- user_inner_world (single policy replaces duplicates)
 CREATE POLICY "user_inner_world_all" ON public.user_inner_world FOR ALL
@@ -331,9 +370,14 @@ CREATE POLICY "app_config_update" ON public.app_config FOR UPDATE
 CREATE POLICY "app_config_insert" ON public.app_config FOR INSERT
   WITH CHECK ((select auth.role()) = 'service_role');
 
--- analytics_events
-CREATE POLICY "analytics_events_insert" ON public.analytics_events FOR INSERT
-  WITH CHECK (user_id = (select auth.uid()));
+DO $$
+BEGIN
+  IF to_regclass('public.analytics_events') IS NOT NULL THEN
+    ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY "analytics_events_insert" ON public.analytics_events FOR INSERT
+      WITH CHECK (user_id = (select auth.uid()));
+  END IF;
+END $$;
 
 -- =============================================
 -- SECTION 3: Fix duplicate indexes

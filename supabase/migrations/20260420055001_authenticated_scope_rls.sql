@@ -259,24 +259,33 @@ CREATE POLICY "user_quests_all" ON public.user_quests
   USING (user_id = (select auth.uid()))
   WITH CHECK (user_id = (select auth.uid()));
 
-DROP POLICY IF EXISTS "user_stats_all" ON public.user_stats;
-CREATE POLICY "user_stats_all" ON public.user_stats
-  FOR ALL
-  TO authenticated
-  USING (user_id = (select auth.uid()))
-  WITH CHECK (user_id = (select auth.uid()));
+DO $$
+BEGIN
+  IF to_regclass('public.user_stats') IS NOT NULL THEN
+    ALTER TABLE public.user_stats ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "user_stats_all" ON public.user_stats;
+    CREATE POLICY "user_stats_all" ON public.user_stats
+      FOR ALL
+      TO authenticated
+      USING (user_id = (select auth.uid()))
+      WITH CHECK (user_id = (select auth.uid()));
+  END IF;
 
-DROP POLICY IF EXISTS "analytics_events_insert" ON public.analytics_events;
-CREATE POLICY "analytics_events_insert" ON public.analytics_events
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (user_id = (select auth.uid()));
+  IF to_regclass('public.analytics_events') IS NOT NULL THEN
+    ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "analytics_events_insert" ON public.analytics_events;
+    CREATE POLICY "analytics_events_insert" ON public.analytics_events
+      FOR INSERT
+      TO authenticated
+      WITH CHECK (user_id = (select auth.uid()));
 
-DROP POLICY IF EXISTS "analytics_events_select" ON public.analytics_events;
-CREATE POLICY "analytics_events_select" ON public.analytics_events
-  FOR SELECT
-  TO authenticated
-  USING (user_id = (select auth.uid()));
+    DROP POLICY IF EXISTS "analytics_events_select" ON public.analytics_events;
+    CREATE POLICY "analytics_events_select" ON public.analytics_events
+      FOR SELECT
+      TO authenticated
+      USING (user_id = (select auth.uid()));
+  END IF;
+END $$;
 
 -- ============================================================
 -- Journal and sync tables with active runtime traffic

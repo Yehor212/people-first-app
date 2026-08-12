@@ -1,6 +1,9 @@
 # Normalize all text files to LF in the repository
 * text=auto eol=lf
 
+# Preserve the official Supabase generator's canonical trailing blank line.
+src/types/supabase.ts whitespace=-blank-at-eof
+
 # Ensure these are always treated as binary
 *.png binary
 *.jpg binary

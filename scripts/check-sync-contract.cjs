@@ -422,7 +422,12 @@ function main() {
   requireMigrationToken(migrations, "CREATE TABLE IF NOT EXISTS public.device_sessions");
   requireMigrationToken(migrations, "device_sessions_select_own");
   requireMigrationToken(migrations, "GRANT SELECT, INSERT, UPDATE ON TABLE public.device_sessions TO authenticated");
-  requireMigrationToken(migrations, "ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY");
+  requireMigrationToken(migrations, "relation.relname = 'messages'");
+  requireMigrationToken(migrations, "relation.relrowsecurity IS TRUE");
+  requireMigrationToken(
+    migrations,
+    "Realtime bootstrap invariant failed: realtime.messages must exist with RLS enabled",
+  );
   requireMigrationToken(migrations, "sync broadcast receive own topic");
   requireMigrationToken(migrations, "sync-signal:' || (SELECT auth.uid())::text");
 

@@ -18,12 +18,16 @@ CREATE TABLE IF NOT EXISTS public.journal_embeddings (
 
 ALTER TABLE public.journal_embeddings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can read own embeddings" ON public.journal_embeddings;
 CREATE POLICY "Users can read own embeddings"
   ON public.journal_embeddings FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own embeddings" ON public.journal_embeddings;
 CREATE POLICY "Users can insert own embeddings"
   ON public.journal_embeddings FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own embeddings" ON public.journal_embeddings;
 CREATE POLICY "Users can update own embeddings"
   ON public.journal_embeddings FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own embeddings" ON public.journal_embeddings;
 CREATE POLICY "Users can delete own embeddings"
   ON public.journal_embeddings FOR DELETE USING (auth.uid() = user_id);
 
@@ -72,7 +76,12 @@ CREATE TRIGGER set_updated_at_user_reminder_settings
 COMMENT ON TABLE public.challenges IS 'DEPRECATED v1.7: Superseded by user_challenges (20260113). DROP planned for v2.0';
 COMMENT ON TABLE public.badges IS 'DEPRECATED v1.7: Superseded by user_badges (20260113). DROP planned for v2.0';
 COMMENT ON TABLE public.user_data IS 'DEPRECATED v1.7: Replaced by user_backups (002_user_backups_safe). DROP planned for v2.0';
-COMMENT ON TABLE public.user_stats IS 'DEPRECATED v1.7: Stats computed via get_user_stats() RPC. DROP planned for v2.0';
+DO $$
+BEGIN
+  IF to_regclass('public.user_stats') IS NOT NULL THEN
+    COMMENT ON TABLE public.user_stats IS 'DEPRECATED v1.7: Stats computed via get_user_stats() RPC. DROP planned for v2.0';
+  END IF;
+END $$;
 COMMENT ON TABLE public.adhd_state IS 'DEPRECATED v1.7: State managed client-side in Zustand. DROP planned for v2.0';
 COMMENT ON TABLE public.mystery_boxes IS 'DEPRECATED v1.7: Feature removed. DROP planned for v2.0';
 COMMENT ON TABLE public.time_challenges IS 'DEPRECATED v1.7: Replaced by user_challenges. DROP planned for v2.0';

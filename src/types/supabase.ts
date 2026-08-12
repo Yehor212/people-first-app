@@ -1,6 +1,3 @@
-// Generated from Supabase project bwgfslmxmueyglpumkbf via Supabase MCP.
-// Regenerate with: npx supabase gen types typescript --project-id bwgfslmxmueyglpumkbf > src/types/supabase.ts
-
 export type Json =
   | string
   | number
@@ -10,13 +7,48 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
+      account_deletion_blocks: {
+        Row: {
+          blocked_at: string
+          user_id: string
+        }
+        Insert: {
+          blocked_at?: string
+          user_id: string
+        }
+        Update: {
+          blocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       adhd_state: {
         Row: {
           combo_count: number | null
@@ -56,30 +88,6 @@ export type Database = {
         }
         Relationships: []
       }
-      analytics_events: {
-        Row: {
-          created_at: string
-          event: string
-          id: string
-          metadata: Json | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          event: string
-          id?: string
-          metadata?: Json | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          event?: string
-          id?: string
-          metadata?: Json | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       app_config: {
         Row: {
           key: string
@@ -95,6 +103,245 @@ export type Database = {
           key?: string
           updated_at?: string | null
           value?: Json
+        }
+        Relationships: []
+      }
+      automation_history_state: {
+        Row: {
+          all_history_purged_at: number | null
+          history_generation: number
+          last_sequence: number
+          record_revision_version: number
+          updated_at: number
+          user_id: string
+        }
+        Insert: {
+          all_history_purged_at?: number | null
+          history_generation?: number
+          last_sequence?: number
+          record_revision_version?: number
+          updated_at: number
+          user_id: string
+        }
+        Update: {
+          all_history_purged_at?: number | null
+          history_generation?: number
+          last_sequence?: number
+          record_revision_version?: number
+          updated_at?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      automation_history_tombstones: {
+        Row: {
+          history_generation: number
+          purged_at: number
+          purged_transaction_id: string
+          server_sequence: number
+          user_id: string
+        }
+        Insert: {
+          history_generation: number
+          purged_at: number
+          purged_transaction_id: string
+          server_sequence: number
+          user_id: string
+        }
+        Update: {
+          history_generation?: number
+          purged_at?: number
+          purged_transaction_id?: string
+          server_sequence?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      automation_mutations: {
+        Row: {
+          after_hash: string
+          after_revision_token: string | null
+          before_hash: string
+          before_revision_token: string | null
+          entity_id: string
+          entity_type: string
+          mutation_ordinal: number
+          operation: string
+          transaction_id: string
+          user_id: string
+        }
+        Insert: {
+          after_hash: string
+          after_revision_token?: string | null
+          before_hash: string
+          before_revision_token?: string | null
+          entity_id: string
+          entity_type: string
+          mutation_ordinal: number
+          operation: string
+          transaction_id: string
+          user_id: string
+        }
+        Update: {
+          after_hash?: string
+          after_revision_token?: string | null
+          before_hash?: string
+          before_revision_token?: string | null
+          entity_id?: string
+          entity_type?: string
+          mutation_ordinal?: number
+          operation?: string
+          transaction_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_mutations_user_id_transaction_id_fkey"
+            columns: ["user_id", "transaction_id"]
+            isOneToOne: false
+            referencedRelation: "automation_transactions"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
+      automation_preferences: {
+        Row: {
+          consent_epoch: string | null
+          consented_at: number | null
+          enabled: boolean
+          enabled_rule_ids: string[]
+          focus_habit_id: string | null
+          focus_minimum_minutes: number
+          planning_habit_mappings: Json
+          revoked_at: number | null
+          server_revision: number
+          updated_at: number
+          user_id: string
+        }
+        Insert: {
+          consent_epoch?: string | null
+          consented_at?: number | null
+          enabled?: boolean
+          enabled_rule_ids?: string[]
+          focus_habit_id?: string | null
+          focus_minimum_minutes?: number
+          planning_habit_mappings?: Json
+          revoked_at?: number | null
+          server_revision?: number
+          updated_at: number
+          user_id: string
+        }
+        Update: {
+          consent_epoch?: string | null
+          consented_at?: number | null
+          enabled?: boolean
+          enabled_rule_ids?: string[]
+          focus_habit_id?: string | null
+          focus_minimum_minutes?: number
+          planning_habit_mappings?: Json
+          revoked_at?: number | null
+          server_revision?: number
+          updated_at?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      automation_record_revisions: {
+        Row: {
+          entity_id: string
+          entity_type: string
+          mutation_generation: number
+          record_exists: boolean
+          revision_token: string | null
+          state_hash: string
+          transaction_id: string | null
+          updated_at: number
+          user_id: string
+        }
+        Insert: {
+          entity_id: string
+          entity_type: string
+          mutation_generation: number
+          record_exists: boolean
+          revision_token?: string | null
+          state_hash: string
+          transaction_id?: string | null
+          updated_at: number
+          user_id: string
+        }
+        Update: {
+          entity_id?: string
+          entity_type?: string
+          mutation_generation?: number
+          record_exists?: boolean
+          revision_token?: string | null
+          state_hash?: string
+          transaction_id?: string | null
+          updated_at?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      automation_transactions: {
+        Row: {
+          consent_epoch: string
+          created_at: number
+          device_id: string
+          history_generation: number
+          id: string
+          revision_ciphertext: string
+          rule_id: string
+          rule_version: number
+          server_sequence: number
+          source_id: string
+          source_key: string
+          source_revision: string
+          source_type: string
+          status: string
+          undo_transaction_id: string | null
+          undone_at: number | null
+          updated_at: number
+          user_id: string
+        }
+        Insert: {
+          consent_epoch: string
+          created_at: number
+          device_id: string
+          history_generation: number
+          id: string
+          revision_ciphertext: string
+          rule_id: string
+          rule_version: number
+          server_sequence: number
+          source_id: string
+          source_key: string
+          source_revision: string
+          source_type: string
+          status: string
+          undo_transaction_id?: string | null
+          undone_at?: number | null
+          updated_at: number
+          user_id: string
+        }
+        Update: {
+          consent_epoch?: string
+          created_at?: number
+          device_id?: string
+          history_generation?: number
+          id?: string
+          revision_ciphertext?: string
+          rule_id?: string
+          rule_version?: number
+          server_sequence?: number
+          source_id?: string
+          source_key?: string
+          source_revision?: string
+          source_type?: string
+          status?: string
+          undo_transaction_id?: string | null
+          undone_at?: number | null
+          updated_at?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -718,8 +965,8 @@ export type Database = {
           paper_color: string | null
           paper_texture: string | null
           particle_speed: string | null
-          photo_layout: Json | null
           photo_ids: string[]
+          photo_layout: Json | null
           stickers: string[]
           tags: string[]
           template_id: string | null
@@ -744,8 +991,8 @@ export type Database = {
           paper_color?: string | null
           paper_texture?: string | null
           particle_speed?: string | null
-          photo_layout?: Json | null
           photo_ids?: string[]
+          photo_layout?: Json | null
           stickers?: string[]
           tags?: string[]
           template_id?: string | null
@@ -770,8 +1017,8 @@ export type Database = {
           paper_color?: string | null
           paper_texture?: string | null
           particle_speed?: string | null
-          photo_layout?: Json | null
           photo_ids?: string[]
+          photo_layout?: Json | null
           stickers?: string[]
           tags?: string[]
           template_id?: string | null
@@ -1027,18 +1274,21 @@ export type Database = {
       push_logs: {
         Row: {
           date_key: string
+          id: string
           sent_at: string
           type: string
           user_id: string
         }
         Insert: {
           date_key: string
+          id?: string
           sent_at?: string
           type: string
           user_id: string
         }
         Update: {
           date_key?: string
+          id?: string
           sent_at?: string
           type?: string
           user_id?: string
@@ -1048,29 +1298,23 @@ export type Database = {
       push_subscriptions: {
         Row: {
           created_at: string | null
-          endpoint: string | null
+          endpoint: string
           id: string
-          keys: Json | null
-          subscription: Json
-          updated_at: string | null
+          keys: Json
           user_id: string
         }
         Insert: {
           created_at?: string | null
-          endpoint?: string | null
+          endpoint: string
           id?: string
-          keys?: Json | null
-          subscription: Json
-          updated_at?: string | null
+          keys: Json
           user_id: string
         }
         Update: {
           created_at?: string | null
-          endpoint?: string | null
+          endpoint?: string
           id?: string
-          keys?: Json | null
-          subscription?: Json
-          updated_at?: string | null
+          keys?: Json
           user_id?: string
         }
         Relationships: []
@@ -1263,17 +1507,17 @@ export type Database = {
       user_backups: {
         Row: {
           payload: Json
-          updated_at: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
           payload: Json
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
           payload?: Json
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1412,17 +1656,17 @@ export type Database = {
       }
       user_inner_world: {
         Row: {
-          updated_at: string | null
+          updated_at: string
           user_id: string
           world_data: Json
         }
         Insert: {
-          updated_at?: string | null
+          updated_at?: string
           user_id: string
-          world_data: Json
+          world_data?: Json
         }
         Update: {
-          updated_at?: string | null
+          updated_at?: string
           user_id?: string
           world_data?: Json
         }
@@ -1528,51 +1772,51 @@ export type Database = {
         Row: {
           days: number[]
           enabled: boolean
-          focus_time: string
+          focus_time: string | null
           habit_ids: string[]
-          habit_time: string
-          language: string
-          mood_time: string
+          habit_time: string | null
+          language: string | null
+          mood_time: string | null
           mood_time_afternoon: string | null
           mood_time_evening: string | null
           mood_time_morning: string | null
-          quiet_end: string
-          quiet_start: string
-          timezone: string
+          quiet_end: string | null
+          quiet_start: string | null
+          timezone: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           days?: number[]
           enabled?: boolean
-          focus_time?: string
+          focus_time?: string | null
           habit_ids?: string[]
-          habit_time?: string
-          language?: string
-          mood_time?: string
+          habit_time?: string | null
+          language?: string | null
+          mood_time?: string | null
           mood_time_afternoon?: string | null
           mood_time_evening?: string | null
           mood_time_morning?: string | null
-          quiet_end?: string
-          quiet_start?: string
-          timezone?: string
+          quiet_end?: string | null
+          quiet_start?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           days?: number[]
           enabled?: boolean
-          focus_time?: string
+          focus_time?: string | null
           habit_ids?: string[]
-          habit_time?: string
-          language?: string
-          mood_time?: string
+          habit_time?: string | null
+          language?: string | null
+          mood_time?: string | null
           mood_time_afternoon?: string | null
           mood_time_evening?: string | null
           mood_time_morning?: string | null
-          quiet_end?: string
-          quiet_start?: string
-          timezone?: string
+          quiet_end?: string | null
+          quiet_start?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1598,53 +1842,6 @@ export type Database = {
           value?: Json | null
         }
         Relationships: []
-      }
-      user_stats: {
-        Row: {
-          created_at: string | null
-          current_streak: number | null
-          last_activity_date: string | null
-          level: number | null
-          longest_streak: number | null
-          total_saved: number | null
-          total_transactions: number | null
-          updated_at: string | null
-          user_id: string
-          xp: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          current_streak?: number | null
-          last_activity_date?: string | null
-          level?: number | null
-          longest_streak?: number | null
-          total_saved?: number | null
-          total_transactions?: number | null
-          updated_at?: string | null
-          user_id: string
-          xp?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          current_streak?: number | null
-          last_activity_date?: string | null
-          level?: number | null
-          longest_streak?: number | null
-          total_saved?: number | null
-          total_transactions?: number | null
-          updated_at?: string | null
-          user_id?: string
-          xp?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_stats_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       user_tasks: {
         Row: {
@@ -1699,11 +1896,146 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      claim_push_install: {
-        Args: { p_device_id: string; p_platform?: string; p_token: string }
+      acquire_push_delivery_permit: {
+        Args: { p_owner_id: string; p_permit_token: string }
+        Returns: {
+          lease_epoch: number
+          lease_expires_at: string
+          owner_id: string
+          permit_token: string
+          state: string
+        }[]
+      }
+      admit_account_deletion_recovery_attempt: {
+        Args: { p_operation_id: string; p_recovery_secret_hash: string }
+        Returns: {
+          retry_after_seconds: number
+          state: string
+        }[]
+      }
+      advance_account_deletion_operation_phase: {
+        Args: {
+          p_lease_epoch: number
+          p_lease_token: string
+          p_next_phase: string
+          p_operation_id: string
+          p_recovery_secret_hash: string
+        }
+        Returns: boolean
+      }
+      automation_apply_mutation: {
+        Args: { p_mutation: Json; p_owner: string; p_transaction_id: string }
+        Returns: undefined
+      }
+      automation_canonical_json: { Args: { p_value: Json }; Returns: string }
+      automation_commit_rejection: {
+        Args: {
+          p_code: string
+          p_history_generation: number
+          p_preference_revision: number
+          p_transaction_id: string
+        }
+        Returns: Json
+      }
+      automation_current_projection: {
+        Args: { p_entity_id: string; p_entity_type: string; p_owner: string }
+        Returns: Json
+      }
+      automation_hash_json: { Args: { p_value: Json }; Returns: string }
+      automation_now_ms: { Args: never; Returns: number }
+      automation_preference_payload: {
+        Args: {
+          p_preference: Database["public"]["Tables"]["automation_preferences"]["Row"]
+        }
+        Returns: Json
+      }
+      automation_source_key: {
+        Args: {
+          p_consent_epoch: string
+          p_owner: string
+          p_rule_id: string
+          p_rule_version: number
+          p_source_id: string
+          p_source_revision: string
+          p_source_type: string
+        }
         Returns: string
       }
+      automation_undo_rejection: {
+        Args: {
+          p_code: string
+          p_history_generation: number
+          p_transaction_id: string
+        }
+        Returns: Json
+      }
+      begin_account_deletion_operation: {
+        Args: {
+          p_operation_id: string
+          p_recovery_secret_hash: string
+          p_user_id: string
+        }
+        Returns: {
+          lease_epoch: number
+          lease_token: string
+          phase: string
+          state: string
+          user_id: string
+        }[]
+      }
       calculate_streak: { Args: { p_user_id: string }; Returns: number }
+      claim_account_deletion_operation: {
+        Args: { p_operation_id: string; p_recovery_secret_hash: string }
+        Returns: {
+          lease_epoch: number
+          lease_token: string
+          phase: string
+          state: string
+          user_id: string
+        }[]
+      }
+      claim_push_install:
+        | {
+            Args: {
+              p_device_id: string
+              p_expected_owner_user_id: string
+              p_platform?: string
+              p_token: string
+            }
+            Returns: string
+          }
+        | {
+            Args: { p_device_id: string; p_platform?: string; p_token: string }
+            Returns: string
+          }
+      commit_automation_transaction: {
+        Args: { p_request: Json }
+        Returns: Json
+      }
+      complete_account_deletion_operation: {
+        Args: {
+          p_lease_epoch: number
+          p_lease_token: string
+          p_operation_id: string
+          p_recovery_secret_hash: string
+        }
+        Returns: boolean
+      }
+      drain_account_push_delivery_permits: {
+        Args: {
+          p_lease_epoch: number
+          p_lease_token: string
+          p_operation_id: string
+          p_recovery_secret_hash: string
+        }
+        Returns: boolean
+      }
+      enforce_account_deletion_api_barrier: { Args: never; Returns: undefined }
+      get_automation_history_snapshot: {
+        Args: { p_cursor?: Json; p_snapshot_token?: Json }
+        Returns: Json
+      }
+      get_automation_preference: { Args: never; Returns: Json }
       get_challenge_leaderboard: {
         Args: { p_challenge_id: string }
         Returns: {
@@ -1726,6 +2058,10 @@ export type Database = {
       }
       grant_journal_ai_consent: {
         Args: { p_expected_generation: number }
+        Returns: boolean
+      }
+      is_journal_entry_payload_current: {
+        Args: { p_entry: Json }
         Returns: boolean
       }
       match_journal_entries: {
@@ -1757,17 +2093,78 @@ export type Database = {
           updated_at: string
         }[]
       }
-      is_journal_entry_payload_current: {
-        Args: { p_entry: Json }
+      purge_automation_history: {
+        Args: {
+          p_all: boolean
+          p_device_id: string
+          p_operation_id: string
+          p_transaction_ids: string[]
+        }
+        Returns: Json
+      }
+      release_account_deletion_operation: {
+        Args: {
+          p_lease_epoch: number
+          p_lease_token: string
+          p_operation_id: string
+          p_recovery_secret_hash: string
+        }
+        Returns: boolean
+      }
+      release_push_delivery_permit: {
+        Args: {
+          p_lease_epoch: number
+          p_owner_id: string
+          p_permit_token: string
+        }
+        Returns: boolean
+      }
+      renew_account_deletion_operation_lease: {
+        Args: {
+          p_lease_epoch: number
+          p_lease_token: string
+          p_operation_id: string
+          p_recovery_secret_hash: string
+        }
         Returns: boolean
       }
       reset_monthly_leaderboard: { Args: never; Returns: undefined }
       reset_weekly_leaderboard: { Args: never; Returns: undefined }
+      revoke_automation_preference: { Args: never; Returns: Json }
       revoke_journal_ai_consent: { Args: never; Returns: boolean }
-      revoke_push_install: {
-        Args: { p_device_id: string; p_token?: string | null }
-        Returns: number
+      revoke_push_install:
+        | {
+            Args: {
+              p_device_id: string
+              p_expected_owner_user_id: string
+              p_token: string
+            }
+            Returns: number
+          }
+        | { Args: { p_device_id: string; p_token?: string }; Returns: number }
+      set_automation_preference: {
+        Args: {
+          p_enabled_rule_ids: string[]
+          p_expected_server_revision: number
+          p_focus_habit_id: string
+          p_focus_minimum_minutes: number
+          p_planning_habit_mappings: Json
+        }
+        Returns: Json
       }
+      set_automation_preference_with_planning: {
+        Args: {
+          p_device_id: string
+          p_enabled_rule_ids: string[]
+          p_expected_server_revision: number
+          p_focus_habit_id: string
+          p_focus_minimum_minutes: number
+          p_planning_blocks: Json
+          p_planning_habit_mappings: Json
+        }
+        Returns: Json
+      }
+      undo_automation_transaction: { Args: { p_request: Json }; Returns: Json }
       update_member_progress: {
         Args: {
           p_challenge_id: string
@@ -1794,6 +2191,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      upsert_journal_embeddings_if_consented: {
+        Args: { p_rows: Json }
+        Returns: number
       }
     }
     Enums: {
@@ -1923,7 +2324,11 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
 } as const
+

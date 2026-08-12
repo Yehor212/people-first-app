@@ -40,7 +40,20 @@ CREATE POLICY "Users can update own settings"
 
 -- Index for fast lookup
 CREATE INDEX IF NOT EXISTS idx_user_settings_user_id ON public.user_settings(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_settings_weekly_digest ON public.user_settings(weekly_digest_enabled) WHERE weekly_digest_enabled = true;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'user_settings'
+      AND column_name = 'weekly_digest_enabled'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_user_settings_weekly_digest
+      ON public.user_settings(weekly_digest_enabled)
+      WHERE weekly_digest_enabled = true;
+  END IF;
+END $$;
 
 -- Auto-update timestamp
 CREATE OR REPLACE FUNCTION update_user_settings_timestamp()
