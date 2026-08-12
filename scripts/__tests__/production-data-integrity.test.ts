@@ -1315,8 +1315,342 @@ describe("production data integrity checker", () => {
     expect(result.report.status).toBe("PASS");
   });
 
+  it("allows T168-style parameterized operational DML inside a function definition", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_operational_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.apply_mood_projection(p_owner uuid, p_after jsonb)",
+        "RETURNS void",
+        "LANGUAGE plpgsql",
+        "SECURITY DEFINER",
+        "SET search_path = ''",
+        "AS $function$",
+        "DECLARE",
+        "  v_mood public.moods%ROWTYPE;",
+        "BEGIN",
+        "  v_mood := pg_catalog.jsonb_populate_record(NULL::public.moods, p_after || pg_catalog.jsonb_build_object('user_id', p_owner));",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES (v_mood.id, p_owner, v_mood.mood, v_mood.note, v_mood.date, v_mood.timestamp, v_mood.updated_at)",
+        "  ON CONFLICT (id) DO UPDATE SET mood = EXCLUDED.mood, note = EXCLUDED.note, updated_at = EXCLUDED.updated_at",
+        "  WHERE public.moods.user_id = p_owner;",
+        "END;",
+        "$function$;",
+      ].join("\n"),
+    });
+
+    const result = run(root);
+    expect(result.status, JSON.stringify(result.report, null, 2)).toBe(0);
+    expect(result.report.status).toBe("PASS");
+  });
+
+  it("allows parameterized operational DML inside an untagged dollar-quoted function", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_untagged_operational_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.insert_mood_projection(p_id uuid, p_owner uuid, p_mood text, p_note text, p_date date, p_timestamp bigint)",
+        "RETURNS void",
+        "LANGUAGE plpgsql",
+        "AS $$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES (p_id, p_owner, p_mood, p_note, p_date, p_timestamp, p_timestamp);",
+        "END;",
+        "$$;",
+      ].join("\n"),
+    });
+
+    const result = run(root);
+    expect(result.status, JSON.stringify(result.report, null, 2)).toBe(0);
+    expect(result.report.status).toBe("PASS");
+  });
+
+  it("allows parameterized operational DML inside a tagged procedure", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_operational_procedure.sql": [
+        "CREATE OR REPLACE PROCEDURE public.insert_mood_projection(p_id uuid, p_owner uuid, p_mood text, p_note text, p_date date, p_timestamp bigint)",
+        "LANGUAGE plpgsql",
+        "AS $procedure$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES (p_id, p_owner, p_mood, p_note, p_date, p_timestamp, p_timestamp);",
+        "END;",
+        "$procedure$;",
+      ].join("\n"),
+    });
+
+    const result = run(root);
+    expect(result.status, JSON.stringify(result.report, null, 2)).toBe(0);
+    expect(result.report.status).toBe("PASS");
+  });
+
+  it("allows positional SQL parameters inside a stored function", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_positional_operational_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.insert_mood_projection(uuid, uuid, text, text, date, bigint)",
+        "RETURNS void",
+        "LANGUAGE sql",
+        "AS $sql$",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES ($1, $2, $3, $4, $5, $6, $6);",
+        "$sql$;",
+      ].join("\n"),
+    });
+
+    const result = run(root);
+    expect(result.status, JSON.stringify(result.report, null, 2)).toBe(0);
+    expect(result.report.status).toBe("PASS");
+  });
+
+  it("blocks a hardcoded owner identity inside an otherwise parameterized routine", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_fixed_owner_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.insert_mood_projection(p_id uuid, p_mood text, p_note text, p_date date, p_timestamp bigint)",
+        "RETURNS void LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES (p_id, '07c6a8bc-c28e-4ad4-9d04-a0a2dcdb1b62'::uuid, p_mood, p_note, p_date, p_timestamp, p_timestamp);",
+        "END;",
+        "$body$;",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("allows the authenticated runtime owner inside a parameterized routine", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_authenticated_owner_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.insert_mood_projection(p_id uuid, p_mood text, p_note text, p_date date, p_timestamp bigint)",
+        "RETURNS void LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES (p_id, auth.uid(), p_mood, p_note, p_date, p_timestamp, p_timestamp);",
+        "END;",
+        "$body$;",
+      ].join("\n"),
+    });
+
+    const result = run(root);
+    expect(result.status, JSON.stringify(result.report, null, 2)).toBe(0);
+    expect(result.report.status).toBe("PASS");
+  });
+
+  it("blocks hardcoded synthetic user history inside a function definition", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_synthetic_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.create_default_mood(p_owner uuid)",
+        "RETURNS void",
+        "LANGUAGE plpgsql",
+        "SECURITY DEFINER",
+        "SET search_path = ''",
+        "AS $function$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES (extensions.gen_random_uuid(), p_owner, 'good', 'A fabricated entry', DATE '2026-07-09', 1783562400000, 1783562400000);",
+        "END;",
+        "$function$;",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("blocks top-level user-data DML adjacent to a safe function", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_adjacent_top_level_seed.sql": [
+        "CREATE OR REPLACE FUNCTION public.insert_mood_projection(p_id uuid, p_owner uuid, p_mood text, p_note text, p_date date, p_timestamp bigint)",
+        "RETURNS void LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES (p_id, p_owner, p_mood, p_note, p_date, p_timestamp, p_timestamp);",
+        "END;",
+        "$body$;",
+        "INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "VALUES ('mood-1', 'user-1', 'good', 'fabricated', DATE '2026-07-09', 1783562400000, 1783562400000);",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("blocks dynamic SQL that writes hardcoded user history inside a function", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_dynamic_seed_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.create_dynamic_default_mood()",
+        "RETURNS void LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        "  EXECUTE 'INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at) VALUES (''mood-1'', ''user-1'', ''good'', ''fabricated'', DATE ''2026-07-09'', 1783562400000, 1783562400000)';",
+        "END;",
+        "$body$;",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("fails closed for user-data DML in a single-quoted function body", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_single_quoted_seed_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.create_single_quoted_default_mood()",
+        "RETURNS void LANGUAGE plpgsql AS '",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES (''mood-1'', ''user-1'', ''good'', ''fabricated'', DATE ''2026-07-09'', 1783562400000, 1783562400000);",
+        "END;",
+        "';",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("fails closed for a multi-row VALUES insert inside a stored routine", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_multi_row_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.insert_moods(p_id uuid, p_owner uuid, p_mood text, p_note text, p_date date, p_timestamp bigint)",
+        "RETURNS void LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES (p_id, p_owner, p_mood, p_note, p_date, p_timestamp, p_timestamp),",
+        "         ('mood-2', 'user-2', 'good', 'fabricated', DATE '2026-07-09', 1783562400000, 1783562400000);",
+        "END;",
+        "$body$;",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("blocks a dollar-quoted hardcoded history value inside a parameterized routine", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_dollar_value_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.insert_mood(p_id uuid, p_owner uuid, p_note text, p_date date, p_timestamp bigint)",
+        "RETURNS void LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES (p_id, p_owner, $mood$good$mood$, p_note, p_date, p_timestamp, p_timestamp);",
+        "END;",
+        "$body$;",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("blocks a hardcoded time expression inside an otherwise parameterized routine", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_constant_time_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.insert_mood(p_id uuid, p_owner uuid, p_mood text, p_note text, p_timestamp bigint)",
+        "RETURNS void LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES (p_id, p_owner, p_mood, p_note, make_date(2026, 7, 9), p_timestamp, p_timestamp);",
+        "END;",
+        "$body$;",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("blocks a hardcoded history fallback mixed with a runtime parameter", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_history_fallback_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.insert_mood(p_id uuid, p_owner uuid, p_mood text, p_note text, p_date date, p_timestamp bigint)",
+        "RETURNS void LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES (p_id, p_owner, COALESCE(p_mood, 'good'), p_note, p_date, p_timestamp, p_timestamp);",
+        "END;",
+        "$body$;",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("fails closed when a stored-routine body is unterminated", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_unterminated_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.insert_mood_projection(p_id uuid, p_owner uuid, p_mood text, p_note text, p_date date, p_timestamp bigint)",
+        "RETURNS void LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES (p_id, p_owner, p_mood, p_note, p_date, p_timestamp, p_timestamp);",
+        "END;",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("ignores user-data DML words that occur only in comments or ordinary SQL strings", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_sql_text_only.sql": [
+        "-- INSERT INTO public.moods (id) VALUES ('comment-only');",
+        "/* COPY public.moods FROM STDIN; */",
+        "SELECT 'INSERT INTO public.moods (id) VALUES (''string-only'')'::text;",
+      ].join("\n"),
+    });
+
+    const result = run(root);
+    expect(result.status, JSON.stringify(result.report, null, 2)).toBe(0);
+    expect(result.report.status).toBe("PASS");
+  });
+
+  it("blocks user-data DML inside an anonymous DO block", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_anonymous_seed.sql": [
+        "DO LANGUAGE plpgsql $block$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood, note, date, timestamp, updated_at)",
+        "  VALUES ('mood-1', 'user-1', 'good', 'fabricated', DATE '2026-07-09', 1783562400000, 1783562400000);",
+        "END;",
+        "$block$;",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
   it.each([
+    "COPY public.moods (id, user_id, mood) FROM STDIN;",
+    "MERGE INTO public.moods AS target USING source_moods AS source ON target.id = source.id WHEN NOT MATCHED THEN INSERT (id, user_id, mood) VALUES (source.id, source.user_id, source.mood);",
+  ])("blocks non-INSERT user-data writes inside stored routines", (statement) => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000009_non_insert_routine_write.sql": [
+        "CREATE OR REPLACE FUNCTION public.write_mood()",
+        "RETURNS void LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        `  ${statement}`,
+        "END;",
+        "$body$;",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it.each([
+    "INSERT INTO public.moods(id,user_id,mood) VALUES ('mood-1','user-1','good');",
     "INSERT INTO ONLY public.moods(id,user_id,mood) VALUES ('mood-1','user-1','good');",
+    "COPY public.moods (id,user_id,mood) FROM STDIN;\nmood-1\tuser-1\tgood\n\\.",
     "MERGE INTO public.moods AS target USING (VALUES ('mood-1','user-1','good')) AS source(id,user_id,mood) ON false WHEN NOT MATCHED THEN INSERT(id,user_id,mood) VALUES(source.id,source.user_id,source.mood);",
   ])("blocks additional PostgreSQL user-data write forms", (sql) => {
     const root = fixture({

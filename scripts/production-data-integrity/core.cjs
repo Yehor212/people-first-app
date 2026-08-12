@@ -2023,22 +2023,449 @@ function analyzeProductionTextFile(root, relativePath, config, findings, reportP
   }
 }
 
+function maskSqlRange(value) {
+  return value.replace(/[^\r\n]/g, " ");
+}
+
+function readSqlDollarDelimiter(text, index, end = text.length) {
+  if (text[index] !== "$") return null;
+  if (index + 1 < end && text[index + 1] === "$") return "$$";
+  if (index + 1 >= end || !/[A-Za-z_]/.test(text[index + 1])) return null;
+  let cursor = index + 2;
+  while (cursor < end && /[A-Za-z0-9_]/.test(text[cursor])) cursor += 1;
+  return cursor < end && text[cursor] === "$" ? text.slice(index, cursor + 1) : null;
+}
+
+function skipSqlSingleQuotedString(text, index, end = text.length) {
+  let cursor = index + 1;
+  while (cursor < end) {
+    if (text[cursor] === "'" && text[cursor + 1] === "'") {
+      cursor += 2;
+      continue;
+    }
+    if (text[cursor] === "'") return cursor + 1;
+    cursor += 1;
+  }
+  return end;
+}
+
+function skipSqlDoubleQuotedIdentifier(text, index, end = text.length) {
+  let cursor = index + 1;
+  while (cursor < end) {
+    if (text[cursor] === '"' && text[cursor + 1] === '"') {
+      cursor += 2;
+      continue;
+    }
+    if (text[cursor] === '"') return cursor + 1;
+    cursor += 1;
+  }
+  return end;
+}
+
+function skipSqlBlockComment(text, index, end = text.length) {
+  let cursor = index + 2;
+  let depth = 1;
+  while (cursor < end && depth > 0) {
+    if (text[cursor] === "/" && text[cursor + 1] === "*") {
+      depth += 1;
+      cursor += 2;
+      continue;
+    }
+    if (text[cursor] === "*" && text[cursor + 1] === "/") {
+      depth -= 1;
+      cursor += 2;
+      continue;
+    }
+    cursor += 1;
+  }
+  return cursor;
+}
+
+function maskSqlCodeSegment(text, maskSingleQuotedStrings, exposeRoutineBodyStrings = false) {
+  const output = text.split("");
+  let index = 0;
+  let statementStart = 0;
+  while (index < text.length) {
+    let end = index;
+    if (text[index] === "-" && text[index + 1] === "-") {
+      end = text.indexOf("\n", index + 2);
+      if (end === -1) end = text.length;
+    } else if (text[index] === "/" && text[index + 1] === "*") {
+      end = skipSqlBlockComment(text, index);
+    } else if (text[index] === "'") {
+      end = skipSqlSingleQuotedString(text, index);
+      const prefixTail = text.slice(Math.max(statementStart, index - 32), index);
+      const routineBodyString = exposeRoutineBodyStrings &&
+        /\bas(?:\s+e)?\s*$/i.test(prefixTail) &&
+        /\bcreate\s+(?:or\s+replace\s+)?(?:function|procedure)\b/i.test(
+          text.slice(statementStart, index)
+        );
+      if (routineBodyString) {
+        index = end;
+        continue;
+      }
+      if (!maskSingleQuotedStrings) {
+        index = end;
+        continue;
+      }
+    } else if (text[index] === '"') {
+      index = skipSqlDoubleQuotedIdentifier(text, index);
+      continue;
+    }
+
+    if (end > index) {
+      for (let cursor = index; cursor < end; cursor += 1) {
+        if (text[cursor] !== "\n" && text[cursor] !== "\r") output[cursor] = " ";
+      }
+      index = end;
+      continue;
+    }
+    if (text[index] === ";") statementStart = index + 1;
+    index += 1;
+  }
+  return output.join("");
+}
+
+function classifySqlDollarSection(prefix) {
+  const normalizedPrefix = maskSqlCodeSegment(prefix, true).trim();
+  if (
+    /\bcreate\s+(?:or\s+replace\s+)?(?:function|procedure)\b[\s\S]*\bas\s*$/i.test(
+      normalizedPrefix
+    )
+  ) {
+    return "routine";
+  }
+  if (/\bdo(?:\s+language\s+(?:"(?:""|[^"])+"|[a-z_][a-z0-9_$]*))?\s*$/i.test(normalizedPrefix)) {
+    return "do";
+  }
+  return "other";
+}
+
+function findSqlDollarSections(text) {
+  const sections = [];
+  let index = 0;
+  let statementStart = 0;
+  while (index < text.length) {
+    if (text[index] === "-" && text[index + 1] === "-") {
+      const lineEnd = text.indexOf("\n", index + 2);
+      index = lineEnd === -1 ? text.length : lineEnd + 1;
+      continue;
+    }
+    if (text[index] === "/" && text[index + 1] === "*") {
+      index = skipSqlBlockComment(text, index);
+      continue;
+    }
+    if (text[index] === "'") {
+      index = skipSqlSingleQuotedString(text, index);
+      continue;
+    }
+    if (text[index] === '"') {
+      index = skipSqlDoubleQuotedIdentifier(text, index);
+      continue;
+    }
+    if (text[index] === ";") {
+      statementStart = index + 1;
+      index += 1;
+      continue;
+    }
+
+    const delimiter = readSqlDollarDelimiter(text, index);
+    if (!delimiter) {
+      index += 1;
+      continue;
+    }
+    const contentStart = index + delimiter.length;
+    const closingStart = text.indexOf(delimiter, contentStart);
+    const closed = closingStart !== -1;
+    const contentEnd = closed ? closingStart : text.length;
+    const end = closed ? closingStart + delimiter.length : text.length;
+    sections.push({
+      start: index,
+      contentStart,
+      contentEnd,
+      end,
+      closed,
+      kind: classifySqlDollarSection(text.slice(statementStart, index)),
+    });
+    index = end;
+  }
+  return sections;
+}
+
+function buildSqlSearchSurface(text) {
+  const sections = findSqlDollarSections(text);
+  const routineBodies = [];
+  let surface = "";
+  let cursor = 0;
+
+  for (const section of sections) {
+    surface += maskSqlCodeSegment(text.slice(cursor, section.start), true, true);
+    const activeBody = section.kind === "routine" || section.kind === "do" || !section.closed;
+    if (activeBody) {
+      surface += maskSqlRange(text.slice(section.start, section.contentStart));
+      surface += maskSqlCodeSegment(
+        text.slice(section.contentStart, section.contentEnd),
+        false
+      );
+      surface += maskSqlRange(text.slice(section.contentEnd, section.end));
+    } else {
+      surface += maskSqlRange(text.slice(section.start, section.end));
+    }
+    if (section.kind === "routine" && section.closed) {
+      routineBodies.push({ start: section.contentStart, end: section.contentEnd });
+    }
+    cursor = section.end;
+  }
+  surface += maskSqlCodeSegment(text.slice(cursor), true, true);
+  return { surface, routineBodies };
+}
+
+function findSqlStringLiteralRanges(text, start, end) {
+  const ranges = [];
+  let index = start;
+  while (index < end) {
+    if (text[index] === "-" && text[index + 1] === "-") {
+      const lineEnd = text.indexOf("\n", index + 2);
+      index = lineEnd === -1 || lineEnd >= end ? end : lineEnd + 1;
+      continue;
+    }
+    if (text[index] === "/" && text[index + 1] === "*") {
+      index = Math.min(skipSqlBlockComment(text, index, end), end);
+      continue;
+    }
+    if (text[index] === "'") {
+      const rangeEnd = skipSqlSingleQuotedString(text, index, end);
+      ranges.push({ start: index, end: rangeEnd, kind: "single" });
+      index = rangeEnd;
+      continue;
+    }
+    if (text[index] === '"') {
+      index = skipSqlDoubleQuotedIdentifier(text, index, end);
+      continue;
+    }
+    const delimiter = readSqlDollarDelimiter(text, index, end);
+    if (delimiter) {
+      const closingStart = text.indexOf(delimiter, index + delimiter.length);
+      const rangeEnd = closingStart === -1 || closingStart >= end
+        ? end
+        : closingStart + delimiter.length;
+      ranges.push({ start: index, end: rangeEnd, kind: "dollar" });
+      index = rangeEnd;
+      continue;
+    }
+    index += 1;
+  }
+  return ranges;
+}
+
+function parseSqlParenthesized(surface, openIndex, limit) {
+  if (surface[openIndex] !== "(") return null;
+  let depth = 0;
+  let index = openIndex;
+  while (index < limit) {
+    if (surface[index] === "'") {
+      index = skipSqlSingleQuotedString(surface, index, limit);
+      continue;
+    }
+    if (surface[index] === '"') {
+      index = skipSqlDoubleQuotedIdentifier(surface, index, limit);
+      continue;
+    }
+    const delimiter = readSqlDollarDelimiter(surface, index, limit);
+    if (delimiter) {
+      const closingStart = surface.indexOf(delimiter, index + delimiter.length);
+      if (closingStart === -1 || closingStart >= limit) return null;
+      index = closingStart + delimiter.length;
+      continue;
+    }
+    if (surface[index] === "(") depth += 1;
+    if (surface[index] === ")") {
+      depth -= 1;
+      if (depth === 0) return { contentStart: openIndex + 1, contentEnd: index, end: index + 1 };
+    }
+    index += 1;
+  }
+  return null;
+}
+
+function splitTopLevelSqlList(value) {
+  const parts = [];
+  let currentStart = 0;
+  let parentheses = 0;
+  let brackets = 0;
+  let index = 0;
+  while (index < value.length) {
+    if (value[index] === "'") {
+      index = skipSqlSingleQuotedString(value, index);
+      continue;
+    }
+    if (value[index] === '"') {
+      index = skipSqlDoubleQuotedIdentifier(value, index);
+      continue;
+    }
+    const delimiter = readSqlDollarDelimiter(value, index);
+    if (delimiter) {
+      const closingStart = value.indexOf(delimiter, index + delimiter.length);
+      index = closingStart === -1 ? value.length : closingStart + delimiter.length;
+      continue;
+    }
+    if (value[index] === "(") parentheses += 1;
+    if (value[index] === ")") parentheses -= 1;
+    if (value[index] === "[") brackets += 1;
+    if (value[index] === "]") brackets -= 1;
+    if (value[index] === "," && parentheses === 0 && brackets === 0) {
+      parts.push(value.slice(currentStart, index).trim());
+      currentStart = index + 1;
+    }
+    index += 1;
+  }
+  parts.push(value.slice(currentStart).trim());
+  return parts.filter(Boolean);
+}
+
+function normalizeSqlColumnName(value) {
+  return value.trim().replace(/^"|"$/g, "").replace(/""/g, '"').toLowerCase();
+}
+
+function isSqlOwnershipColumn(value) {
+  return /^(?:user|owner|account|profile|tenant)_?id$/.test(value);
+}
+
+function hasRuntimeSqlBinding(value) {
+  return /\b(?:p|v|in|arg)_[a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*)?\b|\b(?:new|old)\.[a-z_][a-z0-9_]*\b|\$\d+\b/i.test(
+    value
+  );
+}
+
+function hasRuntimeSqlOwnership(value) {
+  return hasRuntimeSqlBinding(value) ||
+    /^auth\.uid\s*\(\s*\)(?:\s*::\s*(?:pg_catalog\.)?uuid)?$/i.test(value.trim());
+}
+
+function isSqlNullValue(value) {
+  return /^null(?:\s*::[a-z_][a-z0-9_.]*(?:\[\])?)?$/i.test(value.trim());
+}
+
+function isGeneratedSqlIdentity(value) {
+  return /^(?:(?:extensions|public)\.)?(?:gen_random_uuid|uuid_generate_v4)\s*\(\s*\)(?:\s*::uuid)?$/i.test(
+    value.trim()
+  );
+}
+
+function isRuntimeSqlTime(value) {
+  return /^(?:current_(?:date|time|timestamp)|(?:(?:pg_catalog|public)\.)?(?:now|clock_timestamp|statement_timestamp|transaction_timestamp|automation_now_ms)\s*\(\s*\))(?:\s*::[a-z_][a-z0-9_.]*)?$/i.test(
+    value.trim()
+  );
+}
+
+function hasHardcodedSqlLiteral(value) {
+  if (findSqlStringLiteralRanges(value, 0, value.length).length > 0) return true;
+  return /(?:^|[^$a-z0-9_])(?:[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?|true|false)(?=$|[^a-z0-9_])/i.test(
+    value
+  );
+}
+
+function hasSyntheticSqlMarker(valuesText, config) {
+  const ranges = findSqlStringLiteralRanges(valuesText, 0, valuesText.length).filter(
+    (range) => range.kind === "single"
+  );
+  return ranges.some((range) => {
+    const literal = valuesText
+      .slice(range.start + 1, Math.max(range.start + 1, range.end - 1))
+      .replace(/''/g, "'")
+      .toLowerCase();
+    return config.syntheticMarkers.some((marker) => literal.includes(marker.toLowerCase()));
+  });
+}
+
+function isSafeParameterizedRoutineInsert(text, surface, match, routineBody, config) {
+  if (!/^insert\s+into\b/i.test(match[0])) return false;
+  const literalRanges = findSqlStringLiteralRanges(text, routineBody.start, routineBody.end);
+  if (literalRanges.some((range) => match.index >= range.start && match.index < range.end)) {
+    return false;
+  }
+
+  let cursor = match.index + match[0].length;
+  while (cursor < routineBody.end && /\s/.test(surface[cursor])) cursor += 1;
+  const columnsRange = parseSqlParenthesized(surface, cursor, routineBody.end);
+  if (!columnsRange) return false;
+  cursor = columnsRange.end;
+  while (cursor < routineBody.end && /\s/.test(surface[cursor])) cursor += 1;
+  if (!/^values\b/i.test(surface.slice(cursor))) return false;
+  cursor += /^values\b/i.exec(surface.slice(cursor))[0].length;
+  while (cursor < routineBody.end && /\s/.test(surface[cursor])) cursor += 1;
+  const valuesRange = parseSqlParenthesized(surface, cursor, routineBody.end);
+  if (!valuesRange) return false;
+  cursor = valuesRange.end;
+  while (cursor < routineBody.end && /\s/.test(surface[cursor])) cursor += 1;
+  if (surface[cursor] === ",") return false;
+
+  const columns = splitTopLevelSqlList(
+    text.slice(columnsRange.contentStart, columnsRange.contentEnd)
+  ).map(normalizeSqlColumnName);
+  const values = splitTopLevelSqlList(
+    text.slice(valuesRange.contentStart, valuesRange.contentEnd)
+  );
+  if (columns.length === 0 || columns.length !== values.length) return false;
+
+  const valueByColumn = new Map(columns.map((column, index) => [column, values[index]]));
+  const unsafeHistory = config.historySignalFields.some((field) => {
+    const value = valueByColumn.get(field.toLowerCase());
+    return value !== undefined &&
+      !isSqlNullValue(value) &&
+      (!hasRuntimeSqlBinding(value) || hasHardcodedSqlLiteral(value));
+  });
+  const unsafeTime = config.timeSignalFields.some((field) => {
+    const value = valueByColumn.get(field.toLowerCase());
+    return value !== undefined &&
+      !isSqlNullValue(value) &&
+      ((!hasRuntimeSqlBinding(value) && !isRuntimeSqlTime(value)) ||
+        hasHardcodedSqlLiteral(value));
+  });
+  const identity = valueByColumn.get("id");
+  const unsafeIdentity = identity !== undefined &&
+    ((!hasRuntimeSqlBinding(identity) && !isGeneratedSqlIdentity(identity)) ||
+      hasHardcodedSqlLiteral(identity));
+  const unsafeOwnership = columns.some((column, index) =>
+    isSqlOwnershipColumn(column) &&
+    (!hasRuntimeSqlOwnership(values[index]) || hasHardcodedSqlLiteral(values[index]))
+  );
+  const valuesText = text.slice(valuesRange.contentStart, valuesRange.contentEnd);
+  const hasRuntimeBinding = values.some(hasRuntimeSqlBinding);
+
+  return hasRuntimeBinding &&
+    !unsafeHistory &&
+    !unsafeTime &&
+    !unsafeIdentity &&
+    !unsafeOwnership &&
+    !hasSyntheticSqlMarker(valuesText, config);
+}
+
 function analyzeSqlFile(root, relativePath, config, findings, reportPath) {
   if (!reportPath(relativePath) || classifyPath(relativePath, config) === "test") return;
   const text = readText(root, relativePath, config.limits.maxSourceFileBytes);
   if (text === null) return;
-  const withoutComments = text.replace(/--[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
+  const { surface, routineBodies } = buildSqlSearchSurface(text);
   const userDataTables = new Set(
     config.userDataTables.map((table) => table.split(".").pop().toLowerCase())
   );
   const pattern =
     /\b(?:insert\s+into\s+(?:only\s+)?|merge\s+into\s+|copy\s+)((?:"?[a-zA-Z_][a-zA-Z0-9_$]*"?\s*\.\s*)?"?[a-zA-Z_][a-zA-Z0-9_$]*"?)(?=\s|\(|;|$)/gi;
   let match;
-  while ((match = pattern.exec(withoutComments)) !== null) {
+  while ((match = pattern.exec(surface)) !== null) {
     const normalizedTarget = match[1].replace(/["\s]/g, "").toLowerCase();
     const table = normalizedTarget.split(".").pop();
     if (!userDataTables.has(table)) continue;
-    const before = withoutComments.slice(0, match.index);
+    const routineBody = routineBodies.find(
+      (candidate) => match.index >= candidate.start && match.index < candidate.end
+    );
+    if (
+      routineBody &&
+      isSafeParameterizedRoutineInsert(text, surface, match, routineBody, config)
+    ) {
+      continue;
+    }
+    const before = surface.slice(0, match.index);
     const line = before.split("\n").length;
     findings.push(
       makeFinding(config, {
