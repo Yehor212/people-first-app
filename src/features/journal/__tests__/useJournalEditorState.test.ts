@@ -187,6 +187,11 @@ describe("iOS keyboard inset contract", () => {
     expect(hookSource).toContain('vv.addEventListener("scroll", updateKeyboardInset);');
     expect(hookSource).toContain("keyboardInset,");
   });
+
+  it("does not double-apply the visual viewport inset owned by Android SafeArea", () => {
+    expect(hookSource).toContain('import { isIos } from "@/lib/platform";');
+    expect(hookSource).toContain("if (desktop || !isIos) {");
+  });
 });
 
 describe("journal tag sanitization", () => {

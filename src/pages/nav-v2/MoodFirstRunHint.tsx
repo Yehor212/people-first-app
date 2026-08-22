@@ -1,7 +1,9 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { haptics } from "@/lib/haptics";
+import { registerModalCloseCallback } from "@/lib/androidBackHandler";
+import { isAndroid } from "@/lib/platform";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 import "./MoodFirstRunHint.css";
@@ -45,6 +47,13 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const [visible, setVisible] = useState(false);
+  const dismissButtonRef = useRef<HTMLButtonElement>(null);
+
+  const dismiss = useCallback(() => {
+    void haptics.tabChanged();
+    setVisible(false);
+    writeDismissed();
+  }, []);
 
   useEffect(() => {
     if (!eligible) return;
@@ -64,17 +73,32 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
     return () => window.removeEventListener("keydown", onKey);
   }, [visible]);
 
-  if (!visible || typeof document === "undefined") return null;
+  useEffect(() => {
+    if (!visible || !isAndroid) return;
+    return registerModalCloseCallback(() => {
+      dismiss();
+      return true;
+    });
+  }, [dismiss, visible]);
 
-  const dismiss = () => {
-    void haptics.tabChanged();
-    setVisible(false);
-    writeDismissed();
-  };
+  useEffect(() => {
+    if (!visible || !isAndroid) return;
+    const previousFocus = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    const frame = window.requestAnimationFrame(() => dismissButtonRef.current?.focus());
+    return () => {
+      window.cancelAnimationFrame(frame);
+      previousFocus?.focus();
+    };
+  }, [visible]);
+
+  if (!visible || typeof document === "undefined") return null;
 
   return createPortal(
     <div
       role="dialog"
+      aria-modal={isAndroid ? true : undefined}
       aria-labelledby="mood-first-run-title"
       data-testid="mood-first-run-hint"
       className="mood-first-run-backdrop"
@@ -111,6 +135,7 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
         </ol>
 
         <button
+          ref={dismissButtonRef}
           type="button"
           data-testid="mood-first-run-dismiss"
           className="mood-first-run-dismiss"

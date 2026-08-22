@@ -42,6 +42,7 @@ import {
 import { useJournalVoice } from "./useJournalVoice";
 import { useAudioRecorder, type RecordedAudioCapture } from "./useAudioRecorder";
 import { logger } from "@/lib/logger";
+import { isIos } from "@/lib/platform";
 import { SK } from "@/lib/storageKeys";
 import { safeJsonParse, storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { useDiaryTheme } from "./useDiaryTheme";
@@ -1189,9 +1190,11 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     };
   }, [showPromptsDropdown]);
 
-  // iOS/WKWebView visual viewport resize: reserve software keyboard space.
+  // iOS/WKWebView reserves keyboard space here. Android's native SafeArea owner
+  // applies the IME inset to the WebView, so repeating it in CSS would hide the
+  // focused editor field.
   useEffect(() => {
-    if (desktop) {
+    if (desktop || !isIos) {
       setKeyboardInset(0);
       return;
     }

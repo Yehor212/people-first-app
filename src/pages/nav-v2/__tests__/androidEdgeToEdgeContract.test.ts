@@ -44,17 +44,19 @@ describe("Android edge-to-edge native contract", () => {
     expect(styles).not.toContain("@color/zenflow_edge_underlay");
   });
 
-  it("uses @capacitor-community/safe-area as the only Android WebView inset owner", () => {
+  it("uses Capacitor SystemBars as the only Android WebView inset owner", () => {
     const capacitorConfig = read("capacitor.config.ts");
     const packageJson = read("package.json");
+    const manifest = read("android/app/src/main/AndroidManifest.xml");
 
-    expect(packageJson).toContain('"@capacitor-community/safe-area"');
+    expect(packageJson).not.toContain('"@capacitor-community/safe-area"');
     expect(capacitorConfig).toContain("SystemBars");
-    expect(capacitorConfig).toContain('insetsHandling: "disable"');
-    expect(capacitorConfig).not.toContain('insetsHandling: "css"');
+    expect(capacitorConfig).toContain('insetsHandling: "css"');
+    expect(capacitorConfig).not.toContain('insetsHandling: "disable"');
     expect(capacitorConfig).not.toContain("hidden: true");
-    expect(capacitorConfig).toContain("SafeArea");
-    expect(capacitorConfig).toContain("initialViewportFitCover: true");
+    expect(capacitorConfig).not.toContain("SafeArea:");
+    expect(manifest).toContain('android:windowSoftInputMode="adjustNothing"');
+    expect(manifest).not.toContain('android:windowSoftInputMode="adjustResize"');
   });
 
   it("uses a V2 edge-bleed backdrop behind transparent native system bars", () => {
@@ -89,7 +91,9 @@ describe("Android edge-to-edge native contract", () => {
     const viteConfig = read("vite.config.ts");
 
     expect(viteConfig).toContain("process.env.CAPACITOR_BUILD === \"true\"");
-    expect(viteConfig).toContain("const base = isCapacitor ? \"./\" : webBase;");
+    expect(viteConfig).toContain(
+      "const base = t184QaBuild ? \"/\" : isCapacitor ? \"./\" : webBase;",
+    );
     expect(viteConfig).toContain("const pwaEnabled = !isCapacitor");
 
     const nativeIndexPath = "android/app/src/main/assets/public/index.html";
@@ -101,6 +105,11 @@ describe("Android edge-to-edge native contract", () => {
     expect(nativeIndex).not.toContain('href="/people-first-app/manifest.webmanifest');
     expect(nativeIndex).not.toContain('src="/people-first-app/registerSW.js');
     expect(nativeIndex).not.toContain('id="vite-plugin-pwa:register-sw"');
+    if (nativeIndex.includes("ZenFlow T184 Android QA")) {
+      expect(nativeIndex).toMatch(/src="\/assets\/index-[^"]+\.js"/);
+      expect(nativeIndex).not.toContain('src="./src/test/t184/');
+      return;
+    }
     expect(nativeIndex).toMatch(/src="\.\/assets\/index-[^"]+\.js"/);
     expect(nativeIndex).toMatch(/href="\.\/assets\/index-[^"]+\.css"/);
   });
