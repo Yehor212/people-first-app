@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   applyDelta: vi.fn(),
+  bootstrapAutomationHistory: vi.fn(),
   bootstrapSnapshotThenDelta: vi.fn(),
   fetchAllDeltas: vi.fn(),
   getCurrentSessionUserId: vi.fn<() => Promise<string | null>>(),
@@ -28,9 +29,7 @@ const mocks = vi.hoisted(() => ({
   waitForQueueInit: vi.fn<() => Promise<void>>(),
   pullFromCloud: vi.fn(),
   recordSyncHealthReceipt: vi.fn(),
-  remoteChangeCallback: null as
-    | ((signal: { eventSeq?: number }) => void)
-    | null,
+  remoteChangeCallback: null as ((signal: { eventSeq?: number }) => void) | null,
   runWithSyncLeaderLock: vi.fn(),
   scheduleIdleCallbacks: [] as Array<() => void>,
   cancelIdle: vi.fn(),
@@ -72,12 +71,14 @@ vi.mock("@/lib/offlineQueue", () => ({
 }));
 
 vi.mock("@/lib/syncStateMachine", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/syncStateMachine")>(
-    "@/lib/syncStateMachine"
-  );
+  const actual =
+    await vi.importActual<typeof import("@/lib/syncStateMachine")>("@/lib/syncStateMachine");
   return {
     ...actual,
-    syncReducer: (state: Parameters<typeof actual.syncReducer>[0], action: Parameters<typeof actual.syncReducer>[1]) => {
+    syncReducer: (
+      state: Parameters<typeof actual.syncReducer>[0],
+      action: Parameters<typeof actual.syncReducer>[1]
+    ) => {
       mocks.syncActions.push(action);
       return actual.syncReducer(state, action);
     },
@@ -127,6 +128,10 @@ vi.mock("@/storage/realtimeSync", () => ({
   pullFromCloud: mocks.pullFromCloud,
 }));
 
+vi.mock("@/features/automation", () => ({
+  bootstrapAutomationHistoryOnce: mocks.bootstrapAutomationHistory,
+}));
+
 vi.mock("@/observability/syncHealthRecorder", () => ({
   recordSyncHealthReceipt: mocks.recordSyncHealthReceipt,
 }));
@@ -147,6 +152,7 @@ describe("useDeltaSyncEffects", () => {
     mocks.offlineActions = [];
     mocks.processQueue.mockResolvedValue(undefined);
     mocks.waitForQueueInit.mockResolvedValue(undefined);
+    mocks.bootstrapAutomationHistory.mockResolvedValue(null);
     mocks.scheduleIdleCallbacks.length = 0;
     mocks.syncActions.length = 0;
     mocks.authChangeCallback = null;
@@ -406,9 +412,7 @@ describe("useDeltaSyncEffects", () => {
     mocks.getCurrentSessionUserId.mockImplementation(async () => activeOwner);
     mocks.getLastSeq.mockResolvedValue(10);
     mocks.getPersistentDeviceId.mockResolvedValue("device-current");
-    mocks.fetchAllDeltas
-      .mockImplementationOnce(() => accountADelta)
-      .mockResolvedValueOnce([]);
+    mocks.fetchAllDeltas.mockImplementationOnce(() => accountADelta).mockResolvedValueOnce([]);
     mocks.runWithSyncLeaderLock.mockImplementation(async (_name, task) => ({
       acquired: true,
       value: await task(),
@@ -481,6 +485,32 @@ describe("useDeltaSyncEffects", () => {
     unmount();
   });
 
+  it("rebases automation revisions before reporting a generic snapshot fallback as complete", async () => {
+    mocks.getCurrentSessionUserId.mockResolvedValue("account-a");
+    mocks.getLastSeq.mockResolvedValue(10);
+    mocks.pullFromCloud.mockResolvedValue(true);
+    mocks.getServerMaxSeq.mockResolvedValue(2002);
+    mocks.runWithSyncLeaderLock.mockImplementation(async (_name, task) => ({
+      acquired: true,
+      value: await task(),
+    }));
+
+    const { unmount } = renderHook(() => useDeltaSyncEffects());
+    mocks.remoteChangeCallback?.({ eventSeq: 2002 });
+
+    await waitFor(() => {
+      expect(mocks.bootstrapAutomationHistory).toHaveBeenCalledWith("account-a", { force: true });
+    });
+    expect(mocks.pullFromCloud).toHaveBeenCalledBefore(mocks.bootstrapAutomationHistory);
+    expect(mocks.bootstrapAutomationHistory).toHaveBeenCalledBefore(mocks.getServerMaxSeq);
+    expect(mocks.syncActions).toContainEqual({
+      type: "SNAPSHOT_SUCCESS",
+      lastSeq: 2002,
+    });
+
+    unmount();
+  });
+
   it("aborts and discards delayed account A gap recovery after switching to account B", async () => {
     let activeOwner = "account-a";
     let resolveAccountAGap!: (events: Array<Record<string, unknown>>) => void;
@@ -491,9 +521,7 @@ describe("useDeltaSyncEffects", () => {
     mocks.getCurrentSessionUserId.mockImplementation(async () => activeOwner);
     mocks.getLastSeq.mockResolvedValue(10);
     mocks.getPersistentDeviceId.mockResolvedValue("device-current");
-    mocks.fetchAllDeltas
-      .mockImplementationOnce(() => accountAGap)
-      .mockResolvedValueOnce([]);
+    mocks.fetchAllDeltas.mockImplementationOnce(() => accountAGap).mockResolvedValueOnce([]);
     mocks.runWithSyncLeaderLock.mockImplementation(async (_name, task) => ({
       acquired: true,
       value: await task(),

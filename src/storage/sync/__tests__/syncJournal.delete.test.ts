@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   trackDeletedJournalEntryId: vi.fn(),
   getPersistentDeviceId: vi.fn(),
   writeEventAndBroadcast: vi.fn(),
+  commitManualSyncEvent: vi.fn(),
   generateEmbeddings: vi.fn(),
   isEntityTombstonedOnServer: vi.fn(),
   isAbortError: vi.fn(),
@@ -37,6 +38,10 @@ vi.mock("@/storage/deletionTracker", () => ({
 vi.mock("@/storage/eventSync", () => ({
   getPersistentDeviceId: mocks.getPersistentDeviceId,
   writeEventAndBroadcast: mocks.writeEventAndBroadcast,
+}));
+
+vi.mock("@/storage/sync/manualSyncAcceptance", () => ({
+  commitManualSyncEvent: mocks.commitManualSyncEvent,
 }));
 
 vi.mock("@/storage/db", () => ({
@@ -96,6 +101,7 @@ describe("journal sync tombstones", () => {
     mocks.isAbortError.mockReturnValue(false);
     mocks.rpc.mockResolvedValue({ data: true, error: null });
     mocks.journalEntryGet.mockResolvedValue(undefined);
+    mocks.commitManualSyncEvent.mockResolvedValue({ seq: 1 });
   });
 
   it("does not publish a sync event when the server rejects a stale journal write", async () => {
@@ -135,6 +141,42 @@ describe("journal sync tombstones", () => {
         }),
       }
     );
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("accepts a durable journal mutation and its event through one server transaction", async () => {
+    const operationId = "22222222-2222-4222-8222-222222222222";
+    const entry = {
+      id: "journal-atomic",
+      date: "2026-08-13",
+      title: "Private title",
+      content: "zenflow:journal:v1:opaque",
+      stickers: [],
+      tags: [],
+      photoIds: [],
+      createdAt: 10,
+      updatedAt: 20,
+    };
+
+    await syncJournalEntry(entry, "user-1", undefined, operationId);
+
+    expect(mocks.commitManualSyncEvent).toHaveBeenCalledWith({
+      ownerUserId: "user-1",
+      operationId,
+      entityType: "journal",
+      entityId: "journal-atomic",
+      op: "upsert",
+      projection: expect.objectContaining({
+        id: "journal-atomic",
+        date: "2026-08-13",
+        title: "Private title",
+        content: "zenflow:journal:v1:opaque",
+        created_at: 10,
+        updated_at: 20,
+      }),
+      deviceId: "device-1",
+    });
+    expect(mocks.from).not.toHaveBeenCalledWith("journal_entries");
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 

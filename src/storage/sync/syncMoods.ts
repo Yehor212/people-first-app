@@ -15,12 +15,11 @@ import type { ErrorCategory } from "@/lib/sentry";
 const lazyCategorizedBreadcrumb = (
   category: ErrorCategory,
   message: string,
-  data?: Record<string, unknown>,
   level?: SeverityLevel
 ) => {
   import("@/lib/sentry")
-    .then((mod) => mod.addCategorizedBreadcrumb(category, message, data, level))
-    .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
+    .then((mod) => mod.addCategorizedBreadcrumb(category, message, undefined, level))
+    .catch(() => logger.warn("[Sentry] lazy load skipped"));
 };
 import { isAbortError, isValidUUID } from "@/lib/validation";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";
@@ -31,6 +30,7 @@ import { offlineQueue } from "@/lib/offlineQueue";
 import { detectNetworkError } from "./syncUtils";
 import { isEntityTombstonedOnServer } from "./serverTombstones";
 import { validateSyncOwner } from "./syncOwner";
+import { commitManualSyncEvent } from "./manualSyncAcceptance";
 
 // ============================================
 // MOOD SYNC
@@ -38,11 +38,15 @@ import { validateSyncOwner } from "./syncOwner";
 
 export const syncMood = async (
   mood: MoodEntry,
-  expectedOwnerUserId?: string
+  expectedOwnerUserId?: string,
+  eventIdempotencyKey?: string
 ): Promise<void> => {
   const userId = await validateSyncOwner(expectedOwnerUserId, "Mood sync");
   // Explicit validation to prevent RLS violations with undefined user_id
-  if (!supabase) return;
+  if (!supabase) {
+    if (eventIdempotencyKey) throw new Error("Mood remote sync is unavailable");
+    return;
+  }
   if (!userId) {
     logger.warn("[Sync] Cannot sync mood: User not authenticated");
     return;
@@ -50,83 +54,102 @@ export const syncMood = async (
 
   const deletedMoodIds = await getDeletedMoodIds();
   if (deletedMoodIds.has(mood.id)) {
-    logger.warn("[Sync] Skipping tombstoned mood upsert:", mood.id);
+    logger.warn("[Sync] Skipping tombstoned mood upsert");
     return;
   }
 
   // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
   if (!isValidUUID(mood.id)) {
-    logger.log("[Sync] Skipping granular mood sync (non-UUID ID):", mood.id);
+    if (eventIdempotencyKey) {
+      throw new Error("Mood remote identity is unsupported");
+    }
+    logger.log("[Sync] Skipping granular mood sync for a legacy identifier");
     return;
   }
 
-  lazyCategorizedBreadcrumb("sync", "Starting mood sync", {
-    moodId: mood.id,
-    date: mood.date,
-  });
+  lazyCategorizedBreadcrumb("sync", "Starting mood sync");
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
+    if (eventIdempotencyKey) {
+      throw new DOMException("Mood delivery paused while offline", "AbortError");
+    }
     await offlineQueue.enqueue("CREATE_MOOD", mood.id, mood, {
       expectedOwnerUserId: userId,
     });
-    lazyCategorizedBreadcrumb("sync", "Mood queued (offline)", {
-      moodId: mood.id,
-    });
-    logger.log("[Sync] Mood queued for offline sync:", mood.id);
+    lazyCategorizedBreadcrumb("sync", "Mood queued (offline)");
+    logger.log("[Sync] Mood queued for offline sync");
     return;
   }
 
   if (await isEntityTombstonedOnServer("mood", mood.id, userId)) {
     await trackDeletedMoodId(mood.id);
-    logger.warn("[Sync] Skipping server-tombstoned mood upsert:", mood.id);
+    logger.warn("[Sync] Skipping server-tombstoned mood upsert");
     return;
   }
 
   try {
     if (!(await validateSyncOwner(userId, "Mood sync"))) return;
+    const projection = {
+      id: mood.id,
+      mood: mood.mood,
+      note: mood.note || null,
+      tags: mood.tags || [],
+      date: mood.date,
+      timestamp: mood.timestamp,
+      emotion: (mood.emotion as unknown as Json) || null,
+      valence: mood.valence ?? null,
+      log_type: mood.logType ?? null,
+      emotion_tags: mood.emotionTags ?? [],
+      contexts: mood.contexts ?? [],
+      updated_at: mood.updatedAt
+        ? new Date(mood.updatedAt).toISOString()
+        : new Date().toISOString(),
+    };
+    const deviceId = await getPersistentDeviceId();
+    if (eventIdempotencyKey) {
+      await commitManualSyncEvent({
+        ownerUserId: userId,
+        operationId: eventIdempotencyKey,
+        entityType: "mood",
+        entityId: mood.id,
+        op: "upsert",
+        projection,
+        deviceId,
+      });
+      lazyCategorizedBreadcrumb("sync", "Mood synced successfully");
+      logger.log("[Sync] Mood synced");
+      return;
+    }
     const { error } = await supabase.from("moods").upsert(
-      {
-        id: mood.id,
-        user_id: userId,
-        mood: mood.mood,
-        note: mood.note || null,
-        tags: mood.tags || [],
-        date: mood.date,
-        timestamp: mood.timestamp,
-        emotion: (mood.emotion as unknown as Json) || null,
-        // State of Mind fields (v2.0.0)
-        valence: mood.valence ?? null,
-        log_type: mood.logType ?? null,
-        emotion_tags: mood.emotionTags ?? [],
-        contexts: mood.contexts ?? [],
-        updated_at: mood.updatedAt
-          ? new Date(mood.updatedAt).toISOString()
-          : new Date().toISOString(),
-      },
+      { ...projection, user_id: userId },
       { onConflict: "id" }
     );
 
     if (error) throw error;
-    lazyCategorizedBreadcrumb("sync", "Mood synced successfully", {
-      moodId: mood.id,
-    });
-    logger.log("[Sync] Mood synced:", mood.id);
-    const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast(
+    lazyCategorizedBreadcrumb("sync", "Mood synced successfully");
+    logger.log("[Sync] Mood synced");
+    const event = await writeEventAndBroadcast(
       "mood",
       mood.id,
       "upsert",
       mood as unknown as Record<string, unknown>,
       deviceId,
-      { expectedOwnerUserId: userId }
+      {
+        expectedOwnerUserId: userId,
+        ...(eventIdempotencyKey
+          ? { idempotencyKey: eventIdempotencyKey, queueOnFailure: false, requireRemoteCommit: true }
+          : {}),
+      }
     );
+    if (eventIdempotencyKey && !event) {
+      throw new Error("Mood ordered event was not committed");
+    }
   } catch (error) {
-    // Handle AbortError separately - it's intentional, don't retry/queue
     if (isAbortError(error)) {
-      lazyCategorizedBreadcrumb("sync", "Mood sync aborted", { moodId: mood.id }, "warning");
-      logger.warn("[Sync] Mood sync aborted (timeout or navigation):", mood.id);
-      return; // Don't retry, don't queue - this was intentional
+      lazyCategorizedBreadcrumb("sync", "Mood sync aborted", "warning");
+      logger.warn("[Sync] Mood sync aborted");
+      throw error;
     }
 
     // More robust network error detection
@@ -134,25 +157,24 @@ export const syncMood = async (
     const isNetworkError = detectNetworkError(error);
 
     if (isNetworkError) {
+      if (eventIdempotencyKey) throw error;
       await offlineQueue.enqueue("CREATE_MOOD", mood.id, mood, {
         expectedOwnerUserId: userId,
       });
       lazyCategorizedBreadcrumb(
         "sync",
         "Mood queued (network error)",
-        { moodId: mood.id },
         "warning"
       );
-      logger.log("[Sync] Mood queued after network error:", mood.id);
+      logger.log("[Sync] Mood queued after network error");
       // Don't re-throw network errors - they're handled via offline queue
     } else {
       lazyCategorizedBreadcrumb(
         "sync",
         "Mood sync failed",
-        { moodId: mood.id, error: (error as Error).message },
         "error"
       );
-      logger.error("[Sync] Failed to sync mood:", error);
+      logger.error("[Sync] Failed to sync mood");
       // P0-4 Fix: Re-throw so callers (especially offline queue handlers) know sync failed
       // Without this, the offline queue removes the action thinking it succeeded
       throw error;
@@ -162,21 +184,29 @@ export const syncMood = async (
 
 export const deleteMoodFromCloud = async (
   moodId: string,
-  expectedOwnerUserId?: string
+  expectedOwnerUserId?: string,
+  eventIdempotencyKey?: string
 ): Promise<void> => {
   await trackDeletedMoodId(moodId);
 
   const userId = await validateSyncOwner(expectedOwnerUserId, "Mood delete");
-  if (!supabase || !userId) return;
+  if (!supabase) {
+    if (eventIdempotencyKey) throw new Error("Mood remote delete is unavailable");
+    return;
+  }
+  if (!userId) return;
 
   // Skip granular sync for non-UUID IDs (nanoid)
   if (!isValidUUID(moodId)) {
-    logger.log("[Sync] Skipping granular mood delete (non-UUID ID):", moodId);
+    logger.log("[Sync] Skipping granular mood delete for a legacy identifier");
     return;
   }
 
   // If offline, queue for later
   if (!navigator.onLine) {
+    if (eventIdempotencyKey) {
+      throw new DOMException("Mood delete delivery paused while offline", "AbortError");
+    }
     await offlineQueue.enqueue(
       "DELETE_MOOD",
       moodId,
@@ -185,7 +215,7 @@ export const deleteMoodFromCloud = async (
         expectedOwnerUserId: userId,
       }
     );
-    logger.log("[Sync] Mood delete queued for offline:", moodId);
+    logger.log("[Sync] Mood delete queued for offline");
     return;
   }
 
@@ -194,18 +224,24 @@ export const deleteMoodFromCloud = async (
     const { error } = await supabase.from("moods").delete().eq("id", moodId).eq("user_id", userId);
 
     if (error) throw error;
-    logger.log("[Sync] Mood deleted + tracked:", moodId);
+    logger.log("[Sync] Mood deleted + tracked");
     const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast("mood", moodId, "delete", null, deviceId, {
+    const event = await writeEventAndBroadcast("mood", moodId, "delete", null, deviceId, {
       expectedOwnerUserId: userId,
+      ...(eventIdempotencyKey
+        ? { idempotencyKey: eventIdempotencyKey, queueOnFailure: false, requireRemoteCommit: true }
+        : {}),
     });
+    if (eventIdempotencyKey && !event) {
+      throw new Error("Mood delete ordered event was not committed");
+    }
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn("[Sync] Mood delete aborted (timeout or navigation):", moodId);
-      return;
+      logger.warn("[Sync] Mood delete aborted");
+      throw error;
     }
-    logger.error("[Sync] Failed to delete mood:", error);
+    logger.error("[Sync] Failed to delete mood");
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
   }
@@ -256,8 +292,8 @@ export const pullMoodsFromCloud = async (): Promise<boolean> => {
     });
     await triggerDataRefresh();
     return true;
-  } catch (err) {
-    logger.error("[Pull] Moods failed:", err);
+  } catch {
+    logger.error("[Pull] Moods failed");
     return false;
   }
 };

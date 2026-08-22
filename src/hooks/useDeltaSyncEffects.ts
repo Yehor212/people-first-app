@@ -23,6 +23,7 @@ import { bootstrapSnapshotThenDelta } from "@/storage/initialDeltaSync";
 import { syncReducer, INITIAL_STATE, getRetryDelay } from "@/lib/syncStateMachine";
 import { SyncGapDetector } from "@/lib/syncGapDetector";
 import { pullFromCloud } from "@/storage/realtimeSync";
+import { bootstrapAutomationHistoryOnce } from "@/features/automation";
 import { isAbortError } from "@/lib/validation";
 import { recordSyncHealthReceipt } from "@/observability/syncHealthRecorder";
 import { scheduleIdle } from "@/lib/scheduleIdle";
@@ -45,10 +46,7 @@ class DeltaSyncOwnerChangedError extends Error {
 }
 
 function isOwnerBoundaryError(error: unknown): boolean {
-  return (
-    error instanceof DeltaSyncOwnerChangedError ||
-    error instanceof SyncOwnerBoundaryError
-  );
+  return error instanceof DeltaSyncOwnerChangedError || error instanceof SyncOwnerBoundaryError;
 }
 
 function pendingQueueCounts(ownerUserId: string): {
@@ -105,9 +103,7 @@ export function useDeltaSyncEffects(): void {
     return { ownerUserId, generation };
   };
 
-  const assertOwnerOperationCurrent = async (
-    operation: DeltaSyncOwnerOperation
-  ): Promise<void> => {
+  const assertOwnerOperationCurrent = async (operation: DeltaSyncOwnerOperation): Promise<void> => {
     if (operation.generation !== authGenerationRef.current) {
       throw new DeltaSyncOwnerChangedError();
     }
@@ -169,9 +165,7 @@ export function useDeltaSyncEffects(): void {
               actionType: pendingAfter.criticalActionType ?? "offline-queue",
               priority: pendingAfter.criticalPending > 0 ? "critical" : "normal",
             });
-            logger.sync(
-              "[DeltaSync] Delta pull blocked; saved local actions still need retry"
-            );
+            logger.sync("[DeltaSync] Delta pull blocked; saved local actions still need retry");
             return;
           }
 
@@ -189,10 +183,7 @@ export function useDeltaSyncEffects(): void {
         const localSeq = await getLastSeq();
         await assertOwnerOperationCurrent(operation);
         if (localSeq === 0) {
-          const result = await bootstrapSnapshotThenDelta(
-            controller.signal,
-            operation.ownerUserId
-          );
+          const result = await bootstrapSnapshotThenDelta(controller.signal, operation.ownerUserId);
           await assertOwnerOperationCurrent(operation);
           logger.sync(
             "[DeltaSync] Snapshot bootstrap complete, fetched=" +
@@ -232,20 +223,21 @@ export function useDeltaSyncEffects(): void {
           assertOwnerCurrent: () => assertOwnerOperationCurrent(operation),
         });
         await assertOwnerOperationCurrent(operation);
-        const maxSeq = events[events.length - 1].seq;
+        const committedSeq = await getLastSeq();
+        await assertOwnerOperationCurrent(operation);
 
-        logger.sync("[DeltaSync] Applied " + applied + " events, seq=" + maxSeq);
-        dispatchAndSync({ type: "DELTA_SUCCESS", lastSeq: maxSeq });
+        logger.sync("[DeltaSync] Applied " + applied + " events, seq=" + committedSeq);
+        dispatchAndSync({ type: "DELTA_SUCCESS", lastSeq: committedSeq });
         recordSyncHealthReceipt({
           kind: "delta-applied",
           source: "delta",
           fetched: events.length,
           applied,
-          seq: maxSeq,
+          seq: committedSeq,
         });
 
         if (gapDetectorRef.current) {
-          gapDetectorRef.current.resetTo(maxSeq);
+          gapDetectorRef.current.resetTo(committedSeq);
         }
       });
 
@@ -269,11 +261,11 @@ export function useDeltaSyncEffects(): void {
         return;
       }
 
-      logger.error("[DeltaSync] Delta pull failed:", err);
+      logger.error("[DeltaSync] Delta pull failed");
       recordSyncHealthReceipt({
         kind: "error",
         source: "delta",
-        errorName: err instanceof Error ? err.name : "UnknownError",
+        errorName: "DELTA_SYNC_FAILED",
       });
       const delay = getRetryDelay(stateRef.current.consecutiveErrors);
       dispatchAndSync({ type: "ERROR", retryDelayMs: delay });
@@ -315,6 +307,8 @@ export function useDeltaSyncEffects(): void {
       if (!snapshotApplied) {
         throw new Error("[DeltaSync] Snapshot pull failed");
       }
+      await bootstrapAutomationHistoryOnce(operation.ownerUserId, { force: true });
+      await assertOwnerOperationCurrent(operation);
       const serverMax = await getServerMaxSeq(operation.ownerUserId);
       await assertOwnerOperationCurrent(operation);
       dispatchAndSync({ type: "SNAPSHOT_SUCCESS", lastSeq: serverMax });
@@ -332,7 +326,7 @@ export function useDeltaSyncEffects(): void {
         dispatchAndSync({ type: "RESET", lastSeq: 0 });
         return;
       }
-      logger.error("[DeltaSync] Snapshot failed:", err);
+      logger.error("[DeltaSync] Snapshot failed");
       const delay = getRetryDelay(stateRef.current.consecutiveErrors);
       dispatchAndSync({ type: "ERROR", retryDelayMs: delay });
     } finally {
@@ -376,14 +370,15 @@ export function useDeltaSyncEffects(): void {
               assertOwnerCurrent: () => assertOwnerOperationCurrent(operation),
             });
             await assertOwnerOperationCurrent(operation);
-            const maxSeq = events[events.length - 1].seq;
-            gapDetectorRef.current?.resetTo(maxSeq);
-            dispatchAndSync({ type: "RESET", lastSeq: maxSeq });
+            const committedSeq = await getLastSeq();
+            await assertOwnerOperationCurrent(operation);
+            gapDetectorRef.current?.resetTo(committedSeq);
+            dispatchAndSync({ type: "RESET", lastSeq: committedSeq });
             recordSyncHealthReceipt({
               kind: "gap-recovered",
               source: "delta",
               fetched: events.length,
-              seq: maxSeq,
+              seq: committedSeq,
             });
           }
         } catch (error) {
@@ -488,7 +483,7 @@ export function useDeltaSyncEffects(): void {
         void runDeltaSyncRef.current();
       },
       9000,
-      6500,
+      6500
     );
 
     return () => {

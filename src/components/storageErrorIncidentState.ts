@@ -24,7 +24,6 @@ export interface QueueFullEvent {
   maxSize: number;
   message: string;
   actionType?: string;
-  entityId?: string;
 }
 
 export interface RetryableStatusEvent {

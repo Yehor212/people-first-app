@@ -15,17 +15,23 @@ import { isAccountSyncedSettingKey, shouldDeleteSettingFromCloud } from "./setti
 import { validateSyncOwner } from "./syncOwner";
 import { SK } from "@/lib/storageKeys";
 import { canDeleteRemoteJournalVault, canUploadAccountSetting } from "./journalVaultSyncPolicy";
+import { commitManualSyncEvent } from "./manualSyncAcceptance";
 
 export interface DeleteSettingFromCloudOptions {
   /** Capability carried only by the durable journal-security removal intent. */
   journalSecurityRemovalRevision?: string;
   /** Journal removal must retry its parent intent instead of creating a stale generic delete. */
   queueOnNetworkError?: boolean;
+  eventIdempotencyKey?: string;
+  requireRemoteCommit?: boolean;
 }
 
 export interface SyncSettingOptions {
   /** Durable security migrations advance only after the remote row is committed. */
   requireRemoteCommit?: boolean;
+  eventIdempotencyKey?: string;
+  /** Timestamp captured by the atomic local setting+outbox commit. */
+  updatedAt?: string;
 }
 
 // ============================================
@@ -39,7 +45,7 @@ export const syncSetting = async (
   options: SyncSettingOptions = {}
 ): Promise<void> => {
   if (!isAccountSyncedSettingKey(key)) {
-    logger.warn("[Sync] Skipping local-only setting sync:", key);
+    logger.warn("[Sync] Skipping local-only setting sync");
     return;
   }
 
@@ -57,7 +63,7 @@ export const syncSetting = async (
   }
 
   if (!(await canUploadAccountSetting(key, value))) {
-    logger.warn("[Sync] Skipping stale or inactive setting sync:", key);
+    logger.warn("[Sync] Skipping stale or inactive setting sync");
     return;
   }
   await validateSyncOwner(userId, "Setting sync local-state guard");
@@ -79,9 +85,27 @@ export const syncSetting = async (
   }
 
   try {
-    const updatedAt = new Date().toISOString();
+    const updatedAt = options.updatedAt ?? new Date().toISOString();
     const payload = { key, value, updatedAt };
     if (!(await validateSyncOwner(userId, "Setting sync"))) return;
+    const deviceId = await getPersistentDeviceId();
+    if (
+      key === "zenflow-schedule-events" &&
+      options.requireRemoteCommit &&
+      options.eventIdempotencyKey
+    ) {
+      await commitManualSyncEvent({
+        ownerUserId: userId,
+        operationId: options.eventIdempotencyKey,
+        entityType: "setting",
+        entityId: key,
+        op: "upsert",
+        projection: value as Json,
+        deviceId,
+      });
+      logger.log("[Sync] Setting synced");
+      return;
+    }
     const { error } = await supabase.from("user_settings").upsert(
       {
         user_id: userId,
@@ -93,16 +117,25 @@ export const syncSetting = async (
     );
 
     if (error) throw error;
-    const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast("setting", key, "upsert", payload, deviceId, {
+    const event = await writeEventAndBroadcast("setting", key, "upsert", payload, deviceId, {
       expectedOwnerUserId: userId,
+      ...(options.requireRemoteCommit
+        ? {
+            idempotencyKey: options.eventIdempotencyKey,
+            queueOnFailure: false,
+            requireRemoteCommit: true,
+          }
+        : {}),
     });
-    logger.log("[Sync] Setting synced:", key);
+    if (options.requireRemoteCommit && !event) {
+      throw new Error("Setting ordered event was not committed");
+    }
+    logger.log("[Sync] Setting synced");
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
       if (options.requireRemoteCommit) throw error;
-      logger.warn("[Sync] Setting sync aborted:", key);
+      logger.warn("[Sync] Setting sync aborted");
       return;
     }
     // Network error: queue for retry when online
@@ -118,7 +151,7 @@ export const syncSetting = async (
       );
       return;
     }
-    logger.error("[Sync] Failed to sync setting:", error);
+    logger.error("[Sync] Failed to sync setting");
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
   }
@@ -130,13 +163,16 @@ export const deleteSettingFromCloud = async (
   options: DeleteSettingFromCloudOptions = {}
 ): Promise<void> => {
   if (!shouldDeleteSettingFromCloud(key)) {
-    logger.warn("[Sync] Skipping local-only setting delete sync:", key);
+    logger.warn("[Sync] Skipping local-only setting delete sync");
     return;
   }
 
   const userId = await validateSyncOwner(expectedOwnerUserId, "Setting delete");
   if (!supabase) {
-    if (key === SK.JOURNAL_VAULT_KEY && options.journalSecurityRemovalRevision) {
+    if (
+      options.requireRemoteCommit ||
+      (key === SK.JOURNAL_VAULT_KEY && options.journalSecurityRemovalRevision)
+    ) {
       throw new Error("Supabase client is unavailable for diary protection removal");
     }
     return;
@@ -184,13 +220,24 @@ export const deleteSettingFromCloud = async (
 
     if (error) throw error;
     const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast("setting", key, "delete", payload, deviceId, {
+    const event = await writeEventAndBroadcast("setting", key, "delete", payload, deviceId, {
       expectedOwnerUserId: userId,
+      ...(options.requireRemoteCommit
+        ? {
+            idempotencyKey: options.eventIdempotencyKey,
+            queueOnFailure: false,
+            requireRemoteCommit: true,
+          }
+        : {}),
     });
-    logger.log("[Sync] Setting deleted:", key);
+    if (options.requireRemoteCommit && !event) {
+      throw new Error("Setting delete ordered event was not committed");
+    }
+    logger.log("[Sync] Setting deleted");
   } catch (error) {
     if (isAbortError(error)) {
-      logger.warn("[Sync] Setting delete aborted:", key);
+      logger.warn("[Sync] Setting delete aborted");
+      if (options.requireRemoteCommit) throw error;
       return;
     }
     if (detectNetworkError(error)) {
@@ -205,7 +252,7 @@ export const deleteSettingFromCloud = async (
       );
       return;
     }
-    logger.error("[Sync] Failed to delete setting:", error);
+    logger.error("[Sync] Failed to delete setting");
     throw error;
   }
 };

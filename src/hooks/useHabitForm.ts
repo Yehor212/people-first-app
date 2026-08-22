@@ -9,7 +9,7 @@ import type {
   HabitFrequencyRatio,
   HabitScheduleMode,
 } from '@/types';
-import { generateId, getToday } from '@/lib/utils';
+import { generateUuid, getToday } from '@/lib/utils';
 import {
   habitTemplates,
   mapTemplateCategoryToHabitCategory,
@@ -383,7 +383,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit, useV2IconIds = false }
       onUpdateHabit(updatedHabit);
     } else {
       const habit: Habit = {
-        id: generateId(),
+        id: generateUuid(),
         name: newHabitName.trim(),
         icon: persistedIcon,
         color: selectedColorIndex,

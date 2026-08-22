@@ -2012,6 +2012,7 @@ export type Database = {
         Args: { p_request: Json }
         Returns: Json
       }
+      commit_manual_sync_event: { Args: { p_request: Json }; Returns: Json }
       complete_account_deletion_operation: {
         Args: {
           p_lease_epoch: number

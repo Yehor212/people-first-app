@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   getDeletedHabitIds: vi.fn(),
   getPersistentDeviceId: vi.fn(),
   writeEventAndBroadcast: vi.fn(),
+  commitManualSyncEvent: vi.fn(),
   isEntityTombstonedOnServer: vi.fn(),
 }));
 
@@ -30,6 +31,10 @@ vi.mock("@/storage/deletionTracker", () => ({
 vi.mock("@/storage/eventSync", () => ({
   getPersistentDeviceId: mocks.getPersistentDeviceId,
   writeEventAndBroadcast: mocks.writeEventAndBroadcast,
+}));
+
+vi.mock("@/storage/sync/manualSyncAcceptance", () => ({
+  commitManualSyncEvent: mocks.commitManualSyncEvent,
 }));
 
 vi.mock("@/storage/sync/serverTombstones", () => ({
@@ -66,6 +71,7 @@ describe("deleteHabitFromCloud", () => {
     mocks.getDeletedHabitIds.mockResolvedValue(new Set());
     mocks.getPersistentDeviceId.mockResolvedValue("device-1");
     mocks.isEntityTombstonedOnServer.mockResolvedValue(false);
+    mocks.commitManualSyncEvent.mockResolvedValue({ seq: 1 });
     const deleteQuery = {
       eq: mocks.eq,
       then: (resolve: (value: { error: null }) => void) => resolve({ error: null }),
@@ -257,5 +263,60 @@ describe("deleteHabitFromCloud", () => {
     expect(mocks.trackDeletedHabitId).toHaveBeenCalledWith(habitId);
     expect(mocks.from).not.toHaveBeenCalledWith("habit_completions");
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("accepts a durable habit completion and its event atomically", async () => {
+    const habitId = "11111111-1111-4111-8111-111111111111";
+    const operationId = "22222222-2222-4222-8222-222222222222";
+
+    await syncHabitCompletion(
+      habitId,
+      "2026-05-25",
+      true,
+      1,
+      undefined,
+      { habitType: "boolean", entryValue: 2 },
+      "user-1",
+      operationId,
+    );
+
+    expect(mocks.commitManualSyncEvent).toHaveBeenCalledWith({
+      ownerUserId: "user-1",
+      operationId,
+      entityType: "habit_completion",
+      entityId: `${habitId}_2026-05-25`,
+      op: "upsert",
+      projection: {
+        habit_id: habitId,
+        date: "2026-05-25",
+        count: 1,
+        duration: null,
+        entry_value: 2,
+        entry_status: "completed",
+        is_complete: true,
+        habit_type: "boolean",
+        target_type: null,
+      },
+      deviceId: "device-1",
+    });
+    expect(mocks.from).not.toHaveBeenCalledWith("habit_completions");
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("does not acknowledge a legacy habit identifier as a durable completion commit", async () => {
+    await expect(
+      syncHabitCompletion(
+        "legacy-habit-id",
+        "2026-05-25",
+        true,
+        1,
+        undefined,
+        { habitType: "boolean", entryValue: 2 },
+        "user-1",
+        "22222222-2222-4222-8222-222222222222",
+      ),
+    ).rejects.toThrow("Habit completion remote identity is unsupported");
+
+    expect(mocks.commitManualSyncEvent).not.toHaveBeenCalled();
   });
 });

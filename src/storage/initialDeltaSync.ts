@@ -9,6 +9,13 @@ import {
 } from "@/storage/eventSync";
 import { pullFromCloud } from "@/storage/realtimeSync";
 import { validateSyncOwner } from "@/storage/sync/syncOwner";
+import { bootstrapAutomationHistoryOnce } from "@/features/automation";
+import {
+  assertAccountSessionTransitionGeneration,
+  assertOriginAccountBoundaryGeneration,
+  captureAccountSessionTransitionGeneration,
+  captureOriginAccountBoundaryGeneration,
+} from "@/storage/accountBoundaryRuntime";
 
 /**
  * First enablement mirrors Telegram's snapshot + difference model:
@@ -19,15 +26,20 @@ export async function bootstrapSnapshotThenDelta(
   signal?: AbortSignal,
   expectedOwnerUserId?: string
 ): Promise<PullAndApplyDeltaResult> {
-  const ownerUserId = await validateSyncOwner(
-    expectedOwnerUserId,
-    "Initial delta bootstrap"
-  );
+  const accountBoundaryGeneration = captureOriginAccountBoundaryGeneration();
+  const sessionGeneration = captureAccountSessionTransitionGeneration();
+  const ownerUserId = await validateSyncOwner(expectedOwnerUserId, "Initial delta bootstrap");
+  assertOriginAccountBoundaryGeneration(accountBoundaryGeneration);
+  assertAccountSessionTransitionGeneration(sessionGeneration);
   if (!ownerUserId) {
     throw new Error("[InitialDeltaSync] User not authenticated");
   }
   const assertOwnerCurrent = async () => {
+    assertOriginAccountBoundaryGeneration(accountBoundaryGeneration);
+    assertAccountSessionTransitionGeneration(sessionGeneration);
     await validateSyncOwner(ownerUserId, "Initial delta bootstrap");
+    assertOriginAccountBoundaryGeneration(accountBoundaryGeneration);
+    assertAccountSessionTransitionGeneration(sessionGeneration);
   };
 
   const localSeq = await getLastSeq();
@@ -46,7 +58,9 @@ export async function bootstrapSnapshotThenDelta(
       assertOwnerCurrent,
     });
     await assertOwnerCurrent();
-    return { fetched: events.length, applied, lastSeq: events[events.length - 1].seq };
+    const committedSeq = await getLastSeq();
+    await assertOwnerCurrent();
+    return { fetched: events.length, applied, lastSeq: committedSeq };
   }
 
   const baselineSeq = await getServerMaxSeq(ownerUserId);
@@ -56,6 +70,8 @@ export async function bootstrapSnapshotThenDelta(
   if (!snapshotApplied) {
     throw new Error("[InitialDeltaSync] Snapshot bootstrap failed");
   }
+  await bootstrapAutomationHistoryOnce(ownerUserId, { force: true });
+  await assertOwnerCurrent();
 
   const tailEvents = await fetchAllDeltas(baselineSeq, signal);
   await assertOwnerCurrent();
@@ -75,5 +91,7 @@ export async function bootstrapSnapshotThenDelta(
     assertOwnerCurrent,
   });
   await assertOwnerCurrent();
-  return { fetched: tailEvents.length, applied, lastSeq: tailEvents[tailEvents.length - 1].seq };
+  const committedSeq = await getLastSeq();
+  await assertOwnerCurrent();
+  return { fetched: tailEvents.length, applied, lastSeq: committedSeq };
 }

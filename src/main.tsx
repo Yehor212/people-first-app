@@ -489,7 +489,7 @@ async function handleAppResume(): Promise<void> {
               );
             }
           })
-          .catch((err) => logger.warn("[Main] Delta pull on resume failed:", err));
+          .catch(() => logger.warn("[Main] Delta pull on resume failed"));
       } else {
         logger.warn("[Main] Delta pull on resume skipped; saved actions still need retry");
       }

@@ -21,6 +21,7 @@ import {
   isHabitEntrySyncableToCloud,
 } from "./habitCompletionCodec";
 import { validateSyncOwner } from "./syncOwner";
+import { commitManualSyncEvent } from "./manualSyncAcceptance";
 
 // ============================================
 // HABIT SYNC
@@ -28,11 +29,15 @@ import { validateSyncOwner } from "./syncOwner";
 
 export const syncHabit = async (
   habit: Habit,
-  expectedOwnerUserId?: string
+  expectedOwnerUserId?: string,
+  eventIdempotencyKey?: string
 ): Promise<void> => {
   const userId = await validateSyncOwner(expectedOwnerUserId, "Habit sync");
   // Explicit validation to prevent RLS violations with undefined user_id
-  if (!supabase) return;
+  if (!supabase) {
+    if (eventIdempotencyKey) throw new Error("Habit remote sync is unavailable");
+    return;
+  }
   if (!userId) {
     logger.warn("[Sync] Cannot sync habit: User not authenticated");
     return;
@@ -40,28 +45,31 @@ export const syncHabit = async (
 
   const deletedHabitIds = await getDeletedHabitIds();
   if (deletedHabitIds.has(habit.id)) {
-    logger.warn("[Sync] Skipping tombstoned habit upsert:", habit.id);
+    logger.warn("[Sync] Skipping tombstoned habit upsert");
     return;
   }
 
   // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
   if (!isValidUUID(habit.id)) {
-    logger.log("[Sync] Skipping granular habit sync (non-UUID ID):", habit.id);
+    logger.log("[Sync] Skipping granular habit sync for a legacy identifier");
     return;
   }
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
+    if (eventIdempotencyKey) {
+      throw new DOMException("Habit delivery paused while offline", "AbortError");
+    }
     await offlineQueue.enqueue("UPDATE_HABIT", habit.id, habit, {
       expectedOwnerUserId: userId,
     });
-    logger.log("[Sync] Habit queued for offline sync:", habit.id);
+    logger.log("[Sync] Habit queued for offline sync");
     return;
   }
 
   if (await isEntityTombstonedOnServer("habit", habit.id, userId)) {
     await trackDeletedHabitId(habit.id);
-    logger.warn("[Sync] Skipping server-tombstoned habit upsert:", habit.id);
+    logger.warn("[Sync] Skipping server-tombstoned habit upsert");
     return;
   }
 
@@ -183,7 +191,7 @@ export const syncHabit = async (
         .not("id", "in", filterTuple);
 
       if (cleanupError) {
-        logger.warn("[Sync] Failed to cleanup old reminders for habit:", habit.id, cleanupError);
+        logger.warn("[Sync] Habit reminder cleanup deferred");
         // Non-critical - continue anyway
       }
     } else {
@@ -195,27 +203,35 @@ export const syncHabit = async (
         .eq("habit_id", habit.id);
 
       if (deleteError) {
-        logger.warn("[Sync] Failed to delete reminders for habit:", habit.id, deleteError);
+        logger.warn("[Sync] Habit reminder delete deferred");
       }
     }
 
-    logger.log("[Sync] Habit synced:", habit.id);
+    logger.log("[Sync] Habit synced");
     const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast(
+    const event = await writeEventAndBroadcast(
       "habit",
       habit.id,
       "upsert",
       habit as unknown as Record<string, unknown>,
       deviceId,
-      { expectedOwnerUserId: userId }
+      {
+        expectedOwnerUserId: userId,
+        ...(eventIdempotencyKey
+          ? { idempotencyKey: eventIdempotencyKey, queueOnFailure: false, requireRemoteCommit: true }
+          : {}),
+      }
     );
+    if (eventIdempotencyKey && !event) {
+      throw new Error("Habit ordered event was not committed");
+    }
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn("[Sync] Habit sync aborted (timeout or navigation):", habit.id);
-      return;
+      logger.warn("[Sync] Habit sync aborted");
+      throw error;
     }
-    logger.error("[Sync] Failed to sync habit:", error);
+    logger.error("[Sync] Failed to sync habit");
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
   }
@@ -223,15 +239,23 @@ export const syncHabit = async (
 
 export const deleteHabitFromCloud = async (
   habitId: string,
-  expectedOwnerUserId?: string
+  expectedOwnerUserId?: string,
+  eventIdempotencyKey?: string
 ): Promise<void> => {
   await trackDeletedHabitId(habitId);
 
   const userId = await validateSyncOwner(expectedOwnerUserId, "Habit delete");
-  if (!supabase || !userId) return;
+  if (!supabase) {
+    if (eventIdempotencyKey) throw new Error("Habit remote delete is unavailable");
+    return;
+  }
+  if (!userId) return;
 
   // If offline, queue for later
   if (!navigator.onLine) {
+    if (eventIdempotencyKey) {
+      throw new DOMException("Habit delete delivery paused while offline", "AbortError");
+    }
     await offlineQueue.enqueue(
       "DELETE_HABIT",
       habitId,
@@ -240,17 +264,23 @@ export const deleteHabitFromCloud = async (
         expectedOwnerUserId: userId,
       }
     );
-    logger.log("[Sync] Habit delete queued for offline:", habitId);
+    logger.log("[Sync] Habit delete queued for offline");
     return;
   }
 
   try {
     if (!isValidUUID(habitId)) {
       const deviceId = await getPersistentDeviceId();
-      await writeEventAndBroadcast("habit", habitId, "delete", null, deviceId, {
+      const event = await writeEventAndBroadcast("habit", habitId, "delete", null, deviceId, {
         expectedOwnerUserId: userId,
+        ...(eventIdempotencyKey
+          ? { idempotencyKey: eventIdempotencyKey, queueOnFailure: false, requireRemoteCommit: true }
+          : {}),
       });
-      logger.log("[Sync] Legacy habit delete tracked + evented:", habitId);
+      if (eventIdempotencyKey && !event) {
+        throw new Error("Habit delete ordered event was not committed");
+      }
+      logger.log("[Sync] Legacy habit delete tracked + evented");
       return;
     }
 
@@ -263,18 +293,24 @@ export const deleteHabitFromCloud = async (
 
     if (error) throw error;
 
-    logger.log("[Sync] Habit deleted + tracked:", habitId);
+    logger.log("[Sync] Habit deleted + tracked");
     const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast("habit", habitId, "delete", null, deviceId, {
+    const event = await writeEventAndBroadcast("habit", habitId, "delete", null, deviceId, {
       expectedOwnerUserId: userId,
+      ...(eventIdempotencyKey
+        ? { idempotencyKey: eventIdempotencyKey, queueOnFailure: false, requireRemoteCommit: true }
+        : {}),
     });
+    if (eventIdempotencyKey && !event) {
+      throw new Error("Habit delete ordered event was not committed");
+    }
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn("[Sync] Habit delete aborted (timeout or navigation):", habitId);
-      return;
+      logger.warn("[Sync] Habit delete aborted");
+      throw error;
     }
-    logger.error("[Sync] Failed to delete habit:", error);
+    logger.error("[Sync] Failed to delete habit");
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
   }
@@ -295,25 +331,36 @@ export const syncHabitCompletion = async (
     targetType?: TargetType;
     entryValue?: number;
   },
-  expectedOwnerUserId?: string
+  expectedOwnerUserId?: string,
+  eventIdempotencyKey?: string
 ): Promise<void> => {
   const userId = await validateSyncOwner(expectedOwnerUserId, "Habit completion sync");
-  if (!supabase || !userId) return;
+  if (!supabase) {
+    if (eventIdempotencyKey) throw new Error("Habit completion remote sync is unavailable");
+    return;
+  }
+  if (!userId) return;
 
   // Skip granular sync for non-UUID habit IDs (nanoid)
   if (!isValidUUID(habitId)) {
-    logger.log("[Sync] Skipping granular habit completion sync (non-UUID ID):", habitId);
+    if (eventIdempotencyKey) {
+      throw new Error("Habit completion remote identity is unsupported");
+    }
+    logger.log("[Sync] Skipping granular habit completion sync for a legacy identifier");
     return;
   }
 
   const deletedHabitIds = await getDeletedHabitIds();
   if (deletedHabitIds.has(habitId)) {
-    logger.warn("[Sync] Skipping tombstoned habit completion sync:", habitId, date);
+    logger.warn("[Sync] Skipping tombstoned habit completion sync");
     return;
   }
 
   // P1-9 Fix: Add offline queue support (was missing)
   if (!navigator.onLine) {
+    if (eventIdempotencyKey) {
+      throw new DOMException("Habit completion delivery paused while offline", "AbortError");
+    }
     await offlineQueue.enqueue(
       "TOGGLE_HABIT",
       `${habitId}_${date}`,
@@ -331,13 +378,13 @@ export const syncHabitCompletion = async (
         expectedOwnerUserId: userId,
       }
     );
-    logger.log("[Sync] Habit completion queued for offline:", habitId, date);
+    logger.log("[Sync] Habit completion queued for offline");
     return;
   }
 
   if (await isEntityTombstonedOnServer("habit", habitId, userId)) {
     await trackDeletedHabitId(habitId);
-    logger.warn("[Sync] Skipping server-tombstoned habit completion sync:", habitId, date);
+    logger.warn("[Sync] Skipping server-tombstoned habit completion sync");
     return;
   }
 
@@ -361,25 +408,51 @@ export const syncHabitCompletion = async (
         entryValue,
       });
 
-    if (shouldPersist) {
-      const { count: encodedCount, duration: encodedDuration } = encodeHabitCompletionForCloud({
-        habitType,
-        entryValue: entryValue ?? 0,
+    const semanticFields = getCloudHabitCompletionSemanticFieldsForSync({
+      habitType,
+      targetType: options?.targetType,
+      entryValue,
+      isComplete: completed,
+    });
+    const encoded = encodeHabitCompletionForCloud({
+      habitType,
+      entryValue: entryValue ?? 0,
+    });
+    const eventEntityId = `${habitId}_${date}`;
+    if (eventIdempotencyKey) {
+      const deviceId = await getPersistentDeviceId();
+      await commitManualSyncEvent({
+        ownerUserId: userId,
+        operationId: eventIdempotencyKey,
+        entityType: "habit_completion",
+        entityId: eventEntityId,
+        op: shouldPersist ? "upsert" : "delete",
+        projection: shouldPersist
+          ? {
+              habit_id: habitId,
+              date,
+              count: habitType === "numerical" ? encoded.count : (count ?? encoded.count),
+              duration:
+                habitType === "numerical" ? encoded.duration : (duration ?? encoded.duration),
+              ...semanticFields,
+            }
+          : null,
+        deviceId,
       });
+      logger.log("[Sync] Habit completion synced");
+      return;
+    }
+
+    if (shouldPersist) {
       if (!(await validateSyncOwner(userId, "Habit completion sync"))) return;
       const { error } = await supabase.from("habit_completions").upsert(
         {
           user_id: userId,
           habit_id: habitId,
           date,
-          count: habitType === "numerical" ? encodedCount : (count ?? encodedCount),
-          duration: habitType === "numerical" ? encodedDuration : (duration ?? encodedDuration),
-          ...getCloudHabitCompletionSemanticFieldsForSync({
-            habitType,
-            targetType: options?.targetType,
-            entryValue,
-            isComplete: completed,
-          }),
+          count: habitType === "numerical" ? encoded.count : (count ?? encoded.count),
+          duration: habitType === "numerical" ? encoded.duration : (duration ?? encoded.duration),
+          ...semanticFields,
         },
         { onConflict: "habit_id,date" }
       );
@@ -396,11 +469,11 @@ export const syncHabitCompletion = async (
 
       if (error) throw error;
     }
-    logger.log("[Sync] Habit completion synced:", habitId, date, completed);
+    logger.log("[Sync] Habit completion synced");
     const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast(
+    const event = await writeEventAndBroadcast(
       "habit_completion",
-      `${habitId}_${date}`,
+      eventEntityId,
       shouldPersist ? "upsert" : "delete",
       shouldPersist
         ? {
@@ -414,15 +487,23 @@ export const syncHabitCompletion = async (
           }
         : null,
       deviceId,
-      { expectedOwnerUserId: userId }
+      {
+        expectedOwnerUserId: userId,
+        ...(eventIdempotencyKey
+          ? { idempotencyKey: eventIdempotencyKey, queueOnFailure: false, requireRemoteCommit: true }
+          : {}),
+      }
     );
+    if (eventIdempotencyKey && !event) {
+      throw new Error("Habit completion ordered event was not committed");
+    }
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn("[Sync] Habit completion sync aborted:", habitId, date);
-      return;
+      logger.warn("[Sync] Habit completion sync aborted");
+      throw error;
     }
-    logger.error("[Sync] Failed to sync habit completion:", error);
+    logger.error("[Sync] Failed to sync habit completion");
     // P0-4 Fix: Re-throw for retry logic
     throw error;
   }

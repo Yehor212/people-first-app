@@ -6,7 +6,7 @@
 
 import { useState, useMemo, useRef } from 'react';
 import type { MoodType, MoodEntry } from '@/types';
-import { generateId } from '@/lib/utils';
+import { generateUuid } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { triggerFlyingEmoji } from '@/components/FlyingMoodEmoji';
@@ -94,7 +94,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     }
 
     const entry: MoodEntry = {
-      id: generateId(),
+      id: generateUuid(),
       mood: selectedMood,
       note: sanitizedNote,
       date: dateTime.today,

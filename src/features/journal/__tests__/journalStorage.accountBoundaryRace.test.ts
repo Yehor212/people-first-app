@@ -60,12 +60,7 @@ vi.mock("../journalWriteSecurity", () => ({
   getJournalVaultKeyForWrite: mocks.getJournalVaultKeyForWrite,
 }));
 
-import {
-  clearLocalUserData,
-  db,
-  getLocalDataOwnerId,
-  setLocalDataOwnerId,
-} from "@/storage/db";
+import { clearLocalUserData, db, getLocalDataOwnerId, setLocalDataOwnerId } from "@/storage/db";
 import { compressAndStorePhoto, saveEntry } from "../journalStorage";
 
 const DATA_WRITE_BARRIER_LOCK = "zenflow:data-write-barrier";
@@ -223,12 +218,10 @@ describe("journal writes at an origin-wide account boundary", () => {
     await delayedSaveEntered.promise;
     expect(locks.isHeld(JOURNAL_SECURITY_WRITE_LOCK)).toBe(true);
 
-    // Resetting the module graph models tab B. Its realm-local journal tail is
-    // distinct, while the mocked Web Locks manager and IndexedDB origin remain shared.
+    // Resetting the module graph models tab B. The origin-wide DATA lock remains
+    // shared even though each tab owns a separate in-realm journal queue.
     vi.resetModules();
-    const { runWithDataWriteBarrier: runTabBBoundary } = await import(
-      "@/hooks/useIndexedDB"
-    );
+    const { runWithDataWriteBarrier: runTabBBoundary } = await import("@/hooks/useIndexedDB");
     const expectedDataRequestCount = locks.requestCount(DATA_WRITE_BARRIER_LOCK) + 1;
     const accountBoundary = runTabBBoundary(
       async () => {
@@ -245,9 +238,9 @@ describe("journal writes at an origin-wide account boundary", () => {
     await accountBoundary;
 
     expect(locks.requestedLocks().slice(0, 3)).toEqual([
-      JOURNAL_SECURITY_WRITE_LOCK,
       DATA_WRITE_BARRIER_LOCK,
       JOURNAL_SECURITY_WRITE_LOCK,
+      DATA_WRITE_BARRIER_LOCK,
     ]);
 
     // A save initiated from the still-mounted account A realm after the purge
@@ -298,11 +291,8 @@ describe("journal writes at an origin-wide account boundary", () => {
     });
 
     const jpegWithSofDimensions = new Uint8Array([
-      0xff, 0xd8,
-      0xff, 0xc0, 0x00, 0x11, 0x08,
-      0x03, 0x20, 0x04, 0xb0,
-      0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x00, 0x03, 0x11, 0x00,
-      0xff, 0xd9,
+      0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x03, 0x20, 0x04, 0xb0, 0x03, 0x01, 0x11, 0x00,
+      0x02, 0x11, 0x00, 0x03, 0x11, 0x00, 0xff, 0xd9,
     ]);
     const privateJpeg = new File([jpegWithSofDimensions], "private.jpg", { type: "image/jpeg" });
     Object.defineProperty(privateJpeg, "slice", {
@@ -311,10 +301,7 @@ describe("journal writes at an origin-wide account boundary", () => {
         arrayBuffer: () => Promise.resolve(jpegWithSofDimensions.buffer),
       }),
     });
-    const stalePhoto = compressAndStorePhoto(
-      privateJpeg,
-      "account-a-entry"
-    );
+    const stalePhoto = compressAndStorePhoto(privateJpeg, "account-a-entry");
     await imageStarted.promise;
 
     const { runWithDataWriteBarrier } = await import("@/hooks/useIndexedDB");
@@ -335,9 +322,8 @@ describe("journal writes at an origin-wide account boundary", () => {
 
   it("does not persist a photo when processing is aborted during decode", async () => {
     await setLocalDataOwnerId("account-a");
-    const { runWithAccountBoundaryJournalWriteBarrier } = await import(
-      "@/storage/accountBoundaryRuntime"
-    );
+    const { runWithAccountBoundaryJournalWriteBarrier } =
+      await import("@/storage/accountBoundaryRuntime");
     await runWithAccountBoundaryJournalWriteBarrier(async () => undefined);
     const imageStarted = deferred();
     const releaseImage = deferred();
@@ -362,18 +348,15 @@ describe("journal writes at an origin-wide account boundary", () => {
       drawImage: vi.fn(),
     } as unknown as CanvasRenderingContext2D);
     vi.spyOn(HTMLCanvasElement.prototype, "toDataURL").mockReturnValue(
-      "data:image/jpeg;base64,compressed",
+      "data:image/jpeg;base64,compressed"
     );
     vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((callback) => {
       callback(new Blob(["compressed"], { type: "image/jpeg" }));
     });
 
     const jpegWithSofDimensions = new Uint8Array([
-      0xff, 0xd8,
-      0xff, 0xc0, 0x00, 0x11, 0x08,
-      0x03, 0x20, 0x04, 0xb0,
-      0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x00, 0x03, 0x11, 0x00,
-      0xff, 0xd9,
+      0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x03, 0x20, 0x04, 0xb0, 0x03, 0x01, 0x11, 0x00,
+      0x02, 0x11, 0x00, 0x03, 0x11, 0x00, 0xff, 0xd9,
     ]);
     const privateJpeg = new File([jpegWithSofDimensions], "private.jpg", { type: "image/jpeg" });
     Object.defineProperty(privateJpeg, "slice", {

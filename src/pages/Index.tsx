@@ -38,6 +38,8 @@ import { useGamification } from "@/hooks/useGamification";
 import { AdProvider } from "@/contexts/AdContext";
 import { supabase } from "@/lib/supabaseClient";
 import { canInitializeRewardedAds } from "@/lib/privacyConsent";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAutomation } from "@/features/automation";
 import { getChallenges, getBadges } from "@/lib/challengeStorage";
 const DesktopDownloadPage = lazy(() =>
   import("./DesktopDownloadPage").then((m) => ({ default: m.DesktopDownloadPage }))
@@ -140,6 +142,7 @@ function IndexV2Impl() {
   useSessionTimeout(!!supabase);
   useReminderMigration();
   useEmotionSync();
+  const { t } = useLanguage();
 
   const challengesRef = useRef<ChallengeList | null>(null);
   const badgesRef = useRef<BadgeList | null>(null);
@@ -188,6 +191,7 @@ function IndexV2Impl() {
   useAuthSession(isLoading);
   useDeepLinkHandler({ handleDiaryDeepLinks: false });
   useTelegramGradeSyncRuntime();
+  useAutomation({ localizedMoodJournalTitle: t.journalTitle });
 
   const { checkForFeatureUnlocks, updateChallengeProgress } = useChallengeHandlers({
     safeMoods: moods,

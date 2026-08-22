@@ -73,6 +73,9 @@ export type OfflineActionType =
   | "DELETE_JOURNAL_PHOTO_STORAGE"
   | "DELETE_JOURNAL_AUDIO_STORAGE"
   | "MIGRATE_JOURNAL_SECURITY"
+  | "REVOKE_AUTOMATION_PREFERENCE"
+  | "COMMIT_AUTOMATION_TRANSACTION"
+  | "UNDO_AUTOMATION_TRANSACTION"
   | "WRITE_SYNC_EVENT";
 
 export type OfflineActionPriority = "critical" | "high" | "normal" | "low";
@@ -141,6 +144,26 @@ function isBlockedAction(action: OfflineAction): boolean {
   return action.retries >= action.maxRetries;
 }
 
+function getOfflineQueueCausalDeliveryKey(action: OfflineAction): string | null {
+  if (!action.ownerUserId) return null;
+  return `${action.ownerUserId}\u0000${action.type}\u0000${action.entityId}`;
+}
+
+const AUTOMATION_TARGET_DELIVERY_TYPES = new Set<OfflineActionType>([
+  "CREATE_MOOD",
+  "UPDATE_MOOD",
+  "DELETE_MOOD",
+  "TOGGLE_HABIT",
+  "UPDATE_SETTINGS",
+  "DELETE_SETTINGS",
+  "SYNC_JOURNAL_ENTRY",
+  "DELETE_JOURNAL_ENTRY",
+]);
+
+function isAutomationTargetDelivery(action: OfflineAction): boolean {
+  return AUTOMATION_TARGET_DELIVERY_TYPES.has(action.type);
+}
+
 function generateOperationId(): string {
   if (typeof globalThis.crypto?.randomUUID === "function") {
     return globalThis.crypto.randomUUID();
@@ -202,6 +225,31 @@ class OfflineQueueStorageAccessError extends Error {
   }
 }
 
+export type OfflineQueueFailureCode =
+  | "QUEUE_HANDLER_TIMEOUT"
+  | "QUEUE_STORAGE_UNAVAILABLE"
+  | "QUEUE_HANDLER_FAILED";
+
+/**
+ * Queue failures are persisted and can cross device/account diagnostics
+ * boundaries. Keep them to a fixed allowlist so handler messages can never
+ * turn journal, mood, or habit content into durable diagnostic data.
+ */
+export function getOfflineQueueFailureCode(error: unknown): OfflineQueueFailureCode {
+  const errorName =
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    typeof (error as { name?: unknown }).name === "string"
+      ? (error as { name: string }).name
+      : "";
+  if (errorName === "TimeoutError") return "QUEUE_HANDLER_TIMEOUT";
+  if (errorName === "OfflineQueueStorageAccessError") {
+    return "QUEUE_STORAGE_UNAVAILABLE";
+  }
+  return "QUEUE_HANDLER_FAILED";
+}
+
 export interface OfflineAction {
   id: string;
   operationId?: string;
@@ -217,6 +265,17 @@ export interface OfflineAction {
   priority?: OfflineActionPriority; // V2: priority queue support (default: "normal")
 }
 
+function nextOfflineQueueTimestamp(
+  existing: readonly Pick<OfflineAction, "timestamp">[],
+  now = Date.now(),
+): number {
+  const latestTimestamp = existing.reduce(
+    (latest, action) => Math.max(latest, action.timestamp),
+    0,
+  );
+  return Math.max(now, latestTimestamp + 1);
+}
+
 interface OfflineQueueRemovalTombstone {
   id: string;
   operationId: string;
@@ -229,6 +288,13 @@ interface LocalOfflineQueueSnapshot {
   storageVersion?: 2 | 3;
   mode?: "authoritative-snapshot" | "merge-with-tombstones";
   removedOperations?: OfflineQueueRemovalTombstone[];
+}
+
+export interface CriticalOfflineActionIdentity {
+  /** Stable row identity for a transaction-owned outbox entry. */
+  id?: string;
+  /** Stable idempotency identity reused by every delivery attempt. */
+  operationId?: string;
 }
 
 function isCompleteRemovalTombstone(
@@ -256,7 +322,8 @@ export async function persistCriticalOfflineActionInCurrentTransaction(
   type: OfflineActionType,
   entityId: string,
   payload: unknown,
-  expectedOwnerUserId: string
+  expectedOwnerUserId: string,
+  identity: CriticalOfflineActionIdentity = {},
 ): Promise<OfflineQueueItem> {
   const transaction = Dexie.currentTransaction;
   if (!transaction || transaction.mode !== "readwrite") {
@@ -268,10 +335,22 @@ export async function persistCriticalOfflineActionInCurrentTransaction(
     );
   }
 
-  const timestamp = Date.now();
+  const currentSize = await db.offlineQueue.count();
+  if (currentSize >= MAX_QUEUE_SIZE) {
+    throw new Error(`Offline queue full (${MAX_QUEUE_SIZE} items). Connect to sync.`);
+  }
+  if (identity.id !== undefined && identity.id.length === 0) {
+    throw new Error("Critical offline action identity cannot be empty");
+  }
+  if (identity.operationId !== undefined && identity.operationId.length === 0) {
+    throw new Error("Critical offline operation identity cannot be empty");
+  }
+
+  const latestItem = await db.offlineQueue.orderBy("timestamp").last();
+  const timestamp = nextOfflineQueueTimestamp(latestItem ? [latestItem] : []);
   const item: OfflineQueueItem = {
-    id: `${type}_${entityId}_${timestamp}_${generateSecureRandom()}`,
-    operationId: generateOperationId(),
+    id: identity.id ?? `${type}_${entityId}_${timestamp}_${generateSecureRandom()}`,
+    operationId: identity.operationId ?? generateOperationId(),
     type,
     entityId,
     ownerUserId: expectedOwnerUserId,
@@ -291,6 +370,46 @@ const PRIORITY_ORDER: Record<OfflineActionPriority, number> = {
   normal: 2,
   low: 3,
 };
+const MAX_CONSECUTIVE_CRITICAL_ACTIONS = 8;
+
+export function orderOfflineQueueActionsForProcessing(
+  actions: readonly OfflineAction[],
+): OfflineAction[] {
+  const sorted = [...actions].sort((left, right) => {
+    const leftPriority = isCriticalAction(left)
+      ? PRIORITY_ORDER.critical
+      : PRIORITY_ORDER[left.priority || "normal"];
+    const rightPriority = isCriticalAction(right)
+      ? PRIORITY_ORDER.critical
+      : PRIORITY_ORDER[right.priority || "normal"];
+    if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+    if (left.timestamp !== right.timestamp) return left.timestamp - right.timestamp;
+    return left.id.localeCompare(right.id);
+  });
+
+  const critical = sorted.filter(isCriticalAction);
+  const nonCritical = sorted.filter((action) => !isCriticalAction(action));
+  const ordered: OfflineAction[] = [];
+  let criticalIndex = 0;
+  let nonCriticalIndex = 0;
+
+  while (criticalIndex < critical.length || nonCriticalIndex < nonCritical.length) {
+    const criticalBurstEnd = Math.min(
+      criticalIndex + MAX_CONSECUTIVE_CRITICAL_ACTIONS,
+      critical.length,
+    );
+    while (criticalIndex < criticalBurstEnd) {
+      ordered.push(critical[criticalIndex]);
+      criticalIndex += 1;
+    }
+    if (nonCriticalIndex < nonCritical.length) {
+      ordered.push(nonCritical[nonCriticalIndex]);
+      nonCriticalIndex += 1;
+    }
+  }
+
+  return ordered;
+}
 
 /**
  * Compact redundant operations on the same entity.
@@ -384,6 +503,25 @@ const HANDLER_ATTEMPT_TIMEOUT_MS = 30_000;
 const DATA_WRITE_BARRIER_LOCK = "zenflow:data-write-barrier";
 const OFFLINE_QUEUE_STORAGE_LOCK = "zenflow:offline-queue-storage";
 const OFFLINE_QUEUE_PROCESSING_LOCK = "zenflow:offline-queue-processing";
+
+function jitterOfflineQueueDelay(baseDelayMs: number, randomValue: number): number {
+  const boundedBase = Math.max(0, Math.floor(baseDelayMs));
+  const boundedRandom = Math.min(1, Math.max(0, randomValue));
+  const lowerBound = Math.ceil(boundedBase / 2);
+  return Math.floor(lowerBound + (boundedBase - lowerBound) * boundedRandom);
+}
+
+export function computeOfflineQueueRetryDelay(
+  retries: number,
+  randomValue = Math.random(),
+): number {
+  const boundedRetries = Math.max(0, Math.floor(retries));
+  const exponentialDelay = Math.min(
+    RETRY_BASE_DELAY * Math.pow(2, boundedRetries),
+    RETRY_MAX_DELAY,
+  );
+  return jitterOfflineQueueDelay(exponentialDelay, randomValue);
+}
 
 class OfflineQueue {
   private state: QueueState = {
@@ -668,7 +806,6 @@ class OfflineQueue {
               maxSize: MAX_QUEUE_SIZE,
               message: "Offline queue full. Please connect to internet to sync your data.",
               actionType: type,
-              entityId,
             },
           })
         );
@@ -707,7 +844,7 @@ class OfflineQueue {
         const existing = this.state.actions[existingIndex];
         const requeuedWhileProcessing = this.processingActionIds.has(existing.id);
         existing.payload = payload;
-        existing.timestamp = Math.max(Date.now(), existing.timestamp + 1);
+        existing.timestamp = nextOfflineQueueTimestamp(this.state.actions);
         existing.operationId = generateOperationId();
         if (requeuedWhileProcessing) {
           this.requeuedDuringProcessing.add(existing.id);
@@ -715,7 +852,7 @@ class OfflineQueue {
           existing.retries = 0; // A new user edit gets a fresh retry budget.
           existing.lastError = undefined;
         }
-        logger.log("[OfflineQueue] Action deduplicated in-place:", type, entityId);
+        logger.log("[OfflineQueue] Action deduplicated in-place", { actionType: type });
         await this.persistToStorage();
         this.notifyListeners();
 
@@ -729,14 +866,15 @@ class OfflineQueue {
       }
     }
 
+    const timestamp = nextOfflineQueueTimestamp(this.state.actions);
     const action: OfflineAction = {
-      id: `${type}_${entityId}_${Date.now()}_${generateSecureRandom()}`,
+      id: `${type}_${entityId}_${timestamp}_${generateSecureRandom()}`,
       operationId: generateOperationId(),
       type,
       entityId,
       ownerUserId,
       payload,
-      timestamp: Date.now(),
+      timestamp,
       retries: 0,
       maxRetries,
       priority,
@@ -746,7 +884,7 @@ class OfflineQueue {
     await this.persistToStorage();
     this.notifyListeners();
 
-    logger.log("[OfflineQueue] Action queued:", type, entityId);
+    logger.log("[OfflineQueue] Action queued", { actionType: type });
     recordSyncHealthReceipt({
       kind: "queued",
       source: "queue",
@@ -788,14 +926,14 @@ class OfflineQueue {
       .then(() => {
         logger.log("[OfflineQueue] Background Sync registered");
       })
-      .catch((err) => {
+      .catch(() => {
         // P2-6 Fix: Emit event so UI can inform user about sync status
-        logger.warn("[OfflineQueue] Background Sync registration failed:", err);
+        logger.warn("[OfflineQueue] Background Sync registration failed");
         if (typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent("zenflow:background-sync-failed", {
               detail: {
-                error: err instanceof Error ? err.message : String(err),
+                error: "BACKGROUND_SYNC_UNAVAILABLE",
                 pendingActions: this.state.actions.length,
                 message: "Background sync unavailable. Data will sync when you return to the app.",
               },
@@ -820,11 +958,8 @@ class OfflineQueue {
         await db.offlineQueue.delete(actionId);
         await this.refreshActionsFromIndexedDB();
         removed = true;
-      } catch (idbError) {
-        logger.warn(
-          "[OfflineQueue] IndexedDB delete failed, using localStorage fallback:",
-          idbError
-        );
+      } catch {
+        logger.warn("[OfflineQueue] IndexedDB delete failed, using localStorage fallback");
         const current = this.state.actions.find((action) => action.id === actionId);
         if (!current || current.operationId !== operationId) return;
         if (!current.ownerUserId) {
@@ -1003,7 +1138,11 @@ class OfflineQueue {
 
         const failureCount = this.lifecycleProcessFailureCount + 1;
         this.lifecycleProcessFailureCount = failureCount;
-        const retryDelay = LIFECYCLE_PROCESS_RETRY_DELAYS_MS[failureCount - 1];
+        const retryBaseDelay = LIFECYCLE_PROCESS_RETRY_DELAYS_MS[failureCount - 1];
+        const retryDelay =
+          retryBaseDelay === undefined
+            ? undefined
+            : jitterOfflineQueueDelay(retryBaseDelay, Math.random());
         const canRetry =
           retryDelay !== undefined &&
           !this.accountBoundarySuspended &&
@@ -1056,9 +1195,17 @@ class OfflineQueue {
 
     logger.log("[OfflineQueue] Processing queue, actions:", this.state.actions.length);
 
-    // Process actions in order (FIFO)
-    const actionsToProcess = [...this.state.actions];
+    // Critical revocation, event and atomic commit rows drain first. FIFO is
+    // retained within each priority, including after cold-start rehydration.
+    const actionsToProcess = orderOfflineQueueActionsForProcessing(this.state.actions);
     let pausedByAbort = false;
+    const blockedCriticalCausalKeys = new Set<string>();
+    let automationTargetDeliveryBlocked = false;
+    const markCriticalBarrier = (action: OfflineAction, causalDeliveryKey: string | null) => {
+      if (!isCriticalAction(action)) return;
+      if (causalDeliveryKey) blockedCriticalCausalKeys.add(causalDeliveryKey);
+      if (isAutomationTargetDelivery(action)) automationTargetDeliveryBlocked = true;
+    };
 
     for (const action of actionsToProcess) {
       if (this.accountBoundarySuspended) {
@@ -1076,7 +1223,15 @@ class OfflineQueue {
       if (!action.ownerUserId || action.ownerUserId !== ownerUserId) {
         continue;
       }
+      const causalDeliveryKey = getOfflineQueueCausalDeliveryKey(action);
+      if (action.type === "UNDO_AUTOMATION_TRANSACTION" && automationTargetDeliveryBlocked) {
+        continue;
+      }
+      if (causalDeliveryKey && blockedCriticalCausalKeys.has(causalDeliveryKey)) {
+        continue;
+      }
       if (isBlockedAction(action)) {
+        markCriticalBarrier(action, causalDeliveryKey);
         continue;
       }
 
@@ -1085,6 +1240,7 @@ class OfflineQueue {
         logger.warn("[OfflineQueue] No handler for action type:", action.type);
         // Startup hydration can finish before feature handlers register. Every
         // unacknowledged intent stays durable until its handler is available.
+        markCriticalBarrier(action, causalDeliveryKey);
         continue;
       }
 
@@ -1143,13 +1299,13 @@ class OfflineQueue {
         const removed = await this.removeAction(action.id, operationId);
         if (!removed) {
           logger.log(
-            "[OfflineQueue] Newer operation retained after an older delivery:",
-            action.type,
-            action.entityId
+            "[OfflineQueue] Newer operation retained after an older delivery",
+            { actionType: action.type },
           );
+          markCriticalBarrier(action, causalDeliveryKey);
           continue;
         }
-        logger.log("[OfflineQueue] Action processed:", action.type, action.entityId);
+        logger.log("[OfflineQueue] Action processed", { actionType: action.type });
         recordSyncHealthReceipt({
           kind: "processed",
           source: "queue",
@@ -1172,78 +1328,84 @@ class OfflineQueue {
             await this.refreshActionsFromIndexedDB();
           });
           logger.log(
-            "[OfflineQueue] Newer payload kept for the next processing pass:",
-            action.type,
-            action.entityId
+            "[OfflineQueue] Newer payload kept for the next processing pass",
+            { actionType: action.type },
           );
+          markCriticalBarrier(action, causalDeliveryKey);
           continue;
         }
 
         if (isAbortError(error)) {
           logger.warn(
-            "[OfflineQueue] Processing paused without consuming retry budget:",
-            action.type,
-            action.entityId
+            "[OfflineQueue] Processing paused without consuming retry budget",
+            { actionType: action.type },
           );
           pausedByAbort = true;
           break;
         }
 
-        logger.error("[OfflineQueue] Action failed:", action.type, error);
+        const failureCode = getOfflineQueueFailureCode(error);
+        logger.error("[OfflineQueue] Action failed", {
+          actionType: action.type,
+          failureCode,
+        });
         recordSyncHealthReceipt({
           kind: "failed",
           source: "queue",
           actionType: action.type,
           priority: action.priority || "normal",
-          errorName: error instanceof Error ? error.name : "UnknownError",
+          errorName: failureCode,
         });
 
         const operationId = action.operationId;
         if (!operationId) {
           logger.warn("[OfflineQueue] Failed legacy attempt retained without mutation");
+          markCriticalBarrier(action, causalDeliveryKey);
           continue;
         }
         const retries = action.retries + 1;
-        const lastError = error instanceof Error ? error.message : String(error);
         const persistedFailure = await this.persistAttemptFailure(
           action.id,
           operationId,
           retries,
-          lastError
+          failureCode,
         );
         if (!persistedFailure) {
           logger.log(
-            "[OfflineQueue] Failure belonged to an older operation; newer payload retained:",
-            action.type,
-            action.entityId
+            "[OfflineQueue] Failure belonged to an older operation; newer payload retained",
+            { actionType: action.type },
           );
+          markCriticalBarrier(action, causalDeliveryKey);
           continue;
         }
+
+        markCriticalBarrier(persistedFailure, causalDeliveryKey);
 
         if (persistedFailure.retries >= persistedFailure.maxRetries) {
           if (isCriticalAction(persistedFailure)) {
             logger.error(
-              "[OfflineQueue] Critical action blocked after max retries:",
-              persistedFailure.id
+              "[OfflineQueue] Critical action blocked after max retries",
+              { actionType: persistedFailure.type, failureCode },
             );
             recordSyncHealthReceipt({
               kind: "queue-blocked",
               source: "queue",
               actionType: persistedFailure.type,
               priority: persistedFailure.priority || "normal",
-              errorName: error instanceof Error ? error.name : "UnknownError",
+              errorName: failureCode,
             });
             this.dispatchBlockedAction(persistedFailure);
           } else {
-            logger.error("[OfflineQueue] Action blocked after max retries:", persistedFailure.id);
+            logger.error("[OfflineQueue] Action blocked after max retries", {
+              actionType: persistedFailure.type,
+              failureCode,
+            });
             this.dispatchBlockedAction(persistedFailure);
           }
         } else {
-          // Exponential backoff before retry
-          const delay = Math.min(
-            RETRY_BASE_DELAY * Math.pow(2, persistedFailure.retries),
-            RETRY_MAX_DELAY
-          );
+          // Equal jitter prevents a reconnect herd while preserving a finite
+          // exponential ceiling and a non-zero lower bound.
+          const delay = computeOfflineQueueRetryDelay(persistedFailure.retries);
           logger.log(`[OfflineQueue] Will retry in ${delay}ms`);
           await this.sleep(delay);
         }
@@ -1267,12 +1429,27 @@ class OfflineQueue {
 
   private hasProcessableActionsForOwner(ownerUserId: string | null): boolean {
     if (!ownerUserId) return false;
-    return this.state.actions.some(
-      (action) =>
-        action.ownerUserId === ownerUserId &&
-        !isBlockedAction(action) &&
-        this.syncHandlers.has(action.type)
-    );
+    const blockedCriticalCausalKeys = new Set<string>();
+    let automationTargetDeliveryBlocked = false;
+    for (const action of orderOfflineQueueActionsForProcessing(this.state.actions)) {
+      if (action.ownerUserId !== ownerUserId) continue;
+      const causalDeliveryKey = getOfflineQueueCausalDeliveryKey(action);
+      if (action.type === "UNDO_AUTOMATION_TRANSACTION" && automationTargetDeliveryBlocked) {
+        continue;
+      }
+      if (causalDeliveryKey && blockedCriticalCausalKeys.has(causalDeliveryKey)) continue;
+      if (isBlockedAction(action) || !this.syncHandlers.has(action.type)) {
+        if (causalDeliveryKey && isCriticalAction(action)) {
+          blockedCriticalCausalKeys.add(causalDeliveryKey);
+        }
+        if (isCriticalAction(action) && isAutomationTargetDelivery(action)) {
+          automationTargetDeliveryBlocked = true;
+        }
+        continue;
+      }
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -1590,14 +1767,13 @@ class OfflineQueue {
         {
           detail: {
             actionType: action.type,
-            entityId: action.entityId,
             retry: () =>
               this.retryBlockedAction(
                 action.id,
                 expectedOperationId,
                 expectedBoundaryGeneration
               ).catch((retryError) => {
-                logger.error("[OfflineQueue] Blocked sync retry failed:", retryError);
+                logger.error("[OfflineQueue] Blocked sync retry failed");
                 throw retryError;
               }),
           },
@@ -1755,7 +1931,7 @@ class OfflineQueue {
       await this.reconcileStoredActions();
     } catch (idbError) {
       if (idbError instanceof OfflineQueueStorageAccessError) throw idbError;
-      logger.warn("[OfflineQueue] IndexedDB load failed, trying localStorage:", idbError);
+      logger.warn("[OfflineQueue] IndexedDB load failed, trying localStorage");
       this.loadFromLocalStorage();
     }
   }
@@ -1804,6 +1980,44 @@ class OfflineQueue {
     }
   }
 
+  /**
+   * Removes only owner-bound connected-record commit/undo work after the
+   * authoritative server history marker has committed. In-flight handlers
+   * remain generation-fenced by the automation repository finalizers.
+   */
+  async discardAutomationHistoryActions(
+    ownerUserId: string,
+    transactionIds: readonly string[] | null,
+    options: { dataWriteLockHeld?: boolean } = {},
+  ): Promise<number> {
+    await this.waitForInit();
+    const requestedIds = transactionIds === null ? null : new Set(transactionIds);
+    let removed = 0;
+    const discard = async () => {
+      await runWithOriginExclusiveLock(OFFLINE_QUEUE_STORAGE_LOCK, async () => {
+        await this.refreshActionsFromIndexedDB();
+        const removable = this.state.actions.filter(
+          (action) =>
+            action.ownerUserId === ownerUserId &&
+            (action.type === "COMMIT_AUTOMATION_TRANSACTION" ||
+              action.type === "UNDO_AUTOMATION_TRANSACTION") &&
+            (requestedIds === null || requestedIds.has(action.entityId)),
+        );
+        if (removable.length === 0) return;
+        await db.offlineQueue.bulkDelete(removable.map((action) => action.id));
+        removed = removable.length;
+        await this.refreshActionsFromIndexedDB();
+      });
+    };
+    if (options.dataWriteLockHeld) {
+      await discard();
+    } else {
+      await runWithOriginExclusiveLock(DATA_WRITE_BARRIER_LOCK, discard);
+    }
+    if (removed > 0) this.notifyListeners();
+    return removed;
+  }
+
   /** Refreshes memory from durable storage and starts normal processing. */
   async wakeFromDurableStorage(): Promise<void> {
     await this.waitForInit();
@@ -1836,11 +2050,8 @@ class OfflineQueue {
       if (!storageRemove(SK.OFFLINE_QUEUE)) {
         logger.warn("[OfflineQueue] Durable write completed; fallback cleanup remains pending");
       }
-    } catch (idbError) {
-      logger.warn(
-        "[OfflineQueue] IndexedDB persist failed, using localStorage fallback:",
-        idbError
-      );
+    } catch {
+      logger.warn("[OfflineQueue] IndexedDB persist failed, using localStorage fallback");
       // Fallback to localStorage
       if (!this.persistToLocalStorage()) {
         throw new Error("[OfflineQueue] Failed to persist queue to IndexedDB and localStorage");
@@ -2034,7 +2245,7 @@ class OfflineQueue {
       logger.log("[OfflineQueue] Reconciled localStorage fallback with IndexedDB");
     } catch (error) {
       if (error instanceof OfflineQueueStorageAccessError) throw error;
-      logger.warn("[OfflineQueue] Fallback reconciliation remains pending:", error);
+      logger.warn("[OfflineQueue] Fallback reconciliation remains pending");
       throw error;
     }
   }

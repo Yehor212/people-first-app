@@ -9,6 +9,10 @@ const mocks = vi.hoisted(() => ({
   enqueue: vi.fn(),
   getPersistentDeviceId: vi.fn(),
   writeEventAndBroadcast: vi.fn(),
+  commitManualSyncEvent: vi.fn(),
+  loggerWarn: vi.fn(),
+  loggerError: vi.fn(),
+  loggerLog: vi.fn(),
   supabase: null as { from: ReturnType<typeof vi.fn> } | null,
 }));
 
@@ -28,11 +32,15 @@ vi.mock("@/storage/eventSync", () => ({
   writeEventAndBroadcast: mocks.writeEventAndBroadcast,
 }));
 
+vi.mock("@/storage/sync/manualSyncAcceptance", () => ({
+  commitManualSyncEvent: mocks.commitManualSyncEvent,
+}));
+
 vi.mock("@/lib/logger", () => ({
   logger: {
-    log: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
+    log: mocks.loggerLog,
+    warn: mocks.loggerWarn,
+    error: mocks.loggerError,
   },
 }));
 
@@ -43,6 +51,7 @@ vi.mock("../syncUtils", () => ({
 import { deleteSettingFromCloud, syncSetting } from "../syncSettings";
 import { db } from "@/storage/db";
 import { SK } from "@/lib/storageKeys";
+import { AUTOMATION_LOCAL_REFRESH_SETTING_KEY } from "@/features/automation/types";
 
 describe("syncSettings", () => {
   beforeEach(async () => {
@@ -58,6 +67,7 @@ describe("syncSettings", () => {
     mocks.from.mockReturnValue({ upsert: mocks.upsert, delete: mocks.delete });
     mocks.supabase = { from: mocks.from };
     mocks.getPersistentDeviceId.mockResolvedValue("device-1");
+    mocks.commitManualSyncEvent.mockResolvedValue({ seq: 1 });
     await db.settings.clear();
   });
 
@@ -89,6 +99,29 @@ describe("syncSettings", () => {
       "device-1",
       { expectedOwnerUserId: "user-1" }
     );
+  });
+
+  it("accepts a durable planning mutation and its event through one server transaction", async () => {
+    const operationId = "22222222-2222-4222-8222-222222222222";
+    const value = [{ id: "manual-event", completed: false }];
+
+    await syncSetting("zenflow-schedule-events", value, "user-1", {
+      requireRemoteCommit: true,
+      eventIdempotencyKey: operationId,
+      updatedAt: "2026-08-13T08:00:00.000Z",
+    });
+
+    expect(mocks.commitManualSyncEvent).toHaveBeenCalledWith({
+      ownerUserId: "user-1",
+      operationId,
+      entityType: "setting",
+      entityId: "zenflow-schedule-events",
+      op: "upsert",
+      projection: value,
+      deviceId: "device-1",
+    });
+    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
   it("refuses an owner-bound upsert when the active account changes before the mutation", async () => {
@@ -126,6 +159,26 @@ describe("syncSettings", () => {
     expect(resolved).toBe(true);
   });
 
+  it("keeps an aborted durable setting delivery retryable without private diagnostics", async () => {
+    const privateKey = "PRIVATE_SETTING_CANARY";
+    const abort = new DOMException("PRIVATE_ABORT_CANARY", "AbortError");
+    mocks.upsert.mockRejectedValueOnce(abort);
+
+    await expect(
+      syncSetting(privateKey, true, "user-1", {
+        requireRemoteCommit: true,
+      })
+    ).rejects.toBe(abort);
+
+    const diagnostics = JSON.stringify([
+      ...mocks.loggerWarn.mock.calls,
+      ...mocks.loggerError.mock.calls,
+      ...mocks.loggerLog.mock.calls,
+    ]);
+    expect(diagnostics).not.toContain(privateKey);
+    expect(diagnostics).not.toContain("PRIVATE_ABORT_CANARY");
+  });
+
   it("queues setting changes while offline instead of writing partial cloud state", async () => {
     Object.defineProperty(navigator, "onLine", {
       configurable: true,
@@ -152,6 +205,12 @@ describe("syncSettings", () => {
   it("does not sync local-only cursor or device settings to the account", async () => {
     await syncSetting("zenflow-device-id", "device-from-this-browser");
     await syncSetting("sync-last-seq", 42);
+    await syncSetting(AUTOMATION_LOCAL_REFRESH_SETTING_KEY, {
+      schemaVersion: 1,
+      ownerUserId: "11111111-1111-4111-8111-111111111111",
+      revision: 1,
+      deliveredRevision: 0,
+    });
 
     expect(mocks.from).not.toHaveBeenCalled();
     expect(mocks.enqueue).not.toHaveBeenCalled();

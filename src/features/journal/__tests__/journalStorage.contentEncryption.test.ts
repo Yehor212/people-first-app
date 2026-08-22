@@ -82,6 +82,13 @@ vi.mock("@/lib/offlineQueue", () => ({
 vi.mock("@/storage/deletionTracker", () => ({
   trackDeletedJournalEntryId: vi.fn(() => Promise.resolve()),
 }));
+vi.mock("@/features/automation/automationRepository", () => ({
+  detachAutomationRecordRevisionInCurrentTransaction: vi.fn(() => Promise.resolve()),
+  markAutomationSourceRescanRequiredInCurrentTransaction: vi.fn(() => Promise.resolve()),
+  persistAutomationSourceIntentInCurrentTransaction: vi.fn(() =>
+    Promise.resolve({ intentPersisted: false })
+  ),
+}));
 vi.mock("@/storage/journalStorageService", () => ({
   uploadPhoto: vi.fn(() => Promise.resolve(null)),
   uploadAudio: vi.fn(() => Promise.resolve(null)),
